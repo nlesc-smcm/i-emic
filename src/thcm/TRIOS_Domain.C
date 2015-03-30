@@ -15,7 +15,7 @@
 #include "Epetra_Vector.h"
 #include "Epetra_IntVector.h"
 
-#include "/../utils/Utils.H"
+#include "../utils/Utils.H"
 
 #ifdef HAVE_MPI
 #  include "Epetra_MpiComm.h"
