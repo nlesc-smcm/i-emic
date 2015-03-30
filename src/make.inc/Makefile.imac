@@ -1,0 +1,60 @@
+# Makefile variables for Trilinos-THCM
+
+TRIVERSION   = 11.12
+TRIDIR       = /home/erik/trilinos/${TRIVERSION}
+PROJECT_BASE = /home/erik/Projects
+
+include ${TRIDIR}/include/Makefile.export.NOX
+
+COMPILE = ${NOX_CXX_COMPILER}
+
+DEBFLAGS= -g 
+
+CDEBUG = $(DEBFLAGS) 
+
+# Omitting optimalization -O3 ?
+CFLAGS = --std=c++11 ${CDEBUG} -DGNU -DUTRECHT\
+ -DHAVE_ML -DHAVE_CONFIG_H\
+ -DHAVE_ANASAZI -DOLD_EOS
+ 
+# -DHAVE_MPI # already in Trilinos ?
+ 
+# *** compatibility ********
+CXX = ${COMPILE}
+CXX_FLAGS = ${CFLAGS}
+# **************************
+
+MRILUDIR   = /home/erik/mrilu/x86_64_gfortran
+LIBDIR     = -L${TRIDIR}/lib -L${PROJECT_BASE}/lib/${TRIVERSION}
+LIBINCLUDE = ${NOX_INCLUDE_DIRS}
+
+# *** compatibility ********
+INCLUDES = ${LIBINCLUDE} -I${PROJECT_BASE}/include/${TRIVERSION}
+# **************************
+
+FC     = ${NOX_FORTRAN_COMPILER}
+FDEBUG = $(DEBFLAGS)
+FFLAGS = $(FDEBUG) ${FLIBINCLUDE} -fdefault-real-8\
+-DGNU -DUTRECHT -DASCII_TOPO -DOLD_EOS -ffree-line-length-none
+
+FORTLIBS = -lgfortran
+TRILIBS  = ${NOX_LIBRARIES} ${NOX_TPL_LIBRARIES} 
+
+# *** compatibility **************
+TRILINOS_LIBRARIES = ${TRILIBS}
+F_FLAGS = ${FFLAGS}
+# ********************************
+
+MRILULIBS    =#-lmrilucpp -lprecon -lmtstor -liosrc -lmisc   
+ILUPACKLIBS  =#-L${BASEDIR}/lib/ilupack -lDilupack -lsparspak -lamd -lblaslike
+HDF5LIBS     =# -lhdf5 -ljpeg -lz
+MATHLIBS     =# -lfftw
+HYMLSLIBS    = -lhymls -ldl
+TRIOSLIBS    = -ltrios 
+extralibs1   = #NOX_Epetra_LinearSystem_Belos.o
+extralibs2   = 
+extralibs    = ${extralibs1} ${extralibs2}
+MY_LIBRARIES = ${extralibs1} ${extralibs2} ${MRILULIBS} ${ILUPACKLIBS} \
+               ${HDF5LIBS} ${MATHLIBS} ${FORTLIBS} ${TRIOSLIBS} ${HYMLSLIBS}
+
+F77=gfortran -ffixed-line-length-132

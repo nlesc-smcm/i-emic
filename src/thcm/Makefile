@@ -1,0 +1,52 @@
+include ../make.inc/Makefile.${PLAT}
+
+libname= libthcm.a
+
+obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
+     itplbv.o levitus.o mat.o matetc.o lev.o mix.o res.o usr.o par.o\
+     global.o thcm_utils.o scaling.o mix_imp.o mix_sup.o spf.o topo.o usrc.o\
+     OceanModel.o THCM.o OceanGrid.o	 
+
+default: lib
+
+lib: $(libname)
+
+$(libname): ${obj}
+	ar vrcs $(libname) $(obj)
+
+%.o: %.C %.H
+	$(CXX) -c $(INCLUDES) $(CXX_FLAGS) $<
+%.o: %.C
+	$(CXX) -c $(INCLUDES) $(CXX_FLAGS) $<
+%.o: %.F90 usr.o
+	$(FC) -c $(F_INCLUDES) $(F_FLAGS) $<
+%.o: %.f usr.o
+	$(F77) -c $(F_INCLUDES) $(F_FLAGS) $<
+
+# dependencies
+
+par.o: par.F90
+	$(FC) -c $(FINCLUDES) $(F_FLAGS) $<
+usr.o: usr.F90 par.o
+	$(FC) -c $(FINCLUDES) $(F_FLAGS) $<
+
+global.o:      lev.o
+assemble.o:    mat.o matetc.o atm.o
+thcm_utils.o:  mix.o
+boundary.o:    mat.o matetc.o atm.o 
+forcing.o:     inout.o itplbv.o matetc.o atm.o 
+inout.o:       global.o 
+levitus.o:     inout.o lev.o 
+scaling.o:     mat.o
+usrc.o:        usrc.F90 mat.o atm.o res.o mix.o scaling.o monthly.o
+matetc.o:      mat.o 
+mix_imp.o:     mat.o matetc.o mix_sup.o mix.o 
+mix_sup.o:     mix_sup.F90
+spf.o:         atm.o
+topo.o:        itplbv.o matetc.o global.o
+
+clean:
+	-rm -f *.o *.mod $(libname)
+
+realclean: clean
+	-rm *~; 
