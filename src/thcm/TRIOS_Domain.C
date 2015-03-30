@@ -16,6 +16,7 @@
 #include "Epetra_IntVector.h"
 
 #include "../utils/Utils.H"
+#include "globdefs.H"
 
 #ifdef HAVE_MPI
 #  include "Epetra_MpiComm.h"
@@ -169,7 +170,7 @@ namespace TRIOS
 // using nloc and noff, we therefore have to take mod(i,nglob)
 
 		CommonSetup();		
-		LEAVE("Decomp2D");
+
 	}
 
 // 3D domain decomposition (for Navier-Stokes)
@@ -180,11 +181,11 @@ namespace TRIOS
 // positions.
 	void Domain::Decomp3D()
 	{
-		ENTER("Decomp3D");
+
 		int nprocs = comm->NumProc();
 		int pid = comm->MyPID();
-		HYMLS::Tools::SplitBox(n,m,l,nprocs,npN,npM,npL);
-		HYMLS::Tools::ind2sub(npN,npM,npL,pid,pidN,pidM,pidL);
+		Utils::SplitBox(n,m,l,nprocs,npN,npM,npL);
+		Utils::ind2sub(npN,npM,npL,pid,pidN,pidM,pidL);
 
 		Loff0 = pidL*(int)(l/npL);
 		Moff0 = pidM*(int)(m/npM);
@@ -203,13 +204,10 @@ namespace TRIOS
 		lloc = lloc0;
 
 		CommonSetup();  
-		LEAVE("Decomp3D");
 	}
 
 	void Domain::CommonSetup()
     {
-		ENTER("CommonSetup");
-
 		INFO("processor position: (N,M,L) = ("<<pidN<<","<<pidM<<","<<pidL<<")");
 		INFO("subdomain offsets: "<<Noff0<<","<<Moff0<<","<<Loff0);
 		INFO("grid dimension on subdomain: "<<nloc0<<"x"<<mloc0<<"x"<<lloc0);
@@ -278,7 +276,6 @@ namespace TRIOS
 			DEBVAR(xmax_loc)
 			DEBVAR(ymin_loc)
 			DEBVAR(ymax_loc)
-			LEAVE("CommonSetup");
     }
 
 	// find out wether a particular local index is on a ghost node
@@ -293,7 +290,7 @@ namespace TRIOS
 //    DEBUG("GHOST CHECK: li (C++) = "<<ind);
 
 		// find out where the point is
-		HYMLS::Tools::ind2sub(nloc,mloc,lloc,nun_,row,i,j,k,xx);
+		Utils::ind2sub(nloc,mloc,lloc,nun_,row,i,j,k,xx);
     
 		// ghost nodes at periodic boundary only if more than one proc in x-direction
 		bool perio = periodic&&xparallel;
@@ -326,7 +323,7 @@ namespace TRIOS
 		}
 		else
 		{
-			HYMLS::Tools::Error("not implemented",__FILE__,__LINE__);
+			Utils::Error("not implemented",__FILE__,__LINE__);
 //    int l_=depth_av?1:l;
 //    M = loadbal->createBalancedMap(l_,nun_);
 		}
@@ -367,8 +364,8 @@ namespace TRIOS
 											   int nloc_, int mloc_, int lloc_, int nun_) const
 	{
 		int NumMyElements = mloc_*nloc_*lloc_*nun_;
-		DEBVAR(NumMyElements)  
-			int NumGlobalElements = -1; // Let Epetra figure it out herself
+		DEBVAR(NumMyElements);
+		int NumGlobalElements = -1; // Let Epetra figure it out herself
                 
         
 		// Make lists of all global elements that belong to my subdomain 
@@ -396,15 +393,11 @@ namespace TRIOS
 			}//j
 		}//k
 
-
-
-		// create the map
-       
+		// create the map       
 		Teuchos::RCP<Epetra_Map> M = Teuchos::rcp(new Epetra_Map(NumGlobalElements,
-																 NumMyElements,MyGlobalElements,0,*comm));
-          
-		DEBVAR(NumMyElements)  
-			delete [] MyGlobalElements;
+																 NumMyElements,MyGlobalElements,0,*comm));		
+		DEBVAR(NumMyElements);
+		delete [] MyGlobalElements;
 		return M;
 
 
@@ -418,14 +411,14 @@ namespace TRIOS
 		return comm; // can't split anything in sequential mode
 #else //{
 		Teuchos::RCP<Epetra_MpiComm> mpi_comm = Teuchos::rcp_dynamic_cast<Epetra_MpiComm>(comm);
-		if (mpi_comm==Teuchos::null) HYMLS::Tools::Error("Bad Communicator encountered!",__FILE__,__LINE__);
+		if (mpi_comm==Teuchos::null) Utils::Error("Bad Communicator encountered!",__FILE__,__LINE__);
 		MPI_Comm old_comm = mpi_comm->GetMpiComm();
 		MPI_Comm row_comm;
 		MPI_Group old_group, row_group;
 
 		int nproc_row, disp, offset;
 
-		if (npL>1) HYMLS::Tools::Error("This function is not implemented for 3D proc arrays!",
+		if (npL>1) Utils::Error("This function is not implemented for 3D proc arrays!",
 									   __FILE__,__LINE__);    
                     
                     
@@ -444,7 +437,7 @@ namespace TRIOS
 		else
 		{
 			INFO("Bad dimension to be extracted from proc array: "<<dim);
-			HYMLS::Tools::Error("Cannot split dimension",__FILE__,__LINE__);
+			Utils::Error("Cannot split dimension",__FILE__,__LINE__);
 		}
 		int *row_ranks = new int[nproc_row];
 
@@ -452,7 +445,7 @@ namespace TRIOS
 //  Create vector of ranks for row processes: 
 		DEBUG("My position: ("<<pidN<<", "<<pidM<<")");
 		DEBUG("extract communicator for dim="<<dim);
-		DEBUG("Creating sub-communicator consisting of:")
+		DEBUG("Creating sub-communicator consisting of:");
 			for (int k = 0; k < nproc_row; k++)
 			{
 				row_ranks[k] = offset+k*disp;
@@ -467,14 +460,14 @@ namespace TRIOS
 		/* Create the row group  */
 		/* --------------------- */
 		ierr=MPI_Group_incl(old_group, nproc_row, row_ranks, &row_group);
-		if (ierr!=0) HYMLS::Tools::Error("MPI call 'Group_incl' failed!",__FILE__,__LINE__);
+		if (ierr!=0) Utils::Error("MPI call 'Group_incl' failed!",__FILE__,__LINE__);
 
 		/* ---------------------------------------------------- */
 		/* Create the new communicator; MPI assigns the context */
 		/* ---------------------------------------------------- */
   
 		ierr = MPI_Comm_create(old_comm, row_group, &row_comm);
-		if (ierr!=0) HYMLS::Tools::Error("MPI call 'Comm_create' failed!",__FILE__,__LINE__);
+		if (ierr!=0) Utils::Error("MPI call 'Comm_create' failed!",__FILE__,__LINE__);
   
 		// finally create the Epetra comm object
 		Teuchos::RCP<Epetra_Comm> new_comm = Teuchos::rcp(new Epetra_MpiComm(row_comm),false);
@@ -492,15 +485,13 @@ namespace TRIOS
 	int Domain::Assembly2Standard
 	(const Epetra_Vector& source, Epetra_Vector& target) const
 	{
-//        DEBUG("Enter Assembly2Standard");
 #ifdef TESTING
         if (!(source.Map().SameAs(*AssemblyMap)&&target.Map().SameAs(*StandardMap)))
 		{
-			HYMLS::Tools::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         CHECK_ZERO(target.Export(source,*as2std,Zero));
-//        DEBUG("Leave Assembly2Standard");
         return 0;
 	}
 
@@ -509,15 +500,13 @@ namespace TRIOS
 	int Domain::Standard2Assembly
 	(const Epetra_Vector& source, Epetra_Vector& target) const
 	{
-//        DEBUG("Enter Standard2Assembly");
 #ifdef TESTING
         if (!(source.Map().SameAs(*StandardMap)&&target.Map().SameAs(*AssemblyMap)))
 		{
-			HYMLS::Tools::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         CHECK_ZERO(target.Import(source,*as2std,Insert));
-//        DEBUG("Leave Standard2Assembly");
         return 0;
 	}
 
@@ -525,11 +514,10 @@ namespace TRIOS
 	int Domain::Standard2Solve
 	(const Epetra_Vector& source, Epetra_Vector& target) const
 	{
-//        DEBUG("Enter Standard2Solve");
 #ifdef TESTING
         if (!(source.Map().SameAs(*StandardMap)&&target.Map().SameAs(*SolveMap)))
 		{
-			HYMLS::Tools::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         if (UseLoadBalancing()==false)
@@ -540,7 +528,6 @@ namespace TRIOS
 		{
 			CHECK_ZERO(target.Export(source,*std2sol,Insert));
 		}
-//        DEBUG("Leave Standard2Solve");
         return 0;
 	}
 
@@ -548,11 +535,10 @@ namespace TRIOS
 	int Domain::Solve2Standard
 	(const Epetra_Vector& source, Epetra_Vector& target) const
 	{
-//        DEBUG("Enter Solve2Standard");
 #ifdef TESTING
         if (!(source.Map().SameAs(*SolveMap)&&target.Map().SameAs(*StandardMap)))
 		{
-			HYMLS::Tools::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         if (UseLoadBalancing()==false)
@@ -563,7 +549,6 @@ namespace TRIOS
 		{
 			CHECK_ZERO(target.Import(source,*std2sol,Insert));
 		}
-//        DEBUG("Leave Solve2Standard");
         return 0;
 	}
 
@@ -571,11 +556,10 @@ namespace TRIOS
 	int Domain::Solve2Assembly
 	(const Epetra_Vector& source, Epetra_Vector& target) const
 	{
-//        DEBUG("Enter Solve2Assembly");
 #ifdef TESTING
         if (!(source.Map().SameAs(*SolveMap)&&target.Map().SameAs(*AssemblyMap)))
 		{
-			HYMLS::Tools::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         if (UseLoadBalancing()==false)
@@ -588,7 +572,6 @@ namespace TRIOS
 			this->Solve2Standard(source,tmp);
 			this->Standard2Assembly(tmp,target);
 		}
-//        DEBUG("Leave Solve2Assembly");
         return 0;
 	}
 
@@ -601,7 +584,7 @@ namespace TRIOS
 #ifdef TESTING
         if (!(source.Map().SameAs(*AssemblyMap)&&target.Map().SameAs(*SolveMap)))
 		{
-			HYMLS::Tools::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif 
         if (UseLoadBalancing()==false)
@@ -614,7 +597,6 @@ namespace TRIOS
 			this->Assembly2Standard(source,tmp);
 			this->Standard2Solve(tmp,target);
 		}
-//        DEBUG("Leave Assembly2Solve");
         return 0;
 	}
         
@@ -624,11 +606,10 @@ namespace TRIOS
 	int Domain::Standard2Solve
 	(const Epetra_CrsMatrix& source, Epetra_CrsMatrix& target) const
 	{
-//        DEBUG("Enter Standard2Solve");
 #ifdef TESTING
         if (!(source.RowMap().SameAs(*StandardMap)&&target.RowMap().SameAs(*SolveMap)))
 		{
-			HYMLS::Tools::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         if (UseLoadBalancing()==false)
@@ -639,7 +620,6 @@ namespace TRIOS
 		{
 			CHECK_ZERO(target.Export(source,*std2sol,Insert));
 		}
-//        DEBUG("Enter Leave2Solve");
         return 0;
 	}
 }//namespace
