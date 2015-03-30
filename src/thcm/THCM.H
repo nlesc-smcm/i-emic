@@ -13,11 +13,12 @@
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_ParameterList.hpp"
 
-namespace TRIOS {
+#include "../utils/Utils.H"
+
+namespace TRIOS
+{
 	class Domain;
 }
-
-class OceanModel;
 
 class Epetra_Comm;
 class Epetra_Map;
@@ -79,9 +80,6 @@ class THCM :
 {
 
 public:
-
-	// to allow access to RecomputeScaling():
-	friend class OceanModelEvaluator;
 
 	//! Constructor  
 	THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
