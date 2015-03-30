@@ -1,19 +1,19 @@
 ##=================================================================
-## Makefile variables for my account in Groningen.
+## Makefile variables for my imac in Utrecht.
 ## Author: T.E. Mulder => t.e.mulder@uu.nl
 
 ##=================================================================
 ##   Location specific variables:
-LOCATION     = GRONINGEN         # See thcm/par.F90 for its use
+LOCATION     = UTRECHT         # See thcm/par.F90 for its use
 ##   Compiler identifier flag, options are
 ##   GNU, G95, INTEL, ASTER, ORBIT, HOPF, PGI and HUYGENS
 COMP_IDENT   = GNU
 ##   Trilinos version:
 TRIVERSION   = 11.12
 ##   Trilinos directory containing lib and include dirs:
-TRIDIR       = /home/p267904/trilinos/${TRIVERSION}
+TRIDIR       = /home/erik/trilinos/${TRIVERSION}
 ##   Project base directory
-PROJECT_BASE = /home/p267904/Projects
+PROJECT_BASE = /home/erik/Projects
 
 ##=================================================================
 ##   Import makefile variables from Trilinos:
@@ -21,11 +21,12 @@ include ${TRIDIR}/include/Makefile.export.NOX
 CXX                 = ${NOX_CXX_COMPILER}
 FC                  = ${NOX_FORTRAN_COMPILER}
 INCLUDE_DIRS        = ${NOX_INCLUDE_DIRS}
+LIBRARY_DIRS        = ${NOX_LIBRARY_DIRS}
 TRILINOS_LIBRARIES  = ${NOX_LIBRARIES} ${NOX_TPL_LIBRARIES}
 
 ##=================================================================
-## Flags that are shared among the different compilers:
-SHARED_FLAGS = -D${LOCATION} -D{COMP_IDENT}
+##   Flags that are shared among the different compilers:
+SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
 
 ##=================================================================
 ##   Supply debug and other flags for CXX compiler:
@@ -44,9 +45,10 @@ FC_FLAGS  = $(FC_DEBUG) ${SHARED_FLAGS} $(FC_EXTRA)
 F77        = gfortran
 F77_DEBUG  = -g
 F77_EXTRA  = -ffixed-line-length-132
-F77_FLAGS  = $(FC_DEBUG) ${SHARED_FLAGS} $(FC_EXTRA) 
+F77_FLAGS  = $(F77_DEBUG) ${SHARED_FLAGS} $(F77_EXTRA) 
 
 ##=================================================================
 ##   Gather all the libraries:
-FORTLIBS  = -lgfortran
-LIBS      =  ${TRILINOS_LIBRARIES} ${FORTLIBS}
+LIBS_FORT  = -lgfortran
+LIBS_EXTRA = 
+LIBS       =  ${TRILINOS_LIBRARIES} ${LIBS_FORT} ${LIBS_EXTRA}

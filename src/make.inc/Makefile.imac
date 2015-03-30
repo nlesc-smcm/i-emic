@@ -1,60 +1,54 @@
-# Makefile variables for Trilinos-THCM
+##=================================================================
+## Makefile variables for my imac in Utrecht.
+## Author: T.E. Mulder => t.e.mulder@uu.nl
 
+##=================================================================
+##   Location specific variables:
+LOCATION     = UTRECHT         # See thcm/par.F90 for its use
+##   Compiler identifier flag, options are
+##   GNU, G95, INTEL, ASTER, ORBIT, HOPF, PGI and HUYGENS
+COMP_IDENT   = GNU
+##   Trilinos version:
 TRIVERSION   = 11.12
+##   Trilinos directory containing lib and include dirs:
 TRIDIR       = /home/erik/trilinos/${TRIVERSION}
+##   Project base directory
 PROJECT_BASE = /home/erik/Projects
 
+##=================================================================
+##   Import makefile variables from Trilinos:
 include ${TRIDIR}/include/Makefile.export.NOX
+CXX                 = ${NOX_CXX_COMPILER}
+FC                  = ${NOX_FORTRAN_COMPILER}
+INCLUDE_DIRS        = ${NOX_INCLUDE_DIRS}
+LIBRARY_DIRS        = ${NOX_LIBRARY_DIRS}
+TRILINOS_LIBRARIES  = ${NOX_LIBRARIES} ${NOX_TPL_LIBRARIES}
 
-COMPILE = ${NOX_CXX_COMPILER}
+##=================================================================
+##   Flags that are shared among the different compilers:
+SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
 
-DEBFLAGS= -g 
+##=================================================================
+##   Supply debug and other flags for CXX compiler:
+CXX_DEBUG = -g
+CXX_EXTRA = --std=c++11  
+CXX_FLAGS = ${CXXDEBUG} ${SHARED_FLAGS} $(CXX_EXTRA) 
 
-CDEBUG = $(DEBFLAGS) 
+##=================================================================
+##   Supply debug and other flags for FC compiler:
+FC_DEBUG  = -g
+FC_EXTRA  = -fdefault-real-8 -ffree-line-length-none
+FC_FLAGS  = $(FC_DEBUG) ${SHARED_FLAGS} $(FC_EXTRA)  
 
-# Omitting optimalization -O3 ?
-CFLAGS = --std=c++11 ${CDEBUG} -DGNU -DUTRECHT\
- -DHAVE_ML -DHAVE_CONFIG_H\
- -DHAVE_ANASAZI -DOLD_EOS
- 
-# -DHAVE_MPI # already in Trilinos ?
- 
-# *** compatibility ********
-CXX = ${COMPILE}
-CXX_FLAGS = ${CFLAGS}
-# **************************
+##=================================================================
+##   Supply F77 compiler and its flags:
+F77        = gfortran
+F77_DEBUG  = -g
+F77_EXTRA  = -ffixed-line-length-132
+F77_FLAGS  = $(F77_DEBUG) ${SHARED_FLAGS} $(F77_EXTRA) 
 
-MRILUDIR   = /home/erik/mrilu/x86_64_gfortran
-LIBDIR     = -L${TRIDIR}/lib -L${PROJECT_BASE}/lib/${TRIVERSION}
-LIBINCLUDE = ${NOX_INCLUDE_DIRS}
-
-# *** compatibility ********
-INCLUDES = ${LIBINCLUDE} -I${PROJECT_BASE}/include/${TRIVERSION}
-# **************************
-
-FC     = ${NOX_FORTRAN_COMPILER}
-FDEBUG = $(DEBFLAGS)
-FFLAGS = $(FDEBUG) ${FLIBINCLUDE} -fdefault-real-8\
--DGNU -DUTRECHT -DASCII_TOPO -DOLD_EOS -ffree-line-length-none
-
-FORTLIBS = -lgfortran
-TRILIBS  = ${NOX_LIBRARIES} ${NOX_TPL_LIBRARIES} 
-
-# *** compatibility **************
-TRILINOS_LIBRARIES = ${TRILIBS}
-F_FLAGS = ${FFLAGS}
-# ********************************
-
-MRILULIBS    =#-lmrilucpp -lprecon -lmtstor -liosrc -lmisc   
-ILUPACKLIBS  =#-L${BASEDIR}/lib/ilupack -lDilupack -lsparspak -lamd -lblaslike
-HDF5LIBS     =# -lhdf5 -ljpeg -lz
-MATHLIBS     =# -lfftw
-HYMLSLIBS    = -lhymls -ldl
-TRIOSLIBS    = -ltrios 
-extralibs1   = #NOX_Epetra_LinearSystem_Belos.o
-extralibs2   = 
-extralibs    = ${extralibs1} ${extralibs2}
-MY_LIBRARIES = ${extralibs1} ${extralibs2} ${MRILULIBS} ${ILUPACKLIBS} \
-               ${HDF5LIBS} ${MATHLIBS} ${FORTLIBS} ${TRIOSLIBS} ${HYMLSLIBS}
-
-F77=gfortran -ffixed-line-length-132
+##=================================================================
+##   Gather all the libraries:
+LIBS_FORT  = -lgfortran
+LIBS_EXTRA = 
+LIBS       =  ${TRILINOS_LIBRARIES} ${LIBS_FORT} ${LIBS_EXTRA}

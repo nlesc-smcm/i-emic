@@ -27,25 +27,6 @@ class Epetra_CrsGraph;
 class Epetra_CrsMatrix;
 class Epetra_BlockMap;
 class Epetra_MultiVector;
-
-namespace LOCA
-{
-	class ParameterVector;
-}
-
-namespace NOX 
-{
-	namespace Epetra 
-    {
-		class LinearSystem;
-		class Scaling;
-		namespace Interface 
-		{
-			class Required;
-			class Jacobian;
-		}
-    }
-}
   
 namespace EpetraExt
 {
@@ -141,22 +122,6 @@ public:
 	*/
 	void evaluateB();
 
-	//! get the parameter vector of valid THCM parameters.
-  
-	/*! starting values are read from parameter list "THCM"->"Starting Parameters" and 
-      complemented with default values if not found in the list (these values will be
-      added to the list).
-	*/
-	Teuchos::RCP<LOCA::ParameterVector> getParameterVector(void){return pVector;}
-  
-	//! you can register the NOX linear system with the global THCM session.
-	//! This makes the recomputePreconditioner() function available, which 
-	//! we use to implement our own Reuse Policy
-	void setLinSys(Teuchos::RCP<NOX::Epetra::LinearSystem> ls)
-		{
-			linsys = ls;
-		};
-
 	//! Returns initial guess (Global/Solve form)
 	Teuchos::RCP<Epetra_Vector> getSolution();
   
@@ -166,18 +131,6 @@ public:
 	//! get null space
 	Teuchos::RCP<const Epetra_MultiVector> getNullSpace();
     
-	//! get the scaling object
-	Teuchos::RCP<NOX::Epetra::Scaling> getScaling(){return scaling;}
-
-	//! create and get the scaling object for the 4D case (OceanPeriodic driver)
-  
-	/*! once the 4D scaling has been created by calling this function, it will be  
-      kept up-to-date also. Currently the scaling will be the same for all time- 
-      levels, I believe that that shouldn't be a problem, though.                
-	*/
-	Teuchos::RCP<NOX::Epetra::Scaling> getXyztScaling(const Epetra_BlockMap& globalMap, 
-													  Teuchos::RCP<EpetraExt::MultiComm> globalComm);
-
 	//! get row scaling vector
 	Teuchos::RCP<Epetra_Vector> getRowScaling() {return row_scaling;}
 
@@ -192,11 +145,6 @@ public:
   
 	//! print timer status for all timed program parts
 	void printTiming(std::ostream&);
-    
-	//! invalidate the preconditioner in the current NOX linear system
-	//! so that it has to be recomputed before the next Newton solve.
-	//! This works only if you called setLinSys() beforehand.
-	void invalidatePreconditioner();
     
 	//! set the pressure in one specific point to zero by subtracting
 	//! that point's value from all pressure points.
@@ -213,21 +161,6 @@ public:
 
 	//! returns the domain decomposition object
 	Teuchos::RCP<TRIOS::Domain> GetDomain() {return domain;}
-  
-	//! this function can be used to create a linear problem
-  
-	//! create a linear system with solver for our THCM application.
-	//! note that you can create a Belos solver as well because the 
-	//! LinearSystem_Belos class is derived from the AztecOO one.   
-	//! If you do not provide the NOX interfaces, the OceanModel    
-	//! will be used (which is what you want for continuation of    
-	//! steady states)                                              
-	Teuchos::RCP<NOX::Epetra::LinearSystem> createLinearSystem
-	(Teuchos::RCP<OceanModel> model, Teuchos::ParameterList& lsParams, 
-	 Teuchos::ParameterList& printParams, Teuchos::RCP<std::ostream> out=Teuchos::null,
-	 Teuchos::RCP<NOX::Epetra::Interface::Required> iReq=Teuchos::null,
-	 Teuchos::RCP<NOX::Epetra::Interface::Jacobian> iJac=Teuchos::null,
-	 bool scaling=true);  
   
 	//! get the diagonal matrix B
 	Epetra_Vector& DiagB(){return *diagB;}
@@ -279,10 +212,8 @@ public:
 	inline double rhoMixing() const {return rho_mixing;}
 	//@}
 
-
 	//! convert parameter name to integer (i.e. "Combined Forcing" => 19)
 	int par2int(std::string par);
-  
 
 	// convert parameter index to std::string (i.e. 19 => "Combined Forcing")
 	std::string int2par(int ind);
@@ -332,17 +263,6 @@ private:
 
 	//! same crs graph based on standard map
 	Teuchos::RCP<Epetra_CrsGraph> localMatrixGraph;
-  
-	//! pointer to the NOX linear system. This can be set so that
-	//! we can implement our own preconditioner reuse policy etc.
-	Teuchos::RCP<NOX::Epetra::LinearSystem> linsys;
-  
-	//! This object defines the scaling used in THCM for Trilinos
-	Teuchos::RCP<NOX::Epetra::Scaling> scaling;
-  
-	//! this object is null unless it is requested by a call to getXyztScaling().
-	//! It is only relevant for the OceanPeriodic driver.
-	Teuchos::RCP<NOX::Epetra::Scaling> xyzt_scaling;
   
 	//! global communicator for 4D things
 	Teuchos::RCP<EpetraExt::MultiComm> xyzt_comm;
@@ -433,18 +353,8 @@ private:
 	//! pressure points where equation is replaced by P=0 (-1 means none)
 	int rowPfix1, rowPfix2;
 
-	//! THCM parameters
-	Teuchos::RCP<LOCA::ParameterVector> pVector;
-  
 	//! asks THCM to recompute scaling vectors
 	void RecomputeScaling(void);
-
-	//! read THCM parameters from a ParameterList into a ParaeterVector
-	void ReadParameters(Teuchos::ParameterList& plist, LOCA::ParameterVector& pvec);
-
-	//! get THCM parameters from the fortran code into a parameter vector
-	void CurrentParameters(LOCA::ParameterVector& pvec);
-  
 
 	//! distribute land array after global initialization
 	Teuchos::RCP<Epetra_IntVector> distributeLandMask(Teuchos::RCP<Epetra_IntVector> landm_glob);

@@ -4,6 +4,10 @@
  * as long as this header remains intact.                             *
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
+/**********************************************************************
+ * Modified by T.E. Mulder, Utrecht University 2014/15                *
+ * contact: t.e.mulder@uu.nl                                          *
+ **********************************************************************/
 #include <iostream>
 #include <memory.h>
 
@@ -18,10 +22,6 @@
 #include "Epetra_CrsMatrix.h"
 #include "Epetra_Time.h"
 
-#include "NOX_Common.H"
-#include "NOX_Epetra_Scaling.H"
-#include "LOCA_Epetra.H"
-
 #include "EpetraExt_MultiComm.h"
 #include "EpetraExt_BlockVector.h"
 
@@ -29,19 +29,13 @@
 #include "globdefs.H"
 
 // from TRIOS
-#include "NOX_Epetra_LinearSystem_Belos.H"
 #include "TRIOS_Domain.H"
-#include "TRIOS_BlockPreconditioner.H"
-#include "TRIOS_SolverFactory.H"
-#include "TRIOS_Static.H"
 
 // from HYMLS
 #include "HYMLS_MatrixUtils.H"
 
 // from trilinos_thcm
-
 #include "THCM.H"
-#include "OceanModel.H"
 #ifdef DEBUGGING
 #include "OceanGrid.H"
 #endif
@@ -79,16 +73,18 @@ extern "C" {
                                              int*,int*,int*,int*,int*,int*);
 	_MODULE_SUBROUTINE_(m_global,finalize)(void);
 	_MODULE_SUBROUTINE_(m_global,get_landm)(int*); 
-//  _MODULE_SUBROUTINE_(m_global,get_levitus)(int* SRES,double* tatm, double* emip); 
-	_MODULE_SUBROUTINE_(m_global,get_monthly_forcing)(double* tatm, double* emip,double* taux, double* tauy, int* month); 
-	_MODULE_SUBROUTINE_(m_global,get_monthly_internal_forcing)(double* temp, double* salt, int* month);
+	_MODULE_SUBROUTINE_(m_global,get_monthly_forcing)(double* tatm, double* emip,
+													  double* taux, double* tauy, int* month); 
+	_MODULE_SUBROUTINE_(m_global,get_monthly_internal_forcing)(double* temp, double* salt,
+															   int* month);
 	_MODULE_SUBROUTINE_(m_global,get_windfield)(double* taux, double* tauy);
 	_MODULE_SUBROUTINE_(m_global,get_temforcing)(double* tatm);
 	_MODULE_SUBROUTINE_(m_global,get_salforcing)(double* emip); 
 	_MODULE_SUBROUTINE_(m_global,get_internal_temforcing)(double* temp);
 	_MODULE_SUBROUTINE_(m_global,get_internal_salforcing)(double* salt); 
 	_MODULE_SUBROUTINE_(m_global,get_spert)(double* spert); 
-	_MODULE_SUBROUTINE_(m_monthly,set_forcing)(double*tatm, double* emip, double* taux, double* tauy, int* month);
+	_MODULE_SUBROUTINE_(m_monthly,set_forcing)(double*tatm, double* emip, double* taux,
+											   double* tauy, int* month);
 	_MODULE_SUBROUTINE_(m_monthly,set_internal_forcing)(double*temp, double* salt, int* month);
 	_MODULE_SUBROUTINE_(m_usr,set_internal_forcing)(double*temp, double* salt);
 	_MODULE_SUBROUTINE_(m_thcm_utils,get_landm)(int*); 
@@ -202,12 +198,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	// construct an object to decompose the domain:
 	domain = Teuchos::rcp(new TRIOS::Domain(n, m, l, dof, xmin, xmax, ymin, ymax,
 											periodic, hdim, Comm));  
-  
-	// set a static pointer in the TRIOS library to this domain object so that
-	// semi-algebraic solvers like the Block Preconditioner can be constructed
-	// as if they only needed a matrix (they get the domain object from the static
-	// pointer in TRIOS then)
-	TRIOS::Static::SetDomain(domain);
   
 	// perform a 2D decomposition of domain into rectangular boxes
 	domain->Decomp2D();
@@ -372,7 +362,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	CHECK_ZERO(temp_loc->ExtractView(&temp));
 	CHECK_ZERO(salt_loc->ExtractView(&salt));
 	CHECK_ZERO(spert_loc->ExtractView(&spert));
-  
 
 	DEBUG("Initialize Wind field...");
   
@@ -441,7 +430,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
       
 	if (comm->MyPID()==0)
     {
-//      F90NAME(m_global,get_levitus)(&sres,tatm_g,emip_g);
 		F90NAME(m_global,get_temforcing)(tatm_g);
 		F90NAME(m_global,get_salforcing)(emip_g);
 		if (internal_forcing)
@@ -540,9 +528,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	localRhs        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
 	localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));  
 
-	// can be set by user
-	linsys=Teuchos::null;
-    
 	// allocate mem for the CSR matrix in THCM.
 
 	int nrows, nnz;
@@ -650,7 +635,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     {
 		// construct the scaling object. The scaling is computed by THCM (m_scaling)
 		// and passed on to Trilinos:
-		scaling = Teuchos::rcp(new NOX::Epetra::Scaling() );
 		row_scaling = Teuchos::rcp(new Epetra_Vector(*SolveMap));  
 		row_scaling->SetLabel("Row Scaling");
 		col_scaling = Teuchos::rcp(new Epetra_Vector(*SolveMap));  
@@ -660,32 +644,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
 		row_scaling->PutScalar(1.0);
 		col_scaling->PutScalar(1.0);
-
-		// tell LOCA about the THCM scaling
-  
-		// note: the scaling will be recomputed, but Trilinos is
-		// aware of that because it has a pointer:
-		scaling->addUserScaling(NOX::Epetra::Scaling::Right,col_scaling);
-		scaling->addUserScaling(NOX::Epetra::Scaling::Left,row_scaling);
     }
-	else
-    {
-		scaling = Teuchos::null;
-    }
-    
-	xyzt_scaling = Teuchos::null; // only constructed when requested by call to getXyztScaling()
-	xyzt_comm = Teuchos::null;
-
-	// read starting parameters from the input list
-	pVector = Teuchos::rcp(new LOCA::ParameterVector());
-	this->CurrentParameters(*pVector);
-	Teuchos::ParameterList& startList = paramList.sublist("Starting Parameters");
-	this->ReadParameters(startList,*pVector);
-   
-	INFO("Continuation Parameters at Start-Up: "<<*pVector);
-	DEBUG("### leave THCM::THCM ###")
-//  Comm->Barrier();
-		}
+}
 
 THCM::~THCM()
 {
@@ -716,11 +676,6 @@ Teuchos::RCP<Epetra_CrsMatrix> THCM::getJacobian()
 	return Jac;
 }
 
-void THCM::invalidatePreconditioner()
-{
-	if (linsys!=Teuchos::null) linsys->destroyPreconditioner();
-}
-
 //                                                                      	
 // Compute Jacobian and/or RHS.                                         	
 //                                                                      	
@@ -730,18 +685,18 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 {
 	
 #if defined(TESTING) && !defined(NO_INTCOND)
-		if (sres==0)
-		{
-			double intcond;
-			CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
-			/*
-			  double dx = (xmax-xmin)/domain->GlobalN();
-			  double dy = (ymax-ymin)/domain->GlobalM();
-			  double dz = 1.0/domain->GlobalL();
-			  intcond = intcond*dx*dy*dz;
-			*/
-			INFO("Salinity integral condition (should be 0): " << intcond);
-		}
+	if (sres==0)
+	{
+		double intcond;
+		CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
+		/*
+		  double dx = (xmax-xmin)/domain->GlobalN();
+		  double dy = (ymax-ymin)/domain->GlobalM();
+		  double dz = 1.0/domain->GlobalL();
+		  intcond = intcond*dx*dy*dz;
+		*/
+		INFO("Salinity integral condition (should be 0): " << intcond);
+	}
 #endif    
 
 	if (!(soln.Map().SameAs(*SolveMap)))
@@ -899,29 +854,8 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 		domain->Standard2Solve(*localDiagB, *diagB);
 		domain->Standard2Solve(*localJac, *Jac);
 		CHECK_ZERO(Jac->FillComplete());
-    
-		//TODO: fix two pressure points for HYMLS???
-		//CHECK_ZERO(MatrixUtils::PutDirichlet(*Jac,3));
-		//CHECK_ZERO(MatrixUtils::PutDirichlet(*Jac,9));
-
-		if (scaling!=Teuchos::null)
-		{
-			this->RecomputeScaling();
-
-#ifdef STORE_MATRICES
-			std::ofstream ofs1("row_scaling.txt");
-			ofs1 << *row_scaling;
-			ofs1.close();
-			std::ofstream ofs2("col_scaling.txt");
-			ofs2 << *col_scaling;
-			ofs2.close();                  
-#endif      
-		}
     } // matrix
-  
-
-//  Comm->Barrier();
-		return true;
+	return true;
 }
 
 // just reconstruct the diagonal matrix B from THCM
@@ -1030,129 +964,7 @@ void THCM::RecomputeScaling(void)
 			}
 		}
     }// additional T/S scaling (obsolete)
-    
-	// scaling for the 4D case. Whenever any Jacobian is computed,
-	// we update the whole 4D scaling object with that scaling (i.e.
-	// each time level has the same scaling). This is strictly speaking
-	// not correct but our scaling is already spatially averaged anyway,
-	// so it shouldn't matter too much.
-	if (xyzt_scaling!=Teuchos::null)
-    {
-		for (int i=0; i < xyzt_comm->NumTimeStepsOnDomain(); i++) 
-		{
-			int global_i = xyzt_comm->FirstTimeStepOnDomain() + i;
-			DEBUG("xyzt scaling: block row "<<global_i);
-			CHECK_ZERO(xyzt_row_scaling->LoadBlockValues(*row_scaling, global_i));
-			CHECK_ZERO(xyzt_col_scaling->LoadBlockValues(*col_scaling, global_i));
-		}
-    }
 }
-
-// create a linear system with solver for our THCM application.
-// note that you can create a Belos solver as well because the
-// LinearSystem_Belos class is derived from the AztecOO one.
-Teuchos::RCP<NOX::Epetra::LinearSystem> THCM::createLinearSystem
-(Teuchos::RCP<OceanModel> model, Teuchos::ParameterList& lsParams, 
- Teuchos::ParameterList& printParams, Teuchos::RCP<std::ostream> out,
- Teuchos::RCP<NOX::Epetra::Interface::Required> iReq_, 
- Teuchos::RCP<NOX::Epetra::Interface::Jacobian> iJac_, bool scaling_)
-{
-	DEBUG("enter THCM::createLinearSystem");
-
-    lsParams.sublist("Belos").set("Output Stream",out);
-
-    Teuchos::RCP<NOX::Epetra::LinearSystemBelos> linsys;
-
-    Teuchos::RCP<NOX::Epetra::Interface::Required> iReq=iReq_;
-    Teuchos::RCP<LOCA::Epetra::Interface::TimeDependent> iTime=model;
-    Teuchos::RCP<NOX::Epetra::Interface::Jacobian> iJac=iJac_;
-    
-    if (iJac_==Teuchos::null)
-	{ 
-		iJac = model;
-	}
-
-    // get a pointer to the scaling arrays for the linear system
-    Teuchos::RCP<NOX::Epetra::Scaling> scaling=Teuchos::null;
-    if (scaling_)
-	{
-		scaling = model->getScaling();
-	}
-
-    Teuchos::RCP<Epetra_CrsMatrix> A = model->getJacobian();
-    Teuchos::RCP<Epetra_Vector> soln = model->getSolution();
-
-    std::string PrecType = lsParams.get("Preconditioner","Ifpack");
-
-    if (PrecType == "User Defined")
-	{
-#ifdef NEWDEBUG
-		lsParams.set("Verbosity",10);
-#endif      
-		DEBUG("user defined preconditioning");
-		// obtain precPtr from (ocean)model
-		Teuchos::RCP<Epetra_Operator> myPrecOperator = model->getPreconditioner();
-		// set outer and inner output streams
-		Teuchos::RCP<TRIOS::BlockPreconditioner> tmp =
-			Teuchos::rcp_dynamic_cast<TRIOS::BlockPreconditioner>(myPrecOperator);
-		if (!Teuchos::is_null(tmp)) tmp->setOutputStreams(info, out);
-		Teuchos::RCP<NOX::Epetra::Interface::Preconditioner> iPrec = model;
-
-		//Create the linear systems with Ocean preconditioner
-		linsys =
-			Teuchos::rcp(new NOX::Epetra::LinearSystemBelos(printParams, lsParams, iJac,
-															A, iPrec, myPrecOperator,
-															soln, scaling));
-	}
-    else
-	{
-		DEBUG("Trilinos preconditioning");
-		//Create the linear system with Trilinos preconditioners
-		if (PrecType=="ML")
-        {
-			Teuchos::ParameterList& mllist=lsParams.sublist("ML");
-			if (mllist.get("smoother: type","Aztec")=="Aztec")
-			{
-				int *az_options = new int[AZ_OPTIONS_SIZE];
-				double *az_params = new double[AZ_PARAMS_SIZE];
-				AZ_defaults(az_options,az_params);
-				Teuchos::ParameterList& azlist = mllist.sublist("smoother: aztec list");
-
-				// some reasonable default options for Krylov smoothers:
-				az_options[AZ_solver]=AZ_GMRESR;
-				az_options[AZ_scaling]=AZ_none;
-				az_options[AZ_precond]=AZ_dom_decomp;
-				az_options[AZ_subdomain_solve]=AZ_ilut;
-				az_options[AZ_max_iter]=3;
-				az_options[AZ_output]=0;
-				az_options[AZ_overlap]=0;
-				az_options[AZ_print_freq]=0;
-
-				az_params[AZ_tol]=0.0;
-				az_params[AZ_drop]=1.0e-12;
-				az_params[AZ_ilut_fill]=2.0;
-
-				TRIOS::SolverFactory::ExtractAztecOptions(azlist,az_options,az_params);
-
-				mllist.set("smoother: Aztec options",az_options);
-				mllist.set("smoother: Aztec params",az_params);
-			}
-        }
-		if (iReq!=Teuchos::null)
-        {
-			linsys = Teuchos::rcp(new NOX::Epetra::LinearSystemBelos(
-									  printParams, lsParams, iReq, iJac, A, soln,scaling));
-        }
-		else
-        {
-			linsys = Teuchos::rcp(new NOX::Epetra::LinearSystemBelos(
-									  printParams, lsParams, iTime, iJac, A, soln,scaling));
-        }
-	}
-	DEBUG("leave THCM::createLinearSystem");
-	return linsys;
-}
-
 
 void THCM::normalizePressure(Epetra_Vector& soln) const
 {
@@ -1233,54 +1045,6 @@ void THCM::printTiming(std::ostream& os)
 	DEBUG(timerList);
 }
 
-void THCM::CurrentParameters(LOCA::ParameterVector& pvec)
-{
-	double val;
-	std::string label;
-	try {
-		// get all _NPAR_ THCM params, time (0), exp (_NPAR_+1) and seas (_NPAR_+2)
-		for (int i=0;i<=_NPAR_+_NPAR_TRILI;i++)
-		{
-			label = int2par(i);
-			val=1.0; // default value for params not yet set.
-			// note that all THCM params (1-30) are always set
-			this->getParameter(label,val);
-     
-			if (pvec.isParameter(label))
-			{
-				pvec.setValue(label,val);
-			}
-			else
-			{
-				pvec.addParameter(label, val);      
-			}
-		}
-    } catch (...) {Error("failed to set parameters",__FILE__,__LINE__);}
-     
-     
-}
-
-void THCM::ReadParameters(Teuchos::ParameterList& plist, LOCA::ParameterVector& pvec)
-{
-	// make sure Time is present. 
-	double t = plist.get("Time",0.0);
-	double val;
-	std::string label;
-	try {
-		for (int i=0;i<=_NPAR_+_NPAR_TRILI;i++)
-		{
-			label = int2par(i); 
-			if (plist.isParameter(label))
-			{
-				val = plist.get(label,0.0);
-				this->setParameter(label,val);
-			}
-		}
-    } catch(...){Error("Exception while reading parameter starting values!",__FILE__,__LINE__);}
-    
-    
-}
-
 // convert parameter name to integer
 int THCM::par2int(std::string label)
 {
@@ -1342,7 +1106,7 @@ int THCM::par2int(std::string label)
 }
 
 // convert parameter name to integer
-string THCM::int2par(int index)
+std::string THCM::int2par(int index)
 {
 	std::string label = "Invalid Parameter Index";
   
@@ -1402,8 +1166,7 @@ string THCM::int2par(int index)
 	return label;
 }
 
-bool
-THCM::setParameter(std::string label, double value) 
+bool THCM::setParameter(std::string label, double value) 
 {
 	int param = par2int(label);
 	if (param>0 && param<=_NPAR_) // time (0) and exp/seas (31/32) are not passed to THCM
@@ -1446,37 +1209,17 @@ THCM::setParameter(std::string label, double value)
 			}
 		}
     }
-	pVector->setValue(label,value);
 	return true;
 }
 
-bool
-THCM::getParameter(std::string label, double& value) 
+bool THCM::getParameter(std::string label, double& value) 
 {
 	int param = par2int(label);
 	if (param>0 && param<=_NPAR_) // time (0) and exp (_NPAR_+1) are not passed to THCM
     {
 		FNAME(getparcs)(&param,&value);
     }
-	else if (param<0)
-    {
-		Error("Invalid Parameter",__FILE__,__LINE__);
-    }
-	else if ((param==0)||(param<=_NPAR_+_NPAR_TRILI)) // 0 is non-dimensional time
-    {     
-		if (pVector->isParameter(label))
-		{
-			value=pVector->getValue(label);
-		}
-		else
-		{
-			// use input value as default value 
-			// and place it in the vector
-			pVector->addParameter(label,value);
-		}
-    }
-    
-    
+	// The rest is not implemented
 	return true;
 }
 
@@ -2070,44 +1813,6 @@ void THCM::SetupMonthlyForcing()
 		}
     }
 }
-
-Teuchos::RCP<NOX::Epetra::Scaling> THCM::getXyztScaling(const Epetra_BlockMap& globalMap,
-														Teuchos::RCP<EpetraExt::MultiComm> globalComm)
-{
-	if (xyzt_scaling==Teuchos::null)
-    {
-		if (scaling==Teuchos::null)
-		{
-			xyzt_scaling=Teuchos::null; //that was easy!
-		}
-		else
-		{
-			xyzt_comm = globalComm;
-			// construct the scaling object for the 4D case. 
-			// It will be filled completely with the 3D scaling after
-			// each jacobian evaluation, which is strictly speaking not
-			// correct but will hopefully work fine.
-			xyzt_scaling = Teuchos::rcp(new NOX::Epetra::Scaling() );
-			xyzt_row_scaling = Teuchos::rcp(new EpetraExt::BlockVector(*SolveMap,globalMap));
-			xyzt_col_scaling = Teuchos::rcp(new EpetraExt::BlockVector(*SolveMap,globalMap));
-    
-			xyzt_row_scaling->SetLabel("4D Row Scaling");
-			xyzt_col_scaling->SetLabel("4D Col Scaling");
-
-			xyzt_row_scaling->PutScalar(1.0);
-			xyzt_col_scaling->PutScalar(1.0);
-
-			// tell LOCA about the THCM scaling
-  
-			// note: the scaling will be recomputed, but Trilinos is
-			// aware of that because it has a pointer:
-			xyzt_scaling->addUserScaling(NOX::Epetra::Scaling::Right,xyzt_col_scaling);
-			xyzt_scaling->addUserScaling(NOX::Epetra::Scaling::Left,xyzt_row_scaling);
-		}
-    }
-	return xyzt_scaling;
-}
-
 
 
 extern "C" {

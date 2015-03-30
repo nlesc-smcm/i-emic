@@ -1,13 +1,22 @@
 include ../make.inc/Makefile.${PLAT}
 
-libname= libthcm.a
+libbasename = thcm
+libname     = lib$(libbasename).a 
 
 obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
      itplbv.o levitus.o mat.o matetc.o lev.o mix.o res.o usr.o par.o\
-     global.o thcm_utils.o scaling.o mix_imp.o mix_sup.o spf.o topo.o usrc.o\
-     OceanModel.o THCM.o OceanGrid.o	 
+     global.o thcm_utils.o scaling.o\
+	 mix_imp.o mix_sup.o spf.o topo.o usrc.o\
+     THCM.o OceanGrid.o TRIOS_Domain.o HYMLS_MatrixUtils.o	 
 
 default: lib
+
+help:
+	@echo $(libbasename)
+	@echo $(libname)
+
+test: $(libname) test.o
+	$(CXX) test.o $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -lthcm $(LIBS)
 
 lib: $(libname)
 
@@ -15,20 +24,20 @@ $(libname): ${obj}
 	ar vrcs $(libname) $(obj)
 
 %.o: %.C %.H
-	$(CXX) -c $(INCLUDES) $(CXX_FLAGS) $<
+	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 %.o: %.C
-	$(CXX) -c $(INCLUDES) $(CXX_FLAGS) $<
+	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 %.o: %.F90 usr.o
-	$(FC) -c $(F_INCLUDES) $(F_FLAGS) $<
+	$(FC) -c $(FC_FLAGS) $<
 %.o: %.f usr.o
-	$(F77) -c $(F_INCLUDES) $(F_FLAGS) $<
+	$(F77) -c $(F77_FLAGS) $<
 
 # dependencies
 
 par.o: par.F90
-	$(FC) -c $(FINCLUDES) $(F_FLAGS) $<
+	$(FC) -c $(FC_FLAGS) $<
 usr.o: usr.F90 par.o
-	$(FC) -c $(FINCLUDES) $(F_FLAGS) $<
+	$(FC) -c $(FC_FLAGS) $<
 
 global.o:      lev.o
 assemble.o:    mat.o matetc.o atm.o
