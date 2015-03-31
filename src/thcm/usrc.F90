@@ -306,9 +306,10 @@ SUBROUTINE rhs(un,B)
   real(c_double),dimension(ndim) ::    un,B
   real mix(ndim) ! ATvS-Mix
   real    Au(ndim), time0, time1
-  integer i,j,k,k1,row,find_row2, mode
+  integer i,j,k,k1,row,find_row2, mode, iter
+
   !call writeparameters
-  mix=0.0
+  mix  = 0.0
   Al   = 0
   begA = 0
   coA  = 0
@@ -321,7 +322,6 @@ SUBROUTINE rhs(un,B)
   call boundaries
   call assemble
   call matAvec(un,Au)
-
   ! ATvS-Mix ---------------------------------------------------------------------
   if (vmix_flag.ge.1) then
      mode=vmix_fix

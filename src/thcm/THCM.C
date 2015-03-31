@@ -723,6 +723,11 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 		// build rhs simultaneously on each process
 		double* RHS;
 		CHECK_ZERO(localRhs->ExtractView(&RHS));
+		for (int i = 0; i != 50; i++)
+		{
+			std::cout << solution[i] << " ";			
+		}
+		std::cout << '\n';
 		FNAME(rhs)(solution, RHS); // compute right-hand-side on whole subdomain (by THCM)
         
 		// export overlapping rhs to unique-id global rhs vector,

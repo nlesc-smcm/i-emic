@@ -32,7 +32,7 @@ SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
 ##   Supply debug and other flags for CXX compiler:
 CXX_DEBUG = -g
 CXX_EXTRA = --std=c++11 -DTESTING
-CXX_FLAGS = ${CXXDEBUG} ${SHARED_FLAGS} $(CXX_EXTRA)
+CXX_FLAGS = ${CXX_DEBUG} ${SHARED_FLAGS} $(CXX_EXTRA)
 
 ##=================================================================
 ##   Supply debug and other flags for FC compiler:
@@ -45,7 +45,10 @@ FC_FLAGS  = $(FC_DEBUG) ${SHARED_FLAGS} $(FC_EXTRA)
 ##   Supply F77 compiler and its flags:
 F77        = gfortran
 F77_DEBUG  = -g
-F77_EXTRA  = -ffixed-line-length-132 
+#    Use the default-real-8 option to communicate between
+#    F90 and F77
+F77_EXTRA  = -ffixed-line-length-132 -fdefault-real-8\
+             -ffree-line-length-none
 F77_FLAGS  = $(F77_DEBUG) ${SHARED_FLAGS} $(F77_EXTRA)
 
 ##=================================================================

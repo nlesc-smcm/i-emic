@@ -58,8 +58,8 @@
       vmix_time=0.0
       call cpu_time(time0)
 
-      if (vmix_out.gt.0) write (99,'(a26)') 'MIX| init...              '
-      if (vmix_out.gt.0) write (99,'(a16,i10)') 'MIX|     flag:  ', vmix_flag
+      if (vmix_out.gt.0) write (*,'(a26)') 'MIX| init...              '
+      if (vmix_out.gt.0) write (*,'(a16,i10)') 'MIX|     flag:  ', vmix_flag
 
       select case (vmix_flag)
       case(1)
@@ -73,7 +73,7 @@
 
       call cpu_time(time1)
       vmix_time=vmix_time+time1-time0
-      write (99,'(a26,f10.3)') 'MIX|          ...init done', time1-time0
+      write (*,'(a26,f10.3)') 'MIX|          ...init done', time1-time0
 
       call flush(6)
       end
@@ -103,10 +103,9 @@
 !include 'mix.com'
       
       real un(ndim), l2nrm
-      integer test_temp, test_salt
-      
+      integer test_temp, test_salt, i
       if (vmix_out.gt.0) write (*,'(a26)') 'MIX|   control...         '
-
+      
       test_temp=0
       test_salt=0
       
@@ -142,7 +141,7 @@
       integer vmix_minrow,vmix_maxrow
       real dnsm
 
-      write (99,'(a26)') 'MIX|   part...            '
+      write (*,'(a26)') 'MIX|   part...            '
 
       select case(vmix_flag)
       case(1)
@@ -159,12 +158,12 @@
      +     vmix_ipntr,vmix_jpntr,
      +     iwa,liwa)
       dnsm=real(vmix_dim)/(real(ndim)**2)
-      write (99,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
-      write (99,'(a16,es10.2)') 'MIX|     dnsm:  ', dnsm
+      write (*,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
+      write (*,'(a16,es10.2)') 'MIX|     dnsm:  ', dnsm
 
       if (info.le.0) then
-         write (99,*) 'Error in subroutine DSM'
-         write (99,*) 'INFO =', info
+         write (*,*) 'Error in subroutine DSM'
+         write (*,*) 'INFO =', info
          stop
       endif
       vmix_maxrow=0
@@ -175,11 +174,11 @@
          vmix_minrow=min(vmix_minrow,
      +        vmix_ipntr(i+1)-vmix_ipntr(i))
       enddo
-      write (99,'(a16,i10)') 'MIX|     minrow:', vmix_minrow
-      write (99,'(a16,i10)') 'MIX|     maxrow:', vmix_maxrow
-      write (99,'(a16,i10)') 'MIX|     mingrp:', vmix_mingrp
-      write (99,'(a16,i10)') 'MIX|     maxgrp:', vmix_maxgrp
-      write (99,'(a26)')     'MIX|          ...part done'
+      write (*,'(a16,i10)') 'MIX|     minrow:', vmix_minrow
+      write (*,'(a16,i10)') 'MIX|     maxrow:', vmix_maxrow
+      write (*,'(a16,i10)') 'MIX|     mingrp:', vmix_mingrp
+      write (*,'(a16,i10)') 'MIX|     maxgrp:', vmix_maxgrp
+      write (*,'(a26)')     'MIX|          ...part done'
 
       end
 *     ---------------------------------------------------------------------------- *
@@ -644,7 +643,7 @@
          dum(1)=100.0*dum(1)/real(n*m*l) ! ntrl. phy.
          dum(2)=100.0*dum(2)/real(n*m*l) ! cons. mix.
          dum(3)=100.0*dum(3)/real(n*m*l) ! conv. adj.
-         write (99,'(a16,3f7.2)') 'MIX|     fun:   ', dum
+         write (*,'(a16,3f7.2)') 'MIX|     fun:   ', dum
       endif
       
       end
