@@ -1,5 +1,5 @@
 ##=================================================================
-## Makefile variables for my imac in Groningen.
+## Makefile variables for my account in Groningen.
 ## Author: T.E. Mulder => t.e.mulder@uu.nl
 
 ##=================================================================
@@ -31,20 +31,21 @@ SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
 ##=================================================================
 ##   Supply debug and other flags for CXX compiler:
 CXX_DEBUG = -g
-CXX_EXTRA = --std=c++11
+CXX_EXTRA = --std=c++11 -DTESTING
 CXX_FLAGS = ${CXXDEBUG} ${SHARED_FLAGS} $(CXX_EXTRA)
 
 ##=================================================================
 ##   Supply debug and other flags for FC compiler:
 FC_DEBUG  = -g
-FC_EXTRA  = -fdefault-real-8 -ffree-line-length-none
+FC_EXTRA  = -fdefault-real-8 -ffree-line-length-none\
+            -DASCII_TOPO
 FC_FLAGS  = $(FC_DEBUG) ${SHARED_FLAGS} $(FC_EXTRA)
 
 ##=================================================================
 ##   Supply F77 compiler and its flags:
 F77        = gfortran
 F77_DEBUG  = -g
-F77_EXTRA  = -ffixed-line-length-132
+F77_EXTRA  = -ffixed-line-length-132 
 F77_FLAGS  = $(F77_DEBUG) ${SHARED_FLAGS} $(F77_EXTRA)
 
 ##=================================================================

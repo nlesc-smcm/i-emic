@@ -53,4 +53,4 @@ clean:
 	-rm -f *.o *.mod $(libname)
 
 realclean: clean
-	-rm *~;
+	-rm *~ fort.* dump *.txt *#;

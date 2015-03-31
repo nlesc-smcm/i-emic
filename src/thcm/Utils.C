@@ -71,7 +71,7 @@ void Utils::ind2sub(int nx, int ny, int nz, int dof,
 	{
 		std::cerr << "dim=[" << nx << "," << ny << ","
 				  << nz << "], dof=" << dof << ": ind=" <<idx << std::endl;
-		Error("ind2sub: Index out of range!",__FILE__,__LINE__);
+		ERROR("ind2sub: Index out of range!",__FILE__,__LINE__);
 	}
 #endif      
 	int rem = idx;
