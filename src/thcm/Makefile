@@ -1,20 +1,15 @@
 include ../make.inc/Makefile.${PLAT}
 
 libbasename = thcm
-libname     = lib$(libbasename).a 
+libname     = lib$(libbasename).a
 
 obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
      itplbv.o levitus.o mat.o matetc.o lev.o mix.o res.o usr.o par.o\
      global.o thcm_utils.o scaling.o\
 	 mix_imp.o mix_sup.o spf.o topo.o usrc.o\
-     THCM.o OceanGrid.o TRIOS_Domain.o\
-	../utils/Utils.o
+     THCM.o OceanGrid.o TRIOS_Domain.o Utils.o
 
 default: lib
-
-help:
-	@echo $(libbasename)
-	@echo $(libname)
 
 test: $(libname) test.o
 	$(CXX) test.o $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -lthcm $(LIBS)
@@ -34,7 +29,6 @@ $(libname): ${obj}
 	$(F77) -c $(F77_FLAGS) $<
 
 # dependencies
-
 par.o: par.F90
 	$(FC) -c $(FC_FLAGS) $<
 usr.o: usr.F90 par.o
@@ -43,14 +37,14 @@ usr.o: usr.F90 par.o
 global.o:      lev.o
 assemble.o:    mat.o matetc.o atm.o
 thcm_utils.o:  mix.o
-boundary.o:    mat.o matetc.o atm.o 
-forcing.o:     inout.o itplbv.o matetc.o atm.o 
-inout.o:       global.o 
-levitus.o:     inout.o lev.o 
+boundary.o:    mat.o matetc.o atm.o
+forcing.o:     inout.o itplbv.o matetc.o atm.o
+inout.o:       global.o
+levitus.o:     inout.o lev.o
 scaling.o:     mat.o
 usrc.o:        usrc.F90 mat.o atm.o res.o mix.o scaling.o monthly.o
-matetc.o:      mat.o 
-mix_imp.o:     mat.o matetc.o mix_sup.o mix.o 
+matetc.o:      mat.o
+mix_imp.o:     mat.o matetc.o mix_sup.o mix.o
 mix_sup.o:     mix_sup.F90
 spf.o:         atm.o
 topo.o:        itplbv.o matetc.o global.o
@@ -59,4 +53,4 @@ clean:
 	-rm -f *.o *.mod $(libname)
 
 realclean: clean
-	-rm *~; 
+	-rm *~;

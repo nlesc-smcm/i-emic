@@ -26,13 +26,11 @@
 #include "EpetraExt_BlockVector.h"
 
 // define global macros such as UU, _NUN_, INFO etc.
-#include "globdefs.H"
+#include "THCMdefs.H"
 
 // from TRIOS
 #include "TRIOS_Domain.H"
 
-// from HYMLS
-#include "HYMLS_MatrixUtils.H"
 
 // from trilinos_thcm
 #include "THCM.H"
@@ -193,7 +191,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	int   frs  = (_frs) ? 1 : 0; // we always communicate integers to fortran since
 	                             // bool and logical are generally incompatible
                       
-	int dof = _NUN_; // number of unknowns, defined in globdefs.H
+	int dof = _NUN_; // number of unknowns, defined in THCMdefs.H
 
 	// construct an object to decompose the domain:
 	domain = Teuchos::rcp(new TRIOS::Domain(n, m, l, dof, xmin, xmax, ymin, ymax,
@@ -303,7 +301,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 // salt: internal salinity forcing, double 3D
   
 	DEBUG("Create gathered land map");
-	Teuchos::RCP<Epetra_Map> landmap_glb = HYMLS::MatrixUtils::CreateMap(i0,i1,j0,j1,k0,k1,
+	Teuchos::RCP<Epetra_Map> landmap_glb = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
 																		 I0,I1,J0,J1,K0,K1,*comm);
   
 	// sequential landm array on proc 0
@@ -366,7 +364,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	DEBUG("Initialize Wind field...");
   
 	Teuchos::RCP<Epetra_Map> wind_map_dist = domain->CreateStandardMap(1,true);
-	Teuchos::RCP<Epetra_Map> wind_map_root = HYMLS::MatrixUtils::Gather(*wind_map_dist,0);
+	Teuchos::RCP<Epetra_Map> wind_map_root = Utils::Gather(*wind_map_dist,0);
   
 	Teuchos::RCP<Epetra_Vector> taux_glob     = Teuchos::rcp(new Epetra_Vector(*wind_map_root));
 	Teuchos::RCP<Epetra_Vector> tauy_glob     = Teuchos::rcp(new Epetra_Vector(*wind_map_root));
@@ -382,9 +380,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         
 	// distribute wind fields
 	Teuchos::RCP<Epetra_MultiVector> taux_dist     = 
-        HYMLS::MatrixUtils::Scatter(*taux_glob,*wind_map_dist);
+        Utils::Scatter(*taux_glob,*wind_map_dist);
 	Teuchos::RCP<Epetra_MultiVector> tauy_dist     = 
-        HYMLS::MatrixUtils::Scatter(*tauy_glob,*wind_map_dist);
+        Utils::Scatter(*tauy_glob,*wind_map_dist);
   
 	// import overlap
 	Teuchos::RCP<Epetra_Import> wind_loc2dist = Teuchos::rcp(new Epetra_Import(*wind_map_loc,*wind_map_dist));
@@ -405,10 +403,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	DEBUG("Initialize Temperature and Salinity forcing...");
   
 	Teuchos::RCP<Epetra_Map> lev_map_dist  = domain->CreateStandardMap(1,true);
-	Teuchos::RCP<Epetra_Map> lev_map_root  = HYMLS::MatrixUtils::Gather(*lev_map_dist,0);
+	Teuchos::RCP<Epetra_Map> lev_map_root  = Utils::Gather(*lev_map_dist,0);
 
 	Teuchos::RCP<Epetra_Map> intlev_map_dist  = domain->CreateStandardMap(1,false);
-	Teuchos::RCP<Epetra_Map> intlev_map_root  = HYMLS::MatrixUtils::Gather(*intlev_map_dist,0);
+	Teuchos::RCP<Epetra_Map> intlev_map_root  = Utils::Gather(*intlev_map_dist,0);
   
 	Teuchos::RCP<Epetra_Vector> tatm_glob     =
 		Teuchos::rcp(new Epetra_Vector(*lev_map_root));
@@ -448,15 +446,15 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	// distribute levitus fields
 
 	Teuchos::RCP<Epetra_MultiVector> tatm_dist     = 
-        HYMLS::MatrixUtils::Scatter(*tatm_glob, *lev_map_dist);
+        Utils::Scatter(*tatm_glob, *lev_map_dist);
 	Teuchos::RCP<Epetra_MultiVector> emip_dist     = 
-        HYMLS::MatrixUtils::Scatter(*emip_glob, *lev_map_dist);
+        Utils::Scatter(*emip_glob, *lev_map_dist);
 	Teuchos::RCP<Epetra_MultiVector> temp_dist     = 
-        HYMLS::MatrixUtils::Scatter(*temp_glob, *intlev_map_dist);
+        Utils::Scatter(*temp_glob, *intlev_map_dist);
 	Teuchos::RCP<Epetra_MultiVector> salt_dist     = 
-        HYMLS::MatrixUtils::Scatter(*salt_glob, *intlev_map_dist);
+        Utils::Scatter(*salt_glob, *intlev_map_dist);
 	Teuchos::RCP<Epetra_MultiVector> spert_dist    = 
-        HYMLS::MatrixUtils::Scatter(*spert_glob, *lev_map_dist);
+        Utils::Scatter(*spert_glob, *lev_map_dist);
   
 	// import overlap
 	Teuchos::RCP<Epetra_Import> lev_loc2dist =
@@ -649,7 +647,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
 THCM::~THCM()
 {
-	this->printTiming(*info);
+	this->printTiming(std::cout);
 	DEBUG("Destroy THCM...");
   
 	FNAME(finalize)();
@@ -701,7 +699,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
 	if (!(soln.Map().SameAs(*SolveMap)))
     {
-		Error("Map of solution vector not same as solve-map ",__FILE__,__LINE__);
+		ERROR("Map of solution vector not same as solve-map ",__FILE__,__LINE__);
     }
   
 	// convert to standard distribution and                       
@@ -730,7 +728,6 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 		// export overlapping rhs to unique-id global rhs vector,
 		// and load-balance for solve phase:
 		domain->Assembly2Solve(*localRhs,*tmp_rhs);
-		HYMLS::MatrixUtils::Dump(*tmp_rhs,"rhs.txt");     
    
 		CHECK_ZERO(tmp_rhs->Scale(-1.0));
     
@@ -772,7 +769,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 		localDiagB->PutScalar(0.0);
 
 		if (sigmaUVTS||(sigmaWP>1.0e-14)) {
-			Error("We do not allow THCM to shift the matrix anymore!",
+			ERROR("We do not allow THCM to shift the matrix anymore!",
 				  __FILE__,__LINE__);
 		}
 
@@ -813,21 +810,21 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
 				if ((ierr!=0) && (ierr!=3))
 				{
-					(*info) << "\nERROR " << ierr;
-					(*info) <<" while inserting/replacing values in local Jacobian" << std::endl; 
+					(std::cout) << "\nERROR " << ierr;
+					(std::cout) <<" while inserting/replacing values in local Jacobian" << std::endl; 
 					DEBUG(" ERROR while inserting/replacing values in local Jacobian");
 
 					INFO("GRID: "<<AssemblyMap->GID(i))
 						INFO("number of entries: "<<numentries);
-					(*info) << "entries: ";
-					for (int j=0;j<numentries;j++) (*info) << "("<<indices[j]<<" "<<values[j]<<") ";
+					(std::cout) << "entries: ";
+					for (int j=0;j<numentries;j++) (std::cout) << "("<<indices[j]<<" "<<values[j]<<") ";
           
 					CHECK_ZERO(localJac->ExtractGlobalRowCopy(AssemblyMap->GID(i),maxlen,numentries,values,indices));
 					INFO("\noriginal row: ");
 					INFO("number of entries: "<<numentries);
-					(*info) << "entries: ";
-					for (int j=0;j<numentries;j++) (*info) << "("<<indices[j]<<" "<<values[j]<<") ";
-					(*info) << std::endl; 
+					(std::cout) << "entries: ";
+					for (int j=0;j<numentries;j++) (std::cout) << "("<<indices[j]<<" "<<values[j]<<") ";
+					(std::cout) << std::endl; 
 
 					// ierr == 3 probably means not all row entries are replaced,
 					// does not matter because we zeroed them.
@@ -1020,16 +1017,16 @@ void THCM::stopTiming(std::string fname,bool print)
 	timerList.sublist("total time").set(fname,total_time+elapsed);
 	if (print)
     {
-		(*info) << "### timing: "<<fname<<" "<<elapsed<<std::endl;
+		(std::cout) << "### timing: "<<fname<<" "<<elapsed<<std::endl;
     }
 }
 
 void THCM::printTiming(std::ostream& os)
 {
-	os << "================================== TIMING RESULTS =================================="<<std::endl; 
+	os << "================= TIMING RESULTS ====================="<<std::endl; 
 	os << "     Description                              ";
 	os << " # Calls \t Cumulative Time \t Time/call\n";
-	os << "=========================================================================================="<<std::endl;
+	os << "======================================================"<<std::endl;
   
 	Teuchos::ParameterList& ncallsList=timerList.sublist("number of calls");
 	Teuchos::ParameterList& elapsedList=timerList.sublist("total time");
@@ -1041,7 +1038,7 @@ void THCM::printTiming(std::ostream& os)
 		os << fname << "\t" <<ncalls<<"\t"<<elapsed<<"\t" 
 		   << ((ncalls>0)? elapsed/(double)ncalls : 0.0) <<std::endl;
     }
-	os << "========================================================"<<std::endl;
+	os << "====================================================="<<std::endl;
 	DEBUG(timerList);
 }
 
@@ -1100,7 +1097,7 @@ int THCM::par2int(std::string label)
 	else
     {
 		INFO("Invalid continuation parameter label: '"<<label<<"'");
-		Error("Parameter label is invalid!",__FILE__,__LINE__);
+		ERROR("Parameter label is invalid!",__FILE__,__LINE__);
     }
 	return -1;
 }
@@ -1161,7 +1158,7 @@ std::string THCM::int2par(int index)
 	else if (index==MASS)  label = "Mass";
 	else
     {
-		Error("Parameter index is invalid!",__FILE__,__LINE__);
+		ERROR("Parameter index is invalid!",__FILE__,__LINE__);
     }
 	return label;
 }
@@ -1175,7 +1172,7 @@ bool THCM::setParameter(std::string label, double value)
     }
 	else if (param<0)
     {
-		Error("Invalid Parameter",__FILE__,__LINE__);
+		ERROR("Invalid Parameter",__FILE__,__LINE__);
     }
 	else if (param==0) // 0 is non-dimensional time
     {
@@ -1254,7 +1251,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 	int K0 = 0; int K1 = l+la+1;
 
 	DEBUG("create landmap without overlap...");  
-	Teuchos::RCP<Epetra_Map> landmap_loc0 = HYMLS::MatrixUtils::CreateMap(i0,i1,j0,j1,k0,k1,
+	Teuchos::RCP<Epetra_Map> landmap_loc0 = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
 																		  I0,I1,J0,J1,K0,K1,*Comm);  
 
 	// create an overlapping distributed map
@@ -1269,7 +1266,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 	i0--; i1++; j0--; j1++; k0--; k1++;
   
 	DEBUG("create landmap with overlap...");  
-	Teuchos::RCP<Epetra_Map> landmap_loc = HYMLS::MatrixUtils::CreateMap(i0,i1,j0,j1,k0,k1,
+	Teuchos::RCP<Epetra_Map> landmap_loc = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
 																		 I0,I1,J0,J1,K0,K1,*Comm);  
   
 	DEBUG("Create local vectors...");
@@ -1322,13 +1319,13 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
     int root = Comm->NumProc()-1;
     
     Teuchos::RCP<Epetra_MultiVector> intcond_glob = 
-        HYMLS::MatrixUtils::Gather(*intcond_coeff,root);
+        Utils::Gather(*intcond_coeff,root);
 
     if (A.MyGRID(lastrow))
 	{
 		if (Comm->MyPID()!=root)
         {
-			Error("S-integral condition should be on last processor!",__FILE__,__LINE__);
+			ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
         }
 		int lid = B.Map().LID(lastrow);
 		B[lid] = 0.0; // no more time-dependence for this S-point
@@ -1367,7 +1364,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 	}
     else if (Comm->MyPID()==root)
 	{
-		Error("S-integral condition should be on last processor!",__FILE__,__LINE__);
+		ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
 	}
 
 }
@@ -1712,11 +1709,11 @@ void THCM::SetupMonthlyForcing()
   
 	// maps for 2D fields (surface forcing)
 	Teuchos::RCP<Epetra_Map> lev_map_dist = domain->CreateStandardMap(1,true);
-	Teuchos::RCP<Epetra_Map> lev_map_root = HYMLS::MatrixUtils::Gather(*lev_map_dist,0);
+	Teuchos::RCP<Epetra_Map> lev_map_root = Utils::Gather(*lev_map_dist,0);
   
 	// maps for 3D fields (internal forcing)
 	Teuchos::RCP<Epetra_Map> intlev_map_dist = domain->CreateStandardMap(1,false);
-	Teuchos::RCP<Epetra_Map> intlev_map_root = HYMLS::MatrixUtils::Gather(*intlev_map_dist,0);
+	Teuchos::RCP<Epetra_Map> intlev_map_root = Utils::Gather(*intlev_map_dist,0);
       
 	// create sequential and parallel vectors to hold the data    
 	Teuchos::RCP<Epetra_MultiVector> temp_glob = Teuchos::rcp(new 
@@ -1781,12 +1778,12 @@ void THCM::SetupMonthlyForcing()
 
 		// distribute levitus and wind fields
 
-		Teuchos::RCP<Epetra_MultiVector> tatm_dist = HYMLS::MatrixUtils::Scatter(*tatm_glob,*lev_map_dist);
-		Teuchos::RCP<Epetra_MultiVector> emip_dist = HYMLS::MatrixUtils::Scatter(*emip_glob,*lev_map_dist);
-		Teuchos::RCP<Epetra_MultiVector> temp_dist = HYMLS::MatrixUtils::Scatter(*temp_glob,*intlev_map_dist);
-		Teuchos::RCP<Epetra_MultiVector> salt_dist = HYMLS::MatrixUtils::Scatter(*salt_glob,*intlev_map_dist);
-		Teuchos::RCP<Epetra_MultiVector> taux_dist = HYMLS::MatrixUtils::Scatter(*taux_glob,*lev_map_dist);
-		Teuchos::RCP<Epetra_MultiVector> tauy_dist = HYMLS::MatrixUtils::Scatter(*tauy_glob,*lev_map_dist);
+		Teuchos::RCP<Epetra_MultiVector> tatm_dist = Utils::Scatter(*tatm_glob,*lev_map_dist);
+		Teuchos::RCP<Epetra_MultiVector> emip_dist = Utils::Scatter(*emip_glob,*lev_map_dist);
+		Teuchos::RCP<Epetra_MultiVector> temp_dist = Utils::Scatter(*temp_glob,*intlev_map_dist);
+		Teuchos::RCP<Epetra_MultiVector> salt_dist = Utils::Scatter(*salt_glob,*intlev_map_dist);
+		Teuchos::RCP<Epetra_MultiVector> taux_dist = Utils::Scatter(*taux_glob,*lev_map_dist);
+		Teuchos::RCP<Epetra_MultiVector> tauy_dist = Utils::Scatter(*tauy_glob,*lev_map_dist);
             
 		CHECK_ZERO(tatm_loc->Import(*tatm_dist,*loc2dist,Insert));
 		CHECK_ZERO(emip_loc->Import(*emip_dist,*loc2dist,Insert));

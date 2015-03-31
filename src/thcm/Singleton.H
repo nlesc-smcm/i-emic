@@ -8,7 +8,7 @@
 #ifndef SINGLETON_H
 #define SINGLETON_H
 
-#include "globdefs.H"
+#include "THCMdefs.H"
 #include "Teuchos_RCP.hpp"
 
 #if defined(GNU)||defined(G95)||defined(HUYGENS)

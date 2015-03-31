@@ -15,7 +15,7 @@
 
 
 // ordering of variables (should be consistent with trilinos_thcm's 
-// definition in globdefs.H and the ordering assumed by HYMLS, cf. 
+// definition in THCMdefs.H and the ordering assumed by HYMLS, cf. 
 // HYMLS_Tools.H, function sub2ind)
 #ifndef FIND_ROW2
 #define FIND_ROW2(nun_,n,m,l,i,j,k,XX) ((nun_)*((k)*(n)*(m)+ (n)*(j) + (i))+(XX)-1)

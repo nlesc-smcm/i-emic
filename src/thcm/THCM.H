@@ -13,7 +13,7 @@
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_ParameterList.hpp"
 
-#include "../utils/Utils.H"
+#include "Utils.H"
 
 namespace TRIOS
 {

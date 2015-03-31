@@ -4,7 +4,7 @@
  * as long as this header remains intact.                             *
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
-#include "globdefs.H"
+#include "THCMdefs.H"
 #include "TRIOS_Domain.H"
 
 #include "OceanGrid.H"
@@ -236,7 +236,7 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     // puts the data from the locations (1:n,1:m,1:l+la) 
     // into the assembly vector
     //TODO: this should not be used, first make a C-compatible '1D' version!
-    Error("Not Implemented!",__FILE__,__LINE__);
+    ERROR("Not Implemented!",__FILE__,__LINE__);
     FNAME(solu)(data,U_,V_,W_,P_,T_,S_);
     // import boundaries into ghost-nodes
     domain->Assembly2Solve(*importVector,output);
@@ -260,7 +260,7 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
   if (G==NULL)
     { 
     INFO("failed to allocate "<<dim*8*1e-6<<" MB of memory for a grid function!");
-    Error("Memory allocation error!",__FILE__,__LINE__);
+    ERROR("Memory allocation error!",__FILE__,__LINE__);
     }
   for (int i=0;i<dim;i++) G[i]=0.0;
   return G;  

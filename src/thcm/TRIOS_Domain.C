@@ -15,8 +15,8 @@
 #include "Epetra_Vector.h"
 #include "Epetra_IntVector.h"
 
-#include "../utils/Utils.H"
-#include "globdefs.H"
+#include "Utils.H"
+#include "THCMdefs.H"
 
 #ifdef HAVE_MPI
 #  include "Epetra_MpiComm.h"
@@ -323,7 +323,7 @@ namespace TRIOS
 		}
 		else
 		{
-			Utils::Error("not implemented",__FILE__,__LINE__);
+			ERROR("not implemented",__FILE__,__LINE__);
 //    int l_=depth_av?1:l;
 //    M = loadbal->createBalancedMap(l_,nun_);
 		}
@@ -411,14 +411,14 @@ namespace TRIOS
 		return comm; // can't split anything in sequential mode
 #else //{
 		Teuchos::RCP<Epetra_MpiComm> mpi_comm = Teuchos::rcp_dynamic_cast<Epetra_MpiComm>(comm);
-		if (mpi_comm==Teuchos::null) Utils::Error("Bad Communicator encountered!",__FILE__,__LINE__);
+		if (mpi_comm==Teuchos::null) ERROR("Bad Communicator encountered!",__FILE__,__LINE__);
 		MPI_Comm old_comm = mpi_comm->GetMpiComm();
 		MPI_Comm row_comm;
 		MPI_Group old_group, row_group;
 
 		int nproc_row, disp, offset;
 
-		if (npL>1) Utils::Error("This function is not implemented for 3D proc arrays!",
+		if (npL>1) ERROR("This function is not implemented for 3D proc arrays!",
 									   __FILE__,__LINE__);    
                     
                     
@@ -437,7 +437,7 @@ namespace TRIOS
 		else
 		{
 			INFO("Bad dimension to be extracted from proc array: "<<dim);
-			Utils::Error("Cannot split dimension",__FILE__,__LINE__);
+			ERROR("Cannot split dimension",__FILE__,__LINE__);
 		}
 		int *row_ranks = new int[nproc_row];
 
@@ -460,14 +460,14 @@ namespace TRIOS
 		/* Create the row group  */
 		/* --------------------- */
 		ierr=MPI_Group_incl(old_group, nproc_row, row_ranks, &row_group);
-		if (ierr!=0) Utils::Error("MPI call 'Group_incl' failed!",__FILE__,__LINE__);
+		if (ierr!=0) ERROR("MPI call 'Group_incl' failed!",__FILE__,__LINE__);
 
 		/* ---------------------------------------------------- */
 		/* Create the new communicator; MPI assigns the context */
 		/* ---------------------------------------------------- */
   
 		ierr = MPI_Comm_create(old_comm, row_group, &row_comm);
-		if (ierr!=0) Utils::Error("MPI call 'Comm_create' failed!",__FILE__,__LINE__);
+		if (ierr!=0) ERROR("MPI call 'Comm_create' failed!",__FILE__,__LINE__);
   
 		// finally create the Epetra comm object
 		Teuchos::RCP<Epetra_Comm> new_comm = Teuchos::rcp(new Epetra_MpiComm(row_comm),false);
@@ -488,7 +488,7 @@ namespace TRIOS
 #ifdef TESTING
         if (!(source.Map().SameAs(*AssemblyMap)&&target.Map().SameAs(*StandardMap)))
 		{
-			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         CHECK_ZERO(target.Export(source,*as2std,Zero));
@@ -503,7 +503,7 @@ namespace TRIOS
 #ifdef TESTING
         if (!(source.Map().SameAs(*StandardMap)&&target.Map().SameAs(*AssemblyMap)))
 		{
-			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         CHECK_ZERO(target.Import(source,*as2std,Insert));
@@ -517,7 +517,7 @@ namespace TRIOS
 #ifdef TESTING
         if (!(source.Map().SameAs(*StandardMap)&&target.Map().SameAs(*SolveMap)))
 		{
-			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         if (UseLoadBalancing()==false)
@@ -538,7 +538,7 @@ namespace TRIOS
 #ifdef TESTING
         if (!(source.Map().SameAs(*SolveMap)&&target.Map().SameAs(*StandardMap)))
 		{
-			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         if (UseLoadBalancing()==false)
@@ -559,7 +559,7 @@ namespace TRIOS
 #ifdef TESTING
         if (!(source.Map().SameAs(*SolveMap)&&target.Map().SameAs(*AssemblyMap)))
 		{
-			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         if (UseLoadBalancing()==false)
@@ -584,7 +584,7 @@ namespace TRIOS
 #ifdef TESTING
         if (!(source.Map().SameAs(*AssemblyMap)&&target.Map().SameAs(*SolveMap)))
 		{
-			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif 
         if (UseLoadBalancing()==false)
@@ -609,7 +609,7 @@ namespace TRIOS
 #ifdef TESTING
         if (!(source.RowMap().SameAs(*StandardMap)&&target.RowMap().SameAs(*SolveMap)))
 		{
-			Utils::Error("Invalid Transfer Function called!",__FILE__,__LINE__);
+			ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
 #endif
         if (UseLoadBalancing()==false)

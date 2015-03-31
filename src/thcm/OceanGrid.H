@@ -10,6 +10,8 @@
 #include "Epetra_Vector.h"
 #include "Epetra_IntVector.h"
 
+#include "THCMdefs.H"
+
 #include "TRIOS_Domain.H"
 
 #include "Teuchos_Array.hpp"
@@ -367,7 +369,7 @@ private:
 			{
 				INFO("index out of bounds, u/v array, index: ("<<i<<", "<<j<<", "<<k<<")");
 				INFO("                         array bounds: (0:"<<n<<", 0:"<<m<<", 0:"<<l+la+1<<")");
-				Error("Index out of bounds!",__FILE__,__LINE__);
+				ERROR("Index out of bounds!",__FILE__,__LINE__);
 			}
 		}
 
@@ -377,7 +379,7 @@ private:
 			{
 				INFO("index out of bounds, w array, index: ("<<i<<", "<<j<<", "<<k<<")");
 				INFO("                       array bounds: (0:"<<n+1<<", 0:"<<m+1<<", 0:"<<l+la<<")");
-				Error("Index out of bounds!",__FILE__,__LINE__);
+				ERROR("Index out of bounds!",__FILE__,__LINE__);
 			}
 		}
 
@@ -387,7 +389,7 @@ private:
 			{
 				INFO("index out of bounds, p/T/S array, index: ("<<i<<", "<<j<<", "<<k<<")");
 				INFO("                       array bounds: (0:"<<n+1<<", 0:"<<m+1<<", 0:"<<l+la+1<<")");
-				Error("Index out of bounds!",__FILE__,__LINE__);
+				ERROR("Index out of bounds!",__FILE__,__LINE__);
 			}
 		}
 
@@ -397,7 +399,7 @@ private:
 			{
 				INFO("index out of bounds, psiM array, index: ("<<j<<", "<<k<<")");
 				INFO("                       array bounds: (0:"<<m<<", 0:"<<l<<")");
-				Error("Index out of bounds!",__FILE__,__LINE__);
+				ERROR("Index out of bounds!",__FILE__,__LINE__);
 			}
 		}
 
@@ -407,7 +409,7 @@ private:
 			{
 				INFO("index out of bounds, psiB array, index: ("<<i<<", "<<j<<")");
 				INFO("                       array bounds: (0:"<<n<<", 0:"<<m<<")");
-				Error("Index out of bounds!",__FILE__,__LINE__);
+				ERROR("Index out of bounds!",__FILE__,__LINE__);
 			}
 		}
 

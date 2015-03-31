@@ -22,7 +22,7 @@
 #include <Epetra_Vector.h>
 
 #include "THCM.H"
-#include "globdefs.H"
+#include "THCMdefs.H"
 #include <sstream>
 #include <fstream>
 
@@ -69,6 +69,12 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------
 	THCM::Instance().evaluate(*soln, Teuchos::null, true);
 	Teuchos::RCP<Epetra_CrsMatrix> A = THCM::Instance().getJacobian();
+	double nrm[1];
+	soln->Norm2(nrm);
+	std::cout << "||x||_2    = " << nrm[0] << std::endl; 
+	std::cout << "||A||_inf  = " << A->NormInf() << std::endl;
+		
+	std::cout << "EXITING" << std::endl;
     //------------------------------------------------------------------
 	// Finalize MPI
 	//------------------------------------------------------------------
