@@ -19,9 +19,14 @@
 #endif
 
 #ifndef DEBUG
-#  define DEBUG(s) std::cout << s << std::endl;
-// The use of # stringifies variable s:
-#  define DEBVAR(s) std::cout << #s << std::endl;
+#  ifdef DEBUGGING
+#    define DEBUG(s) std::cout << s << std::endl;
+     // The use of # stringifies variable s:
+#    define DEBVAR(s) std::cout << #s << std::endl;
+#  else
+#    define DEBUG(s)
+#    define DEBVAR(s)
+#  endif
 #endif
 
 // macros for checking Epetra calls
