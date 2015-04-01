@@ -4,6 +4,10 @@
  * as long as this header remains intact.                             *
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
+/**********************************************************************
+ * Modified by T.E. Mulder, Utrecht University 2014/15                *
+ * contact: t.e.mulder@uu.nl                                          *
+ **********************************************************************/
 #ifndef THCM_H
 #define THCM_H
 
@@ -63,8 +67,7 @@ namespace EpetraExt
 //!                                                              
 //! rhs is the result of a function evaluation, rhs = f(u), if   
 //! the model is written as Bdu/dt + f(u) = 0. The Jacobian      
-//!  is A=df/du. To avoid confusion it is                        
-//! recommended to use class OceanModel to 'evaluate the model'  
+//!  is A=df/du. 
 //!                                                              
 //! This class is implemented as a 'Singleton', which means that 
 //! there is only one instance allowed at a time. This is reason-
@@ -75,6 +78,7 @@ namespace EpetraExt
 //! When attempting to create another instance, the old one will 
 //! be deleted and a warning is issued.                          
 //!                                                              
+
 class THCM : 
 	public Singleton<THCM>, public Epetra_Object
 {

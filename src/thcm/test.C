@@ -60,9 +60,10 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------	
 	Teuchos::RCP<Epetra_Vector> soln = THCM::Instance().getSolution();
 	//-------------------------------------------------------------------
-	// Randomize solution vector
+	// Initialize solution vector
 	//-------------------------------------------------------------------
-	soln->PutScalar(100.0);
+	soln->Random();
+	soln->Scale(1.0e-8);
 	INFO("Initialized solution vector");
 	//-------------------------------------------------------------------
 	Teuchos::RCP<Epetra_Vector> RHS = Teuchos::rcp(new Epetra_Vector(soln->Map()));
@@ -79,7 +80,6 @@ int main(int argc, char *argv[])
 	std::cout << "||x||_2    = " << nrm[0] << std::endl;
 	std::cout << "||RHS||_2  = " << nrm2[0] << std::endl; 
 	std::cout << "||A||_inf  = " << A->NormInf() << std::endl;
-		
 	std::cout << "EXITING" << std::endl;
     //------------------------------------------------------------------
 	// Finalize MPI
@@ -87,4 +87,3 @@ int main(int argc, char *argv[])
 	MPI_Finalize();
 	return 0;
 }
-
