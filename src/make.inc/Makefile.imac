@@ -17,12 +17,12 @@ PROJECT_BASE = /home/erik/Projects
 
 ##=================================================================
 ##   Import makefile variables from Trilinos:
-include ${TRIDIR}/include/Makefile.export.NOX
-CXX                 = ${NOX_CXX_COMPILER}
-FC                  = ${NOX_FORTRAN_COMPILER}
-INCLUDE_DIRS        = ${NOX_INCLUDE_DIRS}
-LIBRARY_DIRS        = ${NOX_LIBRARY_DIRS}
-TRILINOS_LIBRARIES  = ${NOX_LIBRARIES} ${NOX_TPL_LIBRARIES}
+include ${TRIDIR}/include/Makefile.export.Belos
+CXX                 = ${Belos_CXX_COMPILER}
+FC                  = ${Belos_FORTRAN_COMPILER}
+INCLUDE_DIRS        = ${Belos_INCLUDE_DIRS}
+LIBRARY_DIRS        = ${Belos_LIBRARY_DIRS}
+TRILINOS_LIBRARIES  = ${Belos_LIBRARIES} ${Belos_TPL_LIBRARIES}
 
 ##=================================================================
 ##   Flags that are shared among the different compilers:

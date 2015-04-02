@@ -73,14 +73,6 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------
 	THCM::Instance().evaluate(*soln, Teuchos::null, true);
 	Teuchos::RCP<Epetra_CrsMatrix> A = THCM::Instance().getJacobian();
-	double nrm[1];
-	soln->Norm2(nrm);
-	double nrm2[1];
-	RHS->Norm2(nrm2);
-	std::cout << "||x||_2    = " << nrm[0] << std::endl;
-	std::cout << "||RHS||_2  = " << nrm2[0] << std::endl; 
-	std::cout << "||A||_inf  = " << A->NormInf() << std::endl;
-	std::cout << "EXITING" << std::endl;
     //------------------------------------------------------------------
 	// Finalize MPI
 	//------------------------------------------------------------------
