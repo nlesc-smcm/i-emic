@@ -21,11 +21,25 @@
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_Vector.h>
 
+#include <BelosLinearProblem.hpp>
+#include <BelosBlockGmresSolMgr.hpp>
+#include <BelosEpetraAdapter.hpp>
+
+#include "TekoPreconditioner.H"
+#include "Ifpack.h"
+
 #include "THCM.H"
 #include "THCMdefs.H"
 #include <sstream>
 #include <fstream>
 
+using Teuchos::RCP;
+using Teuchos::rcp;
+
+typedef Epetra_Vector       VEC;
+typedef Epetra_MultiVector  MVEC;
+typedef Epetra_Operator     OPER;
+typedef Epetra_CrsMatrix    CRSMAT;
 //----------------------------------------------------------------------
 // THCM is a singleton, there can be only one instance at a time. 
 // As base class Singleton is templated we must instantiate it    
@@ -37,42 +51,101 @@ int main(int argc, char *argv[])
 {
 #ifdef HAVE_MPI
 	MPI_Init(&argc, &argv);
-	Teuchos::RCP<Epetra_MpiComm> Comm =
-		Teuchos::rcp(new Epetra_MpiComm(MPI_COMM_WORLD));
+	RCP<Epetra_MpiComm> Comm =
+		rcp(new Epetra_MpiComm(MPI_COMM_WORLD));
 #else
-	Teuchos::RCP<Epetra_SerialComm> Comm =
-		Teuchos::rcp(new Epetra_SerialComm());
+	RCP<Epetra_SerialComm> Comm =
+		rcp(new Epetra_SerialComm());
 #endif
 	// -------------------------------------------------------------------
 	// Setup THCM parameters:
 	// -------------------------------------------------------------------
-	Teuchos::RCP<Teuchos::ParameterList> globalParamList =
-		Teuchos::rcp(new Teuchos::ParameterList);
+	RCP<Teuchos::ParameterList> globalParamList =
+		rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("thcm_params.xml", globalParamList.ptr());
 	Teuchos::ParameterList &thcmList = globalParamList->sublist("THCM");
 	thcmList.set("Parameter Name", "Time");
     //-------------------------------------------------------------------
 	// Create THCM object
 	//-------------------------------------------------------------------	
-	Teuchos::RCP<THCM> ocean = Teuchos::rcp(new THCM(thcmList, Comm));
+	RCP<THCM> ocean = rcp(new THCM(thcmList, Comm));
 	//-------------------------------------------------------------------
 	// Obtain solution vector from THCM
 	//-------------------------------------------------------------------	
-	Teuchos::RCP<Epetra_Vector> soln = THCM::Instance().getSolution();
+	RCP<VEC> soln = THCM::Instance().getSolution();
 	//-------------------------------------------------------------------
 	// Initialize solution vector
 	//-------------------------------------------------------------------
 	soln->Random();
 	soln->Scale(1.0e-8);
 	INFO("Initialized solution vector");
-	//-------------------------------------------------------------------
-	Teuchos::RCP<Epetra_Vector> RHS = Teuchos::rcp(new Epetra_Vector(soln->Map()));
+    //-------------------------------------------------------------------
+	// Initialize X, MultiRHS and RHS
+	// ------------------------------------------------------------------	
+	RCP<MVEC> X    = rcp(new MVEC(soln->Map(), 1));
+ 	RCP<MVEC> MRHS = rcp(new MVEC(soln->Map(), 1));
+	// Create non-owning rcp from Epetra_MultiVector MRHS
+	// pointing to first Epetra_Vector in MRHS
+	RCP<VEC>  RHS = rcp((MRHS->operator()(0)), false);
+
+	double nrm1[1];
+	double nrm2[1];
+	MRHS->Norm2(nrm1);
+	INFO("Norm MRHS before calculation " << nrm1[0]);
 	// Calculate rhs and store it in RHS
 	THCM::Instance().evaluate(*soln, RHS, false);
-	// Obtain Jacobian 
+	MRHS->Norm2(nrm2);
+	INFO("Norm MRHS after calculation " << nrm2[0]);
+	//-------------------------------------------------------------------
+	// Obtain Jacobian
 	//-------------------------------------------------------------------
 	THCM::Instance().evaluate(*soln, Teuchos::null, true);
-	Teuchos::RCP<Epetra_CrsMatrix> A = THCM::Instance().getJacobian();
+	RCP<CRSMAT> A = THCM::Instance().getJacobian();
+	//-------------------------------------------------------------------
+	// Belos::LinearProblem setup
+	//-------------------------------------------------------------------
+	RCP<Belos::LinearProblem<double, MVEC, OPER>> problem =
+		rcp(new Belos::LinearProblem<double, MVEC, OPER>(A, X, MRHS));
+    //-------------------------------------------------------------------
+	// Teko setup
+	//-------------------------------------------------------------------
+	Teuchos::ParameterList &tekoParams =
+		globalParamList->sublist("Teko List");
+	Teuchos::RCP<Teuchos::ParameterList> tekoParams_rcp =
+		Teuchos::rcp(&tekoParams, false);
+    updateParametersFromXmlFile("teko_params.xml", tekoParams_rcp.ptr());
+	
+	RCP<Ifpack_Preconditioner> tekoPrec =
+		Teuchos::rcp(new TekoPreconditioner(A, tekoParams_rcp));
+	tekoPrec->Initialize();
+	tekoPrec->Compute();
+
+	RCP<Belos::EpetraPrecOp> belosPrec = rcp(new Belos::EpetraPrecOp(tekoPrec));
+	problem->setLeftPrec(belosPrec);
+	bool set = problem->setProblem();
+	if (set == false)
+	{
+		std::cout << "ERROR:  Belos::LinearProblem failed to set up correctly!"
+				  << std::endl;
+	}
+	//-------------------------------------------------------------------
+	// Belos parameter setup
+	//-------------------------------------------------------------------
+	Teuchos::RCP<Teuchos::ParameterList> belosList =
+		Teuchos::rcp(new Teuchos::ParameterList());
+	belosList->set("Block Size", 100);
+	belosList->set("Maximum Iterations", 5000);
+	belosList->set("Convergence Tolerance", 1e-4);
+	belosList->set("Verbosity", Belos::FinalSummary);
+	//-------------------------------------------------------------------
+	// Belos block GMRES setup
+	//-------------------------------------------------------------------
+	Belos::BlockGmresSolMgr<double, MVEC, OPER> belosSolver(problem, belosList);
+	//--------------------------------------------------------------------
+
+	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
+							   "*** Belos::LinearProblem failed to setup");
+	Belos::ReturnType ret = belosSolver.solve();
     //------------------------------------------------------------------
 	// Finalize MPI
 	//------------------------------------------------------------------

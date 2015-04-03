@@ -49,7 +49,7 @@
       if (vmix_GLB.eq.1) then
          vmix_flag = 2
          vmix_diff = 1
-         vmix_out  = 1
+         vmix_out  = 0
          vmix_fix  = 0
       else
          vmix_flag = -1
@@ -141,7 +141,7 @@
       integer vmix_minrow,vmix_maxrow
       real dnsm
 
-      write (*,'(a26)') 'MIX|   part...            '
+      if (vmix_out.gt.0) write (*,'(a26)') 'MIX|   part...            '
 
       select case(vmix_flag)
       case(1)
@@ -158,8 +158,8 @@
      +     vmix_ipntr,vmix_jpntr,
      +     iwa,liwa)
       dnsm=real(vmix_dim)/(real(ndim)**2)
-      write (*,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
-      write (*,'(a16,es10.2)') 'MIX|     dnsm:  ', dnsm
+      if (vmix_out.gt.0) write (*,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
+      if (vmix_out.gt.0) write (*,'(a16,es10.2)') 'MIX|     dnsm:  ', dnsm
 
       if (info.le.0) then
          write (*,*) 'Error in subroutine DSM'
@@ -174,12 +174,13 @@
          vmix_minrow=min(vmix_minrow,
      +        vmix_ipntr(i+1)-vmix_ipntr(i))
       enddo
-      write (*,'(a16,i10)') 'MIX|     minrow:', vmix_minrow
-      write (*,'(a16,i10)') 'MIX|     maxrow:', vmix_maxrow
-      write (*,'(a16,i10)') 'MIX|     mingrp:', vmix_mingrp
-      write (*,'(a16,i10)') 'MIX|     maxgrp:', vmix_maxgrp
-      write (*,'(a26)')     'MIX|          ...part done'
-
+      if (vmix_out.gt.0) then
+         write (*,'(a16,i10)') 'MIX|     minrow:', vmix_minrow
+         write (*,'(a16,i10)') 'MIX|     maxrow:', vmix_maxrow
+         write (*,'(a16,i10)') 'MIX|     mingrp:', vmix_mingrp
+         write (*,'(a16,i10)') 'MIX|     maxgrp:', vmix_maxgrp
+         write (*,'(a26)')     'MIX|          ...part done'
+      endif
       end
 *     ---------------------------------------------------------------------------- *
       subroutine vmix_fun(un,mix,mode)
@@ -643,7 +644,7 @@
          dum(1)=100.0*dum(1)/real(n*m*l) ! ntrl. phy.
          dum(2)=100.0*dum(2)/real(n*m*l) ! cons. mix.
          dum(3)=100.0*dum(3)/real(n*m*l) ! conv. adj.
-         write (*,'(a16,3f7.2)') 'MIX|     fun:   ', dum
+         if (vmix_out.gt.0) write(*,'(a16,3f7.2)') 'MIX|     fun:   ', dum
       endif
       
       end
