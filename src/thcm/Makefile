@@ -11,8 +11,8 @@ obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
 
 default: lib
 
-test: $(libname) test.o TekoPreconditioner.o
-	$(CXX) test.o TekoPreconditioner.o $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -lthcm $(LIBS)
+test: $(libname) test.o Rearranger.o
+	$(CXX) test.o Rearranger.o $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -lthcm $(LIBS)
 
 lib: $(libname)
 

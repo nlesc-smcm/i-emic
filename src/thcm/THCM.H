@@ -82,14 +82,14 @@ namespace EpetraExt
 class THCM : 
 	public Singleton<THCM>, public Epetra_Object
 {
-
+	
 public:
-
+	
 	//! Constructor  
 	THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
-  
+	
 	//! Destructor
-
+	
 	/*! \note: currently the Fortran data structures are not 
 	  completely deallocated, so it is dangerous to 
 	  delete and re-allocate the THCM object during

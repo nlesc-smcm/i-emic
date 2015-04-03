@@ -25,13 +25,9 @@
 #include <BelosBlockGmresSolMgr.hpp>
 #include <BelosEpetraAdapter.hpp>
 
-#include "TekoPreconditioner.H"
-#include "Ifpack.h"
-
 #include "THCM.H"
 #include "THCMdefs.H"
-#include <sstream>
-#include <fstream>
+#include "Rearranger.H"
 
 using Teuchos::RCP;
 using Teuchos::rcp;
@@ -77,7 +73,7 @@ int main(int argc, char *argv[])
 	// Initialize solution vector
 	//-------------------------------------------------------------------
 	soln->Random();
-	soln->Scale(1.0e-8);
+	soln->Scale(1.0e-3);
 	INFO("Initialized solution vector");
     //-------------------------------------------------------------------
 	// Initialize X, MultiRHS and RHS
@@ -87,7 +83,6 @@ int main(int argc, char *argv[])
 	// Create non-owning rcp from Epetra_MultiVector MRHS
 	// pointing to first Epetra_Vector in MRHS
 	RCP<VEC>  RHS = rcp((MRHS->operator()(0)), false);
-
 	double nrm1[1];
 	double nrm2[1];
 	MRHS->Norm2(nrm1);
@@ -102,32 +97,20 @@ int main(int argc, char *argv[])
 	THCM::Instance().evaluate(*soln, Teuchos::null, true);
 	RCP<CRSMAT> A = THCM::Instance().getJacobian();
 	//-------------------------------------------------------------------
+	// Rearrange the Jacobian so we can solve it with less iterations
+	//-------------------------------------------------------------------
+	Rearranger rearr;
+	rearr.setMatrix(A);
+	rearr.buildOrdering();
+	rearr.setBlockOperator();
+	rearr.fillBlocks();
+	/*
+    //-------------------------------------------------------------------
 	// Belos::LinearProblem setup
 	//-------------------------------------------------------------------
 	RCP<Belos::LinearProblem<double, MVEC, OPER>> problem =
 		rcp(new Belos::LinearProblem<double, MVEC, OPER>(A, X, MRHS));
-    //-------------------------------------------------------------------
-	// Teko setup
-	//-------------------------------------------------------------------
-	Teuchos::ParameterList &tekoParams =
-		globalParamList->sublist("Teko List");
-	Teuchos::RCP<Teuchos::ParameterList> tekoParams_rcp =
-		Teuchos::rcp(&tekoParams, false);
-    updateParametersFromXmlFile("teko_params.xml", tekoParams_rcp.ptr());
-	
-	RCP<Ifpack_Preconditioner> tekoPrec =
-		Teuchos::rcp(new TekoPreconditioner(A, tekoParams_rcp));
-	tekoPrec->Initialize();
-	tekoPrec->Compute();
-
-	RCP<Belos::EpetraPrecOp> belosPrec = rcp(new Belos::EpetraPrecOp(tekoPrec));
-	problem->setLeftPrec(belosPrec);
-	bool set = problem->setProblem();
-	if (set == false)
-	{
-		std::cout << "ERROR:  Belos::LinearProblem failed to set up correctly!"
-				  << std::endl;
-	}
+	problem->setProblem();	// NEEDS CHECK
 	//-------------------------------------------------------------------
 	// Belos parameter setup
 	//-------------------------------------------------------------------
@@ -142,10 +125,8 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------
 	Belos::BlockGmresSolMgr<double, MVEC, OPER> belosSolver(problem, belosList);
 	//--------------------------------------------------------------------
-
-	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
-							   "*** Belos::LinearProblem failed to setup");
 	Belos::ReturnType ret = belosSolver.solve();
+	*/
     //------------------------------------------------------------------
 	// Finalize MPI
 	//------------------------------------------------------------------
