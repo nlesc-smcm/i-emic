@@ -74,5 +74,5 @@ void Rearranger::fillBlocks()
 					*(Teuchos::rcp_dynamic_cast<const Epetra_CrsMatrix>
 					  (blockOperator_->GetBlock(0,0))
 						)));
-	INFO(*A_uv_);
+	INFO(*A_uv_); 
 }
