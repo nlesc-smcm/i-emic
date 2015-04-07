@@ -73,7 +73,6 @@ int main(int argc, char *argv[])
 	// Initialize solution vector
 	//-------------------------------------------------------------------
 	soln->Random();
-	soln->Scale(1.0e-3);
 	INFO("Initialized solution vector");
     //-------------------------------------------------------------------
 	// Initialize X, MultiRHS and RHS
@@ -104,6 +103,7 @@ int main(int argc, char *argv[])
 	rearr.buildOrdering();
 	rearr.setBlockOperator();
 	rearr.fillBlocks();
+	rearr.test();
 	/*
     //-------------------------------------------------------------------
 	// Belos::LinearProblem setup

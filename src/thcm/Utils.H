@@ -11,21 +11,14 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-// A namespace with the necessary utils from hymls and trios
-// It should at least contain:
-//
-//   HYMLS::Tools::SplitBox
-//   HYMLS::Tools::ind2sub
-//   
-//   HYMLS::MatrixUtils::CreateMap
-//   HYMLS::MatrixUtils::Gather
-//   HYMLS::MatrixUtils::Scatter
+// A namespace with utils from hymls and trios that I need
 
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_ArrayView.hpp"
 #include "Epetra_Map.h"
 #include "Epetra_CrsMatrix.h"
 #include "Epetra_Vector.h"
+#include "Epetra_IntVector.h"
 #include "Epetra_Import.h"
 
 #ifdef HAVE_MPI
@@ -99,8 +92,26 @@ namespace Utils
 	Teuchos::RCP<Epetra_Map> CreateMap(int i0, int i1, int j0, int j1, int k0, int k1,
 									   int I0, int I1, int J0, int J1, int K0, int K1,
 									   const Epetra_Comm& comm);
-	
-    //! a general function for gathering sparse matrices. It is fairly slow
+
+	//! extract a map with 1 variable from a map with dof variables per node. 'var'
+    //! is the variable to be extracted, i.e. 0, 1,...dof-1 
+	Teuchos::RCP<Epetra_Map> CreateSubMap(const Epetra_Map& map, int dof, int var);
+
+	//! extract a map for two variables from a map with dof variables. 'var'
+    //! are the variables to be extracted, i.e. {0,1}, {4,5} etc.
+	Teuchos::RCP<Epetra_Map> CreateSubMap(const Epetra_Map& map, int dof, const int var[2]);
+
+    //! extract a map for nvars variables from a map with dof variables. 'var'
+    //! are the variables to be extracted.
+	Teuchos::RCP<Epetra_Map> CreateSubMap(const Epetra_Map& map, int dof,
+										  const int *var, int nvars);
+    
+    //! given a map and an array indicating wether each node of the map is to be
+    //! discarded (true) or not (false), this function creates a new map with the
+    //! discarded entries removed.
+	Teuchos::RCP<Epetra_Map> CreateSubMap(const Epetra_Map& map, const bool* discard);    
+
+	//! a general function for gathering sparse matrices. It is fairly slow
     //! as it rebuilds the required "GatherMap" every time.
     Teuchos::RCP<Epetra_CrsMatrix> Gather(const Epetra_CrsMatrix& mat, int root);
 
@@ -119,5 +130,28 @@ namespace Utils
 	//! convert a 'gathered' vector into a distributed vector
     Teuchos::RCP<Epetra_MultiVector> Scatter(const Epetra_MultiVector& vec, 
 											 const Epetra_BlockMap& distmap);
+
+	//! transform a "solve" into a replicated "col" map, i.e.     
+    //! the resulting map will have all gid's of the original one 
+    //! on every process. The new map will have its indices       
+    //! sorted in ascending order if you choose reorder=true,     
+    //! otherwise the ordering is retained as it is.              
+    Teuchos::RCP<Epetra_BlockMap> AllGather(const Epetra_BlockMap& map,
+											bool reorder=true);
+
+    //! transform a "solve" into a replicated "col" map, i.e.     
+    //! the resulting map will have all gid's of the original one 
+    //! on every process. The new map will have its indices       
+    //! sorted in ascending order if you choose reorder=true,     
+    //! otherwise the ordering is retained as it is.              
+    Teuchos::RCP<Epetra_Map> AllGather(const Epetra_Map& map, bool reorder=true);
+
+    //! a general function for gathering vectors. It is fairly slow
+    //! as it rebuilds the required "GatherMap" every time.
+	Teuchos::RCP<Epetra_MultiVector> AllGather(const Epetra_MultiVector& vec);
+
+    //! a general function for gathering vectors. It is fairly slow
+    //! as it rebuilds the required "GatherMap" every time.
+	Teuchos::RCP<Epetra_IntVector> AllGather(const Epetra_IntVector& vec);
 }
 #endif

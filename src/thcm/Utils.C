@@ -1,3 +1,13 @@
+/**********************************************************************
+ * Copyright by Jonas Thies, Univ. of Groningen 2006/7/8.             *
+ * Permission to use, copy, modify, redistribute is granted           *
+ * as long as this header remains intact.                             *
+ * contact: jonas@math.rug.nl                                         *
+ **********************************************************************/
+/**********************************************************************
+ * Modified by T.E. Mulder, Utrecht University 2014/15                *
+ * contact: t.e.mulder@uu.nl                                          *
+ **********************************************************************/
 #include "Utils.H"
 //========================================================================================
 int Utils::SplitBox(int nx, int ny, int nz,
@@ -226,8 +236,8 @@ Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0
 }
 //========================================================================================
 Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0, int k1,        
-												int I0, int I1, int J0, int J1, int K0, int K1,
-												const Epetra_Comm& comm)
+										  int I0, int I1, int J0, int J1, int K0, int K1,
+										  const Epetra_Comm& comm)
 {
 	Teuchos::RCP<Epetra_Map> result = Teuchos::null;
     
@@ -238,7 +248,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0
       
 	int n = i1-i0+1; int N=I1-I0+1;
 	int m = j1-j0+1; int M=J1-J0+1;
-	int l = k1-k0+1; int L=K1-K0+1;
+	int l = k1-k0+1; //int L=K1-K0+1;
       
 	DEBVAR(M);
 	DEBVAR(N);
@@ -258,6 +268,77 @@ Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0
 										 NumMyElements,MyGlobalElements,0,comm));
 	delete [] MyGlobalElements;
 	return result;
+}
+//========================================================================================
+//! extract a map with nun = nvars from a map with nun=6. 'var'
+//! is the array of variables to be extracted.
+Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
+												   int dof, int var)
+{
+	return CreateSubMap(map,dof,&var,1);
+}
+//========================================================================================
+//! extract a map with nun=2 from a map with nun=6. 'var'
+//! are the variables to be extracted, i.e. {UU,VV}, {TT,SS} etc.
+Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
+												   int dof, const int var[2])
+{
+	return CreateSubMap(map,dof,var,2);
+}
+//========================================================================================
+//! extract a map with nun = nvars from a map with nun = 6. 'var'
+//! is the array of variables to be extracted.
+Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
+												   int dof, const int *var, int nvars)
+{
+	int dim    = map.NumMyElements(); // number of entries in original map
+	int numel  = dim/dof;             // number of blocks
+	int subdim = numel*nvars;         // number of entries in new map (<=dim)
+	if (numel * dof != dim)
+        ERROR("unexpected number of elements in map!",__FILE__,__LINE__);
+    
+	int *MyGlobalElements = new int[subdim];
+    
+	// take the entries from the old map that correspond
+	// to those in 'vars' and put them in the input array
+	// for the new map.
+	int k = 0;
+	for (int i  = 0; i < numel; i++)
+	{
+        for (int j = 0; j < nvars; j++)
+		{
+			MyGlobalElements[k] = map.GID(i*dof+(var[j]-1));
+			k++;
+		}
+	}	
+	Teuchos::RCP<Epetra_Map> submap = 
+        Teuchos::rcp(new Epetra_Map(-1, subdim, MyGlobalElements, 0, map.Comm()));
+	delete [] MyGlobalElements;
+	return submap;
+}
+//========================================================================================
+//! given a map and an array indicating wether each node of the map is to be 
+//! discarded (true) or not (false), this function creates a new map with the
+//! discarded entries removed.
+Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
+												   const bool* discard)
+{
+	int numel = map.NumMyElements(); 
+	int *MyGlobalElements = new int[numel]; // 'worst' case: no discarded nodes
+	int numel_new = 0;
+	for (int k=0;k<numel;k++)
+	{
+        if (!discard[k])
+		{
+			MyGlobalElements[numel_new] = map.GID(k); 
+			numel_new++;
+		}
+	}
+	Teuchos::RCP<Epetra_Map> submap =
+		Teuchos::rcp(new Epetra_Map(-1, numel_new, MyGlobalElements, 
+									map.IndexBase(), map.Comm()));
+	delete [] MyGlobalElements;
+	return submap;
 }
 
 //========================================================================================
@@ -460,3 +541,156 @@ Teuchos::RCP<Epetra_MultiVector> Utils::Scatter
     return dist_vec;
 }
 //========================================================================================
+// create "col" map from "Solve" map
+Teuchos::RCP<Epetra_BlockMap> Utils::AllGather(const Epetra_BlockMap& map, bool reorder)
+{
+    int ElementSize         = map.ElementSize();
+    int NumMyElements       = map.NumMyElements();
+    int NumGlobalElements   = map.NumGlobalElements();
+    const Epetra_Comm& Comm = map.Comm();
+#ifdef TESTING
+    if (ElementSize > 1)
+	{
+		ERROR("this is possibly not implemented correctly!",
+			  __FILE__, __LINE__);
+	}
+#endif
+	int *MyGlobalElements  = new int[NumMyElements];
+    int *AllGlobalElements = new int[NumGlobalElements];
+    for (int i = 0; i < NumMyElements; ++i)
+	{
+		MyGlobalElements[i] = map.GID(i);
+	}    
+	if (Comm.NumProc() > 1)
+    {
+#ifdef HAVE_MPI
+		const Epetra_MpiComm MpiComm = dynamic_cast<const Epetra_MpiComm&>(Comm);
+		int *counts, *disps;
+		counts = new int[Comm.NumProc()];
+		disps = new int[Comm.NumProc()+1];
+		MPI_Allgather(&NumMyElements,1,MPI_INTEGER,
+					  counts,1,MPI_INTEGER,MpiComm.GetMpiComm());
+		
+		disps[0]=0;
+		for (int p=0;p<Comm.NumProc();p++)
+		{
+			disps[p+1] = disps[p]+counts[p];
+		}
+		
+		MPI_Allgatherv(MyGlobalElements, NumMyElements,MPI_INTEGER, 
+					   AllGlobalElements, counts,disps, MPI_INTEGER, MpiComm.GetMpiComm());
+		delete [] counts;
+		delete [] disps;
+#else
+		ERROR("No MPI but still parallel? We don't do tthat.",__FILE__,__LINE__);                
+#endif
+    }
+	else
+    {
+		for (int i = 0; i < NumMyElements; ++i)
+			AllGlobalElements[i] = MyGlobalElements[i];
+    }
+    
+	NumMyElements = NumGlobalElements;
+	NumGlobalElements = -1;
+	
+	if (reorder)
+    {
+		std::sort(AllGlobalElements,AllGlobalElements+NumMyElements);
+    }
+	// build the new (gathered) map
+	Teuchos::RCP<Epetra_BlockMap> gmap =
+		Teuchos::rcp(new Epetra_BlockMap (NumGlobalElements, NumMyElements, 
+										  AllGlobalElements, ElementSize, map.IndexBase(), Comm) );
+	
+    delete [] MyGlobalElements;
+    delete [] AllGlobalElements;
+    
+    return gmap;    
+} //AllGather 1
+//========================================================================================
+// create "col" map from "Solve" map
+Teuchos::RCP<Epetra_Map> Utils::AllGather(const Epetra_Map& map, bool reorder)
+{
+    int NumMyElements       = map.NumMyElements();
+    int NumGlobalElements   = map.NumGlobalElements();
+    const Epetra_Comm& Comm = map.Comm();
+    
+    int *MyGlobalElements  = new int[NumMyElements];
+    int *AllGlobalElements = new int[NumGlobalElements];
+    
+    for (int i = 0; i < NumMyElements; ++i)
+	{
+		MyGlobalElements[i] = map.GID(i);
+	}
+    
+	if (Comm.NumProc() > 1)
+    {
+#ifdef HAVE_MPI
+		const Epetra_MpiComm MpiComm = dynamic_cast<const Epetra_MpiComm&>(Comm);
+		int *counts, *disps;
+		counts = new int[Comm.NumProc()];
+		disps  = new int[Comm.NumProc()+1];
+		MPI_Allgather(&NumMyElements,1,MPI_INTEGER,
+					  counts,1,MPI_INTEGER,MpiComm.GetMpiComm());
+		
+		disps[0] = 0;
+		for (int p = 0; p < Comm.NumProc(); ++p)
+		{
+			disps[p+1] = disps[p] + counts[p];
+		}
+		
+		MPI_Allgatherv(MyGlobalElements, NumMyElements,MPI_INTEGER, 
+					   AllGlobalElements, counts,disps, MPI_INTEGER, MpiComm.GetMpiComm());
+		delete [] counts;
+		delete [] disps;
+#else
+		ERROR("No MPI but still parallel? We don't do tthat.",__FILE__,__LINE__);                
+#endif
+    }
+	else
+    {
+		for (int i = 0; i < NumMyElements; i++)
+			AllGlobalElements[i] = MyGlobalElements[i];
+    }
+    
+	NumMyElements = NumGlobalElements;
+	NumGlobalElements = -1;
+	
+	if (reorder)
+    {
+		std::sort(AllGlobalElements,AllGlobalElements+NumMyElements);
+    }
+
+	// build the new (gathered) map
+	Teuchos::RCP<Epetra_Map> gmap =
+		Teuchos::rcp(new Epetra_Map (NumGlobalElements, NumMyElements, 
+									 AllGlobalElements, map.IndexBase(), Comm) );
+	
+    delete [] MyGlobalElements;
+    delete [] AllGlobalElements;
+    
+    return gmap;    
+} //AllGather
+//========================================================================================
+Teuchos::RCP<Epetra_MultiVector> Utils::AllGather(const Epetra_MultiVector& vec)
+{    
+	const Epetra_BlockMap& map_dist = vec.Map();
+	Teuchos::RCP<Epetra_BlockMap> map = AllGather(map_dist);
+	Teuchos::RCP<Epetra_MultiVector> gvec = Teuchos::rcp(new Epetra_Vector(*map,vec.NumVectors()));
+	Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*map,map_dist) );
+	gvec->Import(vec,*import,Insert);
+	gvec->SetLabel(vec.Label());
+	return gvec;
+}
+//========================================================================================
+Teuchos::RCP<Epetra_IntVector> Utils::AllGather(const Epetra_IntVector& vec)
+{
+	const Epetra_BlockMap& map_dist = vec.Map();
+	Teuchos::RCP<Epetra_BlockMap> map = AllGather(map_dist);
+	Teuchos::RCP<Epetra_IntVector> gvec = Teuchos::rcp(new Epetra_IntVector(*map));
+	Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*map,map_dist) );
+	gvec->Import(vec,*import,Insert);
+	gvec->SetLabel(vec.Label());   
+	return gvec;      
+}

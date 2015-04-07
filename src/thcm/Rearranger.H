@@ -55,7 +55,7 @@ class Rearranger
 	
 	// The rebuild and reordered system
 	RCP<Epetra_CrsMatrix> finalMatrix_;
-	
+
 	// some flags controlling the status
 	bool matrixFilled_;
 	bool orderingFilled_;
@@ -79,5 +79,20 @@ public:
 	void buildOrdering();
 	void setBlockOperator();
 	void fillBlocks();
+	void test();
+
+	//! find dummy rows in a subset of rows of the matrix A.
+    
+	/*! Given a matrix A and a (sub-)map M, this function
+	    sets the flag array is_dummy to true if the corresponding
+	    local node is a dummy row, i.e. if it has only one entry
+	    and that entry is 1.0 on the diagonal of the matrix.
+	    Memory for the is_dummy array is allocated in this function.
+          
+		returns the number of dummies found.
+	*/
+	// Copyright Jonas Thies, Univ. of Groningen 2006/7/8.          
+   	int detectDummies(const Epetra_CrsMatrix& A,
+					  const Epetra_Map& M, bool *is_dummy) const;
 	
 };
