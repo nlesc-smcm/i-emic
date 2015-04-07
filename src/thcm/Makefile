@@ -29,11 +29,14 @@ $(libname): ${obj}
 	$(F77) -c $(F77_FLAGS) $<
 
 # dependencies
+
 par.o: par.F90
 	$(FC) -c $(FC_FLAGS) $<
 
 usr.o: usr.F90 par.o
 	$(FC) -c $(FC_FLAGS) $<
+
+test.o:        Rearranger.o
 
 global.o:      lev.o
 

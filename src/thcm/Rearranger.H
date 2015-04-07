@@ -14,6 +14,8 @@
 #include "GlobalDefinitions.H"
 
 #include <vector>
+#include <array>
+#include <unordered_map>
 
 using Teuchos::RCP;
 using Teuchos::rcp;
@@ -25,21 +27,32 @@ class Rearranger
 	RCP<Epetra_CrsMatrix> matrix_;
 	
     // Nested vector describing the ordering of the unknowns (u,v,w,p,T,S)
-	// It is a vector of vectors describing how the matrix should be blocked.
+	// It is a vector of vectors of ints describing how the matrix should be blocked.
 	std::vector< std::vector<int> > ordering_;
 
 	// A BlockedEpetraoperator should be the main datamember of this class. It takes
 	// care of creating the block reordering.
 	RCP<Teko::Epetra::BlockedEpetraOperator> blockOperator_;
 
-	// Number of blocks in rows and columns respectively;
-	int numRowBlocks_;
-	int numColBlocks_;
+	// Number of nonzero blocks;
+	int numNonzBlocks_ = 10;
+	
+	// An unordered_map with RCP's pointing to the 10 matrix blocks.
+	// The keys for the matrix blocks are given below.
+	std::unordered_map< std::string, RCP<Epetra_CrsMatrix> > blocks_;
 
-	// 10 nonzero matrix blocks using a notation similar to [A. de Niet et al. 2007]
-	RCP<Epetra_CrsMatrix> A_uv_, E_uv_, G_uv_, D_uv_, B_uv_,
-		G_w_, D_w_, B_w_, B_TS_, A_TS_;
+	// Vector of strings used for identifying contents of the blocks_ vector.
+    // Notation similar to [A. de Niet et al. 2007], see constructor.
+	//** This initialization may not work on other compilers (std=c++11) **//
+	std::vector< std::string > keys_  = {"A_uv", "E_uv", "G_uv", "G_w", "B_ST",
+										 "D_uv", "D_w", "B_uv", "B_w", "A_ST"};
 
+	// Indices giving the locations of the nonzero blocks
+	int blockLocations_[10][2]  = { {0,0}, {0,1}, {0,2},
+									{1,2}, {1,3},
+									{2,0}, {2,1},
+									{3,0}, {3,1}, {3,3,} };
+	
 	// The rebuild and reordered system
 	RCP<Epetra_CrsMatrix> finalMatrix_;
 	
@@ -55,7 +68,9 @@ public:
 		orderingFilled_(false),
 		blockOperatorFilled_(false)
 		{
-			INFO("Rearranger constructor called");			
+			INFO("Entering Rearranger constructor");
+
+			INFO("Leaving Rearranger constructor");
 		}
 	
 	~Rearranger(){ INFO("Rearranger destructor called"); }
