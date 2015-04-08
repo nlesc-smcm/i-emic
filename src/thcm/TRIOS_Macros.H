@@ -4,49 +4,38 @@
  * as long as this header remains intact.                             *
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
+/**********************************************************************
+ * Modified by T.E. Mulder, Utrecht University 2014/15                *
+ * contact: t.e.mulder@uu.nl                                          *
+ **********************************************************************/
 #ifndef TRIOS_MACROS_H
 #define TRIOS_MACROS_H
 
-#include <iostream>
-#include <cmath>
-#include "Teuchos_RCP.hpp"
-
-#include "HYMLS_Tools.H"
-
+#include "GlobalDefinitions.H"
 
 // ordering of variables (should be consistent with trilinos_thcm's 
-// definition in THCMdefs.H and the ordering assumed by HYMLS, cf. 
-// HYMLS_Tools.H, function sub2ind)
+
 #ifndef FIND_ROW2
-#define FIND_ROW2(nun_,n,m,l,i,j,k,XX) ((nun_)*((k)*(n)*(m)+ (n)*(j) + (i))+(XX)-1)
+# define FIND_ROW2(nun_,n,m,l,i,j,k,XX) ((nun_)*((k)*(n)*(m)+ (n)*(j) + (i))+(XX)-1)
 #endif
 
 #ifndef UU
-#define UU 1
+# define UU 1
 #endif
 #ifndef VV
-#define VV 2
+# define VV 2
 #endif
 #ifndef WW
-#define WW 3
+# define WW 3
 #endif
 #ifndef PP
-#define PP 4
+# define PP 4
 #endif
 #ifndef TT
-#define TT 5
+# define TT 5
 #endif
 #ifndef SS
-#define SS 6
-#endif
-
-
-#ifndef INFO
-#ifdef DEBUGGING
-#define INFO(s) {HYMLS::Tools::out() << s << std::endl; HYMLS::Tools::deb() << s << std::endl;}
-#else
-#define INFO(s) {HYMLS::Tools::out() << s << std::endl;}
-#endif
+# define SS 6
 #endif
 
 #endif

@@ -9,6 +9,7 @@
  * contact: t.e.mulder@uu.nl                                          *
  **********************************************************************/
 #include "Utils.H"
+#include "EpetraExt_MatrixMatrix.h" 
 //========================================================================================
 int Utils::SplitBox(int nx, int ny, int nz,
 					int nparts, int& ndx, int& ndy, int& ndz,
@@ -694,3 +695,260 @@ Teuchos::RCP<Epetra_IntVector> Utils::AllGather(const Epetra_IntVector& vec)
 	gvec->SetLabel(vec.Label());   
 	return gvec;      
 }
+//========================================================================================
+Teuchos::RCP<Epetra_CrsMatrix> Utils::MatrixProduct(bool transA, const Epetra_CrsMatrix& A,
+													bool transB, const Epetra_CrsMatrix& B)
+{
+    Teuchos::RCP<Epetra_CrsMatrix> AB =
+		Teuchos::rcp(new Epetra_CrsMatrix(Copy, A.RowMap(), A.MaxNumEntries()) );
+	DEBUG("compute A*B...");
+    DEBVAR(transA);
+    DEBVAR(A.NumGlobalRows());
+    DEBVAR(A.NumGlobalCols());
+    DEBVAR(transB);
+    DEBVAR(B.NumGlobalRows());
+    DEBVAR(B.NumGlobalCols());
+	
+#ifdef TESTING
+	if (!A.Filled()) ERROR("Matrix A not filled!",__FILE__,__LINE__);
+	if (!B.Filled()) ERROR("Matrix B not filled!",__FILE__,__LINE__);
+#endif    
+	CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(A,transA,B,transB,*AB));
+	DEBUG("done!");
+    return AB;
+}
+//========================================================================================
+// compress a matrix' column map so that the resulting map contains 
+// only points actually appearing as column indices of the matrix   
+Teuchos::RCP<Epetra_Map> Utils::CompressColMap(const Epetra_CrsMatrix& A)
+{
+	if (!A.HaveColMap()) ERROR("Matrix has no column map!",__FILE__,__LINE__);
+    const Epetra_Map& old_map = A.ColMap();
+    int n_old = old_map.NumMyElements();
+    bool *is_col_entry = new bool[n_old];
+    
+    for (int i = 0; i < n_old; i++)
+		is_col_entry[i] = false;
+    
+    for (int i = 0; i < A.NumMyRows(); i++)
+	{
+		int *ind;
+		int len;
+		CHECK_ZERO(A.Graph().ExtractMyRowView(i,len,ind));
+		for (int j=0;j<len;j++)
+			is_col_entry[ind[j]] = true;
+	}
+	
+    int n_new = 0;
+    int *new_elements = new int[n_old];
+    
+    for (int i = 0; i < n_old; i++) 
+	{
+		if (is_col_entry[i]) 
+        {
+			new_elements[n_new++] = old_map.GID(i);
+        }
+	}
+	Teuchos::RCP<Epetra_Map> new_map =
+		Teuchos::rcp(new Epetra_Map(-1,n_new,new_elements,old_map.IndexBase(),old_map.Comm()));
+    
+    delete [] new_elements;
+    delete [] is_col_entry;
+    
+    return new_map;
+}
+//========================================================================================
+// create an exact copy of a matrix replacing the column map.
+// The column maps have to be 'compatible' 
+// in the sense that the new ColMap is a subset of the old one.
+Teuchos::RCP<Epetra_CrsMatrix> Utils::ReplaceColMap(Teuchos::RCP<Epetra_CrsMatrix> A,
+													const Epetra_Map& newcolmap)
+{
+	int maxlen = A->MaxNumEntries();
+	int len;
+	int *ind = new int[maxlen];
+	double *val = new double[maxlen];
+	int nloc = A->NumMyRows();
+	int *row_lengths = new int[nloc];
+	for (int i=0;i<nloc;i++) row_lengths[i]=A->NumMyEntries(i);
+	Teuchos::RCP<Epetra_CrsMatrix> tmpmat;
+	tmpmat = Teuchos::rcp(new Epetra_CrsMatrix(Copy,A->RowMap(),
+											   newcolmap, row_lengths) );
+	int grid;
+	for (int i=0;i<nloc;i++)
+	{
+		grid = A->GRID(i);
+		CHECK_ZERO(A->ExtractGlobalRowCopy(grid,maxlen,len,val,ind));
+#ifdef DEBUGGING
+//      (*debug) << "row " << grid << ": ";
+//      for (int j=0;j<len;j++) (*debug) << ind[j] << " ";
+//      (*debug) << std::endl;
+#endif      
+		CHECK_ZERO(tmpmat->InsertGlobalValues(grid, len, val, ind));
+	}
+	tmpmat->SetLabel(A->Label());
+	delete [] ind;
+	delete [] val;
+	delete [] row_lengths;
+	return tmpmat;
+}    
+//========================================================================================
+// workaround for the buggy Trilinos routine with the same name
+Teuchos::RCP<Epetra_CrsMatrix> Utils::ReplaceRowMap(Teuchos::RCP<Epetra_CrsMatrix> A,
+													const Epetra_Map& newmap)
+{
+	
+	int maxlen = A->MaxNumEntries();
+	int len;
+	int    *ind = new int[maxlen];
+	double *val = new double[maxlen];
+	int nloc = A->NumMyRows();
+	int *row_lengths = new int[nloc];
+	for (int i=0; i < nloc; i++)
+		row_lengths[i]  =A->NumMyEntries(i);
+	Teuchos::RCP<Epetra_CrsMatrix> tmpmat;
+	if (A->HaveColMap())
+	{
+		tmpmat = Teuchos::rcp(new Epetra_CrsMatrix(Copy,newmap,A->ColMap(), row_lengths) );
+	}
+	else
+	{
+		tmpmat = Teuchos::rcp(new Epetra_CrsMatrix(Copy,newmap, row_lengths) );
+	}
+   
+	int rowA,rowNew;
+	for (int i=0;i<A->NumMyRows();i++)
+	{
+		rowA = A->GRID(i);
+		rowNew = newmap.GID(i);
+		CHECK_ZERO(A->ExtractGlobalRowCopy(rowA,maxlen,len,val,ind));
+		CHECK_ZERO(tmpmat->InsertGlobalValues(rowNew, len, val, ind));
+	}
+	tmpmat->SetLabel(A->Label());
+	delete [] ind;
+	delete [] val;
+	delete [] row_lengths;   
+	return tmpmat;
+}    
+//========================================================================================
+// create an exact copy of a matrix removing the column map.
+// This means that row- and column map have to be 'compatible' 
+// in the sense that the ColMap is a subset of the RowMap.
+// It seems to be required in order to use Ifpack in some cases.
+Teuchos::RCP<Epetra_CrsMatrix> Utils::RemoveColMap(Teuchos::RCP<Epetra_CrsMatrix> A)
+{
+	int maxlen = A->MaxNumEntries();
+	int len;
+	int *ind = new int[maxlen];
+	double *val = new double[maxlen];
+	int nloc = A->NumMyRows();
+	int *row_lengths = new int[nloc];
+	for (int i=0;i<nloc;i++) row_lengths[i]=A->NumMyEntries(i);
+	Teuchos::RCP<Epetra_CrsMatrix> tmpmat;
+	tmpmat = Teuchos::rcp(new Epetra_CrsMatrix(Copy,A->RowMap(), row_lengths) );
+   
+	int grid;
+	for (int i=0;i<A->NumMyRows();i++)
+	{
+		grid = A->GRID(i);
+		CHECK_ZERO(A->ExtractGlobalRowCopy(grid,maxlen,len,val,ind));
+		CHECK_ZERO(tmpmat->InsertGlobalValues(grid, len, val, ind));
+	}
+	tmpmat->SetLabel(A->Label());
+	delete [] ind;
+	delete [] val;
+	delete [] row_lengths;
+	return tmpmat;
+}    
+//========================================================================================
+// simultaneously replace row and column map
+Teuchos::RCP<Epetra_CrsMatrix> Utils::ReplaceBothMaps(Teuchos::RCP<Epetra_CrsMatrix> A,
+													  const Epetra_Map& newmap, 
+													  const Epetra_Map& newcolmap)
+{
+	DEBVAR(A->RowMap());
+	DEBVAR(newmap);
+	DEBVAR(A->ColMap());
+	DEBVAR(newcolmap);
+	int maxlen = A->MaxNumEntries();
+	int len;
+	int    *ind = new int[maxlen];
+	double *val = new double[maxlen];
+	int nloc = A->NumMyRows();
+	int *row_lengths = new int[nloc];
+	for (int i=0;i<nloc;i++)
+		row_lengths[i]=A->NumMyEntries(i);
+	Teuchos::RCP<Epetra_CrsMatrix> tmpmat;
+	tmpmat = Teuchos::rcp(new Epetra_CrsMatrix(Copy,newmap,newcolmap,row_lengths) );
+	int rowA,rowNew;
+   
+	for (int i=0;i<A->NumMyRows();i++)
+	{
+		rowA = A->GRID(i);
+		rowNew = newmap.GID(i);
+		CHECK_ZERO(A->ExtractGlobalRowCopy(rowA,maxlen,len,val,ind));
+		for (int j=0;j<len;j++) 
+        {
+			int newind=newcolmap.GID(A->LCID(ind[j]));
+//        DEBUG(i<<" ("<<rowA<<"->"<<rowNew<<"), "<<A->LCID(ind[j])<<"("<<ind[j]<<"->"<<newind<<")");
+			ind[j] = newind;
+        }
+		CHECK_ZERO(tmpmat->InsertGlobalValues(rowNew, len, val, ind));
+	}
+	tmpmat->SetLabel(A->Label());
+	delete [] ind;
+	delete [] val;
+	delete [] row_lengths;
+	return tmpmat;
+}
+//========================================================================================
+Teuchos::RCP<Epetra_CrsMatrix> Utils::TripleProduct(bool transA, const Epetra_CrsMatrix& A,
+													bool transB, const Epetra_CrsMatrix& B,
+													bool transC, const Epetra_CrsMatrix& C)
+{
+    // trans(A) is not available as we prescribe the row-map of A*B, but if it is needed
+    // at some point it can be readily implemented
+    if(transA) ERROR("This case is not implemented: trans(A)*op(B)*op(C)\n",__FILE__,__LINE__);
+  
+    // temp matrix
+    Teuchos::RCP<Epetra_CrsMatrix> AB =
+		Teuchos::rcp(new Epetra_CrsMatrix(Copy,A.RowMap(),A.MaxNumEntries()) );
+
+    DEBUG("compute A*B...");
+    CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(A,transA,B,transB,*AB));
+
+    // result matrix
+    Teuchos::RCP<Epetra_CrsMatrix> ABC =
+		Teuchos::rcp(new Epetra_CrsMatrix(Copy,AB->RowMap(),AB->MaxNumEntries()) );
+
+    DEBUG("compute ABC...");
+    CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(*AB,false,C,transC,*ABC));
+
+    DEBUG("done!");
+    return ABC;
+}
+//========================================================================================
+Teuchos::RCP<Epetra_Map> Utils::ExtractRange(const Epetra_Map& M, int i1, int i2)
+{
+    int n = M.MaxAllGID();
+	
+#ifdef TESTING
+	if (i1<0||i1>n) ERROR("CreateSubMap: lower bound out of range!",__FILE__,__LINE__);
+	if (i2<0||i2>n) ERROR("CreateSubMap: upper bound out of range!",__FILE__,__LINE__);
+	if (i2<i1)      ERROR("CreateSubMap: invalid interval bounds!" ,__FILE__,__LINE__);
+#endif    
+	
+    int *MyGlobalElements = new int[M.NumMyElements()];
+    int p=0;
+    int gid;
+    for (int i=0;i<M.NumMyElements();i++)
+	{
+		gid = M.GID(i);
+		if (gid>=i1 && gid<=i2) MyGlobalElements[p++]=gid;
+	}
+    // build the two new maps. Set global num el. to -1 so Epetra recomputes it
+    Teuchos::RCP<Epetra_Map> M1 =
+		Teuchos::rcp(new Epetra_Map(-1,p,MyGlobalElements,M.IndexBase(),M.Comm()) );
+    delete [] MyGlobalElements;
+    return M1;
+} 

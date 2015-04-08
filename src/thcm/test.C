@@ -27,7 +27,10 @@
 
 #include "THCM.H"
 #include "THCMdefs.H"
-#include "Rearranger.H"
+//#include "Rearranger.H"
+
+#include "TRIOS_Domain.H"
+#include "TRIOS_BlockPreconditioner.H"
 
 using Teuchos::RCP;
 using Teuchos::rcp;
@@ -98,19 +101,30 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------
 	// Rearrange the Jacobian so we can solve it with less iterations
 	//-------------------------------------------------------------------
-	Rearranger rearr;
-	rearr.setMatrix(A);
-	rearr.buildOrdering();
-	rearr.setBlockOperator();
-	rearr.fillBlocks();
-	rearr.test();
+	// Rearranger rearr;
+	// rearr.setMatrix(A);
+	// rearr.buildOrdering();
+	// rearr.setBlockOperator();
+	// rearr.fillBlocks();
+	// rearr.test();
 	/*
+	RCP<Ifpack_Preconditioner> blockPrec =
+		Teuchos::rcp(new TRIOS::BlockPreconditioner(A, tekoParams_rcp));
+	blockPrec->Initialize();
+	blockPrec->Compute();
+	*/
     //-------------------------------------------------------------------
 	// Belos::LinearProblem setup
 	//-------------------------------------------------------------------
 	RCP<Belos::LinearProblem<double, MVEC, OPER>> problem =
 		rcp(new Belos::LinearProblem<double, MVEC, OPER>(A, X, MRHS));
 	problem->setProblem();	// NEEDS CHECK
+
+	/*
+	RCP<Belos::EpetraPrecOp> belosPrec = rcp(new Belos::EpetraPrecOp(blockPrec));
+	problem->setLeftPrec(belosPrec);
+	bool set = problem->setProblem();
+	*/
 	//-------------------------------------------------------------------
 	// Belos parameter setup
 	//-------------------------------------------------------------------
@@ -125,8 +139,8 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------
 	Belos::BlockGmresSolMgr<double, MVEC, OPER> belosSolver(problem, belosList);
 	//--------------------------------------------------------------------
-	Belos::ReturnType ret = belosSolver.solve();
-	*/
+	belosSolver.solve();
+	
     //------------------------------------------------------------------
 	// Finalize MPI
 	//------------------------------------------------------------------

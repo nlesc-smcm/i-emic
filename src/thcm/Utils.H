@@ -93,6 +93,10 @@ namespace Utils
 									   int I0, int I1, int J0, int J1, int K0, int K1,
 									   const Epetra_Comm& comm);
 
+	//! extract a map with all indices of the original one between min_gid and max_gid 
+    //! (including the bounds)
+    Teuchos::RCP<Epetra_Map> ExtractRange(const Epetra_Map& map, int min_gid, int max_gid);
+
 	//! extract a map with 1 variable from a map with dof variables per node. 'var'
     //! is the variable to be extracted, i.e. 0, 1,...dof-1 
 	Teuchos::RCP<Epetra_Map> CreateSubMap(const Epetra_Map& map, int dof, int var);
@@ -153,5 +157,45 @@ namespace Utils
     //! a general function for gathering vectors. It is fairly slow
     //! as it rebuilds the required "GatherMap" every time.
 	Teuchos::RCP<Epetra_IntVector> AllGather(const Epetra_IntVector& vec);
+
+	//! compute matrix-matrix product C=A*B (implemented using EpetraExt)
+	Teuchos::RCP<Epetra_CrsMatrix> MatrixProduct(bool transA, const Epetra_CrsMatrix& A,
+												 bool transB, const Epetra_CrsMatrix& B);
+
+	//! compute triple matrix product A*B*C or the like
+	Teuchos::RCP<Epetra_CrsMatrix> TripleProduct(bool transA, const Epetra_CrsMatrix& A,
+												 bool transB, const Epetra_CrsMatrix& B,
+												 bool transC, const Epetra_CrsMatrix& C);
+	
+	//! extracts those nodes from a column map that are actually present in a
+    //! Matrix' Graph
+	Teuchos::RCP<Epetra_Map> CompressColMap(const Epetra_CrsMatrix& A);
+
+    //! generalized ReplaceColMap that only requires the new col map to be a 
+    //! subset of the old one (instead of being 'PointSameAs' as in the Trilinos
+    //! function). The map should contain all column indices actually appearing,
+    //! such a map can be created by 'CompressColMap'.
+    Teuchos::RCP<Epetra_CrsMatrix> ReplaceColMap(Teuchos::RCP<Epetra_CrsMatrix> A,
+												 const Epetra_Map& newmap);
+	//! Workaround for the buggy 'ReplaceRowMap' routine in Trilinos 7.0.
+	/*! It is much slower as it copies the whole matrix and should only 
+	    be used until they fix the builtin one
+    */
+    Teuchos::RCP<Epetra_CrsMatrix> ReplaceRowMap(Teuchos::RCP<Epetra_CrsMatrix> A,
+												 const Epetra_Map& newmap);
+	
+	//! create an exact copy of a matrix removing the column map.
+	//! This means that row- and column map have to be 'compatible'
+	//! in the sense that the ColMap is a subset of the RowMap.
+	//! It seems to be required in order to use Ifpack in some cases.
+	Teuchos::RCP<Epetra_CrsMatrix> RemoveColMap(Teuchos::RCP<Epetra_CrsMatrix> A);
+
+	//! simultaneously replace row and column map (see comment for previous function)
+    //! This is a special purpose function. The newcolmap must be a subset of the current
+    //! colmap, i.e. you cannot really change the indexing scheme for the columns.
+    Teuchos::RCP<Epetra_CrsMatrix> ReplaceBothMaps(Teuchos::RCP<Epetra_CrsMatrix> A,
+												   const Epetra_Map& newmap,
+												   const Epetra_Map& newcolmap);
+
 }
 #endif

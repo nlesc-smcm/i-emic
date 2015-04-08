@@ -4,6 +4,10 @@
  * as long as this header remains intact.                             *
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
+/**********************************************************************
+ * Modified by T.E. Mulder, Utrecht University 2014/15                *
+ * contact: t.e.mulder@uu.nl                                          *
+ **********************************************************************/
 #ifndef GLOBALDEFINITIONS_H
 #define GLOBALDEFINITIONS_H
 
