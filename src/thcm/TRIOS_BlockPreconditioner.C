@@ -67,26 +67,20 @@ namespace TRIOS {
 ///////////////////////////////////////////////////////////////////////////////
 	
 	BlockPreconditioner::BlockPreconditioner(Teuchos::RCP<Epetra_CrsMatrix> jac,
-											 Teuchos::RCP<Domain> domain, 
-											 Teuchos::ParameterList &precLSParams_) : 
+											 Teuchos::RCP<Domain> domain,
+											 Teuchos::ParameterList &List)
+		: 
 		jacobian(jac),
 		domain(domain),
 		label_("Ocean Preconditioner"),
 		needs_setup(true),
 		IsComputed_(false)
 	{
-
 		INFO("Create new ocean preconditioner...");
-
 		comm = domain->GetComm();
-
-		DEBUG("$$$ create ocean preconditioner...")
-
-			this->SetParameters(precLSParams_),
-
-			this->Setup1();
-
-	}    //Constructor
+		this->SetParameters(List);
+		this->Setup1();		
+	}   
 
 ///////////////////////////////////////////////////////////////////////////////
 // destructor                                                                  
@@ -1023,7 +1017,7 @@ namespace TRIOS {
 		}
 
 		bool rho_mixing = true; // TODO: for the moment this is hard-coded here
-		bool rhomu = lsParams.get("ATS: rho/mu Transform",rho_mixing);
+		bool rhomu = lsParams.get("ATS: rho/mu Transform", rho_mixing);
 		if (rhomu) this->setup_rhomu();
 		if (verbose>5)
 		{
@@ -1031,7 +1025,7 @@ namespace TRIOS {
 		}
 
 		Teuchos::ParameterList& AuvSolverList = lsParams.sublist("Auv Solver");
-
+		
 		if (AuvSolver==Teuchos::null)
 		{
 			AuvSolver=SolverFactory::CreateKrylovSolver(AuvSolverList,verbose);
@@ -1060,9 +1054,9 @@ namespace TRIOS {
 		{
 			INFO("*** Create Preconditioners...");
 		}
-
+        DEBUG(lsParams);
 		Teuchos::ParameterList& AuvPrecList = lsParams.sublist("Auv Precond");
-
+		DEBUG(AuvPrecList);
   
 // Currently the Auv Preconditioner has to be reconstructed because   
 // the Auv pointer is no longer valid (it is a new one because of the 
@@ -1073,6 +1067,7 @@ namespace TRIOS {
 			AuvPrecond = SolverFactory::CreateAlgebraicPrecond(*Auv,AuvPrecList,verbose);
 
 			DEBUG("Compute Auv Preconditioner...");
+			DEBUG(AuvPrecList);
 			SolverFactory::ComputeAlgebraicPrecond(AuvPrecond,AuvPrecList);
 
 		}
@@ -1487,17 +1482,17 @@ namespace TRIOS {
 
 		for (int i=0;i<Arhomu->NumMyRows();i++)
 		{
-		rowA = Arhomu->GRID(i);
-		rowNew = Arhomu_linearmap->GID(i);
-		CHECK_ZERO(Arhomu->ExtractGlobalRowCopy(rowA,maxlen,len,val,ind));
-		for (int j=0;j<len;j++)
-		{
-		int rem=MOD(ind[j],_NUN_);
-		int newind=(ind[j]-rem)/_NUN_ + MOD(ind[j],2);
-		ind[j] = newind;
-	}
-		CHECK_ZERO(tmpmat->InsertGlobalValues(rowNew, len, val, ind));
-	}
+			rowA = Arhomu->GRID(i);
+			rowNew = Arhomu_linearmap->GID(i);
+			CHECK_ZERO(Arhomu->ExtractGlobalRowCopy(rowA,maxlen,len,val,ind));
+			for (int j=0;j<len;j++)
+			{
+				int rem=MOD(ind[j],_NUN_);
+				int newind=(ind[j]-rem)/_NUN_ + MOD(ind[j],2);
+				ind[j] = newind;
+			}
+			CHECK_ZERO(tmpmat->InsertGlobalValues(rowNew, len, val, ind));
+		}
 		//Arhomu=Utils::RemoveColMap(tmpmat);
 		Arhomu=tmpmat;
 		CHECK_ZERO(Arhomu->FillComplete());
@@ -1535,15 +1530,15 @@ namespace TRIOS {
 #ifdef DUMMY_PREC
 		if (DoPresCorr)
 		{
-		yuv=buv;
-		yw=bw;
-		yp=bp;
-		yTS=bTS;
-		double fac1,fac2;
-		CHECK_ZERO(yp.Dot(*svp1,&fac1));
-		CHECK_ZERO(yp.Dot(*svp2,&fac2));
-		CHECK_ZERO(yp.Update(-fac1,*svp1,-fac2,*svp2,1.0));
-	}
+			yuv=buv;
+			yw=bw;
+			yp=bp;
+			yTS=bTS;
+			double fac1,fac2;
+			CHECK_ZERO(yp.Dot(*svp1,&fac1));
+			CHECK_ZERO(yp.Dot(*svp2,&fac2));
+			CHECK_ZERO(yp.Update(-fac1,*svp1,-fac2,*svp2,1.0));
+		}
 #else
 		// Compute the pressure (yp)
 
@@ -1660,9 +1655,9 @@ namespace TRIOS {
 	}//SolveLower1
 
 	void BlockPreconditioner::SolveLower2(const Epetra_Vector& buv, const Epetra_Vector& bw, 
-			const Epetra_Vector& bp, const Epetra_Vector& bTS, 
-			Epetra_Vector& yuv, Epetra_Vector& yw, 
-			Epetra_Vector& yp, Epetra_Vector& yTS) const
+										  const Epetra_Vector& bp, const Epetra_Vector& bTS, 
+										  Epetra_Vector& yuv, Epetra_Vector& yw, 
+										  Epetra_Vector& yp, Epetra_Vector& yTS) const
 	{
 
 		// Solve the depth-averaged Saddlepoint problem
@@ -1685,25 +1680,25 @@ namespace TRIOS {
 
 		if (zero_init)
 		{
-		CHECK_ZERO(yzuvp.PutScalar(0.0));
-	}
+			CHECK_ZERO(yzuvp.PutScalar(0.0));
+		}
 		{  
 		
-		if (SppSolver!=Teuchos::null) 
-		{
-		// (d) solve Saddlepoint problem yzuvp = Spp\bzuvp using Krylov method
-		// with our own preconditioner
-		CHECK_ZERO(SppSolver->SetRHS(&bzuvp));
-		CHECK_ZERO(SppSolver->SetLHS(&yzuvp));
+			if (SppSolver!=Teuchos::null) 
+			{
+				// (d) solve Saddlepoint problem yzuvp = Spp\bzuvp using Krylov method
+				// with our own preconditioner
+				CHECK_ZERO(SppSolver->SetRHS(&bzuvp));
+				CHECK_ZERO(SppSolver->SetLHS(&yzuvp));
 
-		CHECK_NONNEG(SppSolver->Iterate(nitSpp,tolSpp));
-	}
-		else
-		{
-		CHECK_ZERO(SppPrecond->ApplyInverse(bzuvp,yzuvp));
-	}
+				CHECK_NONNEG(SppSolver->Iterate(nitSpp,tolSpp));
+			}
+			else
+			{
+				CHECK_ZERO(SppPrecond->ApplyInverse(bzuvp,yzuvp));
+			}
 
-	}
+		}
 		// Extract the velocity field yuv
 		for (int i=0;i<nuv;i++) yuv[i] = yzuvp[i];
 
@@ -1736,8 +1731,8 @@ namespace TRIOS {
 		CHECK_ZERO(yTS2.Update(1.0,bTS,-DampingFactor,yTS,-DampingFactor));
 		{
 		
-		this->SolveATS(yTS2,yTS,tolATS,nitATS);
-	}
+			this->SolveATS(yTS2,yTS,tolATS,nitATS);
+		}
 		// Compute the pressure (yp)
 
 		// a) ytilp = Ap\(bw - BTS*yTS)
@@ -1749,8 +1744,8 @@ namespace TRIOS {
 		Epetra_Vector yzp(*mapPbar);
 		for (int i=0; i<nzp; i++)
 		{
-		yzp[i]=yzuvp[nuv+i];
-	}
+			yzp[i]=yzuvp[nuv+i];
+		}
 		CHECK_ZERO(Mzp1->Multiply(true,yzp,yp));
 		CHECK_ZERO(yp.Update(1.0,ytilp,1.0));
 
@@ -1759,18 +1754,18 @@ namespace TRIOS {
 		//                                   - <xp,svp2>*svp2 
 		if (DoPresCorr)
 		{
-		double fac1,fac2;
-		CHECK_ZERO(yp.Dot(*svp1,&fac1));
-		CHECK_ZERO(yp.Dot(*svp2,&fac2));
-		CHECK_ZERO(yp.Update(-fac1,*svp1,-fac2,*svp2,1.0));
-	}
+			double fac1,fac2;
+			CHECK_ZERO(yp.Dot(*svp1,&fac1));
+			CHECK_ZERO(yp.Dot(*svp2,&fac2));
+			CHECK_ZERO(yp.Update(-fac1,*svp1,-fac2,*svp2,1.0));
+		}
 
 	}//SolveLower2
 
 	void BlockPreconditioner::SolveLower3(const Epetra_Vector& buv, const Epetra_Vector& bw, 
-			const Epetra_Vector& bp, const Epetra_Vector& bTS, 
-			Epetra_Vector& yuv, Epetra_Vector& yw, 
-			Epetra_Vector& yp, Epetra_Vector& yTS) const
+										  const Epetra_Vector& bp, const Epetra_Vector& bTS, 
+										  Epetra_Vector& yuv, Epetra_Vector& yw, 
+										  Epetra_Vector& yp, Epetra_Vector& yTS) const
 	{
 
 		// yw = Aw\bw (lower tri-solve)
@@ -1786,8 +1781,8 @@ namespace TRIOS {
 		CHECK_ZERO(yTS2.Update(1.0,bTS,-DampingFactor));
 		{
 		
-		this->SolveATS(yTS2,yTS,tolATS,nitATS);
-	}
+			this->SolveATS(yTS2,yTS,tolATS,nitATS);
+		}
 		// hydrostatic balance
 
 		// Compute ytilp = Ap\[bw,0]'      
@@ -1818,33 +1813,33 @@ namespace TRIOS {
 
 		if (zero_init)
 		{
-		CHECK_ZERO(yzuvp.PutScalar(0.0));
-	}
+			CHECK_ZERO(yzuvp.PutScalar(0.0));
+		}
 		{  
 		
-		if (SppSolver!=Teuchos::null) 
-		{
-		// (d) solve Saddlepoint problem yzuvp = Spp\bzuvp using Krylov method
-		// with our own preconditioner
-		CHECK_ZERO(SppSolver->SetRHS(&bzuvp));
-		CHECK_ZERO(SppSolver->SetLHS(&yzuvp));
+			if (SppSolver!=Teuchos::null) 
+			{
+				// (d) solve Saddlepoint problem yzuvp = Spp\bzuvp using Krylov method
+				// with our own preconditioner
+				CHECK_ZERO(SppSolver->SetRHS(&bzuvp));
+				CHECK_ZERO(SppSolver->SetLHS(&yzuvp));
 
-		CHECK_NONNEG(SppSolver->Iterate(nitSpp,tolSpp));
-	}
-		else
-		{
-		CHECK_ZERO(SppPrecond->ApplyInverse(bzuvp,yzuvp));
-	}
+				CHECK_NONNEG(SppSolver->Iterate(nitSpp,tolSpp));
+			}
+			else
+			{
+				CHECK_ZERO(SppPrecond->ApplyInverse(bzuvp,yzuvp));
+			}
 
-	}                     
+		}                     
 		// Construct the pressure
      
 		// a) yp = ytilp + Mzp1'*yzp
 		Epetra_Vector yzp(*mapPbar);
 		for (int i=0; i<nzp; i++)
 		{
-		yzp[i]=yzuvp[nuv+i];
-	}
+			yzp[i]=yzuvp[nuv+i];
+		}
 		CHECK_ZERO(Mzp1->Multiply(true,yzp,yp));
 		CHECK_ZERO(yp.Update(1.0,ytilp,1.0));
 
@@ -2096,29 +2091,31 @@ namespace TRIOS {
 		comm = domain->GetComm();
   
 		// no params given: set defaults by passing in an empty list
-		this->SetParameters(lsParams);
+		Teuchos::RCP<Teuchos::ParameterList> List =
+			Teuchos::rcp(new Teuchos::ParameterList);
+		this->SetParameters(*List);
   
 		// finish constructor
 		this->Setup1();
 	}
 
-	int BlockPreconditioner::SetParameters(Teuchos::ParameterList& List)
+	int BlockPreconditioner::SetParameters(Teuchos::ParameterList &List)
 	{
-		lsParams=List.sublist("Block Preconditioner");
-		
+		lsParams = List;
 		Teuchos::RCP<std::ostream> defaultStream =
 			Teuchos::rcp(new Teuchos::FancyOStream(Teuchos::rcp(&std::cout,false))); 
 		
-		OuterStream = lsParams.get("Outer Output Stream",defaultStream);
-		defaultStream=Teuchos::rcp_dynamic_cast<Teuchos::FancyOStream>(OuterStream);
-		OuterErrorStream = lsParams.get("Outer Error Stream",defaultStream);
-		InnerStream = lsParams.get("Inner Output Stream",defaultStream);
-		InnerErrorStream = lsParams.get("Inner Error Stream",defaultStream);
+		OuterStream      = lsParams.get("Outer Output Stream", defaultStream);
+		defaultStream    = Teuchos::rcp_dynamic_cast<Teuchos::FancyOStream>(OuterStream);
+		OuterErrorStream = lsParams.get("Outer Error Stream", defaultStream);
+		InnerStream      = lsParams.get("Inner Output Stream",defaultStream);
+		InnerErrorStream = lsParams.get("Inner Error Stream", defaultStream);
 
-		nitAuv = lsParams.sublist("Auv Solver").get("Max Num Iter",2);
-		nitSpp = lsParams.sublist("Saddlepoint Solver").get("Max Num Iter",10);
+		nitAuv = lsParams.sublist("Auv Solver").get("Max Num Iter",1);
+		nitSpp = lsParams.sublist("Saddlepoint Solver").get("Max Num Iter", 5);
   
 		tolAuv = lsParams.sublist("Auv Solver").get("Tolerance",1e-4);
+		DEBVAR(tolAuv);
 		tolSpp = lsParams.sublist("Saddlepoint Solver").get("Tolerance",1e-8);
 
 		scheme = lsParams.get("Scheme","Gauss-Seidel");
@@ -2129,7 +2126,7 @@ namespace TRIOS {
 		DampingFactor = lsParams.get("Relaxation: Damping Factor",1.0);
   
 		// for B-grid
-		DoPresCorr = lsParams.get("Subtract Spurious Pressure Modes",true);
+		DoPresCorr = lsParams.get("Subtract Spurious Pressure Modes", true);
 
 		if (scheme=="ILU") //need to solve Schur-complement instead of ATS
 		{

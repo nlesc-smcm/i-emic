@@ -9,6 +9,7 @@ obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
 	 mix_imp.o mix_sup.o spf.o topo.o usrc.o\
      THCM.o OceanGrid.o\
 	 TRIOS_Domain.o TRIOS_BlockPreconditioner.o TRIOS_Saddlepoint.o\
+	 TRIOS_SolverFactory.o TRIOS_Static.o\
 	 Utils.o 
 
 default: lib

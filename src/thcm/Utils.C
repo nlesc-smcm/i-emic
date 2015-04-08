@@ -249,7 +249,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0
       
 	int n = i1-i0+1; int N=I1-I0+1;
 	int m = j1-j0+1; int M=J1-J0+1;
-	int l = k1-k0+1; //int L=K1-K0+1;
+	int l = k1-k0+1; int L=K1-K0+1;
       
 	DEBVAR(M);
 	DEBVAR(N);

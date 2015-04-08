@@ -22,28 +22,28 @@
 
 extern "C" {
 // these are defined in usrc.F90 and transform data from a 1D array to 6 3D arrays
-_MODULE_SUBROUTINE_(m_thcm_utils,usol1d)(double *data, 
-     double* u, double* v, double* w, 
-     double* p, double* T, double* S);
+	_MODULE_SUBROUTINE_(m_thcm_utils,usol1d)(double *data, 
+											 double* u, double* v, double* w, 
+											 double* p, double* T, double* S);
 
 // get a copy of the local landm array
-_MODULE_SUBROUTINE_(m_thcm_utils,get_landm)(MaskType* landm);
+	_MODULE_SUBROUTINE_(m_thcm_utils,get_landm)(MaskType* landm);
 
 // z-integration of u-velocity
-_MODULE_SUBROUTINE_(m_thcm_utils,depth_int_u)(double* u, double* us);
+	_MODULE_SUBROUTINE_(m_thcm_utils,depth_int_u)(double* u, double* us);
 
 // TODO: this should not be used!!!
-_SUBROUTINE_(solu)(double *data, double* u, double* v, double* w, double* p, double* T, double* S);
-_MODULE_SUBROUTINE_(m_thcm_utils,compute_psim)(double *vs, double *psim);
+	_SUBROUTINE_(solu)(double *data, double* u, double* v, double* w, double* p, double* T, double* S);
+	_MODULE_SUBROUTINE_(m_thcm_utils,compute_psim)(double *vs, double *psim);
 
 // get grid arrays
-_MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z, 
-                                  double* xu,double* yv,double* zw);
+	_MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z, 
+											 double* xu,double* yv,double* zw);
 
 }  
 
-  OceanGrid::OceanGrid(Teuchos::RCP<TRIOS::Domain> dom)
-    {
+OceanGrid::OceanGrid(Teuchos::RCP<TRIOS::Domain> dom)
+{
     DEBUG("Enter OceanGrid constructor...");
     domain = dom;
     n = domain->LocalN();
@@ -175,10 +175,10 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     delete [] y; delete [] yv;
     delete [] z; delete [] zw;
     DEBUG("OceanGrid constructor done");
-    }
+}
   
-  OceanGrid::~OceanGrid()
-    {
+OceanGrid::~OceanGrid()
+{
     INFO("Destroy OceanGrid...");
     delete [] U_;
     delete [] V_;
@@ -190,14 +190,14 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     delete [] PsiM_;
     delete [] PsiB_;
     delete [] LandMask_;
-    }
+}
 
 
 
-  // put data from vector in grid format.
-  //! input should be based on the 'Solve' map
-  void OceanGrid::ImportData(const Epetra_Vector& input)
-    {
+// put data from vector in grid format.
+//! input should be based on the 'Solve' map
+void OceanGrid::ImportData(const Epetra_Vector& input)
+{
     DEBUG("Import vector into grid...");
     // import boundaries into ghost-nodes
     DEBUG("(a) get ghost-nodes...");
@@ -218,19 +218,19 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     DEBUG("done!");
 //    DEBVAR(input);
 //    DEBVAR(*this);
-    }
+}
 
-  void OceanGrid::ImportLandMask(const Epetra_IntVector& mask)
-    {
+void OceanGrid::ImportLandMask(const Epetra_IntVector& mask)
+{
     // we require the input to be distributed already, including
     // overlap and all, so we can simply extract the data
     CHECK_ZERO(mask.ExtractCopy(LandMask_));
-    }
+}
 
-  //! put data from grid in a vector.
-  //! input should be based on the 'Solve' map
-  void OceanGrid::ExportData(Epetra_Vector& output)
-    {
+//! put data from grid in a vector.
+//! input should be based on the 'Solve' map
+void OceanGrid::ExportData(Epetra_Vector& output)
+{
     double *data;
     CHECK_ZERO(importVector->ExtractView(&data));
     // puts the data from the locations (1:n,1:m,1:l+la) 
@@ -240,37 +240,37 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     FNAME(solu)(data,U_,V_,W_,P_,T_,S_);
     // import boundaries into ghost-nodes
     domain->Assembly2Solve(*importVector,output);
-    }
+}
   
 //  private:
 
-  // memory allocation function. This just
-  // allocates a block of memory large enough 
-  // to hold the required data. Indexing has to be
-  // done by the access operators u() etc.
-  double* OceanGrid::allocateGrid(int imin, int imax, 
-                                  int jmin, int jmax, 
-                                  int kmin, int kmax)
-  {
-  DEBUG("Allocate Grid-Array: ["<<imin<<".."<<imax<<"]x["<<jmin<<".."<<jmax<<"]x["<<kmin<<".."<<kmax<<"]");
-  //total memory required
-  int dim = (imax-imin+1)*(jmax-jmin+1)*(kmax-kmin+1);
-  //allocate big block
-  double *G = new double[dim];
-  if (G==NULL)
+// memory allocation function. This just
+// allocates a block of memory large enough 
+// to hold the required data. Indexing has to be
+// done by the access operators u() etc.
+double* OceanGrid::allocateGrid(int imin, int imax, 
+								int jmin, int jmax, 
+								int kmin, int kmax)
+{
+	DEBUG("Allocate Grid-Array: ["<<imin<<".."<<imax<<"]x["<<jmin<<".."<<jmax<<"]x["<<kmin<<".."<<kmax<<"]");
+	//total memory required
+	int dim = (imax-imin+1)*(jmax-jmin+1)*(kmax-kmin+1);
+	//allocate big block
+	double *G = new double[dim];
+	if (G==NULL)
     { 
-    INFO("failed to allocate "<<dim*8*1e-6<<" MB of memory for a grid function!");
-    ERROR("Memory allocation error!",__FILE__,__LINE__);
+		INFO("failed to allocate "<<dim*8*1e-6<<" MB of memory for a grid function!");
+		ERROR("Memory allocation error!",__FILE__,__LINE__);
     }
-  for (int i=0;i<dim;i++) G[i]=0.0;
-  return G;  
-  }
+	for (int i=0;i<dim;i++) G[i]=0.0;
+	return G;  
+}
 
 
 
 
-  void OceanGrid::recomputePsiM()
-    {
+void OceanGrid::recomputePsiM()
+{
     double sum;
     
     DEBUG("OceanGrid: compute Psi_m");
@@ -300,14 +300,14 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     DEBVAR(imin);
     DEBVAR(imax);
     for (int k=1;k<=l;k++)
-      for (int j=0;j<=m;j++)
+		for (int j=0;j<=m;j++)
         {
-        sum = 0.0;
-        for (int i=imin;i<=imax;i++)
-          {
-          sum += v(i,j,k);
-          }
-        PsiM_[IND_VS(j,k)] = sum*dx;
+			sum = 0.0;
+			for (int i=imin;i<=imax;i++)
+			{
+				sum += v(i,j,k);
+			}
+			PsiM_[IND_VS(j,k)] = sum*dx;
         }
     // perform an allreduce operation over all processes in the 
     // x-direction, the resulting array is the global integral  
@@ -328,10 +328,10 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     double PsiMinL=psiM(0,0);
     double PsiMaxL = PsiMinL;
     for (int j=0; j<=m; j++)
-      for (int k=0; k<=l; k++)
+		for (int k=0; k<=l; k++)
         {
-        PsiMaxL = std::max(psiM(j,k),PsiMaxL);
-        PsiMinL = std::min(psiM(j,k),PsiMinL);
+			PsiMaxL = std::max(psiM(j,k),PsiMaxL);
+			PsiMinL = std::min(psiM(j,k),PsiMinL);
         }
     // global maximum
     Teuchos::RCP<Epetra_Comm> comm = domain->GetComm();
@@ -346,10 +346,10 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     
     delete [] vs;
     recompute_PsiM_=false;
-    }
+}
 
-  void OceanGrid::recomputePsiB()
-    {
+void OceanGrid::recomputePsiB()
+{
     double sum;
     
     DEBUG("OceanGrid: compute Psi_b");
@@ -366,16 +366,16 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     DEBUG("depth-integrate U for computation of Psi_B");
     F90NAME(m_thcm_utils,depth_int_u)(U_,us);
 
-      // number of ghost nodes at top of domain
-      int nghosttop = domain->LastJ()-domain->LastRealJ();
-      int nghostbottom = domain->FirstRealJ()-domain->FirstJ();
-      int nghostleft = domain->LastI()-domain->LastRealI();
-      int nghostright = domain->FirstRealI()-domain->FirstI();
+	// number of ghost nodes at top of domain
+	int nghosttop = domain->LastJ()-domain->LastRealJ();
+	int nghostbottom = domain->FirstRealJ()-domain->FirstJ();
+	int nghostleft = domain->LastI()-domain->LastRealI();
+	int nghostright = domain->FirstRealI()-domain->FirstI();
 
-      int imin = 0; 
-      int imax = n;
-      int jmin = 1+nghostbottom;
-      int jmax = m-nghosttop;
+	int imin = 0; 
+	int imax = n;
+	int jmin = 1+nghostbottom;
+	int jmax = m-nghosttop;
 
     // now we can compute the stream-function Psi
     
@@ -389,9 +389,9 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     for (int i=imin; i<=imax; i++) psiB(i,jmin-1) = 0.0;
 
     for (int i=imin; i<=imax; i++)
-      for (int j=jmin; j<=jmax; j++)
+		for (int j=jmin; j<=jmax; j++)
         {
-        psiB(i,j)=0.5*(us[IND_US(i,j-1)]+us[IND_US(i,j)])*dy + psiB(i,j-1);
+			psiB(i,j)=0.5*(us[IND_US(i,j-1)]+us[IND_US(i,j)])*dy + psiB(i,j-1);
         }
 
     // now, on a process in processor row J, we have the integral from
@@ -404,80 +404,80 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     Teuchos::RCP<Epetra_MpiComm> mpi = Teuchos::rcp_dynamic_cast<Epetra_MpiComm>(yComm);
     DEBVAR(*mpi);
     if (mpi!=Teuchos::null) // might be a serial comm, I guess
-      {
-      MPI_Comm ycomm = mpi->Comm(); // get actual MPI communicator
+	{
+		MPI_Comm ycomm = mpi->Comm(); // get actual MPI communicator
 
-      // get info on the processor column
-      int yprocs,yrank;
-      MPI_Comm_rank(ycomm,&yrank);
-      MPI_Comm_size(ycomm,&yprocs);
+		// get info on the processor column
+		int yprocs,yrank;
+		MPI_Comm_rank(ycomm,&yrank);
+		MPI_Comm_size(ycomm,&yprocs);
     
-      int count = n+1;
-      double *buf = new double[count];
-      MPI_Datatype type = MPI_DOUBLE;
-      int tag = 0;
-      if (yrank==0)
+		int count = n+1;
+		double *buf = new double[count];
+		MPI_Datatype type = MPI_DOUBLE;
+		int tag = 0;
+		if (yrank==0)
         {
-        if (yprocs>1)
-          {
-          for (int i=0;i<=n;i++)
-            {
-            buf[i] = psiB(i,jmax);
-            }
-          MPI_Send(buf,count,type,1,tag,ycomm);
-          }
+			if (yprocs>1)
+			{
+				for (int i=0;i<=n;i++)
+				{
+					buf[i] = psiB(i,jmax);
+				}
+				MPI_Send(buf,count,type,1,tag,ycomm);
+			}
         }
-      else
+		else
         {
-        // we sequentially send data to the next proc in the column  
-        // this could be done more efficiently but this shouldn't be 
-        // a crucial routine when it comes to time.
-        for (int proc=1; proc<yprocs; proc++)
-          {
-          if (yrank==proc)
-            {
-            MPI_Recv(buf,count,type,yrank-1,tag,ycomm,MPI_STATUS_IGNORE);
-            for (int j=jmin; j<=jmax; j++)
-              for (int i=imin;i<=imax;i++)
-                {
-                psiB(i,j) += buf[i];
-                }
-            if (yrank<yprocs-1)
-              {
-              for (int i=imin;i<=imax;i++)
-                {
-                buf[i] = psiB(i,jmax);
-                }
-              MPI_Send(buf,count,type,yrank+1,tag,ycomm);
-              }
-            }
-          }// for all procs
+			// we sequentially send data to the next proc in the column  
+			// this could be done more efficiently but this shouldn't be 
+			// a crucial routine when it comes to time.
+			for (int proc=1; proc<yprocs; proc++)
+			{
+				if (yrank==proc)
+				{
+					MPI_Recv(buf,count,type,yrank-1,tag,ycomm,MPI_STATUS_IGNORE);
+					for (int j=jmin; j<=jmax; j++)
+						for (int i=imin;i<=imax;i++)
+						{
+							psiB(i,j) += buf[i];
+						}
+					if (yrank<yprocs-1)
+					{
+						for (int i=imin;i<=imax;i++)
+						{
+							buf[i] = psiB(i,jmax);
+						}
+						MPI_Send(buf,count,type,yrank+1,tag,ycomm);
+					}
+				}
+			}// for all procs
         }// not the root process
-      delete [] buf;      
-      }// not an MPI communicator
+		delete [] buf;      
+	}// not an MPI communicator
 #endif
     
     delete [] us;
 #ifdef DEBUGGING
-     (*debug) << "\nPsiM(0:m,0:l): "<<std::endl;
-     for (int k=l; k>=0; k--)
-       {
-       for (int j=0; j<=m; j++)
-         {
-         (*debug) << psiM(j,k) << "\t";
-         }
-       (*debug) << std::endl;
-       }
+	std::cout << "\nPsiM(0:m,0:l): "<<std::endl;
+	for (int k=l; k>=0; k--)
+	{
+		for (int j=0; j<=m; j++)
+		{
+			std::cout << psiM(j,k) << "\t";
+		}
+		std::cout << std::endl;
+	}
      
-     (*debug) << "\nPsiB(0:n,0:l): "<<std::endl;
-     for (int j=m; j>=0; j--)
-       {
-       for (int i=0; i<=n; i++)
-         {
-         (*debug) << psiB(i,j) << "\t";
-         }
-       (*debug) << std::endl;
-       }
+	std::cout << "\nPsiB(0:n,0:l): "<<std::endl;
+	for (int j=m; j>=0; j--)
+	{
+		for (int i=0; i<=n; i++)
+		{
+			std::cout << psiB(i,j) << "\t";
+		}
+		std::cout << std::endl;
+	}
 #endif    
     
     // compute the local maximum and minimum
@@ -485,10 +485,10 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     double PsiMinL=psiB(0,0);
     double PsiMaxL = PsiMinL;
     for (int j=jmin; j<=jmax; j++)
-      for (int i=imin; i<=imax; i++)
+		for (int i=imin; i<=imax; i++)
         {
-        PsiMaxL = std::max(psiB(i,j),PsiMaxL);
-        PsiMinL = std::min(psiB(i,j),PsiMinL);
+			PsiMaxL = std::max(psiB(i,j),PsiMaxL);
+			PsiMinL = std::min(psiB(i,j),PsiMinL);
         }
     // global maximum
     Teuchos::RCP<Epetra_Comm> comm = domain->GetComm();
@@ -501,177 +501,177 @@ _MODULE_SUBROUTINE_(m_usr,get_grid_data)(double* x, double* y, double* z,
     DEBVAR(PsibMax_);
     
     recompute_PsiB_=false;
-    }
+}
 
 void OceanGrid::recomputeMaxVel(void)
-  {
-  // local maxima
-  double maxU=0;
-  double maxV=0;
-  double maxW=0;
-  // compute local max of u,v,w
-  for (int k=1;k<=l;k++)
-    for (int j=1;j<=m;j++)
-      for (int i=1;i<=n;i++)
-        {
-        maxU=std::max(maxU,std::abs((u(i,j,k)+u(i-1,j,k)+u(i-1,j-1,k)+u(i,j-1,k))*0.25));
-        maxV=std::max(maxV,std::abs((v(i,j,k)+v(i-1,j,k)+v(i-1,j-1,k)+v(i,j-1,k))*0.25));
-        maxW=std::max(maxW,std::abs((w(i,j,k)+w(i,j,k-1))*0.5));
-        }
-  // compute global maxima
-  CHECK_ZERO(domain->GetComm()->MaxAll(&maxU,&MaxU,1));
-  CHECK_ZERO(domain->GetComm()->MaxAll(&maxV,&MaxV,1));
-  CHECK_ZERO(domain->GetComm()->MaxAll(&maxW,&MaxW,1));
-  DEBUG("Maximum velocities: ");
-  DEBVAR(MaxU);
-  DEBVAR(MaxV);
-  DEBVAR(MaxW);
-  recompute_MaxVel_=false;
-  }
+{
+	// local maxima
+	double maxU=0;
+	double maxV=0;
+	double maxW=0;
+	// compute local max of u,v,w
+	for (int k=1;k<=l;k++)
+		for (int j=1;j<=m;j++)
+			for (int i=1;i<=n;i++)
+			{
+				maxU=std::max(maxU,std::abs((u(i,j,k)+u(i-1,j,k)+u(i-1,j-1,k)+u(i,j-1,k))*0.25));
+				maxV=std::max(maxV,std::abs((v(i,j,k)+v(i-1,j,k)+v(i-1,j-1,k)+v(i,j-1,k))*0.25));
+				maxW=std::max(maxW,std::abs((w(i,j,k)+w(i,j,k-1))*0.5));
+			}
+	// compute global maxima
+	CHECK_ZERO(domain->GetComm()->MaxAll(&maxU,&MaxU,1));
+	CHECK_ZERO(domain->GetComm()->MaxAll(&maxV,&MaxV,1));
+	CHECK_ZERO(domain->GetComm()->MaxAll(&maxW,&MaxW,1));
+	DEBUG("Maximum velocities: ");
+	DEBVAR(MaxU);
+	DEBVAR(MaxV);
+	DEBVAR(MaxW);
+	recompute_MaxVel_=false;
+}
 
- // output to file stream
- std::ostream& OceanGrid::print(std::ostream& os) const
-   {
-   os << "OceanGrid"<<std::endl;
-   os << "n = "<<n<<std::endl;
-   os << "m = "<<m<<std::endl;
-   os << "l = "<<l<<std::endl;
-   os << "la= "<<la<<std::endl;
-   os << std::endl;
-   os << *xc_<<std::endl;
-   os << *yc_<<std::endl;
-   os << *zc_<<std::endl;
-   os << *xu_<<std::endl;
-   os << *yv_<<std::endl;
-   os << *zw_<<std::endl;
-   os << "LandMask(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
-   for (int k=0;k<=l+la+1;k++)
-     {
-     os << "k="<<k<<std::endl;
-     for (int j=m+1; j>=0; j--)
-       {
-       for (int i=0; i<=n+1; i++)
-         {
-         os << landm(i,j,k);
-         }
-       os << std::endl;
-       }
-     os << std::endl;
-     }
-   os << "U(0:n,0:m,0:l+la+1): "<<std::endl;
-   for (int k=0;k<=l+la+1;k++)
-     {
-     os << "k="<<k<<std::endl;
-     for (int j=m; j>=0; j--)
-       {
-       for (int i=0; i<=n; i++)
-         {
-         os << u(i,j,k) << "\t";
-         }
-       os << std::endl;
-       }
-     os << std::endl;
-     }
-   os << "\nV(0:n,0:m,0:l+la+1): "<<std::endl;
-   for (int k=0;k<=l+la+1;k++)
-     {
-     os << "k="<<k<<std::endl;
-     for (int j=m; j>=0; j--)
-       {
-       for (int i=0; i<=n; i++)
-         {
-         os << v(i,j,k) << "\t";
-         }
-       os << std::endl;
-       }
-     os << std::endl;
-     }
-   os << "\nW(0:n,0:m,0:l+la): "<<std::endl;
-   for (int k=0;k<=l+la;k++)
-     {
-     os << "k="<<k<<std::endl;
-     for (int j=m; j>=0; j--)
-       {
-       for (int i=0; i<=n; i++)
-         {
-         os << w(i,j,k) << "\t";
-         }
-       os << std::endl;
-       }   
-     os << std::endl;
-     }
-   os << "\np(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
-   for (int k=0;k<=l+la+1;k++)
-     {
-     os << "k="<<k<<std::endl;
-     for (int j=m+1; j>=0; j--)
-       {
-       for (int i=0; i<=n+1; i++)
-         {
-         os << p(i,j,k) << "\t";
-         }
-       os << std::endl;
-       }   
-     os << std::endl;
-     }   
-   os << "\nT(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
-   for (int k=0;k<=l+la+1;k++)
-     {
-     os << "k="<<k<<std::endl;
-     for (int j=m+1; j>=0; j--)
-       {
-       for (int i=0; i<=n+1; i++)
-         {
-         os << T(i,j,k) << "\t";
-         }
-       os << std::endl;
-       }   
-     os << std::endl;
-     }   
-   os << "\nS(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
-   for (int k=0;k<=l+la+1;k++)
-     {
-     os << "k="<<k<<std::endl;
-     for (int j=m+1; j>=0; j--)
-       {
-       for (int i=0; i<=n+1; i++)
-         {
-         os << S(i,j,k) << "\t";
-         }
-       os << std::endl;
-       }
-     os << std::endl;
-     }   
-   if (std::abs(PsimMax_)>0)
-     {
-     os << "\nPsiM(0:m,0:l): "<<std::endl;
-     for (int k=l; k>=0; k--)
-       {
-       for (int j=0; j<=m; j++)
-         {
-         os << psiM(j,k) << "\t";
-         }
-       os << std::endl;
-       }
-     }
-   if (std::abs(PsibMax_)>0)
-     {
-     os << "\nPsiB(0:n,0:l): "<<std::endl;
-     for (int j=m; j>=0; j--)
-       {
-       for (int i=0; i<=n; i++)
-         {
-         os << psiB(i,j) << "\t";
-         }
-       os << std::endl;
-       }
-     }
-   return os;
-   }
+// output to file stream
+std::ostream& OceanGrid::print(std::ostream& os) const
+{
+	os << "OceanGrid"<<std::endl;
+	os << "n = "<<n<<std::endl;
+	os << "m = "<<m<<std::endl;
+	os << "l = "<<l<<std::endl;
+	os << "la= "<<la<<std::endl;
+	os << std::endl;
+	os << *xc_<<std::endl;
+	os << *yc_<<std::endl;
+	os << *zc_<<std::endl;
+	os << *xu_<<std::endl;
+	os << *yv_<<std::endl;
+	os << *zw_<<std::endl;
+	os << "LandMask(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
+	for (int k=0;k<=l+la+1;k++)
+	{
+		os << "k="<<k<<std::endl;
+		for (int j=m+1; j>=0; j--)
+		{
+			for (int i=0; i<=n+1; i++)
+			{
+				os << landm(i,j,k);
+			}
+			os << std::endl;
+		}
+		os << std::endl;
+	}
+	os << "U(0:n,0:m,0:l+la+1): "<<std::endl;
+	for (int k=0;k<=l+la+1;k++)
+	{
+		os << "k="<<k<<std::endl;
+		for (int j=m; j>=0; j--)
+		{
+			for (int i=0; i<=n; i++)
+			{
+				os << u(i,j,k) << "\t";
+			}
+			os << std::endl;
+		}
+		os << std::endl;
+	}
+	os << "\nV(0:n,0:m,0:l+la+1): "<<std::endl;
+	for (int k=0;k<=l+la+1;k++)
+	{
+		os << "k="<<k<<std::endl;
+		for (int j=m; j>=0; j--)
+		{
+			for (int i=0; i<=n; i++)
+			{
+				os << v(i,j,k) << "\t";
+			}
+			os << std::endl;
+		}
+		os << std::endl;
+	}
+	os << "\nW(0:n,0:m,0:l+la): "<<std::endl;
+	for (int k=0;k<=l+la;k++)
+	{
+		os << "k="<<k<<std::endl;
+		for (int j=m; j>=0; j--)
+		{
+			for (int i=0; i<=n; i++)
+			{
+				os << w(i,j,k) << "\t";
+			}
+			os << std::endl;
+		}   
+		os << std::endl;
+	}
+	os << "\np(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
+	for (int k=0;k<=l+la+1;k++)
+	{
+		os << "k="<<k<<std::endl;
+		for (int j=m+1; j>=0; j--)
+		{
+			for (int i=0; i<=n+1; i++)
+			{
+				os << p(i,j,k) << "\t";
+			}
+			os << std::endl;
+		}   
+		os << std::endl;
+	}   
+	os << "\nT(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
+	for (int k=0;k<=l+la+1;k++)
+	{
+		os << "k="<<k<<std::endl;
+		for (int j=m+1; j>=0; j--)
+		{
+			for (int i=0; i<=n+1; i++)
+			{
+				os << T(i,j,k) << "\t";
+			}
+			os << std::endl;
+		}   
+		os << std::endl;
+	}   
+	os << "\nS(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
+	for (int k=0;k<=l+la+1;k++)
+	{
+		os << "k="<<k<<std::endl;
+		for (int j=m+1; j>=0; j--)
+		{
+			for (int i=0; i<=n+1; i++)
+			{
+				os << S(i,j,k) << "\t";
+			}
+			os << std::endl;
+		}
+		os << std::endl;
+	}   
+	if (std::abs(PsimMax_)>0)
+	{
+		os << "\nPsiM(0:m,0:l): "<<std::endl;
+		for (int k=l; k>=0; k--)
+		{
+			for (int j=0; j<=m; j++)
+			{
+				os << psiM(j,k) << "\t";
+			}
+			os << std::endl;
+		}
+	}
+	if (std::abs(PsibMax_)>0)
+	{
+		os << "\nPsiB(0:n,0:l): "<<std::endl;
+		for (int j=m; j>=0; j--)
+		{
+			for (int i=0; i<=n; i++)
+			{
+				os << psiB(i,j) << "\t";
+			}
+			os << std::endl;
+		}
+	}
+	return os;
+}
 
 std::ostream& operator<<(std::ostream& os, const OceanGrid& G)
-  {
-  return G.print(os);
-  }
+{
+	return G.print(os);
+}
 
 

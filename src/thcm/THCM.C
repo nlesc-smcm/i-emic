@@ -494,7 +494,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 #ifdef DEBUGGING
 	OceanGrid G(domain);
 	G.ImportLandMask(*landm_loc);
-	(*debug) << G;
+	std::cout << G;
 #endif  
 
 #if 0
@@ -1489,12 +1489,12 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
 //#ifdef DEBUGGING        
 #if 0
 #define DEBUG_GRAPH_ROW(var)											\
-				(*debug) << "graph row "<<i<<" "<<j<<" "<<k<<" "<<var;	\
-				(*debug) << " (gid "<<(gid0+var)<<"):"<<std::endl;		\
-				(*debug) << "predicted length: "<<numEntriesPerRow[StandardMap->LID(gid0+var)];	\
-				(*debug) <<", actual length: "<<pos<<std::endl;			\
-				for (int pp=0;pp<pos;pp++) (*debug) << (indices)[pp]<<" "; \
-				(*debug) << std::endl;
+				std::cout << "graph row "<<i<<" "<<j<<" "<<k<<" "<<var;		\
+				std::cout << " (gid "<<(gid0+var)<<"):"<<std::endl;			\
+				std::cout << "predicted length: "<<numEntriesPerRow[StandardMap->LID(gid0+var)]; \
+				std::cout <<", actual length: "<<pos<<std::endl;			\
+				for (int pp=0;pp<pos;pp++) std::cout << (indices)[pp]<<" ";	\
+				std::cout << std::endl;
 #else
 #define DEBUG_GRAPH_ROW(var)
 #endif        

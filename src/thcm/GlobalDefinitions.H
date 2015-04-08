@@ -26,7 +26,7 @@
 #  ifdef DEBUGGING
 #    define DEBUG(s) std::cout << s << std::endl;
      // The use of # stringifies variable s:
-#    define DEBVAR(s) std::cout << #s << std::endl;
+#    define DEBVAR(s) std::cout << #s << ": " << s << std::endl;
 #  else
 #    define DEBUG(s)
 #    define DEBVAR(s)

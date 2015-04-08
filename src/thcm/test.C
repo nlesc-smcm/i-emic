@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
 	// Initialize solution vector
 	//-------------------------------------------------------------------
 	soln->Random();
+	soln->Scale(1.0e-3);
 	INFO("Initialized solution vector");
     //-------------------------------------------------------------------
 	// Initialize X, MultiRHS and RHS
@@ -107,23 +108,27 @@ int main(int argc, char *argv[])
 	// rearr.setBlockOperator();
 	// rearr.fillBlocks();
 	// rearr.test();
-	/*
-	RCP<Ifpack_Preconditioner> blockPrec =
-		Teuchos::rcp(new TRIOS::BlockPreconditioner(A, tekoParams_rcp));
-	blockPrec->Initialize();
-	blockPrec->Compute();
-	*/
+
     //-------------------------------------------------------------------
 	// Belos::LinearProblem setup
 	//-------------------------------------------------------------------
 	RCP<Belos::LinearProblem<double, MVEC, OPER>> problem =
 		rcp(new Belos::LinearProblem<double, MVEC, OPER>(A, X, MRHS));
-	problem->setProblem();	// NEEDS CHECK
-
+		
+	//-----------------------------------------------------------------------------
+	// Block preconditioner 
+	//-----------------------------------------------------------------------------
 	/*
+	Teuchos::RCP<Teuchos::ParameterList> solverParams =
+		Teuchos::rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("solver_params.xml", solverParams.ptr());	
+	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
+	DEBUG(*solverParams);
+	RCP<Ifpack_Preconditioner> blockPrec =
+		Teuchos::rcp(new TRIOS::BlockPreconditioner(A, domain, *solverParams));
+	blockPrec->Compute();
 	RCP<Belos::EpetraPrecOp> belosPrec = rcp(new Belos::EpetraPrecOp(blockPrec));
-	problem->setLeftPrec(belosPrec);
-	bool set = problem->setProblem();
+	problem->setRightPrec(belosPrec);
 	*/
 	//-------------------------------------------------------------------
 	// Belos parameter setup
@@ -131,7 +136,7 @@ int main(int argc, char *argv[])
 	Teuchos::RCP<Teuchos::ParameterList> belosList =
 		Teuchos::rcp(new Teuchos::ParameterList());
 	belosList->set("Block Size", 100);
-	belosList->set("Maximum Iterations", 5000);
+	belosList->set("Maximum Iterations", 10000);
 	belosList->set("Convergence Tolerance", 1e-4);
 	belosList->set("Verbosity", Belos::FinalSummary);
 	//-------------------------------------------------------------------
@@ -139,6 +144,9 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------
 	Belos::BlockGmresSolMgr<double, MVEC, OPER> belosSolver(problem, belosList);
 	//--------------------------------------------------------------------
+	INFO("Before setProblem()")
+	bool set = problem->setProblem();	
+	INFO("After setProblem()")
 	belosSolver.solve();
 	
     //------------------------------------------------------------------
