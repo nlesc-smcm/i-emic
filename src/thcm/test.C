@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 	//-----------------------------------------------------------------------------
 	// Block preconditioner 
 	//-----------------------------------------------------------------------------
-	/*
+	
 	Teuchos::RCP<Teuchos::ParameterList> solverParams =
 		Teuchos::rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("solver_params.xml", solverParams.ptr());	
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 	blockPrec->Compute();
 	RCP<Belos::EpetraPrecOp> belosPrec = rcp(new Belos::EpetraPrecOp(blockPrec));
 	problem->setRightPrec(belosPrec);
-	*/
+	
 	//-------------------------------------------------------------------
 	// Belos parameter setup
 	//-------------------------------------------------------------------
