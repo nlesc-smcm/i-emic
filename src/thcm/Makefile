@@ -14,8 +14,8 @@ obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
 
 default: lib
 
-test: $(libname) test.o Rearranger.o
-	$(CXX) test.o Rearranger.o $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -lthcm $(LIBS)
+test: $(libname) test.o 
+	$(CXX) test.o  $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -lthcm $(LIBS)
 
 lib: $(libname)
 
@@ -38,8 +38,6 @@ par.o: par.F90
 
 usr.o: usr.F90 par.o
 	$(FC) -c $(FC_FLAGS) $<
-
-test.o:        Rearranger.o
 
 global.o:      lev.o
 

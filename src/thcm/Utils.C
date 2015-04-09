@@ -9,7 +9,7 @@
  * contact: t.e.mulder@uu.nl                                          *
  **********************************************************************/
 #include "Utils.H"
-#include "EpetraExt_MatrixMatrix.h" 
+#include "EpetraExt_MatrixMatrix.h"
 //========================================================================================
 int Utils::SplitBox(int nx, int ny, int nz,
 					int nparts, int& ndx, int& ndy, int& ndz,
@@ -699,9 +699,12 @@ Teuchos::RCP<Epetra_IntVector> Utils::AllGather(const Epetra_IntVector& vec)
 Teuchos::RCP<Epetra_CrsMatrix> Utils::MatrixProduct(bool transA, const Epetra_CrsMatrix& A,
 													bool transB, const Epetra_CrsMatrix& B)
 {
+	DEBUG("Entered MatrixProduct()");
+	DEBUG("  construct AB");
     Teuchos::RCP<Epetra_CrsMatrix> AB =
-		Teuchos::rcp(new Epetra_CrsMatrix(Copy, A.RowMap(), A.MaxNumEntries()) );
-	DEBUG("compute A*B...");
+		Teuchos::rcp(new Epetra_CrsMatrix(Copy, A.RowMap(), A.MaxNumEntries()));
+
+	DEBUG("  compute A*B...");
     DEBVAR(transA);
     DEBVAR(A.NumGlobalRows());
     DEBVAR(A.NumGlobalCols());
@@ -710,11 +713,30 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::MatrixProduct(bool transA, const Epetra_Cr
     DEBVAR(B.NumGlobalCols());
 	
 #ifdef TESTING
-	if (!A.Filled()) ERROR("Matrix A not filled!",__FILE__,__LINE__);
-	if (!B.Filled()) ERROR("Matrix B not filled!",__FILE__,__LINE__);
-#endif    
+	if (!A.Filled())
+	{
+		ERROR("Matrix A not filled!",__FILE__,__LINE__);
+	}
+	else
+	{
+		DEBUG("Matrix A filled!");
+	}
+	if (!B.Filled())
+	{
+		ERROR("Matrix B not filled!",__FILE__,__LINE__);
+	}
+	else
+	{
+		DEBUG("Matrix B filled!");
+	}
+#endif
+	
+	DEBUG(" perform A*B");
+	DEBUG("--barrier sync");
+	A.Comm().Barrier();
 	CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(A,transA,B,transB,*AB));
 	DEBUG("done!");
+	DEBUG("Leaving MatrixProduct()");
     return AB;
 }
 //========================================================================================
@@ -952,3 +974,4 @@ Teuchos::RCP<Epetra_Map> Utils::ExtractRange(const Epetra_Map& M, int i1, int i2
     delete [] MyGlobalElements;
     return M1;
 } 
+//========================================================================================

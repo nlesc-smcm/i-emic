@@ -27,7 +27,12 @@
 
 #include "THCM.H"
 #include "THCMdefs.H"
-//#include "Rearranger.H"
+
+#include <sstream>
+#include "GlobalDefinitions.H"
+
+// for gethostname in pardebug
+#include <unistd.h>
 
 #include "TRIOS_Domain.H"
 #include "TRIOS_BlockPreconditioner.H"
@@ -39,6 +44,10 @@ typedef Epetra_Vector       VEC;
 typedef Epetra_MultiVector  MVEC;
 typedef Epetra_Operator     OPER;
 typedef Epetra_CrsMatrix    CRSMAT;
+
+Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm);
+void parDebug();
+RCP<std::ostream> outFile;
 //----------------------------------------------------------------------
 // THCM is a singleton, there can be only one instance at a time. 
 // As base class Singleton is templated we must instantiate it    
@@ -56,6 +65,19 @@ int main(int argc, char *argv[])
 	RCP<Epetra_SerialComm> Comm =
 		rcp(new Epetra_SerialComm());
 #endif
+	// -------------------------------------------------------------------
+	// Setup stream for INFO, DEBUG, ERROR and WARNING Macros
+	// -------------------------------------------------------------------
+	outFile = outputFiles(Comm);
+	// -------------------------------------------------------------------
+	// Uncomment this when parallel debugging with gdb
+	//  - It enters an infinite while loop so you can couple a task to
+	//    gdb with the -p option.
+	//  - Then with gdb switch the integer to a value that negates the condition.
+	//    (set var i = 7)
+	//  - For this to work you need to have root privileges on Ubuntu
+	// -------------------------------------------------------------------
+	// parDebug();
 	// -------------------------------------------------------------------
 	// Setup THCM parameters:
 	// -------------------------------------------------------------------
@@ -145,13 +167,45 @@ int main(int argc, char *argv[])
 	Belos::BlockGmresSolMgr<double, MVEC, OPER> belosSolver(problem, belosList);
 	//--------------------------------------------------------------------
 	INFO("Before setProblem()")
-	bool set = problem->setProblem();	
+		bool set = problem->setProblem();	
 	INFO("After setProblem()")
-	belosSolver.solve();
+		belosSolver.solve();
 	
     //------------------------------------------------------------------
 	// Finalize MPI
 	//------------------------------------------------------------------
 	MPI_Finalize();
 	return 0;
+}
+
+Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
+{
+	// Setup output files "fname_#.txt" for P==0 && P==1, other processes
+	// will get a blackholestream.
+	Teuchos::RCP<std::ostream> outFile;
+	if (Comm->MyPID() < 2)
+	{
+		std::ostringstream outfile;  // setting up a filename
+		outfile << "out_" << Comm->MyPID() << ".txt";
+		std::cout << "Output for Process " << Comm->MyPID() << " is written to "
+				  << outfile.str().c_str() << std::endl;
+		outFile = Teuchos::rcp(new std::ofstream(outfile.str().c_str()));
+	}
+	else
+	{
+		std::cout << "Output for Process " << Comm->MyPID()
+				  << " is neglected" << std::endl;
+		outFile = Teuchos::rcp(new Teuchos::oblackholestream());
+	}
+	return outFile;
+}
+void parDebug()
+{
+	int i = 0;
+	char hostname[256];
+	gethostname(hostname, sizeof(hostname));
+	printf("PID %d on %s ready for attach\n", getpid(), hostname);
+	fflush(stdout);
+	while (0 == i)
+		sleep(5);
 }

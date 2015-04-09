@@ -13,24 +13,37 @@
 
 #include <iostream>
 #include <cmath>
+#include "Teuchos_RCP.hpp"
+#include "EpetraExt_RowMatrixOut.h"
+
+// This outstream needs to be defined in the main routine.
+extern Teuchos::RCP<std::ostream> outFile; 	
 
 #ifndef INFO
-#  define INFO(s) std::cout << s << std::endl; 
+#  define INFO(s) (*outFile) << s << std::endl; 
 #endif
 
 #ifndef ERROR
-#  define ERROR(x,y,z) std::cerr << x << " " << y << " " << z << std::endl;
+#  define ERROR(x,y,z) (*outFile) << "**ERROR**: " << x << " " << y << " " << z << std::endl;
+#endif
+
+#ifndef WARNING
+#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << " " << y << " " << z << std::endl;
 #endif
 
 #ifndef DEBUG
 #  ifdef DEBUGGING
-#    define DEBUG(s) std::cout << s << std::endl;
-     // The use of # stringifies variable s:
-#    define DEBVAR(s) std::cout << #s << ": " << s << std::endl;
+#    define DEBUG(s) (*outFile) << s << std::endl;
+     // The use of # stringifies variable s: 
+#    define DEBVAR(s) (*outFile) << #s << ": " << s << std::endl;
 #  else
 #    define DEBUG(s)
 #    define DEBVAR(s)
 #  endif
+#endif
+
+#ifndef DUMP
+#  define DUMP(x,y) EpetraExt::RowMatrixToMatrixMarketFile(x, y);
 #endif
 
 // macros for checking Epetra calls

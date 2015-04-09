@@ -243,17 +243,9 @@ namespace TRIOS {
 		// note: depth-averaging Auv is no longer implemented
 		MAuv = Teuchos::rcp(&Auv,false);
 		DEBUG("Depth-average subsystem Guv...");
-
-		std::cout << "PID:" << comm->MyPID() << " " << "before matprod 1" << std::endl;
 		MGuv = Utils::MatrixProduct(false,Guv,true,Mzp1);
-		std::cout << "PID:" << comm->MyPID() << " " << "after matprod  1" << std::endl;
-
 		DEBUG("Depth-average subsystem Duv...");
-
-		std::cout << "PID:" << comm->MyPID() << " " << "before matprod 2" << std::endl;
 		MDuv = Utils::MatrixProduct(false, Mzp2, false, Duv);
-		std::cout << "PID:" << comm->MyPID() << " " << "after matprod  2" << std::endl;
-		
 		// ___         _
 		// Duv:  uv -> p
 		CHECK_ZERO(MDuv->FillComplete(mapUV,mapPbar));
@@ -261,13 +253,7 @@ namespace TRIOS {
 		// ___   _      
 		// Guv:  p -> uv_ZERO(MGuv->FillComplete(mapPbar,mapUV));
       
-#ifdef STORE_MATRICES
-		Utils::Dump(*MGuv,"SppA12");
-		Utils::Dump(*MDuv,"SppA21");
-#endif      
-
 		label_ = "Depth-averaged Spp (U/V/p)";
-    
 	
 		SaddlepointMatrix::SetBlocks(MAuv,MGuv,MDuv);
 	}
@@ -343,7 +329,7 @@ namespace TRIOS {
 				BlockDiagA11 = Teuchos::rcp(new Epetra_CrsMatrix(Copy,Spp->A11().RowMap(),2,true) );
   
 				DEBUG("extract (inverse) block diagonal from Auv...");   
-				ExtractInverseBlockDiagonal(Spp->A11(),*BlockDiagA11);
+				ExtractInverseBlockDiagonal(Spp->A11(),*BlockDiagA11); //??
   
 				BlockDiagA11->SetLabel("(inverse) 2x2 Block-diagonal of A11");
 			}
@@ -351,22 +337,24 @@ namespace TRIOS {
 		{   
 			
 			DEBUG("compute the Schur-complement...");
-			// compute Chat = Duv*inv(diag(Auv))*Guv
-			std::cout << "PID:" << comm->MyPID() << " " << "before tripprod  2" << std::endl;
-			Teuchos::RCP<Epetra_CrsMatrix> O =
+			DEBUG(" compute Chat = Duv*inv(diag(Auv))*Guv");
+			DEBUG("  initialize TMP");
+			Teuchos::RCP<Epetra_CrsMatrix> TMP =
 				Teuchos::rcp(new Epetra_CrsMatrix(Copy, (Spp->A21()).RowMap(),
 												  (Spp->A21()).MaxNumEntries()));
+			DEBUG("  initialize AB");
 			Teuchos::RCP<Epetra_CrsMatrix> AB =
 				Teuchos::rcp(new Epetra_CrsMatrix(Copy, (Spp->A21()).RowMap(),
 												  (Spp->A21()).MaxNumEntries()));
-
+			DEBUG(Spp->A21());
+			DEBUG(*BlockDiagA11);
+			DEBUG("  perform AB = Spp->A21*BlockDiagA11");
 			EpetraExt::MatrixMatrix::Multiply(Spp->A21(),    false,
 											  *BlockDiagA11, false, *AB);
-
-			EpetraExt::MatrixMatrix::Multiply(*AB, false, Spp->A12(), false, *O );
-			std::cout << "PID:" << comm->MyPID() << " " << "after tripprod  2" << std::endl;
-			Chat = O;
-
+			DEBUG("  perform Chat = AB*Spp->A12");
+			EpetraExt::MatrixMatrix::Multiply(*AB, false, Spp->A12(), false, *TMP );
+			DEBUG("  finished MM's");
+			Chat = TMP;
 			/*
 			Chat = Utils::TripleProduct(false,  Spp->A21(),
 													 false, *BlockDiagA11,
@@ -375,7 +363,6 @@ namespace TRIOS {
 
 			CHECK_ZERO(Chat->Scale(-1.0));
 			Chat->SetLabel("Schur-Complement Chat of Simple Precond");
-
 			// if AdjustChat does something to the local part of Chat,
 			// these indicate which rows have been modified after the call:
 			fixp1 = -1;
@@ -520,7 +507,7 @@ namespace TRIOS {
 		int len,maxlen;
 		int grid;
     
-		maxlen=A.MaxNumEntries();
+		maxlen = A.MaxNumEntries();
     
 		indAu = new int[maxlen];
 		indAv = new int[maxlen];
@@ -536,18 +523,19 @@ namespace TRIOS {
 			ERROR("Simple: Matrix A11 not filled!",__FILE__,__LINE__);
 		}
     
-		for (int i=0;i<A.NumMyRows();i+=2)
+		for (int i = 0; i < A.NumMyRows(); i += 2)
 		{
 			grid = A.GRID(i);
 			// 'u' variable
 			CHECK_ZERO(A.ExtractGlobalRowCopy(grid,maxlen,len,valAu,indAu) );
 #ifdef DEBUGGING
-			//(*debug) << "A11, global row "<<i<<": \n";
-			//for (int j=0;j<len;j++) (*debug) << grid<<"\t"<<indAu[j]<<"\t"<<valAu[j]<<"\n";
+			DEBUG("A11, global row " << i << ": \n");
+			for (int j = 0; j < len; j++)
+				DEBUG(grid << "\t" << indAu[j] << "\t" <<valAu[j] << "\n");
 #endif
-			int j=0;
+			int j = 0;
 			while ((indAu[j]!=grid)&&(j<len)) j++;
-			int k=0;
+			int k = 0;
 			while ((indAu[k]!=grid+1)&&(k<len)) k++;
 			if (j>=len)
 			{

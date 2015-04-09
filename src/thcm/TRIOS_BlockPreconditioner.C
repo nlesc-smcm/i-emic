@@ -998,8 +998,6 @@ namespace TRIOS {
 		{
 			INFO("Prepare preconditioner...");
 		}
-   
-
 		{
 			Ap = Teuchos::rcp(new ApMatrix(*SubMatrix[_Gw], mapW1, mapP1, mapPhat, comm) );
 		}
@@ -1007,8 +1005,9 @@ namespace TRIOS {
 		if (Spp == Teuchos::null)
 		{
 			
-			Spp = Teuchos::rcp(new 
-							   SppDAMatrix(*Mzp1,*Mzp2,*Auv,*SubMatrix[_Guv],*SubMatrix[_Duv],comm));
+			Spp =
+				Teuchos::rcp(new SppDAMatrix(*Mzp1,*Mzp2,*Auv,*SubMatrix[_Guv],
+											 *SubMatrix[_Duv],comm));
 		}
 		else
 		{
@@ -1067,7 +1066,6 @@ namespace TRIOS {
 			AuvPrecond = SolverFactory::CreateAlgebraicPrecond(*Auv,AuvPrecList,verbose);
 
 			DEBUG("Compute Auv Preconditioner...");
-			DEBUG(AuvPrecList);
 			SolverFactory::ComputeAlgebraicPrecond(AuvPrecond,AuvPrecList);
 
 		}
