@@ -260,16 +260,13 @@ namespace TRIOS {
 		if (verbose>5)
 		{
 			INFO("@   Remove dummy W and P points ...");
-			INFO("dummy ws: "<<dumw)
-				INFO("dummy ps: "<<dump)
-				}
-  
-
+			INFO("dummy ws: "<<dumw);
+			INFO("dummy ps: "<<dump);
+		}
 		if (verbose>=10)
 		{
 			INFO("@   Create maps P1, W1, P^ ...");
 		}
-
 
 		// create maps without dummy points: All matrices and vectors
 		// will be based on these maps, not the original P and W maps
@@ -480,8 +477,8 @@ namespace TRIOS {
 		// redistribute to solve map
 		Teuchos::RCP<Epetra_Vector> slv1 = Teuchos::rcp(new Epetra_Vector(*slvMap));
 		Teuchos::RCP<Epetra_Vector> slv2 = Teuchos::rcp(new Epetra_Vector(*slvMap));
-		CHECK_ZERO(slv1->Import(*std1,*import,Insert));
-		CHECK_ZERO(slv2->Import(*std2,*import,Insert));
+		CHECK_ZERO(slv1->Export(*std1,*import,Insert));
+		CHECK_ZERO(slv2->Export(*std2,*import,Insert));
 
 		// replace our temporary map by the pressure map 
 		// (with global indices [3, 9, 15, ...]).        
@@ -605,7 +602,7 @@ namespace TRIOS {
 			for (int i = 0; i < _NUMSUBM; i++) 
 			{
 				DEBUG("extract submatrix " << i);
-				CHECK_ZERO(SubMatrix[i]->Import(Jac, *Importer[i], Zero));
+				CHECK_ZERO(SubMatrix[i]->Export(Jac, *Importer[i], Zero));
     
 				// the first time we do this we have to adjust the column maps
 				if (needs_setup)
@@ -1007,9 +1004,8 @@ namespace TRIOS {
 		if (Spp == Teuchos::null)
 		{
 			
-			Spp =
-				Teuchos::rcp(new SppDAMatrix(*Mzp1,*Mzp2,*Auv,*SubMatrix[_Guv],
-											 *SubMatrix[_Duv], comm));
+			Spp = Teuchos::rcp(new SppDAMatrix(*Mzp1,*Mzp2,*Auv,*SubMatrix[_Guv],
+											   *SubMatrix[_Duv], comm));
 		}
 		else
 		{
@@ -1258,15 +1254,15 @@ namespace TRIOS {
 		Epetra_Vector xp(*mapP1);
 		Epetra_Vector xTS(*mapTS);
    
-		CHECK_ZERO(buv.Import(b,*importUV,Zero));
-		CHECK_ZERO(bw.Import(b,*importW1,Zero));
-		CHECK_ZERO(bp.Import(b,*importP1,Zero));
-		CHECK_ZERO(bTS.Import(b,*importTS,Zero));
+		CHECK_ZERO(buv.Export(b,*importUV,Zero));
+		CHECK_ZERO(bw.Export(b,*importW1,Zero));
+		CHECK_ZERO(bp.Export(b,*importP1,Zero));
+		CHECK_ZERO(bTS.Export(b,*importTS,Zero));
 
-		CHECK_ZERO(xuv.Import(x,*importUV,Zero));
-		CHECK_ZERO(xw.Import(x,*importW1,Zero));
-		CHECK_ZERO(xp.Import(x,*importP1,Zero));
-		CHECK_ZERO(xTS.Import(x,*importTS,Zero));
+		CHECK_ZERO(xuv.Export(x,*importUV,Zero));
+		CHECK_ZERO(xw.Export(x,*importW1,Zero));
+		CHECK_ZERO(xp.Export(x,*importP1,Zero));
+		CHECK_ZERO(xTS.Export(x,*importTS,Zero));
 
 		// set bp = -bp (the sign of the cont. eqn. has been changed)
 		CHECK_ZERO(bp.Scale(-1.0));

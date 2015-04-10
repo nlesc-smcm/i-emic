@@ -25,79 +25,85 @@
 #include <sstream>
 #include "GlobalDefinitions.H"
 
-// for gethostname in pardebug
-#include <unistd.h>
 
 using Teuchos::RCP;
 using Teuchos::rcp;
 
-
-Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm);
-void parDebug();
 RCP<std::ostream> outFile;
-
 
 int main(int argc, char *argv[])
 {
 #ifdef HAVE_MPI
 	MPI_Init(&argc, &argv);
-	RCP<Epetra_MpiComm> Comm =
-		rcp(new Epetra_MpiComm(MPI_COMM_WORLD));
+	Epetra_MpiComm Comm (MPI_COMM_WORLD);
 #else
-	RCP<Epetra_SerialComm> Comm =
-		rcp(new Epetra_SerialComm());
+	Epetra_SerialComm Comm;
 #endif
 	// -------------------------------------------------------------------
 	// Setup stream for INFO, DEBUG, ERROR and WARNING Macros
 	// -------------------------------------------------------------------
-	outFile = outputFiles(Comm);
+	outFile = rcp(&std::cout, false);
 
-	long long int numGlobalElemenst = 64;
-	long long int indexBase = 0;
-	Epetra_Map map(numGlobalElemenst, indexBase, *Comm);
+	const int numDomainElements = 16;
+	const int numRangeElements = 32;
+	const int indexBase = 0;
+	Epetra_Map map(numDomainElements, indexBase, Comm);
+	Epetra_Map map2(numRangeElements, indexBase, Comm);
 	RCP<Epetra_CrsMatrix> A = rcp(new Epetra_CrsMatrix(Copy, map, 8));
-	RCP<Epetra_CrsMatrix> B = rcp(new Epetra_CrsMatrix(Copy, map, 8));
-	int numMyElmntsA = A->map().NumMyElements();
-	DEBVAR(A->RowMap());
-	DEBVAR(A->ColMap());
-	DEBVAR(A->DomainMap());
-	DEBVAR(A->RangeMap());
-		
+	RCP<Epetra_CrsMatrix> B = rcp(new Epetra_CrsMatrix(Copy, map, map2, 8));
+	int numMyElmnts = map.NumMyElements();
+	DEBVAR(numMyElmnts);
+	DEBVAR(map);
+	int *myGlobalElements = map.MyGlobalElements();
+	int rowidx;
+	double valuesA[3];
+	int   indicesA[3];
+	double valuesB[3];
+	int   indicesB[3];
+	for (int i = 0; i != numMyElmnts; ++i)
+	{
+		rowidx = myGlobalElements[i];
+		valuesB[0]  = 121;
+		valuesB[1]  = 32;
+		indicesB[0] = rowidx;
+		indicesB[1] = rowidx + numMyElmnts;
+		B->InsertGlobalValues(rowidx, 2, valuesB, indicesB);
+
+		if (rowidx == 0)
+		{
+			valuesA[0]  = 6;
+			valuesA[1]  = 3;
+			indicesA[0] = rowidx;
+			indicesA[1] = rowidx + 1;
+			A->InsertGlobalValues(rowidx, 2, valuesA, indicesA);
+		}
+		else if (rowidx == numDomainElements - 1)
+		{
+			valuesA[0]  = 3;
+			valuesA[1]  = 6;
+			indicesA[0] = rowidx;
+			indicesA[1] = rowidx - 1;
+			A->InsertGlobalValues(rowidx, 2, valuesA, indicesA);
+		}
+		else
+		{
+			valuesA[0]  = 3;
+			valuesA[1]  = 6;
+			valuesA[1]  = 3;
+			indicesA[0] = rowidx - 1;
+			indicesA[1] = rowidx;
+			indicesA[2] = rowidx + 1;
+			A->InsertGlobalValues(rowidx, 2, valuesA, indicesA);
+		}
+	}
+	A->FillComplete(map, map);
+	B->FillComplete(map, map2);
+	DEBVAR(*A);
+	DEBVAR(*B);
+	
 	//------------------------------------------------------------------
 	// Finalize MPI
 	//------------------------------------------------------------------
 	MPI_Finalize();
 	return 0;
-}
-
-Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
-{
-	// Setup output files "fname_#.txt" for P==0 && P==1, other processes
-	// will get a blackholestream.
-	Teuchos::RCP<std::ostream> outFile;
-	if (Comm->MyPID() < 2)
-	{
-		std::ostringstream outfile;  // setting up a filename
-		outfile << "out_" << Comm->MyPID() << ".txt";
-		std::cout << "Output for Process " << Comm->MyPID() << " is written to "
-				  << outfile.str().c_str() << std::endl;
-		outFile = Teuchos::rcp(new std::ofstream(outfile.str().c_str()));
-	}
-	else
-	{
-		std::cout << "Output for Process " << Comm->MyPID()
-				  << " is neglected" << std::endl;
-		outFile = Teuchos::rcp(new Teuchos::oblackholestream());
-	}
-	return outFile;
-}
-void parDebug()
-{
-	int i = 0;
-	char hostname[256];
-	gethostname(hostname, sizeof(hostname));
-	printf("PID %d on %s ready for attach\n", getpid(), hostname);
-	fflush(stdout);
-	while (0 == i)
-		sleep(5);
 }

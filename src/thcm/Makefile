@@ -20,6 +20,9 @@ test: $(libname) test.o
 test2: test2.o 
 	$(CXX) test2.o  $(CXX_FLAGS) -o test2 $(LIBRARY_DIRS) $(LIBS)
 
+test3: test3.o 
+	$(CXX) test3.o  $(CXX_FLAGS) -o test3 $(LIBRARY_DIRS) $(LIBS)
+
 lib: $(libname)
 
 $(libname): ${obj}

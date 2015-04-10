@@ -210,8 +210,7 @@ void parDebug(Teuchos::RCP<Epetra_Comm> Comm)
 	{
 		printf("PID %d on %s, CPU%d is ready for attach\n", getpid(), hostname, myPID);
 		fflush(stdout);
-		while (0 == i)
-			sleep(5);
+		getchar();
 	}
 	Comm->Barrier();
 }

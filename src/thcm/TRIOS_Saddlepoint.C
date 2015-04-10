@@ -245,11 +245,11 @@ namespace TRIOS {
 		DEBUG("Depth-average subsystem Guv...");
 		MGuv = Utils::MatrixProduct(false,Guv,true,Mzp1);
 		DEBUG("Depth-average subsystem Duv...");
-#if 0		
+#if 1	
 		DEBUG(" Removing column map of Duv...");
 		Teuchos::RCP<Epetra_CrsMatrix> Duvwcm =
 			Utils::RebuildMatrix(Teuchos::rcp(&Duv, false));
-		Duvwcm->FillComplete();
+		Duvwcm->FillComplete(mapUV, mapP);
 		MDuv = Utils::MatrixProduct(false, Mzp2, false, *Duvwcm);
 #else
 		MDuv = Utils::MatrixProduct(false, Mzp2, false, Duv);
@@ -287,9 +287,12 @@ namespace TRIOS {
 	// constructor
 	SppSimplePrec::SppSimplePrec(Teuchos::RCP<SaddlepointMatrix> Spp_,
 								 Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm_, 
-								 Teuchos::RCP<AztecOO> A11Solver_, Teuchos::RCP<Epetra_Operator> A11Precond_, bool zero_init_)
-		: Spp(Spp_), zero_init(zero_init_), comm(comm_),
-		  A11Solver(A11Solver_), A11Precond(A11Precond_)    
+								 Teuchos::RCP<AztecOO> A11Solver_,
+								 Teuchos::RCP<Epetra_Operator> A11Precond_,
+								 bool zero_init_)
+		:
+		Spp(Spp_), zero_init(zero_init_), comm(comm_),
+		A11Solver(A11Solver_), A11Precond(A11Precond_)    
 	{
 
 		scheme = params.get("Scheme","SR");
