@@ -17,6 +17,9 @@ default: lib
 test: $(libname) test.o 
 	$(CXX) test.o  $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -lthcm $(LIBS)
 
+test2: test2.o 
+	$(CXX) test2.o  $(CXX_FLAGS) -o test2 $(LIBRARY_DIRS) $(LIBS)
+
 lib: $(libname)
 
 $(libname): ${obj}

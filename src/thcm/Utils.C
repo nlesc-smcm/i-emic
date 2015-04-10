@@ -698,11 +698,12 @@ Teuchos::RCP<Epetra_IntVector> Utils::AllGather(const Epetra_IntVector& vec)
 //========================================================================================
 Teuchos::RCP<Epetra_CrsMatrix> Utils::MatrixProduct(bool transA, const Epetra_CrsMatrix& A,
 													bool transB, const Epetra_CrsMatrix& B)
-{
+{	
 	DEBUG("Entered MatrixProduct()");
+
 	DEBUG("  construct AB");
     Teuchos::RCP<Epetra_CrsMatrix> AB =
-		Teuchos::rcp(new Epetra_CrsMatrix(Copy, A.RowMap(), A.MaxNumEntries()));
+		Teuchos::rcp(new Epetra_CrsMatrix(Copy, A.RowMap(),  A.MaxNumEntries()));
 
 	DEBUG("  compute A*B...");
     DEBVAR(transA);
@@ -819,15 +820,15 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::ReplaceColMap(Teuchos::RCP<Epetra_CrsMatri
 Teuchos::RCP<Epetra_CrsMatrix> Utils::ReplaceRowMap(Teuchos::RCP<Epetra_CrsMatrix> A,
 													const Epetra_Map& newmap)
 {
-	
-	int maxlen = A->MaxNumEntries();
-	int len;
-	int    *ind = new int[maxlen];
-	double *val = new double[maxlen];
-	int nloc = A->NumMyRows();
+	int maxlen       = A->MaxNumEntries();
+	int    *ind      = new int[maxlen];
+	double *val      = new double[maxlen];
+	int  nloc        = A->NumMyRows();
 	int *row_lengths = new int[nloc];
+
 	for (int i=0; i < nloc; i++)
-		row_lengths[i]  =A->NumMyEntries(i);
+		row_lengths[i] = A->NumMyEntries(i);
+	
 	Teuchos::RCP<Epetra_CrsMatrix> tmpmat;
 	if (A->HaveColMap())
 	{
@@ -837,7 +838,8 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::ReplaceRowMap(Teuchos::RCP<Epetra_CrsMatri
 	{
 		tmpmat = Teuchos::rcp(new Epetra_CrsMatrix(Copy,newmap, row_lengths) );
 	}
-   
+
+	int len;
 	int rowA,rowNew;
 	for (int i=0;i<A->NumMyRows();i++)
 	{
@@ -851,7 +853,7 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::ReplaceRowMap(Teuchos::RCP<Epetra_CrsMatri
 	delete [] val;
 	delete [] row_lengths;   
 	return tmpmat;
-}    
+}
 //========================================================================================
 // create an exact copy of a matrix removing the column map.
 // This means that row- and column map have to be 'compatible' 
@@ -859,18 +861,47 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::ReplaceRowMap(Teuchos::RCP<Epetra_CrsMatri
 // It seems to be required in order to use Ifpack in some cases.
 Teuchos::RCP<Epetra_CrsMatrix> Utils::RemoveColMap(Teuchos::RCP<Epetra_CrsMatrix> A)
 {
-	int maxlen = A->MaxNumEntries();
-	int len;
-	int *ind = new int[maxlen];
-	double *val = new double[maxlen];
-	int nloc = A->NumMyRows();
+	int maxlen       = A->MaxNumEntries();
+	int *ind         = new int[maxlen];
+	double *val      = new double[maxlen];
+	int nloc         = A->NumMyRows();
 	int *row_lengths = new int[nloc];
-	for (int i=0;i<nloc;i++) row_lengths[i]=A->NumMyEntries(i);
+	
+	for (int i = 0; i < nloc; i++)
+		row_lengths[i] = A->NumMyEntries(i);
 	Teuchos::RCP<Epetra_CrsMatrix> tmpmat;
-	tmpmat = Teuchos::rcp(new Epetra_CrsMatrix(Copy,A->RowMap(), row_lengths) );
-   
+	tmpmat = Teuchos::rcp(new Epetra_CrsMatrix(Copy,A->RowMap(), row_lengths));
+
+	int len;
 	int grid;
-	for (int i=0;i<A->NumMyRows();i++)
+	for (int i = 0; i < A->NumMyRows(); i++)
+	{
+		grid = A->GRID(i);
+		CHECK_ZERO(A->ExtractGlobalRowCopy(grid,maxlen,len,val,ind));
+		CHECK_ZERO(tmpmat->InsertGlobalValues(grid, len, val, ind));
+	}
+	tmpmat->SetLabel(A->Label());
+	delete [] ind;
+	delete [] val;
+	delete [] row_lengths;
+	return tmpmat;
+}
+//========================================================================================
+Teuchos::RCP<Epetra_CrsMatrix> Utils::RebuildMatrix(Teuchos::RCP<Epetra_CrsMatrix> A)
+{
+	int maxlen       = A->MaxNumEntries();
+	int *ind         = new int[maxlen];
+	double *val      = new double[maxlen];
+	int nloc         = A->NumMyRows();
+	int *row_lengths = new int[nloc];
+	
+	for (int i = 0; i < nloc; i++)
+		row_lengths[i] = A->NumMyEntries(i);
+	Teuchos::RCP<Epetra_CrsMatrix> tmpmat;
+	tmpmat = Teuchos::rcp(new Epetra_CrsMatrix(Copy,A->RowMap(), A->ColMap(), row_lengths));
+	int len;
+	int grid;
+	for (int i = 0; i < A->NumMyRows(); i++)
 	{
 		grid = A->GRID(i);
 		CHECK_ZERO(A->ExtractGlobalRowCopy(grid,maxlen,len,val,ind));

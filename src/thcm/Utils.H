@@ -190,6 +190,8 @@ namespace Utils
 	//! It seems to be required in order to use Ifpack in some cases.
 	Teuchos::RCP<Epetra_CrsMatrix> RemoveColMap(Teuchos::RCP<Epetra_CrsMatrix> A);
 
+	Teuchos::RCP<Epetra_CrsMatrix> RebuildMatrix(Teuchos::RCP<Epetra_CrsMatrix> A);
+
 	//! simultaneously replace row and column map (see comment for previous function)
     //! This is a special purpose function. The newcolmap must be a subset of the current
     //! colmap, i.e. you cannot really change the indexing scheme for the columns.

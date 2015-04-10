@@ -46,7 +46,7 @@ typedef Epetra_Operator     OPER;
 typedef Epetra_CrsMatrix    CRSMAT;
 
 Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm);
-void parDebug();
+void parDebug(Teuchos::RCP<Epetra_Comm> Comm);
 RCP<std::ostream> outFile;
 //----------------------------------------------------------------------
 // THCM is a singleton, there can be only one instance at a time. 
@@ -73,11 +73,11 @@ int main(int argc, char *argv[])
 	// Uncomment this when parallel debugging with gdb
 	//  - It enters an infinite while loop so you can couple a task to
 	//    gdb with the -p option.
-	//  - Then with gdb switch the integer to a value that negates the condition.
-	//    (set var i = 7)
-	//  - For this to work you need to have root privileges on Ubuntu
+	//  - Then with gdb step until you get in the condition of the while loop
+	//    and switch the integer to a value that negates the condition (set var i = 7)
+	//  - On Ubuntu you need root privileges for this to work.
 	// -------------------------------------------------------------------
-	// parDebug();
+	// parDebug(Comm);
 	// -------------------------------------------------------------------
 	// Setup THCM parameters:
 	// -------------------------------------------------------------------
@@ -199,13 +199,19 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 	}
 	return outFile;
 }
-void parDebug()
+
+void parDebug(Teuchos::RCP<Epetra_Comm> Comm)
 {
 	int i = 0;
+	int myPID = Comm->MyPID();
 	char hostname[256];
 	gethostname(hostname, sizeof(hostname));
-	printf("PID %d on %s ready for attach\n", getpid(), hostname);
-	fflush(stdout);
-	while (0 == i)
-		sleep(5);
+	if (Comm->MyPID() == 0)
+	{
+		printf("PID %d on %s, CPU%d is ready for attach\n", getpid(), hostname, myPID);
+		fflush(stdout);
+		while (0 == i)
+			sleep(5);
+	}
+	Comm->Barrier();
 }

@@ -245,7 +245,16 @@ namespace TRIOS {
 		DEBUG("Depth-average subsystem Guv...");
 		MGuv = Utils::MatrixProduct(false,Guv,true,Mzp1);
 		DEBUG("Depth-average subsystem Duv...");
+#if 0		
+		DEBUG(" Removing column map of Duv...");
+		Teuchos::RCP<Epetra_CrsMatrix> Duvwcm =
+			Utils::RebuildMatrix(Teuchos::rcp(&Duv, false));
+		Duvwcm->FillComplete();
+		MDuv = Utils::MatrixProduct(false, Mzp2, false, *Duvwcm);
+#else
 		MDuv = Utils::MatrixProduct(false, Mzp2, false, Duv);
+#endif
+	
 		// ___         _
 		// Duv:  uv -> p
 		CHECK_ZERO(MDuv->FillComplete(mapUV,mapPbar));

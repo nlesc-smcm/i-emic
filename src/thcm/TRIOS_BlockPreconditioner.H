@@ -60,7 +60,7 @@ namespace TRIOS {
                                                                                     
 	  | Ap    0     0    0   0      |      | I 0 0 0      Ap\BwTS            | 
 	  | Guv  MAuv  MGuv  0   0      |      | 0 I 0 0 -Auv\Guv Ap\BwTS        | 
-      L =  |  0   MDuv   0    0   0      |, U = | 0 0 I 0         0               | 
+ L =  |  0   MDuv   0    0   0      |, U = | 0 0 I 0         0               | 
 	  |  0   Duv1   0    Aw  0      |      | 0 0 0 I Aw\Duv1\Auv\Guv Ap\BwTS | 
 	  |  0   BTSvu  0  BTSw SchurTS |      | 0 0 0 0         I               | 
                                                                                     
@@ -71,7 +71,7 @@ namespace TRIOS {
                                                                                       
 	  Generally the preconditioner attempts to keep the same indexing which is used 
 	  in the global matrix, i.e. a vector x_uv will be based on a map containing    
-	  entries of teh form [0 1 6 7 12 13 ...] etc, and likewise for matrices.       
+	  entries of the form [0 1 6 7 12 13 ...] etc, and likewise for matrices.       
 	  On the other hand, 'depth-averaged' quantities are numbered contiguously,     
 	  i.e. after depth averaging, the same vector will be based on a map            
 	  [0 1 2 ... n*m*2]. Depth-averaged quantities are denoted by 'bar' (mapPbar)   

@@ -277,11 +277,10 @@ namespace TRIOS {
 		// the preconditioner)
 		mapP1 = Utils::CreateSubMap(*mapP,is_dummyP);
 		colmapP1 = Utils::AllGather(*mapP1);
-
+		
 		mapW1 = Utils::CreateSubMap(*mapW,is_dummyW);
 		colmapW1 = Utils::AllGather(*mapW1);
-
-
+		
 		// this map contains all P points corresponding to non-dummy W's.
 		// That is, the P's in the top ocean layer are removed, in addition
 		// to P's in land cells (original dummy P's)         ^    
@@ -290,8 +289,8 @@ namespace TRIOS {
 
 		// create importers
 		importW1 = Teuchos::rcp(new Epetra_Import(*(domain->GetSolveMap()), *mapW1) );
-		importP1 = Teuchos::rcp(new Epetra_Import(*domain->GetSolveMap(), *mapP1) );
-  
+		importP1 = Teuchos::rcp(new Epetra_Import(*(domain->GetSolveMap()), *mapP1) );
+
 		// note: The target map for this importer is P1, not the standard solve map.
 		//       It is used to extract the relevant part of a P-vector.
 		importPhat = Teuchos::rcp(new Epetra_Import(*mapPhat, *mapP1) );
@@ -481,8 +480,8 @@ namespace TRIOS {
 		// redistribute to solve map
 		Teuchos::RCP<Epetra_Vector> slv1 = Teuchos::rcp(new Epetra_Vector(*slvMap));
 		Teuchos::RCP<Epetra_Vector> slv2 = Teuchos::rcp(new Epetra_Vector(*slvMap));
-		CHECK_ZERO(slv1->Export(*std1,*import,Insert));
-		CHECK_ZERO(slv2->Export(*std2,*import,Insert));
+		CHECK_ZERO(slv1->Import(*std1,*import,Insert));
+		CHECK_ZERO(slv2->Import(*std2,*import,Insert));
 
 		// replace our temporary map by the pressure map 
 		// (with global indices [3, 9, 15, ...]).        
@@ -606,7 +605,7 @@ namespace TRIOS {
 			for (int i = 0; i < _NUMSUBM; i++) 
 			{
 				DEBUG("extract submatrix " << i);
-				CHECK_ZERO(SubMatrix[i]->Export(Jac, *Importer[i], Zero));
+				CHECK_ZERO(SubMatrix[i]->Import(Jac, *Importer[i], Zero));
     
 				// the first time we do this we have to adjust the column maps
 				if (needs_setup)
@@ -615,11 +614,13 @@ namespace TRIOS {
 					// what the submatrices look like (they always have the same structure)
 					// replace the col map by one that contains only cols actually present
 					// on the processor:
-					CHECK_ZERO(SubMatrix[i]->FillComplete(*SubMatrixDomainMap[i],*SubMatrixRangeMap[i]));
+					CHECK_ZERO(SubMatrix[i]->FillComplete(*SubMatrixDomainMap[i],
+														  *SubMatrixRangeMap[i]));
 					SubMatrixColMap[i] = Utils::CompressColMap(*SubMatrix[i]);
 					SubMatrix[i]=Utils::ReplaceColMap(SubMatrix[i],*SubMatrixColMap[i]);
 				}    
-				CHECK_ZERO(SubMatrix[i]->FillComplete(*SubMatrixDomainMap[i],*SubMatrixRangeMap[i]));
+				CHECK_ZERO(SubMatrix[i]->FillComplete(*SubMatrixDomainMap[i],
+													  *SubMatrixRangeMap[i]));
 				CHECK_ZERO(SubMatrix[i]->OptimizeStorage());
 				//DEBVAR(*SubMatrix[i]);
 			}
@@ -994,6 +995,7 @@ namespace TRIOS {
 
 	void BlockPreconditioner::build_preconditioner(void)
 	{
+
 		if (verbose>5)
 		{
 			INFO("Prepare preconditioner...");
@@ -1007,7 +1009,7 @@ namespace TRIOS {
 			
 			Spp =
 				Teuchos::rcp(new SppDAMatrix(*Mzp1,*Mzp2,*Auv,*SubMatrix[_Guv],
-											 *SubMatrix[_Duv],comm));
+											 *SubMatrix[_Duv], comm));
 		}
 		else
 		{
@@ -1053,9 +1055,7 @@ namespace TRIOS {
 		{
 			INFO("*** Create Preconditioners...");
 		}
-        DEBUG(lsParams);
 		Teuchos::ParameterList& AuvPrecList = lsParams.sublist("Auv Precond");
-		DEBUG(AuvPrecList);
   
 // Currently the Auv Preconditioner has to be reconstructed because   
 // the Auv pointer is no longer valid (it is a new one because of the 
@@ -1240,9 +1240,7 @@ namespace TRIOS {
 		{
 			ATSSolver->SetOutputStream(*InnerStream);
 			ATSSolver->SetErrorStream(*InnerErrorStream);
-		}
-
-   
+		}   
 
 		// (0) PREPROCESSING
 
@@ -1260,15 +1258,15 @@ namespace TRIOS {
 		Epetra_Vector xp(*mapP1);
 		Epetra_Vector xTS(*mapTS);
    
-		CHECK_ZERO(buv.Export(b,*importUV,Zero));
-		CHECK_ZERO(bw.Export(b,*importW1,Zero));
-		CHECK_ZERO(bp.Export(b,*importP1,Zero));
-		CHECK_ZERO(bTS.Export(b,*importTS,Zero));
+		CHECK_ZERO(buv.Import(b,*importUV,Zero));
+		CHECK_ZERO(bw.Import(b,*importW1,Zero));
+		CHECK_ZERO(bp.Import(b,*importP1,Zero));
+		CHECK_ZERO(bTS.Import(b,*importTS,Zero));
 
-		CHECK_ZERO(xuv.Export(x,*importUV,Zero));
-		CHECK_ZERO(xw.Export(x,*importW1,Zero));
-		CHECK_ZERO(xp.Export(x,*importP1,Zero));
-		CHECK_ZERO(xTS.Export(x,*importTS,Zero));
+		CHECK_ZERO(xuv.Import(x,*importUV,Zero));
+		CHECK_ZERO(xw.Import(x,*importW1,Zero));
+		CHECK_ZERO(xp.Import(x,*importP1,Zero));
+		CHECK_ZERO(xTS.Import(x,*importTS,Zero));
 
 		// set bp = -bp (the sign of the cont. eqn. has been changed)
 		CHECK_ZERO(bp.Scale(-1.0));
