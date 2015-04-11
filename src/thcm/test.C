@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
     //-------------------------------------------------------------------
 	// Belos::LinearProblem setup
 	//-------------------------------------------------------------------
-	RCP<Belos::LinearProblem<double, MVEC, OPER>> problem =
+	RCP<Belos::LinearProblem<double, MVEC, OPER> > problem =
 		rcp(new Belos::LinearProblem<double, MVEC, OPER>(A, X, MRHS));
 		
 	//-----------------------------------------------------------------------------

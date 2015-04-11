@@ -29,6 +29,7 @@
 using Teuchos::RCP;
 using Teuchos::rcp;
 
+Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm);
 RCP<std::ostream> outFile;
 
 int main(int argc, char *argv[])
@@ -42,7 +43,7 @@ int main(int argc, char *argv[])
 	// -------------------------------------------------------------------
 	// Setup stream for INFO, DEBUG, ERROR and WARNING Macros
 	// -------------------------------------------------------------------
-	outFile = rcp(&std::cout, false);
+	outFile = outputFiles(rcp(&Comm, false));
 
 	const int numDomainElements = 16;
 	const int numRangeElements = 32;
@@ -106,4 +107,26 @@ int main(int argc, char *argv[])
 	//------------------------------------------------------------------
 	MPI_Finalize();
 	return 0;
+}
+
+Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
+{
+	// Setup output files "fname_#.txt" for P==0 && P==1, other processes
+	// will get a blackholestream.
+	Teuchos::RCP<std::ostream> outFile;
+	if (Comm->MyPID() < 2)
+	{
+		std::ostringstream outfile;  // setting up a filename
+		outfile << "out_" << Comm->MyPID() << ".txt";
+		std::cout << "Output for Process " << Comm->MyPID() << " is written to "
+				  << outfile.str().c_str() << std::endl;
+		outFile = Teuchos::rcp(new std::ofstream(outfile.str().c_str()));
+	}
+	else
+	{
+		std::cout << "Output for Process " << Comm->MyPID()
+				  << " is neglected" << std::endl;
+		outFile = Teuchos::rcp(new Teuchos::oblackholestream());
+	}
+	return outFile;
 }
