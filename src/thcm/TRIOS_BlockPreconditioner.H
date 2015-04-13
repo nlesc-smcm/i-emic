@@ -106,9 +106,9 @@ namespace TRIOS {
 		public NOX::Epetra::Interface::Preconditioner,
 		public Ifpack_Preconditioner
     {
-      
+		
     public:
-
+		
 		/*!
 		  \brief Constructor
 
@@ -224,7 +224,12 @@ namespace TRIOS {
 		double ComputeFlops() const;
 		double ApplyInverseFlops() const;
 		ostream& Print(std::ostream& os) const;
-  
+#ifdef TESTING
+		//=============================================================================
+		// Get some temporary access for debugging
+		//=============================================================================
+		void Test();
+#endif
 		//!@}
       
     protected:
@@ -402,7 +407,7 @@ namespace TRIOS {
 		*/
 		Teuchos::RCP<Epetra_Vector> svp1, svp2;
       
-		//!\name Solvers and preconditioners for subsystems
+		//!\name Solvers and prexconditioners for subsystems
 		//!@{
       
 		/*! \note since we currently use standard GMRES in the outer iteration

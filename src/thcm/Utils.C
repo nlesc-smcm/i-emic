@@ -697,14 +697,27 @@ Teuchos::RCP<Epetra_IntVector> Utils::AllGather(const Epetra_IntVector& vec)
 }
 //========================================================================================
 Teuchos::RCP<Epetra_CrsMatrix> Utils::MatrixProduct(bool transA, const Epetra_CrsMatrix& A,
-													bool transB, const Epetra_CrsMatrix& B)
+													bool transB, const Epetra_CrsMatrix& B,
+	                                                bool useColMap)
 {	
 	DEBUG("Entered MatrixProduct()");
-
+	
 	DEBUG("  construct AB");
-    Teuchos::RCP<Epetra_CrsMatrix> AB =
-		Teuchos::rcp(new Epetra_CrsMatrix(Copy, A.RowMap(),  A.MaxNumEntries()));
-
+	Teuchos::RCP<Epetra_CrsMatrix> AB;
+	DEBVAR(useColMap);
+	if (useColMap)
+	{
+		AB = Teuchos::rcp(new Epetra_CrsMatrix(Copy, A.RowMap(),
+											   B.ColMap(), A.MaxNumEntries()));
+		DEBVAR(B.Importer());
+		DEBVAR(B.ColMap().SameAs(AB->ColMap()));
+	}
+	else
+	{
+		AB = Teuchos::rcp(new Epetra_CrsMatrix(Copy, A.RowMap(),
+											   A.MaxNumEntries()));
+	}
+	
 	DEBUG("  compute A*B...");
     DEBVAR(transA);
     DEBVAR(A.NumGlobalRows());
@@ -919,10 +932,10 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::ReplaceBothMaps(Teuchos::RCP<Epetra_CrsMat
 													  const Epetra_Map& newmap, 
 													  const Epetra_Map& newcolmap)
 {
-	DEBVAR(A->RowMap());
-	DEBVAR(newmap);
-	DEBVAR(A->ColMap());
-	DEBVAR(newcolmap);
+	//DEBVAR(A->RowMap());
+	//DEBVAR(newmap);
+	//DEBVAR(A->ColMap());
+	//DEBVAR(newcolmap);
 	int maxlen = A->MaxNumEntries();
 	int len;
 	int    *ind = new int[maxlen];

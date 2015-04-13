@@ -246,17 +246,20 @@ namespace TRIOS {
 		MGuv = Utils::MatrixProduct(false,Guv,true,Mzp1);
 		DEBUG("Depth-average subsystem Duv...");
 #if 1	
-		DEBUG(" Removing column map of Duv...");
-		Teuchos::RCP<Epetra_CrsMatrix> Duvwcm =
-			Utils::RebuildMatrix(Teuchos::rcp(&Duv, false));
-		Duvwcm->FillComplete(mapUV, mapP);
-		MDuv = Utils::MatrixProduct(false, Mzp2, false, *Duvwcm);
+		MDuv =
+			Teuchos::rcp(new Epetra_CrsMatrix(Copy, Mzp2.RowMap(),
+											  Duv.ColMap(),
+											  Mzp2.MaxNumEntries()));
+		INFO("Multiply Mzp2 with Duv");
+		CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(Mzp2, false,
+													 Duv, false, *MDuv, false));
 #else
-		MDuv = Utils::MatrixProduct(false, Mzp2, false, Duv);
+		MDuv = Utils::MatrixProduct(false, Mzp2, false, Duv, true);
 #endif
 	
 		// ___         _
 		// Duv:  uv -> p
+		INFO("CHECK_ZERO(MDuv->FillComplete(mapUV,mapPbar))");
 		CHECK_ZERO(MDuv->FillComplete(mapUV,mapPbar));
     
 		// ___   _      
@@ -268,10 +271,10 @@ namespace TRIOS {
 	}
 	
 	void SppDAMatrix::Update(Epetra_CrsMatrix& Auv)
-    {
+	{
 		A11_= Teuchos::rcp(&Auv,false);
 		recompute_normInf();
-    }
+	}
 
 // destructor
 	SppDAMatrix::~SppDAMatrix()
@@ -284,7 +287,7 @@ namespace TRIOS {
 // class SppSimplePrec : public Epetra_Operator //
 //////////////////////////////////////////////////
 
-	// constructor
+// constructor
 	SppSimplePrec::SppSimplePrec(Teuchos::RCP<SaddlepointMatrix> Spp_,
 								 Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm_, 
 								 Teuchos::RCP<AztecOO> A11Solver_,
@@ -358,8 +361,8 @@ namespace TRIOS {
 			Teuchos::RCP<Epetra_CrsMatrix> AB =
 				Teuchos::rcp(new Epetra_CrsMatrix(Copy, (Spp->A21()).RowMap(),
 												  (Spp->A21()).MaxNumEntries()));
-			DEBUG(Spp->A21());
-			DEBUG(*BlockDiagA11);
+			//DEBUG(Spp->A21());
+			//DEBUG(*BlockDiagA11);
 			DEBUG("  perform AB = Spp->A21*BlockDiagA11");
 			EpetraExt::MatrixMatrix::Multiply(Spp->A21(),    false,
 											  *BlockDiagA11, false, *AB);
@@ -368,9 +371,9 @@ namespace TRIOS {
 			DEBUG("  finished MM's");
 			Chat = TMP;
 			/*
-			Chat = Utils::TripleProduct(false,  Spp->A21(),
-													 false, *BlockDiagA11,
-													 false,  Spp->A12());
+			  Chat = Utils::TripleProduct(false,  Spp->A21(),
+			  false, *BlockDiagA11,
+			  false,  Spp->A12());
 			*/
 
 			CHECK_ZERO(Chat->Scale(-1.0));
@@ -454,16 +457,16 @@ namespace TRIOS {
 	}//SppSimplePrec
 
       
-	// Destructor
+// Destructor
 	SppSimplePrec::~SppSimplePrec()
-    {
+	{
 		DEBUG("Destroy SppSimplePrec");
 		// handled by Teuchos Teuchos::rcp's
-    }
+	}
 
-	// fix two points of the pressure to avoid singular Chat  
+// fix two points of the pressure to avoid singular Chat  
 	void SppSimplePrec::AdjustChat(Teuchos::RCP<Epetra_CrsMatrix> P)
-    {
+	{
 		int maxgid = Chat->Map().MaxAllGID();
 		//int maxgid = Chat->Map().MaxMyGID();
 		if (Chat->MyGRID(maxgid))
@@ -505,15 +508,15 @@ namespace TRIOS {
 			delete [] indices;
 			delete [] values;
 		}
-    } 
+	} 
 
 
-	// extracts 2x2 block diagonal from a matrix, inverts the blocks and stores
-	// them as a new Crs matrix.
-	// note: this is _not_ very general
+// extracts 2x2 block diagonal from a matrix, inverts the blocks and stores
+// them as a new Crs matrix.
+// note: this is _not_ very general
 	void SppSimplePrec::ExtractInverseBlockDiagonal(const Epetra_CrsMatrix& A, 
 													Epetra_CrsMatrix& D)
-    {
+	{
 		int *indAu, *indAv, indDu[2], indDv[2];
 		double *valAu, *valAv, valDu[2], valDv[2];
 		int len,maxlen;
@@ -540,7 +543,7 @@ namespace TRIOS {
 			grid = A.GRID(i);
 			// 'u' variable
 			CHECK_ZERO(A.ExtractGlobalRowCopy(grid,maxlen,len,valAu,indAu) );
-#ifdef DEBUGGING
+#if 0
 			DEBUG("A11, global row " << i << ": \n");
 			for (int j = 0; j < len; j++)
 				DEBUG(grid << "\t" << indAu[j] << "\t" <<valAu[j] << "\n");
@@ -600,21 +603,21 @@ namespace TRIOS {
 		delete [] valAu;
 		delete [] valAv;
     
-    }//ExtractInverseBlockDiagonal
+	}//ExtractInverseBlockDiagonal
     
 
-	// Apply preconditioner operator (n/a)
+// Apply preconditioner operator (n/a)
 	int SppSimplePrec::Apply(const Epetra_MultiVector& X, Epetra_MultiVector& Y) const
-    {
+	{
 		INFO("WARNING: SppSimplePrec::Apply not implemented!");
 		INFO("("<<__FILE__<< ", line "<<__LINE__<<")");
 		return -1;
-    }
+	}
       
       
-	// Apply preconditioner operator inverse
+// Apply preconditioner operator inverse
 	int SppSimplePrec::ApplyInverse(const Epetra_MultiVector& B, Epetra_MultiVector& X) const
-    {
+	{
 		if (X.NumVectors()>1) ERROR("Only one vector allowed right now!",__FILE__,__LINE__);
     
 		
@@ -650,15 +653,15 @@ namespace TRIOS {
 		for (int i=0;i<n2;i++) (*b2)[i] = b[n1+i];
       
 		if (scheme=="SI")
-        {
+		{
 			CHECK_ZERO(this->ApplyInverse(*b1,*b2,*x1,*x2,false));
-        }
+		}
 		else if (scheme=="SL")
-        {
+		{
 			CHECK_ZERO(this->ApplyInverse(*b1,*b2,*x1,*x2,true));
-        }
+		}
 		else if (scheme=="SR"||scheme=="SPAI")
-        {
+		{
 			Teuchos::RCP<Epetra_Vector> xtmp1 = Teuchos::rcp(new Epetra_Vector(map1));
 			Teuchos::RCP<Epetra_Vector> xtmp2 = Teuchos::rcp(new Epetra_Vector(map2));
 			Teuchos::RCP<Epetra_Vector> btmp1 = Teuchos::rcp(new Epetra_Vector(map1));
@@ -681,28 +684,28 @@ namespace TRIOS {
 			// construct final result
 			CHECK_ZERO(x1->Update(1.0,*xtmp1,1.0));
 			CHECK_ZERO(x2->Update(1.0,*xtmp2,1.0));
-        }
+		}
 
 		// compose final vector x = [xuv;xp]
 		for (int i=0;i<n1;i++) x[i] = (*x1)[i];
 		for (int i=0;i<n2;i++) x[n1+i] = (*x2)[i];
         
 		return 0;
-    }
+	}
 
-	// apply standard Simple method (SI, if transp=false) or
-	// simple(L) (SL if transp=true);
+// apply standard Simple method (SI, if transp=false) or
+// simple(L) (SL if transp=true);
 	int SppSimplePrec::ApplyInverse(Epetra_Vector& b1, Epetra_Vector& b2,
 									Epetra_Vector& x1, Epetra_Vector& x2,
 									bool trans) const
 	{
-        Teuchos::RCP<Epetra_Vector> y1=Teuchos::rcp(new Epetra_Vector(b1.Map()));
-        Teuchos::RCP<Epetra_Vector> ytmp1=Teuchos::rcp(new Epetra_Vector(b1.Map()));
-        Teuchos::RCP<Epetra_Vector> y2=Teuchos::rcp(new Epetra_Vector(b2.Map()));
-        Teuchos::RCP<Epetra_Vector> ytmp2=Teuchos::rcp(new Epetra_Vector(b2.Map()));
-        Teuchos::RCP<Epetra_Vector> rhs,sol;
+		Teuchos::RCP<Epetra_Vector> y1=Teuchos::rcp(new Epetra_Vector(b1.Map()));
+		Teuchos::RCP<Epetra_Vector> ytmp1=Teuchos::rcp(new Epetra_Vector(b1.Map()));
+		Teuchos::RCP<Epetra_Vector> y2=Teuchos::rcp(new Epetra_Vector(b2.Map()));
+		Teuchos::RCP<Epetra_Vector> ytmp2=Teuchos::rcp(new Epetra_Vector(b2.Map()));
+		Teuchos::RCP<Epetra_Vector> rhs,sol;
         
-        if (!trans) // Simple
+		if (!trans) // Simple
 		{
 			{
 				
@@ -765,7 +768,7 @@ namespace TRIOS {
 			CHECK_ZERO(BlockDiagA11->Multiply(false,*ytmp1,x1));
 			CHECK_ZERO(x1.Update(1.0,*y1,-1.0));
 		}
-        else  // Simple(L)
+		else  // Simple(L)
 		{
 			// apply inv(U')
 			CHECK_ZERO(BlockDiagA11->Multiply(false,b1,*y1));
@@ -833,13 +836,13 @@ namespace TRIOS {
 		return 0;
 	}
       
-	// Computing infinity norm 
+// Computing infinity norm 
 	double SppSimplePrec::NormInf() const
-    {
+	{
 		INFO("WARNING: SppSimplePrec::NormInf not implemented!");
 		INFO("("<<__FILE__<< ", line "<<__LINE__<<")");
 		return -1;
-    }
+	}
 
 
 }//namespace TRIOS

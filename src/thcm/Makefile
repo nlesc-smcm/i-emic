@@ -23,6 +23,9 @@ test2: test2.o
 test3: test3.o 
 	$(CXX) test3.o  $(CXX_FLAGS) -o test3 $(LIBRARY_DIRS) $(LIBS)
 
+test4: $(libname) test4.o 
+	$(CXX) test4.o  $(CXX_FLAGS) -o test4 $(LIBRARY_DIRS) -L. -lthcm $(LIBS)
+
 lib: $(libname)
 
 $(libname): ${obj}

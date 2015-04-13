@@ -160,7 +160,8 @@ namespace Utils
 
 	//! compute matrix-matrix product C=A*B (implemented using EpetraExt)
 	Teuchos::RCP<Epetra_CrsMatrix> MatrixProduct(bool transA, const Epetra_CrsMatrix& A,
-												 bool transB, const Epetra_CrsMatrix& B);
+												 bool transB, const Epetra_CrsMatrix& B,
+												 bool useColMap = false);
 
 	//! compute triple matrix product A*B*C or the like
 	Teuchos::RCP<Epetra_CrsMatrix> TripleProduct(bool transA, const Epetra_CrsMatrix& A,

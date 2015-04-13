@@ -113,6 +113,7 @@ namespace TRIOS {
 // to be called in constructors:
 	void BlockPreconditioner::Setup1()
 	{
+		if (verbose > 5) INFO("Enter Setup1()...");
 		// set pointer to domain map (map of vector x in y=A*x)
 		// this preconditioner acts on standard vectors, i.e.
 		// with 'nun' (6) unknowns per node 
@@ -134,12 +135,10 @@ namespace TRIOS {
 		Teuchos::RCP<Epetra_Map> ColMap = domain->GetColMap();
 
 		// split up row map:
-		if (verbose>5)
-		{
-			INFO("$   Split main map into uv|w|p|TS maps...");
-		}
+		if (verbose>5) INFO("$   Split main map into uv|w|p|TS maps...");
 
-//  DEBVAR(*RowMap);
+
+//  EBVAR(*RowMap);
 
 		const int labelUV[2] = {UU, VV};
 		const int labelTS[2] = {TT, SS};
@@ -234,7 +233,7 @@ namespace TRIOS {
 	{
 		if (verbose>5)
 		{
-			INFO("Setup ocean preconditioner...");
+			INFO("Enter Setup2()...");
 		}
 		// create some more maps we need for the submatrices and set 
 		// pointer arrays, create the matrices.
@@ -441,15 +440,18 @@ namespace TRIOS {
 		// temporary vectors used for assembly
 
 		// rectangular domain without overlap, only 1 DoF
+ 		DEBUG("Calling domain->CreateStandardMap");
 		Teuchos::RCP<Epetra_Map> stdMap = domain->CreateStandardMap(1,false); 
 		Teuchos::RCP<Epetra_Vector> std1 = Teuchos::rcp(new Epetra_Vector(*stdMap));
 		Teuchos::RCP<Epetra_Vector> std2 = Teuchos::rcp(new Epetra_Vector(*stdMap));
 
 		// load-balanced map, only 1 DoF
+		DEBUG("Calling domain->CreateSolveMap");
 		Teuchos::RCP<Epetra_Map> slvMap = domain->CreateSolveMap(1,false);
   
 		// transfer operator
-		Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*stdMap,*slvMap));
+		Teuchos::RCP<Epetra_Import> import =
+			Teuchos::rcp(new Epetra_Import(*stdMap,*slvMap));
   
 		int pos = 0;
 
@@ -503,17 +505,13 @@ namespace TRIOS {
   
 	}
 
-
-
 #ifdef TESTING //[
 
 // check svp's: They must satisfy Guv*svp=Gw*svp=0.
 	bool BlockPreconditioner::test_svp()
 	{
+		INFO("Entering test_svp()");
 		bool result = true;
-
-  
-  
 		double norm;
 		INFO("Test if svp1 and svp2 are singular vectors of P...");
 		INFO("Check if Gw*svp1=0...");
@@ -531,8 +529,7 @@ namespace TRIOS {
 		else
 		{
 			INFO("Test successful.");
-		}
-  
+		}  
 		INFO("Check if Gw*svp2=0...");
 		CHECK_ZERO(SubMatrix[_Gw]->Multiply(false,*svp2,testW));
 		CHECK_ZERO(testW.Norm2(&norm));
@@ -547,8 +544,7 @@ namespace TRIOS {
 		else
 		{
 			INFO("Test successful.");
-		}
-  
+		}  
 		INFO("Check if Guv*svp1=0...");
 		Epetra_Vector testUV(*mapUV);
 		CHECK_ZERO(SubMatrix[_Guv]->Multiply(false,*svp1,testUV));
@@ -2291,10 +2287,46 @@ namespace TRIOS {
 		return os;
 	}
 
+#ifdef TESTING
+	void BlockPreconditioner::Test()
+	{
+		Setup2();
+		extract_submatrices(*jacobian);
+		test_svp();
+		Teuchos::RCP<Epetra_CrsMatrix> T =
+			Teuchos::rcp(new Epetra_CrsMatrix(Copy, (*SubMatrix[_Guv]).RowMap(),
+											  (*SubMatrix[_Guv]).MaxNumEntries()));
+		INFO("Build Mzp1");
+		Mzp1 = build_singular_matrix(SubMatrix[_Gw]);
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// IMPLEMENTATION of auxiliary operator classes                                                                                //
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		INFO("Multiply Guv with Mzp1");
+		CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(*SubMatrix[_Guv], false,
+													 *Mzp1, true, *T));
+		INFO("transpose Dw...");
+		Epetra_RowMatrixTransposer Trans(SubMatrix[_Dw].get());
+		Epetra_CrsMatrix* tmpGw;
+		CHECK_ZERO(Trans.CreateTranspose(true, tmpGw, SubMatrixRowMap[_Gw].get()));
+
+		INFO("build Mzp2...");
+		Mzp2 = build_singular_matrix(Teuchos::rcp(tmpGw, false));
+		Teuchos::RCP<Epetra_CrsMatrix> T2 =
+			Teuchos::rcp(new Epetra_CrsMatrix(Copy, (*Mzp2).RowMap(),
+											  (*SubMatrix[_Duv]).ColMap(),
+											  (*Mzp2).MaxNumEntries()));
+
+		DEBVAR(*Mzp2);
+		DEBVAR(*SubMatrix[_Duv]);
+		DEBVAR((*SubMatrix[_Duv]).Importer());
+		DEBVAR((*SubMatrix[_Duv]).ColMap().SameAs(T2->ColMap()));
+		INFO("Multiply Mzp2 with Duv");
+		CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(*Mzp2, false,
+													 *SubMatrix[_Duv], false, *T2));
+	}
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION of auxiliary operator classes                            //
+/////////////////////////////////////////////////////////////////////////////
 
 // This is a matrix class that represents the matrix Ap.
 // it needs its own class because we want it to map from
@@ -2336,7 +2368,7 @@ namespace TRIOS {
 		DEBVAR(minGID);
 		DEBVAR(maxGID);
 		ColMapGw1 = Utils::ExtractRange(ColMapGw,minGID,maxGID);
-		DEBVAR(*ColMapGw1);
+		//DEBVAR(*ColMapGw1);
 
 		DEBUG("Split matrix...");
 		Gw1 = Teuchos::rcp(new Epetra_CrsMatrix(Copy,RowMapGw,*ColMapGw1,Gw.MaxNumEntries()) );
@@ -2345,9 +2377,9 @@ namespace TRIOS {
 		DEBUG("Import matrix entries...");
 		CHECK_ZERO(Gw1->Import(Gw,*importGw,Zero));
 		DEBUG("replace maps of Gw...");
-		DEBVAR(*mapP1);
-		DEBVAR(*mapW1);
-		DEBVAR(*mapPhat);
+		//DEBVAR(*mapP1);
+		//DEBVAR(*mapW1);
+		//DEBVAR(*mapPhat);
 // we must replace the row map of Gw1 as we want ot perform upper tri solves with it:
 #if 0
 		CHECK_ZERO(Gw1->ReplaceRowMap(*mapPhat));
