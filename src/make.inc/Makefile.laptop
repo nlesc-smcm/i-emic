@@ -1,0 +1,51 @@
+##=================================================================
+## Makefile variables for my imac in Utrecht.
+## Author: T.E. Mulder => t.e.mulder@uu.nl
+##=================================================================
+##   Location specific variables:
+LOCATION     = LAPTOP
+##   Compiler identifier flag, options are
+##   GNU, G95, INTEL, ASTER, ORBIT, HOPF, PGI and HUYGENS
+COMP_IDENT   = GNU
+##   Trilinos version:
+TRIVERSION   = 11.14
+##   Trilinos directory containing lib and include dirs:
+TRIDIR       = /home/erik/trilinos/${TRIVERSION}
+##   Project base directory
+PROJECT_BASE = /home/erik/Projects
+##=================================================================
+##   Import makefile variables from Trilinos:
+include ${TRIDIR}/include/Makefile.export.Teko
+CXX                 = ${Teko_CXX_COMPILER}
+FC                  = ${Teko_FORTRAN_COMPILER}
+INCLUDE_DIRS        = ${Teko_INCLUDE_DIRS}
+LIBRARY_DIRS        = ${Teko_LIBRARY_DIRS}
+TRILINOS_LIBRARIES  = ${Teko_LIBRARIES} ${Teko_TPL_LIBRARIES}
+##=================================================================
+##   Flags that are shared among the different compilers:
+SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
+##=================================================================
+##   Supply debug and other flags for CXX compiler:
+CXX_DEBUG = -g
+CXX_EXTRA = -DDEBUGGING -DTESTING 
+CXX_FLAGS = ${CXX_DEBUG} ${SHARED_FLAGS} $(CXX_EXTRA)
+##=================================================================
+##   Supply debug and other flags for FC compiler:
+FC_DEBUG  = -g
+FC_EXTRA  = -fdefault-real-8 -ffree-line-length-none\
+		    -DASCII_TOPO
+FC_FLAGS  = $(FC_DEBUG) ${SHARED_FLAGS} $(FC_EXTRA)
+##=================================================================
+##   Supply F77 compiler and its flags:
+F77        = gfortran
+F77_DEBUG  = -g
+#    Use the default-real-8 option to communicate between
+#    F90 and F77
+F77_EXTRA  = -ffixed-line-length-132 -fdefault-real-8\
+             -ffree-line-length-none
+F77_FLAGS  = $(F77_DEBUG) ${SHARED_FLAGS} $(F77_EXTRA)
+##=================================================================
+##   Gather all the libraries:
+LIBS_FORT  = -lgfortran
+LIBS_EXTRA =
+LIBS       =  ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT} 

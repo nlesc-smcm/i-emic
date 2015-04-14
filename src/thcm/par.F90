@@ -13,6 +13,9 @@ module m_par
 #elif defined(GRONINGEN)
   character(len=*), parameter ::  topdir = '/home/p267904/Projects/thcm_data/'
   character(len=*), parameter ::  rundir = ''
+#elif defined(LAPTOP)
+  character(len=*), parameter ::  topdir = '/home/erik/Projects/thcm_data/'
+  character(len=*), parameter ::  rundir = ''
 #else
 #error no guess for working directory available!
 #endif
