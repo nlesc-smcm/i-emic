@@ -545,8 +545,7 @@
     <Parameter name="Method" type="string" value="ML"/>
     <Parameter name="Analyze Preconditioned Spectrum" type="bool" value="1"/>
 
-    <!-- Ifpack -->
-    
+    <!-- Ifpack -->    
     <Parameter name="Ifpack Method" type="string" value="MRILU"/>
     <Parameter name="Ifpack Overlap Level" type="int" value="2"/>
 
@@ -606,7 +605,7 @@
       <Parameter name="default values" type="string" value="DD"/>
       <Parameter name="PDE equations" type="int" value="2"/>
       <Parameter name="ML debug mode" type="bool" value="0"/>
-      <Parameter name="ML output" type="int" value="0"/>
+      <Parameter name="ML output" type="int" value="10"/>
       <Parameter name="aggregation: damping factor" type="double" value="1.333"/>
       <Parameter name="aggregation: threshold" type="double" value="0.0"/>
       <Parameter name="aggregation: type" type="string" value="METIS"/>
@@ -618,6 +617,7 @@
       <Parameter name="coarse: type" type="string" value="Amesos-KLU"/>
       <Parameter name="increasing or decreasing" type="string" value="increasing"/>
       <Parameter name="max levels" type="int" value="2"/>
+	  <Parameter name="output" type="int" value="10"/>
       <Parameter name="cycle applications" type="int" value="1"/>
       <Parameter name="prec type" type="string" value="full-MGV"/>
       <Parameter name="print unused" type="int" value="-2"/>
@@ -657,7 +657,7 @@
       </ParameterList><!--}-->
 
       <Parameter name="smoother: ifpack overlap" type="int" value="0"/>
-      <Parameter name="smoother: ifpack type" type="string" value="MRILU"/>
+      <Parameter name="smoother: ifpack type" type="string" value="ILU"/>
       <!--Parameter name="smoother: ifpack type" type="string" 
           value="block relaxation (Amesos)"/-->
       

@@ -38,13 +38,15 @@
 // block preconditioner for THCM jacobian
 #include "TRIOS_BlockPreconditioner.H"
 
+// for the info stream
+#include "GlobalDefinitions.H"
+
 // don't know why...
 #ifdef DEBUGGING
 #ifdef HAVE_ANASAZI
 #undef HAVE_ANASAZI
 #endif
 #endif
-
 
 // this is for eigen-analysis using Anasazi BlockKrylovSchur:
 #ifdef HAVE_ANASAZI
@@ -214,7 +216,6 @@ namespace TRIOS {
 	{
 		string PrecType = plist.get("Method","None"); 
 		DEBUG("Enter SolverFactory::ComputeAlgebraicPrecond ("+PrecType+")"); 
-        
 
 		bool is_ifpack = (PrecType=="Ifpack");
 		if (is_ifpack)
@@ -287,10 +288,9 @@ namespace TRIOS {
 				Teuchos::rcp_dynamic_cast<ML_Epetra::MultiLevelPreconditioner>(P);
 
 			Teuchos::ParameterList& mllist = plist.sublist("ML");
-
-			if (Prec->Comm().MyPID()==0)
+			if (Prec->Comm().MyPID() == 0)
 			{
-				if (mllist.get("output",0)>0)
+				if (mllist.get("output", 0) > 0)
 				{
 					std::cout << "Computing Multi-Level Preconditioner for ";
 					std::cout << Prec->RowMatrix().Label()<<"\n";
@@ -381,10 +381,10 @@ namespace TRIOS {
 		if (SolverType=="AztecOO")
 		{
 			Solver = Teuchos::rcp(new AztecOO() );
-			Solver->SetOutputStream(std::cout);
-			Solver->SetErrorStream(std::cout);
-			if (verbose>5) plist.set("Output",1);      
-			if (verbose==0) plist.set("Output",0);
+			Solver->SetOutputStream(*outFile);
+			Solver->SetErrorStream(*outFile);
+			if (verbose > 5)  plist.set("Output",1);      
+			if (verbose == 0) plist.set("Output",0);
 			Solver->SetParameters(plist);
 		}
 		else if (SolverType!="None")

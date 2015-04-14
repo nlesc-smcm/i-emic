@@ -495,10 +495,10 @@ void OceanGrid::recomputePsiB()
     CHECK_ZERO(comm->MaxAll(&PsiMaxL,&PsibMax_,1));
     CHECK_ZERO(comm->MinAll(&PsiMinL,&PsibMin_,1));
     
-    DEBVAR(PsiMinL);
-    DEBVAR(PsiMaxL);
-    DEBVAR(PsibMin_);
-    DEBVAR(PsibMax_);
+    //DEBVAR(PsiMinL);
+    //DEBVAR(PsiMaxL);
+    //DEBVAR(PsibMin_);
+    //DEBVAR(PsibMax_);
     
     recompute_PsiB_=false;
 }

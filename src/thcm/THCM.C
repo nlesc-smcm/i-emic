@@ -494,7 +494,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 #ifdef DEBUGGING
 	OceanGrid G(domain);
 	G.ImportLandMask(*landm_loc);
-	std::cout << G;
+	//DEBVAR(G);
 #endif  
 
 #if 0
