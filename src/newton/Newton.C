@@ -30,4 +30,3 @@ void Newton::step()
 	
 	INFO("Leaving Newton::step()");
 }
-

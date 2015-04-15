@@ -9,6 +9,7 @@
 //!     Model::evaluateJ(Vector state_); // Jacobian evaluation
 //!     Model::setState(Vector state_);  // set the state in the model
 //!     Model::getState();               // get the state in the model
+//!     Model::solve();                  // solve 
 //!
 //! Vector should be the type returned by Model::evaluateF().
 //! It should have the following methods:
@@ -18,16 +19,13 @@
 //! It should have the following methods:
 
 
-template<typename Model, typename Vector,
-		 typename Matrix, typename LinearSolver>
+template<typename Model, typename Vector>
 class Newton
 {
 	Model model_;
 
 	Vector state_;
 	Vector direction_;
-	
-	LinearSolver linearSolver_;
 
 	//! 
 	size_t maxNumIterations_;
