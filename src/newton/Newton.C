@@ -1,16 +1,33 @@
 #include "Newton.H"
 
-Newton::Newton(ModelType model, Statetype state_, char *parameterFile)
+Newton::Newton(ModelType model, char *parameterFile)
 	:
 	model_(model),
-	state_(state)
+	isInitialized(false),
 {
 	INFO("Entering Newton constructor");
 	INFO("Leaving Newton constructor");
 }
 
-void Newton::solve()
+void Newton::initialize()
 {
-	INFO("Entering Newton::solve()");
-	INFO("Leaving Newton::solve()");
+	INFO("Entering Newton::initialize()");
+	//
+	isInitialized = true;
+	INFO("Leaving Newton::initialize()");
 }
+
+void Newton::run()
+{
+	INFO("Entering Newton::run()");
+	INFO("Leaving Newton::run()");
+}
+
+void Newton::step()
+{
+	INFO("Entering Newton::step()");
+	if (!isInitialized) initialize();
+	
+	INFO("Leaving Newton::step()");
+}
+

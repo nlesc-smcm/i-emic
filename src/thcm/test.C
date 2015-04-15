@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 	// Initialize solution vector
 	//-------------------------------------------------------------------
 	soln->Random();
-	soln->Scale(1.0e-3);
+	soln->Scale(0.0e-3);
 	INFO("Initialized solution vector");
     //-------------------------------------------------------------------
 	// Initialize X, MultiRHS and RHS
