@@ -12,3 +12,6 @@ test: test.o
 	$(CXX) -c $(additional_flags) $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 %.o: %.C
 	$(CXX) -c $(additional_flags) $(INCLUDE_DIRS) $(CXX_FLAGS) $<
+
+clean:
+	rm *.o *~ 

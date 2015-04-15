@@ -10,12 +10,13 @@ public:
 	//constructor
 	Ocean()
 		{
-			INFO("Ocean constructor called");
+			//INFO("Ocean constructor called");
+			std::cout << "Ocean constructor called" << std::endl;
 		}
 	//destructor
 	~Ocean()
 		{
-			INFO("Ocean destructor called");
+			//INFO("Ocean destructor called");
 		}
 };
 #endif
