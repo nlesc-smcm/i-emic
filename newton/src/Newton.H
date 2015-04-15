@@ -28,7 +28,7 @@ class Newton
 	Vector direction_;
 
 	//! 
-	size_t maxNumIterations_;
+	int maxNumIterations_;
 	double toleranceF_;
 	double toleranceX_;
 
@@ -46,5 +46,5 @@ private:
 
 
 	
-}
+};
 #endif

@@ -83,7 +83,8 @@ int main(int argc, char *argv[])
 	// -------------------------------------------------------------------
 	RCP<Teuchos::ParameterList> globalParamList =
 		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("thcm_params.xml", globalParamList.ptr());
+	updateParametersFromXmlFile("../parameters/thcm_params.xml",
+								globalParamList.ptr());
 	Teuchos::ParameterList &thcmList = globalParamList->sublist("THCM");
 	thcmList.set("Parameter Name", "Time");
     //-------------------------------------------------------------------
@@ -143,7 +144,8 @@ int main(int argc, char *argv[])
 	
 	Teuchos::RCP<Teuchos::ParameterList> solverParams =
 		Teuchos::rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("solver_params.xml", solverParams.ptr());	
+	updateParametersFromXmlFile("../parameters/solver_params.xml",
+								solverParams.ptr());	
 	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
 	DEBUG(*solverParams);
 	RCP<Ifpack_Preconditioner> blockPrec =

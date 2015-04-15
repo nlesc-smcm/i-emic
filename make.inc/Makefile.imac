@@ -15,11 +15,13 @@ TRIDIR       = /home/erik/trilinos/${TRIVERSION}
 PROJECT_BASE = /home/erik/Projects
 ##=================================================================
 ##   Import makefile variables from Trilinos:
+##     Using the Teko ones, since that is pretty much the most
+##	   advanced stuff we will use.
 include ${TRIDIR}/include/Makefile.export.Teko
 CXX                 = ${Teko_CXX_COMPILER}
 FC                  = ${Teko_FORTRAN_COMPILER}
-INCLUDE_DIRS        = ${Teko_INCLUDE_DIRS}
-LIBRARY_DIRS        = ${Teko_LIBRARY_DIRS}
+INCLUDE_DIRS_TRI    = ${Teko_INCLUDE_DIRS}
+LIBRARY_DIRS_TRI    = ${Teko_LIBRARY_DIRS}
 TRILINOS_LIBRARIES  = ${Teko_LIBRARIES} ${Teko_TPL_LIBRARIES}
 ##=================================================================
 ##   Flags that are shared among the different compilers:
@@ -48,4 +50,27 @@ F77_FLAGS  = $(F77_DEBUG) ${SHARED_FLAGS} $(F77_EXTRA)
 ##   Gather all the libraries:
 LIBS_FORT  = -lgfortran
 LIBS_EXTRA =
-LIBS       =  ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT} 
+LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
+##=================================================================
+## Internal stuff...
+##   Define the internal library names:
+LIB_UTILS  = utils
+LIB_OCEAN  = thcm
+LIB_NEWTON = newton
+##=================================================================
+##   Define the internal library locations:
+PATH_LIB_UTILS  = $(PROJECT_BASE)/EMIC/utils/src
+PATH_LIB_OCEAN  = $(PROJECT_BASE)/EMIC/ocean/src
+PATH_LIB_NEWTON = $(PROJECT_BASE)/EMIC/newton/src
+##=================================================================
+##   Gather all the include directories:	
+INCLUDE_DIRS =  -I$(PATH_LIB_UTILS) \
+			    -I$(PATH_LIB_OCEAN) \
+			    -I$(PATH_LIB_NEWTON) \
+				  ${INCLUDE_DIRS_TRI}
+##=================================================================
+##   Gather all the library directories:	
+LIBRARY_DIRS =  -L$(PATH_LIB_UTILS) \
+			    -L$(PATH_LIB_OCEAN) \
+				-L$(PATH_LIB_NEWTON) \
+				  $(LIBRARY_DIRS_TRI)

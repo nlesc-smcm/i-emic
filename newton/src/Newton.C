@@ -1,15 +1,18 @@
+#include "GlobalDefinitions.H"
 #include "Newton.H"
 
-Newton::Newton(ModelType model, char *parameterFile)
+template<typename Model, typename Vector>
+Newton<Model, Vector>::Newton(Model model, char *parameterFile)
 	:
 	model_(model),
-	isInitialized(false),
+	isInitialized(false)
 {
 	INFO("Entering Newton constructor");
 	INFO("Leaving Newton constructor");
 }
 
-void Newton::initialize()
+template<typename Model, typename Vector>
+void Newton<Model, Vector>::initialize()
 {
 	INFO("Entering Newton::initialize()");
 	//
@@ -17,13 +20,15 @@ void Newton::initialize()
 	INFO("Leaving Newton::initialize()");
 }
 
-void Newton::run()
+template<typename Model, typename Vector>
+void Newton<Model, Vector>::run()
 {
 	INFO("Entering Newton::run()");
 	INFO("Leaving Newton::run()");
 }
 
-void Newton::step()
+template<typename Model, typename Vector>
+void Newton<Model, Vector>::step()
 {
 	INFO("Entering Newton::step()");
 	if (!isInitialized) initialize();

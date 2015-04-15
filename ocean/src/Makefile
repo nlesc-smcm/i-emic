@@ -1,6 +1,6 @@
-include ../make.inc/Makefile.${PLAT}
+include ../../make.inc/Makefile.${PLAT}
 
-libbasename = thcm
+libbasename = $(LIB_OCEAN)
 libname     = lib$(libbasename).a
 
 obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
@@ -15,7 +15,7 @@ obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
 default: lib
 
 test: $(libname) test.o 
-	$(CXX) test.o  $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -lthcm $(LIBS)
+	$(CXX) test.o  $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -l$(libbasename) $(LIBS)
 
 test2: test2.o 
 	$(CXX) test2.o  $(CXX_FLAGS) -o test2 $(LIBRARY_DIRS) $(LIBS)
@@ -24,7 +24,7 @@ test3: test3.o
 	$(CXX) test3.o  $(CXX_FLAGS) -o test3 $(LIBRARY_DIRS) $(LIBS)
 
 test4: $(libname) test4.o 
-	$(CXX) test4.o  $(CXX_FLAGS) -o test4 $(LIBRARY_DIRS) -L. -lthcm $(LIBS)
+	$(CXX) test4.o  $(CXX_FLAGS) -o test4 $(LIBRARY_DIRS) -L. -l$(libbasename) $(LIBS)
 
 lib: $(libname)
 
