@@ -1,6 +1,7 @@
 #include "GlobalDefinitions.H"
 #include "Newton.H"
 
+
 template<typename Model, typename Vector>
 Newton<Model, Vector>::Newton(Model model, char *parameterFile)
 	:
@@ -10,6 +11,7 @@ Newton<Model, Vector>::Newton(Model model, char *parameterFile)
 	INFO("Entering Newton constructor");
 	INFO("Leaving Newton constructor");
 }
+
 
 template<typename Model, typename Vector>
 void Newton<Model, Vector>::initialize()

@@ -1,7 +1,6 @@
-
-numprocs = 4
+include ./make.inc/Makefile.${PLAT}
 
 all:
-	cd utils/src;   make -j $(numprocs)
-	cd ocean/src;   make lib -j $(numprocs)
-	cd newton/src;  make -j $(numprocs)
+	cd utils/src;   make -j $(JOBS)
+	cd ocean/src;   make lib -j $(JOBS)
+	cd newton/src;  make -j $(JOBS)

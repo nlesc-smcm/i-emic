@@ -1,8 +1,9 @@
 ##=================================================================
-## Makefile variables for my imac in Utrecht.
+## Makefile variables for my machine in Utrecht.
 ## Author: T.E. Mulder => t.e.mulder@uu.nl
 ##=================================================================
 ##   Location specific variables:
+##
 LOCATION     = UTRECHT
 ##   Compiler identifier flag, options are
 ##   GNU, G95, INTEL, ASTER, ORBIT, HOPF, PGI and HUYGENS
@@ -12,65 +13,8 @@ TRIVERSION   = 11.12
 ##   Trilinos directory containing lib and include dirs:
 TRIDIR       = /home/erik/trilinos/${TRIVERSION}
 ##   Project base directory
-PROJECT_BASE = /home/erik/Projects
+PROJECT_BASE = /home/erik/Projects/EMIC
+##   Number of desired make jobs
+JOBS         = 4
 ##=================================================================
-##   Import makefile variables from Trilinos:
-##     Using the Teko ones, since that is pretty much the most
-##	   advanced stuff we will use.
-include ${TRIDIR}/include/Makefile.export.Teko
-CXX                 = ${Teko_CXX_COMPILER}
-FC                  = ${Teko_FORTRAN_COMPILER}
-INCLUDE_DIRS_TRI    = ${Teko_INCLUDE_DIRS}
-LIBRARY_DIRS_TRI    = ${Teko_LIBRARY_DIRS}
-TRILINOS_LIBRARIES  = ${Teko_LIBRARIES} ${Teko_TPL_LIBRARIES}
-##=================================================================
-##   Flags that are shared among the different compilers:
-SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
-##=================================================================
-##   Supply debug and other flags for CXX compiler:
-CXX_DEBUG = -g
-CXX_EXTRA = -DDEBUGGING -DTESTING 
-CXX_FLAGS = ${CXX_DEBUG} ${SHARED_FLAGS} $(CXX_EXTRA)
-##=================================================================
-##   Supply debug and other flags for FC compiler:
-FC_DEBUG  = -g
-FC_EXTRA  = -fdefault-real-8 -ffree-line-length-none\
-		    -DASCII_TOPO
-FC_FLAGS  = $(FC_DEBUG) ${SHARED_FLAGS} $(FC_EXTRA)
-##=================================================================
-##   Supply F77 compiler and its flags:
-F77        = gfortran
-F77_DEBUG  = -g
-#    Use the default-real-8 option to communicate between
-#    F90 and F77
-F77_EXTRA  = -ffixed-line-length-132 -fdefault-real-8\
-             -ffree-line-length-none
-F77_FLAGS  = $(F77_DEBUG) ${SHARED_FLAGS} $(F77_EXTRA)
-##=================================================================
-##   Gather all the libraries:
-LIBS_FORT  = -lgfortran
-LIBS_EXTRA =
-LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
-##=================================================================
-## Internal stuff...
-##   Define the internal library names:
-LIB_UTILS  = utils
-LIB_OCEAN  = thcm
-LIB_NEWTON = newton
-##=================================================================
-##   Define the internal library locations:
-PATH_LIB_UTILS  = $(PROJECT_BASE)/EMIC/utils/src
-PATH_LIB_OCEAN  = $(PROJECT_BASE)/EMIC/ocean/src
-PATH_LIB_NEWTON = $(PROJECT_BASE)/EMIC/newton/src
-##=================================================================
-##   Gather all the include directories:	
-INCLUDE_DIRS =  -I$(PATH_LIB_UTILS) \
-			    -I$(PATH_LIB_OCEAN) \
-			    -I$(PATH_LIB_NEWTON) \
-				  ${INCLUDE_DIRS_TRI}
-##=================================================================
-##   Gather all the library directories:	
-LIBRARY_DIRS =  -L$(PATH_LIB_UTILS) \
-			    -L$(PATH_LIB_OCEAN) \
-				-L$(PATH_LIB_NEWTON) \
-				  $(LIBRARY_DIRS_TRI)
+include $(PROJECT_BASE)/make.inc/Makefile.all
