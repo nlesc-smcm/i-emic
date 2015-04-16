@@ -24,17 +24,16 @@ public:
 	
 	static T& Instance() {return *instance;}
   
-	static bool Instantiated() {return instance != NULL;}
+	static bool Instantiated() {return instance != Teuchos::null;}
   
 protected:
   
-	Singleton(T* inst)
+	Singleton(Teuchos::RCP<T> inst)
 		{
 			DEBUG("Singleton constructor...");
-			if (instance != NULL)
+			if (instance != Teuchos::null)
 			{
 				INFO("Warning: re-instantiating singleton object");
-				delete [] instance;
 			}
 			instance = inst;
 		}
@@ -44,7 +43,7 @@ protected:
 			DEBUG("Destroy Singleton");
 		}
 	
-	static T* instance;
+	static Teuchos::RCP<T> instance;
 	
 };
 

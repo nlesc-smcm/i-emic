@@ -14,7 +14,7 @@ TRIVERSION   = 11.14
 TRIDIR       = /home/erik/trilinos/${TRIVERSION}
 ##   Project base directory
 PROJECT_BASE = /home/erik/Projects/EMIC
-##   Number of desired make jobs
-JOBS         = 2
+##   Make flags
+MFLAGS       = -j 2
 ##=================================================================
 include $(PROJECT_BASE)/make.inc/Makefile.all

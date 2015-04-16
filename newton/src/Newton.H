@@ -1,5 +1,6 @@
 #ifndef NEWTON_H
 #define NEWTON_H
+#include "GlobalDefinitions.H"
 
 //! This class finds a root of F(x) = 0. 
 //!
@@ -22,8 +23,7 @@
 template<typename Model, typename Vector>
 class Newton
 {
-	Model model_;
-
+	Model  model_;
 	Vector state_;
 	Vector direction_;
 
@@ -37,14 +37,43 @@ class Newton
 	
 public:
 	// constructor
-	Newton(Model model, char *parameterFile);
+	Newton();
+	Newton(Model &model);
 	void initialize();
 	void run();
 	void step();
 	
-private:
-
-
-	
 };
+
+template<typename Model, typename Vector>
+Newton<Model, Vector>::Newton(Model &model)
+ 	:
+ 	isInitialized(false)
+{
+ 	INFO("Entering Newton constructor");
+ 	model_ = model;
+ 	INFO("Leaving Newton constructor");
+}
+template<typename Model, typename Vector>
+void Newton<Model, Vector>::initialize()
+{
+ 	INFO("Entering Newton::initialize()");
+ 	//
+ 	isInitialized = true;
+ 	INFO("Leaving Newton::initialize()");
+}
+template<typename Model, typename Vector>
+void Newton<Model, Vector>::run()
+{
+ 	INFO("Entering Newton::run()");
+ 	INFO("Leaving Newton::run()");
+}
+template<typename Model, typename Vector>
+void Newton<Model, Vector>::step()
+{
+ 	INFO("Entering Newton::step()");
+ 	if (!isInitialized) initialize();
+ 	INFO("Leaving Newton::step()");
+}
+ 
 #endif

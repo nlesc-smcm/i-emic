@@ -12,16 +12,20 @@
 #  endif // HAVE_MPI
 
 #include <Teuchos_RCP.hpp>
+#include <Teuchos_FancyOStream.hpp>
+#include <Teuchos_XMLParameterListHelpers.hpp>
 
 #include <Epetra_Vector.h>
 
-#include "Newton.H"
+#include "GlobalDefinitions.H"
 #include "Ocean.H"
+#include "Newton.H"
+#include "Singleton.H"
 
 using Teuchos::RCP;
 using Teuchos::rcp;
 
-Teuchos::RCP<std::ostream> outFile;
+RCP<std::ostream> outFile;
 
 int main(int argc, char **argv)
 {
@@ -33,10 +37,15 @@ int main(int argc, char **argv)
 	RCP<Epetra_SerialComm> Comm =
 		rcp(new Epetra_SerialComm());
 #endif
+	// Specify output streams
 
-	Ocean ocean;
-	Newton<Ocean, Epetra_Vector> newton();
-
+	outFile = rcp(&std::cout, false);
+	Ocean ocean(Comm);
+	INFO("DO STUFF");
+	ocean.doStuff();
+	
+	//Newton<Ocean, Epetra_Vector> newton(ocean);
+	
     //--------------------------------------------------------
 	// Finalize MPI
 	//--------------------------------------------------------

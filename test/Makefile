@@ -5,15 +5,23 @@ DIRS =  $(PROJECT_BASE)/$(LIB_OCEAN)/src\
 
 EXE  = test
 OBJS = test.o
-OBJLIBS = lib$(LIB_OCEAN).a\
-          lib$(LIB_NEWTON).a
+OBJLIBS = \
+	lib$(LIB_OCEAN).a	\
+    lib$(LIB_NEWTON).a	\
 
-INTLIBS = -l$(LIB_OCEAN)\
-          -l$(LIB_NEWTON)
+# Header dependencies, especially important for templated stuff	
+HEADERDEPS = \
+	../newton/src/Newton.H\
+	../ocean/src/GlobalDefinitions.H\
+	../ocean/src/Ocean.H\
+
+INTLIBS = \
+	-l$(LIB_OCEAN)	\
+	-l$(LIB_NEWTON)	\
 
 all: $(EXE)
 
-$(EXE): $(OBJS) $(OBJLIBS)
+$(EXE): $(OBJS) $(OBJLIBS) 
 	$(CXX) $(OBJS) -o $(EXE) $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 lib$(LIB_OCEAN).a: force_look
@@ -22,7 +30,9 @@ lib$(LIB_OCEAN).a: force_look
 lib$(LIB_NEWTON).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_NEWTON)/src; $(MAKE) $(MFLAGS)
 
-%.o: %.C
+$(HEADER):
+
+%.o: %.C $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 
 clean:

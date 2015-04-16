@@ -1,22 +1,22 @@
 #ifndef OCEAN_H
 #define OCEAN_H
 
+#include <Teuchos_RCP.hpp>
+
+#include "THCM.H"
+
 #include "GlobalDefinitions.H"
+
 // For now this is a dummy class
 
 class Ocean
 {
+	Teuchos::RCP<THCM> thcm_;
 public:
 	//constructor
-	Ocean()
-		{
-			//INFO("Ocean constructor called");
-			std::cout << "Ocean constructor called" << std::endl;
-		}
+	Ocean(Teuchos::RCP<Epetra_Comm> Comm);
 	//destructor
-	~Ocean()
-		{
-			//INFO("Ocean destructor called");
-		}
+	~Ocean();
+	void doStuff();
 };
 #endif

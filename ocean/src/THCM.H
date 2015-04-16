@@ -4,10 +4,6 @@
  * as long as this header remains intact.                             *
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
-/**********************************************************************
- * Modified by T.E. Mulder, Utrecht University 2014/15                *
- * contact: t.e.mulder@uu.nl                                          *
- **********************************************************************/
 #ifndef THCM_H
 #define THCM_H
 
@@ -18,6 +14,13 @@
 #include "Teuchos_ParameterList.hpp"
 
 #include "Utils.H"
+
+//----------------------------------------------------------------------
+// THCM is a singleton, there can be only one instance at a time. 
+// As base class Singleton is templated we must instantiate it    
+//----------------------------------------------------------------------
+
+template <typename THCM> Teuchos::RCP<THCM> Singleton<THCM>::instance;
 
 namespace TRIOS
 {
