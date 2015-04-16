@@ -42,23 +42,19 @@ LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
 ##=================================================================
 ## Internal stuff...
 ##   Define the internal library names:
-LIB_UTILS  = utils
-LIB_OCEAN  = thcm
+LIB_OCEAN  = ocean
 LIB_NEWTON = newton
 ##=================================================================
 ##   Define the internal library locations:
-PATH_LIB_UTILS  = $(PROJECT_BASE)/utils/src
-PATH_LIB_OCEAN  = $(PROJECT_BASE)/ocean/src
-PATH_LIB_NEWTON = $(PROJECT_BASE)/newton/src
+PATH_LIB_OCEAN  = $(PROJECT_BASE)/$(LIB_OCEAN)/src
+PATH_LIB_NEWTON = $(PROJECT_BASE)/$(LIB_NEWTON)/src
 ##=================================================================
 ##   Gather all the include directories:	
-INCLUDE_DIRS =  -I$(PATH_LIB_UTILS) \
-			    -I$(PATH_LIB_OCEAN) \
+INCLUDE_DIRS = 	-I$(PATH_LIB_OCEAN) \
 			    -I$(PATH_LIB_NEWTON) \
 				  ${INCLUDE_DIRS_TRI}
 ##=================================================================
 ##   Gather all the library directories:	
-LIBRARY_DIRS =  -L$(PATH_LIB_UTILS) \
-			    -L$(PATH_LIB_OCEAN) \
+LIBRARY_DIRS =  -L$(PATH_LIB_OCEAN) \
 				-L$(PATH_LIB_NEWTON) \
 				  $(LIBRARY_DIRS_TRI)

@@ -5,7 +5,7 @@ libname     = lib$(libbasename).a
 
 obj = Newton.o
 
-default: lib
+all: lib
 
 lib: $(libname)
 

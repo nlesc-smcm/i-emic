@@ -1,17 +1,33 @@
 include ../make.inc/Makefile.${PLAT}
 
-internal_libs    = -l$(LIB_UTILS) -l$(LIB_OCEAN) -l$(LIB_NEWTON)
-additional_flags = -Wall #--std=c++11
-default: test
+DIRS =  $(PROJECT_BASE)/$(LIB_OCEAN)/src\
+        $(PROJECT_BASE)/$(LIB_NEWTON)/src	
 
-test: test.o 
-	$(CXX) test.o $(CXX_FLAGS) -o test $(LIBRARY_DIRS) \
-	$(internal_libs) $(LIBS)
+EXE  = test
+OBJS = test.o
+OBJLIBS = lib$(LIB_OCEAN).a\
+          lib$(LIB_NEWTON).a
 
-%.o: %.C %.H
-	$(CXX) -c $(additional_flags) $(INCLUDE_DIRS) $(CXX_FLAGS) $<
+INTLIBS = -l$(LIB_OCEAN)\
+          -l$(LIB_NEWTON)
+
+all: $(EXE)
+
+$(EXE): $(OBJS) $(OBJLIBS)
+	$(CXX) $(OBJS) -o $(EXE) $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
+
+lib$(LIB_OCEAN).a: force_look
+	cd $(PROJECT_BASE)/$(LIB_OCEAN)/src; $(MAKE) $(MFLAGS)
+
+lib$(LIB_NEWTON).a: force_look
+	cd $(PROJECT_BASE)/$(LIB_NEWTON)/src; $(MAKE) $(MFLAGS)
+
 %.o: %.C
-	$(CXX) -c $(additional_flags) $(INCLUDE_DIRS) $(CXX_FLAGS) $<
+	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 
 clean:
-	rm *.o *~ 
+	-rm -f $(EXE) $(OBJS) $(OBJLIBS)
+	-for d in $(DIRS); do (cd $$d; $(MAKE) clean ); done
+
+force_look:	
+	true

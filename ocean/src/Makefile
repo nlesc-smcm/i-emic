@@ -12,7 +12,7 @@ obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
 	 TRIOS_SolverFactory.o TRIOS_Static.o\
 	 Utils.o 
 
-default: lib
+all: lib
 
 test: $(libname) test.o 
 	$(CXX) test.o  $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -l$(libbasename) $(LIBS)
@@ -77,7 +77,4 @@ spf.o:         atm.o
 topo.o:        itplbv.o matetc.o global.o
 
 clean:
-	-rm -f *.o *.mod $(libname)
-
-realclean: clean
-	-rm *~ fort.* dump *.txt *#;
+	-rm -f *.o *.mod $(libname) *~ fort.* dump *.txt *#

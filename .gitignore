@@ -4,7 +4,7 @@
 !doc/
 !src/
 !parameters/
-
+!matlab/
 !make.inc/
 !utils/
 !ocean/
