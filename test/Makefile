@@ -21,7 +21,7 @@ INTLIBS = \
 
 all: $(EXE)
 
-$(EXE): $(OBJS) $(OBJLIBS) 
+$(EXE):  $(OBJLIBS) $(OBJS)
 	$(CXX) $(OBJS) -o $(EXE) $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 lib$(LIB_OCEAN).a: force_look

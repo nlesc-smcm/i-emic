@@ -25,7 +25,7 @@ class Newton
 {
 	Model  model_;
 	Vector state_;
-	Vector direction_;
+	Vector dirs_;
 
 	//! 
 	int maxNumIterations_;
@@ -36,17 +36,16 @@ class Newton
 	bool isInitialized;
 	
 public:
-	// constructor
-	Newton();
-	Newton(Model &model);
+	Newton(Model model);
 	void initialize();
 	void run();
 	void step();
 	
 };
 
+
 template<typename Model, typename Vector>
-Newton<Model, Vector>::Newton(Model &model)
+Newton<Model, Vector>::Newton(Model model)
  	:
  	isInitialized(false)
 {
@@ -54,6 +53,7 @@ Newton<Model, Vector>::Newton(Model &model)
  	model_ = model;
  	INFO("Leaving Newton constructor");
 }
+
 template<typename Model, typename Vector>
 void Newton<Model, Vector>::initialize()
 {

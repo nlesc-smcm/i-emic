@@ -73,8 +73,10 @@ int main(int argc, char *argv[])
 	// Uncomment this when parallel debugging with gdb
 	//  - It enters an infinite while loop so you can couple a task to
 	//    gdb with the -p option.
-	//  - Then with gdb step until you get in the condition of the while loop
-	//    and switch the integer to a value that negates the condition (set var i = 7)
+	//  - Then with gdb step until you get in the condition of the
+	//    while loop
+	//    and switch the integer to a value that negates the condition
+	//    (set var i = 7)
 	//  - On Ubuntu you need root privileges for this to work.
 	// -------------------------------------------------------------------
 	// parDebug(Comm);
@@ -89,11 +91,11 @@ int main(int argc, char *argv[])
 	thcmList.set("Parameter Name", "Time");
     //-------------------------------------------------------------------
 	// Create THCM object
-	//-------------------------------------------------------------------	
+	//-------------------------------------------------------------------
 	RCP<THCM> ocean = rcp(new THCM(thcmList, Comm));
 	//-------------------------------------------------------------------
 	// Obtain solution vector from THCM
-	//-------------------------------------------------------------------	
+	//-------------------------------------------------------------------
 	RCP<VEC> soln = THCM::Instance().getSolution();
 	//-------------------------------------------------------------------
 	// Initialize solution vector
@@ -103,7 +105,7 @@ int main(int argc, char *argv[])
 	INFO("Initialized solution vector");
     //-------------------------------------------------------------------
 	// Initialize X, MultiRHS and RHS
-	// ------------------------------------------------------------------	
+	// ------------------------------------------------------------------
 	RCP<MVEC> X    = rcp(new MVEC(soln->Map(), 1));
  	RCP<MVEC> MRHS = rcp(new MVEC(soln->Map(), 1));
 	// Create non-owning rcp from Epetra_MultiVector MRHS
@@ -138,9 +140,9 @@ int main(int argc, char *argv[])
 	RCP<Belos::LinearProblem<double, MVEC, OPER> > problem =
 		rcp(new Belos::LinearProblem<double, MVEC, OPER>(A, X, MRHS));
 		
-	//-----------------------------------------------------------------------------
+	//------------------------------------------------------------------
 	// Block preconditioner 
-	//-----------------------------------------------------------------------------
+	//------------------------------------------------------------------
 	
 	Teuchos::RCP<Teuchos::ParameterList> solverParams =
 		Teuchos::rcp(new Teuchos::ParameterList);
@@ -149,9 +151,11 @@ int main(int argc, char *argv[])
 	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
 	DEBUG(*solverParams);
 	RCP<Ifpack_Preconditioner> blockPrec =
-		Teuchos::rcp(new TRIOS::BlockPreconditioner(A, domain, *solverParams));
+		Teuchos::rcp(new TRIOS::BlockPreconditioner(A, domain,
+													*solverParams));
 	blockPrec->Compute();
-	RCP<Belos::EpetraPrecOp> belosPrec = rcp(new Belos::EpetraPrecOp(blockPrec));
+	RCP<Belos::EpetraPrecOp> belosPrec =
+		rcp(new Belos::EpetraPrecOp(blockPrec));
 	problem->setRightPrec(belosPrec);
 	
 	//-------------------------------------------------------------------
@@ -166,7 +170,8 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------
 	// Belos block GMRES setup
 	//-------------------------------------------------------------------
-	Belos::BlockGmresSolMgr<double, MVEC, OPER> belosSolver(problem, belosList);
+	Belos::BlockGmresSolMgr<double, MVEC, OPER> belosSolver(problem,
+															belosList);
 	//--------------------------------------------------------------------
 	INFO("Before setProblem()")
 		bool set = problem->setProblem();	
@@ -189,7 +194,8 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 	{
 		std::ostringstream outfile;  // setting up a filename
 		outfile << "out_" << Comm->MyPID() << ".txt";
-		std::cout << "Output for Process " << Comm->MyPID() << " is written to "
+		std::cout << "Output for Process " << Comm->MyPID()
+				  << " is written to "
 				  << outfile.str().c_str() << std::endl;
 		outFile = Teuchos::rcp(new std::ofstream(outfile.str().c_str()));
 	}
@@ -210,7 +216,8 @@ void parDebug(Teuchos::RCP<Epetra_Comm> Comm)
 	gethostname(hostname, sizeof(hostname));
 	if (Comm->MyPID() == 0)
 	{
-		printf("PID %d on %s, CPU%d is ready for attach\n", getpid(), hostname, myPID);
+		printf("PID %d on %s, CPU%d is ready for attach\n",
+			   getpid(), hostname, myPID);
 		fflush(stdout);
 		getchar();
 	}

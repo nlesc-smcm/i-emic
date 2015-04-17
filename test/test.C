@@ -38,13 +38,15 @@ int main(int argc, char **argv)
 		rcp(new Epetra_SerialComm());
 #endif
 	// Specify output streams
-
 	outFile = rcp(&std::cout, false);
-	Ocean ocean(Comm);
-	INFO("DO STUFF");
-	ocean.doStuff();
-	
-	//Newton<Ocean, Epetra_Vector> newton(ocean);
+	// Initialize ocean model (THCM)
+	RCP<OceanTheta> ocean = rcp(new OceanTheta(Comm));
+	Newton<RCP<OceanTheta>, RCP<Epetra_Vector> > newton(ocean);
+
+	ocean->parkModel();
+	ocean->computeJacobian();
+	ocean->computeRHS();
+	ocean->solve();
 	
     //--------------------------------------------------------
 	// Finalize MPI
