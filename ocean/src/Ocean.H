@@ -5,6 +5,7 @@
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
 #include <BelosEpetraAdapter.hpp>
+#include <Ifpack_Preconditioner.h>
 
 #include "GlobalDefinitions.H"
 
@@ -34,7 +35,9 @@ public:
 	
 	void initializeSolver();
 	
-	void solve();	
+	void solve();
+	void unscaleProblem();	
+	void scaleProblem();
 
 	void computeRHS();
 	void computeJacobian();
@@ -54,6 +57,9 @@ protected:
 	Teuchos::RCP<Epetra_Vector> massMatrix_;	
 	Teuchos::RCP<Epetra_CrsMatrix> jac_;
 	Teuchos::RCP<Epetra_Comm> comm_;
+	
+	Teuchos::RCP<Epetra_Vector> rowScalingRecipr_;
+	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
 
 	bool solverInitialized_;
 
@@ -63,6 +69,8 @@ protected:
 				 <double, Epetra_MultiVector, Epetra_Operator> > problem_;	
 	Teuchos::RCP<Belos::BlockGmresSolMgr
 				 <double, Epetra_MultiVector, Epetra_Operator> > belosSolver_;
+
+	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 };
 
 // class OceanTheta should have all the theta stuff and

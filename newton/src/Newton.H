@@ -53,8 +53,8 @@ template<typename Model, typename Vector>
 Newton<Model, Vector>::Newton(Model model)
  	:
  	isInitialized(false),
-	backTracking(false),
-	maxNumIterations_(1),
+	backTracking(true),
+	maxNumIterations_(10),
 	toleranceRHS_(1.0e-6),
 	normRHS_(1.0),
 	numBackTrackingSteps_(10)
@@ -124,7 +124,7 @@ void Newton<Model, Vector>::runBackTracking()
 	DEBUG("Entering Newton::runBackTracking()");
 
 	//
-	double reduction = -1.0 / numBackTrackingSteps_;
+	double reduction = -1.0 / 2;
 
 	//
 	for (backTrack_ = 0; backTrack_ != numBackTrackingSteps_; ++backTrack_)
@@ -142,6 +142,7 @@ void Newton<Model, Vector>::runBackTracking()
 		DEBVAR(backTrack_);
 		//
 		state_->Update(reduction, *dir_, 1.0);
+		reduction /= 2.0;
 		
 		//
 		model_->computeRHS();

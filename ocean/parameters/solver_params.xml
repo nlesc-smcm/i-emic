@@ -10,7 +10,7 @@
   <Parameter name="Scheme" type="string" value="Gauss-Seidel"/>
 
   <!-- Verbosity, between 0 and 10 -->
-  <Parameter name="Verbosity" type="int" value="10"/>
+  <Parameter name="Verbosity" type="int" value="0"/>
   
   <!-- use 0 starting guess for internal krylov solvers (like in THCM) -->
   <Parameter name="Zero Initial Guess" type="bool" value="1"/>

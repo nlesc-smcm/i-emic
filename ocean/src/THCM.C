@@ -855,9 +855,10 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
 		if (scaling_type == "THCM")
 		{
+			DEBUG(" THCM ---> RecomputeScaling()");
 			this->RecomputeScaling();
 
-#ifdef DUMP_SCALING
+#if 1
 			std::ofstream ofs1("row_scaling.txt");
 			ofs1 << *row_scaling;
 			ofs1.close();

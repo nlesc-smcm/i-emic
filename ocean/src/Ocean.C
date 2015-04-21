@@ -59,7 +59,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	INFO("  Obtained solution from THCM");
 
 	// Randomize state vector 
-	double randScale = 0.0;
+	double randScale = 1.0e-6;
 	randomizeState(randScale);
 	INFO("  Randomized solution and scaled with a factor " << randScale);
 	
@@ -123,21 +123,33 @@ void Ocean::initializeSolver()
 	updateParametersFromXmlFile("../ocean/parameters/solver_params.xml",
 								solverParams.ptr());	
 	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
-	DEBUG(*solverParams);
-	RCP<Ifpack_Preconditioner> blockPrec =
+
+	precPtr_ =
 		Teuchos::rcp(new TRIOS::BlockPreconditioner(jac_, domain,
 													*solverParams));
-	blockPrec->Compute();
-	RCP<Belos::EpetraPrecOp> belosPrec =
-		rcp(new Belos::EpetraPrecOp(blockPrec));
-	problem_->setRightPrec(belosPrec);
 
+    precPtr_->Initialize();
+	// scaleProblem();
+	precPtr_->Compute();
+	// unscaleProblem();
+	
+	RCP<Belos::EpetraPrecOp> belosPrec =
+		rcp(new Belos::EpetraPrecOp(precPtr_));
+	problem_->setRightPrec(belosPrec);
+		
 	// Belos parameter setup
-	belosParamList_ = rcp(new Teuchos::ParameterList());
-	belosParamList_->set("Block Size", 1);
-	belosParamList_->set("Maximum Iterations", 300);
-	belosParamList_->set("Convergence Tolerance", 1e-8);
-	belosParamList_->set("Verbosity", Belos::FinalSummary);
+   belosParamList_ = rcp(new Teuchos::ParameterList());
+   belosParamList_->set("Block Size", 1);
+   belosParamList_->set("Flexible Gmres", true);
+   belosParamList_->set("Adaptive Block Size", false);
+   belosParamList_->set("Num Blocks",250);
+   belosParamList_->set("Maximum Restarts",0);
+   belosParamList_->set("Orthogonalization","DGKS");
+   belosParamList_->set("Output Frequency",1);
+   belosParamList_->set("Maximum Iterations", 250);
+   belosParamList_->set("Convergence Tolerance", 1e-3);
+   belosParamList_->set("Explicit Residual Test", true);
+   belosParamList_->set("Verbosity", Belos::FinalSummary);
 
 	// Belos block GMRES setup
 	belosSolver_ =
@@ -154,20 +166,86 @@ void Ocean::solve()
 	DEBUG("Entering Ocean::solve()");
 	if (!solverInitialized_)
 		initializeSolver();
+
+	// scaleProblem();
 	bool set = problem_->setProblem();
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
 	Belos::ReturnType ret = belosSolver_->solve();
-	applyScaling();
+	// unscaleProblem();
+		
 	double nrm;
 	sol_->Norm2(&nrm);
 	DEBUG(" Ocean::solve()   norm solution: " << nrm);
 	DEBUG("Leaving Ocean::solve()");
 }
-//=====================================================================
-void Ocean::applyScaling()
+ //=====================================================================
+void Ocean::scaleProblem()
 {
+	DEBUG("Entering Ocean::scaleProblem()");
+	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
+	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
+
+	//------------------------------------------------------
+	if (rowScalingRecipr_ == Teuchos::null or
+		!rowScaling->Map().SameAs(rowScalingRecipr_->Map()))
+	{
+		rowScalingRecipr_ =
+			rcp(new Epetra_Vector(rowScaling->Map()));
+	}
+	*rowScalingRecipr_ = *rowScaling;
+	rowScalingRecipr_->Reciprocal(*rowScaling);
 	
+	//------------------------------------------------------
+	if (colScalingRecipr_ == Teuchos::null or
+		!colScaling->Map().SameAs(colScalingRecipr_->Map()))
+	{
+		colScalingRecipr_ =
+			rcp(new Epetra_Vector(colScaling->Map()));
+	}
+	*colScalingRecipr_ = *colScaling;
+	colScalingRecipr_->Reciprocal(*colScaling);
+
+	//------------------------------------------------------
+	double nrm;
+	sol_->Norm2(&nrm);
+	DEBUG("Ocean::scaleProblem() ----->  sol (before scaling): " << nrm);
+	
+	//------------------------------------------------------
+	jac_->LeftScale(*rowScalingRecipr_);
+	rhs_->Multiply(1.0, *rowScalingRecipr_, *rhs_, 0.0);
+	jac_->RightScale(*colScalingRecipr_);
+	sol_->ReciprocalMultiply(1.0, *colScalingRecipr_, *sol_, 0.0);
+
+	//------------------------------------------------------
+	sol_->Norm2(&nrm);
+	DEBUG("Ocean::scaleProblem() ----->  sol (after scaling): " << nrm);
+
+	DEBUG("Leaving Ocean::scaleProblem()");
+}
+ //=====================================================================
+void Ocean::unscaleProblem()
+{
+	DEBUG("Entering Ocean::unscaleProblem()");
+	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
+	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
+
+	//------------------------------------------------------
+	double nrm;
+	sol_->Norm2(&nrm);
+	DEBUG("Ocean::unscaleProblem() ----->  sol (before unscaling): " << nrm);
+	
+	//------------------------------------------------------
+	jac_->LeftScale(*rowScaling);
+	rhs_->Multiply(1.0, *rowScaling, *rhs_, 0.0);
+	jac_->RightScale(*colScaling);
+	sol_->ReciprocalMultiply(1.0, *colScaling, *sol_, 0.0);
+
+	//------------------------------------------------------
+	sol_->Norm2(&nrm);
+	DEBUG("Ocean::unscaleProblem() ----->  sol (after unscaling): " << nrm);
+
+	DEBUG("Leaving Ocean::unscaleProblem()");
 }
 //=====================================================================
 void Ocean::computeRHS()
@@ -210,7 +288,7 @@ OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm)
 	:
 	Ocean(Comm),
 	theta_(1.0),
-	timestep_(0.001)
+	timestep_(1.0e-4)
 {
 	DEBUG("Entering OceanTheta constructor");
 
