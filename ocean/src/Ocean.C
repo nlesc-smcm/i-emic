@@ -147,8 +147,8 @@ void Ocean::initializeSolver()
    belosParamList_->set("Orthogonalization","DGKS");
    belosParamList_->set("Output Frequency",1);
    belosParamList_->set("Maximum Iterations", 250);
-   belosParamList_->set("Convergence Tolerance", 1e-3);
-   belosParamList_->set("Explicit Residual Test", true);
+   belosParamList_->set("Convergence Tolerance", 1.0); // ??????
+   belosParamList_->set("Explicit Residual Test", true); // ???????
    belosParamList_->set("Verbosity", Belos::FinalSummary);
 
 	// Belos block GMRES setup
