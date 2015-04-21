@@ -26,6 +26,7 @@ using Teuchos::RCP;
 using Teuchos::rcp;
 
 RCP<std::ostream> outFile;
+RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 
 int main(int argc, char **argv)
 {
@@ -38,18 +39,38 @@ int main(int argc, char **argv)
 		rcp(new Epetra_SerialComm());
 #endif
 	// Specify output streams
-	outFile = rcp(&std::cout, false);
+	outFile = outputFiles(Comm);
 	// Initialize ocean model (THCM)
-	RCP<OceanTheta> ocean = rcp(new OceanTheta(Comm));
-	Newton<RCP<OceanTheta>, RCP<Epetra_Vector> > newton(ocean);
+	RCP<Ocean> ocean = rcp(new Ocean(Comm));
+	Newton<RCP<Ocean>, RCP<Epetra_Vector> >
+		newtonSolver(ocean);
 
-	ocean->parkModel();
-	ocean->computeJacobian();
-	ocean->computeRHS();
-	ocean->solve();
+	newtonSolver.run();
+	
+	ocean->dumpState();
 	
     //--------------------------------------------------------
 	// Finalize MPI
 	//--------------------------------------------------------
 	MPI_Finalize();	
+}
+
+Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
+{
+	// Setup output files "fname_#.txt" for P==0 && P==1, other processes
+	// will get a blackholestream.
+	Teuchos::RCP<std::ostream> outFile;
+	if (Comm->MyPID() == 0)
+	{
+		std::ostringstream infofile;  // setting up a filename
+		infofile << "info_" << Comm->MyPID() << ".txt";
+		std::cout << "info for P=" << Comm->MyPID() << " is written to "
+				  << infofile.str().c_str() << std::endl;
+		outFile = 
+			Teuchos::rcp(new std::ofstream(infofile.str().c_str()));
+	}
+	else
+		outFile = 
+			Teuchos::rcp(new Teuchos::oblackholestream());
+	return outFile;
 }

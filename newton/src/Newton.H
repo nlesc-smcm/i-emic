@@ -25,55 +25,132 @@ class Newton
 {
 	Model  model_;
 	Vector state_;
-	Vector dirs_;
-
-	//! 
+	Vector dir_;
+	
+	//!
+	int iter_;
 	int maxNumIterations_;
-	double toleranceF_;
-	double toleranceX_;
+
+	int backTrack_;
+	int numBackTrackingSteps_;
+	double toleranceRHS_;
+	double normRHS_;
+	double normRHStest_;
 
 	//!
 	bool isInitialized;
+	bool backTracking;
 	
 public:
 	Newton(Model model);
 	void initialize();
 	void run();
-	void step();
+	void runBackTracking();
 	
 };
-
 
 template<typename Model, typename Vector>
 Newton<Model, Vector>::Newton(Model model)
  	:
- 	isInitialized(false)
+ 	isInitialized(false),
+	backTracking(false),
+	maxNumIterations_(1),
+	toleranceRHS_(1.0e-6),
+	normRHS_(1.0),
+	numBackTrackingSteps_(10)
 {
- 	INFO("Entering Newton constructor");
+ 	DEBUG("Entering Newton constructor");
  	model_ = model;
- 	INFO("Leaving Newton constructor");
+	state_ = model->getState();	
+ 	DEBUG("Leaving Newton constructor");
 }
 
 template<typename Model, typename Vector>
 void Newton<Model, Vector>::initialize()
 {
- 	INFO("Entering Newton::initialize()");
- 	//
+ 	DEBUG("Entering Newton::initialize()");
  	isInitialized = true;
- 	INFO("Leaving Newton::initialize()");
+ 	DEBUG("Leaving Newton::initialize()");
 }
+
 template<typename Model, typename Vector>
 void Newton<Model, Vector>::run()
 {
- 	INFO("Entering Newton::run()");
- 	INFO("Leaving Newton::run()");
+ 	DEBUG("Entering Newton::run()");
+
+	//
+	model_->computeRHS();
+	normRHS_ = model_->getNormRHS();
+	double nrms;
+	for (iter_ = 0; iter_ != maxNumIterations_; ++iter_)
+	{
+				
+		//
+		model_->computeJacobian();
+
+		//
+		model_->solve();
+
+		//
+		dir_ = model_->getSolution();
+
+		//
+ 		nrms = model_->getNormState();
+		DEBUG("Newton:      state (before): " << nrms );
+		state_->Update(1.0, *dir_, 1.0);
+		nrms = model_->getNormState();
+		DEBUG("Newton:      state (after): " << nrms );
+
+		//
+		model_->computeRHS();
+		normRHStest_ = model_->getNormRHS();
+		DEBUG("Newton:      iter: " << iter_ );
+		DEBUG("Newton:      norm: " << normRHS_ );
+		DEBUG("Newton:  new norm: " << normRHStest_ );
+
+		//
+		if (backTracking)
+			runBackTracking();
+
+		//
+		normRHS_ = normRHStest_;
+	}		
+ 	DEBUG("Leaving Newton::run()");
 }
+
 template<typename Model, typename Vector>
-void Newton<Model, Vector>::step()
+void Newton<Model, Vector>::runBackTracking()
 {
- 	INFO("Entering Newton::step()");
- 	if (!isInitialized) initialize();
- 	INFO("Leaving Newton::step()");
+	DEBUG("Entering Newton::runBackTracking()");
+
+	//
+	double reduction = -1.0 / numBackTrackingSteps_;
+
+	//
+	for (backTrack_ = 0; backTrack_ != numBackTrackingSteps_; ++backTrack_)
+	{
+		DEBUG("Newton --> backtracking:       iter: " << iter_ );
+		DEBUG("Newton --> backtracking:  backtrack: " << backTrack_);
+		DEBUG("Newton --> backtracking:       norm: " << normRHStest_);
+
+		if (normRHStest_ < normRHS_)
+		{
+			DEBUG("Success...");
+			break;
+		}
+		
+		DEBVAR(backTrack_);
+		//
+		state_->Update(reduction, *dir_, 1.0);
+		
+		//
+		model_->computeRHS();
+		normRHStest_ = model_->getNormRHS();
+	}
+	if (backTrack_ == numBackTrackingSteps_)
+		DEBUG("Newton: ---> TROUBLE");
+			
+	DEBUG("Leaving Newton::runBackTracking()");
 }
- 
+
 #endif

@@ -1,36 +1,44 @@
+//=====================================================================
 #include <Epetra_Comm.h>
 #include <Epetra_Vector.h>
 #include <Epetra_MultiVector.h>
 #include <Epetra_Operator.h>
 #include <Epetra_CrsMatrix.h>
-
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
-
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
 #include <BelosEpetraAdapter.hpp>
-
+#include <Ifpack_Preconditioner.h>
+//=====================================================================
 #include "Ocean.H"
 #include "THCM.H"
 #include "THCMdefs.H"
-
+#include "TRIOS_Domain.H"
+#include "TRIOS_BlockPreconditioner.H"
 #include "GlobalDefinitions.H"
-
+//=====================================================================
 using Teuchos::RCP;
 using Teuchos::rcp;
+//=====================================================================
+// Fortran stuff:
+extern "C"
+{ 
+	_SUBROUTINE_(write_data)(double*, int*, int*);  // file inout.f
+} //extern
+//=====================================================================
 
 Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	:
+	comm_(Comm),
 	solverInitialized_(false)
 {
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");
 
 	DEBUG("Entering Ocean constructor...");   
-	// ---------------------------------------------------------------
+
 	// Setup THCM parameters:
-	// ---------------------------------------------------------------
 	RCP<Teuchos::ParameterList> globalParamList =
 		rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("../ocean/parameters/thcm_params.xml",
@@ -39,37 +47,35 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 		globalParamList->sublist("THCM");
 	DEBUG(*globalParamList);
 	DEBUG(thcmList);
-    //-------------------------------------------------------------------
+
 	// Create THCM object
-	//-------------------------------------------------------------------
-    thcm_ = rcp(new THCM(thcmList, Comm));
-	//-------------------------------------------------------------------
+    thcm_ = rcp(new THCM(thcmList, comm_));
+
 	// Obtain solution vector from THCM
 	//  THCM is implemented as a Singleton, which allows only a single
 	//  instance at a time. The Ocean class can access THCM with a call
 	//  to THCM::Instance()
-	//-------------------------------------------------------------------
 	state_ = THCM::Instance().getSolution();
 	INFO("  Obtained solution from THCM");
-	//-------------------------------------------------------------------
+
 	// Randomize state vector 
-	//-------------------------------------------------------------------
-	double randScale = 1.0e-3;
+	double randScale = 0.0;
 	randomizeState(randScale);
 	INFO("  Randomized solution and scaled with a factor " << randScale);
-	//-------------------------------------------------------------------
-	// Obtain Jacobian from THCM
-    //-------------------------------------------------------------------
+	
+	// Obtain Jacobian from THCM    
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	jac_ = THCM::Instance().getJacobian();
 	INFO("  Obtained jacobian from THCM");
-    //-------------------------------------------------------------------
-	// Initialize a few datamembers
-	//-------------------------------------------------------------------
-	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
-	DEBUG("Leaving Ocean constructor...");	
-}
 
+	// Initialize a few datamembers
+	sol_ = rcp(new Epetra_Vector(*state_));
+	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
+
+	DEBUG("Leaving Ocean constructor...");
+	
+}
+//=====================================================================
 void Ocean::randomizeState(double scaling)
 {
 	DEBUG("Entering Ocean::randomizeState()...");
@@ -78,53 +84,143 @@ void Ocean::randomizeState(double scaling)
 	INFO("Initialized solution vector");
 	DEBUG("Leaving  Ocean::randomizeState()...");
 }
+//=====================================================================
+void Ocean::dumpState()
+{
+	// This function will probably break (?) on a distributed memory system.
+	// For now it is convenient.
+	// Use some HYMLS functionality to gather the solution in the right way
+	Teuchos::RCP<Epetra_MultiVector> fullSol = Utils::Gather(*state_, 0);
+	int filename = 3;
+	int label    = 2;	
+	int length   = fullSol->GlobalLength();
+	double *solutionArray = new double[length]; 
+	if (comm_->MyPID() == 0)
+	{
+		std::cout << "Writing to fort." << filename
+				  << " at label " << label << "." << std::endl;
 
+		// Using operator() to access first vector in multivector
+		(*fullSol)(0)->ExtractCopy(solutionArray); //  
+		FNAME(write_data)(solutionArray, &filename, &label);
+	}
+	delete [] solutionArray;
+}
+//=====================================================================
 void Ocean::initializeSolver()
 {
 	DEBUG("Entering Ocean::initializeSolver()...");
+
+	// Belos::LinearProblem setup
 	problem_ =
-		rcp(new Belos::LinearProblem<double, Epetra_MultiVector,
-			Epetra_Operator>(jac_, dir_, rhs_) );
-	
+		rcp(new Belos::LinearProblem
+			<double, Epetra_MultiVector,Epetra_Operator>
+			(jac_, sol_, rhs_) );
+
+	// Block preconditioner 
+	Teuchos::RCP<Teuchos::ParameterList> solverParams =
+		Teuchos::rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("../ocean/parameters/solver_params.xml",
+								solverParams.ptr());	
+	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
+	DEBUG(*solverParams);
+	RCP<Ifpack_Preconditioner> blockPrec =
+		Teuchos::rcp(new TRIOS::BlockPreconditioner(jac_, domain,
+													*solverParams));
+	blockPrec->Compute();
+	RCP<Belos::EpetraPrecOp> belosPrec =
+		rcp(new Belos::EpetraPrecOp(blockPrec));
+	problem_->setRightPrec(belosPrec);
+
+	// Belos parameter setup
+	belosParamList_ = rcp(new Teuchos::ParameterList());
+	belosParamList_->set("Block Size", 1);
+	belosParamList_->set("Maximum Iterations", 300);
+	belosParamList_->set("Convergence Tolerance", 1e-8);
+	belosParamList_->set("Verbosity", Belos::FinalSummary);
+
+	// Belos block GMRES setup
+	belosSolver_ =
+		rcp(new Belos::BlockGmresSolMgr
+			<double, Epetra_MultiVector, Epetra_Operator>
+			(problem_, belosParamList_));
 	solverInitialized_ = true;
+
 	DEBUG("Leaving Ocean::initializeSolver()...");
 }
-
+//=====================================================================
 void Ocean::solve()
 {
 	DEBUG("Entering Ocean::solve()");
 	if (!solverInitialized_)
 		initializeSolver();
+	bool set = problem_->setProblem();
+	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
+							   "*** Belos::LinearProblem failed to setup");
+	Belos::ReturnType ret = belosSolver_->solve();
+	applyScaling();
+	double nrm;
+	sol_->Norm2(&nrm);
+	DEBUG(" Ocean::solve()   norm solution: " << nrm);
 	DEBUG("Leaving Ocean::solve()");
+}
+//=====================================================================
+void Ocean::applyScaling()
+{
 	
 }
+//=====================================================================
+void Ocean::computeRHS()
+{
+	DEBUG("Entering Ocean::computeRHS()");
+	// evaluate rhs in THCM with the current state
+	THCM::Instance().evaluate(*state_, rhs_, false);
 
+	DEBUG("Leaving Ocean::computeRHS()");
+}
+//=====================================================================
 void Ocean::computeJacobian()
 {
 	DEBUG("Entering Ocean::computeJacobian()...");
 	// Compute the Jacobian in THCM using the current state
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	// Get the Jacobian from THCM
-	jac_ = THCM::Instance().getJacobian();	
+	jac_ = THCM::Instance().getJacobian();
+	DUMP("jac_.txt", *jac_);
 	DEBUG("Leaving  Ocean::computeJacobian()...");
 }
-
+//=====================================================================
+double Ocean::getNormRHS()
+{
+	double nrm;
+	rhs_->Norm2(&nrm);
+	return nrm;
+}
+//=====================================================================
+double Ocean::getNormState()
+{
+	double nrm;
+	state_->Norm2(&nrm);
+	return nrm;
+}
+//=====================================================================
+// OceanTheta
+//=====================================================================
 OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm)
 	:
 	Ocean(Comm),
-	theta_(0.0),
+	theta_(1.0),
 	timestep_(0.001)
 {
 	DEBUG("Entering OceanTheta constructor");
-	//-------------------------------------------------------------------
+
 	// Initialize a few datamembers
-	//-------------------------------------------------------------------
-	oldState_ = rcp(new Epetra_Vector(jac_->OperatorDomainMap()));
-	stateDot_ = rcp(new Epetra_Vector(jac_->OperatorDomainMap()));
+	oldState_ = rcp(new Epetra_Vector(*state_));
+	stateDot_ = rcp(new Epetra_Vector(*state_));
 	oldRhs_   = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	DEBUG("Leaving OceanTheta constructor");
 }
-
+//=====================================================================
 void OceanTheta::parkModel()
 {
 	DEBUG("Entering Ocean::parkModel()");
@@ -133,29 +229,73 @@ void OceanTheta::parkModel()
 	*oldRhs_   = *rhs_;
 	DEBUG("Leaving Ocean::parkModel()");
 }
+//=====================================================================
+void OceanTheta::computeRHS()
+{
+	DEBUG("Entering OceanTheta::computeRHS()");
+	THCM::Instance().evaluate(*state_, rhs_, false);
 
+    // Calculate mass matrix
+	THCM::Instance().evaluateB();
+
+    // Get the mass matrix from THCM 
+	massMatrix_ = rcp(&THCM::Instance().DiagB(), false);
+
+    // Calculate d/dt x = (xnew - xold)/dt
+	stateDot_->Update(1.0 / timestep_, *state_, -1.0 / timestep_,
+					  *oldState_, 0.0);
+	
+	// Obtain number of local elements
+	int numMyElements     = stateDot_->Map().NumMyElements();
+
+    // Get a list of the global element IDs owned by the calling proc
+	int *myGlobalElements = stateDot_->Map().MyGlobalElements();
+
+	// Scale xdot with the values in the mass matrix
+	double value;
+	for (int i = 0; i != numMyElements; ++i)
+	{
+		value = (*massMatrix_)[i] * (*stateDot_)[i];
+		stateDot_->ReplaceGlobalValues(1, &value, myGlobalElements + i);
+	}
+
+    // The final theta timestepping rhs is given by
+	// -1 * (B d/dt x + theta*F(x) + (theta-1) * F(x_old))
+	rhs_->Update(theta_ - 1.0, *oldRhs_, theta_);
+	rhs_->Update(1.0, *stateDot_, 1.0);
+	rhs_->Scale(-1.0);
+
+	DEBUG("Leaving OceanTheta::computeRHS()");
+}
+//=====================================================================
 void OceanTheta::computeJacobian()
 {
 	DEBUG("Entering OceanTheta::computeJacobian()...");
-	// Check theta
+
+    // Check theta
 	if (theta_ < 0 || theta_ > 1)
 	{
 		INFO("Incorrect theta: " << theta_);
 	}	
-	// First compute the Jacobian in THCM using the current state
+
+    // First compute the Jacobian in THCM using the current state
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
-	// Get the plain Jacobian from THCM
+
+    // Get the plain Jacobian from THCM
 	jac_ = THCM::Instance().getJacobian();
-	// Scale it with theta
+
+    // Scale it with theta
 	jac_->Scale(theta_);
-	// Get the mass matrix from THCM (which is actually just a
+
+    // Get the mass matrix from THCM (which is actually just a
 	//    vector with diagonal elements)
 	// Wrap it in a non-owning RCP
 	massMatrix_ = rcp(&THCM::Instance().DiagB(), false);
 
-	// Get the number of local elements
+    // Get the number of local elements
 	int numMyElements     =	jac_->Map().NumMyElements();
-	// Get a list of the global element IDs owned by the calling proc
+
+    // Get a list of the global element IDs owned by the calling proc
 	int *myGlobalElements = jac_->Map().MyGlobalElements();
 
     // Add to the Jacobian the values B[i]/dt
@@ -167,44 +307,6 @@ void OceanTheta::computeJacobian()
 								  &value, myGlobalElements + i);
 	}
 	jac_->FillComplete();
+	// DUMP("jac_.txt", *jac_);
 	DEBUG("Leaving  OceanTheta::computeJacobian()...");
 }
-
-void Ocean::computeRHS()
-{
-	DEBUG("Entering Ocean::computeRHS()");
-	THCM::Instance().evaluate(*state_, rhs_, false);
-	DEBUG("Leaving Ocean::computeRHS()");
-}
-
-void OceanTheta::computeRHS()
-{
-	DEBUG("Entering OceanTheta::computeRHS()");
-	THCM::Instance().evaluate(*state_, rhs_, false);
-	// Calculate mass matrix
-	THCM::Instance().evaluateB();
-	// Get the mass matrix from THCM 
-	massMatrix_ = rcp(&THCM::Instance().DiagB(), false);
-	// Calculate d/dt x = (xnew - xold)/dt
-	stateDot_->Update(1.0 / timestep_, *state_, -1.0 / timestep_,
-					  *oldState_, 0.0);
-	// Obtain number of local elements
-	int numMyElements     = stateDot_->Map().NumMyElements();
-	// Get a list of the global element IDs owned by the calling proc
-	int *myGlobalElements = stateDot_->Map().MyGlobalElements();
-	// Scale xdot with the values in the mass matrix
-	double value;
-	for (int i = 0; i != numMyElements; ++i)
-	{
-		value = (*massMatrix_)[i] * (*stateDot_)[i];
-		stateDot_->ReplaceGlobalValues(1, &value, myGlobalElements + i);
-	}
-	// The final theta timestepping rhs is given by
-	// B d/dt x + theta*F(x) + (theta-1) * F(x_old)
-	rhs_->Update(theta_ - 1.0, *oldRhs_, theta_);
-	rhs_->Update(1.0, *stateDot_, 1.0);
-		
-	DEBUG("Leaving Ocean::computeRHSTheta()");
-}
-
-

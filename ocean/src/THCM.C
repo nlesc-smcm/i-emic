@@ -643,6 +643,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 		row_scaling->PutScalar(1.0);
 		col_scaling->PutScalar(1.0);
     }
+	
 }
 
 THCM::~THCM()
@@ -851,6 +852,22 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 		domain->Standard2Solve(*localDiagB, *diagB);
 		domain->Standard2Solve(*localJac, *Jac);
 		CHECK_ZERO(Jac->FillComplete());
+
+		if (scaling_type == "THCM")
+		{
+			this->RecomputeScaling();
+
+#ifdef DUMP_SCALING
+			std::ofstream ofs1("row_scaling.txt");
+			ofs1 << *row_scaling;
+			ofs1.close();
+			std::ofstream ofs2("col_scaling.txt");
+			ofs2 << *col_scaling;
+			ofs2.close();                  
+#endif      
+		}
+
+		
     } // matrix
 	return true;
 }
