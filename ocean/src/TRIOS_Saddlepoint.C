@@ -169,13 +169,13 @@ namespace TRIOS {
     
 		Epetra_Vector tmp1(y1.Map());
     
-		DEBUG("set y1 = A11*x1...");
+		// DEBUG("set y1 = A11*x1...");
 		CHECK_ZERO(A11_->Multiply(false,x1,y1));
 
-		DEBUG("set tmp1 = A12*x2...");
+		// DEBUG("set tmp1 = A12*x2...");
 		CHECK_ZERO(A12_->Multiply(false,x2,tmp1));
     
-		DEBUG("set y2 = A21*x1...");
+		// DEBUG("set y2 = A21*x1...");
 		CHECK_ZERO(A21_->Multiply(false,x1,y2));
 
 		// construct final y1
@@ -633,7 +633,7 @@ namespace TRIOS {
 		const Epetra_Vector& b = *b_ptr;
 		Epetra_Vector& x = *x_ptr;
 
-		DEBUG("Apply SppSimplePrec...");
+		// DEBUG("Apply SppSimplePrec...");
 
 		// temporary vector
 		const Epetra_Map& map1 = Spp->A11().RowMap();

@@ -2433,7 +2433,7 @@ namespace TRIOS {
     {
     
     
-		DEBUG("solve Ap*x=b ...");
+		// DEBUG("solve Ap*x=b ...");
     
 #ifdef TESTING
 		if (!b.Map().SameAs(*rangeMap))

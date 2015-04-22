@@ -60,7 +60,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 
 	// Randomize state vector 
 	double randScale = 1.0e-6;
-	randomizeState(randScale);
+	randomizeState(0.0);
 	INFO("  Randomized solution and scaled with a factor " << randScale);
 	
 	// Obtain Jacobian from THCM    
@@ -69,7 +69,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	INFO("  Obtained jacobian from THCM");
 
 	// Initialize a few datamembers
-	sol_ = rcp(new Epetra_Vector(*state_));
+	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 
 	DEBUG("Leaving Ocean constructor...");
@@ -112,6 +112,7 @@ void Ocean::initializeSolver()
 	DEBUG("Entering Ocean::initializeSolver()...");
 
 	// Belos::LinearProblem setup
+
 	problem_ =
 		rcp(new Belos::LinearProblem
 			<double, Epetra_MultiVector,Epetra_Operator>
@@ -122,34 +123,32 @@ void Ocean::initializeSolver()
 		Teuchos::rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("../ocean/parameters/solver_params.xml",
 								solverParams.ptr());	
+
 	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
 
 	precPtr_ =
 		Teuchos::rcp(new TRIOS::BlockPreconditioner(jac_, domain,
 													*solverParams));
-
-    precPtr_->Initialize();
-	// scaleProblem();
-	precPtr_->Compute();
-	// unscaleProblem();
 	
 	RCP<Belos::EpetraPrecOp> belosPrec =
 		rcp(new Belos::EpetraPrecOp(precPtr_));
 	problem_->setRightPrec(belosPrec);
-		
+	
 	// Belos parameter setup
    belosParamList_ = rcp(new Teuchos::ParameterList());
    belosParamList_->set("Block Size", 1);
    belosParamList_->set("Flexible Gmres", true);
    belosParamList_->set("Adaptive Block Size", false);
-   belosParamList_->set("Num Blocks",250);
+   belosParamList_->set("Num Blocks",1000);
    belosParamList_->set("Maximum Restarts",0);
    belosParamList_->set("Orthogonalization","DGKS");
    belosParamList_->set("Output Frequency",1);
-   belosParamList_->set("Maximum Iterations", 250);
-   belosParamList_->set("Convergence Tolerance", 1.0); // ??????
-   belosParamList_->set("Explicit Residual Test", true); // ???????
+   belosParamList_->set("Maximum Iterations", 1000);
+   belosParamList_->set("Convergence Tolerance", 1.0e-3); 
+   belosParamList_->set("Explicit Residual Test", false); 
    belosParamList_->set("Verbosity", Belos::FinalSummary);
+   belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
+   //belosParamList_->set("Explicit Residual Scaling", "Norm of Preconditioned Initial Residual");
 
 	// Belos block GMRES setup
 	belosSolver_ =
@@ -167,8 +166,10 @@ void Ocean::solve()
 	if (!solverInitialized_)
 		initializeSolver();
 
+	sol_->PutScalar(0.0);
 	// scaleProblem();
-	bool set = problem_->setProblem();
+	precPtr_->Compute();
+	bool set = problem_->setProblem(sol_, rhs_);
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
 	Belos::ReturnType ret = belosSolver_->solve();
@@ -253,7 +254,7 @@ void Ocean::computeRHS()
 	DEBUG("Entering Ocean::computeRHS()");
 	// evaluate rhs in THCM with the current state
 	THCM::Instance().evaluate(*state_, rhs_, false);
-
+	rhs_->Scale(-1.0);
 	DEBUG("Leaving Ocean::computeRHS()");
 }
 //=====================================================================
@@ -288,7 +289,7 @@ OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm)
 	:
 	Ocean(Comm),
 	theta_(1.0),
-	timestep_(1.0e-4)
+	timestep_(1.0e-01)
 {
 	DEBUG("Entering OceanTheta constructor");
 
