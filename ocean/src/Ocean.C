@@ -59,8 +59,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	INFO("  Obtained solution from THCM");
 
 	// Randomize state vector 
-	double randScale = 1.0e-6;
-	randomizeState(0.0);
+	double randScale = 0.0;
+	randomizeState(randScale);
 	INFO("  Randomized solution and scaled with a factor " << randScale);
 	
 	// Obtain Jacobian from THCM    
@@ -289,7 +289,7 @@ OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm)
 	:
 	Ocean(Comm),
 	theta_(1.0),
-	timestep_(1.0e-01)
+	timestep_(1.0e-03)
 {
 	DEBUG("Entering OceanTheta constructor");
 

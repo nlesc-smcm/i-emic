@@ -105,9 +105,11 @@
       real un(ndim), l2nrm
       integer test_temp, test_salt, i
       if (vmix_out.gt.0) write (*,'(a26)') 'MIX|   control...         '
-      
-      test_temp=0
-      test_salt=0
+
+!     I would like to start with a zero initial condition, so I'm hardcoding this to 1
+!      -Erik 
+      test_temp = 1  !0
+      test_salt = 1  !0
       
 ! Test for temperature field
       if (l2nrm(un(TT:ndim:nun),n*m*l).gt.1.0e-12) test_temp=1

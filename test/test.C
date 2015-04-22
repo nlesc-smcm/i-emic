@@ -41,8 +41,8 @@ int main(int argc, char **argv)
 	// Specify output streams
 	outFile = outputFiles(Comm);
 	// Initialize ocean model (THCM)
-	RCP<Ocean> ocean = rcp(new Ocean(Comm));
-	Newton<RCP<Ocean>, RCP<Epetra_Vector> >
+	RCP<OceanTheta> ocean = rcp(new OceanTheta(Comm));
+	Newton<RCP<OceanTheta>, RCP<Epetra_Vector> >
 		newtonSolver(ocean);
 	
 	newtonSolver.run();	
