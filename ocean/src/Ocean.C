@@ -36,7 +36,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");
 
-	DEBUG("Entering Ocean constructor...");   
 
 	// Setup THCM parameters:
 	RCP<Teuchos::ParameterList> globalParamList =
@@ -58,10 +57,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	state_ = THCM::Instance().getSolution();
 	INFO("  Obtained solution from THCM");
 
-	// Randomize state vector 
-	double randScale = 0.0;
-	randomizeState(randScale);
-	INFO("  Randomized solution and scaled with a factor " << randScale);
+	state_->PutScalar(0.0);
+	INFO("  Initialized solution -> Ocean::state = zeros...");
 	
 	// Obtain Jacobian from THCM    
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
@@ -72,20 +69,17 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 
-	DEBUG("Leaving Ocean constructor...");
 	
 }
 //=====================================================================
-void Ocean::randomizeState(double scaling)
+void Ocean::RandomizeState(double scaling)
 {
-	DEBUG("Entering Ocean::randomizeState()...");
 	state_->Random();
 	state_->Scale(scaling);
 	INFO("Initialized solution vector");
-	DEBUG("Leaving  Ocean::randomizeState()...");
 }
 //=====================================================================
-void Ocean::dumpState()
+void Ocean::DumpState()
 {
 	// This function will probably break (?) on a distributed memory system.
 	// For now it is convenient.
@@ -107,9 +101,8 @@ void Ocean::dumpState()
 	delete [] solutionArray;
 }
 //=====================================================================
-void Ocean::initializeSolver()
+void Ocean::InitializeSolver()
 {
-	DEBUG("Entering Ocean::initializeSolver()...");
 
 	// Belos::LinearProblem setup
 
@@ -157,33 +150,29 @@ void Ocean::initializeSolver()
 			(problem_, belosParamList_));
 	solverInitialized_ = true;
 
-	DEBUG("Leaving Ocean::initializeSolver()...");
 }
 //=====================================================================
-void Ocean::solve()
+void Ocean::Solve()
 {
-	DEBUG("Entering Ocean::solve()");
 	if (!solverInitialized_)
-		initializeSolver();
+		InitializeSolver();
 
 	sol_->PutScalar(0.0);
-	// scaleProblem();
+	// ScaleProblem();
 	precPtr_->Compute();
 	bool set = problem_->setProblem(sol_, rhs_);
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
 	Belos::ReturnType ret = belosSolver_->solve();
-	// unscaleProblem();
+	// UnscaleProblem();
 		
 	double nrm;
 	sol_->Norm2(&nrm);
 	DEBUG(" Ocean::solve()   norm solution: " << nrm);
-	DEBUG("Leaving Ocean::solve()");
 }
  //=====================================================================
-void Ocean::scaleProblem()
+void Ocean::ScaleProblem()
 {
-	DEBUG("Entering Ocean::scaleProblem()");
 	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
 	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
 
@@ -222,12 +211,10 @@ void Ocean::scaleProblem()
 	sol_->Norm2(&nrm);
 	DEBUG("Ocean::scaleProblem() ----->  sol (after scaling): " << nrm);
 
-	DEBUG("Leaving Ocean::scaleProblem()");
 }
  //=====================================================================
-void Ocean::unscaleProblem()
+void Ocean::UnscaleProblem()
 {
-	DEBUG("Entering Ocean::unscaleProblem()");
 	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
 	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
 
@@ -246,42 +233,38 @@ void Ocean::unscaleProblem()
 	sol_->Norm2(&nrm);
 	DEBUG("Ocean::unscaleProblem() ----->  sol (after unscaling): " << nrm);
 
-	DEBUG("Leaving Ocean::unscaleProblem()");
 }
 //=====================================================================
-void Ocean::computeRHS()
+void Ocean::ComputeRHS()
 {
-	DEBUG("Entering Ocean::computeRHS()");
 	// evaluate rhs in THCM with the current state
 	THCM::Instance().evaluate(*state_, rhs_, false);
 	rhs_->Scale(-1.0);
-	DEBUG("Leaving Ocean::computeRHS()");
 }
 //=====================================================================
-void Ocean::computeJacobian()
+void Ocean::ComputeJacobian()
 {
-	DEBUG("Entering Ocean::computeJacobian()...");
 	// Compute the Jacobian in THCM using the current state
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	// Get the Jacobian from THCM
 	jac_ = THCM::Instance().getJacobian();
 	DUMP("jac_.txt", *jac_);
-	DEBUG("Leaving  Ocean::computeJacobian()...");
 }
 //=====================================================================
-double Ocean::getNormRHS()
+double Ocean::GetNormRHS()
 {
 	double nrm;
 	rhs_->Norm2(&nrm);
 	return nrm;
 }
 //=====================================================================
-double Ocean::getNormState()
+double Ocean::GetNormState()
 {
 	double nrm;
 	state_->Norm2(&nrm);
 	return nrm;
 }
+
 //=====================================================================
 // OceanTheta
 //=====================================================================
@@ -291,27 +274,63 @@ OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm)
 	theta_(1.0),
 	timestep_(1.0e-03)
 {
-	DEBUG("Entering OceanTheta constructor");
 
 	// Initialize a few datamembers
 	oldState_ = rcp(new Epetra_Vector(*state_));
 	stateDot_ = rcp(new Epetra_Vector(*state_));
 	oldRhs_   = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
-	DEBUG("Leaving OceanTheta constructor");
 }
 //=====================================================================
-void OceanTheta::parkModel()
+void OceanTheta::Store()
 {
-	DEBUG("Entering Ocean::parkModel()");
-	INFO("Parking the model"); 
+	DEBUG("Storing the model");
+	
+	if (oldState_ == Teuchos::null or
+		!oldState_->Map().SameAs(state_->Map()))
+	{
+		oldState_ =
+			rcp(new Epetra_Vector(state_->Map()));
+	}
+	
 	*oldState_ = *state_;
+
+	if (oldRhs_ == Teuchos::null or
+		!oldRhs_->Map().SameAs(rhs_->Map()))
+	{
+		oldRhs_ =
+			rcp(new Epetra_Vector(rhs_->Map()));
+	}
+	
 	*oldRhs_   = *rhs_;
-	DEBUG("Leaving Ocean::parkModel()");
+	
 }
 //=====================================================================
-void OceanTheta::computeRHS()
+void OceanTheta::Restore()
 {
-	DEBUG("Entering OceanTheta::computeRHS()");
+	DEBUG("Restoring the model");
+
+	if (state_ == Teuchos::null or
+		!state_->Map().SameAs(oldState_->Map()))
+	{
+		state_ =
+			rcp(new Epetra_Vector(oldState_->Map()));
+	}
+	
+	*state_ = *oldState_;
+
+	if (rhs_ == Teuchos::null or
+		!rhs_->Map().SameAs(oldRhs_->Map()))
+	{
+		rhs_ =
+			rcp(new Epetra_Vector(oldRhs_->Map()));
+	}
+	
+	*rhs_   = *oldRhs_;
+	
+}
+//=====================================================================
+void OceanTheta::ComputeRHS()
+{
 	THCM::Instance().evaluate(*state_, rhs_, false);
 
     // Calculate mass matrix
@@ -344,12 +363,10 @@ void OceanTheta::computeRHS()
 	rhs_->Update(1.0, *stateDot_, 1.0);
 	rhs_->Scale(-1.0);
 
-	DEBUG("Leaving OceanTheta::computeRHS()");
 }
 //=====================================================================
-void OceanTheta::computeJacobian()
+void OceanTheta::ComputeJacobian()
 {
-	DEBUG("Entering OceanTheta::computeJacobian()...");
 
     // Check theta
 	if (theta_ < 0 || theta_ > 1)
@@ -387,5 +404,4 @@ void OceanTheta::computeJacobian()
 	}
 	jac_->FillComplete();
 	// DUMP("jac_.txt", *jac_);
-	DEBUG("Leaving  OceanTheta::computeJacobian()...");
 }

@@ -17,7 +17,10 @@ class Epetra_MultiVector;
 class Epetra_Operator;
 class Epetra_CrsMatrix;
 
-// Perhaps an abstract base class will be nice
+//==============================================================================
+// An abstract base class would be nice
+//==============================================================================
+
 class Ocean
 {
 public:
@@ -30,25 +33,25 @@ public:
 		}
 
 	// Randomize state, scale with scaling
-	void randomizeState(double scaling);
-	void dumpState();
+	void RandomizeState(double scaling);
+	void DumpState();
 	
-	void initializeSolver();
+	void InitializeSolver();
 	
-	void solve();
-	void unscaleProblem();	
-	void scaleProblem();
+	void Solve();
+	void UnscaleProblem();	
+	void ScaleProblem();
 
-	void computeRHS();
-	void computeJacobian();
+	void ComputeRHS();
+	void ComputeJacobian();
 
-	double getNormRHS();
-	double getNormState();
+	double GetNormRHS();
+	double GetNormState();
 	
-	Teuchos::RCP<Epetra_Vector> getState() { return state_; }
-	Teuchos::RCP<Epetra_Vector> getSolution() { return sol_; }
+	Teuchos::RCP<Epetra_Vector> GetState() { return state_; }
+	Teuchos::RCP<Epetra_Vector> GetSolution() { return sol_; }
 	
-	void setState(Teuchos::RCP<Epetra_Vector> state) { state_ = state; }
+	void SetState(Teuchos::RCP<Epetra_Vector> state) { state_ = state; }
 	
 protected:
 	Teuchos::RCP<THCM> thcm_;
@@ -73,8 +76,11 @@ protected:
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 };
 
-// class OceanTheta should have all the theta stuff and
+//==============================================================================
+// class OceanTheta should have all the theta and time stuff and
 // inherit the rest
+//==============================================================================
+
 class OceanTheta: public Ocean
 {
 public:
@@ -82,14 +88,16 @@ public:
 	OceanTheta(Teuchos::RCP<Epetra_Comm> Comm);
 
 	//destructor
-	~OceanTheta()
-		{
-			INFO("OceanTheta destructor called...");
-		}
+	~OceanTheta(){ INFO("OceanTheta destructor called...");	}
 
-	void parkModel();
-	void computeRHS();
-	void computeJacobian();
+	void Store();
+	void Restore();
+
+	void SetTimeStep(double timestep){ timeStep_ = timestep; }
+	void SetTheta(double theta){ theta_ = theta; }
+	
+	void ComputeRHS();
+	void ComputeJacobian();
 	
 protected:
 	double theta_;

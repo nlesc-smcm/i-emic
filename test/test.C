@@ -43,10 +43,10 @@ int main(int argc, char **argv)
 	// Initialize ocean model (THCM)
 	RCP<OceanTheta> ocean = rcp(new OceanTheta(Comm));
 	Newton<RCP<OceanTheta>, RCP<Epetra_Vector> >
-		newtonSolver(ocean);
+		newtonSolver(ocean, ocean->GetState());
 	
-	newtonSolver.run();	
-	ocean->dumpState();
+	newtonSolver.Run();	
+	ocean->DumpState();
 	
     //--------------------------------------------------------
 	// Finalize MPI

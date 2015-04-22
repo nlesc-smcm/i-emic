@@ -1,11 +1,12 @@
+//======================================================================
 #ifndef NEWTON_H
 #define NEWTON_H
-
+//======================================================================
 #include "NewtonDecl.H"
 #include "GlobalDefinitions.H"
-
+//======================================================================
 template<typename Model, typename Vector>
-Newton<Model, Vector>::Newton(Model model)
+Newton<Model, Vector>::Newton(Model model, Vector state)
  	:
  	isInitialized_(false),
 	backTracking_(true),
@@ -16,38 +17,38 @@ Newton<Model, Vector>::Newton(Model model)
 {
  	DEBUG("Entering Newton constructor");
  	model_ = model;
-	state_ = model->getState();
-	initialize();
+	state_ = state;
+	Initialize();
  	DEBUG("Leaving Newton constructor");
 }
-
+//======================================================================
 template<typename Model, typename Vector>
-void Newton<Model, Vector>::initialize()
+void Newton<Model, Vector>::Initialize()
 {
  	DEBUG("Entering Newton::initialize()");
  	isInitialized_ = true;
  	DEBUG("Leaving Newton::initialize()");
 }
-
+//======================================================================
 template<typename Model, typename Vector>
-void Newton<Model, Vector>::run()
+void Newton<Model, Vector>::Run()
 {
  	DEBUG("Entering Newton::run()");
 
 	//
-	model_->computeRHS();
-	normRHS_ = model_->getNormRHS();
+	model_->ComputeRHS();
+	normRHS_ = model_->GetNormRHS();
 	for (iter_ = 0; iter_ != maxNumIterations_; ++iter_)
 	{				
 		//
-		model_->computeJacobian();
-		model_->solve();
-		dir_ = model_->getSolution();
+		model_->ComputeJacobian();
+		model_->Solve();
+		dir_ = model_->GetSolution();
 		state_->Update(1.0, *dir_, 1.0);
 
 		//
-		model_->computeRHS();
-		normRHStest_ = model_->getNormRHS();
+		model_->ComputeRHS();
+		normRHStest_ = model_->GetNormRHS();
 		DEBUG("Newton:      iter: " << iter_ );
 		DEBUG("Newton:      norm: " << normRHS_ );
 		DEBUG("Newton:  new norm: " << normRHStest_ );
@@ -60,7 +61,7 @@ void Newton<Model, Vector>::run()
 		}
 		
 		if (backTracking_ and (normRHS_ < normRHStest_) )
-			runBackTracking();
+			RunBackTracking();
 		
 		//
 		normRHS_ = normRHStest_;
@@ -70,9 +71,9 @@ void Newton<Model, Vector>::run()
 	
  	DEBUG("Leaving Newton::run()");
 }
-
+//======================================================================
 template<typename Model, typename Vector>
-void Newton<Model, Vector>::runBackTracking()
+void Newton<Model, Vector>::RunBackTracking()
 {
 	DEBUG("Entering Newton::runBackTracking()");
 
@@ -97,8 +98,8 @@ void Newton<Model, Vector>::runBackTracking()
 		reduction /= 2.0;
 		
 		//
-		model_->computeRHS();
-		normRHStest_ = model_->getNormRHS();
+		model_->ComputeRHS();
+		normRHStest_ = model_->GetNormRHS();
 	}
 	if (backTrack_ == numBackTrackingSteps_)
 		DEBUG("Newton: ---> TROUBLE");

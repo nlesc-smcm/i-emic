@@ -41,10 +41,10 @@ class Newton
 	bool backTracking_;
 	
 public:
-	Newton(Model model);
-	void initialize();
-	void run();
-	void runBackTracking();	
+	Newton(Model model, Vector state);
+	void Initialize();
+	void Run();
+	void RunBackTracking();	
 };
 
 #endif
