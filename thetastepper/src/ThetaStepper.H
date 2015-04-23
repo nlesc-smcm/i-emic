@@ -10,7 +10,7 @@ ThetaStepper<Model, Vector>::ThetaStepper(Model model, Vector state)
 	:
 	theta_(1.0),
 	time_(0.0),
-	timestep_(1.0e-4),
+	timestep_(1.0e-2),
 	startTime_(0.0),
 	endTime_(50.0)
 {
@@ -40,7 +40,8 @@ void ThetaStepper<Model, Vector>::Run()
 
 		time_ += timestep_;
 		DEBUG("ThetaStepper<Model, Vector>::Run()");
-		DEBUG("  time = " << time_);
+		DEBUG("  time     = " << time_);
+		DEBUG("  timestep = " << timestep_);
 		
 		// iters = newtonSolver.Iterations();
 		// AdjustTimestep(iters); // not implemented yet
