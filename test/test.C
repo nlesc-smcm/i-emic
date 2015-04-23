@@ -19,7 +19,7 @@
 
 #include "GlobalDefinitions.H"
 #include "Ocean.H"
-#include "Newton.H"
+#include "ThetaStepper.H"
 #include "Singleton.H"
 
 using Teuchos::RCP;
@@ -42,10 +42,10 @@ int main(int argc, char **argv)
 	outFile = outputFiles(Comm);
 	// Initialize ocean model (THCM)
 	RCP<OceanTheta> ocean = rcp(new OceanTheta(Comm));
-	Newton<RCP<OceanTheta>, RCP<Epetra_Vector> >
-		newtonSolver(ocean, ocean->GetState());
+	ThetaStepper<RCP<OceanTheta>, RCP<Epetra_Vector> >
+		thetaStepper(ocean, ocean->GetState());
 	
-	newtonSolver.Run();	
+	thetaStepper.Run();	
 	ocean->DumpState();
 	
     //--------------------------------------------------------

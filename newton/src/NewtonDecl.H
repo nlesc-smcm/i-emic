@@ -38,13 +38,18 @@ class Newton
 
 	//!
 	bool isInitialized_;
-	bool backTracking_;
+	bool isConverged_;
+	bool backTracking_; //perhaps call this enableBacktracking_
 	
 public:
 	Newton(Model model, Vector state);
 	void Initialize();
 	void Run();
-	void RunBackTracking();	
+	void RunBackTracking();
+
+	bool Converged(){ return isConverged_; }
+	
+	int  Iterations(){ return iter_; }
 };
 
 #endif

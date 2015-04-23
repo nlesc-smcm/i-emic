@@ -17,7 +17,7 @@ class ThetaStepper
 	// timestepping specific member
 	double theta_;
 	double time_;
-	double timeStep_;
+	double timestep_;
 	double startTime_;
 	double endTime_;
 

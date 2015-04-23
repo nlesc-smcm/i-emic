@@ -93,7 +93,7 @@ public:
 	void Store();
 	void Restore();
 
-	void SetTimeStep(double timestep){ timeStep_ = timestep; }
+	void SetTimestep(double timestep){ timestep_ = timestep; }
 	void SetTheta(double theta){ theta_ = theta; }
 	
 	void ComputeRHS();

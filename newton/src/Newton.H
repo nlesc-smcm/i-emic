@@ -9,33 +9,32 @@ template<typename Model, typename Vector>
 Newton<Model, Vector>::Newton(Model model, Vector state)
  	:
  	isInitialized_(false),
-	backTracking_(true),
+	isConverged_(false),
+	backTracking_(true),  
+	iter_(0),
 	maxNumIterations_(10),
 	toleranceRHS_(1.0e-6),
 	normRHS_(1.0),
 	numBackTrackingSteps_(10)
 {
- 	DEBUG("Entering Newton constructor");
  	model_ = model;
 	state_ = state;
 	Initialize();
- 	DEBUG("Leaving Newton constructor");
 }
 //======================================================================
 template<typename Model, typename Vector>
 void Newton<Model, Vector>::Initialize()
 {
- 	DEBUG("Entering Newton::initialize()");
+	// This function needs some more stuff or it should be deleted
  	isInitialized_ = true;
- 	DEBUG("Leaving Newton::initialize()");
 }
 //======================================================================
 template<typename Model, typename Vector>
 void Newton<Model, Vector>::Run()
 {
- 	DEBUG("Entering Newton::run()");
-
 	//
+	isConverged_ = false;
+	
 	model_->ComputeRHS();
 	normRHS_ = model_->GetNormRHS();
 	for (iter_ = 0; iter_ != maxNumIterations_; ++iter_)
@@ -49,6 +48,7 @@ void Newton<Model, Vector>::Run()
 		//
 		model_->ComputeRHS();
 		normRHStest_ = model_->GetNormRHS();
+
 		DEBUG("Newton:      iter: " << iter_ );
 		DEBUG("Newton:      norm: " << normRHS_ );
 		DEBUG("Newton:  new norm: " << normRHStest_ );
@@ -67,17 +67,20 @@ void Newton<Model, Vector>::Run()
 		normRHS_ = normRHStest_;
 	}
 	if (iter_ == maxNumIterations_)
+	{
 		DEBUG("Newton: ---> TROUBLE");
-	
- 	DEBUG("Leaving Newton::run()");
+	}
+	else
+	{
+		isConverged_ = true;
+	}
 }
 //======================================================================
 template<typename Model, typename Vector>
 void Newton<Model, Vector>::RunBackTracking()
 {
-	DEBUG("Entering Newton::runBackTracking()");
 
-	//
+	// Initialize reduction with -1/2
 	double reduction = -1.0 / 2;
 
 	//
@@ -93,18 +96,19 @@ void Newton<Model, Vector>::RunBackTracking()
 		DEBUG("Newton --> backtracking:  reduction: " << reduction);
 		DEBUG("Newton --> backtracking:       norm: " << normRHStest_);
 
-		//
+		// Apply reduction to the state vector
 		state_->Update(reduction, *dir_, 1.0);
-		reduction /= 2.0;
-		
+
 		//
 		model_->ComputeRHS();
 		normRHStest_ = model_->GetNormRHS();
+
+		// Update reduction
+		reduction /= 2.0;
+
 	}
 	if (backTrack_ == numBackTrackingSteps_)
-		DEBUG("Newton: ---> TROUBLE");
-			
-	DEBUG("Leaving Newton::runBackTracking()");
+		DEBUG("Newton: --> BACKTRACKING FAILED");
 }
 
 #endif

@@ -1,23 +1,22 @@
 include ../make.inc/Makefile.${PLAT}
 
-DIRS =  $(PROJECT_BASE)/$(LIB_OCEAN)/src\
-        $(PROJECT_BASE)/$(LIB_NEWTON)/src	
+DIRS =  $(PROJECT_BASE)/ocean/src\
 
 EXE  = test
 OBJS = test.o
-OBJLIBS = \
-	lib$(LIB_OCEAN).a	\
-    lib$(LIB_NEWTON).a	\
+OBJLIBS = lib$(LIB_OCEAN).a
 
 # Header dependencies, especially important for templated stuff	
 HEADERDEPS = \
-	../newton/src/Newton.H\
-	../ocean/src/GlobalDefinitions.H\
-	../ocean/src/Ocean.H\
+	../newton/src/Newton.H \
+	../newton/src/NewtonDecl.H \
+	../thetastepper/src/ThetaStepper.H \
+	../thetastepper/src/ThetaStepperDecl.H \
+	../ocean/src/GlobalDefinitions.H \
+	../ocean/src/Ocean.H \
 
 INTLIBS = \
-	-l$(LIB_OCEAN)	\
-	-l$(LIB_NEWTON)	\
+	-l$(LIB_OCEAN)\
 
 all: $(EXE)
 
@@ -26,11 +25,6 @@ $(EXE):  $(OBJLIBS) $(OBJS)
 
 lib$(LIB_OCEAN).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_OCEAN)/src; $(MAKE) $(MFLAGS)
-
-lib$(LIB_NEWTON).a: force_look
-	cd $(PROJECT_BASE)/$(LIB_NEWTON)/src; $(MAKE) $(MFLAGS)
-
-$(HEADER):
 
 %.o: %.C $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
