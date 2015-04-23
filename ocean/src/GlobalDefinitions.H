@@ -24,11 +24,13 @@ extern Teuchos::RCP<std::ostream> outFile;
 #endif
 
 #ifndef ERROR
-#  define ERROR(x,y,z) (*outFile) << "**ERROR**: " << x << " " << y << " " << z << std::endl;
+#  define ERROR(x,y,z) (*outFile) << "**ERROR**: " << x << " "\
+	                              << y << " " << z << std::endl;
 #endif
 
 #ifndef WARNING
-#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << " " << y << " " << z << std::endl;
+#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << " "\
+	                                << y << " " << z << std::endl;
 #endif
 
 #ifndef DEBUG
@@ -46,16 +48,30 @@ extern Teuchos::RCP<std::ostream> outFile;
 #  define DUMP(x,y) EpetraExt::RowMatrixToMatrixMarketFile(x, y);
 #endif
 
+#ifndef MAX
+#  define MAX(x,y) (x > y ? x : y)
+#endif
+
+#ifndef MIN
+#  define MIN(x,y) (x < y ? x : y)
+#endif
+
+
+//==================================================================
+//==================================================================
+
 // macros for checking Epetra calls
 #ifndef CHECK_ZERO
 #define CHECK_ZERO(funcall) {int ierr = funcall;						\
-		if (ierr) {INFO("Trilinos Error " << ierr << " returned from call " << #funcall); \
+		if (ierr) {INFO("Trilinos Error " << ierr << " returned from call " \
+						                          << #funcall);\
 			/*throw std::runtime_error("Trilinos Error...");*/}}
 #define CHECK_TRUE(funcall) {bool berr = funcall;						\
 		if (!berr) {INFO("Trilinos call " << #funcall << " returned false"); \
 			/*throw std::runtime_error("Trilinos Error...");*/}}
 #define CHECK_NONNEG(funcall) {int ierr = funcall;						\
-		if (ierr<0) {INFO("Trilinos Error " << ierr << " returned from call " << #funcall); \
+		if (ierr<0) {INFO("Trilinos Error " << ierr << " returned from call " \
+						                    << #funcall);\
 			/*throw std::runtime_error("Trilinos Error...");*/}}
 #endif
 

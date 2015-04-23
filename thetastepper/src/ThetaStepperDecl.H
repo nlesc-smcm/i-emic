@@ -14,17 +14,28 @@ class ThetaStepper
 	Model  model_;
 	Vector state_;
 
-	// timestepping specific member
+	// timestepping specific datamembers
 	double theta_;
 	double time_;
 	double timestep_;
+	double minTimestep_;
+	double maxTimestep_;
+
 	double startTime_;
 	double endTime_;
+
+ 	double timestepScale1_;
+	double timestepScale2_;
+	double timestepScale3_;
+
+	int minAllowedIterations_;
+	int maxAllowedIterations_;
 
 public:
 
 	ThetaStepper(Model model, Vector state);
 	void Run();
+	void AdjustTimestep(int iters, bool convergence);
 
 };
 
