@@ -15,14 +15,16 @@ ThetaStepper<Model, Vector>::ThetaStepper(Model model, Vector state)
 	time_(0.0),
 	timestep_(1.0e-4),
 	minTimestep_(1.0e-8),
-	maxTimestep_(1.0e-1),
+	maxTimestep_(1.0),
 	startTime_(0.0),
 	endTime_(50.0),
 	timestepScale1_(1.20),
 	timestepScale2_(2.00),
 	timestepScale3_(1.05),
+	inYears_(2.0),
+	inDays_(2.0 * 365),
 	minAllowedIterations_(4),
-	maxAllowedIterations_(6)	
+	maxAllowedIterations_(5)	
 {
 	model_ = model;
 	state_ = state;
@@ -35,6 +37,8 @@ void ThetaStepper<Model, Vector>::Run()
 	Newton<Model, Vector> newtonSolver(model_, state_);
 	int  iters;
 	bool convergence;
+
+	Info();
 	
 	while (time_ < endTime_)
 	{
@@ -43,20 +47,22 @@ void ThetaStepper<Model, Vector>::Run()
 		model_->SetTheta(theta_);
 		model_->SetTimestep(timestep_);
 
+		INFO("  time     = " << time_ * inYears_ << " Years");
+		INFO("  timestep = " << timestep_ * inDays_ << " Days");
+		
 		newtonSolver.Run();
 		convergence = newtonSolver.Converged();
 		
 		if (!convergence)
-		{		
+		{
+			INFO("No convergence in Newton solve");
+			INFO("   Restoring the model and decreasing the timestep");
 			model_->Restore();
+			AdjustTimestep(iters, convergence); 
 			continue;
 		}
 		
 		time_ += timestep_;
-
-		DEBUG("ThetaStepper<Model, Vector>::Run()");
-		DEBUG("  time     = " << time_);
-		DEBUG("  timestep = " << timestep_);
 		
 		iters = newtonSolver.Iterations();
 
@@ -71,13 +77,13 @@ template<typename Model, typename Vector>
 void ThetaStepper<Model, Vector>::AdjustTimestep(int iters,
 												 bool convergence)
 {
-	if (iters <= minAllowedIterations_)
+	if (iters < minAllowedIterations_)
  	{
 		DEBUG("  AdjustTimestep: increasing with a factor "
 			  << timestepScale1_);
 		timestep_ = MIN(timestep_ * timestepScale1_, maxTimestep_);
 	}
-	else if (iters >= maxAllowedIterations_ and convergence)
+	else if (iters > maxAllowedIterations_ and convergence)
 	{
 		DEBUG("  AdjustTimestep: decreasing with a factor "
 			  << timestepScale1_);
@@ -91,5 +97,25 @@ void ThetaStepper<Model, Vector>::AdjustTimestep(int iters,
 		timestep_ = MAX(timestep_ / timestepScale2_, minTimestep_);		
 	}	
 }
-	
+//==================================================================
+template<typename Model, typename Vector>
+void ThetaStepper<Model, Vector>::Info()
+{
+	INFO("--------------------------------------------------------");
+	INFO("Timestepping run with... ");
+	INFO("                  theta: " << theta_);
+	INFO("               timestep: " << timestep_);
+	INFO("    timestep boundaries: "
+		 << "[" << minTimestep_ << ", " << maxTimestep_ << "]");
+	INFO("        time boundaries: " 
+		 << "[" << startTime_ << ", " << endTime_ << "]");
+	INFO("      newton boundaries: " 
+		 << "[" << minAllowedIterations_
+		 << ", " << maxAllowedIterations_ << "]");
+	INFO("      timestep scalings..."
+		 << "increase/decrease:" << timestepScale1_
+		 << " big decrease:" << timestepScale2_);
+	INFO("--------------------------------------------------------");
+}
+
 #endif

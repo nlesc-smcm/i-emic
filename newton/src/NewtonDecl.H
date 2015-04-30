@@ -30,6 +30,8 @@ class Newton
 	int iter_;
 	int maxNumIterations_;
 
+	int numPrecRecomputes_;
+	
 	int backTrack_;
 	int numBackTrackingSteps_;
 	double toleranceRHS_;

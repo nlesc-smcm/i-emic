@@ -52,6 +52,7 @@ public:
 	Teuchos::RCP<Epetra_Vector> GetSolution() { return sol_; }
 	
 	void SetState(Teuchos::RCP<Epetra_Vector> state) { state_ = state; }
+	void RecomputePreconditioner() { recomputePreconditioner_ = true; }
 	
 protected:
 	Teuchos::RCP<THCM> thcm_;
@@ -65,6 +66,8 @@ protected:
 	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
 
 	bool solverInitialized_;
+	bool recomputePreconditioner_;
+	bool useScaling_;
 
 	Teuchos::RCP<Epetra_Vector> sol_;
 	Teuchos::RCP<Teuchos::ParameterList> belosParamList_;
@@ -74,6 +77,8 @@ protected:
 				 <double, Epetra_MultiVector, Epetra_Operator> > belosSolver_;
 
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
+
+	int belosIters_;
 };
 
 //==============================================================================

@@ -17,7 +17,7 @@ SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
 ##=================================================================
 ##   Supply debug and other flags for CXX compiler:
 CXX_DEBUG = -g
-CXX_EXTRA = -DDEBUGGING -DTESTING 
+CXX_EXTRA = -O3    #-DDEBUGGING -DTESTING 
 CXX_FLAGS = ${CXX_DEBUG} ${SHARED_FLAGS} $(CXX_EXTRA)
 ##=================================================================
 ##   Supply debug and other flags for FC compiler:

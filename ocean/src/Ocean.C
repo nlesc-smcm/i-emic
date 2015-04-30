@@ -10,6 +10,7 @@
 #include <BelosBlockGmresSolMgr.hpp>
 #include <BelosEpetraAdapter.hpp>
 #include <Ifpack_Preconditioner.h>
+
 //=====================================================================
 #include "Ocean.H"
 #include "THCM.H"
@@ -17,21 +18,26 @@
 #include "TRIOS_Domain.H"
 #include "TRIOS_BlockPreconditioner.H"
 #include "GlobalDefinitions.H"
+
 //=====================================================================
 using Teuchos::RCP;
 using Teuchos::rcp;
+
 //=====================================================================
 // Fortran stuff:
 extern "C"
 { 
-	_SUBROUTINE_(write_data)(double*, int*, int*);  // file inout.f
-} //extern
-//=====================================================================
+	_SUBROUTINE_(write_data)(double*, int*, int*); 
+} 
 
+//=====================================================================
+// Constructor:
 Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	:
 	comm_(Comm),
-	solverInitialized_(false)
+	solverInitialized_(false),
+	recomputePreconditioner_(false),
+	useScaling_(false)
 {
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");
@@ -55,35 +61,35 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	//  instance at a time. The Ocean class can access THCM with a call
 	//  to THCM::Instance()
 	state_ = THCM::Instance().getSolution();
-	INFO("  Obtained solution from THCM");
+	INFO("Ocean: Obtained solution from THCM");
 
 	state_->PutScalar(0.0);
-	INFO("  Initialized solution -> Ocean::state = zeros...");
+	INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
 	
 	// Obtain Jacobian from THCM    
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	jac_ = THCM::Instance().getJacobian();
-	INFO("  Obtained jacobian from THCM");
+	INFO("Ocean: Obtained jacobian from THCM");
 
 	// Initialize a few datamembers
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
-
-	
 }
+
 //=====================================================================
 void Ocean::RandomizeState(double scaling)
 {
 	state_->Random();
 	state_->Scale(scaling);
-	INFO("Initialized solution vector");
+	INFO("Ocean: Initialized solution vector");
 }
+
 //=====================================================================
 void Ocean::DumpState()
 {
 	// This function will probably break (?) on a distributed memory system.
 	// For now it is convenient.
-	// Use some HYMLS functionality to gather the solution in the right way
+	// Use some of Jonas' utilities to gather the solution in the right way
 	Teuchos::RCP<Epetra_MultiVector> fullSol = Utils::Gather(*state_, 0);
 	int filename = 3;
 	int label    = 2;	
@@ -100,16 +106,16 @@ void Ocean::DumpState()
 	}
 	delete [] solutionArray;
 }
+
 //=====================================================================
 void Ocean::InitializeSolver()
 {
 
 	// Belos::LinearProblem setup
 
-	problem_ =
-		rcp(new Belos::LinearProblem
-			<double, Epetra_MultiVector,Epetra_Operator>
-			(jac_, sol_, rhs_) );
+	problem_ = rcp(new Belos::LinearProblem
+				   <double, Epetra_MultiVector, Epetra_Operator>
+				   (jac_, sol_, rhs_) );
 
 	// Block preconditioner 
 	Teuchos::RCP<Teuchos::ParameterList> solverParams =
@@ -122,6 +128,10 @@ void Ocean::InitializeSolver()
 	precPtr_ =
 		Teuchos::rcp(new TRIOS::BlockPreconditioner(jac_, domain,
 													*solverParams));
+
+	// 
+	precPtr_->Initialize();
+	precPtr_->Compute();
 	
 	RCP<Belos::EpetraPrecOp> belosPrec =
 		rcp(new Belos::EpetraPrecOp(precPtr_));
@@ -141,7 +151,6 @@ void Ocean::InitializeSolver()
    belosParamList_->set("Explicit Residual Test", false); 
    belosParamList_->set("Verbosity", Belos::FinalSummary);
    belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
-   //belosParamList_->set("Explicit Residual Scaling", "Norm of Preconditioned Initial Residual");
 
 	// Belos block GMRES setup
 	belosSolver_ =
@@ -151,26 +160,44 @@ void Ocean::InitializeSolver()
 	solverInitialized_ = true;
 
 }
+
 //=====================================================================
 void Ocean::Solve()
 {
 	if (!solverInitialized_)
 		InitializeSolver();
 
+	// 
 	sol_->PutScalar(0.0);
-	// ScaleProblem();
-	precPtr_->Compute();
+
+	if (useScaling_)
+		ScaleProblem();
+	
+	if (recomputePreconditioner_)
+	{
+		INFO("Ocean: Computing preconditioner...")
+		precPtr_->Compute();
+		INFO("Ocean: Computing preconditioner... done")
+		recomputePreconditioner_ = false;
+	}
+	
 	bool set = problem_->setProblem(sol_, rhs_);
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
+	INFO("Ocean: Perform solve...");
 	Belos::ReturnType ret = belosSolver_->solve();
-	// UnscaleProblem();
-		
+	belosIters_ = belosSolver_->getNumIters();	
+	INFO("Ocean: Perform solve... done ("
+		 << belosIters_ << " iterations)" );
+	
+	if (useScaling_)
+		UnscaleProblem();		
 	double nrm;
 	sol_->Norm2(&nrm);
 	DEBUG(" Ocean::solve()   norm solution: " << nrm);
 }
- //=====================================================================
+
+//=====================================================================
 void Ocean::ScaleProblem()
 {
 	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
@@ -212,7 +239,8 @@ void Ocean::ScaleProblem()
 	DEBUG("Ocean::scaleProblem() ----->  sol (after scaling): " << nrm);
 
 }
- //=====================================================================
+
+//=====================================================================
 void Ocean::UnscaleProblem()
 {
 	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
@@ -234,6 +262,7 @@ void Ocean::UnscaleProblem()
 	DEBUG("Ocean::unscaleProblem() ----->  sol (after unscaling): " << nrm);
 
 }
+
 //=====================================================================
 void Ocean::ComputeRHS()
 {
@@ -241,6 +270,7 @@ void Ocean::ComputeRHS()
 	THCM::Instance().evaluate(*state_, rhs_, false);
 	rhs_->Scale(-1.0);
 }
+
 //=====================================================================
 void Ocean::ComputeJacobian()
 {
@@ -250,6 +280,7 @@ void Ocean::ComputeJacobian()
 	jac_ = THCM::Instance().getJacobian();
 	DUMP("jac_.txt", *jac_);
 }
+
 //=====================================================================
 double Ocean::GetNormRHS()
 {
@@ -257,6 +288,7 @@ double Ocean::GetNormRHS()
 	rhs_->Norm2(&nrm);
 	return nrm;
 }
+
 //=====================================================================
 double Ocean::GetNormState()
 {
@@ -280,6 +312,7 @@ OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm)
 	stateDot_ = rcp(new Epetra_Vector(*state_));
 	oldRhs_   = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 }
+
 //=====================================================================
 void OceanTheta::Store()
 {
@@ -302,8 +335,8 @@ void OceanTheta::Store()
 	}
 	
 	*oldRhs_   = *rhs_;
-	
 }
+
 //=====================================================================
 void OceanTheta::Restore()
 {
@@ -326,8 +359,8 @@ void OceanTheta::Restore()
 	}
 	
 	*rhs_   = *oldRhs_;
-	
 }
+
 //=====================================================================
 void OceanTheta::ComputeRHS()
 {
@@ -362,8 +395,8 @@ void OceanTheta::ComputeRHS()
 	rhs_->Update(theta_ - 1.0, *oldRhs_, theta_);
 	rhs_->Update(1.0, *stateDot_, 1.0);
 	rhs_->Scale(-1.0);
-
 }
+
 //=====================================================================
 void OceanTheta::ComputeJacobian()
 {
@@ -371,7 +404,8 @@ void OceanTheta::ComputeJacobian()
     // Check theta
 	if (theta_ < 0 || theta_ > 1)
 	{
-		INFO("Incorrect theta: " << theta_);
+		WARNING("Ocean: Incorrect theta: " << theta_,
+				__FILE__, __LINE__);
 	}	
 
     // First compute the Jacobian in THCM using the current state
@@ -403,5 +437,4 @@ void OceanTheta::ComputeJacobian()
 								  &value, myGlobalElements + i);
 	}
 	jac_->FillComplete();
-	// DUMP("jac_.txt", *jac_);
 }

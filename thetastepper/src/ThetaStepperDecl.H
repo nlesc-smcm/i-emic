@@ -28,15 +28,20 @@ class ThetaStepper
 	double timestepScale2_;
 	double timestepScale3_;
 
+	double inDays_;
+	double inYears_;
+
 	int minAllowedIterations_;
 	int maxAllowedIterations_;
+
+	
 
 public:
 
 	ThetaStepper(Model model, Vector state);
 	void Run();
 	void AdjustTimestep(int iters, bool convergence);
-
+	void Info();
 };
 
 #endif
