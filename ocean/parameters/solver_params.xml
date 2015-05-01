@@ -312,7 +312,7 @@
       <Parameter name="max levels" type="int" value="3"/>
       <Parameter name="cycle applications" type="int" value="1"/>
       <!-- maximum verbosity is 10, output is always sent to stdout  -->
-      <Parameter name="output" type="int" value="10"/>
+      <Parameter name="output" type="int" value="0"/>
       <!-- "MGV","MGW","full-MGV" -->
       <Parameter name="prec type" type="string" value="MGV"/>
       <Parameter name="print unused" type="int" value="-2"/>

@@ -13,7 +13,7 @@ ThetaStepper<Model, Vector>::ThetaStepper(Model model, Vector state)
 	:
 	theta_(1.0),
 	time_(0.0),
-	timestep_(1.0e-4),
+	timestep_(1.0e-3),
 	minTimestep_(1.0e-8),
 	maxTimestep_(1.0),
 	startTime_(0.0),
@@ -77,7 +77,7 @@ template<typename Model, typename Vector>
 void ThetaStepper<Model, Vector>::AdjustTimestep(int iters,
 												 bool convergence)
 {
-	if (iters < minAllowedIterations_)
+	if (iters < minAllowedIterations_ and convergence)
  	{
 		DEBUG("  AdjustTimestep: increasing with a factor "
 			  << timestepScale1_);
@@ -97,6 +97,7 @@ void ThetaStepper<Model, Vector>::AdjustTimestep(int iters,
 		timestep_ = MAX(timestep_ / timestepScale2_, minTimestep_);		
 	}	
 }
+
 //==================================================================
 template<typename Model, typename Vector>
 void ThetaStepper<Model, Vector>::Info()
@@ -112,9 +113,9 @@ void ThetaStepper<Model, Vector>::Info()
 	INFO("      newton boundaries: " 
 		 << "[" << minAllowedIterations_
 		 << ", " << maxAllowedIterations_ << "]");
-	INFO("      timestep scalings..."
-		 << "increase/decrease:" << timestepScale1_
-		 << " big decrease:" << timestepScale2_);
+	INFO("      timestep scalings... "
+		 << "increase/decrease: " << timestepScale1_
+		 << " big decrease: " << timestepScale2_);
 	INFO("--------------------------------------------------------");
 }
 

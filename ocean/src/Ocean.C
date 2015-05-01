@@ -4,6 +4,7 @@
 #include <Epetra_MultiVector.h>
 #include <Epetra_Operator.h>
 #include <Epetra_CrsMatrix.h>
+#include <Epetra_Time.h>
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 #include <BelosLinearProblem.hpp>
@@ -36,7 +37,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	:
 	comm_(Comm),
 	solverInitialized_(false),
-	recomputePreconditioner_(false),
+	recomputePreconditioner_(true),
+	recomputeBound_(10),
 	useScaling_(false)
 {
 	if (outFile == Teuchos::null)
@@ -74,6 +76,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	// Initialize a few datamembers
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
+
+	// Create timing object
+	timer_ = rcp(new Epetra_Time(*Comm));
 }
 
 //=====================================================================
@@ -129,9 +134,10 @@ void Ocean::InitializeSolver()
 		Teuchos::rcp(new TRIOS::BlockPreconditioner(jac_, domain,
 													*solverParams));
 
-	// 
+	//
+	INFO("Ocean: initializing preconditioner...");
 	precPtr_->Initialize();
-	precPtr_->Compute();
+	INFO("Ocean: initializing preconditioner... done");
 	
 	RCP<Belos::EpetraPrecOp> belosPrec =
 		rcp(new Belos::EpetraPrecOp(precPtr_));
@@ -166,18 +172,22 @@ void Ocean::Solve()
 {
 	if (!solverInitialized_)
 		InitializeSolver();
-
+	
 	// 
 	sol_->PutScalar(0.0);
 
 	if (useScaling_)
 		ScaleProblem();
-	
+
+	double time;
 	if (recomputePreconditioner_)
 	{
-		INFO("Ocean: Computing preconditioner...")
+		INFO("Ocean: Computing preconditioner...");
+		timer_->ResetStartTime();
 		precPtr_->Compute();
-		INFO("Ocean: Computing preconditioner... done")
+		time = timer_->ElapsedTime(); 
+		INFO("Ocean: Computing preconditioner... done("
+			 << time << " seconds)" );
 		recomputePreconditioner_ = false;
 	}
 	
@@ -185,13 +195,24 @@ void Ocean::Solve()
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
 	INFO("Ocean: Perform solve...");
+	timer_->ResetStartTime();
 	Belos::ReturnType ret = belosSolver_->solve();
+	time = timer_->ElapsedTime(); 
 	belosIters_ = belosSolver_->getNumIters();	
 	INFO("Ocean: Perform solve... done ("
-		 << belosIters_ << " iterations)" );
+		 << belosIters_ << " iterations, "
+		 << time        << " seconds)");
+
+	if (belosIters_ > recomputeBound_)
+	{
+		INFO("Ocean: Number of iterations exceeds " << recomputeBound_);
+		INFO("Ocean:   Enabling computation of preconditioner.");
+		recomputePreconditioner_ = true;
+	}
 	
 	if (useScaling_)
-		UnscaleProblem();		
+		UnscaleProblem();
+	
 	double nrm;
 	sol_->Norm2(&nrm);
 	DEBUG(" Ocean::solve()   norm solution: " << nrm);

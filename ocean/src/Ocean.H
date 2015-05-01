@@ -16,6 +16,7 @@ class Epetra_Vector;
 class Epetra_MultiVector;
 class Epetra_Operator;
 class Epetra_CrsMatrix;
+class Epetra_Time;
 
 //==============================================================================
 // An abstract base class would be nice
@@ -65,6 +66,8 @@ protected:
 	Teuchos::RCP<Epetra_Vector> rowScalingRecipr_;
 	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
 
+	Teuchos::RCP<Epetra_Time> timer_;
+
 	bool solverInitialized_;
 	bool recomputePreconditioner_;
 	bool useScaling_;
@@ -79,6 +82,7 @@ protected:
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 
 	int belosIters_;
+	int recomputeBound_;
 };
 
 //==============================================================================

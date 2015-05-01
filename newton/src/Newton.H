@@ -16,7 +16,6 @@ Newton<Model, Vector>::Newton(Model model, Vector state)
 	backTracking_(true),  
 	iter_(0),
 	maxNumIterations_(10),
-	numPrecRecomputes_(2),
 	toleranceRHS_(1.0e-3),
 	normRHS_(1.0),
 	numBackTrackingSteps_(10)
@@ -46,10 +45,7 @@ void Newton<Model, Vector>::Run()
 	for (iter_ = 0; iter_ != maxNumIterations_; ++iter_)
 	{				
 		//
-		model_->ComputeJacobian();
-		if (iter_ < numPrecRecomputes_)
-			model_->RecomputePreconditioner();
-		
+		model_->ComputeJacobian();	
 		model_->Solve();
 		dir_ = model_->GetSolution();
 		state_->Update(1.0, *dir_, 1.0);
@@ -59,7 +55,7 @@ void Newton<Model, Vector>::Run()
 		normRHStest_ = model_->GetNormRHS();
 
 		INFO("Newton:      iter: " << iter_ );
-		INFO("Newton:      norm: " << normRHS_ );
+		INFO("Newton:      norm: " << normRHStest_ );
 
 		//
 		if (normRHStest_ < toleranceRHS_)
