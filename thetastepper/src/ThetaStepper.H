@@ -17,7 +17,7 @@ ThetaStepper<Model, Vector>::ThetaStepper(Model model, Vector state)
 	minTimestep_(1.0e-8),
 	maxTimestep_(1.0),
 	startTime_(0.0),
-	endTime_(50.0),
+	endTime_(100.0),
 	timestepScale1_(1.20),
 	timestepScale2_(2.00),
 	timestepScale3_(1.05),

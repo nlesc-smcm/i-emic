@@ -5,11 +5,19 @@
 #include <Epetra_Operator.h>
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_Time.h>
+
+#include <EpetraExt_BlockMapIn.h>
+#include <EpetraExt_BlockMapOut.h>
+#include <EpetraExt_VectorIn.h>
+#include <EpetraExt_VectorOut.h>
+
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
+
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
 #include <BelosEpetraAdapter.hpp>
+
 #include <Ifpack_Preconditioner.h>
 
 //=====================================================================
@@ -319,6 +327,29 @@ double Ocean::GetNormState()
 }
 
 //=====================================================================
+void Ocean::SaveStateToFile(std::string const &name)
+{
+	std::string vectorFile    = name + "vec";
+	std::string mapFile       = name + "map";
+	std::string parameterFile = name + "pars";
+
+	INFO("Writing to " << vectorFile);
+	INFO("           " << mapFile);
+	INFO("           " << parameterFile);
+	
+	EpetraExt::VectorToMatrixMarketFile
+		(vectorFile.c_str(), *state_);
+	EpetraExt::BlockMapToMatrixMarketFile
+		(mapFile.c_str(), state_->Map());
+}
+
+//=====================================================================
+void LoadStateFromFile(std::string const &name)
+{
+	
+}
+
+//=====================================================================
 // OceanTheta
 //=====================================================================
 OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm)
@@ -459,3 +490,5 @@ void OceanTheta::ComputeJacobian()
 	}
 	jac_->FillComplete();
 }
+
+

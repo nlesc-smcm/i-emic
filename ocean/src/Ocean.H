@@ -54,6 +54,9 @@ public:
 	
 	void SetState(Teuchos::RCP<Epetra_Vector> state) { state_ = state; }
 	void RecomputePreconditioner() { recomputePreconditioner_ = true; }
+
+	void SaveStateToFile(std::string const &name);
+	void LoadStateFromFile(std::string const &name);
 	
 protected:
 	Teuchos::RCP<THCM> thcm_;
@@ -85,10 +88,10 @@ protected:
 	int recomputeBound_;
 };
 
-//==============================================================================
+//======================================================================
 // class OceanTheta should have all the theta and time stuff and
 // inherit the rest
-//==============================================================================
+//======================================================================
 
 class OceanTheta: public Ocean
 {
