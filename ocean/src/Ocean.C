@@ -33,7 +33,7 @@ using Teuchos::RCP;
 using Teuchos::rcp;
 
 //=====================================================================
-// Fortran stuff:
+// Fortran: get access to write_data function
 extern "C"
 { 
 	_SUBROUTINE_(write_data)(double*, int*, int*); 
@@ -43,15 +43,15 @@ extern "C"
 // Constructor:
 Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	:
-	comm_(Comm),
-	solverInitialized_(false),
-	recomputePreconditioner_(true),
-	recomputeBound_(10),
-	useScaling_(false)
+	comm_(Comm),                     // Setting the communication object
+	solverInitialized_(false),       // Solver needs initialization
+	recomputePreconditioner_(true),  // --> xml
+	recomputeBound_(10),             // --> xml
+	useScaling_(false)               // --> xml
 {
+	// Check if outFile is specified
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");
-
 
 	// Setup THCM parameters:
 	RCP<Teuchos::ParameterList> globalParamList =
@@ -60,8 +60,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 								globalParamList.ptr());
 	Teuchos::ParameterList &thcmList =
 		globalParamList->sublist("THCM");
-	DEBUG(*globalParamList);
-	DEBUG(thcmList);
 
 	// Create THCM object
     thcm_ = rcp(new THCM(thcmList, comm_));
@@ -71,8 +69,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	//  instance at a time. The Ocean class can access THCM with a call
 	//  to THCM::Instance()
 	state_ = THCM::Instance().getSolution();
-	INFO("Ocean: Obtained solution from THCM");
+	INFO("Ocean: Solution obtained from THCM");
 
+	// Initialize solution
 	state_->PutScalar(0.0);
 	INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
 	
@@ -123,89 +122,123 @@ void Ocean::DumpState()
 //=====================================================================
 void Ocean::InitializeSolver()
 {
-
 	// Belos::LinearProblem setup
-
 	problem_ = rcp(new Belos::LinearProblem
 				   <double, Epetra_MultiVector, Epetra_Operator>
 				   (jac_, sol_, rhs_) );
 
-	// Block preconditioner 
+	// Setup block preconditioner parameters
+	// --> xml files should have a better home
 	Teuchos::RCP<Teuchos::ParameterList> solverParams =
 		Teuchos::rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("../ocean/parameters/solver_params.xml",
 								solverParams.ptr());	
 
+	// Get the domain decomposition from THCM, needed for the preconditioner.
 	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
 
-	precPtr_ =
-		Teuchos::rcp(new TRIOS::BlockPreconditioner(jac_, domain,
-													*solverParams));
-
-	//
+	// Create and initialize block preconditioner
+	precPtr_ = 	Teuchos::rcp(new TRIOS::BlockPreconditioner
+							 (jac_, domain, *solverParams));
 	INFO("Ocean: initializing preconditioner...");
 	precPtr_->Initialize();
 	INFO("Ocean: initializing preconditioner... done");
-	
+
+	// Set as right preconditioner for Belos solver
 	RCP<Belos::EpetraPrecOp> belosPrec =
 		rcp(new Belos::EpetraPrecOp(precPtr_));
 	problem_->setRightPrec(belosPrec);
 	
 	// Belos parameter setup
-   belosParamList_ = rcp(new Teuchos::ParameterList());
-   belosParamList_->set("Block Size", 1);
-   belosParamList_->set("Flexible Gmres", true);
-   belosParamList_->set("Adaptive Block Size", false);
-   belosParamList_->set("Num Blocks",1000);
-   belosParamList_->set("Maximum Restarts",0);
-   belosParamList_->set("Orthogonalization","DGKS");
-   belosParamList_->set("Output Frequency",1);
-   belosParamList_->set("Maximum Iterations", 1000);
-   belosParamList_->set("Convergence Tolerance", 1.0e-3); 
-   belosParamList_->set("Explicit Residual Test", false); 
-   belosParamList_->set("Verbosity", Belos::FinalSummary);
-   belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
-
+	// --> xml
+	belosParamList_ = rcp(new Teuchos::ParameterList());
+	belosParamList_->set("Block Size", 1);
+	belosParamList_->set("Flexible Gmres", true);
+	belosParamList_->set("Adaptive Block Size", false);
+	belosParamList_->set("Num Blocks",1000);
+	belosParamList_->set("Maximum Restarts",0);
+	belosParamList_->set("Orthogonalization","DGKS");
+	belosParamList_->set("Output Frequency",1);
+	belosParamList_->set("Maximum Iterations", 1000);
+	belosParamList_->set("Convergence Tolerance", 1.0e-3); 
+	belosParamList_->set("Explicit Residual Test", false); 
+	belosParamList_->set("Verbosity", Belos::FinalSummary);
+	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
+	// --> xml
+	
 	// Belos block GMRES setup
 	belosSolver_ =
 		rcp(new Belos::BlockGmresSolMgr
 			<double, Epetra_MultiVector, Epetra_Operator>
 			(problem_, belosParamList_));
-	solverInitialized_ = true;
 
+	// Now the solver and preconditioner are initialized we are allowed to
+	// perform a solve.
+	solverInitialized_ = true;
 }
 
 //=====================================================================
 void Ocean::Solve()
 {
+	// Check whether solver is initialized, if not perform the
+	// initialization here
 	if (!solverInitialized_)
 		InitializeSolver();
 	
-	// 
+	// Set the initial solution in the solver to zeros.
+	// --> this should be improved/changed.
 	sol_->PutScalar(0.0);
 
+	// If required we scale the problem here
+	// --> not sure if this is the correct approach
 	if (useScaling_)
 		ScaleProblem();
 
+	// Used to store timings
 	double time;
+
+	// Depending on the number of iterations we might need to
+	// recompute the preconditioner
 	if (recomputePreconditioner_)
 	{
 		INFO("Ocean: Computing preconditioner...");
+
+		// Start timing
+		// --> all this timing stuff should be put inside a macro
 		timer_->ResetStartTime();
+
+		// Compute preconditioner
 		precPtr_->Compute();
-		time = timer_->ElapsedTime(); 
+
+		// End timing
+		time = timer_->ElapsedTime();
+		
 		INFO("Ocean: Computing preconditioner... done("
 			 << time << " seconds)" );
+
+		// Disable subsequent recomputes
 		recomputePreconditioner_ = false;
 	}
-	
+
+	// Set the problem
+	// --> rhs_ should be given from the arguments of solve().
 	bool set = problem_->setProblem(sol_, rhs_);
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
+
+	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
 	INFO("Ocean: Perform solve...");
+
+	// Start Timing
 	timer_->ResetStartTime();
+
+	// Solve
 	Belos::ReturnType ret = belosSolver_->solve();
-	time = timer_->ElapsedTime(); 
+
+	// Stop Timing
+	time = timer_->ElapsedTime();
+
+	//
 	belosIters_ = belosSolver_->getNumIters();	
 	INFO("Ocean: Perform solve... done ("
 		 << belosIters_ << " iterations, "

@@ -28,20 +28,22 @@ public:
 	//constructor
 	Ocean(Teuchos::RCP<Epetra_Comm> Comm);
 	//destructor
-	~Ocean()
-		{
-			INFO("Ocean destructor called...");
-		}
+	~Ocean(){ INFO("Ocean destructor called..."); }
 
 	// Randomize state, scale with scaling
 	void RandomizeState(double scaling);
+
+	// Write the state of the ocean to traditional FORTRAN out files fort.*
+	// Use matlab plot-scripts for visualization 
 	void DumpState();
-	
+
+	// 
 	void InitializeSolver();
 	
 	void Solve();
-	void UnscaleProblem();	
+	
 	void ScaleProblem();
+	void UnscaleProblem();	
 
 	void ComputeRHS();
 	void ComputeJacobian();
