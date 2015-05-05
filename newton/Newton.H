@@ -103,10 +103,10 @@ void Newton<Model, Vector>::RunBackTracking()
 		model_->ComputeRHS();
 		normRHStest_ = model_->GetNormRHS();
 
-		INFO("Newton: --> backtracking:       iter: " << iter_ );
-		INFO("Newton: --> backtracking:  backtrack: " << backTrack_);
-		INFO("Newton: --> backtracking:  reduction: " << reduction);
-		INFO("Newton: --> backtracking:       norm: " << normRHStest_);
+		INFO("Newton: --> backtracking: "
+			 <<	" step: "      << backTrack_ 
+			 << " reduction: " << reduction
+			 << " norm: "      << normRHStest_);
 
 		// Update reduction
 		reduction /= 2.0;

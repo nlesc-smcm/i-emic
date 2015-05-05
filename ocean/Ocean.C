@@ -56,7 +56,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	// Setup THCM parameters:
 	RCP<Teuchos::ParameterList> globalParamList =
 		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("../ocean/parameters/thcm_params.xml",
+	updateParametersFromXmlFile("thcm_params.xml",
 								globalParamList.ptr());
 	Teuchos::ParameterList &thcmList =
 		globalParamList->sublist("THCM");
@@ -131,7 +131,7 @@ void Ocean::InitializeSolver()
 	// --> xml files should have a better home
 	Teuchos::RCP<Teuchos::ParameterList> solverParams =
 		Teuchos::rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("../ocean/parameters/solver_params.xml",
+	updateParametersFromXmlFile("solver_params.xml",
 								solverParams.ptr());	
 
 	// Get the domain decomposition from THCM, needed for the preconditioner.

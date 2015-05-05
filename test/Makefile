@@ -1,6 +1,6 @@
 include ../make.inc/Makefile.${PLAT}
 
-DIRS =  $(PROJECT_BASE)/ocean/src\
+DIRS =  $(PROJECT_BASE)/$(LIB_OCEAN)/
 
 EXE  = test
 OBJS = test.o
@@ -8,12 +8,12 @@ OBJLIBS = lib$(LIB_OCEAN).a
 
 # Header dependencies, especially important for templated stuff	
 HEADERDEPS = \
-	../newton/src/Newton.H \
-	../newton/src/NewtonDecl.H \
-	../thetastepper/src/ThetaStepper.H \
-	../thetastepper/src/ThetaStepperDecl.H \
-	../ocean/src/GlobalDefinitions.H \
-	../ocean/src/Ocean.H \
+	../newton/Newton.H \
+	../newton/NewtonDecl.H \
+	../thetastepper/ThetaStepper.H \
+	../thetastepper/ThetaStepperDecl.H \
+	../ocean/GlobalDefinitions.H \
+	../ocean/Ocean.H \
 
 INTLIBS = \
 	-l$(LIB_OCEAN)\
@@ -24,13 +24,13 @@ $(EXE):  $(OBJLIBS) $(OBJS)
 	$(CXX) $(OBJS) -o $(EXE) $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 lib$(LIB_OCEAN).a: force_look
-	cd $(PROJECT_BASE)/$(LIB_OCEAN)/src; $(MAKE) $(MFLAGS)
+	cd $(PROJECT_BASE)/$(LIB_OCEAN); $(MAKE) $(MFLAGS)
 
 %.o: %.C $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 
 clean:
-	-rm -f $(EXE) $(OBJS) $(OBJLIBS)
+	-rm -f $(EXE) $(OBJS) $(OBJLIBS) fort.* *.txt *.eps
 	-for d in $(DIRS); do (cd $$d; $(MAKE) clean ); done
 
 force_look:	

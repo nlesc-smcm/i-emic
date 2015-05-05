@@ -45,12 +45,12 @@ LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
 LIB_OCEAN  = ocean
 ##=================================================================
 ##   Define the internal library locations:
-PATH_LIB_OCEAN  = $(PROJECT_BASE)/ocean/src
+PATH_LIB_OCEAN  = $(PROJECT_BASE)/ocean
 ##=================================================================
 ##   Gather all the include directories:	
-INCLUDE_DIRS = 	-I$(PROJECT_BASE)/ocean/src\
-			 	-I$(PROJECT_BASE)/newton/src\
-				-I$(PROJECT_BASE)/thetastepper/src\
+INCLUDE_DIRS = 	-I$(PROJECT_BASE)/ocean\
+			 	-I$(PROJECT_BASE)/newton\
+				-I$(PROJECT_BASE)/thetastepper\
         		${INCLUDE_DIRS_TRI}
 ##=================================================================
 ##   Gather all the library directories:	

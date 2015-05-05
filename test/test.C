@@ -63,6 +63,8 @@ int main(int argc, char **argv)
 }
 
 //==============================================================================
+// Auxiliary stuff
+//==============================================================================
 RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
 {
 	

@@ -1,4 +1,4 @@
-include ../../make.inc/Makefile.${PLAT}
+include ../make.inc/Makefile.${PLAT}
 
 libbasename = $(LIB_OCEAN)
 libname     = lib$(libbasename).a

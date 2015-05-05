@@ -4,6 +4,7 @@
 !doc/
 !src/
 !parameters/
+!parameterfiles/
 !matlab/
 !make.inc/
 !utils/
