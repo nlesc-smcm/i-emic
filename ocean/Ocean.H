@@ -39,19 +39,32 @@ public:
 
 	// 
 	void InitializeSolver();
-	
-	void Solve();
-	
+
+	//
+	void Solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null);
+
+	//
 	void ScaleProblem();
+
+	//
 	void UnscaleProblem();	
 
+	//
 	void ComputeRHS();
+
+	//
 	void ComputeJacobian();
 
+	//
 	double GetNormRHS();
+
+	//
 	double GetNormState();
-	
+
+	//
 	Teuchos::RCP<Epetra_Vector> GetState() { return state_; }
+
+	//
 	Teuchos::RCP<Epetra_Vector> GetSolution() { return sol_; }
 	
 	void SetState(Teuchos::RCP<Epetra_Vector> state) { state_ = state; }

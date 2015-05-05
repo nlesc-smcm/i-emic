@@ -178,7 +178,7 @@ void Ocean::InitializeSolver()
 }
 
 //=====================================================================
-void Ocean::Solve()
+void Ocean::Solve(RCP<Epetra_Vector> rhs)
 {
 	// Check whether solver is initialized, if not perform the
 	// initialization here
@@ -220,9 +220,13 @@ void Ocean::Solve()
 		recomputePreconditioner_ = false;
 	}
 
-	// Set the problem
-	// --> rhs_ should be given from the arguments of solve().
-	bool set = problem_->setProblem(sol_, rhs_);
+	// Set the problem, rhs depends may be given as an argument Solve().
+	bool set;
+	if (rhs == Teuchos::null)
+ 		set = problem_->setProblem(sol_, rhs_);
+	else
+		set = problem_->setProblem(sol_, rhs);
+	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
 
