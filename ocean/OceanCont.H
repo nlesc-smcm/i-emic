@@ -11,10 +11,11 @@ class OceanCont: public Ocean
 	Teuchos::RCP<Epetra_Vector> oldRhs_;
 
 	// THCM continuation parameters and bounds
-	int    thcmParIdent_;  // integer identifier
-	double thcmPar_;       // value of the parameter
-	double thcmParStart_;  // its starting value
-	double thcmParEnd_;	   // its ending value
+	int    parIdent_;  // integer identifier
+	double par_;       // value of the parameter
+	double parStart_;  // its starting value
+	double parEnd_;	   // its ending value
+	double oldPar_;    // stored value of the parameter
 	
 public:
 	//constructor

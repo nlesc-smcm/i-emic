@@ -38,13 +38,13 @@ OceanCont::OceanCont(Teuchos::RCP<Epetra_Comm> Comm)
 	oldRhs_   = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 
 	// THCM continuation parameter and its bounds
-	thcmParIdent_ = 19;
-	thcmPar_      = 0.0;
-	thcmParStart_ = 0.0;
-	thcmParEnd_   = 1.0;
+	parIdent_ = 19;
+	par_      = 0.0;
+	parStart_ = 0.0;
+	parEnd_   = 1.0;
 
 	// Put the initial value into the model.
-	SetPar(thcmParStart_);
+	SetPar(parStart_);
 }
 
 //=====================================================================
@@ -57,9 +57,12 @@ void OceanCont::StoreState()
 	{
 		oldState_ =
 			rcp(new Epetra_Vector(state_->Map()));
-	}
-	
+	}	
 	*oldState_ = *state_;
+
+	// As the continuation parameter is an extension of the state
+	// we store it here as well.
+	oldPar_ = par_;	
 }
 
 //=====================================================================
@@ -117,12 +120,12 @@ Teuchos::RCP<Epetra_Vector> OceanCont::GetSolutionCopy()
 //====================================================================
 double OceanCont::GetPar()
 {
-	FNAME(getparcs)(&thcmParIdent_, &thcmPar_);
-	return thcmPar_;
+	FNAME(getparcs)(&parIdent_, &par_);
+	return par_;
 }
 
 //====================================================================
 void OceanCont::SetPar(double value)
 {
-	FNAME(setparcs)(&thcmParIdent_, &value);
+	FNAME(setparcs)(&parIdent_, &value);
 }
