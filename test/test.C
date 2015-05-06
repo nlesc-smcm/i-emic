@@ -22,7 +22,7 @@
 #include <Epetra_Vector.h>
 
 #include "GlobalDefinitions.H"
-#include "Ocean.H"
+#include "OceanTheta.H"
 #include "ThetaStepper.H"
 
 //==============================================================================

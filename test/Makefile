@@ -12,6 +12,8 @@ HEADERDEPS = \
 	../newton/NewtonDecl.H \
 	../thetastepper/ThetaStepper.H \
 	../thetastepper/ThetaStepperDecl.H \
+	../continuation/Continuation.H \
+	../continuation/ContinuationDecl.H \
 	../ocean/GlobalDefinitions.H \
 	../ocean/Ocean.H \
 

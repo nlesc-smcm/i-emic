@@ -51,6 +51,7 @@ PATH_LIB_OCEAN  = $(PROJECT_BASE)/ocean
 INCLUDE_DIRS = 	-I$(PROJECT_BASE)/ocean\
 			 	-I$(PROJECT_BASE)/newton\
 				-I$(PROJECT_BASE)/thetastepper\
+				-I$(PROJECT_BASE)/continuation\
         		${INCLUDE_DIRS_TRI}
 ##=================================================================
 ##   Gather all the library directories:	

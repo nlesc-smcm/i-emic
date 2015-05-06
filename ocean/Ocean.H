@@ -36,38 +36,23 @@ public:
 	// Write the state of the ocean to traditional FORTRAN out files fort.*
 	// Use matlab plot-scripts for visualization 
 	void DumpState();
-
-	// 
 	void InitializeSolver();
-
-	//
 	void Solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null);
-
-	//
 	void ScaleProblem();
-
-	//
 	void UnscaleProblem();	
-
-	//
 	void ComputeRHS();
-
-	//
 	void ComputeJacobian();
 
-	//
 	double GetNormRHS();
-
-	//
 	double GetNormState();
 
-	//
-	Teuchos::RCP<Epetra_Vector> GetState() { return state_; }
-
-	//
-	Teuchos::RCP<Epetra_Vector> GetSolution() { return sol_; }
+	Teuchos::RCP<Epetra_Vector> GetState()    { return state_; }
+	Teuchos::RCP<Epetra_Vector> GetRHS()      { return rhs_;   }
+	Teuchos::RCP<Epetra_Vector> GetSolution() { return sol_;   }
 	
 	void SetState(Teuchos::RCP<Epetra_Vector> state) { state_ = state; }
+	void SetRHS(Teuchos::RCP<Epetra_Vector> rhs)   { rhs_   = rhs;   }
+	
 	void RecomputePreconditioner() { recomputePreconditioner_ = true; }
 
 	void SaveStateToFile(std::string const &name);
@@ -102,38 +87,4 @@ protected:
 	int belosIters_;
 	int recomputeBound_;
 };
-
-//======================================================================
-// class OceanTheta should have all the theta and time stuff and
-// inherit the rest
-//======================================================================
-
-class OceanTheta: public Ocean
-{
-public:
-	//constructor
-	OceanTheta(Teuchos::RCP<Epetra_Comm> Comm);
-
-	//destructor
-	~OceanTheta(){ INFO("OceanTheta destructor called...");	}
-
-	void Store();
-	void Restore();
-
-	void SetTimestep(double timestep){ timestep_ = timestep; }
-	void SetTheta(double theta){ theta_ = theta; }
-	
-	void ComputeRHS();
-	void ComputeJacobian();
-	
-protected:
-	double theta_;
-	double timestep_;
-	
-	Teuchos::RCP<Epetra_Vector> oldState_;
-	Teuchos::RCP<Epetra_Vector> stateDot_;
-	Teuchos::RCP<Epetra_Vector> oldRhs_;
-
-};
-
 #endif
