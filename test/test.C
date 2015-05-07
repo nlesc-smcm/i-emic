@@ -19,9 +19,7 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_FancyOStream.hpp>
 #include <Epetra_Vector.h>
-
-//#include "Vector.H"
-
+#include "Vector.H"
 #include "GlobalDefinitions.H"
 #include "OceanTheta.H"
 #include "OceanCont.H"
@@ -52,10 +50,10 @@ int main(int argc, char **argv)
 	RCP<OceanCont> ocean = rcp(new OceanCont(Comm));
 
 	// Create continuation
-	Continuation<RCP<OceanCont>, RCP<Epetra_Vector> >
+	Continuation<RCP<OceanCont>, RCP<Vector> >
 		continuation(ocean);
 
-	continuation.Run();
+	// continuation.Run();
 	
 	ocean->DumpState();
 	

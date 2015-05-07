@@ -22,6 +22,7 @@
 
 //=====================================================================
 #include "Ocean.H"
+#include "Vector.H"
 #include "THCM.H"
 #include "THCMdefs.H"
 #include "TRIOS_Domain.H"
@@ -366,17 +367,38 @@ double Ocean::GetNormState()
 }
 
 //====================================================================
-Teuchos::RCP<Epetra_Vector> Ocean::GetSolution(char mode)
+// Teuchos::RCP<Epetra_Vector> Ocean::GetSolution(char mode)
+// {
+// 	if (mode == 'C')
+// 	{
+// 		Teuchos::RCP<Epetra_Vector> copySol =
+// 			Teuchos::rcp(new Epetra_Vector(*sol_));
+// 		return copySol;
+// 	}
+// 	else if (mode == 'V')
+// 	{
+// 		return sol_;
+// 	}
+// 	else
+// 	{
+// 		WARNING("Invalid mode", __FILE__, __LINE__);
+// 		return Teuchos::null;
+// 	}	
+// }
+
+//====================================================================
+Teuchos::RCP<Vector> Ocean::GetSolution(char mode)
 {
 	if (mode == 'C')
 	{
-		Teuchos::RCP<Epetra_Vector> copySol =
-			Teuchos::rcp(new Epetra_Vector(*sol_));
-		return copySol;
+		RCP<Epetra_Vector> copySol = rcp(new Epetra_Vector(*sol_));
+		RCP<Vector> solPtr         = rcp(new Vector(copySol));
+		return solPtr;
 	}
 	else if (mode == 'V')
 	{
-		return sol_;
+		RCP<Vector> solPtr = rcp(new Vector(sol_));
+		return solPtr;
 	}
 	else
 	{
@@ -386,17 +408,18 @@ Teuchos::RCP<Epetra_Vector> Ocean::GetSolution(char mode)
 }
 
 //====================================================================
-Teuchos::RCP<Epetra_Vector> Ocean::GetState(char mode)
+Teuchos::RCP<Vector> Ocean::GetState(char mode)
 {
 	if (mode == 'C')
 	{
-		Teuchos::RCP<Epetra_Vector> copyState =
-			Teuchos::rcp(new Epetra_Vector(*state_));
-		return copyState;
+		RCP<Epetra_Vector> copyState = rcp(new Epetra_Vector(*state_));
+		RCP<Vector> statePtr           = rcp(new Vector(copyState));
+		return statePtr;
 	}
 	else if (mode == 'V')
 	{
-		return state_;
+		RCP<Vector> statePtr = rcp(new Vector(state_));
+		return statePtr;
 	}
 	else
 	{
@@ -406,17 +429,18 @@ Teuchos::RCP<Epetra_Vector> Ocean::GetState(char mode)
 }
 
 //====================================================================
-Teuchos::RCP<Epetra_Vector> Ocean::GetRHS(char mode)
+Teuchos::RCP<Vector> Ocean::GetRHS(char mode)
 {
 	if (mode == 'C')
 	{
-		Teuchos::RCP<Epetra_Vector> copyRhs =
-			Teuchos::rcp(new Epetra_Vector(*rhs_));
-		return copyRhs;
+		RCP<Epetra_Vector> copyRhs = rcp(new Epetra_Vector(*rhs_));
+		RCP<Vector> rhsPtr           = rcp(new Vector(copyRhs));
+		return rhsPtr;
 	}
 	else if (mode == 'V')
 	{
-		return rhs_;
+		RCP<Vector> rhsPtr = rcp(new Vector(rhs_));
+		return rhsPtr;
 	}
 	else
 	{

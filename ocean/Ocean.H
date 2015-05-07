@@ -11,6 +11,7 @@
 
 // forward declarations
 class THCM;
+class Vector;
 class Epetra_Comm;
 class Epetra_Vector;
 class Epetra_MultiVector;
@@ -73,11 +74,11 @@ public:
 	double GetNormState();
 
 	// All Get...() functions that return a VectorPtr type should accept
-	// a character, specifying the access the user has: Copy 'C' / View 'V'
+	// a character specifying the access the user has: Copy 'C' or View 'V'
 	// By default this should be copy. 
-	Teuchos::RCP<Epetra_Vector> GetSolution(char mode = 'C');
-	Teuchos::RCP<Epetra_Vector> GetState(char mode = 'C');
-	Teuchos::RCP<Epetra_Vector> GetRHS(char mode = 'C');
+	Teuchos::RCP<Vector> GetSolution(char mode = 'C');
+	Teuchos::RCP<Vector> GetState(char mode = 'C');
+	Teuchos::RCP<Vector> GetRHS(char mode = 'C');
 	
 	void SetState(Teuchos::RCP<Epetra_Vector> state) { state_ = state; }
 	void SetRHS(Teuchos::RCP<Epetra_Vector> rhs)     { rhs_   = rhs;   }
