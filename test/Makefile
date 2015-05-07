@@ -2,8 +2,8 @@ include ../make.inc/Makefile.${PLAT}
 
 DIRS =  $(PROJECT_BASE)/$(LIB_OCEAN)/
 
-EXE  = test
-OBJS = test.o
+EXE  = test timestepping
+OBJS = test.o timestepping.o
 OBJLIBS = lib$(LIB_OCEAN).a
 
 # Header dependencies, especially important for templated stuff	
@@ -20,10 +20,13 @@ HEADERDEPS = \
 INTLIBS = \
 	-l$(LIB_OCEAN)\
 
-all: $(EXE)
+all: test
 
-$(EXE):  $(OBJLIBS) $(OBJS)
-	$(CXX) $(OBJS) -o $(EXE) $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
+test: $(OBJLIBS) test.o
+	$(CXX) test.o -o test $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
+
+timestepping: $(OBJLIBS) timestepping.o
+	$(CXX) timestepping.o -o timestepping $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 lib$(LIB_OCEAN).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_OCEAN); $(MAKE) $(MFLAGS)

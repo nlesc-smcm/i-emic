@@ -38,7 +38,7 @@ class ThetaStepper
 
 public:
 
-	ThetaStepper(Model model, Vector state);
+	ThetaStepper(Model model);
 	void Run();
 	void AdjustTimestep(int iters, bool convergence);
 	void Info();

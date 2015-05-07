@@ -9,7 +9,7 @@
 
 //==================================================================
 template<typename Model, typename Vector>
-ThetaStepper<Model, Vector>::ThetaStepper(Model model, Vector state)
+ThetaStepper<Model, Vector>::ThetaStepper(Model model)
 	:
 	theta_(1.0),
 	time_(0.0),
@@ -27,14 +27,14 @@ ThetaStepper<Model, Vector>::ThetaStepper(Model model, Vector state)
 	maxAllowedIterations_(5)	
 {
 	model_ = model;
-	state_ = state;
+	state_ = model_->GetState('V');
 }
 
 //==================================================================
 template<typename Model, typename Vector>
 void ThetaStepper<Model, Vector>::Run()
 {
-	Newton<Model, Vector> newtonSolver(model_, state_);
+	Newton<Model, Vector> newtonSolver(model_);
 	int  iters;
 	bool convergence;
 

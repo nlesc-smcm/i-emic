@@ -15,18 +15,6 @@ obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
 
 all: lib
 
-test: $(libname) test.o 
-	$(CXX) test.o  $(CXX_FLAGS) -o test $(LIBRARY_DIRS) -L. -l$(libbasename) $(LIBS)
-
-test2: test2.o 
-	$(CXX) test2.o  $(CXX_FLAGS) -o test2 $(LIBRARY_DIRS) $(LIBS)
-
-test3: test3.o 
-	$(CXX) test3.o  $(CXX_FLAGS) -o test3 $(LIBRARY_DIRS) $(LIBS)
-
-test4: $(libname) test4.o 
-	$(CXX) test4.o  $(CXX_FLAGS) -o test4 $(LIBRARY_DIRS) -L. -l$(libbasename) $(LIBS)
-
 lib: $(libname)
 
 $(libname): ${obj}

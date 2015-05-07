@@ -18,15 +18,12 @@
 //==============================================================================
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_FancyOStream.hpp>
-#include <Epetra_Vector.h>
 
-//#include "Vector.H"
+#include <Epetra_Vector.h>
 
 #include "GlobalDefinitions.H"
 #include "OceanTheta.H"
-#include "OceanCont.H"
 #include "ThetaStepper.H"
-#include "Continuation.H"
 
 //==============================================================================
 using Teuchos::RCP;
@@ -47,22 +44,20 @@ int main(int argc, char **argv)
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 	
- 	// Create ocean model OceanCont
+ 	// Create timestepping (theta method) ocean model OceanTheta
 	//  (based on THCM):
-	RCP<OceanCont> ocean = rcp(new OceanCont(Comm));
+	RCP<OceanTheta> ocean = rcp(new OceanTheta(Comm));
 
-	// Create continuation
-	Continuation<RCP<OceanCont>, RCP<Epetra_Vector> >
-		continuation(ocean);
-
-	continuation.Run();
+	// Create timestepping object ThetaStepper using an OceanTheta model
+	//  and an Epetra_Vector
+	ThetaStepper<RCP<OceanTheta>, RCP<Epetra_Vector> > thetaStepper(ocean);
 	
+	thetaStepper.Run();	
 	ocean->DumpState();
 	
     //--------------------------------------------------------
 	// Finalize MPI
 	//--------------------------------------------------------
-	Comm->Barrier();
 	MPI_Finalize();	
 }
 

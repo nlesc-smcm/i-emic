@@ -47,8 +47,9 @@ LIB_OCEAN  = ocean
 ##   Define the internal library locations:
 PATH_LIB_OCEAN  = $(PROJECT_BASE)/ocean
 ##=================================================================
-##   Gather all the include directories:	
-INCLUDE_DIRS = 	-I$(PROJECT_BASE)/ocean\
+##   Gather all the include directories:
+INCLUDE_DIRS =	-I$(PROJECT_BASE)/vector\
+                -I$(PROJECT_BASE)/ocean\
 			 	-I$(PROJECT_BASE)/newton\
 				-I$(PROJECT_BASE)/thetastepper\
 				-I$(PROJECT_BASE)/continuation\

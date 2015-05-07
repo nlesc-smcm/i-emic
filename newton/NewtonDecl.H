@@ -25,7 +25,7 @@ class Newton
 	Model  model_;
 	Vector state_;
 	Vector dir_;
-	
+
 	//!
 	int iter_;
 	int maxNumIterations_;
@@ -44,7 +44,7 @@ class Newton
 	bool backTracking_; //perhaps call this enableBacktracking_
 	
 public:
-	Newton(Model model, Vector state);
+	Newton(Model model);
 	void Initialize();
 	void Run();
 	void RunBackTracking();

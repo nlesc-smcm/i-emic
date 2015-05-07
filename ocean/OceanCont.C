@@ -34,12 +34,12 @@ OceanCont::OceanCont(Teuchos::RCP<Epetra_Comm> Comm)
 	Ocean(Comm)
 {
 	// Initialize a few datamembers
-	oldState_ = rcp(new Epetra_Vector(*state_));
-	oldRhs_   = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
+	storedState_ = rcp(new Epetra_Vector(*state_));
+	storedRhs_   = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 
 	// THCM continuation parameter and its bounds
 	parIdent_ = 19;
-	par_      = 0.0;
+	parValue_ = 0.0;
 	parStart_ = 0.0;
 	parEnd_   = 1.0;
 
@@ -48,35 +48,47 @@ OceanCont::OceanCont(Teuchos::RCP<Epetra_Comm> Comm)
 }
 
 //=====================================================================
+void OceanCont::Store()
+{
+	StoreState();
+	StoreRHS();
+	StorePar();
+}
+
+//=====================================================================
+void OceanCont::Restore()
+{
+	RestoreState();
+	RestoreRHS();
+	RestorePar();
+}
+
+//=====================================================================
 void OceanCont::StoreState()
 {
 	DEBUG("Storing the state of OceanCont");
 	
-	if (oldState_ == Teuchos::null or
-		!oldState_->Map().SameAs(state_->Map()))
+	if (storedState_ == Teuchos::null or
+		!storedState_->Map().SameAs(state_->Map()))
 	{
-		oldState_ =
+		storedState_ =
 			rcp(new Epetra_Vector(state_->Map()));
 	}	
-	*oldState_ = *state_;
-
-	// As the continuation parameter is an extension of the state
-	// we store it here as well.
-	oldPar_ = par_;	
+	*storedState_ = *state_;
 }
 
 //=====================================================================
 void OceanCont::StoreRHS()
 {
 	DEBUG("Storing the RHS of OceanCont");
-	if (oldRhs_ == Teuchos::null or
-		!oldRhs_->Map().SameAs(rhs_->Map()))
+	if (storedRhs_ == Teuchos::null or
+		!storedRhs_->Map().SameAs(rhs_->Map()))
 	{
-		oldRhs_ =
+		storedRhs_ =
 			rcp(new Epetra_Vector(rhs_->Map()));
 	}
 	
-	*oldRhs_   = *rhs_;
+	*storedRhs_   = *rhs_;
 }
 
 //=====================================================================
@@ -85,13 +97,13 @@ void OceanCont::RestoreState()
 	DEBUG("Restoring the state of OceanCont");
 
 	if (state_ == Teuchos::null or
-		!state_->Map().SameAs(oldState_->Map()))
+		!state_->Map().SameAs(storedState_->Map()))
 	{
 		state_ =
-			rcp(new Epetra_Vector(oldState_->Map()));
+			rcp(new Epetra_Vector(storedState_->Map()));
 	}
 	
-	*state_ = *oldState_;
+	*state_ = *storedState_;
 }
 
 //====================================================================
@@ -100,32 +112,65 @@ void OceanCont::RestoreRHS()
 	DEBUG("Restoring the RHS of OceanCont");
 
 	if (rhs_ == Teuchos::null or
-		!rhs_->Map().SameAs(oldRhs_->Map()))
+		!rhs_->Map().SameAs(storedRhs_->Map()))
 	{
 		rhs_ =
-			rcp(new Epetra_Vector(oldRhs_->Map()));
+			rcp(new Epetra_Vector(storedRhs_->Map()));
 	}
 	
-	*rhs_   = *oldRhs_;
-}
-
-//====================================================================
-Teuchos::RCP<Epetra_Vector> OceanCont::GetSolutionCopy()
-{
-	Teuchos::RCP<Epetra_Vector> copySol =
-		Teuchos::rcp(new Epetra_Vector(*sol_));
-	return copySol;
+	*rhs_   = *storedRhs_;
 }
 
 //====================================================================
 double OceanCont::GetPar()
 {
-	FNAME(getparcs)(&parIdent_, &par_);
-	return par_;
+	FNAME(getparcs)(&parIdent_, &parValue_);
+	return parValue_;
 }
 
 //====================================================================
 void OceanCont::SetPar(double value)
 {
 	FNAME(setparcs)(&parIdent_, &value);
+	parValue_ = value;
+}
+
+//====================================================================
+Teuchos::RCP<Epetra_Vector> OceanCont::GetStoredState(char mode)
+{
+	if (mode == 'C')
+	{
+		Teuchos::RCP<Epetra_Vector> copyStoredState =
+			Teuchos::rcp(new Epetra_Vector(*storedState_));
+		return copyStoredState;
+	}
+	else if (mode == 'V')
+	{
+		return storedState_;
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return Teuchos::null;
+	}
+}
+
+//====================================================================
+Teuchos::RCP<Epetra_Vector> OceanCont::GetStoredRHS(char mode)
+{
+	if (mode == 'C')
+	{
+		Teuchos::RCP<Epetra_Vector> copyStoredRhs =
+			Teuchos::rcp(new Epetra_Vector(*storedRhs_));
+		return copyStoredRhs;
+	}
+	else if (mode == 'V')
+	{
+		return storedRhs_;
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return Teuchos::null;
+	}	
 }

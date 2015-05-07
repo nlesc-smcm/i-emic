@@ -331,7 +331,6 @@ void Ocean::UnscaleProblem()
 	sol_->Norm2(&nrm);
 	DEBUG("Ocean::unscaleProblem() ----->  sol (after unscaling): "
 		  << nrm);
-
 }
 
 //=====================================================================
@@ -366,7 +365,68 @@ double Ocean::GetNormState()
 	return nrm;
 }
 
+//====================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::GetSolution(char mode)
+{
+	if (mode == 'C')
+	{
+		Teuchos::RCP<Epetra_Vector> copySol =
+			Teuchos::rcp(new Epetra_Vector(*sol_));
+		return copySol;
+	}
+	else if (mode == 'V')
+	{
+		return sol_;
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return Teuchos::null;
+	}	
+}
+
+//====================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::GetState(char mode)
+{
+	if (mode == 'C')
+	{
+		Teuchos::RCP<Epetra_Vector> copyState =
+			Teuchos::rcp(new Epetra_Vector(*state_));
+		return copyState;
+	}
+	else if (mode == 'V')
+	{
+		return state_;
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return Teuchos::null;
+	}	
+}
+
+//====================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::GetRHS(char mode)
+{
+	if (mode == 'C')
+	{
+		Teuchos::RCP<Epetra_Vector> copyRhs =
+			Teuchos::rcp(new Epetra_Vector(*rhs_));
+		return copyRhs;
+	}
+	else if (mode == 'V')
+	{
+		return rhs_;
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return Teuchos::null;
+	}	
+}
+
 //=====================================================================
+// NOT DONE YET
 void Ocean::SaveStateToFile(std::string const &name)
 {
 	std::string vectorFile    = name + "vec";
@@ -384,6 +444,7 @@ void Ocean::SaveStateToFile(std::string const &name)
 }
 
 //=====================================================================
+// NOT DONE YET
 void LoadStateFromFile(std::string const &name)
 {
 	

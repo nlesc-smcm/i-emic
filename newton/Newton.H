@@ -9,7 +9,7 @@
 //======================================================================
 // Constructor
 template<typename Model, typename Vector>
-Newton<Model, Vector>::Newton(Model model, Vector state)
+Newton<Model, Vector>::Newton(Model model)
  	:
  	isInitialized_(false),
 	isConverged_(false),
@@ -21,7 +21,9 @@ Newton<Model, Vector>::Newton(Model model, Vector state)
 	numBackTrackingSteps_(10)
 {
  	model_ = model;
-	state_ = state;
+
+	// Get control of the state in the model
+	state_ = model_->GetState('V');
 	Initialize();
 }
 
@@ -47,7 +49,7 @@ void Newton<Model, Vector>::Run()
 		//
 		model_->ComputeJacobian();	
 		model_->Solve();
-		dir_ = model_->GetSolution();
+		dir_ = model_->GetSolution('V');
 		state_->Update(1.0, *dir_, 1.0);
 
 		//
