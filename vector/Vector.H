@@ -24,7 +24,7 @@ public:
 	void Update(double scalarA,	Vector &A,
 				double scalarThis)
 		{
-			vector_->Update(scalarA, A.GetEpetraVector(), scalarThis);
+			vector_->Update(scalarA, *(A.GetRCP()), scalarThis);
 		}
 	
 	double Norm()
@@ -42,10 +42,7 @@ public:
 
 	void Scale(double scale) { vector_->Scale(scale); }
 
-	Teuchos::RCP<Epetra_Vector> GetRCP() { return vector_; }
-
-	Epetra_Vector GetEpetraVector() { return *vector_;	}
-	
+	Teuchos::RCP<Epetra_Vector> GetRCP() { return vector_; }	
 };
 
 #endif
