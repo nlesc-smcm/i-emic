@@ -11,6 +11,7 @@
 !utils/
 !ocean/
 !newton/
+!continuation/
 !test/
 !thetastepper/
 
