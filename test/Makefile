@@ -10,6 +10,7 @@ OBJLIBS = lib$(LIB_OCEAN).a
 HEADERDEPS = \
 	../newton/Newton.H \
 	../newton/NewtonDecl.H \
+	../vector/Vector.H\
 	../thetastepper/ThetaStepper.H \
 	../thetastepper/ThetaStepperDecl.H \
 	../continuation/Continuation.H \
