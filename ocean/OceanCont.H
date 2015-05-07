@@ -35,8 +35,8 @@ public:
 	// All Get...() functions that return a VectorPtr type should accept
 	// a character, specifying the access the user has: Copy 'C' / View 'V'
 	// By default this should be copy. 
-	Teuchos::RCP<Epetra_Vector> GetStoredState(char moder = 'C');
-	Teuchos::RCP<Epetra_Vector> GetStoredRHS(char moder = 'C');
+	Teuchos::RCP<Vector> GetStoredState(char mode = 'C');
+	Teuchos::RCP<Vector> GetStoredRHS(char mode = 'C');
 
 	double  GetStoredPar() { return storedPar_; };
 

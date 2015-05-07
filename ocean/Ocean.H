@@ -66,7 +66,7 @@ public:
 	~Ocean(){ INFO("Ocean destructor called..."); }
 
 	// Solve may optionally accept an rhs of VectorPointer type
-	void Solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null);
+	void Solve(Teuchos::RCP<Vector> rhs = Teuchos::null);
 	void ComputeRHS();
 	void ComputeJacobian();
 

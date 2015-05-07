@@ -10,6 +10,7 @@
 
 //=====================================================================
 #include "OceanCont.H"
+#include "Vector.H"
 #include "THCM.H"
 #include "THCMdefs.H"
 #include "GlobalDefinitions.H"
@@ -136,41 +137,49 @@ void OceanCont::SetPar(double value)
 }
 
 //====================================================================
-Teuchos::RCP<Epetra_Vector> OceanCont::GetStoredState(char mode)
+Teuchos::RCP<Vector> OceanCont::GetStoredState(char mode)
 {
 	if (mode == 'C')
 	{
-		Teuchos::RCP<Epetra_Vector> copyStoredState =
-			Teuchos::rcp(new Epetra_Vector(*storedState_));
-		return copyStoredState;
+		RCP<Epetra_Vector> copyStoredState =
+			rcp(new Epetra_Vector(*storedState_));
+		RCP<Vector> storedStatePtr =
+			rcp(new Vector(copyStoredState));
+		return storedStatePtr;
 	}
 	else if (mode == 'V')
 	{
-		return storedState_;
-	}
-	else
-	{
-		WARNING("Invalid mode", __FILE__, __LINE__);
-		return Teuchos::null;
-	}
-}
-
-//====================================================================
-Teuchos::RCP<Epetra_Vector> OceanCont::GetStoredRHS(char mode)
-{
-	if (mode == 'C')
-	{
-		Teuchos::RCP<Epetra_Vector> copyStoredRhs =
-			Teuchos::rcp(new Epetra_Vector(*storedRhs_));
-		return copyStoredRhs;
-	}
-	else if (mode == 'V')
-	{
-		return storedRhs_;
+		RCP<Vector> storedStatePtr =
+			rcp(new Vector(storedState_));
+		return storedStatePtr;
 	}
 	else
 	{
 		WARNING("Invalid mode", __FILE__, __LINE__);
 		return Teuchos::null;
 	}	
+}
+
+//====================================================================
+Teuchos::RCP<Vector> OceanCont::GetStoredRHS(char mode)
+{
+	if (mode == 'C')
+	{
+		RCP<Epetra_Vector> copyStoredRhs =
+			rcp(new Epetra_Vector(*storedRhs_));
+		RCP<Vector> storedRhsPtr =
+			rcp(new Vector(copyStoredRhs));
+		return storedRhsPtr;
+	}
+	else if (mode == 'V')
+	{
+		RCP<Vector> storedRhsPtr =
+			rcp(new Vector(storedRhs_));
+		return storedRhsPtr;
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return Teuchos::null;
+	} 
 }

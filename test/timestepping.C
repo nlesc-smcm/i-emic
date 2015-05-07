@@ -19,7 +19,7 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_FancyOStream.hpp>
 
-#include <Epetra_Vector.h>
+#include "Vector.H"
 
 #include "GlobalDefinitions.H"
 #include "OceanTheta.H"
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 
 	// Create timestepping object ThetaStepper using an OceanTheta model
 	//  and an Epetra_Vector
-	ThetaStepper<RCP<OceanTheta>, RCP<Epetra_Vector> > thetaStepper(ocean);
+	ThetaStepper<RCP<OceanTheta>, RCP<Vector> > thetaStepper(ocean);
 	
 	thetaStepper.Run();	
 	ocean->DumpState();
