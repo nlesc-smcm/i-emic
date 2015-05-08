@@ -13,12 +13,22 @@ obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
 	 TRIOS_SolverFactory.o TRIOS_Static.o\
 	 Utils.o
 
+HEADERDEPS = \
+	$(PROJECT_BASE)/vector/Vector.H	
+
 all: lib
 
 lib: $(libname)
 
 $(libname): ${obj}
 	ar vrcs $(libname) $(obj)
+
+Ocean.o: Ocean.C Ocean.H $(HEADERDEPS)
+	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
+OceanTheta.o: OceanTheta.C OceanTheta.H $(HEADERDEPS)
+	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
+OceanCont.o: OceanCont.C OceanCont.H $(HEADERDEPS)
+	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 
 %.o: %.C %.H
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<

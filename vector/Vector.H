@@ -12,20 +12,15 @@ public:
 	Vector(Teuchos::RCP<Epetra_Vector> vector)
 		:
 		vector_(vector)
-	 	{
-	 		INFO("Vector constructor called");
-	 	}
+	 	{ DEBUG("Vector constructor called"); }
 	
-	~Vector() { INFO("Vector destructor called" ); }
+	~Vector() { DEBUG("Vector destructor called" ); }
 	
 	int Length()  { return vector_->GlobalLength(); }
 
 	// this = scalarThis * this + scalarA * A
-	void Update(double scalarA,	Vector &A,
-				double scalarThis)
-		{
-			vector_->Update(scalarA, *(A.GetRCP()), scalarThis);
-		}
+	void Update(double scalarA,	Vector &A, double scalarThis)
+		{ vector_->Update(scalarA, *(A.GetRCP()), scalarThis); }
 	
 	double Norm()
 		{

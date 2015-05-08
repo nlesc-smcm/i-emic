@@ -69,8 +69,10 @@ template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::CreateTangent()
 {	
 	// Finite difference for the tangent based on the old
-	// state and the new state. Calculate stateDot_,
-	// initialize with copy of old state in model
+	// state and the new state...
+	// Calculate stateDot_, initialize with copy of the
+	// old state in the model as we are going to overwrite
+	// the old state later on.
 	stateDot_ = model_->GetStoredState('C');
 
 	// Obtain view of the current state
@@ -87,8 +89,9 @@ void Continuation<ModelPtr, VectorPtr>::CreateTangent()
 
 //======================================================================
 template<typename ModelPtr, typename VectorPtr>
-void Continuation<ModelPtr, VectorPtr>::Run()
+void Continuation<ModelPtr, VectorPtr>::Step()
 {
+	// Create tangents.
 	if (initialTangent_)
 	{
 		INFO("Create initial tangent...");
@@ -102,10 +105,40 @@ void Continuation<ModelPtr, VectorPtr>::Run()
 		CreateTangent();
 		INFO("Create tangent... done");
 	}
+	
+	// After the stored data in the model is used for creating the
+	// tangents, we are allowed to perform a new Store(),
+	// overwriting the state, rhs and par with their current values.
+	model_->Store();
 
-	// int length = stateDot_->Length();
-	// double nrm = stateDot_->Norm();
-	// stateDot_->Scale(1.0 / (length * nrm));
+	// We scale the tangent of the state with its length and norm.
+	// --> Not sure if length is needed, but smaller is safer...
+	int length = stateDot_->Length();
+	double nrm = stateDot_->Norm();
+	stateDot_->Scale(1.0 / (length * nrm));
+	
+	// ------------------- Euler predictor ------------------------
+	INFO("Compute Euler predictor...");
+	// Obtain view of the current state
+	VectorPtr currentState = model_->GetState('V');
+
+	// Apply predictor to the state in the model
+	// Compute: state = state0 + ds * statedot
+	// Note that at this point state0 and state are equal.
+	currentState->Update(ds_, *stateDot_, 1.0);
+
+	// Compute  par = par0 + ds * pardot
+	// and put it in the model. Make sure that our par_ and the value
+	// in the model are the same.
+	par_ = model_->GetStoredPar() + ds_ * parDot_;
+	model_->SetPar(par_);
+	INFO("Compute Euler predictor... done");
+	// -----------------------------------------------------------
+
+	// ------------------- Newton corrector-----------------------
+	
+	// -----------------------------------------------------------
+	
 }
 
 #endif

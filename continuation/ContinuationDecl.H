@@ -24,6 +24,6 @@ public:
 	
 	void CreateInitialTangent();
 	void CreateTangent();
-	void Run();
+	void Step();
 };
 #endif
