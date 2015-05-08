@@ -21,6 +21,8 @@ HEADERDEPS = \
 INTLIBS = \
 	-l$(LIB_OCEAN)\
 
+CXX_DB = -DDEBUGGING
+
 all: test
 
 test: $(OBJLIBS) test.o
@@ -33,7 +35,7 @@ lib$(LIB_OCEAN).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_OCEAN); $(MAKE) $(MFLAGS)
 
 %.o: %.C $(HEADERDEPS)
-	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
+	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $(CXX_DB) $<
 
 clean:
 	-rm -f $(EXE) $(OBJS) $(OBJLIBS) fort.* *.txt *.eps

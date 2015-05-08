@@ -21,6 +21,13 @@ public:
 	// this = scalarThis * this + scalarA * A
 	void Update(double scalarA,	Vector &A, double scalarThis)
 		{ vector_->Update(scalarA, *(A.GetRCP()), scalarThis); }
+
+	double Dot(Vector &A)
+		{
+			double dot;
+			vector_->Dot(*(A.GetRCP()), &dot);
+			return dot;
+		}
 	
 	double Norm()
 		{

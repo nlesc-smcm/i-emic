@@ -56,7 +56,7 @@ void Newton<Model, Vector>::Run()
 		model_->ComputeRHS();
 		normRHStest_ = model_->GetNormRHS();
 
-		INFO("Newton:      iter: " << iter_ );
+ 		INFO("Newton:      iter: " << iter_ );
 		INFO("Newton:      norm: " << normRHStest_ );
 
 		//

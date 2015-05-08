@@ -28,6 +28,7 @@ public:
 	// may do more in the future,
 	void    SetPar(double value);
 	double  GetPar();
+	double  GetParDestination() { return parEnd_; }
 	
 	void Store();
 	void Restore();

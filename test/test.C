@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 	Continuation<RCP<OceanCont>, RCP<Vector> >
 		continuation(ocean);
 
-	continuation.Step();
+	continuation.Run();
 	
 	ocean->DumpState();
 	
