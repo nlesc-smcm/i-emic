@@ -8,9 +8,10 @@ template<typename ModelPtr, typename VectorPtr>
 class Continuation
 {
 	ModelPtr  model_;
-
+	
 	VectorPtr state_;
 	VectorPtr stateDot_;
+	VectorPtr rhs_;
 	VectorPtr dFdPar_;
 	
 	double par_;
@@ -19,11 +20,16 @@ class Continuation
 	double epsilon_;
 
 	bool initialTangent_;
+
+	int newtonIterations_;
 public:
-	Continuation(ModelPtr model);
-	
+	Continuation(ModelPtr model);	
+	void Step();
+private:
 	void CreateInitialTangent();
 	void CreateTangent();
-	void Step();
+	void ComputeDFDPar();
+	void EulerPredictor();
+	void NewtonCorrector();
 };
 #endif
