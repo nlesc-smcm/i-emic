@@ -17,7 +17,7 @@ ThetaStepper<Model, Vector>::ThetaStepper(Model model)
 	minTimestep_(1.0e-8),
 	maxTimestep_(1.0),
 	startTime_(0.0),
-	endTime_(100.0),
+	endTime_(500.0),
 	timestepScale1_(1.20),
 	timestepScale2_(2.00),
 	timestepScale3_(1.05),
@@ -43,7 +43,7 @@ void ThetaStepper<Model, Vector>::Run()
 	while (time_ < endTime_)
 	{
 		model_->DumpState();
-		model_->Store();
+		model_->tore();
 		model_->SetTheta(theta_);
 		model_->SetTimestep(timestep_);
 

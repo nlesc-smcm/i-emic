@@ -19,6 +19,10 @@ class Continuation
 	double parDot_;
 	double parDir_;
 	double ds_;
+	double dsMin_;
+	double dsMax_;
+	double dsScale1_;
+	double dsScale2_;
 	double epsilon_;
 
 	bool destinationReached_;
@@ -29,6 +33,8 @@ class Continuation
 	int maxSteps_;
 	int iter_;
 	int newtonIterations_;
+	int minAllowedIterations_;
+	int maxAllowedIterations_;
 	int backTrack_;
 	int numBackTrackingSteps_;
 	
@@ -48,15 +54,18 @@ private:
 	// the continuation parameter. Mode governs the
 	// computation of the RHS in the model.
 	// Modes: 'F' --> force computing RHS
-	//        'N' --> let Newton iterations decide
-	void ComputeDFDPar(char mode = 'N');
+	//        'A' --> do not force computing RHS
+	void ComputeDFDPar(char mode = 'A');
 	void EulerPredictor();
-	void NewtonCorrector();
-	void RunBackTracking();
+	int  NewtonCorrector();
+	int  RunBackTracking();
 
 	// Detect special points.
 	// Modes: 'D' --> converge on destination
 	//        'P' --> converge on first sign switch in parDot
 	void Detect(char mode = 'D');
+	void AdjustStep();
+	void Reset();
+	
 };
 #endif
