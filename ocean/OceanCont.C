@@ -93,6 +93,12 @@ void OceanCont::StoreRHS()
 }
 
 //=====================================================================
+void OceanCont::StorePar()
+{
+	storedPar_ = parValue_  ;
+}
+
+//=====================================================================
 void OceanCont::RestoreState()
 {
 	DEBUG("Restoring the state of OceanCont");
@@ -122,18 +128,38 @@ void OceanCont::RestoreRHS()
 	*rhs_   = *storedRhs_;
 }
 
+//=====================================================================
+void OceanCont::RestorePar()
+{
+	parValue_  = storedPar_ ;
+	
+	// Let THCM know that we want to restore the parameter
+	SetPar(parValue_);
+}
+
 //====================================================================
 double OceanCont::GetPar()
 {
-	FNAME(getparcs)(&parIdent_, &parValue_);
+	double thcmPar;
+	FNAME(getparcs)(&parIdent_, &thcmPar);
+	if (thcmPar != parValue_)
+	{
+		INFO("OceanCont::GetPar(): Parameter synchronization");
+		INFO("              thcm: " << thcmPar);
+		INFO("         OceanCont: " << parValue_);
+		INFO("     fixing this...");
+		FNAME(setparcs)(&parIdent_, &parValue_);
+		FNAME(getparcs)(&parIdent_, &thcmPar);
+		INFO("              thcm: " << thcmPar);
+	}					  
 	return parValue_;
 }
 
 //====================================================================
 void OceanCont::SetPar(double value)
 {
-	FNAME(setparcs)(&parIdent_, &value);
 	parValue_ = value;
+	FNAME(setparcs)(&parIdent_, &value);
 }
 
 //====================================================================

@@ -6,25 +6,27 @@
 
 //======================================================================
 #include "ContinuationDecl.H"
+#include "GlobalDefinitions.H"
 
 //======================================================================
 //Constructor
 template<typename ModelPtr, typename VectorPtr>
 Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 	:
-	ds_(2.0e-2),               // initial continuation step-size
+	ds_(1.0e-3),               // initial continuation step-size
 	dsMin_(1.0e-5),            // minimum continuation step-size
 	dsMax_(1.0e01),            // maximum continuation step-size
-	dsScale1_(1.20),           // conservative scaling for adaptive step
-	dsScale2_(2.00),           // drastic scaling for adaptive step
+	dsScale1_(1.00),           // conservative scaling for adaptive step
+	dsScale2_(2.0),            // drastic scaling for resetting adaptive step
 	epsilon_(1.0e-8),          // variation used for numerical finite difference
 	backTracking_(true),       // perform backtracking when Newton fails
 	numBackTrackingSteps_(10), // initialize number of backtracking steps
 	iter_(0),                  // initialize Newton iteration counter
-	newtonIterations_(10),     // set the number of Newton iterations
+	newtonIterations_(20),     // set the number of Newton iterations
 	minAllowedIterations_(4),  // if less then we inrease the step size
 	maxAllowedIterations_(5),  // if more then we decrease the step size
-	newtonTolerance_(1.0e-3)   // set the tolerance in the Newton corrector
+	newtonTolerance_(1.0e-6),  // set the tolerance in the Newton corrector
+	parDotSign_(1)             // sign of parDot, used in Detect()
 {
 	model_  = model;                  // obtain the model
 	// --> Right now it is somewhat arbitrary which VectorPtr contains a Copy
@@ -65,13 +67,6 @@ void Continuation<ModelPtr, VectorPtr>::Run()
 template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::Step()
 {
-	INFO("-----------------------------------------");
-	INFO("Continuation status: ");
-	INFO("            ds:  " << ds_);
-	INFO("           par:  " << par_);
-	INFO("          step:  " << step_);
-	INFO("-----------------------------------------");
-	
 	// Create tangents.
 	if (initialTangent_)
 	{
@@ -84,11 +79,19 @@ void Continuation<ModelPtr, VectorPtr>::Step()
 	else
 		CreateTangent();
 
-
 	// After the stored data in the model is used for creating the
 	// tangents, we are allowed to perform a new Store(),
-	// overwriting the state, rhs and par with their current values.
+	// overwriting the stored state, rhs and par with their current values.
 	model_->Store();
+
+	INFO("-----------------------------------------");
+	INFO("Continuation status: ");
+	INFO("            ds:  " << ds_);
+	INFO("           par:  " << par_);
+	INFO("        parDot:  " << parDot_);
+	INFO("          step:  " << step_);
+	INFO("    norm state:  " << state_->Norm());
+	INFO("-----------------------------------------");
 
 	// We scale the tangent of the state with its length and norm.
 	// --> Not sure if length is needed, but smaller is safer...
@@ -109,10 +112,10 @@ void Continuation<ModelPtr, VectorPtr>::Step()
 	// A reset will also set initialTangent = true, since we
 	// lose the information to compute stateDot with a
 	// finite difference.
-	if (status == 1)
-		Reset();
-	else
-		AdjustStep();
+	// if (status == 1)
+	// 	Reset();
+	// else
+	// 	AdjustStep();
 }
 
 //======================================================================
@@ -214,7 +217,10 @@ void Continuation<ModelPtr, VectorPtr>::EulerPredictor()
 	// Compute  par = par0 + ds * pardot
 	// and put it in the model. Make sure that our par_ and the value
 	// in the model are the same.
-	par_ = model_->GetStoredPar() + ds_ * parDot_;
+	double oldPar = model_->GetStoredPar(); 
+	par_ = oldPar + ds_ * parDot_;
+	INFO("Continuation::EulerPredictor()    old par: " << oldPar);
+	INFO("                            predicted par: " << par_);
 	model_->SetPar(par_);
 }
 
@@ -293,6 +299,7 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		if (backTracking_ and (normRHS_ < normRHStest_) )
 			backTrackingStatus = RunBackTracking();
 	}
+	INFO(" Continuation::NewtonCorrector()     corrected par: " << par_);
 	if (iter_ == newtonIterations_)
 	{
 		WARNING("Continuation: Newton failed!!", __FILE__, __LINE__);
@@ -350,6 +357,13 @@ void Continuation<ModelPtr, VectorPtr>::Detect(char mode)
 	// This is a naive initial implementation
 	if (f1 > 0)
 		destinationReached_ = true;
+
+	// Converge on sign switch
+	if (SGN(parDot_) != parDotSign_)
+	{
+		INFO("Continuation::Detect():  sign switch detected");
+		parDotSign_ = SGN(parDot_);
+	}
 }
 
 //======================================================================
@@ -370,7 +384,7 @@ void Continuation<ModelPtr, VectorPtr>::Reset()
 	ds_ = MAX(ds_ / dsScale2_, dsMin_);
 	INFO("Continuation:  Restoring model...");
 	model_->Restore();
+	par_ = model_->GetPar();
 	INFO("Continuation:  Restoring model... done");
-	initialTangent_ = true;
 }
 #endif

@@ -37,6 +37,7 @@ class Continuation
 	int maxAllowedIterations_;
 	int backTrack_;
 	int numBackTrackingSteps_;
+	int parDotSign_;
 	
 	double newtonTolerance_;
 	double normRHS_;

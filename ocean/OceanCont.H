@@ -47,8 +47,8 @@ private:
 	void RestoreState();
 	void StoreRHS();
 	void RestoreRHS();
-	void StorePar()   {storedPar_ = parValue_  ;} 
-	void RestorePar() {parValue_  = storedPar_ ;} 
+	void StorePar(); 
+	void RestorePar(); 
 };
 
 #endif
