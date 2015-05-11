@@ -47,7 +47,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	comm_(Comm),                     // Setting the communication object
 	solverInitialized_(false),       // Solver needs initialization
 	recomputePreconditioner_(true),  // --> xml
-	recomputeBound_(10),             // --> xml
+	recomputeBound_(50),             // --> xml
 	useScaling_(false)               // --> xml
 {
 	// Check if outFile is specified
@@ -162,7 +162,7 @@ void Ocean::InitializeSolver()
 	belosParamList_->set("Orthogonalization","DGKS");
 	belosParamList_->set("Output Frequency",1);
 	belosParamList_->set("Maximum Iterations", 1000);
-	belosParamList_->set("Convergence Tolerance", 1.0e-3); 
+	belosParamList_->set("Convergence Tolerance", 1.0e-4); 
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Verbosity", Belos::FinalSummary);
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
@@ -353,38 +353,16 @@ void Ocean::ComputeJacobian()
 //=====================================================================
 double Ocean::GetNormRHS()
 {
-	double nrm;
-	rhs_->Norm2(&nrm);
-	return nrm;
+	ERROR("DEPRECATED", __FILE__, __LINE__);
+	return 0.0;
 }
 
 //=====================================================================
 double Ocean::GetNormState()
 {
-	double nrm;
-	state_->Norm2(&nrm);
-	return nrm;
+	ERROR("DEPRECATED", __FILE__, __LINE__);
+	return 0.0;
 }
-
-//====================================================================
-// Teuchos::RCP<Epetra_Vector> Ocean::GetSolution(char mode)
-// {
-// 	if (mode == 'C')
-// 	{
-// 		Teuchos::RCP<Epetra_Vector> copySol =
-// 			Teuchos::rcp(new Epetra_Vector(*sol_));
-// 		return copySol;
-// 	}
-// 	else if (mode == 'V')
-// 	{
-// 		return sol_;
-// 	}
-// 	else
-// 	{
-// 		WARNING("Invalid mode", __FILE__, __LINE__);
-// 		return Teuchos::null;
-// 	}	
-// }
 
 //====================================================================
 Teuchos::RCP<Vector> Ocean::GetSolution(char mode)
@@ -413,7 +391,7 @@ Teuchos::RCP<Vector> Ocean::GetState(char mode)
 	if (mode == 'C')
 	{
 		RCP<Epetra_Vector> copyState = rcp(new Epetra_Vector(*state_));
-		RCP<Vector> statePtr           = rcp(new Vector(copyState));
+		RCP<Vector> statePtr         = rcp(new Vector(copyState));
 		return statePtr;
 	}
 	else if (mode == 'V')

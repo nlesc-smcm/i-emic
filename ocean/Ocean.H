@@ -8,10 +8,10 @@
 #include <Ifpack_Preconditioner.h>
 
 #include "GlobalDefinitions.H"
+#include "Vector.H"
 
 // forward declarations
 class THCM;
-class Vector;
 class Epetra_Comm;
 class Epetra_Vector;
 class Epetra_MultiVector;
@@ -80,6 +80,10 @@ public:
 	Teuchos::RCP<Vector> GetState(char mode = 'C');
 	Teuchos::RCP<Vector> GetRHS(char mode = 'C');
 	
+	void SetState(Teuchos::RCP<Vector> state) { state_ = state->GetRCP(); }
+	void SetRHS(Teuchos::RCP<Vector> rhs)     { rhs_   = rhs->GetRCP();   }
+
+	// --> Trying to prevent thetastepper from breaking
 	void SetState(Teuchos::RCP<Epetra_Vector> state) { state_ = state; }
 	void SetRHS(Teuchos::RCP<Epetra_Vector> rhs)     { rhs_   = rhs;   }
 
@@ -94,9 +98,7 @@ private:
 
 	// Randomize state, scale with scaling
 	void RandomizeState(double scaling);
-
 	void InitializeSolver();
-
 	void ScaleProblem();
 	void UnscaleProblem();		
 };

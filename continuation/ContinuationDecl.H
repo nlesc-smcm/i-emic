@@ -8,27 +8,26 @@ template<typename ModelPtr, typename VectorPtr>
 class Continuation
 {
 	ModelPtr  model_;
-	
+
 	VectorPtr state_;
+	VectorPtr stateView_;
 	VectorPtr stateDot_;
-	VectorPtr stateDir_;
 	VectorPtr rhs_;
+	VectorPtr rhsView_;
 	VectorPtr dFdPar_;
 	
 	double par_;
 	double parDot_;
-	double parDir_;
 	double ds_;
 	double dsMin_;
 	double dsMax_;
-	double dsScale1_;
-	double dsScale2_;
-	double dsOld_;
+	double scale1_;
+	double scale2_;
 	double epsilon_;
 
 	bool destinationReached_;
-	bool initialTangent_;
 	bool backTracking_;
+	bool forceIncreaseParam_;
 
 	int step_;
 	int maxSteps_;
@@ -43,6 +42,19 @@ class Continuation
 	double newtonTolerance_;
 	double normRHS_;
 	double normRHStest_;
+
+	// See Store() and Restore() for its use
+	struct Storage
+	{
+		VectorPtr state0;  // prev state
+		VectorPtr state00; // prev prev state
+		double par0;       // prev par
+		double par00;      // prev prev par
+		double ds0;        // prev ds
+		double ds00;       // prev prev ds
+	};
+
+	Storage storage_;
 	
 public:
 	Continuation(ModelPtr model);
@@ -57,12 +69,12 @@ private:
 	// Compute the derivative of F with respect to
 	// the continuation parameter. Mode governs the
 	// computation of the RHS in the model.
-	// Modes: 'F' --> force computing RHS
-	//        'A' --> do not force computing RHS
+	// Modes: 'F' --> force compute RHS
+	//        'A' --> do not force compute RHS
 	void ComputeDFDPar(char mode = 'A');
 	void EulerPredictor();
 	int  NewtonCorrector();
-	int  RunBackTracking();
+	int  RunBackTracking(VectorPtr stateDir, double parDir);
 
 	// Detect special points.
 	// Modes: 'D' --> converge on destination
@@ -70,6 +82,7 @@ private:
 	void Detect(char mode = 'D');
 	void AdjustStep();
 	void Reset();
+	void Info();
 	
 };
 #endif
