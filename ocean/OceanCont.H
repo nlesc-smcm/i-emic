@@ -6,15 +6,20 @@
 //======================================================================
 class OceanCont: public Ocean
 {
-	Teuchos::RCP<Epetra_Vector> storedState_;
+	// We allow the storage of two previous states
+	// --> Storage of states shouldn't be the responsibility
+	//     of this class. This should be fixed
+	Teuchos::RCP<Epetra_Vector> storedState1_;
+	Teuchos::RCP<Epetra_Vector> storedState2_;
 	Teuchos::RCP<Epetra_Vector> storedRhs_;
 
 	// THCM continuation parameters and bounds
-	int    parIdent_;   // parameter identifier (integer)
-	double parValue_;   // value of the parameter
-	double parStart_;   // its starting value
-	double parEnd_;	    // its ending value
-	double storedPar_;  // stored value of the parameter
+	int    parIdent_;    // parameter identifier (integer)
+	double parValue_;    // value of the parameter
+	double parStart_;    // its starting value
+	double parEnd_;	     // its ending value
+	double storedPar1_;  // stored value of the parameter
+	double storedPar2_;  // stored value of the parameter
 		
 public:
 	//constructor
@@ -39,7 +44,7 @@ public:
 	Teuchos::RCP<Vector> GetStoredState(char mode = 'C');
 	Teuchos::RCP<Vector> GetStoredRHS(char mode = 'C');
 
-	double  GetStoredPar() { return storedPar_; };
+	double  GetStoredPar() { return storedPar1_; };
 
 private:
 

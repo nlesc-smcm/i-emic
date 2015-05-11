@@ -14,10 +14,11 @@ template<typename ModelPtr, typename VectorPtr>
 Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 	:
 	ds_(1.0e-3),               // initial continuation step-size
+	dsOld_(ds_),               // --> this is ugly
 	dsMin_(1.0e-5),            // minimum continuation step-size
 	dsMax_(1.0e01),            // maximum continuation step-size
-	dsScale1_(1.00),           // conservative scaling for adaptive step
-	dsScale2_(2.0),            // drastic scaling for resetting adaptive step
+	dsScale1_(1.05),           // conservative scaling for adaptive step
+	dsScale2_(2.00),           // drastic scaling for resetting adaptive step
 	epsilon_(1.0e-8),          // variation used for numerical finite difference
 	backTracking_(true),       // perform backtracking when Newton fails
 	numBackTrackingSteps_(10), // initialize number of backtracking steps
@@ -25,7 +26,7 @@ Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 	newtonIterations_(20),     // set the number of Newton iterations
 	minAllowedIterations_(4),  // if less then we inrease the step size
 	maxAllowedIterations_(5),  // if more then we decrease the step size
-	newtonTolerance_(1.0e-6),  // set the tolerance in the Newton corrector
+	newtonTolerance_(1.0e-4),  // set the tolerance in the Newton corrector
 	parDotSign_(1)             // sign of parDot, used in Detect()
 {
 	model_  = model;                  // obtain the model
@@ -67,6 +68,9 @@ void Continuation<ModelPtr, VectorPtr>::Run()
 template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::Step()
 {
+	// Store the current state, par
+	// Store();
+	
 	// Create tangents.
 	if (initialTangent_)
 	{
@@ -82,6 +86,12 @@ void Continuation<ModelPtr, VectorPtr>::Step()
 	// After the stored data in the model is used for creating the
 	// tangents, we are allowed to perform a new Store(),
 	// overwriting the stored state, rhs and par with their current values.
+	// --> This should be a function in this class, not in the model
+	// --> Storing the model should be the first action in Step().
+	//     CreateInitialTangent() would be allowed since it doesn't
+	//     require old information.
+	//     CreateTangent() should be performed after NewtonCorrector() but
+	//     before AdjustStep().
 	model_->Store();
 
 	INFO("-----------------------------------------");
@@ -112,10 +122,24 @@ void Continuation<ModelPtr, VectorPtr>::Step()
 	// A reset will also set initialTangent = true, since we
 	// lose the information to compute stateDot with a
 	// finite difference.
-	// if (status == 1)
-	// 	Reset();
-	// else
-	// 	AdjustStep();
+	if (status == 1)
+		Reset();
+	else
+		AdjustStep();
+}
+
+//======================================================================
+template<typename ModelPtr, typename VectorPtr>
+void Continuation<ModelPtr, VectorPtr>::Store()
+{
+	
+}
+
+//======================================================================
+template<typename ModelPtr, typename VectorPtr>
+void Continuation<ModelPtr, VectorPtr>::Restore()
+{
+	
 }
 
 //======================================================================
@@ -164,12 +188,12 @@ void Continuation<ModelPtr, VectorPtr>::CreateTangent()
 	// 2) Compute stateDot = (state1 - state0)/ds
 	// --> Note that our state_ member contains the
 	//     current state of the model
-	stateDot_->Update(1.0 / ds_, *state_, -1.0 / ds_);
+	stateDot_->Update(1.0 / dsOld_, *state_, -1.0 / dsOld_);
 
 	// 3) Compute parDot = (par1 - par0)/ds
 	double storedPar  = model_->GetStoredPar();
 	double currentPar = model_->GetPar();
-	parDot_ = (currentPar - storedPar) / ds_;
+	parDot_ = (currentPar - storedPar) / dsOld_;
 }
 
 
@@ -370,6 +394,7 @@ void Continuation<ModelPtr, VectorPtr>::Detect(char mode)
 template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::AdjustStep()
 {
+	dsOld_ = ds_;
 	if (iter_ < minAllowedIterations_)
 		ds_ = MIN(ds_ * dsScale1_, dsMax_);
 	else if (iter_ > maxAllowedIterations_)

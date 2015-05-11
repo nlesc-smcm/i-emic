@@ -23,6 +23,7 @@ class Continuation
 	double dsMax_;
 	double dsScale1_;
 	double dsScale2_;
+	double dsOld_;
 	double epsilon_;
 
 	bool destinationReached_;
@@ -48,6 +49,8 @@ public:
 	void Run();
 private:
 	void Step();
+	void Store();
+	void Restore();
 	void CreateInitialTangent();
 	void CreateTangent();
 

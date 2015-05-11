@@ -35,8 +35,9 @@ OceanCont::OceanCont(Teuchos::RCP<Epetra_Comm> Comm)
 	Ocean(Comm)
 {
 	// Initialize a few datamembers
-	storedState_ = rcp(new Epetra_Vector(*state_));
-	storedRhs_   = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
+	storedState1_ = rcp(new Epetra_Vector(*state_));
+	storedState2_ = rcp(new Epetra_Vector(*state_));
+	storedRhs_    = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 
 	// THCM continuation parameter and its bounds
 	parIdent_ = 19;
@@ -69,13 +70,23 @@ void OceanCont::StoreState()
 {
 	DEBUG("Storing the state of OceanCont");
 	
-	if (storedState_ == Teuchos::null or
-		!storedState_->Map().SameAs(state_->Map()))
+	// First we put storedState1 -> storedState2
+	if (storedState2_ == Teuchos::null or
+		!storedState2_->Map().SameAs(storedState1_->Map()))
 	{
-		storedState_ =
+		storedState2_ =
+			rcp(new Epetra_Vector(storedState1_->Map()));
+	}	
+	*storedState2_ = *storedState1_;
+	
+	// Then we put state -> storedState1
+	if (storedState1_ == Teuchos::null or
+		!storedState1_->Map().SameAs(state_->Map()))
+	{
+		storedState1_ =
 			rcp(new Epetra_Vector(state_->Map()));
 	}	
-	*storedState_ = *state_;
+	*storedState1_ = *state_;
 }
 
 //=====================================================================
@@ -95,7 +106,8 @@ void OceanCont::StoreRHS()
 //=====================================================================
 void OceanCont::StorePar()
 {
-	storedPar_ = parValue_  ;
+	storedPar2_ = storedPar1_;
+	storedPar1_ = parValue_  ;
 }
 
 //=====================================================================
@@ -103,14 +115,23 @@ void OceanCont::RestoreState()
 {
 	DEBUG("Restoring the state of OceanCont");
 
+	// First restore state
 	if (state_ == Teuchos::null or
-		!state_->Map().SameAs(storedState_->Map()))
+		!state_->Map().SameAs(storedState1_->Map()))
 	{
 		state_ =
-			rcp(new Epetra_Vector(storedState_->Map()));
-	}
-	
-	*state_ = *storedState_;
+			rcp(new Epetra_Vector(storedState1_->Map()));
+	}	
+	*state_ = *storedState1_;
+
+	// Then restore storedState1
+	if (storedState1_ == Teuchos::null or
+		!storedState1_->Map().SameAs(storedState2_->Map()))
+	{
+		storedState1_ =
+			rcp(new Epetra_Vector(storedState2_->Map()));
+	}	
+	*storedState1_ = *storedState2_;
 }
 
 //====================================================================
@@ -124,17 +145,16 @@ void OceanCont::RestoreRHS()
 		rhs_ =
 			rcp(new Epetra_Vector(storedRhs_->Map()));
 	}
-	
 	*rhs_   = *storedRhs_;
 }
 
 //=====================================================================
 void OceanCont::RestorePar()
 {
-	parValue_  = storedPar_ ;
-	
-	// Let THCM know that we want to restore the parameter
+	parValue_  = storedPar1_ ;
+	// Let THCM know that we restore the parameter
 	SetPar(parValue_);
+	storedPar1_ = storedPar2_;
 }
 
 //====================================================================
@@ -168,7 +188,7 @@ Teuchos::RCP<Vector> OceanCont::GetStoredState(char mode)
 	if (mode == 'C')
 	{
 		RCP<Epetra_Vector> copyStoredState =
-			rcp(new Epetra_Vector(*storedState_));
+			rcp(new Epetra_Vector(*storedState1_));
 		RCP<Vector> storedStatePtr =
 			rcp(new Vector(copyStoredState));
 		return storedStatePtr;
@@ -176,7 +196,7 @@ Teuchos::RCP<Vector> OceanCont::GetStoredState(char mode)
 	else if (mode == 'V')
 	{
 		RCP<Vector> storedStatePtr =
-			rcp(new Vector(storedState_));
+			rcp(new Vector(storedState1_));
 		return storedStatePtr;
 	}
 	else
