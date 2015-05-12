@@ -3,11 +3,10 @@
 ## Author: T.E. Mulder => t.e.mulder@uu.nl
 ##=================================================================
 ##   Import makefile variables from Trilinos:
-##     Using the Teko ones, since that is pretty much the most
-##	   advanced stuff we will use.
+
 include ${TRIDIR}/include/Makefile.export.Trilinos
 CXX                 = ${Trilinos_CXX_COMPILER}
-FC                  = ${Trilinos_FORTRAN_COMPILER}
+FC                  = ${Trilinos_Fortran_COMPILER}
 INCLUDE_DIRS_TRI    = ${Trilinos_INCLUDE_DIRS}
 LIBRARY_DIRS_TRI    = ${Trilinos_LIBRARY_DIRS}
 TRILINOS_LIBRARIES  = ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES}
