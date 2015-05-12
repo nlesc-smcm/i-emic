@@ -21,6 +21,7 @@ class Continuation
 	double ds_;
 	double dsMin_;
 	double dsMax_;
+	double zeta_;
 	double scale1_;
 	double scale2_;
 	double epsilon_;
@@ -63,8 +64,13 @@ private:
 	void Step();
 	void Store();
 	void Restore();
+
+	// Create initial Euler tangent
 	void CreateInitialTangent();
-	void CreateTangent();
+
+	// Modes:  'S' Secant
+	//         'E' Euler
+	void CreateTangent(char mode);
 
 	// Compute the derivative of F with respect to
 	// the continuation parameter. Mode governs the

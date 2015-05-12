@@ -7,7 +7,7 @@
 //======================================================================
 #include "ContinuationDecl.H"
 #include "GlobalDefinitions.H"
-
+#include <math.h>
 //======================================================================
 //Constructor
 template<typename ModelPtr, typename VectorPtr>
@@ -35,13 +35,16 @@ Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 	state_  = model_->GetState('V');  // obtain a view of the state
 
 	rhsView_ = model_->GetRHS('V');   // view of the rhs in the model
-	\
+	
 	par_    = model_->GetPar();       // get the current parameter value
 
 	// initialize Storage struct
 	storage_.ds0    = ds_;
 	storage_.par0   = par_;
 	storage_.state0 = model_->GetState('C');
+
+	// initialize scaling
+	zeta_ = 1.0 / state_->Length();
 }
 
 //======================================================================
@@ -92,7 +95,7 @@ void Continuation<ModelPtr, VectorPtr>::Step()
 	else
 	{		
 		// Create new tangents based on new and stored state
-		CreateTangent();			
+		CreateTangent('E');			
 	
 		// step adjustment based on the number of Newton iterations.
 		AdjustStep();
@@ -124,62 +127,73 @@ void Continuation<ModelPtr, VectorPtr>::CreateInitialTangent()
 	// of altering it we get a copy.
 	stateDot_ = model_->GetSolution('C');
 
-	// We scale the tangent of the state with its length and norm.
-	// --> Not sure if this is needed, but smaller is safer?
-	int length = stateDot_->Length();
-	double nrm = stateDot_->Norm();	
-	INFO("   scaling with length: " << length );
-	INFO("   before: " << nrm);
-	stateDot_->Scale(1.0 / (length * nrm));
+	// We scale the tangent of the state and parameter such they are
+	// normalized.
+	stateDot_->Scale(zeta_);
+	double nrm = stateDot_->Norm();
+	double scaling = sqrt(nrm * nrm + 1);
+	stateDot_->Scale(1.0 / scaling);
 	nrm = stateDot_->Norm();	
-	INFO("    after: " << nrm);
 
 	// Set the initial parameter tangent to 1
-	parDot_ = 1.0;
+	parDot_ = 1.0 / scaling;
 
-	INFO("  norm^2  = " << nrm * nrm << " + " << parDot_ * parDot_);
+	INFO("  norm  = " << nrm * nrm << " + " << parDot_ * parDot_
+		 << " = " << nrm * nrm + parDot_ * parDot_);
 }
 
 //======================================================================
 template<typename ModelPtr, typename VectorPtr>
-void Continuation<ModelPtr, VectorPtr>::CreateTangent()
+void Continuation<ModelPtr, VectorPtr>::CreateTangent(char mode)
 {
-	// ------------------------------------------------------------
-	// Calculate stateDot_:
-	// --> we require the existence of a stored state and parameter
-	//  - Initialize with a copy of the state in the model
-	//  - Calculate finite difference for the tangent based on the
-	//     stored state and the current state
-	//  - Calculate finite difference for the parameter tangent
-	// ------------------------------------------------------------
+	if (mode == 'S')
+	{
+		// ------------------------------------------------------------
+		// Calculate stateDot_ with the Secant approach:
+		//  - Initialize with a copy of the state in the model
+		//  - Calculate finite difference for the tangent based on the
+		//     stored state and the current state
+		//  - Calculate finite difference for the parameter tangent
+		// ------------------------------------------------------------
+		
+		// Get a copy of the current state
+		stateDot_ = model_->GetState('C');
+		
+		// Get the previous state and par from our storage
+		VectorPtr state0 = storage_.state0;
+		double par0      = storage_.par0;
+		
+		// Compute stateDot = (state1 - state0)/ds
+		// --> Note that our state_ member contains a view of the
+		//     current state in the model
+		stateDot_->Update(-1.0 / ds_, *state0, 1.0 / ds_);
+		
+		// Compute parDot = (par1 - par0)/ds
+		par_    = model_->GetPar();             // update our own par_
+		parDot_ = (par_ - par0) / ds_;
+	}
+	else if (mode == 'E')
+	{
+		// ------------------------------------------------------------
+		// Calculate stateDot_ with the Euler approach:
+		//   - At this point stateDot_ contains y1 from J*y1 = dFdPar
+		//   - This means we can use it to create a new tangent
+		// ------------------------------------------------------------
+		stateDot_->Scale(zeta_);
+		double nrm     = stateDot_->Norm();
+		double scaling = sqrt(nrm * nrm + 1);
+		INFO("  scaling: " << scaling);
+		stateDot_->Scale(-1.0 / scaling);
+		nrm = stateDot_->Norm();
 
-	// Get a copy of the current state
-	stateDot_ = model_->GetState('C');
-
-	// Get the previous state and par from our storage
-	VectorPtr state0 = storage_.state0;
-	double par0      = storage_.par0;
-
-	// Compute stateDot = (state1 - state0)/ds
-	// --> Note that our state_ member contains a view of the
-	//     current state in the model
-	stateDot_->Update(-1.0 / ds_, *state0, 1.0 / ds_);
-
-	// We scale the tangent of the state with its length and norm.
-	// --> Not sure if this is needed, but smaller is safer?
-	int length = stateDot_->Length();
-	double nrm = stateDot_->Norm();	
-	INFO("   scaling with length: " << length );
-	INFO("   before: " << nrm);
-	stateDot_->Scale(1.0 / (length * nrm));
-	nrm = stateDot_->Norm();	
-	INFO("    after: " << nrm);
-
-    // Compute parDot = (par1 - par0)/ds
-	par_    = model_->GetPar();             // update our own par_
-	parDot_ = (par_ - par0) / ds_;
-	
-	INFO("  norm^2  = " << nrm * nrm << " + " << parDot_ * parDot_);
+		// Set the initial parameter tangent to 1
+		parDot_ = 1.0 / scaling;
+		
+		INFO("  norm  = " << nrm * nrm << " + " << parDot_ * parDot_
+			 << " = " << nrm * nrm + parDot_ * parDot_);	
+	}
+	else
+		WARNING("Invalid mode!", __FILE__, __LINE__);
 }
 
 
@@ -247,8 +261,9 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 	char mode;	             // mode for ComputeDFDPar()
 	
 	VectorPtr stateDir;      // direction for the state
+	VectorPtr y1;            // solution of solve with dFdPar
+	VectorPtr z1;            // solution of solve with F
 	double parDir;           // direction for the parameter
-
 	
 	for (iter_ = 0; iter_ != newtonIterations_; ++iter_)
 	{
@@ -265,15 +280,15 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		//     since at this point it corresponds to F(par+eps)
 		VectorPtr R = rhs_;
 		R->Scale(-1.0);
-
+		
 		// Obtain the lower part (r) of the continuation RHS,
 		// Here we compute
-		// r = ds - stateDot'*(state1 - state0)
+		// r = ds - stateDot'*(state1 - state0)*zeta
 		//           - parDot*(par2   - par0)
 		VectorPtr state0 = storage_.state0;
 		double    par0   = storage_.par0;
-		double    r      =  ds_ - stateDot_->Dot(*state_)
-			                - stateDot_->Dot(*state0)
+		double    r      =  ds_ - stateDot_->Dot(*state_) * zeta_
+			                - stateDot_->Dot(*state0) * zeta_
 			                - parDot_ * (par_ - par0);
 		//r = 1.0 - r / ds_; 
 
@@ -283,24 +298,24 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		model_->ComputeJacobian();
 
 		// Now we will perform 2 solves to solve the bordered system:
-		//  - The vector containing the first solution will have to make
-		//    way for the second solution so we get a copy.
-		//  - For the vector containing the second solution we can use
-		//    a view.
+		// In both cases we obtain copies of the solution. Both vectors
+		// wil have their use either here or in the computation of the
+		// next tangent.
 		model_->Solve(dFdPar_);
-		VectorPtr y1 = model_->GetSolution('C');
+		y1 = model_->GetSolution('C');
 		model_->Solve(R);
-		VectorPtr z1 = model_->GetSolution('V');
+		z1 = model_->GetSolution('C');
 
 		// Determine the directions
 		// First for the parameter:
-		parDir = (r - stateDot_->Dot(*z1)) / (parDot_ - stateDot_->Dot(*y1));
+		parDir = (r - zeta_ * stateDot_->Dot(*z1))
+			   / (parDot_ - zeta_ * stateDot_->Dot(*y1));
 
 		// Then for the state:
 		//  - We perform an update on y1 and
 		//  - let that be the new direction
-		y1->Update(1.0, *z1, -1.0 * parDir);
-		stateDir = y1;
+		z1->Update(-1.0 * parDir, *y1, 1.0);
+		stateDir = z1;
 
 		// Update the state and the parameter in the model
 		state_->Update(1.0, *stateDir, 1.0);
@@ -323,20 +338,25 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		if (backTracking_ and (normRHS_ < normRHStest_) )
 			backTrackingStatus = RunBackTracking(stateDir, parDir);
 	}
+
+	// Store the last obtained y1 in stateDot, such that it can be used by
+	// CreateTangent()
+	stateDot_ = y1;
+	
 	INFO("  NewtonCorrector:          corrected par: " << par_);
 	INFO("  NewtonCorrector:  norm  corrected state: " << state_->Norm());
-
+	
 	if (iter_ == newtonIterations_)
 	{
 		WARNING("Continuation: Newton failed!!", __FILE__, __LINE__);
 		return 1;
 	}
 
-	if (par_ < storage_.par0 && forceIncreaseParam_)
-	{
-		WARNING("Non-increasing parameter detected", __FILE__, __LINE__);
-		return 2;
-	}
+	// if (par_ < storage_.par0 && forceIncreaseParam_)
+	// {
+	// 	WARNING("Non-increasing parameter detected", __FILE__, __LINE__);
+	// 	return 2;
+	// }
 	
 	INFO("Apply Newton corrector... done");		
 	return 0;
