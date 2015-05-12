@@ -7,10 +7,7 @@
 #ifndef TRIOS_BLOCKPRECONDITIONER_H
 #define TRIOS_BLOCKPRECONDITIONER_H
 
-#include "NOX_Common.H"
 #include "Teuchos_ParameterList.hpp"
-#include "NOX_Epetra_Interface_Preconditioner.H"
-#include "NOX_Epetra_Vector.H"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Operator.h"
 #include "Ifpack_Preconditioner.h"
@@ -102,11 +99,8 @@ namespace TRIOS {
 	  | Buv  0   Bw ATS |       |  0   0  BTS Ap |       | 0   0  Guv Kuvp |     
                                                                                       
     */
-    class BlockPreconditioner :
-		public NOX::Epetra::Interface::Preconditioner,
-		public Ifpack_Preconditioner
-    {
-		
+    class BlockPreconditioner: public Ifpack_Preconditioner
+    {		
     public:
 		
 		/*!

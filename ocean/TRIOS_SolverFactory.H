@@ -7,7 +7,6 @@
 #ifndef TRIOS_SOLVERFACTORY_H
 #define TRIOS_SOLVERFACTORY_H
       
-#include "NOX_Epetra_LinearSystem.H"  
 #include "Teuchos_ParameterList.hpp"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Operator.h"
@@ -18,18 +17,6 @@
 
 class AztecOO;
 class OceanModel;
-
-namespace NOX 
-  {
-  namespace Epetra 
-    {
-    namespace Interface 
-      {
-      class Required;
-      class Jacobian;
-      }
-    }
-  }
 
 namespace TRIOS {
 

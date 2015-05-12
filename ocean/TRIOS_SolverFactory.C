@@ -26,9 +26,6 @@
 // ML
 #include "ml_MultiLevelPreconditioner.h"
 
-//NOX
-#include "NOX_Epetra_LinearSystem.H"
-
 #include "Utils.H"
 
 #include "ml_struct.h"
