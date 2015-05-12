@@ -64,7 +64,7 @@ void Continuation<ModelPtr, VectorPtr>::Run()
 	{
 		Step(); 	// Perform a continuation step
 
-		// model_->DumpState();	// Get an intermediate solution
+		model_->DumpState();	// Get an intermediate solution
 
 		// Detect special points:
 		//  if necessary converge on them (-->not implemented yet)
