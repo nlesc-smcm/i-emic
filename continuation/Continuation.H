@@ -130,7 +130,7 @@ void Continuation<ModelPtr, VectorPtr>::CreateInitialTangent()
 	double nrm = stateDot_->Norm();	
 	INFO("   scaling with length: " << length );
 	INFO("   before: " << nrm);
-	stateDot_->Scale(1.0 / (length));
+	stateDot_->Scale(1.0 / (length * nrm));
 	nrm = stateDot_->Norm();	
 	INFO("    after: " << nrm);
 
@@ -171,10 +171,10 @@ void Continuation<ModelPtr, VectorPtr>::CreateTangent()
 	double nrm = stateDot_->Norm();	
 	INFO("   scaling with length: " << length );
 	INFO("   before: " << nrm);
-	stateDot_->Scale(1.0 / (length));
+	stateDot_->Scale(1.0 / (length * nrm));
 	nrm = stateDot_->Norm();	
 	INFO("    after: " << nrm);
-	
+
     // Compute parDot = (par1 - par0)/ds
 	par_    = model_->GetPar();             // update our own par_
 	parDot_ = (par_ - par0) / ds_;
@@ -272,10 +272,10 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		//           - parDot*(par2   - par0)
 		VectorPtr state0 = storage_.state0;
 		double    par0   = storage_.par0;
-		double    r      =  - stateDot_->Dot(*state_)
+		double    r      =  ds_ - stateDot_->Dot(*state_)
 			                - stateDot_->Dot(*state0)
 			                - parDot_ * (par_ - par0);
-		r = 1.0 - r / ds_; 
+		//r = 1.0 - r / ds_; 
 
 		// At this point the model contains the predicted state and
 		// parameter. The Jacobian will be computed based on the
