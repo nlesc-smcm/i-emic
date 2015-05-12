@@ -13,7 +13,7 @@
 template<typename ModelPtr, typename VectorPtr>
 Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 	:
-	ds_(1.0e-2),               // initial continuation step-size
+	ds_(1.0e-3),               // initial continuation step-size
 	dsMin_(1.0e-5),            // minimum continuation step-size
 	dsMax_(1.0e01),            // maximum continuation step-size
 	scale1_(1.00),             // conservative scaling for adaptive step
@@ -35,7 +35,7 @@ Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 	state_  = model_->GetState('V');  // obtain a view of the state
 
 	rhsView_ = model_->GetRHS('V');   // view of the rhs in the model
-	
+	\
 	par_    = model_->GetPar();       // get the current parameter value
 
 	// initialize Storage struct
@@ -128,9 +128,9 @@ void Continuation<ModelPtr, VectorPtr>::CreateInitialTangent()
 	// --> Not sure if this is needed, but smaller is safer?
 	int length = stateDot_->Length();
 	double nrm = stateDot_->Norm();	
-	INFO("   normalizing with " << length << " * " << nrm);
+	INFO("   scaling with length: " << length );
 	INFO("   before: " << nrm);
-	stateDot_->Scale(1.0 / (length * nrm));
+	stateDot_->Scale(1.0 / (length));
 	nrm = stateDot_->Norm();	
 	INFO("    after: " << nrm);
 
@@ -165,13 +165,15 @@ void Continuation<ModelPtr, VectorPtr>::CreateTangent()
 	//     current state in the model
 	stateDot_->Update(-1.0 / ds_, *state0, 1.0 / ds_);
 
-	// Normalize stateDot
-	double nrm = stateDot_->Norm();
-	INFO("   normalizing with " << nrm);
-	INFO("   before: " << nrm);	
-	stateDot_->Scale(1.0 / nrm);
-	nrm = stateDot_->Norm();
-	INFO("    after " << nrm);	
+	// We scale the tangent of the state with its length and norm.
+	// --> Not sure if this is needed, but smaller is safer?
+	int length = stateDot_->Length();
+	double nrm = stateDot_->Norm();	
+	INFO("   scaling with length: " << length );
+	INFO("   before: " << nrm);
+	stateDot_->Scale(1.0 / (length));
+	nrm = stateDot_->Norm();	
+	INFO("    after: " << nrm);
 	
     // Compute parDot = (par1 - par0)/ds
 	par_    = model_->GetPar();             // update our own par_
@@ -270,9 +272,10 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		//           - parDot*(par2   - par0)
 		VectorPtr state0 = storage_.state0;
 		double    par0   = storage_.par0;
-		double    r      = ds_ - stateDot_->Dot(*state_)
-			                   - stateDot_->Dot(*state0)
-			                   - parDot_ * (par_ - par0);
+		double    r      =  - stateDot_->Dot(*state_)
+			                - stateDot_->Dot(*state0)
+			                - parDot_ * (par_ - par0);
+		r = 1.0 - r / ds_; 
 
 		// At this point the model contains the predicted state and
 		// parameter. The Jacobian will be computed based on the
@@ -308,9 +311,11 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		normRHS_ = rhsView_->Norm();
 		model_->ComputeRHS();
 		normRHStest_ = rhsView_->Norm();
-		INFO("   NewtonCorrector      iter: " << iter_ );
-		INFO("   NewtonCorrector  old norm: " << normRHS_ );
-		INFO("   NewtonCorrector  new norm: " << normRHStest_ );
+		INFO("   NewtonCorrector        iter: " << iter_ );
+		INFO("   NewtonCorrector  old norm R: " << normRHS_ );
+		INFO("                             r: " << r );
+		INFO("   NewtonCorrector  new norm R: " << normRHStest_ );
+				
 		if (normRHStest_ < newtonTolerance_)
 			break;
 
