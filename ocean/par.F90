@@ -17,7 +17,7 @@ module m_par
   character(len=*), parameter ::  topdir = '/home/erik/Projects/EMIC/data/'
   character(len=*), parameter ::  rundir = ''
 #elif defined(LOCAL)
-  character(len=*), parameter ::  topdir = '/var/tmp/data/'
+  character(len=*), parameter ::  topdir = '/var/tmp/emic/data/'
   character(len=*), parameter ::  rundir = ''
 
 #else
