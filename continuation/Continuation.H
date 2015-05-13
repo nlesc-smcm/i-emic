@@ -16,17 +16,17 @@ Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 	ds_(2.0e-2),               // initial continuation step-size
 	dsMin_(1.0e-5),            // minimum continuation step-size
 	dsMax_(1.0e01),            // maximum continuation step-size
-	maxSteps_(-1),             // maximum number of continuation steps:
+	maxSteps_(02),             // maximum number of continuation steps:
 	                           //    set to -1 to disable
 	scale1_(1.00),             // conservative scaling for adaptive step
 	scale2_(2.00),             // drastic scaling for resetting adaptive step
 	
-	epsilon_(1.0e-8),          // variation used for numerical finite difference
+	epsilon_(1.0e-8),          // variation used for finite difference
 	
 	backTracking_(true),       // perform backtracking when Newton fails
 	numBackTrackingSteps_(10), // number of backtracking steps
 	
-	newtonIterations_(15),     // set the max for the Newton iterations
+	maxNewtonIterations_(15),  // set the max for the Newton iterations
 	minAllowedIterations_(4),  // if less then we increase the step size
 	maxAllowedIterations_(5),  // if more then we decrease the step size
 	newtonTolerance_(1.0e-3)   // set the tolerance in the Newton corrector
@@ -48,7 +48,7 @@ Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 
 	zeta_ = 1.0 / stateView_->Length();	// initialize additional scaling
 
-	iter_ = 0;	// newton iteration counter
+	newtonIter_ = 0;	// newton iteration counter
 
 	backTrack_ = 0;	// backtracking counter
 
@@ -70,7 +70,7 @@ void Continuation<ModelPtr, VectorPtr>::Run()
 
 	Store(); // Store the current state and parameter
 	
-	while (!destinationReached_ || step_ == maxSteps_)
+	while (!destinationReached_ && step_ != maxSteps_)
 	{
 		Step(); 	// Perform a continuation step
 
@@ -198,7 +198,7 @@ void Continuation<ModelPtr, VectorPtr>::CreateTangent(char mode)
 		// --> Not sure about zeta_ here
 		Normalize(stateDot_, zeta_, parDot_);
 	}
-	else if (mode == 'E' && iter_ != 0) // Euler
+	else if (mode == 'E' && newtonIter_ != 0) // Euler
 	{
 		// ------------------------------------------------------------
 		// Calculate stateDot_ with the Euler approach. Here we require
@@ -239,12 +239,9 @@ void Continuation<ModelPtr, VectorPtr>::Normalize(VectorPtr stateDot,
 	stateDot_->Scale(1.0 / normComb);
 	parDot_ = 1.0 / normComb;
 
-#ifdef DEBUGGING
-	nrm = stateDot_->Norm();
 	DEBUG(" Normalize():");
-	DEBUG("  norm  = " << nrm * nrm << " + " << parDot_ * parDot_
-		               << " = " << nrm * nrm + parDot_ * parDot_);
-#endif
+	DEBUG("  norm  = " << stateDot_->Norm() * stateDot_->Norm()
+		                  + parDot_ * parDot_);
 }
 
 //======================================================================
@@ -263,10 +260,11 @@ void Continuation<ModelPtr, VectorPtr>::EulerPredictor()
 	// Compute  par = par0 + ds * pardot
 	// - Note that at this point par0 and par are equal.
 	par_ = par_ + ds_ * parDot_;
-	INFO("                      old par: " << storage_.par0);
-	INFO("                predicted par: " << par_);
-	INFO("               norm old state: " << storage_.state0->Norm());
-	INFO("         norm predicted state: " << stateView_->Norm());
+	
+	DEBUG("                      old par: " << storage_.par0);
+	DEBUG("                predicted par: " << par_);
+	DEBUG("               norm old state: " << storage_.state0->Norm());
+	DEBUG("         norm predicted state: " << stateView_->Norm());
 
 	// Make sure the model has the same par
 	model_->SetPar(par_);
@@ -286,12 +284,12 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 	VectorPtr z1;            // solution of solve with F
 	double parDir;           // direction for the parameter
 	
-	for (iter_ = 0; iter_ != newtonIterations_; ++iter_)
+	for (newtonIter_ = 0; newtonIter_ != maxNewtonIterations_; ++newtonIter_)
 	{
 		// Taking the derivative of the RHS w.r.t. the continuation
 		// parameter using a finite difference. In the first iteration
 		// the computation of the RHS is required.
-		mode = (iter_ == 0) ? 'F' : 'A'; 
+		mode = (newtonIter_ == 0) ? 'F' : 'A'; 
 		ComputeDFDPar(mode);
 
 		// Obtain the upper part (R) of the continuation RHS.
@@ -351,10 +349,8 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		normRHS_ = rhsView_->Norm();
 		model_->ComputeRHS();
 		normRHStest_ = rhsView_->Norm();
-		INFO("   NewtonCorrector        iter: " << iter_ );
-		INFO("                             r: " << r );
-		INFO("   NewtonCorrector  old norm R: " << normRHS_ );
-		INFO("   NewtonCorrector  new norm R: " << normRHStest_ );
+		INFO(" NewtonCorrector    iter: " << newtonIter_ );
+		INFO(" NewtonCorrector  norm R: " << normRHStest_ );
 				
 		if (normRHStest_ < newtonTolerance_)
 			break;
@@ -368,10 +364,10 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 	// CreateTangent()
 	stateDot_ = y1;
 	
-	INFO("  NewtonCorrector:          corrected par: " << par_);
-	INFO("  NewtonCorrector:  norm  corrected state: " << stateView_->Norm());
+	DEBUG(" NewtonCorrector:         corr par: " << par_);
+	DEBUG(" NewtonCorrector:  norm corr state: " << stateView_->Norm());
 	
-	if (iter_ == newtonIterations_)
+	if (newtonIter_ == maxNewtonIterations_)
 	{
 		WARNING("Continuation: Newton failed!!", __FILE__, __LINE__);
 		return 1;
@@ -404,13 +400,9 @@ int Continuation<ModelPtr, VectorPtr>::RunBackTracking(VectorPtr stateDir,
 		model_->ComputeRHS();
 		normRHStest_ = rhsView_->Norm();
 
-		INFO("    NewtonCorrector:  backtracking: " );
-		INFO("       step:      "   << backTrack_   );
-		INFO("       reduction: "   << reduction    );
-		INFO("       norm:      "   << normRHStest_ );
+		INFO("  backtracking: " << backTrack_ << "  norm: " << normRHStest_ );
 
-		// Update reduction
-		reduction /= 2.0;
+		reduction /= 2.0;	// Update reduction
 	}
 	if (backTrack_ == numBackTrackingSteps_)
 	{
@@ -445,9 +437,9 @@ void Continuation<ModelPtr, VectorPtr>::Detect(char mode)
 template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::AdjustStep()
 {
-	if (iter_ < minAllowedIterations_)
+	if (newtonIter_ < minAllowedIterations_)
 		ds_ = MIN(ds_ * scale1_, dsMax_);
-	else if (iter_ > maxAllowedIterations_)
+	else if (newtonIter_ > maxAllowedIterations_)
 		ds_ = MAX(ds_ / scale1_, dsMin_);
 }
 
@@ -510,7 +502,7 @@ void Continuation<ModelPtr, VectorPtr>::Info()
 	INFO("           parDot:  " << parDot_);
 	INFO("             step:  " << step_);
 	INFO("       norm state:  " << stateView_->Norm());
-	INFO("     newton iters:  " << iter_);
+	INFO("     newton iters:  " << newtonIter_);
 	INFO("-----------------------------------------");
 }
 

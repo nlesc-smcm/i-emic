@@ -101,7 +101,7 @@ void Ocean::RandomizeState(double scaling)
 //=====================================================================
 void Ocean::DumpState()
 {
-	// This function will probably break (?) on a distributed memory system.
+	// This function will probably break on a distributed memory system.
 	// For now it is convenient.
 	// Use some of Jonas' utilities to gather the solution in the right way
 	Teuchos::RCP<Epetra_MultiVector> fullSol = Utils::Gather(*state_, 0);
@@ -202,21 +202,11 @@ void Ocean::Solve(RCP<Vector> rhs)
 	// recompute the preconditioner
 	if (recomputePreconditioner_)
 	{
-		INFO("Ocean: Computing preconditioner...");
-
-		// Start timing
-		// --> all this timing stuff should be put inside a macro
-		timer_->ResetStartTime();
-
-		precPtr_->Compute();		// Compute preconditioner
-
-		time = timer_->ElapsedTime();		// End timing
-
-		INFO("Ocean: Computing preconditioner... done("
-			 << time << " seconds)" );
-
+		// Compute preconditioner
+		TIMER_START("Ocean: Computing preconditioner...", timer_);
+		precPtr_->Compute();		
+		TIMER_END("Ocean: Computing preconditioner...", timer_);
 		recomputePreconditioner_ = false;  // Disable subsequent recomputes
-
 	}
 
 	// Set the problem, rhs may be given as an argument to Solve().
@@ -230,21 +220,11 @@ void Ocean::Solve(RCP<Vector> rhs)
 							   "*** Belos::LinearProblem failed to setup");
 
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
-	INFO("Ocean: Perform solve...");
-
-	// Start Timing
-	timer_->ResetStartTime();
-
-	// Solve
-	Belos::ReturnType ret = belosSolver_->solve();
-
-	// Stop Timing
-	time = timer_->ElapsedTime();
+	TIMER_START("Ocean: Perform solve...", timer_);
+	Belos::ReturnType ret = belosSolver_->solve();	// Solve
+	TIMER_END("Ocean: Perform solve...", timer_);
 
 	belosIters_ = belosSolver_->getNumIters();	
-	INFO("Ocean: Perform solve... done ("
-		 << belosIters_ << " iterations, "
-		 << time        << " seconds)");
 
 	if (belosIters_ > recomputeBound_)
 	{
@@ -303,7 +283,6 @@ void Ocean::ScaleProblem()
 	sol_->Norm2(&nrm);
 	DEBUG("Ocean::scaleProblem() ----->  sol (after scaling): "
 		  << nrm);
-
 }
 
 //=====================================================================
@@ -334,16 +313,20 @@ void Ocean::UnscaleProblem()
 void Ocean::ComputeRHS()
 {
 	// evaluate rhs in THCM with the current state
+ 	TIMER_START("Ocean: compute RHS...", timer_);
 	THCM::Instance().evaluate(*state_, rhs_, false);
+	TIMER_END("Ocean: compute RHS...", timer_);
 }
 
 //=====================================================================
 void Ocean::ComputeJacobian()
 {
+	TIMER_START("Ocean: compute Jacobian...", timer_);
 	// Compute the Jacobian in THCM using the current state
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	// Get the Jacobian from THCM
 	jac_ = THCM::Instance().getJacobian();
+	TIMER_END("Ocean: compute Jacobian...", timer_);
 }
 
 //=====================================================================
@@ -361,70 +344,46 @@ double Ocean::GetNormState()
 }
 
 //====================================================================
-Teuchos::RCP<Vector> Ocean::GetSolution(char mode)
+Teuchos::RCP<Vector> Ocean::GetVector(char mode, RCP<Epetra_Vector> vec)
 {
 	if (mode == 'C')
 	{
-		RCP<Epetra_Vector> copySol = rcp(new Epetra_Vector(*sol_));
-		RCP<Vector> solPtr         = rcp(new Vector(copySol));
-		return solPtr;
+		RCP<Epetra_Vector> copy = rcp(new Epetra_Vector(*vec));
+		RCP<Vector> ptr         = rcp(new Vector(copy));
+		return ptr;
 	}
 	else if (mode == 'V')
 	{
-		RCP<Vector> solPtr = rcp(new Vector(sol_));
-		return solPtr;
+		RCP<Vector> ptr = rcp(new Vector(vec));
+		return ptr;
 	}
 	else
 	{
 		WARNING("Invalid mode", __FILE__, __LINE__);
 		return Teuchos::null;
 	}	
+}
+
+//====================================================================
+Teuchos::RCP<Vector> Ocean::GetSolution(char mode)
+{
+	return GetVector(mode, sol_);
 }
 
 //====================================================================
 Teuchos::RCP<Vector> Ocean::GetState(char mode)
 {
-	if (mode == 'C')
-	{
-		RCP<Epetra_Vector> copyState = rcp(new Epetra_Vector(*state_));
-		RCP<Vector> statePtr         = rcp(new Vector(copyState));
-		return statePtr;
-	}
-	else if (mode == 'V')
-	{
-		RCP<Vector> statePtr = rcp(new Vector(state_));
-		return statePtr;
-	}
-	else
-	{
-		WARNING("Invalid mode", __FILE__, __LINE__);
-		return Teuchos::null;
-	}	
+	return GetVector(mode, state_);
 }
 
 //====================================================================
 Teuchos::RCP<Vector> Ocean::GetRHS(char mode)
 {
-	if (mode == 'C')
-	{
-		RCP<Epetra_Vector> copyRhs = rcp(new Epetra_Vector(*rhs_));
-		RCP<Vector> rhsPtr           = rcp(new Vector(copyRhs));
-		return rhsPtr;
-	}
-	else if (mode == 'V')
-	{
-		RCP<Vector> rhsPtr = rcp(new Vector(rhs_));
-		return rhsPtr;
-	}
-	else
-	{
-		WARNING("Invalid mode", __FILE__, __LINE__);
-		return Teuchos::null;
-	}	
+	return GetVector(mode, rhs_);
 }
 
 //=====================================================================
-// NOT DONE YET
+// NOT IMPLEMENTED YET
 void Ocean::SaveStateToFile(std::string const &name)
 {
 	std::string vectorFile    = name + "vec";

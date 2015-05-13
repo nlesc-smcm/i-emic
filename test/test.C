@@ -4,6 +4,7 @@
 // This defines useful macros like HAVE_MPI, which is defined if and
 // only if Epetra was built with MPI enabled.
 #include <Epetra_config.h>
+#include <iomanip>
 
 //==============================================================================
 #  ifdef HAVE_MPI
@@ -30,10 +31,15 @@ using Teuchos::RCP;
 using Teuchos::rcp;
 
 //==============================================================================
-// A few declarations
-RCP<std::ostream> outFile;
+// --> ugly!
+// A few global things, see ocean/GlobalDefinitions.H 
+std::map<std::string, double> profile;  // profiler
+RCP<std::ostream> outFile;              // output file
+
+//==============================================================================
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
+void printProfile(std::map<std::string, double> profile);
 
 //==============================================================================
 int main(int argc, char **argv)
@@ -55,7 +61,8 @@ int main(int argc, char **argv)
 	continuation.Run();
 	
 	ocean->DumpState();
-	
+
+	printProfile(profile);
     //--------------------------------------------------------
 	// Finalize MPI
 	//--------------------------------------------------------
@@ -101,4 +108,18 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 		outFile = 
 			Teuchos::rcp(new Teuchos::oblackholestream());
 	return outFile;
+}
+
+//===========================================================================
+void printProfile(std::map<std::string, double> profile)
+{
+	INFO("==================================================================")
+	INFO(" Profile:");
+	for (std::map<std::string, double>::iterator it = profile.begin();
+		 it != profile.end(); ++it)
+	{
+		INFO( std::setw(40) << it->first << " -> " <<
+			  std::setw(12) << std::setprecision(8) << it->second);
+	}
+	INFO("==================================================================")
 }

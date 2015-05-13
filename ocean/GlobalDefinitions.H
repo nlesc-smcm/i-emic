@@ -15,9 +15,13 @@
 #include <cmath>
 #include "Teuchos_RCP.hpp"
 #include "EpetraExt_RowMatrixOut.h"
+#include <map>
+#include <string>
 
 // This outstream needs to be defined in the main routine.
 extern Teuchos::RCP<std::ostream> outFile; 	
+
+extern std::map<std::string, double> profile;
 
 #ifndef INFO
 #  define INFO(s) (*outFile) << s << std::endl; 
@@ -60,7 +64,22 @@ extern Teuchos::RCP<std::ostream> outFile;
 #  define SGN(x) (x < 0 ? -1 : 1)
 #endif
 
+#ifndef TIMER_START
+#  define TIMER_START(message, timerPtr)		\
+	(*outFile) << message << std::endl;			\
+	timerPtr->ResetStartTime();					\
+	profile[message] = (profile.count(message)) ? profile[message] : 0;
+#endif
 
+#ifndef TIMER_END
+#  define TIMER_END(message, timerPtr)	{							\
+	double time = timerPtr->ElapsedTime();							\
+	profile[message] += time;										\
+	(*outFile) << message << " done ("								\
+			   << time << ", total: "								\
+			   << profile[message] << ")" <<  std::endl; }
+#endif
+	
 //==================================================================
 //==================================================================
 

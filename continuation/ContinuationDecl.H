@@ -1,3 +1,6 @@
+//======================================================================
+// Author T.E.Mulder --> t.e.mulder@uu.nl
+//======================================================================
 #ifndef CONTINUATIONDECL_H
 #define CONTINUATIONDECL_H
 
@@ -32,7 +35,7 @@ class Continuation
 
 	int step_;
 	int maxSteps_;
-	int iter_;
+	int newtonIter_;
 	int maxNewtonIterations_;
 	int minAllowedIterations_;
 	int maxAllowedIterations_;

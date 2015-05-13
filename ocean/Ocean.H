@@ -70,6 +70,7 @@ public:
 	void ComputeRHS();
 	void ComputeJacobian();
 
+	// --> This should be gone after improving thetastepper
 	double GetNormRHS();
 	double GetNormState();
 
@@ -84,6 +85,7 @@ public:
 	void SetRHS(Teuchos::RCP<Vector> rhs)     { rhs_   = rhs->GetRCP();   }
 
 	// --> Trying to prevent thetastepper from breaking
+	// --> This should be gone after improving thetastepper
 	void SetState(Teuchos::RCP<Epetra_Vector> state) { state_ = state; }
 	void SetRHS(Teuchos::RCP<Epetra_Vector> rhs)     { rhs_   = rhs;   }
 
@@ -100,6 +102,9 @@ private:
 	void RandomizeState(double scaling);
 	void InitializeSolver();
 	void ScaleProblem();
-	void UnscaleProblem();		
+	void UnscaleProblem();
+
+	Teuchos::RCP<Vector> GetVector(char mode,
+								   Teuchos::RCP<Epetra_Vector> vec);
 };
 #endif
