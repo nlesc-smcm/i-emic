@@ -162,7 +162,7 @@ void Ocean::InitializeSolver()
 	belosParamList_->set("Orthogonalization","DGKS");
 	belosParamList_->set("Output Frequency",1);
 	belosParamList_->set("Maximum Iterations", 1000);
-	belosParamList_->set("Convergence Tolerance", 1.0e-4); 
+	belosParamList_->set("Convergence Tolerance", 1.0e-3); 
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Verbosity", Belos::FinalSummary);
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
@@ -196,8 +196,7 @@ void Ocean::Solve(RCP<Vector> rhs)
 	if (useScaling_)
 		ScaleProblem();
 
-	// Used to store timings
-	double time;
+	double time;	// Used to store timings
 
 	// Depending on the number of iterations we might need to
 	// recompute the preconditioner
@@ -209,20 +208,18 @@ void Ocean::Solve(RCP<Vector> rhs)
 		// --> all this timing stuff should be put inside a macro
 		timer_->ResetStartTime();
 
-		// Compute preconditioner
-		precPtr_->Compute();
+		precPtr_->Compute();		// Compute preconditioner
 
-		// End timing
-		time = timer_->ElapsedTime();
-		
+		time = timer_->ElapsedTime();		// End timing
+
 		INFO("Ocean: Computing preconditioner... done("
 			 << time << " seconds)" );
 
-		// Disable subsequent recomputes
-		recomputePreconditioner_ = false;
+		recomputePreconditioner_ = false;  // Disable subsequent recomputes
+
 	}
 
-	// Set the problem, rhs depends may be given as an argument to Solve().
+	// Set the problem, rhs may be given as an argument to Solve().
 	bool set;
 	if (rhs == Teuchos::null)
  		set = problem_->setProblem(sol_, rhs_);
@@ -244,7 +241,6 @@ void Ocean::Solve(RCP<Vector> rhs)
 	// Stop Timing
 	time = timer_->ElapsedTime();
 
-	//
 	belosIters_ = belosSolver_->getNumIters();	
 	INFO("Ocean: Perform solve... done ("
 		 << belosIters_ << " iterations, "

@@ -8,11 +8,12 @@ template<typename ModelPtr, typename VectorPtr>
 class Continuation
 {
 	ModelPtr  model_;
-
-	VectorPtr state_;
+	
+	// A copy of the state in the model
+	VectorPtr stateCopy_;
 	VectorPtr stateView_;
 	VectorPtr stateDot_;
-	VectorPtr rhs_;
+	VectorPtr rhsCopy_;
 	VectorPtr rhsView_;
 	VectorPtr dFdPar_;
 	
@@ -28,12 +29,11 @@ class Continuation
 
 	bool destinationReached_;
 	bool backTracking_;
-	bool forceIncreaseParam_;
 
 	int step_;
 	int maxSteps_;
 	int iter_;
-	int newtonIterations_;
+	int maxNewtonIterations_;
 	int minAllowedIterations_;
 	int maxAllowedIterations_;
 	int backTrack_;
@@ -71,6 +71,11 @@ private:
 	// Modes:  'S' Secant
 	//         'E' Euler
 	void CreateTangent(char mode);
+
+	// Normalize the tangent with an additional scaling
+	// for the state component.
+	void Normalize(VectorPtr stateDot, double scale,
+				   double parDot);
 
 	// Compute the derivative of F with respect to
 	// the continuation parameter. Mode governs the

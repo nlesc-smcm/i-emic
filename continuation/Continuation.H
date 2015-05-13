@@ -13,26 +13,29 @@
 template<typename ModelPtr, typename VectorPtr>
 Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 	:
-	ds_(1.0e-3),               // initial continuation step-size
+	ds_(2.0e-2),               // initial continuation step-size
 	dsMin_(1.0e-5),            // minimum continuation step-size
 	dsMax_(1.0e01),            // maximum continuation step-size
+	maxSteps_(-1),             // maximum number of continuation steps:
+	                           //    set to -1 to disable
 	scale1_(1.00),             // conservative scaling for adaptive step
 	scale2_(2.00),             // drastic scaling for resetting adaptive step
+	
 	epsilon_(1.0e-8),          // variation used for numerical finite difference
+	
 	backTracking_(true),       // perform backtracking when Newton fails
-	forceIncreaseParam_(true), // only allow increasing parameter
 	numBackTrackingSteps_(10), // number of backtracking steps
+	
 	newtonIterations_(15),     // set the max for the Newton iterations
 	minAllowedIterations_(4),  // if less then we increase the step size
 	maxAllowedIterations_(5),  // if more then we decrease the step size
-	newtonTolerance_(1.0e-4),  // set the tolerance in the Newton corrector
-	parDotSign_(1)             // sign of parDot, used in Detect()
+	newtonTolerance_(1.0e-3)   // set the tolerance in the Newton corrector
+	
+
 {
 	model_  = model;           // obtain the model
-	// --> Right now it is somewhat arbitrary which VectorPtr contains a Copy
-	//     and which is a View. This should be made more explicit. Perhaps
-	//     in the naming of the members...
-	state_  = model_->GetState('V');  // obtain a view of the state
+
+	stateView_  = model_->GetState('V');  // obtain a view of the state
 
 	rhsView_ = model_->GetRHS('V');   // view of the rhs in the model
 	
@@ -43,8 +46,13 @@ Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 	storage_.par0   = par_;
 	storage_.state0 = model_->GetState('C');
 
-	// initialize scaling
-	zeta_ = 1.0 / state_->Length();
+	zeta_ = 1.0 / stateView_->Length();	// initialize additional scaling
+
+	iter_ = 0;	// newton iteration counter
+
+	backTrack_ = 0;	// backtracking counter
+
+	parDotSign_ = 1;	// used for detecting sign switch
 }
 
 //======================================================================
@@ -52,18 +60,17 @@ template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::Run()
 {
 	INFO("Continuation run... ");
+	
 	// set all the appropriate initial flags and counters
 	step_ = 0;
 	destinationReached_ = false;
 
 	// Create the first tangent
-	INFO("Create initial tangent...");
 	CreateInitialTangent();
-	INFO("Create initial tangent... done");
 
 	Store(); // Store the current state and parameter
 	
-	while (!destinationReached_)
+	while (!destinationReached_ || step_ == maxSteps_)
 	{
 		Step(); 	// Perform a continuation step
 
@@ -71,7 +78,7 @@ void Continuation<ModelPtr, VectorPtr>::Run()
 
 		// Detect special points:
 		//  if necessary converge on them (-->not implemented yet)
-		// Detect();
+		Detect();
 
 		++step_;
 	}
@@ -129,24 +136,41 @@ void Continuation<ModelPtr, VectorPtr>::CreateInitialTangent()
 
 	// We scale the tangent of the state and parameter such they are
 	// normalized.
-	stateDot_->Scale(zeta_);
-	double nrm = stateDot_->Norm();
-	double scaling = sqrt(nrm * nrm + 1);
-	stateDot_->Scale(1.0 / scaling);
-	nrm = stateDot_->Norm();	
+	Normalize(stateDot_, zeta_, parDot_);
+}
 
-	// Set the initial parameter tangent to 1
-	parDot_ = 1.0 / scaling;
+//======================================================================
+template<typename ModelPtr, typename VectorPtr>
+void Continuation<ModelPtr, VectorPtr>::ComputeDFDPar(char mode)
+{
+	// Let the model compute an RHS F(par) with its current state
+	// --> Note that this is usually a predicted state
+	// --> The RHS for this particular state may already have been
+	//     computed.
+	//
+	if (mode == 'F')
+		model_->ComputeRHS();
 
-	INFO("  norm  = " << nrm * nrm << " + " << parDot_ * parDot_
-		 << " = " << nrm * nrm + parDot_ * parDot_);
+	// Get a copy of this RHS, store it in our rhsCopy_ member
+	rhsCopy_ = model_->GetRHS('C');
+
+	// Calculate new RHS
+	model_->SetPar(par_ + epsilon_);  // increment parameter --> par + eps
+	model_->ComputeRHS();             // compute new RHS     --> F(par+eps)
+	model_->SetPar(par_);             // restore parameter   --> par
+
+	// Get a copy of the new RHS F(par+eps), put it in dFdPar_
+	dFdPar_ = model_->GetRHS('C');
+
+	// Update dFdPar_ such that it contains (F(par+eps) - F(par))/eps
+	dFdPar_->Update(-1.0 / epsilon_, *rhsCopy_, 1.0 / epsilon_);
 }
 
 //======================================================================
 template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::CreateTangent(char mode)
 {
-	if (mode == 'S')
+	if (mode == 'S') // Secant
 	{
 		// ------------------------------------------------------------
 		// Calculate stateDot_ with the Secant approach:
@@ -164,64 +188,63 @@ void Continuation<ModelPtr, VectorPtr>::CreateTangent(char mode)
 		double par0      = storage_.par0;
 		
 		// Compute stateDot = (state1 - state0)/ds
-		// --> Note that our state_ member contains a view of the
-		//     current state in the model
 		stateDot_->Update(-1.0 / ds_, *state0, 1.0 / ds_);
 		
 		// Compute parDot = (par1 - par0)/ds
-		par_    = model_->GetPar();             // update our own par_
+		par_    = model_->GetPar();      // update our par_
 		parDot_ = (par_ - par0) / ds_;
+
+		// Normalize the combined tangent
+		// --> Not sure about zeta_ here
+		Normalize(stateDot_, zeta_, parDot_);
 	}
-	else if (mode == 'E')
+	else if (mode == 'E' && iter_ != 0) // Euler
 	{
 		// ------------------------------------------------------------
-		// Calculate stateDot_ with the Euler approach:
+		// Calculate stateDot_ with the Euler approach. Here we require
+		// that the corrector has been run at least once, so:
 		//   - At this point stateDot_ contains y1 from J*y1 = dFdPar
-		//   - This means we can use it to create a new tangent
+		//   - This means we can flip its sign to create a new tangent
 		// ------------------------------------------------------------
-		stateDot_->Scale(zeta_);
-		double nrm     = stateDot_->Norm();
-		double scaling = sqrt(nrm * nrm + 1);
-		INFO("  scaling: " << scaling);
-		stateDot_->Scale(-1.0 / scaling);
-		nrm = stateDot_->Norm();
+		stateDot_->Scale(-1.0);
 
-		// Set the initial parameter tangent to 1
-		parDot_ = 1.0 / scaling;
-		
-		INFO("  norm  = " << nrm * nrm << " + " << parDot_ * parDot_
-			 << " = " << nrm * nrm + parDot_ * parDot_);	
+		// We still need to make sure everything is normalized
+		Normalize(stateDot_, zeta_, parDot_);
 	}
 	else
 		WARNING("Invalid mode!", __FILE__, __LINE__);
 }
 
-
 //======================================================================
 template<typename ModelPtr, typename VectorPtr>
-void Continuation<ModelPtr, VectorPtr>::ComputeDFDPar(char mode)
+void Continuation<ModelPtr, VectorPtr>::Normalize(VectorPtr stateDot,
+												  double    scale,
+												  double    parDot)
 {
-	// Let the model compute an RHS F(par) with its current state
-	// --> Note that this is usually a predicted state
-	// --> The RHS for this particular state may already have been
-	//     computed.
-	//
-	if (mode == 'F')
-		model_->ComputeRHS();
+	// -----------------------------------------------------------------
+	// We normalize the tangent of the branch (stateDot, parDot)
+	// 1) First we scale the tangent of the state
+	// 2) Then we compute the norm of the combined vector
+	// 3) Finally we normalize both stateDot and parDot
+	// -----------------------------------------------------------------
 
-	// Get a copy of this RHS, store it in our rhs_ member
-	rhs_ = model_->GetRHS('C');
+	// 1) scale stateDot
+	stateDot_->Scale(zeta_);
 
-	// Calculate new RHS
-	model_->SetPar(par_ + epsilon_);  // increment parameter --> par + eps
-	model_->ComputeRHS();             // compute new RHS     --> F(par+eps)
-	model_->SetPar(par_);             // restore parameter   --> par
+	// 2) compute norm of combined vector
+	double nrm      = stateDot_->Norm();
+	double normComb = sqrt(nrm * nrm + 1);
 
-	// Get a copy of the new RHS F(par+eps), put it in dFdPar_
-	dFdPar_ = model_->GetRHS('C');
+	// 3) scale the components
+	stateDot_->Scale(1.0 / normComb);
+	parDot_ = 1.0 / normComb;
 
-	// Update dFdPar_ such that it contains (F(par+eps) - F(par))/eps
-	dFdPar_->Update(-1.0 / epsilon_, *rhs_, 1.0 / epsilon_);
+#ifdef DEBUGGING
+	nrm = stateDot_->Norm();
+	DEBUG(" Normalize():");
+	DEBUG("  norm  = " << nrm * nrm << " + " << parDot_ * parDot_
+		               << " = " << nrm * nrm + parDot_ * parDot_);
+#endif
 }
 
 //======================================================================
@@ -234,18 +257,16 @@ void Continuation<ModelPtr, VectorPtr>::EulerPredictor()
 
 	// Apply predictor to the state in the model
 	// Compute: state = state0 + ds * statedot
-	// --> 1) Note that at this point state0 and state are equal.
-	// --> 2) Note that our state_ member contains a view of the
-	//        current state of the model.
-	state_->Update(ds_, *stateDot_, 1.0);
+	//  - Note that at this point state0 and state are equal.
+	stateView_->Update(ds_, *stateDot_, 1.0);
 
 	// Compute  par = par0 + ds * pardot
-	// --> Note that at this point par0 and par are equal.
+	// - Note that at this point par0 and par are equal.
 	par_ = par_ + ds_ * parDot_;
 	INFO("                      old par: " << storage_.par0);
 	INFO("                predicted par: " << par_);
 	INFO("               norm old state: " << storage_.state0->Norm());
-	INFO("         norm predicted state: " << state_->Norm());
+	INFO("         norm predicted state: " << stateView_->Norm());
 
 	// Make sure the model has the same par
 	model_->SetPar(par_);
@@ -278,19 +299,21 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		// we use that one to get -F(par).
 		// --> Note that we cannot use the current rhs in the model
 		//     since at this point it corresponds to F(par+eps)
-		VectorPtr R = rhs_;
+		VectorPtr R = rhsCopy_;
 		R->Scale(-1.0);
 		
 		// Obtain the lower part (r) of the continuation RHS,
 		// Here we compute
 		// r = ds - stateDot'*(state1 - state0)*zeta
 		//           - parDot*(par2   - par0)
+		// --> zeta is an additional scaling for the state tangent
+		//     and makes sure that we have a proper parDot after
+		//     normalization.
 		VectorPtr state0 = storage_.state0;
 		double    par0   = storage_.par0;
-		double    r      =  ds_ - stateDot_->Dot(*state_) * zeta_
+		double    r      =  ds_ - stateDot_->Dot(*stateView_) * zeta_
 			                - stateDot_->Dot(*state0) * zeta_
 			                - parDot_ * (par_ - par0);
-		//r = 1.0 - r / ds_; 
 
 		// At this point the model contains the predicted state and
 		// parameter. The Jacobian will be computed based on the
@@ -298,7 +321,7 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		model_->ComputeJacobian();
 
 		// Now we will perform 2 solves to solve the bordered system:
-		// In both cases we obtain copies of the solution. Both vectors
+		// In both cases we obtain copies of the solution. Both copies
 		// wil have their use either here or in the computation of the
 		// next tangent.
 		model_->Solve(dFdPar_);
@@ -311,14 +334,16 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		parDir = (r - zeta_ * stateDot_->Dot(*z1))
 			   / (parDot_ - zeta_ * stateDot_->Dot(*y1));
 
+		// --> Perhaps we can optimize the next bit wrt copies and views
+		
 		// Then for the state:
-		//  - We perform an update on y1 and
+		//  - We perform an update on z1 and
 		//  - let that be the new direction
 		z1->Update(-1.0 * parDir, *y1, 1.0);
 		stateDir = z1;
 
 		// Update the state and the parameter in the model
-		state_->Update(1.0, *stateDir, 1.0);
+		stateView_->Update(1.0, *stateDir, 1.0);
 		par_ = par_ + parDir;  // update our parameter
 		model_->SetPar(par_);  // set it in the model
 
@@ -327,8 +352,8 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		model_->ComputeRHS();
 		normRHStest_ = rhsView_->Norm();
 		INFO("   NewtonCorrector        iter: " << iter_ );
-		INFO("   NewtonCorrector  old norm R: " << normRHS_ );
 		INFO("                             r: " << r );
+		INFO("   NewtonCorrector  old norm R: " << normRHS_ );
 		INFO("   NewtonCorrector  new norm R: " << normRHStest_ );
 				
 		if (normRHStest_ < newtonTolerance_)
@@ -344,19 +369,13 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 	stateDot_ = y1;
 	
 	INFO("  NewtonCorrector:          corrected par: " << par_);
-	INFO("  NewtonCorrector:  norm  corrected state: " << state_->Norm());
+	INFO("  NewtonCorrector:  norm  corrected state: " << stateView_->Norm());
 	
 	if (iter_ == newtonIterations_)
 	{
 		WARNING("Continuation: Newton failed!!", __FILE__, __LINE__);
 		return 1;
 	}
-
-	// if (par_ < storage_.par0 && forceIncreaseParam_)
-	// {
-	// 	WARNING("Non-increasing parameter detected", __FILE__, __LINE__);
-	// 	return 2;
-	// }
 	
 	INFO("Apply Newton corrector... done");		
 	return 0;
@@ -376,8 +395,8 @@ int Continuation<ModelPtr, VectorPtr>::RunBackTracking(VectorPtr stateDir,
 		if (normRHStest_ < normRHS_)
 			break;
 
-		// Apply reduction to the state vector and the parameter
-		state_->Update(reduction, *stateDir, 1.0); // update the state
+		// Apply reduction to the model state and its parameter
+		stateView_->Update(reduction, *stateDir, 1.0); // update the state
 		par_ = par_ + reduction * parDir;          // update our parameter
 		model_->SetPar(par_);		               // set it in the model
 
@@ -439,12 +458,7 @@ void Continuation<ModelPtr, VectorPtr>::Reset()
 	INFO("Continuation: RESET!");
 	INFO("Continuation:  Restoring model...");
 	Restore();
-	if (ds_ > dsMin_ && 0)
-	{
-		ds_ = ds_ / scale2_;
-		stateDot_->Scale(1.0 / scale2_);
-		parDot_ = parDot_ / scale2_;
-	}
+	ds_ = MAX(ds_ / scale2_, dsMin_);
 	INFO("Continuation:  Restoring model... done");
 }
 
@@ -466,27 +480,23 @@ template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::Restore()
 {
  	INFO("Continuation::Restore()");
-	INFO("    norm state before set: " << state_->Norm());
+	INFO("               norm state: " << stateView_->Norm());
 	INFO("       norm stored state0: " << storage_.state0->Norm());
 	INFO("      norm stored state00: " << storage_.state00->Norm());
 	model_->SetState(storage_.state0);
 
 	// make sure we have a view of the state
-	state_ = model_->GetState('V');
-	INFO("     norm state after set: " << state_->Norm());
-
-	INFO("    par before set: " << model_->GetPar());
+	stateView_ = model_->GetState('V');
 	model_->SetPar(storage_.par0);
-	INFO("     par after set: " << model_->GetPar());
 	
 	par_ = storage_.par0;
-	// ds_  = storage_.ds0;
+	ds_  = storage_.ds0;
 
 	storage_.state0  = storage_.state00;
 	storage_.state00 = model_->GetState('C');
 	
 	storage_.par0    = storage_.par00;
-	// storage_.ds0     = storage_.ds00;
+	storage_.ds0     = storage_.ds00;
 }
 
 //======================================================================
@@ -494,12 +504,13 @@ template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::Info()
 {
 	INFO("-----------------------------------------");
-	INFO("Continuation status: ");
-	INFO("            ds:  " << ds_);
-	INFO("           par:  " << par_);
-	INFO("        parDot:  " << parDot_);
-	INFO("          step:  " << step_);
-	INFO("    norm state:  " << state_->Norm());
+	INFO("Continuation summary: ");
+	INFO("               ds:  " << ds_);
+	INFO("              par:  " << par_);
+	INFO("           parDot:  " << parDot_);
+	INFO("             step:  " << step_);
+	INFO("       norm state:  " << stateView_->Norm());
+	INFO("     newton iters:  " << iter_);
 	INFO("-----------------------------------------");
 }
 

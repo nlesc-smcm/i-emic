@@ -720,7 +720,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 	localSol->ExtractView(&solution);
 	if(tmp_rhs!=Teuchos::null)
     {
-		INFO("Compute RHS...");
+		// INFO("Compute RHS...");
 		// build rhs simultaneously on each process
 		double* RHS;
 		CHECK_ZERO(localRhs->ExtractView(&RHS));
@@ -764,7 +764,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
     }
 	if(computeJac) 
     {
-		INFO("Compute Jacobian...");
+		// INFO("Compute Jacobian...");
 
 		localJac->PutScalar(0.0); // set all matrix entries to zero
 		localDiagB->PutScalar(0.0);
