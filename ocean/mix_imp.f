@@ -73,7 +73,7 @@
 
       call cpu_time(time1)
       vmix_time=vmix_time+time1-time0
-      write (*,'(a26,f10.3)') 'MIX|          ...init done', time1-time0
+      if (vmix_out.gt.0) write (*,'(a26,f10.3)') 'MIX|          ...init done', time1-time0
 
       call flush(6)
       end

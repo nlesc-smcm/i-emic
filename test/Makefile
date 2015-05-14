@@ -21,7 +21,7 @@ HEADERDEPS = \
 INTLIBS = \
 	-l$(LIB_OCEAN)\
 
-CXX_DB = -DDEBUGGING
+CXX_DB = 
 
 all: test
 

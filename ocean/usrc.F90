@@ -110,7 +110,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   call atmos_coef
   call forcing
 
-  write(f99,*) 'THCM: init done'
+  write(f99,*) 'THCM: init `done'
 end subroutine init
 
 
@@ -135,10 +135,7 @@ subroutine finalize
 
 end subroutine finalize
 
-
-
 !****************************************************************************
-
 SUBROUTINE mixe
   use m_usr
   implicit none
@@ -172,7 +169,7 @@ SUBROUTINE setparcs(param,value)
   ENDIF
   !     ENDIF
 END SUBROUTINE setparcs
-
+!*****************************************************************************
 SUBROUTINE getparcs(param,value) 
   !     interface for Trilinos to get the thirty continuation variables
   use, intrinsic :: iso_c_binding
@@ -188,7 +185,7 @@ SUBROUTINE getparcs(param,value)
   ENDIF
   !     ENDIF
 end subroutine getparcs
-
+!*****************************************************************************
 SUBROUTINE writeparams()
   ! write the entire parameter list (1-30) to fort.7
   use, intrinsic :: iso_c_binding
@@ -247,7 +244,6 @@ SUBROUTINE matrix(un,sig1,sig2)
   !Al(:,:,:,:,PP,WW) = 0.0
 #endif
   !}
-
 
 
   ! ATvS-Mix ---------------------------------------------------------------------
@@ -338,7 +334,7 @@ SUBROUTINE rhs(un,B)
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
-  write(*,*) "p0 = ", p0
+  _DEBUG2_("p0 = ", p0)
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
 
   if(ires == 0) then
@@ -353,7 +349,7 @@ SUBROUTINE rhs(un,B)
         ENDDO
      ENDDO
   endif
-  write(*,*) "maxval rhs= ", maxval(abs(B))
+  _DEBUG2_("maxval rhs= ", maxval(abs(B)))
 
 end SUBROUTINE rhs
 !****************************************************************************
@@ -563,7 +559,7 @@ SUBROUTINE nlin_rhs(un)
   Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS)+ usx+vsy+wsz		! ATvS-Mix
 #endif      
 
-  write(*,*) 'nlin_rhs done'
+  _DEBUG_("nlin_rhs done")
 
 end SUBROUTINE nlin_rhs
 !****************************************************************************
@@ -671,7 +667,7 @@ SUBROUTINE nlin_jac(un)
   Al(:,:,1:l,:,SS,WW) = Al(:,:,1:l,:,SS,WW) + wrSz
   Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS) + Usrx + Vsry + Wsrz
 #endif
-  write(*,*) 'nlin_jac done'
+  _DEBUG_("nlin_jac done")
 end SUBROUTINE nlin_jac
 !****************************************************************************
 SUBROUTINE usol(un,u,v,w,p,t,s)

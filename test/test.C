@@ -113,13 +113,19 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 //===========================================================================
 void printProfile(std::map<std::string, double> profile)
 {
+	double sum = 0;
 	INFO("==================================================================")
-	INFO(" Profile:");
+	INFO("  Profile:");
 	for (std::map<std::string, double>::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
-		INFO( std::setw(40) << it->first << " -> " <<
-			  std::setw(12) << std::setprecision(8) << it->second);
+		sum += it->second;
+		INFO(" " << std::setw(35) << std::left << it->first <<
+			  std::setw(6)  << " -> " <<
+			  std::setw(12) << std::left << std::setprecision(8) << it->second);
 	}
+	INFO(" " << std::setw(35) << std::left << " "  <<
+		 std::setw(6)  << " tot " <<
+		 std::setw(12) << std::left << std::setprecision(8) << sum);
 	INFO("==================================================================")
 }
