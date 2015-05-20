@@ -1,3 +1,21 @@
+//!------------------------------------------------------------------------
+/* Ocean is a model within the I-EMIC. It is a wrapper for Jonas Thies'
+   Trilinos-THCM, using only a fraction of the functionality that is
+   available in there.
+   
+   For now I try to let matrices and solvers be only available at the
+   model-level, but I'm doubting whether this is the right approach...
+
+   A model is required to have the following member functions: 
+       computeJacobian()
+	   computeRHS()
+	   solve(rhs)
+	   getSolution()
+	   getState()
+	   getRHS()
+                          
+*/
+//!------------------------------------------------------------------------
 #ifndef OCEAN_H
 #define OCEAN_H
 
@@ -19,14 +37,11 @@ class Epetra_Operator;
 class Epetra_CrsMatrix;
 class Epetra_Time;
 
-//=======================================================================
-// An abstract base class would be nice
-//=======================================================================
-
 class Ocean
 {
 protected:
-	
+
+	// 
 	Teuchos::RCP<THCM> thcm_;
 
 	Teuchos::RCP<Epetra_Vector> state_;
