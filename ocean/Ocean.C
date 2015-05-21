@@ -45,23 +45,26 @@ extern "C"
 Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	:
 	comm_(Comm),                     // Setting the communication object
-	solverInitialized_(false),       // Solver needs initialization
-	recomputePreconditioner_(true),  // --> xml
-	recomputeBound_(50),             // --> xml
-	useScaling_(false)               // --> xml
+	solverInitialized_(false)        // Solver needs initialization
 {
 	// Check if outFile is specified
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");
 
-	// Setup THCM parameters:
-	RCP<Teuchos::ParameterList> globalParamList =
+	// Setup Ocean and THCM parameters:
+	RCP<Teuchos::ParameterList> oceanParamList =
 		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("thcm_params.xml",
-								globalParamList.ptr());
-	Teuchos::ParameterList &thcmList =
-		globalParamList->sublist("THCM");
+	updateParametersFromXmlFile("ocean_params.xml",
+								oceanParamList.ptr());
 
+	recomputePreconditioner_ = oceanParamList->get("recomputePreconditioner", true);
+	recomputeBound_          = oceanParamList->get("recomputeBound", 50);
+	useScaling_              = oceanParamList->get("useScaling", false);
+
+	
+	Teuchos::ParameterList &thcmList =
+		oceanParamList->sublist("THCM");
+	
 	// Create THCM object
     thcm_ = rcp(new THCM(thcmList, comm_));
 

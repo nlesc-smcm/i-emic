@@ -18,6 +18,8 @@
 
 //==============================================================================
 #include <Teuchos_RCP.hpp>
+#include <Teuchos_ParameterList.hpp>
+#include <Teuchos_XMLParameterListHelpers.hpp>
 #include <Teuchos_FancyOStream.hpp>
 
 #include "Vector.H"
@@ -54,9 +56,14 @@ int main(int argc, char **argv)
 	//  (based on THCM):
 	RCP<OceanCont> ocean = rcp(new OceanCont(Comm));
 
+	// Create parameter object for continuation
+	RCP<Teuchos::ParameterList> continuationParams =
+		rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("continuation_params.xml",
+								continuationParams.ptr());
 	// Create continuation
-	Continuation<RCP<OceanCont>, RCP<Vector> >
-		continuation(ocean);
+	Continuation<RCP<OceanCont>, RCP<Vector>, RCP<Teuchos::ParameterList> >
+		continuation(ocean, continuationParams);
 
 	continuation.Run();
 	
@@ -115,17 +122,17 @@ void printProfile(std::map<std::string, double> profile)
 {
 	double sum = 0;
 	INFO("==================================================================")
-	INFO("  Profile:");
+		INFO("  Profile:");
 	for (std::map<std::string, double>::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
 		sum += it->second;
 		INFO(" " << std::setw(35) << std::left << it->first <<
-			  std::setw(6)  << " -> " <<
-			  std::setw(12) << std::left << std::setprecision(8) << it->second);
+			 std::setw(6)  << " -> " <<
+			 std::setw(12) << std::left << std::setprecision(8) << it->second);
 	}
 	INFO(" " << std::setw(35) << std::left << " "  <<
 		 std::setw(6)  << " tot " <<
 		 std::setw(12) << std::left << std::setprecision(8) << sum);
 	INFO("==================================================================")
-}
+		}
