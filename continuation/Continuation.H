@@ -16,7 +16,7 @@ Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 	ds_(2.0e-2),               // initial continuation step-size
 	dsMin_(1.0e-5),            // minimum continuation step-size
 	dsMax_(1.0e01),            // maximum continuation step-size
-	maxSteps_(02),             // maximum number of continuation steps:
+	maxSteps_(-1),             // maximum number of continuation steps:
 	                           //    set to -1 to disable
 	scale1_(1.00),             // conservative scaling for adaptive step
 	scale2_(2.00),             // drastic scaling for resetting adaptive step
@@ -59,8 +59,6 @@ Continuation<ModelPtr, VectorPtr>::Continuation(ModelPtr model)
 template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::Run()
 {
-	INFO("Continuation run... ");
-	
 	// set all the appropriate initial flags and counters
 	step_ = 0;
 	destinationReached_ = false;
@@ -82,7 +80,7 @@ void Continuation<ModelPtr, VectorPtr>::Run()
 
 		++step_;
 	}
-	INFO("Continuation run... done");
+	INFO("---------Finished continuation run------------");
 }
 
 //======================================================================
@@ -248,7 +246,6 @@ void Continuation<ModelPtr, VectorPtr>::Normalize(VectorPtr stateDot,
 template<typename ModelPtr, typename VectorPtr>
 void Continuation<ModelPtr, VectorPtr>::EulerPredictor()
 {	
-	INFO("Apply Euler predictor...");
 	// At the end of this function the model will be
 	// in a 'predicted' state.
 
@@ -268,14 +265,12 @@ void Continuation<ModelPtr, VectorPtr>::EulerPredictor()
 
 	// Make sure the model has the same par
 	model_->SetPar(par_);
-	INFO("Apply Euler predictor... done");
 }
 
 //======================================================================
 template<typename ModelPtr, typename VectorPtr>
 int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 {
-	INFO("Apply Newton corrector...");		
 	int backTrackingStatus;  // status of backtracking
 	char mode;	             // mode for ComputeDFDPar()
 	
@@ -349,8 +344,8 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 		normRHS_ = rhsView_->Norm();
 		model_->ComputeRHS();
 		normRHStest_ = rhsView_->Norm();
-		INFO(" NewtonCorrector    iter: " << newtonIter_ );
-		INFO(" NewtonCorrector  norm R: " << normRHStest_ );
+		INFO("Contin.: corrector    iter: " << newtonIter_ );
+		INFO("Contin.: corrector  norm R: " << normRHStest_ );
 				
 		if (normRHStest_ < newtonTolerance_)
 			break;
@@ -364,16 +359,13 @@ int Continuation<ModelPtr, VectorPtr>::NewtonCorrector()
 	// CreateTangent()
 	stateDot_ = y1;
 	
-	DEBUG(" NewtonCorrector:         corr par: " << par_);
-	DEBUG(" NewtonCorrector:  norm corr state: " << stateView_->Norm());
-	
 	if (newtonIter_ == maxNewtonIterations_)
 	{
 		WARNING("Continuation: Newton failed!!", __FILE__, __LINE__);
 		return 1;
 	}
-	
-	INFO("Apply Newton corrector... done");		
+
+	INFO("Contin.: corrector converged in " << newtonIter_ << " steps");
 	return 0;
 }
 
@@ -400,7 +392,8 @@ int Continuation<ModelPtr, VectorPtr>::RunBackTracking(VectorPtr stateDir,
 		model_->ComputeRHS();
 		normRHStest_ = rhsView_->Norm();
 
-		INFO("  backtracking: " << backTrack_ << "  norm: " << normRHStest_ );
+		INFO("Contin.: backtracking " << backTrack_ <<
+			 " norm: " << normRHStest_ );
 
 		reduction /= 2.0;	// Update reduction
 	}

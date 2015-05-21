@@ -18,10 +18,10 @@ public:
 	
 	int Length()  { return vector_->GlobalLength(); }
 
-	// this = scalarThis * this + scalarA * A
+	// this = scalarA * A + scalarThis * this
 	void Update(double scalarA,	Vector &A, double scalarThis)
 		{ vector_->Update(scalarA, *(A.GetRCP()), scalarThis); }
-
+	
 	double Dot(Vector &A)
 		{
 			double dot;

@@ -203,9 +203,9 @@ void Ocean::Solve(RCP<Vector> rhs)
 	if (recomputePreconditioner_)
 	{
 		// Compute preconditioner
-		TIMER_START("Ocean: Computing preconditioner...", timer_);
+		TIMER_START("Ocean: computing preconditioner...", timer_);
 		precPtr_->Compute();		
-		TIMER_END("Ocean: Computing preconditioner...", timer_);
+		TIMER_END("Ocean: computing preconditioner...", timer_);
 		recomputePreconditioner_ = false;  // Disable subsequent recomputes
 	}
 
@@ -220,11 +220,11 @@ void Ocean::Solve(RCP<Vector> rhs)
 							   "*** Belos::LinearProblem failed to setup");
 
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
-	TIMER_START("Ocean: Perform solve...", timer_);
+	TIMER_START("Ocean: perform solve...", timer_);
 	Belos::ReturnType ret = belosSolver_->solve();	// Solve
-	TIMER_END("Ocean: Perform solve...", timer_);
-
-	belosIters_ = belosSolver_->getNumIters();	
+	belosIters_ = belosSolver_->getNumIters();		
+	TIMER_END("Ocean: perform solve...", timer_);
+	INFO("Ocean: perform solve... iterations = " << belosIters_);
 
 	if (belosIters_ > recomputeBound_)
 	{
