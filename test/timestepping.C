@@ -5,7 +5,7 @@
 // only if Epetra was built with MPI enabled.
 #include <Epetra_config.h>
 
-//==============================================================================
+//------------------------------------------------------------------
 #  ifdef HAVE_MPI
 // Epetra's wrapper for MPI_Comm.  This header file only exists if
 // Epetra was built with MPI enabled.
@@ -15,7 +15,7 @@
 #    include <Epetra_SerialComm.h>
 #  endif // HAVE_MPI
 
-//==============================================================================
+//------------------------------------------------------------------
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_FancyOStream.hpp>
 
@@ -25,17 +25,18 @@
 #include "OceanTheta.H"
 #include "ThetaStepper.H"
 
-//==============================================================================
+//------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;
 
-//==============================================================================
+//------------------------------------------------------------------
 // A few declarations
-RCP<std::ostream> outFile;
+RCP<std::ostream> outFile;              // output
+std::map<std::string, double> profile;  // profile
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
-
-//==============================================================================
+void printProfile(std::map<std::string, double> profile);
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
 	// Initialize the environment:
@@ -47,10 +48,10 @@ int main(int argc, char **argv)
  	// Create timestepping (theta method) ocean model OceanTheta
 	//  (based on THCM):
 	RCP<OceanTheta> ocean = rcp(new OceanTheta(Comm));
-
+	
 	// Create timestepping object ThetaStepper using an OceanTheta model
 	//  and an Epetra_Vector
-	ThetaStepper<RCP<OceanTheta>, RCP<Vector> > thetaStepper(ocean);
+   ThetaStepper<RCP<OceanTheta>, RCP<Vector> > thetaStepper(ocean);
 	
 	thetaStepper.Run();	
 	ocean->DumpState();
@@ -61,9 +62,9 @@ int main(int argc, char **argv)
 	MPI_Finalize();	
 }
 
-//==============================================================================
+//------------------------------------------------------------------
 // Auxiliary stuff
-//==============================================================================
+//------------------------------------------------------------------
 RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
 {
 	
@@ -80,7 +81,7 @@ RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
 	return Comm;
 }
 
-//==============================================================================
+//------------------------------------------------------------------
 Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 {
 	// Setup output files "fname_#.txt" for P==0 && P==1, other processes
@@ -99,4 +100,23 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 		outFile = 
 			Teuchos::rcp(new Teuchos::oblackholestream());
 	return outFile;
+}
+//------------------------------------------------------------------
+void printProfile(std::map<std::string, double> profile)
+{
+	double sum = 0;
+	INFO("==================================================================")
+		INFO("  Profile:");
+	for (std::map<std::string, double>::iterator it = profile.begin();
+		 it != profile.end(); ++it)
+	{
+		sum += it->second;
+		INFO(" " << std::setw(35) << std::left << it->first <<
+			 std::setw(6)  << " -> " <<
+			 std::setw(12) << std::left << std::setprecision(8) << it->second);
+	}
+	INFO(" " << std::setw(35) << std::left << " "  <<
+		 std::setw(6)  << " tot " <<
+		 std::setw(12) << std::left << std::setprecision(8) << sum);
+	INFO("==================================================================");
 }

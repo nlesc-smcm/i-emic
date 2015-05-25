@@ -40,6 +40,7 @@ public:
 
 	ThetaStepper(Model model);
 	void Run();
+private:
 	void AdjustTimestep(int iters, bool convergence);
 	void Info();
 };

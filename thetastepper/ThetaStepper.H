@@ -43,7 +43,7 @@ void ThetaStepper<Model, Vector>::Run()
 	while (time_ < endTime_)
 	{
 		model_->DumpState();
-		model_->tore();
+		model_->Store();
 		model_->SetTheta(theta_);
 		model_->SetTimestep(timestep_);
 

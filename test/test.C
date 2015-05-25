@@ -1,12 +1,10 @@
-//==============================================================================
-// Test routine
-//==============================================================================
-// This defines useful macros like HAVE_MPI, which is defined if and
-// only if Epetra was built with MPI enabled.
+//=======================================================================
+// Timestepping test routine
+//  using the theta method functionality in this project
+//=======================================================================
 #include <Epetra_config.h>
 #include <iomanip>
 
-//==============================================================================
 #  ifdef HAVE_MPI
 // Epetra's wrapper for MPI_Comm.  This header file only exists if
 // Epetra was built with MPI enabled.
@@ -16,7 +14,7 @@
 #    include <Epetra_SerialComm.h>
 #  endif // HAVE_MPI
 
-//==============================================================================
+
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
@@ -28,22 +26,19 @@
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
 
-//==============================================================================
+//------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;
 
-//==============================================================================
-// --> ugly!
-// A few global things, see ocean/GlobalDefinitions.H 
-std::map<std::string, double> profile;  // profiler
+//------------------------------------------------------------------
+// A few declarations
 RCP<std::ostream> outFile;              // output file
-
-//==============================================================================
+std::map<std::string, double> profile;  // profile
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
 void printProfile(std::map<std::string, double> profile);
 
-//==============================================================================
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
 	// Initialize the environment:
@@ -62,7 +57,9 @@ int main(int argc, char **argv)
 	updateParametersFromXmlFile("continuation_params.xml",
 								continuationParams.ptr());
 	// Create continuation
-	Continuation<RCP<OceanCont>, RCP<Vector>, RCP<Teuchos::ParameterList> >
+	Continuation<RCP<OceanCont>,
+				 RCP<Vector>,
+				 RCP<Teuchos::ParameterList> >
 		continuation(ocean, continuationParams);
 
 	continuation.Run();
@@ -77,9 +74,9 @@ int main(int argc, char **argv)
 	MPI_Finalize();	
 }
 
-//==============================================================================
+//------------------------------------------------------------------
 // Auxiliary stuff
-//==============================================================================
+//------------------------------------------------------------------
 RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
 {
 	
@@ -96,7 +93,7 @@ RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
 	return Comm;
 }
 
-//==============================================================================
+//------------------------------------------------------------------
 Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 {
 	// Setup output files "fname_#.txt" for P==0 && P==1, other processes
@@ -117,12 +114,12 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 	return outFile;
 }
 
-//===========================================================================
+//------------------------------------------------------------------
 void printProfile(std::map<std::string, double> profile)
 {
 	double sum = 0;
-	INFO("==================================================================")
-		INFO("  Profile:");
+	INFO("==================================================================");
+	INFO("  Profile:");
 	for (std::map<std::string, double>::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
@@ -134,5 +131,6 @@ void printProfile(std::map<std::string, double> profile)
 	INFO(" " << std::setw(35) << std::left << " "  <<
 		 std::setw(6)  << " tot " <<
 		 std::setw(12) << std::left << std::setprecision(8) << sum);
-	INFO("==================================================================")
-		}
+	INFO("==================================================================");
+}
+
