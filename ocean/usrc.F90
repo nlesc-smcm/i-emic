@@ -408,7 +408,7 @@ SUBROUTINE lin
   ph     = (1-par(MIXP))*par(PE_H)
   pv     = par(PE_V)
   lambda = par(LAMB)
-  xes = par(NLES)
+  xes    = par(NLES)
   bi     = par(BIOT) 
   Ra     = par(RAYL)
   !      rintt  = par(IFRICT)	! ATvS-Mix

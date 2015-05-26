@@ -4,10 +4,6 @@
  * as long as this header remains intact.                             *
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
-/**********************************************************************
- * Modified by T.E. Mulder, Utrecht University 2014/15                *
- * contact: t.e.mulder@uu.nl                                          *
- **********************************************************************/
 #include <iostream>
 #include <memory.h>
 
@@ -302,7 +298,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
   
 	DEBUG("Create gathered land map");
 	Teuchos::RCP<Epetra_Map> landmap_glb = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
-																		 I0,I1,J0,J1,K0,K1,*comm);
+															I0,I1,J0,J1,K0,K1,*comm);
   
 	// sequential landm array on proc 0
 	Teuchos::RCP<Epetra_IntVector> landm_glb = Teuchos::rcp(new Epetra_IntVector(*landmap_glb));
@@ -1270,7 +1266,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 
 	DEBUG("create landmap without overlap...");  
 	Teuchos::RCP<Epetra_Map> landmap_loc0 = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
-																		  I0,I1,J0,J1,K0,K1,*Comm);  
+															 I0,I1,J0,J1,K0,K1,*Comm);  
 
 	// create an overlapping distributed map
 	i0 = domain->FirstI()+1; // 'grid-style' indexing is 1-based 
@@ -1285,7 +1281,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
   
 	DEBUG("create landmap with overlap...");  
 	Teuchos::RCP<Epetra_Map> landmap_loc = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
-																		 I0,I1,J0,J1,K0,K1,*Comm);  
+															I0,I1,J0,J1,K0,K1,*Comm);  
   
 	DEBUG("Create local vectors...");
   
@@ -1507,10 +1503,10 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
 //#ifdef DEBUGGING        
 #if 0
 #define DEBUG_GRAPH_ROW(var)											\
-				std::cout << "graph row "<<i<<" "<<j<<" "<<k<<" "<<var;		\
-				std::cout << " (gid "<<(gid0+var)<<"):"<<std::endl;			\
+				std::cout << "graph row "<<i<<" "<<j<<" "<<k<<" "<<var;	\
+				std::cout << " (gid "<<(gid0+var)<<"):"<<std::endl;		\
 				std::cout << "predicted length: "<<numEntriesPerRow[StandardMap->LID(gid0+var)]; \
-				std::cout <<", actual length: "<<pos<<std::endl;			\
+				std::cout <<", actual length: "<<pos<<std::endl;		\
 				for (int pp=0;pp<pos;pp++) std::cout << (indices)[pp]<<" ";	\
 				std::cout << std::endl;
 #else

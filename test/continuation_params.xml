@@ -1,2 +1,4 @@
 <!--  -->
-<Parameter name="ds" type="double" value="0.02"/>
+<ParameterList name="continuation">
+  <Parameter name="ds" type="double" value="0.02"/>
+</ParameterList>
