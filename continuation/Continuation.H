@@ -505,7 +505,14 @@ Info()
 	INFO("               ds:  " << ds_);
 	INFO("              par:  " << par_);
 	INFO("           parDot:  " << parDot_);
-	INFO("             step:  " << step_);
+	if (maxSteps_ >= 0)
+	{
+		INFO("             step:  " << step_ << "/" << maxSteps_);
+	}
+	else
+	{
+		INFO("             step:  " << step_);
+	}
 	INFO("       norm state:  " << stateView_->Norm());
 	INFO("     newton iters:  " << newtonIter_);
 	INFO("-----------------------------------------");

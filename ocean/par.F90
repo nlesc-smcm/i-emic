@@ -4,8 +4,7 @@
 !! n,m,l are now set in the function usr::init instead of 
 !! being defined here.
 module m_par
-  ! user parameters (previously located in usr.com)...................................
-
+  ! user parameters (previously located in usr.com)...........................
   !! You will most likely have to change these directories manually:
 #ifdef UTRECHT
   character(len=*), parameter ::  topdir  = '/home/erik/Projects/EMIC/data/'
@@ -25,17 +24,29 @@ module m_par
 #endif
   real,    parameter :: pi    =  3.14159265358979323846
   integer, parameter :: SLIP =  -1 ! noslip boundary SLIP = -1
-  !! previously par.com............................................................
+  !! previously par.com......................................................
+  !  number of unknowns
   integer, parameter :: nun  =  6
   integer, parameter :: la   =  0
 
   integer :: nid
 
-  integer, parameter :: np   =  27	!
+  ! size of stencil/neighbourhood:
+  ! +----------++-------++----------+
+  ! | 12 15 18 || 3 6 9 || 21 24 27 |
+  ! | 11 14 17 || 2 5 8 || 20 23 26 |
+  ! | 10 13 16 || 1 4 7 || 19 22 25 |
+  ! |  below   || center||  above   |
+  ! +----------++-------++----------+
+  integer, parameter :: np   =  27
+
+  ! number of adjustable parameters:
   integer, parameter :: npar =  30	
 
+  ! array containing all these parameters:
   real, dimension(npar) :: par
 
+  ! enumeration to identify the parameters:
   integer, parameter :: AL_T   =  1
   integer, parameter :: RAYL   =  2
   integer, parameter :: EK_V   =  3
@@ -67,6 +78,7 @@ module m_par
   integer, parameter :: MKAP   = 29		
   integer, parameter :: SPL2   = 30		
 
+  ! enumeration to identify the unknowns
   integer, parameter :: UU = 1
   integer, parameter :: VV = 2
   integer, parameter :: WW = 3

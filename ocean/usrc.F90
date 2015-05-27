@@ -330,7 +330,7 @@ SUBROUTINE rhs(un,B)
      if ((vmix_temp.eq.1).or.(vmix_salt.eq.1)) call vmix_fun(un,mix)
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
-     if (vmix_out.gt.0) write (*,'(a26,f10.3)') 'MIX|           ...rhs done',         time1-time0
+     if (vmix_out.gt.0) write (*,'(a26,f10.3)') 'MIX|    ...rhs done',time1-time0
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 

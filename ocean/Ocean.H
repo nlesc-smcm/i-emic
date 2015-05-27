@@ -43,33 +43,33 @@ protected:
 
 	// 
 	Teuchos::RCP<THCM> thcm_;
-
+	
 	Teuchos::RCP<Epetra_Vector> state_;
 	Teuchos::RCP<Epetra_Vector> rhs_;
 	Teuchos::RCP<Epetra_Vector> massMatrix_;	
-
+	
 	Teuchos::RCP<Epetra_CrsMatrix> jac_;
 	Teuchos::RCP<Epetra_Comm> comm_;
 	
 	Teuchos::RCP<Epetra_Vector> rowScalingRecipr_;
 	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
-
+	
 	Teuchos::RCP<Epetra_Time> timer_;
-
+	
 	bool solverInitialized_;
 	bool recomputePreconditioner_;
 	bool useScaling_;
-
+	
 	Teuchos::RCP<Epetra_Vector> sol_;
-
+	
 	Teuchos::RCP<Teuchos::ParameterList> belosParamList_;
 	Teuchos::RCP<Belos::LinearProblem
 				 <double, Epetra_MultiVector, Epetra_Operator> > problem_;	
 	Teuchos::RCP<Belos::BlockGmresSolMgr
 				 <double, Epetra_MultiVector, Epetra_Operator> > belosSolver_;
-
+	
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
-
+	
 	int belosIters_;
 	int recomputeBound_;
 	
@@ -84,7 +84,7 @@ public:
 	void Solve(Teuchos::RCP<Vector> rhs = Teuchos::null);
 	void ComputeRHS();
 	void ComputeJacobian();
-
+	
 	// --> This should be gone after improving thetastepper
 	double GetNormRHS();
 	double GetNormState();
