@@ -1,4 +1,4 @@
-#include "fdebug.h"
+#include "fdefs.h"
 
 !**************************************************************************
 !! initialize THCM: input: number of grid-points in x,y and z-direction,
@@ -26,9 +26,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
 
   integer :: i,j,k,pos
 
-  _DEBUG_( ' ++++++++++++++++++++++++++++++++++ ')
-  _DEBUG_( ' + INITIALIZING THCM              + ')
-  _DEBUG_( ' ++++++++++++++++++++++++++++++++++ ')
+  _INFO_('THCM: init... ')
 
   nmlglob = a_nmlglob
 
@@ -44,7 +42,6 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   end if
 
   call allocate_usr(a_n,a_m,a_l)
-
   call allocate_mat()
   call allocate_atm(n,m,l)
   call allocate_res(ndim)
@@ -55,28 +52,29 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   ! not know about global periodicity (which would
   ! mess up the matrix partitioning).
   pos = 1
-  do k=0,l+la+1
-     do j=0,m+1
-        do i=0,n+1
+  do k = 0, l+la+1
+     do j = 0, m+1
+        do i = 0, n+1
            landm(i,j,k) = a_landm(pos)
            if( (.not.periodic) .and. (landm(i,j,k).eq.PERIO)) then
               landm(i,j,k) = OCEAN
            end if
-           pos=pos+1
+           pos = pos+1
         end do
      end do
   end do
+  
   ! Make the dummy cells all land so the indexing 
   ! scheme (assemble.F90) doesn't get confused.   
   ! This means that there have to be at least two 
   ! layers of overlap in the global parallel session.
   if (.not. periodic) then
-     landm(0,:,:) = LAND
+     landm(0,:,:)   = LAND
      landm(n+1,:,:) = LAND
   end if
-  landm(:,0,:) = LAND
-  landm(:,m+1,:) = LAND
-  landm(:,:,0) = LAND
+  landm(:,0,:)      = LAND
+  landm(:,m+1,:)    = LAND
+  landm(:,:,0)      = LAND
   landm(:,:,l+la+1) = LAND
 
   pos = 1
@@ -90,28 +88,18 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
         pos=pos+1
      end do
   end do
-  !
-  if (f99/=6) then
-     open(f99,FILE=rundir//'fort.99')
-  end if
+
   call grid
   call stpnt
-  !call topofit ! now in m_global::initialize
-  !call windfit ! now in m_global::initialize
   call mixe
   call vmix_init	! ATvS-Mix
-  !      if ((SRES.eq.0).and.(ifw.ne.1)) call read_forcing(emip,15) 
-  ! these are now done in m_global and distributed by THCM.C:
-  !      if ((SRES.eq.1).and.(its.eq.0)) call levitus_sal
-  !      if ((TRES.eq.1).and.(ite.eq.0)) call levitus_sst
   call atmos_coef
   call forcing
-
-  write(f99,*) 'THCM: init `done'
+  
+  _INFO_('THCM: init...  done')
 end subroutine init
 
-
-!! deallocate all dynamically alloc'd memory
+! deallocate all dynamically alloc'd memory
 subroutine finalize
 
   use m_usr

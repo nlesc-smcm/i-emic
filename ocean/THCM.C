@@ -392,8 +392,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	CHECK_ZERO(taux_dist->MinValue(&tauxmin));
 	CHECK_ZERO(tauy_dist->MinValue(&tauymin));
 
-	INFO("Zonal wind forcing from data ranges between: ["<<tauxmin<<".."<<tauxmax<<"]");
-	INFO("Meridional wind forcing from data ranges between: ["<<tauymin<<".."<<tauymax<<"]");
+	INFO("Zonal wind forcing from data ranges between: [" << tauxmin << ".." << tauxmax << "]");
+	INFO("Meridional wind forcing from data ranges between: [" << tauymin << ".." << tauymax << "]");
 
 	DEBUG("Initialize Temperature and Salinity forcing...");
 
@@ -421,10 +421,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	CHECK_ZERO(salt_glob->ExtractView(&salt_g));
 	CHECK_ZERO(spert_glob->ExtractView(&spert_g));
 
-	if (comm->MyPID()==0)
+	if (comm->MyPID() == 0)
     {
-		F90NAME(m_global,get_temforcing)(tatm_g);
-		F90NAME(m_global,get_salforcing)(emip_g);
+		F90NAME(m_global, get_temforcing)(tatm_g);
+		F90NAME(m_global, get_salforcing)(emip_g);
 		if (internal_forcing)
 		{
 			F90NAME(m_global,get_internal_temforcing)(temp_g);
@@ -469,8 +469,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	CHECK_ZERO(tatm_dist->MinValue(&tatmmin));
 	CHECK_ZERO(emip_dist->MinValue(&emipmin));
 
-	INFO("Temperature forcing from data ranges between: ["<<tatmmin<<".."<<tatmmax<<"]");
-	INFO("Salinity forcing from data ranges between: ["<<emipmin<<".."<<emipmax<<"]");
+	INFO("Temperature forcing from data ranges between: ["
+		 << tatmmin <<".." << tatmmax << "]");
+	INFO("Salinity forcing from data ranges between: ["
+		 << emipmin <<".." <<emipmax <<"]");
 
 ////////////////////////////////////////////////////////////////////////////////
 
