@@ -344,11 +344,12 @@ namespace TRIOS
 		return M;
 	}
 
-// public map creation function (can only create a limited range of maps)
+	//==========================================================================
+    // Public map creation function (can only create a limited range of maps)
 	Teuchos::RCP<Epetra_Map> Domain::CreateAssemblyMap(int nun_, bool depth_av) const
 	{
-		Teuchos::RCP<Epetra_Map> M=Teuchos::null;
-		if (depth_av)
+		Teuchos::RCP<Epetra_Map> M = Teuchos::null;
+		if (depth_av) // create a map with a single vertical layer: 'depth-averaged'
 		{
 			M = CreateMap(Noff, Moff,0,nloc, mloc, 1, nun_);
 		}
@@ -358,16 +359,15 @@ namespace TRIOS
 		}
 		return M;
 	}
-  
-// this version is private and very general
+
+	//==========================================================================
+	// This version is private and very general
 	Teuchos::RCP<Epetra_Map> Domain::CreateMap(int noff_, int moff_, int loff_,
 											   int nloc_, int mloc_, int lloc_, int nun_) const
 	{
-		int NumMyElements = mloc_*nloc_*lloc_*nun_;
-		DEBVAR(NumMyElements);
+		int NumMyElements     = mloc_ * nloc_ * lloc_ * nun_;
 		int NumGlobalElements = -1; // Let Epetra figure it out herself
                 
-        
 		// Make lists of all global elements that belong to my subdomain 
 		// (with and without ('0') ghost nodes)
 		int* MyGlobalElements = new int[NumMyElements];
@@ -375,18 +375,17 @@ namespace TRIOS
         
 		// construct list of all entries
 		p = 0;
-		for (int k=loff_;k<loff_+lloc_;k++)
+		for (int k = loff_; k < loff_ + lloc_; k++)
 		{
-			for (int j=moff_;j<moff_+mloc_;j++)
+			for (int j = moff_; j < moff_ + mloc_; j++)
 			{
-				for (int i=noff_;i<noff_+nloc_;i++)
+				for (int i = noff_; i < noff_ + nloc_; i++)
 				{
 					// this is to handle periodic bc in the x-direction:
-					int ii = MOD((double)i,(double)n);
-					for (int xx=1;xx<=nun_;xx++) //6 unknowns per element
+					int ii = MOD((double) i, (double) n);
+					for (int xx = 1; xx <= nun_; xx++) //nun_ unknowns per element
 					{
-//          DEBUG(ii<<" "<<j<<" "<<k<<" => "<<FIND_ROW2(nun_,n,m,l,i,j,k,xx));
-						MyGlobalElements[p] = FIND_ROW2(nun_,n,m,l,ii,j,k,xx);
+						MyGlobalElements[p] = FIND_ROW2(nun_, n, m, l, ii, j, k, xx);
 						p++;
 					}//xx
 				}//i
@@ -394,17 +393,15 @@ namespace TRIOS
 		}//k
 
 		// create the map       
-		Teuchos::RCP<Epetra_Map> M = Teuchos::rcp(new Epetra_Map(NumGlobalElements,
-																 NumMyElements,MyGlobalElements,0,*comm));		
-		DEBVAR(NumMyElements);
+		Teuchos::RCP<Epetra_Map> M =
+			Teuchos::rcp(new Epetra_Map(NumGlobalElements,
+										NumMyElements, MyGlobalElements, 0, *comm));		
 		delete [] MyGlobalElements;
 		return M;
-
-
 	}
 
-
-// create communication groups
+	//==========================================================================
+    // create communication groups
 	Teuchos::RCP<Epetra_Comm> Domain::GetProcRow(int dim)
 	{
 #ifndef HAVE_MPI

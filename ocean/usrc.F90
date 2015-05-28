@@ -24,14 +24,11 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   real(c_double), dimension(a_n*a_m) :: a_taux,a_tauy
   real(c_double), dimension(a_n*a_m) :: a_tatm,a_emip,a_spert
 
-
-
   integer :: i,j,k,pos
 
   _DEBUG_( ' ++++++++++++++++++++++++++++++++++ ')
   _DEBUG_( ' + INITIALIZING THCM              + ')
   _DEBUG_( ' ++++++++++++++++++++++++++++++++++ ')
-
 
   nmlglob = a_nmlglob
 
@@ -334,7 +331,7 @@ SUBROUTINE rhs(un,B)
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
-  _DEBUG2_("p0 = ", p0)
+  _DEBUG2_("p0 = ", p0) !RESIDUE CONTINUATION, can we get rid of this??
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
 
   if(ires == 0) then
