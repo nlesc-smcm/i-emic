@@ -31,10 +31,10 @@
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
 
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="32"/>
+    <Parameter name="Global Grid-Size n" type="int" value="16"/>
 	
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="32"/>
+    <Parameter name="Global Grid-Size m" type="int" value="16"/>
   
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="16"/>
@@ -80,8 +80,8 @@
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
 
     <!-- Levitus Temperature (ite in THCM) -->
-    <!-- 0: data, 1: idealized             -->
-    <Parameter name="Levitus T" type="int" value="1"/>
+    <!-- 0: data, 1: idealized 2: coupled within I-EMIC -->
+    <Parameter name="Levitus T" type="int" value="2"/>
 
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->

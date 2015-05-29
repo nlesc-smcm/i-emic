@@ -57,9 +57,12 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	updateParametersFromXmlFile("ocean_params.xml",
 								oceanParamList.ptr());
 
-	recomputePreconditioner_ = oceanParamList->get("recomputePreconditioner", true);
-	recomputeBound_          = oceanParamList->get("recomputeBound", 50);
-	useScaling_              = oceanParamList->get("useScaling", false);
+	recomputePreconditioner_ =
+		oceanParamList->get("recomputePreconditioner", true);
+	recomputeBound_          =
+		oceanParamList->get("recomputeBound", 50);
+	useScaling_              =
+		oceanParamList->get("useScaling", false);
 
 	
 	Teuchos::ParameterList &thcmList =
@@ -317,6 +320,8 @@ void Ocean::ComputeRHS()
 {
 	// evaluate rhs in THCM with the current state
  	TIMER_START("Ocean: compute RHS...", timer_);
+	INFO("Ocean: inserting Atmosphere in THCM");
+	THCM::Instance().insertAtmosphere();
 	THCM::Instance().evaluate(*state_, rhs_, false);
 	TIMER_END("Ocean: compute RHS...", timer_);
 }

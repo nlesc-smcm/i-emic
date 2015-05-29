@@ -1,3 +1,4 @@
+#include "fdefs.h"
 !****************************************************************************
 SUBROUTINE forcing
   !     shape of wind-forcing and buoyancy forcing 
@@ -75,7 +76,7 @@ SUBROUTINE forcing
         enddo
      enddo
   endif
-
+  
   if (TRES.eq.0) then       ! correct for nonzero flux
      call qint(tatm,temcor)
   else
@@ -94,6 +95,9 @@ SUBROUTINE forcing
         endif
      enddo
   enddo
+  _INFO_("DEBUG")
+  _INFO_(tatm(1,1))
+             
   !
   ! Determine salinity forcing
   !
@@ -154,48 +158,7 @@ SUBROUTINE forcing
   write(f99,*) 'par(LAMB): ',par(LAMB)
   write(f99,*) 'maximum of internal forcing on w: ',max_internal_forcing
 
-  !     do j = 1, m
-  !         do i = 1, n
-  ! top 
-  !            if (la > 0 ) then ! coupling 
-  !               ft(i,j) = hom*par(SUNP) * (suna(j) - amua)
-  !               row = find_row2(i,j,l+1,TT)
-  !               Frc(row) = ft(i,j)
-  !               row = find_row2(i,j,l,TT)
-  !               Frc(row) = hom*par(SUNP) * suno(j) * (1 - landm(i,j,l))
-  !            else ! no coupling 
-  !               row = find_row2(i,j,l,TT)
-  !               Frc(row) = etabi * (ite*hfun(x(i),y(j)) + (1-ite)*tatm(i,j))
-  !            endif
-  !            if (SRES == 0) then  ! flux forcing 
-  !                 if (ifw.eq.0) then ! flux forcing from data 
-  !                 fs(i,j) = (1 - par(SPER))*(par(FPER)*(qfun2(i,j) - fsint) + &
-  !                     gamma*emip(i,j) )
-  !                else ! idealized 
-  !                 fs(i,j) = gamma*(qfun2(i,j) - fsint)
-  !                endif
-  !            else ! restoring forcing 
-  !                fs(i,j) = gamma*(its*salfun(x(i),y(j))+(1-its)*emip(i,j))  
-  !            endif  
-  !            row = find_row2(i,j,l,SS)
-  !            Frc(row) = fs(i,j)
-  ! bottom (this section was removed in version 7.0)
-  !         if (FBT.eq.1) then
-  !           ft(i,j) = bottem
-  !	       row = find_row2(i,j,1,TT)
-  !	       Frc(row) = etabib*ft(i,j)
-  !	     endif
-  !         if (FBS.eq.1) then
-  !           fs(i,j) = botsal
-  !	       row = find_row2(i,j,1,SS)
-  !	       Frc(row) = gammab*fs(i,j)
-  !	     endif
-  !         enddo
-  !      enddo
-  ! 
-
   ! Write fields. This is inconsistent with the parallel approach
-
   if (iout.eq.0) then 
      open(88,FILE=rundir//'fort.88')
      do i=1,n

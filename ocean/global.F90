@@ -1,4 +1,4 @@
-
+#include "fdefs.h"
 ! /**********************************************************************
 ! * Copyright by Jonas Thies, Univ. of Groningen 2006/7/8.             *
 ! * Permission to use, copy, modify, redistribute is granted           *
@@ -66,10 +66,10 @@ contains
        a_ih,a_vmix_GLB,a_tap,a_rho_mixing,&
        a_periodic,a_itopo,a_flat,a_rd_mask,&
        a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm)
-
+    
     use, intrinsic :: iso_c_binding
     implicit none
-
+    
     integer(c_int) :: a_n,a_m,a_l
     real(c_double) :: a_xmin,a_xmax,a_ymin,a_ymax,a_hdim,a_qz
     real(c_double) :: a_alphaT, a_alphaS
@@ -77,12 +77,12 @@ contains
     integer(c_int) :: a_periodic,a_itopo,a_flat,a_rd_mask
     integer(c_int) :: a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm
 
-    xmin     = a_xmin
-    xmax     = a_xmax
-    ymin     = a_ymin
-    ymax     = a_ymax
-    hdim     = a_hdim
-    qz       = a_qz
+    xmin  = a_xmin
+    xmax  = a_xmax
+    ymin  = a_ymin
+    ymax  = a_ymax
+    hdim  = a_hdim
+    qz    = a_qz
 
     alphaT   = a_alphaT
     alphaS   = a_alphaS
@@ -337,27 +337,35 @@ contains
     end do
 
   end subroutine get_windfield
-
+  
   subroutine get_temforcing(ctatm)
-
+    
     use, intrinsic :: iso_c_binding
     implicit none
 
     real(c_double), dimension(n*m) :: ctatm
     integer :: i,j,pos
 
-    if (ite.ne.1) then
+    if (ite.eq.0) then
        if (TRES.eq.0) then ! read heat flux and store it in tatm
+          _INFO_("Read heat flux and store it in tatm...")
           call read_forcing(tatm,14)
        else                ! read sst
+          _INFO_("Read sst from levitus...")
           call levitus_sst 
        end if
-    else                  ! idealized forcing, set in forcing.F90
-       write(*,*) "Using idealized temperature forcing, see forcing.F90"
-       write(*,*) "     tatm = 0"
+    else if (ite.eq.1) then  ! idealized forcing, set in forcing.F90
+       _INFO_("Using idealized temperature forcing, see forcing.F90")
+       _INFO_(" For now we put tatm = 0")
        tatm(1:n,1:m) = 0.0
+    else if (ite.eq.2) then ! accepting external atmosphere within I-EMIC
+       _INFO_("Accepting external atmosphere")
+       _INFO_(" For now we put tatm = 0")
+       tatm(1:n,1:m) = 0.0
+    else
+       _INFO2_("Invalid option assigned to ite: ", ite)
     end if
-
+    
     pos = 1
     do j=1,m
        do i=1,n
@@ -518,11 +526,11 @@ contains
 
     write(ibuf,'(1I2.2)') month
 
-    if (ite==0) then
+    if (ite.eq.0) then
        fname = topdir//'levitus/monthly/t'//ibuf//'an1'
        write(f99,*) 'read levitus SST from file"'//trim(fname)//'"'
        call levitus_interpol(trim(fname),tatm,-5.,50.,l,1)
-    else
+    else if (ite.eq.1) then
        ! idealized - just add a constant sin(t) term (this is only for testing...)
        tatm=sin(month/12*pi)
        ite=0 ! use tatm from now on
@@ -658,8 +666,7 @@ contains
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
              hf(i,j)  = par(BIOT)*&
-                  ( (1-ite)*tatm(i,j) + ite*temfun(x(i),y(j))&
-                  - T(i,j,l)/(par(TEMP)*par(COMB)) )
+                  ( tatm(i,j) - T(i,j,l)/(par(TEMP)*par(COMB)) )
              fwf(i,j) = par(BIOT)*&
                   ( (1-its)*emip(i,j) + its*salfun(x(i),y(j))&
                   - S(i,j,l)/(par(SALT)*par(COMB)) )

@@ -127,12 +127,18 @@ public:
 	*/
 	void evaluateB();
 
+	//! ------------------- I-EMIC couplings -----------------------------
+	//! 
+	//! void insertAtmosphere(const Epetra_Vector &atmos);
+	void insertAtmosphere();
+	//! ------------------------------------------------------------------
+	
 	//! Returns initial guess (Global/Solve form)
 	Teuchos::RCP<Epetra_Vector> getSolution();
   
 	//! returns the Jacobian matrix (Global/Solve form)
 	Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
-  
+
 	//! get null space
 	Teuchos::RCP<const Epetra_MultiVector> getNullSpace();
     
@@ -196,24 +202,17 @@ public:
 
 	//! \name get physical global domain bounds
 	//@{
-  
-	//!
 	inline double xMin() const {return xmin;}
-	//!
 	inline double xMax() const {return xmax;}
-	//!
 	inline double yMin() const {return ymin;}
-	//!
 	inline double yMax() const {return ymax;}
-	//!
 	inline double hDim() const {return hdim;}
-  
 	//@}
 
 	//! \name these are used by the block preconditioner:
 	//!@
-	inline double AlphaT() const {return alphaT;}
-	inline double AlphaS() const {return alphaS;}
+	inline double AlphaT()    const {return alphaT;}
+	inline double AlphaS()    const {return alphaS;}
 	inline double rhoMixing() const {return rho_mixing;}
 	//@}
 
@@ -230,9 +229,7 @@ private:
 
 	//!\name maps and import/exprt objects for distributed data structures
 	//! (obtained from the domain-object)
-    
 	//!@{
-  
 	//! overlapping map for 'THCM objects': 
 	Teuchos::RCP<Epetra_Map> AssemblyMap;
 
@@ -242,7 +239,6 @@ private:
 	//! non-overlapping load-balanced map for Trilinos objects 
 	//! (may contain non-rectangular subdomains)               
 	Teuchos::RCP<Epetra_Map> SolveMap;
-  
 	//!@}
   
 	//! used only to define vector format (i.e. map), I think
@@ -296,16 +292,13 @@ private:
 	//! timer status list
 	Teuchos::ParameterList timerList;
 
-	//! \name the matrix in THCM (CSR-format)
-   
+	//! \name the matrix in THCM (CSR-format)   
 	/*! Memory for the Jacobian on the subdomain is allocated by the
 	  C++ code. In THCM, pointers are set to these locations so that  
 	  the Fortran code fills these arrays directly. Afterwards the    
 	  matrix is copied to the 'Jac' member, ignoring 'ghost' rows.    
 	*/
-
-	//!@{
-  
+	//!@{  
 	//! row pointer
 	int* begA; 
 	//! column indices

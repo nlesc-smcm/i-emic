@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 	//  - output files
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
-	
+
  	// Create ocean model OceanCont
 	//  (based on THCM):
 	RCP<OceanCont> ocean = rcp(new OceanCont(Comm));
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 	// Finalize MPI
 	//--------------------------------------------------------
 	Comm->Barrier();
-	MPI_Finalize();	
+	MPI_Finalize();
 }
 
 //------------------------------------------------------------------
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 //------------------------------------------------------------------
 RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
 {
-	
+
 #ifdef HAVE_MPI
 	MPI_Init(&argc, &argv);
 	RCP<Epetra_MpiComm> Comm =
@@ -105,11 +105,11 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 		infofile << "info_" << Comm->MyPID() << ".txt";
 		std::cout << "info for CPU" << Comm->MyPID() << " is written to "
 				  << infofile.str().c_str() << std::endl;
-		outFile = 
+		outFile =
 			Teuchos::rcp(new std::ofstream(infofile.str().c_str()));
 	}
 	else
-		outFile = 
+		outFile =
 			Teuchos::rcp(new Teuchos::oblackholestream());
 	return outFile;
 }
@@ -133,4 +133,3 @@ void printProfile(std::map<std::string, double> profile)
 		 std::setw(12) << std::left << std::setprecision(8) << sum);
 	INFO("==================================================================");
 }
-

@@ -63,7 +63,7 @@ namespace TRIOS {
 		  (we call it column-major because it comes from the Fortran THCM impl.)    
                                                                                 
 		  \verbatim
-                                                                                
+		  
 		  _______ ^								
 		  |P1|P2| |								
 		  +--+--+ m								
@@ -163,13 +163,12 @@ namespace TRIOS {
 		//! get comm object
 		inline Teuchos::RCP<Epetra_Comm> GetComm() { return comm;}
       
-		//! creates a communicator consisting of a 1D cut through the 3D comm
-      
-		/*! will create a communicator containing all processes whose ranks
-		  differ only in dimension dim. For instance, GetProcRow(0)     
-		  will return a comm with all subdomains with the same [ymin ymax]x[zmin zmax] 
-		  and so allow communication in dimension 0 (x)
-		*/
+		//! Creates a communicator consisting of a 1D cut through the 3D comm.
+		//! Will create a communicator containing all processes whose ranks
+		//! differ only in dimension dim. For instance, GetProcRow(0)     
+		//! will return a comm with all subdomains with the same [ymin ymax]x[zmin zmax] 
+		//! and so al
+		//! low communication in dimension 0 (x) 
 		Teuchos::RCP<Epetra_Comm> GetProcRow(int dim);
 
 		//! The assembly map is created during the Decomp2D call.
@@ -198,32 +197,24 @@ namespace TRIOS {
 		//! 'Allgather/Scatter' operations.                       
 		Teuchos::RCP<Epetra_Map> GetColMap(){return ColMap;}
 
-		//! get physical bound of the subdomain
+		//@{ get physical bound of the subdomain
 		double XminLoc() const {return xmin_loc;}
-		//! get physical bound of the subdomain
 		double XmaxLoc() const {return xmax_loc;}
-		//! get physical bound of the subdomain
 		double YminLoc() const {return ymin_loc;}
-		//! get physical bound of the subdomain
 		double YmaxLoc() const {return ymax_loc;}
-		//! get physical bound of the subdomain
 		double ZminLoc() const {return zmin_loc;}
-		//! get physical bound of the subdomain
 		double ZmaxLoc() const {return zmax_loc;}
-
-		//! get physical bound of the global domain
+		//@}
+		
+		//@{ get physical bound of the global domain
 		double Xmin() const {return xmin;}
-		//! get physical bound of the global domain
 		double Xmax() const {return xmax;}
-		//! get physical bound of the global domain
 		double Ymin() const {return ymin;}
-		//! get physical bound of the global domain
 		double Ymax() const {return ymax;}
-		//! get physical bound of the global domain
 		double Zmin() const {return zmin;}
-		//! get physical bound of the global domain
 		double Zmax() const {return zmax;}
-
+		//@}
+		
 		//! returns true if the given local index 'li' is on a ghost-node.
 		//! optionally 'nun' can be specified to indicate the unknowns per 
 		//! grid point (defaults to 6).
@@ -258,25 +249,13 @@ namespace TRIOS {
 		bool UseLoadBalancing() const {return false;}
 
 		//@{ \name Data Transfer functions between the three map-types
-      
-		//!
 		int Assembly2Standard(const Epetra_Vector& source, Epetra_Vector& target) const;
-
-		//!
 		int Assembly2Solve(const Epetra_Vector& source, Epetra_Vector& target) const;
-      
-		//!
 		int Standard2Assembly(const Epetra_Vector& source, Epetra_Vector& target) const;
-
-		//!
 		int Standard2Solve(const Epetra_Vector& source, Epetra_Vector& target) const;
-
-		//!
 		int Solve2Assembly(const Epetra_Vector& source, Epetra_Vector& target) const;
-      
-		//!
 		int Solve2Standard(const Epetra_Vector& source, Epetra_Vector& target) const;
-
+		//@}
 		//! we also offer this option for matrices, the others are not so important
 		int Standard2Solve(const Epetra_CrsMatrix& source, Epetra_CrsMatrix& target) const;
     
@@ -325,7 +304,6 @@ namespace TRIOS {
 		bool xparallel;
 
 		//! number of "ghost layers" (constant)
-      
 		/*! This is the number of cell layers imported
           from a neighbouring subdomains. The original
           number of grid points in each direction where
@@ -333,7 +311,7 @@ namespace TRIOS {
 		*/
 		static const int num_ghosts = 2; 
       
-		//1 number of unknowns per grid cell
+		//! number of unknowns per grid cell
 		int dof_;
 
     protected:

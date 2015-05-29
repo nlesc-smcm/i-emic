@@ -48,25 +48,23 @@ namespace TRIOS
 		delete [] MyGlobalElements;
 	}
       
-// Destructor
+	// Destructor
 	Domain::~Domain()
 	{
 		// destructor handled by Teuchos::rcp's
 	}
 	
-                  
-// decompose the domain for a 2D processor array.
-// The xy-directions are split up.
+	//=============================================================================
+	// decompose the domain for a 2D processor array.
+	// The xy-directions are split up.
 	void Domain::Decomp2D()
 	{
 		int nprocs = comm->NumProc();
 		int pid    = comm->MyPID();
 
-////////////////////////////////////////////////////////////////////
-		
 		npL = 1;
 
-// Factor the number of processors into two dimensions. (nprocs = npN * npM)
+		// Factor the number of processors into two dimensions. (nprocs = npN * npM)
 
 		int t1 = nprocs;
 		int t2 = 1;
@@ -89,12 +87,12 @@ namespace TRIOS
 			t1--;
 		}
 
-		INFO("+++ Domain decomposition +++");
-		INFO("factoring, np = " << nprocs);
-		INFO(" n = "   << n);
-		INFO(" m = "   << m);
-		INFO(" npN = " << npN);
-		INFO(" npM = " << npM << std::endl);
+		INFO("+++ 2D Domain decomposition +++");
+		INFO(" factoring, np = " << nprocs);
+		INFO("  n = "   << n);
+		INFO("  m = "   << m);
+		INFO("  npN = " << npN);
+		INFO("  npM = " << npM << std::endl);
 
 		// find out where in the domain we are situated.
 		// the subdomains are numbered in a row-major 'matrix' fashion
@@ -106,7 +104,6 @@ namespace TRIOS
 		//  --n-->          
 		//   pidN           
 		//                  
-  
 		// note that this corresponds to the column-major ordering in Fortran,
 		// i.e. i (n-direction) is the fastest index, and k (l-dir.) the slowest
         
@@ -114,8 +111,7 @@ namespace TRIOS
 		pidN = pid % npN;
 		pidM = (pid - pidN) / npN;
 
-		// dimension of actual subdomain (without ghost-nodes)
-        
+		// dimension of actual subdomain (without ghost-nodes)        
 		mloc0 = (int) (m / npM);
 		nloc0 = (int) (n / npN);
 		lloc0 = l;
@@ -126,8 +122,8 @@ namespace TRIOS
 		Noff0 = pidN * (int) (n / npN);
 
 		// distribute remaining points among first few cpu's
-		int remM=m%npM;
-		int remN=n%npN;
+		int remM = m%npM;
+		int remN = n%npN;
   
 		if (pidM<remM) mloc0++;
 		if (pidN<remN) nloc0++;
@@ -160,30 +156,33 @@ namespace TRIOS
 		xparallel = (xcomm->NumProc()>1); // if there is only one subdomain in the 
 		// x-direction, periodicity is left to THCM
 
-		if (pidM>0)      { mloc+=num_ghosts; Moff-=num_ghosts;}
-		if (pidM<npM-1) { mloc+=num_ghosts;}
-		if ((pidN>0)||(periodic&&xparallel))      { nloc+=num_ghosts; Noff-=num_ghosts;}
-		if ((pidN<npN-1)||(periodic&&xparallel)) { nloc+=num_ghosts;}
+		if (pidM > 0)
+		{ mloc+=num_ghosts; Moff-=num_ghosts;}
+		if (pidM < npM-1)
+		{ mloc+=num_ghosts;}
+		if ((pidN > 0) || (periodic && xparallel))
+		{ nloc+=num_ghosts; Noff-=num_ghosts;}
+		if ((pidN < npN-1) || (periodic && xparallel))
+		{ nloc+=num_ghosts;}
 
-// in the case of periodic boundary conditions the offsets may now be 
-// negative or the local domain may exceed the global one. when       
-// using nloc and noff, we therefore have to take mod(i,nglob)
-
+		// in the case of periodic boundary conditions the offsets may now be 
+		// negative or the local domain may exceed the global one. when       
+		// using nloc and noff, we therefore have to take mod(i,nglob)
 		CommonSetup();		
-
 	}
 
-// 3D domain decomposition (for Navier-Stokes)
-// This implementation is more modern than the Decomp2D function
-// because we have lots of functionality from HYMLS we can use now.
-// NOTE: we do not include overlap if this function is used, that 
-// would have to be added if we have a parallel code using 3D decom-
-// positions.
+	//=============================================================================
+    // 3D domain decomposition (for Navier-Stokes)
+    // This implementation is more modern than the Decomp2D function
+    // because we have lots of functionality from HYMLS we can use now.
+    // NOTE: we do not include overlap if this function is used, that 
+    // would have to be added if we have a parallel code using 3D decom-
+    // positions.
 	void Domain::Decomp3D()
 	{
 
 		int nprocs = comm->NumProc();
-		int pid = comm->MyPID();
+		int pid    = comm->MyPID();
 		Utils::SplitBox(n,m,l,nprocs,npN,npM,npL);
 		Utils::ind2sub(npN,npM,npL,pid,pidN,pidM,pidL);
 
@@ -211,27 +210,24 @@ namespace TRIOS
 		INFO("processor position: (N,M,L) = ("<<pidN<<","<<pidM<<","<<pidL<<")");
 		INFO("subdomain offsets: "<<Noff0<<","<<Moff0<<","<<Loff0);
 		INFO("grid dimension on subdomain: "<<nloc0<<"x"<<mloc0<<"x"<<lloc0);
-		DEBUG("+++ including ghost nodes: +++");
-		DEBUG("subdomain offsets: "<<Noff<<","<<Moff<<","<<Loff);
-		DEBUG("grid dimension on subdomain: "<<nloc<<"x"<<mloc<<"x"<<lloc);
-
-
+		INFO("  +++ including ghost nodes: +++");
+		INFO("  subdomain offsets: "<<Noff<<","<<Moff<<","<<Loff);
+		INFO("  grid dimension on subdomain: "<<nloc<<"x"<<mloc<<"x"<<lloc);
 		// create the maps:
        
 		StandardMap = CreateStandardMap(dof_);
 		AssemblyMap = CreateAssemblyMap(dof_);
+		
 		// no load-balancing object available, yet (has to be set by user)
 		SolveMap = StandardMap;
-
 
 #ifdef DEBUGGING
 		comm->Barrier();
 		DEBUG("create importers...");
 #endif
-
 		// finally make the Import/Export objects (transfer function
 		// between the two maps)
-		as2std = Teuchos::rcp(new Epetra_Import(*AssemblyMap,*StandardMap));
+		as2std  = Teuchos::rcp(new Epetra_Import(*AssemblyMap,*StandardMap));
 		std2sol = Teuchos::null;
 /*
   INFO("importer: "<<*as2std);
@@ -268,15 +264,15 @@ namespace TRIOS
 		zmin_loc = zmin + Loff*dz;
 		zmax_loc = zmin + (Loff+lloc)*dz;
 
-		DEBVAR(xmin)
-			DEBVAR(xmax)
-			DEBVAR(ymin)
-			DEBVAR(ymax)
-			DEBVAR(xmin_loc)
-			DEBVAR(xmax_loc)
-			DEBVAR(ymin_loc)
-			DEBVAR(ymax_loc)
-    }
+		DEBVAR(xmin);
+		DEBVAR(xmax);
+		DEBVAR(ymin);
+		DEBVAR(ymax);
+		DEBVAR(xmin_loc);
+		DEBVAR(xmax_loc);
+		DEBVAR(ymin_loc);
+		DEBVAR(ymax_loc);
+	}
 
 	// find out wether a particular local index is on a ghost node
 	bool Domain::IsGhost(int ind,int nun_) const
@@ -416,7 +412,7 @@ namespace TRIOS
 		int nproc_row, disp, offset;
 
 		if (npL>1) ERROR("This function is not implemented for 3D proc arrays!",
-									   __FILE__,__LINE__);    
+						 __FILE__,__LINE__);    
                     
                     
 		if (dim==0)
@@ -443,11 +439,11 @@ namespace TRIOS
 		DEBUG("My position: ("<<pidN<<", "<<pidM<<")");
 		DEBUG("extract communicator for dim="<<dim);
 		DEBUG("Creating sub-communicator consisting of:");
-			for (int k = 0; k < nproc_row; k++)
-			{
-				row_ranks[k] = offset+k*disp;
-				DEBUG(k<<": "<<row_ranks[k]);
-			}
+		for (int k = 0; k < nproc_row; k++)
+		{
+			row_ranks[k] = offset+k*disp;
+			DEBUG(k<<": "<<row_ranks[k]);
+		}
 		/* ----------------------- */
 		/* create the global group */
 		/* ----------------------- */

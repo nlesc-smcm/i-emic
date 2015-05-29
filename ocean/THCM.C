@@ -34,6 +34,7 @@
 #include "OceanGrid.H"
 #endif
 
+//=============================================================================
 extern "C" {
 
 	// usrc.F90
@@ -86,27 +87,39 @@ extern "C" {
 	_MODULE_SUBROUTINE_(m_scaling,compute)(double *db, double *rowscales, double* colscales);
 
 	_SUBROUTINE_(fillcolb)(void);
+
 	// CRS matrix allocation (module m_mat)
 	_MODULE_SUBROUTINE_(m_mat,get_array_sizes)(int* nrows, int* nnz);
-	_MODULE_SUBROUTINE_(m_mat,set_pointers)(int* nrows, int* nnz, int* beg,int* jco,double* co,double* coB);
+	_MODULE_SUBROUTINE_(m_mat,set_pointers)(int* nrows, int* nnz, int* beg,
+											int* jco,double* co,double* coB);
+
 	// compute scaling factors for S-integral condition. Values is an n*m*l array
 	_MODULE_SUBROUTINE_(m_thcm_utils,intcond_scaling)(double* values,int* indices,int* len);
+
 	// compute weights for load balancing
 	_MODULE_SUBROUTINE_(m_thcm_utils,loadbal_weights)(double* weights,double*,double*,double*);
+
 	// sets the vmix_fix flag
 	_MODULE_SUBROUTINE_(m_mix,set_vmix_fix)(int* vmix_fix);
+
 	// for time-dependent forcing (gamma* is a continuation parameter for wind, T and S):
 	_MODULE_SUBROUTINE_(m_monthly,update_forcing)(double* t,
 												  double* gammaw,double* gammat, double* gammas);
 	_MODULE_SUBROUTINE_(m_monthly,update_internal_forcing)(double* t,
 														   double* gammat, double* gammas);
 
-
+	//---------------------- I-EMIC couplings--------------------------------------
+	// Extensions created for communication within the I-EMIC
+	//
+	_MODULE_SUBROUTINE_(m_insertions, insert_atmosphere)(double *atmos);
+	//-----------------------------------------------------------------------------
+	
 	_SUBROUTINE_(write_levitus)(const char*);
 
 }//extern
 
 
+//=============================================================================
 THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     Singleton<THCM>(Teuchos::rcp(this, false)),
     Comm(comm),
@@ -164,7 +177,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	alphaS           = paramList.get("Linear EOS: alpha S",7.6e-4);
 	tres             = paramList.get("Restoring Temperature Profile",1);
 	sres             = paramList.get("Restoring Salinity Profile",1);
-	ite              = paramList.get("Levitus T",1);
+	ite              = paramList.get("Levitus T",2);
 	its              = paramList.get("Levitus S",1);
 	internal_forcing = paramList.get("Levitus Internal T/S",false);
 	bool rd_spertm   = paramList.get("Read Salinity Perturbation Mask",false);
@@ -326,20 +339,19 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
 	int nmlglob = n*m*l;
 
-////////////////////////////////////////////////////////////////////////////////
-
+	//--------------------------------------------------------------------------
 	// read wind, temperature and salinity forcing and distribute it among
 	// processors
-	Teuchos::RCP<Epetra_Map> wind_map_loc    = domain->CreateAssemblyMap(1,true);
-	Teuchos::RCP<Epetra_Map> lev_map_loc     = wind_map_loc;
-	Teuchos::RCP<Epetra_Map> intlev_map_loc  = domain->CreateAssemblyMap(1,false);
-	Teuchos::RCP<Epetra_Vector> taux_loc     = Teuchos::rcp(new Epetra_Vector(*wind_map_loc));
-	Teuchos::RCP<Epetra_Vector> tauy_loc     = Teuchos::rcp(new Epetra_Vector(*wind_map_loc));
-	Teuchos::RCP<Epetra_Vector> tatm_loc     = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
-	Teuchos::RCP<Epetra_Vector> emip_loc     = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
-	Teuchos::RCP<Epetra_Vector> temp_loc     = Teuchos::rcp(new Epetra_Vector(*intlev_map_loc));
-	Teuchos::RCP<Epetra_Vector> salt_loc     = Teuchos::rcp(new Epetra_Vector(*intlev_map_loc));
-	Teuchos::RCP<Epetra_Vector> spert_loc    = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
+	Teuchos::RCP<Epetra_Map> wind_map_loc   = domain->CreateAssemblyMap(1,true);
+	Teuchos::RCP<Epetra_Map> lev_map_loc    = wind_map_loc;
+	Teuchos::RCP<Epetra_Map> intlev_map_loc = domain->CreateAssemblyMap(1,false);
+	Teuchos::RCP<Epetra_Vector> taux_loc    = Teuchos::rcp(new Epetra_Vector(*wind_map_loc));
+	Teuchos::RCP<Epetra_Vector> tauy_loc    = Teuchos::rcp(new Epetra_Vector(*wind_map_loc));
+	Teuchos::RCP<Epetra_Vector> tatm_loc    = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
+	Teuchos::RCP<Epetra_Vector> emip_loc    = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
+	Teuchos::RCP<Epetra_Vector> temp_loc    = Teuchos::rcp(new Epetra_Vector(*intlev_map_loc));
+	Teuchos::RCP<Epetra_Vector> salt_loc    = Teuchos::rcp(new Epetra_Vector(*intlev_map_loc));
+	Teuchos::RCP<Epetra_Vector> spert_loc   = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
 
 	double* taux;
 	double* tauy;
@@ -381,7 +393,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         Utils::Scatter(*tauy_glob,*wind_map_dist);
 
 	// import overlap
-	Teuchos::RCP<Epetra_Import> wind_loc2dist = Teuchos::rcp(new Epetra_Import(*wind_map_loc,*wind_map_dist));
+	Teuchos::RCP<Epetra_Import> wind_loc2dist =
+		Teuchos::rcp(new Epetra_Import(*wind_map_loc,*wind_map_dist));
 	CHECK_ZERO(taux_loc->Import(*taux_dist,*wind_loc2dist,Insert));
 	CHECK_ZERO(tauy_loc->Import(*tauy_dist,*wind_loc2dist,Insert));
 
@@ -392,8 +405,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	CHECK_ZERO(taux_dist->MinValue(&tauxmin));
 	CHECK_ZERO(tauy_dist->MinValue(&tauymin));
 
-	INFO("Zonal wind forcing from data ranges between: [" << tauxmin << ".." << tauxmax << "]");
-	INFO("Meridional wind forcing from data ranges between: [" << tauymin << ".." << tauymax << "]");
+	INFO("Zonal wind forcing from data ranges between: ["
+		 << tauxmin << ".." << tauxmax << "]");
+	INFO("Meridional wind forcing from data ranges between: ["
+		 << tauymin << ".." << tauymax << "]");
 
 	DEBUG("Initialize Temperature and Salinity forcing...");
 
@@ -439,7 +454,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
 
 	// distribute levitus fields
-
 	Teuchos::RCP<Epetra_MultiVector> tatm_dist     =
         Utils::Scatter(*tatm_glob, *lev_map_dist);
 	Teuchos::RCP<Epetra_MultiVector> emip_dist     =
@@ -643,6 +657,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
 }
 
+//=============================================================================
 THCM::~THCM()
 {
 	this->printTiming(std::cout);
@@ -662,19 +677,20 @@ THCM::~THCM()
 	// the rest is handled by Teuchos::rcp's
 }
 
+//=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getSolution()
 {
 	return initialSolution;
 }
 
+//=============================================================================
 Teuchos::RCP<Epetra_CrsMatrix> THCM::getJacobian()
 {
 	return Jac;
 }
 
-//
+//=============================================================================
 // Compute Jacobian and/or RHS.
-//
 bool THCM::evaluate(const Epetra_Vector& soln,
 				    Teuchos::RCP<Epetra_Vector> tmp_rhs,
 				    bool computeJac)
@@ -870,6 +886,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 	return true;
 }
 
+//=============================================================================
 // just reconstruct the diagonal matrix B from THCM
 void THCM::evaluateB(void)
 {
@@ -902,6 +919,21 @@ void THCM::evaluateB(void)
 	domain->Standard2Solve(*localDiagB,*diagB);
 }
 
+//=============================================================================
+void THCM::insertAtmosphere()
+{
+	// This is a test.
+	// We build an atmosphere on the assembly map to give to THCM
+	Teuchos::RCP<Epetra_Map> atmos_map_loc = domain->CreateAssemblyMap(1, true);
+	Teuchos::RCP<Epetra_Vector> atmos_loc  =
+		Teuchos::rcp(new Epetra_Vector(*atmos_map_loc));
+	atmos_loc->PutScalar(2.0);
+	double *atmos_loc_array;
+	atmos_loc->ExtractView(&atmos_loc_array);
+	F90NAME(m_insertions, insert_atmosphere)(atmos_loc_array);
+}
+
+//=============================================================================
 // Recompute scaling for the linear system
 void THCM::RecomputeScaling(void)
 {
@@ -978,6 +1010,7 @@ void THCM::RecomputeScaling(void)
     }// additional T/S scaling (obsolete)
 }
 
+//=============================================================================
 void THCM::normalizePressure(Epetra_Vector& soln) const
 {
 
@@ -1001,15 +1034,11 @@ void THCM::normalizePressure(Epetra_Vector& soln) const
 	//subtract reference value from all 'P' points except land cells
 	// TODO: 1) we do not handle land cells correctly here, yet!
 	//       2) the whole thing seems to go wrong...
-//  for (int i=PP;i<=soln.MyLength();i+=_NUN_) soln[i-1] -= ref_value;
-
+    //  for (int i=PP;i<=soln.MyLength();i+=_NUN_) soln[i-1] -= ref_value;
 }
 
-
-//////////////////////////////////////////////////////////////////
-// Timing functionality                                         //
-//////////////////////////////////////////////////////////////////
-
+//=============================================================================
+// Timing functionality
 void THCM::startTiming(std::string fname)
 {
 	Teuchos::RCP<Epetra_Time> T=Teuchos::rcp(new Epetra_Time(*Comm));
@@ -1017,6 +1046,7 @@ void THCM::startTiming(std::string fname)
 }
 
 
+//=============================================================================
 void THCM::stopTiming(std::string fname,bool print)
 {
 	Teuchos::RCP<Epetra_Time> T = Teuchos::null;
@@ -1036,6 +1066,7 @@ void THCM::stopTiming(std::string fname,bool print)
     }
 }
 
+//=============================================================================
 void THCM::printTiming(std::ostream& os)
 {
 	os << "================= TIMING RESULTS ====================="<<std::endl;
@@ -1057,6 +1088,7 @@ void THCM::printTiming(std::ostream& os)
 	DEBUG(timerList);
 }
 
+//=============================================================================
 // convert parameter name to integer
 int THCM::par2int(std::string label)
 {
@@ -1117,6 +1149,7 @@ int THCM::par2int(std::string label)
 	return -1;
 }
 
+//=============================================================================
 // convert parameter name to integer
 std::string THCM::int2par(int index)
 {
@@ -1178,6 +1211,7 @@ std::string THCM::int2par(int index)
 	return label;
 }
 
+//=============================================================================
 bool THCM::setParameter(std::string label, double value)
 {
 	int param = par2int(label);
@@ -1224,6 +1258,7 @@ bool THCM::setParameter(std::string label, double value)
 	return true;
 }
 
+//=============================================================================
 bool THCM::getParameter(std::string label, double& value)
 {
 	int param = par2int(label);
@@ -1235,14 +1270,14 @@ bool THCM::getParameter(std::string label, double& value)
 	return true;
 }
 
+//=============================================================================
 bool THCM::writeParams()
 {
 	FNAME(writeparams)();
 	return true;
 }
 
-/////////////////////////////////
-
+//=============================================================================
 Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntVector> landm_glb)
 {
 
@@ -1318,10 +1353,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 	return landm_loc;
 }
 
-
-
-/////////////////////////////////////////////////////////////////////////////////
-
+//=============================================================================
 // implement integral condition for S in Jacobian and B-matrix
 void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 {
@@ -1381,9 +1413,9 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 	{
 		ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
 	}
-
 }
 
+//=============================================================================
 void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
 {
 	for (int i=1;i<=2;i++) {
@@ -1411,6 +1443,7 @@ void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
 	}//for two pressure dirichlet values
 }
 
+//=============================================================================
 Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
 {
 	DEBUG("Constructing maximal matrix graph...");
@@ -1440,8 +1473,8 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
 				}
 			}
 
-	Teuchos::RCP<Epetra_CrsGraph> graph = Teuchos::rcp(new
-													   Epetra_CrsGraph(Copy,*StandardMap,numEntriesPerRow,false));
+	Teuchos::RCP<Epetra_CrsGraph> graph
+		= Teuchos::rcp(new Epetra_CrsGraph(Copy,*StandardMap,numEntriesPerRow,false));
 
 	DEBVAR(rowintcon_);
 	DEBVAR(sres);
@@ -1690,6 +1723,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
 	return graph;
 }
 
+//=============================================================================
 void THCM::insert_graph_entry(int* indices, int& pos,
 							  int i, int j, int k, int xx,
 							  int N, int M, int L) const
@@ -1707,6 +1741,7 @@ void THCM::insert_graph_entry(int* indices, int& pos,
 	}
 }
 
+//=============================================================================
 // set vmix_fix
 void THCM::fixMixing(int value)
 {
@@ -1717,10 +1752,10 @@ void THCM::fixMixing(int value)
 	}
 }
 
+//=============================================================================
 void THCM::SetupMonthlyForcing()
 {
 	DEBUG("Initialize monthly Levitus...");
-
 
 	// maps for 2D fields (surface forcing)
 	Teuchos::RCP<Epetra_Map> lev_map_dist = domain->CreateStandardMap(1,true);
@@ -1731,20 +1766,20 @@ void THCM::SetupMonthlyForcing()
 	Teuchos::RCP<Epetra_Map> intlev_map_root = Utils::Gather(*intlev_map_dist,0);
 
 	// create sequential and parallel vectors to hold the data
-	Teuchos::RCP<Epetra_MultiVector> temp_glob = Teuchos::rcp(new
-															  Epetra_Vector(*intlev_map_root));
-	Teuchos::RCP<Epetra_MultiVector> salt_glob = Teuchos::rcp(new
-															  Epetra_Vector(*intlev_map_root));
+	Teuchos::RCP<Epetra_MultiVector> temp_glob =
+		Teuchos::rcp(new Epetra_Vector(*intlev_map_root));
+	Teuchos::RCP<Epetra_MultiVector> salt_glob =
+		Teuchos::rcp(new Epetra_Vector(*intlev_map_root));
 
-	Teuchos::RCP<Epetra_MultiVector> tatm_glob = Teuchos::rcp(new
-															  Epetra_Vector(*lev_map_root));
-	Teuchos::RCP<Epetra_MultiVector> emip_glob = Teuchos::rcp(new
-															  Epetra_Vector(*lev_map_root));
+	Teuchos::RCP<Epetra_MultiVector> tatm_glob =
+		Teuchos::rcp(new Epetra_Vector(*lev_map_root));
+	Teuchos::RCP<Epetra_MultiVector> emip_glob =
+		Teuchos::rcp(new Epetra_Vector(*lev_map_root));
 
-	Teuchos::RCP<Epetra_MultiVector> taux_glob = Teuchos::rcp(new
-															  Epetra_Vector(*lev_map_root));
-	Teuchos::RCP<Epetra_MultiVector> tauy_glob = Teuchos::rcp(new
-															  Epetra_Vector(*lev_map_root));
+	Teuchos::RCP<Epetra_MultiVector> taux_glob =
+		Teuchos::rcp(new Epetra_Vector(*lev_map_root));
+	Teuchos::RCP<Epetra_MultiVector> tauy_glob =
+		Teuchos::rcp(new Epetra_Vector(*lev_map_root));
 
 	// get raw pointers to the data:
 	double *tatm_g, *emip_g, *taux_g, *tauy_g, *temp_g, *salt_g;
@@ -1756,7 +1791,7 @@ void THCM::SetupMonthlyForcing()
 	CHECK_ZERO((*tauy_glob)(0)->ExtractView(&tauy_g));
 
 	// now create distributed maps
-	Teuchos::RCP<Epetra_Map> lev_map_loc = domain->CreateAssemblyMap(1,true);
+	Teuchos::RCP<Epetra_Map> lev_map_loc    = domain->CreateAssemblyMap(1,true);
 	Teuchos::RCP<Epetra_Map> intlev_map_loc = domain->CreateAssemblyMap(1,false);
 
 	// and distributed vectors
@@ -1777,8 +1812,10 @@ void THCM::SetupMonthlyForcing()
 	CHECK_ZERO(tauy_loc->ExtractView(&ctauy));
 
 	// to import overlap
-	Teuchos::RCP<Epetra_Import> loc2dist = Teuchos::rcp(new Epetra_Import(*lev_map_loc,*lev_map_dist));
-	Teuchos::RCP<Epetra_Import> int_loc2dist = Teuchos::rcp(new Epetra_Import(*intlev_map_loc,*intlev_map_dist));
+	Teuchos::RCP<Epetra_Import> loc2dist =
+		Teuchos::rcp(new Epetra_Import(*lev_map_loc,*lev_map_dist));
+	Teuchos::RCP<Epetra_Import> int_loc2dist =
+		Teuchos::rcp(new Epetra_Import(*intlev_map_loc,*intlev_map_dist));
 
 	for (int month=1;month<=12;month++)
     {
@@ -1792,7 +1829,6 @@ void THCM::SetupMonthlyForcing()
 		}
 
 		// distribute levitus and wind fields
-
 		Teuchos::RCP<Epetra_MultiVector> tatm_dist = Utils::Scatter(*tatm_glob,*lev_map_dist);
 		Teuchos::RCP<Epetra_MultiVector> emip_dist = Utils::Scatter(*emip_glob,*lev_map_dist);
 		Teuchos::RCP<Epetra_MultiVector> temp_dist = Utils::Scatter(*temp_glob,*intlev_map_dist);
@@ -1813,11 +1849,11 @@ void THCM::SetupMonthlyForcing()
 		CHECK_ZERO(emip_dist->MaxValue(&emipmax));
 		CHECK_ZERO(tatm_dist->MinValue(&tatmmin));
 		CHECK_ZERO(emip_dist->MinValue(&emipmin));
-		/*
-		  INFO("Month: "<<month)
-		  INFO("Temperature-forcing range: ["<<tatmmin<<".."<<tatmmax<<"]");
-		  INFO("Salinity-forcing range: ["<<emipmin<<".."<<emipmax<<"]");
-		*/
+
+		INFO("Month: " << month);
+		INFO("Temperature-forcing range: [" << tatmmin << ".." << tatmmax << "]");
+		INFO("Salinity-forcing range: [" << emipmin << ".." << emipmax << "]");
+
 		F90NAME(m_monthly,set_forcing)(ctatm,cemip,ctaux,ctauy,&month);
 		if (internal_forcing)
 		{
@@ -1827,6 +1863,7 @@ void THCM::SetupMonthlyForcing()
 }
 
 
+//=============================================================================
 extern "C" {
 
 // this is a cheat for the fortran routine fsint from forcing.F90
@@ -1909,8 +1946,3 @@ extern "C" {
 		return nullSpace;
 	}
 };
-
-
-/////////////////////////////////////////////////////////////////////////////
-// end of implementation of THCM interface                                 //
-/////////////////////////////////////////////////////////////////////////////

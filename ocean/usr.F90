@@ -1,168 +1,165 @@
-!! A Fortran 90 replacement for the file 'usr.com'.			
-!! 									
-!! Note that the dimensions n,m,l are now set in the function init 	
-!! (implemented in usrc.F90) instead of being defined in par.com.	
-!! Some constants have been moved from m_usr to m_par, if you don't 	
-!! find what you are looking for, refer to par.F90.			
-!!									
+!! A Fortran 90 replacement for the file 'usr.com'.
+!!
+!! Note that the dimensions n,m,l are now set in the function init
+!! (implemented in usrc.F90) instead of being defined in par.com.
+!! Some constants have been moved from m_usr to m_par, if you don't
+!! find what you are looking for, refer to par.F90.
+!!
 module m_usr
-
-use m_par
-
-!===== LOCAL GRID VARIABLES =================================================
-!
-!     The grid variables on the subdomain are set by init in usrc.F90
-!
-
-      integer :: n    = 0             ! east-west (x) direction
-      integer :: m    = 0             ! north-south (y) direction
-      integer :: l    = 0             ! z direction
-      integer :: ndim = 0             ! total number of unknowns n*m*l*nun
-            
-      real    :: xmin,xmax            ! limits in x direction
-      real    :: ymin,ymax            ! limits in y direction
-
-      logical :: periodic             ! east-west periodicity on subdomain
-
-      real    :: dx, dy, dz
-      real,    allocatable, dimension(:)     :: x, y, z, xu, yv
-      real,    allocatable, dimension(:)     :: zw, ze, zwe, dfzT, dfzW
-
-      integer, allocatable, dimension(:,:,:) :: landm
-
-!     This is only used if SRES=0 (non-restoring salinity forcing),
-!     we set it to -1 to disable the integral condition
-      integer :: rowintcon = -1
-
-!===== GLOBAL GRID VARIABLES =================================================
-!
-!     The grid specifications that are the same between subdomains and
-!     global domain. If adjustable, it is done in initialize in
-!     global.F90
-!
-
-      real, parameter :: zmin  = -1.0
-      real, parameter :: zmax  =  0.0
-
-      real    :: hdim                 ! largest depth of the ocean
-      real    :: qz        = 1.0      ! vertical stretching parameter
-
-      integer :: itopo     = 1        ! 0: data, 1: no land, 2: idealized
-      logical :: FLAT      = .false.  ! flat bottom, otherwise .false.
-      logical :: rd_mask   = .false.  ! read land-array from file in ./mkmask/
-
-!===== MIXING AND FORCING FLAGS ==============================================
-!
-!     These are set in initialize in global.F90
-!     
-      integer :: ih         = 0       ! inhomogeneous (equatorial) mixing
-      integer :: vmix_GLB   = 1       ! mixing flag
-      integer :: tap        = 1       ! neutral physics taper, 1: Gerdes
-                                      ! et al., 2: Danabasoglu & McWilliams,
-                                      ! 3: De Niet et al.
-      logical :: rho_mixing = .false. ! mix density, instead of T and S
- 
-      integer :: TRES       = 1       ! restoring temp forcing
-      integer :: SRES       = 1       ! restoring salt forcing
-      integer :: iza        = 2       ! wind forcing, 0: data, 1: zon ave.,
-                                      ! 2: idealized
-      integer :: ite        = 1       ! temperature, 0: data, 1:idealized
-      integer :: its        = 1       ! salinity, 0: data, 1: idealized
-
-      logical :: rd_spertm  = .false. ! read salinity perturbation mask
-
-!--obsolete---
-     !integer :: ifw        = 1       ! freshwater forcing 0: data, 1: idealized  (USE its NOW)
-      
-     !integer :: CVT        = 1       ! no = 1; tanh =2; arctan = 3
-     !integer :: FBT        = 0       ! fixed bottom temperature 1 , no flux 0 
-     !integer :: FBS        = 0       ! fixed bottom salinity +1 , no flux 0 
-
-
-!===== FORCING FIELDS ========================================================
-!
-!     The subdomain forcing fields are set by forcing, which is called
-!     from init.
-
-      real, allocatable, dimension(:)     :: Frc
-      real, allocatable, dimension(:,:)   :: taux, tauy
-      real, allocatable, dimension(:,:)   :: tatm, emip, spert
-      real, allocatable, dimension(:,:,:)   :: internal_temp, internal_salt 
-      real, allocatable, dimension(:,:,:) :: ftlev, fslev
-!--obsolete---
-      real, allocatable, dimension(:,:)   :: tx,ty,ft,fs
-
-!===== OUTPUT ================================================================
-
-!     Output unit, formerly sent to fort.99. It is not yet clear how we can
-!     preserve THCM output on the subdomains meaningfully as the fortran files
-!     seem to get lost between calls from C++.
-#ifdef THCM_STDOUT      
-      integer :: f99  = 6
-#else      
-      integer :: f99  = 99
-#endif
-!     This is an artefact used in forcing.f to indicate wether to create some
-!     output. It should probably be kicked out
-      integer :: iout = 0
-
-!===== FIXED PARAMETERS ======================================================
-
-      real, parameter :: omegadim = 7.292e-05 
-      real, parameter :: r0dim    = 6.37e+06
-      real, parameter :: udim     = 0.1e+00
-      real, parameter :: gdim     = 9.8e+00
-      real, parameter :: rhodim   = 1.0e+03
-      real, parameter :: t0       = 15.0
-      real, parameter :: deltat   = 1.0
-      real, parameter :: s0       = 35.0
-      real, parameter :: cp0      = 4.2e+03
-  ! Parameters equation of state  
-  ! b1 = 5.6e-05, b2 = 6.3e-06, b3 = 3.7e-08
-      real :: alphaT   = 1.0e-04
-      real :: alphaS   = 7.6e-04
-      real, parameter :: alpt1    = 2.93    ! 2*b2*t0/b1 - 3*b3*t0*t0/b1
-      real, parameter :: alpt2    = 8.3e-02 ! b2/b1 - 3*t0*b3/b1
-      real, parameter :: alpt3    = 6.6e-04 ! b3/b1
-  ! Mixing parameters     
-      real, parameter :: ah       = 2.5e+05 !2 deg resolution      
-     !real, parameter :: ah       = 1.0e+05 !1 deg resolution      
-     !real, parameter :: ah       = 1.0e+04 !0.5 deg resolution
-      real, parameter :: av       = 1.0e-03
-      real, parameter :: kappah   = 1.0e+03
-      real, parameter :: kappav   = 1.0e-04
-!--obsolete---
-  ! Extra parameters for vertical profiles of k_h and k_v (England 1993)
-     !real, parameter :: Ar       = 1.05e-04/pi
-     !real, parameter :: Alam     = 4.5e-03
-     !real, parameter :: zstar    = -2500.
-     !real, parameter :: Ash      = 1.0e+03 
-  ! Bottom values
-     !real, parameter :: bottem   = 0.0
-     !real, parameter :: botsal   = 0.0
-
-
-
-!--obsolete (at least this seems to be the case) --      	
-      real, dimension(:,:,:),allocatable :: fricum,fricvm
-      real, dimension(:), allocatable    :: kapv,kaph
-      real, dimension(:,:,:),allocatable :: emix
-      real, dimension(:,:,:),allocatable :: pv_adj
-
-!________________________________________________________________
-
-
-!***************************************************************************
-
-contains
-
-subroutine allocate_usr(dim_n,dim_m,dim_l)
 
   use m_par
 
-  implicit none
-  
-  integer dim_n,dim_m,dim_l
+  !===== LOCAL GRID VARIABLES =================================================
+  !
+  !     The grid variables on the subdomain are set by init in usrc.F90
+  !
+
+  integer :: n    = 0             ! east-west (x) direction
+  integer :: m    = 0             ! north-south (y) direction
+  integer :: l    = 0             ! z direction
+  integer :: ndim = 0             ! total number of unknowns n*m*l*nun
+
+  real    :: xmin,xmax            ! limits in x direction
+  real    :: ymin,ymax            ! limits in y direction
+
+  logical :: periodic             ! east-west periodicity on subdomain
+
+  real    :: dx, dy, dz
+  real,    allocatable, dimension(:)     :: x, y, z, xu, yv
+  real,    allocatable, dimension(:)     :: zw, ze, zwe, dfzT, dfzW
+
+  integer, allocatable, dimension(:,:,:) :: landm
+
+  !     This is only used if SRES=0 (non-restoring salinity forcing),
+  !     we set it to -1 to disable the integral condition
+  integer :: rowintcon = -1
+
+  !===== GLOBAL GRID VARIABLES =================================================
+  !     The grid specifications that are the same between subdomains and
+  !     global domain. If adjustable, it is done in initialize in
+  !     global.F90
+
+  real, parameter :: zmin  = -1.0
+  real, parameter :: zmax  =  0.0
+
+  real    :: hdim                 ! largest depth of the ocean
+  real    :: qz        = 1.0      ! vertical stretching parameter
+
+  integer :: itopo     = 1        ! 0: data, 1: no land, 2: idealized
+  logical :: FLAT      = .false.  ! flat bottom, otherwise .false.
+  logical :: rd_mask   = .false.  ! read land-array from file in ./mkmask/
+
+  !===== MIXING AND FORCING FLAGS ==============================================
+  !     These are set in initialize in global.F90
+
+  integer :: ih         = 0       ! inhomogeneous (equatorial) mixing
+  integer :: vmix_GLB   = 1       ! mixing flag
+  integer :: tap        = 1       ! neutral physics taper, 1: Gerdes
+  ! et al., 2: Danabasoglu & McWilliams,
+  ! 3: De Niet et al.
+  logical :: rho_mixing = .false. ! mix density, instead of T and S
+
+  integer :: TRES       = 1       ! restoring temp forcing
+  integer :: SRES       = 1       ! restoring salt forcing
+  integer :: iza        = 2       ! wind forcing, 0: data, 1: zon ave.,
+  ! 2: idealized
+  integer :: ite        = 1       ! temperature, 0: data, 1:idealized
+  integer :: its        = 1       ! salinity, 0: data, 1: idealized
+
+  logical :: rd_spertm  = .false. ! read salinity perturbation mask
+
+  !--obsolete---
+  !integer :: ifw        = 1       ! freshwater forcing 0: data, 1: idealized  (USE its NOW)
+
+  !integer :: CVT        = 1       ! no = 1; tanh =2; arctan = 3
+  !integer :: FBT        = 0       ! fixed bottom temperature 1 , no flux 0
+  !integer :: FBS        = 0       ! fixed bottom salinity +1 , no flux 0
+
+
+  !===== FORCING FIELDS ========================================================
+  !
+  !     The subdomain forcing fields are set by forcing, which is called
+  !     from init.
+
+  real, allocatable, dimension(:)     :: Frc
+  real, allocatable, dimension(:,:)   :: taux, tauy
+  real, allocatable, dimension(:,:)   :: tatm, emip, spert
+  real, allocatable, dimension(:,:,:) :: internal_temp, internal_salt
+  real, allocatable, dimension(:,:,:) :: ftlev, fslev
+  !--obsolete---
+  real, allocatable, dimension(:,:)   :: tx,ty,ft,fs
+
+  !===== OUTPUT ================================================================
+
+  !     Output unit, formerly sent to fort.99. It is not yet clear how we can
+  !     preserve THCM output on the subdomains meaningfully as the fortran files
+  !     seem to get lost between calls from C++.
+#ifdef THCM_STDOUT
+  integer :: f99  = 6
+#else
+  integer :: f99  = 99
+#endif
+  !     This is an artefact used in forcing.f to indicate wether to create some
+  !     output. It should probably be kicked out
+  integer :: iout = 0
+
+  !===== FIXED PARAMETERS ======================================================
+
+  real, parameter :: omegadim = 7.292e-05
+  real, parameter :: r0dim    = 6.37e+06
+  real, parameter :: udim     = 0.1e+00
+  real, parameter :: gdim     = 9.8e+00
+  real, parameter :: rhodim   = 1.0e+03
+  real, parameter :: t0       = 15.0
+  real, parameter :: deltat   = 1.0
+  real, parameter :: s0       = 35.0
+  real, parameter :: cp0      = 4.2e+03
+  ! Parameters equation of state
+  ! b1 = 5.6e-05, b2 = 6.3e-06, b3 = 3.7e-08
+  real :: alphaT   = 1.0e-04
+  real :: alphaS   = 7.6e-04
+  real, parameter :: alpt1    = 2.93    ! 2*b2*t0/b1 - 3*b3*t0*t0/b1
+  real, parameter :: alpt2    = 8.3e-02 ! b2/b1 - 3*t0*b3/b1
+  real, parameter :: alpt3    = 6.6e-04 ! b3/b1
+  ! Mixing parameters
+  real, parameter :: ah       = 2.5e+05 !2 deg resolution
+  !real, parameter :: ah       = 1.0e+05 !1 deg resolution
+  !real, parameter :: ah       = 1.0e+04 !0.5 deg resolution
+  real, parameter :: av       = 1.0e-03
+  real, parameter :: kappah   = 1.0e+03
+  real, parameter :: kappav   = 1.0e-04
+  !--obsolete---
+  ! Extra parameters for vertical profiles of k_h and k_v (England 1993)
+  !real, parameter :: Ar       = 1.05e-04/pi
+  !real, parameter :: Alam     = 4.5e-03
+  !real, parameter :: zstar    = -2500.
+  !real, parameter :: Ash      = 1.0e+03
+  ! Bottom values
+  !real, parameter :: bottem   = 0.0
+  !real, parameter :: botsal   = 0.0
+
+
+
+  !--obsolete (at least this seems to be the case) --
+  real, dimension(:,:,:),allocatable :: fricum,fricvm
+  real, dimension(:), allocatable    :: kapv,kaph
+  real, dimension(:,:,:),allocatable :: emix
+  real, dimension(:,:,:),allocatable :: pv_adj
+
+  !________________________________________________________________
+
+
+  !***************************************************************************
+
+contains
+
+  subroutine allocate_usr(dim_n,dim_m,dim_l)
+
+    use m_par
+
+    implicit none
+
+    integer dim_n,dim_m,dim_l
 
     ! set dimensions in m_par:
     m=dim_m
@@ -170,106 +167,106 @@ subroutine allocate_usr(dim_n,dim_m,dim_l)
     l=dim_l
     ndim = m*n*(l+la)*nun
 
-      allocate(x(n),y(m),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l),&
-               dfzT(l),dfzW(0:l))
+    allocate(x(n),y(m),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l),&
+         dfzT(l),dfzW(0:l))
 
-      allocate(kapv(0:l),kaph(l),emix(n,m,0:l))
-      allocate(landm(0:n+1,0:m+1,0:l+la+1))
-      landm=OCEAN;! in case no topology is read in
-      allocate(fricum(0:n,0:m,l),fricvm(0:n,0:m,l))
+    allocate(kapv(0:l),kaph(l),emix(n,m,0:l))
+    allocate(landm(0:n+1,0:m+1,0:l+la+1))
+    landm=OCEAN;! in case no topology is read in
+    allocate(fricum(0:n,0:m,l),fricvm(0:n,0:m,l))
 
-      allocate(Frc(ndim), taux(n,m), tauy(n,m), tx(n,m), ty(n,m))
-      allocate(ft(n,m), fs(n,m), tatm(n,m), emip(n,m), spert(n,m))
-      allocate(ftlev(n,m,l), fslev(n,m,l))
-      allocate(internal_temp(n,m,l), internal_salt(n,m,l)) 
-      taux  = 0.0
-      tauy  = 0.0
-      tatm  = 0.0
-      emip  = 0.0
-      spert = 0.0
-      internal_temp  = 0.0
-      internal_salt  = 0.0
-      allocate(pv_adj(n,m,0:l))
-end subroutine allocate_usr
+    allocate(Frc(ndim), taux(n,m), tauy(n,m), tx(n,m), ty(n,m))
+    allocate(ft(n,m), fs(n,m), tatm(n,m), emip(n,m), spert(n,m))
+    allocate(ftlev(n,m,l), fslev(n,m,l))
+    allocate(internal_temp(n,m,l), internal_salt(n,m,l))
+    taux  = 0.0
+    tauy  = 0.0
+    tatm  = 0.0
+    emip  = 0.0
+    spert = 0.0
+    internal_temp  = 0.0
+    internal_salt  = 0.0
+    allocate(pv_adj(n,m,0:l))
+  end subroutine allocate_usr
 
-subroutine deallocate_usr()
+  subroutine deallocate_usr()
 
-  use m_par
+    use m_par
 
-  implicit none
-  
-      deallocate(x,y,z,xu,yv,zw,ze,zwe,&
-               dfzT,dfzW)
+    implicit none
 
-      deallocate(kapv,kaph,emix)
-      deallocate(landm)
-      deallocate(fricum,fricvm)
+    deallocate(x,y,z,xu,yv,zw,ze,zwe,&
+         dfzT,dfzW)
 
-      deallocate(Frc, taux, tauy, tx, ty)
-      deallocate(ft, fs, tatm, emip, spert)
-      deallocate(ftlev, fslev)
-      deallocate(internal_temp,internal_salt)
-      deallocate(pv_adj)
-end subroutine deallocate_usr
+    deallocate(kapv,kaph,emix)
+    deallocate(landm)
+    deallocate(fricum,fricvm)
 
-!! can be called from C++ to get the grid arrays:       
-!! xx/yy/zz are the cell centers and range from 1:n/m/l 
-!! xxu/yyz/zzw are 0-based in fortran but one-based for 
-!! this subroutine since referencing C-arrays as zero-  
-!! based is not a good idea (I think).
-subroutine get_grid_data(xx,yy,zz,xxu,yyv,zzw)
+    deallocate(Frc, taux, tauy, tx, ty)
+    deallocate(ft, fs, tatm, emip, spert)
+    deallocate(ftlev, fslev)
+    deallocate(internal_temp,internal_salt)
+    deallocate(pv_adj)
+  end subroutine deallocate_usr
 
-implicit none
+  !! can be called from C++ to get the grid arrays:
+  !! xx/yy/zz are the cell centers and range from 1:n/m/l
+  !! xxu/yyz/zzw are 0-based in fortran but one-based for
+  !! this subroutine since referencing C-arrays as zero-
+  !! based is not a good idea (I think).
+  subroutine get_grid_data(xx,yy,zz,xxu,yyv,zzw)
 
-real, dimension(n) :: xx
-real, dimension(m) :: yy
-real, dimension(l) :: zz
+    implicit none
 
-real, dimension(n+1) :: xxu
-real, dimension(m+1) :: yyv
-real, dimension(l+1) :: zzw
+    real, dimension(n) :: xx
+    real, dimension(m) :: yy
+    real, dimension(l) :: zz
 
-xx(1:n) = x(1:n)
-yy(1:m) = y(1:m)
-zz(1:l) = z(1:l)
+    real, dimension(n+1) :: xxu
+    real, dimension(m+1) :: yyv
+    real, dimension(l+1) :: zzw
 
-xxu(1:n+1) = xu(0:n)
-yyv(1:m+1) = yv(0:m)
-zzw(1:l+1) = zw(0:l)
+    xx(1:n) = x(1:n)
+    yy(1:m) = y(1:m)
+    zz(1:l) = z(1:l)
 
-end subroutine get_grid_data
+    xxu(1:n+1) = xu(0:n)
+    yyv(1:m+1) = yv(0:m)
+    zzw(1:l+1) = zw(0:l)
 
-subroutine set_internal_forcing(ctemp,csalt)
+  end subroutine get_grid_data
 
-implicit none
+  subroutine set_internal_forcing(ctemp,csalt)
 
-real, dimension(m*n*l), intent(in) :: ctemp,csalt
+    implicit none
 
-integer :: i,j,k,pos
-  
-  
-  if (.not. allocated(internal_temp)) then
-    stop 'internal_temp not allocated'
-  end if
+    real, dimension(m*n*l), intent(in) :: ctemp,csalt
 
-  if (.not. allocated(internal_salt)) then
-    stop 'internal_salt not allocated'
-  end if
-OPEN(51,FILE='settemp.txt',STATUS='unknown')
-REWIND(51)
-  
-  pos = 1
-  do k=1,l
-  do j=1,m
-    do i=1,n
-      internal_temp(i,j,k) = ctemp(pos)
-      internal_salt(i,j,k) = csalt(pos)
-      WRITE(51,*) internal_temp(i,j,k)          
-      pos = pos + 1
+    integer :: i,j,k,pos
+
+
+    if (.not. allocated(internal_temp)) then
+       stop 'internal_temp not allocated'
+    end if
+
+    if (.not. allocated(internal_salt)) then
+       stop 'internal_salt not allocated'
+    end if
+    OPEN(51,FILE='settemp.txt',STATUS='unknown')
+    REWIND(51)
+
+    pos = 1
+    do k=1,l
+       do j=1,m
+          do i=1,n
+             internal_temp(i,j,k) = ctemp(pos)
+             internal_salt(i,j,k) = csalt(pos)
+             WRITE(51,*) internal_temp(i,j,k)
+             pos = pos + 1
+          end do
+       end do
     end do
-  end do
-end do
-CLOSE(51)                      
-end subroutine set_internal_forcing
-                      
+    CLOSE(51)
+  end subroutine set_internal_forcing
+
 end module m_usr

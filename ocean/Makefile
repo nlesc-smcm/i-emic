@@ -7,6 +7,7 @@ obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
      itplbv.o levitus.o mat.o matetc.o lev.o mix.o res.o usr.o par.o\
      global.o thcm_utils.o scaling.o\
 	 mix_imp.o mix_sup.o spf.o topo.o usrc.o\
+	 insertions.o\
 	 Ocean.o OceanTheta.o OceanCont.o\
      THCM.o OceanGrid.o\
 	 TRIOS_Domain.o TRIOS_BlockPreconditioner.o TRIOS_Saddlepoint.o\
@@ -40,7 +41,7 @@ OceanCont.o: OceanCont.C OceanCont.H $(HEADERDEPS)
 %.o: %.f usr.o
 	$(F77) -c $(F77_FLAGS) $<
 
-# dependencies
+# specific dependencies
 
 par.o: par.F90
 	$(FC) -c $(FC_FLAGS) $<

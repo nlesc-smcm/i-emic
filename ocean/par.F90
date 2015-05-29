@@ -86,6 +86,7 @@ module m_par
   integer, parameter :: TT = 5
   integer, parameter :: SS = 6
 
+  ! enumeration to identify grid point type
   integer, parameter :: OCEAN = 0
   integer, parameter :: LAND  = 1
   integer, parameter :: WATER = 2
