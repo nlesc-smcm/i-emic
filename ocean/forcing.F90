@@ -95,8 +95,6 @@ SUBROUTINE forcing
         endif
      enddo
   enddo
-  _INFO_("DEBUG")
-  _INFO_(tatm(1,1))
              
   !
   ! Determine salinity forcing

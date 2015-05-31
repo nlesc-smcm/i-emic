@@ -31,10 +31,6 @@ contains
     else
        _INFO2_("Unable to insert atmosphere, ite: ", ite)
     end if
-    _INFO_(pi)
-    _INFO_(y(1))
-    _INFO_(y(5))
-    _INFO_(tatm(1,1))
   end subroutine insert_atmosphere
 
 end module m_insertions

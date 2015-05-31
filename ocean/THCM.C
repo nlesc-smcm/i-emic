@@ -927,7 +927,7 @@ void THCM::insertAtmosphere()
 	Teuchos::RCP<Epetra_Map> atmos_map_loc = domain->CreateAssemblyMap(1, true);
 	Teuchos::RCP<Epetra_Vector> atmos_loc  =
 		Teuchos::rcp(new Epetra_Vector(*atmos_map_loc));
-	atmos_loc->PutScalar(2.0);
+	atmos_loc->PutScalar(0.0);
 	double *atmos_loc_array;
 	atmos_loc->ExtractView(&atmos_loc_array);
 	F90NAME(m_insertions, insert_atmosphere)(atmos_loc_array);

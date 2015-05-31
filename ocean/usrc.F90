@@ -290,7 +290,6 @@ SUBROUTINE rhs(un,B)
   integer i,j,k,k1,row,find_row2, mode, iter
 
   !call writeparameters
-  _INFO_(tatm(1,1))
   mix  = 0.0
   Al   = 0
   begA = 0
