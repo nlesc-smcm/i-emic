@@ -253,6 +253,7 @@ SUBROUTINE matrix(un,sig1,sig2)
               row = find_row2(i,j,k,ii)
               Al(i,j,k,5,ii,ii) = Al(i,j,k,5,ii,ii) - sig1*coB(row)
            end do
+
            ! note that B is 0 in W/P points, but we add something there, too
            ! to make sure the diagonal gets included in the matrix (sig2~mach.eps)
            row = find_row2(i,j,k,WW)

@@ -555,9 +555,9 @@ namespace TRIOS {
 		double tol = 1e-6;
 
 		// Create a sort manager to pass into the block Krylov-Schur solver manager
-		// -->  Make sure the reference-counted pointer is of type Anasazi::SortManager<>
-		// -->  The block Krylov-Schur solver manager uses Anasazi::BasicSort<> by default,
-		//      so you can also pass in the parameter "Which", instead of a sort manager.
+		//  Make sure the reference-counted pointer is of type Anasazi::SortManager<>
+		//  The block Krylov-Schur solver manager uses Anasazi::BasicSort<> by default,
+		//  so you can also pass in the parameter "Which", instead of a sort manager.
 		Teuchos::RCP<Anasazi::SortManager<ScalarType> > MySort =
 			Teuchos::rcp( new Anasazi::BasicSort<ScalarType>( which ) );
 

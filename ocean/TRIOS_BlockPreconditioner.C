@@ -782,7 +782,7 @@ namespace TRIOS {
 		//    -k    | k                                                       
 		//      -k  |   k                                                     
 		//        -kv     k                                                   
-		//          -k -->  k                                                 
+		//          -k  ->  k                                                 
 
 		// if the matrix is correctly built we can do this in parallel, as    
 		// there should only be connections in z-direction, which is not      

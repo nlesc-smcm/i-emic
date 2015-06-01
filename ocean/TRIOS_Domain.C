@@ -101,7 +101,7 @@ namespace TRIOS
 		//           m,pidM 
 		//           |      
 		// P3 P4 P5  v      
-		//  --n-->          
+		//   --n->          
 		//   pidN           
 		//                  
 		// note that this corresponds to the column-major ordering in Fortran,

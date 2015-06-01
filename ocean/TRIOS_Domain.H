@@ -69,7 +69,7 @@ namespace TRIOS {
 		  +--+--+ m								
 		  |P3|P4| |								
 		  +--+--+ v								
-		  <--n--->								
+		  <--n-- >								
                                                                                 
 		  \endverbatim
 		  

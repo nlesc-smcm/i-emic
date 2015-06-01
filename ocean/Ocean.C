@@ -276,8 +276,7 @@ void Ocean::ScaleProblem()
 	//------------------------------------------------------
 	double nrm;
 	sol_->Norm2(&nrm);
-	DEBUG("Ocean::scaleProblem() ----->  sol (before scaling): "
-		  << nrm);
+	DEBUG("Ocean::scaleProblem() sol (before scaling): "  << nrm);
 	
 	//------------------------------------------------------
 	jac_->LeftScale(*rowScalingRecipr_);
@@ -287,8 +286,7 @@ void Ocean::ScaleProblem()
 
 	//------------------------------------------------------
 	sol_->Norm2(&nrm);
-	DEBUG("Ocean::scaleProblem() ----->  sol (after scaling): "
-		  << nrm);
+	DEBUG("Ocean::scaleProblem() sol (after scaling): "  << nrm);
 }
 
 //=====================================================================
@@ -300,8 +298,7 @@ void Ocean::UnscaleProblem()
 	//------------------------------------------------------
 	double nrm;
 	sol_->Norm2(&nrm);
-	DEBUG("Ocean::unscaleProblem() ----->  sol (before unscaling): "
-		  << nrm);
+	DEBUG("Ocean::unscaleProblem() sol (before unscaling): " << nrm);
 	
 	//------------------------------------------------------
 	jac_->LeftScale(*rowScaling);
@@ -311,8 +308,7 @@ void Ocean::UnscaleProblem()
 
 	//------------------------------------------------------
 	sol_->Norm2(&nrm);
-	DEBUG("Ocean::unscaleProblem() ----->  sol (after unscaling): "
-		  << nrm);
+	DEBUG("Ocean::unscaleProblem() sol (after unscaling): " << nrm);
 }
 
 //=====================================================================

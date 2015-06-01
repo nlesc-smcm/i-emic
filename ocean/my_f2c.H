@@ -10,10 +10,10 @@
 // define how fortran functions are called
 #if defined(GNU)
 // g++ and gfortran
-//--> ##: merging,
-//--> Append _ to function name
+//   ##: merging,
+//   Append _ to function name
 #define FNAME(fun) fun ## _ 
-//--> Prepend method name with __<module>_MOD_ 
+//   Prepend method name with __<module>_MOD_ 
 #define F90NAME(mod,fun) __ ## mod ## _MOD_ ## fun  
 
 #elif defined(G95)

@@ -4,7 +4,7 @@ SUBROUTINE assemble
   use m_mat
   use m_usr
   implicit none
-  call preprocessA_old ! is this necessary?
+  call preprocessA_old !--> is this always necessary?
   call fillcolA
   call intcond
 
@@ -158,45 +158,50 @@ SUBROUTINE fillcolA
   !  |  beg{.} : row pointer              |
   !  +------------------------------------+
   !
-  !   Obtaining the matrix: 
-  !   1) The top iteration travels through the grid points:
-  !       vertically       k = 1, l+la
-  !       meridionally     j = 1, m
-  !       zonally          i = 1, n
-  !
-  !   2) For each grid point we iterate over its neighbours: kk = 1, np
-  !       A neighbour is put into (i2, j2, k2)
-  !  
-  !   3) For each neighbour we iterate over every unknown: ii = 1, nun
-  !       For every unknown we obtain its row and fill beg{.}
-  !
-  !   4) Then we iterate over every unknown including ii itself: jj = 1, nun
-  !       The coefficient c in d/dt ii|(i,j,k) = c jj|(i2,j2,k2) + ...
-  !       is stored in the row corresponding to ii|(i,j,k) and the column
-  !       corresponding to jj|(i2,j2,k2).
-  
+  ! +-----------------------------------------------------------------------------+
+  ! | Obtaining the matrix:                                                       |
+  ! | 1) The top iteration travels through the grid points:                       |
+  ! |     vertically       k = 1, l+la                                            |
+  ! |     meridionally     j = 1, m                                               |
+  ! |     zonally          i = 1, n                                               |
+  ! |                                                                             |
+  ! | 2) For each grid point we iterate over its neighbours: kk = 1, np           |
+  ! |     Every neighbour's coordinate set is stored: (i2, j2, k2)                |
+  ! |                                                                             |
+  ! | 3) For each neighbour we iterate over every unknown: ii = 1, nun            |
+  ! |     For every unknown we obtain its row and set a value in beg{.}.          |
+  ! |     Assume an unknown is connected to itself and every other unknown in     |
+  ! |     every point in the stencil, then the number of elements in each row is  |
+  ! |     at most nun*np = 6*27. The row pointer for row r is therefore set to    |
+  ! |     nun*np*(r-1) + 1. Later on this will be corrected... (?)                |
+  ! |                                                                             |
+  ! | 4) Then we iterate over every unknown including ii itself: jj = 1, nun      |
+  ! |     The coefficient c in d/dt ii|(i,j,k) = c jj|(i2,j2,k2) + ...            |
+  ! |     is stored in the row corresponding to ii|(i,j,k) and the column         |
+  ! |     corresponding to jj|(i2,j2,k2).                                         |
+  ! +-----------------------------------------------------------------------------+
   coA = 0.0
-  is  = nun
-  js  = nun*n
-  ks  = nun*n*m
-  do k = 1, l+la ! grid points
+  is  = nun        !--> any use?
+  js  = nun*n      !--> any use?
+  ks  = nun*n*m    !--> any use?
+  do k = 1, l+la
      do j = 1, m
         do i = 1, n
-           do kk = 1,np ! neighbours
+           do kk = 1,np
 
               ! shift(i,j,k,i2,j2,k2,kk) returns the neighbour at location kk
               !  w.r.t. the center of the stencil (5) defined above
               call shift(i,j,k,i2,j2,k2,kk)
-              do ii = 1, nun ! unknowns
+              do ii = 1, nun
 
                  ! find_row2(i,j,k,ii) returns the row in the matrix for variable
                  !  ii at grid point (i,j,k) (matetc.F90)
                  row = find_row2(i,j,k,ii)
                  v   = nun*np*(row-1)
                  begA(row) = v + 1   ! assuming every row will have nun*np entries
-                 do jj = 1, nun ! unknowns
+                 do jj = 1, nun
                     if (active(kk,ii,jj)) then
-                       w = v + (jj-1)*np ! this gives us a blocked order:
+                       w = v + (jj-1)*np ! this gives us a grouped ordering:
                                          !  [(u,v,w,p,T,S)_1,...,(u,v,w,p,T,S)_ndim]^T
                        coA(w+kk)  = al(i,j,k,kk,ii,jj)
                        jcoA(w+kk) = find_row2(i2,j2,k2,jj)
@@ -207,6 +212,8 @@ SUBROUTINE fillcolA
         end do
      end do
   end do
+
+  ! final element of beg{.} array should be final row + 1
   begA(ndim + 1) = nun * np * ndim + 1
 
   if (periodic) then
@@ -339,7 +346,7 @@ SUBROUTINE intcond
 
   !     Replace S equation with an 'integral' condition for s
 
-  ! this is now done in Trilinos, so we simply
+  ! this is now done in Trilinos, so we simply ! --> wat is dit... waarom, waar?
   return
 
   if( SRES == 1 ) return

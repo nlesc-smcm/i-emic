@@ -868,7 +868,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
 		if (scaling_type == "THCM")
 		{
-			DEBUG(" THCM ---> RecomputeScaling()");
+			DEBUG(" THCM:  RecomputeScaling()");
 			this->RecomputeScaling();
 
 #if 1

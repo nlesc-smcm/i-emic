@@ -29,7 +29,7 @@ typedef int MaskType;
   |           |       |        |       |  |        
   z           |  pTS  uv       | wpTS  | phi       
   |           |       |        |       |  |        
-  theta-->     +-------+        +-------+ -theta->  
+  theta->     +-------+        +-------+ -theta->  
                                                    
   (front view)      (top view)          
                                                    
