@@ -1,5 +1,5 @@
 //=======================================================================
-// Timestepping test routine
+// Continuation test routine
 //  using the theta method functionality in this project
 //=======================================================================
 #include <Epetra_config.h>

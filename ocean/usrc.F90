@@ -63,10 +63,10 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
         end do
      end do
   end do
-  
-  ! Make the dummy cells all land so the indexing 
-  ! scheme (assemble.F90) doesn't get confused.   
-  ! This means that there have to be at least two 
+
+  ! Make the dummy cells all land so the indexing
+  ! scheme (assemble.F90) doesn't get confused.
+  ! This means that there have to be at least two
   ! layers of overlap in the global parallel session.
   if (.not. periodic) then
      landm(0,:,:)   = LAND
@@ -95,7 +95,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   call vmix_init	! ATvS-Mix
   call atmos_coef
   call forcing
-  
+
   _INFO_('THCM: init...  done')
 end subroutine init
 
@@ -139,7 +139,7 @@ SUBROUTINE mixe
   !
 end SUBROUTINE mixe
 !*****************************************************************************
-SUBROUTINE setparcs(param,value) 
+SUBROUTINE setparcs(param,value)
   !     interface for Trilinos to set the thirty continuation variables
   use, intrinsic :: iso_c_binding
   use m_usr
@@ -147,7 +147,7 @@ SUBROUTINE setparcs(param,value)
   integer(c_int) param
   real(c_double) value
   !WRITE(f99,*) 'setting par(',param,')=',value
-  IF ((param>=1).AND.(param<=npar)) THEN 
+  IF ((param>=1).AND.(param<=npar)) THEN
      PAR(param) = value
   ELSE
      WRITE(f99,*) 'error in transfer parameter to fortran'
@@ -155,7 +155,7 @@ SUBROUTINE setparcs(param,value)
   !     ENDIF
 END SUBROUTINE setparcs
 !*****************************************************************************
-SUBROUTINE getparcs(param,value) 
+SUBROUTINE getparcs(param,value)
   !     interface for Trilinos to get the thirty continuation variables
   use, intrinsic :: iso_c_binding
   use m_usr
@@ -163,8 +163,8 @@ SUBROUTINE getparcs(param,value)
   integer(c_int) param
   real(c_double) value
   !WRITE(f99,*) 'setting par(',param,')=',value
-  IF ((param>=1).AND.(param<=npar)) THEN 
-     value=PAR(param) 
+  IF ((param>=1).AND.(param<=npar)) THEN
+     value=PAR(param)
   ELSE
      WRITE(f99,*) 'error in transfer parameter from fortran'
   ENDIF
@@ -210,14 +210,14 @@ SUBROUTINE matrix(un,sig1,sig2)
   _DEBUG_("Build diagonal matrix B...")
   call fillcolB
   _DEBUG_("Build linear part of Jacobian...")
-  call lin        
+  call lin
 #ifndef THCM_LINEAR
   _DEBUG_("Build nonlinear part of Jacobian...")
-  call nlin_jac(un) 
+  call nlin_jac(un)
 #endif
   !{ removing tons of things for eigen-analysis test...
 #if 0
-  !Euv 
+  !Euv
   Al(:,:,:,:,UU:VV,WW) = 0.0
   !BTS
   Al(:,:,:,:,WW,TT:SS) = 0.0
@@ -248,7 +248,7 @@ SUBROUTINE matrix(un,sig1,sig2)
 
   do k = 1, l+la
      do j = 1, m
-        do i = 1, n          
+        do i = 1, n
            do ii = 1,nun
               row = find_row2(i,j,k,ii)
               Al(i,j,k,5,ii,ii) = Al(i,j,k,5,ii,ii) - sig1*coB(row)
@@ -264,7 +264,7 @@ SUBROUTINE matrix(un,sig1,sig2)
   enddo
 
 
-  call boundaries 
+  call boundaries
 
   call assemble
 
@@ -295,14 +295,14 @@ SUBROUTINE rhs(un,B)
   begA = 0
   coA  = 0
   jcoA = 0
-  call lin
+  call lin              !--> wordt misschien te vaak aangeroepen?
 #ifndef THCM_LINEAR
   call nlin_rhs(un)
-#endif      
-  call forcing
-  call boundaries
+#endif
+  call forcing          !--> wordt misschien te vaak aangeroepen?
+  call boundaries       !--> wordt misschien te vaak aangeroepen?
   call assemble
-  call matAvec(un,Au)
+  call matAvec(un,Au) !--> Tamelijk fancy dus leg uit wat hier gebeurt!
   ! ATvS-Mix ---------------------------------------------------------------------
   if (vmix_flag.ge.1) then
      mode=vmix_fix
@@ -342,6 +342,20 @@ SUBROUTINE lin
   USE m_mat
   !     Thermohaline equations
   !     Produce local element matrices for linear operators
+  ! +---------------------------------------------------------------------+
+  ! |   Al is a list of dependencies between the unknowns, see m_mat      |
+  ! |      Al(i,j,k,loc,A,B) = c                                          |
+  ! |       where loc is one of the locations below:                      |
+  ! |     +----------++-------++----------+                               |
+  ! |     | 12 15 18 || 3 6 9 || 21 24 27 |                               |
+  ! |     | 11 14 17 || 2 5 8 || 20 23 26 |                               |
+  ! |     | 10 13 16 || 1 4 7 || 19 22 25 |                               |
+  ! |     |  below   || center||  above   |                               |
+  ! |     +----------++-------++----------+                               |
+  ! |                                                                     |
+  ! |     For instance, Al(i,j,k,14,A,B) = c is                           |
+  ! |     d/dt A|(i,j,k) = c*B|(i,j,k-1) + ...                            |
+  ! +---------------------------------------------------------------------+
   use m_usr
   use m_atm
   implicit none
@@ -367,7 +381,7 @@ SUBROUTINE lin
        &     vyy,tyy,vyc,vzz,tzz,wzc,vxs,tbc,tyc,fv,tc,py,pz
 
 
-  v=>u 
+  v=>u
   vy=>uy
   vcsi=>ucsi
   vxx=>uxx
@@ -388,13 +402,13 @@ SUBROUTINE lin
   pz=>px
 
 
-  EV     = par(EK_V) 
+  EV     = par(EK_V)
   EH     = par(EK_H)
   ph     = (1-par(MIXP))*par(PE_H)
   pv     = par(PE_V)
   lambda = par(LAMB)
   xes    = par(NLES)
-  bi     = par(BIOT) 
+  bi     = par(BIOT)
   Ra     = par(RAYL)
   !      rintt  = par(IFRICT)	! ATvS-Mix
 
@@ -414,7 +428,7 @@ SUBROUTINE lin
 
   call vderiv(1,vb )
   call vderiv(2,vxx)
-  call vderiv(3,vyy)      
+  call vderiv(3,vyy)
   call vderiv(4,vzz)
   call vderiv(5,vcsi)
   call vderiv(6,uxs)
@@ -422,14 +436,14 @@ SUBROUTINE lin
   call coriolis(2,fu)
   call gradp(2,py)
   Al(:,:,1:l,:,VV,UU) = fu - EH*uxs
-  Al(:,:,1:l,:,VV,VV) = -EH*(vxx + vyy+vcsi)  -EV*vzz !+ rintt*v ! ATvS-Mix 
+  Al(:,:,1:l,:,VV,VV) = -EH*(vxx + vyy+vcsi)  -EV*vzz !+ rintt*v ! ATvS-Mix
   Al(:,:,1:l,:,VV,PP) = py
 
   call gradp(3,pz)
   call tderiv(6,tbc)
   Al(:,:,1:l,:,WW,PP) = pz
-  ! 
-  Al(:,:,1:l,:,WW,TT) = - Ra *(1. + xes*alpt1) * tbc/2. 
+  !
+  Al(:,:,1:l,:,WW,TT) = - Ra *(1. + xes*alpt1) * tbc/2.
   !
   Al(:,:,1:l,:,WW,SS) = lambda * Ra * tbc/2.
 
@@ -479,7 +493,7 @@ SUBROUTINE nlin_rhs(un)
   implicit none
   !     IMPORT/EXPORT
   real(c_double),dimension(ndim) ::    un
-  !     LOCAL 
+  !     LOCAL
   real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
   real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
   real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
@@ -504,7 +518,7 @@ SUBROUTINE nlin_rhs(un)
   lambda = par(LAMB)
   epsr   = par(ROSB)
   Ra = par(RAYL)
-  xes = par(NLES) 
+  xes = par(NLES)
   pvc1 = par(P_VC)
   pv = par(PE_V)
   pvc2 = pv*(1.0 - par(ALPC))*par(ENER)
@@ -515,18 +529,18 @@ SUBROUTINE nlin_rhs(un)
   call unlin(1,uux,u,v,w)
   call unlin(3,uvy1,u,v,w)
   call unlin(5,uwz,u,v,w)
-  call unlin(7,uvy2,u,v,w) 
-#ifndef NO_UVNLIN      
-  Al(:,:,1:l,:,UU,UU)  = Al(:,:,1:l,:,UU,UU) + epsr * (uux + uvy1 + uwz + uvy2)    
-#endif      
+  call unlin(7,uvy2,u,v,w)
+#ifndef NO_UVNLIN
+  Al(:,:,1:l,:,UU,UU)  = Al(:,:,1:l,:,UU,UU) + epsr * (uux + uvy1 + uwz + uvy2)
+#endif
   call vnlin(1,uvx,u,v,w)
   call vnlin(3,vvy,u,v,w)
   call vnlin(5,vwz,u,v,w)
   call vnlin(7,ut2,u,v,w)
-#ifndef NO_UVNLIN      
-  Al(:,:,1:l,:,VV,UU) = Al(:,:,1:l,:,VV,UU) + epsr *ut2  
-  Al(:,:,1:l,:,VV,VV) = Al(:,:,1:l,:,VV,VV) + epsr*(uvx + vvy + vwz)    
-#endif      
+#ifndef NO_UVNLIN
+  Al(:,:,1:l,:,VV,UU) = Al(:,:,1:l,:,VV,UU) + epsr *ut2
+  Al(:,:,1:l,:,VV,VV) = Al(:,:,1:l,:,VV,VV) + epsr*(uvx + vvy + vwz)
+#endif
   call wnlin(2,t2r,t)
   call wnlin(4,t3r,t)
   Al(:,:,1:l,:,WW,TT) = Al(:,:,1:l,:,WW,TT) - Ra*xes*alpt2*t2r &
@@ -542,7 +556,7 @@ SUBROUTINE nlin_rhs(un)
   call tnlin(5,vsy,u,v,w,s,rho)
   call tnlin(7,wsz,u,v,w,s,rho)
   Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS)+ usx+vsy+wsz		! ATvS-Mix
-#endif      
+#endif
 
   _DEBUG_("nlin_rhs done")
 
@@ -571,7 +585,7 @@ SUBROUTINE nlin_jac(un)
   real    t2r(n,m,l,np),t3r(n,m,l,np)
 
   real    cas1(n,m,l,np),cas2(n,m,l,np),&
-       &        cas3(n,m,l,np),cas4(n,m,l,np) 
+       &        cas3(n,m,l,np),cas4(n,m,l,np)
   real    bolt(n,m,la,np)
   real    lambda,epsr,Ra,xes,pvc1,pvc2,pv
   real uux(n,m,l,np),uvy1(n,m,l,np),uwz(n,m,l,np),uvy2(n,m,l,np)
@@ -592,7 +606,7 @@ SUBROUTINE nlin_jac(un)
 
   lambda = par(LAMB)
   epsr   = par(ROSB)
-  Ra     = par(RAYL) 
+  Ra     = par(RAYL)
   xes    = par(NLES)
   pvc1   = par(P_VC)
   pv     = par(PE_V)
@@ -603,26 +617,26 @@ SUBROUTINE nlin_jac(un)
 
   call unlin(2,Urux,u,v,w)
   call unlin(3,uvy1,u,v,w)
-  call unlin(4,Urvy1,u,v,w)      
+  call unlin(4,Urvy1,u,v,w)
   call unlin(5,uwz,u,v,w)
   call unlin(6,Urwz,u,v,w)
-  call unlin(7,uvy2,u,v,w) 
+  call unlin(7,uvy2,u,v,w)
   call unlin(8,Urvy2,u,v,w)
-#ifndef NO_UVNLIN      
-  Al(:,:,1:l,:,UU,UU)  =  Al(:,:,1:l,:,UU,UU) + epsr * (Urux + uvy1 + uwz + uvy2) 
-  Al(:,:,1:l,:,UU,VV)  =  Al(:,:,1:l,:,UU,VV) + epsr * (Urvy1 + Urvy2) 
-  Al(:,:,1:l,:,UU,WW)  =  Al(:,:,1:l,:,UU,WW) + epsr *  Urwz   
+#ifndef NO_UVNLIN
+  Al(:,:,1:l,:,UU,UU)  =  Al(:,:,1:l,:,UU,UU) + epsr * (Urux + uvy1 + uwz + uvy2)
+  Al(:,:,1:l,:,UU,VV)  =  Al(:,:,1:l,:,UU,VV) + epsr * (Urvy1 + Urvy2)
+  Al(:,:,1:l,:,UU,WW)  =  Al(:,:,1:l,:,UU,WW) + epsr *  Urwz
 #endif
-  call vnlin(1,uvx,u,v,w)      
+  call vnlin(1,uvx,u,v,w)
   call vnlin(2,uVrx,u,v,w)
   call vnlin(4,Vrvy,u,v,w)
   call vnlin(5,vwz,u,v,w)
   call vnlin(6,Vrwz,u,v,w)
   call vnlin(8,Urt2,u,v,w)
 #ifndef NO_UVNLIN
-  Al(:,:,1:l,:,VV,UU) =   Al(:,:,1:l,:,VV,UU) + epsr * (Urt2 + uVrx)  
-  Al(:,:,1:l,:,VV,VV) =   Al(:,:,1:l,:,VV,VV) + epsr * (uvx + Vrvy + vwz)  
-  Al(:,:,1:l,:,VV,WW) =   Al(:,:,1:l,:,VV,WW) + epsr * Vrwz 
+  Al(:,:,1:l,:,VV,UU) =   Al(:,:,1:l,:,VV,UU) + epsr * (Urt2 + uVrx)
+  Al(:,:,1:l,:,VV,VV) =   Al(:,:,1:l,:,VV,VV) + epsr * (uvx + Vrvy + vwz)
+  Al(:,:,1:l,:,VV,WW) =   Al(:,:,1:l,:,VV,WW) + epsr * Vrwz
 #endif
   call wnlin(1,t2r,t)
   call wnlin(3,t3r,t)
@@ -675,7 +689,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
   p = 0.0
   t = 0.0
   s = 0.0
-  do k = 1, l+la 
+  do k = 1, l+la
      do j = 1, m
         do i = 1, n
            u(i,j,k) = un(find_row2(i,j,k,UU))
@@ -687,7 +701,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         enddo
      enddo
   enddo
-  do k = 1, l+la 
+  do k = 1, l+la
      do j = 1, m
         if (periodic) then
            u(0,j,k)  = u(N,j,k)
@@ -714,7 +728,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         endif
      enddo
   enddo
-  do k = 1, l+la 
+  do k = 1, l+la
      do i = 1, n
         u(i,0,k)  = 0.0
         u(i,M,k)= 0.0
@@ -728,7 +742,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         s(i,M+1,k)= s(i,M,k)
      enddo
   enddo
-  do j = 1, m 
+  do j = 1, m
      do i = 1, n
         u(i,j,0)   = u(i,j,1)
         u(i,j,l+1) = u(i,j,l)
@@ -738,10 +752,10 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         w(i,j,0)   = 0.0
         p(i,j,l+1) = 0.0
         p(i,j,0)   = 0.0
-	    IF (la == 0) t(i,j,l+1) = t(i,j,l) 
-        t(i,j,0)   = t(i,j,1) 
-        s(i,j,l+1) = s(i,j,l) 
-        s(i,j,0)   = s(i,j,1) 
+	    IF (la == 0) t(i,j,l+1) = t(i,j,l)
+        t(i,j,0)   = t(i,j,1)
+        s(i,j,l+1) = s(i,j,l)
+        s(i,j,0)   = s(i,j,1)
      enddo
   enddo
 18 format(i4,i4,4(g12.4))
@@ -777,7 +791,7 @@ SUBROUTINE solu(un,u,v,w,p,t,s)
   !     LOCAL
   integer i,j,k,row
 
-  do k = 1, l+la 
+  do k = 1, l+la
      do j = 1, m
         do i = 1, n
            un(find_row2(i,j,k,UU)) = u(i,j,k)
@@ -800,7 +814,7 @@ SUBROUTINE stpnt!(un)
   !     real    un(ndim)
 
   !*******************************************************
-  !     PARAMETERS: 
+  !     PARAMETERS:
   !*******************************************************
   ! when data are used, tmax comes from windfit
   ! otherwise tmax comes from wfun
@@ -817,7 +831,7 @@ SUBROUTINE stpnt!(un)
   par(P_VC)   =  5.0            ! P_VC
   par(LAMB)   =  alphaS/alphaT  ! lambda
   par(SALT)   =  0.0            ! gamma
-  par(WIND)   =  1.0            ! wind h
+  par(WIND)   =  0.0            ! wind h
   par(TEMP)   =  10.0           ! eta_T
   par(BIOT)   =  25.0  ! nonlinearity in T,S equations !10.0
   par(COMB)   =  1.0   ! combined continuation
@@ -869,7 +883,7 @@ SUBROUTINE atmos_coef
   !      write(79,*) Aa,Ad,As,Os,Ooa,amua,bmua
   DO j=1,m
      !       albe(j) = 0.15+ 0.05 * cos (y(j))
-     albe(j) = 0.3 
+     albe(j) = 0.3
      dat(j) =  0.9 + 1.5 * exp(-12*y(j)*y(j)/pi)
      suno(j) = Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
      suna(j) = As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
@@ -877,8 +891,8 @@ SUBROUTINE atmos_coef
      ! 770     format(1x,5(g12.5,1x))
   ENDDO
 
-  DO j=0,m   
-     davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)  
+  DO j=0,m
+     davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
 END SUBROUTINE atmos_coef
 !******************************************************************
@@ -917,7 +931,7 @@ subroutine write_levitus(filename)
   write(42,*) "i j landm x y taux tauy tatm emip"
   do j=1,m
      do i=1,n
-        write(42,999) i,j,landm(i,j,l),x(i),y(j),taux(i,j),tauy(i,j),tatm(i,j),emip(i,j)   
+        write(42,999) i,j,landm(i,j,l),x(i),y(j),taux(i,j),tauy(i,j),tatm(i,j),emip(i,j)
      end do
   end do
 
@@ -926,4 +940,3 @@ subroutine write_levitus(filename)
   close(42)
 
 end subroutine write_levitus
-

@@ -139,12 +139,12 @@
     <!-- Trilinos-THCM, but they can be added easily           -->
     <!-- The starting value in the "LOCA" or "Time Stepping"   -->
     <!-- lists overwrites the choice here                      -->
+	<!-- usrc seems to overwrite them as well at this point... -->
     <ParameterList name="Starting Parameters">
-	  <!-- EVERYTHING IS COMMENTED SO SET THEM IN usrc.F90 -->
       <!-- PAR(15), Salt forcing factor                         -->
       <!-- <Parameter name="Salinity Forcing" type="double" value="0.0"/> -->
-      <!-- PAR(16), Wind forcing factor                         -->
-      <!-- <Parameter name="Wind Forcing" type="double" value="1.0"/> -->
+	  <!-- PAR(16), Wind forcing factor                         -->
+      <!-- <Parameter name="Wind Forcing" type="double" value="0.0"/>   -->
       <!-- PAR(17), Temperature forcing factor                  -->
       <!-- <Parameter name="Temperature Forcing" type="double" value="10.0"/> -->
       <!-- PAR(18), the Biot number                             -->
@@ -152,10 +152,10 @@
       <!-- PAR(19), Salt/Wind/Temperature forcing factor           -->
       <!-- <Parameter name="Combined Forcing" type="double" value="1.0"/> -->
       <!-- convective adjustment -->
-      <!-- <Parameter name="P_VC" type="double" value="1.0"/> -->
+      <!-- <Parameter name="P_VC" type="double" value="5.0"/> -->
       <!-- mixing parameters -->
 	  <!-- check whether vmix_GLB triggers the correct vmix_flag-->
-      <!-- <Parameter name="SPL1" type="double" value="20.0"/> -->
+      <!-- <Parameter name="SPL1" type="double" value="1.25"/> -->
       <!-- <Parameter name="SPL2" type="double" value="0.01"/> -->
     </ParameterList>
     

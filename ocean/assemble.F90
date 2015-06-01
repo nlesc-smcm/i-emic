@@ -142,37 +142,63 @@ SUBROUTINE fillcolA
   !      include 'mat.com'
   integer find_row2
   integer i,j,k,ii,jj,kk,v,w,is,js,ks,bis,row,col,i2,j2,k2
-  
-  ! +----------++-------++----------+
-  ! | 12 15 18 || 3 6 9 || 21 24 27 |
-  ! | 11 14 17 || 2 5 8 || 20 23 26 |
-  ! | 10 13 16 || 1 4 7 || 19 22 25 |
-  ! |  below   || center||  above   |
-  ! +----------++-------++----------+
+
+  !  +------------------------------------+
+  !  |  stencil/neighbourhood             |
+  !  | +----------++-------++----------+  |
+  !  | | 12 15 18 || 3 6 9 || 21 24 27 |  |
+  !  | | 11 14 17 || 2 5 8 || 20 23 26 |  |
+  !  | | 10 13 16 || 1 4 7 || 19 22 25 |  |
+  !  | |  below   || center||  above   |  |
+  !  | +----------++-------++----------+  |
+  !  |                                    |
+  !  | Compressed sparse row format:      |
+  !  |   co{.} : values                   |
+  !  |  jco{.} : column indices           |
+  !  |  beg{.} : row pointer              |
+  !  +------------------------------------+
+  !
+  !   Obtaining the matrix: 
+  !   1) The top iteration travels through the grid points:
+  !       vertically       k = 1, l+la
+  !       meridionally     j = 1, m
+  !       zonally          i = 1, n
+  !
+  !   2) For each grid point we iterate over its neighbours: kk = 1, np
+  !       A neighbour is put into (i2, j2, k2)
+  !  
+  !   3) For each neighbour we iterate over every unknown: ii = 1, nun
+  !       For every unknown we obtain its row and fill beg{.}
+  !
+  !   4) Then we iterate over every unknown including ii itself: jj = 1, nun
+  !       The coefficient c in d/dt ii|(i,j,k) = c jj|(i2,j2,k2) + ...
+  !       is stored in the row corresponding to ii|(i,j,k) and the column
+  !       corresponding to jj|(i2,j2,k2).
   
   coA = 0.0
   is  = nun
   js  = nun*n
   ks  = nun*n*m
-  do k = 1, l+la
+  do k = 1, l+la ! grid points
      do j = 1, m
         do i = 1, n
-           do kk = 1,np
-              
+           do kk = 1,np ! neighbours
+
               ! shift(i,j,k,i2,j2,k2,kk) returns the neighbour at location kk
               !  w.r.t. the center of the stencil (5) defined above
               call shift(i,j,k,i2,j2,k2,kk)
-              do ii = 1, nun
-                 
+              do ii = 1, nun ! unknowns
+
                  ! find_row2(i,j,k,ii) returns the row in the matrix for variable
                  !  ii at grid point (i,j,k) (matetc.F90)
                  row = find_row2(i,j,k,ii)
                  v   = nun*np*(row-1)
-                 begA(row) = v + 1
-                 do jj = 1, nun
+                 begA(row) = v + 1   ! assuming every row will have nun*np entries
+                 do jj = 1, nun ! unknowns
                     if (active(kk,ii,jj)) then
-                       w = v + (jj-1)*np
-                       coA(w+kk) = al(i,j,k,kk,ii,jj)
+                       w = v + (jj-1)*np ! this gives us a blocked order:
+                                         !  [(u,v,w,p,T,S)_1,...,(u,v,w,p,T,S)_ndim]^T
+                       coA(w+kk)  = al(i,j,k,kk,ii,jj)
                        jcoA(w+kk) = find_row2(i2,j2,k2,jj)
                     end if
                  end do
@@ -236,7 +262,7 @@ SUBROUTINE shift(i,j,k,i2,j2,k2,np)
   ! +----------++-------++----------+
   ! shift(i,j,k,i2,j2,k2,np) returns the neighbour at location np
   !  w.r.t. the center of the stencil (5) defined above
-  
+
   implicit none
   integer i,j,k,i2,j2,k2,np
 
