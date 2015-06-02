@@ -75,7 +75,6 @@ module m_usr
   !integer :: FBT        = 0       ! fixed bottom temperature 1 , no flux 0
   !integer :: FBS        = 0       ! fixed bottom salinity +1 , no flux 0
 
-
   !===== FORCING FIELDS ========================================================
   !
   !     The subdomain forcing fields are set by forcing, which is called

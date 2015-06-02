@@ -8,7 +8,8 @@
 !  |  below   || center||  above   |
 !  +----------++-------++----------+
 
-!    atom:
+!    atom(i,j,k,loc)
+!    with 
 
 SUBROUTINE uderiv(type,atom)
   use m_usr
