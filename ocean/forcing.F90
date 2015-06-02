@@ -1,7 +1,8 @@
 #include "fdefs.h"
+
 !****************************************************************************
 SUBROUTINE forcing
-  !     shape of wind-forcing and buoyancy forcing 
+  !     Shape of wind-forcing and buoyancy forcing 
   use m_usr
   use m_atm
   implicit none
@@ -14,37 +15,15 @@ SUBROUTINE forcing
   integer find_row2
   real :: max_internal_forcing
 
-  !      write(*,*) "ENTER FORCING: PARAMETER LIST"
-  !      write(*,*) par
-
   if (iout.eq.0) then 
      write(f99,*) '===========FORCING============'
   endif
-  !      if(SRES == 0) then  ! flux forcing 
-  !        if (ifw.eq.1) then  ! only if idealized 
-  !           do i=1,n
-  !              do j=1,m
-  !                 qfun2(i,j) = 0.0 !qfun(x(i),y(j))
-  !              enddo
-  !           enddo
-  !        else ! flux will be read (-> emip) and can be perturbed here 
-  !           call flux_perturbation(qfun2)
-  !        endif
-  !        call qint(qfun2,fsint) ! integral over domain is computed
-  !        if (iout.eq.0) then 
-  !          write(f99,*) 'forcing with freshwater flux', fsint
-  !        endif 
-  !      else ! restoring salinity, profile is defined below 
-  !         fsint = 0.        
-  !         if (iout.eq.0) then 
-  !         write(f99,*) 'forcing with restoring salinity profile'
-  !         endif
-  !      endif
-  !
+
   Frc   = 0.0
-  !
+  ! ------------------------------------------------------------------
   ! Determine wind forcing
-  !
+  ! ------------------------------------------------------------------
+  
   sigma = par(COMB)*par(WIND)*par(AL_T)
 
   if (iza.eq.2) then        ! idealized wind forcing
@@ -62,11 +41,11 @@ SUBROUTINE forcing
         Frc(find_row2(i,j,l,VV)) = sigma * tauy(i,j)
      enddo
   enddo
-  !      write(*,*) "-------+++++++"
-  !      write(*,*) Frc(find_row2(1,1,l,UU))
-  !
+
+  ! ------------------------------------------------------------------
   ! Determine temperature forcing
-  !
+  ! ------------------------------------------------------------------
+  
   etabi = par(COMB)*par(TEMP)*(1 - TRES + TRES*par(BIOT))
 
   if (ite.eq.1) then        ! idealized temperature forcing 
@@ -76,7 +55,7 @@ SUBROUTINE forcing
         enddo
      enddo
   endif
-  
+
   if (TRES.eq.0) then       ! correct for nonzero flux
      call qint(tatm,temcor)
   else
@@ -95,10 +74,11 @@ SUBROUTINE forcing
         endif
      enddo
   enddo
-             
-  !
+
+  ! ------------------------------------------------------------------
   ! Determine salinity forcing
-  !
+  ! ------------------------------------------------------------------
+  
   gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT))
 
   if (its.eq.1) then        ! idealized salinity forcing
@@ -124,8 +104,10 @@ SUBROUTINE forcing
      enddo
   enddo
 
-  !Determine forcing in the direction z
-
+  ! ------------------------------------------------------------------
+  ! Determine forcing in the z-direction 
+  ! ------------------------------------------------------------------
+  
   max_internal_forcing=0.0
   OPEN(50,FILE='frc.txt',STATUS='unknown')
   REWIND(50)
@@ -133,57 +115,24 @@ SUBROUTINE forcing
   do k=1,l-1
      do j=1,m
         do i=1,n 
-
-
-           !Frc(find_row2(i,j,k,WW))=-par(COMB)*(1-landm(i,j,k))*par(RAYL)*(par(LAMB)*internal_salt(i,j,k)-internal_temp(i,j,k))
-           Frc(find_row2(i,j,k,WW))=-par(COMB)*(1-landm(i,j,k))*par(RAYL)*(par(LAMB)*(internal_salt(i,j,k)+internal_salt(i,j,k+1))/2.-(internal_temp(i,j,k)+internal_temp(i,j,k+1))/2.)
-           max_internal_forcing=max(max_internal_forcing,abs(Frc(find_row2(i,j,k,WW))))
+           Frc(find_row2(i,j,k,WW)) = -par(COMB)*(1-landm(i,j,k))*par(RAYL)*  &
+                (par(LAMB)*(internal_salt(i,j,k) + internal_salt(i,j,k+1))/2. &
+                -(internal_temp(i,j,k)+internal_temp(i,j,k+1))/2.)
+           max_internal_forcing = max(max_internal_forcing, abs(Frc(find_row2(i,j,k,WW))))
            WRITE (50,*) Frc(find_row2(i,j,k,WW)),internal_temp(i,j,k)
         enddo
      enddo
   enddo
 
-  do j=1,m
-     do i=1,n
-        !Frc(find_row2(i,j,l,WW))=0
-     enddo
-  enddo
   CLOSE(50)
-
 
   write(f99,*) 'par(RAYL): ',par(RAYL)
   write(f99,*) 'par(COMB): ',par(COMB)
   write(f99,*) 'par(LAMB): ',par(LAMB)
   write(f99,*) 'maximum of internal forcing on w: ',max_internal_forcing
 
-  ! Write fields. This is inconsistent with the parallel approach
-  if (iout.eq.0) then 
-     open(88,FILE=rundir//'fort.88')
-     do i=1,n
-        do j=1,m               
-           write(88,10) x(i)*180/pi,y(j)*180/pi,taux(i,j),tauy(i,j)
-        enddo
-     enddo
-     close(88)
-     !     
-     write(f99,*) 'you have chosen wind forcing option ',iza
-     write(f99,*) 'wind stress field written to unit 88'
-
-     open(89,FILE=rundir//'fort.89')
-     do j=1,m
-        do i=1,n
-           write(89,10) x(i)*180/pi,y(j)*180/pi,tatm(i,j),emip(i,j)
-        enddo
-     enddo
-     close(89)
-     !
-     write(f99,*) 'heat forcing and salinity forcing written to unit 89'
-     write(f99,*) '===========FORCING============'
-  endif
-
-10 format(1x,4(g12.5,1x))
-  iout = 1
 end subroutine forcing
+
 !****************************************************************************
 SUBROUTINE windfit
   USE m_itplbv
@@ -363,6 +312,7 @@ SUBROUTINE windfit_monthly(month)
   write(f99,*) 'fit of monthly windstress done, tmax = ', tmax
 
 end subroutine windfit_monthly
+
 !****************************************************************************
 SUBROUTINE read_spertm
   use m_global
@@ -397,6 +347,7 @@ SUBROUTINE read_spertm
   write(*,*) '         (mkmask/'//trim(spertmaskfile)//') does not exist.'
 
 end subroutine read_spertm
+
 !****************************************************************************
 real FUNCTION wfun(xx,yy,v1)
   use m_par
@@ -407,20 +358,15 @@ real FUNCTION wfun(xx,yy,v1)
   real :: tmax
   select case(v1)
   case(1)  ! x
-#if 1
      !     F. Bryans (1987) analytical profile:
      wfun = 0.2 - 0.8*sin(6*abs(yy)) - 0.5*(1 - tanh(10*abs(yy)))&
           -0.5*(1 - tanh(10*(pi/2 - abs(yy))))
-#else
-     ! double gyre wind stress
-     !wfun = -cos(2.0*pi*(yy-ymin)/(ymax-ymin))
-     wfun=0
-#endif            
   case(2)  ! y
      wfun = 0.0
   endselect
   tmax = 1.0
 end FUNCTION wfun
+
 !****************************************************************************
 real FUNCTION temfun(xx,yy)
   use m_par
@@ -429,12 +375,11 @@ real FUNCTION temfun(xx,yy)
   real    xx,yy
   if (ymin.ge.0.0) then ! Northern hemisphere
      temfun = cos(pi*(yy-ymin)/(ymax-ymin))
-
   else
      temfun = cos(pi*yy/ymax)
-
   end if
 end FUNCTION temfun
+
 !****************************************************************************
 real FUNCTION salfun(xx,yy)
   use m_par
@@ -450,81 +395,20 @@ real FUNCTION salfun(xx,yy)
 
   end if
 end FUNCTION salfun
-!****************************************************************************
-!      real FUNCTION qfun(xx,yy)
-!      use m_par
-!      use m_global ! we need the global value of ymin and ymax here!
-!      implicit none
-!      real    xx, yy,pps,qf1,qf2,pc
-!      pps = 2.0
-!     qfun = cos(pps * pi * ((yy -ymin)/(ymax-ymin) -0.5)) 
-!    + par(COMB) * sin(pps * pi * ((yy -ymin)/(ymax-ymin) -0.5))
-!     qf1 = -(-cos (3*yy) +
-!    +  2.38*exp(-(yy/0.2094395)**2))
-!     qf2 = cos(pps * pi * ((yy -ymin)/(ymax-ymin) -0.5))  
-!     pc = 0.0
-!     pc = par(COMB)
-!     qfun = qf2*(1 - pc) + pc*qf1
-!      qfun = cos(pi * (yy -ymin)/(ymax-ymin))  
-!      end
-!****************************************************************************
-!      SUBROUTINE flux_perturbation(qfun2)
-!      use m_usr
-!      implicit none
-!      real    yy,yc,qfun2(n,m)
-!      integer i, j, mask(0:n+1,0:m+1)
-!      character*23 filename
-!
-!      if (rd_mask) then 
-!        filename = 'mkmask/mask.glo_atl2'
-!        open(unit=50,file=filename,err=995)
-!        do j = m+1, 0, -1
-!           read(50,'(98(i1,x))') (mask(i,j),i=0,n+1)
-!        enddo
-!        close(50)
-!      else 
-!        mask = 1
-!      endif 
-!
-!      do j=1,m
-!        do i = 1,n
-!          qfun2(i,j) = real(1-mask(i,j))
-!        enddo
-!      enddo
-!         IF (qfun2(i,j).gt.0) THEN
-!            write(22,*) i,j,x(i)*180/pi,y(j)*180/pi
-!         ENDIF
-!      return
-!
-! 995  stop 'qfun2: open mask file'
-!
-!      end
-!****************************************************************************
+
+!**********************************************************************
 SUBROUTINE qint(field,cor)
-  !     Compute correction for nonzero flux
+  ! Compute correction for nonzero flux
   use m_usr
   implicit none
   integer i,j
   real field(n,m),cor,sint
-  !#if 0
-  ! sequential version
-  !      fsint = 0.0
-  !      sint = 0.0
-  !      do i=1,n
-  !        do j=1,m
-  !          fsint = qfun2(i,j) * cos(y(j)) * (1-landm(i,j,l)) + fsint
-  !          sint = cos(y(j)) * (1-landm(i,j,l)) + sint
-  !        enddo
-  !      enddo
-  !      fsint = fsint/sint
-  !#else
-  ! this is an evil breach of concept, we call a C++ function from F90
+  ! This is an evil breach of concept, we call a C++ function from F90
   ! to compute the global integral:
   external thcm_forcing_integral
-
   call thcm_forcing_integral(field,y,landm,cor)
-  !#endif
 end SUBROUTINE qint
+
 !**********************************************************************
 SUBROUTINE tempfit
   USE m_itplbv
@@ -656,6 +540,7 @@ SUBROUTINE fwfluxfit
   write(f99,*) 'fit of fresh water flux done, emipmax  = ', emipmax
 
 end SUBROUTINE fwfluxfit
+
 !*****************************************************************
 SUBROUTINE diagnose_restoring_sflux(un,filename)
   use m_usr
@@ -739,6 +624,7 @@ SUBROUTINE diagnose_restoring_tflux(un,filename)
 
   return
 END SUBROUTINE diagnose_restoring_tflux
+
 !**********************************************************************
 SUBROUTINE qint3(fl)
   !
@@ -759,8 +645,8 @@ SUBROUTINE qint3(fl)
   call ssint(fl,1,l,sint,svol)
 
 end SUBROUTINE qint3
-!**********************************************************************
 
+!**********************************************************************
 SUBROUTINE ssint(fl,k0,k1,sint,svol)
   use m_usr
   implicit none
