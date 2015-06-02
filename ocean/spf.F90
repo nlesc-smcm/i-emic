@@ -8,7 +8,7 @@
 !  |  below   || center||  above   |
 !  +----------++-------++----------+
 
-!    atom:
+!
 
 SUBROUTINE uderiv(type,atom)
   use m_usr
@@ -51,7 +51,7 @@ SUBROUTINE uderiv(type,atom)
      rdy2i = (1.0/dy)**2
      do i=1,n
         do j=1,m-1
-           atom(i,j,:,4) = rdy2i *  bmh(y(j),ih)*cos(y(j))/cos(yv(j))
+           atom(i,j,:,4) = rdy2i * bmh(y(j),ih)*cos(y(j))/cos(yv(j))
            atom(i,j,:,6) = rdy2i * bmh(y(j+1),ih)*cos(y(j+1))/cos(yv(j))
            atom(i,j,:,5) = -(atom(i,j,:,4) + atom(i,j,:,6))
         enddo

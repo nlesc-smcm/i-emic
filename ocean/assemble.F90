@@ -117,7 +117,7 @@ SUBROUTINE preprocessA_old
   !      write(f99,*) "total nnz in A:", nnz
   !      write(f99,*) "with ", count, " active connections out of ", nun*nun*np
 #ifdef DEBUGGING
-  ! this can be useful for determining the maximal matrix graph
+  ! this can be useXul for determining the maximal matrix graph
   open(42,file='active.txt')
   do ii=1,nun
      do jj=1,nun

@@ -306,7 +306,7 @@ SUBROUTINE rhs(un,B)
   call forcing          !--> wordt misschien te vaak aangeroepen?
   call boundaries       !--> wordt misschien te vaak aangeroepen?
   call assemble
-  call matAvec(un,Au) !--> Tamelijk fancy dus leg uit wat hier gebeurt!
+  call matAvec(un,Au)   !--> Tamelijk fancy dus leg uit wat hier gebeurt!
   ! ATvS-Mix ---------------------------------------------------------------------
   if (vmix_flag.ge.1) then
      mode=vmix_fix
@@ -326,7 +326,7 @@ SUBROUTINE rhs(un,B)
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
-  _DEBUG2_("p0 = ", p0) !-->RESIDUE CONTINUATION, can we get rid of this??
+  _DEBUG2_("p0 = ", p0) !-->Residue Continuation, needs a little explaining.
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
 
   if(ires == 0) then
@@ -422,13 +422,13 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! u-equation
   ! ------------------------------------------------------------------
-  call uderiv(1,ub)     !--> kan weg: ub doet niks
+  call uderiv(1,ub)     !--> kan weg: ub doet niks --> bottom friction stuff --> precompiler flag
   call uderiv(2,uxx)
   call uderiv(3,uyy)
   call uderiv(4,uzz)
   call uderiv(5,ucsi)
   call uderiv(6,vxs)
-  call uderiv(7,u)      !--> kan weg: u doet niks
+  call uderiv(7,u)      !--> kan weg: u doet niks --> compilerflag
   call coriolis(1,fv)
   call gradp(1,px)
   Al(:,:,1:l,:,UU,UU) = -EH * (uxx+uyy+ucsi) -EV * uzz ! + rintt*u ! ATvS-Mix
