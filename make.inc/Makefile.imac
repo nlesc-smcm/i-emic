@@ -9,12 +9,14 @@ LOCATION     = UTRECHT
 ##   GNU, G95, INTEL, ASTER, ORBIT, HOPF, PGI and HUYGENS
 COMP_IDENT   = GNU
 ##   Trilinos version:
-TRIVERSION   = 11.12
+TRIVERSION   = 12.0
 ##   Trilinos directory containing lib and include dirs:
 TRIDIR       = /home/erik/trilinos/${TRIVERSION}
 ##   Project base directory
 PROJECT_BASE = /home/erik/Projects/EMIC
 ##   Make flags
-MFLAGS       = -j 4
+MFLAGS       = -j 1
+##   Local compiler flags
+LOCAL_CXX_FLAGS  = -std=c++11
 ##=================================================================
 include $(PROJECT_BASE)/make.inc/Makefile.all
