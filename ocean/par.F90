@@ -12,6 +12,10 @@ module m_par
 #elif defined(GRONINGEN)
   character(len=*), parameter ::  topdir = '/home/p267904/Projects/EMIC/data/'
   character(len=*), parameter ::  rundir = ''
+#elif defined(VLIEGTUIG)
+  character(len=*), parameter ::  topdir = '/home/erikm/Projects/I-EMIC/data/'
+  character(len=*), parameter ::  rundir = ''
+
 #elif defined(LAPTOP)
   character(len=*), parameter ::  topdir = '/home/erik/Projects/EMIC/data/'
   character(len=*), parameter ::  rundir = ''
