@@ -1,6 +1,5 @@
 //=======================================================================
 // Continuation test routine
-//  using the theta method functionality in this project
 //=======================================================================
 #include <Epetra_config.h>
 #include <iomanip>
@@ -32,11 +31,12 @@ using Teuchos::rcp;
 
 //------------------------------------------------------------------
 // A few declarations
-RCP<std::ostream> outFile;              // output file
-std::map<std::string, double> profile;  // profile
+RCP<std::ostream> outFile;               // output file
+std::map<std::string, double> profile;   // profile map
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
-void printProfile(std::map<std::string, double> profile);
+void printProfile(std::map<std::string, double> profile,
+				  RCP<Epetra_Comm> Comm);
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 	
 	ocean->DumpState();
 
-	printProfile(profile);
+	printProfile(profile, Comm);
     //--------------------------------------------------------
 	// Finalize MPI
 	//--------------------------------------------------------
@@ -101,35 +101,62 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 	Teuchos::RCP<std::ostream> outFile;
 	if (Comm->MyPID() == 0)
 	{
-		std::ostringstream infofile;  // setting up a filename
-		infofile << "info_" << Comm->MyPID() << ".txt";
+		std::ostringstream infofile;     // setting up a filename
+
+		infofile    << "info_"    << Comm->MyPID()   << ".txt";
+
 		std::cout << "info for CPU" << Comm->MyPID() << " is written to "
 				  << infofile.str().c_str() << std::endl;
+
 		outFile =
 			Teuchos::rcp(new std::ofstream(infofile.str().c_str()));
 	}
 	else
+	{
 		outFile =
 			Teuchos::rcp(new Teuchos::oblackholestream());
+	}
 	return outFile;
 }
 
 //------------------------------------------------------------------
-void printProfile(std::map<std::string, double> profile)
+void printProfile(std::map<std::string, double> profile,
+				  RCP<Epetra_Comm> Comm)
 {
+	
+	std::ostringstream profilefile;  // setting up a filename
+	RCP<std::ostream> file;          // output file
+	
+	if (Comm->MyPID() == 0)
+	{
+		profilefile << "profile_" << Comm->NumProc() <<  ".txt";
+		INFO("profile for #procs = " << Comm->NumProc()
+			 << " is written to " << profilefile.str().c_str());
+		file =
+			Teuchos::rcp(new std::ofstream(profilefile.str().c_str()));	
+	}
+	else
+	{
+		file = Teuchos::rcp(new Teuchos::oblackholestream());
+	}
+	
 	double sum = 0;
-	INFO("==================================================================");
-	INFO("  Profile:");
+	(*file) << "=================================================================="
+			<< std::endl;
+	(*file) << "  Profile #CPU = " << Comm->NumProc() << std::endl;
 	for (std::map<std::string, double>::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
 		sum += it->second;
-		INFO(" " << std::setw(35) << std::left << it->first <<
-			 std::setw(6)  << " -> " <<
-			 std::setw(12) << std::left << std::setprecision(8) << it->second);
+		(*file) << " " << std::setw(35) << std::left << it->first
+				<< std::setw(6)  << " -> "
+				<< std::setw(12) << std::left << std::setprecision(8) << it->second
+				<< std::endl;
 	}
-	INFO(" " << std::setw(35) << std::left << " "  <<
-		 std::setw(6)  << " tot " <<
-		 std::setw(12) << std::left << std::setprecision(8) << sum);
-	INFO("==================================================================");
+	(*file) << " " << std::setw(35) << std::left << " "  
+			<< std::setw(6)  << " tot " 
+			<< std::setw(12) << std::left << std::setprecision(8) << sum
+			<< std::endl;
+	(*file) << "=================================================================="
+			<< std::endl;
 }

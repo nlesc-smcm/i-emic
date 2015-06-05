@@ -19,7 +19,7 @@
 #include <string>
 
 // This outstream needs to be defined in the main routine.
-extern Teuchos::RCP<std::ostream> outFile; 	
+extern Teuchos::RCP<std::ostream> outFile;
 
 extern std::map<std::string, double> profile;
 
