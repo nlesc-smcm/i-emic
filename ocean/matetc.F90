@@ -208,6 +208,18 @@ SUBROUTINE writecsrmats
   close(42)
 END SUBROUTINE writecsrmats
 !************************************************************************
+SUBROUTINE writematrixmarket(filename)
+  ! Write matrices A and B to matrix market file
+  use m_usr
+  use m_mat
+  implicit none
+  ! Input
+  character*(*) filename
+  ! Local
+  
+
+END SUBROUTINE writematrixmarket
+
 SUBROUTINE writematrhs(rl)
   !*     write the matrix A + rhs to a file
   use m_usr
