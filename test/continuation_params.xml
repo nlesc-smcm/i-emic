@@ -1,5 +1,5 @@
 <!--  -->
 <ParameterList name="continuation">
   <Parameter name="ds" type="double" value="0.02"/>
-  <Parameter name="maxSteps" type="int" value="5"/>
+  <Parameter name="maxSteps" type="int" value="2"/>
 </ParameterList>

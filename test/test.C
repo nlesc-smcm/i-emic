@@ -79,7 +79,6 @@ int main(int argc, char **argv)
 //------------------------------------------------------------------
 RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
 {
-
 #ifdef HAVE_MPI
 	MPI_Init(&argc, &argv);
 	RCP<Epetra_MpiComm> Comm =
@@ -129,9 +128,9 @@ void printProfile(std::map<std::string, double> profile,
 	
 	if (Comm->MyPID() == 0)
 	{
-		profilefile << "profile_" << Comm->NumProc() <<  ".txt";
+		profilefile << "profile_"    << Comm->NumProc() <<  ".txt";
 		INFO("profile for #procs = " << Comm->NumProc()
-			 << " is written to " << profilefile.str().c_str());
+			 << " is written to "    << profilefile.str().c_str());
 		file =
 			Teuchos::rcp(new std::ofstream(profilefile.str().c_str()));	
 	}
@@ -143,7 +142,7 @@ void printProfile(std::map<std::string, double> profile,
 	double sum = 0;
 	(*file) << "=================================================================="
 			<< std::endl;
-	(*file) << "  Profile #CPU = " << Comm->NumProc() << std::endl;
+	(*file) << "  Profile #CPU   = " << Comm->NumProc() << std::endl;
 	for (std::map<std::string, double>::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
