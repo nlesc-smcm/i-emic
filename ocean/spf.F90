@@ -256,7 +256,6 @@ SUBROUTINE tderiv(type,atom)
            enddo
         enddo
      enddo
-
   CASE(4)
      dy2i = (1.0/dy)**2
      do i=1,n
