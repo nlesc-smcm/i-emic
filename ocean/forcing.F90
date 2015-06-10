@@ -41,7 +41,7 @@ SUBROUTINE forcing
         Frc(find_row2(i,j,l,VV)) = sigma * tauy(i,j)
      enddo
   enddo
-
+ 
   ! ------------------------------------------------------------------
   ! Determine temperature forcing
   ! ------------------------------------------------------------------
@@ -388,8 +388,8 @@ real FUNCTION salfun(xx,yy)
   real    xx,yy
   real    subtr
   if (ymin.ge.0.0) then ! Northern hemisphere
-     ! salfun = cos(pi*(yy-ymin)/(ymax-ymin))
-     salfun=0.0
+     salfun = cos(pi*(yy-ymin)/(ymax-ymin))
+     ! salfun=0.0
   else
      salfun = cos(pi*yy/ymax)
 

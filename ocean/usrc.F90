@@ -898,7 +898,7 @@ SUBROUTINE stpnt!(un)
   par(P_VC)   =  5.0            ! P_VC
   par(LAMB)   =  alphaS/alphaT  ! lambda
   par(SALT)   =  1.0            ! gamma
-  par(WIND)   =  0.0            ! wind h
+  par(WIND)   =  1.0            ! wind h
   par(TEMP)   =  10.0           ! eta_T
   par(BIOT)   =  25.0         ! nonlinearity in T,S equations !10.0
   par(COMB)   =  1.0          ! combined continuation
@@ -927,21 +927,23 @@ SUBROUTINE atmos_coef
   muoa = rhoa*ch*cpa*uw
   amua = (arad+brad*t0)/muoa
   bmua = brad/muoa
-  Aa = uatm*rhoa*cpa*hdima/(r0dim*muoa)
-  Ai = rhoa*hdima*cpa*udim/(r0dim*muoa)
-  Ad = rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
-  As = sun0*(1 - c0)/(4*muoa)
-  Os = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
-  Ooa = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
-  DO j=1,m
-     !       albe(j) = 0.15+ 0.05 * cos (y(j))
+  Aa   = uatm*rhoa*cpa*hdima/(r0dim*muoa)
+  Ai   = rhoa*hdima*cpa*udim/(r0dim*muoa)
+  Ad   = rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
+  As   = sun0*(1 - c0)/(4*muoa)
+  Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
+  Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
+  DO j = 1,m
+     !       albe(j) = 0.15 + 0.05 * cos (y(j))
      albe(j) = 0.3
-     dat(j) =  0.9 + 1.5 * exp(-12*y(j)*y(j)/pi)
+
+     ! D(\phi) in the paper
+     dat(j)  = 0.9 + 1.5 * exp(-12*y(j)*y(j)/pi)
      suno(j) = Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
      suna(j) = As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
   ENDDO
 
-  DO j=0,m
+  DO j = 0,m
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
 END SUBROUTINE atmos_coef
