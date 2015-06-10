@@ -12,7 +12,7 @@ MODULE m_mat
 
   ! originally in mat.com: now allocated in C++ via the
   ! subroutines get_array_sizes and set_pointers
-  real(c_double),    dimension(:), POINTER :: coA
+  real(c_double), dimension(:), POINTER :: coA
   integer(c_int), dimension(:), POINTER :: jcoA 
   integer(c_int), dimension(:), POINTER :: begA
 

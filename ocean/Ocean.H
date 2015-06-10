@@ -6,14 +6,27 @@
    For now I try to let matrices and solvers be only available at the
    model-level, but I'm doubting whether this is the right approach...
 
-   A model is required to have the following member functions: 
-       computeJacobian()
-	   computeRHS()
-	   solve(rhs)
-	   getSolution()
-	   getState()
-	   getRHS()
-                          
+   A model is required to have the following member functions:
+
+       void computeJacobian()
+	   void computeRHS() 
+	   void solve(rhs)
+	   
+	   vector getSolution()
+	   vector getState()
+	   vector getRHS()
+
+   The vector type that is returned from the get{.} functions will have
+   to be known by the interface (e.g. Continuation) that calls this class.
+   The calling interface requires it to have the following member functions:
+
+       void update()
+	   void scale()
+
+	   int length()
+	   
+	   double dot()
+	   double norm()
 */
 //!------------------------------------------------------------------------
 #ifndef OCEAN_H
