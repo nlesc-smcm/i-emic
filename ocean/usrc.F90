@@ -319,7 +319,7 @@ SUBROUTINE rhs(un,B)
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
      
-     if ((vmix_temp.eq.1).or.(vmix_salt.eq.1)) call vmix_fun(un,mix)
+     if ((vmix_temp.eq.1).or.(vmix_salt.eq.1)) call vmix_fun(un,mix,vmix_fix)
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
      if (vmix_out.gt.0) write (*,'(a26,f10.3)') 'MIX|    ...rhs done',time1-time0
@@ -890,7 +890,7 @@ SUBROUTINE stpnt!(un)
   par(RAYL)   =  alphaT*gdim*hdim/(2*omegadim*udim*r0dim)	! Ra
   par(EK_V)   =  av/(2*omegadim*hdim*hdim)   		        ! E_V
   par(EK_H)   =  ah/(2*omegadim*r0dim*r0dim)	            ! E_H
-  par(ROSB)   =  udim/(2*omegadim*r0dim)            ! Rossby Number
+  par(ROSB)   =  udim/(2*omegadim*r0dim)                    ! Rossby Number
   par(HMTP)   =  0.0
   par(SUNP)   =  1.0
   par(PE_H)   =  kappah/(udim*r0dim)            ! P_H0

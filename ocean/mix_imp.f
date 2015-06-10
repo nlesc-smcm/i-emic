@@ -191,7 +191,7 @@
       implicit none
 !include 'usr.com'
 !include 'mix.com'
-      real un(ndim), mix(ndim)
+      real un(ndim), mix(ndim)    ! dezen moet waars geallocate worden
       real u(0:n  ,0:m  ,0:l+la+1)
       real v(0:n  ,0:m  ,0:l+la+1)
       real w(0:n+1,0:m+1,0:l+la  )

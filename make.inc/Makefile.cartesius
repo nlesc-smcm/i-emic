@@ -1,6 +1,25 @@
 ##=================================================================
-## Makefile variables
+## Makefile variables for Cartesius
 ## Author: T.E. Mulder => t.e.mulder@uu.nl
+##=================================================================
+##   Location specific variables:
+##
+LOCATION     = CARTESIUS
+##   Compiler identifier flag, options are
+##   GNU, G95, INTEL, ASTER, ORBIT, HOPF, PGI and HUYGENS
+COMP_IDENT   = INTEL
+##   Trilinos version:
+TRIVERSION   = 11.14
+##   Trilinos directory containing lib and include dirs:
+TRIDIR       = ${HOME}/trilinos/${TRIVERSION}
+##   Project base diretory
+PROJECT_BASE = ${HOME}/Projects/I-EMIC
+##   Make flags
+MFLAGS       = -j 8
+##   Local compiler flags
+# LOCAL_CXX_FLAGS  = -std=c++11
+LOCAL_FC_FLAGS = -r8 -O3 
+
 ##=================================================================
 
 ##   Import makefile variables from Trilinos:
@@ -19,25 +38,18 @@ SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
 ##------------------------------------------------------------------
 ##   Supply debug and other flags for CXX compiler:
 CXX_DEBUG = -g
-CXX_EXTRA = ${LOCAL_CXX_FLAGS} #-O3 #-DDEBUGGING #-DTESTING 
+CXX_EXTRA = ${LOCAL_CXX_FLAGS} -O3 -DMPICH_SKIP_MPICXX #-DDEBUGGING #-DTESTING 
 CXX_FLAGS = ${CXX_DEBUG} ${SHARED_FLAGS} $(CXX_EXTRA)
 
 ##------------------------------------------------------------------
-##   Supply debug and other flags for FC compiler:
-FC_DEBUG  = -g
-FC_EXTRA  = -fdefault-real-8 -ffree-line-length-none\
-		    -DASCII_TOPO
-FC_FLAGS  = $(FC_DEBUG) ${SHARED_FLAGS} $(FC_EXTRA)
+##   Supply debug and other flags for FC compiler:		    
+FC_DEBUG = -g
+FC_FLAGS = ${FC_DEBUG} ${LOCAL_FC_FLAGS} ${SHARED_FLAGS} -DASCII_TOPO
 
 ##------------------------------------------------------------------
 ##   Supply F77 compiler and its flags:
-F77        = gfortran
-F77_DEBUG  = -g
-#    Use the default-real-8 option to communicate between
-#    F90 and F77
-F77_EXTRA  = -ffixed-line-length-132 -fdefault-real-8\
-             -ffree-line-length-none
-F77_FLAGS  = $(F77_DEBUG) ${SHARED_FLAGS} $(F77_EXTRA)
+F77        = ${FC}
+F77_FLAGS  = ${FC_FLAGS} -extend-source 132 -O0
 
 ##------------------------------------------------------------------
 ##   Gather all the libraries:

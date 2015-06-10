@@ -135,11 +135,10 @@ end SUBROUTINE preprocessA_old
 
 !****************************************************************************
 SUBROUTINE fillcolA
-  !     fill the columns of A
+  !     Fill the columns of A
   USE m_mat
   use m_usr
   implicit none
-  !      include 'mat.com'
   integer find_row2
   integer i,j,k,ii,jj,kk,v,w,is,js,ks,bis,row,col,i2,j2,k2
 

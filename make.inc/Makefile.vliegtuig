@@ -1,20 +1,22 @@
 ##=================================================================
-## Makefile variables for compiling locally in Groningen.
+## Makefile variables for het vliegtuig in Groningen.
 ## Author: T.E. Mulder => t.e.mulder@uu.nl
 ##=================================================================
 ##   Location specific variables:
 ##
-LOCATION     = LOCAL
+LOCATION     = VLIEGTUIG
 ##   Compiler identifier flag, options are
 ##   GNU, G95, INTEL, ASTER, ORBIT, HOPF, PGI and HUYGENS
 COMP_IDENT   = GNU
 ##   Trilinos version:
-TRIVERSION   = 11.12
+TRIVERSION   = 11.14
 ##   Trilinos directory containing lib and include dirs:
-TRIDIR       = /var/tmp/trilinos/${TRIVERSION}
+TRIDIR       = /home/erikm/trilinos/${TRIVERSION}
 ##   Project base directory
-PROJECT_BASE = /var/tmp/i-emic
+PROJECT_BASE = /home/erikm/Projects/I-EMIC
 ##   Make flags
-MFLAGS       = -j 4
+MFLAGS       = -j 1
+##   Local compiler flags
+# LOCAL_CXX_FLAGS  = -std=c++11
 ##=================================================================
 include $(PROJECT_BASE)/make.inc/Makefile.all

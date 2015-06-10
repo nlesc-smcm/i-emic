@@ -27,12 +27,14 @@
 // from TRIOS
 #include "TRIOS_Domain.H"
 
-
 // from trilinos_thcm
 #include "THCM.H"
 #ifdef DEBUGGING
 #include "OceanGrid.H"
 #endif
+
+// for I-EMIC couplings
+#include <math.h>
 
 //=============================================================================
 extern "C" {
@@ -251,7 +253,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	int mglob_ = 0;
 	int lglob_ = 0;
 
-	if (Comm->MyPID()==0) // this one is responsible for I/O
+	if (Comm->MyPID() == 0) // this one is responsible for I/O
     {
 		nglob_ = n;
 		mglob_ = m;
@@ -923,11 +925,32 @@ void THCM::evaluateB(void)
 void THCM::insertAtmosphere()
 {
 	// This is a test.
-	// We build an atmosphere on the assembly map to give to THCM
+	// We build a trivial atmosphere on the assembly map to give to THCM
 	Teuchos::RCP<Epetra_Map> atmos_map_loc = domain->CreateAssemblyMap(1, true);
 	Teuchos::RCP<Epetra_Vector> atmos_loc  =
 		Teuchos::rcp(new Epetra_Vector(*atmos_map_loc));
-	atmos_loc->PutScalar(0.0);
+
+	int nloc       =  domain->LocalN();
+	int mloc       =  domain->LocalM();
+	double yminLoc =  domain->YminLoc();
+	double ymaxLoc =  domain->YmaxLoc();
+	double ymin    =  domain->Ymin();
+	double ymax    =  domain->Ymax();
+	double dyLoc   = (ymaxLoc - yminLoc) / (mloc - 1);
+	double y       =  yminLoc;
+	
+	double value = 0;
+	int idx      = 0;
+	for (int j = 0; j != mloc; ++j)
+	{
+		y = yminLoc + j * dyLoc;
+		for (int i = 0; i != nloc; ++i)
+		{
+			value = cos(PI_ * y / ymax);
+			(*atmos_loc)[idx] = value;
+			++idx;
+		}
+	}
 	double *atmos_loc_array;
 	atmos_loc->ExtractView(&atmos_loc_array);
 	F90NAME(m_insertions, insert_atmosphere)(atmos_loc_array);

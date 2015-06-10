@@ -23,8 +23,8 @@ contains
        pos = 1
        do j = 1,m
           do i = 1,n
-             ! tatm(i,j) = inserted_atmos(pos)
-             tatm(i,j) = temfun(x(i),y(j))
+             tatm(i,j) = inserted_atmos(pos)
+             ! tatm(i,j) = temfun(x(i),y(j))
              pos = pos + 1
           end do
        end do
