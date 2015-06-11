@@ -131,6 +131,8 @@ public:
 	//! 
 	//! void insertAtmosphere(const Epetra_Vector &atmos);
 	void insertAtmosphere();
+	//! Flag enabling the coupling with external atmosphere via the I-EMIC
+	int coupled_atm;
 	//! ------------------------------------------------------------------
 	
 	//! Returns initial guess (Global/Solve form)

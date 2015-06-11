@@ -480,7 +480,7 @@ SUBROUTINE lin
   call tderiv(5,tzz)
   call tderiv(7,tcb)
   
-  if (la > 0) then
+  if ((la > 0).or.(couple_atm.eq.1)) then
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
   else
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
@@ -936,7 +936,7 @@ SUBROUTINE atmos_coef
   DO j=1,m
      !       albe(j) = 0.15+ 0.05 * cos (y(j))
      albe(j) = 0.3
-     dat(j) =  0.9 + 1.5 * exp(-12*y(j)*y(j)/pi)
+     dat(j)  = 0.9 + 1.5 * exp(-12*y(j)*y(j)/pi)
      suno(j) = Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
      suna(j) = As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
   ENDDO

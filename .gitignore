@@ -10,6 +10,7 @@
 !make.inc/
 !utils/
 !ocean/
+!atmosphere/
 !newton/
 !continuation/
 !test/

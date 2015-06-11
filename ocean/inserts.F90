@@ -1,6 +1,6 @@
 #include "fdefs.h"
 
-module m_insertions
+module m_inserts
 
   use m_usr
 
@@ -19,7 +19,7 @@ contains
     real    :: temfun ! from forcing.F90
     integer :: i,j,pos
 
-    if (ite.eq.2) then
+    if (coupled_atm.eq.1) then
        pos = 1
        do j = 1,m
           do i = 1,n
@@ -29,8 +29,8 @@ contains
           end do
        end do
     else
-       _INFO2_("Unable to insert atmosphere, ite: ", ite)
+       _INFO2_("Not inserting atmosphere: coupled_atm=", coupled_atm)
     end if
   end subroutine insert_atmosphere
 
-end module m_insertions
+end module m_inserts

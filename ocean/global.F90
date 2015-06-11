@@ -19,13 +19,15 @@ module m_global
   use m_par
 
   ! these things are shared between global and subdomain.
-  use m_usr, only : zmin, zmax, la, &
-       hdim, qz, &
-       alphaT,alphaS,&
-       ih,vmix_GLB,tap,rho_mixing,&
-       itopo,flat,rd_mask,&
-       TRES,SRES,iza,ite,its,rd_spertm,&
-       rowintcon,f99,t0,s0
+  use m_usr, only :                          &
+       zmin, zmax, la,                       &
+       hdim, qz,                             &
+       alphaT, alphaS,                       &
+       ih, vmix_GLB, tap, rho_mixing,        &
+       itopo, flat, rd_mask,                 &
+       coupled_atm,                          &
+       TRES, SRES, iza, ite, its, rd_spertm, &
+       rowintcon, f99, t0, s0
 
   implicit none
 
@@ -65,7 +67,8 @@ contains
        a_alphaT,a_alphaS,&
        a_ih,a_vmix_GLB,a_tap,a_rho_mixing,&
        a_periodic,a_itopo,a_flat,a_rd_mask,&
-       a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm)
+       a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm,&
+       a_coupled_atm)
     
     use, intrinsic :: iso_c_binding
     implicit none
@@ -76,6 +79,7 @@ contains
     integer(c_int) :: a_ih,a_vmix_GLB,a_tap,a_rho_mixing
     integer(c_int) :: a_periodic,a_itopo,a_flat,a_rd_mask
     integer(c_int) :: a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm
+    integer(c_int) :: a_coupled_atm
 
     xmin  = a_xmin
     xmax  = a_xmax
@@ -124,6 +128,9 @@ contains
        rd_spertm = .false.
     end if
 
+    !========= I-EMIC couplings ================================
+    coupled_atm = a_coupled_atm
+    !===========================================================
 
     if (n/=a_n .or. m/=a_m .or. l/=a_l) then
 
