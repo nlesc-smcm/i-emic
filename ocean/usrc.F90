@@ -563,7 +563,7 @@ SUBROUTINE nlin_rhs(un)
   call unlin(3,uvy1,u,v,w)
   call unlin(5,uwz,u,v,w)
   call unlin(7,uvy2,u,v,w)
-  Al(:,:,1:l,:,UU,UU)  = Al(:,:,1:l,:,UU,UU) + epsr * (uux + uvy1 + uwz + uvy2)
+  Al(:,:,1:l,:,UU,UU) = Al(:,:,1:l,:,UU,UU) + epsr * (uux + uvy1 + uwz + uvy2)
 #endif
 
   ! ------------------------------------------------------------------

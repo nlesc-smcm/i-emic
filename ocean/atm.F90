@@ -6,15 +6,15 @@ module m_atm
       real, parameter ::   rhoa = 1.25
       real, parameter ::   uatm = 0.0
       real, parameter ::     ce = 1.3e-03
-      real, parameter ::     ch = 0.94 * ce  ! 
+      real, parameter ::     ch = 0.94 * ce  ! exchange coefficient 
       real, parameter ::    cpa = 1000.
-      real, parameter ::     uw = 8.5 ! -> mu=2.5
-      real, parameter ::     d0 = 3.1e+06
-      real, parameter ::     c0 = 0.43 
-      real, parameter :: sigmab = 5.67e-08
-      real, parameter ::   brad = 1.5
-      real, parameter ::   arad = 216.0
-      real, parameter ::   sun0 = 1360.
+      real, parameter ::     uw = 8.5        ! -> mu=2.5
+      real, parameter ::     d0 = 3.1e+06    ! constant eddy diffusivity \[D_0\]
+      real, parameter ::     c0 = 0.43       ! atmospheric absorption coefficient
+      real, parameter :: sigmab = 5.67e-08   ! 
+      real, parameter ::   arad = 216.0      ! radiative flux param A
+      real, parameter ::   brad = 1.5        ! radiative flux param B
+      real, parameter ::   sun0 = 1360.      ! solar constant \[\Sigma_0\]
 
       real    Ai, Ad, As, Aa, Os, Aoa, Ooa, amua, bmua
       real, allocatable, dimension(:) ::    dat, davt, albe, suna, suno,upa
