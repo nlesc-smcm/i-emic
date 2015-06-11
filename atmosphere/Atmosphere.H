@@ -2,7 +2,7 @@
 /*
   Atmosphere is a model within the I-EMIC. It is a reimplementation of the
   energy balance model already available in the old THCM code.
-
+  
   Author: Erik -> t.e.mulder@uu.nl
 */
 //!------------------------------------------------------------------------
@@ -14,9 +14,18 @@
 
 class Atmosphere
 {
-	int n; //! east-west   (x) direction
-	int m; //! north-south (y) direction
-	int l; //! z direction
+	int n; //! #grid-points in east-west (x) direction
+	int m; //! #grid-points in north-south (y) direction
+
+	double xmin, xmax; //! limits in x-direction 
+	double ymin, ymax; //! limits in y-direction 
+
+	double dx, dy; //! grid increments
+	
+	std::vector<double> xc;  //! x-grid (cell centers)
+	std::vector<double> xu;  //! x-grid ([u,v]-nodes)
+	std::vector<double> yc;  //! y-grid (cell centers)
+	std::vector<double> yv;  //! y-grid ([u,v]-nodes)
 
 	struct Parameters
 	{
@@ -56,9 +65,10 @@ class Atmosphere
 	std::vector<double> albe;
 
 	//! latitudinal dependence of eddy diffusivity:
-	//!  0.9 + 1.5 * exp(-12*y(j)*y(j)/pi)
-	std::vector<double> dat;
-
+	//!  0.9 + 1.5 * exp(-12*yc(j)*yc(j)/pi)
+	std::vector<double> datc; //! (defined on cell centers)
+	std::vector<double> datv; //! (defined on [u,v]-nodes)
+	
 	//! latitudinal dependence of short-wave radiative flux:
 	//!  As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
 	std::vector<double> suna; 
