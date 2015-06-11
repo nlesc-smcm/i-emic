@@ -182,6 +182,7 @@ SUBROUTINE matBvec(v1,v2)
   ENDDO
   !*
 END SUBROUTINE matBvec
+
 !*******************************************************************************
 SUBROUTINE writecsrmats
   use m_usr
@@ -207,16 +208,24 @@ SUBROUTINE writecsrmats
   close(41)
   close(42)
 END SUBROUTINE writecsrmats
+
 !************************************************************************
 SUBROUTINE writematrixmarket(filename)
-  ! Write matrices A and B to matrix market file
+  ! Write matrices A,B and the current RHS to matrix market files
   use m_usr
   use m_mat
   implicit none
   ! Input
   character*(*) filename
   ! Local
-  
+  ! integer, dimension(begA(ndim+1)-1), :: ival
+  ! integer i,j
+
+  ! j = 1
+  ! do i=1,begA(ndim+1)-1
+  !    if ( i .eq. begA(
+  !    ival(i) = begA(j)
+     
 
 END SUBROUTINE writematrixmarket
 
@@ -232,12 +241,16 @@ SUBROUTINE writematrhs(rl)
   !*     LOCAL
   integer i
   !*
+  write(*,*) 'outputting A.co, Frc.co ...'
+
   open( 9,file=rundir//'B.co')
   open(10,file=rundir//'A.info')
   open(11,file=rundir//'A.beg')
   open(12,file=rundir//'A.jco')
   open(13,file=rundir//'A.co')
   open(14,file=rundir//'A.rl')
+  open(15,file=rundir//'Frc.co') ! Forcing
+  
   write(10,*) ndim,begA(ndim+1)-1
   DO i=1,ndim+1
      write(11,*) begA(i)
@@ -251,6 +264,7 @@ SUBROUTINE writematrhs(rl)
   DO i=1,ndim
      write( 9,*) coB(i)
      write(14,*) rl(i)
+     write(15,*) Frc(i)
   ENDDO
   close( 9)
   close(10)
@@ -258,6 +272,7 @@ SUBROUTINE writematrhs(rl)
   close(12)
   close(13)
   close(14)
+  close(15)
   !*     STOP
   !*
 END SUBROUTINE writematrhs

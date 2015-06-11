@@ -269,9 +269,9 @@ SUBROUTINE matrix(un,sig1,sig2)
 
 
   call boundaries
+  call writematrhs(0.0)
 
   call assemble
-
   !write(*,*) "In fortran's matrix() maxval TT =", maxval(Al(:,:,:,:,TT,:))
   !write(*,*) "In fortran's matrix() maxval SS =", maxval(Al(:,:,:,:,SS,:))
 
@@ -897,7 +897,7 @@ SUBROUTINE stpnt!(un)
   par(PE_V)   =  kappav*r0dim/(udim*hdim*hdim)  ! P_V0
   par(P_VC)   =  5.0            ! P_VC
   par(LAMB)   =  alphaS/alphaT  ! lambda
-  par(SALT)   =  0.0            ! gamma
+  par(SALT)   =  1.0            ! gamma
   par(WIND)   =  0.0            ! wind h
   par(TEMP)   =  10.0           ! eta_T
   par(BIOT)   =  25.0         ! nonlinearity in T,S equations !10.0

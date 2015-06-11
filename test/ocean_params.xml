@@ -81,7 +81,7 @@
 
     <!-- Levitus Temperature (ite in THCM) -->
     <!-- 0: data, 1: idealized 2: coupled within I-EMIC -->
-    <Parameter name="Levitus T" type="int" value="2"/>
+    <Parameter name="Levitus T" type="int" value="1"/>
 
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
