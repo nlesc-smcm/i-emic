@@ -49,10 +49,12 @@ LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
 ## Internal stuff...
 ##   Define the internal library names:
 LIB_OCEAN  = ocean
+LIB_ATMOS  = atmosphere
 
 ##------------------------------------------------------------------
 ##   Define the internal library locations:
 PATH_LIB_OCEAN  = $(PROJECT_BASE)/ocean
+PATH_LIB_ATMOS  = $(PROJECT_BASE)/atmosphere
 
 ##------------------------------------------------------------------
 ##   Gather all the include directories:
@@ -61,9 +63,11 @@ INCLUDE_DIRS =	-I$(PROJECT_BASE)/vector\
 			 	-I$(PROJECT_BASE)/newton\
 				-I$(PROJECT_BASE)/thetastepper\
 				-I$(PROJECT_BASE)/continuation\
+				-I$(PROJECT_BASE)/atmosphere\
         		${INCLUDE_DIRS_TRI}
 
 ##------------------------------------------------------------------
 ##   Gather all the library directories:	
 LIBRARY_DIRS =  -L$(PATH_LIB_OCEAN) \
+			    -L$(PATH_LIB_ATMOS) \
 		          $(LIBRARY_DIRS_TRI)

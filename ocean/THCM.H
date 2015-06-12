@@ -132,6 +132,7 @@ public:
 	//! void insertAtmosphere(const Epetra_Vector &atmos);
 	void insertAtmosphere();
 	//! Flag enabling the coupling with external atmosphere via the I-EMIC
+	//!   0: standalone thcm, 1: accepting external atmosphere
 	int coupled_atm;
 	//! ------------------------------------------------------------------
 	

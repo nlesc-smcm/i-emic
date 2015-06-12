@@ -20,6 +20,7 @@
 #include <Teuchos_FancyOStream.hpp>
 
 #include "Vector.H"
+#include "Atmosphere.H"
 #include "OceanCont.H"
 #include "ThetaStepper.H"
 #include "Continuation.H"
@@ -50,6 +51,11 @@ int main(int argc, char **argv)
  	// Create ocean model OceanCont
 	//  (based on THCM):
 	RCP<OceanCont> ocean = rcp(new OceanCont(Comm));
+
+	// Create Atmosphere model
+	RCP<Atmosphere> atmos = rcp(new Atmosphere());
+	atmos->test();
+	getchar();
 
 	// Create parameter object for continuation
 	RCP<Teuchos::ParameterList> continuationParams =

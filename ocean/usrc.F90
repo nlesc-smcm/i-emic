@@ -480,7 +480,7 @@ SUBROUTINE lin
   call tderiv(5,tzz)
   call tderiv(7,tcb)
   
-  if ((la > 0).or.(couple_atm.eq.1)) then
+  if ((la > 0).or.(coupled_atm.eq.1)) then
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
   else
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
@@ -933,7 +933,7 @@ SUBROUTINE atmos_coef
   As   = sun0*(1 - c0)/(4*muoa)
   Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
   Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
-  DO j=1,m
+  DO j = 1,m
      !       albe(j) = 0.15+ 0.05 * cos (y(j))
      albe(j) = 0.3
      dat(j)  = 0.9 + 1.5 * exp(-12*y(j)*y(j)/pi)
@@ -941,7 +941,7 @@ SUBROUTINE atmos_coef
      suna(j) = As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
   ENDDO
 
-  DO j=0,m
+  DO j = 0,m
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
 END SUBROUTINE atmos_coef

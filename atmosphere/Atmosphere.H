@@ -2,6 +2,8 @@
 /*
   Atmosphere is a model within the I-EMIC. It is a reimplementation of the
   energy balance model already available in the old THCM code.
+
+  Although this is a 2D model we keep some notation of the 3D ocean model.
   
   Author: Erik -> t.e.mulder@uu.nl
 */
@@ -14,71 +16,81 @@
 
 class Atmosphere
 {
-	int n; //! #grid-points in east-west (x) direction
-	int m; //! #grid-points in north-south (y) direction
+	int n_; //! #grid-points in east-west (x) direction
+	int m_; //! #grid-points in north-south (y) direction
+	int l_; //! #grid-points in vertical (z) direction
 
-	double xmin, xmax; //! limits in x-direction 
-	double ymin, ymax; //! limits in y-direction 
+	//! #neighbours, for example in a 3D grid:
+	//!   stencil np = 27:
+	//!   +----------++-------++----------+
+    //!   | 12 15 18 || 3 6 9 || 21 24 27 |
+    //!   | 11 14 17 || 2 5 8 || 20 23 26 |
+    //!   | 10 13 16 || 1 4 7 || 19 22 25 |
+    //!   |  below   || center||  above   |
+    //!   +----------++-------++----------+
+	int np_;  
+	int nun_; //! #unknowns
 
-	double dx, dy; //! grid increments
+	//! A multidimensional array describing the dependencies among the unknowns:
+	//! Al(i,j,k,21,U,V) = c   <=>   d/dt U|(i,j,k) = ... + c * V|(i-1,j+1,k+1)
+	//! Al(i,j,k,13,U,V) = d   <=>   d/dt U|(i,j,k) = ... + d * V|(i,j-1,k-1)
+	double ******Al_;
 	
-	std::vector<double> xc;  //! x-grid (cell centers)
-	std::vector<double> xu;  //! x-grid ([u,v]-nodes)
-	std::vector<double> yc;  //! y-grid (cell centers)
-	std::vector<double> yv;  //! y-grid ([u,v]-nodes)
+	double xmin_, xmax_; //! limits in x-direction 
+	double ymin_, ymax_; //! limits in y-direction 
 
-	struct Parameters
-	{
-		double   rhoa; //! atmospheric density \[\rho_a\]
-		double  hdima; //! atmospheric scale height \[H_a\]
-		double    cpa; //! heat capacity \[C_{pa}\]
-		double     d0; //! constant eddy diffusivity \[D_0\]
-		double   arad; //! radiative flux param A
-		double   brad; //! radiative flux param B
-		double   sun0; //! solar constant \[\Sigma_0\]        
-		double     c0; //! atmospheric absorption coefficient
-		double     ce; //! exchange coefficient 
-		double     ch; //! exchange coefficient \[C_H\]
-		double     uw; //! mean atmospheric surface wind speed \[|V_a|\] 
-		double     t0; //! reference temperature
-
-		// necessary for the nondimensionalization of time:
-		double   udim; //! typical horizontal velocity of the ocean
-		double  r0dim; //! radius of the earth
-	};
+	double dx_, dy_; //! grid increments
 	
-	Parameters pars_;
+	std::vector<double> xc_;  //! x-grid ( cell centers)
+	std::vector<double> xu_;  //! x-grid ( [u,v]-nodes)
+	std::vector<double> yc_;  //! y-grid ( cell centers)
+	std::vector<double> yv_;  //! y-grid ( [u,v]-nodes)
 
-	struct Coefficients
-	{
-		double muoa;  //! constant exchange coefficient
-		double amua;  //! (arad+brad*t0)/muoa
-		double bmua;  //!  brad/muoa
-		double   Ai;  //!  rhoa*hdima*cpa*udim/(r0dim*muoa)
-		double   Ad;  //!  rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
-		double   As;  //!  sun0*(1 - c0)/(4*muoa)
-	};
+	// Parameters	
+	double   rhoa_; //! atmospheric density \[\rho_a\]
+	double  hdima_; //! atmospheric scale height \[H_a\]
+	double    cpa_; //! heat capacity \[C_{pa}\]
+	double     d0_; //! constant eddy diffusivity \[D_0\]
+	double   arad_; //! radiative flux param A
+	double   brad_; //! radiative flux param B
+	double   sun0_; //! solar constant \[\Sigma_0\]        
+	double     c0_; //! atmospheric absorption coefficient
+	double     ce_; //! exchange coefficient 
+	double     ch_; //! exchange coefficient \[C_H\]
+	double     uw_; //! mean atmospheric surface wind speed \[|V_a|\] 
+	double     t0_; //! reference temperature
+	
+	// Necessary for the nondimensionalization of time:
+	double   udim_; //! typical horizontal velocity of the ocean
+	double  r0dim_; //! radius of the earth
 
-	Coefficients coeff_;
+	// Coefficients
+	double muoa_;  //! constant exchange coefficient
+	double amua_;  //! (arad+brad*t0)/muoa
+	double bmua_;  //!  brad/muoa
+	double   Ai_;  //!  rhoa*hdima*cpa*udim/(r0dim*muoa)
+	double   Ad_;  //!  rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
+	double   As_;  //!  sun0*(1 - c0)/(4*muoa)
 
-    //! latitude-dependent albedo
-	std::vector<double> albe;
+    //! Latitude-dependent albedo
+	std::vector<double> albe_;
 
-	//! latitudinal dependence of eddy diffusivity:
+	//! Latitudinal dependence of eddy diffusivity:
 	//!  0.9 + 1.5 * exp(-12*yc(j)*yc(j)/pi)
-	std::vector<double> datc; //! (defined on cell centers)
-	std::vector<double> datv; //! (defined on [u,v]-nodes)
+	std::vector<double> datc_; //! (defined on cell centers)
+	std::vector<double> datv_; //! (defined on [u,v]-nodes)
 	
-	//! latitudinal dependence of short-wave radiative flux:
+	//! Latitudinal dependence of short-wave radiative flux:
 	//!  As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
-	std::vector<double> suna; 
+	std::vector<double> suna_;
 	
 public:
 	// constructor
 	Atmosphere();
 	// destructor
-	~Atmosphere();
-	
+	~Atmosphere(){}
+
+	void test();
 };
 
 
