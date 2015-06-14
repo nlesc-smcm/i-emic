@@ -66,7 +66,7 @@ Atmosphere::Atmosphere()
 			}
 		}
 	}
-
+	
 	xmin_ = 286 * PI / 180;
 	xmax_ = 350 * PI / 180;
 	ymin_ = 10  * PI / 180;
@@ -99,37 +99,31 @@ Atmosphere::Atmosphere()
 	}
 }
 
-~Atmosphere::Atmosphere()
+Atmosphere::~Atmosphere()
 {
 	// TODO: Delete Al dependency grid: GREAT STUFF... 
 	int counter = 1;
-/*	for (int i = 1; i != n_+1; ++i)
+	for (int i = 1; i != n_+1; ++i)
 	{
-		Al_[i] = new double****[m_+1];
 		for (int j = 1; j != m_+1; ++j)
 		{
-			Al_[i][j] = new double***[l_+1];
 			for (int k = 1; k != l_+1; ++k)
 			{
-				Al_[i][j][k] = new double**[np_+1];
 				for (int loc = 1; loc != np_+1; ++loc)
 				{
-					Al_[i][j][k][loc] = new double*[nun_+1];
 					for (int A = 1; A != nun_+1; ++A)
 					{
-						Al_[i][j][k][loc][A] = new double[nun_+1];
-						for (int B = 1; B != nun_+1; ++B)
-						{
-							Al_[i][j][k][loc][A][B] = counter++;
-						}
+						delete Al_[i][j][k][loc][A];
 					}
+					delete Al_[i][j][k][loc];
 				}
+				delete Al_[i][j][k];
 			}
+			delete Al_[i][j];
 		}
+		delete Al_[i];
 	}
 	delete Al_;
-*/
-
 }
 
 void computeRHS()

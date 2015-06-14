@@ -88,7 +88,7 @@ public:
 	// constructor
 	Atmosphere();
 	// destructor
-	~Atmosphere(){}
+	~Atmosphere();
 
 	void test();
 };
