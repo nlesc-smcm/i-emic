@@ -840,7 +840,7 @@ SUBROUTINE yderiv(type,atom)
      DO j = 1,m
         DO i = 1,n
            !         if(landm(i,j,l)/=LAND) then
-           atom(i,j,:,5) = -1.0
+           atom(i,j,:,5)  = -1.0
            atom(i,j,:,14) =  1.0
            !         endif
         ENDDO

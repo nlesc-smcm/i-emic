@@ -62,19 +62,26 @@ module m_usr
   integer :: TRES       = 1       ! restoring temp forcing
   integer :: SRES       = 1       ! restoring salt forcing
   integer :: iza        = 2       ! wind forcing, 0: data, 1: zon ave.,
-  ! 2: idealized
+                                  !               2: idealized
   integer :: ite        = 1       ! temperature, 0: data, 1:idealized
   integer :: its        = 1       ! salinity, 0: data, 1: idealized
 
   logical :: rd_spertm  = .false. ! read salinity perturbation mask
 
   !--obsolete---
-  !integer :: ifw        = 1       ! freshwater forcing 0: data, 1: idealized  (USE its NOW)
+  !integer :: ifw        = 1       ! freshwater forcing 0: data, 1: idealized
+                                   ! (USE its NOW)
 
   !integer :: CVT        = 1       ! no = 1; tanh =2; arctan = 3
   !integer :: FBT        = 0       ! fixed bottom temperature 1 , no flux 0
   !integer :: FBS        = 0       ! fixed bottom salinity +1 , no flux 0
 
+  !===== I-EMIC COUPLING FLAGS ==============================================
+  !     These are set in initialize in global.F90
+  
+  integer :: coupled_atm = 0       ! 0: standalone thcm,
+                                   ! 1: accepting external atmosphere
+  
   !===== FORCING FIELDS ========================================================
   !
   !     The subdomain forcing fields are set by forcing, which is called
@@ -89,7 +96,6 @@ module m_usr
   real, allocatable, dimension(:,:)   :: tx,ty,ft,fs
 
   !===== OUTPUT ================================================================
-
   !     Output unit, formerly sent to fort.99. It is not yet clear how we can
   !     preserve THCM output on the subdomains meaningfully as the fortran files
   !     seem to get lost between calls from C++.

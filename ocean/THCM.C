@@ -46,28 +46,32 @@ extern "C" {
 	_SUBROUTINE_(rhs)(double*,double*);
 	_SUBROUTINE_(matrix)(double*,double*,double*);
 
-	// input: n,m,l,nmlglob
+	// input:   n,m,l,nmlglob
 	//          xmin,xmax,ymin,ymax,
 	//          periodic,landm,
 	//          taux,tauy,tatm,emip,spert
-	//        (defined in usrc.F90)
 	_SUBROUTINE_(init)(int*,int*,int*,int*,
                        double*,double*,double*,double*,
                        int*,int*,
                        double*,double*,double*,double*,double*);
 	_SUBROUTINE_(finalize)(void);
-	// input: N,M,L,
+
+	// global.F90
+    // input:   N,M,L,
 	//          Xmin,Xmax,Ymin,Ymax,hdim,qz,
 	//          alphaT,alphaS,
 	//          ih,vmix_GLB,tap,rho_mixing,
 	//          periodic,itopo,flat,rd_mask,
 	//          TRES,SRES,iza,ite,its,rd_spertm
+	//          coupled_atm
 	_MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
                                              double*,double*,double*,double*,double*,double*,
                                              double*,double*,
                                              int*,int*,int*,int*,
                                              int*,int*,int*,int*,
-                                             int*,int*,int*,int*,int*,int*);
+                                             int*,int*,int*,int*,int*,int*,
+		                                     int*);
+	
 	_MODULE_SUBROUTINE_(m_global,finalize)(void);
 	_MODULE_SUBROUTINE_(m_global,get_landm)(int*);
 	_MODULE_SUBROUTINE_(m_global,get_monthly_forcing)(double* tatm, double* emip,
@@ -113,7 +117,7 @@ extern "C" {
 	//---------------------- I-EMIC couplings--------------------------------------
 	// Extensions created for communication within the I-EMIC
 	//
-	_MODULE_SUBROUTINE_(m_insertions, insert_atmosphere)(double *atmos);
+	_MODULE_SUBROUTINE_(m_inserts, insert_atmosphere)(double *atmos);
 	//-----------------------------------------------------------------------------
 	
 	_SUBROUTINE_(write_levitus)(const char*);
@@ -183,6 +187,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	its              = paramList.get("Levitus S",1);
 	internal_forcing = paramList.get("Levitus Internal T/S",false);
 	bool rd_spertm   = paramList.get("Read Salinity Perturbation Mask",false);
+	coupled_atm      = paramList.get("Coupled Atmosphere", 0);
 
 	if (rd_spertm)
     {
@@ -280,7 +285,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 								  &alphaT, &alphaS,
 								  &ih, &vmix_GLB, &tap, &irho_mixing,
 								  &iperiodic, &itopo, &iflat, &ird_mask,
-								  &tres, &sres, &iza, &ite, &its, &ird_spertm);
+								  &tres, &sres, &iza, &ite, &its, &ird_spertm,
+								  &coupled_atm);
 
 	// read topography data and convert it to a global land mask
 	DEBUG("Initialize land mask...");
@@ -953,7 +959,7 @@ void THCM::insertAtmosphere()
 	}
 	double *atmos_loc_array;
 	atmos_loc->ExtractView(&atmos_loc_array);
-	F90NAME(m_insertions, insert_atmosphere)(atmos_loc_array);
+	F90NAME(m_inserts, insert_atmosphere)(atmos_loc_array);
 }
 
 //=============================================================================

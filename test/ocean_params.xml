@@ -56,6 +56,10 @@
     <!-- name of land mask file (assumed to be in mkmask/ directory) -->
     <Parameter name="Land Mask" type="string" value="mask_natl32"/>
 
+	<!-- Flag enabling the coupling with an atmosphere within the I-EMIC -->
+    <!--   0: standalone thcm, 1: accepting external atmosphere          -->
+	<Parameter name="Coupled Atmosphere" type="int" value="0"/>
+	
     <!-- Mixing parameter (vmix_GLB in THCM) -->
     <Parameter name="Mixing" type="int" value="1"/>
     
@@ -80,7 +84,7 @@
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
 
     <!-- Levitus Temperature (ite in THCM) -->
-    <!-- 0: data, 1: idealized 2: coupled within I-EMIC -->
+    <!-- 0: data, 1: idealized -->
     <Parameter name="Levitus T" type="int" value="1"/>
 
     <!-- Levitus Salt (its in THCM) -->

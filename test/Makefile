@@ -1,10 +1,12 @@
 include ../make.inc/Makefile.${PLAT}
 
-DIRS =  $(PROJECT_BASE)/$(LIB_OCEAN)/
+DIRS =  $(PROJECT_BASE)/ocean/ \
+	    $(PROJECT_BASE)/atmosphere/ \
 
-EXE  = test timestepping
-OBJS = test.o timestepping.o
-OBJLIBS = lib$(LIB_OCEAN).a
+EXE     = test timestepping
+OBJS    = test.o timestepping.o
+OBJLIBS = lib$(LIB_OCEAN).a\
+	      lib$(LIB_ATMOS).a\
 
 # Header dependencies, especially important for templated stuff	
 HEADERDEPS = \
@@ -17,9 +19,11 @@ HEADERDEPS = \
 	../continuation/ContinuationDecl.H \
 	../ocean/GlobalDefinitions.H \
 	../ocean/Ocean.H \
+	../atmosphere/Atmosphere.H\
 
 INTLIBS = \
 	-l$(LIB_OCEAN)\
+	-l$(LIB_ATMOS)\
 
 CXX_DB = 
 
@@ -33,6 +37,10 @@ timestepping: $(OBJLIBS) timestepping.o
 
 lib$(LIB_OCEAN).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_OCEAN); $(MAKE) $(MFLAGS)
+
+lib$(LIB_ATMOS).a: force_look
+	cd $(PROJECT_BASE)/$(LIB_ATMOS); $(MAKE) $(MFLAGS)
+
 
 %.o: %.C $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $(CXX_DB) $<

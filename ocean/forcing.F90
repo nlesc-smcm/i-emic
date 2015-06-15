@@ -43,7 +43,7 @@ SUBROUTINE forcing
   enddo
  
   ! ------------------------------------------------------------------
-  ! Determine temperature forcing
+  ! Determine atmospheric temperature forcing
   ! ------------------------------------------------------------------
   
   etabi = par(COMB)*par(TEMP)*(1 - TRES + TRES*par(BIOT))
@@ -64,11 +64,16 @@ SUBROUTINE forcing
 
   do j=1,m
      do i=1,n
-        if (la>0) then      ! coupling to atmosphere
+        if (la > 0) then      ! coupling to atmosphere
            Frc(find_row2(i,j,l+1,TT)) = &
                 par(COMB) * par(SUNP) * (suna(j) - amua)
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
+           
+        else if (coupled_atm.eq.1) then ! coupled externally
+           Frc(find_row2(i,j,l,TT)) = &
+                par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
+           
         else                ! ocean-only
            Frc(find_row2(i,j,l,TT)) = etabi * ( tatm(i,j) - temcor )
         endif
