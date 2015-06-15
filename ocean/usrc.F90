@@ -511,7 +511,7 @@ SUBROUTINE lin
 
 end SUBROUTINE lin
 
-!****************************************************************************
+!********************************************************************
 SUBROUTINE nlin_rhs(un)
   use, intrinsic :: iso_c_binding
   USE m_mat

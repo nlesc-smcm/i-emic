@@ -3,7 +3,7 @@
   Atmosphere is a model within the I-EMIC. It is a reimplementation of the
   energy balance model already available in the old THCM code.
 
-  Although this is a 2D model we keep some notation of the 3D ocean model.
+  Although this is a 2D model we maintain notation of the 3D ocean model.
   
   Author: Erik -> t.e.mulder@uu.nl
 */
@@ -13,6 +13,9 @@
 #define ATMOSPHERE_H
 
 #include <vector>
+#include <memory>
+
+class DependencyGrid;
 
 class Atmosphere
 {
@@ -31,10 +34,7 @@ class Atmosphere
 	int np_;  
 	int nun_; //! #unknowns
 
-	//! A multidimensional array describing the dependencies among the unknowns:
-	//! Al(i,j,k,21,U,V) = c   <=>   d/dt U|(i,j,k) = ... + c * V|(i-1,j+1,k+1)
-	//! Al(i,j,k,13,U,V) = d   <=>   d/dt U|(i,j,k) = ... + d * V|(i,j-1,k-1)
-	double ******Al_;
+	std::shared_ptr<DependencyGrid> Al_;
 	
 	double xmin_, xmax_; //! limits in x-direction 
 	double ymin_, ymax_; //! limits in y-direction 
@@ -91,8 +91,31 @@ public:
 	~Atmosphere();
 
 	void test();
+	void fillDependencyGrid();
+private:
+	void discretize(int type, DependencyGrid &grid);
 };
 
 
+//==================================================================
+//! Dependency grid:
+//! A multidimensional array describing the dependencies among the unknowns:
+//! grid(i,j,k,21,U,V) = c   <=>   d/dt U|(i,j,k) = ... + c * V|(i-1,j+1,k+1)
+//! grid(i,j,k,13,U,V) = d   <=>   d/dt U|(i,j,k) = ... + d * V|(i,j-1,k-1)
+//==================================================================
+class DependencyGrid
+{
+	double ******grid_;
+	int n_, m_, l_, np_, nun_;
+	
+public:
+	DependencyGrid(int n, int m, int l, int np, int nun);
+	~DependencyGrid();
+
+	double get(int i, int j, int k, int loc, int A, int B);
+	void   set(int i, int j, int k, int loc, int A, int B, double value);
+	void   add(double scalar, DependencyGrid atom);
+
+};
 
 #endif

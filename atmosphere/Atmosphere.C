@@ -30,7 +30,6 @@ Atmosphere::Atmosphere()
 	Ad_   =  rhoa_ * hdima_ * cpa_ * d0_ / (muoa_ * r0dim_ * r0dim_);
 	As_   =  sun0_ * (1 - c0_) / (4 * muoa_);		
 
-
 	// Set problem size and domain limits (temporary!)
 	n_ = 16;
 	m_ = 16;
@@ -39,34 +38,9 @@ Atmosphere::Atmosphere()
 	np_  = 27; // all neighbouring points including the center
 	nun_ = 1;  // only temperature
 
-	// Create Al dependency grid: GREAT STUFF... 
-	Al_ = new double*****[n_+1];
-	int counter = 1;
-	for (int i = 1; i != n_+1; ++i)
-	{
-		Al_[i] = new double****[m_+1];
-		for (int j = 1; j != m_+1; ++j)
-		{
-			Al_[i][j] = new double***[l_+1];
-			for (int k = 1; k != l_+1; ++k)
-			{
-				Al_[i][j][k] = new double**[np_+1];
-				for (int loc = 1; loc != np_+1; ++loc)
-				{
-					Al_[i][j][k][loc] = new double*[nun_+1];
-					for (int A = 1; A != nun_+1; ++A)
-					{
-						Al_[i][j][k][loc][A] = new double[nun_+1];
-						for (int B = 1; B != nun_+1; ++B)
-						{
-							Al_[i][j][k][loc][A][B] = counter++;
-						}
-					}
-				}
-			}
-		}
-	}
-	
+	// Construct dependency grid:
+	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
+
 	xmin_ = 286 * PI / 180;
 	xmax_ = 350 * PI / 180;
 	ymin_ = 10  * PI / 180;
@@ -76,8 +50,6 @@ Atmosphere::Atmosphere()
 	dx_ = (xmax_ - xmin_) / n_;
 	dy_ = (ymax_ - ymin_) / m_;
 
-	// 
-	
 	// Fill x
 	for (int i = 0; i != n_+1; ++i)
 	{
@@ -100,35 +72,46 @@ Atmosphere::Atmosphere()
 }
 
 Atmosphere::~Atmosphere()
+{}
+
+
+void Atmosphere::fillDependencyGrid()
 {
-	// TODO: Delete Al dependency grid: GREAT STUFF... 
-	int counter = 1;
-	for (int i = 1; i != n_+1; ++i)
-	{
-		for (int j = 1; j != m_+1; ++j)
-		{
-			for (int k = 1; k != l_+1; ++k)
-			{
-				for (int loc = 1; loc != np_+1; ++loc)
-				{
-					for (int A = 1; A != nun_+1; ++A)
-					{
-						delete Al_[i][j][k][loc][A];
-					}
-					delete Al_[i][j][k][loc];
-				}
-				delete Al_[i][j][k];
-			}
-			delete Al_[i][j];
-		}
-		delete Al_[i];
-	}
-	delete Al_;
+	//! ------------------------------------------------------------------
+	//! atmosphere layer
+	//! ------------------------------------------------------------------
+	DependencyGrid tc (n_, m_, l_, np_, 1);
+	DependencyGrid tc2(n_, m_, l_, np_, 1);
+	DependencyGrid txx(n_, m_, l_, np_, 1);
+	DependencyGrid tyy(n_, m_, l_, np_, 1);
+
+	
+	discretize(1, tc);
+	/*
+	discretize(2, tc2);
+	discretize(3, txx);
+	discretize(4, tyy);
+	*/
 }
 
 void computeRHS()
 {
 	
+}
+
+void Atmosphere::discretize(int type, DependencyGrid &grid)
+{
+	switch (type)
+	{
+	case 1:
+		for (int i = 1; i != n_+1; ++i)
+			for (int j = 1; j != m_+1; ++j)
+				for (int k = 1; k != l_+1; ++k)
+				{
+					grid.set(i,j,k,5, 1,1, -1.0);
+					grid.set(i,j,k,14,1,1,  1.0);
+				}
+	}
 }
 
 void Atmosphere::test()
@@ -145,8 +128,87 @@ void Atmosphere::test()
 	for (int i = 0; i != xu_.size(); ++i)
 		std::cout << xu_[i] << " ";
 	std::cout << std::endl;
-	std::cout << "Al[1][1][1][1][1][1]=" << Al_[1][1][1][1][1][1] << std::endl;
-	std::cout << "Al[1][1][1][2][1][1]=" << Al_[1][1][1][2][1][1] << std::endl;
-	std::cout << "Al[1][1][1][3][1][1]=" << Al_[1][1][1][3][1][1] << std::endl;
-	std::cout << "Al[1][2][1][1][1][1]=" << Al_[1][2][1][1][1][1] << std::endl;
+	std::cout << "Al[1][1][1][1][1][1]="
+			  << Al_->get(1,1,1,1,1,1) << std::endl;
+	std::cout << "Al[1][1][1][2][1][1]="
+			  << Al_->get(1,1,1,2,1,1) << std::endl;
+	std::cout << "Al[1][1][1][3][1][1]="
+			  << Al_->get(1,1,1,3,1,1) << std::endl;
+	std::cout << "Al[1][2][1][1][1][1]="
+			  << Al_->get(1,2,1,1,1,1) << std::endl;
+}
+
+//==================================================================
+// DependencyGrid implementation
+//==================================================================
+DependencyGrid::DependencyGrid(int n, int m, int l, int np, int nun)
+	:
+	n_(n),
+	m_(m),
+	l_(l),
+	np_(np),
+	nun_(nun)	
+{
+	// Build dependency grid
+	grid_ = new double*****[n_+1];
+	for (int i = 1; i != n_+1; ++i)
+	{
+		grid_[i] = new double****[m_+1];
+		for (int j = 1; j != m_+1; ++j)
+		{
+			grid_[i][j] = new double***[l_+1];
+			for (int k = 1; k != l_+1; ++k)
+			{
+				grid_[i][j][k] = new double**[np_+1];
+				for (int loc = 1; loc != np_+1; ++loc)
+				{
+					grid_[i][j][k][loc] = new double*[nun_+1];
+					for (int A = 1; A != nun_+1; ++A)
+					{
+						grid_[i][j][k][loc][A] = new double[nun_+1];
+						for (int B = 1; B != nun_+1; ++B)
+						{
+							grid_[i][j][k][loc][A][B] = 0.0;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+DependencyGrid::~DependencyGrid()
+{
+	// Destroy dependency grid
+ 	for (int i = 1; i != n_+1; ++i)
+	{
+		for (int j = 1; j != m_+1; ++j)
+		{
+			for (int k = 1; k != l_+1; ++k)
+			{
+				for (int loc = 1; loc != np_+1; ++loc)
+				{
+					for (int A = 1; A != nun_+1; ++A)
+					{
+						delete grid_[i][j][k][loc][A];
+					}
+					delete grid_[i][j][k][loc];
+				}
+				delete grid_[i][j][k];
+			}
+			delete grid_[i][j];
+		}
+		delete grid_[i];
+	}
+	delete grid_;
+}
+
+double DependencyGrid::get(int i, int j, int k, int loc, int A, int B)
+{
+	return grid_[i][j][k][loc][A][B];
+}
+
+void DependencyGrid::set(int i, int j, int k, int loc, int A, int B, double value)
+{
+	grid_[i][j][k][loc][A][B] = value;
 }

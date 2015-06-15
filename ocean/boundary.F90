@@ -27,6 +27,9 @@ subroutine boundaries
   do i = 1, n
      do j = 1, m
         do k = 1, l+la
+           
+           ! Give all the neighbours appropriate names.
+           ! The landmask contains additional dummy cells on all borders.
            southw    = landm(i-1,j-1,k  )   !  1
            west      = landm(i-1,j  ,k  )   !  2
            nwest     = landm(i-1,j+1,k  )   !  3
@@ -56,6 +59,9 @@ subroutine boundaries
            neastt    = landm(i+1,j+1,k+1)   ! 27
            
            if (i.lt.n) then
+
+              ! Additional neighbours in the interior
+              !--> why? what is the use here?
               southee  = landm(i+2,j-1,k  ) !  ?
               easteast = landm(i+2,j  ,k  ) !  ?
               northee  = landm(i+2,j+1,k  ) !  ?

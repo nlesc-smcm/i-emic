@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 
 	// Create Atmosphere model
 	RCP<Atmosphere> atmos = rcp(new Atmosphere());
-	atmos->test();
+	atmos->fillDependencyGrid();
 	getchar();
 
 	// Create parameter object for continuation
