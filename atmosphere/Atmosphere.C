@@ -80,18 +80,30 @@ void Atmosphere::fillDependencyGrid()
 	//! ------------------------------------------------------------------
 	//! atmosphere layer
 	//! ------------------------------------------------------------------
-	DependencyGrid tc (n_, m_, l_, np_, 1);
-	DependencyGrid tc2(n_, m_, l_, np_, 1);
-	DependencyGrid txx(n_, m_, l_, np_, 1);
-	DependencyGrid tyy(n_, m_, l_, np_, 1);
+	Atom tc (n_, m_, l_, np_);
+	Atom tc2(n_, m_, l_, np_);
+	Atom txx(n_, m_, l_, np_);
+	Atom tyy(n_, m_, l_, np_);
 
-	
 	discretize(1, tc);
-	/*
 	discretize(2, tc2);
 	discretize(3, txx);
 	discretize(4, tyy);
-	*/
+
+	int iloc = 6;
+	int jloc = 8;
+	
+	std::cout  <<  "TEST:------------------>"  << std::endl;
+	std::cout  <<  tc.get (iloc, jloc, 1, 2 )  << std::endl;
+	std::cout  <<  tc.get (iloc, jloc, 1, 14)  << std::endl;
+	std::cout  <<  tc2.get(iloc, jloc, 1, 5 )  << std::endl;
+	std::cout  <<  txx.get(iloc, jloc, 1, 2 )  << std::endl;
+	std::cout  <<  txx.get(iloc, jloc, 1, 5 )  << std::endl;
+	std::cout  <<  txx.get(iloc, jloc, 1, 8 )  << std::endl;
+	std::cout  <<  tyy.get(iloc, jloc, 1, 4 )  << std::endl;
+	std::cout  <<  tyy.get(iloc, jloc, 1, 5 )  << std::endl;
+	std::cout  <<  tyy.get(iloc, jloc, 1, 6 )  << std::endl;
+	
 }
 
 void computeRHS()
@@ -99,18 +111,54 @@ void computeRHS()
 	
 }
 
-void Atmosphere::discretize(int type, DependencyGrid &grid)
+void Atmosphere::discretize(int type, Atom &atom)
 {
 	switch (type)
-	{
-	case 1:
+	{		
+	case 1: // tc
+		atom.set({1,n_,1,m_,1,l_}, 2,  -1.0);
+		atom.set({1,n_,1,m_,1,l_}, 14,  1.0);
+		break;
+	case 2: // tc2
+		atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
+		break;
+	case 3: // txx
+		double cosdx2i;
+		double val2, val8, val5;
 		for (int i = 1; i != n_+1; ++i)
 			for (int j = 1; j != m_+1; ++j)
+			{
+				cosdx2i = 1.0 / pow(cos(yc_[j]), 2);
+				val2 = datc_[j] * cosdx2i;
+				val8 = val2;
+				val5 = -2 * val2;
+				
 				for (int k = 1; k != l_+1; ++k)
 				{
-					grid.set(i,j,k,5, 1,1, -1.0);
-					grid.set(i,j,k,14,1,1,  1.0);
+					atom.set(i, j, k, 2, val2);
+					atom.set(i, j, k, 8, val8);
+					atom.set(i, j, k, 5, val5);
 				}
+			}
+		break;
+	case 4: // tyy
+		double dy2i = 1.0 / pow(dy_, 2);
+		double val4, val6, val5;
+		for (int i = 1; i != n_+1; ++i)
+			for (int j = 1; j != m_+1; ++j)
+			{
+				val4 = dy2i * datv_[j-1] * cos(yv_[j-1]) / cos(yc_[j]);
+				val6 = dy2i * datv_[j]   * cos(yv_[j])   / cos(yc_[j]);
+				val5 = -(val4 + val6);
+				
+				for (int k = 1; k != l_+1; ++k)
+				{
+					atom.set(i, j, k, 4, val4);
+					atom.set(i, j, k, 6, val6);
+					atom.set(i, j, k, 5, val5);
+				}
+			}
+		break;
 	}
 }
 
@@ -138,9 +186,9 @@ void Atmosphere::test()
 			  << Al_->get(1,2,1,1,1,1) << std::endl;
 }
 
-//==================================================================
+//=============================================================================
 // DependencyGrid implementation
-//==================================================================
+//=============================================================================
 DependencyGrid::DependencyGrid(int n, int m, int l, int np, int nun)
 	:
 	n_(n),
@@ -177,6 +225,7 @@ DependencyGrid::DependencyGrid(int n, int m, int l, int np, int nun)
 	}
 }
 
+//-----------------------------------------------------------------------------
 DependencyGrid::~DependencyGrid()
 {
 	// Destroy dependency grid
@@ -203,12 +252,96 @@ DependencyGrid::~DependencyGrid()
 	delete grid_;
 }
 
+//-----------------------------------------------------------------------------
 double DependencyGrid::get(int i, int j, int k, int loc, int A, int B)
 {
 	return grid_[i][j][k][loc][A][B];
 }
 
+//-----------------------------------------------------------------------------
 void DependencyGrid::set(int i, int j, int k, int loc, int A, int B, double value)
 {
 	grid_[i][j][k][loc][A][B] = value;
 }
+
+//-----------------------------------------------------------------------------
+void DependencyGrid::set(int const (&range)[8], int A, int B, Atom &atom)
+{
+	for (int i = range[0]; i != range[1]+1; ++i)
+		for (int j = range[2]; j != range[3]+1; ++j)
+			for (int k = range[4]; k != range[5]+1; ++k)
+				for (int loc = range[6]; loc != range[7]+1; ++loc)
+					grid_[i][j][k][loc][A][B] = atom.get(i,j,k,loc);
+}
+
+//=============================================================================
+// Atom implementation
+//=============================================================================
+Atom::Atom(int n, int m, int l, int np)
+	:
+	n_(n),
+	m_(m),
+	l_(l),
+	np_(np)
+{
+	// Build atom
+	atom_ = new double***[n_+1];
+	for (int i = 1; i != n_+1; ++i)
+	{
+		atom_[i] = new double**[m_+1];
+		for (int j = 1; j != m_+1; ++j)
+		{
+			atom_[i][j] = new double*[l_+1];
+			for (int k = 1; k != l_+1; ++k)
+			{
+				atom_[i][j][k] = new double[np_+1];
+				for (int loc = 1; loc != np_+1; ++loc)
+				{
+					atom_[i][j][k][loc] = 0.0;
+				}
+			}
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+Atom::~Atom()
+{
+	// Destroy atom
+ 	for (int i = 1; i != n_+1; ++i)
+	{
+		for (int j = 1; j != m_+1; ++j)
+		{
+			for (int k = 1; k != l_+1; ++k)
+			{		    
+				delete atom_[i][j][k];
+			}
+			delete atom_[i][j];
+		}
+		delete atom_[i];
+	}
+	delete atom_;
+}
+
+//-----------------------------------------------------------------------------
+double Atom::get(int i, int j, int k, int loc)
+{
+	return atom_[i][j][k][loc];
+}
+
+//-----------------------------------------------------------------------------
+void Atom::set(int i, int j, int k, int loc, double value)
+{
+	atom_[i][j][k][loc] = value;
+}
+
+//-----------------------------------------------------------------------------
+void Atom::set(int const (&range)[6], int loc, double value)
+{
+	for (int i = range[0]; i != range[1]+1; ++i)
+		for (int j = range[2]; j != range[3]+1; ++j)
+			for (int k = range[4]; k != range[5]+1; ++k)
+				atom_[i][j][k][loc] = value;
+}
+
+

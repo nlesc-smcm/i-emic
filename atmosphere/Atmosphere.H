@@ -16,6 +16,7 @@
 #include <memory>
 
 class DependencyGrid;
+class Atom;
 
 class Atmosphere
 {
@@ -93,7 +94,7 @@ public:
 	void test();
 	void fillDependencyGrid();
 private:
-	void discretize(int type, DependencyGrid &grid);
+	void discretize(int type, Atom &atom);
 };
 
 
@@ -114,8 +115,30 @@ public:
 
 	double get(int i, int j, int k, int loc, int A, int B);
 	void   set(int i, int j, int k, int loc, int A, int B, double value);
-	void   add(double scalar, DependencyGrid atom);
+	void   set(int const (&range)[8], int A, int B, Atom &atom);
+	void   add(double scalar, Atom &atom);
 
 };
+
+//==================================================================
+//! Atom:
+//! A multidimensional array describing anonymous dependencies among neighbours:
+//! atom(i,j,k,21) = c   <=>   d/dt {}|(i,j,k) = ... + c * {}|(i-1,j+1,k+1)
+//! atom(i,j,k,13) = d   <=>   d/dt {}|(i,j,k) = ... + d * {}|(i,j-1,k-1)
+//==================================================================
+class Atom
+{
+	double ****atom_;
+	int n_, m_, l_, np_;
+	
+public:
+	Atom(int n, int m, int l, int np);
+	~Atom();
+
+	double get(int i, int j, int k, int loc);
+	void   set(int i, int j, int k, int loc, double value);
+	void   set(int const (&range)[6], int loc, double value);
+};
+
 
 #endif

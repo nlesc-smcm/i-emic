@@ -16,5 +16,7 @@ TRIDIR       = /var/tmp/trilinos/${TRIVERSION}
 PROJECT_BASE = /var/tmp/i-emic
 ##   Make flags
 MFLAGS       = -j 4
+##   Local
+LOCAL_CXX_FLAGS  = -std=c++11
 ##=================================================================
 include $(PROJECT_BASE)/make.inc/Makefile.all
