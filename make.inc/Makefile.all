@@ -59,6 +59,7 @@ PATH_LIB_ATMOS  = $(PROJECT_BASE)/atmosphere
 ##------------------------------------------------------------------
 ##   Gather all the include directories:
 INCLUDE_DIRS =	-I$(PROJECT_BASE)/vector\
+                -I$(PROJECT_BASE)/multiarray\
                 -I$(PROJECT_BASE)/ocean\
 			 	-I$(PROJECT_BASE)/newton\
 				-I$(PROJECT_BASE)/thetastepper\

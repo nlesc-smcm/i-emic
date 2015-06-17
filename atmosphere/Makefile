@@ -5,6 +5,9 @@ libname     = lib$(libbasename).a
 
 obj= Atmosphere.o
 
+HEADERDEPS = \	
+	../multiarray/MultiArray.H
+
 all: lib
 
 lib: $(libname)
@@ -15,7 +18,7 @@ $(libname): ${obj}
 Atmosphere.o: Atmosphere.C Atmosphere.H
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 
-%.o: %.C %.H
+%.o: %.C %.H $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 %.o: %.C
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
