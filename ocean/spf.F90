@@ -527,7 +527,7 @@ SUBROUTINE wnlin(type,atom,t)
   !
   SELECT CASE(type)
   CASE(1)            ! quadratic term jac
-     DO k=1,l-1 
+     DO k = 1,l-1 
         DO j = 1,m
            DO i = 1,n
               atom(i,j,k,23) = (t(i,j,k)+t(i,j,k+1))/2.
@@ -536,7 +536,7 @@ SUBROUTINE wnlin(type,atom,t)
         ENDDO
      ENDDO
   CASE(2)            ! quadratic term rhs
-     DO k=1,l-1
+     DO k = 1,l-1
         DO j = 1,m
            DO i = 1,n
               atom(i,j,k,23) = t(i,j,k+1)/4.

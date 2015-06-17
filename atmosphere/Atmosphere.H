@@ -14,9 +14,16 @@
 
 #include <vector>
 #include <memory>
+#include <array>
+#include <vector>
+#include "AtmosphereDefinitions.H"
 
 class DependencyGrid;
 class Atom;
+class MultiArray;
+
+using std::array;
+using std::vector;
 
 class Atmosphere
 {
@@ -32,7 +39,7 @@ class Atmosphere
     //!   | 10 13 16 || 1 4 7 || 19 22 25 |
     //!   |  below   || center||  above   |
     //!   +----------++-------++----------+
-	int np_;  
+	int np_;  //! #neighbouring points
 	int nun_; //! #unknowns
 
 	std::shared_ptr<DependencyGrid> Al_;
@@ -106,11 +113,11 @@ private:
 //==================================================================
 class DependencyGrid
 {
-	double ******grid_;
+    Grid grid_; 
 	int n_, m_, l_, np_, nun_;
 	
 public:
-	DependencyGrid(int n, int m, int l, int np, int nun);
+	DependencyGrid(int n, int m, int l);
 	~DependencyGrid();
 
 	double get(int i, int j, int k, int loc, int A, int B);
@@ -138,6 +145,12 @@ public:
 	double get(int i, int j, int k, int loc);
 	void   set(int i, int j, int k, int loc, double value);
 	void   set(int const (&range)[6], int loc, double value);
+
+	void update(double scalarThis,
+				double scalarA, Atom &A,
+				double scalarB, Atom &B,
+				double scalarC, Atom &C);
+
 };
 
 

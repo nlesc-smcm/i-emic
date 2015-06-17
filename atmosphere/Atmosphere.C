@@ -1,7 +1,7 @@
 #include "Atmosphere.H"
+#include "AtmosphereDefinitions.H"
 #include <math.h>
 #include <iostream>
-#define PI 3.14159265358979323846
 
 Atmosphere::Atmosphere()
 {
@@ -35,8 +35,8 @@ Atmosphere::Atmosphere()
 	m_ = 16;
 	l_ = 1;
 
-	np_  = 27; // all neighbouring points including the center
-	nun_ = 1;  // only temperature
+	np_  = NP_;   // all neighbouring points including the center
+	nun_ = NUN_;  // only temperature
 
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
@@ -90,23 +90,24 @@ void Atmosphere::fillDependencyGrid()
 	discretize(3, txx);
 	discretize(4, tyy);
 
-	// straks implementeren:
-	// txx.sum(scalarA, A, scalarThis)
 	
 	int iloc = 6;
 	int jloc = 8;
 	
 	std::cout  <<  "TEST:------------------>"  << std::endl;
-	std::cout  <<  tc.get (iloc, jloc, 1, 2 )  << std::endl;
-	std::cout  <<  tc.get (iloc, jloc, 1, 14)  << std::endl;
+	std::cout  <<  tc.get(iloc, jloc, 1, 5 )   << std::endl;
 	std::cout  <<  tc2.get(iloc, jloc, 1, 5 )  << std::endl;
-	std::cout  <<  txx.get(iloc, jloc, 1, 2 )  << std::endl;
 	std::cout  <<  txx.get(iloc, jloc, 1, 5 )  << std::endl;
-	std::cout  <<  txx.get(iloc, jloc, 1, 8 )  << std::endl;
-	std::cout  <<  tyy.get(iloc, jloc, 1, 4 )  << std::endl;
 	std::cout  <<  tyy.get(iloc, jloc, 1, 5 )  << std::endl;
-	std::cout  <<  tyy.get(iloc, jloc, 1, 6 )  << std::endl;
+
+	// Al(:,:,:,:,TT,TT) = - Ad * (txx + tyy) - tc + bmua*tc2
+	txx.update(-Ad_, -Ad_, tyy, -1, tc, bmua_, tc2);
+	Al_->set({1,n_,1,m_,1,l_}, 1, 1, txx);
 	
+	std::cout  <<  "Ad: " << Ad_ << std::endl;
+	std::cout  <<  "bmua: " << bmua_ << std::endl;
+	std::cout  <<  txx.get(iloc, jloc, 1, 5 )  << std::endl;
+
 }
 
 void computeRHS()
@@ -191,67 +192,17 @@ void Atmosphere::test()
 //=============================================================================
 // DependencyGrid implementation
 //=============================================================================
-DependencyGrid::DependencyGrid(int n, int m, int l, int np, int nun)
+DependencyGrid::DependencyGrid(int n, int m, int l)
 	:
 	n_(n),
 	m_(m),
-	l_(l),
-	np_(np),
-	nun_(nun)	
-{
-	// Build dependency grid
-	grid_ = new double*****[n_+1];
-	for (int i = 1; i != n_+1; ++i)
-	{
-		grid_[i] = new double****[m_+1];
-		for (int j = 1; j != m_+1; ++j)
-		{
-			grid_[i][j] = new double***[l_+1];
-			for (int k = 1; k != l_+1; ++k)
-			{
-				grid_[i][j][k] = new double**[np_+1];
-				for (int loc = 1; loc != np_+1; ++loc)
-				{
-					grid_[i][j][k][loc] = new double*[nun_+1];
-					for (int A = 1; A != nun_+1; ++A)
-					{
-						grid_[i][j][k][loc][A] = new double[nun_+1];
-						for (int B = 1; B != nun_+1; ++B)
-						{
-							grid_[i][j][k][loc][A][B] = 0.0;
-						}
-					}
-				}
-			}
-		}
-	}
-}
+	l_(l)
+{}
 
 //-----------------------------------------------------------------------------
 DependencyGrid::~DependencyGrid()
 {
-	// Destroy dependency grid
- 	for (int i = 1; i != n_+1; ++i)
-	{
-		for (int j = 1; j != m_+1; ++j)
-		{
-			for (int k = 1; k != l_+1; ++k)
-			{
-				for (int loc = 1; loc != np_+1; ++loc)
-				{
-					for (int A = 1; A != nun_+1; ++A)
-					{
-						delete grid_[i][j][k][loc][A];
-					}
-					delete grid_[i][j][k][loc];
-				}
-				delete grid_[i][j][k];
-			}
-			delete grid_[i][j];
-		}
-		delete grid_[i];
-	}
-	delete grid_;
+	std::cout << "Called destructor ~DependencyGrid()" << std::endl;
 }
 
 //-----------------------------------------------------------------------------
@@ -346,4 +297,23 @@ void Atom::set(int const (&range)[6], int loc, double value)
 				atom_[i][j][k][loc] = value;
 }
 
+//-----------------------------------------------------------------------------
+// this = scalThis*this+scalA*A+scalB*B+scalC*C
+void Atom::update(double scalarThis,
+				  double scalarA, Atom &A,
+				  double scalarB, Atom &B,
+				  double scalarC, Atom &C)
+{
+	for (int i = 1; i != n_+1; ++i)
+		for (int j = 1; j != m_+1; ++j)
+			for (int k = 1; k != l_+1; ++k)
+				for (int loc = 1; loc != np_+1; ++loc)
+				{
+					atom_[i][j][k][loc] =
+						scalarThis * atom_[i][j][k][loc] +
+						scalarA*A.get(i, j, k, loc) +
+						scalarB*B.get(i, j, k, loc) +
+						scalarC*C.get(i, j, k, loc);
+				}	
+}
 

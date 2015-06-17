@@ -15,6 +15,7 @@
 !continuation/
 !test/
 !thetastepper/
+!multiarray/
 
 !Doxyfile*
 !Makefile*
