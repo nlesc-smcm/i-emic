@@ -5,8 +5,8 @@ libname     = lib$(libbasename).a
 
 obj= Atmosphere.o
 
-HEADERDEPS = \	
-	../multiarray/MultiArray.H
+HEADERDEPS = \
+		../multiarray/MultiArray.H
 
 all: lib
 

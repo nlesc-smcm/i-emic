@@ -14,13 +14,11 @@
 
 #include <vector>
 #include <memory>
-#include <array>
-#include <vector>
+#include "MultiArray.H"
 #include "AtmosphereDefinitions.H"
 
 class DependencyGrid;
 class Atom;
-class MultiArray;
 
 using std::array;
 using std::vector;
@@ -104,7 +102,6 @@ private:
 	void discretize(int type, Atom &atom);
 };
 
-
 //==================================================================
 //! Dependency grid:
 //! A multidimensional array describing the dependencies among the unknowns:
@@ -113,11 +110,11 @@ private:
 //==================================================================
 class DependencyGrid
 {
-    Grid grid_; 
+    MultiArray<double, 6> grid_; 
 	int n_, m_, l_, np_, nun_;
 	
 public:
-	DependencyGrid(int n, int m, int l);
+	DependencyGrid(int n, int m, int l, int np, int nun);
 	~DependencyGrid();
 
 	double get(int i, int j, int k, int loc, int A, int B);
@@ -135,7 +132,7 @@ public:
 //==================================================================
 class Atom
 {
-	double ****atom_;
+	MultiArray<double, 4> atom_;
 	int n_, m_, l_, np_;
 	
 public:
