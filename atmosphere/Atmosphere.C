@@ -90,6 +90,9 @@ void Atmosphere::fillDependencyGrid()
 	discretize(3, txx);
 	discretize(4, tyy);
 
+	// straks implementeren:
+	// txx.sum(scalarA, A, scalarThis)
+	
 	int iloc = 6;
 	int jloc = 8;
 	
@@ -114,7 +117,8 @@ void computeRHS()
 void Atmosphere::discretize(int type, Atom &atom)
 {
 	switch (type)
-	{		
+	{
+		double val2, val4, val5, val6, val8;
 	case 1: // tc
 		atom.set({1,n_,1,m_,1,l_}, 2,  -1.0);
 		atom.set({1,n_,1,m_,1,l_}, 14,  1.0);
@@ -124,7 +128,6 @@ void Atmosphere::discretize(int type, Atom &atom)
 		break;
 	case 3: // txx
 		double cosdx2i;
-		double val2, val8, val5;
 		for (int i = 1; i != n_+1; ++i)
 			for (int j = 1; j != m_+1; ++j)
 			{
@@ -143,7 +146,6 @@ void Atmosphere::discretize(int type, Atom &atom)
 		break;
 	case 4: // tyy
 		double dy2i = 1.0 / pow(dy_, 2);
-		double val4, val6, val5;
 		for (int i = 1; i != n_+1; ++i)
 			for (int j = 1; j != m_+1; ++j)
 			{
