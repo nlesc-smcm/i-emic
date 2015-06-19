@@ -58,6 +58,9 @@ class Atmosphere
 	// Ocean surface temperature
 	std::vector<double> oceanTemp_;
 
+	// Forcing vector
+	std::vector<double> frc_;
+
 	// Right hand side of the discretized system of ODE's
 	std::vector<double> rhs_;
 
@@ -121,6 +124,9 @@ private:
 	// ! Apply boundary conditions in dependency grid
 	void boundaries();
 
+    // ! Create forcing vector
+	void forcing();	
+
     //! Defines location of neighbouring grid points
 	//! +----------++-------++----------+
 	//! | 12 15 18 || 3 6 9 || 21 24 27 |
@@ -132,8 +138,6 @@ private:
 	//!  w.r.t. the center of the stencil (5) defined above
 	void shift(int i, int j, int k,
 			   int &i2, int &j2, int &k2, int loc);
-	
-	
 
 	// ! Find row in vector or matrix corresponding to unknown
 	// ! XX at grid point (i,j,k).

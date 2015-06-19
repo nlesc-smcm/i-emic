@@ -82,6 +82,7 @@ Atmosphere::Atmosphere()
 Atmosphere::~Atmosphere()
 {}
 
+
 //-----------------------------------------------------------------------------
 void Atmosphere::computeJacobian()
 {
@@ -101,6 +102,13 @@ void Atmosphere::computeJacobian()
 	Al_->set({1,n_,1,m_,1,l_,1,np_}, 1, 1, txx);
 	boundaries();
 	assemble();
+}
+
+void Atmosphere::forcing()
+{
+	for (int i = 1; i <= n_; ++i)
+		for (int j = 1; j <= m_; ++i)
+		{}
 }
 
 //-----------------------------------------------------------------------------
@@ -162,26 +170,29 @@ void Atmosphere::assemble()
 	int row;
 	int elm_ctr = 1;
 	double value;
-	for (int i = 1; i <= n_; ++i)
+	for (int k = 1; k <= l_; ++k)
 		for (int j = 1; j <= m_; ++j)
-			for (int k = 1; k <= l_; ++k)
+			for (int i = 1; i <= n_; ++i)
 				for (int A = 1; A <= nun_; ++A)
 				{
 					// Filling new row:
 					//  find the row corresponding to A at (i,j,k):
 					row = find_row(i, j, k, A);
-					//  put element counter in beg:
+					//  put element counter in beg:					
 					beg_.push_back(elm_ctr);
 					for (int loc = 1; loc <= np_; ++loc)
 					{
-						shift(i,j,k,i2,j2,k2,loc);
+						// find index of neighbouring point loc
+						shift(i,j,k,i2,j2,k2,loc);						
 						for (int B = 1; B <= nun_; ++B)
 						{
 							value = Al_->get(i,j,k,loc,A,B);
-							if (abs(value) > 0)
+							if (std::abs(value) > 0)
 							{
+								// store value								
 								ico_.push_back(value);
 								jco_.push_back(find_row(i2,j2,k2,B));
+								// increment the element counter
 								++elm_ctr;
 							}
 						}
@@ -189,7 +200,7 @@ void Atmosphere::assemble()
 				}
 	
 	//final element of beg
-	beg_.push_back(elm_ctr+1);
+	beg_.push_back(elm_ctr);
 	
 	// write ico
 	std::ofstream atmos_ico;
@@ -270,10 +281,6 @@ void Atmosphere::boundaries()
 							 Al_->get(i,j,k,5,TT_,TT_) +
 							 Al_->get(i,j,k,4,TT_,TT_));
 					Al_->set(i,j,k,4,TT_,TT_, 0.0);
-				}
-				if (bottom == 0)
-				{
-					
 				}
 			}
 }
