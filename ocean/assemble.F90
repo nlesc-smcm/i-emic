@@ -101,6 +101,7 @@ SUBROUTINE preprocessA_old
            loop: do i = 1,n
               do j = 1,m
                  do k = 1,l+la
+                    ! --> 1.0E-10 small enough?
                     if (abs(al(i,j,k,kk,ii,jj)) > 1.0E-10) then
                        active(kk,ii,jj) = .true.
                        cycle loop
@@ -200,8 +201,7 @@ SUBROUTINE fillcolA
                  begA(row) = v + 1   ! assuming every row will have nun*np entries
                  do jj = 1, nun
                     if (active(kk,ii,jj)) then
-                       w = v + (jj-1)*np ! this gives us a grouped ordering:
-                                         !  [(u,v,w,p,T,S)_1,...,(u,v,w,p,T,S)_ndim]^T
+                       w = v + (jj-1)*np ! ? grouped ordering?                       
                        coA(w+kk)  = al(i,j,k,kk,ii,jj)
                        jcoA(w+kk) = find_row2(i2,j2,k2,jj)
                     end if

@@ -413,11 +413,13 @@
 
       open(77,FILE=rundir//'fort.77')
       do k = 0, l+la+1
+         write(77,*) "-------------------------------------"
          do j = m+1, 0, -1
             write(77,'(362i1)') landm(:,j,k)
          enddo
       enddo
       close(77)
+
  10   format(1x,'you have chosen topography option',1x,i8)
       end
 

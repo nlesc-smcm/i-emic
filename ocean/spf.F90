@@ -280,14 +280,14 @@ SUBROUTINE tderiv(type,atom)
            enddo
         enddo
      enddo
-     k = l
+     k = l  !--> boundary condition but not applied boundary.f ???
      h1 = 1./(dfzT(k)*dfzW(k))
      h2 = 1./(dfzT(k)*dfzW(k-1))
      do i=1,n
         do j=1,m
            atom(i,j,k,14) = h2*dz2i*(1 - landm(i,j,l))
            atom(i,j,k,23) = 0.0
-           atom(i,j,k,5) = -(atom(i,j,k,14) + atom(i,j,k,23))
+           atom(i,j,k,5)  = -(atom(i,j,k,14) + atom(i,j,k,23))
         enddo
      enddo
   CASE(6)

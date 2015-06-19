@@ -121,7 +121,7 @@ subroutine boundaries
               if (northb == LAND) then 	! 15
                  Al(i,j,k,15,: ,:)  = 0.0
               endif
-              if (southeb == LAND) then 	! 16
+              if (southeb == LAND) then ! 16
                  Al(i,j,k,16,: ,:)  = 0.0
               endif
               if (eastb == LAND) then 	! 17
@@ -204,7 +204,7 @@ subroutine boundaries
               if ((northt == LAND).OR.(northt == ATMOS)) then 	! 24
                  Al(i,j,k,24,: ,:)  = 0.0
               endif
-              if ((southet == LAND).OR.(southet == ATMOS)) then 	! 25
+              if ((southet == LAND).OR.(southet == ATMOS)) then ! 25
                  Al(i,j,k,25,: ,:)  = 0.0
               endif
               if ((eastt == LAND).OR.(eastt == ATMOS)) then 	! 26
@@ -387,7 +387,7 @@ subroutine boundaries
                     endif
                  endif
               endif
-              !------- CENTER = ATMOSPHERE ----------------------------------------------
+              !------- CENTER = ATMOSPHERE ------------------------------------------
            else if (center == ATMOS) then
               if (west == LAND) then
                  Al(i,j,k,5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,2,TT,TT)
@@ -405,7 +405,8 @@ subroutine boundaries
                  Al(i,j,k,5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,4,TT,TT)
                  Al(i,j,k,4,TT,TT) = 0.0
               endif
-              !------- CENTER = not OCEAN or ATMOSPHERE ---------------------------------
+              !------- CENTER = not OCEAN or ATMOSPHERE -----------------------------
+              ! --> so this is probably on LAND 
            else
               Al(i,j,k,:,:,:) = 0.0
               do ii = 1, nun

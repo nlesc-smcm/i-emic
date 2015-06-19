@@ -52,6 +52,20 @@ class Atmosphere
 	std::vector<double> yc_;  //! y-grid ( cell centers)
 	std::vector<double> yv_;  //! y-grid ( [u,v]-nodes)
 
+	// State of the atmosphere
+	std::vector<double> state_;
+
+	// Ocean surface temperature
+	std::vector<double> oceanTemp_;
+
+	// Right hand side of the discretized system of ODE's
+	std::vector<double> rhs_;
+
+	// CRS matrix arrays storing the Jacobian
+	std::vector<double> ico_;
+	std::vector<double> jco_;
+	std::vector<double> beg_;
+	
 	// Parameters	
 	double   rhoa_; //! atmospheric density \[\rho_a\]
 	double  hdima_; //! atmospheric scale height \[H_a\]
@@ -66,7 +80,7 @@ class Atmosphere
 	double     uw_; //! mean atmospheric surface wind speed \[|V_a|\] 
 	double     t0_; //! reference temperature
 	
-	// Necessary for the nondimensionalization of time:
+	// Necessary for nondimensionalizations:
 	double   udim_; //! typical horizontal velocity of the ocean
 	double  r0dim_; //! radius of the earth
 
@@ -96,10 +110,52 @@ public:
 	// destructor
 	~Atmosphere();
 
+	void computeJacobian();
+	void computeRHS();
 	void test();
-	void fillDependencyGrid();
 private:
+	
+	// ! Apply local discretization
 	void discretize(int type, Atom &atom);
+
+	// ! Apply boundary conditions in dependency grid
+	void boundaries();
+
+    //! Defines location of neighbouring grid points
+	//! +----------++-------++----------+
+	//! | 12 15 18 || 3 6 9 || 21 24 27 |
+	//! | 11 14 17 || 2 5 8 || 20 23 26 |
+	//! | 10 13 16 || 1 4 7 || 19 22 25 |
+	//! |  below   || center||  above   |
+	//! +----------++-------++----------+
+	//! shift(i,j,k,i2,j2,k2,loc) sets the neighbour at location loc
+	//!  w.r.t. the center of the stencil (5) defined above
+	void shift(int i, int j, int k,
+			   int &i2, int &j2, int &k2, int loc);
+	
+	
+
+	// ! Find row in vector or matrix corresponding to unknown
+	// ! XX at grid point (i,j,k).
+	// ! Input and output are expected to be 1-based.
+	// ! +-----------------------------------------------------+
+	// ! | Example for nun=6:                                  |
+	// ! | grid point (i,j,k) | row: (  u,  v,  w,  p,  T,  S) |
+	// ! |--------------------+--------------------------------|
+	// ! |            (1,1,1) |      (  1,  2,  3,  4,  5,  6) |
+	// ! |            (2,1,1) |      (  7,  8,  9, 10, 11, 12) |
+	// ! |                    |                                |
+	// ! |            (n,1,1) |      ( 6*(n-1)+1,  ...   ,6*n) |
+	// ! |                    |                                |
+	// ! |            (1,2,1) |      ( 6*n+1, ...      ,6*n+6) |
+	// ! |            (2,2,1) |      ( 6*n+7,  ...    ,6*n+12) |
+	// ! |                    |                                |
+	// ! |            (1,1,2) |      ( 6*n*m+1, ...  ,6*n*m+6) |
+	// ! +-----------------------------------------------------+
+	int find_row(int i, int j, int k, int XX);
+
+	// ! Assemble the dependency grid into a matrix in crs form
+	void assemble();
 };
 
 //==================================================================
@@ -110,7 +166,7 @@ private:
 //==================================================================
 class DependencyGrid
 {
-    MultiArray<double, 6> grid_; 
+    MultiArray<double, 6> grid_;
 	int n_, m_, l_, np_, nun_;
 	
 public:

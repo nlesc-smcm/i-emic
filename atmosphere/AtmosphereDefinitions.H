@@ -16,4 +16,10 @@
 # define NUN_ 1
 #endif
 
+// The one unknown we have in this model
+#ifndef TT_
+# define TT_ 1
+#endif
+
+
 #endif

@@ -72,9 +72,10 @@ SUBROUTINE forcing
            
         else if (coupled_atm.eq.1) then ! coupled externally
            Frc(find_row2(i,j,l,TT)) = &
-                par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
+                par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l)) &
+                - Ooa * tatm(i,j)
            
-        else                ! ocean-only
+        else  ! ocean-only
            Frc(find_row2(i,j,l,TT)) = etabi * ( tatm(i,j) - temcor )
         endif
      enddo

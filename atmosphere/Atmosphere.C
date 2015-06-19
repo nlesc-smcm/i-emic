@@ -2,11 +2,12 @@
 #include "AtmosphereDefinitions.H"
 #include <math.h>
 #include <iostream>
+#include <fstream>
 
+//-----------------------------------------------------------------------------
 Atmosphere::Atmosphere()
 {
-	
-	// Filling the parameters
+	// Filling the parameters --> xml
 	rhoa_   = 1.25       ; //! atmospheric density 
 	hdima_  = 8400.      ; //! atmospheric scale height 
 	cpa_    = 1000.      ; //! heat capacity 
@@ -22,6 +23,7 @@ Atmosphere::Atmosphere()
 	udim_   = 0.1e+00    ; //! typical horizontal velocity of the ocean
 	r0dim_  = 6.37e+06   ; //! radius of the earth
 
+	
 	// Filling the coefficients
 	muoa_ =  rhoa_ * ch_ * cpa_ * uw_;
 	amua_ = (arad_ + brad_ * t0_) / muoa_;
@@ -34,22 +36,28 @@ Atmosphere::Atmosphere()
 	n_ = 16;
 	m_ = 16;
 	l_ = 1;
-
+	
 	np_  = NP_;   // all neighbouring points including the center
-	nun_ = NUN_;  // only temperature
+	nun_ = NUN_;  // only temperature TT_
+	
+	// Initialize state with zero solution
+	state_ = std::vector<double>(n_ * m_ * l_, 0.0);
 
+	// Initialize ocean surface temperature with zero solution
+	oceanTemp_ = std::vector<double>(n_ * m_ * 1, 0.0);
+	
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
-
+	
 	xmin_ = 286 * PI_ / 180;
 	xmax_ = 350 * PI_ / 180;
 	ymin_ = 10  * PI_ / 180;
 	ymax_ = 74  * PI_ / 180;
-
+	
 	// Set the grid increments
 	dx_ = (xmax_ - xmin_) / n_;
 	dy_ = (ymax_ - ymin_) / m_;
-
+	
 	// Fill x
 	for (int i = 0; i != n_+1; ++i)
 	{
@@ -70,12 +78,12 @@ Atmosphere::Atmosphere()
 						(1 - albe_[j]));
 	}
 }
-
+//-----------------------------------------------------------------------------
 Atmosphere::~Atmosphere()
 {}
 
-
-void Atmosphere::fillDependencyGrid()
+//-----------------------------------------------------------------------------
+void Atmosphere::computeJacobian()
 {
 	Atom tc (n_, m_, l_, np_);
 	Atom tc2(n_, m_, l_, np_);
@@ -91,23 +99,20 @@ void Atmosphere::fillDependencyGrid()
 	txx.update(-Ad_, -Ad_, tyy, -1, tc, bmua_, tc2);
 	//--> range array should have size 8 here!
 	Al_->set({1,n_,1,m_,1,l_,1,np_}, 1, 1, txx);
-	
-	test(); // ?
+	boundaries();
+	assemble();
 }
 
-void computeRHS()
-{
-	
-}
-
+//-----------------------------------------------------------------------------
 void Atmosphere::discretize(int type, Atom &atom)
 {
 	switch (type)
 	{
 		double val2, val4, val5, val6, val8;
 	case 1: // tc
-		atom.set({1,n_,1,m_,1,l_}, 2,  -1.0);
-		atom.set({1,n_,1,m_,1,l_}, 14,  1.0);
+		atom.set({1,n_,1,m_,1,l_}, 5,  -1.0);
+		// coupling of ocean is more convenient through forcing
+		// atom.set({1,n_,1,m_,1,l_}, 14,  1.0);
 		break;
 	case 2: // tc2
 		atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
@@ -150,9 +155,224 @@ void Atmosphere::discretize(int type, Atom &atom)
 	}
 }
 
-void Atmosphere::test()
-{}
+//-----------------------------------------------------------------------------
+void Atmosphere::assemble()
+{
+	int i2,j2,k2; // will contain neighbouring grid pointes given by shift()
+	int row;
+	int elm_ctr = 1;
+	double value;
+	for (int i = 1; i <= n_; ++i)
+		for (int j = 1; j <= m_; ++j)
+			for (int k = 1; k <= l_; ++k)
+				for (int A = 1; A <= nun_; ++A)
+				{
+					// Filling new row:
+					//  find the row corresponding to A at (i,j,k):
+					row = find_row(i, j, k, A);
+					//  put element counter in beg:
+					beg_.push_back(elm_ctr);
+					for (int loc = 1; loc <= np_; ++loc)
+					{
+						shift(i,j,k,i2,j2,k2,loc);
+						for (int B = 1; B <= nun_; ++B)
+						{
+							value = Al_->get(i,j,k,loc,A,B);
+							if (abs(value) > 0)
+							{
+								ico_.push_back(value);
+								jco_.push_back(find_row(i2,j2,k2,B));
+								++elm_ctr;
+							}
+						}
+					}
+				}
+	
+	//final element of beg
+	beg_.push_back(elm_ctr+1);
+	
+	// write ico
+	std::ofstream atmos_ico;
+	atmos_ico.open("atmos_ico.txt");
+	for (auto &i : ico_)
+		atmos_ico << i << '\n';
+	atmos_ico.close();
 
+	// write jco
+	std::ofstream atmos_jco;
+	atmos_jco.open("atmos_jco.txt");
+	for (auto &i : jco_)
+		atmos_jco << i << '\n';
+	atmos_jco.close();
+
+	// write beg
+	std::ofstream atmos_beg;
+	atmos_beg.open("atmos_beg.txt");
+	for (auto &i : beg_)
+		atmos_beg << i << '\n';
+	atmos_beg.close();
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::boundaries()
+{
+	//! size of stencil/neighbourhood:
+	//! +----------++-------++----------+
+	//! | 12 15 18 || 3 6 9 || 21 24 27 |
+	//! | 11 14 17 || 2 5 8 || 20 23 26 |
+	//! | 10 13 16 || 1 4 7 || 19 22 25 |
+	//! |  below   || center||  above   |
+	//! +----------++-------++----------+
+	
+	int west, east, north, south, bottom, top;
+	for (int i = 1; i <= n_; ++i)
+		for (int j = 1; j <= m_; ++j)
+			for (int k = 1; k <= l_; ++k)
+			{
+				west   = i-1;
+				east   = i+1;
+				north  = j+1;
+				south  = j-1;
+				bottom = k-1;
+				top    = k+1;
+
+				// western boundary
+				if (west == 0)
+				{
+					Al_->set(i,j,k,5,TT_,TT_, 
+							 Al_->get(i,j,k,5,TT_,TT_) +
+							 Al_->get(i,j,k,2,TT_,TT_));
+					Al_->set(i,j,k,2,TT_,TT_, 0.0);
+				}
+				
+				// eastern boundary
+				if (east == n_+1)
+				{
+					Al_->set(i,j,k,5,TT_,TT_, 
+							 Al_->get(i,j,k,5,TT_,TT_) +
+							 Al_->get(i,j,k,8,TT_,TT_));
+					Al_->set(i,j,k,8,TT_,TT_, 0.0);
+				}
+				
+				// northern boundary
+				if (north == m_+1)
+				{
+					Al_->set(i,j,k,5,TT_,TT_, 
+							 Al_->get(i,j,k,5,TT_,TT_) +
+							 Al_->get(i,j,k,6,TT_,TT_));
+					Al_->set(i,j,k,6,TT_,TT_, 0.0);
+				}
+
+				// southern boundary
+				if (south == 0)
+				{
+					Al_->set(i,j,k,5,TT_,TT_, 
+							 Al_->get(i,j,k,5,TT_,TT_) +
+							 Al_->get(i,j,k,4,TT_,TT_));
+					Al_->set(i,j,k,4,TT_,TT_, 0.0);
+				}
+				if (bottom == 0)
+				{
+					
+				}
+			}
+}
+
+
+//-----------------------------------------------------------------------------
+int Atmosphere::find_row(int i, int j, int k, int XX)
+{
+	// 1-based	
+	return nun_ * ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::shift(int i, int j, int k,
+					   int &i2, int &j2, int &k2, int loc)
+{
+	if (loc < 10)
+	{
+		k2 = k;
+        //   +-------+    +---------+
+		//   | 3 6 9 |	  | 1  1  1 |
+		//   | 2 5 8 | -> | 0  0  0 |
+		//   | 1 4 7 |	  |-1 -1 -1 |
+		//   +-------+	  +---------+
+		j2 = j + ((loc + 2) % 3) - 1;
+		//   +-------+    +---------+
+		//   | 3 6 9 |	  |-1  0  1 |
+		//   | 2 5 8 | -> |-1  0  1 |
+		//   | 1 4 7 |	  |-1  0  1 |
+		//   +-------+	  +---------+
+		i2 = i + (loc - 1) / 3 - 1;
+	}
+	else if (loc < 19)
+	{
+		k2 = k - 1;
+        //   +----------+     +---------+
+		//   | 12 15 18 |	  | 1  1  1 |
+		//   | 11 14 17 | ->  | 0  0  0 |
+		//   | 10 13 16 |	  |-1 -1 -1 |
+	    //   +----------+	  +---------+
+		j2 = j + ((loc + 2) % 3) - 1;
+		//   +----------+     +---------+
+		//   | 12 15 18 |	  |-1  0  1 |
+		//   | 11 14 17 | ->  |-1  0  1 |
+		//   | 10 13 16 |	  |-1  0  1 |
+	    //   +----------+	  +---------+
+		i2 = i + (loc - 10) / 3 - 1;
+	}
+	else
+	{
+		k2 = k + 1;
+		//   +----------+     +---------+
+		//   | 21 24 27 |	  | 1  1  1 |
+		//   | 20 23 26 | ->  | 0  0  0 |
+		//   | 19 22 25 | 	  |-1 -1 -1 |
+		//   +----------+	  +---------+
+		j2 = j + ((loc + 2) % 3) - 1;
+		//   +----------+     +---------+
+		//   | 21 24 27 |	  |-1  0  1 |
+		//   | 20 23 26 | ->  |-1  0  1 |
+		//   | 19 22 25 | 	  |-1  0  1 |
+		//   +----------+	  +---------+
+		i2 = i + (loc - 19) / 3 - 1;
+	}
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::test()
+{
+	std::cout << "Atmosphere: tests" << std::endl;
+	std::cout << "            testing shift..." << std::endl;
+
+	int i = 2;
+	int j = 3;
+	int k = 1;
+
+	int i2, j2, k2;
+	
+	int loc = 21;
+	
+	std::cout << "  +----------++-------++----------+ " << '\n'
+			  << "  | 12 15 18 || 3 6 9 || 21 24 27 | " << '\n'
+			  << "  | 11 14 17 || 2 5 8 || 20 23 26 | " << '\n'
+			  << "  | 10 13 16 || 1 4 7 || 19 22 25 | " << '\n'
+			  << "  |  below   || center||  above   | " << '\n'
+			  << "  +----------++-------++----------+ " << std::endl;
+	
+	std::cout << "(i,j,k,loc) = "
+			  << "(" << i << ", " << j << ", "
+			  << k << ", " << loc << ")" << std::endl;
+
+	shift(i,j,k,i2,j2,k2,loc);
+	std::cout << "(i,j,k,loc) = "
+			  << "(" << i << ", " << j << ", "
+			  << k << ", " << loc << ")" << std::endl;
+
+	std::cout << "shift gives: " 
+			  << "(" << i2 << ", " << j2 << ", " << k2 << ")" << std::endl;
+}
 
 //=============================================================================
 // DependencyGrid implementation
@@ -165,13 +385,11 @@ DependencyGrid::DependencyGrid(int n, int m, int l, int np, int nun)
 	np_(np),
 	nun_(nun),
 	grid_(n, m, l, np, nun, nun)
-{
-}
+{}
 
 //-----------------------------------------------------------------------------
 DependencyGrid::~DependencyGrid()
-{
-}
+{}
 
 //-----------------------------------------------------------------------------
 double DependencyGrid::get(int i, int j, int k, int loc, int A, int B)
@@ -211,13 +429,11 @@ Atom::Atom(int n, int m, int l, int np)
 	l_(l),
 	np_(np),
 	atom_(n, m, l, np)
-{
-}
+{}
 
 //-----------------------------------------------------------------------------
 Atom::~Atom()
-{
-}
+{}
 
 //-----------------------------------------------------------------------------
 double Atom::get(int i, int j, int k, int loc)
