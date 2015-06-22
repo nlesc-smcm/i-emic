@@ -64,10 +64,16 @@ class Atmosphere
 	// Right hand side of the discretized system of ODE's
 	std::vector<double> rhs_;
 
+	// Solution vector
+	std::vector<double> sol_;
+
 	// CRS matrix arrays storing the Jacobian
 	std::vector<double> ico_;
 	std::vector<double> jco_;
 	std::vector<double> beg_;
+
+	// Dense matrix storage
+	std::vector<double> denseA_;
 	
 	// Parameters	
 	double   rhoa_; //! atmospheric density \[\rho_a\]
@@ -115,6 +121,7 @@ public:
 
 	void computeJacobian();
 	void computeRHS();
+	void solve();
 	void test();
 private:
 	
@@ -125,7 +132,10 @@ private:
 	void boundaries();
 
     // ! Create forcing vector
-	void forcing();	
+	void forcing();
+
+	// ! Perform the dot product of a single row with the state vector
+	double matvec(int row);
 
     //! Defines location of neighbouring grid points
 	//! +----------++-------++----------+
@@ -160,6 +170,9 @@ private:
 
 	// ! Assemble the dependency grid into a matrix in crs form
 	void assemble();
+
+	// ! Write everything to output files.
+	void writeAll();
 };
 
 //==================================================================

@@ -3,6 +3,7 @@
 #include <math.h>
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 //-----------------------------------------------------------------------------
 Atmosphere::Atmosphere()
@@ -43,8 +44,17 @@ Atmosphere::Atmosphere()
 	// Initialize state with zero solution
 	state_ = std::vector<double>(n_ * m_ * l_, 0.0);
 
+	// Initialize RHS with zeros
+	rhs_ = std::vector<double>(n_ * m_ * l_, 0.0);
+	
+	// Initialize forcing with zeros
+	frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
+
 	// Initialize ocean surface temperature with zero solution
 	oceanTemp_ = std::vector<double>(n_ * m_ * 1, 0.0);
+
+	// Initialize dense matrix:
+	denseA_ = std::vector<double>(pow(n_ * m_ * l_, 2), 0.0);
 	
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
@@ -104,11 +114,54 @@ void Atmosphere::computeJacobian()
 	assemble();
 }
 
+//-----------------------------------------------------------------------------
+void Atmosphere::computeRHS()
+{
+	// If necessary compute a new Jacobian
+   //	if (recomputeJacobian_)
+	computeJacobian();
+
+	// Compute the forcing
+	forcing();
+	
+	// Compute the right hand side rhs_
+	
+	double value;
+	int row;
+	for (int j = 1; j <= m_; ++j)
+		for (int i = 1; i <= n_; ++i)
+		{
+			row = find_row(i, j, l_, TT_);
+			value = -matvec(row) + frc_[row-1];
+			rhs_[row-1] = value;
+		}	
+}
+
+//-----------------------------------------------------------------------------
+double Atmosphere::matvec(int row)
+{
+	// Returns inner product of a row in the matrix with the state.
+	int first = beg_[row-1];
+	int last  = beg_[row] - 1;
+	double result = 0;
+	for (int j = first - 1; j <= last; ++j)
+		result += ico_[j] * state_[jco_[j]-1];
+	
+	return result;
+}
+
+//-----------------------------------------------------------------------------
 void Atmosphere::forcing()
 {
-	for (int i = 1; i <= n_; ++i)
-		for (int j = 1; j <= m_; ++i)
-		{}
+	double value;
+	int row;
+	for (int j = 1; j <= m_; ++j)
+		for (int i = 1; i <= n_; ++i)
+		{
+			row = find_row(i, j, l_, TT_);
+			value = oceanTemp_[row-1] + suna_[j] - amua_;
+			frc_[row-1] = value;
+		}
 }
 
 //-----------------------------------------------------------------------------
@@ -166,6 +219,11 @@ void Atmosphere::discretize(int type, Atom &atom)
 //-----------------------------------------------------------------------------
 void Atmosphere::assemble()
 {
+	// clear old CRS matrix
+	beg_.clear();
+	ico_.clear();
+	jco_.clear();
+	
 	int i2,j2,k2; // will contain neighbouring grid pointes given by shift()
 	int row;
 	int elm_ctr = 1;
@@ -202,26 +260,123 @@ void Atmosphere::assemble()
 	//final element of beg
 	beg_.push_back(elm_ctr);
 	
-	// write ico
-	std::ofstream atmos_ico;
-	atmos_ico.open("atmos_ico.txt");
-	for (auto &i : ico_)
-		atmos_ico << i << '\n';
-	atmos_ico.close();
+	//------------------------------------------------
+	//--> weird stuff: in the future stick to sparse plx
+	// Create dense matrix:
+	std::vector<double> ivals(jco_.size(), 0.0);
+	int rw  = 1;
+	int idx = 1;
+	while (rw  <= m_*n_*l_)
+	{
+		for (int k = beg_[rw-1]; k != beg_[rw]; ++k)
+		{
+			ivals[idx-1] = rw ;
+			++idx;
+		}
+		++rw ;
+	}
+	int i,j;
+	double val;
+	for (int cntr = 0; cntr != ico_.size(); ++cntr)
+	{
+		val = ico_[cntr];
+		i = ivals[cntr];
+		j = jco_[cntr];
+		idx = i + (j-1)*m_*n_*l_ - 1;
+		denseA_[idx] = val;
+	}
+	//------------------------------------------------
+}
 
-	// write jco
-	std::ofstream atmos_jco;
-	atmos_jco.open("atmos_jco.txt");
-	for (auto &i : jco_)
-		atmos_jco << i << '\n';
-	atmos_jco.close();
+//-----------------------------------------------------------------------------
+extern "C" void dgesv_(int *N, int *NRHS, double *A,
+					   int *LDA, int *IPIV, double *B,
+					   int *LDB, int *INFO);
 
-	// write beg
-	std::ofstream atmos_beg;
-	atmos_beg.open("atmos_beg.txt");
-	for (auto &i : beg_)
-		atmos_beg << i << '\n';
-	atmos_beg.close();
+//-----------------------------------------------------------------------------
+void Atmosphere::solve()
+{
+	int dim  = n_*m_*l_;
+	int nrhs = 1;
+	int lda  = dim;
+	int ldb  = dim;
+	int info;
+	int ipiv[dim+1];
+
+	// copy construction
+	sol_ = std::vector<double>(rhs_);
+	
+	dgesv_(&dim, &nrhs, &denseA_[0], &lda, ipiv,
+		   &sol_[0], &ldb, &info);
+
+	std::cout << "info: " << info << std::endl;
+	writeAll();
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::writeAll()
+{
+	std::cout << "Writing everything to output files..." << std::endl;
+	// Write solution
+	if (!sol_.empty())
+	{
+		std::ofstream atmos_sol;
+		atmos_sol.open("atmos_sol.txt");
+		for (auto &i : sol_)
+			atmos_sol << std::setprecision(12) << i << '\n';
+		atmos_sol.close();
+	}
+	else
+		std::cout << " solution vector is empty" << std::endl;
+
+	// Write rhs
+	if (!rhs_.empty())
+	{
+		std::ofstream atmos_rhs;
+		atmos_rhs.open("atmos_rhs.txt");
+		for (auto &i : rhs_)
+			atmos_rhs << std::setprecision(12) << i << '\n';
+		atmos_rhs.close();
+	}
+	else
+		std::cout << " rhs vector is empty" << std::endl;
+
+	// Write ico
+	if (!ico_.empty())
+	{
+		std::ofstream atmos_ico;
+		atmos_ico.open("atmos_ico.txt");
+		for (auto &i : ico_)
+			atmos_ico << std::setprecision(12) << i << '\n';
+		atmos_ico.close();
+	}
+	else
+		std::cout << " ico vector is empty" << std::endl;
+
+	// Write jco
+	if (!jco_.empty())
+	{
+		std::ofstream atmos_jco;
+		atmos_jco.open("atmos_jco.txt");
+		for (auto &i : jco_)
+			atmos_jco << std::setprecision(12) << i << '\n';
+		atmos_jco.close();
+	}
+	else
+		std::cout << " jco vector is empty" << std::endl;
+
+	// Write beg
+	if (!beg_.empty())
+	{
+		std::ofstream atmos_beg;
+		atmos_beg.open("atmos_beg.txt");
+		for (auto &i : beg_)
+			atmos_beg << std::setprecision(12) << i << '\n';
+		atmos_beg.close();
+	}
+	else
+		std::cout << " beg vector is empty" << std::endl;
+
 }
 
 //-----------------------------------------------------------------------------
@@ -351,6 +506,8 @@ void Atmosphere::shift(int i, int j, int k,
 void Atmosphere::test()
 {
 	std::cout << "Atmosphere: tests" << std::endl;
+	
+	std::cout << "  dense A size: " << denseA_.size() << std::endl;
 	std::cout << "            testing shift..." << std::endl;
 
 	int i = 2;

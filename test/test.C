@@ -55,7 +55,9 @@ int main(int argc, char **argv)
 	// Create Atmosphere model
 	RCP<Atmosphere> atmos = rcp(new Atmosphere());
 	atmos->test();
-	atmos->computeJacobian();	
+	atmos->computeJacobian();
+	atmos->computeRHS();
+	atmos->solve();
 	getchar();
 
 	// Create parameter object for continuation
