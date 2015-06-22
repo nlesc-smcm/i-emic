@@ -71,9 +71,9 @@ int main(int argc, char **argv)
 				 RCP<Teuchos::ParameterList> >
 		continuation(ocean, continuationParams);
 
-	continuation.Run();
+	continuation.run();
 	
-	ocean->DumpState();
+	ocean->dumpState();
 
 	printProfile(profile, Comm);
     //--------------------------------------------------------

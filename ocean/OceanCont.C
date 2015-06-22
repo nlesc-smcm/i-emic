@@ -41,17 +41,17 @@ OceanCont::OceanCont(Teuchos::RCP<Epetra_Comm> Comm)
 	parEnd_   = 1.0;
 
 	// Put the initial value into the model.
-	SetPar(parStart_);
+	setPar(parStart_);
 }
 
 //====================================================================
-double OceanCont::GetPar()
+double OceanCont::getPar()
 {
 	double thcmPar;
 	FNAME(getparcs)(&parIdent_, &thcmPar);
 	if (thcmPar != parValue_)
 	{
-		INFO("OceanCont::GetPar(): Parameter synchronization");
+		INFO("OceanCont::getPar(): Parameter synchronization");
 		INFO("              thcm: " << thcmPar);
 		INFO("         OceanCont: " << parValue_);
 		INFO("     fixing this...");
@@ -63,7 +63,7 @@ double OceanCont::GetPar()
 }
 
 //====================================================================
-void OceanCont::SetPar(double value)
+void OceanCont::setPar(double value)
 {
 	parValue_ = value;
 	FNAME(setparcs)(&parIdent_, &value);

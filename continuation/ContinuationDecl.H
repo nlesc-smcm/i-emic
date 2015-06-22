@@ -82,22 +82,22 @@ class Continuation
 	
 public:
 	Continuation(ModelPtr model, ParameterList pars);
-	void Run();
+	void run();
 private:
-	void Step();
-	void Store();
-	void Restore();
+	void step();
+	void store();
+	void restore();
 
 	// Create initial Euler tangent
-	void CreateInitialTangent();
+	void createInitialTangent();
 
 	// Modes:  'S' Secant
 	//         'E' Euler
-	void CreateTangent(char mode);
+	void createTangent(char mode);
 
 	// Normalize the tangent with an additional scaling
 	// for the state component.
-	void Normalize(VectorPtr stateDot, double scale,
+	void normalize(VectorPtr stateDot, double scale,
 				   double parDot);
 
 	// Compute the derivative of F with respect to
@@ -105,18 +105,18 @@ private:
 	// computation of the RHS in the model.
 	// Modes: 'F' --> force compute RHS
 	//        'A' --> do not force compute RHS
-	void ComputeDFDPar(char mode = 'A');
-	void EulerPredictor();
-	int  NewtonCorrector();
-	int  RunBackTracking(VectorPtr stateDir, double parDir);
+	void computeDFDPar(char mode = 'A');
+	void eulerPredictor();
+	int  newtonCorrector();
+	int  runBackTracking(VectorPtr stateDir, double parDir);
 
 	// Detect special points.
 	// Modes: 'D' --> converge on destination
 	//        'P' --> converge on first sign switch in parDot
-	void Detect(char mode = 'D');
-	void AdjustStep();
-	void Reset();
-	void Info();
+	void detect(char mode = 'D');
+	void adjustStep();
+	void reset();
+	void info();
 	
 };
 #endif

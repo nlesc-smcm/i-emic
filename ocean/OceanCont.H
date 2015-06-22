@@ -24,9 +24,10 @@ public:
 	// The parameter get and set members wrap the corresponding
 	// Fortran functions. Just as in THCM, these functions
 	// may do more in the future,
-	void    SetPar(double value);
-	double  GetPar();
-	double  GetParDestination() { return parEnd_; }
+	//--> not sure if getpardestination is needed
+	void    setPar(double value);
+	double  getPar();
+	double  getParDestination() { return parEnd_; }
 };
 
 #endif

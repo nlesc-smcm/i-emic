@@ -123,6 +123,7 @@ public:
 	void computeRHS();
 	void solve();
 	void test();
+	//void setOceanTemp(std::vector<double> 
 private:
 	
 	// ! Apply local discretization

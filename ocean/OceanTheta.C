@@ -35,7 +35,7 @@ OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm)
 }
 
 //=====================================================================
-void OceanTheta::Store()
+void OceanTheta::store()
 {
 	DEBUG("Storing the model");
 	
@@ -59,7 +59,7 @@ void OceanTheta::Store()
 }
 
 //=====================================================================
-void OceanTheta::Restore()
+void OceanTheta::restore()
 {
 	DEBUG("Restoring the model");
 
@@ -71,7 +71,7 @@ void OceanTheta::Restore()
 	}
 	
 	*state_ = *oldState_;
-
+	
 	if (rhs_ == Teuchos::null or
 		!rhs_->Map().SameAs(oldRhs_->Map()))
 	{
@@ -83,7 +83,7 @@ void OceanTheta::Restore()
 }
 
 //=====================================================================
-void OceanTheta::ComputeRHS()
+void OceanTheta::computeRHS()
 {
 	THCM::Instance().evaluate(*state_, rhs_, false);
 
@@ -119,9 +119,8 @@ void OceanTheta::ComputeRHS()
 }
 
 //=====================================================================
-void OceanTheta::ComputeJacobian()
+void OceanTheta::computeJacobian()
 {
-
     // Check theta
 	if (theta_ < 0 || theta_ > 1)
 	{

@@ -35,10 +35,7 @@ using Teuchos::rcp;
 
 //=====================================================================
 // Fortran: get access to write_data function
-extern "C"
-{ 
-	_SUBROUTINE_(write_data)(double*, int*, int*); 
-} 
+extern "C" _SUBROUTINE_(write_data)(double*, int*, int*); 
 
 //=====================================================================
 // Constructor:
@@ -97,7 +94,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 }
 
 //=====================================================================
-void Ocean::RandomizeState(double scaling)
+void Ocean::randomizeState(double scaling)
 {
 	state_->Random();
 	state_->Scale(scaling);
@@ -105,7 +102,7 @@ void Ocean::RandomizeState(double scaling)
 }
 
 //=====================================================================
-void Ocean::DumpState()
+void Ocean::dumpState()
 {
 	// This function will probably break on a distributed memory system.
 	// For now it is convenient.
@@ -128,7 +125,7 @@ void Ocean::DumpState()
 }
 
 //=====================================================================
-void Ocean::InitializeSolver()
+void Ocean::initializeSolver()
 {
 	// Belos::LinearProblem setup
 	problem_ = rcp(new Belos::LinearProblem
@@ -186,12 +183,12 @@ void Ocean::InitializeSolver()
 }
 
 //=====================================================================
-void Ocean::Solve(RCP<Vector> rhs)
+void Ocean::solve(RCP<Vector> rhs)
 {
 	// Check whether solver is initialized, if not perform the
 	// initialization here
 	if (!solverInitialized_)
-		InitializeSolver();
+		initializeSolver();
 	
 	// Set the initial solution in the solver to zeros.
 	// --> this should be improved/changed.
@@ -200,7 +197,7 @@ void Ocean::Solve(RCP<Vector> rhs)
 	// If required we scale the problem here
 	// --> not sure if this is the correct approach
 	if (useScaling_)
-		ScaleProblem();
+		scaleProblem();
 
 	double time;	// Used to store timings
 
@@ -220,7 +217,7 @@ void Ocean::Solve(RCP<Vector> rhs)
 	if (rhs == Teuchos::null)
  		set = problem_->setProblem(sol_, rhs_);
 	else
-		set = problem_->setProblem(sol_, rhs->GetRCP());
+		set = problem_->setProblem(sol_, rhs->getRCP());
 	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
@@ -240,7 +237,7 @@ void Ocean::Solve(RCP<Vector> rhs)
 	}
 	
 	if (useScaling_)
-		UnscaleProblem();
+		unscaleProblem();
 	
 	double nrm;
 	sol_->Norm2(&nrm);
@@ -248,7 +245,7 @@ void Ocean::Solve(RCP<Vector> rhs)
 }
 
 //=====================================================================
-void Ocean::ScaleProblem()
+void Ocean::scaleProblem()
 {
 	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
 	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
@@ -290,7 +287,7 @@ void Ocean::ScaleProblem()
 }
 
 //=====================================================================
-void Ocean::UnscaleProblem()
+void Ocean::unscaleProblem()
 {
 	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
 	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
@@ -312,7 +309,7 @@ void Ocean::UnscaleProblem()
 }
 
 //=====================================================================
-void Ocean::ComputeRHS()
+void Ocean::computeRHS()
 {
 	// evaluate rhs in THCM with the current state
  	TIMER_START("Ocean: compute RHS...", timer_);
@@ -323,7 +320,7 @@ void Ocean::ComputeRHS()
 }
 
 //=====================================================================
-void Ocean::ComputeJacobian()
+void Ocean::computeJacobian()
 {
 	TIMER_START("Ocean: compute Jacobian...", timer_);
 	// Compute the Jacobian in THCM using the current state
@@ -333,22 +330,8 @@ void Ocean::ComputeJacobian()
 	TIMER_END("Ocean: compute Jacobian...", timer_);
 }
 
-//=====================================================================
-double Ocean::GetNormRHS()
-{
-	ERROR("DEPRECATED", __FILE__, __LINE__);
-	return 0.0;
-}
-
-//=====================================================================
-double Ocean::GetNormState()
-{
-	ERROR("DEPRECATED", __FILE__, __LINE__);
-	return 0.0;
-}
-
 //====================================================================
-Teuchos::RCP<Vector> Ocean::GetVector(char mode, RCP<Epetra_Vector> vec)
+Teuchos::RCP<Vector> Ocean::getVector(char mode, RCP<Epetra_Vector> vec)
 {
 	if (mode == 'C')
 	{
@@ -369,26 +352,26 @@ Teuchos::RCP<Vector> Ocean::GetVector(char mode, RCP<Epetra_Vector> vec)
 }
 
 //====================================================================
-Teuchos::RCP<Vector> Ocean::GetSolution(char mode)
+Teuchos::RCP<Vector> Ocean::getSolution(char mode)
 {
-	return GetVector(mode, sol_);
+	return getVector(mode, sol_);
 }
 
 //====================================================================
-Teuchos::RCP<Vector> Ocean::GetState(char mode)
+Teuchos::RCP<Vector> Ocean::getState(char mode)
 {
-	return GetVector(mode, state_);
+	return getVector(mode, state_);
 }
 
 //====================================================================
-Teuchos::RCP<Vector> Ocean::GetRHS(char mode)
+Teuchos::RCP<Vector> Ocean::getRHS(char mode)
 {
-	return GetVector(mode, rhs_);
+	return getVector(mode, rhs_);
 }
 
 //=====================================================================
 // NOT IMPLEMENTED YET
-void Ocean::SaveStateToFile(std::string const &name)
+void Ocean::saveStateToFile(std::string const &name)
 {
 	std::string vectorFile    = name + "vec";
 	std::string mapFile       = name + "map";
@@ -406,7 +389,5 @@ void Ocean::SaveStateToFile(std::string const &name)
 
 //=====================================================================
 // NOT DONE YET
-void LoadStateFromFile(std::string const &name)
-{
-	
-}
+void Ocean::loadStateFromFile(std::string const &name)
+{}

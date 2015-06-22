@@ -4,27 +4,26 @@
    available in there.
    
    For now I try to let matrices and solvers be only available at the
-   model-level, but I'm doubting whether this is the right approach...
+   model-level, but I'm doubting whether this is the right approach... In
+   the future I will probably need to assemble a big matrix and find an
+   appropriate solver. 
 
    A model is required to have the following member functions:
 
        void computeJacobian()
 	   void computeRHS() 
-	   void solve(rhs)
-	   
+	   void solve(rhs)	   
 	   vector getSolution()
 	   vector getState()
 	   vector getRHS()
 
    The vector type that is returned from the get{.} functions will have
    to be known by the interface (e.g. Continuation) that calls this class.
-   The calling interface requires it to have the following member functions:
+   The calling interface requires the following member functions:
 
        void update()
 	   void scale()
-
-	   int length()
-	   
+	   int length()	   
 	   double dot()
 	   double norm()
 */
@@ -94,45 +93,34 @@ public:
 	~Ocean(){ INFO("Ocean destructor called..."); }
 
 	// Solve may optionally accept an rhs of VectorPointer type
-	void Solve(Teuchos::RCP<Vector> rhs = Teuchos::null);
-	void ComputeRHS();
-	void ComputeJacobian();
+	void solve(Teuchos::RCP<Vector> rhs = Teuchos::null);
+	void computeRHS();
+	void computeJacobian();
 	
-	// --> This should be gone after improving thetastepper
-	double GetNormRHS();
-	double GetNormState();
-
-	// All Get...() functions that return a VectorPtr type should accept
+	// All get...() functions that return a VectorPtr type should accept
 	// a character specifying the access the user has: Copy 'C' or View 'V'
 	// By default this should be copy. 
-	Teuchos::RCP<Vector> GetSolution(char mode = 'C');
-	Teuchos::RCP<Vector> GetState(char mode = 'C');
-	Teuchos::RCP<Vector> GetRHS(char mode = 'C');
+	Teuchos::RCP<Vector> getSolution(char mode = 'C');
+	Teuchos::RCP<Vector> getState(char mode = 'C');
+	Teuchos::RCP<Vector> getRHS(char mode = 'C');
 	
-	void SetState(Teuchos::RCP<Vector> state) { state_ = state->GetRCP(); }
-	void SetRHS(Teuchos::RCP<Vector> rhs)     { rhs_   = rhs->GetRCP();   }
+	void setState(Teuchos::RCP<Vector> state) { state_ = state->getRCP(); }
+	void setRHS(Teuchos::RCP<Vector> rhs)     { rhs_   = rhs->getRCP();   }
 
-	// --> Trying to prevent thetastepper from breaking
-	// --> This should be gone after improving thetastepper
-	void SetState(Teuchos::RCP<Epetra_Vector> state) { state_ = state; }
-	void SetRHS(Teuchos::RCP<Epetra_Vector> rhs)     { rhs_   = rhs;   }
-
-	void SaveStateToFile(std::string const &name);
-	void LoadStateFromFile(std::string const &name);
+	void saveStateToFile(std::string const &name);
+	void loadStateFromFile(std::string const &name);
 
 	// Write the state of the ocean to traditional FORTRAN out files fort.*
 	// Use matlab plot-scripts for visualization 
-	void DumpState();	
+	void dumpState();	
 	
 private:
-
 	// Randomize state, scale with scaling
-	void RandomizeState(double scaling);
-	void InitializeSolver();
-	void ScaleProblem();
-	void UnscaleProblem();
+	void randomizeState(double scaling);
+	void initializeSolver();
+	void scaleProblem();
+	void unscaleProblem();
 
-	Teuchos::RCP<Vector> GetVector(char mode,
-								   Teuchos::RCP<Epetra_Vector> vec);
+	Teuchos::RCP<Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
 };
 #endif

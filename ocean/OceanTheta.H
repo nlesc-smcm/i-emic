@@ -17,14 +17,14 @@ public:
 	//destructor
 	~OceanTheta(){ INFO("OceanTheta destructor called...");	}
 
-	void Store();
-	void Restore();
+	void store();
+	void restore();
 
-	void SetTimestep(double timestep){ timestep_ = timestep; }
-	void SetTheta(double theta){ theta_ = theta; }
+	void setTimestep(double timestep){ timestep_ = timestep; }
+	void setTheta(double theta){ theta_ = theta; }
 	
-	void ComputeRHS();
-	void ComputeJacobian();
+	void computeRHS();
+	void computeJacobian();
 	
 protected:
 	double theta_;

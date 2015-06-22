@@ -16,35 +16,35 @@ public:
 	
 	~Vector() { DEBUG("Vector destructor called" ); }
 	
-	int Length()  { return vector_->GlobalLength(); }
+	int length()  { return vector_->GlobalLength(); }
 
 	// this = scalarA * A + scalarThis * this
-	void Update(double scalarA,	Vector &A, double scalarThis)
-		{ vector_->Update(scalarA, *(A.GetRCP()), scalarThis); }
+	void update(double scalarA,	Vector &A, double scalarThis)
+		{ vector_->Update(scalarA, *(A.getRCP()), scalarThis); }
 	
-	double Dot(Vector &A)
+	double dot(Vector &A)
 		{
 			double dot;
-			vector_->Dot(*(A.GetRCP()), &dot);
+			vector_->Dot(*(A.getRCP()), &dot);
 			return dot;
 		}
 	
-	double Norm()
+	double norm()
 		{
 			double nrm;
 			vector_->Norm2(&nrm);
 			return nrm;
 		}
 
-	void Random(double scale = 1.0)
+	void random(double scale = 1.0)
 		{
 			vector_->Random();
 			vector_->Scale(scale);
 		}
 
-	void Scale(double scale) { vector_->Scale(scale); }
+	void scale(double scale) { vector_->Scale(scale); }
 
-	Teuchos::RCP<Epetra_Vector> GetRCP() { return vector_; }	
+	Teuchos::RCP<Epetra_Vector> getRCP() { return vector_; }	
 };
 
 #endif
