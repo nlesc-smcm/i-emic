@@ -45,9 +45,14 @@ Atmosphere::Atmosphere()
 	np_  = NP_;   // all neighbouring points including the center
 	nun_ = NUN_;  // only temperature TT_
 	
-
 	// Initialize RHS with zeros
-	rhs_ = std::vector<double>(n_ * m_ * l_, 0.0);
+	rhs_ = std::make_shared<std::vector<double> >(n_ * m_ * l_, 0.0);
+
+	// Initialize solution
+	sol_ = std::make_shared<std::vector<double> >();
+
+	// Initialize state
+	state_ = std::make_shared<std::vector<double> >();
 	
 	// Initialize forcing with zeros
 	frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
@@ -87,7 +92,7 @@ Atmosphere::Atmosphere()
 						(1 - albe_[j]));
 	}
 
-	// Initialize ocean surface and state temperature
+	// Define ocean surface and state temperature
 	// with idealized temperature
 	double ampl = 10; // amplitude
 	double value;
@@ -96,7 +101,7 @@ Atmosphere::Atmosphere()
 		{
 			value = ampl*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 			oceanTemp_.push_back(value);
-			state_.push_back(value);
+			(*state_).push_back(value);
 		}
 
 	// create initial RHS
@@ -148,7 +153,7 @@ void Atmosphere::computeRHS()
 		{
 			row = find_row(i, j, l_, TT_);
 			value = -matvec(row) + frc_[row-1];
-			rhs_[row-1] = value;
+			(*rhs_)[row-1] = value;
 		}	
 }
 
@@ -160,7 +165,7 @@ double Atmosphere::matvec(int row)
 	int last  = beg_[row] - 1;
 	double result = 0;
 	for (int j = first - 1; j <= last; ++j)
-		result += ico_[j] * state_[jco_[j]-1];
+		result += ico_[j] * (*state_)[jco_[j]-1];
 	
 	return result;
 }
@@ -319,12 +324,12 @@ void Atmosphere::solve(std::shared_ptr<Vector> rhs)
 	int ipiv[dim+1];
 
 	if (rhs == nullptr)
-		sol_ = std::vector<double>(rhs_);
+		(*sol_) = std::vector<double>((*rhs_));
 	else
-		sol_ = std::vector<double>(*(rhs->getStdVector()));		
+		(*sol_) = std::vector<double>(*(rhs->getStdVector()));		
 	
 	dgesv_(&dim, &nrhs, &denseA_[0], &lda, ipiv,
-		   &sol_[0], &ldb, &info);
+		   &(*sol_)[0], &ldb, &info);
 
 	std::cout << "solve info: " << info << std::endl;
 }
@@ -396,11 +401,11 @@ void Atmosphere::writeAll()
 	std::cout << "Writing everything to output files..." << std::endl;
 	//--> this calls for some abstraction
 	// Write solution
-	if (!sol_.empty())
+	if (!sol_->empty())
 	{
 		std::ofstream atmos_sol;
 		atmos_sol.open("atmos_sol.txt");
-		for (auto &i : sol_)
+		for (auto &i : *sol_)
 			atmos_sol << std::setprecision(12) << i << '\n';
 		atmos_sol.close();
 	}
@@ -408,11 +413,11 @@ void Atmosphere::writeAll()
 		std::cout << " solution vector is empty" << std::endl;
 
 	// Write rhs
-	if (!rhs_.empty())
+	if (!rhs_->empty())
 	{
 		std::ofstream atmos_rhs;
 		atmos_rhs.open("atmos_rhs.txt");
-		for (auto &i : rhs_)
+		for (auto &i : *rhs_)
 			atmos_rhs << std::setprecision(12) << i << '\n';
 		atmos_rhs.close();
 	}
@@ -578,23 +583,21 @@ void Atmosphere::test()
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<Vector> Atmosphere::getVector(char mode, std::vector<double> &vec)
+std::shared_ptr<Vector> Atmosphere::getVector
+(char mode, std::shared_ptr<std::vector<double> > vec)
 {
 	// not sure how to get a view
 	if (mode == 'C')
 	{
 		std::shared_ptr<std::vector<double> > copy =
-			std::make_shared<std::vector<double> >(vec); // make_shared is a copy
+			std::make_shared<std::vector<double> >(*vec); // make_shared is a copy
 		std::shared_ptr<Vector> ptr = std::make_shared<Vector>(copy);
 		return ptr;
 	}
 	else if (mode == 'V')
 	{
-		// shared_ptr wraps the raw pointer -> view
-		//--> don't get this... 
-		std::shared_ptr<std::vector<double> > view (&vec);
-		Vector test(view);
-		//std::shared_ptr<Vector> ptr = std::make_shared<Vector>(view);
+		std::shared_ptr<Vector> ptr = std::make_shared<Vector>(vec);
+		return ptr;
 	}
 	else
 	{

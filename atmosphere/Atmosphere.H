@@ -54,20 +54,22 @@ class Atmosphere
 	std::vector<double> yc_;  //! y-grid ( cell centers)
 	std::vector<double> yv_;  //! y-grid ( [u,v]-nodes)
 
-	// State of the atmosphere
-	std::vector<double> state_;
-
 	// Ocean surface temperature
 	std::vector<double> oceanTemp_;
 
 	// Forcing vector
 	std::vector<double> frc_;
 
+	// State of the atmosphere,
+	// wrapped in a shared_ptr so we can safely hand out
+	// a view of this member.
+	std::shared_ptr<std::vector<double> > state_;
+
 	// Right hand side of the discretized system of ODE's
-	std::vector<double> rhs_;
+	std::shared_ptr<std::vector<double> > rhs_;
 
 	// Solution vector
-	std::vector<double> sol_;
+	std::shared_ptr<std::vector<double> > sol_;
 
 	// CRS matrix arrays storing the Jacobian
 	std::vector<double> ico_;
@@ -134,10 +136,10 @@ public:
 	std::shared_ptr<Vector> getRHS(char mode = 'C');
 	
 	void setState(std::shared_ptr<Vector> state)
-		{ state_ = *(state->getStdVector()); }
+		{ *state_ = *(state->getStdVector()); }
 
 	void setRHS(std::shared_ptr<Vector> rhs)
-		{ rhs_   = *(rhs->getStdVector()); }
+		{ *rhs_   = *(rhs->getStdVector()); }
 
 	void   setPar(double value) { ampl_ = value; }
 	double getPar() { return ampl_; }
@@ -148,7 +150,8 @@ public:
 
 	void dumpState() { writeAll(); }
 private:
-	std::shared_ptr<Vector> getVector(char mode, std::vector<double> &vec);
+	std::shared_ptr<Vector> getVector
+	(char mode, std::shared_ptr<std::vector<double> > vec);
 	
 	// ! Apply local discretization
 	void discretize(int type, Atom &atom);
