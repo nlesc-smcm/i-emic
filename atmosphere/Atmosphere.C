@@ -45,8 +45,6 @@ Atmosphere::Atmosphere()
 	np_  = NP_;   // all neighbouring points including the center
 	nun_ = NUN_;  // only temperature TT_
 	
-	// Initialize state with zero solution
-	state_ = std::vector<double>(n_ * m_ * l_, 0.0);
 
 	// Initialize RHS with zeros
 	rhs_ = std::vector<double>(n_ * m_ * l_, 0.0);
@@ -89,12 +87,21 @@ Atmosphere::Atmosphere()
 						(1 - albe_[j]));
 	}
 
-	// Initialize ocean surface temperature with idealized temperature
+	// Initialize ocean surface and state temperature
+	// with idealized temperature
 	double ampl = 10; // amplitude
+	double value;
 	for (int j = 1; j <= m_; ++j)
 		for (int i = 1; i <= n_; ++i)
-			oceanTemp_.push_back(ampl*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_)));
+		{
+			value = ampl*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+			oceanTemp_.push_back(value);
+			state_.push_back(value);
+		}
 
+	// create initial RHS
+	computeRHS();
+	
 }
 //-----------------------------------------------------------------------------
 Atmosphere::~Atmosphere()
@@ -573,23 +580,26 @@ void Atmosphere::test()
 //-----------------------------------------------------------------------------
 std::shared_ptr<Vector> Atmosphere::getVector(char mode, std::vector<double> &vec)
 {
-	// not sure how to get a view right now, testing with only copies
-	if (mode == 'C' || mode == 'V')
+	// not sure how to get a view
+	if (mode == 'C')
 	{
 		std::shared_ptr<std::vector<double> > copy =
 			std::make_shared<std::vector<double> >(vec); // make_shared is a copy
 		std::shared_ptr<Vector> ptr = std::make_shared<Vector>(copy);
 		return ptr;
 	}
-	// else if (mode == 'V')
-	// {
-	// 	// shared_ptr wraps the raw pointer -> view
-	// 	std::shared_ptr<std::vector<double> > view (&vec);
-	// 	std::shared_ptr<Vector> ptr = std::make_shared<Vector>(view);
-	// }
+	else if (mode == 'V')
+	{
+		// shared_ptr wraps the raw pointer -> view
+		//--> don't get this... 
+		std::shared_ptr<std::vector<double> > view (&vec);
+		Vector test(view);
+		//std::shared_ptr<Vector> ptr = std::make_shared<Vector>(view);
+	}
 	else
 	{
-		std::cout << "WARNING: Invalid mode" << __FILE__ <<  __LINE__ << std::endl;
+		std::cout << "WARNING (Atmosphere::getVector): Invalid mode"
+				  << __FILE__ <<  __LINE__ << std::endl;
 		return nullptr;
 	}	
 }

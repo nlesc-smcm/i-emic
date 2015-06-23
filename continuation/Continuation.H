@@ -101,7 +101,7 @@ step()
 		reset();
 	else
 	{		
-		// Create new tangents based on new and stored state
+		// Create new tangents
 		createTangent('E');			
 	
 		// step adjustment based on the number of Newton iterations.
@@ -201,7 +201,8 @@ createTangent(char mode)
 		// --> Not sure about zeta_ here
 		normalize(stateDot_, zeta_, parDot_);
 	}
-	else if (mode == 'E' && newtonIter_ != 0) // Euler
+	//--> newtonIter_ is a dumb hack
+	else if (mode == 'E' && newtonIter_ != 0) // Euler 
 	{
 		// ------------------------------------------------------------
 		// Calculate stateDot_ with the Euler approach. Here we require
@@ -215,7 +216,8 @@ createTangent(char mode)
 		normalize(stateDot_, zeta_, parDot_);
 	}
 	else
-		WARNING("Invalid mode!", __FILE__, __LINE__);
+		WARNING("(Continuation::createTangent) Invalid mode!",
+				__FILE__, __LINE__);
 }
 
 //======================================================================
@@ -360,7 +362,7 @@ newtonCorrector()
 		if (backTracking_ and (normRHS_ < normRHStest_) )
 			backTrackingStatus = runBackTracking(stateDir, parDir);
 	}
-
+	
 	// Store the last obtained y1 in stateDot, such that it can be used by
 	// CreateTangent()
 	stateDot_ = y1;

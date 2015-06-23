@@ -333,13 +333,13 @@ void Ocean::computeJacobian()
 //====================================================================
 Teuchos::RCP<Vector> Ocean::getVector(char mode, RCP<Epetra_Vector> vec)
 {
-	if (mode == 'C')
+	if (mode == 'C') // copy
 	{
 		RCP<Epetra_Vector> copy = rcp(new Epetra_Vector(*vec));
 		RCP<Vector> ptr         = rcp(new Vector(copy));
 		return ptr;
 	}
-	else if (mode == 'V')
+	else if (mode == 'V') // view
 	{
 		RCP<Vector> ptr = rcp(new Vector(vec));
 		return ptr;
