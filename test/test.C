@@ -13,6 +13,8 @@
 #    include <Epetra_SerialComm.h>
 #  endif // HAVE_MPI
 
+#include <memory>
+#include <vector>
 
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
@@ -29,18 +31,47 @@
 //------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;
-
 //------------------------------------------------------------------
 // A few declarations
 RCP<std::ostream> outFile;               // output file
 std::map<std::string, double> profile;   // profile map
+//------------------------------------------------------------------
+void testVecWrap();
+void testOcean(int argc, char **argv);
+//------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
 void printProfile(std::map<std::string, double> profile,
 				  RCP<Epetra_Comm> Comm);
-
 //------------------------------------------------------------------
+
 int main(int argc, char **argv)
+{
+	// Initialize the environment:
+	//  - MPI
+	//  - output files
+	//  - returns Trilinos' communicator Epetra_Comm
+	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
+
+	// Create Atmosphere model
+	std::shared_ptr<Atmosphere> atmos = std::make_shared<Atmosphere>();
+
+	// Create parameter object for continuation
+	RCP<Teuchos::ParameterList> continuationParams =
+		rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("continuation_params.xml",
+								continuationParams.ptr());
+	// Create continuation
+	Continuation<std::shared_ptr<Atmosphere>,
+				 std::shared_ptr<Vector>,
+				 RCP<Teuchos::ParameterList> >
+		continuation(atmos, continuationParams);
+	
+	continuation.run();
+
+}
+
+void testOcean(int argc, char **argv)
 {
 	// Initialize the environment:
 	//  - MPI
@@ -52,13 +83,6 @@ int main(int argc, char **argv)
 	//  (based on THCM):
 	RCP<OceanCont> ocean = rcp(new OceanCont(Comm));
 
-	// Create Atmosphere model
-	RCP<Atmosphere> atmos = rcp(new Atmosphere());
-	atmos->test();
-	atmos->computeJacobian();
-	atmos->computeRHS();
-	atmos->solve();
-	getchar();
 
 	// Create parameter object for continuation
 	RCP<Teuchos::ParameterList> continuationParams =
@@ -80,7 +104,7 @@ int main(int argc, char **argv)
 	// Finalize MPI
 	//--------------------------------------------------------
 	Comm->Barrier();
-	MPI_Finalize();
+	MPI_Finalize();	
 }
 
 //------------------------------------------------------------------
@@ -167,4 +191,37 @@ void printProfile(std::map<std::string, double> profile,
 			<< std::endl;
 	(*file) << "=================================================================="
 			<< std::endl;
+}
+
+//------------------------------------------------------------------
+void testVecWrap()
+{
+	std::cout << "Testing the Vector Wrapper..." << std::endl;
+	
+	std::vector<double> vec1 = {1,2,3,4,5,6,7,8,9,10};
+	std::vector<double> vec2 = {2,2,3,2,5,2,2,2,9,2};
+	std::shared_ptr<std::vector<double> > spvec1 =
+		std::make_shared<std::vector<double> >(vec1);
+	std::shared_ptr<std::vector<double> > spvec2 =
+		std::make_shared<std::vector<double> >(vec2);
+	
+ 	Vector wrvec1(spvec1);
+	Vector wrvec2(spvec2);
+
+	std::cout << "v1 length: " <<  wrvec1.length() << std::endl;
+	std::cout << "v2 length: " <<  wrvec2.length() << std::endl;
+
+	std::cout << "v1 norm: " << wrvec1.norm() << std::endl;
+	std::cout << "v2 norm: " << wrvec2.norm() << std::endl;
+		
+	std::cout << "(v1,v2): " <<	wrvec1.dot(wrvec2) << std::endl;
+	
+	wrvec1.update(4, wrvec2, 3);
+	wrvec1.print();
+
+	wrvec2.scale(3);
+	wrvec2.print();
+	
+	std::cout << "Testing the Vector Wrapper...done" << std::endl;
+	getchar();
 }

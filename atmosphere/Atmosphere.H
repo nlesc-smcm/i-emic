@@ -12,8 +12,10 @@
 #ifndef ATMOSPHERE_H
 #define ATMOSPHERE_H
 
+
 #include <vector>
 #include <memory>
+#include "Vector.H"
 #include "MultiArray.H"
 #include "AtmosphereDefinitions.H"
 
@@ -74,7 +76,11 @@ class Atmosphere
 
 	// Dense matrix storage
 	std::vector<double> denseA_;
-	
+
+	// Continuation parameter
+	double    ampl_; //! amplitude of forcing 
+	double amplEnd_; //! max amplitude forcing
+
 	// Parameters	
 	double   rhoa_; //! atmospheric density \[\rho_a\]
 	double  hdima_; //! atmospheric scale height \[H_a\]
@@ -119,12 +125,30 @@ public:
 	// destructor
 	~Atmosphere();
 
-	void computeJacobian();
+	void solve(std::shared_ptr<Vector> rhs = nullptr);
 	void computeRHS();
-	void solve();
+	void computeJacobian();
+
+	std::shared_ptr<Vector> getSolution(char mode = 'C');
+	std::shared_ptr<Vector> getState(char mode = 'C');
+	std::shared_ptr<Vector> getRHS(char mode = 'C');
+	
+	void setState(std::shared_ptr<Vector> state)
+		{ state_ = *(state->getStdVector()); }
+
+	void setRHS(std::shared_ptr<Vector> rhs)
+		{ rhs_   = *(rhs->getStdVector()); }
+
+	void   setPar(double value) { ampl_ = value; }
+	double getPar() { return ampl_; }
+	double getParDestination() {return amplEnd_; }
+
 	void test();
-	//void setOceanTemp(std::vector<double> 
+	//void setOceanTemp(std::vector<double>
+
+	void dumpState() { writeAll(); }
 private:
+	std::shared_ptr<Vector> getVector(char mode, std::vector<double> &vec);
 	
 	// ! Apply local discretization
 	void discretize(int type, Atom &atom);

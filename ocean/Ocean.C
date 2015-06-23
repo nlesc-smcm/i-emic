@@ -47,7 +47,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	// Check if outFile is specified
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");
-
+	
 	// Setup Ocean and THCM parameters:
 	RCP<Teuchos::ParameterList> oceanParamList =
 		rcp(new Teuchos::ParameterList);
@@ -217,7 +217,7 @@ void Ocean::solve(RCP<Vector> rhs)
 	if (rhs == Teuchos::null)
  		set = problem_->setProblem(sol_, rhs_);
 	else
-		set = problem_->setProblem(sol_, rhs->getRCP());
+		set = problem_->setProblem(sol_, rhs->getEpetraVector());
 	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");

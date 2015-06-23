@@ -35,12 +35,12 @@ Continuation(ModelPtr model, ParameterList pars)
 {
 	model_  = model;
 
-	stateView_  = model_->getState('V');
+	stateView_ = model_->getState('V');
 
 	rhsView_ = model_->getRHS('V');
 	
-	par_    = model_->getPar();       
-
+ 	par_    = model_->getPar();       
+	
 	// initialize Storage struct
 	storage_.ds0    = ds_;
 	storage_.par0   = par_;

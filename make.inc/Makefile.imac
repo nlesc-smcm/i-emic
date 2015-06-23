@@ -15,7 +15,7 @@ TRIDIR       = /home/erik/trilinos/${TRIVERSION}
 ##   Project base directory
 PROJECT_BASE = /home/erik/Projects/EMIC
 ##   Make flags
-MFLAGS       = -j 1
+MFLAGS       = -j 4
 ##   Local compiler flags
 LOCAL_CXX_FLAGS  = -std=c++11
 ##=================================================================

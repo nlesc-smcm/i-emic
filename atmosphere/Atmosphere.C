@@ -4,25 +4,29 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include "Vector.H"
 
 //-----------------------------------------------------------------------------
 Atmosphere::Atmosphere()
 {
 	// Filling the parameters --> xml
-	rhoa_   = 1.25       ; //! atmospheric density 
-	hdima_  = 8400.      ; //! atmospheric scale height 
-	cpa_    = 1000.      ; //! heat capacity 
-	d0_     = 3.1e+06    ; //! constant eddy diffusivity 
-	arad_   = 216.0      ; //! radiative flux param A
-	brad_   = 1.5        ; //! radiative flux param B
-	sun0_   = 1360.      ; //! solar constant 
-	c0_     = 0.43       ; //! atmospheric absorption coefficient
-	ce_     = 1.3e-03    ; //! exchange coefficient 
-	ch_     = 0.94 * ce_ ; //! exchange coefficient 
-	uw_     = 8.5        ; //! mean atmospheric surface wind speed
-	t0_     = 15.0       ; //! reference temperature
-	udim_   = 0.1e+00    ; //! typical horizontal velocity of the ocean
-	r0dim_  = 6.37e+06   ; //! radius of the earth
+	ampl_    = 0.0        ; //! amplitude of forcing
+	amplEnd_ = 1.0        ; //!
+	
+	rhoa_    = 1.25       ; //! atmospheric density 
+	hdima_   = 8400.      ; //! atmospheric scale height 
+	cpa_     = 1000.      ; //! heat capacity 
+	d0_      = 3.1e+06    ; //! constant eddy diffusivity 
+	arad_    = 216.0      ; //! radiative flux param A
+	brad_    = 1.5        ; //! radiative flux param B
+	sun0_    = 1360.      ; //! solar constant 
+	c0_      = 0.43       ; //! atmospheric absorption coefficient
+	ce_      = 1.3e-03    ; //! exchange coefficient 
+	ch_      = 0.94 * ce_ ; //! exchange coefficient 
+	uw_      = 8.5        ; //! mean atmospheric surface wind speed
+	t0_      = 15.0       ; //! reference temperature
+	udim_    = 0.1e+00    ; //! typical horizontal velocity of the ocean
+	r0dim_   = 6.37e+06   ; //! radius of the earth
 
 	
 	// Filling the coefficients
@@ -49,9 +53,6 @@ Atmosphere::Atmosphere()
 	
 	// Initialize forcing with zeros
 	frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
-
-	// Initialize ocean surface temperature with zero solution
-	oceanTemp_ = std::vector<double>(n_ * m_ * 1, 0.0);
 
 	// Initialize dense matrix:
 	denseA_ = std::vector<double>(pow(n_ * m_ * l_, 2), 0.0);
@@ -87,6 +88,13 @@ Atmosphere::Atmosphere()
 		suna_.push_back(As_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
 						(1 - albe_[j]));
 	}
+
+	// Initialize ocean surface temperature with idealized temperature
+	double ampl = 10; // amplitude
+	for (int j = 1; j <= m_; ++j)
+		for (int i = 1; i <= n_; ++i)
+			oceanTemp_.push_back(ampl*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_)));
+
 }
 //-----------------------------------------------------------------------------
 Atmosphere::~Atmosphere()
@@ -159,7 +167,7 @@ void Atmosphere::forcing()
 		for (int i = 1; i <= n_; ++i)
 		{
 			row = find_row(i, j, l_, TT_);
-			value = oceanTemp_[row-1] + suna_[j] - amua_;
+			value = oceanTemp_[row-1] + ampl_*(suna_[j] - amua_);
 			frc_[row-1] = value;
 		}
 }
@@ -294,7 +302,7 @@ extern "C" void dgesv_(int *N, int *NRHS, double *A,
 					   int *LDB, int *INFO);
 
 //-----------------------------------------------------------------------------
-void Atmosphere::solve()
+void Atmosphere::solve(std::shared_ptr<Vector> rhs)
 {
 	int dim  = n_*m_*l_;
 	int nrhs = 1;
@@ -303,80 +311,15 @@ void Atmosphere::solve()
 	int info;
 	int ipiv[dim+1];
 
-	// copy construction
-	sol_ = std::vector<double>(rhs_);
+	if (rhs == nullptr)
+		sol_ = std::vector<double>(rhs_);
+	else
+		sol_ = std::vector<double>(*(rhs->getStdVector()));		
 	
 	dgesv_(&dim, &nrhs, &denseA_[0], &lda, ipiv,
 		   &sol_[0], &ldb, &info);
 
-	std::cout << "info: " << info << std::endl;
-	writeAll();
-}
-
-//-----------------------------------------------------------------------------
-void Atmosphere::writeAll()
-{
-	std::cout << "Writing everything to output files..." << std::endl;
-	// Write solution
-	if (!sol_.empty())
-	{
-		std::ofstream atmos_sol;
-		atmos_sol.open("atmos_sol.txt");
-		for (auto &i : sol_)
-			atmos_sol << std::setprecision(12) << i << '\n';
-		atmos_sol.close();
-	}
-	else
-		std::cout << " solution vector is empty" << std::endl;
-
-	// Write rhs
-	if (!rhs_.empty())
-	{
-		std::ofstream atmos_rhs;
-		atmos_rhs.open("atmos_rhs.txt");
-		for (auto &i : rhs_)
-			atmos_rhs << std::setprecision(12) << i << '\n';
-		atmos_rhs.close();
-	}
-	else
-		std::cout << " rhs vector is empty" << std::endl;
-
-	// Write ico
-	if (!ico_.empty())
-	{
-		std::ofstream atmos_ico;
-		atmos_ico.open("atmos_ico.txt");
-		for (auto &i : ico_)
-			atmos_ico << std::setprecision(12) << i << '\n';
-		atmos_ico.close();
-	}
-	else
-		std::cout << " ico vector is empty" << std::endl;
-
-	// Write jco
-	if (!jco_.empty())
-	{
-		std::ofstream atmos_jco;
-		atmos_jco.open("atmos_jco.txt");
-		for (auto &i : jco_)
-			atmos_jco << std::setprecision(12) << i << '\n';
-		atmos_jco.close();
-	}
-	else
-		std::cout << " jco vector is empty" << std::endl;
-
-	// Write beg
-	if (!beg_.empty())
-	{
-		std::ofstream atmos_beg;
-		atmos_beg.open("atmos_beg.txt");
-		for (auto &i : beg_)
-			atmos_beg << std::setprecision(12) << i << '\n';
-		atmos_beg.close();
-	}
-	else
-		std::cout << " beg vector is empty" << std::endl;
-
+	std::cout << "solve info: " << info << std::endl;
 }
 
 //-----------------------------------------------------------------------------
@@ -440,6 +383,95 @@ void Atmosphere::boundaries()
 			}
 }
 
+//-----------------------------------------------------------------------------
+void Atmosphere::writeAll()
+{
+	std::cout << "Writing everything to output files..." << std::endl;
+	//--> this calls for some abstraction
+	// Write solution
+	if (!sol_.empty())
+	{
+		std::ofstream atmos_sol;
+		atmos_sol.open("atmos_sol.txt");
+		for (auto &i : sol_)
+			atmos_sol << std::setprecision(12) << i << '\n';
+		atmos_sol.close();
+	}
+	else
+		std::cout << " solution vector is empty" << std::endl;
+
+	// Write rhs
+	if (!rhs_.empty())
+	{
+		std::ofstream atmos_rhs;
+		atmos_rhs.open("atmos_rhs.txt");
+		for (auto &i : rhs_)
+			atmos_rhs << std::setprecision(12) << i << '\n';
+		atmos_rhs.close();
+	}
+	else
+		std::cout << " rhs vector is empty" << std::endl;
+
+	// Write ico
+	if (!ico_.empty())
+	{
+		std::ofstream atmos_ico;
+		atmos_ico.open("atmos_ico.txt");
+		for (auto &i : ico_)
+			atmos_ico << std::setprecision(12) << i << '\n';
+		atmos_ico.close();
+	}
+	else
+		std::cout << " ico vector is empty" << std::endl;
+
+	// Write jco
+	if (!jco_.empty())
+	{
+		std::ofstream atmos_jco;
+		atmos_jco.open("atmos_jco.txt");
+		for (auto &i : jco_)
+			atmos_jco << std::setprecision(12) << i << '\n';
+		atmos_jco.close();
+	}
+	else
+		std::cout << " jco vector is empty" << std::endl;
+
+	// Write beg
+	if (!beg_.empty())
+	{
+		std::ofstream atmos_beg;
+		atmos_beg.open("atmos_beg.txt");
+		for (auto &i : beg_)
+			atmos_beg << std::setprecision(12) << i << '\n';
+		atmos_beg.close();
+	}
+	else
+		std::cout << " beg vector is empty" << std::endl;
+
+	// Write frc
+	if (!frc_.empty())
+	{
+		std::ofstream atmos_frc;
+		atmos_frc.open("atmos_frc.txt");
+		for (auto &i : frc_)
+			atmos_frc << std::setprecision(12) << i << '\n';
+		atmos_frc.close();
+	}
+	else
+		std::cout << " frc vector is empty" << std::endl;
+
+	// Write oceanTemp
+	if (!oceanTemp_.empty())
+	{
+		std::ofstream atmos_oceanTemp;
+		atmos_oceanTemp.open("atmos_oceanTemp.txt");
+		for (auto &i : oceanTemp_)
+			atmos_oceanTemp << std::setprecision(12) << i << '\n';
+		atmos_oceanTemp.close();
+	}
+	else
+		std::cout << " oceanTemp vector is empty" << std::endl;
+}
 
 //-----------------------------------------------------------------------------
 int Atmosphere::find_row(int i, int j, int k, int XX)
@@ -537,6 +569,50 @@ void Atmosphere::test()
 	std::cout << "shift gives: " 
 			  << "(" << i2 << ", " << j2 << ", " << k2 << ")" << std::endl;
 }
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<Vector> Atmosphere::getVector(char mode, std::vector<double> &vec)
+{
+	// not sure how to get a view right now, testing with only copies
+	if (mode == 'C' || mode == 'V')
+	{
+		std::shared_ptr<std::vector<double> > copy =
+			std::make_shared<std::vector<double> >(vec); // make_shared is a copy
+		std::shared_ptr<Vector> ptr = std::make_shared<Vector>(copy);
+		return ptr;
+	}
+	// else if (mode == 'V')
+	// {
+	// 	// shared_ptr wraps the raw pointer -> view
+	// 	std::shared_ptr<std::vector<double> > view (&vec);
+	// 	std::shared_ptr<Vector> ptr = std::make_shared<Vector>(view);
+	// }
+	else
+	{
+		std::cout << "WARNING: Invalid mode" << __FILE__ <<  __LINE__ << std::endl;
+		return nullptr;
+	}	
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<Vector> Atmosphere::getSolution(char mode)
+{
+	return getVector(mode, sol_);
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<Vector> Atmosphere::getState(char mode)
+{
+	return getVector(mode, state_);
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<Vector> Atmosphere::getRHS(char mode)
+{
+	return getVector(mode, rhs_);
+}
+
+//-----------------------------------------------------------------------------
 
 //=============================================================================
 // DependencyGrid implementation

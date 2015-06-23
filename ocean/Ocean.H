@@ -104,8 +104,14 @@ public:
 	Teuchos::RCP<Vector> getState(char mode = 'C');
 	Teuchos::RCP<Vector> getRHS(char mode = 'C');
 	
-	void setState(Teuchos::RCP<Vector> state) { state_ = state->getRCP(); }
-	void setRHS(Teuchos::RCP<Vector> rhs)     { rhs_   = rhs->getRCP();   }
+	void setState(Teuchos::RCP<Vector> state)
+		{
+			state_ = state->getEpetraVector();
+		}
+	void setRHS(Teuchos::RCP<Vector> rhs)
+		{
+			rhs_   = rhs->getEpetraVector();
+		}
 
 	void saveStateToFile(std::string const &name);
 	void loadStateFromFile(std::string const &name);
