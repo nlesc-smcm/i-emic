@@ -13,6 +13,9 @@
 // This class should be able to act as a vector dedicated to a model,
 // but also as a combined 'big' vector.
 
+// even better: std::vector<std::shared_ptr<std::vector<double> > >
+// even better: std::vector<Teuchos::RCP<Epetra_Vector> > 
+
 class Vector
 {
 	Teuchos::RCP<Epetra_Vector> epetraVector_;
@@ -35,6 +38,7 @@ public:
 			init();
 		}
 
+	//------------------------------------------------------------------
 	Vector(std::shared_ptr<std::vector<double> > vector)
 		:
 		epetraVector_(Teuchos::null),
@@ -44,7 +48,8 @@ public:
 		{
 			init();
 		}
-
+	
+	//------------------------------------------------------------------
 	Vector(Teuchos::RCP<Epetra_Vector> vector1,
 		   std::shared_ptr<std::vector<double> > vector2)
 		:
@@ -55,7 +60,8 @@ public:
 		{
 			init();
 		}
-
+	
+	//------------------------------------------------------------------
 	~Vector()
 		{}
 	
@@ -67,6 +73,7 @@ public:
 			length_ += (haveStdVector_) ? stdVector_->size() : 0;
 		}
 
+	//------------------------------------------------------------------
 	int length() { return length_; }
 
 	// this = scalarA * A + scalarThis * this
@@ -90,7 +97,8 @@ public:
 				}
 			}
 		}
-	
+
+	//------------------------------------------------------------------
 	double dot(Vector &A)
 		{
 			if (length_ != A.length())
@@ -110,14 +118,16 @@ public:
 			
 			return dot1 + dot2;
 		}
-	
+
+	//------------------------------------------------------------------
 	double norm()
 		{
-			double nrm2 = 0;
+			double nrm2 = 0.0;
 			nrm2 = dot(*this);
 			return sqrt(nrm2);
 		}
 
+	//------------------------------------------------------------------
 	void random(double scale = 1.0)
 		{
 			if (haveEpetraVector_)
@@ -129,6 +139,7 @@ public:
 				std::cout << "Not implemented for std::vector" << std::endl;
 		}
 
+	//------------------------------------------------------------------
 	void scale(double scale)
 		{
 			if (haveEpetraVector_)
@@ -138,7 +149,7 @@ public:
 					i *= scale;
 		}
 
-	
+	//------------------------------------------------------------------
 	Teuchos::RCP<Epetra_Vector> getEpetraVector()
 		{
 			if (!haveEpetraVector_)
@@ -149,6 +160,7 @@ public:
 			return epetraVector_;
 		}
 
+	//------------------------------------------------------------------
 	std::shared_ptr<std::vector<double> > getStdVector()
 		{
 			if (!haveStdVector_)
@@ -159,10 +171,11 @@ public:
 			return stdVector_;
 		}
 
+	//------------------------------------------------------------------
 	void print()
 		{
 			if (haveEpetraVector_)
-				std::cout << " print() not implemented" << std::endl;
+				std::cout << " print() not implemented for Epetra Vector" << std::endl;
 			
 			if (haveStdVector_)
 			{
@@ -172,5 +185,4 @@ public:
 			}						
 		}
 };
-	
 #endif

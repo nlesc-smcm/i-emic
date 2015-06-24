@@ -20,6 +20,9 @@ class Continuation
 	VectorPtr rhsCopy_;
     // view of the rhs in the model
 	VectorPtr rhsView_;
+	// view of the sol in the model
+	VectorPtr solView_;
+	
 	VectorPtr dFdPar_;
 	
 	double par_;
@@ -117,6 +120,7 @@ private:
 	void adjustStep();
 	void reset();
 	void info();
+	void modelInfo();
 	
 };
 #endif

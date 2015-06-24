@@ -35,23 +35,26 @@ Continuation(ModelPtr model, ParameterList pars)
 {
 	model_  = model;
 
+	// Get views of the important components of the model
 	stateView_ = model_->getState('V');
-
-	rhsView_ = model_->getRHS('V');
+	rhsView_   = model_->getRHS('V');
+	solView_   = model_->getSolution('V');
 	
- 	par_    = model_->getPar();       
+ 	par_       = model_->getPar();       
+
+	// print some info on the model
+	modelInfo();
 	
 	// initialize Storage struct
 	storage_.ds0    = ds_;
 	storage_.par0   = par_;
 	storage_.state0 = model_->getState('C');
 
+	// scaling
 	zeta_ = 1.0 / stateView_->length();	
 
 	newtonIter_ = 0;	
-
-	backTrack_ = 0;	
-
+	backTrack_  = 0;	
 	parDotSign_ = 1;	
 }
 
@@ -98,10 +101,12 @@ step()
 	// If necessary reset the step, otherwise perform a normal
 	// calculation of the tangent and step adjustment
 	if (status)
+	{
 		reset();
+	}
 	else
 	{		
-		// Create new tangents
+		// Create new tangents based on result from newtonCorrector
 		createTangent('E');			
 	
 		// step adjustment based on the number of Newton iterations.
@@ -146,13 +151,13 @@ void Continuation<ModelPtr, VectorPtr, ParameterList>::
 computeDFDPar(char mode)
 {
 	// Let the model compute an RHS F(par) with its current state
-	// --> Note that this is usually a predicted state
-	// --> The RHS for this particular state may already have been
-	//     computed.
+	// - Note that this is usually a predicted state
+	// - The RHS for this particular state may already have been
+	//   computed.
 	//
 	if (mode == 'F')
 		model_->computeRHS();
-
+	
 	// Get a copy of this RHS, store it in our rhsCopy_ member
 	rhsCopy_ = model_->getRHS('C');
 
@@ -201,7 +206,6 @@ createTangent(char mode)
 		// --> Not sure about zeta_ here
 		normalize(stateDot_, zeta_, parDot_);
 	}
-	//--> newtonIter_ is a dumb hack
 	else if (mode == 'E' && newtonIter_ != 0) // Euler 
 	{
 		// ------------------------------------------------------------
@@ -286,8 +290,8 @@ newtonCorrector()
 	VectorPtr y1;            // solution of solve with dFdPar
 	VectorPtr z1;            // solution of solve with F
 	double parDir;           // direction for the parameter
-	
-	for (newtonIter_ = 0; newtonIter_ != maxNewtonIterations_; ++newtonIter_)
+	newtonIter_ = 0;	
+	while (newtonIter_ < maxNewtonIterations_)
 	{
 		// Taking the derivative of the RHS w.r.t. the continuation
 		// parameter using a finite difference. In the first iteration
@@ -298,8 +302,8 @@ newtonCorrector()
 		// Obtain the upper part (R) of the continuation RHS.
 		// A copy of F(par) is obtained in ComputeDFDPar(), so
 		// we use that one to get -F(par).
-		// --> Note that we cannot use the current rhs in the model
-		//     since at this point it corresponds to F(par+eps)
+		// > Note that we cannot use the current rhs in the model
+		//   since at this point it corresponds to F(par+eps)
 		VectorPtr R = rhsCopy_;
 		R->scale(-1.0);
 		
@@ -307,9 +311,9 @@ newtonCorrector()
 		// Here we compute
 		// r = ds - stateDot'*(state1 - state0)*zeta
 		//           - parDot*(par2   - par0)
-		// --> zeta is an additional scaling for the state tangent
-		//     and makes sure that we have a proper parDot after
-		//     normalization.
+		// > zeta is an additional scaling for the state tangent
+		//   and makes sure that we have a proper parDot after
+		//   normalization.
 		VectorPtr state0 = storage_.state0;
 		double    par0   = storage_.par0;
 		double    r      =  ds_ - stateDot_->dot(*stateView_) * zeta_
@@ -327,6 +331,7 @@ newtonCorrector()
 		// next tangent.
 		model_->solve(dFdPar_);
 		y1 = model_->getSolution('C');
+		INFO("... about to do the standard newton solve ...");
 		model_->solve(R);
 		z1 = model_->getSolution('C');
 
@@ -335,8 +340,7 @@ newtonCorrector()
 		parDir = (r - zeta_ * stateDot_->dot(*z1))
 			   / (parDot_ - zeta_ * stateDot_->dot(*y1));
 
-		// --> Perhaps we can optimize the next bit wrt copies and views
-		
+		// --> Perhaps we can optimize the next bit (copies and views)		
 		// Then for the state:
 		//  - We perform an update on z1 and
 		//  - let that be the new direction
@@ -347,7 +351,8 @@ newtonCorrector()
 		stateView_->update(1.0, *stateDir, 1.0);
 		par_ = par_ + parDir;  // update our parameter
 		model_->setPar(par_);  // set it in the model
-
+		++newtonIter_;
+		
 		// test new RHS, if it satisfies the tolerance we exit the loop
 		normRHS_ = rhsView_->norm();
 		model_->computeRHS();
@@ -356,8 +361,10 @@ newtonCorrector()
 		INFO("Contin.: corrector  norm R: " << normRHStest_ );
 				
 		if (normRHStest_ < newtonTolerance_)
+		{
 			break;
-
+		}
+		
 		// if we don't see a decrease we run the backtracking routine
 		if (backTracking_ and (normRHS_ < normRHStest_) )
 			backTrackingStatus = runBackTracking(stateDir, parDir);
@@ -369,7 +376,7 @@ newtonCorrector()
 	
 	if (newtonIter_ == maxNewtonIterations_)
 	{
-		WARNING("Continuation: Newton failed!!", __FILE__, __LINE__);
+		WARNING("Continuation: Newton failed", __FILE__, __LINE__);
 		return 1;
 	}
 
@@ -401,13 +408,13 @@ runBackTracking(VectorPtr stateDir, double parDir)
 		normRHStest_ = rhsView_->norm();
 
 		INFO("Contin.: backtracking " << backTrack_ <<
-			 " norm: " << normRHStest_ );
+			 " norm: " << normRHStest_ << " < " << normRHS_ << " ? ");
 
 		reduction /= 2.0;	// Update reduction
 	}
 	if (backTrack_ == numBackTrackingSteps_)
 	{
-		WARNING("Continuation: --> BACKTRACKING FAILED", __FILE__, __LINE__);
+		WARNING("Continuation: backtracking failed ", __FILE__, __LINE__);
 		return 1;
 	}
 	return 0;
@@ -451,11 +458,14 @@ template<typename ModelPtr, typename VectorPtr, typename ParameterList>
 void Continuation<ModelPtr, VectorPtr, ParameterList>::
 reset()
 {
-	INFO("Continuation: RESET!");
+	INFO("***********************************************");
+	INFO("Continuation: RESETTING!");
+	INFO("Continuation:  Step = " << step_);
 	INFO("Continuation:  Restoring model...");
 	restore();
 	ds_ = MAX(ds_ / scale2_, dsMin_);
 	INFO("Continuation:  Restoring model... done");
+	INFO("***********************************************");
 }
 
 //======================================================================
@@ -517,6 +527,19 @@ info()
 	}
 	INFO("       norm state:  " << stateView_->norm());
 	INFO("     newton iters:  " << newtonIter_);
+	INFO("-----------------------------------------");
+}
+
+//======================================================================
+template<typename ModelPtr, typename VectorPtr, typename ParameterList>
+void Continuation<ModelPtr, VectorPtr, ParameterList>::
+modelInfo()
+{
+	INFO("-----------------------------------------");
+	INFO("Model view: ");
+	INFO("     norm state :  " << stateView_->norm());
+	INFO("     norm rhs   :  " << rhsView_->norm());
+	INFO("     norm sol   :  " << solView_->norm());
 	INFO("-----------------------------------------");
 }
 

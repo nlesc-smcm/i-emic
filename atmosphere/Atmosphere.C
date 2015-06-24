@@ -9,10 +9,11 @@
 //-----------------------------------------------------------------------------
 Atmosphere::Atmosphere()
 {
-	// Filling the parameters --> xml
+	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
 	amplEnd_ = 1.0        ; //!
 	
+	// Filling the parameters --> xml
 	rhoa_    = 1.25       ; //! atmospheric density 
 	hdima_   = 8400.      ; //! atmospheric scale height 
 	cpa_     = 1000.      ; //! heat capacity 
@@ -49,16 +50,22 @@ Atmosphere::Atmosphere()
 	rhs_ = std::make_shared<std::vector<double> >(n_ * m_ * l_, 0.0);
 
 	// Initialize solution
-	sol_ = std::make_shared<std::vector<double> >();
+	sol_ = std::make_shared<std::vector<double> >(n_ * m_ * l_, 0.0);
 
 	// Initialize state
-	state_ = std::make_shared<std::vector<double> >();
+	state_ = std::make_shared<std::vector<double> >(n_ * m_ * l_, 0.0);
+
+	// Initialize ocean temperature
+	oceanTemp_ = std::vector<double>(n_ * m_, 0.0);
 	
 	// Initialize forcing with zeros
 	frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
 
 	// Initialize dense matrix:
 	denseA_ = std::vector<double>(pow(n_ * m_ * l_, 2), 0.0);
+	
+	// Create pivot array for use in lapack
+	ipiv_ = new int[n_*m_*l_+1];
 	
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
@@ -92,26 +99,18 @@ Atmosphere::Atmosphere()
 						(1 - albe_[j]));
 	}
 
-	// Define ocean surface and state temperature
-	// with idealized temperature
-	double ampl = 10; // amplitude
-	double value;
-	for (int j = 1; j <= m_; ++j)
-		for (int i = 1; i <= n_; ++i)
-		{
-			value = ampl*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
-			oceanTemp_.push_back(value);
-			(*state_).push_back(value);
-		}
-
-	// create initial RHS
-	computeRHS();
-	
+	// put some values in oceanTemp
+	for (int i = 1; i <= n_; ++i)
+		for (int j = 1; j <= m_; ++j)
+			oceanTemp_[find_row(i,j,l_,TT_)-1] =
+				10*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 }
+
 //-----------------------------------------------------------------------------
 Atmosphere::~Atmosphere()
-{}
-
+{
+	delete[] ipiv_;
+}
 
 //-----------------------------------------------------------------------------
 void Atmosphere::computeJacobian()
@@ -126,8 +125,8 @@ void Atmosphere::computeJacobian()
 	discretize(3, txx);
 	discretize(4, tyy);
 	
-	// Al(:,:,:,:,TT,TT) = - Ad * (txx + tyy) - tc + bmua*tc2
-	txx.update(-Ad_, -Ad_, tyy, -1, tc, bmua_, tc2);
+	// Al(:,:,:,:,TT,TT) = Ad * (txx + tyy) + tc - bmua*tc2
+	txx.update(Ad_, Ad_, tyy, 1, tc, -bmua_, tc2);
 	//--> range array should have size 8 here!
 	Al_->set({1,n_,1,m_,1,l_,1,np_}, 1, 1, txx);
 	boundaries();
@@ -144,28 +143,28 @@ void Atmosphere::computeRHS()
 	// Compute the forcing
 	forcing();
 	
-	// Compute the right hand side rhs_
-	
+	// Compute the right hand side rhs_	
 	double value;
 	int row;
-	for (int j = 1; j <= m_; ++j)
-		for (int i = 1; i <= n_; ++i)
+	for (int i = 1; i <= n_; ++i)
+		for (int j = 1; j <= m_; ++j)
 		{
-			row = find_row(i, j, l_, TT_);
-			value = -matvec(row) + frc_[row-1];
+			row   = find_row(i, j, l_, TT_);
+			value = matvec(row) + frc_[row-1];
 			(*rhs_)[row-1] = value;
-		}	
+		}
 }
 
 //-----------------------------------------------------------------------------
 double Atmosphere::matvec(int row)
 {
 	// Returns inner product of a row in the matrix with the state.
+	// > ugly stuff with 1 to 0 based...
 	int first = beg_[row-1];
 	int last  = beg_[row] - 1;
-	double result = 0;
-	for (int j = first - 1; j <= last; ++j)
-		result += ico_[j] * (*state_)[jco_[j]-1];
+	double result = 0.0;
+	for (int j = first; j <= last; ++j)
+		result += ico_[j-1] * (*state_)[jco_[j-1]-1];
 	
 	return result;
 }
@@ -173,6 +172,7 @@ double Atmosphere::matvec(int row)
 //-----------------------------------------------------------------------------
 void Atmosphere::forcing()
 {
+	std::cout << "forcing amplitude: " << ampl_ << std::endl;
 	double value;
 	int row;
 	for (int j = 1; j <= m_; ++j)
@@ -236,6 +236,7 @@ void Atmosphere::discretize(int type, Atom &atom)
 	}
 }
 
+
 //-----------------------------------------------------------------------------
 void Atmosphere::assemble()
 {
@@ -277,14 +278,67 @@ void Atmosphere::assemble()
 					}
 				}
 	
-	//final element of beg
+	// final element of beg
 	beg_.push_back(elm_ctr);
 	
+	// create dense A and its LU for solving dgetrs() (lapack)
+	buildDenseA();
+}
+
+//-----------------------------------------------------------------------------
+// Declaring a few LAPACK functions needed around this point
+//-----------------------------------------------------------------------------
+// Create LU
+extern "C" void dgetrf_(int* M, int *N, double *A,
+						int *LDA, int *IPIV, int *INFO);
+
+// Solve LU 
+extern "C" void dgetrs_(char* TRANS, int *N, int *NRHS, double *A,
+						int *LDA, int *IPIV, double *B,
+						int *LDB, int *INFO);
+
+// Make LU and solve
+extern "C" void dgesv_(int *N, int *NRHS, double *A,
+					   int *LDA, int *IPIV, double *B,
+					   int *LDB, int *INFO);
+
+//-----------------------------------------------------------------------------
+void Atmosphere::solve(std::shared_ptr<Vector> rhs)
+{
+	char trans = 'N';
+	
+	int dim    = n_*m_*l_;
+	int nrhs   = 1;
+	int lda    = dim;
+	int ldb    = dim;
+	int info;
+
+	if (rhs == nullptr)
+	{
+		(*sol_) = std::vector<double>((*rhs_));
+		std::cout << "solve... using own rhs" << std::endl;
+	}
+	else
+	{
+		(*sol_) = std::vector<double>(*(rhs->getStdVector()));
+		std::cout << "solve... using ext rhs" << std::endl;
+	}
+
+	dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
+			&(*sol_)[0], &ldb, &info);
+	
+	std::cout << "solve info: " << info << std::endl;
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::buildDenseA()
+{
 	//------------------------------------------------
 	//--> weird stuff: in the future stick to sparse plx
 	// Create dense matrix:
+	denseA_.assign(pow(n_*m_*l_, 2), 0.0);
 	std::vector<double> ivals(jco_.size(), 0.0);
-	int rw  = 1;
+	int rw  = 1; // row
 	int idx = 1;
 	while (rw  <= m_*n_*l_)
 	{
@@ -300,39 +354,21 @@ void Atmosphere::assemble()
 	for (int cntr = 0; cntr != ico_.size(); ++cntr)
 	{
 		val = ico_[cntr];
-		i = ivals[cntr];
-		j = jco_[cntr];
+		i   = ivals[cntr];
+		j   = jco_[cntr];
 		idx = i + (j-1)*m_*n_*l_ - 1;
 		denseA_[idx] = val;
 	}
-	//------------------------------------------------
-}
 
-//-----------------------------------------------------------------------------
-extern "C" void dgesv_(int *N, int *NRHS, double *A,
-					   int *LDA, int *IPIV, double *B,
-					   int *LDB, int *INFO);
-
-//-----------------------------------------------------------------------------
-void Atmosphere::solve(std::shared_ptr<Vector> rhs)
-{
+	// create LU factorisation, store it in denseA_
 	int dim  = n_*m_*l_;
-	int nrhs = 1;
 	int lda  = dim;
-	int ldb  = dim;
 	int info;
-	int ipiv[dim+1];
 
-	if (rhs == nullptr)
-		(*sol_) = std::vector<double>((*rhs_));
-	else
-		(*sol_) = std::vector<double>(*(rhs->getStdVector()));		
-	
-	dgesv_(&dim, &nrhs, &denseA_[0], &lda, ipiv,
-		   &(*sol_)[0], &ldb, &info);
-
-	std::cout << "solve info: " << info << std::endl;
+	std::cout << " Creating LU " << std::endl;
+	dgetrf_(&dim, &dim, &denseA_[0], &lda, ipiv_, &info);
 }
+
 
 //-----------------------------------------------------------------------------
 void Atmosphere::boundaries()
@@ -483,6 +519,18 @@ void Atmosphere::writeAll()
 	}
 	else
 		std::cout << " oceanTemp vector is empty" << std::endl;
+
+	// Write state
+	if (!state_->empty())
+	{
+		std::ofstream atmos_state;
+		atmos_state.open("atmos_state.txt");
+		for (auto &i : *state_)
+			atmos_state << std::setprecision(12) << i << '\n';
+		atmos_state.close();
+	}
+	else
+		std::cout << " state vector is empty" << std::endl;
 }
 
 //-----------------------------------------------------------------------------
@@ -552,6 +600,14 @@ void Atmosphere::test()
 	std::cout << "Atmosphere: tests" << std::endl;
 	
 	std::cout << "  dense A size: " << denseA_.size() << std::endl;
+	std::cout << "  outputting dense A in atmos_denseA.txt: " << std::endl;
+
+	std::ofstream atmos_denseA;
+	atmos_denseA.open("atmos_denseA.txt");
+	for (auto &i : denseA_)
+		atmos_denseA << std::setprecision(12) << i << '\n';
+	atmos_denseA.close();
+	
 	std::cout << "            testing shift..." << std::endl;
 
 	int i = 2;
@@ -572,7 +628,7 @@ void Atmosphere::test()
 	std::cout << "(i,j,k,loc) = "
 			  << "(" << i << ", " << j << ", "
 			  << k << ", " << loc << ")" << std::endl;
-
+	
 	shift(i,j,k,i2,j2,k2,loc);
 	std::cout << "(i,j,k,loc) = "
 			  << "(" << i << ", " << j << ", "
@@ -580,21 +636,40 @@ void Atmosphere::test()
 
 	std::cout << "shift gives: " 
 			  << "(" << i2 << ", " << j2 << ", " << k2 << ")" << std::endl;
+	
+	std::cout << "  test matvec(row), result is in atmos_test.txt" << std::endl;
+	
+	computeJacobian();
+	
+	std::vector<double> test;
+	int row;
+	for (int j = 1; j <= m_; ++j)
+	{
+		for (int i = 1; i <= n_; ++i)
+		{
+			row = find_row(i,j,l_,TT_);
+			test.push_back(matvec(row));
+		}
+	}
+	std::ofstream atmos_test;
+	atmos_test.open("atmos_test.txt");
+	for (auto &i : test)
+		atmos_test << std::setprecision(12) << i << '\n';
+	atmos_test.close();
 }
 
 //-----------------------------------------------------------------------------
 std::shared_ptr<Vector> Atmosphere::getVector
 (char mode, std::shared_ptr<std::vector<double> > vec)
 {
-	// not sure how to get a view
-	if (mode == 'C')
+	if (mode == 'C') // copy
 	{
 		std::shared_ptr<std::vector<double> > copy =
-			std::make_shared<std::vector<double> >(*vec); // make_shared is a copy
+			std::make_shared<std::vector<double> >(*vec); 
 		std::shared_ptr<Vector> ptr = std::make_shared<Vector>(copy);
 		return ptr;
 	}
-	else if (mode == 'V')
+	else if (mode == 'V') // view
 	{
 		std::shared_ptr<Vector> ptr = std::make_shared<Vector>(vec);
 		return ptr;

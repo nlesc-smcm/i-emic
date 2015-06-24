@@ -78,6 +78,8 @@ class Atmosphere
 
 	// Dense matrix storage
 	std::vector<double> denseA_;
+	// Pivot array for lapack
+	int *ipiv_;
 
 	// Continuation parameter
 	double    ampl_; //! amplitude of forcing 
@@ -141,9 +143,9 @@ public:
 	void setRHS(std::shared_ptr<Vector> rhs)
 		{ *rhs_   = *(rhs->getStdVector()); }
 
-	void   setPar(double value) { ampl_ = value; }
-	double getPar() { return ampl_; }
-	double getParDestination() {return amplEnd_; }
+	void   setPar(double value) { ampl_ = value;   }
+	double getPar()             { return ampl_;    }
+	double getParDestination()  { return amplEnd_; }
 
 	void test();
 	//void setOceanTemp(std::vector<double>
@@ -198,6 +200,8 @@ private:
 
 	// ! Assemble the dependency grid into a matrix in crs form
 	void assemble();
+
+	void buildDenseA();
 
 	// ! Write everything to output files.
 	void writeAll();

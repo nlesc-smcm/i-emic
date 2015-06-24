@@ -33,7 +33,7 @@ extern std::map<std::string, double> profile;
 #endif
 
 #ifndef WARNING
-#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << " "\
+#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << "\n"\
 	                                << y << " " << z << std::endl;
 #endif
 
