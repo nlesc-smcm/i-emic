@@ -99,24 +99,13 @@ Atmosphere::Atmosphere()
 	// put some values in oceanTemp
 	double value;
 	int row;
-	// for (int i = 1; i <= n_; ++i)
-	// 	for (int j = 1; j <= m_; ++j)
-	// 	{
-	// 		value = 10*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
-	// 		row   = find_row(i,j,l_,TT_)-1;
-	// 		oceanTemp_[row] = value;
-	// 		(*state_)[row]  = value;
-	// 	}
-
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
 		{
-			if (j <= 2)
-			{
-				value = 10;
-				row   = find_row(i,j,l_,TT_)-1;
-				oceanTemp_[row] = value;
-			}
+			value = 10*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+			row   = find_row(i,j,l_,TT_)-1;
+			oceanTemp_[row] = value;
+			(*state_)[row]  = value;
 		}
 }
 
@@ -193,7 +182,7 @@ void Atmosphere::forcing()
 		for (int i = 1; i <= n_; ++i)
 		{
 			row = find_row(i, j, l_, TT_);
-			value = oceanTemp_[row-1] + 0.0 * (suna_[j] - amua_);
+			value = oceanTemp_[row-1] + 1.0 * (suna_[j] - amua_);
 			value = ampl_ * value;
 			frc_[row-1] = value;
 		}

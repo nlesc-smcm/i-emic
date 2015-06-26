@@ -49,15 +49,15 @@ Ta = reshape(t0_+state,16,16);
 FRC = reshape(frc,16,16);
 
 figure(2)
-contourf((xc),(yc),To',3);
+contourf((xc),(yc),To',15);
 colorbar
 title('T^o')
 figure(3)
-contourf((xc),(yc),Ta',3);
+contourf((xc),(yc),Ta',15);
 colorbar
 title('T^a')
 figure(4)
-contourf((xc),(yc),FRC',3);
+contourf((xc),(yc),FRC',15);
 colorbar
 title('frc')
 
