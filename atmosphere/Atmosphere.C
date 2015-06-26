@@ -99,11 +99,17 @@ Atmosphere::Atmosphere()
 						(1 - albe_[j]));
 	}
 
-	// put some values in oceanTemp
+	// put some values in oceanTemp and the state
+	double value;
+	int row;
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
-			oceanTemp_[find_row(i,j,l_,TT_)-1] =
-				10*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+		{
+			value = 10*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+			row   = find_row(i,j,l_,TT_)-1;
+			oceanTemp_[value] = value;
+			(*state_)[row] = value;
+		}
 }
 
 //-----------------------------------------------------------------------------
@@ -281,7 +287,7 @@ void Atmosphere::assemble()
 	// final element of beg
 	beg_.push_back(elm_ctr);
 	
-	// create dense A and its LU for solving dgetrs() (lapack)
+	// create dense A and its LU for solving with dgetrs()
 	buildDenseA();
 }
 

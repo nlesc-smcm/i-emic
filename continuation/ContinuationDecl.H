@@ -3,7 +3,7 @@
 //======================================================================
 #ifndef CONTINUATIONDECL_H
 #define CONTINUATIONDECL_H
-
+#include <vector>
 //! Pseudo-arclength continuation class using an
 //! Euler predictor and a Newton corrector.
 
@@ -28,6 +28,10 @@ class Continuation
 	double par_;
 	double parDot_;
 
+	// continuation history
+	std::vector<double> parHist_;
+	std::vector<double> stateNormHist_;
+	
     // initial continuation step-size
 	double ds_;
     // minimum continuation step-size
@@ -90,6 +94,7 @@ private:
 	void step();
 	void store();
 	void restore();
+	void testCopyView();
 
 	// Create initial Euler tangent
 	void createInitialTangent();

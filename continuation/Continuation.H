@@ -8,6 +8,7 @@
 #include "ContinuationDecl.H"
 #include "GlobalDefinitions.H"
 #include <math.h>
+#include <iomanip>
 //======================================================================
 //Constructor
 template<typename ModelPtr, typename VectorPtr, typename ParameterList>
@@ -51,11 +52,11 @@ Continuation(ModelPtr model, ParameterList pars)
 	storage_.state0 = model_->getState('C');
 
 	// scaling
-	zeta_ = 1.0 / stateView_->length();	
+	zeta_ = 1.0 / stateView_->length();
 
 	newtonIter_ = 0;	
 	backTrack_  = 0;	
-	parDotSign_ = 1;	
+	parDotSign_ = 1;
 }
 
 //======================================================================
@@ -93,7 +94,8 @@ void Continuation<ModelPtr, VectorPtr, ParameterList>::
 step()
 {
 	info(); 	                      // Print continuation info
-
+	modelInfo();
+	getchar();
 	eulerPredictor(); 	              // Apply Euler predictor
 
 	int status = newtonCorrector();   // Apply Newton corrector
@@ -105,7 +107,11 @@ step()
 		reset();
 	}
 	else
-	{		
+	{
+		// Put the parameter and norm of the state in the history
+		parHist_.push_back(par_);
+		stateNormHist_.push_back(stateView_->norm());
+		
 		// Create new tangents based on result from newtonCorrector
 		createTangent('E');			
 	
@@ -331,7 +337,6 @@ newtonCorrector()
 		// next tangent.
 		model_->solve(dFdPar_);
 		y1 = model_->getSolution('C');
-		INFO("... about to do the standard newton solve ...");
 		model_->solve(R);
 		z1 = model_->getSolution('C');
 
@@ -510,8 +515,57 @@ restore()
 //======================================================================
 template<typename ModelPtr, typename VectorPtr, typename ParameterList>
 void Continuation<ModelPtr, VectorPtr, ParameterList>::
+testCopyView()
+{
+	INFO("******************************************************");
+	INFO("Continuation: Test Copy / View behaviour of the model.");
+	VectorPtr view1 = model_->getState('V');
+	VectorPtr copy1 = model_->getState('C');
+	VectorPtr view2 = model_->getState('V');
+	VectorPtr copy2 = model_->getState('C');
+	INFO("view1      norm: " << view1->norm());
+	INFO("view2      norm: " << view2->norm());
+	INFO("copy1      norm: " << copy1->norm());
+	INFO("copy2      norm: " << copy2->norm());
+	
+	INFO("Testing view");
+	INFO("Scaling view1 with 2 ---------------");
+	view1->scale(2.0);
+	INFO("view1      norm: " << view1->norm());
+	INFO("view2      norm: " << view2->norm());
+	if (view1->norm() != view2->norm())
+	{
+		INFO("Test failed: ||view1|| != ||view2||");
+	}
+	else
+	{
+		INFO("Test passed: ||view1|| == ||view2||");
+	}
+	INFO("Restore view: scale with 1/2");
+	view1->scale(0.5);
+	INFO("Testing copy");
+	INFO("Scaling copy1 with 3 ---------------");
+	copy1->scale(3.0);
+	INFO("copy1      norm: " << copy1->norm());
+	INFO("copy2      norm: " << copy2->norm());
+	if (copy1->norm() == copy2->norm())
+	{
+		INFO("Test failed: ||copy1|| == ||copy2||");
+	}
+	else
+	{
+		INFO("Test passed: ||copy1|| != ||copy2||");
+	}
+	INFO("******************************************************");
+	getchar();
+}
+
+//======================================================================
+template<typename ModelPtr, typename VectorPtr, typename ParameterList>
+void Continuation<ModelPtr, VectorPtr, ParameterList>::
 info()
 {
+	INFO(std::setprecision(8));
 	INFO("-----------------------------------------");
 	INFO("Continuation summary: ");
 	INFO("               ds:  " << ds_);
@@ -535,11 +589,13 @@ template<typename ModelPtr, typename VectorPtr, typename ParameterList>
 void Continuation<ModelPtr, VectorPtr, ParameterList>::
 modelInfo()
 {
+	INFO(std::setprecision(10));
 	INFO("-----------------------------------------");
 	INFO("Model view: ");
 	INFO("     norm state :  " << stateView_->norm());
 	INFO("     norm rhs   :  " << rhsView_->norm());
 	INFO("     norm sol   :  " << solView_->norm());
+	INFO("    parameter   :  " << model_->getPar());
 	INFO("-----------------------------------------");
 }
 
