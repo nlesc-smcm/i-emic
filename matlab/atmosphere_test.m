@@ -26,35 +26,40 @@ As_   =  sun0_ * (1 - c0_) / (4 * muoa_);
 
 suna_ = @(y) (As_*(1 - .482 * (3 * (sin(y)).^2 - 1.) / 2.) *	(1 - .3));
 
-dy    =  (ymax_-ymin_)/(16);
-yc    =  ymin_+dy/2:dy:ymax_;
+xmindeg_ = 286;
+xmaxdeg_ = 350;
+ymindeg_ = 10 ;
+ymaxdeg_ = 74 ;
+
+xmin_ = xmindeg_ * pi / 180;
+xmax_ = xmaxdeg_ * pi / 180;
+ymin_ = ymindeg_ * pi / 180;
+ymax_ = ymaxdeg_ * pi / 180;
+
+dy    =  (ymaxdeg_-ymindeg_)/(16);
+yc    =  ymindeg_+dy/2:dy:ymaxdeg_;
+dx    =  (xmaxdeg_-xmindeg_)/(16);
+xc    =  xmindeg_+dx/2:dx:xmaxdeg_;
 sun   =  suna_(yc);
 ampl  =  0.0179624;
 frc2  =  ampl*(sun - amua_);
 
-figure(1)
-imagesc(reshape(sol,16,16));
-colorbar
-title('sol')
+To = reshape(t0_+otemp,16,16);
+Ta = reshape(t0_+state,16,16);
+FRC = reshape(frc,16,16);
+
 figure(2)
-imagesc(reshape(rhs,16,16));
+contourf((xc),(yc),To',3);
 colorbar
-title('rhs')
+title('T^o')
 figure(3)
-imagesc(reshape(t0_+state,16,16));
+contourf((xc),(yc),Ta',3);
 colorbar
-title('T')
+title('T^a')
 figure(4)
-imagesc(reshape(frc,16,16));
+contourf((xc),(yc),FRC',3);
 colorbar
 title('frc')
-
-xmin_ = 286 * pi / 180;
-xmax_ = 350 * pi / 180;
-ymin_ = 10  * pi / 180;
-ymax_ = 74  * pi / 180;
-
-
 
 %## figure(4)
 %## imagesc(repmat(frc2,16,1));

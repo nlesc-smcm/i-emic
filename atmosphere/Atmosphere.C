@@ -38,22 +38,19 @@ Atmosphere::Atmosphere()
 	Ad_   =  rhoa_ * hdima_ * cpa_ * d0_ / (muoa_ * r0dim_ * r0dim_);
 	As_   =  sun0_ * (1 - c0_) / (4 * muoa_);		
 
-	// Set problem size and domain limits (temporary!)
+	// Set problem size
 	n_ = 16;
 	m_ = 16;
 	l_ = 1;
+	int dim = n_ * m_ * l_;
 	
 	np_  = NP_;   // all neighbouring points including the center
 	nun_ = NUN_;  // only temperature TT_
 	
-	// Initialize RHS with zeros
-	rhs_ = std::make_shared<std::vector<double> >(n_ * m_ * l_, 0.0);
-
-	// Initialize solution
-	sol_ = std::make_shared<std::vector<double> >(n_ * m_ * l_, 0.0);
-
-	// Initialize state
-	state_ = std::make_shared<std::vector<double> >(n_ * m_ * l_, 0.0);
+	// Initialize state, rhs and solution of linear solve with zeros
+	rhs_   = std::make_shared<std::vector<double> >(dim, 0.0);
+	sol_   = std::make_shared<std::vector<double> >(dim, 0.0);
+	state_ = std::make_shared<std::vector<double> >(dim, 0.0);
 
 	// Initialize ocean temperature
 	oceanTemp_ = std::vector<double>(n_ * m_, 0.0);
@@ -99,16 +96,27 @@ Atmosphere::Atmosphere()
 						(1 - albe_[j]));
 	}
 
-	// put some values in oceanTemp and the state
+	// put some values in oceanTemp
 	double value;
 	int row;
+	// for (int i = 1; i <= n_; ++i)
+	// 	for (int j = 1; j <= m_; ++j)
+	// 	{
+	// 		value = 10*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+	// 		row   = find_row(i,j,l_,TT_)-1;
+	// 		oceanTemp_[row] = value;
+	// 		(*state_)[row]  = value;
+	// 	}
+
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
 		{
-			value = 10*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
-			row   = find_row(i,j,l_,TT_)-1;
-			oceanTemp_[value] = value;
-			(*state_)[row] = value;
+			if (j <= 2)
+			{
+				value = 10;
+				row   = find_row(i,j,l_,TT_)-1;
+				oceanTemp_[row] = value;
+			}
 		}
 }
 
@@ -185,7 +193,8 @@ void Atmosphere::forcing()
 		for (int i = 1; i <= n_; ++i)
 		{
 			row = find_row(i, j, l_, TT_);
-			value = oceanTemp_[row-1] + ampl_*(suna_[j] - amua_);
+			value = oceanTemp_[row-1] + 0.0 * (suna_[j] - amua_);
+			value = ampl_ * value;
 			frc_[row-1] = value;
 		}
 }

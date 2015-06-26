@@ -95,6 +95,7 @@ private:
 	void store();
 	void restore();
 	void testCopyView();
+	void analyzeHist();
 
 	// Create initial Euler tangent
 	void createInitialTangent();

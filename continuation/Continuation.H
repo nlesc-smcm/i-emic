@@ -54,6 +54,9 @@ Continuation(ModelPtr model, ParameterList pars)
 	// scaling
 	zeta_ = 1.0 / stateView_->length();
 
+	//-->experimental
+	zeta_ = pow(zeta_,2);
+
 	newtonIter_ = 0;	
 	backTrack_  = 0;	
 	parDotSign_ = 1;
@@ -94,8 +97,6 @@ void Continuation<ModelPtr, VectorPtr, ParameterList>::
 step()
 {
 	info(); 	                      // Print continuation info
-	modelInfo();
-	getchar();
 	eulerPredictor(); 	              // Apply Euler predictor
 
 	int status = newtonCorrector();   // Apply Newton corrector
@@ -111,6 +112,9 @@ step()
 		// Put the parameter and norm of the state in the history
 		parHist_.push_back(par_);
 		stateNormHist_.push_back(stateView_->norm());
+
+		// Inspect the history for weird behaviour
+		analyzeHist();
 		
 		// Create new tangents based on result from newtonCorrector
 		createTangent('E');			
@@ -118,7 +122,7 @@ step()
 		// step adjustment based on the number of Newton iterations.
 		adjustStep();
 
-		store();    // Store the current state and parameter			
+		store();    // Store the current state (-->superfluous?)
 	}
 }
 
@@ -456,6 +460,26 @@ adjustStep()
 		ds_ = MIN(ds_ * scale1_, dsMax_);
 	else if (newtonIter_ > maxAllowedIterations_)
 		ds_ = MAX(ds_ / scale1_, dsMin_);
+}
+
+//======================================================================
+template<typename ModelPtr, typename VectorPtr, typename ParameterList>
+void Continuation<ModelPtr, VectorPtr, ParameterList>::
+analyzeHist()
+{
+	if (parHist_.size() > 5)
+	{
+		// look at the difference between the past 2 steps
+		double test = std::abs(*(parHist_.end()-1) - *(parHist_.end()-3));
+		if (test < 1e-8)
+		{
+			INFO("************************************************");
+			INFO("Parameter appears to stagnate...");
+			INFO("  possible fixes:  adjust zeta");
+			INFO("                   adjust ds");
+			INFO("************************************************");
+		}
+	}
 }
 
 //======================================================================
