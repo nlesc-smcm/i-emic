@@ -11,6 +11,7 @@
 !utils/
 !ocean/
 !atmosphere/
+!coupledmodel/
 !newton/
 !continuation/
 !test/

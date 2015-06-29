@@ -38,6 +38,7 @@ std::map<std::string, double> profile;   // profile map
 //------------------------------------------------------------------
 void testVecWrap();
 void testOcean(int argc, char **argv);
+
 //------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
@@ -67,18 +68,11 @@ int main(int argc, char **argv)
 				 RCP<Teuchos::ParameterList> >
 		continuation(atmos, continuationParams);
 	
-	continuation.run();
-	
+	continuation.run();	
 }
 
 void testOcean(int argc, char **argv)
 {
-	// Initialize the environment:
-	//  - MPI
-	//  - output files
-	//  - returns Trilinos' communicator Epetra_Comm
-	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
-
  	// Create ocean model OceanCont
 	//  (based on THCM):
 	RCP<OceanCont> ocean = rcp(new OceanCont(Comm));
