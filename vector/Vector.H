@@ -154,7 +154,8 @@ public:
 		{
 			if (!haveEpetraVector_)
 			{
-				ERROR("This wrapper does not contain an EpetraVector", __FILE__, __LINE__);
+				ERROR("This wrapper does not contain an EpetraVector",
+					  __FILE__, __LINE__);
 				return Teuchos::null;
 			}
 			return epetraVector_;
@@ -165,7 +166,8 @@ public:
 		{
 			if (!haveStdVector_)
 			{
-				ERROR("This wrapper does not contain a std::vector", __FILE__, __LINE__);
+				ERROR("This wrapper does not contain a std::vector",
+					  __FILE__, __LINE__);
 				return nullptr;
 			}
 			return stdVector_;
@@ -175,7 +177,10 @@ public:
 	void print()
 		{
 			if (haveEpetraVector_)
-				std::cout << " print() not implemented for Epetra Vector" << std::endl;
+			{
+				std::cout << "Printing epetraVector to outFile stream" << std::endl;
+				epetraVector_->Print(*outFile); // see GlobalDefinitions.H
+			}
 			
 			if (haveStdVector_)
 			{

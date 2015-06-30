@@ -1,0 +1,215 @@
+#include "CoupledModel.H"
+#include "Ocean.H"
+#include "OceanCont.H" // --> this should be inside Ocean
+#include "Atmosphere.H"
+#include "Vector.H"
+
+#include <vector>
+#include <memory>
+
+#include <Epetra_Comm.h>
+#include <Teuchos_RCP.hpp>
+
+typedef std::vector<std::vector<bool> > Graph;
+//------------------------------------------------------------------
+CoupledModel::CoupledModel(Graph &couplings,
+						   Teuchos::RCP<Epetra_Comm> comm)
+	:
+	couplings_(couplings),
+	comm_(comm)
+{
+	// Create ocean object using the parallel communicator
+	ocean_ = Teuchos::rcp(new OceanCont(comm_));
+
+	// Create atmosphere object
+	atmosphere_ = std::make_shared<Atmosphere>();
+
+	stateView_ =
+		std::make_shared<Vector>(ocean_->getState('V')->getEpetraVector(),
+								 atmosphere_->getState('V')->getStdVector() );
+
+	solView_ =
+ 		std::make_shared<Vector>(ocean_->getSolution('V')->getEpetraVector(),
+								 atmosphere_->getSolution('V')->getStdVector() );
+
+	rhsView_ =
+ 		std::make_shared<Vector>(ocean_->getRHS('V')->getEpetraVector(),
+								 atmosphere_->getRHS('V')->getStdVector() );
+	
+	test();
+}
+
+//------------------------------------------------------------------
+void CoupledModel::synchronize()
+{
+	INFO("CoupledModel: synchronize...");
+	ocean_->setAtmosphere(*(stateView_->getStdVector()));
+	// returns a copy of the sst in the ocean
+	std::vector<double> sst = ocean_->getSST();
+	atmosphere_->setOceanTemperature(sst);
+	INFO("CoupledModel: synchronize... done")		
+}
+
+//------------------------------------------------------------------
+void CoupledModel::computeJacobian()
+{
+	// Synchronize the models
+	synchronize();
+	
+	// Ocean
+	ocean_->computeJacobian();
+
+	// Atmosphere
+	atmosphere_->computeJacobian();
+}
+
+//------------------------------------------------------------------
+void CoupledModel::computeRHS()
+{
+	// Synchronize the models
+	synchronize();
+
+	// Ocean
+	ocean_->computeRHS();
+
+	// Atmosphere
+	atmosphere_->computeRHS();
+}
+
+//------------------------------------------------------------------
+void CoupledModel::solve(std::shared_ptr<Vector> rhs)
+{
+	// Ocean
+	ocean_->solve(Teuchos::rcp(rhs.get(), false));
+
+	// Atmosphere
+	atmosphere_->solve(rhs);
+}
+
+//------------------------------------------------------------------
+std::shared_ptr<Vector> CoupledModel::getSolution(char mode)
+{
+	if (mode == 'V') // View
+		return solView_;
+	else if (mode == 'C') // Copy
+	{
+		return std::make_shared<Vector>(
+			ocean_->getSolution('C')->getEpetraVector(),
+			atmosphere_->getSolution('C')->getStdVector() );
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return nullptr;
+	}
+}
+
+//------------------------------------------------------------------
+std::shared_ptr<Vector> CoupledModel::getState(char mode)
+{
+	if (mode == 'V') // View
+		return stateView_;
+	else if (mode == 'C') // Copy
+	{
+		return std::make_shared<Vector>(
+			ocean_->getState('C')->getEpetraVector(),
+			atmosphere_->getState('C')->getStdVector() );
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return nullptr;
+	}
+}
+
+//------------------------------------------------------------------
+std::shared_ptr<Vector> CoupledModel::getRHS(char mode)
+{
+	if (mode == 'V') // View
+		return rhsView_;
+	else if (mode == 'C') // Copy
+	{
+		return std::make_shared<Vector>(
+			ocean_->getRHS('C')->getEpetraVector(),
+			atmosphere_->getRHS('C')->getStdVector() );
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return nullptr;
+	}
+}
+
+//------------------------------------------------------------------
+void CoupledModel::setState(std::shared_ptr<Vector> state)
+{
+	ocean_->setState(Teuchos::rcp(state.get(), false));
+    atmosphere_->setState(state);
+}
+
+//------------------------------------------------------------------
+void CoupledModel::setRHS(std::shared_ptr<Vector> rhs)
+{
+	ocean_->setRHS(Teuchos::rcp(rhs.get(), false));
+    atmosphere_->setRHS(rhs);
+}
+
+//------------------------------------------------------------------
+double CoupledModel::getPar()
+{
+	// The parameters should remain equal among the models
+	// Different continuation parameters for different models
+	// is not defined (yet).
+	double par_ocean = ocean_->getPar();
+	double par_atmos = atmosphere_->getPar();
+	if (std::abs(par_ocean - par_atmos) > 1e-8)
+	{
+		WARNING("par_ocean != par_atmos !!",
+				__FILE__, __LINE__);
+ 		std::cout << "ocean: " << par_ocean << std::endl;
+		std::cout << "atmos: " << par_atmos << std::endl;
+		return -1;
+	}
+	return par_ocean;
+}
+
+//------------------------------------------------------------------
+void CoupledModel::setPar(double value)
+{
+	ocean_->setPar(value);
+	atmosphere_->setPar(value);
+}
+
+//------------------------------------------------------------------
+double CoupledModel::getParDestination()
+{
+	// The parameters should remain equal among the models
+	// Different continuation parameters for different models
+	// is not defined (yet).
+	double parDest_ocean = ocean_->getParDestination();
+	double parDest_atmos = atmosphere_->getParDestination();
+	if (std::abs(parDest_ocean - parDest_atmos) > 1e-8)
+	{
+		WARNING("parDest_ocean != parDest_atmos !!",
+				__FILE__, __LINE__);
+ 		INFO("ocean: " << parDest_ocean);
+		INFO("atmos: " << parDest_atmos);
+		return -1;
+	}
+	return parDest_ocean;
+}
+
+//------------------------------------------------------------------
+void CoupledModel::dumpState()
+{
+	ocean_->dumpState();
+	atmosphere_->dumpState();
+}
+
+//------------------------------------------------------------------
+void CoupledModel::test()
+{
+	std::cout << "CoupledModel: testing stateView..." << std::endl;
+	std::cout << " length: " << stateView_->length()  << std::endl;
+	std::cout << " norm:   " << stateView_->norm()    << std::endl;
+}

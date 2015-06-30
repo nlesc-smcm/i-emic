@@ -91,6 +91,26 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 
 	// Create timing object
 	timer_ = rcp(new Epetra_Time(*Comm));
+
+	// Get domain object and set the problem dimensions
+	domain_ = THCM::Instance().GetDomain();
+	N_ = domain_->GlobalN();
+ 	M_ = domain_->GlobalM();
+	L_ = domain_->GlobalL();
+	
+	// Initialize sst
+	sst_ = std::vector<double>(N_*M_, 0.0);
+
+	// Create fullSol_ array
+	fullSol_ = new double[state_->GlobalLength()];
+}
+
+//=====================================================================
+// destructor
+Ocean::~Ocean()
+{
+	INFO("Ocean destructor called..."); 
+	delete [] fullSol_;
 }
 
 //=====================================================================
@@ -104,21 +124,19 @@ void Ocean::randomizeState(double scaling)
 //=====================================================================
 void Ocean::dumpState()
 {
-	// This function will probably break on a distributed memory system.
-	// For now it is convenient.
-	// Use some of Jonas' utilities to gather the solution in the right way
-	Teuchos::RCP<Epetra_MultiVector> fullSol = Utils::Gather(*state_, 0);
+	// This function may break on a distributed memory system.
+	Teuchos::RCP<Epetra_MultiVector> solution = Utils::Gather(*state_, 0);
 	int filename = 3;
 	int label    = 2;
-	int length   = fullSol->GlobalLength();
+	int length   = solution->GlobalLength();
 	double *solutionArray = new double[length]; 
 	if (comm_->MyPID() == 0)
 	{
 		std::cout << "Writing to fort." << filename
 				  << " at label " << label << "." << std::endl;
 
-		// Using operator() to access first vector in multivector
-		(*fullSol)(0)->ExtractCopy(solutionArray); //  
+		// Using operator() to access first EpetraVector in multivector
+		(*solution)(0)->ExtractCopy(solutionArray); //  
 		FNAME(write_data)(solutionArray, &filename, &label);
 	}
 	delete [] solutionArray;
@@ -314,7 +332,6 @@ void Ocean::computeRHS()
 	// evaluate rhs in THCM with the current state
  	TIMER_START("Ocean: compute RHS...", timer_);
 	INFO("Ocean: inserting Atmosphere in THCM");
-	THCM::Instance().insertAtmosphere();
 	THCM::Instance().evaluate(*state_, rhs_, false);
 	TIMER_END("Ocean: compute RHS...", timer_);
 }
@@ -369,6 +386,36 @@ Teuchos::RCP<Vector> Ocean::getRHS(char mode)
 	return getVector(mode, rhs_);
 }
 
+//====================================================================
+void Ocean::setAtmosphere(std::vector<double> &atmos)
+{
+	// This is a job for THCM
+	THCM::Instance().setAtmosphere(atmos);
+}
+
+//====================================================================
+// Fill and return a copy of the SST
+std::vector<double> Ocean::getSST()
+{
+	// extract solution from gathered vector --> this is slow
+	// everything should be better distributed
+	Teuchos::RCP<Epetra_MultiVector> gathered =
+		Utils::AllGather(*state_);
+	gathered->ExtractCopy(fullSol_, state_->GlobalLength());
+	int row;
+	int idx = 0;
+	// sst_ should be initialized
+ 	for (int j = 0; j != M_; ++j)
+		for (int i = 0; i != N_; ++i)
+		{
+			// Using macros from THCMdefs.H
+			row = FIND_ROW2(_NUN_, N_, M_, L_, i, j, L_-1, TT);
+			sst_[idx] = fullSol_[row];
+			++idx;
+		}
+	return sst_;
+}
+
 //=====================================================================
 // NOT IMPLEMENTED YET
 void Ocean::saveStateToFile(std::string const &name)
@@ -388,6 +435,6 @@ void Ocean::saveStateToFile(std::string const &name)
 }
 
 //=====================================================================
-// NOT DONE YET
+// NOT IMPLEMENTED YET
 void Ocean::loadStateFromFile(std::string const &name)
 {}

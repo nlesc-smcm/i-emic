@@ -7,18 +7,18 @@
 #endif
 
 // Number of points in neighbourhood
-#ifndef NP_
-# define NP_ 27
+#ifndef ATMOS_NP_
+# define ATMOS_NP_ 27
 #endif
 
 // Number of unknowns
-#ifndef NUN_
-# define NUN_ 1
+#ifndef ATMOS_NUN_
+# define ATMOS_NUN_ 1
 #endif
 
 // The one unknown we have in this model
-#ifndef TT_
-# define TT_ 1
+#ifndef ATMOS_TT_
+# define ATMOS_TT_ 1
 #endif
 
 

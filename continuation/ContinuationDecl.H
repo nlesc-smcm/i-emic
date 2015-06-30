@@ -90,12 +90,13 @@ class Continuation
 public:
 	Continuation(ModelPtr model, ParameterList pars);
 	void run();
+	void test();
 private:
 	void step();
 	void store();
 	void restore();
-	void testCopyView();
 	void analyzeHist();
+	void testCopyView();
 
 	// Create initial Euler tangent
 	void createInitialTangent();

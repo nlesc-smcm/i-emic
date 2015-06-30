@@ -23,7 +23,5 @@ A = sparse(ivals, jvals, vals, n, n);
 rhs    = importdata('atmos_rhs.txt');
 frc    = importdata('atmos_frc.txt');
 state  = importdata('atmos_state.txt');
-test   = importdata('atmos_test.txt');
 sol    = importdata('atmos_sol.txt');
-denseA = importdata('atmos_denseA.txt');
 otemp  = importdata('atmos_oceanTemp.txt');

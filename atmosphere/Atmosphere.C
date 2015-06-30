@@ -1,5 +1,6 @@
 #include "Atmosphere.H"
 #include "AtmosphereDefinitions.H"
+#include "GlobalDefinitions.H"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -44,8 +45,8 @@ Atmosphere::Atmosphere()
 	l_ = 1;
 	int dim = n_ * m_ * l_;
 	
-	np_  = NP_;   // all neighbouring points including the center
-	nun_ = NUN_;  // only temperature TT_
+	np_  = ATMOS_NP_;   // all neighbouring points including the center
+	nun_ = ATMOS_NUN_;  // only temperature ATMOS_TT_
 	
 	// Initialize state, rhs and solution of linear solve with zeros
 	rhs_   = std::make_shared<std::vector<double> >(dim, 0.0);
@@ -96,16 +97,21 @@ Atmosphere::Atmosphere()
 						(1 - albe_[j]));
 	}
 
-	// put some values in oceanTemp
+	//idealizedOcean();
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::idealizedOcean()
+{
+	// put idealized values in oceanTemp
 	double value;
 	int row;
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
 		{
 			value = 10*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
-			row   = find_row(i,j,l_,TT_)-1;
+			row   = find_row(i,j,l_,ATMOS_TT_)-1;
 			oceanTemp_[row] = value;
-			(*state_)[row]  = value;
 		}
 }
 
@@ -116,8 +122,15 @@ Atmosphere::~Atmosphere()
 }
 
 //-----------------------------------------------------------------------------
+void Atmosphere::setOceanTemperature(std::vector<double> sst)
+{
+	oceanTemp_ = sst;
+}
+
+//-----------------------------------------------------------------------------
 void Atmosphere::computeJacobian()
 {
+	INFO("Atmosphere: compute Jacobian...");
 	Atom tc (n_, m_, l_, np_);
 	Atom tc2(n_, m_, l_, np_);
 	Atom txx(n_, m_, l_, np_);
@@ -134,11 +147,13 @@ void Atmosphere::computeJacobian()
 	Al_->set({1,n_,1,m_,1,l_,1,np_}, 1, 1, txx);
 	boundaries();
 	assemble();
+	INFO("Atmosphere: compute Jacobian... done");
 }
 
 //-----------------------------------------------------------------------------
 void Atmosphere::computeRHS()
 {
+	INFO("Atmosphere: compute RHS...");
 	// If necessary compute a new Jacobian
    //	if (recomputeJacobian_)
 	computeJacobian();
@@ -152,10 +167,11 @@ void Atmosphere::computeRHS()
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
 		{
-			row   = find_row(i, j, l_, TT_);
+			row   = find_row(i, j, l_, ATMOS_TT_);
 			value = matvec(row) + frc_[row-1];
 			(*rhs_)[row-1] = value;
 		}
+	INFO("Atmosphere: compute RHS... done");
 }
 
 //-----------------------------------------------------------------------------
@@ -181,9 +197,8 @@ void Atmosphere::forcing()
 	for (int j = 1; j <= m_; ++j)
 		for (int i = 1; i <= n_; ++i)
 		{
-			row = find_row(i, j, l_, TT_);
-			value = oceanTemp_[row-1] + 1.0 * (suna_[j] - amua_);
-			value = ampl_ * value;
+			row = find_row(i, j, l_, ATMOS_TT_);
+			value = oceanTemp_[row-1] + ampl_ * (suna_[j] - amua_);
 			frc_[row-1] = value;
 		}
 }
@@ -400,37 +415,37 @@ void Atmosphere::boundaries()
 				// western boundary
 				if (west == 0)
 				{
-					Al_->set(i,j,k,5,TT_,TT_, 
-							 Al_->get(i,j,k,5,TT_,TT_) +
-							 Al_->get(i,j,k,2,TT_,TT_));
-					Al_->set(i,j,k,2,TT_,TT_, 0.0);
+					Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_, 
+							 Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +
+							 Al_->get(i,j,k,2,ATMOS_TT_,ATMOS_TT_));
+					Al_->set(i,j,k,2,ATMOS_TT_,ATMOS_TT_, 0.0);
 				}
 				
 				// eastern boundary
 				if (east == n_+1)
 				{
-					Al_->set(i,j,k,5,TT_,TT_, 
-							 Al_->get(i,j,k,5,TT_,TT_) +
-							 Al_->get(i,j,k,8,TT_,TT_));
-					Al_->set(i,j,k,8,TT_,TT_, 0.0);
+					Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_, 
+							 Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +
+							 Al_->get(i,j,k,8,ATMOS_TT_,ATMOS_TT_));
+					Al_->set(i,j,k,8,ATMOS_TT_,ATMOS_TT_, 0.0);
 				}
 				
 				// northern boundary
 				if (north == m_+1)
 				{
-					Al_->set(i,j,k,5,TT_,TT_, 
-							 Al_->get(i,j,k,5,TT_,TT_) +
-							 Al_->get(i,j,k,6,TT_,TT_));
-					Al_->set(i,j,k,6,TT_,TT_, 0.0);
+					Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_, 
+							 Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +
+							 Al_->get(i,j,k,6,ATMOS_TT_,ATMOS_TT_));
+					Al_->set(i,j,k,6,ATMOS_TT_,ATMOS_TT_, 0.0);
 				}
 
 				// southern boundary
 				if (south == 0)
 				{
-					Al_->set(i,j,k,5,TT_,TT_, 
-							 Al_->get(i,j,k,5,TT_,TT_) +
-							 Al_->get(i,j,k,4,TT_,TT_));
-					Al_->set(i,j,k,4,TT_,TT_, 0.0);
+					Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_, 
+							 Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +
+							 Al_->get(i,j,k,4,ATMOS_TT_,ATMOS_TT_));
+					Al_->set(i,j,k,4,ATMOS_TT_,ATMOS_TT_, 0.0);
 				}
 			}
 }
@@ -651,7 +666,7 @@ void Atmosphere::test()
 	{
 		for (int i = 1; i <= n_; ++i)
 		{
-			row = find_row(i,j,l_,TT_);
+			row = find_row(i,j,l_,ATMOS_TT_);
 			test.push_back(matvec(row));
 		}
 	}

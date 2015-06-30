@@ -22,6 +22,7 @@
 #include <Teuchos_FancyOStream.hpp>
 
 #include "Vector.H"
+#include "CoupledModel.H"
 #include "Atmosphere.H"
 #include "OceanCont.H"
 #include "ThetaStepper.H"
@@ -54,29 +55,42 @@ int main(int argc, char **argv)
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
-	// Create Atmosphere model
-	std::shared_ptr<Atmosphere> atmos = std::make_shared<Atmosphere>();
+	// Create CoupledModel
+	std::vector<std::vector<bool> > coupling = {{1, 1}, {1, 1}};
+	
+	std::shared_ptr<CoupledModel> coupledModel =
+		std::make_shared<CoupledModel>(coupling, Comm);
 
-	// Create parameter object for continuation
+	coupledModel->computeJacobian();
+	coupledModel->computeRHS();
+	coupledModel->solve();
+	coupledModel->getSolution();
+	
+ 	// Create parameter object for continuation
 	RCP<Teuchos::ParameterList> continuationParams =
 		rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("continuation_params.xml",
 								continuationParams.ptr());
 	// Create continuation
-	Continuation<std::shared_ptr<Atmosphere>,
+	Continuation<std::shared_ptr<CoupledModel>,
 				 std::shared_ptr<Vector>,
 				 RCP<Teuchos::ParameterList> >
-		continuation(atmos, continuationParams);
-	
+		continuation(coupledModel, continuationParams);
+
 	continuation.run();	
 }
 
 void testOcean(int argc, char **argv)
 {
+	// Initialize the environment:
+	//  - MPI
+	//  - output files
+	//  - returns Trilinos' communicator Epetra_Comm
+	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
+
  	// Create ocean model OceanCont
 	//  (based on THCM):
 	RCP<OceanCont> ocean = rcp(new OceanCont(Comm));
-
 
 	// Create parameter object for continuation
 	RCP<Teuchos::ParameterList> continuationParams =
@@ -125,7 +139,7 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 	// Setup output files "fname_#.txt" for P==0 && P==1, other processes
 	// will get a blackholestream.
 	Teuchos::RCP<std::ostream> outFile;
-	if (Comm->MyPID() == 0)
+	if (Comm->MyPID() < 1)
 	{
 		std::ostringstream infofile;     // setting up a filename
 
@@ -217,5 +231,4 @@ void testVecWrap()
 	wrvec2.print();
 	
 	std::cout << "Testing the Vector Wrapper...done" << std::endl;
-	getchar();
 }

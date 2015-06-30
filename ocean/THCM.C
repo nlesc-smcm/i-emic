@@ -925,13 +925,45 @@ void THCM::evaluateB(void)
     }
 #endif
 	domain->Standard2Solve(*localDiagB,*diagB);
-}
+}	
+	
+//=============================================================================
+void THCM::setAtmosphere(std::vector<double> &atmosvec)
+{
+	// Create a gather map
+	Teuchos::RCP<Epetra_Map> atmos_map_dist = domain->CreateStandardMap(1, true);
+	Teuchos::RCP<Epetra_Map> atmos_map_root = Utils::Gather(*atmos_map_dist, 0);
+
+	// Insert the atmosphere
+	Teuchos::RCP<Epetra_Vector> atmos_glob =
+		Teuchos::rcp(new Epetra_Vector(Copy, *atmos_map_root, &atmosvec[0]));
+
+	// Distribute the atmosphere
+	Teuchos::RCP<Epetra_MultiVector> atmos_dist =
+		Utils::Scatter(*atmos_glob, *atmos_map_dist);
+
+	// Create assembly vector
+	Teuchos::RCP<Epetra_Map> atmos_map_loc  = domain->CreateAssemblyMap(1, true);
+	Teuchos::RCP<Epetra_Vector> atmos_loc =
+		Teuchos::rcp(new Epetra_Vector(*atmos_map_loc));
+
+	// Import overlap
+	Teuchos::RCP<Epetra_Import> atmos_loc2dist =
+		Teuchos::rcp(new Epetra_Import(*atmos_map_loc, *atmos_map_dist));
+
+	// Insert the assembly into THCM
+	atmos_loc->Import(*atmos_dist, *atmos_loc2dist, Insert);
+	double *atmos;
+	atmos_loc->ExtractView(&atmos);
+	F90NAME(m_inserts, insert_atmosphere)(atmos);
+	
+}	
 
 //=============================================================================
-void THCM::insertAtmosphere()
+void THCM::setAtmosphereTest()
 {
 	// This is a test.
-	// We build a trivial atmosphere on the assembly map to give to THCM
+	// We build an idealized atmosphere on the assembly map to give to THCM
 	Teuchos::RCP<Epetra_Map> atmos_map_loc = domain->CreateAssemblyMap(1, true);
 	Teuchos::RCP<Epetra_Vector> atmos_loc  =
 		Teuchos::rcp(new Epetra_Vector(*atmos_map_loc));

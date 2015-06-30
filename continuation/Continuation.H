@@ -16,7 +16,7 @@ Continuation<ModelPtr, VectorPtr, ParameterList>::
 Continuation(ModelPtr model, ParameterList pars)
 	:
 
-	ds_(pars->get("ds",0.02)),
+	ds_(pars->get("ds", 0.02)),
 	dsMin_(pars->get("dsMin", 1.0e-5)),
 	dsMax_(pars->get("dsMax", 1.0e01)),
 	maxSteps_(pars->get("maxSteps", -1)),
@@ -55,7 +55,8 @@ Continuation(ModelPtr model, ParameterList pars)
 	zeta_ = 1.0 / stateView_->length();
 
 	//-->experimental
-	zeta_ = pow(zeta_,2);
+	double zetapower = pars->get("zetapower", 1.0);
+	zeta_ = pow(zeta_, zetapower );
 
 	newtonIter_ = 0;	
 	backTrack_  = 0;	
@@ -539,6 +540,15 @@ restore()
 //======================================================================
 template<typename ModelPtr, typename VectorPtr, typename ParameterList>
 void Continuation<ModelPtr, VectorPtr, ParameterList>::
+test()
+{
+	model_->computeRHS();
+	testCopyView();
+}
+
+//======================================================================
+template<typename ModelPtr, typename VectorPtr, typename ParameterList>
+void Continuation<ModelPtr, VectorPtr, ParameterList>::
 testCopyView()
 {
 	INFO("******************************************************");
@@ -581,7 +591,6 @@ testCopyView()
 		INFO("Test passed: ||copy1|| != ||copy2||");
 	}
 	INFO("******************************************************");
-	getchar();
 }
 
 //======================================================================

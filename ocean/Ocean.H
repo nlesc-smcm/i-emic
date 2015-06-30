@@ -42,6 +42,8 @@
 
 // forward declarations
 class THCM;
+namespace TRIOS
+{ class Domain; }
 class Epetra_Comm;
 class Epetra_Vector;
 class Epetra_MultiVector;
@@ -84,14 +86,29 @@ protected:
 	
 	int belosIters_;
 	int recomputeBound_;
+
+	// Domain object
+	Teuchos::RCP<TRIOS::Domain> domain_;
+
+	// Problem dimensions:
+	int N_, M_, L_;
+
+	// Array containing a copy of the full solution
+	double *fullSol_;
+	
+	// Sea surface temperature
+	std::vector<double> sst_;
 	
 public:
 
 	//constructor
 	Ocean(Teuchos::RCP<Epetra_Comm> Comm);
 	//destructor
-	~Ocean(){ INFO("Ocean destructor called..."); }
+	~Ocean();
 
+	// ----------------------------------------------------------------------+
+	// The following functions are required by the continuation interface:
+	//
 	// Solve may optionally accept an rhs of VectorPointer type
 	void solve(Teuchos::RCP<Vector> rhs = Teuchos::null);
 	void computeRHS();
@@ -105,20 +122,25 @@ public:
 	Teuchos::RCP<Vector> getRHS(char mode = 'C');
 	
 	void setState(Teuchos::RCP<Vector> state)
-		{
-			state_ = state->getEpetraVector();
-		}
+		{ state_ = state->getEpetraVector(); }
+	
 	void setRHS(Teuchos::RCP<Vector> rhs)
-		{
-			rhs_   = rhs->getEpetraVector();
-		}
+		{ rhs_   = rhs->getEpetraVector(); }
 
 	void saveStateToFile(std::string const &name);
 	void loadStateFromFile(std::string const &name);
 
 	// Write the state of the ocean to traditional FORTRAN out files fort.*
 	// Use matlab plot-scripts for visualization 
-	void dumpState();	
+	void dumpState();
+
+	// ----------------------------------------------------------------------+
+	// The following functions are required for the coupling with other
+	// models:
+	//
+	// Obtain an external atmosphere
+	void setAtmosphere(std::vector<double> &atmos);
+	std::vector<double> getSST();
 	
 private:
 	// Randomize state, scale with scaling

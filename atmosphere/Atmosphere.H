@@ -148,7 +148,7 @@ public:
 	double getParDestination()  { return amplEnd_; }
 
 	void test();
-	//void setOceanTemp(std::vector<double>
+	void setOceanTemperature(std::vector<double> sst);
 
 	void dumpState() { writeAll(); }
 private:
@@ -164,6 +164,9 @@ private:
     // ! Create forcing vector
 	void forcing();
 
+	// ! Use idealized values for ocean temperature
+	void idealizedOcean();
+	
 	// ! Perform the dot product of a single row with the state vector
 	double matvec(int row);
 

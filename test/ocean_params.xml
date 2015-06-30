@@ -58,7 +58,7 @@
 
 	<!-- Flag enabling the coupling with an atmosphere within the I-EMIC -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
-	<Parameter name="Coupled Atmosphere" type="int" value="0"/>
+	<Parameter name="Coupled Atmosphere" type="int" value="1"/>
 	
     <!-- Mixing parameter (vmix_GLB in THCM) -->
     <Parameter name="Mixing" type="int" value="1"/>

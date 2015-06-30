@@ -19,7 +19,7 @@ SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
 ##------------------------------------------------------------------
 ##   Supply debug and other flags for CXX compiler:
 CXX_DEBUG = -g
-CXX_EXTRA = ${LOCAL_CXX_FLAGS} #-O3 #-DDEBUGGING #-DTESTING 
+CXX_EXTRA = ${LOCAL_CXX_FLAGS} #-O3 #-DDEBUGGING #-DTESTING
 CXX_FLAGS = ${CXX_DEBUG} ${SHARED_FLAGS} $(CXX_EXTRA)
 
 ##------------------------------------------------------------------
@@ -48,13 +48,15 @@ LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
 ##------------------------------------------------------------------
 ## Internal stuff...
 ##   Define the internal library names:
-LIB_OCEAN  = ocean
-LIB_ATMOS  = atmosphere
+LIB_OCEAN    = ocean
+LIB_ATMOS    = atmosphere
+LIB_COUPLED  = coupledmodel
 
 ##------------------------------------------------------------------
 ##   Define the internal library locations:
-PATH_LIB_OCEAN  = $(PROJECT_BASE)/ocean
-PATH_LIB_ATMOS  = $(PROJECT_BASE)/atmosphere
+PATH_LIB_OCEAN    = $(PROJECT_BASE)/ocean
+PATH_LIB_ATMOS    = $(PROJECT_BASE)/atmosphere
+PATH_LIB_COUPLED  = $(PROJECT_BASE)/coupledmodel
 
 ##------------------------------------------------------------------
 ##   Gather all the include directories:
@@ -65,10 +67,12 @@ INCLUDE_DIRS =	-I$(PROJECT_BASE)/vector\
 				-I$(PROJECT_BASE)/thetastepper\
 				-I$(PROJECT_BASE)/continuation\
 				-I$(PROJECT_BASE)/atmosphere\
+				-I$(PROJECT_BASE)/coupledmodel	\
         		${INCLUDE_DIRS_TRI}
 
 ##------------------------------------------------------------------
-##   Gather all the library directories:	
+##   Gather all the library directories:
 LIBRARY_DIRS =  -L$(PATH_LIB_OCEAN) \
 			    -L$(PATH_LIB_ATMOS) \
+			    -L$(PATH_LIB_COUPLED) \
 		          $(LIBRARY_DIRS_TRI)

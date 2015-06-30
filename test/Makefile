@@ -2,13 +2,15 @@ include ../make.inc/Makefile.${PLAT}
 
 DIRS =  $(PROJECT_BASE)/ocean/ \
 	    $(PROJECT_BASE)/atmosphere/ \
+	    $(PROJECT_BASE)/coupledmodel/ \
 
 EXE     = test timestepping
 OBJS    = test.o timestepping.o
 OBJLIBS = lib$(LIB_OCEAN).a\
 	      lib$(LIB_ATMOS).a\
+	      lib$(LIB_COUPLED).a\
 
-# Header dependencies, especially important for templated stuff	
+# Header dependencies, especially important for templated stuff
 HEADERDEPS = \
 	../newton/Newton.H \
 	../newton/NewtonDecl.H \
@@ -20,12 +22,15 @@ HEADERDEPS = \
 	../ocean/GlobalDefinitions.H \
 	../ocean/Ocean.H \
 	../atmosphere/Atmosphere.H\
+	../coupledmodel/CoupledModel.H\
 
+# Coupled depends on ocean and atmos
 INTLIBS = \
+	-l$(LIB_COUPLED)\
 	-l$(LIB_OCEAN)\
 	-l$(LIB_ATMOS)\
 
-CXX_DB = 
+CXX_DB =
 
 all: test
 
@@ -41,6 +46,8 @@ lib$(LIB_OCEAN).a: force_look
 lib$(LIB_ATMOS).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_ATMOS); $(MAKE) $(MFLAGS)
 
+lib$(LIB_COUPLED).a: force_look
+	cd $(PROJECT_BASE)/$(LIB_COUPLED); $(MAKE) $(MFLAGS)
 
 %.o: %.C $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $(CXX_DB) $<
@@ -49,5 +56,5 @@ clean:
 	-rm -f $(EXE) $(OBJS) $(OBJLIBS) fort.* *.txt *.eps
 	-for d in $(DIRS); do (cd $$d; $(MAKE) clean ); done
 
-force_look:	
+force_look:
 	true
