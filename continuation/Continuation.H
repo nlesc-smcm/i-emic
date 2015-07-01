@@ -366,7 +366,7 @@ newtonCorrector()
 		// test new RHS, if it satisfies the tolerance we exit the loop
 		normRHS_ = rhsView_->norm();
 		model_->computeRHS();
-		normRHStest_ = rhsView_->norm();
+		normRHStest_ = rhsView_->norm('V'); // verbose norm
 		INFO("Contin.: corrector    iter: " << newtonIter_ );
 		INFO("Contin.: corrector  norm R: " << normRHStest_ );
 				

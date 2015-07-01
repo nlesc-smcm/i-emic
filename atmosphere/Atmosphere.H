@@ -151,6 +151,13 @@ public:
 	void setOceanTemperature(std::vector<double> sst);
 
 	void dumpState() { writeAll(); }
+
+	// ! Put default fields in atmosphere and ocean
+	void idealizedOcean();
+	void idealizedState();
+	void zeroOcean();
+	void zeroState();
+	
 private:
 	std::shared_ptr<Vector> getVector
 	(char mode, std::shared_ptr<std::vector<double> > vec);
@@ -164,8 +171,6 @@ private:
     // ! Create forcing vector
 	void forcing();
 
-	// ! Use idealized values for ocean temperature
-	void idealizedOcean();
 	
 	// ! Perform the dot product of a single row with the state vector
 	double matvec(int row);
@@ -255,8 +260,6 @@ public:
 				double scalarA, Atom &A,
 				double scalarB, Atom &B,
 				double scalarC, Atom &C);
-
 };
-
 
 #endif

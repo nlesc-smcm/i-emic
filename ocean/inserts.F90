@@ -20,14 +20,22 @@ contains
     integer :: i,j,pos
 
     if (coupled_atm.eq.1) then
+       open(8,file=rundir//'tatm.txt')
+       ! open(9,file=rundir//'tatm_idealized.txt')
        pos = 1
        do j = 1,m
           do i = 1,n
              tatm(i,j) = inserted_atmos(pos)
-             ! tatm(i,j) = temfun(x(i),y(j))
              pos = pos + 1
+             write(8,*) tatm(i,j)
+             ! tatm(i,j) = temfun(x(i),y(j))
+             ! write(9,*) tatm(i,j)
           end do
        end do
+       ! _INFO2_("Inserting atmosphere: coupled_atm=", coupled_atm)
+       ! _INFO_("   wrote tatm -> tatm.txt")
+       close(8)
+       ! close(9)
     else
        _INFO2_("Not inserting atmosphere: coupled_atm=", coupled_atm)
     end if

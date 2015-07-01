@@ -120,8 +120,20 @@ public:
 		}
 
 	//------------------------------------------------------------------
-	double norm()
+	// mode: 'S': silent
+	//       'V': verbose
+	double norm(char mode = 'S')
 		{
+			if ((mode == 'V') && haveStdVector_ && haveEpetraVector_)
+			{
+				haveStdVector_ = false;
+				INFO("Norm vector 1 (Epetra): " << sqrt(dot(*this)));
+				haveStdVector_ = true;
+				haveEpetraVector_ = false;
+				INFO("Norm vector 2    (STL): " << sqrt(dot(*this)));
+				haveEpetraVector_ = true;
+			}
+			
 			double nrm2 = 0.0;
 			nrm2 = dot(*this);
 			return sqrt(nrm2);

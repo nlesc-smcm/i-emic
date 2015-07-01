@@ -39,6 +39,7 @@ Atmosphere::Atmosphere()
 	Ad_   =  rhoa_ * hdima_ * cpa_ * d0_ / (muoa_ * r0dim_ * r0dim_);
 	As_   =  sun0_ * (1 - c0_) / (4 * muoa_);		
 
+	
 	// Set problem size
 	n_ = 16;
 	m_ = 16;
@@ -97,6 +98,18 @@ Atmosphere::Atmosphere()
 						(1 - albe_[j]));
 	}
 
+	std::cout << "cpp --> sun0: " << sun0_ << std::endl;
+	std::cout << "cpp --> amua: " << amua_ << std::endl;
+	std::cout << "cpp --> bmua: " << bmua_ << std::endl;
+	std::cout << "cpp --> muoa: " << muoa_ << std::endl;
+	std::cout << "cpp --> Ai: " << Ai_ << std::endl;	
+	std::cout << "cpp --> Ad: " << Ad_ << std::endl;
+	std::cout << "cpp --> As: " << As_ << std::endl;
+
+	for (auto &s : suna_)
+		std::cout << std::setprecision(10) << s << " ";
+	std::cout << std::endl;
+
 	//idealizedOcean();
 }
 
@@ -109,10 +122,40 @@ void Atmosphere::idealizedOcean()
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
 		{
-			value = 10*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+			value = ampl_*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 			row   = find_row(i,j,l_,ATMOS_TT_)-1;
 			oceanTemp_[row] = value;
 		}
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::idealizedState()
+{
+	// put idealized values in atmosphere
+	double value;
+	int row;
+	for (int i = 1; i <= n_; ++i)
+		for (int j = 1; j <= m_; ++j)
+		{
+			value = ampl_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+			row   = find_row(i,j,l_,ATMOS_TT_)-1;
+			(*state_)[row] = value;
+		}
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::zeroState()
+{
+	// Set state to zero
+	int dim = n_ * m_ * l_;
+	*state_ = std::vector<double>(dim, 0.0);
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::zeroOcean()
+{
+	// Set ocean to zero
+	oceanTemp_ = std::vector<double>(n_ * m_, 0.0);
 }
 
 //-----------------------------------------------------------------------------
@@ -191,7 +234,6 @@ double Atmosphere::matvec(int row)
 //-----------------------------------------------------------------------------
 void Atmosphere::forcing()
 {
-	std::cout << "forcing amplitude: " << ampl_ << std::endl;
 	double value;
 	int row;
 	for (int j = 1; j <= m_; ++j)
@@ -210,7 +252,7 @@ void Atmosphere::discretize(int type, Atom &atom)
 	{
 		double val2, val4, val5, val6, val8;
 	case 1: // tc
-		atom.set({1,n_,1,m_,1,l_}, 5,  -1.0);
+		atom.set({1,n_,1,m_,1,l_}, 5, -1.0);
 		// coupling of ocean is more convenient through forcing
 		// atom.set({1,n_,1,m_,1,l_}, 14,  1.0);
 		break;
@@ -333,20 +375,12 @@ void Atmosphere::solve(std::shared_ptr<Vector> rhs)
 	int info;
 
 	if (rhs == nullptr)
-	{
 		(*sol_) = std::vector<double>((*rhs_));
-		std::cout << "solve... using own rhs" << std::endl;
-	}
 	else
-	{
 		(*sol_) = std::vector<double>(*(rhs->getStdVector()));
-		std::cout << "solve... using ext rhs" << std::endl;
-	}
-
+	
 	dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
 			&(*sol_)[0], &ldb, &info);
-	
-	std::cout << "solve info: " << info << std::endl;
 }
 
 //-----------------------------------------------------------------------------
@@ -384,7 +418,6 @@ void Atmosphere::buildDenseA()
 	int lda  = dim;
 	int info;
 
-	std::cout << " Creating LU " << std::endl;
 	dgetrf_(&dim, &dim, &denseA_[0], &lda, ipiv_, &info);
 }
 

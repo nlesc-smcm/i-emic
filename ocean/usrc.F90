@@ -236,12 +236,12 @@ SUBROUTINE matrix(un,sig1,sig2)
      call cpu_time(time0)
      if (vmix_out.gt.0) write(*,'(a26)')"MIX| matrix...    "
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     fix:   ', vmix_fix
-     
+
      if ((vmix_fix.eq.0).and.(vmix_flag.ge.2)) call vmix_control(un)
-     
+
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
-     
+
      if ((vmix_temp.eq.1).or.(vmix_salt.eq.1)) call vmix_jac(un)
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
@@ -269,7 +269,6 @@ SUBROUTINE matrix(un,sig1,sig2)
 
 
   call boundaries
-  call writematrhs(0.0)
 
   call assemble
   !write(*,*) "In fortran's matrix() maxval TT =", maxval(Al(:,:,:,:,TT,:))
@@ -313,12 +312,12 @@ SUBROUTINE rhs(un,B)
      call cpu_time(time0)
      if (vmix_out.gt.0) write(*,'(a26)')'MIX| rhs...               '
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     fix:   ', vmix_fix
-     
+
      if ((vmix_fix.eq.0).and.(vmix_flag.ge.2)) call vmix_control(un)
-     
+
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
-     
+
      if ((vmix_temp.eq.1).or.(vmix_salt.eq.1)) call vmix_fun(un,mix,vmix_fix)
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
@@ -437,14 +436,14 @@ SUBROUTINE lin
 
   ! ------------------------------------------------------------------
   ! v-equation
-  ! ------------------------------------------------------------------  
+  ! ------------------------------------------------------------------
   call vderiv(1,vb )    !--> kan weg: vb doet niks
   call vderiv(2,vxx)
   call vderiv(3,vyy)
   call vderiv(4,vzz)
   call vderiv(5,vcsi)
   call vderiv(6,uxs)
-  call vderiv(7,v)      !--> kan weg: v doet niks 
+  call vderiv(7,v)      !--> kan weg: v doet niks
   call coriolis(2,fu)
   call gradp(2,py)
   Al(:,:,1:l,:,VV,UU) =  fu - EH*uxs
@@ -453,7 +452,7 @@ SUBROUTINE lin
 
   ! ------------------------------------------------------------------
   ! w-equation
-  ! ------------------------------------------------------------------  
+  ! ------------------------------------------------------------------
   call gradp(3,pz)
   call tderiv(6,tbc)
   Al(:,:,1:l,:,WW,PP) =  pz
@@ -479,13 +478,15 @@ SUBROUTINE lin
   call tderiv(4,tyy)
   call tderiv(5,tzz)
   call tderiv(7,tcb)
-  
-  if ((la > 0).or.(coupled_atm.eq.1)) then
+
+  if (la > 0) then
+     Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
+  else if (coupled_atm.eq.1) then
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
   else
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
   endif
-  
+
   ! ------------------------------------------------------------------
   ! S-equation
   ! ------------------------------------------------------------------
@@ -568,7 +569,7 @@ SUBROUTINE nlin_rhs(un)
 
   ! ------------------------------------------------------------------
   ! v-equation
-  ! ------------------------------------------------------------------  
+  ! ------------------------------------------------------------------
 #ifndef NO_UVNLIN
   call vnlin(1,uvx,u,v,w)
   call vnlin(3,vvy,u,v,w)
@@ -580,7 +581,7 @@ SUBROUTINE nlin_rhs(un)
 
   ! ------------------------------------------------------------------
   ! w-equation
-  ! ------------------------------------------------------------------  
+  ! ------------------------------------------------------------------
   call wnlin(2,t2r,t)
   call wnlin(4,t3r,t)
   Al(:,:,1:l,:,WW,TT) = Al(:,:,1:l,:,WW,TT) - Ra*xes*alpt2*t2r &
@@ -588,7 +589,7 @@ SUBROUTINE nlin_rhs(un)
 
   ! ------------------------------------------------------------------
   ! T-equation
-  ! ------------------------------------------------------------------    
+  ! ------------------------------------------------------------------
 #ifndef NO_TSNLIN
   call tnlin(3,utx,u,v,w,t,rho)
   call tnlin(5,vty,u,v,w,t,rho)
@@ -598,7 +599,7 @@ SUBROUTINE nlin_rhs(un)
 
   ! ------------------------------------------------------------------
   ! S-equation
-  ! ------------------------------------------------------------------    
+  ! ------------------------------------------------------------------
 #ifndef NO_TSNLIN
   call tnlin(3,usx,u,v,w,s,rho)
   call tnlin(5,vsy,u,v,w,s,rho)
@@ -679,7 +680,7 @@ SUBROUTINE nlin_jac(un)
 
   ! ------------------------------------------------------------------
   ! v-equation
-  ! ------------------------------------------------------------------  
+  ! ------------------------------------------------------------------
 #ifndef NO_UVNLIN
   call vnlin(1,uvx,u,v,w)
   call vnlin(2,uVrx,u,v,w)
@@ -694,7 +695,7 @@ SUBROUTINE nlin_jac(un)
 
   ! ------------------------------------------------------------------
   ! w-equation
-  ! ------------------------------------------------------------------  
+  ! ------------------------------------------------------------------
   call wnlin(1,t2r,t)
   call wnlin(3,t3r,t)
   Al(:,:,1:l,:,WW,TT) = Al(:,:,1:l,:,WW,TT) - Ra*xes*alpt2*t2r &
@@ -897,10 +898,10 @@ SUBROUTINE stpnt!(un)
   par(PE_V)   =  kappav*r0dim/(udim*hdim*hdim)  ! P_V0
   par(P_VC)   =  5.0            ! P_VC
   par(LAMB)   =  alphaS/alphaT  ! lambda
-  par(SALT)   =  1.0            ! gamma
+  par(SALT)   =  0.0            ! gamma
   par(WIND)   =  1.0            ! wind h
   par(TEMP)   =  10.0           ! eta_T
-  par(BIOT)   =  25.0         ! nonlinearity in T,S equations !10.0
+  par(BIOT)   =  r0dim/(75.*3600.*24.*udim) ! nonlinearity in T,S equations
   par(COMB)   =  1.0          ! combined continuation
   par(NLES)   =  0.0
   par(CMPR)   =  0.0
@@ -912,7 +913,7 @@ SUBROUTINE stpnt!(un)
   par(SPL2)   =  0.01        ! neutral physics
 
   call vmix_par
-  
+
 end SUBROUTINE stpnt
 
 !******************************************************************
@@ -944,6 +945,25 @@ SUBROUTINE atmos_coef
   DO j = 0,m
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
+
+  write(*,*) "thcm -->   bi: ", par(BIOT)
+  write(*,*) "thcm --> dzne: ", dzne
+  write(*,*) "thcm -->   dz: ", dz
+  write(*,*) "thcm -->  Ooa: ", Ooa
+  write(*,*) "thcm -->   Os: ", Os
+  write(*,*) " "
+  write(*,*) "thcm --> sun0: ", sun0
+  write(*,*) "thcm --> amua: ", amua
+  write(*,*) "thcm --> bmua: ", bmua
+  write(*,*) "thcm --> muoa: ", muoa
+  write(*,*) "thcm -->   Ai: ", Ai
+  write(*,*) "thcm -->   Ad: ", Ad
+  write(*,*) "thcm -->   As: ", As
+
+  open(8, file = rundir//'suno.txt')
+  write(8, *) suno
+  close(8)
+  
 END SUBROUTINE atmos_coef
 
 !******************************************************************

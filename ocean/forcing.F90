@@ -47,8 +47,9 @@ SUBROUTINE forcing
   ! ------------------------------------------------------------------
   
   etabi = par(COMB)*par(TEMP)*(1 - TRES + TRES*par(BIOT))
-
-  if (ite.eq.1) then        ! idealized temperature forcing 
+  
+  ! idealized temperature forcing 
+  if ((ite.eq.1).and.(coupled_atm.eq.0)) then
      do j=1,m
         do i=1,n
            tatm(i,j) = temfun(x(i),y(j))
@@ -56,12 +57,12 @@ SUBROUTINE forcing
      enddo
   endif
 
-  if (TRES.eq.0) then       ! correct for nonzero flux
+  ! correct for nonzero flux
+  if ((TRES.eq.0).and.(coupled_atm.eq.0)) then      
      call qint(tatm,temcor)
   else
      temcor = 0.0
   end if
-
   do j=1,m
      do i=1,n
         if (la > 0) then      ! coupling to atmosphere
@@ -73,7 +74,7 @@ SUBROUTINE forcing
         else if (coupled_atm.eq.1) then ! coupled externally
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l)) &
-                + Ooa * tatm(i,j) ! --> + Ooa * tatm(i,j)!!! 
+                +  Ooa * tatm(i,j)
            
         else  ! ocean-only
            Frc(find_row2(i,j,l,TT)) = etabi * ( tatm(i,j) - temcor )

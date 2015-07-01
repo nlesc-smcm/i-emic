@@ -35,7 +35,7 @@ CoupledModel::CoupledModel(Graph &couplings,
 	rhsView_ =
  		std::make_shared<Vector>(ocean_->getRHS('V')->getEpetraVector(),
 								 atmosphere_->getRHS('V')->getStdVector() );
-	
+
 	test();
 }
 
@@ -44,18 +44,16 @@ void CoupledModel::synchronize()
 {
 	INFO("CoupledModel: synchronize...");
 	ocean_->setAtmosphere(*(stateView_->getStdVector()));
+
 	// returns a copy of the sst in the ocean
 	std::vector<double> sst = ocean_->getSST();
 	atmosphere_->setOceanTemperature(sst);
-	INFO("CoupledModel: synchronize... done")		
+	INFO("CoupledModel: synchronize... done");
 }
 
 //------------------------------------------------------------------
 void CoupledModel::computeJacobian()
 {
-	// Synchronize the models
-	synchronize();
-	
 	// Ocean
 	ocean_->computeJacobian();
 
@@ -66,9 +64,6 @@ void CoupledModel::computeJacobian()
 //------------------------------------------------------------------
 void CoupledModel::computeRHS()
 {
-	// Synchronize the models
-	synchronize();
-
 	// Ocean
 	ocean_->computeRHS();
 
@@ -204,12 +199,13 @@ void CoupledModel::dumpState()
 {
 	ocean_->dumpState();
 	atmosphere_->dumpState();
+	synchronize();
 }
 
 //------------------------------------------------------------------
 void CoupledModel::test()
 {
-	std::cout << "CoupledModel: testing stateView..." << std::endl;
+	std::cout << "CoupledModel: stateView..." << std::endl;
 	std::cout << " length: " << stateView_->length()  << std::endl;
 	std::cout << " norm:   " << stateView_->norm()    << std::endl;
 }

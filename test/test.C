@@ -1,5 +1,5 @@
 //=======================================================================
-// Continuation test routine
+// Continuation test routines
 //=======================================================================
 #include <Epetra_config.h>
 #include <iomanip>
@@ -32,12 +32,15 @@
 //------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;
+
 //------------------------------------------------------------------
 // A few declarations
 RCP<std::ostream> outFile;               // output file
 std::map<std::string, double> profile;   // profile map
+
 //------------------------------------------------------------------
 void testVecWrap();
+void testCoupling(int argc, char **argv);
 void testOcean(int argc, char **argv);
 
 //------------------------------------------------------------------
@@ -45,9 +48,16 @@ RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
 void printProfile(std::map<std::string, double> profile,
 				  RCP<Epetra_Comm> Comm);
-//------------------------------------------------------------------
 
+//------------------------------------------------------------------
 int main(int argc, char **argv)
+{
+//	testOcean(argc, argv);
+	testCoupling(argc, argv);
+}
+
+//------------------------------------------------------------------
+void testCoupling(int argc, char **argv)
 {
 	// Initialize the environment:
 	//  - MPI
@@ -61,11 +71,6 @@ int main(int argc, char **argv)
 	std::shared_ptr<CoupledModel> coupledModel =
 		std::make_shared<CoupledModel>(coupling, Comm);
 
-	coupledModel->computeJacobian();
-	coupledModel->computeRHS();
-	coupledModel->solve();
-	coupledModel->getSolution();
-	
  	// Create parameter object for continuation
 	RCP<Teuchos::ParameterList> continuationParams =
 		rcp(new Teuchos::ParameterList);
@@ -78,6 +83,14 @@ int main(int argc, char **argv)
 		continuation(coupledModel, continuationParams);
 
 	continuation.run();	
+	
+	printProfile(profile, Comm);
+    //--------------------------------------------------------
+	// Finalize MPI
+	//--------------------------------------------------------
+	Comm->Barrier();
+	MPI_Finalize();	
+
 }
 
 void testOcean(int argc, char **argv)
@@ -105,8 +118,6 @@ void testOcean(int argc, char **argv)
 
 	continuation.run();
 	
-	ocean->dumpState();
-
 	printProfile(profile, Comm);
     //--------------------------------------------------------
 	// Finalize MPI

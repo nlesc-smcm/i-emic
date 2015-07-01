@@ -25,3 +25,4 @@ frc    = importdata('atmos_frc.txt');
 state  = importdata('atmos_state.txt');
 sol    = importdata('atmos_sol.txt');
 otemp  = importdata('atmos_oceanTemp.txt');
+tatm   = importdata('tatm.txt');
