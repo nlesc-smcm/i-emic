@@ -41,8 +41,8 @@ Atmosphere::Atmosphere()
 
 	
 	// Set problem size
-	n_ = 16;
-	m_ = 16;
+	n_ = 32;
+	m_ = 32;
 	l_ = 1;
 	int dim = n_ * m_ * l_;
 	
