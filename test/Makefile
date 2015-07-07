@@ -53,7 +53,8 @@ lib$(LIB_COUPLED).a: force_look
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $(CXX_DB) $<
 
 clean:
-	-rm -f $(EXE) $(OBJS) $(OBJLIBS) fort.* *.txt *.eps
+	-rm -f $(EXE) $(OBJS) $(OBJLIBS) fort.* *.txt \
+	*.eps *.co *.jco *.beg *.rl *.info *~ dump
 	-for d in $(DIRS); do (cd $$d; $(MAKE) clean ); done
 
 force_look:

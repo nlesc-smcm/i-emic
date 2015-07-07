@@ -36,17 +36,17 @@ xmax_ = xmaxdeg_ * pi / 180;
 ymin_ = ymindeg_ * pi / 180;
 ymax_ = ymaxdeg_ * pi / 180;
 
-dy    =  (ymaxdeg_-ymindeg_)/(16);
+dy    =  (ymaxdeg_-ymindeg_)/(m);
 yc    =  ymindeg_+dy/2:dy:ymaxdeg_;
-dx    =  (xmaxdeg_-xmindeg_)/(16);
+dx    =  (xmaxdeg_-xmindeg_)/(n);
 xc    =  xmindeg_+dx/2:dx:xmaxdeg_;
 sun   =  suna_(yc);
 ampl  =  0.0179624;
 frc2  =  ampl*(sun - amua_);
 
-To = reshape(t0_+otemp,16,16);
-Ta = reshape(t0_+state,16,16);
-FRC = reshape(frc,16,16);
+To = reshape(t0_+otemp,n,m);
+Ta = reshape(t0_+state,n,m);
+FRC = reshape(frc,n,m);
 
 figure(2)
 contourf((xc),(yc),To',15);
@@ -68,9 +68,3 @@ figure(4)
 contourf((xc),(yc),FRC',15);
 colorbar
 title('frc')
-
-%## figure(4)
-%## imagesc(repmat(frc2,16,1));
-%## colorbar
-%## title('computed frc')
-

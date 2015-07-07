@@ -1,0 +1,1 @@
+% SMARTROUND - Rounds to nice numbers%%  M. den Toom%function x = smartround(y,nsig)ord     = floor(log10(abs(y)))+1;x       = ceil( abs(y).*0.1.^(ord-nsig) ).*10.^(ord-nsig).*sign(y);x(y==0) = 0;
