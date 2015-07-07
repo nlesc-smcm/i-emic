@@ -98,6 +98,15 @@ protected:
 	
 	// Sea surface temperature
 	std::vector<double> sst_;
+
+	//------------------------------------------------------------------
+	// Datamembers in charge of the continuation parameter
+	int    parIdent_;    // parameter identifier (integer)
+	double parValue_;    // value of the parameter
+	double parStart_;    // its starting value
+	double parEnd_;	     // its ending value
+	double storedPar1_;  // stored value of the parameter
+	double storedPar2_;  // stored value of the parameter
 	
 public:
 
@@ -127,6 +136,17 @@ public:
 	void setRHS(Teuchos::RCP<Vector> rhs)
 		{ rhs_   = rhs->getEpetraVector(); }
 
+	// The parameter get and set members wrap the corresponding
+	// Fortran functions. Just as in THCM, these functions
+	// may do more in the future,
+	//--> not sure if using getpardestination is ok from a design
+	//    perspective. The continuation routine should have that
+	//    information, not the model?
+	void    setPar(double value);
+	double  getPar();
+	double  getParDestination() { return parEnd_; }
+
+	// Not implemented yet
 	void saveStateToFile(std::string const &name);
 	void loadStateFromFile(std::string const &name);
 
@@ -137,9 +157,11 @@ public:
 	// ----------------------------------------------------------------------+
 	// The following functions are required for the coupling with other
 	// models:
-	//
+
 	// Obtain an external atmosphere
 	void setAtmosphere(std::vector<double> &atmos);
+
+	// Obtain ocean surface temperature
 	std::vector<double> getSST();
 	
 private:

@@ -24,7 +24,6 @@
 #include "Vector.H"
 #include "CoupledModel.H"
 #include "Atmosphere.H"
-#include "OceanCont.H"
 #include "ThetaStepper.H"
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
@@ -101,9 +100,9 @@ void testOcean(int argc, char **argv)
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
- 	// Create ocean model OceanCont
+ 	// Create ocean model Ocean
 	//  (based on THCM):
-	RCP<OceanCont> ocean = rcp(new OceanCont(Comm));
+	RCP<Ocean> ocean = rcp(new Ocean(Comm));
 
 	// Create parameter object for continuation
 	RCP<Teuchos::ParameterList> continuationParams =
@@ -111,7 +110,7 @@ void testOcean(int argc, char **argv)
 	updateParametersFromXmlFile("continuation_params.xml",
 								continuationParams.ptr());
 	// Create continuation
-	Continuation<RCP<OceanCont>,
+	Continuation<RCP<Ocean>,
 				 RCP<Vector>,
 				 RCP<Teuchos::ParameterList> >
 		continuation(ocean, continuationParams);

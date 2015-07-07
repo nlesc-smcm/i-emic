@@ -34,8 +34,10 @@ using Teuchos::RCP;
 using Teuchos::rcp;
 
 //=====================================================================
-// Fortran: get access to write_data function
-extern "C" _SUBROUTINE_(write_data)(double*, int*, int*); 
+// Get access to a few THCM functions
+extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
+extern "C" _SUBROUTINE_(getparcs)(int*, double*);
+extern "C" _SUBROUTINE_(setparcs)(int*,double*);
 
 //=====================================================================
 // Constructor:
@@ -103,6 +105,15 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 
 	// Create fullSol_ array
 	fullSol_ = new double[state_->GlobalLength()];
+
+	// Set THCM continuation parameter and its bounds
+	parIdent_ = 19;
+	parValue_ = 0.0;
+	parStart_ = 0.0;
+	parEnd_   = 1.0;
+
+	// Put the initial value into the model.
+	setPar(parStart_);
 }
 
 //=====================================================================
@@ -438,3 +449,28 @@ void Ocean::saveStateToFile(std::string const &name)
 // NOT IMPLEMENTED YET
 void Ocean::loadStateFromFile(std::string const &name)
 {}
+
+//====================================================================
+double Ocean::getPar()
+{
+	double thcmPar;
+	FNAME(getparcs)(&parIdent_, &thcmPar);
+	if (thcmPar != parValue_)
+	{
+		INFO("OceanCont::getPar(): Parameter synchronization");
+		INFO("              thcm: " << thcmPar);
+		INFO("         OceanCont: " << parValue_);
+		INFO("     fixing this...");
+		FNAME(setparcs)(&parIdent_, &parValue_);
+		FNAME(getparcs)(&parIdent_, &thcmPar);
+		INFO("              thcm: " << thcmPar);
+	}					  
+	return parValue_;
+}
+
+//====================================================================
+void Ocean::setPar(double value)
+{
+	parValue_ = value;
+	FNAME(setparcs)(&parIdent_, &value);
+}
