@@ -47,26 +47,27 @@ frc2  =  ampl*(sun - amua_);
 To = reshape(t0_+otemp,16,16);
 Ta = reshape(t0_+state,16,16);
 FRC = reshape(frc,16,16);
-Ta_ocean = reshape(t0_+tatm,16,16);
 
 figure(2)
 contourf((xc),(yc),To',15);
 colorbar
-title('T^o')
+title('SST')
+xlabel('Longitude')
+ylabel('Latitude')
+exportfig('oceanTemp.eps')
+
 figure(3)
 contourf((xc),(yc),Ta',15);
 colorbar
-title('T^a')
+title('Atmosphere')
+xlabel('Longitude')
+ylabel('Latitude')
+exportfig('atmosTemp.eps')
+
 figure(4)
 contourf((xc),(yc),FRC',15);
 colorbar
 title('frc')
-figure(5)
-contourf((xc),(yc),Ta_ocean',15);
-colorbar
-title('T^a_o')
-
-
 
 %## figure(4)
 %## imagesc(repmat(frc2,16,1));
