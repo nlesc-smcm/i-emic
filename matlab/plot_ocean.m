@@ -29,11 +29,10 @@ dz         = (zw(l+1)-zw(1))/l;
 %% - READ SOLUTION - -------------------------------------------------
 
 [lab icp par xl xlp det sig sol solup soleig] = ...
-readfort3(la,'fort.3');
+            readfort3(la,'fort.3');
 
 %% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
-[u,v,w,p,T,S] = ...
-extractsol(sol);
+[u,v,w,p,T,S] = extractsol(sol);
 
 %% - INTEGRATIONS - --------------------------------------------------
 
@@ -52,7 +51,7 @@ fprintf(1,'Average salinity deficiency of %12.8f psu.\n', -check/vol)
 
 %% - PLOT THE RESULTS - ----------------------------------------------
 
-figure(2)
+figure(1)
 contourf(RtD*xu,RtD*y,PSIB',15);
 colorbar
 title('Barotropic Streamfunction');
@@ -60,7 +59,7 @@ xlabel('Longitude')
 ylabel('Latitude')
 exportfig('bstream.eps')
 
-figure(4)
+figure(2)
 contourf(PSIG',15);
 colorbar
 title('Overturning Streamfunction')
@@ -68,12 +67,15 @@ xlabel('Latitude')
 ylabel('z (m)')
 exportfig('mstream.eps')
 
-figure(5)
+figure(3)
 Tp = T(:,:,l); 
 contourf(RtD*xu(1:end-1),RtD*y,T0+Tp',15);
 colorbar
+title('Surface Temperature');
+xlabel('Longitude')
+ylabel('Latitude')
 
-figure(6)
+figure(4)
 Tp2 = squeeze(mean(T,1)); 
 contourf(RtD*yv(1:end-1),z*hdim,Tp2'+T0,15);
 colorbar

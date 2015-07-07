@@ -3,21 +3,21 @@
 otemp  = importdata('atmos_oceanTemp.txt');
 state  = importdata('atmos_state.txt');
 
-t0_     = 15.0       ; %//! reference temperature
+T0  = 15.0       ; %//! reference temperature
+RtD = 180/pi;
+To  = reshape(T0 + otemp,n,m);
+Ta  = reshape(T0 + state,n,m);
 
-To  = reshape(t0_ + otemp,n,m);
-Ta  = reshape(t0_ + state,n,m);
-
-figure(1)
-contourf(x,y,To',15);
+figure(5)
+contourf(RtD*x, RtD*y,To',15);
 colorbar
-title('SST')
+title('SST ')
 xlabel('Longitude')
 ylabel('Latitude')
 exportfig('oceanTemp.eps')
 
-figure(2)
-contourf(x,y,Ta',15);
+figure(6)
+contourf(RtD*x,RtD*y,Ta',15);
 colorbar
 title('Atmosphere')
 xlabel('Longitude')
