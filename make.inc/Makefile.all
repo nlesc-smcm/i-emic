@@ -60,7 +60,7 @@ PATH_LIB_COUPLED  = $(PROJECT_BASE)/coupledmodel
 
 ##------------------------------------------------------------------
 ##   Gather all the include directories:
-INCLUDE_DIRS =	-I$(PROJECT_BASE)/vector\
+INCLUDE_DIRS =	-I$(PROJECT_BASE)/supervector\
                 -I$(PROJECT_BASE)/multiarray\
                 -I$(PROJECT_BASE)/ocean\
 			 	-I$(PROJECT_BASE)/newton\

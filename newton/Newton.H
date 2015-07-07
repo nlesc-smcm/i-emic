@@ -8,8 +8,8 @@
 
 //======================================================================
 // Constructor
-template<typename Model, typename Vector>
-Newton<Model, Vector>::Newton(Model model)
+template<typename Model, typename VectorPtr>
+Newton<Model, VectorPtr>::Newton(Model model)
  	:
  	isInitialized_(false),
 	isConverged_(false),
@@ -28,16 +28,16 @@ Newton<Model, Vector>::Newton(Model model)
 }
 
 //======================================================================
-template<typename Model, typename Vector>
-void Newton<Model, Vector>::Initialize()
+template<typename Model, typename VectorPtr>
+void Newton<Model, VectorPtr>::Initialize()
 {
 	// This function needs some more stuff or it should be deleted
  	isInitialized_ = true;
 }
 
 //======================================================================
-template<typename Model, typename Vector>
-void Newton<Model, Vector>::Run()
+template<typename Model, typename VectorPtr>
+void Newton<Model, VectorPtr>::Run()
 {
 	//
 	isConverged_ = false;
@@ -83,8 +83,8 @@ void Newton<Model, Vector>::Run()
 }
 
 //======================================================================
-template<typename Model, typename Vector>
-void Newton<Model, Vector>::RunBackTracking()
+template<typename Model, typename VectorPtr>
+void Newton<Model, VectorPtr>::RunBackTracking()
 {
 	// Initialize reduction with -1/2
 	double reduction = -1.0 / 2;

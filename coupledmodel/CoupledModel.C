@@ -1,7 +1,7 @@
 #include "CoupledModel.H"
 #include "Ocean.H"
 #include "Atmosphere.H"
-#include "Vector.H"
+#include "SuperVector.H"
 
 #include <vector>
 #include <memory>
@@ -24,15 +24,15 @@ CoupledModel::CoupledModel(Graph &couplings,
 	atmosphere_ = std::make_shared<Atmosphere>();
 
 	stateView_ =
-		std::make_shared<Vector>(ocean_->getState('V')->getEpetraVector(),
+		std::make_shared<SuperVector>(ocean_->getState('V')->getEpetraVector(),
 								 atmosphere_->getState('V')->getStdVector() );
 
 	solView_ =
- 		std::make_shared<Vector>(ocean_->getSolution('V')->getEpetraVector(),
+ 		std::make_shared<SuperVector>(ocean_->getSolution('V')->getEpetraVector(),
 								 atmosphere_->getSolution('V')->getStdVector() );
 
 	rhsView_ =
- 		std::make_shared<Vector>(ocean_->getRHS('V')->getEpetraVector(),
+ 		std::make_shared<SuperVector>(ocean_->getRHS('V')->getEpetraVector(),
 								 atmosphere_->getRHS('V')->getStdVector() );
 
 	test();
@@ -71,7 +71,7 @@ void CoupledModel::computeRHS()
 }
 
 //------------------------------------------------------------------
-void CoupledModel::solve(std::shared_ptr<Vector> rhs)
+void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 {
 	// Ocean
 	ocean_->solve(Teuchos::rcp(rhs.get(), false));
@@ -81,13 +81,13 @@ void CoupledModel::solve(std::shared_ptr<Vector> rhs)
 }
 
 //------------------------------------------------------------------
-std::shared_ptr<Vector> CoupledModel::getSolution(char mode)
+std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode)
 {
 	if (mode == 'V') // View
 		return solView_;
 	else if (mode == 'C') // Copy
 	{
-		return std::make_shared<Vector>(
+		return std::make_shared<SuperVector>(
 			ocean_->getSolution('C')->getEpetraVector(),
 			atmosphere_->getSolution('C')->getStdVector() );
 	}
@@ -99,13 +99,13 @@ std::shared_ptr<Vector> CoupledModel::getSolution(char mode)
 }
 
 //------------------------------------------------------------------
-std::shared_ptr<Vector> CoupledModel::getState(char mode)
+std::shared_ptr<SuperVector> CoupledModel::getState(char mode)
 {
 	if (mode == 'V') // View
 		return stateView_;
 	else if (mode == 'C') // Copy
 	{
-		return std::make_shared<Vector>(
+		return std::make_shared<SuperVector>(
 			ocean_->getState('C')->getEpetraVector(),
 			atmosphere_->getState('C')->getStdVector() );
 	}
@@ -117,13 +117,13 @@ std::shared_ptr<Vector> CoupledModel::getState(char mode)
 }
 
 //------------------------------------------------------------------
-std::shared_ptr<Vector> CoupledModel::getRHS(char mode)
+std::shared_ptr<SuperVector> CoupledModel::getRHS(char mode)
 {
 	if (mode == 'V') // View
 		return rhsView_;
 	else if (mode == 'C') // Copy
 	{
-		return std::make_shared<Vector>(
+		return std::make_shared<SuperVector>(
 			ocean_->getRHS('C')->getEpetraVector(),
 			atmosphere_->getRHS('C')->getStdVector() );
 	}
@@ -135,14 +135,14 @@ std::shared_ptr<Vector> CoupledModel::getRHS(char mode)
 }
 
 //------------------------------------------------------------------
-void CoupledModel::setState(std::shared_ptr<Vector> state)
+void CoupledModel::setState(std::shared_ptr<SuperVector> state)
 {
 	ocean_->setState(Teuchos::rcp(state.get(), false));
     atmosphere_->setState(state);
 }
 
 //------------------------------------------------------------------
-void CoupledModel::setRHS(std::shared_ptr<Vector> rhs)
+void CoupledModel::setRHS(std::shared_ptr<SuperVector> rhs)
 {
 	ocean_->setRHS(Teuchos::rcp(rhs.get(), false));
     atmosphere_->setRHS(rhs);

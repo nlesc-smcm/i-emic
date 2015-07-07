@@ -7,7 +7,7 @@ obj= Atmosphere.o
 
 HEADERDEPS = \
 		../multiarray/MultiArray.H\
-		../vector/Vector.H\
+		../supervector/SuperVector.H\
 
 all: lib
 

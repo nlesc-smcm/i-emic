@@ -8,8 +8,8 @@
 #include "GlobalDefinitions.H"
 
 //==================================================================
-template<typename Model, typename Vector>
-ThetaStepper<Model, Vector>::ThetaStepper(Model model)
+template<typename Model, typename VectorPtr>
+ThetaStepper<Model, VectorPtr>::ThetaStepper(Model model)
 	:
 	theta_(1.0),
 	time_(0.0),
@@ -31,10 +31,10 @@ ThetaStepper<Model, Vector>::ThetaStepper(Model model)
 }
 
 //==================================================================
-template<typename Model, typename Vector>
-void ThetaStepper<Model, Vector>::Run()
+template<typename Model, typename VectorPtr>
+void ThetaStepper<Model, VectorPtr>::Run()
 {
-	Newton<Model, Vector> newtonSolver(model_);
+	Newton<Model, VectorPtr> newtonSolver(model_);
 	int  iters;
 	bool convergence;
 
@@ -73,8 +73,8 @@ void ThetaStepper<Model, Vector>::Run()
 }
 
 //==================================================================
-template<typename Model, typename Vector>
-void ThetaStepper<Model, Vector>::AdjustTimestep(int iters,
+template<typename Model, typename VectorPtr>
+void ThetaStepper<Model, VectorPtr>::AdjustTimestep(int iters,
 												 bool convergence)
 {
 	if (iters < minAllowedIterations_ and convergence)
@@ -99,8 +99,8 @@ void ThetaStepper<Model, Vector>::AdjustTimestep(int iters,
 }
 
 //==================================================================
-template<typename Model, typename Vector>
-void ThetaStepper<Model, Vector>::Info()
+template<typename Model, typename VectorPtr>
+void ThetaStepper<Model, VectorPtr>::Info()
 {
 	INFO("--------------------------------------------------------");
 	INFO("Timestepping run with... ");

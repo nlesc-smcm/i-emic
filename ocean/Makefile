@@ -15,7 +15,7 @@ obj= assemble.o atm.o monthly.o boundary.o forcing.o grid.o inout.o\
 	 Utils.o
 
 HEADERDEPS = \
-	$(PROJECT_BASE)/vector/Vector.H\
+	$(PROJECT_BASE)/supervector/SuperVector.H\
 	$(PROJECT_BASE)/ocean/GlobalDefinitions.H
 
 all: lib

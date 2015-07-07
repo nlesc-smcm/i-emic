@@ -21,7 +21,7 @@
 #include <Teuchos_XMLParameterListHelpers.hpp>
 #include <Teuchos_FancyOStream.hpp>
 
-#include "Vector.H"
+#include "SuperVector.H"
 #include "CoupledModel.H"
 #include "Atmosphere.H"
 #include "ThetaStepper.H"
@@ -77,7 +77,7 @@ void testCoupling(int argc, char **argv)
 								continuationParams.ptr());
 	// Create continuation
 	Continuation<std::shared_ptr<CoupledModel>,
-				 std::shared_ptr<Vector>,
+				 std::shared_ptr<SuperVector>,
 				 RCP<Teuchos::ParameterList> >
 		continuation(coupledModel, continuationParams);
 
@@ -111,7 +111,7 @@ void testOcean(int argc, char **argv)
 								continuationParams.ptr());
 	// Create continuation
 	Continuation<RCP<Ocean>,
-				 RCP<Vector>,
+				 RCP<SuperVector>,
 				 RCP<Teuchos::ParameterList> >
 		continuation(ocean, continuationParams);
 
@@ -214,7 +214,7 @@ void printProfile(std::map<std::string, double> profile,
 //------------------------------------------------------------------
 void testVecWrap()
 {
-	std::cout << "Testing the Vector Wrapper..." << std::endl;
+	std::cout << "Testing the SuperVector Wrapper..." << std::endl;
 	
 	std::vector<double> vec1 = {1,2,3,4,5,6,7,8,9,10};
 	std::vector<double> vec2 = {2,2,3,2,5,2,2,2,9,2};
@@ -223,8 +223,8 @@ void testVecWrap()
 	std::shared_ptr<std::vector<double> > spvec2 =
 		std::make_shared<std::vector<double> >(vec2);
 	
- 	Vector wrvec1(spvec1);
-	Vector wrvec2(spvec2);
+ 	SuperVector wrvec1(spvec1);
+	SuperVector wrvec2(spvec2);
 
 	std::cout << "v1 length: " <<  wrvec1.length() << std::endl;
 	std::cout << "v2 length: " <<  wrvec2.length() << std::endl;
@@ -240,5 +240,5 @@ void testVecWrap()
 	wrvec2.scale(3);
 	wrvec2.print();
 	
-	std::cout << "Testing the Vector Wrapper...done" << std::endl;
+	std::cout << "Testing the SuperVector Wrapper...done" << std::endl;
 }

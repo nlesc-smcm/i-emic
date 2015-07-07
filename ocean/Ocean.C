@@ -22,7 +22,7 @@
 
 //=====================================================================
 #include "Ocean.H"
-#include "Vector.H"
+#include "SuperVector.H"
 #include "THCM.H"
 #include "THCMdefs.H"
 #include "TRIOS_Domain.H"
@@ -212,7 +212,7 @@ void Ocean::initializeSolver()
 }
 
 //=====================================================================
-void Ocean::solve(RCP<Vector> rhs)
+void Ocean::solve(RCP<SuperVector> rhs)
 {
 	// Check whether solver is initialized, if not perform the
 	// initialization here
@@ -359,17 +359,17 @@ void Ocean::computeJacobian()
 }
 
 //====================================================================
-Teuchos::RCP<Vector> Ocean::getVector(char mode, RCP<Epetra_Vector> vec)
+Teuchos::RCP<SuperVector> Ocean::getVector(char mode, RCP<Epetra_Vector> vec)
 {
 	if (mode == 'C') // copy
 	{
 		RCP<Epetra_Vector> copy = rcp(new Epetra_Vector(*vec));
-		RCP<Vector> ptr         = rcp(new Vector(copy));
+		RCP<SuperVector> ptr    = rcp(new SuperVector(copy));
 		return ptr;
 	}
 	else if (mode == 'V') // view
 	{
-		RCP<Vector> ptr = rcp(new Vector(vec));
+		RCP<SuperVector> ptr = rcp(new SuperVector(vec));
 		return ptr;
 	}
 	else
@@ -380,19 +380,19 @@ Teuchos::RCP<Vector> Ocean::getVector(char mode, RCP<Epetra_Vector> vec)
 }
 
 //====================================================================
-Teuchos::RCP<Vector> Ocean::getSolution(char mode)
+Teuchos::RCP<SuperVector> Ocean::getSolution(char mode)
 {
 	return getVector(mode, sol_);
 }
 
 //====================================================================
-Teuchos::RCP<Vector> Ocean::getState(char mode)
+Teuchos::RCP<SuperVector> Ocean::getState(char mode)
 {
 	return getVector(mode, state_);
 }
 
 //====================================================================
-Teuchos::RCP<Vector> Ocean::getRHS(char mode)
+Teuchos::RCP<SuperVector> Ocean::getRHS(char mode)
 {
 	return getVector(mode, rhs_);
 }

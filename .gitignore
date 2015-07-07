@@ -3,7 +3,7 @@
 
 !doc/
 !src/
-!vector/
+!supervector/
 !parameters/
 !parameterfiles/
 !matlab/

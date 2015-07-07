@@ -3,7 +3,7 @@
 
 #include "Ocean.H"
 #include "Atmosphere.H"
-#include "Vector.H"
+#include "SuperVector.H"
 
 #include <vector>
 #include <memory>
@@ -27,9 +27,9 @@ class CoupledModel
 	std::shared_ptr<Atmosphere> atmosphere_;
 
 	// Combined state, right hand side and solution
-	std::shared_ptr<Vector> stateView_;
-	std::shared_ptr<Vector> rhsView_;
-	std::shared_ptr<Vector> solView_;
+	std::shared_ptr<SuperVector> stateView_;
+	std::shared_ptr<SuperVector> rhsView_;
+	std::shared_ptr<SuperVector> solView_;
 
 	// number of models;
 	int nm_; 
@@ -44,14 +44,14 @@ public:
 
 	void computeJacobian();
 	void computeRHS();
-	void solve(std::shared_ptr<Vector> rhs = nullptr);
+	void solve(std::shared_ptr<SuperVector> rhs = nullptr);
 
-	std::shared_ptr<Vector> getSolution(char mode = 'C');
-	std::shared_ptr<Vector> getState(char mode = 'C');
-	std::shared_ptr<Vector> getRHS(char mode = 'C');
+	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
+	std::shared_ptr<SuperVector> getState(char mode = 'C');
+	std::shared_ptr<SuperVector> getRHS(char mode = 'C');
 
-	void setState(std::shared_ptr<Vector> state);
-	void setRHS(std::shared_ptr<Vector> rhs);
+	void setState(std::shared_ptr<SuperVector> state);
+	void setRHS(std::shared_ptr<SuperVector> rhs);
 
 	void   setPar(double value);
 	double getPar();

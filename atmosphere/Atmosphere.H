@@ -15,7 +15,7 @@
 
 #include <vector>
 #include <memory>
-#include "Vector.H"
+#include "SuperVector.H"
 #include "MultiArray.H"
 #include "AtmosphereDefinitions.H"
 
@@ -129,18 +129,18 @@ public:
 	// destructor
 	~Atmosphere();
 
-	void solve(std::shared_ptr<Vector> rhs = nullptr);
+	void solve(std::shared_ptr<SuperVector> rhs = nullptr);
 	void computeRHS();
 	void computeJacobian();
 
-	std::shared_ptr<Vector> getSolution(char mode = 'C');
-	std::shared_ptr<Vector> getState(char mode = 'C');
-	std::shared_ptr<Vector> getRHS(char mode = 'C');
+	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
+	std::shared_ptr<SuperVector> getState(char mode = 'C');
+	std::shared_ptr<SuperVector> getRHS(char mode = 'C');
 	
-	void setState(std::shared_ptr<Vector> state)
+	void setState(std::shared_ptr<SuperVector> state)
 		{ *state_ = *(state->getStdVector()); }
 
-	void setRHS(std::shared_ptr<Vector> rhs)
+	void setRHS(std::shared_ptr<SuperVector> rhs)
 		{ *rhs_   = *(rhs->getStdVector()); }
 
 	void   setPar(double value) { ampl_ = value;   }
@@ -159,7 +159,7 @@ public:
 	void zeroState();
 	
 private:
-	std::shared_ptr<Vector> getVector
+	std::shared_ptr<SuperVector> getVector
 	(char mode, std::shared_ptr<std::vector<double> > vec);
 	
 	// ! Apply local discretization

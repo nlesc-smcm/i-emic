@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include "Vector.H"
+#include "SuperVector.H"
 
 //-----------------------------------------------------------------------------
 Atmosphere::Atmosphere()
@@ -364,7 +364,7 @@ extern "C" void dgesv_(int *N, int *NRHS, double *A,
 					   int *LDB, int *INFO);
 
 //-----------------------------------------------------------------------------
-void Atmosphere::solve(std::shared_ptr<Vector> rhs)
+void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 {
 	char trans = 'N';
 	
@@ -711,19 +711,19 @@ void Atmosphere::test()
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<Vector> Atmosphere::getVector
+std::shared_ptr<SuperVector> Atmosphere::getVector
 (char mode, std::shared_ptr<std::vector<double> > vec)
 {
 	if (mode == 'C') // copy
 	{
 		std::shared_ptr<std::vector<double> > copy =
 			std::make_shared<std::vector<double> >(*vec); 
-		std::shared_ptr<Vector> ptr = std::make_shared<Vector>(copy);
+		std::shared_ptr<SuperVector> ptr = std::make_shared<SuperVector>(copy);
 		return ptr;
 	}
 	else if (mode == 'V') // view
 	{
-		std::shared_ptr<Vector> ptr = std::make_shared<Vector>(vec);
+		std::shared_ptr<SuperVector> ptr = std::make_shared<SuperVector>(vec);
 		return ptr;
 	}
 	else
@@ -735,19 +735,19 @@ std::shared_ptr<Vector> Atmosphere::getVector
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<Vector> Atmosphere::getSolution(char mode)
+std::shared_ptr<SuperVector> Atmosphere::getSolution(char mode)
 {
 	return getVector(mode, sol_);
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<Vector> Atmosphere::getState(char mode)
+std::shared_ptr<SuperVector> Atmosphere::getState(char mode)
 {
 	return getVector(mode, state_);
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<Vector> Atmosphere::getRHS(char mode)
+std::shared_ptr<SuperVector> Atmosphere::getRHS(char mode)
 {
 	return getVector(mode, rhs_);
 }

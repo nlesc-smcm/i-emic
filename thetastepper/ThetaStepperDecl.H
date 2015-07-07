@@ -8,11 +8,11 @@
 //! ...
 //! This class depends on the Newton class in this project.
 
-template<typename Model, typename Vector>
+template<typename Model, typename VectorPtr>
 class ThetaStepper
 {
 	Model  model_;
-	Vector state_;
+	VectorPtr state_;
 
 	// timestepping specific datamembers
 	double theta_;

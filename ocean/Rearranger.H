@@ -41,7 +41,7 @@ class Rearranger
 	// The keys for the matrix blocks are given below.
 	std::unordered_map< std::string, RCP<Epetra_CrsMatrix> > blocks_;
 
-	// Vector of strings used for identifying contents of the blocks_ vector.
+	// vector of strings used for identifying contents of the blocks_ vector.
     // Notation similar to [A. de Niet et al. 2007], see constructor.
 	//** This initialization may not work on other compilers (std=c++11) **//
 	std::vector< std::string > keys_  = {"A_uv", "E_uv", "G_uv", "G_w", "B_ST",

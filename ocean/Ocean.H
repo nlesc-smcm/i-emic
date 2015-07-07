@@ -38,7 +38,7 @@
 #include <Ifpack_Preconditioner.h>
 
 #include "GlobalDefinitions.H"
-#include "Vector.H"
+#include "SuperVector.H"
 
 // forward declarations
 class THCM;
@@ -119,21 +119,21 @@ public:
 	// The following functions are required by the continuation interface:
 	//
 	// Solve may optionally accept an rhs of VectorPointer type
-	void solve(Teuchos::RCP<Vector> rhs = Teuchos::null);
+	void solve(Teuchos::RCP<SuperVector> rhs = Teuchos::null);
 	void computeRHS();
 	void computeJacobian();
 	
 	// All get...() functions that return a VectorPtr type should accept
 	// a character specifying the access the user has: Copy 'C' or View 'V'
 	// By default this should be copy. 
-	Teuchos::RCP<Vector> getSolution(char mode = 'C');
-	Teuchos::RCP<Vector> getState(char mode = 'C');
-	Teuchos::RCP<Vector> getRHS(char mode = 'C');
+	Teuchos::RCP<SuperVector> getSolution(char mode = 'C');
+	Teuchos::RCP<SuperVector> getState(char mode = 'C');
+	Teuchos::RCP<SuperVector> getRHS(char mode = 'C');
 	
-	void setState(Teuchos::RCP<Vector> state)
+	void setState(Teuchos::RCP<SuperVector> state)
 		{ state_ = state->getEpetraVector(); }
 	
-	void setRHS(Teuchos::RCP<Vector> rhs)
+	void setRHS(Teuchos::RCP<SuperVector> rhs)
 		{ rhs_   = rhs->getEpetraVector(); }
 
 	// The parameter get and set members wrap the corresponding
@@ -171,6 +171,6 @@ private:
 	void scaleProblem();
 	void unscaleProblem();
 
-	Teuchos::RCP<Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
+	Teuchos::RCP<SuperVector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
 };
 #endif
