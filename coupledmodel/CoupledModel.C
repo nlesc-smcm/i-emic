@@ -1,6 +1,5 @@
 #include "CoupledModel.H"
 #include "Ocean.H"
-#include "OceanCont.H" // --> this should be inside Ocean
 #include "Atmosphere.H"
 #include "Vector.H"
 
@@ -19,7 +18,7 @@ CoupledModel::CoupledModel(Graph &couplings,
 	comm_(comm)
 {
 	// Create ocean object using the parallel communicator
-	ocean_ = Teuchos::rcp(new OceanCont(comm_));
+	ocean_ = Teuchos::rcp(new Ocean(comm_));
 
 	// Create atmosphere object
 	atmosphere_ = std::make_shared<Atmosphere>();

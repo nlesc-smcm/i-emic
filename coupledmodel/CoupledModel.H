@@ -2,7 +2,6 @@
 #define COUPLEDMODEL_H
 
 #include "Ocean.H"
-#include "OceanCont.H" // --> this should be inside Ocean
 #include "Atmosphere.H"
 #include "Vector.H"
 
@@ -22,7 +21,7 @@ class CoupledModel
 	Graph couplings_;
 
 	// Trilinos-based parallel implicit ocean model (Trilinos-THCM)
-	Teuchos::RCP<OceanCont>  ocean_;
+	Teuchos::RCP<Ocean>  ocean_;
 	
 	// Plain std::vector-based atmosphere model
 	std::shared_ptr<Atmosphere> atmosphere_;

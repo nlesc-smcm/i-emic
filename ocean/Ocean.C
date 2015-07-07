@@ -457,9 +457,9 @@ double Ocean::getPar()
 	FNAME(getparcs)(&parIdent_, &thcmPar);
 	if (thcmPar != parValue_)
 	{
-		INFO("OceanCont::getPar(): Parameter synchronization");
+		INFO("Ocean::getPar(): Faulty parameter synchronization");
 		INFO("              thcm: " << thcmPar);
-		INFO("         OceanCont: " << parValue_);
+		INFO("             Ocean: " << parValue_);
 		INFO("     fixing this...");
 		FNAME(setparcs)(&parIdent_, &parValue_);
 		FNAME(getparcs)(&parIdent_, &thcmPar);
