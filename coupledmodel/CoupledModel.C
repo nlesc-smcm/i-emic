@@ -1,3 +1,4 @@
+
 #include "CoupledModel.H"
 #include "Ocean.H"
 #include "Atmosphere.H"
@@ -79,27 +80,60 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	// Atmosphere
 	atmosphere_->solve(rhs);
 
-	// // Alternative solve:
-	// // Let J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
-	// // D*w1 = b2
-	// atmosphere_->solve(rhs);
-	// std::shared_ptr<SuperVector> w1 =
-	// 	std::make_shared<SuperVector>(atmosphere_->getSolution('C')->getStdVector());
+#if 0
+	//--------------------------------------------------------------------------
+	// Alternative solve:
+	// Let J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
+	// We solve this system in an elimination based fashion. The inverse of the
+	//  Schur complement is approximated using a Neumann series expansion:
+	//  inv(A - B*inv(D)*C) = inv(I-inv(A)*B*inv(D)*C)*inv(A)
+	//                \approx (I+inv(A)*B*inv(D)*C)*inv(A)
+	// This approach results in a sequence of solves.
+	
+	// D*w1 = b2
+	atmosphere_->solve(rhs);
+	std::shared_ptr<SuperVector> w1 =
+		std::make_shared<SuperVector>(atmosphere_->getSolution('C')->getStdVector());
 
-    // // bt = b1 - B*w1 linear mapping from atmosphere to ocean
-	// //               (from STL vector to Epetra vector)
-	// w1->linearTransformation(B_,'A','O');
-	// w1->update(1, *rhs, -1);
+    // bt = b1 - B*w1 linear mapping from atmosphere to ocean
+	//               (from STL vector to Epetra vector)
+	w1->linearTransformation(B_,'A','O');
+	w1->update(1, *rhs, -1);
 	
-	// // A*w2 = bt 
-	// std::shared_ptr<SuperVector> bt(w1);
-	// ocean_->solve(bt);
+	// A*w2 = btmp 
+	std::shared_ptr<SuperVector> btmp(w1);
+	ocean_->solve(btmp);
 
-	// // D*w3 = C*w2
-	// std::shared_ptr<SuperVector> w3 =
-	// 	std::make_shared<SuperVector>(ocean_->getSolution('C')->getEpetraVector());
+	// D*w3 = C*w2 
+	std::shared_ptr<SuperVector> w2 = // extract solution from ocean solve -> w2
+		std::make_shared<SuperVector>(ocean_->getSolution('C')->getEpetraVector());
+	// linear transformation from ocean to atmosphere
+	w3->linearTransformation(C_,'O','A'); // perform transformation C*w2
+	std::shared_ptr<SuperVector> Cw2(w2); // call it Cw2
+	atmosphere_->solve(Cw2);
 	
-	
+	//  A*w4 = B*w3
+	std::shared_ptr<SuperVector> w3 = // extract solution from atmosphere solve -> w3
+		std::make_shared<SuperVector>(atmosphere_->getSolution('C')->getStdVector());
+	w3->linearTransformation(B_,'A','O');
+	std::shared_ptr<SuperVector> Bw3(w3);
+	ocean_->solve(Bw3);
+
+	// btmp = b2 - C*x1 linear mapping from atmosphere to ocean
+	//                (from STL vector to Epetra vector)
+	std::shared_ptr<SuperVector> x1 =  // extract solution from ocean -> x1
+		std::make_shared<SuperVector>(ocean_->getSolution('C')->getEpetraVector());
+	x1->linearTransformation(C_,'O','A');
+	x1->update(1, *rhs, -1);
+	btmp(x1);
+
+    // D*x2 = btmp
+	atmosphere_->solve(btmp);
+
+	// By now the ocean model will contain x1 and the atmosphere model will have x2
+	// The getSolution routine will be responsible for extracting these vectors.	
+	//--------------------------------------------------------------------------
+#endif
 }
 
 //------------------------------------------------------------------
