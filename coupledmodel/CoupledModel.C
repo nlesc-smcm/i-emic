@@ -78,6 +78,28 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 
 	// Atmosphere
 	atmosphere_->solve(rhs);
+
+	// // Alternative solve:
+	// // Let J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
+	// // D*w1 = b2
+	// atmosphere_->solve(rhs);
+	// std::shared_ptr<SuperVector> w1 =
+	// 	std::make_shared<SuperVector>(atmosphere_->getSolution('C')->getStdVector());
+
+    // // bt = b1 - B*w1 linear mapping from atmosphere to ocean
+	// //               (from STL vector to Epetra vector)
+	// w1->linearTransformation(B_,'A','O');
+	// w1->update(1, *rhs, -1);
+	
+	// // A*w2 = bt 
+	// std::shared_ptr<SuperVector> bt(w1);
+	// ocean_->solve(bt);
+
+	// // D*w3 = C*w2
+	// std::shared_ptr<SuperVector> w3 =
+	// 	std::make_shared<SuperVector>(ocean_->getSolution('C')->getEpetraVector());
+	
+	
 }
 
 //------------------------------------------------------------------
