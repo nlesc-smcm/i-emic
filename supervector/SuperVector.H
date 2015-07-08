@@ -203,5 +203,24 @@ public:
 				std::cout << std::endl;
 			}						
 		}
+
+	//------------------------------------------------------------------
+	void linearTransformation(std::shared_ptr<std::vector<double> > > diagonal,
+							  char domain, char range)
+		{
+			if (domain == 'O' && range == 'A')
+			{
+				// lookup Trilinos stuff
+
+				haveEpetraVector_ = false;
+			}
+			else if (domain == 'A' && range == 'O')
+			{
+
+				// ...
+
+				haveStdVector_ = false;
+			}
+		}
 };
 #endif
