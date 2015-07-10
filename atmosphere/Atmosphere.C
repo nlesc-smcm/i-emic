@@ -41,8 +41,8 @@ Atmosphere::Atmosphere()
 
 	
 	// Set problem size
-	n_ = 32;
-	m_ = 32;
+	n_ = 16;
+	m_ = 16;
 	l_ = 1;
 	int dim = n_ * m_ * l_;
 	
@@ -165,8 +165,14 @@ Atmosphere::~Atmosphere()
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::setOceanTemperature(std::vector<double> sst)
+void Atmosphere::setOceanTemperature(std::vector<double> &sst,
+									 double relaxation)
 {
+	// Apply relaxation
+	for (auto &el: sst)
+		el *= relaxation;
+
+	// Set ocean temperature
 	oceanTemp_ = sst;
 }
 
@@ -753,6 +759,28 @@ std::shared_ptr<SuperVector> Atmosphere::getRHS(char mode)
 }
 
 //-----------------------------------------------------------------------------
+std::shared_ptr<std::vector<double> > Atmosphere::getOceanBlock()
+{
+	// The contribution of the ocean in the atmosphere is a
+	// diagonal of ones.
+	return std::make_shared<std::vector<double> >(m_*n_, 1.0);
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<std::vector<int> > Atmosphere::getAtmosRows()
+{
+	std::shared_ptr<std::vector<int> > rows =
+		std::make_shared<std::vector<int> >();
+	for (int j = 1; j <= m_; ++j)
+		for (int i = 1; i <= n_; ++i)
+		{
+			// 1-based!!
+			rows->push_back(find_row(i,j,l_,ATMOS_TT_));
+		}
+	
+	return rows;	
+}
+
 
 //=============================================================================
 // DependencyGrid implementation

@@ -38,6 +38,7 @@ using Teuchos::rcp;
 extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
 extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(setparcs)(int*,double*);
+extern "C" _SUBROUTINE_(getooa)(double*);
 
 //=====================================================================
 // Constructor:
@@ -101,7 +102,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	L_ = domain_->GlobalL();
 	
 	// Initialize sst
-	sst_ = std::vector<double>(N_*M_, 0.0);
+	sst_ = std::make_shared<std::vector<double> >(N_*M_, 0.0);
 
 	// Create fullSol_ array
 	fullSol_ = new double[state_->GlobalLength()];
@@ -113,7 +114,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	parEnd_   = 1.0;
 
 	// Put the initial value into the model.
-	setPar(parStart_);
+	setPar(parStart_);	
 }
 
 //=====================================================================
@@ -194,7 +195,7 @@ void Ocean::initializeSolver()
 	belosParamList_->set("Orthogonalization","DGKS");
 	belosParamList_->set("Output Frequency",1);
 	belosParamList_->set("Maximum Iterations", 1000);
-	belosParamList_->set("Convergence Tolerance", 1.0e-3); 
+	belosParamList_->set("Convergence Tolerance", 5.0e-3); 
 	belosParamList_->set("Explicit Residual Test", false); 
 	//belosParamList_->set("Verbosity", Belos::FinalSummary);
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
@@ -220,7 +221,8 @@ void Ocean::solve(RCP<SuperVector> rhs)
 		initializeSolver();
 	
 	// Set the initial solution in the solver to zeros.
-	// --> this should be improved/changed.
+	// --> this should be improved/changed but having zero as
+	//     initial solution seems to be slightly faster
 	sol_->PutScalar(0.0);
 
 	// If required we scale the problem here
@@ -342,7 +344,6 @@ void Ocean::computeRHS()
 {
 	// evaluate rhs in THCM with the current state
  	TIMER_START("Ocean: compute RHS...", timer_);
-	INFO("Ocean: inserting Atmosphere in THCM");
 	THCM::Instance().evaluate(*state_, rhs_, false);
 	TIMER_END("Ocean: compute RHS...", timer_);
 }
@@ -398,15 +399,38 @@ Teuchos::RCP<SuperVector> Ocean::getRHS(char mode)
 }
 
 //====================================================================
-void Ocean::setAtmosphere(std::vector<double> &atmos)
+void Ocean::setAtmosphere(std::vector<double> &atmos,
+						  double relaxation)
 {
 	// This is a job for THCM
-	THCM::Instance().setAtmosphere(atmos);
+	THCM::Instance().setAtmosphere(atmos, relaxation);
+}
+
+//====================================================================
+std::shared_ptr<std::vector<double> > Ocean::getAtmosBlock()
+{
+	double Ooa;
+	FNAME(getooa)(&Ooa);
+	std::shared_ptr<std::vector<double> > values =
+		std::make_shared<std::vector<double> >(N_ * M_, -Ooa);
+	return values;
+}
+
+//====================================================================
+std::shared_ptr<std::vector<int> > Ocean::getSSTRows()
+{
+	std::shared_ptr<std::vector<int> > rows =
+		std::make_shared<std::vector<int> >();
+	for (int j = 0; j != M_; ++j)
+		for (int i = 0; i != N_; ++i)
+			rows->push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));
+
+	return rows;
 }
 
 //====================================================================
 // Fill and return a copy of the SST
-std::vector<double> Ocean::getSST()
+std::shared_ptr<std::vector<double> > Ocean::getSST()
 {
 	// extract solution from gathered vector --> this is slow
 	// everything should be better distributed
@@ -415,13 +439,14 @@ std::vector<double> Ocean::getSST()
 	gathered->ExtractCopy(fullSol_, state_->GlobalLength());
 	int row;
 	int idx = 0;
+	
 	// sst_ should be initialized
  	for (int j = 0; j != M_; ++j)
 		for (int i = 0; i != N_; ++i)
 		{
 			// Using macros from THCMdefs.H
 			row = FIND_ROW2(_NUN_, N_, M_, L_, i, j, L_-1, TT);
-			sst_[idx] = fullSol_[row];
+			(*sst_)[idx] = fullSol_[row];
 			++idx;
 		}
 	return sst_;

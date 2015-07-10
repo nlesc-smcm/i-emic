@@ -97,7 +97,7 @@ protected:
 	double *fullSol_;
 	
 	// Sea surface temperature
-	std::vector<double> sst_;
+	std::shared_ptr<std::vector<double> > sst_;
 
 	//------------------------------------------------------------------
 	// Datamembers in charge of the continuation parameter
@@ -159,10 +159,17 @@ public:
 	// models:
 
 	// Obtain an external atmosphere
-	void setAtmosphere(std::vector<double> &atmos);
-
+	void setAtmosphere(std::vector<double> &atmos, double relaxation);
+	
+	// Get the diagonal elements of the atmosphere -> ocean
+	// contribution in the Jacobian
+	std::shared_ptr<std::vector<double> > getAtmosBlock();
+	
 	// Obtain ocean surface temperature
-	std::vector<double> getSST();
+	std::shared_ptr<std::vector<double> > getSST();
+	
+	// Get the rows in the matrix associated with surface temperature
+	std::shared_ptr<std::vector<int> > getSSTRows();
 	
 private:
 	// Randomize state, scale with scaling

@@ -1,13 +1,15 @@
 #ifndef SUPERVECTOR_H
 #define SUPERVECTOR_H
 
-#include <Epetra_Vector.h>
 #include <Epetra_Map.h>
-#include "Teuchos_RCP.hpp"
+#include <Epetra_Vector.h>
+#include <Epetra_MultiVector.h>
+#include <Teuchos_RCP.hpp>
 #include <memory> // shared ptr
 #include <vector>
 #include <math.h>
 #include "GlobalDefinitions.H"
+#include "Utils.H"
 
 // This class acts as a normal vector with a few standard methods:
 //   length, update, dot, norm, scale, randomize
@@ -192,12 +194,14 @@ public:
 		{
 			if (haveEpetraVector_)
 			{
-				std::cout << "Printing epetraVector to outFile stream" << std::endl;
-				epetraVector_->Print(*outFile); // see GlobalDefinitions.H
+				std::cout << "\nPrinting epetraVector to outFile stream" << std::endl;
+				epetraVector_->Print(*outFile);  // see GlobalDefinitions.H
+				epetraVector_->Print(std::cout); // see GlobalDefinitions.H
 			}
 			
 			if (haveStdVector_)
 			{
+				std::cout << "\nPrinting stdVector std::cout" << std::endl;
 				for (auto &it : *stdVector_)
 					std::cout << it << " ";
 				std::cout << std::endl;
@@ -205,21 +209,49 @@ public:
 		}
 
 	//------------------------------------------------------------------
-	void linearTransformation(std::shared_ptr<std::vector<double> > > diagonal,
+	void linearTransformation(std::vector<double> &diagonal,
+							  std::vector<int> &indices,
 							  char domain, char range)
 		{
 			if (domain == 'O' && range == 'A')
 			{
-				// lookup Trilinos stuff
+				int dstLength = diagonal.size();
+				int srcLength = epetraVector_->GlobalLength();
 
-				haveEpetraVector_ = false;
+				// re-initialize stdVector				
+				stdVector_ = std::make_shared<std::vector<double> >
+					(dstLength, 0.0);
+
+				// gather the epetraVector
+				Teuchos::RCP<Epetra_MultiVector> gathered =
+					Utils::AllGather(*epetraVector_);
+
+				// fullSol should be allocated
+				double *fullSol = new double[srcLength];
+
+				// get the values in the epetraVector
+				gathered->ExtractCopy(fullSol, srcLength);
+
+				// calculate the values in the destination stdVector
+				for (size_t i = 0; i != stdVector_->size(); ++i)
+					(*stdVector_)[i] = diagonal[i] * fullSol[indices[i]];
+
+				// cleanup
+				delete fullSol;				
 			}
 			else if (domain == 'A' && range == 'O')
 			{
-
-				// ...
-
-				haveStdVector_ = false;
+				std::vector<double> values;
+				for (size_t i = 0; i != stdVector_->size(); ++i)
+					values.push_back(diagonal[i] * (*stdVector_)[i]);
+				
+				// re-initialize epetraVector
+				epetraVector_->PutScalar(0.0);
+				
+				// Fill the epetraVector
+				epetraVector_->ReplaceGlobalValues(
+					stdVector_->size(),
+					&values[0], &indices[0]);
 			}
 		}
 };

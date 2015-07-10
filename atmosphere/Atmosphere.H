@@ -4,6 +4,8 @@
   energy balance model already available in the old THCM code.
 
   Although this is a 2D model we maintain notation of the 3D ocean model.
+
+  --> THIS IMPLEMENTATION SHOULD MOVE TO 0-BASED! better for everyone
   
   Author: Erik -> t.e.mulder@uu.nl
 */
@@ -148,7 +150,8 @@ public:
 	double getParDestination()  { return amplEnd_; }
 
 	void test();
-	void setOceanTemperature(std::vector<double> sst);
+	void setOceanTemperature(std::vector<double> &sst,
+							 double relaxation);
 
 	void dumpState() { writeAll(); }
 
@@ -157,6 +160,11 @@ public:
 	void idealizedState();
 	void zeroOcean();
 	void zeroState();
+
+	// ! -------------------------------------------------------
+	std::shared_ptr<std::vector<double> > getOceanBlock();
+	std::shared_ptr<std::vector<int> >    getAtmosRows();
+
 	
 private:
 	std::shared_ptr<SuperVector> getVector

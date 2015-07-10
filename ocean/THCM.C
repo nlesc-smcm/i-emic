@@ -928,8 +928,12 @@ void THCM::evaluateB(void)
 }	
 	
 //=============================================================================
-void THCM::setAtmosphere(std::vector<double> &atmosvec)
+void THCM::setAtmosphere(std::vector<double> &atmosvec, double relaxation)
 {
+	// Apply relaxation
+	for (auto &el: atmosvec)
+		el *= relaxation;
+	
 	// Create a gather map
 	Teuchos::RCP<Epetra_Map> atmos_map_dist = domain->CreateStandardMap(1, true);
 	Teuchos::RCP<Epetra_Map> atmos_map_root = Utils::Gather(*atmos_map_dist, 0);

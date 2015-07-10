@@ -130,7 +130,7 @@ public:
 	//! ------------------- I-EMIC couplings -----------------------------
 	//! 
 	//! void insertAtmosphere(const Epetra_Vector &atmos);
-	void setAtmosphere(std::vector<double> &atmos);
+	void setAtmosphere(std::vector<double> &atmos, double relaxation);
 	void setAtmosphereTest();
 	//! Flag enabling the coupling with external atmosphere via the I-EMIC
 	//!   0: standalone thcm, 1: accepting external atmosphere

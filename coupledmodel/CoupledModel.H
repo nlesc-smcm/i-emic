@@ -36,6 +36,14 @@ class CoupledModel
 
 	// Trilinos' MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
+
+	// Atmosphere -> Ocean block in Jacobian
+	std::shared_ptr<std::vector<double> > B_;	
+	std::shared_ptr<std::vector<int> > rowsB_;
+
+	// Ocean -> Atmosphere block in Jacobian
+	std::shared_ptr<std::vector<double> > C_;	
+	std::shared_ptr<std::vector<int> > rowsC_;
 	
 public:
 	CoupledModel(Graph &couplings,
@@ -60,9 +68,10 @@ public:
 	void dumpState();
 
 private:
-	void synchronize();
+	// for internal use in the inexact solver
+	std::shared_ptr<SuperVector> getSolution(char mode1, char mode2);
+	void synchronize(double relaxation = 1.0);
 	void test();
-	
 };
 
 #endif

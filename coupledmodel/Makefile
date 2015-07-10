@@ -12,15 +12,15 @@ HEADERDEPS = \
 
 all: lib
 
-lib: $(libname)
+lib: $(libname) 
 
-$(libname): ${obj}
+$(libname): ${obj} 
 	ar vrcs $(libname) $(obj)
 
-CoupledModel.o: CoupledModel.C CoupledModel.H
+CoupledModel.o: CoupledModel.C CoupledModel.H $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 
-%.o: %.C %.H $(HEADERDEPS)
+%.o: %.C %.H 
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 %.o: %.C
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<

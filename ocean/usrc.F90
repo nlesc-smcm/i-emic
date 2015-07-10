@@ -171,6 +171,16 @@ SUBROUTINE getparcs(param,value)
   !     ENDIF
 end subroutine getparcs
 !*****************************************************************************
+SUBROUTINE getooa(value)
+  !     interface to get Ooa
+  use, intrinsic :: iso_c_binding
+  use m_usr
+  use m_atm
+  implicit none
+  real(c_double) value
+  value = Ooa
+end subroutine getooa
+!*****************************************************************************
 SUBROUTINE writeparams()
   ! write the entire parameter list (1-30) to fort.7
   use, intrinsic :: iso_c_binding
@@ -273,6 +283,8 @@ SUBROUTINE matrix(un,sig1,sig2)
   call assemble
   !write(*,*) "In fortran's matrix() maxval TT =", maxval(Al(:,:,:,:,TT,:))
   !write(*,*) "In fortran's matrix() maxval SS =", maxval(Al(:,:,:,:,SS,:))
+
+  ! call writematrhs(0.0)
 
   !     call writecsrmats
   !     stop
