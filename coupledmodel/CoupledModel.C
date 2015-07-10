@@ -84,74 +84,104 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 
 	// Atmosphere
 	atmosphere_->solve(rhs);
-#endif
-#if 1
-	//--------------------------------------------------------------------------
+#else 
+	//.......................................................
 	// Alternative solve:
 	// Let J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
+	//     A: ocean,
+    //     D: atmosphere,
+	//     B: influence of atmosphere on ocean
+	//     C: influence of ocean on atmosphere
+	//
 	// We solve this system in an elimination based fashion. The inverse of the
 	//  Schur complement is approximated using a Neumann series expansion:
 	//  inv(A - B*inv(D)*C) = inv(I-inv(A)*B*inv(D)*C)*inv(A)
 	//                \approx (I+inv(A)*B*inv(D)*C)*inv(A)
 	// This approach results in a sequence of solves.
+	//.......................................................
 
-	// Relaxation for the coupling in the rhs
+	// Relaxation for the coupling in the rhs --> leave it?
 	double lambda = 1;
 	
-	// D*w1 = b2
+	// D*w1 = b2 ............................................
 	atmosphere_->solve(rhs);
 
 	// We extract the solution w1 from the atmosphere. The solution in the ocean
 	// is also obtained so that its properties are available when performing a
 	// linear transformation.
 	std::shared_ptr<SuperVector> w1 = getSolution('C', 'C');
-	
-    // btmp = b1 - lambda*B*w1 linear transformation from atmosphere to ocean
-	//                             (from STL vector to Epetra vector)
+
+    // btmp = b1 - lambda*B*w1 ..............................
+
+	// Compute B*w1: 
+	//   linear transformation from atmosphere to ocean
+	//   from STL vector to Epetra vector)
 	w1->linearTransformation(*B_, *rowsB_, 'A', 'O');
 	w1->update(1, *rhs, -lambda);
 
 	// A*w2 = btmp 
 	std::shared_ptr<SuperVector> btmp(w1);
 	ocean_->solve(Teuchos::rcp(btmp.get(), false));
-	
+
+# if 1
+	// ......................................................
 	// extract solution from ocean solve -> w2
-	// call it Cw2
+	// We need 2 copies:
+	//  -one to manipulate and get Cw2 and
+	//  -one to store and use in the calculation of x1
+
+	std::shared_ptr<SuperVector> w2 = getSolution('C', 'C');
+	
+	// call this one Cw2
 	std::shared_ptr<SuperVector> Cw2 = getSolution('C', 'C');
 	
-	// linear transformation from ocean to atmosphere: C*w2
+	// Compute linear transformation from ocean to atmosphere: C*w2
 	Cw2->linearTransformation(*C_, *rowsB_, 'O', 'A'); 
 
-	// get another copy of w2 for later use
-	std::shared_ptr<SuperVector> w2 = getSolution('C', 'C');
-
-#if 1
-	// D*w3 = C*w2
+	// D*w3 = C*w2 ..........................................
 	atmosphere_->solve(Cw2);	
 	
 	// extract solution from atmosphere solve -> w3
 	std::shared_ptr<SuperVector> w3 = getSolution('C', 'C');
 
-	// linear transformation from atmosphere to ocean
+	// linear transformation from atmosphere to ocean 
 	w3->linearTransformation(*B_, *rowsB_, 'A','O');
 	std::shared_ptr<SuperVector> Bw3(w3); // call it Bw3
 	
 	//  A*w4 = B*w3
 	ocean_->solve(Teuchos::rcp(Bw3.get(), false));
 
-#endif	
-#if 0
+#  if 1
+	// ......................................................
+    // Neumann k = 2
+	// We need 2 copies:
+	//  -one to manipulate and get Cw4 and
+	//  -one to store and use in the calculation of x1
+	std::shared_ptr<SuperVector> w4  = getSolution('C','C');
+	std::shared_ptr<SuperVector> Cw4 = getSolution('C','C');
+	Cw4->linearTransformation(*C_, *rowsB_, 'O', 'A');
+	atmosphere_->solve(Cw4);
+	
+	std::shared_ptr<SuperVector> w5 = getSolution('C','C');
+	w5->linearTransformation(*B_, *rowsB_, 'A', 'O');
+	std::shared_ptr<SuperVector> Bw5(w5);
+	ocean_->solve(Teuchos::rcp(Bw5.get(),false));
 
-//	k = 2  
-	
-#endif	
-	// extract solution VIEW from ocean -> w4
-	// and a COPY from the atmosphere for later use
-	// call it x1   
+	// x1 = w2 + w4 + w6
 	std::shared_ptr<SuperVector> x1 = getSolution('V','C');
-	
-	// update the solution in the ocean: x1 = w2 + w4
+	x1->update(1, *w4, 1);
 	x1->update(1, *w2, 1);
+#  else
+
+	// x1 = w2 + w4
+	std::shared_ptr<SuperVector> x1 = getSolution('V','C');
+	x1->update(1, *w2, 1);
+	
+#  endif
+
+# else
+	// x1 = w2 -> already in ocean_, no need for extraction
+# endif 	
 	
 	// btmp = b2 - C*x1: linear mapping from atmosphere to ocean
 	// obtain a copy of the solution x1 = w4 + w2 in the ocean:
@@ -167,10 +197,9 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
     // Solve D*x2 = btmp:
 	atmosphere_->solve(btmp);
 
-	// By now the ocean model will contain x1 = w2 + w4 and the atmosphere model
+	// By now the ocean model will contain x1 and the atmosphere model
 	// will have x2 = inv(D)*btmp.
-	// The getSolution routine will be responsible for extracting these vectors.	
-	//--------------------------------------------------------------------------
+	// The getSolution routine will be responsible for extracting these vectors.
 #endif
 }
 
