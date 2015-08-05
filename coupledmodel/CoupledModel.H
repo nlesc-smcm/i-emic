@@ -24,7 +24,7 @@ class CoupledModel
 	Teuchos::RCP<Ocean>  ocean_;
 	
 	// Plain std::vector-based atmosphere model
-	std::shared_ptr<Atmosphere> atmosphere_;
+	std::shared_ptr<Atmosphere> atmos_;
 
 	// Combined state, right hand side and solution
 	std::shared_ptr<SuperVector> stateView_;

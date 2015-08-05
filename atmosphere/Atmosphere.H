@@ -140,10 +140,10 @@ public:
 	std::shared_ptr<SuperVector> getRHS(char mode = 'C');
 	
 	void setState(std::shared_ptr<SuperVector> state)
-		{ *state_ = *(state->getStdVector()); }
+		{ *state_ = *(state->getAtmosVector()); }
 
 	void setRHS(std::shared_ptr<SuperVector> rhs)
-		{ *rhs_   = *(rhs->getStdVector()); }
+		{ *rhs_   = *(rhs->getAtmosVector()); }
 
 	void   setPar(double value) { ampl_ = value;   }
 	double getPar()             { return ampl_;    }

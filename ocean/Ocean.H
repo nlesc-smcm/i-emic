@@ -131,10 +131,10 @@ public:
 	Teuchos::RCP<SuperVector> getRHS(char mode = 'C');
 	
 	void setState(Teuchos::RCP<SuperVector> state)
-		{ state_ = state->getEpetraVector(); }
+		{ state_ = state->getOceanVector(); }
 	
 	void setRHS(Teuchos::RCP<SuperVector> rhs)
-		{ rhs_   = rhs->getEpetraVector(); }
+		{ rhs_   = rhs->getOceanVector(); }
 
 	// The parameter get and set members wrap the corresponding
 	// Fortran functions. Just as in THCM, these functions

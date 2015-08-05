@@ -383,7 +383,7 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 	if (rhs == nullptr)
 		(*sol_) = std::vector<double>((*rhs_));
 	else
-		(*sol_) = std::vector<double>(*(rhs->getStdVector()));
+		(*sol_) = std::vector<double>(*(rhs->getAtmosVector()));
 	
 	dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
 			&(*sol_)[0], &ldb, &info);

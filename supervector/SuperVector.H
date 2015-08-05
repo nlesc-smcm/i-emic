@@ -66,10 +66,10 @@ public:
 	void scale(double scale);
 
 	// Get a pointer to the Trilinos/Ocean vector
-	Teuchos::RCP<Epetra_Vector> getEpetraVector();
+	Teuchos::RCP<Epetra_Vector> getOceanVector();
 
 	// Get a pointer to the STL/Atmos vector
-	std::shared_ptr<std::vector<double> > getStdVector();
+	std::shared_ptr<std::vector<double> > getAtmosVector();
 
 	// Print the vectors to various output streams
 	void print();

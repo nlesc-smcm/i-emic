@@ -1,4 +1,3 @@
-
 #include "CoupledModel.H"
 #include "Ocean.H"
 #include "Atmosphere.H"
@@ -22,36 +21,36 @@ CoupledModel::CoupledModel(Graph &couplings,
 	ocean_ = Teuchos::rcp(new Ocean(comm_));
 
 	// Create atmosphere object
-	atmosphere_ = std::make_shared<Atmosphere>();
+	atmos_ = std::make_shared<Atmosphere>();
 
 	stateView_ =
-		std::make_shared<SuperVector>(ocean_->getState('V')->getEpetraVector(),
-								 atmosphere_->getState('V')->getStdVector() );
+		std::make_shared<SuperVector>(ocean_->getState('V')->getOceanVector(),
+									  atmos_->getState('V')->getAtmosVector() );
 
 	solView_ =
- 		std::make_shared<SuperVector>(ocean_->getSolution('V')->getEpetraVector(),
-								 atmosphere_->getSolution('V')->getStdVector() );
+ 		std::make_shared<SuperVector>(ocean_->getSolution('V')->getOceanVector(),
+									  atmos_->getSolution('V')->getAtmosVector() );
 
 	rhsView_ =
- 		std::make_shared<SuperVector>(ocean_->getRHS('V')->getEpetraVector(),
-								 atmosphere_->getRHS('V')->getStdVector() );
+ 		std::make_shared<SuperVector>(ocean_->getRHS('V')->getOceanVector(),
+									  atmos_->getRHS('V')->getAtmosVector() );
 
 	// Get the contribution of the atmosphere to the ocean in the Jacobian
 	B_     = ocean_->getAtmosBlock();
 	rowsB_ = ocean_->getSSTRows();
 
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
-	C_     = atmosphere_->getOceanBlock();
+	C_     = atmos_->getOceanBlock();
 }
 
 //------------------------------------------------------------------
 void CoupledModel::synchronize(double relaxation)
 {
 	INFO("CoupledModel: synchronize...");
-	ocean_->setAtmosphere(*(stateView_->getStdVector()), relaxation);
+	ocean_->setAtmosphere(*(stateView_->getAtmosVector()), relaxation);
 
 	// returns a copy of the sst in the ocean
-	atmosphere_->setOceanTemperature(*(ocean_->getSST()), relaxation);
+	atmos_->setOceanTemperature(*(ocean_->getSST()), relaxation);
 	INFO("CoupledModel: synchronize... done");
 }
 
@@ -62,7 +61,7 @@ void CoupledModel::computeJacobian()
 	ocean_->computeJacobian();
 
 	// Atmosphere
-	atmosphere_->computeJacobian();
+	atmos_->computeJacobian();
 }
 
 //------------------------------------------------------------------
@@ -72,7 +71,7 @@ void CoupledModel::computeRHS()
 	ocean_->computeRHS();
 
 	// Atmosphere
-	atmosphere_->computeRHS();
+	atmos_->computeRHS();
 }
 
 //------------------------------------------------------------------
@@ -83,7 +82,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	ocean_->solve(Teuchos::rcp(rhs.get(), false));
 
 	// Atmosphere
-	atmosphere_->solve(rhs);
+	atmos_->solve(rhs);
 #else 
 	//.......................................................
 	// Alternative solve:
@@ -104,7 +103,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	double lambda = 1;
 	
 	// D*w1 = b2 ............................................
-	atmosphere_->solve(rhs);
+	atmos_->solve(rhs);
 
 	// We extract the solution w1 from the atmosphere. The solution in the ocean
 	// is also obtained so that its properties are available when performing a
@@ -139,7 +138,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	Cw2->linearTransformation(*C_, *rowsB_, 'O', 'A'); 
 
 	// D*w3 = C*w2 ..........................................
-	atmosphere_->solve(Cw2);	
+	atmos_->solve(Cw2);	
 	
 	// extract solution from atmosphere solve -> w3
 	std::shared_ptr<SuperVector> w3 = getSolution('C', 'C');
@@ -160,7 +159,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	std::shared_ptr<SuperVector> w4  = getSolution('C','C');
 	std::shared_ptr<SuperVector> Cw4 = getSolution('C','C');
 	Cw4->linearTransformation(*C_, *rowsB_, 'O', 'A');
-	atmosphere_->solve(Cw4);
+	atmos_->solve(Cw4);
 	
 	std::shared_ptr<SuperVector> w5 = getSolution('C','C');
 	w5->linearTransformation(*B_, *rowsB_, 'A', 'O');
@@ -195,7 +194,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	btmp->update(1, *rhs, -lambda);
 
     // Solve D*x2 = btmp:
-	atmosphere_->solve(btmp);
+	atmos_->solve(btmp);
 
 	// By now the ocean model will contain x1 and the atmosphere model
 	// will have x2 = inv(D)*btmp.
@@ -211,8 +210,8 @@ std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode)
 	else if (mode == 'C') // Copy
 	{
 		return std::make_shared<SuperVector>(
-			ocean_->getSolution('C')->getEpetraVector(),
-			atmosphere_->getSolution('C')->getStdVector() );
+			ocean_->getSolution('C')->getOceanVector(),
+			atmos_->getSolution('C')->getAtmosVector() );
 	}
 	else
 	{
@@ -226,8 +225,8 @@ std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode1,
 													   char mode2)
 {
 	return std::make_shared<SuperVector>(
-		ocean_->getSolution(mode1)->getEpetraVector(),
-		atmosphere_->getSolution(mode2)->getStdVector() );
+		ocean_->getSolution(mode1)->getOceanVector(),
+		atmos_->getSolution(mode2)->getAtmosVector() );
 }
 
 //------------------------------------------------------------------
@@ -238,8 +237,8 @@ std::shared_ptr<SuperVector> CoupledModel::getState(char mode)
 	else if (mode == 'C') // Copy
 	{
 		return std::make_shared<SuperVector>(
-			ocean_->getState('C')->getEpetraVector(),
-			atmosphere_->getState('C')->getStdVector() );
+			ocean_->getState('C')->getOceanVector(),
+			atmos_->getState('C')->getAtmosVector() );
 	}
 	else
 	{
@@ -256,8 +255,8 @@ std::shared_ptr<SuperVector> CoupledModel::getRHS(char mode)
 	else if (mode == 'C') // Copy
 	{
 		return std::make_shared<SuperVector>(
-			ocean_->getRHS('C')->getEpetraVector(),
-			atmosphere_->getRHS('C')->getStdVector() );
+			ocean_->getRHS('C')->getOceanVector(),
+			atmos_->getRHS('C')->getAtmosVector() );
 	}
 	else
 	{
@@ -270,14 +269,14 @@ std::shared_ptr<SuperVector> CoupledModel::getRHS(char mode)
 void CoupledModel::setState(std::shared_ptr<SuperVector> state)
 {
 	ocean_->setState(Teuchos::rcp(state.get(), false));
-    atmosphere_->setState(state);
+    atmos_->setState(state);
 }
 
 //------------------------------------------------------------------
 void CoupledModel::setRHS(std::shared_ptr<SuperVector> rhs)
 {
 	ocean_->setRHS(Teuchos::rcp(rhs.get(), false));
-    atmosphere_->setRHS(rhs);
+    atmos_->setRHS(rhs);
 }
 
 //------------------------------------------------------------------
@@ -287,7 +286,7 @@ double CoupledModel::getPar()
 	// Different continuation parameters for different models
 	// is not defined (yet).
 	double par_ocean = ocean_->getPar();
-	double par_atmos = atmosphere_->getPar();
+	double par_atmos = atmos_->getPar();
 	if (std::abs(par_ocean - par_atmos) > 1e-8)
 	{
 		WARNING("par_ocean != par_atmos !!",
@@ -303,7 +302,7 @@ double CoupledModel::getPar()
 void CoupledModel::setPar(double value)
 {
 	ocean_->setPar(value);
-	atmosphere_->setPar(value);
+	atmos_->setPar(value);
 	synchronize(1.0);
 }
 
@@ -314,7 +313,7 @@ double CoupledModel::getParDestination()
 	// Different continuation parameters for different models
 	// is not defined (yet).
 	double parDest_ocean = ocean_->getParDestination();
-	double parDest_atmos = atmosphere_->getParDestination();
+	double parDest_atmos = atmos_->getParDestination();
 	if (std::abs(parDest_ocean - parDest_atmos) > 1e-8)
 	{
 		WARNING("parDest_ocean != parDest_atmos !!",
@@ -330,7 +329,7 @@ double CoupledModel::getParDestination()
 void CoupledModel::dumpState()
 {
 	ocean_->dumpState();
-	atmosphere_->dumpState();
+	atmos_->dumpState();
 }
 
 //------------------------------------------------------------------

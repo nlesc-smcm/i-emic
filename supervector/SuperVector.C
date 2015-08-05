@@ -63,14 +63,14 @@ void SuperVector::update(double scalarA,	SuperVector &A, double scalarThis)
 		return;
 	}
 	if (haveEpetraVector_)
-		epetraVector_->Update(scalarA, *(A.getEpetraVector()), scalarThis);
+		epetraVector_->Update(scalarA, *(A.getOceanVector()), scalarThis);
 	
 	if (haveStdVector_)
 	{
-		for (size_t idx = 0; idx != A.getStdVector()->size(); ++idx)
+		for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
 		{
 			(*stdVector_)[idx] =
-				scalarA * (*A.getStdVector())[idx]
+				scalarA * (*A.getAtmosVector())[idx]
 				+ scalarThis * (*stdVector_)[idx];
 		}
 	}
@@ -87,12 +87,12 @@ double SuperVector::dot(SuperVector &A)
 			
 	double dot1 = 0;
 	if (haveEpetraVector_)
-		epetraVector_->Dot(*(A.getEpetraVector()), &dot1);
+		epetraVector_->Dot(*(A.getOceanVector()), &dot1);
 			
 	double dot2 = 0;
 	if (haveStdVector_)
-		for (size_t idx = 0; idx != A.getStdVector()->size(); ++idx)
-			dot2 += (*A.getStdVector())[idx] * (*stdVector_)[idx];
+		for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
+			dot2 += (*A.getAtmosVector())[idx] * (*stdVector_)[idx];
 			
 	return dot1 + dot2;
 }
@@ -138,7 +138,7 @@ void SuperVector::scale(double scale)
 }
 
 //------------------------------------------------------------------
-Teuchos::RCP<Epetra_Vector> SuperVector::getEpetraVector()
+Teuchos::RCP<Epetra_Vector> SuperVector::getOceanVector()
 {
 	if (!haveEpetraVector_)
 	{
@@ -150,7 +150,7 @@ Teuchos::RCP<Epetra_Vector> SuperVector::getEpetraVector()
 }
 
 //------------------------------------------------------------------
-std::shared_ptr<std::vector<double> > SuperVector::getStdVector()
+std::shared_ptr<std::vector<double> > SuperVector::getAtmosVector()
 {
 	if (!haveStdVector_)
 	{

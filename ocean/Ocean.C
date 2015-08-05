@@ -248,7 +248,7 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	if (rhs == Teuchos::null)
  		set = problem_->setProblem(sol_, rhs_);
 	else
-		set = problem_->setProblem(sol_, rhs->getEpetraVector());
+		set = problem_->setProblem(sol_, rhs->getOceanVector());
 	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
