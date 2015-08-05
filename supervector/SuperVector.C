@@ -4,10 +4,10 @@
 // Constructor 1:
 SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector)
 	:
-	epetraVector_(vector),
-	stdVector_(nullptr),
-	haveEpetraVector_(true),
-	haveStdVector_(false),
+	oceanVector_(vector),
+	atmosVector_(nullptr),
+	haveOceanVector_(true),
+	haveAtmosVector_(false),
 	isInitialized_(false)
 {
 	init();
@@ -17,10 +17,10 @@ SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector)
 // Constructor 2:
 SuperVector::SuperVector(std::shared_ptr<std::vector<double> > vector)
 	:
-	epetraVector_(Teuchos::null),
-	stdVector_(vector),
-	haveEpetraVector_(false),
-	haveStdVector_(true),
+	oceanVector_(Teuchos::null),
+	atmosVector_(vector),
+	haveOceanVector_(false),
+	haveAtmosVector_(true),
 	isInitialized_(false)
 {
 	init();
@@ -31,10 +31,10 @@ SuperVector::SuperVector(std::shared_ptr<std::vector<double> > vector)
 SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector1,
 						 std::shared_ptr<std::vector<double> > vector2)
 	:
-	epetraVector_(vector1),
-	stdVector_(vector2),
-	haveEpetraVector_(true),
-	haveStdVector_(true),
+	oceanVector_(vector1),
+	atmosVector_(vector2),
+	haveOceanVector_(true),
+	haveAtmosVector_(true),
 	isInitialized_(false)
 {
 	init();
@@ -62,16 +62,16 @@ void SuperVector::update(double scalarA,	SuperVector &A, double scalarThis)
 		std::cout << "Wrong dimensions!" << std::endl;
 		return;
 	}
-	if (haveEpetraVector_)
-		epetraVector_->Update(scalarA, *(A.getOceanVector()), scalarThis);
+	if (haveOceanVector_)
+		oceanVector_->Update(scalarA, *(A.getOceanVector()), scalarThis);
 	
-	if (haveStdVector_)
+	if (haveAtmosVector_)
 	{
 		for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
 		{
-			(*stdVector_)[idx] =
+			(*atmosVector_)[idx] =
 				scalarA * (*A.getAtmosVector())[idx]
-				+ scalarThis * (*stdVector_)[idx];
+				+ scalarThis * (*atmosVector_)[idx];
 		}
 	}
 }
@@ -86,13 +86,13 @@ double SuperVector::dot(SuperVector &A)
 	}
 			
 	double dot1 = 0;
-	if (haveEpetraVector_)
-		epetraVector_->Dot(*(A.getOceanVector()), &dot1);
+	if (haveOceanVector_)
+		oceanVector_->Dot(*(A.getOceanVector()), &dot1);
 			
 	double dot2 = 0;
-	if (haveStdVector_)
+	if (haveAtmosVector_)
 		for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
-			dot2 += (*A.getAtmosVector())[idx] * (*stdVector_)[idx];
+			dot2 += (*A.getAtmosVector())[idx] * (*atmosVector_)[idx];
 			
 	return dot1 + dot2;
 }
@@ -100,14 +100,14 @@ double SuperVector::dot(SuperVector &A)
 //------------------------------------------------------------------
 double SuperVector::norm(char mode)
 {
-	if ((mode == 'V') && haveStdVector_ && haveEpetraVector_)
+	if ((mode == 'V') && haveAtmosVector_ && haveOceanVector_)
 	{
-		haveStdVector_ = false;
+		haveAtmosVector_ = false;
 		INFO("Norm vector 1 (Epetra): " << sqrt(dot(*this)));
-		haveStdVector_ = true;
-		haveEpetraVector_ = false;
+		haveAtmosVector_ = true;
+		haveOceanVector_ = false;
 		INFO("Norm vector 2    (STL): " << sqrt(dot(*this)));
-		haveEpetraVector_ = true;
+		haveOceanVector_ = true;
 	}
 			
 	double nrm2 = 0.0;
@@ -118,63 +118,63 @@ double SuperVector::norm(char mode)
 //------------------------------------------------------------------
 void SuperVector::random(double scale)
 {
-	if (haveEpetraVector_)
+	if (haveOceanVector_)
 	{
-		epetraVector_->Random();
-		epetraVector_->Scale(scale);
+		oceanVector_->Random();
+		oceanVector_->Scale(scale);
 	}
-	if (haveStdVector_)
+	if (haveAtmosVector_)
 		std::cout << "Not implemented for std::vector" << std::endl;
 }
 
 //------------------------------------------------------------------
 void SuperVector::scale(double scale)
 {
-	if (haveEpetraVector_)
-		epetraVector_->Scale(scale);
-	if (haveStdVector_)
-		for (auto &i : *stdVector_)
+	if (haveOceanVector_)
+		oceanVector_->Scale(scale);
+	if (haveAtmosVector_)
+		for (auto &i : *atmosVector_)
 			i *= scale;
 }
 
 //------------------------------------------------------------------
 Teuchos::RCP<Epetra_Vector> SuperVector::getOceanVector()
 {
-	if (!haveEpetraVector_)
+	if (!haveOceanVector_)
 	{
 		ERROR("This wrapper does not contain an EpetraVector",
 			  __FILE__, __LINE__);
 		return Teuchos::null;
 	}
-	return epetraVector_;
+	return oceanVector_;
 }
 
 //------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > SuperVector::getAtmosVector()
 {
-	if (!haveStdVector_)
+	if (!haveAtmosVector_)
 	{
 		ERROR("This wrapper does not contain a std::vector",
 			  __FILE__, __LINE__);
 		return nullptr;
 	}
-	return stdVector_;
+	return atmosVector_;
 }
 
 //------------------------------------------------------------------
 void SuperVector::print()
 {
-	if (haveEpetraVector_)
+	if (haveOceanVector_)
 	{
 		std::cout << "\nPrinting epetraVector to outFile stream" << std::endl;
-		epetraVector_->Print(*outFile);  // see GlobalDefinitions.H
-		epetraVector_->Print(std::cout); // see GlobalDefinitions.H
+		oceanVector_->Print(*outFile);  // see GlobalDefinitions.H
+		oceanVector_->Print(std::cout); // see GlobalDefinitions.H
 	}
 			
-	if (haveStdVector_)
+	if (haveAtmosVector_)
 	{
 		std::cout << "\nPrinting stdVector std::cout" << std::endl;
-		for (auto &it : *stdVector_)
+		for (auto &it : *atmosVector_)
 			std::cout << it << " ";
 		std::cout << std::endl;
 	}						
@@ -188,15 +188,15 @@ void SuperVector::linearTransformation(std::vector<double> &diagonal,
 	if (domain == 'O' && range == 'A')
 	{
 		int dstLength = diagonal.size();
-		int srcLength = epetraVector_->GlobalLength();
+		int srcLength = oceanVector_->GlobalLength();
 
 		// re-initialize stdVector				
-		stdVector_ = std::make_shared<std::vector<double> >
+		atmosVector_ = std::make_shared<std::vector<double> >
 			(dstLength, 0.0);
 
 		// gather the epetraVector
 		Teuchos::RCP<Epetra_MultiVector> gathered =
-			Utils::AllGather(*epetraVector_);
+			Utils::AllGather(*oceanVector_);
 
 		// fullSol should be allocated
 		double *fullSol = new double[srcLength];
@@ -205,8 +205,8 @@ void SuperVector::linearTransformation(std::vector<double> &diagonal,
 		gathered->ExtractCopy(fullSol, srcLength);
 
 		// calculate the values in the destination stdVector
-		for (size_t i = 0; i != stdVector_->size(); ++i)
-			(*stdVector_)[i] = diagonal[i] * fullSol[indices[i]];
+		for (size_t i = 0; i != atmosVector_->size(); ++i)
+			(*atmosVector_)[i] = diagonal[i] * fullSol[indices[i]];
 
 		// cleanup
 		delete fullSol;				
@@ -214,15 +214,15 @@ void SuperVector::linearTransformation(std::vector<double> &diagonal,
 	else if (domain == 'A' && range == 'O')
 	{
 		std::vector<double> values;
-		for (size_t i = 0; i != stdVector_->size(); ++i)
-			values.push_back(diagonal[i] * (*stdVector_)[i]);
+		for (size_t i = 0; i != atmosVector_->size(); ++i)
+			values.push_back(diagonal[i] * (*atmosVector_)[i]);
 				
 		// re-initialize epetraVector
-		epetraVector_->PutScalar(0.0);
+		oceanVector_->PutScalar(0.0);
 				
 		// Fill the epetraVector
-		epetraVector_->ReplaceGlobalValues(
-			stdVector_->size(),
+		oceanVector_->ReplaceGlobalValues(
+			atmosVector_->size(),
 			&values[0], &indices[0]);
 	}
 }
@@ -231,7 +231,7 @@ void SuperVector::linearTransformation(std::vector<double> &diagonal,
 void SuperVector::init()
 {
 	length_ = 0;
-	length_ += (haveEpetraVector_) ? epetraVector_->GlobalLength() : 0;
-	length_ += (haveStdVector_) ? stdVector_->size() : 0;
+	length_ += (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
+	length_ += (haveAtmosVector_) ? atmosVector_->size() : 0;
 	isInitialized_ = true;
 }

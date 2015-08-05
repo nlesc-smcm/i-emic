@@ -13,20 +13,21 @@
 
 // This class acts as a normal vector with a few standard methods:
 //   length, update, dot, norm, scale, randomize
+//
 // It is in fact a combined 'super' vector and should be able to contain
 // multiple distributed Epetra vectors and serial STL vector containers.
-
+//
 // In the future we probably need datamembers of the form:
 //   std::vector<std::shared_ptr<std::vector<double> > >
 //   std::vector<Teuchos::RCP<Epetra_Vector> > 
 
 class SuperVector
 {
-	Teuchos::RCP<Epetra_Vector> epetraVector_;
-	std::shared_ptr<std::vector<double> > stdVector_;
+	Teuchos::RCP<Epetra_Vector>           oceanVector_;
+	std::shared_ptr<std::vector<double> > atmosVector_;
 
-	bool haveEpetraVector_;
-	bool haveStdVector_;
+	bool haveOceanVector_;
+	bool haveAtmosVector_;
 	bool isInitialized_;
 	
 	int length_;	
@@ -88,5 +89,6 @@ private:
 	// Perform a few initializations
 	// right now it only initializes length_
 	void init();
+	
 };
 #endif
