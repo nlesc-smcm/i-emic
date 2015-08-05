@@ -1,14 +1,17 @@
 include ../make.inc/Makefile.${PLAT}
 
-DIRS =  $(PROJECT_BASE)/ocean/ \
-	    $(PROJECT_BASE)/atmosphere/ \
-	    $(PROJECT_BASE)/coupledmodel/ \
+DIRS =  \
+        $(PROJECT_BASE)/ocean/\
+	    $(PROJECT_BASE)/atmosphere/\
+	    $(PROJECT_BASE)/supervector/\
+	    $(PROJECT_BASE)/coupledmodel/\
 
 EXE     = test timestepping
 OBJS    = test.o timestepping.o
 OBJLIBS = lib$(LIB_OCEAN).a\
 	      lib$(LIB_ATMOS).a\
 	      lib$(LIB_COUPLED).a\
+          lib$(LIB_SUPERVEC).a\
 
 # Header dependencies, especially important for templated stuff
 HEADERDEPS = \
@@ -27,6 +30,7 @@ HEADERDEPS = \
 # Coupled depends on ocean and atmos
 INTLIBS = \
 	-l$(LIB_COUPLED)\
+	-l$(LIB_SUPERVEC)\
 	-l$(LIB_OCEAN)\
 	-l$(LIB_ATMOS)\
 
@@ -48,6 +52,9 @@ lib$(LIB_ATMOS).a: force_look
 
 lib$(LIB_COUPLED).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_COUPLED); $(MAKE) $(MFLAGS)
+
+lib$(LIB_SUPERVEC).a: force_look
+	cd $(PROJECT_BASE)/$(LIB_SUPERVEC); $(MAKE) $(MFLAGS)
 
 %.o: %.C $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $(CXX_DB) $<
