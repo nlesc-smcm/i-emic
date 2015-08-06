@@ -1,5 +1,9 @@
-<!-- Global parameter list for Trilinos-THCM { --> 
-<ParameterList name="Trilinos THCM">
+<!-- Global parameter list for the ocean model { --> 
+<ParameterList name="Ocean">
+
+  <!-- Maximum allowed number of iterations in linear solve before a new   -->
+  <!-- preconditioner is requested -->
+  <Parameter name="recomputeBound" type="int" value = "10"/>
 
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -185,9 +189,6 @@
 
   </ParameterList> <!-- } THCM -->
 
-  	<!-- Maximum allowed number of iterations in linear solve before a new         -->
-	<!-- preconditioner is requested -->
-	<Parameter name="recomputeBound" type="int" value = "10"/>
 
 
 </ParameterList> <!-- } -->
