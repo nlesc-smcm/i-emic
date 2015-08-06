@@ -8,6 +8,7 @@
 #include "SuperVector.H"
 
 //-----------------------------------------------------------------------------
+// Constructor
 Atmosphere::Atmosphere()
 {
 	// Continuation parameters
@@ -38,7 +39,6 @@ Atmosphere::Atmosphere()
 	Ai_   =  rhoa_ * hdima_ * cpa_ * udim_ / (r0dim_ * muoa_);
 	Ad_   =  rhoa_ * hdima_ * cpa_ * d0_ / (muoa_ * r0dim_ * r0dim_);
 	As_   =  sun0_ * (1 - c0_) / (4 * muoa_);		
-
 	
 	// Set problem size
 	n_ = 16;
@@ -68,6 +68,9 @@ Atmosphere::Atmosphere()
 	
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
+
+	// Create Timer object
+	timer_ = std::make_shared<Timer>();
 	
 	xmin_ = 286 * PI_ / 180;
 	xmax_ = 350 * PI_ / 180;
@@ -97,20 +100,13 @@ Atmosphere::Atmosphere()
 		suna_.push_back(As_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
 						(1 - albe_[j]));
 	}
+}
 
-	std::cout << "cpp --> sun0: " << sun0_ << std::endl;
-	std::cout << "cpp --> amua: " << amua_ << std::endl;
-	std::cout << "cpp --> bmua: " << bmua_ << std::endl;
-	std::cout << "cpp --> muoa: " << muoa_ << std::endl;
-	std::cout << "cpp --> Ai: " << Ai_ << std::endl;	
-	std::cout << "cpp --> Ad: " << Ad_ << std::endl;
-	std::cout << "cpp --> As: " << As_ << std::endl;
-
-	for (auto &s : suna_)
-		std::cout << std::setprecision(10) << s << " ";
-	std::cout << std::endl;
-
-	//idealizedOcean();
+//-----------------------------------------------------------------------------
+// Destructor
+Atmosphere::~Atmosphere()
+{
+	delete[] ipiv_;
 }
 
 //-----------------------------------------------------------------------------
@@ -159,12 +155,6 @@ void Atmosphere::zeroOcean()
 }
 
 //-----------------------------------------------------------------------------
-Atmosphere::~Atmosphere()
-{
-	delete[] ipiv_;
-}
-
-//-----------------------------------------------------------------------------
 void Atmosphere::setOceanTemperature(std::vector<double> &sst,
 									 double relaxation)
 {
@@ -179,7 +169,8 @@ void Atmosphere::setOceanTemperature(std::vector<double> &sst,
 //-----------------------------------------------------------------------------
 void Atmosphere::computeJacobian()
 {
-	INFO("Atmosphere: compute Jacobian...");
+	TIMER_START("Atmosphere: compute Jacobian...", timer_);
+	
 	Atom tc (n_, m_, l_, np_);
 	Atom tc2(n_, m_, l_, np_);
 	Atom txx(n_, m_, l_, np_);
@@ -196,13 +187,15 @@ void Atmosphere::computeJacobian()
 	Al_->set({1,n_,1,m_,1,l_,1,np_}, 1, 1, txx);
 	boundaries();
 	assemble();
-	INFO("Atmosphere: compute Jacobian... done");
+	
+	TIMER_END("Atmosphere: compute Jacobian...", timer_);
 }
 
 //-----------------------------------------------------------------------------
 void Atmosphere::computeRHS()
 {
-	INFO("Atmosphere: compute RHS...");
+	TIMER_START("Atmosphere: compute RHS...", timer_);
+
 	// If necessary compute a new Jacobian
    //	if (recomputeJacobian_)
 	computeJacobian();
@@ -220,7 +213,8 @@ void Atmosphere::computeRHS()
 			value = matvec(row) + frc_[row-1];
 			(*rhs_)[row-1] = value;
 		}
-	INFO("Atmosphere: compute RHS... done");
+	
+	TIMER_END("Atmosphere: compute RHS...", timer_);
 }
 
 //-----------------------------------------------------------------------------
@@ -372,6 +366,8 @@ extern "C" void dgesv_(int *N, int *NRHS, double *A,
 //-----------------------------------------------------------------------------
 void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 {
+	TIMER_START("Atmosphere: perform solve...", timer_);
+	
 	char trans = 'N';
 	
 	int dim    = n_*m_*l_;
@@ -387,6 +383,8 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 	
 	dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
 			&(*sol_)[0], &ldb, &info);
+
+	TIMER_END("Atmosphere: perform solve...", timer_);
 }
 
 //-----------------------------------------------------------------------------
