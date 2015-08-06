@@ -141,7 +141,7 @@ public:
 	// may do more in the future,
 	//--> not sure if using getpardestination is ok from a design
 	//    perspective. The continuation routine should have that
-	//    information, not the model?
+	//    information, not the model right?
 	void    setPar(double value);
 	double  getPar();
 	double  getParDestination() { return parEnd_; }
@@ -154,6 +154,11 @@ public:
 	// Use matlab plot-scripts for visualization 
 	void dumpState();
 
+	// Get functions for the grid dimensions
+	int getNdim() { return N_;}
+	int getMdim() { return M_;}
+	int getLdim() { return L_;}
+
 	// ----------------------------------------------------------------------+
 	// The following functions are required for the coupling with other
 	// models:
@@ -161,7 +166,7 @@ public:
 	// Obtain an external atmosphere
 	void setAtmosphere(std::vector<double> &atmos, double relaxation);
 	
-	// Get the diagonal elements of the atmosphere -> ocean
+	// Get the diagonal elements of the atmosphere to ocean
 	// contribution in the Jacobian
 	std::shared_ptr<std::vector<double> > getAtmosBlock();
 	

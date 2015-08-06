@@ -133,13 +133,22 @@ class Atmosphere
 	std::vector<double> suna_;
 	
 public:
-	// constructor
-	Atmosphere();
-	// destructor
+	// Constructor, specify horizontal grid dimensions
+	//  > the number of vertical layers is assumed 1 at this point
+	Atmosphere(int n = 16, int m = 16);
+
+	// Destructor
 	~Atmosphere();
 
-        void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
+	// Solve the matrix
+	//  > right now we use a dense solver from lapack, but a banded solver might
+	//    do as well.
+	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
+
+	// Compute the right hand side
 	void computeRHS();
+
+	// Compute the Jacobian matrix
 	void computeJacobian();
 
 	std::shared_ptr<SuperVector> getSolution(char mode = 'C');

@@ -32,7 +32,10 @@ class CoupledModel
 	std::shared_ptr<SuperVector> solView_;
 
 	// number of models;
-	int nm_; 
+	int nm_;
+
+	// Order of Neumann expansion in elimination based solve
+	int kNeumann_;
 
 	// Trilinos' MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
@@ -52,7 +55,13 @@ public:
 
 	void computeJacobian();
 	void computeRHS();
-        void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
+
+	// Solve the models
+	//    mode = 'D': decoupled
+    //    mode = 'S': coupled using the Schur complement and one or more terms
+	//                in the Neumann expansion of the inverse
+	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>(),
+			   char mode = 'S');
 
 	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
 	std::shared_ptr<SuperVector> getState(char mode = 'C');

@@ -1,15 +1,20 @@
 #include "Atmosphere.H"
 #include "AtmosphereDefinitions.H"
 #include "GlobalDefinitions.H"
+#include "SuperVector.H"
+
 #include <math.h>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include "SuperVector.H"
 
 //-----------------------------------------------------------------------------
-// Constructor
-Atmosphere::Atmosphere()
+// Constructor, specify horizontal grid dimensions
+Atmosphere::Atmosphere(int n, int m)
+	:
+	n_(n),
+	m_(m),
+	l_(1)
 {
 	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
@@ -40,10 +45,7 @@ Atmosphere::Atmosphere()
 	Ad_   =  rhoa_ * hdima_ * cpa_ * d0_ / (muoa_ * r0dim_ * r0dim_);
 	As_   =  sun0_ * (1 - c0_) / (4 * muoa_);		
 	
-	// Set problem size
-	n_ = 16;
-	m_ = 16;
-	l_ = 1;
+	// Set problem dimension
 	int dim = n_ * m_ * l_;
 	
 	np_  = ATMOS_NP_;   // all neighbouring points including the center
