@@ -18,12 +18,15 @@
 #include <vector>
 #include <memory>
 #include <array>
+#include <ctime> // Timer
+
 #include "SuperVector.H"
 #include "MultiArray.H"
 #include "AtmosphereDefinitions.H"
 
 class DependencyGrid;
 class Atom;
+class Timer;
 
 using std::array;
 using std::vector;
@@ -78,6 +81,8 @@ class Atmosphere
 	std::vector<double> ico_;
 	std::vector<double> jco_;
 	std::vector<double> beg_;
+
+	std::shared_ptr<Timer> timer_;
 
 	// Dense matrix storage
 	std::vector<double> denseA_;
@@ -269,6 +274,24 @@ public:
 				double scalarA, Atom &A,
 				double scalarB, Atom &B,
 				double scalarC, Atom &C);
+};
+
+//-----------------------------------------------------------------------------
+// Timer class, compatible with macros in GlobalDefinitions.H
+class Timer
+{
+	std::clock_t startTime_;
+public:
+	Timer()
+		:
+		startTime_(std::clock())
+		{}
+
+	void ResetStartTime()
+		{ startTime_ = std::clock();	}
+
+	double ElapsedTime()
+		{ return (double) (std::clock() - startTime_) / CLOCKS_PER_SEC; }
 };
 
 #endif
