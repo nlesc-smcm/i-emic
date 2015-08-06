@@ -8,20 +8,35 @@
  * Modified by T.E. Mulder, Utrecht University 2014/15                *
  * contact: t.e.mulder@uu.nl                                          *
  **********************************************************************/
+
 #ifndef GLOBALDEFINITIONS_H
 #define GLOBALDEFINITIONS_H
 
-#include <iostream>
-#include <cmath>
 #include "Teuchos_RCP.hpp"
 #include "EpetraExt_RowMatrixOut.h"
+
+#include <iostream>
+#include <cmath>
 #include <map>
+#include <array>
 #include <string>
 
 // This outstream needs to be defined in the main routine.
 extern Teuchos::RCP<std::ostream> outFile;
 
-extern std::map<std::string, double> profile;
+//------------------------------------------------------------------
+// Setup profile:
+
+// Number of entries in profile
+#ifndef PROFILE_ENTRIES
+# define PROFILE_ENTRIES 2
+#endif
+
+typedef std::map<std::string, std::array<double, PROFILE_ENTRIES> > ProfileType;
+
+// This profile container needs to be defined in the main routine.
+extern ProfileType profile;
+//------------------------------------------------------------------
 
 #ifndef INFO
 #  define INFO(s) (*outFile) << s << std::endl; 
@@ -68,18 +83,22 @@ extern std::map<std::string, double> profile;
 #  define TIMER_START(message, timerPtr)		\
 	(*outFile) << message << std::endl;			\
 	timerPtr->ResetStartTime();					\
-	profile[message] = (profile.count(message)) ? profile[message] : 0;
+	profile[message][0] = (profile.count(message)) ? profile[message][0] : 0; \
+	profile[message][1] = (profile.count(message)) ? profile[message][1] : 0; 
 #endif
 
 #ifndef TIMER_END
 #  define TIMER_END(message, timerPtr)	{							\
 	double time = timerPtr->ElapsedTime();							\
-	profile[message] += time;										\
-	(*outFile) << message << " done ("								\
-			   << time << ", total: "								\
-			   << profile[message] << ")" <<  std::endl; }
+	profile[message][0] += time;									\
+	profile[message][1] += 1;		      							\
+	(*outFile) << message             << " done ("  				\
+			   << time                << ", total: "				\
+			   << profile[message][0] << ", calls: "				\
+			   << profile[message][1] << ")" <<  std::endl; }
 #endif
 	
+
 //==================================================================
 //==================================================================
 

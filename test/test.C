@@ -15,6 +15,7 @@
 
 #include <memory>
 #include <vector>
+#include <array>
 
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
@@ -35,7 +36,7 @@ using Teuchos::rcp;
 //------------------------------------------------------------------
 // A few declarations
 RCP<std::ostream> outFile;               // output file
-std::map<std::string, double> profile;   // profile map
+ProfileType profile; // ProfileType is typedeffed in GlobalDefinitions.H
 
 //------------------------------------------------------------------
 void testVecWrap();
@@ -45,8 +46,7 @@ void testOcean(int argc, char **argv);
 //------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
-void printProfile(std::map<std::string, double> profile,
-				  RCP<Epetra_Comm> Comm);
+void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm);
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)
@@ -170,8 +170,7 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 }
 
 //------------------------------------------------------------------
-void printProfile(std::map<std::string, double> profile,
-				  RCP<Epetra_Comm> Comm)
+void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm)
 {
 	
 	std::ostringstream profilefile;  // setting up a filename
@@ -191,23 +190,32 @@ void printProfile(std::map<std::string, double> profile,
 	}
 	
 	double sum = 0;
-	(*file) << "=================================================================="
+	(*file) << "==========================================================================="
 			<< std::endl;
 	(*file) << "  Profile #CPU   = " << Comm->NumProc() << std::endl;
-	for (std::map<std::string, double>::iterator it = profile.begin();
+	(*file) << std::setw(35) << std::left << " "
+			<< std::setw(6)  << " "
+			<< std::setw(12) << std::left << " time "
+			<< std::setw(2)  << " "
+			<< std::setw(12) << std::left << " calls "
+			<< std::endl;
+
+	for (ProfileType::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
-		sum += it->second;
+		sum += it->second[0];
 		(*file) << " " << std::setw(35) << std::left << it->first
 				<< std::setw(6)  << " -> "
-				<< std::setw(12) << std::left << std::setprecision(8) << it->second
+				<< std::setw(12) << std::left << std::setprecision(8) << it->second[0]
+				<< std::setw(2)  << " "
+				<< std::setw(12) << std::left << std::setprecision(3) << it->second[1]
 				<< std::endl;
 	}
 	(*file) << " " << std::setw(35) << std::left << " "  
 			<< std::setw(6)  << " tot " 
 			<< std::setw(12) << std::left << std::setprecision(8) << sum
 			<< std::endl;
-	(*file) << "=================================================================="
+	(*file) << "==========================================================================="
 			<< std::endl;
 }
 

@@ -136,7 +136,10 @@
     <!--             - "Step" (recompute after k time-/continuation steps)         -->
     <!-- here k is set by "Max Age Of Prec" above.                                 -->
     <Parameter name="Preconditioner Reuse Policy" type="string" value="None"/>
-    
+
+	<!-- Maximum allowed number of iterations in linear solve before a new         -->
+	<!-- preconditioner is requested -->
+	<Parameter name="recomputeBound" type="int" value = "10"/>
 
     <!-- set start values for the various THCM parameters.     -->
     <!-- currently only a small subset of them is available in -->
@@ -181,5 +184,10 @@
     </ParameterList>
 
   </ParameterList> <!-- } THCM -->
+
+  	<!-- Maximum allowed number of iterations in linear solve before a new         -->
+	<!-- preconditioner is requested -->
+	<Parameter name="recomputeBound" type="int" value = "10"/>
+
 
 </ParameterList> <!-- } -->

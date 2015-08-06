@@ -44,7 +44,7 @@ CoupledModel::CoupledModel(Graph &couplings,
 	C_     = atmos_->getOceanBlock();
 
 	// Determine the order of the Neumann expansion in the elimination based solve
-	kNeumann_ = 1;
+	kNeumann_ = 2;
 }
 
 //------------------------------------------------------------------
