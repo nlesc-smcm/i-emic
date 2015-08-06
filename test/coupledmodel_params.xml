@@ -1,0 +1,7 @@
+<ParameterList name="coupledmodel">
+  <!-- Some kind of coupling graph should be created here -->  
+
+  <!-- Determine the order of the Neumann approximation in the elimination based solve -->
+  <!-- Choose 0, 1 or 2 -->
+  <Parameter name="Order of Neumann approximation" type="int" value="0"/>
+</ParameterList>

@@ -9,12 +9,9 @@
 #include <Epetra_Comm.h>
 #include <Teuchos_RCP.hpp>
 
-typedef std::vector<std::vector<bool> > Graph;
-//------------------------------------------------------------------
-CoupledModel::CoupledModel(Graph &couplings,
-						   Teuchos::RCP<Epetra_Comm> comm)
+CoupledModel::CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
+						   Teuchos::RCP<Teuchos::ParameterList> params)
 	:
-	couplings_(couplings),
 	comm_(comm)
 {
 	// Create ocean object using the parallel communicator
@@ -43,8 +40,8 @@ CoupledModel::CoupledModel(Graph &couplings,
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
 	C_     = atmos_->getOceanBlock();
 
-	// Determine the order of the Neumann expansion in the elimination based solve
-	kNeumann_ = 2;
+ 	// Determine the order of the Neumann expansion in the elimination based solve
+	kNeumann_ = params->get("Order of Neumann approximation", 1);
 }
 
 //------------------------------------------------------------------

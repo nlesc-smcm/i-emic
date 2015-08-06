@@ -9,8 +9,9 @@
 #include <memory>
 
 #include <Teuchos_RCP.hpp>
+#include <Teuchos_ParameterList.hpp>
 
-typedef std::vector<std::vector<bool> > Graph;
+// typedef std::vector<std::vector<bool> > Graph;
 
 // Forward declarations
 class Epetra_Comm;
@@ -18,7 +19,7 @@ class Epetra_Comm;
 class CoupledModel
 {
 	// Adjacency graph describing the couplings between the models
-	Graph couplings_;
+    // Graph couplings_;
 
 	// Trilinos-based parallel implicit ocean model (Trilinos-THCM)
 	Teuchos::RCP<Ocean>  ocean_;
@@ -49,8 +50,9 @@ class CoupledModel
 	std::shared_ptr<std::vector<int> > rowsC_;
 	
 public:
-	CoupledModel(Graph &couplings,
-				 Teuchos::RCP<Epetra_Comm> comm);
+	CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
+		         Teuchos::RCP<Teuchos::ParameterList> params);
+	
 	~CoupledModel(){}
 
 	void computeJacobian();

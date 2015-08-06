@@ -34,9 +34,9 @@ using Teuchos::RCP;
 using Teuchos::rcp;
 
 //------------------------------------------------------------------
-// A few declarations
+// A few declarations (see GlobalDefinitions.H)
 RCP<std::ostream> outFile;               // output file
-ProfileType profile; // ProfileType is typedeffed in GlobalDefinitions.H
+ProfileType profile;                     // profile 
 
 //------------------------------------------------------------------
 void testVecWrap();
@@ -64,23 +64,27 @@ void testCoupling(int argc, char **argv)
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
-	// Create CoupledModel
-	std::vector<std::vector<bool> > coupling = {{1, 1}, {1, 1}};
+ 	// Create parameter object for coupledmodel
+	RCP<Teuchos::ParameterList> coupledmodelParams =
+		rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("coupledmodel_params.xml",
+								coupledmodelParams.ptr());
 	
 	std::shared_ptr<CoupledModel> coupledModel =
-		std::make_shared<CoupledModel>(coupling, Comm);
+		std::make_shared<CoupledModel>(Comm, coupledmodelParams);
 
  	// Create parameter object for continuation
 	RCP<Teuchos::ParameterList> continuationParams =
 		rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("continuation_params.xml",
 								continuationParams.ptr());
+	
 	// Create continuation
 	Continuation<std::shared_ptr<CoupledModel>,
 				 std::shared_ptr<SuperVector>,
 				 RCP<Teuchos::ParameterList> >
 		continuation(coupledModel, continuationParams);
-
+	
 	continuation.run();	
 	
 	printProfile(profile, Comm);
@@ -89,7 +93,6 @@ void testCoupling(int argc, char **argv)
 	//--------------------------------------------------------
 	Comm->Barrier();
 	MPI_Finalize();	
-
 }
 
 void testOcean(int argc, char **argv)
