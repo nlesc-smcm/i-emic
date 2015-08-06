@@ -68,18 +68,28 @@ LIB_SUPERVEC = supervector
 ##------------------------------------------------------------------
 ##   Define the internal library locations:
 PATH_LIB_OCEAN  = $(PROJECT_BASE)/ocean
+PATH_LIB_ATMOS  = $(PROJECT_BASE)/atmosphere
+PATH_LIB_COUPLED  = $(PROJECT_BASE)/coupledmodel
+PATH_LIB_SUPERVEC = $(PROJECT_BASE)/supervector
 
 ##------------------------------------------------------------------
 ##   Gather all the include directories:
 INCLUDE_DIRS =	\
                 -I$(PROJECT_BASE)/ocean\
+                -I$(PROJECT_BASE)/atmosphere\
+                -I$(PROJECT_BASE)/coupledmodel\
 	 	-I$(PROJECT_BASE)/newton\
 		-I$(PROJECT_BASE)/thetastepper\
 		-I$(PROJECT_BASE)/continuation\
 		-I$(PROJECT_BASE)/supervector\
+                -I$(PROJECT_BASE)/multiarray\
        		${INCLUDE_DIRS_TRI}
 
 ##------------------------------------------------------------------
 ##   Gather all the library directories:	
-LIBRARY_DIRS =  -L$(PATH_LIB_OCEAN) \
-		  $(LIBRARY_DIRS_TRI)
+LIBRARY_DIRS =  \
+           -L$(PATH_LIB_OCEAN) \
+           -L$(PATH_LIB_ATMOS) \
+           -L$(PATH_LIB_COUPLED) \
+           -L$(PATH_LIB_SUPERVEC) \
+             $(LIBRARY_DIRS_TRI)

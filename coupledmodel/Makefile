@@ -6,7 +6,7 @@ libname     = lib$(libbasename).a
 obj= CoupledModel.o
 
 HEADERDEPS = \
-		../supervector/SuperVector.H\
+	../supervector/SuperVector.H\
         ../atmosphere/Atmosphere.H\
         ../ocean/Ocean.H\
 

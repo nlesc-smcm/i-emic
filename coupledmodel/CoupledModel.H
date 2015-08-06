@@ -52,7 +52,7 @@ public:
 
 	void computeJacobian();
 	void computeRHS();
-	void solve(std::shared_ptr<SuperVector> rhs = nullptr);
+        void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
 
 	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
 	std::shared_ptr<SuperVector> getState(char mode = 'C');

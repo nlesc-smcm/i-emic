@@ -216,7 +216,7 @@ std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode)
 	else
 	{
 		WARNING("Invalid mode", __FILE__, __LINE__);
-		return nullptr;
+		return std::shared_ptr<SuperVector>();
 	}
 }
 
@@ -243,7 +243,7 @@ std::shared_ptr<SuperVector> CoupledModel::getState(char mode)
 	else
 	{
 		WARNING("Invalid mode", __FILE__, __LINE__);
-		return nullptr;
+		return std::shared_ptr<SuperVector>();
 	}
 }
 
@@ -261,7 +261,7 @@ std::shared_ptr<SuperVector> CoupledModel::getRHS(char mode)
 	else
 	{
 		WARNING("Invalid mode", __FILE__, __LINE__);
-		return nullptr;
+		return std::shared_ptr<SuperVector>();
 	}
 }
 

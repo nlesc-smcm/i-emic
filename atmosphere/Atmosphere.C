@@ -61,7 +61,7 @@ Atmosphere::Atmosphere()
 	frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
 
 	// Initialize dense matrix:
-	denseA_ = std::vector<double>(pow(n_ * m_ * l_, 2), 0.0);
+	denseA_ = std::vector<double>(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
 	
 	// Create pivot array for use in lapack
 	ipiv_ = new int[n_*m_*l_+1];
@@ -393,7 +393,7 @@ void Atmosphere::buildDenseA()
 	//------------------------------------------------
 	//--> weird stuff: in the future stick to sparse plx
 	// Create dense matrix:
-	denseA_.assign(pow(n_*m_*l_, 2), 0.0);
+	denseA_.assign(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
 	std::vector<double> ivals(jco_.size(), 0.0);
 	int rw  = 1; // row
 	int idx = 1;
@@ -734,7 +734,7 @@ std::shared_ptr<SuperVector> Atmosphere::getVector
 	{
 		std::cout << "WARNING (Atmosphere::getVector): Invalid mode"
 				  << __FILE__ <<  __LINE__ << std::endl;
-		return nullptr;
+		return std::shared_ptr<SuperVector>();
 	}	
 }
 

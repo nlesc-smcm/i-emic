@@ -19,6 +19,7 @@
 #include <memory>
 #include <array>
 #include <ctime> // Timer
+#include <cstddef> // Nooit meer problemen
 
 #include "SuperVector.H"
 #include "MultiArray.H"
@@ -137,7 +138,7 @@ public:
 	// destructor
 	~Atmosphere();
 
-	void solve(std::shared_ptr<SuperVector> rhs = nullptr);
+        void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
 	void computeRHS();
 	void computeJacobian();
 

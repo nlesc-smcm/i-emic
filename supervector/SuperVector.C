@@ -5,7 +5,7 @@
 SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector)
 	:
 	oceanVector_(vector),
-	atmosVector_(nullptr),
+	atmosVector_(std::shared_ptr<std::vector<double> >()),
 	haveOceanVector_(true),
 	haveAtmosVector_(false),
 	isInitialized_(false)
@@ -156,7 +156,7 @@ std::shared_ptr<std::vector<double> > SuperVector::getAtmosVector()
 	{
 		ERROR("This wrapper does not contain a std::vector",
 			  __FILE__, __LINE__);
-		return nullptr;
+		return std::shared_ptr<std::vector<double> >();
 	}
 	return atmosVector_;
 }
