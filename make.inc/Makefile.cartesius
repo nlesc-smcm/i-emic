@@ -17,7 +17,7 @@ PROJECT_BASE = ${HOME}/Projects/I-EMIC
 ##   Make flags
 MFLAGS       = -j 8
 ##   Local compiler flags
-# LOCAL_CXX_FLAGS  = -std=c++11
+LOCAL_CXX_FLAGS  = -std=c++11
 LOCAL_FC_FLAGS = -r8 -O3 
 
 ##=================================================================
@@ -60,7 +60,10 @@ LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
 ##------------------------------------------------------------------
 ## Internal stuff...
 ##   Define the internal library names:
-LIB_OCEAN  = ocean
+LIB_OCEAN    = ocean
+LIB_ATMOS    = atmosphere
+LIB_COUPLED  = coupledmodel
+LIB_SUPERVEC = supervector
 
 ##------------------------------------------------------------------
 ##   Define the internal library locations:
@@ -68,14 +71,15 @@ PATH_LIB_OCEAN  = $(PROJECT_BASE)/ocean
 
 ##------------------------------------------------------------------
 ##   Gather all the include directories:
-INCLUDE_DIRS =	-I$(PROJECT_BASE)/vector\
+INCLUDE_DIRS =	\
                 -I$(PROJECT_BASE)/ocean\
-			 	-I$(PROJECT_BASE)/newton\
-				-I$(PROJECT_BASE)/thetastepper\
-				-I$(PROJECT_BASE)/continuation\
-        		${INCLUDE_DIRS_TRI}
+	 	-I$(PROJECT_BASE)/newton\
+		-I$(PROJECT_BASE)/thetastepper\
+		-I$(PROJECT_BASE)/continuation\
+		-I$(PROJECT_BASE)/supervector\
+       		${INCLUDE_DIRS_TRI}
 
 ##------------------------------------------------------------------
 ##   Gather all the library directories:	
 LIBRARY_DIRS =  -L$(PATH_LIB_OCEAN) \
-		          $(LIBRARY_DIRS_TRI)
+		  $(LIBRARY_DIRS_TRI)

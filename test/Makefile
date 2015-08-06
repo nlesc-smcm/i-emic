@@ -2,9 +2,9 @@ include ../make.inc/Makefile.${PLAT}
 
 DIRS =  \
         $(PROJECT_BASE)/ocean/\
-	    $(PROJECT_BASE)/atmosphere/\
-	    $(PROJECT_BASE)/supervector/\
-	    $(PROJECT_BASE)/coupledmodel/\
+	$(PROJECT_BASE)/atmosphere/\
+	$(PROJECT_BASE)/supervector/\
+	$(PROJECT_BASE)/coupledmodel/\
 
 EXE     = test timestepping
 OBJS    = test.o timestepping.o

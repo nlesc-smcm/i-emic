@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <memory>
+#include <array>
 #include "SuperVector.H"
 #include "MultiArray.H"
 #include "AtmosphereDefinitions.H"
