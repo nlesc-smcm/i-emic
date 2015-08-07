@@ -3,7 +3,7 @@
   <!-- Maximum allowed number of iterations in linear solve before a new         -->
   <!-- preconditioner is requested -->
   <Parameter name="recomputeBound" type="int" value = "10"/>
-  
+
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->
@@ -154,5 +154,9 @@
 
   </ParameterList> <!-- } THCM -->
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1c5e08b496176e8ac96ba21821310f5a2283318b
 
 </ParameterList> <!-- } -->
