@@ -196,11 +196,13 @@ void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm)
 	(*file) << "==========================================================================="
 			<< std::endl;
 	(*file) << "  Profile #CPU   = " << Comm->NumProc() << std::endl;
-	(*file) << std::setw(35) << std::left << " "
+	(*file) << " " << std::setw(35) << std::left << " "
 			<< std::setw(6)  << " "
-			<< std::setw(12) << std::left << " time "
+			<< std::setw(10) << std::left << "time"
 			<< std::setw(2)  << " "
-			<< std::setw(12) << std::left << " calls "
+			<< std::setw(6)  << std::left << "calls"
+			<< std::setw(2)  << " "
+			<< std::setw(10) << std::left << "avg"		
 			<< std::endl;
 
 	for (ProfileType::iterator it = profile.begin();
@@ -209,14 +211,17 @@ void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm)
 		sum += it->second[0];
 		(*file) << " " << std::setw(35) << std::left << it->first
 				<< std::setw(6)  << " -> "
-				<< std::setw(12) << std::left << std::setprecision(8) << it->second[0]
+				<< std::setw(10) << std::left << std::setprecision(5) << it->second[0]
 				<< std::setw(2)  << " "
-				<< std::setw(12) << std::left << std::setprecision(3) << it->second[1]
+				<< std::setw(6)  << std::left << std::setprecision(3) << it->second[1]
+				<< std::setw(2)  << " "
+				<< std::setw(10) << std::left << std::setprecision(5)
+				<< it->second[0] / it->second[1]
 				<< std::endl;
 	}
 	(*file) << " " << std::setw(35) << std::left << " "  
 			<< std::setw(6)  << " tot " 
-			<< std::setw(12) << std::left << std::setprecision(8) << sum
+			<< std::setw(10) << std::left << std::setprecision(5) << sum
 			<< std::endl;
 	(*file) << "==========================================================================="
 			<< std::endl;
