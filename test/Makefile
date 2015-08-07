@@ -61,7 +61,7 @@ lib$(LIB_SUPERVEC).a: force_look
 
 clean:
 	-rm -f $(EXE) $(OBJS) $(OBJLIBS) fort.* *.txt \
-	*.eps *.co *.jco *.beg *.rl *.info *~ dump
+	*.eps *.co *.jco *.beg *.rl *.info *~ dump *#
 	-for d in $(DIRS); do (cd $$d; $(MAKE) clean ); done
 
 force_look:

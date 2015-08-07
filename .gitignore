@@ -15,6 +15,7 @@
 !newton/
 !continuation/
 !test/
+!scripts/
 !thetastepper/
 !multiarray/
 

@@ -33,7 +33,7 @@
     <!-- type of scaling for conv. criterion ("r0","no scaling", "rhs",...) -->
     <Parameter name="Conv" type="string" value="r0"/>
     <!-- print every k'th iteration (0 to keep silent) -->
-    <Parameter name="Output" type="int" value="1"/>
+    <Parameter name="Output" type="int" value="0"/>
     <!-- unless you reaaly want to use an Aztec preconditioner, choose "None"! -->
     <Parameter name="Precond" type="string" value="None"/>
     <!-- max size of Krylov space before restart -->
@@ -207,7 +207,7 @@
       <!-- Singular U factor allowed in LU-factorisation of last           -->
       <!--            block. Only in last diagonal element of U!           -->
       <Parameter name="singlu" type="int" value="0"/>
-      <Parameter name="Output Level" type="int" value="5"/> 
+      <Parameter name="Output Level" type="int" value="0"/> 
 	  
       <ParameterList name="visualization">
         <!-- Visualise the original matrix A (possibly scaled) -->
@@ -245,7 +245,7 @@
 			   type="double" value="0.9"/>
     
     <!-- print output on pattern setup -->
-    <Parameter name="ParaSails: Print Stats (Pattern)" type="bool" value="1"/>
+    <Parameter name="ParaSails: Print Stats (Pattern)" type="bool" value="0"/>
 
     <!-- Filter: post-construction drop tolerance. This makes applying the -->
     <!-- preconditioner cheaper                                            -->
@@ -253,7 +253,7 @@
     <Parameter name="ParaSails: Filter" type="double" value="1.0e-3"/>
 
     <!-- print output on spai values -->
-    <Parameter name="ParaSails: Print Stats (Values)" type="bool" value="1"/>
+    <Parameter name="ParaSails: Print Stats (Values)" type="bool" value="0"/>
     
     
     <!-- ML parameters {-->
@@ -409,7 +409,7 @@
     <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
-    <Parameter name="Output" type="int" value="1"/>
+    <Parameter name="Output" type="int" value="0"/>
     <Parameter name="Scaling" type="string" value="None"/>
     <!-- don't touch this one, it's irrelevant -->
     <Parameter name="Precond" type="string" value="None"/>
@@ -468,7 +468,7 @@
       <Parameter name="Drop" type="double" value="1.0e-8"/>
       <Parameter name="KSpace" type="int" value="10"/>
       <Parameter name="Orthog" type="string" value="Classic"/>
-      <Parameter name="Output" type="int" value="1"/>
+      <Parameter name="Output" type="int" value="0"/>
     </ParameterList><!-- } Grad-Div Solver -->
 
     <!-- Parameters for the preconditioner for \hat{C}                      -->
@@ -509,7 +509,7 @@
         <Parameter name="cpivtol" type="double" value="0.875"/>
         <Parameter name="lutol" type="double" value="1.0e-10"/>
         <Parameter name="singlu" type="int" value="1"/>
-        <Parameter name="Output Level" type="int" value="5"/> 
+        <Parameter name="Output Level" type="int" value="0"/> 
         <ParameterList name="visualization">
           <Parameter name="visasc" type="int" value="0"/>
           <Parameter name="visnsc" type="int" value="0"/>
@@ -531,7 +531,7 @@
     <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
-    <Parameter name="Output" type="int" value="1"/>
+    <Parameter name="Output" type="int" value="0"/>
     <Parameter name="Precond" type="string" value="None"/>
     <Parameter name="KSpace" type="int" value="10"/>
     <Parameter name="Orthog" type="string" value="Classic"/>
@@ -605,7 +605,7 @@
       <Parameter name="default values" type="string" value="DD"/>
       <Parameter name="PDE equations" type="int" value="2"/>
       <Parameter name="ML debug mode" type="bool" value="0"/>
-      <Parameter name="ML output" type="int" value="10"/>
+      <Parameter name="ML output" type="int" value="0"/>
       <Parameter name="aggregation: damping factor" type="double" value="1.333"/>
       <Parameter name="aggregation: threshold" type="double" value="0.0"/>
       <Parameter name="aggregation: type" type="string" value="METIS"/>
@@ -617,7 +617,7 @@
       <Parameter name="coarse: type" type="string" value="Amesos-KLU"/>
       <Parameter name="increasing or decreasing" type="string" value="increasing"/>
       <Parameter name="max levels" type="int" value="2"/>
-	  <Parameter name="output" type="int" value="10"/>
+	  <Parameter name="output" type="int" value="0"/>
       <Parameter name="cycle applications" type="int" value="1"/>
       <Parameter name="prec type" type="string" value="full-MGV"/>
       <Parameter name="print unused" type="int" value="-2"/>
