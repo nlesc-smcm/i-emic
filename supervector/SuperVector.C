@@ -103,10 +103,10 @@ double SuperVector::norm(char mode)
 	if ((mode == 'V') && haveAtmosVector_ && haveOceanVector_)
 	{
 		haveAtmosVector_ = false;
-		INFO("Norm ocean vector : " << sqrt(dot(*this)));
+		INFO(" ||ocean vector|| : " << sqrt(dot(*this)));
 		haveAtmosVector_ = true;
 		haveOceanVector_ = false;
-		INFO("Norm atmos vector : " << sqrt(dot(*this)));
+		INFO(" ||atmos vector|| : " << sqrt(dot(*this)));
 		haveOceanVector_ = true;
 	}
 			
