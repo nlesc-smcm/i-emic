@@ -29,7 +29,7 @@ extern Teuchos::RCP<std::ostream> outFile;
 
 // Number of entries in profile
 #ifndef PROFILE_ENTRIES
-# define PROFILE_ENTRIES 2
+# define PROFILE_ENTRIES 4
 #endif
 
 typedef std::map<std::string, std::array<double, PROFILE_ENTRIES> > ProfileType;
@@ -43,19 +43,19 @@ extern ProfileType profile;
 #endif
 
 #ifndef ERROR
-#  define ERROR(x,y,z) (*outFile) << "**ERROR**: " << x << " "\
-	                              << y << " " << z << std::endl;
+#  define ERROR(x,y,z) (*outFile) << "**ERROR**: " << x << " "	\
+	<< y << " " << z << std::endl;
 #endif
 
 #ifndef WARNING
-#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << "\n"\
-	                                << y << " " << z << std::endl;
+#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << "\n"	\
+	<< y << " " << z << std::endl;
 #endif
 
 #ifndef DEBUG
 #  ifdef DEBUGGING
 #    define DEBUG(s) (*outFile) << s << std::endl;
-     // The use of # stringifies variable s: 
+// The use of # stringifies variable s: 
 #    define DEBVAR(s) (*outFile) << #s << ": " << s << std::endl;
 #  else
 #    define DEBUG(s)
@@ -80,40 +80,46 @@ extern ProfileType profile;
 #endif
 
 #ifndef TIMER_START
-#  define TIMER_START(message, timerPtr)		\
-	(*outFile) << message << std::endl;			\
-	timerPtr->ResetStartTime();					\
-	profile[message][0] = (profile.count(message)) ? profile[message][0] : 0; \
-	profile[message][1] = (profile.count(message)) ? profile[message][1] : 0; 
+#  define TIMER_START(message, timerPtr) {						\
+		timerPtr->ResetStartTime();								\
+		profile[message] = (profile.count(message)) ?			\
+			profile[message] :									\
+			std::array<double, PROFILE_ENTRIES>();          } 
 #endif
 
 #ifndef TIMER_END
-#  define TIMER_END(message, timerPtr)	{							\
-	double time = timerPtr->ElapsedTime();							\
-	profile[message][0] += time;									\
-	profile[message][1] += 1;		      							\
-	(*outFile) << message             << " done ("  				\
-			   << time                << ", total: "				\
-			   << profile[message][0] << ", calls: "				\
-			   << profile[message][1] << ")" <<  std::endl; }
+#  define TIMER_END(message, timerPtr)	{								\
+		double time = timerPtr->ElapsedTime();							\
+		profile[message][0] += time;									\
+		profile[message][1] += 1;		      							\
+		profile[message][2] = profile[message][0] / profile[message][1]; }
 #endif
-	
 
-//==================================================================
-//==================================================================
+#ifndef TRACK_ITERATIONS
+# define TRACK_ITERATIONS(message, iters) {							\
+		profile[message] = (profile.count(message)) ?					\
+			profile[message] :											\
+			std::array<double, PROFILE_ENTRIES>();						\
+		profile[message][0] += iters;							\
+		profile[message][1] += 1;										\
+		profile[message][2] = profile[message][0] / profile[message][1]; }
+#endif	
+
+//=========================================================================
+//=========================================================================
 
 // macros for checking Epetra calls
 #ifndef CHECK_ZERO
 #define CHECK_ZERO(funcall) {int ierr = funcall;						\
 		if (ierr) {INFO("Trilinos Error " << ierr << " returned from call " \
-						                          << #funcall);\
+						<< #funcall);									\
 			/*throw std::runtime_error("Trilinos Error...");*/}}
 #define CHECK_TRUE(funcall) {bool berr = funcall;						\
 		if (!berr) {INFO("Trilinos call " << #funcall << " returned false"); \
 			/*throw std::runtime_error("Trilinos Error...");*/}}
 #define CHECK_NONNEG(funcall) {int ierr = funcall;						\
 		if (ierr<0) {INFO("Trilinos Error " << ierr << " returned from call " \
-						                    << #funcall);\
+						  << #funcall);									\
 			/*throw std::runtime_error("Trilinos Error...");*/}}
 #endif
 

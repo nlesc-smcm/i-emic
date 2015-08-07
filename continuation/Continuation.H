@@ -383,6 +383,8 @@ newtonCorrector()
 	// Store the last obtained y1 in stateDot, such that it can be used by
 	// CreateTangent()
 	stateDot_ = y1;
+
+	TRACK_ITERATIONS("Continuation: Newton iterations...", newtonIter_);
 	
 	if (newtonIter_ == maxNewtonIterations_)
 	{
@@ -422,6 +424,9 @@ runBackTracking(VectorPtr stateDir, double parDir)
 
 		reduction /= 2.0;	// Update reduction
 	}
+
+	TRACK_ITERATIONS("Continuation: backtracking steps...", backTrack_);
+	
 	if (backTrack_ == numBackTrackingSteps_)
 	{
 		WARNING("Continuation: backtracking failed ", __FILE__, __LINE__);

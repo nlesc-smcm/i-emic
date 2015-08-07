@@ -192,37 +192,67 @@ void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm)
 		file = Teuchos::rcp(new Teuchos::oblackholestream());
 	}
 	
-	double sum = 0;
 	(*file) << "==========================================================================="
 			<< std::endl;
-	(*file) << "  Profile #CPU   = " << Comm->NumProc() << std::endl;
-	(*file) << " " << std::setw(35) << std::left << " "
-			<< std::setw(6)  << " "
-			<< std::setw(10) << std::left << "time"
-			<< std::setw(2)  << " "
-			<< std::setw(6)  << std::left << "calls"
-			<< std::setw(2)  << " "
-			<< std::setw(10) << std::left << "avg"		
-			<< std::endl;
+	(*file) << " Profile: #cores : " << Comm->NumProc() << std::endl;
 
+	// dimensions of output
+	int dims[7] = {35, 5, 8, 2, 8};
+	
+	(*file) << " "
+			<< std::setw(dims[0]) << std::left << " "
+			<< std::setw(dims[1])  << " "
+			<< std::setw(dims[2]) << std::left << "cumul."
+			<< std::setw(dims[3])  << " "
+			<< std::setw(dims[4])  << std::left << "calls"
+			<< std::setw(dims[5])  << " "
+			<< std::setw(dims[6]) << std::left << "average"		
+			<< std::endl;
+	
+	(*file) << "--------------------------------------------------------------------------"
+			<< std::endl;
+	
+	double sum = 0.0;
 	for (ProfileType::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
-		sum += it->second[0];
-		(*file) << " " << std::setw(35) << std::left << it->first
-				<< std::setw(6)  << " -> "
-				<< std::setw(10) << std::left << std::setprecision(5) << it->second[0]
-				<< std::setw(2)  << " "
-				<< std::setw(6)  << std::left << std::setprecision(3) << it->second[1]
-				<< std::setw(2)  << " "
-				<< std::setw(10) << std::left << std::setprecision(5)
-				<< it->second[0] / it->second[1]
-				<< std::endl;
+		// Display timings of the models
+		if (it->first.compare(0,4,"Cont") != 0 )
+		{
+			sum += it->second[0];
+			
+			(*file) << " "
+					<< std::setw(dims[0]) << std::left << it->first
+					<< std::setw(dims[1]) << " : "
+					<< std::setw(dims[2]) << std::left << std::setprecision(5) << it->second[0]
+					<< std::setw(dims[3]) << " "
+					<< std::setw(dims[4]) << std::left << std::setprecision(3) << it->second[1]
+					<< std::setw(dims[5]) << " "
+					<< std::setw(dims[6]) << std::left << std::setprecision(5) << it->second[2]
+					<< std::endl;
+		}
 	}
-	(*file) << " " << std::setw(35) << std::left << " "  
-			<< std::setw(6)  << " tot " 
-			<< std::setw(10) << std::left << std::setprecision(5) << sum
+	(*file) << "     total elapsed time: " << sum << std::endl;
+	
+	(*file) << "--------------------------------------------------------------------------"
 			<< std::endl;
+	for (ProfileType::iterator it = profile.begin();
+		 it != profile.end(); ++it)
+	{
+		// Display continuation information
+		if (it->first.compare(0,6,"Contin") == 0)
+		{
+			(*file) << " "
+					<< std::setw(dims[0]) << std::left << it->first
+					<< std::setw(dims[1]) << " : "
+					<< std::setw(dims[2]) << std::left << std::setprecision(5) << it->second[0]
+					<< std::setw(dims[3]) << " "
+					<< std::setw(dims[4]) << std::left << std::setprecision(3) << it->second[1]
+					<< std::setw(dims[5]) << " "
+					<< std::setw(dims[6]) << std::left << std::setprecision(5) << it->second[2]
+					<< std::endl;
+		}
+	}
 	(*file) << "==========================================================================="
 			<< std::endl;
 }
