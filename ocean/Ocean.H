@@ -49,7 +49,6 @@ class Epetra_Vector;
 class Epetra_MultiVector;
 class Epetra_Operator;
 class Epetra_CrsMatrix;
-class Epetra_Time;
 
 class Ocean
 {
@@ -67,8 +66,6 @@ protected:
 	
 	Teuchos::RCP<Epetra_Vector> rowScalingRecipr_;
 	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
-	
-	Teuchos::RCP<Epetra_Time> timer_;
 	
 	bool solverInitialized_;
 	bool recomputePreconditioner_;
@@ -150,10 +147,10 @@ public:
 	void saveStateToFile(std::string const &name);
 	void loadStateFromFile(std::string const &name);
 
-	// Write the state of the ocean to traditional FORTRAN out files fort.*
-	// Use matlab plot-scripts for visualization 
-	void dumpState();
-
+	// Let the ocean do some administrative
+	//  work after a continuation/time step 
+	void postConvergence() { dumpState(); }
+	
 	// Get functions for the grid dimensions
 	int getNdim() { return N_;}
 	int getMdim() { return M_;}
@@ -177,6 +174,10 @@ public:
 	std::shared_ptr<std::vector<int> > getSSTRows();
 	
 private:
+	// Write the state of the ocean to traditional FORTRAN out files fort.*
+	// Use matlab plot-scripts for visualization 
+	void dumpState();
+
 	// Randomize state, scale with scaling
 	void randomizeState(double scaling);
 	void initializeSolver();

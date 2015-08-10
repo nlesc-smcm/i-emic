@@ -32,12 +32,15 @@ class CoupledModel
 	std::shared_ptr<SuperVector> rhsView_;
 	std::shared_ptr<SuperVector> solView_;
 
-	// number of models;
-	int nm_;
-
 	// Order of Neumann expansion in elimination based solve
 	int kNeumann_;
 
+	// Solving scheme
+	//   'D': decoupled
+    //   'E': elimination based solve using the Schur complement and one or
+    //        more terms in the Neumann expansion of the Schur inverse
+	char solvingScheme_;
+	
 	// Trilinos' MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
 
@@ -59,11 +62,7 @@ public:
 	void computeRHS();
 
 	// Solve the models
-	//    mode = 'D': decoupled
-    //    mode = 'S': coupled using the Schur complement and one or more terms
-	//                in the Neumann expansion of the inverse
-	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>(),
-			   char mode = 'S');
+	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
 
 	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
 	std::shared_ptr<SuperVector> getState(char mode = 'C');
@@ -76,12 +75,19 @@ public:
 	double getPar();
 	double getParDestination();
 
-	void dumpState();
+	// If a step in a controlling scheme has converged some post-processing
+	// is required, which is done here.
+	void postConvergence();
 
 private:
 	// for internal use in the inexact solver
 	std::shared_ptr<SuperVector> getSolution(char mode1, char mode2);
+
+	// Synchronize the states between the models that are needed to communicate
+	// Relaxation might not be a good idea, set it to 1
 	void synchronize(double relaxation = 1.0);
+
+	// A few tests are collected here
 	void test();
 };
 

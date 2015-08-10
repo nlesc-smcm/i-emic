@@ -40,24 +40,30 @@ CoupledModel::CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
 	C_     = atmos_->getOceanBlock();
 
- 	// Determine the order of the Neumann expansion in the elimination based solve
-	kNeumann_ = params->get("Order of Neumann approximation", 1);
+	// Get parameters from file, see xml for documentation
+	solvingScheme_ = params->get("Solving scheme", 'E');
+	kNeumann_      = params->get("Order of Neumann approximation", 1);
 }
 
 //------------------------------------------------------------------
 void CoupledModel::synchronize(double relaxation)
 {
-	INFO("CoupledModel: synchronize...");
+	std::shared_ptr<Timer> timer = std::make_shared<Timer>();
+	TIMER_START("CoupledModel: synchronize...");
 	ocean_->setAtmosphere(*(stateView_->getAtmosVector()), relaxation);
 
 	// returns a copy of the sst in the ocean
 	atmos_->setOceanTemperature(*(ocean_->getSST()), relaxation);
-	INFO("CoupledModel: synchronize... done");
+	TIMER_STOP("CoupledModel: synchronize...");
 }
 
 //------------------------------------------------------------------
 void CoupledModel::computeJacobian()
 {
+	// Synchronize the states
+	if (solvingScheme_ == 'E')
+		synchronize(1.0);		
+
 	// Ocean
 	ocean_->computeJacobian();
 
@@ -68,6 +74,10 @@ void CoupledModel::computeJacobian()
 //------------------------------------------------------------------
 void CoupledModel::computeRHS()
 {
+	// Synchronize the states
+	if (solvingScheme_ == 'E')
+		synchronize(1.0);		
+	
 	// Ocean
 	ocean_->computeRHS();
 
@@ -76,14 +86,15 @@ void CoupledModel::computeRHS()
 }
 
 //------------------------------------------------------------------
-void CoupledModel::solve(std::shared_ptr<SuperVector> rhs, char mode)
+void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 {
-	if (mode == 'D')
+	// Start solve
+	if (solvingScheme_ == 'D')
 	{
 		ocean_->solve(Teuchos::rcp(rhs.get(), false));  // Ocean
 		atmos_->solve(rhs);  	                        // Atmosphere
 	}
-	else if (mode == 'S')
+	else if (solvingScheme_ == 'E')
 	{
 		//.......................................................
 		// Elimination based solve:
@@ -122,7 +133,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs, char mode)
 		// A*w2 = btmp 
 		std::shared_ptr<SuperVector> btmp(w1);
 		ocean_->solve(Teuchos::rcp(btmp.get(), false));
-
+		
 		if (kNeumann_ > 0)
 		{
 			// ......................................................
@@ -152,7 +163,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs, char mode)
 	
 			//  A*w4 = B*w3
 			ocean_->solve(Teuchos::rcp(Bw3.get(), false));
-
+			
 			if (kNeumann_ > 1)
 			{
 				// ......................................................
@@ -168,6 +179,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs, char mode)
 				std::shared_ptr<SuperVector> w5 = getSolution('C','C');
 				w5->linearTransformation(*B_, *rowsB_, 'A', 'O');
 				std::shared_ptr<SuperVector> Bw5(w5);
+
 				ocean_->solve(Teuchos::rcp(Bw5.get(),false));
 				
 				// x1 = w2 + w4 + w6
@@ -186,7 +198,6 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs, char mode)
 		{
 			// x1 = w2 -> already in ocean_, no need for extraction			
 		}
-		
 		// btmp = b2 - C*x1: linear mapping from atmosphere to ocean
 		// obtain a copy of the solution x1 = w4 + w2 in the ocean:
 		// call it btmp
@@ -213,6 +224,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs, char mode)
 //------------------------------------------------------------------
 std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode)
 {
+	// obtain solution based on mode
 	if (mode == 'V') // View
 		return solView_;
 	else if (mode == 'C') // Copy
@@ -311,7 +323,6 @@ void CoupledModel::setPar(double value)
 {
 	ocean_->setPar(value);
 	atmos_->setPar(value);
-	synchronize(1.0);
 }
 
 //------------------------------------------------------------------
@@ -334,10 +345,16 @@ double CoupledModel::getParDestination()
 }
 
 //------------------------------------------------------------------
-void CoupledModel::dumpState()
+void CoupledModel::postConvergence()
 {
-	ocean_->dumpState();
-	atmos_->dumpState();
+	// If the solver is completely decoupled, this is the right
+	// moment to synchronize
+	if (solvingScheme_ == 'D')
+		synchronize(1.0);
+
+	// Let the models do their post-convergence processing
+	ocean_->postConvergence();
+	atmos_->postConvergence();
 }
 
 //------------------------------------------------------------------

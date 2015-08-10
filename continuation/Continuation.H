@@ -79,9 +79,11 @@ run()
 	
 	while (!destinationReached_ && step_ != maxSteps_)
 	{
-		step(); 	// Perform a continuation step
+		step(); 	            // Perform a continuation step
 
-		model_->dumpState();	// Get an intermediate solution
+		// Let the model do some administrative work after
+		// a continuation step 
+		model_->postConvergence();	   
 
 		// Detect special points:
 		//  if necessary converge on them (-->not implemented yet)
@@ -369,11 +371,9 @@ newtonCorrector()
 		normRHStest_ = rhsView_->norm('V'); // verbose norm
 		INFO("Contin.: corrector    iter: " << newtonIter_ );
 		INFO("Contin.: corrector  norm R: " << normRHStest_ );
-				
+		
 		if (normRHStest_ < newtonTolerance_)
-		{
 			break;
-		}
 		
 		// if we don't see a decrease we run the backtracking routine
 		if (backTracking_ and (normRHS_ < normRHStest_) )
@@ -383,7 +383,7 @@ newtonCorrector()
 	// Store the last obtained y1 in stateDot, such that it can be used by
 	// CreateTangent()
 	stateDot_ = y1;
-
+	
 	TRACK_ITERATIONS("Continuation: Newton iterations...", newtonIter_);
 	
 	if (newtonIter_ == maxNewtonIterations_)
@@ -391,7 +391,7 @@ newtonCorrector()
 		WARNING("Continuation: Newton failed", __FILE__, __LINE__);
 		return 1;
 	}
-
+	
 	INFO("Contin.: corrector converged in " << newtonIter_ << " steps");
 	return 0;
 }

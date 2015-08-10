@@ -2,7 +2,7 @@
 <ParameterList name="Ocean">
   <!-- Maximum allowed number of iterations in linear solve before a new         -->
   <!-- preconditioner is requested -->
-  <Parameter name="recomputeBound" type="int" value = "10"/>
+  <Parameter name="recomputeBound" type="int" value = "20"/>
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->

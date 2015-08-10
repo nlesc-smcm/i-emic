@@ -92,9 +92,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 
-	// Create timing object
-	timer_ = rcp(new Epetra_Time(*Comm));
-
 	// Get domain object and set the problem dimensions
 	domain_ = THCM::Instance().GetDomain();
 	N_ = domain_->GlobalN();
@@ -230,16 +227,14 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	if (useScaling_)
 		scaleProblem();
 
-	double time;	// Used to store timings
-
 	// Depending on the number of iterations we might need to
 	// recompute the preconditioner
 	if (recomputePreconditioner_)
 	{
 		// Compute preconditioner
-		TIMER_START("Ocean: computing preconditioner...", timer_);
+		TIMER_START("Ocean: build preconditioner...");
 		precPtr_->Compute();		
-		TIMER_END("Ocean: computing preconditioner...", timer_);
+		TIMER_STOP("Ocean: build preconditioner...");
 		recomputePreconditioner_ = false;  // Disable subsequent recomputes
 	}
 
@@ -254,11 +249,11 @@ void Ocean::solve(RCP<SuperVector> rhs)
 							   "*** Belos::LinearProblem failed to setup");
 
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
-	TIMER_START("Ocean: perform solve...", timer_);
+	TIMER_START("Ocean: solve...");
 	Belos::ReturnType ret = belosSolver_->solve();	// Solve
 	belosIters_ = belosSolver_->getNumIters();		
-	TIMER_END("Ocean: perform solve...", timer_);
-	INFO("Ocean: perform solve... iterations = " << belosIters_);
+	INFO("Ocean: finished solve... " << belosIters_ << " iterations");
+	TIMER_STOP("Ocean: solve...");
 
 	if (belosIters_ > recomputeBound_)
 	{
@@ -343,20 +338,20 @@ void Ocean::unscaleProblem()
 void Ocean::computeRHS()
 {
 	// evaluate rhs in THCM with the current state
- 	TIMER_START("Ocean: compute RHS...", timer_);
+ 	TIMER_START("Ocean: compute RHS...");
 	THCM::Instance().evaluate(*state_, rhs_, false);
-	TIMER_END("Ocean: compute RHS...", timer_);
+	TIMER_STOP("Ocean: compute RHS...");
 }
 
 //=====================================================================
 void Ocean::computeJacobian()
 {
-	TIMER_START("Ocean: compute Jacobian...", timer_);
+	TIMER_START("Ocean: compute Jacobian...");
 	// Compute the Jacobian in THCM using the current state
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	// Get the Jacobian from THCM
 	jac_ = THCM::Instance().getJacobian();
-	TIMER_END("Ocean: compute Jacobian...", timer_);
+	TIMER_STOP("Ocean: compute Jacobian...");
 }
 
 //====================================================================

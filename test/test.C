@@ -2,7 +2,6 @@
 // Continuation test routines
 //=======================================================================
 #include <Epetra_config.h>
-#include <iomanip>
 
 #  ifdef HAVE_MPI
 // Epetra's wrapper for MPI_Comm.  This header file only exists if
@@ -13,14 +12,16 @@
 #    include <Epetra_SerialComm.h>
 #  endif // HAVE_MPI
 
-#include <memory>
-#include <vector>
-#include <array>
-
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 #include <Teuchos_FancyOStream.hpp>
+
+#include <iomanip>
+#include <memory>
+#include <vector>
+#include <array>
+#include <stack>
 
 #include "SuperVector.H"
 #include "CoupledModel.H"
@@ -35,8 +36,10 @@ using Teuchos::rcp;
 
 //------------------------------------------------------------------
 // A few declarations (see GlobalDefinitions.H)
+// --> put them in a namespace
 RCP<std::ostream> outFile;               // output file
-ProfileType profile;                     // profile 
+ProfileType profile;                     // profile
+std::stack<Timer> timerStack;      // timing stack
 
 //------------------------------------------------------------------
 void testVecWrap();
@@ -175,6 +178,9 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 //------------------------------------------------------------------
 void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm)
 {
+	if (timerStack.empty() == false)
+		WARNING("Unequal amount of TIMER_START and TIMER_STOP uses",
+				__FILE__, __LINE__);
 	
 	std::ostringstream profilefile;  // setting up a filename
 	RCP<std::ostream> file;          // output file
@@ -216,8 +222,9 @@ void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm)
 	for (ProfileType::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
-		// Display timings of the models
-		if (it->first.compare(0,4,"Cont") != 0 )
+		// Display timings of the separate models, summing
+		if ( it->first.compare(0,5,"Atmos") == 0 ||
+			 it->first.compare(0,5,"Ocean") == 0   )
 		{
 			sum += it->second[0];
 			
@@ -232,15 +239,17 @@ void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm)
 					<< std::endl;
 		}
 	}
-	(*file) << "     total elapsed time: " << sum << std::endl;
+	(*file) << std::endl << "     total elapsed time within the models: " << sum << std::endl;
 	
 	(*file) << "--------------------------------------------------------------------------"
 			<< std::endl;
 	for (ProfileType::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
-		// Display continuation information
-		if (it->first.compare(0,6,"Contin") == 0)
+		// Display other information
+		if ( it->first.compare(0,5,"Conti") == 0 ||
+			 it->first.compare(0,5,"Coupl") == 0 || 
+			 it->first.compare(0,5,"Super") == 0    )
 		{
 			(*file) << " "
 					<< std::setw(dims[0]) << std::left << it->first

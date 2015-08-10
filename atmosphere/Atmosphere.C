@@ -71,9 +71,6 @@ Atmosphere::Atmosphere(int n, int m)
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
 
-	// Create Timer object
-	timer_ = std::make_shared<Timer>();
-	
 	xmin_ = 286 * PI_ / 180;
 	xmax_ = 350 * PI_ / 180;
 	ymin_ = 10  * PI_ / 180;
@@ -171,7 +168,7 @@ void Atmosphere::setOceanTemperature(std::vector<double> &sst,
 //-----------------------------------------------------------------------------
 void Atmosphere::computeJacobian()
 {
-	TIMER_START("Atmosphere: compute Jacobian...", timer_);
+	TIMER_START("Atmosphere: compute Jacobian...");
 	
 	Atom tc (n_, m_, l_, np_);
 	Atom tc2(n_, m_, l_, np_);
@@ -190,13 +187,13 @@ void Atmosphere::computeJacobian()
 	boundaries();
 	assemble();
 	
-	TIMER_END("Atmosphere: compute Jacobian...", timer_);
+	TIMER_STOP("Atmosphere: compute Jacobian...");
 }
 
 //-----------------------------------------------------------------------------
 void Atmosphere::computeRHS()
 {
-	TIMER_START("Atmosphere: compute RHS...", timer_);
+	TIMER_START("Atmosphere: compute RHS...");
 
 	// If necessary compute a new Jacobian
    //	if (recomputeJacobian_)
@@ -216,7 +213,7 @@ void Atmosphere::computeRHS()
 			(*rhs_)[row-1] = value;
 		}
 	
-	TIMER_END("Atmosphere: compute RHS...", timer_);
+	TIMER_STOP("Atmosphere: compute RHS...");
 }
 
 //-----------------------------------------------------------------------------
@@ -368,7 +365,7 @@ extern "C" void dgesv_(int *N, int *NRHS, double *A,
 //-----------------------------------------------------------------------------
 void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 {
-	TIMER_START("Atmosphere: perform solve...", timer_);
+	TIMER_START("Atmosphere: solve...");
 	
 	char trans = 'N';
 	
@@ -386,7 +383,7 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 	dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
 			&(*sol_)[0], &ldb, &info);
 
-	TIMER_END("Atmosphere: perform solve...", timer_);
+	TIMER_STOP("Atmosphere: solve...");
 }
 
 //-----------------------------------------------------------------------------

@@ -12,14 +12,17 @@
 #ifndef GLOBALDEFINITIONS_H
 #define GLOBALDEFINITIONS_H
 
-#include "Teuchos_RCP.hpp"
-#include "EpetraExt_RowMatrixOut.h"
+#include <Teuchos_RCP.hpp>
+#include <EpetraExt_RowMatrixOut.h>
+#include <mpi.h>
 
 #include <iostream>
 #include <cmath>
 #include <map>
 #include <array>
 #include <string>
+#include <stack>
+
 
 // This outstream needs to be defined in the main routine.
 extern Teuchos::RCP<std::ostream> outFile;
@@ -36,7 +39,14 @@ typedef std::map<std::string, std::array<double, PROFILE_ENTRIES> > ProfileType;
 
 // This profile container needs to be defined in the main routine.
 extern ProfileType profile;
-//------------------------------------------------------------------
+
+// Forward declaration of Timer class
+class Timer;
+
+// We define a global stack for Timer objects, so that we can nest timings
+extern std::stack<Timer> timerStack;
+
+//=========================================================================
 
 #ifndef INFO
 #  define INFO(s) (*outFile) << s << std::endl; 
@@ -79,33 +89,71 @@ extern ProfileType profile;
 #  define SGN(x) (x < 0 ? -1 : 1)
 #endif
 
+// Timer macro using a global stack, allows for nesting
 #ifndef TIMER_START
-#  define TIMER_START(message, timerPtr) {						\
-		timerPtr->ResetStartTime();								\
-		profile[message] = (profile.count(message)) ?			\
-			profile[message] :									\
-			std::array<double, PROFILE_ENTRIES>();          } 
+#  define TIMER_START(msg)					\
+	{												\
+		Timer timer;								\
+		timer.ResetStartTime();						\
+		profile[msg] = (profile.count(msg)) ?		\
+			profile[msg] :							\
+			std::array<double, PROFILE_ENTRIES>();	\
+		timerStack.push(timer);						\
+	} 
 #endif
 
-#ifndef TIMER_END
-#  define TIMER_END(message, timerPtr)	{								\
-		double time = timerPtr->ElapsedTime();							\
-		profile[message][0] += time;									\
-		profile[message][1] += 1;		      							\
-		profile[message][2] = profile[message][0] / profile[message][1]; }
+#ifndef TIMER_STOP
+#  define TIMER_STOP(msg)										\
+	{															\
+		double time = timerStack.top().ElapsedTime();			\
+		timerStack.pop();										\
+		profile[msg][0] += time;								\
+		profile[msg][1] += 1;									\
+		profile[msg][2] = profile[msg][0] / profile[msg][1];	\
+	}
 #endif
 
 #ifndef TRACK_ITERATIONS
-# define TRACK_ITERATIONS(message, iters) {							\
-		profile[message] = (profile.count(message)) ?					\
-			profile[message] :											\
-			std::array<double, PROFILE_ENTRIES>();						\
-		profile[message][0] += iters;							\
-		profile[message][1] += 1;										\
-		profile[message][2] = profile[message][0] / profile[message][1]; }
+# define TRACK_ITERATIONS(msg, iters)							\
+	{															\
+		profile[msg] = (profile.count(msg)) ?					\
+			profile[msg] :										\
+			std::array<double, PROFILE_ENTRIES>();				\
+		profile[msg][0] += iters;								\
+		profile[msg][1] += 1;									\
+		profile[msg][2] = profile[msg][0] / profile[msg][1];	\
+	}
 #endif	
 
-//=========================================================================
+//------------------------------------------------------------------
+// Timer class, compatible with macros here in GlobalDefinitions.H
+// Not used...
+class Timer
+{
+	double startTime_;
+public:
+	Timer()
+		:
+		startTime_(0.0)
+		{}
+	
+	double wallTime()
+		{
+			int mpiInit;
+			MPI_Initialized(&mpiInit);
+			if (mpiInit)
+				return MPI_Wtime();
+			else
+				return (double) std::clock() / CLOCKS_PER_SEC;
+		}
+	
+	void ResetStartTime()
+		{ startTime_ = wallTime();}
+
+	double ElapsedTime()
+		{ return (double) (wallTime() - startTime_); }
+};
+
 //=========================================================================
 
 // macros for checking Epetra calls
@@ -129,5 +177,7 @@ extern ProfileType profile;
 //! not very useful for periodic boundaries...
 #  define MOD(x,y) (((double)(y)==0.0)? (double)(x): ((double)(x) - floor((double)(x)/((double)(y)))*((double)(y))))
 #endif
+
+
 
 #endif

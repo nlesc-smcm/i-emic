@@ -185,6 +185,7 @@ void SuperVector::linearTransformation(std::vector<double> &diagonal,
 									   std::vector<int> &indices,
 									   char domain, char range)
 {
+	// Do work
 	if (domain == 'O' && range == 'A')
 	{
 		int dstLength = diagonal.size();
