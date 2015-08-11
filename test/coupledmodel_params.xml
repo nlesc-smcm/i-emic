@@ -8,10 +8,10 @@
   <!--            Schur complement is approximated using a Neumann approximation.      -->
   <!--            The solutions are synchronized before every computation of the RHS   -->
   <!--            and the Jacobian.                                                    -->
-  <Parameter name="Solving scheme" type="char" value="E"/>
+  <Parameter name="Solving scheme" type="char" value="D"/>
   
   <!-- Determine the order of the Neumann approximation in the elimination based solve -->
   <!-- Choose 0, 1 or 2                                                                -->
   <!-- This only works if you have chosen E for "Solving scheme"                       -->
-  <Parameter name="Order of Neumann approximation" type="int" value="0"/>
+  <Parameter name="Order of Neumann approximation" type="int" value="2"/>
 </ParameterList>

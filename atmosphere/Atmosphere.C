@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <algorithm> // std::fill in assemble
 
 //-----------------------------------------------------------------------------
 // Constructor, specify horizontal grid dimensions
@@ -19,7 +20,7 @@ Atmosphere::Atmosphere(int n, int m)
 	ksub_(m),
 	ksup_(m),
 	solvingScheme_('D'),
-	ldimA_(2 * m + 1 + m)
+	ldimA_(2 * ksub_ + 1 + ksup_)
 {
 	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
@@ -317,6 +318,9 @@ void Atmosphere::assemble()
 	beg_.clear();
 	ico_.clear();
 	jco_.clear();
+
+	// Clear banded storage
+	std::fill(bandedA_.begin(), bandedA_.end(), 0.0);
 	
 	int i2,j2,k2; // will contain neighbouring grid pointes given by shift()
 	int row;
@@ -357,7 +361,6 @@ void Atmosphere::assemble()
 								// BND --------------------------------------
 								// get row index for banded storage
 								rowb = row - col + kdiag;
-
 	
 								// put matrix values in column major fashion
 								// in the array
@@ -366,7 +369,6 @@ void Atmosphere::assemble()
 								colb = col;
 								idx  = rowb + (colb - 1) * ldimA_ - 1;
 								bandedA_[idx] = value;
-								std::cout << idx << std::endl;
 							}
 						}
 					}
@@ -376,7 +378,7 @@ void Atmosphere::assemble()
 	beg_.push_back(elm_ctr);
 
 	// create dense A and its LU for solving with dgetrs()
-	if (solvingScheme_ = 'D')
+	if (solvingScheme_ == 'D')
 		buildDenseA();
 	TIMER_STOP("Atmosphere: assemble...");
 }
@@ -398,6 +400,12 @@ extern "C" void dgesv_(int *N, int *NRHS, double *A,
 					   int *LDA, int *IPIV, double *B,
 					   int *LDB, int *INFO);
 
+// Solve banded system stored in bandedA_
+extern "C" void dgbsv_(int *N, int *KL, int *KU, int *NRHS, double *AB,
+					   int *LDAB, int *IPIV, double *B,
+					   int *LDB, int *INFO);
+
+
 //-----------------------------------------------------------------------------
 void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 {
@@ -417,11 +425,16 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 		(*sol_) = std::vector<double>(*(rhs->getAtmosVector()));
 	
 	if (solvingScheme_ == 'D')
+	{
 		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
 				&(*sol_)[0], &ldb, &info);
+	}
 	else if (solvingScheme_ == 'B')
-	{}
-
+	{
+		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedA_[0],
+			   &ldimA_, ipiv_, &(*sol_)[0], &ldb, &info);
+	}
+	
 	TIMER_STOP("Atmosphere: solve...");
 }
 
@@ -594,6 +607,19 @@ void Atmosphere::writeAll()
 	}
 	else
 		std::cout << " beg vector is empty" << std::endl;
+
+	// Write beg
+	if (!bandedA_.empty())
+	{
+		std::ofstream atmos_bandedA;
+		atmos_bandedA.open("atmos_bandedA.txt");
+		for (auto &i : bandedA_)
+			atmos_bandedA << std::setprecision(12) << i << '\n';
+		atmos_bandedA.close();
+	}
+	else
+		std::cout << " bandedA vector is empty" << std::endl;
+
 
 	// Write frc
 	if (!frc_.empty())
