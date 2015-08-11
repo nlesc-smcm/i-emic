@@ -429,8 +429,9 @@ void Atmosphere::buildDenseA()
 	int dim  = n_*m_*l_;
 	int lda  = dim;
 	int info;
-
+	TIMER_START("Atmosphere: buildDenseA::dgetrf...");
 	dgetrf_(&dim, &dim, &denseA_[0], &lda, ipiv_, &info);
+	TIMER_STOP("Atmosphere: buildDenseA::dgetrf...");
 	TIMER_STOP("Atmosphere: buildDenseA...");
 }
 
