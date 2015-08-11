@@ -18,8 +18,8 @@ Atmosphere::Atmosphere(int n, int m)
 	dim_(m * n * 1),
 	ksub_(m),
 	ksup_(m),
-	ldimA_(2 * m + 1 + m),
-	bandedA_(2 * m + 1 + m, m * n)
+	solvingScheme_('D'),
+	ldimA_(2 * m + 1 + m)
 {
 	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
@@ -66,6 +66,9 @@ Atmosphere::Atmosphere(int n, int m)
 
 	// Initialize dense matrix:
 	denseA_ = std::vector<double>(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
+
+	// Initialize banded storage
+	bandedA_ = std::vector<double>(ldimA_ * dim_, 0.0);
 	
 	// Create pivot array for use in lapack
 	ipiv_ = new int[n_*m_*l_+1];
@@ -319,6 +322,8 @@ void Atmosphere::assemble()
 	int row;
 	int rowb; // for banded storage
 	int col;
+	int colb; // for banded storage
+	int idx;
 	int kdiag = ksub_ + ksup_ + 1; // for banded storage
 	int elm_ctr = 1;
 	double value;
@@ -341,18 +346,27 @@ void Atmosphere::assemble()
 							value = Al_->get(i,j,k,loc,A,B);
 							if (std::abs(value) > 0)
 							{
-								// store values in CRS arrays							
+								// CRS --------------------------------------
 								ico_.push_back(value);
 								col = find_row(i2,j2,k2,B);
 								jco_.push_back(col);
 
                                 // increment the element counter
 								++elm_ctr;
-								
-								// store value in banded storage
-								//  > go from 1 to 0-based
+
+								// BND --------------------------------------
+								// get row index for banded storage
 								rowb = row - col + kdiag;
-								bandedA_(rowb-1, col-1) = value;
+
+	
+								// put matrix values in column major fashion
+								// in the array
+                                //  > go from 1 to 0-based
+								rowb = rowb;
+								colb = col;
+								idx  = rowb + (colb - 1) * ldimA_ - 1;
+								bandedA_[idx] = value;
+								std::cout << idx << std::endl;
 							}
 						}
 					}
@@ -360,9 +374,10 @@ void Atmosphere::assemble()
 	
 	// final element of beg
 	beg_.push_back(elm_ctr);
-	
+
 	// create dense A and its LU for solving with dgetrs()
-	buildDenseA();
+	if (solvingScheme_ = 'D')
+		buildDenseA();
 	TIMER_STOP("Atmosphere: assemble...");
 }
 
@@ -401,8 +416,11 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 	else
 		(*sol_) = std::vector<double>(*(rhs->getAtmosVector()));
 	
-	dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
-			&(*sol_)[0], &ldb, &info);
+	if (solvingScheme_ == 'D')
+		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
+				&(*sol_)[0], &ldb, &info);
+	else if (solvingScheme_ == 'B')
+	{}
 
 	TIMER_STOP("Atmosphere: solve...");
 }

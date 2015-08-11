@@ -87,10 +87,13 @@ class Atmosphere
  	// Pivot array for lapack
 	int *ipiv_;
 
-	MultiArray<double, 2> bandedA_;    // Banded matrix storage
+	std::vector<double> bandedA_;      // Banded matrix storage
 	int ksub_;                         // Number of subdiagonals
 	int ksup_;                         // Number of superdiagonals
 	int ldimA_;                        // Leading dimension of banded storage
+
+	// Solving scheme: 'D', 'B'
+	char solvingScheme_;
 
 	// Continuation parameter
 	double    ampl_; //! amplitude of forcing 
