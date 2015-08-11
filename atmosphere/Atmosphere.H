@@ -31,9 +31,10 @@ using std::vector;
 
 class Atmosphere
 {
-	int n_; //! #grid-points in east-west (x) direction
-	int m_; //! #grid-points in north-south (y) direction
-	int l_; //! #grid-points in vertical (z) direction
+	int n_;   //! #grid-points in east-west (x) direction
+	int m_;   //! #grid-points in north-south (y) direction
+	int l_;   //! #grid-points in vertical (z) direction
+	int dim_; //! full dimension of the problem
 
 	//! #neighbours, for example in a 3D grid:
 	//!   stencil np = 27:
@@ -82,8 +83,14 @@ class Atmosphere
 
 	// Dense matrix storage
 	std::vector<double> denseA_;
-	// Pivot array for lapack
+
+ 	// Pivot array for lapack
 	int *ipiv_;
+
+	MultiArray<double, 2> bandedA_;    // Banded matrix storage
+	int ksub_;                         // Number of subdiagonals
+	int ksup_;                         // Number of superdiagonals
+	int ldimA_;                        // Leading dimension of banded storage
 
 	// Continuation parameter
 	double    ampl_; //! amplitude of forcing 

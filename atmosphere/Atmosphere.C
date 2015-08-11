@@ -14,7 +14,12 @@ Atmosphere::Atmosphere(int n, int m)
 	:
 	n_(n),
 	m_(m),
-	l_(1)
+	l_(1),
+	dim_(m * n * 1),
+	ksub_(m),
+	ksup_(m),
+	ldimA_(2 * m + 1 + m),
+	bandedA_(2 * m + 1 + m, m * n)
 {
 	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
@@ -45,16 +50,13 @@ Atmosphere::Atmosphere(int n, int m)
 	Ad_   =  rhoa_ * hdima_ * cpa_ * d0_ / (muoa_ * r0dim_ * r0dim_);
 	As_   =  sun0_ * (1 - c0_) / (4 * muoa_);		
 	
-	// Set problem dimension
-	int dim = n_ * m_ * l_;
-	
 	np_  = ATMOS_NP_;   // all neighbouring points including the center
 	nun_ = ATMOS_NUN_;  // only temperature ATMOS_TT_
 	
 	// Initialize state, rhs and solution of linear solve with zeros
-	rhs_   = std::make_shared<std::vector<double> >(dim, 0.0);
-	sol_   = std::make_shared<std::vector<double> >(dim, 0.0);
-	state_ = std::make_shared<std::vector<double> >(dim, 0.0);
+	rhs_   = std::make_shared<std::vector<double> >(dim_, 0.0);
+	sol_   = std::make_shared<std::vector<double> >(dim_, 0.0);
+	state_ = std::make_shared<std::vector<double> >(dim_, 0.0);
 
 	// Initialize ocean temperature
 	oceanTemp_ = std::vector<double>(n_ * m_, 0.0);
@@ -67,7 +69,7 @@ Atmosphere::Atmosphere(int n, int m)
 	
 	// Create pivot array for use in lapack
 	ipiv_ = new int[n_*m_*l_+1];
-	
+
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
 
@@ -306,6 +308,7 @@ void Atmosphere::discretize(int type, Atom &atom)
 //-----------------------------------------------------------------------------
 void Atmosphere::assemble()
 {
+	// Create CRS matrix storage and/or banded storage 
 	TIMER_START("Atmosphere: assemble...");
 	// clear old CRS matrix
 	beg_.clear();
@@ -314,6 +317,9 @@ void Atmosphere::assemble()
 	
 	int i2,j2,k2; // will contain neighbouring grid pointes given by shift()
 	int row;
+	int rowb; // for banded storage
+	int col;
+	int kdiag = ksub_ + ksup_ + 1; // for banded storage
 	int elm_ctr = 1;
 	double value;
 	for (int k = 1; k <= l_; ++k)
@@ -335,11 +341,18 @@ void Atmosphere::assemble()
 							value = Al_->get(i,j,k,loc,A,B);
 							if (std::abs(value) > 0)
 							{
-								// store value								
+								// store values in CRS arrays							
 								ico_.push_back(value);
-								jco_.push_back(find_row(i2,j2,k2,B));
-								// increment the element counter
+								col = find_row(i2,j2,k2,B);
+								jco_.push_back(col);
+
+                                // increment the element counter
 								++elm_ctr;
+								
+								// store value in banded storage
+								//  > go from 1 to 0-based
+								rowb = row - col + kdiag;
+								bandedA_(rowb-1, col-1) = value;
 							}
 						}
 					}
