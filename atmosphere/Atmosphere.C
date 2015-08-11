@@ -219,6 +219,7 @@ void Atmosphere::computeRHS()
 //-----------------------------------------------------------------------------
 double Atmosphere::matvec(int row)
 {
+	TIMER_START("Atmosphere: matvec...");
 	// Returns inner product of a row in the matrix with the state.
 	// > ugly stuff with 1 to 0 based...
 	int first = beg_[row-1];
@@ -226,13 +227,15 @@ double Atmosphere::matvec(int row)
 	double result = 0.0;
 	for (int j = first; j <= last; ++j)
 		result += ico_[j-1] * (*state_)[jco_[j-1]-1];
-	
+
+	TIMER_STOP("Atmosphere: matvec...");
 	return result;
 }
 
 //-----------------------------------------------------------------------------
 void Atmosphere::forcing()
 {
+	TIMER_START("Atmosphere: forcing...");
 	double value;
 	int row;
 	for (int j = 1; j <= m_; ++j)
@@ -242,11 +245,13 @@ void Atmosphere::forcing()
 			value = oceanTemp_[row-1] + ampl_ * (suna_[j] - amua_);
 			frc_[row-1] = value;
 		}
+	TIMER_STOP("Atmosphere: forcing...");
 }
 
 //-----------------------------------------------------------------------------
 void Atmosphere::discretize(int type, Atom &atom)
 {
+	TIMER_START("Atmosphere: discretize...");
 	switch (type)
 	{
 		double val2, val4, val5, val6, val8;
@@ -294,12 +299,14 @@ void Atmosphere::discretize(int type, Atom &atom)
 			}
 		break;
 	}
+	TIMER_STOP("Atmosphere: discretize...");
 }
 
 
 //-----------------------------------------------------------------------------
 void Atmosphere::assemble()
 {
+	TIMER_START("Atmosphere: assemble...");
 	// clear old CRS matrix
 	beg_.clear();
 	ico_.clear();
@@ -343,6 +350,7 @@ void Atmosphere::assemble()
 	
 	// create dense A and its LU for solving with dgetrs()
 	buildDenseA();
+	TIMER_STOP("Atmosphere: assemble...");
 }
 
 //-----------------------------------------------------------------------------
@@ -389,6 +397,7 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 //-----------------------------------------------------------------------------
 void Atmosphere::buildDenseA()
 {
+	TIMER_START("Atmosphere: buildDenseA...");
 	//------------------------------------------------
 	//--> weird stuff: in the future stick to sparse plx
 	// Create dense matrix:
@@ -422,12 +431,14 @@ void Atmosphere::buildDenseA()
 	int info;
 
 	dgetrf_(&dim, &dim, &denseA_[0], &lda, ipiv_, &info);
+	TIMER_STOP("Atmosphere: buildDenseA...");
 }
 
 
 //-----------------------------------------------------------------------------
 void Atmosphere::boundaries()
 {
+	TIMER_START("Atmosphere: boundaries...");
 	//! size of stencil/neighbourhood:
 	//! +----------++-------++----------+
 	//! | 12 15 18 || 3 6 9 || 21 24 27 |
@@ -484,6 +495,7 @@ void Atmosphere::boundaries()
 					Al_->set(i,j,k,4,ATMOS_TT_,ATMOS_TT_, 0.0);
 				}
 			}
+	TIMER_STOP("Atmosphere: boundaries...");
 }
 
 //-----------------------------------------------------------------------------

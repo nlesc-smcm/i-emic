@@ -17,6 +17,7 @@
 #include <Teuchos_XMLParameterListHelpers.hpp>
 #include <Teuchos_FancyOStream.hpp>
 
+#include <ios>
 #include <iomanip>
 #include <memory>
 #include <vector>
@@ -203,62 +204,67 @@ void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm)
 	(*file) << " Profile: #cores : " << Comm->NumProc() << std::endl;
 
 	// dimensions of output
-	int dims[7] = {35, 5, 8, 2, 8};
+	int dims[7] = {35, 3, 10, 5, 10};
 	
 	(*file) << " "
 			<< std::setw(dims[0]) << std::left << " "
-			<< std::setw(dims[1])  << " "
+			<< std::setw(dims[1]) << " "
 			<< std::setw(dims[2]) << std::left << "cumul."
-			<< std::setw(dims[3])  << " "
-			<< std::setw(dims[4])  << std::left << "calls"
-			<< std::setw(dims[5])  << " "
+			<< std::setw(dims[3]) << " "
+			<< std::setw(dims[4]) << std::left << "calls"
+			<< std::setw(dims[5]) << " "
 			<< std::setw(dims[6]) << std::left << "average"		
 			<< std::endl;
 	
 	(*file) << "--------------------------------------------------------------------------"
 			<< std::endl;
+	(*file) << std::setprecision(5);
+	(*file) << std::left;
+	(*file) << std::fixed;
 	
-	double sum = 0.0;
 	for (ProfileType::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
 		// Display timings of the separate models, summing
 		if ( it->first.compare(0,5,"Atmos") == 0 ||
-			 it->first.compare(0,5,"Ocean") == 0   )
+			 it->first.compare(0,5,"Ocean") == 0 ||
+			 it->first.compare(0,5,"Coupl") == 0   )
 		{
-			sum += it->second[0];
-			
 			(*file) << " "
-					<< std::setw(dims[0]) << std::left << it->first
+					<< std::setw(dims[0]) << it->first
 					<< std::setw(dims[1]) << " : "
-					<< std::setw(dims[2]) << std::left << std::setprecision(5) << it->second[0]
+					<< std::setw(dims[2]) 
+					<< std::setprecision(5) << it->second[0]
 					<< std::setw(dims[3]) << " "
-					<< std::setw(dims[4]) << std::left << std::setprecision(3) << it->second[1]
+					<< std::setw(dims[4]) 
+					<< std::setprecision(0) << it->second[1]
 					<< std::setw(dims[5]) << " "
-					<< std::setw(dims[6]) << std::left << std::setprecision(5) << it->second[2]
+					<< std::setw(dims[6]) 
+					<< std::setprecision(5) << it->second[2]
+					<< std::setprecision(0)
 					<< std::endl;
 		}
 	}
-	(*file) << std::endl << "     total elapsed time within the models: " << sum << std::endl;
-	
 	(*file) << "--------------------------------------------------------------------------"
 			<< std::endl;
 	for (ProfileType::iterator it = profile.begin();
 		 it != profile.end(); ++it)
 	{
 		// Display other information
-		if ( it->first.compare(0,5,"Conti") == 0 ||
-			 it->first.compare(0,5,"Coupl") == 0 || 
-			 it->first.compare(0,5,"Super") == 0    )
+		if ( it->first.compare(0,5,"Conti") == 0 )
 		{
 			(*file) << " "
-					<< std::setw(dims[0]) << std::left << it->first
+					<< std::setw(dims[0]) << it->first
 					<< std::setw(dims[1]) << " : "
-					<< std::setw(dims[2]) << std::left << std::setprecision(5) << it->second[0]
+					<< std::setw(dims[2]) 
+					<< it->second[0]
 					<< std::setw(dims[3]) << " "
-					<< std::setw(dims[4]) << std::left << std::setprecision(3) << it->second[1]
+					<< std::setw(dims[4]) 
+					<< it->second[1]
 					<< std::setw(dims[5]) << " "
-					<< std::setw(dims[6]) << std::left << std::setprecision(5) << it->second[2]
+					<< std::setw(dims[6]) 
+					<< std::setprecision(1) << it->second[2]
+					<< std::setprecision(0)
 					<< std::endl;
 		}
 	}
