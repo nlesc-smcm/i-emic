@@ -149,7 +149,7 @@ public:
 	
 	void ResetStartTime()
 		{ startTime_ = wallTime();}
-
+	
 	double ElapsedTime()
 		{ return (double) (wallTime() - startTime_); }
 };

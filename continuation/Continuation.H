@@ -64,6 +64,13 @@ Continuation(ModelPtr model, ParameterList pars)
 }
 
 //======================================================================
+//Destructor
+template<typename ModelPtr, typename VectorPtr, typename ParameterList>
+Continuation<ModelPtr, VectorPtr, ParameterList>::
+~Continuation()
+{}
+
+//======================================================================
 template<typename ModelPtr, typename VectorPtr, typename ParameterList>
 void Continuation<ModelPtr, VectorPtr, ParameterList>::
 run()

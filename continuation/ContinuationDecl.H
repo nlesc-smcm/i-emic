@@ -88,8 +88,16 @@ class Continuation
 	Storage storage_;
 	
 public:
+	// constructor
 	Continuation(ModelPtr model, ParameterList pars);
+
+	// destructor
+	~Continuation();
+
+	// run continuation
 	void run();
+
+	// test
 	void test();
 private:
 	void step();

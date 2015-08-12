@@ -56,9 +56,8 @@ void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm);
 int main(int argc, char **argv)
 {
   //	testOcean(argc, argv);
-  TIMER_START("Total time...");
-  testCoupling(argc, argv);
-  TIMER_STOP("Total time...");
+		
+	testCoupling(argc, argv);
 }
 
 //------------------------------------------------------------------
@@ -70,6 +69,8 @@ void testCoupling(int argc, char **argv)
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
+
+	TIMER_START("Total time...");
  	// Create parameter object for coupledmodel
 	RCP<Teuchos::ParameterList> coupledmodelParams =
 		rcp(new Teuchos::ParameterList);
@@ -92,7 +93,8 @@ void testCoupling(int argc, char **argv)
 		continuation(coupledModel, continuationParams);
 	
 	continuation.run();	
-	
+	TIMER_STOP("Total time...");
+		
 	printProfile(profile, Comm);
     //--------------------------------------------------------
 	// Finalize MPI
@@ -230,6 +232,7 @@ void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm)
 		// Display timings of the separate models, summing
 		if ( it->first.compare(0,5,"Atmos") == 0 ||
 			 it->first.compare(0,5,"Ocean") == 0 ||
+			 it->first.compare(0,5,"Total") == 0 ||
 			 it->first.compare(0,5,"Coupl") == 0   )
 		{
 			(*file) << " "
