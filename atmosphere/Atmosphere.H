@@ -5,6 +5,9 @@
 
   Although this is a 2D model we maintain notation of the 3D ocean model.
 
+  Several options for solving the Jacobian will be implemented, right now
+  we have direct 'D' and banded 'B'
+
   --> THIS IMPLEMENTATION SHOULD MOVE TO 0-BASED! better for everyone
   
   Author: Erik -> t.e.mulder@uu.nl
@@ -92,7 +95,8 @@ class Atmosphere
 	int ksup_;                         // Number of superdiagonals
 	int ldimA_;                        // Leading dimension of banded storage
 
-	// Solving scheme: 'D', 'B'
+	// Solving scheme: 'D': dense
+	//                 'B': banded
 	char solvingScheme_;
 
 	// Continuation parameter
@@ -239,7 +243,11 @@ private:
 	// ! Assemble the dependency grid into a matrix in crs form
 	void assemble();
 
+	// Create dense matrix storage to use with lapack functions
 	void buildDenseA();
+
+	// Write vector to output file
+	void write(std::vector<double> &vector, const std::string &filename);
 
 	// ! Write everything to output files.
 	void writeAll();

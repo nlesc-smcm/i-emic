@@ -19,7 +19,7 @@ Atmosphere::Atmosphere(int n, int m)
 	dim_(m * n * 1),
 	ksub_(m),
 	ksup_(m),
-	solvingScheme_('D'),
+	solvingScheme_('B'),
 	ldimA_(2 * ksub_ + 1 + ksup_)
 {
 	// Continuation parameters
@@ -312,14 +312,15 @@ void Atmosphere::discretize(int type, Atom &atom)
 //-----------------------------------------------------------------------------
 void Atmosphere::assemble()
 {
-	// Create CRS matrix storage and/or banded storage 
 	TIMER_START("Atmosphere: assemble...");
+	// Create CRS matrix storage and/or banded storage 
+
 	// clear old CRS matrix
 	beg_.clear();
 	ico_.clear();
 	jco_.clear();
 
-	// Clear banded storage
+	// Clear banded storage (just to be sure)
 	std::fill(bandedA_.begin(), bandedA_.end(), 0.0);
 	
 	int i2,j2,k2; // will contain neighbouring grid pointes given by shift()
@@ -405,7 +406,6 @@ extern "C" void dgbsv_(int *N, int *KL, int *KU, int *NRHS, double *AB,
 					   int *LDAB, int *IPIV, double *B,
 					   int *LDB, int *INFO);
 
-
 //-----------------------------------------------------------------------------
 void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 {
@@ -423,6 +423,9 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 		(*sol_) = std::vector<double>((*rhs_));
 	else
 		(*sol_) = std::vector<double>(*(rhs->getAtmosVector()));
+
+	// we use a copy to make sure bandedA_ does not get corrupted
+	std::vector<double> bandedAcopy(bandedA_);
 	
 	if (solvingScheme_ == 'D')
 	{
@@ -431,10 +434,10 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 	}
 	else if (solvingScheme_ == 'B')
 	{
-		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedA_[0],
+		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
 			   &ldimA_, ipiv_, &(*sol_)[0], &ldb, &info);
 	}
-	
+
 	TIMER_STOP("Atmosphere: solve...");
 }
 
@@ -444,7 +447,8 @@ void Atmosphere::buildDenseA()
 	TIMER_START("Atmosphere: buildDenseA...");
 	//------------------------------------------------
 	//--> weird stuff: in the future stick to sparse plx
-	// Create dense matrix:
+	// create dense matrix
+	// reset denseA array
 	denseA_.assign(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
 	std::vector<double> ivals(jco_.size(), 0.0);
 	int rw  = 1; // row
@@ -458,6 +462,7 @@ void Atmosphere::buildDenseA()
 		}
 		++rw ;
 	}
+	
 	int i,j;
 	double val;
 	for (int cntr = 0; cntr != ico_.size(); ++cntr)
@@ -469,6 +474,7 @@ void Atmosphere::buildDenseA()
 		denseA_[idx] = val;
 	}
 
+	write(denseA_, "atmos_denseA.txt");
 	// create LU factorisation, store it in denseA_
 	int dim  = n_*m_*l_;
 	int lda  = dim;
@@ -544,118 +550,35 @@ void Atmosphere::boundaries()
 }
 
 //-----------------------------------------------------------------------------
+void Atmosphere::write(std::vector<double> &vector, const std::string &filename)
+{
+	if (!vector.empty())
+	{
+		std::ofstream atmos_ofstream;
+		atmos_ofstream.open(filename);
+		for (auto &i : vector)
+			atmos_ofstream << std::setprecision(12) << i << '\n';
+		atmos_ofstream.close();
+	}
+	else
+		std::cout << "WARNING (Atmosphere::write): vector is empty"
+				  << __FILE__ <<  __LINE__ << std::endl;
+}
+
+//-----------------------------------------------------------------------------
 void Atmosphere::writeAll()
 {
 	std::cout << "Writing everything to output files..." << std::endl;
-	//--> this calls for some abstraction
-	// Write solution
-	if (!sol_->empty())
-	{
-		std::ofstream atmos_sol;
-		atmos_sol.open("atmos_sol.txt");
-		for (auto &i : *sol_)
-			atmos_sol << std::setprecision(12) << i << '\n';
-		atmos_sol.close();
-	}
-	else
-		std::cout << " solution vector is empty" << std::endl;
 
-	// Write rhs
-	if (!rhs_->empty())
-	{
-		std::ofstream atmos_rhs;
-		atmos_rhs.open("atmos_rhs.txt");
-		for (auto &i : *rhs_)
-			atmos_rhs << std::setprecision(12) << i << '\n';
-		atmos_rhs.close();
-	}
-	else
-		std::cout << " rhs vector is empty" << std::endl;
-
-	// Write ico
-	if (!ico_.empty())
-	{
-		std::ofstream atmos_ico;
-		atmos_ico.open("atmos_ico.txt");
-		for (auto &i : ico_)
-			atmos_ico << std::setprecision(12) << i << '\n';
-		atmos_ico.close();
-	}
-	else
-		std::cout << " ico vector is empty" << std::endl;
-
-	// Write jco
-	if (!jco_.empty())
-	{
-		std::ofstream atmos_jco;
-		atmos_jco.open("atmos_jco.txt");
-		for (auto &i : jco_)
-			atmos_jco << std::setprecision(12) << i << '\n';
-		atmos_jco.close();
-	}
-	else
-		std::cout << " jco vector is empty" << std::endl;
-
-	// Write beg
-	if (!beg_.empty())
-	{
-		std::ofstream atmos_beg;
-		atmos_beg.open("atmos_beg.txt");
-		for (auto &i : beg_)
-			atmos_beg << std::setprecision(12) << i << '\n';
-		atmos_beg.close();
-	}
-	else
-		std::cout << " beg vector is empty" << std::endl;
-
-	// Write beg
-	if (!bandedA_.empty())
-	{
-		std::ofstream atmos_bandedA;
-		atmos_bandedA.open("atmos_bandedA.txt");
-		for (auto &i : bandedA_)
-			atmos_bandedA << std::setprecision(12) << i << '\n';
-		atmos_bandedA.close();
-	}
-	else
-		std::cout << " bandedA vector is empty" << std::endl;
-
-
-	// Write frc
-	if (!frc_.empty())
-	{
-		std::ofstream atmos_frc;
-		atmos_frc.open("atmos_frc.txt");
-		for (auto &i : frc_)
-			atmos_frc << std::setprecision(12) << i << '\n';
-		atmos_frc.close();
-	}
-	else
-		std::cout << " frc vector is empty" << std::endl;
-
-	// Write oceanTemp
-	if (!oceanTemp_.empty())
-	{
-		std::ofstream atmos_oceanTemp;
-		atmos_oceanTemp.open("atmos_oceanTemp.txt");
-		for (auto &i : oceanTemp_)
-			atmos_oceanTemp << std::setprecision(12) << i << '\n';
-		atmos_oceanTemp.close();
-	}
-	else
-		std::cout << " oceanTemp vector is empty" << std::endl;
-
-	// Write state
-	if (!state_->empty())
-	{
-		std::ofstream atmos_state;
-		atmos_state.open("atmos_state.txt");
-		for (auto &i : *state_)
-			atmos_state << std::setprecision(12) << i << '\n';
-		atmos_state.close();
-	}
-	else
-		std::cout << " state vector is empty" << std::endl;
+	write(*sol_, "atmos_sol.txt"); 
+	write(*rhs_, "atmos_rhs.txt"); 
+	write(ico_, "atmos_ico.txt"); 
+	write(jco_, "atmos_jco.txt"); 
+	write(beg_, "atmos_beg.txt"); 
+	write(bandedA_, "atmos_bandedA.txt"); 	
+	write(frc_, "atmos_frc.txt");           
+	write(oceanTemp_, "atmos_oceanTemp.txt");
+	write(*state_, "atmos_state.txt");       
 }
 
 //-----------------------------------------------------------------------------

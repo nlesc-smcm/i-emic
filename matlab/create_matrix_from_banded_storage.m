@@ -1,11 +1,11 @@
-function [out] = create_banded_storage(A, dim, ksub, ksup)
-  % Create banded storage for square matrix A
+function [out] = create_matrix_from_banded_storage(BA, dim, ksub, ksup)
+  % Create dense matrix from banded storage BA
   % dim:  dimension of the matrix
   % ksub: number of lower diagonals
   % ksup: number of upper diagonals
 		 
   ldba  = 2*ksub+ksup+1;     % leading dimension of banded storage
-  out   = zeros(ldba, dim);  % banded storage
+  out   = zeros(dim, dim);   % dense storage
   kdiag = ksub + 1 + ksup;   
 
   for icol = 1:dim
@@ -13,8 +13,8 @@ function [out] = create_banded_storage(A, dim, ksub, ksup)
     i2 = min(dim, icol+ksub);
     for irow = i1:i2
       irowb = irow - icol + kdiag;
-      out(irowb, icol) = A(irow, icol);
+      out(irow, icol) = BA(irowb, icol);
     end
   end
-
+  
 end
