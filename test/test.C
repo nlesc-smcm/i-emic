@@ -55,8 +55,10 @@ void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm);
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {
-//	testOcean(argc, argv);
-	testCoupling(argc, argv);
+  //	testOcean(argc, argv);
+  TIMER_START("Total time...");
+  testCoupling(argc, argv);
+  TIMER_STOP("Total time...");
 }
 
 //------------------------------------------------------------------
@@ -72,7 +74,7 @@ void testCoupling(int argc, char **argv)
 	RCP<Teuchos::ParameterList> coupledmodelParams =
 		rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("coupledmodel_params.xml",
-								coupledmodelParams.ptr());
+				    coupledmodelParams.ptr());
 	
 	std::shared_ptr<CoupledModel> coupledModel =
 		std::make_shared<CoupledModel>(Comm, coupledmodelParams);
@@ -81,7 +83,7 @@ void testCoupling(int argc, char **argv)
 	RCP<Teuchos::ParameterList> continuationParams =
 		rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("continuation_params.xml",
-								continuationParams.ptr());
+				    continuationParams.ptr());
 	
 	// Create continuation
 	Continuation<std::shared_ptr<CoupledModel>,

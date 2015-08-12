@@ -1,7 +1,12 @@
 #!/bin/bash
+#SBATCH -t 10:00:00
+#SBATCH -n 4
+
+cd ${HOME}/Projects/I-EMIC/rundir_dimension
+
 echo Doubling the horizontal dimensions of the problem... > profile
-nprocs=4
-for k in 8 16 32 64
+nprocs=1
+for k in 8 16 32 64 128
 do
 	echo $k x $k >> profile
 	sed -i "s/Global Grid-Size n.*value.*/Global Grid-Size n\" type=\"int\" value=\"$k\"\/>/" \

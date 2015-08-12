@@ -22,7 +22,7 @@
 #include <array>
 #include <string>
 #include <stack>
-
+#include <ctime>  // std::clock()
 
 // This outstream needs to be defined in the main routine.
 extern Teuchos::RCP<std::ostream> outFile;

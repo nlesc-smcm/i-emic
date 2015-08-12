@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH -t 5:00:00
-#SBATCH -N 4
+#SBATCH -t 10:00:00
+#SBATCH -n 4
 
 cd ${HOME}/Projects/I-EMIC/test
 
