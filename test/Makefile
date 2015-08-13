@@ -1,7 +1,7 @@
 include ../make.inc/Makefile.${PLAT}
 
 DIRS =  \
-        $(PROJECT_BASE)/ocean/\
+	$(PROJECT_BASE)/ocean/\
 	$(PROJECT_BASE)/atmosphere/\
 	$(PROJECT_BASE)/supervector/\
 	$(PROJECT_BASE)/coupledmodel/\

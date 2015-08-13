@@ -1,7 +1,4 @@
 #!/bin/bash
-#SBATCH -t 10:00:00
-#SBATCH -n 4
-
 cd ${HOME}/Projects/I-EMIC/rundir_dimension
 
 echo Doubling the horizontal dimensions of the problem... > profile

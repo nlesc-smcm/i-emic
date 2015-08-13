@@ -8,6 +8,7 @@ obj= Atmosphere.o
 HEADERDEPS = \
 		../multiarray/MultiArray.H\
 		../supervector/SuperVector.H\
+		../ocean/GlobalDefinitions.H
 
 all: lib
 
