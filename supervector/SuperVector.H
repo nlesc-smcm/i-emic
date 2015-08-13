@@ -26,8 +26,9 @@ class SuperVector
 	Teuchos::RCP<Epetra_Vector>           oceanVector_;
 	std::shared_ptr<std::vector<double> > atmosVector_;
 
-	bool haveOceanVector_;
-	bool haveAtmosVector_;
+	// sick: mutable bools
+	mutable bool haveOceanVector_;
+	mutable bool haveAtmosVector_;
 	bool isInitialized_;
 	
 	int length_;	
@@ -43,37 +44,33 @@ public:
 	~SuperVector();	
 
 	// Get the total length of the combined vector
-	int length();
+	int length() const;
 
 	// Apply vector update:
 	// this = scalarA * A + scalarThis * this
-	void update(double scalarA,	SuperVector &A, double scalarThis);
-
+	void update(double scalarA,	SuperVector const &A, double scalarThis);
+	
 	// Apply dot product
-	double dot(SuperVector &A);
+	double dot(SuperVector const &A) const;
 
 	// Obtain norm of vector
 	// mode: 'S': silent
 	//       'V': verbose
 	//            prints the separate norms of each vector,
 	//            returns complete norm
-	double norm(char mode = 'S');
-
-	// Randomize and scale the vector\
-	// not implemented for STL vector
-	void random(double scale = 1.0);
+	double norm(char mode = 'S') const;
 
 	// Apply scaling to vectors
-	void scale(double scale);
+	void scale(double scale) const;
 
 	// Get a pointer to the Trilinos/Ocean vector
-	Teuchos::RCP<Epetra_Vector> getOceanVector();
+	Teuchos::RCP<Epetra_Vector> getOceanVector() const;
 
 	// Get a pointer to the STL/Atmos vector
-	std::shared_ptr<std::vector<double> > getAtmosVector();
+	std::shared_ptr<std::vector<double> > getAtmosVector() const;
 
 	// Print the vectors to various output streams
-	void print();
+	void print() const;
 
 	// Apply a linear mapping from to ocean to the atmosphere and vice versa
 	// domain/range: 'O': ocean
@@ -81,8 +78,8 @@ public:
 	// diagonal elements define the scaling
 	// indices define the grid points
 	//  (surface temperature points in the ocean)
-	void linearTransformation(std::vector<double> &diagonal,
-							  std::vector<int> &indices,
+	void linearTransformation(std::vector<double> const &diagonal,
+							  std::vector<int> const &indices,
 							  char domain, char range);
 	
 private:	

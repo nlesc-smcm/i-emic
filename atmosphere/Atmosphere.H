@@ -1,12 +1,14 @@
 //!------------------------------------------------------------------------
 /*
   Atmosphere is a model within the I-EMIC. It is a reimplementation of the
-  energy balance model already available in the old THCM code.
+  energy balance model already available in the old THCM code. However,
+  this implementation is able to communicate with Jonas Thies' parallel
+  Trilinos-THCM code. Communication is done by the CoupledModel class.
 
   Although this is a 2D model we maintain notation of the 3D ocean model.
 
   Several options for solving the Jacobian will be implemented, right now
-  we have direct 'D' and banded 'B'
+  we have dense 'D' and banded 'B'
 
   --> THIS IMPLEMENTATION SHOULD MOVE TO 0-BASED! better for everyone
   
@@ -179,7 +181,7 @@ public:
 							 double relaxation);
 
 	// ! Post-convergence processing
-	void postConvergence() { writeAll(); }
+	void postConvergence() { write(*state_, "atmos_state.txt"); }
 
 	// ! Put default fields in atmosphere and ocean
 	void idealizedOcean();
@@ -204,7 +206,6 @@ private:
 
     // ! Create forcing vector
 	void forcing();
-
 	
 	// ! Perform the dot product of a single row with the state vector
 	double matvec(int row);

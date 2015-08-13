@@ -91,14 +91,13 @@ extern std::stack<Timer> timerStack;
 
 // Timer macro using a global stack, allows for nesting
 #ifndef TIMER_START
-#  define TIMER_START(msg)					\
-	{												\
-		Timer timer;								\
-		timer.ResetStartTime();						\
-		profile[msg] = (profile.count(msg)) ?		\
-			profile[msg] :							\
-			std::array<double, PROFILE_ENTRIES>();	\
-		timerStack.push(timer);						\
+#  define TIMER_START(msg)											\
+	{																\
+		Timer timer;												\
+		timer.ResetStartTime();										\
+		if (profile.find(msg) == profile.end())						\
+			profile[msg] = 	std::array<double, PROFILE_ENTRIES>();	\
+		timerStack.push(timer);										\
 	} 
 #endif
 

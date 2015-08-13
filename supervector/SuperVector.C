@@ -46,7 +46,7 @@ SuperVector::~SuperVector()
 {}
 
 //------------------------------------------------------------------
-int SuperVector::length()
+int SuperVector::length() const
 {
 	if (isInitialized_)
 		return length_;
@@ -55,7 +55,7 @@ int SuperVector::length()
 }
 
 //------------------------------------------------------------------
-void SuperVector::update(double scalarA,	SuperVector &A, double scalarThis)
+void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis)
 {
 	if (length_ != A.length())
 	{
@@ -77,7 +77,7 @@ void SuperVector::update(double scalarA,	SuperVector &A, double scalarThis)
 }
 
 //----------------------------------------------------------------
-double SuperVector::dot(SuperVector &A)
+double SuperVector::dot(SuperVector const &A) const
 {
 	if (length_ != A.length())
 	{
@@ -98,7 +98,7 @@ double SuperVector::dot(SuperVector &A)
 }
 
 //------------------------------------------------------------------
-double SuperVector::norm(char mode)
+double SuperVector::norm(char mode) const
 {
 	if ((mode == 'V') && haveAtmosVector_ && haveOceanVector_)
 	{
@@ -116,19 +116,7 @@ double SuperVector::norm(char mode)
 }
 
 //------------------------------------------------------------------
-void SuperVector::random(double scale)
-{
-	if (haveOceanVector_)
-	{
-		oceanVector_->Random();
-		oceanVector_->Scale(scale);
-	}
-	if (haveAtmosVector_)
-		std::cout << "Not implemented for std::vector" << std::endl;
-}
-
-//------------------------------------------------------------------
-void SuperVector::scale(double scale)
+void SuperVector::scale(double scale) const
 {
 	if (haveOceanVector_)
 		oceanVector_->Scale(scale);
@@ -138,7 +126,7 @@ void SuperVector::scale(double scale)
 }
 
 //------------------------------------------------------------------
-Teuchos::RCP<Epetra_Vector> SuperVector::getOceanVector()
+Teuchos::RCP<Epetra_Vector> SuperVector::getOceanVector() const
 {
 	if (!haveOceanVector_)
 	{
@@ -150,7 +138,7 @@ Teuchos::RCP<Epetra_Vector> SuperVector::getOceanVector()
 }
 
 //------------------------------------------------------------------
-std::shared_ptr<std::vector<double> > SuperVector::getAtmosVector()
+std::shared_ptr<std::vector<double> > SuperVector::getAtmosVector() const
 {
 	if (!haveAtmosVector_)
 	{
@@ -162,7 +150,7 @@ std::shared_ptr<std::vector<double> > SuperVector::getAtmosVector()
 }
 
 //------------------------------------------------------------------
-void SuperVector::print()
+void SuperVector::print() const
 {
 	if (haveOceanVector_)
 	{
@@ -181,8 +169,8 @@ void SuperVector::print()
 }
 
 //------------------------------------------------------------------
-void SuperVector::linearTransformation(std::vector<double> &diagonal,
-									   std::vector<int> &indices,
+void SuperVector::linearTransformation(std::vector<double> const &diagonal,
+									   std::vector<int> const &indices,
 									   char domain, char range)
 {
 	// Do work
