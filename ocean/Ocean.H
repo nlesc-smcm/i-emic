@@ -52,6 +52,9 @@ class Epetra_CrsMatrix;
 
 class Ocean
 {
+public:
+	using VectorPtr = Teuchos::RCP<SuperVector>;
+
 protected:
 
 	// 
@@ -106,6 +109,7 @@ protected:
 	double storedPar2_;  // stored value of the parameter
 	
 public:
+	
 
 	//constructor
 	Ocean(Teuchos::RCP<Epetra_Comm> Comm);

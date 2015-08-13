@@ -7,9 +7,10 @@
 //! Pseudo-arclength continuation class using an
 //! Euler predictor and a Newton corrector.
 
-template<typename ModelPtr, typename VectorPtr, typename ParameterList>
+template<typename ModelPtr, typename ParameterList>
 class Continuation
 {
+	using VectorPtr = typename ModelPtr::element_type::VectorPtr;
 	ModelPtr  model_;
 	
 	// copy of the state in the model

@@ -84,11 +84,10 @@ void testCoupling(int argc, char **argv)
 	RCP<Teuchos::ParameterList> continuationParams =
 		rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("continuation_params.xml",
-				    continuationParams.ptr());
+								continuationParams.ptr());
 	
 	// Create continuation
 	Continuation<std::shared_ptr<CoupledModel>,
-				 std::shared_ptr<SuperVector>,
 				 RCP<Teuchos::ParameterList> >
 		continuation(coupledModel, continuationParams);
 	
@@ -121,9 +120,7 @@ void testOcean(int argc, char **argv)
 	updateParametersFromXmlFile("continuation_params.xml",
 								continuationParams.ptr());
 	// Create continuation
-	Continuation<RCP<Ocean>,
-				 RCP<SuperVector>,
-				 RCP<Teuchos::ParameterList> >
+	Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
 		continuation(ocean, continuationParams);
 
 	continuation.run();

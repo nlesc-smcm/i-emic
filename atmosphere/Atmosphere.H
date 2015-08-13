@@ -36,6 +36,10 @@ using std::vector;
 
 class Atmosphere
 {
+public:
+	using VectorPtr = std::shared_ptr<SuperVector>;
+
+private:
 	int n_;   //! #grid-points in east-west (x) direction
 	int m_;   //! #grid-points in north-south (y) direction
 	int l_;   //! #grid-points in vertical (z) direction

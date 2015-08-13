@@ -18,6 +18,10 @@ class Epetra_Comm;
 
 class CoupledModel
 {
+public:
+	using VectorPtr = std::shared_ptr<SuperVector>;
+	
+private:
 	// Adjacency graph describing the couplings between the models
     // Graph couplings_;
 
