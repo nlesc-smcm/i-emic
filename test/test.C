@@ -23,6 +23,7 @@
 #include <vector>
 #include <array>
 #include <stack>
+#include <string>
 
 #include "SuperVector.H"
 #include "CoupledModel.H"
@@ -38,30 +39,22 @@ using Teuchos::rcp;
 //------------------------------------------------------------------
 // A few declarations (see GlobalDefinitions.H)
 // --> put them in a namespace
-RCP<std::ostream> outFile;               // output file
-ProfileType profile;                     // profile
-std::stack<Timer> timerStack;      // timing stack
+RCP<std::ostream> outFile;      // output file
+ProfileType       profile;      // profile
+std::stack<Timer> timerStack;   // timing stack
 
 //------------------------------------------------------------------
 void testVecWrap();
-void testCoupling(int argc, char **argv);
-void testOcean(int argc, char **argv);
+void testCoupling(RCP<Epetra_Comm> Comm);
+void testOcean(RCP<Epetra_Comm> Comm);
 
 //------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
-void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm);
+void              printProfile(ProfileType profile);
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)
-{
-  //	testOcean(argc, argv);
-		
-	testCoupling(argc, argv);
-}
-
-//------------------------------------------------------------------
-void testCoupling(int argc, char **argv)
 {
 	// Initialize the environment:
 	//  - MPI
@@ -69,9 +62,25 @@ void testCoupling(int argc, char **argv)
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
+	// test the coupled model
+	testCoupling(Comm);
 
+	// print the profile
+	if (Comm->MyPID() == 0)
+		printProfile(profile);
+	
+    //--------------------------------------------------------
+	// Finalize MPI
+	//--------------------------------------------------------
+	MPI_Finalize();	
+}
+
+//------------------------------------------------------------------
+void testCoupling(RCP<Epetra_Comm> Comm)
+{
 	TIMER_START("Total time...");
- 	// Create parameter object for coupledmodel
+
+    // Create parameter object for coupledmodel
 	RCP<Teuchos::ParameterList> coupledmodelParams =
 		rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("coupledmodel_params.xml",
@@ -90,26 +99,15 @@ void testCoupling(int argc, char **argv)
 	Continuation<std::shared_ptr<CoupledModel>,
 				 RCP<Teuchos::ParameterList> >
 		continuation(coupledModel, continuationParams);
+
+	// Run continuation
+	continuation.run();
 	
-	continuation.run();	
-	TIMER_STOP("Total time...");
-		
-	printProfile(profile, Comm);
-    //--------------------------------------------------------
-	// Finalize MPI
-	//--------------------------------------------------------
-	Comm->Barrier();
-	MPI_Finalize();	
+	TIMER_STOP("Total time...");		
 }
 
-void testOcean(int argc, char **argv)
+void testOcean(RCP<Epetra_Comm> Comm)
 {
-	// Initialize the environment:
-	//  - MPI
-	//  - output files
-	//  - returns Trilinos' communicator Epetra_Comm
-	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
-
  	// Create ocean model Ocean
 	//  (based on THCM):
 	RCP<Ocean> ocean = rcp(new Ocean(Comm));
@@ -124,13 +122,6 @@ void testOcean(int argc, char **argv)
 		continuation(ocean, continuationParams);
 
 	continuation.run();
-	
-	printProfile(profile, Comm);
-    //--------------------------------------------------------
-	// Finalize MPI
-	//--------------------------------------------------------
-	Comm->Barrier();
-	MPI_Finalize();	
 }
 
 //------------------------------------------------------------------
@@ -178,100 +169,61 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 }
 
 //------------------------------------------------------------------
-void printProfile(ProfileType profile, RCP<Epetra_Comm> Comm)
+void printProfile(ProfileType profile)
 {
 	if (timerStack.empty() == false)
 		WARNING("Unequal amount of TIMER_START and TIMER_STOP uses",
 				__FILE__, __LINE__);
 	
-	std::ostringstream profilefile;  // setting up a filename
-	RCP<std::ostream> file;          // output file
-	
-	if (Comm->MyPID() == 0)
-	{
-		profilefile << "profile_"    << Comm->NumProc() <<  ".txt";
-		INFO("profile for #procs = " << Comm->NumProc()
-			 << " is written to "    << profilefile.str().c_str());
-		file =
-			Teuchos::rcp(new std::ofstream(profilefile.str().c_str()));	
-	}
-	else
-	{
-		file = Teuchos::rcp(new Teuchos::oblackholestream());
-	}
-	
-	(*file) << "==========================================================================="
-			<< std::endl;
-	(*file) << " Profile: #cores : " << Comm->NumProc() << std::endl;
+	std::ostringstream profilefile("profile_output");   // setting up a filename
+	std::ofstream file(profilefile.str().c_str());      // setup output file
 
-	// dimensions of output
-	int dims[7] = {35, 3, 10, 5, 10};
-	
-	(*file) << " "
-			<< std::setw(dims[0]) << std::left << " "
-			<< std::setw(dims[1]) << " "
-			<< std::setw(dims[2]) << std::left << "cumul."
-			<< std::setw(dims[3]) << " "
-			<< std::setw(dims[4]) << std::left << "calls"
-			<< std::setw(dims[5]) << " "
-			<< std::setw(dims[6]) << std::left << "average"		
-			<< std::endl;
-	
-	(*file) << "--------------------------------------------------------------------------"
-			<< std::endl;
-	(*file) << std::setprecision(5);
-	(*file) << std::left;
-	(*file) << std::fixed;
-	
-	for (ProfileType::iterator it = profile.begin();
-		 it != profile.end(); ++it)
-	{
-		// Display timings of the separate models, summing
-		if ( it->first.compare(0,5,"Atmos") == 0 ||
-			 it->first.compare(0,5,"Ocean") == 0 ||
-			 it->first.compare(0,5,"Total") == 0 ||
-			 it->first.compare(0,5,"Coupl") == 0   )
-		{
-			(*file) << " "
-					<< std::setw(dims[0]) << it->first
-					<< std::setw(dims[1]) << " : "
-					<< std::setw(dims[2]) 
-					<< std::setprecision(5) << it->second[0]
-					<< std::setw(dims[3]) << " "
-					<< std::setw(dims[4]) 
-					<< std::setprecision(0) << it->second[1]
-					<< std::setw(dims[5]) << " "
-					<< std::setw(dims[6]) 
-					<< std::setprecision(5) << it->second[2]
-					<< std::setprecision(0)
-					<< std::endl;
-		}
+	// Set format flags
+	file << std::left;
+
+	// Define line format
+#ifndef LINE
+# define LINE(s1, s2, s3, s4, s5, s6, s7, s8, s9)						\
+	{																	\
+		int sp = 3;  int it = 5;  int id = 5;							\
+		int db = 10; int st = 45;										\
+		file << std::setw(id) << s1	<< std::setw(sp) << s2				\
+			 << std::setw(st) << s3 << std::setw(sp) << s4				\
+			 << std::setw(db) << s5	<< std::setw(sp) << s6				\
+			 << std::setw(it) << s7	<< std::setw(sp) << s8				\
+			 << std::setw(db) << s9	<< std::endl;						\
 	}
-	(*file) << "--------------------------------------------------------------------------"
-			<< std::endl;
-	for (ProfileType::iterator it = profile.begin();
-		 it != profile.end(); ++it)
-	{
-		// Display other information
-		if ( it->first.compare(0,5,"Conti") == 0 )
+#endif
+
+	// Header
+	LINE("", "", "", "", "cumul.", "", "calls", "", "average");
+	
+	// Display timings of the separate models, summing
+	int counter = 0;
+	for (auto const &map : profile)
+		if (map.first.compare(0,5,"(itr)") != 0)
 		{
-			(*file) << " "
-					<< std::setw(dims[0]) << it->first
-					<< std::setw(dims[1]) << " : "
-					<< std::setw(dims[2]) 
-					<< it->second[0]
-					<< std::setw(dims[3]) << " "
-					<< std::setw(dims[4]) 
-					<< it->second[1]
-					<< std::setw(dims[5]) << " "
-					<< std::setw(dims[6]) 
-					<< std::setprecision(1) << it->second[2]
-					<< std::setprecision(0)
-					<< std::endl;
+			counter++;
+			std::stringstream s;
+			s << " (" << counter << ")";
+			LINE(s.str(), "", map.first, ":", map.second[0], "",
+				 map.second[1], "", map.second[2]);
 		}
-	}
-	(*file) << "==========================================================================="
-			<< std::endl;
+
+	// Newline
+	file << std::endl;
+	
+	// Display iteration information
+	for (auto const &map : profile)
+		if (map.first.compare(0,5,"(itr)") == 0 )
+		{
+			counter++;
+			std::stringstream s;
+			s << " (" << counter << ")";
+			LINE(s.str(), "", map.first.substr(5), ":", map.second[0], "",
+				 map.second[1], "", map.second[2]);
+		}
+	
 }
 
 //------------------------------------------------------------------

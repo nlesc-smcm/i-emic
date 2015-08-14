@@ -113,8 +113,10 @@ extern std::stack<Timer> timerStack;
 #endif
 
 #ifndef TRACK_ITERATIONS
-# define TRACK_ITERATIONS(msg, iters)							\
+# define TRACK_ITERATIONS(charmsg, iters)						\
 	{															\
+		std::string msg(charmsg);								\
+		msg.insert(0, "(itr)");									\
 		profile[msg] = (profile.count(msg)) ?					\
 			profile[msg] :										\
 			std::array<double, PROFILE_ENTRIES>();				\
