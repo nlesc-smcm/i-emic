@@ -2,14 +2,10 @@
 #SBATCH -t 10:00:00
 #SBATCH -N 1
 
-# Differences between vliegtuig and cartesius ->
-#    - srun (cartesius) / mpirun (vliegtuig)
-#    - ...
-
 cd ${HOME}/Projects/I-EMIC/rundir_profile
 
 # specify horizontal grid size
-k=64
+k=16
 fname=profile_${k}x${k}
 echo writing to $fname
 echo $k x $k >> $fname
@@ -24,11 +20,9 @@ echo "Profile on:" ${PLAT} " in:" ${PWD} > $fname
 # 1,2,4,8,16 procs
 for i in {1..5}
 do
-	echo "----------------------------------------------------------\
-----------------------------------" >> $fname
-    echo "Run:   " $i >> $fname 
-	echo "#Procs:" $procs >> $fname
+    echo "Run:   " $i 
+	echo "#Procs:" $procs
 	mpirun -n $procs ./test > dump
-	cat profile_output >> $fname
+	cat profile_$procs.txt >> $fname
 	procs=$(($procs*2))
 done
