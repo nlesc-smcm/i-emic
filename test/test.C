@@ -186,7 +186,7 @@ void printProfile(ProfileType profile)
 # define LINE(s1, s2, s3, s4, s5, s6, s7, s8, s9)						\
 	{																	\
 		int sp = 3;  int it = 5;  int id = 5;							\
-		int db = 10; int st = 45;										\
+		int db = 12; int st = 45;										\
 		file << std::setw(id) << s1	<< std::setw(sp) << s2				\
 			 << std::setw(st) << s3 << std::setw(sp) << s4				\
 			 << std::setw(db) << s5	<< std::setw(sp) << s6				\
