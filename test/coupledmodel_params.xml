@@ -14,4 +14,11 @@
   <!-- Choose 0, 1 or 2                                                                -->
   <!-- This only works if you have chosen E for "Solving scheme"                       -->
   <Parameter name="Order of Neumann approximation" type="int" value="2"/>
+
+  <!-- Use hashing to decide to act based on whether a state has changed               -->
+  <!-- Right now the functions synchronize(), computeRHS() and computeJacobian()       -->
+  <!-- can check the hash of the stateView and decide to recompute.                    -->
+  <Parameter name="Use hashing" type="bool" value="true"/>
+
+  
 </ParameterList>

@@ -1,5 +1,7 @@
 #include "SuperVector.H"
 
+#include <functional> // for std::hash
+
 //------------------------------------------------------------------
 // Constructor 1:
 SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector)
@@ -217,6 +219,26 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 }
 
 //------------------------------------------------------------------
+// Using an XOR and rotate hash on std::hash
+size_t SuperVector::hash() const
+{
+	size_t seed = 0;
+	std::hash<double> double_hash;
+	if (haveOceanVector_)
+	{
+		int numMyElements = oceanVector_->Map().NumMyElements();
+		for (int i = 0; i < numMyElements; ++i)
+			seed ^= double_hash((*oceanVector_)[i]) + (seed << 6);
+	}
+	if (haveAtmosVector_)
+	{
+		for (int i = 0; i < atmosVector_->size(); ++i)
+			seed ^= double_hash((*atmosVector_)[i]) + (seed << 6);
+	}
+	return seed;		
+}
+
+//------------------------------------------------------------------
 void SuperVector::init()
 {
 	length_ = 0;
@@ -224,3 +246,4 @@ void SuperVector::init()
 	length_ += (haveAtmosVector_) ? atmosVector_->size() : 0;
 	isInitialized_ = true;
 }
+

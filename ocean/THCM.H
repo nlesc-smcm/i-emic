@@ -128,13 +128,17 @@ public:
 	void evaluateB();
 
 	//! ------------------- I-EMIC couplings -----------------------------
-	//! 
-	//! void insertAtmosphere(const Epetra_Vector &atmos);
-	void setAtmosphere(std::vector<double> const &atmos);
-	void setAtmosphereTest();
 	//! Flag enabling the coupling with external atmosphere via the I-EMIC
-	//!   0: standalone thcm, 1: accepting external atmosphere
+	//!   0: standalone thcm
+    //!   1: accepting external atmosphere
 	int coupled_atm;
+
+	//! Copy an atmosphere in the ocean model
+	void setAtmosphere(std::vector<double> const &atmos);
+
+	//! Test 
+	void setAtmosphereTest();
+
 	//! ------------------------------------------------------------------
 	
 	//! Returns initial guess (Global/Solve form)

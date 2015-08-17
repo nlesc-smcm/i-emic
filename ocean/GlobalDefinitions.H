@@ -93,6 +93,7 @@ extern std::stack<Timer> timerStack;
 #ifndef TIMER_START
 #  define TIMER_START(msg)											\
 	{																\
+		INFO(msg);													\
 		Timer timer;												\
 		timer.ResetStartTime();										\
 		if (profile.find(msg) == profile.end())						\
@@ -104,6 +105,7 @@ extern std::stack<Timer> timerStack;
 #ifndef TIMER_STOP
 #  define TIMER_STOP(msg)										\
 	{															\
+		INFO(msg << " done.");									\
 		double time = timerStack.top().ElapsedTime();			\
 		timerStack.pop();										\
 		profile[msg][0] += time;								\

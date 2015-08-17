@@ -86,7 +86,7 @@ run()
 	
 	while (!destinationReached_ && step_ != maxSteps_)
 	{
-		step(); 	            // Perform a continuation step
+		step();  // Perform a continuation step
 
 		// Let the model do some administrative work after
 		// a continuation step 
@@ -276,7 +276,8 @@ normalize(VectorPtr stateDot, double scale, double parDot)
 template<typename ModelPtr, typename ParameterList>
 void Continuation<ModelPtr, ParameterList>::
 eulerPredictor()
-{	
+{
+	INFO("Contin.: predictor");
 	// At the end of this function the model will be
 	// in a 'predicted' state.
 

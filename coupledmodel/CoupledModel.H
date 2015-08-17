@@ -11,6 +11,10 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 
+// This is a very important class and it should be documented well...
+
+// We will use hashes to make sure nothing is computed too often
+
 // typedef std::vector<std::vector<bool> > Graph;
 
 // Forward declarations
@@ -25,10 +29,11 @@ private:
 	// Adjacency graph describing the couplings between the models
     // Graph couplings_;
 
-	// Trilinos-based parallel implicit ocean model (Trilinos-THCM)
+	// Trilinos-based parallel implicit ocean model (Trilinos-THCM) with a
+	// Belos linear solver performing a parallel FGMRES 
 	Teuchos::RCP<Ocean>  ocean_;
 	
-	// Plain std::vector-based atmosphere model
+	// STL std::vector-based implicit atmosphere model with a banded Lapack solver
 	std::shared_ptr<Atmosphere> atmos_;
 
 	// Combined state, right hand side and solution
@@ -44,6 +49,13 @@ private:
     //   'E': elimination based solve using the Schur complement and one or
     //        more terms in the Neumann expansion of the Schur inverse
 	char solvingScheme_;
+
+	// Use hashing to decide to act based on whether a state has changed
+	// Hashes should be remembered for each task they get used for.
+	bool   useHash_;  // flag to turn hashing on/off
+	size_t syncHash_; // hash to base synchronize() decision on
+	size_t rhsHash_;  // hash to base computeRHS() decision on	
+	size_t jacHash_;  // hash to base computeJacobian() decision on
 	
 	// Trilinos' MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
@@ -86,13 +98,16 @@ public:
 private:
 	// for internal use in the inexact solver
 	std::shared_ptr<SuperVector> getSolution(char mode1, char mode2);
-
+	
 	// Synchronize the states between the models that are needed to communicate
 	// Relaxation might not be a good idea, set it to 1
 	void synchronize();
 
 	// A few tests are collected here
 	void test();
+
+	// Create a hash of the extended state + parameter in an XOR / rotating manner
+	size_t getHash();
 };
 
 #endif

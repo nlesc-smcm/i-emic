@@ -26,7 +26,8 @@ class SuperVector
 	Teuchos::RCP<Epetra_Vector>           oceanVector_;
 	std::shared_ptr<std::vector<double> > atmosVector_;
 
-	// sick: mutable bools
+	// mutable bools: methods may not alter the the vectors but these
+	// flags might be allowed to change temporarily
 	mutable bool haveOceanVector_;
 	mutable bool haveAtmosVector_;
 	bool isInitialized_;
@@ -71,6 +72,9 @@ public:
 
 	// Print the vectors to various output streams
 	void print() const;
+
+	// Create a hash of the SuperVector
+	size_t hash() const;
 
 	// Apply a linear mapping from to ocean to the atmosphere and vice versa
 	// domain/range: 'O': ocean

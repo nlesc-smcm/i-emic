@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <memory>
+#include <functional>
 
 #include <Epetra_Comm.h>
 #include <Teuchos_RCP.hpp>
@@ -12,7 +13,10 @@
 CoupledModel::CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
 						   Teuchos::RCP<Teuchos::ParameterList> params)
 	:
-	comm_(comm)
+	comm_(comm),
+	syncHash_(-1),
+	rhsHash_(-1),
+	jacHash_(-1)
 {
 	// Create ocean object using the parallel communicator
 	ocean_ = Teuchos::rcp(new Ocean(comm_));
@@ -20,15 +24,15 @@ CoupledModel::CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
 	// Create atmosphere object
 	// ocean_ model dictates the horizontal resolution for the atmosphere
 	atmos_ = std::make_shared<Atmosphere>(ocean_->getNdim(), ocean_->getMdim());
-
+	
 	stateView_ =
 		std::make_shared<SuperVector>(ocean_->getState('V')->getOceanVector(),
 									  atmos_->getState('V')->getAtmosVector() );
-
+	
 	solView_ =
  		std::make_shared<SuperVector>(ocean_->getSolution('V')->getOceanVector(),
 									  atmos_->getSolution('V')->getAtmosVector() );
-
+	
 	rhsView_ =
  		std::make_shared<SuperVector>(ocean_->getRHS('V')->getOceanVector(),
 									  atmos_->getRHS('V')->getAtmosVector() );
@@ -40,29 +44,60 @@ CoupledModel::CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
 	C_     = atmos_->getOceanBlock();
 
-	// Get parameters from file, see xml for documentation
+	// Get parameters and flags from file, see xml for documentation
 	solvingScheme_ = params->get("Solving scheme", 'E');
 	kNeumann_      = params->get("Order of Neumann approximation", 1);
+	useHash_       = params->get("Use hashing", true);
 }
 
 //------------------------------------------------------------------
 void CoupledModel::synchronize()
-{
-	TIMER_START("CoupledModel: synchronize...");
-	ocean_->setAtmosphere(*(stateView_->getAtmosVector()));
+{	
+	// A synchronization is only necessary when the states have actually
+	// changed, so we compute, compare and store a hash
+	if (useHash_)
+	{
+		size_t hash = getHash();
+		if (hash == syncHash_)
+			return;
+		else
+			syncHash_ = hash;
+	}
 
-	// returns a copy of the sst in the ocean
-	atmos_->setOceanTemperature(*(ocean_->getSST()));
+	INFO("CoupledModel: start sync");
+	TIMER_START("CoupledModel: synchronize...");
+	
+	// Copy the atmosphere from the current combined (SuperVector) state
+	std::vector<double> atmos(*(stateView_->getAtmosVector()));
+
+	// Copy the SST from the ocean model
+	std::vector<double> sst(*(ocean_->getSST()));
+	
+	// Set the atmosphere in the ocean
+	ocean_->setAtmosphere(atmos);
+
+	// Set the SST in the atmosphere
+	atmos_->setOceanTemperature(sst);
+
 	TIMER_STOP("CoupledModel: synchronize...");
 }
 
 //------------------------------------------------------------------
 void CoupledModel::computeJacobian()
 {
+	// Check whether stateView has changed, if so continue, if not return
+	if (useHash_)
+	{
+		size_t hash = getHash();
+		if (hash == jacHash_)
+			return;
+		else
+			jacHash_ = hash;
+	}
+	
 	// Synchronize the states
-	if (solvingScheme_ == 'E')
-		synchronize();		
-
+	if (solvingScheme_ == 'E') { synchronize(); }
+	
 	// Ocean
 	ocean_->computeJacobian();
 
@@ -73,9 +108,18 @@ void CoupledModel::computeJacobian()
 //------------------------------------------------------------------
 void CoupledModel::computeRHS()
 {
+	// Check whether stateView has changed, if so continue, if not return
+	if (useHash_)
+	{
+		size_t hash = getHash();
+		if (hash == rhsHash_)
+			return;
+		else
+			rhsHash_ = hash;
+	}
+	
 	// Synchronize the states
-	if (solvingScheme_ == 'E')
-		synchronize();		
+	if (solvingScheme_ == 'E') { synchronize();	}
 	
 	// Ocean
 	ocean_->computeRHS();
@@ -354,6 +398,21 @@ void CoupledModel::postConvergence()
 	// Let the models do their post-convergence processing
 	ocean_->postConvergence();
 	atmos_->postConvergence();
+}
+
+//------------------------------------------------------------------
+size_t CoupledModel::getHash()
+{
+	TIMER_START("CoupledModel: hash...");
+	// create hash function
+	std::hash<double> double_hash;
+	
+	// first we obtain the hash of stateView
+	size_t seed = stateView_->hash();
+
+	// then we extend and manipulate it with the current parameter
+	seed ^= double_hash(getPar()) + (seed << 6);
+	TIMER_STOP("CoupledModel: hash...");
 }
 
 //------------------------------------------------------------------
