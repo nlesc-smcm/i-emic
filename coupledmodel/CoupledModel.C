@@ -48,7 +48,6 @@ CoupledModel::CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
 //------------------------------------------------------------------
 void CoupledModel::synchronize(double relaxation)
 {
-	std::shared_ptr<Timer> timer = std::make_shared<Timer>();
 	TIMER_START("CoupledModel: synchronize...");
 	ocean_->setAtmosphere(*(stateView_->getAtmosVector()), relaxation);
 
