@@ -181,8 +181,7 @@ public:
 	double getParDestination()  { return amplEnd_; }
 
 	void test();
-	void setOceanTemperature(std::vector<double> &sst,
-							 double relaxation);
+	void setOceanTemperature(std::vector<double> const &sst);
 
 	// ! Post-convergence processing
 	void postConvergence() { write(*state_, "atmos_state.txt"); }

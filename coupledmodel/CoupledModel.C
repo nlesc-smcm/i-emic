@@ -46,13 +46,13 @@ CoupledModel::CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
 }
 
 //------------------------------------------------------------------
-void CoupledModel::synchronize(double relaxation)
+void CoupledModel::synchronize()
 {
 	TIMER_START("CoupledModel: synchronize...");
-	ocean_->setAtmosphere(*(stateView_->getAtmosVector()), relaxation);
+	ocean_->setAtmosphere(*(stateView_->getAtmosVector()));
 
 	// returns a copy of the sst in the ocean
-	atmos_->setOceanTemperature(*(ocean_->getSST()), relaxation);
+	atmos_->setOceanTemperature(*(ocean_->getSST()));
 	TIMER_STOP("CoupledModel: synchronize...");
 }
 
@@ -61,7 +61,7 @@ void CoupledModel::computeJacobian()
 {
 	// Synchronize the states
 	if (solvingScheme_ == 'E')
-		synchronize(1.0);		
+		synchronize();		
 
 	// Ocean
 	ocean_->computeJacobian();
@@ -75,7 +75,7 @@ void CoupledModel::computeRHS()
 {
 	// Synchronize the states
 	if (solvingScheme_ == 'E')
-		synchronize(1.0);		
+		synchronize();		
 	
 	// Ocean
 	ocean_->computeRHS();
@@ -349,7 +349,7 @@ void CoupledModel::postConvergence()
 	// If the solver is completely decoupled, this is the right
 	// moment to synchronize
 	if (solvingScheme_ == 'D')
-		synchronize(1.0);
+		synchronize();
 
 	// Let the models do their post-convergence processing
 	ocean_->postConvergence();

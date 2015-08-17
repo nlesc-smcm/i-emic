@@ -89,7 +89,7 @@ private:
 
 	// Synchronize the states between the models that are needed to communicate
 	// Relaxation might not be a good idea, set it to 1
-	void synchronize(double relaxation = 1.0);
+	void synchronize();
 
 	// A few tests are collected here
 	void test();

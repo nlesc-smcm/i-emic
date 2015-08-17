@@ -394,11 +394,10 @@ Teuchos::RCP<SuperVector> Ocean::getRHS(char mode)
 }
 
 //====================================================================
-void Ocean::setAtmosphere(std::vector<double> &atmos,
-						  double relaxation)
+void Ocean::setAtmosphere(std::vector<double> const &atmos)
 {
 	// This is a job for THCM
-	THCM::Instance().setAtmosphere(atmos, relaxation);
+	THCM::Instance().setAtmosphere(atmos);
 }
 
 //====================================================================

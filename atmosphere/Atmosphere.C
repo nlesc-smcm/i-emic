@@ -168,14 +168,9 @@ void Atmosphere::zeroOcean()
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::setOceanTemperature(std::vector<double> &sst,
-									 double relaxation)
+void Atmosphere::setOceanTemperature(std::vector<double> const &sst)
 {
-	// Apply relaxation
-	for (auto &el: sst)
-		el *= relaxation;
-
-	// Set ocean temperature
+	// Set ocean temperature (copy)
 	oceanTemp_ = sst;
 }
 

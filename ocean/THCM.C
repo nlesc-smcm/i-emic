@@ -928,19 +928,18 @@ void THCM::evaluateB(void)
 }	
 	
 //=============================================================================
-void THCM::setAtmosphere(std::vector<double> &atmosvec, double relaxation)
+void THCM::setAtmosphere(std::vector<double> const &atmosvec)
 {
-	// Apply relaxation
-	for (auto &el: atmosvec)
-		el *= relaxation;
-	
 	// Create a gather map
 	Teuchos::RCP<Epetra_Map> atmos_map_dist = domain->CreateStandardMap(1, true);
 	Teuchos::RCP<Epetra_Map> atmos_map_root = Utils::Gather(*atmos_map_dist, 0);
 
+	// Copy atmosphere to non-const vector
+	std::vector<double> atmosCpy(atmosvec);
+	
 	// Insert the atmosphere
 	Teuchos::RCP<Epetra_Vector> atmos_glob =
-		Teuchos::rcp(new Epetra_Vector(Copy, *atmos_map_root, &atmosvec[0]));
+		Teuchos::rcp(new Epetra_Vector(Copy, *atmos_map_root, &atmosCpy[0]));
 
 	// Distribute the atmosphere
 	Teuchos::RCP<Epetra_MultiVector> atmos_dist =
@@ -959,8 +958,7 @@ void THCM::setAtmosphere(std::vector<double> &atmosvec, double relaxation)
 	atmos_loc->Import(*atmos_dist, *atmos_loc2dist, Insert);
 	double *atmos;
 	atmos_loc->ExtractView(&atmos);
-	F90NAME(m_inserts, insert_atmosphere)(atmos);
-	
+	F90NAME(m_inserts, insert_atmosphere)(atmos);	
 }	
 
 //=============================================================================
