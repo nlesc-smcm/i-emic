@@ -220,9 +220,9 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 
 //------------------------------------------------------------------
 // Using an XOR and rotate hash on std::hash
-size_t SuperVector::hash() const
+std::size_t SuperVector::hash() const
 {
-	size_t seed = 0;
+	std::size_t seed = 0;
 	std::hash<double> double_hash;
 	if (haveOceanVector_)
 	{

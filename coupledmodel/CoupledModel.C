@@ -57,7 +57,7 @@ void CoupledModel::synchronize()
 	// changed, so we compute, compare and store a hash
 	if (useHash_)
 	{
-		size_t hash = getHash();
+		std::size_t hash = stateView_->hash();
 		if (hash == syncHash_)
 			return;
 		else
@@ -85,10 +85,11 @@ void CoupledModel::synchronize()
 //------------------------------------------------------------------
 void CoupledModel::computeJacobian()
 {
-	// Check whether stateView has changed, if so continue, if not return
+	// Check whether the combined (state,par) vector has changed,
+	// if so continue, if not return
 	if (useHash_)
 	{
-		size_t hash = getHash();
+		std::size_t hash = getHash();
 		if (hash == jacHash_)
 			return;
 		else
@@ -108,10 +109,11 @@ void CoupledModel::computeJacobian()
 //------------------------------------------------------------------
 void CoupledModel::computeRHS()
 {
-	// Check whether stateView has changed, if so continue, if not return
+	// Check whether the combined (state,par) vector has changed,
+	// if so continue, if not return
 	if (useHash_)
 	{
-		size_t hash = getHash();
+		std::size_t hash = getHash();
 		if (hash == rhsHash_)
 			return;
 		else
@@ -401,18 +403,19 @@ void CoupledModel::postConvergence()
 }
 
 //------------------------------------------------------------------
-size_t CoupledModel::getHash()
+std::size_t CoupledModel::getHash()
 {
 	TIMER_START("CoupledModel: hash...");
 	// create hash function
 	std::hash<double> double_hash;
 	
 	// first we obtain the hash of stateView
-	size_t seed = stateView_->hash();
+	std::size_t seed = stateView_->hash();
 
 	// then we extend and manipulate it with the current parameter
 	seed ^= double_hash(getPar()) + (seed << 6);
 	TIMER_STOP("CoupledModel: hash...");
+	return seed;
 }
 
 //------------------------------------------------------------------

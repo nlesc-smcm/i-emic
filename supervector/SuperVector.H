@@ -74,7 +74,7 @@ public:
 	void print() const;
 
 	// Create a hash of the SuperVector
-	size_t hash() const;
+	std::size_t hash() const;
 
 	// Apply a linear mapping from to ocean to the atmosphere and vice versa
 	// domain/range: 'O': ocean

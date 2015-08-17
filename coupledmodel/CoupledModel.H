@@ -53,9 +53,9 @@ private:
 	// Use hashing to decide to act based on whether a state has changed
 	// Hashes should be remembered for each task they get used for.
 	bool   useHash_;  // flag to turn hashing on/off
-	size_t syncHash_; // hash to base synchronize() decision on
-	size_t rhsHash_;  // hash to base computeRHS() decision on	
-	size_t jacHash_;  // hash to base computeJacobian() decision on
+	std::size_t syncHash_; // hash to base synchronize() decision on
+	std::size_t rhsHash_;  // hash to base computeRHS() decision on	
+	std::size_t jacHash_;  // hash to base computeJacobian() decision on
 	
 	// Trilinos' MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
@@ -107,7 +107,7 @@ private:
 	void test();
 
 	// Create a hash of the extended state + parameter in an XOR / rotating manner
-	size_t getHash();
+	std::size_t getHash();
 };
 
 #endif
