@@ -184,7 +184,7 @@ public:
 	void setOceanTemperature(std::vector<double> const &sst);
 
 	// ! Post-convergence processing
-	void postConvergence() { write(*state_, "atmos_state.txt"); }
+	void postConvergence() { writeAll(); }
 
 	// ! Put default fields in atmosphere and ocean
 	void idealizedOcean();

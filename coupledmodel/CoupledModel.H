@@ -108,6 +108,10 @@ private:
 
 	// Create a hash of the extended state + parameter in an XOR / rotating manner
 	std::size_t getHash();
+
+	// Output, same as in Atmosphere but templated^^
+	template<typename T>
+	void write(std::vector<T> &vector, const std::string &filename);
 };
 
 #endif

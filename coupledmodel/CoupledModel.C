@@ -41,8 +41,13 @@ CoupledModel::CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
 	B_     = ocean_->getAtmosBlock();
 	rowsB_ = ocean_->getSSTRows();
 
+	// Do some outputting to clutter the working directory
+	write(*B_, "coupled_B.txt");
+	write(*rowsB_, "coupled_rowsB.txt");
+
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
 	C_     = atmos_->getOceanBlock();
+	write(*C_, "coupled_C.txt");
 
 	// Get parameters and flags from file, see xml for documentation
 	solvingScheme_ = params->get("Solving scheme", 'E');
@@ -424,4 +429,21 @@ void CoupledModel::test()
 	std::cout << "CoupledModel: stateView..." << std::endl;
 	std::cout << " length: " << stateView_->length()  << std::endl;
 	std::cout << " norm:   " << stateView_->norm()    << std::endl;
+}
+
+//-----------------------------------------------------------------------------
+template<typename T>
+void CoupledModel::write(std::vector<T> &vector, const std::string &filename)
+{
+	if (!vector.empty())
+	{
+		std::ofstream atmos_ofstream;
+		atmos_ofstream.open(filename);
+		for (auto &i : vector)
+			atmos_ofstream << std::setprecision(12) << i << '\n';
+		atmos_ofstream.close();
+	}
+	else
+		std::cout << "WARNING (Atmosphere::write): vector is empty"
+				  << __FILE__ <<  __LINE__ << std::endl;
 }

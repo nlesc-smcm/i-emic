@@ -284,7 +284,7 @@ SUBROUTINE matrix(un,sig1,sig2)
   !write(*,*) "In fortran's matrix() maxval TT =", maxval(Al(:,:,:,:,TT,:))
   !write(*,*) "In fortran's matrix() maxval SS =", maxval(Al(:,:,:,:,SS,:))
 
-  ! call writematrhs(0.0)
+  call writematrhs(0.0)
 
   !     call writecsrmats
   !     stop
