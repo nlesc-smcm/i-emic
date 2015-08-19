@@ -166,8 +166,11 @@ public:
 
 	// Obtain an external atmosphere
 	void setAtmosphere(std::vector<double> const &atmos);
-	
-	// Get the diagonal elements of the atmosphere to ocean
+
+	// Obtain the Jacobian from THCM
+	Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
+
+    // Get the diagonal elements of the atmosphere to ocean
 	// contribution in the Jacobian
 	std::shared_ptr<std::vector<double> > getAtmosBlock();
 	

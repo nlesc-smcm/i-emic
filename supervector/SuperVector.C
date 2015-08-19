@@ -1,7 +1,7 @@
 #include "SuperVector.H"
 
 #include <functional> // for std::hash
-
+#include <cstdlib>    // for rand();
 //------------------------------------------------------------------
 // Constructor 1:
 SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector)
@@ -151,6 +151,29 @@ std::shared_ptr<std::vector<double> > SuperVector::getAtmosVector() const
 	return atmosVector_;
 }
 
+// ------------------------------------------------------------------
+void SuperVector::random()
+{
+	if (haveAtmosVector_)
+	{
+		std::srand(std::time(0));
+		for (int i = 0; i < atmosVector_->size(); ++i)
+			(*atmosVector_)[i] = (std::rand() / (double) RAND_MAX);
+	}
+	if (haveOceanVector_)
+		oceanVector_->Random();
+}
+
+//------------------------------------------------------------------
+void SuperVector::zero()
+{
+	if (haveAtmosVector_)
+		atmosVector_ = std::make_shared<std::vector<double> >
+			(atmosVector_->size(), 0.0);		
+	if (haveOceanVector_)
+		oceanVector_->PutScalar(0.0);
+}
+
 //------------------------------------------------------------------
 void SuperVector::print() const
 {
@@ -198,7 +221,7 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 		// calculate the values in the destination stdVector
 		for (size_t i = 0; i != atmosVector_->size(); ++i)
 			(*atmosVector_)[i] = diagonal[i] * fullSol[indices[i]];
-
+		
 		// cleanup
 		delete fullSol;				
 	}
@@ -216,6 +239,38 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 			atmosVector_->size(),
 			&values[0], &indices[0]);
 	}
+}
+//------------------------------------------------------------------
+void SuperVector::linearTransformation(Teuchos::RCP<Epetra_CrsMatrix> mat)
+{
+	Teuchos::RCP<Epetra_Vector> tmp = Teuchos::rcp(new Epetra_Vector(oceanVector_->Map()));
+	if (haveOceanVector_)
+	{
+		CHECK_ZERO(mat->Apply(*oceanVector_, *tmp));
+	}
+	oceanVector_ = tmp;
+}
+
+//------------------------------------------------------------------
+void SuperVector::linearTransformation(std::shared_ptr<std::map<std::string,
+									   std::vector<double> > > mat)
+{
+	int first;
+	int last;
+	std::vector<double> result(atmosVector_->size(), 0.0);
+	// 1->0 based... horrible... 
+	for (int row = 1; row <= atmosVector_->size(); ++row)
+	{
+		first   = (*mat)["beg"][row-1];
+		last    = (*mat)["beg"][row] - 1;
+		for (int col = first; col <= last; ++col)
+		{
+			result[row-1] += (*mat)["ico"][col-1] *
+				(*atmosVector_)[(*mat)["jco"][col-1]-1];
+		}			
+	}
+	atmosVector_ = std::make_shared<std::vector<double> >
+		(result);
 }
 
 //------------------------------------------------------------------

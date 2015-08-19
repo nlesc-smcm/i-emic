@@ -411,6 +411,13 @@ std::shared_ptr<std::vector<double> > Ocean::getAtmosBlock()
 }
 
 //====================================================================
+Teuchos::RCP<Epetra_CrsMatrix> Ocean::getJacobian()
+{
+	// This is a job for THCM
+	return THCM::Instance().getJacobian();
+}
+
+//====================================================================
 std::shared_ptr<std::vector<int> > Ocean::getSSTRows()
 {
 	std::shared_ptr<std::vector<int> > rows =

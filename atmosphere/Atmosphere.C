@@ -200,6 +200,19 @@ void Atmosphere::computeJacobian()
 }
 
 //-----------------------------------------------------------------------------
+std::shared_ptr<
+	std::map<
+		std::string, std::vector<double> > > Atmosphere::getJacobian()
+{
+	std::shared_ptr<std::map<std::string, std::vector<double> > > jacMap;
+	jacMap = std::make_shared<std::map<std::string, std::vector<double> > >();
+	(*jacMap)["ico"] = ico_;	
+	(*jacMap)["jco"] = jco_;
+	(*jacMap)["beg"] = beg_;
+	return jacMap;		
+}
+
+//-----------------------------------------------------------------------------
 void Atmosphere::computeRHS()
 {
 	TIMER_START("Atmosphere: compute RHS...");
@@ -417,7 +430,6 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 		(*sol_) = std::vector<double>((*rhs_));
 	else
 		(*sol_) = std::vector<double>(*(rhs->getAtmosVector()));
-
 	
 	if (solvingScheme_ == 'D')
 	{

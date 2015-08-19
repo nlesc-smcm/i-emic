@@ -96,15 +96,19 @@ public:
 	void postConvergence();
 
 private:
-	// for internal use in the inexact solver
+	// Try to solve the coupled system in a backward block SOR iteration.
+	void blockSORSolve(std::shared_ptr<SuperVector> rhs);
+	
+	// Solve the system using an elimination based approach.
+	void eliminationSolve(std::shared_ptr<SuperVector> rhs);
+	
+	// For internal use: both modes for the underlying
+	// getSolution methods can be called here.
 	std::shared_ptr<SuperVector> getSolution(char mode1, char mode2);
 	
 	// Synchronize the states between the models that are needed to communicate
-	// Relaxation might not be a good idea, set it to 1
 	void synchronize();
 
-	// A few tests are collected here
-	void test();
 
 	// Create a hash of the extended state + parameter in an XOR / rotating manner
 	std::size_t getHash();
@@ -112,6 +116,9 @@ private:
 	// Output, same as in Atmosphere but templated^^
 	template<typename T>
 	void write(std::vector<T> &vector, const std::string &filename);
+
+	// A few tests are collected here
+	void test();
 };
 
 #endif

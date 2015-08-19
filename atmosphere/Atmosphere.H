@@ -23,7 +23,7 @@
 #include <vector>
 #include <memory>
 #include <array>
-
+#include <map>
 #include "SuperVector.H"
 #include "MultiArray.H"
 #include "AtmosphereDefinitions.H"
@@ -165,6 +165,11 @@ public:
 
 	// Compute the Jacobian matrix
 	void computeJacobian();
+
+	// Return the Jacobian matrix in CRS format
+	std::shared_ptr<
+		std::map<
+			std::string, vector<double> > > getJacobian();
 
 	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
 	std::shared_ptr<SuperVector> getState(char mode = 'C');

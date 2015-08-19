@@ -7,6 +7,7 @@
 #include <Teuchos_RCP.hpp>
 #include <memory> // shared ptr
 #include <vector>
+#include <map>
 #include <math.h>
 #include "GlobalDefinitions.H"
 #include "Utils.H"
@@ -70,21 +71,37 @@ public:
 	// Get a pointer to the STL/Atmos vector
 	std::shared_ptr<std::vector<double> > getAtmosVector() const;
 
+	// Randomize vectors
+	void random();
+
+	// Zero vectors
+	void zero();
+		
 	// Print the vectors to various output streams
 	void print() const;
 
 	// Create a hash of the SuperVector
 	std::size_t hash() const;
 
-	// Apply a linear mapping from to ocean to the atmosphere and vice versa
-	// domain/range: 'O': ocean
-	//               'A': atmosphere
-	// diagonal elements define the scaling
-	// indices define the grid points
-	//  (surface temperature points in the ocean)
-	void linearTransformation(std::vector<double> const &diagonal,
+	// Apply a linear mapping given by a diagonal matrix.
+	//   -maps the ocean to the atmosphere and vice versa
+	//   -options domain/range: 'O': ocean
+	//                          'A': atmosphere
+	// The result will be available in *this object.
+	void linearTransformation(std::vector<double> const &values,
 							  std::vector<int> const &indices,
 							  char domain, char range);
+
+	// Apply a linear mapping given by an Epetra_CrsMatrix,
+	//  only capable of mapping the ocean to the ocean.
+	void linearTransformation(Teuchos::RCP<Epetra_CrsMatrix> mat);
+
+	// Apply a linear mapping given by a CRS matrix in a
+	// std::shared_ptr<map<std::string, vector<double> > >
+	//  only capable of mapping atmos to atmos.
+	void linearTransformation(std::shared_ptr<std::map<std::string,
+							  std::vector<double> > > mat);
+
 	
 private:	
 	// Perform a few initializations
