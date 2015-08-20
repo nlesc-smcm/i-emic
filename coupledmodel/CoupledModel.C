@@ -52,7 +52,10 @@ CoupledModel::CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
 	// Get parameters and flags from file, see xml for documentation
 	solvingScheme_ = params->get("Solving scheme", 'E');
 	kNeumann_      = params->get("Order of Neumann approximation", 1);
+	iterSOR_       = params->get("SOR iterations", 2);
+	relaxSOR_      = params->get("SOR relaxation", 1.0);
 	useHash_       = params->get("Use hashing", true);
+	
 }
 
 //------------------------------------------------------------------
@@ -164,7 +167,7 @@ void CoupledModel::blockSORSolve(std::shared_ptr<SuperVector> rhs)
 {
 	// Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]	
 	// Set relaxation parameter
-	double w = 1; 
+	double w = relaxSOR_; 
 	
 	// Initialize solution, get a copy of what's already in there
 	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
@@ -173,7 +176,7 @@ void CoupledModel::blockSORSolve(std::shared_ptr<SuperVector> rhs)
 	x->zero();
 	y->zero();
 	
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < iterSOR_; ++i)
 	{
 		// -map the ocean to the atmosphere using matrix block C
 		// -apply relaxation and add rhs
