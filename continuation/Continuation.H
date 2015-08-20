@@ -11,9 +11,9 @@
 #include <iomanip>
 //======================================================================
 //Constructor
-template<typename ModelPtr, typename ParameterList>
-Continuation<ModelPtr, ParameterList>::
-Continuation(ModelPtr model, ParameterList pars)
+template<typename Model, typename ParameterList>
+Continuation<Model, ParameterList>::
+Continuation(Model model, ParameterList pars)
 	:
 
 	ds_(pars->get("ds", 0.02)),
@@ -65,14 +65,14 @@ Continuation(ModelPtr model, ParameterList pars)
 
 //======================================================================
 //Destructor
-template<typename ModelPtr, typename ParameterList>
-Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+Continuation<Model, ParameterList>::
 ~Continuation()
 {}
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 run()
 {
 	// set all the appropriate initial flags and counters
@@ -102,8 +102,8 @@ run()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 step()
 {
 	info(); 	                      // Print continuation info
@@ -137,8 +137,8 @@ step()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 createInitialTangent()
 {
 	//-----------------------------------------------------------------
@@ -166,8 +166,8 @@ createInitialTangent()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 computeDFDPar(char mode)
 {
 	// Let the model compute an RHS F(par) with its current state
@@ -194,8 +194,8 @@ computeDFDPar(char mode)
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 createTangent(char mode)
 {
 	if (mode == 'S') // Secant
@@ -212,8 +212,8 @@ createTangent(char mode)
 		stateDot_ = model_->getState('C');
 		
 		// Get the previous state and par from our storage
-		VectorPtr state0 = storage_.state0;
-		double par0      = storage_.par0;
+		Vector state0 = storage_.state0;
+		double par0   = storage_.par0;
 		
 		// Compute stateDot = (state1 - state0)/ds
 		stateDot_->update(-1.0 / ds_, *state0, 1.0 / ds_);
@@ -245,9 +245,9 @@ createTangent(char mode)
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
-normalize(VectorPtr stateDot, double scale, double parDot)
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
+normalize(Vector stateDot, double scale, double parDot)
 {
 	// -----------------------------------------------------------------
 	// We normalize the tangent of the branch (stateDot, parDot)
@@ -273,8 +273,8 @@ normalize(VectorPtr stateDot, double scale, double parDot)
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 eulerPredictor()
 {
 	INFO("Contin.: predictor");
@@ -300,16 +300,16 @@ eulerPredictor()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-int Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+int Continuation<Model, ParameterList>::
 newtonCorrector()
 {
 	int backTrackingStatus;  // status of backtracking
 	char mode;	             // mode for ComputeDFDPar()
 	
-	VectorPtr stateDir;      // direction for the state
-	VectorPtr y1;            // solution of solve with dFdPar
-	VectorPtr z1;            // solution of solve with F
+	Vector stateDir;      // direction for the state
+	Vector y1;            // solution of solve with dFdPar
+	Vector z1;            // solution of solve with F
 	double parDir;           // direction for the parameter
 	newtonIter_ = 0;	
 	while (newtonIter_ < maxNewtonIterations_)
@@ -325,7 +325,7 @@ newtonCorrector()
 		// we use that one to get -F(par).
 		// > Note that we cannot use the current rhs in the model
 		//   since at this point it corresponds to F(par+eps)
-		VectorPtr R = rhsCopy_;
+		Vector R = rhsCopy_;
 		R->scale(-1.0);
 		
 		// Obtain the lower part (r) of the continuation RHS,
@@ -335,11 +335,11 @@ newtonCorrector()
 		// > zeta is an additional scaling for the state tangent
 		//   and makes sure that we have a proper parDot after
 		//   normalization.
-		VectorPtr state0 = storage_.state0;
-		double    par0   = storage_.par0;
-		double    r      =  ds_ - stateDot_->dot(*stateView_) * zeta_
-			                - stateDot_->dot(*state0) * zeta_
-			                - parDot_ * (par_ - par0);
+		Vector state0 = storage_.state0;
+		double par0   = storage_.par0;
+		double r      =  ds_ - stateDot_->dot(*stateView_) * zeta_
+			                 - stateDot_->dot(*state0) * zeta_
+			                 - parDot_ * (par_ - par0);
 
 		// At this point the model contains the predicted state and
 		// parameter. The Jacobian will be computed based on the
@@ -405,9 +405,9 @@ newtonCorrector()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-int Continuation<ModelPtr, ParameterList>::
-runBackTracking(VectorPtr stateDir, double parDir)
+template<typename Model, typename ParameterList>
+int Continuation<Model, ParameterList>::
+runBackTracking(Vector stateDir, double parDir)
 {
 	// Initialize reduction with -1/2
 	double reduction = -1.0 / 2;
@@ -444,8 +444,8 @@ runBackTracking(VectorPtr stateDir, double parDir)
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 detect(char mode)
 {
 	// Just to be on the safe side
@@ -466,8 +466,8 @@ detect(char mode)
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 adjustStep()
 {
 	if (newtonIter_ < minAllowedIterations_)
@@ -477,8 +477,8 @@ adjustStep()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 analyzeHist()
 {
 	if (parHist_.size() > 5)
@@ -497,8 +497,8 @@ analyzeHist()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 reset()
 {
 	INFO("***********************************************");
@@ -512,8 +512,8 @@ reset()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 store()
 {
 	// We keep two previous states, state0 and state00
@@ -526,8 +526,8 @@ store()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 restore()
 {
  	INFO("Continuation::Restore()");
@@ -551,8 +551,8 @@ restore()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 test()
 {
 	model_->computeRHS();
@@ -560,16 +560,16 @@ test()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 testCopyView()
 {
 	INFO("******************************************************");
 	INFO("Continuation: Test Copy / View behaviour of the model.");
-	VectorPtr view1 = model_->getState('V');
-	VectorPtr copy1 = model_->getState('C');
-	VectorPtr view2 = model_->getState('V');
-	VectorPtr copy2 = model_->getState('C');
+	Vector view1 = model_->getState('V');
+	Vector copy1 = model_->getState('C');
+	Vector view2 = model_->getState('V');
+	Vector copy2 = model_->getState('C');
 	INFO("view1      norm: " << view1->norm());
 	INFO("view2      norm: " << view2->norm());
 	INFO("copy1      norm: " << copy1->norm());
@@ -607,8 +607,8 @@ testCopyView()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 info()
 {
 	INFO(std::setprecision(8));
@@ -631,8 +631,8 @@ info()
 }
 
 //======================================================================
-template<typename ModelPtr, typename ParameterList>
-void Continuation<ModelPtr, ParameterList>::
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
 modelInfo()
 {
 	INFO(std::setprecision(10));

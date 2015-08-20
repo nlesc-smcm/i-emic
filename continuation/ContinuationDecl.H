@@ -4,27 +4,31 @@
 #ifndef CONTINUATIONDECL_H
 #define CONTINUATIONDECL_H
 #include <vector>
+
 //! Pseudo-arclength continuation class using an
 //! Euler predictor and a Newton corrector.
-
-template<typename ModelPtr, typename ParameterList>
+//! 
+//! The templated type ParameterList should be a pointer 
+//! to a parameter storing object having a .get() method.
+//! ...
+template<typename Model, typename ParameterList>
 class Continuation
 {
-	using VectorPtr = typename ModelPtr::element_type::VectorPtr;
-	ModelPtr  model_;
+	using Vector = typename Model::element_type::VectorPtr;
+	Model  model_;
 	
 	// copy of the state in the model
-	VectorPtr stateCopy_;
+	Vector stateCopy_;
     // view of the state
-	VectorPtr stateView_;
-	VectorPtr stateDot_;
-	VectorPtr rhsCopy_;
+	Vector stateView_;
+	Vector stateDot_;
+	Vector rhsCopy_;
     // view of the rhs in the model
-	VectorPtr rhsView_;
+	Vector rhsView_;
 	// view of the sol in the model
-	VectorPtr solView_;
+	Vector solView_;
 	
-	VectorPtr dFdPar_;
+	Vector dFdPar_;
 	
 	double par_;
 	double parDot_;
@@ -78,8 +82,8 @@ class Continuation
 	// See Store() and Restore() for its use
 	struct Storage
 	{
-		VectorPtr state0;  // prev state
-		VectorPtr state00; // prev prev state
+		Vector state0;  // prev state
+		Vector state00; // prev prev state
 		double par0;       // prev par
 		double par00;      // prev prev par
 		double ds0;        // prev ds
@@ -90,7 +94,7 @@ class Continuation
 	
 public:
 	// constructor
-	Continuation(ModelPtr model, ParameterList pars);
+	Continuation(Model model, ParameterList pars);
 
 	// destructor
 	~Continuation();
@@ -116,7 +120,7 @@ private:
 
 	// Normalize the tangent with an additional scaling
 	// for the state component.
-	void normalize(VectorPtr stateDot, double scale,
+	void normalize(Vector stateDot, double scale,
 				   double parDot);
 
 	// Compute the derivative of F with respect to
@@ -127,7 +131,7 @@ private:
 	void computeDFDPar(char mode = 'A');
 	void eulerPredictor();
 	int  newtonCorrector();
-	int  runBackTracking(VectorPtr stateDir, double parDir);
+	int  runBackTracking(Vector stateDir, double parDir);
 
 	// Detect special points.
 	// Modes: 'D' --> converge on destination

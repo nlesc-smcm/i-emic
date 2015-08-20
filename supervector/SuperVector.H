@@ -13,12 +13,12 @@
 #include "Utils.H"
 
 // This class acts as a normal vector with a few standard methods:
-//   length, update, dot, norm, scale, randomize
+//   length, update, dot, norm, scale, random, zero
 //
 // It is in fact a combined 'super' vector and should be able to contain
 // multiple distributed Epetra vectors and serial STL vector containers.
 //
-// In the future we probably need datamembers of the form:
+// In the future we might need datamembers of the form:
 //   std::vector<std::shared_ptr<std::vector<double> > >
 //   std::vector<Teuchos::RCP<Epetra_Vector> > 
 
