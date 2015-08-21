@@ -21,9 +21,10 @@ using Teuchos::rcp;
 //=====================================================================
 // OceanTheta
 //=====================================================================
-OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm)
+OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm,
+					   Teuchos::RCP<Teuchos::ParameterList> params)
 	:
-	Ocean(Comm),
+	Ocean(Comm, params),
 	theta_(1.0),
 	timestep_(1.0e-03)
 {

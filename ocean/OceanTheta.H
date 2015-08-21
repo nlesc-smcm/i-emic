@@ -12,7 +12,8 @@ class OceanTheta: public Ocean
 {
 public:
 	//constructor
-	OceanTheta(Teuchos::RCP<Epetra_Comm> Comm);
+	OceanTheta(Teuchos::RCP<Epetra_Comm> Comm,
+			   Teuchos::RCP<Teuchos::ParameterList> params);
 
 	//destructor
 	~OceanTheta(){ INFO("OceanTheta destructor called...");	}

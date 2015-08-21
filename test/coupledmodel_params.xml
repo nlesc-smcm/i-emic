@@ -23,7 +23,7 @@
 
   <!-- Set the number of iterations in the SOR scheme                                  -->
   <!-- Works only when you choose S for "Solving scheme"                               -->
-  <Parameter name="SOR iterations" type="int" value="8" />
+  <Parameter name="SOR iterations" type="int" value="2" />
   
   <!-- Use hashing to decide to act based on whether a state has changed               -->
   <!-- Right now the functions synchronize(), computeRHS() and computeJacobian()       -->

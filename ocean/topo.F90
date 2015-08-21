@@ -143,11 +143,11 @@
       write(*,*) 'land mask is read in from file mkmask/'//trim(maskfile)
       write(*,*) '===========TOPOGRAPHY==================================='
 !
-      open(unit=50,file=rundir//'mkmask/'//trim(maskfile),status='old',err=123)
+      open(unit=50,file=topdir//'mkmask/'//trim(maskfile),status='old',err=123)
 !     open(unit=50,file=rundir//'mkmask/mask_natl16')
 !     open(unit=50,file=rundir//'mkmask/test2')
-!      open(unit=50,file=rundir//'mkmask/mask.glo_oc') ! 98 x 38 x 12 
-!      open(unit=50,file=rundir//'mkmask/mask.jonas') 
+!     open(unit=50,file=rundir//'mkmask/mask.glo_oc') ! 98 x 38 x 12 
+!     open(unit=50,file=rundir//'mkmask/mask.jonas') 
       
       landm = LAND
       do k = 0, l+la+1

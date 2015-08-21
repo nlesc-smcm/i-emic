@@ -6,7 +6,7 @@
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->
-    <Parameter name="Problem Description" type="string" value="Single Hemispheric"/>
+    <Parameter name="Problem Description" type="string" value="TEST: not sure what this is"/>
     <!-- western domain bound -->
     <Parameter name="Global Bound xmin" type="double" value="286"/>
     <!-- eastern domain bound -->
@@ -19,32 +19,39 @@
     <Parameter name="Periodic" type="bool" value="0"/>
     <!-- depth of the ocean -->
     <Parameter name="Depth hdim" type="double" value="4000"/>
+
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="8"/>
+    <Parameter name="Global Grid-Size n" type="int" value="32"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="8"/>
+    <Parameter name="Global Grid-Size m" type="int" value="32"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="8"/>
+    <Parameter name="Global Grid-Size l" type="int" value="16"/>
+
     <!-- topography:                                -->
     <!-- 0: from data                               -->
     <!-- 1: no land                                 -->
     <!-- others not tested, but this is 'itopo' in  -->
     <!-- THCM language                              -->
-    <Parameter name="Topography" type="int" value="1"/>
+    <Parameter name="Topography" type="int" value="0"/>
     <!-- remove bottom profile? (flat in THCM)      -->
     <Parameter name="Flat Bottom" type="bool" value="0"/>
     <!-- read mask from a file in ./mkmask/. The filename is hard-coded in -->
     <!-- topo.F90.                                                         -->
-    <Parameter name="Read Land Mask" type="bool" value="1"/>
+    <Parameter name="Read Land Mask" type="bool" value="1"/>g
     <!-- name of land mask file (assumed to be in mkmask/ directory) -->
     <Parameter name="Land Mask" type="string" value="mask_natl32"/>
+
+	<!-- =============================================================== -->
 	<!-- Flag enabling the coupling with an atmosphere within the I-EMIC -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
+	<!--                                                                 -->
 	<Parameter name="Coupled Atmosphere" type="int" value="1"/>
+	<!-- =============================================================== -->
+
     <!-- Mixing parameter (vmix_GLB in THCM) -->
     <Parameter name="Mixing" type="int" value="1"/>
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->

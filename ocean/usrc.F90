@@ -910,8 +910,8 @@ SUBROUTINE stpnt!(un)
   par(PE_V)   =  kappav*r0dim/(udim*hdim*hdim)  ! P_V0
   par(P_VC)   =  5.0            ! P_VC
   par(LAMB)   =  alphaS/alphaT  ! lambda
-  par(SALT)   =  0.0            ! gamma
-  par(WIND)   =  0.0            ! wind h
+  par(SALT)   =  1.0            ! gamma
+  par(WIND)   =  1.0            ! wind h
   par(TEMP)   =  10.0           ! eta_T
   par(BIOT)   =  r0dim/(75.*3600.*24.*udim) ! nonlinearity in T,S equations
   par(COMB)   =  1.0          ! combined continuation

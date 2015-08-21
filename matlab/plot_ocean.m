@@ -3,7 +3,7 @@
 %
 %  Father is M. den Toom, who conceived it 06-11-08     
 %
-%  Modified by Erik -> t.e.mulder@uu.nl
+%  Modified by Erik, 2015 -> t.e.mulder@uu.nl
 %---------------------------------------------------------------------
 
 fprintf(1,'----------------------------------------------\n')
@@ -83,3 +83,11 @@ title('Isothermals')
 xlabel('Latitude')
 ylabel('z (m)')
 exportfig('isopycnals.eps')
+
+figure(5)
+Sp = S(:,:,l); 
+contourf(RtD*xu(1:end-1),RtD*y,S0+Sp',15);
+colorbar
+title('Surface Salinity');
+xlabel('Longitude')
+ylabel('Latitude')
