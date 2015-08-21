@@ -109,10 +109,11 @@ protected:
 	double storedPar2_;  // stored value of the parameter
 	
 public:
-	
 
 	//constructor
-	Ocean(Teuchos::RCP<Epetra_Comm> Comm);
+	Ocean(Teuchos::RCP<Epetra_Comm> Comm,
+		  Teuchos::RCP<Teuchos::ParameterList> oceanParamList);
+
 	//destructor
 	~Ocean();
 

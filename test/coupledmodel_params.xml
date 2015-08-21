@@ -1,4 +1,4 @@
-<ParameterList name="coupledmodel">
+<ParameterList name="CoupledModel parameters">
   <!-- Some kind of coupling graph should be created here                              -->
   
   <!-- Select the solving and synchronization mode                                     -->

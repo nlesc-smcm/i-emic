@@ -13,7 +13,7 @@ TRIVERSION   = 11.14
 ##   Trilinos directory containing lib and include dirs:
 TRIDIR       = /home/erik/trilinos/${TRIVERSION}
 ##   Project base directory
-PROJECT_BASE = /home/erik/Projects/EMIC
+PROJECT_BASE = /home/erik/Projects/i-emic
 ##   Make flags
 MFLAGS       = -j 2
 ##   Local

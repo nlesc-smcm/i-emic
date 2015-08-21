@@ -42,28 +42,17 @@ extern "C" _SUBROUTINE_(getooa)(double*);
 
 //=====================================================================
 // Constructor:
-Ocean::Ocean(RCP<Epetra_Comm> Comm)
+Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	:
 	comm_(Comm),                     // Setting the communication object
 	solverInitialized_(false)        // Solver needs initialization
 {
-	// Check if outFile is specified
-	if (outFile == Teuchos::null)
-		throw std::runtime_error("ERROR: Specify output streams");
-	
-	// Setup Ocean and THCM parameters:
-	RCP<Teuchos::ParameterList> oceanParamList =
-		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("ocean_params.xml",
-								oceanParamList.ptr());
-
 	recomputePreconditioner_ =
 		oceanParamList->get("recomputePreconditioner", true);
 	recomputeBound_          =
 		oceanParamList->get("recomputeBound", 50);
 	useScaling_              =
 		oceanParamList->get("useScaling", false);
-
 	
 	Teuchos::ParameterList &thcmList =
 		oceanParamList->sublist("THCM");
