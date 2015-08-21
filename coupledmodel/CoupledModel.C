@@ -10,20 +10,16 @@
 #include <Epetra_Comm.h>
 #include <Teuchos_RCP.hpp>
 
-CoupledModel::CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
+CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
+						   std::shared_ptr<Atmosphere> atmos,
 						   Teuchos::RCP<Teuchos::ParameterList> params)
 	:
-	comm_(comm),
+	ocean_(ocean),
+	atmos_(atmos),
 	syncHash_(-1),
 	rhsHash_(-1),
 	jacHash_(-1)
 {
-	// Create ocean object using the parallel communicator
-	ocean_ = Teuchos::rcp(new Ocean(comm_));
-
-	// Create atmosphere object
-	// ocean_ model dictates the horizontal resolution for the atmosphere
-	atmos_ = std::make_shared<Atmosphere>(ocean_->getNdim(), ocean_->getMdim());
 	
 	stateView_ =
 		std::make_shared<SuperVector>(ocean_->getState('V')->getOceanVector(),

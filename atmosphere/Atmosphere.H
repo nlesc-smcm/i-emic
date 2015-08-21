@@ -27,6 +27,8 @@
 #include "SuperVector.H"
 #include "MultiArray.H"
 #include "AtmosphereDefinitions.H"
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_ParameterList.hpp>
 
 class DependencyGrid;
 class Atom;
@@ -38,7 +40,7 @@ class Atmosphere
 {
 public:
 	using VectorPtr = std::shared_ptr<SuperVector>;
-
+	using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
 private:
 	int n_;   //! #grid-points in east-west (x) direction
 	int m_;   //! #grid-points in north-south (y) direction
@@ -150,7 +152,7 @@ private:
 public:
 	// Constructor, specify horizontal grid dimensions
 	//  > the number of vertical layers is assumed 1 at this point
-	Atmosphere(int n = 16, int m = 16);
+	Atmosphere(int n, int m, ParameterList params);
 
 	// Destructor
 	~Atmosphere();

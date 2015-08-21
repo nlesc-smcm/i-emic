@@ -11,7 +11,7 @@ function [profile] = plot_profile(filename, range)
 	range = 1:M;
   end
   for i = range
-	semilogy(x_axis, profile.data((i-1)*N+2:i*N+1),'.-');
+	semilogy(x_axis, profile.data((i-1)*N+2:i*N+1),'.-','color',[rand rand rand]);
 	hold on
   end
   hold off

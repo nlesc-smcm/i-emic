@@ -11,12 +11,12 @@
 
 //-----------------------------------------------------------------------------
 // Constructor, specify horizontal grid dimensions
-Atmosphere::Atmosphere(int n, int m)
+Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	:
 	n_(n),
 	m_(m),
 	l_(1),
-	dim_(m * n * 1),
+    dim_(m * n * 1),
 	ksub_(m),
 	ksup_(m),
 	solvingScheme_('B'),
@@ -26,22 +26,21 @@ Atmosphere::Atmosphere(int n, int m)
 	ampl_    = 0.0        ; //! amplitude of forcing
 	amplEnd_ = 1.0        ; //!
 	
-	// Filling the parameters --> xml
-	rhoa_    = 1.25       ; //! atmospheric density 
-	hdima_   = 8400.      ; //! atmospheric scale height 
-	cpa_     = 1000.      ; //! heat capacity 
-	d0_      = 3.1e+06    ; //! constant eddy diffusivity 
-	arad_    = 216.0      ; //! radiative flux param A
-	brad_    = 1.5        ; //! radiative flux param B
-	sun0_    = 1360.      ; //! solar constant 
-	c0_      = 0.43       ; //! atmospheric absorption coefficient
-	ce_      = 1.3e-03    ; //! exchange coefficient 
-	ch_      = 0.94 * ce_ ; //! exchange coefficient 
-	uw_      = 8.5        ; //! mean atmospheric surface wind speed
-	t0_      = 15.0       ; //! reference temperature
-	udim_    = 0.1e+00    ; //! typical horizontal velocity of the ocean
-	r0dim_   = 6.37e+06   ; //! radius of the earth
-
+	// Filling the parameters from xml file 
+	rhoa_    = params->get("atmospheric density",1.25); 
+	hdima_   = params->get("heat capacity",8400.); 
+	cpa_     = params->get("heat capacity",1000.);
+	d0_      = params->get("constant eddy diffusivity",3.1e+06);
+	arad_    = params->get("radiative flux param A",216.0);
+	brad_    = params->get("radiative flux param B",1.5);
+	sun0_    = params->get("solar constant",1360.);
+	c0_      = params->get("atmospheric absorption coefficient",0.43);
+	ce_      = params->get("exchange coefficient ce",1.3e-03);
+	ch_      = params->get("exchange coefficient ch",0.94 * ce_);
+	uw_      = params->get("mean atmospheric surface wind speed",8.5);
+	t0_      = params->get("reference temperature",15.0);
+	udim_    = params->get("horizontal velocity of the ocean",0.1e+00);
+	r0dim_   = params->get("radius of the earth",6.37e+06);
 	
 	// Filling the coefficients
 	muoa_ =  rhoa_ * ch_ * cpa_ * uw_;

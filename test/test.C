@@ -80,48 +80,52 @@ void testCoupling(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
 
-    // Create parameter object for coupledmodel
-	RCP<Teuchos::ParameterList> coupledmodelParams =
-		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("coupledmodel_params.xml",
-				    coupledmodelParams.ptr());
+	//------------------------------------------------------------------
+	// Check if outFile is specified
+	if (outFile == Teuchos::null)
+		throw std::runtime_error("ERROR: Specify output streams");
 	
-	std::shared_ptr<CoupledModel> coupledModel =
-		std::make_shared<CoupledModel>(Comm, coupledmodelParams);
+	//------------------------------------------------------------------
+	// Create parameter object for Ocean
+	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
 
+	// Create parallelized Ocean object
+	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
+
+	//------------------------------------------------------------------
+	// Create parameter object for Atmosphere
+	RCP<Teuchos::ParameterList> atmosphereParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+
+    // Create Atmosphere object
+	// Let the ocean model dictate the horizontal resolution for the atmosphere
+	std::shared_ptr<Atmosphere> atmos =
+		std::make_shared<Atmosphere>(ocean->getNdim(), ocean->getMdim(), atmosphereParams);
+
+	//------------------------------------------------------------------
+    // Create parameter object for coupledmodel
+	RCP<Teuchos::ParameterList> coupledmodelParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("coupledmodel_params.xml", coupledmodelParams.ptr());
+
+	// Create CoupledModel
+	std::shared_ptr<CoupledModel> coupledModel =
+		std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
+
+	//------------------------------------------------------------------
  	// Create parameter object for continuation
-	RCP<Teuchos::ParameterList> continuationParams =
-		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("continuation_params.xml",
-								continuationParams.ptr());
+	RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
 	
-	// Create continuation
-	Continuation<std::shared_ptr<CoupledModel>,
-				 RCP<Teuchos::ParameterList> >
+	// Create Continuation
+	Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
 		continuation(coupledModel, continuationParams);
 
 	// Run continuation
 	continuation.run();
-	
+
+	//------------------------------------------------------------------
 	TIMER_STOP("Total time...");		
-}
-
-void testOcean(RCP<Epetra_Comm> Comm)
-{
- 	// Create ocean model Ocean
-	//  (based on THCM):
-	RCP<Ocean> ocean = rcp(new Ocean(Comm));
-
-	// Create parameter object for continuation
-	RCP<Teuchos::ParameterList> continuationParams =
-		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("continuation_params.xml",
-								continuationParams.ptr());
-	// Create continuation
-	Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-		continuation(ocean, continuationParams);
-
-	continuation.run();
 }
 
 //------------------------------------------------------------------

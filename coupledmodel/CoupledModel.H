@@ -73,7 +73,8 @@ private:
 	std::shared_ptr<std::vector<int> > rowsC_;
 	
 public:
-	CoupledModel(Teuchos::RCP<Epetra_Comm> comm,
+	CoupledModel(Teuchos::RCP<Ocean> ocean,
+				 std::shared_ptr<Atmosphere> atmos,
 		         Teuchos::RCP<Teuchos::ParameterList> params);
 	
 	~CoupledModel(){}
@@ -112,7 +113,6 @@ private:
 	
 	// Synchronize the states between the models that are needed to communicate
 	void synchronize();
-
 
 	// Create a hash of the extended state + parameter in an XOR / rotating manner
 	std::size_t getHash();
