@@ -7,11 +7,16 @@ function [profile] = plot_profile(filename, range)
   M       = numel(profile.textdata);
   cores   = 2.^(0:N-1);
   x_axis  = 1:N;
+  
   if nargin == 1
 	range = 1:M;
   end
+  
+  colm = lines(numel(range));
+  ctr  = 1;
   for i = range
-	semilogy(x_axis, profile.data((i-1)*N+2:i*N+1),'.-');
+	semilogy(x_axis, profile.data((i-1)*N+2:i*N+1),'.-','color',colm(ctr,:));
+    ctr = ctr + 1;
 	hold on
   end
   hold off

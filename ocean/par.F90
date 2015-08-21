@@ -7,7 +7,7 @@ module m_par
   ! user parameters (previously located in usr.com)...........................
   !! You will most likely have to change these directories manually:
 #ifdef UTRECHT
-  character(len=*), parameter ::  topdir  = '/home/erik/Projects/EMIC/data/'
+  character(len=*), parameter ::  topdir  = '/home/erik/Projects/i-emic/data/'
   character(len=*), parameter ::  rundir = ''
 #elif defined(GRONINGEN)
   character(len=*), parameter ::  topdir = '/home/p267904/Projects/EMIC/data/'

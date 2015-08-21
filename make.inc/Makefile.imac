@@ -9,7 +9,7 @@ LOCATION     = UTRECHT
 ##   GNU, G95, INTEL, ASTER, ORBIT, HOPF, PGI and HUYGENS
 COMP_IDENT   = GNU
 ##   Trilinos version:
-TRIVERSION   = 12.0
+TRIVERSION   = 11.12
 ##   Trilinos directory containing lib and include dirs:
 TRIDIR       = /home/erik/trilinos/${TRIVERSION}
 ##   Project base directory

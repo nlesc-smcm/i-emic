@@ -198,6 +198,7 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 									   std::vector<int> const &indices,
 									   char domain, char range)
 {
+	TIMER_START("SuperVector: linearTransformation 1...");
 	// Do work
 	if (domain == 'O' && range == 'A')
 	{
@@ -239,22 +240,26 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 			atmosVector_->size(),
 			&values[0], &indices[0]);
 	}
+	TIMER_STOP("SuperVector: linearTransformation 1...");
 }
 //------------------------------------------------------------------
 void SuperVector::linearTransformation(Teuchos::RCP<Epetra_CrsMatrix> mat)
 {
+	TIMER_START("SuperVector: linearTransformation 2...");
 	Teuchos::RCP<Epetra_Vector> tmp = Teuchos::rcp(new Epetra_Vector(oceanVector_->Map()));
 	if (haveOceanVector_)
 	{
 		CHECK_ZERO(mat->Apply(*oceanVector_, *tmp));
 	}
 	oceanVector_ = tmp;
+	TIMER_STOP("SuperVector: linearTransformation 2...");
 }
 
 //------------------------------------------------------------------
 void SuperVector::linearTransformation(std::shared_ptr<std::map<std::string,
 									   std::vector<double> > > mat)
 {
+	TIMER_START("SuperVector: linearTransformation 3...");
 	int first;
 	int last;
 	std::vector<double> result(atmosVector_->size(), 0.0);
@@ -271,6 +276,7 @@ void SuperVector::linearTransformation(std::shared_ptr<std::map<std::string,
 	}
 	atmosVector_ = std::make_shared<std::vector<double> >
 		(result);
+	TIMER_STOP("SuperVector: linearTransformation 3...");
 }
 
 //------------------------------------------------------------------

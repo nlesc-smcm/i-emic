@@ -9,8 +9,8 @@
 cd ${HOME}/Projects/I-EMIC/rundir_profile
 
 # specify horizontal grid size
-n=96
-m=96
+n=16
+m=16
 fname=profile_${n}x${m}
 echo writing to $fname
 echo $n x $m >> $fname
@@ -23,7 +23,7 @@ procs=1
 echo "Profile on:" ${PLAT} " in:" ${PWD} > $fname
 
 # 1,2,4,8,16 procs
-for i in {1..5}
+for i in {1..3}
 do
 	echo "----------------------------------------------------------\
 ----------------------------------" >> $fname

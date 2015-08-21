@@ -163,6 +163,15 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 }
 
 //------------------------------------------------------------------
+// void CoupledModel::symBlockGSSolve(std::shared_ptr<SuperVector> rhs)
+// {
+// 	// Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
+// 	// Initialize solution
+// 	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
+	
+// }
+
+//------------------------------------------------------------------
 void CoupledModel::blockSORSolve(std::shared_ptr<SuperVector> rhs)
 {
 	// Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]	
