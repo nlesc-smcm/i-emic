@@ -164,7 +164,8 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 	//
 	// This leads to iteratively solving   D*x2 = -C*x1 + b2
 	//                                     A*x1 = -B*x2 + b1
-	//                         
+	// 
+	// After the iteration we do a final solve with  D*x2 = -C*x1 + b2                       
 
     // Initialize solution [x1;x2] = 0
  	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
@@ -192,7 +193,13 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 
 		// Retrieve solution
 		x = getSolution('C','C');		
-	}	
+	}
+	// Create -C*x1 + b2
+	x->linearTransformation(*C_, *rowsB_, 'O', 'A');
+	x->update(1, *rhs, -1);
+	
+	// Solve D*x2 = -C*x1 + b2
+	atmos_->solve(x);
 }
 
 //------------------------------------------------------------------
