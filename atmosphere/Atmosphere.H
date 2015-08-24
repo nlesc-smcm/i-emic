@@ -70,6 +70,9 @@ private:
 	std::vector<double> yc_;  //! y-grid ( cell centers)
 	std::vector<double> yv_;  //! y-grid ( [u,v]-nodes)
 
+	// Land mask
+	std::shared_ptr<std::vector<int> > landm_;
+	
 	// Ocean surface temperature
 	std::vector<double> oceanTemp_;
 
@@ -203,6 +206,10 @@ public:
 	std::shared_ptr<std::vector<double> > getOceanBlock();
 	std::shared_ptr<std::vector<int> >    getAtmosRows();
 
+	//! --------------------------------------------------------
+	//! Set an external 2D land mask in the atmosphere.
+	//! The size of the vector should be (n+2)*(m+2).
+	void setLandMask(std::shared_ptr<std::vector<int> > landm);
 	
 private:
 	std::shared_ptr<SuperVector> getVector

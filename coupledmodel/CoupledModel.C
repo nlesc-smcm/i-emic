@@ -51,6 +51,19 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 
 	// Output parameters
 	INFO(*params);
+
+	// Get the landmask used in the ocean
+	std::shared_ptr<std::vector<int> > landm = ocean_->getLandMask();
+
+	// Get rid of every layer except for the surface one
+	int n = ocean_->getNdim();
+	int m = ocean_->getMdim();
+	int l = ocean_->getLdim();
+	landm->erase(landm->begin(), landm->begin() + l*(m+2)*(n+2));
+	landm->erase(landm->begin() + (m+2)*(n+2), landm->end());
+
+	// Put the surface landmask in the atmosphere
+	atmos_->setLandMask(landm);
 }
 
 //------------------------------------------------------------------

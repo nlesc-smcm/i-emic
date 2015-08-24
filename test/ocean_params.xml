@@ -36,14 +36,14 @@
     <!-- 1: no land                                 -->
     <!-- others not tested, but this is 'itopo' in  -->
     <!-- THCM language                              -->
-    <Parameter name="Topography" type="int" value="1"/>
+    <Parameter name="Topography" type="int" value="0"/>
     <!-- remove bottom profile? (flat in THCM)      -->
     <Parameter name="Flat Bottom" type="bool" value="0"/>
     <!-- read mask from a file in mkmask The filename is hard-coded in   -->
     <!-- topo.F90.                                                       -->
-    <Parameter name="Read Land Mask" type="bool" value="0"/>g
+    <Parameter name="Read Land Mask" type="bool" value="1"/>g
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_natl32"/>
+    <Parameter name="Land Mask" type="string" value="mask_natl16"/>
 
 	<!-- =============================================================== -->
 	<!-- Flag enabling the coupling with an atmosphere within I-EMIC     -->

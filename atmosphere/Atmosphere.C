@@ -774,6 +774,16 @@ std::shared_ptr<std::vector<int> > Atmosphere::getAtmosRows()
 	return rows;	
 }
 
+//-----------------------------------------------------------------------------
+void Atmosphere::setLandMask(std::shared_ptr<std::vector<int> > landm)
+{
+	if (landm->size() != (n_+2)*(m_+2))
+		std::cout << "WARNING (Atmosphere::setLandMask): landm->size() not ok:"
+				  << landm->size() << __FILE__ <<  __LINE__ << std::endl;
+
+	landm_ = landm;
+}
+
 
 //=============================================================================
 // DependencyGrid implementation

@@ -444,7 +444,7 @@ std::shared_ptr<std::vector<double> > Ocean::getSST()
 }
 
 //====================================================================
-std::shared_ptr<std::vector<int> > getLandMask()
+std::shared_ptr<std::vector<int> > Ocean::getLandMask()
 {
 	return THCM::Instance().getLandMask();
 }
