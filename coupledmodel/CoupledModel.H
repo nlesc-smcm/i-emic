@@ -104,7 +104,7 @@ public:
 
 private:
 	// Solve the system with a few symmetric block GS iterations
-	void symBlockGSSolve(std::shared_ptr<SuperVector> rhs);
+	void blockGSSolve(std::shared_ptr<SuperVector> rhs);
 	
 	// Solve the coupled system in a few backward block SOR iterations.
 	void blockSORSolve(std::shared_ptr<SuperVector> rhs);

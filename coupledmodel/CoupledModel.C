@@ -102,8 +102,7 @@ void CoupledModel::computeJacobian()
 	}
 	
 	// Synchronize the states
-	if ( (solvingScheme_ == 'E') ||
-		 (solvingScheme_ == 'S')   ) { synchronize(); }
+	if (solvingScheme_ != 'D') { synchronize(); }
 	
 	// Ocean
 	ocean_->computeJacobian();
@@ -127,8 +126,7 @@ void CoupledModel::computeRHS()
 	}
 
 	// Synchronize the states
-	if ( (solvingScheme_ == 'E') ||
-		 (solvingScheme_ == 'S')   ) { synchronize(); }
+	if (solvingScheme_ != 'D') { synchronize(); }
 	
 	// Ocean
 	ocean_->computeRHS();
@@ -146,21 +144,19 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 		ocean_->solve(Teuchos::rcp(rhs.get(), false));
 		atmos_->solve(rhs);
 	}
-	else if (solvingScheme_ == 'S') // backward block SOR solve
-	{
+	else if (solvingScheme_ == 'G') // backward block SOR solve
 		blockSORSolve(rhs);
-	}
+	else if (solvingScheme_ == 'S') // backward block SOR solve
+		blockSORSolve(rhs);
 	else if (solvingScheme_ == 'E') // elimination based solve
-	{
 		eliminationSolve(rhs);
-	}
 	else
 		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
 }
 
 //------------------------------------------------------------------
-void CoupledModel::symBlockGSSolve(std::shared_ptr<SuperVector> rhs)
+void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 {
  	// Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
 	//           M = [A, 0; 0, D], E = [0, 0; -C, 0], F = [0, -B; 0, 0]
@@ -186,10 +182,19 @@ void CoupledModel::symBlockGSSolve(std::shared_ptr<SuperVector> rhs)
 		// Solve D*x2 = -C*x1 + b2
 		atmos_->solve(x);
 
-		// Retrieve solution --> View?
+		// Retrieve solution
 		x = getSolution('C','C');
-	}
-	
+
+		// Create -B*x2 + b1
+		x->linearTransformation(*B_, *rowsB_, 'A', 'O');
+		x->update(1, *rhs, -1);
+
+		// Solve A*x1 = -B*x2 + b1
+		ocean_->solve(Teuchos::rcp(x.get(), false));
+
+		// Retrieve solution
+		x = getSolution('C','C');		
+	}	
 }
 
 //------------------------------------------------------------------
