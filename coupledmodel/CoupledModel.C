@@ -52,7 +52,9 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	iterSOR_       = params->get("SOR iterations", 2);
 	relaxSOR_      = params->get("SOR relaxation", 1.0);
 	useHash_       = params->get("Use hashing", true);
-	
+
+	// Output parameters
+	INFO(*params);
 }
 
 //------------------------------------------------------------------
@@ -144,8 +146,8 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 		ocean_->solve(Teuchos::rcp(rhs.get(), false));
 		atmos_->solve(rhs);
 	}
-	else if (solvingScheme_ == 'G') // backward block SOR solve
-		blockSORSolve(rhs);
+	else if (solvingScheme_ == 'G') // backward block GS  solve
+		blockGSSolve(rhs);
 	else if (solvingScheme_ == 'S') // backward block SOR solve
 		blockSORSolve(rhs);
 	else if (solvingScheme_ == 'E') // elimination based solve
