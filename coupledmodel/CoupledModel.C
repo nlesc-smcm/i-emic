@@ -42,11 +42,11 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	write(*C_, "coupled_C.txt");
 
 	// Get parameters and flags from file, see xml for documentation
-	solvingScheme_ = params->get("Solving scheme", 'E');
-	kNeumann_      = params->get("Order of Neumann approximation", 1);
-	iterGS_        = params->get("GS iterations", 2);
+	solvingScheme_ = params->get("Solving scheme", 'G');
+	iterGS_        = params->get("GS iterations", 4);
 	iterSOR_       = params->get("SOR iterations", 2);
 	relaxSOR_      = params->get("SOR relaxation", 1.0);
+	kNeumann_      = params->get("Order of Neumann approximation", 1);
 	useHash_       = params->get("Use hashing", true);
 
 	// Output parameters
@@ -156,6 +156,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 //------------------------------------------------------------------
 void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 {
+	// ***************************************************************
  	// Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
 	//           M = [A, 0; 0, D], E = [0, 0; -C, 0], F = [0, -B; 0, 0]
 	//
@@ -165,8 +166,10 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 	// This leads to iteratively solving   D*x2 = -C*x1 + b2
 	//                                     A*x1 = -B*x2 + b1
 	// 
-	// After the iteration we do a final solve with  D*x2 = -C*x1 + b2                       
-
+	// After the iteration we do a final solve with  D*x2 = -C*x1 + b2
+	//  (because it's cheap)
+	// ***************************************************************
+   
     // Initialize solution [x1;x2] = 0
  	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
 	x->zero();

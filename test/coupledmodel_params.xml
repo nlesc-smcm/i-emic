@@ -24,7 +24,7 @@
 
   <!-- Set the number of iterations in the block GS scheme                             -->
   <!-- Works only when you choose G for "Solving scheme"                               -->
-  <Parameter name="GS iterations" type="int" value="2" />
+  <Parameter name="GS iterations" type="int" value="4" />
   
   <!-- Set the number of iterations in the SOR scheme                                  -->
   <!-- Works only when you choose S for "Solving scheme"                               -->

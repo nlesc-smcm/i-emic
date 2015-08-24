@@ -241,8 +241,9 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	TIMER_START("Ocean: solve...");
 	Belos::ReturnType ret = belosSolver_->solve();	// Solve
 	belosIters_ = belosSolver_->getNumIters();		
-	INFO("Ocean: finished solve... " << belosIters_ << " iterations");
 	TIMER_STOP("Ocean: solve...");
+	INFO("Ocean: finished solve... " << belosIters_ << " iterations");
+	TRACK_ITERATIONS("Ocean: Belos iterations...", belosIters_)
 
 	if (belosIters_ > recomputeBound_)
 	{
