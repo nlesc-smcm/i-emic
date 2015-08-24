@@ -139,6 +139,10 @@ public:
 	//! Test 
 	void setAtmosphereTest();
 
+	//! Return a shared pointer to the ocean's landmask for use in the
+	//! atmosphere
+	std::shared_ptr<std::vector<int> > getLandMask();
+
 	//! ------------------------------------------------------------------
 	
 	//! Returns initial guess (Global/Solve form)

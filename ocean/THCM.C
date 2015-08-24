@@ -4,8 +4,12 @@
  * as long as this header remains intact.                             *
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
+
+// for I-EMIC couplings
+#include <math.h>
 #include <iostream>
-#include <memory.h>
+#include <memory>
+#include <vector>
 
 #include "Teuchos_StandardCatchMacros.hpp"
 
@@ -29,12 +33,11 @@
 
 // from trilinos_thcm
 #include "THCM.H"
+
 #ifdef DEBUGGING
 #include "OceanGrid.H"
 #endif
 
-// for I-EMIC couplings
-#include <math.h>
 
 //=============================================================================
 extern "C" {
@@ -894,7 +897,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 	return true;
 }
 
-//=============================================================================
+
 // just reconstruct the diagonal matrix B from THCM
 void THCM::evaluateB(void)
 {
@@ -927,6 +930,17 @@ void THCM::evaluateB(void)
 	domain->Standard2Solve(*localDiagB,*diagB);
 }	
 	
+//=============================================================================
+// I-EMIC stuff
+//=============================================================================
+std::shared_ptr<std::vector<int> > THCM::getLandMask()
+{
+	std::shared_ptr<std::vector<int> > landm =
+		std::make_shared<std::vector<int> >( (n+2)*(m+2)*(l+la+2), 0);
+	F90NAME(m_global,get_landm)(&(*landm)[0]);
+	return landm;
+}
+		
 //=============================================================================
 void THCM::setAtmosphere(std::vector<double> const &atmosvec)
 {

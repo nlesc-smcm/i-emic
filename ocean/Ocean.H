@@ -42,8 +42,10 @@
 
 // forward declarations
 class THCM;
+
 namespace TRIOS
 { class Domain; }
+
 class Epetra_Comm;
 class Epetra_Vector;
 class Epetra_MultiVector;
@@ -180,6 +182,9 @@ public:
 	
 	// Get the rows in the matrix associated with surface temperature
 	std::shared_ptr<std::vector<int> > getSSTRows();
+
+	// Get the ocean's landmask;
+	std::shared_ptr<std::vector<int> > getLandMask();
 	
 private:
 	// Write the state of the ocean to traditional FORTRAN out files fort.*

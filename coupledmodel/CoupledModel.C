@@ -37,10 +37,6 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	B_     = ocean_->getAtmosBlock();
 	rowsB_ = ocean_->getSSTRows();
 
-	// Do some outputting to clutter the working directory
-	write(*B_, "coupled_B.txt");
-	write(*rowsB_, "coupled_rowsB.txt");
-
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
 	C_     = atmos_->getOceanBlock();
 	write(*C_, "coupled_C.txt");

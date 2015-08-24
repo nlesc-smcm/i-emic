@@ -14,4 +14,9 @@
   <Parameter name="horizontal velocity of the ocean"    type="double" value="0.1e00"   />
   <Parameter name="radius of the earth"                 type="double" value="6.37e06"  />
 
+  <!-- Choose to use the ocean's landmask if available     -->
+  <Parameter name="Use ocean landmask" type="bool" value="1"/>
+
+  <!--  -->
+
 </ParameterList>

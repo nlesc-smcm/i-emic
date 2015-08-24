@@ -442,6 +442,12 @@ std::shared_ptr<std::vector<double> > Ocean::getSST()
 	return sst_;
 }
 
+//====================================================================
+std::shared_ptr<std::vector<int> > getLandMask()
+{
+	return THCM::Instance().getLandMask();
+}
+
 //=====================================================================
 // NOT IMPLEMENTED YET
 void Ocean::saveStateToFile(std::string const &name)
