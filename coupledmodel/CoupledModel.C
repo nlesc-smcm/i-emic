@@ -48,6 +48,7 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	// Get parameters and flags from file, see xml for documentation
 	solvingScheme_ = params->get("Solving scheme", 'E');
 	kNeumann_      = params->get("Order of Neumann approximation", 1);
+	iterGS_        = params->get("GS iterations", 2);
 	iterSOR_       = params->get("SOR iterations", 2);
 	relaxSOR_      = params->get("SOR relaxation", 1.0);
 	useHash_       = params->get("Use hashing", true);
@@ -159,13 +160,37 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 }
 
 //------------------------------------------------------------------
-// void CoupledModel::symBlockGSSolve(std::shared_ptr<SuperVector> rhs)
-// {
-// 	// Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
-// 	// Initialize solution
-// 	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
+void CoupledModel::symBlockGSSolve(std::shared_ptr<SuperVector> rhs)
+{
+ 	// Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
+	//           M = [A, 0; 0, D], E = [0, 0; -C, 0], F = [0, -B; 0, 0]
+	//
+	// Symmetric block GS: (M-F)*x^{k+1/2} = E*x^{k} + b
+	//                     (M-E)*x^{k+1)   = F*x^{k+1/2) + b
+	//
+	// This leads to iteratively solving   D*x2 = -C*x1 + b2
+	//                                     A*x1 = -B*x2 + b1
+	//                         
+
+    // Initialize solution [x1;x2] = 0
+ 	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
+	x->zero();
+
+	// Start iteration
+	for (int i = 0; i < iterGS_; ++i)
+	{
+		// Create -C*x1 + b2
+		x->linearTransformation(*C_, *rowsB_, 'O', 'A');
+		x->update(1, *rhs, -1);
+
+		// Solve D*x2 = -C*x1 + b2
+		atmos_->solve(x);
+
+		// Retrieve solution --> View?
+		x = getSolution('C','C');
+	}
 	
-// }
+}
 
 //------------------------------------------------------------------
 void CoupledModel::blockSORSolve(std::shared_ptr<SuperVector> rhs)

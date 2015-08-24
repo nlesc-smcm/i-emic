@@ -58,6 +58,8 @@ private:
 	std::size_t rhsHash_;  // hash to base computeRHS() decision on	
 	std::size_t jacHash_;  // hash to base computeJacobian() decision on
 
+	int iterGS_; // Iterations in GS scheme
+	
 	double relaxSOR_;  // Relaxation in SOR scheme
 	int iterSOR_;      // Iterations in SOR scheme
 	
@@ -101,7 +103,10 @@ public:
 	void postConvergence();
 
 private:
-	// Try to solve the coupled system in a backward block SOR iteration.
+	// Solve the system with a few symmetric block GS iterations
+	void symBlockGSSolve(std::shared_ptr<SuperVector> rhs);
+	
+	// Solve the coupled system in a few backward block SOR iterations.
 	void blockSORSolve(std::shared_ptr<SuperVector> rhs);
 	
 	// Solve the system using an elimination based approach.

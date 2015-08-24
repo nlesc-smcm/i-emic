@@ -1,0 +1,16 @@
+symmetric block GS...
+
+|A  B| |x1|   |0   0||x1|   |b1|
+|    | |  | = |     ||  | + |  |
+|0  D| |x2|   |-C  0||x2|   |b2|
+
+|A  0| |x1|   |0  -B||x1|   |b1|
+|    | |  | = |     ||  | + |  |
+|C  D| |x2|   |0   0||x2|   |b2|
+
+D*x2 = -C*x1 + b2
+A*x1 = -B*x2 + b1
+correction... auxiliary relations?
+A*x1 = -B*x2 + b1
+D*x2 = -C*x1 + b2
+correction... ?
