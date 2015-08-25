@@ -24,6 +24,7 @@ subroutine boundaries
   !    |  below   || center||  above   |  
   !    +----------++-------++----------+  
 
+  ! Iterate over the flow domain
   do i = 1, n
      do j = 1, m
         do k = 1, l+la
@@ -166,7 +167,7 @@ subroutine boundaries
                  Al(i,j,k, :,WW,: ) = 0.0
                  Al(i,j,k, 5,WW,WW) = 1.0
               endif
-              if (top == ATMOS) then
+              if (top == ATMOS) then !--> Wat gebeurt hier???
                  Al(i,j,k, 1,: ,UU) = Al(i,j,k,1,: ,UU) + Al(i,j,k,19,: ,UU) ! ACdN
                  Al(i,j,k, 1,: ,VV) = Al(i,j,k,1,: ,VV) + Al(i,j,k,19,: ,VV) ! ACdN
                  Al(i,j,k,19,: ,UU) = 0.0
@@ -413,10 +414,16 @@ subroutine boundaries
                  Frc(find_row2(i,j,k,ii)) = 0.0
                  Al(i,j,k,5,ii,ii) = 1.0
               enddo
-              if ( ( k == l ) .AND. (top == ATMOS)) then 
+              if ( ( k == l ) .AND. (top == ATMOS)) then
+                 ! direct computation of land temperature             
                  Al(i,j,l,5,TT,TT) = 1.0
                  Al(i,j,l,23,TT,TT) = - 1.0
-                 Frc(find_row2(i,j,k,TT)) = par(COMB)*par(SUNP) * suno(j)/Ooa
+                 Frc(find_row2(i,j,k,TT)) = par(COMB)*par(SUNP) * suno(j)/Ooa                 
+              endif
+              if ( ( k == l ) .AND. (coupled_atm .EQ. 1) ) then
+                 ! let the atmosphere be available via the forcing    ! TEM
+                 Al(i,j,l,5,TT,TT) = 1.0
+                 Frc(find_row2(i,j,k,TT)) = par(COMB)*par(SUNP) * suno(j)/Ooa + tatm(i,j)
               endif
            endif
         enddo

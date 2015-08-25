@@ -41,8 +41,7 @@ PSIB = bstream(u*udim,zw*hdim,[y;ymax]*r0dim);
 
 % Overturning streamfunction
 PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
-PSIG = [zeros(m+1,1) PSIG zeros(m+1,1)];
-
+PSIG = [zeros(m+1,1) PSIG];
 %% - CHECK SALINITY - ------------------------------------------------
 
 check      = checksal(S,x,y,dfzt);
@@ -60,7 +59,7 @@ ylabel('Latitude')
 exportfig('bstream.eps')
 
 figure(2)
-contourf(PSIG',15);
+contourf(RtD*[y;ymax],zw*hdim',PSIG',15);
 colorbar
 title('Overturning Streamfunction')
 xlabel('Latitude')
@@ -86,7 +85,7 @@ exportfig('isopycnals.eps')
 
 figure(5)
 Sp = S(:,:,l); 
-contourf(RtD*xu(1:end-1),RtD*y,S0+Sp',15);
+contourf(RtD*(y),RtD*xu(1:end-1),S0+Sp');
 colorbar
 title('Surface Salinity');
 xlabel('Longitude')
