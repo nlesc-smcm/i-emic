@@ -424,6 +424,7 @@ subroutine boundaries
                  ! let the atmosphere be available via the forcing    ! TEM
                  Al(i,j,l,5,TT,TT) = 1.0
                  Frc(find_row2(i,j,k,TT)) = par(COMB)*par(SUNP) * suno(j)/Ooa + tatm(i,j)
+                 write(*,*) "computed land temperature: ", Frc(find_row2(i,j,k,TT)), "at", i, j
               endif
            endif
         enddo
