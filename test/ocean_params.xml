@@ -2,7 +2,7 @@
 <ParameterList name="Ocean">
   <!-- Maximum allowed number of iterations in linear solve before a new         -->
   <!-- preconditioner is requested -->
-  <Parameter name="recomputeBound" type="int" value = "20"/>
+  <Parameter name="recomputeBound" type="int" value = "50"/>
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->
@@ -45,8 +45,8 @@
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
     <Parameter name="Land Mask" type="string" value="mask_natl16"/>
 
-	<!-- =============================================================== -->
-	<!-- Flag enabling the coupling with an atmosphere within I-EMIC     -->
+	<!-- ==================== Coupling ================================= -->
+	<!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
 	<Parameter name="Coupled Atmosphere" type="int" value="1"/>
 	<!-- =============================================================== -->
@@ -68,9 +68,14 @@
     <!-- Freshwater Forcing (ifw in THCM) -->
     <!-- 0: data, 1: idealized            -->
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
-    <!-- Levitus Temperature (ite in THCM) -->
-    <!-- 0: data, 1: idealized, 2: coupled -->
+
+	<!-- ================== Coupling ================================== -->
+	<!-- Temperatur forcing                                             -->
+	<!-- Levitus Temperature (ite in THCM)                              -->
+    <!-- 0: data, 1: idealized, 2: coupled                              -->
     <Parameter name="Levitus T" type="int" value="2"/>
+	<!-- ============================================================== -->
+	
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
     <Parameter name="Levitus S" type="int" value="1"/>

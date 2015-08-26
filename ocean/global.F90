@@ -366,7 +366,7 @@ contains
        _INFO_(" For now we put tatm = 0")
        tatm(1:n,1:m) = 0.0
     else if (ite.eq.2) then ! accepting external atmosphere within I-EMIC
-       _INFO_("Accepting external atmosphere")
+       _INFO_("Accepting external atmosphere, we are now part of the I-EMIC")
        _INFO_(" For now we put tatm = 0")
        tatm(1:n,1:m) = 0.0
     else

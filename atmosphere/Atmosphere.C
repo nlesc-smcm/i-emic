@@ -199,12 +199,10 @@ void Atmosphere::computeJacobian()
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<
-	std::map<
-		std::string, std::vector<double> > > Atmosphere::getJacobian()
+std::shared_ptr<Atmosphere::CRSMat> Atmosphere::getJacobian()
 {
-	std::shared_ptr<std::map<std::string, std::vector<double> > > jacMap;
-	jacMap = std::make_shared<std::map<std::string, std::vector<double> > >();
+	std::shared_ptr<CRSMat> jacMap;
+	jacMap = std::make_shared<CRSMat>();
 	(*jacMap)["ico"] = ico_;	
 	(*jacMap)["jco"] = jco_;
 	(*jacMap)["beg"] = beg_;
@@ -492,15 +490,15 @@ void Atmosphere::buildDenseA()
 
 
 //-----------------------------------------------------------------------------
+//! size of stencil/neighbourhood:
+//! +----------++-------++----------+
+//! | 12 15 18 || 3 6 9 || 21 24 27 |
+//! | 11 14 17 || 2 5 8 || 20 23 26 |
+//! | 10 13 16 || 1 4 7 || 19 22 25 |
+//! |  below   || center||  above   |
+//! +----------++-------++----------+
 void Atmosphere::boundaries()
 {
-	//! size of stencil/neighbourhood:
-	//! +----------++-------++----------+
-	//! | 12 15 18 || 3 6 9 || 21 24 27 |
-	//! | 11 14 17 || 2 5 8 || 20 23 26 |
-	//! | 10 13 16 || 1 4 7 || 19 22 25 |
-	//! |  below   || center||  above   |
-	//! +----------++-------++----------+
 	
 	int west, east, north, south, bottom, top;
 	for (int i = 1; i <= n_; ++i)

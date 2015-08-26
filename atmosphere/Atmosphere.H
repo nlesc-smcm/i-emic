@@ -39,7 +39,8 @@ using std::vector;
 class Atmosphere
 {
 public:
-	using VectorPtr = std::shared_ptr<SuperVector>;
+	using VectorPtr     = std::shared_ptr<SuperVector>;
+	using CRSMat        = std::map<std::string, vector<double> > ; 
 	using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
 private:
 	int n_;   //! #grid-points in east-west (x) direction
@@ -172,9 +173,7 @@ public:
 	void computeJacobian();
 
 	// Return the Jacobian matrix in CRS format
-	std::shared_ptr<
-		std::map<
-			std::string, vector<double> > > getJacobian();
+	std::shared_ptr<CRSMat> getJacobian();
 
 	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
 	std::shared_ptr<SuperVector> getState(char mode = 'C');
