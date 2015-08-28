@@ -42,7 +42,7 @@ F77_FLAGS  = $(F77_DEBUG) ${SHARED_FLAGS} $(F77_EXTRA)
 ##------------------------------------------------------------------
 ##   Gather all the libraries:
 LIBS_FORT  = -lgfortran
-LIBS_EXTRA =
+LIBS_EXTRA = -lhdf5
 LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
 
 ##------------------------------------------------------------------

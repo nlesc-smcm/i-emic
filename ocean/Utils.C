@@ -236,7 +236,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0
 	return result;
 }
 //========================================================================================
-Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0, int k1,        
+Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0, int k1, 
 										  int I0, int I1, int J0, int J1, int K0, int K1,
 										  const Epetra_Comm& comm)
 {

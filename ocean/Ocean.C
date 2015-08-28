@@ -6,10 +6,7 @@
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_Time.h>
 
-#include <EpetraExt_BlockMapIn.h>
-#include <EpetraExt_BlockMapOut.h>
-#include <EpetraExt_VectorIn.h>
-#include <EpetraExt_VectorOut.h>
+#include <EpetraExt_HDF5.h>
 
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
@@ -45,62 +42,64 @@ extern "C" _SUBROUTINE_(getooa)(double*);
 Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	:
 	comm_(Comm),                     // Setting the communication object
-	solverInitialized_(false)        // Solver needs initialization
-{
-	recomputePreconditioner_ =
-		oceanParamList->get("recomputePreconditioner", true);
-	recomputeBound_          =
-		oceanParamList->get("recomputeBound", 50);
-	useScaling_              =
-		oceanParamList->get("useScaling", false);
-	
+	solverInitialized_(false),       // Solver needs initialization
+	recomputePreconditioner_(true),  // We need a preconditioner to start with
+	outputFile_(oceanParamList->get("Output file", "ocean.h5")),
+	inputFile_(oceanParamList->get("Input file", "ocean.h5")),
+	useExistingState_(oceanParamList->get("Use existing state", false)),
+	recomputeBound_(oceanParamList->get("Preconditioner recompute bound", 50)),
+	useScaling_(oceanParamList->get("Use scaling", false)),
+	parIdent_(19), // Initialize continuation parameters
+	parStart_(0),
+	parEnd_(1),
+	parValue_(0)
+{	
 	Teuchos::ParameterList &thcmList =
 		oceanParamList->sublist("THCM");
-	
-	// Create THCM object
-    thcm_ = rcp(new THCM(thcmList, comm_));
 
-	// Obtain solution vector from THCM
+	// Create THCM object
 	//  THCM is implemented as a Singleton, which allows only a single
 	//  instance at a time. The Ocean class can access THCM with a call
 	//  to THCM::Instance()
-	state_ = THCM::Instance().getSolution();
-	INFO("Ocean: Solution obtained from THCM");
+	thcm_ = rcp(new THCM(thcmList, comm_));
 
-	// Initialize solution
-	state_->PutScalar(0.0);
-	INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
+	// If specified we load a pre-existing state and parameter (x,l)
+	if (useExistingState_)
+		loadStateFromFile(inputFile_);
+	else
+	{	
+		// Obtain solution vector from THCM
+		state_ = THCM::Instance().getSolution();
+		INFO("Ocean: Solution obtained from THCM");
+
+		// Initialize solution
+		state_->PutScalar(0.0);
+		INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
+	}
 	
 	// Obtain Jacobian from THCM
-	// --> Not sure if this is necessary here
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	jac_ = THCM::Instance().getJacobian();
 	INFO("Ocean: Obtained jacobian from THCM");
-
+	
 	// Initialize a few datamembers
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
-
+	
 	// Get domain object and set the problem dimensions
 	domain_ = THCM::Instance().GetDomain();
 	N_ = domain_->GlobalN();
  	M_ = domain_->GlobalM();
 	L_ = domain_->GlobalL();
 	
-	// Initialize sst
-	sst_ = std::make_shared<std::vector<double> >(N_*M_, 0.0);
+	// Initialize surface temperature
+	surfaceT_ = std::make_shared<std::vector<double> >(N_*M_, 0.0);
 
 	// Create fullSol_ array
 	fullSol_ = new double[state_->GlobalLength()];
 
-	// Set THCM continuation parameter and its bounds
-	parIdent_ = 19;
-	parValue_ = 0.0;
-	parStart_ = 0.0;
-	parEnd_   = 1.0;
-
-	// Put the initial value into the model.
-	setPar(parStart_);	
+	// Put the correct parameter value in THCM
+	setPar(parValue_);
 }
 
 //=====================================================================
@@ -119,25 +118,11 @@ void Ocean::randomizeState(double scaling)
 	INFO("Ocean: Initialized solution vector");
 }
 
-//=====================================================================
-void Ocean::dumpState()
+//====================================================================
+void Ocean::postConvergence()
 {
-	// This function may break on a distributed memory system.
-	Teuchos::RCP<Epetra_MultiVector> solution = Utils::Gather(*state_, 0);
-	int filename = 3;
-	int label    = 2;
-	int length   = solution->GlobalLength();
-	double *solutionArray = new double[length]; 
-	if (comm_->MyPID() == 0)
-	{
-		std::cout << "Writing to fort." << filename
-				  << " at label " << label << "." << std::endl;
-
-		// Using operator() to access first EpetraVector in multivector
-		(*solution)(0)->ExtractCopy(solutionArray); //  
-		FNAME(write_data)(solutionArray, &filename, &label);
-	}
-	delete [] solutionArray;
+	saveStateToFile(outputFile_);
+	writeFortFiles();
 }
 
 //=====================================================================
@@ -183,7 +168,6 @@ void Ocean::initializeSolver()
 	belosParamList_->set("Maximum Iterations", 1000);
 	belosParamList_->set("Convergence Tolerance", 5.0e-3); 
 	belosParamList_->set("Explicit Residual Test", false); 
-	//belosParamList_->set("Verbosity", Belos::FinalSummary);
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
 	// --> xml
 	
@@ -207,12 +191,11 @@ void Ocean::solve(RCP<SuperVector> rhs)
 		initializeSolver();
 	
 	// Set the initial solution in the solver to zeros.
-	// --> this should be improved/changed but having zero as
+	// --> this could be improved/changed but having zero as
 	//     initial solution seems to be slightly faster
 	sol_->PutScalar(0.0);
 
 	// If required we scale the problem here
-	// --> not sure if this is the correct approach
 	if (useScaling_)
 		scaleProblem();
 
@@ -240,29 +223,32 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
 	TIMER_START("Ocean: solve...");
 	Belos::ReturnType ret = belosSolver_->solve();	// Solve
-	belosIters_ = belosSolver_->getNumIters();		
 	TIMER_STOP("Ocean: solve...");
-	INFO("Ocean: finished solve... " << belosIters_ << " iterations");
-	TRACK_ITERATIONS("Ocean: Belos iterations...", belosIters_)
 
+	// Do some post-processing
+	belosIters_ = belosSolver_->getNumIters();		
+	INFO("Ocean: finished solve... " << belosIters_ << " iterations");
+	TRACK_ITERATIONS("Ocean: Belos iterations...", belosIters_);
+
+	// If the number of linear solver iterations exceeds a preset bound
+	// we recompute the preconditioner
 	if (belosIters_ > recomputeBound_)
 	{
 		INFO("Ocean: Number of iterations exceeds " << recomputeBound_);
 		INFO("Ocean:   Enabling computation of preconditioner.");
 		recomputePreconditioner_ = true;
 	}
-	
+
+	// If specified, unscale the problem
 	if (useScaling_)
 		unscaleProblem();
-	
-	double nrm;
-	sol_->Norm2(&nrm);
-	DEBUG(" Ocean::solve()   norm solution: " << nrm);
 }
 
 //=====================================================================
 void Ocean::scaleProblem()
 {
+	// Not sure if this is the right approach or implemented correctly.
+	// Scaling is obtained from THCM and then applied to the problem.
 	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
 	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
 
@@ -408,7 +394,7 @@ Teuchos::RCP<Epetra_CrsMatrix> Ocean::getJacobian()
 }
 
 //====================================================================
-std::shared_ptr<std::vector<int> > Ocean::getSSTRows()
+std::shared_ptr<std::vector<int> > Ocean::getSurfaceTRows()
 {
 	std::shared_ptr<std::vector<int> > rows =
 		std::make_shared<std::vector<int> >();
@@ -420,10 +406,12 @@ std::shared_ptr<std::vector<int> > Ocean::getSSTRows()
 }
 
 //====================================================================
-// Fill and return a copy of the SST
-std::shared_ptr<std::vector<double> > Ocean::getSST()
+// Fill and return a copy of surfaceT_
+std::shared_ptr<std::vector<double> > Ocean::getSurfaceT()
 {
-	// extract solution from gathered vector --> this is slow
+	TIMER_START("Ocean::getSurfaceT()...");
+	
+    // extract solution from gathered vector --> this is slow
 	// everything should be better distributed
 	Teuchos::RCP<Epetra_MultiVector> gathered =
 		Utils::AllGather(*state_);
@@ -431,16 +419,19 @@ std::shared_ptr<std::vector<double> > Ocean::getSST()
 	int row;
 	int idx = 0;
 	
-	// sst_ should be initialized
+	// surfaceT_ should be initialized
  	for (int j = 0; j != M_; ++j)
 		for (int i = 0; i != N_; ++i)
 		{
 			// Using macros from THCMdefs.H
 			row = FIND_ROW2(_NUN_, N_, M_, L_, i, j, L_-1, TT);
-			(*sst_)[idx] = fullSol_[row];
+			(*surfaceT_)[idx] = fullSol_[row];
 			++idx;
 		}
-	return sst_;
+
+	TIMER_STOP("Ocean::getSurfaceT()...");
+	
+	return surfaceT_;
 }
 
 //====================================================================
@@ -450,27 +441,73 @@ std::shared_ptr<std::vector<int> > Ocean::getLandMask()
 }
 
 //=====================================================================
-// NOT IMPLEMENTED YET
-void Ocean::saveStateToFile(std::string const &name)
-{
-	std::string vectorFile    = name + "vec";
-	std::string mapFile       = name + "map";
-	std::string parameterFile = name + "pars";
+void Ocean::writeFortFiles()
+{	
+	TIMER_START("Ocean::writeFortFiles()...");
+	// This function may break on a distributed memory system.
+	Teuchos::RCP<Epetra_MultiVector> solution = Utils::Gather(*state_, 0);
+	int filename = 3;
+	int label    = 2;
+	int length   = solution->GlobalLength();
+	double *solutionArray = new double[length]; 
+	if (comm_->MyPID() == 0)
+	{
+		std::cout << "Writing to fort." << filename
+				  << " at label " << label << "." << std::endl;
 
-	INFO("Writing to " << vectorFile);
-	INFO("           " << mapFile);
-	INFO("           " << parameterFile);
-	
-	EpetraExt::VectorToMatrixMarketFile
-		(vectorFile.c_str(), *state_);
-	EpetraExt::BlockMapToMatrixMarketFile
-		(mapFile.c_str(), state_->Map());
+		// Using operator() to access first EpetraVector in multivector
+		(*solution)(0)->ExtractCopy(solutionArray); //  
+		FNAME(write_data)(solutionArray, &filename, &label);
+	}
+	delete [] solutionArray;
+	TIMER_STOP("Ocean::writeFortFiles()...");
 }
 
 //=====================================================================
-// NOT IMPLEMENTED YET
-void Ocean::loadStateFromFile(std::string const &name)
-{}
+void Ocean::saveStateToFile(std::string const &filename)
+{
+	TIMER_START("Ocean::saveStateToFile...");
+	
+	INFO("Writing to " << filename);
+
+ 	// Write state, map and continuation parameter
+	EpetraExt::HDF5 HDF5(*comm_);
+	HDF5.Create(filename);
+	HDF5.Write("state", *state_);
+	HDF5.Write("map-" +  std::to_string(comm_->NumProc()),
+			   *(domain_->GetSolveMap()));
+	HDF5.Write("continuation parameter", "value", parValue_);
+	
+	TIMER_STOP("Ocean::saveStateToFile...");
+}
+
+//=====================================================================
+void Ocean::loadStateFromFile(std::string const &filename)
+{
+	TIMER_START("Ocean::loadStateFromFile...");
+
+	INFO("Loading from " << filename);
+
+	// Create HDF5 object
+	EpetraExt::HDF5 HDF5(*comm_);
+	Epetra_Map *map = NULL;
+	Epetra_MultiVector *state;
+
+	// Read map and state
+	HDF5.Open(filename);
+	
+	HDF5.Read("map-" + std::to_string(comm_->NumProc()), map);
+	HDF5.Read("state", *map, state);
+
+	// Obtain Epetra_Vector from multivector and construct state_
+	state_ = Teuchos::rcp(new Epetra_Vector( *((*state)(0)) ) );
+
+	// Read continuation parameter and put it in THCM
+	HDF5.Read("continuation parameter", "value", parValue_);
+	setPar(parValue_);
+	
+	TIMER_STOP("Ocean::loadStateFromFile...");
+}
 
 //====================================================================
 double Ocean::getPar()

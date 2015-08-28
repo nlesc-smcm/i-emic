@@ -58,7 +58,7 @@ extern std::stack<Timer> timerStack;
 #endif
 
 #ifndef WARNING
-#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << "\n"	\
+#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << " "	\
 	<< y << " " << z << std::endl;
 #endif
 

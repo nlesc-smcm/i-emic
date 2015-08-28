@@ -11,9 +11,9 @@ COMP_IDENT   = GNU
 ##   Trilinos version:
 TRIVERSION   = 11.12
 ##   Trilinos directory containing lib and include dirs:
-TRIDIR       = /home/p267904/trilinos/${TRIVERSION}
+TRIDIR       = /var/tmp/trilinos/${TRIVERSION}
 ##   Project base directory
-PROJECT_BASE = /home/p267904/Projects/EMIC
+PROJECT_BASE = /var/tmp/i-emic/
 ##   Make flags
 MFLAGS       = -j 4
 ##   Local

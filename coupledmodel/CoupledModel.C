@@ -35,7 +35,7 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 
 	// Get the contribution of the atmosphere to the ocean in the Jacobian
 	B_     = ocean_->getAtmosBlock();
-	rowsB_ = ocean_->getSSTRows();
+	rowsB_ = ocean_->getSurfaceTRows();
 
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
 	C_     = atmos_->getOceanBlock();
@@ -55,13 +55,13 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	// Get the landmask used in the ocean
 	std::shared_ptr<std::vector<int> > landm = ocean_->getLandMask();
 
-	// Get rid of every layer except for the surface one
+	// Get rid of every layer in the landmask except for the surface 
 	int n = ocean_->getNdim();
 	int m = ocean_->getMdim();
 	int l = ocean_->getLdim();
 	landm->erase(landm->begin(), landm->begin() + l*(m+2)*(n+2));
 	landm->erase(landm->begin() + (m+2)*(n+2), landm->end());
-
+	
 	// Put the surface landmask in the atmosphere
 	atmos_->setLandMask(landm);
 }
@@ -86,15 +86,15 @@ void CoupledModel::synchronize()
 	// Copy the atmosphere from the current combined (SuperVector) state
 	std::vector<double> atmos(*(stateView_->getAtmosVector()));
 
-	// Copy the SST from the ocean model
-	std::vector<double> sst(*(ocean_->getSST()));
+	// Copy the surface temperature from the ocean model
+	std::vector<double> sst(*(ocean_->getSurfaceT()));
 	
 	// Set the atmosphere in the ocean
 	ocean_->setAtmosphere(atmos);
 
 	// Set the SST in the atmosphere
 	atmos_->setOceanTemperature(sst);
-
+	
 	TIMER_STOP("CoupledModel: synchronize...");
 }
 
@@ -115,11 +115,8 @@ void CoupledModel::computeJacobian()
 	// Synchronize the states
 	if (solvingScheme_ != 'D') { synchronize(); }
 	
-	// Ocean
-	ocean_->computeJacobian();
-
-	// Atmosphere
-	atmos_->computeJacobian();
+	ocean_->computeJacobian();	// Ocean
+	atmos_->computeJacobian();	// Atmosphere
 }
 
 //------------------------------------------------------------------
@@ -135,15 +132,12 @@ void CoupledModel::computeRHS()
 		else
 			rhsHash_ = hash;
 	}
-
+	
 	// Synchronize the states
 	if (solvingScheme_ != 'D') { synchronize(); }
 	
-	// Ocean
-	ocean_->computeRHS();
-
-	// Atmosphere
-	atmos_->computeRHS();
+	ocean_->computeRHS();	// Ocean
+	atmos_->computeRHS(); 	// Atmosphere
 }
 
 //------------------------------------------------------------------
@@ -495,11 +489,13 @@ double CoupledModel::getPar()
 	double par_atmos = atmos_->getPar();
 	if (std::abs(par_ocean - par_atmos) > 1e-8)
 	{
-		WARNING("par_ocean != par_atmos !!",
-				__FILE__, __LINE__);
- 		std::cout << "ocean: " << par_ocean << std::endl;
-		std::cout << "atmos: " << par_atmos << std::endl;
-		return -1;
+		WARNING("par_ocean != par_atmos" << " ocean: " << par_ocean
+				<< "atmos: " << par_atmos
+				<< " putting maximum in both models", __FILE__, __LINE__);
+		double max = std::max(par_ocean, par_atmos);
+		ocean_->setPar(max);
+		atmos_->setPar(max);
+		return max;
 	}
 	return par_ocean;
 }

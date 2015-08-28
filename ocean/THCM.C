@@ -321,11 +321,12 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 // salt: internal salinity forcing, double 3D
 
 	DEBUG("Create gathered land map");
-	Teuchos::RCP<Epetra_Map> landmap_glb = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
-															I0,I1,J0,J1,K0,K1,*comm);
+	Teuchos::RCP<Epetra_Map> landmap_glb =
+		Utils::CreateMap(i0,i1,j0,j1,k0,k1,I0,I1,J0,J1,K0,K1,*comm);
 
 	// sequential landm array on proc 0
-	Teuchos::RCP<Epetra_IntVector> landm_glb = Teuchos::rcp(new Epetra_IntVector(*landmap_glb));
+	Teuchos::RCP<Epetra_IntVector> landm_glb =
+		Teuchos::rcp(new Epetra_IntVector(*landmap_glb));
 
 	int *landm;
 	if (comm->MyPID()==0)
@@ -882,7 +883,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 			DEBUG(" THCM:  RecomputeScaling()");
 			this->RecomputeScaling();
 
-#if 1
+#if 0
 			std::ofstream ofs1("row_scaling.txt");
 			ofs1 << *row_scaling;
 			ofs1.close();
@@ -935,9 +936,24 @@ void THCM::evaluateB(void)
 //=============================================================================
 std::shared_ptr<std::vector<int> > THCM::getLandMask()
 {
+
+	// length of landmask array
+	int dim = (n+2)*(m+2)*(l+la+2);
+
+	// Create landmask array
 	std::shared_ptr<std::vector<int> > landm =
-		std::make_shared<std::vector<int> >( (n+2)*(m+2)*(l+la+2), 0);
-	F90NAME(m_global,get_landm)(&(*landm)[0]);
+		std::make_shared<std::vector<int> >(dim, 0);
+	
+	// Let THCM fill the landmask array on proc = 0
+	if (Comm->MyPID() == 0)
+		F90NAME(m_global,get_landm)(&(*landm)[0]);
+	
+#ifdef HAVE_MPI
+	// Get the MpiComm from Epetra
+	Epetra_MpiComm const MpiComm =
+		dynamic_cast<Epetra_MpiComm const &>(*Comm); 
+	MPI_Bcast(&(*landm)[0], dim, MPI_INTEGER, 0, MpiComm.GetMpiComm());
+#endif 
 	return landm;
 }
 		

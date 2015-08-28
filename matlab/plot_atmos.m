@@ -1,4 +1,6 @@
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
+surfm      = landm(2:n+1,2:m+1,l+1);    %Only interior surface points
+landm_int  = landm(2:n+1,2:m+1,2:l+1);
 
 %otemp  = importdata('atmos_oceanTemp.txt');
 state  = importdata('atmos_state.txt');
@@ -20,7 +22,8 @@ Ta  = reshape(T0 + state,n,m);
 % exportfig('oceanTemp.eps')
 
 figure(6)
-contourf(RtD*x,RtD*y,Ta',15);
+contourf(RtD*x,RtD*y,Ta',15); hold on;
+contour(RtD*x,RtD*y,surfm',1,'k:','linewidth',2); hold off
 colorbar
 title('Atmosphere')
 xlabel('Longitude')

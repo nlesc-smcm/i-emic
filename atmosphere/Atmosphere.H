@@ -42,6 +42,7 @@ public:
 	using VectorPtr     = std::shared_ptr<SuperVector>;
 	using CRSMat        = std::map<std::string, vector<double> > ; 
 	using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
+
 private:
 	int n_;   //! #grid-points in east-west (x) direction
 	int m_;   //! #grid-points in north-south (y) direction

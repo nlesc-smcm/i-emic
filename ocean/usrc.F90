@@ -99,6 +99,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   _INFO_('THCM: init...  done')
 end subroutine init
 
+!****************************************************************************
 ! deallocate all dynamically alloc'd memory
 subroutine finalize
 
@@ -138,6 +139,7 @@ SUBROUTINE mixe
   enddo
   !
 end SUBROUTINE mixe
+
 !*****************************************************************************
 SUBROUTINE setparcs(param,value)
   !     interface for Trilinos to set the thirty continuation variables
@@ -154,6 +156,7 @@ SUBROUTINE setparcs(param,value)
   ENDIF
   !     ENDIF
 END SUBROUTINE setparcs
+
 !*****************************************************************************
 SUBROUTINE getparcs(param,value)
   !     interface for Trilinos to get the thirty continuation variables
@@ -170,6 +173,7 @@ SUBROUTINE getparcs(param,value)
   ENDIF
   !     ENDIF
 end subroutine getparcs
+
 !*****************************************************************************
 SUBROUTINE getooa(value)
   !     interface to get Ooa
@@ -180,6 +184,7 @@ SUBROUTINE getooa(value)
   real(c_double) value
   value = Ooa
 end subroutine getooa
+
 !*****************************************************************************
 SUBROUTINE writeparams()
   ! write the entire parameter list (1-30) to fort.7
@@ -192,6 +197,7 @@ SUBROUTINE writeparams()
   write(7, '(5e15.5)') (PAR(i), i=1, npar)
   write(7, *) '---------------------------'
 end subroutine writeparams
+
 !*****************************************************************************
 SUBROUTINE matrix(un,sig1,sig2)
   use, intrinsic :: iso_c_binding
@@ -338,9 +344,11 @@ SUBROUTINE rhs(un,B)
   ! --------------------------------------------------------------------- ATvS-Mix
 
   _DEBUG2_("p0 = ", p0) !-->Residue Continuation, needs a little explaining.
+  
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
 
-  if(ires == 0) then
+#if 0 
+  if(ires == 0) then !......... why......????
      DO i = 1, n
         DO j = 1, m
            DO k = 1, l
@@ -352,6 +360,8 @@ SUBROUTINE rhs(un,B)
         ENDDO
      ENDDO
   endif
+#endif 
+  
   _DEBUG2_("maxval rhs= ", maxval(abs(B)))
 
 end SUBROUTINE rhs
@@ -910,7 +920,7 @@ SUBROUTINE stpnt!(un)
   par(PE_V)   =  kappav*r0dim/(udim*hdim*hdim)  ! P_V0
   par(P_VC)   =  5.0            ! P_VC
   par(LAMB)   =  alphaS/alphaT  ! lambda
-  par(SALT)   =  0.1            ! gamma
+  par(SALT)   =  0.0            ! gamma
   par(WIND)   =  1.0            ! wind h
   par(TEMP)   =  10.0           ! eta_T
   par(BIOT)   =  r0dim/(75.*3600.*24.*udim) ! nonlinearity in T,S equations

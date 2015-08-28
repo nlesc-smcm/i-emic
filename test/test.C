@@ -12,6 +12,8 @@
 #    include <Epetra_SerialComm.h>
 #  endif // HAVE_MPI
 
+#include <EpetraExt_HDF5.h>
+
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
@@ -76,6 +78,40 @@ int main(int argc, char **argv)
 }
 
 //------------------------------------------------------------------
+void testOcean(RCP<Epetra_Comm> Comm)
+{
+	TIMER_START("Total time...");
+
+	//------------------------------------------------------------------
+	// Check if outFile is specified
+	if (outFile == Teuchos::null)
+		throw std::runtime_error("ERROR: Specify output streams");	
+	
+	//------------------------------------------------------------------
+	// Create parameter object for Ocean
+	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+
+	// Create parallelized Ocean object
+	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
+
+	//------------------------------------------------------------------
+ 	// Create parameter object for continuation
+	RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
+	
+	// Create Continuation
+	Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
+		continuation(ocean, continuationParams);
+
+	// Run continuation
+	continuation.run();
+
+	//------------------------------------------------------------------
+	TIMER_STOP("Total time...");		
+}
+
+//------------------------------------------------------------------
 void testCoupling(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
@@ -83,7 +119,7 @@ void testCoupling(RCP<Epetra_Comm> Comm)
 	//------------------------------------------------------------------
 	// Check if outFile is specified
 	if (outFile == Teuchos::null)
-		throw std::runtime_error("ERROR: Specify output streams");
+		throw std::runtime_error("ERROR: Specify output streams");	
 	
 	//------------------------------------------------------------------
 	// Create parameter object for Ocean
@@ -152,7 +188,7 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 	// Setup output files "fname_#.txt" for P==0 && P==1, other processes
 	// will get a blackholestream.
 	Teuchos::RCP<std::ostream> outFile;
-	if (Comm->MyPID() < 1)
+	if (Comm->MyPID() < 2)
 	{
 		std::ostringstream infofile;     // setting up a filename
 

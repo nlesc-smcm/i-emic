@@ -5,6 +5,7 @@
 
 #include <math.h>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <iomanip>
 #include <algorithm> // std::fill in assemble
@@ -780,6 +781,21 @@ void Atmosphere::setLandMask(std::shared_ptr<std::vector<int> > landm)
 				  << landm->size() << __FILE__ <<  __LINE__ << std::endl;
 
 	landm_ = landm;
+
+	INFO("Printing land surface mask...");
+	int ctr = 0;
+	std::ostringstream string;
+	for (auto &l: *landm)
+	{
+		ctr++;
+		string << l;
+		if (ctr % (n_+2) == 0)
+		{
+			INFO(string.str().c_str());
+			string.str("");
+			string.clear();
+		}
+	}
 }
 
 

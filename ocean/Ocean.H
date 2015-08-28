@@ -63,6 +63,7 @@ protected:
 	Teuchos::RCP<THCM> thcm_;
 	
 	Teuchos::RCP<Epetra_Vector> state_;
+	Teuchos::RCP<Epetra_Map> map_;
 	Teuchos::RCP<Epetra_Vector> rhs_;
 	Teuchos::RCP<Epetra_Vector> massMatrix_;	
 	
@@ -98,11 +99,19 @@ protected:
 	// Array containing a copy of the full solution
 	double *fullSol_;
 	
-	// Sea surface temperature
-	std::shared_ptr<std::vector<double> > sst_;
+	// Surface temperature
+	std::shared_ptr<std::vector<double> > surfaceT_;
 
+ 	// HDF5 input/output files
+	std::string const inputFile_;
+	std::string const outputFile_;
+
+	// Flag for loading pre-existing state
+	bool useExistingState_;
+	
 	//------------------------------------------------------------------
 	// Datamembers in charge of the continuation parameter
+	// --> only parValue should be in here...
 	int    parIdent_;    // parameter identifier (integer)
 	double parValue_;    // value of the parameter
 	double parStart_;    // its starting value
@@ -150,13 +159,10 @@ public:
 	double  getPar();
 	double  getParDestination() { return parEnd_; }
 
-	// Not implemented yet
-	void saveStateToFile(std::string const &name);
-	void loadStateFromFile(std::string const &name);
 
 	// Let the ocean do some administrative
 	//  work after a continuation/time step 
-	void postConvergence() { dumpState(); }
+	void postConvergence();
 	
 	// Get functions for the grid dimensions
 	int getNdim() { return N_;}
@@ -177,23 +183,30 @@ public:
 	// contribution in the Jacobian
 	std::shared_ptr<std::vector<double> > getAtmosBlock();
 	
-	// Obtain ocean surface temperature
-	std::shared_ptr<std::vector<double> > getSST();
+	// Obtain ocean/land surface temperature
+	std::shared_ptr<std::vector<double> > getSurfaceT();
 	
 	// Get the rows in the matrix associated with surface temperature
-	std::shared_ptr<std::vector<int> > getSSTRows();
+	std::shared_ptr<std::vector<int> > getSurfaceTRows();
 
 	// Get the ocean's landmask;
 	std::shared_ptr<std::vector<int> > getLandMask();
 	
 private:
+	// HDF5-based save and load functions for the state and parameters
+	void saveStateToFile(std::string const &name);
+	void loadStateFromFile(std::string const &name);
+
 	// Write the state of the ocean to traditional FORTRAN out files fort.*
 	// Use matlab plot-scripts for visualization 
-	void dumpState();
+	void writeFortFiles();
 
 	// Randomize state, scale with scaling
 	void randomizeState(double scaling);
+
 	void initializeSolver();
+
+	// Scale the matrix and rhs of the problem
 	void scaleProblem();
 	void unscaleProblem();
 

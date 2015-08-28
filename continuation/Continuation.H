@@ -108,15 +108,12 @@ step()
 {
 	info(); 	                      // Print continuation info
 	eulerPredictor(); 	              // Apply Euler predictor
-
 	int status = newtonCorrector();   // Apply Newton corrector
 
 	// If necessary reset the step, otherwise perform a normal
 	// calculation of the tangent and step adjustment
 	if (status)
-	{
 		reset();
-	}
 	else
 	{
 		// Put the parameter and norm of the state in the history
@@ -159,7 +156,7 @@ createInitialTangent()
 	// To obtain the solution from this solve without the risk
 	// of altering it we get a copy.
 	stateDot_ = model_->getSolution('C');
-
+	
 	// We scale the tangent of the state and parameter such they are
 	// normalized.
 	normalize(stateDot_, zeta_, parDot_);
@@ -626,6 +623,7 @@ info()
 		INFO("             step:  " << step_);
 	}
 	INFO("       norm state:  " << stateView_->norm());
+	INFO("    norm stateDot:  " << stateDot_->norm());
 	INFO("     newton iters:  " << newtonIter_);
 	INFO("-----------------------------------------");
 }
