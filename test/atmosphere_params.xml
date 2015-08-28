@@ -18,5 +18,9 @@
   <Parameter name="Use ocean landmask" type="bool" value="1"/>
 
   <!--  -->
+  
+  <!-- Specify whether the ocean model should initialize with -->
+  <!-- an old state (true) or with a zero solution (false).   -->
+  <Parameter name="Use existing state" type="bool" value = "true"/>
 
 </ParameterList>

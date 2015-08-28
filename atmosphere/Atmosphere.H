@@ -153,6 +153,13 @@ private:
 	//! Latitudinal dependence of short-wave radiative flux:
 	//!  As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
 	std::vector<double> suna_;
+
+	// Flag for loading pre-existing state
+	bool useExistingState_;
+
+	// HDF5 input/output files
+	std::string const inputFile_;
+	std::string const outputFile_;
 	
 public:
 	// Constructor, specify horizontal grid dimensions
@@ -194,7 +201,7 @@ public:
 	void setOceanTemperature(std::vector<double> const &sst);
 
 	// ! Post-convergence processing
-	void postConvergence() { writeAll(); }
+	void postConvergence();
 
 	// ! Put default fields in atmosphere and ocean
 	void idealizedOcean();
@@ -269,6 +276,10 @@ private:
 
 	// ! Write everything to output files.
 	void writeAll();
+
+	//! HDF5 load/save routines
+	void saveStateToFile(std::string const &filename);
+	void loadStateFromFile(std::string const &filename);
 };
 
 //==================================================================

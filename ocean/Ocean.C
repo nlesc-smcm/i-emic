@@ -473,10 +473,10 @@ void Ocean::saveStateToFile(std::string const &filename)
  	// Write state, map and continuation parameter
 	EpetraExt::HDF5 HDF5(*comm_);
 	HDF5.Create(filename);
-	HDF5.Write("state", *state_);
-	HDF5.Write("map-" +  std::to_string(comm_->NumProc()),
+	HDF5.Write("State", *state_);
+	HDF5.Write("Map-" +  std::to_string(comm_->NumProc()),
 			   *(domain_->GetSolveMap()));
-	HDF5.Write("continuation parameter", "value", parValue_);
+	HDF5.Write("Continuation parameter", "Value", parValue_);
 	
 	TIMER_STOP("Ocean::saveStateToFile...");
 }
@@ -496,14 +496,14 @@ void Ocean::loadStateFromFile(std::string const &filename)
 	// Read map and state
 	HDF5.Open(filename);
 	
-	HDF5.Read("map-" + std::to_string(comm_->NumProc()), map);
-	HDF5.Read("state", *map, state);
+	HDF5.Read("Map-" + std::to_string(comm_->NumProc()), map);
+	HDF5.Read("State", *map, state);
 
 	// Obtain Epetra_Vector from multivector and construct state_
 	state_ = Teuchos::rcp(new Epetra_Vector( *((*state)(0)) ) );
 
 	// Read continuation parameter and put it in THCM
-	HDF5.Read("continuation parameter", "value", parValue_);
+	HDF5.Read("Continuation parameter", "Value", parValue_);
 	setPar(parValue_);
 	
 	TIMER_STOP("Ocean::loadStateFromFile...");

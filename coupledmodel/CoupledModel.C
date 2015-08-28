@@ -490,8 +490,8 @@ double CoupledModel::getPar()
 	if (std::abs(par_ocean - par_atmos) > 1e-8)
 	{
 		WARNING("par_ocean != par_atmos" << " ocean: " << par_ocean
-				<< "atmos: " << par_atmos
-				<< " putting maximum in both models", __FILE__, __LINE__);
+				<< " atmos: " << par_atmos
+				<< " putting maximum in both models ", __FILE__, __LINE__);
 		double max = std::max(par_ocean, par_atmos);
 		ocean_->setPar(max);
 		atmos_->setPar(max);

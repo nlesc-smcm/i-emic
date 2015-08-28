@@ -10,6 +10,8 @@
 #include <iomanip>
 #include <algorithm> // std::fill in assemble
 
+#include <hdf5.h>
+
 //-----------------------------------------------------------------------------
 // Constructor, specify horizontal grid dimensions
 Atmosphere::Atmosphere(int n, int m, ParameterList params)
@@ -21,7 +23,10 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	ksub_(m),
 	ksup_(m),
 	solvingScheme_('B'),
-	ldimA_(2 * ksub_ + 1 + ksup_)
+	ldimA_(2 * ksub_ + 1 + ksup_),
+	useExistingState_(params->get("Use existing state", false)),
+	outputFile_(params->get("Output file", "atmos.h5")),
+	inputFile_(params->get("Input file", "atmos.h5"))
 {
 	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
@@ -113,6 +118,10 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 		suna_.push_back(As_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
 						(1 - albe_[j]));
 	}
+
+	// If specified we load a pre-existing state and parameter (x,l)
+	if (useExistingState_)
+		loadStateFromFile(inputFile_);
 }
 
 //-----------------------------------------------------------------------------
@@ -451,8 +460,7 @@ void Atmosphere::buildDenseA()
 	//------------------------------------------------
 	// This is horrible, only use when desparate (solvingScheme == 'D')
 	if (solvingScheme_ != 'D')
-		std::cout << "WARNING (Atmosphere::buildDenseA): this is not supposed to happen"
-				  << __FILE__ <<  __LINE__ << std::endl;
+		WARNING("this is not supposed to happen", __FILE__, __LINE__);
 
 	// create dense matrix
 	// reset denseA array
@@ -563,8 +571,7 @@ void Atmosphere::write(std::vector<double> &vector, const std::string &filename)
 		atmos_ofstream.close();
 	}
 	else
-		std::cout << "WARNING (Atmosphere::write): vector is empty"
-				  << __FILE__ <<  __LINE__ << std::endl;
+		WARNING("vector is empty", __FILE__, __LINE__);
 }
 
 //-----------------------------------------------------------------------------
@@ -726,8 +733,7 @@ std::shared_ptr<SuperVector> Atmosphere::getVector
 	}
 	else
 	{
-		std::cout << "WARNING (Atmosphere::getVector): Invalid mode"
-				  << __FILE__ <<  __LINE__ << std::endl;
+		WARNING("invalid mode", __FILE__, __LINE__);
 		return std::shared_ptr<SuperVector>();
 	}	
 }
@@ -768,8 +774,7 @@ std::shared_ptr<std::vector<int> > Atmosphere::getAtmosRows()
 		{
 			// 1-based!!
 			rows->push_back(find_row(i,j,l_,ATMOS_TT_));
-		}
-	
+		}	
 	return rows;	
 }
 
@@ -777,8 +782,7 @@ std::shared_ptr<std::vector<int> > Atmosphere::getAtmosRows()
 void Atmosphere::setLandMask(std::shared_ptr<std::vector<int> > landm)
 {
 	if (landm->size() != (n_+2)*(m_+2))
-		std::cout << "WARNING (Atmosphere::setLandMask): landm->size() not ok:"
-				  << landm->size() << __FILE__ <<  __LINE__ << std::endl;
+		WARNING("landm->size() not ok:",  __FILE__, __LINE__);
 
 	landm_ = landm;
 
@@ -798,9 +802,122 @@ void Atmosphere::setLandMask(std::shared_ptr<std::vector<int> > landm)
 	}
 }
 
+//-----------------------------------------------------------------------------
+void Atmosphere::postConvergence()
+{
+	saveStateToFile("atmos.h5");
+	write(*state_, "atmos_state.txt");       
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::saveStateToFile(std::string const &filename)
+{
+	TIMER_START("Atmosphere::saveStateToFile()...");
+	INFO("Writing to " << filename);
+	
+    hid_t       file_id, group_id, dataspace_id, dataset_id;
+ 	hsize_t     dim_state = state_->size();
+	hsize_t     dim_par = 1;
+	int         nstat = 9;
+	herr_t      status[nstat];
+	int         si = 0;
+	
+	// Create a new file 
+	file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+    // Create a group 
+	group_id = H5Gcreate2(file_id, "/State", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+	// Create the data space and dataset
+	dataspace_id = H5Screate_simple(1, &dim_state, NULL);
+	dataset_id   = H5Dcreate2(file_id, "/State/Values", H5T_IEEE_F64LE, dataspace_id,
+							  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+	// Write to the dataset
+	status[si++] = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+							&(*state_)[0]);	
+
+	// Close dataset, dataspace and group
+	status[si++] = H5Dclose(dataset_id);
+	status[si++] = H5Sclose(dataspace_id );
+	status[si++] = H5Gclose(group_id);
+
+	// Create a new group 
+	group_id = H5Gcreate2(file_id, "/Continuation parameter", H5P_DEFAULT,
+						  H5P_DEFAULT, H5P_DEFAULT);
+
+	// Create data space and dataset
+	dataspace_id = H5Screate_simple(1, &dim_par, NULL);
+	dataset_id   = H5Dcreate2(file_id, "/Continuation parameter/Value", H5T_IEEE_F64LE,
+							  dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	
+	// Write
+	status[si++] = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+							&ampl_);	
+	
+	// Close everything
+	status[si++] = H5Dclose(dataset_id);
+	status[si++] = H5Sclose(dataspace_id );
+	status[si++] = H5Gclose(group_id);
+	status[si++] = H5Fclose(file_id); 
+
+	// Check for errors
+	for (int i = 0; i != nstat; ++i)
+		if (status[i] != 0)
+			WARNING("Status[" << i << "] not ok", __FILE__, __LINE__);
+
+	TIMER_STOP("Atmosphere::saveStateToFile()...");
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::loadStateFromFile(std::string const &filename)
+{
+	TIMER_START("Atmosphere::loadStateFromFile()...");
+	INFO("Loading from " << filename);
+
+	hid_t    file_id, dataset_id;
+	int      nstat = 5;
+	herr_t   status[nstat];
+	int      si = 0;
+	
+	// Open existing file
+	file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+	
+	// Open state dataset
+	dataset_id = H5Dopen2(file_id, "/State/Values", H5P_DEFAULT);
+	
+	// Read state from dataset and close it
+	status[si++] = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+						   &(*state_)[0]);
+	status[si++] = H5Dclose(dataset_id);
+
+	// Open continuation parameter dataset
+	dataset_id = H5Dopen2(file_id, "/Continuation parameter/Value", H5P_DEFAULT);
+
+	// Read from dataset and close it
+	status[si++] = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+						   &ampl_);
+
+	// 
+	status[si++] = H5Dclose(dataset_id);
+	status[si++] = H5Fclose(file_id); 
+	
+	// Check for errors
+	for (int i = 0; i != nstat; ++i)
+		if (status[i] != 0)
+			WARNING("Status[" << i << "] not ok", __FILE__, __LINE__);
+
+	TIMER_STOP("Atmosphere::loadStateFromFile()...");
+}
 
 //=============================================================================
+//=============================================================================
+//=============================================================================
+//=============================================================================
 // DependencyGrid implementation
+//=============================================================================
+//=============================================================================
+//=============================================================================
 //=============================================================================
 DependencyGrid::DependencyGrid(int n, int m, int l, int np, int nun)
 	:
@@ -843,9 +960,14 @@ void DependencyGrid::set(int const (&range)[8], int A, int B, Atom &atom)
 						atom.get(i,j,k,loc);
  				}
 }
-
+//=============================================================================
+//=============================================================================
+//=============================================================================
 //=============================================================================
 // Atom implementation
+//=============================================================================
+//=============================================================================
+//=============================================================================
 //=============================================================================
 Atom::Atom(int n, int m, int l, int np)
 	:

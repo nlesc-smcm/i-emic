@@ -63,7 +63,6 @@ protected:
 	Teuchos::RCP<THCM> thcm_;
 	
 	Teuchos::RCP<Epetra_Vector> state_;
-	Teuchos::RCP<Epetra_Map> map_;
 	Teuchos::RCP<Epetra_Vector> rhs_;
 	Teuchos::RCP<Epetra_Vector> massMatrix_;	
 	

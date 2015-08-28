@@ -53,19 +53,17 @@ extern std::stack<Timer> timerStack;
 #endif
 
 #ifndef ERROR
-#  define ERROR(x,y,z) (*outFile) << "**ERROR**: " << x << " "	\
-	<< y << " " << z << std::endl;
+#  define ERROR(x,y,z) (*outFile) << "**ERROR**: " << x << " " << y << " " << z << std::endl;
 #endif
 
 #ifndef WARNING
-#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << " "	\
-	<< y << " " << z << std::endl;
+#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << " " << y << " " << z << std::endl;
 #endif
 
 #ifndef DEBUG
 #  ifdef DEBUGGING
 #    define DEBUG(s) (*outFile) << s << std::endl;
-// The use of # stringifies variable s: 
+// # stringifies variable s: 
 #    define DEBVAR(s) (*outFile) << #s << ": " << s << std::endl;
 #  else
 #    define DEBUG(s)
