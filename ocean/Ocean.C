@@ -44,16 +44,18 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	comm_(Comm),                     // Setting the communication object
 	solverInitialized_(false),       // Solver needs initialization
 	recomputePreconditioner_(true),  // We need a preconditioner to start with
-	outputFile_(oceanParamList->get("Output file", "ocean.h5")),
-	inputFile_(oceanParamList->get("Input file", "ocean.h5")),
-	useExistingState_(oceanParamList->get("Use existing state", false)),
-	recomputeBound_(oceanParamList->get("Preconditioner recompute bound", 50)),
-	useScaling_(oceanParamList->get("Use scaling", false)),
-	parIdent_(19), // Initialize continuation parameters
+	outputFile_       (oceanParamList->get("Output file", "ocean.h5")),
+	inputFile_        (oceanParamList->get("Input file", "ocean.h5")),
+	useExistingState_ (oceanParamList->get("Use existing state", false)),
+	recomputeBound_   (oceanParamList->get("Preconditioner recompute bound", 50)),
+	useScaling_       (oceanParamList->get("Use scaling", false)),
+	parIdent_(19),    // Initialize continuation parameters
 	parStart_(0),
 	parEnd_(1),
 	parValue_(0)
-{	
+{
+	INFO("Ocean: constructor...");
+	
 	Teuchos::ParameterList &thcmList =
 		oceanParamList->sublist("THCM");
 
@@ -62,21 +64,19 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	//  instance at a time. The Ocean class can access THCM with a call
 	//  to THCM::Instance()
 	thcm_ = rcp(new THCM(thcmList, comm_));
+	
+	// Obtain solution vector from THCM
+	state_ = THCM::Instance().getSolution();
+	INFO("Ocean: Solution obtained from THCM");
+	
+	// Initialize solution
+	state_->PutScalar(0.0);
+	INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
 
 	// If specified we load a pre-existing state and parameter (x,l)
 	if (useExistingState_)
 		loadStateFromFile(inputFile_);
-	else
-	{	
-		// Obtain solution vector from THCM
-		state_ = THCM::Instance().getSolution();
-		INFO("Ocean: Solution obtained from THCM");
-
-		// Initialize solution
-		state_->PutScalar(0.0);
-		INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
-	}
-	
+		
 	// Obtain Jacobian from THCM
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	jac_ = THCM::Instance().getJacobian();
@@ -100,6 +100,11 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
 	// Put the correct parameter value in THCM
 	setPar(parValue_);
+
+	// Initialize solver
+	initializeSolver();
+	
+	INFO("Ocean: constructor... done");
 }
 
 //=====================================================================
@@ -128,6 +133,7 @@ void Ocean::postConvergence()
 //=====================================================================
 void Ocean::initializeSolver()
 {
+	INFO("Ocean: initialize solver...");
 	// Belos::LinearProblem setup
 	problem_ = rcp(new Belos::LinearProblem
 				   <double, Epetra_MultiVector, Epetra_Operator>
@@ -180,6 +186,7 @@ void Ocean::initializeSolver()
 	// Now the solver and preconditioner are initialized we are allowed to
 	// perform a solve.
 	solverInitialized_ = true;
+	INFO("Ocean: initialize solver... done");
 }
 
 //=====================================================================
@@ -486,8 +493,18 @@ void Ocean::loadStateFromFile(std::string const &filename)
 {
 	TIMER_START("Ocean::loadStateFromFile...");
 
+	// Check whether file exists
 	INFO("Loading from " << filename);
 
+	std::ifstream file(filename);
+	if (!file)
+	{
+		WARNING("Can't open " << filename
+				<< " continue with trivial state", __FILE__, __LINE__);
+		return;
+	}
+	else file.close();
+	
 	// Create HDF5 object
 	EpetraExt::HDF5 HDF5(*comm_);
 	Epetra_Map *map = NULL;

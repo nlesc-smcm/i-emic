@@ -8,9 +8,9 @@
   <!-- Specify whether the Jacobian and RHS should be scaled before a solve -->
   <Parameter name="Use scaling" type="bool" value = "false"/>
   
-  <!-- Maximum allowed number of iterations in linear solve before a new -->
+  <!-- Maximum allowed number of iterations in linear solver before a new -->
   <!-- preconditioner is requested -->
-  <Parameter name="Preconditioner recompute bound" type="int" value = "30"/>
+  <Parameter name="Preconditioner recompute bound" type="int" value = "100"/>
 
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">

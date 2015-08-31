@@ -76,6 +76,8 @@ public:
 
 	// Zero vectors
 	void zero();
+	void zeroAtmos();
+	void zeroOcean();
 		
 	// Print the vectors to various output streams
 	void print() const;

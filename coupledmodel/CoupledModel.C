@@ -18,7 +18,15 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	atmos_(atmos),
 	syncHash_(-1),
 	rhsHash_(-1),
-	jacHash_(-1)
+	jacHash_(-1),
+	solvingScheme_    (params->get("Solving scheme", 'G')),
+	iterGS_           (params->get("Max GS iterations", 10)),
+	toleranceGS_      (params->get("GS tolerance", 1e-1)),
+	iterSOR_          (params->get("SOR iterations", 2)),
+	relaxSOR_         (params->get("SOR relaxation", 1.0)),
+	kNeumann_         (params->get("Order of Neumann approximation", 1)),
+	useExistingState_ (params->get("Use existing state", false)),
+	useHash_          (params->get("Use hashing", true))
 {
 	
 	stateView_ =
@@ -39,31 +47,12 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
 	C_     = atmos_->getOceanBlock();
-	write(*C_, "coupled_C.txt");
-
-	// Get parameters and flags from file, see xml for documentation
-	solvingScheme_ = params->get("Solving scheme", 'G');
-	iterGS_        = params->get("GS iterations", 4);
-	iterSOR_       = params->get("SOR iterations", 2);
-	relaxSOR_      = params->get("SOR relaxation", 1.0);
-	kNeumann_      = params->get("Order of Neumann approximation", 1);
-	useHash_       = params->get("Use hashing", true);
 
 	// Output parameters
 	INFO(*params);
 
-	// Get the landmask used in the ocean
-	std::shared_ptr<std::vector<int> > landm = ocean_->getLandMask();
-
-	// Get rid of every layer in the landmask except for the surface 
-	int n = ocean_->getNdim();
-	int m = ocean_->getMdim();
-	int l = ocean_->getLdim();
-	landm->erase(landm->begin(), landm->begin() + l*(m+2)*(n+2));
-	landm->erase(landm->begin() + (m+2)*(n+2), landm->end());
-	
-	// Put the surface landmask in the atmosphere
-	atmos_->setLandMask(landm);
+	// Synchronize landmask
+	synchronizeLandmask();
 }
 
 //------------------------------------------------------------------
@@ -80,7 +69,6 @@ void CoupledModel::synchronize()
 			syncHash_ = hash;
 	}
 
-	INFO("CoupledModel: start sync");
 	TIMER_START("CoupledModel: synchronize...");
 	
 	// Copy the atmosphere from the current combined (SuperVector) state
@@ -96,6 +84,22 @@ void CoupledModel::synchronize()
 	atmos_->setOceanTemperature(sst);
 	
 	TIMER_STOP("CoupledModel: synchronize...");
+}
+
+void CoupledModel::synchronizeLandmask()
+{
+	// Get the landmask used in the ocean
+	std::shared_ptr<std::vector<int> > landm = ocean_->getLandMask();
+
+	// Get rid of every layer in the landmask except for the surface 
+	int n = ocean_->getNdim();
+	int m = ocean_->getMdim();
+	int l = ocean_->getLdim();
+	landm->erase(landm->begin(), landm->begin() + l*(m+2)*(n+2));
+	landm->erase(landm->begin() + (m+2)*(n+2), landm->end());
+	
+	// Put the surface landmask in the atmosphere
+	atmos_->setLandMask(landm);
 }
 
 //------------------------------------------------------------------
@@ -176,13 +180,16 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 	// After the iteration we do a final solve with  D*x2 = -C*x1 + b2
 	//  (because it's cheap)
 	// ***************************************************************
-   
+
+	double residual;
+	
     // Initialize solution [x1;x2] = 0
  	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
 	x->zero();
-
+	
 	// Start iteration
-	for (int i = 0; i < iterGS_; ++i)
+	int i;
+	for (i = 0; i < iterGS_; ++i)
 	{
 		// Create -C*x1 + b2
 		x->linearTransformation(*C_, *rowsB_, 'O', 'A');
@@ -202,14 +209,59 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 		ocean_->solve(Teuchos::rcp(x.get(), false));
 
 		// Retrieve solution
-		x = getSolution('C','C');		
+		x = getSolution('C','C');
+		
+		// Calculate residual
+		residual = computeResidual(rhs);
+
+		if (residual < toleranceGS_)
+			break;
 	}
-	// Create -C*x1 + b2
+
+	// Do a final solve with D
+	// Create -C*x1 + b2 and solve D*x2 = -C*x1 + b2
 	x->linearTransformation(*C_, *rowsB_, 'O', 'A');
 	x->update(1, *rhs, -1);
-	
-	// Solve D*x2 = -C*x1 + b2
 	atmos_->solve(x);
+
+	// Postprocessing...
+	residual = computeResidual(rhs);
+	
+	INFO("CoupledModel: blockGS iterations: " << i
+		 << " rel. residual: " << residual);
+
+	TRACK_ITERATIONS("CoupledModel: blockGS iterations...", i);
+	
+	if (i == iterGS_)
+		WARNING("GS tolerance not reached...", __FILE__, __LINE__);
+}
+
+//------------------------------------------------------------------
+double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
+{
+	TIMER_START("CoupledModel: compute residual...");
+	
+	std::shared_ptr<SuperVector> x = getSolution('C','C');
+	std::shared_ptr<SuperVector> y = getSolution('C','C');
+	std::shared_ptr<SuperVector> z = getSolution('C','C');
+
+	// Calculate relative residual
+	x->linearTransformation(ocean_->getJacobian());   // A*x1
+	x->linearTransformation(atmos_->getJacobian());   // D*x2
+	
+	y->linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
+	y->zeroAtmos();
+	z->linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
+	z->zeroOcean();
+	
+	x->update(1, *y, 1);                              // A*x1 + B*x2
+	x->update(1, *z, 1);                              // D*x2 + C*x1
+	x->update(-1, *rhs, 1);                           // b-Jx
+	
+	double relResidual = x->norm() / rhs->norm();     // ||b-Jx||/||b||
+
+	TIMER_STOP("CoupledModel: compute residual...");
+	return relResidual;
 }
 
 //------------------------------------------------------------------

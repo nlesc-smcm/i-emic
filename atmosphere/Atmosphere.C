@@ -25,28 +25,29 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	solvingScheme_('B'),
 	ldimA_(2 * ksub_ + 1 + ksup_),
 	useExistingState_(params->get("Use existing state", false)),
-	outputFile_(params->get("Output file", "atmos.h5")),
-	inputFile_(params->get("Input file", "atmos.h5"))
+	outputFile_      (params->get("Output file", "atmos.h5")),
+	inputFile_       (params->get("Input file", "atmos.h5")),
+	rhoa_            (params->get("atmospheric density",1.25)),
+	hdima_           (params->get("heat capacity",8400.)),
+	cpa_             (params->get("heat capacity",1000.)),
+	d0_              (params->get("constant eddy diffusivity",3.1e+06)),
+	arad_            (params->get("radiative flux param A",216.0)),
+	brad_            (params->get("radiative flux param B",1.5)),
+	sun0_            (params->get("solar constant",1360.)),
+	c0_              (params->get("atmospheric absorption coefficient",0.43)),
+	ce_              (params->get("exchange coefficient ce",1.3e-03)),
+	ch_              (params->get("exchange coefficient ch",0.94 * ce_)),
+	uw_              (params->get("mean atmospheric surface wind speed",8.5)),
+	t0_              (params->get("reference temperature",15.0)),
+	udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
+	r0dim_           (params->get("radius of the earth",6.37e+06))
 {
+	INFO("Atmosphere: constructor...");
 	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
 	amplEnd_ = 1.0        ; //!
 	
 	// Filling the parameters from xml file 
-	rhoa_    = params->get("atmospheric density",1.25); 
-	hdima_   = params->get("heat capacity",8400.); 
-	cpa_     = params->get("heat capacity",1000.);
-	d0_      = params->get("constant eddy diffusivity",3.1e+06);
-	arad_    = params->get("radiative flux param A",216.0);
-	brad_    = params->get("radiative flux param B",1.5);
-	sun0_    = params->get("solar constant",1360.);
-	c0_      = params->get("atmospheric absorption coefficient",0.43);
-	ce_      = params->get("exchange coefficient ce",1.3e-03);
-	ch_      = params->get("exchange coefficient ch",0.94 * ce_);
-	uw_      = params->get("mean atmospheric surface wind speed",8.5);
-	t0_      = params->get("reference temperature",15.0);
-	udim_    = params->get("horizontal velocity of the ocean",0.1e+00);
-	r0dim_   = params->get("radius of the earth",6.37e+06);
 	
 	// Filling the coefficients
 	muoa_ =  rhoa_ * ch_ * cpa_ * uw_;
@@ -122,6 +123,8 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	// If specified we load a pre-existing state and parameter (x,l)
 	if (useExistingState_)
 		loadStateFromFile(inputFile_);
+
+	INFO("Atmosphere: constructor... done");
 }
 
 //-----------------------------------------------------------------------------
@@ -879,6 +882,16 @@ void Atmosphere::loadStateFromFile(std::string const &filename)
 	int      nstat = 5;
 	herr_t   status[nstat];
 	int      si = 0;
+
+	// Check whether file exists
+	std::ifstream file(filename);
+	if (!file)
+	{
+		WARNING("Can't open " << filename
+				<< " continue with trivial state", __FILE__, __LINE__);
+		return;
+	}
+	else file.close();
 	
 	// Open existing file
 	file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -898,7 +911,7 @@ void Atmosphere::loadStateFromFile(std::string const &filename)
 	status[si++] = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
 						   &ampl_);
 
-	// 
+	// Close dataset and file
 	status[si++] = H5Dclose(dataset_id);
 	status[si++] = H5Fclose(file_id); 
 	
@@ -911,13 +924,13 @@ void Atmosphere::loadStateFromFile(std::string const &filename)
 }
 
 //=============================================================================
-//=============================================================================
-//=============================================================================
-//=============================================================================
-// DependencyGrid implementation
-//=============================================================================
-//=============================================================================
-//=============================================================================
+// / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / //
+//                                                                           //
+//                                                                           //
+// DependencyGrid implementation                                             //
+//                                                                           //
+//                                                                           //
+// / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / //
 //=============================================================================
 DependencyGrid::DependencyGrid(int n, int m, int l, int np, int nun)
 	:
@@ -960,14 +973,16 @@ void DependencyGrid::set(int const (&range)[8], int A, int B, Atom &atom)
 						atom.get(i,j,k,loc);
  				}
 }
+
+
 //=============================================================================
-//=============================================================================
-//=============================================================================
-//=============================================================================
-// Atom implementation
-//=============================================================================
-//=============================================================================
-//=============================================================================
+// / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / //
+//                                                                           //
+//                                                                           //
+// Atom implementation                                                       //
+//                                                                           //
+//                                                                           //
+// / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / //
 //=============================================================================
 Atom::Atom(int n, int m, int l, int np)
 	:

@@ -1,4 +1,10 @@
 <ParameterList name="CoupledModel parameters">
+
+  <!-- Specify whether the coupled model should initialize with  -->
+  <!-- old states (true) or with a trivial solution (false).     -->
+  <Parameter name="Use existing state" type="bool" value = "true"/>
+
+  
   <!-- Some kind of coupling graph should be created here                              -->
   <!-- ...  -->
 
@@ -22,10 +28,14 @@
   <!-- Works only when you choose E for "Solving scheme"                               -->
   <Parameter name="Order of Neumann approximation" type="int" value="2"/>
 
-  <!-- Set the number of iterations in the block GS scheme                             -->
+  <!-- Set the maximum number of iterations in the block GS scheme                     -->
   <!-- Works only when you choose G for "Solving scheme"                               -->
-  <Parameter name="GS iterations" type="int" value="4" />
-  
+  <Parameter name="Max GS iterations" type="int" value="20" />
+
+  <!-- Set the tolerance in the block GS scheme                                        -->
+  <!-- Works only when you choose G for "Solving scheme"                               -->
+  <Parameter name="GS tolerance" type="double" value="1e-1" />
+
   <!-- Set the number of iterations in the SOR scheme                                  -->
   <!-- Works only when you choose S for "Solving scheme"                               -->
   <Parameter name="SOR iterations" type="int" value="2" />

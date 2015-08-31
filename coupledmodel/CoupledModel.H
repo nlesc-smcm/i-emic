@@ -40,6 +40,9 @@ private:
 	std::shared_ptr<SuperVector> stateView_;
 	std::shared_ptr<SuperVector> rhsView_;
 	std::shared_ptr<SuperVector> solView_;
+
+	// Use existing (hdf5) state/par
+	bool useExistingState_;
 	
 	// Order of Neumann expansion in elimination based solve
 	int kNeumann_;
@@ -58,7 +61,8 @@ private:
 	std::size_t rhsHash_;  // hash to base computeRHS() decision on	
 	std::size_t jacHash_;  // hash to base computeJacobian() decision on
 
-	int iterGS_; // Iterations in GS scheme
+	int iterGS_;         // Max iterations in GS scheme
+	double toleranceGS_; // Tolerance in GS scheme
 	
 	double relaxSOR_;  // Relaxation in SOR scheme
 	int iterSOR_;      // Iterations in SOR scheme
@@ -115,14 +119,20 @@ private:
 	// For internal use: both modes for the underlying
 	// getSolution methods can be called here.
 	std::shared_ptr<SuperVector> getSolution(char mode1, char mode2);
+
+	// Compute the residual ||b-Jx||
+	double computeResidual(std::shared_ptr<SuperVector> rhs);
 	
 	// Synchronize the states between the models that are needed to communicate
 	void synchronize();
 
+	// Synchronize the landmask between the ocean and the atmosphere
+	void synchronizeLandmask();
+
 	// Create a hash of the extended state + parameter in an XOR / rotating manner
 	std::size_t getHash();
 
-	// Output, same as in Atmosphere but templated^^
+	// Output, same as in Atmosphere but templated
 	template<typename T>
 	void write(std::vector<T> &vector, const std::string &filename);
 

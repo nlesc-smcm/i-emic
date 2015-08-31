@@ -167,9 +167,21 @@ void SuperVector::random()
 //------------------------------------------------------------------
 void SuperVector::zero()
 {
+	zeroAtmos();
+	zeroOcean();
+}
+
+//------------------------------------------------------------------
+void SuperVector::zeroAtmos()
+{
 	if (haveAtmosVector_)
 		atmosVector_ = std::make_shared<std::vector<double> >
 			(atmosVector_->size(), 0.0);		
+}
+
+//------------------------------------------------------------------
+void SuperVector::zeroOcean()
+{
 	if (haveOceanVector_)
 		oceanVector_->PutScalar(0.0);
 }
@@ -205,11 +217,11 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 		int dstLength = diagonal.size();
 		int srcLength = oceanVector_->GlobalLength();
 
-		// re-initialize stdVector				
+		// re-initialize atmosVector				
 		atmosVector_ = std::make_shared<std::vector<double> >
 			(dstLength, 0.0);
 
-		// gather the epetraVector
+		// gather the oceanVector
 		Teuchos::RCP<Epetra_MultiVector> gathered =
 			Utils::AllGather(*oceanVector_);
 
@@ -219,7 +231,7 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 		// get the values in the epetraVector
 		gathered->ExtractCopy(fullSol, srcLength);
 
-		// calculate the values in the destination stdVector
+		// calculate the scaled values in the destination stdVector
 		for (size_t i = 0; i != atmosVector_->size(); ++i)
 			(*atmosVector_)[i] = diagonal[i] * fullSol[indices[i]];
 		
@@ -228,14 +240,15 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 	}
 	else if (domain == 'A' && range == 'O')
 	{
+		// calculate diagonal scaling
 		std::vector<double> values;
 		for (size_t i = 0; i != atmosVector_->size(); ++i)
 			values.push_back(diagonal[i] * (*atmosVector_)[i]);
 				
-		// re-initialize epetraVector
+		// re-initialize oceanVector
 		oceanVector_->PutScalar(0.0);
 				
-		// Fill the epetraVector
+		// fill the oceanVector
 		oceanVector_->ReplaceGlobalValues(
 			atmosVector_->size(),
 			&values[0], &indices[0]);
@@ -246,12 +259,16 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 void SuperVector::linearTransformation(Teuchos::RCP<Epetra_CrsMatrix> mat)
 {
 	TIMER_START("SuperVector: linearTransformation 2...");
+
 	Teuchos::RCP<Epetra_Vector> tmp = Teuchos::rcp(new Epetra_Vector(oceanVector_->Map()));
 	if (haveOceanVector_)
 	{
 		CHECK_ZERO(mat->Apply(*oceanVector_, *tmp));
+		oceanVector_ = tmp;
 	}
-	oceanVector_ = tmp;
+	else
+		WARNING("No oceanVector...", __FILE__, __LINE__);
+	
 	TIMER_STOP("SuperVector: linearTransformation 2...");
 }
 
@@ -260,22 +277,29 @@ void SuperVector::linearTransformation(std::shared_ptr<std::map<std::string,
 									   std::vector<double> > > mat)
 {
 	TIMER_START("SuperVector: linearTransformation 3...");
+
 	int first;
 	int last;
-	std::vector<double> result(atmosVector_->size(), 0.0);
-	// 1->0 based... horrible... 
-	for (int row = 1; row <= atmosVector_->size(); ++row)
+	if (haveAtmosVector_)
 	{
-		first   = (*mat)["beg"][row-1];
-		last    = (*mat)["beg"][row] - 1;
-		for (int col = first; col <= last; ++col)
+		std::vector<double> result(atmosVector_->size(), 0.0);
+		// Perform matrix vector product
+		// 1->0 based... horrible... 
+		for (int row = 1; row <= atmosVector_->size(); ++row)
 		{
-			result[row-1] += (*mat)["ico"][col-1] *
-				(*atmosVector_)[(*mat)["jco"][col-1]-1];
-		}			
+			first   = (*mat)["beg"][row-1];
+			last    = (*mat)["beg"][row] - 1;
+			for (int col = first; col <= last; ++col)
+			{
+				result[row-1] += (*mat)["ico"][col-1] *
+					(*atmosVector_)[(*mat)["jco"][col-1]-1];
+			}			
+		}
+		atmosVector_ = std::make_shared<std::vector<double> >(result);
 	}
-	atmosVector_ = std::make_shared<std::vector<double> >
-		(result);
+	else
+		WARNING("No atmosVector...", __FILE__, __LINE__);
+	
 	TIMER_STOP("SuperVector: linearTransformation 3...");
 }
 
@@ -307,4 +331,3 @@ void SuperVector::init()
 	length_ += (haveAtmosVector_) ? atmosVector_->size() : 0;
 	isInitialized_ = true;
 }
-
