@@ -4,30 +4,17 @@
   <!-- old states (true) or with a trivial solution (false).     -->
   <Parameter name="Use existing state" type="bool" value = "true"/>
 
-  
   <!-- Some kind of coupling graph should be created here                              -->
   <!-- ...  -->
 
   <!-- Select the solving and synchronization mode                                     -->
   <!--  mode 'D': decoupled, the systems are solved separately and the solutions are   -->
   <!--            synchronized after the Newton process has converged.                 -->
-  <!--  mode 'E': An eliminated system is solved in which the inverse of the           -->
-  <!--            Schur complement is approximated using a Neumann approximation.      -->
-  <!--            The solutions are synchronized before every computation of the RHS   -->
-  <!--            and the Jacobian.                                                    -->
   <!--  mode 'G': Solve coupled system using a few backward block GS iterations        -->
-  <!--            The solutions are synchronized before every computation of the RHS   -->
-  <!--            and the Jacobian.                                                    -->
-  <!--  mode 'S': Solve coupled system using a few backward block SOR iterations       -->
   <!--            The solutions are synchronized before every computation of the RHS   -->
   <!--            and the Jacobian.                                                    -->
   <Parameter name="Solving scheme" type="char" value="G"/>
   
-  <!-- Determine the order of the Neumann approximation in the elimination based solve -->
-  <!-- Choose 0, 1 or 2                                                                -->
-  <!-- Works only when you choose E for "Solving scheme"                               -->
-  <Parameter name="Order of Neumann approximation" type="int" value="2"/>
-
   <!-- Set the maximum number of iterations in the block GS scheme                     -->
   <!-- Works only when you choose G for "Solving scheme"                               -->
   <Parameter name="Max GS iterations" type="int" value="20" />
@@ -36,15 +23,6 @@
   <!-- Works only when you choose G for "Solving scheme"                               -->
   <Parameter name="GS tolerance" type="double" value="1e-1" />
 
-  <!-- Set the number of iterations in the SOR scheme                                  -->
-  <!-- Works only when you choose S for "Solving scheme"                               -->
-  <Parameter name="SOR iterations" type="int" value="2" />
-
-  <!-- Set the relaxation in the SOR scheme                                            -->
-  <!-- Works only when you choose S for "Solving scheme"                               -->
-  <!-- Default is backward Gauss-Seidel: w = 1.0                                       -->
-  <Parameter name="SOR relaxation" type="double" value="1.0" />
-  
   <!-- Use hashing to decide to act based on whether a state has changed               -->
   <!-- Right now the functions synchronize(), computeRHS() and computeJacobian()       -->
   <!-- can check the hash of the stateView and decide to recompute.                    -->

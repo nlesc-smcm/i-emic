@@ -110,12 +110,6 @@ private:
 	// Solve the system with a few symmetric block GS iterations
 	void blockGSSolve(std::shared_ptr<SuperVector> rhs);
 	
-	// Solve the coupled system in a few backward block SOR iterations.
-	void blockSORSolve(std::shared_ptr<SuperVector> rhs);
-	
-	// Solve the system using an elimination based approach.
-	void eliminationSolve(std::shared_ptr<SuperVector> rhs);
-	
 	// For internal use: both modes for the underlying
 	// getSolution methods can be called here.
 	std::shared_ptr<SuperVector> getSolution(char mode1, char mode2);
