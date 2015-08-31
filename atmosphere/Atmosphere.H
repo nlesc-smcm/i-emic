@@ -72,6 +72,9 @@ private:
 	std::vector<double> yc_;  //! y-grid ( cell centers)
 	std::vector<double> yv_;  //! y-grid ( [u,v]-nodes)
 
+	// Periodic boundary conditions in x-direction
+	bool periodic_;
+	
 	// Land mask
 	std::shared_ptr<std::vector<int> > landm_;
 	

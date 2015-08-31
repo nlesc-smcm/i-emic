@@ -215,6 +215,7 @@ SUBROUTINE fillcolA
   ! final element of beg{.} array should be final row + 1
   begA(ndim + 1) = nun * np * ndim + 1
 
+  ! --> what happens here?
   if (periodic) then
      bis= nun*(n-1)
      do k = 1, l+la

@@ -27,6 +27,7 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	useExistingState_(params->get("Use existing state", false)),
 	outputFile_      (params->get("Output file", "atmos.h5")),
 	inputFile_       (params->get("Input file", "atmos.h5")),
+	periodic_        (params->get("Periodic", false)),
 	rhoa_            (params->get("atmospheric density",1.25)),
 	hdima_           (params->get("heat capacity",8400.)),
 	cpa_             (params->get("heat capacity",1000.)),
@@ -85,8 +86,8 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 
 	xmin_ = 286 * PI_ / 180;
 	xmax_ = 350 * PI_ / 180;
-	ymin_ = 10  * PI_ / 180;
-	ymax_ = 74  * PI_ / 180;
+	ymin_ =  10 * PI_ / 180;
+	ymax_ =  74 * PI_ / 180;
 	
 	// Set the grid increments
 	dx_ = (xmax_ - xmin_) / n_;
@@ -525,7 +526,7 @@ void Atmosphere::boundaries()
 				top    = k+1;
 
 				// western boundary
-				if (west == 0)
+				if (west == 0 && !periodic_)
 				{
 					Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_, 
 							 Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +
@@ -534,7 +535,7 @@ void Atmosphere::boundaries()
 				}
 				
 				// eastern boundary
-				if (east == n_+1)
+				if (east == n_+1 && !periodic_)
 				{
 					Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_, 
 							 Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +

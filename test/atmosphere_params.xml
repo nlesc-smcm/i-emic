@@ -17,10 +17,11 @@
   <!-- Choose to use the ocean's landmask if available     -->
   <Parameter name="Use ocean landmask" type="bool" value="1"/>
 
-  <!--  -->
+  <!-- Periodic boundary conditions in x-direction -->
+  <Parameter name="Periodic" type="bool" value="false"/>
   
   <!-- Specify whether the ocean model should initialize with -->
   <!-- an old state (true) or with a zero solution (false).   -->
-  <Parameter name="Use existing state" type="bool" value = "true"/>
+  <Parameter name="Use existing state" type="bool" value = "false"/>
 
 </ParameterList>

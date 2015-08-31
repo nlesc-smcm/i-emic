@@ -3,7 +3,7 @@
 
   <!-- Specify whether the ocean model should initialize with -->
   <!-- an old state (true) or with a zero solution (false).   -->
-  <Parameter name="Use existing state" type="bool" value = "true"/>
+  <Parameter name="Use existing state" type="bool" value = "false"/>
   
   <!-- Specify whether the Jacobian and RHS should be scaled before a solve -->
   <Parameter name="Use scaling" type="bool" value = "false"/>
@@ -25,7 +25,7 @@
     <!-- northern domain bound -->
     <Parameter name="Global Bound ymax" type="double" value="74"/>
     <!-- periodic boundary conditions in x-direction -->
-    <Parameter name="Periodic" type="bool" value="0"/>
+    <Parameter name="Periodic" type="bool" value="1"/>
     <!-- depth of the ocean -->
     <Parameter name="Depth hdim" type="double" value="4000"/>
 
@@ -34,9 +34,9 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="16"/>
+    <Parameter name="Global Grid-Size n" type="int" value="32"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="16"/>
+    <Parameter name="Global Grid-Size m" type="int" value="32"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="16"/>
 
@@ -52,7 +52,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>g
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_natl16"/>
+    <Parameter name="Land Mask" type="string" value="mask_natl32_test"/>
 
 	<!-- ==================== Coupling ================================= -->
 	<!-- Flag enabling the coupling with an atmosphere                   -->
