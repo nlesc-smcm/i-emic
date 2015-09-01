@@ -54,7 +54,7 @@ F77_FLAGS  = ${FC_FLAGS} -extend-source 132 -O0
 ##------------------------------------------------------------------
 ##   Gather all the libraries:
 LIBS_FORT  = -lgfortran
-LIBS_EXTRA =
+LIBS_EXTRA = -lhdf5
 LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
 
 ##------------------------------------------------------------------

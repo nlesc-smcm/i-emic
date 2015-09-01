@@ -25,7 +25,7 @@
     <!-- northern domain bound -->
     <Parameter name="Global Bound ymax" type="double" value="74"/>
     <!-- periodic boundary conditions in x-direction -->
-    <Parameter name="Periodic" type="bool" value="1"/>
+    <Parameter name="Periodic" type="bool" value="0"/>
     <!-- depth of the ocean -->
     <Parameter name="Depth hdim" type="double" value="4000"/>
 
@@ -52,7 +52,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>g
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_natl32_test"/>
+    <Parameter name="Land Mask" type="string" value="mask_natl32"/>
 
 	<!-- ==================== Coupling ================================= -->
 	<!-- Flag enabling the coupling with an atmosphere                   -->

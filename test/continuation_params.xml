@@ -1,6 +1,6 @@
 <!--  -->
 <ParameterList name="continuation">
-  <Parameter name="ds" type="double" value=".02"/>
+  <Parameter name="ds" type="double" value=".005"/>
   <Parameter name="maxSteps" type="int" value="-1"/>
   <Parameter name="maxNewtonIterations" type="int" value="20"/>
   <Parameter name="numBackTrackingSteps" type="int" value="10"/>
