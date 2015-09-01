@@ -210,6 +210,9 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 		// Calculate residual
 		residual = computeResidual(rhs);
 
+		INFO("CoupledModel: blockGS iterations: " << i
+			 << " rel. residual: " << residual);
+		
 		if (residual < toleranceGS_)
 			break;
 	}
@@ -219,12 +222,6 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 	x->linearTransformation(*C_, *rowsB_, 'O', 'A');
 	x->update(1, *rhs, -1);
 	atmos_->solve(x);
-
-	// Postprocessing...
-	residual = computeResidual(rhs);
-	
-	INFO("CoupledModel: blockGS iterations: " << i
-		 << " rel. residual: " << residual);
 
 	TRACK_ITERATIONS("CoupledModel: blockGS iterations...", i);
 	
