@@ -208,9 +208,6 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 		residual = computeResidual(rhs);
 		INFO("CoupledModel: blockGS iterations: " << i
 			 << " rel. residual: " << residual);
-
-		INFO("CoupledModel: blockGS iterations: " << i
-			 << " rel. residual: " << residual);
 		
 		if (residual < toleranceGS_)
 			break;
