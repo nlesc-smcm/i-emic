@@ -34,11 +34,14 @@ namespace TRIOS
 	Domain::Domain(int N, int M, int L, int dof, 
 				   double Xmin, double Xmax, double Ymin, double Ymax, 
 				   bool Periodic, double Hdim, Teuchos::RCP<Epetra_Comm> Comm)
-		: m(M), n(N), l(L),
-		  xmin(Xmin), xmax(Xmax), ymin(Ymin), ymax(Ymax),
-		  dof_(dof),
-		  periodic(Periodic), zmin(-Hdim), zmax(0),
-		  comm(Comm)
+		:
+		comm(Comm),
+		n(N), m(M), l(L),
+		xmin(Xmin), xmax(Xmax), ymin(Ymin), ymax(Ymax),
+		zmin(-Hdim),
+		zmax(0),
+		periodic(Periodic),
+		dof_(dof)
 	{
 		//TODO: check if we want zmin=-Hdim or -1 (as in THCM)
 		int dim = m * n * l * dof_;

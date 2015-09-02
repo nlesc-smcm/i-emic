@@ -343,7 +343,7 @@ SUBROUTINE rhs(un,B)
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
-  _DEBUG2_("p0 = ", p0) !-->Residue Continuation, needs a little explaining.
+  _DEBUG2_("p0 = ", p0) !-->Residue Continuation
   
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
 
