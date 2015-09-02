@@ -132,8 +132,9 @@ extern "C" {
 THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     Singleton<THCM>(Teuchos::rcp(this, false)),
     Comm(comm),
-	paramList(params),
-	nullSpace(Teuchos::null)
+	nullSpace(Teuchos::null),
+	paramList(params)
+	
 {
 	DEBUG("### enter THCM::THCM ###");
 
@@ -203,12 +204,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 		}
     }
 
-//  int ifw  = paramList.get("Freshwater Forcing",1);
-
 	iza  = paramList.get("Wind Forcing",1);
-	bool _frs  = paramList.get("Free Surface",false);
-	int   frs  = (_frs) ? 1 : 0; // we always communicate integers to fortran since
-	                             // bool and logical are generally incompatible
 
 	int dof = _NUN_; // number of unknowns, defined in THCMdefs.H
 
@@ -236,9 +232,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	double xmaxloc = domain->XmaxLoc();
 	double yminloc = domain->YminLoc();
 	double ymaxloc = domain->YmaxLoc();
-	double zminloc = domain->ZminLoc();
-	double zmaxloc = domain->ZmaxLoc();
-	double hdimloc = zmaxloc - zminloc;
+	// double zminloc = domain->ZminLoc();
+	// double zmaxloc = domain->ZmaxLoc();
 
 	DEBVAR(xmin);  //== Output variable into debug stream
 	DEBVAR(xminloc);
@@ -634,16 +629,16 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 //  sigmaWP=1.0e-14;
 	sigmaWP=0.0;
 
-
 // we can select two points where the continuity equation will be replaced by
 // P(i,j,k) = 0. This is experimental, we hope to fix the divergence problem in the 4D case
-// like this
-	int N = domain->GlobalN();
-	int M = domain->GlobalM();
-	int L = domain->GlobalL();
-
-//rowPfix1 = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
-//rowPfix2 = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
+//  like this
+// 	int N = domain->GlobalN();
+// 	int M = domain->GlobalM();
+// 	int L = domain->GlobalL();
+//
+// rowPfix1 = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
+// rowPfix2 = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
+	
 	rowPfix1=-1;
 	rowPfix2=-1;
 
@@ -1004,7 +999,6 @@ void THCM::setAtmosphereTest()
 	int mloc       =  domain->LocalM();
 	double yminLoc =  domain->YminLoc();
 	double ymaxLoc =  domain->YmaxLoc();
-	double ymin    =  domain->Ymin();
 	double ymax    =  domain->Ymax();
 	double dyLoc   = (ymaxLoc - yminLoc) / (mloc - 1);
 	double y       =  yminLoc;

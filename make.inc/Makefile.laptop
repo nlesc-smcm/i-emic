@@ -15,8 +15,8 @@ TRIDIR       = /home/erik/trilinos/${TRIVERSION}
 ##   Project base directory
 PROJECT_BASE = /home/erik/Projects/i-emic
 ##   Make flags
-MFLAGS       = -j 2
+MFLAGS       = -j 1
 ##   Local
-LOCAL_CXX_FLAGS = -std=c++11
+LOCAL_CXX_FLAGS = -std=c++11 -Wall
 ##=================================================================
 include $(PROJECT_BASE)/make.inc/Makefile.all

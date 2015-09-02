@@ -44,15 +44,13 @@ private:
 	// Use existing (hdf5) state/par
 	bool useExistingState_;
 	
-	// Order of Neumann expansion in elimination based solve
-	int kNeumann_;
-
 	// Solving scheme
 	//   'D': decoupled
-    //   'E': elimination based solve using the Schur complement and one or
-    //        more terms in the Neumann expansion of the Schur inverse
-	//   'S': backward block SOR
-	char solvingScheme_;
+	//   'G': backward block Gauss Seidel
+	char   solvingScheme_;
+
+	int    iterGS_;      // Max iterations in GS scheme
+	double toleranceGS_; // Tolerance in GS scheme
 
 	// Use hashing to decide to act based on whether a state has changed
 	// Hashes should be remembered for each task they get used for.
@@ -60,12 +58,6 @@ private:
 	std::size_t syncHash_; // hash to base synchronize() decision on
 	std::size_t rhsHash_;  // hash to base computeRHS() decision on	
 	std::size_t jacHash_;  // hash to base computeJacobian() decision on
-
-	int iterGS_;         // Max iterations in GS scheme
-	double toleranceGS_; // Tolerance in GS scheme
-	
-	double relaxSOR_;  // Relaxation in SOR scheme
-	int iterSOR_;      // Iterations in SOR scheme
 	
 	// Trilinos' MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;

@@ -44,17 +44,18 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	comm_(Comm),                     // Setting the communication object
 	solverInitialized_(false),       // Solver needs initialization
 	recomputePreconditioner_(true),  // We need a preconditioner to start with
-	outputFile_       (oceanParamList->get("Output file", "ocean.h5")),
-	inputFile_        (oceanParamList->get("Input file", "ocean.h5")),
-	useExistingState_ (oceanParamList->get("Use existing state", false)),
-	recomputeBound_   (oceanParamList->get("Preconditioner recompute bound", 50)),
-	useScaling_       (oceanParamList->get("Use scaling", false)),
+	useScaling_        (oceanParamList->get("Use scaling", false)),
+	recomputeBound_    (oceanParamList->get("Preconditioner recompute bound", 50)),
+	inputFile_         (oceanParamList->get("Input file", "ocean.h5")),
+	outputFile_        (oceanParamList->get("Output file", "ocean.h5")),
+	useExistingState_  (oceanParamList->get("Use existing state", false)),
 	parIdent_(19),    // Initialize continuation parameters
+	parValue_(0),
 	parStart_(0),
-	parEnd_(1),
-	parValue_(0)
+	parEnd_(1)
 {
 	INFO("Ocean: constructor...");
+	
 	
 	Teuchos::ParameterList &thcmList =
 		oceanParamList->sublist("THCM");
@@ -226,10 +227,10 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
-
+	
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
 	TIMER_START("Ocean: solve...");
-	Belos::ReturnType ret = belosSolver_->solve();	// Solve
+	belosSolver_->solve();	// Solve
 	TIMER_STOP("Ocean: solve...");
 
 	// Do some post-processing

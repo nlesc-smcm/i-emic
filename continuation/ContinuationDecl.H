@@ -17,65 +17,50 @@ class Continuation
 	using Vector = typename Model::element_type::VectorPtr;
 	Model  model_;
 	
-	// copy of the state in the model
-	Vector stateCopy_;
-    // view of the state
-	Vector stateView_;
-	Vector stateDot_;
-	Vector rhsCopy_;
-    // view of the rhs in the model
-	Vector rhsView_;
-	// view of the sol in the model
-	Vector solView_;
-	
-	Vector dFdPar_;
-	
-	double par_;
-	double parDot_;
+	Vector stateCopy_; // copy of the state in the model
+	Vector stateView_; // view of the state
+	Vector rhsCopy_;   // copy of the rhs in the model
+	Vector rhsView_;   // view of the rhs in the model
+	Vector solView_;   // view of the solution in the model
 
-	// continuation history
-	std::vector<double> parHist_;
-	std::vector<double> stateNormHist_;
+	Vector stateDot_;  // derivative of the state w.r.t. arclength par.
 	
-    // initial continuation step-size
-	double ds_;
-    // minimum continuation step-size
-	double dsMin_;
-    // maximum continuation step-size
-	double dsMax_;
-    // initialize additional scaling
-	double zeta_;
-    // conservative scaling for adaptive step
-	double scale1_;
-    // drastic scaling for  resetting adaptive step
-	double scale2_;
-    // variation used for finite difference
-	double epsilon_;
-
-	bool destinationReached_;
-    // perform backtracking when Newton fails
-	bool backTracking_;
-
-	int step_;
-    // maximum number of continuation steps:
-	int maxSteps_;
-    // newton iteration counter
-	int newtonIter_;
-    // set the max for the Newton iterations
-	int maxNewtonIterations_;
-    // if less then we increase the step size
-	int minAllowedIterations_;
-    // if more then we decrease the step size
-	int maxAllowedIterations_;
-	// backtracking counter
-	int backTrack_;
-    // number of backtracking steps
-	int numBackTrackingSteps_;
-	// used for detecting sign switch
-	int parDotSign_;
+	Vector dFdPar_;    // derivative of the rhs w.r.t. continuation par.
 	
-    // set the tolerance in the Newton corrector
-	double newtonTolerance_;
+	double par_;       // continuation parameter
+	double parDot_;    // derivative of cont. parameter w.r.t. arclength par.
+
+	std::vector<double> parHist_;        // parameter history
+	std::vector<double> stateNormHist_;  // state history
+	
+	double ds_;    // continuation step-size
+	double dsMin_; // minimum continuation step-size
+	double dsMax_; // maximum continuation step-size
+
+	double zeta_;  // additional scaling for stateDot
+
+	double scale1_; // conservative scaling for adaptive step
+	double scale2_; // drastic scaling for  resetting adaptive step
+
+	double epsilon_; // variation used for finite difference
+
+	bool destinationReached_;   // status flag when destination reached
+
+	bool backTracking_;         // perform backtracking when Newton fails
+	int  backTrack_;            // backtracking counter
+	int  numBackTrackingSteps_; // number of backtracking steps
+
+	int step_;                 // continuation step counter
+	int maxSteps_;             // maximum number of continuation steps:
+	
+   	int newtonIter_;              // newton iteration counter
+	int maxNewtonIterations_;     // set the max for the Newton iterations
+	int minAllowedIterations_;    // if less then we increase the step size
+	int maxAllowedIterations_;    // if more then we decrease the step size
+	double newtonTolerance_;      // set the tolerance in the Newton corrector
+
+	int parDotSign_;           // used for detecting sign switch
+	
 	double normRHS_;
 	double normRHStest_;
 

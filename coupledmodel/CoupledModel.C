@@ -16,17 +16,14 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	:
 	ocean_(ocean),
 	atmos_(atmos),
-	syncHash_(-1),
-	rhsHash_(-1),
-	jacHash_(-1),
+	useExistingState_ (params->get("Use existing state", false)),
 	solvingScheme_    (params->get("Solving scheme", 'G')),
 	iterGS_           (params->get("Max GS iterations", 10)),
 	toleranceGS_      (params->get("GS tolerance", 1e-1)),
-	iterSOR_          (params->get("SOR iterations", 2)),
-	relaxSOR_         (params->get("SOR relaxation", 1.0)),
-	kNeumann_         (params->get("Order of Neumann approximation", 1)),
-	useExistingState_ (params->get("Use existing state", false)),
-	useHash_          (params->get("Use hashing", true))
+	useHash_          (params->get("Use hashing", true)),
+	syncHash_(-1),
+	rhsHash_(-1),
+	jacHash_(-1)
 {
 	
 	stateView_ =
@@ -209,6 +206,8 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 		
 		// Calculate residual
 		residual = computeResidual(rhs);
+		INFO("CoupledModel: blockGS iterations: " << i
+			 << " rel. residual: " << residual);
 
 		if (residual < toleranceGS_)
 			break;
@@ -219,12 +218,6 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 	x->linearTransformation(*C_, *rowsB_, 'O', 'A');
 	x->update(1, *rhs, -1);
 	atmos_->solve(x);
-
-	// Postprocessing...
-	residual = computeResidual(rhs);
-	
-	INFO("CoupledModel: blockGS iterations: " << i
-		 << " rel. residual: " << residual);
 
 	TRACK_ITERATIONS("CoupledModel: blockGS iterations...", i);
 	
