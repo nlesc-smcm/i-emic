@@ -22,8 +22,9 @@ Ta  = reshape(T0 + state,n,m);
 % exportfig('oceanTemp.eps')
 
 figure(6)
-contourf(RtD*x,RtD*y,Ta',15); hold on;
-contour(RtD*x,RtD*y,surfm',1,'k:','linewidth',2); hold off
+% contourf(RtD*x,RtD*y,Ta',15); hold on;
+imagesc(RtD*x,RtD*y,flipud(Ta')); hold on
+contour(RtD*x,RtD*y,T0+1e-2*flipud(surfm'),1,'k-','linewidth',2); hold off
 colorbar
 title('Atmosphere')
 xlabel('Longitude')

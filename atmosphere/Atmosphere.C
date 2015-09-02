@@ -48,8 +48,6 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	ampl_    = 0.0        ; //! amplitude of forcing
 	amplEnd_ = 1.0        ; //!
 	
-	// Filling the parameters from xml file 
-	
 	// Filling the coefficients
 	muoa_ =  rhoa_ * ch_ * cpa_ * uw_;
 	amua_ = (arad_ + brad_ * t0_) / muoa_;

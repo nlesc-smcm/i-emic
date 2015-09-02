@@ -21,7 +21,7 @@
 
   <!-- Set the tolerance in the block GS scheme                                        -->
   <!-- Works only when you choose G for "Solving scheme"                               -->
-  <Parameter name="GS tolerance" type="double" value="0.25" />
+  <Parameter name="GS tolerance" type="double" value="0.5" />
 
   <!-- Use hashing to decide to act based on whether a state has changed               -->
   <!-- Right now the functions synchronize(), computeRHS() and computeJacobian()       -->
