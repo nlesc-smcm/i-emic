@@ -15,11 +15,10 @@ template<typename Model, typename ParameterList>
 Continuation<Model, ParameterList>::
 Continuation(Model model, ParameterList pars)
 	:
-
+	
 	ds_(pars->get("ds", 0.02)),
 	dsMin_(pars->get("dsMin", 1.0e-5)),
 	dsMax_(pars->get("dsMax", 1.0e01)),
-	maxSteps_(pars->get("maxSteps", -1)),
 
 	scale1_(pars->get("scale1", 1.00)),
 	scale2_(pars->get("scale2", 2.00)),
@@ -28,6 +27,8 @@ Continuation(Model model, ParameterList pars)
 
 	backTracking_(pars->get("backTracking", true)),
 	numBackTrackingSteps_(pars->get("numBackTrackingSteps", 10)),
+	
+	maxSteps_(pars->get("maxSteps", -1)),
 
 	maxNewtonIterations_(pars->get("maxNewtonIterations", 15)),
 	minAllowedIterations_(pars->get("minAllowedIterations", 4)),
@@ -302,13 +303,12 @@ template<typename Model, typename ParameterList>
 int Continuation<Model, ParameterList>::
 newtonCorrector()
 {
-	int backTrackingStatus;  // status of backtracking
-	char mode;	             // mode for ComputeDFDPar()
-	
+	char   mode;	      // mode for ComputeDFDPar()
 	Vector stateDir;      // direction for the state
 	Vector y1;            // solution of solve with dFdPar
 	Vector z1;            // solution of solve with F
-	double parDir;           // direction for the parameter
+	double parDir;        // direction for the parameter
+
 	newtonIter_ = 0;	
 	while (newtonIter_ < maxNewtonIterations_)
 	{
@@ -383,7 +383,7 @@ newtonCorrector()
 		
 		// if we don't see a decrease we run the backtracking routine
 		if (backTracking_ and (normRHS_ < normRHStest_) )
-			backTrackingStatus = runBackTracking(stateDir, parDir);
+			runBackTracking(stateDir, parDir);
 	}
 	
 	// Store the last obtained y1 in stateDot, such that it can be used by

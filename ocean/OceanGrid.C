@@ -336,7 +336,6 @@ void OceanGrid::recomputePsiM()
     // global maximum
     Teuchos::RCP<Epetra_Comm> comm = domain->GetComm();
     CHECK_ZERO(comm->MaxAll(&PsiMaxL,&PsimMax_,1));
-    double PsiMin;
     CHECK_ZERO(comm->MinAll(&PsiMinL,&PsimMin_,1));
     
     DEBVAR(PsiMinL);
@@ -350,10 +349,8 @@ void OceanGrid::recomputePsiM()
 
 void OceanGrid::recomputePsiB()
 {
-    double sum;
-    
     DEBUG("OceanGrid: compute Psi_b");
-    
+	
     // integrate x-velocity u in z-direction,
     // resulting in an average u-field in the x-y plane
     
@@ -366,11 +363,9 @@ void OceanGrid::recomputePsiB()
     DEBUG("depth-integrate U for computation of Psi_B");
     F90NAME(m_thcm_utils,depth_int_u)(U_,us);
 
-	// number of ghost nodes at top of domain
+	// number of ghost nodes at top and bottom of domain
 	int nghosttop = domain->LastJ()-domain->LastRealJ();
 	int nghostbottom = domain->FirstRealJ()-domain->FirstJ();
-	int nghostleft = domain->LastI()-domain->LastRealI();
-	int nghostright = domain->FirstRealI()-domain->FirstI();
 
 	int imin = 0; 
 	int imax = n;

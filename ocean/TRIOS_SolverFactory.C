@@ -57,15 +57,15 @@ using std::min;
 
 namespace TRIOS {
 
-// create an algebraic preconditinoer (i.e. for a submatrix)
+// create an algebraic preconditioner (i.e. for a submatrix)
 	Teuchos::RCP<Epetra_Operator> SolverFactory::CreateAlgebraicPrecond(Epetra_CrsMatrix& A, 
 																		Teuchos::ParameterList& plist, int verbose)
 	{
 		string PrecType = plist.get("Method","Ifpack"); 
 		DEBUG("Enter SolverFactory::CreateAlgebraicPrecond ("+PrecType+")");
-
+		
 		Teuchos::RCP<Epetra_Operator> prec;
-
+		
 		bool is_ifpack = (PrecType=="Ifpack");
 
 		if (is_ifpack)

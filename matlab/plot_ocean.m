@@ -66,9 +66,10 @@ end
 
 %% - PLOT THE RESULTS - ----------------------------------------------
 figure(1)
-contourf(RtD*xu,RtD*y,PSIB',15); hold on
-contour(RtD*x,RtD*y,surfm',1,'k:','linewidth',2); hold off
+% contourf(RtD*x,RtD*y,PSIB(2:end,:)',25); hold on
+imagesc(RtD*x,RtD*y,flipud(PSIB(2:end,:)')); hold on
 colorbar
+contour(RtD*x,RtD*y,1e-4*flipud(surfm'),1,'k-','linewidth',2); hold off
 title('Barotropic Streamfunction');
 xlabel('Longitude')
 ylabel('Latitude')
@@ -83,13 +84,15 @@ ylabel('z (m)')
 exportfig('mstream.eps')
 
 figure(3)
-Tp = T(:,:,l); 
-contourf(RtD*x,RtD*y,T0+Tp',15); hold on
-contour(RtD*x,RtD*y,surfm',1,'k:','linewidth',2); hold off
+Tp = T(:,:,l);
+temp = flipud(T0 + Tp');
+% contourf(RtD*x,RtD*y,T0+Tp',15); hold on
+imagesc(RtD*x,RtD*y,temp); hold on
 colorbar
+contour(RtD*x,RtD*y,T0+1e-4*flipud(surfm'),1,'k-','linewidth',2); hold off
 title('Surface Temperature');
-xlabel('Longitude')
-ylabel('Latitude')
+xlabel('Longitude');
+ylabel('Latitude');
 
 figure(4)
 Tp2 = squeeze(mean(T,1)); 

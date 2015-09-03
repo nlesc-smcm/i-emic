@@ -343,7 +343,7 @@ SUBROUTINE rhs(un,B)
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
-  _DEBUG2_("p0 = ", p0) !-->Residue Continuation, needs a little explaining.
+  _DEBUG2_("p0 = ", p0) !-->Residue Continuation
   
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
 
@@ -968,23 +968,23 @@ SUBROUTINE atmos_coef
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
 
-  write(*,*) "thcm -->   bi: ", par(BIOT)
-  write(*,*) "thcm --> dzne: ", dzne
-  write(*,*) "thcm -->   dz: ", dz
-  write(*,*) "thcm -->  Ooa: ", Ooa
-  write(*,*) "thcm -->   Os: ", Os
-  write(*,*) " "
-  write(*,*) "thcm --> sun0: ", sun0
-  write(*,*) "thcm --> amua: ", amua
-  write(*,*) "thcm --> bmua: ", bmua
-  write(*,*) "thcm --> muoa: ", muoa
-  write(*,*) "thcm -->   Ai: ", Ai
-  write(*,*) "thcm -->   Ad: ", Ad
-  write(*,*) "thcm -->   As: ", As
+  ! write(*,*) "thcm -->   bi: ", par(BIOT)
+  ! write(*,*) "thcm --> dzne: ", dzne
+  ! write(*,*) "thcm -->   dz: ", dz
+  ! write(*,*) "thcm -->  Ooa: ", Ooa
+  ! write(*,*) "thcm -->   Os: ", Os
+  ! write(*,*) " "
+  ! write(*,*) "thcm --> sun0: ", sun0
+  ! write(*,*) "thcm --> amua: ", amua
+  ! write(*,*) "thcm --> bmua: ", bmua
+  ! write(*,*) "thcm --> muoa: ", muoa
+  ! write(*,*) "thcm -->   Ai: ", Ai
+  ! write(*,*) "thcm -->   Ad: ", Ad
+  ! write(*,*) "thcm -->   As: ", As
 
-  open(8, file = rundir//'suno.txt')
-  write(8, *) suno
-  close(8)
+  ! open(8, file = rundir//'suno.txt')
+  ! write(8, *) suno
+  ! close(8)
   
 END SUBROUTINE atmos_coef
 

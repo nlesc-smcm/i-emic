@@ -12,7 +12,7 @@
 
 #include <hdf5.h>
 
-//-----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 // Constructor, specify horizontal grid dimensions
 Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	:
@@ -20,14 +20,11 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	m_(m),
 	l_(1),
     dim_(m * n * 1),
+	periodic_        (params->get("Periodic", false)),
 	ksub_(m),
 	ksup_(m),
-	solvingScheme_('B'),
 	ldimA_(2 * ksub_ + 1 + ksup_),
-	useExistingState_(params->get("Use existing state", false)),
-	outputFile_      (params->get("Output file", "atmos.h5")),
-	inputFile_       (params->get("Input file", "atmos.h5")),
-	periodic_        (params->get("Periodic", false)),
+	solvingScheme_('B'),
 	rhoa_            (params->get("atmospheric density",1.25)),
 	hdima_           (params->get("heat capacity",8400.)),
 	cpa_             (params->get("heat capacity",1000.)),
@@ -41,14 +38,15 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	uw_              (params->get("mean atmospheric surface wind speed",8.5)),
 	t0_              (params->get("reference temperature",15.0)),
 	udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
-	r0dim_           (params->get("radius of the earth",6.37e+06))
+	r0dim_           (params->get("radius of the earth",6.37e+06)),
+	useExistingState_(params->get("Use existing state", false)),
+	inputFile_       (params->get("Input file", "atmos.h5")),
+	outputFile_      (params->get("Output file", "atmos.h5"))
 {
 	INFO("Atmosphere: constructor...");
 	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
 	amplEnd_ = 1.0        ; //!
-	
-	// Filling the parameters from xml file 
 	
 	// Filling the coefficients
 	muoa_ =  rhoa_ * ch_ * cpa_ * uw_;
@@ -484,7 +482,7 @@ void Atmosphere::buildDenseA()
 	
 	int i,j;
 	double val;
-	for (int cntr = 0; cntr != ico_.size(); ++cntr)
+	for (size_t cntr = 0; cntr != ico_.size(); ++cntr)
 	{
 		val = ico_[cntr];
 		i   = ivals[cntr];
@@ -513,7 +511,7 @@ void Atmosphere::buildDenseA()
 void Atmosphere::boundaries()
 {
 	
-	int west, east, north, south, bottom, top;
+	int west, east, north, south;
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
 			for (int k = 1; k <= l_; ++k)
@@ -522,8 +520,6 @@ void Atmosphere::boundaries()
 				east   = i+1;
 				north  = j+1;
 				south  = j-1;
-				bottom = k-1;
-				top    = k+1;
 
 				// western boundary
 				if (west == 0 && !periodic_)
@@ -785,7 +781,7 @@ std::shared_ptr<std::vector<int> > Atmosphere::getAtmosRows()
 //-----------------------------------------------------------------------------
 void Atmosphere::setLandMask(std::shared_ptr<std::vector<int> > landm)
 {
-	if (landm->size() != (n_+2)*(m_+2))
+	if ((int) landm->size() != (n_+2)*(m_+2))
 		WARNING("landm->size() not ok:",  __FILE__, __LINE__);
 
 	landm_ = landm;
@@ -935,12 +931,12 @@ void Atmosphere::loadStateFromFile(std::string const &filename)
 //=============================================================================
 DependencyGrid::DependencyGrid(int n, int m, int l, int np, int nun)
 	:
+	grid_(n, m, l, np, nun, nun),
 	n_(n),
 	m_(m),
 	l_(l),
 	np_(np),
-	nun_(nun),
-	grid_(n, m, l, np, nun, nun)
+	nun_(nun)
 {}
 
 //-----------------------------------------------------------------------------
@@ -987,11 +983,11 @@ void DependencyGrid::set(int const (&range)[8], int A, int B, Atom &atom)
 //=============================================================================
 Atom::Atom(int n, int m, int l, int np)
 	:
+	atom_(n, m, l, np),
 	n_(n),
 	m_(m),
 	l_(l),
-	np_(np),
-	atom_(n, m, l, np)
+	np_(np)
 {}
 
 //-----------------------------------------------------------------------------

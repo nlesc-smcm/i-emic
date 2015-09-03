@@ -44,17 +44,18 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	comm_(Comm),                     // Setting the communication object
 	solverInitialized_(false),       // Solver needs initialization
 	recomputePreconditioner_(true),  // We need a preconditioner to start with
-	outputFile_       (oceanParamList->get("Output file", "ocean.h5")),
-	inputFile_        (oceanParamList->get("Input file", "ocean.h5")),
-	useExistingState_ (oceanParamList->get("Use existing state", false)),
-	recomputeBound_   (oceanParamList->get("Preconditioner recompute bound", 50)),
-	useScaling_       (oceanParamList->get("Use scaling", false)),
+	useScaling_        (oceanParamList->get("Use scaling", false)),
+	recomputeBound_    (oceanParamList->get("Preconditioner recompute bound", 50)),
+	inputFile_         (oceanParamList->get("Input file", "ocean.h5")),
+	outputFile_        (oceanParamList->get("Output file", "ocean.h5")),
+	useExistingState_  (oceanParamList->get("Use existing state", false)),
 	parIdent_(19),    // Initialize continuation parameters
+	parValue_(0),
 	parStart_(0),
-	parEnd_(1),
-	parValue_(0)
+	parEnd_(1)
 {
 	INFO("Ocean: constructor...");
+	
 	
 	Teuchos::ParameterList &thcmList =
 		oceanParamList->sublist("THCM");
@@ -226,10 +227,10 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
-
+	
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
 	TIMER_START("Ocean: solve...");
-	Belos::ReturnType ret = belosSolver_->solve();	// Solve
+	belosSolver_->solve();	// Solve
 	TIMER_STOP("Ocean: solve...");
 
 	// Do some post-processing
@@ -481,7 +482,7 @@ void Ocean::saveStateToFile(std::string const &filename)
 	EpetraExt::HDF5 HDF5(*comm_);
 	HDF5.Create(filename);
 	HDF5.Write("State", *state_);
-	HDF5.Write("Map-" +  std::to_string(comm_->NumProc()),
+	HDF5.Write("Map-" +  std::to_string((long long) comm_->NumProc()),
 			   *(domain_->GetSolveMap()));
 	HDF5.Write("Continuation parameter", "Value", parValue_);
 	
@@ -513,7 +514,7 @@ void Ocean::loadStateFromFile(std::string const &filename)
 	// Read map and state
 	HDF5.Open(filename);
 	
-	HDF5.Read("Map-" + std::to_string(comm_->NumProc()), map);
+	HDF5.Read("Map-" + std::to_string((long long) comm_->NumProc()), map);
 	HDF5.Read("State", *map, state);
 
 	// Obtain Epetra_Vector from multivector and construct state_

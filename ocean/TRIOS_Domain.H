@@ -279,7 +279,7 @@ namespace TRIOS {
 		//! objects to transform the three vector types into one another
 		Teuchos::RCP<Epetra_Import> as2std,std2sol;
       
-		int l,m,n; //!dimension of global domain
+		int n,m,l; //!dimension of global domain
 		int lloc,mloc,nloc; //! dimension of local subdomain (incl. ghost-nodes)
 		int lloc0,mloc0,nloc0; //! dimension of local subdomain (excl. ghost-nodes)
       
@@ -295,13 +295,14 @@ namespace TRIOS {
 		//! size of processor array
 		int npL,npM,npN;
       
+      
+		//! flag indicating if there are more than one subdomain in the x-direction
+		bool xparallel;
+
 		//! if true, the domain is periodic in the x-direction.
 		//! This means that proc nx-1 has right neighbour proc 
 		//! 0 etc. and is useful for global computations.      
 		bool periodic;
-      
-		//! flag indicating if there are more tan one subdomain in the x-direction
-		bool xparallel;
 
 		//! number of "ghost layers" (constant)
 		/*! This is the number of cell layers imported
