@@ -84,10 +84,10 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
 
-	xmin_ = 286 * PI_ / 180;
-	xmax_ = 350 * PI_ / 180;
-	ymin_ =  10 * PI_ / 180;
-	ymax_ =  74 * PI_ / 180;
+	xmin_ = params->get("Global Bound xmin", 286) * PI_ / 180;
+	xmax_ = params->get("Global Bound xmax", 350) * PI_ / 180;
+	ymin_ = params->get("Global Bound ymin", 10)  * PI_ / 180;
+	ymax_ = params->get("Global Bound ymax", 74)  * PI_ / 180;
 	
 	// Set the grid increments
 	dx_ = (xmax_ - xmin_) / n_;
