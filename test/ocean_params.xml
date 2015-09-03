@@ -10,35 +10,35 @@
   
   <!-- Maximum allowed number of iterations in linear solver before a new -->
   <!-- preconditioner is requested -->
-  <Parameter name="Preconditioner recompute bound" type="int" value = "50"/>
+  <Parameter name="Preconditioner recompute bound" type="int" value = "100"/>
 
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->
     <Parameter name="Problem Description" type="string" value="test"/>
     <!-- western domain bound -->
-    <Parameter name="Global Bound xmin" type="double" value="240"/>
+    <Parameter name="Global Bound xmin" type="double" value="0"/>
     <!-- eastern domain bound -->
-    <Parameter name="Global Bound xmax" type="double" value="350"/>
+    <Parameter name="Global Bound xmax" type="double" value="359.99"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="10"/>
+    <Parameter name="Global Bound ymin" type="double" value="-80"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="74"/>
+    <Parameter name="Global Bound ymax" type="double" value="80"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="0"/>
     <!-- depth of the ocean -->
-    <Parameter name="Depth hdim" type="double" value="4000"/>
-
+    <Parameter name="Depth hdim" type="double" value="5000"/>
+    
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="16"/>
+    <Parameter name="Global Grid-Size n" type="int" value="180"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="16"/>
+    <Parameter name="Global Grid-Size m" type="int" value="80"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="16"/>
+    <Parameter name="Global Grid-Size l" type="int" value="12"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
@@ -52,14 +52,14 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_natl16"/>
+    <Parameter name="Land Mask" type="string" value="mask2deg12"/>
 
-	<!-- ==================== Coupling ================================= -->
-	<!-- Flag enabling the coupling with an atmosphere                   -->
+    <!-- ==================== Coupling ================================= -->
+    <!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
-	<Parameter name="Coupled Atmosphere" type="int" value="1"/>
-	<!-- =============================================================== -->
-
+    <Parameter name="Coupled Atmosphere" type="int" value="1"/>
+    <!-- =============================================================== -->
+    
     <!-- Mixing parameter (vmix_GLB in THCM) -->
     <Parameter name="Mixing" type="int" value="1"/>
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
@@ -78,13 +78,13 @@
     <!-- 0: data, 1: idealized            -->
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
 
-	<!-- ================== Coupling ================================== -->
-	<!-- Temperature forcing                                            -->
-	<!-- Levitus Temperature (ite in THCM)                              -->
+    <!-- ================== Coupling ================================== -->
+    <!-- Temperature forcing                                            -->
+    <!-- Levitus Temperature (ite in THCM)                              -->
     <!-- 0: data, 1: idealized, 2: coupled                              -->
     <Parameter name="Levitus T" type="int" value="2"/>
-	<!-- ============================================================== -->
-	
+    <!-- ============================================================== -->
+    
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
     <Parameter name="Levitus S" type="int" value="1"/>
@@ -126,22 +126,22 @@
     <!--             - "Step" (recompute after k time-/continuation steps)         -->
     <!-- here k is set by "Max Age Of Prec" above.                                 -->
     <Parameter name="Preconditioner Reuse Policy" type="string" value="None"/>
-	<!-- Maximum allowed number of iterations in linear solve before a new         -->
-	<!-- preconditioner is requested -->
-	<Parameter name="recomputeBound" type="int" value = "10"/>
+    <!-- Maximum allowed number of iterations in linear solve before a new         -->
+    <!-- preconditioner is requested -->
+    <Parameter name="recomputeBound" type="int" value = "10"/>
     <!-- set start values for the various THCM parameters.     -->
     <!-- currently only a small subset of them is available in -->
     <!-- Trilinos-THCM, but they can be added easily           -->
     <!-- The starting value in the "LOCA" or "Time Stepping"   -->
     <!-- lists overwrites the choice here                      -->
-	<!-- usrc seems to overwrite them as well at this point... -->
+    <!-- usrc seems to overwrite them as well at this point... -->
     <ParameterList name="Starting Parameters">
       <!-- PAR(15), Salt forcing factor                         -->
       <!-- <Parameter name="Salinity Forcing" type="double" value="0.0"/> -->
-	  <!-- PAR(16), Wind forcing factor                         -->
-      <!-- <Parameter name="Wind Forcing" type="double" value="0.0"/>   -->
+      <!-- PAR(16), Wind forcing factor                         -->
+      <Parameter name="Wind Forcing" type="double" value="0.0"/>
       <!-- PAR(17), Temperature forcing factor                  -->
-      <!-- <Parameter name="Temperature Forcing" type="double" value="10.0"/> -->
+      <Parameter name="Temperature Forcing" type="double" value="10.0"/>
       <!-- PAR(18), the Biot number                             -->
       <!-- <Parameter name="Nonlinear Factor" type="double" value="25.0"/> -->
       <!-- PAR(19), Salt/Wind/Temperature forcing factor           -->
@@ -149,7 +149,7 @@
       <!-- convective adjustment -->
       <!-- <Parameter name="P_VC" type="double" value="5.0"/> -->
       <!-- mixing parameters -->
-	  <!-- check whether vmix_GLB triggers the correct vmix_flag-->
+      <!-- check whether vmix_GLB triggers the correct vmix_flag-->
       <!-- <Parameter name="SPL1" type="double" value="1.25"/> -->
       <!-- <Parameter name="SPL2" type="double" value="0.01"/> -->
     </ParameterList>
