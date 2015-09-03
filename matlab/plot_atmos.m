@@ -2,6 +2,11 @@
 surfm      = landm(2:n+1,2:m+1,l+1);    %Only interior surface points
 landm_int  = landm(2:n+1,2:m+1,2:l+1);
 
+srf = [];
+greyness = .85;
+srf(:,:,1) = (1-greyness*(surfm'));
+srf(:,:,2) = (1-greyness*(surfm'));
+srf(:,:,3) = (1-greyness*(surfm'));
 
 %otemp  = importdata('atmos_oceanTemp.txt');
 state  = importdata('atmos_state.txt');
@@ -21,11 +26,21 @@ Ta  = reshape(T0 + state,n,m);
 % xlabel('Longitude')
 % ylabel('Latitude')
 % exportfig('oceanTemp.eps')
-
+%%
+colormap jet
 figure(6)
-contourf(RtD*x,RtD*y,Ta',15); hold on;
+img = Ta';
+contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
+imagesc(RtD*x,RtD*(y),img,'AlphaData',.8);
+image(RtD*x,RtD*(y),srf,'AlphaData',.5); 
+c = contour(RtD*x,RtD*(y),img,10,'Visible', 'on','linewidth',2); 
 colorbar
-contour(RtD*x,RtD*y,T0-1e-4*surfm',1,'k-','linewidth',2); hold off
+caxis([min(min(Ta)),max(max(Ta))])
+hold off
+
+
+drawnow
+
 
 title('Atmosphere')
 xlabel('Longitude')

@@ -73,22 +73,25 @@ end
 %% - PLOT THE RESULTS - ----------------------------------------------
 figure(1)
 img = PSIB(2:end,:)';
+minval = min(min(img));
+maxval = max(max(img));
 contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
-imagesc(RtD*x,RtD*(y),img,'AlphaData',.1); hold on
-image(RtD*x,RtD*(y),srf,'AlphaData',1); hold on
+imagesc(RtD*x,RtD*(y),img,'AlphaData',.8); hold on
+image(RtD*x,RtD*(y),srf,'AlphaData',.9); hold on
 contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',2); hold off;
 colorbar
+caxis([minval,maxval])
 title('Barotropic Streamfunction');
 xlabel('Longitude')
 ylabel('Latitude')
 exportfig('bstream.eps')
 %%
 figure(8)
-img = squeeze(sum(v,3))';
+img = squeeze(abs(sum(u,3))>1e-8)';
 contour(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
-imagesc(RtD*x,RtD*(y),img,'AlphaData',.1); hold on
-image(RtD*x,RtD*(y),srf,'AlphaData',0.9); hold on
-contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',2); hold off;
+imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold on
+image(RtD*x,RtD*(y),srf,'AlphaData',.1); hold on
+% contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',2); hold off;
 
 title('Depth-averaged meridional velocity');
 xlabel('Longitude')
