@@ -82,10 +82,10 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
 
-	xmin_ = params->get("Global Bound xmin", 286) * PI_ / 180;
-	xmax_ = params->get("Global Bound xmax", 350) * PI_ / 180;
-	ymin_ = params->get("Global Bound ymin", 10)  * PI_ / 180;
-	ymax_ = params->get("Global Bound ymax", 74)  * PI_ / 180;
+	xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
+	xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
+	ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
+	ymax_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
 	
 	// Set the grid increments
 	dx_ = (xmax_ - xmin_) / n_;
@@ -227,7 +227,7 @@ void Atmosphere::computeRHS()
 	TIMER_START("Atmosphere: compute RHS...");
 
 	// If necessary compute a new Jacobian
-   //	if (recomputeJacobian_)
+	//	if (recomputeJacobian_)
 	computeJacobian();
 
 	// Compute the forcing
