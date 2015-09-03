@@ -167,7 +167,7 @@ private:
 public:
 	// Constructor, specify horizontal grid dimensions
 	//  > the number of vertical layers is assumed 1 at this point
-	Atmosphere(int n, int m, ParameterList params);
+	Atmosphere(ParameterList params);
 
 	// Destructor
 	~Atmosphere();

@@ -14,17 +14,13 @@
 
 //---------------------------------------------------------------------------
 // Constructor, specify horizontal grid dimensions
-Atmosphere::Atmosphere(int n, int m, ParameterList params)
+Atmosphere::Atmosphere(ParameterList params)
 	:
-	n_(n),
-	m_(m),
-	l_(1),
-    dim_(m * n * 1),
+	n_               (params->get("Global Grid-Size n", 16)),
+	m_               (params->get("Global Grid-Size m", 16)),
+	l_               (params->get("Global Grid-Size l", 1)),
 	periodic_        (params->get("Periodic", false)),
-	ksub_(m),
-	ksup_(m),
-	ldimA_(2 * ksub_ + 1 + ksup_),
-	solvingScheme_('B'),
+	solvingScheme_   (params->get("Solving scheme", 'B')),
 	rhoa_            (params->get("atmospheric density",1.25)),
 	hdima_           (params->get("heat capacity",8400.)),
 	cpa_             (params->get("heat capacity",1000.)),
@@ -44,6 +40,17 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	outputFile_      (params->get("Output file", "atmos.h5"))
 {
 	INFO("Atmosphere: constructor...");
+
+	// Dimension of atmosphere
+	dim_ = m_ * n_ * l_;
+
+	// Number of super and sub-diagonal bands in banded matrix
+	ksub_ = std::max(n_, m_);
+	ksup_ = std::max(n_, m_);
+
+	// Leading dimension of banded matrix
+	ldimA_ = 2 * ksub_ + 1 + ksup_;
+	
 	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
 	amplEnd_ = 1.0        ; //!

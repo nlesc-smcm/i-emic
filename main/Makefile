@@ -6,8 +6,8 @@ DIRS =  \
 	$(PROJECT_BASE)/supervector/\
 	$(PROJECT_BASE)/coupledmodel/\
 
-EXE     = test timestepping
-OBJS    = test.o timestepping.o
+EXE     = main test timestepping
+OBJS    = main.o test.o timestepping.o
 OBJLIBS = lib$(LIB_OCEAN).a\
 	      lib$(LIB_ATMOS).a\
 	      lib$(LIB_COUPLED).a\
@@ -36,13 +36,17 @@ INTLIBS = \
 
 CXX_DB =
 
-all: test
+all: main
+
+main: $(OBJLIBS) main.o
+	$(CXX) main.o -o main $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 test: $(OBJLIBS) test.o
 	$(CXX) test.o -o test $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 timestepping: $(OBJLIBS) timestepping.o
 	$(CXX) timestepping.o -o timestepping $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
+
 
 lib$(LIB_OCEAN).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_OCEAN); $(MAKE) $(MFLAGS)
@@ -55,6 +59,7 @@ lib$(LIB_COUPLED).a: force_look
 
 lib$(LIB_SUPERVEC).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_SUPERVEC); $(MAKE) $(MFLAGS)
+
 
 %.o: %.C $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $(CXX_DB) $<
