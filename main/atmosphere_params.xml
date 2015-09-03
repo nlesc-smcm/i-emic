@@ -25,14 +25,14 @@
   <Parameter name="Use existing state" type="bool" value = "false" />
 
   <!-- western, eastern, southern and northern domain bounds      -->
-  <Parameter name="Global Bound xmin" type="double" value="0"      />
-  <Parameter name="Global Bound xmax" type="double" value="359.99" />
-  <Parameter name="Global Bound ymin" type="double" value="-80"    />
+  <Parameter name="Global Bound xmin" type="double" value="200"    />
+  <Parameter name="Global Bound xmax" type="double" value="300"    />
+  <Parameter name="Global Bound ymin" type="double" value="10"     />
   <Parameter name="Global Bound ymax" type="double" value="80"     />
 
   <!-- global number of grid points in x,y and z-directions       -->
-  <Parameter name="Global Grid-Size n" type="int" value="180"       />
-  <Parameter name="Global Grid-Size m" type="int" value="80"       />
+  <Parameter name="Global Grid-Size n" type="int" value="32"       />
+  <Parameter name="Global Grid-Size m" type="int" value="32"       />
   <Parameter name="Global Grid-Size l" type="int" value="1"        />
 
   <!-- Supply solving scheme: 'D': direct dense                   -->

@@ -2,21 +2,18 @@
 surfm      = landm(2:n+1,2:m+1,l+1);    %Only interior surface points
 landm_int  = landm(2:n+1,2:m+1,2:l+1);
 
-%%
+
 %otemp  = importdata('atmos_oceanTemp.txt');
 state  = importdata('atmos_state.txt');
 %sol   = importdata('atmos_sol.txt');
 
-n = 180; m = 80;
 T0  = 15.0;   %//! reference temperature
 RtD = 180/pi;
 
 %To  = reshape(T0 + otemp,n,m);
 Ta  = reshape(T0 + state,n,m);
-imagesc(flipud(Ta'))
-colorbar
 %Ts  = reshape(T0 + sol,n,m);
-%%
+
 % figure(5)
 % contourf(RtD*x, RtD*y,To',15);
 % colorbar
@@ -26,10 +23,10 @@ colorbar
 % exportfig('oceanTemp.eps')
 
 figure(6)
-% contourf(RtD*x,RtD*y,Ta',15); hold on;
-imagesc(RtD*x,RtD*y,flipud(Ta')); hold on
-contour(RtD*x,RtD*y,T0+1e-2*flipud(surfm'),1,'k-','linewidth',2); hold off
+contourf(RtD*x,RtD*y,Ta',15); hold on;
 colorbar
+contour(RtD*x,RtD*y,T0-1e-4*surfm',1,'k-','linewidth',2); hold off
+
 title('Atmosphere')
 xlabel('Longitude')
 ylabel('Latitude')
