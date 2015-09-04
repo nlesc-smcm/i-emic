@@ -158,10 +158,9 @@ public:
 	double  getPar();
 	double  getParDestination() { return parEnd_; }
 
-
-	// Let the ocean do some administrative
-	//  work after a continuation/time step 
-	void postConvergence();
+	// ! Pre and post-convergence processing
+	void preProcess();
+	void postProcess();
 	
 	// Get functions for the grid dimensions
 	int getNdim() { return N_;}

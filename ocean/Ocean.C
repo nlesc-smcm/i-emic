@@ -125,7 +125,15 @@ void Ocean::randomizeState(double scaling)
 }
 
 //====================================================================
-void Ocean::postConvergence()
+void Ocean::preProcess()
+{
+	// Enable computation of preconditioner
+	recomputePreconditioner_ = true;
+	INFO("Ocean pre-processing: enabling computation of preconditioner.");
+}
+
+//====================================================================
+void Ocean::postProcess()
 {
 	saveStateToFile(outputFile_);
 	writeFortFiles();
@@ -142,17 +150,17 @@ void Ocean::initializeSolver()
 
 	// Setup block preconditioner parameters
 	// --> xml files should have a better home
-	Teuchos::RCP<Teuchos::ParameterList> solverParams =
+	Teuchos::RCP<Teuchos::ParameterList> precParams =
 		Teuchos::rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("solver_params.xml",
-								solverParams.ptr());	
+	updateParametersFromXmlFile("ocean_preconditioner_params.xml",
+								precParams.ptr());	
 
 	// Get the domain decomposition from THCM, needed for the preconditioner.
 	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
 
 	// Create and initialize block preconditioner
 	precPtr_ = 	Teuchos::rcp(new TRIOS::BlockPreconditioner
-							 (jac_, domain, *solverParams));
+							 (jac_, domain, *precParams));
 	INFO("Ocean: initializing preconditioner...");
 	precPtr_->Initialize();
 	INFO("Ocean: initializing preconditioner... done");
@@ -213,6 +221,7 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	{
 		// Compute preconditioner
 		TIMER_START("Ocean: build preconditioner...");
+		INFO("Ocean: build preconditioner...");
 		precPtr_->Compute();		
 		TIMER_STOP("Ocean: build preconditioner...");
 		recomputePreconditioner_ = false;  // Disable subsequent recomputes
@@ -417,7 +426,7 @@ std::shared_ptr<std::vector<int> > Ocean::getSurfaceTRows()
 // Fill and return a copy of surfaceT_
 std::shared_ptr<std::vector<double> > Ocean::getSurfaceT()
 {
-	TIMER_START("Ocean::getSurfaceT()...");
+	TIMER_START("Ocean: get surface temperature...");
 	
     // extract solution from gathered vector --> this is slow
 	// everything should be better distributed
@@ -437,8 +446,7 @@ std::shared_ptr<std::vector<double> > Ocean::getSurfaceT()
 			++idx;
 		}
 
-	TIMER_STOP("Ocean::getSurfaceT()...");
-	
+	TIMER_STOP("Ocean: get surface temperature...");	
 	return surfaceT_;
 }
 
@@ -451,7 +459,6 @@ std::shared_ptr<std::vector<int> > Ocean::getLandMask()
 //=====================================================================
 void Ocean::writeFortFiles()
 {	
-	TIMER_START("Ocean::writeFortFiles()...");
 	// This function may break on a distributed memory system.
 	Teuchos::RCP<Epetra_MultiVector> solution = Utils::Gather(*state_, 0);
 	int filename = 3;
@@ -468,7 +475,6 @@ void Ocean::writeFortFiles()
 		FNAME(write_data)(solutionArray, &filename, &label);
 	}
 	delete [] solutionArray;
-	TIMER_STOP("Ocean::writeFortFiles()...");
 }
 
 //=====================================================================

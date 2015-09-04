@@ -810,7 +810,13 @@ void Atmosphere::setLandMask(std::shared_ptr<std::vector<int> > landm)
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::postConvergence()
+void Atmosphere::preProcess()
+{
+	// nothing to do here (yet)
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::postProcess()
 {
 	saveStateToFile("atmos.h5");
 	write(*state_, "atmos_state.txt");       
@@ -819,7 +825,6 @@ void Atmosphere::postConvergence()
 //-----------------------------------------------------------------------------
 void Atmosphere::saveStateToFile(std::string const &filename)
 {
-	TIMER_START("Atmosphere::saveStateToFile()...");
 	INFO("Writing to " << filename);
 	
     hid_t       file_id, group_id, dataspace_id, dataset_id;
@@ -873,7 +878,6 @@ void Atmosphere::saveStateToFile(std::string const &filename)
 		if (status[i] != 0)
 			WARNING("Status[" << i << "] not ok", __FILE__, __LINE__);
 
-	TIMER_STOP("Atmosphere::saveStateToFile()...");
 }
 
 //-----------------------------------------------------------------------------

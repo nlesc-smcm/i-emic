@@ -86,11 +86,11 @@ xlabel('Longitude')
 ylabel('Latitude')
 exportfig('bstream.eps')
 %%
-figure(8)
-img = squeeze(abs(sum(u,3))>1e-8)';
-contour(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
-imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold on
-image(RtD*x,RtD*(y),srf,'AlphaData',.1); hold on
+%figure(8)
+%img = squeeze(abs(sum(u,3))>1e-8)';
+%contour(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
+%imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold on
+%image(RtD*x,RtD*(y),srf,'AlphaData',.1); hold on
 % contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',2); hold off;
 
 title('Depth-averaged meridional velocity');

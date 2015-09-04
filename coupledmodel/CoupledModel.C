@@ -379,16 +379,23 @@ double CoupledModel::getParDestination()
 }
 
 //------------------------------------------------------------------
-void CoupledModel::postConvergence()
+void CoupledModel::preProcess()
+{
+	ocean_->preProcess();
+	atmos_->preProcess();
+}
+
+//------------------------------------------------------------------
+void CoupledModel::postProcess()
 {
 	// If the solver is completely decoupled, this is the right
 	// moment to synchronize
 	if (solvingScheme_ == 'D')
 		synchronize();
 
-	// Let the models do their post-convergence processing
-	ocean_->postConvergence();
-	atmos_->postConvergence();
+	// Let the models do their own post-processing
+	ocean_->postProcess();
+	atmos_->postProcess();
 }
 
 //------------------------------------------------------------------

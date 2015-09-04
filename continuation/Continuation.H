@@ -87,16 +87,18 @@ run()
 	
 	while (!destinationReached_ && step_ != maxSteps_)
 	{
+		// Let the model do some administrative work before a step
+		model_->preProcess();
+		
 		step();  // Perform a continuation step
-
-		// Let the model do some administrative work after
-		// a continuation step 
-		model_->postConvergence();	   
-
+		
+		// Let the model do some administrative work after a step 
+		model_->postProcess();	   
+		
 		// Detect special points:
 		//  if necessary converge on them (-->not implemented yet)
 		detect();
-
+		
 		++step_;
 	}
 	INFO("---------Finished continuation run------------");
