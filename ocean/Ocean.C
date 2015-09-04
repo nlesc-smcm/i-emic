@@ -74,6 +74,12 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	state_->PutScalar(0.0);
 	INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
 
+	// Get domain object and set the problem dimensions
+	domain_ = THCM::Instance().GetDomain();
+	N_ = domain_->GlobalN();
+ 	M_ = domain_->GlobalM();
+	L_ = domain_->GlobalL();
+	
 	// If specified we load a pre-existing state and parameter (x,l)
 	if (useExistingState_)
 		loadStateFromFile(inputFile_);
@@ -87,11 +93,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	
-	// Get domain object and set the problem dimensions
-	domain_ = THCM::Instance().GetDomain();
-	N_ = domain_->GlobalN();
- 	M_ = domain_->GlobalM();
-	L_ = domain_->GlobalL();
 	
 	// Initialize surface temperature
 	surfaceT_ = std::make_shared<std::vector<double> >(N_*M_, 0.0);
@@ -488,8 +489,6 @@ void Ocean::saveStateToFile(std::string const &filename)
 	EpetraExt::HDF5 HDF5(*comm_);
 	HDF5.Create(filename);
 	HDF5.Write("State", *state_);
-	HDF5.Write("Map-" +  std::to_string((long long) comm_->NumProc()),
-			   *(domain_->GetSolveMap()));
 	HDF5.Write("Continuation parameter", "Value", parValue_);
 	
 	TIMER_STOP("Ocean::saveStateToFile...");
@@ -519,13 +518,18 @@ void Ocean::loadStateFromFile(std::string const &filename)
 
 	// Read map and state
 	HDF5.Open(filename);
+	HDF5.Read("State", state);
+
+	// Create importer
+	// target map: thcm domain SolveMap
+	// source map: state as read by HDF5.Read
+	Teuchos::RCP<Epetra_Import> lin2solve =
+		Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
+									   state->Map() ));
 	
-	HDF5.Read("Map-" + std::to_string((long long) comm_->NumProc()), map);
-	HDF5.Read("State", *map, state);
-
-	// Obtain Epetra_Vector from multivector and construct state_
-	state_ = Teuchos::rcp(new Epetra_Vector( *((*state)(0)) ) );
-
+	// Import state from HDF5 into state_ datamember
+	state_->Import(*((*state)(0)), *lin2solve, Insert);
+	
 	// Read continuation parameter and put it in THCM
 	HDF5.Read("Continuation parameter", "Value", parValue_);
 	setPar(parValue_);
