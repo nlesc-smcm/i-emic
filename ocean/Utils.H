@@ -28,8 +28,8 @@
 #  include "Epetra_SerialComm.h"
 #endif
 
-// for sorting indices
-#include <algorithm>
+#include <algorithm> // for sorting indices
+#include <vector>
 
 #include "GlobalDefinitions.H"
 
@@ -109,7 +109,11 @@ namespace Utils
     //! are the variables to be extracted.
 	Teuchos::RCP<Epetra_Map> CreateSubMap(const Epetra_Map& map, int dof,
 										  const int *var, int nvars);
-    
+
+	//! extract a map based on a list of global indices
+	Teuchos::RCP<Epetra_BlockMap> CreateSubMap(const Epetra_BlockMap& map,
+											   std::vector<int> const &indices);
+	
     //! given a map and an array indicating wether each node of the map is to be
     //! discarded (true) or not (false), this function creates a new map with the
     //! discarded entries removed.

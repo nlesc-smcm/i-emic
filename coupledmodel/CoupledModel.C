@@ -59,7 +59,7 @@ void CoupledModel::synchronize()
 	// changed, so we compute, compare and store a hash
 	if (useHash_)
 	{
-		std::size_t hash = stateView_->hash();
+		std::size_t  hash = stateView_->hash();
 		if (hash == syncHash_)
 			return;
 		else
