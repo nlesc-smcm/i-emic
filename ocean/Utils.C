@@ -349,8 +349,6 @@ Teuchos::RCP<Epetra_BlockMap> Utils::CreateSubMap(const Epetra_BlockMap& map,
 		Teuchos::rcp(new Epetra_Map(listdim, MyGlobalElements.size(),
 									&MyGlobalElements[0], 0, map.Comm()));
 
-	
-	std::cout << *submap << std::endl;
 	delete [] PIDList;
 	delete [] LIDList;
 	return submap;

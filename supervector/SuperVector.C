@@ -237,7 +237,7 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 
 		// Import indexed ocean values into restricted vector
 		restricted->Import(*oceanVector_, *ocean2index, Insert);
-		
+
 		// gather the restricted ocean
 		Teuchos::RCP<Epetra_MultiVector> gathered =
 			Utils::AllGather(*restricted);
@@ -251,9 +251,9 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 		// calculate the scaled values in the destination stdVector
 		for (size_t i = 0; i != atmosVector_->size(); ++i)
 			(*atmosVector_)[i] = diagonal[i] * fullSol[i];
-
 		// cleanup
 		delete fullSol;
+		
 		TIMER_STOP("SuperVector: linearTransformation O->A...");
 	}
 	else if (domain == 'A' && range == 'O')
