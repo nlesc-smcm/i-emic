@@ -31,8 +31,8 @@
   <Parameter name="Global Bound ymax" type="double" value="80"     />
 
   <!-- global number of grid points in x,y and z-directions       -->
-  <Parameter name="Global Grid-Size n" type="int" value="16"       />
-  <Parameter name="Global Grid-Size m" type="int" value="16"       />
+  <Parameter name="Global Grid-Size n" type="int" value="96"       />
+  <Parameter name="Global Grid-Size m" type="int" value="64"       />
   <Parameter name="Global Grid-Size l" type="int" value="1"        />
 
   <!-- Supply solving scheme: 'D': direct dense                   -->
