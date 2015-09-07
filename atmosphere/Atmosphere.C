@@ -78,7 +78,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
 
 	// Initialize dense matrix:
-	if (solvingScheme == 'D')
+	if (solvingScheme_ == 'D')
 		denseA_ = std::vector<double>(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
 
 	// Initialize banded storage
