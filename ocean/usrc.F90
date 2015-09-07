@@ -257,8 +257,10 @@ SUBROUTINE matrix(un,sig1,sig2)
 
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
-
-     if ((vmix_temp.eq.1).or.(vmix_salt.eq.1)) call vmix_jac(un)
+     
+     if (((vmix_temp.eq.1).or.(vmix_salt.eq.1)).and.(vmix_dim.gt.0)) then
+        call vmix_jac(un)
+     endif
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
      if (vmix_out.gt.0) write (*,'(a26, f10.3)') 'MIX|        ...matrix done', time1-time0
@@ -336,7 +338,9 @@ SUBROUTINE rhs(un,B)
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
 
-     if ((vmix_temp.eq.1).or.(vmix_salt.eq.1)) call vmix_fun(un,mix,vmix_fix)
+     if (((vmix_temp.eq.1).or.(vmix_salt.eq.1)).and.(vmix_dim.gt.0)) then
+        call vmix_fun(un,mix,vmix_fix)
+     endif
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
      if (vmix_out.gt.0) write (*,'(a26,f10.3)') 'MIX|    ...rhs done',time1-time0

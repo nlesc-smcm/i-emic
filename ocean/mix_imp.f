@@ -37,6 +37,38 @@
 *     
 *     ============================================================================ *
 
+! Call structure w.r.t DSM and FDJS
+!   +----------------------------+                    
+!   |                            |   +-----------+    
+!   |          mix_imp.f         |   |   usrc.f  |    
+!   |                            | --+-----+-----+    
+!   |                          --+/        |          
+!   |        +---------------+/  |         |          
+!   |        | vmix_control  |   |         |          
+!   |        +------+--------+   |         |          
+!   |               |            +---------+---------+
+!   |      +--------+----+         +-------+--+      |
+!   |      |  vmix_part  |         | vmix_jac |      |
+!   |      +------+---+--+         +----+-----+      |
+!   |             |   |                 |            |
+!   | +-------------+ |             +---+----+       |
+!   | | vmix_el(1,2)| |             |  FDJ   |       |
+!   | |  -vmix_dim  | |            /+--------+       |
+!   | +-------------+ |           /                  |
+!   |                 |          |                   |
+!   |             +---+--------+ /                   |
+!   |             | DSM        |/                    |
+!   |             | -vmix_iptr |                     |
+!   |             +------------+                     |
+!   |                                                |
+!   |                                                |
+!   |                                                |
+!   |                                                |
+!   |                                                |
+!   |                                                |
+!   |                                                |
+!   +------------------------------------------------+
+
       subroutine vmix_init
       use m_usr
       use m_mix
@@ -154,8 +186,6 @@
       
       liwa=6*ndim
 
-      write(*,*) "calling dsm with M=", ndim, " N=", ndim, " NPAIRS=", vmix_dim 
-      
       call dsm(ndim,ndim,
      +     vmix_dim,vmix_row,vmix_col,
      +     vmix_ngrp,vmix_maxgrp,vmix_mingrp,
@@ -163,13 +193,20 @@
      +     vmix_ipntr,vmix_jpntr,
      +     iwa,liwa)
       dnsm=real(vmix_dim)/(real(ndim)**2)
-      if (vmix_out.gt.0) write (*,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
-      if (vmix_out.gt.0) write (*,'(a16,es10.2)') 'MIX|     dnsm:  ', dnsm
+      if (vmix_out.eq.0) write (*,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
+      if (vmix_out.eq.0) write (*,'(a16,es10.2)') 'MIX|     dnsm:  ', dnsm
 
       if (info.le.0) then
          write (*,*) 'Error in subroutine DSM'
          write (*,*) 'INFO =', info
-         stop
+         write (*,*) 'NPAIRS (vmix_dim) =', vmix_dim
+         if (vmix_dim.eq.0) then
+            write(*,*) ' There are no relevant matrix entries,'
+            write(*,*) ' our core is probably located on land...'
+            return
+         else
+            stop
+         endif
       endif
       vmix_maxrow=0
       vmix_minrow=ndim
