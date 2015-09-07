@@ -173,16 +173,23 @@ void Ocean::initializeSolver()
 	
 	// Belos parameter setup
 	// --> xml
+	int NumGlobalElements = state_->GlobalLength();
+	int maxsubspace = 500;
+	int maxrestarts = 2;
+	int blocksize   = 1;
+	int maxiters    = NumGlobalElements/blocksize - 1;
 	belosParamList_ = rcp(new Teuchos::ParameterList());
-	belosParamList_->set("Block Size", 1);
+	belosParamList_->set("Block Size", blocksize);
 	belosParamList_->set("Flexible Gmres", true);
 	belosParamList_->set("Adaptive Block Size", false);
-	belosParamList_->set("Num Blocks",250);
-	belosParamList_->set("Maximum Restarts",4);
+	belosParamList_->set("Num Blocks",maxsubspace);
+	belosParamList_->set("Maximum Restarts",maxrestarts);
 	belosParamList_->set("Orthogonalization","DGKS");
-	belosParamList_->set("Output Frequency",1);
-	belosParamList_->set("Maximum Iterations", 250);
-	belosParamList_->set("Convergence Tolerance", 1.0e-3); 
+	belosParamList_->set("Output Frequency",10);
+	belosParamList_->set("Verbosity", Belos::TimingDetails + Belos::Errors +
+						 Belos::Warnings + Belos::StatusTestDetails );
+	belosParamList_->set("Maximum Iterations", maxiters);       // Maximum number of iterations
+	belosParamList_->set("Convergence Tolerance", 1.0e-2);      // Relative convergence tol
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
 	// --> xml
@@ -237,11 +244,20 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
-	
+
+	// ---------------------------------------------------------------------
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
 	TIMER_START("Ocean: solve...");
-	belosSolver_->solve();	// Solve
+	try
+	{
+		belosSolver_->solve(); 	// Solve
+	}
+	catch (std::exception const &e)
+	{
+		INFO("Ocean: exception caught: " << e.what());
+	}	
 	TIMER_STOP("Ocean: solve...");
+	// ---------------------------------------------------------------------
 
 	// Do some post-processing
 	belosIters_ = belosSolver_->getNumIters();		
