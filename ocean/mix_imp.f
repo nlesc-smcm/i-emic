@@ -153,6 +153,9 @@
       end select
       
       liwa=6*ndim
+
+      write(*,*) "calling dsm with M=", ndim, " N=", ndim, " NPAIRS=", vmix_dim 
+      
       call dsm(ndim,ndim,
      +     vmix_dim,vmix_row,vmix_col,
      +     vmix_ngrp,vmix_maxgrp,vmix_mingrp,
