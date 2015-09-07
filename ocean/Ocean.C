@@ -177,11 +177,11 @@ void Ocean::initializeSolver()
 	belosParamList_->set("Block Size", 1);
 	belosParamList_->set("Flexible Gmres", true);
 	belosParamList_->set("Adaptive Block Size", false);
-	belosParamList_->set("Num Blocks",1000);
-	belosParamList_->set("Maximum Restarts",0);
+	belosParamList_->set("Num Blocks",250);
+	belosParamList_->set("Maximum Restarts",4);
 	belosParamList_->set("Orthogonalization","DGKS");
 	belosParamList_->set("Output Frequency",1);
-	belosParamList_->set("Maximum Iterations", 1000);
+	belosParamList_->set("Maximum Iterations", 250);
 	belosParamList_->set("Convergence Tolerance", 1.0e-3); 
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
