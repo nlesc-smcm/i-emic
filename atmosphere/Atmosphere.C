@@ -78,7 +78,8 @@ Atmosphere::Atmosphere(ParameterList params)
 	frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
 
 	// Initialize dense matrix:
-	denseA_ = std::vector<double>(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
+	if (solvingScheme == 'D')
+		denseA_ = std::vector<double>(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
 
 	// Initialize banded storage
 	bandedA_ = std::vector<double>(ldimA_ * dim_, 0.0);
@@ -663,14 +664,6 @@ void Atmosphere::test()
 {
 	std::cout << "Atmosphere: tests" << std::endl;
 	
-	std::cout << "  dense A size: " << denseA_.size() << std::endl;
-	std::cout << "  outputting dense A in atmos_denseA.txt: " << std::endl;
-
-	std::ofstream atmos_denseA;
-	atmos_denseA.open("atmos_denseA.txt");
-	for (auto &i : denseA_)
-		atmos_denseA << std::setprecision(12) << i << '\n';
-	atmos_denseA.close();
 	
 	std::cout << "            testing shift..." << std::endl;
 
