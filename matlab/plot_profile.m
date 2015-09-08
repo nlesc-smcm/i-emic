@@ -7,6 +7,7 @@ function [profile] = plot_profile(filename, range)
   M       = numel(profile.textdata);
   cores   = 2.^(0:N-1);
   x_axis  = 1:N;
+  x_axis  = cores;
   
   if nargin == 1
 	range = 1:M;
@@ -15,11 +16,23 @@ function [profile] = plot_profile(filename, range)
   colm = lines(numel(range));
   ctr  = 1;
   for i = range
-	semilogy(x_axis, profile.data((i-1)*N+2:i*N+1),'.-','color',colm(ctr,:));
-    ctr = ctr + 1;
-	hold on
+      pllt = profile.data((i-1)*N+2:i*N+1);
+      figure(1) 
+      semilogy(x_axis, pllt,'.-','linewidth',2,'markersize',15,'color',colm(ctr,:));
+      hold on
+      
+      figure(2)
+      plot(x_axis,pllt(1)./pllt,'.-','linewidth',2,'markersize',15,'color',colm(ctr,:));
+      hold on
+      
+      ctr = ctr + 1;
   end
+  figure(1)
   hold off
-  legend(profile.textdata(range));
-	  
+  figure(2) 
+  legend(profile.textdata(range),'location','northwest');
+  plot(x_axis, x_axis, 'k--')
+  hold off
+ 
+    
 end

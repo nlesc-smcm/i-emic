@@ -14,17 +14,13 @@
 
 //---------------------------------------------------------------------------
 // Constructor, specify horizontal grid dimensions
-Atmosphere::Atmosphere(int n, int m, ParameterList params)
+Atmosphere::Atmosphere(ParameterList params)
 	:
-	n_(n),
-	m_(m),
-	l_(1),
-    dim_(m * n * 1),
+	n_               (params->get("Global Grid-Size n", 16)),
+	m_               (params->get("Global Grid-Size m", 16)),
+	l_               (params->get("Global Grid-Size l", 1)),
 	periodic_        (params->get("Periodic", false)),
-	ksub_(m),
-	ksup_(m),
-	ldimA_(2 * ksub_ + 1 + ksup_),
-	solvingScheme_('B'),
+	solvingScheme_   (params->get("Solving scheme", 'B')),
 	rhoa_            (params->get("atmospheric density",1.25)),
 	hdima_           (params->get("heat capacity",8400.)),
 	cpa_             (params->get("heat capacity",1000.)),
@@ -44,6 +40,17 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	outputFile_      (params->get("Output file", "atmos.h5"))
 {
 	INFO("Atmosphere: constructor...");
+
+	// Dimension of atmosphere
+	dim_ = m_ * n_ * l_;
+
+	// Number of super and sub-diagonal bands in banded matrix
+	ksub_ = std::max(n_, m_);
+	ksup_ = std::max(n_, m_);
+
+	// Leading dimension of banded matrix
+	ldimA_ = 2 * ksub_ + 1 + ksup_;
+	
 	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
 	amplEnd_ = 1.0        ; //!
@@ -71,7 +78,8 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
 
 	// Initialize dense matrix:
-	denseA_ = std::vector<double>(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
+	if (solvingScheme_ == 'D')
+		denseA_ = std::vector<double>(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
 
 	// Initialize banded storage
 	bandedA_ = std::vector<double>(ldimA_ * dim_, 0.0);
@@ -82,10 +90,10 @@ Atmosphere::Atmosphere(int n, int m, ParameterList params)
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
 
-	xmin_ = 286 * PI_ / 180;
-	xmax_ = 350 * PI_ / 180;
-	ymin_ =  10 * PI_ / 180;
-	ymax_ =  74 * PI_ / 180;
+	xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
+	xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
+	ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
+	ymax_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
 	
 	// Set the grid increments
 	dx_ = (xmax_ - xmin_) / n_;
@@ -227,7 +235,7 @@ void Atmosphere::computeRHS()
 	TIMER_START("Atmosphere: compute RHS...");
 
 	// If necessary compute a new Jacobian
-   //	if (recomputeJacobian_)
+	//	if (recomputeJacobian_)
 	computeJacobian();
 
 	// Compute the forcing
@@ -656,14 +664,6 @@ void Atmosphere::test()
 {
 	std::cout << "Atmosphere: tests" << std::endl;
 	
-	std::cout << "  dense A size: " << denseA_.size() << std::endl;
-	std::cout << "  outputting dense A in atmos_denseA.txt: " << std::endl;
-
-	std::ofstream atmos_denseA;
-	atmos_denseA.open("atmos_denseA.txt");
-	for (auto &i : denseA_)
-		atmos_denseA << std::setprecision(12) << i << '\n';
-	atmos_denseA.close();
 	
 	std::cout << "            testing shift..." << std::endl;
 
@@ -803,7 +803,13 @@ void Atmosphere::setLandMask(std::shared_ptr<std::vector<int> > landm)
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::postConvergence()
+void Atmosphere::preProcess()
+{
+	// nothing to do here (yet)
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::postProcess()
 {
 	saveStateToFile("atmos.h5");
 	write(*state_, "atmos_state.txt");       
@@ -812,7 +818,6 @@ void Atmosphere::postConvergence()
 //-----------------------------------------------------------------------------
 void Atmosphere::saveStateToFile(std::string const &filename)
 {
-	TIMER_START("Atmosphere::saveStateToFile()...");
 	INFO("Writing to " << filename);
 	
     hid_t       file_id, group_id, dataspace_id, dataset_id;
@@ -866,7 +871,6 @@ void Atmosphere::saveStateToFile(std::string const &filename)
 		if (status[i] != 0)
 			WARNING("Status[" << i << "] not ok", __FILE__, __LINE__);
 
-	TIMER_STOP("Atmosphere::saveStateToFile()...");
 }
 
 //-----------------------------------------------------------------------------

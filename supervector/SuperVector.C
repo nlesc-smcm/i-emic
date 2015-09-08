@@ -210,21 +210,38 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 									   std::vector<int> const &indices,
 									   char domain, char range)
 {
-	TIMER_START("SuperVector: linearTransformation 1...");
 	// Do work
 	if (domain == 'O' && range == 'A')
 	{
+		TIMER_START("SuperVector: linearTransformation O->A...");
 		int dstLength = diagonal.size();
-		int srcLength = oceanVector_->GlobalLength();
-
+		int srcLength = indices.size();;
+		
 		// re-initialize atmosVector				
 		atmosVector_ = std::make_shared<std::vector<double> >
 			(dstLength, 0.0);
 
-		// gather the oceanVector
-		Teuchos::RCP<Epetra_MultiVector> gathered =
-			Utils::AllGather(*oceanVector_);
+		// The next bit should be factorized....
+		Teuchos::RCP<Epetra_BlockMap> indexmap =
+			Utils::CreateSubMap(oceanVector_->Map(), indices);
 
+		// Create a vector that will be restricted to the indices
+		Teuchos::RCP<Epetra_Vector> restricted =
+			Teuchos::rcp(new Epetra_Vector(*indexmap) );
+			
+		// Create importer
+		// target map: indexmap
+		// source map: oceanVector_'s map
+		Teuchos::RCP<Epetra_Import> ocean2index =
+			Teuchos::rcp(new Epetra_Import(*indexmap, oceanVector_->Map()) );
+
+		// Import indexed ocean values into restricted vector
+		restricted->Import(*oceanVector_, *ocean2index, Insert);
+
+		// gather the restricted ocean
+		Teuchos::RCP<Epetra_MultiVector> gathered =
+			Utils::AllGather(*restricted);
+		
 		// fullSol should be allocated
 		double *fullSol = new double[srcLength];
 
@@ -233,13 +250,15 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 
 		// calculate the scaled values in the destination stdVector
 		for (size_t i = 0; i != atmosVector_->size(); ++i)
-			(*atmosVector_)[i] = diagonal[i] * fullSol[indices[i]];
-		
+			(*atmosVector_)[i] = diagonal[i] * fullSol[i];
 		// cleanup
-		delete fullSol;				
+		delete fullSol;
+		
+		TIMER_STOP("SuperVector: linearTransformation O->A...");
 	}
 	else if (domain == 'A' && range == 'O')
 	{
+		TIMER_START("SuperVector: linearTransformation A->O...");
 		// calculate diagonal scaling
 		std::vector<double> values;
 		for (size_t i = 0; i != atmosVector_->size(); ++i)
@@ -252,13 +271,13 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 		oceanVector_->ReplaceGlobalValues(
 			atmosVector_->size(),
 			&values[0], &indices[0]);
+		TIMER_STOP("SuperVector: linearTransformation A->O...");
 	}
-	TIMER_STOP("SuperVector: linearTransformation 1...");
 }
 //------------------------------------------------------------------
 void SuperVector::linearTransformation(Teuchos::RCP<Epetra_CrsMatrix> mat)
 {
-	TIMER_START("SuperVector: linearTransformation 2...");
+	TIMER_START("SuperVector: linearTransformation O->O...");
 
 	Teuchos::RCP<Epetra_Vector> tmp = Teuchos::rcp(new Epetra_Vector(oceanVector_->Map()));
 	if (haveOceanVector_)
@@ -269,14 +288,14 @@ void SuperVector::linearTransformation(Teuchos::RCP<Epetra_CrsMatrix> mat)
 	else
 		WARNING("No oceanVector...", __FILE__, __LINE__);
 	
-	TIMER_STOP("SuperVector: linearTransformation 2...");
+	TIMER_STOP("SuperVector: linearTransformation O->O...");
 }
 
 //------------------------------------------------------------------
 void SuperVector::linearTransformation(std::shared_ptr<std::map<std::string,
 									   std::vector<double> > > mat)
 {
-	TIMER_START("SuperVector: linearTransformation 3...");
+	TIMER_START("SuperVector: linearTransformation A->A...");
 
 	int first;
 	int last;
@@ -300,7 +319,7 @@ void SuperVector::linearTransformation(std::shared_ptr<std::map<std::string,
 	else
 		WARNING("No atmosVector...", __FILE__, __LINE__);
 	
-	TIMER_STOP("SuperVector: linearTransformation 3...");
+	TIMER_STOP("SuperVector: linearTransformation A->A...");
 }
 
 //------------------------------------------------------------------

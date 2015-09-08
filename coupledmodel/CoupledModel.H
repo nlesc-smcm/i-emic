@@ -94,9 +94,13 @@ public:
 	double getPar();
 	double getParDestination();
 
-	// If a step in a controlling scheme has converged some post-processing
-	// is required, which is done here.
-	void postConvergence();
+	// A controlling scheme may allow some pre-processing, for instance at the
+	// start of a Newton process.
+	void preProcess();
+	
+	// Similarly we can supply some post-processing, for instance when
+	// a Newton process has converged.
+	void postProcess();
 
 private:
 	// Solve the system with a few symmetric block GS iterations

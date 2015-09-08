@@ -25,6 +25,12 @@ dx         = (xu(n+1)-xu(1))/n;
 dy         = (yv(m+1)-yv(1))/m;
 dz         = (zw(l+1)-zw(1))/l;
 
+srf = [];
+greyness = .85;
+srf(:,:,1) = (1-greyness*(surfm'));
+srf(:,:,2) = (1-greyness*(surfm'));
+srf(:,:,3) = (1-greyness*(surfm'));
+
 [qz,dfzt,dfzw] = gridstretch(zw);
 
 %% - READ SOLUTION - -------------------------------------------------
@@ -66,16 +72,32 @@ end
 
 %% - PLOT THE RESULTS - ----------------------------------------------
 figure(1)
-contourf(RtD*x,RtD*y,PSIB(2:end,:)',15); hold on
-% imagesc(RtD*x,RtD*y,flipud(PSIB(2:end,:)')); hold on
+img = PSIB(2:end,:)';
+minval = min(min(img));
+maxval = max(max(img));
+contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
+imagesc(RtD*x,RtD*(y),img,'AlphaData',.5); hold on
+image(RtD*x,RtD*(y),srf,'AlphaData',.9); hold on
+contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',2); hold off;
 colorbar
-% contour(RtD*x,RtD*y,1e-4*flipud(surfm'),1,'k-','linewidth',2); hold off
-contour(RtD*x,RtD*y,1e-4*(surfm'),1,'k-','linewidth',2); hold off
+caxis([minval,maxval])
 title('Barotropic Streamfunction');
 xlabel('Longitude')
 ylabel('Latitude')
 exportfig('bstream.eps')
+%%
+%figure(8)
+%img = squeeze(abs(sum(u,3))>1e-8)';
+%contour(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
+%imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold on
+%image(RtD*x,RtD*(y),srf,'AlphaData',.1); hold on
+% contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',2); hold off;
 
+title('Depth-averaged meridional velocity');
+xlabel('Longitude')
+ylabel('Latitude')
+
+%%
 figure(2)
 contourf(RtD*[y;ymax],zw*hdim',PSIG',15);
 colorbar
@@ -87,10 +109,10 @@ exportfig('mstream.eps')
 figure(3)
 Tp = T(:,:,l);
 temp = flipud(T0 + Tp');
-% contourf(RtD*x,RtD*y,T0+Tp',15); hold on
-imagesc(RtD*x,RtD*y,temp); hold on
+contourf(RtD*x,RtD*y,T0+Tp',15); hold on
+% imagesc(RtD*x,RtD*y,temp); hold on
 colorbar
-contour(RtD*x,RtD*y,T0+1e-4*flipud(surfm'),1,'k-','linewidth',2); hold off
+contour(RtD*x,RtD*y,T0+1e-4*(surfm'),1,'k-','linewidth',2); hold off
 title('Surface Temperature');
 xlabel('Longitude');
 ylabel('Latitude');

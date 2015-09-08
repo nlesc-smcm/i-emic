@@ -1,5 +1,5 @@
 //=======================================================================
-// Continuation test routines
+// Main continuation of the coupled model 
 //=======================================================================
 #include <Epetra_config.h>
 
@@ -45,11 +45,10 @@ RCP<std::ostream> outFile;      // output file
 ProfileType       profile;      // profile
 std::stack<Timer> timerStack;   // timing stack
 
-//------------------------------------------------------------------
-void testVecWrap();
-void testCoupling(RCP<Epetra_Comm> Comm);
-void testOcean(RCP<Epetra_Comm> Comm);
 
+void runCoupledModel(RCP<Epetra_Comm> Comm);
+
+// These are duplicated from test.C -> factorize and put them in a namespace
 //------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
@@ -64,8 +63,7 @@ int main(int argc, char **argv)
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
-	// test the coupled model
-	testCoupling(Comm);
+	runCoupledModel(Comm);
 
 	// print the profile
 	if (Comm->MyPID() == 0)
@@ -78,41 +76,7 @@ int main(int argc, char **argv)
 }
 
 //------------------------------------------------------------------
-void testOcean(RCP<Epetra_Comm> Comm)
-{
-	TIMER_START("Total time...");
-
-	//------------------------------------------------------------------
-	// Check if outFile is specified
-	if (outFile == Teuchos::null)
-		throw std::runtime_error("ERROR: Specify output streams");	
-	
-	//------------------------------------------------------------------
-	// Create parameter object for Ocean
-	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-
-	// Create parallelized Ocean object
-	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
-
-	//------------------------------------------------------------------
- 	// Create parameter object for continuation
-	RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
-	
-	// Create Continuation
-	Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-		continuation(ocean, continuationParams);
-
-	// Run continuation
-	continuation.run();
-
-	//------------------------------------------------------------------
-	TIMER_STOP("Total time...");		
-}
-
-//------------------------------------------------------------------
-void testCoupling(RCP<Epetra_Comm> Comm)
+void runCoupledModel(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
 
@@ -137,7 +101,7 @@ void testCoupling(RCP<Epetra_Comm> Comm)
     // Create Atmosphere object
 	// Let the ocean model dictate the horizontal resolution for the atmosphere
 	std::shared_ptr<Atmosphere> atmos =
-		std::make_shared<Atmosphere>(ocean->getNdim(), ocean->getMdim(), atmosphereParams);
+		std::make_shared<Atmosphere>(atmosphereParams);
 
 	//------------------------------------------------------------------
     // Create parameter object for coupledmodel
@@ -264,36 +228,4 @@ void printProfile(ProfileType profile)
 				 map.second[1], "", map.second[2]);
 		}
 	
-}
-
-//------------------------------------------------------------------
-void testVecWrap()
-{
-	std::cout << "Testing the SuperVector Wrapper..." << std::endl;
-	
-	std::vector<double> vec1 = {1,2,3,4,5,6,7,8,9,10};
-	std::vector<double> vec2 = {2,2,3,2,5,2,2,2,9,2};
-	std::shared_ptr<std::vector<double> > spvec1 =
-		std::make_shared<std::vector<double> >(vec1);
-	std::shared_ptr<std::vector<double> > spvec2 =
-		std::make_shared<std::vector<double> >(vec2);
-	
- 	SuperVector wrvec1(spvec1);
-	SuperVector wrvec2(spvec2);
-
-	std::cout << "v1 length: " <<  wrvec1.length() << std::endl;
-	std::cout << "v2 length: " <<  wrvec2.length() << std::endl;
-
-	std::cout << "v1 norm: " << wrvec1.norm() << std::endl;
-	std::cout << "v2 norm: " << wrvec2.norm() << std::endl;
-		
-	std::cout << "(v1,v2): " <<	wrvec1.dot(wrvec2) << std::endl;
-	
-	wrvec1.update(4, wrvec2, 3);
-	wrvec1.print();
-
-	wrvec2.scale(3);
-	wrvec2.print();
-	
-	std::cout << "Testing the SuperVector Wrapper...done" << std::endl;
 }

@@ -286,6 +286,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 {
 	return CreateSubMap(map,dof,var,2);
 }
+
 //========================================================================================
 //! extract a map with nun = nvars from a map with nun = 6. 'var'
 //! is the array of variables to be extracted.
@@ -295,7 +296,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 	int dim    = map.NumMyElements(); // number of entries in original map
 	int numel  = dim/dof;             // number of blocks
 	int subdim = numel*nvars;         // number of entries in new map (<=dim)
-	if (numel * dof != dim)
+	if (numel * dof != dim)           
         ERROR("unexpected number of elements in map!",__FILE__,__LINE__);
     
 	int *MyGlobalElements = new int[subdim];
@@ -317,6 +318,42 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 	delete [] MyGlobalElements;
 	return submap;
 }
+
+//========================================================================================
+//! Given a list of global indices we create a submap
+Teuchos::RCP<Epetra_BlockMap> Utils::CreateSubMap(const Epetra_BlockMap& map,
+												  std::vector<int> const &list)
+{
+	int dim     = map.NumMyElements();     // number of entries in original map
+	int listdim = list.size();             // number of entries in new map
+
+	if (listdim > map.NumGlobalElements()) // weak check of correct list
+		ERROR("unexpected number of elements in index list!",__FILE__,__LINE__);
+
+	std::vector<int> MyGlobalElements;  // Container for elements owned 
+	
+	int *PIDList = new int[listdim];    // List of PID's 
+	int *LIDList = new int[listdim];    // List of LID's
+	
+	// Get a list of PID's and LID's in the map based on the list of global
+	// indices from the given arguments.
+	map.RemoteIDList(listdim, &list[0], PIDList, LIDList);
+
+	// Create MyGlobalElements array based on the information in PIDList
+	int myPID = map.Comm().MyPID();
+	for (int i = 0; i < listdim; ++i)
+		if (PIDList[i] == myPID)
+			MyGlobalElements.push_back(list[i]);
+	
+	Teuchos::RCP<Epetra_Map> submap =
+		Teuchos::rcp(new Epetra_Map(listdim, MyGlobalElements.size(),
+									&MyGlobalElements[0], 0, map.Comm()));
+
+	delete [] PIDList;
+	delete [] LIDList;
+	return submap;
+}
+
 //========================================================================================
 //! given a map and an array indicating wether each node of the map is to be 
 //! discarded (true) or not (false), this function creates a new map with the
@@ -367,6 +404,7 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::Gather(const Epetra_CrsMatrix& mat, int ro
 	gmat->SetLabel(mat.Label());
 	return gmat;
 }
+
 //========================================================================================
 Teuchos::RCP<Epetra_MultiVector> Utils::Gather(const Epetra_MultiVector& vec, int root)
 {
@@ -380,6 +418,7 @@ Teuchos::RCP<Epetra_MultiVector> Utils::Gather(const Epetra_MultiVector& vec, in
 	gvec->SetLabel(vec.Label());
 	return gvec;      
 }
+
 //========================================================================================
 // create "Gather" map from "Solve" map
 Teuchos::RCP<Epetra_BlockMap> Utils::Gather(const Epetra_BlockMap& map, int root)

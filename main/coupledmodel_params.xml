@@ -17,7 +17,7 @@
   
   <!-- Set the maximum number of iterations in the block GS scheme                     -->
   <!-- Works only when you choose G for "Solving scheme"                               -->
-  <Parameter name="Max GS iterations" type="int" value="20" />
+  <Parameter name="Max GS iterations" type="int" value="10" />
 
   <!-- Set the tolerance in the block GS scheme                                        -->
   <!-- Works only when you choose G for "Solving scheme"                               -->

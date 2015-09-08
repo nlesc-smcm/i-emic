@@ -74,6 +74,12 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	state_->PutScalar(0.0);
 	INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
 
+	// Get domain object and set the problem dimensions
+	domain_ = THCM::Instance().GetDomain();
+	N_ = domain_->GlobalN();
+ 	M_ = domain_->GlobalM();
+	L_ = domain_->GlobalL();
+	
 	// If specified we load a pre-existing state and parameter (x,l)
 	if (useExistingState_)
 		loadStateFromFile(inputFile_);
@@ -87,11 +93,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	
-	// Get domain object and set the problem dimensions
-	domain_ = THCM::Instance().GetDomain();
-	N_ = domain_->GlobalN();
- 	M_ = domain_->GlobalM();
-	L_ = domain_->GlobalL();
 	
 	// Initialize surface temperature
 	surfaceT_ = std::make_shared<std::vector<double> >(N_*M_, 0.0);
@@ -125,7 +126,15 @@ void Ocean::randomizeState(double scaling)
 }
 
 //====================================================================
-void Ocean::postConvergence()
+void Ocean::preProcess()
+{
+	// Enable computation of preconditioner
+	recomputePreconditioner_ = true;
+	INFO("Ocean pre-processing: enabling computation of preconditioner.");
+}
+
+//====================================================================
+void Ocean::postProcess()
 {
 	saveStateToFile(outputFile_);
 	writeFortFiles();
@@ -142,17 +151,17 @@ void Ocean::initializeSolver()
 
 	// Setup block preconditioner parameters
 	// --> xml files should have a better home
-	Teuchos::RCP<Teuchos::ParameterList> solverParams =
+	Teuchos::RCP<Teuchos::ParameterList> precParams =
 		Teuchos::rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("solver_params.xml",
-								solverParams.ptr());	
+	updateParametersFromXmlFile("ocean_preconditioner_params.xml",
+								precParams.ptr());	
 
 	// Get the domain decomposition from THCM, needed for the preconditioner.
 	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
 
 	// Create and initialize block preconditioner
 	precPtr_ = 	Teuchos::rcp(new TRIOS::BlockPreconditioner
-							 (jac_, domain, *solverParams));
+							 (jac_, domain, *precParams));
 	INFO("Ocean: initializing preconditioner...");
 	precPtr_->Initialize();
 	INFO("Ocean: initializing preconditioner... done");
@@ -164,16 +173,23 @@ void Ocean::initializeSolver()
 	
 	// Belos parameter setup
 	// --> xml
+	int NumGlobalElements = state_->GlobalLength();
+	int maxsubspace = 500;
+	int maxrestarts = 2;
+	int blocksize   = 1;
+	int maxiters    = NumGlobalElements/blocksize - 1;
 	belosParamList_ = rcp(new Teuchos::ParameterList());
-	belosParamList_->set("Block Size", 1);
+	belosParamList_->set("Block Size", blocksize);
 	belosParamList_->set("Flexible Gmres", true);
 	belosParamList_->set("Adaptive Block Size", false);
-	belosParamList_->set("Num Blocks",1000);
-	belosParamList_->set("Maximum Restarts",0);
+	belosParamList_->set("Num Blocks",maxsubspace);
+	belosParamList_->set("Maximum Restarts",maxrestarts);
 	belosParamList_->set("Orthogonalization","DGKS");
-	belosParamList_->set("Output Frequency",1);
-	belosParamList_->set("Maximum Iterations", 1000);
-	belosParamList_->set("Convergence Tolerance", 5.0e-3); 
+	belosParamList_->set("Output Frequency",10);
+	belosParamList_->set("Verbosity", Belos::TimingDetails + Belos::Errors +
+						 Belos::Warnings + Belos::StatusTestDetails );
+	belosParamList_->set("Maximum Iterations", maxiters);       // Maximum number of iterations
+	belosParamList_->set("Convergence Tolerance", 1.0e-2);      // Relative convergence tol
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
 	// --> xml
@@ -213,6 +229,7 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	{
 		// Compute preconditioner
 		TIMER_START("Ocean: build preconditioner...");
+		INFO("Ocean: build preconditioner...");
 		precPtr_->Compute();		
 		TIMER_STOP("Ocean: build preconditioner...");
 		recomputePreconditioner_ = false;  // Disable subsequent recomputes
@@ -227,11 +244,20 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
-	
+
+	// ---------------------------------------------------------------------
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
 	TIMER_START("Ocean: solve...");
-	belosSolver_->solve();	// Solve
+	try
+	{
+		belosSolver_->solve(); 	// Solve
+	}
+	catch (std::exception const &e)
+	{
+		INFO("Ocean: exception caught: " << e.what());
+	}	
 	TIMER_STOP("Ocean: solve...");
+	// ---------------------------------------------------------------------
 
 	// Do some post-processing
 	belosIters_ = belosSolver_->getNumIters();		
@@ -417,7 +443,7 @@ std::shared_ptr<std::vector<int> > Ocean::getSurfaceTRows()
 // Fill and return a copy of surfaceT_
 std::shared_ptr<std::vector<double> > Ocean::getSurfaceT()
 {
-	TIMER_START("Ocean::getSurfaceT()...");
+	TIMER_START("Ocean: get surface temperature...");
 	
     // extract solution from gathered vector --> this is slow
 	// everything should be better distributed
@@ -437,8 +463,7 @@ std::shared_ptr<std::vector<double> > Ocean::getSurfaceT()
 			++idx;
 		}
 
-	TIMER_STOP("Ocean::getSurfaceT()...");
-	
+	TIMER_STOP("Ocean: get surface temperature...");	
 	return surfaceT_;
 }
 
@@ -451,7 +476,6 @@ std::shared_ptr<std::vector<int> > Ocean::getLandMask()
 //=====================================================================
 void Ocean::writeFortFiles()
 {	
-	TIMER_START("Ocean::writeFortFiles()...");
 	// This function may break on a distributed memory system.
 	Teuchos::RCP<Epetra_MultiVector> solution = Utils::Gather(*state_, 0);
 	int filename = 3;
@@ -468,7 +492,6 @@ void Ocean::writeFortFiles()
 		FNAME(write_data)(solutionArray, &filename, &label);
 	}
 	delete [] solutionArray;
-	TIMER_STOP("Ocean::writeFortFiles()...");
 }
 
 //=====================================================================
@@ -482,8 +505,6 @@ void Ocean::saveStateToFile(std::string const &filename)
 	EpetraExt::HDF5 HDF5(*comm_);
 	HDF5.Create(filename);
 	HDF5.Write("State", *state_);
-	HDF5.Write("Map-" +  std::to_string((long long) comm_->NumProc()),
-			   *(domain_->GetSolveMap()));
 	HDF5.Write("Continuation parameter", "Value", parValue_);
 	
 	TIMER_STOP("Ocean::saveStateToFile...");
@@ -513,13 +534,18 @@ void Ocean::loadStateFromFile(std::string const &filename)
 
 	// Read map and state
 	HDF5.Open(filename);
+	HDF5.Read("State", state);
+
+	// Create importer
+	// target map: thcm domain SolveMap
+	// source map: state as read by HDF5.Read
+	Teuchos::RCP<Epetra_Import> lin2solve =
+		Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
+									   state->Map() ));
 	
-	HDF5.Read("Map-" + std::to_string((long long) comm_->NumProc()), map);
-	HDF5.Read("State", *map, state);
-
-	// Obtain Epetra_Vector from multivector and construct state_
-	state_ = Teuchos::rcp(new Epetra_Vector( *((*state)(0)) ) );
-
+	// Import state from HDF5 into state_ datamember
+	state_->Import(*((*state)(0)), *lin2solve, Insert);
+	
 	// Read continuation parameter and put it in THCM
 	HDF5.Read("Continuation parameter", "Value", parValue_);
 	setPar(parValue_);
