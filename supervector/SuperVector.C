@@ -61,7 +61,7 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 {
 	if (length_ != A.length())
 	{
-		std::cout << "Wrong dimensions!" << std::endl;
+		ERROR("Wrong dimensions!", __FILE__, __LINE__);
 		return;
 	}
 	if (haveOceanVector_)

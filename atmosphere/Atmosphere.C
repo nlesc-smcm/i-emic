@@ -460,8 +460,20 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
 			   &ldimA_, ipiv_, &(*sol_)[0], &ldb, &info);
 	}
-
+	double residual = computeResidual(rhs);
+	INFO("Atmosphere: solve... residual=" << residual);
 	TIMER_STOP("Atmosphere: solve...");
+}
+
+//----------------------------------------------------------------------------
+double Atmosphere::computeResidual(std::shared_ptr<SuperVector> rhs)
+{
+	std::shared_ptr<SuperVector> x = getSolution('C'); // obtain solution
+	std::shared_ptr<SuperVector> b =
+		std::make_shared<SuperVector>(rhs->getAtmosVector());
+	x->linearTransformation(getJacobian());            // calculate J*x
+	x->update(-1, *b, 1);                              // calculate Jx - b
+	return x->norm();                                  // return ||b-Jx||
 }
 
 //-----------------------------------------------------------------------------

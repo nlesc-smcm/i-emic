@@ -238,6 +238,9 @@ private:
 	// ! Perform the dot product of a single row with the state vector
 	double matvec(int row);
 
+	// ! Compute residual
+	double computeResidual(std::shared_ptr<SuperVector> rhs);
+
     //! Defines location of neighbouring grid points
 	//! +----------++-------++----------+
 	//! | 12 15 18 || 3 6 9 || 21 24 27 |
