@@ -247,7 +247,7 @@ double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
 	x->update(1, *z, 1);                              // D*x2 + C*x1
 	x->update(-1, *rhs, 1);                           // b-Jx
 	
-	double relResidual = x->norm() / rhs->norm();     // ||b-Jx||/||b||
+	double relResidual = x->norm('V') / rhs->norm();     // ||b-Jx||/||b||
 
 	TIMER_STOP("CoupledModel: compute residual...");
 	return relResidual;

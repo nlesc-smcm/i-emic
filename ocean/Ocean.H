@@ -74,6 +74,7 @@ protected:
 	
 	bool solverInitialized_;
 	bool recomputePreconditioner_;
+        bool adaptivePrecCompute_;
 	bool useScaling_;
 	
 	Teuchos::RCP<Epetra_Vector> sol_;

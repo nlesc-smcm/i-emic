@@ -44,11 +44,12 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	comm_(Comm),                     // Setting the communication object
 	solverInitialized_(false),       // Solver needs initialization
 	recomputePreconditioner_(true),  // We need a preconditioner to start with
-	useScaling_        (oceanParamList->get("Use scaling", false)),
-	recomputeBound_    (oceanParamList->get("Preconditioner recompute bound", 50)),
-	inputFile_         (oceanParamList->get("Input file", "ocean.h5")),
-	outputFile_        (oceanParamList->get("Output file", "ocean.h5")),
-	useExistingState_  (oceanParamList->get("Use existing state", false)),
+	useScaling_          (oceanParamList->get("Use scaling", false)),
+	recomputeBound_      (oceanParamList->get("Preconditioner recompute bound", 50)),
+	inputFile_           (oceanParamList->get("Input file", "ocean.h5")),
+	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
+	useExistingState_    (oceanParamList->get("Use existing state", false)),
+        adaptivePrecCompute_ (oceanParamList->get("Use adaptive preconditioner computation", false)),
 	parIdent_(19),    // Initialize continuation parameters
 	parValue_(0),
 	parStart_(0),
@@ -175,7 +176,7 @@ void Ocean::initializeSolver()
 	// --> xml
 	int NumGlobalElements = state_->GlobalLength();
 	int maxsubspace = 500;
-	int maxrestarts = 2;
+	int maxrestarts = 0;
 	int blocksize   = 1;
 	int maxiters    = NumGlobalElements/blocksize - 1;
 	belosParamList_ = rcp(new Teuchos::ParameterList());
@@ -189,7 +190,7 @@ void Ocean::initializeSolver()
 	belosParamList_->set("Verbosity", Belos::TimingDetails + Belos::Errors +
 						 Belos::Warnings + Belos::StatusTestDetails );
 	belosParamList_->set("Maximum Iterations", maxiters);       // Maximum number of iterations
-	belosParamList_->set("Convergence Tolerance", 1.0e-2);      // Relative convergence tol
+	belosParamList_->set("Convergence Tolerance", 1.0e-3);      // Relative convergence tol
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
 	// --> xml
@@ -231,6 +232,7 @@ void Ocean::solve(RCP<SuperVector> rhs)
 		TIMER_START("Ocean: build preconditioner...");
 		INFO("Ocean: build preconditioner...");
 		precPtr_->Compute();		
+		INFO("Ocean: build preconditioner... done");
 		TIMER_STOP("Ocean: build preconditioner...");
 		recomputePreconditioner_ = false;  // Disable subsequent recomputes
 	}
@@ -248,6 +250,7 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	// ---------------------------------------------------------------------
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
 	TIMER_START("Ocean: solve...");
+	INFO("Ocean: solve...");
 	try
 	{
 		belosSolver_->solve(); 	// Solve
@@ -256,6 +259,7 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	{
 		INFO("Ocean: exception caught: " << e.what());
 	}	
+	INFO("Ocean: solve... done");
 	TIMER_STOP("Ocean: solve...");
 	// ---------------------------------------------------------------------
 
@@ -266,7 +270,7 @@ void Ocean::solve(RCP<SuperVector> rhs)
 
 	// If the number of linear solver iterations exceeds a preset bound
 	// we recompute the preconditioner
-	if (belosIters_ > recomputeBound_)
+	if ((belosIters_ > recomputeBound_) && adaptivePrecCompute_)
 	{
 		INFO("Ocean: Number of iterations exceeds " << recomputeBound_);
 		INFO("Ocean:   Enabling computation of preconditioner.");
@@ -275,7 +279,7 @@ void Ocean::solve(RCP<SuperVector> rhs)
 
 	// If specified, unscale the problem
 	if (useScaling_)
-		unscaleProblem();
+	  unscaleProblem();
 }
 
 //=====================================================================

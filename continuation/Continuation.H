@@ -142,6 +142,7 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 createInitialTangent()
 {
+  INFO("Continuation: create initial tangent...");
 	//-----------------------------------------------------------------
 	// Initial tangent:
 	// 1) Take the derivative of the RHS w.r.t. the continuation par
@@ -149,7 +150,7 @@ createInitialTangent()
 	// 2) Solve J*statedot = -dFdPar.
 	//-----------------------------------------------------------------
 
-	// 1) Compute dFdPar_, force compute of RHS
+	// 1) Compute dFdPar_, force computation of RHS
 	computeDFDPar('F');
 
 	// 2) Solve J*stateDot_ = -dFdPar_
@@ -164,6 +165,7 @@ createInitialTangent()
 	// We scale the tangent of the state and parameter such they are
 	// normalized.
 	normalize(stateDot_, zeta_, parDot_);
+	INFO("Continuation: create initial tangent... done");
 }
 
 //======================================================================
@@ -305,6 +307,7 @@ template<typename Model, typename ParameterList>
 int Continuation<Model, ParameterList>::
 newtonCorrector()
 {
+  INFO("Continuation: Newton corrector...");
 	char   mode;	      // mode for ComputeDFDPar()
 	Vector stateDir;      // direction for the state
 	Vector y1;            // solution of solve with dFdPar
@@ -377,8 +380,8 @@ newtonCorrector()
 		normRHS_ = rhsView_->norm();
 		model_->computeRHS();
 		normRHStest_ = rhsView_->norm('V'); // verbose norm
-		INFO("Contin.: corrector    iter: " << newtonIter_ );
-		INFO("Contin.: corrector  norm R: " << normRHStest_ );
+		INFO("Continuation: Newton corrector    iter: " << newtonIter_ );
+		INFO("Continuation: Newton corrector  norm R: " << normRHStest_ );
 		
 		if (normRHStest_ < newtonTolerance_)
 			break;
@@ -400,7 +403,8 @@ newtonCorrector()
 		return 1;
 	}
 	
-	INFO("Contin.: corrector converged in " << newtonIter_ << " steps");
+	INFO("Continuation: corrector converged in " << newtonIter_ << " steps");
+	INFO("Continuation: Newton corrector... done");
 	return 0;
 }
 
