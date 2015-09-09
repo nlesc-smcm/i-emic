@@ -926,7 +926,7 @@ SUBROUTINE stpnt!(un)
   par(LAMB)   =  alphaS/alphaT  ! lambda
   par(SALT)   =  0.0            ! gamma
   par(WIND)   =  1.0            ! wind h
-  par(TEMP)   =  10.0           ! eta_T
+  par(TEMP)   =  0.0            ! eta_T
   par(BIOT)   =  r0dim/(75.*3600.*24.*udim) ! nonlinearity in T,S equations
   par(COMB)   =  1.0          ! combined continuation
   par(NLES)   =  0.0

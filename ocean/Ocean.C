@@ -175,7 +175,7 @@ void Ocean::initializeSolver()
 	// Belos parameter setup
 	// --> xml
 	int NumGlobalElements = state_->GlobalLength();
-	int maxsubspace = 500;
+	int maxsubspace = 1000;
 	int maxrestarts = 0;
 	int blocksize   = 1;
 	int maxiters    = NumGlobalElements/blocksize - 1;
