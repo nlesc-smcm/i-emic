@@ -43,13 +43,13 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	:
 	comm_(Comm),                     // Setting the communication object
 	solverInitialized_(false),       // Solver needs initialization
+	adaptivePrecCompute_ (oceanParamList->get("Use adaptive preconditioner computation", false)),
 	recomputePreconditioner_(true),  // We need a preconditioner to start with
 	useScaling_          (oceanParamList->get("Use scaling", false)),
 	recomputeBound_      (oceanParamList->get("Preconditioner recompute bound", 50)),
 	inputFile_           (oceanParamList->get("Input file", "ocean.h5")),
 	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
 	useExistingState_    (oceanParamList->get("Use existing state", false)),
-        adaptivePrecCompute_ (oceanParamList->get("Use adaptive preconditioner computation", false)),
 	parIdent_(19),    // Initialize continuation parameters
 	parValue_(0),
 	parStart_(0),
@@ -410,8 +410,10 @@ Teuchos::RCP<SuperVector> Ocean::getRHS(char mode)
 //====================================================================
 void Ocean::setAtmosphere(std::vector<double> const &atmos)
 {
+	TIMER_START("Ocean: set atmosphere...");
 	// This is a job for THCM
 	THCM::Instance().setAtmosphere(atmos);
+	TIMER_STOP("Ocean: set atmosphere...");
 }
 
 //====================================================================
@@ -533,16 +535,15 @@ void Ocean::loadStateFromFile(std::string const &filename)
 	
 	// Create HDF5 object
 	EpetraExt::HDF5 HDF5(*comm_);
-	Epetra_Map *map = NULL;
 	Epetra_MultiVector *state;
 
-	// Read map and state
+	// Read state
 	HDF5.Open(filename);
 	HDF5.Read("State", state);
 
 	// Create importer
 	// target map: thcm domain SolveMap
-	// source map: state as read by HDF5.Read
+	// source map: state with linear map  as read by HDF5.Read
 	Teuchos::RCP<Epetra_Import> lin2solve =
 		Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
 									   state->Map() ));

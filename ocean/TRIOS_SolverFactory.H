@@ -203,17 +203,17 @@ class IdentityOperator : public Ifpack_Preconditioner
     
  protected:
 //--------//
-
-  //! domain map (map for vectors x in Ax=y)
-  const Epetra_Map& domainMap;
-  
-  //! range map (map for vectors y in Ax=y)
-  const Epetra_Map& rangeMap;
-
-  //! communicator
-  const Epetra_Comm& comm;
-
-  bool useTranspose;
+	  
+	  //! communicator
+	  const Epetra_Comm& comm;
+	  
+	  //! range map (map for vectors y in Ax=y)
+	  const Epetra_Map& rangeMap;
+	  
+	  //! domain map (map for vectors x in Ax=y)
+	  const Epetra_Map& domainMap;
+	  
+	  bool useTranspose;
   
   }; // end of class IdentityOperator
 

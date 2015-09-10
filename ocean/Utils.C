@@ -249,7 +249,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0
       
 	int n = i1-i0+1; int N=I1-I0+1;
 	int m = j1-j0+1; int M=J1-J0+1;
-	int l = k1-k0+1; int L=K1-K0+1;
+	int l = k1-k0+1; //int L=K1-K0+1;
       
 	DEBVAR(M);
 	DEBVAR(N);
@@ -320,11 +320,11 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 }
 
 //========================================================================================
-//! Given a list of global indices we create a submap
+//! Given a map and a list of global indices we create a submap 
+//! --> this has not been properly tested yet!!
 Teuchos::RCP<Epetra_BlockMap> Utils::CreateSubMap(const Epetra_BlockMap& map,
 												  std::vector<int> const &list)
 {
-	int dim     = map.NumMyElements();     // number of entries in original map
 	int listdim = list.size();             // number of entries in new map
 
 	if (listdim > map.NumGlobalElements()) // weak check of correct list
@@ -1035,9 +1035,9 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::TripleProduct(bool transA, const Epetra_Cr
 //========================================================================================
 Teuchos::RCP<Epetra_Map> Utils::ExtractRange(const Epetra_Map& M, int i1, int i2)
 {
-    int n = M.MaxAllGID();
 	
 #ifdef TESTING
+    int n = M.MaxAllGID();	
 	if (i1<0||i1>n) ERROR("CreateSubMap: lower bound out of range!",__FILE__,__LINE__);
 	if (i2<0||i2>n) ERROR("CreateSubMap: upper bound out of range!",__FILE__,__LINE__);
 	if (i2<i1)      ERROR("CreateSubMap: invalid interval bounds!" ,__FILE__,__LINE__);
