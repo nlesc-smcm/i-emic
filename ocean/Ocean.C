@@ -94,13 +94,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	
-	
-	// Initialize surface temperature
-	surfaceT_ = std::make_shared<std::vector<double> >(N_*M_, 0.0);
-
-	// Create fullSol_ array
-	fullSol_ = new double[state_->GlobalLength()];
-
 	// Put the correct parameter value in THCM
 	setPar(parValue_);
 
@@ -115,7 +108,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 Ocean::~Ocean()
 {
 	INFO("Ocean destructor called..."); 
-	delete [] fullSol_;
 }
 
 //=====================================================================
@@ -446,31 +438,30 @@ std::shared_ptr<std::vector<int> > Ocean::getSurfaceTRows()
 }
 
 //====================================================================
-// Fill and return a copy of surfaceT_
+// Fill and return a copy of the surface temperature
 std::shared_ptr<std::vector<double> > Ocean::getSurfaceT()
 {
 	TIMER_START("Ocean: get surface temperature...");
 	
-    // extract solution from gathered vector --> this is slow
-	// everything should be better distributed
-	Teuchos::RCP<Epetra_MultiVector> gathered =
-		Utils::AllGather(*state_);
-	gathered->ExtractCopy(fullSol_, state_->GlobalLength());
-	int row;
-	int idx = 0;
+	// Get list of global rows corresponding to surface temperature
+	std::shared_ptr<std::vector<int> > rows = getSurfaceTRows();
 	
-	// surfaceT_ should be initialized
- 	for (int j = 0; j != M_; ++j)
-		for (int i = 0; i != N_; ++i)
-		{
-			// Using macros from THCMdefs.H
-			row = FIND_ROW2(_NUN_, N_, M_, L_, i, j, L_-1, TT);
-			(*surfaceT_)[idx] = fullSol_[row];
-			++idx;
-		}
+	// Get a restricted Epetra_Vector containing only the surface temp values
+	Teuchos::RCP<Epetra_Vector> restricted = Utils::RestrictVector(*state_, *rows);
+	
+	// Gather restricted vector to all procs
+	Teuchos::RCP<Epetra_MultiVector> gathered = Utils::AllGather(*restricted);
+
+	// The local array should be allocated
+	int numel = rows->size();
+	std::shared_ptr<std::vector<double> > surfaceT =
+		std::make_shared<std::vector<double> >(numel, 0.0);
+
+	// Get the values
+	gathered->ExtractCopy(&(*surfaceT)[0], numel);
 
 	TIMER_STOP("Ocean: get surface temperature...");	
-	return surfaceT_;
+	return surfaceT;
 }
 
 //====================================================================

@@ -5,7 +5,7 @@
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
 /**********************************************************************
- * Put together by T.E. Mulder, Utrecht University 2014/15            *
+ * Put together/extended by T.E. Mulder, Utrecht University 2014/15   *
  * contact: t.e.mulder@uu.nl                                          *
  **********************************************************************/
 #ifndef UTILS_H
@@ -110,14 +110,20 @@ namespace Utils
 	Teuchos::RCP<Epetra_Map> CreateSubMap(const Epetra_Map& map, int dof,
 										  const int *var, int nvars);
 
-	//! extract a map based on a list of global indices
-	Teuchos::RCP<Epetra_BlockMap> CreateSubMap(const Epetra_BlockMap& map,
-											   std::vector<int> const &indices);
-	
     //! given a map and an array indicating wether each node of the map is to be
     //! discarded (true) or not (false), this function creates a new map with the
     //! discarded entries removed.
-	Teuchos::RCP<Epetra_Map> CreateSubMap(const Epetra_Map& map, const bool* discard);    
+	Teuchos::RCP<Epetra_Map> CreateSubMap(const Epetra_Map& map, const bool* discard);
+
+	//! Extract a map based on a list of global indices
+	Teuchos::RCP<Epetra_BlockMap> CreateSubMap(const Epetra_BlockMap& map,
+											   std::vector<int> const &indices);
+	
+	//! Given a Epetra_MultiVector and a list of global indices we return an Epetra_MultiVector with
+	//! the same distribution but restricted to the values at the supplied indices.
+	Teuchos::RCP<Epetra_Vector> RestrictVector(Epetra_Vector const &vector,
+											   std::vector<int> const &indices);
+
 
 	//! a general function for gathering sparse matrices. It is fairly slow
     //! as it rebuilds the required "GatherMap" every time.

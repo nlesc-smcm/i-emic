@@ -25,7 +25,6 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	rhsHash_(-1),
 	jacHash_(-1)
 {
-	
 	stateView_ =
 		std::make_shared<SuperVector>(ocean_->getState('V')->getOceanVector(),
 									  atmos_->getState('V')->getAtmosVector() );
@@ -37,17 +36,17 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	rhsView_ =
  		std::make_shared<SuperVector>(ocean_->getRHS('V')->getOceanVector(),
 									  atmos_->getRHS('V')->getAtmosVector() );
-
+	
 	// Get the contribution of the atmosphere to the ocean in the Jacobian
 	B_     = ocean_->getAtmosBlock();
 	rowsB_ = ocean_->getSurfaceTRows();
-
+	
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
 	C_     = atmos_->getOceanBlock();
-
+	
 	// Output parameters
 	INFO(*params);
-
+	
 	// Synchronize landmask
 	synchronizeLandmask();
 }

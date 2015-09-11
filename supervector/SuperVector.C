@@ -210,48 +210,34 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 									   std::vector<int> const &indices,
 									   char domain, char range)
 {
-	// Do work
 	if (domain == 'O' && range == 'A')
 	{
 		TIMER_START("SuperVector: linearTransformation O->A...");
 		int dstLength = diagonal.size();
-		int srcLength = indices.size();;
+		int srcLength = indices.size();
 		
-		// re-initialize atmosVector				
+		// Re-initialize atmosVector				
 		atmosVector_ = std::make_shared<std::vector<double> >
 			(dstLength, 0.0);
 
-		// The next bit should be factorized....
-		Teuchos::RCP<Epetra_BlockMap> indexmap =
-			Utils::CreateSubMap(oceanVector_->Map(), indices);
-
-		// Create a vector that will be restricted to the indices
+		// Get the part of the oceanVector restricted to the supplied indices
 		Teuchos::RCP<Epetra_Vector> restricted =
-			Teuchos::rcp(new Epetra_Vector(*indexmap) );
-			
-		// Create importer
-		// target map: indexmap
-		// source map: oceanVector_'s map
-		Teuchos::RCP<Epetra_Import> ocean2index =
-			Teuchos::rcp(new Epetra_Import(*indexmap, oceanVector_->Map()) );
+			Utils::RestrictVector(*oceanVector_, indices);		
 
-		// Import indexed ocean values into restricted vector
-		restricted->Import(*oceanVector_, *ocean2index, Insert);
-
-		// gather the restricted ocean
+		// Gather the restricted ocean
 		Teuchos::RCP<Epetra_MultiVector> gathered =
 			Utils::AllGather(*restricted);
 		
-		// fullSol should be allocated
+		// FullSol should be allocated
 		double *fullSol = new double[srcLength];
 
-		// get the values in the epetraVector
+		// Get the values in the epetraVector
 		gathered->ExtractCopy(fullSol, srcLength);
 
-		// calculate the scaled values in the destination stdVector
+		// Calculate the scaled values in the destination stdVector
 		for (size_t i = 0; i != atmosVector_->size(); ++i)
 			(*atmosVector_)[i] = diagonal[i] * fullSol[i];
-		// cleanup
+		// Cleanup
 		delete fullSol;
 		
 		TIMER_STOP("SuperVector: linearTransformation O->A...");

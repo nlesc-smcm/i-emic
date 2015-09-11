@@ -96,12 +96,6 @@ protected:
 	// Problem dimensions:
 	int N_, M_, L_;
 
-	// Array containing a copy of the full solution
-	double *fullSol_;
-	
-	// Surface temperature
-	std::shared_ptr<std::vector<double> > surfaceT_;
-
  	// HDF5 input/output files
 	std::string const inputFile_;
 	std::string const outputFile_;

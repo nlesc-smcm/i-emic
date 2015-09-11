@@ -3,8 +3,8 @@ function [profile] = plot_profile(filename, range)
   % project directory, for instance proj_dir/rundir
   system(['../scripts/gatherprofile.sh ' filename ' converted']);
   profile = importdata('converted');
-  N       = profile.data(1); % number of experiments
-  M       = numel(profile.textdata);
+  N       = profile.data(1) % number of experiments
+  M       = numel(profile.textdata)
   cores   = 2.^(0:N-1);
   x_axis  = 1:N;
   x_axis  = cores;

@@ -12,12 +12,14 @@ else
 	oname=$2
 fi
 
+units=89 # Magic number
+
 delim=" " # Delimiting character
 
 echo -n > $oname # Initialize output file
 
 # Write the different program component names to the output
-for i in {1..20}
+for i in {1..89}
 do
 	grep -m 1 "($i)" $iname | sed 's/.*)\ *//' | sed 's/\ * :.*//' >> $oname
 done
@@ -28,7 +30,7 @@ grep -c "(1)" $iname >> $oname
 echo $delim >> $oname
 
 # Write the total time results to the output
-for i in {1..20}
+for i in {1..89}
 do
 	grep "($i)" $iname | sed 's/.*:\ *//' | sed 's/\ .*//' >> $oname
 	echo $delim >> $oname

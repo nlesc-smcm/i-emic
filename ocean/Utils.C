@@ -5,7 +5,7 @@
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
 /**********************************************************************
- * Modified by T.E. Mulder, Utrecht University 2014/15                *
+ * Modified and Extended by Erik, Utrecht University 2014/15          *
  * contact: t.e.mulder@uu.nl                                          *
  **********************************************************************/
 #include "Utils.H"
@@ -320,7 +320,34 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 }
 
 //========================================================================================
-//! Given a map and a list of global indices we create a submap 
+//! given a map and an array indicating wether each node of the map is to be 
+//! discarded (true) or not (false), this function creates a new map with the
+//! discarded entries removed.
+Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
+												   const bool* discard)
+{
+	int numel = map.NumMyElements(); 
+	int *MyGlobalElements = new int[numel]; // 'worst' case: no discarded nodes
+	int numel_new = 0;
+	for (int k=0;k<numel;k++)
+	{
+        if (!discard[k])
+		{
+			MyGlobalElements[numel_new] = map.GID(k); 
+			numel_new++;
+		}
+	}
+	Teuchos::RCP<Epetra_Map> submap =
+		Teuchos::rcp(new Epetra_Map(-1, numel_new, MyGlobalElements, 
+									map.IndexBase(), map.Comm()));
+	delete [] MyGlobalElements;
+	return submap;
+}
+
+
+//========================================================================================
+//! Given a map and a list of global indices we create a submap with the same parallel
+//! distribution but restricted to the given indices.
 //! --> this has not been properly tested yet!!
 Teuchos::RCP<Epetra_BlockMap> Utils::CreateSubMap(const Epetra_BlockMap& map,
 												  std::vector<int> const &list)
@@ -354,29 +381,29 @@ Teuchos::RCP<Epetra_BlockMap> Utils::CreateSubMap(const Epetra_BlockMap& map,
 	return submap;
 }
 
-//========================================================================================
-//! given a map and an array indicating wether each node of the map is to be 
-//! discarded (true) or not (false), this function creates a new map with the
-//! discarded entries removed.
-Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
-												   const bool* discard)
+//=======================================================================================
+//! Given an Epetra_Vector and a list of global indices we return an Epetra_Vector with
+//! the same distribution but restricted to the values at the supplied indices.
+Teuchos::RCP<Epetra_Vector> Utils::RestrictVector(Epetra_Vector const &vector,
+												  std::vector<int> const &indices)
 {
-	int numel = map.NumMyElements(); 
-	int *MyGlobalElements = new int[numel]; // 'worst' case: no discarded nodes
-	int numel_new = 0;
-	for (int k=0;k<numel;k++)
-	{
-        if (!discard[k])
-		{
-			MyGlobalElements[numel_new] = map.GID(k); 
-			numel_new++;
-		}
-	}
-	Teuchos::RCP<Epetra_Map> submap =
-		Teuchos::rcp(new Epetra_Map(-1, numel_new, MyGlobalElements, 
-									map.IndexBase(), map.Comm()));
-	delete [] MyGlobalElements;
-	return submap;
+	// Create restricted map
+	Teuchos::RCP<Epetra_BlockMap> indexMap =
+		Utils::CreateSubMap(vector.Map(), indices);
+
+	// Create the output vector
+	Teuchos::RCP<Epetra_Vector> restrictedVector =
+		Teuchos::rcp(new Epetra_Vector(*indexMap) );
+
+	// Create importer
+	// target map: indexMap
+	// source map: vector.Map()
+	Epetra_Import full2restricted(*indexMap, vector.Map());
+
+	// Import vector values into restricted vector
+	restrictedVector->Import(vector, full2restricted, Insert);
+
+	return restrictedVector;	
 }
 
 //========================================================================================
