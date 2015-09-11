@@ -1179,6 +1179,7 @@ namespace TRIOS {
 	ApplyInverse(const Epetra_MultiVector& input,
 				 Epetra_MultiVector& result) const
 	{
+		TIMER_START("BlockPreconditioner: ApplyInverse...");
 		
   
 		bool noisy = (verbose>=8);
@@ -1396,7 +1397,7 @@ namespace TRIOS {
 #endif//]
   
 //  DEBVAR(result);
-
+		TIMER_STOP("BlockPreconditioner: ApplyInverse...");
 		return 0;
   
 	}
