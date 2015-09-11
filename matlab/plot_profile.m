@@ -17,19 +17,19 @@ function [profile] = plot_profile(filename, range)
   ctr  = 1;
   for i = range
       pllt = profile.data((i-1)*N+2:i*N+1);
-      figure(1) 
+      figure(9) 
       semilogy(x_axis, pllt,'.-','linewidth',2,'markersize',15,'color',colm(ctr,:));
       hold on
       
-      figure(2)
+      figure(10)
       plot(x_axis,pllt(1)./pllt,'.-','linewidth',2,'markersize',15,'color',colm(ctr,:));
       hold on
       
       ctr = ctr + 1;
   end
-  figure(1)
+  figure(9)
   hold off
-  figure(2) 
+  figure(10) 
   legend(profile.textdata(range),'location','northwest');
   plot(x_axis, x_axis, 'k--')
   hold off
