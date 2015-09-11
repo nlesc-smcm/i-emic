@@ -73,8 +73,8 @@ protected:
 	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
 	
 	bool solverInitialized_;
+	bool adaptivePrecCompute_;
 	bool recomputePreconditioner_;
-        bool adaptivePrecCompute_;
 	bool useScaling_;
 	
 	Teuchos::RCP<Epetra_Vector> sol_;

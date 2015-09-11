@@ -70,9 +70,9 @@ namespace TRIOS {
 											 Teuchos::RCP<Domain> domain,
 											 Teuchos::ParameterList &List)
 		: 
+		label_("Ocean Preconditioner"),
 		jacobian(jac),
 		domain(domain),
-		label_("Ocean Preconditioner"),
 		needs_setup(true),
 		IsComputed_(false)
 	{
@@ -721,8 +721,9 @@ namespace TRIOS {
 		int dim = M.NumMyElements();
 		int ndummies = 0;
 		int row;
-		int len,col;
-		double val;
+		int len;
+		//int col;
+		//double val;
 		int maxlen = A.MaxNumEntries();
 		int *indices = new int[maxlen];
 		double *values = new double[maxlen];
@@ -2350,13 +2351,12 @@ namespace TRIOS {
 		const Epetra_Map& RowMapGw = Gw.RowMap();
 		const Epetra_Map& ColMapGw = Gw.ColMap();
 
-		int nrowsGw = RowMapGw.NumGlobalElements();
-		int ncolsGw = ColMapGw.NumMyElements(); // note that this is a replicated map so we use 
+		// note that this is a replicated map so we use 
 		// the local number of cols
-		DEBUG("Gw is "<<nrowsGw<<"x"<<ncolsGw);
+		DEBUG("Gw is " << RowMapGw.NumGlobalElements()
+			  <<"x" << ColMapGw.NumMyElements());
     
 		// extract column maps for the blocks of Gw and Mzp
-    
 		Teuchos::RCP<Epetra_Map> ColMapGw1=Teuchos::null;
 		DEBUG("Split column maps of Gw...");
 		// Gw = [Gw1 Gw2] where Gw1 is square. Note that we do not need Gw2 anymore

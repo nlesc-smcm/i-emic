@@ -91,7 +91,8 @@ namespace TRIOS {
 		}
 		else if (PrecType=="ML")
 		{
-#ifndef NO_ML      
+#ifndef NO_ML
+			
 			Teuchos::ParameterList& mllist = plist.sublist("ML");
 			if (A.Comm().MyPID()==0)
 			{
@@ -154,7 +155,7 @@ namespace TRIOS {
 			string smoo = mllist.get("smoother: type","Aztec");
 			if (smoo=="IFPACK")
 			{
-				Teuchos::ParameterList& ifp_list=mllist.sublist("smoother: ifpack list");
+				//Teuchos::ParameterList& ifp_list=mllist.sublist("smoother: ifpack list");
 				string ifp_type=mllist.get("smoother: ifpack type","Amesos");
 				const char *str1 = ifp_type.c_str();
 				const char *str2 = "block relaxation";
@@ -309,7 +310,7 @@ namespace TRIOS {
 			{
 				// ML dumps all of its output to std::cout
 				std::ostream& os = std::cout;
-				int NumSmoo = mllist.get("smoother: sweeps",1);
+				//int NumSmoo = mllist.get("smoother: sweeps",1);
 				int NumCycles = mllist.get("cycle applications",1);
 				int NumPre=0, NumPost=0;
 				string PreOrPost = mllist.get("smoother: pre or post","both");

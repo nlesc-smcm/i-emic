@@ -157,7 +157,7 @@ void SuperVector::random()
 	if (haveAtmosVector_)
 	{
 		std::srand(std::time(0));
-		for (int i = 0; i < atmosVector_->size(); ++i)
+		for (size_t i = 0; i < atmosVector_->size(); ++i)
 			(*atmosVector_)[i] = (std::rand() / (double) RAND_MAX);
 	}
 	if (haveOceanVector_)
@@ -304,7 +304,7 @@ void SuperVector::linearTransformation(std::shared_ptr<std::map<std::string,
 		std::vector<double> result(atmosVector_->size(), 0.0);
 		// Perform matrix vector product
 		// 1->0 based... horrible... 
-		for (int row = 1; row <= atmosVector_->size(); ++row)
+		for (size_t row = 1; row <= atmosVector_->size(); ++row)
 		{
 			first   = (*mat)["beg"][row-1];
 			last    = (*mat)["beg"][row] - 1;
@@ -336,7 +336,7 @@ std::size_t SuperVector::hash() const
 	}
 	if (haveAtmosVector_)
 	{
-		for (int i = 0; i < atmosVector_->size(); ++i)
+		for (size_t i = 0; i < atmosVector_->size(); ++i)
 			seed ^= double_hash((*atmosVector_)[i]) + (seed << 6);
 	}
 	return seed;		

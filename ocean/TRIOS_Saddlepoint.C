@@ -36,8 +36,8 @@ namespace TRIOS {
 	//! private constructor
 	SaddlepointMatrix::SaddlepointMatrix(Teuchos::RCP<Epetra_Comm> comm) 
 		:
-		comm_(comm),
-		label_("Saddlepoint Matrix")
+		label_("Saddlepoint Matrix"),
+		comm_(comm)
 	{}
 
 	//! constructor
@@ -46,8 +46,8 @@ namespace TRIOS {
 										 Teuchos::RCP<Epetra_CrsMatrix> a21,
 										 Teuchos::RCP<Epetra_Comm> comm)
 		:
-		comm_(comm),
-		label_("Saddlepoint Matrix")
+		label_("Saddlepoint Matrix"),
+		comm_(comm)
 	{
 		SetBlocks(a11,a12,a21);
 	}
@@ -237,7 +237,7 @@ namespace TRIOS {
 		Teuchos::RCP<Epetra_CrsMatrix> MAuv, MGuv, MDuv;
 	
 		const Epetra_Map& mapPbar = Mzp1.RowMap();
-		const Epetra_Map& mapP    = Duv.RowMap();
+		//const Epetra_Map& mapP    = Duv.RowMap();
 		const Epetra_Map& mapUV   = Auv.RowMap();
                 
 		// note: depth-averaging Auv is no longer implemented
@@ -294,7 +294,7 @@ namespace TRIOS {
 								 Teuchos::RCP<Epetra_Operator> A11Precond_,
 								 bool zero_init_)
 		:
-		Spp(Spp_), zero_init(zero_init_), comm(comm_),
+		comm(comm_), zero_init(zero_init_), Spp(Spp_), 
 		A11Solver(A11Solver_), A11Precond(A11Precond_)    
 	{
 
@@ -405,9 +405,9 @@ namespace TRIOS {
 		}
 #endif
 
-
-		Teuchos::ParameterList& AuvSolverList = params.sublist("Auv Solver");
-		Teuchos::ParameterList& AuvPrecList = params.sublist("Auv Precond");
+		// -->unused parameters...?
+		//Teuchos::ParameterList& AuvSolverList = params.sublist("Auv Solver");
+		//Teuchos::ParameterList& AuvPrecList = params.sublist("Auv Precond");
 
 		// note: the solver may be null if "None" is specified as Method
 		if (A11Solver.get()!=NULL)
@@ -447,7 +447,7 @@ namespace TRIOS {
 #endif
 
 		Teuchos::ParameterList& A11SolverList = params.sublist("Auv Solver");
-		Teuchos::ParameterList& A11PrecList = params.sublist("Auv Precond");
+		//Teuchos::ParameterList& A11PrecList = params.sublist("Auv Precond");
     
 		nitA11 = A11SolverList.get("Max Num Iter",10);
 		tolA11 = A11SolverList.get("Tolerance",1.0e-8);

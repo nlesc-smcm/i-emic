@@ -744,8 +744,10 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 		// build rhs simultaneously on each process
 		double* RHS;
 		CHECK_ZERO(localRhs->ExtractView(&RHS));
-		FNAME(rhs)(solution, RHS); // compute right-hand-side on whole subdomain (by THCM)
-
+		TIMER_START("Ocean: compute rhs: fortran part");
+		// compute right-hand-side on whole subdomain (by THCM)
+		FNAME(rhs)(solution, RHS); 
+		TIMER_STOP("Ocean: compute rhs: fortran part");
 		// export overlapping rhs to unique-id global rhs vector,
 		// and load-balance for solve phase:
 		domain->Assembly2Solve(*localRhs,*tmp_rhs);
@@ -796,8 +798,10 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
 		//Call the fortran routine, providing the solution vector,
 		//and get back the three vectors of the sparse Jacobian (CSR form)
+		TIMER_START("Ocean: compute jacobian: fortran part");
 		FNAME(matrix)(solution,&sigmaUVTS,&sigmaWP);
-
+		TIMER_STOP("Ocean: compute jacobian: fortran part");
+		
 		const int maxlen = _NUN_*_NP_+1;    //nun*np+1 is max nonzeros per row
 		int indices[maxlen];
 		double values[maxlen];
