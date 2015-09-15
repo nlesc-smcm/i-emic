@@ -126,6 +126,9 @@ private:
 	template<typename T>
 	void write(std::vector<T> &vector, const std::string &filename);
 
+	// print profile
+	void printProfile(ProfileType profile);
+	
 	// A few tests are collected here
 	void test();
 };

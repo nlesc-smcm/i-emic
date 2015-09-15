@@ -17,6 +17,6 @@ PROJECT_BASE = /home/erik/Projects/i-emic
 ##   Make flags
 MFLAGS       = -j 4
 ##   Local compiler flags
-LOCAL_CXX_FLAGS  = -std=c++11
+LOCAL_CXX_FLAGS  = -std=c++11 -Wall
 ##=================================================================
 include $(PROJECT_BASE)/make.inc/Makefile.all
