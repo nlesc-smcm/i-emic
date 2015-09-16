@@ -315,7 +315,7 @@ namespace TRIOS {
           
 		DEBUG("Build Spp Simple preconditioner...");
     
-		rangeMap = Spp->GetRangeMap();
+		rangeMap  = Spp->GetRangeMap();
 		domainMap = Spp->GetDomainMap();
   
 		{

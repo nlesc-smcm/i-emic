@@ -351,7 +351,7 @@ SUBROUTINE rhs(un,B)
   
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
 
-#if 0 
+#if 0
   if(ires == 0) then !......... why......????
      DO i = 1, n
         DO j = 1, m
