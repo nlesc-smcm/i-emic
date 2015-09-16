@@ -87,7 +87,6 @@ protected:
 	
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 	
-	int belosIters_;
 	int recomputeBound_;
 
 	// Domain object

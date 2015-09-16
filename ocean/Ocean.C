@@ -55,7 +55,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	parStart_(0),
 	parEnd_(1)
 {
-        INFO("Ocean: constructor...");	
+	INFO("Ocean: constructor...");	
 	
 	Teuchos::ParameterList &thcmList =
 		oceanParamList->sublist("THCM");
@@ -255,13 +255,14 @@ void Ocean::solve(RCP<SuperVector> rhs)
 	// ---------------------------------------------------------------------
 
 	// Do some post-processing
-	belosIters_ = belosSolver_->getNumIters();		
-	INFO("Ocean: finished solve... " << belosIters_ << " iterations");
-	TRACK_ITERATIONS("Ocean: Belos iterations...", belosIters_);
+	int    belosIters = belosSolver_->getNumIters();
+	double belosTol   = belosSolver_->achievedTol();
+	INFO("Ocean: FGMRES, i = " << belosIters << ", ||r|| = " << belosTol);
+	TRACK_ITERATIONS("Ocean: FGMRES iterations...", belosIters);
 
 	// If the number of linear solver iterations exceeds a preset bound
 	// we recompute the preconditioner
-	if ((belosIters_ > recomputeBound_) && adaptivePrecCompute_)
+	if ((belosIters > recomputeBound_) && adaptivePrecCompute_)
 	{
 		INFO("Ocean: Number of iterations exceeds " << recomputeBound_);
 		INFO("Ocean:   Enabling computation of preconditioner.");
@@ -270,7 +271,7 @@ void Ocean::solve(RCP<SuperVector> rhs)
 
 	// If specified, unscale the problem
 	if (useScaling_)
-	  unscaleProblem();
+		unscaleProblem();
 }
 
 //=====================================================================
