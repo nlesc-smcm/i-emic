@@ -43,10 +43,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	:
 	comm_(Comm),                     // Setting the communication object
 	solverInitialized_(false),       // Solver needs initialization
-	adaptivePrecCompute_ (oceanParamList->get("Use adaptive preconditioner computation", false)),
+	adaptivePrecCompute_ (oceanParamList->get("Use adaptive preconditioner computation", true)),
 	recomputePreconditioner_(true),  // We need a preconditioner to start with
 	useScaling_          (oceanParamList->get("Use scaling", false)),
-	recomputeBound_      (oceanParamList->get("Preconditioner recompute bound", 50)),
+	recomputeBound_      (oceanParamList->get("Preconditioner recompute bound", 400)),
 	inputFile_           (oceanParamList->get("Input file", "ocean.h5")),
 	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
 	useExistingState_    (oceanParamList->get("Use existing state", false)),
@@ -55,8 +55,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	parStart_(0),
 	parEnd_(1)
 {
-	INFO("Ocean: constructor...");
-	
+        INFO("Ocean: constructor...");	
 	
 	Teuchos::ParameterList &thcmList =
 		oceanParamList->sublist("THCM");
@@ -75,7 +74,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	state_->PutScalar(0.0);
 	INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
 
-	// Get domain object and set the problem dimensions
+	// Get domain object and get the problem dimensions
 	domain_ = THCM::Instance().GetDomain();
 	N_ = domain_->GlobalN();
  	M_ = domain_->GlobalM();
@@ -167,9 +166,9 @@ void Ocean::initializeSolver()
 	// Belos parameter setup
 	// --> xml
 	int NumGlobalElements = state_->GlobalLength();
-	int maxsubspace = 1000;
+	int maxsubspace = 500;
 	int maxrestarts = 0;
-	int blocksize   = 1;
+	int blocksize   = 1; // number of vectors in rhs
 	int maxiters    = NumGlobalElements/blocksize - 1;
 	belosParamList_ = rcp(new Teuchos::ParameterList());
 	belosParamList_->set("Block Size", blocksize);
@@ -182,7 +181,7 @@ void Ocean::initializeSolver()
 	belosParamList_->set("Verbosity", Belos::TimingDetails + Belos::Errors +
 						 Belos::Warnings + Belos::StatusTestDetails );
 	belosParamList_->set("Maximum Iterations", maxiters);       // Maximum number of iterations
-	belosParamList_->set("Convergence Tolerance", 1.0e-3);      // Relative convergence tol
+	belosParamList_->set("Convergence Tolerance", 1.0e-2);      // Relative convergence tol
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
 	// --> xml

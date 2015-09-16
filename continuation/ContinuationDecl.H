@@ -58,6 +58,7 @@ class Continuation
 	int minAllowedIterations_;    // if less then we increase the step size
 	int maxAllowedIterations_;    // if more then we decrease the step size
 	double newtonTolerance_;      // set the tolerance in the Newton corrector
+  bool rejectFailedNewton_;
 
 	int parDotSign_;           // used for detecting sign switch
 	

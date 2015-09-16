@@ -33,7 +33,8 @@ Continuation(Model model, ParameterList pars)
 	maxNewtonIterations_(pars->get("maxNewtonIterations", 15)),
 	minAllowedIterations_(pars->get("minAllowedIterations", 4)),
 	maxAllowedIterations_(pars->get("maxAllowedIterations", 5)),
-	newtonTolerance_(pars->get("newtonTolerance", 1.0e-3))
+	newtonTolerance_(pars->get("newtonTolerance", 1.0e-3)),
+	rejectFailedNewton_(pars->get("Reject solution from failed Newton iteration", true))
 {
 	model_  = model;
 
@@ -395,15 +396,21 @@ newtonCorrector()
 	// CreateTangent()
 	stateDot_ = y1;
 	
+	// Do some administrative work
 	TRACK_ITERATIONS("Continuation: Newton iterations...", newtonIter_);
 	
 	if (newtonIter_ == maxNewtonIterations_)
-	{
-		WARNING("Continuation: Newton failed", __FILE__, __LINE__);
-		return 1;
-	}
+	  {
+	    WARNING("Continuation: Newton failed after " << newtonIter_ << " steps", 
+		    __FILE__, __LINE__);
+	    if (rejectFailedNewton_)
+	      return 1;
+	    else
+	      INFO("Continuation: Proceeding with unconverged result");
+	  }
+	else
+	  INFO("Continuation: corrector converged in " << newtonIter_ << " steps");
 	
-	INFO("Continuation: corrector converged in " << newtonIter_ << " steps");
 	INFO("Continuation: Newton corrector... done");
 	return 0;
 }
