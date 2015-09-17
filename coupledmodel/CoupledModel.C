@@ -174,6 +174,9 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 	// ***************************************************************
 
 	double residual;
+	double old_residual = computeResidual(rhs);
+	INFO("CoupledModel: blockGS, initial residual"
+		 << ", ||b-Jx|| = " << old_residual << ", tol = " << toleranceGS_);
 	
     // Initialize solution [x1;x2] = 0
  	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
@@ -207,6 +210,9 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 		residual = computeResidual(rhs);
 		INFO("CoupledModel: blockGS, i = " << i
 			 << ", ||b-Jx|| = " << residual << ", tol = " << toleranceGS_);
+
+		if (residual > old_residual)
+			WARNING("INCREASING RESIDUAL!", __FILE__, __LINE__);
 		
 		if (residual < toleranceGS_)
 			break;
