@@ -281,7 +281,7 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 eulerPredictor()
 {
-	INFO("Contin.: predictor");
+	INFO("Continuation: predictor");
 	// At the end of this function the model will be
 	// in a 'predicted' state.
 
@@ -381,8 +381,11 @@ newtonCorrector()
 		normRHS_ = rhsView_->norm();
 		model_->computeRHS();
 		normRHStest_ = rhsView_->norm('V'); // verbose norm
-		INFO("Continuation: Newton corrector    iter: " << newtonIter_ );
-		INFO("Continuation: Newton corrector  norm R: " << normRHStest_ );
+
+		INFO("----------------------------------------------------------");
+		INFO("           Newton corrector    iter: " << newtonIter_ );
+		INFO("                             norm R: " << normRHStest_ );
+		INFO("----------------------------------------------------------");		
 		
 		if (normRHStest_ < newtonTolerance_)
 			break;
@@ -443,8 +446,8 @@ runBackTracking(Vector stateDir, double parDir)
 		model_->computeRHS();
 		normRHStest_ = rhsView_->norm();
 
-		INFO("Contin.: backtracking " << backTrack_ <<
-			 " norm: " << normRHStest_ << " < " << normRHS_ << " ? ");
+		INFO("    backtracking step " << backTrack_ <<
+			 ", norm: " << normRHStest_ << " < " << normRHS_ << " ? ");
 
 		reduction /= 2.0;	// Update reduction
 	}
@@ -519,11 +522,11 @@ reset()
 {
 	INFO("***********************************************");
 	INFO("Continuation: RESETTING!");
-	INFO("Continuation:  Step = " << step_);
-	INFO("Continuation:  Restoring model...");
+	INFO("              Step = " << step_);
+	INFO("              Restoring model...");
 	restore();
 	ds_ = MAX(ds_ / scale2_, dsMin_);
-	INFO("Continuation:  Restoring model... done");
+	INFO("              Restoring model... done");
 	INFO("***********************************************");
 }
 
@@ -546,10 +549,10 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 restore()
 {
- 	INFO("Continuation::Restore()");
-	INFO("               norm state: " << stateView_->norm());
-	INFO("       norm stored state0: " << storage_.state0->norm());
-	INFO("      norm stored state00: " << storage_.state00->norm());
+ 	INFO("   Continuation::Restore()");
+	INFO("                 norm state: " << stateView_->norm());
+	INFO("         norm stored state0: " << storage_.state0->norm());
+	INFO("        norm stored state00: " << storage_.state00->norm());
 	model_->setState(storage_.state0);
 
 	// make sure we have a view of the state

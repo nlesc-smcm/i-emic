@@ -11,11 +11,13 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 
-// This is a very important class and it should be documented well...
+// This class assembles multiple sub-models into a CoupledModel. Which models and couplings are used should be supplied in the accompanying xml file (coupledmodel_params.xml). For the state we designed a special container called a SuperVector, see it's class header for more documentation.
 
-// We will use hashes to make sure nothing is computed too often
+// Most routines in CoupledModel simply call their corresponding routines in the sub-models. For instance, a call to computeJacobian() translates to a call to computeJacobian() in the sub-models.
 
-// typedef std::vector<std::vector<bool> > Graph;
+// The frequency at which the states of the sub-models are synchronized depends on the solving scheme. Moreover we use hashes to make sure nothing is computed and synchronized too often
+
+// The Jacobians in the sub-models form the diagonal blocks of the CoupledModel's Jacobian. If we require each sub-model to maintain its own solve() routine we can use a block Gauss Seidel iteration to solve the coupled problem. This circumvents the assembly of a big matrix. Another option is to solve the problem decoupled and only synchronize when postProcess() is called.
 
 // Forward declarations
 class Epetra_Comm;
@@ -27,6 +29,7 @@ public:
 	
 private:
 	// Adjacency graph describing the couplings between the models
+	// NOT IMPLEMENTED YET
     // Graph couplings_;
 
 	// Trilinos-based parallel implicit ocean model (Trilinos-THCM) with a

@@ -159,6 +159,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 //------------------------------------------------------------------
 void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 {
+	TIMER_START("CoupledModel: blockGS solve...");
 	// ***************************************************************
  	// Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
 	//           M = [A, 0; 0, D], E = [0, 0; -C, 0], F = [0, -B; 0, 0]
@@ -175,8 +176,6 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 
 	double residual;
 	double old_residual = computeResidual(rhs);
-	INFO("CoupledModel: blockGS, initial residual"
-		 << ", ||b-Jx|| = " << old_residual << ", tol = " << toleranceGS_);
 	
     // Initialize solution [x1;x2] = 0
  	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
@@ -184,7 +183,7 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 	
 	// Start iteration
 	int i;
-	for (i = 0; i < iterGS_; ++i)
+	for (i = 1; i <= iterGS_; ++i)
 	{
 		// Create -C*x1 + b2
 		x->linearTransformation(*C_, *rowsB_, 'O', 'A');
@@ -209,7 +208,7 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 		// Calculate residual
 		residual = computeResidual(rhs);
 		INFO("CoupledModel: blockGS, i = " << i
-			 << ", ||b-Jx|| = " << residual << ", tol = " << toleranceGS_);
+			 << ", ||b-Jx||/||b|| = " << residual << ", tol = " << toleranceGS_);
 
 		if (residual > old_residual)
 			WARNING("INCREASING RESIDUAL!", __FILE__, __LINE__);
@@ -228,6 +227,8 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 	
 	if (i == iterGS_)
 		WARNING("GS tolerance not reached...", __FILE__, __LINE__);
+
+	TIMER_STOP("CoupledModel: blockGS solve...");
 }
 
 //------------------------------------------------------------------
