@@ -389,7 +389,12 @@ newtonCorrector()
 		
 		// if we don't see a decrease we run the backtracking routine
 		if (backTracking_ and (normRHS_ < normRHStest_) )
+		{
 			runBackTracking(stateDir, parDir);
+			normRHStest_ = rhsView_->norm(); 
+			if (normRHStest_ < newtonTolerance_)
+				break;					
+		}
 	}
 	
 	// Store the last obtained y1 in stateDot, such that it can be used by
