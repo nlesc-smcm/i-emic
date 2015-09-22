@@ -7,7 +7,7 @@
 //======================================================================
 #include "ContinuationDecl.H"
 #include "GlobalDefinitions.H"
-#include <math.h>
+#include <math.h> // pow(), sqrt()
 #include <iomanip>
 //======================================================================
 //Constructor
@@ -376,7 +376,7 @@ newtonCorrector()
 		par_ = par_ + parDir;  // update our parameter
 		model_->setPar(par_);  // set it in the model
 		++newtonIter_;
-		
+
 		// test new RHS, if it satisfies the tolerance we exit the loop
 		normRHS_ = rhsView_->norm();
 		model_->computeRHS();
@@ -384,19 +384,18 @@ newtonCorrector()
 
 		INFO("----------------------------------------------------------");
 		INFO("           Newton corrector    iter: " << newtonIter_ );
-		INFO("                             norm R: " << normRHStest_ );
+		INFO("                              ||R||: " << normRHStest_ );
+		INFO("                             ||dx||: " << stateDir->norm());
 		INFO("----------------------------------------------------------");		
 		
-		if (normRHStest_ < newtonTolerance_)
-			break;
+		if (normRHStest_ < newtonTolerance_) break;
 		
 		// if we don't see a decrease we run the backtracking routine
 		if (backTracking_ and (normRHS_ < normRHStest_) )
 		{
 			runBackTracking(stateDir, parDir);
 			normRHStest_ = rhsView_->norm(); 
-			if (normRHStest_ < newtonTolerance_)
-				break;					
+			if (normRHStest_ < newtonTolerance_) break;					
 		}
 	}
 	
