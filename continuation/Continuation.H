@@ -34,7 +34,8 @@ Continuation(Model model, ParameterList pars)
 	minAllowedIterations_(pars->get("minAllowedIterations", 4)),
 	maxAllowedIterations_(pars->get("maxAllowedIterations", 5)),
 	newtonTolerance_(pars->get("newtonTolerance", 1.0e-3)),
-	rejectFailedNewton_(pars->get("Reject solution from failed Newton iteration", true))
+	rejectFailedNewton_(pars->get("Reject solution from failed Newton iteration", true)),
+	cycleTolerance_(pars->get("Cycle between multiples of the tolerance", false))
 {
 	model_  = model;
 
@@ -42,7 +43,6 @@ Continuation(Model model, ParameterList pars)
 	stateView_ = model_->getState('V');
 	rhsView_   = model_->getRHS('V');
 	solView_   = model_->getSolution('V');
-	
  	par_       = model_->getPar();       
 
 	// print some info on the model
@@ -111,9 +111,10 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 step()
 {
-	info(); 	                      // Print continuation info
-	eulerPredictor(); 	              // Apply Euler predictor
-	int status = newtonCorrector();   // Apply Newton corrector
+	computeTolerance();             // Calculate practical tolerance 
+	info(); 	                    // Print continuation info
+	eulerPredictor(); 	            // Apply Euler predictor
+	int status = newtonCorrector(); // Apply Newton corrector
 
 	// If necessary reset the step, otherwise perform a normal
 	// calculation of the tangent and step adjustment
@@ -138,6 +139,21 @@ step()
 	}
 }
 
+//======================================================================
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
+computeTolerance()
+{
+	// Scale the requested tolerance with sqrt(n)
+	practicalTol_ = newtonTolerance_ * sqrt(stateView_->length());
+
+	// If requested we cycle between several multiples of practicalTol_
+	int multiples[5] = {1,5,10,10,5};
+	if (cycleTolerance_)
+		practicalTol_ *= multiples[step_ % 5];
+		
+}
+	
 //======================================================================
 template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
@@ -257,7 +273,7 @@ normalize(Vector stateDot, double scale, double parDot)
 	// We normalize the tangent of the branch (stateDot, parDot)
 	// 1) First we scale the tangent of the state
 	// 2) Then we compute the norm of the combined vector
-	// 3) Finally we normalize both stateDot and parDot
+	// 3) Finally we normalize (stateDot, parDot)
 	// -----------------------------------------------------------------
 
 	// 1) scale stateDot
@@ -384,18 +400,19 @@ newtonCorrector()
 
 		INFO("----------------------------------------------------------");
 		INFO("           Newton corrector    iter: " << newtonIter_ );
-		INFO("                              ||R||: " << normRHStest_ );
+		INFO("                      practical tol: " << practicalTol_);
+		INFO("                              ||R||: " << normRHStest_);
 		INFO("                             ||dx||: " << stateDir->norm());
 		INFO("----------------------------------------------------------");		
 		
-		if (normRHStest_ < newtonTolerance_) break;
+		if (normRHStest_ < practicalTol_) break;
 		
 		// if we don't see a decrease we run the backtracking routine
 		if (backTracking_ and (normRHS_ < normRHStest_) )
 		{
 			runBackTracking(stateDir, parDir);
 			normRHStest_ = rhsView_->norm(); 
-			if (normRHStest_ < newtonTolerance_) break;					
+			if (normRHStest_ < practicalTol_) break;					
 		}
 	}
 	

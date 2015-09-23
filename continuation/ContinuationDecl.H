@@ -62,7 +62,9 @@ class Continuation
 	int minAllowedIterations_;    // if less then we increase the step size
 	int maxAllowedIterations_;    // if more then we decrease the step size
 	double newtonTolerance_;      // set the tolerance in the Newton corrector
-  bool rejectFailedNewton_;
+	bool rejectFailedNewton_;     // set to false if you feel lucky
+	double practicalTol_;         // actual tolerance used for the problem
+	bool cycleTolerance_;          // if true we cycle between multiples of tol
 
 	int parDotSign_;           // used for detecting sign switch
 	
@@ -107,6 +109,7 @@ private:
 	// Modes:  'S' Secant
 	//         'E' Euler
 	void createTangent(char mode);
+	void computeTolerance();
 
 	// Normalize the tangent with an additional scaling
 	// for the state component.
@@ -126,7 +129,7 @@ private:
 	// Detect special points.
 	// Modes: 'D' --> converge on destination
 	//        'P' --> converge on first sign switch in parDot
-	void detect(char mode = 'D');
+	void detect(char mode = 'D');	
 	void adjustStep();
 	void reset();
 	void info();
