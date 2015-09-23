@@ -3,29 +3,24 @@
    Trilinos-THCM, using only a fraction of the functionality that is
    available in there.
    
-   For now I try to let matrices and solvers be only available at the
-   model-level, but I'm doubting whether this is the right approach... In
-   the future I will probably need to assemble a big matrix and find an
-   appropriate solver. 
-
    A model is required to have the following member functions:
 
-       void computeJacobian()
 	   void computeRHS() 
+       void computeJacobian()
 	   void solve(rhs)	   
-	   vector getSolution()
-	   vector getState()
-	   vector getRHS()
+	   	   
+	   vector *getSolution()
+	   vector *getRHS()
+	   vector *getState()	   
+	   double getPar()
+	   void   setPar()
+	   
+	   void preProcess()
+	   void postProcess()
 
-   The vector type that is returned from the get{.} functions will have
+   The vector that is returned from the get{.} functions will have
    to be known by the interface (e.g. Continuation) that calls this class.
-   The calling interface requires the following member functions:
 
-       void update()
-	   void scale()
-	   int length()	   
-	   double dot()
-	   double norm()
 */
 //!------------------------------------------------------------------------
 #ifndef OCEAN_H
@@ -149,7 +144,13 @@ public:
 	//    perspective. The continuation routine should have that
 	//    information, not the model right?
 	void    setPar(double value);
-	double  getPar();
+
+	// Return continuation parameter or related information.
+	// Different modes   'V': return parameter value (default)
+	//                   'D': return parameter destination value
+	//                   'S': return parameter start value
+	double  getPar(char mode = 'V');
+	
 	double  getParDestination() { return parEnd_; }
 
 	// ! Pre and post-convergence processing
@@ -205,3 +206,11 @@ private:
 	Teuchos::RCP<SuperVector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
 };
 #endif
+
+
+
+
+
+
+
+
