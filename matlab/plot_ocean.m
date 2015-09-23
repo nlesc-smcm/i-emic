@@ -126,13 +126,12 @@ xlabel('Latitude')
 ylabel('z (m)')
 exportfig('isopycnals.eps')
 
-%figure(5)
-%Sp = S(:,:,l); 
-%contourf(RtD*(y),RtD*xu(1:end-1),S0+Sp');
-%colorbar
-%title('Surface Salinity');
-%xlabel('Longitude')
-%ylabel('Latitude')
+%%
+figure(5)
+imagesc(flipud(PSIG')); axis off
+title('Overturning Streamfunction')
+exportfig('mstream.eps')
+
 %%
 figure(7)
 Ps = p(:,:,l);    % surface longitudinal velocity
