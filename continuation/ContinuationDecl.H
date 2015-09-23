@@ -8,9 +8,13 @@
 //! Pseudo-arclength continuation class using an
 //! Euler predictor and a Newton corrector.
 //! 
+//! The templated Model type should be a pointer to a model
+//! with a specific set of member functions:
+//! ...
+//!
 //! The templated type ParameterList should be a pointer 
 //! to a parameter storing object having a .get() method.
-//! ...
+
 template<typename Model, typename ParameterList>
 class Continuation
 {

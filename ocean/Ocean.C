@@ -178,10 +178,12 @@ void Ocean::initializeSolver()
 	belosParamList_->set("Maximum Restarts",maxrestarts);
 	belosParamList_->set("Orthogonalization","DGKS");
 	belosParamList_->set("Output Frequency",20);
-	belosParamList_->set("Verbosity", Belos::TimingDetails + Belos::Errors +
-						 Belos::Warnings + Belos::StatusTestDetails );
-	belosParamList_->set("Maximum Iterations", maxiters);       // Maximum number of iterations
-	belosParamList_->set("Convergence Tolerance", 1e-2);        // Relative convergence tol
+	belosParamList_->set("Verbosity", Belos::TimingDetails +
+						 Belos::Errors +
+						 Belos::Warnings +
+						 Belos::StatusTestDetails );
+	belosParamList_->set("Maximum Iterations", maxiters); 
+	belosParamList_->set("Convergence Tolerance", 1e-2); 
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
 	// --> xml
@@ -199,7 +201,7 @@ void Ocean::initializeSolver()
 }
 
 //=====================================================================
-void Ocean::solve(RCP<SuperVector> rhs)
+void Ocean::solve(VectorPtr rhs)
 {
 	// Check whether solver is initialized, if not perform the
 	// initialization here
@@ -550,21 +552,31 @@ void Ocean::loadStateFromFile(std::string const &filename)
 }
 
 //====================================================================
-double Ocean::getPar()
+double Ocean::getPar(char mode)
 {
-	double thcmPar;
-	FNAME(getparcs)(&parIdent_, &thcmPar);
-	if (thcmPar != parValue_)
+	if (mode == 'V')
 	{
-		INFO("Ocean::getPar(): Faulty parameter synchronization");
-		INFO("              thcm: " << thcmPar);
-		INFO("             Ocean: " << parValue_);
-		INFO("     fixing this...");
-		FNAME(setparcs)(&parIdent_, &parValue_);
+		double thcmPar;
 		FNAME(getparcs)(&parIdent_, &thcmPar);
-		INFO("              thcm: " << thcmPar);
-	}					  
+		if (thcmPar != parValue_)
+		{
+			INFO("Ocean::getPar(): Faulty parameter synchronization");
+			INFO("              thcm: " << thcmPar);
+			INFO("             Ocean: " << parValue_);
+			INFO("     fixing this...");
+			FNAME(setparcs)(&parIdent_, &parValue_);
+			FNAME(getparcs)(&parIdent_, &thcmPar);
+			INFO("              thcm: " << thcmPar);
+		}					  
 	return parValue_;
+	}
+	if (mode == 'D') return parEnd_;
+	if (mode == 'S') return parStart_;
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return -1;
+	}
 }
 
 //====================================================================
