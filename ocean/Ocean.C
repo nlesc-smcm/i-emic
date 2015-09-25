@@ -168,7 +168,7 @@ void Ocean::initializeSolver()
 	// --> xml
 	int NumGlobalElements = state_->GlobalLength();
 	int maxsubspace = gmresIters_;
-	int maxrestarts = 1;
+	int maxrestarts = 0;
 	int blocksize   = 1; // number of vectors in rhs
 	int maxiters    = NumGlobalElements/blocksize - 1;
 	belosParamList_ = rcp(new Teuchos::ParameterList());
@@ -178,7 +178,7 @@ void Ocean::initializeSolver()
 	belosParamList_->set("Num Blocks",maxsubspace);
 	belosParamList_->set("Maximum Restarts",maxrestarts);
 	belosParamList_->set("Orthogonalization","DGKS");
-	belosParamList_->set("Output Frequency", 10);
+	belosParamList_->set("Output Frequency", 0);
 	belosParamList_->set("Verbosity", Belos::TimingDetails +
 						 Belos::Errors +
 						 Belos::Warnings +
@@ -231,10 +231,7 @@ void Ocean::solve(VectorPtr rhs)
 	if (rhs == Teuchos::null)
  		set = problem_->setProblem(sol_, rhs_);
 	else
-	{
-		sol_->PutScalar(0.0);
 		set = problem_->setProblem(sol_, rhs->getOceanVector());
-	}
 	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
