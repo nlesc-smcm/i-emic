@@ -46,6 +46,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	adaptivePrecCompute_ (oceanParamList->get("Use adaptive preconditioner computation", true)),
 	recomputePreconditioner_(true),  // We need a preconditioner to start with
 	useScaling_          (oceanParamList->get("Use scaling", false)),
+	gmresIters_          (oceanParamList->get("Iterations in FGMRES solver", 100)),
 	recomputeBound_      (oceanParamList->get("Preconditioner recompute bound", 400)),
 	inputFile_           (oceanParamList->get("Input file", "ocean.h5")),
 	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
@@ -166,18 +167,18 @@ void Ocean::initializeSolver()
 	// Belos parameter setup
 	// --> xml
 	int NumGlobalElements = state_->GlobalLength();
-	int maxsubspace = 500;
-	int maxrestarts = 0;
+	int maxsubspace = gmresIters_;
+	int maxrestarts = 1;
 	int blocksize   = 1; // number of vectors in rhs
 	int maxiters    = NumGlobalElements/blocksize - 1;
 	belosParamList_ = rcp(new Teuchos::ParameterList());
 	belosParamList_->set("Block Size", blocksize);
 	belosParamList_->set("Flexible Gmres", true);
-	belosParamList_->set("Adaptive Block Size", false);
+	belosParamList_->set("Adaptive Block Size", true);
 	belosParamList_->set("Num Blocks",maxsubspace);
 	belosParamList_->set("Maximum Restarts",maxrestarts);
 	belosParamList_->set("Orthogonalization","DGKS");
-	belosParamList_->set("Output Frequency",20);
+	belosParamList_->set("Output Frequency", 10);
 	belosParamList_->set("Verbosity", Belos::TimingDetails +
 						 Belos::Errors +
 						 Belos::Warnings +
@@ -208,11 +209,6 @@ void Ocean::solve(VectorPtr rhs)
 	if (!solverInitialized_)
 		initializeSolver();
 	
-	// Set the initial solution in the solver to zeros.
-	// --> this could be improved/changed but having zero as
-	//     initial solution seems to be slightly faster
-	sol_->PutScalar(0.0);
-
 	// If required we scale the problem here
 	if (useScaling_)
 		scaleProblem();
@@ -230,12 +226,15 @@ void Ocean::solve(VectorPtr rhs)
 		recomputePreconditioner_ = false;  // Disable subsequent recomputes
 	}
 
-	// Set the problem, rhs may be given as an argument to Solve().
+	// Set the problem, rhs may be given as an argument to solve().
 	bool set;
 	if (rhs == Teuchos::null)
  		set = problem_->setProblem(sol_, rhs_);
 	else
+	{
+		sol_->PutScalar(0.0);
 		set = problem_->setProblem(sol_, rhs->getOceanVector());
+	}
 	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
@@ -251,7 +250,7 @@ void Ocean::solve(VectorPtr rhs)
 	catch (std::exception const &e)
 	{
 		INFO("Ocean: exception caught: " << e.what());
-	}	
+	}
 	INFO("Ocean: solve... done");
 	TIMER_STOP("Ocean: solve...");
 	// ---------------------------------------------------------------------
