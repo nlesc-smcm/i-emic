@@ -7,10 +7,13 @@
   
   <!-- Specify whether the Jacobian and RHS should be scaled before a solve -->
   <Parameter name="Use scaling" type="bool" value = "false"/>
+ 
+  <!-- Specify number of iterations in linear solver -->
+  <Parameter name="Iterations in FGMRES solver" type="int" value = "10"/>
   
   <!-- Maximum allowed number of iterations in linear solver before a new -->
   <!-- preconditioner is requested -->
-  <Parameter name="Preconditioner recompute bound" type="int" value = "100"/>
+  <Parameter name="Preconditioner recompute bound" type="int" value = "20"/>
 
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -34,9 +37,9 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="16"/>
+    <Parameter name="Global Grid-Size n" type="int" value="32"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="16"/>
+    <Parameter name="Global Grid-Size m" type="int" value="32"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="16"/>
 
