@@ -180,11 +180,11 @@ void Ocean::initializeSolver()
 	belosParamList_->set("Orthogonalization","DGKS");
 	belosParamList_->set("Output Frequency", 0);
 	belosParamList_->set("Verbosity", Belos::TimingDetails +
-						 Belos::Errors +
-						 Belos::Warnings +
-						 Belos::StatusTestDetails );
+			     Belos::Errors +
+			     Belos::Warnings +
+			     Belos::StatusTestDetails );
 	belosParamList_->set("Maximum Iterations", maxiters); 
-	belosParamList_->set("Convergence Tolerance", 1e-2); 
+	belosParamList_->set("Convergence Tolerance", 5e-2); 
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
 	// --> xml
