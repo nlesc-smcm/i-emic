@@ -13,6 +13,7 @@
 
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
+#include <BelosBlockFGCRODRSolMgr.hpp>
 #include <BelosEpetraAdapter.hpp>
 
 #include <Ifpack_Preconditioner.h>
@@ -191,7 +192,7 @@ void Ocean::initializeSolver()
 	
 	// Belos block GMRES setup
 	belosSolver_ =
-		rcp(new Belos::BlockGmresSolMgr
+		rcp(new Belos::BlockFGCRODRSolMgr
 			<double, Epetra_MultiVector, Epetra_Operator>
 			(problem_, belosParamList_));
 
