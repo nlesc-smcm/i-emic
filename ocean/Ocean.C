@@ -47,6 +47,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	recomputePreconditioner_(true),  // We need a preconditioner to start with
 	useScaling_          (oceanParamList->get("Use scaling", false)),
 	gmresIters_          (oceanParamList->get("Iterations in FGMRES solver", 100)),
+	gmresTol_            (oceanParamList->get("Tolerance in FGMRES solver", 1e-3)),
 	recomputeBound_      (oceanParamList->get("Preconditioner recompute bound", 400)),
 	inputFile_           (oceanParamList->get("Input file", "ocean.h5")),
 	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
@@ -167,7 +168,6 @@ void Ocean::initializeSolver()
 	// Belos parameter setup
 	// --> xml
 	int NumGlobalElements = state_->GlobalLength();
-	int maxsubspace = gmresIters_;
 	int maxrestarts = 0;
 	int blocksize   = 1; // number of vectors in rhs
 	int maxiters    = NumGlobalElements/blocksize - 1;
@@ -175,16 +175,16 @@ void Ocean::initializeSolver()
 	belosParamList_->set("Block Size", blocksize);
 	belosParamList_->set("Flexible Gmres", true);
 	belosParamList_->set("Adaptive Block Size", true);
-	belosParamList_->set("Num Blocks",maxsubspace);
-	belosParamList_->set("Maximum Restarts",maxrestarts);
+	belosParamList_->set("Num Blocks", gmresIters_);
+	belosParamList_->set("Maximum Restarts", maxrestarts);
 	belosParamList_->set("Orthogonalization","DGKS");
-	belosParamList_->set("Output Frequency", 0);
+	belosParamList_->set("Output Frequency", 100);
 	belosParamList_->set("Verbosity", Belos::TimingDetails +
 			     Belos::Errors +
 			     Belos::Warnings +
 			     Belos::StatusTestDetails );
 	belosParamList_->set("Maximum Iterations", maxiters); 
-	belosParamList_->set("Convergence Tolerance", 5e-2); 
+	belosParamList_->set("Convergence Tolerance", gmresTol_); 
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
 	// --> xml
@@ -234,7 +234,7 @@ void Ocean::solve(VectorPtr rhs)
 		set = problem_->setProblem(sol_, rhs->getOceanVector());
 	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
-							   "*** Belos::LinearProblem failed to setup");
+				   "*** Belos::LinearProblem failed to setup");
 
 	// ---------------------------------------------------------------------
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
