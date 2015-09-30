@@ -8,9 +8,10 @@
   <!-- Specify whether the Jacobian and RHS should be scaled before a solve -->
   <Parameter name="Use scaling" type="bool" value = "false"/>
  
-  <!-- Specify number of iterations in linear solver -->
+  <!-- Specify number of iterations and tolerance in linear solver -->
   <Parameter name="Iterations in FGMRES solver" type="int" value = "20"/>
-  
+  <Parameter name="Tolerance in FGMRES solver" type="double" value = "1e-3"/>
+
   <!-- Maximum allowed number of iterations in linear solver before a new -->
   <!-- preconditioner is requested -->
   <Parameter name="Preconditioner recompute bound" type="int" value = "20"/>

@@ -29,7 +29,6 @@
 #include <Teuchos_RCP.hpp>
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
-#include <BelosBlockFGCRODRSolMgr.hpp>
 #include <BelosEpetraAdapter.hpp>
 #include <Ifpack_Preconditioner.h>
 
@@ -80,7 +79,7 @@ protected:
 	Teuchos::RCP<Teuchos::ParameterList> belosParamList_;
 	Teuchos::RCP<Belos::LinearProblem
 				 <double, Epetra_MultiVector, Epetra_Operator> > problem_;	
-	Teuchos::RCP<Belos::BlockFGCRODRSolMgr
+	Teuchos::RCP<Belos::BlockGmresSolMgr
 				 <double, Epetra_MultiVector, Epetra_Operator> > belosSolver_;
 	
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
