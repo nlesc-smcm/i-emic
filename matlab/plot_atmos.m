@@ -27,7 +27,7 @@ Ta  = reshape(T0 + state,n,m);
 % ylabel('Latitude')
 % exportfig('oceanTemp.eps')
 %%
-colormap jet
+colormap default
 figure(6)
 img = Ta';
 contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
@@ -42,7 +42,7 @@ hold off
 drawnow
 
 
-title('Atmosphere')
+title('Atmospheric temperature')
 xlabel('Longitude')
 ylabel('Latitude')
 exportfig('atmosTemp.eps')

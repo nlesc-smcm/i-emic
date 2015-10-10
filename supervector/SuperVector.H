@@ -49,8 +49,8 @@ public:
 	~SuperVector();
 
 	// Get info on contents SuperVector
-	bool haveOceanVector(){ return haveOceanVector_; };
-	bool haveAtmosVector(){ return haveAtmosVector_; };
+	bool haveOceanVector() const { return haveOceanVector_; }
+	bool haveAtmosVector() const { return haveAtmosVector_; }
 
 	// Get the total length of the combined vector
 	int length() const;

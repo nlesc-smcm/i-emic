@@ -47,13 +47,13 @@ SuperVector::SuperVector(SuperVector const &other)
 {
 	if (other.haveOceanVector())
 	{
-		oceanVector_ = Teuchos::rcp(
-			new Epetra_Vector(*(other.getOceanVector())));
+		oceanVector_ = Teuchos::rcp
+			(new Epetra_Vector(*(other.getOceanVector())));
 		haveOceanVector_ = true;
 	}
 	else
 	{
-		oceanVector_(Teuchos::null),
+		oceanVector_ = Teuchos::null;
 		haveOceanVector_ = false;
 	}
 	if (other.haveAtmosVector())
@@ -64,7 +64,7 @@ SuperVector::SuperVector(SuperVector const &other)
 	}
 	else
 	{
-		atmosVector_(std::shared_ptr<std::vector<double> >());
+		atmosVector_ = std::shared_ptr<std::vector<double> >();
 		haveAtmosVector_ = false;
 	}
 	init();
