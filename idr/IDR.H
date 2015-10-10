@@ -2,8 +2,9 @@
 #define IDRSolver_H
 
 #include <vector>
+#include <memory>
 
-// Templated types are assumed to be pointers: we use -> in calls to
+// Templated types are assumed to be shared_pointers: we use -> in calls to
 // their members.
 
 // Model should be a class with members:
@@ -24,10 +25,13 @@ class IDRSolver
 	Model  model_;
 	Vector x_;
 
+	double tol_;
+	bool   smoothing;
+
 public:
 	// constructor
-	IDRSolver(Model A, Vector x, Vector r);
-
+	IDRSolver(Model model, Vector x0);
+	
 	// destructor
 	~IDRSolver();
 	
@@ -40,12 +44,14 @@ public:
 //====================================================================
 template<typename Model, typename Vector>
 IDRSolver<Model, Vector>::
-IDRSolver(Model A, Vector x, Vector r)
+IDRSolver(Model model, Vector x0)
 	:
-	A_(A),
-	x_(x),
-	model_(M)
-{}
+	model_(model),  
+	x_(x0),
+{
+	tol_ = 1e-6;
+	smoothing_ = false;
+}
 
 // ===================================================================
 template<typename Model, typename Vector>
@@ -61,7 +67,35 @@ solve(Vector b)
 	// Initialize output paramater relres
 	double relres = nan();
 
-	Vector 
+	double normb = b->norm();
+	double tolb  = tol_ * normb; // Relative tolerance
+
+	// Compute residual
+	Vector Ax = model_->applyMatrix(*x_);     // Perform matvec
+	Vector r  = std::make_shared<Vector>(*b); // Initialize r with b
+	r->update( 1.0,  *b, 0.0);                // Replace contents with rhs
+	r->update(-1.0, *Ax, 1.0);                // r = b - A*x
+
+	Vector x_s, r_s;
+	if (smoothing_)
+	{
+		x_s = std::make_shared<Vector>(*x_);
+		r_s = std::make_shared<Vector>(*r);
+	}
+
+	double normr = r->norm();
+	std::vector<double> resvec();
+	resvec.push_back(norm);
+	double trueres = 0.0;
+
+	// Initial guess is a good enough solution
+	// TODO
+
+	int iter = 0;
+	while (normr > tolb && iter < maxit)
+	{
+		// kijk in fortran code
+	}
 	
 }
 
