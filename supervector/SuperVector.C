@@ -1,5 +1,4 @@
 #include "SuperVector.H"
-
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
 //------------------------------------------------------------------
@@ -39,6 +38,35 @@ SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector1,
 	haveAtmosVector_(true),
 	isInitialized_(false)
 {
+	init();
+}
+
+//------------------------------------------------------------------
+// Copy constructor 
+SuperVector::SuperVector(SuperVector const &other)
+{
+	if (other.haveOceanVector())
+	{
+		oceanVector_ = Teuchos::rcp(
+			new Epetra_Vector(*(other.getOceanVector())));
+		haveOceanVector_ = true;
+	}
+	else
+	{
+		oceanVector_(Teuchos::null),
+		haveOceanVector_ = false;
+	}
+	if (other.haveAtmosVector())
+	{
+		atmosVector_ = std::make_shared<std::vector<double> >
+			(*(other.getAtmosVector()));
+		haveAtmosVector_ = true;
+	}
+	else
+	{
+		atmosVector_(std::shared_ptr<std::vector<double> >());
+		haveAtmosVector_ = false;
+	}
 	init();
 }
 
@@ -86,16 +114,16 @@ double SuperVector::dot(SuperVector const &A) const
 		std::cout << "Wrong dimensions!" << std::endl;
 		return 1;
 	}
-			
+	
 	double dot1 = 0;
 	if (haveOceanVector_)
 		oceanVector_->Dot(*(A.getOceanVector()), &dot1);
-			
+	
 	double dot2 = 0;
 	if (haveAtmosVector_)
 		for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
 			dot2 += (*A.getAtmosVector())[idx] * (*atmosVector_)[idx];
-			
+	
 	return dot1 + dot2;
 }
 

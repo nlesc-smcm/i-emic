@@ -42,8 +42,15 @@ public:
 	SuperVector(Teuchos::RCP<Epetra_Vector> vector1,
 				std::shared_ptr<std::vector<double> > vector2);
 
+	// Copy constructor
+	SuperVector(SuperVector const &other);
+	
 	// Destructor
-	~SuperVector();	
+	~SuperVector();
+
+	// Get info on contents SuperVector
+	bool haveOceanVector(){ return haveOceanVector_; };
+	bool haveAtmosVector(){ return haveAtmosVector_; };
 
 	// Get the total length of the combined vector
 	int length() const;
