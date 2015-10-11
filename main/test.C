@@ -33,6 +33,7 @@
 #include "ThetaStepper.H"
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
+#include "IDRSolver.H"
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
@@ -50,6 +51,7 @@ void testVecWrap();
 void testCoupling(RCP<Epetra_Comm> Comm);
 void testOcean(RCP<Epetra_Comm> Comm);
 void testGlobalAtmos();
+void testIDR(RCP<Epetra_Comm> Comm);
 
 //------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
@@ -66,7 +68,7 @@ int main(int argc, char **argv)
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
 	// test the coupled model
-	testGlobalAtmos();
+	testIDR(Comm);
 
 	// print the profile
 	if (Comm->MyPID() == 0)
@@ -76,6 +78,35 @@ int main(int argc, char **argv)
 	// Finalize MPI
 	//--------------------------------------------------------
 	MPI_Finalize();	
+}
+
+void testIDR(RCP<Epetra_Comm> Comm)
+{
+	TIMER_START("Total time...");
+
+	//------------------------------------------------------------------
+	// Check if outFile is specified
+	if (outFile == Teuchos::null)
+		throw std::runtime_error("ERROR: Specify output streams");	
+	
+	//------------------------------------------------------------------
+	// Create parameter object for Ocean
+	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+
+	// Create parallelized Ocean object
+	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
+
+	// Get state from Ocean
+	RCP<SuperVector> x = ocean->getState('C');
+
+	// Create IDRSolver object
+	IDRSolver<RCP<Ocean>, RCP<SuperVector> > solver(ocean, x);
+
+	solver.test();
+	
+	//------------------------------------------------------------------
+	TIMER_STOP("Total time...");		
 }
 
 //------------------------------------------------------------------

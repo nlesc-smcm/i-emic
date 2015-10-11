@@ -1,6 +1,21 @@
 #include "SuperVector.H"
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
+
+//------------------------------------------------------------------
+// Default constructor:
+SuperVector::SuperVector()
+	:
+	oceanVector_(Teuchos::null),
+	atmosVector_(std::shared_ptr<std::vector<double> >()),
+	haveOceanVector_(false),
+	haveAtmosVector_(false),
+	isInitialized_(false)
+{
+	init();
+}
+
+
 //------------------------------------------------------------------
 // Constructor 1:
 SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector)

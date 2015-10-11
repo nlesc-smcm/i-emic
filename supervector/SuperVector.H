@@ -36,6 +36,9 @@ class SuperVector
 	int length_;	
 	
 public:
+	// Default constructor
+	SuperVector();
+	
 	// Constructors
 	SuperVector(Teuchos::RCP<Epetra_Vector> vector);
 	SuperVector(std::shared_ptr<std::vector<double> > vector);

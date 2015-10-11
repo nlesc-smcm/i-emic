@@ -22,6 +22,7 @@ HEADERDEPS = \
 	../thetastepper/ThetaStepperDecl.H \
 	../continuation/Continuation.H \
 	../continuation/ContinuationDecl.H \
+	../idrsolver/IDRSolver.H \
 	../ocean/GlobalDefinitions.H \
 	../ocean/Ocean.H \
 	../atmosphere/Atmosphere.H\

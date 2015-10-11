@@ -3,7 +3,7 @@
 
 !doc/
 !src/
-!idr/
+!idrsolver/
 !supervector/
 !parameters/
 !parameterfiles/
