@@ -4,54 +4,7 @@
 #include <vector>
 #include <memory>
 
-// Templated types are assumed to be shared_pointers: we use -> in calls to
-// their members.
-
-// Model should be a class with members:
-//    -applyMatrix(Vector v), performing matrix vector product t=Av
-//    -applyPrecon(Vector v), applying the operation v = P^{-1} x
-// Note that Model should be compatible with Vector
-
-// Vector should be a class with members:
-//    -update(double scalarA, Vector A, double scalarThis, performing
-//      this = scalarA * A + scalarThis * this
-//    -norm()
-//    -copy construction
-
-
-template<typename ModelPointer, typename VectorPointer>
-class IDRSolver
-{
-	// We require the pointers to be of shared_ptr/RCP type
-	using  Model  = typename ModelPointer::element_type;	
-	using  Vector = typename VectorPointer::element_type;
-	
-	ModelPointer  model_;
-	VectorPointer x_;
-
-	double tol_;
-	bool   smoothing_;
-	int    s_;
-	int    maxit_;
-	// smoothing vectors
-	Vector xs_;
-	Vector rs_;
-
-	// shadow space?
-	std::vector<Vector> P_;
-
-public:
-	// constructor
-	IDRSolver(ModelPointer model, VectorPointer x0);
-	
-	// destructor
-	~IDRSolver();
-	
-	VectorPointer solve(VectorPointer b);
-
-	void test();
-	
-};
+#include "IDRSolverDecl.H"
 
 //====================================================================
 //====================================================================
@@ -63,10 +16,25 @@ IDRSolver(ModelPointer model, VectorPointer x0)
 	model_(model),  
 	x_(x0)
 {
-	tol_ = 1e-6;
+	tol_       = 1e-6;
 	smoothing_ = false;
-	s_ = 4;
-	maxit_ = 500;
+	s_         = 4;
+	maxit_     = 500;
+
+	createP();
+}
+
+//====================================================================
+template<typename ModelPointer, typename VectorPointer>
+IDRSolver<ModelPointer, VectorPointer>::
+~IDRSolver()
+{}
+
+//====================================================================
+template<typename ModelPointer, typename VectorPointer>
+void IDRSolver<ModelPointer, VectorPointer>::
+createP()
+{
 	double alpha;
 	for (int j = 0; j < s_; ++j)
 	{
@@ -80,14 +48,7 @@ IDRSolver(ModelPointer model, VectorPointer x0)
 		}
 		P_[j].scale(1.0/P_[j].norm());
 	}
-
 }
-
-//====================================================================
-template<typename ModelPointer, typename VectorPointer>
-IDRSolver<ModelPointer, VectorPointer>::
-~IDRSolver()
-{}
 
 // ===================================================================
 template<typename ModelPointer, typename VectorPointer>
@@ -126,16 +87,31 @@ solve(VectorPointer b)
 
 	// Initial guess is a good enough solution
 	// TODO
-
-	int iter = 0;
+	
+	int   iter = 0;
+	size_t dim = s_;
 	std::vector<double> f;
+	std::vector<std::vector<double> > M(dim, std::vector<double>(dim, 0.0));
 	while (normr > tolb && iter < maxit_)
 	{
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
-			f.push_back(r->dot(P_[i]));		
-	}
-	
+			f.push_back(r->dot(P_[i]));
+
+		for (int k = 0; k < s_; ++k)
+		{
+			// Solve small lower triangular system and make v orthogonal to P:
+			double gamma;
+			for (int i = k; i < s_; ++i)
+			{
+				gamma = f[i];
+				for (int j = k; j < i-1; ++j)
+				{
+					
+				}				
+			}
+		}
+	}	
 }
 
 //====================================================================
