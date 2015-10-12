@@ -30,6 +30,7 @@ class IDRSolver
 	bool   smoothing_;
 	int    s_;
 	int    maxit_;
+
 	// smoothing vectors
 	Vector xs_;
 	Vector rs_;

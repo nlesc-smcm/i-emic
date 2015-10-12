@@ -132,7 +132,11 @@ public:
 	Teuchos::RCP<SuperVector> getSolution(char mode = 'C');
 	Teuchos::RCP<SuperVector> getState(char mode = 'C');
 	Teuchos::RCP<SuperVector> getRHS(char mode = 'C');
-	
+
+	// Apply the Jacobian to a vector and return the result u = J*v
+	Teuchos::RCP<SuperVector> applyMatrix(SuperVector const &v);
+
+	// THESE ARE OBSOLETE!!!
 	void setState(Teuchos::RCP<SuperVector> state)
 		{ state_ = state->getOceanVector(); }
 	

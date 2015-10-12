@@ -15,7 +15,6 @@ SuperVector::SuperVector()
 	init();
 }
 
-
 //------------------------------------------------------------------
 // Constructor 1:
 SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector)

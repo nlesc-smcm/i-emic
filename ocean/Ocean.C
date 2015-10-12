@@ -398,6 +398,14 @@ Teuchos::RCP<SuperVector> Ocean::getRHS(char mode)
 }
 
 //====================================================================
+Teuchos::RCP<SuperVector> Ocean::applyMatrix(SuperVector const &v)
+{
+	RCP<Epetra_Vector> result = rcp(new Epetra_Vector(jac_->RangeMap()));
+	jac_->Apply(*(v.getOceanVector()), *result);
+	return getVector('V', result);
+}
+
+//====================================================================
 void Ocean::setAtmosphere(std::vector<double> const &atmos)
 {
 	TIMER_START("Ocean: set atmosphere...");

@@ -97,13 +97,17 @@ void testIDR(RCP<Epetra_Comm> Comm)
 	// Create parallelized Ocean object
 	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
 
-	// Get state from Ocean
+	// Get state from Ocean and make random rhs
 	RCP<SuperVector> x = ocean->getState('C');
+	RCP<SuperVector> b = ocean->getState('C');
+	b->random();
+	
 
 	// Create IDRSolver object
 	IDRSolver<RCP<Ocean>, RCP<SuperVector> > solver(ocean, x);
 
 	solver.test();
+	solver.solve(b);
 	
 	//------------------------------------------------------------------
 	TIMER_STOP("Total time...");		

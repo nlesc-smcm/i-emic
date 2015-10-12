@@ -69,46 +69,71 @@ solve(VectorPointer b)
 
 	// Compute residual
 	VectorPointer Ax = model_->applyMatrix(*x_);     // Perform matvec
-	VectorPointer r  = std::make_shared<VectorPointer>(*b); // Initialize r with b
-	r->update( 1.0,  *b, 0.0);                // Replace contents with rhs
-	r->update(-1.0, *Ax, 1.0);                // r = b - A*x
+	Vector r(*b);                                    // Initialize r with b
+	r.update( 1.0,  *b, 0.0);                        // Replace contents with rhs
+	r.update(-1.0, *Ax, 1.0);                        // r = b - A*x
 
 	// Constructing smoothing vectors xs_ and rs_
 	if (smoothing_)
 	{
-		xs_(*x_);
-		rs_(*r);
+		xs_ = Vector(*x_);
+		rs_ = Vector(r);
 	}
 	
-	double normr = r->norm();
-	std::vector<double> resvec();
+	double normr = r.norm();
+	std::vector<double> resvec;
 	resvec.push_back(normr);
 	double trueres = 0.0;
 
 	// Initial guess is a good enough solution
 	// TODO
 	
-	int   iter = 0;
+	int   iter = 0; 
+	int     ii = 0;   // inner iteration counter
+	int     jj = 0;   // G-space counter
+	
 	size_t dim = s_;
+	
 	std::vector<double> f;
+	std::vector<double> gamma(dim, 0.0);
+	
+	std::vector<VectorPointer>        G(dim, VectorPointer());
 	std::vector<std::vector<double> > M(dim, std::vector<double>(dim, 0.0));
+	
 	while (normr > tolb && iter < maxit_)
 	{
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
-			f.push_back(r->dot(P_[i]));
+			f.push_back(r.dot(P_[i]));
 
 		for (int k = 0; k < s_; ++k)
 		{
-			// Solve small lower triangular system and make v orthogonal to P:
-			double gamma;
-			for (int i = k; i < s_; ++i)
-			{
-				gamma = f[i];
-				for (int j = k; j < i-1; ++j)
+			// Update inner iteration counter
+			ii = ii + 1;
+				
+			// Create new v
+			Vector v(r);
+
+			if (jj > 0)
+			{				
+				// Solve small lower triangular system and make v orthogonal to P:
+				for (int i = k; i < s_; ++i)
 				{
-					
-				}				
+					gamma[i] = f[i];
+					for (int j = k; j < i-1; ++j)
+					{
+						gamma[i] = gamma[i] - M[i][j] * gamma[j];
+					}
+					gamma[i] = gamma[i] / M[i][i];
+					v.update(-gamma[i], *(G[i]), 1.0);
+				}
+
+				// Preconditioning
+				// v = *(model_->applyPrecon(v);
+				
+				// Compute new U[k]
+				
+				
 			}
 		}
 	}	
