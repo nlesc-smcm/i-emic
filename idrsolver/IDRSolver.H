@@ -56,7 +56,7 @@ VectorPointer IDRSolver<ModelPointer, VectorPointer>::
 solve(VectorPointer b)
 {
 	// check for zero rhs
-	// TODO
+	//-->TODO
 
 	// Number close to machine precision:
 	double mp = 1e-13;
@@ -86,18 +86,23 @@ solve(VectorPointer b)
 	double trueres = 0.0;
 
 	// Initial guess is a good enough solution
-	// TODO
+	//-->TODO
+
+	//-->RECYCLING!!
+	bool inispace = false; // true if an initial search space is available
 	
 	int   iter = 0; 
 	int     ii = 0;   // inner iteration counter
 	int     jj = 0;   // G-space counter
 	
 	size_t dim = s_;
+	double om  = 1.0;
 	
 	std::vector<double> f;
 	std::vector<double> gamma(dim, 0.0);
 	
 	std::vector<VectorPointer>        G(dim, VectorPointer());
+	std::vector<VectorPointer>        U(dim, VectorPointer());
 	std::vector<std::vector<double> > M(dim, std::vector<double>(dim, 0.0));
 	
 	while (normr > tolb && iter < maxit_)
@@ -111,7 +116,7 @@ solve(VectorPointer b)
 			// Update inner iteration counter
 			ii = ii + 1;
 				
-			// Create new v
+			// Create new vectors v,t
 			Vector v(r);
 
 			if (jj > 0)
@@ -129,12 +134,28 @@ solve(VectorPointer b)
 				}
 
 				// Preconditioning
-				// v = *(model_->applyPrecon(v);
-				
-				// Compute new U[k]
-				
-				
+				//-->needs checks, now we are assuming we do right prec
+				VectorPointer t = model_->applyPrecon(v);
+				t->scale(om);
+
+				// Compute new U(:,k)
+				for (int i = k; i < s_; ++i)
+					t->update(gamma[i], *(G[i]), 1.0);
+				U[k] = t;
+
+				// Compute Hessenberg matrix
+				//-->TODO
 			}
+			else if (!inispace) //only when an initial search space unavailable
+			{
+				U[k] = model_->applyPrecon(v);
+			}
+
+			// Compute new G(:,k), G(:,k) is in space G_j
+			G[k] = model_->applyMatrix(*(U[k]));
+
+			// Bi-Orthogonalise the new basis vectors:
+			//-->TODO
 		}
 	}	
 }

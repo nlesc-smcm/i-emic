@@ -136,6 +136,10 @@ public:
 	// Apply the Jacobian to a vector and return the result u = J*v
 	Teuchos::RCP<SuperVector> applyMatrix(SuperVector const &v);
 
+	// Apply the preconditioner inverse to a vector and return
+	// the result u = P^{-1}*v
+	Teuchos::RCP<SuperVector> applyPrecon(SuperVector const &v);
+
 	// THESE ARE OBSOLETE!!!
 	void setState(Teuchos::RCP<SuperVector> state)
 		{ state_ = state->getOceanVector(); }
