@@ -90,7 +90,8 @@ solve(VectorPointer b)
 
 	//-->RECYCLING!!
 	bool inispace = false; // true if an initial search space is available
-	
+
+	int   flag = 0;   // a flag!
 	int   iter = 0; 
 	int     ii = 0;   // inner iteration counter
 	int     jj = 0;   // G-space counter
@@ -116,7 +117,7 @@ solve(VectorPointer b)
 			// Update inner iteration counter
 			ii = ii + 1;
 				
-			// Create new vectors v,t
+			// Create new vector v
 			Vector v(r);
 
 			if (jj > 0)
@@ -155,8 +156,63 @@ solve(VectorPointer b)
 			G[k] = model_->applyMatrix(*(U[k]));
 
 			// Bi-Orthogonalise the new basis vectors:
+			double alpha;
+			for (int i = 0; i < k-1; ++i)
+			{
+				alpha = P_[i].dot(*(G[k])) / M[i][i];
+				G[k]->update(-alpha, *(G[i]), 1.0);
+				U[k]->update(-alpha, *(U[i]), 1.0);
+			}
+
+			// New column of M = P'*G  (first k-1 entries are zero)
+			for (int i = k; i < s; ++i)
+			{
+				M[i][k] = G[k]->dot(*(P[i]));
+			}
+			if (M[k][k] == 0)
+			{
+				flag = 3;
+				std::cout << "WARNING" << std::endl;
+				return;
+			}
+
+			// Make r orthogonal to p_i, i = 1..k, update solution and residual
+			double beta = f[k] / M[k][k];
+			r.update( -beta, *(G[k]), 1.0);	   // r = r - beta*G(:,k);
+			x_->update(beta, *(U[k]), 1.0);    // x = x + beta*U(:,k);
+
+			// Smoothing
 			//-->TODO
+
+			// New f = P'*r (first k  components are zero)
+			//-->Here we use s-1 since we are zero-based!
+			if (k < s-1)
+			{
+				for (int i = k+1; i < s; ++i)
+				{
+					f[i] = f[i] - beta*M[i][k];
+				}
+			}
+
+			// Check for convergence
+			normr = r.norm();
+			resvec.push_back(normr);
+			iter = iter + 1;
+			if (normr < tolb || iter == maxit)
+				break;
 		}
+
+		// Check for convergence
+		if (normr < tolb || iter == maxit)
+			break;
+
+		// Update G-space counter
+		jj = jj + 1;
+
+		// Compute first residual in G_j+1
+		// Note: r is already perpendicular to P so v = r
+		// Preconditioning:
+		//-->TODO
 	}	
 }
 
