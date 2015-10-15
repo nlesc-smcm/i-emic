@@ -114,6 +114,7 @@ public:
 	void linearTransformation(std::shared_ptr<std::map<std::string,
 							  std::vector<double> > > mat);
 
+	void info();
 	
 private:	
 	// Perform a few initializations

@@ -41,8 +41,9 @@ extern "C" _SUBROUTINE_(getooa)(double*);
 // Constructor:
 Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	:
-	comm_(Comm),                     // Setting the communication object
-	solverInitialized_(false),       // Solver needs initialization
+	comm_(Comm),                   // Setting the communication object
+	solverInitialized_(false),     // Solver needs initialization
+	precInitialized_(false),       // Preconditioner needs initialization
 	adaptivePrecCompute_ (oceanParamList->get("Use adaptive preconditioner computation", true)),
 	recomputePreconditioner_(true),  // We need a preconditioner to start with
 	useScaling_          (oceanParamList->get("Use scaling", false)),
@@ -135,14 +136,9 @@ void Ocean::postProcess()
 }
 
 //=====================================================================
-void Ocean::initializeSolver()
+void Ocean::initializePreconditioner()
 {
-	INFO("Ocean: initialize solver...");
-	// Belos::LinearProblem setup
-	problem_ = rcp(new Belos::LinearProblem
-				   <double, Epetra_MultiVector, Epetra_Operator>
-				   (jac_, sol_, rhs_) );
-
+	INFO("Ocean: initialize preconditioner...");
 	// Setup block preconditioner parameters
 	// --> xml files should have a better home
 	Teuchos::RCP<Teuchos::ParameterList> precParams =
@@ -150,17 +146,30 @@ void Ocean::initializeSolver()
 	updateParametersFromXmlFile("ocean_preconditioner_params.xml",
 								precParams.ptr());	
 
-	// Get the domain decomposition from THCM, needed for the preconditioner.
-	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
-
 	// Create and initialize block preconditioner
 	precPtr_ = 	Teuchos::rcp(new TRIOS::BlockPreconditioner
-							 (jac_, domain, *precParams));
-	INFO("Ocean: initializing preconditioner...");
-	precPtr_->Initialize();
-	INFO("Ocean: initializing preconditioner... done");
+							 (jac_, domain_, *precParams));
 
-	// Set as right preconditioner for Belos solver
+	precPtr_->Initialize();
+	precPtr_->Compute();
+
+	precInitialized_ = true;
+	INFO("Ocean: initialize preconditioner done...");
+}	
+
+//=====================================================================
+void Ocean::initializeSolver()
+{
+	INFO("Ocean: initialize solver...");
+	if (!precInitialized_)
+		initializePreconditioner();
+
+	// Belos::LinearProblem setup
+	problem_ = rcp(new Belos::LinearProblem
+				   <double, Epetra_MultiVector, Epetra_Operator>
+				   (jac_, sol_, rhs_) );
+
+	// Set right preconditioner for Belos solver
 	RCP<Belos::EpetraPrecOp> belosPrec =
 		rcp(new Belos::EpetraPrecOp(precPtr_));
 	problem_->setRightPrec(belosPrec);
@@ -400,7 +409,8 @@ Teuchos::RCP<SuperVector> Ocean::getRHS(char mode)
 //====================================================================
 Teuchos::RCP<SuperVector> Ocean::applyMatrix(SuperVector const &v)
 {
-	RCP<Epetra_Vector> result = rcp(new Epetra_Vector(jac_->RangeMap()));
+	RCP<Epetra_Vector> result =
+		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
 	jac_->Apply(*(v.getOceanVector()), *result);
 	return getVector('V', result);
 }
@@ -408,7 +418,11 @@ Teuchos::RCP<SuperVector> Ocean::applyMatrix(SuperVector const &v)
 //====================================================================
 Teuchos::RCP<SuperVector> Ocean::applyPrecon(SuperVector const &v)
 {
-	RCP<Epetra_Vector> result = rcp(new Epetra_Vector(jac_->RangeMap()));
+	if (!precInitialized_)
+		initializePreconditioner();
+	
+	RCP<Epetra_Vector> result =
+		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
 	precPtr_->ApplyInverse(*(v.getOceanVector()), *result);
 	return getVector('V', result);
 }

@@ -32,8 +32,12 @@ class IDRSolver
 	double tol_;
 	double angle_;
 	bool   smoothing_;
-	int    s_;
+	bool   replacement_;
+	bool   trueres_;
+
+	int    s_;	
 	int    maxit_;
+	int    replacements_;
 
 	// smoothing vectors
 	Vector xs_;
@@ -42,16 +46,29 @@ class IDRSolver
 	// shadow space?
 	std::vector<Vector> P_;
 
+	// vector with residual norms
+	std::vector<double> resvec_;
+
 public:
 	// constructor
-	IDRSolver(ModelPointer model, VectorPointer x0);
+	IDRSolver(ModelPointer model, VectorPointer x0, VectorPointer b);
 	
 	// destructor
 	~IDRSolver();
 	
-	VectorPointer solve(VectorPointer b);
+	int solve();
 
-	double calc_omega(Vector const &t, Vector const &s, double angle)
+	double calc_omega(Vector const &t, Vector const &s, double angle);
+
+	// get members
+	VectorPointer getSolution() { return x_; }
+	VectorPointer getRHS() { return b_; }
+
+	// set members
+	void setSolution(VectorPointer x) { x_ = x; }
+	void setRHS(VectorPointer b) { b_ = b; }
+	
+	void printResVec();
 	
 	void test();
 

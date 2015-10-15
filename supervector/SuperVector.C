@@ -385,3 +385,12 @@ void SuperVector::init()
 	length_ += (haveAtmosVector_) ? atmosVector_->size() : 0;
 	isInitialized_ = true;
 }
+
+//------------------------------------------------------------------
+void SuperVector::info()
+{
+	std::cout << "SuperVector info:" << std::endl;
+	std::cout << "  haveOceanVector " << haveOceanVector_ << std::endl;
+	std::cout << "  haveAtmosVector " << haveAtmosVector_ << std::endl;
+	std::cout << "  length          " << length_ << std::endl;
+}

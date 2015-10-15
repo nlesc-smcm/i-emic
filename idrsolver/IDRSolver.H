@@ -57,10 +57,11 @@ createP()
 
 // ===================================================================
 template<typename ModelPointer, typename VectorPointer>
-VectorPointer IDRSolver<ModelPointer, VectorPointer>::
+int IDRSolver<ModelPointer, VectorPointer>::
 solve()
 {
 	// check for zero rhs
+	std::cout << "IDR: norm rhs = " << b_->norm() << std::endl;
 	//-->TODO
 
 	// Number close to machine precision:
@@ -74,8 +75,9 @@ solve()
 
 	// Compute residual r = b - Ax
 	VectorPointer r = model_->applyMatrix(*x_); // Ax
-	r->update( 1.0,  *b, -1.0);                 // b - Ax
-
+	std::cout << "IDR: Ax = " << r->norm() << std::endl;
+	r->update( 1.0,  *b_, -1.0);                 // b - Ax
+	
 	// Constructing smoothing vectors xs_ and rs_
 	if (smoothing_)
 	{
@@ -84,8 +86,8 @@ solve()
 	}
 	
 	double normr = r->norm();
-	std::vector<double> resvec;
-	resvec.push_back(normr);
+	std::cout << "IDR: initial residual = " << normr << std::endl;
+	resvec_.push_back(normr);
 	double trueres = 0.0;
 
 	// Initial guess is a good enough solution
@@ -98,6 +100,8 @@ solve()
 	int   iter = 0; 
 	int     ii = 0;   // inner iteration counter
 	int     jj = 0;   // G-space counter
+
+	int replacements_ = 0;
 	
 	size_t dim = s_;
 	double om  = 1.0;
@@ -107,12 +111,14 @@ solve()
 	
 	std::vector<VectorPointer>        G(dim, VectorPointer());
 	std::vector<VectorPointer>        U(dim, VectorPointer());
-	std::vector<std::vector<double> > M(dim, std::vector<double>(dim, 0.0));
+	std::vector<std::vector<double> > M
+		(dim, std::vector<double>(dim, 0.0));
 	// Declare vector v
 	Vector v;
 	
 	while (normr > tolb && iter < maxit_)
 	{
+		std::cout << normr << " " << tolb << " " << iter << std::endl;
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
 			f.push_back(r->dot(P_[i]));
@@ -127,7 +133,8 @@ solve()
 
 			if (jj > 0)
 			{				
-				// Solve small lower triangular system and make v orthogonal to P:
+				// Solve small lower triangular system and make
+				// v orthogonal to P:
 				for (int i = k; i < s_; ++i)
 				{
 					gamma[i] = f[i];
@@ -140,7 +147,8 @@ solve()
 				}
 
 				// Preconditioning
-				//-->needs checks, now we are assuming we do right prec
+				//-->needs checks, now we are assuming
+				//   we do right preconditioning
 				VectorPointer t = model_->applyPrecon(v);
 				t->scale(om);
 
@@ -152,7 +160,7 @@ solve()
 				// Compute Hessenberg matrix
 				//-->TODO
 			}
-			else if (!inispace) //only when an initial search space unavailable
+			else if (!inispace) 
 			{
 				U[k] = model_->applyPrecon(v);
 			}
@@ -170,15 +178,15 @@ solve()
 			}
 
 			// New column of M = P'*G  (first k-1 entries are zero)
-			for (int i = k; i < s; ++i)
+			for (int i = k; i < s_; ++i)
 			{
-				M[i][k] = G[k]->dot(*(P[i]));
+				M[i][k] = G[k]->dot(P_[i]);
 			}
 			if (M[k][k] == 0)
 			{
 				flag = 3;
-				std::cout << "WARNING" << std::endl;
-				return;
+				std::cout << "WARNING: M[k][k] == 0"  << std::endl;
+				return -1;
 			}
 
 			// Make r orthogonal to p_i, i = 1..k, update solution and residual
@@ -195,9 +203,9 @@ solve()
 
 			// New f = P'*r (first k  components are zero)
 			//-->Here we use s-1 since we are zero-based!
-			if (k < s-1)
+			if (k < s_-1)
 			{
-				for (int i = k+1; i < s; ++i)
+				for (int i = k+1; i < s_; ++i)
 				{
 					f[i] = f[i] - beta*M[i][k];
 				}
@@ -205,14 +213,14 @@ solve()
 
 			// Check for convergence
 			normr = r->norm();
-			resvec.push_back(normr);
+			resvec_.push_back(normr);
 			iter = iter + 1;
-			if (normr < tolb || iter == maxit)
+			if (normr < tolb || iter == maxit_)
 				break;
 		}
 
 		// Check for convergence
-		if (normr < tolb || iter == maxit)
+		if (normr < tolb || iter == maxit_)
 			break;
 
 		// Update G-space counter
@@ -241,7 +249,7 @@ solve()
 		{
 			// r = b - A*x;
 			r = model_->applyMatrix(*x_); // Ax
-			r->update( 1.0,  *b, -1.0);   // b - Ax
+			r->update( 1.0,  *b_, -1.0);   // b - Ax
 			trueres_ = false;
 			replacements_ = replacements_ + 1;
 		}
@@ -249,7 +257,7 @@ solve()
 		// Smoothing
 		//-->TODO
 
-		resvec.push_back(normr);
+		resvec_.push_back(normr);
 		iter = iter + 1;		
 	}
 
@@ -258,6 +266,16 @@ solve()
 
 	
 	
+}
+
+//====================================================================
+template<typename ModelPointer, typename VectorPointer>
+void IDRSolver<ModelPointer, VectorPointer>::
+printResVec()
+{
+	int ctr = 0;
+	for (auto &i: resvec_)
+		std::cout << ctr << " " << i << std::endl;
 }
 
 //====================================================================

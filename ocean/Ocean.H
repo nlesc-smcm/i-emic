@@ -68,6 +68,7 @@ protected:
 	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
 	
 	bool solverInitialized_;
+	bool precInitialized_;
 	bool adaptivePrecCompute_;
 	bool recomputePreconditioner_;
         int gmresIters_;
@@ -207,7 +208,9 @@ private:
 	// Randomize state, scale with scaling
 	void randomizeState(double scaling);
 
+	// Initializer members
 	void initializeSolver();
+	void initializePreconditioner();
 
 	// Scale the matrix and rhs of the problem
 	void scaleProblem();
