@@ -25,8 +25,12 @@ class IDRSolver
 	
 	ModelPointer  model_;
 	VectorPointer x_;
+	VectorPointer b_;
 
+	// number close to machine precision
+	double mp_;
 	double tol_;
+	double angle_;
 	bool   smoothing_;
 	int    s_;
 	int    maxit_;
@@ -47,6 +51,8 @@ public:
 	
 	VectorPointer solve(VectorPointer b);
 
+	double calc_omega(Vector const &t, Vector const &s, double angle)
+	
 	void test();
 
 private:

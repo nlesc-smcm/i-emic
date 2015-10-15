@@ -7,19 +7,24 @@
 #include "IDRSolverDecl.H"
 
 //====================================================================
-//====================================================================
-//====================================================================
 template<typename ModelPointer, typename VectorPointer>
 IDRSolver<ModelPointer, VectorPointer>::
-IDRSolver(ModelPointer model, VectorPointer x0)
+IDRSolver(ModelPointer model,
+		  VectorPointer x0,
+		  VectorPointer b)
 	:
-	model_(model),  
-	x_(x0)
+	model_(model),  // model
+	x_(x0),         // initial guess
+	b_(b)           // RHS
 {
-	tol_       = 1e-6;
-	smoothing_ = false;
-	s_         = 4;
-	maxit_     = 500;
+	tol_         = 1e-6;
+	angle_       = 0.7;
+	smoothing_   = false;
+	s_           = 4;
+	maxit_       = 500;
+	mp_          = 1e-13; // number close to machine precision
+	replacement_ = false;
+	trueres_     = false;
 
 	createP();
 }
@@ -53,7 +58,7 @@ createP()
 // ===================================================================
 template<typename ModelPointer, typename VectorPointer>
 VectorPointer IDRSolver<ModelPointer, VectorPointer>::
-solve(VectorPointer b)
+solve()
 {
 	// check for zero rhs
 	//-->TODO
@@ -64,23 +69,21 @@ solve(VectorPointer b)
 	// Initialize output paramater relres
 	double relres = nan("");
 
-	double normb = b->norm();
+	double normb = b_->norm();
 	double tolb  = tol_ * normb; // Relative tolerance
 
-	// Compute residual
-	VectorPointer Ax = model_->applyMatrix(*x_);     // Perform matvec
-	Vector r(*b);                                    // Initialize r with b
-	r.update( 1.0,  *b, 0.0);                        // Replace contents with rhs
-	r.update(-1.0, *Ax, 1.0);                        // r = b - A*x
+	// Compute residual r = b - Ax
+	VectorPointer r = model_->applyMatrix(*x_); // Ax
+	r->update( 1.0,  *b, -1.0);                 // b - Ax
 
 	// Constructing smoothing vectors xs_ and rs_
 	if (smoothing_)
 	{
 		xs_ = Vector(*x_);
-		rs_ = Vector(r);
+		rs_ = Vector(*r);
 	}
 	
-	double normr = r.norm();
+	double normr = r->norm();
 	std::vector<double> resvec;
 	resvec.push_back(normr);
 	double trueres = 0.0;
@@ -89,7 +92,7 @@ solve(VectorPointer b)
 	//-->TODO
 
 	//-->RECYCLING!!
-	bool inispace = false; // true if an initial search space is available
+	bool inispace = false; // true with initial search space
 
 	int   flag = 0;   // a flag!
 	int   iter = 0; 
@@ -105,20 +108,22 @@ solve(VectorPointer b)
 	std::vector<VectorPointer>        G(dim, VectorPointer());
 	std::vector<VectorPointer>        U(dim, VectorPointer());
 	std::vector<std::vector<double> > M(dim, std::vector<double>(dim, 0.0));
+	// Declare vector v
+	Vector v;
 	
 	while (normr > tolb && iter < maxit_)
 	{
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
-			f.push_back(r.dot(P_[i]));
+			f.push_back(r->dot(P_[i]));
 
 		for (int k = 0; k < s_; ++k)
 		{
 			// Update inner iteration counter
 			ii = ii + 1;
 				
-			// Create new vector v
-			Vector v(r);
+			// Compute new v (copy construction)
+			v = Vector(*r);
 
 			if (jj > 0)
 			{				
@@ -178,8 +183,12 @@ solve(VectorPointer b)
 
 			// Make r orthogonal to p_i, i = 1..k, update solution and residual
 			double beta = f[k] / M[k][k];
-			r.update( -beta, *(G[k]), 1.0);	   // r = r - beta*G(:,k);
-			x_->update(beta, *(U[k]), 1.0);    // x = x + beta*U(:,k);
+			r->update( -beta, *(G[k]), 1.0); // r = r - beta*G(:,k);
+			x_->update(beta, *(U[k]), 1.0);  // x = x + beta*U(:,k);
+
+			// Check whether we need to replace residual
+			normr = r->norm();			
+			if (replacement_ && normr > tolb / mp_) trueres_ = true;
 
 			// Smoothing
 			//-->TODO
@@ -195,7 +204,7 @@ solve(VectorPointer b)
 			}
 
 			// Check for convergence
-			normr = r.norm();
+			normr = r->norm();
 			resvec.push_back(normr);
 			iter = iter + 1;
 			if (normr < tolb || iter == maxit)
@@ -211,11 +220,66 @@ solve(VectorPointer b)
 
 		// Compute first residual in G_j+1
 		// Note: r is already perpendicular to P so v = r
-		// Preconditioning:
+		// Preconditioning: v = inv(P)*r
+		v = *(model_->applyPrecon(*r));
+
+		// Matrix-vector multiplication: t = A*v
+		VectorPointer t = model_->applyMatrix(v);
+
+		// Computation of a new omega
+		om = calc_omega(*t, *r, angle_);
+		
+		// Update solution and residual:
+		r->update(-om, *t, 1.0);  // r = r - om*t
+		x_->update(om, v, 1.0);   // x = x + om*v 
+
+		normr = r->norm();
+		
+		// Residual replacement?
+		if (replacement_ && normr > tolb / mp_) trueres_ = 1;
+		if (trueres_ && normr < normb )
+		{
+			// r = b - A*x;
+			r = model_->applyMatrix(*x_); // Ax
+			r->update( 1.0,  *b, -1.0);   // b - Ax
+			trueres_ = false;
+			replacements_ = replacements_ + 1;
+		}
+
+		// Smoothing
 		//-->TODO
-	}	
+
+		resvec.push_back(normr);
+		iter = iter + 1;		
+	}
+
+	// Smoothing
+	//-->TODO
+
+	
+	
 }
 
+//====================================================================
+template<typename ModelPointer, typename VectorPointer>
+double IDRSolver<ModelPointer, VectorPointer>::
+calc_omega(Vector const &t, Vector const &s, double angle)
+{
+	double ns = s.norm();
+	double nt = t.norm();
+	double ts = t.dot(s);
+
+	double rho = std::abs(ts / (nt * ns));
+
+	double om = ts / (nt * nt);
+
+	if (rho < angle)
+		om = om * angle / rho;
+
+	return om;
+}
+
+	
 //====================================================================
 template<typename ModelPointer, typename VectorPointer>
 void IDRSolver<ModelPointer, VectorPointer>::

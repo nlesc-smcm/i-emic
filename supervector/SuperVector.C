@@ -106,6 +106,7 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 		ERROR("Wrong dimensions!", __FILE__, __LINE__);
 		return;
 	}
+	
 	if (haveOceanVector_)
 		oceanVector_->Update(scalarA, *(A.getOceanVector()), scalarThis);
 	
@@ -117,6 +118,12 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 				scalarA * (*A.getAtmosVector())[idx]
 				+ scalarThis * (*atmosVector_)[idx];
 		}
+	}
+	
+	if (!haveOceanVector_ && !haveAtmosVector_)
+	{
+		ERROR("Undefined behaviour ahead!!", __FILE__, __LINE__);
+		return;
 	}
 }
 
