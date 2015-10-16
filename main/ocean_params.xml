@@ -9,12 +9,12 @@
   <Parameter name="Use scaling" type="bool" value = "false"/>
  
   <!-- Specify number of iterations and tolerance in linear solver -->
-  <Parameter name="Iterations in FGMRES solver" type="int" value = "20"/>
+  <Parameter name="Iterations in FGMRES solver" type="int" value = "200"/>
   <Parameter name="Tolerance in FGMRES solver" type="double" value = "1e-3"/>
 
   <!-- Maximum allowed number of iterations in linear solver before a new -->
   <!-- preconditioner is requested -->
-  <Parameter name="Preconditioner recompute bound" type="int" value = "20"/>
+  <Parameter name="Preconditioner recompute bound" type="int" value = "100"/>
 
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -38,11 +38,11 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="16"/>
+    <Parameter name="Global Grid-Size n" type="int" value="8"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="16"/>
+    <Parameter name="Global Grid-Size m" type="int" value="8"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="16"/>
+    <Parameter name="Global Grid-Size l" type="int" value="8"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->

@@ -214,6 +214,8 @@ void Atmosphere::computeJacobian()
 	Al_->set({1,n_,1,m_,1,l_,1,np_}, 1, 1, txx);
 	boundaries();
 	assemble();
+
+	//jac_ = getJacobian();
 	
 	TIMER_STOP("Atmosphere: compute Jacobian...");
 }
@@ -766,6 +768,36 @@ std::shared_ptr<SuperVector> Atmosphere::getState(char mode)
 std::shared_ptr<SuperVector> Atmosphere::getRHS(char mode)
 {
 	return getVector(mode, rhs_);
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<SuperVector> Atmosphere::applyMatrix(SuperVector const &v)
+{
+	std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
+	std::shared_ptr<std::vector<double> > result =
+		std::make_shared<std::vector<double> > (atmosVector->size(),0.0);
+	
+	int first;
+	int last;	
+	
+	// Perform matrix vector product
+	// 1->0 based... horrible... 
+	for (size_t row = 1; row <= atmosVector->size(); ++row)
+	{
+		first   = beg_[row-1];
+		last    = beg_[row] - 1;
+		for (int col = first; col <= last; ++col)
+			(*result)[row-1] += ico_[col-1] * (*atmosVector)[jco_[col-1]-1];
+	}
+	return getVector('V', result);
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<SuperVector> Atmosphere::applyPrecon(SuperVector const &v)
+{
+	// Do nothing
+	std::shared_ptr<SuperVector> result = std::make_shared<SuperVector>(v);
+	return result;
 }
 
 //-----------------------------------------------------------------------------

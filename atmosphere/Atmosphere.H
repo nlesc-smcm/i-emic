@@ -100,7 +100,10 @@ private:
 	std::vector<double> jco_;
 	std::vector<double> beg_;
 
-	// Dense matrix storage
+	// Complete jacobian in CRS form
+	std::shared_ptr<CRSMat> jac_;
+
+	// Dense matrix storage --> superfluous
 	std::vector<double> denseA_;
 
  	// Pivot array for lapack
@@ -189,6 +192,14 @@ public:
 	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
 	std::shared_ptr<SuperVector> getState(char mode = 'C');
 	std::shared_ptr<SuperVector> getRHS(char mode = 'C');
+
+	// Apply the Jacobian to a vector and return the result u = J*v
+	std::shared_ptr<SuperVector> applyMatrix(SuperVector const &v);
+
+	// Apply the preconditioner inverse to a vector and return
+	// the result u = P^{-1}*v
+	std::shared_ptr<SuperVector> applyPrecon(SuperVector const &v);
+
 	
 	void setState(std::shared_ptr<SuperVector> state)
 		{ *state_ = *(state->getAtmosVector()); }

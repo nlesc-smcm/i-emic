@@ -149,7 +149,7 @@ void Ocean::initializePreconditioner()
 	// Create and initialize block preconditioner
 	precPtr_ = 	Teuchos::rcp(new TRIOS::BlockPreconditioner
 							 (jac_, domain_, *precParams));
-
+	
 	precPtr_->Initialize();
 	precPtr_->Compute();
 

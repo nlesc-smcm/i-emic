@@ -36,6 +36,8 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	rhsView_ =
  		std::make_shared<SuperVector>(ocean_->getRHS('V')->getOceanVector(),
 									  atmos_->getRHS('V')->getAtmosVector() );
+
+	test();
 	
 	// Get the contribution of the atmosphere to the ocean in the Jacobian
 	B_     = ocean_->getAtmosBlock();
@@ -485,6 +487,12 @@ std::size_t CoupledModel::getHash()
 //------------------------------------------------------------------
 void CoupledModel::test()
 {
+	INFO("CoupledModel views...");
+	INFO("state:  " << stateView_->norm());
+	INFO("length: " << stateView_->length());
+	INFO("sol:    " << solView_->norm());
+	INFO("rhs:    " << rhsView_->norm());
+
 	std::cout << "CoupledModel: stateView..." << std::endl;
 	std::cout << " length: " << stateView_->length()  << std::endl;
 	std::cout << " norm:   " << stateView_->norm()    << std::endl;

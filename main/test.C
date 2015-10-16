@@ -70,6 +70,8 @@ int main(int argc, char **argv)
 	// test the coupled model
 	testIDR(Comm);
 
+	//testOcean(Comm);
+
 	// print the profile
 	if (Comm->MyPID() == 0)
 		printProfile(profile);
@@ -90,29 +92,28 @@ void testIDR(RCP<Epetra_Comm> Comm)
 		throw std::runtime_error("ERROR: Specify output streams");	
 	
 	//------------------------------------------------------------------
-	// Create parameter object for Ocean
-	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+	// Create parameter object for Atmosphere
+	RCP<Teuchos::ParameterList> atmosphereParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
 
-	// Create parallelized Ocean object
-	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
+    // Create Atmosphere object
+	std::shared_ptr<Atmosphere> atmos =
+		std::make_shared<Atmosphere>(atmosphereParams);
 
-	// Get state and rhs from Ocean
-	RCP<SuperVector> x = ocean->getState('C');
-	RCP<SuperVector> b = ocean->getRHS('C');
-	std::cout << "TEST: |x| = " << b->norm() << std::endl;
-	x->info(); x->print();
-	std::cout << "TEST: |b| = " << b->norm() << std::endl;
-	b->info(); b->print();
-	RCP<SuperVector> Ax = ocean->applyMatrix(*x);
-	std::cout << "TEST: |Ax| = " << Ax->norm() << std::endl;
-	Ax->info(); 
+	atmos->computeJacobian();
+	atmos->computeRHS();
+	
+	std::shared_ptr<SuperVector> x = atmos->getSolution();
+	std::shared_ptr<SuperVector> b = atmos->getRHS();
+	x->info();
+	b->info();
+	b->scale(-1.0);	
 	
 	// Create IDRSolver object
-	IDRSolver<RCP<Ocean>, RCP<SuperVector> > solver(ocean, x, b);
-
+	IDRSolver<std::shared_ptr<Atmosphere>, std::shared_ptr<SuperVector> >
+		solver(atmos, x, b);
+	
 	solver.solve();
-	solver.printResVec();
 	
 	//------------------------------------------------------------------
 	TIMER_STOP("Total time...");		

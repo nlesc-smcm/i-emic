@@ -20,7 +20,7 @@ IDRSolver(ModelPointer model,
 	tol_         = 1e-6;
 	angle_       = 0.7;
 	smoothing_   = false;
-	s_           = 4;
+	s_           = 20;
 	maxit_       = 500;
 	mp_          = 1e-13; // number close to machine precision
 	replacement_ = false;
