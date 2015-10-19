@@ -90,37 +90,87 @@ void testIDR(RCP<Epetra_Comm> Comm)
 	// Check if outFile is specified
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");	
+
+	{
+		//------------------------------------------------------------------
+		// Create parameter object for Atmosphere
+		RCP<Teuchos::ParameterList> atmosphereParams = rcp(new Teuchos::ParameterList);
+		updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+
+		// Create Atmosphere object
+		std::shared_ptr<Atmosphere> atmos =
+			std::make_shared<Atmosphere>(atmosphereParams);
+
+		atmos->computeJacobian();
+		atmos->computeRHS();
 	
+		std::shared_ptr<SuperVector> x = atmos->getState();
+		std::shared_ptr<SuperVector> b = atmos->getRHS();
+		x->info();
+		x->zero();
+		atmos->writeAll();
+		std::cout << " norm x: " << x->norm() << std::endl;
+		b->info();
+		std::cout << " norm b: " << b->norm() << std::endl;
+		b->scale(-1.0);	
+
+		// seed random generator
+		std::srand(7);
+	
+		// Create IDRSolver object
+		IDRSolver<std::shared_ptr<Atmosphere>, std::shared_ptr<SuperVector> >
+			solver(atmos, x, b);
+	
+		solver.solve();
+	}
+
 	//------------------------------------------------------------------
-	// Create parameter object for Atmosphere
-	RCP<Teuchos::ParameterList> atmosphereParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+	// Create parameter object for Ocean
+	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
 
-    // Create Atmosphere object
-	std::shared_ptr<Atmosphere> atmos =
-		std::make_shared<Atmosphere>(atmosphereParams);
+	// Create parallelized Ocean object
+	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
 
-	atmos->computeJacobian();
-	atmos->computeRHS();
+	ocean->computeJacobian();
+	ocean->computeRHS();
 	
-	std::shared_ptr<SuperVector> x = atmos->getState();
-	std::shared_ptr<SuperVector> b = atmos->getRHS();
-	x->info();
-	x->zero();
-	atmos->writeAll();
+	RCP<SuperVector> x = ocean->getState();
+	RCP<SuperVector> b = ocean->getRHS();
+	x->info(); 
 	std::cout << " norm x: " << x->norm() << std::endl;
+	x->zero();
 	b->info();
 	std::cout << " norm b: " << b->norm() << std::endl;
 	b->scale(-1.0);	
-
-	// seed random generator
-	std::srand(7);
-	
+		
 	// Create IDRSolver object
-	IDRSolver<std::shared_ptr<Atmosphere>, std::shared_ptr<SuperVector> >
-		solver(atmos, x, b);
+	IDRSolver<RCP<Ocean>, RCP<SuperVector> >
+		solver(ocean, x, b);
 	
 	solver.solve();
+
+	RCP<SuperVector> sol = solver.getSolution();	
+	b->update(-1.0, *(ocean->applyMatrix(*sol)), 1.0);
+	std::cout << "explicit residual norm: " << b->norm() << std::endl;
+
+	RCP<SuperVector> state = ocean->getState('V');
+	state->update(1.0, *sol, 0.0);	
+		
+	ocean->postProcess();
+	getchar();
+	
+	ocean->solve(b);
+
+	RCP<SuperVector> sol2 = ocean->getSolution();	
+	b->update(-1.0, *(ocean->applyMatrix(*sol2)), 1.0);
+	std::cout << "explicit residual norm: " << b->norm() << std::endl;
+	
+
+	RCP<SuperVector> state2 = ocean->getState('V');
+	state->update(1.0, *sol2, 0.0);	
+
+	ocean->postProcess();
 	
 	//------------------------------------------------------------------
 	TIMER_STOP("Total time...");		

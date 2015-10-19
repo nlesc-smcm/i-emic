@@ -234,7 +234,9 @@ void Ocean::solve(VectorPtr rhs)
 		TIMER_STOP("Ocean: build preconditioner...");
 		recomputePreconditioner_ = false;  // Disable subsequent recomputes
 	}
-
+	// Initialize solution
+	sol_->Scale(0.0);
+	
 	// Set the problem, rhs may be given as an argument to solve().
 	bool set;
 	if (rhs == Teuchos::null)

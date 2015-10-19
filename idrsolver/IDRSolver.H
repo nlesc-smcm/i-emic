@@ -55,7 +55,6 @@ createP()
 			P_[j].update(-alpha, P_[k], 1.0);
 		}
 		P_[j].scale(1.0/P_[j].norm());
-		P_[j].print();
 	}	
 }
 
