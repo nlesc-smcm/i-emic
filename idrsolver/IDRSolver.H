@@ -20,13 +20,14 @@ IDRSolver(ModelPointer model,
 	tol_         = 1e-6;
 	angle_       = 0.7;
 	smoothing_   = false;
-	s_           = 20;
+	s_           = 4;
 	maxit_       = 500;
 	mp_          = 1e-13; // number close to machine precision
 	replacement_ = false;
 	trueres_     = false;
 
 	createP();
+	test();
 }
 
 //====================================================================
@@ -40,19 +41,22 @@ template<typename ModelPointer, typename VectorPointer>
 void IDRSolver<ModelPointer, VectorPointer>::
 createP()
 {
+	P_.clear();
+	P_ = std::vector<Vector>(s_, Vector());
 	double alpha;
 	for (int j = 0; j < s_; ++j)
 	{
 		Vector p(*x_);
 		p.random();
-		P_.push_back(p);
+		P_[j] = p;
 		for (int k = 0; k < j; ++k)
 		{
 			alpha = (P_[k]).dot(P_[j]);
 			P_[j].update(-alpha, P_[k], 1.0);
 		}
 		P_[j].scale(1.0/P_[j].norm());
-	}
+		P_[j].print();
+	}	
 }
 
 // ===================================================================
@@ -63,7 +67,7 @@ solve()
 	// check for zero rhs
 	std::cout << "IDR: norm rhs = " << b_->norm() << std::endl;
 	//-->TODO
-
+	
 	// Number close to machine precision:
 	double mp = 1e-13;
 
@@ -87,9 +91,11 @@ solve()
 	
 	double normr = r->norm();
 	std::cout << "IDR: initial residual = " << normr << std::endl;
+	
+	resvec_.clear();
 	resvec_.push_back(normr);
 	double trueres = 0.0;
-
+	
 	// Initial guess is a good enough solution
 	//-->TODO
 
@@ -106,7 +112,7 @@ solve()
 	size_t dim = s_;
 	double om  = 1.0;
 	
-	std::vector<double> f;
+	std::vector<double> f(dim, 0.0);
 	std::vector<double> gamma(dim, 0.0);
 	
 	std::vector<VectorPointer>        G(dim, VectorPointer());
@@ -121,7 +127,7 @@ solve()
 		std::cout << normr << " " << tolb << " " << iter << std::endl;
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
-			f.push_back(r->dot(P_[i]));
+			f[i] = r->dot(P_[i]);
 
 		for (int k = 0; k < s_; ++k)
 		{
@@ -138,7 +144,7 @@ solve()
 				for (int i = k; i < s_; ++i)
 				{
 					gamma[i] = f[i];
-					for (int j = k; j < i-1; ++j)
+					for (int j = k; j < i; ++j)
 					{
 						gamma[i] = gamma[i] - M[i][j] * gamma[j];
 					}
@@ -154,7 +160,7 @@ solve()
 
 				// Compute new U(:,k)
 				for (int i = k; i < s_; ++i)
-					t->update(gamma[i], *(G[i]), 1.0);
+					t->update(gamma[i], *(U[i]), 1.0);
 				U[k] = t;
 
 				// Compute Hessenberg matrix
@@ -170,7 +176,7 @@ solve()
 
 			// Bi-Orthogonalise the new basis vectors:
 			double alpha;
-			for (int i = 0; i < k-1; ++i)
+			for (int i = 0; i < k; ++i)
 			{
 				alpha = P_[i].dot(*(G[k])) / M[i][i];
 				G[k]->update(-alpha, *(G[i]), 1.0);
@@ -315,6 +321,23 @@ test()
 		}
 	}
 	std::cout << "========== Testing IDR solver finished  =====" << std::endl;
+}
+
+//====================================================================
+template<typename ModelPointer, typename VectorPointer>
+void IDRSolver<ModelPointer, VectorPointer>::
+writeVector(std::vector<double> &vector, const std::string &filename)
+{
+	if (!vector.empty())
+	{
+		std::ofstream atmos_ofstream;
+		atmos_ofstream.open(filename);
+		for (auto &i : vector)
+			atmos_ofstream << std::setprecision(12) << i << '\n';
+		atmos_ofstream.close();
+	}
+	else
+		WARNING("vector is empty", __FILE__, __LINE__);
 }
 
 #endif

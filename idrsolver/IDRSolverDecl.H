@@ -75,6 +75,8 @@ public:
 private:
 
 	void createP();
+	void writeVector(std::vector<double> &vector,
+					 const std::string &filename);
 	
 };
 

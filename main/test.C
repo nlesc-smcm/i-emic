@@ -103,11 +103,18 @@ void testIDR(RCP<Epetra_Comm> Comm)
 	atmos->computeJacobian();
 	atmos->computeRHS();
 	
-	std::shared_ptr<SuperVector> x = atmos->getSolution();
+	std::shared_ptr<SuperVector> x = atmos->getState();
 	std::shared_ptr<SuperVector> b = atmos->getRHS();
 	x->info();
+	x->zero();
+	atmos->writeAll();
+	std::cout << " norm x: " << x->norm() << std::endl;
 	b->info();
+	std::cout << " norm b: " << b->norm() << std::endl;
 	b->scale(-1.0);	
+
+	// seed random generator
+	std::srand(7);
 	
 	// Create IDRSolver object
 	IDRSolver<std::shared_ptr<Atmosphere>, std::shared_ptr<SuperVector> >
@@ -123,6 +130,7 @@ void testIDR(RCP<Epetra_Comm> Comm)
 void testOcean(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
+
 
 	//------------------------------------------------------------------
 	// Check if outFile is specified

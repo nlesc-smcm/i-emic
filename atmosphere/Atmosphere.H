@@ -292,8 +292,10 @@ private:
 	// Write vector to output file
 	void write(std::vector<double> &vector, const std::string &filename);
 
+public:
 	// ! Write everything to output files.
 	void writeAll();
+private:
 
 	//! HDF5 load/save routines
 	void saveStateToFile(std::string const &filename);

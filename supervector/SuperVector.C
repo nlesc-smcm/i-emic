@@ -205,7 +205,6 @@ void SuperVector::random()
 {
 	if (haveAtmosVector_)
 	{
-		std::srand(std::time(0));
 		for (size_t i = 0; i < atmosVector_->size(); ++i)
 			(*atmosVector_)[i] = (std::rand() / (double) RAND_MAX);
 	}
@@ -240,14 +239,12 @@ void SuperVector::print() const
 {
 	if (haveOceanVector_)
 	{
-		std::cout << "\nPrinting epetraVector to outFile stream" << std::endl;
 		oceanVector_->Print(*outFile);  // see GlobalDefinitions.H
 		oceanVector_->Print(std::cout); // see GlobalDefinitions.H
 	}
 			
 	if (haveAtmosVector_)
 	{
-		std::cout << "\nPrinting stdVector std::cout" << std::endl;
 		for (auto &it : *atmosVector_)
 			std::cout << it << " ";
 		std::cout << std::endl;
@@ -383,6 +380,7 @@ void SuperVector::init()
 	length_ = 0;
 	length_ += (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
 	length_ += (haveAtmosVector_) ? atmosVector_->size() : 0;
+			
 	isInitialized_ = true;
 }
 
