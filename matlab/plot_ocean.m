@@ -85,17 +85,6 @@ title('Barotropic Streamfunction');
 xlabel('Longitude')
 ylabel('Latitude')
 exportfig('bstream.eps')
-%%
-%figure(8)
-%img = squeeze(abs(sum(u,3))>1e-8)';
-%contour(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
-%imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold on
-%image(RtD*x,RtD*(y),srf,'AlphaData',.1); hold on
-% contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',2); hold off;
-
-title('Depth-averaged meridional velocity');
-xlabel('Longitude')
-ylabel('Latitude')
 
 %%
 figure(2)
@@ -106,6 +95,7 @@ xlabel('Latitude')
 ylabel('z (m)')
 exportfig('mstream.eps')
 
+%%
 figure(3)
 Tp = T(:,:,l);
 temp = flipud(T0 + Tp');
@@ -117,6 +107,7 @@ title('Surface Temperature');
 xlabel('Longitude');
 ylabel('Latitude');
 
+%%
 figure(4)
 Tp2 = squeeze(mean(T,1)); 
 contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
@@ -133,18 +124,19 @@ title('Overturning Streamfunction')
 exportfig('mstream.eps')
 
 %%
-figure(7)
-Ps = p(:,:,l);    % surface longitudinal velocity
-Ud = sum(u,3)/l;  % depth averaged longitudinal velocity
-imagesc(RtD*x,RtD*y,flipud(Ps')); hold off
+figure(6)
+Sp = squeeze(mean(S,1)); 
+contourf(RtD*yv(1:end-1),z*hdim,Sp'+S0,15);
 colorbar
-% contour(RtD*x,RtD*y,1e-4*flipud(surfm'),1,'k-','linewidth',2); hold off
+title('Isohalines')
+xlabel('Latitude')
+ylabel('z (m)')
+exportfig('isopycnals.eps')
 
 %%
-figure(8)
-Vs = v(:,:,l);   % surface meridional velocity
-Vd = sum(v,3)/l; % depth averaged meridional velocity
-imagesc(RtD*x,RtD*y,flipud(Vd')); hold on
-% contourf(RtD*x,RtD*y,(Vsurf'),15); hold on
-contour(RtD*x,RtD*y,1e-4*flipud(surfm'),1,'k-','linewidth',2); hold off
-colorbar
+figure(7)
+Sp = S(:,:,l);
+contourf(RtD*x,RtD*y,S0+Sp',15);
+title('Surface salinity');
+xlabel('Longitude');
+ylabel('Latitude');

@@ -1,4 +1,4 @@
-function [Q,M,V,D,sol] = build_covmat(range)
+function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
   fprintf(1,'----------------------------------------------\n')
   %% - DEFINE CONSTANTS - ----------------------------------------------
   udim  = 0.1;                 %[m/s]   Velocity scale
@@ -25,23 +25,33 @@ function [Q,M,V,D,sol] = build_covmat(range)
   dim = n*m*(l+la)*nun;
   obs = numel(range);
 
-  % data matrix
-  M   = zeros(obs, dim);
-  for k = range
-	[lab icp par xl xlp det sig sol solup soleig] = ...
-    readfort3(la,strcat('fort.3.',num2str(k)));
-	M(k,:) = sol(:);
+  if nargin < 2
+	% data matrix
+	M   = zeros(obs, dim);
+	for k = 1:obs
+	  fprintf('reading fort.%d\n', range(k));
+	  [lab icp par xl xlp det sig sol solup soleig] = ...
+      readfort3(la,strcat('fort.',num2str(range(k))));
+	  M(k,:) = sol(:);
+	end
+	
+	% subtract mean to get centred data matrix
+	mn = mean(M);
+	M = M - repmat(mn,obs,1);
+	Q = (1/(obs-1))*M'*M;
+  else
+	sol = zeros(nun, n, m, l);
+	M = [];
+  end
+
+  if nargin < 3
+	 ev = 1;
   end
   
-  % subtract mean to get centred data matrix
-  mn = mean(M);
-  M = M - repmat(mn,obs,1);
-  Q = (1/(obs-1))*M'*M;
-
-  fprintf(1,'------------- Calculating eigen vector--------\n')
-  [V,D] = eigs(Q,10,'lm');
-  sol(:) = V(:,1);
-  fprintf(1,'----------------------------------------------\n')
+  fprintf(1,'------------- Calculating eigenvector--------\n')
+  [V,D] = eigs(Q,ev,'lm');
+  sol(:) = V(:,ev);
+  fprintf(1,'-------------- Plot eigenvector -------------\n')
 
   %% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
   [u,v,w,p,T,S] = extractsol(sol);
@@ -59,9 +69,9 @@ function [Q,M,V,D,sol] = build_covmat(range)
   vol   = sum(sum(1-surfm).*cos(y'))*dx*dy;
   fprintf(1,'Average salinity deficiency of %12.8f psu.\n', -check/vol) 
 
-  %% Create Salinity
-  % build longitudinal average over non-land cells
+  %% build longitudinal average over non-land cells
   Sl = zeros(m,l);
+  Tl = zeros(m,l);
   for k = 1:l
     for j = 1:m
       count = 0;
@@ -69,13 +79,15 @@ function [Q,M,V,D,sol] = build_covmat(range)
         if landm_int(i,j,k) == 0
           count = count + 1;
           Sl(j,k) = Sl(j,k) + S(i,j,k);
+          Tl(j,k) = Tl(j,k) + T(i,j,k);
         end
       end
       Sl(j,k) = Sl(j,k) / count;
+      Tl(j,k) = Tl(j,k) / count;
     end
   end
 
-    %%
+  %%
   figure(2)
   contourf(RtD*[y;ymax],zw*hdim',PSIG',15);
   colorbar
@@ -98,6 +110,22 @@ function [Q,M,V,D,sol] = build_covmat(range)
   contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
   colorbar
   title('Isohalines')
+  xlabel('Latitude')
+  ylabel('z (m)')
+  exportfig('isohalines.eps')
+  
+  figure(5)
+  Tp = T(:,:,l);
+  contourf(RtD*x,RtD*y,T0+Tp',15); hold on
+  colorbar
+  title('Surface Temperature');
+  xlabel('Longitude');
+  ylabel('Latitude');
+
+  figure(6)
+  contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
+  colorbar
+  title('Isothermals')
   xlabel('Latitude')
   ylabel('z (m)')
   exportfig('isohalines.eps')
