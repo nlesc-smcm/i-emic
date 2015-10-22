@@ -31,7 +31,7 @@ function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
 	for k = 1:obs
 	  fprintf('reading fort.%d\n', range(k));
 	  [lab icp par xl xlp det sig sol solup soleig] = ...
-      readfort3(la,strcat('fort.',num2str(range(k))));
+      readfort3(la,strcat('fort.',num2str(range(k))), true);
 	  M(k,:) = sol(:);
 	end
 	
@@ -49,7 +49,8 @@ function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
   end
   
   fprintf(1,'------------- Calculating eigenvector--------\n')
-  [V,D] = eigs(Q,ev,'lm');
+  [V,D,flag] = eigs(Q,ev+4,'lr');
+  fprintf(' flag = %d\n', flag);
   sol(:) = V(:,ev);
   fprintf(1,'-------------- Plot eigenvector -------------\n')
 
@@ -99,11 +100,11 @@ function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
   figure(3)
   Sp = S(:,:,l);
   temp = flipud(S0 + Sp');
-  contourf(RtD*x,RtD*y,S0+Sp',15); hold on
-  colorbar
+  %contourf(RtD*x,RtD*y,S0+Sp',15);
+  plot(RtD*y, mean(Sp,1),'r');
   title('Surface Salinity');
-  xlabel('Longitude');
-  ylabel('Latitude');
+  xlabel('Latitude');
+
 
   figure(4)
   Sp2 = squeeze(mean(S,1)); 
@@ -116,11 +117,10 @@ function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
   
   figure(5)
   Tp = T(:,:,l);
-  contourf(RtD*x,RtD*y,T0+Tp',15); hold on
+  plot(RtD*y, mean(Tp,1),'r');
   colorbar
   title('Surface Temperature');
-  xlabel('Longitude');
-  ylabel('Latitude');
+  xlabel('Latitude');
 
   figure(6)
   contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
