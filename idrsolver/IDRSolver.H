@@ -7,38 +7,54 @@
 #include "IDRSolverDecl.H"
 
 //====================================================================
-template<typename ModelPointer, typename VectorPointer>
-IDRSolver<ModelPointer, VectorPointer>::
-IDRSolver(ModelPointer model,
+template<typename Model, typename VectorPointer>
+IDRSolver<Model, VectorPointer>::
+IDRSolver(Model &model)
+	:
+	model_         (model),  // model
+	haveInitSol_   (false),
+	haveRHS_       (false),
+	smoothing_     (false),
+	replacement_   (false),
+	trueres_       (false),
+	mp_            (1e-13),  // number close to machine precision
+	tol_           (1e-6),
+	angle_         (0.7),
+	s_             (4),
+	maxit_         (500)
+{}
+
+//====================================================================
+template<typename Model, typename VectorPointer>
+IDRSolver<Model, VectorPointer>::
+IDRSolver(Model &model,
 		  VectorPointer x0,
 		  VectorPointer b)
 	:
-	model_(model),  // model
-	x_(x0),         // initial guess
-	b_(b)           // RHS
-{
-	tol_         = 1e-6;
-	angle_       = 0.7;
-	smoothing_   = false;
-	s_           = 4;
-	maxit_       = 500;
-	mp_          = 1e-13; // number close to machine precision
-	replacement_ = false;
-	trueres_     = false;
-
-	createP();
-	test();
-}
+	model_         (model),  // model
+	x_             (x0),     // initial guess
+	b_             (b),      // RHS
+	haveInitSol_   (true),
+	haveRHS_       (true),
+	smoothing_     (false),
+	replacement_   (false),
+	trueres_       (false),
+	mp_            (1e-13),  // number close to machine precision
+	tol_           (1e-6),
+	angle_         (0.7),
+	s_             (4),
+	maxit_         (500)
+{}
 
 //====================================================================
-template<typename ModelPointer, typename VectorPointer>
-IDRSolver<ModelPointer, VectorPointer>::
+template<typename Model, typename VectorPointer>
+IDRSolver<Model, VectorPointer>::
 ~IDRSolver()
 {}
 
 //====================================================================
-template<typename ModelPointer, typename VectorPointer>
-void IDRSolver<ModelPointer, VectorPointer>::
+template<typename Model, typename VectorPointer>
+void IDRSolver<Model, VectorPointer>::
 createP()
 {
 	P_.clear();
@@ -59,25 +75,28 @@ createP()
 }
 
 // ===================================================================
-template<typename ModelPointer, typename VectorPointer>
-int IDRSolver<ModelPointer, VectorPointer>::
+template<typename Model, typename VectorPointer>
+int IDRSolver<Model, VectorPointer>::
 solve()
 {
+	if (P_.empty())
+		createP();
+
+	if (!haveInitSol_ || !haveRHS_)
+	{
+		std::cout << "Problem not setup correctly!" << std::endl;
+		return 1;
+	}			
+	
 	// check for zero rhs
 	std::cout << "IDR: norm rhs = " << b_->norm() << std::endl;
 	//-->TODO
 	
-	// Number close to machine precision:
-	double mp = 1e-13;
-
-	// Initialize output paramater relres
-	double relres = nan("");
-
 	double normb = b_->norm();
 	double tolb  = tol_ * normb; // Relative tolerance
 
 	// Compute residual r = b - Ax
-	VectorPointer r = model_->applyMatrix(*x_); // Ax
+	VectorPointer r = model_.applyMatrix(*x_); // Ax
 	std::cout << "IDR: Ax = " << r->norm() << std::endl;
 	r->update( 1.0,  *b_, -1.0);                 // b - Ax
 	
@@ -93,7 +112,6 @@ solve()
 	
 	resvec_.clear();
 	resvec_.push_back(normr);
-	double trueres = 0.0;
 	
 	// Initial guess is a good enough solution
 	//-->TODO
@@ -102,9 +120,10 @@ solve()
 	bool inispace = false; // true with initial search space
 
 	int   flag = 0;   // a flag!
-	int   iter = 0; 
 	int     ii = 0;   // inner iteration counter
 	int     jj = 0;   // G-space counter
+
+	iter_ = 0; 
 
 	int replacements_ = 0;
 	
@@ -121,9 +140,9 @@ solve()
 	// Declare vector v
 	Vector v;
 	
-	while (normr > tolb && iter < maxit_)
+	while (normr > tolb && iter_ < maxit_)
 	{
-		std::cout << normr << " " << tolb << " " << iter << std::endl;
+		std::cout << normr << " " << tolb << " " << iter_ << std::endl;
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
 			f[i] = r->dot(P_[i]);
@@ -154,7 +173,7 @@ solve()
 				// Preconditioning
 				//-->needs checks, now we are assuming
 				//   we do right preconditioning
-				VectorPointer t = model_->applyPrecon(v);
+				VectorPointer t = model_.applyPrecon(v);
 				t->scale(om);
 
 				// Compute new U(:,k)
@@ -167,11 +186,11 @@ solve()
 			}
 			else if (!inispace) 
 			{
-				U[k] = model_->applyPrecon(v);
+				U[k] = model_.applyPrecon(v);
 			}
 
 			// Compute new G(:,k), G(:,k) is in space G_j
-			G[k] = model_->applyMatrix(*(U[k]));
+			G[k] = model_.applyMatrix(*(U[k]));
 
 			// Bi-Orthogonalise the new basis vectors:
 			double alpha;
@@ -219,13 +238,13 @@ solve()
 			// Check for convergence
 			normr = r->norm();
 			resvec_.push_back(normr);
-			iter = iter + 1;
-			if (normr < tolb || iter == maxit_)
+			iter_ = iter_ + 1;
+			if (normr < tolb || iter_ == maxit_)
 				break;
 		}
 
 		// Check for convergence
-		if (normr < tolb || iter == maxit_)
+		if (normr < tolb || iter_ == maxit_)
 			break;
 
 		// Update G-space counter
@@ -234,10 +253,10 @@ solve()
 		// Compute first residual in G_j+1
 		// Note: r is already perpendicular to P so v = r
 		// Preconditioning: v = inv(P)*r
-		v = *(model_->applyPrecon(*r));
+		v = *(model_.applyPrecon(*r));
 
 		// Matrix-vector multiplication: t = A*v
-		VectorPointer t = model_->applyMatrix(v);
+		VectorPointer t = model_.applyMatrix(v);
 
 		// Computation of a new omega
 		om = calc_omega(*t, *r, angle_);
@@ -253,7 +272,7 @@ solve()
 		if (trueres_ && normr < normb )
 		{
 			// r = b - A*x;
-			r = model_->applyMatrix(*x_); // Ax
+			r = model_.applyMatrix(*x_); // Ax
 			r->update( 1.0,  *b_, -1.0);   // b - Ax
 			trueres_ = false;
 			replacements_ = replacements_ + 1;
@@ -263,19 +282,19 @@ solve()
 		//-->TODO
 
 		resvec_.push_back(normr);
-		iter = iter + 1;		
+		iter_ = iter_ + 1;		
 	}
 
 	// Smoothing
 	//-->TODO
 
 	
-	
+	return flag;
 }
 
 //====================================================================
-template<typename ModelPointer, typename VectorPointer>
-void IDRSolver<ModelPointer, VectorPointer>::
+template<typename Model, typename VectorPointer>
+void IDRSolver<Model, VectorPointer>::
 printResVec()
 {
 	int ctr = 0;
@@ -284,8 +303,8 @@ printResVec()
 }
 
 //====================================================================
-template<typename ModelPointer, typename VectorPointer>
-double IDRSolver<ModelPointer, VectorPointer>::
+template<typename Model, typename VectorPointer>
+double IDRSolver<Model, VectorPointer>::
 calc_omega(Vector const &t, Vector const &s, double angle)
 {
 	double ns = s.norm();
@@ -304,8 +323,8 @@ calc_omega(Vector const &t, Vector const &s, double angle)
 
 	
 //====================================================================
-template<typename ModelPointer, typename VectorPointer>
-void IDRSolver<ModelPointer, VectorPointer>::
+template<typename Model, typename VectorPointer>
+void IDRSolver<Model, VectorPointer>::
 test()
 {
 	std::cout << "========== Testing IDR solver ===============" << std::endl;
@@ -323,8 +342,18 @@ test()
 }
 
 //====================================================================
-template<typename ModelPointer, typename VectorPointer>
-void IDRSolver<ModelPointer, VectorPointer>::
+template<typename Model, typename VectorPointer>
+double IDRSolver<Model, VectorPointer>::
+explicitResNorm()
+{
+	VectorPointer r = model_.applyMatrix(*x_); // Ax
+	r->update( 1.0,  *b_, -1.0);               // b - Ax
+	return r->norm();
+}
+
+//====================================================================
+template<typename Model, typename VectorPointer>
+void IDRSolver<Model, VectorPointer>::
 writeVector(std::vector<double> &vector, const std::string &filename)
 {
 	if (!vector.empty())

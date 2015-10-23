@@ -16,28 +16,31 @@
 //    -copy construction
 
 
-template<typename ModelPointer, typename VectorPointer>
+template<typename Model, typename VectorPointer>
 class IDRSolver
 {
-	// We require the pointers to be of shared_ptr/RCP type
-	using  Model  = typename ModelPointer::element_type;	
+	// We require the pointers to vectors to be of shared_ptr/RCP type
 	using  Vector = typename VectorPointer::element_type;
 	
-	ModelPointer  model_;
+	Model &model_;
 	VectorPointer x_;
 	VectorPointer b_;
+
+	bool haveInitSol_;
+	bool haveRHS_;
+	bool smoothing_;
+	bool replacement_;
+	bool trueres_;
 
 	// number close to machine precision
 	double mp_;
 	double tol_;
 	double angle_;
-	bool   smoothing_;
-	bool   replacement_;
-	bool   trueres_;
 
 	int    s_;	
 	int    maxit_;
 	int    replacements_;
+	int    iter_;
 
 	// smoothing vectors
 	Vector xs_;
@@ -51,7 +54,12 @@ class IDRSolver
 
 public:
 	// constructor
-	IDRSolver(ModelPointer model, VectorPointer x0, VectorPointer b);
+	IDRSolver(Model &model);
+	
+	// constructor
+	IDRSolver(Model &model,
+			  VectorPointer x0,
+			  VectorPointer b);
 	
 	// destructor
 	~IDRSolver();
@@ -71,6 +79,10 @@ public:
 	void printResVec();
 	
 	void test();
+
+	double explicitResNorm();
+
+	int getNumIters() { return iter_; }
 
 private:
 

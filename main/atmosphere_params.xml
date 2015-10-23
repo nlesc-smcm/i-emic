@@ -22,7 +22,7 @@
   
   <!-- Specify whether the ocean model should initialize with     -->
   <!-- an old state (true) or with a zero solution (false).       -->
-  <Parameter name="Use existing state" type="bool" value = "false" />
+  <Parameter name="Use existing state" type="bool" value = "true" />
 
   <!-- western, eastern, southern and northern domain bounds      -->
   <Parameter name="Global Bound xmin" type="double" value="200"    />

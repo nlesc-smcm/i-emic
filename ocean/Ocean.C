@@ -42,13 +42,15 @@ extern "C" _SUBROUTINE_(getooa)(double*);
 Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	:
 	comm_(Comm),                   // Setting the communication object
-	solverInitialized_(false),     // Solver needs initialization
-	precInitialized_(false),       // Preconditioner needs initialization
+	solverType_          (oceanParamList->get("Solver type", 'I')),
+	solverInitialized_   (false),     // Solver needs initialization
+	precInitialized_     (false),       // Preconditioner needs initialization
 	adaptivePrecCompute_ (oceanParamList->get("Use adaptive preconditioner computation", true)),
 	recomputePreconditioner_(true),  // We need a preconditioner to start with
-	useScaling_          (oceanParamList->get("Use scaling", false)),
 	gmresIters_          (oceanParamList->get("Iterations in FGMRES solver", 100)),
 	gmresTol_            (oceanParamList->get("Tolerance in FGMRES solver", 1e-3)),
+	useScaling_          (oceanParamList->get("Use scaling", false)),
+	idrSolver_           (*this), // Initialize IDR solver with current object (ocean);
 	recomputeBound_      (oceanParamList->get("Preconditioner recompute bound", 400)),
 	inputFile_           (oceanParamList->get("Input file", "ocean.h5")),
 	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
@@ -238,40 +240,73 @@ void Ocean::solve(VectorPtr rhs)
 	sol_->Scale(0.0);
 	
 	// Set the problem, rhs may be given as an argument to solve().
-	bool set;
-	if (rhs == Teuchos::null)
- 		set = problem_->setProblem(sol_, rhs_);
-	else
-		set = problem_->setProblem(sol_, rhs->getOceanVector());
-	
-	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
-				   "*** Belos::LinearProblem failed to setup");
+	if (solverType_ == 'F')
+	{
+		bool set;
+		if (rhs == Teuchos::null)
+			set = problem_->setProblem(sol_, rhs_);
+		else
+			set = problem_->setProblem(sol_, rhs->getOceanVector());
+		TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
+								   "*** Belos::LinearProblem failed to setup");
+	}
+	else if (solverType_ == 'I')
+	{
+		// Setup IDR: for our IDRSolver member we supply a view of the
+		//            solution and the RHS:
+		idrSolver_.setSolution(getSolution('V'));
+		if (rhs == Teuchos::null)
+			idrSolver_.setRHS(getRHS('V'));
+		else
+			idrSolver_.setRHS(rhs);
+	}	
 
 	// ---------------------------------------------------------------------
-	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
+	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs
 	TIMER_START("Ocean: solve...");
 	INFO("Ocean: solve...");
-	try
+	int    iters;
+	double tol;
+	if (solverType_ == 'F')
 	{
-		belosSolver_->solve(); 	// Solve
+		try
+		{
+			belosSolver_->solve(); 	// Solve
+		}
+		catch (std::exception const &e)
+		{
+			INFO("Ocean: exception caught: " << e.what());
+		}
 	}
-	catch (std::exception const &e)
+	else if (solverType_ == 'I')
 	{
-		INFO("Ocean: exception caught: " << e.what());
+		idrSolver_.solve();
 	}
+	
 	INFO("Ocean: solve... done");
 	TIMER_STOP("Ocean: solve...");
 	// ---------------------------------------------------------------------
 
 	// Do some post-processing
-	int    belosIters = belosSolver_->getNumIters();
-	double belosTol   = belosSolver_->achievedTol();
-	INFO("Ocean: FGMRES, i = " << belosIters << ", ||r|| = " << belosTol);
-	TRACK_ITERATIONS("Ocean: FGMRES iterations...", belosIters);
+	if (solverType_ == 'F')
+	{
+		iters = belosSolver_->getNumIters();
+		tol   = belosSolver_->achievedTol();
+		INFO("Ocean: FGMRES, i = " << iters << ", ||r|| = " << tol);
+		TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
+	}
+	else if (solverType_ == 'I')
+	{
+		iters = idrSolver_.getNumIters();
+		tol   = idrSolver_.explicitResNorm();
+		INFO("Ocean: IDR, i = " << iters << ", ||r|| = " << tol);
+		TRACK_ITERATIONS("Ocean: IDR iterations...", iters);
+
+	}
 
 	// If the number of linear solver iterations exceeds a preset bound
 	// we recompute the preconditioner
-	if ((belosIters > recomputeBound_) && adaptivePrecCompute_)
+	if ((iters > recomputeBound_) && adaptivePrecCompute_)
 	{
 		INFO("Ocean: Number of iterations exceeds " << recomputeBound_);
 		INFO("Ocean:   Enabling computation of preconditioner.");

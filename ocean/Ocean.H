@@ -34,6 +34,7 @@
 
 #include "GlobalDefinitions.H"
 #include "SuperVector.H"
+#include "IDRSolver.H"
 
 // forward declarations
 class THCM;
@@ -66,22 +67,30 @@ protected:
 	
 	Teuchos::RCP<Epetra_Vector> rowScalingRecipr_;
 	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
+
+	// 'F' Flexible GMRES (Belos/Trilinos)
+	// 'I' IDR 
+	char solverType_;
 	
-	bool solverInitialized_;
-	bool precInitialized_;
-	bool adaptivePrecCompute_;
-	bool recomputePreconditioner_;
-        int gmresIters_;
+	bool   solverInitialized_;
+	bool   precInitialized_;
+	bool   adaptivePrecCompute_;
+	bool   recomputePreconditioner_;
+	int    gmresIters_;
 	double gmresTol_;
-	bool useScaling_;
+	bool   useScaling_;
 	
 	Teuchos::RCP<Epetra_Vector> sol_;
-	
+
+	// Belos flexible GMRES members
 	Teuchos::RCP<Teuchos::ParameterList> belosParamList_;
 	Teuchos::RCP<Belos::LinearProblem
 				 <double, Epetra_MultiVector, Epetra_Operator> > problem_;	
 	Teuchos::RCP<Belos::BlockGmresSolMgr
 				 <double, Epetra_MultiVector, Epetra_Operator> > belosSolver_;
+
+	// IDR solver
+	IDRSolver<Ocean, Teuchos::RCP<SuperVector> > idrSolver_;
 	
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 	
