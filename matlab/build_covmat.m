@@ -27,22 +27,15 @@ function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
 
   if nargin < 2
 	% data matrix
-	M   = zeros(obs, dim);
-	for k = 1:obs
-	  fprintf('reading fort.%d\n', range(k));
-	  [lab icp par xl xlp det sig sol solup soleig] = ...
-      readfort3(la,strcat('fort.',num2str(range(k))), true);
-	  M(k,:) = sol(:);
-	end
-	
+	M = read_many_forts(range, dim);	
 	% subtract mean to get centred data matrix
 	mn = mean(M);
 	M = M - repmat(mn,obs,1);
 	Q = (1/(obs-1))*M'*M;
   else
-	sol = zeros(nun, n, m, l);
 	M = [];
   end
+  sol = zeros(nun, n, m, l);
 
   if nargin < 3
 	 ev = 1;
@@ -99,16 +92,17 @@ function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
 
   figure(3)
   Sp = S(:,:,l);
-  temp = flipud(S0 + Sp');
+  temp = flipud(Sp');
   %contourf(RtD*x,RtD*y,S0+Sp',15);
   plot(RtD*y, mean(Sp,1),'r');
   title('Surface Salinity');
+  xlim(RtD*[ymin,ymax])
   xlabel('Latitude');
 
 
   figure(4)
   Sp2 = squeeze(mean(S,1)); 
-  contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
+  contourf(RtD*yv(1:end-1),z*hdim,Sl',15);
   colorbar
   title('Isohalines')
   xlabel('Latitude')
@@ -118,12 +112,12 @@ function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
   figure(5)
   Tp = T(:,:,l);
   plot(RtD*y, mean(Tp,1),'r');
-  colorbar
   title('Surface Temperature');
+  xlim(RtD*[ymin,ymax])
   xlabel('Latitude');
 
   figure(6)
-  contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
+  contourf(RtD*yv(1:end-1),z*hdim,Tl',15);
   colorbar
   title('Isothermals')
   xlabel('Latitude')
