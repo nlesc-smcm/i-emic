@@ -75,13 +75,13 @@ protected:
 	bool   solverInitialized_;
 	bool   precInitialized_;
 	bool   adaptivePrecCompute_;
-	bool   recomputePreconditioner_;
-	int    gmresIters_;
-	double gmresTol_;
+	bool   recompPreconditioner_;
 	bool   useScaling_;
 	
 	Teuchos::RCP<Epetra_Vector> sol_;
 
+	Teuchos::RCP<Teuchos::ParameterList> solverParams_;
+	
 	// Belos flexible GMRES members
 	Teuchos::RCP<Teuchos::ParameterList> belosParamList_;
 	Teuchos::RCP<Belos::LinearProblem
@@ -91,6 +91,9 @@ protected:
 
 	// IDR solver
 	IDRSolver<Ocean, Teuchos::RCP<SuperVector> > idrSolver_;
+
+	bool zeroInitGuess_;
+	bool printExpResNorm_;
 	
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 	
@@ -224,6 +227,9 @@ private:
 	// Initializer members
 	void initializeSolver();
 	void initializePreconditioner();
+	void initializeBelos();
+	void initializeIDR();
+	
 
 	// Scale the matrix and rhs of the problem
 	void scaleProblem();

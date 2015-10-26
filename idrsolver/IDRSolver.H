@@ -17,6 +17,7 @@ IDRSolver(Model &model)
 	smoothing_     (false),
 	replacement_   (false),
 	trueres_       (false),
+	inispace_      (false),
 	mp_            (1e-13),  // number close to machine precision
 	tol_           (1e-8),
 	angle_         (0.7),
@@ -39,6 +40,7 @@ IDRSolver(Model &model,
 	smoothing_     (false),
 	replacement_   (false),
 	trueres_       (false),
+	inispace_      (false),
 	mp_            (1e-13),  // number close to machine precision
 	tol_           (1e-6),
 	angle_         (0.7),
@@ -49,8 +51,21 @@ IDRSolver(Model &model,
 //====================================================================
 template<typename Model, typename VectorPointer>
 IDRSolver<Model, VectorPointer>::
-~IDRSolver()
-{}
+~IDRSolver() {}
+
+//====================================================================
+template<typename Model, typename VectorPointer>
+template<typename ParListPtr>
+void IDRSolver<Model, VectorPointer>::
+setParameters(ParListPtr pars)
+{
+	s_           = pars->get("IDR s", 4);	
+	tol_         = pars->get("IDR tolerance", 1e-8);
+	maxit_       = pars->get("IDR iterations", 500);
+	inispace_    = pars->get("IDR save search space", true);
+	smoothing_   = pars->get("IDR use smoothing", false);
+	replacement_ = pars->get("IDR replace residuals", false);
+}
 
 //====================================================================
 template<typename Model, typename VectorPointer>
@@ -84,12 +99,14 @@ solve()
 
 	if (!haveInitSol_ || !haveRHS_)
 	{
-		std::cout << "Problem not setup correctly!" << std::endl;
+		std::cout << "Problem not setup correctly!"
+				  << haveInitSol_ << " "
+				  << haveRHS_ << std::endl;
 		return 1;
 	}			
 	
 	// check for zero rhs
-	std::cout << "IDR: norm rhs = " << b_->norm() << std::endl;
+	// std::cout << "IDR: norm rhs = " << b_->norm() << std::endl;
 	//-->TODO
 	
 	double normb = b_->norm();
@@ -97,8 +114,7 @@ solve()
 
 	// Compute residual r = b - Ax
 	VectorPointer r = model_.applyMatrix(*x_); // Ax
-	std::cout << "IDR: Ax = " << r->norm() << std::endl;
-	r->update( 1.0,  *b_, -1.0);                 // b - Ax
+	r->update( 1.0,  *b_, -1.0);               // b - Ax
 	
 	// Constructing smoothing vectors xs_ and rs_
 	if (smoothing_)
@@ -116,7 +132,7 @@ solve()
 	//-->TODO
 
 	//-->RECYCLING!!
-	bool inispace = false; // true with initial search space
+	inispace_ = false; // true with initial search space
 
 	int   flag = 0;   // a flag!
 	int     ii = 0;   // inner iteration counter
@@ -132,8 +148,13 @@ solve()
 	std::vector<double> f(dim, 0.0);
 	std::vector<double> gamma(dim, 0.0);
 	
-	std::vector<VectorPointer>        G(dim, VectorPointer());
-	std::vector<VectorPointer>        U(dim, VectorPointer());
+	std::vector<VectorPointer> G(dim, VectorPointer());
+	if ((U_.empty()) || !inispace_)
+	{
+		U_.clear();
+		U_ = std::vector<VectorPointer>(dim, VectorPointer());
+	}
+
 	std::vector<std::vector<double> > M
 		(dim, std::vector<double>(dim, 0.0));
 	// Declare vector v
@@ -141,7 +162,6 @@ solve()
 	
 	while (normr_ > tolb && iter_ < maxit_)
 	{
-		std::cout << normr_ << " " << tolb << " " << iter_ << std::endl;
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
 			f[i] = r->dot(P_[i]);
@@ -177,19 +197,19 @@ solve()
 
 				// Compute new U(:,k)
 				for (int i = k; i < s_; ++i)
-					t->update(gamma[i], *(U[i]), 1.0);
-				U[k] = t;
+					t->update(gamma[i], *(U_[i]), 1.0);
+				U_[k] = t;
 
 				// Compute Hessenberg matrix
 				//-->TODO
 			}
-			else if (!inispace) 
+			else if (!inispace_) 
 			{
-				U[k] = model_.applyPrecon(v);
+				U_[k] = model_.applyPrecon(v);
 			}
 
 			// Compute new G(:,k), G(:,k) is in space G_j
-			G[k] = model_.applyMatrix(*(U[k]));
+			G[k] = model_.applyMatrix(*(U_[k]));
 
 			// Bi-Orthogonalise the new basis vectors:
 			double alpha;
@@ -197,7 +217,7 @@ solve()
 			{
 				alpha = P_[i].dot(*(G[k])) / M[i][i];
 				G[k]->update(-alpha, *(G[i]), 1.0);
-				U[k]->update(-alpha, *(U[i]), 1.0);
+				U_[k]->update(-alpha, *(U_[i]), 1.0);
 			}
 
 			// New column of M = P'*G  (first k-1 entries are zero)
@@ -215,7 +235,7 @@ solve()
 			// Make r orthogonal to p_i, i = 1..k, update solution and residual
 			double beta = f[k] / M[k][k];
 			r->update( -beta, *(G[k]), 1.0); // r = r - beta*G(:,k);
-			x_->update(beta, *(U[k]), 1.0);  // x = x + beta*U(:,k);
+			x_->update(beta, *(U_[k]), 1.0);  // x = x + beta*U(:,k);
 
 			// Check whether we need to replace residual
 			normr_ = r->norm();			

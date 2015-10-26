@@ -1,0 +1,33 @@
+<!--  -->
+<ParameterList name="solver">
+
+  <!-- Choose solver type, options are:    -->
+  <!--   F: Flexible GMRES                 -->
+  <!--   I: IDR(s)                         -->
+  <Parameter name="Solver type" type="char" value = "I"/>
+
+  <!-- FGMRES parameters -->  
+  <Parameter name="FGMRES tolerance" type="double" value="1e-6"/>
+  <Parameter name="FGMRES iterations" type="int" value="500"/>
+
+  <!-- IDR(s) parameters  -->
+  <Parameter name="IDR s" type="int" value="100"/>
+  <Parameter name="IDR tolerance" type="double" value="1e-6"/>
+  <Parameter name="IDR iterations" type="int" value="500"/>
+  <Parameter name="IDR save search space" type="bool" value="false"/>
+
+  <!-- ..................................................................   -->
+  <!-- Ocean specific parameters                                            -->
+  
+  <!-- Specify whether the Jacobian and RHS should be scaled before a solve -->
+  <Parameter name="Use scaling" type="bool" value = "false"/>
+ 
+  <!-- Maximum allowed number of iterations in linear solver before a new -->
+  <!-- preconditioner is requested -->
+  <Parameter name="Preconditioner recompute bound" type="int" value = "1000"/>
+
+  <!-- Choose to use a zero initial guess in solver -->
+  <Parameter name="Use trivial initial guess" type="bool" value = "true"/>
+  
+  
+</ParameterList>

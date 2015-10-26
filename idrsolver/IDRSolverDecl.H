@@ -23,6 +23,7 @@ class IDRSolver
 	using  Vector = typename VectorPointer::element_type;
 	
 	Model &model_;
+	
 	VectorPointer x_;
 	VectorPointer b_;
 
@@ -32,12 +33,16 @@ class IDRSolver
 	bool replacement_;
 	bool trueres_;
 
+	// Specify whether or not to save the search space
+	bool inispace_;
+
 	// number close to machine precision
 	double mp_;
 	double tol_;
 	double normr_;
-	double angle_;	
-
+	double angle_;
+	
+	// 
 	int    s_;	
 	int    maxit_;
 	int    replacements_;
@@ -47,8 +52,11 @@ class IDRSolver
 	Vector xs_;
 	Vector rs_;
 
-	// shadow space?
+	// Shadow space
 	std::vector<Vector> P_;
+
+	// Search space
+	std::vector<VectorPointer> U_;
 
 	// vector with residual norms
 	std::vector<double> resvec_;
@@ -64,6 +72,9 @@ public:
 	
 	// destructor
 	~IDRSolver();
+
+	template<typename ParListPtr>
+	void setParameters(ParListPtr pars);
 	
 	int solve();
 
@@ -76,7 +87,8 @@ public:
 	// set members
 	void setSolution(VectorPointer x) { x_ = x; haveInitSol_ = true;}
 	void setRHS(VectorPointer b) { b_ = b; haveRHS_ = true;}
-	
+
+	void clearSearchSpace() { U_.clear(); }
 	void printResVec();
 	
 	void test();
