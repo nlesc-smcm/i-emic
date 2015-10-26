@@ -297,7 +297,7 @@ void Ocean::solve(VectorPtr rhs)
 		if (rhs == Teuchos::null)
 			idrSolver_.setRHS(getRHS('V'));
 		else
-			idrSolver_.setRHS(rhs);
+			idrSolver_.setRHS(getVector('V',rhs->getOceanVector()));
 	}	
 
 	// ---------------------------------------------------------------------

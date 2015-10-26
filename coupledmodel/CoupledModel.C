@@ -9,6 +9,7 @@
 
 #include <Epetra_Comm.h>
 #include <Teuchos_RCP.hpp>
+#include <Teuchos_XMLParameterListHelpers.hpp>
 
 CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 						   std::shared_ptr<Atmosphere> atmos,
@@ -23,7 +24,8 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	useHash_          (params->get("Use hashing", true)),
 	syncHash_(-1),
 	rhsHash_(-1),
-	jacHash_(-1)
+	jacHash_(-1),
+	idrSolver_(*this)
 {
 	stateView_ =
 		std::make_shared<SuperVector>(ocean_->getState('V')->getOceanVector(),
@@ -142,6 +144,18 @@ void CoupledModel::computeRHS()
 	atmos_->computeRHS(); 	// Atmosphere
 }
 
+//====================================================================
+void CoupledModel::initializeIDR()
+{
+	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
+		rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
+	
+	idrSolver_.setParameters(solverParams_);
+	idrSolver_.setSolution(getSolution('V'));
+	idrSolver_.setRHS(getRHS('V'));
+}
+
 //------------------------------------------------------------------
 void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 {
@@ -153,9 +167,57 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	}
 	else if (solvingScheme_ == 'G') // backward block GS solve
 		blockGSSolve(rhs);
+	else if (solvingScheme_  == 'I') // IDR on complete matrix
+	{
+		idrSolver_.setSolution(getSolution('V'));
+		idrSolver_.setRHS(rhs);
+		idrSolver_.solve();
+		double iters = idrSolver_.getNumIters();
+		INFO("CoupledModel IDR, i = " << iters);
+		TRACK_ITERATIONS("CoupledModel IDR iterations...", iters);
+	}
 	else
 		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
+}
+
+//------------------------------------------------------------------
+std::shared_ptr<SuperVector>
+CoupledModel::applyMatrix(SuperVector const &v)
+{
+	TIMER_START("CoupledModel: apply matrix...");
+
+	//************
+	// A*x1 + B*x2
+	// C*x1 + D*x2
+	//************
+
+	SuperVector tmp1 = *(ocean_->applyMatrix(v));
+	SuperVector tmp2 = *(atmos_->applyMatrix(v));
+	SuperVector copy1(v);
+	SuperVector copy2(v);
+	copy1.linearTransformation(*B_, *rowsB_, 'A', 'O');
+	copy2.linearTransformation(*C_, *rowsB_, 'O', 'A');
+
+	SuperVector part1(tmp1.getOceanVector(), tmp2.getAtmosVector());
+	SuperVector part2(copy1.getOceanVector(), copy2.getAtmosVector());
+
+	part1.update(1.0, part2, 1.0);
+
+	TIMER_STOP("CoupledModel: apply matrix...");
+	return std::make_shared<SuperVector>(part1);	
+}
+
+//------------------------------------------------------------------
+std::shared_ptr<SuperVector>
+CoupledModel::applyPrecon(SuperVector const &v)
+{
+	TIMER_START("CoupledModel: apply preconditioner...");	
+	SuperVector tmp1 = *(ocean_->applyPrecon(v));
+	SuperVector tmp2 = *(atmos_->applyPrecon(v));
+	TIMER_STOP("CoupledModel: apply preconditioner...");	
+	return std::make_shared<SuperVector>(tmp1.getOceanVector(),
+										 tmp2.getAtmosVector());
 }
 
 //------------------------------------------------------------------

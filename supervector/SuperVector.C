@@ -132,7 +132,7 @@ double SuperVector::dot(SuperVector const &A) const
 {
 	if (length_ != A.length())
 	{
-		std::cout << "Wrong dimensions!" << std::endl;
+		ERROR("Wrong dimensions!", __FILE__, __LINE__);
 		return 1;
 	}
 	
