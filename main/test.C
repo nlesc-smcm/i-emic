@@ -68,10 +68,8 @@ int main(int argc, char **argv)
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
 	// test the coupled model
-	testIDR(Comm);
+	// testIDR(Comm);
 	testOcean(Comm);
-
-	//testOcean(Comm);
 
 	// print the profile
 	if (Comm->MyPID() == 0)

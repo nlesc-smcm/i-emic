@@ -304,6 +304,11 @@ void Ocean::solve(VectorPtr rhs)
 
 	}
 
+	// If requested, calculate the explicit residual
+	std::cout << "Ocean::solve() exp res norm: "
+			  << explicitResNorm(rhs) << std::endl;
+	
+
 	// If the number of linear solver iterations exceeds a preset bound
 	// we recompute the preconditioner
 	if ((iters > recomputeBound_) && adaptivePrecCompute_)
@@ -316,6 +321,19 @@ void Ocean::solve(VectorPtr rhs)
 	// If specified, unscale the problem
 	if (useScaling_)
 		unscaleProblem();
+}
+
+
+//=====================================================================
+double Ocean::explicitResNorm(VectorPtr rhs)
+{
+	RCP<Epetra_Vector> Ax =
+		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
+	jac_->Apply(*sol_, *Ax);
+	Ax->Update(1.0, *(rhs->getOceanVector()), -1.0);
+	double nrm;
+	Ax->Norm2(&nrm);
+	return nrm;
 }
 
 //=====================================================================

@@ -133,6 +133,10 @@ public:
 	//
 	// Solve may optionally accept an rhs of VectorPointer type
 	void solve(Teuchos::RCP<SuperVector> rhs = Teuchos::null);
+
+	// Calculate explicit residual norm
+	double explicitResNorm(VectorPtr rhs);
+	
 	void computeRHS();
 	void computeJacobian();
 	

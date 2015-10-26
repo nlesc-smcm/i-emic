@@ -35,7 +35,8 @@ class IDRSolver
 	// number close to machine precision
 	double mp_;
 	double tol_;
-	double angle_;
+	double normr_;
+	double angle_;	
 
 	int    s_;	
 	int    maxit_;
@@ -81,6 +82,7 @@ public:
 	void test();
 
 	double explicitResNorm();
+	double implicitResNorm() { return normr_; }
 
 	int getNumIters() { return iter_; }
 

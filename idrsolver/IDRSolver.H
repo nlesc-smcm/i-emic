@@ -18,10 +18,10 @@ IDRSolver(Model &model)
 	replacement_   (false),
 	trueres_       (false),
 	mp_            (1e-13),  // number close to machine precision
-	tol_           (1e-6),
+	tol_           (1e-8),
 	angle_         (0.7),
 	s_             (4),
-	maxit_         (500)
+	maxit_         (1000)
 {}
 
 //====================================================================
@@ -107,11 +107,10 @@ solve()
 		rs_ = Vector(*r);
 	}
 	
-	double normr = r->norm();
-	std::cout << "IDR: initial residual = " << normr << std::endl;
+	normr_ = r->norm();
 	
 	resvec_.clear();
-	resvec_.push_back(normr);
+	resvec_.push_back(normr_);
 	
 	// Initial guess is a good enough solution
 	//-->TODO
@@ -140,9 +139,9 @@ solve()
 	// Declare vector v
 	Vector v;
 	
-	while (normr > tolb && iter_ < maxit_)
+	while (normr_ > tolb && iter_ < maxit_)
 	{
-		std::cout << normr << " " << tolb << " " << iter_ << std::endl;
+		std::cout << normr_ << " " << tolb << " " << iter_ << std::endl;
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
 			f[i] = r->dot(P_[i]);
@@ -219,8 +218,8 @@ solve()
 			x_->update(beta, *(U[k]), 1.0);  // x = x + beta*U(:,k);
 
 			// Check whether we need to replace residual
-			normr = r->norm();			
-			if (replacement_ && normr > tolb / mp_) trueres_ = true;
+			normr_ = r->norm();			
+			if (replacement_ && normr_ > tolb / mp_) trueres_ = true;
 
 			// Smoothing
 			//-->TODO
@@ -236,15 +235,15 @@ solve()
 			}
 
 			// Check for convergence
-			normr = r->norm();
-			resvec_.push_back(normr);
+			normr_ = r->norm();
+			resvec_.push_back(normr_);
 			iter_ = iter_ + 1;
-			if (normr < tolb || iter_ == maxit_)
+			if (normr_ < tolb || iter_ == maxit_)
 				break;
 		}
 
 		// Check for convergence
-		if (normr < tolb || iter_ == maxit_)
+		if (normr_ < tolb || iter_ == maxit_)
 			break;
 
 		// Update G-space counter
@@ -265,12 +264,13 @@ solve()
 		r->update(-om, *t, 1.0);  // r = r - om*t
 		x_->update(om, v, 1.0);   // x = x + om*v 
 
-		normr = r->norm();
+		normr_ = r->norm();
 		
 		// Residual replacement?
-		if (replacement_ && normr > tolb / mp_) trueres_ = 1;
-		if (trueres_ && normr < normb )
+		if (replacement_ && normr_ > tolb / mp_) trueres_ = 1;
+		if (trueres_ && normr_ < normb )
 		{
+			std::cout << "IDR: replacing residual..." << std::endl;
 			// r = b - A*x;
 			r = model_.applyMatrix(*x_); // Ax
 			r->update( 1.0,  *b_, -1.0);   // b - Ax
@@ -281,7 +281,7 @@ solve()
 		// Smoothing
 		//-->TODO
 
-		resvec_.push_back(normr);
+		resvec_.push_back(normr_);
 		iter_ = iter_ + 1;		
 	}
 
