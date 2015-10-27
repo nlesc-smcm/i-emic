@@ -25,7 +25,8 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	syncHash_(-1),
 	rhsHash_(-1),
 	jacHash_(-1),
-	idrSolver_(*this)
+	idrSolver_(*this),
+	idrInitialized_(false)
 {
 	stateView_ =
 		std::make_shared<SuperVector>(ocean_->getState('V')->getOceanVector(),
@@ -154,6 +155,7 @@ void CoupledModel::initializeIDR()
 	idrSolver_.setParameters(solverParams_);
 	idrSolver_.setSolution(getSolution('V'));
 	idrSolver_.setRHS(getRHS('V'));
+	idrInitialized_ = true;
 }
 
 //------------------------------------------------------------------
@@ -169,12 +171,26 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 		blockGSSolve(rhs);
 	else if (solvingScheme_  == 'I') // IDR on complete matrix
 	{
+		if (!idrInitialized_)
+			initializeIDR();
+
+		TIMER_START("CoupledModel: solve...");
+
 		idrSolver_.setSolution(getSolution('V'));
 		idrSolver_.setRHS(rhs);
+
+		INFO("CoupledModel: IDR solve...");
 		idrSolver_.solve();
+		INFO("CoupledModel: IDR solve... done");
+		
 		double iters = idrSolver_.getNumIters();
-		INFO("CoupledModel IDR, i = " << iters);
+		double nrm   = idrSolver_.explicitResNorm();
+		double res   = computeResidual(rhs);
+
+		INFO("CoupledModel IDR, i = " << iters << " exp res norm: " << nrm);
+		INFO("CoupledModel residual = " << res);		
 		TRACK_ITERATIONS("CoupledModel IDR iterations...", iters);
+		TIMER_STOP("CoupledModel: solve...");
 	}
 	else
 		WARNING("(CoupledModel::Solve()) Invalid mode!",
@@ -187,25 +203,28 @@ CoupledModel::applyMatrix(SuperVector const &v)
 {
 	TIMER_START("CoupledModel: apply matrix...");
 
-	//************
-	// A*x1 + B*x2
-	// C*x1 + D*x2
-	//************
+	//******************
+	// R1 = A*v1 + B*v2
+	// R2 = C*v1 + D*v2
+	//******************
 
-	SuperVector tmp1 = *(ocean_->applyMatrix(v));
-	SuperVector tmp2 = *(atmos_->applyMatrix(v));
-	SuperVector copy1(v);
-	SuperVector copy2(v);
-	copy1.linearTransformation(*B_, *rowsB_, 'A', 'O');
-	copy2.linearTransformation(*C_, *rowsB_, 'O', 'A');
+	SuperVector Av1 = *(ocean_->applyMatrix(v));
+	SuperVector Dv2 = *(atmos_->applyMatrix(v));
 
-	SuperVector part1(tmp1.getOceanVector(), tmp2.getAtmosVector());
-	SuperVector part2(copy1.getOceanVector(), copy2.getAtmosVector());
+	SuperVector Bv2(v);
+	SuperVector Cv1(v);
+	
+	Bv2.linearTransformation(*B_, *rowsB_, 'A', 'O');
+    Cv1.linearTransformation(*C_, *rowsB_, 'O', 'A');
 
-	part1.update(1.0, part2, 1.0);
+	// Compute result
+	SuperVector R1(Av1.getOceanVector(), Dv2.getAtmosVector());
+	SuperVector R2(Bv2.getOceanVector(), Cv1.getAtmosVector());
+
+    R1.update(1.0, R2, 1.0);
 
 	TIMER_STOP("CoupledModel: apply matrix...");
-	return std::make_shared<SuperVector>(part1);	
+	return std::make_shared<SuperVector>(R1);	
 }
 
 //------------------------------------------------------------------

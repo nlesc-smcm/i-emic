@@ -32,6 +32,7 @@ class IDRSolver
 	bool smoothing_;
 	bool replacement_;
 	bool trueres_;
+	int  verbosity_;
 
 	// Specify whether or not to save the search space
 	bool inispace_;

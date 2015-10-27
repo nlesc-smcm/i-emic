@@ -17,6 +17,7 @@ IDRSolver(Model &model)
 	smoothing_     (false),
 	replacement_   (false),
 	trueres_       (false),
+	verbosity_     (0),
 	inispace_      (false),
 	mp_            (1e-13),  // number close to machine precision
 	tol_           (1e-8),
@@ -40,12 +41,13 @@ IDRSolver(Model &model,
 	smoothing_     (false),
 	replacement_   (false),
 	trueres_       (false),
+	verbosity_     (0),
 	inispace_      (false),
 	mp_            (1e-13),  // number close to machine precision
 	tol_           (1e-6),
 	angle_         (0.7),
 	s_             (4),
-	maxit_         (500)
+	maxit_         (1000)
 {}
 
 //====================================================================
@@ -59,12 +61,15 @@ template<typename ParListPtr>
 void IDRSolver<Model, VectorPointer>::
 setParameters(ParListPtr pars)
 {
+	std::cout << "IDR: updating parameters" << std::endl;
 	s_           = pars->get("IDR s", 4);	
 	tol_         = pars->get("IDR tolerance", 1e-8);
 	maxit_       = pars->get("IDR iterations", 500);
 	inispace_    = pars->get("IDR save search space", true);
 	smoothing_   = pars->get("IDR use smoothing", false);
 	replacement_ = pars->get("IDR replace residuals", false);
+	verbosity_   = pars->get("IDR verbosity", 0);
+	std::cout << verbosity_ << std::endl;
 }
 
 //====================================================================
@@ -131,9 +136,6 @@ solve()
 	// Initial guess is a good enough solution
 	//-->TODO
 
-	//-->RECYCLING!!
-	inispace_ = false; // true with initial search space
-
 	int   flag = 0;   // a flag!
 	int     ii = 0;   // inner iteration counter
 	int     jj = 0;   // G-space counter
@@ -149,7 +151,7 @@ solve()
 	std::vector<double> gamma(dim, 0.0);
 	
 	std::vector<VectorPointer> G(dim, VectorPointer());
-	if ((U_.empty()) || !inispace_)
+	if ((U_.size() == 0) || !inispace_)
 	{
 		U_.clear();
 		U_ = std::vector<VectorPointer>(dim, VectorPointer());
@@ -160,8 +162,17 @@ solve()
 	// Declare vector v
 	Vector v;
 	
+	std::cout << "iteration: " << iter_
+			  << " maxit:    " << maxit_
+			  << " normb:    " << normb
+			  << " residual: " << normr_
+			  << "tolerance: " << tolb
+			  <<  std::endl;
+	
 	while (normr_ > tolb && iter_ < maxit_)
 	{
+//		if (verbosity_ > 5)
+		
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
 			f[i] = r->dot(P_[i]);
@@ -170,7 +181,7 @@ solve()
 		{
 			// Update inner iteration counter
 			ii = ii + 1;
-				
+			
 			// Compute new v (copy construction)
 			v = Vector(*r);
 
@@ -188,7 +199,7 @@ solve()
 					gamma[i] = gamma[i] / M[i][i];
 					v.update(-gamma[i], *(G[i]), 1.0);
 				}
-
+				
 				// Preconditioning
 				//-->needs checks, now we are assuming
 				//   we do right preconditioning

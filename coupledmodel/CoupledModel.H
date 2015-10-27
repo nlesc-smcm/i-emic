@@ -63,6 +63,7 @@ private:
 	std::size_t jacHash_;  // hash to base computeJacobian() decision on
 
 	IDRSolver<CoupledModel, std::shared_ptr<SuperVector> > idrSolver_;
+	bool idrInitialized_;
 	
 	// Trilinos' MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;

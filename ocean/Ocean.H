@@ -93,6 +93,7 @@ protected:
 	IDRSolver<Ocean, Teuchos::RCP<SuperVector> > idrSolver_;
 
 	bool zeroInitGuess_;
+	bool bypassPrec_;
 	bool printExpResNorm_;
 	
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;

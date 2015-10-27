@@ -162,13 +162,14 @@ void Ocean::initializeSolver()
 	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
 
 	// Get the requested solver type
-	solverType_          = solverParams_->get("Solver type", 'I');
+	solverType_          = solverParams_->get("Ocean solver type", 'I');
 	
 	// Get some parameters that are independent of solver type
 	adaptivePrecCompute_ = solverParams_->get("Use adaptive preconditioner computation", true);
 	useScaling_          = solverParams_->get("Use scaling", false);
 	recomputeBound_      = solverParams_->get("Preconditioner recompute bound", 400);
 	zeroInitGuess_       = solverParams_->get("Use trivial initial guess", true);
+	bypassPrec_          = solverParams_->get("Bypass preconditioner", false);
 	
 	// Initialize the preconditioner
 	if (!precInitialized_)
@@ -512,6 +513,12 @@ Teuchos::RCP<SuperVector> Ocean::applyMatrix(SuperVector const &v)
 Teuchos::RCP<SuperVector> Ocean::applyPrecon(SuperVector const &v)
 {
 	TIMER_START("Ocean: apply preconditioning...");
+	if (bypassPrec_)
+	{
+		std::cout << "Ocean: bypassing preconditioner" << std::endl;
+		return rcp(new SuperVector(v));
+	}
+	
 	if (!precInitialized_)
 		initializePreconditioner();
 	

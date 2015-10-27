@@ -2,6 +2,10 @@
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
 
+#ifndef NAME
+# define NAME(x) #x
+#endif
+
 //------------------------------------------------------------------
 // Default constructor:
 SuperVector::SuperVector()
@@ -385,10 +389,12 @@ void SuperVector::init()
 }
 
 //------------------------------------------------------------------
-void SuperVector::info()
+void SuperVector::info() const
 {
-	std::cout << "SuperVector info:" << std::endl;
+	std::cout << "*****************************" << std::endl;
+	std::cout << " SuperVector info:" << std::endl;
 	std::cout << "  haveOceanVector " << haveOceanVector_ << std::endl;
 	std::cout << "  haveAtmosVector " << haveAtmosVector_ << std::endl;
 	std::cout << "  length          " << length_ << std::endl;
+	std::cout << "  norm            " << norm() << std::endl;
 }
