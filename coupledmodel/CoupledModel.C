@@ -198,6 +198,8 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 }
 
 //------------------------------------------------------------------
+
+/*
 std::shared_ptr<SuperVector>
 CoupledModel::applyMatrix(SuperVector const &v)
 {
@@ -226,6 +228,7 @@ CoupledModel::applyMatrix(SuperVector const &v)
 	TIMER_STOP("CoupledModel: apply matrix...");
 	return std::make_shared<SuperVector>(R1);	
 }
+*/
 
 //------------------------------------------------------------------
 std::shared_ptr<SuperVector>
@@ -263,6 +266,7 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
     // Initialize solution [x1;x2] = 0
  	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
 	x->zero();
+	//ocean_->clearSearchSpace();
 	
 	// Start iteration
 	int i;
@@ -315,25 +319,36 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 }
 
 //------------------------------------------------------------------
+std::shared_ptr<SuperVector>
+CoupledModel::applyMatrix(SuperVector const &v)
+{
+	TIMER_START("CoupledModel: apply matrix...");
+	std::shared_ptr<SuperVector> x = std::make_shared<SuperVector>(v);
+	SuperVector y(v);
+	SuperVector z(v);
+	
+	x->linearTransformation(ocean_->getJacobian());   // A*x1
+	x->linearTransformation(atmos_->getJacobian());   // D*x2
+
+	y.linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
+	y.zeroAtmos();
+	z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
+	z.zeroOcean();
+
+	x->update(1, y, 1);                              // A*x1 + B*x2
+	x->update(1, z, 1);                              // D*x2 + C*x1
+
+	return x;
+}
+
+//------------------------------------------------------------------
 double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
 {
 	TIMER_START("CoupledModel: compute residual...");
 	
-	std::shared_ptr<SuperVector> x = getSolution('C','C');
-	std::shared_ptr<SuperVector> y = getSolution('C','C');
-	std::shared_ptr<SuperVector> z = getSolution('C','C');
+	std::shared_ptr<SuperVector> x =
+		applyMatrix(*getSolution('C','C'));
 
-	// Calculate relative residual
-	x->linearTransformation(ocean_->getJacobian());   // A*x1
-	x->linearTransformation(atmos_->getJacobian());   // D*x2
-	
-	y->linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
-	y->zeroAtmos();
-	z->linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
-	z->zeroOcean();
-	
-	x->update(1, *y, 1);                              // A*x1 + B*x2
-	x->update(1, *z, 1);                              // D*x2 + C*x1
 	x->update(-1, *rhs, 1);                           // b-Jx
 	
 	double relResidual = x->norm() / rhs->norm();     // ||b-Jx||/||b||
@@ -341,6 +356,7 @@ double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
 	TIMER_STOP("CoupledModel: compute residual...");
 	return relResidual;
 }
+
 
 //------------------------------------------------------------------
 std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode)

@@ -91,6 +91,7 @@ public:
 
 	void clearSearchSpace() { U_.clear(); }
 	void printResVec();
+	void printIterStatus();
 	
 	void test();
 

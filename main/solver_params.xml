@@ -6,9 +6,9 @@
   <Parameter name="FGMRES iterations" type="int" value="500"/>
 
   <!-- IDR(s) parameters  -->
-  <Parameter name="IDR s" type="int" value="8"/>
+  <Parameter name="IDR s" type="int" value="20"/>
   <Parameter name="IDR tolerance" type="double" value="1e-3"/>
-  <Parameter name="IDR iterations" type="int" value="100"/>
+  <Parameter name="IDR iterations" type="int" value="1000"/>
   <Parameter name="IDR save search space" type="bool" value="true"/>
   <Parameter name="IDR replace residuals" type="bool" value="true"/>
   <Parameter name="IDR verbosity" type="int" value="10"/>

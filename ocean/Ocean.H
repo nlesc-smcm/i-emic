@@ -138,6 +138,9 @@ public:
 	// Solve may optionally accept an rhs of VectorPointer type
 	void solve(Teuchos::RCP<SuperVector> rhs = Teuchos::null);
 
+	// Clear the search space of the IDR solver
+	void clearSearchSpace() { idrSolver_.clearSearchSpace();}
+
 	// Calculate explicit residual norm
 	double explicitResNorm(VectorPtr rhs);
 	

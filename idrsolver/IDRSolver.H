@@ -111,7 +111,6 @@ solve()
 	}			
 	
 	// check for zero rhs
-	// std::cout << "IDR: norm rhs = " << b_->norm() << std::endl;
 	//-->TODO
 	
 	double normb = b_->norm();
@@ -151,27 +150,25 @@ solve()
 	std::vector<double> gamma(dim, 0.0);
 	
 	std::vector<VectorPointer> G(dim, VectorPointer());
-	if ((U_.size() == 0) || !inispace_)
-	{
-		U_.clear();
-		U_ = std::vector<VectorPointer>(dim, VectorPointer());
-	}
 
+	// Determine whether the search space needs initialization
+	bool createInitU =
+		(U_.size() == 0) ||	(!inispace_) || U_.empty();
+	
+	if (createInitU)
+		U_ = std::vector<VectorPointer>(dim, VectorPointer());	
+	
 	std::vector<std::vector<double> > M
 		(dim, std::vector<double>(dim, 0.0));
-	// Declare vector v
-	Vector v;
+
+	Vector v; // Declare vector v
 	
-	std::cout << "iteration: " << iter_
-			  << " maxit:    " << maxit_
-			  << " normb:    " << normb
-			  << " residual: " << normr_
-			  << "tolerance: " << tolb
-			  <<  std::endl;
+	printIterStatus();
 	
 	while (normr_ > tolb && iter_ < maxit_)
 	{
-//		if (verbosity_ > 5)
+		if (verbosity_ > 5)
+			printIterStatus();
 		
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
@@ -214,7 +211,7 @@ solve()
 				// Compute Hessenberg matrix
 				//-->TODO
 			}
-			else if (!inispace_) 
+			else if (createInitU) 
 			{
 				U_[k] = model_.applyPrecon(v);
 			}
@@ -323,6 +320,16 @@ solve()
 	return flag;
 }
 
+//====================================================================
+template<typename Model, typename VectorPointer>
+void IDRSolver<Model, VectorPointer>::
+printIterStatus()
+{
+	std::cout << "iteration: "   << iter_
+			  << " residual: "   << normr_
+			  << std::endl;
+}
+	
 //====================================================================
 template<typename Model, typename VectorPointer>
 void IDRSolver<Model, VectorPointer>::
