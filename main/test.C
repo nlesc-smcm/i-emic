@@ -68,8 +68,8 @@ int main(int argc, char **argv)
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
 	// test the coupled model
-	// testIDR(Comm);
-	testOcean(Comm);
+	testIDR(Comm);
+	//	testOcean(Comm);
 
 	// print the profile
 	if (Comm->MyPID() == 0)
@@ -109,6 +109,7 @@ void testIDR(RCP<Epetra_Comm> Comm)
 	atmos->writeAll();
 	std::cout << " norm x: " << x->norm() << std::endl;
 	b->info();
+	b->random();
 	std::cout << " norm b: " << b->norm() << std::endl;
 	b->scale(-1.0);	
 		

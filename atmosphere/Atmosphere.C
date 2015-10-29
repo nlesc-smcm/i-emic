@@ -733,7 +733,7 @@ void Atmosphere::test()
 std::shared_ptr<SuperVector> Atmosphere::getVector
 (char mode, std::shared_ptr<std::vector<double> > vec)
 {
-	if (mode == 'C') // copy
+	if (mode == 'C')      // copy
 	{
 		std::shared_ptr<std::vector<double> > copy =
 			std::make_shared<std::vector<double> >(*vec); 

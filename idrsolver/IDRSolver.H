@@ -23,7 +23,8 @@ IDRSolver(Model &model)
 	tol_           (1e-8),
 	angle_         (0.7),
 	s_             (4),
-	maxit_         (1000)
+	maxit_         (1000),
+	iter_          (0)
 {}
 
 //====================================================================
@@ -47,7 +48,8 @@ IDRSolver(Model &model,
 	tol_           (1e-6),
 	angle_         (0.7),
 	s_             (4),
-	maxit_         (1000)
+	maxit_         (1000),
+	iter_          (0)
 {}
 
 //====================================================================
@@ -139,7 +141,6 @@ solve()
 	int     ii = 0;   // inner iteration counter
 	int     jj = 0;   // G-space counter
 
-	iter_ = 0; 
 
 	int replacements_ = 0;
 	
@@ -153,7 +154,8 @@ solve()
 
 	// Determine whether the search space needs initialization
 	bool createInitU =
-		(U_.size() == 0) ||	(!inispace_) || U_.empty();
+		(U_.size() == 0) ||	(!inispace_) ||
+		U_.empty()       || (iter_ < s_);
 	
 	if (createInitU)
 		U_ = std::vector<VectorPointer>(dim, VectorPointer());	
@@ -163,12 +165,11 @@ solve()
 
 	Vector v; // Declare vector v
 	
-	printIterStatus();
 	
+	iter_ = 0; 
 	while (normr_ > tolb && iter_ < maxit_)
 	{
-		if (verbosity_ > 5)
-			printIterStatus();
+		if (verbosity_ > 5) printIterStatus();
 		
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
@@ -198,8 +199,8 @@ solve()
 				}
 				
 				// Preconditioning
-				//-->needs checks, now we are assuming
-				//   we do right preconditioning
+				//--> needs checks, now we are assuming
+				//    we do right preconditioning
 				VectorPointer t = model_.applyPrecon(v);
 				t->scale(om);
 
@@ -315,7 +316,7 @@ solve()
 
 	// Smoothing
 	//-->TODO
-
+	if (verbosity_ > 5)	printIterStatus();
 	
 	return flag;
 }

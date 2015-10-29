@@ -89,7 +89,7 @@ public:
 	void setSolution(VectorPointer x) { x_ = x; haveInitSol_ = true;}
 	void setRHS(VectorPointer b) { b_ = b; haveRHS_ = true;}
 
-	void clearSearchSpace() { U_.clear(); }
+	void clearSearchSpace() { }//U_.clear(); }
 	void printResVec();
 	void printIterStatus();
 	
