@@ -63,7 +63,9 @@ template<typename ParListPtr>
 void IDRSolver<Model, VectorPointer>::
 setParameters(ParListPtr pars)
 {
-	std::cout << "IDR: updating parameters" << std::endl;
+	if (verbosity_ > 0)
+		std::cout << "IDR: updating parameters" << std::endl;
+	
 	s_           = pars->get("IDR s", 4);	
 	tol_         = pars->get("IDR tolerance", 1e-8);
 	maxit_       = pars->get("IDR iterations", 500);
@@ -71,7 +73,7 @@ setParameters(ParListPtr pars)
 	smoothing_   = pars->get("IDR use smoothing", false);
 	replacement_ = pars->get("IDR replace residuals", false);
 	verbosity_   = pars->get("IDR verbosity", 0);
-	std::cout << verbosity_ << std::endl;
+
 }
 
 //====================================================================
@@ -141,7 +143,6 @@ solve()
 	int     ii = 0;   // inner iteration counter
 	int     jj = 0;   // G-space counter
 
-
 	int replacements_ = 0;
 	
 	size_t dim = s_;
@@ -154,17 +155,22 @@ solve()
 
 	// Determine whether the search space needs initialization
 	bool createInitU =
-		(U_.size() == 0) ||	(!inispace_) ||
-		U_.empty()       || (iter_ < s_);
-	
+		(U_init_.size() == 0) || (!inispace_)  ||
+		 U_init_.empty()      || (iter_ < s_);
+
+	std::vector<VectorPointer> U;
 	if (createInitU)
-		U_ = std::vector<VectorPointer>(dim, VectorPointer());	
+	{
+		U       = std::vector<VectorPointer>(dim, VectorPointer());
+		U_init_ = std::vector<VectorPointer>(dim, VectorPointer());
+	}	
+	else
+		U = U_init_;		
 	
 	std::vector<std::vector<double> > M
 		(dim, std::vector<double>(dim, 0.0));
 
 	Vector v; // Declare vector v
-	
 	
 	iter_ = 0; 
 	while (normr_ > tolb && iter_ < maxit_)
@@ -182,7 +188,7 @@ solve()
 			
 			// Compute new v (copy construction)
 			v = Vector(*r);
-
+			
 			if (jj > 0)
 			{				
 				// Solve small lower triangular system and make
@@ -206,19 +212,21 @@ solve()
 
 				// Compute new U(:,k)
 				for (int i = k; i < s_; ++i)
-					t->update(gamma[i], *(U_[i]), 1.0);
-				U_[k] = t;
+					t->update(gamma[i], *(U[i]), 1.0);
+				U[k] = t;
 
 				// Compute Hessenberg matrix
 				//-->TODO
 			}
 			else if (createInitU) 
 			{
-				U_[k] = model_.applyPrecon(v);
+				// create initial search space
+				U_init_[k] = model_.applyPrecon(v);
+				U[k] = U_init_[k];
 			}
 
 			// Compute new G(:,k), G(:,k) is in space G_j
-			G[k] = model_.applyMatrix(*(U_[k]));
+			G[k] = model_.applyMatrix(*(U[k]));
 
 			// Bi-Orthogonalise the new basis vectors:
 			double alpha;
@@ -226,7 +234,7 @@ solve()
 			{
 				alpha = P_[i].dot(*(G[k])) / M[i][i];
 				G[k]->update(-alpha, *(G[i]), 1.0);
-				U_[k]->update(-alpha, *(U_[i]), 1.0);
+				U[k]->update(-alpha, *(U[i]), 1.0);
 			}
 
 			// New column of M = P'*G  (first k-1 entries are zero)
@@ -244,7 +252,7 @@ solve()
 			// Make r orthogonal to p_i, i = 1..k, update solution and residual
 			double beta = f[k] / M[k][k];
 			r->update( -beta, *(G[k]), 1.0); // r = r - beta*G(:,k);
-			x_->update(beta, *(U_[k]), 1.0);  // x = x + beta*U(:,k);
+			x_->update(beta, *(U[k]), 1.0);  // x = x + beta*U(:,k);
 
 			// Check whether we need to replace residual
 			normr_ = r->norm();			
@@ -297,6 +305,7 @@ solve()
 		
 		// Residual replacement?
 		if (replacement_ && normr_ > tolb / mp_) trueres_ = 1;
+
 		if (trueres_ && normr_ < normb )
 		{
 			std::cout << "IDR: replacing residual..." << std::endl;

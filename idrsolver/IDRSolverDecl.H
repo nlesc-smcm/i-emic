@@ -56,8 +56,8 @@ class IDRSolver
 	// Shadow space
 	std::vector<Vector> P_;
 
-	// Search space
-	std::vector<VectorPointer> U_;
+	// Initial search space
+	std::vector<VectorPointer> U_init_;
 
 	// vector with residual norms
 	std::vector<double> resvec_;
@@ -89,7 +89,12 @@ public:
 	void setSolution(VectorPointer x) { x_ = x; haveInitSol_ = true;}
 	void setRHS(VectorPointer b) { b_ = b; haveRHS_ = true;}
 
-	void clearSearchSpace() { }//U_.clear(); }
+	void clearSearchSpace()
+		{
+			if (verbosity_ > 0)
+				std::cout << "IDR: Clearing search space!!" << std::endl;
+			U_init_.clear();
+		}
 	void printResVec();
 	void printIterStatus();
 	

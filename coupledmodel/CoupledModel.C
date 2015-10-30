@@ -26,7 +26,8 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	rhsHash_(-1),
 	jacHash_(-1),
 	idrSolver_(*this),
-	idrInitialized_(false)
+	idrInitialized_(false),
+	idrSolveCtr_(0)
 {
 	stateView_ =
 		std::make_shared<SuperVector>(ocean_->getState('V')->getOceanVector(),
@@ -173,9 +174,15 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	{
 		if (!idrInitialized_)
 			initializeIDR();
-
+		
 		TIMER_START("CoupledModel: solve...");
 
+		// MAGIC NUMBERS!!! UGLY!!
+		// If requested we clean the search space every X calls:
+		if (idrSolveCtr_ % 4 == 0)
+			idrSolver_.clearSearchSpace();
+		idrSolveCtr_++;
+		
 		idrSolver_.setSolution(getSolution('V'));
 		idrSolver_.setRHS(rhs);
 
@@ -196,39 +203,6 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
 }
-
-//------------------------------------------------------------------
-
-/*
-std::shared_ptr<SuperVector>
-CoupledModel::applyMatrix(SuperVector const &v)
-{
-	TIMER_START("CoupledModel: apply matrix...");
-
-	//******************
-	// R1 = A*v1 + B*v2
-	// R2 = C*v1 + D*v2
-	//******************
-
-	SuperVector Av1 = *(ocean_->applyMatrix(v));
-	SuperVector Dv2 = *(atmos_->applyMatrix(v));
-
-	SuperVector Bv2(v);
-	SuperVector Cv1(v);
-	
-	Bv2.linearTransformation(*B_, *rowsB_, 'A', 'O');
-    Cv1.linearTransformation(*C_, *rowsB_, 'O', 'A');
-
-	// Compute result
-	SuperVector R1(Av1.getOceanVector(), Dv2.getAtmosVector());
-	SuperVector R2(Bv2.getOceanVector(), Cv1.getAtmosVector());
-
-    R1.update(1.0, R2, 1.0);
-
-	TIMER_STOP("CoupledModel: apply matrix...");
-	return std::make_shared<SuperVector>(R1);	
-}
-*/
 
 //------------------------------------------------------------------
 std::shared_ptr<SuperVector>
@@ -266,7 +240,9 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
     // Initialize solution [x1;x2] = 0
  	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
 	x->zero();
-	//ocean_->clearSearchSpace();
+
+	// Clear saved Krylov space in ocean solver
+	ocean_->clearSearchSpace();
 	
 	// Start iteration
 	int i;

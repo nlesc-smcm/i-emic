@@ -64,6 +64,7 @@ private:
 
 	IDRSolver<CoupledModel, std::shared_ptr<SuperVector> > idrSolver_;
 	bool idrInitialized_;
+	int idrSolveCtr_;
 	
 	// Trilinos' MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
