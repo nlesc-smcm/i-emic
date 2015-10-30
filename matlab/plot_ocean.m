@@ -142,9 +142,8 @@ colorbar
 
 %%
 figure(8)
-Vs = v(:,:,l);   % surface meridional velocity
-Vd = sum(v,3)/l; % depth averaged meridional velocity
-imagesc(RtD*x,RtD*y,flipud(Vd')); hold on
+Ws = w(:,:,l-2);   % mixed layer vertical velocity
+imagesc(RtD*x,RtD*y,flipud(Ws')); hold on
 % contourf(RtD*x,RtD*y,(Vsurf'),15); hold on
 contour(RtD*x,RtD*y,1e-4*flipud(surfm'),1,'k-','linewidth',2); hold off
 colorbar

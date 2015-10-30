@@ -1,23 +1,30 @@
-<!--  -->
+<!-- LINEAR SOLVER PARAMETERS -->
 <ParameterList name="solver">
 
-  <!-- FGMRES parameters -->  
+  <!-- ..................................................................-->
+  <!-- FGMRES parameters                                                 -->  
+  <!-- ..................................................................-->
   <Parameter name="FGMRES tolerance" type="double" value="1e-3"/>
   <Parameter name="FGMRES iterations" type="int" value="500"/>
 
-  <!-- IDR(s) parameters  -->
+  <!-- ..................................................................-->
+  <!-- IDR(s) parameters                                                 -->
+  <!-- ..................................................................-->  
   <Parameter name="IDR s" type="int" value="100"/>
   <Parameter name="IDR tolerance" type="double" value="1e-4"/>
   <Parameter name="IDR iterations" type="int" value="2000"/>
-  <Parameter name="IDR save search space" type="bool" value="false"/>
+  <Parameter name="IDR save search space" type="bool" value="true"/>
   <Parameter name="IDR replace residuals" type="bool" value="true"/>
   <Parameter name="IDR verbosity" type="int" value="1"/>
-  
+
+  <!-- ..................................................................-->
+  <!-- CoupledModel specific parameters                                  -->
+  <!-- ..................................................................-->
+  <Parameter name="Clear search space frequency" type="int" value="2"/>
 
   <!-- ..................................................................-->
   <!-- Ocean specific parameters                                         -->
   <!-- ..................................................................-->
-
   <!-- Choose ocean solver type, options are:    -->
   <!--   F: Flexible GMRES                       -->
   <!--   I: IDR(s)                               -->

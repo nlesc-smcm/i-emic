@@ -156,6 +156,7 @@ void CoupledModel::initializeIDR()
 	idrSolver_.setParameters(solverParams_);
 	idrSolver_.setSolution(getSolution('V'));
 	idrSolver_.setRHS(getRHS('V'));
+	clearSPFreq_ = solverParams_->get("Clear search space frequency", 2);
 	idrInitialized_ = true;
 }
 
@@ -177,10 +178,10 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 		
 		TIMER_START("CoupledModel: solve...");
 
-		// MAGIC NUMBERS!!! UGLY!!
-		// If requested we clean the search space every X calls:
-		if (idrSolveCtr_ % 4 == 0)
+		// Clear the search space every X calls:
+		if (idrSolveCtr_ % clearSPFreq_ == 0)
 			idrSolver_.clearSearchSpace();
+		
 		idrSolveCtr_++;
 		
 		idrSolver_.setSolution(getSolution('V'));
@@ -313,7 +314,7 @@ CoupledModel::applyMatrix(SuperVector const &v)
 
 	x->update(1, y, 1);                              // A*x1 + B*x2
 	x->update(1, z, 1);                              // D*x2 + C*x1
-
+	TIMER_STOP("CoupledModel: apply matrix...");
 	return x;
 }
 
