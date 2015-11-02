@@ -195,11 +195,12 @@ public:
 
 	// Apply the Jacobian to a vector and return the result u = J*v
 	std::shared_ptr<SuperVector> applyMatrix(SuperVector const &v);
+	void applyMatrix(SuperVector const &v, SuperVector &out);
 
 	// Apply the preconditioner inverse to a vector and return
 	// the result u = P^{-1}*v
 	std::shared_ptr<SuperVector> applyPrecon(SuperVector const &v);
-
+	void applyPrecon(SuperVector const &v, SuperVector &out);
 	
 	void setState(std::shared_ptr<SuperVector> state)
 		{ *state_ = *(state->getAtmosVector()); }

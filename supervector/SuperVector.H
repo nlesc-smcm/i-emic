@@ -47,6 +47,9 @@ public:
 
 	// Copy constructor
 	SuperVector(SuperVector const &other);
+
+	// Overloaded assignment operator
+	void operator=(SuperVector const &other);
 	
 	// Destructor
 	~SuperVector();
@@ -55,6 +58,10 @@ public:
 	bool haveOceanVector() const { return haveOceanVector_; }
 	bool haveAtmosVector() const { return haveAtmosVector_; }
 
+	// Assign Ocean and Atmos vectors
+	void assign(Teuchos::RCP<Epetra_Vector> vector);
+	void assign(std::shared_ptr<std::vector<double> > vector);
+	
 	// Get the total length of the combined vector
 	int length() const;
 
@@ -83,6 +90,8 @@ public:
 
 	// Randomize vectors
 	void random();
+
+   
 
 	// Zero vectors
 	void zero();
@@ -120,6 +129,7 @@ private:
 	// Perform a few initializations
 	// right now it only initializes length_
 	void init();
+	void assign(SuperVector const &other);
 	
 };
 #endif

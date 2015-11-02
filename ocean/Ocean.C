@@ -510,6 +510,14 @@ Teuchos::RCP<SuperVector> Ocean::applyMatrix(SuperVector const &v)
 }
 
 //====================================================================
+void Ocean::applyMatrix(SuperVector const &v, SuperVector &out)
+{
+	TIMER_START("Ocean: apply matrix...");
+	jac_->Apply(*(v.getOceanVector()), *(out.getOceanVector()));
+	TIMER_STOP("Ocean: apply matrix...");
+}
+
+//====================================================================
 Teuchos::RCP<SuperVector> Ocean::applyPrecon(SuperVector const &v)
 {
 	TIMER_START("Ocean: apply preconditioning...");
@@ -528,6 +536,23 @@ Teuchos::RCP<SuperVector> Ocean::applyPrecon(SuperVector const &v)
 
 	TIMER_STOP("Ocean: apply preconditioning...");
 	return getVector('V', result);
+}
+
+//====================================================================
+void Ocean::applyPrecon(SuperVector const &v, SuperVector &out)
+{
+	if (bypassPrec_)
+	{
+		std::cout << "Ocean: bypassing preconditioner" << std::endl;
+		out = v;
+	}
+	
+	if (!precInitialized_)
+		initializePreconditioner();
+	
+	TIMER_START("Ocean: apply preconditioning...");
+	precPtr_->ApplyInverse(*(v.getOceanVector()), *(out.getOceanVector()));
+	TIMER_STOP("Ocean: apply preconditioning...");
 }
 
 //====================================================================

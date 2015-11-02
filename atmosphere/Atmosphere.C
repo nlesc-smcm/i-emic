@@ -793,11 +793,39 @@ std::shared_ptr<SuperVector> Atmosphere::applyMatrix(SuperVector const &v)
 }
 
 //-----------------------------------------------------------------------------
+void Atmosphere::applyMatrix(SuperVector const &v, SuperVector &out)
+{
+	std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
+	std::shared_ptr<std::vector<double> > result = out.getAtmosVector();
+	
+	int first;
+	int last;	
+	
+	// Perform matrix vector product
+	// 1->0 based... horrible... 
+	for (size_t row = 1; row <= atmosVector->size(); ++row)
+	{
+		first = beg_[row-1];
+		last  = beg_[row] - 1;
+		
+		(*result)[row-1] = 0;
+		for (int col = first; col <= last; ++col)
+			(*result)[row-1] += ico_[col-1] * (*atmosVector)[jco_[col-1]-1];
+	}
+}
+
+//-----------------------------------------------------------------------------
 std::shared_ptr<SuperVector> Atmosphere::applyPrecon(SuperVector const &v)
 {
 	// Do nothing
 	std::shared_ptr<SuperVector> result = std::make_shared<SuperVector>(v);
 	return result;
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
+{
+	out.assign(v.getAtmosVector());
 }
 
 //-----------------------------------------------------------------------------

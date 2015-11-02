@@ -64,9 +64,9 @@ class Continuation
 	double newtonTolerance_;      // set the tolerance in the Newton corrector
 	bool rejectFailedNewton_;     // set to false if you feel lucky
 	double practicalTol_;         // actual tolerance used for the problem
-	bool cycleTolerance_;          // if true we cycle between multiples of tol
-
-	int parDotSign_;           // used for detecting sign switch
+	bool cycleTolerance_;         // if true we cycle between multiples of tol
+	bool usePracticalTol_;        // if true we scale the tolerance 
+	int parDotSign_;              // used for detecting sign switch
 	
 	double normRHS_;
 	double normRHStest_;

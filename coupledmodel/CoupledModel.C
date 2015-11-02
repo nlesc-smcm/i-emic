@@ -205,17 +205,6 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 				__FILE__, __LINE__);
 }
 
-//------------------------------------------------------------------
-std::shared_ptr<SuperVector>
-CoupledModel::applyPrecon(SuperVector const &v)
-{
-	TIMER_START("CoupledModel: apply preconditioner...");	
-	SuperVector tmp1 = *(ocean_->applyPrecon(v));
-	SuperVector tmp2 = *(atmos_->applyPrecon(v));
-	TIMER_STOP("CoupledModel: apply preconditioner...");	
-	return std::make_shared<SuperVector>(tmp1.getOceanVector(),
-										 tmp2.getAtmosVector());
-}
 
 //------------------------------------------------------------------
 void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
@@ -316,6 +305,55 @@ CoupledModel::applyMatrix(SuperVector const &v)
 	x->update(1, z, 1);                              // D*x2 + C*x1
 	TIMER_STOP("CoupledModel: apply matrix...");
 	return x;
+}
+
+//------------------------------------------------------------------
+void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out)
+{
+	TIMER_START("CoupledModel: apply matrix...");
+
+	out.zero();	// Initialize output
+	
+	// Fill the ocean and atmos part of output
+	ocean_->applyMatrix(v, out);  // A*x1
+	atmos_->applyMatrix(v, out);  // D*x2
+
+	// Make temporary copies of v to store linear transformations
+	SuperVector y(v);
+	SuperVector z(v);
+
+	// Perform mappings
+	y.linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
+	z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
+	y.zeroAtmos();        
+	z.zeroOcean();        
+
+	out.update(1,y,1);  // A*x1 + B*x2
+	out.update(1,z,1);  // D*x2 + C*x1
+	
+	TIMER_STOP("CoupledModel: apply matrix...");
+}
+
+//------------------------------------------------------------------
+std::shared_ptr<SuperVector>
+CoupledModel::applyPrecon(SuperVector const &v)
+{
+	TIMER_START("CoupledModel: apply preconditioner...");
+	SuperVector tmp1 = *(ocean_->applyPrecon(v));
+	SuperVector tmp2 = *(atmos_->applyPrecon(v));
+	TIMER_STOP("CoupledModel: apply preconditioner...");	
+	return std::make_shared<SuperVector>(tmp1.getOceanVector(),
+										 tmp2.getAtmosVector());
+}
+
+//------------------------------------------------------------------
+void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out)
+{
+	TIMER_START("CoupledModel: apply preconditioner...");	
+	out.zero();	// Initialize output
+	ocean_->applyPrecon(v, out);
+	atmos_->applyPrecon(v, out);
+	TIMER_STOP("CoupledModel: apply preconditioner...");	
 }
 
 //------------------------------------------------------------------

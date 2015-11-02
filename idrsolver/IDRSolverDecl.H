@@ -57,7 +57,7 @@ class IDRSolver
 	std::vector<Vector> P_;
 
 	// Initial search space
-	std::vector<VectorPointer> U_init_;
+	std::vector<Vector> U_init_;
 
 	// vector with residual norms
 	std::vector<double> resvec_;

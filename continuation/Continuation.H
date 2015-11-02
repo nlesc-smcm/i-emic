@@ -16,26 +16,23 @@ Continuation<Model, ParameterList>::
 Continuation(Model model, ParameterList pars)
 	:
 	
-	ds_(pars->get("ds", 0.02)),
-	dsMin_(pars->get("dsMin", 1.0e-5)),
-	dsMax_(pars->get("dsMax", 1.0e01)),
-
-	scale1_(pars->get("scale1", 1.00)),
-	scale2_(pars->get("scale2", 2.00)),
-
-	epsilon_(pars->get("epsilon", 1.0e-8)),
-
-	backTracking_(pars->get("backTracking", true)),
-	numBackTrackingSteps_(pars->get("numBackTrackingSteps", 10)),
+	ds_                    (pars->get("ds", 0.02)),
+	dsMin_                 (pars->get("dsMin", 1.0e-5)),
+	dsMax_                 (pars->get("dsMax", 1.0e01)),
+	scale1_                (pars->get("scale1", 1.00)),
+	scale2_                (pars->get("scale2", 2.00)),
+	epsilon_               (pars->get("epsilon", 1.0e-8)),
+	backTracking_          (pars->get("backTracking", true)),
+	numBackTrackingSteps_  (pars->get("numBackTrackingSteps", 10)),
+	maxSteps_              (pars->get("maxSteps", -1)),
+	maxNewtonIterations_   (pars->get("maxNewtonIterations", 15)),
+	minAllowedIterations_  (pars->get("minAllowedIterations", 4)),
+	maxAllowedIterations_  (pars->get("maxAllowedIterations", 5)),
+	newtonTolerance_       (pars->get("newtonTolerance", 1.0e-3)),
+	rejectFailedNewton_    (pars->get("Reject solution from failed Newton iteration", true)),
+	cycleTolerance_        (pars->get("Cycle between multiples of the tolerance", false)),
+	usePracticalTol_       (pars->get("Use practical tolerance", false))
 	
-	maxSteps_(pars->get("maxSteps", -1)),
-
-	maxNewtonIterations_(pars->get("maxNewtonIterations", 15)),
-	minAllowedIterations_(pars->get("minAllowedIterations", 4)),
-	maxAllowedIterations_(pars->get("maxAllowedIterations", 5)),
-	newtonTolerance_(pars->get("newtonTolerance", 1.0e-3)),
-	rejectFailedNewton_(pars->get("Reject solution from failed Newton iteration", true)),
-	cycleTolerance_(pars->get("Cycle between multiples of the tolerance", false))
 {
 	model_  = model;
 
@@ -145,13 +142,17 @@ void Continuation<Model, ParameterList>::
 computeTolerance()
 {
 	// Scale the requested tolerance with sqrt(n)
-	practicalTol_ = newtonTolerance_ * sqrt(stateView_->length());
+	if (usePracticalTol_)
+		practicalTol_ = newtonTolerance_ * sqrt(stateView_->length());
+	else
+		practicalTol_ = newtonTolerance_;
 
 	// If requested we cycle between several multiples of practicalTol_
-	int multiples[5] = {1,5,10,10,5};
 	if (cycleTolerance_)
+	{
+		int multiples[5] = {1,5,10,10,5};
 		practicalTol_ *= multiples[step_ % 5];
-		
+	}
 }
 	
 //======================================================================
@@ -400,7 +401,7 @@ newtonCorrector()
 
 		INFO("----------------------------------------------------------");
 		INFO("           Newton corrector    iter: " << newtonIter_ );
-		INFO("                      practical tol: " << practicalTol_);
+		INFO("                          tolerance: " << practicalTol_);
 		INFO("                              ||R||: " << normRHStest_);
 		INFO("                             ||dx||: " << stateDir->norm());
 		INFO("----------------------------------------------------------");		

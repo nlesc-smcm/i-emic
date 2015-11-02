@@ -2,10 +2,6 @@
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
 
-#ifndef NAME
-# define NAME(x) #x
-#endif
-
 //------------------------------------------------------------------
 // Default constructor:
 SuperVector::SuperVector()
@@ -63,6 +59,39 @@ SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector1,
 // Copy constructor 
 SuperVector::SuperVector(SuperVector const &other)
 {
+	assign(other);
+	init();
+}
+
+//------------------------------------------------------------------
+// Copy constructor
+void SuperVector::operator=(SuperVector const &other)
+{
+	assign(other);
+	init();
+}
+
+//------------------------------------------------------------------
+// Destructor
+SuperVector::~SuperVector()
+{}
+
+//------------------------------------------------------------------
+void SuperVector::assign(Teuchos::RCP<Epetra_Vector> vector)
+{
+	oceanVector_ = vector;
+}
+
+//------------------------------------------------------------------
+void SuperVector::assign(std::shared_ptr<std::vector<double> > vector)
+{
+	atmosVector_ = vector;
+}
+
+//------------------------------------------------------------------
+//------------------------------------------------------------------
+void SuperVector::assign(SuperVector const &other)
+{
 	if (other.haveOceanVector())
 	{
 		oceanVector_ = Teuchos::rcp
@@ -85,13 +114,8 @@ SuperVector::SuperVector(SuperVector const &other)
 		atmosVector_ = std::shared_ptr<std::vector<double> >();
 		haveAtmosVector_ = false;
 	}
-	init();
+	isInitialized_ = false;
 }
-
-//------------------------------------------------------------------
-// Destructor
-SuperVector::~SuperVector()
-{}
 
 //------------------------------------------------------------------
 int SuperVector::length() const

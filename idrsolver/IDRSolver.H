@@ -66,7 +66,8 @@ setParameters(ParListPtr pars)
 	if (verbosity_ > 0)
 		std::cout << "IDR: updating parameters" << std::endl;
 	
-	s_           = pars->get("IDR s", 4);	
+	s_           = pars->get("IDR s", 4);
+	angle_       = pars->get("IDR angle", 0.7);
 	tol_         = pars->get("IDR tolerance", 1e-8);
 	maxit_       = pars->get("IDR iterations", 500);
 	inispace_    = pars->get("IDR save search space", true);
@@ -121,17 +122,18 @@ solve()
 	double tolb  = tol_ * normb; // Relative tolerance
 
 	// Compute residual r = b - Ax
-	VectorPointer r = model_.applyMatrix(*x_); // Ax
-	r->update( 1.0,  *b_, -1.0);               // b - Ax
+	Vector r(*x_);
+	model_.applyMatrix(*x_, r);
+	r.update( 1.0,  *b_, -1.0);               // b - Ax
 	
 	// Constructing smoothing vectors xs_ and rs_
 	if (smoothing_)
 	{
 		xs_ = Vector(*x_);
-		rs_ = Vector(*r);
+		rs_ = Vector(r);
 	}
 	
-	normr_ = r->norm();
+	normr_ = r.norm();
 	
 	resvec_.clear();
 	resvec_.push_back(normr_);
@@ -151,43 +153,44 @@ solve()
 	std::vector<double> f(dim, 0.0);
 	std::vector<double> gamma(dim, 0.0);
 	
-	std::vector<VectorPointer> G(dim, VectorPointer());
-
+	std::vector<Vector> G(dim, Vector(*x_));
+	
 	// Determine whether the search space needs initialization
 	bool createInitU =
 		(U_init_.size() == 0) || (!inispace_)  ||
-		 U_init_.empty()      || (iter_ < s_);
+		U_init_.empty()      || (iter_ < s_);
 
-	std::vector<VectorPointer> U;
+	std::vector<Vector> U;
 	if (createInitU)
 	{
-		U       = std::vector<VectorPointer>(dim, VectorPointer());
-		U_init_ = std::vector<VectorPointer>(dim, VectorPointer());
+		U       = std::vector<Vector>(dim, Vector());
+		U_init_ = std::vector<Vector>(dim, Vector(*x_));
 	}	
 	else
-		U = U_init_;		
+		U = U_init_;
 	
 	std::vector<std::vector<double> > M
 		(dim, std::vector<double>(dim, 0.0));
-
-	Vector v; // Declare vector v
+	
+	Vector v; 
+	Vector t(r);
 	
 	iter_ = 0; 
 	while (normr_ > tolb && iter_ < maxit_)
 	{
-		if (verbosity_ > 5) printIterStatus();
+		if (verbosity_ > 4) printIterStatus();
 		
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
-			f[i] = r->dot(P_[i]);
+			f[i] = r.dot(P_[i]);
 
 		for (int k = 0; k < s_; ++k)
-		{
+		{			
 			// Update inner iteration counter
 			ii = ii + 1;
 			
 			// Compute new v (copy construction)
-			v = Vector(*r);
+			v = r;
 			
 			if (jj > 0)
 			{				
@@ -201,18 +204,18 @@ solve()
 						gamma[i] = gamma[i] - M[i][j] * gamma[j];
 					}
 					gamma[i] = gamma[i] / M[i][i];
-					v.update(-gamma[i], *(G[i]), 1.0);
+					v.update(-gamma[i], G[i], 1.0);
 				}
 				
 				// Preconditioning
 				//--> needs checks, now we are assuming
 				//    we do right preconditioning
-				VectorPointer t = model_.applyPrecon(v);
-				t->scale(om);
+				model_.applyPrecon(v, t);
+				t.scale(om);
 
 				// Compute new U(:,k)
 				for (int i = k; i < s_; ++i)
-					t->update(gamma[i], *(U[i]), 1.0);
+					t.update(gamma[i], U[i], 1.0);
 				U[k] = t;
 
 				// Compute Hessenberg matrix
@@ -221,26 +224,26 @@ solve()
 			else if (createInitU) 
 			{
 				// create initial search space
-				U_init_[k] = model_.applyPrecon(v);
+				model_.applyPrecon(v, U_init_[k]);
 				U[k] = U_init_[k];
 			}
 
 			// Compute new G(:,k), G(:,k) is in space G_j
-			G[k] = model_.applyMatrix(*(U[k]));
+			model_.applyMatrix(U[k], G[k]);
 
 			// Bi-Orthogonalise the new basis vectors:
 			double alpha;
 			for (int i = 0; i < k; ++i)
 			{
-				alpha = P_[i].dot(*(G[k])) / M[i][i];
-				G[k]->update(-alpha, *(G[i]), 1.0);
-				U[k]->update(-alpha, *(U[i]), 1.0);
+				alpha = P_[i].dot(G[k]) / M[i][i];
+				G[k].update(-alpha, G[i], 1.0);
+				U[k].update(-alpha, U[i], 1.0);
 			}
 
 			// New column of M = P'*G  (first k-1 entries are zero)
 			for (int i = k; i < s_; ++i)
 			{
-				M[i][k] = G[k]->dot(P_[i]);
+				M[i][k] = G[k].dot(P_[i]);
 			}
 			if (M[k][k] == 0)
 			{
@@ -251,17 +254,17 @@ solve()
 
 			// Make r orthogonal to p_i, i = 1..k, update solution and residual
 			double beta = f[k] / M[k][k];
-			r->update( -beta, *(G[k]), 1.0); // r = r - beta*G(:,k);
-			x_->update(beta, *(U[k]), 1.0);  // x = x + beta*U(:,k);
+			r.update( -beta, G[k], 1.0);  // r = r - beta*G(:,k);
+			x_->update(beta, U[k], 1.0);  // x = x + beta*U(:,k);
 
 			// Check whether we need to replace residual
-			normr_ = r->norm();			
+			normr_ = r.norm();			
 			if (replacement_ && normr_ > tolb / mp_) trueres_ = true;
 
 			// Smoothing
 			//-->TODO
 
-			// New f = P'*r (first k  components are zero)
+			// New f = P'r (first k  components are zero)
 			//-->Here we use s-1 since we are zero-based!
 			if (k < s_-1)
 			{
@@ -272,7 +275,7 @@ solve()
 			}
 
 			// Check for convergence
-			normr_ = r->norm();
+			normr_ = r.norm();
 			resvec_.push_back(normr_);
 			iter_ = iter_ + 1;
 			if (normr_ < tolb || iter_ == maxit_)
@@ -288,20 +291,20 @@ solve()
 
 		// Compute first residual in G_j+1
 		// Note: r is already perpendicular to P so v = r
-		// Preconditioning: v = inv(P)*r
-		v = *(model_.applyPrecon(*r));
-
+		// Preconditioning: v = inv(P)r
+		model_.applyPrecon(r, v);
+		
 		// Matrix-vector multiplication: t = A*v
-		VectorPointer t = model_.applyMatrix(v);
+		model_.applyMatrix(v, t);
 
 		// Computation of a new omega
-		om = calc_omega(*t, *r, angle_);
+		om = calc_omega(t, r, angle_);
 		
 		// Update solution and residual:
-		r->update(-om, *t, 1.0);  // r = r - om*t
+		r.update(-om,  t, 1.0);  // r = r - om*t
 		x_->update(om, v, 1.0);   // x = x + om*v 
 
-		normr_ = r->norm();
+		normr_ = r.norm();
 		
 		// Residual replacement?
 		if (replacement_ && normr_ > tolb / mp_) trueres_ = 1;
@@ -310,8 +313,8 @@ solve()
 		{
 			std::cout << "IDR: replacing residual..." << std::endl;
 			// r = b - A*x;
-			r = model_.applyMatrix(*x_); // Ax
-			r->update( 1.0,  *b_, -1.0);   // b - Ax
+			model_.applyMatrix(*x_, r);   // Ax
+			r.update( 1.0,  *b_, -1.0);   // b - Ax
 			trueres_ = false;
 			replacements_ = replacements_ + 1;
 		}
@@ -394,9 +397,10 @@ template<typename Model, typename VectorPointer>
 double IDRSolver<Model, VectorPointer>::
 explicitResNorm()
 {
-	VectorPointer r = model_.applyMatrix(*x_); // Ax
-	r->update( 1.0,  *b_, -1.0);               // b - Ax
-	return r->norm();
+	Vector r(*x_);
+	model_.applyMatrix(*x_, r); // Ax
+	r.update( 1.0,  *b_, -1.0); // b - Ax
+	return r.norm();
 }
 
 //====================================================================

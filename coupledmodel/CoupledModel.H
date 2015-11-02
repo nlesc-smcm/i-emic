@@ -93,6 +93,9 @@ public:
 
 	void initializeIDR();
 
+	void applyMatrix(SuperVector const &v, SuperVector &out);
+	void applyPrecon(SuperVector const &v, SuperVector &out);
+	
 	std::shared_ptr<SuperVector> applyMatrix(SuperVector const &v);
 	std::shared_ptr<SuperVector> applyPrecon(SuperVector const &v);
 
