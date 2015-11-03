@@ -22,7 +22,7 @@
   
   <!-- Specify whether the ocean model should initialize with     -->
   <!-- an old state (true) or with a zero solution (false).       -->
-  <Parameter name="Use existing state" type="bool" value = "true" />
+  <Parameter name="Use existing state" type="bool" value = "false" />
   
   <!-- western, eastern, southern and northern domain bounds      -->
   <Parameter name="Global Bound xmin" type="double" value="200"    />
@@ -31,12 +31,18 @@
   <Parameter name="Global Bound ymax" type="double" value="80"     />
   
   <!-- global number of grid points in x,y and z-directions       -->
-  <Parameter name="Global Grid-Size n" type="int" value="12"       />
-  <Parameter name="Global Grid-Size m" type="int" value="12"       />
+  <Parameter name="Global Grid-Size n" type="int" value="16"       />
+  <Parameter name="Global Grid-Size m" type="int" value="16"       />
   <Parameter name="Global Grid-Size l" type="int" value="1"        />
 
   <!-- Supply solving scheme: 'D': direct dense                   -->
   <!--                        'B': direct banded                  -->
   <Parameter name="Solving scheme" type="char" value="B"           />
+
+  <!-- Supply preconditioner: 'D': Direct solve                   -->
+  <!-- Supply preconditioner: 'J': Jacobi                         -->
+  <!--                        'N': None                           -->
+  <Parameter name="Preconditioner" type="char" value="D"           />
+
   
 </ParameterList>

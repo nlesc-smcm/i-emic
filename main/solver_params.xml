@@ -4,15 +4,15 @@
   <!-- ..................................................................-->
   <!-- FGMRES parameters                                                 -->  
   <!-- ..................................................................-->
-  <Parameter name="FGMRES tolerance" type="double" value="1e-3"/>
+  <Parameter name="FGMRES tolerance" type="double" value="1e-5"/>
   <Parameter name="FGMRES iterations" type="int" value="1000"/>
 
   <!-- ..................................................................-->
   <!-- IDR(s) parameters                                                 -->
   <!-- ..................................................................-->  
-  <Parameter name="IDR s" type="int" value="4"/>
+  <Parameter name="IDR s" type="int" value="8"/>
   <Parameter name="IDR angle" type="double" value=".7"/>
-  <Parameter name="IDR tolerance" type="double" value="1e-8"/>
+  <Parameter name="IDR tolerance" type="double" value="1e-3"/>
   <Parameter name="IDR iterations" type="int" value="1000"/>
   <Parameter name="IDR save search space" type="bool" value="false"/>
   <Parameter name="IDR replace residuals" type="bool" value="true"/>
@@ -30,7 +30,7 @@
   <!-- Choose ocean solver type, options are:    -->
   <!--   F: Flexible GMRES                       -->
   <!--   I: IDR(s)                               -->
-  <Parameter name="Ocean solver type" type="char" value = "I"/>
+  <Parameter name="Ocean solver type" type="char" value = "F"/>
   
   <!-- Specify whether the Jacobian and RHS should be scaled before a solve -->
   <Parameter name="Use scaling" type="bool" value = "false"/>

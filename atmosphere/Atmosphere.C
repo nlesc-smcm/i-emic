@@ -21,6 +21,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	l_               (params->get("Global Grid-Size l", 1)),
 	periodic_        (params->get("Periodic", false)),
 	solvingScheme_   (params->get("Solving scheme", 'B')),
+	preconditioner_  (params->get("Preconditioner", 'J')),
 	rhoa_            (params->get("atmospheric density",1.25)),
 	hdima_           (params->get("heat capacity",8400.)),
 	cpa_             (params->get("heat capacity",1000.)),
@@ -467,6 +468,37 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 	TIMER_STOP("Atmosphere: solve...");
 }
 
+//-----------------------------------------------------------------------------
+void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
+{
+	TIMER_START("Atmosphere: solve...");
+	
+	char trans  = 'N';	
+	int dim     = n_*m_*l_;
+	int nrhs    = 1;
+	int lda     = dim;
+	int ldb     = dim;
+	int info;
+
+	std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();
+	// FACTORIZE?
+	if (solvingScheme_ == 'D')
+	{
+		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
+				&(*sol)[0], &ldb, &info);
+	}
+	else if (solvingScheme_ == 'B')
+	{
+		// we use a copy to make sure bandedA_ does not get corrupted
+		std::vector<double> bandedAcopy(bandedA_);
+		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
+			   &ldimA_, ipiv_, &(*sol)[0], &ldb, &info);
+	}
+	//double residual = computeResidual(rhs);
+	//INFO("Atmosphere: solve... residual=" << residual);
+	TIMER_STOP("Atmosphere: solve...");
+}
+
 //----------------------------------------------------------------------------
 double Atmosphere::computeResidual(std::shared_ptr<SuperVector> rhs)
 {
@@ -825,14 +857,13 @@ std::shared_ptr<SuperVector> Atmosphere::applyPrecon(SuperVector const &v)
 //-----------------------------------------------------------------------------
 void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
 {
-	if (false)
-		out.assign(v.getAtmosVector());
-	else
+	if (preconditioner_ = 'J')
 	{
 		std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
 		std::shared_ptr<std::vector<double> > result = out.getAtmosVector();
 		int first;
-		int last;	
+		int last;
+		double scaling = 1;
 		
 		// Perform matrix vector product
 		// 1->0 based... horrible... 
@@ -844,9 +875,16 @@ void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
 			(*result)[row-1] = 0;
 			for (int col = first; col <= last; ++col)
 				if (row == jco_[col-1])
-					(*result)[row-1] = (*atmosVector)[jco_[col-1]-1] / ico_[col-1] ;
+					(*result)[row-1] = scaling
+						* (*atmosVector)[jco_[col-1]-1]
+						/ ico_[col-1] ;
 		}
 	}
+	else if (preconditioner_ = 'D')
+		solve(v, out);
+	else
+		out.assign(v.getAtmosVector());
+
 }
 
 //-----------------------------------------------------------------------------

@@ -118,6 +118,10 @@ private:
 	//                 'B': banded
 	char solvingScheme_;
 
+	// Preconditioner: 'J': Jacobi
+	//                 'N': None
+	char preconditioner_;
+
 	// Continuation parameter
 	double    ampl_; //! amplitude of forcing 
 	double amplEnd_; //! max amplitude forcing
@@ -176,10 +180,10 @@ public:
 	~Atmosphere();
 
 	// Solve the matrix
-	//  > right now we use a dense solver from lapack, but a banded solver might
-	//    do as well.
+	// Needs some factorization
 	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
-
+	void solve(SuperVector const &rhs, SuperVector &out);
+		
 	// Compute the right hand side
 	void computeRHS();
 

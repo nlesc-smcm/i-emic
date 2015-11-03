@@ -338,7 +338,8 @@ void Ocean::solve(VectorPtr rhs)
 	else if (solverType_ == 'I')
 	{
 		iters = idrSolver_.getNumIters();
-		INFO("Ocean: IDR, i = " << iters);
+		INFO("Ocean: IDR, i = " << iters
+			 << " residual = " << idrSolver_.explicitResNorm());
 		TRACK_ITERATIONS("Ocean: IDR iterations...", iters);
 	}
 
