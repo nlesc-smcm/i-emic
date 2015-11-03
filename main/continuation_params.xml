@@ -1,11 +1,11 @@
 <!--  -->
 <ParameterList name="continuation">
   <Parameter name="ds" type="double" value=".005"/>
-  <Parameter name="maxSteps" type="int" value="5"/>
+  <Parameter name="maxSteps" type="int" value="1"/>
   <Parameter name="maxNewtonIterations" type="int" value="10"/>
   <Parameter name="numBackTrackingSteps" type="int" value="10"/>
   <Parameter name="zetapower" type="double" value="1.7"/>
-  <Parameter name="newtonTolerance" type="double" value="1.0e-3"/>
+  <Parameter name="newtonTolerance" type="double" value="1.0e-6"/>
   <Parameter name="Reject solution from failed Newton iteration" type="bool" value="true"/>
   <Parameter name="Cycle between multiples of the tolerance" type="bool" value="false"/>
   <Parameter name="Use practical tolerance" type="bool" value="false"/>

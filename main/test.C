@@ -84,6 +84,9 @@ int main(int argc, char **argv)
 void testIDR(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
+
+	// seed random generator
+	std::srand(7);
 	
 	//------------------------------------------------------------------
 	// Check if outFile is specified
@@ -109,17 +112,19 @@ void testIDR(RCP<Epetra_Comm> Comm)
 	atmos->writeAll();
 	std::cout << " norm x: " << x->norm() << std::endl;
 	b->info();
-	b->random();
 	std::cout << " norm b: " << b->norm() << std::endl;
 	b->scale(-1.0);	
 		
-	// seed random generator
-	std::srand(7);
-		
+
+	// Create parameter object for IDRSolver
+	RCP<Teuchos::ParameterList> solverPars = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("solver_params.xml", solverPars.ptr());
+
 	// Create IDRSolver object
 	IDRSolver<Atmosphere, std::shared_ptr<SuperVector> >
 		solver(*atmos, x, b);
-		
+
+	solver.setParameters(solverPars);
 	solver.solve();
 	std::cout << solver.explicitResNorm() << std::endl;
 

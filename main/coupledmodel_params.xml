@@ -14,7 +14,7 @@
   <!--            The solutions are synchronized before every computation of the RHS   -->
   <!--            and the Jacobian.                                                    -->
   <!--  mode 'I': Try IDR for the complete system                                      -->
-  <Parameter name="Solving scheme" type="char" value="I"/>
+  <Parameter name="Solving scheme" type="char" value="G"/>
   
   <!-- Set the maximum number of iterations in the block GS scheme                     -->
   <!-- Works only when you choose G for "Solving scheme"                               -->
@@ -22,7 +22,7 @@
 
   <!-- Set the tolerance in the block GS scheme                                        -->
   <!-- Works only when you choose G for "Solving scheme"                               -->
-  <Parameter name="GS tolerance" type="double" value="1e-3" />
+  <Parameter name="GS tolerance" type="double" value="1e-2" />
 
   <!-- Use hashing to decide to act based on whether a state has changed               -->
   <!-- Right now the functions synchronize(), computeRHS() and computeJacobian()       -->

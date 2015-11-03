@@ -361,13 +361,12 @@ double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
 {
 	TIMER_START("CoupledModel: compute residual...");
 	
-	std::shared_ptr<SuperVector> x =
-		applyMatrix(*getSolution('C','C'));
-
-	x->update(-1, *rhs, 1);                           // b-Jx
+	SuperVector r(*solView_);
+	applyMatrix(*solView_, r);
 	
-	double relResidual = x->norm() / rhs->norm();     // ||b-Jx||/||b||
-
+	r.update(1, *rhs, -1);                           //  b-Jx	
+	double relResidual = r.norm() / rhs->norm();     // ||b-Jx||/||b||
+	
 	TIMER_STOP("CoupledModel: compute residual...");
 	return relResidual;
 }

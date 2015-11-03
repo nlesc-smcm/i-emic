@@ -63,7 +63,7 @@ template<typename ParListPtr>
 void IDRSolver<Model, VectorPointer>::
 setParameters(ParListPtr pars)
 {
-	if (verbosity_ > 0)
+	if (verbosity_ > 5)
 		std::cout << "IDR: updating parameters" << std::endl;
 	
 	s_           = pars->get("IDR s", 4);
@@ -96,7 +96,10 @@ createP()
 			P_[j].update(-alpha, P_[k], 1.0);
 		}
 		P_[j].scale(1.0/P_[j].norm());
-	}	
+
+		if (verbosity_ > 9) P_[j].print();
+	}
+	
 }
 
 // ===================================================================
@@ -175,10 +178,10 @@ solve()
 	Vector v; 
 	Vector t(r);
 	
-	iter_ = 0; 
+	iter_ = 0;
+	if (verbosity_ > 4) printIterStatus();
 	while (normr_ > tolb && iter_ < maxit_)
 	{
-		if (verbosity_ > 4) printIterStatus();
 		
 		// Create new right hand side for small system:
 		for (int i = 0; i < s_; ++i)
@@ -186,6 +189,7 @@ solve()
 
 		for (int k = 0; k < s_; ++k)
 		{			
+			
 			// Update inner iteration counter
 			ii = ii + 1;
 			
@@ -258,7 +262,7 @@ solve()
 			x_->update(beta, U[k], 1.0);  // x = x + beta*U(:,k);
 
 			// Check whether we need to replace residual
-			normr_ = r.norm();			
+			normr_ = r.norm();
 			if (replacement_ && normr_ > tolb / mp_) trueres_ = true;
 
 			// Smoothing
@@ -278,6 +282,7 @@ solve()
 			normr_ = r.norm();
 			resvec_.push_back(normr_);
 			iter_ = iter_ + 1;
+			if (verbosity_ > 4) printIterStatus();
 			if (normr_ < tolb || iter_ == maxit_)
 				break;
 		}
@@ -301,13 +306,13 @@ solve()
 		om = calc_omega(t, r, angle_);
 		
 		// Update solution and residual:
-		r.update(-om,  t, 1.0);  // r = r - om*t
+		r.update(-om,  t, 1.0);   // r = r - om*t
 		x_->update(om, v, 1.0);   // x = x + om*v 
 
 		normr_ = r.norm();
 		
 		// Residual replacement?
-		if (replacement_ && normr_ > tolb / mp_) trueres_ = 1;
+		if (replacement_ && normr_ > tolb / mp_) trueres_ = true;
 
 		if (trueres_ && normr_ < normb )
 		{
@@ -324,11 +329,11 @@ solve()
 
 		resvec_.push_back(normr_);
 		iter_ = iter_ + 1;		
+		if (verbosity_ > 4) printIterStatus();
 	}
 
 	// Smoothing
 	//-->TODO
-	if (verbosity_ > 5)	printIterStatus();
 	
 	return flag;
 }
@@ -400,7 +405,7 @@ explicitResNorm()
 	Vector r(*x_);
 	model_.applyMatrix(*x_, r); // Ax
 	r.update( 1.0,  *b_, -1.0); // b - Ax
-	return r.norm();
+	return r.norm() / b_->norm();
 }
 
 //====================================================================
