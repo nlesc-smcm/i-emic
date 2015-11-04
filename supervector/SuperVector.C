@@ -64,7 +64,7 @@ SuperVector::SuperVector(SuperVector const &other)
 }
 
 //------------------------------------------------------------------
-// Copy constructor
+// Assignment operator
 void SuperVector::operator=(SuperVector const &other)
 {
 	assign(other);
@@ -77,15 +77,21 @@ SuperVector::~SuperVector()
 {}
 
 //------------------------------------------------------------------
+// Assign a copy
 void SuperVector::assign(Teuchos::RCP<Epetra_Vector> vector)
 {
-	oceanVector_ = vector;
+	oceanVector_ = Teuchos::rcp(new Epetra_Vector(*vector));
+	haveOceanVector_ = true;
+	init();
 }
 
 //------------------------------------------------------------------
+// Assign a copy
 void SuperVector::assign(std::shared_ptr<std::vector<double> > vector)
 {
-	atmosVector_ = vector;
+	atmosVector_ = std::make_shared<std::vector<double> >(*vector);
+	haveAtmosVector_ = true;
+	init();
 }
 
 //------------------------------------------------------------------
@@ -274,7 +280,10 @@ void SuperVector::print() const
 	if (haveAtmosVector_)
 	{
 		for (auto &it : *atmosVector_)
+		{
+			INFO(it);
 			std::cout << it << " ";
+		}
 		std::cout << std::endl;
 	}						
 }

@@ -479,7 +479,8 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 	int lda     = dim;
 	int ldb     = dim;
 	int info;
-
+	
+	out.assign(rhs.getAtmosVector());
 	std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();
 	// FACTORIZE?
 	if (solvingScheme_ == 'D')
@@ -494,8 +495,8 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
 			   &ldimA_, ipiv_, &(*sol)[0], &ldb, &info);
 	}
-	//double residual = computeResidual(rhs);
-	//INFO("Atmosphere: solve... residual=" << residual);
+	// double residual = computeResidual(rhs, out);
+	// INFO("Atmosphere: solve  residual = " << residual);
 	TIMER_STOP("Atmosphere: solve...");
 }
 
@@ -508,6 +509,22 @@ double Atmosphere::computeResidual(std::shared_ptr<SuperVector> rhs)
 	x->linearTransformation(getJacobian());            // calculate J*x
 	x->update(-1, *b, 1);                              // calculate Jx - b
 	return x->norm();                                  // return ||b-Jx||
+}
+
+//----------------------------------------------------------------------------
+double Atmosphere::computeResidual(SuperVector const &rhs,
+								   SuperVector const &x)
+{
+	SuperVector r;
+	r.assign(x.getAtmosVector());
+	
+	SuperVector b;
+	b.assign(rhs.getAtmosVector());
+	
+	applyMatrix(x, r);
+	r.update(1, b, -1);
+	
+	return r.norm();     // return ||b-Jx||
 }
 
 //-----------------------------------------------------------------------------
@@ -857,7 +874,7 @@ std::shared_ptr<SuperVector> Atmosphere::applyPrecon(SuperVector const &v)
 //-----------------------------------------------------------------------------
 void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
 {
-	if (preconditioner_ = 'J')
+	if (preconditioner_ == 'J')
 	{
 		std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
 		std::shared_ptr<std::vector<double> > result = out.getAtmosVector();
@@ -880,8 +897,10 @@ void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
 						/ ico_[col-1] ;
 		}
 	}
-	else if (preconditioner_ = 'D')
+	else if (preconditioner_ == 'D')
+	{
 		solve(v, out);
+	}
 	else
 		out.assign(v.getAtmosVector());
 

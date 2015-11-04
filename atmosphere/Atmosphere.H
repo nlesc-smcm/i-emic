@@ -256,6 +256,8 @@ private:
 
 	// ! Compute residual
 	double computeResidual(std::shared_ptr<SuperVector> rhs);
+	double computeResidual(SuperVector const &rhs,
+						   SuperVector const &x);
 
     //! Defines location of neighbouring grid points
 	//! +----------++-------++----------+
