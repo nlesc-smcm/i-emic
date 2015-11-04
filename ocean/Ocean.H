@@ -34,6 +34,7 @@
 
 #include "GlobalDefinitions.H"
 #include "SuperVector.H"
+#include "IDRSolver.H"
 
 // forward declarations
 class THCM;
@@ -66,21 +67,34 @@ protected:
 	
 	Teuchos::RCP<Epetra_Vector> rowScalingRecipr_;
 	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
+
+	// 'F' Flexible GMRES (Belos/Trilinos)
+	// 'I' IDR 
+	char solverType_;
 	
-	bool solverInitialized_;
-	bool adaptivePrecCompute_;
-	bool recomputePreconditioner_;
-        int gmresIters_;
-	double gmresTol_;
-	bool useScaling_;
+	bool   solverInitialized_;
+	bool   precInitialized_;
+	bool   adaptivePrecCompute_;
+	bool   recompPreconditioner_;
+	bool   useScaling_;
 	
 	Teuchos::RCP<Epetra_Vector> sol_;
+
+	Teuchos::RCP<Teuchos::ParameterList> solverParams_;
 	
+	// Belos flexible GMRES members
 	Teuchos::RCP<Teuchos::ParameterList> belosParamList_;
 	Teuchos::RCP<Belos::LinearProblem
 				 <double, Epetra_MultiVector, Epetra_Operator> > problem_;	
 	Teuchos::RCP<Belos::BlockGmresSolMgr
 				 <double, Epetra_MultiVector, Epetra_Operator> > belosSolver_;
+
+	// IDR solver
+	IDRSolver<Ocean, Teuchos::RCP<SuperVector> > idrSolver_;
+
+	bool zeroInitGuess_;
+	bool bypassPrec_;
+	bool printExpResNorm_;
 	
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 	
@@ -123,6 +137,13 @@ public:
 	//
 	// Solve may optionally accept an rhs of VectorPointer type
 	void solve(Teuchos::RCP<SuperVector> rhs = Teuchos::null);
+
+	// Clear the search space of the IDR solver
+	void clearSearchSpace() { idrSolver_.clearSearchSpace();}
+
+	// Calculate explicit residual norm
+	double explicitResNorm(VectorPtr rhs);
+	
 	void computeRHS();
 	void computeJacobian();
 	
@@ -135,10 +156,12 @@ public:
 
 	// Apply the Jacobian to a vector and return the result u = J*v
 	Teuchos::RCP<SuperVector> applyMatrix(SuperVector const &v);
+	void applyMatrix(SuperVector const &v, SuperVector &out);
 
 	// Apply the preconditioner inverse to a vector and return
 	// the result u = P^{-1}*v
 	Teuchos::RCP<SuperVector> applyPrecon(SuperVector const &v);
+	void applyPrecon(SuperVector const &v, SuperVector &out);
 
 	// THESE ARE OBSOLETE!!!
 	void setState(Teuchos::RCP<SuperVector> state)
@@ -207,7 +230,12 @@ private:
 	// Randomize state, scale with scaling
 	void randomizeState(double scaling);
 
+	// Initializer members
 	void initializeSolver();
+	void initializePreconditioner();
+	void initializeBelos();
+	void initializeIDR();
+	
 
 	// Scale the matrix and rhs of the problem
 	void scaleProblem();

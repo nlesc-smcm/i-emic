@@ -41,21 +41,18 @@ extern "C" _SUBROUTINE_(getooa)(double*);
 // Constructor:
 Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	:
-	comm_(Comm),                     // Setting the communication object
-	solverInitialized_(false),       // Solver needs initialization
-	adaptivePrecCompute_ (oceanParamList->get("Use adaptive preconditioner computation", true)),
-	recomputePreconditioner_(true),  // We need a preconditioner to start with
-	useScaling_          (oceanParamList->get("Use scaling", false)),
-	gmresIters_          (oceanParamList->get("Iterations in FGMRES solver", 100)),
-	gmresTol_            (oceanParamList->get("Tolerance in FGMRES solver", 1e-3)),
-	recomputeBound_      (oceanParamList->get("Preconditioner recompute bound", 400)),
+	comm_                (Comm),   // Setting the communication object
+	solverInitialized_   (false),  // Solver needs initialization
+	precInitialized_     (false),  // Preconditioner needs initialization
+	recompPreconditioner_(true),   // We need a preconditioner to start with
+	idrSolver_           (*this),  // Initialize IDR solver with current object (ocean);
 	inputFile_           (oceanParamList->get("Input file", "ocean.h5")),
 	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
 	useExistingState_    (oceanParamList->get("Use existing state", false)),
-	parIdent_(19),    // Initialize continuation parameters
-	parValue_(0),
-	parStart_(0),
-	parEnd_(1)
+	parIdent_            (19),     // Initialize continuation parameters
+	parValue_            (0),
+	parStart_            (0),
+	parEnd_              (1)
 {
 	INFO("Ocean: constructor...");	
 	
@@ -123,7 +120,7 @@ void Ocean::randomizeState(double scaling)
 void Ocean::preProcess()
 {
 	// Enable computation of preconditioner
-	recomputePreconditioner_ = true;
+	recompPreconditioner_ = true;
 	INFO("Ocean pre-processing: enabling computation of preconditioner.");
 }
 
@@ -135,14 +132,9 @@ void Ocean::postProcess()
 }
 
 //=====================================================================
-void Ocean::initializeSolver()
+void Ocean::initializePreconditioner()
 {
-	INFO("Ocean: initialize solver...");
-	// Belos::LinearProblem setup
-	problem_ = rcp(new Belos::LinearProblem
-				   <double, Epetra_MultiVector, Epetra_Operator>
-				   (jac_, sol_, rhs_) );
-
+	INFO("Ocean: initialize preconditioner...");
 	// Setup block preconditioner parameters
 	// --> xml files should have a better home
 	Teuchos::RCP<Teuchos::ParameterList> precParams =
@@ -150,32 +142,95 @@ void Ocean::initializeSolver()
 	updateParametersFromXmlFile("ocean_preconditioner_params.xml",
 								precParams.ptr());	
 
-	// Get the domain decomposition from THCM, needed for the preconditioner.
-	RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
-
 	// Create and initialize block preconditioner
 	precPtr_ = 	Teuchos::rcp(new TRIOS::BlockPreconditioner
-							 (jac_, domain, *precParams));
-	INFO("Ocean: initializing preconditioner...");
+							 (jac_, domain_, *precParams));
+	
 	precPtr_->Initialize();
-	INFO("Ocean: initializing preconditioner... done");
+	precPtr_->Compute();
 
-	// Set as right preconditioner for Belos solver
+	precInitialized_ = true;
+	INFO("Ocean: initialize preconditioner done...");
+}	
+
+//=====================================================================
+void Ocean::initializeSolver()
+{
+	INFO("Ocean: initialize solver...");
+	
+	solverParams_ = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
+
+	// Get the requested solver type
+	solverType_          = solverParams_->get("Ocean solver type", 'I');
+	
+	// Get some parameters that are independent of solver type
+	adaptivePrecCompute_ = solverParams_->get("Use adaptive preconditioner computation", true);
+	useScaling_          = solverParams_->get("Use scaling", false);
+	recomputeBound_      = solverParams_->get("Preconditioner recompute bound", 400);
+	zeroInitGuess_       = solverParams_->get("Use trivial initial guess", true);
+	bypassPrec_          = solverParams_->get("Bypass preconditioner", false);
+	
+	// Initialize the preconditioner
+	if (!precInitialized_)
+		initializePreconditioner();
+
+	// Initialize the requested solver
+	if (solverType_ == 'F')
+	{
+		initializeBelos();
+		solverInitialized_ = true;
+	}
+	else if (solverType_ == 'I')
+	{
+		initializeIDR();
+		solverInitialized_ = true;
+	}	
+	
+	// Now that the solver and preconditioner are initialized we are allowed to
+	// perform a solve.
+	INFO("Ocean: initialize solver... done");
+}
+
+//====================================================================
+void Ocean::initializeIDR()
+{
+	idrSolver_.setParameters(solverParams_);
+	idrSolver_.setSolution(getSolution('V'));
+	idrSolver_.setRHS(getRHS('V'));
+}
+
+//====================================================================
+void Ocean::initializeBelos()
+{
+	// If preconditioner not initialized do it now
+	if (!precInitialized_) initializePreconditioner();
+
+	// Belos LinearProblem setup
+	problem_ = rcp(new Belos::LinearProblem
+				   <double, Epetra_MultiVector, Epetra_Operator>
+				   (jac_, sol_, rhs_) );
+
+	// Set right preconditioner for Belos solver
 	RCP<Belos::EpetraPrecOp> belosPrec =
 		rcp(new Belos::EpetraPrecOp(precPtr_));
 	problem_->setRightPrec(belosPrec);
 	
-	// Belos parameter setup
-	// --> xml
+	// A few FGMRES parameters are made available in solver_params.xml:
+	int gmresIters  = solverParams_->get("FGMRES iterations", 500);
+	double gmresTol = solverParams_->get("FGMRES tolerance", 1e-8);
+	
 	int NumGlobalElements = state_->GlobalLength();
-	int maxrestarts = 0;
-	int blocksize   = 1; // number of vectors in rhs
-	int maxiters    = NumGlobalElements/blocksize - 1;
+	int maxrestarts       = 0;
+	int blocksize         = 1; // number of vectors in rhs
+	int maxiters          = NumGlobalElements/blocksize - 1;
+
+	// Create Belos parameterlist
 	belosParamList_ = rcp(new Teuchos::ParameterList());
 	belosParamList_->set("Block Size", blocksize);
 	belosParamList_->set("Flexible Gmres", true);
 	belosParamList_->set("Adaptive Block Size", true);
-	belosParamList_->set("Num Blocks", gmresIters_);
+	belosParamList_->set("Num Blocks", gmresIters);
 	belosParamList_->set("Maximum Restarts", maxrestarts);
 	belosParamList_->set("Orthogonalization","DGKS");
 	belosParamList_->set("Output Frequency", 100);
@@ -184,23 +239,17 @@ void Ocean::initializeSolver()
 			     Belos::Warnings +
 			     Belos::StatusTestDetails );
 	belosParamList_->set("Maximum Iterations", maxiters); 
-	belosParamList_->set("Convergence Tolerance", gmresTol_); 
+	belosParamList_->set("Convergence Tolerance", gmresTol); 
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
-	// --> xml
 	
-	// Belos block GMRES setup
+	// Belos block FGMRES setup
 	belosSolver_ =
 		rcp(new Belos::BlockGmresSolMgr
 			<double, Epetra_MultiVector, Epetra_Operator>
 			(problem_, belosParamList_));
 
-	// Now the solver and preconditioner are initialized we are allowed to
-	// perform a solve.
-	solverInitialized_ = true;
-	INFO("Ocean: initialize solver... done");
 }
-
 //=====================================================================
 void Ocean::solve(VectorPtr rhs)
 {
@@ -215,7 +264,7 @@ void Ocean::solve(VectorPtr rhs)
 
 	// Depending on the number of iterations we might need to
 	// recompute the preconditioner
-	if (recomputePreconditioner_)
+	if (recompPreconditioner_)
 	{
 		// Compute preconditioner
 		TIMER_START("Ocean: build preconditioner...");
@@ -223,53 +272,105 @@ void Ocean::solve(VectorPtr rhs)
 		precPtr_->Compute();		
 		INFO("Ocean: build preconditioner... done");
 		TIMER_STOP("Ocean: build preconditioner...");
-		recomputePreconditioner_ = false;  // Disable subsequent recomputes
+		recompPreconditioner_ = false;  // Disable subsequent recomputes
 	}
-
-	// Set the problem, rhs may be given as an argument to solve().
-	bool set;
-	if (rhs == Teuchos::null)
- 		set = problem_->setProblem(sol_, rhs_);
-	else
-		set = problem_->setProblem(sol_, rhs->getOceanVector());
 	
-	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
-				   "*** Belos::LinearProblem failed to setup");
+	// If specified use trivial initial solution
+	if (zeroInitGuess_)
+		sol_->Scale(0.0);
+	
+	// Set the problem, rhs may be given as an argument to solve().
+	if (solverType_ == 'F')
+	{
+		bool set;
+		if (rhs == Teuchos::null)
+			set = problem_->setProblem(sol_, rhs_);
+		else
+			set = problem_->setProblem(sol_, rhs->getOceanVector());
+		TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
+								   "*** Belos::LinearProblem failed to setup");
+	}
+	else if (solverType_ == 'I')
+	{
+		// Setup IDR: for our IDRSolver member we supply a view of the
+		//            solution and the RHS:
+		idrSolver_.setSolution(getSolution('V'));
+		if (rhs == Teuchos::null)
+			idrSolver_.setRHS(getRHS('V'));
+		else
+			idrSolver_.setRHS(getVector('V',rhs->getOceanVector()));
+	}	
 
 	// ---------------------------------------------------------------------
-	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs_
+	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs
 	TIMER_START("Ocean: solve...");
 	INFO("Ocean: solve...");
-	try
+	int    iters;
+	double tol;
+	if (solverType_ == 'F')
 	{
-		belosSolver_->solve(); 	// Solve
+		try
+		{
+			belosSolver_->solve(); 	// Solve
+		}
+		catch (std::exception const &e)
+		{
+			INFO("Ocean: exception caught: " << e.what());
+		}
 	}
-	catch (std::exception const &e)
+	else if (solverType_ == 'I')
 	{
-		INFO("Ocean: exception caught: " << e.what());
+		idrSolver_.solve();
 	}
+	
 	INFO("Ocean: solve... done");
 	TIMER_STOP("Ocean: solve...");
 	// ---------------------------------------------------------------------
 
 	// Do some post-processing
-	int    belosIters = belosSolver_->getNumIters();
-	double belosTol   = belosSolver_->achievedTol();
-	INFO("Ocean: FGMRES, i = " << belosIters << ", ||r|| = " << belosTol);
-	TRACK_ITERATIONS("Ocean: FGMRES iterations...", belosIters);
+	if (solverType_ == 'F')
+	{
+		iters = belosSolver_->getNumIters();
+		tol   = belosSolver_->achievedTol();
+		INFO("Ocean: FGMRES, i = " << iters << ", ||r|| = " << tol);
+		TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
+	}
+	else if (solverType_ == 'I')
+	{
+		iters = idrSolver_.getNumIters();
+		INFO("Ocean: IDR, i = " << iters
+			 << " residual = " << idrSolver_.explicitResNorm());
+		TRACK_ITERATIONS("Ocean: IDR iterations...", iters);
+	}
+
+	// If requested, calculate the explicit residual
+	if (printExpResNorm_)
+		INFO("Ocean:    exp res nrm: " << explicitResNorm(rhs));
 
 	// If the number of linear solver iterations exceeds a preset bound
 	// we recompute the preconditioner
-	if ((belosIters > recomputeBound_) && adaptivePrecCompute_)
+	if ((iters > recomputeBound_) && adaptivePrecCompute_)
 	{
 		INFO("Ocean: Number of iterations exceeds " << recomputeBound_);
 		INFO("Ocean:   Enabling computation of preconditioner.");
-		recomputePreconditioner_ = true;
+		recompPreconditioner_ = true;
 	}
 
 	// If specified, unscale the problem
 	if (useScaling_)
 		unscaleProblem();
+}
+
+//=====================================================================
+double Ocean::explicitResNorm(VectorPtr rhs)
+{
+	RCP<Epetra_Vector> Ax =
+		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
+	jac_->Apply(*sol_, *Ax);
+	Ax->Update(1.0, *(rhs->getOceanVector()), -1.0);
+	double nrm;
+	Ax->Norm2(&nrm);
+	return nrm;
 }
 
 //=====================================================================
@@ -400,17 +501,59 @@ Teuchos::RCP<SuperVector> Ocean::getRHS(char mode)
 //====================================================================
 Teuchos::RCP<SuperVector> Ocean::applyMatrix(SuperVector const &v)
 {
-	RCP<Epetra_Vector> result = rcp(new Epetra_Vector(jac_->RangeMap()));
+	TIMER_START("Ocean: apply matrix...");
+	RCP<Epetra_Vector> result =
+		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
 	jac_->Apply(*(v.getOceanVector()), *result);
+
+	TIMER_STOP("Ocean: apply matrix...");
 	return getVector('V', result);
+}
+
+//====================================================================
+void Ocean::applyMatrix(SuperVector const &v, SuperVector &out)
+{
+	TIMER_START("Ocean: apply matrix...");
+	jac_->Apply(*(v.getOceanVector()), *(out.getOceanVector()));
+	TIMER_STOP("Ocean: apply matrix...");
 }
 
 //====================================================================
 Teuchos::RCP<SuperVector> Ocean::applyPrecon(SuperVector const &v)
 {
-	RCP<Epetra_Vector> result = rcp(new Epetra_Vector(jac_->RangeMap()));
+	TIMER_START("Ocean: apply preconditioning...");
+	if (bypassPrec_)
+	{
+		std::cout << "Ocean: bypassing preconditioner" << std::endl;
+		return rcp(new SuperVector(v));
+	}
+	
+	if (!precInitialized_)
+		initializePreconditioner();
+	
+	RCP<Epetra_Vector> result =
+		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
 	precPtr_->ApplyInverse(*(v.getOceanVector()), *result);
+
+	TIMER_STOP("Ocean: apply preconditioning...");
 	return getVector('V', result);
+}
+
+//====================================================================
+void Ocean::applyPrecon(SuperVector const &v, SuperVector &out)
+{
+	if (bypassPrec_)
+	{
+		std::cout << "Ocean: bypassing preconditioner" << std::endl;
+		out = v;
+	}
+	
+	if (!precInitialized_)
+		initializePreconditioner();
+	
+	TIMER_START("Ocean: apply preconditioning...");
+	precPtr_->ApplyInverse(*(v.getOceanVector()), *(out.getOceanVector()));
+	TIMER_STOP("Ocean: apply preconditioning...");
 }
 
 //====================================================================

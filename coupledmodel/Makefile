@@ -7,8 +7,9 @@ obj= CoupledModel.o
 
 HEADERDEPS = \
 	../supervector/SuperVector.H\
-        ../atmosphere/Atmosphere.H\
-        ../ocean/Ocean.H\
+    ../atmosphere/Atmosphere.H\
+    ../idrsolver/IDRSolver.H\
+    ../ocean/Ocean.H\
 
 all: lib
 

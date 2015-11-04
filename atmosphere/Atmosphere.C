@@ -21,6 +21,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	l_               (params->get("Global Grid-Size l", 1)),
 	periodic_        (params->get("Periodic", false)),
 	solvingScheme_   (params->get("Solving scheme", 'B')),
+	preconditioner_  (params->get("Preconditioner", 'J')),
 	rhoa_            (params->get("atmospheric density",1.25)),
 	hdima_           (params->get("heat capacity",8400.)),
 	cpa_             (params->get("heat capacity",1000.)),
@@ -214,6 +215,8 @@ void Atmosphere::computeJacobian()
 	Al_->set({1,n_,1,m_,1,l_,1,np_}, 1, 1, txx);
 	boundaries();
 	assemble();
+
+	//jac_ = getJacobian();
 	
 	TIMER_STOP("Atmosphere: compute Jacobian...");
 }
@@ -465,6 +468,38 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 	TIMER_STOP("Atmosphere: solve...");
 }
 
+//-----------------------------------------------------------------------------
+void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
+{
+	TIMER_START("Atmosphere: solve...");
+	
+	char trans  = 'N';	
+	int dim     = n_*m_*l_;
+	int nrhs    = 1;
+	int lda     = dim;
+	int ldb     = dim;
+	int info;
+	
+	out.assign(rhs.getAtmosVector());
+	std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();
+	// FACTORIZE?
+	if (solvingScheme_ == 'D')
+	{
+		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
+				&(*sol)[0], &ldb, &info);
+	}
+	else if (solvingScheme_ == 'B')
+	{
+		// we use a copy to make sure bandedA_ does not get corrupted
+		std::vector<double> bandedAcopy(bandedA_);
+		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
+			   &ldimA_, ipiv_, &(*sol)[0], &ldb, &info);
+	}
+	// double residual = computeResidual(rhs, out);
+	// INFO("Atmosphere: solve  residual = " << residual);
+	TIMER_STOP("Atmosphere: solve...");
+}
+
 //----------------------------------------------------------------------------
 double Atmosphere::computeResidual(std::shared_ptr<SuperVector> rhs)
 {
@@ -474,6 +509,22 @@ double Atmosphere::computeResidual(std::shared_ptr<SuperVector> rhs)
 	x->linearTransformation(getJacobian());            // calculate J*x
 	x->update(-1, *b, 1);                              // calculate Jx - b
 	return x->norm();                                  // return ||b-Jx||
+}
+
+//----------------------------------------------------------------------------
+double Atmosphere::computeResidual(SuperVector const &rhs,
+								   SuperVector const &x)
+{
+	SuperVector r;
+	r.assign(x.getAtmosVector());
+	
+	SuperVector b;
+	b.assign(rhs.getAtmosVector());
+	
+	applyMatrix(x, r);
+	r.update(1, b, -1);
+	
+	return r.norm();     // return ||b-Jx||
 }
 
 //-----------------------------------------------------------------------------
@@ -731,7 +782,7 @@ void Atmosphere::test()
 std::shared_ptr<SuperVector> Atmosphere::getVector
 (char mode, std::shared_ptr<std::vector<double> > vec)
 {
-	if (mode == 'C') // copy
+	if (mode == 'C')      // copy
 	{
 		std::shared_ptr<std::vector<double> > copy =
 			std::make_shared<std::vector<double> >(*vec); 
@@ -766,6 +817,93 @@ std::shared_ptr<SuperVector> Atmosphere::getState(char mode)
 std::shared_ptr<SuperVector> Atmosphere::getRHS(char mode)
 {
 	return getVector(mode, rhs_);
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<SuperVector> Atmosphere::applyMatrix(SuperVector const &v)
+{
+	std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
+	std::shared_ptr<std::vector<double> > result =
+		std::make_shared<std::vector<double> > (atmosVector->size(),0.0);
+	
+	int first;
+	int last;	
+	
+	// Perform matrix vector product
+	// 1->0 based... horrible... 
+	for (size_t row = 1; row <= atmosVector->size(); ++row)
+	{
+		first   = beg_[row-1];
+		last    = beg_[row] - 1;
+		for (int col = first; col <= last; ++col)
+			(*result)[row-1] += ico_[col-1] * (*atmosVector)[jco_[col-1]-1];
+	}
+	return getVector('V', result);
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::applyMatrix(SuperVector const &v, SuperVector &out)
+{
+ 	std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
+	std::shared_ptr<std::vector<double> > result = out.getAtmosVector();
+	
+	int first;
+	int last;	
+	
+	// Perform matrix vector product
+	// 1->0 based... horrible... 
+	for (size_t row = 1; row <= atmosVector->size(); ++row)
+	{
+		first = beg_[row-1];
+		last  = beg_[row] - 1;
+		
+		(*result)[row-1] = 0;
+		for (int col = first; col <= last; ++col)
+			(*result)[row-1] += ico_[col-1] * (*atmosVector)[jco_[col-1]-1];
+	}
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<SuperVector> Atmosphere::applyPrecon(SuperVector const &v)
+{
+	// Do nothing
+	std::shared_ptr<SuperVector> result = std::make_shared<SuperVector>(v);
+	return result;
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
+{
+	if (preconditioner_ == 'J')
+	{
+		std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
+		std::shared_ptr<std::vector<double> > result = out.getAtmosVector();
+		int first;
+		int last;
+		double scaling = 1;
+		
+		// Perform matrix vector product
+		// 1->0 based... horrible... 
+		for (size_t row = 1; row <= atmosVector->size(); ++row)
+		{
+			first = beg_[row-1];
+			last  = beg_[row] - 1;
+			
+			(*result)[row-1] = 0;
+			for (int col = first; col <= last; ++col)
+				if (row == jco_[col-1])
+					(*result)[row-1] = scaling
+						* (*atmosVector)[jco_[col-1]-1]
+						/ ico_[col-1] ;
+		}
+	}
+	else if (preconditioner_ == 'D')
+	{
+		solve(v, out);
+	}
+	else
+		out.assign(v.getAtmosVector());
+
 }
 
 //-----------------------------------------------------------------------------

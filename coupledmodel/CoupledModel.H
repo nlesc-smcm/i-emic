@@ -61,6 +61,11 @@ private:
 	std::size_t syncHash_; // hash to base synchronize() decision on
 	std::size_t rhsHash_;  // hash to base computeRHS() decision on	
 	std::size_t jacHash_;  // hash to base computeJacobian() decision on
+
+	IDRSolver<CoupledModel, std::shared_ptr<SuperVector> > idrSolver_;
+	bool idrInitialized_;
+	int idrSolveCtr_;
+	int clearSPFreq_;
 	
 	// Trilinos' MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
@@ -85,6 +90,14 @@ public:
 
 	// Solve the models
 	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
+
+	void initializeIDR();
+
+	void applyMatrix(SuperVector const &v, SuperVector &out);
+	void applyPrecon(SuperVector const &v, SuperVector &out);
+	
+	std::shared_ptr<SuperVector> applyMatrix(SuperVector const &v);
+	std::shared_ptr<SuperVector> applyPrecon(SuperVector const &v);
 
 	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
 	std::shared_ptr<SuperVector> getState(char mode = 'C');

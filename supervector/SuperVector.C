@@ -59,6 +59,45 @@ SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector1,
 // Copy constructor 
 SuperVector::SuperVector(SuperVector const &other)
 {
+	assign(other);
+	init();
+}
+
+//------------------------------------------------------------------
+// Assignment operator
+void SuperVector::operator=(SuperVector const &other)
+{
+	assign(other);
+	init();
+}
+
+//------------------------------------------------------------------
+// Destructor
+SuperVector::~SuperVector()
+{}
+
+//------------------------------------------------------------------
+// Assign a copy
+void SuperVector::assign(Teuchos::RCP<Epetra_Vector> vector)
+{
+	oceanVector_ = Teuchos::rcp(new Epetra_Vector(*vector));
+	haveOceanVector_ = true;
+	init();
+}
+
+//------------------------------------------------------------------
+// Assign a copy
+void SuperVector::assign(std::shared_ptr<std::vector<double> > vector)
+{
+	atmosVector_ = std::make_shared<std::vector<double> >(*vector);
+	haveAtmosVector_ = true;
+	init();
+}
+
+//------------------------------------------------------------------
+//------------------------------------------------------------------
+void SuperVector::assign(SuperVector const &other)
+{
 	if (other.haveOceanVector())
 	{
 		oceanVector_ = Teuchos::rcp
@@ -81,13 +120,8 @@ SuperVector::SuperVector(SuperVector const &other)
 		atmosVector_ = std::shared_ptr<std::vector<double> >();
 		haveAtmosVector_ = false;
 	}
-	init();
+	isInitialized_ = false;
 }
-
-//------------------------------------------------------------------
-// Destructor
-SuperVector::~SuperVector()
-{}
 
 //------------------------------------------------------------------
 int SuperVector::length() const
@@ -132,7 +166,7 @@ double SuperVector::dot(SuperVector const &A) const
 {
 	if (length_ != A.length())
 	{
-		std::cout << "Wrong dimensions!" << std::endl;
+		ERROR("Wrong dimensions!", __FILE__, __LINE__);
 		return 1;
 	}
 	
@@ -205,7 +239,6 @@ void SuperVector::random()
 {
 	if (haveAtmosVector_)
 	{
-		std::srand(std::time(0));
 		for (size_t i = 0; i < atmosVector_->size(); ++i)
 			(*atmosVector_)[i] = (std::rand() / (double) RAND_MAX);
 	}
@@ -240,16 +273,17 @@ void SuperVector::print() const
 {
 	if (haveOceanVector_)
 	{
-		std::cout << "\nPrinting epetraVector to outFile stream" << std::endl;
 		oceanVector_->Print(*outFile);  // see GlobalDefinitions.H
 		oceanVector_->Print(std::cout); // see GlobalDefinitions.H
 	}
 			
 	if (haveAtmosVector_)
 	{
-		std::cout << "\nPrinting stdVector std::cout" << std::endl;
 		for (auto &it : *atmosVector_)
+		{
+			INFO(it);
 			std::cout << it << " ";
+		}
 		std::cout << std::endl;
 	}						
 }
@@ -383,5 +417,17 @@ void SuperVector::init()
 	length_ = 0;
 	length_ += (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
 	length_ += (haveAtmosVector_) ? atmosVector_->size() : 0;
+			
 	isInitialized_ = true;
+}
+
+//------------------------------------------------------------------
+void SuperVector::info() const
+{
+	std::cout << "*****************************" << std::endl;
+	std::cout << " SuperVector info:" << std::endl;
+	std::cout << "  haveOceanVector " << haveOceanVector_ << std::endl;
+	std::cout << "  haveAtmosVector " << haveAtmosVector_ << std::endl;
+	std::cout << "  length          " << length_ << std::endl;
+	std::cout << "  norm            " << norm() << std::endl;
 }

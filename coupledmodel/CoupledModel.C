@@ -9,6 +9,7 @@
 
 #include <Epetra_Comm.h>
 #include <Teuchos_RCP.hpp>
+#include <Teuchos_XMLParameterListHelpers.hpp>
 
 CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 						   std::shared_ptr<Atmosphere> atmos,
@@ -23,7 +24,10 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	useHash_          (params->get("Use hashing", true)),
 	syncHash_(-1),
 	rhsHash_(-1),
-	jacHash_(-1)
+	jacHash_(-1),
+	idrSolver_(*this),
+	idrInitialized_(false),
+	idrSolveCtr_(0)
 {
 	stateView_ =
 		std::make_shared<SuperVector>(ocean_->getState('V')->getOceanVector(),
@@ -36,6 +40,8 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	rhsView_ =
  		std::make_shared<SuperVector>(ocean_->getRHS('V')->getOceanVector(),
 									  atmos_->getRHS('V')->getAtmosVector() );
+
+	test();
 	
 	// Get the contribution of the atmosphere to the ocean in the Jacobian
 	B_     = ocean_->getAtmosBlock();
@@ -140,6 +146,20 @@ void CoupledModel::computeRHS()
 	atmos_->computeRHS(); 	// Atmosphere
 }
 
+//====================================================================
+void CoupledModel::initializeIDR()
+{
+	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
+		rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
+	
+	idrSolver_.setParameters(solverParams_);
+	idrSolver_.setSolution(getSolution('V'));
+	idrSolver_.setRHS(getRHS('V'));
+	clearSPFreq_ = solverParams_->get("Clear search space frequency", 2);
+	idrInitialized_ = true;
+}
+
 //------------------------------------------------------------------
 void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 {
@@ -151,10 +171,40 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	}
 	else if (solvingScheme_ == 'G') // backward block GS solve
 		blockGSSolve(rhs);
+	else if (solvingScheme_  == 'I') // IDR on complete matrix
+	{
+		if (!idrInitialized_)
+			initializeIDR();
+		
+		TIMER_START("CoupledModel: solve...");
+
+		// Clear the search space every X calls:
+		if (idrSolveCtr_ % clearSPFreq_ == 0)
+			idrSolver_.clearSearchSpace();
+		
+		idrSolveCtr_++;
+		
+		idrSolver_.setSolution(getSolution('V'));
+		idrSolver_.setRHS(rhs);
+
+		INFO("CoupledModel: IDR solve...");
+		idrSolver_.solve();
+		INFO("CoupledModel: IDR solve... done");
+		
+		double iters = idrSolver_.getNumIters();
+		double nrm   = idrSolver_.explicitResNorm();
+		double res   = computeResidual(rhs);
+
+		INFO("CoupledModel IDR, i = " << iters << " exp res norm: " << nrm);
+		INFO("CoupledModel residual = " << res);		
+		TRACK_ITERATIONS("CoupledModel IDR iterations...", iters);
+		TIMER_STOP("CoupledModel: solve...");
+	}
 	else
 		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
 }
+
 
 //------------------------------------------------------------------
 void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
@@ -180,6 +230,9 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
     // Initialize solution [x1;x2] = 0
  	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
 	x->zero();
+
+	// Clear saved Krylov space in ocean solver
+	ocean_->clearSearchSpace();
 	
 	// Start iteration
 	int i;
@@ -232,32 +285,92 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 }
 
 //------------------------------------------------------------------
+std::shared_ptr<SuperVector>
+CoupledModel::applyMatrix(SuperVector const &v)
+{
+	TIMER_START("CoupledModel: apply matrix...");
+	std::shared_ptr<SuperVector> x = std::make_shared<SuperVector>(v);
+	SuperVector y(v);
+	SuperVector z(v);
+	
+	x->linearTransformation(ocean_->getJacobian());   // A*x1
+	x->linearTransformation(atmos_->getJacobian());   // D*x2
+
+	y.linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
+	y.zeroAtmos();
+	z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
+	z.zeroOcean();
+
+	x->update(1, y, 1);                              // A*x1 + B*x2
+	x->update(1, z, 1);                              // D*x2 + C*x1
+	TIMER_STOP("CoupledModel: apply matrix...");
+	return x;
+}
+
+//------------------------------------------------------------------
+void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out)
+{
+	TIMER_START("CoupledModel: apply matrix...");
+
+	out.zero();	// Initialize output
+	
+	// Fill the ocean and atmos part of output
+	ocean_->applyMatrix(v, out);  // A*x1
+	atmos_->applyMatrix(v, out);  // D*x2
+
+	// Make temporary copies of v to store linear transformations
+	SuperVector y(v);
+	SuperVector z(v);
+
+	// Perform mappings
+	y.linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
+	z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
+	y.zeroAtmos();        
+	z.zeroOcean();        
+
+	out.update(1,y,1);  // A*x1 + B*x2
+	out.update(1,z,1);  // D*x2 + C*x1
+	
+	TIMER_STOP("CoupledModel: apply matrix...");
+}
+
+//------------------------------------------------------------------
+std::shared_ptr<SuperVector>
+CoupledModel::applyPrecon(SuperVector const &v)
+{
+	TIMER_START("CoupledModel: apply preconditioner...");
+	SuperVector tmp1 = *(ocean_->applyPrecon(v));
+	SuperVector tmp2 = *(atmos_->applyPrecon(v));
+	TIMER_STOP("CoupledModel: apply preconditioner...");	
+	return std::make_shared<SuperVector>(tmp1.getOceanVector(),
+										 tmp2.getAtmosVector());
+}
+
+//------------------------------------------------------------------
+void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out)
+{
+	TIMER_START("CoupledModel: apply preconditioner...");	
+	out.zero();	// Initialize output
+	ocean_->applyPrecon(v, out);
+	atmos_->applyPrecon(v, out);
+	TIMER_STOP("CoupledModel: apply preconditioner...");	
+}
+
+//------------------------------------------------------------------
 double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
 {
 	TIMER_START("CoupledModel: compute residual...");
 	
-	std::shared_ptr<SuperVector> x = getSolution('C','C');
-	std::shared_ptr<SuperVector> y = getSolution('C','C');
-	std::shared_ptr<SuperVector> z = getSolution('C','C');
-
-	// Calculate relative residual
-	x->linearTransformation(ocean_->getJacobian());   // A*x1
-	x->linearTransformation(atmos_->getJacobian());   // D*x2
+	SuperVector r(*solView_);
+	applyMatrix(*solView_, r);
 	
-	y->linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
-	y->zeroAtmos();
-	z->linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
-	z->zeroOcean();
+	r.update(1, *rhs, -1);                           //  b-Jx	
+	double relResidual = r.norm() / rhs->norm();     // ||b-Jx||/||b||
 	
-	x->update(1, *y, 1);                              // A*x1 + B*x2
-	x->update(1, *z, 1);                              // D*x2 + C*x1
-	x->update(-1, *rhs, 1);                           // b-Jx
-	
-	double relResidual = x->norm() / rhs->norm();     // ||b-Jx||/||b||
-
 	TIMER_STOP("CoupledModel: compute residual...");
 	return relResidual;
 }
+
 
 //------------------------------------------------------------------
 std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode)
@@ -485,6 +598,12 @@ std::size_t CoupledModel::getHash()
 //------------------------------------------------------------------
 void CoupledModel::test()
 {
+	INFO("CoupledModel views...");
+	INFO("state:  " << stateView_->norm());
+	INFO("length: " << stateView_->length());
+	INFO("sol:    " << solView_->norm());
+	INFO("rhs:    " << rhsView_->norm());
+
 	std::cout << "CoupledModel: stateView..." << std::endl;
 	std::cout << " length: " << stateView_->length()  << std::endl;
 	std::cout << " norm:   " << stateView_->norm()    << std::endl;

@@ -100,7 +100,10 @@ private:
 	std::vector<double> jco_;
 	std::vector<double> beg_;
 
-	// Dense matrix storage
+	// Complete jacobian in CRS form
+	std::shared_ptr<CRSMat> jac_;
+
+	// Dense matrix storage --> superfluous
 	std::vector<double> denseA_;
 
  	// Pivot array for lapack
@@ -114,6 +117,10 @@ private:
 	// Solving scheme: 'D': dense
 	//                 'B': banded
 	char solvingScheme_;
+
+	// Preconditioner: 'J': Jacobi
+	//                 'N': None
+	char preconditioner_;
 
 	// Continuation parameter
 	double    ampl_; //! amplitude of forcing 
@@ -173,10 +180,10 @@ public:
 	~Atmosphere();
 
 	// Solve the matrix
-	//  > right now we use a dense solver from lapack, but a banded solver might
-	//    do as well.
+	// Needs some factorization
 	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
-
+	void solve(SuperVector const &rhs, SuperVector &out);
+		
 	// Compute the right hand side
 	void computeRHS();
 
@@ -189,6 +196,15 @@ public:
 	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
 	std::shared_ptr<SuperVector> getState(char mode = 'C');
 	std::shared_ptr<SuperVector> getRHS(char mode = 'C');
+
+	// Apply the Jacobian to a vector and return the result u = J*v
+	std::shared_ptr<SuperVector> applyMatrix(SuperVector const &v);
+	void applyMatrix(SuperVector const &v, SuperVector &out);
+
+	// Apply the preconditioner inverse to a vector and return
+	// the result u = P^{-1}*v
+	std::shared_ptr<SuperVector> applyPrecon(SuperVector const &v);
+	void applyPrecon(SuperVector const &v, SuperVector &out);
 	
 	void setState(std::shared_ptr<SuperVector> state)
 		{ *state_ = *(state->getAtmosVector()); }
@@ -240,6 +256,8 @@ private:
 
 	// ! Compute residual
 	double computeResidual(std::shared_ptr<SuperVector> rhs);
+	double computeResidual(SuperVector const &rhs,
+						   SuperVector const &x);
 
     //! Defines location of neighbouring grid points
 	//! +----------++-------++----------+
@@ -281,8 +299,10 @@ private:
 	// Write vector to output file
 	void write(std::vector<double> &vector, const std::string &filename);
 
+public:
 	// ! Write everything to output files.
 	void writeAll();
+private:
 
 	//! HDF5 load/save routines
 	void saveStateToFile(std::string const &filename);

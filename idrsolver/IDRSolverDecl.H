@@ -16,48 +16,100 @@
 //    -copy construction
 
 
-template<typename ModelPointer, typename VectorPointer>
+template<typename Model, typename VectorPointer>
 class IDRSolver
 {
-	// We require the pointers to be of shared_ptr/RCP type
-	using  Model  = typename ModelPointer::element_type;	
+	// We require the pointers to vectors to be of shared_ptr/RCP type
 	using  Vector = typename VectorPointer::element_type;
 	
-	ModelPointer  model_;
+	Model &model_;
+	
 	VectorPointer x_;
 	VectorPointer b_;
+
+	bool haveInitSol_;
+	bool haveRHS_;
+	bool smoothing_;
+	bool replacement_;
+	bool trueres_;
+	int  verbosity_;
+
+	// Specify whether or not to save the search space
+	bool inispace_;
 
 	// number close to machine precision
 	double mp_;
 	double tol_;
+	double normr_;
 	double angle_;
-	bool   smoothing_;
-	int    s_;
+	
+	// 
+	int    s_;	
 	int    maxit_;
+	int    replacements_;
+	int    iter_;
 
 	// smoothing vectors
 	Vector xs_;
 	Vector rs_;
 
-	// shadow space?
+	// Shadow space
 	std::vector<Vector> P_;
+
+	// Initial search space
+	std::vector<Vector> U_init_;
+
+	// vector with residual norms
+	std::vector<double> resvec_;
 
 public:
 	// constructor
-	IDRSolver(ModelPointer model, VectorPointer x0);
+	IDRSolver(Model &model);
+	
+	// constructor
+	IDRSolver(Model &model,
+			  VectorPointer x0,
+			  VectorPointer b);
 	
 	// destructor
 	~IDRSolver();
-	
-	VectorPointer solve(VectorPointer b);
 
-	double calc_omega(Vector const &t, Vector const &s, double angle)
+	template<typename ParListPtr>
+	void setParameters(ParListPtr pars);
+	
+	int solve();
+
+	double calc_omega(Vector const &t, Vector const &s, double angle);
+
+	// get members
+	VectorPointer getSolution() { return x_; }
+	VectorPointer getRHS() { return b_; }
+
+	// set members
+	void setSolution(VectorPointer x) { x_ = x; haveInitSol_ = true;}
+	void setRHS(VectorPointer b) { b_ = b; haveRHS_ = true;}
+
+	void clearSearchSpace()
+		{
+			if (verbosity_ > 0)
+				std::cout << "IDR: Clearing search space!!" << std::endl;
+			U_init_.clear();
+		}
+	void printResVec();
+	void printIterStatus();
 	
 	void test();
+
+	double explicitResNorm();
+	double implicitResNorm() { return normr_; }
+
+	int getNumIters() { return iter_; }
 
 private:
 
 	void createP();
+	void writeVector(std::vector<double> &vector,
+					 const std::string &filename);
 	
 };
 

@@ -1,0 +1,48 @@
+<!-- LINEAR SOLVER PARAMETERS -->
+<ParameterList name="solver">
+
+  <!-- ..................................................................-->
+  <!-- FGMRES parameters                                                 -->  
+  <!-- ..................................................................-->
+  <Parameter name="FGMRES tolerance" type="double" value="1e-5"/>
+  <Parameter name="FGMRES iterations" type="int" value="1000"/>
+
+  <!-- ..................................................................-->
+  <!-- IDR(s) parameters                                                 -->
+  <!-- ..................................................................-->  
+  <Parameter name="IDR s" type="int" value="8"/>
+  <Parameter name="IDR angle" type="double" value=".7"/>
+  <Parameter name="IDR tolerance" type="double" value="1e-3"/>
+  <Parameter name="IDR iterations" type="int" value="1000"/>
+  <Parameter name="IDR save search space" type="bool" value="false"/>
+  <Parameter name="IDR replace residuals" type="bool" value="true"/>
+  <Parameter name="IDR verbosity" type="int" value="5"/>
+
+  <!-- ..................................................................-->
+  <!-- CoupledModel specific parameters                                  -->
+  <!-- ..................................................................-->
+  <!-- Clear the search every X solves                                   -->
+  <Parameter name="Clear search space frequency" type="int" value="2"/>
+
+  <!-- ..................................................................-->
+  <!-- Ocean specific parameters                                         -->
+  <!-- ..................................................................-->
+  <!-- Choose ocean solver type, options are:    -->
+  <!--   F: Flexible GMRES                       -->
+  <!--   I: IDR(s)                               -->
+  <Parameter name="Ocean solver type" type="char" value = "F"/>
+  
+  <!-- Specify whether the Jacobian and RHS should be scaled before a solve -->
+  <Parameter name="Use scaling" type="bool" value = "false"/>
+ 
+  <!-- Maximum allowed number of iterations in linear solver before a new -->
+  <!-- preconditioner is requested -->
+  <Parameter name="Preconditioner recompute bound" type="int" value = "1000"/>
+
+  <!-- Choose to use a zero initial guess in solver -->
+  <Parameter name="Use trivial initial guess" type="bool" value = "true"/>
+
+  <!-- Bypass preconditioner -->
+  <Parameter name="Bypass preconditioner" type="bool" value = "false"/>
+  
+</ParameterList>
