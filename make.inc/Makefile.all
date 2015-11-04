@@ -69,6 +69,7 @@ INCLUDE_DIRS =	-I$(PROJECT_BASE)/supervector\
 				-I$(PROJECT_BASE)/thetastepper\
 				-I$(PROJECT_BASE)/continuation\
 				-I$(PROJECT_BASE)/idrsolver\
+				-I$(PROJECT_BASE)/gmressolver\
 				-I$(PROJECT_BASE)/atmosphere\
 				-I$(PROJECT_BASE)/coupledmodel\
 				-I$(PROJECT_BASE)/supervector\

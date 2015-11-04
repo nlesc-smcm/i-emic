@@ -10,7 +10,7 @@
   <!-- Select the solving and synchronization mode                                     -->
   <!--  mode 'D': decoupled, the systems are solved separately and the solutions are   -->
   <!--            synchronized after the Newton process has converged.                 -->
-  <!--  mode 'G': Solve coupled system using a few backward block GS iterations        -->
+  <!--  mode 'G': Solve coupled system using backward block GS iterations              -->
   <!--            The solutions are synchronized before every computation of the RHS   -->
   <!--            and the Jacobian.                                                    -->
   <!--  mode 'I': Try IDR for the complete system                                      -->

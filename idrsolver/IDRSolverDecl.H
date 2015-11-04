@@ -83,7 +83,7 @@ public:
 
 	// get members
 	VectorPointer getSolution() { return x_; }
-	VectorPointer getRHS() { return b_; }
+	VectorPointer getRHS()      { return b_; }
 
 	// set members
 	void setSolution(VectorPointer x) { x_ = x; haveInitSol_ = true;}

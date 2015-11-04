@@ -4,6 +4,7 @@
 !doc/
 !src/
 !idrsolver/
+!gmressolver/
 !supervector/
 !parameters/
 !parameterfiles/

@@ -312,8 +312,7 @@ void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out)
 {
 	TIMER_START("CoupledModel: apply matrix...");
 
-	out.zero();	// Initialize output
-	
+	out.zero();	// Initialize output	
 	// Fill the ocean and atmos part of output
 	ocean_->applyMatrix(v, out);  // A*x1
 	atmos_->applyMatrix(v, out);  // D*x2

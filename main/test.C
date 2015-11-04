@@ -34,6 +34,7 @@
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
 #include "IDRSolver.H"
+#include "GMRESSolver.H"
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
@@ -52,6 +53,7 @@ void testCoupling(RCP<Epetra_Comm> Comm);
 void testOcean(RCP<Epetra_Comm> Comm);
 void testGlobalAtmos();
 void testIDR(RCP<Epetra_Comm> Comm);
+void testGMRES(RCP<Epetra_Comm> Comm);
 
 //------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
@@ -80,6 +82,55 @@ int main(int argc, char **argv)
 	//--------------------------------------------------------
 	MPI_Finalize();	
 }
+
+void testGMRES(RCP<Epetra_Comm> Comm)
+{
+	TIMER_START("Total time...");
+	
+	//------------------------------------------------------------------
+	// Check if outFile is specified
+	if (outFile == Teuchos::null)
+		throw std::runtime_error("ERROR: Specify output streams");	
+	
+	//------------------------------------------------------------------
+	// Create parameter object for Atmosphere
+	RCP<Teuchos::ParameterList> atmosphereParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+		
+	// Create Atmosphere object
+	std::shared_ptr<Atmosphere> atmos =
+		std::make_shared<Atmosphere>(atmosphereParams);
+		
+	atmos->computeJacobian();
+	atmos->computeRHS();
+	
+	std::shared_ptr<SuperVector> x = atmos->getState();
+	std::shared_ptr<SuperVector> b = atmos->getRHS();
+	x->info();
+	x->zero();
+	atmos->writeAll();
+	std::cout << " norm x: " << x->norm() << std::endl;
+	b->info();
+	std::cout << " norm b: " << b->norm() << std::endl;
+	b->scale(-1.0);	
+
+	// Create parameter object for GMRESSolver
+	RCP<Teuchos::ParameterList> solverPars = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("solver_params.xml", solverPars.ptr());
+
+	// Create GMRESSolver object
+	GMRESSolver<Atmosphere, std::shared_ptr<SuperVector> >
+		solver(*atmos, x, b);
+
+	solver.setParameters(solverPars);
+	solver.solve();
+
+	std::cout << solver.residual() << std::endl;
+
+	TIMER_STOP("Total time...");		
+}
+
+//-------------------------------------------------------------------------------
 
 void testIDR(RCP<Epetra_Comm> Comm)
 {
