@@ -60,9 +60,9 @@ public:
 	double residual();
 
 private:
-	void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn)
+	void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn);
 	void ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn);
-	void Update(int k, Matrix &h, STLVector &s, std::vector<Vector> v);
+	void Update(int k, Matrix &H, STLVector &s, std::vector<Vector> V);
 };
 
 #endif
