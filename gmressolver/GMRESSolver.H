@@ -95,11 +95,12 @@ solve()
 		return 0;
 	}
 
-	std::vector<Vector> V(m+1, Vector());
+	std::vector<Vector> V(m_+1, Vector());
 	
 	while (j <= maxit_)
 	{
-		V[0] = r.scale(1.0 / beta);
+		r.scale(1.0 / beta);
+		V[0] = r;
 		s.assign(m_+1, 0.0);
 		s[0] = beta;
 		
@@ -114,7 +115,8 @@ solve()
 				w.update(-H[k][i], V[k], 1.0);    // w -= H(k, i) * v[k];
 			}
 			H[i+1][i] = w.norm();
-			V[i+1]    = w.scale(1.0 / H[i+1][i]); //  w / H(i+1, i)
+			w.scale(1.0 / H[i+1][i]); //  w / H(i+1, i)
+			V[i+1]    = w;  
 			
 			for (k = 0; k < i; k++)
 				ApplyPlaneRotation(H[k][i], H[k+1][i], cs[k], sn[k]);
@@ -124,36 +126,37 @@ solve()
 			ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
 
 			resid = std::abs(s[i+1]) / normb;
-			if (resid < tol)
+			if (resid < tol_)
 			{
 				Update(i, H, s, V);
-				tol   = resid;
+				tol_  = resid;
 				iter_ = j;
 				return 0;
 			}
 		}
-		Update(m - 1, H, s, V);
+		Update(m_ - 1, H, s, V);
 		model_.applyMatrix(*x_, tmp); // Ax
 		tmp.update(1.0, *b_, -1.0);   // b - Ax
 		model_.applyPrecon(tmp, r);   // r = M.solve(b - A * x);
 		beta = r.norm();
 		
 		resid = beta / normb;
-		if (resid < tol)
+		if (resid < tol_)
 		{
-			tol   = resid;
+			tol_   = resid;
 			iter_ = j;
 			return 0;
 		}
 	}
 	
-	tol = resid;
+	tol_ = resid;
 	return 1;
 }
 
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
-void GMRESSolver::GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn)
+void GMRESSolver<Model, VectorPointer>::
+GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn)
 {
 	if (dy == 0.0)
 	{
@@ -176,7 +179,8 @@ void GMRESSolver::GeneratePlaneRotation(double &dx, double &dy, double &cs, doub
 
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
-void GMRESSolver::ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn)
+void GMRESSolver<Model, VectorPointer>::
+ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn)
 {
 	double temp  =  cs * dx + sn * dy;
 	dy = -sn * dx + cs * dy;
@@ -185,15 +189,16 @@ void GMRESSolver::ApplyPlaneRotation(double &dx, double &dy, double &cs, double 
 
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
-void GMRESSolver::Update(int k, Matrix &h, STLVector &s, std::vector<Vector> v)
+void GMRESSolver<Model, VectorPointer>::
+Update(int k, Matrix &H, STLVector &s, std::vector<Vector> V)
 {
 	STLVector y(s);
 	// Backsolve:  
 	for (int i = k; i >= 0; i--)
 	{
-		y[i] /= h[i][i];
+		y[i] /= H[i][i];
 		for (int j = i - 1; j >= 0; j--)
-			y[j] -= h[j,i] * y[i];
+			y[j] -= H[j][i] * y[i];
 	}
 	
 	for (int j = 0; j <= k; j++)
