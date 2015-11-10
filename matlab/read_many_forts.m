@@ -8,5 +8,4 @@ function [M] = read_many_forts(range, dim)
     readfort3(0,strcat('fort.',num2str(range(k))), true);
 	M(k,:) = sol(:);	
   end
-  %M(:,4:6:end) = 0*M(:,4:6:end)/10000;
 end

@@ -14,20 +14,26 @@ function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
   dy         = (yv(m+1)-yv(1))/m;
   dz         = (zw(l+1)-zw(1))/l;
 
-  srf = [];
-  greyness = .85;
-  srf(:,:,1) = (1-greyness*(surfm'));
-  srf(:,:,2) = (1-greyness*(surfm'));
-  srf(:,:,3) = (1-greyness*(surfm'));
-
   [qz,dfzt,dfzw] = gridstretch(zw);
   %% - READ SOLUTION --------------
   dim = n*m*(l+la)*nun;
   obs = numel(range);
 
-  if nargin < 2
+  if nargin < 2 || isempty(Q)
 	% data matrix
-	M = read_many_forts(range, dim);	
+	M = read_many_forts(range, dim);
+
+	% remove checkerboard modes in pressure
+	p_idx   = 4:6:dim; % pressure indices
+	[s1,s2] = checkerboard_modes(n,m,l);
+
+	scale1   = s1(:)'*s1(:);
+	scale2   = s2(:)'*s2(:);
+	for i = 1:obs
+	  M(i,p_idx) = M(i, p_idx) - (M(i, p_idx)*s1(:)/scale1)*s1(:)' ...
+	                 - (M(i, p_idx)*s2(:)/scale2)*s2(:)';
+	end
+	
 	% subtract mean to get centred data matrix
 	mn = mean(M);
 	M = M - repmat(mn,obs,1);
@@ -36,9 +42,9 @@ function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
 	M = [];
   end
   sol = zeros(nun, n, m, l);
-
+  
   if nargin < 3
-	 ev = 1;
+	ev = 1;
   end
   
   fprintf(1,'------------- Calculating eigenvector--------\n')
@@ -123,5 +129,12 @@ function [Q,M,V,D,sol] = build_covmat(range, Q, ev)
   xlabel('Latitude')
   ylabel('z (m)')
   exportfig('isohalines.eps')
+  
+  figure(7)
+  Pp = p(:,:,l);
+  plot(RtD*y, mean(Pp,1),'r');
+  title('Surface Pressure');
+  xlim(RtD*[ymin,ymax])
+  xlabel('Latitude');
 
 end
