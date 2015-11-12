@@ -9,6 +9,7 @@ HEADERDEPS = \
 	../supervector/SuperVector.H\
     ../atmosphere/Atmosphere.H\
     ../idrsolver/IDRSolver.H\
+    ../gmressolver/GMRESSolver.H\
     ../ocean/Ocean.H\
 
 all: lib

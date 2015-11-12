@@ -1,11 +1,13 @@
 <!-- LINEAR SOLVER PARAMETERS -->
 <ParameterList name="solver">
-
   <!-- ..................................................................-->
-  <!-- FGMRES parameters                                                 -->  
-  <!-- ..................................................................-->
-  <Parameter name="FGMRES tolerance" type="double" value="1e-5"/>
-  <Parameter name="FGMRES iterations" type="int" value="1000"/>
+  <!-- GMRES parameters                                                  -->
+  <!-- ..................................................................-->  
+  <Parameter name="GMRES tolerance"  type="double" value="1e-3"/>
+  <Parameter name="GMRES iterations" type="int"    value="1000"/>
+  <Parameter name="GMRES restart"    type="int"    value="1000"/>
+  <Parameter name="GMRES left prec"  type="bool"   value="false"/>
+  <Parameter name="GMRES verbosity"  type="int"    value="10"/>
 
   <!-- ..................................................................-->
   <!-- IDR(s) parameters                                                 -->
@@ -17,6 +19,12 @@
   <Parameter name="IDR save search space" type="bool" value="false"/>
   <Parameter name="IDR replace residuals" type="bool" value="true"/>
   <Parameter name="IDR verbosity" type="int" value="5"/>
+  
+  <!-- ..................................................................-->
+  <!-- FGMRES (Belos) parameters                                         -->  
+  <!-- ..................................................................-->
+  <Parameter name="FGMRES tolerance" type="double" value="1e-5"/>
+  <Parameter name="FGMRES iterations" type="int" value="1000"/>
 
   <!-- ..................................................................-->
   <!-- CoupledModel specific parameters                                  -->
@@ -28,8 +36,8 @@
   <!-- Ocean specific parameters                                         -->
   <!-- ..................................................................-->
   <!-- Choose ocean solver type, options are:    -->
-  <!--   F: Flexible GMRES                       -->
   <!--   I: IDR(s)                               -->
+  <!--   F: Flexible GMRES (Belos)               -->
   <Parameter name="Ocean solver type" type="char" value = "F"/>
   
   <!-- Specify whether the Jacobian and RHS should be scaled before a solve -->

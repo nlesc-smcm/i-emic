@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
 	// test the coupled model
-	testIDR(Comm);
+	testGMRES(Comm);
 	//	testOcean(Comm);
 
 	// print the profile
@@ -113,7 +113,7 @@ void testGMRES(RCP<Epetra_Comm> Comm)
 	b->info();
 	std::cout << " norm b: " << b->norm() << std::endl;
 	b->scale(-1.0);	
-
+	
 	// Create parameter object for GMRESSolver
 	RCP<Teuchos::ParameterList> solverPars = rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("solver_params.xml", solverPars.ptr());
@@ -123,7 +123,9 @@ void testGMRES(RCP<Epetra_Comm> Comm)
 		solver(*atmos, x, b);
 
 	solver.setParameters(solverPars);
-	solver.solve();
+	int status = solver.solve();
+	std::cout << "status: " << status << std::endl;
+	x->print();
 
 	std::cout << solver.residual() << std::endl;
 

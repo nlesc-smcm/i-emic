@@ -26,7 +26,9 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	rhsHash_(-1),
 	jacHash_(-1),
 	idrSolver_(*this),
+	gmresSolver_(*this),
 	idrInitialized_(false),
+	gmresInitialized_(false),
 	idrSolveCtr_(0)
 {
 	stateView_ =
@@ -160,6 +162,19 @@ void CoupledModel::initializeIDR()
 	idrInitialized_ = true;
 }
 
+//====================================================================
+void CoupledModel::initializeGMRES()
+{
+	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
+		rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
+	
+	gmresSolver_.setParameters(solverParams_);
+	gmresSolver_.setSolution(getSolution('V'));
+	gmresSolver_.setRHS(getRHS('V'));
+	gmresInitialized_ = true;
+}
+
 //------------------------------------------------------------------
 void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 {
@@ -169,42 +184,72 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 		ocean_->solve(Teuchos::rcp(rhs.get(), false));
 		atmos_->solve(rhs);
 	}
-	else if (solvingScheme_ == 'G') // backward block GS solve
+	else if (solvingScheme_ == 'B') // backward block GS solve
 		blockGSSolve(rhs);
-	else if (solvingScheme_  == 'I') // IDR on complete matrix
-	{
-		if (!idrInitialized_)
-			initializeIDR();
-		
-		TIMER_START("CoupledModel: solve...");
-
-		// Clear the search space every X calls:
-		if (idrSolveCtr_ % clearSPFreq_ == 0)
-			idrSolver_.clearSearchSpace();
-		
-		idrSolveCtr_++;
-		
-		idrSolver_.setSolution(getSolution('V'));
-		idrSolver_.setRHS(rhs);
-
-		INFO("CoupledModel: IDR solve...");
-		idrSolver_.solve();
-		INFO("CoupledModel: IDR solve... done");
-		
-		double iters = idrSolver_.getNumIters();
-		double nrm   = idrSolver_.explicitResNorm();
-		double res   = computeResidual(rhs);
-
-		INFO("CoupledModel IDR, i = " << iters << " exp res norm: " << nrm);
-		INFO("CoupledModel residual = " << res);		
-		TRACK_ITERATIONS("CoupledModel IDR iterations...", iters);
-		TIMER_STOP("CoupledModel: solve...");
-	}
+	else if (solvingScheme_ == 'I') // IDR on complete matrix
+		IDRSolve(rhs);
+	else if (solvingScheme_ == 'G') // GMRES on complete matrix
+		GMRESSolve(rhs);
 	else
 		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
 }
 
+//------------------------------------------------------------------
+void CoupledModel::IDRSolve(std::shared_ptr<SuperVector> rhs)
+{
+	if (!idrInitialized_)
+		initializeIDR();
+		
+	TIMER_START("CoupledModel: solve...");
+
+	// Clear the search space every X calls:
+	if (idrSolveCtr_ % clearSPFreq_ == 0)
+		idrSolver_.clearSearchSpace();
+		
+	idrSolveCtr_++;
+ 	solView_->zero();
+	idrSolver_.setSolution(getSolution('V'));
+	idrSolver_.setRHS(rhs);
+
+	INFO("CoupledModel: IDR solve...");
+	idrSolver_.solve();
+	INFO("CoupledModel: IDR solve... done");
+		
+	int iters    = idrSolver_.getNumIters();
+	double nrm   = idrSolver_.explicitResNorm();
+	double res   = computeResidual(rhs);
+
+	INFO("CoupledModel IDR, i = " << iters << " exp res norm: " << nrm);
+	INFO("CoupledModel residual = " << res);		
+	TRACK_ITERATIONS("CoupledModel IDR iterations...", iters);
+	TIMER_STOP("CoupledModel: solve...");
+}
+
+//------------------------------------------------------------------
+void CoupledModel::GMRESSolve(std::shared_ptr<SuperVector> rhs)
+{
+	if (!gmresInitialized_)
+		initializeGMRES();
+		
+	TIMER_START("CoupledModel: solve...");
+	gmresSolver_.setSolution(getSolution('V'));
+	gmresSolver_.setRHS(rhs);
+
+	solView_->zero();
+	INFO("CoupledModel: GMRES solve...");
+	gmresSolver_.solve();
+	INFO("CoupledModel: GMRES solve... done");
+	
+	int iters    = gmresSolver_.getNumIters();
+	double nrm   = gmresSolver_.residual();
+	double res   = computeResidual(rhs);
+
+	INFO("CoupledModel GMRES, i = " << iters << " exp res norm: " << nrm);
+	INFO("CoupledModel residual = " << res);		
+	TRACK_ITERATIONS("CoupledModel GMRES iterations...", iters);
+	TIMER_STOP("CoupledModel: solve...");
+}
 
 //------------------------------------------------------------------
 void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)

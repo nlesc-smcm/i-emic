@@ -13,9 +13,11 @@ GMRESSolver(Model &model)
 	haveInitSol_   (false),
 	haveRHS_       (false),
 	tol_           (1e-8),
+	resid_         (1.0),
 	maxit_         (1000),
 	m_             (1000),
 	iter_          (0),
+	leftPrec_      (false),
 	verbosity_     (0)
 {}
 
@@ -31,10 +33,12 @@ GMRESSolver(Model &model,
 	b_             (b),      // RHS
 	haveInitSol_   (true),
 	haveRHS_       (true),
-	tol_           (1e-6),
+	tol_           (1e-8),
+	resid_         (1.0),
 	maxit_         (1000),
 	m_             (1000),
 	iter_          (0),
+	leftPrec_      (false),
 	verbosity_     (0)
 {}
 
@@ -57,6 +61,7 @@ setParameters(ParListPtr pars)
 	maxit_       = pars->get("GMRES iterations", 500);
 	m_           = pars->get("GMRES restart", maxit_);
 	verbosity_   = pars->get("GMRES verbosity", 0);
+	leftPrec_    = pars->get("GMRES left prec", false);
 }
 
 //*****************************************************************************
@@ -64,7 +69,18 @@ template<typename Model, typename VectorPointer>
 int GMRESSolver<Model, VectorPointer>::
 solve()
 {
-	int i, j = 1, k;
+	if (!haveInitSol_ || !haveRHS_)
+	{
+		std::cout << "Problem not setup correctly!"
+				  << haveInitSol_ << " "
+				  << haveRHS_ << std::endl;
+		return 1;
+	}
+	int i, k;
+	iter_ = 0;
+
+	// use zero initial guess
+	//x_->zero();
 	
 	STLVector s (m_+1, 0.0);
 	STLVector cs(m_+1, 0.0);
@@ -76,38 +92,55 @@ solve()
 	Vector r  (*x_);
 	Vector w  (*x_);
 
-	model_.applyPrecon(*b_, tmp);
-	double normb = tmp.norm();	  // norm(M.solve(b))
+	double normb = b_->norm();
 
-	model_.applyMatrix(*x_, tmp); // Ax
-	tmp.update(1.0, *b_, -1.0);   // b - Ax
-	model_.applyPrecon(tmp, r);   // r = M.solve(b - A * x);
+	if (leftPrec_)
+	{
+		model_.applyMatrix(*x_, tmp); // Ax
+		tmp.update(1.0, *b_, -1.0);   // b - Ax
+		model_.applyPrecon(tmp, r);   // r = M.solve(b - A * x);
+	}
+	else
+	{
+		model_.applyMatrix(*x_, r); // Ax
+		r.update(1.0, *b_, -1.0);   // b - Ax
+	}
+	
 	double beta = r.norm();
-
+	
 	if (normb == 0.0)
 		normb = 1;
 
-	double resid = beta / normb;
-	if (resid <= tol_)
+	resid_ = beta / normb;
+	if (resid_ <= tol_)
 	{
-		tol_  = resid;
 		iter_ = 0;
 		return 0;
 	}
 
 	std::vector<Vector> V(m_+1, Vector());
 	
-	while (j <= maxit_)
+	while (iter_ <= maxit_)
 	{
 		r.scale(1.0 / beta);
 		V[0] = r;
 		s.assign(m_+1, 0.0);
 		s[0] = beta;
 		
-		for (i = 0; i < m_ && j <= maxit_; i++, j++)
+		for (i = 0; i < m_ && iter_ <= maxit_; i++, iter_++)
 		{
-			model_.applyMatrix(V[i], tmp); 
-			model_.applyPrecon(tmp, w);     // M.solve(A * v[i])
+			if (verbosity_ > 4) printIterStatus();
+			
+			if (leftPrec_)
+			{
+				model_.applyMatrix(V[i], tmp); 
+				model_.applyPrecon(tmp, w);     // M.solve(A * v[i])
+			}
+			else
+			{
+				model_.applyPrecon(V[i], tmp);
+				model_.applyMatrix(tmp, w);    // w =  A * M^{-1} v[i]
+			}
 			
 			for (k = 0; k <= i; k++)
 			{
@@ -124,32 +157,37 @@ solve()
 			GeneratePlaneRotation(H[i][i], H[i+1][i], cs[i], sn[i]);
 			ApplyPlaneRotation(H[i][i], H[i+1][i], cs[i], sn[i]);
 			ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
-
-			resid = std::abs(s[i+1]) / normb;
-			if (resid < tol_)
+			
+			resid_ = std::abs(s[i+1]) / normb;
+			if (resid_ < tol_)
 			{
 				Update(i, H, s, V);
-				tol_  = resid;
-				iter_ = j;
 				return 0;
 			}
 		}
 		Update(m_ - 1, H, s, V);
-		model_.applyMatrix(*x_, tmp); // Ax
-		tmp.update(1.0, *b_, -1.0);   // b - Ax
-		model_.applyPrecon(tmp, r);   // r = M.solve(b - A * x);
+
+		if (leftPrec_)
+		{
+			model_.applyMatrix(*x_, tmp); // Ax
+			tmp.update(1.0, *b_, -1.0);   // b - Ax
+			model_.applyPrecon(tmp, r);   // r = M.solve(b - A * x);
+		}
+		else
+		{
+			model_.applyMatrix(*x_, r); // Ax
+			r.update(1.0, *b_, -1.0);   // b - Ax
+		}
+			
 		beta = r.norm();
 		
-		resid = beta / normb;
-		if (resid < tol_)
+		resid_ = beta / normb;
+		if (resid_ < tol_)
 		{
-			tol_   = resid;
-			iter_ = j;
 			return 0;
 		}
 	}
-	
-	tol_ = resid;
+
 	return 1;
 }
 
@@ -190,7 +228,7 @@ ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn)
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
 void GMRESSolver<Model, VectorPointer>::
-Update(int k, Matrix &H, STLVector &s, std::vector<Vector> V)
+Update(int k, Matrix &H, STLVector &s, std::vector<Vector> &V)
 {
 	STLVector y(s);
 	// Backsolve:  
@@ -201,8 +239,21 @@ Update(int k, Matrix &H, STLVector &s, std::vector<Vector> V)
 			y[j] -= H[j][i] * y[i];
 	}
 	
-	for (int j = 0; j <= k; j++)
-		x_->update(y[j], V[j], 1.0); //x += v[j] * y(j);
+	if (leftPrec_)
+	{
+		for (int j = 0; j <= k; j++)
+			x_->update(y[j], V[j], 1.0); //x += v[j] * y(j);
+	}
+	else
+	{
+		Vector tmp1(*x_);
+		Vector tmp2(*x_);
+		tmp1.zero(); // tmp1 = 0
+		for (int j = 0; j <= k; j++)
+			tmp1.update(y[j], V[j], 1.0); // tmp1 += v[j] * y(j);
+		model_.applyPrecon(tmp1, tmp2);   // tmp2  = inv(M)*V*y
+		x_->update(1.0, tmp2, 1.0);			
+	}
 }
 
 //*****************************************************************************
@@ -210,8 +261,18 @@ template<typename Model, typename VectorPointer>
 double GMRESSolver<Model, VectorPointer>::
 residual()
 {
-	return 666;
+	return resid_;
 }
 
+//====================================================================
+template<typename Model, typename VectorPointer>
+void GMRESSolver<Model, VectorPointer>::
+printIterStatus()
+{
+	std::cout << "iteration: "   << iter_
+			  << " residual: "   << resid_
+			  << " rel. tol: "   << tol_
+			  << std::endl;
+}
 
 #endif

@@ -4,6 +4,8 @@
 #include "Ocean.H"
 #include "Atmosphere.H"
 #include "SuperVector.H"
+#include "IDRSolver.H"
+#include "GMRESSolver.H"
 
 #include <vector>
 #include <memory>
@@ -49,7 +51,9 @@ private:
 	
 	// Solving scheme
 	//   'D': decoupled
-	//   'G': backward block Gauss Seidel
+	//   'B': backward block Gauss Seidel with sub-model solves
+	//   'I': IDR(s)
+	//   'G': GMRES(r)
 	char   solvingScheme_;
 
 	int    iterGS_;      // Max iterations in GS scheme
@@ -62,8 +66,11 @@ private:
 	std::size_t rhsHash_;  // hash to base computeRHS() decision on	
 	std::size_t jacHash_;  // hash to base computeJacobian() decision on
 
+	// IDR and GMRES solve members
 	IDRSolver<CoupledModel, std::shared_ptr<SuperVector> > idrSolver_;
+	GMRESSolver<CoupledModel, std::shared_ptr<SuperVector> > gmresSolver_;
 	bool idrInitialized_;
+	bool gmresInitialized_;
 	int idrSolveCtr_;
 	int clearSPFreq_;
 	
@@ -92,6 +99,7 @@ public:
 	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
 
 	void initializeIDR();
+	void initializeGMRES();
 
 	void applyMatrix(SuperVector const &v, SuperVector &out);
 	void applyPrecon(SuperVector const &v, SuperVector &out);
@@ -121,6 +129,12 @@ public:
 private:
 	// Solve the system with a few symmetric block GS iterations
 	void blockGSSolve(std::shared_ptr<SuperVector> rhs);
+
+	// Solve the system using IDR(s)
+	void IDRSolve(std::shared_ptr<SuperVector> rhs);
+	
+	// Solve the system using GMRES(r)
+	void GMRESSolve(std::shared_ptr<SuperVector> rhs);
 	
 	// For internal use: both modes for the underlying
 	// getSolution methods can be called here.

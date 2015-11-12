@@ -53,7 +53,7 @@ public:
 	
 	// Destructor
 	~SuperVector();
-
+	
 	// Get info on contents SuperVector
 	bool haveOceanVector() const { return haveOceanVector_; }
 	bool haveAtmosVector() const { return haveAtmosVector_; }

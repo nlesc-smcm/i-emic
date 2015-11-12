@@ -40,6 +40,7 @@ class IDRSolver
 	// number close to machine precision
 	double mp_;
 	double tol_;
+	double tolb_;
 	double normr_;
 	double angle_;
 	

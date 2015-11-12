@@ -46,6 +46,7 @@ IDRSolver(Model &model,
 	inispace_      (false),
 	mp_            (1e-13),  // number close to machine precision
 	tol_           (1e-6),
+	tolb_          (1e-6),
 	angle_         (0.7),
 	s_             (4),
 	maxit_         (1000),
@@ -122,7 +123,7 @@ solve()
 	//-->TODO
 	
 	double normb = b_->norm();
-	double tolb  = tol_ * normb; // Relative tolerance
+	tolb_  = tol_ * normb; // Relative tolerance
 
 	// Compute residual r = b - Ax
 	Vector r(*x_);
@@ -180,7 +181,7 @@ solve()
 	
 	iter_ = 0;
 	if (verbosity_ > 4) printIterStatus();
-	while (normr_ > tolb && iter_ < maxit_)
+	while (normr_ > tolb_ && iter_ < maxit_)
 	{
 		
 		// Create new right hand side for small system:
@@ -263,7 +264,7 @@ solve()
 
 			// Check whether we need to replace residual
 			normr_ = r.norm();
-			if (replacement_ && normr_ > tolb / mp_) trueres_ = true;
+			if (replacement_ && normr_ > tolb_ / mp_) trueres_ = true;
 
 			// Smoothing
 			//-->TODO
@@ -283,12 +284,12 @@ solve()
 			resvec_.push_back(normr_);
 			iter_ = iter_ + 1;
 			if (verbosity_ > 4) printIterStatus();
-			if (normr_ < tolb || iter_ == maxit_)
+			if (normr_ < tolb_ || iter_ == maxit_)
 				break;
 		}
-
+		
 		// Check for convergence
-		if (normr_ < tolb || iter_ == maxit_)
+		if (normr_ < tolb_ || iter_ == maxit_)
 			break;
 
 		// Update G-space counter
@@ -312,7 +313,7 @@ solve()
 		normr_ = r.norm();
 		
 		// Residual replacement?
-		if (replacement_ && normr_ > tolb / mp_) trueres_ = true;
+		if (replacement_ && normr_ > tolb_ / mp_) trueres_ = true;
 
 		if (trueres_ && normr_ < normb )
 		{
@@ -345,6 +346,7 @@ printIterStatus()
 {
 	std::cout << "iteration: "   << iter_
 			  << " residual: "   << normr_
+			  << " rel. tol: "   << tolb_
 			  << std::endl;
 }
 	

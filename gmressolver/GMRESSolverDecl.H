@@ -1,7 +1,7 @@
 #ifndef GMRESSOLVERDECL_H
 #define GMRESSOLVERDECL_H
 
-// Templated types are assumed to be shared_pointers: we use -> in calls to
+// Some templated types are assumed to be shared_pointers: we use -> in calls to
 // their members.
 
 // Model should be a class with members:
@@ -22,19 +22,24 @@ class GMRESSolver
 	using STLVector = typename std::vector<double>;
 	using Matrix    = typename std::vector<STLVector>;
 
-	Model &model_;
+	Model &model_;  // We hold a reference to the model
 
-	VectorPointer x_;
-	VectorPointer b_;
+	// Since we move around these vectors we use pointers
+	VectorPointer x_; // state
+	VectorPointer b_; // rhs
 
 	bool haveInitSol_;
 	bool haveRHS_;
 
-	double tol_;
+	double tol_;     // tolerance
+	double resid_;   // scaled residual norm
 
-	int maxit_;
-	int m_;
-	int iter_;
+	int maxit_;      // max # iterations
+	int m_;          // # iterations before restart
+	int iter_;       // iteration counter
+
+	bool leftPrec_;  // use left preconditioning
+	
 	int verbosity_;
 	
 public:
@@ -58,11 +63,13 @@ public:
 	void setParameters(ParListPtr pars);
 
 	double residual();
+	int getNumIters() { return iter_; }
 
 private:
 	void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn);
 	void ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn);
-	void Update(int k, Matrix &H, STLVector &s, std::vector<Vector> V);
+	void Update(int k, Matrix &H, STLVector &s, std::vector<Vector> &V);
+	void printIterStatus();
 };
 
 #endif

@@ -257,8 +257,7 @@ void SuperVector::zero()
 void SuperVector::zeroAtmos()
 {
 	if (haveAtmosVector_)
-		atmosVector_ = std::make_shared<std::vector<double> >
-			(atmosVector_->size(), 0.0);		
+		atmosVector_->assign(atmosVector_->size(),0.0);
 }
 
 //------------------------------------------------------------------

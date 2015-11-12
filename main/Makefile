@@ -23,6 +23,7 @@ HEADERDEPS = \
 	../continuation/Continuation.H \
 	../continuation/ContinuationDecl.H \
 	../idrsolver/IDRSolver.H \
+	../gmressolver/GMRESSolver.H \
 	../ocean/GlobalDefinitions.H \
 	../ocean/Ocean.H \
 	../atmosphere/Atmosphere.H\
