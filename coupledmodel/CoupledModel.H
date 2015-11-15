@@ -61,10 +61,16 @@ private:
 
 	// Use hashing to decide to act based on whether a state has changed
 	// Hashes should be remembered for each task they get used for.
-	bool   useHash_;  // flag to turn hashing on/off
+	bool useHash_;  // flag to turn hashing on/off
 	std::size_t syncHash_; // hash to base synchronize() decision on
 	std::size_t rhsHash_;  // hash to base computeRHS() decision on	
 	std::size_t jacHash_;  // hash to base computeJacobian() decision on
+
+	// Synchronization counter
+	int syncCtr_;
+
+	// Preconditioning strategy based on changes in state
+	int buildPrecEvery_;
 
 	// IDR and GMRES solve members
 	IDRSolver<CoupledModel, std::shared_ptr<SuperVector> > idrSolver_;

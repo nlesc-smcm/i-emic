@@ -146,8 +146,8 @@ void Ocean::initializePreconditioner()
 	precPtr_ = 	Teuchos::rcp(new TRIOS::BlockPreconditioner
 							 (jac_, domain_, *precParams));
 	
-	precPtr_->Initialize();
-	precPtr_->Compute();
+	precPtr_->Initialize(); // Initialize
+	precPtr_->Compute();    // Compute
 
 	precInitialized_ = true;
 	INFO("Ocean: initialize preconditioner done...");
@@ -265,15 +265,7 @@ void Ocean::solve(VectorPtr rhs)
 	// Depending on the number of iterations we might need to
 	// recompute the preconditioner
 	if (recompPreconditioner_)
-	{
-		// Compute preconditioner
-		TIMER_START("Ocean: build preconditioner...");
-		INFO("Ocean: build preconditioner...");
-		precPtr_->Compute();		
-		INFO("Ocean: build preconditioner... done");
-		TIMER_STOP("Ocean: build preconditioner...");
-		recompPreconditioner_ = false;  // Disable subsequent recomputes
-	}
+		buildPreconditioner();
 	
 	// If specified use trivial initial solution
 	if (zeroInitGuess_)
@@ -519,24 +511,14 @@ void Ocean::applyMatrix(SuperVector const &v, SuperVector &out)
 }
 
 //====================================================================
-Teuchos::RCP<SuperVector> Ocean::applyPrecon(SuperVector const &v)
+void Ocean::buildPreconditioner()
 {
-	TIMER_START("Ocean: apply preconditioning...");
-	if (bypassPrec_)
-	{
-		std::cout << "Ocean: bypassing preconditioner" << std::endl;
-		return rcp(new SuperVector(v));
-	}
-	
-	if (!precInitialized_)
-		initializePreconditioner();
-	
-	RCP<Epetra_Vector> result =
-		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
-	precPtr_->ApplyInverse(*(v.getOceanVector()), *result);
-
-	TIMER_STOP("Ocean: apply preconditioning...");
-	return getVector('V', result);
+	TIMER_START("Ocean: build preconditioner...");
+	INFO("Ocean: build preconditioner...");
+	precPtr_->Compute();		
+	INFO("Ocean: build preconditioner... done");
+	TIMER_STOP("Ocean: build preconditioner...");
+	recompPreconditioner_ = false;  // Disable subsequent recomputes
 }
 
 //====================================================================
@@ -548,12 +530,25 @@ void Ocean::applyPrecon(SuperVector const &v, SuperVector &out)
 		out = v;
 	}
 	
-	if (!precInitialized_)
+	if (!precInitialized_) // Initialize preconditioner
 		initializePreconditioner();
+	
+	if (recompPreconditioner_) 	// Compute preconditioner
+		buildPreconditioner();
 	
 	TIMER_START("Ocean: apply preconditioning...");
 	precPtr_->ApplyInverse(*(v.getOceanVector()), *(out.getOceanVector()));
 	TIMER_STOP("Ocean: apply preconditioning...");
+}
+
+//====================================================================
+Teuchos::RCP<SuperVector> Ocean::applyPrecon(SuperVector const &v)
+{
+	RCP<Epetra_Vector> result =
+		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
+	RCP<SuperVector> out = getVector('V', result);
+	applyPrecon(v, *out);
+	return out;
 }
 
 //====================================================================

@@ -25,6 +25,8 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	syncHash_(-1),
 	rhsHash_(-1),
 	jacHash_(-1),
+	syncCtr_(0),
+	buildPrecEvery_   (params->get("Rebuild preconditioner", 3)),
 	idrSolver_(*this),
 	gmresSolver_(*this),
 	idrInitialized_(false),
@@ -66,7 +68,7 @@ void CoupledModel::synchronize()
 	// changed, so we compute, compare and store a hash
 	if (useHash_)
 	{
-		std::size_t  hash = stateView_->hash();
+		std::size_t hash = stateView_->hash();
 		if (hash == syncHash_)
 			return;
 		else
@@ -74,8 +76,10 @@ void CoupledModel::synchronize()
 	}
 
 	TIMER_START("CoupledModel: synchronize...");
+
+	syncCtr_++; // Keep track of synchronizations
 	
-	// Copy the atmosphere from the current combined (SuperVector) state
+	// Copy the atmosphere from the current combined state
 	std::vector<double> atmos(*(stateView_->getAtmosVector()));
 
 	// Copy the surface temperature from the ocean model
@@ -86,6 +90,10 @@ void CoupledModel::synchronize()
 
 	// Set the SST in the atmosphere
 	atmos_->setOceanTemperature(sst);
+
+	// Now that there is a new state we can also recompute the preconditioners
+	if (syncCtr_ % buildPrecEvery_ == 0)
+		ocean_->recomputePreconditioner();
 	
 	TIMER_STOP("CoupledModel: synchronize...");
 }
@@ -233,10 +241,10 @@ void CoupledModel::GMRESSolve(std::shared_ptr<SuperVector> rhs)
 		initializeGMRES();
 		
 	TIMER_START("CoupledModel: solve...");
+	solView_->zero();
 	gmresSolver_.setSolution(getSolution('V'));
 	gmresSolver_.setRHS(rhs);
 
-	solView_->zero();
 	INFO("CoupledModel: GMRES solve...");
 	gmresSolver_.solve();
 	INFO("CoupledModel: GMRES solve... done");

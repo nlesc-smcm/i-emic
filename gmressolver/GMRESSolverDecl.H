@@ -27,17 +27,18 @@ class GMRESSolver
 	// Since we move around these vectors we use pointers
 	VectorPointer x_; // state
 	VectorPointer b_; // rhs
-
+	
 	bool haveInitSol_;
 	bool haveRHS_;
-
+	
 	double tol_;     // tolerance
 	double resid_;   // scaled residual norm
 
 	int maxit_;      // max # iterations
 	int m_;          // # iterations before restart
 	int iter_;       // iteration counter
-
+	
+	
 	bool leftPrec_;  // use left preconditioning
 	
 	int verbosity_;
@@ -68,7 +69,7 @@ public:
 private:
 	void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn);
 	void ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn);
-	void Update(int k, Matrix &H, STLVector &s, std::vector<Vector> &V);
+	void Update(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
 	void printIterStatus();
 };
 

@@ -163,6 +163,8 @@ public:
 	Teuchos::RCP<SuperVector> applyPrecon(SuperVector const &v);
 	void applyPrecon(SuperVector const &v, SuperVector &out);
 
+	void recomputePreconditioner() { recompPreconditioner_ = true; }
+
 	// THESE ARE OBSOLETE!!!
 	void setState(Teuchos::RCP<SuperVector> state)
 		{ state_ = state->getOceanVector(); }
@@ -235,6 +237,9 @@ private:
 	void initializePreconditioner();
 	void initializeBelos();
 	void initializeIDR();
+
+	// Build preconditioner
+	void buildPreconditioner();
 	
 
 	// Scale the matrix and rhs of the problem
