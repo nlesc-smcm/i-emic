@@ -201,6 +201,9 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	else
 		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
+
+	// Update the profile after a solve
+	printProfile(profile);	
 }
 
 //------------------------------------------------------------------

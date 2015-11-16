@@ -2,6 +2,7 @@
 #define GMRESSOLVER_H
 
 #include "GMRESSolverDecl.H"
+#include "GMRESMacros.H"
 #include <vector>
 
 //====================================================================
@@ -55,7 +56,7 @@ void GMRESSolver<Model, VectorPointer>::
 setParameters(ParListPtr pars)
 {
 	if (verbosity_ > 5)
-		std::cout << "GMRES: updating parameters" << std::endl;
+		PRINT("GMRES: updating parameters");
 	
 	tol_            = pars->get("GMRES tolerance", 1e-8);
 	maxit_          = pars->get("GMRES iterations", 500);
@@ -117,7 +118,7 @@ solve()
 
 	std::vector<Vector> V(m_+1, Vector());
 	while (iter_ <= maxit_)
-	{
+	  {
 		r.scale(1.0 / beta);
 		V[0] = r;
 		s.assign(m_+1, 0.0);
@@ -125,7 +126,7 @@ solve()
 		
 		for (i = 0; i < m_ && iter_ <= maxit_; i++, iter_++)
 		{
-			if (verbosity_ > 4) printIterStatus();
+			if (verbosity_ > 2 && iter_ % 10 == 0) printIterStatus();
 			
 			if (leftPrec_)
 			{
@@ -159,10 +160,10 @@ solve()
 			resid_ = std::abs(s[i+1]) / normb;
 			if (resid_ < tol_)
 			{
-				if (verbosity_ > 6)
+				if (verbosity_ > 0)
 				{
-					std::cout << "GMRES implicit residual passed..." << std::endl;
-					std::cout << "  implicit residual = " << resid_ << std::endl;
+					PRINT("GMRES implicit residual passed...");
+					PRINT("  implicit residual = " << resid_);
 				}
 				break;
 			}
@@ -188,19 +189,18 @@ solve()
 		beta    = r.norm();
 		resid_  = beta / normb;
 		
-		if (verbosity_ > 4)
-			std::cout << "  explicit residual = " << resid_ << std::endl;
+		if (verbosity_ > 2)
+			PRINT("  explicit residual = " << resid_);
 
 		if (resid_ < tol_)
 		{
 			if (verbosity_ > 6)
-				std::cout << "GMRES explicit residual passed..." << std::endl;
-
+				PRINT("GMRES explicit residual passed...");
 			return 0;
 		}
-	}
-
-
+		else if (verbosity_ > 2)
+			PRINT("   restart ");
+	  }
 	return 1;
 }
 
@@ -282,10 +282,8 @@ template<typename Model, typename VectorPointer>
 void GMRESSolver<Model, VectorPointer>::
 printIterStatus()
 {
-	std::cout << "iteration: "   << iter_
-			  << " residual: "   << resid_
-			  << " rel. tol: "   << tol_
-			  << std::endl;
+	PRINT("iteration: "   << iter_  << " residual: "   << resid_
+		  << " rel. tol: "   << tol_);
 }
 
 #endif
