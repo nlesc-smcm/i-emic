@@ -16,12 +16,18 @@
 // Constructor, specify horizontal grid dimensions
 Atmosphere::Atmosphere(ParameterList params)
 	:
+	params_          (params),
+	
 	n_               (params->get("Global Grid-Size n", 16)),
 	m_               (params->get("Global Grid-Size m", 16)),
 	l_               (params->get("Global Grid-Size l", 1)),
 	periodic_        (params->get("Periodic", false)),
+
 	solvingScheme_   (params->get("Solving scheme", 'B')),
 	preconditioner_  (params->get("Preconditioner", 'J')),
+	gmresSolver_     (*this),
+	gmresInitialized_(false),
+	
 	rhoa_            (params->get("atmospheric density",1.25)),
 	hdima_           (params->get("heat capacity",8400.)),
 	cpa_             (params->get("heat capacity",1000.)),
@@ -36,6 +42,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	t0_              (params->get("reference temperature",15.0)),
 	udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
 	r0dim_           (params->get("radius of the earth",6.37e+06)),
+	
 	useExistingState_(params->get("Use existing state", false)),
 	inputFile_       (params->get("Input file", "atmos.h5")),
 	outputFile_      (params->get("Output file", "atmos.h5"))
@@ -50,7 +57,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	ksup_ = std::max(n_, m_);
 
 	// Leading dimension of banded matrix
-	ldimA_ = 2 * ksub_ + 1 + ksup_;
+	ldimA_  = 2 * ksub_ + 1 + ksup_;
 	
 	// Continuation parameters
 	ampl_    = 0.0        ; //! amplitude of forcing
@@ -83,7 +90,8 @@ Atmosphere::Atmosphere(ParameterList params)
 		denseA_ = std::vector<double>(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
 
 	// Initialize banded storage
-	bandedA_ = std::vector<double>(ldimA_ * dim_, 0.0);
+	bandedA_     = std::vector<double>(ldimA_  * dim_, 0.0);
+	buildLU_     = true;
 	
 	// Create pivot array for use in lapack
 	ipiv_ = new int[n_*m_*l_+1];
@@ -141,6 +149,45 @@ Atmosphere::~Atmosphere()
 {
 	delete[] ipiv_;
 }
+
+//-----------------------------------------------------------------------------
+void Atmosphere::initializeGMRES()
+{
+	gmresSolver_.setParameters(params_);
+	gmresInitialized_ = true;
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::GMRESSolve(std::shared_ptr<SuperVector> rhs)
+{} // NOT IMPLEMENTED
+
+//-----------------------------------------------------------------------------
+void Atmosphere::GMRESSolve(std::shared_ptr<SuperVector> rhs,
+							std::shared_ptr<SuperVector> out)
+{
+	if (!gmresInitialized_)
+		initializeGMRES();
+
+	int verbosity = params_->get("GMRES verbosity", 0);
+	
+	TIMER_START("Atmosphere: solve...");
+
+	gmresSolver_.setSolution (out);
+	gmresSolver_.setRHS      (rhs);
+	
+	if (verbosity > 4) INFO("Atmosphere: GMRES solve...");
+	gmresSolver_.solve();
+	if (verbosity > 4) INFO("Atmosphere: GMRES solve... done");
+
+	int iters    = gmresSolver_.getNumIters();
+	double nrm   = gmresSolver_.residual();
+
+	if (verbosity > 4) INFO("Atmosphere GMRES, i = " << iters << " residual = " << nrm);
+	
+	TRACK_ITERATIONS("Atmosphere GMRES iterations...", iters);
+	TIMER_STOP("Atmosphere: solve...");
+}
+
 
 //-----------------------------------------------------------------------------
 void Atmosphere::idealizedOcean()
@@ -215,6 +262,7 @@ void Atmosphere::computeJacobian()
 	Al_->set({1,n_,1,m_,1,l_,1,np_}, 1, 1, txx);
 	boundaries();
 	assemble();
+	buildLU_ = true;
 
 	//jac_ = getJacobian();
 	
@@ -342,7 +390,7 @@ void Atmosphere::discretize(int type, Atom &atom)
 //-----------------------------------------------------------------------------
 void Atmosphere::assemble()
 {
-	// Create CRS matrix storage and/or banded storage 
+	// Create CRS matrix storage and/or padded banded storage 
 
 	// clear old CRS matrix
 	beg_.clear();
@@ -398,7 +446,7 @@ void Atmosphere::assemble()
 								rowb = rowb;
 								colb = col;
 								idx  = rowb + (colb - 1) * ldimA_ - 1;
-								bandedA_[idx] = value;
+								bandedA_[idx] = value;								
 							}
 						}
 					}
@@ -434,12 +482,31 @@ extern "C" void dgbsv_(int *N, int *KL, int *KU, int *NRHS, double *AB,
 					   int *LDAB, int *IPIV, double *B,
 					   int *LDB, int *INFO);
 
+// Solve banded system stored in bandedA_ EXPERT MODE
+extern "C" void dgbsvx_(char *FACT, char *TRANS,
+						int *N, int *KL, int *KU, int *NRHS, double *AB,
+						int *LDAB, double *AFB, int *LDAFB, int *IPIV,
+						char *EQUED, double *R, double *C,
+						double *B, int *LDB,
+						double *X, int *LDX,
+						double *RCOND, double *FERR, double *BERR,
+						double *WORK, int *IWORK, int *INFO);
+
+// Create LU factorization of banded system
+extern "C" void dgbtrf_(int *M, int *N, int *KL, int *KU, double *AB,
+						int *LDAB, int *IPIV, int *INFO);
+
+// Solve system using LU factorization given by dgbtrf
+extern "C" void dgbtrs_(char *TRANS, int *N, int *KL, int *KU, int *NRHS,
+						double *AB, int *LDAB, int *IPIV, double *B, int *LDB,
+						int *INFO);
+
 //-----------------------------------------------------------------------------
 void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 {
 	TIMER_START("Atmosphere: solve...");
 	
-	char trans  = 'N';	
+	char trans  = 'N';
 	int dim     = n_*m_*l_;
 	int nrhs    = 1;
 	int lda     = dim;
@@ -463,40 +530,63 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
 			   &ldimA_, ipiv_, &(*sol_)[0], &ldb, &info);
 	}
+	else if (solvingScheme_ == 'X')
+	{// TODO		
+	}
+	else
+		ERROR("Invalid solving scheme...", __FILE__, __LINE__);
+
 	double residual = computeResidual(rhs);
 	INFO("Atmosphere: solve... residual=" << residual);
 	TIMER_STOP("Atmosphere: solve...");
 }
-
+// FACTORIZE!!!!!!!!
 //-----------------------------------------------------------------------------
 void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 {
 	TIMER_START("Atmosphere: solve...");
 	
-	char trans  = 'N';	
+	char trans  = 'N';
+	
 	int dim     = n_*m_*l_;
 	int nrhs    = 1;
 	int lda     = dim;
 	int ldb     = dim;
+		
 	int info;
 	
-	out.assign(rhs.getAtmosVector());
-	std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();
-	// FACTORIZE?
 	if (solvingScheme_ == 'D')
 	{
+		out.assign(rhs.getAtmosVector());
+		std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();	
 		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
 				&(*sol)[0], &ldb, &info);
 	}
 	else if (solvingScheme_ == 'B')
-	{
-		// we use a copy to make sure bandedA_ does not get corrupted
-		std::vector<double> bandedAcopy(bandedA_);
-		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
-			   &ldimA_, ipiv_, &(*sol)[0], &ldb, &info);
+	{ 
+		if (buildLU_)
+		{
+			dgbtrf_(&dim, &dim, &ksub_, &ksup_, &bandedA_[0],
+					&ldimA_, ipiv_, &info);
+			buildLU_ = false; // until next request
+		}
+		
+		out.assign(rhs.getAtmosVector());
+		std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();
+
+		dgbtrs_(&trans, &dim, &ksub_, &ksup_, &nrhs,
+				&bandedA_[0], &ldimA_, ipiv_,  &(*sol)[0], &ldb, &info);
 	}
-	// double residual = computeResidual(rhs, out);
-	// INFO("Atmosphere: solve  residual = " << residual);
+	else if (solvingScheme_ == 'G')
+	{
+		std::shared_ptr<SuperVector> b =
+			std::make_shared<SuperVector>(rhs.getAtmosVector());
+		std::shared_ptr<SuperVector> v =
+			std::make_shared<SuperVector>(out.getAtmosVector());
+		GMRESSolve(b, v);
+		out.assign(v->getAtmosVector());
+	}
+	
 	TIMER_STOP("Atmosphere: solve...");
 }
 
@@ -903,7 +993,6 @@ void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
 	}
 	else
 		out.assign(v.getAtmosVector());
-
 }
 
 //-----------------------------------------------------------------------------

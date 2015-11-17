@@ -31,18 +31,26 @@
   <Parameter name="Global Bound ymax" type="double" value="80"     />
   
   <!-- global number of grid points in x,y and z-directions       -->
-  <Parameter name="Global Grid-Size n" type="int" value="128"      />
-  <Parameter name="Global Grid-Size m" type="int" value="64"       />
+  <Parameter name="Global Grid-Size n" type="int" value="32"       />
+  <Parameter name="Global Grid-Size m" type="int" value="32"       />
   <Parameter name="Global Grid-Size l" type="int" value="1"        />
   
   <!-- Supply solving scheme: 'D': direct dense                   -->
   <!--                        'B': direct banded                  -->
+  <!--                        'G': GMRES                          -->
   <Parameter name="Solving scheme" type="char" value="B"           />
 
-  <!-- Supply preconditioner: 'D': Direct solve                   -->
+  <!-- GMRES parameters                                           -->
+  <Parameter name="GMRES tolerance"       type="double" value="1e-1"/>
+  <Parameter name="GMRES iterations"      type="int"    value="100"/>
+  <Parameter name="GMRES restart"         type="int"    value="100"/>
+  <Parameter name="GMRES preconditioning" type="bool"   value="false"/>
+  <Parameter name="GMRES left prec"       type="bool"   value="false"/>
+  <Parameter name="GMRES verbosity"       type="int"    value="0"/>
+
+  <!-- Supply preconditioner: 'D': Full solve with solving scheme -->
   <!-- Supply preconditioner: 'J': Jacobi                         -->
   <!--                        'N': None                           -->
   <Parameter name="Preconditioner" type="char" value="D"           />
-
   
 </ParameterList>

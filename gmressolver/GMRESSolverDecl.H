@@ -38,7 +38,7 @@ class GMRESSolver
 	int m_;          // # iterations before restart
 	int iter_;       // iteration counter
 	
-	
+	bool prec_;      // use preconditioning
 	bool leftPrec_;  // use left preconditioning
 	
 	int verbosity_;

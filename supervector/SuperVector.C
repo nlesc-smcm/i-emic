@@ -185,14 +185,25 @@ double SuperVector::dot(SuperVector const &A) const
 //------------------------------------------------------------------
 double SuperVector::norm(char mode) const
 {
-	if ((mode == 'V') && haveAtmosVector_ && haveOceanVector_)
+	if (mode == 'V')
 	{
-		haveAtmosVector_ = false;
-		INFO(" ||ocean vector|| : " << sqrt(dot(*this)));
-		haveAtmosVector_ = true;
-		haveOceanVector_ = false;
-		INFO(" ||atmos vector|| : " << sqrt(dot(*this)));
-		haveOceanVector_ = true;
+		if (haveOceanVector_ && haveAtmosVector_)
+		{
+			haveAtmosVector_ = false;
+			INFO(" ||ocean vector|| : " << sqrt(dot(*this)));
+			haveAtmosVector_ = true;
+			haveOceanVector_ = false;
+			INFO(" ||atmos vector|| : " << sqrt(dot(*this)));
+			haveOceanVector_ = true;
+		}
+		else if (haveOceanVector_)
+		{
+			INFO(" ||ocean vector|| : " << sqrt(dot(*this)));
+		}
+		else if (haveAtmosVector_)
+		{
+			INFO(" ||atmos vector|| : " << sqrt(dot(*this)));
+		}
 	}
 			
 	double nrm2 = 0.0;

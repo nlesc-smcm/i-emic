@@ -107,7 +107,9 @@ public:
 	void initializeIDR();
 	void initializeGMRES();
 
-	void applyMatrix(SuperVector const &v, SuperVector &out);
+	// coupled   mode 'C'
+	// decoupled mode 'D'
+	void applyMatrix(SuperVector const &v, SuperVector &out, char mode = 'C');
 	void applyPrecon(SuperVector const &v, SuperVector &out);
 	
 	std::shared_ptr<SuperVector> applyMatrix(SuperVector const &v);
@@ -148,7 +150,12 @@ private:
 
 	// Compute the residual ||b-Jx||
 	double computeResidual(std::shared_ptr<SuperVector> rhs);
-	
+	// coupled   mode 'C'
+	// decoupled mode 'D'
+	double computeResidual(SuperVector const &rhs,
+						   SuperVector const &x,
+						   char mode = 'C');
+		
 	// Synchronize the states between the models that are needed to communicate
 	void synchronize();
 

@@ -98,37 +98,33 @@ void testGMRES(RCP<Epetra_Comm> Comm)
 	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
 		
 	// Create Atmosphere object
-	std::shared_ptr<Atmosphere> atmos =
-		std::make_shared<Atmosphere>(atmosphereParams);
-		
-	atmos->computeJacobian();
-	atmos->computeRHS();
+	Atmosphere atmos(atmosphereParams);
+
 	
-	std::shared_ptr<SuperVector> x = atmos->getState();
-	std::shared_ptr<SuperVector> b = atmos->getRHS();
+	atmos.computeJacobian();
+	atmos.computeRHS();
+	
+	std::shared_ptr<SuperVector> x = atmos.getState();
+	std::shared_ptr<SuperVector> b = atmos.getRHS();
 	x->info();
 	x->zero();
-	atmos->writeAll();
+	atmos.writeAll();
 	std::cout << " norm x: " << x->norm() << std::endl;
 	b->info();
 	std::cout << " norm b: " << b->norm() << std::endl;
 	b->scale(-1.0);	
-	
-	// Create parameter object for GMRESSolver
-	RCP<Teuchos::ParameterList> solverPars = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("solver_params.xml", solverPars.ptr());
 
 	// Create GMRESSolver object
 	GMRESSolver<Atmosphere, std::shared_ptr<SuperVector> >
-		solver(*atmos, x, b);
+		solver(atmos, x, b);
 
-	solver.setParameters(solverPars);
+	solver.setParameters(atmosphereParams);
 	int status = solver.solve();
 	std::cout << "status: " << status << std::endl;
 	x->print();
 
 	std::cout << solver.residual() << std::endl;
-
+	
 	TIMER_STOP("Total time...");		
 }
 
@@ -154,7 +150,7 @@ void testIDR(RCP<Epetra_Comm> Comm)
 	// Create Atmosphere object
 	std::shared_ptr<Atmosphere> atmos =
 		std::make_shared<Atmosphere>(atmosphereParams);
-		
+	
 	atmos->computeJacobian();
 	atmos->computeRHS();
 	

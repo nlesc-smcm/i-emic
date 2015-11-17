@@ -178,8 +178,6 @@ void CoupledModel::initializeGMRES()
 	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
 	
 	gmresSolver_.setParameters(solverParams_);
-	gmresSolver_.setSolution(getSolution('V'));
-	gmresSolver_.setRHS(getRHS('V'));
 	gmresInitialized_ = true;
 }
 
@@ -364,7 +362,7 @@ CoupledModel::applyMatrix(SuperVector const &v)
 }
 
 //------------------------------------------------------------------
-void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out)
+void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out, char mode)
 {
 	TIMER_START("CoupledModel: apply matrix...");
 
@@ -373,19 +371,23 @@ void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out)
 	ocean_->applyMatrix(v, out);  // A*x1
 	atmos_->applyMatrix(v, out);  // D*x2
 
-	// Make temporary copies of v to store linear transformations
-	SuperVector y(v);
-	SuperVector z(v);
+	if (mode == 'C')
+	{
+		// Make temporary copies of v to store linear transformations
+		SuperVector y(v);
+		SuperVector z(v);
 
-	// Perform mappings
-	y.linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
-	z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
-	y.zeroAtmos();        
-	z.zeroOcean();        
+		// Perform mappings
+		y.linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
+		z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
 
-	out.update(1,y,1);  // A*x1 + B*x2
-	out.update(1,z,1);  // D*x2 + C*x1
-	
+		// Just to be sure
+		y.zeroAtmos();        
+		z.zeroOcean();        
+
+		out.update(1,y,1);  // A*x1 + B*x2
+		out.update(1,z,1);  // D*x2 + C*x1
+	}	
 	TIMER_STOP("CoupledModel: apply matrix...");
 }
 
@@ -408,6 +410,7 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out)
 	out.zero();	// Initialize output
 	ocean_->applyPrecon(v, out);
 	atmos_->applyPrecon(v, out);
+
 	TIMER_STOP("CoupledModel: apply preconditioner...");	
 }
 
@@ -426,6 +429,15 @@ double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
 	return relResidual;
 }
 
+//----------------------------------------------------------------------------
+double CoupledModel::computeResidual(SuperVector const &rhs,
+									 SuperVector const &x, char mode)
+{
+	SuperVector r(x);
+	applyMatrix(x, r, mode);
+	r.update(1, rhs, -1);	
+	return r.norm('V');     // return ||b-Jx||
+}
 
 //------------------------------------------------------------------
 std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode)

@@ -18,8 +18,6 @@ HEADERDEPS = \
 	$(PROJECT_BASE)/supervector/SuperVector.H\
 	$(PROJECT_BASE)/idrsolver/IDRSolver.H\
 	$(PROJECT_BASE)/idrsolver/IDRSolverDecl.H\
-	$(PROJECT_BASE)/gmressolver/GMRESSolver.H\
-	$(PROJECT_BASE)/gmressolver/GMRESSolverDecl.H\
 	$(PROJECT_BASE)/ocean/GlobalDefinitions.H
 
 all: lib

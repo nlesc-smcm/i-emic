@@ -7,7 +7,7 @@
   <Parameter name="GMRES iterations" type="int"    value="1000"/>
   <Parameter name="GMRES restart"    type="int"    value="100"/>
   <Parameter name="GMRES left prec"  type="bool"   value="false"/>
-  <Parameter name="GMRES verbosity"  type="int"    value="5"/>
+  <Parameter name="GMRES verbosity"  type="int"    value="10"/>
   
   <!-- ..................................................................-->
   <!-- IDR(s) parameters                                                 -->

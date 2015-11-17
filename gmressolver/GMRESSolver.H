@@ -18,6 +18,7 @@ GMRESSolver(Model &model)
 	maxit_           (1000),
 	m_               (1000),
 	iter_            (0),
+	prec_            (true),
 	leftPrec_        (false),
 	verbosity_       (0)
 {}
@@ -39,6 +40,7 @@ GMRESSolver(Model &model,
 	maxit_           (1000),
 	m_               (1000),
 	iter_            (0),
+	prec_            (true),
 	leftPrec_        (false),
 	verbosity_       (0)
 {}
@@ -62,6 +64,7 @@ setParameters(ParListPtr pars)
 	maxit_          = pars->get("GMRES iterations", 500);
 	m_              = pars->get("GMRES restart", maxit_);
 	verbosity_      = pars->get("GMRES verbosity", 0);
+	prec_           = pars->get("GMRES preconditioning", true);
 	leftPrec_       = pars->get("GMRES left prec", false);
 }
 
@@ -92,7 +95,7 @@ solve()
 
 	double normb = b_->norm();
 
-	if (leftPrec_)
+	if (prec_ && leftPrec_)
 	{
 		model_.applyMatrix(*x_, tmp); // Ax
 		tmp.update(1.0, *b_, -1.0);   // b - Ax
@@ -126,25 +129,29 @@ solve()
 		
 		for (i = 0; i < m_ && iter_ <= maxit_; i++, iter_++)
 		{
-			if (verbosity_ > 2 && iter_ % 10 == 0) printIterStatus();
+			if (verbosity_ > 2 && iter_ % 10 == 0 || verbosity_ > 7) printIterStatus();
 			
-			if (leftPrec_)
+			// Compute w
+			if (leftPrec_ && prec_)
 			{
  				model_.applyMatrix(V[i], tmp); 
 				model_.applyPrecon(tmp, w);     // M.solve(A * v[i])
 			}
-			else // Right preconditioning (default)
+			else if (prec_) // Right preconditioning (default)
 			{
 				model_.applyPrecon(V[i], tmp);
 				model_.applyMatrix(tmp, w);    // w =  A * M^{-1} v[i]
+			}
+			else
+			{
+				model_.applyMatrix(V[i], w);   // w =  A * v[i]
 			}
 			
 			for (k = 0; k <= i; k++)
 			{
 				H[k][i] = w.dot(V[k]);            // H(k, i) = dot(w, v[k]);
 				w.update(-H[k][i], V[k], 1.0);    // w -= H(k, i) * v[k];
-			}
-			
+			}			
 			
 			H[i+1][i] = w.norm();
 			w.scale(1.0 / H[i+1][i]); //  w / H(i+1, i)
@@ -163,6 +170,7 @@ solve()
 				if (verbosity_ > 0)
 				{
 					PRINT("GMRES implicit residual passed...");
+					PRINT("         iterations = " << iter_);
 					PRINT("  implicit residual = " << resid_);
 				}
 				break;
@@ -175,7 +183,7 @@ solve()
 			Update(0, i, H, s, V);
 		
 		// Calculate explicit residual
-		if (leftPrec_)
+		if (prec_ && leftPrec_)
 		{
 			model_.applyMatrix(*x_, tmp); // Ax
 			tmp.update(1.0, *b_, -1.0);   // b - Ax
@@ -185,20 +193,20 @@ solve()
 		{
 			model_.applyMatrix(*x_, r); // Ax
 			r.update(1.0, *b_, -1.0);   // b - Ax
-		}		
+		}
 		beta    = r.norm();
 		resid_  = beta / normb;
 		
-		if (verbosity_ > 2)
+		if (verbosity_ > 0)
 			PRINT("  explicit residual = " << resid_);
 
 		if (resid_ < tol_)
 		{
-			if (verbosity_ > 6)
+			if (verbosity_ > 0)
 				PRINT("GMRES explicit residual passed...");
 			return 0;
 		}
-		else if (verbosity_ > 2)
+		else if (verbosity_ > 0)
 			PRINT("   restart ");
 	  }
 	return 1;
@@ -252,7 +260,7 @@ Update(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
 			y[j] -= H[j][i] * y[i];
 	}
 	
-	if (leftPrec_)
+	if (!prec_ || leftPrec_)
 	{
 		for (int j = first; j <= last; j++)
 			x_->update(y[j], V[j], 1.0); //x += v[j] * y(j);
@@ -265,7 +273,7 @@ Update(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
 		for (int j = first; j <= last; j++)
 			tmp1.update(y[j], V[j], 1.0); // tmp1 += v[j] * y(j);
 		model_.applyPrecon(tmp1, tmp2);   // tmp2  = inv(M)*V*y
-		x_->update(1.0, tmp2, 1.0);			
+		x_->update(1.0, tmp2, 1.0);		  // x += inv(M)*V*y
 	}
 }
 

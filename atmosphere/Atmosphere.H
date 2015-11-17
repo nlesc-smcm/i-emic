@@ -29,6 +29,7 @@
 #include "AtmosphereDefinitions.H"
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
+#include "GMRESSolver.H"
 
 class DependencyGrid;
 class Atom;
@@ -44,6 +45,8 @@ public:
 	using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
 
 private:
+	ParameterList params_;
+	
 	int n_;   //! #grid-points in east-west (x) direction
 	int m_;   //! #grid-points in north-south (y) direction
 	int l_;   //! #grid-points in vertical (z) direction
@@ -113,14 +116,21 @@ private:
 	int ksub_;                         // Number of subdiagonals
 	int ksup_;                         // Number of superdiagonals
 	int ldimA_;                        // Leading dimension of banded storage
+	bool buildLU_;
 
 	// Solving scheme: 'D': dense
 	//                 'B': banded
+	//                 'G': GMRES
 	char solvingScheme_;
 
 	// Preconditioner: 'J': Jacobi
+	//                 'D': Full solve using native solving scheme
 	//                 'N': None
 	char preconditioner_;
+	
+	// GMRES solver object
+	GMRESSolver<Atmosphere, std::shared_ptr<SuperVector> > gmresSolver_;
+	bool gmresInitialized_;
 
 	// Continuation parameter
 	double    ampl_; //! amplitude of forcing 
@@ -170,6 +180,7 @@ private:
 	// HDF5 input/output files
 	std::string const inputFile_;
 	std::string const outputFile_;
+
 	
 public:
 	// Constructor, specify horizontal grid dimensions
@@ -177,7 +188,7 @@ public:
 	Atmosphere(ParameterList params);
 
 	// Destructor
-	~Atmosphere();
+	virtual ~Atmosphere();
 
 	// Solve the matrix
 	// Needs some factorization
@@ -254,6 +265,12 @@ private:
 	// ! Perform the dot product of a single row with the state vector
 	double matvec(int row);
 
+	// GMRES routines
+	void initializeGMRES();
+	void GMRESSolve(std::shared_ptr<SuperVector> rhs);
+	void GMRESSolve(std::shared_ptr<SuperVector> rhs,
+					std::shared_ptr<SuperVector> out);
+	
 	// ! Compute residual
 	double computeResidual(std::shared_ptr<SuperVector> rhs);
 	double computeResidual(SuperVector const &rhs,

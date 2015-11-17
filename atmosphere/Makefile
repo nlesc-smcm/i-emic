@@ -8,7 +8,8 @@ obj= Atmosphere.o
 HEADERDEPS = \
 		../multiarray/MultiArray.H\
 		../supervector/SuperVector.H\
-		../ocean/GlobalDefinitions.H
+		../ocean/GlobalDefinitions.H\
+		../gmressolver/GMRESSolver.H\
 
 all: lib
 
@@ -17,7 +18,7 @@ lib: $(libname)
 $(libname): ${obj}
 	ar vrcs $(libname) $(obj)
 
-Atmosphere.o: Atmosphere.C Atmosphere.H
+Atmosphere.o: Atmosphere.C Atmosphere.H $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
 
 %.o: %.C %.H $(HEADERDEPS)
