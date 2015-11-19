@@ -42,8 +42,8 @@ Atmosphere::Atmosphere(ParameterList params)
 	t0_              (params->get("reference temperature",15.0)),
 	udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
 	r0dim_           (params->get("radius of the earth",6.37e+06)),
-	
-	useExistingState_(params->get("Use existing state", false)),
+	loadState_       (params->get("Load state", false)),
+	saveState_       (params->get("Save state", false)),
 	inputFile_       (params->get("Input file", "atmos.h5")),
 	outputFile_      (params->get("Output file", "atmos.h5"))
 {
@@ -137,7 +137,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	}
 
 	// If specified we load a pre-existing state and parameter (x,l)
-	if (useExistingState_)
+	if (loadState_)
 		loadStateFromFile(inputFile_);
 
 	INFO("Atmosphere: constructor... done");
@@ -1050,7 +1050,9 @@ void Atmosphere::preProcess()
 //-----------------------------------------------------------------------------
 void Atmosphere::postProcess()
 {
-	saveStateToFile("atmos.h5");
+	if (saveState_)
+		saveStateToFile("atmos.h5");
+	
 	write(*state_, "atmos_state.txt");       
 }
 

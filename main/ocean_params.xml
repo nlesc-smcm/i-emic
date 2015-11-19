@@ -3,8 +3,9 @@
 
   <!-- Specify whether the ocean model should initialize with -->
   <!-- an old state (true) or with a zero solution (false).   -->
-  <Parameter name="Use existing state" type="bool" value = "false"/>
-
+  <Parameter name="Load state" type="bool" value = "false"/>
+  <Parameter name="Save state" type="bool" value = "false"/>
+  
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->

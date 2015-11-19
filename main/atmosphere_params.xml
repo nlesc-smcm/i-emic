@@ -1,4 +1,9 @@
 <ParameterList name="Atmosphere parameters">
+
+  <!-- Specify whether the ocean model should initialize with     -->
+  <!-- an old state (true) or with a zero solution (false).       -->
+  <Parameter name="Load state" type="bool" value="false" />
+  <Parameter name="Save state" type="bool" value="false" />
   
   <Parameter name="atmospheric density"                 type="double" value="1.25"     />
   <Parameter name="atmospheric scale height"            type="double" value="8400"     />
@@ -20,9 +25,6 @@
   <!-- Periodic boundary conditions in x-direction                -->
   <Parameter name="Periodic" type="bool" value="false"             />
   
-  <!-- Specify whether the ocean model should initialize with     -->
-  <!-- an old state (true) or with a zero solution (false).       -->
-  <Parameter name="Use existing state" type="bool" value="false" />
   
   <!-- western, eastern, southern and northern domain bounds      -->
   <Parameter name="Global Bound xmin" type="double" value="200"    />

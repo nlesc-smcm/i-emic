@@ -110,8 +110,9 @@ protected:
 	std::string const inputFile_;
 	std::string const outputFile_;
 
-	// Flag for loading pre-existing state
-	bool useExistingState_;
+	// Flags for loading/saving states from/to hfd5 file
+	bool loadState_;
+	bool saveState_;
 	
 	//------------------------------------------------------------------
 	// Datamembers in charge of the continuation parameter

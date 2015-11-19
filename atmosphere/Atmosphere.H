@@ -174,13 +174,13 @@ private:
 	//!  As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
 	std::vector<double> suna_;
 
-	// Flag for loading pre-existing state
-	bool useExistingState_;
-
+	// Flags for loading/saving states from/to hfd5 file
+	bool loadState_;
+	bool saveState_;
+	
 	// HDF5 input/output files
 	std::string const inputFile_;
 	std::string const outputFile_;
-
 	
 public:
 	// Constructor, specify horizontal grid dimensions

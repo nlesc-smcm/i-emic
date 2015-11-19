@@ -48,8 +48,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	idrSolver_           (*this),  // Initialize IDR solver with current object (ocean);
 	inputFile_           (oceanParamList->get("Input file", "ocean.h5")),
 	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
-	useExistingState_    (oceanParamList->get("Use existing state", false)),
-	parIdent_            (19),     // Initialize continuation parameters
+	loadState_           (oceanParamList->get("Load state", false)),
+	saveState_           (oceanParamList->get("Save state", false)),
+	parIdent_            (oceanParamList->get("THCM continuation par", 19)),
 	parValue_            (0),
 	parStart_            (0),
 	parEnd_              (1)
@@ -80,7 +81,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	L_ = domain_->GlobalL();
 	
 	// If specified we load a pre-existing state and parameter (x,l)
-	if (useExistingState_)
+	if (loadState_)
 		loadStateFromFile(inputFile_);
 		
 	// Obtain Jacobian from THCM
@@ -127,7 +128,9 @@ void Ocean::preProcess()
 //====================================================================
 void Ocean::postProcess()
 {
-	saveStateToFile(outputFile_);
+	if (saveState_)
+		saveStateToFile(outputFile_);
+	
 	writeFortFiles();
 }
 
