@@ -93,10 +93,10 @@ namespace TRIOS {
 	  Three different permutations are implemented (see Arie's thesis, p. 104).     
 	  The permutation used is selected by the option "Permutation" (1, 2, or 3):    
                                                                                       
-	  | Ap   0   0  BTS |       | Kuvp 0   0 Guv |       | Aw  0   0  Duv  |     
+           | Ap   0   0  BTS |       | Kuvp 0   0 Guv |       | Aw  0   0  Duv  |     
       M1 = | Guv Kuvp 0   0  |, M2 = | Duv  Aw  0  0  |, M3 = | Bw ATS  0  Buv  |     
-	  |  0  Duv  Aw  0  |       | Buv  Bw ATS 0  |       | 0  BTS Ap   0   |     
-	  | Buv  0   Bw ATS |       |  0   0  BTS Ap |       | 0   0  Guv Kuvp |     
+	       |  0  Duv  Aw  0  |       | Buv  Bw ATS 0  |       | 0  BTS Ap   0   |     
+	       | Buv  0   Bw ATS |       |  0   0  BTS Ap |       | 0   0  Guv Kuvp |     
                                                                                       
     */
     class BlockPreconditioner: public Ifpack_Preconditioner

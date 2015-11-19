@@ -1506,8 +1506,8 @@ namespace TRIOS {
 			CHECK_ZERO(yp.Update(-fac1,*svp1,-fac2,*svp2,1.0));
 		}
 #else
+		
 		// Compute the pressure (yp)
-
 		// Compute ytilp = Ap\[bw,0]'      
 		TIMER_START("BlockPrec: solve Ap\[bw,0]...");
 		Epetra_Vector ytilp(*mapP1);
