@@ -1509,10 +1509,10 @@ namespace TRIOS {
 		
 		// Compute the pressure (yp)
 		// Compute ytilp = Ap\[bw,0]'      
-		TIMER_START("BlockPrec: solve Ap\[bw,0]...");
+		TIMER_START("BlockPrec: solve Ap \ [bw,0]...");
 		Epetra_Vector ytilp(*mapP1);
 		Ap->ApplyInverse(bw,ytilp);
-		TIMER_STOP("BlockPrec: solve Ap\[bw,0]...");
+		TIMER_STOP("BlockPrec: solve Ap \ [bw,0]...");
 
 		TIMER_START("BlockPrec: solve depth-av Spp");
 		// Solve the depth-averaged Saddlepoint problem
