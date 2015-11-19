@@ -170,8 +170,6 @@ void Atmosphere::GMRESSolve(std::shared_ptr<SuperVector> rhs,
 
 	int verbosity = params_->get("GMRES verbosity", 0);
 	
-	TIMER_START("Atmosphere: solve...");
-
 	gmresSolver_.setSolution (out);
 	gmresSolver_.setRHS      (rhs);
 	
@@ -185,7 +183,6 @@ void Atmosphere::GMRESSolve(std::shared_ptr<SuperVector> rhs,
 	if (verbosity > 4) INFO("Atmosphere GMRES, i = " << iters << " residual = " << nrm);
 	
 	TRACK_ITERATIONS("Atmosphere GMRES iterations...", iters);
-	TIMER_STOP("Atmosphere: solve...");
 }
 
 
@@ -529,9 +526,6 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 		std::vector<double> bandedAcopy(bandedA_);
 		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
 			   &ldimA_, ipiv_, &(*sol_)[0], &ldb, &info);
-	}
-	else if (solvingScheme_ == 'X')
-	{// TODO		
 	}
 	else
 		ERROR("Invalid solving scheme...", __FILE__, __LINE__);
@@ -1117,7 +1111,6 @@ void Atmosphere::saveStateToFile(std::string const &filename)
 //-----------------------------------------------------------------------------
 void Atmosphere::loadStateFromFile(std::string const &filename)
 {
-	TIMER_START("Atmosphere::loadStateFromFile()...");
 	INFO("Loading from " << filename);
 
 	hid_t    file_id, dataset_id;
@@ -1162,7 +1155,6 @@ void Atmosphere::loadStateFromFile(std::string const &filename)
 		if (status[i] != 0)
 			WARNING("Status[" << i << "] not ok", __FILE__, __LINE__);
 
-	TIMER_STOP("Atmosphere::loadStateFromFile()...");
 }
 
 //=============================================================================

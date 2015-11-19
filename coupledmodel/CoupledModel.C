@@ -185,6 +185,7 @@ void CoupledModel::initializeGMRES()
 void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 {
 	// Start solve
+	TIMER_START("CoupledModel: solve...");
 	if (solvingScheme_ == 'D') // fully decoupled solve
 	{
 		ocean_->solve(Teuchos::rcp(rhs.get(), false));
@@ -201,7 +202,8 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 				__FILE__, __LINE__);
 
 	// Update the profile after a solve
-	printProfile(profile);	
+	printProfile(profile);
+	TIMER_STOP("CoupledModel: solve...");
 }
 
 //------------------------------------------------------------------
@@ -210,7 +212,6 @@ void CoupledModel::IDRSolve(std::shared_ptr<SuperVector> rhs)
 	if (!idrInitialized_)
 		initializeIDR();
 		
-	TIMER_START("CoupledModel: solve...");
 
 	// Clear the search space every X calls:
 	if (idrSolveCtr_ % clearSPFreq_ == 0)
@@ -232,7 +233,6 @@ void CoupledModel::IDRSolve(std::shared_ptr<SuperVector> rhs)
 	INFO("CoupledModel IDR, i = " << iters << " exp res norm: " << nrm);
 	INFO("CoupledModel residual = " << res);		
 	TRACK_ITERATIONS("CoupledModel IDR iterations...", iters);
-	TIMER_STOP("CoupledModel: solve...");
 }
 
 //------------------------------------------------------------------
@@ -241,7 +241,6 @@ void CoupledModel::GMRESSolve(std::shared_ptr<SuperVector> rhs)
 	if (!gmresInitialized_)
 		initializeGMRES();
 		
-	TIMER_START("CoupledModel: solve...");
 	solView_->zero();
 	gmresSolver_.setSolution(getSolution('V'));
 	gmresSolver_.setRHS(rhs);
@@ -257,13 +256,11 @@ void CoupledModel::GMRESSolve(std::shared_ptr<SuperVector> rhs)
 	INFO("CoupledModel GMRES, i = " << iters << " exp res norm: " << nrm);
 	INFO("CoupledModel residual = " << res);		
 	TRACK_ITERATIONS("CoupledModel GMRES iterations...", iters);
-	TIMER_STOP("CoupledModel: solve...");
 }
 
 //------------------------------------------------------------------
 void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 {
-	TIMER_START("CoupledModel: blockGS solve...");
 	// ***************************************************************
  	// Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
 	//           M = [A, 0; 0, D], E = [0, 0; -C, 0], F = [0, -B; 0, 0]
@@ -335,7 +332,6 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 	if (i == iterGS_)
 		WARNING("GS tolerance not reached...", __FILE__, __LINE__);
 
-	TIMER_STOP("CoupledModel: blockGS solve...");
 }
 
 //------------------------------------------------------------------
@@ -643,7 +639,6 @@ void CoupledModel::printProfile(ProfileType profile)
 			LINE(s.str(), "", map.first.substr(5), ":", map.second[0], "",
 				 map.second[1], "", map.second[2]);
 		}
-	
 }
 
 //------------------------------------------------------------------

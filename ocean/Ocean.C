@@ -539,6 +539,7 @@ void Ocean::applyPrecon(SuperVector const &v, SuperVector &out)
 	if (recompPreconditioner_) 	// Compute preconditioner
 		buildPreconditioner();
 	
+
 	TIMER_START("Ocean: apply preconditioning...");
 	precPtr_->ApplyInverse(*(v.getOceanVector()), *(out.getOceanVector()));
 	TIMER_STOP("Ocean: apply preconditioning...");
@@ -649,7 +650,6 @@ void Ocean::writeFortFiles()
 //=====================================================================
 void Ocean::saveStateToFile(std::string const &filename)
 {
-	TIMER_START("Ocean::saveStateToFile...");
 	
 	INFO("Writing to " << filename);
 
@@ -659,13 +659,11 @@ void Ocean::saveStateToFile(std::string const &filename)
 	HDF5.Write("State", *state_);
 	HDF5.Write("Continuation parameter", "Value", parValue_);
 	
-	TIMER_STOP("Ocean::saveStateToFile...");
 }
 
 //=====================================================================
 void Ocean::loadStateFromFile(std::string const &filename)
 {
-	TIMER_START("Ocean::loadStateFromFile...");
 
 	// Check whether file exists
 	INFO("Loading from " << filename);
@@ -700,8 +698,6 @@ void Ocean::loadStateFromFile(std::string const &filename)
 	// Read continuation parameter and put it in THCM
 	HDF5.Read("Continuation parameter", "Value", parValue_);
 	setPar(parValue_);
-	
-	TIMER_STOP("Ocean::loadStateFromFile...");
 }
 
 //====================================================================

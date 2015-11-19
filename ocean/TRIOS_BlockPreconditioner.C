@@ -1180,7 +1180,6 @@ namespace TRIOS {
 	ApplyInverse(const Epetra_MultiVector& input,
 				 Epetra_MultiVector& result) const
 	{
-		TIMER_START("BlockPreconditioner: ApplyInverse...");
 		
   
 		bool noisy = (verbose>=8);
@@ -1208,12 +1207,6 @@ namespace TRIOS {
 		const Epetra_Vector& b = *(input_vec);
 		Epetra_Vector& x =       *(result_vec);
 
-
-#ifdef DUMP_LINSYS
-		this->dumpLinSys(x,b);
-		ERROR("Only dump linear system, stopping now",__FILE__,__LINE__);
-#endif
-
 		// make the solvers report to our own files
 		// (note that Aztec uses a static stream   
 		// because it is based on old C code)      
@@ -1239,9 +1232,10 @@ namespace TRIOS {
 		// (0) PREPROCESSING
 
 		if (noisy)  INFO("(0) Split rhs vector ...");
+		
+		TIMER_START("BlockPrec: split rhs vector...");
 
-
-		// split b = [buv,bw,bp,bTS]' and x = [xuv,xw,xp,xTS]'
+		// split b = [buv,bw,bp,bTS]' and x = [xuv,xw,xp,xTS]'		
 		Epetra_Vector buv(*mapUV);
 		Epetra_Vector bw(*mapW1);
 		Epetra_Vector bp(*mapP1);
@@ -1261,6 +1255,8 @@ namespace TRIOS {
 		CHECK_ZERO(xw.Export(x,*importW1,Zero));
 		CHECK_ZERO(xp.Export(x,*importP1,Zero));
 		CHECK_ZERO(xTS.Export(x,*importTS,Zero));
+
+		TIMER_STOP("BlockPrec: split rhs vector...");
 
 		// set bp = -bp (the sign of the cont. eqn. has been changed)
 		CHECK_ZERO(bp.Scale(-1.0));
@@ -1306,7 +1302,8 @@ namespace TRIOS {
 		}
 		else if (scheme=="Gauss-Seidel")
 		{
-			//solve y = (D+wL)\b   
+			//solve y = (D+wL)\b
+			TIMER_START("BlockPrec: solve y = (D+wL)\b...");
 			if (noisy) INFO("(1) Solve (D+wL)x=b...");
 			if (permutation==1)
 				SolveLower1(buv,bw,bp,bTS,xuv, xw,xp,xTS);
@@ -1316,6 +1313,7 @@ namespace TRIOS {
 				SolveLower3(buv,bw,bp,bTS,xuv, xw,xp,xTS);
 			else
 				ERROR("Invalid choice of parameter 'Permutation' (should be 1, 2 or 3)",__FILE__,__LINE__);
+			TIMER_STOP("BlockPrec: solve y = (D+wL)\b...");
 		}
 		else if (scheme=="symmetric Gauss-Seidel")
 		{
@@ -1343,16 +1341,18 @@ namespace TRIOS {
 		}
 
 		// (3) Postprocessing
+
 		if (noisy) INFO("(3) Postprocess: construct final result...");
 
 		// (3.1) fill result vector x
+		TIMER_START("BlockPrec: fill result vector x...");
 		CHECK_ZERO(x.PutScalar(0.0));
 		CHECK_ZERO(x.Import(xuv,*importUV,Add));
 		CHECK_ZERO(x.Import(xw,*importW1,Add));
 		CHECK_ZERO(x.Import(xp,*importP1,Add));
 		CHECK_ZERO(x.Import(xTS,*importTS,Add));
+		TIMER_STOP("BlockPrec: fill result vector x...");
 
-    
 		// reset the static Aztec stream for the outer iteration
 		// as it may happen that there is no Auv Solver, we do  
 		// it for all three solvers to make sure the stream is  
@@ -1371,36 +1371,8 @@ namespace TRIOS {
 		{
 			ATSSolver->SetOutputStream(*OuterStream);
 			ATSSolver->SetErrorStream(*OuterErrorStream);
-		}
-#ifdef STORE_RESIDUAL //[
-		{
-			Epetra_Vector res(x.Map());
-			CHECK_ZERO(jacobian->Multiply(false,x,res));
-			CHECK_ZERO(res.Update(1.0,b,-1.0));
-			Teuchos::RCP<std::ostream> out;
-			if (comm->MyPID()==0)
-			{
-				std::stringstream fname;
-				fname<<"Prec_Residual.txt";
-				out = Teuchos::rcp(new std::ofstream(fname.str().c_str()) );
-			}
-			else
-			{ // dummy stream
-				out = Teuchos::rcp(new Teuchos::oblackholestream());
-			}
-			(*out) << std::setw(15) << std::setprecision(15);
-			(*out) << *(Utils::Gather(res,0));
-			double nrmr,nrmb;
-			res.Norm2(&nrmr);
-			b.Norm2(&nrmb);
-			INFO("Preconditioner residual ||A(P\b)-b||/||b||: "<<nrmr/nrmb);
-		}
-#endif//]
-  
-//  DEBVAR(result);
-		TIMER_STOP("BlockPreconditioner: ApplyInverse...");
+		}  
 		return 0;
-  
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1512,10 +1484,14 @@ namespace TRIOS {
 	//////////////////////////////////////////////////////////////////////////////
 	// solve Ly = b for y:                                                      //
 	//////////////////////////////////////////////////////////////////////////////
-	void BlockPreconditioner::SolveLower1(const Epetra_Vector& buv, const Epetra_Vector& bw, 
-										  const Epetra_Vector& bp, const Epetra_Vector& bTS, 
-										  Epetra_Vector& yuv, Epetra_Vector& yw, 
-										  Epetra_Vector& yp, Epetra_Vector& yTS) const
+	void BlockPreconditioner::SolveLower1(const Epetra_Vector& buv,
+										  const Epetra_Vector& bw, 
+										  const Epetra_Vector& bp,
+										  const Epetra_Vector& bTS, 
+										  Epetra_Vector& yuv,
+										  Epetra_Vector& yw, 
+										  Epetra_Vector& yp,
+										  Epetra_Vector& yTS) const
 	{
 #ifdef DUMMY_PREC
 		if (DoPresCorr)
@@ -1533,11 +1509,13 @@ namespace TRIOS {
 		// Compute the pressure (yp)
 
 		// Compute ytilp = Ap\[bw,0]'      
+		TIMER_START("BlockPrec: solve Ap\[bw,0]...");
 		Epetra_Vector ytilp(*mapP1);
 		Ap->ApplyInverse(bw,ytilp);
+		TIMER_STOP("BlockPrec: solve Ap\[bw,0]...");
 
+		TIMER_START("BlockPrec: solve depth-av Spp");
 		// Solve the depth-averaged Saddlepoint problem
-
 		// (a) depth-average bzp = Mzp*bp
 		Epetra_Vector bzp(*mapPbar);
 		CHECK_ZERO(Mzp2->Multiply(false,bp,bzp));
@@ -1564,28 +1542,24 @@ namespace TRIOS {
 		yzuvp = bzuvp;
 
 		if (zero_init)
-		{
 			CHECK_ZERO(yzuvp.PutScalar(0.0));
-		}
-		{  
-			
+
+		{ // --> in a scope for some reason?
 			if (SppSolver!=Teuchos::null) 
 			{
-				// (d) solve Saddlepoint problem yzuvp = Spp\bzuvp using Krylov method
-				// with our own preconditioner
+				// (d) solve Saddlepoint problem yzuvp = Spp\bzuvp
+				//     using Krylov method
+				//     with our own preconditioner
 				CHECK_ZERO(SppSolver->SetRHS(&bzuvp));
 				CHECK_ZERO(SppSolver->SetLHS(&yzuvp));
-
 				CHECK_NONNEG(SppSolver->Iterate(nitSpp,tolSpp));
 			}
 			else
-			{
 				CHECK_ZERO(SppPrecond->ApplyInverse(bzuvp,yzuvp));
-			}
-
-		}                     
+		}
+		TIMER_STOP("BlockPrec: solve depth-av Spp");
+		
 		// Construct the pressure
-
 		// a) yp = ytilp + Mzp1'*yzp
 		Epetra_Vector yzp(*mapPbar);
 		for (int i=0; i<nzp; i++)
@@ -1607,8 +1581,8 @@ namespace TRIOS {
 		// Solve the velocity field yuv
 		for (int i=0;i<nzuv;i++) yuv[i] = yzuvp[i];
 
+		TIMER_START("BlockPrec: solve vert. velocity field...");
 		// Solve vertical velocity field
-
 		// yw = bp(1:nw) - Duv1*yuv 
 		// note that the sign of Duv has been changed!
 		// Duv maps to P1, but Duv1 has been shifted
@@ -1622,8 +1596,10 @@ namespace TRIOS {
 		Epetra_Vector rhsw = yw;
 		CHECK_ZERO(Aw->Solve(false,false,false,rhsw,yw));
 		//     Utils::TriSolve(*Aw,rhsw,yw);
+		TIMER_STOP("BlockPrec: solve vert. velocity field...");
 
-		// temperature and salinity equantions
+		TIMER_START("BlockPrec: solve temp and sal equations...");
+		// temperature and salinity equations
 
 		// yTS = BTSuv*yuv
 		CHECK_ZERO(SubMatrix[_BTSuv]->Multiply(false,yuv,yTS));
@@ -1634,12 +1610,12 @@ namespace TRIOS {
 
 		// yTS2 = bTS - yTS - yTS2
 		CHECK_ZERO(yTS2.Update(1.0,bTS,-DampingFactor,yTS,-DampingFactor));
-		{
-			
+		{ // --> scope?
 			this->SolveATS(yTS2,yTS,tolATS,nitATS);
 		}
+		TIMER_STOP("BlockPrec: solve temp and sal equations...");
 #endif        
-
+		
 		return;
 
 	}//SolveLower1
