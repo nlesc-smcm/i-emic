@@ -1303,7 +1303,7 @@ namespace TRIOS {
 		else if (scheme=="Gauss-Seidel")
 		{
 			//solve y = (D+wL)\b
-			TIMER_START("BlockPrec: solve y = (D+wL)\b...");
+			TIMER_START("BlockPrec: solveLower1...");
 			if (noisy) INFO("(1) Solve (D+wL)x=b...");
 			if (permutation==1)
 				SolveLower1(buv,bw,bp,bTS,xuv, xw,xp,xTS);
@@ -1313,7 +1313,7 @@ namespace TRIOS {
 				SolveLower3(buv,bw,bp,bTS,xuv, xw,xp,xTS);
 			else
 				ERROR("Invalid choice of parameter 'Permutation' (should be 1, 2 or 3)",__FILE__,__LINE__);
-			TIMER_STOP("BlockPrec: solve y = (D+wL)\b...");
+			TIMER_STOP("BlockPrec: solveLower1...");
 		}
 		else if (scheme=="symmetric Gauss-Seidel")
 		{
@@ -1509,10 +1509,10 @@ namespace TRIOS {
 		
 		// Compute the pressure (yp)
 		// Compute ytilp = Ap\[bw,0]'      
-		TIMER_START("BlockPrec: solve Ap \ [bw,0]...");
+		TIMER_START("BlockPrec: solve Ap...");
 		Epetra_Vector ytilp(*mapP1);
 		Ap->ApplyInverse(bw,ytilp);
-		TIMER_STOP("BlockPrec: solve Ap \ [bw,0]...");
+		TIMER_STOP("BlockPrec: solve Ap...");
 
 		TIMER_START("BlockPrec: solve depth-av Spp");
 		// Solve the depth-averaged Saddlepoint problem
@@ -1581,7 +1581,7 @@ namespace TRIOS {
 		// Solve the velocity field yuv
 		for (int i=0;i<nzuv;i++) yuv[i] = yzuvp[i];
 
-		TIMER_START("BlockPrec: solve vert. velocity field...");
+		TIMER_START("BlockPrec: Aw");
 		// Solve vertical velocity field
 		// yw = bp(1:nw) - Duv1*yuv 
 		// note that the sign of Duv has been changed!
@@ -1596,9 +1596,9 @@ namespace TRIOS {
 		Epetra_Vector rhsw = yw;
 		CHECK_ZERO(Aw->Solve(false,false,false,rhsw,yw));
 		//     Utils::TriSolve(*Aw,rhsw,yw);
-		TIMER_STOP("BlockPrec: solve vert. velocity field...");
+		TIMER_STOP("BlockPrec: Aw");
 
-		TIMER_START("BlockPrec: solve temp and sal equations...");
+		TIMER_START("BlockPrec: ATS");
 		// temperature and salinity equations
 
 		// yTS = BTSuv*yuv
@@ -1613,7 +1613,7 @@ namespace TRIOS {
 		{ // --> scope?
 			this->SolveATS(yTS2,yTS,tolATS,nitATS);
 		}
-		TIMER_STOP("BlockPrec: solve temp and sal equations...");
+		TIMER_STOP("BlockPrec: ATS");
 #endif        
 		
 		return;
@@ -1955,13 +1955,17 @@ namespace TRIOS {
 		// Solve system with ATS or Arhomu iteratively or apply preconditioner once
 		if (ATSSolver!=Teuchos::null)
 		{
+			TIMER_START("BlockPrec: ATS->ATSSolver");
 			ATSSolver->SetRHS(rhs_ptr.get());
 			ATSSolver->SetLHS(sol_ptr.get());
 			CHECK_NONNEG(ATSSolver->Iterate(maxit,tol));
+			TIMER_STOP("BlockPrec: ATS->ATSSolver");
 		}
 		else
 		{
+			TIMER_START("BlockPrec: ATS->ATSPRECOND");
 			CHECK_ZERO(ATSPrecond->ApplyInverse(*rhs_ptr,*sol_ptr));
+			TIMER_STOP("BlockPrec: ATS->ATSPRECOND");
 		}
 #ifdef LINEAR_ARHOMU_MAPS
 		if (Arhomu_linearmap!=Teuchos::null)

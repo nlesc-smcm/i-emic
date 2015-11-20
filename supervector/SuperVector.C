@@ -305,14 +305,14 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 {
 	if (domain == 'O' && range == 'A')
 	{
-		TIMER_START("SuperVector: linearTransformation O->A...");
+		TIMER_START("SuperVector: LINTRANS O->A");
 		int dstLength = diagonal.size();
 		int srcLength = indices.size();
 		
 		// Re-initialize atmosVector				
 		atmosVector_ = std::make_shared<std::vector<double> >
 			(dstLength, 0.0);
-
+		
 		// Get the part of the oceanVector restricted to the supplied indices
 		Teuchos::RCP<Epetra_Vector> restricted =
 			Utils::RestrictVector(*oceanVector_, indices);		
@@ -333,11 +333,11 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 		// Cleanup
 		delete fullSol;
 		
-		TIMER_STOP("SuperVector: linearTransformation O->A...");
+		TIMER_STOP("SuperVector: LINTRANS O->A");
 	}
 	else if (domain == 'A' && range == 'O')
 	{
-		TIMER_START("SuperVector: linearTransformation A->O...");
+		TIMER_START("SuperVector: LINTRANS A->O");
 		// calculate diagonal scaling
 		std::vector<double> values;
 		for (size_t i = 0; i != atmosVector_->size(); ++i)
@@ -350,13 +350,13 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 		oceanVector_->ReplaceGlobalValues(
 			atmosVector_->size(),
 			&values[0], &indices[0]);
-		TIMER_STOP("SuperVector: linearTransformation A->O...");
+		TIMER_STOP("SuperVector: LINTRANS A->O");
 	}
 }
 //------------------------------------------------------------------
 void SuperVector::linearTransformation(Teuchos::RCP<Epetra_CrsMatrix> mat)
 {
-	TIMER_START("SuperVector: linearTransformation O->O...");
+	TIMER_START("SuperVector: LINTRANS O->O");
 
 	Teuchos::RCP<Epetra_Vector> tmp = Teuchos::rcp(new Epetra_Vector(oceanVector_->Map()));
 	if (haveOceanVector_)
@@ -365,16 +365,16 @@ void SuperVector::linearTransformation(Teuchos::RCP<Epetra_CrsMatrix> mat)
 		oceanVector_ = tmp;
 	}
 	else
-		WARNING("No oceanVector...", __FILE__, __LINE__);
+		WARNING("No oceanVector", __FILE__, __LINE__);
 	
-	TIMER_STOP("SuperVector: linearTransformation O->O...");
+	TIMER_STOP("SuperVector: LINTRANS O->O");
 }
 
 //------------------------------------------------------------------
 void SuperVector::linearTransformation(std::shared_ptr<std::map<std::string,
 									   std::vector<double> > > mat)
 {
-	TIMER_START("SuperVector: linearTransformation A->A...");
+	TIMER_START("SuperVector: LINTRANS A->A");
 
 	int first;
 	int last;
@@ -396,9 +396,9 @@ void SuperVector::linearTransformation(std::shared_ptr<std::map<std::string,
 		atmosVector_ = std::make_shared<std::vector<double> >(result);
 	}
 	else
-		WARNING("No atmosVector...", __FILE__, __LINE__);
+		WARNING("No atmosVector", __FILE__, __LINE__);
 	
-	TIMER_STOP("SuperVector: linearTransformation A->A...");
+	TIMER_STOP("SuperVector: LINTRANS A->A");
 }
 
 //------------------------------------------------------------------

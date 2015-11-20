@@ -18,16 +18,26 @@ function [profile] = plot_profile(filename, range, domain)
   
   colm = lines(numel(range));
   ctr  = 1;
+  linst = {'.-','.:','.--'};
   for i = range
       pllt = profile.data((i-1)*N+2:i*N+1);
       figure(9) 
-      semilogy(x_axis(domain), pllt(domain),'.-','linewidth',2,'markersize',15,'color',colm(ctr,:));
+      semilogy(x_axis(domain), pllt(domain),linst{mod(ctr,numel(linst))+1},...
+                    'linewidth',2,'markersize',15,'color',colm(ctr,:));
+      x = x_axis(domain(end));    
+      y = pllt(domain(end));
+      hold on
+      text((1.02+(rand-.5)/30)*x,y,num2str(i),'color',colm(ctr,:));
       hold on
       
       figure(10)
-      plot(x_axis(domain),pllt(1)./pllt(domain),'.-','linewidth',2,'markersize',15,'color',colm(ctr,:));
+      plot(x_axis(domain),pllt(1)./pllt(domain),linst{mod(ctr,numel(linst))+1},...
+                    'linewidth',2,'markersize',15,'color',colm(ctr,:));
+      x = x_axis(domain(end));
+      y = pllt(1)./pllt(domain(end));      
       hold on
-      
+      text((1.02+(rand-.5)/30)*x,y,num2str(i),'color',colm(ctr,:));
+      profile.textdata{i} = ['(',num2str(i),'): ',profile.textdata{i}];
       ctr = ctr + 1;
   end
   figure(9)
