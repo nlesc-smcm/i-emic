@@ -1,4 +1,4 @@
-function [Q,M,V,D] = build_covmat(range, Q, mode)
+function [Q,M,V,D] = convergence_covmat(max, neigs)
   fprintf(1,'----------------------------------------------\n')
   %% - DEFINE CONSTANTS - ----------------------------------------------
   udim  = 0.1;                 %[m/s]   Velocity scale
@@ -18,42 +18,52 @@ function [Q,M,V,D] = build_covmat(range, Q, mode)
   %% - READ SOLUTION --------------
   dim = n*m*(l+la)*nun;
   %=======================================================================
-  
+  range_b = 1;
+  range_e = 8;
+  M = zeros(max,dim);
+  obs = 0;
+  fileID = fopen('eigenvalues.txt','w')
+  while range_e <= max
+	fprintf('adding observations %d to %d\n', range_b, range_e);
+	range = 999 + (range_b:range_e);
 
-  obs = numel(range);
-  
-  if nargin < 2 || isempty(Q)
-	% data matrix
-	M = read_many_forts(range, dim);
+	range_b = range_e + 1;
+	range_e = range_e*2;
 
+	obs_old  = obs;
+	obs      = obs + numel(range);
+	m_range  = 1:obs;
+	m_append = obs_old+1:obs;
+	M(m_append,:) = read_many_forts(range, dim);
+	
 	% remove checkerboard modes in pressure
 	p_idx   = 4:6:dim; % pressure indices
 	[s1,s2] = checkerboard_modes(n,m,l);
 
 	scale1   = s1(:)'*s1(:);
 	scale2   = s2(:)'*s2(:);
-	for i = 1:obs
+	for i = m_append
 	  M(i,p_idx) = M(i, p_idx) - (M(i, p_idx)*s1(:)/scale1)*s1(:)' ...
-	                 - (M(i, p_idx)*s2(:)/scale2)*s2(:)';
+	               - (M(i, p_idx)*s2(:)/scale2)*s2(:)';
 	end
 	
 	% subtract mean to get centered data matrix
-	mn = mean(M);
-	M = M - repmat(mn,obs,1);
-	Q = (1/(obs-1))*M'*M;
-  else
-	M = [];
-  end
-  sol = zeros(nun, n, m, l);
-  
-  if nargin < 3
-	mode = 1;
-  end
-  
-  fprintf(1,'------------- Calculating eigenvector--------\n')
-  opts.issym = true;
-  [V,D,flag] = eigs(Q,20,'lm',opts);
-  
+	fprintf(1,'subtract mean\n');
+	mn = mean(M(m_range,:));
+	Msubtr = M(m_range,:) - repmat(mn,obs,1);
+	fprintf(1,'compute Q\n');
+	Q = (1/(obs-1))*Msubtr'*Msubtr;	
+	fprintf(1,'compute eigenvectors\n');
+	opts.issym = true;
+	[V,D] = eigs(Q,neigs,'lm',opts);
+	EVALS = diag(D)/sum(diag(D));
 
-  plot_mode(V,mode)
+	fprintf(fileID, 'obs = %d\n', obs);
+	for i = 1:neigs
+	  fprintf(fileID, '%8.5f\n',EVALS(i));
+	end
+  end
+  fclose(fileID);
+  %fprintf(1,'save Q\n');
+  %save(['M',num2str(max),'.mat'],'M');
 end

@@ -88,12 +88,12 @@ exportfig('bstream.eps')
 
 %%
 figure(2)
-contourf(RtD*[y;ymax],zw*hdim',PSIG',15);
+contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',14);
 colorbar
-title('Overturning Streamfunction')
-xlabel('Latitude')
-ylabel('z (m)')
-exportfig('mstream.eps')
+title('MOC (Sv)')
+xlabel('latitude')
+ylabel('depth (m)')
+exportfig('mstream.eps',10,[20,7])
 
 %%
 figure(3)
@@ -119,9 +119,9 @@ exportfig('isopycnals.eps')
 
 %%
 figure(5)
-imagesc(flipud(PSIG')); axis off
+imagesc(flipud(PSIG')); 
+grid on
 title('Overturning Streamfunction')
-exportfig('mstream.eps')
 
 %%
 figure(6)
