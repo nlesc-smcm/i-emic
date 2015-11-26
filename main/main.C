@@ -205,7 +205,7 @@ void printProfile(ProfileType profile)
 	// Display timings of the separate models, summing
 	int counter = 0;
 	for (auto const &map : profile)
-		if (map.first.compare(0,5,"(itr)") != 0)
+		if (map.first.compare(0,5,"_NOTIME_") != 0)
 		{
 			counter++;
 			std::stringstream s;
@@ -219,7 +219,7 @@ void printProfile(ProfileType profile)
 	
 	// Display iteration information
 	for (auto const &map : profile)
-		if (map.first.compare(0,5,"(itr)") == 0 )
+		if (map.first.compare(0,5,"_NOTIME_") == 0 )
 		{
 			counter++;
 			std::stringstream s;

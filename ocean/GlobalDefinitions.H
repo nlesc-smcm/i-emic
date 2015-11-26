@@ -110,11 +110,13 @@ extern std::stack<Timer> timerStack;
 	}
 #endif
 
+// We can also keep track of different things, to distinguish these
+// from timings we prepend _NOTIME_ to the message
 #ifndef TRACK_ITERATIONS
 # define TRACK_ITERATIONS(charmsg, iters)						\
 	{															\
 		std::string msg(charmsg);								\
-		msg.insert(0, "(itr)");									\
+		msg.insert(0, "_NOTIME_");								\
 		profile[msg] = (profile.count(msg)) ?					\
 			profile[msg] :										\
 			std::array<double, PROFILE_ENTRIES>();				\
@@ -122,11 +124,24 @@ extern std::stack<Timer> timerStack;
 		profile[msg][1] += 1;									\
 		profile[msg][2] = profile[msg][0] / profile[msg][1];	\
 	}
-#endif	
+#endif
+
+#ifndef TRACK_RESIDUAL
+# define TRACK_RESIDUAL(charmsg, residual)						\
+	{															\
+		std::string msg(charmsg);								\
+		msg.insert(0, "_NOTIME_");								\
+		profile[msg] = (profile.count(msg)) ?					\
+			profile[msg] :										\
+			std::array<double, PROFILE_ENTRIES>();				\
+		profile[msg][0] += residual;							\
+		profile[msg][1] += 1;									\
+		profile[msg][2] = profile[msg][0] / profile[msg][1];	\
+	}
+#endif
 
 //------------------------------------------------------------------
 // Timer class, compatible with macros here in GlobalDefinitions.H
-// Not used...
 class Timer
 {
 	double startTime_;
