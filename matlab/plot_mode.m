@@ -55,53 +55,29 @@ function [] = plot_mode(V,mode)
   end
 
   %%
-  figure(2)
-  contourf(RtD*[y;ymax],zw*hdim',PSIG',15);
+  figure(1)
+  contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',14);
   colorbar
-  title('Overturning Streamfunction')
-  xlabel('Latitude')
-  ylabel('z (m)')
-  exportfig('mstream.eps')
+  title('MOC')
+  xlabel('latitude')
+  ylabel('depth (m)')
+  exportfig(['mstream_eof',num2str(mode),'.eps'],10,[20,7])
 
-  figure(3)
-  Sp = S(:,:,l);
-  temp = flipud(Sp');
-  %contourf(RtD*x,RtD*y,S0+Sp',15);
-  plot(RtD*y, mean(Sp,1),'r');
-  title('Surface Salinity');
-  xlim(RtD*[ymin,ymax])
-  xlabel('Latitude');
-
-
-  figure(4)
+  figure(2)
   Sp2 = squeeze(mean(S,1)); 
-  contourf(RtD*yv(1:end-1),z*hdim,Sl',15);
+  contourf(RtD*linspace(ymin,ymax,m),linspace(min(zw),max(zw),l)*hdim,Sl',14);
   colorbar
   title('Isohalines')
-  xlabel('Latitude')
-  ylabel('z (m)')
-  exportfig('isohalines.eps')
-  
-  figure(5)
-  Tp = T(:,:,l);
-  plot(RtD*y, mean(Tp,1),'r');
-  title('Surface Temperature');
-  xlim(RtD*[ymin,ymax])
-  xlabel('Latitude');
+  xlabel('latitude')
+  ylabel('depth (m)')
+  exportfig(['isohalines_eof',num2str(mode),'.eps'],10,[20,7])
 
-  figure(6)
-  contourf(RtD*yv(1:end-1),z*hdim,Tl',15);
+  figure(3)
+  contourf(RtD*linspace(ymin,ymax,m),linspace(min(zw),max(zw),l)*hdim,Tl',14);
   colorbar
   title('Isothermals')
-  xlabel('Latitude')
-  ylabel('z (m)')
-  exportfig('isothermals.eps')
-  
-  figure(7)
-  Pp = p(:,:,l);
-  plot(RtD*y, mean(Pp,1),'r');
-  title('Surface Pressure');
-  xlim(RtD*[ymin,ymax])
-  xlabel('Latitude');
+  xlabel('latitude')
+  ylabel('depth (m)')
+  exportfig(['isothermals_eof',num2str(mode),'.eps'],10,[20,7])
 
 end
