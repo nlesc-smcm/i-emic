@@ -111,7 +111,7 @@ extern std::stack<Timer> timerStack;
 #endif
 
 // We can also keep track of different things, to distinguish these
-// from timings we prepend _NOTIME_ to the message
+// from timings we prepend NOTIME to the message
 #ifndef TRACK_ITERATIONS
 # define TRACK_ITERATIONS(charmsg, iters)						\
 	{															\

@@ -618,7 +618,7 @@ void CoupledModel::printProfile(ProfileType profile)
 	// Display timings of the separate models, summing
 	int counter = 0;
 	for (auto const &map : profile)
-		if (map.first.compare(0,5,"_NOTIME_") != 0)
+		if (map.first.compare(0,8,"_NOTIME_") != 0)
 		{
 			counter++;
 			std::stringstream s;
@@ -632,12 +632,12 @@ void CoupledModel::printProfile(ProfileType profile)
 	
 	// Display iteration information
 	for (auto const &map : profile)
-		if (map.first.compare(0,5,"_NOTIME_") == 0 )
+		if (map.first.compare(0,8,"_NOTIME_") == 0 )
 		{
 			counter++;
 			std::stringstream s;
 			s << " (" << counter << ")";
-			LINE(s.str(), "", map.first.substr(5), ":", map.second[0], "",
+			LINE(s.str(), "", map.first.substr(8), ":", map.second[0], "",
 				 map.second[1], "", map.second[2]);
 		}
 }
