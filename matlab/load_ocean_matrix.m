@@ -5,12 +5,12 @@ function [A,M] = load_ocean_matrix()
   % Author: Erik Mulder -> t.e.mulder@uu.nl
   %*************************************************
 
-  Abeg  = importdata('A.beg');
-  Aco   = importdata('A.co');
-  Ainfo = importdata('A.info');
-  Ajco  = importdata('A.jco');
+  Abeg  = load('A.beg');
+  Aco   = load('A.co');
+  Ainfo = load('A.info');
+  Ajco  = load('A.jco');
   %Arl   = importdata('A.rl');
-  Bco   = importdata('B.co');
+  Bco   = load('B.co');
 
   n   = Ainfo(1);
   nnz = Ainfo(2);

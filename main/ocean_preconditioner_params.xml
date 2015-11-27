@@ -522,7 +522,7 @@
   </ParameterList><!-- } Saddlepoint Preconditioner -->
 
   <!-- solve for variables rho/mu instead of T/S -->
-  <Parameter name="ATS: rho/mu Transform" type="bool" value="0"/>
+  <Parameter name="ATS: rho/mu Transform" type="bool" value="true"/>
 
   <!-- Parameters for the Krylov solver for ATS { -->
   <ParameterList name="ATS Solver">

@@ -61,8 +61,7 @@ template<typename ParListPtr>
 void GMRESSolver<Model, VectorPointer>::
 setParameters(ParListPtr pars)
 {
-	if (verbosity_ > 5)
-		PRINT("GMRES: updating parameters");
+	PRINT("GMRES: updating parameters", verbosity_);
 	
 	tol_            = pars->get("GMRES tolerance"       , tol_);
 	maxit_          = pars->get("GMRES iterations"      , maxit_);
@@ -130,8 +129,10 @@ solve()
 		V[0] = r;
 		s.assign(m_+1, 0.0);
 		s[0] = beta;
-		
-		for (i = 0; i < m_ && iter_ <= maxit_; i++, iter_++)
+
+		// We do not exit from this loop when iter_ > maxit,
+		// whether this is a bug or a feature I'm not sure...
+		for (i = 0; i < m_; i++, iter_++)
 		{
 			if ((verbosity_ > 2 && iter_ % 10 == 0) || verbosity_ > 7) printIterStatus();
 			
@@ -169,14 +170,12 @@ solve()
 			ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
 			
 			resid_ = std::abs(s[i+1]) / normb;
+
 			if (resid_ < tol_)
 			{
-				if (verbosity_ > 0)
-				{
-					PRINT("GMRES implicit residual passed...");
-					PRINT("         iterations = " << iter_);
-					PRINT("  implicit residual = " << resid_);
-				}
+				PRINT("GMRES implicit residual passed...", verbosity_);
+				PRINT("         iterations = " << iter_, verbosity_);
+				PRINT("  implicit residual = " << resid_, verbosity_);
 				break;
 			}
 		}		
@@ -201,17 +200,15 @@ solve()
 		beta    = r.norm();
 		resid_  = beta / normb;
 		
-		if (verbosity_ > 0)
-			PRINT("  explicit residual = " << resid_);
+		PRINT("  explicit residual = " << resid_, verbosity_);
 
 		if (resid_ < tol_)
 		{
-			if (verbosity_ > 0)
-				PRINT("GMRES explicit residual passed...");
+			PRINT("GMRES explicit residual passed...", verbosity_);
 			return 0;
 		}
-		else if (verbosity_ > 0)
-			PRINT("   restart ");
+		else
+			PRINT("   restart ", verbosity_);
 	}
 	return 1;
 }
@@ -295,7 +292,7 @@ void GMRESSolver<Model, VectorPointer>::
 printIterStatus()
 {
 	PRINT("iteration: "   << iter_  << " residual: "   << resid_
-		  << " rel. tol: "   << tol_);
+		  << " rel. tol: "   << tol_, verbosity_);
 }
 
 #endif
