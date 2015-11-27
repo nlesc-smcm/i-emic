@@ -3,8 +3,8 @@
 
   <!-- Specify whether the ocean model should initialize with -->
   <!-- an old state (true) or with a zero solution (false).   -->
-  <Parameter name="Load state" type="bool" value = "false"/>
-  <Parameter name="Save state" type="bool" value = "false"/>
+  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Save state" type="bool" value="false"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -128,24 +128,24 @@
     <!-- Trilinos-THCM, but they can be added easily           -->
     <!-- The starting value in the "LOCA" or "Time Stepping"   -->
     <!-- lists overwrites the choice here                      -->
-    <!-- usrc seems to overwrite them as well at this point... -->
+    <!-- USRC SEEMS TO OVERWRITE THEM AS WELL AT THIS POINT... -->
     <ParameterList name="Starting Parameters">
       <!-- PAR(15), Salt forcing factor                         -->
-      <!-- <Parameter name="Salinity Forcing" type="double" value="0.0"/> -->
+      <Parameter name="Salinity Forcing" type="double" value="0.0"/>
       <!-- PAR(16), Wind forcing factor                         -->
-      <Parameter name="Wind Forcing" type="double" value="0.0"/>
+      <Parameter name="Wind Forcing" type="double" value="1.0"/>
       <!-- PAR(17), Temperature forcing factor                  -->
-      <Parameter name="Temperature Forcing" type="double" value="10.0"/>
+      <Parameter name="Temperature Forcing" type="double" value="0.0"/>
       <!-- PAR(18), the Biot number                             -->
-      <!-- <Parameter name="Nonlinear Factor" type="double" value="25.0"/> -->
+      <Parameter name="Nonlinear Factor" type="double" value="10.0"/>
       <!-- PAR(19), Salt/Wind/Temperature forcing factor           -->
-      <!-- <Parameter name="Combined Forcing" type="double" value="1.0"/> -->
+      <Parameter name="Combined Forcing" type="double" value="1.0"/>
       <!-- convective adjustment -->
-      <!-- <Parameter name="P_VC" type="double" value="5.0"/> -->
+      <Parameter name="P_VC" type="double" value="5.0"/>
       <!-- mixing parameters -->
       <!-- check whether vmix_GLB triggers the correct vmix_flag-->
-      <!-- <Parameter name="SPL1" type="double" value="1.25"/> -->
-      <!-- <Parameter name="SPL2" type="double" value="0.01"/> -->
+      <Parameter name="SPL1" type="double" value="1.25"/>
+      <Parameter name="SPL2" type="double" value="0.01"/>
     </ParameterList>
 
     <ParameterList name="Xdmf Output">
