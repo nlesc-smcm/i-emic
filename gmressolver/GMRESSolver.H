@@ -5,7 +5,9 @@
 #include "GMRESMacros.H"
 #include <vector>
 
+
 //====================================================================
+// constructor 1
 template<typename Model, typename VectorPointer>
 GMRESSolver<Model, VectorPointer>::
 GMRESSolver(Model &model)
@@ -24,6 +26,7 @@ GMRESSolver(Model &model)
 {}
 
 //====================================================================
+// constructor 2
 template<typename Model, typename VectorPointer>
 GMRESSolver<Model, VectorPointer>::
 GMRESSolver(Model &model,
@@ -46,6 +49,7 @@ GMRESSolver(Model &model,
 {}
 
 //====================================================================
+// destructor
 template<typename Model, typename VectorPointer>
 GMRESSolver<Model, VectorPointer>::
 ~GMRESSolver() {}
@@ -60,12 +64,12 @@ setParameters(ParListPtr pars)
 	if (verbosity_ > 5)
 		PRINT("GMRES: updating parameters");
 	
-	tol_            = pars->get("GMRES tolerance", 1e-8);
-	maxit_          = pars->get("GMRES iterations", 500);
-	m_              = pars->get("GMRES restart", maxit_);
-	verbosity_      = pars->get("GMRES verbosity", 0);
-	prec_           = pars->get("GMRES preconditioning", true);
-	leftPrec_       = pars->get("GMRES left prec", false);
+	tol_            = pars->get("GMRES tolerance"       , tol_);
+	maxit_          = pars->get("GMRES iterations"      , maxit_);
+	m_              = pars->get("GMRES restart"         , m_);
+	verbosity_      = pars->get("GMRES verbosity"       , verbosity_);
+	prec_           = pars->get("GMRES preconditioning" , prec_);
+	leftPrec_       = pars->get("GMRES left prec"       , leftPrec_);
 }
 
 //*****************************************************************************
@@ -121,7 +125,7 @@ solve()
 
 	std::vector<Vector> V(m_+1, Vector());
 	while (iter_ <= maxit_)
-	  {
+	{
 		r.scale(1.0 / beta);
 		V[0] = r;
 		s.assign(m_+1, 0.0);
@@ -208,7 +212,7 @@ solve()
 		}
 		else if (verbosity_ > 0)
 			PRINT("   restart ");
-	  }
+	}
 	return 1;
 }
 
