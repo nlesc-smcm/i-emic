@@ -134,7 +134,8 @@ solve()
 		// whether this is a bug or a feature I'm not sure...
 		for (i = 0; i < m_; i++, iter_++)
 		{
-			if ((verbosity_ > 2 && iter_ % 10 == 0) || verbosity_ > 7) printIterStatus();
+			if ((verbosity_ > 2 && iter_ % 10 == 0) || verbosity_ > 7)
+				printIterStatus();
 			
 			// Compute w
 			if (leftPrec_ && prec_)

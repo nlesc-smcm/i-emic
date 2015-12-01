@@ -1420,9 +1420,7 @@ namespace TRIOS {
 			CHECK_ZERO(QTS->FillComplete());
 		}
 
-		std::cout << "PID:" << comm->MyPID() << " " << "before tripprod 1" << std::endl;
 		Arhomu = Utils::TripleProduct(false,*QTS,false,*ATS,false,*QTS);
-		std::cout << "PID:" << comm->MyPID() << " " << "after  tripprod 1" << std::endl;
 		
 		Arhomu->SetLabel("A_(rho,mu)");
 #ifdef LINEAR_ARHOMU_MAPS

@@ -45,8 +45,6 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
  		std::make_shared<SuperVector>(ocean_->getRHS('V')->getOceanVector(),
 									  atmos_->getRHS('V')->getAtmosVector() );
 
-	test();
-	
 	// Get the contribution of the atmosphere to the ocean in the Jacobian
 	B_     = ocean_->getAtmosBlock();
 	rowsB_ = ocean_->getSurfaceTRows();
