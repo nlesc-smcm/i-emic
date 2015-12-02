@@ -3,13 +3,13 @@
 
 // Some templated types are assumed to be shared_pointers: we use -> in calls to
 // their members.
-
+//
 // Model should be a class with members:
-//    -applyMatrix(Vector v), performing matrix vector product t=Av
-//    -applyPrecon(Vector v), applying the operation v = P^{-1} x
-// Note that Model should be compatible with Vector
-
-// Vector should be a class with members:
+//    -applyMatrix(Vector v, Vector x), performing matrix vector product x=A*v
+//    -applyPrecon(Vector v, Vector x), applying the operation x=inv(P)*v
+// Model should be compatible with Vectors
+//
+// Vector should be a class with:
 //    -update(double scalarA, Vector A, double scalarThis, performing
 //      this = scalarA * A + scalarThis * this
 //    -norm()
@@ -24,12 +24,18 @@ class GMRESSolver
 
 	Model &model_;  // We hold a reference to the model
 
-	// Since we move around these vectors we use pointers
+	// Since we move these vectors around we use (shared) pointers
 	VectorPointer x_; // state
 	VectorPointer b_; // rhs
+
+	Vector xCopy_;    // local copy of the state
 	
 	bool haveInitSol_;
 	bool haveRHS_;
+	bool replaceResidual_;
+
+	char minimizeScheme_; // 'B' backward solve after Givens rotations
+	                      // 'Q' QR solve using lapack routine
 	
 	double tol_;     // tolerance
 	double resid_;   // scaled residual norm
@@ -40,11 +46,12 @@ class GMRESSolver
 	
 	bool prec_;      // use preconditioning
 	bool leftPrec_;  // use left preconditioning
+	                 // (default is right preconditioning)
 	
-	int verbosity_;
+	int verbosity_;  // integer [0-9], 0 is quiet
 	
 public:
-	// constructor
+	// constructors
 	GMRESSolver(Model &model);
 	GMRESSolver(Model &model, VectorPointer x, VectorPointer b);
 	// destructor
@@ -70,6 +77,11 @@ private:
 	void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn);
 	void ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn);
 	void Update(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
+	void UpdateCopy(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
+
+	void backsolve(int m, Matrix &H, STLVector &s);
+	void LLSsolve(int m, Matrix &H, STLVector &s); // uses lapack
+	
 	void printIterStatus();
 };
 

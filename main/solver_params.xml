@@ -3,11 +3,13 @@
   <!-- ..................................................................-->
   <!-- GMRES parameters                                                  -->
   <!-- ..................................................................-->  
-  <Parameter name="GMRES tolerance"  type="double" value="1e-8"/>
-  <Parameter name="GMRES iterations" type="int"    value="50"/>
-  <Parameter name="GMRES restart"    type="int"    value="25"/>
-  <Parameter name="GMRES left prec"  type="bool"   value="false"/>
-  <Parameter name="GMRES verbosity"  type="int"    value="5"/>
+  <Parameter name="GMRES tolerance"        type="double" value="1e-8"/>
+  <Parameter name="GMRES iterations"       type="int"    value="100"/>
+  <Parameter name="GMRES restart"          type="int"    value="10"/>
+  <Parameter name="GMRES left prec"        type="bool"   value="false"/>
+  <Parameter name="GMRES verbosity"        type="int"    value="10"/>
+  <Parameter name="GMRES replace residual" type="bool"   value="true"/>
+  <Parameter name="GMRES minimizer scheme" type="char"   value="B"/>
   
   <!-- ..................................................................-->
   <!-- IDR(s) parameters                                                 -->

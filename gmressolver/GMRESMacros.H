@@ -19,4 +19,8 @@
 # endif
 #endif
 
+#ifndef SGN
+# define SGN(x) ((x < 0) ? -1 : 1)
+#endif
+
 #endif
