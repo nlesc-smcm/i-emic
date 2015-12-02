@@ -263,7 +263,7 @@ void Ocean::solve(VectorPtr rhs)
 	
 	// If required we scale the problem here
 	if (useScaling_)
-		scaleProblem();
+	  scaleProblem();
 
 	// Depending on the number of iterations we might need to
 	// recompute the preconditioner
@@ -353,7 +353,7 @@ void Ocean::solve(VectorPtr rhs)
 
 	// If specified, unscale the problem
 	if (useScaling_)
-		unscaleProblem();
+	  unscaleProblem();
 }
 
 //=====================================================================
@@ -369,7 +369,7 @@ double Ocean::explicitResNorm(VectorPtr rhs)
 }
 
 //=====================================================================
-void Ocean::scaleProblem()
+void Ocean::scaleProblem(VectorPtr rhs)
 {
 	// Not sure if this is the right approach or implemented correctly.
 	// Scaling is obtained from THCM and then applied to the problem.
@@ -393,6 +393,7 @@ void Ocean::scaleProblem()
 		colScalingRecipr_ =
 			rcp(new Epetra_Vector(colScaling->Map()));
 	}
+	
 	*colScalingRecipr_ = *colScaling;
 	colScalingRecipr_->Reciprocal(*colScaling);
 
@@ -403,7 +404,12 @@ void Ocean::scaleProblem()
 	
 	//------------------------------------------------------
 	jac_->LeftScale(*rowScalingRecipr_);
-	rhs_->Multiply(1.0, *rowScalingRecipr_, *rhs_, 0.0);
+
+	if (rhs == Teuchos::null)
+		rhs_->Multiply(1.0, *rowScalingRecipr_, *rhs_, 0.0);
+	else
+		(rhs->getOceanVector())->Multiply(1.0, *rowScalingRecipr_, *rhs_, 0.0);
+	
 	jac_->RightScale(*colScalingRecipr_);
 	sol_->ReciprocalMultiply(1.0, *colScalingRecipr_, *sol_, 0.0);
 
@@ -413,7 +419,7 @@ void Ocean::scaleProblem()
 }
 
 //=====================================================================
-void Ocean::unscaleProblem()
+void Ocean::unscaleProblem(VectorPtr rhs)
 {
 	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
 	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
@@ -425,7 +431,12 @@ void Ocean::unscaleProblem()
 	
 	//------------------------------------------------------
 	jac_->LeftScale(*rowScaling);
-	rhs_->Multiply(1.0, *rowScaling, *rhs_, 0.0);
+	
+	if (rhs == Teuchos::null)
+		rhs_->Multiply(1.0, *rowScaling, *rhs_, 0.0);
+	else
+		(rhs->getOceanVector())->Multiply(1.0, *rowScaling, *rhs_, 0.0);
+	
 	jac_->RightScale(*colScaling);
 	sol_->ReciprocalMultiply(1.0, *colScaling, *sol_, 0.0);
 

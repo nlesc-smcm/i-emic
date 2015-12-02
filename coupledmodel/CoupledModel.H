@@ -56,6 +56,8 @@ private:
 	//   'G': GMRES(r)
 	char   solvingScheme_;
 
+	bool useScaling_;  // scale the problem before a solve
+	
 	int    iterGS_;      // Max iterations in GS scheme
 	double toleranceGS_; // Tolerance in GS scheme
 

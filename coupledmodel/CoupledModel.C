@@ -19,6 +19,7 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	atmos_(atmos),
 	useExistingState_ (params->get("Use existing state", false)),
 	solvingScheme_    (params->get("Solving scheme", 'G')),
+	useScaling_       (params->get("Use scaling", false)),
 	iterGS_           (params->get("Max GS iterations", 10)),
 	toleranceGS_      (params->get("GS tolerance", 1e-1)),
 	useHash_          (params->get("Use hashing", true)),
@@ -184,6 +185,9 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 {
 	// Start solve
 	TIMER_START("CoupledModel: solve...");
+	if (useScaling_)
+		ocean_->scaleProblem(Teuchos::rcp(rhs.get(), false));
+	
 	if (solvingScheme_ == 'D') // fully decoupled solve
 	{
 		ocean_->solve(Teuchos::rcp(rhs.get(), false));
@@ -199,6 +203,9 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
 
+	if (useScaling_)
+		ocean_->unscaleProblem(Teuchos::rcp(rhs.get(), false));
+	
 	// Update the profile after a solve
 	printProfile(profile);
 	TIMER_STOP("CoupledModel: solve...");

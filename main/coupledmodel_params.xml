@@ -18,7 +18,10 @@
   <!--  mode 'I': Use IDR for the complete system                                      -->
   <!--  mode 'G': Use GMRES for the complete system                                    -->
   <Parameter name="Solving scheme" type="char" value="G"/>
-  
+
+  <!-- Scale the problem before a solve                -->
+  <Parameter name="Use scaling" type="bool" value="true"/>
+
   <!-- Set the maximum number of iterations in the block GS scheme                     -->
   <!-- Works only when you choose G for "Solving scheme"                               -->
   <Parameter name="Max GS iterations" type="int" value="100" />
