@@ -371,7 +371,7 @@ double Ocean::explicitResNorm(VectorPtr rhs)
 //=====================================================================
 void Ocean::scaleProblem(VectorPtr rhs)
 {
-	// Not sure if this is the right approach or implemented correctly.
+	// Not sure if this is the right approach and/or implemented correctly.
 	// Scaling is obtained from THCM and then applied to the problem.
 	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
 	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();

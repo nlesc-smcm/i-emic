@@ -20,7 +20,7 @@
   <Parameter name="Solving scheme" type="char" value="G"/>
 
   <!-- Scale the problem before a solve                -->
-  <Parameter name="Use scaling" type="bool" value="true"/>
+  <Parameter name="Use scaling" type="bool" value="false"/>
 
   <!-- Set the maximum number of iterations in the block GS scheme                     -->
   <!-- Works only when you choose G for "Solving scheme"                               -->

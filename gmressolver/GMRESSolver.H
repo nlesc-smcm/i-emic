@@ -4,6 +4,7 @@
 #include "GMRESSolverDecl.H"
 #include "GMRESMacros.H"
 #include <vector>
+#include <math.h>
 
 //====================================================================
 // constructor 1
@@ -117,7 +118,8 @@ solve()
 	if (normb == 0.0)
 		normb = 1;
 
-	resid_ = beta / normb;
+	resid_     = beta / normb;
+	explResid_ = resid_;
 	if (resid_ <= tol_)
 	{
 		iter_ = 0;
@@ -128,7 +130,6 @@ solve()
 	double proj;
 	while (iter_ <= maxit_)
 	{
-		int first = 0;
 		xCopy_ = *x_; // initialize local copy
 		beta   = r.norm();
 		r.scale(1.0 / beta);
@@ -151,7 +152,7 @@ solve()
 			}
 			else if (prec_) // Right preconditioning (default)
 			{
-				model_.applyPrecon(V[i], tmp);
+				model_.applyPrecon(V[i], tmp);				
 				model_.applyMatrix(tmp, w);    // w =  A * M^{-1} v[i]
 			}
 			else
@@ -168,7 +169,7 @@ solve()
 			H[i+1][i] = w.norm();
 			w.scale(1.0 / H[i+1][i]); //  w / H(i+1, i)
 			
-			V[i+1]      = w;
+			V[i+1] =  w;
 			
 			if (minimizeScheme_ == 'B')
 			{
@@ -179,41 +180,19 @@ solve()
 				ApplyPlaneRotation(H[i][i], H[i+1][i], cs[i], sn[i]);
 				ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
 				
-			
 				resid_ = std::abs(s[i+1]) / normb;
 			}
-			
-			// if necessary replace residual with true residual
-			if (replaceResidual_)
-			{
-				UpdateCopy(0, i, H, s, V);
-				first = i+1;
-				
-				if (prec_ && leftPrec_)
-				{
-					model_.applyMatrix(*x_, tmp); // Ax
-					tmp.update(1.0, *b_, -1.0);   // b - Ax
-					model_.applyPrecon(tmp, r);   // r = M.solve(b - A * x);
-				}
-				else
-				{
-					model_.applyMatrix(xCopy_, r);   // A*x
-					r.update(1.0, *b_, -1.0);        // b - A*x
-				}
-				
-				beta   = r.norm();                   // ||b - A*x||
-				PRINT("      explicit residual = " << beta / normb, verbosity_);
-				r.update(.999, V[i+1], .001);
-				for (k = 0; k <= i; k++) // orthogonalize r w.r.t. V[0:i]
-				{
-					proj = r.dot(V[k]);          // pr = dot(r, v[k]);
-					r.update(-proj, V[k], 1.0);  // r -= pr * v[k];
-				}			
-				beta = r.norm();
-				r.scale(1.0 / beta);
+			else
+				resid_ =  compute_r(i, H, s, V) / normb;
 
-				V[i+1] = r;
+			double newres = compute_explicit_residual(i, H, s, V) / normb;
+			PRINT("GMRES explicit residual = " << newres, verbosity_);
+			if (newres > explResid_)
+			{
+				PRINT("   explicit residual increasing", verbosity_ - 5);
+				break;
 			}
+			explResid_ = newres;
 			
 			if (resid_ < tol_)
 			{
@@ -223,13 +202,11 @@ solve()
 				break;
 			}
 		}		
-		
-		if (replaceResidual_)
-			*x_ = xCopy_;
-		else if (i == m_)
-			Update(0, m_-1, H, s, V);
+
+		if (i == m_)
+			Update(m_-1, H, s, V);
 		else
-			Update(0, i, H, s, V);
+			Update(i, H, s, V);
 		
 		// Calculate explicit residual
 		if (prec_ && leftPrec_)
@@ -296,27 +273,22 @@ ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn)
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
 void GMRESSolver<Model, VectorPointer>::
-Update(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
+Update(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
 {
-	STLVector y(s);
+	compute_y(last, H, s, V);
 	
-	if (minimizeScheme_ == 'B') // Backsolve:
-		backsolve(last, H, y);	
-	else if (minimizeScheme_ == 'Q')   // Use lapack QR solve
-		LLSsolve(last, H, y);
-
 	if (!prec_ || leftPrec_)
 	{
-		for (int j = first; j <= last; j++)
-			x_->update(y[j], V[j], 1.0);  // x += v[j] * y(j);
+		for (int j = 0; j <= last; j++)
+			x_->update(y_[j], V[j], 1.0);  // x += v[j] * y(j);
 	}
 	else // Right preconditioning (default)
 	{
 		Vector tmp1(*x_);
 		Vector tmp2(*x_);
 		tmp1.zero(); // tmp1 = 0
-		for (int j = first; j <= last+1; j++)
-			tmp1.update(y[j], V[j], 1.0); // tmp1 += v[j] * y(j);
+		for (int j = 0; j <= last; j++)
+			tmp1.update(y_[j], V[j], 1.0); // tmp1 += v[j] * y(j);
 		model_.applyPrecon(tmp1, tmp2);   // tmp2  = inv(M)*V*y
 		x_->update(1.0, tmp2, 1.0);		  // x += inv(M)*V*y
 	}
@@ -325,21 +297,73 @@ Update(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
 void GMRESSolver<Model, VectorPointer>::
-UpdateCopy(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
+compute_y(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
 {
-	xCopy_ = *x_; 	// Copy solution into xCopy
-	
-	STLVector y(s);
+	y_ = s;
 
 	if (minimizeScheme_ == 'B') // Backsolve:
-		backsolve(last, H, y);	
+		backsolve(last, H, y_);	
 	else if (minimizeScheme_ == 'Q')   // Use lapack QR solve
-		LLSsolve(last, H, y);
+		LLSsolve(last, H, y_);
+}
+
+//*****************************************************************************
+template<typename Model, typename VectorPointer>
+double GMRESSolver<Model, VectorPointer>::
+compute_r(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
+{
+	compute_y(last, H, s, V);
 	
+	int M = last+2;
+	int N = last+1;
+
+	STLVector tmp(M,0.0);
+
+	double nrm = 0;
+	
+	for (int row = 0; row < M; ++row)
+	{
+		for (int col = 0; col < N; ++col)
+			tmp[row] += H[row][col]*y_[col];
+		tmp[row] -= s[row];
+	}
+	
+	for (int row = 0; row < M; ++row)
+		nrm += tmp[row] * tmp[row];
+	
+	nrm = sqrt(nrm);
+	return nrm;
+}
+
+//*****************************************************************************
+template<typename Model, typename VectorPointer>
+double GMRESSolver<Model, VectorPointer>::
+compute_explicit_residual(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
+{
+	// update local copy of solution
+	UpdateCopy(last, H, s, V);
+
+	// compute residual
+	Vector r(*x_);
+	model_.applyMatrix(xCopy_, r);   // A*x
+	r.update(1.0, *b_, -1.0);        // b - A*x
+	double beta   = r.norm();               // ||b - A*x||
+	return beta;
+}
+
+//*****************************************************************************
+template<typename Model, typename VectorPointer>
+void GMRESSolver<Model, VectorPointer>::
+UpdateCopy(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
+{
+	xCopy_ = *x_; 	// Copy solution into xCopy		
+
+	compute_y(last, H, s, V);
+		
 	if (!prec_ || leftPrec_)
 	{
-		for (int j = first; j <= last; j++)
-			xCopy_.update(y[j], V[j], 1.0); //x += v[j] * y(j);
+		for (int j = 0; j <= last; j++)
+			xCopy_.update(y_[j], V[j], 1.0); //x += v[j] * y(j);
 	}
 	else // Right preconditioning (default)
 	{
@@ -347,8 +371,8 @@ UpdateCopy(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
 		Vector tmp2(*x_);
 		tmp1.zero(); // tmp1 = 0
 		//PRINT("  updating entries " << first << " to " << last, verbosity_ - 5);
-		for (int j = first; j <= last; j++)
-			tmp1.update(y[j], V[j], 1.0); // tmp1 += v[j] * y(j);
+		for (int j = 0; j <= last; j++)
+			tmp1.update(y_[j], V[j], 1.0); // tmp1 += v[j] * y(j);
 		model_.applyPrecon(tmp1, tmp2);   // tmp2  = inv(M)*V*y
 		xCopy_.update(1.0, tmp2, 1.0);		  // x += inv(M)*V*y
 	}
@@ -370,21 +394,33 @@ backsolve(int m, Matrix &H, STLVector &s)
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
 void GMRESSolver<Model, VectorPointer>::
-LLSsolve(int m, Matrix &H, STLVector &s)
+LLSsolve(int last, Matrix &H, STLVector &s)
 {
-	STLVector exportH((m_+2)*(m_+1), 0.0);
+	int  M     =  last+2;  // FOM -> last+1, GMRES last+2 ??
+	int  N     =  last+1;
+	
+	STLVector exportH(M * N, 0.0);
 
 	int idx = 0;
-	for (int col = 0; col <= m; ++col)
-		for (int row = 0; row <= m+1; ++row)
+	for (int col = 0; col < N; ++col)
+		for (int row = 0; row < M; ++row)
 		{
 			exportH[idx] = H[row][col];
 			idx++;
 		}
 
+	if (verbosity_ > 10)
+	{
+		PRINT("  testing exportH -----", verbosity_);
+		for (auto &it: exportH)
+			PRINT("   " << it, verbosity_);
+		PRINT("  ", verbosity_);
+		PRINT("  " << last << "  " << exportH.size(),  verbosity_);
+		PRINT("  testing exportH -----", verbosity_);
+	}
+	
 	char trans = 'N';
-	int  M     =  m+1;
-	int  N     =  M;
+
 	int  nrhs  =  1;
 	int  lda   =  M;
 	int  ldb   =  M;
@@ -394,10 +430,12 @@ LLSsolve(int m, Matrix &H, STLVector &s)
 	double  work[lwork];
 	
 	int  info;
-
+	
 	// lapack LLS solver
 	dgels_(&trans, &M, &N, &nrhs, &exportH[0], &lda,
 		   &s[0], &ldb, work, &lwork, &info);
+
+	PRINT("  LLS: DGELS_ info = " << info, verbosity_ - 10);
 
 //	dgesv_(&M, &nrhs, &exportH[0], &lda, ipiv, &s[0], &ldb, &info);		   
 }

@@ -29,6 +29,8 @@ class GMRESSolver
 	VectorPointer b_; // rhs
 
 	Vector xCopy_;    // local copy of the state
+
+	STLVector y_;
 	
 	bool haveInitSol_;
 	bool haveRHS_;
@@ -37,8 +39,9 @@ class GMRESSolver
 	char minimizeScheme_; // 'B' backward solve after Givens rotations
 	                      // 'Q' QR solve using lapack routine
 	
-	double tol_;     // tolerance
-	double resid_;   // scaled residual norm
+	double tol_;       // tolerance
+	double resid_;     // scaled residual norm
+	double explResid_; // explicit residual norm
 
 	int maxit_;      // max # iterations
 	int m_;          // # iterations before restart
@@ -76,13 +79,17 @@ public:
 private:
 	void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn);
 	void ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn);
-	void Update(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
-	void UpdateCopy(int first, int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
+	void Update(int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
+	void UpdateCopy(int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
 
 	void backsolve(int m, Matrix &H, STLVector &s);
-	void LLSsolve(int m, Matrix &H, STLVector &s); // uses lapack
+	void LLSsolve (int m, Matrix &H, STLVector &s); // uses lapack
 	
 	void printIterStatus();
+	
+	void   compute_y(int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
+	double compute_r(int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
+	double compute_explicit_residual(int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
 };
 
 #endif
