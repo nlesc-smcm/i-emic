@@ -137,7 +137,7 @@ public:
 	// The following functions are required by the continuation interface:
 	//
 	// Solve may optionally accept an rhs of VectorPointer type
-	void solve(Teuchos::RCP<SuperVector> rhs = Teuchos::null);
+	void solve(VectorPtr rhs = Teuchos::null);
 
 	// Clear the search space of the IDR solver
 	void clearSearchSpace() { idrSolver_.clearSearchSpace();}
@@ -221,6 +221,10 @@ public:
 	// Get the ocean's landmask;
 	std::shared_ptr<std::vector<int> > getLandMask();
 	
+	// Scale the matrix and rhs of the problem
+	void scaleProblem(VectorPtr rhs = Teuchos::null);
+	void unscaleProblem(VectorPtr rhs = Teuchos::null);
+	
 private:
 	// HDF5-based save and load functions for the state and parameters
 	void saveStateToFile(std::string const &name);
@@ -241,11 +245,6 @@ private:
 
 	// Build preconditioner
 	void buildPreconditioner();
-	
-
-	// Scale the matrix and rhs of the problem
-	void scaleProblem();
-	void unscaleProblem();
 
 	Teuchos::RCP<SuperVector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
 };
