@@ -33,7 +33,7 @@
     <!-- type of scaling for conv. criterion ("r0","no scaling", "rhs",...) -->
     <Parameter name="Conv" type="string" value="r0"/>
     <!-- print every k'th iteration (0 to keep silent) -->
-    <Parameter name="Output" type="int" value="0"/>
+    <Parameter name="Output" type="int" value="1"/>
     <!-- unless you reaaly want to use an Aztec preconditioner, choose "None"! -->
     <Parameter name="Precond" type="string" value="None"/>
     <!-- max size of Krylov space before restart -->
@@ -405,11 +405,11 @@
   <!-- Solver parameters for the saddlepoint problem { -->
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="5"/>
+    <Parameter name="Max Num Iter" type="int" value="1"/>
     <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
-    <Parameter name="Output" type="int" value="0"/>
+    <Parameter name="Output" type="int" value="1"/>
     <Parameter name="Scaling" type="string" value="None"/>
     <!-- don't touch this one, it's irrelevant -->
     <Parameter name="Precond" type="string" value="None"/>
@@ -477,6 +477,55 @@
     <ParameterList name="Chat Precond">
       
       <Parameter name="Method" type="string" value="ML"/>
+
+	  <!-- MultiLevel parameters (choice "ML" above) -->
+      <ParameterList name="ML">
+		<Parameter name="ML debug mode" type="bool" value="0"/>
+		<Parameter name="ML output" type="int" value="0"/>
+		<Parameter name="ML validate parameter list" type="bool" value="1"/>
+		<Parameter name="default values" type="string" value="DD-ML"/>
+		<Parameter name="aggregation: aux: enable" type="bool" value="0"/>
+		<Parameter name="aggregation: aux: max levels" type="int" value="10"/>
+		<Parameter name="aggregation: aux: threshold" type="double" value="0.0"/>
+		<Parameter name="aggregation: block scaling" type="bool" value="0"/>
+		<Parameter name="aggregation: damping factor" type="double" value="1.3333"/>
+		<Parameter name="aggregation: threshold" type="double" value="1.0e-10"/>
+		<Parameter name="aggregation: type" type="string" value="Uncoupled-MIS"/>
+		<Parameter name="aggregation: smoothing sweeps" type="int" value="1"/>
+		<Parameter name="null space: type" type="string" value="default vectors"/>
+		
+		<Parameter name="eigen-analysis: type" type="string" value="Anorm"/>
+		<Parameter name="coarse: max size" type="int" value="1024"/> 
+		<Parameter name="coarse: type" type="string" value="Amesos-KLU"/>
+		<Parameter name="increasing or decreasing" type="string" value="increasing"/>
+		<Parameter name="max levels" type="int" value="3"/>
+		<Parameter name="cycle applications" type="int" value="1"/>
+		<Parameter name="output" type="int" value="0"/>
+		<Parameter name="prec type" type="string" value="MGV"/>
+		<Parameter name="print unused" type="int" value="-2"/>
+		<Parameter name="smoother: damping factor" type="double" value="1.0"/>
+		<Parameter name="smoother: pre or post" type="string" value="both"/>
+		<Parameter name="smoother: sweeps" type="int" value="1"/>
+		<Parameter name="smoother: type" type="string" value="Aztec"/>
+		<Parameter name="smoother: Aztec as solver" type="bool" value="0"/>
+		
+		<!-- parameters for Aztec smoother { -->
+		<ParameterList name="smoother: aztec list">
+          <Parameter name="Max_Iter" type="int" value="1"/>
+          <Parameter name="Tol" type="double" value="1.0e-10"/>
+          <Parameter name="Solver" type="string" value="GMRESR"/>
+          <Parameter name="Conv" type="string" value="r0"/>
+          <Parameter name="Scaling" type="string" value="None"/>
+          <Parameter name="Overlap" type="int" value="0"/>
+          <Parameter name="Precond" type="string" value="dom_decomp"/>
+          <Parameter name="Subdomain_Solve" type="string" value="ilut"/>
+          <Parameter name="ILUT_Fill" type="double" value="1.0"/>
+          <Parameter name="Drop" type="double" value="1.0e-2"/>
+          <Parameter name="KSpace" type="int" value="10"/>
+          <Parameter name="Orthog" type="string" value="Classic"/>
+          <Parameter name="Output" type="int" value="0"/>
+		</ParameterList><!--}-->
+      </ParameterList> <!-- } ML -->
 
       <!-- Ifpack -->
       

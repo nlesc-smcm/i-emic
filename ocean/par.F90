@@ -24,6 +24,10 @@ module m_par
 #elif defined(LOCAL)
   character(len=*), parameter ::  topdir = '/var/tmp/i-emic/data/'
   character(len=*), parameter ::  rundir = ''
+#elif defined(DESKTOP)
+  character(len=*), parameter ::  topdir = '/home/erik/Projects/i-emic/data/'
+  character(len=*), parameter ::  rundir = ''
+
 
 #else
 #error no guess for working directory available!
