@@ -51,16 +51,29 @@ function [Q,M,V,D] = convergence_covmat(max, neigs)
 	fprintf(1,'subtract mean\n');
 	mn = mean(M(m_range,:));
 	Msubtr = M(m_range,:) - repmat(mn,obs,1);
+	
 	fprintf(1,'compute Q\n');
-	Q = (1/(obs-1))*Msubtr'*Msubtr;	
-	fprintf(1,'compute eigenvectors\n');
-	opts.issym = true;
-	[V,D] = eigs(Q,neigs,'lm',opts);
-	EVALS = diag(D)/sum(diag(D));
+	Q = (1/(obs-1))*Msubtr'*Msubtr;
+	total = trace(Q);
+	
+	fprintf(1,'compute eigenvectors.. \n');
+	opts.tol = 1e-12;
+	[V,D,flag] = eigs(Q,neigs,'lm',opts);
+	fprintf(1,'compute eigenvectors.. done: %d\n', flag);
+	if flag ~= 0
+	   fprintf('NOT ALL EIGENVALUES CONVERGED.. EXITING\n');
+	   break;
+	end
+	% scale with trace Q
+	EVALS  = diag(D)/total;
 
-	fprintf(fileID, 'obs = %d\n', obs);
+	sumeigs = sum(diag(D));
+	EVALS2  = diag(D) / sumeigs;
+
+	fprintf(fileID, 'obs = %d, trace = %f, sum diag = %f\n', ...
+			obs, total, sumeigs);
 	for i = 1:neigs
-	  fprintf(fileID, '%8.5f\n',EVALS(i));
+	  fprintf(fileID, '%8.5f  %8.5f\n', EVALS(i), EVALS2(i));
 	end
   end
   fclose(fileID);

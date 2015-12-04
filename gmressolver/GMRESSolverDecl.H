@@ -38,6 +38,9 @@ class GMRESSolver
 
 	char minimizeScheme_; // 'B' backward solve after Givens rotations
 	                      // 'Q' QR solve using lapack routine
+
+	bool flexible_;    // When using iterative solvers in the (right) preconditioner
+	                   // the user should use FlexibleGMRES.
 	
 	double tol_;       // tolerance
 	double resid_;     // scaled residual norm
@@ -51,7 +54,7 @@ class GMRESSolver
 	bool leftPrec_;  // use left preconditioning
 	                 // (default is right preconditioning)
 	
-	int verbosity_;  // integer [0-9], 0 is quiet
+	int verbosity_;  // 0 is quiet
 	
 public:
 	// constructors
@@ -87,8 +90,8 @@ private:
 	
 	void printIterStatus();
 	
-	void   compute_y(int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
-	double compute_r(int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
+	void   compute_y(int last, Matrix &H, STLVector &s);
+	double compute_r(int last, Matrix &H, STLVector &s);
 	double compute_explicit_residual(int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
 };
 

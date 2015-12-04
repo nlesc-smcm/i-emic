@@ -405,7 +405,7 @@
   <!-- Solver parameters for the saddlepoint problem { -->
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="1"/>
+    <Parameter name="Max Num Iter" type="int" value="5"/>
     <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
@@ -416,7 +416,6 @@
     <Parameter name="KSpace" type="int" value="10"/>
     <Parameter name="Orthog" type="string" value="Classic"/>
   </ParameterList><!-- } Saddlepoint Solver -->
-
 
   <!-- Parameters for the modified Simple-type preconditioner for the -->
   <!-- Saddlepoint problem. {                                         -->
@@ -454,7 +453,7 @@
     <!-- Solver for Schur-complement inside Simple: { -->
     <ParameterList name="Chat Solver">
       <!-- can be "AztecOO" or "None" -->
-      <Parameter name="Method" type="string" value="None"/>
+      <Parameter name="Method" type="string" value="AztecOO"/>
       <Parameter name="Max Num Iter" type="int" value="5"/>
       <Parameter name="Tol" type="double" value="1.0e-3"/>
       <Parameter name="Solver" type="string" value="GMRESR"/>

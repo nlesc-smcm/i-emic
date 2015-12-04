@@ -17,6 +17,7 @@ GMRESSolver(Model &model)
 	haveRHS_         (false),
 	replaceResidual_ (false),
 	minimizeScheme_  ('B'),
+	flexible_        (false),
 	tol_             (1e-8),
 	resid_           (1.0),
 	maxit_           (1000),
@@ -63,6 +64,7 @@ setParameters(ParListPtr pars)
 	leftPrec_        = pars->get("GMRES left prec"       , leftPrec_);
 	replaceResidual_ = pars->get("GMRES replace residual", replaceResidual_);
 	minimizeScheme_  = pars->get("GMRES minimizer scheme", minimizeScheme_);
+	flexible_        = pars->get("GMRES flexible"        , flexible_);
 }
 
 // Lapack least squares solver:
@@ -125,46 +127,53 @@ solve()
 		iter_ = 0;
 		return 0;
 	}
+	
+	std::vector<Vector> Z(m_+1, Vector()); // for FGMRES
+	std::vector<Vector> V(m_+1, Vector()); 
 
-	std::vector<Vector> V(m_+1, Vector());
-	double proj;
 	while (iter_ <= maxit_)
 	{
 		xCopy_ = *x_; // initialize local copy
 		beta   = r.norm();
 		r.scale(1.0 / beta);
+
 		V[0] = r;
+		
 		s.assign(m_+1, 0.0);
 		s[0] = beta;
 
-		// We do not exit from this loop when iter_ > maxit,
-		// whether this is a bug or a feature I'm not sure...
-		for (i = 0; i < m_; i++, iter_++)
+		for (i = 0; i < m_ && iter_ <= maxit_; i++, iter_++)
 		{
 			if ((verbosity_ > 2 && !(iter_ % 10)) || verbosity_ > 7)
 				printIterStatus();
 			
 			// Compute w
-			if (leftPrec_ && prec_)
+			if (prec_ && leftPrec_)               // Left preconditioning
 			{
  				model_.applyMatrix(V[i], tmp); 
-				model_.applyPrecon(tmp, w);     // M.solve(A * v[i])
+				model_.applyPrecon(tmp, w);       // M.solve(A * v[i])
 			}
-			else if (prec_) // Right preconditioning (default)
+			else if (prec_ && flexible_)          // Right preconditioned FGMRES
+			{
+				model_.applyPrecon(V[i], tmp);   // z[i] = M^{-1} * v[i]
+				Z[i] = tmp;
+				model_.applyMatrix(tmp, w);      // w    = A * z[i]
+			}
+			else if (prec_)                       // Right preconditioning (default)
 			{
 				model_.applyPrecon(V[i], tmp);				
-				model_.applyMatrix(tmp, w);    // w =  A * M^{-1} v[i]
+				model_.applyMatrix(tmp, w);       // w =  A * M^{-1} * v[i]
 			}
 			else
 			{
-				model_.applyMatrix(V[i], w);   // w =  A * v[i]
+				model_.applyMatrix(V[i], w);      // w =  A * v[i]
 			}
 			
 			for (k = 0; k <= i; k++)
 			{
 				H[k][i] = w.dot(V[k]);            // H(k, i) = dot(w, v[k]);
 				w.update(-H[k][i], V[k], 1.0);    // w -= H(k, i) * v[k];
-			}			
+			}
 			
 			H[i+1][i] = w.norm();
 			w.scale(1.0 / H[i+1][i]); //  w / H(i+1, i)
@@ -175,17 +184,22 @@ solve()
 			{
 				for (k = 0; k < i; k++)
 					ApplyPlaneRotation(H[k][i], H[k+1][i], cs[k], sn[k]);
-      
+				
 				GeneratePlaneRotation(H[i][i], H[i+1][i], cs[i], sn[i]);
 				ApplyPlaneRotation(H[i][i], H[i+1][i], cs[i], sn[i]);
 				ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
 				
 				resid_ = std::abs(s[i+1]) / normb;
 			}
-			else
-				resid_ =  compute_r(i, H, s, V) / normb;
+			else 
+				resid_ =  compute_r(i, H, s) / normb;
 
-			double newres = compute_explicit_residual(i, H, s, V) / normb;
+			double newres;
+			if (flexible_)
+				newres = compute_explicit_residual(i, H, s, Z) / normb;
+			else
+				newres = compute_explicit_residual(i, H, s, V) / normb;
+			
 			PRINT("GMRES explicit residual = " << newres, verbosity_);
 			if (newres > explResid_)
 			{
@@ -203,10 +217,12 @@ solve()
 			}
 		}		
 
-		if (i == m_)
-			Update(m_-1, H, s, V);
+		int space = (i == m_) ? m_ - 1 : i;
+
+		if (flexible_)
+			Update(space, H, s, Z);
 		else
-			Update(i, H, s, V);
+			Update(space, H, s, V);
 		
 		// Calculate explicit residual
 		if (prec_ && leftPrec_)
@@ -275,29 +291,29 @@ template<typename Model, typename VectorPointer>
 void GMRESSolver<Model, VectorPointer>::
 Update(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
 {
-	compute_y(last, H, s, V);
+	compute_y(last, H, s);
 	
-	if (!prec_ || leftPrec_)
+	if (!prec_ || leftPrec_ || flexible_)
 	{
 		for (int j = 0; j <= last; j++)
 			x_->update(y_[j], V[j], 1.0);  // x += v[j] * y(j);
 	}
-	else // Right preconditioning (default)
+	else    // Right preconditioning (default)
 	{
 		Vector tmp1(*x_);
 		Vector tmp2(*x_);
 		tmp1.zero(); // tmp1 = 0
 		for (int j = 0; j <= last; j++)
 			tmp1.update(y_[j], V[j], 1.0); // tmp1 += v[j] * y(j);
-		model_.applyPrecon(tmp1, tmp2);   // tmp2  = inv(M)*V*y
-		x_->update(1.0, tmp2, 1.0);		  // x += inv(M)*V*y
+		model_.applyPrecon(tmp1, tmp2);    // tmp2  = inv(M)*V*y
+		x_->update(1.0, tmp2, 1.0);		   // x    += inv(M)*V*y
 	}
 }
 
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
 void GMRESSolver<Model, VectorPointer>::
-compute_y(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
+compute_y(int last, Matrix &H, STLVector &s)
 {
 	y_ = s;
 
@@ -310,9 +326,9 @@ compute_y(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
 double GMRESSolver<Model, VectorPointer>::
-compute_r(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
+compute_r(int last, Matrix &H, STLVector &s)
 {
-	compute_y(last, H, s, V);
+	compute_y(last, H, s);
 	
 	int M = last+2;
 	int N = last+1;
@@ -358,9 +374,9 @@ UpdateCopy(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
 {
 	xCopy_ = *x_; 	// Copy solution into xCopy		
 
-	compute_y(last, H, s, V);
+	compute_y(last, H, s);
 		
-	if (!prec_ || leftPrec_)
+	if (!prec_ || leftPrec_ || flexible_)
 	{
 		for (int j = 0; j <= last; j++)
 			xCopy_.update(y_[j], V[j], 1.0); //x += v[j] * y(j);
