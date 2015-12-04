@@ -297,7 +297,6 @@ namespace TRIOS {
 		comm(comm_), zero_init(zero_init_), Spp(Spp_), 
 		A11Solver(A11Solver_), A11Precond(A11Precond_)    
 	{
-
 		scheme = params.get("Scheme","SR");
 		Teuchos::ParameterList& SpaIList = params.sublist("Approximate Inverse");
 		string spai_scheme=SpaIList.get("Method","Block Diagonal");
@@ -699,16 +698,15 @@ namespace TRIOS {
 									Epetra_Vector& x1, Epetra_Vector& x2,
 									bool trans) const
 	{
-		Teuchos::RCP<Epetra_Vector> y1=Teuchos::rcp(new Epetra_Vector(b1.Map()));
-		Teuchos::RCP<Epetra_Vector> ytmp1=Teuchos::rcp(new Epetra_Vector(b1.Map()));
-		Teuchos::RCP<Epetra_Vector> y2=Teuchos::rcp(new Epetra_Vector(b2.Map()));
-		Teuchos::RCP<Epetra_Vector> ytmp2=Teuchos::rcp(new Epetra_Vector(b2.Map()));
+		Teuchos::RCP<Epetra_Vector> y1     =Teuchos::rcp(new Epetra_Vector(b1.Map()));
+		Teuchos::RCP<Epetra_Vector> ytmp1  =Teuchos::rcp(new Epetra_Vector(b1.Map()));
+		Teuchos::RCP<Epetra_Vector> y2     =Teuchos::rcp(new Epetra_Vector(b2.Map()));
+		Teuchos::RCP<Epetra_Vector> ytmp2  =Teuchos::rcp(new Epetra_Vector(b2.Map()));
 		Teuchos::RCP<Epetra_Vector> rhs,sol;
         
 		if (!trans) // Simple
 		{
 			{
-				
 				if (zero_init)
 				{
 					CHECK_ZERO(y1->PutScalar(0.0));

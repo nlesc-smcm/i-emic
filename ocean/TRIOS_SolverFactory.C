@@ -222,19 +222,20 @@ namespace TRIOS {
 				Teuchos::rcp_dynamic_cast<Ifpack_Preconditioner>(P);
 
 #ifdef DEBUGGING
-			string SubType=plist.get("Ifpack Method","None");
+			string SubType   = plist.get("Ifpack Method","None");
+			int overlapLevel = plist.get("Ifpack Overlap Level", 0);
 			DEBVAR(SubType);
 			if (SubType=="ILU")
 			{
 				Teuchos::RCP<Ifpack_AdditiveSchwarz<Ifpack_ILU> > ilu = 
-					Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILU> >(Prec);
+					Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILU> >(Prec, overlapLevel);
 				const Epetra_RowMatrix& Aloc = dynamic_cast<const Epetra_RowMatrix&>(ilu->Inverse()->Matrix());
 				//MatrixUtils::PrintRowMatrix(Aloc,*debug);
 			}
 			else if (SubType=="ILUT")
 			{
 				Teuchos::RCP<Ifpack_AdditiveSchwarz<Ifpack_ILUT> > ilu = 
-					Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILUT> >(Prec);
+					Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILUT> >(Prec, overlapLevel);
 				const Epetra_RowMatrix& Aloc = dynamic_cast<const Epetra_RowMatrix&>(ilu->Inverse()->Matrix());
 				//MatrixUtils::PrintRowMatrix(Aloc,*debug);
 			}
