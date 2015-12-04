@@ -34,27 +34,28 @@ class GMRESSolver
 	
 	bool haveInitSol_;
 	bool haveRHS_;
-	bool replaceResidual_;
 
-	char minimizeScheme_; // 'B' backward solve after Givens rotations
-	                      // 'Q' QR solve using lapack routine
+	char minimizeScheme_;   // 'B' backward solve after Givens rotations
+	                        // 'Q' QR solve using lapack routine
 
-	bool flexible_;    // When using iterative solvers in the (right) preconditioner
-	                   // the user should use FlexibleGMRES.
-	
-	double tol_;       // tolerance
-	double resid_;     // scaled residual norm
-	double explResid_; // explicit residual norm
+	bool flexible_;         // When using iterative solvers in the (right) preconditioner
+	                        // the user should use FlexibleGMRES.
 
-	int maxit_;      // max # iterations
-	int m_;          // # iterations before restart
-	int iter_;       // iteration counter
+	bool computeExplResid_; // Choose to compute explicit residual (can be expensive)
 	
-	bool prec_;      // use preconditioning
-	bool leftPrec_;  // use left preconditioning
-	                 // (default is right preconditioning)
+	double tol_;            // tolerance
+	double resid_;          // scaled residual norm
+	double explResid_;      // explicit residual norm
+
+	int maxit_;             // max # iterations
+	int m_;                 // # iterations before restart
+	int iter_;              // iteration counter
 	
-	int verbosity_;  // 0 is quiet
+	bool prec_;             // use preconditioning
+	bool leftPrec_;         // use left preconditioning
+	                        // (default is right preconditioning)
+	
+	int verbosity_;         // 0 is quiet
 	
 public:
 	// constructors

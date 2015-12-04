@@ -15,9 +15,9 @@ GMRESSolver(Model &model)
 	model_           (model),
 	haveInitSol_     (false),
 	haveRHS_         (false),
-	replaceResidual_ (false),
 	minimizeScheme_  ('B'),
 	flexible_        (false),
+	computeExplResid_(false),
 	tol_             (1e-8),
 	resid_           (1.0),
 	maxit_           (1000),
@@ -56,15 +56,15 @@ setParameters(ParListPtr pars)
 {
 	PRINT("GMRES: updating parameters", verbosity_);
 	
-	tol_             = pars->get("GMRES tolerance"       , tol_);
-	maxit_           = pars->get("GMRES iterations"      , maxit_);
-	m_               = pars->get("GMRES restart"         , m_);
-	verbosity_       = pars->get("GMRES verbosity"       , verbosity_);
-	prec_            = pars->get("GMRES preconditioning" , prec_);
-	leftPrec_        = pars->get("GMRES left prec"       , leftPrec_);
-	replaceResidual_ = pars->get("GMRES replace residual", replaceResidual_);
-	minimizeScheme_  = pars->get("GMRES minimizer scheme", minimizeScheme_);
-	flexible_        = pars->get("GMRES flexible"        , flexible_);
+	tol_              = pars->get("GMRES tolerance"        , tol_);
+	maxit_            = pars->get("GMRES iterations"       , maxit_);
+	m_                = pars->get("GMRES restart"          , m_);
+	verbosity_        = pars->get("GMRES verbosity"        , verbosity_);
+	prec_             = pars->get("GMRES preconditioning"  , prec_);
+	leftPrec_         = pars->get("GMRES left prec"        , leftPrec_);
+	minimizeScheme_   = pars->get("GMRES minimizer scheme" , minimizeScheme_);
+	flexible_         = pars->get("GMRES flexible"         , flexible_);
+	computeExplResid_ = pars->get("GMRES explicit residual", computeExplResid_);
 }
 
 // Lapack least squares solver:
@@ -107,7 +107,7 @@ solve()
 	{
 		model_.applyMatrix(*x_, tmp); // Ax
 		tmp.update(1.0, *b_, -1.0);   // b - Ax
-		model_.applyPrecon(tmp, r);   // r = M.solve(b - A * x);
+		model_.applyPrecon(tmp, r);   // r = inv(M) * (b - A * x);
 	}
 	else
 	{
@@ -151,13 +151,13 @@ solve()
 			if (prec_ && leftPrec_)               // Left preconditioning
 			{
  				model_.applyMatrix(V[i], tmp); 
-				model_.applyPrecon(tmp, w);       // M.solve(A * v[i])
+				model_.applyPrecon(tmp, w);       // inv(M) * (A * v[i])
 			}
 			else if (prec_ && flexible_)          // Right preconditioned FGMRES
 			{
-				model_.applyPrecon(V[i], tmp);   // z[i] = M^{-1} * v[i]
+				model_.applyPrecon(V[i], tmp);    // z[i] = M^{-1} * v[i]
 				Z[i] = tmp;
-				model_.applyMatrix(tmp, w);      // w    = A * z[i]
+				model_.applyMatrix(tmp, w);       // w    = A * z[i]
 			}
 			else if (prec_)                       // Right preconditioning (default)
 			{
@@ -168,16 +168,17 @@ solve()
 			{
 				model_.applyMatrix(V[i], w);      // w =  A * v[i]
 			}
-			
+
+			// Orthogonalize w
 			for (k = 0; k <= i; k++)
 			{
 				H[k][i] = w.dot(V[k]);            // H(k, i) = dot(w, v[k]);
 				w.update(-H[k][i], V[k], 1.0);    // w -= H(k, i) * v[k];
 			}
-			
+
+			// Normalize and assign to space
 			H[i+1][i] = w.norm();
-			w.scale(1.0 / H[i+1][i]); //  w / H(i+1, i)
-			
+			w.scale(1.0 / H[i+1][i]);             //  w / H(i+1, i)			
 			V[i+1] =  w;
 			
 			if (minimizeScheme_ == 'B')
@@ -194,52 +195,48 @@ solve()
 			else 
 				resid_ =  compute_r(i, H, s) / normb;
 
-			double newres;
-			if (flexible_)
-				newres = compute_explicit_residual(i, H, s, Z) / normb;
-			else
-				newres = compute_explicit_residual(i, H, s, V) / normb;
-			
-			PRINT("GMRES explicit residual = " << newres, verbosity_);
-			if (newres > explResid_)
+			if (computeExplResid_)
 			{
-				PRINT("   explicit residual increasing", verbosity_ - 5);
-				break;
+				if (flexible_)
+					explResid_ = compute_explicit_residual(i, H, s, Z) / normb;
+				else
+					explResid_ = compute_explicit_residual(i, H, s, V) / normb;
+
+				resid_ = std::max(resid_, explResid_);
 			}
-			explResid_ = newres;
 			
 			if (resid_ < tol_)
 			{
-				PRINT("GMRES implicit residual passed...", verbosity_);
-				PRINT("         iterations = " << iter_, verbosity_);
-				PRINT("  implicit residual = " << resid_, verbosity_);
+				PRINT("GMRES residual passed...", verbosity_);
+				PRINT("           iterations = " << iter_, verbosity_);
+				PRINT("             residual = " << resid_, verbosity_);
 				break;
 			}
 		}		
 
-		int space = (i == m_) ? m_ - 1 : i;
-
+		// Update solution 
+		int spaceSize = (i == m_) ? m_ - 1 : i;		
 		if (flexible_)
-			Update(space, H, s, Z);
+			Update(spaceSize, H, s, Z); // xm = x0 + Z*ym
 		else
-			Update(space, H, s, V);
+			Update(spaceSize, H, s, V); // xm = x0 + inv(M)*V*ym
 		
 		// Calculate explicit residual
 		if (prec_ && leftPrec_)
 		{
 			model_.applyMatrix(*x_, tmp); // Ax
 			tmp.update(1.0, *b_, -1.0);   // b - Ax
-			model_.applyPrecon(tmp, r);   // r = M.solve(b - A * x);
+			model_.applyPrecon(tmp, r);   // r = inv(M) * (b - A * x);
 		}
 		else
 		{
 			model_.applyMatrix(*x_, r); // Ax
 			r.update(1.0, *b_, -1.0);   // b - Ax
 		}
-		beta    = r.norm();
-		resid_  = beta / normb;
+		beta   = r.norm();
+		explResid_ = beta / normb;
 		
-		PRINT("  explicit residual = " << resid_, verbosity_);
+		PRINT("    true residual = " << explResid_, verbosity_);
 
 		if (resid_ < tol_)
 		{
@@ -247,7 +244,7 @@ solve()
 			return 0;
 		}
 		else
-			PRINT("   restart ", verbosity_);
+			PRINT("    :( ...  restart ", verbosity_);
 	}
 	return 1;
 }
@@ -363,7 +360,7 @@ compute_explicit_residual(int last, Matrix &H, STLVector &s, std::vector<Vector>
 	Vector r(*x_);
 	model_.applyMatrix(xCopy_, r);   // A*x
 	r.update(1.0, *b_, -1.0);        // b - A*x
-	double beta   = r.norm();               // ||b - A*x||
+	double beta   = r.norm();        // ||b - A*x||
 	return beta;
 }
 
@@ -469,8 +466,8 @@ template<typename Model, typename VectorPointer>
 void GMRESSolver<Model, VectorPointer>::
 printIterStatus()
 {
-	PRINT("iteration: "   << iter_  << " residual: "   << resid_
-		  << " rel. tol: "   << tol_, verbosity_);
+	PRINT("iteration: "   << iter_  << " impl res: "   << resid_
+		  << " expl res: "   << explResid_, verbosity_);
 }
 
 #endif
