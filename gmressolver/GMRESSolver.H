@@ -130,6 +130,7 @@ solve()
 	
 	std::vector<Vector> Z(m_+1, Vector()); // for FGMRES
 	std::vector<Vector> V(m_+1, Vector()); 
+	int spaceSize;	// keeping track of the size of Z,V
 
 	while (iter_ <= maxit_)
 	{
@@ -179,7 +180,8 @@ solve()
 			// Normalize and assign to space
 			H[i+1][i] = w.norm();
 			w.scale(1.0 / H[i+1][i]);             //  w / H(i+1, i)			
-			V[i+1] =  w;
+			V[i+1]    =  w;
+			spaceSize = i;
 			
 			if (minimizeScheme_ == 'B')
 			{
@@ -215,7 +217,6 @@ solve()
 		}		
 
 		// Update solution 
-		int spaceSize = (i == m_) ? m_ - 1 : i;		
 		if (flexible_)
 			Update(spaceSize, H, s, Z); // xm = x0 + Z*ym
 		else
@@ -243,7 +244,7 @@ solve()
 			PRINT("GMRES explicit residual passed...", verbosity_);
 			return 0;
 		}
-		else
+		else if 
 			PRINT("    :( ...  restart ", verbosity_);
 	}
 	return 1;
