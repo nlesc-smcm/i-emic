@@ -25,7 +25,7 @@
     <!-- up to now only "AztecOO" or "None" (just apply precond once) -->
     <Parameter name="Method" type="string" value="AztecOO"/>
     <!-- maximum number of iterations permitted -->
-    <Parameter name="Max Num Iter" type="int" value="1"/>
+    <Parameter name="Max Num Iter" type="int" value="10"/>
     <!-- (relative) convergence tolerance      -->
     <Parameter name="Tolerance" type="double" value="1.0e-4"/>
     <!-- options include "GMRES", "GMRESR", etc. -->
@@ -405,7 +405,7 @@
   <!-- Solver parameters for the saddlepoint problem { -->
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="1"/>
+    <Parameter name="Max Num Iter" type="int" value="10"/>
     <Parameter name="Tolerance" type="double" value="1.0e-4"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
@@ -661,7 +661,7 @@
       <Parameter name="aggregation: local aggregates" type="int" value="64"/>
       <Parameter name="aggregation: smoothing sweeps" type="int" value="1"/>
       <Parameter name="eigen-analysis: type" type="string" value="Anorm"/>
-      <Parameter name="coarse: max size" type="int" value="4096"/> 
+      <Parameter name="coarse: max size" type="int" value="256"/> 
       <Parameter name="coarse: type" type="string" value="Amesos-KLU"/>
       <Parameter name="increasing or decreasing" type="string" value="increasing"/>
       <Parameter name="max levels" type="int" value="2"/>

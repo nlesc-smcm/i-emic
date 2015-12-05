@@ -79,11 +79,16 @@
       real time0, time1
 
       if (vmix_GLB.eq.1) then
+         vmix_flag = 1
+         vmix_diff = 1
+         vmix_out  = 0
+         vmix_fix  = 0
+      else if (vmix_GLB.eq.2) then
          vmix_flag = 2
          vmix_diff = 1
          vmix_out  = 0
          vmix_fix  = 0
-      else
+      else 
          vmix_flag = -1
       endif
       

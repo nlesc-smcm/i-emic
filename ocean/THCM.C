@@ -276,7 +276,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	int ird_mask    = (rd_mask   ) ? 1 : 0;
 	int ird_spertm  = (rd_spertm ) ? 1 : 0;
 
-	DEBUG("call m_global::initialize...");
+	INFO("THCM init: m_global::initialize...");
+	INFO("    Mixing: vmix_GLB = " << vmix_GLB);
 	//== In fortran object code this corresponds to the function __m_global_MOD_initialize
 	F90NAME(m_global, initialize)(&nglob_, &mglob_, &lglob_,
 								  &xmin, &xmax, &ymin, &ymax, &hdim, &qz,
@@ -285,6 +286,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 								  &iperiodic, &itopo, &iflat, &ird_mask,
 								  &tres, &sres, &iza, &ite, &its, &ird_spertm,
 								  &coupled_atm);
+
+	INFO("THCM init: m_global::initialize... done");	
 
 	// read topography data and convert it to a global land mask
 	DEBUG("Initialize land mask...");

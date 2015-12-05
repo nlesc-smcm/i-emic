@@ -4,7 +4,7 @@
   <!-- Specify whether the ocean model should initialize with -->
   <!-- an old state (true) or with a zero solution (false).   -->
   <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Save state" type="bool" value="false"/>
+  <Parameter name="Save state" type="bool" value="true"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -39,12 +39,12 @@
     <!-- 1: no land                                 -->
     <!-- others not tested, but this is 'itopo' in  -->
     <!-- THCM language                              -->
-    <Parameter name="Topography" type="int" value="1"/>
+    <Parameter name="Topography" type="int" value="0"/>
     <!-- remove bottom profile? (flat in THCM)      -->
     <Parameter name="Flat Bottom" type="bool" value="0"/>
     <!-- read mask from a file in mkmask The filename is hard-coded in   -->
     <!-- topo.F90.                                                       -->
-    <Parameter name="Read Land Mask" type="bool" value="0"/>
+    <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
     <Parameter name="Land Mask" type="string" value="mask_natl32"/>
 
