@@ -244,7 +244,7 @@ solve()
 			PRINT("GMRES explicit residual passed...", verbosity_);
 			return 0;
 		}
-		else if 
+		else
 			PRINT("    :( ...  restart ", verbosity_);
 	}
 	return 1;

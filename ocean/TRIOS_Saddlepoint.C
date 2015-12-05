@@ -729,12 +729,11 @@ namespace TRIOS {
 			if (fixp1>=0) (*y2)[fixp1]=valp;
 			if (fixp2>=0) (*y2)[fixp2]=valp;
 			{
-				
 				if (zero_init)
 				{
 					CHECK_ZERO(x2.PutScalar(0.0));
 				}
-            
+
 				// apply inv(L):
 				rhs=y2; sol=Teuchos::rcp(&x2,false);
 #ifdef HAVE_ZOLTAN
