@@ -1,102 +1,61 @@
-*     ============================================================================ *
-*     
-*     Subroutines for the approximation of the Jacobian Matrix w.r.t.:
-*     - Horizonal mixing of salt and heat according to neutral physics,
-*     - Convective adjustment of salt and heat, 
-*     - Energetically consistant vertical mixing of salt and heat, and 
-*     - Gent-McWilliams stirring of salt and heat,
-*     using subroutines [in mix_sup.f] and method by Coleman et al.
-*     
-*     ---------------------------------------------------------------------------- *
-*     
-*     vmix_flag: 
-*     - 0: original formulation [obsolete]
-*     ~ only convective adjustment and energetically consistant vertical mixing
-*     ~ uses analytical expression of the Jacobian obtained with Mathematica
-*     - 1: fixed partition
-*     ~ evaluated during intialization and remains fixed
-*     ~ for T,S-equations and T,S-variables, including zero-valued fields
-*     - 2: adaptive partitioning wrt. fields
-*     ~ partition dependent on T,S-fields, i.e. zero fields are not considered
-*     ~ checks L_2 norm of the T,S-fields every continuation step and changes
-*     partition if necessary
-*     
-*     ---------------------------------------------------------------------------- *
-*     
-*     Uses the following parameters [see subroutine stpnt in usrc.f]:
-*     - MIXP /  6: 
-*     - SPL1 /  8: coefficient for vertical mixing and convective adjustment [f_mix]
-*     - PE_H / 11:
-*     - PE_V / 12:
-*     - P_VC / 13: 
-*     - LAMB / 14:
-*     - ENER / 24: 
-*     - ALPC / 25: bifurication parameter for consistant vertical mixing
-*     - MKAP / 29: Gent-McWillims stirring (relative to K_H)
-*     - SPL2 / 30: coefficient for neutral physics [f_ntr]
-*     
-*     ============================================================================ *
-
-! Call structure w.r.t DSM and FDJS
-!   +----------------------------+                    
-!   |                            |   +-----------+    
-!   |          mix_imp.f         |   |   usrc.f  |    
-!   |                            | --+-----+-----+    
-!   |                          --+/        |          
-!   |        +---------------+/  |         |          
-!   |        | vmix_control  |   |         |          
-!   |        +------+--------+   |         |          
-!   |               |            +---------+---------+
-!   |      +--------+----+         +-------+--+      |
-!   |      |  vmix_part  |         | vmix_jac |      |
-!   |      +------+---+--+         +----+-----+      |
-!   |             |   |                 |            |
-!   | +-------------+ |             +---+----+       |
-!   | | vmix_el(1,2)| |             |  FDJ   |       |
-!   | |  -vmix_dim  | |            /+--------+       |
-!   | +-------------+ |           /                  |
-!   |                 |          |                   |
-!   |             +---+--------+ /                   |
-!   |             | DSM        |/                    |
-!   |             | -vmix_iptr |                     |
-!   |             +------------+                     |
-!   |                                                |
-!   |                                                |
-!   |                                                |
-!   |                                                |
-!   |                                                |
-!   |                                                |
-!   |                                                |
-!   +------------------------------------------------+
-
+!     * ================================================================================
+!     *
+!     * Subroutines for the approximation of the Jacobian Matrix w.r.t.:
+!     * - Horizonal mixing of salt and heat according to neutral physics,
+!     * - Convective adjustment of salt and heat, 
+!     * - Energetically consistant vertical mixing of salt and heat, and 
+!     * - Gent-McWilliams stirring of salt and heat,
+!     * using subroutines [in mix_sup.f] and method by Coleman et al.
+!     *
+!     * This file was entirely revised by M. den Toom (2008 => M.dentoom@uu.nl).
+!     * The old Cox (1987) implementation proved to be unstable (see Griffies(1998)),
+!     * and was therefore replaced by Griffies (1998) alternative. See additional
+!     * information in the heading of vmix_fun.
+!     *
+!     * --------------------------------------------------------------------------------
+!     * 
+!     * vmix_flag: 
+!     * - 0: original formulation [obsolete]
+!     *      ~ only convective adjustment and energetically consistant vertical mixing
+!     *      ~ uses analytical expression of the Jacobian obtained with Mathematica
+!     * - 1: fixed partition
+!     *      ~ evaluated during intialization and remains fixed
+!     *      ~ for T,S-equations and T,S-variables, including zero-valued fields
+!     * - 2: adaptive partitioning wrt. fields
+!     *      ~ partition dependent on T,S-fields, i.e. zero fields are not considered
+!     *      ~ checks L_2 norm of the T,S-fields every continuation step and changes
+!     *        partition if necessary
+!     *
+!     * ================================================================================
       subroutine vmix_init
       use m_usr
       use m_mix
       implicit none
 !include 'usr.com'
 !include 'mix.com'
-      
+
       real time0, time1
 
       if (vmix_GLB.eq.1) then
          vmix_flag = 1
          vmix_diff = 1
          vmix_out  = 0
-         vmix_fix  = 0
+         vmix_fix  = 1
       else if (vmix_GLB.eq.2) then
          vmix_flag = 2
          vmix_diff = 1
          vmix_out  = 0
-         vmix_fix  = 0
-      else 
+         vmix_fix  = 1
+      else
          vmix_flag = -1
       endif
-      
+
+
       vmix_time=0.0
       call cpu_time(time0)
 
-      if (vmix_out.gt.0) write (*,'(a26)') 'MIX| init...              '
-      if (vmix_out.gt.0) write (*,'(a16,i10)') 'MIX|     flag:  ', vmix_flag
+      if (vmix_out.gt.0) write (99,'(a26)') 'MIX| init...              '
+      if (vmix_out.gt.0) write (99,'(a16,i10)') 'MIX|     flag:  ', vmix_flag
 
       select case (vmix_flag)
       case(1)
@@ -106,15 +65,14 @@
       case(2)
          vmix_temp=0
          vmix_salt=0
-      end select	
+      end select
 
       call cpu_time(time1)
       vmix_time=vmix_time+time1-time0
-      if (vmix_out.gt.0) write (*,'(a26,f10.3)') 'MIX|          ...init done', time1-time0
+      write (99,'(a26,f10.3)') 'MIX|          ...init done', time1-time0
 
-      call flush(6)
-      end
-*     ---------------------------------------------------------------------------- *
+      end subroutine vmix_init
+!     * --------------------------------------------------------------------------------
       subroutine vmix_par
       use m_usr
       use m_mix
@@ -128,59 +86,58 @@
          par(ALPC)   =  1.0
          par(ENER)   =  1.0e+2
          par(MKAP)   =  0.0
-      endif	
-      
-      end
-*     ---------------------------------------------------------------------------- *
+      endif
+
+      end subroutine vmix_par
+!     * --------------------------------------------------------------------------------
       subroutine vmix_control(un)
       use m_usr
       use m_mix
       implicit none
 !include 'usr.com'
 !include 'mix.com'
-      
-      real un(ndim), l2nrm
-      integer test_temp, test_salt, i
-      if (vmix_out.gt.0) write (*,'(a26)') 'MIX|   control...         '
 
-!     I would like to start with a zero initial condition, so I'm hardcoding this to 1
-!      -Erik 
-      test_temp = 1  !0
-      test_salt = 1  !0
-      
+      real un(ndim), l2nrm
+      integer test_temp, test_salt
+
+      if (vmix_out.gt.0) write (99,'(a26)') 'MIX|   control...         '
+
+      test_temp = 1
+      test_salt = 1
+
 ! Test for temperature field
       if (l2nrm(un(TT:ndim:nun),n*m*l).gt.1.0e-12) test_temp=1
       if (vmix_out.gt.0)
-     +     write (*,'(a16,2i5)') 'MIX|     temp:  ', vmix_temp, test_temp 
-      
+     +     write (99,'(a16,2i5)') 'MIX|     temp:  ', vmix_temp, test_temp 
+
 ! Test for salinity
       if (l2nrm(un(SS:ndim:nun),n*m*l).gt.1.0e-12) test_salt=1
       if (vmix_out.gt.0)
-     +     write (*,'(a16,2i5)') 'MIX|     salt:  ', vmix_salt, test_salt 
-      
+     +     write (99,'(a16,2i5)') 'MIX|     salt:  ', vmix_salt, test_salt 
+
       if ((vmix_temp.ne.test_temp).or.(vmix_salt.ne.test_salt)) then
          vmix_temp=test_temp 
          vmix_salt=test_salt  
          if ((vmix_temp.ne.0).and.(vmix_temp.ne.0)) call vmix_part
-      endif  
+      endif
       vmix_fix=1
-      
-      if (vmix_out.gt.0) write (*,'(a26)') 'MIX|       ...control done'
 
-      end
-*     ---------------------------------------------------------------------------- *
+      if (vmix_out.gt.0) write (99,'(a26)') 'MIX|       ...control done'
+
+      end subroutine vmix_control
+!     * --------------------------------------------------------------------------------
       subroutine vmix_part
       use m_usr
       use m_mix
       implicit none
 !include 'usr.com'
 !include 'mix.com'
-      
+
       integer i, info, iwa(6*ndim), liwa
       integer vmix_minrow,vmix_maxrow
       real dnsm
 
-      if (vmix_out.gt.0) write (*,'(a26)') 'MIX|   part...            '
+      write (99,'(a26)') 'MIX|   part...            '
 
       select case(vmix_flag)
       case(1)
@@ -188,9 +145,8 @@
       case(2)
          call vmix_el_2(vmix_row, vmix_col, vmix_dim)
       end select
-      
+    
       liwa=6*ndim
-
       call dsm(ndim,ndim,
      +     vmix_dim,vmix_row,vmix_col,
      +     vmix_ngrp,vmix_maxgrp,vmix_mingrp,
@@ -198,20 +154,13 @@
      +     vmix_ipntr,vmix_jpntr,
      +     iwa,liwa)
       dnsm=real(vmix_dim)/(real(ndim)**2)
-      if (vmix_out.eq.0) write (*,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
-      if (vmix_out.eq.0) write (*,'(a16,es10.2)') 'MIX|     dnsm:  ', dnsm
+      write (99,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
+      write (99,'(a16,es10.2)') 'MIX|     dnsm:  ', dnsm
 
       if (info.le.0) then
-         write (*,*) 'Error in subroutine DSM'
-         write (*,*) 'INFO =', info
-         write (*,*) 'NPAIRS (vmix_dim) =', vmix_dim
-         if (vmix_dim.eq.0) then
-            write(*,*) ' There are no relevant matrix entries,'
-            write(*,*) ' our core is probably located on land...'
-            return
-         else
-            stop
-         endif
+         write (99,*) 'Error in subroutine DSM'
+         write (99,*) 'INFO =', info
+         stop
       endif
       vmix_maxrow=0
       vmix_minrow=ndim
@@ -219,499 +168,663 @@
          vmix_maxrow=max(vmix_maxrow,
      +        vmix_ipntr(i+1)-vmix_ipntr(i))
          vmix_minrow=min(vmix_minrow,
-     +        vmix_ipntr(i+1)-vmix_ipntr(i))
+     +                  vmix_ipntr(i+1)-vmix_ipntr(i))
       enddo
-      if (vmix_out.gt.0) then
-         write (*,'(a16,i10)') 'MIX|     minrow:', vmix_minrow
-         write (*,'(a16,i10)') 'MIX|     maxrow:', vmix_maxrow
-         write (*,'(a16,i10)') 'MIX|     mingrp:', vmix_mingrp
-         write (*,'(a16,i10)') 'MIX|     maxgrp:', vmix_maxgrp
-         write (*,'(a26)')     'MIX|          ...part done'
-      endif
-      end
-*     ---------------------------------------------------------------------------- *
-      subroutine vmix_fun(un,mix,mode)
+      write (99,'(a16,i10)') 'MIX|     minrow:', vmix_minrow
+      write (99,'(a16,i10)') 'MIX|     maxrow:', vmix_maxrow
+      write (99,'(a16,i10)') 'MIX|     mingrp:', vmix_mingrp
+      write (99,'(a16,i10)') 'MIX|     maxgrp:', vmix_maxgrp
+      write (99,'(a26)')     'MIX|          ...part done'
+
+      end subroutine vmix_part
+!     * --------------------------------------------------------------------------------
+!     *
+!     *=================================================================================
+      subroutine vmix_fun(un,mix)
+
+!     *     Computes divergence of the diffusive tracer flux.
+!     *     Implementation of neutral physics, Gent-McWilliams stirring and implicit
+!     *     vertical mixing. NP and GM are based on Griffies et al. (JPO,1998).
+!     *     INPUT
+!     *      un:   solution vector
+!     *     OUTPUT
+!     *      mix: divergence of diffusive tracer flux.
+!     *     PARAMETERS
+!     *      - MIXP / p6 : isoneutral diffusivity as fraction of PE_H
+!     *      - SPL1 / p8 : cut-off value for stability criterion [tprstb]
+!     *      - PE_H / p11: horizontal diffusivity
+!     *      - PE_V / p12: vertical diffusivity
+!     *      - P_VC / p13: implicit vertical diffusivity
+!     *      - LAMB / p14: ratio of expansion coefficients
+!     *      - NLES / p21: 1.0 for nonlinear equation of state
+!     *      - ENER / p24: energy available for consistent mixing
+!     *      - ALPC / p25: bifurcation parameter, 0.0 (1.0) is (no) consistent mixing
+!     *      - MKAP / p29: GM diffusivity as fraction of PE_H
+!     *      - SPL2 / p30: cirtical slope for neutral physics and GM [tprslp]
+!     *     TESTING
+!     *      - 20/11/08: Established convergence under horizontal grid refinement
+!     *                  of order two. Test functions used:
+!     *                  {T,S} = \sum_{i=1,3} a_i^{T,S} ( exp(x_i-x_i(0))-1 ).
+!     *      - 05/12/08: Experiment (along with earlier tests) confirms that
+!     *                  solution is invariant under par(PE_H) when par(MIXP) = 1.0
+!     *                  and salinity is constant everywhere, s=0.
+!     *
+!     *     Author: M. den Toom => m.dentoom@uu.nl
       use m_usr
       use m_mix
       implicit none
 !include 'usr.com'
 !include 'mix.com'
-      real un(ndim), mix(ndim)    ! dezen moet waars geallocate worden
+
+!     *     Import/export
+      real un(ndim), mix(ndim)
+!     *     Local
       real u(0:n  ,0:m  ,0:l+la+1)
       real v(0:n  ,0:m  ,0:l+la+1)
       real w(0:n+1,0:m+1,0:l+la  )
       real p(0:n+1,0:m+1,0:l+la+1)
       real t(0:n+1,0:m+1,0:l+la+1)
       real s(0:n+1,0:m+1,0:l+la+1)
-      real lambda, kvc, alp, eps0, gmkap, bifm, ph, pv, stkapp
-      real T_mmm,T_0mm,T_pmm,T_m0m,T_00m,T_p0m,T_mpm,T_0pm,T_ppm
-      real T_mm0,T_0m0,T_pm0,T_m00,T_000,T_p00,T_mp0,T_0p0,T_pp0
-      real T_mmp,T_0mp,T_pmp,T_m0p,T_00p,T_p0p,T_mpp,T_0pp,T_ppp
-      real S_mmm,S_0mm,S_pmm,S_m0m,S_00m,S_p0m,S_mpm,S_0pm,S_ppm
-      real S_mm0,S_0m0,S_pm0,S_m00,S_000,S_p00,S_mp0,S_0p0,S_pp0
-      real S_mmp,S_0mp,S_pmp,S_m0p,S_00p,S_p0p,S_mpp,S_0pp,S_ppp
-      real dTdx_m00,dTdx_p00,dTdx_0m0,dTdx_0p0,dTdx_00m,dTdx_00p
-      real dTdy_m00,dTdy_p00,dTdy_0m0,dTdy_0p0,dTdy_00m,dTdy_00p
-      real dTdz_m00,dTdz_p00,dTdz_0m0,dTdz_0p0,dTdz_00m,dTdz_00p
-      real dSdx_m00,dSdx_p00,dSdx_0m0,dSdx_0p0,dSdx_00m,dSdx_00p
-      real dSdy_m00,dSdy_p00,dSdy_0m0,dSdy_0p0,dSdy_00m,dSdy_00p
-      real dSdz_m00,dSdz_p00,dSdz_0m0,dSdz_0p0,dSdz_00m,dSdz_00p
-      real dx0, dx1, dy0, dy1, dz2, dz3, dz4, dz6
-      real ep, em, kd, f_mix, f_ntr, dum(3)
-      real sppk,spmk,smpi,smmi,smpj,smmj,smpk1,smmk1,smpk2,smmk2
-      integer i,j,k,row, mode
-      integer we, no, es, so, to, bo 
+      real dtdxe(0:n,0:m+1,0:l+la+1),dsdxe(0:n,0:m+1,0:l+la+1)
+      real dtdyn(0:n+1,0:m,0:l+la+1),dsdyn(0:n+1,0:m,0:l+la+1)
+      real dtdzt(0:n+1,0:m+1,0:l+la),dsdzt(0:n+1,0:m+1,0:l+la)
+      real rho(0:n+1,0:m+1,0:l+la+1)
+      real drhods(0:n+1,0:m+1,0:l+la+1),drhodt(0:n+1,0:m+1,0:l+la+1)
+      real drhodzt(0:n+1,0:m+1,0:l+la)
+      real Ftxe(0:n,1:m,1:l), Fsxe(0:n,1:m,1:l)
+      real Ftyn(1:n,0:m,1:l), Fsyn(1:n,0:m,1:l)
+      real Ftzt(1:n,1:m,0:l), Fszt(1:n,1:m,0:l)
+      real Ftimp(1:n,1:m,0:l),Fsimp(1:n,1:m,0:l)
+      real xes,lambda,piso,pgm,eps,kvc,sp1,sp2
+      real dumt,dums,drdh,drdz,slp,tpr
+      real, parameter:: epsln = 1.0e-20
+      integer i,j,k,ip,jq,kr,row
+!     *     Functions
+      real tprstb
       integer find_row2
-      logical flag
 
-      lambda = par(LAMB)
-      kvc    = par(P_VC)
-      ph     = par(PE_H)
-      pv     = par(PE_V)
-      alp    = par(ALPC)
-      eps0   = par(ENER)
-      gmkap  = par(MKAP)
-      bifm   = par(MIXP)
-      stkapp = par(MKAP)
-
-
+!     *     Extract u,v,w,p,t,s from solution vector un
       call usol(un,u,v,w,p,t,s)      
-      mix=0.0
-      dum=0.0
-      
+
+!     *     Abbreviate the parameter names
+      xes    = par(NLES)
+      lambda = par(LAMB)
+      piso   = par(MIXP)       * par(PE_H)
+      pgm    = par(MKAP)       * par(PE_H)
+      eps    = (1.0-par(ALPC)) * par(ENER) * par(PE_V) ! as in the old mix_imp.f
+      kvc    = par(P_VC)
+      sp1    = par(SPL1)
+      sp2    = par(SPL2)
+
+!     *     Calculate gradients of temperature and salinity
+      call dCdxt(t,dtdxe)       !East face of T-cells
+      call dCdxt(s,dsdxe)
+      call dCdyt(t,dtdyn)       !North face of T-cells
+      call dCdyt(s,dsdyn)
+      call dCdzt(t,dtdzt)       !Top face of T-cells
+      call dCdzt(s,dsdzt)
+
+!     *     Calculate density and relevant derivatives.
+      rho    = lambda*s -  t - xes *
+     &     ( alpt1*t +     alpt2*t*t -    alpt3*t*t*t )
+      call drhodC(t,s,drhodt,drhods)
+      call dCdzt(rho,drhodzt)
+
+!     *     Calculate fluxes on east, north and top faces ==============================
+
+!     *     Initialize arrays
+      Ftxe(:,:,:)    = 0.0
+      Fsxe(:,:,:)    = 0.0
+      Ftyn(:,:,:)    = 0.0
+      Fsyn(:,:,:)    = 0.0
+      Ftzt(:,:,:)    = 0.0
+      Fszt(:,:,:)    = 0.0
+      Ftimp(:,:,:)   = 0.0
+      Fsimp(:,:,:)   = 0.0
+
+!     *L0s  start loop over k,j,i
+      do k=1,l
+         do j=1,m
+
+!     WESTERN BOUNDARY -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+            i=0
+
+!     IFs    NEUTRAL PHYSICS AND GENT-MCWILLIAMS --------------------------------------
+            if ( (piso.ne.0.0).or.(pgm.ne.0.0) ) then
+
+!     EAST FACE  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+               dumt   = 0.0
+               dums   = 0.0
+!     L1s      start loop over 4 triads
+               do kr=0,1
+                  do ip=0,1
+!     Calculate slope and taper
+                     drdh   =  ( drhodt(i+ip,j,k)*dtdxe(i,   j,k     ) + 
+     &                    drhods(i+ip,j,k)*dsdxe(i,   j,k     ) )
+                     drdz   =  ( drhodt(i+ip,j,k)*dtdzt(i+ip,j,k-1+kr) +
+     &                    drhods(i+ip,j,k)*dsdzt(i+ip,j,k-1+kr) )
+                     call tprslp(drdh,drdz,sp2,slp,tpr)
+!     Calculate flux contributions
+                     dumt   = dumt + dfzw(k-1+kr) * 
+     &                    (  tpr*(piso    )  *     dtdxe(i   ,j,k     ) +
+     &                    tpr*(piso-pgm)  * slp*dtdzt(i+ip,j,k-1+kr)  )
+                     dums   = dums + dfzw(k-1+kr) * 
+     &                    (  tpr*(piso    )  *     dsdxe(i   ,j,k     ) +
+     &                    tpr*(piso-pgm)  * slp*dsdzt(i+ip,j,k-1+kr)  )
+                  enddo
+               enddo
+!     L1e      end loop over 4 triads
+               Ftxe(i,j,k)  = Ftxe(i,j,k) - dumt/(4*dfzT(k))
+               Fsxe(i,j,k)  = Fsxe(i,j,k) - dums/(4*dfzT(k))
+            endif
+!     IFe    end neutral physics and Gent-McWilliams
+
+!     INTERIOR -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+            do i=1,n
+
+!     IFs    NEUTRAL PHYSICS AND GENT-MCWILLIAMS --------------------------------------
+               if ( (piso.ne.0.0).or.(pgm.ne.0.0) ) then
+
+!     EAST FACE  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+                  dumt   = 0.0
+                  dums   = 0.0
+!     L1s      start loop over 4 triads
+                  do kr=0,1
+                     do ip=0,1
+!     Calculate slope and taper
+                        drdh   =  ( drhodt(i+ip,j,k)*dtdxe(i,   j,k     ) + 
+     &                       drhods(i+ip,j,k)*dsdxe(i,   j,k     ) )
+                        drdz   =  ( drhodt(i+ip,j,k)*dtdzt(i+ip,j,k-1+kr) +
+     &                       drhods(i+ip,j,k)*dsdzt(i+ip,j,k-1+kr) )
+                        call tprslp(drdh,drdz,sp2,slp,tpr)
+!     Calculate flux contributions
+                        dumt   = dumt + dfzw(k-1+kr) * 
+     &                       (  tpr*(piso    )  *     dtdxe(i   ,j,k     ) +
+     &                       tpr*(piso-pgm)  * slp*dtdzt(i+ip,j,k-1+kr)  )
+                        dums   = dums + dfzw(k-1+kr) * 
+     &                       (  tpr*(piso    )  *     dsdxe(i   ,j,k     ) +
+     &                       tpr*(piso-pgm)  * slp*dsdzt(i+ip,j,k-1+kr)  )
+                     enddo
+                  enddo
+!     L1e      end loop over 4 triads
+                  Ftxe(i,j,k)  = Ftxe(i,j,k) - dumt/(4*dfzT(k))
+                  Fsxe(i,j,k)  = Fsxe(i,j,k) - dums/(4*dfzT(k))
+
+!     *         NORTH FACE - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+                  dumt   = 0.0
+                  dums   = 0.0
+!     1s      start loop over 4 triads
+                  do kr=0,1
+                     do jq=0,1
+!     Calculate slope and taper
+                        drdh   =  ( drhodt(i,j+jq,k)*dtdyn(i,j   ,k     ) +
+     &                       drhods(i,j+jq,k)*dsdyn(i,j   ,k     ) )
+                        drdz   =  ( drhodt(i,j+jq,k)*dtdzt(i,j+jq,k-1+kr) +
+     &                       drhods(i,j+jq,k)*dsdzt(i,j+jq,k-1+kr) )
+                        call tprslp(drdh,drdz,sp2,slp,tpr)
+!     Calculate flux contributions
+                        dumt   = dumt + dfzw(k-1+kr) * cos(y(j+jq)) *
+     &                       (  tpr*(piso    )  *     dtdyn(i,j   ,k     ) +
+     &                       tpr*(piso-pgm)  * slp*dtdzt(i,j+jq,k-1+kr)  )
+                        dums   = dums + dfzw(k-1+kr) * cos(y(j+jq)) * 
+     &                       (  tpr*(piso    )  *     dsdyn(i,   j,k     ) +
+     &                       tpr*(piso-pgm)  * slp*dsdzt(i,j+jq,k-1+kr)  )
+                     enddo
+                  enddo
+!     *L1e      end loop over 4 triads
+                  Ftyn(i,j,k)  = Ftyn(i,j,k) - dumt/(4*dfzT(k)*cos(yv(j)))
+                  Fsyn(i,j,k)  = Fsyn(i,j,k) - dums/(4*dfzT(k)*cos(yv(j)))
+
+!     *         TOP FACE - ZONAL VARIATIONS  - - - -  - - - - - - - - -
+                  dumt   = 0.0
+                  dums   = 0.0
+!     *L1s      start loop over 4 triads
+                  do ip=0,1
+                     do kr=0,1
+!     *         Calculate slope and taper
+                        drdh   =  ( drhodt(i,j,k+kr)*dtdxe(i-1+ip,j,k+kr) +
+     &                       drhods(i,j,k+kr)*dsdxe(i-1+ip,j,k+kr) )
+                        drdz   =  ( drhodt(i,j,k+kr)*dtdzt(i     ,j,k   ) +
+     &                       drhods(i,j,k+kr)*dsdzt(i     ,j,k   ) )
+                        call tprslp(drdh,drdz,sp2,slp,tpr)
+!     *         Calculate flux contributions
+                        dumt   = dumt + 
+     &                       (  tpr*(piso    ) * slp*slp*dtdzt(i ,j,k   ) +
+     &                       tpr*(piso+pgm) * slp*dtdxe(i-1+ip,j,k+kr)  )
+                        dums   = dums +
+     &                       (  tpr*(piso    ) * slp*slp*dsdzt(i ,j,k   ) +
+     &                       tpr*(piso+pgm) * slp*dsdxe(i-1+ip,j,k+kr)  )
+                     enddo
+                  enddo
+!     *L1e      end loop over 4 triads
+                  Ftzt(i,j,k)  = Ftzt(i,j,k) - dumt/4
+                  Fszt(i,j,k)  = Fszt(i,j,k) - dums/4
+
+!     *         TOP FACE - MERIDIONAL VARIATIONS - - - - - -
+                  dumt   = 0.0
+                  dums   = 0.0
+!     *L1s      start loop over 4 triads
+                  do jq=0,1
+                     do kr=0,1
+!     *         Calculate slope and taper
+                        drdh   =  ( drhodt(i,j,k+kr)*dtdyn(i,j-1+jq,k+kr) +
+     &                       drhods(i,j,k+kr)*dsdyn(i,j-1+jq,k+kr) )
+                        drdz   =  ( drhodt(i,j,k+kr)*dtdzt(i,j     ,k   ) +
+     &                       drhods(i,j,k+kr)*dsdzt(i,j     ,k   ) )
+                        call tprslp(drdh,drdz,sp2,slp,tpr)
+!     *         Calculate flux contributions
+                        dumt   = dumt +
+     &                       (  tpr*(piso    ) * slp*slp*dtdzt(i ,j,k   ) +
+     &                       tpr*(piso+pgm) * slp*dtdyn(i,j-1+jq,k+kr)  )
+                        dums   = dums +
+     &                       (  tpr*(piso    ) * slp*slp*dsdzt(i ,j,k   ) +
+     &                       tpr*(piso+pgm) * slp*dsdyn(i,j-1+jq,k+kr)  )
+                     enddo
+                  enddo
+!     *L1e      end loop over 4 triads
+                  Ftzt(i,j,k)  = Ftzt(i,j,k) - dumt/4
+                  Fszt(i,j,k)  = Fszt(i,j,k) - dums/4
+
+               endif
+!     *IFe    end neutral physics and Gent-McWilliams
+
+!     *IFs    CONSISTENT VERTICAL MIXING -----------------------------------------------
+               if (eps.ne.0.0) then
+                  Ftzt(i,j,k)  = Ftzt(i,j,k) + tprstb(drhodzt(i,j,k),sp1)*eps *
+     &                 dtdzt(i,j,k)/(drhodzt(i,j,k)-epsln)
+                  Fszt(i,j,k)  = Fszt(i,j,k) + tprstb(drhodzt(i,j,k),sp1)*eps *
+     &                 dsdzt(i,j,k)/(drhodzt(i,j,k)-epsln)
+               endif
+!     *IFe    end consistent vertical mixing
+
+!     *IFs    IMPLICIT VERTICAL MIXING -------------------------------------------------
+               if (kvc.ne.0.0) then
+                  Ftimp(i,j,k) = -tprstb(-drhodzt(i,j,k),sp1)*kvc*dtdzt(i,j,k)
+                  Fsimp(i,j,k) = -tprstb(-drhodzt(i,j,k),sp1)*kvc*dsdzt(i,j,k)
+               endif
+!     *IFe    end implicit vertical mixing
+
+            enddo
+         enddo
+      enddo
+!     *L0e  end loop over k,j,i
+
+!     *     Calculate divergence of the fluxes =========================================
+!     *L0s  start loop over k,j,i
       do k=1,l
          do j=1,m
             do i=1,n
 
-               if (landm(i,j,k).eq.OCEAN) then
-*     MdT  For each OCEAN point define tracer value at that point (000) and the 26
-*     neighbouring points; (xxx) are (i,j,k)-pairs, where m=x-1, 0=x, p=x+1.
-*     --  landm=PERIO is only relevant for (mxx) and (pxx).
-*     --  at all neighbouring points no-flux condition must be implemented. Note that
-*     this is problematic for all points with less than two 0's, e.g. T_0mm, because
-*     the exact boundary configuration is 'unknown'. I simply substitute the (000)
-*     value if such neighbouring point happens to be LAND. (08-04-2008)
+!     *     For TEMPERATURE ------------------------------------------------------------
+               row       = find_row2(i,j,k,TT)
+               mix(row)  = 0.0
+!     *IFs      
+               if ( vmix_temp.eq.1 ) then
+!     *     Zonal difference
+                  mix(row)  = (Ftxe(i,j,k)           - Ftxe(i-1,j,k)             )/
+     &                 (dx*cos(y(j))) + mix(row)
+!     *     Meridional difference
+                  mix(row)  = (Ftyn(i,j,k)*cos(yv(j))- Ftyn(i,j-1,k)*cos(yv(j-1)))/
+     &                 (dy*cos(y(j))) + mix(row)
+!     *     Vertical difference
+                  mix(row)  = (Ftzt(i,j,k)           - Ftzt(i,j,k-1)             )/
+     &                 (dz*dfzT(k))   + mix(row)
 
-! Temperature at stencil points (BC's implemented here!!) ----------------
-                  T_mmm=t(i-1,j-1,k-1)*(kd(landm(i-1,j-1,k-1),OCEAN)+kd(landm(i-1,j-1,k-1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i-1,j-1,k-1),LAND )    
-                  T_0mm=t(i  ,j-1,k-1)* kd(landm(i  ,j-1,k-1),OCEAN)
-     +                 +t(i  ,j  ,k  )* kd(landm(i  ,j-1,k-1),LAND )
-                  T_pmm=t(i+1,j-1,k-1)*(kd(landm(i+1,j-1,k-1),OCEAN)+kd(landm(i+1,j-1,k-1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i+1,j-1,k-1),LAND )
-                  T_m0m=t(i-1,j  ,k-1)*(kd(landm(i-1,j  ,k-1),OCEAN)+kd(landm(i-1,j  ,k-1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i-1,j  ,k-1),LAND )
-                  T_00m=t(i  ,j  ,k-1)* kd(landm(i  ,j  ,k-1),OCEAN)
-     +                 +t(i  ,j  ,k  )* kd(landm(i  ,j  ,k-1),LAND )
-                  T_p0m=t(i+1,j  ,k-1)*(kd(landm(i+1,j  ,k-1),OCEAN)+kd(landm(i+1,j  ,k-1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i+1,j  ,k-1),LAND )
-                  T_mpm=t(i-1,j+1,k-1)*(kd(landm(i-1,j+1,k-1),OCEAN)+kd(landm(i-1,j+1,k-1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i-1,j+1,k-1),LAND )
-                  T_0pm=t(i  ,j+1,k-1)* kd(landm(i  ,j+1,k-1),OCEAN)
-     +                 +t(i  ,j  ,k  )* kd(landm(i  ,j+1,k-1),LAND )
-                  T_ppm=t(i+1,j+1,k-1)*(kd(landm(i+1,j+1,k-1),OCEAN)+kd(landm(i+1,j+1,k-1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i+1,j+1,k-1),LAND )
-                  T_mm0=t(i-1,j-1,k  )*(kd(landm(i-1,j-1,k  ),OCEAN)+kd(landm(i-1,j-1,k  ),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i-1,j-1,k  ),LAND )
-                  T_0m0=t(i  ,j-1,k  )* kd(landm(i  ,j-1,k  ),OCEAN)
-     +                 +t(i  ,j  ,k  )* kd(landm(i  ,j-1,k  ),LAND )
-                  T_pm0=t(i+1,j-1,k  )*(kd(landm(i+1,j-1,k  ),OCEAN)+kd(landm(i+1,j-1,k  ),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i+1,j-1,k  ),LAND )
-                  T_m00=t(i-1,j  ,k  )*(kd(landm(i-1,j  ,k  ),OCEAN)+kd(landm(i-1,j  ,k  ),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i-1,j  ,k  ),LAND )
-                  T_000=t(i  ,j  ,k  )
-                  T_p00=t(i+1,j  ,k  )*(kd(landm(i+1,j  ,k  ),OCEAN)+kd(landm(i+1,j  ,k  ),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i+1,j  ,k  ),LAND )
-                  T_mp0=t(i-1,j+1,k  )*(kd(landm(i-1,j+1,k  ),OCEAN)+kd(landm(i-1,j+1,k  ),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i-1,j+1,k  ),LAND )
-                  T_0p0=t(i  ,j+1,k  )* kd(landm(i  ,j+1,k  ),OCEAN)
-     +                 +t(i  ,j  ,k  )* kd(landm(i  ,j+1,k  ),LAND )
-                  T_pp0=t(i+1,j+1,k  )*(kd(landm(i+1,j+1,k  ),OCEAN)+kd(landm(i+1,j+1,k  ),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i  ,j+1,k  ),LAND )
-
-                  IF ((landm(i,j,k+1).EQ.ATMOS).OR.(landm(i,j,k+1).EQ.LAND )) THEN
-                  T_mmp=t(i-1,j-1,k)
-                  T_0mp=t(i  ,j-1,k)
-                  T_pmp=t(i+1,j-1,k)
-                  T_m0p=t(i-1,j  ,k)
-                  T_00p=t(i  ,j  ,k)
-                  T_p0p=t(i+1,j  ,k)
-                  T_mpp=t(i-1,j+1,k)
-                  T_0pp=t(i  ,j+1,k)
-                  T_ppp=t(i+1,j+1,k)
-               ELSE
-                  T_mmp=t(i-1,j-1,k+1)*(kd(landm(i-1,j-1,k+1),OCEAN)+kd(landm(i-1,j-1,k+1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i-1,j-1,k+1),LAND )
-                  T_0mp=t(i  ,j-1,k+1)* kd(landm(i  ,j-1,k+1),OCEAN)
-     +                 +t(i  ,j  ,k  )* kd(landm(i  ,j-1,k+1),LAND )
-                  T_pmp=t(i+1,j-1,k+1)*(kd(landm(i+1,j-1,k+1),OCEAN)+kd(landm(i+1,j-1,k+1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i+1,j-1,k+1),LAND )
-                  T_m0p=t(i-1,j  ,k+1)*(kd(landm(i-1,j  ,k+1),OCEAN)+kd(landm(i-1,j  ,k+1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i-1,j  ,k+1),LAND )
-                  T_00p=t(i  ,j  ,k+1)* kd(landm(i  ,j  ,k+1),OCEAN)
-     +                 +t(i  ,j  ,k  )* kd(landm(i  ,j  ,k+1),LAND )
-                  T_p0p=t(i+1,j  ,k+1)*(kd(landm(i+1,j  ,k+1),OCEAN)+kd(landm(i+1,j  ,k+1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i+1,j  ,k+1),LAND )
-                  T_mpp=t(i-1,j+1,k+1)*(kd(landm(i-1,j+1,k+1),OCEAN)+kd(landm(i-1,j+1,k+1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i-1,j+1,k+1),LAND )
-                  T_0pp=t(i  ,j+1,k+1)* kd(landm(i  ,j+1,k+1),OCEAN)
-     +                 +t(i  ,j  ,k  )* kd(landm(i  ,j+1,k+1),LAND )
-                  T_ppp=t(i+1,j+1,k+1)*(kd(landm(i+1,j+1,k+1),OCEAN)+kd(landm(i+1,j+1,k+1),PERIO))
-     +                 +t(i  ,j  ,k  )* kd(landm(i+1,j+1,k+1),LAND )
-               ENDIF
-
-! Salinity at stencil points (BC's implemented here!!) -------------------
-               S_mmm=s(i-1,j-1,k-1)*(kd(landm(i-1,j-1,k-1),OCEAN)+kd(landm(i-1,j-1,k-1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i-1,j-1,k-1),LAND )
-               S_0mm=s(i  ,j-1,k-1)* kd(landm(i  ,j-1,k-1),OCEAN)
-     +              +s(i  ,j  ,k  )* kd(landm(i  ,j-1,k-1),LAND )
-               S_pmm=s(i+1,j-1,k-1)*(kd(landm(i+1,j-1,k-1),OCEAN)+kd(landm(i+1,j-1,k-1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i+1,j-1,k-1),LAND )
-               S_m0m=s(i-1,j  ,k-1)*(kd(landm(i-1,j  ,k-1),OCEAN)+kd(landm(i-1,j  ,k-1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i-1,j  ,k-1),LAND )
-               S_00m=s(i  ,j  ,k-1)* kd(landm(i  ,j  ,k-1),OCEAN)
-     +              +s(i  ,j  ,k  )* kd(landm(i  ,j  ,k-1),LAND )
-               S_p0m=s(i+1,j  ,k-1)*(kd(landm(i+1,j  ,k-1),OCEAN)+kd(landm(i+1,j  ,k-1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i+1,j  ,k-1),LAND )
-               S_mpm=s(i-1,j+1,k-1)*(kd(landm(i-1,j+1,k-1),OCEAN)+kd(landm(i-1,j+1,k-1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i-1,j+1,k-1),LAND )
-               S_0pm=s(i  ,j+1,k-1)* kd(landm(i  ,j+1,k-1),OCEAN)
-     +              +s(i  ,j  ,k  )* kd(landm(i  ,j+1,k-1),LAND )
-               S_ppm=s(i+1,j+1,k-1)*(kd(landm(i+1,j+1,k-1),OCEAN)+kd(landm(i+1,j+1,k-1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i+1,j+1,k-1),LAND )
-               S_mm0=s(i-1,j-1,k  )*(kd(landm(i-1,j-1,k  ),OCEAN)+kd(landm(i-1,j-1,k  ),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i-1,j-1,k  ),LAND )
-               S_0m0=s(i  ,j-1,k  )* kd(landm(i  ,j-1,k  ),OCEAN)
-     +              +s(i  ,j  ,k  )* kd(landm(i  ,j-1,k  ),LAND )
-               S_pm0=s(i+1,j-1,k  )*(kd(landm(i+1,j-1,k  ),OCEAN)+kd(landm(i+1,j-1,k  ),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i+1,j-1,k  ),LAND )
-               S_m00=s(i-1,j  ,k  )*(kd(landm(i-1,j  ,k  ),OCEAN)+kd(landm(i-1,j  ,k  ),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i-1,j  ,k  ),LAND )
-               S_000=s(i  ,j  ,k  )
-               S_p00=s(i+1,j  ,k  )*(kd(landm(i+1,j  ,k  ),OCEAN)+kd(landm(i+1,j  ,k  ),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i+1,j  ,k  ),LAND )
-               S_mp0=s(i-1,j+1,k  )*(kd(landm(i-1,j+1,k  ),OCEAN)+kd(landm(i-1,j+1,k  ),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i-1,j+1,k  ),LAND )
-               S_0p0=s(i  ,j+1,k  )* kd(landm(i  ,j+1,k  ),OCEAN)
-     +              +s(i  ,j  ,k  )* kd(landm(i  ,j+1,k  ),LAND )
-               S_pp0=s(i+1,j+1,k  )*(kd(landm(i+1,j+1,k  ),OCEAN)+kd(landm(i+1,j+1,k  ),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i+1,j+1,k  ),LAND )
-
-               IF ((landm(i,j,k+1).EQ.ATMOS).OR.(landm(i,j,k+1).EQ.LAND )) THEN
-               S_mmp=s(i-1,j-1,k)
-               S_0mp=s(i  ,j-1,k)
-               S_pmp=s(i+1,j-1,k)
-               S_m0p=s(i-1,j  ,k)
-               S_00p=s(i  ,j  ,k)
-               S_p0p=s(i+1,j  ,k)
-               S_mpp=s(i-1,j+1,k)
-               S_0pp=s(i  ,j+1,k)
-               S_ppp=s(i+1,j+1,k)
-            ELSE
-               S_mmp=s(i-1,j-1,k+1)*(kd(landm(i-1,j-1,k+1),OCEAN)+kd(landm(i-1,j-1,k+1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i-1,j-1,k+1),LAND )
-               S_0mp=s(i  ,j-1,k+1)* kd(landm(i  ,j-1,k+1),OCEAN)
-     +              +s(i  ,j  ,k  )* kd(landm(i  ,j-1,k+1),LAND )
-               S_pmp=s(i+1,j-1,k+1)*(kd(landm(i+1,j-1,k+1),OCEAN)+kd(landm(i+1,j-1,k+1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i+1,j-1,k+1),LAND )
-               S_m0p=s(i-1,j  ,k+1)*(kd(landm(i-1,j  ,k+1),OCEAN)+kd(landm(i-1,j  ,k+1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i-1,j  ,k+1),LAND )
-               S_00p=s(i  ,j  ,k+1)* kd(landm(i  ,j  ,k+1),OCEAN)
-     +              +s(i  ,j  ,k  )* kd(landm(i  ,j  ,k+1),LAND )
-               S_p0p=s(i+1,j  ,k+1)*(kd(landm(i+1,j  ,k+1),OCEAN)+kd(landm(i+1,j  ,k+1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i+1,j  ,k+1),LAND )
-               S_mpp=s(i-1,j+1,k+1)*(kd(landm(i-1,j+1,k+1),OCEAN)+kd(landm(i-1,j+1,k+1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i-1,j+1,k+1),LAND )
-               S_0pp=s(i  ,j+1,k+1)* kd(landm(i  ,j+1,k+1),OCEAN)
-     +              +s(i  ,j  ,k  )* kd(landm(i  ,j+1,k+1),LAND )
-               S_ppp=s(i+1,j+1,k+1)*(kd(landm(i+1,j+1,k+1),OCEAN)+kd(landm(i+1,j+1,k+1),PERIO))
-     +              +s(i  ,j  ,k  )* kd(landm(i+1,j+1,k+1),LAND )
-            ENDIF
-
-! Derivative of the temperature at the intermediate stencil points -------
-            dTdx_m00 = (T_000-T_m00            )/(    dx*cos(y (j  )) ) 
-            dTdx_p00 = (T_p00-T_000            )/(    dx*cos(y (j  )) )
-            dTdx_0m0 = (T_p00-T_m00+T_pm0-T_mm0)/(4.0*dx*cos(yv(j-1)) )
-            dTdx_0p0 = (T_pp0-T_mp0+T_p00-T_m00)/(4.0*dx*cos(yv(j  )) )
-            dTdx_00m = (T_p00-T_m00+T_p0m-T_m0m)/(4.0*dx*cos(y (j  )) ) 
-            dTdx_00p = (T_p0p-T_m0p+T_p00-T_m00)/(4.0*dx*cos(y (j  )) )
-
-            dTdy_m00 = (T_0p0-T_0m0+T_mp0-T_mm0)/(4.0*dy              )
-            dTdy_p00 = (T_pp0-T_pm0+T_0p0-T_0m0)/(4.0*dy              )
-            dTdy_0m0 = (T_000-T_0m0            )/(    dy              )
-            dTdy_0p0 = (T_0p0-T_000            )/(    dy              )
-            dTdy_00m = (T_0p0-T_0m0+T_0pm-T_0mm)/(4.0*dy              )
-            dTdy_00p = (T_0pp-T_0mp+T_0p0-T_0m0)/(4.0*dy              )
-
-            dTdz_m00 = (T_00p-T_00m+T_m0p-T_m0m)/(4.0*dz*dfzT(k  )    )
-            dTdz_p00 = (T_p0p-T_p0m+T_00p-T_00m)/(4.0*dz*dfzT(k  )    )
-            dTdz_0m0 = (T_00p-T_00m+T_0mp-T_0mm)/(4.0*dz*dfzT(k  )    )
-            dTdz_0p0 = (T_0pp-T_0pm+T_00p-T_00m)/(4.0*dz*dfzT(k  )    )
-            dTdz_00m = (T_000-T_00m            )/(    dz*dfzW(k-1)    )
-            dTdz_00p = (T_00p-T_000            )/(    dz*dfzW(k  )    )
-
-! Derivative of the salinity at the intermediate stencil points ----------
-            dSdx_m00 = (S_000-S_m00            )/(    dx*cos(y (j  )) )
-            dSdx_p00 = (S_p00-S_000            )/(    dx*cos(y (j  )) )
-            dSdx_0m0 = (S_p00-S_m00+S_pm0-S_mm0)/(4.0*dx*cos(yv(j-1)) )
-            dSdx_0p0 = (S_pp0-S_mp0+S_p00-S_m00)/(4.0*dx*cos(yv(j  )) )
-            dSdx_00m = (S_p00-S_m00+S_p0m-S_m0m)/(4.0*dx*cos(y (j  )) )
-            dSdx_00p = (S_p0p-S_m0p+S_p00-S_m00)/(4.0*dx*cos(y (j  )) )
-
-            dSdy_m00 = (S_0p0-S_0m0+S_mp0-S_mm0)/(4.0*dy              )
-            dSdy_p00 = (S_pp0-S_pm0+S_0p0-S_0m0)/(4.0*dy              )
-            dSdy_0m0 = (S_000-S_0m0            )/(    dy              )
-            dSdy_0p0 = (S_0p0-S_000            )/(    dy              )
-            dSdy_00m = (S_0p0-S_0m0+S_0pm-S_0mm)/(4.0*dy              )
-            dSdy_00p = (S_0pp-S_0mp+S_0p0-S_0m0)/(4.0*dy              )
-
-            dSdz_m00 = (S_00p-S_00m+S_m0p-S_m0m)/(4.0*dz*dfzT(k  )    )
-            dSdz_p00 = (S_p0p-S_p0m+S_00p-S_00m)/(4.0*dz*dfzT(k  )    )
-            dSdz_0m0 = (S_00p-S_00m+S_0mp-S_0mm)/(4.0*dz*dfzT(k  )    )
-            dSdz_0p0 = (S_0pp-S_0pm+S_00p-S_00m)/(4.0*dz*dfzT(k  )    )
-            dSdz_00m = (S_000-S_00m            )/(    dz*dfzW(k-1)    )
-            dSdz_00p = (S_00p-S_000            )/(    dz*dfzW(k)      )
-
-! Functions: 'Heaviside' and energy --------------------------------------
-            if (bifm.ne.0.0) then
-               smpi =f_ntr((-dTdx_p00+lambda*dSdx_p00),
-     +              (-dTdy_p00+lambda*dSdy_p00),
-     +              (-dTdz_p00+lambda*dSdz_p00)) ! i+1/2; neutral physics
-               smmi =f_ntr((-dTdx_m00+lambda*dSdx_m00),
-     +              (-dTdy_m00+lambda*dSdy_m00),
-     +              (-dTdz_m00+lambda*dSdz_m00)) ! i-1/2; neutral physics
-               smpj =f_ntr((-dTdx_0p0+lambda*dSdx_0p0),
-     +              (-dTdy_0p0+lambda*dSdy_0p0),
-     +              (-dTdz_0p0+lambda*dSdz_0p0)) ! j+1/2; neutral physics
-               smmj =f_ntr((-dTdx_0m0+lambda*dSdx_0m0),
-     +              (-dTdy_0m0+lambda*dSdy_0m0),
-     +              (-dTdz_0m0+lambda*dSdz_0m0)) ! j-1/2; neutral physics
-               smpk2=f_ntr((-dTdx_00p+lambda*dSdx_00p),
-     +              (-dTdy_00p+lambda*dSdy_00p),
-     +              (-dTdz_00p+lambda*dSdz_00p)) ! k+1/2; neutral physics
-               smmk2=f_ntr((-dTdx_00m+lambda*dSdx_00m),
-     +              (-dTdy_00m+lambda*dSdy_00m),
-     +              (-dTdz_00m+lambda*dSdz_00m)) ! k-1/2; neutral physics
-            endif
-            if (alp.ne.1.0) then
-               smpk1=f_mix(-dTdz_00p+lambda*dSdz_00p) ! k+1/2; stable
-               smmk1=f_mix(-dTdz_00m+lambda*dSdz_00m) ! k-1/2; stable
-               ep=emix(i,j,k  )
-               em=emix(i,j,k-1)
-            endif
-            sppk =f_mix( dTdz_00p-lambda*dSdz_00p) ! k+1/2; unstable
-            spmk =f_mix( dTdz_00m-lambda*dSdz_00m) ! k-1/2; unstable
-
-! dx's, dy's and dz's ----------------------------------------------------
-            dx0 = 1/(dx*cos (y(j)) )
-            dx1 = 1/(dx*cos (y(j)) )
-            dy0 = 1/(dy*cos (y(j)) ) !Note:
-            dy1 = 1/(dy*cos (y(j)) ) !  d/dy of divergence also operates on a cos(y)
-            dz2 = 1/(dz*dfzT(k   ) )
-            dz3 = 1/(dz*dfzT(k   ) )
-            dz4 = 1/(dz*dfzT(k   ) )
-            dz6 = 1/(dz*dfzT(k   ) )
-
-! Temperature ============================================================ 
-            row = find_row2(i,j,k,TT)
-            mix(row)=0.0
-            
-            if (vmix_temp.eq.1) then
-               if (bifm.ne.0.0) then
-! Temperature Term 0B ----------------------------------------------------
-                  if ((1-smpi).gt.0) mix(row)=mix(row)+ph*(1-stkapp)*bifm*
-     +                 (1-smpi)*dx0*dTdx_p00
-                  if ((1-smmi).gt.0) mix(row)=mix(row)-ph*(1-stkapp)*bifm*
-     +                 (1-smmi)*dx0*dTdx_m00
-                  if ((1-smpj).gt.0) mix(row)=mix(row)+ph*(1-stkapp)*bifm*
-     +                 (1-smpj)*dy0*cos(yv(j))*dTdy_0p0
-                  if ((1-smmj).gt.0) mix(row)=mix(row)-ph*(1-stkapp)*bifm*
-     +                 (1-smmj)*dy0*cos(yv(j-1))*dTdy_0m0
-
-! Temperature Term 1 -----------------------------------------------------
-                  if (smpi.gt.0.0) mix(row)=mix(row)+ph*(1-gmkap)*bifm*
-     +                 smpi*dx1*(lambda*dSdx_p00-dTdx_p00)*dTdz_p00/
-     +                 (lambda*dSdz_p00-dTdz_p00)
-                  if (smmi.gt.0.0) mix(row)=mix(row)-ph*(1-gmkap)*bifm*
-     +                 smmi*dx1*(lambda*dSdx_m00-dTdx_m00)*dTdz_m00/
-     +                 (lambda*dSdz_m00-dTdz_m00)
-                  if (smpj.gt.0.0) mix(row)=mix(row)+ph*(1-gmkap)*bifm*
-     +                 smpj*dy1*cos(yv(j))*
-     +                 (lambda*dSdy_0p0-dTdy_0p0)*dTdz_0p0/
-     +                 (lambda*dSdz_0p0-dTdz_0p0)
-                  if (smmj.gt.0.0) mix(row)=mix(row)-ph*(1-gmkap)*bifm*
-     +                 smmj*dy1*cos(yv(j-1))*
-     +                 (lambda*dSdy_0m0-dTdy_0m0)*dTdz_0m0/
-     +                 (lambda*dSdz_0m0-dTdz_0m0)
-
-! Temperature Term 2 -----------------------------------------------------
-                  if (smpk2.gt.0.0) mix(row)=mix(row)+ph*(1+gmkap)*bifm*
-     +                 smpk2*dz2*((lambda*dSdx_00p*dTdx_00p-dTdx_00p**2)
-     +                 + (lambda*dSdy_00p*dTdy_00p-dTdy_00p**2))/
-     +                 (lambda*dSdz_00p-dTdz_00p)
-                  if (smmk2.gt.0.0) mix(row)=mix(row)-ph*(1+gmkap)*bifm*
-     +                 smmk2*dz2*((lambda*dSdx_00m*dTdx_00m-dTdx_00m**2)
-     +                 + (lambda*dSdy_00m*dTdy_00m-dTdy_00m**2))/
-     +                 (lambda*dSdz_00m-dTdz_00m)
-
-!  Temperature Term 3 ------------------------------------------------------
-                  if (smpk2.gt.0.0) mix(row)=mix(row)-ph*bifm*
-     +                 smpk2*dz3*(dTdz_00p/((lambda*dSdz_00p-dTdz_00p)**2))*
-     +                 ((lambda**2*dSdx_00p**2
-     +                 -2.0*lambda*dSdx_00p*dTdx_00p+dTdx_00p**2)
-     +                 +(lambda**2*dSdy_00p**2
-     +                 -2.0*lambda*dSdy_00p*dTdy_00p+dTdy_00p**2))
-                  if (smmk2.gt.0.0) mix(row)=mix(row)+ph*bifm*
-     +                 smmk2*dz3*(dTdz_00m/((lambda*dSdz_00m-dTdz_00m)**2))*
-     +                 ((lambda**2*dSdx_00m**2
-     +                 -2.0*lambda*dSdx_00m*dTdx_00m+dTdx_00m**2)
-     +                 +(lambda**2*dSdy_00m**2
-     +                 -2.0*lambda*dSdy_00m*dTdy_00m+dTdy_00m**2))
-               endif            ! (bifm.gt.0.0)
-
-! Temperature Term 4 -----------------------------------------------------
-               if (alp.ne.1.0) then
-                  if (smpk1.gt.0.0) mix(row)=mix(row)-(1.0-alp)*eps0*pv*
-     +                 dz4*smpk1*dTdz_00p*ep/(dTdz_00p-lambda*dSdz_00p)		
-                  if (smmk1.gt.0.0) mix(row)=mix(row)+(1.0-alp)*eps0*pv*
-     +                 dz4*smmk1*dTdz_00m*em/(dTdz_00m-lambda*dSdz_00m)
-               endif	
-
-! Temperature Term 6 -----------------------------------------------------
-               if (kvc.ne.0.0) then
-                  if (rho_mixing) then
-                     mix(row)= mix(row)-kvc*dz6*
-     +                    (sppk*(dTdz_00p-lambda*dSdz_00p)-spmk*(dTdz_00m-lambda*dSdz_00m))/2
+                  if (rho_mixing.and.xes.eq.0.0) then
+                     mix(row)  = ( (Ftimp(i,j,k) - Ftimp(i,j,k-1))  - 
+     &                    (Fsimp(i,j,k) - Fsimp(i,j,k-1))*lambda )/
+     &                    ( 2.0*dz*dfzT(k) ) + mix(row)
                   else
-                     mix(row)=mix(row)-kvc*dz6*(sppk*dTdz_00p-spmk*dTdz_00m)
+                     mix(row)  = (  Ftimp(i,j,k) - Ftimp(i,j,k-1)         )/
+     &                    (     dz*dfzT(k) ) + mix(row)
                   endif
                endif
-            endif               ! (vmix_temp.eq.1)
+!     *IFe
 
-! Salinity ===============================================================
-            row = find_row2(i,j,k,SS)
-            mix(row)=0.0
-            
-            if (vmix_salt.eq.1) then
-               if (bifm.ne.0.0) then          
-! Salinity Term 0B ----------------------------------------------------
-                  if ((1-smpi).gt.0) mix(row)=mix(row)+ph*(1-stkapp)*bifm*
-     +                 (1-smpi)*dx0*dSdx_p00
-                  if ((1-smmi).gt.0) mix(row)=mix(row)-ph*(1-stkapp)*bifm*
-     +                 (1-smmi)*dx0*dSdx_m00
-                  if ((1-smpj).gt.0) mix(row)=mix(row)+ph*(1-stkapp)*bifm*
-     +                 (1-smpj)*dy0*cos(yv(j))*dSdy_0p0
-                  if ((1-smmj).gt.0) mix(row)=mix(row)-ph*(1-stkapp)*bifm*
-     +                 (1-smmj)*dy0*cos(yv(j-1))*dSdy_0m0
-
-! Salinity Term 1 --------------------------------------------------------
-                  if (smpi.gt.0.0) mix(row)=mix(row)-ph*(1.0-gmkap)*bifm*
-     +                 smpi*dx1*(lambda*dSdx_p00-dTdx_p00)*dSdz_p00/
-     +                 (lambda*dSdz_p00-dTdz_p00)
-                  if (smmi.gt.0.0) mix(row)=mix(row)+ph*(1.0-gmkap)*bifm*
-     +                 smmi*dx1*(lambda*dSdx_m00-dTdx_m00)*dSdz_m00/
-     +                 (lambda*dSdz_m00-dTdz_m00)
-                  if (smpj.gt.0.0) mix(row)=mix(row)-ph*(1.0-gmkap)*bifm*
-     +                 smpj*dy1*cos(yv(j))*
-     +                 (lambda*dSdy_0p0-dTdy_0p0)*dSdz_0p0/
-     +                 (lambda*dSdz_0p0-dTdz_0p0)
-                  if (smmj.gt.0.0) mix(row)=mix(row)+ph*(1.0-gmkap)*bifm*
-     +                 smmj*dy1*cos(yv(j-1))*
-     +                 (lambda*dSdy_0m0-dTdy_0m0)*dSdz_0m0/
-     +                 (lambda*dSdz_0m0-dTdz_0m0)
-
-! Salinity Term 2 --------------------------------------------------------
-                  if (smpk2.gt.0.0) mix(row)=mix(row)-ph*(1.0+gmkap)*bifm*
-     +                 smpk2*dz2*((lambda*dSdx_00p**2-dSdx_00p*dTdx_00p**2)
-     +                 + (lambda*dSdy_00p**2-dSdy_00p*dTdy_00p**2))/
-     +                 (lambda*dSdz_00p-dTdz_00p)
-                  if (smmk2.gt.0.0) mix(row)=mix(row)+ph*(1.0+gmkap)*bifm*
-     +                 smmk2*dz2*((lambda*dSdx_00m**2-dSdx_00m*dTdx_00m**2)
-     +                 + (lambda*dSdy_00m**2-dSdy_00m*dTdy_00m**2))/
-     +                 (lambda*dSdz_00m-dTdz_00m)
-
-! Salinity Term 3 --------------------------------------------------------
-                  if (smpk2.gt.0.0) mix(row)=mix(row)-ph*bifm*
-     +                 smpk2**2*dz3*(dSdz_00p/((lambda*dSdz_00p-dTdz_00p)**2))*
-     +                 ((lambda**2*dSdx_00p**2
-     +                 -2.0*lambda*dSdx_00p*dTdx_00p+dTdx_00p**2)
-     +                 +(lambda**2*dSdy_00p**2
-     +                 -2.0*lambda*dSdy_00p*dTdy_00p+dTdy_00p**2))
-                  if (smmk2.gt.0.0) mix(row)=mix(row)+ph*bifm*
-     +                 smmk2**2*dz3*(dSdz_00m/((lambda*dSdz_00m-dTdz_00m)**2))*
-     +                 ((lambda**2*dSdx_00m**2
-     +                 -2.0*lambda*dSdx_00m*dTdx_00m+dTdx_00m**2)
-     +                 +(lambda**2*dSdy_00m**2
-     +                 -2.0*lambda*dSdy_00m*dTdy_00m+dTdy_00m**2))
-               endif            ! (bifm.gt.0.0)
-               
-! Salinity Term 4 --------------------------------------------------------
-               if (alp.ne.1.0) then
-                  if (smpk1.gt.0.0) mix(row)=mix(row)-(1.0-alp)*eps0*pv*
-     +                 dz4*smpk1*dSdz_00p*ep/(dTdz_00p-lambda*dSdz_00p)
-                  if (smmk1.gt.0.0) mix(row)=mix(row)+(1.0-alp)*eps0*pv*
-     +                 dz4*smmk1*dSdz_00m*em/(dTdz_00m-lambda*dSdz_00m)
-               endif
-
-! Salinity Term 6 --------------------------------------------------------
-               if (kvc.ne.0.0) then
-                  if (rho_mixing) then
-                     mix(row)=mix(row)-kvc*dz6*
-     +                    (sppk*(dSdz_00p-dTdz_00p/lambda)-spmk*(dSdz_00m-dTdz_00m/lambda))/2
+!     *     For SALINITY ---------------------------------------------------------------
+               row       = find_row2(i,j,k,SS)
+               mix(row)  = 0.0
+!     *IFs
+               if ( vmix_salt.eq.1 ) then
+!     *     Zonal difference
+                  mix(row)  = (Fsxe(i,j,k)           - Fsxe(i-1,j,k)             )/
+     &                 (dx*cos(y(j))) + mix(row)
+!     *     Meridional difference
+                  mix(row)  = (Fsyn(i,j,k)*cos(yv(j))- Fsyn(i,j-1,k)*cos(yv(j-1)))/
+     &                 (dy*cos(y(j))) + mix(row)
+!     *     Vertical difference
+                  mix(row)  = (Fszt(i,j,k)           - Fszt(i,j,k-1)             )/
+     &                 (dz*dfzT(k))   + mix(row)
+                  if (rho_mixing.and.xes.eq.0.0) then
+                     mix(row)  = ( (Fsimp(i,j,k) - Fsimp(i,j,k-1))  - 
+     &                    (Ftimp(i,j,k) - Ftimp(i,j,k-1))/lambda )/
+     &                    ( 2.0*dz*dfzT(k) ) + mix(row)
                   else
-                     mix(row)=mix(row)-kvc*dz6*(sppk*dSdz_00p-spmk*dSdz_00m)
+                     mix(row)  = (  Fsimp(i,j,k) - Fsimp(i,j,k-1)         )/
+     &                    (     dz*dfzT(k) ) + mix(row)
                   endif
                endif
-            endif               ! (vmix_salt.eq.1)
-            
-            if (mode.eq.0) then
-               flag=.false.
-               if (smpi .gt.0.0) flag=.true.
-               if (smmi .gt.0.0) flag=.true.
-               if (smpj .gt.0.0) flag=.true.
-               if (smmj .gt.0.0) flag=.true.
-               if (smpk2.gt.0.0) flag=.true.
-               if (smmk2.gt.0.0) flag=.true.
-               if (flag) dum(1)=dum(1)+1.0
-               flag=.false.
-               if (smpk1.gt.0.0) flag=.true.
-               if (smmk1.gt.0.0) flag=.true.
-               if (flag) dum(2)=dum(2)+1.0
-               flag=.false.
-               if (sppk .gt.0.0) flag=.true.
-               if (spmk .gt.0.0) flag=.true.
-               if (flag) dum(3)=dum(3)+1.0
-            endif
-         endif	    
+!     *IFe
+
+            enddo
+         enddo
       enddo
+!     *L0e  end loop over k,j,i
+
+      end subroutine vmix_fun
+!     * --------------------------------------------------------------------------------
+      subroutine dCdxt(C,dCdx)
+
+!     *     Calculates zonal derivative of variable that lives on T-grid. Derivative is
+!     *     centered on east face of T-cell.
+!     *
+!     *     Author: M. den Toom => m.dentoom@uu.nl
+      use m_usr
+      implicit none
+!include 'usr.com'
+
+      real    C(0:n+1,0:m+1,0:l+la+1)
+      real dCdx(0:n  ,0:m+1,0:l+la+1)
+      real isoc
+      integer i,j,k
+
+      do k=0,l+la+1
+         do j=0,m+1
+            do i=0,n
+               dCdx(i,j,k) = isoc(i+1,j,k) * isoc(i,j,k) * 
+     &              ( C(i+1,j,k) - C(i,j,k) )/( dx * cos(y(j)) )
+            enddo
+         enddo
       enddo
+
+      end subroutine dCdxt
+!     * --------------------------------------------------------------------------------
+      subroutine dCdyt(C,dCdy)
+
+!     *     Calculates meridional derivative of variable that lives on T-grid.
+!     *     Derivative is centered on north face of T-cell.
+!     *
+!     *     Author: M. den Toom => m.dentoom@uu.nl
+      use m_usr
+      implicit none
+!include 'usr.com'
+
+      real    C(0:n+1,0:m+1,0:l+la+1)
+      real dCdy(0:n+1,0:m  ,0:l+la+1)
+      real isoc
+      integer i,j,k
+
+      do k=0,l+la+1
+         do j=0,m
+            do i=0,n+1
+               dCdy(i,j,k) = isoc(i,j+1,k) * isoc(i,j,k) * 
+     &              ( C(i,j+1,k) - C(i,j,k) )/ dy
+            enddo
+         enddo
       enddo
-      
-      if(mode.eq.0) then
-         dum(1)=100.0*dum(1)/real(n*m*l) ! ntrl. phy.
-         dum(2)=100.0*dum(2)/real(n*m*l) ! cons. mix.
-         dum(3)=100.0*dum(3)/real(n*m*l) ! conv. adj.
-         if (vmix_out.gt.0) write(*,'(a16,3f7.2)') 'MIX|     fun:   ', dum
+
+      end subroutine dCdyt
+!     * --------------------------------------------------------------------------------
+      subroutine dCdzt(C,dCdz)
+
+!     *     Calculates vertical derivative of variable that lives on T-grid.
+!     *     Derivative is centered on top face of T-cell.
+!     *
+!     *     Author: M. den Toom => m.dentoom@uu.nl
+
+      use m_usr
+      implicit none
+!include 'usr.com'
+
+      real    C(0:n+1,0:m+1,0:l+la+1)
+      real dCdz(0:n+1,0:m+1,0:l+la  )
+      real isoc
+      integer i,j,k
+
+      do k=0,l+la
+         do j=0,m+1
+            do i=0,n+1
+               dCdz(i,j,k) = isoc(i,j,k+1) * isoc(i,j,k) * 
+     &              ( C(i,j,k+1) - C(i,j,k) )/( dz * dfzW(k) )
+            enddo
+         enddo
+      enddo
+
+      end subroutine dCdzt
+!     * --------------------------------------------------------------------------------
+      subroutine drhodC(t,s,drhodt,drhods)
+
+!     *     Calculates expansion coefficients for temperature and salinity.
+!     *     Derivative lives on center of T-cell.
+!     *
+!     *     Author: M. den Toom => m.dentoom@uu.nl
+
+      use m_usr
+      implicit none
+!include 'usr.com'
+
+      real      t(0:n+1,0:m+1,0:l+la+1),     s(0:n+1,0:m+1,0:l+la+1)
+      real drhodt(0:n+1,0:m+1,0:l+la+1),drhods(0:n+1,0:m+1,0:l+la+1)
+      real xes, lambda
+      integer i,j,k
+
+!     *     Define ratio of expansion coefficients
+      lambda = par(LAMB)
+
+      do k=0,l+la+1
+         do j=0,m+1
+            do i=0,n+1
+               drhodt(i,j,k) = -1.0 - xes * 
+     &              ( alpt1 + 2.0*alpt2*t(i,j,k) - 3.0*alpt3*t(i,j,k)**2 )
+               drhods(i,j,k) = lambda
+            enddo
+         enddo
+      enddo
+
+      end subroutine drhodC
+!     * --------------------------------------------------------------------------------
+      subroutine tprslp(drdh,drdz,spl,slp,tpr)
+
+!     *     Calculates taper tpr based on value of isoneutral slope slp, either
+!     *     tap = 1: Gerdes et al. (Clim Dyn, 1991)
+!     *     tap = 2: Danabasoglu and McWilliams (J. Clim, 1995)
+!     *     tap = 3: De Niet et al. (J. Comp Phys, 2007)
+!     *
+!     *     Author: M. den Toom => m.dentoom@uu.nl
+
+      use m_usr
+      implicit none
+!include 'usr.com'
+
+      real drdh,drdz,spl
+      real slp,tpr
+      real delta,sd,absslp,dum
+      real, parameter:: width = 1.0
+      real, parameter:: epsln = 1.0e-20
+
+!     *     Calculate slope, cut-off slope, define taper width
+      if (drdz.eq.0.0) drdz = epsln
+      slp    = -drdh/drdz
+      absslp = sqrt( slp**2 ) 
+      delta  = (r0dim/hdim)*spl
+      sd     = width*delta
+
+!     *     Gerdes et al.
+      if     (tap == 1) then 
+         if (absslp .gt. delta) then
+            tpr = ( delta/absslp )**2
+         else
+            tpr = 1.0
+         endif
+!     *     Danabasoglu and McWilliams
+      elseif (tap == 2) then
+         tpr = 0.5 * (1.0 - tanh( (absslp-delta)/sd  ) )
+!     *     De Niet et al
+      elseif (tap ==3) then
+         if     ( (absslp.lt.delta-sd).and.(drdz.lt.0.0) ) then
+            tpr = 1.0
+         elseif ( (absslp.ge.delta-sd).and.(absslp.lt.delta)
+     &           .and.(drdz.lt.0.0) ) then
+            dum = (absslp - (delta-sd))/sd
+            tpr = 1.0-3.0*dum**2+2.0*dum**3
+         else
+            tpr = 0.0
+         endif
+!     *     Do nothing
+      else
+         tpr = 1.0
       endif
-      
-      end
-*     ---------------------------------------------------------------------------- *
-      subroutine vmix_el_1(irow,icol,idim) ! for both T and S
+
+      end subroutine tprslp
+!     * --------------------------------------------------------------------------------
+      subroutine vmix_jac(un)
+      USE m_mat
+
+!     *     Approximates the jacobian that results from the nonlinear mixing, using the
+!     *     method of Coleman et al. (ACM Trans. Math. Software,1984)
+!     *
+!     *     Adapted by M. den Toom from the old version => m.dentoom@uu.nl
+
       use m_usr
       use m_mix
       implicit none
 !include 'usr.com'
 !include 'mix.com'
-      
+
+      real un(ndim),und(ndim),d(ndim)
+      real mix(ndim), mixd(ndim)
+      real fjac(vmix_dim), eps
+      integer i,j,k, numgrp
+      integer ix,iy,iz,ie,jx,jy,jz,je,s
+      logical col
+
+      eps = 1.0e-08
+
+      select case(vmix_diff)
+!     *     Forward differences
+      case(1)
+         call vmix_fun(un,mix)
+         do numgrp=1,vmix_maxgrp
+            d = 0.0
+            do j=1,ndim
+               if (vmix_ngrp(j).eq.numgrp) d(j) = eps
+            enddo
+            und   = un + d
+            call vmix_fun(und, mixd)
+            mixd  = mixd - mix
+            col   =.false.      ! DO NOT CHANGE
+            if (col) then
+               call fdjs(ndim,ndim,col,vmix_row,vmix_jpntr,
+     +              vmix_ngrp,numgrp,d,mixd,fjac)
+            else
+               call fdjs(ndim,ndim,col,vmix_col,vmix_ipntr,
+     +              vmix_ngrp,numgrp,d,mixd,fjac)
+            endif
+         enddo
+!     *     Central differences      
+      case(2)
+         do numgrp=1,vmix_maxgrp
+            d = 0.0
+            do j=1,ndim
+               if (vmix_ngrp(j).eq.numgrp) d(j) = 2.0*eps
+            enddo
+            und   = un + 0.5*d
+            call vmix_fun(und, mixd)
+            und   = un - 0.5*d
+            call vmix_fun(und, mix)
+            mixd  = mixd - mix
+            col   =.false.      ! DO NOT CHANGE
+            if (col) then
+               call fdjs(ndim,ndim,col,vmix_row,vmix_jpntr,
+     +              vmix_ngrp,numgrp,d,mixd,fjac)
+            else
+               call fdjs(ndim,ndim,col,vmix_col,vmix_ipntr,
+     +              vmix_ngrp,numgrp,d,mixd,fjac)
+            endif
+         enddo
+      end select
+! note: row=i, columns are icol(ipntr(i):ipntr(i+1)-1)  
+
+      numgrp = 0
+      do i=1,ndim               ! loop over rows, assumes col=.false. !!
+         call findex(i,ix,iy,iz,ie)
+         do j=vmix_ipntr(i),vmix_ipntr(i+1)-1 ! loop over columns (in approx.)
+            call findex(vmix_col(j),jx,jy,jz,je)
+            s = 0
+            if (jz-iz.eq. -1) s  = s + 9
+            if (jz-iz.eq.  1) s  = s + 18 
+            if (jx-ix.eq.  0) s  = s + 3
+            if (jx-ix.eq.  1) s  = s + 6
+            if (jx-ix.eq.1-n) s  = s + 6
+            if (jy-iy.eq. -1) s  = s + 1
+            if (jy-iy.eq.  0) s  = s + 2
+            if (jy-iy.eq.  1) s  = s + 3
+            al(ix,iy,iz,s,ie,je) = al(ix,iy,iz,s,ie,je) + fjac(j)
+         enddo
+      enddo
+
+      end subroutine vmix_jac
+!     * --------------------------------------------------------------------------------
+      real function isoc(i,j,k)
+
+!     *     Function "is ocean?" (isoc)
+!     *
+!     *     Author: M. den Toom => m.dentoom@uu.nl
+      use m_usr
+
+      implicit none
+!include 'usr.com'
+
+      integer i,j,k
+
+      if (landm(i,j,k)==OCEAN .or. landm(i,j,k)==PERIO) then
+         isoc = 1.0
+      else
+         isoc = 0.0
+      endif
+
+      end function isoc
+!     * --------------------------------------------------------------------------------
+      real function tprstb(grad,spl)
+
+!     *     Calculates taper, based on stability (grad = drhodz).
+!     *
+!     *     Author: M. den Toom => m.dentoom@uu.nl - Adapted from old mix_imp.f
+
+      use m_usr
+      implicit none
+!include 'usr.com'
+
+      real grad,fac,spl
+
+!     *     Define steepness of taper (note scaling with alphaT to 
+!     *     get dimensionless density)
+      fac    = alphaT * spl
+
+!     *     Apply taper
+      tprstb = max(tanh((-grad*fac)**3),0.0)
+
+      end function tprstb
+!     *=================================================================================
+!     *
+!     * ---------------------------------------------------------------------------- *
+      subroutine vmix_el_1(irow,icol,idim) ! for both T and S
+      use m_usr
+      use m_mix
+      implicit none
+
+!include 'usr.com'
+!include 'mix.com'
+
       integer irow(ndim*(nun*np+1)), icol(ndim*(nun*np+1)), idim
       integer p, h, i, j, k, row, tel
       integer find_row2, st(27,4), kind
-      
+
       irow=0
       icol=0
       idim=0
       p=0
-      
+
       st( 1,:)=(/ -1, -1, -1, 0 /)
       st( 2,:)=(/ -1,  0, -1, 0 /)
       st( 3,:)=(/ -1,  1, -1, 0 /)
@@ -739,7 +852,7 @@
       st(25,:)=(/  1, -1,  1, 0 /)
       st(26,:)=(/  1,  0,  1, 0 /)
       st(27,:)=(/  1,  1,  1, 0 /)
-      
+
       do k=1,l
          do j=1,m
             do i=1,n
@@ -764,30 +877,30 @@
                p=p+2*tel
             endif
          enddo
-      enddo  
+      enddo
       enddo
       idim=p
-      end
-*     ---------------------------------------------------------------------------- *
+      end subroutine vmix_el_1
+!     * ---------------------------------------------------------------------------- *
       subroutine vmix_el_2(irow,icol,idim) ! for T or S
       use m_usr
       use m_mix
       implicit none
-      
+
 !include 'usr.com'
 !include 'mix.com'
-      
+
       integer irow(ndim*(nun*np+1)), icol(ndim*(nun*np+1)), idim
       integer p, h, i, j, k, row, tel
       integer find_row2, st(27,4), kind
       logical flag
 
-      
+
       irow=0
       icol=0
       idim=0
       p=0
-      
+
       st( 1,:)=(/ -1, -1, -1, 0 /)
       st( 2,:)=(/ -1,  0, -1, 0 /)
       st( 3,:)=(/ -1,  1, -1, 0 /)
@@ -815,7 +928,7 @@
       st(25,:)=(/  1, -1,  1, 0 /)
       st(26,:)=(/  1,  0,  1, 0 /)
       st(27,:)=(/  1,  1,  1, 0 /)
-      
+
       do k=1,l
          do j=1,m
             do i=1,n
@@ -834,7 +947,7 @@
                         if (vmix_salt.eq.1) then
                            icol(p+2)=find_row2(i+st(h,1),j+st(h,2),k+st(h,3),SS)
                            irow(p+2)=row
-                        endif  
+                        endif
                         p=p+1+vmix_salt
                      case(PERIO)
 ! ... wrt. temperature
@@ -844,11 +957,11 @@
                         if (vmix_salt.eq.1) then
                            icol(p+2)=find_row2(i-st(h,1)*(n-1),j+st(h,2),k+st(h,3),SS)
                            irow(p+2)=row
-                        endif  
+                        endif
                         p=p+1+vmix_salt
                      end select
                   enddo
-               endif	
+               endif
             endif
             row = find_row2(i,j,k,SS)
 ! Salinity equation...
@@ -861,7 +974,7 @@
                      if (vmix_temp.eq.1) then
                         icol(p+1)=find_row2(i+st(h,1),j+st(h,2),k+st(h,3),TT)
                         irow(p+1)=row
-                     endif  
+                     endif
                      icol(p+1+vmix_temp)=
      +                    find_row2(i+st(h,1),j+st(h,2),k+st(h,3),SS)
                      irow(p+1+vmix_temp)=row
@@ -870,7 +983,7 @@
                      if (vmix_temp.eq.1) then
                         icol(p+1)=find_row2(i-st(h,1)*(n-1),j+st(h,2),k+st(h,3),TT)
                         irow(p+1)=row
-                     endif  
+                     endif
                      icol(p+1+vmix_temp)=
      +                    find_row2(i-st(h,1)*(n-1),j+st(h,2),k+st(h,3),SS)
                      irow(p+1+vmix_temp)=row
@@ -878,160 +991,11 @@
                   end select
                enddo
             endif
-         endif  
-	  enddo
+         endif
+      enddo
       enddo
       enddo
       idim=p
 
-      end
-*     ---------------------------------------------------------------------------- *
-      subroutine vmix_jac(un)
-      
-      use m_mat
-      use m_usr
-      use m_mix
-      implicit none
-!include 'usr.com'
-!include 'mix.com'
-      
-      integer i,j,k, numgrp
-      integer ix,iy,iz,ie,jx,jy,jz,je,s
-      real un(ndim), mix(ndim), d(ndim), und(ndim), mixd(ndim)
-      real fjac(vmix_dim), eps
-      logical col
-
-
-      eps=1.0e-08
-
-      select case(vmix_diff)
-      case(1)                   ! forward diffences
-      
-         call vmix_fun(un,mix,1)
-         do numgrp=1,vmix_maxgrp
-            d=0.0
-            do j=1,ndim
-               if (vmix_ngrp(j).eq.numgrp) d(j) = eps
-            enddo
-            und=un+d
-            call vmix_fun(und, mixd,1)
-            mixd=mixd-mix
-            col=.false.         ! DO NOT CHANGE
-            if (col) then
-               call fdjs(ndim,ndim,col,vmix_row,vmix_jpntr,
-     +              vmix_ngrp,numgrp,d,mixd,fjac)
-            else
-               call fdjs(ndim,ndim,col,vmix_col,vmix_ipntr,
-     +              vmix_ngrp,numgrp,d,mixd,fjac)
-            endif
-         enddo
-         
-      case(2)                   ! central differences
-         do numgrp=1,vmix_maxgrp
-            d=0.0
-            do j=1,ndim
-               if (vmix_ngrp(j).eq.numgrp) d(j) = 2.0*eps
-            enddo
-            und=un+0.5*d
-            call vmix_fun(und, mixd,1)
-            und=un-0.5*d
-            call vmix_fun(und, mix,1)
-            mixd=mixd-mix
-            col=.false.         ! DO NOT CHANGE
-            if (col) then
-               call fdjs(ndim,ndim,col,vmix_row,vmix_jpntr,
-     +              vmix_ngrp,numgrp,d,mixd,fjac)
-            else
-               call fdjs(ndim,ndim,col,vmix_col,vmix_ipntr,
-     +              vmix_ngrp,numgrp,d,mixd,fjac)
-            endif
-         enddo
-      end select
-! note: row=i, columns are icol(ipntr(i):ipntr(i+1)-1)  
-      
-      numgrp=0
-      do i=1,ndim               ! loop over rows, assumes col=.false. !!
-         call findex(i,ix,iy,iz,ie)
-         do j=vmix_ipntr(i),vmix_ipntr(i+1)-1 ! loop over columns (in approx.)
-            call findex(vmix_col(j),jx,jy,jz,je)
-            s=0
-            if (jz-iz.eq. -1) s=s+9
-            if (jz-iz.eq.  1) s=s+18	  
-            if (jx-ix.eq.  0) s=s+3
-            if (jx-ix.eq.  1) s=s+6
-            if (jx-ix.eq.1-n) s=s+6
-            if (jy-iy.eq. -1) s=s+1
-            if (jy-iy.eq.  0) s=s+2
-            if (jy-iy.eq.  1) s=s+3
-            al(ix,iy,iz,s,ie,je)=al(ix,iy,iz,s,ie,je)+fjac(j)
-         enddo
-      enddo
-
-      end
-*     ---------------------------------------------------------------------------- *
-      real function f_mix(val)
-      use m_usr
-      implicit none
-      !include 'usr.com'
-      
-      real val, fac
-      
-      fac=par(SPL1)
-!     if (val.gt.0.0) then 
-!     f_mix = 0.0      
-!     else
-!     f_mix=max(tanh((val*fac)**2),0.0)
-!     endif
-      f_mix=max(tanh(-(val*fac)**3),0.0)
-
-      end
-*     ---------------------------------------------------------------------------- *
-      real function f_ntr(val_x,val_y,val_z)
-      use m_usr
-      implicit none
-      !include 'usr.com'
-      
-      real val_x, val_y, val_z
-      real norm
-      real eps, delta, t
-*     MdT  Adapt eps to system with dimensionless coordinates!      
-!     eps   = par(SPL2)
-      eps   = (r0dim/hdim)*par(SPL2)
-      norm  = sqrt(val_x**2+val_y**2)/eps
-      delta =0.05*norm
-*     MdT  New function definition, to filter out steep slopes!
-!     if ((val_z.ge.0.0).or.(val_z.lt.-norm)) then
-!     f_ntr=0.0
-!     elseif ((val_z.ge.-delta).and.(val_z.lt.0.0)) then
-!     t=(val_z+delta)/delta
-!     f_ntr=1.0-3.0*t**2+2.0*t**3
-!     elseif ((val_z.ge.-norm).and.(val_z.lt.-norm+delta)) then
-!     t=(val_z+norm)/delta
-!     f_ntr=3.0*t**2-2.0*t**3
-!     else
-!     f_ntr=1.0
-!     endif
-      if (val_z.lt.-norm-delta) then
-         f_ntr=1.0
-      elseif ((val_z.ge.-norm-delta).and.(val_z.lt.-norm)) then
-         t=(val_z+norm+delta)/delta
-         f_ntr=1.0-3.0*t**2+2.0*t**3
-      else
-         f_ntr=0.0
-      endif
-      
-      end
-*     ---------------------------------------------------------------------------- *
-      real function kd(x,x0)
-      implicit none
-      
-      integer x,x0
-      real val
-      
-      if (x.eq.x0) then
-         kd=1.0
-      else	
-         kd=0.0
-      endif
-      end
-*     ============================================================================ *
+      end subroutine vmix_el_2
+!     ============================================================================ 

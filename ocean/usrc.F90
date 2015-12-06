@@ -922,7 +922,7 @@ SUBROUTINE stpnt!(un)
   par(SUNP)   =  1.0
   par(PE_H)   =  kappah/(udim*r0dim)            ! P_H0
   par(PE_V)   =  kappav*r0dim/(udim*hdim*hdim)  ! P_V0
-  par(P_VC)   =  5.0            ! P_VC
+  par(P_VC)   =  2.5e+04*par(PE_V)   !5.0       ! P_VC
   par(LAMB)   =  alphaS/alphaT  ! lambda
   par(SALT)   =  0.0            ! gamma
   par(WIND)   =  1.0            ! wind h
@@ -933,10 +933,10 @@ SUBROUTINE stpnt!(un)
   par(CMPR)   =  0.0
   par(ALPC)   =  1.0
   par(ENER)   =  1.0e+02
-  par(MIXP)   =  0.0	     ! ATvS-Mix
-  par(MKAP)   =  0.0         ! gent-Mcwilliams	! ATvS-Mix
-  par(SPL1)   =  1.25        ! tanh		        ! ATvS-Mix
-  par(SPL2)   =  0.01        ! neutral physics
+  par(MIXP)   =  0.0	   ! ATvS-Mix
+  par(MKAP)   =  0.0       ! gent-Mcwilliams  ! ATvS-Mix
+  par(SPL1)   =  2.0e+03   ! 1.25  !tanh      ! ATvS-Mix
+  par(SPL2)   =  0.01      ! neutral physics
 
   call vmix_par
 
