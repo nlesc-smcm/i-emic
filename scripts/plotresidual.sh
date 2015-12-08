@@ -1,12 +1,24 @@
 #!/bin/bash
 
-# You might have to change this
-solvehistory=$1
-newtonhistory=$2
-horizontal=100
-vertical=30
+if [ $# -eq 0 ]
+then
+    echo "  usage: <solver history> <newton history> <horizontal size> <vertical size>"
+    echo "  using defaults..."
+    solvehistory=200
+    newtonhistory=100
+    horizontal=70
+    vertical=20
+else
+    solvehistory=$1
+    newtonhistory=$2
+    horizontal=$3
+    vertical=$4
+fi
+
+
 date=`date +%m%d%y-%k%M`
 
+# You might have to change this
 less dump | grep 'impl res' | tail -n $solvehistory | sed 's/.*iteration://' | sed 's/impl res://' \
 	| sed 's/expl.*//' > solveresiduals
 less info_0.txt | grep '||R||' | tail -n $newtonhistory | sed 's/.*||R||://' > newtonresiduals
