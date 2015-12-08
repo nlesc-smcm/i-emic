@@ -3,7 +3,7 @@
   <!-- ..................................................................-->
   <!-- GMRES parameters                                                  -->
   <!-- ..................................................................-->  
-  <Parameter name="GMRES tolerance"         type="double" value="1e-4"/>
+  <Parameter name="GMRES tolerance"         type="double" value="1e-2"/>
   <Parameter name="GMRES iterations"        type="int"    value="100"/>
   <Parameter name="GMRES restart"           type="int"    value="100"/>
   <Parameter name="GMRES preconditioning"   type="bool"   value="true"/>

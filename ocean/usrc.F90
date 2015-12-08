@@ -922,7 +922,7 @@ SUBROUTINE stpnt!(un)
   par(SUNP)   =  1.0
   par(PE_H)   =  kappah/(udim*r0dim)            ! P_H0
   par(PE_V)   =  kappav*r0dim/(udim*hdim*hdim)  ! P_V0
-  par(P_VC)   =  0 !2.5e+04*par(PE_V)   !5.0       ! P_VC
+  par(P_VC)   =  2.5e+04*par(PE_V)   !5.0       ! P_VC
   par(LAMB)   =  alphaS/alphaT  ! lambda
   par(SALT)   =  0.0            ! gamma
   par(WIND)   =  1.0            ! wind h
