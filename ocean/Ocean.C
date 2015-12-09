@@ -65,15 +65,12 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	//  instance at a time. The Ocean class can access THCM with a call
 	//  to THCM::Instance()
 	thcm_ = rcp(new THCM(thcmList, comm_));
+	INFO("Ocean: continuation parameter value: " << getPar());
 	
 	// Obtain solution vector from THCM
 	state_ = THCM::Instance().getSolution();
 	INFO("Ocean: Solution obtained from THCM");
 	
-	// Initialize solution
-	state_->PutScalar(0.0);
-	INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
-
 	// Get domain object and get the problem dimensions
 	domain_ = THCM::Instance().GetDomain();
 	N_ = domain_->GlobalN();
@@ -83,19 +80,14 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	// If specified we load a pre-existing state and parameter (x,l)
 	if (loadState_)
 		loadStateFromFile(inputFile_);
-		
-	// Obtain Jacobian from THCM
-	THCM::Instance().evaluate(*state_, Teuchos::null, true);
-	jac_ = THCM::Instance().getJacobian();
-	INFO("Ocean: Obtained jacobian from THCM");
-	
-	// Initialize a few datamembers
-	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
-	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
-	
-	// Put the correct parameter value in THCM
-	setPar(parValue_);
+	else 			// Initialize with trivial solution
+	{
+		state_->PutScalar(0.0);
+		initializeOcean();
+		INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
+	}
 
+		
 	// Initialize solver
 	initializeSolver();
 	
@@ -110,11 +102,20 @@ Ocean::~Ocean()
 }
 
 //=====================================================================
-void Ocean::randomizeState(double scaling)
+// initialize Ocean with trivial state
+void Ocean::initializeOcean()
 {
-	state_->Random();
-	state_->Scale(scaling);
-	INFO("Ocean: Initialized solution vector");
+	// Obtain Jacobian from THCM
+	THCM::Instance().evaluate(*state_, Teuchos::null, true);
+	jac_ = THCM::Instance().getJacobian();
+	INFO("Ocean: Obtained jacobian from THCM");
+	
+	// Initialize a few datamembers
+	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
+	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
+	
+	// Put the correct parameter value in THCM
+	setPar(parValue_);	
 }
 
 //====================================================================
@@ -664,15 +665,26 @@ void Ocean::saveStateToFile(std::string const &filename)
 	
 	INFO("Writing to " << filename);
 
+	// Testing whether we save an equilibrium
+	computeJacobian();
+	computeRHS();
+	double nrm;
+	rhs_->Norm2(&nrm);
+	INFO("  testing: ||F(x)|| = " << nrm);
+	state_->Norm2(&nrm);
+	INFO("  testing:    ||x|| = " << nrm);
+	INFO("  parameter value: " << parValue_);
+	INFO("  parameter value in model: " << getPar());	
+
+
  	// Write state, map and continuation parameter
 	EpetraExt::HDF5 HDF5(*comm_);
 	HDF5.Create(filename);
 	HDF5.Write("State", *state_);
-	HDF5.Write("Continuation parameter", "Value", parValue_);
-	
+	HDF5.Write("Continuation parameter", "Value", parValue_);	
 }
 
-//=====================================================================
+// =====================================================================
 void Ocean::loadStateFromFile(std::string const &filename)
 {
 
@@ -684,31 +696,53 @@ void Ocean::loadStateFromFile(std::string const &filename)
 	{
 		WARNING("Can't open " << filename
 				<< " continue with trivial state", __FILE__, __LINE__);
+		state_->PutScalar(0.0);
+		initializeOcean();
 		return;
 	}
 	else file.close();
+
+	// Obtain state vector from THCM and put in datamember
+	state_ = THCM::Instance().getSolution();
 	
-	// Create HDF5 object
+	// Create HDF5 object 
 	EpetraExt::HDF5 HDF5(*comm_);
-	Epetra_MultiVector *state;
+	Epetra_MultiVector *readState;
 
 	// Read state
 	HDF5.Open(filename);
-	HDF5.Read("State", state);
+	HDF5.Read("State", readState);
 
 	// Create importer
 	// target map: thcm domain SolveMap
 	// source map: state with linear map  as read by HDF5.Read
 	Teuchos::RCP<Epetra_Import> lin2solve =
 		Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
-									   state->Map() ));
+									   readState->Map() ));
 	
 	// Import state from HDF5 into state_ datamember
-	state_->Import(*((*state)(0)), *lin2solve, Insert);
-	
+	state_->Import(*((*readState)(0)), *lin2solve, Insert);
+
 	// Read continuation parameter and put it in THCM
 	HDF5.Read("Continuation parameter", "Value", parValue_);
 	setPar(parValue_);
+	
+	// Now that we have a state and a parameter we can initialize more datamembers
+	initializeOcean();
+	
+	// Testing whether we load an equilibrium
+	computeJacobian();
+	computeRHS();
+	double nrm;
+	rhs_->Norm2(&nrm);
+	INFO("  testing: ||F(x)|| = " << nrm);
+	state_->Norm2(&nrm);
+	INFO("  testing:    ||x|| = " << nrm);
+	INFO("  parameter value: " << parValue_);
+	INFO("  parameter value in model: " << getPar());
+	writeFortFiles();
+	getchar();
+	INFO("Ocean: constructor... done");
 }
 
 //====================================================================

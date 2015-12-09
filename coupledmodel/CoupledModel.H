@@ -46,7 +46,10 @@ private:
 	std::shared_ptr<SuperVector> rhsView_;
 	std::shared_ptr<SuperVector> solView_;
 
-	// Use existing (hdf5) state/par
+	// Let the models load existing states during initialization
+	// saving is done from the postprocess operation
+	// The respective in- and output files need to be set in the
+	// separate model parameters
 	bool useExistingState_;
 	
 	// Solving scheme

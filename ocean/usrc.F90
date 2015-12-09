@@ -928,7 +928,7 @@ SUBROUTINE stpnt!(un)
   par(WIND)   =  1.0            ! wind h
   par(TEMP)   =  0.0            ! eta_T
   par(BIOT)   =  r0dim/(75.*3600.*24.*udim) ! nonlinearity in T,S equations
-  par(COMB)   =  1.0          ! combined continuation
+  par(COMB)   =  0.0          ! combined continuation
   par(NLES)   =  0.0
   par(CMPR)   =  0.0
   par(ALPC)   =  1.0

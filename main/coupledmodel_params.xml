@@ -2,12 +2,8 @@
 
   <!-- Specify whether the coupled model should initialize with  -->
   <!-- old states (true) or with a trivial solution (false).     -->
-  <!-- NOT IMPLEMENTED YET -->
   <Parameter name="Use existing state" type="bool" value = "false"/>
-
-  <!-- Some kind of coupling graph should be created here                              -->
-  <!-- ...  -->
-
+  
   <!-- Select the solving and synchronization mode.                                    -->
   <!--  Synchronization depends on the solving method for the matrix of                -->
   <!--  mode 'D': decoupled, the systems are solved separately and the solutions are   -->

@@ -16,8 +16,6 @@ else
 fi
 
 
-date=`date +%m%d%y-%k%M`
-
 # You might have to change this
 less dump | grep 'impl res' | tail -n $solvehistory | sed 's/.*iteration://' | sed 's/impl res://' \
 	| sed 's/expl.*//' > solveresiduals
@@ -30,7 +28,7 @@ then
                 set logscale y;\
                 unset xtics;\
                 set title 'linear solver';\
-                plot 'solveresiduals' using 2 with lines linetype 1 notitle;" > solveresidual.plot
+                plot 'solveresiduals' using 2 with lines linetype 0 notitle;" > solveresidual.plot
 	cat solveresidual.plot
 fi
 

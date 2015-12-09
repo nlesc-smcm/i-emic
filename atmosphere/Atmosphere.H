@@ -8,7 +8,7 @@
   Although this is a 2D model we maintain notation of the 3D ocean model.
 
   Several options for solving the Jacobian will be implemented, right now
-  we have dense 'D' and banded 'B'
+  we have dense 'D' and banded 'B' 
 
   --> THIS IMPLEMENTATION SHOULD MOVE TO 0-BASED! better for everyone
   
@@ -319,8 +319,13 @@ private:
 public:
 	// ! Write everything to output files.
 	void writeAll();
-private:
 
+	//! public HDF5 load/save routines
+	void loadState() { loadStateFromFile(inputFile_); }	
+	void saveState() { saveStateToFile(outputFile_); }
+	
+private:
+	
 	//! HDF5 load/save routines
 	void saveStateToFile(std::string const &filename);
 	void loadStateFromFile(std::string const &filename);

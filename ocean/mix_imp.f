@@ -15,9 +15,7 @@
 !     * --------------------------------------------------------------------------------
 !     * 
 !     * vmix_flag: 
-!     * - 0: original formulation [obsolete]
-!     *      ~ only convective adjustment and energetically consistant vertical mixing
-!     *      ~ uses analytical expression of the Jacobian obtained with Mathematica
+!     * - 0: do nothing
 !     * - 1: fixed partition
 !     *      ~ evaluated during intialization and remains fixed
 !     *      ~ for T,S-equations and T,S-variables, including zero-valued fields
@@ -36,7 +34,12 @@
 
       real time0, time1
 
-      if (vmix_GLB.eq.1) then
+      if (vmix_GLB.eq.0) then
+         vmix_flag = 0
+         vmix_diff = 1
+         vmix_out  = 0
+         vmix_fix  = 1
+      else if (vmix_GLB.eq.1) then
          vmix_flag = 1
          vmix_diff = 1
          vmix_out  = 0
@@ -58,6 +61,9 @@
       if (vmix_out.gt.0) write (99,'(a16,i10)') 'MIX|     flag:  ', vmix_flag
 
       select case (vmix_flag)
+      case(0)
+         vmix_temp=0
+         vmix_salt=0
       case(1)
          vmix_temp=1
          vmix_salt=1
@@ -102,8 +108,8 @@
 
       if (vmix_out.gt.0) write (99,'(a26)') 'MIX|   control...         '
 
-      test_temp = 1
-      test_salt = 1
+      test_temp = 0
+      test_salt = 0
 
 ! Test for temperature field
       if (l2nrm(un(TT:ndim:nun),n*m*l).gt.1.0e-12) test_temp=1

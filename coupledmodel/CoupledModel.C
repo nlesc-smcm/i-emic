@@ -34,6 +34,13 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	gmresInitialized_(false),
 	idrSolveCtr_(0)
 {
+	// let the models get their state from a file
+	if (useExistingState_)
+	{
+		ocean_->loadState();
+		atmos_->loadState();
+	}
+	
 	stateView_ =
 		std::make_shared<SuperVector>(ocean_->getState('V')->getOceanVector(),
 									  atmos_->getState('V')->getAtmosVector() );

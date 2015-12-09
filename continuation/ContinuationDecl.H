@@ -41,6 +41,8 @@ class Continuation
 	double dsMin_; // minimum continuation step-size
 	double dsMax_; // maximum continuation step-size
 
+	double parDest_; // parameter destination
+
 	double zeta_;  // additional scaling for stateDot
 
 	double scale1_; // conservative scaling for adaptive step

@@ -15,24 +15,23 @@ template<typename Model, typename ParameterList>
 Continuation<Model, ParameterList>::
 Continuation(Model model, ParameterList pars)
 	:
-	
-	ds_                    (pars->get("ds", 0.02)),
-	dsMin_                 (pars->get("dsMin", 1.0e-5)),
-	dsMax_                 (pars->get("dsMax", 1.0e01)),
-	scale1_                (pars->get("scale1", 1.00)),
-	scale2_                (pars->get("scale2", 2.00)),
-	epsilon_               (pars->get("epsilon", 1.0e-8)),
-	backTracking_          (pars->get("backTracking", true)),
-	numBackTrackingSteps_  (pars->get("numBackTrackingSteps", 10)),
-	maxSteps_              (pars->get("maxSteps", -1)),
-	maxNewtonIterations_   (pars->get("maxNewtonIterations", 15)),
-	minAllowedIterations_  (pars->get("minAllowedIterations", 4)),
-	maxAllowedIterations_  (pars->get("maxAllowedIterations", 5)),
-	newtonTolerance_       (pars->get("newtonTolerance", 1.0e-3)),
-	rejectFailedNewton_    (pars->get("Reject solution from failed Newton iteration", true)),
-	cycleTolerance_        (pars->get("Cycle between multiples of the tolerance", false)),
-	usePracticalTol_       (pars->get("Use practical tolerance", false))
-	
+	ds_                    (pars->get("initial step size", 0.02)),
+	dsMin_                 (pars->get("minimum step size", 1.0e-5)),
+	dsMax_                 (pars->get("maximum step size", 1.0e01)),
+	parDest_               (pars->get("parameter destination", 1.0)),
+	scale1_                (pars->get("increase step size", 2.00)),
+	scale2_                (pars->get("decrease step size", 2.00)),
+	epsilon_               (pars->get("epsilon increment", 1.0e-8)),
+	backTracking_          (pars->get("enable backtracking", true)),
+	numBackTrackingSteps_  (pars->get("backtracking steps", 10)),
+	maxSteps_              (pars->get("maximum number of steps", -1)),
+	maxNewtonIterations_   (pars->get("maximum Newton iterations", 15)),
+	minAllowedIterations_  (pars->get("minimum desired Newton iterations", 4)),
+	maxAllowedIterations_  (pars->get("maximum desired Newton iterations", 5)),
+	newtonTolerance_       (pars->get("Newton tolerance", 1.0e-3)),
+	rejectFailedNewton_    (pars->get("reject failed iteration", true)),
+	cycleTolerance_        (pars->get("enable tolerance cycling", false)),
+	usePracticalTol_       (pars->get("enable practical tolerance", false))	
 {
 	model_  = model;
 
@@ -487,8 +486,8 @@ detect(char mode)
 	// Just to be on the safe side
 	par_ = model_->getPar();
 	double f1;
-	f1 = par_ - model_->getParDestination();
-
+	f1 = par_ - parDest_;
+	
 	// This is a naive initial implementation
 	if (f1 > 0)
 		destinationReached_ = true;
@@ -507,9 +506,19 @@ void Continuation<Model, ParameterList>::
 adjustStep()
 {
 	if (newtonIter_ < minAllowedIterations_)
-		ds_ = MIN(ds_ * scale1_, dsMax_);
+	{
+		INFO("      adjusting ds... ");
+		INFO("      old ds: " << ds_);
+		ds_ = std::min(ds_ * scale1_, dsMax_);
+		INFO("      new ds: " << ds_);
+	}
 	else if (newtonIter_ > maxAllowedIterations_)
-		ds_ = MAX(ds_ / scale1_, dsMin_);
+	{
+		INFO("      adjusting ds... ");
+		INFO("      old ds: " << ds_);
+		ds_ = std::max(ds_ / scale2_, dsMin_);
+		INFO("      new ds: " << ds_);
+	}
 }
 
 //======================================================================
@@ -649,10 +658,12 @@ info()
 {
 	INFO(std::setprecision(8));
 	INFO("-----------------------------------------");
-	INFO("Continuation summary: ");
-	INFO("               ds:  " << ds_);
-	INFO("              par:  " << par_);
-	INFO("           parDot:  " << parDot_);
+	INFO("Continuation summary ");
+	INFO("        step size:  " << ds_);
+	INFO("  parameter value:  " << par_);
+	INFO("      destination:  " << parDest_);
+	INFO("        d/ds(par):  " << parDot_);
+
 	if (maxSteps_ >= 0)
 	{
 		INFO("             step:  " << step_ << "/" << maxSteps_);
@@ -661,8 +672,9 @@ info()
 	{
 		INFO("             step:  " << step_);
 	}
-	INFO("       norm state:  " << stateView_->norm());
-	INFO("    norm stateDot:  " << stateDot_->norm());
+	
+	INFO("            ||x||:  " << stateView_->norm());
+	INFO("      ||d/ds(x)||:  " << stateDot_->norm());
 	INFO("     newton iters:  " << newtonIter_);
 	INFO("-----------------------------------------");
 }

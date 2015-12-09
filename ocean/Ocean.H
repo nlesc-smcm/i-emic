@@ -224,20 +224,21 @@ public:
 	// Scale the matrix and rhs of the problem
 	void scaleProblem(VectorPtr rhs = Teuchos::null);
 	void unscaleProblem(VectorPtr rhs = Teuchos::null);
+
+	void loadState() { loadStateFromFile(inputFile_); }
+	void saveState() { saveStateToFile(outputFile_); }
 	
 private:
 	// HDF5-based save and load functions for the state and parameters
-	void saveStateToFile(std::string const &name);
 	void loadStateFromFile(std::string const &name);
+	void saveStateToFile(std::string const &name);
 
 	// Write the state of the ocean to traditional FORTRAN out files fort.*
 	// Use matlab plot-scripts for visualization 
 	void writeFortFiles();
 
-	// Randomize state, scale with scaling
-	void randomizeState(double scaling);
-
 	// Initializer members
+	void initializeOcean();
 	void initializeSolver();
 	void initializePreconditioner();
 	void initializeBelos();
