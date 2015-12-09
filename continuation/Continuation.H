@@ -505,6 +505,13 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 adjustStep()
 {
+	// we may need something like
+	//   if (newtonIter_ < 1.5 * work)
+	//       increase ds
+	//       work = newtonIter_
+	//   else
+	//       decrease ds       
+	         
 	if (newtonIter_ < minAllowedIterations_)
 	{
 		INFO("      adjusting ds... ");
