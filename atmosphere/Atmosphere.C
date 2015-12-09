@@ -1051,7 +1051,7 @@ void Atmosphere::postProcess()
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::saveStateToFile(std::string const &filename)
+int Atmosphere::saveStateToFile(std::string const &filename)
 {
 	INFO("Writing to " << filename);
 	
@@ -1104,12 +1104,15 @@ void Atmosphere::saveStateToFile(std::string const &filename)
 	// Check for errors
 	for (int i = 0; i != nstat; ++i)
 		if (status[i] != 0)
+		{
 			WARNING("Status[" << i << "] not ok", __FILE__, __LINE__);
-
+			return 2;
+		}
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::loadStateFromFile(std::string const &filename)
+int Atmosphere::loadStateFromFile(std::string const &filename)
 {
 	INFO("Loading from " << filename);
 
@@ -1124,7 +1127,7 @@ void Atmosphere::loadStateFromFile(std::string const &filename)
 	{
 		WARNING("Can't open " << filename
 				<< " continue with trivial state", __FILE__, __LINE__);
-		return;
+		return 1;
 	}
 	else file.close();
 	
@@ -1135,6 +1138,7 @@ void Atmosphere::loadStateFromFile(std::string const &filename)
 	dataset_id = H5Dopen2(file_id, "/State/Values", H5P_DEFAULT);
 	
 	// Read state from dataset and close it
+	state_->assign(dim_, 0.0);
 	status[si++] = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
 						   &(*state_)[0]);
 	status[si++] = H5Dclose(dataset_id);
@@ -1148,13 +1152,19 @@ void Atmosphere::loadStateFromFile(std::string const &filename)
 
 	// Close dataset and file
 	status[si++] = H5Dclose(dataset_id);
-	status[si++] = H5Fclose(file_id); 
+	status[si++] = H5Fclose(file_id);
+	
+	INFO("            ||x|| = " << getState()->norm());
+	INFO("  parameter value = " << ampl_);
 	
 	// Check for errors
 	for (int i = 0; i != nstat; ++i)
 		if (status[i] != 0)
+		{
 			WARNING("Status[" << i << "] not ok", __FILE__, __LINE__);
-
+			return 2;
+		}
+	return 0;
 }
 
 //=============================================================================

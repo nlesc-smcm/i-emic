@@ -225,13 +225,13 @@ public:
 	void scaleProblem(VectorPtr rhs = Teuchos::null);
 	void unscaleProblem(VectorPtr rhs = Teuchos::null);
 
-	void loadState() { loadStateFromFile(inputFile_); }
-	void saveState() { saveStateToFile(outputFile_); }
+	int loadState() { return loadStateFromFile(inputFile_); }
+	int saveState() { return saveStateToFile(outputFile_); }
 	
 private:
 	// HDF5-based save and load functions for the state and parameters
-	void loadStateFromFile(std::string const &name);
-	void saveStateToFile(std::string const &name);
+	int loadStateFromFile(std::string const &name);
+	int saveStateToFile(std::string const &name);
 
 	// Write the state of the ocean to traditional FORTRAN out files fort.*
 	// Use matlab plot-scripts for visualization 

@@ -17,6 +17,12 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	:
 	ocean_(ocean),
 	atmos_(atmos),
+	stateView_(std::make_shared<SuperVector>(ocean->getState('V')->getOceanVector(),
+											 atmos->getState('V')->getAtmosVector())),
+	solView_(std::make_shared<SuperVector>(ocean->getSolution('V')->getOceanVector(),
+										   atmos->getSolution('V')->getAtmosVector())),
+	rhsView_(std::make_shared<SuperVector>(ocean->getRHS('V')->getOceanVector(),
+										   atmos->getRHS('V')->getAtmosVector())),
 	useExistingState_ (params->get("Use existing state", false)),
 	solvingScheme_    (params->get("Solving scheme", 'G')),
 	useScaling_       (params->get("Use scaling", false)),
@@ -37,22 +43,11 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	// let the models get their state from a file
 	if (useExistingState_)
 	{
-		ocean_->loadState();
-		atmos_->loadState();
+		int status = atmos_->loadState();
+		status += ocean_->loadState();
+		INFO("CoupledModel load status = " << status);
 	}
 	
-	stateView_ =
-		std::make_shared<SuperVector>(ocean_->getState('V')->getOceanVector(),
-									  atmos_->getState('V')->getAtmosVector() );
-	
-	solView_ =
- 		std::make_shared<SuperVector>(ocean_->getSolution('V')->getOceanVector(),
-									  atmos_->getSolution('V')->getAtmosVector() );
-	
-	rhsView_ =
- 		std::make_shared<SuperVector>(ocean_->getRHS('V')->getOceanVector(),
-									  atmos_->getRHS('V')->getAtmosVector() );
-
 	// Get the contribution of the atmosphere to the ocean in the Jacobian
 	B_     = ocean_->getAtmosBlock();
 	rowsB_ = ocean_->getSurfaceTRows();
@@ -65,6 +60,9 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	
 	// Synchronize landmask
 	synchronizeLandmask();
+
+	// Synchronize state
+	synchronize();
 }
 
 //------------------------------------------------------------------
@@ -98,6 +96,7 @@ void CoupledModel::synchronize()
 	atmos_->setOceanTemperature(sst);
 
 	// Now that there is a new state we can also recompute the preconditioners
+	// --> weird place to do this...
 	if (syncCtr_ % buildPrecEvery_ == 0)
 		ocean_->recomputePreconditioner();
 	

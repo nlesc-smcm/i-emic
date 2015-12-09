@@ -321,14 +321,14 @@ public:
 	void writeAll();
 
 	//! public HDF5 load/save routines
-	void loadState() { loadStateFromFile(inputFile_); }	
-	void saveState() { saveStateToFile(outputFile_); }
+	int loadState() { return loadStateFromFile(inputFile_); }	
+	int saveState() { return saveStateToFile(outputFile_); }
 	
 private:
 	
 	//! HDF5 load/save routines
-	void saveStateToFile(std::string const &filename);
-	void loadStateFromFile(std::string const &filename);
+	int saveStateToFile(std::string const &filename);
+	int loadStateFromFile(std::string const &filename);
 };
 
 //==================================================================

@@ -81,15 +81,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	if (loadState_)
 		loadStateFromFile(inputFile_);
 	else 			// Initialize with trivial solution
-	{
 		state_->PutScalar(0.0);
-		initializeOcean();
-		INFO("Ocean: Initialized solution -> Ocean::state = zeros...");
-	}
 
-		
-	// Initialize solver
-	initializeSolver();
+	// Now that we have a state and a parameter we can initialize more datamembers
+	initializeOcean();
 	
 	INFO("Ocean: constructor... done");
 }
@@ -181,15 +176,11 @@ void Ocean::initializeSolver()
 
 	// Initialize the requested solver
 	if (solverType_ == 'F')
-	{
 		initializeBelos();
-		solverInitialized_ = true;
-	}
 	else if (solverType_ == 'I')
-	{
 		initializeIDR();
-		solverInitialized_ = true;
-	}	
+	
+	solverInitialized_ = true;
 	
 	// Now that the solver and preconditioner are initialized we are allowed to
 	// perform a solve.
@@ -660,32 +651,25 @@ void Ocean::writeFortFiles()
 }
 
 //=====================================================================
-void Ocean::saveStateToFile(std::string const &filename)
-{
-	
+int Ocean::saveStateToFile(std::string const &filename)
+{	
 	INFO("Writing to " << filename);
-
-	// Testing whether we save an equilibrium
-	computeJacobian();
-	computeRHS();
+	
 	double nrm;
-	rhs_->Norm2(&nrm);
-	INFO("  testing: ||F(x)|| = " << nrm);
 	state_->Norm2(&nrm);
-	INFO("  testing:    ||x|| = " << nrm);
-	INFO("  parameter value: " << parValue_);
-	INFO("  parameter value in model: " << getPar());	
-
+	INFO("     state: ||x|| = " << nrm);
+	INFO("  parameter value = " << parValue_);
 
  	// Write state, map and continuation parameter
 	EpetraExt::HDF5 HDF5(*comm_);
 	HDF5.Create(filename);
 	HDF5.Write("State", *state_);
-	HDF5.Write("Continuation parameter", "Value", parValue_);	
+	HDF5.Write("Continuation parameter", "Value", parValue_);
+	return 0;
 }
 
 // =====================================================================
-void Ocean::loadStateFromFile(std::string const &filename)
+int Ocean::loadStateFromFile(std::string const &filename)
 {
 
 	// Check whether file exists
@@ -698,7 +682,7 @@ void Ocean::loadStateFromFile(std::string const &filename)
 				<< " continue with trivial state", __FILE__, __LINE__);
 		state_->PutScalar(0.0);
 		initializeOcean();
-		return;
+		return 1;
 	}
 	else file.close();
 
@@ -722,27 +706,17 @@ void Ocean::loadStateFromFile(std::string const &filename)
 	
 	// Import state from HDF5 into state_ datamember
 	state_->Import(*((*readState)(0)), *lin2solve, Insert);
-
+	
 	// Read continuation parameter and put it in THCM
 	HDF5.Read("Continuation parameter", "Value", parValue_);
 	setPar(parValue_);
-	
-	// Now that we have a state and a parameter we can initialize more datamembers
-	initializeOcean();
-	
-	// Testing whether we load an equilibrium
-	computeJacobian();
-	computeRHS();
+		
 	double nrm;
-	rhs_->Norm2(&nrm);
-	INFO("  testing: ||F(x)|| = " << nrm);
 	state_->Norm2(&nrm);
-	INFO("  testing:    ||x|| = " << nrm);
-	INFO("  parameter value: " << parValue_);
-	INFO("  parameter value in model: " << getPar());
-	writeFortFiles();
-	getchar();
+	INFO("     state: ||x|| = " << nrm);
+	INFO("  parameter value = " << parValue_);
 	INFO("Ocean: constructor... done");
+	return 0;
 }
 
 //====================================================================
