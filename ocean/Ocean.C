@@ -84,8 +84,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 		state_->PutScalar(0.0);
 
 	// Now that we have a state and a parameter we can initialize more datamembers
-	initializeOcean();
-	
+	initializeOcean();	
 	INFO("Ocean: constructor... done");
 }
 

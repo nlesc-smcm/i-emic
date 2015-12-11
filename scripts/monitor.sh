@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]
-	echo "  usage: <solver history> <newton history> <horizontal size> <vertical size>"
+then
     echo "  using defaults..."
 	server=cartesius
 	dir=rundir_test
@@ -10,26 +10,50 @@ else
 	dir=$2
 fi
 
-remote_command='"watch ls ~/Projects/I-EMIC/'$1'/"'
-compl_command="'exec ssh -t "$server" $remote_command'"
+rand()
+{
+	tr -dc 0-9 < /dev/urandom | head -c10;
+	echo
+}
+
+session_name=status_$(rand)
+
+teststr=local
+local=0
+if [ $server = $teststr ]
+then
+	local=1
+	echo "LOCAL!"
+fi
 
 tailhist=1000
 
-echo $compl_command
+if [ $local -eq 1 ]
+then
+	tmux new-session -d -s $session_name 'exec tail -f -n '$tailhist' '${SHARED_DIR}'/i-emic/'$dir'/dump '
+	tmux split-window -h 'cd '${SHARED_DIR}'/i-emic/'$dir'/ && watch -n 5 -t ./plotresidual.sh 3000 1000'
+	tmux split-window -v -t 0 'exec  tail -f -n '$tailhist'  '${SHARED_DIR}'/i-emic/'$dir'/info_0.txt '
+	tmux resize-pane -L 30
+# cd '${SHARED_DIR}'/i-emic/'$dir'/; watch -n 5 -t ls '
+else
 
-tmux new-session -d -s status 'exec ssh -t '$server' \
-"tail -f -n '$tailhist' ~/Projects/I-EMIC/'$dir'/dump" '
+	tmux new-session -d -s $session_name 'exec ssh -t '$server' \
+"tail -f -n '$tailhist' \${SHARED_DIR}/i-emic/'$dir'/dump" '
+
+	tmux split-window -h 'exec ssh -t '$server' "cd \${SHARED_DIR}/i-emic/'$dir'/ \
+&& watch -n 5 -t ./plotresidual.sh 3000 1000" '
+	
+	tmux split-window -v -t 0 'exec ssh -t '$server' \
+"tail -f -n '$tailhist' \${SHARED_DIR}/i-emic/'$dir'/info_0.txt" '
+
+	tmux resize-pane -L 30
+
+	tmux split-window -v -t 1 'exec ssh -t '$server' "cd \${SHARED_DIR}/i-emic/'$dir'/; bash" '
+
+	tmux resize-pane -D 20
+
+fi
+
 tmux rename-window 'Status'
 
-tmux split-window -h 'exec ssh -t '$server' \
-"cd ~/Projects/I-EMIC/'$dir'/ \
-&& watch -n 5 -t ./plotresidual.sh 3000 1000" '
-
-tmux split-window -v -t 0 'exec ssh -t '$server' \
-"tail -f -n '$tailhist' ~/Projects/I-EMIC/'$dir'/info_0.txt" '
-
-tmux resize-pane -L 10
-
-#'exec ssh -t '$server' "watch ls ~/Projects/I-EMIC/'$dir'/" '
-
-tmux -2 attach-session -t status
+tmux -2 attach-session -t $session_name
