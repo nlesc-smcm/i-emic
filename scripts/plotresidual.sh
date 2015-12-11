@@ -6,21 +6,25 @@ then
     echo "  using defaults..."
     solvehistory=200
     newtonhistory=100
-    horizontal=70
-    vertical=20
 else
     solvehistory=$1
     newtonhistory=$2
-    horizontal=$3
-    vertical=$4
 fi
+
+horizontal=$((`tput cols` - 5))
+vertical=$((`tput lines` * 2 / 5))
+padding=$(( (`tput lines` - 2 * $vertical) / 2 ))
+
+for i in `eval echo {1..$padding}`
+do
+	echo ""
+done
 
 
 # You might have to change this
 less dump | grep 'impl res' | tail -n $solvehistory | sed 's/.*iteration://' | sed 's/impl res://' \
 	| sed 's/expl.*//' > solveresiduals
 less info_0.txt | grep '||R||' | tail -n $newtonhistory | sed 's/.*||R||://' > newtonresiduals
-
 
 if [ -s "solveresiduals" ]
 then
