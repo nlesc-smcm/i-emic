@@ -208,7 +208,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	else if (solvingScheme_ == 'G') // GMRES on complete matrix
 		GMRESSolve(rhs);
 	else
-		WARNING("(CoupledModel::Solve()) Invalid mode!",
+ 		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
 
 	if (useScaling_)

@@ -206,7 +206,7 @@ void Atmosphere::idealizedOcean()
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
 		{
-			value = ampl_*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+			value = comb_*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 			row   = find_row(i,j,l_,ATMOS_TT_)-1;
 			oceanTemp_[row] = value;
 		}
@@ -221,7 +221,7 @@ void Atmosphere::idealizedState()
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
 		{
-			value = ampl_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+			value = comb_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 			row   = find_row(i,j,l_,ATMOS_TT_)-1;
 			(*state_)[row] = value;
 		}
@@ -337,7 +337,7 @@ void Atmosphere::forcing()
 		for (int i = 1; i <= n_; ++i)
 		{
 			row = find_row(i, j, l_, ATMOS_TT_);
-			value = oceanTemp_[row-1] + ampl_ * (suna_[j] - amua_);
+			value = oceanTemp_[row-1] + comb_ * (suna_[j] - amua_);
 			frc_[row-1] = value;
 		}
 }
@@ -1012,7 +1012,7 @@ void Atmosphere::setPar(double value)
 void Atmosphere::setPar(std::string parName, double value)
 {
 	if (parName.compare("Combined Forcing") == 0)
-		ampl_ = value;
+		comb_ = value;
 	else if (parName.compare("None") == 0)		
 	else
 	{
@@ -1033,7 +1033,7 @@ double Atmosphere::getPar()
 double Atmosphere::getPar(std::string parName)
 {
 	if (parName.compare("Combined Forcing") == 0)
-		return ampl_;
+		return comb_;
 	else if (parName.compare("None") == 0)
 		return 0;
 	else
