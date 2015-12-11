@@ -13,10 +13,10 @@ module m_par
   character(len=*), parameter ::  topdir = '/home/p267904/Projects/EMIC/data/'
   character(len=*), parameter ::  rundir = ''
 #elif defined(VLIEGTUIG)
-  character(len=*), parameter ::  topdir = '/home/erikm/Projects/I-EMIC/data/'
+  character(len=*), parameter ::  topdir = '/home/erikm/Projects/i-emic/data/'
   character(len=*), parameter ::  rundir = ''
 #elif defined(CARTESIUS)
-  character(len=*), parameter ::  topdir = '/home/emulder/Projects/I-EMIC/data/'
+  character(len=*), parameter ::  topdir = '/home/emulder/Projects/i-emic/data/'
   character(len=*), parameter ::  rundir = ''
 #elif defined(LAPTOP)
   character(len=*), parameter ::  topdir = '/home/erik/Projects/i-emic/data/'

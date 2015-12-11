@@ -15,9 +15,15 @@ horizontal=$((`tput cols` - 5))
 vertical=$((`tput lines` * 2 / 5))
 padding=$(( (`tput lines` - 2 * $vertical) / 2 ))
 
+
 for i in `eval echo {1..$padding}`
 do
+    if [ $i -eq $(( $padding / 2 )) ]
+    then
+	echo "   " $HOSTNAME "  " $PWD
+    else
 	echo ""
+    fi
 done
 
 
