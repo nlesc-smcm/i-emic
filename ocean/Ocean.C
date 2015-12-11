@@ -159,16 +159,9 @@ void Ocean::initializeSolver()
 	
 	solverParams_ = rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
-
+	
 	// Get the requested solver type
 	solverType_          = solverParams_->get("Ocean solver type", 'I');
-	
-	// Get some parameters that are independent of solver type
-	adaptivePrecCompute_ = solverParams_->get("Use adaptive preconditioner computation", true);
-	useScaling_          = solverParams_->get("Use scaling", false);
-	recomputeBound_      = solverParams_->get("Preconditioner recompute bound", 400);
-	zeroInitGuess_       = solverParams_->get("Use trivial initial guess", true);
-	bypassPrec_          = solverParams_->get("Bypass preconditioner", false);
 	
 	// Initialize the preconditioner
 	if (!precInitialized_)
@@ -253,18 +246,13 @@ void Ocean::solve(VectorPtr rhs)
 	if (!solverInitialized_)
 		initializeSolver();
 	
-	// If required we scale the problem here
-	if (useScaling_)
-	  scaleProblem();
-
 	// Depending on the number of iterations we might need to
 	// recompute the preconditioner
 	if (recompPreconditioner_)
 		buildPreconditioner();
 	
-	// If specified use trivial initial solution
-	if (zeroInitGuess_)
-		sol_->Scale(0.0);
+	// Use trivial initial solution
+	sol_->Scale(0.0);
 	
 	// Set the problem, rhs may be given as an argument to solve().
 	if (solverType_ == 'F')
@@ -329,23 +317,6 @@ void Ocean::solve(VectorPtr rhs)
 			 << " residual = " << idrSolver_.explicitResNorm());
 		TRACK_ITERATIONS("Ocean: IDR iterations...", iters);
 	}
-
-	// If requested, calculate the explicit residual
-	if (printExpResNorm_)
-		INFO("Ocean:    exp res nrm: " << explicitResNorm(rhs));
-
-	// If the number of linear solver iterations exceeds a preset bound
-	// we recompute the preconditioner
-	if ((iters > recomputeBound_) && adaptivePrecCompute_)
-	{
-		INFO("Ocean: Number of iterations exceeds " << recomputeBound_);
-		INFO("Ocean:   Enabling computation of preconditioner.");
-		recompPreconditioner_ = true;
-	}
-
-	// If specified, unscale the problem
-	if (useScaling_)
-	  unscaleProblem();
 }
 
 //=====================================================================
@@ -530,18 +501,11 @@ void Ocean::buildPreconditioner()
 //====================================================================
 void Ocean::applyPrecon(SuperVector const &v, SuperVector &out)
 {
-	if (bypassPrec_)
-	{
-		std::cout << "Ocean: bypassing preconditioner" << std::endl;
-		out = v;
-	}
-	
 	if (!precInitialized_) // Initialize preconditioner
 		initializePreconditioner();
 	
 	if (recompPreconditioner_) 	// Compute preconditioner
-		buildPreconditioner();
-	
+		buildPreconditioner();	
 
 	TIMER_START("Ocean: apply preconditioning...");
 	precPtr_->ApplyInverse(*(v.getOceanVector()), *(out.getOceanVector()));

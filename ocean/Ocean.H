@@ -74,9 +74,7 @@ protected:
 	
 	bool   solverInitialized_;
 	bool   precInitialized_;
-	bool   adaptivePrecCompute_;
 	bool   recompPreconditioner_;
-	bool   useScaling_;
 	
 	Teuchos::RCP<Epetra_Vector> sol_;
 
@@ -92,14 +90,8 @@ protected:
 	// IDR solver
 	IDRSolver<Ocean, Teuchos::RCP<SuperVector> > idrSolver_;
 
-	bool zeroInitGuess_;
-	bool bypassPrec_;
-	bool printExpResNorm_;
-	
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 	
-	int recomputeBound_;
-
 	// Domain object
 	Teuchos::RCP<TRIOS::Domain> domain_;
 

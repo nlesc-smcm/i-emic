@@ -1,7 +1,15 @@
 #!/bin/bash
 
-server=$1
-dir=$2
+if [ $# -eq 0 ]
+	echo "  usage: <solver history> <newton history> <horizontal size> <vertical size>"
+    echo "  using defaults..."
+	server=cartesius
+	dir=rundir_test
+else
+	server=$1
+	dir=$2
+fi
+
 remote_command='"watch ls ~/Projects/I-EMIC/'$1'/"'
 compl_command="'exec ssh -t "$server" $remote_command'"
 
@@ -15,7 +23,7 @@ tmux rename-window 'Status'
 
 tmux split-window -h 'exec ssh -t '$server' \
 "cd ~/Projects/I-EMIC/'$dir'/ \
-&& watch -n 5 -t ./plotresidual.sh 3000 1000 80 20" '
+&& watch -n 5 -t ./plotresidual.sh 3000 1000" '
 
 tmux split-window -v -t 0 'exec ssh -t '$server' \
 "tail -f -n '$tailhist' ~/Projects/I-EMIC/'$dir'/info_0.txt" '
