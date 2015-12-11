@@ -50,10 +50,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
 	loadState_           (oceanParamList->get("Load state", false)),
 	saveState_           (oceanParamList->get("Save state", false)),
-	parIdent_            (oceanParamList->get("THCM continuation par", 19)),
-	parValue_            (0),
-	parStart_            (0),
-	parEnd_              (1)
+	parName_             (oceanParamList->get("Continuation parameter",
+											  "Combined Forcing")),
+	parValue_            (0)
 {
 	INFO("Ocean: constructor...");	
 	
@@ -628,6 +627,7 @@ int Ocean::saveStateToFile(std::string const &filename)
 	HDF5.Create(filename);
 	HDF5.Write("State", *state_);
 	HDF5.Write("Continuation parameter", "Value", parValue_);
+	HDF5.Write(continuationParameter_, "Value", parValue_);
 	return 0;
 }
 
@@ -673,7 +673,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
 	// Read continuation parameter and put it in THCM
 	HDF5.Read("Continuation parameter", "Value", parValue_);
 	setPar(parValue_);
-		
+	
 	double nrm;
 	state_->Norm2(&nrm);
 	INFO("     state: ||x|| = " << nrm);
@@ -681,38 +681,46 @@ int Ocean::loadStateFromFile(std::string const &filename)
 	INFO("Ocean: constructor... done");
 	return 0;
 }
-
 //====================================================================
-double Ocean::getPar(char mode)
+double Ocean::getPar()
 {
-	if (mode == 'V')
+	return getPar(parName_);
+}
+//====================================================================
+double Ocean::getPar(std::string parName)
+{
+	double thcmPar;
+	int parIdent = THCM::Instance().par2int(parName);
+	FNAME(getparcs)(&parIdent, &thcmPar);
+	if (thcmPar != parValue_)
 	{
-		double thcmPar;
-		FNAME(getparcs)(&parIdent_, &thcmPar);
-		if (thcmPar != parValue_)
-		{
-			INFO("Ocean::getPar(): Faulty parameter synchronization");
-			INFO("              thcm: " << thcmPar);
-			INFO("             Ocean: " << parValue_);
-			INFO("     fixing this...");
-			FNAME(setparcs)(&parIdent_, &parValue_);
-			FNAME(getparcs)(&parIdent_, &thcmPar);
-			INFO("              thcm: " << thcmPar);
-		}					  
+		INFO("Ocean::getPar(): Faulty parameter synchronization");
+		INFO("              THCM: " << thcmPar);
+		INFO("             Ocean: " << parValue_);
+		INFO("     fixing this, putting our parameter in THCM");
+		FNAME(setparcs)(&parIdent, &parValue_);
+		FNAME(getparcs)(&parIdent, &thcmPar);
+		INFO("              THCM: " << thcmPar);
+	}					  
 	return parValue_;
-	}
-	if (mode == 'D') return parEnd_;
-	if (mode == 'S') return parStart_;
-	else
-	{
-		WARNING("Invalid mode", __FILE__, __LINE__);
-		return -1;
-	}
 }
 
 //====================================================================
 void Ocean::setPar(double value)
 {
-	parValue_ = value;
-	FNAME(setparcs)(&parIdent_, &value);
+	setPar(parName_, value);
+}
+
+//====================================================================
+void Ocean::setPar(std::string parName, double value)
+{
+	int parIdent = THCM::Instance().par2int(parName);
+	if (parIdent > 0)
+	{
+		parValue_ = value;
+		FNAME(setparcs)(&parIdent, &value);
+	}
+	else
+		ERROR("Ocean: too afraid to put this in THCM "<< parIdent,
+			  __FILE__, __LINE__);
 }

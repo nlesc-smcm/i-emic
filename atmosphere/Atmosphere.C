@@ -17,17 +17,20 @@
 Atmosphere::Atmosphere(ParameterList params)
 	:
 	params_          (params),
-	
+
+// grid	
 	n_               (params->get("Global Grid-Size n", 16)),
 	m_               (params->get("Global Grid-Size m", 16)),
 	l_               (params->get("Global Grid-Size l", 1)),
 	periodic_        (params->get("Periodic", false)),
 
+// solvers
 	solvingScheme_   (params->get("Solving scheme", 'B')),
 	preconditioner_  (params->get("Preconditioner", 'J')),
 	gmresSolver_     (*this),
 	gmresInitialized_(false),
-	
+
+// physics 
 	rhoa_            (params->get("atmospheric density",1.25)),
 	hdima_           (params->get("heat capacity",8400.)),
 	cpa_             (params->get("heat capacity",1000.)),
@@ -42,10 +45,18 @@ Atmosphere::Atmosphere(ParameterList params)
 	t0_              (params->get("reference temperature",15.0)),
 	udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
 	r0dim_           (params->get("radius of the earth",6.37e+06)),
+	
+// continuation parameters 
+	allParameters_   ({ "Combined Forcing" }),   // parameter identifiers
+	parName_         (params->get("Continuation parameter",
+								  "Combined Forcing")),
+	comb_            (0.0),                      // combined forcing
+	
+// input/output
 	loadState_       (params->get("Load state", false)),
 	saveState_       (params->get("Save state", false)),
 	inputFile_       (params->get("Input file", "atmos.h5")),
-	outputFile_      (params->get("Output file", "atmos.h5"))
+	outputFile_      (params->get("Output file", "atmos.h5")),
 {
 	INFO("Atmosphere: constructor...");
 
@@ -59,9 +70,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	// Leading dimension of banded matrix
 	ldimA_  = 2 * ksub_ + 1 + ksup_;
 	
-	// Continuation parameters
-	ampl_    = 0.0        ; //! amplitude of forcing
-	amplEnd_ = 1.0        ; //!
+	// Continuation parameter
 	
 	// Filling the coefficients
 	muoa_ =  rhoa_ * ch_ * cpa_ * uw_;
@@ -136,6 +145,8 @@ Atmosphere::Atmosphere(ParameterList params)
 						(1 - albe_[j]));
 	}
 
+	// construct the continuation parameter list
+	
 	// If specified we load a pre-existing state and parameter (x,l)
 	if (loadState_)
 		loadStateFromFile(inputFile_);
@@ -989,6 +1000,50 @@ void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
 		out.assign(v.getAtmosVector());
 }
 
+// ---------------------------------------------------------------------------
+// Adjust locally defined parameter
+void Atmosphere::setPar(double value)
+{
+	setPar(parName_, value);
+}
+
+// ---------------------------------------------------------------------------
+// Adjust specific parameter
+void Atmosphere::setPar(std::string parName, double value)
+{
+	if (parName.compare("Combined Forcing") == 0)
+		ampl_ = value;
+	else if (parName.compare("None") == 0)		
+	else
+	{
+		INFO("Atmosphere::setPar() invalid continuation parameter label: '" << parName << "'");
+		ERROR("Atmosphere::setPar() parameter label is invalid!",__FILE__,__LINE__);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Adjust locally defined parameter
+double Atmosphere::getPar()
+{
+	return getPar(parName_);
+}
+
+// ---------------------------------------------------------------------------
+// Adjust parameter
+double Atmosphere::getPar(std::string parName)
+{
+	if (parName.compare("Combined Forcing") == 0)
+		return ampl_;
+	else if (parName.compare("None") == 0)
+		return 0;
+	else
+	{
+		INFO("Atmosphere::getPar() invalid continuation parameter label: '" << parName << "'");
+		ERROR("Atmosphere::getPar() parameter label is invalid!",__FILE__,__LINE__);
+	}
+}
+
+
 //-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getOceanBlock()
 {
@@ -1057,10 +1112,9 @@ int Atmosphere::saveStateToFile(std::string const &filename)
 	
     hid_t       file_id, group_id, dataspace_id, dataset_id;
  	hsize_t     dim_state = state_->size();
-	hsize_t     dim_par = 1;
-	int         nstat = 9;
-	herr_t      status[nstat];
-	int         si = 0;
+	hsize_t     dim_par   = 1; // writing one parameter at a time
+
+	std::vector<herr_t> status;
 	
 	// Create a new file 
 	file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -1073,41 +1127,54 @@ int Atmosphere::saveStateToFile(std::string const &filename)
 	dataset_id   = H5Dcreate2(file_id, "/State/Values", H5T_IEEE_F64LE, dataspace_id,
 							  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
+	INFO(" state ||x|| = " << getState()->norm());
 	// Write to the dataset
-	status[si++] = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-							&(*state_)[0]);	
+	status.push_back(H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+							  &(*state_)[0]));	
 
 	// Close dataset, dataspace and group
-	status[si++] = H5Dclose(dataset_id);
-	status[si++] = H5Sclose(dataspace_id );
-	status[si++] = H5Gclose(group_id);
+	status.push_back(H5Dclose(dataset_id));
+	status.push_back(H5Sclose(dataspace_id ));
+	status.push_back(H5Gclose(group_id));
 
-	// Create a new group 
-	group_id = H5Gcreate2(file_id, "/Continuation parameter", H5P_DEFAULT,
-						  H5P_DEFAULT, H5P_DEFAULT);
+	// Now we are going to write all available continuation parameters
+	group_id = H5Gcreate2(file_id, "/Parameters", H5P_DEFAULT,
+						  H5P_DEFAULT, H5P_DEFAULT);     // Create a new group 
+	std::stringstream ss;
+	double par;
+	for (auto const &parameter : allParameters_)
+	{
+		ss << "/Parameters/" << parameter;
+		dataspace_id = H5Screate_simple(1, &dim_par, NULL);  // Create data space and dataset
+		dataset_id   = H5Dcreate2(file_id, ss.str().c_str(), H5T_IEEE_F64LE,
+								  dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
-	// Create data space and dataset
-	dataspace_id = H5Screate_simple(1, &dim_par, NULL);
-	dataset_id   = H5Dcreate2(file_id, "/Continuation parameter/Value", H5T_IEEE_F64LE,
-							  dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		par = getPar(parameter);
+		status.push_back(H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+								  &par));	                 // Write
+		
+		INFO(parameter << " = " << par);
+
+		// Close everything
+		status.push_back(H5Dclose(dataset_id));
+		status.push_back(H5Sclose(dataspace_id));
+		
+		// Reset stringstream
+		ss(std::string());
+		ss.clear();
+	}
 	
-	// Write
-	status[si++] = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-							&ampl_);	
+	status.push_back(H5Gclose(group_id));
+	status.push_back(H5Fclose(file_id)); 	// Close the file
 	
-	// Close everything
-	status[si++] = H5Dclose(dataset_id);
-	status[si++] = H5Sclose(dataspace_id );
-	status[si++] = H5Gclose(group_id);
-	status[si++] = H5Fclose(file_id); 
-
 	// Check for errors
-	for (int i = 0; i != nstat; ++i)
-		if (status[i] != 0)
+	for (auto const &st : status)
+		if (st != 0)
 		{
-			WARNING("Status[" << i << "] not ok", __FILE__, __LINE__);
+			WARNING("status[" << &st - &status[0] << "] not ok", __FILE__, __LINE__);
 			return 2;
 		}
+	INFO("Writing to " << filename << " done");
 	return 0;
 }
 
@@ -1115,12 +1182,10 @@ int Atmosphere::saveStateToFile(std::string const &filename)
 int Atmosphere::loadStateFromFile(std::string const &filename)
 {
 	INFO("Loading from " << filename);
-
+	
 	hid_t    file_id, dataset_id;
-	int      nstat = 5;
-	herr_t   status[nstat];
-	int      si = 0;
-
+	std::vector<herr_t>  status;
+	
 	// Check whether file exists
 	std::ifstream file(filename);
 	if (!file)
@@ -1139,31 +1204,41 @@ int Atmosphere::loadStateFromFile(std::string const &filename)
 	
 	// Read state from dataset and close it
 	state_->assign(dim_, 0.0);
-	status[si++] = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-						   &(*state_)[0]);
-	status[si++] = H5Dclose(dataset_id);
+	status.push_back(H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+							 &(*state_)[0]));
+	status.push_back(H5Dclose(dataset_id));
 
-	// Open continuation parameter dataset
-	dataset_id = H5Dopen2(file_id, "/Continuation parameter/Value", H5P_DEFAULT);
+	INFO(" state ||x|| = " << getState()->norm());
+	// Open parameter dataset and load all parameters
+	std::stringstream ss;
+	double par;
+	for (auto const &parameter : allParameters_)
+	{
+		ss << "/Parameters/" << parameter;
+		dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT);
 
-	// Read from dataset and close it
-	status[si++] = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-						   &ampl_);
+		// Read from dataset and close it
+		status.push_back(H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+								 &par));
+		setPar(parameter, par);
 
-	// Close dataset and file
-	status[si++] = H5Dclose(dataset_id);
-	status[si++] = H5Fclose(file_id);
-	
-	INFO("            ||x|| = " << getState()->norm());
-	INFO("  parameter value = " << ampl_);
-	
+		// Close dataset 
+		status.push_back(H5Dclose(dataset_id));
+		INFO(parameter << " = " << par);
+	}
+
+	// Close file
+	status.push_back(H5Fclose(file_id));	
+
 	// Check for errors
-	for (int i = 0; i != nstat; ++i)
-		if (status[i] != 0)
+	for (auto const &st : status)
+		if (st != 0)
 		{
-			WARNING("Status[" << i << "] not ok", __FILE__, __LINE__);
+			WARNING("status[" << &st - &status[0] << "] not ok", __FILE__, __LINE__);
 			return 2;
 		}
+	
+	INFO("Loading from " << filename << " done");
 	return 0;
 }
 

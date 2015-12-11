@@ -24,6 +24,8 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	rhsView_(std::make_shared<SuperVector>(ocean->getRHS('V')->getOceanVector(),
 										   atmos->getRHS('V')->getAtmosVector())),
 	useExistingState_ (params->get("Use existing state", false)),
+	parName_          (params->get("Continuation parameter",
+								   "Combined Forcing")),
 	solvingScheme_    (params->get("Solving scheme", 'G')),
 	useScaling_       (params->get("Use scaling", false)),
 	iterGS_           (params->get("Max GS iterations", 10)),
@@ -535,9 +537,9 @@ double CoupledModel::getPar()
 	double par_atmos = atmos_->getPar();
 	if (std::abs(par_ocean - par_atmos) > 1e-8)
 	{
-		WARNING("par_ocean != par_atmos" << " ocean: " << par_ocean
-				<< " atmos: " << par_atmos
-				<< " putting maximum in both models ", __FILE__, __LINE__);
+		WARNING("par_ocean != par_atmos\n"
+				<< " ocean: " << par_ocean << '\n'
+				<< " atmos: " << par_atmos << '\n', __FILE__, __LINE__);
 		double max = std::max(par_ocean, par_atmos);
 		ocean_->setPar(max);
 		atmos_->setPar(max);
@@ -549,8 +551,8 @@ double CoupledModel::getPar()
 //------------------------------------------------------------------
 void CoupledModel::setPar(double value)
 {
-	ocean_->setPar(value);
-	atmos_->setPar(value);
+	ocean_->setPar(parName_, value);
+	atmos_->setPar(parName_, value);
 }
 
 //------------------------------------------------------------------

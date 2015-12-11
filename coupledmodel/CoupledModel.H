@@ -51,6 +51,10 @@ private:
 	// The respective in- and output files need to be set in the
 	// separate model parameters
 	bool useExistingState_;
+
+	// Determines the continuation parameter
+	// For a list see THCM::par2int()
+	std::string parName_;
 	
 	// Solving scheme
 	//   'D': decoupled

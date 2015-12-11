@@ -136,6 +136,5 @@ private:
 	void reset();
 	void info();
 	void modelInfo();
-	
 };
 #endif

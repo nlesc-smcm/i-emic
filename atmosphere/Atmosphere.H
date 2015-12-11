@@ -133,8 +133,7 @@ private:
 	bool gmresInitialized_;
 
 	// Continuation parameter
-	double    ampl_; //! amplitude of forcing 
-	double amplEnd_; //! max amplitude forcing
+	double    comb_; //! amplitude of forcing 
 
 	// Parameters	
 	double   rhoa_; //! atmospheric density \[\rho_a\]
@@ -173,6 +172,12 @@ private:
 	//! Latitudinal dependence of short-wave radiative flux:
 	//!  As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
 	std::vector<double> suna_;
+
+	// -------------------------------------------------------
+	// Continuation 
+	// -------------------------------------------------------
+	std::vector<std::string> allParameters_;
+	std::string parName_;
 
 	// Flags for loading/saving states from/to hfd5 file
 	bool loadState_;
@@ -223,9 +228,9 @@ public:
 	void setRHS(std::shared_ptr<SuperVector> rhs)
 		{ *rhs_   = *(rhs->getAtmosVector()); }
 
-	void   setPar(double value) { ampl_ = value;   }
-	double getPar()             { return ampl_;    }
-	double getParDestination()  { return amplEnd_; }
+	void   setPar(double value);
+	void   setPar(std::string parName, double value);
+	double getPar();
 
 	void test();
 	void setOceanTemperature(std::vector<double> const &sst);

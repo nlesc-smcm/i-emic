@@ -108,13 +108,10 @@ protected:
 	
 	//------------------------------------------------------------------
 	// Datamembers in charge of the continuation parameter
-	// --> only parValue should be in here...
-	int    parIdent_;    // parameter identifier (integer)
-	double parValue_;    // value of the parameter
-	double parStart_;    // its starting value
-	double parEnd_;	     // its ending value
-	double storedPar1_;  // stored value of the parameter
-	double storedPar2_;  // stored value of the parameter
+	// For a list of possible parameter names see THCM::par2int()
+	std::string parName_;
+	int         parIdent_;  // parameter identifier (integer)
+	double      parValue_;  // value of the parameter
 	
 public:
 
@@ -158,28 +155,22 @@ public:
 
 	void recomputePreconditioner() { recompPreconditioner_ = true; }
 
-	// THESE ARE OBSOLETE!!!
+	// // THESE ARE OBSOLETE!!! there is a minor dependency in the continuation
+	// storage stuff. Since we save to HDF5 we can get rid of that
 	void setState(Teuchos::RCP<SuperVector> state)
 		{ state_ = state->getOceanVector(); }
 	
 	void setRHS(Teuchos::RCP<SuperVector> rhs)
 		{ rhs_   = rhs->getOceanVector(); }
 
-	// The parameter get and set members wrap the corresponding
-	// Fortran functions. Just as in THCM, these functions
-	// may do more in the future,
-	//--> not sure if using getpardestination is ok from a design
-	//    perspective. The continuation routine should have that
-	//    information, not the model right?
-	void    setPar(double value);
+	// The parameter set members wrap the corresponding
+	// Fortran functions. We keep an internal parameter name which
+	// can be overruled here.
+	void setPar(double value);
+	void setPar(std::string parName, double value);
 
-	// Return continuation parameter or related information.
-	// Different modes   'V': return parameter value (default)
-	//                   'D': return parameter destination value
-	//                   'S': return parameter start value
-	double  getPar(char mode = 'V');
-	
-	double  getParDestination() { return parEnd_; }
+	// Return continuation parameter value
+	double getPar();	
 
 	// ! Pre and post-convergence processing
 	void preProcess();
