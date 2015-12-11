@@ -1238,8 +1238,7 @@ int THCM::par2int(std::string label)
 	else
     {
 		INFO("TCHM: Invalid continuation parameter label: '" << label << "'");
-		ERROR("THCM: Parameter label is invalid!", __FILE__, __LINE__);
-    }
+	}
 	return -1;
 }
 

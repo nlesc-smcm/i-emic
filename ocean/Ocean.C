@@ -626,6 +626,7 @@ int Ocean::saveStateToFile(std::string const &filename)
 	EpetraExt::HDF5 HDF5(*comm_);
 	HDF5.Create(filename);
 	HDF5.Write("State", *state_);
+	>>>>>>>>>>>>>>>> GET A LOOP IN HERE
 	HDF5.Write("Continuation parameter", "Value", parValue_);
 	HDF5.Write(continuationParameter_, "Value", parValue_);
 	return 0;
@@ -681,28 +682,37 @@ int Ocean::loadStateFromFile(std::string const &filename)
 	INFO("Ocean: constructor... done");
 	return 0;
 }
+
 //====================================================================
+// Adjust locally defined parameter
+// This happens when Ocean is managed directly by Continuation
 double Ocean::getPar()
 {
 	return getPar(parName_);
 }
+
 //====================================================================
 double Ocean::getPar(std::string parName)
 {
-	double thcmPar;
 	int parIdent = THCM::Instance().par2int(parName);
-	FNAME(getparcs)(&parIdent, &thcmPar);
-	if (thcmPar != parValue_)
+	if (parIdent > 0 && parIdent <= _NPAR_)
 	{
-		INFO("Ocean::getPar(): Faulty parameter synchronization");
-		INFO("              THCM: " << thcmPar);
-		INFO("             Ocean: " << parValue_);
-		INFO("     fixing this, putting our parameter in THCM");
-		FNAME(setparcs)(&parIdent, &parValue_);
+		double thcmPar;
 		FNAME(getparcs)(&parIdent, &thcmPar);
-		INFO("              THCM: " << thcmPar);
-	}					  
-	return parValue_;
+		if (thcmPar != parValue_)
+		{
+			INFO("Ocean::getPar(): Faulty parameter synchronization");
+			INFO("              THCM: " << thcmPar);
+			INFO("             Ocean: " << parValue_);
+			INFO("     fixing this, putting our parameter in THCM");
+			FNAME(setparcs)(&parIdent, &parValue_);
+			FNAME(getparcs)(&parIdent, &thcmPar);
+			INFO("        (new) THCM: " << thcmPar);
+		}
+		return parValue_;
+	}
+	else
+		return 0;
 }
 
 //====================================================================

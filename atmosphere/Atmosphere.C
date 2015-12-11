@@ -1013,16 +1013,14 @@ void Atmosphere::setPar(std::string parName, double value)
 {
 	if (parName.compare("Combined Forcing") == 0)
 		comb_ = value;
-	else if (parName.compare("None") == 0)		
 	else
-	{
-		INFO("Atmosphere::setPar() invalid continuation parameter label: '" << parName << "'");
-		ERROR("Atmosphere::setPar() parameter label is invalid!",__FILE__,__LINE__);
-	}
+		INFO("Atmosphere: parameter " << parName << " not available\n"
+			 << "  doing nothing...");
 }
-
+x
 // ---------------------------------------------------------------------------
 // Adjust locally defined parameter
+// This happens when Atmosphere is managed directly by Continuation
 double Atmosphere::getPar()
 {
 	return getPar(parName_);
@@ -1034,15 +1032,13 @@ double Atmosphere::getPar(std::string parName)
 {
 	if (parName.compare("Combined Forcing") == 0)
 		return comb_;
-	else if (parName.compare("None") == 0)
-		return 0;
 	else
 	{
-		INFO("Atmosphere::getPar() invalid continuation parameter label: '" << parName << "'");
-		ERROR("Atmosphere::getPar() parameter label is invalid!",__FILE__,__LINE__);
+		INFO("Atmosphere: parameter " << parName << " not available\n"
+			 << "  doing nothing...");
+		return 0;
 	}
 }
-
 
 //-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getOceanBlock()

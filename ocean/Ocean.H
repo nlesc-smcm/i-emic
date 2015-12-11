@@ -1,4 +1,4 @@
-//!------------------------------------------------------------------------
+//!---------------------------------------------------------------------
 /* Ocean is a model within the I-EMIC. It is a wrapper for Jonas Thies'
    Trilinos-THCM, using only a fraction of the functionality that is
    available in there.
@@ -22,7 +22,7 @@
    to be known by the interface (e.g. Continuation) that calls this class.
 
 */
-//!------------------------------------------------------------------------
+//!---------------------------------------------------------------------
 #ifndef OCEAN_H
 #define OCEAN_H
 

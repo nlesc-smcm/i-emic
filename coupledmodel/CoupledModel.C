@@ -17,12 +17,17 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	:
 	ocean_(ocean),
 	atmos_(atmos),
-	stateView_(std::make_shared<SuperVector>(ocean->getState('V')->getOceanVector(),
-											 atmos->getState('V')->getAtmosVector())),
-	solView_(std::make_shared<SuperVector>(ocean->getSolution('V')->getOceanVector(),
-										   atmos->getSolution('V')->getAtmosVector())),
-	rhsView_(std::make_shared<SuperVector>(ocean->getRHS('V')->getOceanVector(),
-										   atmos->getRHS('V')->getAtmosVector())),
+	
+	stateView_(std::make_shared<SuperVector>
+			   (ocean->getState('V')->getOceanVector(),
+				atmos->getState('V')->getAtmosVector())),
+	solView_(std::make_shared<SuperVector>
+			 (ocean->getSolution('V')->getOceanVector(),
+			  atmos->getSolution('V')->getAtmosVector())),
+	rhsView_(std::make_shared<SuperVector>
+			 (ocean->getRHS('V')->getOceanVector(),
+			  atmos->getRHS('V')->getAtmosVector())),
+	
 	useExistingState_ (params->get("Use existing state", false)),
 	parName_          (params->get("Continuation parameter",
 								   "Combined Forcing")),
@@ -30,11 +35,13 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	useScaling_       (params->get("Use scaling", false)),
 	iterGS_           (params->get("Max GS iterations", 10)),
 	toleranceGS_      (params->get("GS tolerance", 1e-1)),
+	
 	useHash_          (params->get("Use hashing", true)),
 	syncHash_(-1),
 	rhsHash_(-1),
 	jacHash_(-1),
 	syncCtr_(0),
+	
 	buildPrecEvery_   (params->get("Rebuild preconditioner stride", 1)),
 	idrSolver_(*this),
 	gmresSolver_(*this),
@@ -530,19 +537,15 @@ void CoupledModel::setRHS(std::shared_ptr<SuperVector> rhs)
 //------------------------------------------------------------------
 double CoupledModel::getPar()
 {
-	// The parameters should remain equal among the models
-	// Different continuation parameters for different models
-	// is not defined (yet).
-	double par_ocean = ocean_->getPar();
-	double par_atmos = atmos_->getPar();
+	double par_ocean = ocean_->getPar(parName_);
+	double par_atmos = atmos_->getPar(parName_);
 	if (std::abs(par_ocean - par_atmos) > 1e-8)
 	{
-		WARNING("par_ocean != par_atmos\n"
-				<< " ocean: " << par_ocean << '\n'
-				<< " atmos: " << par_atmos << '\n', __FILE__, __LINE__);
+		INFO("CoupledModel: par_ocean != par_atmos\n"
+				<< "   ocean: " << par_ocean << '\n'
+				<< "   atmos: " << par_atmos << '\n'
+				<< "   returning maximum\n");
 		double max = std::max(par_ocean, par_atmos);
-		ocean_->setPar(max);
-		atmos_->setPar(max);
 		return max;
 	}
 	return par_ocean;
