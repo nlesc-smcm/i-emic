@@ -1017,7 +1017,7 @@ void Atmosphere::setPar(std::string parName, double value)
 		INFO("Atmosphere: parameter " << parName << " not available\n"
 			 << "  doing nothing...");
 }
-x
+
 // ---------------------------------------------------------------------------
 // Adjust locally defined parameter
 // This happens when Atmosphere is managed directly by Continuation

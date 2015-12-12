@@ -626,9 +626,17 @@ int Ocean::saveStateToFile(std::string const &filename)
 	EpetraExt::HDF5 HDF5(*comm_);
 	HDF5.Create(filename);
 	HDF5.Write("State", *state_);
-	>>>>>>>>>>>>>>>> GET A LOOP IN HERE
-	HDF5.Write("Continuation parameter", "Value", parValue_);
-	HDF5.Write(continuationParameter_, "Value", parValue_);
+
+	// Interface between HDF5 and the THCM parameters,
+	// store all the (_NPAR_ = 30) THCM parameters in the HDF5 file.
+	std::string parName;
+	double parValue;
+	for (int par = 1; par <= _NPAR_; ++par)
+	{
+		parName  = THCM::Instance().int2par(par);
+		parValue = getPar(parName);
+		HDF5.Write("Parameters", parName.c_str(), parValue);
+	}
 	return 0;
 }
 
@@ -670,11 +678,20 @@ int Ocean::loadStateFromFile(std::string const &filename)
 	
 	// Import state from HDF5 into state_ datamember
 	state_->Import(*((*readState)(0)), *lin2solve, Insert);
-	
-	// Read continuation parameter and put it in THCM
-	HDF5.Read("Continuation parameter", "Value", parValue_);
-	setPar(parValue_);
-	
+
+	// Interface between HDF5 and the THCM parameters,
+	// put all the (_NPAR_ = 30) THCM parameters back in THCM.
+	std::string parName;
+	double parValue;
+	for (int par = 1; par <= _NPAR_; ++par)
+	{
+		parName  = THCM::Instance().int2par(par);
+
+		// Read continuation parameter and put it in THCM
+		HDF5.Read("Parameters", parName.c_str(), parValue);
+		setPar(parName, parValue);
+	}
+
 	double nrm;
 	state_->Norm2(&nrm);
 	INFO("     state: ||x|| = " << nrm);
@@ -684,7 +701,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
 }
 
 //====================================================================
-// Adjust locally defined parameter
+// Adjust locally defined continuation parameter
 // This happens when Ocean is managed directly by Continuation
 double Ocean::getPar()
 {
@@ -699,17 +716,7 @@ double Ocean::getPar(std::string parName)
 	{
 		double thcmPar;
 		FNAME(getparcs)(&parIdent, &thcmPar);
-		if (thcmPar != parValue_)
-		{
-			INFO("Ocean::getPar(): Faulty parameter synchronization");
-			INFO("              THCM: " << thcmPar);
-			INFO("             Ocean: " << parValue_);
-			INFO("     fixing this, putting our parameter in THCM");
-			FNAME(setparcs)(&parIdent, &parValue_);
-			FNAME(getparcs)(&parIdent, &thcmPar);
-			INFO("        (new) THCM: " << thcmPar);
-		}
-		return parValue_;
+		return thcmPar;
 	}
 	else
 		return 0;
@@ -724,13 +731,11 @@ void Ocean::setPar(double value)
 //====================================================================
 void Ocean::setPar(std::string parName, double value)
 {
+	// We only allow parameters that are available in THCM
 	int parIdent = THCM::Instance().par2int(parName);
-	if (parIdent > 0)
+	if (parIdent > 0 && parIdent <= _NPAR_)
 	{
 		parValue_ = value;
 		FNAME(setparcs)(&parIdent, &value);
 	}
-	else
-		ERROR("Ocean: too afraid to put this in THCM "<< parIdent,
-			  __FILE__, __LINE__);
 }
