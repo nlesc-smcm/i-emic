@@ -559,25 +559,6 @@ void CoupledModel::setPar(double value)
 }
 
 //------------------------------------------------------------------
-double CoupledModel::getParDestination()
-{
-	// The parameters should remain equal among the models
-	// Different continuation parameters for different models
-	// is not defined (yet).
-	double parDest_ocean = ocean_->getParDestination();
-	double parDest_atmos = atmos_->getParDestination();
-	if (std::abs(parDest_ocean - parDest_atmos) > 1e-8)
-	{
-		WARNING("parDest_ocean != parDest_atmos !!",
-				__FILE__, __LINE__);
- 		INFO("ocean: " << parDest_ocean);
-		INFO("atmos: " << parDest_atmos);
-		return -1;
-	}
-	return parDest_ocean;
-}
-
-//------------------------------------------------------------------
 void CoupledModel::preProcess()
 {
 	ocean_->preProcess();

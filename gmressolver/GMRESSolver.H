@@ -432,26 +432,21 @@ LLSsolve(int last, Matrix &H, STLVector &s)
 		PRINT("  " << last << "  " << exportH.size(),  verbosity_);
 		PRINT("  testing exportH -----", verbosity_);
 	}
-	
-	char trans = 'N';
 
-	int  nrhs  =  1;
-	int  lda   =  M;
-	int  ldb   =  M;
-	int  lwork =  4*N;  // some size needed by lapack
-	int  ipiv[N];
-
+	// Variables required by lapack:
+	char    trans = 'N';
+	int     nrhs  =  1;
+	int     lda   =  M;
+	int     ldb   =  M;
+	int     lwork =  4*N;  // some size needed by lapack
+	int     info;
 	double  work[lwork];
-	
-	int  info;
 	
 	// lapack LLS solver
 	dgels_(&trans, &M, &N, &nrhs, &exportH[0], &lda,
 		   &s[0], &ldb, work, &lwork, &info);
-
+	
 	PRINT("  LLS: DGELS_ info = " << info, verbosity_ - 10);
-
-//	dgesv_(&M, &nrhs, &exportH[0], &lda, ipiv, &s[0], &ldb, &info);		   
 }
 
 //*****************************************************************************

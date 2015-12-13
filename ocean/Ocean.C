@@ -628,7 +628,7 @@ int Ocean::saveStateToFile(std::string const &filename)
 	HDF5.Write("State", *state_);
 
 	// Interface between HDF5 and the THCM parameters,
-	// store all the (_NPAR_ = 30) THCM parameters in the HDF5 file.
+	// store all the (_NPAR_ = 30) THCM parameters in an HDF5 file.
 	std::string parName;
 	double parValue;
 	for (int par = 1; par <= _NPAR_; ++par)
@@ -709,7 +709,7 @@ double Ocean::getPar()
 }
 
 //====================================================================
-double Ocean::getPar(std::string parName)
+double Ocean::getPar(std::string const &parName)
 {
 	int parIdent = THCM::Instance().par2int(parName);
 	if (parIdent > 0 && parIdent <= _NPAR_)

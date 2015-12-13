@@ -170,7 +170,8 @@ public:
 	void setPar(std::string parName, double value);
 
 	// Return continuation parameter value
-	double getPar();	
+	double getPar();
+	double getPar(std::string const &parName);
 
 	// ! Pre and post-convergence processing
 	void preProcess();

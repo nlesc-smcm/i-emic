@@ -56,7 +56,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	loadState_       (params->get("Load state", false)),
 	saveState_       (params->get("Save state", false)),
 	inputFile_       (params->get("Input file", "atmos.h5")),
-	outputFile_      (params->get("Output file", "atmos.h5")),
+	outputFile_      (params->get("Output file", "atmos.h5"))
 {
 	INFO("Atmosphere: constructor...");
 
@@ -1009,7 +1009,7 @@ void Atmosphere::setPar(double value)
 
 // ---------------------------------------------------------------------------
 // Adjust specific parameter
-void Atmosphere::setPar(std::string parName, double value)
+void Atmosphere::setPar(std::string const &parName, double value)
 {
 	if (parName.compare("Combined Forcing") == 0)
 		comb_ = value;
@@ -1028,7 +1028,7 @@ double Atmosphere::getPar()
 
 // ---------------------------------------------------------------------------
 // Adjust parameter
-double Atmosphere::getPar(std::string parName)
+double Atmosphere::getPar(std::string const &parName)
 {
 	if (parName.compare("Combined Forcing") == 0)
 		return comb_;
@@ -1156,7 +1156,7 @@ int Atmosphere::saveStateToFile(std::string const &filename)
 		status.push_back(H5Sclose(dataspace_id));
 		
 		// Reset stringstream
-		ss(std::string());
+		ss.str("");
 		ss.clear();
 	}
 	

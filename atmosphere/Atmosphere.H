@@ -132,8 +132,6 @@ private:
 	GMRESSolver<Atmosphere, std::shared_ptr<SuperVector> > gmresSolver_;
 	bool gmresInitialized_;
 
-	// Continuation parameter
-	double    comb_; //! amplitude of forcing 
 
 	// Parameters	
 	double   rhoa_; //! atmospheric density \[\rho_a\]
@@ -178,6 +176,7 @@ private:
 	// -------------------------------------------------------
 	std::vector<std::string> allParameters_;
 	std::string parName_;
+	double      comb_; //! combined forcing
 
 	// Flags for loading/saving states from/to hfd5 file
 	bool loadState_;
@@ -228,9 +227,11 @@ public:
 	void setRHS(std::shared_ptr<SuperVector> rhs)
 		{ *rhs_   = *(rhs->getAtmosVector()); }
 
-	void   setPar(double value);
-	void   setPar(std::string parName, double value);
-	double getPar();
+	// Getters and setter for the continuation parameters
+	void    setPar(double value);
+	void    setPar(std::string const &parName, double value);
+	double  getPar();
+	double  getPar(std::string const &parName);
 
 	void test();
 	void setOceanTemperature(std::vector<double> const &sst);

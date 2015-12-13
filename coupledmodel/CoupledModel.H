@@ -43,8 +43,8 @@ private:
 
 	// Combined state, right hand side and solution
 	std::shared_ptr<SuperVector> stateView_;
-	std::shared_ptr<SuperVector> rhsView_;
 	std::shared_ptr<SuperVector> solView_;
+	std::shared_ptr<SuperVector> rhsView_;
 
 	// Let the models load existing states during initialization
 	// saving is done from the postprocess operation
@@ -131,12 +131,13 @@ public:
 	void setState(std::shared_ptr<SuperVector> state);
 	void setRHS(std::shared_ptr<SuperVector> rhs);
 
+	// Getters and setters for the continuation parameter
+	//  Used by Continuation class
 	void   setPar(double value);
 	double getPar();
-	double getParDestination();
 
-	// A controlling scheme may allow some pre-processing, for instance at the
-	// start of a Newton process.
+	// A controlling scheme might allow some pre-processing,
+	// for instance at the start of a Newton process.
 	void preProcess();
 	
 	// Similarly we can supply some post-processing, for instance when
