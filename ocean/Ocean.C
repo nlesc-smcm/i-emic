@@ -50,15 +50,16 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
 	loadState_           (oceanParamList->get("Load state", false)),
 	saveState_           (oceanParamList->get("Save state", false)),
+
+// continuation
 	parName_             (oceanParamList->get("Continuation parameter",
-											  "Combined Forcing")),
-	parValue_            (0)
+											  "Combined Forcing"))
 {
 	INFO("Ocean: constructor...");	
 	
 	Teuchos::ParameterList &thcmList =
 		oceanParamList->sublist("THCM");
-
+	
 	// Create THCM object
 	//  THCM is implemented as a Singleton, which allows only a single
 	//  instance at a time. The Ocean class can access THCM with a call
@@ -75,7 +76,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	N_ = domain_->GlobalN();
  	M_ = domain_->GlobalM();
 	L_ = domain_->GlobalL();
-	
+
 	// If specified we load a pre-existing state and parameter (x,l)
 	if (loadState_)
 		loadStateFromFile(inputFile_);
@@ -106,9 +107,6 @@ void Ocean::initializeOcean()
 	// Initialize a few datamembers
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
-	
-	// Put the correct parameter value in THCM
-	setPar(parValue_);	
 }
 
 //====================================================================
@@ -619,8 +617,7 @@ int Ocean::saveStateToFile(std::string const &filename)
 	
 	double nrm;
 	state_->Norm2(&nrm);
-	INFO("     state: ||x|| = " << nrm);
-	INFO("  parameter value = " << parValue_);
+	INFO("   state: ||x|| = " << nrm);
 
  	// Write state, map and continuation parameter
 	EpetraExt::HDF5 HDF5(*comm_);
@@ -635,8 +632,10 @@ int Ocean::saveStateToFile(std::string const &filename)
 	{
 		parName  = THCM::Instance().int2par(par);
 		parValue = getPar(parName);
+		INFO("   " << parName << " = " << parValue);
 		HDF5.Write("Parameters", parName.c_str(), parValue);
 	}
+	INFO("Writing to " << filename << " done");
 	return 0;
 }
 
@@ -679,6 +678,10 @@ int Ocean::loadStateFromFile(std::string const &filename)
 	// Import state from HDF5 into state_ datamember
 	state_->Import(*((*readState)(0)), *lin2solve, Insert);
 
+	double nrm;
+	state_->Norm2(&nrm);
+	INFO("   state: ||x|| = " << nrm);
+	
 	// Interface between HDF5 and the THCM parameters,
 	// put all the (_NPAR_ = 30) THCM parameters back in THCM.
 	std::string parName;
@@ -686,17 +689,13 @@ int Ocean::loadStateFromFile(std::string const &filename)
 	for (int par = 1; par <= _NPAR_; ++par)
 	{
 		parName  = THCM::Instance().int2par(par);
-
+		
 		// Read continuation parameter and put it in THCM
 		HDF5.Read("Parameters", parName.c_str(), parValue);
 		setPar(parName, parValue);
+		INFO("   " << parName << " = " << parValue);
 	}
-
-	double nrm;
-	state_->Norm2(&nrm);
-	INFO("     state: ||x|| = " << nrm);
-	INFO("  parameter value = " << parValue_);
-	INFO("Ocean: constructor... done");
+	INFO("Loading from " << filename << " done");
 	return 0;
 }
 
@@ -734,8 +733,5 @@ void Ocean::setPar(std::string parName, double value)
 	// We only allow parameters that are available in THCM
 	int parIdent = THCM::Instance().par2int(parName);
 	if (parIdent > 0 && parIdent <= _NPAR_)
-	{
-		parValue_ = value;
 		FNAME(setparcs)(&parIdent, &value);
-	}
 }

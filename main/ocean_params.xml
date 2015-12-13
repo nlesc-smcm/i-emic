@@ -7,6 +7,10 @@
   <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="oceantmp.h5" />
   <Parameter name="Output file" type="string" value="oceantmp.h5" />
+
+  <!-- Continuation parameter -->
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+  
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -141,7 +145,7 @@
       <!-- PAR(18), the Biot number                             -->
       <Parameter name="Nonlinear Factor" type="double" value="25.0"/>
       <!-- PAR(19), Salt/Wind/Temperature forcing factor           -->
-      <Parameter name="Combined Forcing" type="double" value="1.0"/>
+      <Parameter name="Combined Forcing" type="double" value="0.0"/>
       <!-- convective adjustment -->
       <Parameter name="P_VC" type="double" value="10.0"/>
       <!-- mixing parameters -->

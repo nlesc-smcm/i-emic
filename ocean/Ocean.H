@@ -107,11 +107,9 @@ protected:
 	bool saveState_;
 	
 	//------------------------------------------------------------------
-	// Datamembers in charge of the continuation parameter
-	// For a list of possible parameter names see THCM::par2int()
+	// Continuation parameter name.
+	// For a list of possible names see THCM::par2int()
 	std::string parName_;
-	int         parIdent_;  // parameter identifier (integer)
-	double      parValue_;  // value of the parameter
 	
 public:
 

@@ -51,7 +51,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	parName_         (params->get("Continuation parameter",
 								  "Combined Forcing")),
 	comb_            (0.0),                      // combined forcing
-	
+		
 // input/output
 	loadState_       (params->get("Load state", false)),
 	saveState_       (params->get("Save state", false)),
@@ -1096,7 +1096,7 @@ void Atmosphere::preProcess()
 void Atmosphere::postProcess()
 {
 	if (saveState_)
-		saveStateToFile("atmos.h5");
+		saveStateToFile(outputFile_);
 	
 	write(*state_, "atmos_state.txt");       
 }
@@ -1123,7 +1123,8 @@ int Atmosphere::saveStateToFile(std::string const &filename)
 	dataset_id   = H5Dcreate2(file_id, "/State/Values", H5T_IEEE_F64LE, dataspace_id,
 							  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
-	INFO(" state ||x|| = " << getState()->norm());
+	INFO("   state: ||x|| = " << getState()->norm());
+
 	// Write to the dataset
 	status.push_back(H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
 							  &(*state_)[0]));	
@@ -1149,7 +1150,7 @@ int Atmosphere::saveStateToFile(std::string const &filename)
 		status.push_back(H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
 								  &par));	                 // Write
 		
-		INFO(parameter << " = " << par);
+		INFO("   " << parameter << " = " << par);
 
 		// Close everything
 		status.push_back(H5Dclose(dataset_id));
@@ -1200,11 +1201,11 @@ int Atmosphere::loadStateFromFile(std::string const &filename)
 	
 	// Read state from dataset and close it
 	state_->assign(dim_, 0.0);
-	status.push_back(H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-							 &(*state_)[0]));
+	status.push_back(H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL,
+							 H5S_ALL, H5P_DEFAULT, &(*state_)[0]));
 	status.push_back(H5Dclose(dataset_id));
-
-	INFO(" state ||x|| = " << getState()->norm());
+	
+	INFO("   state: ||x|| = " << getState()->norm());
 	// Open parameter dataset and load all parameters
 	std::stringstream ss;
 	double par;
@@ -1214,13 +1215,13 @@ int Atmosphere::loadStateFromFile(std::string const &filename)
 		dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT);
 
 		// Read from dataset and close it
-		status.push_back(H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-								 &par));
+		status.push_back(H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL,
+								 H5S_ALL, H5P_DEFAULT, &par));
 		setPar(parameter, par);
 
 		// Close dataset 
 		status.push_back(H5Dclose(dataset_id));
-		INFO(parameter << " = " << par);
+		INFO("   " << parameter << " = " << par);
 	}
 
 	// Close file
@@ -1233,7 +1234,6 @@ int Atmosphere::loadStateFromFile(std::string const &filename)
 			WARNING("status[" << &st - &status[0] << "] not ok", __FILE__, __LINE__);
 			return 2;
 		}
-	
 	INFO("Loading from " << filename << " done");
 	return 0;
 }
