@@ -112,6 +112,7 @@ void CoupledModel::synchronize()
 	TIMER_STOP("CoupledModel: synchronize...");
 }
 
+//------------------------------------------------------------------
 void CoupledModel::synchronizeLandmask()
 {
 	// Get the landmask used in the ocean
@@ -539,16 +540,12 @@ double CoupledModel::getPar()
 {
 	double par_ocean = ocean_->getPar(parName_);
 	double par_atmos = atmos_->getPar(parName_);
-	if (std::abs(par_ocean - par_atmos) > 1e-8)
-	{
-		INFO("CoupledModel: par_ocean != par_atmos\n"
-				<< "   ocean: " << par_ocean << '\n'
-				<< "   atmos: " << par_atmos << '\n'
-				<< "   returning maximum\n");
-		double max = std::max(par_ocean, par_atmos);
-		return max;
-	}
-	return par_ocean;
+
+	// For the case that the internal parameters are not the same
+	// we return the maximum.
+	// This happens when we perform continuations in parameters that
+	// do not exist in all models. 
+	return std::max(par_ocean, par_atmos);
 }
 
 //------------------------------------------------------------------
@@ -585,10 +582,6 @@ void CoupledModel::postProcess()
 // This is a copy of the code in main.C --> should be factorized
 void CoupledModel::printProfile(ProfileType profile)	
 {
-	if (timerStack.empty() == false)
-		WARNING("Unequal amount of TIMER_START and TIMER_STOP uses",
-				__FILE__, __LINE__);
-	
 	std::ostringstream profilefile("profile_output");   // setting up a filename
 	std::ofstream file(profilefile.str().c_str());      // setup output file
 

@@ -1013,9 +1013,7 @@ void Atmosphere::setPar(std::string const &parName, double value)
 {
 	if (parName.compare("Combined Forcing") == 0)
 		comb_ = value;
-	else
-		INFO("Atmosphere: parameter " << parName << " not available\n"
-			 << "  doing nothing...");
+	// If parameter not available we take no action
 }
 
 // ---------------------------------------------------------------------------
@@ -1032,12 +1030,8 @@ double Atmosphere::getPar(std::string const &parName)
 {
 	if (parName.compare("Combined Forcing") == 0)
 		return comb_;
-	else
-	{
-		INFO("Atmosphere: parameter " << parName << " not available\n"
-			 << "  doing nothing...");
+	else // If parameter not available we return 0
 		return 0;
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1206,32 +1200,43 @@ int Atmosphere::loadStateFromFile(std::string const &filename)
 	status.push_back(H5Dclose(dataset_id));
 	
 	INFO("   state: ||x|| = " << getState()->norm());
+	
 	// Open parameter dataset and load all parameters
 	std::stringstream ss;
 	double par;
 	for (auto const &parameter : allParameters_)
 	{
 		ss << "/Parameters/" << parameter;
-		dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT);
 
-		// Read from dataset and close it
+		// Open dataset
+		dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT);
+		
+		// Read from dataset
 		status.push_back(H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL,
 								 H5S_ALL, H5P_DEFAULT, &par));
-		setPar(parameter, par);
 
+		if (status.back() < 0)
+		{
+			WARNING("read failed " << status.back(), __FILE__, __LINE__);
+			continue;
+		}
+		
+		setPar(parameter, par);
+		
 		// Close dataset 
 		status.push_back(H5Dclose(dataset_id));
 		INFO("   " << parameter << " = " << par);
 	}
-
+	
 	// Close file
 	status.push_back(H5Fclose(file_id));	
-
+	
 	// Check for errors
 	for (auto const &st : status)
 		if (st != 0)
 		{
-			WARNING("status[" << &st - &status[0] << "] not ok", __FILE__, __LINE__);
+			WARNING("status[" << &st - &status[0] << "] not ok",
+					__FILE__, __LINE__);
 			return 2;
 		}
 	INFO("Loading from " << filename << " done");

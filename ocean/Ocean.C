@@ -7,6 +7,7 @@
 #include <Epetra_Time.h>
 
 #include <EpetraExt_HDF5.h>
+#include <EpetraExt_Exception.h>
 
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
@@ -691,7 +692,16 @@ int Ocean::loadStateFromFile(std::string const &filename)
 		parName  = THCM::Instance().int2par(par);
 		
 		// Read continuation parameter and put it in THCM
-		HDF5.Read("Parameters", parName.c_str(), parValue);
+		try
+		{
+			HDF5.Read("Parameters", parName.c_str(), parValue);
+		}
+		catch (EpetraExt::Exception &e)
+		{
+			e.Print();
+			continue;
+		}
+		
 		setPar(parName, parValue);
 		INFO("   " << parName << " = " << parValue);
 	}
@@ -710,6 +720,7 @@ double Ocean::getPar()
 //====================================================================
 double Ocean::getPar(std::string const &parName)
 {
+	// We only allow parameters that are available in THCM
 	int parIdent = THCM::Instance().par2int(parName);
 	if (parIdent > 0 && parIdent <= _NPAR_)
 	{
@@ -717,7 +728,7 @@ double Ocean::getPar(std::string const &parName)
 		FNAME(getparcs)(&parIdent, &thcmPar);
 		return thcmPar;
 	}
-	else
+	else  // If parameter not available we return 0
 		return 0;
 }
 
