@@ -593,7 +593,6 @@ std::shared_ptr<std::vector<int> > Ocean::getLandMask()
 //=====================================================================
 void Ocean::writeFortFiles()
 {	
-	// This function may break on a distributed memory system.
 	Teuchos::RCP<Epetra_MultiVector> solution = Utils::Gather(*state_, 0);
 	int filename = 3;
 	int label    = 2;
@@ -601,12 +600,18 @@ void Ocean::writeFortFiles()
 	double *solutionArray = new double[length]; 
 	if (comm_->MyPID() == 0)
 	{
-		std::cout << "Writing to fort." << filename
+		std::cout << "Writing to fort." << filename 
 				  << " at label " << label << "." << std::endl;
 
 		// Using operator() to access first EpetraVector in multivector
 		(*solution)(0)->ExtractCopy(solutionArray); //  
 		FNAME(write_data)(solutionArray, &filename, &label);
+
+		std::stringstream ss;
+		ss << "state" << std::setprecision(8) << getPar(parName_);
+		std::ifstream src("fort.3", std::ios::binary);
+		std::ofstream dst(ss.str(), std::ios::binary);
+		dst << src.rdbuf();
 	}
 	delete [] solutionArray;
 }

@@ -78,7 +78,7 @@ maxval = max(max(img));
 contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
 imagesc(RtD*x,RtD*(y),img,'AlphaData',.5); hold on
 image(RtD*x,RtD*(y),srf,'AlphaData',.9); hold on
-contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',2); hold off;
+contour(RtD*x,RtD*(y),img,40,'Visible', 'on','linewidth',2); hold off;
 colorbar
 caxis([minval,maxval])
 title('Barotropic Streamfunction');

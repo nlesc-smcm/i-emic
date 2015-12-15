@@ -6,7 +6,7 @@
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean.h5" />
-  <Parameter name="Output file" type="string" value="oceantmp.h5" />
+  <Parameter name="Output file" type="string" value="ocean.h5" />
 
   <!-- Continuation parameter -->
   <!-- Options:  "Combined Forcing" -->
@@ -35,9 +35,9 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="32"/>
+    <Parameter name="Global Grid-Size n" type="int" value="16"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="32"/>
+    <Parameter name="Global Grid-Size m" type="int" value="16"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="16"/>
 
@@ -53,7 +53,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_natl32"/>
+    <Parameter name="Land Mask" type="string" value="mask_natl16"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
