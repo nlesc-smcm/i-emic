@@ -42,6 +42,10 @@ srf(:,:,3) = (1-greyness*(surfm'));
 
 [qz,dfzt,dfzw] = gridstretch(zw);
 
+writerObj = VideoWriter( ['movie.avi'],'Motion JPEG AVI');
+writerObj.FrameRate = 15;
+writerObj.Quality = 90;
+open(writerObj);
 for file = 1:numel(filenames)
   %% - READ SOLUTION - -------------------------------------------------
 
@@ -82,12 +86,16 @@ for file = 1:numel(filenames)
 
   Tp = T(:,:,l);
   temp = flipud(T0 + Tp');
-  contourf(RtD*x,RtD*y,T0+Tp',15); hold on
+  contourf(RtD*x,RtD*y,T0+Tp',40); hold on
   % imagesc(RtD*x,RtD*y,temp); hold on
   colorbar
+  caxis([2,22]);
   contour(RtD*x,RtD*y,T0+1e-4*(surfm'),1,'k-','linewidth',2); hold off
-  title(['Surface Temperature ', filenames{file} ]);
+  title(['Surface Temperature ', filenames{file}], 'interpreter', 'none');
   xlabel('Longitude');
   ylabel('Latitude');
-  drawnow
+  %----------------------------------
+  frame = getframe(gcf);
+  writeVideo(writerObj, frame);
 end
+close(writerObj);
