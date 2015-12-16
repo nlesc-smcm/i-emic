@@ -1116,7 +1116,7 @@ void Atmosphere::postProcess()
 	
 	// Copy state
 	std::stringstream ss;
-	ss << "atmos_state_par" << paridx << "_"
+	ss << "atmos_state_par" << paridx << "_" << std::setfill('_')
 	   << std::setprecision(4)  << std::setw(6) << getPar(parName_);
 	INFO("copying atmos_state.txt to " << ss.str());
 	std::ifstream src("atmos_state.txt", std::ios::binary);
