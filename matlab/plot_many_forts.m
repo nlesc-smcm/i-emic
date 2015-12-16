@@ -1,9 +1,9 @@
 
 % Create array of strings with filenames of the states
-[s,statenames] = system('ls state[0-9]* | sed "s/ / /" ')
+[s,statenames] = system('ls state*[0-9]* | sed "s/ / /" ')
 newlines = find(statenames == char(10));
 
-filenames = []
+filenames = [];
 begin = 1;
 k = 1;
 for i = 1:numel(statenames)
@@ -14,7 +14,7 @@ for i = 1:numel(statenames)
   end
 end
 
-filenames; pause(3)
+filenames
 fprintf(1,'----------------------------------------------\n')
 
 %% - DEFINE CONSTANTS - ----------------------------------------------
@@ -42,11 +42,11 @@ srf(:,:,3) = (1-greyness*(surfm'));
 
 [qz,dfzt,dfzw] = gridstretch(zw);
 
-for k = 1:numel(filenames)
+for file = 1:numel(filenames)
   %% - READ SOLUTION - -------------------------------------------------
 
   [lab icp par xl xlp det sig sol solup soleig] = ...
-  readfort3(la,filenames{k});
+  readfort3(la,filenames{file});
 
   %% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
   [u,v,w,p,T,S] = extractsol(sol);
@@ -80,19 +80,14 @@ for k = 1:numel(filenames)
     end
   end
 
-  %% - PLOT THE RESULTS - ----------------------------------------------
-  figure(1)
-  img = PSIB(2:end,:)';
-  minval = min(min(img));
-  maxval = max(max(img));
-  contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
-  imagesc(RtD*x,RtD*(y),img,'AlphaData',.5); hold on
-  image(RtD*x,RtD*(y),srf,'AlphaData',.9); hold on
-  contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',2); hold off;
+  Tp = T(:,:,l);
+  temp = flipud(T0 + Tp');
+  contourf(RtD*x,RtD*y,T0+Tp',15); hold on
+  % imagesc(RtD*x,RtD*y,temp); hold on
   colorbar
-  caxis([minval,maxval])
-  title('Barotropic Streamfunction');
-  xlabel('Longitude')
-  ylabel('Latitude')
+  contour(RtD*x,RtD*y,T0+1e-4*(surfm'),1,'k-','linewidth',2); hold off
+  title(['Surface Temperature ', filenames{file} ]);
+  xlabel('Longitude');
+  ylabel('Latitude');
   drawnow
 end

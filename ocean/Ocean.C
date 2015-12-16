@@ -610,9 +610,10 @@ void Ocean::writeFortFiles()
 		
 		// Copy state
 		std::stringstream ss;
-		ss << "state" << std::setprecision(4) << std::setfill('_')
+		ss << "ocean_state_par" << std::setprecision(4) << std::setfill('_')
+		   << std::setw(2) << THCM::Instance().par2int(parName_) << "_"
 		   << std::setw(6) << getPar(parName_);
-		std::cout << "copying fort.3 to " << ss.str() << std::endl;
+		INFO("copying fort.3 to " << ss.str());
 		std::ifstream src("fort.3", std::ios::binary);
 		std::ofstream dst(ss.str(), std::ios::binary);
 		dst << src.rdbuf();

@@ -1103,7 +1103,26 @@ void Atmosphere::postProcess()
 	if (saveState_)
 		saveStateToFile(outputFile_);
 	
-	write(*state_, "atmos_state.txt");       
+	write(*state_, "atmos_state.txt");
+
+	// get parameter idx
+	size_t paridx;
+	for (size_t i = 0; i != allParameters_.size(); ++i)
+		if (allParameters_[i].compare(parName_) == 0)
+		{
+			paridx = i;
+			break;
+		}
+	
+	// Copy state
+	std::stringstream ss;
+	ss << "atmos_state_par" << paridx << "_"
+	   << std::setprecision(4)  << std::setw(6) << getPar(parName_);
+	INFO("copying atmos_state.txt to " << ss.str());
+	std::ifstream src("atmos_state.txt", std::ios::binary);
+	std::ofstream dst(ss.str(), std::ios::binary);
+	dst << src.rdbuf();
+
 }
 
 //-----------------------------------------------------------------------------
@@ -1228,7 +1247,8 @@ int Atmosphere::loadStateFromFile(std::string const &filename)
 
 		if (status.back() < 0)
 		{
-			WARNING("read failed " << status.back(), __FILE__, __LINE__);
+			WARNING("read failed: "<< status.back() << " " << ss.str().c_str(),
+					__FILE__, __LINE__);
 			continue;
 		}
 		
@@ -1237,6 +1257,10 @@ int Atmosphere::loadStateFromFile(std::string const &filename)
 		// Close dataset 
 		status.push_back(H5Dclose(dataset_id));
 		INFO("   " << parameter << " = " << par);
+
+		// Reset stringstream
+		ss.str("");
+		ss.clear();
 	}
 	
 	// Close file

@@ -76,7 +76,7 @@
             do i = 1, n
                do XX = 1,nun
                   row = find_row2(i,j,k,XX)
-                  write(ofile,999) u(row),up(row),(w(row,j2),j2=1,nf)
+                  write(ofile,999) u(row)!,up(row),(w(row,j2),j2=1,nf)
                enddo
             enddo
          enddo
