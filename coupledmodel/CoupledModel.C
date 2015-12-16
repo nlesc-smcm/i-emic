@@ -56,6 +56,10 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 		status += ocean_->loadState();
 		INFO("CoupledModel load status = " << status);
 	}
+
+	// Let the sub-models know our continuation parameter
+	ocean_->setParName(parName_);	
+	atmos_->setParName(parName_);
 	
 	// Get the contribution of the atmosphere to the ocean in the Jacobian
 	B_     = ocean_->getAtmosBlock();

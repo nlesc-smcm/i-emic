@@ -163,9 +163,10 @@ public:
 
 	// The parameter set members wrap the corresponding
 	// Fortran functions. We keep an internal parameter name which
-	// can be overruled here.
+	// can be overwritten here.
 	void setPar(double value);
-	void setPar(std::string parName, double value);
+	void setPar(std::string const &parName, double value);
+	void setParName(std::string const &parName) { parName_ = parName; }
 
 	// Return continuation parameter value
 	double getPar();

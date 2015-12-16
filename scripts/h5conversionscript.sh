@@ -1,4 +1,4 @@
-parameterfile=parameter
+parameterfile=.parameter
 
 h5dump $1 | grep -n '(0):' | grep 8: | sed 's/[0-9].*)://' > $parameterfile
 backup=new_$1

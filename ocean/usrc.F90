@@ -911,7 +911,7 @@ SUBROUTINE stpnt!(un)
   !     PARAMETERS:
   !*******************************************************
   ! when data are used, tmax comes from windfit
-  ! otherwise tmax comes from wfun
+  ! otherwise tmax comes from wfun... 
 
   par(AL_T)   =  0.1/(2*omegadim*rhodim*hdim*udim*dz*dfzT(l))
   par(RAYL)   =  alphaT*gdim*hdim/(2*omegadim*udim*r0dim)	! Ra
@@ -919,22 +919,22 @@ SUBROUTINE stpnt!(un)
   par(EK_H)   =  ah/(2*omegadim*r0dim*r0dim)	            ! E_H
   par(ROSB)   =  udim/(2*omegadim*r0dim)                    ! Rossby Number
   par(HMTP)   =  0.0
-  par(SUNP)   =  1.0
+  par(SUNP)   =  0.0
   par(PE_H)   =  kappah/(udim*r0dim)            ! P_H0
   par(PE_V)   =  kappav*r0dim/(udim*hdim*hdim)  ! P_V0
-  par(P_VC)   =  2.5e+04*par(PE_V)   !5.0       ! P_VC
-  par(LAMB)   =  alphaS/alphaT  ! lambda
-  par(SALT)   =  0.0            ! gamma
-  par(WIND)   =  1.0            ! wind h
-  par(TEMP)   =  0.0            ! eta_T
+  par(P_VC)   =  2.5e+04*par(PE_V)   ! 5.0      ! P_VC
+  par(LAMB)   =  alphaS/alphaT     ! lambda
+  par(SALT)   =  0.0               ! gamma
+  par(WIND)   =  0.0               ! wind h
+  par(TEMP)   =  0.0               ! eta_T
   par(BIOT)   =  r0dim/(75.*3600.*24.*udim) ! nonlinearity in T,S equations
-  par(COMB)   =  0.0          ! combined continuation
+  par(COMB)   =  1.0          ! combined continuation
   par(NLES)   =  0.0
   par(CMPR)   =  0.0
   par(ALPC)   =  1.0
   par(ENER)   =  1.0e+02
   par(MIXP)   =  0.0	   ! ATvS-Mix
-  par(MKAP)   =  0.0       ! gent-Mcwilliams  ! ATvS-Mix
+  par(MKAP)   =  0.0       ! Gent-Mcwilliams  ! ATvS-Mix
   par(SPL1)   =  2.0e+03   ! 1.25  !tanh      ! ATvS-Mix
   par(SPL2)   =  0.01      ! neutral physics
 

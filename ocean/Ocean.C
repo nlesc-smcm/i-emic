@@ -85,7 +85,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 		state_->PutScalar(0.0);
 
 	// Now that we have a state and a parameter we can initialize more datamembers
-	initializeOcean();	
+	initializeOcean();
+	
 	INFO("Ocean: constructor... done");
 }
 
@@ -606,9 +607,12 @@ void Ocean::writeFortFiles()
 		// Using operator() to access first EpetraVector in multivector
 		(*solution)(0)->ExtractCopy(solutionArray); //  
 		FNAME(write_data)(solutionArray, &filename, &label);
-
+		
+		// Copy state
 		std::stringstream ss;
-		ss << "state" << std::setprecision(8) << getPar(parName_);
+		ss << "state" << std::setprecision(4) << std::setfill('_')
+		   << std::setw(6) << getPar(parName_);
+		std::cout << "copying fort.3 to " << ss.str() << std::endl;
 		std::ifstream src("fort.3", std::ios::binary);
 		std::ofstream dst(ss.str(), std::ios::binary);
 		dst << src.rdbuf();
@@ -744,7 +748,7 @@ void Ocean::setPar(double value)
 }
 
 //====================================================================
-void Ocean::setPar(std::string parName, double value)
+void Ocean::setPar(std::string const &parName, double value)
 {
 	// We only allow parameters that are available in THCM
 	int parIdent = THCM::Instance().par2int(parName);

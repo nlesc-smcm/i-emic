@@ -209,7 +209,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	int dof = _NUN_; // number of unknowns, defined in THCMdefs.H
 
 	// construct an object to decompose the domain:
-	domain = Teuchos::rcp(new TRIOS::Domain(n, m, l, dof, xmin, xmax, ymin, ymax,
+	domain = Teuchos::rcp(new TRIOS::Domain(n, m, l, dof, xmin, xmax, ymin, ymax, 
 											periodic, hdim, Comm));
 
 	// perform a 2D decomposition of domain into rectangular boxes
@@ -1208,7 +1208,7 @@ int THCM::par2int(std::string label)
 	else if (label == "RESC")                            return RESC;
 	else if (label == "SPL1")                            return SPL1;
 	else if (label == "Homotopy")                        return HMTP;
-	else if (label == "Sun")                             return SUNP;
+	else if (label == "Solar Forcing")                   return SUNP;
 	else if (label == "Vertical Peclet-Number")          return PE_V;
 	else if (label == "Horizontal Peclet-Number")        return PE_H;
 	else if (label == "P_VC")                            return P_VC;
@@ -1270,7 +1270,7 @@ std::string THCM::int2par(int index)
 	else if (index==RESC)   label = "RESC";
 	else if (index==SPL1)   label = "SPL1";
 	else if (index==HMTP)   label = "Homotopy";
-	else if (index==SUNP)   label = "Sun";
+	else if (index==SUNP)   label = "Solar Forcing";
 	else if (index==PE_V)   label = "Vertical Peclet-Number";
 	else if (index==PE_H)   label = "Horizontal Peclet-Number";
 	else if (index==SALT)   label = "Salinity Forcing";

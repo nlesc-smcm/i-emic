@@ -12,27 +12,27 @@
 
 #include <hdf5.h>
 
-//---------------------------------------------------------------------------
+//==================================================================
 // Constructor, specify horizontal grid dimensions
 Atmosphere::Atmosphere(ParameterList params)
 	:
 	params_          (params),
 
-// grid	
+// grid ------------------------------------------------------------------
 	n_               (params->get("Global Grid-Size n", 16)),
 	m_               (params->get("Global Grid-Size m", 16)),
 	l_               (params->get("Global Grid-Size l", 1)),
 	periodic_        (params->get("Periodic", false)),
 
-// solvers
+// solvers ------------------------------------------------------------------
 	solvingScheme_   (params->get("Solving scheme", 'B')),
 	preconditioner_  (params->get("Preconditioner", 'J')),
 	gmresSolver_     (*this),
 	gmresInitialized_(false),
 
-// physics 
+// physics ------------------------------------------------------------------
 	rhoa_            (params->get("atmospheric density",1.25)),
-	hdima_           (params->get("heat capacity",8400.)),
+	hdima_           (params->get("atmospheric scale height",8400.)),
 	cpa_             (params->get("heat capacity",1000.)),
 	d0_              (params->get("constant eddy diffusivity",3.1e+06)),
 	arad_            (params->get("radiative flux param A",216.0)),
@@ -46,11 +46,13 @@ Atmosphere::Atmosphere(ParameterList params)
 	udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
 	r0dim_           (params->get("radius of the earth",6.37e+06)),
 	
-// continuation parameters 
-	allParameters_   ({ "Combined Forcing" }),   // parameter identifiers
+// continuation ---------------------------------------------------------------- 
+	allParameters_   ({ "Combined Forcing", "Solar Forcing" }), 
 	parName_         (params->get("Continuation parameter",
 								  "Combined Forcing")),
-	comb_            (0.0),                      // combined forcing
+// starting values 
+	comb_            (1.0),                      // combined forcing
+	sunp_            (0.0),                      // solar forcing
 		
 // input/output
 	loadState_       (params->get("Load state", false)),
@@ -206,7 +208,7 @@ void Atmosphere::idealizedOcean()
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
 		{
-			value = comb_*cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+			value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 			row   = find_row(i,j,l_,ATMOS_TT_)-1;
 			oceanTemp_[row] = value;
 		}
@@ -221,7 +223,7 @@ void Atmosphere::idealizedState()
 	for (int i = 1; i <= n_; ++i)
 		for (int j = 1; j <= m_; ++j)
 		{
-			value = comb_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+			value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 			row   = find_row(i,j,l_,ATMOS_TT_)-1;
 			(*state_)[row] = value;
 		}
@@ -337,7 +339,7 @@ void Atmosphere::forcing()
 		for (int i = 1; i <= n_; ++i)
 		{
 			row = find_row(i, j, l_, ATMOS_TT_);
-			value = oceanTemp_[row-1] + comb_ * (suna_[j] - amua_);
+			value = oceanTemp_[row-1] + comb_ * sunp_ * (suna_[j] - amua_);
 			frc_[row-1] = value;
 		}
 }
@@ -1011,8 +1013,13 @@ void Atmosphere::setPar(double value)
 // Adjust specific parameter
 void Atmosphere::setPar(std::string const &parName, double value)
 {
+	parName_ = parName; // Overwrite our parameter name
+	
 	if (parName.compare("Combined Forcing") == 0)
 		comb_ = value;
+	else if (parName.compare("Solar Forcing") == 0)
+		sunp_ = value;
+
 	// If parameter not available we take no action
 }
 
@@ -1028,8 +1035,12 @@ double Atmosphere::getPar()
 // Adjust parameter
 double Atmosphere::getPar(std::string const &parName)
 {
+	parName_ = parName; // Overwrite our parameter name
+		
 	if (parName.compare("Combined Forcing") == 0)
 		return comb_;
+	else if (parName.compare("Solar Forcing") == 0)
+		return sunp_;
 	else // If parameter not available we return 0
 		return 0;
 }

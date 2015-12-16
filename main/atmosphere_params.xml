@@ -6,9 +6,13 @@
   <Parameter name="Save state" type="bool" value="true" />
   <Parameter name="Input file"  type="string" value="atmos.h5" />
   <Parameter name="Output file" type="string" value="atmos.h5" />
-  
-  <!-- Continuation parameter -->
+
+  <!-- Continuation parameter name                                    -->
+  <!-- In a coupled situation this will be overruled by the parameter -->
+  <!-- specified in CoupledModel                                      -->
+  <!--                                                                -->
   <!-- Options:  "Combined Forcing" -->
+  <!--           "Solar Forcing"    -->
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
   
   <!-- Choose to use the ocean's landmask if available            -->
@@ -17,7 +21,6 @@
   <!-- Periodic boundary conditions in x-direction                -->
   <Parameter name="Periodic" type="bool" value="false"             />
   
-  
   <!-- western, eastern, southern and northern domain bounds      -->
   <Parameter name="Global Bound xmin" type="double" value="200"    />
   <Parameter name="Global Bound xmax" type="double" value="300"    />
@@ -25,28 +28,10 @@
   <Parameter name="Global Bound ymax" type="double" value="80"     />
   
   <!-- global number of grid points in x,y and z-directions       -->
-  <Parameter name="Global Grid-Size n" type="int" value="16"       />
-  <Parameter name="Global Grid-Size m" type="int" value="16"       />
+  <Parameter name="Global Grid-Size n" type="int" value="32"       />
+  <Parameter name="Global Grid-Size m" type="int" value="32"       />
   <Parameter name="Global Grid-Size l" type="int" value="1"        />
-  
-  <!-- Supply solving scheme: 'D': direct dense                   -->
-  <!--                        'B': direct banded                  -->
-  <!--                        'G': GMRES                          -->
-  <Parameter name="Solving scheme" type="char" value="B"           />
 
-  <!-- GMRES parameters                                           -->
-  <Parameter name="GMRES tolerance"       type="double" value="1e-1"/>
-  <Parameter name="GMRES iterations"      type="int"    value="100"/>
-  <Parameter name="GMRES restart"         type="int"    value="100"/>
-  <Parameter name="GMRES preconditioning" type="bool"   value="false"/>
-  <Parameter name="GMRES left prec"       type="bool"   value="false"/>
-  <Parameter name="GMRES verbosity"       type="int"    value="0"/>
-
-  <!-- Supply preconditioner: 'D': Full solve with solving scheme -->
-  <!-- Supply preconditioner: 'J': Jacobi                         -->
-  <!--                        'N': None                           -->
-  <Parameter name="Preconditioner" type="char" value="D"           />
-  
   <!-- Atmosphere physical parameters -->
   <Parameter name="atmospheric density"                 type="double" value="1.25"     />
   <Parameter name="atmospheric scale height"            type="double" value="8400"     />
@@ -61,4 +46,15 @@
   <Parameter name="reference temperature"               type="double" value="15.0"     />
   <Parameter name="horizontal velocity of the ocean"    type="double" value="0.1e00"   />
   <Parameter name="radius of the earth"                 type="double" value="6.37e06"  />
+
+  <!-- Supply solving scheme: 'D': direct dense                   -->
+  <!--                        'B': direct banded                  -->
+  <!--                        'G': GMRES                          -->
+  <Parameter name="Solving scheme" type="char" value="B"           />
+
+  <!-- Supply preconditioner: 'D': Full solve with solving scheme -->
+  <!--                        'J': Jacobi                         -->
+  <!--                        'N': None                           -->
+  <Parameter name="Preconditioner" type="char" value="D"           />
+
 </ParameterList>
