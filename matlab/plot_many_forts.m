@@ -1,6 +1,9 @@
 % decide which plots to show in movie
-surftemp = false;
-barstreamfunc = true;
+surftemp      = false;
+barstreamfunc = false;
+isothermals   = false;
+moc           = false;
+amoc          = true; % only working with 2deg landmask
 
 % Create array of strings with filenames of the states (UNIX)
 [s,statenames] = system('ls ocean_state*[0-9]* | sed "s/ / /" ')
@@ -54,15 +57,48 @@ srf(:,:,3) = (1-greyness*(interp2(surfm(range,:)','linear')));
 
 %--------------------------------------------------------------------
 [~,~, par2,~,~,~,~,sol2,~,~] = readfort3(la,filenames{end});
+
 %% - EXTRACT SOLUTION COMPONENTS - ----------------------------------
 [u,v,w,p,T,S] = extractsol(sol2);
+
 minT = min(T(:)) + T0
 maxT = max(T(:)) + T0
+
 %% - INTEGRATIONS - -------------------------------------------------
+
 % Barotropic streamfunction
 PSIB = bstream(u*udim,zw*hdim,[y;ymax]*r0dim);
 minPSIB = min(PSIB(:))
 maxPSIB = max(PSIB(:))
+
+% MOC
+PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
+minPSIG = min(PSIG(:));
+maxPSIG = max(PSIG(:));
+
+if amoc
+  % Atlantic horizontal range for 2deg landmask
+  surfm_atl = imread('surfm_atl.bmp');
+  atl_j = find(RtD*y > -40 & RtD*y < 70);
+
+  % Atlantic v
+  v_atl = v;
+  for j = 1:m
+	for i = 1:n
+	  if surfm_atl(i,j) ~= 0
+		v_atl(i,j,:) = 0;
+	  end
+	end
+  end
+  % Atlantic overturning streamfunction
+  APSIG = mstream(v_atl(:,atl_j,:)*udim,[x;xmax]*cos(yv(atl_j))'*r0dim,...
+				  zw*hdim);
+  
+  APSIG = [zeros(size(APSIG,1),1) APSIG];
+  minAPSIG = min(APSIG(:));
+  maxAPSIG = max(APSIG(:));
+end
+
 % get parameter
 par2 = par2(paridx);
 %--------------------------------------------------------------------
@@ -74,6 +110,12 @@ if surftemp
   fname = ['surftemp',sprintf('%5.4f',par2),'.avi']
 elseif barstreamfunc
   fname = ['barstreamfunc',sprintf('%5.4f',par2),'.avi']
+elseif isothermals
+  fname = ['isothermal',sprintf('%5.4f',par2),'.avi']
+elseif moc
+  fname = ['moc',sprintf('%5.4f',par2),'.avi']
+elseif amoc
+  fname = ['amoc',sprintf('%5.4f',par2),'.avi']
 else
   fname = 'movie.avi'
 end
@@ -88,7 +130,6 @@ fhandle = figure('units','pixels','position',[0,0,1920,1080]);
 set(gca,'position',[0.05 0.1 .92 0.85],'units','normalized');
 set(gca,'color','w','fontsize',15);
 
-
 sol2 = sol1;
 par2 = par1;
 for file = 2:numel(filenames)
@@ -96,52 +137,64 @@ for file = 2:numel(filenames)
   par1 = par2;
   
   % - READ SOLUTION - -------------------------------------------------
-  tic
   [~,~, par2,~,~,~,~, sol2,~,~] = readfort3(la,filenames{file});
   par2 = par2(paridx);
-  toc;
 
   for pr = par1:par_incr:par2
 	% HOMOTOPY --------------------------------------------------------
 	a = (pr-par1) / (par2-par1);
 	sol = (1-a)*sol1 + a*sol2;
-
-	tic
+	
 	%% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
 	[u,v,w,p,T,S] = extractsol(sol);
 
 	%% - INTEGRATIONS - --------------------------------------------------
 	% Barotropic streamfunction
-	PSIB = bstream(u*udim,zw*hdim,[y;ymax]*r0dim);
+	if barstreamfunc
+	  PSIB = bstream(u*udim,zw*hdim,[y;ymax]*r0dim);
+	end
 
-	% Overturning streamfunction
-	PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
-	PSIG = [zeros(m+1,1) PSIG];
+	if moc
+	  % Overturning streamfunction
+	  PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
+	  PSIG = [zeros(size(PSIG,1),1) PSIG];
+	end
 
-	%% - CHECK SALINITY - ------------------------------------------------
-	check = checksal(S,x,y,dfzt);
-	vol   = sum(sum(1-surfm).*cos(y'))*dx*dy;
-	fprintf(1,'Average salinity deficiency of %12.8f psu.\n', -check/vol) 
+	if amoc
+	  % Atlantic v
+	  v_atl = v;
+	  for j = 1:m
+		for i = 1:n
+		  if surfm_atl(i,j) ~= 0
+			v_atl(i,j,:) = 0;
+		  end
+		end
+	  end
+	  % Atlantic overturning streamfunction
+	  APSIG = mstream(v_atl(:,atl_j,:)*udim,[x;xmax]*cos(yv(atl_j))'*r0dim,...
+					  zw*hdim);
+	  
+	  APSIG = [zeros(size(APSIG,1),1) APSIG];
+	end
 
 	%% Create Temperature
 	% build longitudinal average over non-land cells
-	Tl = zeros(m,l);
-	for k = 1:l
-      for j = 1:m
-		count = 0;
-		for i=1:n            
-          if landm_int(i,j,k) == 0
-			count = count + 1;
-			Tl(j,k) = Tl(j,k) + T(i,j,k);
-          end
+	if isothermals
+	  Tl = zeros(m,l);
+	  for k = 1:l
+		for j = 1:m
+		  count = 0;
+		  for i=1:n            
+			if landm_int(i,j,k) == 0
+			  count = count + 1;
+			  Tl(j,k) = Tl(j,k) + T(i,j,k);
+			end
+		  end
+		  Tl(j,k) = Tl(j,k) / count;
 		end
-		Tl(j,k) = Tl(j,k) / count;
-      end
+	  end
 	end
-	fprintf('data building done\n');
-	toc
-
-	tic
+	
 	if surftemp %----------------------------------
 	  Tp = T(range,:,l);
 	  temp = flipud(T0 + Tp');
@@ -180,8 +233,8 @@ for file = 2:numel(filenames)
 	  hold off
 	  colorbar
 	  caxis([minval,maxval])
-	  title(['Barotropic Streamfunction ', sprintf('%5.4f',pr)], 'interpreter', 'none');
 	  xlabel('Longitude')
+	  title(['Barotropic Streamfunction ', sprintf('%5.4f',pr)], 'interpreter', 'none');
 	  ylabel('Latitude')
 
 	  xtl  = get(gca,'xticklabel');
@@ -190,18 +243,29 @@ for file = 2:numel(filenames)
 		  xtl2{i} = num2str( str2num(xtl{i}) + round(RtD*x(div),-1) - 360 );
 	  end
 	  set(gca,'xticklabel',xtl2);
-
+	  
+	elseif moc
+	  contours = linspace(minPSIG,maxPSIG,40);
+	  contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',contours,'linewidth',2);
+	  colorbar
+	  title(['MOC (Sv) ', sprintf('%5.4f',pr)],'interpreter', 'none');
+	  xlabel('latitude')
+	  ylabel('depth (m)')
+	  
+	elseif amoc % ---------------------------------------------------
+	  contours = linspace(minAPSIG,maxAPSIG,40);
+	  contourf(RtD*[y(atl_j);y(max(atl_j))+dy]-dy/2,zw*hdim',APSIG',contours,'linewidth',2);
+	  colorbar
+	  title(['AMOC (Sv) ', sprintf('%5.4f',pr)], 'interpreter', 'none');
+	  xlabel('latitude')
+	  ylabel('depth (m)')
+		   
 	end
-	fprintf('plotting done\n');
-	fprintf('parameter: %f\n', pr);
-	toc
 	
-	tic
+	fprintf('parameter: %f\n', pr);	
 	%----------------------------------
 	frame = getframe(gcf);
 	writeVideo(writerObj, frame);
-	fprintf('frame export done\n')
-	toc
   end
 end
 close(writerObj);
