@@ -126,9 +126,6 @@ public:
 	// Solve may optionally accept an rhs of VectorPointer type
 	void solve(VectorPtr rhs = Teuchos::null);
 
-	// Clear the search space of the IDR solver
-	void clearSearchSpace() { idrSolver_.clearSearchSpace();}
-
 	// Calculate explicit residual norm
 	double explicitResNorm(VectorPtr rhs);
 	
@@ -152,14 +149,6 @@ public:
 	void applyPrecon(SuperVector const &v, SuperVector &out);
 
 	void recomputePreconditioner() { recompPreconditioner_ = true; }
-
-	// // THESE ARE OBSOLETE!!! there is a minor dependency in the continuation
-	// storage stuff. Since we save to HDF5 we can get rid of that
-	void setState(Teuchos::RCP<SuperVector> state)
-		{ state_ = state->getOceanVector(); }
-	
-	void setRHS(Teuchos::RCP<SuperVector> rhs)
-		{ rhs_   = rhs->getOceanVector(); }
 
 	// The parameter set members wrap the corresponding
 	// Fortran functions. We keep an internal parameter name which

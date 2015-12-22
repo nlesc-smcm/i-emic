@@ -29,9 +29,12 @@ Continuation(Model model, ParameterList pars)
 	minAllowedIterations_  (pars->get("minimum desired Newton iterations", 4)),
 	maxAllowedIterations_  (pars->get("maximum desired Newton iterations", 5)),
 	newtonTolerance_       (pars->get("Newton tolerance", 1.0e-3)),
+	destinationTolerance_  (pars->get("destination tolerance", 1.0e-5)),
+	tanScaling_            (pars->get("state tangent scaling", 1.0e-6)),	
 	rejectFailedNewton_    (pars->get("reject failed iteration", true)),
 	cycleTolerance_        (pars->get("enable tolerance cycling", false)),
-	usePracticalTol_       (pars->get("enable practical tolerance", false))	
+	usePracticalTol_       (pars->get("enable practical tolerance", false)),
+	signMonitor_           (0)
 {
 	model_  = model;
 
@@ -52,10 +55,6 @@ Continuation(Model model, ParameterList pars)
 	// scaling
 	zeta_ = 1.0 / stateView_->length();
 
-	//-->experimental
-	double zetapower = pars->get("zetapower", 1.0);
-	zeta_ = pow(zeta_, zetapower );
-
 	newtonIter_ = 0;	
 	backTrack_  = 0;	
 	parDotSign_ = 1;
@@ -75,30 +74,24 @@ run()
 {
 	// set all the appropriate initial flags and counters
 	step_ = 0;
+	secant_ = false;
 	destinationReached_ = false;
 
-	// Create the first tangent
-	createInitialTangent();
+	createInitialTangent(); // Create the first tangent
 
-	store(); // Store the current state and parameter
-	
+	detect(); // Detect special points (initialization)
+
 	while (!destinationReached_ && step_ != maxSteps_)
 	{
-		// Let the model do some administrative work before a step
-		model_->preProcess();
-		
-		step();  // Perform a continuation step
-		
-		// Let the model do some administrative work after a step 
-		model_->postProcess();	   
-		
-		// Detect special points:
-		//  if necessary converge on them (-->not implemented yet)
-		detect();
-		
-		++step_;
+		info();       // Print continuation summary
+		store();      // Store the current state and parameter		
+		step();       // Perform a continuation step				
+		detect();     // Detect special points
+        adjustStep(); // step size adjustment
+		++step_;      // Increment step counter
 	}
 	INFO("---------Finished continuation run------------");
+	info();
 	modelInfo();
 }
 
@@ -107,16 +100,20 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 step()
 {
+	// Let the model do some administrative work at the beginning of a step
+	model_->preProcess();
+	
 	computeTolerance();             // Calculate practical tolerance 
-	info(); 	                    // Print continuation info
 	eulerPredictor(); 	            // Apply Euler predictor
 	int status = newtonCorrector(); // Apply Newton corrector
 
 	// If necessary reset the step, otherwise perform a normal
 	// calculation of the tangent and step adjustment
-	if (status)
-		reset();
-	else
+	if (status)   // Failure
+	{
+		reset();  // Reset the model		
+	}
+	else          // Success
 	{
 		// Put the parameter and norm of the state in the history
 		parHist_.push_back(par_);
@@ -127,11 +124,9 @@ step()
 		
 		// Create new tangents based on result from newtonCorrector
 		createTangent('E');			
-	
-		// step adjustment based on the number of Newton iterations.
-		adjustStep();
-
-		store();    // Store the current state (-->superfluous?)
+		
+		// Let the model do some administrative work at the end of a succesful step 
+		model_->postProcess();	   		
 	}
 }
 
@@ -143,6 +138,8 @@ computeTolerance()
 	// Scale the requested tolerance with sqrt(n)
 	if (usePracticalTol_)
 		practicalTol_ = newtonTolerance_ * sqrt(stateView_->length());
+	else if (secant_)
+		practicalTol_ = destinationTolerance_;
 	else
 		practicalTol_ = newtonTolerance_;
 
@@ -159,7 +156,7 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 createInitialTangent()
 {
-  INFO("Continuation: create initial tangent...");
+	INFO("Continuation: create initial tangent...");
 	//-----------------------------------------------------------------
 	// Initial tangent:
 	// 1) Take the derivative of the RHS w.r.t. the continuation par
@@ -181,7 +178,7 @@ createInitialTangent()
 	
 	// We scale the tangent of the state and parameter such they are
 	// normalized.
-	normalize(stateDot_, zeta_, parDot_);
+	normalize();
 	INFO("Continuation: create initial tangent... done");
 }
 
@@ -244,7 +241,7 @@ createTangent(char mode)
 
 		// Normalize the combined tangent
 		// --> Not sure about zeta_ here
-		normalize(stateDot_, zeta_, parDot_);
+		normalize();
 	}
 	else if (mode == 'E' && newtonIter_ != 0) // Euler 
 	{
@@ -257,7 +254,7 @@ createTangent(char mode)
 		stateDot_->scale(-1.0);
 
 		// We still need to make sure everything is normalized
-		normalize(stateDot_, zeta_, parDot_);
+		normalize();
 	}
 	else
 		WARNING("(Continuation::createTangent) Invalid mode!",
@@ -267,7 +264,7 @@ createTangent(char mode)
 //======================================================================
 template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
-normalize(Vector stateDot, double scale, double parDot)
+normalize()
 {
 	// -----------------------------------------------------------------
 	// We normalize the tangent of the branch (stateDot, parDot)
@@ -277,6 +274,7 @@ normalize(Vector stateDot, double scale, double parDot)
 	// -----------------------------------------------------------------
 
 	// 1) scale stateDot
+	zeta_ = tanScaling_ / stateDot_->norm(); // this might be more robust
 	stateDot_->scale(zeta_);
 
 	// 2) compute norm of combined vector
@@ -286,10 +284,6 @@ normalize(Vector stateDot, double scale, double parDot)
 	// 3) scale the components
 	stateDot_->scale(1.0 / normComb);
 	parDot_ = 1.0 / normComb;
-
-	DEBUG(" Normalize():");
-	DEBUG("  norm  = " << stateDot_->norm() * stateDot_->norm()
-		                  + parDot_ * parDot_);
 }
 
 //======================================================================
@@ -324,7 +318,7 @@ template<typename Model, typename ParameterList>
 int Continuation<Model, ParameterList>::
 newtonCorrector()
 {
-  INFO("Continuation: Newton corrector...");
+	INFO("Continuation: Newton corrector...");
 	char   mode;	      // mode for ComputeDFDPar()
 	Vector stateDir;      // direction for the state
 	Vector y1;            // solution of solve with dFdPar
@@ -358,8 +352,8 @@ newtonCorrector()
 		Vector state0 = storage_.state0;
 		double par0   = storage_.par0;
 		double r      =  ds_ - stateDot_->dot(*stateView_) * zeta_
-			                 - stateDot_->dot(*state0) * zeta_
-			                 - parDot_ * (par_ - par0);
+			- stateDot_->dot(*state0) * zeta_
+			- parDot_ * (par_ - par0);
 
 		// At this point the model contains the predicted state and
 		// parameter. The Jacobian will be computed based on the
@@ -378,7 +372,7 @@ newtonCorrector()
 		// Determine the directions
 		// First for the parameter:
 		parDir = (r - zeta_ * stateDot_->dot(*z1))
-			   / (parDot_ - zeta_ * stateDot_->dot(*y1));
+			/ (parDot_ - zeta_ * stateDot_->dot(*y1));
 
 		// --> Perhaps we can optimize the next bit (copies and views)		
 		// Then for the state:
@@ -410,7 +404,10 @@ newtonCorrector()
 		// if we don't see a decrease we run the backtracking routine
 		if (backTracking_ and (normRHS_ < normRHStest_) )
 		{
-			runBackTracking(stateDir, parDir);
+			int status = runBackTracking(stateDir, parDir);
+			if (status)
+				return 1; // exiting Newton when backtracking fails
+					
 			normRHStest_ = rhsView_->norm(); 
 			if (normRHStest_ < practicalTol_) break;					
 		}
@@ -423,17 +420,17 @@ newtonCorrector()
 	// Do some administrative work
 	TRACK_ITERATIONS("Continuation: Newton iterations...", newtonIter_);
 	
-	if (newtonIter_ == maxNewtonIterations_)
-	  {
+	if (normRHStest_ > practicalTol_)
+	{
 	    WARNING("Continuation: Newton failed after " << newtonIter_ << " steps", 
-		    __FILE__, __LINE__);
+				__FILE__, __LINE__);
 	    if (rejectFailedNewton_)
-	      return 1;
+			return 1;
 	    else
-	      INFO("Continuation: Proceeding with unconverged result");
-	  }
+			WARNING("Continuation: Proceeding with unconverged result",__FILE__, __LINE__);
+	}
 	else
-	  INFO("Continuation: corrector converged in " << newtonIter_ << " steps");
+		INFO("Continuation: corrector converged in " << newtonIter_ << " steps");
 	
 	INFO("Continuation: Newton corrector... done");
 	return 0;
@@ -483,21 +480,35 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 detect(char mode)
 {
-	// Just to be on the safe side
-	par_ = model_->getPar();
-	double f1;
-	f1 = par_ - parDest_;
-	
-	// This is a naive initial implementation
-	if (f1 > 0)
-		destinationReached_ = true;
+	par_ = model_->getPar(); // just to be on the safe side
+	double f0 = storage_.par0 - parDest_;
+	double f1 =          par_ - parDest_;
 
-	// Converge on sign switch
-	if (SGN(parDot_) != parDotSign_)
+	if (signMonitor_ == 0) // initialization
+		signMonitor_ = SGN(f1);
+	
+	if (signMonitor_ != SGN(f1)) // secant convergence
 	{
-		INFO("Continuation::detect():  sign switch detected");
-		parDotSign_ = SGN(parDot_);
+		INFO("Continuation::detect():  sign switch in f1 detected");
+		secant_ = true;
 	}
+
+	if (secant_)
+	{
+		INFO("  secant: f1 = " << f1 << " f0 = " << f0);
+		INFO("          ds = " << ds_);
+		ds_ = -f1 * ds_ / (f1 - f0); // secant method
+		INFO("          ds = " << ds_);
+		createTangent('S');
+	}
+
+	signMonitor_ = SGN(f1);
+	
+	if (secant_)
+		INFO("  |par - pardest| = " << std::abs(f1));
+	
+	if (secant_ && std::abs(f1) < destinationTolerance_)
+		destinationReached_ = true;
 }
 
 //======================================================================
@@ -510,20 +521,23 @@ adjustStep()
 	//       increase ds
 	//       work = newtonIter_
 	//   else
-	//       decrease ds       
-	         
+	//       decrease ds
+	
+	if (secant_)  // Secant detection in process
+		return;   // Do nothing
+	
 	if (newtonIter_ < minAllowedIterations_)
 	{
-		INFO("      adjusting ds... ");
+		INFO("\n      adjusting ds... ");
 		INFO("      old ds: " << ds_);
-		ds_ = std::min(ds_ * scale1_, dsMax_);
+		ds_ = SGN(ds_) * std::min(SGN(ds_) * ds_ * scale1_, dsMax_);
 		INFO("      new ds: " << ds_);
 	}
 	else if (newtonIter_ > maxAllowedIterations_)
 	{
 		INFO("      adjusting ds... ");
 		INFO("      old ds: " << ds_);
-		ds_ = std::max(ds_ / scale2_, dsMin_);
+		ds_ = SGN(ds_) * std::max(SGN(ds_) * ds_ / scale2_, dsMin_);
 		INFO("      new ds: " << ds_);
 	}
 }
@@ -554,13 +568,22 @@ void Continuation<Model, ParameterList>::
 reset()
 {
 	INFO("***********************************************");
-	INFO("Continuation: RESETTING!");
-	INFO("              Step = " << step_);
-	INFO("              Restoring model...");
+	INFO("Continuation: reset... ");
+	INFO("                 step: " << step_);
+	INFO("            step size: " << ds_);
+	INFO("           norm state: " << stateView_->norm());
+	INFO("   norm stored state0: " << (storage_.state0)->norm());
+ 	INFO("                  par: " << par_);
+	INFO("***********************************************");
+	
 	restore();
 	ds_ = MAX(ds_ / scale2_, dsMin_);
-	INFO("              Restoring model... done");
+	INFO("           norm state: " << stateView_->norm());
+	INFO("                  par: " << par_);
+	INFO("            step size: " << ds_);
 	INFO("***********************************************");
+
+	createInitialTangent();
 }
 
 //======================================================================
@@ -582,22 +605,16 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 restore()
 {
- 	INFO("   Continuation::Restore()");
-	INFO("                 norm state: " << stateView_->norm());
-	INFO("         norm stored state0: " << storage_.state0->norm());
-	INFO("        norm stored state00: " << storage_.state00->norm());
-	model_->setState(storage_.state0);
-
-	// make sure we have a view of the state
-	stateView_ = model_->getState('V');
+	// Replace state in model with old state
+	stateView_->update(1.0, *storage_.state0, 0.0);
+	
 	model_->setPar(storage_.par0);
 	
 	par_ = storage_.par0;
 	ds_  = storage_.ds0;
 
 	storage_.state0  = storage_.state00;
-	storage_.state00 = model_->getState('C');
-	
+	storage_.state00 = model_->getState('C'); // why?	
 	storage_.par0    = storage_.par00;
 	storage_.ds0     = storage_.ds00;
 }

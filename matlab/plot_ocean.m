@@ -5,7 +5,7 @@
 %
 %  Modified by Erik, 2015 -> t.e.mulder@uu.nl
 %---------------------------------------------------------------------
-atlantic = true
+atlantic = true;
 
 fprintf(1,'----------------------------------------------\n')
 
@@ -26,7 +26,11 @@ dx         = (xu(n+1)-xu(1))/n;
 dy         = (yv(m+1)-yv(1))/m;
 dz         = (zw(l+1)-zw(1))/l;
 
-if atlantic
+if n < 180  % hack
+    atlantic = false;
+end    
+
+if atlantic 
   % Atlantic horizontal range for 2deg landmask
   surfm_atl = imread('surfm_atl.bmp');
   atl_j = find(RtD*y > -40 & RtD*y < 60);
@@ -135,55 +139,55 @@ ylabel('Latitude')
 exportfig('bstream.eps')
 
 %%%
-%figure(2)
-%contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',14);
-%colorbar
-%title('MOC (Sv)')
-%xlabel('latitude')
-%ylabel('depth (m)')
-%exportfig('mstream.eps',10,[20,7])
+figure(2)
+contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',14);
+colorbar
+title('MOC (Sv)')
+xlabel('latitude')
+ylabel('depth (m)')
+exportfig('mstream.eps',10,[20,7])
 %
 %%%
-%if atlantic
-%  figure(8)
-%  contourf(RtD*[y(atl_j);y(max(atl_j))+dy]-dy/2,zw*hdim',APSIG',14)
-%  colorbar
-%  title('AMOC (Sv)')
-%  xlabel('latitude')
-%  ylabel('depth (m)')
-%  exportfig('amstream.eps',10,[20,7])
-%end  
+if atlantic
+ figure(8)
+ contourf(RtD*[y(atl_j);y(max(atl_j))+dy]-dy/2,zw*hdim',APSIG',14)
+ colorbar
+ title('AMOC (Sv)')
+ xlabel('latitude')
+ ylabel('depth (m)')
+ exportfig('amstream.eps',10,[20,7])
+end  
 %
 %%
-%figure(3)
-%Tp = T(:,:,l);
-%temp = flipud(T0 + Tp');
-%contourf(RtD*x,RtD*y,T0+Tp',15); hold on
-%% imagesc(RtD*x,RtD*y,temp); hold on
-%colorbar
-%contour(RtD*x,RtD*y,T0+1e-4*(surfm'),1,'k-','linewidth',2); hold off
-%title('Surface Temperature');
-%xlabel('Longitude');
-%ylabel('Latitude');
+figure(3)
+Tp = T(:,:,l);
+temp = flipud(T0 + Tp');
+contourf(RtD*x,RtD*y,T0+Tp',15); hold on
+% imagesc(RtD*x,RtD*y,temp); hold on
+colorbar
+contour(RtD*x,RtD*y,T0+1e-4*(surfm'),1,'k-','linewidth',2); hold off
+title('Surface Temperature');
+xlabel('Longitude');
+ylabel('Latitude');
 
 %%
-%figure(4)
-%contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
-%colorbar
-%title('Temperature')
-%xlabel('Latitude')
-%ylabel('z (m)')
-%exportfig('isothermals.eps')
-%
-%if atlantic
-%  figure(5)
-%  contourf(RtD*yv(1:end-1),z*hdim,Tla'+T0,15);
-%  colorbar
-%  title('Atlantic temperature')
-%  xlabel('Latitude')
-%  ylabel('z (m)')
-%  exportfig('atl_isothermals.eps')
-%end
+figure(4)
+contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
+colorbar
+title('Temperature')
+xlabel('Latitude')
+ylabel('z (m)')
+exportfig('isothermals.eps')
+
+if atlantic
+  figure(5)
+  contourf(RtD*yv(1:end-1),z*hdim,Tla'+T0,15);
+  colorbar
+  title('Atlantic temperature')
+  xlabel('Latitude')
+  ylabel('z (m)')
+  exportfig('atl_isothermals.eps')
+end
 
 %%
 %figure(6)

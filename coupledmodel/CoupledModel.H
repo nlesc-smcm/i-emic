@@ -112,10 +112,10 @@ public:
 
 	// Solve the models
 	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
-
+	
 	void initializeIDR();
 	void initializeGMRES();
-
+	
 	// coupled   mode 'C'
 	// decoupled mode 'D'
 	void applyMatrix(SuperVector const &v, SuperVector &out, char mode = 'C');
@@ -127,9 +127,6 @@ public:
 	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
 	std::shared_ptr<SuperVector> getState(char mode = 'C');
 	std::shared_ptr<SuperVector> getRHS(char mode = 'C');
-
-	void setState(std::shared_ptr<SuperVector> state);
-	void setRHS(std::shared_ptr<SuperVector> rhs);
 
 	// Getters and setters for the continuation parameter
 	//  Used by Continuation class
