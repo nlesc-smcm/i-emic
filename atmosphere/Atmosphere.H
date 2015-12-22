@@ -222,12 +222,6 @@ public:
 	std::shared_ptr<SuperVector> applyPrecon(SuperVector const &v);
 	void applyPrecon(SuperVector const &v, SuperVector &out);
 	
-	void setState(std::shared_ptr<SuperVector> state)
-		{ *state_ = *(state->getAtmosVector()); }
-
-	void setRHS(std::shared_ptr<SuperVector> rhs)
-		{ *rhs_   = *(rhs->getAtmosVector()); }
-
 	// Getters and setter for the continuation parameters
 	void    setPar(double value);
 	void    setPar(std::string const &parName, double value);

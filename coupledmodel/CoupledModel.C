@@ -308,9 +308,6 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
  	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
 	x->zero();
 
-	// Clear saved Krylov space in ocean solver
-	ocean_->clearSearchSpace();
-	
 	// Start iteration
 	int i;
 	for (i = 1; i <= iterGS_; ++i)
@@ -523,20 +520,6 @@ std::shared_ptr<SuperVector> CoupledModel::getRHS(char mode)
 		WARNING("Invalid mode", __FILE__, __LINE__);
 		return std::shared_ptr<SuperVector>();
 	}
-}
-
-//------------------------------------------------------------------
-void CoupledModel::setState(std::shared_ptr<SuperVector> state)
-{
-	ocean_->setState(Teuchos::rcp(state.get(), false));
-    atmos_->setState(state);
-}
-
-//------------------------------------------------------------------
-void CoupledModel::setRHS(std::shared_ptr<SuperVector> rhs)
-{
-	ocean_->setRHS(Teuchos::rcp(rhs.get(), false));
-    atmos_->setRHS(rhs);
 }
 
 //------------------------------------------------------------------

@@ -5,6 +5,7 @@
 %
 %  Modified by Erik, 2015 -> t.e.mulder@uu.nl
 %---------------------------------------------------------------------
+atlantic = true;
 
 fprintf(1,'----------------------------------------------\n')
 
@@ -25,6 +26,16 @@ dx         = (xu(n+1)-xu(1))/n;
 dy         = (yv(m+1)-yv(1))/m;
 dz         = (zw(l+1)-zw(1))/l;
 
+if n < 180  % hack
+    atlantic = false;
+end    
+
+if atlantic 
+  % Atlantic horizontal range for 2deg landmask
+  surfm_atl = imread('surfm_atl.bmp');
+  atl_j = find(RtD*y > -40 & RtD*y < 60);
+end
+
 srf = [];
 greyness = .85;
 srf(:,:,1) = (1-greyness*(surfm'));
@@ -36,18 +47,39 @@ srf(:,:,3) = (1-greyness*(surfm'));
 %% - READ SOLUTION - -------------------------------------------------
 
 [lab icp par xl xlp det sig sol solup soleig] = ...
-            readfort3(la,'fort.3');
+readfort3(la,'fort.3');
 
 %% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
 [u,v,w,p,T,S] = extractsol(sol);
 
+if atlantic
+  % Atlantic v
+  v_atl = v;
+  for j = 1:m
+	for i = 1:n
+	  if surfm_atl(i,j) ~= 0
+		v_atl(i,j,:) = 0;
+	  end
+	end
+  end
+end
+
 %% - INTEGRATIONS - --------------------------------------------------
-% Barotropic streamfunction
+% Barotropic streamfunction;
 PSIB = bstream(u*udim,zw*hdim,[y;ymax]*r0dim);
 
 % Overturning streamfunction
 PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
 PSIG = [zeros(m+1,1) PSIG];
+
+if atlantic
+  % Atlantic overturning streamfunction
+  APSIG = mstream(v_atl(:,atl_j,:)*udim,[x;xmax]*cos(yv(atl_j))'*r0dim,...
+				  zw*hdim);
+  
+  APSIG = [zeros(size(APSIG,1),1) APSIG];
+end
+
 
 %% - CHECK SALINITY - ------------------------------------------------
 check = checksal(S,x,y,dfzt);
@@ -58,35 +90,55 @@ fprintf(1,'Average salinity deficiency of %12.8f psu.\n', -check/vol)
 % build longitudinal average over non-land cells
 Tl = zeros(m,l);
 for k = 1:l
-    for j = 1:m
-        count = 0;
-        for i=1:n            
-            if landm_int(i,j,k) == 0
-                count = count + 1;
-                Tl(j,k) = Tl(j,k) + T(i,j,k);
-            end
-        end
-        Tl(j,k) = Tl(j,k) / count;
+  for j = 1:m
+    count = 0;
+    for i=1:n            
+      if landm_int(i,j,k) == 0
+        count = count + 1;
+        Tl(j,k) = Tl(j,k) + T(i,j,k);
+      end
     end
+    Tl(j,k) = Tl(j,k) / count;
+  end
 end
+
+if atlantic
+  %% Create Temperature
+  % build longitudinal average over non-land cells
+  Tla = zeros(m,l);
+  for k = 1:l
+	for j = 1:m
+      count = 0;
+      for i=1:n            
+		if (landm_int(i,j,k) == 0) && (surfm_atl(i,j) == 0)
+          count = count + 1;
+          Tla(j,k) = Tla(j,k) + T(i,j,k);
+		end
+      end
+      Tla(j,k) = Tla(j,k) / count;
+	end
+  end
+end
+
 
 %% - PLOT THE RESULTS - ----------------------------------------------
 figure(1)
 img = PSIB(2:end,:)';
-minval = min(min(img));
-maxval = max(max(img));
+minPSIB = min(PSIB(:));
+maxPSIB = max(PSIB(:));
 contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
 imagesc(RtD*x,RtD*(y),img,'AlphaData',.5); hold on
 image(RtD*x,RtD*(y),srf,'AlphaData',.9); hold on
-contour(RtD*x,RtD*(y),img,40,'Visible', 'on','linewidth',2); hold off;
+contours = linspace(minPSIB,maxPSIB,15);
+contour(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',2); hold off;
 colorbar
-caxis([minval,maxval])
+caxis([minPSIB,maxPSIB])
 title('Barotropic Streamfunction');
 xlabel('Longitude')
 ylabel('Latitude')
 exportfig('bstream.eps')
 
-%%
+%%%
 figure(2)
 contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',14);
 colorbar
@@ -94,7 +146,18 @@ title('MOC (Sv)')
 xlabel('latitude')
 ylabel('depth (m)')
 exportfig('mstream.eps',10,[20,7])
-
+%
+%%%
+if atlantic
+ figure(8)
+ contourf(RtD*[y(atl_j);y(max(atl_j))+dy]-dy/2,zw*hdim',APSIG',14)
+ colorbar
+ title('AMOC (Sv)')
+ xlabel('latitude')
+ ylabel('depth (m)')
+ exportfig('amstream.eps',10,[20,7])
+end  
+%
 %%
 figure(3)
 Tp = T(:,:,l);
@@ -109,34 +172,38 @@ ylabel('Latitude');
 
 %%
 figure(4)
-Tp2 = squeeze(mean(T,1)); 
 contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
 colorbar
-title('Isothermals')
+title('Temperature')
 xlabel('Latitude')
 ylabel('z (m)')
-exportfig('isopycnals.eps')
+exportfig('isothermals.eps')
+
+if atlantic
+  figure(5)
+  contourf(RtD*yv(1:end-1),z*hdim,Tla'+T0,15);
+  colorbar
+  title('Atlantic temperature')
+  xlabel('Latitude')
+  ylabel('z (m)')
+  exportfig('atl_isothermals.eps')
+end
 
 %%
-figure(5)
-imagesc(flipud(PSIG')); 
-grid on
-title('Overturning Streamfunction')
+%figure(6)
+%Sp = squeeze(mean(S,1)); 
+%contourf(RtD*yv(1:end-1),z*hdim,Sp'+S0,15);
+%colorbar
+%title('Isohalines')
+%xlabel('Latitude')
+%ylabel('z (m)')
+%exportfig('isopycnals.eps')
 
 %%
-figure(6)
-Sp = squeeze(mean(S,1)); 
-contourf(RtD*yv(1:end-1),z*hdim,Sp'+S0,15);
-colorbar
-title('Isohalines')
-xlabel('Latitude')
-ylabel('z (m)')
-exportfig('isopycnals.eps')
-
-%%
-figure(7)
-Sp = S(:,:,l);
-contourf(RtD*x,RtD*y,S0+Sp',15);
-title('Surface salinity');
-xlabel('Longitude');
-ylabel('Latitude');
+%figure(7)
+%Sp = S(:,:,l);
+%contourf(RtD*x,RtD*y,S0+Sp',15);
+%title('Surface salinity');
+%xlabel('Longitude');
+%ylabel('Latitude');
+%
