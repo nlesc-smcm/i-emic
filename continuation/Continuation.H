@@ -19,7 +19,7 @@ Continuation(Model model, ParameterList pars)
 	dsMin_                 (pars->get("minimum step size", 1.0e-5)),
 	dsMax_                 (pars->get("maximum step size", 1.0e01)),
 	parDest_               (pars->get("parameter destination", 1.0)),
-	scale1_                (pars->get("increase step size", 2.00)),
+	scale1_                (pars->get("increase step size", 1.25)),
 	scale2_                (pars->get("decrease step size", 2.00)),
 	epsilon_               (pars->get("epsilon increment", 1.0e-8)),
 	backTracking_          (pars->get("enable backtracking", true)),
