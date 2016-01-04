@@ -756,3 +756,29 @@ void Ocean::setPar(std::string const &parName, double value)
 	if (parIdent > 0 && parIdent <= _NPAR_)
 		FNAME(setparcs)(&parIdent, &value);
 }
+
+//====================================================================
+void Ocean::setParameters(Teuchos::RCP<Teuchos::ParameterList> pars)
+{
+	std::string parName;
+	double parValue;
+	// This is similar to reading from HDF5
+	for (int par = 1; par <= _NPAR_; ++par)
+	{
+		parName  = THCM::Instance().int2par(par);
+		parValue = getPar(parName);
+		
+		// Overwrite continuation parameter and put it in THCM
+		try
+		{
+			parValue = pars->get(parName, parValue);
+		}
+		catch (EpetraExt::Exception &e)
+		{
+			e.Print();
+			continue;
+		}
+		
+		setPar(parName, parValue);
+	}	
+}

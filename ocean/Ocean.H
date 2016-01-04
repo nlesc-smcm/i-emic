@@ -120,7 +120,7 @@ public:
 	//destructor
 	~Ocean();
 
-	// ----------------------------------------------------------------------+
+	// ------------------------------------------------------------------+
 	// The following functions are required by the continuation interface:
 	//
 	// Solve may optionally accept an rhs of VectorPointer type
@@ -170,7 +170,7 @@ public:
 	int getMdim() { return M_;}
 	int getLdim() { return L_;}
 
-	// ----------------------------------------------------------------------+
+	// ---------------------------------------------------------------
 	// The following functions are required for the coupling with other
 	// models:
 
@@ -199,6 +199,8 @@ public:
 
 	int loadState() { return loadStateFromFile(inputFile_); }
 	int saveState() { return saveStateToFile(outputFile_); }
+
+	void setParameters(Teuchos::RCP<Teuchos::ParameterList> pars);
 	
 private:
 	// HDF5-based save and load functions for the state and parameters
@@ -222,11 +224,3 @@ private:
 	Teuchos::RCP<SuperVector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
 };
 #endif
-
-
-
-
-
-
-
-

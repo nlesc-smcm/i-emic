@@ -6,8 +6,8 @@ DIRS =  \
 	$(PROJECT_BASE)/supervector/\
 	$(PROJECT_BASE)/coupledmodel/\
 
-EXE     = main test timestepping
-OBJS    = main.o test.o timestepping.o
+EXE     = main test timestepping xml2hdf5
+OBJS    = main.o test.o timestepping.o xml2hdf5.o
 OBJLIBS = lib$(LIB_OCEAN).a\
 	      lib$(LIB_ATMOS).a\
 	      lib$(LIB_COUPLED).a\
@@ -49,6 +49,8 @@ test: $(OBJLIBS) test.o
 timestepping: $(OBJLIBS) timestepping.o
 	$(CXX) timestepping.o -o timestepping $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
+xml2hdf5: $(OBJLIBS) xml2hdf5.o
+	$(CXX) xml2hdf5.o -o xml2hdf5 $(LIBRARY_DIRS) -l$(LIB_OCEAN) -l$(LIB_SUPERVEC) $(LIBS)
 
 lib$(LIB_OCEAN).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_OCEAN); $(MAKE) $(MFLAGS)
@@ -61,7 +63,6 @@ lib$(LIB_COUPLED).a: force_look
 
 lib$(LIB_SUPERVEC).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_SUPERVEC); $(MAKE) $(MFLAGS)
-
 
 %.o: %.C $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $(CXX_DB) $<
