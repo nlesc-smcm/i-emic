@@ -213,7 +213,7 @@
     
     <!-- for comments see "Auv Precond" list above -->
     
-    <Parameter name="Method" type="string" value="ML"/>
+    <Parameter name="Method" type="string" value="Ifpack"/>
     
 	<ParameterList name="ML">
 	  
@@ -291,6 +291,58 @@
         <Parameter name="fact: drop tolerance" type="double" value="1.0e-8"/>
       </ParameterList> <!-- } smoother: ifpack list" -->
     </ParameterList> <!-- } ML -->
+
+	<Parameter name="Ifpack Method" type="string" value="MRILU"/>
+    <Parameter name="Ifpack Overlap Level" type="int" value="2"/>
+
+    <Parameter name="amesos: solver type" type="string" value="Amesos_Klu"/>
+    
+    <Parameter name="schwarz: compute condest" type="bool" value="0"/>
+    <Parameter name="schwarz: filter singletons" type="bool" value="0"/>
+    <Parameter name="schwarz: combine mode" type="string" value="Average"/>
+    <Parameter name="fact: ilut level-of-fill" type="double" value="3.0"/>
+    <Parameter name="fact: drop tolerance" type="double" value="1.0e-8"/>
+    
+    <Parameter name="fact: level-of-fill" type="int" value="5"/>
+
+    <!-- Parameters for the Ifpack/MRILU solver { -->
+    <ParameterList name="MRILU">
+
+      <Parameter name="blocksize" type="int" value="2"/>
+      <Parameter name="cutmck" type="int" value="0"/>
+      <Parameter name="scarow" type="int" value="1"/>
+      <Parameter name="xactelm" type="int" value="1"/>
+      <Parameter name="clsonce" type="int" value="1"/>
+      <Parameter name="nlsfctr" type="double" value="0.1"/>
+      <Parameter name="epsw" type="double" value="0.1"/>
+      <Parameter name="elmfctr" type="double" value="0.2"/>
+      <Parameter name="gusmod" type="int" value="0"/>
+      <Parameter name="gusfctr" type="double" value="0.0"/>
+      <Parameter name="redfctr" type="double" value="2.0"/>
+      <Parameter name="schtol" type="double" value="1.0e-6"/>
+      <Parameter name="denslim" type="double" value="0.9"/>
+      <Parameter name="globfrac" type="double" value="0.02"/>
+      <Parameter name="locfrac" type="double" value="0.0"/>
+      <Parameter name="sparslim" type="double" value="0.95"/>
+      <Parameter name="ilutype" type="int" value="9"/>
+      <Parameter name="droptol" type="double" value="1.0e-5"/>
+      <Parameter name="compfct" type="double" value="0.0"/>
+      <Parameter name="cpivtol" type="double" value="0.875"/>
+      <Parameter name="lutol" type="double" value="1.0e-10"/>
+      <Parameter name="singlu" type="int" value="1"/>
+      <Parameter name="Output Level" type="int" value="0"/> 
+	  
+      <ParameterList name="visualization">
+        <Parameter name="visasc" type="int" value="0"/>
+        <Parameter name="visnsc" type="int" value="0"/>
+        <Parameter name="vislsc" type="int" value="0"/>
+        <Parameter name="visildu" type="int" value="0"/> 
+        <Parameter name="visnro" type="int" value="0"/>
+      </ParameterList>
+	  
+    </ParameterList><!-- } end of MRILU -->
+	
   </ParameterList><!-- } ATS Precond -->
-</ParameterList> <!-- } Block prec -->
   
+</ParameterList> <!-- } Block prec -->
+
