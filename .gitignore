@@ -6,6 +6,7 @@
 !idrsolver/
 !gmressolver/
 !supervector/
+!mrilucpp/
 !parameters/
 !parameterfiles/
 !matlab/
@@ -21,6 +22,8 @@
 !scripts/
 !thetastepper/
 !multiarray/
+!notes/
+!patch/
 
 !Doxyfile*
 !Makefile*
@@ -41,7 +44,6 @@
 !*.F
 !*.F90
 !*.sh
-
 !*.note
 *.#*
 *~

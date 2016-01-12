@@ -4,6 +4,7 @@ DIRS =  \
 	$(PROJECT_BASE)/ocean/\
 	$(PROJECT_BASE)/atmosphere/\
 	$(PROJECT_BASE)/supervector/\
+	$(PROJECT_BASE)/mrilucpp/\
 	$(PROJECT_BASE)/coupledmodel/\
 
 EXE     = main test timestepping xml2hdf5
@@ -12,6 +13,7 @@ OBJLIBS = lib$(LIB_OCEAN).a\
 	      lib$(LIB_ATMOS).a\
 	      lib$(LIB_COUPLED).a\
           lib$(LIB_SUPERVEC).a\
+          lib$(LIB_MRILUCPP).a\
 
 # Header dependencies, especially important for templated stuff
 HEADERDEPS = \
@@ -63,6 +65,9 @@ lib$(LIB_COUPLED).a: force_look
 
 lib$(LIB_SUPERVEC).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_SUPERVEC); $(MAKE) $(MFLAGS)
+
+lib$(LIB_MRILUCPP).a: force_look
+	cd $(PROJECT_BASE)/$(LIB_MRILUCPP); $(MAKE) $(MFLAGS)
 
 %.o: %.C $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $(CXX_DB) $<

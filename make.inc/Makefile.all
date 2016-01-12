@@ -42,8 +42,10 @@ F77_FLAGS  = $(F77_DEBUG) ${SHARED_FLAGS} $(F77_EXTRA)
 ##------------------------------------------------------------------
 ##   Gather all the libraries:
 LIBS_FORT  = -lgfortran
-LIBS_EXTRA = -lhdf5
-LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
+LIBS_EXTRA = -lhdf5 \
+		     -lifpack_mrilu -lmrilucpp\
+		   	 -lprecon -lmtstor -lmisc -liosrc
+LIBS       =  ${TRILINOS_LIBRARIES} ${LIBS_EXTRA} ${LIBS_FORT}
 
 ##------------------------------------------------------------------
 ## Internal stuff...
@@ -52,6 +54,7 @@ LIB_OCEAN    = ocean
 LIB_ATMOS    = atmosphere
 LIB_COUPLED  = coupledmodel
 LIB_SUPERVEC = supervector
+LIB_MRILUCPP = mrilucpp
 
 ##------------------------------------------------------------------
 ##   Define the internal library locations:
@@ -59,6 +62,7 @@ PATH_LIB_OCEAN    = $(PROJECT_BASE)/ocean
 PATH_LIB_ATMOS    = $(PROJECT_BASE)/atmosphere
 PATH_LIB_COUPLED  = $(PROJECT_BASE)/coupledmodel
 PATH_LIB_SUPERVEC = $(PROJECT_BASE)/supervector
+PATH_LIB_MRILUCPP = $(PROJECT_BASE)/mrilucpp
 
 ##------------------------------------------------------------------
 ##   Gather all the include directories:
@@ -73,6 +77,8 @@ INCLUDE_DIRS =	-I$(PROJECT_BASE)/supervector\
 				-I$(PROJECT_BASE)/atmosphere\
 				-I$(PROJECT_BASE)/coupledmodel\
 				-I$(PROJECT_BASE)/supervector\
+				-I$(PROJECT_BASE)/mrilucpp\
+				-I$(MRILUDIR)/mod\
         		${INCLUDE_DIRS_TRI}
 
 ##------------------------------------------------------------------
@@ -81,4 +87,6 @@ LIBRARY_DIRS =  -L$(PATH_LIB_OCEAN)\
 			    -L$(PATH_LIB_ATMOS)\
 			    -L$(PATH_LIB_COUPLED)\
 			    -L$(PATH_LIB_SUPERVEC)\
+			    -L$(PATH_LIB_MRILUCPP)\
+				-L$(MRILUDIR)/lib\
 		          $(LIBRARY_DIRS_TRI)

@@ -213,7 +213,7 @@
     
     <!-- for comments see "Auv Precond" list above -->
     
-    <Parameter name="Method" type="string" value="Ifpack"/>
+    <Parameter name="Method" type="string" value="ML"/>
     
 	<ParameterList name="ML">
 	  
@@ -236,16 +236,63 @@
       <Parameter name="cycle applications" type="int" value="1"/>
       <Parameter name="prec type" type="string" value="full-MGV"/>
       <Parameter name="print unused" type="int" value="-2"/>
+
       <Parameter name="smoother: damping factor" type="double" value="0.9"/>
       <Parameter name="smoother: pre or post" type="string" value="both"/>
       <Parameter name="smoother: sweeps" type="int" value="1"/>
-      <Parameter name="smoother: type" type="string" value="Aztec"/>
-	  <!--
-          <Parameter name="smoother: type (level 0)" type="string" value="IFPACK"/>
-          <Parameter name="smoother: type (level 1)" type="string" value="do-nothing"/>
-	  -->                
+      <Parameter name="smoother: type" type="string" value="IFPACK"/>
+	  <Parameter name="smoother: ifpack overlap" type="int" value="0"/>
+      <Parameter name="smoother: ifpack type" type="string" value="MRILU"/>
       <Parameter name="smoother: Aztec as solver" type="bool" value="0"/>
-      
+	  <ParameterList name="smoother: ifpack list">
+        <Parameter name="partitioner: type" type="string" value="user"/>
+        <Parameter name="schwarz: compute condest" type="bool" value="0"/>
+        <Parameter name="schwarz: filter singletons" type="bool" value="0"/>
+        <Parameter name="schwarz: combine mode" type="string" value="Average"/>
+        <!--Parameter name="partitioner: local parts" type="int" value="1"/-->
+        <Parameter name="relaxation: type" type="string" value="Jacobi"/>
+        <Parameter name="relaxation: sweeps" type="int" value="1"/>
+        <Parameter name="relaxation: damping factor" type="double" value="1.0"/>
+        <Parameter name="relaxation: zero starting solution" type="bool" value="0"/> 
+        <Parameter name="fact: level-of-fill" type="int" value="1"/>
+        <Parameter name="fact: ilut level-of-fill" type="double" value="5.0"/>
+        <Parameter name="fact: drop tolerance" type="double" value="1.0e-8"/>
+        <!-- Parameters for the Ifpack/MRILU solver { -->
+        <ParameterList name="MRILU">
+          <Parameter name="blocksize" type="int" value="2"/>
+          <Parameter name="cutmck" type="int" value="0"/>
+          <Parameter name="scarow" type="int" value="1"/>
+          <Parameter name="xactelm" type="int" value="1"/>
+          <Parameter name="clsonce" type="int" value="1"/>
+          <Parameter name="nlsfctr" type="double" value="0.1"/>
+          <Parameter name="epsw" type="double" value="0.1"/>
+          <Parameter name="elmfctr" type="double" value="0.25"/>
+          <Parameter name="gusmod" type="int" value="0"/>
+          <Parameter name="gusfctr" type="double" value="0.0"/>
+          <Parameter name="redfctr" type="double" value="2.0"/>
+          <Parameter name="schtol" type="double" value="1.0e-6"/>
+          <Parameter name="denslim" type="double" value="0.9"/>
+          <Parameter name="globfrac" type="double" value="0.05"/>
+          <Parameter name="locfrac" type="double" value="0.0"/>
+          <Parameter name="sparslim" type="double" value="0.95"/>
+          <Parameter name="ilutype" type="int" value="9"/>
+          <Parameter name="droptol" type="double" value="1.0e-5"/>
+          <Parameter name="compfct" type="double" value="0.0"/>
+          <Parameter name="cpivtol" type="double" value="0.875"/>
+          <Parameter name="lutol" type="double" value="1.0e-10"/>
+          <Parameter name="singlu" type="int" value="1"/>
+          <Parameter name="Output Level" type="int" value="0"/> 
+
+          <ParameterList name="visualization">
+            <Parameter name="visasc" type="int" value="0"/>
+            <Parameter name="visnsc" type="int" value="0"/>
+            <Parameter name="vislsc" type="int" value="0"/>
+            <Parameter name="visildu" type="int" value="0"/> 
+            <Parameter name="visnro" type="int" value="0"/>
+          </ParameterList> 
+        </ParameterList><!-- } end of MRILU -->
+      </ParameterList> <!-- } smoother: ifpack list" -->
+     
       <Parameter name="repartition: enable" type="int" value="0"/>
       <Parameter name="repartition: partitioner" type="string" value="Zoltan"/>
       <Parameter name="repartition: Zoltan dimensions" type="int" value="3"/>
@@ -276,20 +323,6 @@
           value="block relaxation (Amesos)"/-->
       
       <!-- { -->
-      <ParameterList name="smoother: ifpack list">
-        <Parameter name="partitioner: type" type="string" value="user"/>
-        <Parameter name="schwarz: compute condest" type="bool" value="0"/>
-        <Parameter name="schwarz: filter singletons" type="bool" value="0"/>
-        <Parameter name="schwarz: combine mode" type="string" value="Average"/>
-        <!--Parameter name="partitioner: local parts" type="int" value="1"/-->
-        <Parameter name="relaxation: type" type="string" value="Jacobi"/>
-        <Parameter name="relaxation: sweeps" type="int" value="1"/>
-        <Parameter name="relaxation: damping factor" type="double" value="1.0"/>
-        <Parameter name="relaxation: zero starting solution" type="bool" value="0"/> 
-        <Parameter name="fact: level-of-fill" type="int" value="1"/>
-        <Parameter name="fact: ilut level-of-fill" type="double" value="5.0"/>
-        <Parameter name="fact: drop tolerance" type="double" value="1.0e-8"/>
-      </ParameterList> <!-- } smoother: ifpack list" -->
     </ParameterList> <!-- } ML -->
 
 	<Parameter name="Ifpack Method" type="string" value="MRILU"/>
@@ -330,7 +363,7 @@
       <Parameter name="cpivtol" type="double" value="0.875"/>
       <Parameter name="lutol" type="double" value="1.0e-10"/>
       <Parameter name="singlu" type="int" value="1"/>
-      <Parameter name="Output Level" type="int" value="0"/> 
+      <Parameter name="Output Level" type="int" value="1"/> 
 	  
       <ParameterList name="visualization">
         <Parameter name="visasc" type="int" value="0"/>

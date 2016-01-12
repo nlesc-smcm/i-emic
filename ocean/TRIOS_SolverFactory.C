@@ -20,6 +20,7 @@
 #include "Ifpack_AdditiveSchwarz.h"
 #include "Ifpack_ILU.h"
 #include "Ifpack_ILUT.h"
+#include "Ifpack_MRILU.h"
 #include <iomanip>
 #include "Teuchos_oblackholestream.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
@@ -80,7 +81,6 @@ namespace TRIOS {
 				if (verbose<5) out = min(out,verbose); 
 				plist.sublist("MRILU").set("Output Level",out);
 			}
-    
 			Ifpack PreconditionerFactory;
 			prec = Teuchos::rcp(PreconditionerFactory.Create(SubType,
 															 &A, OverlapLevel) );

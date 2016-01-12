@@ -1,0 +1,6 @@
+Ifpack.h and Ifpack.cpp show how these files might be patched in Trilinos 11.12.
+
+Be sure to put something like the following in the cmake install script.
+  -D CMAKE_CXX_FLAGS:STRING="-g -O3 -DHAVE_IFPACK_MRILU" \
+
+Also, let Ifpack_MRILU.h be available in the path.
