@@ -935,7 +935,7 @@ SUBROUTINE stpnt!(un)
   par(ENER)   =  1.0e+02
   par(MIXP)   =  0.0	   ! ATvS-Mix
   par(MKAP)   =  0.0       ! Gent-Mcwilliams  ! ATvS-Mix
-  par(SPL1)   =  1.25      ! 2.0e+03   ! 1.25  !tanh      ! ATvS-Mix
+  par(SPL1)   =  2.0e+03   ! 1.25  !tanh      ! ATvS-Mix
   par(SPL2)   =  0.01      ! neutral physics
 
   call vmix_par

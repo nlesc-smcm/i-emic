@@ -24,6 +24,7 @@
 !multiarray/
 !notes/
 !patch/
+!11.*
 
 !Doxyfile*
 !Makefile*

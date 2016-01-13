@@ -16,7 +16,7 @@ all: lib
 lib: libmrilucpp.a libifpack_mrilu.a
 
 mrilucpp.o: mrilucpp.F90
-	${FC} ${MRILU_MODDIR} ${FF_FLAGS} -c $<
+	${FC} ${MRILU_MODDIR} ${FF_FLAGS} ${FC_FLAGS} -c $<
 
 Ifpack_MRILU.o: Ifpack_MRILU.cpp Ifpack_MRILU.h
 	${CXX} ${INCLUDE_DIRS} ${CXX_FLAGS} -c $<
