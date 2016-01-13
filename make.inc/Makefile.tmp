@@ -12,6 +12,8 @@ COMP_IDENT   = GNU
 TRIVERSION   = 11.12
 ##   Trilinos directory containing lib and include dirs:
 TRIDIR       = /var/tmp/trilinos/${TRIVERSION}
+##   MRILU directory containing lib and mod subfolders
+MRILUDIR     = /var/tmp/mrilu/
 ##   Project base directory
 PROJECT_BASE = /var/tmp/i-emic
 ##   Make flags

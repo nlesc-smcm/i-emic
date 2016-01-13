@@ -1,9 +1,9 @@
 % decide which plots to show in movie
-surftemp      = false;
+surftemp      = true;
 barstreamfunc = false;
 isothermals   = false;
 moc           = false;
-amoc          = true; % only working with 2deg landmask
+amoc          = false; % only working with 2deg landmask
 
 % Create array of strings with filenames of the states (UNIX)
 [s,statenames] = system('ls ocean_state*[0-9]* | sed "s/ / /" ')
