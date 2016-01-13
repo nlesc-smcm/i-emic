@@ -213,7 +213,7 @@
     
     <!-- for comments see "Auv Precond" list above -->
     
-    <Parameter name="Method" type="string" value="ML"/>
+    <Parameter name="Method" type="string" value="Ifpack"/>
     
 	<ParameterList name="ML">
 	  

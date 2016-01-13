@@ -19,7 +19,7 @@ SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
 ##------------------------------------------------------------------
 ##   Supply debug and other flags for CXX compiler:
 CXX_DEBUG = -g
-CXX_EXTRA = ${LOCAL_CXX_FLAGS} #-O3 #-DDEBUGGING #-DTESTING
+CXX_EXTRA = ${LOCAL_CXX_FLAGS}
 CXX_FLAGS = ${CXX_DEBUG} ${SHARED_FLAGS} $(CXX_EXTRA)
 
 ##------------------------------------------------------------------

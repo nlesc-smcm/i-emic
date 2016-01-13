@@ -12,86 +12,27 @@ COMP_IDENT   = INTEL
 TRIVERSION   = 11.14
 ##   Trilinos directory containing lib and include dirs:
 TRIDIR       = ${HOME}/trilinos/${TRIVERSION}
+##   MRILU directory containing lib and mod subfolders
+MRILUDIR     = /home/emulder/mrilu/ifort/
 ##   Project base diretory
 PROJECT_BASE = ${HOME}/Projects/i-emic
 ##   Make flags
 MFLAGS       = -j 8
 ##   Local compiler flags
-LOCAL_CXX_FLAGS  = -std=c++11
-LOCAL_FC_FLAGS = -r8 -O3 
-
-##=================================================================
-
-##   Import makefile variables from Trilinos:
-
-include ${TRIDIR}/include/Makefile.export.Trilinos
-CXX                 = ${Trilinos_CXX_COMPILER}
-FC                  = ${Trilinos_Fortran_COMPILER}
-INCLUDE_DIRS_TRI    = ${Trilinos_INCLUDE_DIRS}
-LIBRARY_DIRS_TRI    = ${Trilinos_LIBRARY_DIRS}
-TRILINOS_LIBRARIES  = ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES}
+LOCAL_CXX_FLAGS  = -std=c++11 -O3 -DMPICH_SKIP_MPICXX 
 
 ##------------------------------------------------------------------
-##   Flags that are shared among the different compilers:
-SHARED_FLAGS = -D${LOCATION} -D${COMP_IDENT}
+## Get shared Makefile variables
+include $(PROJECT_BASE)/make.inc/Makefile.all
 
 ##------------------------------------------------------------------
-##   Supply debug and other flags for CXX compiler:
-CXX_DEBUG = -g
-CXX_EXTRA = ${LOCAL_CXX_FLAGS} -O3 -DMPICH_SKIP_MPICXX #-DDEBUGGING #-DTESTING 
-CXX_FLAGS = ${CXX_DEBUG} ${SHARED_FLAGS} $(CXX_EXTRA)
+## Overwrite a few since we are using ifort
 
 ##------------------------------------------------------------------
-##   Supply debug and other flags for FC compiler:		    
-FC_DEBUG = -g
-FC_FLAGS = ${FC_DEBUG} ${LOCAL_FC_FLAGS} ${SHARED_FLAGS} -DASCII_TOPO
+##   Gather flags for FC compiler
+FC_FLAGS = -g -r8 -O3  ${SHARED_FLAGS} -DASCII_TOPO -DWITH_UNION
 
 ##------------------------------------------------------------------
 ##   Supply F77 compiler and its flags:
 F77        = ${FC}
-F77_FLAGS  = ${FC_FLAGS} -extend-source 132 -O0
-
-##------------------------------------------------------------------
-##   Gather all the libraries:
-LIBS_FORT  = -lgfortran
-LIBS_EXTRA = -lhdf5
-LIBS       = ${LIBS_EXTRA} ${TRILINOS_LIBRARIES} ${LIBS_FORT}
-
-##------------------------------------------------------------------
-## Internal stuff...
-##   Define the internal library names:
-LIB_OCEAN    = ocean
-LIB_ATMOS    = atmosphere
-LIB_COUPLED  = coupledmodel
-LIB_SUPERVEC = supervector
-
-##------------------------------------------------------------------
-##   Define the internal library locations:
-PATH_LIB_OCEAN  = $(PROJECT_BASE)/ocean
-PATH_LIB_ATMOS  = $(PROJECT_BASE)/atmosphere
-PATH_LIB_COUPLED  = $(PROJECT_BASE)/coupledmodel
-PATH_LIB_SUPERVEC = $(PROJECT_BASE)/supervector
-
-##------------------------------------------------------------------
-##   Gather all the include directories:
-INCLUDE_DIRS =	\
-                -I$(PROJECT_BASE)/ocean\
-                -I$(PROJECT_BASE)/atmosphere\
-                -I$(PROJECT_BASE)/coupledmodel\
-	 	-I$(PROJECT_BASE)/newton\
-		-I$(PROJECT_BASE)/thetastepper\
-		-I$(PROJECT_BASE)/continuation\
-		-I$(PROJECT_BASE)/supervector\
-                -I$(PROJECT_BASE)/multiarray\
-                -I$(PROJECT_BASE)/idrsolver\
-                -I$(PROJECT_BASE)/gmressolver\
-       		${INCLUDE_DIRS_TRI}
-
-##------------------------------------------------------------------
-##   Gather all the library directories:	
-LIBRARY_DIRS =  \
-           -L$(PATH_LIB_OCEAN) \
-           -L$(PATH_LIB_ATMOS) \
-           -L$(PATH_LIB_COUPLED) \
-           -L$(PATH_LIB_SUPERVEC) \
-             $(LIBRARY_DIRS_TRI)
+F77_FLAGS  = ${FC_FLAGS} -extend-source 132 
