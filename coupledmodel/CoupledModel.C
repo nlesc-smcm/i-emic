@@ -390,7 +390,7 @@ void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out, char mode
 	ocean_->applyMatrix(v, out);  // A*x1
 	atmos_->applyMatrix(v, out);  // D*x2
 
-	if (mode == 'C')
+	if (mode == 'C') // Applying coupling blocks
 	{
 		// Make temporary copies of v to store linear transformations
 		SuperVector y(v);
@@ -423,12 +423,44 @@ CoupledModel::applyPrecon(SuperVector const &v)
 }
 
 //------------------------------------------------------------------
-void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out)
+void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode)
 {
 	TIMER_START("CoupledModel: apply preconditioner...");	
+
 	out.zero();	// Initialize output
-	ocean_->applyPrecon(v, out);
-	atmos_->applyPrecon(v, out);
+
+	if (mode == 'C')
+	{
+		// Make plenty of copies... 
+		SuperVector x1(v);
+		SuperVector x2(v);
+		SuperVector y1(out);
+		SuperVector y2(out);
+
+		x1.zeroAtmos();
+		x2.zeroOcean();
+		
+		ocean_->applyPrecon(v, y2);                     // inv(M)*x1
+		y2.linearTransformation(*C_, *rowsB_, 'O', 'A'); // C*inv(M)*x1
+		y2.zeroOcean();		
+		y2.update(1, x2, -1);  // y2 = x2 - C*inv(M)*x1
+
+		// Get the atmos part
+		atmos_->applyPrecon(y2, y1); // inv(D)*y2
+		out.assign(y1.getAtmosVector());		
+		
+		y1.linearTransformation(*B_, *rowsB_, 'A', 'O'); // B*inv(D)*y2
+		y1.zeroAtmos();
+		y1.update(1, x1, -1); // y1 = x1 - B*inv(D)*y2
+
+		// Get the ocean part
+		ocean_->applyPrecon(y1, out); // x1 = inv(M)*y1		
+	}
+	else
+	{
+		ocean_->applyPrecon(v, out);
+		atmos_->applyPrecon(v, out);
+	}
 
 	TIMER_STOP("CoupledModel: apply preconditioner...");	
 }
