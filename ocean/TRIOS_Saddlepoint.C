@@ -425,7 +425,6 @@ namespace TRIOS {
 		// make preconditioner for Chat
 		DEBUG("Construct preconditioner for Chat...");
 		{
-			
 			ChatPrecond = SolverFactory::CreateAlgebraicPrecond(*Chat, ChatPrecList);
 			DEBUG("Compute preconditioner for Chat...");
 			SolverFactory::ComputeAlgebraicPrecond(ChatPrecond, ChatPrecList);

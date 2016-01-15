@@ -30,9 +30,9 @@ include $(PROJECT_BASE)/make.inc/Makefile.all
 
 ##------------------------------------------------------------------
 ##   Gather flags for FC compiler
-FC_FLAGS = -g -r8 -O3  ${SHARED_FLAGS} -DASCII_TOPO -DWITH_UNION
+FC_FLAGS = -g -r8 -O3  ${SHARED_FLAGS} -DASCII_TOPO -DWITH_UNION -heap-arrays 1
 
 ##------------------------------------------------------------------
 ##   Supply F77 compiler and its flags:
 F77        = ${FC}
-F77_FLAGS  = ${FC_FLAGS} -extend-source 132 
+F77_FLAGS  = ${FC_FLAGS} -extend-source 132 -O0
