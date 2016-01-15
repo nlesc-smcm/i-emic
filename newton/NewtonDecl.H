@@ -3,20 +3,22 @@
 
 //! This class finds a root of F(x) = 0. 
 //!
-//! Model can be a wrapper for THCM and other implicit models.
-//! The user should implement the following methods:
-//!     Model::evaluateF(VectorPtr state_); // rhs evaluation
-//!     Model::evaluateJ(VectorPtr state_); // Jacobian evaluation
-//!     Model::setState(VectorPtr state_);  // set the state in the model
-//!     Model::getState();               // get the state in the model
-//!     Model::solve();                  // solve 
-//!
-//! VectorPtr should be the type returned by Model::evaluateF().
 //! It should have the following methods:
-//!     VectorPtr::update(double a, double b, VectorPtr y) // perform  x = a*x+b*y
-//!
-//! Matrix should be the type returned by Model::evaluateJ().
-//! It should have the following methods:
+
+//! VectorPtr model_->GetState();
+//! VectorPtr model_->GetSolution();
+//! double    model_->GetNormRHS();
+
+//! model_->ComputeRHS();
+//! model_->ComputeJacobian();
+//! model_->Solve();
+
+//! state_->Update(1.0, *dir_, 1.0); --> in Epetra_MultiVector
+
+//! In my opinion, a model should have data members:
+//!   state
+//!   rhs
+//!   jacobian
 
 
 template<typename Model, typename VectorPtr>
