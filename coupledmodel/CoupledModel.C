@@ -445,6 +445,16 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 		y2.zeroOcean();		
 		y2.update(1, x2, -1);  // y2 = x2 - C*inv(M)*x1
 
+		SuperVector y22(y2);
+		y2.linearTransformation(*B_, *rowsB_, 'A', 'O'); // ...
+		ocean_->applyPrecon(y2, out);                    // ...
+		y2.update(1.0, out, 0.0);
+		y2.zeroAtmos();
+		y2.linearTransformation(*C_, *rowsB_, 'O', 'A'); // ...
+		atmos_->applyPrecon(y2, out);                    // ...
+		y2.update(1.0, out, 0.0);
+		y2.update(1.0, y22, 0.0);                        // ...
+
 		// Get the atmos part
 		atmos_->applyPrecon(y2, y1); // inv(D)*y2
 		out.assign(y1.getAtmosVector());		
@@ -454,6 +464,7 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 		y1.update(1, x1, -1); // y1 = x1 - B*inv(D)*y2
 
 		// Get the ocean part
+		out.zeroOcean();
 		ocean_->applyPrecon(y1, out); // x1 = inv(M)*y1		
 	}
 	else
