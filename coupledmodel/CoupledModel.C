@@ -431,41 +431,48 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 
 	if (mode == 'C')
 	{
-		// Make plenty of copies... 
 		SuperVector x1(v);
 		SuperVector x2(v);
-		SuperVector y1(out);
-		SuperVector y2(out);
+		x1.zeroAtmos();
+		x2.zeroOcean();
 
+		x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
+		x1.update(1.0, v, -1.0);
+		x1.zeroOcean();
+		atmos_->applyPrecon(x1, x2);
+
+		x2.linearTransformation(*B_, *rowsB_, 'A', 'O');
+		x2.update(1.0, v, -1.0);
+		x2.zeroAtmos();
+		ocean_->applyPrecon(x2, x1);
+		out.assign(x1.getOceanVector());
+
+		x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
+		x1.update(1.0, v, -1.0);
+		x1.zeroOcean();
+		atmos_->applyPrecon(x1, x2);
+		out.assign(x2.getAtmosVector());
+		
+		/*
+		SuperVector x1(v);
+		SuperVector x2(v);
 		x1.zeroAtmos();
 		x2.zeroOcean();
 		
-		ocean_->applyPrecon(v, y2);                     // inv(M)*x1
-		y2.linearTransformation(*C_, *rowsB_, 'O', 'A'); // C*inv(M)*x1
-		y2.zeroOcean();		
-		y2.update(1, x2, -1);  // y2 = x2 - C*inv(M)*x1
+		SuperVector t1(v);
+		SuperVector t2(v);
 
-		SuperVector y22(y2);
-		y2.linearTransformation(*B_, *rowsB_, 'A', 'O'); // ...
-		ocean_->applyPrecon(y2, out);                    // ...
-		y2.update(1.0, out, 0.0);
-		y2.zeroAtmos();
-		y2.linearTransformation(*C_, *rowsB_, 'O', 'A'); // ...
-		atmos_->applyPrecon(y2, out);                    // ...
-		y2.update(1.0, out, 0.0);
-		y2.update(1.0, y22, 0.0);                        // ...
-
-		// Get the atmos part
-		atmos_->applyPrecon(y2, y1); // inv(D)*y2
-		out.assign(y1.getAtmosVector());		
-		
-		y1.linearTransformation(*B_, *rowsB_, 'A', 'O'); // B*inv(D)*y2
-		y1.zeroAtmos();
-		y1.update(1, x1, -1); // y1 = x1 - B*inv(D)*y2
-
-		// Get the ocean part
-		out.zeroOcean();
-		ocean_->applyPrecon(y1, out); // x1 = inv(M)*y1		
+		ocean_->applyPrecon(v, t1);
+ 		t1.linearTransformation(*C_, *rowsB_, 'O', 'A'); 
+		t1.zeroOcean();
+		t1.update(1.0, x2, -1.0);
+		atmos_->applyPrecon(t1, t2);
+		out.assign(t2.getAtmosVector());
+		t2.linearTransformation(*B_, *rowsB_, 'A', 'O');
+		t2.zeroAtmos();
+		t2.update(1.0, x1, -1.0);
+		ocean_->applyPrecon(t2, out);
+		*/
 	}
 	else
 	{
