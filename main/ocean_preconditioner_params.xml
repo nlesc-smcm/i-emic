@@ -12,6 +12,8 @@
   <!-- this influences the output behavior of all methods inside the -->
   <!-- preconditioner. Values should be between 0 and 10.            -->
   <Parameter name="Verbosity" type="int" value="0"/>
+
+  <Parameter name="Permutation" type="int" value="2"/>
   
   <!-- use 0 starting guess for internal krylov solvers (like in THCM) -->
   <Parameter name="Zero Initial Guess" type="bool" value="1"/>
