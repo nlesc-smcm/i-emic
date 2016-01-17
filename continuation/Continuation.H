@@ -34,6 +34,7 @@ Continuation(Model model, ParameterList pars)
 	rejectFailedNewton_    (pars->get("reject failed iteration", true)),
 	cycleTolerance_        (pars->get("enable tolerance cycling", false)),
 	usePracticalTol_       (pars->get("enable practical tolerance", false)),
+	scaleRHS_              (pars->get("enable rhs scaling", false)),
 	signMonitor_           (0)
 {
 	model_  = model;
@@ -324,7 +325,9 @@ newtonCorrector()
 	Vector y1;            // solution of solve with dFdPar
 	Vector z1;            // solution of solve with F
 	double parDir;        // direction for the parameter
-
+	double rscale = 1.0;  // experimental RHS scaling
+	
+	
 	newtonIter_ = 0;	
 	while (newtonIter_ < maxNewtonIterations_)
 	{
@@ -340,7 +343,11 @@ newtonCorrector()
 		// > Note that we cannot use the current rhs in the model
 		//   since at this point it corresponds to F(par+eps)
 		Vector R = rhsCopy_;
-		R->scale(-1.0);
+
+		if (scaleRHS_) // experimental
+			rscale += newtonIter_ * 100;
+		
+		R->scale(-1.0 * rscale);
 		
 		// Obtain the lower part (r) of the continuation RHS,
 		// Here we compute
@@ -368,6 +375,9 @@ newtonCorrector()
 		y1 = model_->getSolution('C');
 		model_->solve(R);
 		z1 = model_->getSolution('C');
+
+		if (scaleRHS_) // experimental
+			z1->scale(1.0 / rscale);
 
 		// Determine the directions
 		// First for the parameter:

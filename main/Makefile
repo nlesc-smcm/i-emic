@@ -38,7 +38,6 @@ INTLIBS = \
 	-l$(LIB_OCEAN)\
 	-l$(LIB_ATMOS)\
 
-CXX_DB =
 
 all: main
 
@@ -76,6 +75,9 @@ clean:
 	-rm -f $(EXE) $(OBJS) $(OBJLIBS) fort.* *.txt \
 	*.eps *.co *.jco *.beg *.rl *.info *~ dump *#
 	-for d in $(DIRS); do (cd $$d; $(MAKE) clean ); done
+
+include:
+	echo $(INCLUDE_DIRS) 
 
 force_look:
 	true

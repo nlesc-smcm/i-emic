@@ -431,25 +431,32 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 
 	if (mode == 'C')
 	{
-		SuperVector x1(v);
-		SuperVector x2(v);
-		x1.zeroAtmos();
-		x2.zeroOcean();
+		SuperVector x1(out);
+		SuperVector x2(out);
+		SuperVector b1(v);
+		SuperVector b2(v);
 
-		x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
-		x1.update(1.0, v, -1.0);
-		x1.zeroOcean();
-		atmos_->applyPrecon(x1, x2);
+		b1.zeroAtmos();
+		b2.zeroOcean();
 
-		x2.linearTransformation(*B_, *rowsB_, 'A', 'O');
-		x2.update(1.0, v, -1.0);
-		x2.zeroAtmos();
-		ocean_->applyPrecon(x2, x1);
+		for (int i = 0; i != iterGS_; ++i)
+		{
+			x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
+			x1.zeroOcean();
+			x1.update(1.0, b2, -1.0);
+			atmos_->applyPrecon(x1, x2);
+			
+			x2.linearTransformation(*B_, *rowsB_, 'A', 'O');
+			x2.zeroAtmos();
+			x2.update(1.0, b1, -1.0);
+			ocean_->applyPrecon(x2, x1);
+		}
+		
 		out.assign(x1.getOceanVector());
 
 		x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
-		x1.update(1.0, v, -1.0);
 		x1.zeroOcean();
+		x1.update(1.0, b2, -1.0);
 		atmos_->applyPrecon(x1, x2);
 		out.assign(x2.getAtmosVector());
 		
