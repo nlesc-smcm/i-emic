@@ -10,8 +10,8 @@ DIRS =  \
 EXE     = main test timestepping xml2hdf5
 OBJS    = main.o test.o timestepping.o xml2hdf5.o
 OBJLIBS = lib$(LIB_OCEAN).a\
-	      lib$(LIB_ATMOS).a\
-	      lib$(LIB_COUPLED).a\
+	  lib$(LIB_ATMOS).a\
+	  lib$(LIB_COUPLED).a\
           lib$(LIB_SUPERVEC).a\
           lib$(LIB_MRILUCPP).a\
 
@@ -41,7 +41,7 @@ INTLIBS = \
 
 all: main
 
-main: $(OBJLIBS) main.o
+main: $(OBJLIBS)  main.o
 	$(CXX) main.o -o main $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 test: $(OBJLIBS) test.o

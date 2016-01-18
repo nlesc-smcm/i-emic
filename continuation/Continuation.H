@@ -343,9 +343,13 @@ newtonCorrector()
 		// > Note that we cannot use the current rhs in the model
 		//   since at this point it corresponds to F(par+eps)
 		Vector R = rhsCopy_;
+		normRHS_ = rhsCopy_->norm();
 
 		if (scaleRHS_) // experimental
-			rscale += newtonIter_ * 100;
+		{
+			INFO("Continuation: applying scaling to R");
+			rscale = 100 / R->norm();
+		}
 		
 		R->scale(-1.0 * rscale);
 		
@@ -397,14 +401,14 @@ newtonCorrector()
 		model_->setPar(par_);  // set it in the model
 		++newtonIter_;
 
-		// test new RHS, if it satisfies the tolerance we exit the loop
-		normRHS_ = rhsView_->norm();
+		// test new RHS, if it satisfies the tolerance we exit the loop		
 		model_->computeRHS();
 		normRHStest_ = rhsView_->norm('V');
 
 		INFO("----------------------------------------------------------");
 		INFO("           Newton corrector    iter: " << newtonIter_ );
 		INFO("                          tolerance: " << practicalTol_);
+		INFO("                  previous residual: " << normRHS_);
 		INFO("                              ||R||: " << normRHStest_);
 		INFO("                             ||dx||: " << stateDir->norm());
 		INFO("----------------------------------------------------------");		
