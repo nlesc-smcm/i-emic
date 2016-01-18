@@ -1,5 +1,4 @@
-<ParameterList name="Block Preconditioner">
-  
+<ParameterList name="Block Preconditioner">              
   <!-- Preconditioner scheme: currently allowed are                    -->
   <!-- "ILU": involves the very expensive Schur-complement that        -->
   <!--        can not currently be solved efficiently                  -->
@@ -8,15 +7,19 @@
   <!-- "symmetric Gauss-Seidel": doesn't seem to give any improvement) -->
   <!--                           but is not much more expensive either -->
   <Parameter name="Scheme" type="string" value="Gauss-Seidel"/>
-
-  <!-- this influences the output behavior of all methods inside the -->
-  <!-- preconditioner. Values should be between 0 and 10.            -->
-  <Parameter name="Verbosity" type="int" value="0"/>
-
-  <Parameter name="Permutation" type="int" value="2"/>
   
   <!-- use 0 starting guess for internal krylov solvers (like in THCM) -->
   <Parameter name="Zero Initial Guess" type="bool" value="1"/>
+
+  <!-- Verbosity -->
+  <Parameter name="Verbosity" type="int" value="0"/>
+
+  <!-- Permutation                                                              -->
+  <!--     | Ap   0   0  BTS |      | Kuvp 0   0 Guv |      | Aw  0   0  Duv  | -->
+  <!-- 1 = | Guv Kuvp 0   0  |, 2 = | Duv  Aw  0  0  |, 3 = | Bw ATS  0  Buv  | -->
+  <!--     |  0  Duv  Aw  0  |      | Buv  Bw ATS 0  |      | 0  BTS Ap   0   | -->
+  <!--     | Buv  0   Bw ATS |      |  0   0  BTS Ap |      | 0   0  Guv Kuvp | -->
+  <Parameter name="Permutation" type="int" value="2"/>
   
   <!-- relaxation parameter for block-Gauss-Seidel preconditioner -->
   <!-- currently it seems that 1.0 is a good choice               -->
@@ -26,7 +29,7 @@
   <!-- This solver is used inside the 'Simple' preconditioner              -->
   <ParameterList name="Auv Solver">
     <!-- up to now only "AztecOO" or "None" (just apply precond once) -->
-    <Parameter name="Method" type="string" value="None"/>
+    <Parameter name="Method" type="string" value="AztecOO"/>
     <!-- maximum number of iterations permitted -->
     <Parameter name="Max Num Iter" type="int" value="1"/>
     <!-- (relative) convergence tolerance      -->
@@ -36,7 +39,7 @@
     <!-- type of scaling for conv. criterion ("r0","no scaling", "rhs",...) -->
     <Parameter name="Conv" type="string" value="r0"/>
     <!-- print every k'th iteration (0 to keep silent) -->
-    <Parameter name="Output" type="int" value="0"/>
+    <Parameter name="Output" type="int" value="1"/>
     <!-- unless you reaaly want to use an Aztec preconditioner, choose "None"! -->
     <Parameter name="Precond" type="string" value="None"/>
     <!-- max size of Krylov space before restart -->
@@ -409,10 +412,10 @@
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
     <Parameter name="Max Num Iter" type="int" value="5"/>
-    <Parameter name="Tolerance" type="double" value="1.0e-3"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-4"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
-    <Parameter name="Output" type="int" value="10"/>
+    <Parameter name="Output" type="int" value="1"/>
     <Parameter name="Scaling" type="string" value="None"/>
     <!-- don't touch this one, it's irrelevant -->
     <Parameter name="Precond" type="string" value="None"/>
@@ -530,11 +533,11 @@
   <!-- Parameters for the Krylov solver for ATS { -->
   <ParameterList name="ATS Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="10"/>
+    <Parameter name="Max Num Iter" type="int" value="20"/>
     <Parameter name="Tolerance" type="double" value="1.0e-4"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
-    <Parameter name="Output" type="int" value="0"/>
+    <Parameter name="Output" type="int" value="1"/>
     <Parameter name="Precond" type="string" value="None"/>
     <Parameter name="KSpace" type="int" value="10"/>
     <Parameter name="Orthog" type="string" value="Classic"/>

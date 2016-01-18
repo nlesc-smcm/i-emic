@@ -378,14 +378,12 @@ namespace TRIOS {
 
 			CHECK_ZERO(Chat->Scale(-1.0));
 			Chat->SetLabel("Schur-Complement Chat of Simple Precond");
-			DUMP("chat1.txt",*Chat);
 			// if AdjustChat does something to the local part of Chat,
 			// these indicate which rows have been modified after the call:
 			fixp1 = -1;
 			fixp2 = -1;
 			valp=0.0;
 			this->AdjustChat(Chat);
-			DUMP("chat2.txt",*Chat);
 		}
 		
 		/*

@@ -885,7 +885,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 			DEBUG(" THCM:  RecomputeScaling()");
 			this->RecomputeScaling();
 
-#if 0
+#if 1
 			std::ofstream ofs1("row_scaling.txt");
 			ofs1 << *row_scaling;
 			ofs1.close();
@@ -1073,7 +1073,7 @@ void THCM::RecomputeScaling(void)
 	// make sure T and S are scaled the same way in each cell
 	// we need this because of our special block scaling for the
 	// ATS matrix in the preconditioner.
-	for (int i=TT-1;i<row_scaling->MyLength();i+=_NUN_)
+	for (int i = TT-1; i < row_scaling->MyLength(); i += _NUN_)
     {
 		double mean = 0.5*((*row_scaling)[i]+(*row_scaling)[i+1]);
 		(*row_scaling)[i] = mean;

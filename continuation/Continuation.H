@@ -195,20 +195,29 @@ computeDFDPar(char mode)
 	//
 	if (mode == 'F')
 		model_->computeRHS();
-	
+
+	INFO("    creating dFdPar...");	
+	INFO("       |                       F(x,l) = " << rhsView_->norm());
 	// Get a copy of this RHS, store it in our rhsCopy_ member
 	rhsCopy_ = model_->getRHS('C');
-
+	//INFO("       |                 copy  F(x,l) = " << rhsCopy_->norm());
+	
 	// Calculate new RHS
 	model_->setPar(par_ + epsilon_);  // increment parameter --> par + eps
 	model_->computeRHS();             // compute new RHS     --> F(par+eps)
+	INFO("       |                            l = " << par_);
+	INFO("       |                          eps = " << epsilon_);
+	INFO("       |                   F(x,l+eps) = " << rhsView_->norm());
 	model_->setPar(par_);             // restore parameter   --> par
 
 	// Get a copy of the new RHS F(par+eps), put it in dFdPar_
 	dFdPar_ = model_->getRHS('C');
+	//INFO("       |           copy    F(x,l+eps) = " << dFdPar_->norm());
 
 	// Update dFdPar_ such that it contains (F(par+eps) - F(par))/eps
 	dFdPar_->update(-1.0 / epsilon_, *rhsCopy_, 1.0 / epsilon_);
+	INFO("       |  (F(x,l+eps) - F(x,l)) / eps = " << dFdPar_->norm());
+
 }
 
 //======================================================================
@@ -258,7 +267,7 @@ createTangent(char mode)
 		normalize();
 	}
 	else
-		WARNING("(Continuation::createTangent) Invalid mode!",
+		WARNING("(       |:createTangent) Invalid mode!",
 				__FILE__, __LINE__);
 }
 
@@ -305,10 +314,10 @@ eulerPredictor()
 	// - Note that at this point par0 and par are equal.
 	par_ = par_ + ds_ * parDot_;
 	
-	DEBUG("                      old par: " << storage_.par0);
-	DEBUG("                predicted par: " << par_);
-	DEBUG("               norm old state: " << storage_.state0->norm());
-	DEBUG("         norm predicted state: " << stateView_->norm());
+	INFO("   |                   old par: " << storage_.par0);
+	INFO("   |             predicted par: " << par_);
+	INFO("   |            norm old state: " << storage_.state0->norm());
+	INFO("   |      norm predicted state: " << stateView_->norm());
 
 	// Make sure the model has the same par
 	model_->setPar(par_);
@@ -331,6 +340,7 @@ newtonCorrector()
 	newtonIter_ = 0;	
 	while (newtonIter_ < maxNewtonIterations_)
 	{
+		
 		// Taking the derivative of the RHS w.r.t. the continuation
 		// parameter using a finite difference. In the first iteration
 		// the computation of the RHS is required.
@@ -399,32 +409,40 @@ newtonCorrector()
 		stateView_->update(1.0, *stateDir, 1.0);
 		par_ = par_ + parDir;  // update our parameter
 		model_->setPar(par_);  // set it in the model
+		
+		// Do some printing ---------------------------------------
+		model_->printJacobian("J" + std::to_string(newtonIter_));
+		stateDot_->print("xdot" + std::to_string(newtonIter_));
+		stateDir->print("dx" + std::to_string(newtonIter_));
+		stateView_->print("x" + std::to_string(newtonIter_));
+		rhsCopy_->print("F" + std::to_string(newtonIter_));
+		dFdPar_->print("Fl" + std::to_string(newtonIter_));
+		// --------------------------------------------------------
+
 		++newtonIter_;
 
 		// test new RHS, if it satisfies the tolerance we exit the loop		
 		model_->computeRHS();
 		normRHStest_ = rhsView_->norm('V');
 
-		INFO("----------------------------------------------------------");
-		INFO("           Newton corrector    iter: " << newtonIter_ );
-		INFO("                          tolerance: " << practicalTol_);
-		INFO("                  previous residual: " << normRHS_);
-		INFO("                              ||R||: " << normRHStest_);
-		INFO("                             ||dx||: " << stateDir->norm());
-		INFO("----------------------------------------------------------");		
-		
-		if (normRHStest_ < practicalTol_) break;
-		
 		// if we don't see a decrease we run the backtracking routine
 		if (backTracking_ and (normRHS_ < normRHStest_) )
 		{
 			int status = runBackTracking(stateDir, parDir);
 			if (status)
 				return 1; // exiting Newton when backtracking fails
-					
-			normRHStest_ = rhsView_->norm(); 
-			if (normRHStest_ < practicalTol_) break;					
 		}
+		
+		
+		INFO("----------------------------------------------------------");
+		INFO("           Newton corrector    iter: " << newtonIter_ );
+		INFO("                          tolerance: " << practicalTol_);
+		INFO("                  previous residual: " << normRHS_);
+		INFO("                              ||R||: " << normRHStest_);
+		INFO("                             ||dx||: " << stateDir->norm());
+		INFO("----------------------------------------------------------");
+		
+		if (normRHStest_ < practicalTol_) break;
 	}
 	
 	// Store the last obtained y1 in stateDot, such that it can be used by

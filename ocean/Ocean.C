@@ -359,24 +359,25 @@ void Ocean::scaleProblem(VectorPtr rhs)
 	colScalingRecipr_->Reciprocal(*colScaling);
 
 	//------------------------------------------------------
-	double nrm;
-	sol_->Norm2(&nrm);
-	DEBUG("Ocean::scaleProblem() sol (before scaling): "  << nrm);
+	// double nrm;
+	// sol_->Norm2(&nrm);
+	// DEBUG("Ocean::scaleProblem() sol (before scaling): "  << nrm);
 	
 	//------------------------------------------------------
-	jac_->LeftScale(*rowScalingRecipr_);
+	jac_->LeftScale(*rowScaling);
+	// jac_->RightScale(*colScaling);
 
 	if (rhs == Teuchos::null)
-		rhs_->Multiply(1.0, *rowScalingRecipr_, *rhs_, 0.0);
+		rhs_->Multiply(1.0, *rowScaling, *rhs_, 0.0);
 	else
-		(rhs->getOceanVector())->Multiply(1.0, *rowScalingRecipr_, *rhs_, 0.0);
-	
-	jac_->RightScale(*colScalingRecipr_);
-	sol_->ReciprocalMultiply(1.0, *colScalingRecipr_, *sol_, 0.0);
+		(rhs->getOceanVector())->Multiply(1.0, *rowScaling, *rhs_, 0.0);
+
+	recompPreconditioner_ = true;
+	//sol_->ReciprocalMultiply(1.0, *colScaling, *sol_, 0.0);
 
 	//------------------------------------------------------
-	sol_->Norm2(&nrm);
-	DEBUG("Ocean::scaleProblem() sol (after scaling): "  << nrm);
+	//sol_->Norm2(&nrm);
+	//DEBUG("Ocean::scaleProblem() sol (after scaling): "  << nrm);
 }
 
 //=====================================================================
@@ -386,24 +387,24 @@ void Ocean::unscaleProblem(VectorPtr rhs)
 	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
 
 	//------------------------------------------------------
-	double nrm;
-	sol_->Norm2(&nrm);
-	DEBUG("Ocean::unscaleProblem() sol (before unscaling): " << nrm);
+	//double nrm;
+	//sol_->Norm2(&nrm);
+	//DEBUG("Ocean::unscaleProblem() sol (before unscaling): " << nrm);
 	
 	//------------------------------------------------------
-	jac_->LeftScale(*rowScaling);
+	//jac_->RightScale(*colScalingRecipr_);
+	jac_->LeftScale(*rowScalingRecipr_);
 	
 	if (rhs == Teuchos::null)
-		rhs_->Multiply(1.0, *rowScaling, *rhs_, 0.0);
+		rhs_->Multiply(1.0, *rowScalingRecipr_, *rhs_, 0.0);
 	else
-		(rhs->getOceanVector())->Multiply(1.0, *rowScaling, *rhs_, 0.0);
+		(rhs->getOceanVector())->Multiply(1.0, *rowScalingRecipr_, *rhs_, 0.0);
 	
-	jac_->RightScale(*colScaling);
-	sol_->ReciprocalMultiply(1.0, *colScaling, *sol_, 0.0);
+	//sol_->Multiply(1.0, *colScaling, *sol_, 0.0);
 
 	//------------------------------------------------------
-	sol_->Norm2(&nrm);
-	DEBUG("Ocean::unscaleProblem() sol (after unscaling): " << nrm);
+	//sol_->Norm2(&nrm);
+	//DEBUG("Ocean::unscaleProblem() sol (after unscaling): " << nrm);
 }
 
 //=====================================================================

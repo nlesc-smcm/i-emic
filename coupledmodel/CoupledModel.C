@@ -623,6 +623,17 @@ void CoupledModel::postProcess()
 }
 
 //------------------------------------------------------------------
+void CoupledModel::printJacobian(std::string const filename) const
+{
+	std::stringstream ocean_fname, atmos_fname;
+	ocean_fname << filename << ".ocean";
+	atmos_fname << filename << ".atmos";
+
+	DUMP(ocean_fname.str().c_str(), *(ocean_->getJacobian()));
+	atmos_->writeJacobian(atmos_fname.str());			
+}
+
+//------------------------------------------------------------------
 // This is a copy of the code in main.C --> should be factorized
 void CoupledModel::printProfile(ProfileType profile)	
 {

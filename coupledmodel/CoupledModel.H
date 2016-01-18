@@ -142,6 +142,9 @@ public:
 	// a Newton process has converged.
 	void postProcess();
 
+	// Print the Jacobian
+	void printJacobian(std::string const filename) const;
+
 private:
 	// Solve the system with a few symmetric block GS iterations
 	void blockGSSolve(std::shared_ptr<SuperVector> rhs);

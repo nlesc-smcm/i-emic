@@ -299,6 +299,28 @@ void SuperVector::print() const
 }
 
 //------------------------------------------------------------------
+void SuperVector::print(std::string const filename) const
+{
+	std::stringstream ocean_fname, atmos_fname;
+	ocean_fname << filename << ".ocean";
+	atmos_fname << filename << ".atmos";
+	
+	std::ofstream ocean_ofstream, atmos_ofstream;
+	ocean_ofstream.open(ocean_fname.str());
+	atmos_ofstream.open(atmos_fname.str());
+
+	if (haveOceanVector_)
+		oceanVector_->Print(ocean_ofstream);
+	ocean_ofstream.close();
+			
+	if (haveAtmosVector_)
+		for (auto &it : *atmosVector_)
+			atmos_ofstream << std::setprecision(12) << it << '\n';
+
+	atmos_ofstream.close();
+}
+
+//------------------------------------------------------------------
 void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 									   std::vector<int> const &indices,
 									   char domain, char range)

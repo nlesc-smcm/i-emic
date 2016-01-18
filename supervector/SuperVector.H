@@ -100,6 +100,7 @@ public:
 		
 	// Print the vectors to various output streams
 	void print() const;
+	void print(std::string const filename) const;
 
 	// Create a hash of the SuperVector
 	std::size_t hash() const;

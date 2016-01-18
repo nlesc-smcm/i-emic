@@ -18,7 +18,7 @@
   <!--           "Solar Forcing"    -->
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Solar Forcing"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -33,7 +33,7 @@
     <!-- northern domain bound -->
     <Parameter name="Global Bound ymax" type="double" value="80"/>
     <!-- periodic boundary conditions in x-direction -->
-    <Parameter name="Periodic" type="bool" value="0"/>
+    <Parameter name="Periodic" type="bool" value="1"/>
     <!-- depth of the ocean -->
     <Parameter name="Depth hdim" type="double" value="5000"/>
     
@@ -42,11 +42,11 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="90"/>
+    <Parameter name="Global Grid-Size n" type="int" value="32"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="45"/>
+    <Parameter name="Global Grid-Size m" type="int" value="32"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="6"/>
+    <Parameter name="Global Grid-Size l" type="int" value="16"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
@@ -60,7 +60,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask30Ma"/>
+    <Parameter name="Land Mask" type="string" value="mask_natl32"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -86,7 +86,7 @@
     <!-- 0: data, 1: idealized            -->
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
 
-    <!-- ================== Coupling ================================== -->
+    <!-- ================== Temperature coupling ====================== -->
     <!-- Temperature forcing                                            -->
     <!-- Levitus Temperature (ite in THCM)                              -->
     <!-- 0: data, 1: idealized, 2: coupled                              -->
@@ -101,6 +101,7 @@
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
     <Parameter name="Wind Forcing" type="int" value="2"/>
+    <!-- Free Surface (frs in THCM)       -->
     <!-- Type of scaling applied to the linear systems.                            -->
     <!-- We currently support "None" and "THCM"                                    -->
     <!-- "None" is not really recomended.                                          -->

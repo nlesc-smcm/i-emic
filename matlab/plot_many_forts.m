@@ -126,7 +126,7 @@ writerObj.Quality = 90;
 open(writerObj);
 frames = writerObj.FrameRate * 20;
 par_incr = (par2 - par1) / frames;
-fhandle = figure('units','pixels','position',[0,0,1920,1080]);
+fhandle = figure('units','pixels','position',[0,0,1280,720]);
 set(gca,'position',[0.05 0.1 .92 0.85],'units','normalized');
 set(gca,'color','w','fontsize',15);
 
@@ -262,7 +262,7 @@ for file = 2:numel(filenames)
 		   
 	end
 	
-	fprintf('parameter: %f\n', pr);	
+	fprintf('parameter: %f %f %f %f\n', pr, par1, par_incr, par2);	
 	%----------------------------------
 	frame = getframe(gcf);
 	writeVideo(writerObj, frame);

@@ -321,6 +321,16 @@ private:
 public:
 	// ! Write everything to output files.
 	void writeAll();
+	void writeJacobian(std::string const filename)
+		{
+			std::stringstream ico_fname, jco_fname, beg_fname;
+			ico_fname << filename << ".ico";
+			jco_fname << filename << ".jco";
+		    beg_fname << filename << ".beg";
+			write(ico_, ico_fname.str());
+			write(jco_, jco_fname.str());
+			write(beg_, beg_fname.str());
+		}
 
 	//! public HDF5 load/save routines
 	int loadState() { return loadStateFromFile(inputFile_); }	
