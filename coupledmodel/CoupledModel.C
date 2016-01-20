@@ -108,10 +108,6 @@ void CoupledModel::synchronize()
 	// Set the SST in the atmosphere
 	atmos_->setOceanTemperature(sst);
 
-	// Now that there is a new state we can also recompute the preconditioners
-	// --> weird place to do this...
-	if (syncCtr_ % buildPrecEvery_ == 0)
-		ocean_->recomputePreconditioner();
 	
 	TIMER_STOP("CoupledModel: synchronize...");
 }
@@ -152,6 +148,11 @@ void CoupledModel::computeJacobian()
 	
 	ocean_->computeJacobian();	// Ocean
 	atmos_->computeJacobian();	// Atmosphere
+
+	// Now that there is a new Jacobian we can also recompute the preconditioners
+	// --> weird place to do this...
+	if (syncCtr_ % buildPrecEvery_ == 0)
+		ocean_->recomputePreconditioner();
 }
 
 //------------------------------------------------------------------
@@ -225,6 +226,8 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 
 	if (useScaling_)
 		ocean_->unscaleProblem(Teuchos::rcp(rhs.get(), false));
+
+	INFO("CoupledModel residual = " << computeResidual(rhs));
 	
 	// Update the profile after a solve
 	printProfile(profile);
@@ -276,12 +279,11 @@ void CoupledModel::GMRESSolve(std::shared_ptr<SuperVector> rhs)
 	
 	int iters    = gmresSolver_.getNumIters();
 	double nrm   = gmresSolver_.residual();
-	double res   = computeResidual(rhs);
 
 	INFO("CoupledModel GMRES, i = " << iters << " exp res norm: " << nrm);
-	INFO("CoupledModel residual = " << res);		
+
 	TRACK_ITERATIONS("CoupledModel GMRES iterations...", iters);
-	TRACK_RESIDUAL("CoupledModel GMRES residual...", res);
+	TRACK_RESIDUAL("CoupledModel GMRES residual...", nrm);
 }
 
 //------------------------------------------------------------------

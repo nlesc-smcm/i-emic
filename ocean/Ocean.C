@@ -332,31 +332,46 @@ double Ocean::explicitResNorm(VectorPtr rhs)
 //=====================================================================
 void Ocean::scaleProblem(VectorPtr rhs)
 {
+	INFO("Ocean: scale problem...");
+	if (rhs == Teuchos::null)
+		ERROR("DEPRECATED FUNCTIONALITY", __LINE__, __FILE__);
+	
 	// Not sure if this is the right approach and/or implemented correctly.
 	// Scaling is obtained from THCM and then applied to the problem.
-	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
-	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
 
+	rowScaling_ = THCM::Instance().getRowScaling();
+	// colScaling_ = THCM::Instance().getColScaling();
+	
 	//------------------------------------------------------
 	if (rowScalingRecipr_ == Teuchos::null or
-		!rowScaling->Map().SameAs(rowScalingRecipr_->Map()))
+		!rowScaling_->Map().SameAs(rowScalingRecipr_->Map()))
 	{
 		rowScalingRecipr_ =
-			rcp(new Epetra_Vector(rowScaling->Map()));
+			rcp(new Epetra_Vector(rowScaling_->Map()));
 	}
-	*rowScalingRecipr_ = *rowScaling;
-	rowScalingRecipr_->Reciprocal(*rowScaling);
+
+	// std::stringstream fname;
+	// fname << "row_scaling_" << std::time(nullptr);
+	// std::ofstream fstr;
+	// fstr.open(fname.str());
+	// rowScaling_->Print(fstr);
+	// fstr.close();
 	
-	//------------------------------------------------------
-	if (colScalingRecipr_ == Teuchos::null or
-		!colScaling->Map().SameAs(colScalingRecipr_->Map()))
-	{
-		colScalingRecipr_ =
-			rcp(new Epetra_Vector(colScaling->Map()));
-	}
+	// //------------------------------------------------------
+	// if (colScalingRecipr_ == Teuchos::null or
+	// 	!colScaling_->Map().SameAs(colScalingRecipr_->Map()))
+	// {
+	// 	colScalingRecipr_ =
+	// 		rcp(new Epetra_Vector(colScaling_->Map()));
+	// }
 	
-	*colScalingRecipr_ = *colScaling;
-	colScalingRecipr_->Reciprocal(*colScaling);
+	rowScaling_ = THCM::Instance().getRowScaling();
+	jac_->InvRowSums(*rowScaling_);
+	*rowScalingRecipr_ = *rowScaling_;
+	rowScalingRecipr_->Reciprocal(*rowScaling_);
+
+	// *colScalingRecipr_ = *colScaling_;
+	// colScalingRecipr_->Reciprocal(*colScaling_);
 
 	//------------------------------------------------------
 	// double nrm;
@@ -364,47 +379,46 @@ void Ocean::scaleProblem(VectorPtr rhs)
 	// DEBUG("Ocean::scaleProblem() sol (before scaling): "  << nrm);
 	
 	//------------------------------------------------------
-	jac_->LeftScale(*rowScaling);
-	// jac_->RightScale(*colScaling);
+	jac_->LeftScale(*rowScalingRecipr_);
+	// jac_->RightScale(*colScaling_);
 
-	if (rhs == Teuchos::null)
-		rhs_->Multiply(1.0, *rowScaling, *rhs_, 0.0);
-	else
-		(rhs->getOceanVector())->Multiply(1.0, *rowScaling, *rhs_, 0.0);
-
-	recompPreconditioner_ = true;
-	//sol_->ReciprocalMultiply(1.0, *colScaling, *sol_, 0.0);
+	(rhs->getOceanVector())->Multiply(1.0, *rowScalingRecipr_,
+									  *(rhs->getOceanVector()), 0.0);
+	
+	// recompPreconditioner_ = true;
+	// sol_->ReciprocalMultiply(1.0, *colScaling, *sol_, 0.0);
 
 	//------------------------------------------------------
 	//sol_->Norm2(&nrm);
 	//DEBUG("Ocean::scaleProblem() sol (after scaling): "  << nrm);
+	INFO("Ocean: scale problem... done");
 }
 
 //=====================================================================
 void Ocean::unscaleProblem(VectorPtr rhs)
 {
-	RCP<Epetra_Vector> rowScaling = THCM::Instance().getRowScaling();
-	RCP<Epetra_Vector> colScaling = THCM::Instance().getColScaling();
-
+	INFO("Ocean: unscale problem...");
+	if (rhs == Teuchos::null)
+		ERROR("DEPRECATED FUNCTIONALITY", __LINE__, __FILE__);
+		
 	//------------------------------------------------------
 	//double nrm;
 	//sol_->Norm2(&nrm);
 	//DEBUG("Ocean::unscaleProblem() sol (before unscaling): " << nrm);
 	
 	//------------------------------------------------------
-	//jac_->RightScale(*colScalingRecipr_);
-	jac_->LeftScale(*rowScalingRecipr_);
+	// jac_->RightScale(*colScalingRecipr_);
+	jac_->LeftScale(*rowScaling_);
 	
-	if (rhs == Teuchos::null)
-		rhs_->Multiply(1.0, *rowScalingRecipr_, *rhs_, 0.0);
-	else
-		(rhs->getOceanVector())->Multiply(1.0, *rowScalingRecipr_, *rhs_, 0.0);
+	(rhs->getOceanVector())->Multiply(1.0, *rowScaling_,
+									  *(rhs->getOceanVector()), 0.0);
 	
-	//sol_->Multiply(1.0, *colScaling, *sol_, 0.0);
+	//sol_->Multiply(1.0, *rowScaling_, *sol_, 0.0);
 
 	//------------------------------------------------------
 	//sol_->Norm2(&nrm);
 	//DEBUG("Ocean::unscaleProblem() sol (after unscaling): " << nrm);
+	INFO("Ocean: unscale problem... done");
 }
 
 //=====================================================================
@@ -489,11 +503,11 @@ void Ocean::applyMatrix(SuperVector const &v, SuperVector &out)
 //====================================================================
 void Ocean::buildPreconditioner()
 {
-	TIMER_START("Ocean: build preconditioner...");
-	INFO("Ocean: build preconditioner...");
-	precPtr_->Compute();		
-	INFO("Ocean: build preconditioner... done");
-	TIMER_STOP("Ocean: build preconditioner...");
+	TIMER_START("Ocean: comput preconditioner...");
+	INFO("Ocean: compute preconditioner...");
+	precPtr_->Compute();
+	INFO("Ocean: compute preconditioner... done");
+	TIMER_STOP("Ocean: comput preconditioner...");
 	recompPreconditioner_ = false;  // Disable subsequent recomputes
 }
 

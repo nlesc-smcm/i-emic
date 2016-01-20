@@ -65,6 +65,8 @@ protected:
 	Teuchos::RCP<Epetra_CrsMatrix> jac_;
 	Teuchos::RCP<Epetra_Comm> comm_;
 	
+	Teuchos::RCP<Epetra_Vector> rowScaling_;
+	Teuchos::RCP<Epetra_Vector> colScaling_;
 	Teuchos::RCP<Epetra_Vector> rowScalingRecipr_;
 	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
 
