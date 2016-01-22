@@ -346,33 +346,35 @@ contains
   end subroutine get_windfield
   
   subroutine get_temforcing(ctatm)
-    
+
     use, intrinsic :: iso_c_binding
     implicit none
 
     real(c_double), dimension(n*m) :: ctatm
     integer :: i,j,pos
 
-    if (ite.eq.0) then
-       if (TRES.eq.0) then ! read heat flux and store it in tatm
-          _INFO_("Read heat flux and store it in tatm...")
-          call read_forcing(tatm,14)
-       else                ! read sst
-          _INFO_("Read sst from levitus...")
-          call levitus_sst 
+    if (coupled_atm.ne.1) then
+       if (ite.eq.0) then
+          if (TRES.eq.0) then ! read heat flux and store it in tatm
+             _INFO_("Read heat flux and store it in tatm...")
+             call read_forcing(tatm,14)
+          else                ! read sst
+             _INFO_("Read sst from levitus...")
+             call levitus_sst 
+          end if
+       else if (ite.eq.1) then  ! idealized forcing, set in forcing.F90
+          _INFO_("Using idealized temperature forcing, see forcing.F90")
+          _INFO_(" For now we put tatm = 0")
+          tatm(1:n,1:m) = 0.0
+       else
+          _INFO2_("Invalid option assigned to ite: ", ite)
        end if
-    else if (ite.eq.1) then  ! idealized forcing, set in forcing.F90
-       _INFO_("Using idealized temperature forcing, see forcing.F90")
-       _INFO_(" For now we put tatm = 0")
-       tatm(1:n,1:m) = 0.0
-    else if (ite.eq.2) then ! accepting external atmosphere within I-EMIC
+    else ! accepting external atmosphere within I-EMIC
        _INFO_("Accepting external atmosphere, we are now part of the I-EMIC")
        _INFO_(" For now we put tatm = 0")
        tatm(1:n,1:m) = 0.0
-    else
-       _INFO2_("Invalid option assigned to ite: ", ite)
     end if
-    
+
     pos = 1
     do j=1,m
        do i=1,n

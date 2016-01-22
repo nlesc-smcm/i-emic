@@ -194,6 +194,7 @@ public:
 
 	// Get the ocean's landmask;
 	std::shared_ptr<std::vector<int> > getLandMask();
+	std::shared_ptr<std::vector<int> > getSurfaceMask();
 	
 	// Scale the matrix and rhs of the problem
 	void scaleProblem(VectorPtr rhs = Teuchos::null);
@@ -211,7 +212,7 @@ private:
 
 	// Write the state of the ocean to traditional FORTRAN out files fort.*
 	// Use matlab plot-scripts for visualization 
-	void writeFortFiles();
+	void printFiles();
 
 	// Initializer members
 	void initializeOcean();

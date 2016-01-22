@@ -499,9 +499,12 @@ double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
 	
 	SuperVector r(*solView_);
 	applyMatrix(*solView_, r);
-	
-	r.update(1, *rhs, -1);                           //  b-Jx	
-	double relResidual = r.norm() / rhs->norm();     // ||b-Jx||/||b||
+	INFO("CoupledModel:  norm rhs")
+	double rhsNorm = rhs->norm();
+	r.update(1, *rhs, -1); //  b-Jx
+	r.scale(1.0 / rhsNorm);
+	INFO("CoupledModel:  norm residual")
+		double relResidual = r.norm('V');     // ||b-Jx||/||b||
 	
 	TIMER_STOP("CoupledModel: compute residual...");
 	return relResidual;
@@ -622,6 +625,7 @@ void CoupledModel::postProcess()
 
 	// Print the contents of the profile
 	printProfile(profile);
+	printJacobian("J");
 }
 
 //------------------------------------------------------------------

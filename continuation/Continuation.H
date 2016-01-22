@@ -411,12 +411,12 @@ newtonCorrector()
 		model_->setPar(par_);  // set it in the model
 		
 		// Do some printing ---------------------------------------
-		model_->printJacobian("J" + std::to_string(newtonIter_));
-		stateDot_->print("xdot" + std::to_string(newtonIter_));
-		stateDir->print("dx" + std::to_string(newtonIter_));
-		stateView_->print("x" + std::to_string(newtonIter_));
-		rhsCopy_->print("F" + std::to_string(newtonIter_));
-		dFdPar_->print("Fl" + std::to_string(newtonIter_));
+		// model_->printJacobian("J" + std::to_string(newtonIter_));
+		// stateDot_->print("xdot" + std::to_string(newtonIter_));
+		// stateDir->print("dx" + std::to_string(newtonIter_));
+		// stateView_->print("x" + std::to_string(newtonIter_));
+		// rhsCopy_->print("F" + std::to_string(newtonIter_));
+		// dFdPar_->print("Fl" + std::to_string(newtonIter_));
 		// --------------------------------------------------------
 
 		++newtonIter_;

@@ -142,6 +142,7 @@ public:
 	//! Return a shared pointer to the ocean's landmask for use in the
 	//! atmosphere
 	std::shared_ptr<std::vector<int> > getLandMask();
+	std::shared_ptr<std::vector<int> > getSurfaceMask();
 
 	//! ------------------------------------------------------------------
 	

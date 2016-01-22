@@ -18,7 +18,9 @@
 // ordering of variables (should be consistent with fortran 
 // function find_row2 in matetc.f, beware, however, that    
 // this one is 0-based!)                                    
-#define FIND_ROW2(nun_,n,m,l,i,j,k,XX) ((nun_)*((k)*(n)*(m)+ (n)*(j) + (i))+(XX)-1)
+#define FIND_ROW2(nun_,n,m,l,i,j,k,XX)				\
+	((nun_)*((k)*(n)*(m)+ (n)*(j) + (i))+(XX)-1)
+
 // number of parameters currently used in THCM (excluding our own params 
 // "Time" and "Exponent", which shouldn't be passed to THCM directly).   
 #define _NPAR_ 30

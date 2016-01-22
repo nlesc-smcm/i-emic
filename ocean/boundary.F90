@@ -390,6 +390,7 @@ subroutine boundaries
               endif
               !------- CENTER = ATMOSPHERE ------------------------------------------
            else if (center == ATMOS) then
+              write(*,*) 'center is atmos'
               if (west == LAND) then
                  Al(i,j,k,5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,2,TT,TT)
                  Al(i,j,k,2,TT,TT) = 0.0
@@ -418,13 +419,15 @@ subroutine boundaries
                  ! direct computation of land temperature             
                  Al(i,j,l,5,TT,TT) = 1.0
                  Al(i,j,l,23,TT,TT) = - 1.0
-                 Frc(find_row2(i,j,k,TT)) = par(COMB)*par(SUNP) * suno(j)/Ooa                 
+                 Frc(find_row2(i,j,k,TT)) = par(COMB)*par(SUNP) * suno(j)/Ooa 
               endif
+#if 0
               if ( ( k == l ) .AND. (coupled_atm .EQ. 1) ) then
-                 ! let the atmosphere be available via the forcing    ! TEM
+                 ! let the atmosphere be available via the forcing    ! Erik
                  Al(i,j,l,5,TT,TT) = 1.0
                  Frc(find_row2(i,j,k,TT)) = par(COMB)*par(SUNP) * suno(j)/Ooa + tatm(i,j)
               endif
+#endif
            endif
         enddo
      enddo

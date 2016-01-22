@@ -1,5 +1,15 @@
-function [] = plot_mode(V,mode)
+function [] = plot_mode(V,mode,fpath,fontsize)
+  % - plot_mode(V,i) plots the i-th EOF (MOC, temp and salt).
+  % - V from eigs output.
+  % - requires corresponding fort.44 and a few thcm matlab routines 
 
+  if nargin < 4
+	fontsize = 14;
+  end
+  if nargin < 3
+	fpath = '';
+  end
+  
   fprintf(1,'-------------- Plot EOF #%d-------------\n',mode)
   %% - DEFINE CONSTANTS - ----------------------------------------------
   udim  = 0.1;                 %[m/s]   Velocity scale
@@ -55,29 +65,25 @@ function [] = plot_mode(V,mode)
   end
 
   %%
-  figure(1)
   contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',14);
   colorbar
-  title('MOC')
   xlabel('latitude')
   ylabel('depth (m)')
-  exportfig(['mstream_eof',num2str(mode),'.eps'],10,[20,7])
+  exportfig([fpath,'mstream_eof',num2str(mode),'.eps'],fontsize,[20,7]);
+  clf
 
-  figure(2)
   Sp2 = squeeze(mean(S,1)); 
   contourf(RtD*linspace(ymin,ymax,m),linspace(min(zw),max(zw),l)*hdim,Sl',14);
   colorbar
-  title('Isohalines')
   xlabel('latitude')
   ylabel('depth (m)')
-  exportfig(['isohalines_eof',num2str(mode),'.eps'],10,[20,7])
+  exportfig([fpath,'isohalines_eof',num2str(mode),'.eps'],fontsize,[20,7]);
+  clf
 
-  figure(3)
   contourf(RtD*linspace(ymin,ymax,m),linspace(min(zw),max(zw),l)*hdim,Tl',14);
   colorbar
-  title('Isothermals')
   xlabel('latitude')
   ylabel('depth (m)')
-  exportfig(['isothermals_eof',num2str(mode),'.eps'],10,[20,7])
-
+  exportfig([fpath,'isothermals_eof',num2str(mode),'.eps'],fontsize,[20,7]);
+  clf
 end

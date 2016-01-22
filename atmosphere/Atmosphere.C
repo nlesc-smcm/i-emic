@@ -51,10 +51,10 @@ Atmosphere::Atmosphere(ParameterList params)
 	parName_         (params->get("Continuation parameter",
 								  "Combined Forcing")),
 // starting values 
-	comb_            (1.0),                      // combined forcing
-	sunp_            (0.0),                      // solar forcing
+	comb_            (params->get("Combined Forcing", 0.0)),
+	sunp_            (params->get("Solar Forcing", 1.0)),
 		
-// input/output
+// input/output  --------------------------------------------------------------
 	loadState_       (params->get("Load state", false)),
 	saveState_       (params->get("Save state", false)),
 	inputFile_       (params->get("Input file", "atmos.h5")),

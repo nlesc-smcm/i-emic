@@ -187,6 +187,7 @@ SUBROUTINE fillcolA
   do k = 1, l+la
      do j = 1, m
         do i = 1, n
+
            do kk = 1,np
 
               ! shift(i,j,k,i2,j2,k2,kk) returns the neighbour at location kk
@@ -208,6 +209,7 @@ SUBROUTINE fillcolA
                  end do
               end do
            end do
+
         end do
      end do
   end do

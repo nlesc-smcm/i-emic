@@ -125,7 +125,7 @@ void Ocean::postProcess()
 	if (saveState_)
 		saveStateToFile(outputFile_);
 	
-	writeFortFiles();
+	printFiles();
 }
 
 //=====================================================================
@@ -350,13 +350,6 @@ void Ocean::scaleProblem(VectorPtr rhs)
 			rcp(new Epetra_Vector(rowScaling_->Map()));
 	}
 
-	// std::stringstream fname;
-	// fname << "row_scaling_" << std::time(nullptr);
-	// std::ofstream fstr;
-	// fstr.open(fname.str());
-	// rowScaling_->Print(fstr);
-	// fstr.close();
-	
 	// //------------------------------------------------------
 	// if (colScalingRecipr_ == Teuchos::null or
 	// 	!colScaling_->Map().SameAs(colScalingRecipr_->Map()))
@@ -366,7 +359,7 @@ void Ocean::scaleProblem(VectorPtr rhs)
 	// }
 	
 	rowScaling_ = THCM::Instance().getRowScaling();
-	jac_->InvRowSums(*rowScaling_);
+	// jac_->InvRowSums(*rowScaling_);
 	*rowScalingRecipr_ = *rowScaling_;
 	rowScalingRecipr_->Reciprocal(*rowScaling_);
 
@@ -379,11 +372,16 @@ void Ocean::scaleProblem(VectorPtr rhs)
 	// DEBUG("Ocean::scaleProblem() sol (before scaling): "  << nrm);
 	
 	//------------------------------------------------------
-	jac_->LeftScale(*rowScalingRecipr_);
+	// jac_->LeftScale(*rowScalingRecipr_);
+	jac_->LeftScale(*rowScaling_);
 	// jac_->RightScale(*colScaling_);
 
-	(rhs->getOceanVector())->Multiply(1.0, *rowScalingRecipr_,
+ 	// (rhs->getOceanVector())->Multiply(1.0, *rowScalingRecipr_,
+	// 								  *(rhs->getOceanVector()), 0.0);
+	
+	(rhs->getOceanVector())->Multiply(1.0, *rowScaling_,
 									  *(rhs->getOceanVector()), 0.0);
+
 	
 	// recompPreconditioner_ = true;
 	// sol_->ReciprocalMultiply(1.0, *colScaling, *sol_, 0.0);
@@ -408,10 +406,14 @@ void Ocean::unscaleProblem(VectorPtr rhs)
 	
 	//------------------------------------------------------
 	// jac_->RightScale(*colScalingRecipr_);
-	jac_->LeftScale(*rowScaling_);
+	jac_->LeftScale(*rowScalingRecipr_);
+	// jac_->LeftScale(*rowScaling_);
 	
-	(rhs->getOceanVector())->Multiply(1.0, *rowScaling_,
+	(rhs->getOceanVector())->Multiply(1.0, *rowScalingRecipr_,
 									  *(rhs->getOceanVector()), 0.0);
+	// (rhs->getOceanVector())->Multiply(1.0, *rowScaling_,
+	// 								  *(rhs->getOceanVector()), 0.0);
+
 	
 	//sol_->Multiply(1.0, *rowScaling_, *sol_, 0.0);
 
@@ -551,6 +553,23 @@ std::shared_ptr<std::vector<double> > Ocean::getAtmosBlock()
 	FNAME(getooa)(&Ooa);
 	std::shared_ptr<std::vector<double> > values =
 		std::make_shared<std::vector<double> >(N_ * M_, -Ooa);
+
+	// Apply Surface mask to values
+	std::shared_ptr<std::vector<int> > landm = getSurfaceMask();
+	int ctr  = 0;
+	int lctr = 0;
+	for (int j = 0; j != M_; ++j)
+		for (int i = 0; i != N_; ++i)
+		{			
+			if ((*landm)[(j+1)*(N_+2) + i + 1] == 1)
+			{
+				(*values)[ctr] = 0;
+				lctr++;
+			}
+			ctr++;
+		}
+
+	std::cout << " -----------> " << lctr << std::endl;
 	return values;
 }
 
@@ -566,10 +585,11 @@ std::shared_ptr<std::vector<int> > Ocean::getSurfaceTRows()
 {
 	std::shared_ptr<std::vector<int> > rows =
 		std::make_shared<std::vector<int> >();
+
 	for (int j = 0; j != M_; ++j)
 		for (int i = 0; i != N_; ++i)
-			rows->push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));
-
+			rows->push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));	
+	
 	return rows;
 }
 
@@ -606,22 +626,43 @@ std::shared_ptr<std::vector<int> > Ocean::getLandMask()
 	return THCM::Instance().getLandMask();
 }
 
+//====================================================================
+std::shared_ptr<std::vector<int> > Ocean::getSurfaceMask()
+{
+	return THCM::Instance().getSurfaceMask();
+}
+
 //=====================================================================
-void Ocean::writeFortFiles()
+void Ocean::printFiles()
 {	
 	Teuchos::RCP<Epetra_MultiVector> solution = Utils::Gather(*state_, 0);
+	Teuchos::RCP<Epetra_MultiVector> rhs      = Utils::Gather(*rhs_, 0);
 	int filename = 3;
 	int label    = 2;
 	int length   = solution->GlobalLength();
-	double *solutionArray = new double[length]; 
+	double *solutionArray = new double[length];
+	double *rhsArray = new double[length]; 
 	if (comm_->MyPID() == 0)
 	{
-		std::cout << "Writing to fort." << filename 
-				  << " at label " << label << "." << std::endl;
+		INFO( "Writing to fort." << filename 
+			  << " at label " << label);
 
-		// Using operator() to access first EpetraVector in multivector
-		(*solution)(0)->ExtractCopy(solutionArray); //  
+		(*solution)(0)->ExtractCopy(solutionArray); 
+		(*rhs)(0)->ExtractCopy(rhsArray);
+		
 		FNAME(write_data)(solutionArray, &filename, &label);
+
+		std::stringstream rhsfname;
+		rhsfname << "ocean_rhs_par" << std::setprecision(4) << std::setfill('_')
+		   << std::setw(2) << THCM::Instance().par2int(parName_) << "_"
+		   << std::setw(6) << getPar(parName_);
+
+		INFO("Writing ocean rhs to " << rhsfname.str());
+		std::ofstream file;
+		file.open(rhsfname.str());
+		for (int i = 0; i != length; ++i)
+			file << rhsArray[i] << '\n';
+		file.close();
 		
 		// Copy state
 		std::stringstream ss;
@@ -634,6 +675,7 @@ void Ocean::writeFortFiles()
 		dst << src.rdbuf();
 	}
 	delete [] solutionArray;
+	delete [] rhsArray;
 }
 
 //=====================================================================

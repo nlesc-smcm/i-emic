@@ -52,8 +52,7 @@ function [Q,M,V,D] = build_covmat(range, Q, mode)
   
   fprintf(1,'------------- Calculating eigenvector--------\n')
   opts.issym = true;
-  [V,D,flag] = eigs(Q,20,'lm',opts);
-  
+  [V,D,flag] = eigs(Q,20,'lm',opts);  
 
-  plot_mode(V,mode)
+  %plot_mode(V,mode)
 end

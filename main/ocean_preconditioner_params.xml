@@ -19,7 +19,7 @@
   <!-- 1 = | Guv Kuvp 0   0  |, 2 = | Duv  Aw  0  0  |, 3 = | Bw ATS  0  Buv  | -->
   <!--     |  0  Duv  Aw  0  |      | Buv  Bw ATS 0  |      | 0  BTS Ap   0   | -->
   <!--     | Buv  0   Bw ATS |      |  0   0  BTS Ap |      | 0   0  Guv Kuvp | -->
-  <Parameter name="Permutation" type="int" value="2"/>
+  <Parameter name="Permutation" type="int" value="1"/>
   
   <!-- relaxation parameter for block-Gauss-Seidel preconditioner -->
   <!-- currently it seems that 1.0 is a good choice               -->
@@ -486,7 +486,7 @@
 
       <!-- Ifpack -->
       
-      <Parameter name="Ifpack Method" type="string" value="MRILU"/>
+      <Parameter name="Ifpack Method" type="string" value="Amesos stand-alone"/>
       <Parameter name="amesos: solver type" type="string" value="Amesos_Klu"/>
       <Parameter name="Ifpack Overlap Level" type="int" value="0"/>
 

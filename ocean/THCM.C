@@ -949,8 +949,36 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 	// Let THCM fill the landmask array on proc = 0
 	if (Comm->MyPID() == 0)
 		F90NAME(m_global,get_landm)(&(*landm)[0]);
+
+#ifdef HAVE_MPI 
+	// Get the MpiComm from Epetra
+	Epetra_MpiComm const MpiComm =
+		dynamic_cast<Epetra_MpiComm const &>(*Comm); 
+	MPI_Bcast(&(*landm)[0], dim, MPI_INTEGER, 0, MpiComm.GetMpiComm());
+#endif 
+	return landm;
+}
+
+//=============================================================================
+std::shared_ptr<std::vector<int> > THCM::getSurfaceMask()
+{
+	// length of landmask array
+	int dim = (n+2)*(m+2)*(l+la+2);
 	
-#ifdef HAVE_MPI
+	// Create surface mask
+	std::shared_ptr<std::vector<int> > landm =
+		std::make_shared<std::vector<int> >(dim, 0);
+	
+	// Let THCM fill the landmask array on proc = 0
+	if (Comm->MyPID() == 0)
+		F90NAME(m_global,get_landm)(&(*landm)[0]);
+
+	// Isolate the surface
+	landm->erase(landm->begin(), landm->begin() + l*(m+2)*(n+2));
+	
+	landm->erase(landm->begin() + (m+2)*(n+2), landm->end());
+
+#ifdef HAVE_MPI 
 	// Get the MpiComm from Epetra
 	Epetra_MpiComm const MpiComm =
 		dynamic_cast<Epetra_MpiComm const &>(*Comm); 
