@@ -86,6 +86,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
 	// Now that we have a state and a parameter we can initialize more datamembers
 	initializeOcean();
+
+	landmask_ = THCM::Instance().getLandMask();
+	surfmask_ = THCM::Instance().getSurfaceMask();
 	
 	INFO("Ocean: constructor... done");
 }
@@ -555,13 +558,12 @@ std::shared_ptr<std::vector<double> > Ocean::getAtmosBlock()
 		std::make_shared<std::vector<double> >(N_ * M_, -Ooa);
 
 	// Apply Surface mask to values
-	std::shared_ptr<std::vector<int> > landm = getSurfaceMask();
 	int ctr  = 0;
 	int lctr = 0;
 	for (int j = 0; j != M_; ++j)
 		for (int i = 0; i != N_; ++i)
 		{			
-			if ((*landm)[(j+1)*(N_+2) + i + 1] == 1)
+			if ((*surfmask_)[j*N_+i] == 1)
 			{
 				(*values)[ctr] = 0;
 				lctr++;
@@ -618,18 +620,6 @@ std::shared_ptr<std::vector<double> > Ocean::getSurfaceT()
 
 	TIMER_STOP("Ocean: get surface temperature...");	
 	return surfaceT;
-}
-
-//====================================================================
-std::shared_ptr<std::vector<int> > Ocean::getLandMask()
-{
-	return THCM::Instance().getLandMask();
-}
-
-//====================================================================
-std::shared_ptr<std::vector<int> > Ocean::getSurfaceMask()
-{
-	return THCM::Instance().getSurfaceMask();
 }
 
 //=====================================================================

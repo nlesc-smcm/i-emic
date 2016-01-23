@@ -1068,21 +1068,21 @@ std::shared_ptr<std::vector<int> > Atmosphere::getAtmosRows()
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::setLandMask(std::shared_ptr<std::vector<int> > landm)
+void Atmosphere::setSurfMask(std::shared_ptr<std::vector<int> > surfm)
 {
-	if ((int) landm->size() != (n_+2)*(m_+2))
-		WARNING("landm->size() not ok:",  __FILE__, __LINE__);
+	if ((int) surfm->size() != n_*m_)
+		WARNING("surfm->size() not ok:",  __FILE__, __LINE__);
 
-	landm_ = landm;
+	surfm_ = surfm;
 
-	INFO("Printing land surface mask...");
+	INFO("Printing surface mask...");
 	int ctr = 0;
 	std::ostringstream string;
-	for (auto &l: *landm)
+	for (auto &l: *surfm)
 	{
 		ctr++;
 		string << l;
-		if (ctr % (n_+2) == 0)
+		if (ctr % n_ == 0)
 		{
 			INFO(string.str().c_str());
 			string.str("");

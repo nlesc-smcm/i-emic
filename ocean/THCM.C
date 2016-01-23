@@ -963,28 +963,37 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 std::shared_ptr<std::vector<int> > THCM::getSurfaceMask()
 {
 	// length of landmask array
-	int dim = (n+2)*(m+2)*(l+la+2);
+	size_t dim_landmask = (n+2)*(m+2)*(l+la+2);
+	size_t dim_surfmask = n*m;
 	
-	// Create surface mask
-	std::shared_ptr<std::vector<int> > landm =
-		std::make_shared<std::vector<int> >(dim, 0);
+	// Initialize land and surf masks
+	std::vector<int> landm(dim_landmask, 0);
+	std::shared_ptr<std::vector<int> > surfm =
+		std::make_shared<std::vector<int> >();
 	
 	// Let THCM fill the landmask array on proc = 0
 	if (Comm->MyPID() == 0)
-		F90NAME(m_global,get_landm)(&(*landm)[0]);
+		F90NAME(m_global,get_landm)(&landm[0]);
 
 	// Isolate the surface
-	landm->erase(landm->begin(), landm->begin() + l*(m+2)*(n+2));
-	
-	landm->erase(landm->begin() + (m+2)*(n+2), landm->end());
+	landm.erase(landm.begin(), landm.begin() + l*(m+2)*(n+2));	
+	landm.erase(landm.begin() + (m+2)*(n+2), landm.end());
+
+	// Put a version without borders in surfm
+	for (int j = 1; j != m+1; ++j)
+		for (int i = 1; i != n+1; ++i)
+			surfm->push_back(landm[j*(n+2) + i]);
+
+	if (surfm->size() != dim_surfmask)
+		WARNING("Something is wrong!!", __FILE__, __LINE__);
 
 #ifdef HAVE_MPI 
 	// Get the MpiComm from Epetra
 	Epetra_MpiComm const MpiComm =
 		dynamic_cast<Epetra_MpiComm const &>(*Comm); 
-	MPI_Bcast(&(*landm)[0], dim, MPI_INTEGER, 0, MpiComm.GetMpiComm());
+	MPI_Bcast(&(*surfm)[0], dim_surfmask, MPI_INTEGER, 0, MpiComm.GetMpiComm());
 #endif 
-	return landm;
+	return surfm;
 }
 		
 //=============================================================================

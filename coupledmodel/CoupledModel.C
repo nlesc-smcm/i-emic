@@ -72,7 +72,7 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	INFO(*params);
 	
 	// Synchronize landmask
-	synchronizeLandmask();
+	synchronizeSurfmask();
 
 	// Synchronize state
 	synchronize();
@@ -113,20 +113,14 @@ void CoupledModel::synchronize()
 }
 
 //------------------------------------------------------------------
-void CoupledModel::synchronizeLandmask()
+void CoupledModel::synchronizeSurfmask()
 {
-	// Get the landmask used in the ocean
-	std::shared_ptr<std::vector<int> > landm = ocean_->getLandMask();
-
-	// Get rid of every layer in the landmask except for the surface 
-	int n = ocean_->getNdim();
-	int m = ocean_->getMdim();
-	int l = ocean_->getLdim();
-	landm->erase(landm->begin(), landm->begin() + l*(m+2)*(n+2));
-	landm->erase(landm->begin() + (m+2)*(n+2), landm->end());
+	// Get the surface mask used in the ocean
+	std::shared_ptr<std::vector<int> > surfm =
+		ocean_->getSurfaceMask();
 	
 	// Put the surface landmask in the atmosphere
-	atmos_->setLandMask(landm);
+	atmos_->setSurfMask(surfm);
 }
 
 //------------------------------------------------------------------

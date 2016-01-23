@@ -100,6 +100,11 @@ protected:
 	// Problem dimensions:
 	int N_, M_, L_;
 
+	std::shared_ptr<std::vector<int> > landmask_; 	// Land mask, including borders and lids
+	std::shared_ptr<std::vector<int> > surfmask_; 	// Surface mask, without borders
+
+	
+
  	// HDF5 input/output files
 	std::string const inputFile_;
 	std::string const outputFile_;
@@ -193,8 +198,8 @@ public:
 	std::shared_ptr<std::vector<int> > getSurfaceTRows();
 
 	// Get the ocean's landmask;
-	std::shared_ptr<std::vector<int> > getLandMask();
-	std::shared_ptr<std::vector<int> > getSurfaceMask();
+	std::shared_ptr<std::vector<int> > getLandMask()    { return landmask_; }
+	std::shared_ptr<std::vector<int> > getSurfaceMask() { return surfmask_; }
 	
 	// Scale the matrix and rhs of the problem
 	void scaleProblem(VectorPtr rhs = Teuchos::null);
