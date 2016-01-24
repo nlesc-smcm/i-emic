@@ -170,9 +170,6 @@ private:
 	// Synchronize the states between the models that are needed to communicate
 	void synchronize();
 
-	// Synchronize the surface mask between the ocean and the atmosphere
-	void synchronizeSurfmask();
-
 	// Create a hash of the extended state + parameter in an XOR / rotating manner
 	std::size_t getHash();
 

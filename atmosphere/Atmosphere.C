@@ -1068,14 +1068,14 @@ std::shared_ptr<std::vector<int> > Atmosphere::getAtmosRows()
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::setSurfMask(std::shared_ptr<std::vector<int> > surfm)
+void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 {
 	if ((int) surfm->size() != n_*m_)
 		WARNING("surfm->size() not ok:",  __FILE__, __LINE__);
 
 	surfm_ = surfm;
 
-	INFO("Printing surface mask...");
+	INFO("Printing surface mask available in Atmosphere");
 	int ctr = 0;
 	std::ostringstream string;
 	for (auto &l: *surfm)

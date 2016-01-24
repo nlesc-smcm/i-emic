@@ -249,7 +249,7 @@ public:
 	//! --------------------------------------------------------
 	//! Set an external 2D surface mask in the atmosphere.
 	//! The size of the vector should be n*m.
-	void setSurfMask(std::shared_ptr<std::vector<int> > surfm);
+	void setSurfaceMask(std::shared_ptr<std::vector<int> > surfm);
 	
 private:
 	std::shared_ptr<SuperVector> getVector
