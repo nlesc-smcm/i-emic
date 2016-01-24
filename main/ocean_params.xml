@@ -86,11 +86,10 @@
     <!-- 0: data, 1: idealized            -->
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
 
-    <!-- Temperature forcing                                            -->
-    <!-- Levitus Temperature (ite in THCM)                              -->
-    <!-- 0: data, 1: idealized                                          -->
+    <!-- Temperature forcing                                 -->
+    <!-- Levitus Temperature (ite in THCM)                   -->
+    <!-- 0: data, 1: idealized                               -->
     <Parameter name="Levitus T" type="int" value="1"/>
-    <!-- ============================================================== -->
     
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
