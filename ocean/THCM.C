@@ -87,6 +87,7 @@ extern "C" {
 	_MODULE_SUBROUTINE_(m_global,get_internal_temforcing)(double* temp);
 	_MODULE_SUBROUTINE_(m_global,get_internal_salforcing)(double* salt);
 	_MODULE_SUBROUTINE_(m_global,get_spert)(double* spert);
+	
 	_MODULE_SUBROUTINE_(m_monthly,set_forcing)(double*tatm, double* emip, double* taux,
 											   double* tauy, int* month);
 	_MODULE_SUBROUTINE_(m_monthly,set_internal_forcing)(double*temp, double* salt, int* month);
@@ -94,7 +95,7 @@ extern "C" {
 	_MODULE_SUBROUTINE_(m_thcm_utils,get_landm)(int*);
 	_MODULE_SUBROUTINE_(m_scaling,average_block)(double *db);
 	_MODULE_SUBROUTINE_(m_scaling,compute)(double *db, double *rowscales, double* colscales);
-
+	
 	_SUBROUTINE_(fillcolb)(void);
 
 	// CRS matrix allocation (module m_mat)
@@ -121,6 +122,7 @@ extern "C" {
 	// Extensions created for communication within the I-EMIC
 	//
 	_MODULE_SUBROUTINE_(m_inserts, insert_atmosphere)(double *atmos);
+	_MODULE_SUBROUTINE_(m_global, get_land_temp)(double *land);
 	//-----------------------------------------------------------------------------
 	
 	_SUBROUTINE_(write_levitus)(const char*);

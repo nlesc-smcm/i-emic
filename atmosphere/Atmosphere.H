@@ -77,12 +77,15 @@ private:
 
 	// Periodic boundary conditions in x-direction
 	bool periodic_;
+
+	// Specify whether we should use a land mask
+	bool use_landmask_;
 	
 	// Surface mask
-	std::shared_ptr<std::vector<int> > surfm_;
+	std::shared_ptr<std::vector<int> > surfmask_;
 	
 	// Ocean surface temperature
-	std::vector<double> oceanTemp_;
+	std::vector<double> surfaceTemp_;
 
 	// Forcing vector
 	std::vector<double> frc_;
@@ -158,6 +161,7 @@ private:
 	double   Ai_;  //!  rhoa*hdima*cpa*udim/(r0dim*muoa)
 	double   Ad_;  //!  rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
 	double   As_;  //!  sun0*(1 - c0)/(4*muoa)
+	double  Ooa_;  //!  ...? something in the ocean
 
     //! Latitude-dependent albedo
 	std::vector<double> albe_;
@@ -170,6 +174,9 @@ private:
 	//! Latitudinal dependence of short-wave radiative flux:
 	//!  As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
 	std::vector<double> suna_;
+
+	//!  Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
+	std::vector<double> suno_;
 
 	// -------------------------------------------------------
 	// Continuation 

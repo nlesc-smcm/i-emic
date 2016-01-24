@@ -36,7 +36,7 @@ using Teuchos::rcp;
 extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
 extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(setparcs)(int*,double*);
-extern "C" _SUBROUTINE_(getooa)(double*);
+extern "C" _SUBROUTINE_(getooa)(double*, double*);
 
 //=====================================================================
 // Constructor:
@@ -552,8 +552,8 @@ void Ocean::setAtmosphere(std::vector<double> const &atmos)
 //====================================================================
 std::shared_ptr<std::vector<double> > Ocean::getAtmosBlock()
 {
-	double Ooa;
-	FNAME(getooa)(&Ooa);
+	double Ooa, Os;
+	FNAME(getooa)(&Ooa, &Os);
 	std::shared_ptr<std::vector<double> > values =
 		std::make_shared<std::vector<double> >(N_ * M_, -Ooa);
 
@@ -571,7 +571,8 @@ std::shared_ptr<std::vector<double> > Ocean::getAtmosBlock()
 			ctr++;
 		}
 
-	std::cout << " -----------> " << lctr << std::endl;
+	INFO("  A->O block, zeros due to surfacemask --> " << lctr);
+	
 	return values;
 }
 
@@ -580,6 +581,22 @@ Teuchos::RCP<Epetra_CrsMatrix> Ocean::getJacobian()
 {
 	// This is a job for THCM
 	return THCM::Instance().getJacobian();
+}
+
+//====================================================================
+std::shared_ptr<std::vector<double> >
+Ocean::getLandTemperature(std::shared_ptr<std::vector<double> > tatm)
+{
+	// Here we calculate and return the landtemperature based
+	// on the provided atmosphere temperature
+	std::shared_ptr<std::vector<double> > land =
+		std::make_shared<std::vector<double> >(M_*N_, 0.0);
+	
+	//F90NAME(m_global,get_land_temp)(&(*land)[0]);
+
+	//for *autosd
+	
+	return land;
 }
 
 //====================================================================

@@ -175,14 +175,15 @@ SUBROUTINE getparcs(param,value)
 end subroutine getparcs
 
 !*****************************************************************************
-SUBROUTINE getooa(value)
+SUBROUTINE getooa(o_Ooa, o_Os)
   !     interface to get Ooa
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_atm
   implicit none
-  real(c_double) value
-  value = Ooa
+  real(c_double) o_Ooa, o_Os
+  o_Ooa = Ooa
+  o_Os  = Os
 end subroutine getooa
 
 !*****************************************************************************
@@ -507,7 +508,7 @@ SUBROUTINE lin
 
   if (la > 0) then
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
-  else if (coupled_atm.eq.1) then
+  else if (coupled_atm.eq.1) then ! coupled with external atmos
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
   else
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc

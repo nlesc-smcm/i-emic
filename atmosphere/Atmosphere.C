@@ -1,6 +1,5 @@
 #include "Atmosphere.H"
 #include "AtmosphereDefinitions.H"
-#include "GlobalDefinitions.H"
 #include "SuperVector.H"
 
 #include <math.h>
@@ -11,6 +10,11 @@
 #include <algorithm> // std::fill in assemble
 
 #include <hdf5.h>
+
+// stuff that is not so modular right now
+#include "GlobalDefinitions.H"
+#include "THCMdefs.H"
+extern "C" _SUBROUTINE_(getooa)(double*, double*);
 
 //==================================================================
 // Constructor, specify horizontal grid dimensions
@@ -23,6 +27,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	m_               (params->get("Global Grid-Size m", 16)),
 	l_               (params->get("Global Grid-Size l", 1)),
 	periodic_        (params->get("Periodic", false)),
+	use_landmask_    (params->get("Use land mask from Ocean", false)),
 
 // solvers ------------------------------------------------------------------
 	solvingScheme_   (params->get("Solving scheme", 'B')),
@@ -90,8 +95,11 @@ Atmosphere::Atmosphere(ParameterList params)
 	sol_   = std::make_shared<std::vector<double> >(dim_, 0.0);
 	state_ = std::make_shared<std::vector<double> >(dim_, 0.0);
 
-	// Initialize ocean temperature
-	oceanTemp_ = std::vector<double>(n_ * m_, 0.0);
+	// Initialize surface mask
+	surfmask_ = std::make_shared<std::vector<int> >();
+
+	// Initialize land/ocean surface temperature
+	surfaceTemp_ = std::vector<double>(n_ * m_, 0.0);
 	
 	// Initialize forcing with zeros
 	frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
@@ -127,6 +135,10 @@ Atmosphere::Atmosphere(ParameterList params)
 		xu_.push_back(xmin_ + i * dx_);
 		xc_.push_back(xmin_ + (i - 0.5) * dx_);
 	}
+
+	double Os = 0.0;
+	if (use_landmask_)
+		FNAME(getooa)(&Ooa_, &Os );
 	
 	// Fill y and latitude-based arrays
 	yv_.reserve(m_+1);
@@ -135,6 +147,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	datc_.reserve(m_+1);
 	datv_.reserve(m_+1);
 	suna_.reserve(m_+1);
+	suno_.reserve(m_+1);
 	for (int j = 0; j != m_+1; ++j)
 	{
 		yv_.push_back( ymin_ + j * dy_ );
@@ -145,6 +158,8 @@ Atmosphere::Atmosphere(ParameterList params)
 		datv_.push_back(0.9 + 1.5 * exp(-12 * yv_[j] * yv_[j] / PI_));
 		suna_.push_back(As_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
 						(1 - albe_[j]));
+		suno_.push_back(Os*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
+						(1 - albe_[j]));				
 	}
 
 	// construct the continuation parameter list
@@ -202,7 +217,7 @@ void Atmosphere::GMRESSolve(std::shared_ptr<SuperVector> rhs,
 //-----------------------------------------------------------------------------
 void Atmosphere::idealizedOcean()
 {
-	// put idealized values in oceanTemp
+	// put idealized values in the surface temperature
 	double value;
 	int row;
 	for (int i = 1; i <= n_; ++i)
@@ -210,7 +225,7 @@ void Atmosphere::idealizedOcean()
 		{
 			value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 			row   = find_row(i,j,l_,ATMOS_TT_)-1;
-			oceanTemp_[row] = value;
+			surfaceTemp_[row] = value;
 		}
 }
 
@@ -240,15 +255,15 @@ void Atmosphere::zeroState()
 //-----------------------------------------------------------------------------
 void Atmosphere::zeroOcean()
 {
-	// Set ocean to zero
-	oceanTemp_ = std::vector<double>(n_ * m_, 0.0);
+	// Set sst to zero
+	surfaceTemp_ = std::vector<double>(n_ * m_, 0.0);
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::setOceanTemperature(std::vector<double> const &sst)
+void Atmosphere::setOceanTemperature(std::vector<double> const &surftemp)
 {
-	// Set ocean temperature (copy)
-	oceanTemp_ = sst;
+	// Set surface temperature (copy)
+	surfaceTemp_ = surftemp;
 }
 
 //-----------------------------------------------------------------------------
@@ -335,13 +350,27 @@ void Atmosphere::forcing()
 {
 	double value;
 	int row;
+	
 	for (int j = 1; j <= m_; ++j)
 		for (int i = 1; i <= n_; ++i)
 		{
 			row = find_row(i, j, l_, ATMOS_TT_);
-			value = oceanTemp_[row-1] + comb_ * sunp_ * (suna_[j] - amua_);
+			
+			// Apply surface mask and calculate land temperatures
+			if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
+			{
+				value = comb_ * sunp_ * suno_[j] / Ooa_;
+				surfaceTemp_[row-1] = value + (*state_)[row-1];
+				value += comb_ * sunp_ * (suna_[j] - amua_);
+			}
+			else // above ocean
+			{
+				value = surfaceTemp_[row-1] +
+					comb_ * sunp_ * (suna_[j] - amua_);
+			}
 			frc_[row-1] = value;
 		}
+	write(surfaceTemp_, "surfacetemp.txt");
 }
 
 //-----------------------------------------------------------------------------
@@ -352,8 +381,13 @@ void Atmosphere::discretize(int type, Atom &atom)
 		double val2, val4, val5, val6, val8;
 	case 1: // tc
 		atom.set({1,n_,1,m_,1,l_}, 5, -1.0);
-		// coupling of ocean is more convenient through forcing
-		// atom.set({1,n_,1,m_,1,l_}, 14,  1.0);
+
+		// Apply land mask
+		if (use_landmask_)
+			for (int j = 1; j <= m_; ++j)
+				for (int i = 1; i <= n_; ++i)
+					if ((*surfmask_)[(j-1)*n_+(i-1)])
+						atom.set(i, j, l_, 5, 0.0);
 		break;
 	case 2: // tc2
 		atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
@@ -754,7 +788,7 @@ void Atmosphere::writeAll()
 	write(beg_, "atmos_beg.txt"); 
 	write(bandedA_, "atmos_bandedA.txt"); 	
 	write(frc_, "atmos_frc.txt");           
-	write(oceanTemp_, "atmos_oceanTemp.txt");
+	write(surfaceTemp_, "atmos_oceanTemp.txt");
 	write(*state_, "atmos_state.txt");       
 }
 
@@ -1049,8 +1083,32 @@ double Atmosphere::getPar(std::string const &parName)
 std::shared_ptr<std::vector<double> > Atmosphere::getOceanBlock()
 {
 	// The contribution of the ocean in the atmosphere is a
-	// diagonal of ones.
-	return std::make_shared<std::vector<double> >(m_*n_, 1.0);
+	// diagonal of ones, see the forcing.
+
+	std::shared_ptr<std::vector<double> > oceanblock = 
+		std::make_shared<std::vector<double> >(m_*n_, 1.0);
+
+	// Apply surface mask
+	if ((int) surfmask_->size() != m_*n_)
+		ERROR("Surface mask is not set", __FILE__, __LINE__);
+	
+	int idx = 0;
+	int ctr = 0;
+	for (int j = 0; j != m_; ++j)
+		for (int i = 0; i != n_; ++i)
+		{
+			if ((*surfmask_)[j*n_+i])
+			{
+				(*oceanblock)[idx] = 0.0;
+				ctr++;
+			}
+			idx++;
+		}
+
+	INFO("  O->A block, zeros due to surfacemask --> " << ctr);
+
+	
+	return oceanblock;
 }
 
 //-----------------------------------------------------------------------------
@@ -1073,12 +1131,12 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 	if ((int) surfm->size() != n_*m_)
 		WARNING("surfm->size() not ok:",  __FILE__, __LINE__);
 
-	surfm_ = surfm;
+	surfmask_ = surfm;
 
 	INFO("Printing surface mask available in Atmosphere");
 	int ctr = 0;
 	std::ostringstream string;
-	for (auto &l: *surfm)
+	for (auto &l: *surfmask_)
 	{
 		ctr++;
 		string << l;

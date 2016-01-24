@@ -145,11 +145,11 @@ public:
 	Teuchos::RCP<SuperVector> getSolution(char mode = 'C');
 	Teuchos::RCP<SuperVector> getState(char mode = 'C');
 	Teuchos::RCP<SuperVector> getRHS(char mode = 'C');
-
+	
 	// Apply the Jacobian to a vector and return the result u = J*v
 	Teuchos::RCP<SuperVector> applyMatrix(SuperVector const &v);
 	void applyMatrix(SuperVector const &v, SuperVector &out);
-
+	
 	// Apply the preconditioner inverse to a vector and return
 	// the result u = P^{-1}*v
 	Teuchos::RCP<SuperVector> applyPrecon(SuperVector const &v);
@@ -188,8 +188,11 @@ public:
 	Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
 
     // Get the diagonal elements of the atmosphere to ocean
-	// contribution in the Jacobian
+	// contribution in the Jacobian, see forcing.F90.
 	std::shared_ptr<std::vector<double> > getAtmosBlock();
+
+	std::shared_ptr<std::vector<double> >
+	getLandTemperature(std::shared_ptr<std::vector<double> > tatm);
 	
 	// Obtain ocean/land surface temperature
 	std::shared_ptr<std::vector<double> > getSurfaceT();
@@ -200,6 +203,8 @@ public:
 	// Get the ocean's landmask;
 	std::shared_ptr<std::vector<int> > getLandMask()    { return landmask_; }
 	std::shared_ptr<std::vector<int> > getSurfaceMask() { return surfmask_; }
+
+	// ---------------------------------------------------------------
 	
 	// Scale the matrix and rhs of the problem
 	void scaleProblem(VectorPtr rhs = Teuchos::null);

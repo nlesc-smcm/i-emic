@@ -29,6 +29,8 @@ module m_global
        TRES, SRES, iza, ite, its, rd_spertm, &
        rowintcon, f99, t0, s0
 
+  use m_atm, only : Ooa, suno
+
   implicit none
 
   integer, parameter :: nf   =  4
@@ -69,10 +71,10 @@ contains
        a_periodic,a_itopo,a_flat,a_rd_mask,&
        a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm,&
        a_coupled_atm)
-    
+
     use, intrinsic :: iso_c_binding
     implicit none
-    
+
     integer(c_int) :: a_n,a_m,a_l
     real(c_double) :: a_xmin,a_xmax,a_ymin,a_ymax,a_hdim,a_qz
     real(c_double) :: a_alphaT, a_alphaS
@@ -344,7 +346,7 @@ contains
     end do
 
   end subroutine get_windfield
-  
+
   subroutine get_temforcing(ctatm)
 
     use, intrinsic :: iso_c_binding

@@ -61,6 +61,9 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	ocean_->setParName(parName_);	
 	atmos_->setParName(parName_);
 	
+	// Communicate surface landmask
+	atmos_->setSurfaceMask(ocean_->getSurfaceMask());
+	
 	// Get the contribution of the atmosphere to the ocean in the Jacobian
 	B_     = ocean_->getAtmosBlock();
 	rowsB_ = ocean_->getSurfaceTRows();
@@ -71,8 +74,6 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	// Output parameters
 	INFO(*params);
 	
-	// Communicate surface landmask
-	atmos_->setSurfaceMask(ocean_->getSurfaceMask());	
 
 	// Synchronize state
 	synchronize();
