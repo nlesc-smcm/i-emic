@@ -283,7 +283,7 @@ void SuperVector::removeAtmos()
 {
 	if (haveAtmosVector_)
 	{
-		atmosVector_(std::shared_ptr<std::vector<double> >());
+		atmosVector_ = std::shared_ptr<std::vector<double> >(); // nullptr
 		haveAtmosVector_ = false;
 	}
 }
@@ -293,7 +293,7 @@ void SuperVector::removeOcean()
 {
 	if (haveOceanVector_)
 	{
-		oceanVector_(Teuchos::null);
+		oceanVector_ = Teuchos::null; // nullptr
 		haveOceanVector_ = false;
 	}
 }
