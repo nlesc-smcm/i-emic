@@ -91,12 +91,14 @@ public:
 	// Randomize vectors
 	void random();
 
-   
-
 	// Zero vectors
 	void zero();
 	void zeroAtmos();
 	void zeroOcean();
+
+	// Remove vectors
+	void removeAtmos();
+	void removeOcean();
 		
 	// Print the vectors to various output streams
 	void print() const;

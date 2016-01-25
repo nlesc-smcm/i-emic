@@ -129,7 +129,7 @@ int SuperVector::length() const
 	if (isInitialized_)
 		return length_;
 	else
-		return 1;
+		return -1;
 }
 
 //------------------------------------------------------------------
@@ -276,6 +276,26 @@ void SuperVector::zeroOcean()
 {
 	if (haveOceanVector_)
 		oceanVector_->PutScalar(0.0);
+}
+
+//------------------------------------------------------------------
+void SuperVector::removeAtmos()
+{
+	if (haveAtmosVector_)
+	{
+		atmosVector_(std::shared_ptr<std::vector<double> >());
+		haveAtmosVector_ = false;
+	}
+}
+
+//------------------------------------------------------------------
+void SuperVector::removeOcean()
+{
+	if (haveOceanVector_)
+	{
+		oceanVector_(Teuchos::null);
+		haveOceanVector_ = false;
+	}
 }
 
 //------------------------------------------------------------------
@@ -446,6 +466,7 @@ std::size_t SuperVector::hash() const
 //------------------------------------------------------------------
 void SuperVector::init()
 {
+	// Right now this is just the computation of our length
 	length_ = 0;
 	length_ += (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
 	length_ += (haveAtmosVector_) ? atmosVector_->size() : 0;
