@@ -7,17 +7,17 @@
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size" type="double" value="1.0e-2"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>
-  <Parameter name="maximum step size" type="double" value=".1"/>
+  <Parameter name="maximum step size" type="double" value="5.0e-2"/>
   
   <!-- Define the destination value for the continuation parameter -->
-  <Parameter name="parameter destination" type="double" value="0.25"/>
+  <Parameter name="parameter destination" type="double" value="0.7"/>
   
   <!-- Define the number of continuation steps              -->
   <!--   set to -1 to run indefinitely                      -->
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-2"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
 
   <!-- Tolerance when converging on destination         -->
   <!--  for both Newton and secant process in detect()  -->
@@ -25,7 +25,7 @@
   
   <!-- Define the optimal interval for the amount of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="5"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="15"/>
+  <Parameter name="maximum desired Newton iterations" type="int" value="8"/>
   
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
   <Parameter name="maximum Newton iterations" type="int" value="20"/>

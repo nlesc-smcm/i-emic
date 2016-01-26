@@ -68,6 +68,10 @@ public:
 	// Apply vector update:
 	// this = scalarA * A + scalarThis * this
 	void update(double scalarA,	SuperVector const &A, double scalarThis);
+
+	// Update element in the vector
+	// X[i] = scalarThis*X[i] + scalar
+	void updateElement(int index, double scalar, double scalarThis);
 	
 	// Apply dot product
 	double dot(SuperVector const &A) const;

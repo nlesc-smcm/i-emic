@@ -162,6 +162,33 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 }
 
 //----------------------------------------------------------------
+void SuperVector::updateElement(int index, double scalar, double scalarThis)
+{
+
+	if ((index < 0) || (index > length_))
+		ERROR("INVALID index", __FILE__, __LINE__);
+	
+	int oceanLength = (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
+	// int atmosLength = (haveAtmosVector_) ? atmosVector_->size() : 0;
+	
+	if (haveOceanVector_ && index < oceanLength) // Parallel update
+	{
+		int lid = getOceanVector()->Map().LID(index);
+		if (lid >= 0)
+		{
+			(*getOceanVector())[lid] =
+				scalarThis * (*getOceanVector())[lid] + scalar;
+		}
+	}
+	if (haveAtmosVector_ && index >= oceanLength)  // Serial update
+	{
+		(*atmosVector_)[index] =
+			scalarThis * (*atmosVector_)[index] + scalar;
+	}
+		
+}
+
+//----------------------------------------------------------------	
 double SuperVector::dot(SuperVector const &A) const
 {
 	if (length_ != A.length())
