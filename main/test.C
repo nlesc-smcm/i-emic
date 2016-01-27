@@ -106,11 +106,12 @@ void testNumJac(RCP<Epetra_Comm> Comm)
 	
 	Epetra_BlockMap Map = state->getOceanVector()->Map();
 
-	int el  = FIND_ROW2(_NUN_,16,16,16,12,12,12,TT);
-	int lid = Map.LID(el);
-
+	ocean->computeRHS();
+	ocean->getRHS('V')->print("F");
+		
 	NumericalJacobian<Ocean, RCP<SuperVector>> numjacob(*ocean, state);
 	numjacob.compute();
+
 		
 }
 
