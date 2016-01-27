@@ -60,10 +60,11 @@ Atmosphere::Atmosphere(ParameterList params)
 	sunp_            (params->get("Solar Forcing", 1.0)),
 		
 // input/output  --------------------------------------------------------------
-	loadState_       (params->get("Load state", false)),
-	saveState_       (params->get("Save state", false)),
 	inputFile_       (params->get("Input file", "atmos.h5")),
-	outputFile_      (params->get("Output file", "atmos.h5"))
+	outputFile_      (params->get("Output file", "atmos.h5")),
+	loadState_       (params->get("Load state", false)),
+	saveState_       (params->get("Save state", false)),	
+	storeEverything_  (params->get("Store everything", false))
 {
 	INFO("Atmosphere: constructor...");
 
@@ -1171,15 +1172,30 @@ void Atmosphere::postProcess()
 			paridx = i;
 			break;
 		}
-	
-	// Copy state
-	std::stringstream ss;
-	ss << "atmos_state_par" << paridx << "_" << std::setfill('_')
-	   << std::setprecision(4)  << std::setw(6) << getPar(parName_);
-	INFO("copying atmos_state.txt to " << ss.str());
-	std::ifstream src("atmos_state.txt", std::ios::binary);
-	std::ofstream dst(ss.str(), std::ios::binary);
-	dst << src.rdbuf();
+
+	if (storeEverything_)
+	{
+		// Copy state
+		std::stringstream ss;
+		ss << "atmos_state_par" << paridx << "_" << std::setfill('_')
+		   << std::setprecision(4)  << std::setw(6) << getPar(parName_);
+		
+		INFO("copying atmos_state.txt to " << ss.str());
+		
+		std::ifstream src1("atmos_state.txt", std::ios::binary);
+		std::ofstream dst1(ss.str(), std::ios::binary);
+		dst1 << src1.rdbuf();
+		
+		if (saveState_)
+		{
+			ss << ".h5";
+			INFO("copying " << outputFile_ << " to " << ss.str());
+			std::ifstream src2(outputFile_.c_str(), std::ios::binary);
+			std::ofstream dst2(ss.str(), std::ios::binary);
+			dst2 << src2.rdbuf();
+		}
+			
+	}
 
 }
 

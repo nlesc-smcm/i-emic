@@ -103,8 +103,6 @@ protected:
 	std::shared_ptr<std::vector<int> > landmask_; 	// Land mask, including borders and lids
 	std::shared_ptr<std::vector<int> > surfmask_; 	// Surface mask, without borders
 
-	
-
  	// HDF5 input/output files
 	std::string const inputFile_;
 	std::string const outputFile_;
@@ -112,6 +110,9 @@ protected:
 	// Flags for loading/saving states from/to hfd5 file
 	bool loadState_;
 	bool saveState_;
+
+	// Enable saving every state in multiple formats
+	bool storeEverything_;
 	
 	//------------------------------------------------------------------
 	// Continuation parameter name.
@@ -223,6 +224,7 @@ private:
 	// Write the state of the ocean to traditional FORTRAN out files fort.*
 	// Use matlab plot-scripts for visualization 
 	void printFiles();
+	void copyFiles();
 
 	// Initializer members
 	void initializeOcean();

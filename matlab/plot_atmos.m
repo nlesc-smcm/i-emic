@@ -8,49 +8,45 @@ srf(:,:,1) = (1-greyness*(surfm'));
 srf(:,:,2) = (1-greyness*(surfm'));
 srf(:,:,3) = (1-greyness*(surfm'));
 
-%otemp  = importdata('atmos_oceanTemp.txt');
 state  = importdata('atmos_state.txt');
-%sol   = importdata('atmos_sol.txt');
 
 T0  = 15.0;   %//! reference temperature
 RtD = 180/pi;
 
-%To  = reshape(T0 + otemp,n,m);
 Ta  = reshape(T0 + state,n,m);
-%Ts  = reshape(T0 + sol,n,m);
+Tz  = mean(Ta,1); % zonal mean
 
-% figure(5)
-% contourf(RtD*x, RtD*y,To',15);
-% colorbar
-% title('SST ')
-% xlabel('Longitude')
-% ylabel('Latitude')
-% exportfig('oceanTemp.eps')
 %%
 colormap default
-figure(6)
+figure(10)
 img = Ta';
-contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
-imagesc(RtD*x,RtD*(y),img,'AlphaData',.8);
-image(RtD*x,RtD*(y),srf,'AlphaData',.5); 
-c = contour(RtD*x,RtD*(y),img,10,'Visible', 'on','linewidth',2); 
+contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
+image(RtD*x,RtD*(y),srf,'AlphaData',.2); 
+c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1); 
 colorbar
 caxis([min(min(Ta)),max(max(Ta))])
 hold off
-
-
 drawnow
-
-
 title('Atmospheric temperature')
 xlabel('Longitude')
 ylabel('Latitude')
 exportfig('atmosTemp.eps')
 
-% figure(7)
-% contourf(RtD*x,RtD*y,Ts',15);
-% colorbar
-% title('Solution')
-% xlabel('Longitude')
-% ylabel('Latitude')
-% exportfig('atmosTemp.eps')
+		 
+%%
+colormap default
+figure(11)
+img = (Ta-repmat(Tz,n,1))';
+contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
+image(RtD*x,RtD*(y),srf,'AlphaData',.2); 
+c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1); 
+colorbar
+caxis([min(min(img)),max(max(img))])
+hold off
+drawnow
+title('Atmospheric temperature anomaly')
+xlabel('Longitude')
+ylabel('Latitude')
+exportfig('atmosTemp.eps')
+
+		 

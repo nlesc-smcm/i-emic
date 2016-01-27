@@ -161,12 +161,15 @@ end
 %%
 figure(3)
 Tp = T(:,:,l);
+minT=min(min(Tp));
+maxT=max(max(Tp));
 temp = flipud(T0 + Tp');
-contourf(RtD*x,RtD*y,T0+Tp',15); hold on
+%contour(RtD*x,RtD*y,T0+1e-4*(surfm'),1,'k-','linewidth',2); hold off
 % imagesc(RtD*x,RtD*y,temp); hold on
-colorbar
-contour(RtD*x,RtD*y,T0+1e-4*(surfm'),1,'k-','linewidth',2); hold off
+contourf(RtD*x,RtD*y,T0+Tp',15);
 title('Surface Temperature');
+colorbar
+caxis(T0+[minT,maxT])
 xlabel('Longitude');
 ylabel('Latitude');
 
@@ -200,10 +203,10 @@ end
 %exportfig('isopycnals.eps')
 
 %%
-%figure(7)
-%Sp = S(:,:,l);
-%contourf(RtD*x,RtD*y,S0+Sp',15);
-%title('Surface salinity');
-%xlabel('Longitude');
-%ylabel('Latitude');
-%
+figure(7)
+Sp = S(:,:,l);
+contourf(RtD*x,RtD*y,S0+Sp',20);
+title('Surface salinity');
+xlabel('Longitude');
+ylabel('Latitude');
+

@@ -186,13 +186,16 @@ private:
 	double      comb_; //! combined forcing
 	double      sunp_; //! solar forcing    
 
-	// Flags for loading/saving states from/to hfd5 file
-	bool loadState_;
-	bool saveState_;
-	
 	// HDF5 input/output files
 	std::string const inputFile_;
 	std::string const outputFile_;
+	
+	// Flags for loading/saving states from/to hfd5 file
+	bool loadState_;
+	bool saveState_;
+
+	// Enable saving every state in multiple formats
+	bool storeEverything_;	
 	
 public:
 	// Constructor, specify horizontal grid dimensions

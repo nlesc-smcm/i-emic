@@ -143,21 +143,23 @@ SUBROUTINE readmask
   write(*,*) 'land mask is read in from file mkmask/'//trim(maskfile)
   write(*,*) '===========TOPOGRAPHY==================================='
   !
-  open(unit=50,file=topdir//'mkmask/'//trim(maskfile),status='old',err=123)
-  !     open(unit=50,file=rundir//'mkmask/mask_natl16')
-  !     open(unit=50,file=rundir//'mkmask/test2')
-  !     open(unit=50,file=rundir//'mkmask/mask.glo_oc') ! 98 x 38 x 12 
-  !     open(unit=50,file=rundir//'mkmask/mask.jonas') 
+  open(unit=500,file=topdir//'mkmask/'//trim(maskfile),status='old',err=123)
+  !     open(unit=500,file=rundir//'mkmask/mask_natl16')
+  !     open(unit=500,file=rundir//'mkmask/test2')
+  !     open(unit=500,file=rundir//'mkmask/mask.glo_oc') ! 98 x 38 x 12 
+  !     open(unit=500,file=rundir//'mkmask/mask.jonas') 
 
   landm = LAND
+  write(*,*) ' l, la, m, n = ', l, la, m, n 
   do k = 0, l+la+1
-     read(50,*) 
+     read(500,*) 
      do j = m+1, 0, -1
-        read(50,'(362i1)') (landm(i,j,k),i=0,n+1)
+        read(500,'(362i1)',iostat=status) (landm(i,j,k),i=0,n+1)
+        write(*,*) ' k = ', k, ' j = ', j, ' status ', status
      enddo
   enddo
 
-  close(50)
+  close(500)
 
   !
   do k=1,l

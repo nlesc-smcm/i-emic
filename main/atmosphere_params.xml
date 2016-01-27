@@ -6,6 +6,9 @@
   <Parameter name="Save state" type="bool" value="false" />
   <Parameter name="Input file"  type="string" value="atmos.h5" />
   <Parameter name="Output file" type="string" value="atmos.h5" />
+
+  <!-- To keep track of each converged state, enable this. -->
+  <Parameter name="Store everything" type="bool" value="false" />
   
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->
