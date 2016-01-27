@@ -20,7 +20,7 @@ Continuation(Model model, ParameterList pars)
 	dsMax_                 (pars->get("maximum step size", 1.0e01)),
 	parDest_               (pars->get("parameter destination", 1.0)),
 	scale1_                (pars->get("increase step size", 1.25)),
-	scale2_                (pars->get("decrease step size", 2.00)),
+	scale2_                (pars->get("decrease step size", 1.25)),
 	epsilon_               (pars->get("epsilon increment", 1.0e-8)),
 	backTracking_          (pars->get("enable backtracking", true)),
 	numBackTrackingSteps_  (pars->get("backtracking steps", 10)),
@@ -81,14 +81,23 @@ run()
 	createInitialTangent(); // Create the first tangent
 
 	detect(); // Detect special points (initialization)
+	
+	int status = 0;
 
 	while (!destinationReached_ && step_ != maxSteps_)
 	{
-		info();       // Print continuation summary
-		store();      // Store the current state and parameter		
-		step();       // Perform a continuation step				
+		info();           // Print continuation summary
+		store();          // Store the current state and parameter		
+		status = step();  // Perform a continuation step				
+
+		if (status) // If step failed we continue
+		{
+			reset();  // Reset the model		
+			continue; // Skip the rest
+		}
+
 		detect();     // Detect special points
-        adjustStep(); // step size adjustment
+		adjustStep(); // step size adjustment
 		++step_;      // Increment step counter
 	}
 	INFO("---------Finished continuation run------------");
@@ -98,7 +107,7 @@ run()
 
 //======================================================================
 template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+int Continuation<Model, ParameterList>::
 step()
 {
 	// Let the model do some administrative work at the beginning of a step
@@ -111,9 +120,7 @@ step()
 	// If necessary reset the step, otherwise perform a normal
 	// calculation of the tangent and step adjustment
 	if (status)   // Failure
-	{
-		reset();  // Reset the model		
-	}
+		return 1; // Consider this step failed
 	else          // Success
 	{
 		// Put the parameter and norm of the state in the history
@@ -129,6 +136,7 @@ step()
 		// Let the model do some administrative work at the end of a succesful step 
 		model_->postProcess();	   		
 	}
+	return 0; // Exiting normally
 }
 
 //======================================================================
@@ -499,7 +507,7 @@ runBackTracking(Vector stateDir, double parDir)
 
 	TRACK_ITERATIONS("Continuation: backtracking steps...", backTrack_);
 	
-	if (backTrack_ == numBackTrackingSteps_)
+	if (normRHStest_ > normRHS_)
 	{
 		WARNING("Continuation: backtracking failed ", __FILE__, __LINE__);
 		return 1;
@@ -601,18 +609,18 @@ reset()
 {
 	INFO("***********************************************");
 	INFO("Continuation: reset... ");
-	INFO("                 step: " << step_);
-	INFO("            step size: " << ds_);
-	INFO("           norm state: " << stateView_->norm());
-	INFO("   norm stored state0: " << (storage_.state0)->norm());
- 	INFO("                  par: " << par_);
-	INFO("***********************************************");
+	INFO("|                step: " << step_);
+	INFO("|           step size: " << ds_);
+	INFO("|          norm state: " << stateView_->norm());
+	INFO("|  norm stored state0: " << (storage_.state0)->norm());
+ 	INFO("|                 par: " << par_);
+	INFO("| -------------------------------------------  ");
 	
 	restore();
 	ds_ = MAX(ds_ / scale2_, dsMin_);
-	INFO("           norm state: " << stateView_->norm());
-	INFO("                  par: " << par_);
-	INFO("            step size: " << ds_);
+	INFO("|      new norm state: " << stateView_->norm());
+	INFO("|             new par: " << par_);
+	INFO("|       new step size: " << ds_);
 	INFO("***********************************************");
 
 	createInitialTangent();

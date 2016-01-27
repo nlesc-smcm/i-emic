@@ -14,6 +14,9 @@
 //!
 //! The templated type ParameterList should be a pointer 
 //! to a parameter storing object having a .get() method.
+//!
+//! --> At this point the differences between the responsibilities of
+//! routines run() and step() are vague, we should improve this.
 
 template<typename Model, typename ParameterList>
 class Continuation
@@ -104,7 +107,7 @@ public:
 	// test
 	void test();
 private:
-	void step();
+        int  step();
 	void store();
 	void restore();
 	void analyzeHist();
