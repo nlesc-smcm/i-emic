@@ -672,13 +672,13 @@ void Ocean::printFiles()
 		file.close();
 		
 		// Copy state
-		std::stringstream ss;
-		ss << "ocean_state_par" << std::setprecision(4) << std::setfill('_')
+		std::stringstream ss1, ss2;
+		ss1 << "ocean_state_par" << std::setprecision(4) << std::setfill('_')
 		   << std::setw(2) << THCM::Instance().par2int(parName_) << "_"
 		   << std::setw(6) << getPar(parName_);
-		INFO("copying fort.3 to " << ss.str());
+		INFO("copying fort.3 to " << ss1.str());
 		std::ifstream src("fort.3", std::ios::binary);
-		std::ofstream dst(ss.str(), std::ios::binary);
+		std::ofstream dst(ss1.str(), std::ios::binary);
 		dst << src.rdbuf();
 	}
 	delete [] solutionArray;

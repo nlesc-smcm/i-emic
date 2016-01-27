@@ -47,7 +47,6 @@ template<typename Model, typename VectorPointer>
 GMRESSolver<Model, VectorPointer>::
 ~GMRESSolver() {}
 
-
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
 template<typename ParListPtr>

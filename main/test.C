@@ -30,8 +30,11 @@
 #include "ThetaStepper.H"
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
+#include "THCMdefs.H"
 #include "IDRSolver.H"
 #include "GMRESSolver.H"
+
+#include "NumericalJacobian.H"
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
@@ -51,6 +54,7 @@ void testOcean(RCP<Epetra_Comm> Comm);
 void testGlobalAtmos();
 void testIDR(RCP<Epetra_Comm> Comm);
 void testGMRES(RCP<Epetra_Comm> Comm);
+void testNumJac(RCP<Epetra_Comm> Comm);
 
 //------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
@@ -67,7 +71,7 @@ int main(int argc, char **argv)
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
 	// test the coupled model
-	testGMRES(Comm);
+	testNumJac(Comm);
 	//	testOcean(Comm);
 
 	// print the profile
@@ -80,6 +84,38 @@ int main(int argc, char **argv)
 	MPI_Finalize();	
 }
 
+//------------------------------------------------------------------
+void testNumJac(RCP<Epetra_Comm> Comm)
+{
+	//------------------------------------------------------------------
+	// Check if outFile is specified
+	if (outFile == Teuchos::null)
+		throw std::runtime_error("ERROR: Specify output streams");	
+	
+	//------------------------------------------------------------------
+	// Create parameter object for Ocean
+	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+	
+	// Create parallelized Ocean object
+	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
+
+	RCP<SuperVector> state = ocean->getState('V');
+
+	std::cout << state->norm('V') << std::endl;
+	
+	Epetra_BlockMap Map = state->getOceanVector()->Map();
+
+	ocean->computeRHS();
+	ocean->getRHS('V')->print("F");
+		
+	NumericalJacobian<Ocean, RCP<SuperVector>> numjacob(*ocean, state);
+	numjacob.compute();
+
+		
+}
+
+//------------------------------------------------------------------
 void testGMRES(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
@@ -126,7 +162,6 @@ void testGMRES(RCP<Epetra_Comm> Comm)
 }
 
 //-------------------------------------------------------------------------------
-
 void testIDR(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
@@ -181,7 +216,6 @@ void testIDR(RCP<Epetra_Comm> Comm)
 void testOcean(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
-
 
 	//------------------------------------------------------------------
 	// Check if outFile is specified

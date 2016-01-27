@@ -129,7 +129,7 @@ int SuperVector::length() const
 	if (isInitialized_)
 		return length_;
 	else
-		return 1;
+		return -1;
 }
 
 //------------------------------------------------------------------
@@ -162,6 +162,33 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 }
 
 //----------------------------------------------------------------
+void SuperVector::updateElement(int index, double scalar, double scalarThis)
+{
+
+	if ((index < 0) || (index > length_))
+		ERROR("INVALID index", __FILE__, __LINE__);
+	
+	int oceanLength = (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
+	// int atmosLength = (haveAtmosVector_) ? atmosVector_->size() : 0;
+	
+	if (haveOceanVector_ && index < oceanLength) // Parallel update
+	{
+		int lid = getOceanVector()->Map().LID(index);
+		if (lid >= 0)
+		{
+			(*getOceanVector())[lid] =
+				scalarThis * (*getOceanVector())[lid] + scalar;
+		}
+	}
+	if (haveAtmosVector_ && index >= oceanLength)  // Serial update
+	{
+		(*atmosVector_)[index] =
+			scalarThis * (*atmosVector_)[index] + scalar;
+	}
+		
+}
+
+//----------------------------------------------------------------	
 double SuperVector::dot(SuperVector const &A) const
 {
 	if (length_ != A.length())
@@ -276,6 +303,26 @@ void SuperVector::zeroOcean()
 {
 	if (haveOceanVector_)
 		oceanVector_->PutScalar(0.0);
+}
+
+//------------------------------------------------------------------
+void SuperVector::removeAtmos()
+{
+	if (haveAtmosVector_)
+	{
+		atmosVector_ = std::shared_ptr<std::vector<double> >(); // nullptr
+		haveAtmosVector_ = false;
+	}
+}
+
+//------------------------------------------------------------------
+void SuperVector::removeOcean()
+{
+	if (haveOceanVector_)
+	{
+		oceanVector_ = Teuchos::null; // nullptr
+		haveOceanVector_ = false;
+	}
 }
 
 //------------------------------------------------------------------
@@ -446,6 +493,7 @@ std::size_t SuperVector::hash() const
 //------------------------------------------------------------------
 void SuperVector::init()
 {
+	// Right now this is just the computation of our length
 	length_ = 0;
 	length_ += (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
 	length_ += (haveAtmosVector_) ? atmosVector_->size() : 0;

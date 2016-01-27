@@ -68,6 +68,10 @@ public:
 	// Apply vector update:
 	// this = scalarA * A + scalarThis * this
 	void update(double scalarA,	SuperVector const &A, double scalarThis);
+
+	// Update element in the vector
+	// X[i] = scalarThis*X[i] + scalar
+	void updateElement(int index, double scalar, double scalarThis);
 	
 	// Apply dot product
 	double dot(SuperVector const &A) const;
@@ -91,12 +95,14 @@ public:
 	// Randomize vectors
 	void random();
 
-   
-
 	// Zero vectors
 	void zero();
 	void zeroAtmos();
 	void zeroOcean();
+
+	// Remove vectors
+	void removeAtmos();
+	void removeOcean();
 		
 	// Print the vectors to various output streams
 	void print() const;

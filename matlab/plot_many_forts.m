@@ -1,15 +1,15 @@
 % decide which plots to show in movie
-surftemp      = true;
-barstreamfunc = false;
+surftemp      = false;
+barstreamfunc = true;
 isothermals   = false;
 moc           = false;
 amoc          = false; % only working with 2deg landmask
 
 % Create array of strings with filenames of the states (UNIX)
-[s,statenames] = system('ls ocean_state*[0-9]* | sed "s/ / /" ')
+[s,statenames] = system('ls -rt ocean_state*[0-9]* | sed "s/ / /" ')
 newlines = find(statenames == char(10));
 filenames = [];
-paridx = 10; % continuation parameter, this should be obtained from filename
+paridx = 16; % continuation parameter, this should be obtained from filename
 begin = 1;
 k = 1;
 for i = 1:numel(statenames)
@@ -20,7 +20,8 @@ for i = 1:numel(statenames)
   end
 end
 
-filenames
+filenames'
+input('OK?\n')
 fprintf(1,'----------------------------------------------\n')
 
 %% - DEFINE CONSTANTS - ----------------------------------------------
