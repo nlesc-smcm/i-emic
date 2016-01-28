@@ -369,8 +369,9 @@ class SppSimplePrec : public Epetra_Operator
       //! the Schur-complement matrix
       Teuchos::RCP<Epetra_CrsMatrix> Chat;
 
-	  //! Option to use a scaling in the Chat solve
-	  bool scaleChat;
+	  //! Options to use a scaling in the Chat solve
+	  //! and remove zeros on its diagonals
+	  bool scaleChat, fixSingularChat;
 	  
 	  //! scaling vector for Chat
       Teuchos::RCP<Epetra_Vector> scalingChat;

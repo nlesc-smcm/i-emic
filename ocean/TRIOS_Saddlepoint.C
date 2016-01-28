@@ -294,11 +294,16 @@ namespace TRIOS {
 								 Teuchos::RCP<Epetra_Operator> A11Precond_,
 								 bool zero_init_)
 		:
-		comm(comm_), zero_init(zero_init_), Spp(Spp_), 
-		A11Solver(A11Solver_), A11Precond(A11Precond_)    
+		comm          (comm_),
+		zero_init     (zero_init_),
+		Spp           (Spp_), 
+		A11Solver     (A11Solver_),
+		A11Precond    (A11Precond_)    
 	{
-		scheme = params.get("Scheme","SR");
-		scaleChat = params.get("Scale Chat", false);
+		scheme          = params.get("Scheme","SR");
+		scaleChat       = params.get("Scale Chat", false);
+		fixSingularChat = params.get("Fix singular Chat", false);
+																	
 		Teuchos::ParameterList& SpaIList = params.sublist("Approximate Inverse");
 		string spai_scheme=SpaIList.get("Method","Block Diagonal");
 		label_ = "Simple Preconditioner ("+scheme+", "+spai_scheme+")";
@@ -512,45 +517,51 @@ namespace TRIOS {
 			delete [] indices;
 			delete [] values;
 		}
+		
 
 		// =============================================================================
 		// IMPROVE CONDITION NUMBER OF CHAT ----
-		// I'm also going to try to fix zero diagonal elements due to the landmask -Erik
-		Epetra_Vector diagonal(Chat->RowMap());
-		CHECK_ZERO(Chat->ExtractDiagonalCopy(diagonal));
-		INFO("  chat diagonal length = " << diagonal.GlobalLength());
-		DUMPMATLAB("CHAT", *Chat);
+		// I'm also going to try to fix zero diagonal elements due to the landmask -Erik{
+		if (fixSingularChat)
+		{			
+			Epetra_Vector diagonal(Chat->RowMap());
+			CHECK_ZERO(Chat->ExtractDiagonalCopy(diagonal));
+			INFO("  chat diagonal length = " << diagonal.GlobalLength());
+			DUMPMATLAB("CHAT", *Chat);
 		
-		Teuchos::RCP<Epetra_CrsMatrix> TMP =
-			Teuchos::rcp(new Epetra_CrsMatrix(Copy, Chat->RowMap(), 0));
+			Teuchos::RCP<Epetra_CrsMatrix> TMP =
+				Teuchos::rcp(new Epetra_CrsMatrix(Copy, Chat->RowMap(), 0));
 		
-		double values[1] = {-1.0};
-		int colinds[1] = {0};
-		int numMyElements = diagonal.Map().NumMyElements();
+			double values[1]  = {0.0};
+			int colinds[1]    = {0};
+			int numMyElements = diagonal.Map().NumMyElements();
 		
-		int *myGlobalElements = diagonal.Map().MyGlobalElements();
-		int row;
-		double tol = 1e-8;
-		for (int i = 0; i != numMyElements; ++i)
-		{
-			if (std::abs(diagonal[i]) < tol)
+			int *myGlobalElements = diagonal.Map().MyGlobalElements();
+			int row;
+			double tol = 1e-8;
+			for (int i = 0; i != numMyElements; ++i)
 			{
-				values[0] = (i > 0) ? diagonal[i-1] : -1.0;
-				row = myGlobalElements[i];
-				colinds[0]  = row;
-				diagonal[i] = values[0];
-				CHECK_ZERO(TMP->InsertGlobalValues(row, 1, values, colinds));
+				if (std::abs(diagonal[i]) < tol)
+				{
+					values[0] = (i > 0) ? diagonal[i-1] : -1.0;
+					row = myGlobalElements[i];
+					colinds[0]  = row;
+					diagonal[i] = values[0];
+					CHECK_ZERO(TMP->InsertGlobalValues(row, 1, values, colinds));
+				}
 			}
-		}
-		Epetra_Import Chat2TMP(TMP->RowMap(), Chat->RowMap());
+			Epetra_Import Chat2TMP(TMP->RowMap(), Chat->RowMap());
 
-		CHECK_ZERO(TMP->Import(*Chat, Chat2TMP, Insert));
-		CHECK_ZERO(TMP->FillComplete());
-		DUMPMATLAB("TMP",   *TMP);
+			CHECK_ZERO(TMP->Import(*Chat, Chat2TMP, Insert));
+			CHECK_ZERO(TMP->FillComplete());
+			DUMPMATLAB("TMP",   *TMP);
 		
-		Chat = TMP;
-		DUMPMATLAB("CHAT2", *Chat);
+			Chat = TMP;
+			DUMPMATLAB("CHAT2", *Chat);
+		}
 
+	// Traditional scaling although I'm still not sure whether I'm doing it right
+	// See also ApplyInverse()
 		if (scaleChat)
 		{
 			scalingChat = Teuchos::rcp(new Epetra_Vector(Chat->RowMap()));
