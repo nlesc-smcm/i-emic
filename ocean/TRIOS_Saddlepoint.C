@@ -298,6 +298,7 @@ namespace TRIOS {
 		A11Solver(A11Solver_), A11Precond(A11Precond_)    
 	{
 		scheme = params.get("Scheme","SR");
+		scaleChat = params.get("Scale Chat", false);
 		Teuchos::ParameterList& SpaIList = params.sublist("Approximate Inverse");
 		string spai_scheme=SpaIList.get("Method","Block Diagonal");
 		label_ = "Simple Preconditioner ("+scheme+", "+spai_scheme+")";
@@ -353,7 +354,7 @@ namespace TRIOS {
 			DEBUG("compute the Schur-complement...");
 			DEBUG(" compute Chat = Duv*inv(diag(Auv))*Guv");
 
-			/*
+			
 			DEBUG("  initialize TMP");
 			Teuchos::RCP<Epetra_CrsMatrix> TMP =
 				Teuchos::rcp(new Epetra_CrsMatrix(Copy, (Spp->A21()).RowMap(),
@@ -371,11 +372,13 @@ namespace TRIOS {
 			EpetraExt::MatrixMatrix::Multiply(*AB, false, Spp->A12(), false, *TMP );
 			DEBUG("  finished MM's");
 			Chat = TMP;
-			*/
+			
+			/*
 			Chat = Utils::TripleProduct(false,  Spp->A21(),
 										false, *BlockDiagA11,
 										false,  Spp->A12());			
-
+			*/
+			
 			CHECK_ZERO(Chat->Scale(-1.0));
 			Chat->SetLabel("Schur-Complement Chat of Simple Precond");
 			// if AdjustChat does something to the local part of Chat,
@@ -383,7 +386,7 @@ namespace TRIOS {
 			fixp1 = -1;
 			fixp2 = -1;
 			valp=0.0;
-			this->AdjustChat(Chat);
+			this->AdjustChat(Chat);			
 		}
 		
 		/*
@@ -504,9 +507,59 @@ namespace TRIOS {
 				}
 			}
 			CHECK_ZERO(Chat->ReplaceGlobalValues(row,len,values,indices));
+
+			
 			delete [] indices;
 			delete [] values;
 		}
+
+		// =============================================================================
+		// IMPROVE CONDITION NUMBER OF CHAT ----
+		// I'm also going to try to fix zero diagonal elements due to the landmask -Erik
+		Epetra_Vector diagonal(Chat->RowMap());
+		CHECK_ZERO(Chat->ExtractDiagonalCopy(diagonal));
+		INFO("  chat diagonal length = " << diagonal.GlobalLength());
+		DUMPMATLAB("CHAT", *Chat);
+		
+		Teuchos::RCP<Epetra_CrsMatrix> TMP =
+			Teuchos::rcp(new Epetra_CrsMatrix(Copy, Chat->RowMap(), 0));
+		
+		double values[1] = {-1.0};
+		int colinds[1] = {0};
+		int numMyElements = diagonal.Map().NumMyElements();
+		
+		int *myGlobalElements = diagonal.Map().MyGlobalElements();
+		int row;
+		double tol = 1e-8;
+		for (int i = 0; i != numMyElements; ++i)
+		{
+			if (std::abs(diagonal[i]) < tol)
+			{
+				values[0] = (i > 0) ? diagonal[i-1] : -1.0;
+				row = myGlobalElements[i];
+				colinds[0]  = row;
+				diagonal[i] = values[0];
+				CHECK_ZERO(TMP->InsertGlobalValues(row, 1, values, colinds));
+			}
+		}
+		Epetra_Import Chat2TMP(TMP->RowMap(), Chat->RowMap());
+
+		CHECK_ZERO(TMP->Import(*Chat, Chat2TMP, Insert));
+		CHECK_ZERO(TMP->FillComplete());
+		DUMPMATLAB("TMP",   *TMP);
+		
+		Chat = TMP;
+		DUMPMATLAB("CHAT2", *Chat);
+
+		if (scaleChat)
+		{
+			scalingChat = Teuchos::rcp(new Epetra_Vector(Chat->RowMap()));
+			
+			Chat->InvRowSums(*scalingChat);
+			Chat->LeftScale(*scalingChat);
+			Chat->RightScale(*scalingChat);
+			DUMPMATLAB("CHAT3", *Chat);		
+		}		
 	} 
 
 
@@ -736,6 +789,7 @@ namespace TRIOS {
 
 				// apply inv(L):
 				rhs=y2; sol=Teuchos::rcp(&x2,false);
+				if (scaleChat) rhs->Multiply(1.0, *scalingChat,*rhs, 0.0); // scale rhs
 #ifdef HAVE_ZOLTAN
 				if (RepartChat!= Teuchos::null)
 				{
@@ -743,7 +797,7 @@ namespace TRIOS {
 					sol = Teuchos::rcp(new Epetra_Vector(Chat->RowMap()));
 					RepartChat->Redistribute(*y2,*rhs);
 				}
-#endif            
+#endif
 				if (ChatSolver.get()==NULL)
 				{
 					CHECK_ZERO(ChatPrecond->ApplyInverse(*rhs,*sol));
@@ -760,6 +814,7 @@ namespace TRIOS {
 					RepartChat->Undistribute(*sol,x2);
 				}
 #endif
+				if (scaleChat) sol->Multiply(1.0, *scalingChat,*sol, 0.0); // scale sol
 			}
 			CHECK_ZERO(Spp->A12().Multiply(false,x2,*ytmp1));
 			CHECK_ZERO(BlockDiagA11->Multiply(false,*ytmp1,x1));
@@ -781,6 +836,7 @@ namespace TRIOS {
 					CHECK_ZERO(x2.PutScalar(0.0));
 				}
 				rhs=y2; sol=Teuchos::rcp(&x2,false);
+				if (scaleChat) rhs->Multiply(1.0, *scalingChat,*rhs, 0.0); // scale rhs
 #ifdef HAVE_ZOLTAN
 				if (RepartChat!= Teuchos::null)
 				{
@@ -805,6 +861,7 @@ namespace TRIOS {
 					RepartChat->Undistribute(*sol,x2);
 				}
 #endif
+				if (scaleChat) sol->Multiply(1.0, *scalingChat,*sol, 0.0); // scale sol
 			}
           
 			// apply inv(L')

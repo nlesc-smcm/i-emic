@@ -15,8 +15,8 @@ then
 	linhist=$3
 	newthist=$4
 else
-	linhist=2000
-	newthist=1000
+	linhist=5000
+	newthist=50
 fi
 
 rand()
@@ -43,7 +43,7 @@ then
 	echo "LOCAL!" ${SHARED_DIR}
 	sleep 1
 	tmux new-session -d -s $session_name 'exec tail -f -n '$tailhist' '${SHARED_DIR}'/i-emic/'$dir'/dump '
-	tmux split-window -h 'cd '${SHARED_DIR}'/i-emic/'$dir'/ && watch -n 5 -t ./plotresidual.sh '$linhist' '$newthist''
+	tmux split-window -h 'cd '${SHARED_DIR}'/i-emic/'$dir'/ && watch -n 5 -t ./plotresidual.sh '$linhist' '$newthist' '
 	tmux split-window -v -t 0 'exec  tail -f -n '$tailhist'  '${SHARED_DIR}'/i-emic/'$dir'/info_0.txt '
 	tmux resize-pane -L 30
 # cd '${SHARED_DIR}'/i-emic/'$dir'/; watch -n 5 -t ls '
@@ -53,7 +53,7 @@ else
 "tail -f -n '$tailhist' \${SHARED_DIR}/i-emic/'$dir'/dump" '
 
 	tmux split-window -h 'exec ssh -t '$server' "cd \${SHARED_DIR}/i-emic/'$dir'/ \
-&& watch -n 5 -t ./plotresidual.sh 3000 1000" '
+&& watch -n 5 -t ./plotresidual.sh '$linhist' '$newthist'" '
 	
 	tmux split-window -v -t 0 'exec ssh -t '$server' \
 "tail -f -n '$tailhist' \${SHARED_DIR}/i-emic/'$dir'/info_0.txt" '

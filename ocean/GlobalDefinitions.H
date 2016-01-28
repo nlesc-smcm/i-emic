@@ -72,7 +72,11 @@ extern std::stack<Timer> timerStack;
 #endif
 
 #ifndef DUMP
-#  define DUMP(x,y) EpetraExt::RowMatrixToMatrixMarketFile(x, y);
+#  define DUMP(fname,mat) EpetraExt::RowMatrixToMatrixMarketFile(fname, mat);
+#endif
+
+#ifndef DUMPMATLAB
+#  define DUMPMATLAB(fname,mat) EpetraExt::RowMatrixToMatlabFile(fname, mat);
 #endif
 
 #ifndef MAX

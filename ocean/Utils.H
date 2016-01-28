@@ -119,7 +119,7 @@ namespace Utils
 	Teuchos::RCP<Epetra_BlockMap> CreateSubMap(const Epetra_BlockMap& map,
 											   std::vector<int> const &indices);
 	
-	//! Given a Epetra_MultiVector and a list of global indices we return an Epetra_MultiVector with
+	//! Given an Epetra_MultiVector and a list of global indices we return an Epetra_MultiVector with
 	//! the same distribution but restricted to the values at the supplied indices.
 	Teuchos::RCP<Epetra_Vector> RestrictVector(Epetra_Vector const &vector,
 											   std::vector<int> const &indices);
