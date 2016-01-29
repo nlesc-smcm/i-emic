@@ -206,6 +206,7 @@ SUBROUTINE matrix(un,sig1,sig2)
   use m_mix
   use m_atm
   USE m_mat
+  USE m_res
   !     construct the jacobian A and the 'mass' matrix B
   !     Put B in coB,  A-sig*B in coA
   !     sig1: u/v/T/S
@@ -214,7 +215,7 @@ SUBROUTINE matrix(un,sig1,sig2)
   real(c_double),dimension(ndim) :: un
   real(c_double) :: sig1,sig2
   real time0, time1
-  integer i,j,k,row,ii,jj,kk,find_row2
+  integer i,j,k,k1,row,ii,jj,kk,find_row2
   integer ix, iy, iz,ie
 
   !     clean old arrays:
@@ -224,6 +225,22 @@ SUBROUTINE matrix(un,sig1,sig2)
   begA(1:ndim+1) = 0
   coA(1:maxnnz)  = 0.D0
   jcoA(1:maxnnz) = 0
+
+#if 1	
+  if(ires == 0) then 
+     DO i = 1, n
+        DO j = 1, m
+           DO k = 1, l
+              DO k1 = 1,nun
+                 row = find_row2(i,j,k,k1)
+                 un(row) = un(row) * (1 - landm(i,j,k))
+              ENDDO
+           ENDDO
+        ENDDO
+     ENDDO
+  endif
+#endif 
+  
   _DEBUG_("Build diagonal matrix B...")
   call fillcolB
   _DEBUG_("Build linear part of Jacobian...")
