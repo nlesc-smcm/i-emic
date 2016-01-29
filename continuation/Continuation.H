@@ -35,6 +35,7 @@ Continuation(Model model, ParameterList pars)
 	cycleTolerance_        (pars->get("enable tolerance cycling", false)),
 	usePracticalTol_       (pars->get("enable practical tolerance", false)),
 	scaleRHS_              (pars->get("enable rhs scaling", false)),
+	newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
 	signMonitor_           (0)
 {
 	model_  = model;
@@ -233,6 +234,7 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 createTangent(char mode)
 {
+	INFO("Continuation: create tangent " << mode);
 	if (mode == 'S') // Secant
 	{
 		// ------------------------------------------------------------
@@ -257,26 +259,42 @@ createTangent(char mode)
 		par_    = model_->getPar();      // update our par_
 		parDot_ = (par_ - par0) / ds_;
 
-		// Normalize the combined tangent
-		// --> Not sure about zeta_ here
-		normalize();
 	}
-	else if (mode == 'E' && newtonIter_ != 0) // Euler 
+	else if (mode == 'E')  // Euler 
 	{
-		// ------------------------------------------------------------
-		// Calculate stateDot_ with the Euler approach. Here we require
-		// that the corrector has been run at least once, so:
-		//   - At this point stateDot_ contains y1 from J*y1 = dFdPar
-		//   - This means we can flip its sign to create a new tangent
-		// ------------------------------------------------------------
-		stateDot_->scale(-1.0);
-
-		// We still need to make sure everything is normalized
-		normalize();
+		// Calculate stateDot_ with the Euler approach
+		if (newtChordHybr_)
+		{
+			// 1) Compute dFdPar_, force computation of RHS
+			computeDFDPar('F');
+			
+			// 2) Solve J*stateDot_ = -dFdPar_
+			model_->computeJacobian();
+			dFdPar_->scale(-1.0);
+			model_->solve(dFdPar_);
+			
+			// To obtain the solution from this solve without the risk
+			// of altering it we get a copy.
+			stateDot_ = model_->getSolution('C');			
+		}
+		else if (newtonIter_ != 0)
+		{
+			// ------------------------------------------------------------
+			//  If the corrector has been run we have
+			//  stateDot = y1 from J*y1 = dFdPar.
+			//  This means we can flip its sign to create a new tangent.
+			// ------------------------------------------------------------
+			stateDot_->scale(-1.0);
+		}
+		else
+			WARNING(" undefined behaviour!",__FILE__, __LINE__);
 	}
 	else
-		WARNING("(       |:createTangent) Invalid mode!",
-				__FILE__, __LINE__);
+		WARNING(" invalid mode!",__FILE__, __LINE__);
+	
+	// Normalize the combined tangent
+	normalize();
+	INFO("Continuation: create tangent " << mode << " done");
 }
 
 //======================================================================
@@ -393,24 +411,35 @@ newtonCorrector()
 		// In both cases we obtain copies of the solution. Both copies
 		// wil have their use either here or in the computation of the
 		// next tangent.
-		model_->solve(dFdPar_);
-		y1 = model_->getSolution('C');
+		if (!newtChordHybr_)
+		{
+			model_->solve(dFdPar_);
+			y1 = model_->getSolution('C');
+		}
+		
 		model_->solve(R);
 		z1 = model_->getSolution('C');
 
 		if (scaleRHS_) // experimental
 			z1->scale(1.0 / rscale);
 
-		// Determine the directions
+		// Determine the directions.....................................
 		// First for the parameter:
-		parDir = (r - zeta_ * stateDot_->dot(*z1))
-			/ (parDot_ - zeta_ * stateDot_->dot(*y1));
+		if (newtChordHybr_)
+			parDir = (r - zeta_ * stateDot_->dot(*z1))
+				/ (parDot_ - zeta_ * stateDot_->dot(*stateDot_));			
+		else
+			parDir = (r - zeta_ * stateDot_->dot(*z1))
+				/ (parDot_ - zeta_ * stateDot_->dot(*y1));
 
-		// --> Perhaps we can optimize the next bit (copies and views)		
 		// Then for the state:
-		//  - We perform an update on z1 and
-		//  - let that be the new direction
-		z1->update(-1.0 * parDir, *y1, 1.0);
+		//  we perform an update on z1
+		if (newtChordHybr_)
+			z1->update(-1.0 * parDir, *stateDot_, 1.0);
+		else			
+			z1->update(-1.0 * parDir, *y1, 1.0);
+		
+		//  let that be the new direction
 		stateDir = z1;
 
 		// Update the state and the parameter in the model
@@ -418,15 +447,6 @@ newtonCorrector()
 		par_ = par_ + parDir;  // update our parameter
 		model_->setPar(par_);  // set it in the model
 		
-		// Do some printing ---------------------------------------
-		// model_->printJacobian("J" + std::to_string(newtonIter_));
-		// stateDot_->print("xdot" + std::to_string(newtonIter_));
-		// stateDir->print("dx" + std::to_string(newtonIter_));
-		// stateView_->print("x" + std::to_string(newtonIter_));
-		// rhsCopy_->print("F" + std::to_string(newtonIter_));
-		// dFdPar_->print("Fl" + std::to_string(newtonIter_));
-		// --------------------------------------------------------
-
 		++newtonIter_;
 
 		// test new RHS, if it satisfies the tolerance we exit the loop		
@@ -452,10 +472,10 @@ newtonCorrector()
 		
 		if (normRHStest_ < practicalTol_) break;
 	}
-	
-	// Store the last obtained y1 in stateDot, such that it can be used by
+
+	// Keep the last obtained y1 in stateDot, such that it can be used by
 	// CreateTangent()
-	stateDot_ = y1;
+	if (!newtChordHybr_) stateDot_ = y1;
 	
 	// Do some administrative work
 	TRACK_ITERATIONS("Continuation: Newton iterations...", newtonIter_);

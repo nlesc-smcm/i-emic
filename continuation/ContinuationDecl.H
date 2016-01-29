@@ -75,6 +75,11 @@ class Continuation
 	bool cycleTolerance_;         // if true we cycle between multiples of tol
 	bool usePracticalTol_;        // if true we scale the tolerance
 	bool scaleRHS_;               // experimental rhs scaling
+
+	// If the parameter dependence in the rhs is constant we can reuse statedot in the Newton corrector,
+	// effectively disregarding updates in the Jacobian. This means we do a partial Newton-chord iteration.
+	bool newtChordHybr_;
+	
 	int parDotSign_;              // used for detecting sign switch
 	int signMonitor_;             // track the sign of monitor in detect()
 	
