@@ -31,7 +31,7 @@
     <!-- up to now only "AztecOO" or "None" (just apply precond once) -->
     <Parameter name="Method" type="string" value="AztecOO"/>
     <!-- maximum number of iterations permitted -->
-    <Parameter name="Max Num Iter" type="int" value="1"/>
+    <Parameter name="Max Num Iter" type="int" value="5"/>
     <!-- (relative) convergence tolerance      -->
     <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <!-- options include "GMRES", "GMRESR", etc. -->
@@ -432,6 +432,12 @@
     <!-- "SI": Simple "SL": SimpleL (transposed) "SR": symmetrized = SimpleR -->
     <Parameter name="Scheme" type="string" value="SR"/>
 
+	<!-- fix Chat's diagonal if it is singular -->
+	<Parameter name="Fix singular Chat" type="bool" value="false"/>
+	
+	<!-- scale the Chat solve -->
+	<Parameter name="Scale Chat" type="bool" value="false"/>
+
     <!-- enable repartitioning for Chat (requires Zoltan/Isorropia) -->
     <Parameter name="Repartition Chat" type="bool" value="0"/>
 
@@ -446,8 +452,7 @@
       
       <Parameter name="ParaSails: Threshold" type="double" value="0.01"/>
 
-      <Parameter name="ParaSails: Load Balancing Beta" 
-                 type="double" value="0.9"/>
+      <Parameter name="ParaSails: Load Balancing Beta" type="double" value="0.9"/>
       
       <Parameter name="ParaSails: Print Stats (Pattern)" type="bool" value="0"/>
 
@@ -487,6 +492,7 @@
       <!-- Ifpack -->
       
       <Parameter name="Ifpack Method" type="string" value="Amesos stand-alone"/>
+	  <!-- <Parameter name="Ifpack Method" type="string" value="MRILU"/> -->
       <Parameter name="amesos: solver type" type="string" value="Amesos_Klu"/>
       <Parameter name="Ifpack Overlap Level" type="int" value="0"/>
 
@@ -499,7 +505,7 @@
         <Parameter name="xactelm" type="int" value="1"/>
         <Parameter name="clsonce" type="int" value="0"/>
         <Parameter name="nlsfctr" type="double" value="0.1"/>
-        <Parameter name="epsw" type="double" value="1.0e-4"/>
+        <Parameter name="epsw" type="double" value="1.0e-1"/>
         <Parameter name="elmfctr" type="double" value="0.2"/>
         <Parameter name="gusmod" type="int" value="1"/>
         <Parameter name="gusfctr" type="double" value="1.0"/>
@@ -533,7 +539,7 @@
   <!-- Parameters for the Krylov solver for ATS { -->
   <ParameterList name="ATS Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="20"/>
+    <Parameter name="Max Num Iter" type="int" value="10"/>
     <Parameter name="Tolerance" type="double" value="1.0e-4"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
