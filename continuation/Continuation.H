@@ -281,7 +281,7 @@ createTangent(char mode)
 		{
 			// ------------------------------------------------------------
 			//  If the corrector has been run we have
-			//  stateDot = y1 from J*y1 = dFdPar.
+			//  stateDot = y from J*y = dFdPar.
 			//  This means we can flip its sign to create a new tangent.
 			// ------------------------------------------------------------
 			stateDot_->scale(-1.0);
@@ -357,8 +357,8 @@ newtonCorrector()
 	INFO("Continuation: Newton corrector...");
 	char   mode;	      // mode for ComputeDFDPar()
 	Vector stateDir;      // direction for the state
-	Vector y1;            // solution of solve with dFdPar
-	Vector z1;            // solution of solve with F
+	Vector y;             // solution of solve with dFdPar
+	Vector z;             // solution of solve with F
 	double parDir;        // direction for the parameter
 	double rscale = 1.0;  // experimental RHS scaling
 	
@@ -414,33 +414,33 @@ newtonCorrector()
 		if (!newtChordHybr_)
 		{
 			model_->solve(dFdPar_);
-			y1 = model_->getSolution('C');
+			y = model_->getSolution('C');
 		}
 		
 		model_->solve(R);
-		z1 = model_->getSolution('C');
+		z = model_->getSolution('C');
 
 		if (scaleRHS_) // experimental
-			z1->scale(1.0 / rscale);
+			z->scale(1.0 / rscale);
 
 		// Determine the directions.....................................
 		// First for the parameter:
 		if (newtChordHybr_)
-			parDir = (r - zeta_ * stateDot_->dot(*z1))
-				/ (parDot_ - zeta_ * stateDot_->dot(*stateDot_));			
+			parDir = (r - zeta_ * stateDot_->dot(*z))
+				/ (parDot_ + zeta_ * stateDot_->dot(*stateDot_));			
 		else
-			parDir = (r - zeta_ * stateDot_->dot(*z1))
-				/ (parDot_ - zeta_ * stateDot_->dot(*y1));
+			parDir = (r - zeta_ * stateDot_->dot(*z))
+				/ (parDot_ - zeta_ * stateDot_->dot(*y));
 
 		// Then for the state:
-		//  we perform an update on z1
+		//  we perform an update on z
 		if (newtChordHybr_)
-			z1->update(-1.0 * parDir, *stateDot_, 1.0);
+			z->update(1.0 * parDir, *stateDot_, 1.0);
 		else			
-			z1->update(-1.0 * parDir, *y1, 1.0);
+			z->update(-1.0 * parDir, *y, 1.0);
 		
 		//  let that be the new direction
-		stateDir = z1;
+		stateDir = z;
 
 		// Update the state and the parameter in the model
 		stateView_->update(1.0, *stateDir, 1.0);
@@ -473,9 +473,9 @@ newtonCorrector()
 		if (normRHStest_ < practicalTol_) break;
 	}
 
-	// Keep the last obtained y1 in stateDot, such that it can be used by
+	// Keep the last obtained y in stateDot, such that it can be used by
 	// CreateTangent()
-	if (!newtChordHybr_) stateDot_ = y1;
+	if (!newtChordHybr_) stateDot_ = y;
 	
 	// Do some administrative work
 	TRACK_ITERATIONS("Continuation: Newton iterations...", newtonIter_);
