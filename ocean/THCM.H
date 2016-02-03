@@ -235,6 +235,9 @@ public:
 	// convert parameter index to std::string (i.e. 19 => "Combined Forcing")
 	std::string int2par(int ind);
 
+	//! read THCM parameters from a ParameterList
+	void ReadParameters(Teuchos::ParameterList& plist);
+
 private:
 
 	//! object for domain-decomposition:

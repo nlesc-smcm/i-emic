@@ -26,7 +26,7 @@ end
 [s,statenames] = system('ls -rt ocean_state*[0-9]* | sed "s/ / /" ')
 newlines = find(statenames == char(10));
 filenames = [];
-paridx = input('Enter parameter id...\n'); % continuation parameter, this should be obtained from filename
+paridx = input('Enter parameter id...\n'); % continuation parameter
 begin = 1;
 k = 1;
 for i = 1:numel(statenames)

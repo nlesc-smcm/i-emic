@@ -10,7 +10,7 @@
   <!--           "Solar Forcing"    -->
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Solar Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Wind Forcing"/>
   
   <!-- Select the solving and synchronization mode.                                    -->
   <!-- Synchronization depends on the solving method.                                  -->
