@@ -36,11 +36,17 @@ if atlantic
   atl_j = find(RtD*y > -40 & RtD*y < 60);
 end
 
+% change longitudinal view
+div   = floor(n/4);
+natl  = [div:n,1:div-1]; % NA focus
+pacf  = 1:n;             % PA focus
+range = natl;
+
 srf = [];
-greyness = .85;
-srf(:,:,1) = (1-greyness*(surfm'));
-srf(:,:,2) = (1-greyness*(surfm'));
-srf(:,:,3) = (1-greyness*(surfm'));
+greyness = .5;
+srf(:,:,1) = (1-greyness*(interp2(surfm(range,:)','cubic')));
+srf(:,:,2) = (1-greyness*(interp2(surfm(range,:)','cubic')));
+srf(:,:,3) = (1-greyness*(interp2(surfm(range,:)','cubic')));
 
 [qz,dfzt,dfzw] = gridstretch(zw);
 
@@ -79,7 +85,6 @@ if atlantic
   
   APSIG = [zeros(size(APSIG,1),1) APSIG];
 end
-
 
 %% - CHECK SALINITY - ------------------------------------------------
 check = checksal(S,x,y,dfzt);
@@ -126,54 +131,80 @@ figure(1)
 img = PSIB(2:end,:)';
 minPSIB = min(PSIB(:));
 maxPSIB = max(PSIB(:));
-contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
-imagesc(RtD*x,RtD*(y),img,'AlphaData',.5); hold on
+contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
+imagesc(RtD*x,RtD*(y),img(:,range),'AlphaData',.5); hold on
 image(RtD*x,RtD*(y),srf,'AlphaData',.9); hold on
 contours = linspace(minPSIB,maxPSIB,15);
-contour(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',2); hold off;
+contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', 'on','linewidth',2); hold off;
 colorbar
 caxis([minPSIB,maxPSIB])
 title('Barotropic Streamfunction');
+xtl  = get(gca,'xticklabel');
+xtl2 = xtl;
+for i = 1:numel(xtl)
+  xtl2{i} = num2str( str2num(xtl{i}) + round(RtD*x(div),-1) - 360 );
+end
+set(gca,'xticklabel',xtl2);
+
 xlabel('Longitude')
 ylabel('Latitude')
 exportfig('bstream.eps')
 
-%%%
-figure(2)
-contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',14);
-colorbar
-title('MOC (Sv)')
-xlabel('latitude')
-ylabel('depth (m)')
-exportfig('mstream.eps',10,[20,7])
-%
-%%%
-if atlantic
- figure(8)
- contourf(RtD*[y(atl_j);y(max(atl_j))+dy]-dy/2,zw*hdim',APSIG',14)
- colorbar
- title('AMOC (Sv)')
- xlabel('latitude')
- ylabel('depth (m)')
- exportfig('amstream.eps',10,[20,7])
-end  
-%
+%%% 
+%figure(2)
+%contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',14);
+%colorbar
+%title('MOC (Sv)')
+%xlabel('latitude')
+%ylabel('depth (m)')
+%exportfig('mstream.eps',10,[20,7])
+
 %%
+%if atlantic
+% figure(8)
+% contourf(RtD*[y(atl_j);y(max(atl_j))+dy]-dy/2,zw*hdim',APSIG',14)
+% colorbar
+% title('AMOC (Sv)')
+% xlabel('latitude')
+% ylabel('depth (m)')
+% exportfig('amstream.eps',10,[20,7])
+%end  
+
+%% -------------------------------------------------------
 figure(3)
-Tp = T(:,:,l);
-minT=min(min(Tp));
-maxT=max(max(Tp));
-temp = flipud(T0 + Tp');
-%contour(RtD*x,RtD*y,T0+1e-4*(surfm'),1,'k-','linewidth',2); hold off
-% imagesc(RtD*x,RtD*y,temp); hold on
-contourf(RtD*x,RtD*y,T0+Tp',15);
-title('Surface Temperature');
+Tsurf = T(:,:,l);
+minT = T0+min(min(Tsurf));
+maxT = T0+max(max(Tsurf));
+for j = 1:m
+  for i = 1:n
+	if surfm(i,j) == 1
+	   Tsurf(i,j) = -999;
+	end
+  end
+end
+
+img  = T0 + Tsurf(range,:)';
+contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
+set(gca,'color',[0.65,0.65,0.65]);
+image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
+contours = linspace(minT,maxT,40);
+contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',2); hold off
+
 colorbar
-caxis(T0+[minT,maxT])
+caxis([minT,maxT]);
+title('Surface Temperature', 'interpreter', 'none');
 xlabel('Longitude');
 ylabel('Latitude');
 
-%%
+xtl  = get(gca,'xticklabel');
+xtl2 = xtl;
+for i = 1:numel(xtl)
+  xtl2{i} = num2str( str2num(xtl{i}) + round(RtD*x(div),-1) - 360 );
+end
+set(gca,'xticklabel',xtl2);
+input(' ');
+
+%% -------------------------------------------------------
 figure(4)
 contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
 colorbar
@@ -209,4 +240,3 @@ contourf(RtD*x,RtD*y,S0+Sp',20);
 title('Surface salinity');
 xlabel('Longitude');
 ylabel('Latitude');
-
