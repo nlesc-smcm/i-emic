@@ -503,31 +503,31 @@ runBackTracking(Vector stateDir, double parDir)
 {
 	// Initialize reduction with -1/2
 	double reduction = -1.0 / 2;
-	// double reduction = -.1;
+	double increase  = 4.0;  // --> xml
 
 	for (backTrack_ = 0; backTrack_ != numBackTrackingSteps_; ++backTrack_)
 	{
-		if (normRHStest_ < normRHS_)
+		if (normRHStest_ < normRHS_ * increase) // we should allow for a significant increase
 			break;
 
 		// Apply reduction to the model state and its parameter
 		stateView_->update(reduction, *stateDir, 1.0); // update the state
-		par_ = par_ + reduction * parDir;          // update our parameter
-		model_->setPar(par_);		               // set it in the model
+		par_ = par_ + reduction * parDir;              // update our parameter
+		model_->setPar(par_);		                   // set it in the model
 
 		// Compute new RHS and obtain its norm
 		model_->computeRHS();
 		normRHStest_ = rhsView_->norm();
 
 		INFO("    backtracking step " << backTrack_ <<
-			 ", norm: " << normRHStest_ << " < " << normRHS_ << " ? ");
+			 ", norm: " << normRHStest_ << " < " << normRHS_ * increase << " ? ");
 
 		reduction /= 2.0;	// Update reduction
 	}
 
 	TRACK_ITERATIONS("Continuation: backtracking steps...", backTrack_);
 	
-	if (normRHStest_ > normRHS_)
+	if (normRHStest_ > normRHS_ * increase)
 	{
 		WARNING("Continuation: backtracking failed ", __FILE__, __LINE__);
 		return 1;
