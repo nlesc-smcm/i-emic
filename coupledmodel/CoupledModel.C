@@ -73,10 +73,12 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	
 	// Output parameters
 	INFO(*params);
-	
 
 	// Synchronize state
 	synchronize();
+	
+	if (!useExistingState_) // Since there is no pre-existing state we can do this
+		postProcess();	
 }
 
 //------------------------------------------------------------------

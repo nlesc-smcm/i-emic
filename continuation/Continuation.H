@@ -90,13 +90,13 @@ run()
 		info();           // Print continuation summary
 		store();          // Store the current state and parameter		
 		status = step();  // Perform a continuation step				
-
+		
 		if (status) // If step failed we continue
 		{
 			reset();  // Reset the model		
 			continue; // Skip the rest
 		}
-
+		
 		detect();     // Detect special points
 		adjustStep(); // step size adjustment
 		++step_;      // Increment step counter
