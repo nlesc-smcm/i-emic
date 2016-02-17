@@ -23,7 +23,7 @@ switch (plottype)
 end
 
 % Create array of strings with filenames of the states (UNIX)
-[s,statenames] = system('ls -rt ocean_state*[0-9]* | sed "s/ / /" ')
+[s,statenames] = system('ls -rt ocean_state*[0-9]*[^h5] | sed "s/ / /" | sort ')
 newlines = find(statenames == char(10));
 filenames = [];
 paridx = input('Enter parameter id...\n'); % continuation parameter
@@ -144,7 +144,8 @@ writerObj = VideoWriter(fname, 'Motion JPEG AVI');
 writerObj.FrameRate = 15;
 writerObj.Quality = 90;
 open(writerObj);
-frames = writerObj.FrameRate * 30;
+seconds = input('duration movie in seconds\n');
+frames = writerObj.FrameRate * seconds;
 par_incr = (pare - parb) / frames;
 fhandle = figure('units','pixels','position',[0,0,1280,720]);
 set(gca,'position',[0.05 0.1 .92 0.85],'units','normalized');
@@ -291,6 +292,7 @@ for file = 2:numel(filenames)
 	  contours = linspace(minAPSIG,maxAPSIG,40);
 	  contourf(RtD*[y(atl_j);y(max(atl_j))+dy]-dy/2,zw*hdim',APSIG',contours,'linewidth',2);
 	  colorbar
+	  caxis([minAPSIG,maxAPSIG]);
 	  title(['AMOC (Sv) ', sprintf('%5.4f',pr)], 'interpreter', 'none');
 	  xlabel('latitude')
 	  ylabel('depth (m)')

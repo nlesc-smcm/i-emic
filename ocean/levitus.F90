@@ -204,7 +204,7 @@
       close(33)
       emip(1:n,1:m) = emip(1:n,1:m) - s0 
       emipmax = maxval(emip)
-      write(f99,*) 'fit of levitus salt field done, emipmax =',emipmax+s0
+      write(*,*) 'fit of levitus salt field done, emipmax =',emipmax+s0
 
       end
       
