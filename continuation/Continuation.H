@@ -503,11 +503,12 @@ runBackTracking(Vector stateDir, double parDir)
 {
 	// Initialize reduction with -1/2
 	double reduction = -1.0 / 2;
-	double increase  = 4.0;  // --> xml
+	double increase  = 10.0;  // --> xml
+	double ceiling   = 10.0;  // --> xml
 
 	for (backTrack_ = 0; backTrack_ != numBackTrackingSteps_; ++backTrack_)
 	{
-		if (normRHStest_ < normRHS_ * increase) // we should allow for a significant increase
+	  if (normRHStest_ < normRHS_ * increase && normRHStest_ < ceiling) // we should allow for a significant increase
 			break;
 
 		// Apply reduction to the model state and its parameter
@@ -527,7 +528,7 @@ runBackTracking(Vector stateDir, double parDir)
 
 	TRACK_ITERATIONS("Continuation: backtracking steps...", backTrack_);
 	
-	if (normRHStest_ > normRHS_ * increase)
+	if (normRHStest_ > normRHS_ * increase || normRHStest_ > ceiling)
 	{
 		WARNING("Continuation: backtracking failed ", __FILE__, __LINE__);
 		return 1;
