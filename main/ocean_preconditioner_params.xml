@@ -433,10 +433,10 @@
     <Parameter name="Scheme" type="string" value="SR"/>
 
 	<!-- fix Chat's diagonal if it is singular -->
-	<Parameter name="Fix singular Chat" type="bool" value="false"/>
+	<Parameter name="Fix singular Chat" type="bool" value="true"/>
 	
 	<!-- scale the Chat solve -->
-	<Parameter name="Scale Chat" type="bool" value="false"/>
+	<Parameter name="Scale Chat" type="bool" value="true"/>
 
     <!-- enable repartitioning for Chat (requires Zoltan/Isorropia) -->
     <Parameter name="Repartition Chat" type="bool" value="0"/>

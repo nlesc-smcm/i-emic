@@ -368,8 +368,12 @@ namespace TRIOS {
 			Teuchos::RCP<Epetra_CrsMatrix> AB =
 				Teuchos::rcp(new Epetra_CrsMatrix(Copy, (Spp->A21()).RowMap(),
 												  (Spp->A21()).MaxNumEntries()));
-			//DEBUG(Spp->A21());
-			//DEBUG(*BlockDiagA11);
+			if (fixSingularChat)
+			{
+				DUMPMATLAB("Auv",Spp->A11());
+				DUMPMATLAB("BDAuv",*BlockDiagA11);
+			}
+			
 			DEBUG("  perform AB = Spp->A21*BlockDiagA11");
 			EpetraExt::MatrixMatrix::Multiply(Spp->A21(),    false,
 											  *BlockDiagA11, false, *AB);
@@ -521,7 +525,7 @@ namespace TRIOS {
 
 		// =============================================================================
 		// IMPROVE CONDITION NUMBER OF CHAT ----
-		// I'm also going to try to fix zero diagonal elements due to the landmask -Erik{
+		// I'm also going to try to fix zero diagonal elements due to the landmask -Erik
 		if (fixSingularChat)
 		{			
 			Epetra_Vector diagonal(Chat->RowMap());
@@ -538,12 +542,12 @@ namespace TRIOS {
 		
 			int *myGlobalElements = diagonal.Map().MyGlobalElements();
 			int row;
-			double tol = 1e-8;
+			double tol = 1e3;
 			for (int i = 0; i != numMyElements; ++i)
 			{
 				if (std::abs(diagonal[i]) < tol)
 				{
-					values[0] = (i > 0) ? diagonal[i-1] : -1.0;
+					values[0] = (i > 0) ? diagonal[i-1] : -tol;
 					row = myGlobalElements[i];
 					colinds[0]  = row;
 					diagonal[i] = values[0];

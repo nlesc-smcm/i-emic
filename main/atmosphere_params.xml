@@ -3,7 +3,7 @@
   <!-- Specify whether the ocean model should initialize with     -->
   <!-- an old state (true) or with a zero solution (false).       -->
   <Parameter name="Load state" type="bool" value="false" />
-  <Parameter name="Save state" type="bool" value="true" />
+  <Parameter name="Save state" type="bool" value="false" />
   <Parameter name="Input file"  type="string" value="atmos.h5" />
   <Parameter name="Output file" type="string" value="atmos.h5" />
 
@@ -19,8 +19,8 @@
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- Starting parameters -->
-  <Parameter name="Combined Forcing" type="double" value="1.0"/>
-  <Parameter name="Solar Forcing"    type="double" value="0.0"/>
+  <Parameter name="Combined Forcing" type="double" value="0.0"/>
+  <Parameter name="Solar Forcing"    type="double" value="1.0"/>
   
   <!-- Periodic boundary conditions in x-direction                -->
   <Parameter name="Periodic" type="bool" value="false"             />
@@ -31,12 +31,12 @@
   <!-- western, eastern, southern and northern domain bounds      -->
   <Parameter name="Global Bound xmin" type="double" value="300"    />
   <Parameter name="Global Bound xmax" type="double" value="340"    />
-  <Parameter name="Global Bound ymin" type="double" value="10"     />
-  <Parameter name="Global Bound ymax" type="double" value="74"     />
+  <Parameter name="Global Bound ymin" type="double" value="-50"    />
+  <Parameter name="Global Bound ymax" type="double" value="50"     />
   
   <!-- global number of grid points in x,y and z-directions       -->
-  <Parameter name="Global Grid-Size n" type="int" value="16"      />
-  <Parameter name="Global Grid-Size m" type="int" value="16"       />
+  <Parameter name="Global Grid-Size n" type="int" value="32"      />
+  <Parameter name="Global Grid-Size m" type="int" value="32"       />
   <Parameter name="Global Grid-Size l" type="int" value="1"        />
   
   <!-- Atmosphere physical parameters -->
