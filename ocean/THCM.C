@@ -509,6 +509,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                 &perio, landm,
                 taux, tauy, tatm, emip, spert);
 
+	INFO("   initialize THCM subdomain done");
+	
     if (internal_forcing)
 	{
 		F90NAME(m_usr,set_internal_forcing)(temp,salt);

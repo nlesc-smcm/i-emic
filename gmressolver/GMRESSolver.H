@@ -3,6 +3,7 @@
 
 #include "GMRESSolverDecl.H"
 #include "GMRESMacros.H"
+#include "GlobalDefinitions.H"
 #include <vector>
 #include <math.h>
 
@@ -148,6 +149,7 @@ solve()
 				printIterStatus();
 			
 			// Compute w
+			TIMER_START("GMRES: compute w...");
 			if (prec_ && leftPrec_)               // Left preconditioning
 			{
  				model_.applyMatrix(V[i], tmp); 
@@ -168,13 +170,16 @@ solve()
 			{
 				model_.applyMatrix(V[i], w);      // w =  A * v[i]
 			}
+			TIMER_STOP("GMRES: compute w...");
 
 			// Orthogonalize w
+			TIMER_START("GMRES: orthogonalization...");
 			for (k = 0; k <= i; k++)
 			{
 				H[k][i] = w.dot(V[k]);            // H(k, i) = dot(w, v[k]);
 				w.update(-H[k][i], V[k], 1.0);    // w -= H(k, i) * v[k];
 			}
+			TIMER_STOP("GMRES: orthogonalization...");
 
 			// Normalize and assign to space
 			H[i+1][i] = w.norm();
