@@ -25,6 +25,40 @@
 !     *        partition if necessary
 !     *
 !     * ================================================================================
+
+Call structure DSM and FDJS
+
+!   +----------------------------+                    
+!   |                            |   +-----------+    
+!   |          mix_imp.f         |   |   usrc.f  |    
+!   |                            | --+-----+-----+    
+!   |                          --+/        |          
+!   |        +---------------+/  |         |          
+!   |        | vmix_control  |   |         |          
+!   |        +------+--------+   |         |          
+!   |               |            +---------+---------+
+!   |      +--------+----+         +-------+--+      |
+!   |      |  vmix_part  |         | vmix_jac |      |
+!   |      +------+---+--+         +----+-----+      |
+!   |             |   |                 |            |
+!   | +-------------+ |             +---+----+       |
+!   | | vmix_el(1,2)| |             |  FDJ   |       |
+!   | |  -vmix_dim  | |            /+--------+       |
+!   | +-------------+ |           /                  |
+!   |                 |          |                   |
+!   |             +---+--------+ /                   |
+!   |             | DSM        |/                    |
+!   |             | -vmix_iptr |                     |
+!   |             +------------+                     |
+!   |                                                |
+!   |                                                |
+!   |                                                |
+!   |                                                |
+!   |                                                |
+!   |                                                |
+!   |                                                |
+!   +------------------------------------------------+
+      
       subroutine vmix_init
       use m_usr
       use m_mix
@@ -151,6 +185,13 @@
       case(2)
          call vmix_el_2(vmix_row, vmix_col, vmix_dim)
       end select
+
+      if (vmix_dim.eq.0) then
+         write (*,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
+         write (*,*) '   vmix_dim = 0 (NPAIRS), probably no water here'
+         write (*,*) '   returning...'
+         return
+      end if
     
       liwa=6*ndim
       call dsm(ndim,ndim,
@@ -162,10 +203,12 @@
       dnsm=real(vmix_dim)/(real(ndim)**2)
       write (99,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
       write (99,'(a16,es10.2)') 'MIX|     dnsm:  ', dnsm
-
+      
       if (info.le.0) then
-         write (99,*) 'Error in subroutine DSM'
-         write (99,*) 'INFO =', info
+         write (*,*) 'Error in subroutine DSM'
+         write (*,*) 'INFO =', info
+         write (*,'(a16,i10)')    'MIX|     idim:  ', vmix_dim
+         write (*,'(a16,es10.2)') 'MIX|     dnsm:  ', dnsm
          stop
       endif
       vmix_maxrow=0

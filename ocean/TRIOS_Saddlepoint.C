@@ -542,7 +542,7 @@ namespace TRIOS {
 		
 			int *myGlobalElements = diagonal.Map().MyGlobalElements();
 			int row;
-			double tol = 1e3;
+			double tol = 1e3;  // --> ARBITARY FIX THIS!!!
 			for (int i = 0; i != numMyElements; ++i)
 			{
 				if (std::abs(diagonal[i]) < tol)

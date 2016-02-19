@@ -238,8 +238,11 @@ end subroutine average_block
        call dgecon('I', size, mat, size, Anorm, rcond, work, iwork, info )
 !
 !     Error, if matrix exactly singular or Rcond underflows
-      IF (1.0+rcond==1.0) stop 'thcm scaling: Matrix is singular up to working precision'
-!
+      if (1.0+rcond==1.0) then
+         write(*,*) ' thcm scaling: Matrix is singular up to working precision'
+         write(*,*) ' mat ', mat
+         return
+      end if
 !     Compute the inverse of a matrix only "job = 01"
 !      CALL dgedi (mat,size, pvt, Det, 01)
 !      call dgedi (mat,size, pvt)

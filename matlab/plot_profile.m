@@ -3,11 +3,11 @@ function [profile] = plot_profile(filename, range, domain)
   % project directory, for instance proj_dir/rundir
   system(['../scripts/gatherprofile.sh ' filename ' converted']);
   profile = importdata('converted');
-  N       = profile.data(1) % number of experiments
-  M       = numel(profile.textdata)
+  N       = profile.data(1); % number of experiments
+  M       = numel(profile.textdata);
   cores   = 2.^(1:N);
   x_axis  = 1:N;
-  x_axis  = cores;
+%   x_axis  = cores;
   
   if nargin < 3
       domain = 1:N;

@@ -431,16 +431,16 @@
     <!-- mode of operation for the Simple preconditioner.                    -->
     <!-- "SI": Simple "SL": SimpleL (transposed) "SR": symmetrized = SimpleR -->
     <Parameter name="Scheme" type="string" value="SR"/>
-
+	
 	<!-- fix Chat's diagonal if it is singular -->
 	<Parameter name="Fix singular Chat" type="bool" value="true"/>
 	
 	<!-- scale the Chat solve -->
 	<Parameter name="Scale Chat" type="bool" value="true"/>
-
+	
     <!-- enable repartitioning for Chat (requires Zoltan/Isorropia) -->
     <Parameter name="Repartition Chat" type="bool" value="0"/>
-
+	
     <!-- define the method for approximating the inverse of Auv. {-->
     <ParameterList name="Approximate Inverse">
       
@@ -461,7 +461,7 @@
       <Parameter name="ParaSails: Print Stats (Values)" type="bool" value="0"/>
       
     </ParameterList><!-- } Simple: Sparse Approximate Inverse -->
-
+	
     <!-- Solver for Schur-complement inside Simple: { -->
     <ParameterList name="Chat Solver">
       <!-- can be "AztecOO" or "None" -->

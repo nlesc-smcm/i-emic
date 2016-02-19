@@ -157,7 +157,7 @@ end
 
 xlabel('Longitude')
 ylabel('Latitude')
-exportfig('bstream.eps')
+exportfig('bstream.eps',10,[50,25])
 
 %%% 
 figure(2)
