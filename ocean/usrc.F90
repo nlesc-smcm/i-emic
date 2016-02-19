@@ -226,21 +226,6 @@ SUBROUTINE matrix(un,sig1,sig2)
   coA(1:maxnnz)  = 0.D0
   jcoA(1:maxnnz) = 0
 
-#if 1	
-  if(ires == 0) then 
-     DO i = 1, n
-        DO j = 1, m
-           DO k = 1, l
-              DO k1 = 1,nun
-                 row = find_row2(i,j,k,k1)
-                 un(row) = un(row) * (1 - landm(i,j,k))
-              ENDDO
-           ENDDO
-        ENDDO
-     ENDDO
-  endif
-#endif 
-  
   _DEBUG_("Build diagonal matrix B...")
   call fillcolB
   _DEBUG_("Build linear part of Jacobian...")
@@ -330,21 +315,6 @@ SUBROUTINE rhs(un,B)
   real    Au(ndim), time0, time1
   integer i,j,k,k1,row,find_row2, mode, iter
   
-#if 1	
-  if(ires == 0) then 
-     DO i = 1, n
-        DO j = 1, m
-           DO k = 1, l
-              DO k1 = 1,nun
-                 row = find_row2(i,j,k,k1)
-                 un(row) = un(row) * (1 - landm(i,j,k))
-              ENDDO
-           ENDDO
-        ENDDO
-     ENDDO
-  endif
-#endif 
-
   !call writeparameters
   mix  = 0.0
   Al   = 0

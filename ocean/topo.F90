@@ -155,7 +155,7 @@ SUBROUTINE readmask
      read(500,*) 
      do j = m+1, 0, -1
         read(500,'(362i1)',iostat=status) (landm(i,j,k),i=0,n+1)
-        write(*,*) ' k = ', k, ' j = ', j, ' status ', status
+        !write(*,*) ' k = ', k, ' j = ', j, ' status ', status
      enddo
   enddo
 

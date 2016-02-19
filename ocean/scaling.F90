@@ -239,8 +239,7 @@ end subroutine average_block
 !
 !     Error, if matrix exactly singular or Rcond underflows
       if (1.0+rcond==1.0) then
-         write(*,*) ' thcm scaling: Matrix is singular up to working precision'
-         write(*,*) ' mat ', mat
+         write(*,*) ' thcm scaling: diagonal block is singular up to working precision'
          return
       end if
 !     Compute the inverse of a matrix only "job = 01"

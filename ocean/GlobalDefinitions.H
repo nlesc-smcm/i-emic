@@ -14,6 +14,7 @@
 
 #include <Teuchos_RCP.hpp>
 #include <EpetraExt_RowMatrixOut.h>
+#include <EpetraExt_VectorOut.h>
 #include <mpi.h>
 
 #include <iostream>
@@ -73,6 +74,10 @@ extern std::stack<Timer> timerStack;
 
 #ifndef DUMP
 #  define DUMP(fname,mat) EpetraExt::RowMatrixToMatrixMarketFile(fname, mat);
+#endif
+
+#ifndef DUMP_VECTOR
+#  define DUMP_VECTOR(fname,mat) EpetraExt::VectorToMatlabFile(fname, mat);
 #endif
 
 #ifndef DUMPMATLAB
