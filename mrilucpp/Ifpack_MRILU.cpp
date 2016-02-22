@@ -14,6 +14,7 @@
 #include <iomanip>
 #include "Teuchos_oblackholestream.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
+#include "GlobalDefinitions.H"
 
 
 // we still use one or two subroutines from the Fortran code,
