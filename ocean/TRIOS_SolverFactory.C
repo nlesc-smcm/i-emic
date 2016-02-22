@@ -375,9 +375,9 @@ namespace TRIOS {
 // be supported by our class.
 	Teuchos::RCP<AztecOO> SolverFactory::CreateKrylovSolver(Teuchos::ParameterList& plist,int verbose)
 	{  
-		Teuchos::RCP<AztecOO> Solver=Teuchos::null;
-		std::string SolverType=plist.get("Method","AztecOO");
-		if (SolverType=="AztecOO")
+		Teuchos::RCP<AztecOO> Solver = Teuchos::null;
+		std::string SolverType = plist.get("Method","AztecOO");
+		if (SolverType == "AztecOO")
 		{
 			Solver = Teuchos::rcp(new AztecOO() );
 			Solver->SetOutputStream(*outFile);
@@ -386,7 +386,7 @@ namespace TRIOS {
 			if (verbose == 0) plist.set("Output",0);
 			Solver->SetParameters(plist);
 		}
-		else if (SolverType!="None")
+		else if (SolverType != "None")
 		{
 			ERROR("Invalid Solver Method: "+SolverType,__FILE__,__LINE__);
 		}  

@@ -1054,7 +1054,6 @@ namespace TRIOS {
 // the Auv pointer is no longer valid (it is a new one because of the 
 // call to Utils::RemoveColMap(...)) 
 		{
-			   
 			DEBUG("Create Auv Preconditioner...");
 			AuvPrecond = SolverFactory::CreateAlgebraicPrecond(*Auv,AuvPrecList,verbose);
 
@@ -1066,8 +1065,6 @@ namespace TRIOS {
      
 		// currently has to be reconstructed, I think
 		{
-			
-
 			DEBUG("Create SppSimplePrecond...");
 			Teuchos::ParameterList& SimpleList = lsParams.sublist("Saddlepoint Preconditioner");
 			// also pass on info about Auv solver (like tol, maxit etc)
@@ -1093,8 +1090,9 @@ namespace TRIOS {
 		if (ATSSolver==Teuchos::null)
 		{
 			Teuchos::ParameterList& solverlist = lsParams.sublist("ATS Solver");    
-			ATSSolver=SolverFactory::CreateKrylovSolver(solverlist,verbose);
+			ATSSolver = SolverFactory::CreateKrylovSolver(solverlist,verbose);
 		}
+		
 		if (ATSSolver!=Teuchos::null)
 		{
 			if (rhomu)
@@ -1106,7 +1104,6 @@ namespace TRIOS {
 				CHECK_ZERO(ATSSolver->SetUserMatrix(ATS.get()));
 			}
 		}
-
    
 		// ATS Precond has to be rebuilt. See comment for Auv Precond.
 		{
@@ -1126,8 +1123,6 @@ namespace TRIOS {
 			DEBUG("Compute ATSPrecond...");
 			SolverFactory::ComputeAlgebraicPrecond(ATSPrecond,lsParams.sublist("ATS Precond"));
 		}
-     
-
 
 		// tell the solvers which preconditioners to use:
 		DEBUG("Set Preconditioner Operators...");
@@ -1138,6 +1133,7 @@ namespace TRIOS {
 			AuvSolver->SetErrorStream(*OuterErrorStream);
 			CHECK_ZERO(AuvSolver->SetPrecOperator(AuvPrecond.get()));
 		}
+		
 		if (SppSolver!=Teuchos::null)
 		{
 			// set outer stream for Aztec solver
@@ -1145,6 +1141,7 @@ namespace TRIOS {
 			SppSolver->SetErrorStream(*OuterErrorStream);
 			CHECK_ZERO(SppSolver->SetPrecOperator(SppPrecond.get())); 
 		}
+		
 		if (ATSSolver!=Teuchos::null)
 		{
 			// set outer stream for Aztec solver
@@ -1163,7 +1160,7 @@ namespace TRIOS {
 ///////////////////////////////////////////////////////////////////////////////
 // Apply preconditioner matrix (not available)                                 
 ///////////////////////////////////////////////////////////////////////////////
-
+	
 	int BlockPreconditioner::
 	Apply(const Epetra_MultiVector& X, Epetra_MultiVector& Y) const
 	{
@@ -1179,9 +1176,7 @@ namespace TRIOS {
 	int BlockPreconditioner::
 	ApplyInverse(const Epetra_MultiVector& input,
 				 Epetra_MultiVector& result) const
-	{
-		
-  
+	{  
 		bool noisy = (verbose>=8);
 		if (noisy) INFO("Apply Block-Preconditioner...");
 
@@ -1191,7 +1186,6 @@ namespace TRIOS {
 		{
 			ERROR("Ocean Preconditioner not implemented for multiple RHS, yet!",__FILE__,__LINE__);
 		}
-
 
 // check if input vectors are multivectors or standard vectors
 		const Epetra_Vector *input_vec = dynamic_cast<const Epetra_Vector*>(&input);
@@ -1233,9 +1227,7 @@ namespace TRIOS {
 
 		if (noisy)  INFO("(0) Split rhs vector ...");
 		
-		TIMER_START("BlockPrec: split rhs vector...");
-
-		// split b = [buv,bw,bp,bTS]' and x = [xuv,xw,xp,xTS]'		
+		// split b = [buv,bw,bp,bTS]' and x = [xuv,xw,xp,xTS]'	// ++scales++
 		Epetra_Vector buv(*mapUV);
 		Epetra_Vector bw(*mapW1);
 		Epetra_Vector bp(*mapP1);
@@ -1255,8 +1247,6 @@ namespace TRIOS {
 		CHECK_ZERO(xw.Export(x,*importW1,Zero));
 		CHECK_ZERO(xp.Export(x,*importP1,Zero));
 		CHECK_ZERO(xTS.Export(x,*importTS,Zero));
-
-		TIMER_STOP("BlockPrec: split rhs vector...");
 
 		// set bp = -bp (the sign of the cont. eqn. has been changed)
 		CHECK_ZERO(bp.Scale(-1.0));
@@ -1303,7 +1293,6 @@ namespace TRIOS {
 		else if (scheme=="Gauss-Seidel")
 		{
 			//solve y = (D+wL)\b
-			TIMER_START("BlockPrec: solveLower1...");
 			if (noisy) INFO("(1) Solve (D+wL)x=b...");
 			if (permutation==1)
 				SolveLower1(buv,bw,bp,bTS,xuv, xw,xp,xTS);
@@ -1313,7 +1302,6 @@ namespace TRIOS {
 				SolveLower3(buv,bw,bp,bTS,xuv, xw,xp,xTS);
 			else
 				ERROR("Invalid choice of parameter 'Permutation' (should be 1, 2 or 3)",__FILE__,__LINE__);
-			TIMER_STOP("BlockPrec: solveLower1...");
 		}
 		else if (scheme=="symmetric Gauss-Seidel")
 		{
@@ -1345,13 +1333,11 @@ namespace TRIOS {
 		if (noisy) INFO("(3) Postprocess: construct final result...");
 
 		// (3.1) fill result vector x
-		TIMER_START("BlockPrec: fill result vector x...");
 		CHECK_ZERO(x.PutScalar(0.0));
 		CHECK_ZERO(x.Import(xuv,*importUV,Add));
 		CHECK_ZERO(x.Import(xw,*importW1,Add));
 		CHECK_ZERO(x.Import(xp,*importP1,Add));
 		CHECK_ZERO(x.Import(xTS,*importTS,Add));
-		TIMER_STOP("BlockPrec: fill result vector x...");
 
 		// reset the static Aztec stream for the outer iteration
 		// as it may happen that there is no Auv Solver, we do  
@@ -1596,7 +1582,6 @@ namespace TRIOS {
 		//     Utils::TriSolve(*Aw,rhsw,yw);
 		TIMER_STOP("BlockPrec: Aw");
 
-		TIMER_START("BlockPrec: ATS");
 		// temperature and salinity equations
 
 		// yTS = BTSuv*yuv
@@ -1611,12 +1596,11 @@ namespace TRIOS {
 		{ // --> scope?
 			this->SolveATS(yTS2,yTS,tolATS,nitATS);
 		}
-		TIMER_STOP("BlockPrec: ATS");
 #endif        
 		
 		return;
 
-	}//SolveLower1
+	} //SolveLower1
 
 	void BlockPreconditioner::SolveLower2(const Epetra_Vector& buv, const Epetra_Vector& bw, 
 										  const Epetra_Vector& bp, const Epetra_Vector& bTS, 
