@@ -216,7 +216,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 	INFO("CoupledModel residual = " << computeResidual(rhs));
 	
 	// Update the profile after a solve
-	printProfile(profile);
+	// printProfile(profile);
 	TIMER_STOP("CoupledModel: solve...");
 }
 
@@ -481,18 +481,12 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 //------------------------------------------------------------------
 double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
 {
-	TIMER_START("CoupledModel: compute residual...");
-	
 	SuperVector r(*solView_);
 	applyMatrix(*solView_, r);
-	INFO("CoupledModel:  norm rhs")
 	double rhsNorm = rhs->norm();
 	r.update(1, *rhs, -1); //  b-Jx
 	r.scale(1.0 / rhsNorm);
-	INFO("CoupledModel:  norm residual")
-		double relResidual = r.norm('V');     // ||b-Jx||/||b||
-	
-	TIMER_STOP("CoupledModel: compute residual...");
+	double relResidual = r.norm();     // ||b-Jx||/||b||	
 	return relResidual;
 }
 
@@ -610,7 +604,7 @@ void CoupledModel::postProcess()
 	atmos_->postProcess();
 
 	// Print the contents of the profile
-	printProfile(profile);
+	// printProfile(profile);
 	printJacobian("J");
 }
 
@@ -685,7 +679,6 @@ void CoupledModel::printProfile(ProfileType profile)
 //------------------------------------------------------------------
 std::size_t CoupledModel::getHash()
 {
-	TIMER_START("CoupledModel: hash...");
 	// create hash function
 	std::hash<double> double_hash;
 	
@@ -694,7 +687,6 @@ std::size_t CoupledModel::getHash()
 
 	// then we extend and manipulate it with the current parameter
 	seed ^= double_hash(getPar()) + (seed << 6);
-	TIMER_STOP("CoupledModel: hash...");
 	return seed;
 }
 

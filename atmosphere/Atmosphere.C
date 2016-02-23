@@ -14,6 +14,7 @@
 // stuff that is not so modular right now
 #include "GlobalDefinitions.H"
 #include "THCMdefs.H"
+
 extern "C" _SUBROUTINE_(getooa)(double*, double*);
 
 //==================================================================
@@ -371,7 +372,6 @@ void Atmosphere::forcing()
 			}
 			frc_[row-1] = value;
 		}
-	write(surfaceTemp_, "surfacetemp.txt");
 }
 
 //-----------------------------------------------------------------------------
@@ -549,7 +549,7 @@ extern "C" void dgbtrs_(char *TRANS, int *N, int *KL, int *KU, int *NRHS,
 //-----------------------------------------------------------------------------
 void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 {
-	TIMER_START("Atmosphere: solve...");
+	TIMER_START("Atmosphere: solve1...");
 	
 	char trans  = 'N';
 	int dim     = n_*m_*l_;
@@ -578,15 +578,14 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 	else
 		ERROR("Invalid solving scheme...", __FILE__, __LINE__);
 
-	double residual = computeResidual(rhs);
-	INFO("Atmosphere: solve... residual=" << residual);
-	TIMER_STOP("Atmosphere: solve...");
+	TIMER_STOP("Atmosphere: solve1...");
 }
+
 // FACTORIZE!!!!!!!!
 //-----------------------------------------------------------------------------
 void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 {
-	TIMER_START("Atmosphere: solve...");
+	TIMER_START("Atmosphere: solve2...");
 	
 	char trans  = 'N';
 	
@@ -605,19 +604,23 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 				&(*sol)[0], &ldb, &info);
 	}
 	else if (solvingScheme_ == 'B')
-	{ 
+	{
 		if (buildLU_)
 		{
+			TIMER_START("Atmosphere: build LU");
 			dgbtrf_(&dim, &dim, &ksub_, &ksup_, &bandedA_[0],
 					&ldimA_, ipiv_, &info);
 			buildLU_ = false; // until next request
+			TIMER_STOP("Atmosphere: build LU");
 		}
 		
 		out.assign(rhs.getAtmosVector());
 		std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();
 
+		TIMER_START("Atmosphere: solve dgbtrs");
 		dgbtrs_(&trans, &dim, &ksub_, &ksup_, &nrhs,
 				&bandedA_[0], &ldimA_, ipiv_,  &(*sol)[0], &ldb, &info);
+		TIMER_STOP("Atmosphere: solve dgbtrs");
 	}
 	else if (solvingScheme_ == 'G')
 	{
@@ -629,7 +632,7 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 		out.assign(v->getAtmosVector());
 	}
 	
-	TIMER_STOP("Atmosphere: solve...");
+	TIMER_STOP("Atmosphere: solve2...");
 }
 
 //----------------------------------------------------------------------------

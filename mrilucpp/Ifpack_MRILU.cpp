@@ -125,29 +125,29 @@ int Ifpack_MRILU::SetParameters(Teuchos::ParameterList& ifpParams)
 	DEBUG("Parameters supplied by User: ");
 	DEBUG(lsParams);
 
-	blocksize= lsParams.get("blocksize",blocksize);
-	cutmck  =  lsParams.get("cutmck",cutmck);
-	scarow  =  lsParams.get("scarow",scarow);
-	xactelm  =  lsParams.get("xactelm",xactelm);
-	clsonce  =  lsParams.get("clsonce",clsonce);
-	nlsfctr  =  lsParams.get("nlsfctr",nlsfctr);
-	epsw  =  lsParams.get("epsw",epsw);
-	elmfctr  =  lsParams.get("elmfctr",elmfctr);
-	gusmod  =  lsParams.get("gusmod",gusmod);
-	gusfctr  =  lsParams.get("gusfctr",gusfctr);
-	redfctr  =  lsParams.get("redfctr",redfctr);
-	schtol  =  lsParams.get("schtol",schtol);
-	denslim  =  lsParams.get("denslim", denslim);
+	blocksize =  lsParams.get("blocksize",blocksize);
+	cutmck    =  lsParams.get("cutmck",cutmck);
+	scarow    =  lsParams.get("scarow",scarow);
+	xactelm   =  lsParams.get("xactelm",xactelm);
+	clsonce   =  lsParams.get("clsonce",clsonce);
+	nlsfctr   =  lsParams.get("nlsfctr",nlsfctr);
+	epsw      =  lsParams.get("epsw",epsw);
+	elmfctr   =  lsParams.get("elmfctr",elmfctr);
+	gusmod    =  lsParams.get("gusmod",gusmod);
+	gusfctr   =  lsParams.get("gusfctr",gusfctr);
+	redfctr   =  lsParams.get("redfctr",redfctr);
+	schtol    =  lsParams.get("schtol",schtol);
+	denslim   =  lsParams.get("denslim", denslim);
 	globfrac  =  lsParams.get("globfrac", globfrac);
-	locfrac  =  lsParams.get("locfrac", locfrac);
+	locfrac   =  lsParams.get("locfrac", locfrac);
 	sparslim  =  lsParams.get("sparslim", sparslim);
-	ilutype  =  lsParams.get("ilutype", ilutype);
-	droptol  =  lsParams.get("droptol", droptol);
-	compfct  =  lsParams.get("compfct", compfct);
-	cpivtol  =  lsParams.get("cpivtol", cpivtol);
-	lutol  =  lsParams.get("lutol", lutol);
-	singlu  =  lsParams.get("singlu", singlu);
-	outlev  =  lsParams.get("Output Level",outlev);
+	ilutype   =  lsParams.get("ilutype", ilutype);
+	droptol   =  lsParams.get("droptol", droptol);
+	compfct   =  lsParams.get("compfct", compfct);
+	cpivtol   =  lsParams.get("cpivtol", cpivtol);
+	lutol     =  lsParams.get("lutol", lutol);
+	singlu    =  lsParams.get("singlu", singlu);
+	outlev    =  lsParams.get("Output Level",outlev);
 
 	DEBUG("Parameters used: ");
 	DEBUG(lsParams);
@@ -211,15 +211,10 @@ ApplyInverse(const Epetra_MultiVector& input,
   }
 */
 	if (is_identity)
-	{
-		std::cout << "     MRILU obtained identity on PROC " << comm->MyPID() << std::endl;
 		result = input;
-	}
 	else
 	{
-		TIMER_START("MRILU apply");
 		mrilucpp_apply(&mrilu_id, &n, rhs_array,sol_array);
-		TIMER_START("MRILU apply");
 	}
 	
 	//for (int i=0;i<n;i++)    result[0][i]=sol_array[i];
@@ -285,27 +280,31 @@ int Ifpack_MRILU::Initialize()
 	double* co = new double[nnz];
   
 	int len;
-	beg[0] = 0;
+	beg[0]  = 0;
 	int idx = 0;
 	is_identity = true;
+
 	for (int i = 0; i < nrows; i++)
     {
 		CHECK_ZERO(Matrix_->ExtractMyRowCopy(i, nnz-beg[i], len, co+beg[i], jco+beg[i]));
 		beg[i+1] = beg[i] + len;
 		
 		// Check whether this matrix is the identity
-		for (int j = beg[i]; j != beg[i+1]; ++j)
+		if (is_identity)
 		{
-			if ( (jco[idx] == i) && (std::abs(co[idx] - 1.0) > 1e-7) ||
-				 (jco[idx] != i) && (std::abs(co[idx])       > 1e-7)   )
+			for (int j = beg[i]; j != beg[i+1]; ++j)
 			{
-				is_identity = false;
-				continue;
+				if ( (jco[idx] == i) && (std::abs(co[idx] - 1.0) > 1e-7) ||
+					 (jco[idx] != i) && (std::abs(co[idx])       > 1e-7)   )
+				{
+					is_identity = false;
+					break;
+				}
+				idx++;
 			}
-			idx++;
 		}
     }
-    
+
 	DEBUG("Create preconditioner...");	
 
 #ifdef HAVE_IFPACK_MRILU

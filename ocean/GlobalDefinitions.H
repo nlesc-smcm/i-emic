@@ -5,8 +5,8 @@
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
 /**********************************************************************
- * Modified by T.E. Mulder, Utrecht University 2014/15                *
- * contact: t.e.mulder@uu.nl                                          *
+ * Modified/Extended by T.E. Mulder, Utrecht University 2014/15/16    *
+ * contact: t.e.mulder@uu.nl                                           *
  **********************************************************************/
 
 #ifndef GLOBALDEFINITIONS_H

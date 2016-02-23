@@ -1493,10 +1493,8 @@ namespace TRIOS {
 		
 		// Compute the pressure (yp)
 		// Compute ytilp = Ap\[bw,0]'      
-		TIMER_START("BlockPrec: solve Ap...");
 		Epetra_Vector ytilp(*mapP1);
 		Ap->ApplyInverse(bw,ytilp);
-		TIMER_STOP("BlockPrec: solve Ap...");
 
 		TIMER_START("BlockPrec: solve depth-av Spp");
 		// Solve the depth-averaged Saddlepoint problem
@@ -1565,7 +1563,6 @@ namespace TRIOS {
 		// Solve the velocity field yuv
 		for (int i=0;i<nzuv;i++) yuv[i] = yzuvp[i];
 
-		TIMER_START("BlockPrec: Aw");
 		// Solve vertical velocity field
 		// yw = bp(1:nw) - Duv1*yuv 
 		// note that the sign of Duv has been changed!
@@ -1580,7 +1577,6 @@ namespace TRIOS {
 		Epetra_Vector rhsw = yw;
 		CHECK_ZERO(Aw->Solve(false,false,false,rhsw,yw));
 		//     Utils::TriSolve(*Aw,rhsw,yw);
-		TIMER_STOP("BlockPrec: Aw");
 
 		// temperature and salinity equations
 
