@@ -383,9 +383,9 @@ namespace TRIOS {
 			Chat = TMP;
 			
 			/*
-			Chat = Utils::TripleProduct(false,  Spp->A21(),
-										false, *BlockDiagA11,
-										false,  Spp->A12());			
+			  Chat = Utils::TripleProduct(false,  Spp->A21(),
+			  false, *BlockDiagA11,
+			  false,  Spp->A12());			
 			*/
 			
 			CHECK_ZERO(Chat->Scale(-1.0));
@@ -564,8 +564,8 @@ namespace TRIOS {
 			DUMPMATLAB("CHAT2", *Chat);
 		}
 
-	// Traditional scaling although I'm still not sure whether I'm doing it right
-	// See also ApplyInverse()
+		// Traditional scaling although I'm still not sure whether I'm doing it right
+		// See also ApplyInverse()
 		if (scaleChat)
 		{
 			scalingChat = Teuchos::rcp(new Epetra_Vector(Chat->RowMap()));
@@ -687,8 +687,6 @@ namespace TRIOS {
 	{
 		if (X.NumVectors()>1) ERROR("Only one vector allowed right now!",__FILE__,__LINE__);
     
-		
-
 		// TODO: only implemented for standard vectors
 		const Epetra_Vector *b_ptr = dynamic_cast<const Epetra_Vector*>(&B);
 		Epetra_Vector *x_ptr = dynamic_cast<Epetra_Vector*>(&X);
@@ -780,6 +778,7 @@ namespace TRIOS {
 					CHECK_ZERO(y1->PutScalar(0.0));
 				}
 				// apply inv(L):
+				TIMER_START("BlockPrec: solve Auv");
 				if (A11Solver.get()==NULL)
 				{
 					CHECK_ZERO(A11Precond->ApplyInverse(b1,*y1));
@@ -790,6 +789,7 @@ namespace TRIOS {
 					CHECK_ZERO(A11Solver->SetLHS(y1.get()));
 					CHECK_NONNEG(A11Solver->Iterate(nitA11,tolA11));
 				}
+				TIMER_STOP("BlockPrec: solve Auv");
 			}
 			CHECK_ZERO(Spp->A21().Multiply(false,*y1,*y2));
 			CHECK_ZERO(y2->Update(1.0,b2,-1.0));
@@ -813,6 +813,7 @@ namespace TRIOS {
 					RepartChat->Redistribute(*y2,*rhs);
 				}
 #endif
+				TIMER_START("BlockPrec: solve Chat");
 				if (ChatSolver.get()==NULL)
 				{
 					CHECK_ZERO(ChatPrecond->ApplyInverse(*rhs,*sol));
@@ -823,6 +824,7 @@ namespace TRIOS {
 					CHECK_ZERO(ChatSolver->SetLHS(sol.get()));
 					CHECK_NONNEG(ChatSolver->Iterate(nitChat,tolChat));
 				}
+				TIMER_STOP("BlockPrec: solve Chat");
 #ifdef HAVE_ZOLTAN
 				if (RepartChat!= Teuchos::null)
 				{
@@ -860,6 +862,7 @@ namespace TRIOS {
 					RepartChat->Redistribute(*y2,*rhs);
 				}
 #endif
+				TIMER_START("BlockPrec: solve Chat");
 				if (ChatSolver.get()==NULL)
 				{
 					CHECK_ZERO(ChatPrecond->ApplyInverse(*rhs,*sol));
@@ -870,6 +873,7 @@ namespace TRIOS {
 					CHECK_ZERO(ChatSolver->SetLHS(sol.get()));
 					CHECK_NONNEG(ChatSolver->Iterate(nitChat,tolChat));
 				}
+				TIMER_STOP("BlockPrec: solve Chat");
 #ifdef HAVE_ZOLTAN
 				if (RepartChat!= Teuchos::null)
 				{
@@ -890,6 +894,7 @@ namespace TRIOS {
 					CHECK_ZERO(x1.PutScalar(0.0));
 				}
 
+				TIMER_START("BlockPrec: solve Auv");
 				if (A11Solver.get()==NULL)
 				{
 					CHECK_ZERO(A11Precond->ApplyInverse(*y1,x1));
@@ -900,6 +905,7 @@ namespace TRIOS {
 					CHECK_ZERO(A11Solver->SetLHS(&x1));
 					CHECK_NONNEG(A11Solver->Iterate(nitA11,tolA11));
 				}
+				TIMER_STOP("BlockPrec: solve Auv");
 			}
 		}
 		return 0;

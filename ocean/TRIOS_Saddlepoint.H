@@ -423,7 +423,6 @@ class SppSimplePrec : public Epetra_Operator
                         Epetra_Vector& x1, Epetra_Vector& x2, 
                         bool trans) const;
         
-      
   };    //end of class SppSimplePrec
 
 ////////////////////////////////////////////////////////////////////////

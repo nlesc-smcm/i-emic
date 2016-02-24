@@ -1933,17 +1933,15 @@ namespace TRIOS {
 		// Solve system with ATS or Arhomu iteratively or apply preconditioner once
 		if (ATSSolver!=Teuchos::null)
 		{
-			TIMER_START("BlockPrec: ATS->ATSSolver");
+			TIMER_START("BlockPrec: solve ATS");
 			ATSSolver->SetRHS(rhs_ptr.get());
 			ATSSolver->SetLHS(sol_ptr.get());
 			CHECK_NONNEG(ATSSolver->Iterate(maxit,tol));
-			TIMER_STOP("BlockPrec: ATS->ATSSolver");
+			TIMER_STOP("BlockPrec: solve ATS");
 		}
 		else
 		{
-			TIMER_START("BlockPrec: ATS->ATSPRECOND");
 			CHECK_ZERO(ATSPrecond->ApplyInverse(*rhs_ptr,*sol_ptr));
-			TIMER_STOP("BlockPrec: ATS->ATSPRECOND");
 		}
 #ifdef LINEAR_ARHOMU_MAPS
 		if (Arhomu_linearmap!=Teuchos::null)
