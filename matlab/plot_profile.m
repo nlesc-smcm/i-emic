@@ -24,14 +24,14 @@ function [profile] = plot_profile(filename, range, domain)
       
       pllt = profile.data((i-1)*N+2:i*N+1);
       
-      figure(8) 
-      plot(x_axis(domain), pllt(domain),linst{mod(ctr,numel(linst))+1},...
-                    'linewidth',2,'markersize',15,'color',colm(ctr,:));
-      x = x_axis(domain(end));    
-      y = pllt(domain(end));
-      hold on
-      text((1.02+(rand-.5)/30)*x,y,num2str(i),'color',colm(ctr,:));
-      hold on
+%       figure(8) 
+%       plot(x_axis(domain), pllt(domain),linst{mod(ctr,numel(linst))+1},...
+%                     'linewidth',2,'markersize',15,'color',colm(ctr,:));
+%       x = x_axis(domain(end));    
+%       y = pllt(domain(end));
+%       hold on
+%       text((1.02+(rand-.5)/30)*x,y,num2str(i),'color',colm(ctr,:));
+%       hold on
       
       figure(9) 
       semilogy(x_axis(domain), pllt(domain),linst{mod(ctr,numel(linst))+1},...
@@ -39,7 +39,7 @@ function [profile] = plot_profile(filename, range, domain)
       x = x_axis(domain(end));    
       y = pllt(domain(end));
       hold on
-      text((1.02+(rand-.5)/30)*x,y,profile.textdata{i},'color',colm(ctr,:));
+      text((1.02+(rand-.5)/30)*x,y,[profile.textdata{i},': ',num2str(y)],'color',colm(ctr,:));
       xlim([0,1.4*x_axis(end)]);
       hold on
       
@@ -53,8 +53,8 @@ function [profile] = plot_profile(filename, range, domain)
       
       ctr = ctr + 1;
   end
-  figure(8)
-  hold off
+%   figure(8)
+%   hold off
   figure(9)
   hold off
   figure(10) 
