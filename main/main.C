@@ -80,6 +80,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
 
+	TIMER_START("Total initialization");
 	//------------------------------------------------------------------
 	// Check if outFile is specified
 	if (outFile == Teuchos::null)
@@ -121,6 +122,8 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 	Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
 		continuation(coupledModel, continuationParams);
 
+	TIMER_STOP("Total initialization");
+	
 	// Run continuation
 	continuation.run();
 

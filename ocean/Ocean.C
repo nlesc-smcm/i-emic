@@ -95,7 +95,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
 	landmask_ = THCM::Instance().getLandMask();
 	surfmask_ = THCM::Instance().getSurfaceMask();
-	
+
+	// Initialize preconditioner
+	initializePreconditioner();
 	INFO("Ocean: constructor... done");
 }
 
@@ -141,11 +143,13 @@ void Ocean::postProcess()
 }
 
 //=====================================================================
+// Setup block preconditioner parameters
+// --> xml files should have a better home
 void Ocean::initializePreconditioner()
 {
 	INFO("Ocean: initialize preconditioner...");
-	// Setup block preconditioner parameters
-	// --> xml files should have a better home
+	TIMER_START("Ocean: initialize preconditioner");
+
 	Teuchos::RCP<Teuchos::ParameterList> precParams =
 		Teuchos::rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("ocean_preconditioner_params.xml",
@@ -159,6 +163,7 @@ void Ocean::initializePreconditioner()
 	precPtr_->Compute();    // Compute
 
 	precInitialized_ = true;
+	TIMER_STOP("Ocean: initialize preconditioner");
 	INFO("Ocean: initialize preconditioner done...");
 }	
 
@@ -517,11 +522,11 @@ void Ocean::applyMatrix(SuperVector const &v, SuperVector &out)
 //====================================================================
 void Ocean::buildPreconditioner()
 {
-	TIMER_START("Ocean: comput preconditioner...");
-	INFO("Ocean: compute preconditioner...");
+	TIMER_START("Ocean: build preconditioner");
+	INFO("Ocean: build preconditioner...");
 	precPtr_->Compute();
-	INFO("Ocean: compute preconditioner... done");
-	TIMER_STOP("Ocean: comput preconditioner...");
+	INFO("Ocean: build preconditioner... done");
+	TIMER_STOP("Ocean: build preconditioner");
 	recompPreconditioner_ = false;  // Disable subsequent recomputes
 }
 

@@ -985,6 +985,7 @@ void Atmosphere::applyMatrix(SuperVector const &v, SuperVector &out)
 	int first;
 	int last;	
 	
+	TIMER_START("Atmosphere: apply matrix");
 	// Perform matrix vector product
 	// 1->0 based... horrible... 
 	for (size_t row = 1; row <= atmosVector->size(); ++row)
@@ -996,6 +997,7 @@ void Atmosphere::applyMatrix(SuperVector const &v, SuperVector &out)
 		for (int col = first; col <= last; ++col)
 			(*result)[row-1] += ico_[col-1] * (*atmosVector)[jco_[col-1]-1];
 	}
+	TIMER_STOP("Atmosphere: apply matrix");
 }
 
 //-----------------------------------------------------------------------------
@@ -1009,6 +1011,7 @@ std::shared_ptr<SuperVector> Atmosphere::applyPrecon(SuperVector const &v)
 //-----------------------------------------------------------------------------
 void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
 {
+	TIMER_START("Atmosphere: apply preconditioning");
 	if (preconditioner_ == 'J')
 	{
 		std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
@@ -1038,6 +1041,7 @@ void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
 	}
 	else
 		out.assign(v.getAtmosVector());
+	TIMER_STOP("Atmosphere: apply preconditioning");
 }
 
 // ---------------------------------------------------------------------------

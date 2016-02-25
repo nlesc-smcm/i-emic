@@ -384,9 +384,11 @@ Teuchos::RCP<Epetra_BlockMap> Utils::CreateSubMap(const Epetra_BlockMap& map,
 //=======================================================================================
 //! Given an Epetra_Vector and a list of global indices we return an Epetra_Vector with
 //! the same distribution but restricted to the values at the supplied indices.
+//! ITS SLOW!
 Teuchos::RCP<Epetra_Vector> Utils::RestrictVector(Epetra_Vector const &vector,
 												  std::vector<int> const &indices)
 {
+	TIMER_START("Utils: restrict vector");
 	// Create restricted map
 	Teuchos::RCP<Epetra_BlockMap> indexMap =
 		Utils::CreateSubMap(vector.Map(), indices);
@@ -395,6 +397,10 @@ Teuchos::RCP<Epetra_Vector> Utils::RestrictVector(Epetra_Vector const &vector,
 	Teuchos::RCP<Epetra_Vector> restrictedVector =
 		Teuchos::rcp(new Epetra_Vector(*indexMap) );
 
+
+	TIMER_STOP("Utils: restrict vector");
+	TIMER_START("Utils: restrict vector import");
+
 	// Create importer
 	// target map: indexMap
 	// source map: vector.Map()
@@ -402,7 +408,8 @@ Teuchos::RCP<Epetra_Vector> Utils::RestrictVector(Epetra_Vector const &vector,
 
 	// Import vector values into restricted vector
 	restrictedVector->Import(vector, full2restricted, Insert);
-
+	TIMER_STOP("Utils: restrict vector import");
+	
 	return restrictedVector;	
 }
 
@@ -741,12 +748,18 @@ Teuchos::RCP<Epetra_Map> Utils::AllGather(const Epetra_Map& map, bool reorder)
 } //AllGather
 //========================================================================================
 Teuchos::RCP<Epetra_MultiVector> Utils::AllGather(const Epetra_MultiVector& vec)
-{    
+{
+	TIMER_START("Utils: all gather");		
 	const Epetra_BlockMap& map_dist = vec.Map();
 	Teuchos::RCP<Epetra_BlockMap> map = AllGather(map_dist);
 	Teuchos::RCP<Epetra_MultiVector> gvec = Teuchos::rcp(new Epetra_Vector(*map,vec.NumVectors()));
+	TIMER_STOP("Utils: all gather");
+	TIMER_START("Utils: all gather create import");		
 	Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*map,map_dist) );
+	TIMER_STOP("Utils: all gather create import");
+	TIMER_START("Utils: all gather import");		
 	gvec->Import(vec,*import,Insert);
+	TIMER_STOP("Utils: all gather import");		
 	gvec->SetLabel(vec.Label());
 	return gvec;
 }

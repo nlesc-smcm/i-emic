@@ -74,6 +74,7 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 run()
 {
+	TIMER_START("Continuation: run");
 	// set all the appropriate initial flags and counters
 	step_ = 0;
 	secant_ = false;
@@ -104,6 +105,7 @@ run()
 	INFO("---------Finished continuation run------------");
 	info();
 	modelInfo();
+	TIMER_STOP("Continuation: run");
 }
 
 //======================================================================
@@ -111,6 +113,7 @@ template<typename Model, typename ParameterList>
 int Continuation<Model, ParameterList>::
 step()
 {
+	TIMER_START("Continuation: step");
 	// Let the model do some administrative work at the beginning of a step
 	model_->preProcess();
 	
@@ -121,7 +124,10 @@ step()
 	// If necessary reset the step, otherwise perform a normal
 	// calculation of the tangent and step adjustment
 	if (status)   // Failure
+	{
+		TIMER_STOP("Continuation: step");
 		return 1; // Consider this step failed
+	}
 	else          // Success
 	{
 		// Put the parameter and norm of the state in the history
@@ -137,6 +143,7 @@ step()
 		// Let the model do some administrative work at the end of a succesful step 
 		model_->postProcess();	   		
 	}
+	TIMER_STOP("Continuation: step");
 	return 0; // Exiting normally
 }
 

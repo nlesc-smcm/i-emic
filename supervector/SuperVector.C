@@ -10,7 +10,8 @@ SuperVector::SuperVector()
 	atmosVector_(std::shared_ptr<std::vector<double> >()),
 	haveOceanVector_(false),
 	haveAtmosVector_(false),
-	isInitialized_(false)
+	isInitialized_(false),
+	calcRestriction_(true)
 {
 	init();
 }
@@ -23,7 +24,8 @@ SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector)
 	atmosVector_(std::shared_ptr<std::vector<double> >()),
 	haveOceanVector_(true),
 	haveAtmosVector_(false),
-	isInitialized_(false)
+	isInitialized_(false),
+	calcRestriction_(true)
 {
 	init();
 }
@@ -36,7 +38,8 @@ SuperVector::SuperVector(std::shared_ptr<std::vector<double> > vector)
 	atmosVector_(vector),
 	haveOceanVector_(false),
 	haveAtmosVector_(true),
-	isInitialized_(false)
+	isInitialized_(false),
+	calcRestriction_(true)
 {
 	init();
 }
@@ -50,7 +53,8 @@ SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector1,
 	atmosVector_(vector2),
 	haveOceanVector_(true),
 	haveAtmosVector_(true),
-	isInitialized_(false)
+	isInitialized_(false),
+	calcRestriction_(true)
 {
 	init();
 }
@@ -82,6 +86,8 @@ void SuperVector::assign(Teuchos::RCP<Epetra_Vector> vector)
 {
 	oceanVector_ = Teuchos::rcp(new Epetra_Vector(*vector));
 	haveOceanVector_ = true;
+	if (oceanVector_ == Teuchos::null || !oceanVector_->Map().SameAs(vector->Map()))
+		calcRestriction_ = true;
 	init();
 }
 
@@ -98,17 +104,24 @@ void SuperVector::assign(std::shared_ptr<std::vector<double> > vector)
 //------------------------------------------------------------------
 void SuperVector::assign(SuperVector const &other)
 {
+	TIMER_START("SuperVector: assign");
 	if (other.haveOceanVector())
 	{
 		oceanVector_ = Teuchos::rcp
 			(new Epetra_Vector(*(other.getOceanVector())));
 		haveOceanVector_ = true;
+		indexMap_        = other.indexMap_;
+		restrVec_        = other.restrVec_;
+		restrImp_        = other.restrImp_;
+		calcRestriction_ = other.calcRestriction_;
 	}
 	else
 	{
 		oceanVector_ = Teuchos::null;
 		haveOceanVector_ = false;
+		calcRestriction_ = true;
 	}
+
 	if (other.haveAtmosVector())
 	{
 		atmosVector_ = std::make_shared<std::vector<double> >
@@ -120,7 +133,9 @@ void SuperVector::assign(SuperVector const &other)
 		atmosVector_ = std::shared_ptr<std::vector<double> >();
 		haveAtmosVector_ = false;
 	}
+
 	isInitialized_ = false;
+	TIMER_STOP("SuperVector: assign");
 }
 
 //------------------------------------------------------------------
@@ -141,9 +156,13 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 		return;
 	}
 	
+	TIMER_START("SuperVector: update (ocean)");
 	if (haveOceanVector_)
 		oceanVector_->Update(scalarA, *(A.getOceanVector()), scalarThis);
-	
+
+	TIMER_STOP("SuperVector: update (ocean)");
+
+	TIMER_START("SuperVector: update (atmos)");
 	if (haveAtmosVector_)
 	{
 		for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
@@ -153,6 +172,7 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 				+ scalarThis * (*atmosVector_)[idx];
 		}
 	}
+	TIMER_STOP("SuperVector: update (atmos)");
 	
 	if (!haveOceanVector_ && !haveAtmosVector_)
 	{
@@ -197,15 +217,19 @@ double SuperVector::dot(SuperVector const &A) const
 		return 1;
 	}
 	
+	TIMER_START("Supervector: dot (ocean)");
 	double dot1 = 0;
 	if (haveOceanVector_)
 		oceanVector_->Dot(*(A.getOceanVector()), &dot1);
-	
+	TIMER_STOP("Supervector: dot (ocean)");
+
+	TIMER_START("Supervector: dot (atmos)");
 	double dot2 = 0;
 	if (haveAtmosVector_)
 		for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
 			dot2 += (*A.getAtmosVector())[idx] * (*atmosVector_)[idx];
-	
+
+	TIMER_STOP("Supervector: dot (atmos)");
 	return dot1 + dot2;
 }
 
@@ -294,15 +318,19 @@ void SuperVector::zero()
 //------------------------------------------------------------------
 void SuperVector::zeroAtmos()
 {
+	TIMER_START("SuperVector: zeroAtmos");
 	if (haveAtmosVector_)
 		atmosVector_->assign(atmosVector_->size(),0.0);
+	TIMER_STOP("SuperVector: zeroAtmos");
 }
 
 //------------------------------------------------------------------
 void SuperVector::zeroOcean()
 {
+	TIMER_START("SuperVector: zeroOcean");
 	if (haveOceanVector_)
 		oceanVector_->PutScalar(0.0);
+	TIMER_STOP("SuperVector: zeroOcean");
 }
 
 //------------------------------------------------------------------
@@ -374,21 +402,36 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 {
 	if (domain == 'O' && range == 'A')
 	{
-		TIMER_START("SuperVector: LINTRANS O->A");
+		TIMER_START("SuperVector: O->A");
 		int dstLength = diagonal.size();
 		int srcLength = indices.size();
 		
 		// Re-initialize atmosVector				
 		atmosVector_ = std::make_shared<std::vector<double> >
 			(dstLength, 0.0);
+
+		// // Get the part of the oceanVector restricted to the supplied indices
+		// Teuchos::RCP<Epetra_Vector> restricted =
+		// 	Utils::RestrictVector(*oceanVector_, indices);
+
+		if (calcRestriction_ || restrImp_ == Teuchos::null) 
+		{
+			TIMER_START("SuperVector: O->A restrict");
+			indexMap_ = Utils::CreateSubMap(oceanVector_->Map(), indices);
+			restrVec_ = Teuchos::rcp(new Epetra_Vector(*indexMap_));
+			restrImp_ = Teuchos::rcp(new Epetra_Import(*indexMap_, oceanVector_->Map()));
+			calcRestriction_ = false;
+			TIMER_STOP("SuperVector: O->A restrict");
+		}
 		
-		// Get the part of the oceanVector restricted to the supplied indices
-		Teuchos::RCP<Epetra_Vector> restricted =
-			Utils::RestrictVector(*oceanVector_, indices);		
+		TIMER_START("SuperVector: O->A restrict import");
+		restrVec_->Import(*oceanVector_, *restrImp_, Insert);
+		TIMER_STOP("SuperVector: O->A restrict import");
 
 		// Gather the restricted ocean
-		Teuchos::RCP<Epetra_MultiVector> gathered =
-			Utils::AllGather(*restricted);
+		TIMER_START("SuperVector: O->A gather");
+		Teuchos::RCP<Epetra_MultiVector> gathered = Utils::AllGather(*restrVec_);
+		TIMER_STOP("SuperVector: O->A gather");
 		
 		// FullSol should be allocated
 		double *fullSol = new double[srcLength];
@@ -399,14 +442,15 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 		// Calculate the scaled values in the destination stdVector
 		for (size_t i = 0; i != atmosVector_->size(); ++i)
 			(*atmosVector_)[i] = diagonal[i] * fullSol[i];
+
 		// Cleanup
 		delete fullSol;
 		
-		TIMER_STOP("SuperVector: LINTRANS O->A");
+		TIMER_STOP("SuperVector: O->A");
 	}
 	else if (domain == 'A' && range == 'O')
 	{
-		TIMER_START("SuperVector: LINTRANS A->O");
+		TIMER_START("SuperVector: A->O");
 		// calculate diagonal scaling
 		std::vector<double> values;
 		for (size_t i = 0; i != atmosVector_->size(); ++i)
@@ -419,7 +463,7 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 		oceanVector_->ReplaceGlobalValues(
 			atmosVector_->size(),
 			&values[0], &indices[0]);
-		TIMER_STOP("SuperVector: LINTRANS A->O");
+		TIMER_STOP("SuperVector: A->O");
 	}
 }
 //------------------------------------------------------------------

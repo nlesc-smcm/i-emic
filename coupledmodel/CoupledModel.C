@@ -118,6 +118,8 @@ void CoupledModel::synchronize()
 //------------------------------------------------------------------
 void CoupledModel::computeJacobian()
 {
+	TIMER_START("CoupledModel: compute Jacobian");
+	
 	// Check whether the combined (state,par) vector has changed,
 	// if so continue, if not return
 	if (useHash_)
@@ -139,11 +141,15 @@ void CoupledModel::computeJacobian()
 	// --> weird place to do this...
 	if (syncCtr_ % buildPrecEvery_ == 0)
 		ocean_->recomputePreconditioner();
+	
+	TIMER_STOP("CoupledModel: compute Jacobian");
 }
 
 //------------------------------------------------------------------
 void CoupledModel::computeRHS()
 {
+	TIMER_START("CoupledModel compute RHS");
+	
 	// Check whether the combined (state,par) vector has changed,
 	// if so continue, if not return
 	if (useHash_)
@@ -160,6 +166,8 @@ void CoupledModel::computeRHS()
 	
 	ocean_->computeRHS();	// Ocean
 	atmos_->computeRHS(); 	// Atmosphere
+	
+	TIMER_STOP("CoupledModel compute RHS");
 }
 
 //====================================================================
@@ -402,10 +410,10 @@ void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out, char mode
 std::shared_ptr<SuperVector>
 CoupledModel::applyPrecon(SuperVector const &v)
 {
-	TIMER_START("CoupledModel: apply preconditioner...");
+	TIMER_START("CoupledModel: apply preconditioner1...");
 	SuperVector tmp1 = *(ocean_->applyPrecon(v));
 	SuperVector tmp2 = *(atmos_->applyPrecon(v));
-	TIMER_STOP("CoupledModel: apply preconditioner...");	
+	TIMER_STOP("CoupledModel: apply preconditioner1...");	
 	return std::make_shared<SuperVector>(tmp1.getOceanVector(),
 										 tmp2.getAtmosVector());
 }
@@ -413,7 +421,7 @@ CoupledModel::applyPrecon(SuperVector const &v)
 //------------------------------------------------------------------
 void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode)
 {
-	TIMER_START("CoupledModel: apply preconditioner...");	
+	TIMER_START("CoupledModel: apply preconditioner2...");	
 
 	out.zero();	// Initialize output
 
@@ -437,11 +445,14 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 			x2.linearTransformation(*B_, *rowsB_, 'A', 'O');
 			x2.zeroAtmos();
 			x2.update(1.0, b1, -1.0);
+
+			TIMER_START("CoupledModel: ocean prec");
 			ocean_->applyPrecon(x2, x1);
+			TIMER_STOP("CoupledModel: ocean prec");
 		}
 		
 		out.assign(x1.getOceanVector());
-
+		
 		x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
 		x1.zeroOcean();
 		x1.update(1.0, b2, -1.0);
@@ -475,7 +486,7 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 		atmos_->applyPrecon(v, out);
 	}
 
-	TIMER_STOP("CoupledModel: apply preconditioner...");	
+	TIMER_STOP("CoupledModel: apply preconditioner2...");	
 }
 
 //------------------------------------------------------------------
