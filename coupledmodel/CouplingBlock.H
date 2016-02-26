@@ -29,5 +29,5 @@ public:
 private:
 	void initialize();
 	void applyOA(SuperVector const &v, SuperVector &out);
-	void applyAO(SuperVector const &v, SuperVector &out);s
+	void applyAO(SuperVector const &v, SuperVector &out);
 };

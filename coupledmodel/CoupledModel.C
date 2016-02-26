@@ -65,10 +65,10 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	atmos_->setSurfaceMask(ocean_->getSurfaceMask());
 	
 	// Get the contribution of the atmosphere to the ocean in the Jacobian
-	B_     = ocean_->getAtmosBlock();
-	rowsB_ = ocean_->getSurfaceTRows();
+	ocean_->getAtmosBlock(*B_, *rowsB_);
 	
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
+	// atmos_->getOceanBlock(*C_, *rowsC_);
 	C_     = atmos_->getOceanBlock();
 	
 	// Output parameters
