@@ -587,8 +587,13 @@ void Ocean::getAtmosBlock(std::vector<double> &values,
 			ctr++;
 		}
 
-	row_inds = std::vector<int>(*getSurfaceTRows());
+	// clear row_inds
+	row_inds.clear();
 	
+	// fill with surface temperature values
+	for (int j = 0; j != M_; ++j)
+		for (int i = 0; i != N_; ++i)
+			row_inds.push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));		
 	INFO("  A->O block, zeros due to surfacemask --> " << lctr);
 }
 

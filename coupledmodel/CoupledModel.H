@@ -7,6 +7,8 @@
 #include "IDRSolver.H"
 #include "GMRESSolver.H"
 
+#include "CouplingBlock.H"
+
 #include <vector>
 #include <memory>
 
@@ -36,6 +38,8 @@ private:
 
 	// Trilinos-based parallel implicit ocean model (Trilinos-THCM) 
 	Teuchos::RCP<Ocean>  ocean_;
+
+	CouplingBlock C12_, C21_;
 	
 	// STL std::vector-based implicit atmosphere model with a banded Lapack solver
 	std::shared_ptr<Atmosphere> atmos_;

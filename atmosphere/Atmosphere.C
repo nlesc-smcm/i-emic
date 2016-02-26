@@ -1088,14 +1088,17 @@ double Atmosphere::getPar(std::string const &parName)
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<std::vector<double> > Atmosphere::getOceanBlock()
+void Atmosphere::getOceanBlock(std::vector<double> &values,
+							   std::vector<int> &rows)
 {
 	// The contribution of the ocean in the atmosphere is a
 	// diagonal of ones, see the forcing.
+	values = std::vector<double>(m_*n_, 1.0);
+	rows   = std::vector<int>(m_*n_, 0);
 
-	std::shared_ptr<std::vector<double> > oceanblock = 
-		std::make_shared<std::vector<double> >(m_*n_, 1.0);
-
+	for (int i = 0; i != m_*n_; ++i)
+		rows[i] = i;
+	
 	// Apply surface mask
 	if ((int) surfmask_->size() != m_*n_)
 		ERROR("Surface mask is not set", __FILE__, __LINE__);
@@ -1107,29 +1110,13 @@ std::shared_ptr<std::vector<double> > Atmosphere::getOceanBlock()
 		{
 			if ((*surfmask_)[j*n_+i])
 			{
-				(*oceanblock)[idx] = 0.0;
+				values[idx] = 0.0;
 				ctr++;
 			}
 			idx++;
 		}
-
-	INFO("  O->A block, zeros due to surfacemask --> " << ctr);
 	
-	return oceanblock;
-}
-
-//-----------------------------------------------------------------------------
-std::shared_ptr<std::vector<int> > Atmosphere::getAtmosRows()
-{
-	std::shared_ptr<std::vector<int> > rows =
-		std::make_shared<std::vector<int> >();
-	for (int j = 1; j <= m_; ++j)
-		for (int i = 1; i <= n_; ++i)
-		{
-			// 1-based!!
-			rows->push_back(find_row(i,j,l_,ATMOS_TT_));
-		}	
-	return rows;	
+	INFO("  O->A block, zeros due to surfacemask --> " << ctr);
 }
 
 //-----------------------------------------------------------------------------
