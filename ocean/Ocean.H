@@ -188,10 +188,11 @@ public:
 	// Obtain the Jacobian from THCM
 	Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
 
-    // Get the diagonal elements of the atmosphere to ocean
+    // Get the atmosphere to ocean
 	// contribution in the Jacobian, see forcing.F90.
-	std::shared_ptr<std::vector<double> > getAtmosBlock();
-
+	void getAtmosBlock(std::vector<double> &values,
+					   std::vector<int> &row_inds);
+	
 	std::shared_ptr<std::vector<double> >
 	getLandTemperature(std::shared_ptr<std::vector<double> > tatm);
 	

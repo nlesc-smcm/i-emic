@@ -63,13 +63,29 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	
 	// Communicate surface landmask
 	atmos_->setSurfaceMask(ocean_->getSurfaceMask());
+
+
+	// Setup coupling blocks
+	std::vector<double> C12values;
+	std::vector<int>    C12rows;
+	ocean_->getAtmosBlock(C12values, C12rows); 
 	
-	// Get the contribution of the atmosphere to the ocean in the Jacobian
-	B_     = ocean_->getAtmosBlock();
-	rowsB_ = ocean_->getSurfaceTRows();
+	std::vector<double> C21values;
+	std::vector<int>    C21rows;
+	atmos_->getOceanBlock(C21values, C21rows); 
+
+	// A->O and O->A coupling blocks
+	C12_ = CouplingBlock("AO", C12values, C12rows, C21rows);
+	C21_ = CouplingBlock("OA", C21values, C21rows, C12rows);
 	
+	C12_.info();
+	C21_.info();
+
+	// Get the contribution of the atmosphere to the ocean in the Jacobian	
+	B_     = std::make_shared<std::vector<double> >(C12values);
+	rowsB_ = std::make_shared<std::vector<int> >(C12rows);
 	// Get the contribution of the ocean to the atmosphere in the Jacobian
-	C_     = atmos_->getOceanBlock();
+	C_     = std::make_shared<std::vector<double> >(C21values);
 	
 	// Output parameters
 	INFO(*params);
@@ -107,7 +123,7 @@ void CoupledModel::synchronize()
 	
 	// Set the atmosphere in the ocean
 	ocean_->setAtmosphere(atmos);
-
+	
 	// Set the SST in the atmosphere
 	atmos_->setOceanTemperature(sst);
 
@@ -394,7 +410,8 @@ void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out, char mode
 
 		// Perform mappings
 		y.linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
-		z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
+		C21_.applyMatrix(z, z);
+		//z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
 
 		// Just to be sure
 		y.zeroAtmos();        
@@ -437,7 +454,9 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 
 		for (int i = 0; i != iterGS_; ++i)
 		{
-			x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
+			//x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
+			C21_.applyMatrix(x1, x1);
+			
 			x1.zeroOcean();
 			x1.update(1.0, b2, -1.0);
 			atmos_->applyPrecon(x1, x2);
@@ -453,7 +472,8 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 		
 		out.assign(x1.getOceanVector());
 		
-		x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
+		//x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
+		C21_.applyMatrix(x1, x1);
 		x1.zeroOcean();
 		x1.update(1.0, b2, -1.0);
 		atmos_->applyPrecon(x1, x2);

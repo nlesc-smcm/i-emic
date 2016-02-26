@@ -7,6 +7,8 @@
 #include "IDRSolver.H"
 #include "GMRESSolver.H"
 
+#include "CouplingBlock.H"
+
 #include <vector>
 #include <memory>
 
@@ -34,9 +36,10 @@ private:
 	// NOT IMPLEMENTED YET
     // Graph couplings_;
 
-	// Trilinos-based parallel implicit ocean model (Trilinos-THCM) with a
-	// Belos linear solver performing a parallel FGMRES 
+	// Trilinos-based parallel implicit ocean model (Trilinos-THCM) 
 	Teuchos::RCP<Ocean>  ocean_;
+
+	CouplingBlock C12_, C21_;
 	
 	// STL std::vector-based implicit atmosphere model with a banded Lapack solver
 	std::shared_ptr<Atmosphere> atmos_;

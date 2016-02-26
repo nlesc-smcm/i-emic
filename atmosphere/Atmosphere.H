@@ -253,9 +253,9 @@ public:
 	void zeroState();
 
 	// ! -------------------------------------------------------
-	std::shared_ptr<std::vector<double> > getOceanBlock();
-	std::shared_ptr<std::vector<int> >    getAtmosRows();
-
+	void getOceanBlock(std::vector<double> &values,
+					   std::vector<int> &rows);
+	
 	//! --------------------------------------------------------
 	//! Set an external 2D surface mask in the atmosphere.
 	//! The size of the vector should be n*m.

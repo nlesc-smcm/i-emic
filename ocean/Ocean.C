@@ -564,13 +564,15 @@ void Ocean::setAtmosphere(std::vector<double> const &atmos)
 }
 
 //====================================================================
-std::shared_ptr<std::vector<double> > Ocean::getAtmosBlock()
+// Return the coupling block containing the contribution of the
+// atmosphere to the ocen
+void Ocean::getAtmosBlock(std::vector<double> &values,
+						  std::vector<int> &row_inds)
 {
 	double Ooa, Os;
 	FNAME(getooa)(&Ooa, &Os);
-	std::shared_ptr<std::vector<double> > values =
-		std::make_shared<std::vector<double> >(N_ * M_, -Ooa);
-
+	values = std::vector<double>(N_ * M_, -Ooa);
+	
 	// Apply Surface mask to values
 	int ctr  = 0;
 	int lctr = 0;
@@ -579,15 +581,20 @@ std::shared_ptr<std::vector<double> > Ocean::getAtmosBlock()
 		{			
 			if ((*surfmask_)[j*N_+i] == 1)
 			{
-				(*values)[ctr] = 0;
+				values[ctr] = 0.0;
 				lctr++;
 			}
 			ctr++;
 		}
 
-	INFO("  A->O block, zeros due to surfacemask --> " << lctr);
+	// clear row_inds
+	row_inds.clear();
 	
-	return values;
+	// fill with surface temperature values
+	for (int j = 0; j != M_; ++j)
+		for (int i = 0; i != N_; ++i)
+			row_inds.push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));		
+	INFO("  A->O block, zeros due to surfacemask --> " << lctr);
 }
 
 //====================================================================
