@@ -9,13 +9,15 @@ CouplingBlock::CouplingBlock(std::string const &coupling,
 							 std::vector<int> const &row_ind,
 							 std::vector<int> const &col_ind)
 	:
-	coupling_  (coupling),
-	values_    (values),
-	row_ind_   (row_ind),
-	col_ind_   (col_ind)
+	coupling_   (coupling),
+	values_     (values),
+	row_ind_    (row_ind),
+	col_ind_    (col_ind),
+	initialized_(false)
 {
 }
 
+//------------------------------------------------------------------
 void CouplingBlock::initialize()
 {
 }
@@ -75,7 +77,7 @@ void CouplingBlock::applyOA(SuperVector const &in, SuperVector &out)
 	TIMER_START("CouplingBlock: applyOA");
 	if (!initialized_) // initialize
 		initializeOA(in.getOceanVector()->Map());
-
+	
 	// obtain restricted vector
 	TIMER_START("CouplingBlock: applyOA restrict vector");
 	restrVec_->Import(*in.getOceanVector(), *restrImp_, Insert);
