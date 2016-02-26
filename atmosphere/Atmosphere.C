@@ -1114,7 +1114,6 @@ std::shared_ptr<std::vector<double> > Atmosphere::getOceanBlock()
 		}
 
 	INFO("  O->A block, zeros due to surfacemask --> " << ctr);
-
 	
 	return oceanblock;
 }

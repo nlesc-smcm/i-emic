@@ -371,7 +371,8 @@ Teuchos::RCP<Epetra_BlockMap> Utils::CreateSubMap(const Epetra_BlockMap& map,
 	for (int i = 0; i < listdim; ++i)
 		if (PIDList[i] == myPID)
 			MyGlobalElements.push_back(list[i]);
-	
+
+	// Create submap
 	Teuchos::RCP<Epetra_Map> submap =
 		Teuchos::rcp(new Epetra_Map(listdim, MyGlobalElements.size(),
 									&MyGlobalElements[0], 0, map.Comm()));

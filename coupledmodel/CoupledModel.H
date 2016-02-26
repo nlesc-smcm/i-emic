@@ -34,8 +34,7 @@ private:
 	// NOT IMPLEMENTED YET
     // Graph couplings_;
 
-	// Trilinos-based parallel implicit ocean model (Trilinos-THCM) with a
-	// Belos linear solver performing a parallel FGMRES 
+	// Trilinos-based parallel implicit ocean model (Trilinos-THCM) 
 	Teuchos::RCP<Ocean>  ocean_;
 	
 	// STL std::vector-based implicit atmosphere model with a banded Lapack solver

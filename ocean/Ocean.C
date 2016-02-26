@@ -564,6 +564,8 @@ void Ocean::setAtmosphere(std::vector<double> const &atmos)
 }
 
 //====================================================================
+// Return the coupling block containing the contribution of the
+// atmosphere to the ocen
 std::shared_ptr<std::vector<double> > Ocean::getAtmosBlock()
 {
 	double Ooa, Os;
