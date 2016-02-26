@@ -26,10 +26,12 @@ void CouplingBlock::initialize()
 void CouplingBlock::initializeOA(Epetra_BlockMap const &map)
 {
 	// --> here we should use the UNIQUE col indices, not this array
-	indexMap_ = Utils::CreateSubMap(map, col_ind_);
-	restrVec_ = Teuchos::rcp(new Epetra_Vector(*indexMap_));
-	restrImp_ = Teuchos::rcp(new Epetra_Import(*indexMap_, map));
-
+	indexMap_  = Utils::CreateSubMap(map, col_ind_);
+	gatherMap_ = Utils::AllGather(*indexMap_);
+	restrVec_  = Teuchos::rcp(new Epetra_Vector(*indexMap_));
+	restrImp_  = Teuchos::rcp(new Epetra_Import(*indexMap_, map));
+	gatherImp_ = Teuchos::rcp(new Epetra_Import(*gatherMap_, *indexMap_));
+	gathered_  = Teuchos::rcp(new Epetra_MultiVector(*gatherMap_, 1));							  
 
 	initialized_ = true;
 }
@@ -85,7 +87,8 @@ void CouplingBlock::applyOA(SuperVector const &in, SuperVector &out)
 	
 	// gather the restricted vector
 	TIMER_START("CouplingBlock: applyOA gather");
-	gathered_ = Utils::AllGather(*restrVec_);
+	// gathered_ = Utils::AllGather(*restrVec_);
+	gathered_->Import(*restrVec_, *gatherImp_, Insert);
 	TIMER_STOP("CouplingBlock: applyOA gather");
 
 	// get the ocean values
