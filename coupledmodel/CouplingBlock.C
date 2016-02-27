@@ -3,6 +3,12 @@
 #include "Utils.H"
 
 //------------------------------------------------------------------
+CouplingBlock::CouplingBlock()
+	:
+	initialized_(false)
+{}
+
+//------------------------------------------------------------------
 // constructor
 CouplingBlock::CouplingBlock(std::string const &coupling,
 							 std::vector<double> const &values,
@@ -18,6 +24,7 @@ CouplingBlock::CouplingBlock(std::string const &coupling,
 }
 
 //------------------------------------------------------------------
+// default constructor
 void CouplingBlock::initialize()
 {
 }

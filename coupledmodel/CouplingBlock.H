@@ -38,7 +38,7 @@ class CouplingBlock
 
 public:
 // Default constructor
-	CouplingBlock(){}
+	CouplingBlock();
 	
 // Constructor
 	CouplingBlock(std::string const &coupling,
