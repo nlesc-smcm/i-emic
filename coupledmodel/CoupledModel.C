@@ -442,7 +442,7 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 
 	out.zero();	// Initialize output
 
-	if ((mode == 'C') || (iterGS_ == 0))
+	if ((mode == 'C') && (iterGS_ != 0))
 	{
 		SuperVector x1(out);
 		SuperVector x2(out);
