@@ -370,8 +370,8 @@ namespace TRIOS {
 												  (Spp->A21()).MaxNumEntries()));
 			if (fixSingularChat)
 			{
-				DUMPMATLAB("Auv",Spp->A11());
-				DUMPMATLAB("BDAuv",*BlockDiagA11);
+				// DUMPMATLAB("Auv",Spp->A11());
+				// DUMPMATLAB("BDAuv",*BlockDiagA11);
 			}
 			
 			DEBUG("  perform AB = Spp->A21*BlockDiagA11");
@@ -531,7 +531,7 @@ namespace TRIOS {
 			Epetra_Vector diagonal(Chat->RowMap());
 			CHECK_ZERO(Chat->ExtractDiagonalCopy(diagonal));
 			INFO("  chat diagonal length = " << diagonal.GlobalLength());
-			DUMPMATLAB("CHAT", *Chat);
+			// DUMPMATLAB("CHAT", *Chat); 
 		
 			Teuchos::RCP<Epetra_CrsMatrix> TMP =
 				Teuchos::rcp(new Epetra_CrsMatrix(Copy, Chat->RowMap(), 0));
@@ -542,7 +542,7 @@ namespace TRIOS {
 		
 			int *myGlobalElements = diagonal.Map().MyGlobalElements();
 			int row;
-			double tol = 1e3;  // --> ARBITARY FIX THIS!!!
+			double tol = 5e2;  // --> ARBITRARY IMPROVE THIS!!!
 			for (int i = 0; i != numMyElements; ++i)
 			{
 				if (std::abs(diagonal[i]) < tol)
@@ -558,10 +558,10 @@ namespace TRIOS {
 
 			CHECK_ZERO(TMP->Import(*Chat, Chat2TMP, Insert));
 			CHECK_ZERO(TMP->FillComplete());
-			DUMPMATLAB("TMP",   *TMP);
+			// DUMPMATLAB("TMP",   *TMP);
 		
 			Chat = TMP;
-			DUMPMATLAB("CHAT2", *Chat);
+			// DUMPMATLAB("CHAT2", *Chat);
 		}
 
 		// Traditional scaling although I'm still not sure whether I'm doing it right
@@ -573,7 +573,7 @@ namespace TRIOS {
 			Chat->InvRowSums(*scalingChat);
 			Chat->LeftScale(*scalingChat);
 			Chat->RightScale(*scalingChat);
-			DUMPMATLAB("CHAT3", *Chat);		
+			// DUMPMATLAB("CHAT3", *Chat);		
 		}		
 	} 
 

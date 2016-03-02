@@ -3,7 +3,7 @@ include ../make.inc/Makefile.${PLAT}
 libbasename = $(LIB_COUPLED)
 libname     = lib$(libbasename).a
 
-obj= CoupledModel.o
+obj= CoupledModel.o CouplingBlock.o
 
 HEADERDEPS = \
 	../supervector/SuperVector.H\
@@ -11,6 +11,7 @@ HEADERDEPS = \
     ../idrsolver/IDRSolver.H\
     ../gmressolver/GMRESSolver.H\
     ../ocean/Ocean.H\
+	../ocean/Utils.H\
 
 all: lib
 
@@ -21,6 +22,9 @@ $(libname): ${obj}
 
 CoupledModel.o: CoupledModel.C CoupledModel.H $(HEADERDEPS)
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<
+
+CouplingBlock.o: CouplingBlock.C CouplingBlock.H $(HEADERDEPS)
+	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<	
 
 %.o: %.C %.H 
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $<

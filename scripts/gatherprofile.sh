@@ -21,7 +21,7 @@ echo -n > $oname # Initialize output file
 # Write the different program component names to the output
 for i in {1..89}
 do
-	grep -m 1 "($i)" $iname | sed 's/.*)\ *//' | sed 's/\ * :.*//' >> $oname
+	grep -m 1 "($i)" $iname | sed 's/.*([0-9]*)\ *//' | sed 's/\ * :\ \ [0-9].*//' >> $oname
 done
 
 # Write the number of experiments to the output

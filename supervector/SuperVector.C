@@ -1,6 +1,18 @@
 #include "SuperVector.H"
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
+#include <assert.h>
+
+//------------------------------------------------------------------
+// We need some BLAS 
+extern "C" void dscal_(int* N, double *DA, double *X, int *INCX);
+
+
+extern "C" void daxpy_(int* N,    double *DA, double *X,
+					   int *INCX, double *Y,  int *INCY);
+
+extern "C" double ddot_(int *N, double *X, int *INCX, double *Y, int *INCY);
+
 
 //------------------------------------------------------------------
 // Default constructor:
@@ -148,6 +160,8 @@ int SuperVector::length() const
 }
 
 //------------------------------------------------------------------
+// this = scalarA * A + scalarThis * this
+
 void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis)
 {
 	if (length_ != A.length())
@@ -165,12 +179,20 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 	TIMER_START("SuperVector: update (atmos)");
 	if (haveAtmosVector_)
 	{
-		for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
-		{
-			(*atmosVector_)[idx] =
-				scalarA * (*A.getAtmosVector())[idx]
-				+ scalarThis * (*atmosVector_)[idx];
-		}
+		int N = A.getAtmosVector()->size();
+		assert(N == atmosVector_->size());
+		
+		int incX = 1;
+		int incY = 1;		
+		
+		dscal_(&N, &scalarThis, &(*atmosVector_)[0], &incY);
+		daxpy_(&N, &scalarA, &(*A.getAtmosVector())[0], &incX, &(*atmosVector_)[0], &incY);
+		// for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
+		// {
+		// 	(*atmosVector_)[idx] =
+		// 		scalarA * (*A.getAtmosVector())[idx]
+		// 		+ scalarThis * (*atmosVector_)[idx];
+		// }
 	}
 	TIMER_STOP("SuperVector: update (atmos)");
 	
@@ -208,7 +230,9 @@ void SuperVector::updateElement(int index, double scalar, double scalarThis)
 		
 }
 
-//----------------------------------------------------------------	
+//----------------------------------------------------------------
+
+
 double SuperVector::dot(SuperVector const &A) const
 {
 	if (length_ != A.length())
@@ -226,9 +250,20 @@ double SuperVector::dot(SuperVector const &A) const
 	TIMER_START("Supervector: dot (atmos)");
 	double dot2 = 0;
 	if (haveAtmosVector_)
-		for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
-			dot2 += (*A.getAtmosVector())[idx] * (*atmosVector_)[idx];
+	{
+		int N = A.getAtmosVector()->size();
+		assert(N == atmosVector_->size());
 
+		int incX = 1;
+		int incY = 1;
+
+		dot2 = ddot_(&N, &(*atmosVector_)[0],
+					 &incX, &(*A.getAtmosVector())[0], &incY);
+		
+		// for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
+		// 	dot2 += (*A.getAtmosVector())[idx] * (*atmosVector_)[idx];
+	}
+	
 	TIMER_STOP("Supervector: dot (atmos)");
 	return dot1 + dot2;
 }
