@@ -517,7 +517,7 @@ double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
 	double rhsNorm = rhs->norm();
 	r.update(1, *rhs, -1); //  b-Jx
 	r.scale(1.0 / rhsNorm);
-	double relResidual = r.norm();     // ||b-Jx||/||b||	
+	double relResidual = r.norm('E', "relative residual");     // ||b-Jx||/||b||
 	return relResidual;
 }
 
@@ -601,10 +601,9 @@ double CoupledModel::getPar()
 	double par_ocean = ocean_->getPar(parName_);
 	double par_atmos = atmos_->getPar(parName_);
 
-	// For the case that the internal parameters are not the same
-	// we return the maximum.
-	// This happens when we perform continuations in parameters that
-	// do not exist in all models. 
+	// For the case that the internal parameters are not the same we 
+	// we return the maximum. This happens when we perform continuations
+	// in parameters that do not exist in all models. 
 	return std::max(par_ocean, par_atmos);
 }
 

@@ -7,6 +7,7 @@
 #include <Teuchos_RCP.hpp>
 #include <memory> // shared ptr
 #include <vector>
+#include <string>
 #include <map>
 #include <math.h>
 #include "GlobalDefinitions.H"
@@ -81,7 +82,11 @@ public:
 	//       'V': verbose
 	//            prints the separate norms of each vector,
 	//            returns complete norm
-	double norm(char mode = 'S') const;
+	//            supply message <msg> to improve output
+	//       'E': elaborate
+	//            prints components of the vectors
+	//            supply message <msg> to improve output	
+	double norm(char mode = 'S', std::string const msg = "") const;
 
 	// Apply scaling to vectors
 	void scale(double scale) const;

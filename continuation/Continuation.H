@@ -458,7 +458,7 @@ newtonCorrector()
 
 		// test new RHS, if it satisfies the tolerance we exit the loop		
 		model_->computeRHS();
-		normRHStest_ = rhsView_->norm('V');
+		normRHStest_ = rhsView_->norm('E', "||R||");
 
 		// if we don't see a decrease we run the backtracking routine
 		if (backTracking_ and (normRHS_ < normRHStest_) )
@@ -768,7 +768,7 @@ info()
 	INFO("            ||x||:  " << stateView_->norm());
 	INFO("      ||d/ds(x)||:  " << stateDot_->norm());
 	INFO("     newton iters:  " << newtonIter_);
-	INFO("-----------------------------------------");
+	INFO("-----------------------------------------\n");
 }
 
 //======================================================================

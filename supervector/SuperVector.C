@@ -2,6 +2,7 @@
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
 #include <assert.h>
+#include "THCMdefs.H"
 
 //------------------------------------------------------------------
 // We need some BLAS 
@@ -170,7 +171,7 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 	if (haveAtmosVector_)
 	{
 		int N = A.getAtmosVector()->size();
-		assert(N == atmosVector_->size());
+		assert(N == (int) atmosVector_->size());
 		
 		int incX = 1; int incY = 1;		
 		// scale our vector with scalarThis
@@ -237,7 +238,7 @@ double SuperVector::dot(SuperVector const &A) const
 	if (haveAtmosVector_)
 	{
 		int N = A.getAtmosVector()->size();
-		assert(N == atmosVector_->size());
+		assert(N == (int) atmosVector_->size());
 
 		int incX = 1;
 		int incY = 1;
@@ -254,10 +255,12 @@ double SuperVector::dot(SuperVector const &A) const
 }
 
 //------------------------------------------------------------------
-double SuperVector::norm(char mode) const
+double SuperVector::norm(char mode, std::string const msg) const
 {
+	// Simple verbose component outputting
 	if (mode == 'V')
 	{
+		INFO('\n' << "  " << msg);
 		if (haveOceanVector_ && haveAtmosVector_)
 		{
 			// temporarily disable the other component
@@ -277,8 +280,9 @@ double SuperVector::norm(char mode) const
 			INFO(" ||atmos vector|| : " << sqrt(dot(*this)));
 		}
 	}
-	else if (mode == 'E')
+	else if (mode == 'E') // More elaborate component outputting
 	{
+ 		INFO('\n' << "  " << msg);
 		componentNorms();
 	}
 			
@@ -290,6 +294,35 @@ double SuperVector::norm(char mode) const
 //------------------------------------------------------------------
 void SuperVector::componentNorms() const
 {
+	TIMER_START("SuperVector: component norms");
+	double total = 0.0;
+	double nrm   = 0.0;
+	if (haveOceanVector_)
+	{
+		// assuming the ordering u,v,w,p,T,S in oceanVector
+		int const nun = _NUN_; // 6
+		int length    = oceanVector_->GlobalLength();
+		std::array<std::vector<int>, nun> indices;
+		std::array<char, nun> names = {'u','v','w','p','T','S'};
+		for (int i = 0; i != nun; ++i)
+		{
+			for (int j = 0; j != length / nun; ++j)
+				indices[i].push_back(i+j*nun);
+			Utils::RestrictVector(*oceanVector_, indices[i])->Norm2(&nrm);
+			INFO("  |  " << names[i] << " :  " << nrm);
+			total += nrm*nrm;
+		}
+	}
+	if (haveAtmosVector_)
+	{
+		haveOceanVector_ = false;
+		nrm = sqrt(dot(*this));
+		total += nrm*nrm;
+		INFO("  |  " << "Ta" << ":  " << nrm );
+		haveOceanVector_ = true;
+	}
+	INFO("  |  " << "total = " << sqrt(total) << '\n');
+	TIMER_STOP("SuperVector: component norms");
 }
 
 //------------------------------------------------------------------
