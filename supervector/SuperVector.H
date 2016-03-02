@@ -34,14 +34,6 @@ class SuperVector
 	bool isInitialized_;
 	
 	int length_;
-
-	// For the communication between ocean and atmosphere we need
-	// to restrict the ocean's state to its surface temperature and
-	// gather the remains. For this we use the following datamembers:
-	Teuchos::RCP<Epetra_BlockMap> indexMap_;
-	Teuchos::RCP<Epetra_Vector> restrVec_;
-	Teuchos::RCP<Epetra_Import> restrImp_;
-	bool calcRestriction_;
 	
 public:
 	// Default constructor
@@ -145,6 +137,9 @@ private:
 	// right now it only initializes length_
 	void init();
 	void assign(SuperVector const &other);
+
+	// Print detailed norm information on all components
+	void componentNorms() const;
 	
 };
 #endif

@@ -22,8 +22,7 @@ SuperVector::SuperVector()
 	atmosVector_(std::shared_ptr<std::vector<double> >()),
 	haveOceanVector_(false),
 	haveAtmosVector_(false),
-	isInitialized_(false),
-	calcRestriction_(true)
+	isInitialized_(false)
 {
 	init();
 }
@@ -36,8 +35,7 @@ SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector)
 	atmosVector_(std::shared_ptr<std::vector<double> >()),
 	haveOceanVector_(true),
 	haveAtmosVector_(false),
-	isInitialized_(false),
-	calcRestriction_(true)
+	isInitialized_(false)
 {
 	init();
 }
@@ -50,8 +48,7 @@ SuperVector::SuperVector(std::shared_ptr<std::vector<double> > vector)
 	atmosVector_(vector),
 	haveOceanVector_(false),
 	haveAtmosVector_(true),
-	isInitialized_(false),
-	calcRestriction_(true)
+	isInitialized_(false)
 {
 	init();
 }
@@ -65,8 +62,7 @@ SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector1,
 	atmosVector_(vector2),
 	haveOceanVector_(true),
 	haveAtmosVector_(true),
-	isInitialized_(false),
-	calcRestriction_(true)
+	isInitialized_(false)
 {
 	init();
 }
@@ -98,8 +94,6 @@ void SuperVector::assign(Teuchos::RCP<Epetra_Vector> vector)
 {
 	oceanVector_ = Teuchos::rcp(new Epetra_Vector(*vector));
 	haveOceanVector_ = true;
-	if (oceanVector_ == Teuchos::null || !oceanVector_->Map().SameAs(vector->Map()))
-		calcRestriction_ = true;
 	init();
 }
 
@@ -122,16 +116,11 @@ void SuperVector::assign(SuperVector const &other)
 		oceanVector_ = Teuchos::rcp
 			(new Epetra_Vector(*(other.getOceanVector())));
 		haveOceanVector_ = true;
-		indexMap_        = other.indexMap_;
-		restrVec_        = other.restrVec_;
-		restrImp_        = other.restrImp_;
-		calcRestriction_ = other.calcRestriction_;
 	}
 	else
 	{
 		oceanVector_ = Teuchos::null;
 		haveOceanVector_ = false;
-		calcRestriction_ = true;
 	}
 
 	if (other.haveAtmosVector())
@@ -169,30 +158,27 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 		ERROR("Wrong dimensions!", __FILE__, __LINE__);
 		return;
 	}
-	
+
+	// Update the ocean component
 	TIMER_START("SuperVector: update (ocean)");
 	if (haveOceanVector_)
 		oceanVector_->Update(scalarA, *(A.getOceanVector()), scalarThis);
-
 	TIMER_STOP("SuperVector: update (ocean)");
 
+	// Update the atmosphere component
 	TIMER_START("SuperVector: update (atmos)");
 	if (haveAtmosVector_)
 	{
 		int N = A.getAtmosVector()->size();
 		assert(N == atmosVector_->size());
 		
-		int incX = 1;
-		int incY = 1;		
-		
+		int incX = 1; int incY = 1;		
+		// scale our vector with scalarThis
 		dscal_(&N, &scalarThis, &(*atmosVector_)[0], &incY);
-		daxpy_(&N, &scalarA, &(*A.getAtmosVector())[0], &incX, &(*atmosVector_)[0], &incY);
-		// for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
-		// {
-		// 	(*atmosVector_)[idx] =
-		// 		scalarA * (*A.getAtmosVector())[idx]
-		// 		+ scalarThis * (*atmosVector_)[idx];
-		// }
+
+		// update 
+		daxpy_(&N, &scalarA, &(*A.getAtmosVector())[0],
+			   &incX, &(*atmosVector_)[0], &incY);
 	}
 	TIMER_STOP("SuperVector: update (atmos)");
 	
@@ -204,6 +190,7 @@ void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis
 }
 
 //----------------------------------------------------------------
+// --> This routine needs some checking I think
 void SuperVector::updateElement(int index, double scalar, double scalarThis)
 {
 
@@ -231,8 +218,6 @@ void SuperVector::updateElement(int index, double scalar, double scalarThis)
 }
 
 //----------------------------------------------------------------
-
-
 double SuperVector::dot(SuperVector const &A) const
 {
 	if (length_ != A.length())
@@ -263,8 +248,8 @@ double SuperVector::dot(SuperVector const &A) const
 		// for (size_t idx = 0; idx != A.getAtmosVector()->size(); ++idx)
 		// 	dot2 += (*A.getAtmosVector())[idx] * (*atmosVector_)[idx];
 	}
-	
 	TIMER_STOP("Supervector: dot (atmos)");
+	
 	return dot1 + dot2;
 }
 
@@ -275,6 +260,7 @@ double SuperVector::norm(char mode) const
 	{
 		if (haveOceanVector_ && haveAtmosVector_)
 		{
+			// temporarily disable the other component
 			haveAtmosVector_ = false;
 			INFO(" ||ocean vector|| : " << sqrt(dot(*this)));
 			haveAtmosVector_ = true;
@@ -291,6 +277,10 @@ double SuperVector::norm(char mode) const
 			INFO(" ||atmos vector|| : " << sqrt(dot(*this)));
 		}
 	}
+	else if (mode == 'E')
+	{
+		componentNorms();
+	}
 			
 	double nrm2 = 0.0;
 	nrm2 = dot(*this);
@@ -298,13 +288,23 @@ double SuperVector::norm(char mode) const
 }
 
 //------------------------------------------------------------------
+void SuperVector::componentNorms() const
+{
+}
+
+//------------------------------------------------------------------
 void SuperVector::scale(double scale) const
 {
+	TIMER_START("Supervector: scale (ocean)");
 	if (haveOceanVector_)
 		oceanVector_->Scale(scale);
+	TIMER_STOP("Supervector: scale (ocean)");
+
+	TIMER_START("Supervector: scale (atmos)");
 	if (haveAtmosVector_)
 		for (auto &i : *atmosVector_)
 			i *= scale;
+	TIMER_STOP("Supervector: scale (atmos)");
 }
 
 //------------------------------------------------------------------
@@ -437,51 +437,7 @@ void SuperVector::linearTransformation(std::vector<double> const &diagonal,
 {
 	if (domain == 'O' && range == 'A')
 	{
-		TIMER_START("SuperVector: O->A");
-		int dstLength = diagonal.size();
-		int srcLength = indices.size();
-		
-		// Re-initialize atmosVector				
-		atmosVector_ = std::make_shared<std::vector<double> >
-			(dstLength, 0.0);
-
-		// // Get the part of the oceanVector restricted to the supplied indices
-		// Teuchos::RCP<Epetra_Vector> restricted =
-		// 	Utils::RestrictVector(*oceanVector_, indices);
-
-		if (calcRestriction_ || restrImp_ == Teuchos::null) 
-		{
-			TIMER_START("SuperVector: O->A restrict");
-			indexMap_ = Utils::CreateSubMap(oceanVector_->Map(), indices);
-			restrVec_ = Teuchos::rcp(new Epetra_Vector(*indexMap_));
-			restrImp_ = Teuchos::rcp(new Epetra_Import(*indexMap_, oceanVector_->Map()));
-			calcRestriction_ = false;
-			TIMER_STOP("SuperVector: O->A restrict");
-		}
-		
-		TIMER_START("SuperVector: O->A restrict import");
-		restrVec_->Import(*oceanVector_, *restrImp_, Insert);
-		TIMER_STOP("SuperVector: O->A restrict import");
-
-		// Gather the restricted ocean
-		TIMER_START("SuperVector: O->A gather");
-		Teuchos::RCP<Epetra_MultiVector> gathered = Utils::AllGather(*restrVec_);
-		TIMER_STOP("SuperVector: O->A gather");
-		
-		// FullSol should be allocated
-		double *fullSol = new double[srcLength];
-
-		// Get the values in the epetraVector
-		gathered->ExtractCopy(fullSol, srcLength);
-
-		// Calculate the scaled values in the destination stdVector
-		for (size_t i = 0; i != atmosVector_->size(); ++i)
-			(*atmosVector_)[i] = diagonal[i] * fullSol[i];
-
-		// Cleanup
-		delete fullSol;
-		
-		TIMER_STOP("SuperVector: O->A");
+		WARNING("DEPRECATED", __FILE__, __LINE__);
 	}
 	else if (domain == 'A' && range == 'O')
 	{
