@@ -3,19 +3,28 @@
 #include "Utils.H"
 
 //------------------------------------------------------------------
+CouplingBlock::CouplingBlock()
+	:
+	initialized_(false)
+{}
+
+//------------------------------------------------------------------
 // constructor
 CouplingBlock::CouplingBlock(std::string const &coupling,
 							 std::vector<double> const &values,
 							 std::vector<int> const &row_ind,
 							 std::vector<int> const &col_ind)
 	:
-	coupling_  (coupling),
-	values_    (values),
-	row_ind_   (row_ind),
-	col_ind_   (col_ind)
+	coupling_   (coupling),
+	values_     (values),
+	row_ind_    (row_ind),
+	col_ind_    (col_ind),
+	initialized_(false)
 {
 }
 
+//------------------------------------------------------------------
+// default constructor
 void CouplingBlock::initialize()
 {
 }
@@ -24,10 +33,12 @@ void CouplingBlock::initialize()
 void CouplingBlock::initializeOA(Epetra_BlockMap const &map)
 {
 	// --> here we should use the UNIQUE col indices, not this array
-	indexMap_ = Utils::CreateSubMap(map, col_ind_);
-	restrVec_ = Teuchos::rcp(new Epetra_Vector(*indexMap_));
-	restrImp_ = Teuchos::rcp(new Epetra_Import(*indexMap_, map));
-
+	indexMap_  = Utils::CreateSubMap(map, col_ind_);
+	gatherMap_ = Utils::AllGather(*indexMap_);
+	restrVec_  = Teuchos::rcp(new Epetra_Vector(*indexMap_));
+	restrImp_  = Teuchos::rcp(new Epetra_Import(*indexMap_, map));
+	gatherImp_ = Teuchos::rcp(new Epetra_Import(*gatherMap_, *indexMap_));
+	gathered_  = Teuchos::rcp(new Epetra_MultiVector(*gatherMap_, 1));							  
 
 	initialized_ = true;
 }
@@ -75,7 +86,7 @@ void CouplingBlock::applyOA(SuperVector const &in, SuperVector &out)
 	TIMER_START("CouplingBlock: applyOA");
 	if (!initialized_) // initialize
 		initializeOA(in.getOceanVector()->Map());
-
+	
 	// obtain restricted vector
 	TIMER_START("CouplingBlock: applyOA restrict vector");
 	restrVec_->Import(*in.getOceanVector(), *restrImp_, Insert);
@@ -83,7 +94,8 @@ void CouplingBlock::applyOA(SuperVector const &in, SuperVector &out)
 	
 	// gather the restricted vector
 	TIMER_START("CouplingBlock: applyOA gather");
-	gathered_ = Utils::AllGather(*restrVec_);
+	// gathered_ = Utils::AllGather(*restrVec_);
+	gathered_->Import(*restrVec_, *gatherImp_, Insert);
 	TIMER_STOP("CouplingBlock: applyOA gather");
 
 	// get the ocean values

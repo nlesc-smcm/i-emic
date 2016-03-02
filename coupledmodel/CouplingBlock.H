@@ -28,15 +28,17 @@ class CouplingBlock
 	int n_, m_;
 
 	Teuchos::RCP<Epetra_BlockMap> indexMap_;    // Submap based on restriction indices
+	Teuchos::RCP<Epetra_BlockMap> gatherMap_;   // Gathered indexMap_
 	Teuchos::RCP<Epetra_Vector> restrVec_;      // Distributed restricted vector
 	Teuchos::RCP<Epetra_Import> restrImp_;      // Importer for restricted vector
+	Teuchos::RCP<Epetra_Import> gatherImp_;     // Importer for gathered restr vector
 	Teuchos::RCP<Epetra_MultiVector> gathered_; // Gathered restricted vector
 
 	bool initialized_;
 
 public:
 // Default constructor
-	CouplingBlock(){}
+	CouplingBlock();
 	
 // Constructor
 	CouplingBlock(std::string const &coupling,

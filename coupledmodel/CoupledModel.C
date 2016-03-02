@@ -442,7 +442,7 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 
 	out.zero();	// Initialize output
 
-	if (mode == 'C')
+	if ((mode == 'C') && (iterGS_ != 0))
 	{
 		SuperVector x1(out);
 		SuperVector x2(out);
@@ -455,7 +455,7 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 		for (int i = 0; i != iterGS_; ++i)
 		{
 			//x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
-			C21_.applyMatrix(x1, x1);
+			C21_.applyMatrix(x1, x1);   // C21*x1
 			
 			x1.zeroOcean();
 			x1.update(1.0, b2, -1.0);
