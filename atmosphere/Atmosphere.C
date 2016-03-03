@@ -176,7 +176,9 @@ Atmosphere::Atmosphere(ParameterList params)
 //-----------------------------------------------------------------------------
 // Destructor
 Atmosphere::~Atmosphere()
-{}
+{
+	INFO("Atmosphere destructor called");
+}
 
 //-----------------------------------------------------------------------------
 void Atmosphere::initializeGMRES()

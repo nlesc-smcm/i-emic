@@ -7,9 +7,9 @@
 template<typename Model, typename Vector>
 class NumericalJacobian
 {
-
-	Model     model_;
-    Vector state_;
+	
+	Model  &model_;
+    Vector &state_;
 
 	// Compressed column storage for the matrix
 	std::vector<double> values_;
