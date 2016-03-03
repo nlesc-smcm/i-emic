@@ -100,7 +100,6 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
 
     // Create Atmosphere object
-	// Let the ocean model dictate the horizontal resolution for the atmosphere
 	std::shared_ptr<Atmosphere> atmos =
 		std::make_shared<Atmosphere>(atmosphereParams);
 

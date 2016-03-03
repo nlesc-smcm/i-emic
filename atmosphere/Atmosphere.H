@@ -113,7 +113,7 @@ private:
 	std::vector<double> denseA_;
 
  	// Pivot array for lapack
-	int *ipiv_;
+	std::vector<int> ipiv_;
 
 	std::vector<double> bandedA_;      // Banded matrix storage
 	int ksub_;                         // Number of subdiagonals

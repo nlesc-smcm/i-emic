@@ -77,6 +77,11 @@ SuperVector::SuperVector(SuperVector const &other)
 }
 
 //------------------------------------------------------------------
+// Destructor
+SuperVector::~SuperVector()
+{}
+
+//------------------------------------------------------------------
 // Assignment operator
 void SuperVector::operator=(SuperVector const &other)
 {
@@ -85,9 +90,40 @@ void SuperVector::operator=(SuperVector const &other)
 }
 
 //------------------------------------------------------------------
-// Destructor
-SuperVector::~SuperVector()
-{}
+double &SuperVector::operator[](int index)
+{
+	return operatorIndex(index);
+}
+
+//------------------------------------------------------------------
+double const &SuperVector::operator[](int index) const
+{
+	return operatorIndex(index);
+}
+
+//------------------------------------------------------------------
+// we assume the ordering {OCEAN, ATMOSPHERE}
+double &SuperVector::operatorIndex(int index) const
+{
+	if ((index < 0) || (index > length_))
+		ERROR("INVALID index", __FILE__, __LINE__);
+	
+	int oceanLength = (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
+	
+	if (haveOceanVector_ && index < oceanLength) 
+	{
+		// Find index in parallel vector
+		int lid = oceanVector_->Map().LID(index);
+		if (lid >= 0) // means our proc has it
+			return (*getOceanVector())[lid];
+	}
+	
+	if (haveAtmosVector_ && index >= oceanLength)  // Serial update
+		return (*atmosVector_)[index];
+	
+	ERROR("UNDEFINED BEHAVIOUR", __FILE__, __LINE__);
+	return (*atmosVector_)[index];	
+}
 
 //------------------------------------------------------------------
 // Assign a copy

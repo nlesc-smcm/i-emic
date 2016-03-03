@@ -49,12 +49,16 @@ public:
 	// Copy constructor
 	SuperVector(SuperVector const &other);
 
-	// Overloaded assignment operator
-	void operator=(SuperVector const &other);
-	
 	// Destructor
 	~SuperVector();
 	
+	// Overloaded assignment operator
+	void operator=(SuperVector const &other);
+	
+	// Overloaded index operators
+	double &operator[](int index);
+	double const &operator[](int index) const;
+		
 	// Get info on contents SuperVector
 	bool haveOceanVector() const { return haveOceanVector_; }
 	bool haveAtmosVector() const { return haveAtmosVector_; }
@@ -145,6 +149,8 @@ private:
 
 	// Print detailed norm information on all components
 	void componentNorms() const;
+
+	double &operatorIndex(int index) const;
 	
 };
 #endif

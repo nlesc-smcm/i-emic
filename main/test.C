@@ -111,8 +111,6 @@ void testNumJac(RCP<Epetra_Comm> Comm)
 		
 	NumericalJacobian<Ocean, RCP<SuperVector>> numjacob(*ocean, state);
 	numjacob.compute();
-
-		
 }
 
 //------------------------------------------------------------------
@@ -132,7 +130,6 @@ void testGMRES(RCP<Epetra_Comm> Comm)
 		
 	// Create Atmosphere object
 	Atmosphere atmos(atmosphereParams);
-
 	
 	atmos.computeJacobian();
 	atmos.computeRHS();
@@ -194,8 +191,7 @@ void testIDR(RCP<Epetra_Comm> Comm)
 	std::cout << " norm x: " << x->norm() << std::endl;
 	b->info();
 	std::cout << " norm b: " << b->norm() << std::endl;
-	b->scale(-1.0);	
-		
+	b->scale(-1.0);			
 
 	// Create parameter object for IDRSolver
 	RCP<Teuchos::ParameterList> solverPars = rcp(new Teuchos::ParameterList);

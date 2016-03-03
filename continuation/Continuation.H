@@ -88,6 +88,7 @@ run()
 
 	while (!destinationReached_ && step_ != maxSteps_)
 	{
+		++step_;          // Increment step counter
 		info();           // Print continuation summary
 		store();          // Store the current state and parameter		
 		status = step();  // Perform a continuation step				
@@ -100,7 +101,6 @@ run()
 		
 		detect();     // Detect special points
 		adjustStep(); // step size adjustment
-		++step_;      // Increment step counter
 	}
 	INFO("---------Finished continuation run------------");
 	info();

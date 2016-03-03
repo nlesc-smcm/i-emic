@@ -115,7 +115,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	buildLU_     = true;
 	
 	// Create pivot array for use in lapack
-	ipiv_ = new int[n_*m_*l_+1];
+	ipiv_ = std::vector<int> (n_*m_*l_+1, 0);
 
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
@@ -176,9 +176,7 @@ Atmosphere::Atmosphere(ParameterList params)
 //-----------------------------------------------------------------------------
 // Destructor
 Atmosphere::~Atmosphere()
-{
-	delete[] ipiv_;
-}
+{}
 
 //-----------------------------------------------------------------------------
 void Atmosphere::initializeGMRES()
@@ -565,7 +563,7 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 	
 	if (solvingScheme_ == 'D')
 	{
-		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
+		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, &ipiv_[0],
 				&(*sol_)[0], &ldb, &info);
 	}
 	else if (solvingScheme_ == 'B')
@@ -573,7 +571,7 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 		// we use a copy to make sure bandedA_ does not get corrupted
 		std::vector<double> bandedAcopy(bandedA_);
 		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
-			   &ldimA_, ipiv_, &(*sol_)[0], &ldb, &info);
+			   &ldimA_, &ipiv_[0], &(*sol_)[0], &ldb, &info);
 	}
 	else
 		ERROR("Invalid solving scheme...", __FILE__, __LINE__);
@@ -600,7 +598,7 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 	{
 		out.assign(rhs.getAtmosVector());
 		std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();	
-		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
+		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, &ipiv_[0],
 				&(*sol)[0], &ldb, &info);
 	}
 	else if (solvingScheme_ == 'B')
@@ -609,7 +607,7 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 		{
 			TIMER_START("Atmosphere: build LU");
 			dgbtrf_(&dim, &dim, &ksub_, &ksup_, &bandedA_[0],
-					&ldimA_, ipiv_, &info);
+					&ldimA_, &ipiv_[0], &info);
 			buildLU_ = false; // until next request
 			TIMER_STOP("Atmosphere: build LU");
 		}
@@ -619,7 +617,7 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 
 		TIMER_START("Atmosphere: solve dgbtrs");
 		dgbtrs_(&trans, &dim, &ksub_, &ksup_, &nrhs,
-				&bandedA_[0], &ldimA_, ipiv_,  &(*sol)[0], &ldb, &info);
+				&bandedA_[0], &ldimA_, &ipiv_[0],  &(*sol)[0], &ldb, &info);
 		TIMER_STOP("Atmosphere: solve dgbtrs");
 	}
 	else if (solvingScheme_ == 'G')
@@ -702,7 +700,7 @@ void Atmosphere::buildDenseA()
 	int dim  = n_*m_*l_;
 	int lda  = dim;
 	int info;
-	dgetrf_(&dim, &dim, &denseA_[0], &lda, ipiv_, &info);
+	dgetrf_(&dim, &dim, &denseA_[0], &lda, &ipiv_[0], &info);
 }
 
 
