@@ -125,48 +125,44 @@ void testNumJac(RCP<Epetra_Comm> Comm)
 	//------------------------------------------------------------------
 	// Create Atmos numerical Jacobian
 	INFO("compute njA");
-	NumericalJacobian<Atmosphere, SuperVector>
-		njA(*atmos, *atmos->getState('V'));
-	
-	njA.compute();
+	NumericalJacobian<Atmosphere, SuperVector> njA;
+	INFO(atmos->getState('V')->norm());
+	njA.compute(*atmos, *atmos->getState('V'));
 	njA.print("JnA");
-/*
+
+	/*
 	//------------------------------------------------------------------
-	// Create C12 numerical Jacobian
+ 	// Create C12 numerical Jacobian
 	INFO("compute njC12");
-	NumericalJacobian<Ocean, SuperVector>
-		njC12(*ocean, *atmos->getState('V'));
+	NumericalJacobian<Ocean, SuperVector> njC12;
 	
-	njC12.compute();
+	njC12.compute(*ocean, *atmos->getState('V'));
 	njC12.print("JnC12");
 
 	//------------------------------------------------------------------
 	// Create C21 numerical Jacobian
 	INFO("compute njC21");
-	NumericalJacobian<Atmosphere, SuperVector>
-		njC21(*atmos, *ocean->getState('V'));
+	NumericalJacobian<Atmosphere, SuperVector> njC21;
 	
-	njC21.compute();
+	njC21.compute(*atmos, *ocean->getState('V'));
 	njC21.print("JnC21");
 	
 	//------------------------------------------------------------------
 	// Create Ocean numerical Jacobian
 	INFO("compute njO");
-	NumericalJacobian<Ocean, SuperVector>
-		njO(*ocean, *ocean->getState('V'));
+	NumericalJacobian<Ocean, SuperVector> njO;
 	
-	njO.compute();
+	njO.compute(*ocean, *ocean->getState('V'));
 	njO.print("JnO");
 	
     //------------------------------------------------------------------
 	// create CoupledModel numerical Jacobian
 	INFO("compute njC");
-	NumericalJacobian<CoupledModel, SuperVector>
-		njC(*coupledModel, *coupledModel->getState('V'));
+	NumericalJacobian<CoupledModel, SuperVector> njC;
 	
-	njC.compute();
+	njC.compute(*coupledModel, *coupledModel->getState('V'));
 	njC.print("JnC");
-*/
+	*/
 }
 
 //------------------------------------------------------------------

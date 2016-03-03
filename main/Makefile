@@ -30,6 +30,7 @@ HEADERDEPS = \
 	../ocean/Ocean.H \
 	../atmosphere/Atmosphere.H\
 	../coupledmodel/CoupledModel.H\
+	../main/NumericalJacobian.H\
 
 # Coupled depends on ocean and atmos
 INTLIBS = \
@@ -46,7 +47,7 @@ main: $(OBJLIBS)  main.o
 test: $(OBJLIBS) test.o
 	$(CXX) test.o -o test $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
-test_ocean: $(OBJLIBS) test_ocean.o
+test_ocean: $(OBJLIBS) test_ocean.o 
 	$(CXX) test_ocean.o -o test_ocean $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 test_numjac: $(OBJLIBS) test_numjac.o

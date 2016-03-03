@@ -41,7 +41,7 @@ class Atmosphere
 {
 public:
 	using VectorPtr     = std::shared_ptr<SuperVector>;
-	using CRSMat        = std::map<std::string, vector<double> > ; 
+	using CRSMat        = std::map<std::string, vector<double> >; 
 	using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
 
 private:
@@ -207,9 +207,10 @@ public:
 
 	// Solve the matrix
 	// Needs some factorization
-	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
+	void solve(std::shared_ptr<SuperVector> rhs =
+			   std::shared_ptr<SuperVector>());
 	void solve(SuperVector const &rhs, SuperVector &out);
-		
+	
 	// Compute the right hand side
 	void computeRHS();
 

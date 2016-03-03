@@ -235,7 +235,6 @@ void SuperVector::updateElement(int index, double scalar, double scalarThis)
 		ERROR("INVALID index", __FILE__, __LINE__);
 	
 	int oceanLength = (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
-	// int atmosLength = (haveAtmosVector_) ? atmosVector_->size() : 0;
 	
 	if (haveOceanVector_ && index < oceanLength) // Parallel update
 	{
