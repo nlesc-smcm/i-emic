@@ -7,8 +7,8 @@ DIRS =  \
 	$(PROJECT_BASE)/mrilucpp/\
 	$(PROJECT_BASE)/coupledmodel/\
 
-EXE     = main test timestepping xml2hdf5
-OBJS    = main.o test.o timestepping.o xml2hdf5.o
+EXE     = main test test_ocean
+OBJS    = main.o test.o test_ocean.o
 OBJLIBS = lib$(LIB_OCEAN).a\
 	  lib$(LIB_ATMOS).a\
 	  lib$(LIB_COUPLED).a\
@@ -47,11 +47,8 @@ main: $(OBJLIBS)  main.o
 test: $(OBJLIBS) test.o
 	$(CXX) test.o -o test $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
-timestepping: $(OBJLIBS) timestepping.o
-	$(CXX) timestepping.o -o timestepping $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
-
-xml2hdf5: $(OBJLIBS) xml2hdf5.o
-	$(CXX) xml2hdf5.o -o xml2hdf5 $(LIBRARY_DIRS) -l$(LIB_OCEAN) -l$(LIB_SUPERVEC) $(LIBS)
+test_ocean: $(OBJLIBS) test_ocean.o
+	$(CXX) test_ocean.o -o test_ocean $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 lib$(LIB_OCEAN).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_OCEAN); $(MAKE) $(MFLAGS)

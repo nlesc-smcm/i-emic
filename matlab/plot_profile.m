@@ -1,20 +1,23 @@
-function [profile] = plot_profile(filename, range, domain)
+function [profile] = plot_profile(filename, range, start)
   % we assume that you are in a directory below the main
   % project directory, for instance proj_dir/rundir
   system(['../scripts/gatherprofile.sh ' filename ' converted']);
   profile = importdata('converted');
   N       = profile.data(1); % number of experiments
   M       = numel(profile.textdata);
-  cores   = 2.^(1:N);
+  cores   = 2.^(0:N-1);
   x_axis  = 1:N;
-%   x_axis  = cores;
-  
+  x_axis  = cores;
+
   if nargin < 3
       domain = 1:N;
       if nargin < 2
           range = 1:M;
       end
-  end 
+  else
+	  domain = start:N;
+  end
+  
   
   colm = lines(numel(range));
   ctr  = 1;
@@ -34,7 +37,7 @@ function [profile] = plot_profile(filename, range, domain)
 %       hold on
       
       figure(9) 
-      semilogy(x_axis(domain), pllt(domain),linst{mod(ctr,numel(linst))+1},...
+      loglog(x_axis(domain), pllt(domain),linst{mod(ctr,numel(linst))+1},...
                     'linewidth',2,'markersize',15,'color',colm(ctr,:));
       x = x_axis(domain(end));    
       y = pllt(domain(end));
@@ -44,7 +47,7 @@ function [profile] = plot_profile(filename, range, domain)
       hold on
       
       figure(10)
-      plot(x_axis(domain),pllt(1)./pllt(domain),linst{mod(ctr,numel(linst))+1},...
+      plot(x_axis(domain),pllt(start)./pllt(domain),linst{mod(ctr,numel(linst))+1},...
                     'linewidth',2,'markersize',15,'color',colm(ctr,:));
       x = x_axis(domain(end));
       y = pllt(1)./pllt(domain(end));      
@@ -59,7 +62,7 @@ function [profile] = plot_profile(filename, range, domain)
   hold off
   figure(10) 
   legend(profile.textdata(range),'location','northwest');
-  plot(x_axis(domain), x_axis(domain), 'k--')
+  plot(x_axis(domain), 2.^(0:numel(domain)-1), 'k--')
   hold off
  
     

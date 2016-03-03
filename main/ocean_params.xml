@@ -32,9 +32,9 @@
     <!-- eastern domain bound -->
     <Parameter name="Global Bound xmax" type="double" value="355"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="-50"/>
+    <Parameter name="Global Bound ymin" type="double" value="10"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="50"/>
+    <Parameter name="Global Bound ymax" type="double" value="74"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="0"/>
     <!-- depth of the ocean -->

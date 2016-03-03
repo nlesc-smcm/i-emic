@@ -64,7 +64,6 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	// Communicate surface landmask
 	atmos_->setSurfaceMask(ocean_->getSurfaceMask());
 
-
 	// Setup coupling blocks
 	std::vector<double> C12values;
 	std::vector<int>    C12rows;
@@ -99,7 +98,7 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 
 //------------------------------------------------------------------
 void CoupledModel::synchronize()
-{	
+{
 	// A synchronization is only necessary when the states have actually
 	// changed, so we compute, compare and store a hash
 	if (useHash_)
