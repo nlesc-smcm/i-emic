@@ -27,7 +27,7 @@ class SuperVector
 {
 	Teuchos::RCP<Epetra_Vector>           oceanVector_;
 	std::shared_ptr<std::vector<double> > atmosVector_;
-
+	
 	// mutable bools: methods may not alter the the vectors but these
 	// flags might be allowed to change temporarily
 	mutable bool haveOceanVector_;

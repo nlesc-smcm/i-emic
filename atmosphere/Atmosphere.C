@@ -1097,7 +1097,7 @@ void Atmosphere::getOceanBlock(std::vector<double> &values,
 	// diagonal of ones, see the forcing.
 	values = std::vector<double>(m_*n_, 1.0);
 	rows   = std::vector<int>(m_*n_, 0);
-
+	
 	for (int i = 0; i != m_*n_; ++i)
 		rows[i] = i;
 	

@@ -126,35 +126,30 @@ void testNumJac(RCP<Epetra_Comm> Comm)
 	// // Create Atmos numerical Jacobian
 	// INFO("compute njA");
 	// atmos->writeJacobian("JA");
-	// NumericalJacobian<Atmosphere, SuperVector> njA;
-	// njA.compute(*atmos, *atmos->getState('V'));
+	// NumericalJacobian<std::shared_ptr<Atmosphere>,
+	// 				  std::shared_ptr<SuperVector> > njA;
+	// njA.compute(atmos, atmos->getState('V'));
 	// njA.print("JnA");
 
 	// //------------------------------------------------------------------
  	// // Create C12 numerical Jacobian
 	// INFO("compute njC12");
-	// NumericalJacobian<CoupledModel, SuperVector> njC12;
+	// NumericalJacobian<std::shared_ptr<CoupledModel>,
+	// 				  std::shared_ptr<SuperVector> > njC12;
 	
-	// njC12.compute(*coupledModel, *atmos->getState('V'));
+	// njC12.compute(coupledModel, atmos->getState('V'));
 	// njC12.print("JnC12");
 
 	// //------------------------------------------------------------------
 	// // Create C21 numerical Jacobian
 	// INFO("compute njC21");
-	// NumericalJacobian<CoupledModel, SuperVector> njC21;
-	
-	// njC21.compute(*coupledModel, *ocean->getState('V'));
-	// njC21.print("JnC21");
-	
+	// NumericalJacobian<std::shared_ptr<CoupledModel>,
+	// 				  std::shared_ptr<SuperVector> > njC21;
+	// std::shared_ptr<SuperVector> stateView =
+	// 	std::make_shared<SuperVector>(ocean->getState('V')->getOceanVector());
+	// njC21.compute(coupledModel, stateView);
+	// njC21.print("JnC21");	
 
-	// //------------------------------------------------------------------
-	// // Create Ocean numerical Jacobian
-	// INFO("compute njO");
-	// NumericalJacobian<Ocean, SuperVector> njO;
-	
-	// njO.compute(*ocean, *ocean->getState('V'));
-	// njO.print("JnO");
-	
     //------------------------------------------------------------------
 	// create CoupledModel numerical Jacobian
 	INFO("compute njC");

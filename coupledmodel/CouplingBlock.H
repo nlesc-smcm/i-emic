@@ -23,7 +23,10 @@ class CouplingBlock
 	std::vector<double> values_;
 	std::vector<int>    row_ind_;
 	std::vector<int>    col_ind_;
-
+	
+	std::vector<int>    unique_row_ind_;
+	std::vector<int>    unique_col_ind_;
+	
 // Dimensions
 	int n_, m_;
 
@@ -47,7 +50,10 @@ public:
 				  std::vector<int> const &col_ind);
 
 // Destructor
-	~CouplingBlock(){};
+	~CouplingBlock()
+		{
+			INFO("CouplingBlock destructor called");
+		};
 
 // Fill our storage
 	void setValues(std::vector<double> const &values);
@@ -65,6 +71,7 @@ private:
 	void initializeAO();
 	void applyOA(SuperVector const &v, SuperVector &out);
 	void applyAO(SuperVector const &v, SuperVector &out);
+	std::vector<int> find_unique(std::vector<int> const &in);
 };
 
 #endif

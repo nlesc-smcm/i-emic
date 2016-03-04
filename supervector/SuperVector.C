@@ -121,9 +121,9 @@ double &SuperVector::operatorIndex(int index) const
 		if (lid >= 0) // means our proc has it
 			return (*getOceanVector())[lid];
 	}
-	
+
 	if (haveAtmosVector_ && index >= oceanLength)  // Serial update
-		return (*atmosVector_)[index];
+		return (*atmosVector_)[index-oceanLength];
 	
 	ERROR("UNDEFINED BEHAVIOUR", __FILE__, __LINE__);
 	return (*atmosVector_)[index];	
@@ -300,18 +300,13 @@ void SuperVector::updateElement(int index, double scalar, double scalarThis)
 				scalarThis * (*getOceanVector())[lid] + scalar;
 		}
 	}
-
+	
 	if (haveAtmosVector_ && index >= oceanLength)  // Serial update
 	{
 		int atmosIndex = index - oceanLength;
- 		INFO(" 1 update element " << atmosIndex << " "
-			 << (*atmosVector_)[atmosIndex]);
 		(*atmosVector_)[atmosIndex] =
 			scalarThis * (*atmosVector_)[atmosIndex] + scalar;
-		INFO(" 2 update element " << atmosIndex << " "
-			 << (*atmosVector_)[atmosIndex]);				
 	}
-	
 }
 
 //----------------------------------------------------------------

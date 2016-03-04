@@ -413,7 +413,7 @@ void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out, char mode
 		//z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
 
 		// Just to be sure
-		y.zeroAtmos();        
+		y.zeroAtmos();
 		z.zeroOcean();        
 
 		out.update(1,y,1);  // A*x1 + B*x2

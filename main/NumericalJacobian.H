@@ -30,8 +30,6 @@ public:
 			INFO(" ONLY DO THIS FOR SMALL PROBLEMS AND ON A SINGLE CORE!!");
 			INFO("  OTHERWISE I DON'T KNOW WHAT WILL HAPPEN!!\n");
 
-			state->print("X");
-			
 			values_.clear();
 			rowIdx_.clear();
 			colPtr_.clear();
@@ -41,8 +39,6 @@ public:
 		    VectorPtr Fcopy = model->getRHS('C');
 			VectorPtr Fview = model->getRHS('V');
 
-			INFO(" F length = " << Fview->length());
-			
 			double nrm = state->norm();
 			int elctr  = 0; // element counter
 			for (int j = 0; j != state->length(); ++j)
@@ -51,14 +47,6 @@ public:
 				Fview->zero();
 				model->computeRHS();
 
-				if (j >= 1532 && j <= 1543)
-				{
-					state->info();
-					INFO(" j " << j << " nrm rhs: " << Fview->norm());
-					INFO(" j " << j << " act rhs: " << model->getRHS('V')->norm());
-					getchar();
-				}
-				
 				state->updateElement(j, -h_, 1.0);
 				assert(std::abs(nrm - state->norm()) < 1e-12);
 				
