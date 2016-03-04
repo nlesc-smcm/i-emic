@@ -37,7 +37,7 @@
   <!-- Use hashing to decide to sync based on whether a state has changed              -->
   <!-- Right now the functions synchronize(), computeRHS() and computeJacobian()       -->
   <!-- can check the hash of the stateView and decide to recompute.                    -->
-  <Parameter name="Use hashing" type="bool" value="true"/>
+  <Parameter name="Use hashing" type="bool" value="false"/>
 
   <Parameter name="Rebuild preconditioner stride" type="int" value="2"/>
   

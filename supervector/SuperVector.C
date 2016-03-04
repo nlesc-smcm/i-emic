@@ -23,7 +23,8 @@ SuperVector::SuperVector()
 	atmosVector_(std::shared_ptr<std::vector<double> >()),
 	haveOceanVector_(false),
 	haveAtmosVector_(false),
-	isInitialized_(false)
+	isInitialized_(false),
+	isView_(false)
 {
 	init();
 }
@@ -36,7 +37,8 @@ SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector)
 	atmosVector_(std::shared_ptr<std::vector<double> >()),
 	haveOceanVector_(true),
 	haveAtmosVector_(false),
-	isInitialized_(false)
+	isInitialized_(false),
+	isView_(false)
 {
 	init();
 }
@@ -49,7 +51,8 @@ SuperVector::SuperVector(std::shared_ptr<std::vector<double> > vector)
 	atmosVector_(vector),
 	haveOceanVector_(false),
 	haveAtmosVector_(true),
-	isInitialized_(false)
+	isInitialized_(false),
+	isView_(false)
 {
 	init();
 }
@@ -63,13 +66,14 @@ SuperVector::SuperVector(Teuchos::RCP<Epetra_Vector> vector1,
 	atmosVector_(vector2),
 	haveOceanVector_(true),
 	haveAtmosVector_(true),
-	isInitialized_(false)
+	isInitialized_(false),
+	isView_(false)
 {
 	init();
 }
 
 //------------------------------------------------------------------
-// Copy constructor 
+// Copy constructor, does not maintain view unless specified!
 SuperVector::SuperVector(SuperVector const &other)
 {
 	assign(other);
@@ -82,7 +86,7 @@ SuperVector::~SuperVector()
 {}
 
 //------------------------------------------------------------------
-// Assignment operator
+// Assignment operator -> copy construction, does not maintain view!
 void SuperVector::operator=(SuperVector const &other)
 {
 	assign(other);
@@ -148,32 +152,87 @@ void SuperVector::assign(std::shared_ptr<std::vector<double> > vector)
 void SuperVector::assign(SuperVector const &other)
 {
 	TIMER_START("SuperVector: assign");
-	if (other.haveOceanVector())
-	{
-		oceanVector_ = Teuchos::rcp
-			(new Epetra_Vector(*(other.getOceanVector())));
-		haveOceanVector_ = true;
+	if (!other.isView())
+	{	
+		if (other.haveOceanVector())
+		{
+			oceanVector_ = Teuchos::rcp
+				(new Epetra_Vector(*(other.getOceanVector())));
+			haveOceanVector_ = true;
+		}
+		else
+		{
+			oceanVector_ = Teuchos::null;
+			haveOceanVector_ = false;
+		}
+		if (other.haveAtmosVector())
+		{
+			atmosVector_ = std::make_shared<std::vector<double> >
+				(*(other.getAtmosVector()));
+			haveAtmosVector_ = true;
+		}
+		else
+		{
+			atmosVector_ = std::shared_ptr<std::vector<double> >();
+			haveAtmosVector_ = false;
+		}
 	}
 	else
 	{
-		oceanVector_ = Teuchos::null;
-		haveOceanVector_ = false;
+		if (other.haveOceanVector())
+		{
+			oceanVector_ = other.getOceanVector();
+			haveOceanVector_ = true;
+		}
+		else
+		{
+			oceanVector_ = Teuchos::null;
+			haveOceanVector_ = false;
+		}
+		if (other.haveAtmosVector())
+		{
+			atmosVector_ = other.getAtmosVector();
+			haveAtmosVector_ = true;
+		}
+		else
+		{
+			atmosVector_ = std::shared_ptr<std::vector<double> >();
+			haveAtmosVector_ = false;
+		}
 	}
-
-	if (other.haveAtmosVector())
-	{
-		atmosVector_ = std::make_shared<std::vector<double> >
-			(*(other.getAtmosVector()));
-		haveAtmosVector_ = true;
-	}
-	else
-	{
-		atmosVector_ = std::shared_ptr<std::vector<double> >();
-		haveAtmosVector_ = false;
-	}
-
+	
 	isInitialized_ = false;
 	TIMER_STOP("SuperVector: assign");
+}
+
+//------------------------------------------------------------------
+SuperVector SuperVector::createView()
+{
+	if (haveOceanVector_ && haveAtmosVector_)
+	{
+		SuperVector view(oceanVector_, atmosVector_);
+		view.setView(true);
+		return view;
+	}
+	else if (haveOceanVector_)
+	{
+		SuperVector view(oceanVector_);
+		view.setView(true);
+		return view;
+		
+	}
+	else if (haveAtmosVector_)
+	{
+		SuperVector view(atmosVector_);
+		view.setView(true);
+		return view;
+	}
+	else
+	{
+		SuperVector view;
+		view.setView(true);
+		return view;
+	}
 }
 
 //------------------------------------------------------------------
@@ -190,18 +249,14 @@ int SuperVector::length() const
 
 void SuperVector::update(double scalarA, SuperVector const &A, double scalarThis)
 {
-	if (length_ != A.length())
-	{
-		ERROR("Wrong dimensions!", __FILE__, __LINE__);
-		return;
-	}
+	assert(length_ == A.length());
 
 	// Update the ocean component
 	TIMER_START("SuperVector: update (ocean)");
 	if (haveOceanVector_)
 		oceanVector_->Update(scalarA, *(A.getOceanVector()), scalarThis);
 	TIMER_STOP("SuperVector: update (ocean)");
-
+	
 	// Update the atmosphere component
 	TIMER_START("SuperVector: update (atmos)");
 	if (haveAtmosVector_)
@@ -245,12 +300,18 @@ void SuperVector::updateElement(int index, double scalar, double scalarThis)
 				scalarThis * (*getOceanVector())[lid] + scalar;
 		}
 	}
+
 	if (haveAtmosVector_ && index >= oceanLength)  // Serial update
 	{
-		(*atmosVector_)[index] =
-			scalarThis * (*atmosVector_)[index] + scalar;
+		int atmosIndex = index - oceanLength;
+ 		INFO(" 1 update element " << atmosIndex << " "
+			 << (*atmosVector_)[atmosIndex]);
+		(*atmosVector_)[atmosIndex] =
+			scalarThis * (*atmosVector_)[atmosIndex] + scalar;
+		INFO(" 2 update element " << atmosIndex << " "
+			 << (*atmosVector_)[atmosIndex]);				
 	}
-		
+	
 }
 
 //----------------------------------------------------------------

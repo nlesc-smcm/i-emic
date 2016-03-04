@@ -32,7 +32,11 @@ class SuperVector
 	// flags might be allowed to change temporarily
 	mutable bool haveOceanVector_;
 	mutable bool haveAtmosVector_;
+	
 	bool isInitialized_;
+
+	// If this is true a copy constructor will make a view
+	bool isView_;
 	
 	int length_;
 	
@@ -62,10 +66,15 @@ public:
 	// Get info on contents SuperVector
 	bool haveOceanVector() const { return haveOceanVector_; }
 	bool haveAtmosVector() const { return haveAtmosVector_; }
+	bool isView() const          { return isView_; }
+	void setView(bool isView)    { isView_ = isView; }
 
 	// Assign Ocean and Atmos vectors
 	void assign(Teuchos::RCP<Epetra_Vector> vector);
 	void assign(std::shared_ptr<std::vector<double> > vector);
+
+	// Create and return a view of this SuperVector
+	SuperVector createView();
 	
 	// Get the total length of the combined vector
 	int length() const;

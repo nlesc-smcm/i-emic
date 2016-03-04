@@ -334,6 +334,7 @@ public:
 	void writeAll();
 	void writeJacobian(std::string const filename)
 		{
+			// ico should be co
 			std::stringstream ico_fname, jco_fname, beg_fname;
 			ico_fname << filename << ".ico";
 			jco_fname << filename << ".jco";

@@ -26,7 +26,7 @@
   <Parameter name="Periodic" type="bool" value="false"             />
 
   <!-- Choose to use the ocean's landmask if available              -->
-  <Parameter name="Use land mask from Ocean" type="bool" value="true"/>
+  <Parameter name="Use land mask from Ocean" type="bool" value="false"/>
   
   <!-- western, eastern, southern and northern domain bounds      -->
   <Parameter name="Global Bound xmin" type="double" value="300"    />

@@ -37,17 +37,17 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	toleranceGS_      (params->get("GS tolerance", 1e-1)),
 	
 	useHash_          (params->get("Use hashing", true)),
-	syncHash_(-1),
-	rhsHash_(-1),
-	jacHash_(-1),
-	syncCtr_(0),
+	syncHash_         (-1),
+	rhsHash_          (-1),
+	jacHash_          (-1),
+	syncCtr_          (0),
 	
 	buildPrecEvery_   (params->get("Rebuild preconditioner stride", 1)),
-	idrSolver_(*this),
-	gmresSolver_(*this),
-	idrInitialized_(false),
-	gmresInitialized_(false),
-	idrSolveCtr_(0)
+	idrSolver_        (*this),
+	gmresSolver_      (*this),
+	idrInitialized_   (false),
+	gmresInitialized_ (false),
+	idrSolveCtr_      (0)
 {
 	// let the models get their state from a file
 	if (useExistingState_)

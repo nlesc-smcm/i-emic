@@ -311,7 +311,9 @@ std::shared_ptr<Atmosphere::CRSMat> Atmosphere::getJacobian()
 void Atmosphere::computeRHS()
 {
 	TIMER_START("Atmosphere: compute RHS...");
-
+	
+	std::fill(rhs_->begin(), rhs_->end(), 0.0);
+	
 	// If necessary compute a new Jacobian
 	//	if (recomputeJacobian_)
 	computeJacobian();
@@ -329,7 +331,7 @@ void Atmosphere::computeRHS()
 			value = matvec(row) + frc_[row-1];
 			(*rhs_)[row-1] = value;
 		}
-	
+
 	TIMER_STOP("Atmosphere: compute RHS...");
 }
 

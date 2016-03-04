@@ -572,6 +572,7 @@ void Ocean::getAtmosBlock(std::vector<double> &values,
 	double Ooa, Os;
 	FNAME(getooa)(&Ooa, &Os);
 	values = std::vector<double>(N_ * M_, -Ooa);
+	INFO("Ocean: Ooa = " << Ooa);
 	
 	// Apply Surface mask to values
 	int ctr  = 0;
