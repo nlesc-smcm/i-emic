@@ -29,7 +29,6 @@
 #include "AtmosphereDefinitions.H"
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
-#include "GMRESSolver.H"
 
 class DependencyGrid;
 class Atom;
@@ -123,7 +122,6 @@ private:
 
 	// Solving scheme: 'D': dense
 	//                 'B': banded
-	//                 'G': GMRES
 	char solvingScheme_;
 
 	// Preconditioner: 'J': Jacobi
@@ -131,11 +129,6 @@ private:
 	//                 'N': None
 	char preconditioner_;
 	
-	// GMRES solver object
-	GMRESSolver<Atmosphere, std::shared_ptr<SuperVector> > gmresSolver_;
-	bool gmresInitialized_;
-
-
 	// Parameters	
 	double   rhoa_; //! atmospheric density \[\rho_a\]
 	double  hdima_; //! atmospheric scale height \[H_a\]
@@ -278,12 +271,6 @@ private:
 	// ! Perform the dot product of a single row with the state vector
 	double matvec(int row);
 
-	// GMRES routines
-	void initializeGMRES();
-	void GMRESSolve(std::shared_ptr<SuperVector> rhs);
-	void GMRESSolve(std::shared_ptr<SuperVector> rhs,
-					std::shared_ptr<SuperVector> out);
-	
 	// ! Compute residual
 	double computeResidual(std::shared_ptr<SuperVector> rhs);
 	double computeResidual(SuperVector const &rhs,

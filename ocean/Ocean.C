@@ -565,7 +565,7 @@ void Ocean::setAtmosphere(std::vector<double> const &atmos)
 
 //====================================================================
 // Return the coupling block containing the contribution of the
-// atmosphere to the ocen
+// atmosphere to the ocean
 void Ocean::getAtmosBlock(std::vector<double> &values,
 						  std::vector<int> &row_inds)
 {
@@ -589,12 +589,16 @@ void Ocean::getAtmosBlock(std::vector<double> &values,
 		}
 
 	// clear row_inds
-	row_inds.clear();
+	row_inds = std::vector<int>(N_ * M_, 0);
 	
 	// fill with surface temperature values
+	int idx = 0;
 	for (int j = 0; j != M_; ++j)
 		for (int i = 0; i != N_; ++i)
-			row_inds.push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));		
+		{
+			row_inds[idx] = (FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));
+			idx++;
+		}
 	INFO("  A->O block, zeros due to surfacemask --> " << lctr);
 }
 

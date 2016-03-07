@@ -127,9 +127,8 @@ void testCouplingBlock(RCP<Epetra_Comm> Comm)
 	
 		// A->O and O->A coupling blocks
 		{
-			//CouplingBlock C12("AO", C12values, C12rows, C21rows);
-			//CouplingBlock C21("OA", C21values, C21rows, C12rows);
-			CouplingBlock C;
+			CouplingBlock C12("AO", C12values, C12rows, C21rows);
+			CouplingBlock C21("OA", C21values, C21rows, C12rows);
 		}
 	}
 	

@@ -33,8 +33,6 @@ Atmosphere::Atmosphere(ParameterList params)
 // solvers ------------------------------------------------------------------
 	solvingScheme_   (params->get("Solving scheme", 'B')),
 	preconditioner_  (params->get("Preconditioner", 'J')),
-	gmresSolver_     (*this),
-	gmresInitialized_(false),
 
 // physics ------------------------------------------------------------------
 	rhoa_            (params->get("atmospheric density",1.25)),
@@ -179,42 +177,6 @@ Atmosphere::~Atmosphere()
 {
 	INFO("Atmosphere destructor called");
 }
-
-//-----------------------------------------------------------------------------
-void Atmosphere::initializeGMRES()
-{
-	gmresSolver_.setParameters(params_);
-	gmresInitialized_ = true;
-}
-
-//-----------------------------------------------------------------------------
-void Atmosphere::GMRESSolve(std::shared_ptr<SuperVector> rhs)
-{} // NOT IMPLEMENTED
-
-//-----------------------------------------------------------------------------
-void Atmosphere::GMRESSolve(std::shared_ptr<SuperVector> rhs,
-							std::shared_ptr<SuperVector> out)
-{
-	if (!gmresInitialized_)
-		initializeGMRES();
-
-	int verbosity = params_->get("GMRES verbosity", 0);
-	
-	gmresSolver_.setSolution (out);
-	gmresSolver_.setRHS      (rhs);
-	
-	if (verbosity > 4) INFO("Atmosphere: GMRES solve...");
-	gmresSolver_.solve();
-	if (verbosity > 4) INFO("Atmosphere: GMRES solve... done");
-
-	int iters    = gmresSolver_.getNumIters();
-	double nrm   = gmresSolver_.residual();
-
-	if (verbosity > 4) INFO("Atmosphere GMRES, i = " << iters << " residual = " << nrm);
-	
-	TRACK_ITERATIONS("Atmosphere GMRES iterations...", iters);
-}
-
 
 //-----------------------------------------------------------------------------
 void Atmosphere::idealizedOcean()
@@ -624,14 +586,9 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 				&bandedA_[0], &ldimA_, &ipiv_[0],  &(*sol)[0], &ldb, &info);
 		TIMER_STOP("Atmosphere: solve dgbtrs");
 	}
-	else if (solvingScheme_ == 'G')
+	else
 	{
-		std::shared_ptr<SuperVector> b =
-			std::make_shared<SuperVector>(rhs.getAtmosVector());
-		std::shared_ptr<SuperVector> v =
-			std::make_shared<SuperVector>(out.getAtmosVector());
-		GMRESSolve(b, v);
-		out.assign(v->getAtmosVector());
+		WARNING("Invalid solving scheme!", __FILE__, __LINE__);
 	}
 	
 	TIMER_STOP("Atmosphere: solve2...");
