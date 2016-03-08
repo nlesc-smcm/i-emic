@@ -26,7 +26,7 @@ class CouplingBlock
 	
 	std::vector<int>    unique_row_ind_;
 	std::vector<int>    unique_col_ind_;
-	
+
 // Dimensions
 	int n_, m_;
 

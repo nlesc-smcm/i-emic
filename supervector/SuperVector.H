@@ -113,6 +113,9 @@ public:
 	// Randomize vectors
 	void random();
 
+	// Put this scalar at every entry
+	void putScalar(double scalar);
+
 	// Zero vectors
 	void zero();
 	void zeroAtmos();

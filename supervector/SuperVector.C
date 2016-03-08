@@ -468,6 +468,18 @@ void SuperVector::random()
 }
 
 //------------------------------------------------------------------
+void SuperVector::putScalar(double scalar)
+{
+	if (haveAtmosVector_)
+	{
+		for (size_t i = 0; i < atmosVector_->size(); ++i)
+			(*atmosVector_)[i] = scalar;
+	}
+	if (haveOceanVector_)
+		oceanVector_->PutScalar(scalar);	
+}
+
+//------------------------------------------------------------------
 void SuperVector::zero()
 {
 	zeroAtmos();

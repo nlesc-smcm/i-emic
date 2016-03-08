@@ -34,7 +34,8 @@ void CouplingBlock::initialize()
 //------------------------------------------------------------------
 std::vector<int> CouplingBlock::find_unique(std::vector<int> const &in)
 {
-	std::vector<int> tmp(values_.size(), 0);
+	int max = *std::max_element(in.begin(), in.end());
+	std::vector<int> tmp(max+1, 0);
 	for (auto &i: in)
 		tmp[i] = 1;
 

@@ -1089,10 +1089,13 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 	INFO("Printing surface mask available in Atmosphere");
 	int ctr = 0;
 	std::ostringstream string;
+	std::ofstream smask;
+	smask.open("surfmask");
 	for (auto &l: *surfmask_)
 	{
 		ctr++;
 		string << l;
+		smask  << l << '\n';
 		if (ctr % n_ == 0)
 		{
 			INFO(string.str().c_str());
@@ -1100,6 +1103,7 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 			string.clear();
 		}
 	}
+	smask.close();
 }
 
 //-----------------------------------------------------------------------------
