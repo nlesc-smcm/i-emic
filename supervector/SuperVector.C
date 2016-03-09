@@ -152,8 +152,9 @@ void SuperVector::assign(std::shared_ptr<std::vector<double> > vector)
 void SuperVector::assign(SuperVector const &other)
 {
 	TIMER_START("SuperVector: assign");
-	if (!other.isView())
-	{	
+	if (other.isView() == false)
+	{
+		isView_ = false;
 		if (other.haveOceanVector())
 		{
 			oceanVector_ = Teuchos::rcp
@@ -179,6 +180,7 @@ void SuperVector::assign(SuperVector const &other)
 	}
 	else
 	{
+		isView_ = true;
 		if (other.haveOceanVector())
 		{
 			oceanVector_ = other.getOceanVector();
