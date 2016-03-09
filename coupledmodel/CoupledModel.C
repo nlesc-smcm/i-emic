@@ -634,7 +634,7 @@ void CoupledModel::postProcess()
 
 	// Print the contents of the profile
 	// printProfile(profile);
-	printJacobian("J");
+	// printJacobian("J");
 }
 
 //------------------------------------------------------------------

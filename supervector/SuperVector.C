@@ -547,23 +547,30 @@ void SuperVector::print() const
 //------------------------------------------------------------------
 void SuperVector::print(std::string const filename) const
 {
-	std::stringstream ocean_fname, atmos_fname;
-	ocean_fname << filename << ".ocean";
-	atmos_fname << filename << ".atmos";
-	
-	std::ofstream ocean_ofstream, atmos_ofstream;
-	ocean_ofstream.open(ocean_fname.str());
-	atmos_ofstream.open(atmos_fname.str());
 
+	std::stringstream ocean_fname, atmos_fname;
+	
 	if (haveOceanVector_)
-		oceanVector_->Print(ocean_ofstream);
-	ocean_ofstream.close();
-			
+	{
+		ocean_fname << filename << ".ocean";
+		INFO(" printing to " << ocean_fname.str());
+		std::ofstream ocean_ofstream;
+		ocean_ofstream.open(ocean_fname.str());		
+		(*Utils::AllGather(*oceanVector_))(0)->Print(ocean_ofstream);
+		ocean_ofstream.close();
+	}
+		
 	if (haveAtmosVector_)
+	{
+		atmos_fname << filename << ".atmos";
+		INFO(" printing to " << atmos_fname.str());
+		std::ofstream  atmos_ofstream;
+		atmos_ofstream.open(atmos_fname.str());
 		for (auto &it : *atmosVector_)
 			atmos_ofstream << std::setprecision(12) << it << '\n';
 
-	atmos_ofstream.close();
+		atmos_ofstream.close();
+	}
 }
 
 //------------------------------------------------------------------

@@ -96,7 +96,6 @@ run()
 		if (status) // If step failed we continue
 		{
 			reset();                       // Reset the model
-			rhsView_->print("failed_rhs"); // Print residual
 			continue;                      // Skip the rest
 		}
 		
@@ -636,17 +635,20 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 reset()
 {
+	rhsView_->print("failed_rhs"); // Print failed residual
 	INFO("***********************************************");
-	INFO("Continuation: reset... ");
+	INFO("Continuation: reset... ");	
 	INFO("|                step: " << step_);
 	INFO("|           step size: " << ds_);
 	INFO("|          norm state: " << stateView_->norm());
+	INFO("|          norm   rhs: " << rhsView_->norm());
 	INFO("|  norm stored state0: " << (storage_.state0)->norm());
  	INFO("|                 par: " << par_);
 	INFO("| -------------------------------------------  ");
 	
 	restore();
 	ds_ = MAX(ds_ / scale2_, dsMin_);
+	
 	INFO("|      new norm state: " << stateView_->norm());
 	INFO("|             new par: " << par_);
 	INFO("|       new step size: " << ds_);
