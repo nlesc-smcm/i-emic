@@ -95,8 +95,9 @@ run()
 		
 		if (status) // If step failed we continue
 		{
-			reset();  // Reset the model		
-			continue; // Skip the rest
+			reset();                       // Reset the model
+			rhsView_->print("failed_rhs"); // Print residual
+			continue;                      // Skip the rest
 		}
 		
 		detect();     // Detect special points
