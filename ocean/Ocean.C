@@ -78,17 +78,18 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	N_ = domain_->GlobalN();
  	M_ = domain_->GlobalM();
 	L_ = domain_->GlobalL();
+	
+	// Read starting parameters from xml
+	Teuchos::ParameterList& startList =
+		thcmList.sublist("Starting Parameters");	
+	THCM::Instance().ReadParameters(startList);
 
 	// If specified we load a pre-existing state and parameters (x,l)
+	// thereby overwriting the starting parameters
 	if (loadState_)
 		loadStateFromFile(inputFile_);
 	else 			// Initialize with trivial solution
 		state_->PutScalar(0.0);
-
-	// Read/Overwrite starting parameters from xml
-	Teuchos::ParameterList& startList =
-		thcmList.sublist("Starting Parameters");	
-	THCM::Instance().ReadParameters(startList);
 	
 	// Now that we have the state and parameters we can initialize more datamembers
 	initializeOcean();

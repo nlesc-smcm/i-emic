@@ -71,7 +71,7 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	
 	std::vector<double> C21values;
 	std::vector<int>    C21rows;
-	atmos_->getOceanBlock(C21values, C21rows); 
+	atmos_->getOceanBlock(C21values, C21rows);
 
 	// A->O and O->A coupling blocks
 	C12_ = CouplingBlock("AO", C12values, C12rows, C21rows);
