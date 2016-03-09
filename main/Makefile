@@ -7,13 +7,13 @@ DIRS =  \
 	$(PROJECT_BASE)/mrilucpp/\
 	$(PROJECT_BASE)/coupledmodel/\
 
-EXE     = main test test_ocean
-OBJS    = main.o test.o test_ocean.o
+EXE     = main test test_ocean test_numjac
+OBJS    = main.o test.o test_ocean.o test_numjac
 OBJLIBS = lib$(LIB_OCEAN).a\
 	  lib$(LIB_ATMOS).a\
 	  lib$(LIB_COUPLED).a\
-          lib$(LIB_SUPERVEC).a\
-          lib$(LIB_MRILUCPP).a\
+	  lib$(LIB_SUPERVEC).a\
+      lib$(LIB_MRILUCPP).a\
 
 # Header dependencies, especially important for templated stuff
 HEADERDEPS = \
@@ -30,6 +30,7 @@ HEADERDEPS = \
 	../ocean/Ocean.H \
 	../atmosphere/Atmosphere.H\
 	../coupledmodel/CoupledModel.H\
+	../main/NumericalJacobian.H\
 
 # Coupled depends on ocean and atmos
 INTLIBS = \
@@ -37,7 +38,6 @@ INTLIBS = \
 	-l$(LIB_SUPERVEC)\
 	-l$(LIB_OCEAN)\
 	-l$(LIB_ATMOS)\
-
 
 all: main
 
@@ -47,8 +47,11 @@ main: $(OBJLIBS)  main.o
 test: $(OBJLIBS) test.o
 	$(CXX) test.o -o test $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
-test_ocean: $(OBJLIBS) test_ocean.o
+test_ocean: $(OBJLIBS) test_ocean.o 
 	$(CXX) test_ocean.o -o test_ocean $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
+
+test_numjac: $(OBJLIBS) test_numjac.o
+	$(CXX) test_numjac.o -o test_numjac $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 lib$(LIB_OCEAN).a: force_look
 	cd $(PROJECT_BASE)/$(LIB_OCEAN); $(MAKE) $(MFLAGS)

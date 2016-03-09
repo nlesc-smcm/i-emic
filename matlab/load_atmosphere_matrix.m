@@ -1,7 +1,8 @@
-function [A] = load_atmosphere_matrix()
-  beg  = importdata('atmos_beg.txt');
-  ico  = importdata('atmos_ico.txt');
-  jco  = importdata('atmos_jco.txt');
+function [A] = load_atmosphere_matrix(basename)
+
+  beg  = importdata([basename,'.beg']);
+  ico  = importdata([basename,'.ico']);
+  jco  = importdata([basename,'.jco']);
 
   n   = numel(beg)-1;
   nnz = beg(end)-1;

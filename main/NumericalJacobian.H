@@ -4,64 +4,90 @@
 #include "GlobalDefinitions.H"
 #include <vector>
 
-template<typename Model, typename VectorPtr>
+template<typename ModelPtr, typename VectorPtr>
 class NumericalJacobian
 {
-
-	Model     model_;
-    VectorPtr state_;
-
 	// Compressed column storage for the matrix
 	std::vector<double> values_;
 	std::vector<int>    rowIdx_;
 	std::vector<int>    colPtr_;
-	double h_; // finite difference increment
+	double h_;   // finite difference increment
 
 public:
-	NumericalJacobian(Model &model, VectorPtr state)
+	NumericalJacobian()
 		:
-		model_    (model),
-		state_    (state),
 		values_   (std::vector<double>()),
 		rowIdx_   (std::vector<int>()),
 		colPtr_   (std::vector<int>()),
-		h_        (1e-8)
-		{}
-
-	void compute()
+		h_        (1e2)
 		{
-			INFO("Computing numerical Jacobian");
+			INFO("NumericalJacobian: constructor");
+		}
+
+	void compute(ModelPtr model, VectorPtr state)
+		{
+			INFO("Computing numerical Jacobian\n");
 			INFO(" ONLY DO THIS FOR SMALL PROBLEMS AND ON A SINGLE CORE!!");
+			INFO("  OTHERWISE I DON'T KNOW WHAT WILL HAPPEN!!\n");
 
 			values_.clear();
 			rowIdx_.clear();
 			colPtr_.clear();
 			
-			model_.computeRHS();
+			model->computeRHS();
 			
-		    VectorPtr Fcopy = model_.getRHS('C');
-			VectorPtr Fview = model_.getRHS('V');
-			
-			double nrm;
-			for (int j = 0; j != state_->length(); ++j)
+		    VectorPtr Fcopy = model->getRHS('C');
+			VectorPtr Fview = model->getRHS('V');
+
+			double nrm = state->norm();
+			int elctr  = 0; // element counter
+			for (int j = 0; j != state->length(); ++j)
 			{
-				nrm = state_->norm();
-				state_->updateElement(j, h_, 1.0);
-				model_.computeRHS();
+				state->updateElement(j, h_, 1.0);
+				Fview->zero();
+				model->computeRHS();
+
+				state->updateElement(j, -h_, 1.0);
+				assert(std::abs(nrm - state->norm()) < 1e-12);
+				
 				Fview->update(-1.0/h_, *Fcopy, 1.0/h_);
 
-				// values_.push_append(Fview->nonzeros())
+				if (state->haveOceanVector())
+					if (j >= state->getOceanVector()->GlobalLength())
+						Fview->print("F" + std::to_string(j));
 				
-				state_->updateElement(j, -h_, 1.0);
-				
-				if (std::abs(nrm - state_->norm()))
-					ERROR("Something went wrong in updateElement",
-						  __FILE__, __LINE__);
+				colPtr_.push_back(elctr);
+				for (int i = 0; i != Fview->length(); ++i)
+					if (std::abs((*Fview)[i]) > 1e-5)
+					{
+						values_.push_back((*Fview)[i]);
+						rowIdx_.push_back(i);
+						elctr++;
+					}								
 				
 				if ( j % 100  == 0)
-					INFO("      " << j << " of " << state_->length());
+					INFO("      " << j << " of " << state->length());
 			}
+			
+			colPtr_.push_back(elctr);
 			INFO("Computing numerical Jacobian done");
+		}
+	
+	void print(std::string const &basename)
+		{
+			std::ofstream co_str, ico_str, beg_str;
+			co_str.open(basename + "_co");
+			for (auto &i: values_)
+				co_str << i << '\n';			
+			co_str.close();
+			ico_str.open(basename + "_ico");
+			for (auto &i: rowIdx_)
+				ico_str << i << '\n';			
+			ico_str.close();
+			beg_str.open(basename + "_beg");
+			for (auto &i: colPtr_)
+				beg_str << i << '\n';			
+			beg_str.close();
 		}
 };
 

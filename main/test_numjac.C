@@ -1,6 +1,3 @@
-//=======================================================================
-// Main continuation of the coupled model 
-//=======================================================================
 #include <Epetra_config.h>
 
 #  ifdef HAVE_MPI
@@ -33,6 +30,11 @@
 #include "ThetaStepper.H"
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
+#include "THCMdefs.H"
+#include "IDRSolver.H"
+#include "GMRESSolver.H"
+
+#include "NumericalJacobian.H"
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
@@ -45,10 +47,9 @@ RCP<std::ostream> outFile;      // output file
 ProfileType       profile;      // profile
 std::stack<Timer> timerStack;   // timing stack
 
+//------------------------------------------------------------------
+void testNumJac(RCP<Epetra_Comm> Comm);
 
-void runCoupledModel(RCP<Epetra_Comm> Comm);
-
-// These are duplicated from test.C -> factorize and put them in a namespace
 //------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
@@ -63,7 +64,7 @@ int main(int argc, char **argv)
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
-	runCoupledModel(Comm);
+	testNumJac(Comm);
 
 	// print the profile
 	if (Comm->MyPID() == 0)
@@ -76,11 +77,8 @@ int main(int argc, char **argv)
 }
 
 //------------------------------------------------------------------
-void runCoupledModel(RCP<Epetra_Comm> Comm)
+void testNumJac(RCP<Epetra_Comm> Comm)
 {
-	TIMER_START("Total time...");
-
-	TIMER_START("Total initialization");
 	//------------------------------------------------------------------
 	// Check if outFile is specified
 	if (outFile == Teuchos::null)
@@ -121,13 +119,45 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 	Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
 		continuation(coupledModel, continuationParams);
 
-	TIMER_STOP("Total initialization");
-	
 	// Run continuation
 	continuation.run();
 
-	//------------------------------------------------------------------
-	TIMER_STOP("Total time...");		
+	// //------------------------------------------------------------------
+	// // Create Atmos numerical Jacobian
+	// INFO("compute njA");
+	// atmos->writeJacobian("JA");
+	// NumericalJacobian<std::shared_ptr<Atmosphere>,
+	// 				  std::shared_ptr<SuperVector> > njA;
+	// njA.compute(atmos, atmos->getState('V'));
+	// njA.print("JnA");
+
+	// //------------------------------------------------------------------
+ 	// // Create C12 numerical Jacobian
+	// INFO("compute njC12");
+	// NumericalJacobian<std::shared_ptr<CoupledModel>,
+	// 				  std::shared_ptr<SuperVector> > njC12;
+	
+	// njC12.compute(coupledModel, atmos->getState('V'));
+	// njC12.print("JnC12");
+
+	// //------------------------------------------------------------------
+	// // Create C21 numerical Jacobian
+	// INFO("compute njC21");
+	// NumericalJacobian<std::shared_ptr<CoupledModel>,
+	// 				  std::shared_ptr<SuperVector> > njC21;
+	// std::shared_ptr<SuperVector> stateView =
+	// 	std::make_shared<SuperVector>(ocean->getState('V')->getOceanVector());
+	// njC21.compute(coupledModel, stateView);
+	// njC21.print("JnC21");	
+
+    //------------------------------------------------------------------
+	// create CoupledModel numerical Jacobian
+	INFO("compute njC");
+	NumericalJacobian<std::shared_ptr<CoupledModel>,
+					  std::shared_ptr<SuperVector> > njC;
+	njC.compute(coupledModel, coupledModel->getState('V'));
+	njC.print("JnC");
+
 }
 
 //------------------------------------------------------------------
@@ -207,7 +237,7 @@ void printProfile(ProfileType profile)
 	// Display timings of the separate models, summing
 	int counter = 0;
 	for (auto const &map : profile)
-		if (map.first.compare(0,8,"_NOTIME_") != 0)
+		if (map.first.compare(0,5,"(itr)") != 0)
 		{
 			counter++;
 			std::stringstream s;
@@ -221,13 +251,45 @@ void printProfile(ProfileType profile)
 	
 	// Display iteration information
 	for (auto const &map : profile)
-		if (map.first.compare(0,8,"_NOTIME_") == 0 )
+		if (map.first.compare(0,5,"(itr)") == 0 )
 		{
 			counter++;
 			std::stringstream s;
 			s << " (" << counter << ")";
-			LINE(s.str(), "", map.first.substr(8), ":", map.second[0], "",
+			LINE(s.str(), "", map.first.substr(5), ":", map.second[0], "",
 				 map.second[1], "", map.second[2]);
 		}
 	
+}
+
+//------------------------------------------------------------------
+void testVecWrap()
+{
+	std::cout << "Testing the SuperVector Wrapper..." << std::endl;
+	
+	std::vector<double> vec1 = {1,2,3,4,5,6,7,8,9,10};
+	std::vector<double> vec2 = {2,2,3,2,5,2,2,2,9,2};
+	std::shared_ptr<std::vector<double> > spvec1 =
+		std::make_shared<std::vector<double> >(vec1);
+	std::shared_ptr<std::vector<double> > spvec2 =
+		std::make_shared<std::vector<double> >(vec2);
+	
+ 	SuperVector wrvec1(spvec1);
+	SuperVector wrvec2(spvec2);
+
+	std::cout << "v1 length: " <<  wrvec1.length() << std::endl;
+	std::cout << "v2 length: " <<  wrvec2.length() << std::endl;
+
+	std::cout << "v1 norm: " << wrvec1.norm() << std::endl;
+	std::cout << "v2 norm: " << wrvec2.norm() << std::endl;
+		
+	std::cout << "(v1,v2): " <<	wrvec1.dot(wrvec2) << std::endl;
+	
+	wrvec1.update(4, wrvec2, 3);
+	wrvec1.print();
+
+	wrvec2.scale(3);
+	wrvec2.print();
+	
+	std::cout << "Testing the SuperVector Wrapper...done" << std::endl;
 }

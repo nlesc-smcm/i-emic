@@ -27,12 +27,16 @@ class SuperVector
 {
 	Teuchos::RCP<Epetra_Vector>           oceanVector_;
 	std::shared_ptr<std::vector<double> > atmosVector_;
-
+	
 	// mutable bools: methods may not alter the the vectors but these
 	// flags might be allowed to change temporarily
 	mutable bool haveOceanVector_;
 	mutable bool haveAtmosVector_;
+	
 	bool isInitialized_;
+
+	// If this is true a copy constructor will make a view
+	bool isView_;
 	
 	int length_;
 	
@@ -49,19 +53,28 @@ public:
 	// Copy constructor
 	SuperVector(SuperVector const &other);
 
-	// Overloaded assignment operator
-	void operator=(SuperVector const &other);
-	
 	// Destructor
 	~SuperVector();
 	
+	// Overloaded assignment operator
+	void operator=(SuperVector const &other);
+	
+	// Overloaded index operators
+	double &operator[](int index);
+	double const &operator[](int index) const;
+		
 	// Get info on contents SuperVector
 	bool haveOceanVector() const { return haveOceanVector_; }
 	bool haveAtmosVector() const { return haveAtmosVector_; }
+	bool isView() const          { return isView_; }
+	void setView(bool isView)    { isView_ = isView; }
 
 	// Assign Ocean and Atmos vectors
 	void assign(Teuchos::RCP<Epetra_Vector> vector);
 	void assign(std::shared_ptr<std::vector<double> > vector);
+
+	// Create and return a view of this SuperVector
+	SuperVector createView();
 	
 	// Get the total length of the combined vector
 	int length() const;
@@ -99,6 +112,9 @@ public:
 
 	// Randomize vectors
 	void random();
+
+	// Put this scalar at every entry
+	void putScalar(double scalar);
 
 	// Zero vectors
 	void zero();
@@ -145,6 +161,8 @@ private:
 
 	// Print detailed norm information on all components
 	void componentNorms() const;
+
+	double &operatorIndex(int index) const;
 	
 };
 #endif

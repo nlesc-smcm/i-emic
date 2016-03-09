@@ -29,7 +29,6 @@
 #include "AtmosphereDefinitions.H"
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
-#include "GMRESSolver.H"
 
 class DependencyGrid;
 class Atom;
@@ -41,7 +40,7 @@ class Atmosphere
 {
 public:
 	using VectorPtr     = std::shared_ptr<SuperVector>;
-	using CRSMat        = std::map<std::string, vector<double> > ; 
+	using CRSMat        = std::map<std::string, vector<double> >; 
 	using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
 
 private:
@@ -113,7 +112,7 @@ private:
 	std::vector<double> denseA_;
 
  	// Pivot array for lapack
-	int *ipiv_;
+	std::vector<int> ipiv_;
 
 	std::vector<double> bandedA_;      // Banded matrix storage
 	int ksub_;                         // Number of subdiagonals
@@ -123,7 +122,6 @@ private:
 
 	// Solving scheme: 'D': dense
 	//                 'B': banded
-	//                 'G': GMRES
 	char solvingScheme_;
 
 	// Preconditioner: 'J': Jacobi
@@ -131,11 +129,6 @@ private:
 	//                 'N': None
 	char preconditioner_;
 	
-	// GMRES solver object
-	GMRESSolver<Atmosphere, std::shared_ptr<SuperVector> > gmresSolver_;
-	bool gmresInitialized_;
-
-
 	// Parameters	
 	double   rhoa_; //! atmospheric density \[\rho_a\]
 	double  hdima_; //! atmospheric scale height \[H_a\]
@@ -207,9 +200,10 @@ public:
 
 	// Solve the matrix
 	// Needs some factorization
-	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
+	void solve(std::shared_ptr<SuperVector> rhs =
+			   std::shared_ptr<SuperVector>());
 	void solve(SuperVector const &rhs, SuperVector &out);
-		
+	
 	// Compute the right hand side
 	void computeRHS();
 
@@ -277,12 +271,6 @@ private:
 	// ! Perform the dot product of a single row with the state vector
 	double matvec(int row);
 
-	// GMRES routines
-	void initializeGMRES();
-	void GMRESSolve(std::shared_ptr<SuperVector> rhs);
-	void GMRESSolve(std::shared_ptr<SuperVector> rhs,
-					std::shared_ptr<SuperVector> out);
-	
 	// ! Compute residual
 	double computeResidual(std::shared_ptr<SuperVector> rhs);
 	double computeResidual(SuperVector const &rhs,
@@ -333,6 +321,7 @@ public:
 	void writeAll();
 	void writeJacobian(std::string const filename)
 		{
+			// ico should be co
 			std::stringstream ico_fname, jco_fname, beg_fname;
 			ico_fname << filename << ".ico";
 			jco_fname << filename << ".jco";

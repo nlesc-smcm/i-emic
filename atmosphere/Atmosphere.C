@@ -33,8 +33,6 @@ Atmosphere::Atmosphere(ParameterList params)
 // solvers ------------------------------------------------------------------
 	solvingScheme_   (params->get("Solving scheme", 'B')),
 	preconditioner_  (params->get("Preconditioner", 'J')),
-	gmresSolver_     (*this),
-	gmresInitialized_(false),
 
 // physics ------------------------------------------------------------------
 	rhoa_            (params->get("atmospheric density",1.25)),
@@ -115,7 +113,7 @@ Atmosphere::Atmosphere(ParameterList params)
 	buildLU_     = true;
 	
 	// Create pivot array for use in lapack
-	ipiv_ = new int[n_*m_*l_+1];
+	ipiv_ = std::vector<int> (n_*m_*l_+1, 0);
 
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
@@ -177,44 +175,8 @@ Atmosphere::Atmosphere(ParameterList params)
 // Destructor
 Atmosphere::~Atmosphere()
 {
-	delete[] ipiv_;
+	INFO("Atmosphere destructor called");
 }
-
-//-----------------------------------------------------------------------------
-void Atmosphere::initializeGMRES()
-{
-	gmresSolver_.setParameters(params_);
-	gmresInitialized_ = true;
-}
-
-//-----------------------------------------------------------------------------
-void Atmosphere::GMRESSolve(std::shared_ptr<SuperVector> rhs)
-{} // NOT IMPLEMENTED
-
-//-----------------------------------------------------------------------------
-void Atmosphere::GMRESSolve(std::shared_ptr<SuperVector> rhs,
-							std::shared_ptr<SuperVector> out)
-{
-	if (!gmresInitialized_)
-		initializeGMRES();
-
-	int verbosity = params_->get("GMRES verbosity", 0);
-	
-	gmresSolver_.setSolution (out);
-	gmresSolver_.setRHS      (rhs);
-	
-	if (verbosity > 4) INFO("Atmosphere: GMRES solve...");
-	gmresSolver_.solve();
-	if (verbosity > 4) INFO("Atmosphere: GMRES solve... done");
-
-	int iters    = gmresSolver_.getNumIters();
-	double nrm   = gmresSolver_.residual();
-
-	if (verbosity > 4) INFO("Atmosphere GMRES, i = " << iters << " residual = " << nrm);
-	
-	TRACK_ITERATIONS("Atmosphere GMRES iterations...", iters);
-}
-
 
 //-----------------------------------------------------------------------------
 void Atmosphere::idealizedOcean()
@@ -311,7 +273,9 @@ std::shared_ptr<Atmosphere::CRSMat> Atmosphere::getJacobian()
 void Atmosphere::computeRHS()
 {
 	TIMER_START("Atmosphere: compute RHS...");
-
+	
+	std::fill(rhs_->begin(), rhs_->end(), 0.0);
+	
 	// If necessary compute a new Jacobian
 	//	if (recomputeJacobian_)
 	computeJacobian();
@@ -329,7 +293,7 @@ void Atmosphere::computeRHS()
 			value = matvec(row) + frc_[row-1];
 			(*rhs_)[row-1] = value;
 		}
-	
+
 	TIMER_STOP("Atmosphere: compute RHS...");
 }
 
@@ -565,7 +529,7 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 	
 	if (solvingScheme_ == 'D')
 	{
-		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
+		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, &ipiv_[0],
 				&(*sol_)[0], &ldb, &info);
 	}
 	else if (solvingScheme_ == 'B')
@@ -573,7 +537,7 @@ void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 		// we use a copy to make sure bandedA_ does not get corrupted
 		std::vector<double> bandedAcopy(bandedA_);
 		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
-			   &ldimA_, ipiv_, &(*sol_)[0], &ldb, &info);
+			   &ldimA_, &ipiv_[0], &(*sol_)[0], &ldb, &info);
 	}
 	else
 		ERROR("Invalid solving scheme...", __FILE__, __LINE__);
@@ -600,7 +564,7 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 	{
 		out.assign(rhs.getAtmosVector());
 		std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();	
-		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, ipiv_,
+		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, &ipiv_[0],
 				&(*sol)[0], &ldb, &info);
 	}
 	else if (solvingScheme_ == 'B')
@@ -609,7 +573,7 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 		{
 			TIMER_START("Atmosphere: build LU");
 			dgbtrf_(&dim, &dim, &ksub_, &ksup_, &bandedA_[0],
-					&ldimA_, ipiv_, &info);
+					&ldimA_, &ipiv_[0], &info);
 			buildLU_ = false; // until next request
 			TIMER_STOP("Atmosphere: build LU");
 		}
@@ -619,17 +583,12 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 
 		TIMER_START("Atmosphere: solve dgbtrs");
 		dgbtrs_(&trans, &dim, &ksub_, &ksup_, &nrhs,
-				&bandedA_[0], &ldimA_, ipiv_,  &(*sol)[0], &ldb, &info);
+				&bandedA_[0], &ldimA_, &ipiv_[0],  &(*sol)[0], &ldb, &info);
 		TIMER_STOP("Atmosphere: solve dgbtrs");
 	}
-	else if (solvingScheme_ == 'G')
+	else
 	{
-		std::shared_ptr<SuperVector> b =
-			std::make_shared<SuperVector>(rhs.getAtmosVector());
-		std::shared_ptr<SuperVector> v =
-			std::make_shared<SuperVector>(out.getAtmosVector());
-		GMRESSolve(b, v);
-		out.assign(v->getAtmosVector());
+		WARNING("Invalid solving scheme!", __FILE__, __LINE__);
 	}
 	
 	TIMER_STOP("Atmosphere: solve2...");
@@ -702,7 +661,7 @@ void Atmosphere::buildDenseA()
 	int dim  = n_*m_*l_;
 	int lda  = dim;
 	int info;
-	dgetrf_(&dim, &dim, &denseA_[0], &lda, ipiv_, &info);
+	dgetrf_(&dim, &dim, &denseA_[0], &lda, &ipiv_[0], &info);
 }
 
 
@@ -1095,7 +1054,7 @@ void Atmosphere::getOceanBlock(std::vector<double> &values,
 	// diagonal of ones, see the forcing.
 	values = std::vector<double>(m_*n_, 1.0);
 	rows   = std::vector<int>(m_*n_, 0);
-
+	
 	for (int i = 0; i != m_*n_; ++i)
 		rows[i] = i;
 	
@@ -1130,10 +1089,13 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 	INFO("Printing surface mask available in Atmosphere");
 	int ctr = 0;
 	std::ostringstream string;
+	std::ofstream smask;
+	smask.open("surfmask");
 	for (auto &l: *surfmask_)
 	{
 		ctr++;
 		string << l;
+		smask  << l << '\n';
 		if (ctr % n_ == 0)
 		{
 			INFO(string.str().c_str());
@@ -1141,6 +1103,7 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 			string.clear();
 		}
 	}
+	smask.close();
 }
 
 //-----------------------------------------------------------------------------

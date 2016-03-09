@@ -24,8 +24,11 @@
 #include <stack>
 #include <string>
 
+#include <cassert>
+
 #include "SuperVector.H"
 #include "CoupledModel.H"
+#include "CouplingBlock.H"
 #include "Atmosphere.H"
 #include "ThetaStepper.H"
 #include "Continuation.H"
@@ -55,6 +58,8 @@ void testGlobalAtmos();
 void testIDR(RCP<Epetra_Comm> Comm);
 void testGMRES(RCP<Epetra_Comm> Comm);
 void testNumJac(RCP<Epetra_Comm> Comm);
+void testSuperVec(RCP<Epetra_Comm> Comm);
+void testCouplingBlock(RCP<Epetra_Comm> Comm);
 
 //------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
@@ -70,14 +75,8 @@ int main(int argc, char **argv)
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
-	// test the coupled model
-	testNumJac(Comm);
-	//	testOcean(Comm);
+	testCouplingBlock(Comm);
 
-	// print the profile
-	if (Comm->MyPID() == 0)
-		printProfile(profile);
-	
     //--------------------------------------------------------
 	// Finalize MPI
 	//--------------------------------------------------------
@@ -85,7 +84,70 @@ int main(int argc, char **argv)
 }
 
 //------------------------------------------------------------------
-void testNumJac(RCP<Epetra_Comm> Comm)
+void testCouplingBlock(RCP<Epetra_Comm> Comm)
+{
+	//------------------------------------------------------------------
+	// Check if outFile is specified
+	if (outFile == Teuchos::null)
+		throw std::runtime_error("ERROR: Specify output streams");	
+	
+	std::vector<double> C12values;
+	std::vector<int>    C12rows;
+	std::vector<double> C21values;
+	std::vector<int>    C21rows;
+
+	//------------------------------------------------------------------
+	// Create parameter object for Ocean
+	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+
+	//------------------------------------------------------------------
+	// Create parameter object for Atmosphere
+	RCP<Teuchos::ParameterList> atmosphereParams =
+		rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("atmosphere_params.xml",
+								atmosphereParams.ptr());
+
+	
+	// Create parallelized Ocean object
+	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
+	ocean->getAtmosBlock(C12values, C12rows);	
+	
+	// Create Atmosphere object
+	std::shared_ptr<Atmosphere> atmos =
+		std::make_shared<Atmosphere>(atmosphereParams);
+		
+	// Communicate surface landmask
+	std::shared_ptr<vector<int> > surfmask =
+		ocean->getSurfaceMask();
+	atmos->setSurfaceMask(surfmask);
+	atmos->getOceanBlock(C21values, C21rows);
+
+	SuperVector vec0(ocean->getState('C')->getOceanVector(),
+					 atmos->getState('C')->getAtmosVector());
+	SuperVector vec1(vec0);
+	SuperVector vec2(vec0);
+
+	vec0.putScalar(0.0);
+	vec1.putScalar(3.14);	
+
+	CouplingBlock C12("AO", C12values, C12rows, C21rows);
+	CouplingBlock C21("OA", C21values, C21rows, C12rows);
+	
+	C12.info();
+	C21.info();
+
+	C12.applyMatrix(vec1, vec0);
+	vec0.print("vec_out1");
+
+	vec0.putScalar(0.0);
+	C21.applyMatrix(vec1, vec0);
+	vec0.print("vec_out2");
+	
+}
+
+//------------------------------------------------------------------
+void testSuperVec(RCP<Epetra_Comm> Comm)
 {
 	//------------------------------------------------------------------
 	// Check if outFile is specified
@@ -93,26 +155,34 @@ void testNumJac(RCP<Epetra_Comm> Comm)
 		throw std::runtime_error("ERROR: Specify output streams");	
 	
 	//------------------------------------------------------------------
-	// Create parameter object for Ocean
-	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+	// Create parameter object for Atmosphere
+	RCP<Teuchos::ParameterList> atmosphereParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+
+    // Create Atmosphere object
+	std::shared_ptr<Atmosphere> atmos =
+		std::make_shared<Atmosphere>(atmosphereParams);
+
+	// Obtain views of state and rhs
+	SuperVector stateView = atmos->getState('V')->createView();
+	SuperVector rhsView   = atmos->getRHS('V')->createView();
+
+	// get norms
+	double nrmRHS   = rhsView.norm();
+	double nrmState = stateView.norm();	
 	
-	// Create parallelized Ocean object
-	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
+	// Randomize state
+	stateView.random();
 
-	RCP<SuperVector> state = ocean->getState('V');
+	atmos->computeRHS();
 
-	std::cout << state->norm('V') << std::endl;
-	
-	Epetra_BlockMap Map = state->getOceanVector()->Map();
-
-	ocean->computeRHS();
-	ocean->getRHS('V')->print("F");
-		
-	NumericalJacobian<Ocean, RCP<SuperVector>> numjacob(*ocean, state);
-	numjacob.compute();
-
-		
+	// Test
+	double statnorm = std::abs(nrmState - stateView.norm());
+	double diffnorm = std::abs(nrmRHS   - rhsView.norm());
+	INFO("  " << statnorm);
+	INFO("  " << diffnorm);
+	assert(statnorm > 1e-12);	
+	assert(diffnorm > 1e-12);
 }
 
 //------------------------------------------------------------------
@@ -132,7 +202,6 @@ void testGMRES(RCP<Epetra_Comm> Comm)
 		
 	// Create Atmosphere object
 	Atmosphere atmos(atmosphereParams);
-
 	
 	atmos.computeJacobian();
 	atmos.computeRHS();
@@ -194,8 +263,7 @@ void testIDR(RCP<Epetra_Comm> Comm)
 	std::cout << " norm x: " << x->norm() << std::endl;
 	b->info();
 	std::cout << " norm b: " << b->norm() << std::endl;
-	b->scale(-1.0);	
-		
+	b->scale(-1.0);			
 
 	// Create parameter object for IDRSolver
 	RCP<Teuchos::ParameterList> solverPars = rcp(new Teuchos::ParameterList);
@@ -225,7 +293,7 @@ void testOcean(RCP<Epetra_Comm> Comm)
 	//------------------------------------------------------------------
 	// Create parameter object for Ocean
 	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+	updateParametersFromXmlFile("oceanparams.xml", oceanParams.ptr());
 
 	// Create parallelized Ocean object
 	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
@@ -297,7 +365,7 @@ void testCoupling(RCP<Epetra_Comm> Comm)
 	//------------------------------------------------------------------
 	// Create parameter object for Ocean
 	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+	updateParametersFromXmlFile("oceanparams.xml", oceanParams.ptr());
 
 	// Create parallelized Ocean object
 	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));

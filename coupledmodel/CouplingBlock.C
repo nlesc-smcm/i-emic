@@ -21,12 +21,30 @@ CouplingBlock::CouplingBlock(std::string const &coupling,
 	col_ind_    (col_ind),
 	initialized_(false)
 {
+	unique_row_ind_ = find_unique(row_ind);
+	unique_col_ind_ = find_unique(col_ind);
 }
 
 //------------------------------------------------------------------
 // default constructor
 void CouplingBlock::initialize()
 {
+}
+
+//------------------------------------------------------------------
+std::vector<int> CouplingBlock::find_unique(std::vector<int> const &in)
+{
+	int max = *std::max_element(in.begin(), in.end());
+	std::vector<int> tmp(max+1, 0);
+	for (auto &i: in)
+		tmp[i] = 1;
+
+	std::vector<int> out;
+	for (int i = 0; i != (int) tmp.size(); ++i)
+		if (tmp[i])
+			out.push_back(i);
+	
+	return out;		
 }
 
 //------------------------------------------------------------------
@@ -38,7 +56,7 @@ void CouplingBlock::initializeOA(Epetra_BlockMap const &map)
 	restrVec_  = Teuchos::rcp(new Epetra_Vector(*indexMap_));
 	restrImp_  = Teuchos::rcp(new Epetra_Import(*indexMap_, map));
 	gatherImp_ = Teuchos::rcp(new Epetra_Import(*gatherMap_, *indexMap_));
-	gathered_  = Teuchos::rcp(new Epetra_MultiVector(*gatherMap_, 1));							  
+	gathered_  = Teuchos::rcp(new Epetra_MultiVector(*gatherMap_, 1));
 
 	initialized_ = true;
 }
@@ -46,7 +64,8 @@ void CouplingBlock::initializeOA(Epetra_BlockMap const &map)
 //------------------------------------------------------------------
 void CouplingBlock::initializeAO()
 {
-	
+	// I don't believe we need any initializing here
+	initialized_ = true;
 }
 
 //------------------------------------------------------------------
@@ -88,15 +107,10 @@ void CouplingBlock::applyOA(SuperVector const &in, SuperVector &out)
 		initializeOA(in.getOceanVector()->Map());
 	
 	// obtain restricted vector
-	TIMER_START("CouplingBlock: applyOA restrict vector");
 	restrVec_->Import(*in.getOceanVector(), *restrImp_, Insert);
-	TIMER_STOP("CouplingBlock: applyOA restrict vector");
-	
-	// gather the restricted vector
-	TIMER_START("CouplingBlock: applyOA gather");
-	// gathered_ = Utils::AllGather(*restrVec_);
+
+	// gather vector
 	gathered_->Import(*restrVec_, *gatherImp_, Insert);
-	TIMER_STOP("CouplingBlock: applyOA gather");
 
 	// get the ocean values
 	std::vector<double> oceanValues(col_ind_.size(), 0.0);
@@ -109,15 +123,34 @@ void CouplingBlock::applyOA(SuperVector const &in, SuperVector &out)
 	for (size_t i = 0; i != values_.size(); ++i)
 		(*result)[row_ind_[i]] += values_[i] * oceanValues[i]; 
 
-	// this is wrong
-	// instead of fullSol[i] we nee fullSol[restricted_col_ind_[i]]
+	// the above is wrong
+	// instead of oceanValues[i] we nee oceanValues[restricted_col_ind_[i]]
+	
 	TIMER_STOP("CouplingBlock: applyOA");
 }
 
 //------------------------------------------------------------------
-void CouplingBlock::applyAO(SuperVector const &v, SuperVector &out)
+void CouplingBlock::applyAO(SuperVector const &in, SuperVector &out)
 {
+	TIMER_START("CouplingBlock: applyAO");
 	
+	if (!initialized_) // initialize
+		initializeAO();
+	
+	out.zeroOcean();
+
+	std::vector<double> result(values_.size(),0.0);
+	std::shared_ptr<std::vector<double> > atmosValues =	in.getAtmosVector();
+	
+	// we need a restricted_row_ind_[i] in result[i]
+	for (size_t i = 0; i != values_.size(); ++i)
+		result[i] += values_[i] * (*atmosValues)[col_ind_[i]];
+
+	out.getOceanVector()->ReplaceGlobalValues(
+		atmosValues->size(),
+		&result[0], &row_ind_[0]);
+	
+	TIMER_STOP("CouplingBlock: applyAO");
 }
 
 //------------------------------------------------------------------
