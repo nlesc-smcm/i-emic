@@ -426,10 +426,10 @@ newtonCorrector()
 		
 		model_->solve(R);
 		z = model_->getSolution('C');
-
+		
 		if (scaleRHS_) // experimental
 			z->scale(1.0 / rscale);
-
+		
 		// Determine the directions.....................................
 		// First for the parameter:
 		if (newtChordHybr_)
@@ -636,6 +636,7 @@ void Continuation<Model, ParameterList>::
 reset()
 {
 	rhsView_->print("failed_rhs"); // Print failed residual
+	model_->getSolution('V')->print("failed_sol"); // Print failed solution
 	INFO("***********************************************");
 	INFO("Continuation: reset... ");	
 	INFO("|                step: " << step_);
