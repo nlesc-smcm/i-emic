@@ -141,7 +141,7 @@ step()
 		createTangent('E');			
 		
 		// Let the model do some administrative work at the end of a succesful step 
-		model_->postProcess();	   		
+		model_->postProcess();
 	}
 	TIMER_STOP("Continuation: step");
 	return 0; // Exiting normally
@@ -768,7 +768,7 @@ info()
 	{
 		INFO("             step:  " << step_);
 	}
-	
+
 	INFO("            ||x||:  " << stateView_->norm());
 	INFO("      ||d/ds(x)||:  " << stateDot_->norm());
 	INFO("     newton iters:  " << newtonIter_);
