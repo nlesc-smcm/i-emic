@@ -1,8 +1,7 @@
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
 surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
-%resa = importdata('failed_rhs.atmos');
-%reso = importdata('failed_rhs.ocean');
-%reso = reso(:,3);
+resa = load('failed_rhs.atmos');
+reso = load('failed_rhs.ocean');
 
 norm(reso)
 norm(resa)
@@ -26,12 +25,18 @@ for j = 1:m
 	Ta(m-j+1,i) = resa(i + (j-1)*m);
   end
 end
-
-[j,i] = find(To==max(max(To)));
+mx = max(max(abs(To)));
+[j,i] = find(abs(To) == mx);
 fprintf('maximum in To at i=%d, j=%d\n', i, m+1-j);
 
-subplot(4,1,1); imagesc(To); title('surface temperature residual'); colorbar
-hold on; contour(1e-4*LM,5); hold off
-subplot(4,1,2); imagesc(TL); title(['temperature residual in layer ', num2str(L)]); colorbar
-subplot(4,1,3); imagesc(So); title('surface salinity residual');  colorbar
-subplot(4,1,4); imagesc(Ta); title('atmosphere temperature residual');colorbar
+figure(1); imagesc(To); title('surface temperature residual'); colorbar
+hold on; contour(mx*LM,2); hold off
+figure(2); imagesc(TL); title(['temperature residual in layer ', num2str(L)]); colorbar
+mx = max(max(abs(TL)));
+hold on; contour(mx*LM,2); hold off
+figure(3); imagesc(So); title('surface salinity residual');  colorbar
+mx = max(max(abs(So)));
+hold on; contour(mx*LM,2); hold off
+figure(4); imagesc(Ta); title('atmosphere temperature residual');colorbar
+mx = max(max(abs(Ta)));
+hold on; contour(mx*LM,2); hold off
