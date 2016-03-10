@@ -33,6 +33,5 @@ fprintf('maximum in To at i=%d, j=%d\n', i, m+1-j);
 subplot(4,1,1); imagesc(To); title('surface temperature residual'); colorbar
 hold on; contour(1e-4*LM,5); hold off
 subplot(4,1,2); imagesc(TL); title(['temperature residual in layer ', num2str(L)]); colorbar
-subplot(4,1,3); imagesc(So); title('surface salinity residual'); colorbar
+subplot(4,1,3); imagesc(So); title('surface salinity residual');  colorbar
 subplot(4,1,4); imagesc(Ta); title('atmosphere temperature residual');colorbar
-
