@@ -284,7 +284,7 @@
 !
             if (weight.eq.0) then
                nmis = nmis + 1
-!w               write(f99,*)'levitus miss at :',k,i,j, nmis
+               write(*,*)'levitus miss at :',k,i,j, nmis
                iilow  = iilow - 1
                jjlow  = jjlow - 1
                iihigh = iihigh + 1
