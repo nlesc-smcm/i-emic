@@ -555,11 +555,23 @@ void SuperVector::print(std::string const filename) const
 	if (haveOceanVector_)
 	{
 		ocean_fname << filename << ".ocean";
-		INFO(" printing to " << ocean_fname.str());
 		std::ofstream ocean_ofstream;
-		ocean_ofstream.open(ocean_fname.str());		
-		(*Utils::AllGather(*oceanVector_))(0)->Print(ocean_ofstream);
-		ocean_ofstream.close();
+		ocean_ofstream.open(ocean_fname.str());
+		
+		Teuchos::RCP<Epetra_MultiVector> oceang =
+			Utils::Gather(*oceanVector_, 0);
+		
+		std::vector<double> vecArray(oceang->GlobalLength(), 0.0);
+
+		if (oceanVector_->Map().Comm().MyPID() == 0)
+		{
+			INFO(" printing to " << ocean_fname.str());
+			(*oceang)(0)->ExtractCopy(&vecArray[0]);
+			for (auto &it : vecArray)
+				ocean_ofstream << std::setprecision(12) << it << '\n';
+
+			ocean_ofstream.close();	
+		}
 	}
 		
 	if (haveAtmosVector_)
