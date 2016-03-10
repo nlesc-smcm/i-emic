@@ -628,10 +628,6 @@ void CoupledModel::postProcess()
 	if (solvingScheme_ == 'D')
 		synchronize();
 
-	// At this point we should be interested in the residual:
-	INFO("CoupledModel: postprocess, printing residual")
-	rhsView_->print("residual");
-
 	// Let the models do their own post-processing as well	
 	ocean_->postProcess();
 	atmos_->postProcess();

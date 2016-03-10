@@ -130,6 +130,10 @@ step()
 	}
 	else          // Success
 	{
+		// Print the residual and last solution from linear solve
+		rhsView_->print("residual");
+		model_->getSolution('V')->print("solution"); 
+		
 		// Put the parameter and norm of the state in the history
 		parHist_.push_back(par_);
 		stateNormHist_.push_back(stateView_->norm());
