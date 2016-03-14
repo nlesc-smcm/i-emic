@@ -30,7 +30,7 @@ protected:
   
 	Singleton(Teuchos::RCP<T> inst)
 		{
-			DEBUG("Singleton constructor...");
+			INFO("Singleton constructor");
 			if (instance != Teuchos::null)
 			{
 				INFO("Warning: re-instantiating singleton object");
@@ -40,7 +40,7 @@ protected:
 	
 	virtual ~Singleton()
 		{
-			DEBUG("Destroy Singleton");
+			INFO("Singleton destructor");
 		}
 	
 	static Teuchos::RCP<T> instance;

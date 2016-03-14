@@ -45,7 +45,7 @@ main: $(OBJLIBS)  main.o
 	$(CXX) main.o -o main $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 test: $(OBJLIBS) test.o
-	$(CXX) test.o -o test $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
+	$(CXX) test.o -o test $(LIBRARY_DIRS) $(INTLIBS) $(LIBS) -lgtest -lpthread
 
 test_ocean: $(OBJLIBS) test_ocean.o 
 	$(CXX) test_ocean.o -o test_ocean $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)

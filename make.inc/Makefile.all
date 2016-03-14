@@ -69,17 +69,18 @@ PATH_LIB_MRILUCPP = $(PROJECT_BASE)/mrilucpp
 INCLUDE_DIRS =	-I$(PROJECT_BASE)/supervector\
                 -I$(PROJECT_BASE)/multiarray\
                 -I$(PROJECT_BASE)/ocean\
-	 	-I$(PROJECT_BASE)/newton\
-		-I$(PROJECT_BASE)/thetastepper\
-         	-I$(PROJECT_BASE)/continuation\
-		-I$(PROJECT_BASE)/idrsolver\
-	        -I$(PROJECT_BASE)/gmressolver\
-		-I$(PROJECT_BASE)/atmosphere\
-		-I$(PROJECT_BASE)/coupledmodel\
-		-I$(PROJECT_BASE)/supervector\
-		-I$(PROJECT_BASE)/mrilucpp\
-		-I$(MRILUDIR)/mod\
-        	${INCLUDE_DIRS_TRI}
+				-I$(PROJECT_BASE)/newton\
+				-I$(PROJECT_BASE)/thetastepper\
+				-I$(PROJECT_BASE)/continuation\
+				-I$(PROJECT_BASE)/idrsolver\
+				-I$(PROJECT_BASE)/gmressolver\
+				-I$(PROJECT_BASE)/atmosphere\
+				-I$(PROJECT_BASE)/coupledmodel\
+				-I$(PROJECT_BASE)/supervector\
+				-I$(PROJECT_BASE)/mrilucpp\
+				-I$(MRILUDIR)/mod\
+                  ${INCLUDE_DIRS_TRI}\
+				-I$(GTEST_INC)
 
 ##------------------------------------------------------------------
 ##   Gather all the library directories:
@@ -89,4 +90,5 @@ LIBRARY_DIRS =  -L$(PATH_LIB_OCEAN)\
 			    -L$(PATH_LIB_SUPERVEC)\
 			    -L$(PATH_LIB_MRILUCPP)\
 				-L$(MRILUDIR)/lib\
-		          $(LIBRARY_DIRS_TRI)
+		          $(LIBRARY_DIRS_TRI)\
+				-L$(GTEST_LIB)

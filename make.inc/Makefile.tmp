@@ -14,6 +14,10 @@ TRIVERSION   = 11.12
 TRIDIR       = /var/tmp/trilinos/${TRIVERSION}
 ##   MRILU directory containing lib and mod subfolders
 MRILUDIR     = /var/tmp/mrilu/
+##   Google test library directory
+GTEST_LIB    = /var/tmp/lib
+##   Google test include directory
+GTEST_INC    = /var/tmp/include
 ##   Project base directory
 PROJECT_BASE = /var/tmp/i-emic
 ##   Make flags
