@@ -11,6 +11,7 @@ function [profile] = plot_profile(filename, range, start)
 
   if nargin < 3
       domain = 1:N;
+	  start = 1;
       if nargin < 2
           range = 1:M;
       end
@@ -60,10 +61,16 @@ function [profile] = plot_profile(filename, range, start)
 %   hold off
   figure(9)
   hold off
+  xlabel('#procs');
+  ylabel('time');
+  exportfig('profile1.eps',10,[24,12]);
+  
   figure(10) 
   legend(profile.textdata(range),'location','northwest');
   plot(x_axis(domain), 2.^(0:numel(domain)-1), 'k--')
   hold off
- 
-    
+  xlabel('#procs');
+  ylabel('speedup');
+  exportfig('profile2.eps',10,[24,12]);
+  
 end

@@ -89,8 +89,8 @@ namespace TRIOS
 			}
 			t1--;
 		}
-
-		INFO("+++ 2D Domain decomposition +++");
+		
+		INFO("\n+++ 2D Domain decomposition +++");
 		INFO(" factoring, np = " << nprocs);
 		INFO("  n = "   << n);
 		INFO("  m = "   << m);

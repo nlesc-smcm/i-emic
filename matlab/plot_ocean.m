@@ -212,6 +212,7 @@ if glbl
   end
   set(gca,'xticklabel',xtl2);
 end
+exportfig('sst.eps',10,[50,25])
 
 %% -------------------------------------------------------
 figure(4)
@@ -220,7 +221,7 @@ colorbar
 title('Temperature')
 xlabel('Latitude')
 ylabel('z (m)')
-exportfig('isothermals.eps')
+exportfig('isothermals.eps',10,[20,7])
 
 if atlantic
   figure(5)
@@ -229,7 +230,7 @@ if atlantic
   title('Atlantic temperature')
   xlabel('Latitude')
   ylabel('z (m)')
-  exportfig('atl_isothermals.eps')
+  exportfig('atl_isothermals.eps',10,[20,7])
 end
 
 %%
@@ -240,7 +241,7 @@ colorbar
 title('Isohalines')
 xlabel('Latitude')
 ylabel('z (m)')
-exportfig('isopycnals.eps')
+exportfig('isopycnals.eps',10,[20,7])
 
 %%-----------------------------------------------------------------------------
 figure(7)
@@ -275,3 +276,4 @@ if glbl
   set(gca,'xticklabel',xtl2);
 end
 
+exportfig('sss.eps',10,[50,25])
