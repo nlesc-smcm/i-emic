@@ -685,7 +685,6 @@ THCM::~THCM()
 	delete [] coA;
 	delete [] begA;
 	delete [] coB;
-
 	// the rest is handled by Teuchos::rcp's
 }
 

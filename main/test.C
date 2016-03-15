@@ -87,10 +87,16 @@ void initializeEnvironment(int argc, char **argv)
 }
 
 //------------------------------------------------------------------
-// This is will function as a fixture for the test routines
-class IEMIC : public testing::Test
-{
+namespace // local (unnamed) namespace (similar to static in C)
+{	
+	RCP<Ocean>                    ocean;
+	std::shared_ptr<Atmosphere>   atmos;
+	std::shared_ptr<CoupledModel> coupledModel;
+}
 
+//------------------------------------------------------------------
+class IEMIC : public testing::Environment
+{
 public:
 	// constructor
 	IEMIC()
@@ -99,39 +105,34 @@ public:
 			RCP<Teuchos::ParameterList> oceanParams =
 				rcp(new Teuchos::ParameterList);
 			updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-			ocean_ = Teuchos::rcp(new Ocean(comm, oceanParams));
+			ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
 	
 			// Create Atmosphere object
 			RCP<Teuchos::ParameterList> atmosphereParams =
 				rcp(new Teuchos::ParameterList);
 			updateParametersFromXmlFile("atmosphere_params.xml",
 										atmosphereParams.ptr());
-			atmos_ = std::make_shared<Atmosphere>(atmosphereParams);
+			atmos = std::make_shared<Atmosphere>(atmosphereParams);
 		
 			// Create CoupledModel
 			RCP<Teuchos::ParameterList> coupledmodelParams =
 				rcp(new Teuchos::ParameterList);
 			updateParametersFromXmlFile("coupledmodel_params.xml",
 										coupledmodelParams.ptr());
-			coupledModel_ =
-				std::make_shared<CoupledModel>(ocean_, atmos_, coupledmodelParams);
-
+			coupledModel =
+				std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
 		}
-	
+
 	// destructor
 	~IEMIC()
 		{}
-	
-	RCP<Ocean>                    ocean_;
-	std::shared_ptr<Atmosphere>   atmos_;
-	std::shared_ptr<CoupledModel> coupledModel_;
 };
 
 //------------------------------------------------------------------
-TEST_F(IEMIC, AtmosphereView)
+TEST(IEMIC, AtmosphereView)
 {
-	SuperVector stateView = *atmos_->getState('V');
-	SuperVector stateCopy = *atmos_->getState('C');
+	SuperVector stateView = *atmos->getState('V');
+	SuperVector stateCopy = *atmos->getState('C');
 
 	double normView = stateView.norm();
 	double normCopy = stateCopy.norm();
@@ -140,10 +141,10 @@ TEST_F(IEMIC, AtmosphereView)
 }
 
 //------------------------------------------------------------------
-TEST_F(IEMIC, AtmosphereCopy)
+TEST(IEMIC, AtmosphereCopy)
 {
-	SuperVector stateView = *atmos_->getState('V');
-	SuperVector stateCopy = *atmos_->getState('C');
+	SuperVector stateView = *atmos->getState('V');
+	SuperVector stateCopy = *atmos->getState('C');
 
 	double normView = stateView.norm();
 	double normCopy = stateCopy.norm();
@@ -152,18 +153,18 @@ TEST_F(IEMIC, AtmosphereCopy)
 }
 
 //------------------------------------------------------------------
-TEST_F(IEMIC, CouplingBlock)
+TEST(IEMIC, CouplingBlock)
 {
 	std::vector<double> C12values;
 	std::vector<int>    C12rows;
 	std::vector<double> C21values;
 	std::vector<int>    C21rows;
 
-	ocean_->getAtmosBlock(C12values, C12rows);
-	atmos_->getOceanBlock(C21values, C21rows);
+	ocean->getAtmosBlock(C12values, C12rows);
+	atmos->getOceanBlock(C21values, C21rows);
 
-	SuperVector vec0(ocean_->getState('C')->getOceanVector(),
-					 atmos_->getState('C')->getAtmosVector());
+	SuperVector vec0(ocean->getState('C')->getOceanVector(),
+					 atmos->getState('C')->getAtmosVector());
 
 	SuperVector vec1(vec0);
 	SuperVector vec2(vec0);
@@ -184,24 +185,24 @@ int main(int argc, char **argv)
 {
 	// Initialize the environment:
 	initializeEnvironment(argc, argv);
-
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");
 
-	// -------------------------------------------------------
-	// TEST_FING 
 	::testing::InitGoogleTest(&argc, argv);
+	::testing::AddGlobalTestEnvironment(new IEMIC);
+	// -------------------------------------------------------
+	// TESTING 
 	int out = RUN_ALL_TESTS();
 	// -------------------------------------------------------
-
-	MPI_Finalize();
-	return out;
-}
-
-//------------------------------------------------------------------
-void testCouplingBlock()
-{
 	
-
+	// Get rid of possibly parallel objects:
+	ocean        = Teuchos::null;
+	atmos        = nullptr;
+	coupledModel = nullptr;
+	
+	comm->Barrier();
+	std::cout << "TEST exit code proc #" << comm->MyPID()
+			  << " " << out << std::endl;
+	MPI_Finalize();
+	return 0;
 }
-
