@@ -471,7 +471,14 @@ newtonCorrector()
 			if (status)
 				return 1; // exiting Newton when backtracking fails
 		}
-		
+
+		// if we see a drastic increase in |dx| we also quit the corrector
+		if (stateDir->norm() > 1e3 * state0->norm() && state0->norm() > 0)
+		{
+			WARNING("  |dx| = " << stateDir->norm()
+					<< " >> old |x| = " << state0->norm(), __FILE__, __LINE__);
+			return 1;
+		}				
 		
 		INFO("----------------------------------------------------------");
 		INFO("           Newton corrector    iter: " << newtonIter_ );
@@ -479,6 +486,8 @@ newtonCorrector()
 		INFO("                  previous residual: " << normRHS_);
 		INFO("                              ||R||: " << normRHStest_);
 		INFO("                             ||dx||: " << stateDir->norm());
+		INFO("                              ||x||: " << stateView_->norm());
+		INFO("                          old ||x||: " << state0->norm());
 		INFO("----------------------------------------------------------");
 		
 		if (normRHStest_ < practicalTol_) break;
@@ -588,29 +597,36 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 adjustStep()
 {
-	// we may need something like
-	//   if (newtonIter_ < 1.5 * work)
-	//       increase ds
-	//       work = newtonIter_
-	//   else
-	//       decrease ds
-	
 	if (secant_)  // Secant detection in process
 		return;   // Do nothing
 	
 	if (newtonIter_ < minAllowedIterations_)
 	{
 		INFO("\n      adjusting ds... ");
-		INFO("      old ds: " << ds_);
-		ds_ = SGN(ds_) * std::min(SGN(ds_) * ds_ * scale1_, dsMax_);
-		INFO("      new ds: " << ds_);
+		if (ds_ == dsMax_)
+		{
+			INFO("      ceiling found: " << ds_);
+		}
+		else
+		{
+			INFO("      old ds: " << ds_);
+			ds_ = SGN(ds_) * std::min(SGN(ds_) * ds_ * scale1_, dsMax_);
+			INFO("      new ds: " << ds_);
+		}
 	}
 	else if (newtonIter_ > maxAllowedIterations_)
 	{
 		INFO("      adjusting ds... ");
-		INFO("      old ds: " << ds_);
-		ds_ = SGN(ds_) * std::max(SGN(ds_) * ds_ / scale2_, dsMin_);
-		INFO("      new ds: " << ds_);
+		if (ds_ == dsMin_)
+		{
+			INFO("      floor found: " << ds_);
+		}
+		else
+		{
+			INFO("      old ds: " << ds_);
+			ds_ = SGN(ds_) * std::max(SGN(ds_) * ds_ / scale2_, dsMin_);
+			INFO("      new ds: " << ds_);
+		}
 	}
 }
 

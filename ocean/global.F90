@@ -229,7 +229,6 @@ contains
        x(i) = (real(i)-0.5)*dx + xmin
        xu(i)= (real(i)    )*dx + xmin
     ENDDO
-    write(*,*) "x=", x
     
     xu(0) = xmin
     DO j=1,m
@@ -249,6 +248,7 @@ contains
     ENDDO
     zw(0) = zmin
     !      dfzw(0) = dfdz(zmin,qz)
+
   end subroutine g_grid
 
   !! this is supposed to be called once by the root            

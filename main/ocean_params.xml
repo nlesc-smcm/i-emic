@@ -6,7 +6,7 @@
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
   <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Save state" type="bool" value="false"/>
+  <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean.h5" />
   <Parameter name="Output file" type="string" value="ocean.h5" />
 
@@ -28,13 +28,13 @@
     <!-- a descriptive name to identify the settings -->
     <Parameter name="Problem Description" type="string" value="test"/>
     <!-- western domain bound -->
-    <Parameter name="Global Bound xmin" type="double" value="310"/>
+    <Parameter name="Global Bound xmin" type="double" value="300"/>
     <!-- eastern domain bound -->
-    <Parameter name="Global Bound xmax" type="double" value="355"/>
+    <Parameter name="Global Bound xmax" type="double" value="340"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="10"/>
+    <Parameter name="Global Bound ymin" type="double" value="20"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="74"/>
+    <Parameter name="Global Bound ymax" type="double" value="60"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="0"/>
     <!-- depth of the ocean -->
@@ -63,25 +63,28 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_natl32"/>
+    <Parameter name="Land Mask" type="string" value="natl_290_355_10_80.mask"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
-    <Parameter name="Coupled Atmosphere" type="int" value="1"/>
+    <Parameter name="Coupled Atmosphere" type="int" value="0"/>
     <!-- =============================================================== -->
 	
     <!-- Starting Parameters -->
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-      <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+      <Parameter name="Solar Forcing"       type="double" value="0.0"/>
       <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
-      <Parameter name="Wind Forcing"        type="double" value="0.0"/>
-	  <Parameter name="Temperature Forcing" type="double" value="0.0"/>
+      <Parameter name="Wind Forcing"        type="double" value="1.0"/>
+	  <Parameter name="Temperature Forcing" type="double" value="1.0"/>
+	  <Parameter name="SPL1"                type="double" value="1.25"/>
+	  <Parameter name="SPL2"                type="double" value="0.01"/>	  
     </ParameterList>
 	
-    <!-- Mixing parameter (vmix_GLB in THCM) -->
-    <Parameter name="Mixing" type="int" value="1"/>
+    <!-- Mixing parameter (vmix_GLB in THCM)                                 -->
+	<!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely -->
+    <Parameter name="Mixing" type="int" value="2"/>
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>
     <!-- Taper (tap in usr.F90) -->
@@ -100,7 +103,7 @@
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->
-    <Parameter name="Levitus T" type="int" value="1"/>    
+    <Parameter name="Levitus T" type="int" value="0"/>    
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
     <Parameter name="Levitus S" type="int" value="0"/>
@@ -108,7 +111,7 @@
     <!-- 0: data,                         -->
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
-    <Parameter name="Wind Forcing" type="int" value="0"/>
+    <Parameter name="Wind Forcing" type="int" value="2"/>
     <!-- Type of scaling applied to the linear systems.                            -->
     <!-- We currently support "None" and "THCM"                                    -->
     <!-- "None" is not really recomended.                                          -->
