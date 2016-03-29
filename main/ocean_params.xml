@@ -6,7 +6,7 @@
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
   <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Save state" type="bool" value="true"/>
+  <Parameter name="Save state" type="bool" value="false"/>
   <Parameter name="Input file"  type="string" value="ocean.h5" />
   <Parameter name="Output file" type="string" value="ocean.h5" />
 
@@ -28,13 +28,13 @@
     <!-- a descriptive name to identify the settings -->
     <Parameter name="Problem Description" type="string" value="test"/>
     <!-- western domain bound -->
-    <Parameter name="Global Bound xmin" type="double" value="300"/>
+    <Parameter name="Global Bound xmin" type="double" value="290"/>
     <!-- eastern domain bound -->
-    <Parameter name="Global Bound xmax" type="double" value="340"/>
+    <Parameter name="Global Bound xmax" type="double" value="355"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="20"/>
+    <Parameter name="Global Bound ymin" type="double" value="10"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="60"/>
+    <Parameter name="Global Bound ymax" type="double" value="80"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="0"/>
     <!-- depth of the ocean -->
@@ -111,7 +111,7 @@
     <!-- 0: data,                         -->
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
-    <Parameter name="Wind Forcing" type="int" value="2"/>
+    <Parameter name="Wind Forcing" type="int" value="0"/>
     <!-- Type of scaling applied to the linear systems.                            -->
     <!-- We currently support "None" and "THCM"                                    -->
     <!-- "None" is not really recomended.                                          -->

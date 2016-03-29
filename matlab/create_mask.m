@@ -7,7 +7,7 @@ lonmin = 290;
 lonmax = 355;
 depth  = 4000;
 
-n = 40; m = 40; l = 8;
+n = 32; m = 32; l = 16;
 qz = 1; % Not sure what to do with qz (yet)
 periodic = false;
 
@@ -83,8 +83,10 @@ xlim([lonmin,lonmax]);
 ylim([latmin,latmax]);
 
 figure(3)
-pcolor(gridx,gridy,mask(:,:,1));
+pcolor(gridx,gridy,mask(:,:,12));
 xlim([lonmin,lonmax]);
 ylim([latmin,latmax]);
+
+
 
 

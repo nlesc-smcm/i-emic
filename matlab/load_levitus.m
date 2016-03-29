@@ -1,11 +1,11 @@
 %% For this to work you need to have libdap and loadapp and loadapp.m
 %% in the path.
 
-latmin = 10;
-latmax = 75;
-lonmin = 280;
+latmin = -80;
+latmax = 80;
+lonmin = 1;
 lonmax = 360;
-depth  = 4000;
+depth  = 5000;
 
 if ~exist('sal')
   loaddap('http://iridl.ldeo.columbia.edu/SOURCES/.LEVITUS94/.ANNUAL/.sal/dods')
@@ -22,7 +22,9 @@ end
 figure(1)
 S = sal.sal;
 S(S<-100) = NaN;
+find(S==max(max(max(S))))
 contourf(X,Y,squeeze(S(:,:,1)),100); colorbar
+%pcolor(X,Y,squeeze(S(:,:,1))); colorbar
 xlim([lonmin,lonmax])
 ylim([latmin,latmax])
 title('levitus salinity')

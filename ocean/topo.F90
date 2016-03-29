@@ -135,10 +135,6 @@ SUBROUTINE readmask
 10 continue      
   close(42)
 
-  write(f99,*) '===========TOPOGRAPHY=================='
-  write(f99,*) 'A specific mask is read in from unit 50 (file mkmask/'//trim(maskfile)//')'
-  write(f99,*) '===========TOPOGRAPHY=================='
-
   write(*,*) '===========TOPOGRAPHY==================================='
   write(*,*) 'land mask is read in from file mkmask/'//trim(maskfile)
   write(*,*) '===========TOPOGRAPHY==================================='
@@ -183,7 +179,7 @@ SUBROUTINE readmask
      do j = 1, m
         do k = l, 2,-1
            if ( landm(i,j,k).eq.LAND .and. landm(i,j,k-1).eq.OCEAN ) then
-              write(f99,*) 'land inversion at ',i,j,k
+              write(*,*) 'land inversion at ',i,j,k
               landm(i,j,k-1) = LAND
            endif
         enddo
@@ -203,11 +199,11 @@ SUBROUTINE readmask
   !rowintcon = find_row2(i,j,k,SS)
   rowintcon=-1
 
-  write(f99,*) '____',i,j,k, rowintcon,'____'
+  write(*,*) '____',i,j,k, rowintcon,'____'
   do k = 1, l
-     write(f99,*) '______________',z(k)*hdim,'__________________'
+     write(*,*) '______________',z(k)*hdim,'__________________'
      do j = m+1, 0, -1
-        write(f99,'(92i1)') landm(:,j,k)
+        write(*,'(92i1)') landm(:,j,k)
      enddo
   enddo
 
@@ -259,7 +255,7 @@ SUBROUTINE depth3land(depth)
      where( landm == WATER ) landm = LAND
      !rowintcon = find_row2(i,j,k,SS)
      rowintcon = -1
-     write(f99,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
+     write(*,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
      ! END CASE 0
   CASE(1) ! no continents  
      _DEBUG_('case 1: no continents')
@@ -268,7 +264,7 @@ SUBROUTINE depth3land(depth)
      k = l
      !rowintcon = find_row2(i,j,k,SS)
      rowintcon = -1
-     write(f99,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
+     write(*,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
      landm(1:n,1:m,1:l) = OCEAN
      !         landm(7:9,1:m,1:5) = LAND
      ! END CASE 1
@@ -278,7 +274,7 @@ SUBROUTINE depth3land(depth)
      k = l-1
      !rowintcon = find_row2(i,j,k,SS)
      rowintcon = -1
-     write(f99,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
+     write(*,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
      landm(1:n,1:m,1:l) = OCEAN
      !
      ph1 = 250*pi/180.
@@ -353,7 +349,7 @@ SUBROUTINE depth3land(depth)
      k = l
      !rowintcon = find_row2(i,j,k,SS)
      rowintcon = -1
-     write(f99,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
+     write(*,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
      landm(1:n,1:m,1:l) = OCEAN
      !     landm(18:20,3:14,1:l) = LAND
      landm(18:20,1:16,1:l) = LAND
@@ -364,7 +360,7 @@ SUBROUTINE depth3land(depth)
      k = l
      !rowintcon = find_row2(i,j,k,SS)
      rowintcon=-1
-     write(f99,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
+     write(*,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
      landm(1:n,1:m,1:l) = OCEAN
      !     landm(1:1,1:m,1:l) = LAND
      !     landm(n:n,1:m,1:l) = LAND
@@ -408,10 +404,10 @@ SUBROUTINE depth3land(depth)
         landm(  0,:,l+1) = PERIO
      end where
   endif
-  write(f99,*) '===========TOPOGRAPHY=================='
-  write(f99,10) itopo
-  write(f99,*) 'land mask is written to unit 77'
-  write(f99,*) '===========TOPOGRAPHY=================='
+  write(*,*) '===========TOPOGRAPHY=================='
+  write(*,10) itopo
+  write(*,*) 'land mask is written to unit 77'
+  write(*,*) '===========TOPOGRAPHY=================='
 
   open(77,FILE=rundir//'fort.77')
   do k = 0, l+la+1
@@ -480,11 +476,11 @@ subroutine fillbays
            enddo
         enddo
      enddo
-     write(f99,*)'fillbays, it : ',it,' number of edits: ',nedit
+     write(*,*)'fillbays, it : ',it,' number of edits: ',nedit
      if (nedit.eq.0) goto 100
   enddo
 100 continue
-  write(f99,*)'fillbays: ',it-1,' iterations'
+  write(*,*)'fillbays: ',it-1,' iterations'
 
 end subroutine fillbays
 !*****************************************************************
@@ -531,11 +527,11 @@ subroutine fillbays_old
            enddo
         enddo
      enddo
-     write(f99,*)'fillbays, it : ',it,' number of edits: ',nedit
+     write(*,*)'fillbays, it : ',it,' number of edits: ',nedit
      if (nedit.eq.0) goto 100
   enddo
 100 continue
-  write(f99,*)'fillbays: ',it-1,' iterations'
+  write(*,*)'fillbays: ',it-1,' iterations'
 
 end subroutine fillbays_old
 !******************************************************************

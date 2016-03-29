@@ -574,7 +574,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
 	rowintcon_=-1;
 #ifndef NO_INTCOND
-	if (sres==0)
+	if (sres == 0)
     {
 		int N=domain->GlobalN();
 		int M=domain->GlobalM();
@@ -1145,7 +1145,6 @@ void THCM::RecomputeScaling(void)
 //=============================================================================
 void THCM::normalizePressure(Epetra_Vector& soln) const
 {
-
 	int i = n/2-1;
 	int j = 6*m/8-1;
 	int k = l-1;
