@@ -8,6 +8,7 @@
 #include "ContinuationDecl.H"
 #include "GlobalDefinitions.H"
 #include <math.h> // pow(), sqrt()
+#include <ctime>
 #include <iomanip>
 //======================================================================
 //Constructor
@@ -772,9 +773,12 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 info()
 {
+	// get time of day
+	std::time_t result = std::time(0); // hope this works on intel
+	
 	INFO(std::setprecision(8));
 	INFO("-----------------------------------------");
-	INFO("Continuation summary ");
+	INFO("Continuation summary, " << std::asctime(std::localtime(&result))); 
 	INFO("        step size:  " << ds_);
 	INFO("  parameter value:  " << par_);
 	INFO("      destination:  " << parDest_);

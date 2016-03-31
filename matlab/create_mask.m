@@ -1,15 +1,15 @@
 %% For this to work you need to have libdap and loadapp and loadapp.m
 %% in the path.
 
-latmin = 10;
+latmin = -80;
 latmax = 80;
-lonmin = 290;
-lonmax = 355;
+lonmin = 0;
+lonmax = 360;
 depth  = 4000;
 
-n = 32; m = 32; l = 16;
+n = 180; m = 80; l = 12;
 qz = 1; % Not sure what to do with qz (yet)
-periodic = false;
+periodic = true;
 
 region    = 'natl'
 mask_name = sprintf('%s_%d_%d_%d_%d',region,lonmin,lonmax,latmin,latmax);
@@ -62,13 +62,16 @@ end
 
 save([mask_name,'.mat'], 'mask');
 
-%transform_mask(mask_name, periodic);
+smooth_mask(mask_name);
+
+transform_mask(mask_name, periodic);
 
 figure(1);
 %contourf(gridx,gridy,Tgrid(:,:,1)',10);
 pcolor(gridx,gridy,Tgrid(:,:,1)')
 xlim([lonmin,lonmax]);
 ylim([latmin,latmax]);
+title('interpolated T');
 
 
 figure(2)
@@ -81,12 +84,15 @@ djmax = max(d_j_arr);
 pcolor(X,Y,T(:,:,1));
 xlim([lonmin,lonmax]);
 ylim([latmin,latmax]);
+title('original T');
+
+M = load([mask_name, '.mat']);
+mask = M.mask;
 
 figure(3)
-pcolor(gridx,gridy,mask(:,:,12));
-xlim([lonmin,lonmax]);
-ylim([latmin,latmax]);
+pcolor(gridx,gridy,mask(:,:,1));
+title('mask level 1')
 
-
-
-
+figure(4)
+pcolor(gridx,gridy,mask(:,:,5));
+title('mask level 5')

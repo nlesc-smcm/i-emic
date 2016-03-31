@@ -241,6 +241,7 @@ colorbar
 title('Isohalines')
 xlabel('Latitude')
 ylabel('z (m)')
+
 exportfig('isopycnals.eps',10,[20,7])
 
 %%-----------------------------------------------------------------------------
