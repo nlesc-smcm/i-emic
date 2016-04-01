@@ -28,15 +28,15 @@
     <!-- a descriptive name to identify the settings -->
     <Parameter name="Problem Description" type="string" value="test"/>
     <!-- western domain bound -->
-    <Parameter name="Global Bound xmin" type="double" value="290"/>
+    <Parameter name="Global Bound xmin" type="double" value="0"/>
     <!-- eastern domain bound -->
-    <Parameter name="Global Bound xmax" type="double" value="355"/>
+    <Parameter name="Global Bound xmax" type="double" value="359.99"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="10"/>
+    <Parameter name="Global Bound ymin" type="double" value="-80"/>
     <!-- northern domain bound -->
     <Parameter name="Global Bound ymax" type="double" value="80"/>
     <!-- periodic boundary conditions in x-direction -->
-    <Parameter name="Periodic" type="bool" value="0"/>
+    <Parameter name="Periodic" type="bool" value="1"/>
     <!-- depth of the ocean -->
     <Parameter name="Depth hdim" type="double" value="4000"/>
     
@@ -45,11 +45,11 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="32"/>
+    <Parameter name="Global Grid-Size n" type="int" value="64"/>
     <!-- global number of grid points in y-direction -->
     <Parameter name="Global Grid-Size m" type="int" value="32"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="16"/>
+    <Parameter name="Global Grid-Size l" type="int" value="12"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
@@ -63,7 +63,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="natl_290_355_10_80.mask"/>
+    <Parameter name="Land Mask" type="string" value="global_0_360_-80_80_64_32_12.mask"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -75,9 +75,9 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-	  <Parameter name="Temperature Forcing" type="double" value="1.25"/>
+	  <Parameter name="Temperature Forcing" type="double" value="0.0"/>
 	  <Parameter name="SPL1"                type="double" value="1.25"/>
 	  <Parameter name="SPL2"                type="double" value="0.01"/>	  
     </ParameterList>
@@ -103,15 +103,15 @@
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->
-    <Parameter name="Levitus T" type="int" value="0"/>    
+    <Parameter name="Levitus T" type="int" value="1"/>    
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
-    <Parameter name="Levitus S" type="int" value="0"/>
+    <Parameter name="Levitus S" type="int" value="1"/>
     <!-- Wind Forcing (iza in THCM)       -->
     <!-- 0: data,                         -->
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
-    <Parameter name="Wind Forcing" type="int" value="0"/>
+    <Parameter name="Wind Forcing" type="int" value="2"/>
     <!-- Type of scaling applied to the linear systems.                            -->
     <!-- We currently support "None" and "THCM"                                    -->
     <!-- "None" is not really recomended.                                          -->

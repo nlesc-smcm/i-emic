@@ -104,20 +104,20 @@ public:
 			// Create parallel Ocean 
 			RCP<Teuchos::ParameterList> oceanParams =
 				rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+			updateParametersFromXmlFile("ocean_test.xml", oceanParams.ptr());
 			ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
 	
 			// Create Atmosphere object
 			RCP<Teuchos::ParameterList> atmosphereParams =
 				rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("atmosphere_params.xml",
+			updateParametersFromXmlFile("atmos_test.xml",
 										atmosphereParams.ptr());
 			atmos = std::make_shared<Atmosphere>(atmosphereParams);
 		
 			// Create CoupledModel
 			RCP<Teuchos::ParameterList> coupledmodelParams =
 				rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("coupledmodel_params.xml",
+			updateParametersFromXmlFile("coupledmodel_test.xml",
 										coupledmodelParams.ptr());
 			coupledModel =
 				std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
@@ -179,6 +179,34 @@ TEST(IEMIC, CouplingBlock)
 	EXPECT_EQ(3.14, vec0.norm());
 }
 
+//------------------------------------------------------------------
+TEST(IEMIC, OceanScaling)
+{
+	Teuchos::RCP<Epetra_Vector> rowScaling = ocean->getRowScaling();
+	Teuchos::RCP<Epetra_Vector> colScaling = ocean->getColScaling();
+	std::ofstream rowScalFile, colScalFile;
+	rowScalFile.open("rowscaling.txt");	
+	colScalFile.open("colscaling.txt");
+	Teuchos::RCP<Epetra_MultiVector> rowScalingGath = Utils::Gather(*rowScaling, 0);
+	Teuchos::RCP<Epetra_MultiVector> colScalingGath = Utils::Gather(*colScaling, 0);
+	std::vector<double> rowScalingVec(rowScaling->GlobalLength(), 0.0);
+	std::vector<double> colScalingVec(colScaling->GlobalLength(), 0.0);
+	if (rowScaling->Map().Comm().MyPID() == 0)
+	{
+		(*rowScalingGath)(0)->ExtractCopy(&rowScalingVec[0]);
+		(*colScalingGath)(0)->ExtractCopy(&colScalingVec[0]);
+
+		INFO("    ++++ printing rowscaling ++++");
+		for (auto &r : rowScalingVec)
+			rowScalFile << std::setprecision(12) << r << '\n';
+
+		INFO("    ++++ printing colscaling ++++");
+		for (auto &c : rowScalingVec)
+			colScalFile << std::setprecision(12) << c << '\n';
+	}
+
+	EXPECT_EQ(rowScaling->GlobalLength(), colScaling->GlobalLength());
+}
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)

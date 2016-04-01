@@ -207,14 +207,15 @@ public:
 	std::shared_ptr<std::vector<int> > getSurfaceMask() { return surfmask_; }
 
 	// ---------------------------------------------------------------
-	
 	// Scale the matrix and rhs of the problem
 	void scaleProblem(VectorPtr rhs = Teuchos::null);
 	void unscaleProblem(VectorPtr rhs = Teuchos::null);
+	Teuchos::RCP<Epetra_Vector> getRowScaling();
+	Teuchos::RCP<Epetra_Vector> getColScaling();
 
 	int loadState() { return loadStateFromFile(inputFile_); }
 	int saveState() { return saveStateToFile(outputFile_); }
-
+ 
 	void setParameters(Teuchos::RCP<Teuchos::ParameterList> pars);
 	
 private:

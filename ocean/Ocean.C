@@ -347,6 +347,8 @@ double Ocean::explicitResNorm(VectorPtr rhs)
 	return nrm;
 }
 
+
+
 //=====================================================================
 void Ocean::scaleProblem(VectorPtr rhs)
 {
@@ -439,6 +441,18 @@ void Ocean::unscaleProblem(VectorPtr rhs)
 	//sol_->Norm2(&nrm);
 	//DEBUG("Ocean::unscaleProblem() sol (after unscaling): " << nrm);
 	INFO("Ocean: unscale problem... done");
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getRowScaling()
+{
+	return THCM::Instance().getRowScaling();
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getColScaling()
+{
+	return THCM::Instance().getColScaling();
 }
 
 //=====================================================================
