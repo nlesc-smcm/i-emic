@@ -1,1 +1,0 @@
-../scripts/plotresidual.sh
