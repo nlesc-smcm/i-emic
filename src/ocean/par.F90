@@ -27,10 +27,11 @@ module m_par
 #elif defined(DESKTOP)
   character(len=*), parameter ::  topdir = '/home/erik/Projects/i-emic/data/'
   character(len=*), parameter ::  rundir = ''
-
-
+#elif defined(DATA_DIR)
+  character(len=*), parameter ::  topdir = DATA_DIR
+  character(len=*), parameter ::  rundir = ''
 #else
-#error no guess for working directory available!
+#error no guess for data directory available!
 #endif
   real,    parameter :: pi    =  3.14159265358979323846
   integer, parameter :: SLIP =  -1 ! noslip boundary SLIP = -1

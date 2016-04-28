@@ -1,10 +1,10 @@
 ##=================================================================
-## Makefile variables for my machine in Utrecht.
+## Makefile variables for my machine at home
 ## Author: T.E. Mulder => t.e.mulder@uu.nl
 ##=================================================================
 ##   Location specific variables:
 ##
-LOCATION     = DESKTOP
+LOCATION = DATA_DIR=\'/home/erik/Projects/i-emic/data/\'
 ##   Compiler identifier flag, options are
 ##   GNU, G95, INTEL, ASTER, ORBIT, HOPF, PGI and HUYGENS
 COMP_IDENT   = GNU
