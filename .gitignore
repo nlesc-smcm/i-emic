@@ -4,6 +4,7 @@
 !doc/
 !src/
 !idrsolver/
+!tests/
 !jdqzpp/
 !gmressolver/
 !supervector/
@@ -31,6 +32,8 @@
 !Makefile*
 !makefile*
 !Makefile.*
+
+!CMakeLists.*
 
 !*.m
 !*.xml
