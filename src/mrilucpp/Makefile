@@ -1,4 +1,4 @@
-include ${SHARED_DIR}/i-emic/make.inc/Makefile.${PLAT}
+include ../make.inc/Makefile.${PLAT}
 
 MRILU_LIBDIR=-L${MRILUDIR}/lib
 MRILU_MODDIR=-I${MRILUDIR}/mod
