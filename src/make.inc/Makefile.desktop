@@ -14,8 +14,12 @@ TRIVERSION   = 11.12
 TRIDIR       = /home/erik/trilinos/${TRIVERSION}
 ##   MRILU directory containing lib and mod subfolders
 MRILUDIR     = /home/erik/mrilu/x86_64_gfortran/
+##   Google test library directory
+GTEST_LIB    = /var/tmp/lib
+##   Google test include directory
+GTEST_INC    = /var/tmp/include
 ##   Project base directory
-PROJECT_BASE = /home/erik/Projects/i-emic
+PROJECT_BASE = /home/erik/Projects/i-emic/src
 ##   Make flags
 MFLAGS       = -j 2
 ##   Local compiler flags
