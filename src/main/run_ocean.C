@@ -33,6 +33,7 @@
 #include "THCMdefs.H"
 #include "IDRSolver.H"
 #include "GMRESSolver.H"
+#include "jdqz.H"
 
 #include "NumericalJacobian.H"
 
@@ -107,6 +108,10 @@ void testOcean(RCP<Epetra_Comm> Comm)
 	
 	// Run continuation
 	continuation.run();
+
+	// Calculate eigenvalues and eigenvectors
+	JDQZ_WRAPPER<Ocean> 
+	
 
 	//------------------------------------------------------------------
 	TIMER_STOP("Total time...");		

@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 2.8.12.2)
 
-add_executable(run_coupled coupled.C)
-add_executable(run_ocean ocean.C)
+add_executable(run_coupled run_coupled.C)
+add_executable(run_ocean run_ocean.C)
 
 set(MAIN_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
   ../thetastepper/
   ../newton/
   ../continuation/
+  ../jdqzpp/src
   )
 
 target_link_libraries(run_coupled PUBLIC ${I-EMIC_LIBS})

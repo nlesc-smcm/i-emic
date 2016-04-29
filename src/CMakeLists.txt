@@ -23,6 +23,12 @@ elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel") #ifort, icc
   set (COMP_IDENT INTEL)
 endif (CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 
+find_program(CCACHE_FOUND ccache)
+if(CCACHE_FOUND)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+endif(CCACHE_FOUND)
+
 include_directories(${Trilinos_INCLUDE_DIRS})
 include_directories(${Trilinos_TPL_INCLUDE_DIRS})
 
