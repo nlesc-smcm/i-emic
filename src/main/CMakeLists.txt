@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12.2)
 
-add_executable(main main.C)
+add_executable(run_coupled coupled.C)
+add_executable(run_ocean ocean.C)
 
 set(MAIN_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -9,8 +10,13 @@ set(MAIN_INCLUDE_DIRS
   ../continuation/
   )
 
-target_link_libraries(main PUBLIC ${I-EMIC_LIBS})
-target_link_libraries(main PUBLIC ${library_dependencies})
-target_include_directories(main PUBLIC ${MAIN_INCLUDE_DIRS})
-set_target_properties(main PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+target_link_libraries(run_coupled PUBLIC ${I-EMIC_LIBS})
+target_link_libraries(run_coupled PUBLIC ${library_dependencies})
+target_include_directories(run_coupled PUBLIC ${MAIN_INCLUDE_DIRS})
+
+target_link_libraries(run_ocean PUBLIC ${I-EMIC_LIBS})
+target_link_libraries(run_ocean PUBLIC ${library_dependencies})
+target_include_directories(run_ocean PUBLIC ${MAIN_INCLUDE_DIRS})
+
+install(TARGETS run_coupled DESTINATION bin)
+install(TARGETS run_ocean DESTINATION bin)

@@ -103,7 +103,7 @@ run()
 		detect();     // Detect special points
 		adjustStep(); // step size adjustment
 	}
-	INFO("---------Finished continuation run------------");
+	INFO("---------Finished continuation run--------------");
 	info();
 	modelInfo();
 	TIMER_STOP("Continuation: run");

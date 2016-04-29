@@ -7,8 +7,8 @@ DIRS =  \
 	$(PROJECT_BASE)/mrilucpp/\
 	$(PROJECT_BASE)/coupledmodel/\
 
-EXE     = main test test_ocean test_numjac
-OBJS    = main.o test.o test_ocean.o test_numjac
+EXE     = coupled ocean test test_numjac
+OBJS    = coupled.o ocean.o test.o test_numjac
 OBJLIBS = lib$(LIB_OCEAN).a\
 	  lib$(LIB_ATMOS).a\
 	  lib$(LIB_COUPLED).a\
@@ -39,16 +39,16 @@ INTLIBS = \
 	-l$(LIB_OCEAN)\
 	-l$(LIB_ATMOS)\
 
-all: main
+all: coupled
 
-main: $(OBJLIBS)  main.o
-	$(CXX) main.o -o main $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
+coupled: $(OBJLIBS)  coupled.o
+	$(CXX) coupled.o -o coupled $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
+
+ocean: $(OBJLIBS) ocean.o 
+	$(CXX) ocean.o -o ocean $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 test: $(OBJLIBS) test.o
 	$(CXX) test.o -o test $(LIBRARY_DIRS) $(INTLIBS) $(LIBS) -lgtest -lpthread
-
-test_ocean: $(OBJLIBS) test_ocean.o 
-	$(CXX) test_ocean.o -o test_ocean $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)
 
 test_numjac: $(OBJLIBS) test_numjac.o
 	$(CXX) test_numjac.o -o test_numjac $(LIBRARY_DIRS) $(INTLIBS) $(LIBS)

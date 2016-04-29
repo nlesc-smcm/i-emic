@@ -45,8 +45,10 @@ extern "C"
 #define DEBUG(s) 
 #endif
 
-#define CHECK_ZERO(funcall) {int ierr = funcall;						\
+#ifndef CHECK_ZERO
+# define CHECK_ZERO(funcall) {int ierr = funcall;						\
 		if (ierr) {std::cerr<<"Trilinos Error "<<ierr<<" returned from call "<<#funcall<<std::endl;}}
+#endif
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,9 +64,9 @@ extern "C"
 //       completely every time.
 
 Ifpack_MRILU::Ifpack_MRILU(Teuchos::RCP<Epetra_CrsMatrix> A, Teuchos::RCP<Epetra_Comm> comm_) : 
+	mrilu_id(0),
 	Matrix_(A),
 	comm(comm_),
-	mrilu_id(0),
 	is_initialized(false),is_computed(false)
 {  
 	string s1="MRILU(";
@@ -294,8 +296,8 @@ int Ifpack_MRILU::Initialize()
 		{
 			for (int j = beg[i]; j != beg[i+1]; ++j)
 			{
-				if ( (jco[idx] == i) && (std::abs(co[idx] - 1.0) > 1e-7) ||
-					 (jco[idx] != i) && (std::abs(co[idx])       > 1e-7)   )
+				if ( ((jco[idx] == i) && (std::abs(co[idx] - 1.0) > 1e-7)) ||
+					 ((jco[idx] != i) && (std::abs(co[idx])       > 1e-7))   )
 				{
 					is_identity = false;
 					break;
