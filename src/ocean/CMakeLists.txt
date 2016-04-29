@@ -9,7 +9,7 @@ set(FORTRAN_SOURCES assemble.F90 atm.F90 monthly.F90
 
 set(CPP_SOURCES Ocean.C THCM.C OceanGrid.C
   TRIOS_Domain.C TRIOS_BlockPreconditioner.C TRIOS_Saddlepoint.C
-  TRIOS_SolverFactory.C TRIOS_Static.C Utils.C)
+  TRIOS_SolverFactory.C TRIOS_Static.C)
 
 add_library(ocean ${FORTRAN_SOURCES} ${CPP_SOURCES})
 
@@ -17,6 +17,7 @@ set(OCEAN_INCLUDE_DIRS
   ../supervector/
   ../idrsolver/
   ../mrilucpp/
+  ../utils/
   )
 
 target_include_directories(ocean PUBLIC ${OCEAN_INCLUDE_DIRS})

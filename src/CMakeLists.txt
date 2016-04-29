@@ -62,6 +62,7 @@ set(I-EMIC_LIBS
   supervector
   ifpack_mrilu
   mrilucpp
+  utils
   )
 
 add_subdirectory(ocean)
@@ -69,4 +70,5 @@ add_subdirectory(mrilucpp)
 add_subdirectory(atmosphere)
 add_subdirectory(coupledmodel)
 add_subdirectory(supervector)
+add_subdirectory(utils)
 add_subdirectory(main)

@@ -110,8 +110,7 @@ void testOcean(RCP<Epetra_Comm> Comm)
 	continuation.run();
 
 	// Calculate eigenvalues and eigenvectors
-	JDQZ_WRAPPER<Ocean> 
-	
+	//JDQZInterface<Ocean> matrix;	
 
 	//------------------------------------------------------------------
 	TIMER_STOP("Total time...");		

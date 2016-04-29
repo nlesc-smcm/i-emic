@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
   
 set(ATMOSPHERE_INCLUDE_DIRS
   ../ocean/
+  ../utils/
   ../multiarray/
   ../supervector/
   ../gmressolver/

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12.2)
   
 set(SUPERVECTOR_INCLUDE_DIRS
+  ../utils/
   ../ocean/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
