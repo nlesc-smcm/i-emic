@@ -15,3 +15,5 @@ endif ()
 
 add_subdirectory(src)
 add_subdirectory(tests)
+
+message("-- Executable will be put in " ${CMAKE_BINARY_DIR})
