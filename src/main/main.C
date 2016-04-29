@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 	//  - output files
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
-
+	
 	runCoupledModel(Comm);
 
 	// print the profile

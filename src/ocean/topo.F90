@@ -25,7 +25,7 @@ SUBROUTINE topofit
 
   integer ido,ierr
 
-  _DEBUG_('enter topofit...')
+  _DEBUG_('entering topofit...')
 
   lwrk=4*n+nd+4
   liwrk=n+nd
