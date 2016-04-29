@@ -72,7 +72,7 @@ lib$(LIB_MRILUCPP).a: force_look
 	$(CXX) -c $(INCLUDE_DIRS) $(CXX_FLAGS) $(CXX_DB) $<
 
 clean:
-	-rm -f $(EXE) $(OBJS) $(OBJLIBS) fort.* *.txt \
+	-rm -f $(EXE) $(OBJS) $(OBJLIBS) fort.*  \
 	*.eps *.co *.jco *.beg *.rl *.info *~ dump *#
 	-for d in $(DIRS); do (cd $$d; $(MAKE) clean ); done
 

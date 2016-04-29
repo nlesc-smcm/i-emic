@@ -78,4 +78,4 @@ spf.o:         atm.o
 topo.o:        itplbv.o matetc.o global.o
 
 clean:
-	-rm -f *.o *.mod $(libname) *~ fort.* dump *.txt *#
+	-rm -f *.o *.mod $(libname) *~ fort.* dump *#
