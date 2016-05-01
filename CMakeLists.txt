@@ -4,7 +4,7 @@ project(i-emic)
 if (DEFINED ENV{SHARED_DIR})
   set(DATA_DIR "'$ENV{SHARED_DIR}/i-emic/data/'")
 else()
-  message (FATAL_ERROR "SHARED_DIR environment variable should be available")
+  message (FATAL_ERROR "SHARED_DIR environment variable should be available (absolute directory)")
 endif()
 
 message("-- Data is stored in: " ${DATA_DIR})
@@ -16,7 +16,6 @@ else ()
 endif ()
 
 add_subdirectory(src)
-add_subdirectory(tests)
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set (CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "default install path" FORCE )
