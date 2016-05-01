@@ -165,4 +165,11 @@ private:
 	double &operatorIndex(int index) const;
 	
 };
+
+class ComplexSuperVector
+{
+public:
+	
+};
+
 #endif
