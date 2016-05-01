@@ -11,6 +11,9 @@
 !mrilucpp/
 !parameters/
 !parameterfiles/
+!current/
+!default/
+!run/
 !matlab/
 !make.inc/
 !utils/
