@@ -104,8 +104,19 @@ void testSuperVec(RCP<Epetra_Comm> Comm)
 	std::shared_ptr<CoupledModel> coupledModel =
 		std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
 
-	
+	SuperVector x1 = *coupledModel->getSolution();
+	SuperVector x2 = *coupledModel->getSolution();
+	SuperVector y1 = *coupledModel->getSolution();
+	SuperVector y2 = *coupledModel->getSolution();
 
+	x1.putScalar(1.0);
+	x2.putScalar(2.0);
+	y1.putScalar(3.0);
+	y2.putScalar(4.0);
+
+	x1.info();
+
+	ComplexSuperVector z1(x1,y1);
 }
 
 //------------------------------------------------------------------

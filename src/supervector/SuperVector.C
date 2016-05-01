@@ -2,6 +2,7 @@
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
 #include <assert.h>
+#include <complex>
 #include "THCMdefs.H"
 
 //------------------------------------------------------------------
@@ -703,3 +704,71 @@ void SuperVector::info() const
 	std::cout << "  length          " << length_ << std::endl;
 	std::cout << "  norm            " << norm() << std::endl;
 }
+
+//==================================================================
+//==================================================================
+// ComplexSuperVector implementation:
+//-----------------------------------------------------------------
+// constructor 
+ComplexSuperVector::ComplexSuperVector()
+{
+	real_ = SuperVector();
+	imag_ = SuperVector();
+	real_.zero();
+	imag_.zero();		
+}
+
+//-----------------------------------------------------------------
+// constructor 
+ComplexSuperVector::ComplexSuperVector(SuperVector &real) 
+	:
+	real_(real)
+{
+	imag_ = SuperVector();
+	imag_.zero();
+}
+
+//------------------------------------------------------------------
+// constructor 
+ComplexSuperVector::ComplexSuperVector(SuperVector &real, SuperVector &imag)
+	:
+	real_(real),
+	imag_(imag)
+{}
+
+//------------------------------------------------------------------
+double ComplexSuperVector::norm() const
+{
+	return sqrt(dot(*this).real());
+}
+
+//------------------------------------------------------------------
+std::complex<double> ComplexSuperVector::dot(ComplexSuperVector const &other) const
+{
+	double rePart = real_.dot(other.real()) - imag_.dot(other.imag());
+	double imPart = imag_.dot(other.real()) + real_.dot(other.imag());
+	std::complex<double> result(rePart, -imPart);
+	return result;
+}
+
+//------------------------------------------------------------------
+void ComplexSuperVector::axpy(std::complex<double> a, ComplexSuperVector const &x)
+{}
+
+//------------------------------------------------------------------
+void ComplexSuperVector::axpby(std::complex<double> a, ComplexSuperVector const &x,
+		   std::complex<double> b)
+{}
+
+//------------------------------------------------------------------
+void ComplexSuperVector::scale(std::complex<double> a)
+{}
+
+//------------------------------------------------------------------
+void ComplexSuperVector::zero()
+{}
+
+//------------------------------------------------------------------
+void ComplexSuperVector::random()
+{}
+

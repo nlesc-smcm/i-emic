@@ -168,7 +168,27 @@ private:
 
 class ComplexSuperVector
 {
+	SuperVector real_;
+	SuperVector imag_;
+
 public:
+	
+	ComplexSuperVector();
+	ComplexSuperVector(SuperVector &real);
+	ComplexSuperVector(SuperVector &real, SuperVector &imag);
+
+	SuperVector const &real() const {return real_;}
+	SuperVector const &imag() const {return imag_;}
+
+	double norm() const;
+
+	std::complex<double> dot(ComplexSuperVector const &other) const;
+	void axpy(std::complex<double> a, ComplexSuperVector const &x);
+	void axpby(std::complex<double> a, ComplexSuperVector const &x,
+			   std::complex<double> b);
+	void scale(std::complex<double> a);
+	void zero();
+	void random();
 	
 };
 
