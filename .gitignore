@@ -13,6 +13,7 @@
 !parameterfiles/
 !current/
 !default/
+!tests/
 !run/
 !matlab/
 !make.inc/
