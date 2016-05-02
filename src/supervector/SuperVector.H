@@ -180,6 +180,9 @@ public:
 	ComplexSuperVector(SuperVector &real);
 	ComplexSuperVector(SuperVector &real, SuperVector &imag);
 
+	// Overloaded assignment operator
+	void operator=(ComplexSuperVector const &other);
+
 	SuperVector const &real() const {return real_;}
 	SuperVector const &imag() const {return imag_;}
 

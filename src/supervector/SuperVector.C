@@ -750,6 +750,14 @@ ComplexSuperVector::ComplexSuperVector(SuperVector &real, SuperVector &imag)
 }
 
 //------------------------------------------------------------------
+// Overloaded assignment operator
+void ComplexSuperVector::operator=(ComplexSuperVector const &other)
+{
+	real_ = other.real();
+	imag_ = other.imag();
+}
+
+//------------------------------------------------------------------
 double ComplexSuperVector::norm() const
 {
 	return sqrt(dot(*this).real());
@@ -784,16 +792,6 @@ void ComplexSuperVector::axpby(std::complex<double> a, ComplexSuperVector const 
 
 	scale(b);
 	axpy(a, x);
-	
-	// temp_ = real_;
-	
-	// real_.update( a.real(), x.real(), 1.0);
-	// real_.update(-a.imag(), x.imag(), 1.0);
-	// real_.update(-b.imag(), imag_, b.real());
-
-	// imag_.update( a.real(), x.imag(), 1.0);
-	// imag_.update( a.imag(), x.real(), 1.0);
-	// imag_.update( b.imag(), temp_, b.real());	
 }
 
 //------------------------------------------------------------------
