@@ -30,6 +30,8 @@
 #include "Atmosphere.H"
 #include "GlobalDefinitions.H"
 #include "THCMdefs.H"
+#include "JDQZInterface.H"
+#include "MyParameterList.H"
 
 #include "jdqz.H"
 
@@ -123,8 +125,9 @@ public:
 			RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
 			updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
 			
-			Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
-				continuation(coupledModel, continuationParams);
+			continuation = 
+				Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
+				(coupledModel, continuationParams);
 		}
 
 	// destructor
@@ -134,7 +137,55 @@ public:
 
 TEST(JDQZ, General)
 {
+	continuation.run();
+
+	coupledModel->printJacobian("testjac");
 	
+	SuperVector x = *coupledModel->getSolution();
+	SuperVector y = *coupledModel->getSolution();
+	x.zero(); y.zero();
+	ComplexSuperVector z(x, y);
+	ComplexSuperVector residue(x,y);
+	ComplexSuperVector tmp(x,y);
+
+	JDQZInterface<CoupledModel> matrix(*coupledModel);	
+
+	JDQZ<JDQZInterface<CoupledModel> > jdqz(matrix, z);
+	
+	std::map<std::string, double> list;	
+	list["Shift (real part)"]         = 0.0;
+	list["Number of eigenvalues"]     = 3;
+	list["Max size search space"]     = 20;
+	list["Min size search space"]     = 10;
+	list["Max JD iterations"]         = 200;
+	list["Tracking parameter"]        = 1e-8;
+	list["Criterion for Ritz values"] = 0;
+	list["Linear solver"]             = 1;
+	list["GMRES search space"]        = 20;		
+	MyParameterList params(list);
+	
+	jdqz.setParameters(params);
+	jdqz.printParameters();
+	jdqz.solve();
+
+	std::vector<ComplexSuperVector>    eivec = jdqz.getEigenVectors();
+	std::vector<std::complex<double> > alpha = jdqz.getAlpha();
+	std::vector<std::complex<double> > beta  = jdqz.getBeta();
+
+
+	for (int j = 0; j != jdqz.kmax(); ++j)
+	{
+		residue.zero();
+		tmp.zero();
+		matrix.AMUL(eivec[j], residue);
+		residue.scale(beta[j]);
+		matrix.BMUL(eivec[j], tmp);
+		residue.axpy(-alpha[j], tmp);
+		std::cout << "alpha: " <<  std::setw(20) << alpha[j]
+				  << " beta: " << std::setw(20) << beta[j]
+				  << " " << residue.norm() << std::endl;
+		
+	}
 }
 
 //------------------------------------------------------------------
@@ -161,5 +212,5 @@ int main(int argc, char **argv)
 	std::cout << "TEST exit code proc #" << comm->MyPID()
 			  << " " << out << std::endl;
 	MPI_Finalize();
-	return 0;
+	return out;
 }

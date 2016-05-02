@@ -123,6 +123,7 @@ public:
 	// decoupled mode 'D'
 	void applyMatrix(SuperVector const &v, SuperVector &out, char mode = 'C');
 	void applyPrecon(SuperVector const &v, SuperVector &out, char mode = 'C');
+	void applyMassMatrix(SuperVector const &v, SuperVector &out);
 
 	// these are deprecated
 	std::shared_ptr<SuperVector> applyMatrix(SuperVector const &v);

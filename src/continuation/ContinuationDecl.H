@@ -100,6 +100,10 @@ class Continuation
 	Storage storage_;
 	
 public:
+
+	// default constructor
+	Continuation(){};
+	
 	// constructor
 	Continuation(Model model, ParameterList pars);
 

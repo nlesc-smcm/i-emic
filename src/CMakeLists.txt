@@ -64,6 +64,7 @@ set(I-EMIC_LIBS
   ifpack_mrilu
   mrilucpp
   utils
+  jdqz_tools
   )
 
 add_subdirectory(ocean)
@@ -74,3 +75,4 @@ add_subdirectory(supervector)
 add_subdirectory(utils)
 add_subdirectory(main)
 add_subdirectory(tests)
+

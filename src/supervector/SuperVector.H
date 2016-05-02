@@ -185,6 +185,9 @@ public:
 
 	SuperVector const &real() const {return real_;}
 	SuperVector const &imag() const {return imag_;}
+	SuperVector &real() {return real_;}
+	SuperVector &imag() {return imag_;}
+
 
 	int length() const {return real_.length();}
 	
