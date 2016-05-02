@@ -172,9 +172,10 @@ class ComplexSuperVector
 {
 	SuperVector real_;
 	SuperVector imag_;
+	SuperVector temp_;
 
 public:
-	
+
 	ComplexSuperVector();
 	ComplexSuperVector(SuperVector &real);
 	ComplexSuperVector(SuperVector &real, SuperVector &imag);
@@ -182,6 +183,8 @@ public:
 	SuperVector const &real() const {return real_;}
 	SuperVector const &imag() const {return imag_;}
 
+	int length() const {return real_.length();}
+	
 	double norm() const;
 
 	std::complex<double> dot(ComplexSuperVector const &other) const;
@@ -191,6 +194,8 @@ public:
 	void scale(std::complex<double> a);
 	void zero();
 	void random();
+
+	void print(){real_.print(); imag_.print();}
 	
 };
 

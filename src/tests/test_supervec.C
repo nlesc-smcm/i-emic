@@ -135,10 +135,78 @@ TEST(SuperVector, ComplexDot)
 
 	ComplexSuperVector z1(x1,y1);
 	ComplexSuperVector z2(x2,y2);
-
+	
 	std::complex<double> result = z1.dot(z2);
 	EXPECT_EQ(result.real(),43904);
 	EXPECT_EQ(result.imag(),-6272);
+}
+
+//------------------------------------------------------------------
+TEST(SuperVector, Axpy)
+{
+	SuperVector x1 = *coupledModel->getSolution();
+	SuperVector x2 = *coupledModel->getSolution();
+	SuperVector y1 = *coupledModel->getSolution();
+	SuperVector y2 = *coupledModel->getSolution();
+
+	x1.putScalar(-1.0);
+	x2.putScalar( 1.0);
+	y1.putScalar( 2.0);
+	y2.putScalar( 5.0);
+
+	ComplexSuperVector z1(x1,y1);
+	ComplexSuperVector z2(x2,y2);
+
+	std::complex<double> a(4,-2);
+
+	z1.axpy(a, z2);
+	EXPECT_NEAR(z1.norm(), 1.33580836949017e+03, 1e-10);
+	EXPECT_EQ(z1.real()[z1.length()-1],13);
+	EXPECT_EQ(z1.imag()[z1.length()-1],20);
+}
+
+//------------------------------------------------------------------
+TEST(SuperVector, Axpby)
+{
+	SuperVector x1 = *coupledModel->getSolution();
+	SuperVector x2 = *coupledModel->getSolution();
+	SuperVector y1 = *coupledModel->getSolution();
+	SuperVector y2 = *coupledModel->getSolution();
+
+	x1.putScalar(-1.0);
+	x2.putScalar( 1.0);
+	y1.putScalar( 2.0);
+	y2.putScalar( 5.0);
+
+	ComplexSuperVector z1(x1,y1);
+	ComplexSuperVector z2(x2,y2);
+
+	std::complex<double> a(4,-2);
+	std::complex<double> b(6,-4);	
+
+	z1.axpby(a, z2, b);
+	EXPECT_NEAR(z1.norm(), 2.104288953542265e+03, 1e-10);
+	// EXPECT_EQ(z1.real()[z1.length()-1],13);
+	// EXPECT_EQ(z1.imag()[z1.length()-1],20);
+}
+
+//------------------------------------------------------------------
+TEST(SuperVector, Scale)
+{
+	SuperVector x1 = *coupledModel->getSolution();
+	SuperVector y1 = *coupledModel->getSolution();
+
+	x1.putScalar(-1.0);
+	y1.putScalar( 2.0);
+
+	ComplexSuperVector z1(x1,y1);
+
+	std::complex<double> a(4,-2);
+
+	z1.scale(a);
+	EXPECT_EQ(z1.norm(), 560);
+	EXPECT_EQ(z1.real()[z1.length()-1],0);
+	EXPECT_EQ(z1.imag()[z1.length()-1],10);
 }
 
 //------------------------------------------------------------------

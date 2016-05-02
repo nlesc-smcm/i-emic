@@ -719,18 +719,22 @@ ComplexSuperVector::ComplexSuperVector()
 {
 	real_ = SuperVector();
 	imag_ = SuperVector();
+	temp_ = SuperVector();
 	real_.zero();
-	imag_.zero();		
+	imag_.zero();
+	temp_.zero();
 }
 
 //-----------------------------------------------------------------
 // constructor 
 ComplexSuperVector::ComplexSuperVector(SuperVector &real) 
 	:
-	real_(real)
+	real_(real),
+	imag_(real)
 {
-	imag_ = SuperVector();
 	imag_.zero();
+	temp_ = SuperVector();
+	temp_.zero();
 }
 
 //------------------------------------------------------------------
@@ -739,7 +743,11 @@ ComplexSuperVector::ComplexSuperVector(SuperVector &real, SuperVector &imag)
 	:
 	real_(real),
 	imag_(imag)
-{}
+{
+	assert(real.length() == imag.length());
+	temp_ = SuperVector();
+	temp_.zero();
+}
 
 //------------------------------------------------------------------
 double ComplexSuperVector::norm() const
@@ -758,22 +766,55 @@ std::complex<double> ComplexSuperVector::dot(ComplexSuperVector const &other) co
 
 //------------------------------------------------------------------
 void ComplexSuperVector::axpy(std::complex<double> a, ComplexSuperVector const &x)
-{}
+{
+	assert(this->length() == x.length());
+
+	real_.update( a.real(), x.real(), 1.0);
+	real_.update(-a.imag(), x.imag(), 1.0);
+
+	imag_.update( a.imag(), x.real(), 1.0);
+	imag_.update( a.real(), x.imag(), 1.0);
+}
 
 //------------------------------------------------------------------
 void ComplexSuperVector::axpby(std::complex<double> a, ComplexSuperVector const &x,
-		   std::complex<double> b)
-{}
+							   std::complex<double> b)
+{
+	assert(this->length() == x.length());
+
+	scale(b);
+	axpy(a, x);
+	
+	// temp_ = real_;
+	
+	// real_.update( a.real(), x.real(), 1.0);
+	// real_.update(-a.imag(), x.imag(), 1.0);
+	// real_.update(-b.imag(), imag_, b.real());
+
+	// imag_.update( a.real(), x.imag(), 1.0);
+	// imag_.update( a.imag(), x.real(), 1.0);
+	// imag_.update( b.imag(), temp_, b.real());	
+}
 
 //------------------------------------------------------------------
 void ComplexSuperVector::scale(std::complex<double> a)
-{}
+{
+	temp_ = real_;
+	real_.update(-a.imag(), imag_,  a.real());
+	imag_.update( a.imag(), temp_,  a.real());
+}
 
 //------------------------------------------------------------------
 void ComplexSuperVector::zero()
-{}
+{
+	real_.zero();
+	imag_.zero();
+}
 
 //------------------------------------------------------------------
 void ComplexSuperVector::random()
-{}
+{
+	real_.random(); // random values in [-1,1]
+	imag_.zero();   // not putting this to random (for now)
+}
 

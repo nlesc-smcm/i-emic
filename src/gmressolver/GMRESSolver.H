@@ -131,13 +131,13 @@ solve()
 	std::vector<Vector> Z(m_+1, Vector()); // for FGMRES
 	std::vector<Vector> V(m_+1, Vector()); 
 	int spaceSize;	// keeping track of the size of Z,V
-
+	
 	while (iter_ <= maxit_)
 	{
 		xCopy_ = *x_; // initialize local copy
 		beta   = r.norm();
 		r.scale(1.0 / beta);
-
+		
 		V[0] = r;
 		
 		s.assign(m_+1, 0.0);
