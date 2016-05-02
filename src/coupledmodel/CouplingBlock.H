@@ -52,7 +52,7 @@ public:
 // Destructor
 	~CouplingBlock()
 		{
-			INFO("CouplingBlock destructor called");
+			INFO("CouplingBlock destructor");
 		};
 
 // Fill our storage

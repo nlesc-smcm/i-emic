@@ -22,7 +22,7 @@ template<typename Model, typename ParameterList>
 class Continuation
 {
 	using Vector = typename Model::element_type::VectorPtr;
-	Model  model_;
+	Model model_;
 	
 	Vector stateCopy_; // copy of the state in the model
 	Vector stateView_; // view of the state

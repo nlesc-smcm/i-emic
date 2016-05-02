@@ -170,26 +170,21 @@ private:
 
 class ComplexSuperVector
 {
-	SuperVector real_;
-	SuperVector imag_;
-	SuperVector temp_;
+	SuperVector tmp_;
 
 public:
 
+	SuperVector real;
+	SuperVector imag;
+	
 	ComplexSuperVector();
-	ComplexSuperVector(SuperVector &real);
-	ComplexSuperVector(SuperVector &real, SuperVector &imag);
+	ComplexSuperVector(SuperVector &re);
+	ComplexSuperVector(SuperVector &re, SuperVector &im);
 
 	// Overloaded assignment operator
 	void operator=(ComplexSuperVector const &other);
 
-	SuperVector const &real() const {return real_;}
-	SuperVector const &imag() const {return imag_;}
-	SuperVector &real() {return real_;}
-	SuperVector &imag() {return imag_;}
-
-
-	int length() const {return real_.length();}
+	int length() const {return real.length();}
 	
 	double norm() const;
 
@@ -201,7 +196,7 @@ public:
 	void zero();
 	void random();
 
-	void print(){real_.print(); imag_.print();}
+	void print(){real.print(); imag.print();}
 	
 };
 

@@ -161,8 +161,8 @@ TEST(SuperVector, Axpy)
 
 	z1.axpy(a, z2);
 	EXPECT_NEAR(z1.norm(), 1.33580836949017e+03, 1e-10);
-	EXPECT_EQ(z1.real()[z1.length()-1],13);
-	EXPECT_EQ(z1.imag()[z1.length()-1],20);
+	EXPECT_EQ(z1.real[z1.length()-1],13);
+	EXPECT_EQ(z1.imag[z1.length()-1],20);
 }
 
 //------------------------------------------------------------------
@@ -205,8 +205,8 @@ TEST(SuperVector, Scale)
 
 	z1.scale(a);
 	EXPECT_EQ(z1.norm(), 560);
-	EXPECT_EQ(z1.real()[z1.length()-1],0);
-	EXPECT_EQ(z1.imag()[z1.length()-1],10);
+	EXPECT_EQ(z1.real[z1.length()-1],0);
+	EXPECT_EQ(z1.imag[z1.length()-1],10);
 }
 
 //------------------------------------------------------------------

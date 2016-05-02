@@ -16,6 +16,7 @@ template<typename Model, typename ParameterList>
 Continuation<Model, ParameterList>::
 Continuation(Model model, ParameterList pars)
 	:
+	model_(model),
 	ds_                    (pars->get("initial step size", 0.02)),
 	dsMin_                 (pars->get("minimum step size", 1.0e-5)),
 	dsMax_                 (pars->get("maximum step size", 1.0e01)),
@@ -39,7 +40,6 @@ Continuation(Model model, ParameterList pars)
 	newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
 	signMonitor_           (0)
 {
-	model_  = model;
 
 	// Get views of the important components of the model
 	stateView_ = model_->getState('V');
@@ -68,7 +68,9 @@ Continuation(Model model, ParameterList pars)
 template<typename Model, typename ParameterList>
 Continuation<Model, ParameterList>::
 ~Continuation()
-{}
+{
+	INFO("Continuation destructor");
+}
 
 //======================================================================
 template<typename Model, typename ParameterList>

@@ -108,7 +108,7 @@ public:
 				 std::shared_ptr<Atmosphere> atmos,
 		         Teuchos::RCP<Teuchos::ParameterList> params);
 	
-	~CoupledModel(){}
+	~CoupledModel(){INFO("CoupledModel destructor");}
 
 	void computeJacobian();
 	void computeRHS();

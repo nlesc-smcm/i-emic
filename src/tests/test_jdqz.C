@@ -137,10 +137,13 @@ public:
 
 TEST(JDQZ, General)
 {
+	
 	continuation.run();
 
+	INFO("Printing Jacobians...");
 	coupledModel->printJacobian("testjac");
-	
+
+	INFO("Creating ComplexSuperVector...");
 	SuperVector x = *coupledModel->getSolution();
 	SuperVector y = *coupledModel->getSolution();
 	x.zero(); y.zero();
@@ -148,10 +151,15 @@ TEST(JDQZ, General)
 	ComplexSuperVector residue(x,y);
 	ComplexSuperVector tmp(x,y);
 
-	JDQZInterface<CoupledModel> matrix(*coupledModel);	
-
-	JDQZ<JDQZInterface<CoupledModel> > jdqz(matrix, z);
+	INFO("Building JDQZInterface...");
+	JDQZInterface<std::shared_ptr<CoupledModel> >
+		matrix(coupledModel, z);	
 	
+	INFO("Building JDQZ...");
+	JDQZ<JDQZInterface<std::shared_ptr<CoupledModel> > >
+		jdqz(matrix, z);
+
+	INFO("Setting parameters...");
 	std::map<std::string, double> list;	
 	list["Shift (real part)"]         = 0.0;
 	list["Number of eigenvalues"]     = 3;
@@ -166,6 +174,8 @@ TEST(JDQZ, General)
 	
 	jdqz.setParameters(params);
 	jdqz.printParameters();
+
+	INFO("Starting JDQZ solve...");
 	jdqz.solve();
 
 	std::vector<ComplexSuperVector>    eivec = jdqz.getEigenVectors();

@@ -406,11 +406,11 @@ void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out, char mode
 		// Make temporary copies of v to store linear transformations
 		SuperVector y(v);
 		SuperVector z(v);
+		SuperVector t(z);
 
 		// Perform mappings
 		y.linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
-		C21_.applyMatrix(z, z);
-		//z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
+		C21_.applyMatrix(t, z);
 
 		// Just to be sure
 		y.zeroAtmos();
@@ -447,14 +447,15 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 		SuperVector x2(out);
 		SuperVector b1(v);
 		SuperVector b2(v);
+		SuperVector t(x1);
 
 		b1.zeroAtmos();
 		b2.zeroOcean();
 
 		for (int i = 0; i != iterGS_; ++i)
 		{
-			//x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
-			C21_.applyMatrix(x1, x1);   // C21*x1
+			t = x1;
+			C21_.applyMatrix(t, x1);   // C21*x1
 			
 			x1.zeroOcean();
 			x1.update(1.0, b2, -1.0);
@@ -471,8 +472,8 @@ void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode
 		
 		out.assign(x1.getOceanVector());
 		
-		//x1.linearTransformation(*C_, *rowsB_, 'O', 'A');
-		C21_.applyMatrix(x1, x1);
+		t = x1;
+		C21_.applyMatrix(t, x1);
 		x1.zeroOcean();
 		x1.update(1.0, b2, -1.0);
 		atmos_->applyPrecon(x1, x2);
