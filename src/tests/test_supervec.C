@@ -30,80 +30,99 @@
 #include "GlobalDefinitions.H"
 #include "THCMdefs.H"
 
+#include "gtest/gtest.h" // google test
+
 //------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;
 
 //------------------------------------------------------------------
-// A few declarations (see GlobalDefinitions.H)
-// --> put them in a namespace
+// A few globals (see GlobalDefinitions.H)
+//------------------------------------------------------------------
 RCP<std::ostream> outFile;      // output file
 ProfileType       profile;      // profile
 std::stack<Timer> timerStack;   // timing stack
+RCP<Epetra_Comm>  comm;         // communicator object
 
 //------------------------------------------------------------------
-void testSuperVec(RCP<Epetra_Comm> Comm);
-
-//------------------------------------------------------------------
-RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
-RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
-void              printProfile(ProfileType profile);
-
-//------------------------------------------------------------------
-int main(int argc, char **argv)
+RCP<std::ostream> outputFiles()
 {
-	// Initialize the environment:
-	//  - MPI
-	//  - output files
-	//  - returns Trilinos' communicator Epetra_Comm
-	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
+	Teuchos::RCP<std::ostream> outFile;
+	if (comm->MyPID() < 1)
+	{
+		std::ostringstream infofile;     // setting up a filename
 
-	testSuperVec(Comm);
+		infofile    << "info_"    << comm->MyPID()   << ".txt";
 
-	// print the profile
-	if (Comm->MyPID() == 0)
-		printProfile(profile);
-	
-    //--------------------------------------------------------
-	// Finalize MPI
-	//--------------------------------------------------------
-	MPI_Finalize();	
+		std::cout << "info for CPU" << comm->MyPID() << " is written to "
+				  << infofile.str().c_str() << std::endl;
+
+		outFile = Teuchos::rcp(new std::ofstream(infofile.str().c_str()));
+	}
+	else
+	{
+		outFile = Teuchos::rcp(new Teuchos::oblackholestream());
+	}
+	return outFile;
 }
 
 //------------------------------------------------------------------
-void testSuperVec(RCP<Epetra_Comm> Comm)
+void initializeEnvironment(int argc, char **argv)
 {
-	//------------------------------------------------------------------
-	// Check if outFile is specified
-	if (outFile == Teuchos::null)
-		throw std::runtime_error("ERROR: Specify output streams");	
+#ifdef HAVE_MPI           // Initialize communicator
+	MPI_Init(&argc, &argv);
+	comm = rcp(new Epetra_MpiComm(MPI_COMM_WORLD));
+#else
+	comm = rcp(new Epetra_SerialComm());
+#endif
+	outFile = outputFiles(); 	// Initialize output files
+}
+
+//------------------------------------------------------------------
+namespace // local (unnamed) namespace (similar to static in C)
+{	
+	RCP<Ocean>                    ocean;
+	std::shared_ptr<Atmosphere>   atmos;
+	std::shared_ptr<CoupledModel> coupledModel;
+}
+
+//------------------------------------------------------------------
+class IEMIC : public testing::Environment
+{
+public:
+	// constructor
+	IEMIC()
+		{
+			// Create parallel Ocean 
+			RCP<Teuchos::ParameterList> oceanParams =
+				rcp(new Teuchos::ParameterList);
+			updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+			ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
 	
-	//------------------------------------------------------------------
-	// Create parameter object for Ocean
-	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+			// Create Atmosphere object
+			RCP<Teuchos::ParameterList> atmosphereParams =
+				rcp(new Teuchos::ParameterList);
+			updateParametersFromXmlFile("atmosphere_params.xml",
+										atmosphereParams.ptr());
+			atmos = std::make_shared<Atmosphere>(atmosphereParams);
+		
+			// Create CoupledModel
+			RCP<Teuchos::ParameterList> coupledmodelParams =
+				rcp(new Teuchos::ParameterList);
+			updateParametersFromXmlFile("coupledmodel_params.xml",
+										coupledmodelParams.ptr());
+			coupledModel =
+				std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
+		}
 
-	// Create parallelized Ocean object
-	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
+	// destructor
+	~IEMIC()
+		{}
+};
 
-	//------------------------------------------------------------------
-	// Create parameter object for Atmosphere
-	RCP<Teuchos::ParameterList> atmosphereParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
-
-    // Create Atmosphere object
-	std::shared_ptr<Atmosphere> atmos =
-		std::make_shared<Atmosphere>(atmosphereParams);
-
-	//------------------------------------------------------------------
-    // Create parameter object for coupledmodel
-	RCP<Teuchos::ParameterList> coupledmodelParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("coupledmodel_params.xml", coupledmodelParams.ptr());
-
-	// Create CoupledModel
-	std::shared_ptr<CoupledModel> coupledModel =
-		std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
-
+//------------------------------------------------------------------
+TEST(SuperVector, ComplexDot)
+{
 	SuperVector x1 = *coupledModel->getSolution();
 	SuperVector x2 = *coupledModel->getSolution();
 	SuperVector y1 = *coupledModel->getSolution();
@@ -114,118 +133,17 @@ void testSuperVec(RCP<Epetra_Comm> Comm)
 	y1.putScalar(3.0);
 	y2.putScalar(4.0);
 
-	x1.info();
-
 	ComplexSuperVector z1(x1,y1);
+	ComplexSuperVector z2(x2,y2);
+
+	std::complex<double> result = z1.dot(z2);
+	EXPECT_EQ(result.real(),43904);
+	EXPECT_EQ(result.imag(),-6272);
 }
 
 //------------------------------------------------------------------
-// Auxiliary stuff
-//------------------------------------------------------------------
-RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
+TEST(SuperVector, Wrapper)
 {
-#ifdef HAVE_MPI
-	MPI_Init(&argc, &argv);
-	RCP<Epetra_MpiComm> Comm =
-		rcp(new Epetra_MpiComm(MPI_COMM_WORLD));
-#else
-	RCP<Epetra_SerialComm> Comm =
-		rcp(new Epetra_SerialComm());
-#endif
-	// Specify output files
-	outFile = outputFiles(Comm);
-	return Comm;
-}
-
-//------------------------------------------------------------------
-Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
-{
-	// Setup output files "fname_#.txt" for P==0 && P==1, other processes
-	// will get a blackholestream.
-	Teuchos::RCP<std::ostream> outFile;
-	if (Comm->MyPID() < 2)
-	{
-		std::ostringstream infofile;     // setting up a filename
-
-		infofile    << "info_"    << Comm->MyPID()   << ".txt";
-
-		std::cout << "info for CPU" << Comm->MyPID() << " is written to "
-				  << infofile.str().c_str() << std::endl;
-
-		outFile =
-			Teuchos::rcp(new std::ofstream(infofile.str().c_str()));
-	}
-	else
-	{
-		outFile =
-			Teuchos::rcp(new Teuchos::oblackholestream());
-	}
-	return outFile;
-}
-
-//------------------------------------------------------------------
-void printProfile(ProfileType profile)
-{
-	if (timerStack.empty() == false)
-		WARNING("Unequal amount of TIMER_START and TIMER_STOP uses",
-				__FILE__, __LINE__);
-	
-	std::ostringstream profilefile("profile_output");   // setting up a filename
-	std::ofstream file(profilefile.str().c_str());      // setup output file
-
-	// Set format flags
-	file << std::left;
-
-	// Define line format
-#ifndef LINE
-# define LINE(s1, s2, s3, s4, s5, s6, s7, s8, s9)						\
-	{																	\
-		int sp = 3;  int it = 5;  int id = 5;							\
-		int db = 12; int st = 45;										\
-		file << std::setw(id) << s1	<< std::setw(sp) << s2				\
-			 << std::setw(st) << s3 << std::setw(sp) << s4				\
-			 << std::setw(db) << s5	<< std::setw(sp) << s6				\
-			 << std::setw(it) << s7	<< std::setw(sp) << s8				\
-			 << std::setw(db) << s9	<< std::endl;						\
-	}
-#endif
-
-	// Header
-	LINE("", "", "", "", "cumul.", "", "calls", "", "average");
-	
-	// Display timings of the separate models, summing
-	int counter = 0;
-	for (auto const &map : profile)
-		if (map.first.compare(0,5,"(itr)") != 0)
-		{
-			counter++;
-			std::stringstream s;
-			s << " (" << counter << ")";
-			LINE(s.str(), "", map.first, ":", map.second[0], "",
-				 map.second[1], "", map.second[2]);
-		}
-
-	// Newline
-	file << std::endl;
-	
-	// Display iteration information
-	for (auto const &map : profile)
-		if (map.first.compare(0,5,"(itr)") == 0 )
-		{
-			counter++;
-			std::stringstream s;
-			s << " (" << counter << ")";
-			LINE(s.str(), "", map.first.substr(5), ":", map.second[0], "",
-				 map.second[1], "", map.second[2]);
-		}
-	
-}
-
-//------------------------------------------------------------------
-void testVecWrap()
-{
-	std::cout << "Testing the SuperVector Wrapper..." << std::endl;
-	
 	std::vector<double> vec1 = {1,2,3,4,5,6,7,8,9,10};
 	std::vector<double> vec2 = {2,2,3,2,5,2,2,2,9,2};
 	std::shared_ptr<std::vector<double> > spvec1 =
@@ -236,19 +154,38 @@ void testVecWrap()
  	SuperVector wrvec1(spvec1);
 	SuperVector wrvec2(spvec2);
 
-	std::cout << "v1 length: " <<  wrvec1.length() << std::endl;
-	std::cout << "v2 length: " <<  wrvec2.length() << std::endl;
+	EXPECT_EQ(wrvec1.length(), vec1.size());
+	EXPECT_EQ(wrvec2.length(), vec2.size());
 
-	std::cout << "v1 norm: " << wrvec1.norm() << std::endl;
-	std::cout << "v2 norm: " << wrvec2.norm() << std::endl;
-		
-	std::cout << "(v1,v2): " <<	wrvec1.dot(wrvec2) << std::endl;
-	
-	wrvec1.update(4, wrvec2, 3);
-	wrvec1.print();
+	EXPECT_NEAR(wrvec1.norm(), 19.621416870348583, 1e-10);
+	EXPECT_NEAR(wrvec2.norm(), 11.958260743101398, 1e-10);
 
-	wrvec2.scale(3);
-	wrvec2.print();
+	EXPECT_EQ(wrvec1.dot(wrvec2), 191);
+}
+
+//------------------------------------------------------------------
+int main(int argc, char **argv)
+{
+	// Initialize the environment:
+	initializeEnvironment(argc, argv);
+	if (outFile == Teuchos::null)
+		throw std::runtime_error("ERROR: Specify output streams");
+
+	::testing::InitGoogleTest(&argc, argv);
+	::testing::AddGlobalTestEnvironment(new IEMIC);
+	// -------------------------------------------------------
+	// TESTING 
+	int out = RUN_ALL_TESTS();
+	// -------------------------------------------------------
 	
-	std::cout << "Testing the SuperVector Wrapper...done" << std::endl;
+	// Get rid of possibly parallel objects:
+	ocean        = Teuchos::null;
+	atmos        = nullptr;
+	coupledModel = nullptr;
+	
+	comm->Barrier();
+	std::cout << "TEST exit code proc #" << comm->MyPID()
+			  << " " << out << std::endl;
+	MPI_Finalize();
+	return 0;
 }

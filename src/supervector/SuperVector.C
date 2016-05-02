@@ -690,7 +690,10 @@ void SuperVector::init()
 	length_ = 0;
 	length_ += (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
 	length_ += (haveAtmosVector_) ? atmosVector_->size() : 0;
-			
+
+	oceanLength_ = (haveOceanVector_) ? oceanVector_->GlobalLength() : 0;
+	atmosLength_ = (haveAtmosVector_) ? atmosVector_->size() : 0;
+	
 	isInitialized_ = true;
 }
 
@@ -699,9 +702,11 @@ void SuperVector::info() const
 {
 	std::cout << "*****************************" << std::endl;
 	std::cout << " SuperVector info:" << std::endl;
-	std::cout << "  haveOceanVector " << haveOceanVector_ << std::endl;
-	std::cout << "  haveAtmosVector " << haveAtmosVector_ << std::endl;
 	std::cout << "  length          " << length_ << std::endl;
+	std::cout << "  haveOceanVector " << haveOceanVector_ << std::endl;
+	std::cout << "  oceanVector N   " << oceanLength_ << std::endl;
+	std::cout << "  haveAtmosVector " << haveAtmosVector_ << std::endl;
+	std::cout << "  atmosVector N   " << atmosLength_ << std::endl;
 	std::cout << "  norm            " << norm() << std::endl;
 }
 
@@ -745,9 +750,9 @@ double ComplexSuperVector::norm() const
 //------------------------------------------------------------------
 std::complex<double> ComplexSuperVector::dot(ComplexSuperVector const &other) const
 {
-	double rePart = real_.dot(other.real()) - imag_.dot(other.imag());
-	double imPart = imag_.dot(other.real()) + real_.dot(other.imag());
-	std::complex<double> result(rePart, -imPart);
+	double rePart = real_.dot(other.real()) + imag_.dot(other.imag());
+	double imPart = real_.dot(other.imag()) - imag_.dot(other.real());
+	std::complex<double> result(rePart, imPart);
 	return result;
 }
 

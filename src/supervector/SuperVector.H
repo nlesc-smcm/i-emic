@@ -39,6 +39,8 @@ class SuperVector
 	bool isView_;
 	
 	int length_;
+	int oceanLength_;
+	int atmosLength_;
 	
 public:
 	// Default constructor
