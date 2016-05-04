@@ -15,6 +15,7 @@
 !default/
 !tests/
 !run/
+!external/
 !matlab/
 !make.inc/
 !utils/
