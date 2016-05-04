@@ -12,7 +12,6 @@ set(TESTS_INCLUDE_DIRS
   ../thetastepper/
   ../newton/
   ../continuation/
-  ../jdqzpp/src
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 

@@ -56,6 +56,16 @@ set(EXTRA_LIBS
 
 list(APPEND library_dependencies ${EXTRA_LIBS})
 
+set(ExternalProjectCMakeArgs
+  -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/src/external
+  -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
+  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+  )
+
+add_external(jdqzpp "")
+
 set(I-EMIC_LIBS
   ocean
   atmosphere
