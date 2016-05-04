@@ -38,11 +38,32 @@ list(APPEND library_directories ${Trilinos_TPL_LIBRARY_DIRS})
 list(APPEND library_directories $ENV{MRILU_DIR}/lib/) # MRILU
 list(APPEND library_directories $ENV{LD_LIBRARY_PATH}) 
 
-link_directories(${library_directories})
-
 set(library_dependencies ${Trilinos_LIBRARIES})
 list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
 
+# Locate JDQZPP external project
+#  maintained as a git submodule but that is not used here (yet).
+include(ExternalProject)
+set_directory_properties(PROPERTIES EP_PREFIX ${CMAKE_SOURCE_DIR}/src/external)
+
+ExternalProject_Add(jdqzpp
+  SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/external/jdqzpp
+  BINARY_DIR ${CMAKE_SOURCE_DIR}/src/external/jdqzpp/build
+  CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+  CMAKE_ARGS -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
+  CMAKE_ARGS -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+  CMAKE_ARGS -DCMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS}
+  )
+
+ExternalProject_Get_Property(jdqzpp source_dir)
+set(JDQZPP_INCLUDE_DIR ${source_dir}/include)
+set(JDQZPP_LIBRARY_DIR ${source_dir}/lib)
+
+include_directories(${JDQZPP_INCLUDE_DIR})
+list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
+link_directories(${library_directories})
+
+# 
 set(EXTRA_LIBS
   hdf5
   ifpack_mrilu
@@ -55,16 +76,6 @@ set(EXTRA_LIBS
   )
 
 list(APPEND library_dependencies ${EXTRA_LIBS})
-
-set(ExternalProjectCMakeArgs
-  -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/src/external
-  -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
-  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-  )
-
-add_external(jdqzpp "")
 
 set(I-EMIC_LIBS
   ocean
@@ -85,4 +96,3 @@ add_subdirectory(supervector)
 add_subdirectory(utils)
 add_subdirectory(main)
 add_subdirectory(tests)
-
