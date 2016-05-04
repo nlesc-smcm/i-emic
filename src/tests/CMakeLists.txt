@@ -17,7 +17,6 @@ set(TESTS_INCLUDE_DIRS
 
 add_executable(test_supervec test_supervec.C)
 add_executable(test_jdqz test_jdqz.C)
-add_dependencies(test_jdqz jdqzpp)
 
 target_compile_definitions(test_supervec PUBLIC ${COMP_IDENT})
 target_compile_definitions(test_jdqz PUBLIC ${COMP_IDENT})

@@ -61,6 +61,7 @@ ExternalProject_Add(jdqzpp
 ExternalProject_Get_Property(jdqzpp source_dir)
 set(JDQZPP_INCLUDE_DIR ${source_dir}/include)
 set(JDQZPP_LIBRARY_DIR ${source_dir}/lib)
+message("-- JDQZ++ source dir: " ${source_dir})
 
 include_directories(${JDQZPP_INCLUDE_DIR})
 list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
