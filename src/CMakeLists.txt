@@ -3,10 +3,16 @@ project(i-emic)
 
 enable_language (Fortran)
 
+# Trying to find Trilinos
+if (DEFINED ENV{TRILINOS_DIR})
+  set(Trilinos_DIR $ENV{TRILINOS_DIR}/lib/cmake/Trilinos)
+  message("-- Trilinos directory: " ${Trilinos_DIR})
+endif ()
+
 find_package(Trilinos)
 
 if (NOT Trilinos_FOUND)
-  message(FATAL_ERROR " Trilinos root directory should be in PATH ")
+  message(FATAL_ERROR " Trilinos root directory should be in PATH or TRILINOS_DIR should be set to location containing TrilinosConfig.cmake.")
 endif ()
 
 set(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER})
@@ -67,7 +73,6 @@ include_directories(${JDQZPP_INCLUDE_DIR})
 list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
 link_directories(${library_directories})
 
-# 
 set(EXTRA_LIBS
   hdf5
   ifpack_mrilu
