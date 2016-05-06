@@ -54,10 +54,8 @@ set_directory_properties(PROPERTIES EP_PREFIX ${CMAKE_SOURCE_DIR}/src/external)
 
 ExternalProject_Add(jdqzpp
   GIT_REPOSITORY https://github.com/erik808/jdqzpp
+  GIT_TAG origin/master
   PREFIX      ${CMAKE_SOURCE_DIR}/src/external/jdqzpp
-  # SOURCE_DIR  ${CMAKE_SOURCE_DIR}/src/external/jdqzpp
-  # INSTALL_DIR ${CMAKE_SOURCE_DIR}/src/external/jdqzpp/build
-  # BINARY_DIR  ${CMAKE_SOURCE_DIR}/src/external/jdqzpp/build
   CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
   CMAKE_ARGS -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
   CMAKE_ARGS -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
