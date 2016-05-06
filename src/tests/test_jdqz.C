@@ -169,7 +169,8 @@ TEST(JDQZ, General)
 	list["Tracking parameter"]        = 1e-8;
 	list["Criterion for Ritz values"] = 0;
 	list["Linear solver"]             = 1;
-	list["GMRES search space"]        = 20;		
+	list["GMRES search space"]        = 20;
+	list["Verbosity"]                 = 5;		
 	MyParameterList params(list);
 	
 	jdqz.setParameters(params);
