@@ -25,7 +25,9 @@ target_include_directories(test_supervec PUBLIC ${TESTS_INCLUDE_DIRS})
 target_include_directories(test_jdqz PUBLIC ${TESTS_INCLUDE_DIRS})
 
 # Google test
+if (NOT GTEST_FOUND)
 find_package(GTest)
+endif ()
 
 if (NOT GTEST_FOUND)
   if (DEFINED ENV{GTEST_DIR})
