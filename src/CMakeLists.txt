@@ -60,7 +60,7 @@ ExternalProject_Add(jdqzpp
   CMAKE_ARGS -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
   CMAKE_ARGS -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
   CMAKE_ARGS -DCMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS}
-  CMAKE_ARGS -DLAPACK_LIBRARIES=${Trilinos_TPL_LIBRARIES}
+  CMAKE_ARGS -DTPL_LIBRARIES=${Trilinos_TPL_LIBRARIES}
   )
 
 ExternalProject_Get_Property(jdqzpp source_dir)
