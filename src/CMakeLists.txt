@@ -12,7 +12,7 @@ endif ()
 find_package(Trilinos)
 
 if (NOT Trilinos_FOUND)
-  message(FATAL_ERROR " Trilinos root directory should be in PATH or TRILINOS_DIR should be set to location containing TrilinosConfig.cmake.")
+  message(FATAL_ERROR " Trilinos root directory should be in PATH or TRILINOS_DIR ")
 endif ()
 
 set(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER})

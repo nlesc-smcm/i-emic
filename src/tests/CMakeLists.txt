@@ -28,11 +28,18 @@ target_include_directories(test_jdqz PUBLIC ${TESTS_INCLUDE_DIRS})
 find_package(GTest)
 
 if (NOT GTEST_FOUND)
-  message("-- GTest not automatically found, trying $ENV{SHARED_DIR}")
-  set(GTEST_ROOT "$ENV{SHARED_DIR}")
+  if (DEFINED ENV{GTEST_DIR})
+	message("-- GTest not automatically found, trying $ENV{GTEST_DIR}")
+	set(GTEST_ROOT "$ENV{GTEST_DIR}")
+  else ()
+	message("-- GTest not automatically found, GTEST_DIR not set, trying $ENV{SHARED_DIR}")
+	set(GTEST_ROOT "$ENV{SHARED_DIR}")
+  endif ()
+  
   unset(GTEST_INCLUDE_DIR CACHE) #FindGTEST quirk
   find_package(GTest)
 endif ()
+
 if (NOT GTEST_FOUND)
   message(FATAL_ERROR "GTest not found, tests will not compile")
 endif ()
