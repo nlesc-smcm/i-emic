@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12.2)
 project(i-emic)
 
-enable_language (Fortran)
-
 # Trying to find Trilinos
 if (DEFINED ENV{TRILINOS_DIR})
   set(Trilinos_DIR $ENV{TRILINOS_DIR}/lib/cmake/Trilinos)
@@ -17,6 +15,10 @@ endif ()
 
 set(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER})
 set(CMAKE_Fortran_COMPILER ${Trilinos_Fortran_COMPILER})
+
+enable_language(Fortran)
+
+message("-- CMAKE_Fortran_COMPILER_ID ${CMAKE_Fortran_COMPILER_ID}")
 
 if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU") #gfortran, gcc
   set (CMAKE_Fortran_FLAGS
@@ -46,6 +48,7 @@ list(APPEND library_directories $ENV{LD_LIBRARY_PATH})
 
 set(library_dependencies ${Trilinos_LIBRARIES})
 list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
+message("-- TPL: ${Trilinos_TPL_LIBRARIES}")
 
 # Locate JDQZPP external project
 #  maintained as a git submodule but that is not used here (yet).
@@ -60,7 +63,6 @@ ExternalProject_Add(jdqzpp
   CMAKE_ARGS -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
   CMAKE_ARGS -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
   CMAKE_ARGS -DCMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS}
-  CMAKE_ARGS -DTPL_LIBRARIES=${Trilinos_TPL_LIBRARIES}
   )
 
 ExternalProject_Get_Property(jdqzpp source_dir)

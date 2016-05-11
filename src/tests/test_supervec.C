@@ -248,8 +248,8 @@ int main(int argc, char **argv)
 	
 	// Get rid of possibly parallel objects:
 	ocean        = Teuchos::null;
-	atmos        = nullptr;
-	coupledModel = nullptr;
+	atmos        = std::shared_ptr<Atmosphere>();
+	coupledModel = std::shared_ptr<CoupledModel>();
 	
 	comm->Barrier();
 	std::cout << "TEST exit code proc #" << comm->MyPID()
