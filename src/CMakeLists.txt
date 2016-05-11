@@ -12,7 +12,7 @@ endif ()
 find_package(Trilinos)
 
 if (NOT Trilinos_FOUND)
-  message(FATAL_ERROR " Trilinos root directory should be in PATH or TRILINOS_DIR ")
+  message(FATAL_ERROR " Trilinos root directory should be in PATH or TRILINOS_DIR.")
 endif ()
 
 set(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER})
@@ -60,6 +60,7 @@ ExternalProject_Add(jdqzpp
   CMAKE_ARGS -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
   CMAKE_ARGS -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
   CMAKE_ARGS -DCMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS}
+  CMAKE_ARGS -DLAPACK_LIBRARIES=${Trilinos_TPL_LIBRARIES}
   )
 
 ExternalProject_Get_Property(jdqzpp source_dir)
