@@ -674,7 +674,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 //=============================================================================
 THCM::~THCM()
 {
-	INFO("THCM destructor called");
+	INFO("THCM destructor");
 	FNAME(finalize)();
 	if (Comm->MyPID()==0)
     {

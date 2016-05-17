@@ -3,6 +3,8 @@
 
 #include "SuperVector.H"
 
+// Class to interface one of our models to the JDQZ++ eigenvalue solver.
+
 template<typename Model>
 class JDQZInterface
 {

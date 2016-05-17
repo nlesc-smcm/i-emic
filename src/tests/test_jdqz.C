@@ -84,13 +84,11 @@ void initializeEnvironment(int argc, char **argv)
 }
 
 //------------------------------------------------------------------
-namespace // local (unnamed) namespace (similar to static in C)
+namespace // local unnamed namespace (similar to static in C)
 {	
 	RCP<Ocean>                    ocean;
 	std::shared_ptr<Atmosphere>   atmos;
 	std::shared_ptr<CoupledModel> coupledModel;
-	Continuation<std::shared_ptr<CoupledModel>,
-				 RCP<Teuchos::ParameterList> >	continuation;
 }
 
 //------------------------------------------------------------------
@@ -121,13 +119,7 @@ public:
 			coupledModel =
 				std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
 			
-			// Create Continuation
-			RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
-			
-			continuation = 
-				Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
-				(coupledModel, continuationParams);
+		
 		}
 
 	// destructor
@@ -135,41 +127,52 @@ public:
 		{}
 };
 
-TEST(JDQZ, General)
+//------------------------------------------------------------------
+TEST(JDQZ, Atmosphere)
 {
+	// Create Continuation
+	RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
 	
+	Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
+		continuation(coupledModel, continuationParams);
+
+	// We perform a continuation with the coupled model
 	continuation.run();
 
+	// Then we are going to calculate the eigenvalues of the Atmosphere Jacobian
 	INFO("Printing Jacobians...");
-	coupledModel->printJacobian("testjac");
+	atmos->printJacobian("atmos_testjac");
 
 	INFO("Creating ComplexSuperVector...");
-	SuperVector x = *coupledModel->getSolution();
-	SuperVector y = *coupledModel->getSolution();
+	SuperVector x = *atmos->getSolution();
+	SuperVector y = *atmos->getSolution();
 	x.zero(); y.zero();
+
+	// JDQZ needs complex arithmatic, that's why we create a ComplexSuperVector
 	ComplexSuperVector z(x, y);
 	ComplexSuperVector residue(x,y);
 	ComplexSuperVector tmp(x,y);
 
 	INFO("Building JDQZInterface...");
-	JDQZInterface<std::shared_ptr<CoupledModel> >
-		matrix(coupledModel, z);	
+	JDQZInterface<std::shared_ptr<Atmosphere> >
+		matrix(atmos, z);	
 	
 	INFO("Building JDQZ...");
-	JDQZ<JDQZInterface<std::shared_ptr<CoupledModel> > >
+	JDQZ<JDQZInterface<std::shared_ptr<Atmosphere> > >
 		jdqz(matrix, z);
 
 	INFO("Setting parameters...");
 	std::map<std::string, double> list;	
 	list["Shift (real part)"]         = 0.0;
 	list["Number of eigenvalues"]     = 3;
-	list["Max size search space"]     = 20;
-	list["Min size search space"]     = 10;
-	list["Max JD iterations"]         = 200;
+	list["Max size search space"]     = 50;
+	list["Min size search space"]     = 20;
+	list["Max JD iterations"]         = 300;
 	list["Tracking parameter"]        = 1e-8;
 	list["Criterion for Ritz values"] = 0;
 	list["Linear solver"]             = 1;
-	list["GMRES search space"]        = 20;
+	list["GMRES search space"]        = 50;
 	list["Verbosity"]                 = 5;		
 	MyParameterList params(list);
 	
@@ -222,6 +225,7 @@ int main(int argc, char **argv)
 	comm->Barrier();
 	std::cout << "TEST exit code proc #" << comm->MyPID()
 			  << " " << out << std::endl;
+	
 	MPI_Finalize();
 	return out;
 }

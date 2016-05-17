@@ -319,7 +319,7 @@ private:
 public:
 	// ! Write everything to output files.
 	void writeAll();
-	void writeJacobian(std::string const filename)
+	void printJacobian(std::string const filename)
 		{
 			// ico should be co
 			std::stringstream ico_fname, jco_fname, beg_fname;

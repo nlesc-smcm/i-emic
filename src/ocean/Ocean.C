@@ -106,7 +106,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 // destructor
 Ocean::~Ocean()
 {
-	INFO("Ocean destructor called..."); 
+	INFO("Ocean destructor"); 
 }
 
 //=====================================================================

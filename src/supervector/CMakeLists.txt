@@ -6,8 +6,10 @@ set(SUPERVECTOR_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-add_library(supervector SuperVector.C)
+add_library(supervector SHARED SuperVector.C)
 
 target_compile_definitions(supervector PUBLIC ${COMP_IDENT})
 
 target_include_directories(supervector PUBLIC ${SUPERVECTOR_INCLUDE_DIRS})
+
+install(TARGETS supervector DESTINATION lib)

@@ -645,7 +645,7 @@ void CoupledModel::printJacobian(std::string const filename) const
 
 	ocean_fname << ".rhs";
 	DUMP_VECTOR(ocean_fname.str().c_str(), *(ocean_->getRHS()->getOceanVector()));
-	atmos_->writeJacobian(atmos_fname.str());			
+	atmos_->printJacobian(atmos_fname.str());			
 }
 
 //------------------------------------------------------------------

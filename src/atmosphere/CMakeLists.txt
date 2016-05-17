@@ -9,8 +9,10 @@ set(ATMOSPHERE_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-add_library(atmosphere Atmosphere.C)
+add_library(atmosphere SHARED Atmosphere.C)
 
 target_compile_definitions(atmosphere PUBLIC ${COMP_IDENT})
 
 target_include_directories(atmosphere PUBLIC ${ATMOSPHERE_INCLUDE_DIRS})
+
+install(TARGETS atmosphere DESTINATION lib)

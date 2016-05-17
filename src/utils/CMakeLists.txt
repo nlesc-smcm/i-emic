@@ -4,7 +4,7 @@ set(UTILS_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-add_library(utils Utils.C)
+add_library(utils SHARED Utils.C)
 
 # set(FORTRAN_SOURCES
 #   ../jdqzpp/src/jdqz_tools/select.f
@@ -15,3 +15,6 @@ add_library(utils Utils.C)
 # target_include_directories (jdqz_tools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_compile_definitions(utils PUBLIC ${COMP_IDENT})
+
+
+install(TARGETS utils DESTINATION lib)

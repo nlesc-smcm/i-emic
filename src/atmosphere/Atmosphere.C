@@ -176,7 +176,7 @@ Atmosphere::Atmosphere(ParameterList params)
 // Destructor
 Atmosphere::~Atmosphere()
 {
-	INFO("Atmosphere destructor called");
+	INFO("Atmosphere destructor");
 }
 
 //-----------------------------------------------------------------------------
