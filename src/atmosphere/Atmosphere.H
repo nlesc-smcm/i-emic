@@ -108,21 +108,14 @@ private:
 	// Complete jacobian in CRS form
 	std::shared_ptr<CRSMat> jac_;
 
-	// Dense matrix storage --> superfluous
-	std::vector<double> denseA_;
-
  	// Pivot array for lapack
 	std::vector<int> ipiv_;
 
 	std::vector<double> bandedA_;      // Banded matrix storage
-	int ksub_;                         // Number of subdiagonals
-	int ksup_;                         // Number of superdiagonals
-	int ldimA_;                        // Leading dimension of banded storage
+	int  ksub_;                        // Number of subdiagonals
+	int  ksup_;                        // Number of superdiagonals
+	int  ldimA_;                       // Leading dimension of banded storage
 	bool buildLU_;
-
-	// Solving scheme: 'D': dense
-	//                 'B': banded
-	char solvingScheme_;
 
 	// Preconditioner: 'J': Jacobi
 	//                 'D': Full solve using native solving scheme

@@ -32,7 +32,6 @@ Atmosphere::Atmosphere(ParameterList params)
 	use_landmask_    (params->get("Use land mask from Ocean", false)),
 
 // solvers ------------------------------------------------------------------
-	solvingScheme_   (params->get("Solving scheme", 'B')),
 	preconditioner_  (params->get("Preconditioner", 'J')),
 
 // physics ------------------------------------------------------------------
@@ -104,10 +103,6 @@ Atmosphere::Atmosphere(ParameterList params)
 	
 	// Initialize forcing with zeros
 	frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
-
-	// Initialize dense matrix:
-	if (solvingScheme_ == 'D')
-		denseA_ = std::vector<double>(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
 
 	// Initialize banded storage
 	bandedA_     = std::vector<double>(ldimA_  * dim_, 0.0);
@@ -464,43 +459,15 @@ void Atmosphere::assemble()
 	
 	// final element of beg
 	beg_.push_back(elm_ctr);
-
-	// create dense A and its LU for solving with dgetrs()
-	if (solvingScheme_ == 'D')
-		buildDenseA();
 }
 
 //-----------------------------------------------------------------------------
 // Declaring a few LAPACK functions needed around this point
-//-----------------------------------------------------------------------------
-// Create LU
-extern "C" void dgetrf_(int* M, int *N, double *A,
-						int *LDA, int *IPIV, int *INFO);
-
-// Solve LU 
-extern "C" void dgetrs_(char* TRANS, int *N, int *NRHS, double *A,
-						int *LDA, int *IPIV, double *B,
-						int *LDB, int *INFO);
-
-// Make LU and solve
-extern "C" void dgesv_(int *N, int *NRHS, double *A,
-					   int *LDA, int *IPIV, double *B,
-					   int *LDB, int *INFO);
 
 // Solve banded system stored in bandedA_
 extern "C" void dgbsv_(int *N, int *KL, int *KU, int *NRHS, double *AB,
 					   int *LDAB, int *IPIV, double *B,
 					   int *LDB, int *INFO);
-
-// Solve banded system stored in bandedA_ EXPERT MODE
-extern "C" void dgbsvx_(char *FACT, char *TRANS,
-						int *N, int *KL, int *KU, int *NRHS, double *AB,
-						int *LDAB, double *AFB, int *LDAFB, int *IPIV,
-						char *EQUED, double *R, double *C,
-						double *B, int *LDB,
-						double *X, int *LDX,
-						double *RCOND, double *FERR, double *BERR,
-						double *WORK, int *IWORK, int *INFO);
 
 // Create LU factorization of banded system
 extern "C" void dgbtrf_(int *M, int *N, int *KL, int *KU, double *AB,
@@ -514,85 +481,40 @@ extern "C" void dgbtrs_(char *TRANS, int *N, int *KL, int *KU, int *NRHS,
 //-----------------------------------------------------------------------------
 void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
 {
-	TIMER_START("Atmosphere: solve1...");
-	
-	char trans  = 'N';
-	int dim     = n_*m_*l_;
-	int nrhs    = 1;
-	int lda     = dim;
-	int ldb     = dim;
-	int info;
-
-	if (rhs == nullptr)
-		(*sol_) = std::vector<double>((*rhs_));
-	else
-		(*sol_) = std::vector<double>(*(rhs->getAtmosVector()));
-	
-	if (solvingScheme_ == 'D')
-	{
-		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, &ipiv_[0],
-				&(*sol_)[0], &ldb, &info);
-	}
-	else if (solvingScheme_ == 'B')
-	{
-		// we use a copy to make sure bandedA_ does not get corrupted
-		std::vector<double> bandedAcopy(bandedA_);
-		dgbsv_(&dim, &ksub_, &ksup_, &nrhs, &bandedAcopy[0],
-			   &ldimA_, &ipiv_[0], &(*sol_)[0], &ldb, &info);
-	}
-	else
-		ERROR("Invalid solving scheme...", __FILE__, __LINE__);
-
-	TIMER_STOP("Atmosphere: solve1...");
+	SuperVector tmp = *rhs;
+	solve(*rhs, tmp);
+	sol_ = tmp.getAtmosVector();
 }
 
-// FACTORIZE!!!!!!!!
 //-----------------------------------------------------------------------------
 void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 {
-	TIMER_START("Atmosphere: solve2...");
-	
-	char trans  = 'N';
+	TIMER_START("Atmosphere: solve...");
 	
 	int dim     = n_*m_*l_;
 	int nrhs    = 1;
-	int lda     = dim;
 	int ldb     = dim;
-		
 	int info;
 	
-	if (solvingScheme_ == 'D')
+	if (buildLU_)
 	{
-		out.assign(rhs.getAtmosVector());
-		std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();	
-		dgetrs_(&trans, &dim, &nrhs, &denseA_[0], &lda, &ipiv_[0],
-				&(*sol)[0], &ldb, &info);
+		TIMER_START("Atmosphere: build LU (dgbtrf)");
+		dgbtrf_(&dim, &dim, &ksub_, &ksup_, &bandedA_[0],
+				&ldimA_, &ipiv_[0], &info);
+		buildLU_ = false; // until next request
+		TIMER_STOP("Atmosphere: build LU (dgbtrf)");
 	}
-	else if (solvingScheme_ == 'B')
-	{
-		if (buildLU_)
-		{
-			TIMER_START("Atmosphere: build LU");
-			dgbtrf_(&dim, &dim, &ksub_, &ksup_, &bandedA_[0],
-					&ldimA_, &ipiv_[0], &info);
-			buildLU_ = false; // until next request
-			TIMER_STOP("Atmosphere: build LU");
-		}
 		
-		out.assign(rhs.getAtmosVector());
-		std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();
+	out.assign(rhs.getAtmosVector());
+	std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();
 
-		TIMER_START("Atmosphere: solve dgbtrs");
-		dgbtrs_(&trans, &dim, &ksub_, &ksup_, &nrhs,
-				&bandedA_[0], &ldimA_, &ipiv_[0],  &(*sol)[0], &ldb, &info);
-		TIMER_STOP("Atmosphere: solve dgbtrs");
-	}
-	else
-	{
-		WARNING("Invalid solving scheme!", __FILE__, __LINE__);
-	}
+	TIMER_START("Atmosphere: solve (dgbtrs)");
+	char trans  = 'N';
+	dgbtrs_(&trans, &dim, &ksub_, &ksup_, &nrhs,
+			&bandedA_[0], &ldimA_, &ipiv_[0],  &(*sol)[0], &ldb, &info);
+	TIMER_STOP("Atmosphere: solve (dgbtrs)");
 	
-	TIMER_STOP("Atmosphere: solve2...");
+	TIMER_STOP("Atmosphere: solve...");
 }
 
 //----------------------------------------------------------------------------
@@ -621,50 +543,6 @@ double Atmosphere::computeResidual(SuperVector const &rhs,
 	
 	return r.norm();     // return ||b-Jx||
 }
-
-//-----------------------------------------------------------------------------
-void Atmosphere::buildDenseA()
-{
-	//------------------------------------------------
-	// This is horrible, only use when desparate (solvingScheme == 'D')
-	if (solvingScheme_ != 'D')
-		WARNING("this is not supposed to happen", __FILE__, __LINE__);
-
-	// create dense matrix
-	// reset denseA array
-	denseA_.assign(n_ * m_ * l_ * n_ * m_ * l_, 0.0);
-	std::vector<double> ivals(jco_.size(), 0.0);
-	int rw  = 1; // row
-	int idx = 1;
-	while (rw  <= m_*n_*l_)
-	{
-		for (int k = beg_[rw-1]; k != beg_[rw]; ++k)
-		{
-			ivals[idx-1] = rw ;
-			++idx;
-		}
-		++rw ;
-	}
-	
-	int i,j;
-	double val;
-	for (size_t cntr = 0; cntr != ico_.size(); ++cntr)
-	{
-		val = ico_[cntr];
-		i   = ivals[cntr];
-		j   = jco_[cntr];
-		idx = i + (j-1)*m_*n_*l_ - 1;
-		denseA_[idx] = val;
-	}
-
-	write(denseA_, "atmos_denseA.txt");
-	// create LU factorisation, store it in denseA_
-	int dim  = n_*m_*l_;
-	int lda  = dim;
-	int info;
-	dgetrf_(&dim, &dim, &denseA_[0], &lda, &ipiv_[0], &info);
-}
-
 
 //-----------------------------------------------------------------------------
 //! size of stencil/neighbourhood:

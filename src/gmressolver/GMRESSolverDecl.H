@@ -86,8 +86,8 @@ private:
 	void Update(int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
 	void UpdateCopy(int last, Matrix &H, STLVector &s, std::vector<Vector> &V);
 
-	void backsolve(int m, Matrix &H, STLVector &s);
-	void LLSsolve (int m, Matrix &H, STLVector &s); // uses lapack
+	void backSolve(int m, Matrix &H, STLVector &s);
+	void LLSSolve(int m, Matrix &H, STLVector &s); // uses lapack
 	
 	void printIterStatus();
 	

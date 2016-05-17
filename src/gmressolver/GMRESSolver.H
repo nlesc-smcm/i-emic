@@ -320,9 +320,9 @@ compute_y(int last, Matrix &H, STLVector &s)
 	y_ = s;
 
 	if (minimizeScheme_ == 'B') // Backsolve:
-		backsolve(last, H, y_);	
+		backSolve(last, H, y_);	
 	else if (minimizeScheme_ == 'Q')   // Use lapack QR solve
-		LLSsolve(last, H, y_);
+		LLSSolve(last, H, y_);
 }
 
 //*****************************************************************************
@@ -399,7 +399,7 @@ UpdateCopy(int last, Matrix &H, STLVector &s, std::vector<Vector> &V)
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
 void GMRESSolver<Model, VectorPointer>::
-backsolve(int m, Matrix &H, STLVector &s)
+backSolve(int m, Matrix &H, STLVector &s)
 {
 	for (int i = m; i >= 0; i--)
 	{
@@ -412,7 +412,7 @@ backsolve(int m, Matrix &H, STLVector &s)
 //*****************************************************************************
 template<typename Model, typename VectorPointer>
 void GMRESSolver<Model, VectorPointer>::
-LLSsolve(int last, Matrix &H, STLVector &s)
+LLSSolve(int last, Matrix &H, STLVector &s)
 {
 	int  M     =  last+2;  // FOM -> last+1, GMRES last+2 ??
 	int  N     =  last+1;
