@@ -165,14 +165,14 @@ TEST(JDQZ, Atmosphere)
 	INFO("Setting parameters...");
 	std::map<std::string, double> list;	
 	list["Shift (real part)"]         = 0.0;
-	list["Number of eigenvalues"]     = 3;
-	list["Max size search space"]     = 50;
-	list["Min size search space"]     = 20;
-	list["Max JD iterations"]         = 300;
+	list["Number of eigenvalues"]     = 8;
+	list["Max size search space"]     = 35;
+	list["Min size search space"]     = 10;
+	list["Max JD iterations"]         = 500;
 	list["Tracking parameter"]        = 1e-8;
 	list["Criterion for Ritz values"] = 0;
 	list["Linear solver"]             = 1;
-	list["GMRES search space"]        = 50;
+	list["GMRES search space"]        = 20;
 	list["Verbosity"]                 = 5;		
 	MyParameterList params(list);
 	
