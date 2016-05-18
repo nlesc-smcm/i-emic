@@ -29,9 +29,9 @@ if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU") #gfortran, gcc
   set (COMP_IDENT GNU)  
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel") #ifort, icc
   set (CMAKE_Fortran_FLAGS "-g -r8 -O3 -DASCII_TOPO -DWITH_UNION -heap-arrays 1 -extend-source 132")
-  set (CMAKE_CXX_FLAGS "-std=c++11 -O3 -DMPICH_SKIP_MPICXX")
+  set (CMAKE_CXX_FLAGS "-std=c++11 -O3")
   set (COMP_IDENT INTEL)
-endif (CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+endif ()
 
 include_directories(${Trilinos_INCLUDE_DIRS})
 include_directories(${Trilinos_TPL_INCLUDE_DIRS})
