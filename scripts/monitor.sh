@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# check arguments
 if [ $# -eq 0 ]
 then
     echo "  using defaults..."
@@ -19,14 +20,14 @@ else
 	newthist=50
 fi
 
+# Random number generator
 rand()
 {
 	tr -dc 0-9 < /dev/urandom | head -c10;
 	echo
 }
 
-
-
+# Session name needs a random number...
 session_name=status_$(rand)
 
 teststr=local

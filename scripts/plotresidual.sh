@@ -1,8 +1,9 @@
 #!/bin/bash
 
+# Check arguments
 if [ $# -eq 0 ]
 then
-    echo "  usage: <solver history> <newton history> <horizontal size> <vertical size>"
+    echo "  usage: <solver history> <newton history> "
     echo "  using defaults..."
     solvehistory=200
     newtonhistory=100
@@ -26,10 +27,13 @@ do
     fi
 done
 
-
-# You might have to change this
+# Two possibilities for extracting linear solver residuals:
 less dump | grep 'impl res' | tail -n $solvehistory | sed 's/.*iteration://' | sed 's/impl res://' \
 	| sed 's/expl.*//' > solveresiduals
+less dump | grep 'residual \[ 0 \]' | tail -n $solvehistory | sed 's/.*=\ //' | sed 's/\ >.*//' \
+	> solveresiduals
+
+# Extract Newton solve residuals
 less info_0.txt | grep '||R||' | tail -n $newtonhistory | sed 's/.*||R||://' > newtonresiduals
 
 if [ -s "solveresiduals" ]
