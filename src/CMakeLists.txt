@@ -3,10 +3,12 @@ project(i-emic)
 
 # Trying to find Trilinos
 if (DEFINED ENV{TRILINOS_DIR})
-  set(Trilinos_DIR $ENV{TRILINOS_DIR}/lib/cmake/Trilinos)
-  message("-- Trilinos directory: " ${Trilinos_DIR})
+  set (Trilinos_DIR $ENV{TRILINOS_DIR}/lib/cmake/Trilinos)
+  message ("-- Trilinos directory: " ${Trilinos_DIR})
 endif ()
 
+# ------------------------------------------------------------------
+# Trilinos
 find_package(Trilinos)
 
 if (NOT Trilinos_FOUND)
@@ -30,13 +32,6 @@ elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel") #ifort, icc
   set (CMAKE_CXX_FLAGS "-std=c++11 -O3 -DMPICH_SKIP_MPICXX")
   set (COMP_IDENT INTEL)
 endif (CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-
-find_program(CCACHE_FOUND ccache)
-if(CCACHE_FOUND)
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
-  message("-- CCACHE found and applied")
-endif(CCACHE_FOUND)
 
 include_directories(${Trilinos_INCLUDE_DIRS})
 include_directories(${Trilinos_TPL_INCLUDE_DIRS})
@@ -74,6 +69,8 @@ include_directories(${JDQZPP_INCLUDE_DIR})
 list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
 link_directories(${library_directories})
 
+# ------------------------------------------------------------------
+# Additional libraries
 set(EXTRA_LIBS
   hdf5
   ifpack_mrilu
@@ -87,6 +84,8 @@ set(EXTRA_LIBS
 
 list(APPEND library_dependencies ${EXTRA_LIBS})
 
+# ------------------------------------------------------------------
+# Internal I-EMIC shared libraries
 set(I-EMIC_LIBS
   ocean
   atmosphere
@@ -98,6 +97,8 @@ set(I-EMIC_LIBS
   jdqz_tools
   )
 
+# ------------------------------------------------------------------
+# Get targets and dependencies of the components
 add_subdirectory(ocean)
 add_subdirectory(mrilucpp)
 add_subdirectory(atmosphere)
@@ -105,4 +106,17 @@ add_subdirectory(coupledmodel)
 add_subdirectory(supervector)
 add_subdirectory(utils)
 add_subdirectory(main)
+<<<<<<< Updated upstream
 add_subdirectory(tests)
+=======
+add_subdirectory(tests)
+
+# ------------------------------------------------------------------
+# CCACHE
+find_program(CCACHE_FOUND ccache)
+if(CCACHE_FOUND)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+  message("-- CCACHE found and applied")
+endif(CCACHE_FOUND)
+>>>>>>> Stashed changes
