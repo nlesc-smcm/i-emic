@@ -116,11 +116,15 @@ void Ocean::initializeOcean()
 	// Obtain Jacobian from THCM
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	jac_ = THCM::Instance().getJacobian();
-	INFO("Ocean: Obtained jacobian from THCM");
+	INFO("Ocean: Obtained Jacobian from THCM");
+	INFO("Ocean: Printing Jacobian to jacobian.ocean");	
+	// Print the Jacobian
+	DUMP("jacobian.ocean", *jac_);
 	
 	// Initialize a few datamembers
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
+
 }
 
 //====================================================================

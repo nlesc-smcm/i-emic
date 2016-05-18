@@ -281,7 +281,6 @@ namespace TRIOS {
 	{
 		DEBUG("Destroy SppDAMatrix");
 	}
-
       
 //////////////////////////////////////////////////
 // class SppSimplePrec : public Epetra_Operator //
@@ -303,6 +302,7 @@ namespace TRIOS {
 		scheme          = params.get("Scheme","SR");
 		scaleChat       = params.get("Scale Chat", false);
 		fixSingularChat = params.get("Fix singular Chat", false);
+		fixSingularA11  = params.get("Fix singular A11", false);		
 																	
 		Teuchos::ParameterList& SpaIList = params.sublist("Approximate Inverse");
 		string spai_scheme=SpaIList.get("Method","Block Diagonal");
@@ -329,9 +329,13 @@ namespace TRIOS {
 #ifdef HAVE_PARASAILS 
 			if (spai_scheme=="ParaSails")
 			{
-				Teuchos::RCP<Epetra_Operator> spai = SolverFactory::CreateAlgebraicPrecond(Spp->A11(),SpaIList);
+				Teuchos::RCP<Epetra_Operator> spai =
+					SolverFactory::CreateAlgebraicPrecond(Spp->A11(),SpaIList);
+				
 				SolverFactory::ComputeAlgebraicPrecond(spai,SpaIList);
-				Teuchos::RCP<ParaSailsPrecond> psPre = Teuchos::rcp_dynamic_cast<ParaSailsPrecond>(spai);
+				Teuchos::RCP<ParaSailsPrecond> psPre =
+					Teuchos::rcp_dynamic_cast<ParaSailsPrecond>(spai);
+				
 				if (psPre== Teuchos::null) ERROR("failed to dynamic_cast SpaI",__FILE__,__LINE__);
 				DEBUG("extract SpaI CRS matrix...");
 				BlockDiagA11 = psPre->GetSpaI();
@@ -358,7 +362,6 @@ namespace TRIOS {
 			
 			DEBUG("compute the Schur-complement...");
 			DEBUG(" compute Chat = Duv*inv(diag(Auv))*Guv");
-
 			
 			DEBUG("  initialize TMP");
 			Teuchos::RCP<Epetra_CrsMatrix> TMP =
@@ -368,12 +371,50 @@ namespace TRIOS {
 			Teuchos::RCP<Epetra_CrsMatrix> AB =
 				Teuchos::rcp(new Epetra_CrsMatrix(Copy, (Spp->A21()).RowMap(),
 												  (Spp->A21()).MaxNumEntries()));
-			if (fixSingularChat)
+
+
+			//------------------------------------------------------------------
+			// Doing stuff to A11
+			//------------------------------------------------------------------			
+			if (fixSingularA11)
 			{
-				// DUMPMATLAB("Auv",Spp->A11());
-				// DUMPMATLAB("BDAuv",*BlockDiagA11);
+				// Epetra_Vector diagonal(Chat->RowMap());
+				// CHECK_ZERO(Chat->ExtractDiagonalCopy(diagonal));
+				// INFO("  chat diagonal length = " << diagonal.GlobalLength());
+				// // DUMPMATLAB("CHAT", *Chat); 
+		
+				// Teuchos::RCP<Epetra_CrsMatrix> TMP =
+				// 	Teuchos::rcp(new Epetra_CrsMatrix(Copy, Chat->RowMap(), 0));
+		
+				// double values[1]  = {0.0};
+				// int colinds[1]    = {0};
+				// int numMyElements = diagonal.Map().NumMyElements();
+		
+				// int *myGlobalElements = diagonal.Map().MyGlobalElements();
+				// int row;
+				// double tol = 1e3;  // --> ARBITRARY IMPROVE THIS!!!
+				// for (int i = 0; i != numMyElements; ++i)
+				// {
+				// 	if (std::abs(diagonal[i]) < tol)
+				// 	{
+				// 		values[0] = (i > 0) ? diagonal[i-1] : -tol;
+				// 		row = myGlobalElements[i];
+				// 		colinds[0]  = row;
+				// 		diagonal[i] = values[0];
+				// 		CHECK_ZERO(TMP->InsertGlobalValues(row, 1, values, colinds));
+				// 	}
+				// }
+				// Epetra_Import Chat2TMP(TMP->RowMap(), Chat->RowMap());
+
+				// CHECK_ZERO(TMP->Import(*Chat, Chat2TMP, Insert));
+				// CHECK_ZERO(TMP->FillComplete());
+				// // DUMPMATLAB("TMP",   *TMP);
+		
+				// Chat = TMP;
+				// // DUMPMATLAB("CHAT2", *Chat);
+
 			}
-			
+
 			DEBUG("  perform AB = Spp->A21*BlockDiagA11");
 			EpetraExt::MatrixMatrix::Multiply(Spp->A21(),    false,
 											  *BlockDiagA11, false, *AB);
