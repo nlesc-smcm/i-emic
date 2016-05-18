@@ -195,8 +195,8 @@ TEST(JDQZ, Atmosphere)
 		residue.scale(beta[j]);
 		matrix.BMUL(eivec[j], tmp);
 		residue.axpy(-alpha[j], tmp);
-		std::cout << "alpha: " <<  std::setw(20) << alpha[j]
-				  << " beta: " << std::setw(20) << beta[j]
+		std::cout << "alpha: " << std::setw(30) << alpha[j]
+				  << " beta: " << std::setw(30) << beta[j]
 				  << " " << residue.norm() << std::endl;
 		
 	}

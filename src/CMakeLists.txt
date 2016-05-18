@@ -23,14 +23,18 @@ enable_language(Fortran)
 message("-- CMAKE_Fortran_COMPILER_ID ${CMAKE_Fortran_COMPILER_ID}")
 
 if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU") #gfortran, gcc
+  
   set (CMAKE_Fortran_FLAGS
 	"-g -u -O0 -ffixed-line-length-132 -fdefault-real-8 -ffree-line-length-none -DASCII_TOPO")
   set (CMAKE_CXX_FLAGS "-g -std=c++11 -O0 -Wall")
-  set (COMP_IDENT GNU)  
+  set (COMP_IDENT GNU)
+  
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel") #ifort, icc
+  
   set (CMAKE_Fortran_FLAGS "-g -r8 -O3 -DASCII_TOPO -DWITH_UNION -heap-arrays 1 -extend-source 132")
   set (CMAKE_CXX_FLAGS "-std=c++11 -O3")
   set (COMP_IDENT INTEL)
+  
 endif ()
 
 include_directories(${Trilinos_INCLUDE_DIRS})
@@ -39,11 +43,9 @@ include_directories(${Trilinos_TPL_INCLUDE_DIRS})
 set(library_directories ${Trilinos_LIBRARY_DIRS})
 list(APPEND library_directories ${Trilinos_TPL_LIBRARY_DIRS})
 list(APPEND library_directories $ENV{MRILU_DIR}/lib/) # MRILU
-list(APPEND library_directories $ENV{LD_LIBRARY_PATH}) 
 
 set(library_dependencies ${Trilinos_LIBRARIES})
 list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
-message("-- TPL: ${Trilinos_TPL_LIBRARIES}")
 
 # Locate JDQZPP external project
 #  maintained as a git submodule but that is not used here (yet).
@@ -53,11 +55,7 @@ set_directory_properties(PROPERTIES EP_PREFIX ${CMAKE_SOURCE_DIR}/src/external)
 ExternalProject_Add(jdqzpp
   GIT_REPOSITORY https://github.com/erik808/jdqzpp
   GIT_TAG origin/master
-  PREFIX      ${CMAKE_SOURCE_DIR}/src/external/jdqzpp
-  # CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-  # CMAKE_ARGS -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
-  # CMAKE_ARGS -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-  # CMAKE_ARGS -DCMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS}
+  PREFIX ${CMAKE_SOURCE_DIR}/src/external/jdqzpp
   )
 
 ExternalProject_Get_Property(jdqzpp source_dir)
@@ -91,8 +89,6 @@ set(I-EMIC_LIBS
   atmosphere
   coupledmodel
   supervector
-  ifpack_mrilu
-  mrilucpp
   utils
   jdqz_tools
   )

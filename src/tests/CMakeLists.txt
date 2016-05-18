@@ -59,5 +59,6 @@ find_package(Threads)
 target_link_libraries(test_supervec PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(test_jdqz PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 
+
 install(TARGETS test_supervec DESTINATION test/default)
 install(TARGETS test_jdqz DESTINATION test/jdqz)

@@ -1,16 +1,32 @@
 function [peri,pmask] = transform_mask(mask_name, periodic)
   % This function transforms Michiel's masks to THCM masks
-  % Supply the name of the .mat file and whether you want periodic boundaries.		 
-
+  % Supply the name of the .mat file and whether you want periodic
+  % boundaries.
+		 
   if nargin < 2
 	periodic = true;
   end
   
   M        =  load([mask_name, '.mat']);
-  mask     =  ~M.mask;
+  mimport  =   M.maskp; % might be .mask or .maskp, not sure
+  mask     =  ~mimport;
   [m,n,l]  =  size(mask);
-  fid      =  fopen([mask_name, '.mask'],'w');
 
+  % check whether we have a non-layered format
+  if (l == 1)
+	fprintf('  not in layered format: converting!\n');
+	pcolor(mimport);
+	% convert to layered format
+	l = max(max(abs(mimport)))
+	mask = zeros(m,n,l);
+	for i = 1:l
+	  mask(:,:,i) = ~(M.maskp >= i);
+	end
+  end
+
+  % Create file id 
+  fid      =  fopen([mask_name, '.mask'],'w');
+  
   % set padded mask pmask  
   pmask = ones(m+2,n+2,l+2);
   pmask(2:m+1,2:n+1,2:l+1) = mask;
