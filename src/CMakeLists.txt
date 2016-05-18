@@ -106,9 +106,6 @@ add_subdirectory(coupledmodel)
 add_subdirectory(supervector)
 add_subdirectory(utils)
 add_subdirectory(main)
-<<<<<<< Updated upstream
-add_subdirectory(tests)
-=======
 add_subdirectory(tests)
 
 # ------------------------------------------------------------------
@@ -119,4 +116,3 @@ if(CCACHE_FOUND)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
   message("-- CCACHE found and applied")
 endif(CCACHE_FOUND)
->>>>>>> Stashed changes
