@@ -44,7 +44,7 @@ then
 	echo "LOCAL!" ${SHARED_DIR}
 	sleep 1
 	tmux new-session -d -s $session_name 'exec tail -f -n '$tailhist' '${SHARED_DIR}'/i-emic/'$dir'/dump '
-	tmux split-window -h 'cd '${SHARED_DIR}'/i-emic/'$dir'/ && watch -n 5 -t ./plotresidual.sh '$linhist' '$newthist' '
+#	tmux split-window -h 'cd '${SHARED_DIR}'/i-emic/'$dir'/ && watch -n 5 -t ./plotresidual.sh '$linhist' '$newthist' '
 	tmux split-window -v -t 0 'exec  tail -f -n '$tailhist'  '${SHARED_DIR}'/i-emic/'$dir'/info_0.txt '
 	tmux resize-pane -L 30
 	

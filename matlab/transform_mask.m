@@ -9,8 +9,15 @@ function [peri,pmask] = transform_mask(mask_name, periodic)
   
   M        =  load([mask_name, '.mat']);
   mimport  =   M.maskp; % might be .mask or .maskp, not sure
+  [~,~,L]  =   size(mimport);
+
+  reducesize = false;
+  if (reducesize && L == 1) % cruel reduction
+	 mimport = mimport(1:2:end,1:2:end);
+  end
+	 
   mask     =  ~mimport;
-  [m,n,l]  =  size(mask);
+  [m,n,l]  =  size(mask)
 
   % check whether we have a non-layered format
   if (l == 1)
@@ -20,7 +27,7 @@ function [peri,pmask] = transform_mask(mask_name, periodic)
 	l = max(max(abs(mimport)))
 	mask = zeros(m,n,l);
 	for i = 1:l
-	  mask(:,:,i) = ~(M.maskp >= i);
+	  mask(:,:,i) = ~(mimport >= i);
 	end
   end
 
