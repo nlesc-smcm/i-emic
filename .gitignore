@@ -28,6 +28,8 @@
 
 !test/
 !default/
+!jdqz/
+!masks/
 
 !run/
 !paleo
