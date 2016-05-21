@@ -131,6 +131,7 @@ extern "C" {
 
 
 //=============================================================================
+// constructor
 THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     Singleton<THCM>(Teuchos::rcp(this, false)),
     Comm(comm),
@@ -150,7 +151,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	// TODO: implement atmosphere layer
 	la = 0;
 	//=================================================
-
+	
 	std::stringstream ss;
 	ss << "THCM (" << probdesc <<", "
 	   << n << "x" << m << "x" << l <<")";

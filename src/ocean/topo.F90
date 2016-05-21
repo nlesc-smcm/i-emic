@@ -45,12 +45,14 @@ SUBROUTINE topofit
      end if
 #ifndef ASCII_TOPO
      read(10) d10
-#else      
+#else
+     
      do j=1,md
         do i=1,nd
            read(10,'(1I6)') d10(i,j)
         end do
      end do
+     
 #endif      
      close(10)
      if (xmax .gt. 2*pi) then
@@ -140,35 +142,30 @@ SUBROUTINE readmask
   write(*,*) '===========TOPOGRAPHY==================================='
   !
   open(unit=500,file=topdir//'mkmask/'//trim(maskfile),status='old',err=123)
-  !     open(unit=500,file=rundir//'mkmask/mask_natl16')
-  !     open(unit=500,file=rundir//'mkmask/test2')
-  !     open(unit=500,file=rundir//'mkmask/mask.glo_oc') ! 98 x 38 x 12 
-  !     open(unit=500,file=rundir//'mkmask/mask.jonas') 
 
   landm = LAND
-  write(*,*) ' l, la, m, n = ', l, la, m, n 
+
   do k = 0, l+la+1
      read(500,*) 
      do j = m+1, 0, -1
         read(500,'(362i1)',iostat=status) (landm(i,j,k),i=0,n+1)
-        !write(*,*) ' k = ', k, ' j = ', j, ' status ', status
      enddo
   enddo
 
   close(500)
 
   !
-  do k=1,l
+  do k = 1, l
      do i = 3, n-2
         do j = 2, m-1
            if ( landm(i,j,k).eq.OCEAN ) then
               nw =  landm(i-1,j,k)
               ne =  landm(i+1,j,k)     
-              ns=   landm(i,j-1,k)
+              ns =  landm(i,j-1,k)
               nn =  landm(i,j+1,k) 
               nsum = nw+ne+ns+nn
               if (nsum.gt.2) then                      
-                 landm(i,j,k) = LAND
+                 landm(i,j,k) = LAND ! <--- gotcha!!
               endif
            endif
         enddo
