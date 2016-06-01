@@ -744,15 +744,16 @@ namespace TRIOS {
 				{
 					is_dummy[i] = true;
 				}
-				// else if (values[p] == 0.0)
-				// {
-				// 	is_dummy[i] = true;
-				// }
 				else if (values[p] != 0.0)
 				{
 					is_dummy[i] = false;
 					break;
 				}
+				// else
+				// {
+				// 	is_dummy[i] = true;
+				// }
+					
 			}
 			if (is_dummy[i]) ndummies++;
 		}
