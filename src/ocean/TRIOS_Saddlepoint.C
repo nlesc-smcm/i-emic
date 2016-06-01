@@ -299,10 +299,11 @@ namespace TRIOS {
 		A11Solver     (A11Solver_),
 		A11Precond    (A11Precond_)    
 	{
-		scheme          = params.get("Scheme","SR");
-		scaleChat       = params.get("Scale Chat", false);
-		fixSingularChat = params.get("Fix singular Chat", false);
-		fixSingularA11  = params.get("Fix singular A11", false);		
+		scheme            = params.get("Scheme","SR");
+		scaleChat         = params.get("Scale Chat", false);
+		fixSingularChat   = params.get("Fix singular Chat", false);
+		printSingularChat = params.get("Print zero diagonal indices", false);
+		fixSingularA11    = params.get("Fix singular A11", false);		
 																	
 		Teuchos::ParameterList& SpaIList = params.sublist("Approximate Inverse");
 		string spai_scheme=SpaIList.get("Method","Block Diagonal");
@@ -324,8 +325,48 @@ namespace TRIOS {
 		domainMap = Spp->GetDomainMap();
   
 		{
+			//------------------------------------------------------------------
+			// Doing stuff to A11
+			//------------------------------------------------------------------
+			if (fixSingularA11)
+			{
+				// Extract diagonal
+				Epetra_Vector diagonal(Spp->A11().RowMap());
+				CHECK_ZERO(Spp->A11().ExtractDiagonalCopy(diagonal));
+				INFO("  A11 diagonal length = " << diagonal.GlobalLength());
+
+				// Copy matrix
+				Teuchos::RCP<Epetra_CrsMatrix> TMP =
+					Teuchos::rcp(new Epetra_CrsMatrix(Copy, Spp->A11().RowMap(), 0));
+		
+				double values[1]  = {0.0};
+				int colinds[1]    = {0};
+				int numMyElements = diagonal.Map().NumMyElements();
+		
+				int *myGlobalElements = diagonal.Map().MyGlobalElements();
+				int row;
+				double tol = 1e-1;  // --> ARBITRARY! IMPROVE THIS!!!
+				for (int i = 0; i != numMyElements; ++i)
+				{
+					if (std::abs(diagonal[i]) < tol)
+					{
+						values[0] = (i > 0) ? diagonal[i-1] : -tol;
+						row = myGlobalElements[i];
+						INFO("   fix row " << row << ": "
+							 << diagonal[i] << " -> " << values[0]);
+						colinds[0]  = row;
+						diagonal[i] = values[0];
+						CHECK_ZERO(TMP->InsertGlobalValues(row, 1, values, colinds));
+					}
+				}
+				Epetra_Import A112TMP(TMP->RowMap(), Spp->A11().RowMap());
+
+				CHECK_ZERO(TMP->Import(Spp->A11(), A112TMP, Insert));
+				CHECK_ZERO(TMP->FillComplete());
+		
+				Spp->A11() = *TMP;
+			}
 			
-  
 #ifdef HAVE_PARASAILS 
 			if (spai_scheme=="ParaSails")
 			{
@@ -372,52 +413,7 @@ namespace TRIOS {
 				Teuchos::rcp(new Epetra_CrsMatrix(Copy, (Spp->A21()).RowMap(),
 												  (Spp->A21()).MaxNumEntries()));
 
-			//------------------------------------------------------------------
-			// Doing stuff to A11
-			//------------------------------------------------------------------
-			if (fixSingularA11)
-			{
-				// Extract diagonal
-				Epetra_Vector diagonal(Spp->A11().RowMap());
-				CHECK_ZERO(Spp->A11().ExtractDiagonalCopy(diagonal));
-				INFO("  A11 diagonal length = " << diagonal.GlobalLength());
-				// DUMPMATLAB("CHAT", *Chat); 
 
-				// Copy matrix
-				Teuchos::RCP<Epetra_CrsMatrix> TMP =
-					Teuchos::rcp(new Epetra_CrsMatrix(Copy, Spp->A11().RowMap(), 0));
-		
-				double values[1]  = {0.0};
-				int colinds[1]    = {0};
-				int numMyElements = diagonal.Map().NumMyElements();
-		
-				int *myGlobalElements = diagonal.Map().MyGlobalElements();
-				int row;
-				double tol = 1e-1;  // --> ARBITRARY! IMPROVE THIS!!!
-				for (int i = 0; i != numMyElements; ++i)
-				{
-					if (std::abs(diagonal[i]) < tol)
-					{
-						values[0] = (i > 0) ? diagonal[i-1] : -tol;
-						row = myGlobalElements[i];
-						INFO("   fix row " << row << ": "
-							 << diagonal[i] << " -> " << values[0]);
-						colinds[0]  = row;
-						diagonal[i] = values[0];
-						CHECK_ZERO(TMP->InsertGlobalValues(row, 1, values, colinds));
-					}
-				}
-				Epetra_Import A112TMP(TMP->RowMap(), Spp->A11().RowMap());
-
-				CHECK_ZERO(TMP->Import(Spp->A11(), A112TMP, Insert));
-				CHECK_ZERO(TMP->FillComplete());
-				// DUMPMATLAB("TMP",   *TMP);
-		
-				Chat = TMP;
-				// DUMPMATLAB("CHAT2", *Chat);
-			}
-
-			getchar();
 
 			DEBUG("  perform AB = Spp->A21*BlockDiagA11");
 			EpetraExt::MatrixMatrix::Multiply(Spp->A21(),    false,
@@ -567,7 +563,23 @@ namespace TRIOS {
 			delete [] values;
 		}
 		
+		if (printSingularChat)
+		{
+			Epetra_Vector diagonal(Chat->RowMap());
+			Epetra_Vector zeroRows(Chat->RowMap());
+			CHECK_ZERO(Chat->ExtractDiagonalCopy(diagonal));
+			INFO("  chat diagonal length = " << diagonal.GlobalLength());
+			int numMyElements = diagonal.Map().NumMyElements();
+			double tol = 1e-10;
 
+			for (int i = 0; i != numMyElements; ++i)
+				if (std::abs(diagonal[i]) < tol)
+					zeroRows[i] = 1;
+
+			INFO("Printing zero rows in Chat");
+			EpetraExt::VectorToMatlabFile("zerorows", zeroRows);
+		}
+		
 		// =============================================================================
 		// IMPROVE CONDITION NUMBER OF CHAT ----
 		// I'm also going to try to fix zero diagonal elements due to the landmask -Erik

@@ -31,7 +31,11 @@ SUBROUTINE topofit
   liwrk=n+nd
 
   ido = 1
+  ! disabling this whole thing...
+#ifdef TOPO10 
+  
   IF (ido == 1) THEN ! debugging, file topo10.binnew cannot be read
+
 #ifdef ASCII_TOPO
      open(unit=10,file=topdir//'topo/topo10.asc',&
           form='formatted',status='old',action='read', iostat=ierr)
@@ -112,6 +116,8 @@ SUBROUTINE topofit
         ENDDO
      ENDDO
   ENDIF
+
+#endif
   IF (rd_mask) THEN
      _DEBUG_('call readmask...') 
      call readmask
@@ -164,9 +170,9 @@ SUBROUTINE readmask
               ns =  landm(i,j-1,k)
               nn =  landm(i,j+1,k) 
               nsum = nw+ne+ns+nn
-              if (nsum.gt.2) then                      
-                 landm(i,j,k) = LAND ! <--- gotcha!!
-              endif
+              !if (nsum.gt.2) then                      
+              !   landm(i,j,k) = LAND ! <--- gotcha!!
+              !endif
            endif
         enddo
      enddo

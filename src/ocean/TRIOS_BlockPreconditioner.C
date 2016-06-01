@@ -242,6 +242,8 @@ namespace TRIOS {
   
 		is_dummyW = new bool[mapW->NumMyElements()];
 		is_dummyP = new bool[mapP->NumMyElements()];
+
+		INFO("mapP->NumMyElements = " << mapP->NumMyElements());
   
 		// dummy points are defined to be such rows of the matrix that
 		// a) belong to the corresponding eqn (p or w, depending on the map)
@@ -253,19 +255,14 @@ namespace TRIOS {
 		// 
 		// so that in practice there are always m*n more dummy w's than dummy p's
 		// (the top ocean layer)
-		dump = detect_dummies(*jacobian,*mapP,is_dummyP);
-		dumw = detect_dummies(*jacobian,*mapW,is_dummyW);
+		dump = detect_dummies(*jacobian, *mapP, is_dummyP);
+		dumw = detect_dummies(*jacobian, *mapW, is_dummyW);
   
-		if (verbose>5)
-		{
-			INFO("@   Remove dummy W and P points ...");
-			INFO("dummy ws: "<<dumw);
-			INFO("dummy ps: "<<dump);
-		}
-		if (verbose>=10)
-		{
-			INFO("@   Create maps P1, W1, P^ ...");
-		}
+		INFO(" Remove dummy W and P points ...");
+		INFO(" dummy ws: " << dumw);
+		INFO(" dummy ps: " << dump);
+
+		INFO(" Create maps P1, W1, P^ ...");
 
 		// create maps without dummy points: All matrices and vectors
 		// will be based on these maps, not the original P and W maps
@@ -370,7 +367,6 @@ namespace TRIOS {
 		Importer[_BTSw] = importTS;
 		SubMatrixLabel[_BTSw]="BTSw";
   
-  
 		//G and D matrices
   
 		// pressure gradient, Guv: P1->UV
@@ -381,7 +377,7 @@ namespace TRIOS {
 		Importer[_Guv] = importUV;
 		SubMatrixLabel[_Guv]="Guv";
 
-// Gw without dummies: P1->W1
+		// Gw without dummies: P1->W1
 		SubMatrixRowMap[_Gw] = mapW1;
 		SubMatrixColMap[_Gw] = colmapP1;
 		SubMatrixRangeMap[_Gw] = mapW1;
@@ -390,19 +386,22 @@ namespace TRIOS {
 		SubMatrixLabel[_Gw]="Gw";
 
 		// divergence in p-eqn Duv: UV->P1
-		SubMatrixRowMap[_Duv] = mapP1;
-		SubMatrixColMap[_Duv] = colmapUV;
-		SubMatrixRangeMap[_Duv] = mapP1;
+		SubMatrixRowMap[_Duv]    = mapP1;
+		SubMatrixColMap[_Duv]    = colmapUV;
+		SubMatrixRangeMap[_Duv]  = mapP1;
 		SubMatrixDomainMap[_Duv] = mapUV;
-		Importer[_Duv] = importP1;
-		SubMatrixLabel[_Duv]="Duv";
+		Importer[_Duv]           = importP1;
+		SubMatrixLabel[_Duv]     = "Duv";
   
     
 		// allocate memory for submatrices
 		for (int i=0;i<_NUMSUBM;i++)
 		{
-			SubMatrix[i] = Teuchos::rcp(new 
-										Epetra_CrsMatrix(Copy,*(SubMatrixRowMap[i]),*(SubMatrixColMap[i]),0));
+			SubMatrix[i] =
+				Teuchos::rcp(new Epetra_CrsMatrix(Copy,
+												  *(SubMatrixRowMap[i]),
+												  *(SubMatrixColMap[i]),0));
+			
 			SubMatrix[i]->SetLabel(SubMatrixLabel[i].c_str());
 		}
 		if (verbose>5)
@@ -680,8 +679,11 @@ namespace TRIOS {
 		// Duv1 is the 'square part' of Duv, in practice it maps
 		// to w1 vectors (which have less points) instead of p1 vectors:
     
-		Duv1 = Teuchos::rcp(new Epetra_CrsMatrix(Copy,*mapPhat,SubMatrix[_Duv]->ColMap(),
-												 SubMatrix[_Duv]->MaxNumEntries()) );
+		Duv1 =
+			Teuchos::rcp(new Epetra_CrsMatrix(Copy,
+											  *mapPhat,
+											  SubMatrix[_Duv]->ColMap(),
+											  SubMatrix[_Duv]->MaxNumEntries()) );
 		CHECK_ZERO(Duv1->Import(*SubMatrix[_Duv],*importPhat,Zero));
     
 		// make it map to W1 instead of Phat:
@@ -724,27 +726,32 @@ namespace TRIOS {
 		int len;
 		//int col;
 		//double val;
-		int maxlen = A.MaxNumEntries();
-		int *indices = new int[maxlen];
+		int maxlen     = A.MaxNumEntries();
+		int *indices   = new int[maxlen];
 		double *values = new double[maxlen];
      
-		len=1;
+		len = 1;
      
-		for (int i=0; i<dim; i++)
+		for (int i = 0; i < dim; i++)
 		{
 			row = M.GID(i);
 			is_dummy[i]=false;
 
 			CHECK_ZERO(A.ExtractGlobalRowCopy(row, maxlen,len, values, indices)); 
-			for (int p=0;p<len;p++)
+			for (int p = 0; p < len; p++)
 			{
-				if (indices[p]==row)
+				if (indices[p] == row)
 				{
-					is_dummy[i]=true;
+					is_dummy[i] = true;
 				}
-				else if (values[p]!=0.0)
+				// else if (values[p] == 0.0)
+				// {
+				// 	is_dummy[i] = true;
+				// }
+				else if (values[p] != 0.0)
 				{
-					is_dummy[i]=false; break;
+					is_dummy[i] = false;
+					break;
 				}
 			}
 			if (is_dummy[i]) ndummies++;
