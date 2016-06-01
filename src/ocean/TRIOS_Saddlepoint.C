@@ -580,6 +580,7 @@ namespace TRIOS {
 			EpetraExt::VectorToMatlabFile("zerorows", zeroRows);
 		}
 		
+		
 		// =============================================================================
 		// IMPROVE CONDITION NUMBER OF CHAT ----
 		// I'm also going to try to fix zero diagonal elements due to the landmask -Erik

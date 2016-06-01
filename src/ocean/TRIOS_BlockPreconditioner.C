@@ -262,6 +262,8 @@ namespace TRIOS {
 		INFO(" dummy ws: " << dumw);
 		INFO(" dummy ps: " << dump);
 
+		getchar();
+
 		INFO(" Create maps P1, W1, P^ ...");
 
 		// create maps without dummy points: All matrices and vectors
@@ -731,13 +733,20 @@ namespace TRIOS {
 		double *values = new double[maxlen];
      
 		len = 1;
+		int ctr = 0;
      
 		for (int i = 0; i < dim; i++)
 		{
 			row = M.GID(i);
 			is_dummy[i]=false;
 
-			CHECK_ZERO(A.ExtractGlobalRowCopy(row, maxlen,len, values, indices)); 
+			CHECK_ZERO(A.ExtractGlobalRowCopy(row, maxlen,len, values, indices));
+
+			std::cout << i << ":  ";
+			
+			for (int p = 0; p < len; p++)
+				std::cout << values[p] << " ";
+			
 			for (int p = 0; p < len; p++)
 			{
 				if (indices[p] == row)
@@ -749,13 +758,19 @@ namespace TRIOS {
 					is_dummy[i] = false;
 					break;
 				}
-				// else
-				// {
-				// 	is_dummy[i] = true;
-				// }
-					
 			}
-			if (is_dummy[i]) ndummies++;
+			
+			// // Additional hack 
+			// if (values[0] == 0.0)
+			// 	is_dummy[i] = true;
+			
+			if (is_dummy[i])
+			{
+				ndummies++;
+				std::cout << " <-- dummy";
+			}
+			
+			std::cout << std::endl;
 		}
 
 		delete [] indices;
