@@ -110,7 +110,7 @@ namespace TRIOS {
 		// rest should be handled automatically by Teuchos::rcp's
 	}
 
-// to be called in constructors:
+	// to be called in constructors:
 	void BlockPreconditioner::Setup1()
 	{
 		if (verbose > 5) INFO("Enter Setup1()...");
@@ -138,7 +138,7 @@ namespace TRIOS {
 		if (verbose>5) INFO("$   Split main map into uv|w|p|TS maps...");
 
 
-//  EBVAR(*RowMap);
+		//  DEBVAR(*RowMap);
 
 		const int labelUV[2] = {UU, VV};
 		const int labelTS[2] = {TT, SS};
@@ -265,7 +265,7 @@ namespace TRIOS {
 		// Points that will cause the Schur complement to become singular
 		// should be viewed as dummy points as well.
 		// These occur for 'impossible' topographies. 
-
+		
 		for (int i = 0; i != NmapW; ++i)
 			if (is_dummyP[i] && !is_dummyW[i])
 			{
@@ -765,11 +765,11 @@ namespace TRIOS {
 			}
 
 			// Additional hack for impossible topographies
-			// sum = 0.0;
-			// for (int p = 0; p < len; p++)
-			// 	sum += values[p];
-			// if (sum == 0 || sum == 4)
-			// 	is_dummy[i] = true;
+			sum = 0.0;
+			for (int p = 0; p < len; p++)
+				sum += values[p];
+			if (sum == 0 || sum == 4)
+				is_dummy[i] = true;
 			
 
 			if (is_dummy[i])
