@@ -171,7 +171,7 @@ SUBROUTINE readmask
               nn =  landm(i,j+1,k) 
               nsum = nw+ne+ns+nn
               !if (nsum.gt.2) then                      
-              !   landm(i,j,k) = LAND ! <--- gotcha!!
+              !   landm(i,j,k) = LAND ! <--- disabled this hack
               !endif
            endif
         enddo

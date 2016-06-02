@@ -63,7 +63,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="test"/>
+    <Parameter name="Land Mask" type="string" value="test2"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -75,8 +75,8 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.2"/>
-      <Parameter name="Wind Forcing"        type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
+      <Parameter name="Wind Forcing"        type="double" value="0.0"/>
 	  <Parameter name="Temperature Forcing" type="double" value="1.0"/>
 	  <Parameter name="SPL1"                type="double" value="1.25"/>
 	  <Parameter name="SPL2"                type="double" value="0.01"/>	  

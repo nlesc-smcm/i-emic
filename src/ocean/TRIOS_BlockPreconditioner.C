@@ -239,11 +239,14 @@ namespace TRIOS {
 		// pointer arrays, create the matrices.
   
 		// detect dummy w and p points
-  
-		is_dummyW = new bool[mapW->NumMyElements()];
-		is_dummyP = new bool[mapP->NumMyElements()];
+		
+		int NmapW = mapW->NumMyElements();
+		int NmapP = mapP->NumMyElements();
+		is_dummyW = new bool[NmapW];
+		is_dummyP = new bool[NmapP];
 
-		INFO("mapP->NumMyElements = " << mapP->NumMyElements());
+		INFO("mapP->NumMyElements = " << NmapP);
+		INFO("mapW->NumMyElements = " << NmapW);
   
 		// dummy points are defined to be such rows of the matrix that
 		// a) belong to the corresponding eqn (p or w, depending on the map)
@@ -257,11 +260,23 @@ namespace TRIOS {
 		// (the top ocean layer)
 		dump = detect_dummies(*jacobian, *mapP, is_dummyP);
 		dumw = detect_dummies(*jacobian, *mapW, is_dummyW);
-  
+
+		
+		// Points that will cause the Schur complement to become singular
+		// should be viewed as dummy points as well.
+		// These occur for 'impossible' topographies. 
+
+		for (int i = 0; i != NmapW; ++i)
+			if (is_dummyP[i] && !is_dummyW[i])
+			{
+				is_dummyW[i] = true;
+				dumw++;
+			}
+		
 		INFO(" Remove dummy W and P points ...");
 		INFO(" dummy ws: " << dumw);
 		INFO(" dummy ps: " << dump);
-
+		
 		getchar();
 
 		INFO(" Create maps P1, W1, P^ ...");
@@ -308,12 +323,9 @@ namespace TRIOS {
 		}
 		mapPbar = Teuchos::rcp(new Epetra_Map(-1,NumMyElements,0,*comm));
 
-// Set arrays with pointers. This makes accessing the objects
-// more convenient later on.
-		if (verbose>5)
-		{
-			INFO("@   Set Pointer Arrays ...");
-		}
+		// Set arrays with pointers. This makes accessing the objects
+		// more convenient later on.
+		INFO(" Set Pointer Arrays ...");
 
 		// diagonal blocks:
   
@@ -406,16 +418,12 @@ namespace TRIOS {
 			
 			SubMatrix[i]->SetLabel(SubMatrixLabel[i].c_str());
 		}
-		if (verbose>5)
-		{
-			INFO("@   Build singular vectors of the pressure...");
-		}
+		
+		INFO(" Build singular vectors of the pressure...");
+
 		build_svp();
   
-		if (verbose>5)
-		{
-			INFO("@@@@ setup done. @@@");
-		}
+		INFO(" BlockPreconditioner setup done.");
 
 		// needs_setup is still kept 'true'. After the submatrices have been extracted
 		// for the first time their column maps will be adjusted, THEN needs_setup will
@@ -731,10 +739,9 @@ namespace TRIOS {
 		int maxlen     = A.MaxNumEntries();
 		int *indices   = new int[maxlen];
 		double *values = new double[maxlen];
-     
+
+		double sum;
 		len = 1;
-		int ctr = 0;
-     
 		for (int i = 0; i < dim; i++)
 		{
 			row = M.GID(i);
@@ -742,13 +749,10 @@ namespace TRIOS {
 
 			CHECK_ZERO(A.ExtractGlobalRowCopy(row, maxlen,len, values, indices));
 
-			std::cout << i << ":  ";
-			
-			for (int p = 0; p < len; p++)
-				std::cout << values[p] << " ";
 			
 			for (int p = 0; p < len; p++)
 			{
+				sum += values[p];
 				if (indices[p] == row)
 				{
 					is_dummy[i] = true;
@@ -759,18 +763,19 @@ namespace TRIOS {
 					break;
 				}
 			}
-			
-			// // Additional hack 
-			// if (values[0] == 0.0)
+
+			// Additional hack for impossible topographies
+			// sum = 0.0;
+			// for (int p = 0; p < len; p++)
+			// 	sum += values[p];
+			// if (sum == 0 || sum == 4)
 			// 	is_dummy[i] = true;
 			
+
 			if (is_dummy[i])
 			{
 				ndummies++;
-				std::cout << " <-- dummy";
 			}
-			
-			std::cout << std::endl;
 		}
 
 		delete [] indices;
@@ -2142,10 +2147,7 @@ namespace TRIOS {
 		// on the topography and the grid:
 		if (Mzp1 == Teuchos::null)
 		{
-			if (verbose>5)    
-			{
-				INFO("build Mzp1...");
-			}
+			INFO(" build Mzp1...");
 			//Mzp1 is the Teuchos::null-space of Gw
 			Mzp1 = build_singular_matrix(SubMatrix[_Gw]);
 		}
