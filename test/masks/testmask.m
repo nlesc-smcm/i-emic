@@ -13,8 +13,8 @@ if ~exist('mask25Ma') || force
   transform_mask('Mask_25Ma_lon1.5-3-358.5_lat-79.5-3-79.5',true);
 end
 
-lvl = 1; % level
-mask = mask45Ma;
+lvl = 2; % level
+mask = mask65Ma;
 
 figure(1);
 imagesc(mask(:,:,1+lvl));
@@ -50,7 +50,7 @@ C = -Duv * iAuv * Guv;
 
 %force = true;
 if ~exist('r') || force
-  r = findzerorows(Duv);
+  r = findzerorows(diag(C));
 end
 
 RWS = load('zerorows');
@@ -77,10 +77,9 @@ imagesc(squeeze(uvgrid(1,:,:,13-lvl))')
 set(gca,'ydir','normal')
 condest(C)
 
-%for i = 1:12
-%figure(i)
-%MSK = squeeze(mask(2:end-1,2:end-1,1+i))';
-%UVG = squeeze(uvgrid(1,:,:,13-i));
-%imagesc((MSK+10*TRB)')
-%set(gca,'ydir','normal')
-%end
+SWS = load('singrows');
+SWS = reshape(SWS,n,m,l);
+
+figure(4)
+imagesc(squeeze(SWS(:,:,13-lvl))')
+set(gca,'ydir','normal')

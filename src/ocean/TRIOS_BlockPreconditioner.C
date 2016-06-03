@@ -260,24 +260,10 @@ namespace TRIOS {
 		// (the top ocean layer)
 		dump = detect_dummies(*jacobian, *mapP, is_dummyP);
 		dumw = detect_dummies(*jacobian, *mapW, is_dummyW);
-
-		
-		// Points that will cause the Schur complement to become singular
-		// should be viewed as dummy points as well.
-		// These occur for 'impossible' topographies. 
-		
-		for (int i = 0; i != NmapW; ++i)
-			if (is_dummyP[i] && !is_dummyW[i])
-			{
-				is_dummyW[i] = true;
-				dumw++;
-			}
 		
 		INFO(" Remove dummy W and P points ...");
 		INFO(" dummy ws: " << dumw);
 		INFO(" dummy ps: " << dump);
-		
-		getchar();
 
 		INFO(" Create maps P1, W1, P^ ...");
 
@@ -740,7 +726,6 @@ namespace TRIOS {
 		int *indices   = new int[maxlen];
 		double *values = new double[maxlen];
 
-		double sum;
 		len = 1;
 		for (int i = 0; i < dim; i++)
 		{
@@ -752,7 +737,6 @@ namespace TRIOS {
 			
 			for (int p = 0; p < len; p++)
 			{
-				sum += values[p];
 				if (indices[p] == row)
 				{
 					is_dummy[i] = true;
@@ -764,14 +748,13 @@ namespace TRIOS {
 				}
 			}
 
-			// Additional hack for impossible topographies
-			sum = 0.0;
-			for (int p = 0; p < len; p++)
-				sum += values[p];
-			if (sum == 0 || sum == 4)
-				is_dummy[i] = true;
-			
-
+			// // Additional hack for impossible topographies
+			// sum = 0.0;
+			// for (int p = 0; p < len; p++)
+			// 	sum += values[p];
+			//  if (sum == 0 || sum == 4)
+			// 	is_dummy[i] = true;
+	
 			if (is_dummy[i])
 			{
 				ndummies++;

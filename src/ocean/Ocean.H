@@ -235,6 +235,10 @@ private:
 	void initializeBelos();
 	void initializeIDR();
 
+	// This member finds the pressure rows that will give a singular Schur complement
+	// Based on these rows we will try to create a better landmask.
+	void analyzeJacobian();
+
 	// Build preconditioner
 	void buildPreconditioner();
 

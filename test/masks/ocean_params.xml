@@ -63,7 +63,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="Mask_25Ma_lon1.5-3-358.5_lat-79.5-3-79.5.mask"/>
+    <Parameter name="Land Mask" type="string" value="Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5.mask"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->

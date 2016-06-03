@@ -89,12 +89,12 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
      end do
   end do
 
-  call grid
-  call stpnt
-  call mixe
-  call vmix_init	! ATvS-Mix
-  call atmos_coef
-  call forcing
+  call grid         ! 
+  call stpnt        ! 
+  call mixe         ! 
+  call vmix_init	! ATvS-Mix  USES LANDMASK
+  call atmos_coef   ! 
+  call forcing      ! USES LANDMASK
 
   _INFO_('THCM: init...  done')
 end subroutine init
@@ -129,7 +129,7 @@ SUBROUTINE mixe
   do i=1,n
      do j=1,m
         emix(i,j,0) = 0.0
-	    do k=1,l-1
+	    do k=1,fl-1
            emix(i,j,k)= - sin(pi*(x(i)-xmin)/(xmax-xmin))*   &
                 (cos((pi/2)*(y(j)-ymin)/(ymax-ymin)) + 0.2)         &
                 *zw(k)
@@ -941,6 +941,7 @@ SUBROUTINE stpnt!(un)
   par(SPL1)   =  2.0e+03   ! 1.25  !tanh      ! ATvS-Mix
   par(SPL2)   =  0.01      ! neutral physics
 
+  ! Set mixing parameters
   call vmix_par
 
 end SUBROUTINE stpnt

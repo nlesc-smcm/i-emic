@@ -10,4 +10,5 @@ width = dims(1); height = dims(2);
 set(gca,'fontsize',fs)
 set(gcf,'paperunits','centimeters')
 set(gcf,'paperposition',[1,1,width,height])
+fprintf('saving to %s...\n', string);
 saveas(gcf, string, 'epsc2')

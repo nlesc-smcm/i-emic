@@ -112,7 +112,9 @@ Call structure DSM and FDJS
       write (99,'(a26,f10.3)') 'MIX|          ...init done', time1-time0
 
       end subroutine vmix_init
+
 !     * --------------------------------------------------------------------------------
+!     * set mixing parameters
       subroutine vmix_par
       use m_usr
       use m_mix
@@ -129,6 +131,7 @@ Call structure DSM and FDJS
       endif
 
       end subroutine vmix_par
+
 !     * --------------------------------------------------------------------------------
       subroutine vmix_control(un)
       use m_usr

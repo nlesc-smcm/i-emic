@@ -93,7 +93,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	
 	// Now that we have the state and parameters we can initialize more datamembers
 	initializeOcean();
-
+	getchar();
 	landmask_ = THCM::Instance().getLandMask();
 	surfmask_ = THCM::Instance().getSurfaceMask();
 
@@ -118,13 +118,62 @@ void Ocean::initializeOcean()
 	jac_ = THCM::Instance().getJacobian();
 	INFO("Ocean: Obtained Jacobian from THCM");
 	INFO("Ocean: Printing Jacobian to jacobian.ocean");	
+
 	// Print the Jacobian
 	DUMP("jacobian.ocean", *jac_);
+
+	// Analyze Jacobian and print impossible land points
+	analyzeJacobian();
 	
 	// Initialize a few datamembers
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 
+}
+
+//====================================================================
+void Ocean::analyzeJacobian()
+{
+	// Get the rowmap for the pressure points
+	Teuchos::RCP<Epetra_Map> RowMap = domain_->GetSolveMap();	
+	Teuchos::RCP<Epetra_Map> mapP   = Utils::CreateSubMap(*RowMap, _NUN_, PP);
+
+	Epetra_Vector singRows(*mapP);
+	
+	// Prepare some variables to extract rows
+	int dim = mapP->NumMyElements();
+	int row, len;
+	int maxlen = jac_->MaxNumEntries();
+	std::vector<int> indices(maxlen);
+	std::vector<double> values(maxlen);
+
+	int nSingRows = 0;
+	double sum;
+	for (int i = 0; i != dim; i++)
+	{
+		row = mapP->GID(i);
+		CHECK_ZERO(jac_->ExtractGlobalRowCopy(row, maxlen,
+											  len, &values[0],
+											  &indices[0]));
+		sum = 0.0;
+		for (int p = 0; p != len; p++)
+		{
+			sum += values[p];
+		}
+		if (sum == 0 || sum == 4)
+		{
+			singRows[i] = 2;
+			nSingRows++;
+		}
+		else if (sum == 1)
+			singRows[i] = 1;
+	}
+
+	if (nSingRows > 0)
+		WARNING("FIX YOUR LANDMASK!!", __FILE__, __LINE__);
+	
+	INFO("Printing singular rows in P rows");
+	EpetraExt::VectorToMatlabFile("singrows", singRows);
 }
 
 //====================================================================

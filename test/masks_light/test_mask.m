@@ -22,9 +22,28 @@ Auv  = A(iuv,iuv);
 Guv  = A(iuv,ip);
 Duv  = A(ip, iuv);
 
-if ~exist('r') || force
-  r = findzerorows(Duv);
+if ~exist('iAuv') || force
+  iAuv = inverseblockdiagonal(Auv,2);
+end
+C = -Duv * iAuv * Guv;
+
+c = diag(C);
+z = zeros(numel(c),1);
+for i = 1:numel(c);
+  if (sum(abs(c(i))) == 0)
+	z(i) = 1;
+  end  
 end
 
+SWS = load('singrows');
+fprintf('----------------------\n');
+for i = 1:numel(SWS)
+  fprintf('%d      %d %d\n', i, z(i), SWS(i));
+end
+SWS = reshape(SWS,n,m,l);
 
-r'-1
+figure(4)
+imagesc(squeeze(SWS(:,:,end-1))')
+set(gca,'ydir','normal')
+
+

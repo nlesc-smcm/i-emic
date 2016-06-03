@@ -281,7 +281,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
 	INFO("THCM init: m_global::initialize...");
 	INFO("    Mixing: vmix_GLB = " << vmix_GLB);
-	//== In fortran object code this corresponds to the function __m_global_MOD_initialize
+
+	// In fortran object code this corresponds to the function
+	//  __m_global_MOD_initialize
 	F90NAME(m_global, initialize)(&nglob_, &mglob_, &lglob_,
 								  &xmin, &xmax, &ymin, &ymax, &hdim, &qz,
 								  &alphaT, &alphaS,
@@ -337,7 +339,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 		DEBUG("call m_global::get_landm");
 		F90NAME(m_global,get_landm)(landm);
     }
-
+	
 	Teuchos::RCP<Epetra_IntVector> landm_loc = distributeLandMask(landm_glb);
 
 	// import local landm-part to THCM
@@ -517,23 +519,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 		F90NAME(m_usr,set_internal_forcing)(temp,salt);
 	}
 
-#ifdef DEBUGGING
-	OceanGrid G(domain);
-	G.ImportLandMask(*landm_loc);
-	//DEBVAR(G);
-#endif
-
-#if 0
-//#ifdef TESTING
-	{
-		std::stringstream ss;
-		ss << "levitus_"<<Comm->MyPID()<<".txt";
-		const char* fname = ss.str().c_str();
-		INFO("store levitus fields in "<<fname);
-		FNAME(write_levitus)(fname);
-	}
-#endif
-
 	bool time_dep_forcing = paramList.get("Time Dependent Forcing",false);
 	if (time_dep_forcing)
     {
@@ -552,8 +537,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	localRhs        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
 	localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
 
-	// allocate mem for the CSR matrix in THCM.
-
+	// allocate mem for the CSR matrix in THCM.	
 	int nrows, nnz;
 
 	// first ask how big it should be:
@@ -581,15 +565,16 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 		int M=domain->GlobalM();
 		int L=domain->GlobalL();
 		rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
-		INFO("integral condition for S is in global row "<<rowintcon_);
+		INFO("integral condition for S is in global row " << rowintcon_);
 		intcond_coeff = Teuchos::rcp(new Epetra_Vector(*SolveMap));
 		intcond_coeff->PutScalar(0.0);
 		Teuchos::RCP<Epetra_Vector> intcond_tmp = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
 		int nml = (domain->LocalN())*(domain->LocalM())*(domain->LocalL());
+
 		double *values = new double[nml];
-		int *indices = new int[nml];
+		int *indices   = new int[nml];
 		int len;
-		F90NAME(m_thcm_utils,intcond_scaling)(values,indices,&len);
+		F90NAME(m_thcm_utils, intcond_scaling)(values, indices, &len);
 		for (int i=0;i<len;i++)
 		{
 			(*intcond_tmp)[indices[i]-1] = values[i];

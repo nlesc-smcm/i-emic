@@ -31,6 +31,7 @@ SUBROUTINE topofit
   liwrk=n+nd
 
   ido = 1
+
   ! disabling this whole thing...
 #ifdef TOPO10 
   
@@ -118,6 +119,7 @@ SUBROUTINE topofit
   ENDIF
 
 #endif
+  
   IF (rd_mask) THEN
      _DEBUG_('call readmask...') 
      call readmask
