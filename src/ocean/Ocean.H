@@ -118,6 +118,12 @@ protected:
 	// Continuation parameter name.
 	// For a list of possible names see THCM::par2int()
 	std::string parName_;
+
+	//------------------------------------------------------------------
+	// Landmask and map
+	Teuchos::RCP<Epetra_Map> landmapGlb_;
+	Teuchos::RCP<Epetra_IntVector> landmaskGlb_;
+	bool landInitialized_;
 	
 public:
 
@@ -202,8 +208,13 @@ public:
 	// Get the rows in the matrix associated with surface temperature
 	std::shared_ptr<std::vector<int> > getSurfaceTRows();
 
-	// Get the ocean's landmask;
+	// Get the ocean's current landmask (gathered on all procs);
 	std::shared_ptr<std::vector<int> > getLandMask()    { return landmask_; }
+
+	// Get a distributed landmask based on its name
+	Teuchos::RCP<Epetra_IntVector> getLandMask(std::string const &maskName);
+
+	// Get the ocean's current surface landmask (gathered on all procs);
 	std::shared_ptr<std::vector<int> > getSurfaceMask() { return surfmask_; }
 
 	// ---------------------------------------------------------------
@@ -238,6 +249,7 @@ private:
 	// This member finds the pressure rows that will give a singular Schur complement
 	// Based on these rows we will try to create a better landmask.
 	void analyzeJacobian();
+
 
 	// Build preconditioner
 	void buildPreconditioner();

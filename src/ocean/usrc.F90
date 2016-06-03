@@ -129,7 +129,7 @@ SUBROUTINE mixe
   do i=1,n
      do j=1,m
         emix(i,j,0) = 0.0
-	    do k=1,fl-1
+	    do k=1,l-1
            emix(i,j,k)= - sin(pi*(x(i)-xmin)/(xmax-xmin))*   &
                 (cos((pi/2)*(y(j)-ymin)/(ymax-ymin)) + 0.2)         &
                 *zw(k)
@@ -185,6 +185,49 @@ SUBROUTINE getooa(o_Ooa, o_Os)
   o_Ooa = Ooa
   o_Os  = Os
 end subroutine getooa
+
+!*****************************************************************************
+SUBROUTINE set_landmask(a_landm)
+  ! interface to set a new landmask
+  use, intrinsic :: iso_c_binding
+  use m_usr
+  use m_mix
+
+  implicit none
+
+  integer(c_int), dimension((n+2)*(m+2)*(l+2)) :: a_landm
+
+  integer :: i,j,k,pos
+
+  _INFO_('THCM: set_landmask...')
+  
+  ! Fill the local landmask array
+  pos = 1
+  do k = 0, l+1
+     do j = 0, m+1
+        do i = 0, n+1
+           landm(i,j,k) = a_landm(pos)
+           pos = pos + 1
+        end do
+     end do
+  end do
+  
+  ! Let the dummy cells be land
+  if (.not.periodic) then
+     landm(0,:,:)   = LAND
+     landm(n+1,:,:) = LAND
+  end if
+  landm(:,0,:)    = LAND   
+  landm(:,m+1,:)  = LAND
+  landm(:,:,0)    = LAND
+  landm(:,:,l+1)  = LAND
+  
+  !  A few initializations need to be repeated
+  call vmix_init
+  call forcing  
+
+  _INFO_('THCM: set_landmask...  done')  
+end subroutine set_landmask
 
 !*****************************************************************************
 SUBROUTINE writeparams()

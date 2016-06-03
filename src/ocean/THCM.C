@@ -57,6 +57,10 @@ extern "C" {
                        double*,double*,double*,double*,
                        int*,int*,
                        double*,double*,double*,double*,double*);
+
+	// input:   landm
+	_SUBROUTINE_(set_landmask)(int *);
+	
 	_SUBROUTINE_(finalize)(void);
 
 	// global.F90
@@ -172,9 +176,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
 	if (rd_mask)
     {
-		std::string mask_file = paramList.get("Land Mask","no_mask_specified");
 		// we put the name of the desired mask in a file so it can be
 		// obtained from there by the fortran code:
+		std::string mask_file = paramList.get("Land Mask","no_mask_specified");
 		if (Comm->MyPID() == 0)
 		{
 			std::ofstream mfs("mask_name.txt", std::ios::trunc);
@@ -238,16 +242,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	// double zminloc = domain->ZminLoc();
 	// double zmaxloc = domain->ZmaxLoc();
 
-	DEBVAR(xmin);  //== Output variable into debug stream
-	DEBVAR(xminloc);
-	DEBVAR(xmax);
-	DEBVAR(xmaxloc);
-	DEBVAR(ymin);
-	DEBVAR(yminloc);
-	DEBVAR(ymax);
-	DEBVAR(ymaxloc);
-	DEBVAR(hdim);
-
 	// and the number of grid points contained in it:
 	int nloc = domain->LocalN();
 	int mloc = domain->LocalM();
@@ -296,7 +290,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
 	// read topography data and convert it to a global land mask
 	DEBUG("Initialize land mask...");
-
+	
 	int I0 = 0; int I1 = n+1;
 	int J0 = 0; int J1 = m+1;
 	int K0 = 0; int K1 = l+la+1;
@@ -944,6 +938,53 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 	MPI_Bcast(&(*landm)[0], dim, MPI_INTEGER, 0, MpiComm.GetMpiComm());
 #endif 
 	return landm;
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName)
+{
+	if (Comm->MyPID() == 0)
+	{
+		// Write mask name to file, fortran code will read it from there
+		std::ofstream ofs("mask_name.txt", std::ios::trunc);
+		ofs << maskName;	
+	}
+
+	// Create gathered map for land mask
+	// All indices are on root process
+	int I0 = 0; int I1 = n+1;
+	int J0 = 0; int J1 = m+1;
+	int K0 = 0; int K1 = l+la+1;
+	
+	int i0 = 0, i1 = -1, j0 = 0, j1 = -1,k0 = 0,k1 = -1;
+	if (Comm->MyPID() == 0)
+		i1 = I1; j1 = J1; k1=K1;
+
+	Teuchos::RCP<Epetra_Map> landmap_glb =
+		Utils::CreateMap(i0,i1,j0,j1,k0,k1,I0,I1,J0,J1,K0,K1,*Comm);
+	
+	// Create sequential landmask array on proc 0
+	Teuchos::RCP<Epetra_IntVector> landm_glb =
+		Teuchos::rcp(new Epetra_IntVector(*landmap_glb));
+	
+	// Get global landmask from fortran
+	int *landm;
+	if (Comm->MyPID()==0)
+    {
+		CHECK_ZERO(landm_glb->ExtractView(&landm));
+		// Let THCM fill the global landm array and put it into our C pointer location
+		F90NAME(m_global,get_landm)(landm);
+    }
+
+	Teuchos::RCP<Epetra_IntVector> landm_loc = distributeLandMask(landm_glb);
+	return landm_loc;
+}
+
+//=============================================================================
+// TODO
+void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask)
+{
+	//FNAME(set_landmask -----> todo
 }
 
 //=============================================================================

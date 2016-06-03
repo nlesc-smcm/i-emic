@@ -139,13 +139,19 @@ public:
 	//! Test 
 	void setAtmosphereTest();
 
-	//! Return a shared pointer to the ocean's landmask for use in the
-	//! atmosphere
+	//! Return a shared pointer to the ocean's gathered landmask
+	//! for use in the atmosphere
 	std::shared_ptr<std::vector<int> > getLandMask();
 	std::shared_ptr<std::vector<int> > getSurfaceMask();
 
-	//! ------------------------------------------------------------------
+	//! Return distributed mask read from maskName
+	Teuchos::RCP<Epetra_IntVector> getLandMask(std::string const &maskName);
+
+	//! Set distributed landmask in THCM
+	void setLandMask(Teuchos::RCP<Epetra_IntVector> landmask); // TODO
 	
+	
+	//! ------------------------------------------------------------------
 	//! Returns initial guess (Global/Solve form)
 	Teuchos::RCP<Epetra_Vector> getSolution();
   
@@ -372,7 +378,7 @@ private:
 
 	//! distribute land array after global initialization
 	Teuchos::RCP<Epetra_IntVector> distributeLandMask(Teuchos::RCP<Epetra_IntVector> landm_glob);
-  
+
 	//! implement integral condition for S in Jacobian and B-matrix
 	void intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B);
 

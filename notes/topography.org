@@ -1,11 +1,14 @@
-* Implementing set_landmask
-** CPP 
-   1) First we need a new mask_name, so put that in mask_name.txt
-   2) Then we need global to obtain the new mask and put in an array
-   3) Again we distribute the landmask using distributeLandMask()
-   4) Then we need a dedicated fortran routine to set the mask, not usrc::init
+* Implementing get_landmask and set_landmask
 
-** Fortran
-   On the fortran part it seems that after we set a new landmask we need to
-  - call vmix_init 
-  - call forcing
+*** We need a routine to get a mask
+   1) Name of a mask gives a mask_name, so put that in mask_name.txt
+   2) Use global.F90 to obtain the new mask and put in an array
+   3) Distribute the landmask using distributeLandMask()
+
+*** We need a routine to set a mask
+	For this we need a dedicated fortran routine to set the mask, not usrc::init
+
+*** Fortran: set_landmask
+	On the fortran part it seems that after we set a new landmask we need to
+    - call vmix_init 
+    - call forcing

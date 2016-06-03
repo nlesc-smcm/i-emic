@@ -53,7 +53,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	saveState_           (oceanParamList->get("Save state", false)),
 	storeEverything_     (oceanParamList->get("Store everything", false)),
 
-// continuation
 	parName_             (oceanParamList->get("Continuation parameter",
 											  "Combined Forcing"))
 {
@@ -93,7 +92,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	
 	// Now that we have the state and parameters we can initialize more datamembers
 	initializeOcean();
-	getchar();
+
+	getchar(); // relax for a bit
+	
 	landmask_ = THCM::Instance().getLandMask();
 	surfmask_ = THCM::Instance().getSurfaceMask();
 
@@ -174,6 +175,12 @@ void Ocean::analyzeJacobian()
 	
 	INFO("Printing singular rows in P rows");
 	EpetraExt::VectorToMatlabFile("singrows", singRows);
+}
+
+//====================================================================
+Teuchos::RCP<Epetra_IntVector> Ocean::getLandMask(std::string const &maskName)
+{
+	return THCM::Instance().getLandMask(maskName);	
 }
 
 //====================================================================
