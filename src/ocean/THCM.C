@@ -941,7 +941,8 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName)
+Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
+												 Teuchos::RCP<Epetra_Vector> fix)
 {
 	if (Comm->MyPID() == 0)
 	{
@@ -976,15 +977,50 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName)
 		F90NAME(m_global,get_landm)(landm);
     }
 
+	if (fix != Teuchos::null)
+	{
+		std::cout << Comm->MyPID() << " landm "
+				  << landm_glb->Map().NumMyElements() << std::endl;
+		std::cout << Comm->MyPID() << " fix   "
+				  << fix->Map().NumMyElements() << std::endl;
+		
+		// Gather fix on proc 0
+		Teuchos::RCP<Epetra_MultiVector> fix0 =
+			Utils::Gather(*fix, 0);
+
+		std::cout << Comm->MyPID() << " fix0  "
+				  << fix0->Map().NumMyElements() << std::endl;
+
+		if (Comm->MyPID() == 0)
+		{
+			int pos = 0;
+			int idx = 0;
+			for (int k = K0+1; k < K1; ++k)
+				for (int j = J0+1; j < J1; ++j)
+					for (int i = I0+1; i < I1; ++i)
+					{
+						// if (fix0->(0)[pos] == 2) // this number... 
+						// {
+						// 	idx = k*(m+2)*(n+2) + j*(n+2) + i;
+					 	// 	landm[idx] = 1;
+						// }
+						// pos++;
+					}
+		}
+	}	
+	
 	Teuchos::RCP<Epetra_IntVector> landm_loc = distributeLandMask(landm_glb);
 	return landm_loc;
 }
 
 //=============================================================================
-// TODO
+// Set landmask in THCM
+// set_landmask takes care of a few reinitializations
 void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask)
 {
-	//FNAME(set_landmask -----> todo
+	int *landm;
+	CHECK_ZERO(landmask->ExtractView(&landm));	
+	FNAME(set_landmask)(landm);
 }
 
 //=============================================================================
@@ -1467,9 +1503,9 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 	int k1 = domain->LastRealK()+1;
 
 	// add global boundary cells
-	if (i0==1) i0--; if (i1==n) i1++;
-	if (j0==1) j0--; if (j1==m) j1++;
-	if (k0==1) k0--; if (k1==l+la) k1++;
+	if (i0 == 1) i0-- ; if (i1 == n)    i1++;
+	if (j0 == 1) j0-- ; if (j1 == m)    j1++;
+	if (k0 == 1) k0-- ; if (k1 == l+la) k1++;
 
 	int I0 = 0; int I1 = n+1;
 	int J0 = 0; int J1 = m+1;

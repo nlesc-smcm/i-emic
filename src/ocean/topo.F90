@@ -204,13 +204,13 @@ SUBROUTINE readmask
   !rowintcon = find_row2(i,j,k,SS)
   rowintcon=-1
 
-  write(*,*) '____',i,j,k, rowintcon,'____'
-  do k = 1, l
-     write(*,*) '______________',z(k)*hdim,'__________________'
-     do j = m+1, 0, -1
-        write(*,'(92i1)') landm(:,j,k)
-     enddo
-  enddo
+  ! write(*,*) '____',i,j,k, rowintcon,'____'
+  ! do k = 1, l
+  !    write(*,*) '______________',z(k)*hdim,'__________________'
+  !    do j = m+1, 0, -1
+  !       write(*,'(92i1)') landm(:,j,k)
+  !    enddo
+  ! enddo
 
   return
 

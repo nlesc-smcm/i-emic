@@ -145,8 +145,12 @@ public:
 	std::shared_ptr<std::vector<int> > getSurfaceMask();
 
 	//! Return distributed mask read from maskName
-	Teuchos::RCP<Epetra_IntVector> getLandMask(std::string const &maskName);
-
+	//! A fix vector can be supplied containing additional grid points that
+	//! should be set to land.
+	Teuchos::RCP<Epetra_IntVector>
+	getLandMask(std::string const &maskName,
+				Teuchos::RCP<Epetra_Vector> fix = Teuchos::null);
+	
 	//! Set distributed landmask in THCM
 	void setLandMask(Teuchos::RCP<Epetra_IntVector> landmask); // TODO
 	

@@ -120,10 +120,8 @@ protected:
 	std::string parName_;
 
 	//------------------------------------------------------------------
-	// Landmask and map
-	Teuchos::RCP<Epetra_Map> landmapGlb_;
-	Teuchos::RCP<Epetra_IntVector> landmaskGlb_;
-	bool landInitialized_;
+	// Landmask file
+	std::string landmaskFile_;
 	
 public:
 
@@ -211,12 +209,16 @@ public:
 	// Get the ocean's current landmask (gathered on all procs);
 	std::shared_ptr<std::vector<int> > getLandMask()    { return landmask_; }
 
-	// Get a distributed landmask based on its name
-	Teuchos::RCP<Epetra_IntVector> getLandMask(std::string const &maskName);
-
+	//! Get a distributed landmask based on its filename
+	//! A fix vector can be supplied containing additional grid points that
+	//! should be set to land.
+	Teuchos::RCP<Epetra_IntVector>
+	getLandMask(std::string const &maskName,
+				Teuchos::RCP<Epetra_Vector> fix = Teuchos::null);
+		
 	// Get the ocean's current surface landmask (gathered on all procs);
 	std::shared_ptr<std::vector<int> > getSurfaceMask() { return surfmask_; }
-
+	
 	// ---------------------------------------------------------------
 	// Scale the matrix and rhs of the problem
 	void scaleProblem(VectorPtr rhs = Teuchos::null);
@@ -234,7 +236,7 @@ private:
 	int loadStateFromFile(std::string const &name);
 	int saveStateToFile(std::string const &name);
 
-	// Write the state of the ocean to traditional FORTRAN out files fort.*
+	// Write the state of the ocean to traditional fortrain out files fort.*
 	// Use matlab plot-scripts for visualization 
 	void printFiles();
 	void copyFiles();
@@ -253,7 +255,7 @@ private:
 
 	// Build preconditioner
 	void buildPreconditioner();
-
+	
 	Teuchos::RCP<SuperVector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
 };
 #endif

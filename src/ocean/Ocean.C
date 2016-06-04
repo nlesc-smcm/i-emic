@@ -54,7 +54,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	storeEverything_     (oceanParamList->get("Store everything", false)),
 
 	parName_             (oceanParamList->get("Continuation parameter",
-											  "Combined Forcing"))
+											  "Combined Forcing")),
+
+	landmaskFile_        (oceanParamList->sublist("THCM").get("Land Mask", "none"))
 {
 	INFO("Ocean: constructor...");	
 	
@@ -90,16 +92,21 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	else 			// Initialize with trivial solution
 		state_->PutScalar(0.0);
 	
-	// Now that we have the state and parameters we can initialize more datamembers
+	// Now that we have the state and parameters initialize
+	// the Jacobian, solution and rhs
 	initializeOcean();
 
+	// Analyze Jacobian and print/fix impossible land points
+	analyzeJacobian();
+
 	getchar(); // relax for a bit
-	
-	landmask_ = THCM::Instance().getLandMask();
-	surfmask_ = THCM::Instance().getSurfaceMask();
 
 	// Initialize preconditioner
 	initializePreconditioner();
+
+	// Get masks to communicate with an Atmosphere
+	landmask_ = THCM::Instance().getLandMask();
+	surfmask_ = THCM::Instance().getSurfaceMask();
 	INFO("Ocean: constructor... done");
 }
 
@@ -123,13 +130,9 @@ void Ocean::initializeOcean()
 	// Print the Jacobian
 	DUMP("jacobian.ocean", *jac_);
 
-	// Analyze Jacobian and print impossible land points
-	analyzeJacobian();
-	
-	// Initialize a few datamembers
+	// Initialize solution and rhs
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
-
 }
 
 //====================================================================
@@ -139,7 +142,7 @@ void Ocean::analyzeJacobian()
 	Teuchos::RCP<Epetra_Map> RowMap = domain_->GetSolveMap();	
 	Teuchos::RCP<Epetra_Map> mapP   = Utils::CreateSubMap(*RowMap, _NUN_, PP);
 
-	Epetra_Vector singRows(*mapP);
+	Teuchos::RCP<Epetra_Vector> singRows = Teuchos::rcp(new Epetra_Vector(*mapP));
 	
 	// Prepare some variables to extract rows
 	int dim = mapP->NumMyElements();
@@ -163,24 +166,29 @@ void Ocean::analyzeJacobian()
 		}
 		if (sum == 0 || sum == 4)
 		{
-			singRows[i] = 2;
+			(*singRows)[i] = 2;
 			nSingRows++;
 		}
 		else if (sum == 1)
-			singRows[i] = 1;
+			(*singRows)[i] = 1;
 	}
-
-	if (nSingRows > 0)
-		WARNING("FIX YOUR LANDMASK!!", __FILE__, __LINE__);
 	
-	INFO("Printing singular rows in P rows");
-	EpetraExt::VectorToMatlabFile("singrows", singRows);
+	if (nSingRows > 0)
+	{
+		INFO("Printing singular rows in P rows");
+		EpetraExt::VectorToMatlabFile("singrows", *singRows);
+		WARNING("FIXING YOUR LANDMASK!!", __FILE__, __LINE__);
+		Teuchos::RCP<Epetra_IntVector> landmask =
+			getLandMask(landmaskFile_, singRows);
+	}	
 }
 
 //====================================================================
-Teuchos::RCP<Epetra_IntVector> Ocean::getLandMask(std::string const &maskName)
+Teuchos::RCP<Epetra_IntVector>
+Ocean::getLandMask(std::string const &maskName,
+				   Teuchos::RCP<Epetra_Vector> fix)
 {
-	return THCM::Instance().getLandMask(maskName);	
+	return THCM::Instance().getLandMask(maskName, fix);	
 }
 
 //====================================================================

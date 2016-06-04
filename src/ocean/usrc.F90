@@ -174,7 +174,7 @@ SUBROUTINE getparcs(param,value)
   !     ENDIF
 end subroutine getparcs
 
-!*****************************************************************************
+!***********************************************************
 SUBROUTINE getooa(o_Ooa, o_Os)
   !     interface to get Ooa
   use, intrinsic :: iso_c_binding
@@ -186,7 +186,7 @@ SUBROUTINE getooa(o_Ooa, o_Os)
   o_Os  = Os
 end subroutine getooa
 
-!*****************************************************************************
+!***********************************************************
 SUBROUTINE set_landmask(a_landm)
   ! interface to set a new landmask
   use, intrinsic :: iso_c_binding
