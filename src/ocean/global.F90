@@ -253,7 +253,7 @@ contains
 
   !! this is supposed to be called once by the root            
   !! proc with a standard 0:n+1,0:m+1,0:l+la+1 1D C            
-  !!array which is then distributed to all the subdomains      
+  !! array which is then distributed to all the subdomains      
   !! and re-inserted into the subdomains when calling usrc:init
   subroutine get_landm(cland)
 
@@ -263,7 +263,9 @@ contains
     integer(c_int), dimension((n+2)*(m+2)*(l+la+2)) :: cland
 
     integer :: i,j,k,pos
-    
+
+
+    _INFO_('THCM: global.F90 get_landm...')
     call topofit
 
     pos = 1
@@ -274,9 +276,79 @@ contains
              pos=pos+1
           end do
        end do
+    end do    
+    _INFO_('THCM: global.F90 get_landm... done')
+  end subroutine get_landm
+
+  ! Obtain the landmask as it is right now in THCM,
+  ! without reading from a file
+  subroutine get_current_landm(cland)
+
+    use, intrinsic :: iso_c_binding
+    implicit none
+
+    integer(c_int), dimension((n+2)*(m+2)*(l+la+2)) :: cland
+
+    integer :: i,j,k,pos
+
+    _INFO_('THCM: global.F90 get_current_landm...')
+    pos = 1
+    do k=0,l+la+1
+       do j=0,m+1
+          do i=0,n+1
+             cland(pos) = landm(i,j,k)
+             pos=pos+1
+          end do
+       end do
+    end do    
+    _INFO_('THCM: global.F90 get_current_landm... done')
+  end subroutine get_current_landm
+  
+  !! Similar but vice versa, set landm from c array
+  subroutine set_landm(cland)
+    
+    use, intrinsic :: iso_c_binding
+    implicit none
+        
+    integer(c_int), dimension((n+2)*(m+2)*(l+la+2)) :: cland
+    integer :: i,j,k,pos
+
+
+    _INFO_('THCM: global.F90 set_landm...')
+    
+    landm = 0;
+    
+    pos = 1
+    do k=0,l+la+1
+       do j=0,m+1
+          do i=0,n+1
+             landm(i,j,k) = cland(pos)
+             pos=pos+1
+          end do
+       end do
     end do
 
-  end subroutine get_landm
+    do i = 1, n
+       do j = 1, m
+          do k = l, 2,-1
+             if ( landm(i,j,k).eq.LAND .and. landm(i,j,k-1).eq.OCEAN ) then
+                write(*,*) 'land inversion at ',i,j,k
+                landm(i,j,k-1) = LAND
+             endif
+          enddo
+       enddo
+    enddo
+    
+    write(*,*) '______________set_landm__________________'
+    do k = 1, l
+       write(*,*) '______________',z(k)*hdim,'__________________'
+       do j = m+1, 0, -1
+          write(*,'(92i1)') landm(:,j,k)
+       enddo
+    enddo
+
+    _INFO_('THCM: global.F90 set_landm... done')    
+  end subroutine set_landm    
 
   !! this is supposed to be called once by the root            
   !! proc with standard 1:n+1,0:m 1D C                         

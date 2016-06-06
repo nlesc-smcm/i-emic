@@ -122,7 +122,13 @@ protected:
 	//------------------------------------------------------------------
 	// Landmask file
 	std::string landmaskFile_;
-	
+
+	// Row map for pressure points
+	Teuchos::RCP<Epetra_Map> mapP_;
+
+	// Rows corresponding to singular pressure points
+	Teuchos::RCP<Epetra_Vector> singRows_;
+
 public:
 
 	//constructor
@@ -209,13 +215,6 @@ public:
 	// Get the ocean's current landmask (gathered on all procs);
 	std::shared_ptr<std::vector<int> > getLandMask()    { return landmask_; }
 
-	//! Get a distributed landmask based on its filename
-	//! A fix vector can be supplied containing additional grid points that
-	//! should be set to land.
-	Teuchos::RCP<Epetra_IntVector>
-	getLandMask(std::string const &maskName,
-				Teuchos::RCP<Epetra_Vector> fix = Teuchos::null);
-		
 	// Get the ocean's current surface landmask (gathered on all procs);
 	std::shared_ptr<std::vector<int> > getSurfaceMask() { return surfmask_; }
 	
@@ -250,8 +249,7 @@ private:
 
 	// This member finds the pressure rows that will give a singular Schur complement
 	// Based on these rows we will try to create a better landmask.
-	void analyzeJacobian();
-
+	int analyzeJacobian();
 
 	// Build preconditioner
 	void buildPreconditioner();

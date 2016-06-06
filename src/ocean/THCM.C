@@ -8,6 +8,7 @@
 // for I-EMIC couplings
 #include <math.h>
 #include <iostream>
+#include <sstream>
 #include <memory>
 #include <vector>
 
@@ -59,7 +60,7 @@ extern "C" {
                        double*,double*,double*,double*,double*);
 
 	// input:   landm
-	_SUBROUTINE_(set_landmask)(int *);
+	_SUBROUTINE_(set_landmask)(int *, int *);
 	
 	_SUBROUTINE_(finalize)(void);
 
@@ -81,6 +82,8 @@ extern "C" {
 	
 	_MODULE_SUBROUTINE_(m_global,finalize)(void);
 	_MODULE_SUBROUTINE_(m_global,get_landm)(int*);
+	_MODULE_SUBROUTINE_(m_global,get_current_landm)(int*);
+	_MODULE_SUBROUTINE_(m_global,set_landm)(int*);
 	_MODULE_SUBROUTINE_(m_global,get_monthly_forcing)(double* tatm, double* emip,
 													  double* taux, double* tauy, int* month);
 	_MODULE_SUBROUTINE_(m_global,get_monthly_internal_forcing)(double* temp, double* salt,
@@ -532,13 +535,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
 
 	// allocate mem for the CSR matrix in THCM.	
-	int nrows, nnz;
-
 	// first ask how big it should be:
+ 	int nrows, nnz;
 	DEBUG("call get_array_sizes...");
 	F90NAME(m_mat,get_array_sizes)(&nrows,&nnz);
-
-	DEBUG("Allocating Fortran CSR arrays, nrows="<<nrows<<", nnz="<<nnz);
+	INFO("Allocating Fortran CSR arrays, nrows=" << nrows << ", nnz=" << nnz);
 
 	// allocate the memory
 	begA = new int[nrows+1];
@@ -929,7 +930,7 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 	
 	// Let THCM fill the landmask array on proc = 0
 	if (Comm->MyPID() == 0)
-		F90NAME(m_global,get_landm)(&(*landm)[0]);
+		F90NAME(m_global,get_current_landm)(&(*landm)[0]);
 
 #ifdef HAVE_MPI 
 	// Get the MpiComm from Epetra
@@ -974,53 +975,86 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
     {
 		CHECK_ZERO(landm_glb->ExtractView(&landm));
 		// Let THCM fill the global landm array and put it into our C pointer location
-		F90NAME(m_global,get_landm)(landm);
+		F90NAME(m_global,get_current_landm)(landm);
     }
 
+	// Fixing landmask
 	if (fix != Teuchos::null)
 	{
-		std::cout << Comm->MyPID() << " landm "
-				  << landm_glb->Map().NumMyElements() << std::endl;
-		std::cout << Comm->MyPID() << " fix   "
-				  << fix->Map().NumMyElements() << std::endl;
-		
 		// Gather fix on proc 0
 		Teuchos::RCP<Epetra_MultiVector> fix0 =
 			Utils::Gather(*fix, 0);
+		
+		int len = fix0->Map().NumMyElements();
+		std::cout << "PID " << Comm->MyPID() << " numel " << len << std::endl;
+		
+ 		std::vector<double> fix1(len);
+		(*fix0)(0)->ExtractCopy(&fix1[0]);
 
-		std::cout << Comm->MyPID() << " fix0  "
-				  << fix0->Map().NumMyElements() << std::endl;
+		std::ostringstream string_old;
+		std::ostringstream string_new;
+		std::vector<std::string> stringvec_old;
+		std::vector<std::string> stringvec_new;
+		stringvec_old.push_back("-----");
+		stringvec_new.push_back("-----");		
 
-		if (Comm->MyPID() == 0)
+		int i,j,k;
+		if (Comm->MyPID() == 0 && len > 0)
 		{
 			int pos = 0;
 			int idx = 0;
-			for (int k = K0+1; k < K1; ++k)
-				for (int j = J0+1; j < J1; ++j)
-					for (int i = I0+1; i < I1; ++i)
+			for (k = K0+1; k < K1; ++k)
+			{
+				for (j = J0+1; j < J1; ++j)
+				{
+					string_old.str(""); string_old.clear();
+					string_new.str(""); string_new.clear();
+					for (i = I0+1; i < I1; ++i)
 					{
-						// if (fix0->(0)[pos] == 2) // this number... 
-						// {
-						// 	idx = k*(m+2)*(n+2) + j*(n+2) + i;
-					 	// 	landm[idx] = 1;
-						// }
-						// pos++;
+						idx = k*(m+2)*(n+2) + j*(n+2) + i;
+						string_old << landm[idx];
+						if (fix1[pos] == 2) // this number... 
+						{
+							INFO("fix " << i << ' ' << j << ' ' << k);
+					 		landm[idx] = 1;
+						}
+						string_new << landm[idx];
+						pos++;						
 					}
-		}
-	}	
+					stringvec_old.push_back(string_old.str());
+					stringvec_new.push_back(string_new.str());
+				}
+				stringvec_old.push_back("-----" + std::to_string(k));
+				stringvec_new.push_back("-----" + std::to_string(k));
+			}
+			for (auto i = stringvec_new.rbegin(); i != stringvec_new.rend(); ++i)
+				INFO(i->c_str());
+
+			INFO("Setting global landmask in THCM");
+			F90NAME(m_global, set_landm)(landm);
+		}		
+	}
 	
 	Teuchos::RCP<Epetra_IntVector> landm_loc = distributeLandMask(landm_glb);
+	
 	return landm_loc;
 }
 
 //=============================================================================
-// Set landmask in THCM
+// Set distributed landmask in THCM
 // set_landmask takes care of a few reinitializations
 void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask)
-{
+{	
+	// in the main part of THCM (except m_global) we set periodic
+	// boundary conditions to .false. _unless_ we are running a
+	// periodic problem on a single CPU in the x-direction:
+	Teuchos::RCP<Epetra_Comm> xComm = domain->GetProcRow(0);
+	int perio   = (periodic && xComm->NumProc() == 1);
+	
 	int *landm;
-	CHECK_ZERO(landmask->ExtractView(&landm));	
-	FNAME(set_landmask)(landm);
+	CHECK_ZERO(landmask->ExtractView(&landm));
+	
+	FNAME(set_landmask)(landm, &perio);
 }
 
 //=============================================================================
@@ -1037,7 +1071,7 @@ std::shared_ptr<std::vector<int> > THCM::getSurfaceMask()
 	
 	// Let THCM fill the landmask array on proc = 0
 	if (Comm->MyPID() == 0)
-		F90NAME(m_global,get_landm)(&landm[0]);
+		F90NAME(m_global,get_current_landm)(&landm[0]);
 
 	// Isolate the surface
 	landm.erase(landm.begin(), landm.begin() + l*(m+2)*(n+2));	

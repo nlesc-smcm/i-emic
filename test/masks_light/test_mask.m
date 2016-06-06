@@ -6,7 +6,7 @@ end
 
 [N,M] = size(A);
 
-n = 8; m = 8; l = 4; nun = 6;
+n = 8; m = 8; l = 8; nun = 6;
 
 assert(N == n*m*l*nun);
 

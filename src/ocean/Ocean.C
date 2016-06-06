@@ -97,9 +97,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	initializeOcean();
 
 	// Analyze Jacobian and print/fix impossible land points
-	analyzeJacobian();
-
-	getchar(); // relax for a bit
+	while (analyzeJacobian() > 0);
 
 	// Initialize preconditioner
 	initializePreconditioner();
@@ -133,29 +131,31 @@ void Ocean::initializeOcean()
 	// Initialize solution and rhs
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 	rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
+
+	// Get the rowmap for the pressure points
+	Teuchos::RCP<Epetra_Map> RowMap = domain_->GetSolveMap();
+	
+	mapP_     = Utils::CreateSubMap(*RowMap, _NUN_, PP);
+	singRows_ = Teuchos::rcp(new Epetra_Vector(*mapP_));
 }
 
 //====================================================================
-void Ocean::analyzeJacobian()
-{
-	// Get the rowmap for the pressure points
-	Teuchos::RCP<Epetra_Map> RowMap = domain_->GetSolveMap();	
-	Teuchos::RCP<Epetra_Map> mapP   = Utils::CreateSubMap(*RowMap, _NUN_, PP);
-
-	Teuchos::RCP<Epetra_Vector> singRows = Teuchos::rcp(new Epetra_Vector(*mapP));
-	
-	// Prepare some variables to extract rows
-	int dim = mapP->NumMyElements();
+int Ocean::analyzeJacobian()
+{	
+	// Make preparations for extracting pressure rows
+	int dim = mapP_->NumMyElements();
 	int row, len;
 	int maxlen = jac_->MaxNumEntries();
 	std::vector<int> indices(maxlen);
 	std::vector<double> values(maxlen);
 
-	int nSingRows = 0;
+	int singRowsFound = 0;
 	double sum;
+
+	// Check pressure rows for weird things
 	for (int i = 0; i != dim; i++)
 	{
-		row = mapP->GID(i);
+		row = mapP_->GID(i);
 		CHECK_ZERO(jac_->ExtractGlobalRowCopy(row, maxlen,
 											  len, &values[0],
 											  &indices[0]));
@@ -166,29 +166,37 @@ void Ocean::analyzeJacobian()
 		}
 		if (sum == 0 || sum == 4)
 		{
-			(*singRows)[i] = 2;
-			nSingRows++;
+			(*singRows_)[i] = 2;
+			singRowsFound++;
 		}
 		else if (sum == 1)
-			(*singRows)[i] = 1;
+		{
+			(*singRows_)[i] = 1;
+		}
 	}
+
+	int maxFound;
+	comm_->MaxAll(&singRowsFound, &maxFound, 1);
+
+	std::cout << comm_->MyPID() << " :  " << maxFound << std::endl;
 	
-	if (nSingRows > 0)
+	// If we find singular pressure rows we adjust the landmask
+	if (maxFound > 0)
 	{
 		INFO("Printing singular rows in P rows");
-		EpetraExt::VectorToMatlabFile("singrows", *singRows);
+		EpetraExt::VectorToMatlabFile("singrows", *singRows_);
 		WARNING("FIXING YOUR LANDMASK!!", __FILE__, __LINE__);
+		INFO("Obtaining landmask " << landmaskFile_);
 		Teuchos::RCP<Epetra_IntVector> landmask =
-			getLandMask(landmaskFile_, singRows);
-	}	
-}
-
-//====================================================================
-Teuchos::RCP<Epetra_IntVector>
-Ocean::getLandMask(std::string const &maskName,
-				   Teuchos::RCP<Epetra_Vector> fix)
-{
-	return THCM::Instance().getLandMask(maskName, fix);	
+			THCM::Instance().getLandMask(landmaskFile_, singRows_);
+		
+		INFO("Putting a fixed version of " << landmaskFile_ <<
+			 " back in THCM...");
+		
+		THCM::Instance().setLandMask(landmask);
+		THCM::Instance().evaluate(*state_, Teuchos::null, true);
+	}
+	return maxFound;
 }
 
 //====================================================================
@@ -209,6 +217,8 @@ void Ocean::postProcess()
 	
 	if (storeEverything_)
 		copyFiles(); // Copy fortran and hdf5 files
+
+	//getchar();
 }
 
 //=====================================================================

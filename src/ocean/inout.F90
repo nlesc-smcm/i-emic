@@ -134,7 +134,9 @@
       use m_global
       implicit none
       integer, intent(in) :: gfile
-      integer i, j
+      integer i, j, k
+
+      
       write(gfile,"('Version   0',5i4)") n, m, l, nun, SLIP
       write(gfile,999) xmin, xmax, ymin, ymax, hdim
       write(gfile,999) ( x(i), i = 1, n)
@@ -181,6 +183,15 @@
       implicit none
       integer, intent(in) :: gfile
       integer i, j, k
+
+      write(*,*) '______________write_geometry__________________'
+      do k = 1, l
+         write(*,*) '______________',z(k)*hdim,'__________________'
+         do j = m+1, 0, -1
+            write(*,'(92i1)') landm(:,j,k)
+         enddo
+      enddo
+
       write(gfile,"('Version   2')")
       write(gfile,"(6i4)") n, m, l, la, nun, SLIP
       write(gfile,999) xmin, xmax, ymin, ymax, hdim

@@ -435,7 +435,7 @@
     <Parameter name="Fix singular Chat" type="bool" value="false"/>
 
 	<!-- Print indices where Chat's diagonal is zero -->
-    <Parameter name="Print zero diagonal indices" type="bool" value="true"/>	
+    <Parameter name="Print zero diagonal indices" type="bool" value="false"/>	
     
     <!-- scale the Chat solve -->
     <Parameter name="Scale Chat" type="bool" value="false"/>

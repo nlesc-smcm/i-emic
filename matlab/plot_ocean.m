@@ -197,7 +197,9 @@ contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
 set(gca,'color',[0.65,0.65,0.65]);
 image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
 contours = linspace(minT,maxT,40);
-contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1); hold off
+contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1);
+hold off
+
 
 colorbar
 title('Surface Temperature', 'interpreter', 'none');

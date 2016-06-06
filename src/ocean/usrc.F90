@@ -187,7 +187,7 @@ SUBROUTINE getooa(o_Ooa, o_Os)
 end subroutine getooa
 
 !***********************************************************
-SUBROUTINE set_landmask(a_landm)
+SUBROUTINE set_landmask(a_landm, a_periodic)
   ! interface to set a new landmask
   use, intrinsic :: iso_c_binding
   use m_usr
@@ -195,22 +195,44 @@ SUBROUTINE set_landmask(a_landm)
 
   implicit none
 
+  integer(c_int) :: a_periodic
   integer(c_int), dimension((n+2)*(m+2)*(l+2)) :: a_landm
 
   integer :: i,j,k,pos
 
-  _INFO_('THCM: set_landmask...')
-  
+  _INFO_('THCM: usrc.F90 set_landmask...')
+
+  if (a_periodic.eq.0) then
+     periodic  =  .false.
+  else
+     periodic  =  .true.
+  end if
+
   ! Fill the local landmask array
   pos = 1
   do k = 0, l+1
      do j = 0, m+1
         do i = 0, n+1
            landm(i,j,k) = a_landm(pos)
-           pos = pos + 1
+           if( (.not.periodic) .and. (landm(i,j,k).eq.PERIO)) then
+              landm(i,j,k) = OCEAN
+           end if
+           pos = pos+1
         end do
      end do
   end do
+
+  do i = 1, n
+     do j = 1, m
+        do k = l, 2,-1
+           if ( landm(i,j,k).eq.LAND .and. landm(i,j,k-1).eq.OCEAN ) then
+              write(*,*) 'land inversion at ',i,j,k
+              landm(i,j,k-1) = LAND
+           endif
+        enddo
+     enddo
+  enddo
+
   
   ! Let the dummy cells be land
   if (.not.periodic) then
@@ -221,12 +243,12 @@ SUBROUTINE set_landmask(a_landm)
   landm(:,m+1,:)  = LAND
   landm(:,:,0)    = LAND
   landm(:,:,l+1)  = LAND
-  
+ 
   !  A few initializations need to be repeated
-  call vmix_init
-  call forcing  
+  call vmix_init	! ATvS-Mix  USES LANDMASK
+  call forcing      ! USES LANDMASK
 
-  _INFO_('THCM: set_landmask...  done')  
+  _INFO_('THCM: usrc.F90 set_landmask...  done')  
 end subroutine set_landmask
 
 !*****************************************************************************
