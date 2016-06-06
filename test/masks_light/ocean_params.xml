@@ -49,7 +49,7 @@
     <!-- global number of grid points in y-direction -->
     <Parameter name="Global Grid-Size m" type="int" value="8"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="8"/>
+    <Parameter name="Global Grid-Size l" type="int" value="9"/>
 	
     <!-- topography:                                -->
     <!-- 0: from data                               -->

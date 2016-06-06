@@ -6,7 +6,7 @@ end
 
 [N,M] = size(A);
 
-n = 8; m = 8; l = 8; nun = 6;
+n = 8; m = 8; l = 9; nun = 6;
 
 assert(N == n*m*l*nun);
 
@@ -38,12 +38,12 @@ end
 SWS = load('singrows');
 fprintf('----------------------\n');
 for i = 1:numel(SWS)
-  fprintf('%d      %d %d\n', i, z(i), SWS(i));
+  fprintf('%3d      %3d %3d\n', i, z(i), SWS(i));
 end
 SWS = reshape(SWS,n,m,l);
 
-figure(4)
-imagesc(squeeze(SWS(:,:,end-1))')
-set(gca,'ydir','normal')
+## figure(4)
+## imagesc(squeeze(SWS(:,:,end-1))')
+## set(gca,'ydir','normal')
 
 

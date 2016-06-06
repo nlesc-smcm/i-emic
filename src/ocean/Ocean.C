@@ -160,11 +160,17 @@ int Ocean::analyzeJacobian()
 											  len, &values[0],
 											  &indices[0]));
 		sum = 0.0;
+		std::cout << "row= " << i << " ";
 		for (int p = 0; p != len; p++)
 		{
 			sum += values[p];
+			std::cout << values[p] << " ";
 		}
-		if (sum == 0 || sum == 4)
+		std::cout << std::endl;
+
+		// If the sum of a row is 0 or L_, it is likely to be one of our
+		// 'problem rows'
+		if (sum == 0 || sum == L_)
 		{
 			(*singRows_)[i] = 2;
 			singRowsFound++;
@@ -178,13 +184,13 @@ int Ocean::analyzeJacobian()
 	int maxFound;
 	comm_->MaxAll(&singRowsFound, &maxFound, 1);
 
-	std::cout << comm_->MyPID() << " :  " << maxFound << std::endl;
-	
+	std::cout << "PID=" << comm_->MyPID() << " :  " << maxFound << std::endl;
+	INFO("Printing singular rows in P rows to singrows");
+	EpetraExt::VectorToMatlabFile("singrows", *singRows_);
+	getchar();
 	// If we find singular pressure rows we adjust the landmask
 	if (maxFound > 0)
 	{
-		INFO("Printing singular rows in P rows");
-		EpetraExt::VectorToMatlabFile("singrows", *singRows_);
 		WARNING("FIXING YOUR LANDMASK!!", __FILE__, __LINE__);
 		INFO("Obtaining landmask " << landmaskFile_);
 		Teuchos::RCP<Epetra_IntVector> landmask =
@@ -971,3 +977,4 @@ void Ocean::setParameters(Teuchos::RCP<Teuchos::ParameterList> pars)
 		setPar(parName, parValue);
 	}	
 }
+
