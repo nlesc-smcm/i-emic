@@ -372,6 +372,7 @@ class SppSimplePrec : public Epetra_Operator
 	  //! Options to use a scaling in the Chat solve
 	  //! and remove zeros on its diagonals
 	  bool scaleChat, fixSingularChat, printSingularChat, fixSingularA11;
+	  double fixChatTol;
 	  
 	  //! scaling vector for Chat
       Teuchos::RCP<Epetra_Vector> scalingChat;

@@ -94,8 +94,6 @@ namespace TRIOS {
 		rangeMap = Teuchos::rcp(new Epetra_Map(-1,n1+n2,
 											   MyGlobalElements, rangemap1.IndexBase(), *comm_) );
 
-
-
 		domainMap = rangeMap;
     
 		// create column maps 
@@ -302,6 +300,8 @@ namespace TRIOS {
 		scheme            = params.get("Scheme","SR");
 		scaleChat         = params.get("Scale Chat", false);
 		fixSingularChat   = params.get("Fix singular Chat", false);
+		fixChatTol        = params.get("Fix Chat tolerance", 1e3);
+
 		printSingularChat = params.get("Print zero diagonal indices", false);
 		fixSingularA11    = params.get("Fix singular A11", false);		
 																	
@@ -325,47 +325,6 @@ namespace TRIOS {
 		domainMap = Spp->GetDomainMap();
   
 		{
-			//------------------------------------------------------------------
-			// Doing stuff to A11
-			//------------------------------------------------------------------
-			if (fixSingularA11)
-			{
-				// Extract diagonal
-				Epetra_Vector diagonal(Spp->A11().RowMap());
-				CHECK_ZERO(Spp->A11().ExtractDiagonalCopy(diagonal));
-				INFO("  A11 diagonal length = " << diagonal.GlobalLength());
-
-				// Copy matrix
-				Teuchos::RCP<Epetra_CrsMatrix> TMP =
-					Teuchos::rcp(new Epetra_CrsMatrix(Copy, Spp->A11().RowMap(), 0));
-		
-				double values[1]  = {0.0};
-				int colinds[1]    = {0};
-				int numMyElements = diagonal.Map().NumMyElements();
-		
-				int *myGlobalElements = diagonal.Map().MyGlobalElements();
-				int row;
-				double tol = 1e-1;  // --> ARBITRARY! IMPROVE THIS!!!
-				for (int i = 0; i != numMyElements; ++i)
-				{
-					if (std::abs(diagonal[i]) < tol)
-					{
-						values[0] = (i > 0) ? diagonal[i-1] : -tol;
-						row = myGlobalElements[i];
-						INFO("   fix row " << row << ": "
-							 << diagonal[i] << " -> " << values[0]);
-						colinds[0]  = row;
-						diagonal[i] = values[0];
-						CHECK_ZERO(TMP->InsertGlobalValues(row, 1, values, colinds));
-					}
-				}
-				Epetra_Import A112TMP(TMP->RowMap(), Spp->A11().RowMap());
-
-				CHECK_ZERO(TMP->Import(Spp->A11(), A112TMP, Insert));
-				CHECK_ZERO(TMP->FillComplete());
-		
-				Spp->A11() = *TMP;
-			}
 			
 #ifdef HAVE_PARASAILS 
 			if (spai_scheme=="ParaSails")
@@ -578,6 +537,7 @@ namespace TRIOS {
 
 			INFO("Printing zero rows in Chat");
 			EpetraExt::VectorToMatlabFile("zerorows", zeroRows);
+			getchar();
 		}
 		
 		
@@ -600,12 +560,11 @@ namespace TRIOS {
 		
 			int *myGlobalElements = diagonal.Map().MyGlobalElements();
 			int row;
-			double tol = 1e3;  // --> ARBITRARY IMPROVE THIS!!!
 			for (int i = 0; i != numMyElements; ++i)
 			{
-				if (std::abs(diagonal[i]) < tol)
+				if (std::abs(diagonal[i]) < fixChatTol)
 				{
-					values[0] = (i > 0) ? diagonal[i-1] : -tol;
+					values[0] = (i > 0) ? diagonal[i-1] : -fixChatTol;
 					row = myGlobalElements[i];
 					colinds[0]  = row;
 					diagonal[i] = values[0];

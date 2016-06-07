@@ -123,10 +123,6 @@ void Ocean::initializeOcean()
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	jac_ = THCM::Instance().getJacobian();
 	INFO("Ocean: Obtained Jacobian from THCM");
-	INFO("Ocean: Printing Jacobian to jacobian.ocean");	
-
-	// Print the Jacobian
-	DUMP("jacobian.ocean", *jac_);
 
 	// Initialize solution and rhs
 	sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
@@ -141,7 +137,12 @@ void Ocean::initializeOcean()
 
 //====================================================================
 int Ocean::analyzeJacobian()
-{	
+{
+	INFO("Ocean: Printing Jacobian to jacobian.ocean");	
+
+	// Print the Jacobian
+	DUMP("jacobian.ocean", *jac_);
+
 	// Make preparations for extracting pressure rows
 	int dim = mapP_->NumMyElements();
 	int row, len;
@@ -160,13 +161,10 @@ int Ocean::analyzeJacobian()
 											  len, &values[0],
 											  &indices[0]));
 		sum = 0.0;
-		std::cout << "row= " << i << " ";
 		for (int p = 0; p != len; p++)
 		{
 			sum += values[p];
-			std::cout << values[p] << " ";
 		}
-		std::cout << std::endl;
 
 		// If the sum of a row is 0 or L_, it is likely to be one of our
 		// 'problem rows'
@@ -183,11 +181,10 @@ int Ocean::analyzeJacobian()
 
 	int maxFound;
 	comm_->MaxAll(&singRowsFound, &maxFound, 1);
-
-	std::cout << "PID=" << comm_->MyPID() << " :  " << maxFound << std::endl;
+	
 	INFO("Printing singular rows in P rows to singrows");
 	EpetraExt::VectorToMatlabFile("singrows", *singRows_);
-	getchar();
+
 	// If we find singular pressure rows we adjust the landmask
 	if (maxFound > 0)
 	{
@@ -224,7 +221,6 @@ void Ocean::postProcess()
 	if (storeEverything_)
 		copyFiles(); // Copy fortran and hdf5 files
 
-	//getchar();
 }
 
 //=====================================================================
