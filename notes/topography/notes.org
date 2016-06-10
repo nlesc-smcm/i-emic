@@ -1,0 +1,33 @@
+* Continuation in topography
+** Homotopy 
+   +---------------------------------------------+
+   $t_0$              topography 1 
+   $t_1$              topography 2 
+   $F(\bvec{x},t_0) = 0$  initial solution
+   $F(\bvec{x},t_1) = 0$  destination solution
+   +---------------------------------------------+
+   Homotopy function:
+   $F^h(\bvec{x},\delta) = \delta F(\bvec{x},t_1) - (1-\delta) F(\bvec{x},t_0)$
+   +---------------------------------------------+
+   Pseudo-arclength continuation:
+   \begin{align*}
+   F^h(\bvec{x},\delta) &= 0\\
+   \dot{\bvec{x}} (\bvec{x} - \bvec{x}_0) + \dot{\delta} (\delta - \delta_0) - \Delta s &= 0
+   \end{align*}
+   +---------------------------------------------+   
+	
+   \begin{equation*}
+   \begin{bmatrix}
+   F^h_{\bvec{x}} & F^h_{\delta} \\
+   \dot{\bvec{x}}^T & \dot{\lambda}   
+   \end{bmatrix} \begin{bmatrix} \Delta x \\ \Delta \delta \end{bmatrix} = 
+   \begin{bmatrix} -F^h(\bvec{x},\delta) \\ r \end{bmatrix}
+   \end{equation*}  $\Leftrightarrow$ 
+   
+   \begin{equation*}
+   \begin{bmatrix}
+   F^h_{\bvec{x}} & F^h_{\delta} \\
+   \dot{\bvec{x}}^T & \dot{\lambda}   
+   \end{bmatrix} \begin{bmatrix} \Delta x \\ \Delta \delta \end{bmatrix} = 
+   \begin{bmatrix} -F^h(\bvec{x},\delta) \\ r \end{bmatrix}
+   \end{equation*}
