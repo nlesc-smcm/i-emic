@@ -548,8 +548,9 @@ namespace TRIOS {
 		{			
 			Epetra_Vector diagonal(Chat->RowMap());
 			CHECK_ZERO(Chat->ExtractDiagonalCopy(diagonal));
+			INFO("  Fixing singular Chat...");
+			INFO("  tolerance = " << fixChatTol);
 			INFO("  chat diagonal length = " << diagonal.GlobalLength());
-			// DUMPMATLAB("CHAT", *Chat); 
 		
 			Teuchos::RCP<Epetra_CrsMatrix> TMP =
 				Teuchos::rcp(new Epetra_CrsMatrix(Copy, Chat->RowMap(), 0));
@@ -575,10 +576,10 @@ namespace TRIOS {
 
 			CHECK_ZERO(TMP->Import(*Chat, Chat2TMP, Insert));
 			CHECK_ZERO(TMP->FillComplete());
-			// DUMPMATLAB("TMP",   *TMP);
 		
 			Chat = TMP;
-			// DUMPMATLAB("CHAT2", *Chat);
+			INFO("  Fixing singular Chat... done");
+						
 		}
 
 		// Traditional scaling although I'm still not sure whether I'm doing it right
@@ -589,7 +590,7 @@ namespace TRIOS {
 			
 			Chat->InvRowSums(*scalingChat);
 			Chat->LeftScale(*scalingChat);
-			Chat->RightScale(*scalingChat);
+			// Chat->RightScale(*scalingChat);
 			// DUMPMATLAB("CHAT3", *Chat);		
 		}		
 	} 
@@ -848,7 +849,7 @@ namespace TRIOS {
 					RepartChat->Undistribute(*sol,x2);
 				}
 #endif
-				if (scaleChat) sol->Multiply(1.0, *scalingChat,*sol, 0.0); // scale sol
+				// if (scaleChat) sol->Multiply(1.0, *scalingChat,*sol, 0.0); // scale sol
 			}
 			CHECK_ZERO(Spp->A12().Multiply(false,x2,*ytmp1));
 			CHECK_ZERO(BlockDiagA11->Multiply(false,*ytmp1,x1));
@@ -897,7 +898,7 @@ namespace TRIOS {
 					RepartChat->Undistribute(*sol,x2);
 				}
 #endif
-				if (scaleChat) sol->Multiply(1.0, *scalingChat,*sol, 0.0); // scale sol
+				// if (scaleChat) sol->Multiply(1.0, *scalingChat,*sol, 0.0); // scale sol
 			}
           
 			// apply inv(L')

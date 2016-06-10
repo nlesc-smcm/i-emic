@@ -27,8 +27,20 @@ Duv  = A(ip, iuv);
 if ~exist('iAuv') || force
   iAuv = inverseblockdiagonal(Auv,2);
 end
-
+		 
 C   = -Duv * iAuv * Guv;
+
+condest(C)
+
+figure(1)
+plot(diag(C))
+
+sc = 1./sum(abs(C),2);
+Csc = C*diag(sc);
+
+figure(2)
+plot(diag(Csc));
+condest(Csc)
 
 c = diag(C);
 z = zeros(numel(c),1);

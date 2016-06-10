@@ -432,7 +432,11 @@
     <Parameter name="Scheme" type="string" value="SR"/>
 
     <!-- fix Chat's diagonal if it is singular -->
-    <Parameter name="Fix singular Chat" type="bool" value="false"/>
+    <Parameter name="Fix singular Chat" type="bool" value="true"/>
+
+	<!-- Tolerance for Chat fix -->
+    <Parameter name="Fix Chat tolerance" type="double" value="1e5"/>
+
 
 	<!-- Print indices where Chat's diagonal is zero -->
     <Parameter name="Print zero diagonal indices" type="bool" value="true"/>	
