@@ -6,10 +6,6 @@ end
 
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
 
-n = 120;
-m = 54;
-l = 12;
-
 assert(N == n*m*l*nun);
 
 % (u,v,w,p,T,S)
@@ -39,35 +35,20 @@ Duv  = A(ip, iuv);
 if ~exist('iAuv') || force
   iAuv = inverseblockdiagonal(Auv,2);
 end
-
-E  = -Duv * Guv;
-dE = diag(E);
-for i = 1:numel(dE)
-  if (abs(dE(i)) > 3000)
-	fprintf('%6d  ', i);
-	fprintf('%1.3e ', sum(full(Duv(i,:))));
-	fprintf('\n');
-	SWS(rp(i)) = 6;
-  end
-end
 		 
 C   = -Duv * iAuv * Guv;
 
-C11 = C(rp<n*m,rp<n*m);
-E11 = E(rp<n*m,rp<n*m);
-
-condest(C11)
+condest(C)
 
 figure(1)
-plot(diag(E11))
-sc    = sum(abs(E11),2);
-E11sc = diag(1./sc)*E11;
+plot(diag(C))
+
+sc = 1./sum(abs(C),2);
+Csc = C*diag(sc);
 
 figure(2)
-plot(diag(E11sc));
-condest(E11sc)
-
-figure(3)
+plot(diag(Csc));
+condest(Csc)
 
 c = diag(C);
 z = zeros(numel(c),1);
