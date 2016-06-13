@@ -219,6 +219,7 @@ exportfig('sst.eps',10,[50,25])
 %% -------------------------------------------------------
 figure(4)
 contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
+%pcolor(RtD*yv(1:end-1),z*hdim,Tl'+T0);
 colorbar
 title('Temperature')
 xlabel('Latitude')

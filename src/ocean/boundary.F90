@@ -62,18 +62,17 @@ subroutine boundaries
            if (i.lt.n) then
 
               ! Additional neighbours in the interior
-              !--> why? what is the use here?
-              southee  = landm(i+2,j-1,k  ) !  ?
-              easteast = landm(i+2,j  ,k  ) !  ?
-              northee  = landm(i+2,j+1,k  ) !  ?
+              southee  = landm(i+2,j-1,k  ) !
+              easteast = landm(i+2,j  ,k  ) !
+              northee  = landm(i+2,j+1,k  ) !
               if (j.lt.m) then
                  nnorthee = landm(i+2,j+2,k) 
               endif
            endif
            if (j.lt.m) then
-              nnwest   = landm(i  ,j+2,k  ) !  ?
-              nnorth   = landm(i  ,j+2,k  ) !  ?
-              nneast   = landm(i  ,j+2,k  ) !  ?
+              nnwest   = landm(i  ,j+2,k  ) !
+              nnorth   = landm(i  ,j+2,k  ) !
+              nneast   = landm(i  ,j+2,k  ) !
            endif
 
            !------- CENTER = OCEAN ---------------------------------------------------
@@ -167,7 +166,7 @@ subroutine boundaries
                  Al(i,j,k, :,WW,: ) = 0.0
                  Al(i,j,k, 5,WW,WW) = 1.0
               endif
-              if (top == ATMOS) then !--> Wat gebeurt hier???
+              if (top == ATMOS) then !
                  Al(i,j,k, 1,: ,UU) = Al(i,j,k,1,: ,UU) + Al(i,j,k,19,: ,UU) ! ACdN
                  Al(i,j,k, 1,: ,VV) = Al(i,j,k,1,: ,VV) + Al(i,j,k,19,: ,VV) ! ACdN
                  Al(i,j,k,19,: ,UU) = 0.0
@@ -408,7 +407,7 @@ subroutine boundaries
                  Al(i,j,k,4,TT,TT) = 0.0
               endif
               !------- CENTER = not OCEAN or ATMOSPHERE -----------------------------
-              ! --> so this is probably on LAND 
+              ! so this is probably on LAND 
            else
               Al(i,j,k,:,:,:) = 0.0
               do ii = 1, nun
@@ -423,8 +422,8 @@ subroutine boundaries
               endif
               
 #if 0 
-              ! I don't think this is a good idea, introducing land temp values
-              ! in the state, could affect preconditioning
+              ! I don't think this is a good idea: introducing land temp values
+              ! in the state could affect preconditioning
               if ( ( k == l ) .AND. (coupled_atm .EQ. 1) ) then
                  ! let the atmosphere be available via the forcing    ! Erik
                  Al(i,j,l,5,TT,TT) = 1.0

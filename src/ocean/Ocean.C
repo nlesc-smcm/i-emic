@@ -97,7 +97,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	initializeOcean();
 
 	// Analyze Jacobian and print/fix impossible land points
-	while (analyzeJacobian() > 0);
+	int ctr  = 0;
+	while (analyzeJacobian() > 0){ctr++; getchar(); INFO(ctr);}
 
 	// Initialize preconditioner
 	initializePreconditioner();
@@ -132,6 +133,8 @@ void Ocean::initializeOcean()
 	Teuchos::RCP<Epetra_Map> RowMap = domain_->GetSolveMap();
 	
 	mapP_     = Utils::CreateSubMap(*RowMap, _NUN_, PP);
+	mapU_     = Utils::CreateSubMap(*RowMap, _NUN_, UU);
+		
 	singRows_ = Teuchos::rcp(new Epetra_Vector(*mapP_));
 }
 
@@ -142,9 +145,12 @@ int Ocean::analyzeJacobian()
 
 	// Print the Jacobian
 	DUMP("jacobian.ocean", *jac_);
-
+	
 	// Make preparations for extracting pressure rows
 	int dim = mapP_->NumMyElements();
+
+	assert(dim == mapU_->NumMyElements());
+	
 	int row, len;
 	int maxlen = jac_->MaxNumEntries();
 	std::vector<int> indices(maxlen);
@@ -152,39 +158,91 @@ int Ocean::analyzeJacobian()
 
 	int singRowsFound = 0;
 	double sum;
+	int el;
+	int southw;
+	int pos;
 
-	// Check pressure rows for weird things
 	for (int i = 0; i != dim; i++)
 	{
+		// Check pressure rows for weird things
 		row = mapP_->GID(i);
 		CHECK_ZERO(jac_->ExtractGlobalRowCopy(row, maxlen,
 											  len, &values[0],
 											  &indices[0]));
 		sum = 0.0;
+		el  = 0;
 		for (int p = 0; p != len; p++)
 		{
 			sum += values[p];
+			if (std::abs(values[p]) > 1e-10)
+			{
+				el++;
+				if (values[p] > 0)
+					pos++;
+				else
+					pos = 0;
+			}
 		}
 
-		// If the sum of a row is 0 or L_, it is likely to be one of our
-		// 'problem rows'
-		if (sum == 0 || sum == L_)
+		if (sum == 1)
+		{
+			// If the sum of the elements equals 1 this is already a land cell
+			// We don't need to 'fix' it
+			(*singRows_)[i] = 1;
+		}
+		else if (el <= 2)
+		{
+			// If the number of contributions is less than or equal to 2,
+			// it is likely to be one of our 'problem rows'.
+			// These rows only depend on vertical velocity W.
+			(*singRows_)[i] = 2;
+			singRowsFound++;
+		}
+		else if (0)//(el <= 3 && pos >= 2)
+		{
+			southw = mapP_->LID(row-((N_+1)*6));
+			INFO(southw);
+			if (southw >= 0)
+			{
+				CHECK_ZERO(jac_->ExtractGlobalRowCopy(southw, maxlen,
+													  len, &values[0],
+													  &indices[0]));
+				sum = 0.0;
+				for (int p = 0; p != len; p++)
+					sum += values[p];
+			
+				if (sum != 1)
+				{
+					(*singRows_)[i] = 2;
+					singRowsFound++;
+				}
+			}
+		}
+
+		// Check u-velocity rows for weird things
+		row = mapU_->GID(i);
+		CHECK_ZERO(jac_->ExtractGlobalRowCopy(row, maxlen,
+											  len, &values[0],
+											  &indices[0]));
+		el  = 0;
+		for (int p = 0; p != len; p++)
+		{
+			if (std::abs(values[p]) > 1e-7)
+				el++;
+		}		
+		
+		if (el == 7)
 		{
 			(*singRows_)[i] = 2;
 			singRowsFound++;
 		}
-		else if (sum == 1)
-		{
-			(*singRows_)[i] = 1;
-		}
 	}
-
+	
 	int maxFound;
 	comm_->MaxAll(&singRowsFound, &maxFound, 1);
 	
 	INFO("Printing singular rows in P rows to singrows");
 	EpetraExt::VectorToMatlabFile("singrows", *singRows_);
-	getchar();
 
 	// If we find singular pressure rows we adjust the landmask
 	if (maxFound > 0)

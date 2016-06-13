@@ -1,1 +1,1 @@
-% fz - Maps ze to z%%  M. den Toom%function z = fz(ze,qz)th  = tanh( qz * (ze+1) );tth = tanh( qz );z   = -1 + th./tth; 
+% fz - Maps ze to z%%  M. den Toom%function z = fz(ze,qz)  if qz > 1	th  = tanh( qz * (ze+1) );	tth = tanh( qz );	z   = -1 + th./tth;  else	z = ze + (1-qz).*ze.*(1-ze);  endend

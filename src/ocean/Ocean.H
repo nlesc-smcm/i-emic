@@ -123,8 +123,11 @@ protected:
 	// Landmask file
 	std::string landmaskFile_;
 
-	// Row map for pressure points
+	// Row map for pressure points P
 	Teuchos::RCP<Epetra_Map> mapP_;
+
+	// Row map for velocity U
+	Teuchos::RCP<Epetra_Map> mapU_;
 
 	// Rows corresponding to singular pressure points
 	Teuchos::RCP<Epetra_Vector> singRows_;

@@ -432,7 +432,7 @@
     <Parameter name="Scheme" type="string" value="SR"/>
 
     <!-- fix Chat's diagonal if it is singular -->
-    <Parameter name="Fix singular Chat" type="bool" value="true"/>
+    <Parameter name="Fix singular Chat" type="bool" value="false"/>
 
     <!-- Tolerance for Chat fix -->
     <Parameter name="Fix Chat tolerance" type="double" value="1e2"/>
@@ -441,7 +441,7 @@
     <Parameter name="Print zero diagonal indices" type="bool" value="false"/>	
     
     <!-- scale the Chat solve -->
-    <Parameter name="Scale Chat" type="bool" value="true"/>
+    <Parameter name="Scale Chat" type="bool" value="false"/>
 
     <!-- fix A11's diagonal if it is singular -->
     <Parameter name="Fix singular A11" type="bool" value="false"/>
