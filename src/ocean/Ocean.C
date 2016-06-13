@@ -98,7 +98,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
 	// Analyze Jacobian and print/fix impossible land points
 	int ctr  = 0;
-	while (analyzeJacobian() > 0){ctr++; getchar(); INFO(ctr);}
+	while (analyzeJacobian() > 0){INFO(++ctr);}
 
 	// Initialize preconditioner
 	initializePreconditioner();
@@ -159,7 +159,6 @@ int Ocean::analyzeJacobian()
 	int singRowsFound = 0;
 	double sum;
 	int el;
-	int southw;
 	int pos;
 
 	for (int i = 0; i != dim; i++)
@@ -197,26 +196,6 @@ int Ocean::analyzeJacobian()
 			// These rows only depend on vertical velocity W.
 			(*singRows_)[i] = 2;
 			singRowsFound++;
-		}
-		else if (0)//(el <= 3 && pos >= 2)
-		{
-			southw = mapP_->LID(row-((N_+1)*6));
-			INFO(southw);
-			if (southw >= 0)
-			{
-				CHECK_ZERO(jac_->ExtractGlobalRowCopy(southw, maxlen,
-													  len, &values[0],
-													  &indices[0]));
-				sum = 0.0;
-				for (int p = 0; p != len; p++)
-					sum += values[p];
-			
-				if (sum != 1)
-				{
-					(*singRows_)[i] = 2;
-					singRowsFound++;
-				}
-			}
 		}
 
 		// Check u-velocity rows for weird things

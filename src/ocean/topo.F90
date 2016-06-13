@@ -134,7 +134,7 @@ SUBROUTINE readmask
   use m_global
   implicit none
   integer i,j,k       
-  integer nw,ns,ne,nn,nsum,status
+  integer nw,nnw,nsw,ns,ne,nne,nse,nn,nsum,status
 
   ! if all worked out fine, the C++ program should have placed
   ! the name of the desired mask in this file (to avoid having
@@ -163,22 +163,32 @@ SUBROUTINE readmask
   close(500)
 
   
- do k = 1, l
-    do i = 3, n-2
-       do j = 2, m-1
-          if ( landm(i,j,k).eq.OCEAN ) then
-             nw =  landm(i-1,j,k)
-             ne =  landm(i+1,j,k)     
-             ns =  landm(i,j-1,k)
-             nn =  landm(i,j+1,k) 
-             nsum = nw+ne+ns+nn
-             if (nsum.gt.2) then                      
-                landm(i,j,k) = LAND ! disabled this hack?
-             endif
-          endif
-       enddo
-    enddo
- enddo
+  ! do k = 1, l
+  !    do i = 3, n-2
+  !       do j = 2, m-1
+  !          if ( landm(i,j,k).eq.OCEAN ) then
+  !             nw  =  landm(i-1,j,k)
+  !             nnw =  landm(i-1,j+1,k)
+  !             nsw =  landm(i-1,j-1,k)
+  !             ne  =  landm(i+1,j,k)
+  !             nne =  landm(i+1,j+1,k)
+  !             nse =  landm(i+1,j-1,k)
+  !             ns  =  landm(i,j-1,k)
+  !             nn  =  landm(i,j+1,k) 
+
+  !             nsum = nw+ne+ns+nn
+  !             if (nsum.gt.2) then                      
+  !                landm(i,j,k) = LAND ! disabled this hack?
+  !             endif
+
+  !             if (((nw + ns) .eq. 2).and. (nsw.eq.OCEAN)) then
+  !                landm(i,j,k) = LAND ! disabled this hack?
+  !             endif
+
+  !          endif
+  !       enddo
+  !    enddo
+  ! enddo
   !      
   do i = 1, n
      do j = 1, m
