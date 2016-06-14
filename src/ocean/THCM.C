@@ -1024,8 +1024,8 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 					stringvec_old.push_back(string_old.str());
 					stringvec_new.push_back(string_new.str());
 				}
-				stringvec_old.push_back("-----" + std::to_string(k));
-				stringvec_new.push_back("-----" + std::to_string(k));
+				stringvec_old.push_back("-----");
+				stringvec_new.push_back("-----");
 			}
 			for (auto i = stringvec_new.rbegin(); i != stringvec_new.rend(); ++i)
 				INFO(i->c_str());

@@ -221,7 +221,6 @@ int Ocean::analyzeJacobian()
 	
 	INFO("Printing singular rows in P rows to singrows");
 	EpetraExt::VectorToMatlabFile("singrows", *singRows_);
-	getchar();
 
 	// If we find singular pressure rows we adjust the landmask
 	if (maxFound > 0)
