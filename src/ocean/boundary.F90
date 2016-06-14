@@ -242,10 +242,10 @@ subroutine boundaries
               if (south == LAND) then	! 4 
                  Al(i,j,k, 5,: ,SS) = Al(i,j,k,5,: ,SS) + Al(i,j,k,4,: ,SS) ! ACdN
                  Al(i,j,k, 5,: ,TT) = Al(i,j,k,5,: ,TT) + Al(i,j,k,4,: ,TT) ! ACdN
-                 !              Al(i,j,k, 5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,4,TT,TT)
-                 !              Al(i,j,k, 5,SS,SS) = Al(i,j,k,5,SS,SS) + Al(i,j,k,4,SS,SS)
-                 !              Al(i,j,k, 5,TT,SS) = Al(i,j,k,5,TT,SS) + Al(i,j,k,4,TT,SS)
-                 !              Al(i,j,k, 5,SS,TT) = Al(i,j,k,5,SS,TT) + Al(i,j,k,4,SS,TT)
+                 !   Al(i,j,k, 5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,4,TT,TT)
+                 !   Al(i,j,k, 5,SS,SS) = Al(i,j,k,5,SS,SS) + Al(i,j,k,4,SS,SS)
+                 !   Al(i,j,k, 5,TT,SS) = Al(i,j,k,5,TT,SS) + Al(i,j,k,4,TT,SS)
+                 !   Al(i,j,k, 5,SS,TT) = Al(i,j,k,5,SS,TT) + Al(i,j,k,4,SS,TT)
                  Al(i,j,k, 4,: ,: ) = 0.0
                  Al(i,j,k, 1,: ,UU) = 0.0
                  Al(i,j,k, 1,: ,VV) = 0.0        
@@ -279,10 +279,10 @@ subroutine boundaries
                  !
                  Al(i,j,k, 5,: ,SS) = Al(i,j,k,5,: ,SS) + Al(i,j,k,6,: ,SS) ! ACdN
                  Al(i,j,k, 5,: ,TT) = Al(i,j,k,5,: ,TT) + Al(i,j,k,6,: ,TT) ! ACdN
-                 !              Al(i,j,k, 5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,6,TT,TT)
-                 !              Al(i,j,k, 5,SS,SS) = Al(i,j,k,5,SS,SS) + Al(i,j,k,6,SS,SS)
-                 !              Al(i,j,k, 5,TT,SS) = Al(i,j,k,5,TT,SS) + Al(i,j,k,6,TT,SS)
-                 !              Al(i,j,k, 5,SS,TT) = Al(i,j,k,5,SS,TT) + Al(i,j,k,6,SS,TT)
+                 !   Al(i,j,k, 5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,6,TT,TT)
+                 !   Al(i,j,k, 5,SS,SS) = Al(i,j,k,5,SS,SS) + Al(i,j,k,6,SS,SS)
+                 !   Al(i,j,k, 5,TT,SS) = Al(i,j,k,5,TT,SS) + Al(i,j,k,6,TT,SS)
+                 !   Al(i,j,k, 5,SS,TT) = Al(i,j,k,5,SS,TT) + Al(i,j,k,6,SS,TT)
                  Al(i,j,k, 6,: ,: ) = 0.0
               elseif (j.lt.m) then
                  if (nnorth == LAND) then
@@ -332,10 +332,10 @@ subroutine boundaries
                  !
                  Al(i,j,k, 5,: ,SS) = Al(i,j,k,5,: ,SS) + Al(i,j,k,8,: ,SS)
                  Al(i,j,k, 5,: ,TT) = Al(i,j,k,5,: ,TT) + Al(i,j,k,8,: ,TT)
-                 !              Al(i,j,k, 5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,8,TT,TT)
-                 !              Al(i,j,k, 5,SS,SS) = Al(i,j,k,5,SS,SS) + Al(i,j,k,8,SS,SS)
-                 !              Al(i,j,k, 5,TT,SS) = Al(i,j,k,5,TT,SS) + Al(i,j,k,8,TT,SS)
-                 !              Al(i,j,k, 5,SS,TT) = Al(i,j,k,5,SS,TT) + Al(i,j,k,8,SS,TT)
+                 !   Al(i,j,k, 5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,8,TT,TT)
+                 !   Al(i,j,k, 5,SS,SS) = Al(i,j,k,5,SS,SS) + Al(i,j,k,8,SS,SS)
+                 !   Al(i,j,k, 5,TT,SS) = Al(i,j,k,5,TT,SS) + Al(i,j,k,8,TT,SS)
+                 !   Al(i,j,k, 5,SS,TT) = Al(i,j,k,5,SS,TT) + Al(i,j,k,8,SS,TT)
                  Al(i,j,k, 8,: ,: ) = 0.0
                  Al(i,j,k, 7, :,UU) = 0.0
                  Al(i,j,k, 7, :,VV) = 0.0

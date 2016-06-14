@@ -28,13 +28,13 @@
     <!-- a descriptive name to identify the settings -->
     <Parameter name="Problem Description" type="string" value="test"/>
     <!-- western domain bound -->
-    <Parameter name="Global Bound xmin" type="double" value="10"/>
+    <Parameter name="Global Bound xmin" type="double" value="300"/>
     <!-- eastern domain bound -->
-    <Parameter name="Global Bound xmax" type="double" value="60"/>
+    <Parameter name="Global Bound xmax" type="double" value="340"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="0"/>
+    <Parameter name="Global Bound ymin" type="double" value="10"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="50"/>
+    <Parameter name="Global Bound ymax" type="double" value="80"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="0"/>
     <!-- depth of the ocean -->
@@ -75,18 +75,18 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.8"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-	  <Parameter name="Temperature Forcing" type="double" value="1.0"/>
-	  <Parameter name="SPL1"                type="double" value="1.25"/>
+	  <Parameter name="Temperature Forcing" type="double" value="10.0"/>
+	  <Parameter name="SPL1"                type="double" value="2.0e3"/>
 	  <Parameter name="SPL2"                type="double" value="0.01"/>	  
     </ParameterList>
 	
     <!-- Mixing parameter (vmix_GLB in THCM)                                   -->
 	<!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
-	<!-- Mixing = 1  => SPL1 =  ..., SPL2 = ...                                -->
-	<!-- Mixing = 2  => SPL1 = 1.25, SPL2 = 0.01                               -->
-    <Parameter name="Mixing" type="int" value="2"/>
+	<!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                              -->
+	<!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                              -->
+    <Parameter name="Mixing" type="int" value="1"/>
 	
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>

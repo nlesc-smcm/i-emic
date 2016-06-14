@@ -1,6 +1,4 @@
-if ~exist('A') || force
-  A = mmread('jacobian.ocean');
-end
+A = mmread('jacobian.ocean');
 
 [N,M] = size(A);
 
@@ -24,16 +22,42 @@ Auv  = A(iuv,iuv);
 Guv  = A(iuv,ip);
 Duv  = A(ip, iuv);
 
-if ~exist('iAuv') || force
-  iAuv = inverseblockdiagonal(Auv,2);
-end
-		 
-C   = -Duv * iAuv * Guv;
+iAuv = inverseblockdiagonal(Auv,2);
+cond(full(iAuv))
 
-condest(C)
+rgs = find(~SWS);
+
+C   = -Duv(rgs,:) * iAuv * Guv(:,rgs);
+O   = -Duv(rgs,:) * Guv(:,rgs);
+
+fprintf('cond iAuv              = %2.2e\n', cond(full(iAuv)));
+fprintf('cond -Duv * iAuv * Guv = %2.2e\n', cond(full(C)));
+fprintf('cond -Duv * Guv        = %2.2e\n', cond(full(O)));
+fprintf('  min(diag(C))    = %2.2e\n', min(abs(diag(full(C)))));
+fprintf('  max(diag(C))    = %2.2e\n', max(abs(diag(full(C)))));
+fprintf('  max(C)          = %2.2e\n\n', max(max(abs(full(C)))));
+
+fprintf('  min(Duv)        = %2.2e\n', min(min(abs(full(Duv(abs(Duv)>0))))));
+fprintf('  max(Duv)        = %2.2e\n\n', max(max(abs(full(Duv(abs(Duv)>0))))));
+
+fprintf('  min(diag(iAuv)) = %2.2e\n', min(abs(diag(full(iAuv)))));
+fprintf('  min(iAuv)       = %2.2e\n', min(min(abs(full(iAuv(abs(iAuv)>0))))));
+fprintf('  max(iAuv)       = %2.2e\n\n', max(max(abs(full(iAuv(abs(iAuv)>0))))));
+
+fprintf('  min(Guv)        = %2.2e\n', min(min(abs(full(Guv(abs(Guv)>0))))));
+fprintf('  max(Guv)        = %2.2e\n\n', max(max(abs(full(Guv(abs(Guv)>0))))));
+
 
 figure(1)
 plot(diag(C))
+
+%vsm(C)
+%vsm(O)
+
+C   = -Duv * iAuv * Guv;
+O   = -Duv * Guv;
+
+
 
 c = diag(C);
 z = zeros(numel(c),1);
@@ -45,7 +69,6 @@ end
 
 rg = m*n*l;
 
-
 Prows = A(ip(1:rg),:);
 Urows = A(iu(1:rg),:);
 Vrows = A(iu(1:rg),:);
@@ -55,15 +78,13 @@ for i = 1:m*n
   idV = find(Urows(i,:));
 end
 
-Prows(44,:)
-Prows(35,:)
-
 dc11 = c(1:m*n);
 DC11 = reshape(dc11, m, n);
 SV11 = reshape(full(sum(A(iv(1:m*n),:),2)),n,m);
 SU11 = reshape(full(sum(A(iu(1:m*n),:),2)),n,m);
 SW11 = reshape(full(sum(A(iw(1:m*n),:),2)),n,m);
 SP11 = reshape(full(sum(A(ip(1:m*n),:),2)),n,m);
+
 
 figure(2)
 imagesc(DC11')
@@ -90,13 +111,34 @@ imagesc(SP11')
 title('P')
 set(gca,'ydir','normal'); colorbar;
 
+DUV = reshape(full(sum(abs(Duv(1:m*n,:)),2)),n,m);
+GUU = reshape(full(sum(abs(Guv(1:2:2*m*n,:)),2)),n,m);
+GUV = reshape(full(sum(abs(Guv(2:2:2*m*n,:)),2)),n,m);
 
-fprintf('----------------------\n');
-for i = 1:numel(ip)
-%  fprintf('%3d      %3d %3d\n', i, z(i), SWS(i));
-  if z(i) == 1 && SWS(i) == 0
-	SWS(i) = 3;
-  end
-end
+figure(7)
+imagesc(DUV')
+title('DUV')
+set(gca,'ydir','normal'); colorbar;
 
-SWS = reshape(SWS,n,m,l);
+figure(8)
+imagesc(GUU')
+title('GUU')
+set(gca,'ydir','normal'); colorbar;
+
+figure(9)
+imagesc(GUV')
+title('GUV')
+set(gca,'ydir','normal'); colorbar;
+
+SC2 = reshape(diag(C(1:m*n,:)),n,m);
+SC3 = reshape(diag(C(1:m*n,:)),n,m);
+
+figure(10)
+imagesc(SC2')
+title('SC2')
+set(gca,'ydir','normal'); colorbar;
+
+figure(11)
+imagesc(SC3')
+title('SC3')
+set(gca,'ydir','normal'); colorbar;
