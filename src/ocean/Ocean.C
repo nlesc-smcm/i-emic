@@ -97,8 +97,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	initializeOcean();
 
 	// Analyze Jacobian and print/fix impossible land points
-	int ctr  = 0;
-	while (analyzeJacobian() > 0){INFO(++ctr);}
+	while (analyzeJacobian() > 0);
 
 	// Initialize preconditioner
 	initializePreconditioner();
@@ -198,23 +197,23 @@ int Ocean::analyzeJacobian()
 			singRowsFound++;
 		}
 
-		// Check u-velocity rows for weird things
-		row = mapU_->GID(i);
-		CHECK_ZERO(jac_->ExtractGlobalRowCopy(row, maxlen,
-											  len, &values[0],
-											  &indices[0]));
-		el  = 0;
-		for (int p = 0; p != len; p++)
-		{
-			if (std::abs(values[p]) > 1e-7)
-				el++;
-		}		
+		// // Check u-velocity rows for weird things
+		// row = mapU_->GID(i);
+		// CHECK_ZERO(jac_->ExtractGlobalRowCopy(row, maxlen,
+		// 									  len, &values[0],
+		// 									  &indices[0]));
+		// el  = 0;
+		// for (int p = 0; p != len; p++)
+		// {
+		// 	if (std::abs(values[p]) > 1e-7)
+		// 		el++;
+		// }		
 		
-		if (el == 7)
-		{
-			(*singRows_)[i] = 2;
-			singRowsFound++;
-		}
+		// if (el == 7)
+		// {
+		// 	(*singRows_)[i] = 2;
+		// 	singRowsFound++;
+		// }
 	}
 	
 	int maxFound;

@@ -1,0 +1,48 @@
+* Continuation in topography
+** Homotopy 
+   +---------------------------------------------+
+   $m_{k}$                   $k$-th topography 
+   $F(\bvec{x},m_{s}) = 0$   starting solution
+   $F(\bvec{x},m_{d}) = 0$   destination solution
+   +---------------------------------------------+
+   Homotopy function:
+   $F^h(\bvec{x},\delta) = \hat{\delta} F(\bvec{x},m_d) + (1-\hat{\delta}) F(\bvec{x},m_s)$
+   $s = \texttt{floor}(\delta)$ 
+   $d = s + 1$
+   $\hat{\delta} = \delta - s$
+
+   Or:
+   $F^h(\bvec{x}, \delta) = \text{sin}^2(\frac{\pi \delta}{2})F(\bvec{x},m_{d}) + \text{cos}^2(\frac{\pi \delta}{2}) F(\bvec{x},m_{s})$
+
+   delta            = 0..1..2..3..4..5..6..7 
+   d                = 1  1  2  2  3  3  4  4
+   s                = 0  1  1  2  2  3  3  4
+   floor(delta) % 2 = 0  1  0  1  0  1  0  1
+
+   d_{k+1} = d_k + floor(delta) % 2
+
+   $k(\delta) = \texttt{floor}(\delta)$ 
+   
+   +---------------------------------------------+
+   Pseudo-arclength continuation:
+   \begin{align*}
+   F^h(\bvec{x},\delta) &= 0\\
+   \dot{\bvec{x}} (\bvec{x} - \bvec{x}_0) + \dot{\delta} (\delta - \delta_0) - \Delta s &= 0
+   \end{align*}
+   +---------------------------------------------+   
+	
+   \begin{equation*}
+   \begin{bmatrix}
+   F^h_{\bvec{x}} & F^h_{\delta} \\
+   \dot{\bvec{x}}^T & \dot{\lambda}   
+   \end{bmatrix} \begin{bmatrix} \Delta x \\ \Delta \delta \end{bmatrix} = 
+   \begin{bmatrix} -F^h(\bvec{x},\delta) \\ r \end{bmatrix}
+   \end{equation*}  
+   
+   \begin{align*}
+   F^h_{\bvec{x}} &= \hat{\delta} F_\bvec{x}(\bvec{x},m_{k+1}) + (1-\hat{\delta}) F_\bvec{x}(\bvec{x},m_{k}) \\
+   F^h_{\delta} &=  
+   \end{align*}
+
+* Implementation
+  
