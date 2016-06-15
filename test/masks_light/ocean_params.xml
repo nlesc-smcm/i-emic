@@ -5,14 +5,14 @@
   <!-- an old state (true) or with a zero solution (false).                  -->
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
-  <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Save state" type="bool" value="false"/>
+  <Parameter name="Load state" type="bool" value="true"/>
+  <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean.h5" />
   <Parameter name="Output file" type="string" value="ocean.h5" />
-
+  
   <!-- To keep track of each converged state, enable this. -->
   <Parameter name="Store everything" type="bool" value="false" />
-
+  
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->
   <!-- specified in CoupledModel                                      -->
@@ -63,7 +63,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="test2"/>
+    <Parameter name="Land Mask" type="string" value="test5"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -75,7 +75,7 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.8"/>
+      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
 	  <Parameter name="Temperature Forcing" type="double" value="10.0"/>
 	  <Parameter name="SPL1"                type="double" value="2.0e3"/>
@@ -119,7 +119,5 @@
     <!-- We currently support "None" and "THCM"                                    -->
     <!-- "None" is not really recomended.                                          -->
     <Parameter name="Scaling" type="string" value="THCM"/> 
-
-  </ParameterList> <!-- } THCM -->
-  
+  </ParameterList> <!-- } THCM -->  
 </ParameterList> <!-- } -->
