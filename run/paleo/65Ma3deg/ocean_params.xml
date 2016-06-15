@@ -6,12 +6,12 @@
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
   <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Save state" type="bool" value="false"/>
+  <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean.h5" />
   <Parameter name="Output file" type="string" value="ocean.h5" />
 
   <!-- To keep track of each converged state, enable this. -->
-  <Parameter name="Store everything" type="bool" value="false" />
+  <Parameter name="Store everything" type="bool" value="true" />
 
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->
@@ -75,18 +75,18 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.2"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.8"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-	  <Parameter name="Temperature Forcing" type="double" value="1.0"/>
-	  <Parameter name="SPL1"                type="double" value="1.25"/>
-	  <Parameter name="SPL2"                type="double" value="0.01"/>	  
+      <Parameter name="Temperature Forcing" type="double" value="10.0"/>
+      <Parameter name="SPL1"                type="double" value="2.0e3"/>
+      <Parameter name="SPL2"                type="double" value="0.01"/>	  
     </ParameterList>
 	
     <!-- Mixing parameter (vmix_GLB in THCM)                                   -->
-	<!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
-	<!-- Mixing = 1  => SPL1 =  ..., SPL2 = ...                                -->
-	<!-- Mixing = 2  => SPL1 = 1.25, SPL2 = 0.01                               -->
-    <Parameter name="Mixing" type="int" value="2"/>
+    <!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
+    <!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                               -->
+    <!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                               -->
+    <Parameter name="Mixing" type="int" value="1"/>
 	
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>

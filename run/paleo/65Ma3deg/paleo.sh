@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --time=5-00:00:00
-#SBATCH --ntasks=48
-#SBATCH --nodes=2
+#SBATCH --ntasks=24
+#SBATCH --nodes=1
+
 
 cd ${HOME}/Projects/i-emic/run/paleo/65Ma3deg/
 
@@ -10,7 +11,7 @@ fname=summary_$date
 fnameprev=summary_prev_$date
 infofile=info_$date
 echo writing to $fname
-procs=48
+procs=24
 
 echo "Global configuration on:" ${PLAT} " in:" ${PWD} > $fname
 echo "#Procs:" $procs >> $fname
