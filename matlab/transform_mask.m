@@ -1,4 +1,4 @@
-function [peri,pmask] = transform_mask(mask_name, periodic)
+function [peri, pmask] = transform_mask(mask_name, periodic)
   % This function transforms Michiel's masks to THCM masks
   % Supply the name of the .mat file and whether you want periodic
   % boundaries.
