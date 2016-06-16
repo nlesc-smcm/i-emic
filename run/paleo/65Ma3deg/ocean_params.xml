@@ -5,7 +5,7 @@
   <!-- an old state (true) or with a zero solution (false).                  -->
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
-  <Parameter name="Load state" type="bool" value="true"/>
+  <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean.h5" />
   <Parameter name="Output file" type="string" value="ocean.h5" />
@@ -21,7 +21,7 @@
   <!--           "Solar Forcing"    -->
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Salinity Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -43,7 +43,7 @@
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
-    <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
+    <Parameter name="Grid Stretching qz" type="double" value="2.25"/>
     <!-- global number of grid points in x-direction -->
     <Parameter name="Global Grid-Size n" type="int" value="120"/>
     <!-- global number of grid points in y-direction -->
@@ -63,7 +63,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5.mask"/>
+    <Parameter name="Land Mask" type="string" value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz2.25.mask"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -75,7 +75,7 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.8"/>
+      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
       <Parameter name="Temperature Forcing" type="double" value="10.0"/>
       <Parameter name="SPL1"                type="double" value="2.0e3"/>

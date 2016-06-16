@@ -1,5 +1,5 @@
 * Continuation in topography
-** Homotopy 
+
    +---------------------------------------------+
    $m_{k}$                   $k$-th topography 
    $F(\bvec{x},m_{s}) = 0$   starting solution
@@ -71,7 +71,7 @@
   - Topo member functions:
 	- computeRHS()
       {
-	    
+	  
       }
 	- 
 	

@@ -7,7 +7,7 @@ function [peri, pmask] = transform_mask(mask_name, periodic)
 	periodic = true;
   end
   
-  M        =  load([mask_name, '.mat']);
+  M        =   load([mask_name, '.mat']);
   mimport  =   M.maskp; % might be .mask or .maskp, not sure
   [~,~,L]  =   size(mimport);
 
