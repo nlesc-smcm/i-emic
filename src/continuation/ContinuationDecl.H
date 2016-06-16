@@ -115,8 +115,10 @@ public:
 
 	// test
 	void test();
+
 private:
-        int  step();
+
+	int  step();
 	void store();
 	void restore();
 	void analyzeHist();

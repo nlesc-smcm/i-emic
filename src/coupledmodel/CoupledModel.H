@@ -21,8 +21,6 @@
 
 // The frequency at which the states of the sub-models are synchronized depends on the solving scheme. Moreover we use hashes to make sure nothing is computed and synchronized too often
 
-// The Jacobians in the sub-models form the diagonal blocks of the CoupledModel's Jacobian. If we require each sub-model to maintain its own solve() routine we can use a block Gauss Seidel iteration to solve the coupled problem. This circumvents the assembly of a big matrix. Another option is to solve the problem decoupled and only synchronize when postProcess() is called.
-
 // Forward declarations
 class Epetra_Comm;
 
