@@ -51,7 +51,29 @@
    
 * Implementation
   
-  New Model, similar to CoupledModel.
-  computeRHS()
+  New templated model, Topo
+  
+  template<typename Model> 
+  class Topo
+  
+  - Model is an RCP to a model
+
+  - Model should have get- and setLandMask functionality
+	
+  - Topo maintains names of landmasks
+
+  - Topo data members:
+	
+    std::vector<std::string> landMasks_;
+	int    nMasks_; // number of topographies
+    double delta_;  // continuation parameter
+
+  - Topo member functions:
+	- computeRHS()
+      {
+	    
+      }
+	- 
+	
   computeJacobian();
   
