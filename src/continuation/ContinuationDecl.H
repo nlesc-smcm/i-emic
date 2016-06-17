@@ -10,29 +10,49 @@
 //! 
 //! The templated Model type should be a pointer to a model
 //! with a specific set of member functions:
-//! ...
 //!
+//!  VectorPtr getState(char mode)
+//!  VectorPtr getRHS(char mode)
+//!  VectorPtr getSolution(char mode)
+//!
+//!  double getPar()
+//!  void   setPar(double value)
+//!
+//!  void preProcess()
+//!  void postProcess()
+//!
+//!  void computeRHS()
+//!  void computeJacobian()
+//!  void solve(VectorPtr b)
+//!
+//! A Model should maintain its own Vector, which we expect
+//! to be of pointer type as well and named VectorPtr.
+//! A Vector is expected to implement the following members:
+//!
+//!  int    length()
+//!  double norm(char mode, std::string const msg)
+//!  void   update(double a, Vector const &A, double s)
+//!  double dot(Vector const &A) 
+//!  
 //! The templated type ParameterList should be a pointer 
 //! to a parameter storing object having a .get() method.
 //!
-//! --> At this point the differences between the responsibilities of
-//! routines run() and step() are vague, we should improve this.
 
 template<typename Model, typename ParameterList>
 class Continuation
 {
-	using Vector = typename Model::element_type::VectorPtr;
+	using VectorPtr = typename Model::element_type::VectorPtr;
 	Model model_;
 	
-	Vector stateCopy_; // copy of the state in the model
-	Vector stateView_; // view of the state
-	Vector rhsCopy_;   // copy of the rhs in the model
-	Vector rhsView_;   // view of the rhs in the model
-	Vector solView_;   // view of the solution in the model
+	VectorPtr stateCopy_; // copy of the state in the model
+	VectorPtr stateView_; // view of the state
+	VectorPtr rhsCopy_;   // copy of the rhs in the model
+	VectorPtr rhsView_;   // view of the rhs in the model
+	VectorPtr solView_;   // view of the solution in the model
 
-	Vector stateDot_;  // derivative of the state w.r.t. arclength par.
+	VectorPtr stateDot_;  // derivative of the state w.r.t. arclength par.
 	
-	Vector dFdPar_;    // derivative of the rhs w.r.t. continuation par.
+	VectorPtr dFdPar_;    // derivative of the rhs w.r.t. continuation par.
 	
 	double par_;       // continuation parameter
 	double parDot_;    // derivative of cont. parameter w.r.t. arclength par.
@@ -89,8 +109,8 @@ class Continuation
 	// See Store() and Restore() for its use
 	struct Storage
 	{
-		Vector state0;     // prev state
-		Vector state00;    // prev prev state
+		VectorPtr state0;     // prev state
+		VectorPtr state00;    // prev prev state
 		double par0;       // prev par
 		double par00;      // prev prev par
 		double ds0;        // prev ds
@@ -144,7 +164,7 @@ private:
 	void computeDFDPar(char mode = 'A');
 	void eulerPredictor();
 	int  newtonCorrector();
-	int  runBackTracking(Vector stateDir, double parDir);
+	int  runBackTracking(VectorPtr stateDir, double parDir);
 
 	// Detect special points.
 	// Modes: 'D' --> converge on destination

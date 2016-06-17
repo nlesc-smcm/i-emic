@@ -263,8 +263,8 @@ createTangent(char mode)
 		stateDot_ = model_->getState('C');
 		
 		// Get the previous state and par from our storage
-		Vector state0 = storage_.state0;
-		double par0   = storage_.par0;
+		VectorPtr state0 = storage_.state0;
+		double    par0   = storage_.par0;
 		
 		// Compute stateDot = (state1 - state0)/ds
 		stateDot_->update(-1.0 / ds_, *state0, 1.0 / ds_);
@@ -369,12 +369,12 @@ int Continuation<Model, ParameterList>::
 newtonCorrector()
 {
 	INFO("Continuation: Newton corrector...");
-	char   mode;	      // mode for ComputeDFDPar()
-	Vector stateDir;      // direction for the state
-	Vector y;             // solution of solve with dFdPar
-	Vector z;             // solution of solve with F
-	double parDir;        // direction for the parameter
-	double rscale = 1.0;  // experimental RHS scaling
+	char      mode;	         // mode for ComputeDFDPar()
+	VectorPtr stateDir;      // direction for the state
+	VectorPtr y;             // solution of solve with dFdPar
+	VectorPtr z;             // solution of solve with F
+	double    parDir;        // direction for the parameter
+	double    rscale = 1.0;  // experimental RHS scaling
 	
 	
 	newtonIter_ = 0;	
@@ -392,8 +392,8 @@ newtonCorrector()
 		// we use that one to get -F(par).
 		// > Note that we cannot use the current rhs in the model
 		//   since at this point it corresponds to F(par+eps)
-		Vector R = rhsCopy_;
-		normRHS_ = rhsCopy_->norm();
+		VectorPtr R = rhsCopy_;
+		normRHS_    = rhsCopy_->norm();
 
 		if (scaleRHS_) // experimental
 		{
@@ -410,9 +410,9 @@ newtonCorrector()
 		// > zeta is an additional scaling for the state tangent
 		//   and makes sure that we have a proper parDot after
 		//   normalization.
-		Vector state0 = storage_.state0;
-		double par0   = storage_.par0;
-		double r      =  ds_ - stateDot_->dot(*stateView_) * zeta_
+		VectorPtr state0 = storage_.state0;
+		double    par0   = storage_.par0;
+		double    r      =  ds_ - stateDot_->dot(*stateView_) * zeta_
 			- stateDot_->dot(*state0) * zeta_
 			- parDot_ * (par_ - par0);
 
@@ -522,7 +522,7 @@ newtonCorrector()
 //======================================================================
 template<typename Model, typename ParameterList>
 int Continuation<Model, ParameterList>::
-runBackTracking(Vector stateDir, double parDir)
+runBackTracking(VectorPtr stateDir, double parDir)
 {
 	// Initialize reduction with -1/2
 	double reduction = -1.0 / 2;
@@ -730,10 +730,10 @@ testCopyView()
 {
 	INFO("******************************************************");
 	INFO("Continuation: Test Copy / View behaviour of the model.");
-	Vector view1 = model_->getState('V');
-	Vector copy1 = model_->getState('C');
-	Vector view2 = model_->getState('V');
-	Vector copy2 = model_->getState('C');
+	VectorPtr view1 = model_->getState('V');
+	VectorPtr copy1 = model_->getState('C');
+	VectorPtr view2 = model_->getState('V');
+	VectorPtr copy2 = model_->getState('C');
 	INFO("view1      norm: " << view1->norm());
 	INFO("view2      norm: " << view2->norm());
 	INFO("copy1      norm: " << copy1->norm());
