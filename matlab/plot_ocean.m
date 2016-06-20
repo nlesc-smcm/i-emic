@@ -248,7 +248,7 @@ title('Isohalines')
 xlabel('Latitude')
 ylabel('z (m)')
 
-exportfig('isopycnals.eps',10,[20,7])
+exportfig('isohalines.eps',10,[20,7])
 
 %%-----------------------------------------------------------------------------
 figure(7)

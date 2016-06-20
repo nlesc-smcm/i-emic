@@ -97,7 +97,20 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	initializeOcean();
 
 	// Analyze Jacobian and print/fix impossible land points
-	while (analyzeJacobian() > 0);
+	while( analyzeJacobian() )
+	{
+		// If we find singular pressure rows we adjust the landmask
+		INFO(" Fixing landmask " << landmaskFile_);
+		
+		Teuchos::RCP<Epetra_IntVector> landmask =
+			THCM::Instance().getLandMask(landmaskFile_, singRows_);
+		
+		INFO(" Putting a fixed version of " << landmaskFile_ <<
+			 "  back in THCM...");
+		
+		THCM::Instance().setLandMask(landmask);
+		THCM::Instance().evaluate(*state_, Teuchos::null, true);		
+	}
 
 	// Initialize preconditioner
 	initializePreconditioner();
@@ -139,12 +152,7 @@ void Ocean::initializeOcean()
 
 //====================================================================
 int Ocean::analyzeJacobian()
-{
-	INFO("Ocean: Printing Jacobian to jacobian.ocean");	
-
-	// Print the Jacobian
-	DUMP("jacobian.ocean", *jac_);
-	
+{	
 	// Make preparations for extracting pressure rows
 	int dim = mapP_->NumMyElements();
 
@@ -181,7 +189,7 @@ int Ocean::analyzeJacobian()
 					pos = 0;
 			}
 		}
-
+		
 		if (sum == 1)
 		{
 			// If the sum of the elements equals 1 this is already a land cell
@@ -196,47 +204,47 @@ int Ocean::analyzeJacobian()
 			(*singRows_)[i] = 2;
 			singRowsFound++;
 		}
-
-		// // Check u-velocity rows for weird things
-		// row = mapU_->GID(i);
-		// CHECK_ZERO(jac_->ExtractGlobalRowCopy(row, maxlen,
-		// 									  len, &values[0],
-		// 									  &indices[0]));
-		// el  = 0;
-		// for (int p = 0; p != len; p++)
-		// {
-		// 	if (std::abs(values[p]) > 1e-7)
-		// 		el++;
-		// }		
-		
-		// if (el == 7)
-		// {
-		// 	(*singRows_)[i] = 2;
-		// 	singRowsFound++;
-		// }
 	}
 	
 	int maxFound;
 	comm_->MaxAll(&singRowsFound, &maxFound, 1);
-	
-	INFO("Printing singular rows in P rows to singrows");
-	EpetraExt::VectorToMatlabFile("singrows", *singRows_);
 
-	// If we find singular pressure rows we adjust the landmask
-	if (maxFound > 0)
+	return maxFound;
+}
+
+//====================================================================
+Ocean::LandMask Ocean::getLandMask(std::string const & fname)
+{
+	LandMask mask;
+	
+	Teuchos::RCP<Epetra_IntVector> mask_local =
+		THCM::Instance().getLandMask(fname);
+	THCM::Instance().evaluate(*state_, Teuchos::null, true);
+	
+	// zero the singRows array
+	singRows_->PutScalar(0.0);
+	
+	while( analyzeJacobian() )
 	{
-		WARNING("FIXING YOUR LANDMASK!!", __FILE__, __LINE__);
-		INFO("Obtaining landmask " << landmaskFile_);
-		Teuchos::RCP<Epetra_IntVector> landmask =
+		// If we find singular pressure rows we adjust the landmask
+		mask_local =
 			THCM::Instance().getLandMask(landmaskFile_, singRows_);
 		
-		INFO("Putting a fixed version of " << landmaskFile_ <<
-			 " back in THCM...");
-		
-		THCM::Instance().setLandMask(landmask);
-		THCM::Instance().evaluate(*state_, Teuchos::null, true);
+		//  Putting a fixed version of the landmask back in THCM		
+		THCM::Instance().setLandMask(mask_local);
+		THCM::Instance().evaluate(*state_, Teuchos::null, true);		
 	}
-	return maxFound;
+	mask.local  = mask_local;
+	
+	// Get the current global land mask from THCM.
+	mask.global = THCM::Instance().getLandMask();
+	return mask;
+}
+
+//===================================================================
+void Ocean::setLandMask(LandMask mask)
+{
+	// -->TODO
 }
 
 //====================================================================
@@ -257,7 +265,6 @@ void Ocean::postProcess()
 	
 	if (storeEverything_)
 		copyFiles(); // Copy fortran and hdf5 files
-
 }
 
 //=====================================================================
@@ -463,8 +470,6 @@ double Ocean::explicitResNorm(VectorPtr rhs)
 	Ax->Norm2(&nrm);
 	return nrm;
 }
-
-
 
 //=====================================================================
 void Ocean::scaleProblem(VectorPtr rhs)
@@ -742,6 +747,7 @@ Teuchos::RCP<Epetra_CrsMatrix> Ocean::getJacobian()
 }
 
 //====================================================================
+// --> deprecated?
 std::shared_ptr<std::vector<double> >
 Ocean::getLandTemperature(std::shared_ptr<std::vector<double> > tatm)
 {

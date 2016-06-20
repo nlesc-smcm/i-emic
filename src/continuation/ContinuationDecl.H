@@ -11,32 +11,32 @@
 //! The templated Model type should be a pointer to a model
 //! with a specific set of member functions:
 //!
-//!  VectorPtr getState(char mode)
-//!  VectorPtr getRHS(char mode)
-//!  VectorPtr getSolution(char mode)
+//!  VectorPtr getState()
+//!  VectorPtr getRHS()
+//!  VectorPtr getSolution()
 //!
 //!  double getPar()
-//!  void   setPar(double value)
+//!  void   setPar()
 //!
 //!  void preProcess()
 //!  void postProcess()
 //!
 //!  void computeRHS()
 //!  void computeJacobian()
-//!  void solve(VectorPtr b)
+//!  void solve()
 //!
 //! A Model should maintain its own Vector, which we expect
 //! to be of pointer type as well and named VectorPtr.
 //! A Vector is expected to implement the following members:
 //!
-//!  int    length()
-//!  double norm(char mode, std::string const msg)
-//!  void   update(double a, Vector const &A, double s)
-//!  double dot(Vector const &A) 
+//!  void    update()
+//!  void    print()
+//!  int     length()
+//!  double  norm()
+//!  double  dot() 
 //!  
 //! The templated type ParameterList should be a pointer 
 //! to a parameter storing object having a .get() method.
-//!
 
 template<typename Model, typename ParameterList>
 class Continuation
@@ -96,8 +96,9 @@ class Continuation
 	bool usePracticalTol_;        // if true we scale the tolerance
 	bool scaleRHS_;               // experimental rhs scaling
 
-	// If the parameter dependence in the rhs is constant we can reuse statedot in the Newton corrector,
-	// effectively disregarding updates in the Jacobian. This means we do a partial Newton-chord iteration.
+	// If the parameter dependence in the rhs is constant we can reuse statedot
+	// in the Newton corrector, partially disregarding updates in the Jacobian.
+	// This means we do a partial Newton-chord iteration.
 	bool newtChordHybr_;
 	
 	int parDotSign_;              // used for detecting sign switch
@@ -111,16 +112,16 @@ class Continuation
 	{
 		VectorPtr state0;     // prev state
 		VectorPtr state00;    // prev prev state
-		double par0;       // prev par
-		double par00;      // prev prev par
-		double ds0;        // prev ds
-		double ds00;       // prev prev ds
+		double par0;          // prev par
+		double par00;         // prev prev par
+		double ds0;           // prev ds
+		double ds00;          // prev prev ds
 	};
 
 	Storage storage_;
 	
 public:
-
+	
 	// default constructor
 	Continuation(){};
 	
@@ -175,4 +176,5 @@ private:
 	void info();
 	void modelInfo();
 };
+
 #endif
