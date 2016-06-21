@@ -918,6 +918,7 @@ void THCM::evaluateB(void)
 //=============================================================================
 // I-EMIC stuff
 //=============================================================================
+// Get current global landmask including borders
 std::shared_ptr<std::vector<int> > THCM::getLandMask()
 {
 
@@ -930,18 +931,21 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 	
 	// Let THCM fill the landmask array on proc = 0
 	if (Comm->MyPID() == 0)
-		F90NAME(m_global,get_current_landm)(&(*landm)[0]);
+		F90NAME(m_global, get_current_landm)(&(*landm)[0]);
 
 #ifdef HAVE_MPI 
 	// Get the MpiComm from Epetra
 	Epetra_MpiComm const MpiComm =
-		dynamic_cast<Epetra_MpiComm const &>(*Comm); 
+		dynamic_cast<Epetra_MpiComm const &>(*Comm);
+
+	// Broadcast the landmask
 	MPI_Bcast(&(*landm)[0], dim, MPI_INTEGER, 0, MpiComm.GetMpiComm());
 #endif 
 	return landm;
 }
 
 //=============================================================================
+// Get distributed land mask based on maskName
 Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 												 Teuchos::RCP<Epetra_Vector> fix)
 {
@@ -949,7 +953,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 	{
 		// Write mask name to file, fortran code will read it from there
 		std::ofstream ofs("mask_name.txt", std::ios::trunc);
-		ofs << maskName;	
+		ofs << maskName;
 	}
 
 	// Create gathered map for land mask
@@ -974,8 +978,12 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 	if (Comm->MyPID()==0)
     {
 		CHECK_ZERO(landm_glb->ExtractView(&landm));
+		
 		// Let THCM fill the global landm array and put it into our C pointer location
-		F90NAME(m_global,get_current_landm)(landm);
+		if (maskName == "current")
+			F90NAME(m_global,get_current_landm)(landm);
+		else
+			F90NAME(m_global,get_landm)(landm);
     }
 
 	// Fixing landmask
@@ -991,13 +999,6 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
  		std::vector<double> fix1(len);
 		(*fix0)(0)->ExtractCopy(&fix1[0]);
 
-		std::ostringstream string_old;
-		std::ostringstream string_new;
-		std::vector<std::string> stringvec_old;
-		std::vector<std::string> stringvec_new;
-		stringvec_old.push_back("-----");
-		stringvec_new.push_back("-----");		
-
 		int i,j,k;
 		if (Comm->MyPID() == 0 && len > 0)
 		{
@@ -1007,34 +1008,25 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 			{
 				for (j = J0+1; j < J1; ++j)
 				{
-					string_old.str(""); string_old.clear();
-					string_new.str(""); string_new.clear();
 					for (i = I0+1; i < I1; ++i)
 					{
 						idx = k*(m+2)*(n+2) + j*(n+2) + i;
-						string_old << landm[idx];
 						if (fix1[pos] == 2) // this number... 
 						{
 							INFO("fix " << i << ' ' << j << ' ' << k);
 					 		landm[idx] = 1;
 						}
-						string_new << landm[idx];
 						pos++;						
 					}
-					stringvec_old.push_back(string_old.str());
-					stringvec_new.push_back(string_new.str());
 				}
-				stringvec_old.push_back("-----");
-				stringvec_new.push_back("-----");
 			}
-			for (auto i = stringvec_new.rbegin(); i != stringvec_new.rend(); ++i)
-				INFO(i->c_str());
-
-			INFO("Setting global landmask in THCM");
+		
+			// Setting fixed global landmask in THCM
 			F90NAME(m_global, set_landm)(landm);
 		}		
 	}
-	
+
+	// Return distributed landmask
 	Teuchos::RCP<Epetra_IntVector> landm_loc = distributeLandMask(landm_glb);
 	
 	return landm_loc;
@@ -1055,6 +1047,14 @@ void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask)
 	CHECK_ZERO(landmask->ExtractView(&landm));
 	
 	FNAME(set_landmask)(landm, &perio);
+}
+
+//=============================================================================
+// Set global landmask in THCM
+void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask)
+{
+	if (Comm->MyPID() == 0)
+		F90NAME(m_global, set_landm)(&(*landmask)[0]);
 }
 
 //=============================================================================

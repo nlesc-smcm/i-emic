@@ -1,28 +1,28 @@
-//!---------------------------------------------------------------------
-/* Ocean is a model within the I-EMIC. It is a wrapper for Jonas Thies'
-   Trilinos-THCM, using only a fraction of the functionality that is
-   available in there.
-   
-   A model is required to have the following member functions:
+//!
+//! Ocean is a model within the I-EMIC. It is a wrapper for Jonas Thies'
+//!   Trilinos-THCM, using only a fraction of the functionality that is
+//!   available in there. 
+//!   
+//!   A model is required to have the following member functions:
+//!
+//!     VectorPtr getState()
+//!     VectorPtr getRHS()
+//!     VectorPtr getSolution()
+//!
+//!     double getPar()
+//!     void   setPar()
+//!
+//!     void preProcess()
+//!     void postProcess()
+//!
+//!     void computeRHS()
+//!     void computeJacobian()
+//!     void solve()
+//!   
+//!   The VectorPtr type that is returned from the get{.} functions will have
+//!   to be known by the interface (e.g. Continuation) that calls this class.
 
-	   void computeRHS() 
-       void computeJacobian()
-	   void solve(rhs)	   
-	   	   
-	   vector *getSolution()
-	   vector *getRHS()
-	   vector *getState()	   
-	   double getPar()
-	   void   setPar()
-	   
-	   void preProcess()
-	   void postProcess()
 
-   The vector that is returned from the get{.} functions will have
-   to be known by the interface (e.g. Continuation) that calls this class.
-
-*/
-//!---------------------------------------------------------------------
 #ifndef OCEAN_H
 #define OCEAN_H
 
@@ -48,13 +48,24 @@ class Epetra_MultiVector;
 class Epetra_Operator;
 class Epetra_CrsMatrix;
 
+
 class Ocean
 {
+	// We need both a distributed and a global version of the land mask, so
+	// we use a struct.
+	struct maskStruct
+	{
+		Teuchos::RCP<Epetra_IntVector> local;
+		std::shared_ptr<std::vector<int> > global;
+	};
+	
 public:
+	
 	using VectorPtr = Teuchos::RCP<SuperVector>;
+	using LandMask  = maskStruct;
 
 protected:
-
+	
 	// 
 	Teuchos::RCP<THCM> thcm_;
 	
@@ -100,8 +111,11 @@ protected:
 	// Problem dimensions:
 	int N_, M_, L_;
 
-	std::shared_ptr<std::vector<int> > landmask_; 	// Land mask, including borders and lids
-	std::shared_ptr<std::vector<int> > surfmask_; 	// Surface mask, without borders
+	// Gathererd landmask, including borders and lids
+	std::shared_ptr<std::vector<int> > landmask_;
+
+	// Gathered surface mask, without borders
+	std::shared_ptr<std::vector<int> > surfmask_; 	
 
  	// HDF5 input/output files
 	std::string const inputFile_;
@@ -114,12 +128,10 @@ protected:
 	// Enable saving every state in multiple formats
 	bool storeEverything_;
 	
-	//------------------------------------------------------------------
 	// Continuation parameter name.
 	// For a list of possible names see THCM::par2int()
 	std::string parName_;
 
-	//------------------------------------------------------------------
 	// Landmask file
 	std::string landmaskFile_;
 
@@ -134,46 +146,43 @@ protected:
 
 public:
 
-	//constructor
+	//! constructor
 	Ocean(Teuchos::RCP<Epetra_Comm> Comm,
 		  Teuchos::RCP<Teuchos::ParameterList> oceanParamList);
 
-	//destructor
+	//! destructor
 	~Ocean();
 
-	// ------------------------------------------------------------------+
-	// The following functions are required by the continuation interface:
-	//
-	// Solve may optionally accept an rhs of VectorPointer type
+	//! Solve may optionally accept an rhs of VectorPointer type
 	void solve(VectorPtr rhs = Teuchos::null);
 
-	// Calculate explicit residual norm
+	//! Calculate explicit residual norm
 	double explicitResNorm(VectorPtr rhs);
 	
 	void computeRHS();
 	void computeJacobian();
 	
-	// All get...() functions that return a VectorPtr type should accept
-	// a character specifying the access the user has: Copy 'C' or View 'V'
-	// By default this should be copy. 
+	//! All get...() functions that return a VectorPtr type should accept
+	//! a character specifying the access the user has: Copy 'C' or View 'V'
+	//! By default this should be copy. 
 	Teuchos::RCP<SuperVector> getSolution(char mode = 'C');
 	Teuchos::RCP<SuperVector> getState(char mode = 'C');
 	Teuchos::RCP<SuperVector> getRHS(char mode = 'C');
 	
-	// Apply the Jacobian to a vector and return the result u = J*v
+	//! Apply the Jacobian to a vector and return the result u = J*v
 	Teuchos::RCP<SuperVector> applyMatrix(SuperVector const &v);
 	void applyMatrix(SuperVector const &v, SuperVector &out);
 	
-	// Apply the preconditioner inverse to a vector and return
-	// the result u = P^{-1}*v
+	//! Apply the preconditioner inverse to a vector and return
+	//! the result u = P^{-1}*v
 	Teuchos::RCP<SuperVector> applyPrecon(SuperVector const &v);
 	void applyPrecon(SuperVector const &v, SuperVector &out);
 
 	void recomputePreconditioner() { recompPreconditioner_ = true; }
 
-	// The parameter set members wrap the corresponding
-	// Fortran functions. We keep an internal parameter name which
-	// can be overwritten here.
+	//! The parameter set members wrap the corresponding
+	//! Fortran functions. We keep an internal parameter name which
+	//! can be overwritten here.
 	void setPar(double value);
 	void setPar(std::string const &parName, double value);
 	void setParName(std::string const &parName) { parName_ = parName; }
@@ -182,11 +191,19 @@ public:
 	double getPar();
 	double getPar(std::string const &parName);
 
-	// ! Pre and post-convergence processing
+	//! Get global and local (distributed) landmask arrays.
+	//! This routine also tests the obtained landmask and it will
+	//! therefore also be set in THCM.
+	LandMask getLandMask(std::string const & fname);
+
+	//! Set global and local (distributed) landmask arrays
+	void setLandMask(LandMask mask);
+	
+	//! Pre and post-convergence processing
 	void preProcess();
 	void postProcess();
 	
-	// Get functions for the grid dimensions
+	//! Get functions for the grid dimensions
 	int getNdim() { return N_;}
 	int getMdim() { return M_;}
 	int getLdim() { return L_;}
@@ -250,13 +267,15 @@ private:
 	void initializeBelos();
 	void initializeIDR();
 
-	// This member finds the pressure rows that will give a singular Schur complement
+	// This function finds the pressure rows that will give a
+	// singular Schur complement.
 	// Based on these rows we will try to create a better landmask.
 	int analyzeJacobian();
 
 	// Build preconditioner
 	void buildPreconditioner();
 	
-	Teuchos::RCP<SuperVector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
+	Teuchos::RCP<SuperVector>
+	getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
 };
 #endif

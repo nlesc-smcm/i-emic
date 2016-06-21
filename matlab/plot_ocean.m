@@ -54,6 +54,8 @@ greyness = .5;
 srf(:,:,1) = (1-greyness*(interp2(surfm(range,:)','cubic')));
 srf(:,:,2) = (1-greyness*(interp2(surfm(range,:)','cubic')));
 srf(:,:,3) = (1-greyness*(interp2(surfm(range,:)','cubic')));
+srf(srf<0) = 0;
+srf(srf>1) = 1;
 
 [qz,dfzt,dfzw] = gridstretch(zw);
 
@@ -161,7 +163,7 @@ exportfig('bstream.eps',10,[50,25])
 
 %%% 
 figure(2)
-contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',14);
+contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',40);
 colorbar
 title('MOC (Sv)')
 xlabel('latitude')
@@ -200,7 +202,7 @@ contours = linspace(minT,maxT,40);
 contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1);
 hold off
 
-
+caxis([minT,maxT]);
 colorbar
 title('Surface Temperature', 'interpreter', 'none');
 xlabel('Longitude');
@@ -240,12 +242,13 @@ end
 figure(6)
 Sp = squeeze(mean(S,1)); 
 contourf(RtD*yv(1:end-1),z*hdim,Sp'+S0,15);
+%pcolor(RtD*yv(1:end-1),z*hdim,Sp'+S0);
 colorbar
 title('Isohalines')
 xlabel('Latitude')
 ylabel('z (m)')
 
-exportfig('isopycnals.eps',10,[20,7])
+exportfig('isohalines.eps',10,[20,7])
 
 %%-----------------------------------------------------------------------------
 figure(7)
@@ -265,7 +268,7 @@ set(gca,'color',[0.65,0.65,0.65]);
 image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
 contours = linspace(minS,maxS,40);
 contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1); hold off
-
+caxis([minS,maxS]);
 colorbar
 title('Surface Salinity', 'interpreter', 'none');
 xlabel('Longitude');

@@ -1,7 +1,14 @@
 * Continuation in topography
-** Homotopy 
+
+  In order to perform a continuation in topography we need to make sure
+  that at the discrete level of the landmasks the change is gradual. 
+  To achieve this we employ a variant of the homotopy technique 
+  [Seydel, Chapter 4?]. We let a parameter $\delta$ label the 
+  landmasks. Then at non-integer values of $\delta$ we need it to define
+  the gradual change between two landmasks. 
+  
    +---------------------------------------------+
-   $m_{k}$                   $k$-th topography 
+   $m_{k}$               $k$-th topography 
    $F(\bvec{x},m_{s}) = 0$   starting solution
    $F(\bvec{x},m_{d}) = 0$   destination solution
    +---------------------------------------------+
@@ -26,27 +33,32 @@
    $d_{k+1} = d_k + 2(k\mod 2)$
    $s_{k+1} = s_k + 2((k+1)\mod 2)$
    
+   $F_\bvec{x}^h(\bvec{x}, \delta) = \text{sin}^2(\frac{\pi \delta}{2})F_\bvec{x}(\bvec{x},m_{d}) + \text{cos}^2(\frac{\pi \delta}{2}) F_\bvec{x}(\bvec{x},m_{s})$
+
+   $F_\delta^h(\bvec{x}, \delta) = \pi \sin \left(\frac{\pi\delta}{2}\right) \cos\left(\frac{\pi\delta}{2}\right) 
+          \big(F(\bvec{x},m_{d})-F(\bvec{x},m_{s})\big)$
+   
    +---------------------------------------------+
    Homotopy function (3):
    $F^h(\bvec{x}, \delta) = \text{sin}^2(\frac{\pi \delta}{2})F(\mu(\bvec{x}),m_{d}) + \text{cos}^2(\frac{\pi \delta}{2}) F(\mu(\bvec{x}),m_{s})$
-   $\mu(\bvec{x})$ projects a solution on the new mask
+   $\mu(\bvec{x})$ projects an existing solution on a new mask
    
 
    +---------------------------------------------+
    Pseudo-arclength continuation:
    \begin{align*}
    F^h(\bvec{x},\delta) &= 0\\
-   \dot{\bvec{x}} (\bvec{x} - \bvec{x}_0) + \dot{\delta} (\delta - \delta_0) - \Delta s &= 0
+   r = \dot{\bvec{x}} (\bvec{x} - \bvec{x}_0) + \dot{\delta} (\delta - \delta_0) - \Delta s &= 0
    \end{align*}
 
-   +---------------------------------------------+   
+   +---------------------------------------------+ 
 	
    \begin{equation*}
    \begin{bmatrix}
    F^h_{\bvec{x}} & F^h_{\delta} \\
    \dot{\bvec{x}}^T & \dot{\lambda}   
    \end{bmatrix} \begin{bmatrix} \Delta x \\ \Delta \delta \end{bmatrix} = 
-   \begin{bmatrix} -F^h(\bvec{x},\delta) \\ r \end{bmatrix}
+   \begin{bmatrix} -F^h(\bvec{x},\delta) \\ -r \end{bmatrix}
    \end{equation*}  
    
 * Implementation
@@ -71,9 +83,8 @@
   - Topo member functions:
 	- computeRHS()
       {
-	    
+	  
       }
 	- 
 	
   computeJacobian();
-  

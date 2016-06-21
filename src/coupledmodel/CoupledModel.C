@@ -11,6 +11,8 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
+//==================================================================
+// constructor
 CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 						   std::shared_ptr<Atmosphere> atmos,
 						   Teuchos::RCP<Teuchos::ParameterList> params)
@@ -125,7 +127,6 @@ void CoupledModel::synchronize()
 	
 	// Set the SST in the atmosphere
 	atmos_->setOceanTemperature(sst);
-
 	
 	TIMER_STOP("CoupledModel: synchronize...");
 }
