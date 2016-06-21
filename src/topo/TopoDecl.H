@@ -56,6 +56,12 @@ public:
 	//! destructor
 	~Topo();
 
+	//! compute right hand side
+	void computeRHS();
+
+	//! compute Jacobian matrix
+	void computeJacobian();
+
 private:
 	//! load the mask filenames
 	void loadMaskFileNames();
