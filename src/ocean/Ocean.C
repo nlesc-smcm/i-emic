@@ -143,7 +143,7 @@ int Ocean::analyzeJacobian()
 	INFO("Ocean: Printing Jacobian to jacobian.ocean");	
 
 	// Print the Jacobian
-	DUMP("jacobian.ocean", *jac_);
+	// DUMP("jacobian.ocean", *jac_);
 	
 	// Make preparations for extracting pressure rows
 	int dim = mapP_->NumMyElements();
@@ -219,8 +219,8 @@ int Ocean::analyzeJacobian()
 	int maxFound;
 	comm_->MaxAll(&singRowsFound, &maxFound, 1);
 	
-	INFO("Printing singular rows in P rows to singrows");
-	EpetraExt::VectorToMatlabFile("singrows", *singRows_);
+	// INFO("Printing singular rows in P rows to singrows");
+	// EpetraExt::VectorToMatlabFile("singrows", *singRows_);
 
 	// If we find singular pressure rows we adjust the landmask
 	if (maxFound > 0)
