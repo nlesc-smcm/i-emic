@@ -5,7 +5,7 @@
   <!-- an old state (true) or with a zero solution (false).                  -->
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
-  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Load state" type="bool" value="true"/>
   <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean.h5" />
   <Parameter name="Output file" type="string" value="ocean.h5" />
@@ -63,12 +63,12 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="topotest/test1"/>
+    <Parameter name="Land Mask" type="string" value="topotest/test0"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
-    <Parameter name="Coupled Atmosphere" type="int" value="0"/>
+    <Parameter name="Coupled Atmosphere" type="int" value="0" />
     <!-- =============================================================== -->
 	
     <!-- Starting Parameters -->

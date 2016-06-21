@@ -48,19 +48,20 @@ class Epetra_MultiVector;
 class Epetra_Operator;
 class Epetra_CrsMatrix;
 
-struct maskStruct
-{
-	Teuchos::RCP<Epetra_IntVector> local;
-	std::shared_ptr<std::vector<int> > global;
-};
 
 class Ocean
 {
-public:
-	using VectorPtr = Teuchos::RCP<SuperVector>;
-
 	// We need both a distributed and a global version of the land mask, so
 	// we use a struct.
+	struct maskStruct
+	{
+		Teuchos::RCP<Epetra_IntVector> local;
+		std::shared_ptr<std::vector<int> > global;
+	};
+	
+public:
+	
+	using VectorPtr = Teuchos::RCP<SuperVector>;
 	using LandMask  = maskStruct;
 
 protected:
@@ -145,43 +146,43 @@ protected:
 
 public:
 
-	//constructor
+	//! constructor
 	Ocean(Teuchos::RCP<Epetra_Comm> Comm,
 		  Teuchos::RCP<Teuchos::ParameterList> oceanParamList);
 
-	//destructor
+	//! destructor
 	~Ocean();
 
-	// Solve may optionally accept an rhs of VectorPointer type
+	//! Solve may optionally accept an rhs of VectorPointer type
 	void solve(VectorPtr rhs = Teuchos::null);
 
-	// Calculate explicit residual norm
+	//! Calculate explicit residual norm
 	double explicitResNorm(VectorPtr rhs);
 	
 	void computeRHS();
 	void computeJacobian();
 	
-	// All get...() functions that return a VectorPtr type should accept
-	// a character specifying the access the user has: Copy 'C' or View 'V'
-	// By default this should be copy. 
+	//! All get...() functions that return a VectorPtr type should accept
+	//! a character specifying the access the user has: Copy 'C' or View 'V'
+	//! By default this should be copy. 
 	Teuchos::RCP<SuperVector> getSolution(char mode = 'C');
 	Teuchos::RCP<SuperVector> getState(char mode = 'C');
 	Teuchos::RCP<SuperVector> getRHS(char mode = 'C');
 	
-	// Apply the Jacobian to a vector and return the result u = J*v
+	//! Apply the Jacobian to a vector and return the result u = J*v
 	Teuchos::RCP<SuperVector> applyMatrix(SuperVector const &v);
 	void applyMatrix(SuperVector const &v, SuperVector &out);
 	
-	// Apply the preconditioner inverse to a vector and return
-	// the result u = P^{-1}*v
+	//! Apply the preconditioner inverse to a vector and return
+	//! the result u = P^{-1}*v
 	Teuchos::RCP<SuperVector> applyPrecon(SuperVector const &v);
 	void applyPrecon(SuperVector const &v, SuperVector &out);
 
 	void recomputePreconditioner() { recompPreconditioner_ = true; }
 
-	// The parameter set members wrap the corresponding
-	// Fortran functions. We keep an internal parameter name which
-	// can be overwritten here.
+	//! The parameter set members wrap the corresponding
+	//! Fortran functions. We keep an internal parameter name which
+	//! can be overwritten here.
 	void setPar(double value);
 	void setPar(std::string const &parName, double value);
 	void setParName(std::string const &parName) { parName_ = parName; }
@@ -190,18 +191,19 @@ public:
 	double getPar();
 	double getPar(std::string const &parName);
 
-	// Get distributed landmask arrays. This routine also tests the obtained
-	// landmask and it will therefore also be set in THCM.
+	//! Get global and local (distributed) landmask arrays.
+	//! This routine also tests the obtained landmask and it will
+	//! therefore also be set in THCM.
 	LandMask getLandMask(std::string const & fname);
 
-	// Set distributed landmask arrays
+	//! Set global and local (distributed) landmask arrays
 	void setLandMask(LandMask mask);
 	
-	// ! Pre and post-convergence processing
+	//! Pre and post-convergence processing
 	void preProcess();
 	void postProcess();
 	
-	// Get functions for the grid dimensions
+	//! Get functions for the grid dimensions
 	int getNdim() { return N_;}
 	int getMdim() { return M_;}
 	int getLdim() { return L_;}

@@ -99,11 +99,11 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	// Analyze Jacobian and print/fix impossible land points
 	while( analyzeJacobian() )
 	{
-		// If we find singular pressure rows we adjust the landmask
+		// If we find singular pressure rows we adjust the current landmask
 		INFO(" Fixing landmask " << landmaskFile_);
 		
 		Teuchos::RCP<Epetra_IntVector> landmask =
-			THCM::Instance().getLandMask(landmaskFile_, singRows_);
+			THCM::Instance().getLandMask("current", singRows_);
 		
 		INFO(" Putting a fixed version of " << landmaskFile_ <<
 			 "  back in THCM...");
@@ -115,7 +115,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	// Initialize preconditioner
 	initializePreconditioner();
 
-	// Get masks to communicate with an Atmosphere
+	// Get current global masks to communicate with an Atmosphere
 	landmask_ = THCM::Instance().getLandMask();
 	surfmask_ = THCM::Instance().getSurfaceMask();
 	INFO("Ocean: constructor... done");
@@ -209,6 +209,8 @@ int Ocean::analyzeJacobian()
 	int maxFound;
 	comm_->MaxAll(&singRowsFound, &maxFound, 1);
 
+	INFO("  analyzeJacobian(): maxFound = " << maxFound);
+	
 	return maxFound;
 }
 
@@ -217,24 +219,22 @@ Ocean::LandMask Ocean::getLandMask(std::string const & fname)
 {
 	LandMask mask;
 	
-	Teuchos::RCP<Epetra_IntVector> mask_local =
-		THCM::Instance().getLandMask(fname);
+	mask.local = THCM::Instance().getLandMask(fname);
+	THCM::Instance().setLandMask(mask.local);
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	
 	// zero the singRows array
 	singRows_->PutScalar(0.0);
 	
-	while( analyzeJacobian() )
+	while( analyzeJacobian() > 0 )
 	{
-		// If we find singular pressure rows we adjust the landmask
-		mask_local =
-			THCM::Instance().getLandMask(landmaskFile_, singRows_);
+		// If we find singular pressure rows we adjust the current landmask
+		mask.local = THCM::Instance().getLandMask("current", singRows_);
 		
 		//  Putting a fixed version of the landmask back in THCM		
-		THCM::Instance().setLandMask(mask_local);
+		THCM::Instance().setLandMask(mask.local);
 		THCM::Instance().evaluate(*state_, Teuchos::null, true);		
 	}
-	mask.local  = mask_local;
 	
 	// Get the current global land mask from THCM.
 	mask.global = THCM::Instance().getLandMask();
@@ -244,7 +244,9 @@ Ocean::LandMask Ocean::getLandMask(std::string const & fname)
 //===================================================================
 void Ocean::setLandMask(LandMask mask)
 {
-	// -->TODO
+	THCM::Instance().setLandMask(mask.local);
+	THCM::Instance().setLandMask(mask.global);
+	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 }
 
 //====================================================================
@@ -590,10 +592,13 @@ void Ocean::computeRHS()
 void Ocean::computeJacobian()
 {
 	TIMER_START("Ocean: compute Jacobian...");
+
 	// Compute the Jacobian in THCM using the current state
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
+
 	// Get the Jacobian from THCM
 	jac_ = THCM::Instance().getJacobian();
+
 	TIMER_STOP("Ocean: compute Jacobian...");
 }
 

@@ -918,6 +918,7 @@ void THCM::evaluateB(void)
 //=============================================================================
 // I-EMIC stuff
 //=============================================================================
+// Get current global landmask including borders
 std::shared_ptr<std::vector<int> > THCM::getLandMask()
 {
 
@@ -935,13 +936,16 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 #ifdef HAVE_MPI 
 	// Get the MpiComm from Epetra
 	Epetra_MpiComm const MpiComm =
-		dynamic_cast<Epetra_MpiComm const &>(*Comm); 
+		dynamic_cast<Epetra_MpiComm const &>(*Comm);
+
+	// Broadcast the landmask
 	MPI_Bcast(&(*landm)[0], dim, MPI_INTEGER, 0, MpiComm.GetMpiComm());
 #endif 
 	return landm;
 }
 
 //=============================================================================
+// Get distributed land mask based on maskName
 Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 												 Teuchos::RCP<Epetra_Vector> fix)
 {
@@ -976,7 +980,10 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 		CHECK_ZERO(landm_glb->ExtractView(&landm));
 		
 		// Let THCM fill the global landm array and put it into our C pointer location
-		F90NAME(m_global,get_current_landm)(landm);
+		if (maskName == "current")
+			F90NAME(m_global,get_current_landm)(landm);
+		else
+			F90NAME(m_global,get_landm)(landm);
     }
 
 	// Fixing landmask
@@ -1014,7 +1021,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 				}
 			}
 		
-			// Setting global landmask in THCM
+			// Setting fixed global landmask in THCM
 			F90NAME(m_global, set_landm)(landm);
 		}		
 	}
@@ -1040,6 +1047,14 @@ void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask)
 	CHECK_ZERO(landmask->ExtractView(&landm));
 	
 	FNAME(set_landmask)(landm, &perio);
+}
+
+//=============================================================================
+// Set global landmask in THCM
+void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask)
+{
+	if (Comm->MyPID() == 0)
+		F90NAME(m_global, set_landm)(&(*landmask)[0]);
 }
 
 //=============================================================================

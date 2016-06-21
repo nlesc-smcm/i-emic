@@ -151,10 +151,12 @@ public:
 	getLandMask(std::string const &maskName,
 				Teuchos::RCP<Epetra_Vector> fix = Teuchos::null);
 	
-	//! Set distributed landmask in THCM
-	void setLandMask(Teuchos::RCP<Epetra_IntVector> landmask); // TODO
-	
-	
+	//! Set local (distributed) landmask in THCM
+	void setLandMask(Teuchos::RCP<Epetra_IntVector> landmask);
+
+	//! Set global landmask in THCM
+	void setLandMask(std::shared_ptr<std::vector<int> > landmask);
+
 	//! ------------------------------------------------------------------
 	//! Returns initial guess (Global/Solve form)
 	Teuchos::RCP<Epetra_Vector> getSolution();

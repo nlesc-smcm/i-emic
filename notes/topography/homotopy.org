@@ -1,7 +1,14 @@
 * Continuation in topography
 
+  In order to perform a continuation in topography we need to make sure
+  that at the discrete level of the landmasks the change is gradual. 
+  To achieve this we employ a variant of the homotopy technique 
+  [Seydel, Chapter 4?]. We let a parameter $\delta$ label the 
+  landmasks. Then at non-integer values of $\delta$ we need it to define
+  the gradual change between two landmasks. 
+  
    +---------------------------------------------+
-   $m_{k}$                   $k$-th topography 
+   $m_{k}$               $k$-th topography 
    $F(\bvec{x},m_{s}) = 0$   starting solution
    $F(\bvec{x},m_{d}) = 0$   destination solution
    +---------------------------------------------+

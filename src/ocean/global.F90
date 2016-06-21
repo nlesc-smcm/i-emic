@@ -339,13 +339,12 @@ contains
        enddo
     enddo
     
-    write(*,*) '______________set_landm__________________'
-    do k = 1, l
-       write(*,*) '______________',z(k)*hdim,'__________________'
-       do j = m+1, 0, -1
-          write(*,'(92i1)') landm(:,j,k)
-       enddo
+    write(*,*) '_______ set_landm ____________', z(l)*hdim
+
+    do j = m+1, 0, -1
+       write(*,'(  92i1)') landm(:,j,l)
     enddo
+    
 
     _INFO_('THCM: global.F90 set_landm... done')    
   end subroutine set_landm    

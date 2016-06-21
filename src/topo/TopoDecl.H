@@ -19,15 +19,15 @@
 //!
 //!   void          setLandMask()
 //!   LandMask      getLandMask()
-//!
+//! 
 //! The templated type ParameterList should be a pointer 
 //! to a parameter storing object having a .get() method.
 
 template<typename Model, typename ParameterList>
 class Topo
 {
-	using Vector   = typename Model::element_type::VectorPtr;
-	using LandMask = typename Model::element_type::LandMask;
+	using VectorPtr = typename Model::element_type::VectorPtr;
+	using LandMask  = typename Model::element_type::LandMask;
 	
 	//! Model
 	Model model_;
@@ -39,10 +39,13 @@ class Topo
 	int nMasks_;
 
 	//! Vector containing all the filenames
-	std::vector<std::string> landMaskFiles_;
+	std::vector<std::string> landMaskFileNames_;
 
 	//! Vector containing RCP's to the landmask arrays
-	std::vector<LandMask> landMaskArrays_;
+	std::vector<LandMask> landMasks_;
+
+	//! Continuation parameter
+	double delta_;
 
 public:
 	//! default constructor
@@ -54,11 +57,11 @@ public:
 	~Topo();
 
 private:
-	//! load the mask files
-	void loadMaskFiles();
+	//! load the mask filenames
+	void loadMaskFileNames();
 
-	//! load the mask arrays
-	void loadMaskArrays();
+	//! load the masks
+	void loadMasks();
 };
 
 

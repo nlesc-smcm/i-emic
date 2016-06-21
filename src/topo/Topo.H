@@ -16,14 +16,17 @@ template<typename Model, typename ParameterList>
 Topo<Model, ParameterList>::
 Topo(Model model, ParameterList pars)
 	:
-	model_(model),
-	pars_(pars),
-
-	nMasks_(pars->get("Number of mask files", 0))	
+	model_  (model),
+	pars_   (pars),
+	nMasks_ (pars->get("Number of mask files", 0)),
+	delta_  (pars->get("Delta", 0.0))	
 {
 	INFO("Topo constructor...");
-	loadMaskFiles();
-	loadMaskArrays();	
+	loadMaskFileNames();
+	loadMasks();
+
+	model_->setLandMask(landMasks_[2]);
+	
 	INFO("Topo constructor... done");
 }
 
@@ -38,35 +41,54 @@ Topo<Model, ParameterList>::
 
 //==================================================================
 template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::loadMaskFiles()
+void Topo<Model, ParameterList>::loadMaskFileNames()
 {
 	INFO(" Topo: loading mask files...");
 	
-	landMaskFiles_ = std::vector<std::string>(nMasks_);
+	landMaskFileNames_ = std::vector<std::string>(nMasks_);
 	std::stringstream fileID;
 	for (int i = 0; i != nMasks_; ++i)
 	{
 		fileID << "Mask file " << i;		
-		landMaskFiles_[i] = pars_->get(fileID.str().c_str(), "");
-		assert(landMaskFiles_[i] != "");
-		INFO("  " << fileID.str() << ": " << landMaskFiles_[i]);
+		landMaskFileNames_[i] = pars_->get(fileID.str().c_str(), "");
+		assert(landMaskFileNames_[i] != "");
+		INFO("  " << fileID.str() << ": " << landMaskFileNames_[i]);
 		fileID.str("");
 		fileID.clear();
 	}
+	
 	INFO(" Topo: loading mask files... done");
 }
 
 //==================================================================
 template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::loadMaskArrays()
+void Topo<Model, ParameterList>::loadMasks()
 {
 	INFO(" Topo: loading mask arrays...");
-	landMaskArrays_ = std::vector<LandMask>(nMasks_);
+
+	landMasks_ = std::vector<LandMask>(nMasks_);
 	
 	for (int i = 0; i != nMasks_; ++i)
-		landMaskArrays_[i] = model_->getLandMask(landMaskFiles_[i]);
+	{
+		INFO("   loading " << landMaskFileNames_[i]);
+		landMasks_[i] = model_->getLandMask(landMaskFileNames_[i]);
+	}
+	
 	INFO(" Topo: loading mask arrays... done");
 }
 
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::computeRHS()
+{
+	// TODO
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::computeJacobian()
+{
+	// TODO
+}
 
 #endif
