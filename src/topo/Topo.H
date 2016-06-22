@@ -113,14 +113,16 @@ template<typename Model, typename ParameterList>
 typename Topo<Model, ParameterList>::VectorPtr
 Topo<Model, ParameterList>::getState(char mode)
 {
-	// TODO
 	if (mode == 'V')
 	{
 		return state_;
 	}
 	else if (mode == 'C')
 	{
-		
+		stateCopy = model_->getState('C');
+		// copy construction
+		*stateCopy = *state_;
+		return stateCopy;
 	}
 }
 
