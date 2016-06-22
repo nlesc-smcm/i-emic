@@ -79,6 +79,44 @@ void Topo<Model, ParameterList>::loadMasks()
 
 //==================================================================
 template<typename Model, typename ParameterList>
+double Topo<Model, ParameterList>::getPar()
+{
+	return delta_;
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::setPar(double par)
+{
+	delta_ = par;
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+typename Topo<Model, ParameterList>::VectorPtr
+Topo<Model, ParameterList>::getState(char mode)
+{
+	// TODO
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+typename Topo<Model, ParameterList>::VectorPtr
+Topo<Model, ParameterList>::getRHS(char mode)
+{
+	// TODO
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+typename Topo<Model, ParameterList>::VectorPtr
+Topo<Model, ParameterList>::getSolution(char mode)
+{
+	// TODO
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeRHS()
 {
 	// TODO
@@ -89,6 +127,27 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeJacobian()
 {
 	// TODO
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::solve(VectorPtr b)
+{
+	// TODO
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::preProcess()
+{
+	model_->preProcess();
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::postProcess()
+{
+	model_->postProcess();
 }
 
 #endif
