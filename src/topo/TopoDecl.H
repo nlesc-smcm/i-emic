@@ -47,20 +47,60 @@ class Topo
 	//! Continuation parameter
 	double delta_;
 
+	//! State
+	VectorPtr state_;
+
+	//! Right hand side
+	VectorPtr rhs_;
+
+	//! Solution from solve()
+	VectorPtr sol_;
+
 public:
 	//! default constructor
 	Topo(){};
+	
 	//! constructor
 	Topo(Model model, ParameterList pars);
 	
 	//! destructor
 	~Topo();
 
+	//! get continuation parameter
+	double getPar();
+
+	//! set continuation parameter
+	void setPar(double par);
+
+	//! get the state of the model
+	//!   mode: 'C' copy
+	//!         'V' view
+	VectorPtr getState(char mode = 'C');
+
+	//! get the right hand side of the model
+	//!   mode: 'C' copy
+	//!         'V' view
+	VectorPtr getRHS(char mode = 'C');
+
+	//! get the solution of the model after a call to solve()
+	//!   mode: 'C' copy
+	//!         'V' view
+	VectorPtr getSolution(char mode = 'C');
+	
 	//! compute right hand side
 	void computeRHS();
 
 	//! compute Jacobian matrix
 	void computeJacobian();
+
+	//! solve Jx=b
+	void solve(VectorPtr b);
+
+	//! perform some duties before important things happen
+	void preProcess();
+
+	//! perform some duties after important things have happened
+	void postProcess();	
 
 private:
 	//! load the mask filenames
