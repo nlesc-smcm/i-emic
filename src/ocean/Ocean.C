@@ -209,7 +209,7 @@ int Ocean::analyzeJacobian()
 	int maxFound;
 	comm_->MaxAll(&singRowsFound, &maxFound, 1);
 
-	INFO("  analyzeJacobian(): maxFound = " << maxFound);
+	INFO("  analyzeJacobian(): problem rows found: " << maxFound);
 	
 	return maxFound;
 }

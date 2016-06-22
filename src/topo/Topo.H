@@ -31,6 +31,18 @@ Topo(Model model, ParameterList pars)
 	state_ = model_->getState('C');
 	rhs_   = model_->getRHS('C');
 	sol_   = model_->getSolution('C');
+
+	// Setup indices k,a and b
+	k_ = static_cast<int>(std::floor(delta_));
+	a_ = std::vector<int>(nMasks_);
+	b_ = std::vector<int>(nMasks_);		
+	a_[0] = 0;
+	b_[0] = 1;
+	for (int k = 0; k != nMasks_-1; ++k)
+	{
+		a_[k+1] = a_[k] + 2 * ((k + 1) % 2);
+		b_[k+1] = b_[k] + 2 * ( k % 2 );
+	}
 	
 	INFO("Topo constructor... done");
 }

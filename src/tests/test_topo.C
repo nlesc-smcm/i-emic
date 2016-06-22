@@ -91,34 +91,66 @@ class IEMIC : public testing::Environment
 public:
 	// constructor
 	IEMIC()
-		{
-			// Create parallel Ocean 
-			RCP<Teuchos::ParameterList> oceanParams =
-				rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-			ocean = Teuchos::rcp(new Ocean(comm, oceanParams));	
-		}
+		{}
 
 	// destructor
 	~IEMIC()
 		{}
 };
 
-//------------------------------------------------------------------
-TEST(Topo, Initialization)
+TEST(Ocean, Initialization)
 {
-	// Create parameterlist
-	RCP<Teuchos::ParameterList> topoParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("topo_params.xml", topoParams.ptr());
-
-	// Create topo class
-	topo = Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >(ocean, topoParams);
+	bool failed = false;
+	try
+	{
+		// Create parallel Ocean 
+		RCP<Teuchos::ParameterList> oceanParams =
+			rcp(new Teuchos::ParameterList);
+		updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+		ocean = Teuchos::rcp(new Ocean(comm, oceanParams));	
+	}
+	catch (...)
+	{
+		failed = true;
+	}
+	
+	EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------
-TEST(Topo, SomethingElse)
+TEST(Topo, Initialization)
 {
-	
+	bool failed = false;
+	try
+	{
+		// Create parameterlist
+		RCP<Teuchos::ParameterList> topoParams = rcp(new Teuchos::ParameterList);
+		updateParametersFromXmlFile("topo_params.xml", topoParams.ptr());
+		// Create topo class
+		topo = Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >(ocean, topoParams);
+	}
+	catch (...)
+	{
+		failed = true;
+	}
+	EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(Topo, Arrays)
+{
+	std::vector<int> a = topo.getA();
+	std::vector<int> b = topo.getB();
+	int N = topo.nMasks();
+
+	std::vector<int> aref = {0,2,2,4,4,6,6,8};
+	std::vector<int> bref = {1,1,3,3,5,5,7,7};
+
+	for (int i = 0; i != std::min(N, 8); ++i)
+	{
+		EXPECT_EQ(a[i], aref[i]);
+		EXPECT_EQ(b[i], bref[i]);
+	}
 }
 
 //------------------------------------------------------------------

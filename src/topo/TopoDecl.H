@@ -45,6 +45,7 @@ class Topo
 	std::vector<LandMask> landMasks_;
 
 	//! Continuation parameter
+	//!  ranging continually from 0 to nMasks-1
 	double delta_;
 
 	//! State
@@ -58,6 +59,15 @@ class Topo
 	//! Solution from solve()
 	//!  is initialized with a copy from the model's solution	
 	VectorPtr sol_;
+
+	//! Integer for selecting the right landmask.
+	//!  k_ = floor(delta_)
+	int k_;
+
+	//! Vectors of integers for selecting the right landmask.
+	//!  a_[i+1] = a_[i] + 2 * ((k_+1) % 2); a_[0] = 0
+	//!  b_[i+1] = b_[i] + 2 * ( k_ % 2 );   b_[0] = 1
+	std::vector<int> a_, b_;
 
 public:
 	//! default constructor
@@ -103,7 +113,16 @@ public:
 	void preProcess();
 
 	//! perform some duties after important things have happened
-	void postProcess();	
+	void postProcess();
+
+	//! get a_ for testing
+	std::vector<int> getA() { return a_; }
+
+	//! get b_ for testing
+	std::vector<int> getB() { return b_; }
+
+	//! return number of masks
+	int nMasks() { return nMasks_; }
 
 private:
 	//! load the mask filenames

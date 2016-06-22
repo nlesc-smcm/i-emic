@@ -33,7 +33,9 @@
 //!  void    print()
 //!  int     length()
 //!  double  norm()
-//!  double  dot() 
+//!  double  dot()
+//!
+//! Furthermore, a Vector should support copy construction.
 //!  
 //! The templated type ParameterList should be a pointer 
 //! to a parameter storing object having a .get() method.
