@@ -9,23 +9,23 @@
   
    +---------------------------------------------+
    $m_{k}$               $k$-th topography 
-   $F(\bvec{x},m_{s}) = 0$   starting solution
-   $F(\bvec{x},m_{d}) = 0$   destination solution
+   $F(\bvec{x},m_{a}) = 0$   RHS at topo $a$
+   $F(\bvec{x},m_{b}) = 0$   RHS at topo $b$
    +---------------------------------------------+
    Homotopy function (1):
-   $F^h(\bvec{x},\delta) = \hat{\delta} F(\bvec{x},m_d) + (1-\hat{\delta}) F(\bvec{x},m_s)$
-   $s = \lfloor \delta \rfloor$ 
-   $d = s + 1$
-   $\hat{\delta} = \delta - s$
+   $F^h(\bvec{x},\delta) = \hat{\delta} F(\bvec{x},m_b) + (1-\hat{\delta}) F(\bvec{x},m_a)$
+   $a = \lfloor \delta \rfloor$ 
+   $b = a + 1$
+   $\hat{\delta} = \delta - a$
 
    +---------------------------------------------+
    Homotopy function (2):
 
-   $F^h(\bvec{x}, \delta) = \text{sin}^2(\frac{\pi \delta}{2})F(\bvec{x},m_{d}) + \text{cos}^2(\frac{\pi \delta}{2}) F(\bvec{x},m_{s})$
+   $F^h(\bvec{x}, \delta) = \text{sin}^2(\frac{\pi \delta}{2})F(\bvec{x},m_{b}) + \text{cos}^2(\frac{\pi \delta}{2}) F(\bvec{x},m_{a})$
 
    $\delta$  =  0..1..2..3..4..5..6..7 
-   d  =  1  1  3  3  5  5  7  7
-   $s$  =  0  2  2  4  4  6  6  8
+   $a$  =  0  2  2  4  4  6  6  8
+   $b$  =  1  1  3  3  5  5  7  7
   
    $k = \lfloor \delta \rfloor$   
    $d_0 = 1$
