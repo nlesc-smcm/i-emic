@@ -48,12 +48,15 @@ class Topo
 	double delta_;
 
 	//! State
+	//!  is initialized with a copy from the model's state
 	VectorPtr state_;
 
 	//! Right hand side
+	//!  is initialized with a copy from the model's rhs	
 	VectorPtr rhs_;
 
 	//! Solution from solve()
+	//!  is initialized with a copy from the model's solution	
 	VectorPtr sol_;
 
 public:

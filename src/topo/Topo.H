@@ -26,6 +26,11 @@ Topo(Model model, ParameterList pars)
 	loadMasks();
 
 	model_->setLandMask(landMasks_[2]);
+
+	// We initialize our vectors with copies of the ones in the model.
+	state_ = model_->getState('C');
+	rhs_   = model_->getRHS('C');
+	sol_   = model_->getSolution('C');
 	
 	INFO("Topo constructor... done");
 }
@@ -97,6 +102,14 @@ typename Topo<Model, ParameterList>::VectorPtr
 Topo<Model, ParameterList>::getState(char mode)
 {
 	// TODO
+	if (mode == 'V')
+	{
+		return state_;
+	}
+	else if (mode == 'C')
+	{
+		
+	}
 }
 
 //==================================================================
