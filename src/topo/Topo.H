@@ -119,11 +119,16 @@ Topo<Model, ParameterList>::getState(char mode)
 	}
 	else if (mode == 'C')
 	{
-		stateCopy = model_->getState('C');
+		VectorPtr stateCopy = model_->getState('C');
 		// copy construction
 		*stateCopy = *state_;
 		return stateCopy;
 	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return Teuchos::null;
+	}	
 }
 
 //==================================================================
@@ -131,7 +136,22 @@ template<typename Model, typename ParameterList>
 typename Topo<Model, ParameterList>::VectorPtr
 Topo<Model, ParameterList>::getRHS(char mode)
 {
-	// TODO
+	if (mode == 'V')
+	{
+		return rhs_;
+	}
+	else if (mode == 'C')
+	{
+		VectorPtr rhsCopy = model_->getRHS('C');
+		// copy construction
+		*rhsCopy = *rhs_;
+		return rhsCopy;
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return Teuchos::null;
+	}	
 }
 
 //==================================================================
@@ -139,7 +159,22 @@ template<typename Model, typename ParameterList>
 typename Topo<Model, ParameterList>::VectorPtr
 Topo<Model, ParameterList>::getSolution(char mode)
 {
-	// TODO
+	if (mode == 'V')
+	{
+		return state_;
+	}
+	else if (mode == 'C')
+	{
+		VectorPtr stateCopy = model_->getState('C');
+		// copy construction
+		*stateCopy = *state_;
+		return stateCopy;
+	}
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return Teuchos::null;
+	}	
 }
 
 //==================================================================

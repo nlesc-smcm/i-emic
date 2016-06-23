@@ -156,13 +156,38 @@ TEST(Topo, Arrays)
 //------------------------------------------------------------------
 TEST(Topo, Copy)
 {
-	//TODO
+	double tol = 1e-12;
+	double nrmC, nrmV;
+	Ocean::VectorPtr stateCopy = topo.getState('C');
+	Ocean::VectorPtr stateView = topo.getState('V');
+	nrmC = stateCopy->norm();
+	nrmV = stateView->norm();
+	EXPECT_NEAR(nrmC, nrmV, tol);
+	
+	stateCopy->putScalar(3.14);
+	nrmC = stateCopy->norm();
+	nrmV = stateView->norm();
+
+	EXPECT_NE(nrmC, nrmV);
 }
 
 //------------------------------------------------------------------
 TEST(Topo, View)
 {
-	//TODO
+	double tol = 1e-12;
+	double nrmC, nrmV;
+	Ocean::VectorPtr stateCopy = topo.getState('C');
+	Ocean::VectorPtr stateView = topo.getState('V');
+	nrmC = stateCopy->norm();
+	nrmV = stateView->norm();
+	EXPECT_NEAR(nrmC, nrmV, tol);
+	
+	stateView->putScalar(3.14);
+	
+	nrmC = stateCopy->norm();
+	nrmV = stateView->norm();
+	
+	EXPECT_NE(nrmC, nrmV);
 }
 
 //------------------------------------------------------------------
