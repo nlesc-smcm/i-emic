@@ -215,10 +215,9 @@ computeDFDPar(char mode)
 	// - Note that this is usually a predicted state
 	// - The RHS for this particular state may already have been
 	//   computed.
-	//
 	if (mode == 'F')
 		model_->computeRHS();
-
+	
 	INFO("    creating dFdPar...");	
 	INFO("       |                       F(x,l) = " << rhsView_->norm());
 	// Get a copy of this RHS, store it in our rhsCopy_ member
@@ -230,7 +229,7 @@ computeDFDPar(char mode)
 	model_->computeRHS();             // compute new RHS     --> F(par+eps)
 	INFO("       |                            l = " << par_);
 	INFO("       |                          eps = " << epsilon_);
-	INFO("       |                   F(x,l+eps) = " << rhsView_->norm());
+	INFO("       |                  F(x, l+eps) = " << rhsView_->norm());
 	model_->setPar(par_);             // restore parameter   --> par
 
 	// Get a copy of the new RHS F(par+eps), put it in dFdPar_
@@ -489,6 +488,7 @@ newtonCorrector()
 		INFO("                  previous residual: " << normRHS_);
 		INFO("                              ||R||: " << normRHStest_);
 		INFO("                             ||dx||: " << stateDir->norm());
+		INFO("                             ||dl||: " << std::abs(parDir));
 		INFO("                              ||x||: " << stateView_->norm());
 		INFO("                          old ||x||: " << state0->norm());
 		INFO("----------------------------------------------------------");

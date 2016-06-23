@@ -26,8 +26,13 @@
 template<typename Model, typename ParameterList>
 class Topo
 {
+
+public:
+	
 	using VectorPtr = typename Model::element_type::VectorPtr;
 	using LandMask  = typename Model::element_type::LandMask;
+
+private: 
 	
 	//! Model
 	Model model_;
@@ -49,16 +54,16 @@ class Topo
 	double delta_;
 
 	//! State
-	//!  is initialized with a copy from the model's state
-	VectorPtr state_;
+	//!  is initialized with a view from the model's state
+	VectorPtr stateView_;
 
 	//! Right hand side
 	//!  is initialized with a copy from the model's rhs	
 	VectorPtr rhs_;
 
 	//! Solution from solve()
-	//!  is initialized with a copy from the model's solution	
-	VectorPtr sol_;
+	//!  is initialized with a view from the model's solution	
+	VectorPtr solView_;
 
 	//! Integer for selecting the right landmask.
 	//!  k_ = floor(delta_)

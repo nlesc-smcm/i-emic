@@ -48,6 +48,9 @@ class Timer;
 extern std::stack<Timer> timerStack;
 
 //=========================================================================
+#ifndef M_PI
+# define M_PI 3.14159265358979323846
+#endif
 
 #ifndef INFO
 #  define INFO(s) (*outFile) << s << std::endl; 
@@ -63,7 +66,11 @@ extern std::stack<Timer> timerStack;
 #endif
 
 #ifndef WARNING
-#  define WARNING(x,y,z) (*outFile) << "**WARNING**: " << x << " " << y << " " << z << std::endl;
+#  define WARNING(x,y,z)							\
+	{												\
+		(*outFile) << "**WARNING**: " << x << " "	\
+				   << y << " " << z << std::endl;	\
+	}
 #endif
 
 #ifndef DEBUG

@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <sstream>
+#include <math.h>
 
 //==================================================================
 // constructor
@@ -27,10 +28,10 @@ Topo(Model model, ParameterList pars)
 
 	model_->setLandMask(landMasks_[2]);
 
-	// We initialize our vectors with copies of the ones in the model.
-	state_ = model_->getState('C');
-	rhs_   = model_->getRHS('C');
-	sol_   = model_->getSolution('C');
+	// We initialize our vectors with the ones in the model.
+	stateView_ = model_->getState('V');
+	solView_   = model_->getSolution('V');
+	rhs_       = model_->getRHS('C');
 
 	// Setup indices k,a and b
 	k_ = static_cast<int>(std::floor(delta_));
@@ -115,20 +116,20 @@ Topo<Model, ParameterList>::getState(char mode)
 {
 	if (mode == 'V')
 	{
-		return state_;
+		return stateView_;
 	}
 	else if (mode == 'C')
 	{
 		VectorPtr stateCopy = model_->getState('C');
 		// copy construction
-		*stateCopy = *state_;
+		*stateCopy = *stateView_;
 		return stateCopy;
 	}
 	else
 	{
 		WARNING("Invalid mode", __FILE__, __LINE__);
 		return Teuchos::null;
-	}	
+	}
 }
 
 //==================================================================
@@ -161,14 +162,14 @@ Topo<Model, ParameterList>::getSolution(char mode)
 {
 	if (mode == 'V')
 	{
-		return state_;
+		return solView_;
 	}
 	else if (mode == 'C')
 	{
-		VectorPtr stateCopy = model_->getState('C');
+		VectorPtr solCopy = model_->getSolution('C');
 		// copy construction
-		*stateCopy = *state_;
-		return stateCopy;
+		*solCopy = *solView_;
+		return solCopy;
 	}
 	else
 	{
@@ -181,21 +182,74 @@ Topo<Model, ParameterList>::getSolution(char mode)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeRHS()
 {
-	// TODO
+	INFO("Topo: computeRHS...");
+	// Get our current landmask index
+	k_ = static_cast<int>(std::floor(delta_));
+
+	// Calculate homotopy factors
+	double facA = pow(cos(M_PI * delta_ / 2), 2);
+	double facB = pow(sin(M_PI * delta_ / 2), 2);		
+
+	// Set landmask (A) in the model
+	model_->setLandMask(landMasks_[a_[k_]]);
+
+	// Evaluate and compute RHS
+	model_->computeRHS();
+
+	// Let our rhs_ point to a copy of the RHS in the model
+	*rhs_ = *model_->getRHS('C');
+	INFO("   norm RHS (A) = " << rhs_->norm() << " facA = " << facA);
+
+	// Multiply RHS (A) with its homotopy factor
+	rhs_->scale(facA);
+
+	// Set landmask (B) in the model
+	model_->setLandMask(landMasks_[b_[k_]]);
+
+	// Evaluate and compute RHS
+	model_->computeRHS();
+	
+	// Obtain copy of the RHS in the model
+	VectorPtr rhstmp = model_->getRHS('C');
+	INFO("   norm RHS (B) = " << rhstmp->norm() << " facB = " << facB);
+
+	// Multiply RHS (B) with its homotopy factor
+	rhstmp->scale(facB);
+
+	// Add RHS(B) to RHS(A)
+	rhs_->update(1.0, *rhstmp, 1.0);
+
+	INFO("   norm facB*B+facA*A = " << rhs_->norm());
+
+	// To be safe we restore the model to the k-th landmask
+	// and evaluate it.
+	model_->setLandMask(landMasks_[k_]);
+	model_->computeRHS();
+	INFO("Topo: computeRHS... done");
 }
 
 //==================================================================
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeJacobian()
 {
-	// TODO
+	// Get our current landmask index
+	k_ = static_cast<int>(std::floor(delta_));
+
+	// For now we only compute Jacobians based on the k-th
+	// landmask.
+
+	// Set k-th landmask in the model
+	model_->setLandMask(landMasks_[k_]);
+	model_->computeJacobian();	
 }
 
 //==================================================================
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::solve(VectorPtr b)
 {
-	// TODO
+	// Let the model do its thing
+	model_->setLandMask(landMasks_[k_]);
+	model_->solve(b);
 }
 
 //==================================================================

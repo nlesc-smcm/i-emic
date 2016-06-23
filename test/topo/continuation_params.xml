@@ -5,7 +5,7 @@
 <ParameterList name="Continuation parameters">
   
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="1.0e-2"/>
+  <Parameter name="initial step size" type="double" value="1.0e-8"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>
   <Parameter name="maximum step size" type="double" value="1.0e-1"/>
   
@@ -42,7 +42,7 @@
   
   <!-- Scaling of the state tangent, which needs to be several orders -->
   <!-- smaller than the parameter tangent -->
-  <Parameter name="state tangent scaling" type="double" value="1.0e-5"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0e-4"/>
 
   <!-- reject solution from failed Newton iteration -->
   <Parameter name="reject failed iteration" type="bool" value="true"/>
@@ -58,6 +58,6 @@
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
-  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
+  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
 
 </ParameterList>

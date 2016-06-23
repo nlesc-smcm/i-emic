@@ -191,6 +191,41 @@ TEST(Topo, View)
 }
 
 //------------------------------------------------------------------
+TEST(Topo, Continuation)
+{
+	bool failed = false;
+	try
+	{
+		// Create new topography class
+		RCP<Teuchos::ParameterList> topoParams = rcp(new Teuchos::ParameterList);
+		updateParametersFromXmlFile("topo_params.xml", topoParams.ptr());
+		RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > > topoPtr =
+			rcp(new Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >
+				(ocean, topoParams));
+	
+		// Create parameter object for continuation
+		RCP<Teuchos::ParameterList> continuationParams =
+			rcp(new Teuchos::ParameterList);
+		updateParametersFromXmlFile("continuation_params.xml",
+									continuationParams.ptr());
+
+		// Create continuation
+		Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >,
+					 RCP<Teuchos::ParameterList> >
+			continuation(topoPtr, continuationParams);
+
+		// Run continuation
+		continuation.run();
+	}
+	catch (...)
+	{
+		failed = true;
+	}
+	
+	EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
 	// Initialize the environment:
