@@ -273,7 +273,7 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	// double facB = pow(sin(M_PI * delta_ / 2), 2);
 
 	// Let the model do its thing
-	model_->setLandMask(landMasks_[a_[k_]]);
+	model_->setLandMask(landMasks_[k_]);
 	model_->computeJacobian();
 	model_->solve(b);
 	// VectorPtr solA = model_->getSolution('C');	
