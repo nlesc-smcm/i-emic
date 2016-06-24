@@ -314,7 +314,7 @@ contains
     integer :: i,j,k,pos
 
 
-    _INFO_('THCM: global.F90 set_landm...')
+!    _INFO_('THCM: global.F90 set_landm...')
     
     landm = 0;
     
@@ -339,14 +339,14 @@ contains
        enddo
     enddo
     
-    write(*,*) '_______ set_landm ____________', z(l)*hdim
-
-    do j = m+1, 0, -1
-       write(*,'(  92i1)') landm(:,j,l)
-    enddo
+!    write(*,*) '_______ set_landm ____________', z(l)*hdim
+!
+!    do j = m+1, 0, -1
+!       write(*,'(  92i1)') landm(:,j,l)
+!    enddo
     
 
-    _INFO_('THCM: global.F90 set_landm... done')    
+!    _INFO_('THCM: global.F90 set_landm... done')    
   end subroutine set_landm    
 
   !! this is supposed to be called once by the root            

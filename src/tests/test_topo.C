@@ -82,7 +82,7 @@ void initializeEnvironment(int argc, char **argv)
 namespace // local unnamed namespace (similar to static in C)
 {	
 	RCP<Ocean>  ocean;
-	Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >	topo;
+	RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > > topo;
 }
 
 //------------------------------------------------------------------
@@ -123,11 +123,11 @@ TEST(Topo, Initialization)
 	bool failed = false;
 	try
 	{
-		// Create parameterlist
+		// Create topography class
 		RCP<Teuchos::ParameterList> topoParams = rcp(new Teuchos::ParameterList);
 		updateParametersFromXmlFile("topo_params.xml", topoParams.ptr());
-		// Create topo class
-		topo = Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >(ocean, topoParams);
+		topo = rcp(new Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >
+				   (ocean, topoParams));
 	}
 	catch (...)
 	{
@@ -139,9 +139,9 @@ TEST(Topo, Initialization)
 //------------------------------------------------------------------
 TEST(Topo, Arrays)
 {
-	std::vector<int> a = topo.getA();
-	std::vector<int> b = topo.getB();
-	int N = topo.nMasks();
+	std::vector<int> a = topo->getA();
+	std::vector<int> b = topo->getB();
+	int N = topo->nMasks();
 
 	std::vector<int> aref = {0,2,2,4,4,6,6,8};
 	std::vector<int> bref = {1,1,3,3,5,5,7,7};
@@ -158,15 +158,15 @@ TEST(Topo, Copy)
 {
 	double tol = 1e-12;
 	double nrmC, nrmV;
-	Ocean::VectorPtr stateCopy = topo.getState('C');
-	Ocean::VectorPtr stateView = topo.getState('V');
-	nrmC = stateCopy->norm();
-	nrmV = stateView->norm();
+	Ocean::VectorPtr solCopy = topo->getSolution('C');
+	Ocean::VectorPtr solView = topo->getSolution('V');
+	nrmC = solCopy->norm();
+	nrmV = solView->norm();
 	EXPECT_NEAR(nrmC, nrmV, tol);
 	
-	stateCopy->putScalar(3.14);
-	nrmC = stateCopy->norm();
-	nrmV = stateView->norm();
+	solCopy->putScalar(3.14);
+	nrmC = solCopy->norm();
+	nrmV = solView->norm();
 
 	EXPECT_NE(nrmC, nrmV);
 }
@@ -176,16 +176,18 @@ TEST(Topo, View)
 {
 	double tol = 1e-12;
 	double nrmC, nrmV;
-	Ocean::VectorPtr stateCopy = topo.getState('C');
-	Ocean::VectorPtr stateView = topo.getState('V');
-	nrmC = stateCopy->norm();
-	nrmV = stateView->norm();
+	Ocean::VectorPtr solCopy = topo->getSolution('C');
+	Ocean::VectorPtr solView = topo->getSolution('V');
+	nrmC = solCopy->norm();
+	nrmV = solView->norm();
 	EXPECT_NEAR(nrmC, nrmV, tol);
 	
-	stateView->putScalar(3.14);
+	solView->putScalar(3.14);
 	
-	nrmC = stateCopy->norm();
-	nrmV = stateView->norm();
+	nrmC = solCopy->norm();
+	nrmV = solView->norm();
+
+	solView->putScalar(0.0);
 	
 	EXPECT_NE(nrmC, nrmV);
 }
@@ -195,14 +197,7 @@ TEST(Topo, Continuation)
 {
 	bool failed = false;
 	try
-	{
-		// Create new topography class
-		RCP<Teuchos::ParameterList> topoParams = rcp(new Teuchos::ParameterList);
-		updateParametersFromXmlFile("topo_params.xml", topoParams.ptr());
-		RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > > topoPtr =
-			rcp(new Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-				(ocean, topoParams));
-	
+	{	
 		// Create parameter object for continuation
 		RCP<Teuchos::ParameterList> continuationParams =
 			rcp(new Teuchos::ParameterList);
@@ -212,7 +207,7 @@ TEST(Topo, Continuation)
 		// Create continuation
 		Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >,
 					 RCP<Teuchos::ParameterList> >
-			continuation(topoPtr, continuationParams);
+			continuation(topo, continuationParams);
 
 		// Run continuation
 		continuation.run();
@@ -243,7 +238,7 @@ int main(int argc, char **argv)
 
 	// Get rid of possibly parallel objects for a clean ending.
 	ocean = Teuchos::null;
-	topo  = Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >();
+	topo  = Teuchos::null;
 	
 	comm->Barrier();
 	std::cout << "TEST exit code proc #" << comm->MyPID()

@@ -200,7 +200,7 @@ SUBROUTINE set_landmask(a_landm, a_periodic)
 
   integer :: i,j,k,pos
 
-  _INFO_('THCM: usrc.F90 set_landmask...')
+!  _INFO_('THCM: usrc.F90 set_landmask...')
 
   if (a_periodic.eq.0) then
      periodic  =  .false.
@@ -248,7 +248,7 @@ SUBROUTINE set_landmask(a_landm, a_periodic)
   call vmix_init	! ATvS-Mix  USES LANDMASK
   call forcing      ! USES LANDMASK
 
-  _INFO_('THCM: usrc.F90 set_landmask...  done')  
+!  _INFO_('THCM: usrc.F90 set_landmask...  done')  
 end subroutine set_landmask
 
 !*****************************************************************************

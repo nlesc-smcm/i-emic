@@ -23,15 +23,22 @@ Topo(Model model, ParameterList pars)
 	delta_  (pars->get("Delta", 0.0))	
 {
 	INFO("Topo constructor...");
+
+	double nrm1, nrm2;
+
+	model_->computeRHS();
+	nrm1 = model_->getRHS('V')->norm();
+	INFO("   norm RHS (1) = " << nrm1);
+
 	loadMaskFileNames();
 	loadMasks();
-
-	model_->setLandMask(landMasks_[2]);
-
+	
+	model_->setLandMask(landMasks_[0]);	
+	
 	// We initialize our vectors with the ones in the model.
 	stateView_ = model_->getState('V');
 	solView_   = model_->getSolution('V');
-	rhs_       = model_->getRHS('C');
+	rhs_       = model_->getRHS('C');	
 
 	// Setup indices k,a and b
 	k_ = static_cast<int>(std::floor(delta_));
@@ -43,8 +50,15 @@ Topo(Model model, ParameterList pars)
 	{
 		a_[k+1] = a_[k] + 2 * ((k + 1) % 2);
 		b_[k+1] = b_[k] + 2 * ( k % 2 );
-	}
+	}	
+
+	model_->computeRHS();
+	nrm2 = model_->getRHS('V')->norm();
+	INFO("   norm RHS (2) = " << nrm2);
 	
+	if (std::abs(nrm1 - nrm2) > 1e-10)
+		ERROR("Norms should not differ much!", __FILE__, __LINE__);
+
 	INFO("Topo constructor... done");
 }
 
@@ -188,7 +202,11 @@ void Topo<Model, ParameterList>::computeRHS()
 
 	// Calculate homotopy factors
 	double facA = pow(cos(M_PI * delta_ / 2), 2);
-	double facB = pow(sin(M_PI * delta_ / 2), 2);		
+	double facB = pow(sin(M_PI * delta_ / 2), 2);
+	
+	// Evaluate and compute RHS
+	model_->computeRHS();
+	INFO("   norm RHS     = " << model_->getRHS('V')->norm());
 
 	// Set landmask (A) in the model
 	model_->setLandMask(landMasks_[a_[k_]]);
@@ -236,7 +254,7 @@ void Topo<Model, ParameterList>::computeJacobian()
 	k_ = static_cast<int>(std::floor(delta_));
 
 	// For now we only compute Jacobians based on the k-th
-	// landmask.
+	// landmask. Not sure what the use is of doing both here.
 
 	// Set k-th landmask in the model
 	model_->setLandMask(landMasks_[k_]);
@@ -247,9 +265,28 @@ void Topo<Model, ParameterList>::computeJacobian()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::solve(VectorPtr b)
 {
+	// Get our current landmask index
+	k_ = static_cast<int>(std::floor(delta_));
+	
+	// Calculate homotopy factors
+	// double facA = pow(cos(M_PI * delta_ / 2), 2);
+	// double facB = pow(sin(M_PI * delta_ / 2), 2);
+
 	// Let the model do its thing
-	model_->setLandMask(landMasks_[k_]);
+	model_->setLandMask(landMasks_[a_[k_]]);
+	model_->computeJacobian();
 	model_->solve(b);
+	// VectorPtr solA = model_->getSolution('C');	
+	
+	// model_->setLandMask(landMasks_[b_[k_]]);
+	// model_->computeJacobian();
+	// model_->solve(b);
+	
+	// solView_->update(1.0,*solA,0.0);
+	
+	// model_->setLandMask(landMasks_[a_[k_]]);
+	// model_->computeJacobian();	
+
 }
 
 //==================================================================

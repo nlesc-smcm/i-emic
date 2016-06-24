@@ -323,7 +323,7 @@ normalize()
 	// -----------------------------------------------------------------
 
 	// 1) scale stateDot
-	zeta_ = tanScaling_ / stateDot_->norm(); // this might be more robust
+	zeta_ = tanScaling_ / stateDot_->norm();
 	stateDot_->scale(zeta_);
 
 	// 2) compute norm of combined vector
@@ -428,10 +428,16 @@ newtonCorrector()
 		{
 			model_->solve(dFdPar_);
 			y = model_->getSolution('C');
+			INFO("  ||dFdPar_|| = " << dFdPar_->norm() );
+			INFO("      || y || = " << y->norm() );
 		}
 		
 		model_->solve(R);
 		z = model_->getSolution('C');
+
+		INFO("      || R || = " << R->norm());
+		INFO("      || z || = " << y->norm());
+
 		
 		if (scaleRHS_) // experimental
 			z->scale(1.0 / rscale);
