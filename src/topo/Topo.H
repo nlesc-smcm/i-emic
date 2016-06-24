@@ -265,28 +265,79 @@ void Topo<Model, ParameterList>::computeJacobian()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::solve(VectorPtr b)
 {
+	
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::applyMatrix(Vector const &v, Vector &out)
+{
 	// Get our current landmask index
 	k_ = static_cast<int>(std::floor(delta_));
-	
+
 	// Calculate homotopy factors
-	// double facA = pow(cos(M_PI * delta_ / 2), 2);
-	// double facB = pow(sin(M_PI * delta_ / 2), 2);
+	double facA = pow(cos(M_PI * delta_ / 2), 2);
+	double facB = pow(sin(M_PI * delta_ / 2), 2);
 
-	// Let the model do its thing
-	model_->setLandMask(landMasks_[k_]);
+	// Set landmask (A) in the model
+	model_->setLandMask(landMasks_[a_[k_]]);
+
+	// Compute Jacobian (A)
 	model_->computeJacobian();
-	model_->solve(b);
-	// VectorPtr solA = model_->getSolution('C');	
-	
-	// model_->setLandMask(landMasks_[b_[k_]]);
-	// model_->computeJacobian();
-	// model_->solve(b);
-	
-	// solView_->update(1.0,*solA,0.0);
-	
-	// model_->setLandMask(landMasks_[a_[k_]]);
-	// model_->computeJacobian();	
 
+	// Apply Jacobian (A)
+	model_->applyMatrix(v, out);	
+
+	// Copy result
+	Vector outA = out;
+
+	// Set landmask (B) in the model
+	model_->setLandMask(landMasks_[b_[k_]]);
+
+	// Compute Jacobian (B)
+	model_->computeJacobian();
+
+	// Apply Jacobian (B)
+	model_->applyMatrix(v, out);
+
+	// Combine terms
+	out.update(facA, outA, facB);	
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::applyPrecon(Vector const &v, Vector &out)
+{
+	// Get our current landmask index
+	k_ = static_cast<int>(std::floor(delta_));
+
+	// Calculate homotopy factors
+	double facA = pow(cos(M_PI * delta_ / 2), 2);
+	double facB = pow(sin(M_PI * delta_ / 2), 2);
+
+	// Set landmask (A) in the model
+	model_->setLandMask(landMasks_[a_[k_]]);
+
+	// Apply Jacobian (A)
+	model_->applyMatrix(v, out);	
+
+	// Copy result
+	Vector outA = out;
+
+	// Set landmask (B) in the model
+	model_->setLandMask(landMasks_[b_[k_]]);
+
+	// Apply Jacobian (B)
+	model_->applyMatrix(v, out);
+
+	// Combine terms
+	out.update(facA, outA, facB);		
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::solve(VectorPtr b)
+{
 }
 
 //==================================================================

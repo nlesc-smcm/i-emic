@@ -30,6 +30,7 @@ class Topo
 public:
 	
 	using VectorPtr = typename Model::element_type::VectorPtr;
+	using Vector    = typename VectorPtr::element_type;
 	using LandMask  = typename Model::element_type::LandMask;
 
 private: 
@@ -113,6 +114,8 @@ public:
 
 	//! solve Jx=b
 	void solve(VectorPtr b);
+
+	//! apply J*x
 
 	//! perform some duties before important things happen
 	void preProcess();

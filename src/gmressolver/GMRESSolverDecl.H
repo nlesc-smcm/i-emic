@@ -10,7 +10,7 @@
 // Model should be compatible with Vectors
 //
 // Vector should be a class with:
-//    -update(double scalarA, Vector A, double scalarThis, performing
+//    -update(double scalarA, Vector A, double scalarThis), performing
 //      this = scalarA * A + scalarThis * this
 //    -norm()
 //    -copy construction
