@@ -428,16 +428,10 @@ newtonCorrector()
 		{
 			model_->solve(dFdPar_);
 			y = model_->getSolution('C');
-			INFO("  ||dFdPar_|| = " << dFdPar_->norm() );
-			INFO("      || y || = " << y->norm() );
 		}
 		
 		model_->solve(R);
 		z = model_->getSolution('C');
-
-		INFO("      || R || = " << R->norm());
-		INFO("      || z || = " << y->norm());
-
 		
 		if (scaleRHS_) // experimental
 			z->scale(1.0 / rscale);

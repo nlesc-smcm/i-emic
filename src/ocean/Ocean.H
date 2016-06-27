@@ -198,6 +198,9 @@ public:
 
 	//! Set global and local (distributed) landmask arrays
 	void setLandMask(LandMask mask);
+
+	//! Apply landmask to state
+	void applyLandMask(LandMask mask1, LandMask mask2);	
 	
 	//! Pre and post-convergence processing
 	void preProcess();

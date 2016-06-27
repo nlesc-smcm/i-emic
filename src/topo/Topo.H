@@ -11,6 +11,9 @@
 #include <sstream>
 #include <math.h>
 
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_ParameterList.hpp>
+
 //==================================================================
 // constructor
 template<typename Model, typename ParameterList>
@@ -20,7 +23,10 @@ Topo(Model model, ParameterList pars)
 	model_  (model),
 	pars_   (pars),
 	nMasks_ (pars->get("Number of mask files", 0)),
-	delta_  (pars->get("Delta", 0.0))	
+	delta_  (pars->get("Delta", 0.0)),
+	
+	gmresSolver_        (*this),
+	gmresInitialized_   (false)
 {
 	INFO("Topo constructor...");
 
@@ -239,10 +245,6 @@ void Topo<Model, ParameterList>::computeRHS()
 
 	INFO("   norm facB*B+facA*A = " << rhs_->norm());
 
-	// To be safe we restore the model to the k-th landmask
-	// and evaluate it.
-	model_->setLandMask(landMasks_[k_]);
-	model_->computeRHS();
 	INFO("Topo: computeRHS... done");
 }
 
@@ -265,43 +267,103 @@ void Topo<Model, ParameterList>::computeJacobian()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::solve(VectorPtr b)
 {
-	
-}
 
-//==================================================================
-template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::applyMatrix(Vector const &v, Vector &out)
-{
-	// Get our current landmask index
+	// // Get our current landmask index
 	k_ = static_cast<int>(std::floor(delta_));
 
-	// Calculate homotopy factors
+	// // Calculate homotopy factors
 	double facA = pow(cos(M_PI * delta_ / 2), 2);
 	double facB = pow(sin(M_PI * delta_ / 2), 2);
+
+	solView_->zero();
+
+
+	// Set landmask (A) in the model
+	// model_->preProcess();
+	model_->setLandMask(landMasks_[a_[k_]]);
+	//model_->applyLandMask(landMasks_[b_[k_]], landMasks_[a_[k_]]);
+	model_->computeJacobian();	
+	model_->solve(b);
+	VectorPtr z = getSolution('C');
+
+	// Set landmask (B) in the model
+	// model_->preProcess();
+	model_->setLandMask(landMasks_[b_[k_]]);
+	//model_->applyLandMask(landMasks_[a_[k_]], landMasks_[b_[k_]]);
+	model_->computeJacobian();
+	model_->solve(b);
+
+	solView_->update(facA, *z, facB);
+
+	//--------------------------------------------
+	// CALCULATE RESIDUAL
+	//--------------------------------------------
+
+	Vector resA = *getSolution('C');
+	Vector resB = *getSolution('C');
 
 	// Set landmask (A) in the model
 	model_->setLandMask(landMasks_[a_[k_]]);
 
 	// Compute Jacobian (A)
 	model_->computeJacobian();
-
-	// Apply Jacobian (A)
-	model_->applyMatrix(v, out);	
-
-	// Copy result
-	Vector outA = out;
+	model_->applyMatrix(*solView_, resA);
 
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
 
 	// Compute Jacobian (B)
 	model_->computeJacobian();
+	model_->applyMatrix(*solView_, resB);
+	
+	resA.update(1.0, *b, -facA);
+	resB.update(1.0, resA, -facB);
+	
+	INFO(" Topo residual: " << resB.norm() / b->norm());
+}
 
-	// Apply Jacobian (B)
-	model_->applyMatrix(v, out);
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::applyMatrix(Vector const &v, Vector &out)
+{
+	// computeRHS();
+	// out = *rhs_;
+	// double eps = 1e-7;
+	// stateView_->update(eps, v, 1.0);
+	// computeRHS();
+	// out.update(1./eps, *rhs_, -1./eps);	
+	// stateView_->update(1.0, v, -eps);
+	
+	// // // Get our current landmask index
+	// // k_ = static_cast<int>(std::floor(delta_));
 
-	// Combine terms
-	out.update(facA, outA, facB);	
+	// // // Calculate homotopy factors
+	// // double facA = pow(cos(M_PI * delta_ / 2), 2);
+	// // double facB = pow(sin(M_PI * delta_ / 2), 2);
+
+	// // // Set landmask (A) in the model
+	// // model_->setLandMask(landMasks_[a_[k_]]);
+
+	// // // Compute Jacobian (A)
+	// // model_->computeJacobian();
+
+	// // // Apply Jacobian (A)
+	// // model_->applyMatrix(v, out);	
+
+	// // // Copy result
+	// // Vector outA = out;
+
+	// // // Set landmask (B) in the model
+	// // model_->setLandMask(landMasks_[b_[k_]]);
+
+	// // // Compute Jacobian (B)
+	// // model_->computeJacobian();
+
+	// // // Apply Jacobian (B)
+	// // model_->applyMatrix(v, out);
+
+	// // // Combine terms
+	// // out.update(facA, outA, facB);	
 }
 
 //==================================================================
@@ -309,35 +371,44 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::applyPrecon(Vector const &v, Vector &out)
 {
 	// Get our current landmask index
-	k_ = static_cast<int>(std::floor(delta_));
+	// k_ = static_cast<int>(std::floor(delta_));
 
 	// Calculate homotopy factors
-	double facA = pow(cos(M_PI * delta_ / 2), 2);
-	double facB = pow(sin(M_PI * delta_ / 2), 2);
+	// double facA = pow(cos(M_PI * delta_ / 2), 2);
+	// double facB = pow(sin(M_PI * delta_ / 2), 2);
 
-	// Set landmask (A) in the model
-	model_->setLandMask(landMasks_[a_[k_]]);
+	// Set landmask (k) in the model
+	// model_->setLandMask(landMasks_[k_]);
 
-	// Apply Jacobian (A)
-	model_->applyMatrix(v, out);	
+	// Compute Jacobian (k)
+	// model_->computeJacobian();
+
+	// Apply Jacobian (k)
+	// model_->applyPrecon(v, out);	
 
 	// Copy result
-	Vector outA = out;
+	// Vector outA = out;
 
 	// Set landmask (B) in the model
-	model_->setLandMask(landMasks_[b_[k_]]);
+	// model_->setLandMask(landMasks_[b_[k_]]);
 
 	// Apply Jacobian (B)
-	model_->applyMatrix(v, out);
+	// model_->applyPrecon(v, out);
 
 	// Combine terms
-	out.update(facA, outA, facB);		
+	// out.update(facA, outA, facB);		
 }
 
 //==================================================================
 template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::solve(VectorPtr b)
+void Topo<Model, ParameterList>::initializeGMRES()
 {
+	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
+		rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
+	
+	gmresSolver_.setParameters(solverParams_);
+	gmresInitialized_ = true;
 }
 
 //==================================================================

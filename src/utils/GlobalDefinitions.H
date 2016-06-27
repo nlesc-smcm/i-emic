@@ -196,14 +196,14 @@ public:
 #define CHECK_ZERO(funcall) {int ierr = funcall;						\
 		if (ierr) {INFO("Trilinos Error " << ierr << " returned from call " \
 						<< #funcall);									\
-			throw std::runtime_error("Trilinos Error...");}}
+			/*throw std::runtime_error("Trilinos Error...");*/}}
 #define CHECK_TRUE(funcall) {bool berr = funcall;						\
 		if (!berr) {INFO("Trilinos call " << #funcall << " returned false"); \
-			throw std::runtime_error("Trilinos Error...");}}
+			/*throw std::runtime_error("Trilinos Error...");*/}}
 #define CHECK_NONNEG(funcall) {int ierr = funcall;						\
 		if (ierr<0) {INFO("Trilinos Error " << ierr << " returned from call " \
 						  << #funcall);									\
-			throw std::runtime_error("Trilinos Error...");}}
+			/*throw std::runtime_error("Trilinos Error...");*/}}
 #endif
 
 #ifndef MOD

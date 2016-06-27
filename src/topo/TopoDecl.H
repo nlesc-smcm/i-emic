@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include "GMRESSolver.H"
+
 //! This class manages a Model that allows changing its topography. A
 //! continuation with Topo<Model> model is then possible through the
 //! continuation parameter delta_.
@@ -70,10 +72,14 @@ private:
 	//!  k_ = floor(delta_)
 	int k_;
 
-	//! Vectors of integers for selecting the right landmask.
+ 	//! Vectors of integers for selecting the right landmask.
 	//!  a_[i+1] = a_[i] + 2 * ((k_+1) % 2); a_[0] = 0
 	//!  b_[i+1] = b_[i] + 2 * ( k_ % 2 );   b_[0] = 1
 	std::vector<int> a_, b_;
+
+	//! Linear solver
+	GMRESSolver<Topo, VectorPtr> gmresSolver_;
+	bool gmresInitialized_;
 
 public:
 	//! default constructor
@@ -115,7 +121,11 @@ public:
 	//! solve Jx=b
 	void solve(VectorPtr b);
 
-	//! apply J*x
+	//! apply Jacobian matrix J*v
+	void applyMatrix(Vector const &v, Vector &out);
+
+	//! apply Preconditioning inv(P)*v
+	void applyPrecon(Vector const &v, Vector &out);
 
 	//! perform some duties before important things happen
 	void preProcess();
@@ -133,12 +143,14 @@ public:
 	int nMasks() { return nMasks_; }
 
 private:
-	//! load the mask filenames
+  	//! load the mask filenames
 	void loadMaskFileNames();
 
 	//! load the masks
 	void loadMasks();
-};
 
+	//! initialize linear solver
+	void initializeGMRES();
+};
 
 #endif

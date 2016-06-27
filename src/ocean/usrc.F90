@@ -232,7 +232,6 @@ SUBROUTINE set_landmask(a_landm, a_periodic)
         enddo
      enddo
   enddo
-
   
   ! Let the dummy cells be land
   if (.not.periodic) then

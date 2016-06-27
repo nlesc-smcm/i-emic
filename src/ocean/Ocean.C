@@ -249,6 +249,38 @@ void Ocean::setLandMask(LandMask mask)
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 }
 
+//==================================================================
+void Ocean::applyLandMask(LandMask mask1, LandMask mask2)
+{
+	int nmask = mask1.global->size();
+	assert(nmask == (M_+2)*(N_+2)*(L_+2));
+	
+	int idx1, idx2;
+	int lid;
+	
+	assert(mask1.global->size() == mask2.global->size());
+
+	for (int k = 1; k != L_+1; ++k)
+		for (int j = 1; j != M_+1; ++j)
+			for (int i = 1; i != N_+1; ++i)
+			{
+				idx1 = k*(M_+2)*(N_+2) + j*(N_+2) + i;
+				idx2 = (k-1)*M_*N_ + (j-1)*N_ + i-1;
+				
+				if ((*mask1.global)[idx1] - (*mask2.global)[idx1] < 0)
+				{
+					for (int ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
+					{
+						lid = state_->Map().LID(ii);
+						if (lid >= 0) // means our proc has it
+							(*state_)[ii]  = 0.0;
+					}
+				}
+			}
+	
+}
+
+
 //====================================================================
 void Ocean::preProcess()
 {
@@ -450,6 +482,7 @@ void Ocean::solve(VectorPtr rhs)
 		iters = belosSolver_->getNumIters();
 		tol   = belosSolver_->achievedTol();
 		INFO("Ocean: FGMRES, i = " << iters << ", ||r|| = " << tol);
+
 		TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 	}
 	else if (solverType_ == 'I')
