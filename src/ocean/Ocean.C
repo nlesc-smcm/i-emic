@@ -376,6 +376,7 @@ void Ocean::initializeBelos()
 	// Set right preconditioner for Belos solver
 	RCP<Belos::EpetraPrecOp> belosPrec =
 		rcp(new Belos::EpetraPrecOp(precPtr_));
+	
 	problem_->setRightPrec(belosPrec);
 	
 	// A few FGMRES parameters are made available in solver_params.xml:
@@ -405,7 +406,7 @@ void Ocean::initializeBelos()
 	belosParamList_->set("Explicit Residual Test", false); 
 	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
 	
-	// Belos block FGMRES setup
+ 	// Belos block FGMRES setup
 	belosSolver_ =
 		rcp(new Belos::BlockGmresSolMgr
 			<double, Epetra_MultiVector, Epetra_Operator>
@@ -419,11 +420,9 @@ void Ocean::solve(VectorPtr rhs)
 	// initialization here
 	if (!solverInitialized_)
 		initializeSolver();
-	
-	// Depending on the number of iterations we might need to
-	// recompute the preconditioner
-	if (recompPreconditioner_)
-		buildPreconditioner();
+
+	// Get new preconditioner
+	buildPreconditioner();
 	
 	// Use trivial initial solution
 	sol_->Scale(0.0);
@@ -697,12 +696,18 @@ void Ocean::applyMatrix(SuperVector const &v, SuperVector &out)
 //====================================================================
 void Ocean::buildPreconditioner()
 {
-	TIMER_START("Ocean: build preconditioner");
-	INFO("Ocean: build preconditioner...");
-	precPtr_->Compute();
-	INFO("Ocean: build preconditioner... done");
-	TIMER_STOP("Ocean: build preconditioner");
-	recompPreconditioner_ = false;  // Disable subsequent recomputes
+	if (!precInitialized_) // Initialize preconditioner
+		initializePreconditioner();
+
+	if (recompPreconditioner_)
+	{
+		TIMER_START("Ocean: build preconditioner");
+		INFO("Ocean: build preconditioner...");
+		precPtr_->Compute();
+		INFO("Ocean: build preconditioner... done");
+		TIMER_STOP("Ocean: build preconditioner");
+		recompPreconditioner_ = false;  // Disable subsequent recomputes
+	}
 }
 
 //====================================================================
@@ -711,8 +716,8 @@ void Ocean::applyPrecon(SuperVector const &v, SuperVector &out)
 	if (!precInitialized_) // Initialize preconditioner
 		initializePreconditioner();
 	
-	if (recompPreconditioner_) 	// Compute preconditioner
-		buildPreconditioner();	
+	// Compute preconditioner
+	buildPreconditioner();	
 
 	TIMER_START("Ocean: apply preconditioning...");
 	precPtr_->ApplyInverse(*(v.getOceanVector()), *(out.getOceanVector()));
@@ -775,13 +780,6 @@ void Ocean::getAtmosBlock(std::vector<double> &values,
 			idx++;
 		}
 	INFO("  A->O block, zeros due to surfacemask --> " << lctr);
-}
-
-//====================================================================
-Teuchos::RCP<Epetra_CrsMatrix> Ocean::getJacobian()
-{
-	// This is a job for THCM
-	return THCM::Instance().getJacobian();
 }
 
 //====================================================================

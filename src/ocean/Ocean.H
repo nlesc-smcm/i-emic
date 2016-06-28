@@ -63,6 +63,7 @@ public:
 	
 	using VectorPtr = Teuchos::RCP<SuperVector>;
 	using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
+	using PreconPtr = Teuchos::RCP<Ifpack_Preconditioner>;
 	using LandMask  = maskStruct;
 
 protected:
@@ -169,6 +170,9 @@ public:
 	Teuchos::RCP<SuperVector> getSolution(char mode = 'C');
 	Teuchos::RCP<SuperVector> getState(char mode = 'C');
 	Teuchos::RCP<SuperVector> getRHS(char mode = 'C');
+
+	//! Return pointer to Jacobian
+	Teuchos::RCP<Epetra_CrsMatrix> getJacobian() {return jac_;}
 	
 	//! Apply the Jacobian to a vector and return the result u = J*v
 	Teuchos::RCP<SuperVector> applyMatrix(SuperVector const &v);
@@ -179,7 +183,14 @@ public:
 	Teuchos::RCP<SuperVector> applyPrecon(SuperVector const &v);
 	void applyPrecon(SuperVector const &v, SuperVector &out);
 
+	//! Set prec recompute flag
 	void recomputePreconditioner() { recompPreconditioner_ = true; }
+
+ 	//! Build preconditioner
+	void buildPreconditioner();
+
+	//! Get pointer to preconditioning operator
+	PreconPtr getPreconPtr(){ return precPtr_;}
 
 	//! The parameter set members wrap the corresponding
 	//! Fortran functions. We keep an internal parameter name which
@@ -218,9 +229,6 @@ public:
 
 	// Obtain an external atmosphere
 	void setAtmosphere(std::vector<double> const &atmos);
-
-	// Obtain the Jacobian from THCM
-	Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
 
     // Get the atmosphere to ocean
 	// contribution in the Jacobian, see forcing.F90.
@@ -276,8 +284,6 @@ private:
 	// Based on these rows we will try to create a better landmask.
 	int analyzeJacobian();
 
-	// Build preconditioner
-	void buildPreconditioner();
 	
 	Teuchos::RCP<SuperVector>
 	getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);

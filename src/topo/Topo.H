@@ -14,16 +14,22 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 
+//=====================================================================
+using Teuchos::RCP;
+using Teuchos::rcp;
+
 //==================================================================
 // constructor
 template<typename Model, typename ParameterList>
 Topo<Model, ParameterList>::
 Topo(Model model, ParameterList pars)
 	:
-	model_  (model),
-	pars_   (pars),
-	nMasks_ (pars->get("Number of mask files", 0)),
-	delta_  (pars->get("Delta", 0.0))	
+	model_              (model),
+	pars_               (pars),
+	nMasks_             (pars->get("Number of mask files", 0)),
+	delta_              (pars->get("Delta", 0.0)),
+	solverInitialized_  (false)
+	
 {
 	INFO("Topo constructor...");
 
@@ -62,8 +68,8 @@ Topo(Model model, ParameterList pars)
 	if (std::abs(nrm1 - nrm2) > 1e-10)
 		ERROR("Norms should not differ much!", __FILE__, __LINE__);
 
-	matA_ = model_->getJacobian();
-	matB_ = model_->getJacobian();
+	matA_ = rcp(new Matrix(*model_->getJacobian()));
+	matB_ = rcp(new Matrix(*model_->getJacobian()));
 	
 	INFO("Topo constructor... done");
 }
@@ -263,18 +269,24 @@ void Topo<Model, ParameterList>::computeJacobian()
 	model_->setLandMask(landMasks_[a_[k_]]);
 	model_->computeJacobian();
 	*matA_ = *model_->getJacobian();
+	matA_->Scale(facA);
 
 	model_->setLandMask(landMasks_[b_[k_]]);
 	model_->computeJacobian();
 	*matB_ = *model_->getJacobian();
+	matB_->Scale(facB);
 
+	combMat_.A = matA_;
+	combMat_.B = matB_;
+	combMat_.P = PreconPtr();
+	combMat_.isPrec = false;
 }
+
 
 //==================================================================
 template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::solve(VectorPtr b)
+double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 {
-
 	// // Get our current landmask index
 	k_ = static_cast<int>(std::floor(delta_));
 
@@ -282,18 +294,12 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	double facA = pow(cos(M_PI * delta_ / 2), 2);
 	double facB = pow(sin(M_PI * delta_ / 2), 2);
 
-	model_->solve(b);
-
-	//--------------------------------------------
-	// CALCULATE RESIDUAL
-	//--------------------------------------------
-
 	Vector resA = *getSolution('C');
 	Vector resB = *getSolution('C');
-
+	
 	// Set landmask (A) in the model
 	model_->setLandMask(landMasks_[a_[k_]]);
-
+	
 	// Compute Jacobian (A)
 	model_->computeJacobian();
 	model_->applyMatrix(*solView_, resA);
@@ -307,86 +313,142 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	
 	resA.update(1.0, *b, -facA);
 	resB.update(1.0, resA, -facB);
+	double res = resB.norm() / b->norm();
+	INFO(" Topo residual: " << res);
+
+	return res;	
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::initializeSolver()
+{
+	solverParams_ = rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
 	
-	INFO(" Topo residual: " << resB.norm() / b->norm());
+	// Belos LinearProblem setup
+	Teuchos::RCP<Combined_Operator<Model> > combMatPtr =
+		Teuchos::rcp(&combMat_, false);
+	
+	problem_ =
+		rcp(new Belos::LinearProblem
+			<double, Epetra_MultiVector, Combined_Operator<Model> >
+			(combMatPtr,
+			 solView_->getOceanVector(),
+			 rhs_->getOceanVector()) );
+
+	// Get our current landmask index
+	k_ = static_cast<int>(std::floor(delta_));
+	model_->setLandMask(landMasks_[k_]);	
+	
+	model_->buildPreconditioner();
+
+	combPrec_.A = MatrixPtr();
+	combPrec_.B = MatrixPtr();
+	combPrec_.P = model_->getPreconPtr();
+	combPrec_.isPrec = true;
+
+	Teuchos::RCP<Combined_Operator<Model> > combPrecPtr =
+		Teuchos::rcp(&combPrec_, false);
+	
+	problem_->setRightPrec(combPrecPtr);
+
+	// A few FGMRES parameters are made available in solver_params.xml:
+	int gmresIters  = solverParams_->get("FGMRES iterations", 500);
+	double gmresTol = solverParams_->get("FGMRES tolerance", 1e-8);
+
+	int NumGlobalElements = stateView_->getOceanVector()->GlobalLength();
+	int maxrestarts       = 0;
+	int blocksize         = 1; // number of vectors in rhs
+	int maxiters          = NumGlobalElements / blocksize - 1;
+
+	// Create Belos parameterlist
+	belosParamList_ = rcp(new Teuchos::ParameterList());
+	belosParamList_->set("Block Size", blocksize);
+	belosParamList_->set("Flexible Gmres", true);
+	belosParamList_->set("Adaptive Block Size", true);
+	belosParamList_->set("Num Blocks", gmresIters);
+	belosParamList_->set("Maximum Restarts", maxrestarts);
+	belosParamList_->set("Orthogonalization","DGKS");
+	belosParamList_->set("Output Frequency", 100);
+	belosParamList_->set("Verbosity", Belos::TimingDetails +
+						 Belos::Errors +
+						 Belos::Warnings +
+						 Belos::StatusTestDetails );
+	belosParamList_->set("Maximum Iterations", maxiters); 
+	belosParamList_->set("Convergence Tolerance", gmresTol); 
+	belosParamList_->set("Explicit Residual Test", false); 
+	belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
+
+	// Belos block FGMRES setup
+	belosSolver_ =
+		rcp(new Belos::BlockGmresSolMgr
+			<double, Epetra_MultiVector, Combined_Operator<Model> >
+			(problem_, belosParamList_));
+
+	solverInitialized_ = true;
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::solve(VectorPtr b)
+{
+	// Check whether solver is initialized, if not perform the
+	// initialization here
+	if (!solverInitialized_)
+		initializeSolver();	
+
+	// Get our current landmask index
+	k_ = static_cast<int>(std::floor(delta_));
+	model_->setLandMask(landMasks_[k_]);	
+
+	// Get new preconditioner
+	model_->buildPreconditioner();
+
+	// Initialize to zero
+	solView_->scale(0.0);
+
+	bool set;
+	set = problem_->setProblem(solView_->getOceanVector(), b->getOceanVector());
+	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
+							   "*** Belos::LinearProblem failed to setup");
+
+	TIMER_START("  TOPO:  solve...");
+	INFO("  TOPO:  solve...");
+	int    iters;
+	double tol;
+	try
+	{
+		belosSolver_->solve(); 	// Solve
+	}
+	catch (std::exception const &e)
+	{
+		INFO("Ocean: exception caught: " << e.what());
+	}
+
+
+	INFO("  TOPO:  solve... done");
+	TIMER_STOP("  TOPO:  solve...");
+
+	iters = belosSolver_->getNumIters();
+	tol   = belosSolver_->achievedTol();
+	INFO("  TOPO: FGMRES, i = " << iters << ", ||r|| = " << tol);
+	
+	TRACK_ITERATIONS("  TOPO: FGMRES iterations...", iters);
+
+	
+	computeResidual(b);
 }
 
 //==================================================================
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::applyMatrix(Vector const &v, Vector &out)
-{
-	// computeRHS();
-	// out = *rhs_;
-	// double eps = 1e-7;
-	// stateView_->update(eps, v, 1.0);
-	// computeRHS();
-	// out.update(1./eps, *rhs_, -1./eps);	
-	// stateView_->update(1.0, v, -eps);
-	
-	// // // Get our current landmask index
-	// // k_ = static_cast<int>(std::floor(delta_));
-
-	// // // Calculate homotopy factors
-	// // double facA = pow(cos(M_PI * delta_ / 2), 2);
-	// // double facB = pow(sin(M_PI * delta_ / 2), 2);
-
-	// // // Set landmask (A) in the model
-	// // model_->setLandMask(landMasks_[a_[k_]]);
-
-	// // // Compute Jacobian (A)
-	// // model_->computeJacobian();
-
-	// // // Apply Jacobian (A)
-	// // model_->applyMatrix(v, out);	
-
-	// // // Copy result
-	// // Vector outA = out;
-
-	// // // Set landmask (B) in the model
-	// // model_->setLandMask(landMasks_[b_[k_]]);
-
-	// // // Compute Jacobian (B)
-	// // model_->computeJacobian();
-
-	// // // Apply Jacobian (B)
-	// // model_->applyMatrix(v, out);
-
-	// // // Combine terms
-	// // out.update(facA, outA, facB);	
-}
+{}
 
 //==================================================================
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::applyPrecon(Vector const &v, Vector &out)
-{
-	// Get our current landmask index
-	// k_ = static_cast<int>(std::floor(delta_));
-
-	// Calculate homotopy factors
-	// double facA = pow(cos(M_PI * delta_ / 2), 2);
-	// double facB = pow(sin(M_PI * delta_ / 2), 2);
-
-	// Set landmask (k) in the model
-	// model_->setLandMask(landMasks_[k_]);
-
-	// Compute Jacobian (k)
-	// model_->computeJacobian();
-
-	// Apply Jacobian (k)
-	// model_->applyPrecon(v, out);	
-
-	// Copy result
-	// Vector outA = out;
-
-	// Set landmask (B) in the model
-	// model_->setLandMask(landMasks_[b_[k_]]);
-
-	// Apply Jacobian (B)
-	// model_->applyPrecon(v, out);
-
-	// Combine terms
-	// out.update(facA, outA, facB);		
-}
+{}
 
 //==================================================================
 template<typename Model, typename ParameterList>

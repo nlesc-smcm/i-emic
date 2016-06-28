@@ -6,7 +6,26 @@
 
 #include <vector>
 
-#include "GMRESSolver.H"
+#include <Epetra_MultiVector.h>
+
+#include <Teuchos_RCP.hpp>
+#include "BelosConfigDefs.hpp"
+#include "BelosMultiVec.hpp"
+#include "BelosOperator.hpp"
+#include "BelosTypes.hpp"
+#include <BelosLinearProblem.hpp>
+#include <BelosBlockGmresSolMgr.hpp>
+
+//! Forward declarations
+template<typename Model>
+struct Combined_Operator;
+
+namespace Belos
+{
+	template <typename Model>
+	class OperatorTraits <double, Epetra_MultiVector,
+						  Combined_Operator<Model> >;
+}
 
 //! This class manages a Model that allows changing its topography. A
 //! continuation with Topo<Model> model is then possible through the
@@ -34,7 +53,8 @@ public:
 	using VectorPtr = typename Model::element_type::VectorPtr;
 	using Vector    = typename VectorPtr::element_type;
 	using MatrixPtr = typename Model::element_type::MatrixPtr;
-	using Matrix    = typename VectorPtr::element_type;
+	using Matrix    = typename MatrixPtr::element_type;
+	using PreconPtr = typename Model::element_type::PreconPtr;
 	using LandMask  = typename Model::element_type::LandMask;
 
 private: 
@@ -82,7 +102,25 @@ private:
 	//! Pointers to Jacobians
 	MatrixPtr matA_, matB_;
 
-public:
+	//! Combined operators
+	Combined_Operator<Model> combMat_;
+	Combined_Operator<Model> combPrec_;	
+
+	//! Solver parameterlist
+	ParameterList solverParams_, belosParamList_;
+
+	Teuchos::RCP
+	<Belos::LinearProblem
+	 <double, Epetra_MultiVector, Combined_Operator<Model> > > problem_;	
+	
+	Teuchos::RCP
+	<Belos::BlockGmresSolMgr
+	<double, Epetra_MultiVector, Combined_Operator<Model> > > belosSolver_;
+
+	// Initialization flag
+	bool solverInitialized_;
+
+public:	
 	//! default constructor
 	Topo(){};
 	
@@ -150,6 +188,57 @@ private:
 	//! load the masks
 	void loadMasks();
 
+	//! compute residual norm ||b - facA*A*x - facB*B*x||
+	double computeResidual(VectorPtr b);
+
+	//! initialize solver
+	void initializeSolver();
 };
+
+//------------------------------------------------------------------
+
+template <typename Model>
+struct Combined_Operator
+{
+	using MatrixPtr = typename Model::element_type::MatrixPtr;
+	using PreconPtr = typename Model::element_type::PreconPtr;
+	MatrixPtr A;
+	MatrixPtr B;
+	PreconPtr P;
+	bool isPrec;
+};
+
+//------------------------------------------------------------------
+// Specialization of OperatorTraits
+//------------------------------------------------------------------
+
+namespace Belos
+{
+	template<typename Model>
+	class OperatorTraits <double, Epetra_MultiVector,
+						  Combined_Operator<Model> >
+	{
+	public:
+		static void
+		Apply (const Combined_Operator<Model> &Op,
+			   const Epetra_MultiVector &x,
+			   Epetra_MultiVector &y,
+			   int trans = 0)
+			{
+				if (Op.isPrec)
+					Op.P->ApplyInverse(x, y);
+				else
+				{
+					Epetra_MultiVector tmp = y;
+					Op.A->Apply(x, tmp);
+					Op.B->Apply(x, y);
+					y.Update(1.0, tmp, 1.0);
+				}
+			}
+		
+		static bool
+		HasApplyTranspose (const Combined_Operator<Model> &Op) {return false;}
+	};
+}
 
 #endif
