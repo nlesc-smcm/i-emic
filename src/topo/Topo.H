@@ -23,10 +23,7 @@ Topo(Model model, ParameterList pars)
 	model_  (model),
 	pars_   (pars),
 	nMasks_ (pars->get("Number of mask files", 0)),
-	delta_  (pars->get("Delta", 0.0)),
-	
-	gmresSolver_        (*this),
-	gmresInitialized_   (false)
+	delta_  (pars->get("Delta", 0.0))	
 {
 	INFO("Topo constructor...");
 
@@ -65,6 +62,9 @@ Topo(Model model, ParameterList pars)
 	if (std::abs(nrm1 - nrm2) > 1e-10)
 		ERROR("Norms should not differ much!", __FILE__, __LINE__);
 
+	matA_ = model_->getJacobian();
+	matB_ = model_->getJacobian();
+	
 	INFO("Topo constructor... done");
 }
 
@@ -255,12 +255,19 @@ void Topo<Model, ParameterList>::computeJacobian()
 	// Get our current landmask index
 	k_ = static_cast<int>(std::floor(delta_));
 
-	// For now we only compute Jacobians based on the k-th
-	// landmask. Not sure what the use is of doing both here.
+	// Calculate homotopy factors
+	double facA = pow(cos(M_PI * delta_ / 2), 2);
+	double facB = pow(sin(M_PI * delta_ / 2), 2);
 
-	// Set k-th landmask in the model
-	model_->setLandMask(landMasks_[k_]);
-	model_->computeJacobian();	
+	// Get Jacobians
+	model_->setLandMask(landMasks_[a_[k_]]);
+	model_->computeJacobian();
+	*matA_ = *model_->getJacobian();
+
+	model_->setLandMask(landMasks_[b_[k_]]);
+	model_->computeJacobian();
+	*matB_ = *model_->getJacobian();
+
 }
 
 //==================================================================
@@ -275,25 +282,7 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	double facA = pow(cos(M_PI * delta_ / 2), 2);
 	double facB = pow(sin(M_PI * delta_ / 2), 2);
 
-	solView_->zero();
-
-
-	// Set landmask (A) in the model
-	// model_->preProcess();
-	model_->setLandMask(landMasks_[a_[k_]]);
-	//model_->applyLandMask(landMasks_[b_[k_]], landMasks_[a_[k_]]);
-	model_->computeJacobian();	
 	model_->solve(b);
-	VectorPtr z = getSolution('C');
-
-	// Set landmask (B) in the model
-	// model_->preProcess();
-	model_->setLandMask(landMasks_[b_[k_]]);
-	//model_->applyLandMask(landMasks_[a_[k_]], landMasks_[b_[k_]]);
-	model_->computeJacobian();
-	model_->solve(b);
-
-	solView_->update(facA, *z, facB);
 
 	//--------------------------------------------
 	// CALCULATE RESIDUAL
@@ -397,18 +386,6 @@ void Topo<Model, ParameterList>::applyPrecon(Vector const &v, Vector &out)
 
 	// Combine terms
 	// out.update(facA, outA, facB);		
-}
-
-//==================================================================
-template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::initializeGMRES()
-{
-	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
-		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
-	
-	gmresSolver_.setParameters(solverParams_);
-	gmresInitialized_ = true;
 }
 
 //==================================================================

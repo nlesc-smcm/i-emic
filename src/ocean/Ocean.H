@@ -62,6 +62,7 @@ class Ocean
 public:
 	
 	using VectorPtr = Teuchos::RCP<SuperVector>;
+	using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
 	using LandMask  = maskStruct;
 
 protected:

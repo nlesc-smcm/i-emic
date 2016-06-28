@@ -33,6 +33,8 @@ public:
 	
 	using VectorPtr = typename Model::element_type::VectorPtr;
 	using Vector    = typename VectorPtr::element_type;
+	using MatrixPtr = typename Model::element_type::MatrixPtr;
+	using Matrix    = typename VectorPtr::element_type;
 	using LandMask  = typename Model::element_type::LandMask;
 
 private: 
@@ -77,9 +79,8 @@ private:
 	//!  b_[i+1] = b_[i] + 2 * ( k_ % 2 );   b_[0] = 1
 	std::vector<int> a_, b_;
 
-	//! Linear solver
-	GMRESSolver<Topo, VectorPtr> gmresSolver_;
-	bool gmresInitialized_;
+	//! Pointers to Jacobians
+	MatrixPtr matA_, matB_;
 
 public:
 	//! default constructor
@@ -149,8 +150,6 @@ private:
 	//! load the masks
 	void loadMasks();
 
-	//! initialize linear solver
-	void initializeGMRES();
 };
 
 #endif
