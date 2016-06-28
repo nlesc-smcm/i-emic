@@ -20,7 +20,9 @@ RtD   = 180/pi;              %[-]     Radians to degrees
 
 %% - READ MASK - -----------------------------------------------------
 
-[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
+[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
+readfort44('fort.44'); 
+
 surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
 landm_int  = landm(2:n+1,2:m+1,2:l+1);
 dx         = (xu(n+1)-xu(1))/n;
@@ -186,13 +188,13 @@ figure(3)
 Tsurf = T(:,:,l);
 minT = T0+min(min(Tsurf));
 maxT = T0+max(max(Tsurf));
-for j = 1:m
-  for i = 1:n
-	if surfm(i,j) == 1
-	   Tsurf(i,j) = -999;
-	end
-  end
-end
+%for j = 1:m
+%  for i = 1:n
+%	if surfm(i,j) == 1
+%	  Tsurf(i,j) = -999;
+%	end
+%  end
+%end
 
 img  = T0 + Tsurf(range,:)';
 contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
@@ -255,13 +257,14 @@ figure(7)
 Ssurf = S(:,:,l);
 minS = S0+min(min(Ssurf));
 maxS = S0+max(max(Ssurf));
-for j = 1:m
-  for i = 1:n
-	if surfm(i,j) == 1
-	   Ssurf(i,j) = -999;
-	end
-  end
-end
+%for j = 1:m
+%  for i = 1:n
+%	if surfm(i,j) == 1
+%	   Ssurf(i,j) = -999;
+%	end
+%  end
+%end
+
 img  = S0 + Ssurf(range,:)';
 contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
 set(gca,'color',[0.65,0.65,0.65]);

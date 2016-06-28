@@ -157,6 +157,9 @@ public:
 	//! compute Jacobian matrix
 	void computeJacobian();
 
+	//! build Preconditioner
+	void buildPreconditioner();
+
 	//! solve Jx=b
 	void solve(VectorPtr b);
 

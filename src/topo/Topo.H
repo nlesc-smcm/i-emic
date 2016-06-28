@@ -321,6 +321,27 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 
 //==================================================================
 template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::buildPreconditioner()
+{
+	// Get our current landmask index
+	k_ = static_cast<int>(std::floor(delta_));
+
+	// // Calculate homotopy factors
+	// double facA = pow(cos(M_PI * delta_ / 2), 2);
+	// double facB = pow(sin(M_PI * delta_ / 2), 2);
+
+	model_->setLandMask(landMasks_[k_]);	
+	model_->computeJacobian();
+	model_->buildPreconditioner();
+
+	combPrec_.A = MatrixPtr();
+	combPrec_.B = MatrixPtr();
+	combPrec_.P = model_->getPreconPtr();
+	combPrec_.isPrec = true;
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::initializeSolver()
 {
 	solverParams_ = rcp(new Teuchos::ParameterList);
@@ -337,16 +358,7 @@ void Topo<Model, ParameterList>::initializeSolver()
 			 solView_->getOceanVector(),
 			 rhs_->getOceanVector()) );
 
-	// Get our current landmask index
-	k_ = static_cast<int>(std::floor(delta_));
-	model_->setLandMask(landMasks_[k_]);	
-	
-	model_->buildPreconditioner();
-
-	combPrec_.A = MatrixPtr();
-	combPrec_.B = MatrixPtr();
-	combPrec_.P = model_->getPreconPtr();
-	combPrec_.isPrec = true;
+	buildPreconditioner();
 
 	Teuchos::RCP<Combined_Operator<Model> > combPrecPtr =
 		Teuchos::rcp(&combPrec_, false);
@@ -398,12 +410,8 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	if (!solverInitialized_)
 		initializeSolver();	
 
-	// Get our current landmask index
-	k_ = static_cast<int>(std::floor(delta_));
-	model_->setLandMask(landMasks_[k_]);	
-
 	// Get new preconditioner
-	model_->buildPreconditioner();
+	buildPreconditioner();
 
 	// Initialize to zero
 	solView_->scale(0.0);
@@ -426,7 +434,6 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 		INFO("Ocean: exception caught: " << e.what());
 	}
 
-
 	INFO("  TOPO:  solve... done");
 	TIMER_STOP("  TOPO:  solve...");
 
@@ -435,7 +442,6 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	INFO("  TOPO: FGMRES, i = " << iters << ", ||r|| = " << tol);
 	
 	TRACK_ITERATIONS("  TOPO: FGMRES iterations...", iters);
-
 	
 	computeResidual(b);
 }
