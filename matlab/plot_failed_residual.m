@@ -14,7 +14,7 @@ reso = load('failed_rhs.ocean');
 pcol = [.3 .3 .3];
 
 % parallel grid dimensions (horizontal)
-npN = 3;
+npN = 1;
 npM = 1;
 Ndim = floor(n / npN) * ones(npN,1);
 Mdim = floor(m / npM) * ones(npM,1);
@@ -36,6 +36,7 @@ norm(reso)
 L = l-1;
 
 Uo = zeros(m,n); % zonal velocity
+Wo = zeros(m,n); % vertical velocity	
 To = zeros(m,n); % temperature
 TL = zeros(m,n); %
 So = zeros(m,n); %
@@ -60,6 +61,7 @@ dim = m*n*l*nun;
 for j = 1:m
   for i = 1:n
 	Uo(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l,1));	
+	Wo(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l,3));	
 	To(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l,5));	
 	TL(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,L,5));
 	LM(m-j+1,i) = surfm(i,j);
@@ -77,7 +79,7 @@ figure(1);
 v = [1 1];
 imagesc(To); title('surface temperature residual'); colorbar
 hold on;
-contour(mx*P,[-1e-10,0,1e-10],'--','color',pcol);
+contour(mx*P,[-1e-10,0,1e-10])
 if norm(LM)
   contour(mx*LM,2);
 end
@@ -89,7 +91,7 @@ figure(2);
 mx = max(max(abs(TL)));
 imagesc(TL); title(['temperature residual in layer ', num2str(L)]); colorbar
 hold on;
-contour(mx*P,[-1e-10,0,1e-10],'--','color',pcol)
+contour(mx*P,[-1e-10,0,1e-10])
 if norm(LM)
   contour(mx*LM,2);
 end
@@ -99,7 +101,7 @@ exportfig('failed_residual_layer.eps',12,[20,12]);
 figure(3); imagesc(So); title('surface salinity residual');  colorbar
 mx = max(max(abs(So)));
 hold on;
-contour(mx*P,[-1e-10,0,1e-10],'--','color',pcol);
+contour(mx*P,[-1e-10,0,1e-10])
 if norm(LM)
   contour(mx*LM,2);
 end
@@ -109,7 +111,7 @@ exportfig('failed_residual_salinity.eps',12,[20,12]);
 %figure(4); imagesc(Ta); title('atmosphere temperature residual');colorbar
 %mx = max(max(abs(Ta)));
 %hold on;
-%contour(mx*P,[-1e-10,0,1e-10],'--','color',pcol);
+%contour(mx*P,[-1e-10,0,1e-10])
 if norm(LM)
 %contour(mx*LM,2);
 end
@@ -119,7 +121,7 @@ end
 figure(5); imagesc(Uo); title('surface zonal velocity');colorbar
 mx = max(max(abs(Uo)));
 hold on;
-contour(mx*P,[-1e-10,0,1e-10],'--','color',pcol);
+contour(mx*P,[-1e-10,0,1e-10])
 if norm(LM)
   contour(mx*LM,2);
 end
@@ -129,8 +131,10 @@ exportfig('failed_residual_zonal.eps',12,[20,12]);
 figure(6); imagesc(Po); title('surface pressure');colorbar
 mx = max(max(abs(Uo)));
 hold on;
-contour(mx*P,[-1e-10,0,1e-10],'--','color',pcol);
+contour(mx*P,[-1e-10,0,1e-10])
 if norm(LM)
   contour(mx*LM,2);
 end
 hold off
+
+figure(7); imagesc(Wo); title('vertical velocity');colorbar

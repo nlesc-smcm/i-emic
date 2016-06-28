@@ -212,7 +212,8 @@ public:
 	void setLandMask(LandMask mask);
 
 	//! Apply landmask to state
-	void applyLandMask(LandMask mask1, LandMask mask2);	
+	void applyLandMask(LandMask mask, double factor);	
+	void applyLandMask(LandMask mask1, LandMask mask2, double factor);	
 	
 	//! Pre and post-convergence processing
 	void preProcess();

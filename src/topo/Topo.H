@@ -42,7 +42,8 @@ Topo(Model model, ParameterList pars)
 	loadMaskFileNames();
 	loadMasks();
 	
-	model_->setLandMask(landMasks_[0]);	
+	model_->setLandMask(landMasks_[0]);
+	model_->applyLandMask(landMasks_[0], 1.0);
 	
 	// We initialize our vectors with the ones in the model.
 	stateView_ = model_->getState('V');
@@ -215,41 +216,37 @@ void Topo<Model, ParameterList>::computeRHS()
 	// Calculate homotopy factors
 	double facA = pow(cos(M_PI * delta_ / 2), 2);
 	double facB = pow(sin(M_PI * delta_ / 2), 2);
-	
-	// Evaluate and compute RHS
-	model_->computeRHS();
-	INFO("   norm RHS     = " << model_->getRHS('V')->norm());
 
-	// Set landmask (A) in the model
+ 	// Set landmask (A) in the model
 	model_->setLandMask(landMasks_[a_[k_]]);
-
-	// Evaluate and compute RHS
+	model_->applyLandMask(landMasks_[a_[k_]], facA);
+	
+	// Evaluate and compute RHS (A)
 	model_->computeRHS();
 
 	// Let our rhs_ point to a copy of the RHS in the model
 	*rhs_ = *model_->getRHS('C');
 	INFO("   norm RHS (A) = " << rhs_->norm() << " facA = " << facA);
 
-	// Multiply RHS (A) with its homotopy factor
-	rhs_->scale(facA);
-
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
+	model_->applyLandMask(landMasks_[b_[k_]], facB);
 
-	// Evaluate and compute RHS
+	// Evaluate and compute RHS (B)
 	model_->computeRHS();
 	
 	// Obtain copy of the RHS in the model
-	VectorPtr rhstmp = model_->getRHS('C');
-	INFO("   norm RHS (B) = " << rhstmp->norm() << " facB = " << facB);
+	VectorPtr rhsA = model_->getRHS('C');
+	INFO("   norm RHS (B) = " << rhsA->norm() << " facB = " << facB);
 
-	// Multiply RHS (B) with its homotopy factor
-	rhstmp->scale(facB);
-
-	// Add RHS(B) to RHS(A)
-	rhs_->update(1.0, *rhstmp, 1.0);
+	// Add facB * RHS(B) to facA * RHS(A)
+	rhs_->update(facB, *rhsA, facA);
 
 	INFO("   norm facB*B+facA*A = " << rhs_->norm());
+
+	// Set landmask (A) in the model
+	model_->setLandMask(landMasks_[a_[k_]]);
+	model_->applyLandMask(landMasks_[a_[k_]], facA);
 
 	INFO("Topo: computeRHS... done");
 }
@@ -267,11 +264,15 @@ void Topo<Model, ParameterList>::computeJacobian()
 
 	// Get Jacobians
 	model_->setLandMask(landMasks_[a_[k_]]);
+	model_->applyLandMask(landMasks_[a_[k_]], facA);
+
 	model_->computeJacobian();
 	*matA_ = *model_->getJacobian();
 	matA_->Scale(facA);
 
 	model_->setLandMask(landMasks_[b_[k_]]);
+	model_->applyLandMask(landMasks_[b_[k_]], facB);
+
 	model_->computeJacobian();
 	*matB_ = *model_->getJacobian();
 	matB_->Scale(facB);
@@ -282,7 +283,6 @@ void Topo<Model, ParameterList>::computeJacobian()
 	combMat_.isPrec = false;
 }
 
-
 //==================================================================
 template<typename Model, typename ParameterList>
 double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
@@ -291,28 +291,20 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 	k_ = static_cast<int>(std::floor(delta_));
 
 	// // Calculate homotopy factors
-	double facA = pow(cos(M_PI * delta_ / 2), 2);
-	double facB = pow(sin(M_PI * delta_ / 2), 2);
+	// double facA = pow(cos(M_PI * delta_ / 2), 2);
+	// double facB = pow(sin(M_PI * delta_ / 2), 2);
 
 	Vector resA = *getSolution('C');
 	Vector resB = *getSolution('C');
 	
-	// Set landmask (A) in the model
-	model_->setLandMask(landMasks_[a_[k_]]);
-	
-	// Compute Jacobian (A)
-	model_->computeJacobian();
-	model_->applyMatrix(*solView_, resA);
+	combMat_.A->Apply(*solView_->getOceanVector(),
+					  *resA.getOceanVector());
 
-	// Set landmask (B) in the model
-	model_->setLandMask(landMasks_[b_[k_]]);
-
-	// Compute Jacobian (B)
-	model_->computeJacobian();
-	model_->applyMatrix(*solView_, resB);
+	combMat_.B->Apply(*solView_->getOceanVector(),
+					  *resB.getOceanVector());
 	
-	resA.update(1.0, *b, -facA);
-	resB.update(1.0, resA, -facB);
+	resA.update(1.0, *b, -1.0);
+	resB.update(1.0, resA, -1.0);
 	double res = resB.norm() / b->norm();
 	INFO(" Topo residual: " << res);
 
@@ -330,7 +322,8 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	// double facA = pow(cos(M_PI * delta_ / 2), 2);
 	// double facB = pow(sin(M_PI * delta_ / 2), 2);
 
-	model_->setLandMask(landMasks_[k_]);	
+	model_->setLandMask(landMasks_[k_]);
+	model_->applyLandMask(landMasks_[k_], 1.0);		
 	model_->computeJacobian();
 	model_->buildPreconditioner();
 
@@ -442,7 +435,7 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	INFO("  TOPO: FGMRES, i = " << iters << ", ||r|| = " << tol);
 	
 	TRACK_ITERATIONS("  TOPO: FGMRES iterations...", iters);
-	
+
 	computeResidual(b);
 }
 
