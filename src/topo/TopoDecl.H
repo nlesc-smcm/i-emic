@@ -55,6 +55,7 @@ public:
 	using MatrixPtr = typename Model::element_type::MatrixPtr;
 	using Matrix    = typename MatrixPtr::element_type;
 	using PreconPtr = typename Model::element_type::PreconPtr;
+	using Precon    = typename PreconPtr::element_type;
 	using LandMask  = typename Model::element_type::LandMask;
 
 private: 
@@ -94,6 +95,9 @@ private:
 	//!  k_ = floor(delta_)
 	int k_;
 
+	//! Homotopy factors
+	double facA_, facB_;
+
  	//! Vectors of integers for selecting the right landmask.
 	//!  a_[i+1] = a_[i] + 2 * ((k_+1) % 2); a_[0] = 0
 	//!  b_[i+1] = b_[i] + 2 * ( k_ % 2 );   b_[0] = 1
@@ -101,6 +105,9 @@ private:
 
 	//! Pointers to Jacobians
 	MatrixPtr matA_, matB_;
+
+	//! Pointers to preconditioner
+	PreconPtr precA_, precB_;
 
 	//! Combined operators
 	Combined_Operator<Model> combMat_;
@@ -117,8 +124,11 @@ private:
 	<Belos::BlockGmresSolMgr
 	<double, Epetra_MultiVector, Combined_Operator<Model> > > belosSolver_;
 
-	// Initialization flag
+	//! Initialization flag
 	bool solverInitialized_;
+
+	//! Array keeping track of initialized preconditioners
+	std::vector<bool> initPrecs_;
 
 public:	
 	//! default constructor
@@ -134,6 +144,7 @@ public:
 	double getPar();
 
 	//! set continuation parameter
+	//!  this also sets k_, facA_ and facB_
 	void setPar(double par);
 
 	//! get the state of the model
@@ -207,7 +218,10 @@ struct Combined_Operator
 	using PreconPtr = typename Model::element_type::PreconPtr;
 	MatrixPtr A;
 	MatrixPtr B;
-	PreconPtr P;
+	PreconPtr PA;
+	PreconPtr PB;
+	double facA;
+	double facB;
 	bool isPrec;
 };
 
@@ -229,13 +243,18 @@ namespace Belos
 			   int trans = 0)
 			{
 				if (Op.isPrec)
-					Op.P->ApplyInverse(x, y);
+				{
+					Epetra_MultiVector tmp = y;										
+					Op.PA->ApplyInverse(x, tmp);
+					Op.PB->ApplyInverse(x, y);
+					y.Update(Op.facA, tmp, Op.facB);
+				}
 				else
 				{
 					Epetra_MultiVector tmp = y;
 					Op.A->Apply(x, tmp);
 					Op.B->Apply(x, y);
-					y.Update(1.0, tmp, 1.0);
+					y.Update(Op.facA, tmp, Op.facB);
 				}
 			}
 		

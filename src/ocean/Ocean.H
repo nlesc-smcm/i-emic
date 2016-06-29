@@ -187,7 +187,7 @@ public:
 	void recomputePreconditioner() { recompPreconditioner_ = true; }
 
  	//! Build preconditioner
-	void buildPreconditioner();
+	void buildPreconditioner(bool forceInit = false);
 
 	//! Get pointer to preconditioning operator
 	PreconPtr getPreconPtr(){ return precPtr_;}
@@ -209,7 +209,7 @@ public:
 	LandMask getLandMask(std::string const & fname);
 
 	//! Set global and local (distributed) landmask arrays
-	void setLandMask(LandMask mask);
+	void setLandMask(LandMask mask, bool global = false);
 
 	//! Apply landmask to state
 	void applyLandMask(LandMask mask, double factor);	

@@ -197,11 +197,14 @@ maxT = T0+max(max(Tsurf));
 %end
 
 img  = T0 + Tsurf(range,:)';
-contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
-set(gca,'color',[0.65,0.65,0.65]);
-image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
-contours = linspace(minT,maxT,40);
-contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1);
+% contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
+% set(gca,'color',[0.65,0.65,0.65]);
+% image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
+% contours = linspace(minT,maxT,40);
+%contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1);
+imagesc(img);
+set(gca,'ydir','normal');
+grid on;
 hold off
 
 caxis([minT,maxT]);
@@ -266,11 +269,15 @@ maxS = S0+max(max(Ssurf));
 %end
 
 img  = S0 + Ssurf(range,:)';
-contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
-set(gca,'color',[0.65,0.65,0.65]);
-image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
-contours = linspace(minS,maxS,40);
-contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1); hold off
+% contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
+% set(gca,'color',[0.65,0.65,0.65]);
+% image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
+% contours = linspace(minS,maxS,40);
+% contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1); hold off
+
+imagesc(img);
+set(gca,'ydir','normal');
+grid on
 caxis([minS,maxS]);
 colorbar
 title('Surface Salinity', 'interpreter', 'none');

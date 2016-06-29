@@ -242,10 +242,12 @@ Ocean::LandMask Ocean::getLandMask(std::string const & fname)
 }
 
 //===================================================================
-void Ocean::setLandMask(LandMask mask)
+void Ocean::setLandMask(LandMask mask, bool global)
 {
 	THCM::Instance().setLandMask(mask.local);
-	THCM::Instance().setLandMask(mask.global);
+
+	if (global)
+		THCM::Instance().setLandMask(mask.global);
 }
 
 //==================================================================
@@ -284,12 +286,13 @@ void Ocean::applyLandMask(LandMask mask1, LandMask mask2, double factor)
 //==================================================================
 void Ocean::applyLandMask(LandMask mask, double factor)
 {
-	/*
+	
 	int nmask = mask.global->size();
 	assert(nmask == (M_+2)*(N_+2)*(L_+2));
 	
 	int idx1, idx2;
 	int lid;
+	int ii;
 
 	for (int k = 1; k != L_+1; ++k)
 		for (int j = 1; j != M_+1; ++j)
@@ -297,18 +300,17 @@ void Ocean::applyLandMask(LandMask mask, double factor)
 			{
 				idx1 = k*(M_+2)*(N_+2) + j*(N_+2) + i;
 				idx2 = (k-1)*M_*N_ + (j-1)*N_ + i-1;
-				
-				if ((*mask.global)[idx1])
+
+				if ((*mask.global)[idx1])  // On land
 				{
-					for (int ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
+					for (ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
 					{
-						lid = state_->Map().LID(ii);
-						if (lid >= 0) // means our proc has it
-							(*state_)[ii] *= (1.0 - factor);
+						lid = state_->Map().LID(ii); // Local ID of this point			
+						if (lid >= 0)
+							(*state_)[lid] *= factor;
 					}
 				}
 			}
-	*/
 }
 
 //====================================================================
@@ -724,9 +726,9 @@ void Ocean::applyMatrix(SuperVector const &v, SuperVector &out)
 }
 
 //====================================================================
-void Ocean::buildPreconditioner()
+void Ocean::buildPreconditioner(bool forceInit)
 {
-	if (!precInitialized_) // Initialize preconditioner
+	if (!precInitialized_ || forceInit) // Initialize preconditioner
 		initializePreconditioner();
 
 	if (recompPreconditioner_)
