@@ -225,7 +225,9 @@ exportfig('sst.eps',10,[50,25])
 
 %% -------------------------------------------------------
 figure(4)
-contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
+%contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
+imagesc(Tl'+T0);
+set(gca,'ydir','normal');
 %pcolor(RtD*yv(1:end-1),z*hdim,Tl'+T0);
 colorbar
 title('Temperature')
@@ -246,7 +248,9 @@ end
 %%
 figure(6)
 Sp = squeeze(mean(S,1)); 
-contourf(RtD*yv(1:end-1),z*hdim,Sp'+S0,15);
+%contourf(RtD*yv(1:end-1),z*hdim,Sp'+S0,15);
+imagesc(Sp'+S0);
+set(gca,'ydir','normal')
 %pcolor(RtD*yv(1:end-1),z*hdim,Sp'+S0);
 colorbar
 title('Isohalines')

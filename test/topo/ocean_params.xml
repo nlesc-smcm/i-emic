@@ -36,7 +36,7 @@
     <!-- northern domain bound -->
     <Parameter name="Global Bound ymax" type="double" value="80"/>
     <!-- periodic boundary conditions in x-direction -->
-    <Parameter name="Periodic" type="bool" value="0"/>
+    <Parameter name="Periodic" type="bool" value="1"/>
     <!-- depth of the ocean -->
     <Parameter name="Depth hdim" type="double" value="4000"/>
     

@@ -468,11 +468,11 @@ void Topo<Model, ParameterList>::postProcess()
 	model_->setLandMask(landMasks_[r], true);
 
 	// If we are near a landmask we reset new land values
-	if (std::abs(facA_) < 1e-1)
+	if (std::abs(facA_) < 1e-3)
 	{
 		model_->applyLandMask(landMasks_[b_[k_]], 0.0);
 	}
-	else if (std::abs(facB_) < 1e-1)
+	else if (std::abs(facB_) < 1e-3)
 	{
 		model_->applyLandMask(landMasks_[a_[k_]], 0.0);
 	}
