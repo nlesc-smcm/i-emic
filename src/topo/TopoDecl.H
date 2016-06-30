@@ -111,7 +111,10 @@ private:
 
 	//! Combined operators
 	Combined_Operator<Model> combMat_;
-	Combined_Operator<Model> combPrec_;	
+	Combined_Operator<Model> combPrec_;
+
+	//! If every converged state deserves to be stored, enable this
+	bool storeEverything_;
 
 	//! Solver parameterlist
 	ParameterList solverParams_, belosParamList_;

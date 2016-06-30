@@ -263,15 +263,16 @@ public:
  
 	void setParameters(Teuchos::RCP<Teuchos::ParameterList> pars);
 	
+ 	void copyFiles();
+ 	void copyFiles(std::string const &fname);
 private:
 	// HDF5-based save and load functions for the state and parameters
 	int loadStateFromFile(std::string const &name);
 	int saveStateToFile(std::string const &name);
 
-	// Write the state of the ocean to traditional fortrain out files fort.*
+	// Write the state of the ocean to traditional fortran out files fort.*
 	// Use matlab plot-scripts for visualization 
 	void printFiles();
-	void copyFiles();
 
 	// Initializer members
 	void initializeOcean();

@@ -28,6 +28,7 @@ Topo(Model model, ParameterList pars)
 	pars_               (pars),
 	nMasks_             (pars->get("Number of mask files", 0)),
 	delta_              (pars->get("Delta", 0.0)),
+	storeEverything_    (pars->get("Store everything", false)),
 	solverInitialized_  (false)
 {
 	INFO("Topo constructor...");
@@ -478,6 +479,13 @@ void Topo<Model, ParameterList>::postProcess()
 	}
 	
 	model_->postProcess();
+
+	if (storeEverything_)
+	{
+		std::stringstream fname;
+		fname << "state_topo_" << delta_;
+		model_->copyFiles(fname.str());
+	}
 }
 
 #endif

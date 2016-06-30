@@ -17,10 +17,9 @@ Continuation<Model, ParameterList>::
 Continuation(Model model, ParameterList pars)
 	:
 	model_(model),
-	ds_                    (pars->get("initial step size", 0.02)),
+	dsInit_                (pars->get("initial step size", 0.02)),
 	dsMin_                 (pars->get("minimum step size", 1.0e-5)),
 	dsMax_                 (pars->get("maximum step size", 1.0e01)),
-	parDest_               (pars->get("parameter destination", 1.0)),
 	scale1_                (pars->get("increase step size", 1.25)),
 	scale2_                (pars->get("decrease step size", 1.25)),
 	epsilon_               (pars->get("epsilon increment", 1.0e-8)),
@@ -40,7 +39,25 @@ Continuation(Model model, ParameterList pars)
 	newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
 	signMonitor_           (0)
 {
-
+	// Set the step size
+	ds_ = dsInit_;
+	
+	// Get the parameter destinations	
+	double dest;
+	for (int i = 0; i != 999; ++i)
+	{
+		std::stringstream destID;
+		destID << "intermediate destination " << i;		
+		dest = pars->get(destID.str().c_str(), -999.0);
+		if (std::abs(dest + 999.) < 1e-7)
+			break;
+		
+		destinations_.push_back(dest);
+		destID.str("");
+		destID.clear();
+	}
+	destinations_.push_back(pars->get("parameter destination", 1.0));
+	
 	// Get views of the important components of the model
 	stateView_ = model_->getState('V');
 	rhsView_   = model_->getRHS('V');
@@ -531,7 +548,8 @@ runBackTracking(VectorPtr stateDir, double parDir)
 
 	for (backTrack_ = 0; backTrack_ != numBackTrackingSteps_; ++backTrack_)
 	{
-	  if (normRHStest_ < normRHS_ * increase && normRHStest_ < ceiling) // we should allow for a significant increase
+		// we allow for a significant increase
+		if (normRHStest_ < normRHS_ * increase && normRHStest_ < ceiling) 
 			break;
 
 		// Apply reduction to the model state and its parameter
@@ -564,35 +582,59 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 detect(char mode)
 {
-	par_ = model_->getPar(); // just to be on the safe side
-	double f0 = storage_.par0 - parDest_;
-	double f1 =          par_ - parDest_;
-
-	if (signMonitor_ == 0) // initialization
-		signMonitor_ = SGN(f1);
-	
-	if (signMonitor_ != SGN(f1)) // secant convergence
+	int idx = 0;
+	bool busy = false;
+	for (auto &dest: destinations_)
 	{
-		INFO("Continuation::detect():  sign switch in f1 detected");
-		secant_ = true;
-	}
+		idx++; // counter
+		
+		par_ = model_->getPar(); // just to be on the safe side
+		double f0 = storage_.par0 - dest;
+		double f1 =          par_ - dest;
+		
+		if (signMonitor_ == 0) // initialization
+			signMonitor_ = SGN(f1);
+		
+		if (signMonitor_ != SGN(f1)) // secant convergence
+		{
+			INFO("Continuation::detect():  sign switch in f1 detected");
+			secant_     = true;
+			activeDest_ = dest;
+		}
 
-	if (secant_)
-	{
-		INFO("  secant: f1 = " << f1 << " f0 = " << f0);
-		INFO("          ds = " << ds_);
-		ds_ = -f1 * ds_ / (f1 - f0); // secant method
-		INFO("          ds = " << ds_);
-		createTangent('S');
-	}
+		busy = (secant_ && (std::abs(activeDest_ - dest) < 1e-7));
+		
+		if (busy)
+		{
+			INFO("  secant: f1 = " << f1 << " f0 = " << f0);
+			INFO("          ds = " << ds_);
+			ds_ = -f1 * ds_ / (f1 - f0);   // secant method
+			INFO("          ds = " << ds_);
+			createTangent('S');
+		}
 
-	signMonitor_ = SGN(f1);
-	
-	if (secant_)
-		INFO("  |par - pardest| = " << std::abs(f1));
-	
-	if (secant_ && std::abs(f1) < destinationTolerance_)
-		destinationReached_ = true;
+		signMonitor_ = SGN(f1);	
+		
+		if (busy && std::abs(f1) < destinationTolerance_)
+		{
+			if (idx == destinations_.size())
+				destinationReached_ = true;
+			else
+			{
+				// Get the algorithm ready to proceed with the continuation
+				secant_ = false;
+				signMonitor_ = 0;
+				ds_ = dsInit_;
+				destinations_.erase(destinations_.begin() + idx - 1);
+			}
+		}
+		
+		if (busy)
+		{
+			INFO("  |par - dest| = " << std::abs(f1));
+			break; 
+		}
+	}
 }
 
 //======================================================================
@@ -783,7 +825,8 @@ info()
 	INFO("Continuation summary, " << std::asctime(std::localtime(&result))); 
 	INFO("        step size:  " << ds_);
 	INFO("  parameter value:  " << par_);
-	INFO("      destination:  " << parDest_);
+	INFO("    destination f:  " << destinations_.front());
+	INFO("    destination b:  " << destinations_.back());
 	INFO("        d/ds(par):  " << parDot_);
 
 	if (maxSteps_ >= 0)

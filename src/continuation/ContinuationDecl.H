@@ -1,5 +1,5 @@
 //======================================================================
-// Author T.E.Mulder --> t.e.mulder@uu.nl
+// Author T.E.Mulder 2014/2015/2016 (t.e.mulder@uu.nl)
 //======================================================================
 #ifndef CONTINUATIONDECL_H
 #define CONTINUATIONDECL_H
@@ -62,11 +62,13 @@ class Continuation
 	std::vector<double> parHist_;        // parameter history
 	std::vector<double> stateNormHist_;  // state history
 	
-	double ds_;    // continuation step-size
-	double dsMin_; // minimum continuation step-size
-	double dsMax_; // maximum continuation step-size
+	double ds_;     // continuation step-size
+	double dsInit_; // initial continuation step-size
+	double dsMin_;  // minimum continuation step-size
+	double dsMax_;  // maximum continuation step-size
 
-	double parDest_; // parameter destination
+	std::vector<double> destinations_; // parameter destinations
+	double activeDest_; // the active destination in detect()
 
 	double zeta_;  // additional scaling for stateDot
 
@@ -162,16 +164,16 @@ private:
 	// Compute the derivative of F with respect to
 	// the continuation parameter. Mode governs the
 	// computation of the RHS in the model.
-	// Modes: 'F' --> force compute RHS
-	//        'A' --> do not force compute RHS
+	// Modes: 'F' : force compute RHS
+	//        'A' : do not force compute RHS
 	void computeDFDPar(char mode = 'A');
 	void eulerPredictor();
 	int  newtonCorrector();
 	int  runBackTracking(VectorPtr stateDir, double parDir);
 
 	// Detect special points.
-	// Modes: 'D' --> converge on destination
-	//        'P' --> converge on first sign switch in parDot
+	// Modes: 'D' : converge on destination
+	//        'P' : converge on first sign switch in parDot (not impl yet)
 	void detect(char mode = 'D');	
 	void adjustStep();
 	void reset();

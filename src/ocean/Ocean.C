@@ -924,6 +924,28 @@ void Ocean::copyFiles()
 }
 
 //=====================================================================
+void Ocean::copyFiles(std::string const &filename)
+{
+	if (comm_->MyPID() == 0)
+	{		
+		INFO("copying fort.3 to " << filename);
+		std::ifstream src1("fort.3", std::ios::binary);
+		std::ofstream dst1(filename.c_str(), std::ios::binary);
+		dst1 << src1.rdbuf();
+		
+		if (saveState_) // Copy hdf5
+		{
+			std::string fnameCpy(filename);
+			fnameCpy.append(".h5");
+			INFO("copying " << outputFile_ << " to " << fnameCpy);
+			std::ifstream src2(outputFile_.c_str(), std::ios::binary);
+			std::ofstream dst2(fnameCpy.c_str(), std::ios::binary);
+			dst2 << src2.rdbuf();
+		}
+	}
+}
+
+//=====================================================================
 int Ocean::saveStateToFile(std::string const &filename)
 {	
 	INFO("Writing to " << filename);
