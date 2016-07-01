@@ -51,6 +51,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
 	loadState_           (oceanParamList->get("Load state", false)),
 	saveState_           (oceanParamList->get("Save state", false)),
+	saveMask_            (oceanParamList->get("Save mask", true)),
 	storeEverything_     (oceanParamList->get("Store everything", false)),
 
 	parName_             (oceanParamList->get("Continuation parameter",
@@ -941,6 +942,25 @@ void Ocean::copyFiles(std::string const &filename)
 			std::ofstream dst2(fnameCpy.c_str(), std::ios::binary);
 			dst2 << src2.rdbuf();
 		}
+	}
+}
+
+//==================================================================
+void Ocean::copyMask(std::string const &filename)
+{
+	if (comm_->MyPID() == 0)
+	{		
+		if (saveMask_) // Copy fort.44
+		{
+			std::string fnameCpy(filename);
+			fnameCpy.append(".mask");
+			INFO("copying " << "fort.44" << " to " << fnameCpy);
+			std::ifstream src2("fort.44", std::ios::binary);
+			std::ofstream dst2(fnameCpy.c_str(), std::ios::binary);
+			dst2 << src2.rdbuf();
+		}
+		else
+			WARNING("Saving mask not enabled in Ocean.", __FILE__, __LINE__);
 	}
 }
 

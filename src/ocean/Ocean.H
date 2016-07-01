@@ -126,6 +126,7 @@ protected:
 	// Flags for loading/saving states from/to hfd5 file
 	bool loadState_;
 	bool saveState_;
+	bool saveMask_;
 
 	// Enable saving every state in multiple formats
 	bool storeEverything_;
@@ -265,6 +266,7 @@ public:
 	
  	void copyFiles();
  	void copyFiles(std::string const &fname);
+	void copyMask(std::string const &fname);
 private:
 	// HDF5-based save and load functions for the state and parameters
 	int loadStateFromFile(std::string const &name);
