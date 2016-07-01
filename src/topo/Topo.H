@@ -152,6 +152,11 @@ void Topo<Model, ParameterList>::setPar(double par)
 	facA_  = pow(cos(M_PI * delta_ / 2), 2);
 	facB_  = pow(sin(M_PI * delta_ / 2), 2);
 
+	// ALTERNATIVE
+	// double dhat = delta_ - k_;
+	// facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
+	// facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
+
 	// correct for small values
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
 	facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
@@ -160,6 +165,14 @@ void Topo<Model, ParameterList>::setPar(double par)
 		 " k = " << k_ <<
 		 " facA = " << facA_ <<
 		 " facB = " << facB_  << "  <><>  ");
+
+	if (std::abs(facA_ + facB_ - 1.0) > 1e-7)
+	{
+		std::stringstream errmsg;
+		errmsg << "facA and facB do not add up to 1.0";
+		errmsg << " facA + facB = " << facA_ + facB_;
+		ERROR(errmsg.str(), __FILE__, __LINE__);
+	}
 }
 
 //==================================================================
