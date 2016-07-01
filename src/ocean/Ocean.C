@@ -68,7 +68,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	//  instance at a time. The Ocean class can access THCM with a call
 	//  to THCM::Instance()
 	thcm_ = rcp(new THCM(thcmList, comm_));
-	INFO("Ocean: continuation parameter value: " << getPar());
 	
 	// Obtain solution vector from THCM
 	state_ = THCM::Instance().getSolution();

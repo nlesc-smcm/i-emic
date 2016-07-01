@@ -35,6 +35,9 @@ Topo(Model model, ParameterList pars)
 
 	double nrm1, nrm2;
 
+	// Set the parameter and coefficients
+	setPar(delta_);
+
 	model_->computeRHS();
 	nrm1 = model_->getRHS('V')->norm();
 	INFO("   norm RHS (1) = " << nrm1);
@@ -134,14 +137,29 @@ double Topo<Model, ParameterList>::getPar()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::setPar(double par)
 {
+	if (par < 0 || par > nMasks_ - 1)
+	{
+		std::stringstream err;
+		err << "Topo: invalid parameter, par = " << par; 
+		ERROR(err.str(), __FILE__, __LINE__);
+	}
+
+	// set parameter
 	delta_ = par;
+
+	// calculate index and coefficients
 	k_     = static_cast<int>(std::floor(delta_));
 	facA_  = pow(cos(M_PI * delta_ / 2), 2);
 	facB_  = pow(sin(M_PI * delta_ / 2), 2);
-	INFO("++++ delta = " << delta_ <<
+
+	// correct for small values
+	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
+	facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
+	
+	INFO("  <><>  delta = " << delta_ <<
 		 " k = " << k_ <<
 		 " facA = " << facA_ <<
-		 " facB = " << facB_ );
+		 " facB = " << facB_  << "  <><>  ");
 }
 
 //==================================================================
@@ -226,7 +244,8 @@ void Topo<Model, ParameterList>::computeRHS()
 	// Get a copy of RHS (A)
 	VectorPtr rhsA = model_->getRHS('C');
 
-	INFO("    ||RHS (A)|| = " << facA_ * rhsA->norm());
+	INFO("    ||F(A)|| = " <<  rhsA->norm() <<
+		 " facA " << facA_ << " : " << facA_ * rhsA->norm());
 
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
@@ -237,12 +256,13 @@ void Topo<Model, ParameterList>::computeRHS()
 	// Let our rhs be a view
 	*rhs_ = *model_->getRHS('V');
 
- 	INFO("    ||RHS (B)|| = " << facB_ * rhs_->norm());
+	INFO("    ||F(B)|| = " <<  rhs_->norm() <<
+		 " facB " << facB_ << " : " << facB_ * rhs_->norm());
 
 	// Add facB * RHS(B) to facA * RHS(A)
 	rhs_->update(facA_, *rhsA, facB_);
 
-	INFO("    ||RHS (A) + RHS (B)|| = " << rhs_->norm());
+	INFO("    ||F(A) + F(B)|| = " << rhs_->norm());
 }
 
 //==================================================================

@@ -44,10 +44,10 @@ Continuation(Model model, ParameterList pars)
 	
 	// Get the parameter destinations	
 	double dest;
+	std::stringstream destID;
 	for (int i = 0; i != 999; ++i)
 	{
-		std::stringstream destID;
-		destID << "intermediate destination " << i;		
+		destID << "destination " << i;		
 		dest = pars->get(destID.str().c_str(), -999.0);
 		if (std::abs(dest + 999.) < 1e-7)
 			break;
@@ -56,7 +56,6 @@ Continuation(Model model, ParameterList pars)
 		destID.str("");
 		destID.clear();
 	}
-	destinations_.push_back(pars->get("parameter destination", 1.0));
 	
 	// Get views of the important components of the model
 	stateView_ = model_->getState('V');
@@ -595,9 +594,10 @@ detect(char mode)
 		if (signMonitor_ == 0) // initialization
 			signMonitor_ = SGN(f1);
 		
-		if (signMonitor_ != SGN(f1)) // secant convergence
+		if (signMonitor_ != SGN(f1) && !secant_) // secant convergence
 		{
 			INFO("Continuation::detect():  sign switch in f1 detected");
+						
 			secant_     = true;
 			activeDest_ = dest;
 		}
@@ -622,9 +622,9 @@ detect(char mode)
 			else
 			{
 				// Get the algorithm ready to proceed with the continuation
-				secant_ = false;
+				secant_      = false;
 				signMonitor_ = 0;
-				ds_ = dsInit_;
+				ds_          = dsInit_;
 				destinations_.erase(destinations_.begin() + idx - 1);
 			}
 		}
@@ -713,7 +713,8 @@ reset()
 	INFO("| -------------------------------------------  ");
 	
 	restore();
-	ds_ = MAX(ds_ / scale2_, dsMin_);
+	int s = SGN(ds_);	
+	ds_ = s * MAX(s * ds_ / scale2_, dsMin_);
 	
 	INFO("|      new norm state: " << stateView_->norm());
 	INFO("|             new par: " << par_);
