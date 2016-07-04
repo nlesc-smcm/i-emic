@@ -83,10 +83,15 @@ private:
 	//!  is initialized with a view from the model's state
 	VectorPtr stateView_;
 
+	//! We keep our own stateDot
+	VectorPtr stateDot_;
+
 	//! Right hand side
 	//!  is initialized with a copy from the model's rhs	
 	VectorPtr rhs_;
 
+	//! Derivative with respect to delta
+	VectorPtr dFdPar_;
 	//! Solution from solve()
 	//!  is initialized with a view from the model's solution	
 	VectorPtr solView_;
@@ -170,6 +175,9 @@ public:
 
 	//! compute Jacobian matrix
 	void computeJacobian();
+
+	//! compute derivative of RHS with respect to delta
+	void computeDFDPar();
 
 	//! build Preconditioner
 	void buildPreconditioner();

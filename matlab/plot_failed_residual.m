@@ -8,7 +8,7 @@ surfm = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
 %reso = load('solution.ocean');
 
 %resa = load('failed_rhs.atmos');
-reso = load('failed_rhs.ocean');
+reso = load('xdot.ocean');
 
 % pargrid line color
 pcol = [.3 .3 .3];

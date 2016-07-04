@@ -47,10 +47,12 @@ Topo(Model model, ParameterList pars)
 	
 	model_->setLandMask(landMasks_[0], true);
 	
-	// We initialize our vectors with the ones in the model.
+	// We initialize our vectors with model vectors.
 	stateView_ = model_->getState('V');
 	solView_   = model_->getSolution('V');
-	rhs_       = model_->getRHS('C');	
+	stateDot_  = model_->getState('C');
+	rhs_       = model_->getRHS('C');
+	dFdPar_    = model_->getRHS('C');
 
 	// Setup indices k,a and b
 	k_ = static_cast<int>(std::floor(delta_));
@@ -250,6 +252,9 @@ void Topo<Model, ParameterList>::computeRHS()
 {
  	// Set landmask (A) in the model
 	model_->setLandMask(landMasks_[a_[k_]]);	
+
+	// // Predictor for A's state // HIER VERDER
+	// stateView_->update(a_[k_] - delta_, *stateDot_, 1.0);
 	
 	// Evaluate and compute RHS (A)
 	model_->computeRHS();
@@ -280,11 +285,45 @@ void Topo<Model, ParameterList>::computeRHS()
 
 //==================================================================
 template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::computeDFDPar()
+{
+	INFO(" TOPO: Calculating dFdpar...");
+ 	// Set landmask (A) in the model
+	model_->setLandMask(landMasks_[a_[k_]]);	
+	
+	// Evaluate and compute RHS (A)
+	model_->computeRHS();
+
+	// Get a copy of RHS (A)
+	VectorPtr rhsA = model_->getRHS('C');
+
+	// Set landmask (B) in the model
+	model_->setLandMask(landMasks_[b_[k_]]);
+
+	// Evaluate and compute RHS (B)
+	model_->computeRHS();
+
+	// Get it
+	*dFdPar_ = *model_->getRHS('C');
+
+	// Calculate pi*cos(theta)*sin(theta)(F(B) - F(A))
+	//  theta = pi * delta / 2
+	
+	double factor = M_PI * sin(M_PI * delta_ / 2)
+		* cos(M_PI * delta_ / 2);
+	
+	dFdPar_->update(-factor, *rhsA, factor);
+
+	//done
+	INFO(" TOPO: Calculating dFdpar... done " << dFdPar_->norm());
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeJacobian()
 {
 	// Get Jacobians
 	model_->setLandMask(landMasks_[a_[k_]]);
-
 	model_->computeJacobian();
 	*matA_ = *model_->getJacobian();
 
@@ -448,11 +487,6 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	// Initialize to zero
 	solView_->putScalar(0.0);
 
-	// int dominantMask = (facA_ >= facB_) ? a_[k_] : b_[k_];
-	// model_->setLandMask(landMasks_[dominantMask]);
-	// model_->computeJacobian();
-	// model_->solve(b);
-	
 	bool set;
 	set = problem_->setProblem(solView_->getOceanVector(), b->getOceanVector());
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
@@ -500,6 +534,10 @@ void Topo<Model, ParameterList>::preProcess()
 {
 	model_->preProcess();
 	buildPreconditioner();
+	
+	computeDFDPar();
+	solve(dFdPar_);
+	stateDot_ = getSolution('C');
 }
 
 //==================================================================
