@@ -247,14 +247,14 @@ namespace Belos
 			{
 				if (Op.isPrec)
 				{
-					Epetra_MultiVector tmp = y;										
+					Epetra_MultiVector tmp = y;	
 					Op.PA->ApplyInverse(x, tmp);
 					Op.PB->ApplyInverse(x, y);
 					y.Update(Op.facA, tmp, Op.facB);
 				}
 				else
 				{
-					Epetra_MultiVector tmp = y;
+ 					Epetra_MultiVector tmp = y;
 					Op.A->Apply(x, tmp);
 					Op.B->Apply(x, y);
 					y.Update(Op.facA, tmp, Op.facB);

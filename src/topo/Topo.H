@@ -249,7 +249,7 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeRHS()
 {
  	// Set landmask (A) in the model
-	model_->setLandMask(landMasks_[a_[k_]]);
+	model_->setLandMask(landMasks_[a_[k_]]);	
 	
 	// Evaluate and compute RHS (A)
 	model_->computeRHS();
@@ -308,19 +308,23 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 {
 	Vector resA = *getSolution('C');
 	Vector resB = *getSolution('C');
+	resA.zero();
+	resB.zero();
 	
 	combMat_.A->Apply(*solView_->getOceanVector(),
 					  *resA.getOceanVector());
 
 	combMat_.B->Apply(*solView_->getOceanVector(),
 					  *resB.getOceanVector());
+	resA.scale(facA_);
+	resB.scale(facB_);
 	
 	resA.update(1.0, *b, -1.0);
+	INFO("   TOPO residual ||b-Ax|| / ||b||: " << resA.norm() / b->norm());
+	INFO("                 ||b-Bx|| / ||b||: " << resB.norm() / b->norm());
 	resB.update(1.0, resA, -1.0);
-	double res = resB.norm() / b->norm();
-	INFO(" Topo residual: " << res);
-
-	return res;	
+	INFO("             ||b-(A+B)x|| / ||b||: " << resB.norm() / b->norm());
+	return resB.norm();	
 }
 
 //==================================================================
@@ -367,7 +371,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	//------------------------------------------------------------------
 	
 	combPrec_.PA = precA_;
-	combPrec_.PB = precB_;		
+	combPrec_.PB = precB_;
 	combPrec_.isPrec = true;
 }
 
@@ -442,8 +446,13 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 		initializeSolver();	
 
 	// Initialize to zero
-	solView_->scale(0.0);
+	solView_->putScalar(0.0);
 
+	// int dominantMask = (facA_ >= facB_) ? a_[k_] : b_[k_];
+	// model_->setLandMask(landMasks_[dominantMask]);
+	// model_->computeJacobian();
+	// model_->solve(b);
+	
 	bool set;
 	set = problem_->setProblem(solView_->getOceanVector(), b->getOceanVector());
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
