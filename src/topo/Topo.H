@@ -472,6 +472,7 @@ void Topo<Model, ParameterList>::initializeSolver()
 	// A few FGMRES parameters are made available in solver_params.xml:
 	int gmresIters  = solverParams_->get("FGMRES iterations", 500);
 	double gmresTol = solverParams_->get("FGMRES tolerance", 1e-8);
+	int output      = solverParams_->get("FGMRES output", 100);
 
 	int NumGlobalElements = stateView_->getOceanVector()->GlobalLength();
 	int maxrestarts       = 0;
@@ -486,7 +487,7 @@ void Topo<Model, ParameterList>::initializeSolver()
 	belosParamList_->set("Num Blocks", gmresIters);
 	belosParamList_->set("Maximum Restarts", maxrestarts);
 	belosParamList_->set("Orthogonalization","DGKS");
-	belosParamList_->set("Output Frequency", 100);
+	belosParamList_->set("Output Frequency", output);
 	belosParamList_->set("Verbosity", Belos::TimingDetails +
 						 Belos::Errors +
 						 Belos::Warnings +
