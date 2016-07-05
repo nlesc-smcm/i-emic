@@ -2,7 +2,8 @@
 #SBATCH --time=5-00:00:00
 #SBATCH --ntasks=24
 #SBATCH --nodes=1
-#SBATCH -p fat
+
+# #SBATCH -p fat
 
 cd ${HOME}/Projects/i-emic/run/paleo/65MaTo40Ma3deg/
 
