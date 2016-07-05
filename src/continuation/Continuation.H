@@ -25,6 +25,8 @@ Continuation(Model model, ParameterList pars)
 	epsilon_               (pars->get("epsilon increment", 1.0e-8)),
 	backTracking_          (pars->get("enable backtracking", true)),
 	numBackTrackingSteps_  (pars->get("backtracking steps", 10)),
+	backTrackIncrease_     (pars->get("backtracking increase", 10.0)),
+	backTrackCeiling_      (pars->get("backtracking ceiling", 10.0)),
 	maxSteps_              (pars->get("maximum number of steps", -1)),
 	maxNewtonIterations_   (pars->get("maximum Newton iterations", 15)),
 	minAllowedIterations_  (pars->get("minimum desired Newton iterations", 4)),
@@ -323,6 +325,9 @@ createTangent(char mode)
 	
 	// Normalize the combined tangent
 	normalize();
+
+	// Print for inspection
+	stateDot_->print("stateDot");
 	INFO("Continuation: create tangent " << mode << " done");
 }
 
@@ -471,6 +476,9 @@ newtonCorrector()
 		//  let that be the new direction
 		stateDir = z;
 
+		// Inspect the direction
+		stateDir->print("stateDir");
+
 		// Update the state and the parameter in the model
 		stateView_->update(1.0, *stateDir, 1.0);
 		par_ = par_ + parDir;  // update our parameter
@@ -542,8 +550,8 @@ runBackTracking(VectorPtr stateDir, double parDir)
 {
 	// Initialize reduction with -1/2
 	double reduction = -1.0 / 2;
-	double increase  = 10.0;  // --> xml
-	double ceiling   = 10.0;  // --> xml
+	double increase  = backTrackIncrease_;
+	double ceiling   = backTrackCeiling_; 
 
 	for (backTrack_ = 0; backTrack_ != numBackTrackingSteps_; ++backTrack_)
 	{

@@ -84,6 +84,9 @@ class Continuation
 	int  backTrack_;            // backtracking counter
 	int  numBackTrackingSteps_; // number of backtracking steps
 
+	double backTrackIncrease_;  // allowed increase in backtracking
+	double backTrackCeiling_;   // ceiling for backtracking
+
 	int step_;                 // continuation step counter
 	int maxSteps_;             // maximum number of continuation steps:
 	

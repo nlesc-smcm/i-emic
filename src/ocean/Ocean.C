@@ -27,6 +27,9 @@
 #include "TRIOS_BlockPreconditioner.H"
 #include "GlobalDefinitions.H"
 
+//==================================================================
+#include <math.h>
+
 //=====================================================================
 using Teuchos::RCP;
 using Teuchos::rcp;
@@ -250,38 +253,38 @@ void Ocean::setLandMask(LandMask mask, bool global)
 		THCM::Instance().setLandMask(mask.global);
 }
 
-//==================================================================
-void Ocean::applyLandMask(LandMask mask1, LandMask mask2, double factor)
-{
-	int nmask = mask1.global->size();
-	assert(nmask == (M_+2)*(N_+2)*(L_+2));
+// //==================================================================
+// void Ocean::applyLandMask(LandMask mask1, LandMask mask2, double factor)
+// {
+// 	int nmask = mask1.global->size();
+// 	assert(nmask == (M_+2)*(N_+2)*(L_+2));
 	
-	int idx1, idx2;
-	int lid;
+// 	int idx1, idx2;
+// 	int lid;
 	
-	assert(mask1.global->size() == mask2.global->size());
+// 	assert(mask1.global->size() == mask2.global->size());
 
-	for (int k = 1; k != L_+1; ++k)
-		for (int j = 1; j != M_+1; ++j)
-			for (int i = 1; i != N_+1; ++i)
-			{
-				idx1 = k*(M_+2)*(N_+2) + j*(N_+2) + i;
-				idx2 = (k-1)*M_*N_ + (j-1)*N_ + i-1;
+// 	for (int k = 1; k != L_+1; ++k)
+// 		for (int j = 1; j != M_+1; ++j)
+// 			for (int i = 1; i != N_+1; ++i)
+// 			{
+// 				idx1 = k*(M_+2)*(N_+2) + j*(N_+2) + i;
+// 				idx2 = (k-1)*M_*N_ + (j-1)*N_ + i-1;
 				
-				if ((*mask1.global)[idx1] - (*mask2.global)[idx1] < 0)
-				{
-					for (int ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
-					{
-						lid = state_->Map().LID(ii);
-						if (lid >= 0) // means our proc has it
-						{
-							(*sol_)[ii]  *= factor;
-						}
-					}
-					std::cout << std::endl;
-				}
-			}
-}
+// 				if ((*mask1.global)[idx1] - (*mask2.global)[idx1] < 0)
+// 				{
+// 					for (int ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
+// 					{
+// 						lid = state_->Map().LID(ii);
+// 						if (lid >= 0) // means our proc has it
+// 						{
+// 							(*sol_)[ii]  *= factor;
+// 						}
+// 					}
+// 					std::cout << std::endl;
+// 				}
+// 			}
+// }
 
 //==================================================================
 void Ocean::applyLandMask(LandMask mask, double factor)
@@ -308,6 +311,69 @@ void Ocean::applyLandMask(LandMask mask, double factor)
 						lid = state_->Map().LID(ii); // Local ID of this point			
 						if (lid >= 0)
 							(*state_)[lid] *= factor;
+					}
+				}
+			}
+}
+
+//==================================================================
+void Ocean::applyLandMask(LandMask mA, LandMask mB, double d)
+{
+	std::cout << '\n' << '\n' << " -------- apply landmask ------ \n";
+	// set the direction: +1: A->B, -1: B->A
+	int dir = SGN(cos(M_PI * d / 2) * sin(M_PI * d / 2));
+	
+	int nmask = mA.global->size();
+	assert(nmask == (M_+2)*(N_+2)*(L_+2));
+	assert(mA.global->size() == mB.global->size());
+
+	int diff, lid, ii, iie, idx1, idx2;
+
+	double value = 0.0;
+	double maxValue;
+
+	for (int k = 1; k != L_+1; ++k)
+		for (int j = 1; j != M_+1; ++j)
+			for (int i = 1; i != N_+1; ++i)
+			{
+				idx1 = k*(M_+2)*(N_+2) + j*(N_+2) + i;
+				idx2 = (k-1)*M_*N_ + (j-1)*N_ + i-1;
+				
+				diff = (*mA.global)[idx1] - (*mB.global)[idx1];
+
+				if (diff == dir) // put neighbouring values in this point
+				{
+					for (int ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
+					{
+						for (int l = 1; l <= N_; ++l)
+						{
+							iie = ii + l*_NUN_; // to the east
+							lid = state_->Map().LID(iie); 
+							if (lid >= 0 && std::abs((*state_)[lid]) > 1e-7)
+							{
+								value = (*state_)[lid];
+								break;
+							}						
+						}
+						comm_->MaxAll(&value, &maxValue, 1);
+						lid = state_->Map().LID(ii);
+						if (lid >= 0)
+						{
+							(*state_)[lid] = value;
+							std::cout << " Putting " << value << " in " << lid << std::endl;
+						}
+					}						
+				}
+				else if (diff == -dir) // set this point to zero
+				{
+					for (ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
+					{
+						lid = state_->Map().LID(ii); // Local ID of this point
+						if (lid >= 0)
+						{
+							(*state_)[lid] = 0.0;
+							std::cout << " Putting " << 0.0 << " in " << lid << std::endl;
+						}
 					}
 				}
 			}

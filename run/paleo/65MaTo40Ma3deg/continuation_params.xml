@@ -5,8 +5,8 @@
 <ParameterList name="Continuation parameters">
   
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="1.0e-10"/>
-  <Parameter name="minimum step size" type="double" value="1.0e-10"/>
+  <Parameter name="initial step size" type="double" value="1.0e-3"/>
+  <Parameter name="minimum step size" type="double" value="1.0e-8"/>
   <Parameter name="maximum step size" type="double" value="5.0e-1"/>
   
   <!-- Define the destination values for the continuation parameter.-->
@@ -18,21 +18,21 @@
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-2"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
 
   <!-- Tolerance when converging on destination         -->
   <!--  for both Newton and secant process in detect()  -->
   <Parameter name="destination tolerance" type="double" value="1.0e-6"/>
   
   <!-- Define the optimal interval for the amount of Newton iterations -->
-  <Parameter name="minimum desired Newton iterations" type="int" value="4"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="5"/>
+  <Parameter name="minimum desired Newton iterations" type="int" value="5"/>
+  <Parameter name="maximum desired Newton iterations" type="int" value="15"/>
   
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="10"/>
+  <Parameter name="maximum Newton iterations" type="int" value="100"/>
 
   <!-- Set the number of backtracking steps -->
-  <Parameter name="backtracking steps" type="int" value="5"/>
+  <Parameter name="backtracking steps" type="int" value="10"/>
 
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental, avoid them... -->

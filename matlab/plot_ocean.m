@@ -197,12 +197,12 @@ maxT = T0+max(max(Tsurf));
 %end
 
 img  = T0 + Tsurf(range,:)';
-% contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
-% set(gca,'color',[0.65,0.65,0.65]);
-% image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
-% contours = linspace(minT,maxT,40);
+%contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
+%set(gca,'color',[0.65,0.65,0.65]);
+%image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
+%contours = linspace(minT,maxT,40);
 %contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1);
-imagesc(img);
+ imagesc(img);
 set(gca,'ydir','normal');
 grid on;
 hold off
@@ -225,8 +225,8 @@ exportfig('sst.eps',10,[50,25])
 
 %% -------------------------------------------------------
 figure(4)
-%contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
-imagesc(Tl'+T0);
+contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
+%imagesc(RtD*yv(1:end-1),z*hdim,Tl'+T0);
 set(gca,'ydir','normal');
 %pcolor(RtD*yv(1:end-1),z*hdim,Tl'+T0);
 colorbar
@@ -248,8 +248,8 @@ end
 %%
 figure(6)
 Sp = squeeze(mean(S,1)); 
-%contourf(RtD*yv(1:end-1),z*hdim,Sp'+S0,15);
-imagesc(Sp'+S0);
+contourf(RtD*yv(1:end-1),z*hdim,Sp'+S0,15);
+%imagesc(Sp'+S0);
 set(gca,'ydir','normal')
 %pcolor(RtD*yv(1:end-1),z*hdim,Sp'+S0);
 colorbar
