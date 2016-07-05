@@ -8,7 +8,9 @@ surfm = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
 %reso = load('solution.ocean');
 
 %resa = load('failed_rhs.atmos');
-reso = load('xdot.ocean');
+%reso = load('stateDot.ocean');
+%reso = load('xdot.ocean');
+reso = load('stateDir.ocean');
 
 % pargrid line color
 pcol = [.3 .3 .3];
@@ -33,7 +35,7 @@ norm(reso)
 %norm(resa)
 %norm([reso;resa]')
 
-L = l-1;
+L = l-6;
 
 Uo = zeros(m,n); % zonal velocity
 Wo = zeros(m,n); % vertical velocity	
