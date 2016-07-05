@@ -85,13 +85,13 @@ class Continuation
 	int  numBackTrackingSteps_; // number of backtracking steps
 
 	double backTrackIncrease_;  // allowed increase in backtracking
-	double backTrackCeiling_;   // ceiling for backtracking
 
 	int step_;                 // continuation step counter
 	int maxSteps_;             // maximum number of continuation steps:
 	
    	int newtonIter_;              // newton iteration counter
 	int maxNewtonIterations_;     // set the max for the Newton iterations
+	int minNewtonIterations_;     // set the min for the Newton iterations
 	int minAllowedIterations_;    // if less then we increase the step size
 	int maxAllowedIterations_;    // if more then we decrease the step size
 	double newtonTolerance_;      // set the tolerance in the Newton corrector

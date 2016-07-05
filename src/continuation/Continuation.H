@@ -26,9 +26,9 @@ Continuation(Model model, ParameterList pars)
 	backTracking_          (pars->get("enable backtracking", true)),
 	numBackTrackingSteps_  (pars->get("backtracking steps", 10)),
 	backTrackIncrease_     (pars->get("backtracking increase", 10.0)),
-	backTrackCeiling_      (pars->get("backtracking ceiling", 10.0)),
 	maxSteps_              (pars->get("maximum number of steps", -1)),
 	maxNewtonIterations_   (pars->get("maximum Newton iterations", 15)),
+	minNewtonIterations_   (pars->get("minimum Newton iterations", 1)),
 	minAllowedIterations_  (pars->get("minimum desired Newton iterations", 4)),
 	maxAllowedIterations_  (pars->get("maximum desired Newton iterations", 5)),
 	newtonTolerance_       (pars->get("Newton tolerance", 1.0e-3)),
@@ -517,7 +517,8 @@ newtonCorrector()
 		INFO("                          old ||x||: " << state0->norm());
 		INFO("----------------------------------------------------------");
 		
-		if (normRHStest_ < practicalTol_) break;
+		if (normRHStest_ < practicalTol_ && newtonIter_ >= minNewtonIterations_)
+			break;
 	}
 
 	// Keep the last obtained y in stateDot, such that it can be used by
@@ -551,12 +552,11 @@ runBackTracking(VectorPtr stateDir, double parDir)
 	// Initialize reduction with -1/2
 	double reduction = -1.0 / 2;
 	double increase  = backTrackIncrease_;
-	double ceiling   = backTrackCeiling_; 
 
 	for (backTrack_ = 0; backTrack_ != numBackTrackingSteps_; ++backTrack_)
 	{
 		// we allow for a significant increase
-		if (normRHStest_ < normRHS_ * increase && normRHStest_ < ceiling) 
+		if (normRHStest_ < normRHS_ * increase) 
 			break;
 
 		// Apply reduction to the model state and its parameter
@@ -576,7 +576,7 @@ runBackTracking(VectorPtr stateDir, double parDir)
 
 	TRACK_ITERATIONS("Continuation: backtracking steps...", backTrack_);
 	
-	if (normRHStest_ > normRHS_ * increase || normRHStest_ > ceiling)
+	if (normRHStest_ > normRHS_ * increase)
 	{
 		WARNING("Continuation: backtracking failed ", __FILE__, __LINE__);
 		return 1;

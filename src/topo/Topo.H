@@ -291,7 +291,7 @@ void Topo<Model, ParameterList>::computeRHS()
 
 	// Add facB * RHS(B) to facA * RHS(A)
 	rhs_->update(facA_, *rhsA, facB_);
-
+	
 	INFO("    ||F(A) + F(B)|| = " << rhs_->norm());
 
 	// Restore backup
