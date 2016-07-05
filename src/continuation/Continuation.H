@@ -153,7 +153,7 @@ step()
 	{
 		// Print the residual and last solution from linear solve
 		rhsView_->print("residual");
-		model_->getSolution('V')->print("solution"); 
+		model_->getSolution('V')->print("solution");
 		
 		// Put the parameter and norm of the state in the history
 		parHist_.push_back(par_);
@@ -326,8 +326,6 @@ createTangent(char mode)
 	// Normalize the combined tangent
 	normalize();
 
-	// Print for inspection
-	stateDot_->print("stateDot");
 	INFO("Continuation: create tangent " << mode << " done");
 }
 
@@ -475,9 +473,6 @@ newtonCorrector()
 		
 		//  let that be the new direction
 		stateDir = z;
-
-		// Inspect the direction
-		stateDir->print("stateDir");
 
 		// Update the state and the parameter in the model
 		stateView_->update(1.0, *stateDir, 1.0);

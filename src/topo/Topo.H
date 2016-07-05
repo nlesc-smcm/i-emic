@@ -40,7 +40,6 @@ Topo(Model model, ParameterList pars)
 
 	model_->computeRHS();
 	nrm1 = model_->getRHS('V')->norm();
-	INFO("   norm RHS (1) = " << nrm1);
 
 	loadMaskFileNames();
 	loadMasks();
@@ -68,7 +67,6 @@ Topo(Model model, ParameterList pars)
 
 	model_->computeRHS();
 	nrm2 = model_->getRHS('V')->norm();
-	INFO("   norm RHS (2) = " << nrm2);
 	
 	if (std::abs(nrm1 - nrm2) > 1e-10)
 		ERROR("Norms should not differ much!", __FILE__, __LINE__);
@@ -163,10 +161,10 @@ void Topo<Model, ParameterList>::setPar(double par)
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
 	facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
 	
-	INFO("  <><>  delta = " << delta_ <<
-		 " k = " << k_ <<
-		 " facA = " << facA_ <<
-		 " facB = " << facB_  << "  <><>  ");
+	// INFO("  <><>  delta = " << delta_ <<
+	// 	 " k = " << k_ <<
+	// 	 " facA = " << facA_ <<
+	// 	 " facB = " << facB_  << "  <><>  ");
 
 	if (std::abs(facA_ + facB_ - 1.0) > 1e-7)
 	{
@@ -267,9 +265,6 @@ void Topo<Model, ParameterList>::computeRHS()
 	// Get a copy of RHS (A)
 	VectorPtr rhsA = model_->getRHS('C');
 
-	INFO("    ||F(A)|| = " <<  rhsA->norm() <<
-		 " facA " << facA_ << " : " << facA_ * rhsA->norm());
-
 	// Restore backup
 	// stateView_->update(1.0, *stateCopy, 0.0);
 	
@@ -285,10 +280,13 @@ void Topo<Model, ParameterList>::computeRHS()
 	
 	// Let our rhs be a view
 	*rhs_ = *model_->getRHS('V');
+	
+	INFO("    ||F(A)|| = " <<  rhsA->norm() <<
+		 " facA " << facA_ << " : " << facA_ * rhsA->norm());
 
 	INFO("    ||F(B)|| = " <<  rhs_->norm() <<
 		 " facB " << facB_ << " : " << facB_ * rhs_->norm());
-
+	
 	// Add facB * RHS(B) to facA * RHS(A)
 	rhs_->update(facA_, *rhsA, facB_);
 	
@@ -391,8 +389,8 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 	resB.scale(facB_);
 	
 	resA.update(1.0, *b, -1.0);
-	INFO("   TOPO residual ||b-Ax|| / ||b||: " << resA.norm() / b->norm());
-	INFO("                 ||b-Bx|| / ||b||: " << resB.norm() / b->norm());
+	// INFO("   TOPO residual ||b-Ax|| / ||b||: " << resA.norm() / b->norm());
+	// INFO("                 ||b-Bx|| / ||b||: " << resB.norm() / b->norm());
 	resB.update(1.0, resA, -1.0);
 	INFO("             ||b-(A+B)x|| / ||b||: " << resB.norm() / b->norm());
 	return resB.norm();	
@@ -567,12 +565,12 @@ void Topo<Model, ParameterList>::preProcess()
 	model_->preProcess();
 	buildPreconditioner();
 	
-	computeDFDPar();
-	solve(dFdPar_);
-	stateDot_ = getSolution('C');
-	stateDot_->scale(-1.0);
-	stateDot_->print("xdot");
-	INFO(" ||stateDot|| = " << stateDot_->norm());
+	// computeDFDPar();
+	// solve(dFdPar_);
+	// stateDot_ = getSolution('C');
+	// stateDot_->scale(-1.0);
+	// stateDot_->print("xdot");
+	// INFO(" ||stateDot|| = " << stateDot_->norm());
 }
 
 //==================================================================
