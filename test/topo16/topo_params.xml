@@ -4,12 +4,12 @@
 
 <ParameterList name="Topo parameters">
   
-  <Parameter name="Number of mask files" type="int" value="4"/>
+  <Parameter name="Number of mask files" type="int" value="3"/>
   
   <Parameter name="Mask file 0" type="string" value="topotest16/test0"/>
   <Parameter name="Mask file 1" type="string" value="topotest16/test1"/>
-  <Parameter name="Mask file 2" type="string" value="topotest16/test2"/>
-  <Parameter name="Mask file 3" type="string" value="topotest16/test3"/>
+  <Parameter name="Mask file 2" type="string" value="topotest16/test1"/>
+
   
   <Parameter name="Delta" type="double" value="0.0"/>
   

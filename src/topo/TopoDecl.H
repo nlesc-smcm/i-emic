@@ -255,10 +255,14 @@ namespace Belos
 			{
 				if (Op.isPrec)
 				{
-					Epetra_MultiVector tmp = y;	
-					Op.PA->ApplyInverse(x, tmp);
-					Op.PB->ApplyInverse(x, y);
-					y.Update(Op.facA, tmp, Op.facB);
+					// Epetra_MultiVector tmp = y;	
+					// Op.PA->ApplyInverse(x, tmp);
+					// Op.PB->ApplyInverse(x, y);
+					// y.Update(Op.facA, tmp, Op.facB);
+					if (Op.facA >= Op.facB)
+						Op.PA->ApplyInverse(x, y);
+					else
+						Op.PB->ApplyInverse(x, y);
 				}
 				else
 				{
