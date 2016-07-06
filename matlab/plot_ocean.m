@@ -298,3 +298,9 @@ if glbl
 end
 
 exportfig('sss.eps',10,[50,25])
+
+
+figure(7)
+imagesc(RtD*x, RtD*y, squeeze(sum(u(:,:,end:end),3))');
+colorbar
+set(gca,'ydir','normal')
