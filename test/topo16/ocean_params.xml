@@ -43,7 +43,7 @@
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
-    <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
+    <Parameter name="Grid Stretching qz" type="double" value="1.5"/>
     <!-- global number of grid points in x-direction -->
     <Parameter name="Global Grid-Size n" type="int" value="16"/>
     <!-- global number of grid points in y-direction -->
