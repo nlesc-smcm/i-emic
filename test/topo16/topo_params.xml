@@ -21,7 +21,7 @@
   <!-- M : determine operator from max(facA,facB)     -->
   <!-- H : use both operators with a homotopy         -->
   <!-- N : M with scaling                             -->
-  <Parameter name="Preconditioning type" type="char" value="N" />  
+  <Parameter name="Preconditioning type" type="char" value="H" />  
 
   
 </ParameterList>

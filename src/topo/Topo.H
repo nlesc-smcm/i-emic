@@ -151,6 +151,7 @@ void Topo<Model, ParameterList>::setPar(double par)
 	k_     = static_cast<int>(std::floor(delta_));
 	facA_  = pow(cos(M_PI * delta_ / 2), 2);
 	facB_  = pow(sin(M_PI * delta_ / 2), 2);
+	facG_  = pow(sin(M_PI * delta_), 2) + 1;
 
 	// ALTERNATIVE
 	// double dhat = delta_ - k_;
@@ -161,11 +162,6 @@ void Topo<Model, ParameterList>::setPar(double par)
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
 	facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
 	
-	// INFO("  <><>  delta = " << delta_ <<
-	// 	 " k = " << k_ <<
-	// 	 " facA = " << facA_ <<
-	// 	 " facB = " << facB_  << "  <><>  ");
-
 	if (std::abs(facA_ + facB_ - 1.0) > 1e-7)
 	{
 		std::stringstream errmsg;
@@ -273,7 +269,7 @@ void Topo<Model, ParameterList>::computeRHS()
 		 " facB " << facB_ << " : " << facB_ * rhs_->norm());
 	
 	// Add facB * RHS(B) to facA * RHS(A)
-	rhs_->update(facA_, *rhsA, facB_);
+	rhs_->update(facG_*facA_, *rhsA, facG_*facB_);
 	
 	INFO("    ||F(A) + F(B)|| = " << rhs_->norm());
 }
@@ -330,8 +326,8 @@ void Topo<Model, ParameterList>::computeJacobian()
 	combMat_.B      = matB_;
 	combMat_.PA     = PreconPtr();
 	combMat_.PB     = PreconPtr();
-	combMat_.facA   = facA_;
-	combMat_.facB   = facB_;		
+	combMat_.facA   = facA_*facG_;
+	combMat_.facB   = facB_*facG_;		
 	combMat_.isPrec = false;
 	combMat_.precType = 0;
 
@@ -364,8 +360,8 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::buildPreconditioner()
 {
-	combPrec_.facA   = facA_;
-	combPrec_.facB   = facB_;		
+	combPrec_.facA   = facA_*facG_;
+	combPrec_.facB   = facB_*facG_;		
 
 	//------------------------------------------------------------------
 	// Preconditioner A

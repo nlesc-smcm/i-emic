@@ -101,7 +101,7 @@ private:
 	int k_;
 
 	//! Homotopy factors
-	double facA_, facB_;
+	double facA_, facB_, facG_;
 
  	//! Vectors of integers for selecting the right landmask.
 	//!  a_[i+1] = a_[i] + 2 * ((k_+1) % 2); a_[0] = 0
