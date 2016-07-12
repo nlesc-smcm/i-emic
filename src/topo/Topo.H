@@ -276,6 +276,78 @@ void Topo<Model, ParameterList>::computeRHS()
 
 //==================================================================
 template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::testRHS()
+{
+	// Backup
+ 	VectorPtr stateCopy = model_->getState('C');
+	double factor;
+	
+	// Set landmask (A) in the model
+	model_->setLandMask(landMasks_[a_[k_]]);	
+
+	// Evaluate and compute RHS (A)
+	model_->computeRHS();
+
+	// Get a copy of RHS (A)
+	VectorPtr rhsA = model_->getRHS('C');
+
+	INFO("*test* ||F(x )|| = " <<  rhsA->norm() <<
+		 " facA " << facA_ << " : " << facA_ * rhsA->norm());
+
+	// Predictor for A's state
+	factor = -1.0 * pow(sin(M_PI * delta_ / 2), 2) * (delta_ - a_[k_]);
+	stateView_->update(factor, *stateDot_, 1.0);
+	INFO("*test*  factor = " << factor);
+	
+	// Evaluate and compute RHS (A)
+	model_->computeRHS();
+
+	// Get a copy of RHS (A)
+	rhsA = model_->getRHS('C');
+
+	INFO("*test* ||F(xp)|| = " <<  rhsA->norm() <<
+		 " facA " << facA_ << " : " << facA_ * rhsA->norm());
+
+	// Restore backup
+	stateView_->update(1.0, *stateCopy, 0.0);
+	
+	// set landmask (B) in the model
+	model_->setLandMask(landMasks_[b_[k_]]);
+
+	// Evaluate and compute RHS (B)
+	model_->computeRHS();
+	
+	// Let our rhs be a view
+	*rhs_ = *model_->getRHS('V');
+
+	INFO("*test* ||F(x )|| = " <<  rhs_->norm() <<
+		 " facB " << facB_ << " : " << facB_ * rhs_->norm());
+	
+	// Predictor for B's state
+	double r = 2.0;
+	while (r > -2.0)
+	{
+		// Restore backup
+		stateView_->update(1.0, *stateCopy, 0.0);
+
+		factor = r * pow(cos(M_PI * delta_ / 2),2) * (delta_ - b_[k_]);
+		stateView_->update(factor, *stateDot_, 1.0);
+		INFO("*test*  factor = " << factor << " r = " << r);
+	
+		// Evaluate and compute RHS (B)
+		model_->computeRHS();
+		
+		// Let our rhs be a view
+		*rhs_ = *model_->getRHS('V');
+		
+		INFO("*test* ||F(xp)|| = " <<  rhs_->norm() <<
+			 " facB " << facB_ << " : " << facB_ * rhs_->norm());
+		r -= .1;
+	}
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeDFDPar()
 {
 	INFO(" TOPO: Calculating dFdpar...");
@@ -330,7 +402,6 @@ void Topo<Model, ParameterList>::computeJacobian()
 	combMat_.facB   = facB_*facG_;		
 	combMat_.isPrec = false;
 	combMat_.precType = 0;
-
 }
 
 //==================================================================
@@ -527,6 +598,13 @@ void Topo<Model, ParameterList>::preProcess()
 {
 	model_->preProcess();
 	buildPreconditioner();
+
+	computeDFDPar();
+	solve(dFdPar_);
+	stateDot_ = getSolution('C');
+	stateDot_->scale(-1.0);
+	stateDot_->print("xdot");
+	INFO(" ||stateDot|| = " << stateDot_->norm());
 }
 
 //==================================================================

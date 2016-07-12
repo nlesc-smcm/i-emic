@@ -206,6 +206,8 @@ public:
 	//! return number of masks
 	int nMasks() { return nMasks_; }
 
+	//! test different RHS
+	void testRHS();
 private:
   	//! load the mask filenames
 	void loadMaskFileNames();
@@ -218,6 +220,7 @@ private:
 
 	//! initialize solver
 	void initializeSolver();
+
 };
 
 //------------------------------------------------------------------
