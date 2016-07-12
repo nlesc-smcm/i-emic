@@ -364,8 +364,6 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::buildPreconditioner()
 {
-	combPrec_.A      = MatrixPtr();
-	combPrec_.B      = MatrixPtr();
 	combPrec_.facA   = facA_;
 	combPrec_.facB   = facB_;		
 
@@ -375,6 +373,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	
 	model_->setLandMask(landMasks_[a_[k_]]);
 	model_->computeJacobian();
+	*matA_ = *model_->getJacobian();
 	
 	if ( !initPrecs_[a_[k_]] )
 	{
@@ -391,6 +390,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 
 	model_->setLandMask(landMasks_[b_[k_]]);
 	model_->computeJacobian();
+	*matB_ = *model_->getJacobian();		
 	
 	if ( !initPrecs_[b_[k_]] )
 	{
@@ -401,11 +401,12 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 
 	precB_->Compute();		
 
-	//------------------------------------------------------------------
-	
-	combPrec_.PA = precA_;
-	combPrec_.PB = precB_;
-	combPrec_.isPrec = true;
+	//------------------------------------------------------------------	
+	combPrec_.A        = matA_;
+	combPrec_.B        = matB_;
+	combPrec_.PA       = precA_;
+	combPrec_.PB       = precB_;
+	combPrec_.isPrec   = true;
 	combPrec_.precType = pars_->get("Preconditioning type", 'H');
 }
 

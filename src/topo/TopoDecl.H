@@ -255,19 +255,32 @@ namespace Belos
 			{
 				if (Op.isPrec)
 				{
-					if (Op.precType == 'H')
+					if (Op.precType == 'H') // Use homotopy
 					{
 						Epetra_MultiVector tmp = y;	
 						Op.PA->ApplyInverse(x, tmp);
 						Op.PB->ApplyInverse(x, y);
 						y.Update(Op.facA, tmp, Op.facB);
 					}
-					else if (Op.precType == 'M')
+					else if (Op.precType == 'M') // Look at max
 					{
 						if (Op.facA >= Op.facB)
 							Op.PA->ApplyInverse(x, y);
 						else
 							Op.PB->ApplyInverse(x, y);
+					}
+					else if (Op.precType == 'N') // Apply scaling
+					{
+						if (Op.facA >= Op.facB)
+						{
+							Op.PA->ApplyInverse(x, y);
+							y.Scale(1.0 / Op.facA);
+						}
+						else
+						{
+							Op.PB->ApplyInverse(x, y);
+							y.Scale(1.0 / Op.facB);
+						}
 					}
 				}
 				else

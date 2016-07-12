@@ -18,9 +18,10 @@
   
   <Parameter name="Store everything" type="bool" value="true" />
 
-  <!-- M : determine operator from max(facA,facB)  -->
-  <!-- H : use both operators with a homotopy      -->
-  <Parameter name="Preconditioning type" type="char" value="H" />  
+  <!-- M : determine operator from max(facA,facB)     -->
+  <!-- H : use both operators with a homotopy         -->
+  <!-- N : M with scaling                             -->
+  <Parameter name="Preconditioning type" type="char" value="N" />  
 
   
 </ParameterList>
