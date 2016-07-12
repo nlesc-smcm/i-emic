@@ -333,6 +333,7 @@ void Topo<Model, ParameterList>::computeJacobian()
 	combMat_.facA   = facA_;
 	combMat_.facB   = facB_;		
 	combMat_.isPrec = false;
+	combMat_.precType = 0;
 
 }
 
@@ -354,8 +355,6 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 	resB.scale(facB_);
 	
 	resA.update(1.0, *b, -1.0);
-	// INFO("   TOPO residual ||b-Ax|| / ||b||: " << resA.norm() / b->norm());
-	// INFO("                 ||b-Bx|| / ||b||: " << resB.norm() / b->norm());
 	resB.update(1.0, resA, -1.0);
 	INFO("             ||b-(A+B)x|| / ||b||: " << resB.norm() / b->norm());
 	return resB.norm();	
@@ -407,6 +406,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	combPrec_.PA = precA_;
 	combPrec_.PB = precB_;
 	combPrec_.isPrec = true;
+	combPrec_.precType = pars_->get("Preconditioning type", 'H');
 }
 
 //==================================================================

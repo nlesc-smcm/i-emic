@@ -221,7 +221,6 @@ private:
 };
 
 //------------------------------------------------------------------
-
 template <typename Model>
 struct Combined_Operator
 {
@@ -234,6 +233,7 @@ struct Combined_Operator
 	double facA;
 	double facB;
 	bool isPrec;
+	char precType;
 };
 
 //------------------------------------------------------------------
@@ -255,14 +255,20 @@ namespace Belos
 			{
 				if (Op.isPrec)
 				{
-					// Epetra_MultiVector tmp = y;	
-					// Op.PA->ApplyInverse(x, tmp);
-					// Op.PB->ApplyInverse(x, y);
-					// y.Update(Op.facA, tmp, Op.facB);
-					if (Op.facA >= Op.facB)
-						Op.PA->ApplyInverse(x, y);
-					else
+					if (Op.precType == 'H')
+					{
+						Epetra_MultiVector tmp = y;	
+						Op.PA->ApplyInverse(x, tmp);
 						Op.PB->ApplyInverse(x, y);
+						y.Update(Op.facA, tmp, Op.facB);
+					}
+					else if (Op.precType == 'M')
+					{
+						if (Op.facA >= Op.facB)
+							Op.PA->ApplyInverse(x, y);
+						else
+							Op.PB->ApplyInverse(x, y);
+					}
 				}
 				else
 				{
