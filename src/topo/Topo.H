@@ -248,30 +248,15 @@ Topo<Model, ParameterList>::getSolution(char mode)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeRHS()
 {
-	// Backup
- 	// VectorPtr stateCopy = model_->getState('C');
-	// double factor;
-	
  	// Set landmask (A) in the model
 	model_->setLandMask(landMasks_[a_[k_]]);	
 
-	// Predictor for A's state
-	// factor = pow(sin(M_PI * delta_ / 2),2)*(a_[k_] - delta_);
-	// stateView_->update(factor, *stateDot_, 1.0);
-	
 	// Evaluate and compute RHS (A)
 	model_->computeRHS();
 
 	// Get a copy of RHS (A)
 	VectorPtr rhsA = model_->getRHS('C');
 
-	// Restore backup
-	// stateView_->update(1.0, *stateCopy, 0.0);
-	
-	// Predictor for B's state
-	// factor = pow(cos(M_PI * delta_ / 2),2)*(b_[k_] - delta_);
-	// stateView_->update(factor, *stateDot_, 1.0);
-	
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
 
@@ -291,9 +276,6 @@ void Topo<Model, ParameterList>::computeRHS()
 	rhs_->update(facA_, *rhsA, facB_);
 	
 	INFO("    ||F(A) + F(B)|| = " << rhs_->norm());
-
-	// Restore backup
-	// stateView_->update(1.0, *stateCopy, 0.0);
 }
 
 //==================================================================
@@ -333,28 +315,13 @@ void Topo<Model, ParameterList>::computeDFDPar()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeJacobian()
 {
-	// Backup
-	// VectorPtr stateCopy = model_->getState('C');
-	// double factor;
-
 	// Get Jacobians
 	model_->setLandMask(landMasks_[a_[k_]]);
-
-	// Predictor for A's state
-	// factor = pow(sin(M_PI * delta_ / 2),2)*(a_[k_] - delta_);
-	// stateView_->update(factor, *stateDot_, 1.0);
 
 	model_->computeJacobian();
 	*matA_ = *model_->getJacobian();
 
-	// Restore backup
-	// stateView_->update(1.0, *stateCopy, 0.0);
-
 	model_->setLandMask(landMasks_[b_[k_]]);
-
-	// Predictor for B's state
-	// factor = pow(cos(M_PI * delta_ / 2),2)*(b_[k_] - delta_);
-	// stateView_->update(factor, *stateDot_, 1.0);
 
 	model_->computeJacobian();
 	*matB_ = *model_->getJacobian();
@@ -367,8 +334,6 @@ void Topo<Model, ParameterList>::computeJacobian()
 	combMat_.facB   = facB_;		
 	combMat_.isPrec = false;
 
-	// Restore backup
-	// stateView_->update(1.0, *stateCopy, 0.0);
 }
 
 //==================================================================
@@ -565,13 +530,6 @@ void Topo<Model, ParameterList>::preProcess()
 {
 	model_->preProcess();
 	buildPreconditioner();
-	
-	// computeDFDPar();
-	// solve(dFdPar_);
-	// stateDot_ = getSolution('C');
-	// stateDot_->scale(-1.0);
-	// stateDot_->print("xdot");
-	// INFO(" ||stateDot|| = " << stateDot_->norm());
 }
 
 //==================================================================
