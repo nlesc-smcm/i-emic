@@ -324,8 +324,8 @@ void Topo<Model, ParameterList>::testRHS()
 		 " facB " << facB_ << " : " << facB_ * rhs_->norm());
 	
 	// Predictor for B's state
-	double r = 2.0;
-	while (r > -2.0)
+	double r = 0.0;
+	while (r > -5.0)
 	{
 		// Restore backup
 		stateView_->update(1.0, *stateCopy, 0.0);
