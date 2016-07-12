@@ -17,5 +17,10 @@
   <Parameter name="Delta" type="double" value="0.0"/>
   
   <Parameter name="Store everything" type="bool" value="true" />
+
+  <!-- M : determine operator from max(facA,facB)  -->
+  <!-- H : use both operators with a homotopy      -->
+  <Parameter name="Preconditioning type" type="char" value="H" />  
+
   
 </ParameterList>
