@@ -1,13 +1,12 @@
 <!-- ************************ -->
 <!-- Continuation parameters  -->
 <!-- ************************ -->
-
 <ParameterList name="Continuation parameters">
   
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="1.0e-2"/>
+  <Parameter name="initial step size" type="double" value="0.05"/>
   <Parameter name="minimum step size" type="double" value="1.0e-10"/>
-  <Parameter name="maximum step size" type="double" value="5.0e-1"/>
+  <Parameter name="maximum step size" type="double" value="0.25"/>
   
   <!-- Define the destination values for the continuation parameter.-->
   <Parameter name="destination 0" type="double" value="1.0"/>
@@ -18,24 +17,24 @@
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-00"/>
-
+  <Parameter name="Newton tolerance" type="double" value="2.0e+01"/>
+  
   <!-- Tolerance when converging on destination         -->
   <!--  for both Newton and secant process in detect()  -->
   <Parameter name="destination tolerance" type="double" value="1.0e-6"/>
   
   <!-- Define the optimal interval for the amount of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="5"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="15"/>
+  <Parameter name="maximum desired Newton iterations" type="int" value="10"/>
   
   <!-- Lower bound for the Newton iterations -->
-  <Parameter name="minimum Newton iterations" type="int" value="4"/>
+  <Parameter name="minimum Newton iterations" type="int" value="3"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="100"/>
+  <Parameter name="maximum Newton iterations" type="int" value="20"/>
 
   <!-- Set the number of backtracking steps -->
-  <Parameter name="backtracking steps" type="int" value="10"/>
+  <Parameter name="backtracking steps" type="int" value="20"/>
 
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental, avoid them... -->
@@ -65,6 +64,6 @@
   <!--   for example during a continuation in Solar Forcing        -->
   <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
 
-  <Parameter name="backtracking increase" type="double" value="1.1"/>
+  <Parameter name="backtracking increase" type="double" value="1.02"/>
 
 </ParameterList>
