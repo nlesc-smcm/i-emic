@@ -14,7 +14,6 @@
   <Parameter name="destination 1" type="double" value="2.0"/>
   <Parameter name="destination 2" type="double" value="3.0"/>
   <Parameter name="destination 3" type="double" value="4.0"/>
-  <Parameter name="destination 4" type="double" value="5.0"/>
 
   <!-- define the number of continuation steps              -->
   <!--   set to -1 to run indefinitely                      -->
