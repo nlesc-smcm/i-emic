@@ -138,6 +138,15 @@ private:
 	//! Array keeping track of initialized preconditioners
 	std::vector<bool> initPrecs_;
 
+	//! Relaxation factors for predictors
+	double rA_, rB_;
+
+	//! Enable this to use predictors
+	bool usePredictors_;
+
+	//! Enable this to dynamically estimate relaxation factors
+	bool calcRelax_;	
+
 public:	
 	//! default constructor
 	Topo(){};

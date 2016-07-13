@@ -29,7 +29,11 @@ Topo(Model model, ParameterList pars)
 	nMasks_             (pars->get("Number of mask files", 0)),
 	delta_              (pars->get("Delta", 0.0)),
 	storeEverything_    (pars->get("Store everything", false)),
-	solverInitialized_  (false)
+	solverInitialized_  (false),
+	rA_                 (1.0),
+	rB_                 (1.0),
+	usePredictors_      (pars->get("Use predictors", false)),
+	calcRelax_          (pars->get("Estimate relaxation factors", false))
 {
 	INFO("Topo constructor...");
 
@@ -50,6 +54,7 @@ Topo(Model model, ParameterList pars)
 	stateView_ = model_->getState('V');
 	solView_   = model_->getSolution('V');
 	stateDot_  = model_->getState('C');
+	stateDot_->zero();
 	rhs_       = model_->getRHS('C');
 	dFdPar_    = model_->getRHS('C');
 
@@ -151,7 +156,8 @@ void Topo<Model, ParameterList>::setPar(double par)
 	k_     = static_cast<int>(std::floor(delta_));
 	facA_  = pow(cos(M_PI * delta_ / 2), 2);
 	facB_  = pow(sin(M_PI * delta_ / 2), 2);
-	facG_  = pow(sin(M_PI * delta_), 2) + 1;
+	//facG_  = pow(sin(M_PI * delta_), 2) + 1;
+	facG_  = 1.0;
 
 	// ALTERNATIVE
 	// double dhat = delta_ - k_;
@@ -247,6 +253,19 @@ void Topo<Model, ParameterList>::computeRHS()
  	// Set landmask (A) in the model
 	model_->setLandMask(landMasks_[a_[k_]]);	
 
+	VectorPtr backup;
+	double factor;
+	double theta = M_PI * delta_ / 2;
+	if (usePredictors_)
+	{
+		INFO("  ||x|| = " << stateView_->norm());
+		backup = model_->getState('C');
+		factor = -1.0 * rA_ * pow(sin(theta), 2) * (delta_ - a_[k_]);
+		if (stateDot_->norm() > 0)
+			stateView_->update(factor, *stateDot_, 1.0);
+		INFO("  ||x|| = " << stateView_->norm());
+	}
+	
 	// Evaluate and compute RHS (A)
 	model_->computeRHS();
 
@@ -255,6 +274,17 @@ void Topo<Model, ParameterList>::computeRHS()
 
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
+
+	if (usePredictors_)
+	{
+		factor = -1.0 * rB_ * pow(cos(theta), 2) * (delta_ - b_[k_]);
+		if (stateDot_->norm() > 0)
+		{
+			stateView_->update(1.0, *backup, 0.0);
+			stateView_->update(factor, *stateDot_, 1.0);
+		}
+		INFO("  ||x|| = " << stateView_->norm());
+	}
 
 	// Evaluate and compute RHS (B)
 	model_->computeRHS();
@@ -272,6 +302,15 @@ void Topo<Model, ParameterList>::computeRHS()
 	rhs_->update(facG_*facA_, *rhsA, facG_*facB_);
 	
 	INFO("    ||F(A) + F(B)|| = " << rhs_->norm());
+
+	if (usePredictors_	&& stateDot_->norm() > 0)
+	{
+		stateView_->update(1.0, *backup, 0.0);
+		factor = (-1/2) * (delta_ - (pow(cos(theta),2)*b_[k_] +
+									 pow(sin(theta),2)*a_[k_]));
+		stateView_->update(factor, *stateDot_, 1.0);
+		INFO("  ||x|| = " << stateView_->norm());
+	}
 }
 
 //==================================================================
@@ -325,12 +364,16 @@ void Topo<Model, ParameterList>::testRHS()
 	
 	// Predictor for B's state
 	double r = 0.0;
-	while (r > -5.0)
+	double nrm = rhs_->norm();
+	double oldNorm = nrm;
+	while (nrm <= oldNorm)
 	{
+		oldNorm = nrm;
+		
 		// Restore backup
 		stateView_->update(1.0, *stateCopy, 0.0);
 
-		factor = r * pow(cos(M_PI * delta_ / 2),2) * (delta_ - b_[k_]);
+		factor = -1.0 * r * pow(cos(M_PI * delta_ / 2),2) * (delta_ - b_[k_]);
 		stateView_->update(factor, *stateDot_, 1.0);
 		INFO("*test*  factor = " << factor << " r = " << r);
 	
@@ -339,11 +382,13 @@ void Topo<Model, ParameterList>::testRHS()
 		
 		// Let our rhs be a view
 		*rhs_ = *model_->getRHS('V');
+
+		nrm = rhs_->norm();
 		
 		INFO("*test* ||F(xp)|| = " <<  rhs_->norm() <<
 			 " facB " << facB_ << " : " << facB_ * rhs_->norm());
-		r -= .1;
-	}
+		r += .1;
+	}   
 }
 
 //==================================================================

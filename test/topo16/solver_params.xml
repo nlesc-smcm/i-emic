@@ -27,9 +27,9 @@
   <!-- ..................................................................-->
   <!-- FGMRES (Belos) parameters                                         -->  
   <!-- ..................................................................-->
-  <Parameter name="FGMRES tolerance" type="double" value="1e-3"/>
+  <Parameter name="FGMRES tolerance" type="double" value="1e-1"/>
   <Parameter name="FGMRES iterations" type="int" value="100"/>
-  <Parameter name="FGMRES output" type="int" value="10"/>
+  <Parameter name="FGMRES output" type="int" value="50"/>
 
   <!-- ..................................................................-->
   <!-- CoupledModel specific parameters                                  -->

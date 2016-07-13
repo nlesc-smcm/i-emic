@@ -195,12 +195,11 @@ TEST(Topo, View)
 //------------------------------------------------------------------
 TEST(Topo, RHS)
 {
-	topo->setPar(0.01);
+	topo->setPar(0.3);
 	topo->computeRHS();
 	topo->computeJacobian();
 	topo->preProcess();
 	topo->testRHS();
-	getchar();
 }
 
 //------------------------------------------------------------------

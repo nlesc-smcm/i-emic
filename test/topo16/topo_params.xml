@@ -4,15 +4,15 @@
 
 <ParameterList name="Topo parameters">
   
-  <Parameter name="Number of mask files" type="int" value="5"/>
+  <Parameter name="Number of mask files" type="int" value="3"/>
   
   <Parameter name="Mask file 0" type="string" value="topotest16/test0"/>
   <Parameter name="Mask file 1" type="string" value="topotest16/test1"/>
   <Parameter name="Mask file 2" type="string" value="topotest16/test2"/>
-  <Parameter name="Mask file 3" type="string" value="topotest16/test3"/>
-  <Parameter name="Mask file 4" type="string" value="topotest16/test4"/>
-  <Parameter name="Mask file 5" type="string" value="topotest16/test5"/>
-  <Parameter name="Mask file 6" type="string" value="topotest16/test5"/>
+  <!-- <Parameter name="Mask file 3" type="string" value="topotest16/test3"/> -->
+  <!-- <Parameter name="Mask file 4" type="string" value="topotest16/test4"/> -->
+  <!-- <Parameter name="Mask file 5" type="string" value="topotest16/test5"/> -->
+  <!-- <Parameter name="Mask file 6" type="string" value="topotest16/test5"/> -->
   
   <Parameter name="Delta" type="double" value="0.0"/>
   
@@ -21,7 +21,9 @@
   <!-- M : determine operator from max(facA,facB)     -->
   <!-- H : use both operators with a homotopy         -->
   <!-- N : M with scaling                             -->
-  <Parameter name="Preconditioning type" type="char" value="H" />  
+  <Parameter name="Preconditioning type" type="char" value="H" />
 
+  <!-- Predictors  -->
+  <Parameter name="Use predictors" type="bool" value="true" />
   
 </ParameterList>
