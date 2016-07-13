@@ -1,6 +1,6 @@
 % decide which plot to show in movie
 str = ['select plottype: \n(0) surftemp, (1) barstreamfunc,',...
-	   '(2) isothermals, (3) moc, (4) amoc\n'];
+	   '(2) isothermals, (3) moc, (4) amoc (5) zonal surface vel.\n'];
 plottype = input(str);
 
 surftemp      = false;
@@ -8,6 +8,7 @@ barstreamfunc = false;
 isothermals   = false;
 moc           = false;
 amoc          = false; % only working with 2deg landmask
+zonalsurf     = false;
 
 switch (plottype)
   case 0
@@ -20,6 +21,8 @@ switch (plottype)
 	moc = true;
   case 4
 	amoc = true;
+  case 5
+	zonalsurf = true;
 end
 
 % Create array of strings with filenames of the states (UNIX)
@@ -101,6 +104,9 @@ srf(:,:,3) = (1-greyness*(interp2(surfm(range,:)','linear')));
 minT = min(T(:)) + T0
 maxT = max(T(:)) + T0
 
+minU = min(u(:)) * udim;
+maxU = max(u(:)) * udim;
+
 %% - INTEGRATIONS - -------------------------------------------------
 
 % Barotropic streamfunction
@@ -155,6 +161,8 @@ elseif moc
   fname = ['moc',sprintf('%5.4f',par2),'.avi']
 elseif amoc
   fname = ['amoc',sprintf('%5.4f',par2),'.avi']
+elseif zonalsurf
+  fname = ['zonalsurf',sprintf('%5.4f',par2),'.avi']
 else
   fname = 'movie.avi'
 end
@@ -242,6 +250,10 @@ for file = 2:numel(filenames)
 	  APSIG = [zeros(size(APSIG,1),1) APSIG];
 	end
 
+	if zonalsurf
+	   USURF = u(:,:,end) * udim;
+	end
+
 	%% Create Temperature
 	% build longitudinal average over non-land cells
 	if isothermals
@@ -313,15 +325,16 @@ for file = 2:numel(filenames)
 	  ylabel('Latitude')
 
       if div > 1
-	  xtl  = get(gca,'xticklabel');
-	  xtl2 = xtl;
-	  for i = 1:numel(xtl)
+		xtl  = get(gca,'xticklabel');
+		xtl2 = xtl;
+	  
+		for i = 1:numel(xtl)
 		  xtl2{i} = num2str( str2num(xtl{i}) + round(RtD*x(div),-1) - 360 );
+		end
+		set(gca,'xticklabel',xtl2);
 	  end
-	  set(gca,'xticklabel',xtl2);
-      end
-      
-	elseif moc
+
+	  elseif moc
 	  contours = linspace(minPSIG,maxPSIG,40);
 	  contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',contours,'linewidth',2);
 	  colorbar
@@ -337,7 +350,16 @@ for file = 2:numel(filenames)
 	  title(['AMOC (Sv) ', sprintf('%5.4f',pr)], 'interpreter', 'none');
 	  xlabel('latitude')
 	  ylabel('depth (m)')
-		   
+
+	elseif zonalsurf % ---------------------------------------------------
+	  contours = linspace(minU,maxU,40);
+	  imagesc(RtD*x,RtD*y, USURF');
+	  set(gca,'ydir','normal');
+	  colorbar
+	  caxis([minU,maxU]);
+	  title(['Surface zonal velocity (m/s) ', sprintf('%5.4f',pr)], 'interpreter', 'none');
+	  xlabel('lon')
+	  ylabel('lat')		   
 	end
 	
 	fprintf('parameter: %f %f %f %f\n', pr, par1, par_incr, par2);	

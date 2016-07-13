@@ -101,7 +101,7 @@ private:
 	int k_;
 
 	//! Homotopy factors
-	double facA_, facB_;
+	double facA_, facB_, facG_;
 
  	//! Vectors of integers for selecting the right landmask.
 	//!  a_[i+1] = a_[i] + 2 * ((k_+1) % 2); a_[0] = 0
@@ -206,6 +206,8 @@ public:
 	//! return number of masks
 	int nMasks() { return nMasks_; }
 
+	//! test different RHS
+	void testRHS();
 private:
   	//! load the mask filenames
 	void loadMaskFileNames();
@@ -218,10 +220,10 @@ private:
 
 	//! initialize solver
 	void initializeSolver();
+
 };
 
 //------------------------------------------------------------------
-
 template <typename Model>
 struct Combined_Operator
 {
@@ -234,6 +236,7 @@ struct Combined_Operator
 	double facA;
 	double facB;
 	bool isPrec;
+	char precType;
 };
 
 //------------------------------------------------------------------
@@ -255,10 +258,33 @@ namespace Belos
 			{
 				if (Op.isPrec)
 				{
-					Epetra_MultiVector tmp = y;	
-					Op.PA->ApplyInverse(x, tmp);
-					Op.PB->ApplyInverse(x, y);
-					y.Update(Op.facA, tmp, Op.facB);
+					if (Op.precType == 'H') // Use homotopy
+					{
+						Epetra_MultiVector tmp = y;	
+						Op.PA->ApplyInverse(x, tmp);
+						Op.PB->ApplyInverse(x, y);
+						y.Update(Op.facA, tmp, Op.facB);
+					}
+					else if (Op.precType == 'M') // Look at max
+					{
+						if (Op.facA >= Op.facB)
+							Op.PA->ApplyInverse(x, y);
+						else
+							Op.PB->ApplyInverse(x, y);
+					}
+					else if (Op.precType == 'N') // Apply scaling
+					{
+						if (Op.facA >= Op.facB)
+						{
+							Op.PA->ApplyInverse(x, y);
+							y.Scale(1.0 / Op.facA);
+						}
+						else
+						{
+							Op.PB->ApplyInverse(x, y);
+							y.Scale(1.0 / Op.facB);
+						}
+					}
 				}
 				else
 				{

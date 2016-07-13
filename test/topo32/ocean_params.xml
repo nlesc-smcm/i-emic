@@ -28,13 +28,13 @@
     <!-- a descriptive name to identify the settings -->
     <Parameter name="Problem Description" type="string" value="test"/>
     <!-- western domain bound -->
-    <Parameter name="Global Bound xmin" type="double" value="300"/>
+    <Parameter name="Global Bound xmin" type="double" value="5"/>
     <!-- eastern domain bound -->
     <Parameter name="Global Bound xmax" type="double" value="350"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="-10"/>
+    <Parameter name="Global Bound ymin" type="double" value="-70"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="-80"/>
+    <Parameter name="Global Bound ymax" type="double" value="-10"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="1"/>
     <!-- depth of the ocean -->
@@ -43,17 +43,17 @@
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
-    <Parameter name="Grid Stretching qz" type="double" value="1.5"/>
+    <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="16"/>
+    <Parameter name="Global Grid-Size n" type="int" value="32"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="16"/>
+    <Parameter name="Global Grid-Size m" type="int" value="32"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="8"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
-   q <!-- 1: no land                                 -->
+	<!-- 1: no land                                 -->
     <!-- others not tested, but this is 'itopo' in  -->
     <!-- THCM language                              -->
     <Parameter name="Topography" type="int" value="0"/>
@@ -63,7 +63,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="topotest16/test0"/>
+    <Parameter name="Land Mask" type="string" value="topotest32/test0"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -75,7 +75,7 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
-      <Parameter name="Wind Forcing"        type="double" value="1.0"/>
+      <Parameter name="Wind Forcing"        type="double" value="0.0"/>
 	  <Parameter name="Temperature Forcing" type="double" value="10.0"/>
 	  <Parameter name="SPL1"                type="double" value="2.0e3"/>
 	  <Parameter name="SPL2"                type="double" value="0.01"/>

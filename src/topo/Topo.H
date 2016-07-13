@@ -151,6 +151,7 @@ void Topo<Model, ParameterList>::setPar(double par)
 	k_     = static_cast<int>(std::floor(delta_));
 	facA_  = pow(cos(M_PI * delta_ / 2), 2);
 	facB_  = pow(sin(M_PI * delta_ / 2), 2);
+	facG_  = pow(sin(M_PI * delta_), 2) + 1;
 
 	// ALTERNATIVE
 	// double dhat = delta_ - k_;
@@ -161,11 +162,6 @@ void Topo<Model, ParameterList>::setPar(double par)
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
 	facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
 	
-	// INFO("  <><>  delta = " << delta_ <<
-	// 	 " k = " << k_ <<
-	// 	 " facA = " << facA_ <<
-	// 	 " facB = " << facB_  << "  <><>  ");
-
 	if (std::abs(facA_ + facB_ - 1.0) > 1e-7)
 	{
 		std::stringstream errmsg;
@@ -248,30 +244,15 @@ Topo<Model, ParameterList>::getSolution(char mode)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeRHS()
 {
-	// Backup
- 	// VectorPtr stateCopy = model_->getState('C');
-	// double factor;
-	
  	// Set landmask (A) in the model
 	model_->setLandMask(landMasks_[a_[k_]]);	
 
-	// Predictor for A's state
-	// factor = pow(sin(M_PI * delta_ / 2),2)*(a_[k_] - delta_);
-	// stateView_->update(factor, *stateDot_, 1.0);
-	
 	// Evaluate and compute RHS (A)
 	model_->computeRHS();
 
 	// Get a copy of RHS (A)
 	VectorPtr rhsA = model_->getRHS('C');
 
-	// Restore backup
-	// stateView_->update(1.0, *stateCopy, 0.0);
-	
-	// Predictor for B's state
-	// factor = pow(cos(M_PI * delta_ / 2),2)*(b_[k_] - delta_);
-	// stateView_->update(factor, *stateDot_, 1.0);
-	
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
 
@@ -288,12 +269,81 @@ void Topo<Model, ParameterList>::computeRHS()
 		 " facB " << facB_ << " : " << facB_ * rhs_->norm());
 	
 	// Add facB * RHS(B) to facA * RHS(A)
-	rhs_->update(facA_, *rhsA, facB_);
+	rhs_->update(facG_*facA_, *rhsA, facG_*facB_);
 	
 	INFO("    ||F(A) + F(B)|| = " << rhs_->norm());
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::testRHS()
+{
+	// Backup
+ 	VectorPtr stateCopy = model_->getState('C');
+	double factor;
+	
+	// Set landmask (A) in the model
+	model_->setLandMask(landMasks_[a_[k_]]);	
+
+	// Evaluate and compute RHS (A)
+	model_->computeRHS();
+
+	// Get a copy of RHS (A)
+	VectorPtr rhsA = model_->getRHS('C');
+
+	INFO("*test* ||F(x )|| = " <<  rhsA->norm() <<
+		 " facA " << facA_ << " : " << facA_ * rhsA->norm());
+
+	// Predictor for A's state
+	factor = -1.0 * pow(sin(M_PI * delta_ / 2), 2) * (delta_ - a_[k_]);
+	stateView_->update(factor, *stateDot_, 1.0);
+	INFO("*test*  factor = " << factor);
+	
+	// Evaluate and compute RHS (A)
+	model_->computeRHS();
+
+	// Get a copy of RHS (A)
+	rhsA = model_->getRHS('C');
+
+	INFO("*test* ||F(xp)|| = " <<  rhsA->norm() <<
+		 " facA " << facA_ << " : " << facA_ * rhsA->norm());
 
 	// Restore backup
-	// stateView_->update(1.0, *stateCopy, 0.0);
+	stateView_->update(1.0, *stateCopy, 0.0);
+	
+	// set landmask (B) in the model
+	model_->setLandMask(landMasks_[b_[k_]]);
+
+	// Evaluate and compute RHS (B)
+	model_->computeRHS();
+	
+	// Let our rhs be a view
+	*rhs_ = *model_->getRHS('V');
+
+	INFO("*test* ||F(x )|| = " <<  rhs_->norm() <<
+		 " facB " << facB_ << " : " << facB_ * rhs_->norm());
+	
+	// Predictor for B's state
+	double r = 0.0;
+	while (r > -5.0)
+	{
+		// Restore backup
+		stateView_->update(1.0, *stateCopy, 0.0);
+
+		factor = r * pow(cos(M_PI * delta_ / 2),2) * (delta_ - b_[k_]);
+		stateView_->update(factor, *stateDot_, 1.0);
+		INFO("*test*  factor = " << factor << " r = " << r);
+	
+		// Evaluate and compute RHS (B)
+		model_->computeRHS();
+		
+		// Let our rhs be a view
+		*rhs_ = *model_->getRHS('V');
+		
+		INFO("*test* ||F(xp)|| = " <<  rhs_->norm() <<
+			 " facB " << facB_ << " : " << facB_ * rhs_->norm());
+		r -= .1;
+	}
 }
 
 //==================================================================
@@ -333,28 +383,13 @@ void Topo<Model, ParameterList>::computeDFDPar()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeJacobian()
 {
-	// Backup
-	// VectorPtr stateCopy = model_->getState('C');
-	// double factor;
-
 	// Get Jacobians
 	model_->setLandMask(landMasks_[a_[k_]]);
-
-	// Predictor for A's state
-	// factor = pow(sin(M_PI * delta_ / 2),2)*(a_[k_] - delta_);
-	// stateView_->update(factor, *stateDot_, 1.0);
 
 	model_->computeJacobian();
 	*matA_ = *model_->getJacobian();
 
-	// Restore backup
-	// stateView_->update(1.0, *stateCopy, 0.0);
-
 	model_->setLandMask(landMasks_[b_[k_]]);
-
-	// Predictor for B's state
-	// factor = pow(cos(M_PI * delta_ / 2),2)*(b_[k_] - delta_);
-	// stateView_->update(factor, *stateDot_, 1.0);
 
 	model_->computeJacobian();
 	*matB_ = *model_->getJacobian();
@@ -363,12 +398,10 @@ void Topo<Model, ParameterList>::computeJacobian()
 	combMat_.B      = matB_;
 	combMat_.PA     = PreconPtr();
 	combMat_.PB     = PreconPtr();
-	combMat_.facA   = facA_;
-	combMat_.facB   = facB_;		
+	combMat_.facA   = facA_*facG_;
+	combMat_.facB   = facB_*facG_;		
 	combMat_.isPrec = false;
-
-	// Restore backup
-	// stateView_->update(1.0, *stateCopy, 0.0);
+	combMat_.precType = 0;
 }
 
 //==================================================================
@@ -389,8 +422,6 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 	resB.scale(facB_);
 	
 	resA.update(1.0, *b, -1.0);
-	// INFO("   TOPO residual ||b-Ax|| / ||b||: " << resA.norm() / b->norm());
-	// INFO("                 ||b-Bx|| / ||b||: " << resB.norm() / b->norm());
 	resB.update(1.0, resA, -1.0);
 	INFO("             ||b-(A+B)x|| / ||b||: " << resB.norm() / b->norm());
 	return resB.norm();	
@@ -400,10 +431,8 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::buildPreconditioner()
 {
-	combPrec_.A      = MatrixPtr();
-	combPrec_.B      = MatrixPtr();
-	combPrec_.facA   = facA_;
-	combPrec_.facB   = facB_;		
+	combPrec_.facA   = facA_*facG_;
+	combPrec_.facB   = facB_*facG_;		
 
 	//------------------------------------------------------------------
 	// Preconditioner A
@@ -411,6 +440,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	
 	model_->setLandMask(landMasks_[a_[k_]]);
 	model_->computeJacobian();
+	*matA_ = *model_->getJacobian();
 	
 	if ( !initPrecs_[a_[k_]] )
 	{
@@ -427,6 +457,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 
 	model_->setLandMask(landMasks_[b_[k_]]);
 	model_->computeJacobian();
+	*matB_ = *model_->getJacobian();		
 	
 	if ( !initPrecs_[b_[k_]] )
 	{
@@ -437,11 +468,13 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 
 	precB_->Compute();		
 
-	//------------------------------------------------------------------
-	
-	combPrec_.PA = precA_;
-	combPrec_.PB = precB_;
-	combPrec_.isPrec = true;
+	//------------------------------------------------------------------	
+	combPrec_.A        = matA_;
+	combPrec_.B        = matB_;
+	combPrec_.PA       = precA_;
+	combPrec_.PB       = precB_;
+	combPrec_.isPrec   = true;
+	combPrec_.precType = pars_->get("Preconditioning type", 'H');
 }
 
 //==================================================================
@@ -565,13 +598,13 @@ void Topo<Model, ParameterList>::preProcess()
 {
 	model_->preProcess();
 	buildPreconditioner();
-	
-	// computeDFDPar();
-	// solve(dFdPar_);
-	// stateDot_ = getSolution('C');
-	// stateDot_->scale(-1.0);
-	// stateDot_->print("xdot");
-	// INFO(" ||stateDot|| = " << stateDot_->norm());
+
+	computeDFDPar();
+	solve(dFdPar_);
+	stateDot_ = getSolution('C');
+	stateDot_->scale(-1.0);
+	stateDot_->print("xdot");
+	INFO(" ||stateDot|| = " << stateDot_->norm());
 }
 
 //==================================================================

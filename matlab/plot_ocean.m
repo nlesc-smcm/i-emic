@@ -105,6 +105,7 @@ fprintf(1,'Average salinity deficiency of %12.8f psu.\n', -check/vol)
 %% Create Temperature
 % build longitudinal average over non-land cells
 Tl = zeros(m,l);
+Sl = zeros(m,l);
 for k = 1:l
   for j = 1:m
     count = 0;
@@ -112,9 +113,11 @@ for k = 1:l
       if landm_int(i,j,k) == 0
         count = count + 1;
         Tl(j,k) = Tl(j,k) + T(i,j,k);
+		Sl(j,k) = Sl(j,k) + S(i,j,k);
       end
     end
     Tl(j,k) = Tl(j,k) / count;
+	Sl(j,k) = Sl(j,k) / count;
   end
 end
 
@@ -200,12 +203,11 @@ img  = T0 + Tsurf(range,:)';
 %contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
 %set(gca,'color',[0.65,0.65,0.65]);
 %image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
-%contours = linspace(minT,maxT,40);
+%contours = linspace(minT,maxT,20);
 %contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1);
- imagesc(img);
+imagesc(RtD*x,RtD*(y),img)
 set(gca,'ydir','normal');
-grid on;
-hold off
+%hold off
 
 caxis([minT,maxT]);
 colorbar
@@ -247,8 +249,7 @@ end
 
 %%
 figure(6)
-Sp = squeeze(mean(S,1)); 
-contourf(RtD*yv(1:end-1),z*hdim,Sp'+S0,15);
+contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
 %imagesc(Sp'+S0);
 set(gca,'ydir','normal')
 %pcolor(RtD*yv(1:end-1),z*hdim,Sp'+S0);
@@ -279,7 +280,7 @@ img  = S0 + Ssurf(range,:)';
 % contours = linspace(minS,maxS,40);
 % contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1); hold off
 
-imagesc(img);
+imagesc(RtD*x,RtD*(y),img);
 set(gca,'ydir','normal');
 grid on
 caxis([minS,maxS]);
@@ -298,3 +299,9 @@ if glbl
 end
 
 exportfig('sss.eps',10,[50,25])
+
+
+figure(7)
+imagesc(RtD*x, RtD*y, squeeze(sum(u(:,:,end:end),3))');
+colorbar
+set(gca,'ydir','normal')
