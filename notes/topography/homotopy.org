@@ -12,6 +12,8 @@
    $F(\bvec{x},m_{a}) = 0$   RHS at topo $a$
    $F(\bvec{x},m_{b}) = 0$   RHS at topo $b$
    +---------------------------------------------+
+
+** DONE First try
    Homotopy function (1):
    $F^h(\bvec{x},\delta) = \hat{\delta} F(\bvec{x},m_b) + (1-\hat{\delta}) F(\bvec{x},m_a)$
    $a = \lfloor \delta \rfloor$ 
@@ -19,13 +21,14 @@
    $\hat{\delta} = \delta - a$
 
    +---------------------------------------------+
+** DONE Second try
    Homotopy function (2):
 
    $F^h(\bvec{x}, \delta) = \text{sin}^2(\frac{\pi \delta}{2})F(\bvec{x},m_{b}) + \text{cos}^2(\frac{\pi \delta}{2}) F(\bvec{x},m_{a})$
 
-   $\delta$  =  0..1..2..3..4..5..6..7 
-   $a$  =  0  2  2  4  4  6  6  8
-   $b$  =  1  1  3  3  5  5  7  7
+   $\delta$  =  0..1..2..3..4..5..6..7 ...
+   $a$  =  0  2  2  4  4  6  6  8 ...
+   $b$  =  1  1  3  3  5  5  7  7 ...
   
    $k = \lfloor \delta \rfloor$   
    $a_0 = 0$
@@ -38,13 +41,23 @@
 
    $F_\delta^h(\bvec{x}, \delta) = \pi \sin \left(\frac{\pi\delta}{2}\right) \cos\left(\frac{\pi\delta}{2}\right) 
           \big(F(\bvec{x},m_{b})-F(\bvec{x},m_{a})\big)$
-   
+
+   - The tangent for the predictor obtained from 
+        $F_\bvec{x}^h  \dot{\bvec{x}} = - F_\delta^h$ 	actually makes sense!
+
+   - Which Jacobian to use for the preconditioning is determined
+	 by $\max(\text{sin}^2(\frac{\pi \delta}{2}),\text{cos}^2(\frac{\pi \delta}{2}))$. We can replace this by a homotopy 
+	 between two preconditioners, but this doesn't seem to have 
+     many benefits.
+
+** TODO Third try 
    +---------------------------------------------+
    Homotopy function (3):
    $F^h(\bvec{x}, \delta) = \text{sin}^2(\frac{\pi \delta}{2})F(\mu(\bvec{x}),m_{b}) + \text{cos}^2(\frac{\pi \delta}{2}) F(\mu(\bvec{x}),m_{a})$
-   $\mu(\bvec{x})$ projects an existing solution on a new mask
-   
+   $\mu(\bvec{x})$ projects an existing solution on a new mask   
 
+
+** Continuation
    +---------------------------------------------+
    Pseudo-arclength continuation:
    \begin{align*}

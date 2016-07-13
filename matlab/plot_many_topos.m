@@ -312,13 +312,15 @@ for file = 2:numel(filenames)
 	  title(['Barotropic Streamfunction ', sprintf('%5.4f',pr)], 'interpreter', 'none');
 	  ylabel('Latitude')
 
+      if div > 1
 	  xtl  = get(gca,'xticklabel');
 	  xtl2 = xtl;
 	  for i = 1:numel(xtl)
 		  xtl2{i} = num2str( str2num(xtl{i}) + round(RtD*x(div),-1) - 360 );
 	  end
 	  set(gca,'xticklabel',xtl2);
-	  
+      end
+      
 	elseif moc
 	  contours = linspace(minPSIG,maxPSIG,40);
 	  contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',contours,'linewidth',2);
