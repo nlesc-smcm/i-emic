@@ -101,7 +101,6 @@ class Continuation
 	double practicalTol_;         // actual tolerance used for the problem
 	bool cycleTolerance_;         // if true we cycle between multiples of tol
 	bool usePracticalTol_;        // if true we scale the tolerance
-	bool scaleRHS_;               // experimental rhs scaling
 
 	// If the parameter dependence in the rhs is constant we can reuse statedot
 	// in the Newton corrector, partially disregarding updates in the Jacobian.

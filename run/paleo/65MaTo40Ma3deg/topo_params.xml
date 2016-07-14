@@ -7,12 +7,16 @@
   <Parameter name="Number of mask files" type="int" value="4"/>
   
   <Parameter name="Mask file 0" type="string" value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
-  <Parameter name="Mask file 1" type="string" value="paleo/Mask_60Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
-  <Parameter name="Mask file 2" type="string" value="paleo/Mask_55Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
-  <Parameter name="Mask file 3" type="string" value="paleo/Mask_55Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 1" type="string" value="paleo/65to64_level12_qz1.8.mask"/>
+  <Parameter name="Mask file 2" type="string" value="paleo/65to64_level11_qz1.8.mask"/>
+  <Parameter name="Mask file 3" type="string" value="paleo/65to64_level10_qz1.8.mask"/>
   
   <Parameter name="Delta" type="double" value="0.0"/>
   
   <Parameter name="Store everything" type="bool" value="true" />
+
+  <!-- M : determine operator from max(facA,facB)  -->
+  <!-- H : use both operators with a homotopy      -->
+  <Parameter name="Preconditioning type" type="char" value="H" />  
   
 </ParameterList>

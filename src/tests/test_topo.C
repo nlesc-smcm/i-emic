@@ -193,6 +193,17 @@ TEST(Topo, View)
 }
 
 //------------------------------------------------------------------
+TEST(Topo, RHS)
+{
+	topo->setPar(0.01);
+	topo->computeRHS();
+	topo->computeJacobian();
+	topo->preProcess();
+	topo->testRHS();
+	getchar();
+}
+
+//------------------------------------------------------------------
 TEST(Topo, Continuation)
 {
 	bool failed = false;

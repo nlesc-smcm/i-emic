@@ -244,8 +244,8 @@ SUBROUTINE set_landmask(a_landm, a_periodic)
   landm(:,:,l+1)  = LAND
  
   !  A few initializations need to be repeated
-  call vmix_init	! ATvS-Mix  USES LANDMASK
-  call forcing      ! USES LANDMASK
+  ! call vmix_init	! ATvS-Mix  USES LANDMASK
+  ! call forcing      ! USES LANDMASK
 
 !  _INFO_('THCM: usrc.F90 set_landmask...  done')  
 end subroutine set_landmask
