@@ -247,8 +247,7 @@ Ocean::LandMask Ocean::getLandMask(std::string const & fname)
 //===================================================================
 void Ocean::setLandMask(LandMask mask, bool global)
 {
-	// This will set a landmask without reinitializations for the local part
-	THCM::Instance().setLandMask(mask.local, false);
+	THCM::Instance().setLandMask(mask.local);
 
 	if (global)
 		THCM::Instance().setLandMask(mask.global);
