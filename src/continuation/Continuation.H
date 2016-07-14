@@ -538,7 +538,7 @@ runBackTracking(VectorPtr stateDir, double parDir)
 
 	for (backTrack_ = 0; backTrack_ != numBackTrackingSteps_; ++backTrack_)
 	{
-		// we allow for a significant increase
+		// we allow for a some increase
 		if (normRHStest_ < normRHS_ * increase) 
 			break;
 
