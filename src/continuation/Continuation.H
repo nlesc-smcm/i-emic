@@ -576,7 +576,7 @@ detect(char mode)
 	bool busy = false;
 	for (auto &dest: destinations_)
 	{
-		idx++; // counter
+		idx++; // destination counter
 		
 		par_ = model_->getPar(); // just to be on the safe side
 		double f0 = storage_.par0 - dest;
@@ -588,9 +588,16 @@ detect(char mode)
 		if (signMonitor_ != SGN(f1) && !secant_) // secant convergence
 		{
 			INFO("Continuation::detect():  sign switch in f1 detected");
-						
 			secant_     = true;
 			activeDest_ = dest;
+		}
+
+		if (std::abs(f1) < 10 * destinationTolerance_ && !secant_)
+		{
+			INFO("Continuation::detect():  f1 near destination");
+			secant_     = true;
+			activeDest_ = dest;
+
 		}
 
 		busy = (secant_ && (std::abs(activeDest_ - dest) < 1e-7));

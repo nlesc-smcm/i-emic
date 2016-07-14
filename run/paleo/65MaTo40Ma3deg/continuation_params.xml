@@ -4,20 +4,28 @@
 <ParameterList name="Continuation parameters">
   
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="1"/>
+  <Parameter name="initial step size" type="double" value="0.05"/>
   <Parameter name="minimum step size" type="double" value="0.01"/>
-  <Parameter name="maximum step size" type="double" value="1"/>
+  <Parameter name="maximum step size" type="double" value="0.5"/>
   
   <!-- Define the destination values for the continuation parameter.-->
   <Parameter name="destination 0" type="double" value="1.0"/>
   <Parameter name="destination 1" type="double" value="2.0"/>
-
+  <Parameter name="destination 2" type="double" value="3.0"/>
+  <Parameter name="destination 3" type="double" value="4.0"/>
+  <Parameter name="destination 4" type="double" value="5.0"/>
+  <Parameter name="destination 5" type="double" value="6.0"/>
+  <Parameter name="destination 6" type="double" value="7.0"/>
+  <Parameter name="destination 7" type="double" value="8.0"/>
+  <Parameter name="destination 8" type="double" value="9.0"/>
+  <Parameter name="destination 9" type="double" value="10.0"/>
+  
   <!-- Define the number of continuation steps              -->
   <!--   set to -1 to run indefinitely                      -->
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
+  <Parameter name="Newton tolerance" type="double" value="10"/>
   
   <!-- Tolerance when converging on destination         -->
   <!--  for both Newton and secant process in detect()  -->

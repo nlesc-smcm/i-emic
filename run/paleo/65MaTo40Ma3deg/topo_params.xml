@@ -4,7 +4,7 @@
 
 <ParameterList name="Topo parameters">
   
-  <Parameter name="Number of mask files" type="int" value="3"/>
+  <Parameter name="Number of mask files" type="int" value="12"/>
   
   <Parameter name="Mask file 0" type="string" value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
 
@@ -28,6 +28,7 @@
 	     value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/s0.9Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
 
   <Parameter name="Mask file 10" type="string" value="paleo/Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 11" type="string" value="paleo/Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
   
   <Parameter name="Delta" type="double" value="0.0"/>
   
