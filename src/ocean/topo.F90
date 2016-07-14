@@ -140,7 +140,7 @@ SUBROUTINE readmask
   ! the name of the desired mask in this file (to avoid having
   ! to pass a char-array to fortran)
   open(UNIT=42,file='mask_name.txt',status='old',err=123)
-  read(unit=42,fmt='(A100)',iostat=status,end=10) maskfile
+  read(unit=42,fmt='(A999)',iostat=status,end=10) maskfile
 
 10 continue      
   close(42)

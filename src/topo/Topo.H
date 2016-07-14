@@ -50,6 +50,7 @@ Topo(Model model, ParameterList pars)
 	stateView_ = model_->getState('V');
 	solView_   = model_->getSolution('V');
 	stateDot_  = model_->getState('C');
+	stateDot_->zero();
 	rhs_       = model_->getRHS('C');
 	dFdPar_    = model_->getRHS('C');
 
@@ -599,12 +600,12 @@ void Topo<Model, ParameterList>::preProcess()
 	model_->preProcess();
 	buildPreconditioner();
 
-	computeDFDPar();
-	solve(dFdPar_);
-	stateDot_ = getSolution('C');
-	stateDot_->scale(-1.0);
-	stateDot_->print("xdot");
-	INFO(" ||stateDot|| = " << stateDot_->norm());
+	// computeDFDPar();
+	// solve(dFdPar_);
+	// stateDot_ = getSolution('C');
+	// stateDot_->scale(-1.0);
+	// stateDot_->print("xdot");
+	// INFO(" ||stateDot|| = " << stateDot_->norm());
 }
 
 //==================================================================
