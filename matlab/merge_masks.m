@@ -20,7 +20,6 @@ for s = srange
   maskO = maskS;
   maskS = round((s*mask2) + ((1-s)*mask1));
 
-
   figure(2)
   imagesc(maskS)
   set(gca,'ydir','normal')
