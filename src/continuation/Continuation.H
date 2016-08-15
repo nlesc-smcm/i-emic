@@ -137,9 +137,10 @@ step()
 	// Let the model do some administrative work at the beginning of a step
 	model_->preProcess();
 	
-	computeTolerance();             // Calculate practical tolerance 
-	eulerPredictor(); 	            // Apply Euler predictor
-	int status = newtonCorrector(); // Apply Newton corrector
+	computeTolerance();         // Calculate practical tolerance
+
+	int status = 0;
+	status = eulerPredictor();  // Apply Euler predictor
 
 	// If necessary reset the step, otherwise perform a normal
 	// calculation of the tangent and step adjustment
@@ -148,25 +149,31 @@ step()
 		TIMER_STOP("Continuation: step");
 		return 1; // Consider this step failed
 	}
-	else          // Success
+	
+	status = newtonCorrector(); // Apply Newton corrector
+	if (status)   // Failure
 	{
-		// Print the residual and last solution from linear solve
-		rhsView_->print("residual");
-		model_->getSolution('V')->print("solution");
-		
-		// Put the parameter and norm of the state in the history
-		parHist_.push_back(par_);
-		stateNormHist_.push_back(stateView_->norm());
-
-		// Inspect the history for weird behaviour
-		analyzeHist();
-		
-		// Create new tangents based on result from newtonCorrector
-		createTangent('E');			
-		
-		// Let the model do some administrative work at the end of a succesful step 
-		model_->postProcess();
+		TIMER_STOP("Continuation: step");
+		return 1; // Consider this step failed
 	}
+
+	// Print the residual and last solution from linear solve
+	rhsView_->print("residual");
+	model_->getSolution('V')->print("solution");
+		
+	// Put the parameter and norm of the state in the history
+	parHist_.push_back(par_);
+	stateNormHist_.push_back(stateView_->norm());
+
+	// Inspect the history for weird behaviour
+	analyzeHist();
+		
+	// Create new tangents based on result from newtonCorrector
+	createTangent('S');			
+		
+	// Let the model do some administrative work at the end of a succesful step 
+	model_->postProcess();
+	
 	TIMER_STOP("Continuation: step");
 	return 0; // Exiting normally
 }
@@ -355,7 +362,7 @@ normalize()
 
 //======================================================================
 template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+int Continuation<Model, ParameterList>::
 eulerPredictor()
 {
 	INFO("Continuation: predictor");
@@ -378,6 +385,14 @@ eulerPredictor()
 
 	// Make sure the model has the same par
 	model_->setPar(par_);
+
+	// Test whether our prediction is acceptable
+	model_->computeRHS();
+	double rhsNrm = rhsView_->norm();
+	if (rhsNrm > 10) // --> magic number --> xls!
+		return 1;
+	else
+		return 0;
 }
 
 //======================================================================
@@ -719,7 +734,8 @@ reset()
 	INFO("|       new step size: " << ds_);
 	INFO("***********************************************");
 
-	createInitialTangent();
+	// I don't think we need this:
+	// createInitialTangent();
 }
 
 //======================================================================

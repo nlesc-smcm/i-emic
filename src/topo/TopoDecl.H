@@ -79,9 +79,13 @@ private:
 	//!  ranging continually from 0 to nMasks-1
 	double delta_;
 
+	//! The model's continuation parameter, which we might
+	//! want to affect as well
+	double modelPar_;
+
 	//! State
-	//!  is initialized with a view from the model's state
 	VectorPtr stateView_;
+	VectorPtr stateCopy_;
 
 	//! We keep our own stateDot
 	VectorPtr stateDot_;
@@ -92,6 +96,7 @@ private:
 
 	//! Derivative with respect to delta
 	VectorPtr dFdPar_;
+
 	//! Solution from solve()
 	//!  is initialized with a view from the model's solution	
 	VectorPtr solView_;
@@ -101,7 +106,7 @@ private:
 	int k_;
 
 	//! Homotopy factors
-	double facA_, facB_, facG_;
+	double facA_, facB_;
 
  	//! Vectors of integers for selecting the right landmask.
 	//!  a_[i+1] = a_[i] + 2 * ((k_+1) % 2); a_[0] = 0
@@ -242,7 +247,6 @@ struct Combined_Operator
 //------------------------------------------------------------------
 // Specialization of OperatorTraits
 //------------------------------------------------------------------
-
 namespace Belos
 {
 	template<typename Model>
@@ -267,10 +271,15 @@ namespace Belos
 					}
 					else if (Op.precType == 'M') // Look at max
 					{
-						if (Op.facA >= Op.facB)
-							Op.PA->ApplyInverse(x, y);
-						else
-							Op.PB->ApplyInverse(x, y);
+						// if (Op.facA >= Op.facB)
+						// 	Op.PA->ApplyInverse(x, y);
+						// else
+						// 	Op.PB->ApplyInverse(x, y);
+						y.Update(1.0,x,0.0);
+						
+						Epetra_MultiVector tmp = y;	
+						Op.PB->ApplyInverse(x, tmp);
+						y.Update(Op.facB, tmp, Op.facA);
 					}
 					else if (Op.precType == 'N') // Apply scaling
 					{
@@ -288,10 +297,8 @@ namespace Belos
 				}
 				else
 				{
- 					Epetra_MultiVector tmp = y;
-					Op.A->Apply(x, tmp);
 					Op.B->Apply(x, y);
-					y.Update(Op.facA, tmp, Op.facB);
+					y.Update(Op.facA, x, Op.facB);
 				}
 			}
 		

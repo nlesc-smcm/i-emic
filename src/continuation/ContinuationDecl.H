@@ -169,7 +169,7 @@ private:
 	// Modes: 'F' : force compute RHS
 	//        'A' : do not force compute RHS
 	void computeDFDPar(char mode = 'A');
-	void eulerPredictor();
+	int  eulerPredictor();
 	int  newtonCorrector();
 	int  runBackTracking(VectorPtr stateDir, double parDir);
 
