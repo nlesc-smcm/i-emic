@@ -389,8 +389,12 @@ eulerPredictor()
 	// Test whether our prediction is acceptable
 	model_->computeRHS();
 	double rhsNrm = rhsView_->norm();
+	INFO("   |                  norm rhs: " << rhsNrm);
 	if (rhsNrm > 10) // --> magic number --> xls!
+	{
+		INFO("   |      too big!");
 		return 1;
+	}
 	else
 		return 0;
 }
