@@ -169,7 +169,7 @@ step()
 	analyzeHist();
 		
 	// Create new tangents based on result from newtonCorrector
-	createTangent('S');			
+	createTangent('E');			
 		
 	// Let the model do some administrative work at the end of a succesful step 
 	model_->postProcess();

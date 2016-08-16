@@ -153,15 +153,16 @@ void Topo<Model, ParameterList>::setPar(double par)
 
 	// calculate index and coefficients
 	k_     = static_cast<int>(std::floor(delta_));
-	facA_  = pow(cos(M_PI * delta_ / 2), 2);
-	facB_  = pow(sin(M_PI * delta_ / 2), 2);
+	// facA_  = pow(cos(M_PI * delta_ / 2), 2);
+	// facB_  = pow(sin(M_PI * delta_ / 2), 2);
 
 	// ALTERNATIVE
-	// double dhat = delta_ - k_;
-	// facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
-	// facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
+	double dhat = delta_ - k_;
+	facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
+	facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
 
 	// correct for small values
+	
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
 	facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
 	
@@ -172,11 +173,11 @@ void Topo<Model, ParameterList>::setPar(double par)
 		errmsg << " facA + facB = " << facA_ + facB_;
 		ERROR(errmsg.str(), __FILE__, __LINE__);
 	}
-
-	// We perturb the model's parameter 
-	// double newModelPar = modelPar_ +
-	// 	sin(M_PI * delta_ * 2) * modelPar_ / 100;
-	// model_->setPar(newModelPar);	
+	
+	//	We perturb the model's parameter
+	double newModelPar = modelPar_ +
+		sin(M_PI * delta_ * 2) * modelPar_ / 100;
+	model_->setPar(newModelPar);
 }
 
 //==================================================================
@@ -625,11 +626,11 @@ void Topo<Model, ParameterList>::postProcess()
 	model_->setLandMask(landMasks_[r], true);
 
 	// If we are near a landmask we reset new land values
-	if (std::abs(facA_) < 1e-1)
+	if (std::abs(facA_) < 1e-3)
 	{
 		model_->applyLandMask(landMasks_[b_[k_]], 0.0);
 	}
-	else if (std::abs(facB_) < 1e-1)
+	else if (std::abs(facB_) < 1e-3)
 	{
 		model_->applyLandMask(landMasks_[a_[k_]], 0.0);
 	}

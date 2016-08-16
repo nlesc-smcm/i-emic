@@ -276,7 +276,7 @@ namespace Belos
 						// else
 						// 	Op.PB->ApplyInverse(x, y);
 						
-						Epetra_MultiVector tmp = y;
+						// Epetra_MultiVector tmp = y;
 						
 						// if (Op.facA > 1e-2)
 						// {
@@ -288,15 +288,15 @@ namespace Belos
 						// }
 						// else
 						// 	Op.PB->ApplyInverse(x, y);
-						Op.PB->ApplyInverse(x, tmp);
-						tmp.Update(1.0,x,-1.0);
-						Op.B->Apply(tmp,y);
-						y.Scale(Op.facB);
-						y.Update(1.0, x, -1.0);
-						
-						// y.Update(Op.facB, tmp, Op.facA);
+						// Op.PB->ApplyInverse(x, tmp);
+						// tmp.Update(1.0,x,-1.0);
+						// Op.B->Apply(tmp,y);
+						// y.Scale(Op.facB);
 
+						// Op.PB->ApplyInverse(x, y);
+						y.Update(1.0, x, 0.0);
 						
+						// y.Update(Op.facB, tmp, Op.facA);						
 					}
 					else if (Op.precType == 'N') // Apply scaling
 					{
