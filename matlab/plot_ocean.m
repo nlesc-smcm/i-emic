@@ -24,16 +24,8 @@ RtD   = 180/pi;              %[-]     Radians to degrees
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
 readfort44('fort.44'); 
 
-[~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, landm0] = ...
-readfort44('mask_0.mask'); 
-
-[~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, landm1] = ...
-readfort44('mask_1.mask'); 
-
 surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
 landm_int  = landm(2:n+1,2:m+1,2:l+1);
-landm_int0 = landm0(2:n+1,2:m+1,2:l+1);
-landm_int1 = landm1(2:n+1,2:m+1,2:l+1);
 dx         = (xu(n+1)-xu(1))/n;
 dy         = (yv(m+1)-yv(1))/m;
 dz         = (zw(l+1)-zw(1))/l;

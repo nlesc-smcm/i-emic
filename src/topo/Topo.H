@@ -72,7 +72,8 @@ Topo(Model model, ParameterList pars)
 	nrm2 = model_->getRHS('V')->norm();
 	
 	if (std::abs(nrm1 - nrm2) > 1e-10)
-		ERROR("Norms should not differ much!", __FILE__, __LINE__);
+		ERROR("Norms should not differ much! Choose correct initial landmask!"
+			  , __FILE__, __LINE__);
 
 	matA_  = rcp(new Matrix(*model_->getJacobian()));
 	matB_  = rcp(new Matrix(*model_->getJacobian()));
@@ -152,13 +153,13 @@ void Topo<Model, ParameterList>::setPar(double par)
 
 	// calculate index and coefficients
 	k_     = static_cast<int>(std::floor(delta_));
-	// facA_  = pow(cos(M_PI * delta_ / 2), 2);
-	// facB_  = pow(sin(M_PI * delta_ / 2), 2);
+	facA_  = pow(cos(M_PI * delta_ / 2), 2);
+	facB_  = pow(sin(M_PI * delta_ / 2), 2);
 
 	// ALTERNATIVE
-	double dhat = delta_ - k_;
-	facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
-	facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
+	// double dhat = delta_ - k_;
+	// facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
+	// facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
 
 	// correct for small values
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
@@ -173,9 +174,9 @@ void Topo<Model, ParameterList>::setPar(double par)
 	}
 
 	// We perturb the model's parameter 
-	double newModelPar = modelPar_ +
-		sin(M_PI * delta_ * 2) * modelPar_ / 100;
-	model_->setPar(newModelPar);	
+	// double newModelPar = modelPar_ +
+	// 	sin(M_PI * delta_ * 2) * modelPar_ / 100;
+	// model_->setPar(newModelPar);	
 }
 
 //==================================================================
@@ -271,7 +272,7 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	*rhs_ = *model_->getRHS('V');
 
 	INFO("    ||F(A)|| = " <<  x->norm() <<
-		 " facB " << facA_ << " : " << facA_ * x->norm());   
+		 " facA " << facA_ << " : " << facA_ * x->norm());   
 
 	INFO("    ||F(B)|| = " <<  rhs_->norm() <<
 		 " facB " << facB_ << " : " << facB_ * rhs_->norm());   
@@ -624,11 +625,11 @@ void Topo<Model, ParameterList>::postProcess()
 	model_->setLandMask(landMasks_[r], true);
 
 	// If we are near a landmask we reset new land values
-	if (std::abs(facA_) < 1e-3)
+	if (std::abs(facA_) < 1e-1)
 	{
 		model_->applyLandMask(landMasks_[b_[k_]], 0.0);
 	}
-	else if (std::abs(facB_) < 1e-3)
+	else if (std::abs(facB_) < 1e-1)
 	{
 		model_->applyLandMask(landMasks_[a_[k_]], 0.0);
 	}
