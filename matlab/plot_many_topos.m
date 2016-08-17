@@ -191,22 +191,24 @@ for file = 2:numel(filenames)
   par2 = pars(file);
 
   % - GET LANDMASK ----------------------------------------------------
-  [~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,landm] = ...
+  [~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,landm0] = ...
   readfort44(maskfiles{floor(par2)+1});
-  surfm = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
+  surfm = landm0(2:n+1,2:m+1,l+1);  %Only interior surface points
   srf1(:,:,1) = (1-greyness*(interp2(surfm(range,:)','linear')));
   srf1(:,:,2) = (1-greyness*(interp2(surfm(range,:)','linear')));
   srf1(:,:,3) = (1-greyness*(interp2(surfm(range,:)','linear')));
 
-  [~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,landm] = ...
+  [~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,landm1] = ...
   readfort44(maskfiles{min(floor(par2)+2,numel(maskfiles))});
-  surfm = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
+  surfm = landm1(2:n+1,2:m+1,l+1);  %Only interior surface points
   srf2(:,:,1) = (1-greyness*(interp2(surfm(range,:)','linear')));
   srf2(:,:,2) = (1-greyness*(interp2(surfm(range,:)','linear')));
   srf2(:,:,3) = (1-greyness*(interp2(surfm(range,:)','linear')));
 
   delta = par2 - floor(par2);
   srf = (1-delta)*srf1 + delta*srf2;
+  landm = (1-delta)*landm0 + delta*landm1;  
+  landm_int  = round(landm(2:n+1,2:m+1,2:l+1));
   
   for pr = parb:par_incr:pare
 
@@ -220,6 +222,16 @@ for file = 2:numel(filenames)
 	
 	%% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
 	[u,v,w,p,T,S] = extractsol(sol);
+
+	for k = 1:l
+	  for j = 1:m
+		for i = 1:n
+		  if landm1(i+1,j+1,k+1) == 1
+			u(i,j,k) = 0;
+		  end
+		end
+	  end
+	end
 
 	%% - INTEGRATIONS - --------------------------------------------------
 	% Barotropic streamfunction

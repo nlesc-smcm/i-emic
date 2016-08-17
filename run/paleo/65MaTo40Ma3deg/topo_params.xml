@@ -4,19 +4,39 @@
 
 <ParameterList name="Topo parameters">
   
-  <Parameter name="Number of mask files" type="int" value="4"/>
+  <Parameter name="Number of mask files" type="int" value="12"/>
   
   <Parameter name="Mask file 0" type="string" value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
-  <Parameter name="Mask file 1" type="string" value="paleo/65to64_level12_qz1.8.mask"/>
-  <Parameter name="Mask file 2" type="string" value="paleo/65to64_level11_qz1.8.mask"/>
-  <Parameter name="Mask file 3" type="string" value="paleo/65to64_level10_qz1.8.mask"/>
+
+  <Parameter name="Mask file 1" type="string" 
+	     value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/s0.1Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 2" type="string" 
+	     value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/s0.2Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 3" type="string" 
+	     value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/s0.3Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 4" type="string" 
+	     value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/s0.4Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 5" type="string" 
+	     value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/s0.5Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 6" type="string" 
+	     value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/s0.6Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 7" type="string" 
+	     value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/s0.7Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 8" type="string" 
+	     value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/s0.8Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 9" type="string" 
+	     value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/s0.9Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+
+  <Parameter name="Mask file 10" type="string" value="paleo/Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
+  <Parameter name="Mask file 11" type="string" value="paleo/Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.mask"/>
   
   <Parameter name="Delta" type="double" value="0.0"/>
   
   <Parameter name="Store everything" type="bool" value="true" />
 
-  <!-- M : determine operator from max(facA,facB)  -->
-  <!-- H : use both operators with a homotopy      -->
-  <Parameter name="Preconditioning type" type="char" value="H" />  
+  <!-- M : determine operator from max(facA,facB)            -->
+  <!-- N : determine operator from max(facA,facB) and scale  -->
+  <!-- H : use both operators with a homotopy (recommended)  -->
+  <Parameter name="Preconditioning type" type="char" value="M" />  
   
 </ParameterList>

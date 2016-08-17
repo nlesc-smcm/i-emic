@@ -152,7 +152,7 @@ public:
 				Teuchos::RCP<Epetra_Vector> fix = Teuchos::null);
 	
 	//! Set local (distributed) landmask in THCM
-	void setLandMask(Teuchos::RCP<Epetra_IntVector> landmask);
+	void setLandMask(Teuchos::RCP<Epetra_IntVector> landmask, bool init = true);
 
 	//! Set global landmask in THCM
 	void setLandMask(std::shared_ptr<std::vector<int> > landmask);

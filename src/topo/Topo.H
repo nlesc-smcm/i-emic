@@ -39,8 +39,9 @@ Topo(Model model, ParameterList pars)
 
 	double nrm1, nrm2;
 
-	// Set the parameter and coefficients
-	setPar(delta_);
+	// Set the parameters and coefficients
+	modelPar_ = model_->getPar();
+	setPar(delta_);	
 
 	model_->computeRHS();
 	nrm1 = model_->getRHS('V')->norm();
@@ -52,12 +53,13 @@ Topo(Model model, ParameterList pars)
 	
 	// We initialize our vectors with model vectors.
 	stateView_ = model_->getState('V');
+	stateCopy_ = model_->getState('C');
 	solView_   = model_->getSolution('V');
 	stateDot_  = model_->getState('C');
 	stateDot_->zero();
 	rhs_       = model_->getRHS('C');
 	dFdPar_    = model_->getRHS('C');
-
+	
 	// Setup indices k,a and b
 	k_ = static_cast<int>(std::floor(delta_));
 	a_ = std::vector<int>(nMasks_);
@@ -74,7 +76,8 @@ Topo(Model model, ParameterList pars)
 	nrm2 = model_->getRHS('V')->norm();
 	
 	if (std::abs(nrm1 - nrm2) > 1e-10)
-		ERROR("Norms should not differ much!", __FILE__, __LINE__);
+		ERROR("Norms should not differ much! Choose correct initial landmask!"
+			  , __FILE__, __LINE__);
 
 	matA_  = rcp(new Matrix(*model_->getJacobian()));
 	matB_  = rcp(new Matrix(*model_->getJacobian()));
@@ -154,17 +157,17 @@ void Topo<Model, ParameterList>::setPar(double par)
 
 	// calculate index and coefficients
 	k_     = static_cast<int>(std::floor(delta_));
-	facA_  = pow(cos(M_PI * delta_ / 2), 2);
-	facB_  = pow(sin(M_PI * delta_ / 2), 2);
-	//facG_  = pow(sin(M_PI * delta_), 2) + 1;
-	facG_  = 1.0;
+
+	// facA_  = pow(cos(M_PI * delta_ / 2), 2);
+	// facB_  = pow(sin(M_PI * delta_ / 2), 2);
 
 	// ALTERNATIVE
-	// double dhat = delta_ - k_;
-	// facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
-	// facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
+	double dhat = delta_ - k_;
+	facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
+	facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
 
 	// correct for small values
+	
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
 	facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
 	
@@ -175,6 +178,11 @@ void Topo<Model, ParameterList>::setPar(double par)
 		errmsg << " facA + facB = " << facA_ + facB_;
 		ERROR(errmsg.str(), __FILE__, __LINE__);
 	}
+	
+	//	We perturb the model's parameter
+	// double newModelPar = modelPar_ +
+	// 	sin(M_PI * delta_ * 2) * modelPar_ / 100;
+	// model_->setPar(newModelPar);
 }
 
 //==================================================================
@@ -248,10 +256,10 @@ Topo<Model, ParameterList>::getSolution(char mode)
 
 //==================================================================
 template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::computeRHS()
+void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 {
  	// Set landmask (A) in the model
-	model_->setLandMask(landMasks_[a_[k_]]);	
+	// model_->setLandMask(landMasks_[a_[k_]]);	
 
 	VectorPtr backup;
 	double factor;
@@ -267,10 +275,11 @@ void Topo<Model, ParameterList>::computeRHS()
 	}
 	
 	// Evaluate and compute RHS (A)
-	model_->computeRHS();
+	// model_->computeRHS();
 
 	// Get a copy of RHS (A)
-	VectorPtr rhsA = model_->getRHS('C');
+	VectorPtr x = model_->getState('C');
+	x->update(-1.0, *stateCopy_, 1.0);
 
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
@@ -291,15 +300,15 @@ void Topo<Model, ParameterList>::computeRHS()
 	
 	// Let our rhs be a view
 	*rhs_ = *model_->getRHS('V');
-	
-	INFO("    ||F(A)|| = " <<  rhsA->norm() <<
-		 " facA " << facA_ << " : " << facA_ * rhsA->norm());
+
+	INFO("    ||F(A)|| = " <<  x->norm() <<
+		 " facA " << facA_ << " : " << facA_ * x->norm());   
 
 	INFO("    ||F(B)|| = " <<  rhs_->norm() <<
-		 " facB " << facB_ << " : " << facB_ * rhs_->norm());
+		 " facB " << facB_ << " : " << facB_ * rhs_->norm());   
 	
 	// Add facB * RHS(B) to facA * RHS(A)
-	rhs_->update(facG_*facA_, *rhsA, facG_*facB_);
+	rhs_->update(facA_, *x, facB_);
 	
 	INFO("    ||F(A) + F(B)|| = " << rhs_->norm());
 
@@ -443,8 +452,8 @@ void Topo<Model, ParameterList>::computeJacobian()
 	combMat_.B      = matB_;
 	combMat_.PA     = PreconPtr();
 	combMat_.PB     = PreconPtr();
-	combMat_.facA   = facA_*facG_;
-	combMat_.facB   = facB_*facG_;		
+	combMat_.facA   = facA_;
+	combMat_.facB   = facB_;		
 	combMat_.isPrec = false;
 	combMat_.precType = 0;
 }
@@ -476,8 +485,8 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::buildPreconditioner()
 {
-	combPrec_.facA   = facA_*facG_;
-	combPrec_.facB   = facB_*facG_;		
+	combPrec_.facA   = facA_;
+	combPrec_.facB   = facB_;		
 
 	//------------------------------------------------------------------
 	// Preconditioner A
@@ -644,12 +653,12 @@ void Topo<Model, ParameterList>::preProcess()
 	model_->preProcess();
 	buildPreconditioner();
 
-	computeDFDPar();
-	solve(dFdPar_);
-	stateDot_ = getSolution('C');
-	stateDot_->scale(-1.0);
-	stateDot_->print("xdot");
-	INFO(" ||stateDot|| = " << stateDot_->norm());
+	// computeDFDPar();
+	// solve(dFdPar_);
+	// stateDot_ = getSolution('C');
+	// stateDot_->scale(-1.0);
+	// stateDot_->print("xdot");
+	// INFO(" ||stateDot|| = " << stateDot_->norm());
 }
 
 //==================================================================

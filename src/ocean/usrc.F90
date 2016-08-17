@@ -187,7 +187,7 @@ SUBROUTINE getooa(o_Ooa, o_Os)
 end subroutine getooa
 
 !***********************************************************
-SUBROUTINE set_landmask(a_landm, a_periodic)
+SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
   ! interface to set a new landmask
   use, intrinsic :: iso_c_binding
   use m_usr
@@ -196,6 +196,7 @@ SUBROUTINE set_landmask(a_landm, a_periodic)
   implicit none
 
   integer(c_int) :: a_periodic
+  integer(c_int) :: a_reinit
   integer(c_int), dimension((n+2)*(m+2)*(l+2)) :: a_landm
 
   integer :: i,j,k,pos
@@ -241,11 +242,13 @@ SUBROUTINE set_landmask(a_landm, a_periodic)
   landm(:,0,:)    = LAND   
   landm(:,m+1,:)  = LAND
   landm(:,:,0)    = LAND
-  landm(:,:,l+1)  = LAND
- 
-  !  A few initializations need to be repeated
-  ! call vmix_init	! ATvS-Mix  USES LANDMASK
-  ! call forcing      ! USES LANDMASK
+  landm(:,:,l+1)  = LAND 
+
+  if (a_reinit.eq.1) then
+     !  A few initializations need to be repeated
+     call vmix_init	! ATvS-Mix  USES LANDMASK
+     call forcing      ! USES LANDMASK
+  endif
 
 !  _INFO_('THCM: usrc.F90 set_landmask...  done')  
 end subroutine set_landmask

@@ -60,7 +60,7 @@ extern "C" {
                        double*,double*,double*,double*,double*);
 
 	// input:   landm
-	_SUBROUTINE_(set_landmask)(int *, int *);
+	_SUBROUTINE_(set_landmask)(int *, int *, int *);
 	
 	_SUBROUTINE_(finalize)(void);
 
@@ -1034,8 +1034,8 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 
 //=============================================================================
 // Set distributed landmask in THCM
-// set_landmask takes care of a few reinitializations
-void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask)
+// set_landmask takes care of a few reinitializations if requested
+void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask, bool init)
 {	
 	// in the main part of THCM (except m_global) we set periodic
 	// boundary conditions to .false. _unless_ we are running a
@@ -1045,8 +1045,9 @@ void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask)
 	
 	int *landm;
 	CHECK_ZERO(landmask->ExtractView(&landm));
-	
-	FNAME(set_landmask)(landm, &perio);
+
+	int reinit = (init) ? 1 : 0;
+	FNAME(set_landmask)(landm, &perio, &reinit);
 }
 
 //=============================================================================

@@ -57,7 +57,7 @@ module m_global
   logical ::  periodic
   real, dimension(:,:,:), allocatable :: internal_temp,internal_salt
 
-  character(len=100) :: maskfile, spertmaskfile
+  character(len=999) :: maskfile, spertmaskfile
 
 contains
 
