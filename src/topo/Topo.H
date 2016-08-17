@@ -175,9 +175,9 @@ void Topo<Model, ParameterList>::setPar(double par)
 	}
 	
 	//	We perturb the model's parameter
-	double newModelPar = modelPar_ +
-		sin(M_PI * delta_ * 2) * modelPar_ / 100;
-	model_->setPar(newModelPar);
+	// double newModelPar = modelPar_ +
+	// 	sin(M_PI * delta_ * 2) * modelPar_ / 100;
+	// model_->setPar(newModelPar);
 }
 
 //==================================================================
@@ -254,10 +254,10 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 {
  	// Set landmask (A) in the model
-	model_->setLandMask(landMasks_[a_[k_]]);	
+	// model_->setLandMask(landMasks_[a_[k_]]);	
 
 	// Evaluate and compute RHS (A)
-	model_->computeRHS();
+	// model_->computeRHS();
 
 	// Get a copy of RHS (A)
 	VectorPtr x = model_->getState('C');
