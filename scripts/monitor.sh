@@ -46,7 +46,7 @@ then
 	tmux new-session -d -s $session_name 'exec tail -f -n '$tailhist' '${SHARED_DIR}'/i-emic/'$dir'/dump '
 #	tmux split-window -h 'cd '${SHARED_DIR}'/i-emic/'$dir'/ && watch -n 5 -t ./plotresidual.sh '$linhist' '$newthist' '
 	tmux split-window -v -t 0 'exec  tail -f -n '$tailhist'  '${SHARED_DIR}'/i-emic/'$dir'/info_0.txt '
-	tmux resize-pane -L 30
+	tmux resize-pane -L 0
 	
 else
 
@@ -59,11 +59,11 @@ else
 	tmux split-window -v -t 0 'exec ssh -t '$server' \
 "tail -f -n '$tailhist' \${SHARED_DIR}/i-emic/'$dir'/info_0.txt" '
 	
-	tmux resize-pane -L 30
+	tmux resize-pane -L 0
 
 	tmux split-window -v -t 1 'exec ssh -t '$server' "cd \${SHARED_DIR}/i-emic/'$dir'/; bash" '
 	
-	tmux resize-pane -D 20
+	tmux resize-pane -D 0
 fi
 
 tmux rename-window 'Status'

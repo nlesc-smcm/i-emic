@@ -158,13 +158,13 @@ void Topo<Model, ParameterList>::setPar(double par)
 	// calculate index and coefficients
 	k_     = static_cast<int>(std::floor(delta_));
 
-	// facA_  = pow(cos(M_PI * delta_ / 2), 2);
-	// facB_  = pow(sin(M_PI * delta_ / 2), 2);
-
+	facA_  = pow(cos(M_PI * delta_ / 2), 2);
+	facB_  = pow(sin(M_PI * delta_ / 2), 2);
+	
 	// ALTERNATIVE
-	double dhat = delta_ - k_;
-	facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
-	facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
+	// double dhat = delta_ - k_;
+	// facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
+	// facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
 
 	// correct for small values
 	
@@ -405,9 +405,9 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeJacobian()
 {
 	// Get Jacobians
-	// model_->setLandMask(landMasks_[a_[k_]]);
+	model_->setLandMask(landMasks_[a_[k_]]);
 
-	// model_->computeJacobian();
+	model_->computeJacobian();
 	*matA_ = *model_->getJacobian();
 
 	model_->setLandMask(landMasks_[b_[k_]]);
@@ -456,17 +456,17 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	combPrec_.facB   = facB_;		
 
 	//------------------------------------------------------------------
-	// Preconditioner A // disabled
+	// Preconditioner A 
 	//------------------------------------------------------------------
 	
-	// model_->setLandMask(landMasks_[a_[k_]]);
-	// model_->computeJacobian();
+	model_->setLandMask(landMasks_[a_[k_]]);
+	model_->computeJacobian();
 	*matA_ = *model_->getJacobian();
 	
 	if ( !initPrecs_[a_[k_]] )
 	{
 		initPrecs_[a_[k_]] = true;
-		// model_->buildPreconditioner(true);
+		model_->buildPreconditioner(true);
 		precA_ = model_->getPreconPtr();
 	}	
 
