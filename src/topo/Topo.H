@@ -261,19 +261,6 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
  	// Set landmask (A) in the model
 	// model_->setLandMask(landMasks_[a_[k_]]);	
 
-	VectorPtr backup;
-	double factor;
-	double theta = M_PI * delta_ / 2;
-	if (usePredictors_)
-	{
-		INFO("  ||x|| = " << stateView_->norm());
-		backup = model_->getState('C');
-		factor = -1.0 * rA_ * pow(sin(theta), 2) * (delta_ - a_[k_]);
-		if (stateDot_->norm() > 0)
-			stateView_->update(factor, *stateDot_, 1.0);
-		INFO("  ||x|| = " << stateView_->norm());
-	}
-	
 	// Evaluate and compute RHS (A)
 	// model_->computeRHS();
 
@@ -283,17 +270,6 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
-
-	if (usePredictors_)
-	{
-		factor = -1.0 * rB_ * pow(cos(theta), 2) * (delta_ - b_[k_]);
-		if (stateDot_->norm() > 0)
-		{
-			stateView_->update(1.0, *backup, 0.0);
-			stateView_->update(factor, *stateDot_, 1.0);
-		}
-		INFO("  ||x|| = " << stateView_->norm());
-	}
 
 	// Evaluate and compute RHS (B)
 	model_->computeRHS();
@@ -311,15 +287,6 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	rhs_->update(facA_, *x, facB_);
 	
 	INFO("    ||F(A) + F(B)|| = " << rhs_->norm());
-
-	if (usePredictors_	&& stateDot_->norm() > 0)
-	{
-		stateView_->update(1.0, *backup, 0.0);
-		factor = (-1/2) * (delta_ - (pow(cos(theta),2)*b_[k_] +
-									 pow(sin(theta),2)*a_[k_]));
-		stateView_->update(factor, *stateDot_, 1.0);
-		INFO("  ||x|| = " << stateView_->norm());
-	}
 }
 
 //==================================================================
@@ -438,9 +405,9 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeJacobian()
 {
 	// Get Jacobians
-	model_->setLandMask(landMasks_[a_[k_]]);
+	// model_->setLandMask(landMasks_[a_[k_]]);
 
-	model_->computeJacobian();
+	// model_->computeJacobian();
 	*matA_ = *model_->getJacobian();
 
 	model_->setLandMask(landMasks_[b_[k_]]);
@@ -489,17 +456,17 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	combPrec_.facB   = facB_;		
 
 	//------------------------------------------------------------------
-	// Preconditioner A
+	// Preconditioner A // disabled
 	//------------------------------------------------------------------
 	
-	model_->setLandMask(landMasks_[a_[k_]]);
-	model_->computeJacobian();
+	// model_->setLandMask(landMasks_[a_[k_]]);
+	// model_->computeJacobian();
 	*matA_ = *model_->getJacobian();
 	
 	if ( !initPrecs_[a_[k_]] )
 	{
 		initPrecs_[a_[k_]] = true;
-		model_->buildPreconditioner(true);
+		// model_->buildPreconditioner(true);
 		precA_ = model_->getPreconPtr();
 	}	
 
