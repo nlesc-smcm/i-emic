@@ -141,7 +141,7 @@ step()
 
 	int status = 0;
 	status = eulerPredictor();  // Apply Euler predictor
-
+	
 	// If necessary reset the step, otherwise perform a normal
 	// calculation of the tangent and step adjustment
 	if (status)   // Failure
@@ -169,7 +169,7 @@ step()
 	analyzeHist();
 		
 	// Create new tangents based on result from newtonCorrector
-	createTangent('E');			
+	createTangent('S');			
 		
 	// Let the model do some administrative work at the end of a succesful step 
 	model_->postProcess();

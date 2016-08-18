@@ -79,6 +79,7 @@ Topo(Model model, ParameterList pars)
 		ERROR("Norms should not differ much! Choose correct initial landmask!"
 			  , __FILE__, __LINE__);
 
+	// FAIL!!!
 	matA_  = rcp(new Matrix(*model_->getJacobian()));
 	matB_  = rcp(new Matrix(*model_->getJacobian()));
 
@@ -158,13 +159,13 @@ void Topo<Model, ParameterList>::setPar(double par)
 	// calculate index and coefficients
 	k_     = static_cast<int>(std::floor(delta_));
 
-	facA_  = pow(cos(M_PI * delta_ / 2), 2);
-	facB_  = pow(sin(M_PI * delta_ / 2), 2);
+	// facA_  = pow(cos(M_PI * delta_ / 2), 2);
+	// facB_  = pow(sin(M_PI * delta_ / 2), 2);
 	
 	// ALTERNATIVE
-	// double dhat = delta_ - k_;
-	// facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
-	// facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
+	double dhat = delta_ - k_;
+	facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
+	facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
 
 	// correct for small values
 	
@@ -284,7 +285,10 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 		 " facB " << facB_ << " : " << facB_ * rhs_->norm());   
 	
 	// Add facB * RHS(B) to facA * RHS(A)
-	rhs_->update(facA_, *x, facB_);
+	if (facB_ < 0.95)
+		rhs_->update(facA_, *x, facB_);
+	else
+		rhs_->scale(facB_);
 	
 	INFO("    ||F(A) + F(B)|| = " << rhs_->norm());
 }
@@ -461,7 +465,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	
 	model_->setLandMask(landMasks_[a_[k_]]);
 	model_->computeJacobian();
-	*matA_ = *model_->getJacobian();
+	*matA_ = *(model_->getJacobian());
 	
 	if ( !initPrecs_[a_[k_]] )
 	{
@@ -478,7 +482,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 
 	model_->setLandMask(landMasks_[b_[k_]]);
 	model_->computeJacobian();
-	*matB_ = *model_->getJacobian();		
+	*matB_ = *(model_->getJacobian());		
 	
 	if ( !initPrecs_[b_[k_]] )
 	{
@@ -487,7 +491,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 		precB_ = model_->getPreconPtr();
 	}
 
-	precB_->Compute();		
+	precB_->Compute();
 
 	//------------------------------------------------------------------	
 	combPrec_.A        = matA_;
@@ -569,11 +573,30 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	if (!solverInitialized_)
 		initializeSolver();	
 
+	// TESTING
+	// Vector x = *stateView_;
+	// //x.putScalar(1.0);
+	// Vector y = *stateView_;
+	// y.putScalar(0.0);
+	// std::cout << x.norm() << std::endl;
+	// precA_->ApplyInverse(*x.getOceanVector(),*y.getOceanVector());
+	// std::cout << precA_->IsInitialized() << " " << y.norm() << std::endl;
+	// precB_->ApplyInverse(*x.getOceanVector(),*y.getOceanVector());
+	// std::cout << precB_->IsInitialized() << " " << y.norm() << std::endl;
+	
+	
 	// Initialize to zero
 	solView_->putScalar(0.0);
 
 	bool set;
 	set = problem_->setProblem(solView_->getOceanVector(), b->getOceanVector());
+	// TESTING
+	// problem_->applyRightPrec(*x.getOceanVector(),*y.getOceanVector());
+	// std::cout << " " << y.norm() << std::endl;
+	// model_->applyPrecon(x, y);
+	// std::cout << " " << y.norm() << std::endl;
+	// model_->solve(b);
+	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
 
@@ -590,7 +613,7 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	{
 		INFO("Ocean: exception caught: " << e.what());
 	}
-
+	
 	INFO("  TOPO:  solve... done");
 	TIMER_STOP("  TOPO:  solve...");
 
@@ -618,7 +641,7 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::preProcess()
 {
 	model_->preProcess();
-	buildPreconditioner();
+	// buildPreconditioner();
 
 	// computeDFDPar();
 	// solve(dFdPar_);

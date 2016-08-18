@@ -278,9 +278,12 @@ namespace Belos
 						Op.PB->ApplyInverse(x, y);
 						y.Update(Op.facA, tmp, Op.facB);
 					}
-					else if (Op.precType == 'M') // Look at max
+					else if (Op.precType == 'M') 
 					{
-						y.Update(1.0, x, 0.0);
+						if (Op.facB < 0.95)
+							y.Update(1.0, x, 0.0);
+						else
+							Op.PB->ApplyInverse(x, y);
 					}
 					else if (Op.precType == 'N') // Apply scaling
 					{
@@ -298,8 +301,13 @@ namespace Belos
 				}
 				else
 				{
-					Op.B->Apply(x, y);
-					y.Update(Op.facA, x, Op.facB);
+					if (Op.facB < 0.95)
+					{
+						Op.B->Apply(x, y);
+						y.Update(Op.facA, x, Op.facB);
+					}
+					else
+						Op.B->Apply(x, y);
 				}
 			}
 		

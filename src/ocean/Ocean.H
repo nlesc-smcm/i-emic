@@ -191,7 +191,7 @@ public:
 	void buildPreconditioner(bool forceInit = false);
 
 	//! Get pointer to preconditioning operator
-	PreconPtr getPreconPtr(){ return precPtr_;}
+	PreconPtr getPreconPtr() { return precPtr_; }
 
 	//! The parameter set members wrap the corresponding
 	//! Fortran functions. We keep an internal parameter name which

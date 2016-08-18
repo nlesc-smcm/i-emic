@@ -413,8 +413,8 @@ void Ocean::initializePreconditioner()
 								precParams.ptr());	
 
 	// Create and initialize block preconditioner
-	precPtr_ = 	Teuchos::rcp(new TRIOS::BlockPreconditioner
-							 (jac_, domain_, *precParams));
+	precPtr_ = Teuchos::rcp(new TRIOS::BlockPreconditioner
+							(jac_, domain_, *precParams));
 	
 	precPtr_->Initialize(); // Initialize
 	precPtr_->Compute();    // Compute
@@ -480,6 +480,8 @@ void Ocean::initializeBelos()
 	// A few FGMRES parameters are made available in solver_params.xml:
 	int gmresIters  = solverParams_->get("FGMRES iterations", 500);
 	double gmresTol = solverParams_->get("FGMRES tolerance", 1e-8);
+	int output      = solverParams_->get("FGMRES output", 100);
+		
 	
 	int NumGlobalElements = state_->GlobalLength();
 	int maxrestarts       = 0;
@@ -494,7 +496,7 @@ void Ocean::initializeBelos()
 	belosParamList_->set("Num Blocks", gmresIters);
 	belosParamList_->set("Maximum Restarts", maxrestarts);
 	belosParamList_->set("Orthogonalization","DGKS");
-	belosParamList_->set("Output Frequency", 100);
+	belosParamList_->set("Output Frequency", output);
 	belosParamList_->set("Verbosity", Belos::TimingDetails +
 						 Belos::Errors +
 						 Belos::Warnings +
@@ -545,7 +547,18 @@ void Ocean::solve(VectorPtr rhs)
 			idrSolver_.setRHS(getRHS('V'));
 		else
 			idrSolver_.setRHS(getVector('V',rhs->getOceanVector()));
-	}	
+	}
+
+	SuperVector x = *getState('C');
+	//x.putScalar(1.0);
+	std::cout << x.norm() << std::endl;	
+	SuperVector y = *getState('C');
+	y.putScalar(0.0);
+	problem_->applyRightPrec(*x.getOceanVector(),*y.getOceanVector());
+	std::cout << " " << y.norm() << std::endl;
+
+	getchar();
+	return;
 
 	// ---------------------------------------------------------------------
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs
