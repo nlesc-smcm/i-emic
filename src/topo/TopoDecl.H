@@ -280,10 +280,7 @@ namespace Belos
 					}
 					else if (Op.precType == 'M') 
 					{
-						if (Op.facB < 0.95)
-							y.Update(1.0, x, 0.0);
-						else
-							Op.PB->ApplyInverse(x, y);
+						Op.PB->ApplyInverse(x, y);
 					}
 					else if (Op.precType == 'N') // Apply scaling
 					{
@@ -301,13 +298,7 @@ namespace Belos
 				}
 				else
 				{
-					if (Op.facB < 0.95)
-					{
-						Op.B->Apply(x, y);
-						y.Update(Op.facA, x, Op.facB);
-					}
-					else
-						Op.B->Apply(x, y);
+					Op.B->Apply(x, y);
 				}
 			}
 		

@@ -79,12 +79,11 @@ Topo(Model model, ParameterList pars)
 		ERROR("Norms should not differ much! Choose correct initial landmask!"
 			  , __FILE__, __LINE__);
 
-	// FAIL!!!
 	matA_  = rcp(new Matrix(*model_->getJacobian()));
 	matB_  = rcp(new Matrix(*model_->getJacobian()));
 
 	initPrecs_ = std::vector<bool>(nMasks_, false);
-	
+
 	INFO("Topo constructor... done");
 }
 
@@ -259,38 +258,37 @@ Topo<Model, ParameterList>::getSolution(char mode)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 {
- 	// Set landmask (A) in the model
-	// model_->setLandMask(landMasks_[a_[k_]]);	
-
-	// Evaluate and compute RHS (A)
-	// model_->computeRHS();
-
 	// Get a copy of RHS (A)
 	VectorPtr x = model_->getState('C');
-	x->update(-1.0, *stateCopy_, 1.0);
 
+	// Overwrite state with initial
+	stateView_->update(1.0, *stateCopy_, 0.0);
+	
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
 
 	// Evaluate and compute RHS (B)
 	model_->computeRHS();
 	
-	// Let our rhs be a view
+	// Obtain residual
+	VectorPtr rB = model_->getRHS('C');
+	INFO("        norm rB = " << rB->norm());
+
+	// Restore state
+	stateView_->update(1.0, *x, 0.0);
+
+	// Evaluate and compute RHS (B)
+	model_->computeRHS();
+
+	// Get the view
 	*rhs_ = *model_->getRHS('V');
+	INFO("        norm fB = " << rhs_->norm());
 
-	INFO("    ||F(A)|| = " <<  x->norm() <<
-		 " facA " << facA_ << " : " << facA_ * x->norm());   
+	rhs_->update(-facA_, *rB, 1.0);
 
-	INFO("    ||F(B)|| = " <<  rhs_->norm() <<
-		 " facB " << facB_ << " : " << facB_ * rhs_->norm());   
-	
-	// Add facB * RHS(B) to facA * RHS(A)
-	if (facB_ < 0.95)
-		rhs_->update(facA_, *x, facB_);
-	else
-		rhs_->scale(facB_);
-	
-	INFO("    ||F(A) + F(B)|| = " << rhs_->norm());
+	INFO("           facA = " << facA_);
+	INFO("norm fB-facA*rB = " << rhs_->norm());
+
 }
 
 //==================================================================
