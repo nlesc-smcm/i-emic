@@ -38,6 +38,7 @@ Continuation(Model model, ParameterList pars)
 	cycleTolerance_        (pars->get("enable tolerance cycling", false)),
 	usePracticalTol_       (pars->get("enable practical tolerance", false)),
 	newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
+	tangentType_           (pars->get("tangent type", 'E')),
 	signMonitor_           (0)
 {
 	// Set the step size
@@ -169,7 +170,7 @@ step()
 	analyzeHist();
 		
 	// Create new tangents based on result from newtonCorrector
-	createTangent('S');			
+	createTangent(tangentType_);			
 		
 	// Let the model do some administrative work at the end of a succesful step 
 	model_->postProcess();

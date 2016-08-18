@@ -106,6 +106,11 @@ class Continuation
 	// in the Newton corrector, partially disregarding updates in the Jacobian.
 	// This means we do a partial Newton-chord iteration.
 	bool newtChordHybr_;
+
+	// Specify the tangent type in the body of the continuation
+	// E: Euler
+	// S: Secant
+	char tangentType_;
 	
 	int parDotSign_;              // used for detecting sign switch
 	int signMonitor_;             // track the sign of monitor in detect()

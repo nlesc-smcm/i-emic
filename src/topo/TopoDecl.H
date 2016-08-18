@@ -93,6 +93,7 @@ private:
 	//! Right hand side
 	//!  is initialized with a copy from the model's rhs	
 	VectorPtr rhs_;
+	VectorPtr rhsView_;
 
 	//! Derivative with respect to delta
 	VectorPtr dFdPar_;
@@ -150,7 +151,7 @@ private:
 	bool usePredictors_;
 
 	//! Enable this to dynamically estimate relaxation factors
-	bool calcRelax_;	
+	bool calcRelax_;
 
 public:	
 	//! default constructor
@@ -280,7 +281,10 @@ namespace Belos
 					}
 					else if (Op.precType == 'M') 
 					{
-						Op.PB->ApplyInverse(x, y);
+						if (Op.facB < 0.99)
+							y.Update(1.0, x, 0.0);
+						else
+							Op.PB->ApplyInverse(x, y);						
 					}
 					else if (Op.precType == 'N') // Apply scaling
 					{
@@ -298,7 +302,14 @@ namespace Belos
 				}
 				else
 				{
-					Op.B->Apply(x, y);
+					if (Op.facB < 0.99)
+					{
+						Op.B->Apply(x, y);
+						y.Update(Op.facA, x, Op.facB);
+					}
+					else
+						Op.B->Apply(x, y);
+
 				}
 			}
 		

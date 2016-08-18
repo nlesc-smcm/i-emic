@@ -214,6 +214,8 @@ public:
 
 	//! Apply landmask 
 	void applyLandMask(LandMask mask, double factor);	
+	void applyLandMask(Teuchos::RCP<Epetra_Vector> x,
+					   LandMask mask, double factor);	
 	void applyLandMask(LandMask mA, LandMask mB, double d);
 		
 	//! Pre and post-convergence processing

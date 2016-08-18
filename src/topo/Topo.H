@@ -58,6 +58,7 @@ Topo(Model model, ParameterList pars)
 	stateDot_  = model_->getState('C');
 	stateDot_->zero();
 	rhs_       = model_->getRHS('C');
+	rhsView_   = model_->getRHS('V');
 	dFdPar_    = model_->getRHS('C');
 	
 	// Setup indices k,a and b
@@ -84,6 +85,10 @@ Topo(Model model, ParameterList pars)
 
 	initPrecs_ = std::vector<bool>(nMasks_, false);
 
+	// Apply landmask B to stateCopy
+	model_->applyLandMask(stateCopy_->getOceanVector(),
+						  landMasks_[b_[k_]], 0.0);
+	
 	INFO("Topo constructor... done");
 }
 
@@ -179,10 +184,6 @@ void Topo<Model, ParameterList>::setPar(double par)
 		ERROR(errmsg.str(), __FILE__, __LINE__);
 	}
 	
-	//	We perturb the model's parameter
-	// double newModelPar = modelPar_ +
-	// 	sin(M_PI * delta_ * 2) * modelPar_ / 100;
-	// model_->setPar(newModelPar);
 }
 
 //==================================================================
@@ -262,32 +263,26 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	VectorPtr x = model_->getState('C');
 
 	// Overwrite state with initial
-	stateView_->update(1.0, *stateCopy_, 0.0);
+	x->update(-1.0, *stateCopy_, 1.0);
+	INFO("            norm x-xA = " << x->norm());
 	
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
 
 	// Evaluate and compute RHS (B)
-	model_->computeRHS();
-	
-	// Obtain residual
-	VectorPtr rB = model_->getRHS('C');
-	INFO("        norm rB = " << rB->norm());
-
-	// Restore state
-	stateView_->update(1.0, *x, 0.0);
-
-	// Evaluate and compute RHS (B)
-	model_->computeRHS();
+	model_->computeRHS();	
 
 	// Get the view
+	
 	*rhs_ = *model_->getRHS('V');
-	INFO("        norm fB = " << rhs_->norm());
+	INFO("              norm fB = " << rhs_->norm());
 
-	rhs_->update(-facA_, *rB, 1.0);
+	if (facB_ < 0.99)
+		rhs_->update(facA_, *x, facB_);
 
-	INFO("           facA = " << facA_);
-	INFO("norm fB-facA*rB = " << rhs_->norm());
+	INFO("                 facA = " << facA_);
+	INFO("                 facB = " << facB_);
+	INFO("facA*(x-xA) + facB*fB = " << rhs_->norm());
 
 }
 
@@ -531,7 +526,7 @@ void Topo<Model, ParameterList>::initializeSolver()
 	int output      = solverParams_->get("FGMRES output", 100);
 
 	int NumGlobalElements = stateView_->getOceanVector()->GlobalLength();
-	int maxrestarts       = 0;
+	int maxrestarts       = solverParams_->get("FGMRES restarts", 0);
 	int blocksize         = 1; // number of vectors in rhs
 	int maxiters          = NumGlobalElements / blocksize - 1;
 
@@ -571,30 +566,12 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	if (!solverInitialized_)
 		initializeSolver();	
 
-	// TESTING
-	// Vector x = *stateView_;
-	// //x.putScalar(1.0);
-	// Vector y = *stateView_;
-	// y.putScalar(0.0);
-	// std::cout << x.norm() << std::endl;
-	// precA_->ApplyInverse(*x.getOceanVector(),*y.getOceanVector());
-	// std::cout << precA_->IsInitialized() << " " << y.norm() << std::endl;
-	// precB_->ApplyInverse(*x.getOceanVector(),*y.getOceanVector());
-	// std::cout << precB_->IsInitialized() << " " << y.norm() << std::endl;
-	
-	
 	// Initialize to zero
 	solView_->putScalar(0.0);
 
 	bool set;
 	set = problem_->setProblem(solView_->getOceanVector(), b->getOceanVector());
-	// TESTING
-	// problem_->applyRightPrec(*x.getOceanVector(),*y.getOceanVector());
-	// std::cout << " " << y.norm() << std::endl;
-	// model_->applyPrecon(x, y);
-	// std::cout << " " << y.norm() << std::endl;
-	// model_->solve(b);
-	
+
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
 
@@ -639,14 +616,6 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::preProcess()
 {
 	model_->preProcess();
-	// buildPreconditioner();
-
-	// computeDFDPar();
-	// solve(dFdPar_);
-	// stateDot_ = getSolution('C');
-	// stateDot_->scale(-1.0);
-	// stateDot_->print("xdot");
-	// INFO(" ||stateDot|| = " << stateDot_->norm());
 }
 
 //==================================================================
