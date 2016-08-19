@@ -277,8 +277,10 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	*rhs_ = *model_->getRHS('V');
 	INFO("              norm fB = " << rhs_->norm());
 
-	if (facB_ < 0.99)
+	if (facB_ < 0.85)
 		rhs_->update(facA_, *x, facB_);
+	else
+		rhs_->scale(facB_);
 
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);

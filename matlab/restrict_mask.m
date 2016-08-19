@@ -1,4 +1,4 @@
-mask_name = 'Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
+mask_name = 'Mask_60Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
 saveRestricted = true;
 periodic = true;
 
