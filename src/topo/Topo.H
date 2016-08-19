@@ -85,9 +85,9 @@ Topo(Model model, ParameterList pars)
 
 	initPrecs_ = std::vector<bool>(nMasks_, false);
 
-	// Apply landmask B to stateCopy
-	model_->applyLandMask(stateCopy_->getOceanVector(),
-						  landMasks_[b_[k_]], 0.0);
+	// Apply landmask B to stateCopy //--> EXPERIMENTAL
+	// model_->applyLandMask(stateCopy_->getOceanVector(),
+	// 					  landMasks_[b_[k_]], 0.0);
 	
 	INFO("Topo constructor... done");
 }
@@ -420,6 +420,11 @@ void Topo<Model, ParameterList>::computeJacobian()
 	combMat_.facB   = facB_;		
 	combMat_.isPrec = false;
 	combMat_.precType = 0;
+
+	// We don't have to update the preconditioners
+	// but we do need to let them know the correct factors!
+	combPrec_.facA   = facA_;
+	combPrec_.facB   = facB_;
 }
 
 //==================================================================
