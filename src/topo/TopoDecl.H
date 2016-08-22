@@ -284,7 +284,7 @@ namespace Belos
 					{
 						// Op.B->Apply(x, y);
 						// y.Update(2.0-Op.facA, x, -Op.facB);
-						if (Op.facB < 0.95)
+						if (Op.facB < 0.99)
 							y = x;
 						else
 							Op.PB->ApplyInverse(x, y);
@@ -305,8 +305,15 @@ namespace Belos
 				}
 				else
 				{
-					Op.B->Apply(x, y);
-					y.Update(Op.facA, x, Op.facB);
+					if (Op.facB < 0.99)
+					{
+						Op.B->Apply(x, y);
+						y.Update(Op.facA, x, Op.facB);
+					}
+					else
+					{
+						Op.B->Apply(x, y);
+					}
 				}
 			}
 		

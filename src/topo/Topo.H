@@ -53,7 +53,6 @@ Topo(Model model, ParameterList pars)
 	
 	// We initialize our vectors with model vectors.
 	stateView_ = model_->getState('V');
-	stateCopy_ = model_->getState('C');
 	solView_   = model_->getSolution('V');
 	stateDot_  = model_->getState('C');
 	stateDot_->zero();
@@ -85,22 +84,23 @@ Topo(Model model, ParameterList pars)
 
 	initPrecs_ = std::vector<bool>(nMasks_, false);
 
-	// Apply landmask B to stateCopy //--> EXPERIMENTAL
-	model_->applyLandMask(stateCopy_->getOceanVector(),
-						  landMasks_[b_[k_]], 0.0);
-	model_->applyLandMask(stateView_->getOceanVector(),
-						  landMasks_[b_[k_]], 0.0);
+	// Apply landmask B to state //--> EXPERIMENTAL
 
-	// Calculate residue
 	// Set landmask (B) in the model
-	// model_->setLandMask(landMasks_[b_[k_]]);
+	model_->setLandMask(landMasks_[b_[k_]]);
+	model_->computeRHS();
+	INFO(" nrm before applyLandmask: " << rhsView_->norm());
 
-	// // Evaluate and compute RHS (B)
-	// model_->computeRHS();	
+	rhsView_->print("topores1");
+	model_->applyLandMask(stateView_->getOceanVector(),
+						  landMasks_[a_[k_]],
+						  landMasks_[b_[k_]]);
 
-	// // Get residue
-	// residue_   = model_->getRHS('C');	
-	
+	stateCopy_ = model_->getState('C');
+	model_->computeRHS();
+	rhsView_->print("topores2");
+	INFO(" nrm after  applyLandmask: " << rhsView_->norm());
+
 	INFO("Topo constructor... done");
 }
 
@@ -196,6 +196,10 @@ void Topo<Model, ParameterList>::setPar(double par)
 		ERROR(errmsg.str(), __FILE__, __LINE__);
 	}
 	
+	//	We perturb the model's parameter
+	double newModelPar = modelPar_ +
+		sin(M_PI * delta_ * 2) * modelPar_ / 100;
+	model_->setPar(newModelPar);	
 }
 
 //==================================================================
@@ -287,8 +291,11 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	// Get the view	
 	*rhs_ = *model_->getRHS('V');
 	INFO("              norm fB = " << rhs_->norm());
-	
-	rhs_->update(facA_, *x, facB_);
+
+	if (facB_ < 0.99)
+		rhs_->update(facA_, *x, facB_);
+	else
+		rhs_->update(0.0, *x, facB_);
 	
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);

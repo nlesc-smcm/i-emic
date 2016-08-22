@@ -8,6 +8,6 @@ mask1 = M1.maskp;
 mask2 = M2.maskp;
 
 diff = mask1 - mask2;
-figure(1); imagesc(mask1); set(gca,'ydir','normal');
-figure(2); imagesc(mask2); set(gca,'ydir','normal');
-figure(3); imagesc(diff);  set(gca,'ydir','normal');
+%figure(1); imagesc(mask1); set(gca,'ydir','normal');
+%figure(2); imagesc(mask2); set(gca,'ydir','normal');
+figure(3); imagesc(diff);  set(gca,'ydir','normal'); grid on

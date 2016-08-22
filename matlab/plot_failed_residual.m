@@ -8,7 +8,8 @@ surfm = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
 %reso = load('solution.ocean');
 
 %resa = load('failed_rhs.atmos');
-reso = load('failed_rhs.ocean');
+reso  = load('topores1.ocean');
+reso2 = load('topores2.ocean');
 %reso = load('xdot.ocean');
 %reso = load('stateDir.ocean');
 
@@ -40,6 +41,7 @@ L = l;
 Uo = zeros(m,n); % zonal velocity
 Wo = zeros(m,n); % vertical velocity	
 To = zeros(m,n); % temperature
+To2= zeros(m,n); % temperature
 TL = zeros(m,n); %
 So = zeros(m,n); %
 Ta = zeros(m,n); %
@@ -64,7 +66,8 @@ for j = 1:m
   for i = 1:n
 	Uo(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l,1));	
 	Wo(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l,3));	
-	To(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l,5));	
+	To(j,i)   = sum(reso(find_row(nun,n,m,l,i,j,1:l,5)));
+	To2(j,i)  = sum(reso2(find_row(nun,n,m,l,i,j,1:l,5)));
 	TL(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,L,5));
 	LM(m-j+1,i) = surfm(i,j);
 	So(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l,6));
@@ -77,19 +80,15 @@ mx = max(max(abs(To)));
 [j,i] = find(abs(To) == mx);
 fprintf('maximum in To at i=%d, j=%d\n', i, m-j+1);
 
-figure(1);
-v = [1 1];
-imagesc(To); title('surface temperature residual'); colorbar
-hold on;
-contour(mx*P,[-1e-10,0,1e-10])
-if norm(LM)
-  contour(mx*LM,2);
-end
-hold off
-exportfig('failed_residual_surftemp.eps',12,[20,12]);
+figure(1)
+imagesc(To);    title('surface temperature before'); grid on; colorbar
+set(gca,'ydir','normal');	
 
+figure(2)
+imagesc(To2);   title('surface temperature after'); grid on; colorbar
+set(gca,'ydir','normal');	
+return
 
-figure(2);
 mx = max(max(abs(TL)));
 imagesc(TL); title(['temperature residual in layer ', num2str(L)]); colorbar
 hold on;
@@ -98,9 +97,10 @@ if norm(LM)
   contour(mx*LM,2);
 end
 hold off
-exportfig('failed_residual_layer.eps',12,[20,12]);
+%exportfig('failed_residual_layer.eps',12,[20,12]);
 
-figure(3); imagesc(So); title('surface salinity residual');  colorbar
+
+figure(1); imagesc(So); title('surface salinity residual');  colorbar
 mx = max(max(abs(So)));
 hold on;
 contour(mx*P,[-1e-10,0,1e-10])
