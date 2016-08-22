@@ -10,10 +10,10 @@
 			 value="paleo/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/coarsened.mask"/>
 
   <Parameter name="Mask file 1" type="string"
-			 value="paleo/Mask_60Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/coarsened.mask"/>
+			 value="paleo/Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/coarsened.mask"/>
   
   <Parameter name="Mask file 2" type="string"
-			 value="paleo/Mask_60Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/coarsened.mask"/>
+			 value="paleo/Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8/coarsened.mask"/>
 
   <!-- Continuation parameter -->
   <Parameter name="Delta" type="double" value="0.0"/>

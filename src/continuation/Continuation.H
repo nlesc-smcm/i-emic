@@ -39,7 +39,7 @@ Continuation(Model model, ParameterList pars)
 	usePracticalTol_       (pars->get("enable practical tolerance", false)),
 	newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
 	tangentType_           (pars->get("tangent type", 'E')),
-	predictorBound_        (pars->get("predictor bound", 100)),
+	predictorBound_        (pars->get("predictor bound", 100.0)),
 	signMonitor_           (0)
 {
 	// Set the step size

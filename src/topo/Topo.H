@@ -86,8 +86,20 @@ Topo(Model model, ParameterList pars)
 	initPrecs_ = std::vector<bool>(nMasks_, false);
 
 	// Apply landmask B to stateCopy //--> EXPERIMENTAL
-	// model_->applyLandMask(stateCopy_->getOceanVector(),
-	// 					  landMasks_[b_[k_]], 0.0);
+	model_->applyLandMask(stateCopy_->getOceanVector(),
+						  landMasks_[b_[k_]], 0.0);
+	model_->applyLandMask(stateView_->getOceanVector(),
+						  landMasks_[b_[k_]], 0.0);
+
+	// Calculate residue
+	// Set landmask (B) in the model
+	// model_->setLandMask(landMasks_[b_[k_]]);
+
+	// // Evaluate and compute RHS (B)
+	// model_->computeRHS();	
+
+	// // Get residue
+	// residue_   = model_->getRHS('C');	
 	
 	INFO("Topo constructor... done");
 }
@@ -270,18 +282,14 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	model_->setLandMask(landMasks_[b_[k_]]);
 
 	// Evaluate and compute RHS (B)
-	model_->computeRHS();	
+	model_->computeRHS();
 
-	// Get the view
-	
+	// Get the view	
 	*rhs_ = *model_->getRHS('V');
 	INFO("              norm fB = " << rhs_->norm());
-
-	if (facB_ < 0.85)
-		rhs_->update(facA_, *x, facB_);
-	else
-		rhs_->scale(facB_);
-
+	
+	rhs_->update(facA_, *x, facB_);
+	
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);
 	INFO("facA*(x-xA) + facB*fB = " << rhs_->norm());

@@ -94,6 +94,7 @@ private:
 	//!  is initialized with a copy from the model's rhs	
 	VectorPtr rhs_;
 	VectorPtr rhsView_;
+	VectorPtr residue_;	
 
 	//! Derivative with respect to delta
 	VectorPtr dFdPar_;
@@ -281,14 +282,12 @@ namespace Belos
 					}
 					else if (Op.precType == 'M') 
 					{
-						if (Op.facB < 0.85)
-						{
-							y.Update(1.0, x, 0.0);
-						}
+						// Op.B->Apply(x, y);
+						// y.Update(2.0-Op.facA, x, -Op.facB);
+						if (Op.facB < 0.95)
+							y = x;
 						else
-						{
 							Op.PB->ApplyInverse(x, y);
-						}			   
 					}
 					else if (Op.precType == 'N') // Apply scaling
 					{
@@ -306,15 +305,8 @@ namespace Belos
 				}
 				else
 				{
-					if (Op.facB < 0.85)
-					{
-						Op.B->Apply(x, y);
-						y.Update(Op.facA, x, Op.facB);
-					}
-					else
-					{
-						Op.B->Apply(x, y);
-					}
+					Op.B->Apply(x, y);
+					y.Update(Op.facA, x, Op.facB);
 				}
 			}
 		
