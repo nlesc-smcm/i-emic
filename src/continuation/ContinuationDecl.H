@@ -92,8 +92,8 @@ class Continuation
    	int newtonIter_;              // newton iteration counter
 	int maxNewtonIterations_;     // set the max for the Newton iterations
 	int minNewtonIterations_;     // set the min for the Newton iterations
-	int minAllowedIterations_;    // if less then we increase the step size
-	int maxAllowedIterations_;    // if more then we decrease the step size
+	int minAllowedIterations_;    // if less then we increase the step-size
+	int maxAllowedIterations_;    // if more then we decrease the step-size
 	double newtonTolerance_;      // set the tolerance in the Newton corrector
 	double destinationTolerance_; // set the tolerance for the final convergence
 	double tanScaling_;           // scaling of the state tangent
@@ -111,6 +111,10 @@ class Continuation
 	// E: Euler
 	// S: Secant
 	char tangentType_;
+
+	// Specify a bound on the RHS computed from the predicted state
+	// If it exceeds the bound we choose a smaller step size-ds
+	double predictorBound_;
 	
 	int parDotSign_;              // used for detecting sign switch
 	int signMonitor_;             // track the sign of monitor in detect()

@@ -39,6 +39,7 @@ Continuation(Model model, ParameterList pars)
 	usePracticalTol_       (pars->get("enable practical tolerance", false)),
 	newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
 	tangentType_           (pars->get("tangent type", 'E')),
+	predictorBound_        (pars->get("predictor bound", 100)),
 	signMonitor_           (0)
 {
 	// Set the step size
@@ -391,7 +392,7 @@ eulerPredictor()
 	model_->computeRHS();
 	double rhsNrm = rhsView_->norm();
 	INFO("   |                  norm rhs: " << rhsNrm);
-	if (rhsNrm > 100) // --> magic number --> xls!
+	if (rhsNrm > predictorBound_) 
 	{
 		INFO("   |      too big!");
 		return 1;
