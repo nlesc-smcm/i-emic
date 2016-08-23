@@ -45,9 +45,9 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.8"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="60"/>
+    <Parameter name="Global Grid-Size n" type="int" value="40"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="27"/>
+    <Parameter name="Global Grid-Size m" type="int" value="18"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="6"/>
 
@@ -75,9 +75,9 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-      <Parameter name="Temperature Forcing" type="double" value="10.0"/>
+      <Parameter name="Temperature Forcing" type="double" value="0.0"/>
       <Parameter name="SPL1"                type="double" value="2.0e3"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>	  
     </ParameterList>

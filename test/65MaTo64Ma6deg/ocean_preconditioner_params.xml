@@ -29,9 +29,9 @@
   <!-- This solver is used inside the 'Simple' preconditioner              -->
   <ParameterList name="Auv Solver">
     <!-- up to now only "AztecOO" or "None" (just apply precond once) -->
-    <Parameter name="Method" type="string" value="None"/>
+    <Parameter name="Method" type="string" value="AztecOO"/>
     <!-- maximum number of iterations permitted -->
-    <Parameter name="Max Num Iter" type="int" value="1"/>
+    <Parameter name="Max Num Iter" type="int" value="10"/>
     <!-- (relative) convergence tolerance      -->
     <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <!-- options include "GMRES", "GMRESR", etc. -->
@@ -476,7 +476,7 @@
       <!-- can be "AztecOO" or "None" -->
       <Parameter name="Method" type="string" value="AztecOO"/>
       <Parameter name="Max Num Iter" type="int" value="500"/>
-      <Parameter name="Tol" type="double" value="1.0e-2"/>
+      <Parameter name="Tol" type="double" value="1.0e-3"/>
       <Parameter name="Solver" type="string" value="GMRESR"/>
       <Parameter name="Conv" type="string" value="r0"/>
       <Parameter name="Scaling" type="string" value="None"/>
@@ -486,7 +486,7 @@
       <Parameter name="Graph_Fill" type="double" value="1.0"/>
       <Parameter name="ILUT_Fill" type="double" value="1.0"/>
       <Parameter name="Drop" type="double" value="1.0e-8"/>
-      <Parameter name="KSpace" type="int" value="100"/>
+      <Parameter name="KSpace" type="int" value="250"/>
       <Parameter name="Orthog" type="string" value="Classic"/>
       <Parameter name="Output" type="int" value="0"/>
     </ParameterList><!-- } Grad-Div Solver -->

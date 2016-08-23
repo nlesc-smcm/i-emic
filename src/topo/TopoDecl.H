@@ -282,12 +282,12 @@ namespace Belos
 					}
 					else if (Op.precType == 'M') 
 					{
-						// Op.B->Apply(x, y);
-						// y.Update(2.0-Op.facA, x, -Op.facB);
 						if (Op.facB < 0.99)
 							y = x;
 						else
+						{
 							Op.PB->ApplyInverse(x, y);
+						}
 					}
 					else if (Op.precType == 'N') // Apply scaling
 					{

@@ -588,20 +588,20 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	if (!solverInitialized_)
 		initializeSolver();	
 
-	// Initialize to zero
-	solView_->putScalar(0.0);
-
-	bool set;
-	set = problem_->setProblem(solView_->getOceanVector(), b->getOceanVector());
-
-	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
-							   "*** Belos::LinearProblem failed to setup");
-
 	TIMER_START("  TOPO:  solve...");
 	INFO("  TOPO:  solve...");
-	int    iters;
-	double tol;
 
+	int    innerIters;
+	double innerTol, outerTol;
+	bool   set;
+	
+	Vector resB = *getSolution('C');	
+
+	set = problem_->setProblem(solView_->getOceanVector(),
+							   b->getOceanVector());
+		
+	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
+							   "*** Belos::LinearProblem failed to setup");
 	try
 	{
 		belosSolver_->solve(); 	// Solve
@@ -610,17 +610,27 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	{
 		INFO("Ocean: exception caught: " << e.what());
 	}
+
+	innerIters = belosSolver_->getNumIters();
+	innerTol   = belosSolver_->achievedTol();
+
+	INFO("  TOPO: FGMRES, inner = " <<
+		 innerIters << ", ||r|| = " << innerTol);
+	
+	INFO("  TOPO: FGMRES  ||x|| = " << solView_->norm());
+	
+	combMat_.B->Apply(*solView_->getOceanVector(),
+					  *resB.getOceanVector());
+	resB.update(1.0, *b, -facB_);
+	resB.update(-facA_, *solView_, 1.0);
+		
+	outerTol = resB.norm();
+	INFO("  TOPO: FGMRES, actual ||r|| = " << outerTol);
+		
+	TRACK_ITERATIONS("  TOPO: FGMRES iterations...", innerIters);		
 	
 	INFO("  TOPO:  solve... done");
 	TIMER_STOP("  TOPO:  solve...");
-
-	iters = belosSolver_->getNumIters();
-	tol   = belosSolver_->achievedTol();
-	INFO("  TOPO: FGMRES, i = " << iters << ", ||r|| = " << tol);
-	
-	TRACK_ITERATIONS("  TOPO: FGMRES iterations...", iters);
-
-	computeResidual(b);
 }
 
 //==================================================================

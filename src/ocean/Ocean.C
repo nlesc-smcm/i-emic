@@ -324,7 +324,7 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 	int lidC, lidE, lidW;
 	int ii;
 	int dir;
-
+	
 	for (int k = 1; k != L_+1; ++k)
 		for (int j = 1; j != M_+1; ++j)
 			for (int i = 1; i != N_+1; ++i)

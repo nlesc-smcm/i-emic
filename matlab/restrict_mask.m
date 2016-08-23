@@ -1,4 +1,4 @@
-mask_name = 'Mask_60Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
+mask_name = 'Mask_64Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
 saveRestricted = true;
 periodic = true;
 
@@ -15,16 +15,16 @@ l = max(max(mask)); % levels
 fprintf('mask has dimensions %d x %d x %d\n', n,m,l);
 fprintf('cutting these in half...\n');
 
-mask = round(mask / 2);
-M = m/2;
-N = n/2;
+mask = round(mask / 2); %restrict depth
+M = m/3;                %restrict horizontal directions
+N = n/3;
 mask2 = zeros(M,N);
 
 for j = 1:M
   for i = 1:N
-	  jrange = (j-1)*2 + 1 : j*2;
-	  irange = (i-1)*2 + 1 : i*2;
-	  mask2(j,i) = round(sum(sum(mask(jrange, irange)))/4);
+	  jrange = (j-1)*3 + 1 : j*3;
+	  irange = (i-1)*3 + 1 : i*3;
+	  mask2(j,i) = round(sum(sum(mask(jrange, irange)))/9);
   end
 end
 
