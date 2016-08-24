@@ -191,23 +191,25 @@ for file = 2:numel(filenames)
   par2 = pars(file);
 
   % - GET LANDMASK ----------------------------------------------------
-  [~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,landm0] = ...
-  readfort44(maskfiles{floor(par2)+1});
-  surfm = landm0(2:n+1,2:m+1,l+1);  %Only interior surface points
+  [~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,landm1] = ...
+  readfort44(maskfiles{floor(par1)+1});
+  surfm = landm1(2:n+1,2:m+1,l+1);  %Only interior surface points
   srf1(:,:,1) = (1-greyness*(interp2(surfm(range,:)','linear')));
   srf1(:,:,2) = (1-greyness*(interp2(surfm(range,:)','linear')));
   srf1(:,:,3) = (1-greyness*(interp2(surfm(range,:)','linear')));
 
-  [~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,landm1] = ...
-  readfort44(maskfiles{min(floor(par2)+2,numel(maskfiles))});
-  surfm = landm1(2:n+1,2:m+1,l+1);  %Only interior surface points
+  [~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,landm2] = ...
+  readfort44(maskfiles{min(floor(par1)+2,numel(maskfiles))});
+  surfm = landm2(2:n+1,2:m+1,l+1);  %Only interior surface points
   srf2(:,:,1) = (1-greyness*(interp2(surfm(range,:)','linear')));
   srf2(:,:,2) = (1-greyness*(interp2(surfm(range,:)','linear')));
   srf2(:,:,3) = (1-greyness*(interp2(surfm(range,:)','linear')));
 
-  delta = par2 - floor(par2);
-  srf = (1-delta)*srf1 + delta*srf2;
-  landm = (1-delta)*landm0 + delta*landm1;  
+  delta1 = par1 - floor(par1);
+  delta2 = par2 - floor(par2);
+  srfl  = (1-delta1)*srf1   + delta1*srf2;
+  srfr  = (1-delta2)*srf1   + delta2*srf2;
+  landm = (1-delta2)*landm1 + delta2*landm2;  
   landm_int  = round(landm(2:n+1,2:m+1,2:l+1));
   
   for pr = parb:par_incr:pare
@@ -218,20 +220,20 @@ for file = 2:numel(filenames)
 	% HOMOTOPY --------------------------------------------------------
 	a = (pr-par1) / (par2-par1);
 	sol = (1-a)*sol1 + a*sol2;
-
+	srf = (1-a)*srfl + a*srfr;
 	
 	%% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
 	[u,v,w,p,T,S] = extractsol(sol);
 
-	for k = 1:l
-	  for j = 1:m
-		for i = 1:n
-		  if landm1(i+1,j+1,k+1) == 1
-			u(i,j,k) = 0;
-		  end
-		end
-	  end
-	end
+	%for k = 1:l
+	%  for j = 1:m
+	%	for i = 1:n
+	%	  if landm2(i+1,j+1,k+1) == 1
+	%		u(i,j,k) = 0;
+	%	  end
+	%	end
+	%  end
+	%end
 
 	%% - INTEGRATIONS - --------------------------------------------------
 	% Barotropic streamfunction
@@ -287,19 +289,20 @@ for file = 2:numel(filenames)
 	if surftemp %----------------------------------
 
 	  Tsurf = T(:,:,l);
-	  for j = 1:m
-		for i = 1:n
-		  if surfm(i,j) == 1
-			Tsurf(i,j) = -999;
-		  end
-		end
-	  end
+	  %## for j = 1:m
+	  %## 	for i = 1:n
+	  %## 	  if surfm(i,j) == 1
+	  %## 		Tsurf(i,j) = -999;
+	  %## 	  end
+	  %## 	end
+	  %## end
 	  img  = T0 + Tsurf(range,:)';
-	  contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
-	  set(gca,'color',[0.65,0.65,0.65]);
-	  image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
-	  contours = linspace(minT,maxT,40);
-	  contourf(RtD*x,RtD*(y),img,contours); hold off
+%	  contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
+%	  set(gca,'color',[0.65,0.65,0.65]);
+%	  image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
+%	  contours = linspace(minT,maxT,40);
+	  imagesc(RtD*x,RtD*(y),img); hold off
+	  set(gca,'ydir','normal')
 	  
 	  colorbar
 	  caxis([minT,maxT]);
@@ -324,7 +327,7 @@ for file = 2:numel(filenames)
 	  %imagesc(RtD*x,RtD*(y),img,'AlphaData',.5); hold on
 	  image(RtD*x,RtD*(y),srf,'AlphaData',.9); hold on
 	  %contours = [fliplr(1-logspace(0.1,log10(abs(minval)),30)),-1+logspace(-.1,log10(abs(maxval)),10)]
-	  contours = linspace(minval,maxval,40);
+	  contours = linspace(minval,maxval,25);
 	  %contour(RtD*x,RtD*y,(surfm(range,:)'),1,'k-','linewidth',1); hold on
 	  contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', ...
 			  'on','linewidth',2); hold on
