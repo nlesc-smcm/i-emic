@@ -90,12 +90,12 @@ Topo(Model model, ParameterList pars)
 	model_->setLandMask(landMasks_[b_[k_]]);
 	model_->computeRHS();
 	INFO(" nrm before applyLandmask: " << rhsView_->norm());
-
+	
 	rhsView_->print("topores1");
 	model_->applyLandMask(stateView_->getOceanVector(),
 						  landMasks_[a_[k_]],
 						  landMasks_[b_[k_]]);
-
+	
 	stateCopy_ = model_->getState('C');
 	model_->computeRHS();
 	rhsView_->print("topores2");
@@ -283,7 +283,8 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	INFO("            norm x-xA = " << x->norm());
 	
 	// Set landmask (B) in the model
-	model_->setLandMask(landMasks_[b_[k_]]);
+	if (!model_->isCurrentMask(landMasks_[b_[k_]].label)
+		model_->setLandMask(landMasks_[b_[k_]]);
 
 	// Evaluate and compute RHS (B)
 	model_->computeRHS();
@@ -419,12 +420,14 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeJacobian()
 {
 	// Get Jacobians
-	model_->setLandMask(landMasks_[a_[k_]]);
+	if (!model_->isCurrentMask(landMasks_[a_[k_]].label)
+		model_->setLandMask(landMasks_[a_[k_]]);
 
 	model_->computeJacobian();
 	*matA_ = *model_->getJacobian();
 
-	model_->setLandMask(landMasks_[b_[k_]]);
+	if (!model_->isCurrentMask(landMasks_[b_[k_]].label)
+		model_->setLandMask(landMasks_[b_[k_]]);
 
 	model_->computeJacobian();
 	*matB_ = *model_->getJacobian();
@@ -477,8 +480,10 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	//------------------------------------------------------------------
 	// Preconditioner A 
 	//------------------------------------------------------------------
-	
-	model_->setLandMask(landMasks_[a_[k_]]);
+
+	if (!model_->isCurrentMask(landMasks_[a_[k_]].label)
+		model_->setLandMask(landMasks_[a_[k_]]);
+		
 	model_->computeJacobian();
 	*matA_ = *(model_->getJacobian());
 	
@@ -495,7 +500,9 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	// Preconditioner B
 	//------------------------------------------------------------------
 
-	model_->setLandMask(landMasks_[b_[k_]]);
+	if (!model_->isCurrentMask(landMasks_[b_[k_]].label)
+		model_->setLandMask(landMasks_[b_[k_]]);
+		
 	model_->computeJacobian();
 	*matB_ = *(model_->getJacobian());		
 	
