@@ -78,6 +78,8 @@ private:
 	//! Continuation parameter
 	//!  ranging continually from 0 to nMasks-1
 	double delta_;
+	double deltaHat_;
+	double gamma_;
 
 	//! The model's continuation parameter, which we might
 	//! want to affect as well
@@ -151,9 +153,7 @@ private:
 	//! Enable this to use predictors
 	bool usePredictors_;
 
-	//! Enable this to dynamically estimate relaxation factors
-	bool calcRelax_;
-
+	
 public:	
 	//! default constructor
 	Topo(){};
@@ -282,8 +282,10 @@ namespace Belos
 					}
 					else if (Op.precType == 'M') 
 					{
-						if (Op.facB < 0.99)
+						if (Op.facB < deltaHat_)
+						{
 							y = x;
+						}
 						else
 						{
 							Op.PB->ApplyInverse(x, y);
@@ -305,7 +307,7 @@ namespace Belos
 				}
 				else
 				{
-					if (Op.facB < 0.99)
+					if (Op.facB < deltaHat_)
 					{
 						Op.B->Apply(x, y);
 						y.Update(Op.facA, x, Op.facB);
