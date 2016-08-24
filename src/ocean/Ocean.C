@@ -239,8 +239,9 @@ Ocean::LandMask Ocean::getLandMask(std::string const & fname)
 		THCM::Instance().evaluate(*state_, Teuchos::null, true);		
 	}
 	
-	// Get the current global land mask from THCM.
+	// Get the current global landmask from THCM.
 	mask.global = THCM::Instance().getLandMask();
+	mask.label = fname;
 	return mask;
 }
 
@@ -251,6 +252,8 @@ void Ocean::setLandMask(LandMask mask, bool global)
 	
 	if (global)
 		THCM::Instance().setLandMask(mask.global);
+
+	currentMask_ = mask.label;
 }
 
 //==================================================================

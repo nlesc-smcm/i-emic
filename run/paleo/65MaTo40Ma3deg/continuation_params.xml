@@ -4,7 +4,7 @@
 <ParameterList name="Continuation parameters">
   
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="0.05"/>
+  <Parameter name="initial step size" type="double" value="0.01"/>
   <Parameter name="minimum step size" type="double" value="1e-10"/>
   <Parameter name="maximum step size" type="double" value="0.20"/>
   
