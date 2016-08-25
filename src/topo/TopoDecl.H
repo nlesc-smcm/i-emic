@@ -78,7 +78,6 @@ private:
 	//! Continuation parameter
 	//!  ranging continually from 0 to nMasks-1
 	double delta_;
-	double deltaHat_;
 	double gamma_;
 
 	//! The model's continuation parameter, which we might
@@ -153,6 +152,8 @@ private:
 	//! Enable this to use predictors
 	bool usePredictors_;
 
+	//! Point at which we switch from homotopy to residue
+	double deltaHat_;
 	
 public:	
 	//! default constructor
@@ -251,6 +252,7 @@ struct Combined_Operator
 	PreconPtr PB;
 	double facA;
 	double facB;
+	double dhat;
 	bool isPrec;
 	char precType;
 };
@@ -282,7 +284,7 @@ namespace Belos
 					}
 					else if (Op.precType == 'M') 
 					{
-						if (Op.facB < deltaHat_)
+						if (Op.facB < Op.dhat)
 						{
 							y = x;
 						}
@@ -307,7 +309,7 @@ namespace Belos
 				}
 				else
 				{
-					if (Op.facB < deltaHat_)
+					if (Op.facB < Op.dhat)
 					{
 						Op.B->Apply(x, y);
 						y.Update(Op.facA, x, Op.facB);

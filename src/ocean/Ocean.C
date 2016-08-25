@@ -248,12 +248,14 @@ Ocean::LandMask Ocean::getLandMask(std::string const & fname)
 //===================================================================
 void Ocean::setLandMask(LandMask mask, bool global)
 {
+	INFO("Ocean: set landmask " << mask.label << "...");
 	THCM::Instance().setLandMask(mask.local);
 	
 	if (global)
 		THCM::Instance().setLandMask(mask.global);
 
 	currentMask_ = mask.label;
+	INFO("Ocean: set landmask " << mask.label << "... done");
 }
 
 //==================================================================
