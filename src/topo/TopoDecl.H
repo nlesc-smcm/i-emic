@@ -138,7 +138,7 @@ private:
 	
 	Teuchos::RCP
 	<Belos::BlockGmresSolMgr
-	<double, Epetra_MultiVector, Combined_Operator<Model> > > belosSolver_;
+	 <double, Epetra_MultiVector, Combined_Operator<Model> > > belosSolver_;
 
 	//! Initialization flag
 	bool solverInitialized_;

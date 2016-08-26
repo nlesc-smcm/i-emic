@@ -1,12 +1,12 @@
 <!-- Ocean model parameters (mainly THCM) -->
 <ParameterList name="Ocean">
-
+  
   <!-- Specify whether the ocean model should initialize with                -->
   <!-- an old state (true) or with a zero solution (false).                  -->
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
   <Parameter name="Load state" type="bool" value="true"/>
-  <Parameter name="Save state" type="bool" value="true"/>
+  <Parameter name="Save state" type="bool" value="false"/>
   <Parameter name="Input file"  type="string" value="ocean.h5" />
   <Parameter name="Output file" type="string" value="ocean.h5" />
 
@@ -34,7 +34,7 @@
     <!-- southern domain bound -->
     <Parameter name="Global Bound ymin" type="double" value="-70"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="-10"/>
+    <Parameter name="Global Bound ymax" type="double" value="70"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="1"/>
     <!-- depth of the ocean -->
@@ -74,9 +74,9 @@
     <!-- Starting Parameters -->
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
-      <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-	  <Parameter name="Temperature Forcing" type="double" value="0.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value=".05.0"/>
+      <Parameter name="Wind Forcing"        type="double" value="1.5"/>
+	  <Parameter name="Temperature Forcing" type="double" value=".5.0"/>
 	  <Parameter name="SPL1"                type="double" value="2.0e3"/>
 	  <Parameter name="SPL2"                type="double" value="0.01"/>
 	  

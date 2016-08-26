@@ -14,6 +14,8 @@
   
   <Parameter name="Store everything" type="bool" value="true" />
   
-  <Parameter name="Preconditioning type" type="char" value="M" />  
+  <Parameter name="Preconditioning type" type="char" value="M" />
+
+  <Parameter name="Switch" type="double" value="0.9" />  
   
 </ParameterList>

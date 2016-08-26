@@ -322,13 +322,20 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 						  LandMask maskA, LandMask maskB)
 {
+	INFO("Ocean: applyLandMask...");
 	int nmask = maskA.global->size();
 	assert(nmask == (M_+2)*(N_+2)*(L_+2));
 	
 	int idx1, idx2;
-	int lidC, lidE, lidW;
-	int ii;
+	std::vector<int> nbidx;       // neighbour indices
+	int ii, lid;
 	int dir;
+	int nnz;
+	int radius, maxRadius = 20;
+	double value, globValue;
+	double avg = 0.0;
+	int newOcean = 0;
+	int newLand  = 0;
 	
 	for (int k = 1; k != L_+1; ++k)
 		for (int j = 1; j != M_+1; ++j)
@@ -336,34 +343,82 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 			{
 				idx1 = k*(M_+2)*(N_+2) + j*(N_+2) + i;
 				idx2 = (k-1)*M_*N_ + (j-1)*N_ + i-1;
-
+				
 				dir = (*maskA.global)[idx1] - (*maskB.global)[idx1];
-
+				
 				if (dir > 0)  // New ocean
 				{
 					for (ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
 					{
-						lidC = x->Map().LID(ii);   // Local central ID
-						lidE = x->Map().LID(ii+6); // Eastern ID
-						lidW = x->Map().LID(ii-6); // Western ID 
-						if (lidC >= 0 && lidE >= 0 &&
-							std::abs((*x)[lidE]) > 0)
-							(*x)[lidC] = (*x)[lidE];
-						else if (lidC >= 0 && lidW >= 0 &&
-								 std::abs((*x)[lidW]) > 0)
-							(*x)[lidC] = (*x)[lidW];
+						avg = 0.0;
+						radius = 0;
+						while (std::abs(avg) < 1e-8 && radius < maxRadius)
+						{
+							// Get the horizontally neighbouring values
+							radius++;
+							nbidx.clear();
+
+							//--> This should stick to its layer!
+							nbidx.push_back(ii + radius * _NUN_);
+							nbidx.push_back(ii - radius * _NUN_);
+							nbidx.push_back(ii + _NUN_*N_);
+							nbidx.push_back(ii + _NUN_*(N_ - radius));
+							nbidx.push_back(ii + _NUN_*(N_ + radius));
+							nbidx.push_back(ii - _NUN_*N_);
+							nbidx.push_back(ii - _NUN_*(N_ - radius));
+							nbidx.push_back(ii - _NUN_*(N_ + radius));
+							
+							nnz = 0;						
+							for (auto &nbi: nbidx)
+							{
+								value = 0.0;
+								lid = x->Map().LID(nbi);
+							
+								if (lid >= 0)
+									value = (*x)[lid];
+							
+								comm_->MaxAll(&value, &globValue, 1);
+								avg += globValue;
+								nnz += (std::abs(globValue) < 1e-8) ? 0 : 1;
+								// std::cout << "{}" << globValue << " ";
+							}
+							
+							// Set average of nonzero neighbours in x(ii)
+							if (nnz > 0)
+							{
+								avg /= nnz;
+								lid = x->Map().LID(ii);
+								newOcean++;
+								if (lid >= 0)
+									(*x)[lid] = avg;
+							}
+							else
+								avg = 0.0;
+							
+							// std::cout << "[]" << avg << " " << nnz << "||"
+							//						  << radius << "{[]}" << ii << std::endl;
+							
+							// for (auto &el: nbidx)
+							// 	std::cout << el << " ";
+							// std::cout << std::endl;
+						}
 					}
 				}
 				else if (dir < 0) // New land
 				{
 					for (ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
 					{
-						lidC = x->Map().LID(ii); // Local ID of this point			
-						if (lidC >= 0)
-							(*x)[lidC] *= 0.0;
+						newLand++;
+						lid = x->Map().LID(ii); // Local ID of this point			
+						if (lid >= 0)
+							(*x)[lid] = 0.0;
 					}
 				}
 			}
+	
+	INFO("Ocean: applyLandmask, adjusted " << newOcean << " new ocean entries.");
+	INFO("Ocean: applyLandmask, adjusted " << newLand  << " new land entries.");
+	INFO("Ocean: applyLandMask... done");
 }
 
 //====================================================================
@@ -391,7 +446,7 @@ void Ocean::postProcess()
 // --> xml files should have a better home
 void Ocean::initializePreconditioner()
 {
-	INFO("Ocean: initialize preconditioner...");
+ 	INFO("Ocean: initialize preconditioner...");
 	TIMER_START("Ocean: initialize preconditioner");
 
 	Teuchos::RCP<Teuchos::ParameterList> precParams =

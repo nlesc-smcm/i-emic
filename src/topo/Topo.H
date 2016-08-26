@@ -33,7 +33,7 @@ Topo(Model model, ParameterList pars)
 	rA_                 (1.0),
 	rB_                 (1.0),
 	usePredictors_      (pars->get("Use predictors", false)),
-	deltaHat_           (pars->get("Switch", 0.9))
+	deltaHat_           (pars->get("Switch", 0.75))
 {
 	INFO("Topo constructor...");
 
@@ -92,6 +92,7 @@ Topo(Model model, ParameterList pars)
 	INFO(" nrm before applyLandmask: " << rhsView_->norm());
 	
 	rhsView_->print("topores1");
+	stateView_->print("topox1");
 	model_->applyLandMask(stateView_->getOceanVector(),
 						  landMasks_[a_[k_]],
 						  landMasks_[b_[k_]]);
@@ -99,10 +100,12 @@ Topo(Model model, ParameterList pars)
 	stateCopy_ = model_->getState('C');
 	model_->computeRHS();
 	rhsView_->print("topores2");
+	stateView_->print("topox2");
 	INFO(" nrm after  applyLandmask: " << rhsView_->norm());
 
 	residue_ = model_->getRHS('C');
 
+	
 	INFO("Topo constructor... done");
 }
 
@@ -297,6 +300,7 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 
 	if (facB_ < deltaHat_)
 	{
+		gamma_ = 0;
 		residue_->update((facB_ - 1.0) / facB_, *x, 0.0);
 		rhs_->update(facA_, *x, facB_);
 	}
@@ -308,6 +312,7 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);
+	INFO("                gamma = " << gamma_);
 	INFO("facA*(x-xA) + facB*fB = " << rhs_->norm());
 
 }

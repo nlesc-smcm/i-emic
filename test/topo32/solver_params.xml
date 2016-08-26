@@ -29,7 +29,7 @@
   <!-- ..................................................................-->
   <Parameter name="FGMRES tolerance" type="double" value="1e-2"/>
   <Parameter name="FGMRES iterations" type="int" value="500"/>
-  <Parameter name="FGMRES output" type="int" value="50"/>
+  <Parameter name="FGMRES output" type="int" value="5"/>
 
   <!-- ..................................................................-->
   <!-- CoupledModel specific parameters                                  -->
