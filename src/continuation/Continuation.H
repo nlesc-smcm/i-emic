@@ -59,6 +59,9 @@ Continuation(Model model, ParameterList pars)
 		destID.str("");
 		destID.clear();
 	}
+	if (destinations_.empty())
+		ERROR("No destinations given in continuation xml!",
+			  __FILE__, __LINE__);
 	
 	// Get views of the important components of the model
 	stateView_ = model_->getState('V');

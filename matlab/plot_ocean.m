@@ -178,7 +178,6 @@ end
 xlabel('Longitude')
 ylabel('Latitude')
 exportfig('bstream.eps',10,[50,25])
-return
 
 %%% 
 figure(2)
@@ -205,20 +204,20 @@ figure(3)
 Tsurf = T(:,:,l);
 minT = T0+min(min(Tsurf));
 maxT = T0+max(max(Tsurf));
-for j = 1:m
- for i = 1:n
-	if surfm(i,j) == 1
-	  Tsurf(i,j) = -999;
-	end
- end
-end
+% for j = 1:m
+%  for i = 1:n
+% 	if surfm(i,j) == 1
+% 	  Tsurf(i,j) = -999;
+% 	end
+%  end
+% end
 
 img  = T0 + Tsurf(range,:)';
 contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
 set(gca,'color',[0.65,0.65,0.65]);
-image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
+%image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
 contours = linspace(minT,maxT,20);
-contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1);
+imagesc(RtD*x,RtD*(y),img);
 %imagesc(RtD*x,RtD*(y),img)
 %set(gca,'ydir','normal');
 hold off

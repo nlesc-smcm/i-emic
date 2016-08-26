@@ -78,6 +78,7 @@ private:
 	//! Continuation parameter
 	//!  ranging continually from 0 to nMasks-1
 	double delta_;
+	double gamma_;
 
 	//! The model's continuation parameter, which we might
 	//! want to affect as well
@@ -137,7 +138,7 @@ private:
 	
 	Teuchos::RCP
 	<Belos::BlockGmresSolMgr
-	<double, Epetra_MultiVector, Combined_Operator<Model> > > belosSolver_;
+	 <double, Epetra_MultiVector, Combined_Operator<Model> > > belosSolver_;
 
 	//! Initialization flag
 	bool solverInitialized_;
@@ -151,9 +152,9 @@ private:
 	//! Enable this to use predictors
 	bool usePredictors_;
 
-	//! Enable this to dynamically estimate relaxation factors
-	bool calcRelax_;
-
+	//! Point at which we switch from homotopy to residue
+	double deltaHat_;
+	
 public:	
 	//! default constructor
 	Topo(){};
@@ -251,6 +252,7 @@ struct Combined_Operator
 	PreconPtr PB;
 	double facA;
 	double facB;
+	double dhat;
 	bool isPrec;
 	char precType;
 };
@@ -282,8 +284,10 @@ namespace Belos
 					}
 					else if (Op.precType == 'M') 
 					{
-						if (Op.facB < 0.99)
+						if (Op.facB < Op.dhat)
+						{
 							y = x;
+						}
 						else
 						{
 							Op.PB->ApplyInverse(x, y);
@@ -305,7 +309,7 @@ namespace Belos
 				}
 				else
 				{
-					if (Op.facB < 0.99)
+					if (Op.facB < Op.dhat)
 					{
 						Op.B->Apply(x, y);
 						y.Update(Op.facA, x, Op.facB);

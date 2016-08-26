@@ -5,8 +5,8 @@
   
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size" type="double" value="1.0e-1"/>
-  <Parameter name="minimum step size" type="double" value="1.0e-8"/>
-  <Parameter name="maximum step size" type="double" value="1.8e-1"/>
+  <Parameter name="minimum step size" type="double" value="1.0e-1"/>
+  <Parameter name="maximum step size" type="double" value="1.0e-1"/>
   
   <!-- Define the destination values for the continuation parameter.-->
   <Parameter name="destination 0" type="double" value="1.0"/>
@@ -64,5 +64,14 @@
   <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
 
   <Parameter name="backtracking increase" type="double" value="1.1"/>
+
+  <!-- Type of the tangent that is calculated during the continuation -->
+  <!--     E: Euler                                                   -->
+  <!--     S: Secant                                                  -->
+  <Parameter name="tangent type" type="char" value="S"/>
+
+  <!-- Bound on RHS in predicted state                                -->
+  <Parameter name="predictor bound" type="double" value="3000.0"/>
+
 
 </ParameterList>

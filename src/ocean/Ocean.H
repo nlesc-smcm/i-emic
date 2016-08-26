@@ -36,6 +36,8 @@
 #include "SuperVector.H"
 #include "IDRSolver.H"
 
+#include <string>
+
 // forward declarations
 class THCM;
 
@@ -57,6 +59,7 @@ class Ocean
 	{
 		Teuchos::RCP<Epetra_IntVector> local;
 		std::shared_ptr<std::vector<int> > global;
+		std::string label;
 	};
 	
 public:
@@ -117,7 +120,10 @@ protected:
 	std::shared_ptr<std::vector<int> > landmask_;
 
 	// Gathered surface mask, without borders
-	std::shared_ptr<std::vector<int> > surfmask_; 	
+	std::shared_ptr<std::vector<int> > surfmask_;
+
+	// Label of current mask
+	std::string currentMask_;
 
  	// HDF5 input/output files
 	std::string const inputFile_;
@@ -208,6 +214,12 @@ public:
 	//! This routine also tests the obtained landmask and it will
 	//! therefore also be set in THCM.
 	LandMask getLandMask(std::string const & fname);
+
+	//! Check the current mask
+	bool isCurrentMask(std::string const &label)
+		{
+			return (currentMask_ == label);
+		}
 
 	//! Set global and local (distributed) landmask arrays
 	void setLandMask(LandMask mask, bool global = false);

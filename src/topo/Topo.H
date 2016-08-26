@@ -33,7 +33,7 @@ Topo(Model model, ParameterList pars)
 	rA_                 (1.0),
 	rB_                 (1.0),
 	usePredictors_      (pars->get("Use predictors", false)),
-	calcRelax_          (pars->get("Estimate relaxation factors", false))
+	deltaHat_           (pars->get("Switch", 0.75))
 {
 	INFO("Topo constructor...");
 
@@ -90,17 +90,22 @@ Topo(Model model, ParameterList pars)
 	model_->setLandMask(landMasks_[b_[k_]]);
 	model_->computeRHS();
 	INFO(" nrm before applyLandmask: " << rhsView_->norm());
-
+	
 	rhsView_->print("topores1");
+	stateView_->print("topox1");
 	model_->applyLandMask(stateView_->getOceanVector(),
 						  landMasks_[a_[k_]],
 						  landMasks_[b_[k_]]);
-
+	
 	stateCopy_ = model_->getState('C');
 	model_->computeRHS();
 	rhsView_->print("topores2");
+	stateView_->print("topox2");
 	INFO(" nrm after  applyLandmask: " << rhsView_->norm());
 
+	residue_ = model_->getRHS('C');
+
+	
 	INFO("Topo constructor... done");
 }
 
@@ -197,9 +202,9 @@ void Topo<Model, ParameterList>::setPar(double par)
 	}
 	
 	//	We perturb the model's parameter
-	double newModelPar = modelPar_ +
-		sin(M_PI * delta_ * 2) * modelPar_ / 100;
-	model_->setPar(newModelPar);	
+	// double newModelPar = modelPar_ +
+	// 	sin(M_PI * delta_ * 2) * modelPar_ / 100;
+	// model_->setPar(newModelPar);	
 }
 
 //==================================================================
@@ -283,7 +288,8 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	INFO("            norm x-xA = " << x->norm());
 	
 	// Set landmask (B) in the model
-	model_->setLandMask(landMasks_[b_[k_]]);
+	if (!model_->isCurrentMask(landMasks_[b_[k_]].label))
+		model_->setLandMask(landMasks_[b_[k_]]);
 
 	// Evaluate and compute RHS (B)
 	model_->computeRHS();
@@ -292,13 +298,21 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	*rhs_ = *model_->getRHS('V');
 	INFO("              norm fB = " << rhs_->norm());
 
-	if (facB_ < 0.99)
+	if (facB_ < deltaHat_)
+	{
+		gamma_ = 0;
+		residue_->update((facB_ - 1.0) / facB_, *x, 0.0);
 		rhs_->update(facA_, *x, facB_);
+	}
 	else
-		rhs_->update(0.0, *x, facB_);
+	{
+		gamma_ = (facB_ - deltaHat_) / (1.0 - deltaHat_) - 1.0;
+		rhs_->update(gamma_, *residue_, 1.0);
+	}
 	
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);
+	INFO("                gamma = " << gamma_);
 	INFO("facA*(x-xA) + facB*fB = " << rhs_->norm());
 
 }
@@ -418,13 +432,16 @@ void Topo<Model, ParameterList>::computeDFDPar()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeJacobian()
 {
+	INFO("Topo: compute Jacobian...");
 	// Get Jacobians
-	model_->setLandMask(landMasks_[a_[k_]]);
+	// if (!model_->isCurrentMask(landMasks_[a_[k_]].label))
+	// 	model_->setLandMask(landMasks_[a_[k_]]);
 
-	model_->computeJacobian();
-	*matA_ = *model_->getJacobian();
+	// model_->computeJacobian();
+	// *matA_ = *model_->getJacobian();
 
-	model_->setLandMask(landMasks_[b_[k_]]);
+	if (!model_->isCurrentMask(landMasks_[b_[k_]].label))
+		model_->setLandMask(landMasks_[b_[k_]]);
 
 	model_->computeJacobian();
 	*matB_ = *model_->getJacobian();
@@ -435,6 +452,7 @@ void Topo<Model, ParameterList>::computeJacobian()
 	combMat_.PB     = PreconPtr();
 	combMat_.facA   = facA_;
 	combMat_.facB   = facB_;		
+	combMat_.dhat   = deltaHat_;
 	combMat_.isPrec = false;
 	combMat_.precType = 0;
 
@@ -442,6 +460,7 @@ void Topo<Model, ParameterList>::computeJacobian()
 	// but we do need to let them know the correct factors!
 	combPrec_.facA   = facA_;
 	combPrec_.facB   = facB_;
+	INFO("Topo: compute Jacobian... done");
 }
 
 //==================================================================
@@ -471,14 +490,18 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::buildPreconditioner()
 {
+	INFO("Topo: build preconditioner...");
 	combPrec_.facA   = facA_;
 	combPrec_.facB   = facB_;		
+	combPrec_.dhat   = deltaHat_;		
 
 	//------------------------------------------------------------------
 	// Preconditioner A 
 	//------------------------------------------------------------------
-	
-	model_->setLandMask(landMasks_[a_[k_]]);
+
+	if (!model_->isCurrentMask(landMasks_[a_[k_]].label))
+		model_->setLandMask(landMasks_[a_[k_]]);
+		
 	model_->computeJacobian();
 	*matA_ = *(model_->getJacobian());
 	
@@ -495,7 +518,9 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	// Preconditioner B
 	//------------------------------------------------------------------
 
-	model_->setLandMask(landMasks_[b_[k_]]);
+	if (!model_->isCurrentMask(landMasks_[b_[k_]].label))
+		model_->setLandMask(landMasks_[b_[k_]]);
+		
 	model_->computeJacobian();
 	*matB_ = *(model_->getJacobian());		
 	
@@ -515,6 +540,8 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	combPrec_.PB       = precB_;
 	combPrec_.isPrec   = true;
 	combPrec_.precType = pars_->get("Preconditioning type", 'H');
+
+	INFO("Topo: build preconditioner... done");
 }
 
 //==================================================================
@@ -597,6 +624,8 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	
 	Vector resB = *getSolution('C');	
 
+	solView_->putScalar(0.0);
+	
 	set = problem_->setProblem(solView_->getOceanVector(),
 							   b->getOceanVector());
 		
