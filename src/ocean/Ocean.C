@@ -331,90 +331,99 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 	int ii, lid;
 	int dir;
 	int nnz;
-	int radius, maxRadius = 20;
+	int radius, maxRadius = 2;
 	double value, globValue;
 	double avg = 0.0;
 	int newOcean = 0;
 	int newLand  = 0;
-	
-	for (int k = 1; k != L_+1; ++k)
-		for (int j = 1; j != M_+1; ++j)
-			for (int i = 1; i != N_+1; ++i)
-			{
-				idx1 = k*(M_+2)*(N_+2) + j*(N_+2) + i;
-				idx2 = (k-1)*M_*N_ + (j-1)*N_ + i-1;
-				
-				dir = (*maskA.global)[idx1] - (*maskB.global)[idx1];
-				
-				if (dir > 0)  // New ocean
-				{
-					for (ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
-					{
-						avg = 0.0;
-						radius = 0;
-						while (std::abs(avg) < 1e-8 && radius < maxRadius)
-						{
-							// Get the horizontally neighbouring values
-							radius++;
-							nbidx.clear();
+	std::vector<int> dirs;
 
-							//--> This should stick to its layer!
-							nbidx.push_back(ii + radius * _NUN_);
-							nbidx.push_back(ii - radius * _NUN_);
-							nbidx.push_back(ii + _NUN_*N_);
-							nbidx.push_back(ii + _NUN_*(N_ - radius));
-							nbidx.push_back(ii + _NUN_*(N_ + radius));
-							nbidx.push_back(ii - _NUN_*N_);
-							nbidx.push_back(ii - _NUN_*(N_ - radius));
-							nbidx.push_back(ii - _NUN_*(N_ + radius));
-							
-							nnz = 0;						
-							for (auto &nbi: nbidx)
+	for (int q = 0; q != 1; ++q)
+		for (int k = 1; k != L_+1; ++k)
+			for (int j = 1; j != M_+1; ++j)
+				for (int i = 1; i != N_+1; ++i)
+				{
+					idx1 = k*(M_+2)*(N_+2) + j*(N_+2) + i;
+					idx2 = (k-1)*M_*N_ + (j-1)*N_ + i-1;
+				
+					dir = (*maskA.global)[idx1] - (*maskB.global)[idx1];
+				
+					if (dir > 0)  // New ocean
+					{
+						for (ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
+						{
+							avg = 0.0;
+							radius = 0;
+							while (std::abs(avg) < 1e-8 && radius < maxRadius)
 							{
-								value = 0.0;
-								lid = x->Map().LID(nbi);
+								// Get the horizontally neighbouring values
+								radius++;
+								nbidx.clear();
+
+								//--> This should stick to its layer!
+								nbidx.push_back(ii + radius * _NUN_);
+								nbidx.push_back(ii - radius * _NUN_);
+								nbidx.push_back(ii + radius * _NUN_*N_);
+								nbidx.push_back(ii - radius * _NUN_*N_);
+								nbidx.push_back(ii + (radius+1) * _NUN_);
+								nbidx.push_back(ii - (radius+1) * _NUN_);
+								nbidx.push_back(ii + (radius+2) * _NUN_);
+								nbidx.push_back(ii - (radius+2) * _NUN_);
+								// nbidx.push_back(ii + _NUN_*(N_ - radius));
+								// nbidx.push_back(ii + _NUN_*(N_ + radius));
+								// nbidx.push_back(ii - _NUN_*N_);
+								// nbidx.push_back(ii - _NUN_*(N_ - radius));
+								// nbidx.push_back(ii - _NUN_*(N_ + radius));
 							
-								if (lid >= 0)
-									value = (*x)[lid];
+								nnz = 0;						
+								for (auto &nbi: nbidx)
+								{
+									value = 0.0;
+									lid = x->Map().LID(nbi);
 							
-								comm_->MaxAll(&value, &globValue, 1);
-								avg += globValue;
-								nnz += (std::abs(globValue) < 1e-8) ? 0 : 1;
-								// std::cout << "{}" << globValue << " ";
+									if (lid >= 0)
+									{
+										value = (*x)[lid];
+									}
+							
+									comm_->SumAll(&value, &globValue, 1);
+									avg += globValue;
+									nnz += (std::abs(globValue) < 1e-8) ? 0 : 1;
+									// std::cout << "{}" << globValue << " ";
+								}
+								
+								// Set average of nonzero neighbours in x(ii)
+								if (nnz > 0)
+								{
+									avg /= nnz;
+									lid = x->Map().LID(ii);
+									newOcean++;
+									if (lid >= 0)
+										(*x)[lid] = avg;
+								}
+								else
+									avg = 0.0;
+							
+								// std::cout << "[]" << avg << " " << nnz << "||"
+								//						  << radius << "{[]}" << ii << std::endl;
+							
+								// for (auto &el: nbidx)
+								// 	std::cout << el << " ";
+								// std::cout << std::endl;
 							}
-							
-							// Set average of nonzero neighbours in x(ii)
-							if (nnz > 0)
-							{
-								avg /= nnz;
-								lid = x->Map().LID(ii);
-								newOcean++;
-								if (lid >= 0)
-									(*x)[lid] = avg;
-							}
-							else
-								avg = 0.0;
-							
-							// std::cout << "[]" << avg << " " << nnz << "||"
-							//						  << radius << "{[]}" << ii << std::endl;
-							
-							// for (auto &el: nbidx)
-							// 	std::cout << el << " ";
-							// std::cout << std::endl;
+						}
+					}
+					else if (dir < 0) // New land
+					{
+						for (ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
+						{
+							newLand++;
+							lid = x->Map().LID(ii); // Local ID of this point			
+							if (lid >= 0)
+								(*x)[lid] = 0.0;
 						}
 					}
 				}
-				else if (dir < 0) // New land
-				{
-					for (ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
-					{
-						newLand++;
-						lid = x->Map().LID(ii); // Local ID of this point			
-						if (lid >= 0)
-							(*x)[lid] = 0.0;
-					}
-				}
-			}
 	
 	INFO("Ocean: applyLandmask, adjusted " << newOcean << " new ocean entries.");
 	INFO("Ocean: applyLandmask, adjusted " << newLand  << " new land entries.");
