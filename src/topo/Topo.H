@@ -202,9 +202,9 @@ void Topo<Model, ParameterList>::setPar(double par)
 	}
 	
 	//	We perturb the model's parameter
-	double newModelPar = modelPar_ +
-		sin(M_PI * delta_ * 2) * modelPar_ / 100;
-	model_->setPar(newModelPar);	
+	// double newModelPar = modelPar_ +
+	// 	sin(M_PI * delta_ * 2) * modelPar_ / 100;
+	// model_->setPar(newModelPar);	
 }
 
 //==================================================================
