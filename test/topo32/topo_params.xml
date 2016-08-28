@@ -16,6 +16,6 @@
   
   <Parameter name="Preconditioning type" type="char" value="M" />
 
-  <Parameter name="Switch" type="double" value="0.7" />  
+  <Parameter name="Switch" type="double" value="0.98" />  
   
 </ParameterList>

@@ -30,10 +30,10 @@ Topo(Model model, ParameterList pars)
 	delta_              (pars->get("Delta", 0.0)),
 	storeEverything_    (pars->get("Store everything", false)),
 	solverInitialized_  (false),
-	rA_                 (1.0),
-	rB_                 (1.0),
 	usePredictors_      (pars->get("Use predictors", false)),
-	deltaHat_           (pars->get("Switch", 0.75))
+	target_             (pars->get("Switch", 0.75)),
+	fixed_              (0.0),
+	allowSwitch_        (false)
 {
 	INFO("Topo constructor...");
 
@@ -200,11 +200,14 @@ void Topo<Model, ParameterList>::setPar(double par)
 		errmsg << " facA + facB = " << facA_ + facB_;
 		ERROR(errmsg.str(), __FILE__, __LINE__);
 	}
-	
-	//	We perturb the model's parameter
-	// double newModelPar = modelPar_ +
-	// 	sin(M_PI * delta_ * 2) * modelPar_ / 100;
-	// model_->setPar(newModelPar);	
+
+	// if (facB_ > target_)
+	// {
+	// 	//	We perturb the model's parameter
+	// 	double newModelPar = modelPar_ +
+	// 		sin(M_PI * (facB_-target_)/(1.0-target_)) * modelPar_ / 100;
+	// 	model_->setPar(newModelPar);		
+	// }	
 }
 
 //==================================================================
@@ -293,28 +296,41 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 
 	// Evaluate and compute RHS (B)
 	model_->computeRHS();
-
+	
 	// Get the view	
 	*rhs_ = *model_->getRHS('V');
 	INFO("              norm fB = " << rhs_->norm());
-
-	if (facB_ < deltaHat_)
-	{
-		gamma_ = 0;
-		residue_->update((facB_ - 1.0) / facB_, *x, 0.0);
+	
+	// if (facB_ < target_)
+	// {
 		rhs_->update(facA_, *x, facB_);
-	}
-	else
-	{
-		gamma_ = (facB_ - deltaHat_) / (1.0 - deltaHat_) - 1.0;
-		rhs_->update(gamma_, *residue_, 1.0);
-	}
+	// 	allowSwitch_ = true;
+	// 	fixed_ = facB_;
+	// }				   
+	// else			   
+	// {				   
+	// 	// now we switch and calculate the current residue
+	// 	if (allowSwitch_) 
+	// 	{			   
+	// 		// fixed_ = facB_;
+	// 		// residue_->update((fixed_ - 1.0) / fixed_, *x, 0.0);
+	// 		residue_->update(1.0, *x, 0.0);
+			
+	// 		// doing this only once
+	// 		allowSwitch_ = false; 
+	// 	}
+		
+	// 	// gamma_ = (facB_ - fixed_) / (1.0 - fixed_) - 1.0;
+	// 	// rhs_->update(gamma_, *residue_, 1.0);
+	// 	// gamma_ = (facB_ - fixed_) / (1.0 - fixed_);
+	// 	// rhs_->update(gamma_-1.0, *residue_, gamma_);
+	// 	// rhs_->scale(facB_);
+	// }
 	
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);
 	INFO("                gamma = " << gamma_);
 	INFO("facA*(x-xA) + facB*fB = " << rhs_->norm());
-
 }
 
 //==================================================================
@@ -452,7 +468,7 @@ void Topo<Model, ParameterList>::computeJacobian()
 	combMat_.PB     = PreconPtr();
 	combMat_.facA   = facA_;
 	combMat_.facB   = facB_;		
-	combMat_.dhat   = deltaHat_;
+	combMat_.dhat   = target_;
 	combMat_.isPrec = false;
 	combMat_.precType = 0;
 
@@ -493,7 +509,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	INFO("Topo: build preconditioner...");
 	combPrec_.facA   = facA_;
 	combPrec_.facB   = facB_;		
-	combPrec_.dhat   = deltaHat_;		
+	combPrec_.dhat   = target_;		
 
 	//------------------------------------------------------------------
 	// Preconditioner A 

@@ -146,14 +146,15 @@ private:
 	//! Array keeping track of initialized preconditioners
 	std::vector<bool> initPrecs_;
 
-	//! Relaxation factors for predictors
-	double rA_, rB_;
-
 	//! Enable this to use predictors
 	bool usePredictors_;
 
 	//! Point at which we switch from homotopy to residue
-	double deltaHat_;
+	double target_;
+	double fixed_;
+
+	//! Allows a switch from homotopy to residue
+	bool allowSwitch_;
 	
 public:	
 	//! default constructor
@@ -167,16 +168,16 @@ public:
 
 	//! get continuation parameter
 	double getPar();
-
+	
 	//! set continuation parameter
 	//!  this also sets k_, facA_ and facB_
 	void setPar(double par);
-
+	
 	//! get the state of the model
 	//!   mode: 'C' copy
 	//!         'V' view
 	VectorPtr getState(char mode = 'C');
-
+	
 	//! get the right hand side of the model
 	//!   mode: 'C' copy
 	//!         'V' view
@@ -309,15 +310,15 @@ namespace Belos
 				}
 				else
 				{
-					if (Op.facB < Op.dhat)
-					{
+					// if (Op.facB < Op.dhat)
+					// {
 						Op.B->Apply(x, y);
 						y.Update(Op.facA, x, Op.facB);
-					}
-					else
-					{
-						Op.B->Apply(x, y);
-					}
+					// }
+					// else
+					// {
+					// 	Op.B->Apply(x, y);
+					// }
 				}
 			}
 		
