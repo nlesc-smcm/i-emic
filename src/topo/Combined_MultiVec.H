@@ -123,14 +123,14 @@ public:
 			return info;
 		}
 
-	
 	int scale(double scalarValue)
 		{
-			first_->Scale(scalarValue);
-			second_->Scale(scalarValue);
-		}
-					 
-					 
+			int info = 0;
+			info =  first_->Scale(scalarValue);
+			info += second_->Scale(scalarValue);
+			return info;
+		}		 
+	
 	
 
 };
@@ -340,6 +340,7 @@ namespace Belos
 				Epetra_MultiVector B_Pvec(View, LocalMap, B.values(), B.stride(), B.numCols());
 				
 				const int info = mv.multiply ('N', 'N', alpha, A, B_Pvec, beta);
+
 				TEUCHOS_TEST_FOR_EXCEPTION(
 					info != 0, EpetraMultiVecFailure,
 					"Belos::MultiVecTraits<double,Epetra_MultiVector>::MvTimesMatAddMv: "
@@ -355,6 +356,7 @@ namespace Belos
 				 Combined_MultiVec& mv)
 			{
 				const int info = mv.update (alpha, A, beta, B, 0.0);								
+
 				TEUCHOS_TEST_FOR_EXCEPTION(info != 0, EpetraMultiVecFailure,
 										   "Belos::MultiVecTraits<double, Epetra_MultiVector>::MvAddMv: Call to "
 										   "Update() returned a nonzero value " << info << ".");
@@ -364,12 +366,47 @@ namespace Belos
 		MvScale (Combined_MultiVec& mv,
 				 const double alpha)
 			{
-				const int info = mv.Scale(alpha);
+				const int info = mv.scale(alpha);
+
 				TEUCHOS_TEST_FOR_EXCEPTION(info != 0, EpetraMultiVecFailure,
 										   "Belos::MultiVecTraits<double,Combined_MultiVec>::MvScale: "
 										   "Epetra_MultiVector::Scale() returned a nonzero value info="
 										   << info << ".");
 			}
+
+		//! For all columns j of  mv, set mv[j] = alpha[j] * mv[j].
+		static void
+		MvScale (Combined_MultiVec&T mv,
+				 const std::vector<double> &alpha)
+			{
+				// Check to make sure the vector has the same number of entries
+				// as the multivector has columns.
+				const int numvecs = mv.numVecs();
+
+				TEUCHOS_TEST_FOR_EXCEPTION(
+					(int) alpha.size () != numvecs, EpetraMultiVecFailure,
+					"Belos::MultiVecTraits<double,Combined_MultiVec>::MvScale: "
+					"Array alpha of scaling coefficients has " << alpha.size ()
+					<< " entries, which is not the same as the number of columns "
+					<< numvecs << " in the input multivector mv.");
+
+				int info = 0;
+				int startIndex = 0;
+				for (int i = 0; i < numvecs; ++i)
+				{
+					Combined_MultiVec temp_vec(::View, mv, startIndex, 1);
+					info = temp_vec.scale(alpha[i]);
+					
+					TEUCHOS_TEST_FOR_EXCEPTION(info != 0, EpetraMultiVecFailure,
+											   "Belos::MultiVecTraits<double,Epetra_MultiVector>::MvScale: "
+											   "On column " << (i+1) << " of " << numvecs << ", Epetra_Multi"
+											   "Vector::Scale() returned a nonzero value info=" << info << ".");
+					startIndex++;
+				}
+			}
+
+		// static void MvTransMv( const double alpha, const Epetra_MultiVector& A, const Epetra_MultiVector& mv, Teuchos::SerialDenseMatrix<int,double>& B )
+		// 	{
 
 	};
 
