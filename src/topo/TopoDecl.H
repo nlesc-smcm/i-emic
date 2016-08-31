@@ -310,21 +310,30 @@ namespace Belos
 				}
 				else
 				{
-					// if (Op.facB < Op.dhat)
-					// {
-						Op.B->Apply(x, y);
-						y.Update(Op.facA, x, Op.facB);
-					// }
-					// else
-					// {
-					// 	Op.B->Apply(x, y);
-					// }
+					// int id1 = 0;
+					// int id2 = 1;
+					// const Epetra_Vector *x1 = x(id1);
+					// const Epetra_Vector *x2 = x(id2);
+					// Epetra_Vector *y1 = y(id1);
+					// Epetra_Vector *y2 = y(id2);
+					
+					// Epetra_Vector  tp = *y1; // Copy
+
+					// Op.B->Apply(*x2, tp);
+					
+					// y1->Update(1.0 - Op.facB, *x1, 0.0);
+					// y1->Update(Op.facB, tp, 1.0);
+
+					// y2->Update(-1.0, *x1, 0.0);
+					// y2->Update( 1.0, *x2, 1.0);
+					Op.B->Apply(x,y);
+					y.Update(Op.facA, x, Op.facB); 
 				}
 			}
 		
 		static bool
 		HasApplyTranspose (const Combined_Operator<Model> &Op) {return false;}
-	};
+	};		
 }
 
 #endif
