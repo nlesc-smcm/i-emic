@@ -84,6 +84,10 @@ public:
 			second_ = Teuchos::rcp
 				(new Epetra_MultiVector(CV, *source.second(), startIndex, numVectors));	
 		}
+
+	// Get maps
+	const Epetra_BlockMap &map1() {return first_->Map();  }
+	const Epetra_BlockMap &map2() {return second_->Map(); }
 	
 	// Get the rcpointers
 	Teuchos::RCP<Epetra_MultiVector> first()  { return first_ ;}
@@ -98,7 +102,37 @@ public:
 	// Query the stride
 	bool constantStride() {return first_->ConstantStride() && second_->ConstantStride();}
 
+	// this = alpha*A*B + scalarThis*this
+	int multiply(char transA, char transB, double scalarAB,
+				 const Combined_MultiVec &A, const Epetra_MultiVector &B,
+				 double scalarThis )
+		{
+			int info = 0;
+			info =  first_->Multiply(transA, transB, scalarAB, *A.first(), B, scalarThis);
+			info += second_->Multiply(transA, transB, scalarAB, *A.second(), B, scalarThis);
+			return info;
+		}
+
+	// this = scalarThis*this + scalarA*A + scalarB*B
+	int update(double scalarA, const Combined_MultiVec &A,
+			   double scalarB, const Combined_MultiVec &B, double scalarThis)
+		{
+			int info = 0;
+			info =  first_->Update(scalarA,  *A.first(),  scalarB, *B.first(),  scalarThis);
+			info += second_->Update(scalarA, *A.second(), scalarB, *B.second(), scalarThis);
+			return info;
+		}
+
 	
+	int scale(double scalarValue)
+		{
+			first_->Scale(scalarValue);
+			second_->Scale(scalarValue);
+		}
+					 
+					 
+	
+
 };
 
 
@@ -117,7 +151,7 @@ namespace Belos
 			{
 				TEUCHOS_TEST_FOR_EXCEPTION(
 					numVecs <= 0, std::invalid_argument,
-					"Belos::MultiVecTraits<double, Combined_MultVec>::"
+					"Belos::MultiVecTraits<double, Combined_MultiVec>::"
 					"Clone(mv, numVecs = " << numVecs << "): "
 					"outNumVecs must be positive.");
 
@@ -295,20 +329,48 @@ namespace Belos
 
 
 
-		// Experimental!! --> HIER VERDER
+		// Epetra style (we should compare this with just a bunch of updates)
 		static void MvTimesMatAddMv (const double alpha,
 									 const Combined_MultiVec& A,
 									 const Teuchos::SerialDenseMatrix<int,double>& B,
 									 const double beta,
 									 Combined_MultiVec& mv)
 			{
-				int rowsB = B.numRows();
-				int colsB = B.numCols();
-
-				// We can do B(i,j) 
+				Epetra_LocalMap LocalMap(B.numRows(), 0, mv.map1().Comm());
+				Epetra_MultiVector B_Pvec(View, LocalMap, B.values(), B.stride(), B.numCols());
+				
+				const int info = mv.multiply ('N', 'N', alpha, A, B_Pvec, beta);
+				TEUCHOS_TEST_FOR_EXCEPTION(
+					info != 0, EpetraMultiVecFailure,
+					"Belos::MultiVecTraits<double,Epetra_MultiVector>::MvTimesMatAddMv: "
+					"Epetra_MultiVector::Multiply() returned a nonzero value info=" << info
+					<< ".");
+			}
+		
+		static void
+		MvAddMv (const double alpha,
+				 const Combined_MultiVec& A,
+				 const double beta,
+				 const Combined_MultiVec& B,
+				 Combined_MultiVec& mv)
+			{
+				const int info = mv.update (alpha, A, beta, B, 0.0);								
+				TEUCHOS_TEST_FOR_EXCEPTION(info != 0, EpetraMultiVecFailure,
+										   "Belos::MultiVecTraits<double, Epetra_MultiVector>::MvAddMv: Call to "
+										   "Update() returned a nonzero value " << info << ".");
 			}
 
-		
+		static void
+		MvScale (Combined_MultiVec& mv,
+				 const double alpha)
+			{
+				const int info = mv.Scale(alpha);
+				TEUCHOS_TEST_FOR_EXCEPTION(info != 0, EpetraMultiVecFailure,
+										   "Belos::MultiVecTraits<double,Combined_MultiVec>::MvScale: "
+										   "Epetra_MultiVector::Scale() returned a nonzero value info="
+										   << info << ".");
+			}
+
 	};
 
 	
