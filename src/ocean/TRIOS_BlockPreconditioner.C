@@ -726,14 +726,18 @@ namespace TRIOS {
 		int *indices   = new int[maxlen];
 		double *values = new double[maxlen];
 
+		int Ndim = domain->GlobalN();
+		int Mdim = domain->GlobalM();
+		int Ldim = domain->GlobalL();
+		
+		
 		len = 1;
 		for (int i = 0; i < dim; i++)
 		{
 			row = M.GID(i);
-			is_dummy[i]=false;
+			is_dummy[i] = false;
 
-			CHECK_ZERO(A.ExtractGlobalRowCopy(row, maxlen,len, values, indices));
-
+			CHECK_ZERO(A.ExtractGlobalRowCopy(row, maxlen, len, values, indices));
 			
 			for (int p = 0; p < len; p++)
 			{

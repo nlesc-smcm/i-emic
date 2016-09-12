@@ -307,5 +307,7 @@ private:
 	
 	Teuchos::RCP<SuperVector>
 	getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
+
+	void inspectState();
 };
 #endif

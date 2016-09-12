@@ -113,7 +113,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 		
 		THCM::Instance().setLandMask(landmask);
 		THCM::Instance().evaluate(*state_, Teuchos::null, true);		
-	}
+	}	
 
 	// Initialize preconditioner
 	initializePreconditioner();
@@ -121,6 +121,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	// Get current global masks to communicate with an Atmosphere
 	landmask_ = THCM::Instance().getLandMask();
 	surfmask_ = THCM::Instance().getSurfaceMask();
+
+	// Inspect current state
+	inspectState();
+	
 	INFO("Ocean: constructor... done");
 }
 
@@ -217,8 +221,46 @@ int Ocean::analyzeJacobian()
 	return maxFound;
 }
 
+//==================================================================
+void Ocean::inspectState()
+{
+	// for now we just check whether the surface w-values are zero
+	int row = 0;
+	int lid = 0;
+	std::vector<int> badRows;
+	int flag = 0;
+	int globFlag = 0;
+	
+	for (int j = 0; j != M_; ++j)
+		for (int i = 0; i != N_; ++i)
+		{
+			flag = 0;
+			globFlag = 0;
+			row = (L_-1)*M_*N_*_NUN_ + j*N_*_NUN_ + i*_NUN_ + 2; // surface w row
+			lid = state_->Map().LID(row);
+			if (lid >= 0)
+			{
+				if (std::abs((*state_)[lid]) > 1e-10)
+				{
+					(*state_)[lid] = 0.0;
+					flag = true;
+				}
+			}
+			comm_->SumAll(&flag, &globFlag, 1);
+			
+			if (globFlag)
+				badRows.push_back(row);
+		}
+	if (badRows.size() > 0)
+	{
+		INFO("   fixed bad w points in surface rows: ");
+		for (auto &el: badRows)
+			INFO(el);		
+	}
+}
+
 //====================================================================
-Ocean::LandMask Ocean::getLandMask(std::string const & fname)
+Ocean::LandMask Ocean::getLandMask(std::string const &fname)
 {
 	LandMask mask;
 	
