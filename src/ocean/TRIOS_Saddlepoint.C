@@ -337,8 +337,7 @@ namespace TRIOS {
 				
 				if (psPre== Teuchos::null) ERROR("failed to dynamic_cast SpaI",__FILE__,__LINE__);
 				DEBUG("extract SpaI CRS matrix...");
-				BlockDiagA11 = psPre->GetSpaI();
-    
+				BlockDiagA11 = psPre->GetSpaI();    
 			}
 			else
 #endif  

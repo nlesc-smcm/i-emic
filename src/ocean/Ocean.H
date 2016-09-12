@@ -167,6 +167,7 @@ public:
 
 	//! Calculate explicit residual norm
 	double explicitResNorm(VectorPtr rhs);
+	void printResidual(VectorPtr rhs);
 	
 	void computeRHS();
 	void computeJacobian();

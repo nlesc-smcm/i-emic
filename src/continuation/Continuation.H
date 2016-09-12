@@ -466,6 +466,7 @@ newtonCorrector()
 		
 		model_->solve(R);
 		z = model_->getSolution('C');
+		model_->printResidual(R);
 		
 		// Determine the directions.....................................
 		// First for the parameter:

@@ -656,6 +656,17 @@ double Ocean::explicitResNorm(VectorPtr rhs)
 	return nrm;
 }
 
+//==================================================================
+void Ocean::printResidual(VectorPtr rhs)
+{
+	VectorPtr Ax = getSolution('C');
+	VectorPtr  x = getSolution('C');
+	applyMatrix(*x, *Ax);
+	Ax->update(1.0, *rhs, -1.0);
+	Ax->norm('E',"ocean ||b-Ax||");
+	Ax->print("residual");
+}
+
 //=====================================================================
 void Ocean::scaleProblem(VectorPtr rhs)
 {
