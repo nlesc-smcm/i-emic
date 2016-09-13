@@ -308,6 +308,6 @@ private:
 	Teuchos::RCP<SuperVector>
 	getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
 
-	void inspectState();
+	void inspectVector(Teuchos::RCP<Epetra_Vector> x);
 };
 #endif
