@@ -226,6 +226,8 @@ public:
 
 	//! test different RHS
 	void testRHS();
+
+	void printResidual(VectorPtr b) {}
 private:
   	//! load the mask filenames
 	void loadMaskFileNames();

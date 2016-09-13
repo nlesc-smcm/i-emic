@@ -113,7 +113,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 		
 		THCM::Instance().setLandMask(landmask);
 		THCM::Instance().evaluate(*state_, Teuchos::null, true);		
-	}
+	}	
 
 	// Initialize preconditioner
 	initializePreconditioner();
@@ -121,6 +121,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	// Get current global masks to communicate with an Atmosphere
 	landmask_ = THCM::Instance().getLandMask();
 	surfmask_ = THCM::Instance().getSurfaceMask();
+
+	// Inspect current state
+	inspectVector(state_);
+	
 	INFO("Ocean: constructor... done");
 }
 
@@ -217,8 +221,48 @@ int Ocean::analyzeJacobian()
 	return maxFound;
 }
 
+//==================================================================
+void Ocean::inspectVector(Teuchos::RCP<Epetra_Vector> x)
+{
+	INFO("Ocean: inspect vector...");
+	// for now we just check whether the surface w-values are zero
+	int row = 0;
+	int lid = 0;
+	std::vector<int> badRows;
+	int flag = 0;
+	int globFlag = 0;
+	
+	for (int j = 0; j != M_; ++j)
+		for (int i = 0; i != N_; ++i)
+		{
+			flag = 0;
+			globFlag = 0;
+			row = (L_-1)*M_*N_*_NUN_ + j*N_*_NUN_ + i*_NUN_ + 2; // surface w row
+			lid = x->Map().LID(row);
+			if (lid >= 0)
+			{
+				if (std::abs((*x)[lid]) > 1e-10)
+				{
+					(*x)[lid] = 0.0;
+					flag = true;
+				}
+			}
+			comm_->SumAll(&flag, &globFlag, 1);
+			
+			if (globFlag)
+				badRows.push_back(row);
+		}
+	if (badRows.size() > 0)
+	{
+		INFO("   fixed bad w points in surface rows: ");
+		for (auto &el: badRows)
+			INFO(el);		
+	}
+	INFO("Ocean: inspect vector... done");
+}
+
 //====================================================================
-Ocean::LandMask Ocean::getLandMask(std::string const & fname)
+Ocean::LandMask Ocean::getLandMask(std::string const &fname)
 {
 	LandMask mask;
 	
@@ -329,6 +373,8 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 	int idx1, idx2;
 	std::vector<int> nbidx;       // neighbour indices
 	int ii, lid;
+	int iir, iip;
+	int ls = _NUN_ * N_ * M_;     // layer size
 	int dir;
 	int nnz;
 	int radius, maxRadius = 2;
@@ -352,6 +398,9 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 					{
 						for (ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
 						{
+							iir = ii % ls  - 1;  // relative location in layer (forward)
+							iip = ls - iir - 1; // relative location in layer (backward)
+							
 							avg = 0.0;
 							radius = 0;
 							while (std::abs(avg) < 1e-8 && radius < maxRadius)
@@ -360,15 +409,15 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 								radius++;
 								nbidx.clear();
 
-								//--> This should stick to its layer!
-								nbidx.push_back(ii + radius * _NUN_);
-								nbidx.push_back(ii - radius * _NUN_);
-								nbidx.push_back(ii + radius * _NUN_*N_);
-								nbidx.push_back(ii - radius * _NUN_*N_);
-								nbidx.push_back(ii + (radius+1) * _NUN_);
-								nbidx.push_back(ii - (radius+1) * _NUN_);
-								nbidx.push_back(ii + (radius+2) * _NUN_);
-								nbidx.push_back(ii - (radius+2) * _NUN_);
+								nbidx.push_back(ii + (radius * _NUN_)       % iip);
+								nbidx.push_back(ii - (radius * _NUN_)       % iir);
+								nbidx.push_back(ii + (radius * _NUN_*N_)    % iip);
+								nbidx.push_back(ii - (radius * _NUN_*N_)    % iir);
+								nbidx.push_back(ii + ((radius + 1) * _NUN_) % iip);
+								nbidx.push_back(ii - ((radius + 1) * _NUN_) % iir);
+								nbidx.push_back(ii + ((radius + 2) * _NUN_) % iip);
+								nbidx.push_back(ii - ((radius + 2) * _NUN_) % iir);
+
 								// nbidx.push_back(ii + _NUN_*(N_ - radius));
 								// nbidx.push_back(ii + _NUN_*(N_ + radius));
 								// nbidx.push_back(ii - _NUN_*N_);
@@ -397,9 +446,16 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 								{
 									avg /= nnz;
 									lid = x->Map().LID(ii);
-									newOcean++;
-									if (lid >= 0)
+									if (lid >= 0 && std::abs((*x)[lid]) < 1e-8)
+									{
+										newOcean++;
 										(*x)[lid] = avg;
+									}
+									// synchronize counter
+									int tmp;
+									comm_->MaxAll(&newOcean, &tmp, 1);
+									newOcean = tmp;
+									
 								}
 								else
 									avg = 0.0;
@@ -424,6 +480,9 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 						}
 					}
 				}
+
+	// To be sure we check whether we have introduced some unwanted values
+	inspectVector(x);
 	
 	INFO("Ocean: applyLandmask, adjusted " << newOcean << " new ocean entries.");
 	INFO("Ocean: applyLandmask, adjusted " << newLand  << " new land entries.");
@@ -654,6 +713,17 @@ double Ocean::explicitResNorm(VectorPtr rhs)
 	double nrm;
 	Ax->Norm2(&nrm);
 	return nrm;
+}
+
+//==================================================================
+void Ocean::printResidual(VectorPtr rhs)
+{
+	VectorPtr Ax = getSolution('C');
+	VectorPtr  x = getSolution('C');
+	applyMatrix(*x, *Ax);
+	Ax->update(1.0, *rhs, -1.0);
+	Ax->norm('E',"ocean ||b-Ax||");
+	Ax->print("residual");
 }
 
 //=====================================================================

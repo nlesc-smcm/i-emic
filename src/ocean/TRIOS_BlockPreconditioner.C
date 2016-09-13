@@ -726,18 +726,22 @@ namespace TRIOS {
 		int *indices   = new int[maxlen];
 		double *values = new double[maxlen];
 
+		int Ndim = domain->GlobalN();
+		int Mdim = domain->GlobalM();
+		int Ldim = domain->GlobalL();
+		
+		
 		len = 1;
 		for (int i = 0; i < dim; i++)
 		{
 			row = M.GID(i);
-			is_dummy[i]=false;
+			is_dummy[i] = false;
 
-			CHECK_ZERO(A.ExtractGlobalRowCopy(row, maxlen,len, values, indices));
-
+			CHECK_ZERO(A.ExtractGlobalRowCopy(row, maxlen, len, values, indices));
 			
 			for (int p = 0; p < len; p++)
 			{
-				if (indices[p] == row)
+				if (indices[p] == row && std::abs(values[p]-1.0) < 1e-8)
 				{
 					is_dummy[i] = true;
 				}
@@ -747,13 +751,6 @@ namespace TRIOS {
 					break;
 				}
 			}
-
-			// // Additional hack for impossible topographies
-			// sum = 0.0;
-			// for (int p = 0; p < len; p++)
-			// 	sum += values[p];
-			//  if (sum == 0 || sum == 4)
-			// 	is_dummy[i] = true;
 	
 			if (is_dummy[i])
 			{
@@ -2305,10 +2302,13 @@ namespace TRIOS {
   
 	// constructor
 	ApMatrix::ApMatrix(const Epetra_CrsMatrix& Gw, 
-					   Teuchos::RCP<Epetra_Map> mapW1_, Teuchos::RCP<Epetra_Map> mapP1_, Teuchos::RCP<Epetra_Map> mapPhat, Teuchos::RCP<Epetra_Comm> comm_)
-		: rangeMap(mapW1_), domainMap(mapP1_),
-		  mapW1(mapW1_),mapP1(mapP1_)
-         
+					   Teuchos::RCP<Epetra_Map> mapW1_,
+					   Teuchos::RCP<Epetra_Map> mapP1_,
+					   Teuchos::RCP<Epetra_Map> mapPhat,
+					   Teuchos::RCP<Epetra_Comm> comm_)
+		:
+		rangeMap(mapW1_), domainMap(mapP1_),
+		mapW1(mapW1_), mapP1(mapP1_)         
     {
 		DEBUG(" building new Ap matrix, Ap = Gw(W1,W1)");
 
@@ -2421,5 +2421,4 @@ namespace TRIOS {
 		CHECK_ZERO(Gw1->Solve(true,false,false,bhat,x));
 		return 0;
     }//ApMatrix::ApplyInverse
-
 }//namespace TRIOS

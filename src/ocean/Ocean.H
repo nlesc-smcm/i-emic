@@ -167,6 +167,7 @@ public:
 
 	//! Calculate explicit residual norm
 	double explicitResNorm(VectorPtr rhs);
+	void printResidual(VectorPtr rhs);
 	
 	void computeRHS();
 	void computeJacobian();
@@ -306,5 +307,7 @@ private:
 	
 	Teuchos::RCP<SuperVector>
 	getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
+
+	void inspectVector(Teuchos::RCP<Epetra_Vector> x);
 };
 #endif
