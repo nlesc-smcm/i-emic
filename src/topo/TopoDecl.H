@@ -227,7 +227,7 @@ public:
 	//! test different RHS
 	void testRHS();
 
-	void printResidual(VectorPtr b) {}
+	void printResidual(VectorPtr b) { model_->printResidual(b); }
 private:
   	//! load the mask filenames
 	void loadMaskFileNames();

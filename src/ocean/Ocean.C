@@ -226,7 +226,10 @@ void Ocean::inspectVector(Teuchos::RCP<Epetra_Vector> x)
 {
 	INFO("Ocean: inspect vector...");
 	// for now we just check whether the surface w-values are zero
-	int row = 0;
+	// if not we put them to zero
+	// this setup lets us choose more rows in a layer to reset
+	
+	std::vector<int> rows;	
 	int lid = 0;
 	std::vector<int> badRows;
 	int flag = 0;
@@ -237,20 +240,27 @@ void Ocean::inspectVector(Teuchos::RCP<Epetra_Vector> x)
 		{
 			flag = 0;
 			globFlag = 0;
-			row = (L_-1)*M_*N_*_NUN_ + j*N_*_NUN_ + i*_NUN_ + 2; // surface w row
-			lid = x->Map().LID(row);
-			if (lid >= 0)
-			{
-				if (std::abs((*x)[lid]) > 1e-10)
-				{
-					(*x)[lid] = 0.0;
-					flag = true;
-				}
-			}
-			comm_->SumAll(&flag, &globFlag, 1);
 			
-			if (globFlag)
-				badRows.push_back(row);
+			// surface w row
+			rows.push_back((L_-1)*M_*N_*_NUN_ + j*N_*_NUN_ + i*_NUN_ + 2);
+
+			for (auto &row: rows)
+			{
+				lid = x->Map().LID(row);
+				if (lid >= 0)
+				{
+					if (std::abs((*x)[lid]) > 1e-10)
+					{
+						(*x)[lid] = 0.0;
+						flag = true;
+					}
+				}
+				comm_->SumAll(&flag, &globFlag, 1);
+				
+				if (globFlag)
+					badRows.push_back(row);
+			}
+			rows.clear();
 		}
 	if (badRows.size() > 0)
 	{
@@ -371,18 +381,15 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 	assert(nmask == (M_+2)*(N_+2)*(L_+2));
 	
 	int idx1, idx2;
-	std::vector<int> nbidx;       // neighbour indices
 	int ii, lid;
-	int iir, iip;
-	int ls = _NUN_ * N_ * M_;     // layer size
+	int iil, iir;
 	int dir;
 	int nnz;
-	int radius, maxRadius = 2;
 	double value, globValue;
 	double avg = 0.0;
 	int newOcean = 0;
 	int newLand  = 0;
-	std::vector<int> dirs;
+	std::vector<int> unknowns = {0, 4, 5}; // Only adjust these unknowns (u,T,S)
 
 	for (int q = 0; q != 1; ++q)
 		for (int k = 1; k != L_+1; ++k)
@@ -396,76 +403,50 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 				
 					if (dir > 0)  // New ocean
 					{
-						for (ii = idx2*_NUN_; ii != (idx2+1)*_NUN_; ++ii)
+						for (auto &var: unknowns)
 						{
-							iir = ii % ls  - 1;  // relative location in layer (forward)
-							iip = ls - iir - 1; // relative location in layer (backward)
+							// row in vector
+							ii  = idx2*_NUN_ + var;
 							
+							// left-most point at this latitude in this layer
+							iil = ((k-1)*M_*N_ + (j-1)*N_)*_NUN_ + var;
+
+							// right-most point at this latitude in this layer
+							iir = ((k-1)*M_*N_ + (j-1)*N_ + N_-1)*_NUN_ + var;
+
+							// get zonal average
 							avg = 0.0;
-							radius = 0;
-							while (std::abs(avg) < 1e-8 && radius < maxRadius)
+							nnz = 0;
+							for (; iil <= iir; iil += _NUN_)
 							{
-								// Get the horizontally neighbouring values
-								radius++;
-								nbidx.clear();
+								value     = 0.0;
+								globValue = 0.0;
 
-								nbidx.push_back(ii + (radius * _NUN_)       % iip);
-								nbidx.push_back(ii - (radius * _NUN_)       % iir);
-								nbidx.push_back(ii + (radius * _NUN_*N_)    % iip);
-								nbidx.push_back(ii - (radius * _NUN_*N_)    % iir);
-								nbidx.push_back(ii + ((radius + 1) * _NUN_) % iip);
-								nbidx.push_back(ii - ((radius + 1) * _NUN_) % iir);
-								nbidx.push_back(ii + ((radius + 2) * _NUN_) % iip);
-								nbidx.push_back(ii - ((radius + 2) * _NUN_) % iir);
+								lid = x->Map().LID(iil);
 
-								// nbidx.push_back(ii + _NUN_*(N_ - radius));
-								// nbidx.push_back(ii + _NUN_*(N_ + radius));
-								// nbidx.push_back(ii - _NUN_*N_);
-								// nbidx.push_back(ii - _NUN_*(N_ - radius));
-								// nbidx.push_back(ii - _NUN_*(N_ + radius));
-							
-								nnz = 0;						
-								for (auto &nbi: nbidx)
+								if (lid >= 0)
+									value = (*x)[lid];
+								
+								comm_->SumAll(&value, &globValue, 1);
+								avg += globValue;
+								nnz += (std::abs(globValue) < 1e-8) ? 0 : 1;
+							}
+
+							// put zonal average in ii
+							if (nnz > 0)
+							{
+								avg /= nnz;
+								lid = x->Map().LID(ii);
+								if (lid >= 0 && std::abs((*x)[lid]) < 1e-8)
 								{
-									value = 0.0;
-									lid = x->Map().LID(nbi);
-							
-									if (lid >= 0)
-									{
-										value = (*x)[lid];
-									}
-							
-									comm_->SumAll(&value, &globValue, 1);
-									avg += globValue;
-									nnz += (std::abs(globValue) < 1e-8) ? 0 : 1;
-									// std::cout << "{}" << globValue << " ";
+									newOcean++;
+									(*x)[lid] = avg;
 								}
 								
-								// Set average of nonzero neighbours in x(ii)
-								if (nnz > 0)
-								{
-									avg /= nnz;
-									lid = x->Map().LID(ii);
-									if (lid >= 0 && std::abs((*x)[lid]) < 1e-8)
-									{
-										newOcean++;
-										(*x)[lid] = avg;
-									}
-									// synchronize counter
-									int tmp;
-									comm_->MaxAll(&newOcean, &tmp, 1);
-									newOcean = tmp;
-									
-								}
-								else
-									avg = 0.0;
-							
-								// std::cout << "[]" << avg << " " << nnz << "||"
-								//						  << radius << "{[]}" << ii << std::endl;
-							
-								// for (auto &el: nbidx)
-								// 	std::cout << el << " ";
-								// std::cout << std::endl;
+								// synchronize counter
+								int tmp;
+								comm_->MaxAll(&newOcean, &tmp, 1);
+								newOcean = tmp;									
 							}
 						}
 					}
