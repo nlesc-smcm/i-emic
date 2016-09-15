@@ -389,7 +389,7 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 	double avg = 0.0;
 	int newOcean = 0;
 	int newLand  = 0;
-	std::vector<int> unknowns = {0, 4, 5}; // Only adjust these unknowns (u,T,S)
+	std::vector<int> unknowns = {4, 5}; // Only adjust these unknowns (T,S)
 
 	for (int q = 0; q != 1; ++q)
 		for (int k = 1; k != L_+1; ++k)
