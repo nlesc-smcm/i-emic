@@ -93,6 +93,7 @@ Topo(Model model, ParameterList pars)
 	
 	rhsView_->print("topores1");
 	stateView_->print("topox1");
+
 	model_->applyLandMask(stateView_->getOceanVector(),
 						  landMasks_[a_[k_]],
 						  landMasks_[b_[k_]]);
