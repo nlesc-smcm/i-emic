@@ -93,6 +93,7 @@ Topo(Model model, ParameterList pars)
 	
 	rhsView_->print("topores1");
 	stateView_->print("topox1");
+
 	model_->applyLandMask(stateView_->getOceanVector(),
 						  landMasks_[a_[k_]],
 						  landMasks_[b_[k_]]);
@@ -570,14 +571,25 @@ void Topo<Model, ParameterList>::initializeSolver()
 	// Belos LinearProblem setup
 	Teuchos::RCP<Combined_Operator<Model> > combMatPtr =
 		Teuchos::rcp(&combMat_, false);
+
+	// Create a temporary solution [x1,x2]^T
+	int indices[2] = {0,0};
+	Teuchos::RCP<Epetra_MultiVector> soltmp =
+		Teuchos::rcp(new Epetra_MultiVector(Copy, *(solView_->getOceanVector()),
+											indices, 2));
+
+	// Create a temporary right hand side [b,0]^T
+	Teuchos::RCP<Epetra_MultiVector> btmp =
+		Teuchos::rcp(new Epetra_MultiVector(Copy, *(rhs_->getOceanVector()),
+											indices, 2));
+
+	(*btmp)(1)->PutScalar(0.0);
 	
 	problem_ =
 		rcp(new Belos::LinearProblem
 			<double, Epetra_MultiVector, Combined_Operator<Model> >
-			(combMatPtr,
-			 solView_->getOceanVector(),
-			 rhs_->getOceanVector()) );
-
+			(combMatPtr, soltmp, btmp));
+			
 	buildPreconditioner();
 
 	Teuchos::RCP<Combined_Operator<Model> > combPrecPtr =
@@ -641,9 +653,22 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	Vector resB = *getSolution('C');	
 
 	solView_->putScalar(0.0);
-	
-	set = problem_->setProblem(solView_->getOceanVector(),
-							   b->getOceanVector());
+
+	// Create a temporary solution multivector with two vectors
+	int indices[2] = {0,0};
+	Teuchos::RCP<Epetra_MultiVector> soltmp =
+		Teuchos::rcp(new Epetra_MultiVector(Copy, *(solView_->getOceanVector()),
+											indices, 2));
+
+	// Create a temporary right hand side [b,0]^T
+	Teuchos::RCP<Epetra_MultiVector> btmp =
+		Teuchos::rcp(new Epetra_MultiVector(Copy, *(b->getOceanVector()),
+											indices, 2));
+	(*btmp)(1)->PutScalar(0.0);
+	set = problem_->setProblem(soltmp, btmp);
+
+	INFO("             " << " number of vectors in soltmp " << soltmp->NumVectors());
+	INFO("             " << " number of vectors in btmp   " << btmp->NumVectors());
 		
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
@@ -655,6 +680,9 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	{
 		INFO("Ocean: exception caught: " << e.what());
 	}
+
+	// Put the solution in solView
+	solView_->getOceanVector()->Update(1.0, *(*soltmp)(0), 0.0);
 
 	innerIters = belosSolver_->getNumIters();
 	innerTol   = belosSolver_->achievedTol();

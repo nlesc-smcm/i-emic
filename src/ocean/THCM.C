@@ -994,7 +994,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 			Utils::Gather(*fix, 0);
 		
 		int len = fix0->Map().NumMyElements();
-		std::cout << "PID " << Comm->MyPID() << " numel " << len << std::endl;
+		// std::cout << "PID " << Comm->MyPID() << " numel " << len << std::endl;
 		
  		std::vector<double> fix1(len);
 		(*fix0)(0)->ExtractCopy(&fix1[0]);
@@ -1013,7 +1013,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 						idx = k*(m+2)*(n+2) + j*(n+2) + i;
 						if (fix1[pos] == 2) // this number... 
 						{
-							INFO("fix " << i << ' ' << j << ' ' << k);
+							// INFO("fix " << i << ' ' << j << ' ' << k);
 					 		landm[idx] = 1;
 						}
 						pos++;						
