@@ -2345,18 +2345,20 @@ namespace TRIOS {
 		//DEBVAR(*mapP1);
 		//DEBVAR(*mapW1);
 		//DEBVAR(*mapPhat);
-// we must replace the row map of Gw1 as we want ot perform upper tri solves with it:
+		
+		// we must replace the row map of Gw1 as we want ot perform upper tri solves with it:
 #if 0
 		CHECK_ZERO(Gw1->ReplaceRowMap(*mapPhat));
 #else
 		CHECK_ZERO(Gw1->FillComplete());
-//  Gw1=Utils::ReplaceRowMap(Gw1,*mapPhat);
-		Gw1=Utils::ReplaceBothMaps(Gw1,*mapPhat,*mapPhat);
+		//  Gw1=Utils::ReplaceRowMap(Gw1,*mapPhat);
+		Gw1 = Utils::ReplaceBothMaps(Gw1, *mapPhat, *mapPhat);
 #endif
 
 
 		// G1: P -> P, but operating only on the first part (Phat)
 		CHECK_ZERO(Gw1->FillComplete(*mapP1,*mapP1));
+
 		// this seems to be necessary if we want to do upper tri solves (which we do)
 		Gw1->OptimizeStorage();
 		Gw1->SetLabel("Gw1");
@@ -2394,12 +2396,9 @@ namespace TRIOS {
 	//    
 	// note: alternatively we can just treat Ap as the square part of Gw (Gw1), this approach
 	// is now implemented instead
-	int 	ApMatrix::ApplyInverse (const Epetra_Vector &b, Epetra_Vector &x) const
-    {
-    
-    
-		// DEBUG("solve Ap*x=b ...");
-    
+	int ApMatrix::ApplyInverse (const Epetra_Vector &b, Epetra_Vector &x) const
+    {    
+
 #ifdef TESTING
 		if (!b.Map().SameAs(*rangeMap))
 		{
@@ -2410,15 +2409,16 @@ namespace TRIOS {
 			ERROR("bad lhs vector for solve with Ap!",__FILE__,__LINE__);
 		}
 #endif
-
     
 		// b is based on the W1 map, x on the P1 map
 		// we convert b to a P vector first:
-		Epetra_Vector bhat(*mapP1,true);
+		Epetra_Vector bhat(*mapP1, true);
     
-		for (int i=0;i<b.MyLength();i++) bhat[i]=b[i];
+		for (int i = 0; i < b.MyLength(); i++)
+			bhat[i] = b[i];
     
-		CHECK_ZERO(Gw1->Solve(true,false,false,bhat,x));
+		CHECK_ZERO(Gw1->Solve(true, false, false, bhat, x));
 		return 0;
+		
     }//ApMatrix::ApplyInverse
 }//namespace TRIOS
