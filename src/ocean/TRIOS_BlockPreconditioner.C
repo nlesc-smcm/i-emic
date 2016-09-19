@@ -725,11 +725,6 @@ namespace TRIOS {
 		int maxlen     = A.MaxNumEntries();
 		int *indices   = new int[maxlen];
 		double *values = new double[maxlen];
-
-		int Ndim = domain->GlobalN();
-		int Mdim = domain->GlobalM();
-		int Ldim = domain->GlobalL();
-		
 		
 		len = 1;
 		for (int i = 0; i < dim; i++)
@@ -2362,6 +2357,10 @@ namespace TRIOS {
 		// this seems to be necessary if we want to do upper tri solves (which we do)
 		Gw1->OptimizeStorage();
 		Gw1->SetLabel("Gw1");
+
+		DUMP("Gw_old", Gw);
+		DUMP("Gw1_old", *Gw1);
+		getchar();
     }
     
 
