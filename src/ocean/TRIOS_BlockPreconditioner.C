@@ -35,6 +35,9 @@
 
 #include "TRIOS_Static.H"
 
+#include "THCMdefs.H"
+#include "GlobalDefinitions.H"
+
 /// define this to set P=I, just remove checkerboard pressure modes
 //#define DUMMY_PREC 1
 
@@ -726,11 +729,6 @@ namespace TRIOS {
 		int *indices   = new int[maxlen];
 		double *values = new double[maxlen];
 
-		int Ndim = domain->GlobalN();
-		int Mdim = domain->GlobalM();
-		int Ldim = domain->GlobalL();
-		
-		
 		len = 1;
 		for (int i = 0; i < dim; i++)
 		{
@@ -932,7 +930,8 @@ namespace TRIOS {
     
 		DEBUG("final svs: "<<svs);
         
-		Teuchos::RCP<Epetra_CrsMatrix> Mzp = Teuchos::rcp(new Epetra_CrsMatrix(Copy,*mapPbar,*colmapP1,domain->LocalL()) );
+		Teuchos::RCP<Epetra_CrsMatrix> Mzp =
+			Teuchos::rcp(new Epetra_CrsMatrix(Copy,*mapPbar,*colmapP1,domain->LocalL()) );
 
 		int ipb; // row index in Pbar indexing
 
@@ -1003,7 +1002,7 @@ namespace TRIOS {
 			INFO("Prepare preconditioner...");
 		}
 		{
-			Ap = Teuchos::rcp(new ApMatrix(*SubMatrix[_Gw], mapW1, mapP1, mapPhat, comm) );
+			Ap = Teuchos::rcp(new ApMatrix(*SubMatrix[_Gw], *Mzp1, mapW1, mapP1, mapPhat, comm) );
 		}
 
 		if (Spp == Teuchos::null)
@@ -2298,81 +2297,125 @@ namespace TRIOS {
 // class ApMatrix 
   
 // public:
-
   
 	// constructor
-	ApMatrix::ApMatrix(const Epetra_CrsMatrix& Gw, 
+	ApMatrix::ApMatrix(const Epetra_CrsMatrix &Gw,
+					   const Epetra_CrsMatrix &Mp,
 					   Teuchos::RCP<Epetra_Map> mapW1_,
 					   Teuchos::RCP<Epetra_Map> mapP1_,
 					   Teuchos::RCP<Epetra_Map> mapPhat,
 					   Teuchos::RCP<Epetra_Comm> comm_)
 		:
 		rangeMap(mapW1_), domainMap(mapP1_),
-		mapW1(mapW1_), mapP1(mapP1_)         
+		mapW1(mapW1_), mapP1(mapP1_)
     {
-		DEBUG(" building new Ap matrix, Ap = Gw(W1,W1)");
-
-		const Epetra_Map& RowMapGw = Gw.RowMap();
-		const Epetra_Map& ColMapGw = Gw.ColMap();
+		INFO("ApMatrix constructor: testing Gw*Mp'...");
+		Teuchos::RCP<Epetra_CrsMatrix> C = Teuchos::rcp(new Epetra_CrsMatrix(Copy, Gw.RangeMap(), 10) );
+		CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(Gw, false, Mp, true, *C));
+		INFO("   ||Gw*Mp'||_inf = " << C->NormInf());
+		
+		INFO(" building new Ap matrix, Ap = Gw(W1,W1)");		
+		const Epetra_Map &RowMapGw = Gw.RowMap();
+		const Epetra_Map &ColMapGw = Gw.ColMap();
+		const Epetra_Map &RowMapMp = Mp.RowMap();
+		const Epetra_Map &ColMapMp = Mp.ColMap();
 
 		// note that this is a replicated map so we use 
 		// the local number of cols
-		DEBUG("Gw is " << RowMapGw.NumGlobalElements()
-			  <<"x" << ColMapGw.NumMyElements());
-    
+		INFO("  Gw is " << RowMapGw.NumGlobalElements()
+			 <<"x" << ColMapGw.NumMyElements());
+		INFO("  Mp is " << RowMapMp.NumGlobalElements()
+			 <<"x" << ColMapMp.NumMyElements());
+		
 		// extract column maps for the blocks of Gw and Mzp
-		Teuchos::RCP<Epetra_Map> ColMapGw1=Teuchos::null;
-		DEBUG("Split column maps of Gw...");
-		// Gw = [Gw1 Gw2] where Gw1 is square. Note that we do not need Gw2 anymore
-
+		Teuchos::RCP<Epetra_Map> ColMapGw1 = Teuchos::null;
+		Teuchos::RCP<Epetra_Map> ColMapGw2 = Teuchos::null;
+		Teuchos::RCP<Epetra_Map> ColMapMp1 = Teuchos::null;
+		Teuchos::RCP<Epetra_Map> ColMapMp2 = Teuchos::null;		
+		
+		INFO("  Split column maps of Gw...");
+		
+		// Gw = [Gw1 Gw2] where Gw1 is square.
 		// note: Gw: P1->W1
-
 		// Gw1 contains all P cells from 0 to nrowsGw
 		int minGID = 0;
 		int maxGID = RowMapGw.MaxAllGID()+(PP-WW);// must adjust from W to P index
-		DEBVAR(minGID);
-		DEBVAR(maxGID);
-		ColMapGw1 = Utils::ExtractRange(ColMapGw,minGID,maxGID);
-		//DEBVAR(*ColMapGw1);
-
-		DEBUG("Split matrix...");
-		Gw1 = Teuchos::rcp(new Epetra_CrsMatrix(Copy,RowMapGw,*ColMapGw1,Gw.MaxNumEntries()) );
-		// we use dummy importers to do the actual splitting.
-		Teuchos::RCP<Epetra_Import> importGw = Teuchos::rcp(new Epetra_Import(RowMapGw,RowMapGw) );
-		DEBUG("Import matrix entries...");
-		CHECK_ZERO(Gw1->Import(Gw,*importGw,Zero));
-		DEBUG("replace maps of Gw...");
-		//DEBVAR(*mapP1);
-		//DEBVAR(*mapW1);
-		//DEBVAR(*mapPhat);
 		
-		// we must replace the row map of Gw1 as we want ot perform upper tri solves with it:
-#if 0
-		CHECK_ZERO(Gw1->ReplaceRowMap(*mapPhat));
-#else
-		CHECK_ZERO(Gw1->FillComplete());
-		//  Gw1=Utils::ReplaceRowMap(Gw1,*mapPhat);
-		Gw1 = Utils::ReplaceBothMaps(Gw1, *mapPhat, *mapPhat);
-#endif
+		ColMapGw1 = Utils::ExtractRange(ColMapGw,minGID,maxGID);
+		ColMapMp1 = Utils::ExtractRange(ColMapMp,minGID,maxGID);
 
+		// The columns map of Gw2 contains the remaining P cells
+		minGID    = RowMapGw.MaxAllGID()+(PP-WW)+_NUN_;
+		maxGID    = ColMapGw.MaxAllGID();
+		ColMapGw2 = Utils::ExtractRange(ColMapGw,minGID,maxGID);
+		ColMapMp2 = Utils::ExtractRange(ColMapMp,minGID,maxGID);
 
-		// G1: P -> P, but operating only on the first part (Phat)
-		CHECK_ZERO(Gw1->FillComplete(*mapP1,*mapP1));
+		INFO("  Split matrix...");
+		
+		INFO("  Gw1 is " << RowMapGw.NumGlobalElements()
+			 <<"x" << ColMapGw1->NumMyElements());
+		INFO("  Gw2 is " << RowMapGw.NumGlobalElements()
+			 <<"x" << ColMapGw2->NumMyElements());
+		INFO("  Mp1 is " << RowMapMp.NumGlobalElements()
+			 <<"x" << ColMapMp1->NumMyElements());
+		INFO("  Mp2 is " << RowMapMp.NumGlobalElements()
+			 <<"x" << ColMapMp2->NumMyElements());
+		
+		Gw1 = Teuchos::rcp(new Epetra_CrsMatrix(Copy, RowMapGw,	*ColMapGw1, Gw.MaxNumEntries()));
+		Gw2 = Teuchos::rcp(new Epetra_CrsMatrix(Copy, RowMapGw,	*ColMapGw2, Gw.MaxNumEntries()));
+		Mp1 = Teuchos::rcp(new Epetra_CrsMatrix(Copy, RowMapMp, *ColMapMp1, Mp.MaxNumEntries()));
+		Mp2 = Teuchos::rcp(new Epetra_CrsMatrix(Copy, RowMapMp, *ColMapMp2, Mp.MaxNumEntries()));
 
-		// this seems to be necessary if we want to do upper tri solves (which we do)
-		Gw1->OptimizeStorage();
+		// we use dummy importers to do the actual splitting.
+		Teuchos::RCP<Epetra_Import> importGw =
+			Teuchos::rcp(new Epetra_Import(RowMapGw,RowMapGw) );
+		Teuchos::RCP<Epetra_Import> importMp =
+			Teuchos::rcp(new Epetra_Import(RowMapMp,RowMapMp) );
+		
+		INFO("  Import matrix entries...");
+		CHECK_ZERO(Gw1->Import(Gw,*importGw,Zero));
+		CHECK_ZERO(Gw2->Import(Gw,*importGw,Zero));
+		CHECK_ZERO(Mp1->Import(Mp,*importMp,Zero));
+		CHECK_ZERO(Mp2->Import(Mp,*importMp,Zero));
+
+		CHECK_ZERO(Gw1->FillComplete(*ColMapGw1, RowMapGw));
+		CHECK_ZERO(Mp1->FillComplete(*ColMapMp1, RowMapMp));
+	
+	 	CHECK_ZERO(Gw2->FillComplete(*ColMapGw2, RowMapGw));
+		CHECK_ZERO(Mp2->FillComplete(*ColMapMp2, RowMapMp));
+		
+		INFO("  Gw1 is " << Gw1->NumGlobalRows() <<"x" << Gw1->NumGlobalCols());
+		INFO("  Gw2 is " << Gw2->NumGlobalRows() <<"x" << Gw2->NumGlobalCols());
+		INFO("  Mp1 is " << Mp1->NumGlobalRows() <<"x" << Mp1->NumGlobalCols());
+		INFO("  Mp2 is " << Mp2->NumGlobalRows() <<"x" << Mp2->NumGlobalCols());
+		INFO("  replace maps of Gw...");
+
+		DUMP("Gw",  Gw);
+		DUMP("Gw1", *Gw1);
+		DUMP("Gw2", *Gw2);
+
 		Gw1->SetLabel("Gw1");
-    }
-    
+		Gw2->SetLabel("Gw2");
+		Mp1->SetLabel("Mp1");
+		Mp2->SetLabel("Mp2");
 
-           
+		INFO("  Testing the splitting...");
+		Teuchos::RCP<Epetra_CrsMatrix> R = Teuchos::rcp(new Epetra_CrsMatrix(Copy, Gw.RangeMap(), 10) );
+		CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(*Gw1, false, *Mp1, true, *R));
+
+		Teuchos::RCP<Epetra_CrsMatrix> S = Teuchos::rcp(new Epetra_CrsMatrix(Copy, Gw.RangeMap(), 10) );
+		CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(*Gw2, false, *Mp2, true, *S));
+		
+		CHECK_ZERO(EpetraExt::MatrixMatrix::Add(*R, false, 1.0, *S, 1.0));
+		INFO("   || Gw1*Mp1' + Gw2*Mp2' ||_inf = " << S->NormInf());
+		INFO("ApMatrix constructor: done");				
+    }            
       
 	// destructor
 	ApMatrix::~ApMatrix()
     {
 		// handled by Teuchos Teuchos::rcp's
     }
-
 
 	//                                                                                     
 	// apply inverse operator x=Ap\b.                                                      
@@ -2412,12 +2455,13 @@ namespace TRIOS {
     
 		// b is based on the W1 map, x on the P1 map
 		// we convert b to a P vector first:
-		Epetra_Vector bhat(*mapP1, true);
-    
+		Epetra_Vector bhat(Gw1->RangeMap(), true);
+		
 		for (int i = 0; i < b.MyLength(); i++)
 			bhat[i] = b[i];
-    
-		CHECK_ZERO(Gw1->Solve(true, false, false, bhat, x));
+		
+		CHECK_ZERO(Gw1->Solve(true, false, false, b, x));
+		getchar();
 		return 0;
 		
     }//ApMatrix::ApplyInverse
