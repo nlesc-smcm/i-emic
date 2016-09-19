@@ -2390,9 +2390,9 @@ namespace TRIOS {
 		INFO("  Mp2 is " << Mp2->NumGlobalRows() <<"x" << Mp2->NumGlobalCols());
 		INFO("  replace maps of Gw...");
 
-		DUMP("Gw",  Gw);
-		DUMP("Gw1", *Gw1);
-		DUMP("Gw2", *Gw2);
+		DUMP("Gw_new",  Gw);
+		DUMP("Gw1_new", *Gw1);
+		DUMP("Gw2_new", *Gw2);
 
 		Gw1->SetLabel("Gw1");
 		Gw2->SetLabel("Gw2");
