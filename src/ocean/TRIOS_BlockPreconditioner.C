@@ -2350,17 +2350,17 @@ namespace TRIOS {
 		Gw1 = Utils::ReplaceBothMaps(Gw1, *mapPhat, *mapPhat);
 #endif
 
-
 		// G1: P -> P, but operating only on the first part (Phat)
 		CHECK_ZERO(Gw1->FillComplete(*mapP1,*mapP1));
 
 		// this seems to be necessary if we want to do upper tri solves (which we do)
 		Gw1->OptimizeStorage();
 		Gw1->SetLabel("Gw1");
-
-		DUMP("Gw_old", Gw);
-		DUMP("Gw1_old", *Gw1);
-		getchar();
+		
+		// std::ofstream Gwfile("Gw.txt");
+		// std::ofstream Gw1file("Gw1.txt");
+		// Gw.Print(Gwfile);
+		// Gw1->Print(Gw1file);
     }
     
 

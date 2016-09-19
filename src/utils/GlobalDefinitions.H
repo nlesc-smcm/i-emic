@@ -84,7 +84,8 @@ extern std::stack<Timer> timerStack;
 #  endif
 #endif
 
-#ifndef DUMP
+// Don't trust these dumps!! I think calling print on such objects is safer.
+#ifndef DUMP 
 #  define DUMP(fname,mat) EpetraExt::RowMatrixToMatrixMarketFile(fname, mat);
 #endif
 
