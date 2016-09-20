@@ -2343,13 +2343,17 @@ namespace TRIOS {
 		
 		ColMapGw1 = Utils::ExtractRange(ColMapGw,minGID,maxGID);
 		ColMapMp1 = Utils::ExtractRange(ColMapMp,minGID,maxGID);
-
+		
 		// The columns map of Gw2 contains the remaining P cells
 		minGID    = RowMapGw.MaxAllGID()+(PP-WW)+_NUN_;
 		maxGID    = ColMapGw.MaxAllGID();
 		ColMapGw2 = Utils::ExtractRange(ColMapGw,minGID,maxGID);
 		ColMapMp2 = Utils::ExtractRange(ColMapMp,minGID,maxGID);
 
+		// create the importers we need in applyinverse
+		importPbar = Teuchos::rcp(new Epetra_Import(*mapP1, *ColMapMp2));
+		importPhat = Teuchos::rcp(new Epetra_Import(*mapP1, *ColMapMp1));
+		
 		INFO("  Split matrix...");		
 		INFO("  Gw1 is " << RowMapGw.NumGlobalElements()
 			 <<"x" << ColMapGw1->NumMyElements());
@@ -2367,9 +2371,10 @@ namespace TRIOS {
 		
 		// we use dummy importers to do the actual splitting.
 		Teuchos::RCP<Epetra_Import> importGw =
-			Teuchos::rcp(new Epetra_Import(RowMapGw,RowMapGw) );
+			Teuchos::rcp(new Epetra_Import(RowMapGw, RowMapGw) );
 		Teuchos::RCP<Epetra_Import> importMp =
-			Teuchos::rcp(new Epetra_Import(RowMapMp,RowMapMp) );
+			Teuchos::rcp(new Epetra_Import(RowMapMp, RowMapMp) );
+
 		
 		INFO("  Import matrix entries...");
 		CHECK_ZERO(Gw1->Import(Gw,*importGw,Zero));
@@ -2377,7 +2382,7 @@ namespace TRIOS {
 		CHECK_ZERO(Mp1->Import(Mp,*importMp,Zero));
 		CHECK_ZERO(Mp2->Import(Mp,*importMp,Zero));
 		
-		// CHECK_ZERO(Gw1->FillComplete(*ColMapGw1, RowMapGw));
+		CHECK_ZERO(Gw1->FillComplete(*ColMapGw1, RowMapGw));
 		CHECK_ZERO(Mp1->FillComplete(*ColMapMp1, RowMapMp));
 		
 	 	CHECK_ZERO(Gw2->FillComplete(*ColMapGw2, RowMapGw));
@@ -2387,32 +2392,42 @@ namespace TRIOS {
 		INFO("  Gw2 is " << Gw2->NumGlobalRows() <<"x" << Gw2->NumGlobalCols());
 		INFO("  Mp1 is " << Mp1->NumGlobalRows() <<"x" << Mp1->NumGlobalCols());
 		INFO("  Mp2 is " << Mp2->NumGlobalRows() <<"x" << Mp2->NumGlobalCols());
-		INFO("  replace maps of Gw...");
-		
-		Gw1 = Utils::ReplaceBothMaps(Gw1, *mapPhat, *mapPhat);
-		CHECK_ZERO(Gw1->FillComplete(*mapPhat,*mapPhat));
-		Gw1->OptimizeStorage();
 		
 		Gw1->SetLabel("Gw1");
 		Gw2->SetLabel("Gw2");
 		Mp1->SetLabel("Mp1");
-		Mp2->SetLabel("Mp2");		
+		Mp2->SetLabel("Mp2");
 		
 		INFO("  Testing the splitting...");
 		Teuchos::RCP<Epetra_CrsMatrix> R = Teuchos::rcp(new Epetra_CrsMatrix(Copy, Gw.RangeMap(), 10) );
 		CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(*Gw1, false, *Mp1, true, *R));
-		
 		Teuchos::RCP<Epetra_CrsMatrix> S = Teuchos::rcp(new Epetra_CrsMatrix(Copy, Gw.RangeMap(), 10) );
 		CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(*Gw2, false, *Mp2, true, *S));
 		
 		CHECK_ZERO(EpetraExt::MatrixMatrix::Add(*R, false, 1.0, *S, 1.0));
 		INFO("   || Gw1*Mp1' + Gw2*Mp2' ||_inf = " << S->NormInf());
+
+		INFO("  replace maps...");		
+		Gw1 = Utils::ReplaceBothMaps(Gw1, *mapPhat, *mapPhat);
+		Mp1 = Utils::ReplaceBothMaps(Mp1, *ColMapMp2, *ColMapMp1);
+		Mp2 = Utils::ReplaceBothMaps(Mp2, *ColMapMp2, *ColMapMp2);
+		CHECK_ZERO(Gw1->FillComplete(*mapPhat,*mapPhat));
+		CHECK_ZERO(Mp1->FillComplete(*ColMapMp1,*ColMapMp2));
+		CHECK_ZERO(Mp2->FillComplete(*ColMapMp2,*ColMapMp2));
+		Gw1->OptimizeStorage();
+		Mp1->OptimizeStorage();
+		Mp2->OptimizeStorage();		
 		
 		std::ofstream Gwfile("Gw.txt");
 		std::ofstream Gw1file("Gw1.txt");
+		std::ofstream Mp1file("Mp1.txt");
+		std::ofstream Mp2file("Mp2.txt");
+		
 		Gw.Print(Gwfile);
 		Gw1->Print(Gw1file);
-
+		Mp1->Print(Mp1file);
+		Mp2->Print(Mp2file);
+		
 		INFO("ApMatrix constructor: done");				
     }            
       
@@ -2465,7 +2480,44 @@ namespace TRIOS {
 		for (int i = 0; i < b.MyLength(); i++)
 			bhat[i] = b[i];
 		
-		CHECK_ZERO(Gw1->Solve(true, false, false, b, x));
+		Epetra_Vector w(Gw1->RangeMap(), true);
+		CHECK_ZERO(Gw1->Solve(true, false, false, b, w));
+		Epetra_Vector y(Mp1->RangeMap(), true);
+		Epetra_Vector v(Mp1->RangeMap(), true);
+		Epetra_Vector z(Gw1->RangeMap(), true);
+
+		CHECK_ZERO(Mp1->Multiply(false, w, y));
+ 		CHECK_ZERO(Mp1->Multiply(true, y, z));
+		w.Update(-1.0, z, 1.0);
+		
+		CHECK_ZERO(Mp2->Multiply(true, y, v));
+		
+		CHECK_ZERO(x.Import(w, *importPhat, Add));
+		CHECK_ZERO(x.Import(v, *importPbar, Add));
+		
+		std::ofstream xfile("x.txt"); x.Print(xfile);
+		std::ofstream yfile("y.txt"); y.Print(yfile);
+		std::ofstream zfile("z.txt"); z.Print(zfile);
+
+		Epetra_Vector tmp1(Mp1->RangeMap(), true);
+		Epetra_Vector tmp2(Mp2->RangeMap(), true);
+		Mp1->Multiply(false, w, tmp1);
+		Mp2->Multiply(false, v, tmp2);
+		tmp1.Update(1.0, tmp2, 1.0);
+		double nrm;
+		tmp1.Norm2(&nrm);
+		std::cout << nrm << std::endl;
+
+		Epetra_Vector tmp3(Gw1->RangeMap(), true);
+		Epetra_Vector tmp4(Gw2->RangeMap(), true);
+		Gw1->Multiply(false, w, tmp3);
+		Gw2->Multiply(false, v, tmp4);
+		tmp3.Update(1.0, tmp4, 1.0);
+		tmp3.Update(1.0, b, -1.0);
+
+		tmp3.Norm2(&nrm);
+		std::cout << nrm << std::endl;
+
 		getchar();
 		return 0;
 		

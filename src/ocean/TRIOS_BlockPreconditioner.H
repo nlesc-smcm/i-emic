@@ -643,9 +643,11 @@ namespace TRIOS {
 
 		//! modified nullspace of Gw
 		Teuchos::RCP<Epetra_CrsMatrix> Mp1, Mp2;
+
+		//! we need some importers
+		Teuchos::RCP<Epetra_Import> importPbar, importPhat;
   
 		//! to create temporary vectors etc we need some maps:
-
 		Teuchos::RCP<Epetra_Map> mapW1, mapP1;
 		
 	}; // end of class ApMatrix
