@@ -2407,16 +2407,10 @@ namespace TRIOS {
 		CHECK_ZERO(Gw1->FillComplete(*mapPhat,*mapPhat));
 		CHECK_ZERO(Mp1->FillComplete(*mapPhat, RowMapMp));
 		CHECK_ZERO(Mp2->FillComplete(*ColMapMp2, RowMapMp));
+
 		Gw1->OptimizeStorage();
 		Mp1->OptimizeStorage();
 		Mp2->OptimizeStorage();
-
-		// Create the support vectors
-		bhat = Teuchos::rcp(new Epetra_Vector(Gw1->RangeMap(), true));
-		w    = Teuchos::rcp(new Epetra_Vector(Gw1->DomainMap(), true));
-		y    = Teuchos::rcp(new Epetra_Vector(Mp2->ColMap(), true));
-		v    = Teuchos::rcp(new Epetra_Vector(Mp2->ColMap(), true));
-		z    = Teuchos::rcp(new Epetra_Vector(Gw1->DomainMap(), true));
 
 		// std::ofstream Mp1file("Mp1" + std::to_string(comm_->MyPID())); Mp1->Print(Mp1file);
 		// std::ofstream Mp2file("Mp2" + std::to_string(comm_->MyPID())); Mp2->Print(Mp2file);
@@ -2468,26 +2462,27 @@ namespace TRIOS {
     
 		// b is based on the W1 map, x on the P1 map
 		// we convert b to a P vector first:
-		bhat->PutScalar(0.0);
+				// Create the support vectors
+		Epetra_Vector bhat(Gw1->RangeMap(), true);
+		Epetra_Vector w   (Gw1->DomainMap(), true);
+		Epetra_Vector y   (Mp2->ColMap(), true);
+		Epetra_Vector v   (Mp2->ColMap(), true);
+		Epetra_Vector z   (Gw1->DomainMap(), true);
+
 		for (int i = 0; i < b.MyLength(); i++)
-			(*bhat)[i] = b[i];
+			bhat[i] = b[i];
 
-		w->PutScalar(0.0);
-		y->PutScalar(0.0);
-		z->PutScalar(0.0);
-		v->PutScalar(0.0);
-
-		CHECK_ZERO(Gw1->Solve(true, false, false, b, *w));
-		CHECK_ZERO(Mp1->Multiply(false, *w, *y));
- 		CHECK_ZERO(Mp1->Multiply(true, *y, *z));
-		w->Update(-1.0, *z, 1.0);
+		CHECK_ZERO(Gw1->Solve(true, false, false, b, w));
+		CHECK_ZERO(Mp1->Multiply(false, w, y));
+ 		CHECK_ZERO(Mp1->Multiply(true, y, z));
+		w.Update(-1.0, z, 1.0);
 		
-		CHECK_ZERO(Mp2->Multiply(true, *y, *v));
-		v->Scale(-1.0);
+		CHECK_ZERO(Mp2->Multiply(true, y, v));
+		v.Scale(-1.0);
 		
-		CHECK_ZERO(x.Import(*w, *importPhat, Add));
+		CHECK_ZERO(x.Import(w, *importPhat, Add));
 		// // std::ofstream xwfile("xw"); x.Print(xwfile);
-		CHECK_ZERO(x.Import(*v, *importPbar, Add));
+		CHECK_ZERO(x.Import(v, *importPbar, Add));
 		// // std::ofstream xvfile("xv"); x.Print(xvfile);
 		
 		// TEST RESIDUALS....

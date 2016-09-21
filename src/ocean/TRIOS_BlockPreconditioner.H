@@ -649,10 +649,7 @@ namespace TRIOS {
   
 		//! to create temporary vectors etc we need some maps:
 		Teuchos::RCP<Epetra_Map> mapW1, mapP1;
-
-		//! Support vectors
-		Teuchos::RCP<Epetra_Vector> bhat,v,w,y,z;
-		
+	
 	}; // end of class ApMatrix
 
 // BILU is no longer supported, we keep the class below just in case
