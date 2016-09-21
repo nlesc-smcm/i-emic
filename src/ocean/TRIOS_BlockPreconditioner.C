@@ -2500,8 +2500,8 @@ namespace TRIOS {
 		
 		// Epetra_Vector tmp1(Mp1->RangeMap(), true);
 		// Epetra_Vector tmp2(Mp2->RangeMap(), true);
-		// Mp1->Multiply(false, w, tmp1);
-		// Mp2->Multiply(false, v, tmp2);
+		// Mp1->Multiply(false, *w, tmp1);
+		// Mp2->Multiply(false, *v, tmp2);
 		// tmp1.Update(1.0, tmp2, 1.0);
 		// double nrm;
 		// tmp1.Norm2(&nrm);
@@ -2510,8 +2510,8 @@ namespace TRIOS {
 		// Epetra_Vector tmp3(Gw1->RangeMap(), true);
 		// Epetra_Vector tmp4(Gw2->RangeMap(), true);
 		
-		// Gw1->Multiply(false, w, tmp3);
-		// Gw2->Multiply(false, v, tmp4);
+		// Gw1->Multiply(false, *w, tmp3);
+		// Gw2->Multiply(false, *v, tmp4);
 		// tmp3.Update(1.0, tmp4, 1.0);
 		// tmp3.Update(1.0, b, -1.0);
 		// tmp3.Norm2(&nrm);
