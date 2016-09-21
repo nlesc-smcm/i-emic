@@ -35,6 +35,9 @@
 
 #include "TRIOS_Static.H"
 
+#include "THCMdefs.H"
+#include "GlobalDefinitions.H"
+
 /// define this to set P=I, just remove checkerboard pressure modes
 //#define DUMMY_PREC 1
 
@@ -725,7 +728,7 @@ namespace TRIOS {
 		int maxlen     = A.MaxNumEntries();
 		int *indices   = new int[maxlen];
 		double *values = new double[maxlen];
-		
+
 		len = 1;
 		for (int i = 0; i < dim; i++)
 		{
@@ -927,7 +930,8 @@ namespace TRIOS {
     
 		DEBUG("final svs: "<<svs);
         
-		Teuchos::RCP<Epetra_CrsMatrix> Mzp = Teuchos::rcp(new Epetra_CrsMatrix(Copy,*mapPbar,*colmapP1,domain->LocalL()) );
+		Teuchos::RCP<Epetra_CrsMatrix> Mzp =
+			Teuchos::rcp(new Epetra_CrsMatrix(Copy,*mapPbar,*colmapP1,domain->LocalL()) );
 
 		int ipb; // row index in Pbar indexing
 
@@ -998,7 +1002,7 @@ namespace TRIOS {
 			INFO("Prepare preconditioner...");
 		}
 		{
-			Ap = Teuchos::rcp(new ApMatrix(*SubMatrix[_Gw], mapW1, mapP1, mapPhat, comm) );
+			Ap = Teuchos::rcp(new ApMatrix(*SubMatrix[_Gw], *Mzp1, mapW1, mapP1, mapPhat, comm) );
 		}
 
 		if (Spp == Teuchos::null)
@@ -2293,85 +2297,131 @@ namespace TRIOS {
 // class ApMatrix 
   
 // public:
-
   
 	// constructor
-	ApMatrix::ApMatrix(const Epetra_CrsMatrix& Gw, 
+	ApMatrix::ApMatrix(const Epetra_CrsMatrix &Gw,
+					   const Epetra_CrsMatrix &Mp_,
 					   Teuchos::RCP<Epetra_Map> mapW1_,
 					   Teuchos::RCP<Epetra_Map> mapP1_,
 					   Teuchos::RCP<Epetra_Map> mapPhat,
 					   Teuchos::RCP<Epetra_Comm> comm_)
 		:
 		rangeMap(mapW1_), domainMap(mapP1_),
-		mapW1(mapW1_), mapP1(mapP1_)         
+		mapW1(mapW1_), mapP1(mapP1_)
     {
-		DEBUG(" building new Ap matrix, Ap = Gw(W1,W1)");
+		INFO("ApMatrix constructor...");
 
-		const Epetra_Map& RowMapGw = Gw.RowMap();
-		const Epetra_Map& ColMapGw = Gw.ColMap();
+		// We want Mp to have a distributed colmap, the same as Gw.ColMap();
+		Epetra_CrsMatrix Mp(Copy, Mp_.RowMap(), Gw.ColMap(), Mp_.MaxNumEntries());
+		Teuchos::RCP<Epetra_Import> importMpCols = Teuchos::rcp(new Epetra_Import(Gw.ColMap(), Mp_.ColMap()));
+		Mp.Import(Mp, *importMpCols, Zero);
+		Mp.FillComplete(Gw.ColMap(), Mp_.RowMap());
+		
+		INFO(" building new Ap matrix, Ap = Gw(W1,W1)");		
+		const Epetra_Map &RowMapGw = Gw.RowMap();
+		const Epetra_Map &ColMapGw = Gw.ColMap();
+		const Epetra_Map &RowMapMp = Mp.RowMap();
+		const Epetra_Map &ColMapMp = Mp.ColMap();		
 
-		// note that this is a replicated map so we use 
-		// the local number of cols
-		DEBUG("Gw is " << RowMapGw.NumGlobalElements()
-			  <<"x" << ColMapGw.NumMyElements());
-    
 		// extract column maps for the blocks of Gw and Mzp
-		Teuchos::RCP<Epetra_Map> ColMapGw1=Teuchos::null;
-		DEBUG("Split column maps of Gw...");
-		// Gw = [Gw1 Gw2] where Gw1 is square. Note that we do not need Gw2 anymore
-
+		Teuchos::RCP<Epetra_Map> ColMapGw1 = Teuchos::null;
+		Teuchos::RCP<Epetra_Map> ColMapGw2 = Teuchos::null;
+		Teuchos::RCP<Epetra_Map> ColMapMp1 = Teuchos::null;
+		Teuchos::RCP<Epetra_Map> ColMapMp2 = Teuchos::null;		
+		
+		INFO("  Split column maps of Gw...");		
+		// Gw = [Gw1 Gw2] where Gw1 is square.
 		// note: Gw: P1->W1
-
 		// Gw1 contains all P cells from 0 to nrowsGw
+
 		int minGID = 0;
 		int maxGID = RowMapGw.MaxAllGID()+(PP-WW);// must adjust from W to P index
-		DEBVAR(minGID);
-		DEBVAR(maxGID);
+		
 		ColMapGw1 = Utils::ExtractRange(ColMapGw,minGID,maxGID);
-		//DEBVAR(*ColMapGw1);
+		ColMapMp1 = Utils::ExtractRange(ColMapMp,minGID,maxGID);
+		
+		// The column map of Gw2 contains the remaining P cells
+		minGID    = RowMapGw.MaxAllGID()+(PP-WW)+_NUN_;
+		maxGID    = ColMapGw.MaxAllGID();
 
-		DEBUG("Split matrix...");
-		Gw1 = Teuchos::rcp(new Epetra_CrsMatrix(Copy,RowMapGw,*ColMapGw1,Gw.MaxNumEntries()) );
+		ColMapGw2 = Utils::ExtractRange(ColMapGw,minGID,maxGID);
+		ColMapMp2 = Utils::ExtractRange(ColMapMp,minGID,maxGID);
+
+		// create the importers we need in applyinverse
+		importPbar = Teuchos::rcp(new Epetra_Import(*mapP1, *ColMapMp2));
+		importPhat = Teuchos::rcp(new Epetra_Import(*mapP1, *ColMapMp1));
+		
+		INFO("  Split matrix...");		
+		Gw1 = Teuchos::rcp(new Epetra_CrsMatrix(Copy, RowMapGw,	*ColMapGw1, Gw.MaxNumEntries()));
+		Gw2 = Teuchos::rcp(new Epetra_CrsMatrix(Copy, RowMapGw,	*ColMapGw2, Gw.MaxNumEntries()));
+		Mp1 = Teuchos::rcp(new Epetra_CrsMatrix(Copy, RowMapMp, *ColMapMp1, Mp.MaxNumEntries()));
+		Mp2 = Teuchos::rcp(new Epetra_CrsMatrix(Copy, RowMapMp, *ColMapMp2, Mp.MaxNumEntries()));
+		
 		// we use dummy importers to do the actual splitting.
-		Teuchos::RCP<Epetra_Import> importGw = Teuchos::rcp(new Epetra_Import(RowMapGw,RowMapGw) );
-		DEBUG("Import matrix entries...");
-		CHECK_ZERO(Gw1->Import(Gw,*importGw,Zero));
-		DEBUG("replace maps of Gw...");
-		//DEBVAR(*mapP1);
-		//DEBVAR(*mapW1);
-		//DEBVAR(*mapPhat);
+		Teuchos::RCP<Epetra_Import> importGw =
+			Teuchos::rcp(new Epetra_Import(RowMapGw, RowMapGw) );
+		Teuchos::RCP<Epetra_Import> importMp =
+			Teuchos::rcp(new Epetra_Import(RowMapMp, RowMapMp) );
 		
-		// we must replace the row map of Gw1 as we want ot perform upper tri solves with it:
-#if 0
-		CHECK_ZERO(Gw1->ReplaceRowMap(*mapPhat));
-#else
-		CHECK_ZERO(Gw1->FillComplete());
-		//  Gw1=Utils::ReplaceRowMap(Gw1,*mapPhat);
-		Gw1 = Utils::ReplaceBothMaps(Gw1, *mapPhat, *mapPhat);
-#endif
-
-		// G1: P -> P, but operating only on the first part (Phat)
-		CHECK_ZERO(Gw1->FillComplete(*mapP1,*mapP1));
-
-		// this seems to be necessary if we want to do upper tri solves (which we do)
-		Gw1->OptimizeStorage();
+		INFO("  Import matrix entries...");
+		CHECK_ZERO(Gw1->Import(Gw, *importGw, Zero));
+		CHECK_ZERO(Gw2->Import(Gw, *importGw, Zero));
+		CHECK_ZERO(Mp1->Import(Mp, *importMp, Zero));
+		CHECK_ZERO(Mp2->Import(Mp, *importMp, Zero));
+		
+		CHECK_ZERO(Gw1->FillComplete(*ColMapGw1, RowMapGw));
+		CHECK_ZERO(Mp1->FillComplete(*ColMapMp1, RowMapMp));		
+	 	CHECK_ZERO(Gw2->FillComplete(*ColMapGw2, RowMapGw));
+		CHECK_ZERO(Mp2->FillComplete(*ColMapMp2, RowMapMp));
+		
+		INFO("  Gw1 is " << Gw1->NumGlobalRows() <<"x" << Gw1->NumGlobalCols());
+		INFO("  Gw2 is " << Gw2->NumGlobalRows() <<"x" << Gw2->NumGlobalCols());
+		INFO("  Mp1 is " << Mp1->NumGlobalRows() <<"x" << Mp1->NumGlobalCols());
+		INFO("  Mp2 is " << Mp2->NumGlobalRows() <<"x" << Mp2->NumGlobalCols());
+		
 		Gw1->SetLabel("Gw1");
+		Gw2->SetLabel("Gw2");
+		Mp1->SetLabel("Mp1");
+		Mp2->SetLabel("Mp2");
 		
-		// std::ofstream Gwfile("Gw.txt");
-		// std::ofstream Gw1file("Gw1.txt");
-		// Gw.Print(Gwfile);
-		// Gw1->Print(Gw1file);
-    }
-    
+		// INFO("  Testing the splitting...");
+		// Teuchos::RCP<Epetra_CrsMatrix> R = Teuchos::rcp(new Epetra_CrsMatrix(Copy, Gw.RangeMap(), 10) );
+		// CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(*Gw1, false, *Mp1, true, *R));
+		// Teuchos::RCP<Epetra_CrsMatrix> S = Teuchos::rcp(new Epetra_CrsMatrix(Copy, Gw.RangeMap(), 10) );
+		// CHECK_ZERO(EpetraExt::MatrixMatrix::Multiply(*Gw2, false, *Mp2, true, *S));
+		// CHECK_ZERO(EpetraExt::MatrixMatrix::Add(*R, false, 1.0, *S, 1.0));
+		// INFO("   || Gw1*Mp1' + Gw2*Mp2' ||_inf = " << S->NormInf());
 
-           
+		INFO("  replace maps...");		
+		Gw1 = Utils::ReplaceBothMaps(Gw1, *mapPhat, *mapPhat);
+		Mp1 = Utils::ReplaceBothMaps(Mp1, *ColMapMp2, *ColMapMp1);
+		Mp2 = Utils::ReplaceBothMaps(Mp2, *ColMapMp2, *ColMapMp2);
+		CHECK_ZERO(Gw1->FillComplete(*mapPhat,*mapPhat));
+		CHECK_ZERO(Mp1->FillComplete(*ColMapMp1,*ColMapMp2));
+		CHECK_ZERO(Mp2->FillComplete(*ColMapMp2,*ColMapMp2));
+		Gw1->OptimizeStorage();
+		Mp1->OptimizeStorage();
+		Mp2->OptimizeStorage();
+
+ 		// std::ofstream Gw1File("Gw1." + std::to_string(comm_->MyPID()));
+		// std::ofstream Gw2File("Gw2." + std::to_string(comm_->MyPID()));
+		// std::ofstream Mp1File("Mp1." + std::to_string(comm_->MyPID()));
+		// std::ofstream Mp2File("Mp2." + std::to_string(comm_->MyPID()));
+		// Gw1->Print(Gw1File);
+		// Gw2->Print(Gw2File);
+		// Mp1->Print(Mp1File);
+		// Mp2->Print(Mp2File);
+
+		// getchar();
+		
+		INFO("ApMatrix constructor: done");				
+    }            
       
 	// destructor
 	ApMatrix::~ApMatrix()
     {
 		// handled by Teuchos Teuchos::rcp's
     }
-
 
 	//                                                                                     
 	// apply inverse operator x=Ap\b.                                                      
@@ -2411,12 +2461,51 @@ namespace TRIOS {
     
 		// b is based on the W1 map, x on the P1 map
 		// we convert b to a P vector first:
-		Epetra_Vector bhat(*mapP1, true);
-    
+		Epetra_Vector bhat(Gw1->RangeMap(), true);
+		
 		for (int i = 0; i < b.MyLength(); i++)
 			bhat[i] = b[i];
-    
-		CHECK_ZERO(Gw1->Solve(true, false, false, bhat, x));
+		
+		Epetra_Vector w(Gw1->RangeMap(), true);
+		CHECK_ZERO(Gw1->Solve(true, false, false, b, w));
+		Epetra_Vector y(Mp1->RangeMap(), true);
+		Epetra_Vector v(Mp1->RangeMap(), true);
+		Epetra_Vector z(Gw1->RangeMap(), true);
+
+		CHECK_ZERO(Mp1->Multiply(false, w, y));
+ 		CHECK_ZERO(Mp1->Multiply(true, y, z));
+		w.Update(-1.0, z, 1.0);
+		
+		CHECK_ZERO(Mp2->Multiply(true, y, v));
+		
+		CHECK_ZERO(x.Import(w, *importPhat, Add));
+		CHECK_ZERO(x.Import(v, *importPbar, Add));
+		
+		// // TEST RESIDUALS....
+		// std::ofstream xfile("x.txt"); x.Print(xfile);
+		// std::ofstream yfile("y.txt"); y.Print(yfile);
+		// std::ofstream zfile("z.txt"); z.Print(zfile);
+
+		
+		// Epetra_Vector tmp1(Mp1->RangeMap(), true);
+		// Epetra_Vector tmp2(Mp2->RangeMap(), true);
+		// Mp1->Multiply(false, w, tmp1);
+		// Mp2->Multiply(false, v, tmp2);
+		// tmp1.Update(1.0, tmp2, 1.0);
+		// double nrm;
+		// tmp1.Norm2(&nrm);
+		// std::cout << nrm << std::endl;
+
+		// Epetra_Vector tmp3(Gw1->RangeMap(), true);
+		// Epetra_Vector tmp4(Gw2->RangeMap(), true);
+		
+		// Gw1->Multiply(false, w, tmp3);
+		// Gw2->Multiply(false, v, tmp4);
+		// tmp3.Update(1.0, tmp4, 1.0);
+		// tmp3.Update(1.0, b, -1.0);
+		// tmp3.Norm2(&nrm);
+		// std::cout << nrm << std::endl;
+		
 		return 0;
 		
     }//ApMatrix::ApplyInverse
