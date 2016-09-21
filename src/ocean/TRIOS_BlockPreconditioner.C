@@ -2392,13 +2392,16 @@ namespace TRIOS {
 		// CHECK_ZERO(EpetraExt::MatrixMatrix::Add(*R, false, 1.0, *S, 1.0));
 		// INFO("   || Gw1*Mp1' + Gw2*Mp2' ||_inf = " << S->NormInf());
 
-		INFO("  replace maps...");		
+		INFO("  replace maps Gw1...");		
 		Gw1 = Utils::ReplaceBothMaps(Gw1, *mapPhat, *mapPhat);
-		Mp1 = Utils::ReplaceBothMaps(Mp1, *ColMapMp2, *ColMapMp1);
-		Mp2 = Utils::ReplaceBothMaps(Mp2, *ColMapMp2, *ColMapMp2);
+		INFO("  replace maps Mp1...");		
+		Mp1 = Utils::ReplaceBothMaps(Mp1, RowMapMp, *mapPhat);
+		INFO("  replace maps Mp2...");		
+		Mp2 = Utils::ReplaceBothMaps(Mp2, RowMapMp, *ColMapMp2);
+
 		CHECK_ZERO(Gw1->FillComplete(*mapPhat,*mapPhat));
-		CHECK_ZERO(Mp1->FillComplete(*ColMapMp1,*ColMapMp2));
-		CHECK_ZERO(Mp2->FillComplete(*ColMapMp2,*ColMapMp2));
+		CHECK_ZERO(Mp1->FillComplete(*mapPhat, RowMapMp));
+		CHECK_ZERO(Mp2->FillComplete(*ColMapMp2, RowMapMp));
 		Gw1->OptimizeStorage();
 		Mp1->OptimizeStorage();
 		Mp2->OptimizeStorage();
@@ -2481,30 +2484,30 @@ namespace TRIOS {
 		CHECK_ZERO(x.Import(w, *importPhat, Add));
 		CHECK_ZERO(x.Import(v, *importPbar, Add));
 		
-		// // TEST RESIDUALS....
-		// std::ofstream xfile("x.txt"); x.Print(xfile);
-		// std::ofstream yfile("y.txt"); y.Print(yfile);
-		// std::ofstream zfile("z.txt"); z.Print(zfile);
-
+		// TEST RESIDUALS....
+		std::ofstream xfile("x"); x.Print(xfile);
+		std::ofstream yfile("y"); y.Print(yfile);
+		std::ofstream zfile("z"); z.Print(zfile);
 		
-		// Epetra_Vector tmp1(Mp1->RangeMap(), true);
-		// Epetra_Vector tmp2(Mp2->RangeMap(), true);
-		// Mp1->Multiply(false, w, tmp1);
-		// Mp2->Multiply(false, v, tmp2);
-		// tmp1.Update(1.0, tmp2, 1.0);
-		// double nrm;
-		// tmp1.Norm2(&nrm);
-		// std::cout << nrm << std::endl;
+		Epetra_Vector tmp1(Mp1->RangeMap(), true);
+		Epetra_Vector tmp2(Mp2->RangeMap(), true);
+		Mp1->Multiply(false, w, tmp1);
+		Mp2->Multiply(false, v, tmp2);
+		tmp1.Update(1.0, tmp2, 1.0);
+		double nrm;
+		tmp1.Norm2(&nrm);
+		std::cout << nrm << std::endl;
 
-		// Epetra_Vector tmp3(Gw1->RangeMap(), true);
-		// Epetra_Vector tmp4(Gw2->RangeMap(), true);
+		Epetra_Vector tmp3(Gw1->RangeMap(), true);
+		Epetra_Vector tmp4(Gw2->RangeMap(), true);
 		
-		// Gw1->Multiply(false, w, tmp3);
-		// Gw2->Multiply(false, v, tmp4);
-		// tmp3.Update(1.0, tmp4, 1.0);
-		// tmp3.Update(1.0, b, -1.0);
-		// tmp3.Norm2(&nrm);
-		// std::cout << nrm << std::endl;
+		Gw1->Multiply(false, w, tmp3);
+		Gw2->Multiply(false, v, tmp4);
+		tmp3.Update(1.0, tmp4, 1.0);
+		tmp3.Update(1.0, b, -1.0);
+		tmp3.Norm2(&nrm);
+		std::cout << nrm << std::endl;
+		getchar();
 		
 		return 0;
 		
