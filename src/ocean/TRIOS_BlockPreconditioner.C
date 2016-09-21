@@ -2449,7 +2449,6 @@ namespace TRIOS {
 	int ApMatrix::ApplyInverse (const Epetra_Vector &b, Epetra_Vector &x) const
     {    
 
-#ifdef TESTING
 		if (!b.Map().SameAs(*rangeMap))
 		{
 			ERROR("bad rhs vector for solve with Ap!",__FILE__,__LINE__);
@@ -2458,32 +2457,29 @@ namespace TRIOS {
 		{
 			ERROR("bad lhs vector for solve with Ap!",__FILE__,__LINE__);
 		}
-#endif
     
 		// b is based on the W1 map, x on the P1 map
 		// we convert b to a P vector first:
-				// Create the support vectors
-		Epetra_Vector bhat(Gw1->RangeMap(), true);
-		Epetra_Vector w   (Gw1->DomainMap(), true);
-		Epetra_Vector y   (Mp2->ColMap(), true);
-		Epetra_Vector v   (Mp2->ColMap(), true);
-		Epetra_Vector z   (Gw1->DomainMap(), true);
 
-		for (int i = 0; i < b.MyLength(); i++)
-			bhat[i] = b[i];
+		// Create the support vectors
+		Epetra_Vector utmp(Mp1->RangeMap(), true); 
+		Epetra_Vector vtmp(Mp2->ColMap(), true);
+		Epetra_Vector wtmp(Mp1->DomainMap(), true);
+		Epetra_Vector ztmp(Mp1->DomainMap(), true);
 
-		CHECK_ZERO(Gw1->Solve(true, false, false, b, w));
-		CHECK_ZERO(Mp1->Multiply(false, w, y));
- 		CHECK_ZERO(Mp1->Multiply(true, y, z));
-		w.Update(-1.0, z, 1.0);
+		CHECK_ZERO(Gw1->Solve(true, false, false, b, wtmp));
 		
-		CHECK_ZERO(Mp2->Multiply(true, y, v));
-		v.Scale(-1.0);
+		CHECK_ZERO(Mp1->Multiply(false, wtmp, utmp));
+		CHECK_ZERO(Mp1->Multiply(true, utmp, ztmp));
+		CHECK_ZERO(wtmp.Update(-1.0, ztmp, 1.0));
 		
-		CHECK_ZERO(x.Import(w, *importPhat, Add));
+		CHECK_ZERO(Mp2->Multiply(true, utmp, vtmp));
+		CHECK_ZERO(vtmp.Scale(-1.0));
+		
+		CHECK_ZERO(x.Import(wtmp, *importPhat, Add));
 		// // std::ofstream xwfile("xw"); x.Print(xwfile);
-		CHECK_ZERO(x.Import(v, *importPbar, Add));
-		// // std::ofstream xvfile("xv"); x.Print(xvfile);
+		CHECK_ZERO(x.Import(vtmp, *importPbar, Add));
+		// std::ofstream xvfile("xv"); x.Print(xvfile);
 		
 		// TEST RESIDUALS....
 		// std::ofstream wfile("w"); w.Print(wfile);
@@ -2492,25 +2488,26 @@ namespace TRIOS {
 		
 		// std::ofstream Mp1file("Mp1"); Mp1->Print(Mp1file);
 		// std::ofstream Mp2file("Mp2"); Mp2->Print(Mp2file); 		 
-		
+
+		// INFO("  testing ApplyInverse... ");
 		// Epetra_Vector tmp1(Mp1->RangeMap(), true);
 		// Epetra_Vector tmp2(Mp2->RangeMap(), true);
-		// Mp1->Multiply(false, *w, tmp1);
-		// Mp2->Multiply(false, *v, tmp2);
+		// Mp1->Multiply(false, wtmp, tmp1);
+		// Mp2->Multiply(false, vtmp, tmp2);
 		// tmp1.Update(1.0, tmp2, 1.0);
 		// double nrm;
 		// tmp1.Norm2(&nrm);
-		// std::cout << nrm << std::endl;
+		// INFO(" ||M1*x1+M2*x2|| = " << nrm);
 
 		// Epetra_Vector tmp3(Gw1->RangeMap(), true);
 		// Epetra_Vector tmp4(Gw2->RangeMap(), true);
 		
-		// Gw1->Multiply(false, *w, tmp3);
-		// Gw2->Multiply(false, *v, tmp4);
+		// Gw1->Multiply(false, wtmp, tmp3);
+		// Gw2->Multiply(false, vtmp, tmp4);
 		// tmp3.Update(1.0, tmp4, 1.0);
 		// tmp3.Update(1.0, b, -1.0);
 		// tmp3.Norm2(&nrm);
-		// std::cout << nrm << std::endl;
+		// INFO(" ||G1*x1+G2*x2|| = " << nrm);
 		
 		return 0;
 		

@@ -649,6 +649,7 @@ namespace TRIOS {
   
 		//! to create temporary vectors etc we need some maps:
 		Teuchos::RCP<Epetra_Map> mapW1, mapP1;
+
 	
 	}; // end of class ApMatrix
 
