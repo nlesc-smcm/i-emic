@@ -2483,6 +2483,7 @@ namespace TRIOS {
 		w->Update(-1.0, *z, 1.0);
 		
 		CHECK_ZERO(Mp2->Multiply(true, *y, *v));
+		v->Scale(-1.0);
 		
 		CHECK_ZERO(x.Import(*w, *importPhat, Add));
 		// // std::ofstream xwfile("xw"); x.Print(xwfile);
