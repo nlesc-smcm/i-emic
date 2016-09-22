@@ -613,7 +613,8 @@ namespace TRIOS {
 				 Teuchos::RCP<Epetra_Map> mapW1,
 				 Teuchos::RCP<Epetra_Map> mapP1,
 				 Teuchos::RCP<Epetra_Map> mapPhat,
-				 Teuchos::RCP<Epetra_Comm> comm_);
+				 Teuchos::RCP<Epetra_Comm> comm_,
+				 char ApType_);
       
 		//! destructor
 		virtual ~ApMatrix();
@@ -650,6 +651,7 @@ namespace TRIOS {
 		//! to create temporary vectors etc we need some maps:
 		Teuchos::RCP<Epetra_Map> mapW1, mapP1;
 
+		char ApType;
 	
 	}; // end of class ApMatrix
 
