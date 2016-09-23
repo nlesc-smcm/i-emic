@@ -2498,7 +2498,7 @@ namespace TRIOS {
 	int ApMatrix::ApplyInverse (const Epetra_Vector &b, Epetra_Vector &x) const
     {    
 
-		DUMP_VECTOR("b.ascii", b);
+		// DUMP_VECTOR("b.ascii", b);
 #ifdef TESTING
 		if (!b.Map().SameAs(*rangeMap))
 		{
@@ -2517,6 +2517,9 @@ namespace TRIOS {
 		for (int i = 0; i < b.MyLength(); i++)
 			bhat[i] = b[i];
 
+		// DUMP_VECTOR("bhat.ascii", bhat);
+				
+
 		if (ApType == 'S') // Only Square part of Gw
 		{
 			CHECK_ZERO(Gw1->Solve(true, false, false, bhat, x));
@@ -2531,42 +2534,43 @@ namespace TRIOS {
 			
 			CHECK_ZERO(Gw1->Solve(true, false, false, bhat, wtmp));
 
-			DUMP_VECTOR("w.ascii", wtmp);
-			std::ofstream wfile("w"); wtmp.Print(wfile);
+ 			// DUMP_VECTOR("w.ascii", wtmp);
+			// std::ofstream wfile("w"); wtmp.Print(wfile);
 			
 			CHECK_ZERO(Mp1->Multiply(false, wtmp, utmp));
 
-			DUMP_VECTOR("u.ascii", utmp);
-			std::ofstream ufile("u"); utmp.Print(ufile);
+			// DUMP_VECTOR("u.ascii", utmp);
+			// std::ofstream ufile("u"); utmp.Print(ufile);
 			
 			CHECK_ZERO(Mp1->Multiply(true, utmp, ztmp));
 
-			DUMP_VECTOR("z.ascii", ztmp);
-			std::ofstream zfile("z"); ztmp.Print(zfile);
+			// DUMP_VECTOR("z.ascii", ztmp);
+			// std::ofstream zfile("z"); ztmp.Print(zfile);
 
 			CHECK_ZERO(wtmp.Update(-1.0, ztmp, 1.0));
 
-			DUMP_VECTOR("wmz.ascii", wtmp);
-			std::ofstream wmzfile("wmz"); wtmp.Print(wmzfile);
+			// DUMP_VECTOR("wmz.ascii", wtmp);
+			// std::ofstream wmzfile("wmz"); wtmp.Print(wmzfile);
 			
 			CHECK_ZERO(Mp2->Multiply(true, utmp, vtmp));
 			CHECK_ZERO(vtmp.Scale(-1.0));
 
-			DUMP_VECTOR("v.ascii", vtmp);
-			std::ofstream vfile("v"); vtmp.Print(vfile);
+			// DUMP_VECTOR("v.ascii", vtmp);
+			// std::ofstream vfile("v"); vtmp.Print(vfile);
 			
 			CHECK_ZERO(x.Import(wtmp, *importPhat, Add));
-			std::ofstream xwfile("xw"); x.Print(xwfile);
+			// std::ofstream xwfile("xw"); x.Print(xwfile);
 			CHECK_ZERO(x.Import(vtmp, *importPbar, Add));
-			std::ofstream xvfile("xv"); x.Print(xvfile);
+			// std::ofstream xvfile("xv"); x.Print(xvfile);
 
-			DUMP_VECTOR("x.ascii", x);
-			std::ofstream xfile("x"); x.Print(xfile);
+			// DUMP_VECTOR("x.ascii", x);
+			// std::ofstream xfile("x"); x.Print(xfile);
 			
-			// TEST RESIDUALS....
-			std::ofstream Mp1file("Mp1"); Mp1->Print(Mp1file);
-			std::ofstream Mp2file("Mp2"); Mp2->Print(Mp2file); 		 
+			// // TEST RESIDUALS....
+			// std::ofstream Mp1file("Mp1"); Mp1->Print(Mp1file);
+			// std::ofstream Mp2file("Mp2"); Mp2->Print(Mp2file); 		 
 
+#if 1
 			INFO("  testing ApplyInverse... ");
 			Epetra_Vector tmp1(Mp1->RangeMap(), true);
 			Epetra_Vector tmp2(Mp2->RangeMap(), true);
@@ -2598,7 +2602,10 @@ namespace TRIOS {
 			vtmp.Norm2(&nrm);
 			INFO(" ||x2|| = " << nrm);
 
-			getchar();
+			x.Norm2(&nrm);
+			INFO(" ||x|| = " << nrm);
+#endif 
+						
 		}
 		return 0;
 		
