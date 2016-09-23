@@ -59,13 +59,17 @@ figure(6); imagesc(S(:,:,level)'); title('S'); set(gca,'ydir','normal'); colorba
 
 landm_int = landm(2:end-1, 2:end-1, 2:end-1);
 
-figure(7); imagesc(l-sum(landm_int, 3)'); title('mask'); set(gca,'ydir','normal'); colorbar;
+%figure(7); imagesc(l-sum(landm_int, 3)'); title('mask'); set(gca,'ydir','normal'); colorbar;
 
-fprintf('|u|=%e\n',norm(u(:)));
-fprintf('|v|=%e\n',norm(v(:)));
-fprintf('|w|=%e\n',norm(w(:)));
-fprintf('|p|=%e\n',norm(p(:)));
-fprintf('|T|=%e\n',norm(T(:)));
-fprintf('|S|=%e\n',norm(S(:)));
+%pl = p(:,:,level);
+
+fprintf('|u| = %e\n',norm(u(:)));
+fprintf('|v| = %e\n',norm(v(:)));
+fprintf('|w| = %e\n',norm(w(:)));
+fprintf('|p| = %e\n',norm(p(:)));
+%fprintf('|pl|= %e\n',norm(pl(:)));
+fprintf('|T| = %e\n',norm(T(:)));
+fprintf('|S| = %e\n',norm(S(:)));
 fprintf('---------\n');
-fprintf('|X|=%e\n',norm(res(:)));
+fprintf('|X| = %e\n',norm(res(:)));
+

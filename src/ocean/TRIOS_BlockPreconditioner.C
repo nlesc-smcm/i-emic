@@ -2379,6 +2379,8 @@ namespace TRIOS {
 		Gw1->SetLabel("Gw1"); Gw2->SetLabel("Gw2");
 		Mp1->SetLabel("Mp1"); Mp2->SetLabel("Mp2");
 
+		DUMPMATLAB("Mp2.ascii", *Mp2);
+
 		// create the importers we need in applyinverse
 		importPhat = Teuchos::rcp(new Epetra_Import(*mapP1, Mp1->DomainMap()));
 		importPbar = Teuchos::rcp(new Epetra_Import(*mapP1, Mp2->DomainMap()));
@@ -2452,12 +2454,10 @@ namespace TRIOS {
 		// b is based on the W1 map, x on the P1 map
 		// we convert b to a P vector first:
 		Epetra_Vector bhat(*mapP1, true);
-		Epetra_Vector bhat2(Mp1->DomainMap(), true);
 		
 		for (int i = 0; i < b.MyLength(); i++)
 		{
 			bhat[i] = b[i];
-			bhat2[i] = b[i];
 		}
 		
 		if (ApType == 'S') // Only Square part of Gw
@@ -2474,19 +2474,19 @@ namespace TRIOS {
 			
 			CHECK_ZERO(Gw1->Solve(true, false, false, bhat, wtmp));
 			
-			CHECK_ZERO(Mp1->Multiply(false, bhat2, utmp));
+			CHECK_ZERO(Mp1->Multiply(false, wtmp, utmp));
 			
 			CHECK_ZERO(Mp1->Multiply(true, utmp, ztmp));
 
 			CHECK_ZERO(wtmp.Update(-1.0, ztmp, 1.0));
 			
 			CHECK_ZERO(Mp2->Multiply(true, utmp, vtmp));
-			// CHECK_ZERO(vtmp.Scale(-1.0));
+			CHECK_ZERO(vtmp.Scale(-1.0));
 			
 			CHECK_ZERO(x.Import(wtmp, *importPhat, Add));
 			CHECK_ZERO(x.Import(vtmp, *importPbar, Add));
 
-#if 1
+#if 0
 			INFO("  testing ApplyInverse... ");
 			Epetra_Vector tmp1(Mp1->RangeMap(), true);
 			Epetra_Vector tmp2(Mp2->RangeMap(), true);
