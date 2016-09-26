@@ -805,18 +805,15 @@ namespace TRIOS {
 
 		// start by creating a CRS matrix (adaptation of the Fortran routine
 		// build_Mzp from m_bgskit)
-		if (verbose>5)
-		{
-			INFO(" build Mzp...");
-		}
+		INFO(" build Mzp...");
 
 		// determine dimension
 		int nGw = Gw->NumMyRows();
+
 		// upper bound for nonzeros in Mzp:
 		int nnz = mapUV->NumGlobalElements();
 		int np1 = mapP1->NumMyElements();
 		DEBVAR(nGw);
-
 
 		// allocate temporary CRS graph
 		int* begM = new int[np1+1];
@@ -844,7 +841,7 @@ namespace TRIOS {
 		// build all Teuchos::null-vectors of Gw. Note that Gw does not
 		// contain the top-layer, so we might miss some: those
 		// water-columns that are only one cell thick.
-		for (int i = 0;i<nGw;i++)
+		for (int i = 0; i < nGw; i++)
 		{
 			//DEBVAR(i)
 			if (!track[i]) // new singular vector
@@ -853,14 +850,14 @@ namespace TRIOS {
 				svs = svs+1;
 				//DEBVAR(svs)
 				k = i; // start in row i
-				while (k<nGw) // jump through matrix
+				while (k < nGw) // jump through matrix
 				{
 					// look at row k from the matrix Gw
-					CHECK_ZERO(Gw->ExtractMyRowView(k,len,coGw,jcoGw));
+					CHECK_ZERO(Gw->ExtractMyRowView(k, len, coGw, jcoGw));
 					// there may be a single 0-entry in the top layer due to
 					// the fixed pattern of the Jacobian
-					if (len<2) break;
-#ifdef TESTING
+					if (len < 2) break;
+#if 1
 					if (len!=2)
 					{
 						INFO("found unexpected local row in matrix Gw:");
@@ -910,7 +907,7 @@ namespace TRIOS {
 		// extra-loop over the top layer: Gw is not defined here,
 		// but any columns that have not been tracked yet are    
 		// water columns of thickness 1 cell, where \bar{p}=p holds.
-		DEBUG("enter extra-loop, ["<<nGw<<":"<<np1-1<<"]");
+		INFO("enter extra-loop, ["<<nGw<<":"<<np1-1<<"]");
 		for (int i=nGw;i<np1;i++)
 		{
 			if (!track[i]) // new singular vector
@@ -921,14 +918,14 @@ namespace TRIOS {
 				j = j+1; // counts nnz in M
 				//DEBVAR(j)
 				track[i] = true;
-				DEBUG("shallow layer node: ("<<i<<", "<<mapP1->GID(i)<<")");
+				INFO("shallow layer node: ("<<i<<", "<<mapP1->GID(i)<<")");
 				jcoM[j-1] = mapP1->GID(i); // transform to global P index
 				coM[j-1] = 1.0;
 				begM[svs] = j;
 			}//track
 		}//i
     
-		DEBUG("final svs: "<<svs);
+		INFO("final svs: "<<svs);
         
 		Teuchos::RCP<Epetra_CrsMatrix> Mzp =
 			Teuchos::rcp(new Epetra_CrsMatrix(Copy,*mapPbar,*colmapP1,domain->LocalL()) );
@@ -2379,6 +2376,9 @@ namespace TRIOS {
 		Gw1->SetLabel("Gw1"); Gw2->SetLabel("Gw2");
 		Mp1->SetLabel("Mp1"); Mp2->SetLabel("Mp2");
 
+		DUMPMATLAB("Gw.ascii", Gw);
+		DUMPMATLAB("Mp.ascii", Mp);
+		DUMPMATLAB("Mp1.ascii", *Mp1);
 		DUMPMATLAB("Mp2.ascii", *Mp2);
 		DUMPMATLAB("Mp1.ascii", *Mp1);
 		DUMPMATLAB("Gw.ascii", Gw);
