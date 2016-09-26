@@ -72,4 +72,3 @@ fprintf('|T| = %e\n',norm(T(:)));
 fprintf('|S| = %e\n',norm(S(:)));
 fprintf('---------\n');
 fprintf('|X| = %e\n',norm(res(:)));
-

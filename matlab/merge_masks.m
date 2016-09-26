@@ -1,19 +1,21 @@
 % Merge two masks into X intermediate masks
 
-mask_name_1 = 'Mask_40Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
-mask_name_2 = 'Mask_30Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
+shared_dir = [getenv('SHARED_DIR'), '/i-emic/data/mkmask/paleo/'];
+
+mask_name_1 = 'Mask_55Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
+mask_name_2 = 'Mask_50Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
 
 periodic   = true;
-savemerged = false;
+savemerged = true;
 
-M1 = load([mask_name_1, '.mat']);
-M2 = load([mask_name_2, '.mat']);
+M1 = load([shared_dir, mask_name_1, '.mat']);
+M2 = load([shared_dir, mask_name_2, '.mat']);
 
 mask1 = M1.maskp;
 mask2 = M2.maskp;
 
 maskS = mask1;
-srange = 0:0.2:1;
+srange = 0.1:0.1:0.9;
 mdiff = [];
 ndiff = [];
 for s = srange
@@ -35,17 +37,19 @@ for s = srange
   fprintf('max dif = %d\n', mdiff(end))
   fprintf('num dif = %d\n', ndiff(end))
   
-  pause(0.2)
-  if (mdiff > 0)
+  if (mdiff(end) > 0)
 	if (savemerged)
-	  fname = sprintf('%s/s%1.1f%s',mask_name_1,s,mask_name_2);
-	  maskp = maskS;
-	  system(['mkdir -p ', mask_name_1]);
+	  fname  = sprintf('%s%s/s%1.1f%s',shared_dir,mask_name_1,s,mask_name_2);
+	  maskp  = maskS;
+	  newdir = sprintf('%s%s', shared_dir, mask_name_1);
+	  fprintf('create new dir: %s\n', newdir);
+	  system(['mkdir -p ', newdir])
 	  fprintf(' writing to %s\n', fname);
 	  save([fname,'.mat'],'maskp')
 	  transform_mask(fname, periodic);
 	end
   end
+input('press ENTER to continue');
 end
 plot(srange, ndiff)
 
