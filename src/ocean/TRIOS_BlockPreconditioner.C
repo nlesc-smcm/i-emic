@@ -2380,6 +2380,9 @@ namespace TRIOS {
 		Mp1->SetLabel("Mp1"); Mp2->SetLabel("Mp2");
 
 		DUMPMATLAB("Mp2.ascii", *Mp2);
+		DUMPMATLAB("Mp1.ascii", *Mp1);
+		DUMPMATLAB("Gw.ascii", Gw);
+		DUMPMATLAB("Mp.ascii", Mp);
 
 		// create the importers we need in applyinverse
 		importPhat = Teuchos::rcp(new Epetra_Import(*mapP1, Mp1->DomainMap()));
