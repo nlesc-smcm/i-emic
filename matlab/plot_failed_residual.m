@@ -1,17 +1,6 @@
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
-surfm = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
 
-%resa = load('residual.atmos');
-%reso = load('residual.ocean');
-
-%resa = load('solution.atmos');
-%reso = load('solution.ocean');
-
-%resa = load('failed_rhs.atmos');
-reso  = load('topox1.ocean');
-reso2 = load('topox2.ocean');
-%reso = load('xdot.ocean');
-%reso = load('stateDir.ocean');
+res  = load(fname);
 
 % pargrid line color
 pcol = [.3 .3 .3];
@@ -31,22 +20,7 @@ for j = 1:mod(m,npM)
 end
 
 assert(sum(Ndim) == n)
-
-norm(reso)
-%norm(resa)
-%norm([reso;resa]')s
-
-L = l;
-
-Uo = zeros(m,n); % zonal velocity
-Wo = zeros(m,n); % vertical velocity	
-To = zeros(m,n); % temperature
-To2= zeros(m,n); % temperature
-TL = zeros(m,n); %
-So = zeros(m,n); %
-Ta = zeros(m,n); %
-Po = zeros(m,n); %
-
+  
 % create parallel checkerboard
 P  = zeros(m,n);
 
@@ -60,83 +34,41 @@ for i=1:npN
   end
 end
 
-dim = m*n*l*nun;
-
-for j = 1:m
-  for i = 1:n
-	Uo(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l,1));	
-	Wo(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l,3));	
-	To(j,i)   = sum(reso(find_row(nun,n,m,l,i,j,1:l,5)));
-	To2(j,i)  = sum(reso2(find_row(nun,n,m,l,i,j,1:l,5)));
-	TL(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,L,5));
-	LM(m-j+1,i) = surfm(i,j);
-	So(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l,6));
-	Po(m-j+1,i) = reso(find_row(nun,n,m,l,i,j,l-1,4));
-  %	Ta(m-j+1,i) = resa(i + (j-1)*m);	
+sol = zeros(nun,n,m,l+la);
+idx = 1;
+for k = 1:l+la
+  for j = 1:m
+	for i = 1:n
+      for XX = 1:nun
+		sol(XX,i,j,k) = res(idx);
+		idx = idx + 1;
+      end
+	end
   end
 end
 
-mx = max(max(abs(To)));
-[j,i] = find(abs(To) == mx);
-fprintf('maximum in To at i=%d, j=%d\n', i, m-j+1);
+[u,v,w,p,T,S] = extractsol(sol);
 
-figure(1)
-imagesc(To);    title('surface temperature before'); grid on; colorbar
-set(gca,'ydir','normal');	
+level = l;
+figure(1); imagesc(u(:,:,level)'); title('u'); set(gca,'ydir','normal'); colorbar;
+figure(2); imagesc(v(:,:,level)'); title('v'); set(gca,'ydir','normal'); colorbar;
+figure(3); imagesc(w(:,:,level)'); title('w'); set(gca,'ydir','normal'); colorbar;
+figure(4); imagesc(p(:,:,level)'); title('p'); set(gca,'ydir','normal'); colorbar;
+figure(5); imagesc(T(:,:,level)'); title('T'); set(gca,'ydir','normal'); colorbar;
+figure(6); imagesc(S(:,:,level)'); title('S'); set(gca,'ydir','normal'); colorbar;
 
-figure(2)
-imagesc(To2);   title('surface temperature after'); grid on; colorbar
-set(gca,'ydir','normal');	
-return
+landm_int = landm(2:end-1, 2:end-1, 2:end-1);
 
-mx = max(max(abs(TL)));
-imagesc(TL); title(['temperature residual in layer ', num2str(L)]); colorbar
-hold on;
-contour(mx*P,[-1e-10,0,1e-10])
-if norm(LM)
-  contour(mx*LM,2);
-end
-hold off
-%exportfig('failed_residual_layer.eps',12,[20,12]);
+%figure(7); imagesc(l-sum(landm_int, 3)'); title('mask'); set(gca,'ydir','normal'); colorbar;
 
+%pl = p(:,:,level);
 
-figure(1); imagesc(So); title('surface salinity residual');  colorbar
-mx = max(max(abs(So)));
-hold on;
-contour(mx*P,[-1e-10,0,1e-10])
-if norm(LM)
-  contour(mx*LM,2);
-end
-hold off
-exportfig('failed_residual_salinity.eps',12,[20,12]);
-
-%figure(4); imagesc(Ta); title('atmosphere temperature residual');colorbar
-%mx = max(max(abs(Ta)));
-%hold on;
-%contour(mx*P,[-1e-10,0,1e-10])
-if norm(LM)
-%contour(mx*LM,2);
-end
-%hold off
-%exportfig('failed_residual_atmos.eps',12,[20,12]);
-
-figure(5); imagesc(Uo); title('surface zonal velocity');colorbar
-mx = max(max(abs(Uo)));
-hold on;
-contour(mx*P,[-1e-10,0,1e-10])
-if norm(LM)
-  contour(mx*LM,2);
-end
-hold off
-exportfig('failed_residual_zonal.eps',12,[20,12]);
-
-figure(6); imagesc(Po); title('surface pressure');colorbar
-mx = max(max(abs(Uo)));
-hold on;
-contour(mx*P,[-1e-10,0,1e-10])
-if norm(LM)
-  contour(mx*LM,2);
-end
-hold off
-
-figure(7); imagesc(Wo); title('vertical velocity');colorbar
+fprintf('|u| = %e\n',norm(u(:)));
+fprintf('|v| = %e\n',norm(v(:)));
+fprintf('|w| = %e\n',norm(w(:)));
+fprintf('|p| = %e\n',norm(p(:)));
+%fprintf('|pl|= %e\n',norm(pl(:)));
+fprintf('|T| = %e\n',norm(T(:)));
+fprintf('|S| = %e\n',norm(S(:)));
+fprintf('---------\n');
+fprintf('|X| = %e\n',norm(res(:)));

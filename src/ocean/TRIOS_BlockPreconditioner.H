@@ -608,9 +608,13 @@ namespace TRIOS {
 		  '1' indicates that dummies should be removed from the standard maps;
 		  'Phat' are those p points which lie in cells where there is a non-dummy W.
 		*/
-		ApMatrix(const Epetra_CrsMatrix& Gw, Teuchos::RCP<Epetra_Map> mapW1,
-				 Teuchos::RCP<Epetra_Map> mapP1, Teuchos::RCP<Epetra_Map> mapPhat,
-				 Teuchos::RCP<Epetra_Comm> comm_);
+		ApMatrix(const Epetra_CrsMatrix &Gw,
+				 const Epetra_CrsMatrix &Mp,
+				 Teuchos::RCP<Epetra_Map> mapW1,
+				 Teuchos::RCP<Epetra_Map> mapP1,
+				 Teuchos::RCP<Epetra_Map> mapPhat,
+				 Teuchos::RCP<Epetra_Comm> comm_,
+				 char ApType_);
       
 		//! destructor
 		virtual ~ApMatrix();
@@ -626,7 +630,7 @@ namespace TRIOS {
 		/*! Here b should be based on the 'W1' map,
 		  and X on the 'P1' map 
 		*/
-		int 	ApplyInverse (const Epetra_Vector &b, Epetra_Vector &x) const;
+		int ApplyInverse (const Epetra_Vector &b, Epetra_Vector &x) const;
 
 
 	protected:
@@ -636,11 +640,19 @@ namespace TRIOS {
 		Teuchos::RCP<Epetra_Map> rangeMap, domainMap;
 
 		//! modified Gw-matrix (maps are replaced)
-		Teuchos::RCP<Epetra_CrsMatrix> Gw1;
+		Teuchos::RCP<Epetra_CrsMatrix> Gw1, Gw2;
+
+		//! modified nullspace of Gw
+		Teuchos::RCP<Epetra_CrsMatrix> Mp1, Mp2;
+
+		//! we need some importers
+		Teuchos::RCP<Epetra_Import> importPbar, importPhat;
   
 		//! to create temporary vectors etc we need some maps:
-		Teuchos::RCP<Epetra_Map> mapW1,mapP1;
+		Teuchos::RCP<Epetra_Map> mapW1, mapP1;
 
+		char ApType;
+	
 	}; // end of class ApMatrix
 
 // BILU is no longer supported, we keep the class below just in case

@@ -1,28 +1,27 @@
 function [peri, pmask] = transform_mask(mask_name, periodic)
   % This function transforms Michiel's masks to THCM masks
   % Supply the name of the .mat file and whether you want periodic
-  % boundaries.
+  % boundaries. Shallow parts can be dampened with dampshallow
 		 
   if nargin < 2
 	periodic = true;
   end
-  
+
   M        =   load([mask_name, '.mat']);
   mimport  =   M.maskp; % might be .mask or .maskp, not sure
   [~,~,L]  =   size(mimport);
 
   reducesize = false;
   if (reducesize && L == 1) % cruel reduction
-	 mimport = mimport(1:2:end,1:2:end);
+	mimport = mimport(1:2:end,1:2:end);
   end
-	 
+  
   mask     =  ~mimport;
   [m,n,l]  =  size(mask)
 
   % check whether we have a non-layered format
   if (l == 1)
 	fprintf('  not in layered format: converting!\n');
-	pcolor(mimport);
 	% convert to layered format
 	l = max(max(abs(mimport)))
 	mask = zeros(m,n,l);

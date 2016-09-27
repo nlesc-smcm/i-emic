@@ -225,9 +225,13 @@ int Ocean::analyzeJacobian()
 void Ocean::inspectVector(Teuchos::RCP<Epetra_Vector> x)
 {
 	INFO("Ocean: inspect vector...");
+
 	// for now we just check whether the surface w-values are zero
 	// if not we put them to zero
+	
 	// this setup lets us choose more rows in a layer to reset
+	// so now we are going to put the surface u,v,p anomalies to zero as well
+	// this is evil
 	
 	std::vector<int> rows;	
 	int lid = 0;
@@ -243,6 +247,15 @@ void Ocean::inspectVector(Teuchos::RCP<Epetra_Vector> x)
 			
 			// surface w row
 			rows.push_back((L_-1)*M_*N_*_NUN_ + j*N_*_NUN_ + i*_NUN_ + 2);
+
+			// // surface u row
+			// rows.push_back((L_-1)*M_*N_*_NUN_ + j*N_*_NUN_ + i*_NUN_ + 0);
+
+			// // surface v row
+			// rows.push_back((L_-1)*M_*N_*_NUN_ + j*N_*_NUN_ + i*_NUN_ + 1);
+
+			// // surface p row
+			// rows.push_back((L_-1)*M_*N_*_NUN_ + j*N_*_NUN_ + i*_NUN_ + 3);
 
 			for (auto &row: rows)
 			{

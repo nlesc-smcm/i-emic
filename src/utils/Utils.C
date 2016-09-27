@@ -1028,7 +1028,7 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::ReplaceBothMaps(Teuchos::RCP<Epetra_CrsMat
 	tmpmat = Teuchos::rcp(new Epetra_CrsMatrix(Copy,newmap,newcolmap,row_lengths) );
 	int rowA,rowNew;
    
-	for (int i=0;i<A->NumMyRows();i++)
+	for (int i = 0; i < A->NumMyRows(); i++)
 	{
 		rowA = A->GRID(i);
 		rowNew = newmap.GID(i);
