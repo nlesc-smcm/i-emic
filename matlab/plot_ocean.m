@@ -8,6 +8,7 @@
 atlantic = true;
 glbl     = true;
 pacific  = false;
+specify_mask = true;
 
 fprintf(1,'----------------------------------------------\n')
 
@@ -52,13 +53,29 @@ else
   range = pacf;
 end
 
+
 srf = [];
-greyness = .5;
-srf(:,:,1) = (1-greyness*(interp2(surfm(range,:)','cubic')));
-srf(:,:,2) = (1-greyness*(interp2(surfm(range,:)','cubic')));
-srf(:,:,3) = (1-greyness*(interp2(surfm(range,:)','cubic')));
+greyness = 1;
+
+if specify_mask
+  shared_dir = [getenv('SHARED_DIR'), '/i-emic/data/mkmask/paleo/'];
+  current_mask = 'Mask_25Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
+  M = load([shared_dir,current_mask,'.mat']); 
+  maskp = M.maskp';
+  pw = .3;
+  mx = max(max(abs(maskp).^pw))
+  srf(:,:,1) = (greyness*((maskp(range,:)'))).^pw;
+  srf(:,:,2) = (greyness*((maskp(range,:)'))).^pw;
+  srf(:,:,3) = (greyness*((maskp(range,:)'))).^pw;
+  srf = srf / mx;
+else  
+  srf(:,:,1) = (1-greyness*((surfm(range,:)')));
+  srf(:,:,2) = (1-greyness*((surfm(range,:)')));
+  srf(:,:,3) = (1-greyness*((surfm(range,:)')));
+end
 srf(srf<0) = 0;
 srf(srf>1) = 1;
+
 
 [qz,dfzt,dfzw] = gridstretch(zw);
 
@@ -157,15 +174,14 @@ figure(1)
 img = PSIB(2:end,:)';
 minPSIB = min(PSIB(:));
 maxPSIB = max(PSIB(:));
-contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
-imagesc(RtD*x,RtD*(y),img(:,range),'AlphaData',.5); hold on
-image(RtD*x,RtD*(y),srf,'AlphaData',.9); hold on
+image(RtD*x,RtD*(y),srf,'AlphaData',1); set(gca,'ydir','normal');hold on
 contours = linspace(minPSIB,maxPSIB,15);
-contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', 'on','linewidth',2); hold off;
+contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', 'on','linewidth',3); hold off;
 colorbar
 caxis([minPSIB,maxPSIB])
 title('Barotropic Streamfunction');
 
+return
 if glbl
   xtl  = get(gca,'xticklabel');
   xtl2 = xtl;
