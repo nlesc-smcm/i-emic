@@ -1,9 +1,9 @@
 % Merge two masks into X intermediate masks
 
-mask_name = 'Mask_50Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
+mask_name = 'Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
 
 periodic   = true;
-savemerged = true;
+savemerged = false;
 
 M = load([mask_name, '.mat']);
 
