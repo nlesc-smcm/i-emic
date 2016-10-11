@@ -149,6 +149,9 @@ public:
 
 	void printResidual(VectorPtr b){}
 
+	// Additional monitor for continuation
+	bool monitor(){return false;}
+
 private:
 	// Solve the system with a few symmetric block GS iterations
 	void blockGSSolve(std::shared_ptr<SuperVector> rhs);

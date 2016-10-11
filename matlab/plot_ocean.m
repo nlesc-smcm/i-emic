@@ -8,7 +8,7 @@
 atlantic = true;
 glbl     = true;
 pacific  = false;
-specify_mask = true;
+specify_mask = false;%true;
 
 fprintf(1,'----------------------------------------------\n')
 
@@ -181,7 +181,7 @@ colorbar
 caxis([minPSIB,maxPSIB])
 title('Barotropic Streamfunction');
 
-return
+
 if glbl
   xtl  = get(gca,'xticklabel');
   xtl2 = xtl;
@@ -238,7 +238,7 @@ imagesc(RtD*x,RtD*(y),img);
 %set(gca,'ydir','normal');
 hold off
 
-caxis([minT,maxT]);
+%caxis([minT,maxT]);
 colorbar
 title('Surface Temperature', 'interpreter', 'none');
 xlabel('Longitude');
@@ -312,7 +312,7 @@ contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1); hold off
 %imagesc(RtD*x,RtD*(y),img);
 set(gca,'ydir','normal');
 grid on
-caxis([minS,maxS]);
+%caxis([minS,maxS]);
 colorbar
 title('Surface Salinity', 'interpreter', 'none');
 xlabel('Longitude');

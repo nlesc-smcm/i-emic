@@ -33,6 +33,7 @@ Continuation(Model model, ParameterList pars)
 	maxAllowedIterations_  (pars->get("maximum desired Newton iterations", 5)),
 	newtonTolerance_       (pars->get("Newton tolerance", 1.0e-3)),
 	destinationTolerance_  (pars->get("destination tolerance", 1.0e-5)),
+	userDetect_            (pars->get("enable custom monitor", false)),
 	tanScaling_            (pars->get("state tangent scaling", 1.0e-6)),	
 	rejectFailedNewton_    (pars->get("reject failed iteration", true)),
 	cycleTolerance_        (pars->get("enable tolerance cycling", false)),
@@ -62,7 +63,23 @@ Continuation(Model model, ParameterList pars)
 	if (destinations_.empty())
 		ERROR("No destinations given in continuation xml!",
 			  __FILE__, __LINE__);
-	
+
+}
+
+//======================================================================
+//Destructor
+template<typename Model, typename ParameterList>
+Continuation<Model, ParameterList>::
+~Continuation()
+{
+	INFO("Continuation destructor");
+}
+
+//======================================================================
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
+initialize()
+{
 	// Get views of the important components of the model
 	stateView_ = model_->getState('V');
 	rhsView_   = model_->getRHS('V');
@@ -83,15 +100,9 @@ Continuation(Model model, ParameterList pars)
 	newtonIter_ = 0;	
 	backTrack_  = 0;	
 	parDotSign_ = 1;
-}
-
-//======================================================================
-//Destructor
-template<typename Model, typename ParameterList>
-Continuation<Model, ParameterList>::
-~Continuation()
-{
-	INFO("Continuation destructor");
+	
+	if (userDetect_) { INFO("Continuation: custom monitor enabled");}
+	else { INFO("Continuation: custom monitor disabled");}	
 }
 
 //======================================================================
@@ -99,7 +110,12 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 run()
 {
+	INFO("Continuation::run initialize...");
+	initialize(); // core initializations
+	INFO("Continuation::run initialize... done");
+
 	TIMER_START("Continuation: run");
+
 	// set all the appropriate initial flags and counters
 	step_ = 0;
 	secant_ = false;
@@ -125,12 +141,13 @@ run()
 		}
 		
 		detect();     // Detect special points
+		userDetect(); // Use additional targets provided by model class
 		adjustStep(); // step size adjustment
 	}
-	INFO("---------Finished continuation run--------------");
 	info();
 	modelInfo();
 	TIMER_STOP("Continuation: run");
+	INFO("---------Finished continuation run--------------");
 }
 
 //======================================================================
@@ -622,7 +639,6 @@ detect(char mode)
 			INFO("Continuation::detect():  f1 near destination");
 			secant_     = true;
 			activeDest_ = dest;
-
 		}
 
 		busy = (secant_ && (std::abs(activeDest_ - dest) < 1e-7));
@@ -656,6 +672,22 @@ detect(char mode)
 		{
 			INFO("  |par - dest| = " << std::abs(f1));
 			break; 
+		}
+	}
+}
+
+//======================================================================
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
+userDetect()
+{
+	if (userDetect_)
+	{
+		bool reached = model_->monitor();
+		if (reached)
+		{
+			INFO("Continuation::userDetect() stopping criterion met");
+			destinationReached_ = true;
 		}
 	}
 }

@@ -524,6 +524,10 @@ void Ocean::initializePreconditioner()
 	precPtr_->Compute();    // Compute
 
 	precInitialized_ = true;
+
+	// Enable computation of preconditioner
+	recompPreconditioner_ = true;
+
 	TIMER_STOP("Ocean: initialize preconditioner");
 	INFO("Ocean: initialize preconditioner done...");
 }	
@@ -537,7 +541,7 @@ void Ocean::initializeSolver()
 	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
 	
 	// Get the requested solver type
-	solverType_          = solverParams_->get("Ocean solver type", 'I');
+	solverType_ = solverParams_->get("Ocean solver type", 'F');
 	
 	// Initialize the preconditioner
 	if (!precInitialized_)
@@ -916,11 +920,11 @@ void Ocean::buildPreconditioner(bool forceInit)
 
 	if (recompPreconditioner_)
 	{
-		TIMER_START("Ocean: build preconditioner");
-		INFO("Ocean: build preconditioner...");
+		TIMER_START("Ocean: compute preconditioner");
+		INFO("Ocean: compute preconditioner...");
 		precPtr_->Compute();
-		INFO("Ocean: build preconditioner... done");
-		TIMER_STOP("Ocean: build preconditioner");
+		INFO("Ocean: compute preconditioner... done");
+		TIMER_STOP("Ocean: compute preconditioner");
 		recompPreconditioner_ = false;  // Disable subsequent recomputes
 	}
 }

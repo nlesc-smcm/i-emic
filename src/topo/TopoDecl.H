@@ -111,6 +111,9 @@ private:
 	//! Homotopy factors
 	double facA_, facB_;
 
+	//! Norm of the new RHS
+	double normfB_;
+
  	//! Vectors of integers for selecting the right landmask.
 	//!  a_[i+1] = a_[i] + 2 * ((k_+1) % 2); a_[0] = 0
 	//!  b_[i+1] = b_[i] + 2 * ( k_ % 2 );   b_[0] = 1
@@ -125,6 +128,9 @@ private:
 	//! Combined operators
 	Combined_Operator<Model> combMat_;
 	Combined_Operator<Model> combPrec_;
+
+	//! Stopping tolerance in homotopy continuation
+	double stopTol_;
 
 	//! If every converged state deserves to be stored, enable this
 	bool storeEverything_;
@@ -146,16 +152,13 @@ private:
 	//! Array keeping track of initialized preconditioners
 	std::vector<bool> initPrecs_;
 
-	//! Enable this to use predictors
-	bool usePredictors_;
-
-	//! Point at which we switch from homotopy to residue
-	double target_;
-	double fixed_;
-
-	//! Allows a switch from homotopy to residue
-	bool allowSwitch_;
+	//! params for predictor
+	bool usePredictor_;
 	
+	//! NR params for corrector
+	int maxNRit_;
+	double tolNR_;
+
 public:	
 	//! default constructor
 	Topo(){};
@@ -172,7 +175,10 @@ public:
 	//! set continuation parameter
 	//!  this also sets k_, facA_ and facB_
 	void setPar(double par);
-	
+
+	//! set the mask index
+	void setMaskIndex(int index);
+
 	//! get the state of the model
 	//!   mode: 'C' copy
 	//!         'V' view
@@ -215,10 +221,10 @@ public:
 	//! perform some duties after important things have happened
 	void postProcess();
 
-	//! get a_ for testing
+	//! get copy of a_ 
 	std::vector<int> getA() { return a_; }
-
-	//! get b_ for testing
+	
+	//! get copy of b_ 
 	std::vector<int> getB() { return b_; }
 
 	//! return number of masks
@@ -228,6 +234,16 @@ public:
 	void testRHS();
 
 	void printResidual(VectorPtr b) { model_->printResidual(b); }
+
+	//! stopping criterion for continuation 
+	bool monitor();
+
+	//! apply predictor based on topos A and B
+	void predictor();
+
+	//! apply plain NR iteration to current F, J and x
+	int corrector();
+	
 private:
   	//! load the mask filenames
 	void loadMaskFileNames();
@@ -255,7 +271,6 @@ struct Combined_Operator
 	PreconPtr PB;
 	double facA;
 	double facB;
-	double dhat;
 	bool isPrec;
 	char precType;
 };
@@ -287,14 +302,7 @@ namespace Belos
 					}
 					else if (Op.precType == 'M') 
 					{
-						if (Op.facB < Op.dhat)
-						{
-							y = x;
-						}
-						else
-						{
-							Op.PB->ApplyInverse(x, y);
-						}
+						y = x;
 					}
 					else if (Op.precType == 'N') // Apply scaling
 					{
@@ -312,22 +320,6 @@ namespace Belos
 				}
 				else
 				{
-					// int id1 = 0;
-					// int id2 = 1;
-					// const Epetra_Vector *x1 = x(id1);
-					// const Epetra_Vector *x2 = x(id2);
-					// Epetra_Vector *y1 = y(id1);
-					// Epetra_Vector *y2 = y(id2);
-					
-					// Epetra_Vector  tp = *y1; // Copy
-
-					// Op.B->Apply(*x2, tp);
-					
-					// y1->Update(1.0 - Op.facB, *x1, 0.0);
-					// y1->Update(Op.facB, tp, 1.0);
-
-					// y2->Update(-1.0, *x1, 0.0);
-					// y2->Update( 1.0, *x2, 1.0);
 					Op.B->Apply(x,y);
 					y.Update(Op.facA, x, Op.facB); 
 				}

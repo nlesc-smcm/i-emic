@@ -3,20 +3,33 @@
 <!-- ************************ -->
 
 <ParameterList name="Topo parameters">
+
+  <!--  -->
+  <Parameter name="Number of mask files" type="int" value="8"/>
+
+  <Parameter name="Mask file 0" type="string" value="topotest32/test0"/>
+  <Parameter name="Mask file 1" type="string" value="topotest32/test1"/>
+  <Parameter name="Mask file 2" type="string" value="topotest32/test2"/>
+  <Parameter name="Mask file 3" type="string" value="topotest32/test3"/>
+  <Parameter name="Mask file 4" type="string" value="topotest32/test4"/>
+  <Parameter name="Mask file 5" type="string" value="topotest32/test5"/>
+  <Parameter name="Mask file 6" type="string" value="topotest32/test6"/>
+  <Parameter name="Mask file 7" type="string" value="topotest32/test7"/>		  
+
+  <Parameter name="Store everything" type="bool" value="true" />
   
-  <Parameter name="Number of mask files" type="int" value="3"/>
-
-  <Parameter name="Mask file 0" type="string" value="topotest/test0"/>
-  <Parameter name="Mask file 1" type="string" value="topotest/test1"/>
-  <Parameter name="Mask file 2" type="string" value="topotest/test1"/>
-
-  <Parameter name="Delta" type="double" value="0.0"/>
-
-  <!-- M : determine operator from max(facA,facB)            -->
-  <!-- N : determine operator from max(facA,facB) and scale  -->
-  <!-- H : use both operators with a homotopy (recommended)  -->
+  <!-- M : no preconditioning   -->
   <Parameter name="Preconditioning type" type="char" value="M" />
+  
+  <Parameter name="Stopping tolerance homotopy" type="double" value="5.0" />
 
-  <Parameter name="Switch" type="double" value="0.98" />  
+  <!-- Predictor params -->
+  <Parameter name="Use predictor type (I)" type="bool" value="true" />
+  
+  <!-- Corrector params -->
+  <Parameter name="Max Newton steps" type="int" value="20" />
+
+  <Parameter name="Tolerance in Newton iteration" type="double" value="1e-4" />   
+  
 
 </ParameterList>

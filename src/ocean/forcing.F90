@@ -99,6 +99,8 @@ SUBROUTINE forcing
   if (SRES.eq.0) then       ! correct for nonzero flux
      call qint(emip,salcor)
      call qint(spert,spertcor)
+
+     write(*,*) salcor, spertcor
   else
      salcor   = 0.0
      spertcor = 0.0

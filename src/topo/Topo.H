@@ -28,12 +28,12 @@ Topo(Model model, ParameterList pars)
 	pars_               (pars),
 	nMasks_             (pars->get("Number of mask files", 0)),
 	delta_              (pars->get("Delta", 0.0)),
+	stopTol_            (pars->get("Stopping tolerance homotopy", 5.0)),
 	storeEverything_    (pars->get("Store everything", false)),
 	solverInitialized_  (false),
-	usePredictors_      (pars->get("Use predictors", false)),
-	target_             (pars->get("Switch", 0.75)),
-	fixed_              (0.0),
-	allowSwitch_        (false)
+	usePredictor_       (pars->get("Use predictor type (I)", true)),
+	maxNRit_            (pars->get("Max Newton steps", 20)),
+	tolNR_              (pars->get("Tolerance in Newton iteration", 1e-6))
 {
 	INFO("Topo constructor...");
 
@@ -61,16 +61,16 @@ Topo(Model model, ParameterList pars)
 	dFdPar_    = model_->getRHS('C');
 	
 	// Setup indices k,a and b
-	k_ = static_cast<int>(std::floor(delta_));
+	k_ = 0;
 	a_ = std::vector<int>(nMasks_);
-	b_ = std::vector<int>(nMasks_);		
+	b_ = std::vector<int>(nMasks_);	
 	a_[0] = 0;
 	b_[0] = 1;
 	for (int k = 0; k != nMasks_-1; ++k)
 	{
-		a_[k+1] = a_[k] + 2 * ((k + 1) % 2);
-		b_[k+1] = b_[k] + 2 * ( k % 2 );
-	}	
+		a_[k+1] = a_[k] + 1;
+		b_[k+1] = b_[k] + 1;
+	}
 
 	model_->computeRHS();
 	nrm2 = model_->getRHS('V')->norm();
@@ -84,28 +84,12 @@ Topo(Model model, ParameterList pars)
 
 	initPrecs_ = std::vector<bool>(nMasks_, false);
 
-	// Apply landmask B to state //--> EXPERIMENTAL
-
+	// Apply landmask B to state 
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
 	model_->computeRHS();
-	INFO(" nrm before applyLandmask: " << rhsView_->norm());
-	
-	rhsView_->print("topores1");
-	stateView_->print("topox1");
-
-	model_->applyLandMask(stateView_->getOceanVector(),
-						  landMasks_[a_[k_]],
-						  landMasks_[b_[k_]]);
-	
-	stateCopy_ = model_->getState('C');
-	model_->computeRHS();
-	rhsView_->print("topores2");
-	stateView_->print("topox2");
-	INFO(" nrm after  applyLandmask: " << rhsView_->norm());
 
 	residue_ = model_->getRHS('C');
-
 	
 	INFO("Topo constructor... done");
 }
@@ -117,6 +101,40 @@ Topo<Model, ParameterList>::
 ~Topo()
 {
 	INFO("Topo destructor");
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::predictor()
+{
+	if (usePredictor_)
+	{
+		INFO("Topo: predictor...");
+		if (!model_->isCurrentMask(landMasks_[b_[k_]].label))
+			model_->setLandMask(landMasks_[b_[k_]]);
+		
+		model_->computeRHS();		
+		INFO("  nrm before applyLandmask: " << rhsView_->norm());
+
+		INFO("  k = " << k_ << " a[k] = " << a_[k_] << " b[k] = " << b_[k_]);
+		INFO("  using differences between " <<
+			 landMasks_[b_[k_]].label << " and " << landMasks_[a_[k_]].label);
+	
+		rhsView_->print("topores1");
+		stateView_->print("topox1");
+		
+		model_->applyLandMask(stateView_->getOceanVector(),
+							  landMasks_[a_[k_]],
+							  landMasks_[b_[k_]]);
+	
+		model_->computeRHS();
+		rhsView_->print("topores2");
+		stateView_->print("topox2");
+		INFO("  nrm after  applyLandmask: " << rhsView_->norm());
+		INFO("Topo: predictor... done");
+	}
+	
+	stateCopy_ = model_->getState('C');
 }
 
 //==================================================================
@@ -166,6 +184,17 @@ double Topo<Model, ParameterList>::getPar()
 
 //==================================================================
 template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::setMaskIndex(int index)
+{
+	if ((index < 0) || (index > nMasks_))
+		ERROR("Wrong mask index", __FILE__, __LINE__);
+
+	INFO("Topo: setting mask idx: " << index);
+	k_ = index;
+}
+
+//==================================================================
+template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::setPar(double par)
 {
 	if (par < 0 || par > nMasks_ - 1)
@@ -178,19 +207,11 @@ void Topo<Model, ParameterList>::setPar(double par)
 	// set parameter
 	delta_ = par;
 
-	// calculate index and coefficients
-	k_     = static_cast<int>(std::floor(delta_));
+	// calculate coefficients
+	facA_ = 1 - delta_;
+	facB_ = delta_;
 
-	// facA_  = pow(cos(M_PI * delta_ / 2), 2);
-	// facB_  = pow(sin(M_PI * delta_ / 2), 2);
-	
-	// ALTERNATIVE
-	double dhat = delta_ - k_;
-	facA_ = (k_ % 2 == 0) ? 1 - dhat : dhat;
-	facB_ = (k_ % 2 == 0) ? dhat : 1 - dhat; 	
-
-	// correct for small values
-	
+	// correct for small values	
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
 	facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
 	
@@ -201,14 +222,6 @@ void Topo<Model, ParameterList>::setPar(double par)
 		errmsg << " facA + facB = " << facA_ + facB_;
 		ERROR(errmsg.str(), __FILE__, __LINE__);
 	}
-
-	// if (facB_ > target_)
-	// {
-	// 	//	We perturb the model's parameter
-	// 	double newModelPar = modelPar_ +
-	// 		sin(M_PI * (facB_-target_)/(1.0-target_)) * modelPar_ / 100;
-	// 	model_->setPar(newModelPar);		
-	// }	
 }
 
 //==================================================================
@@ -282,7 +295,7 @@ Topo<Model, ParameterList>::getSolution(char mode)
 
 //==================================================================
 template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
+void Topo<Model, ParameterList>::computeRHS() 
 {
 	// Get a copy of RHS (A)
 	VectorPtr x = model_->getState('C');
@@ -300,34 +313,11 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 	
 	// Get the view	
 	*rhs_ = *model_->getRHS('V');
-	INFO("              norm fB = " << rhs_->norm());
+	normfB_ = rhs_->norm();
+	INFO("              norm fB = " << normfB_);
 	
-	// if (facB_ < target_)
-	// {
-		rhs_->update(facA_, *x, facB_);
-	// 	allowSwitch_ = true;
-	// 	fixed_ = facB_;
-	// }				   
-	// else			   
-	// {				   
-	// 	// now we switch and calculate the current residue
-	// 	if (allowSwitch_) 
-	// 	{			   
-	// 		// fixed_ = facB_;
-	// 		// residue_->update((fixed_ - 1.0) / fixed_, *x, 0.0);
-	// 		residue_->update(1.0, *x, 0.0);
-			
-	// 		// doing this only once
-	// 		allowSwitch_ = false; 
-	// 	}
-		
-	// 	// gamma_ = (facB_ - fixed_) / (1.0 - fixed_) - 1.0;
-	// 	// rhs_->update(gamma_, *residue_, 1.0);
-	// 	// gamma_ = (facB_ - fixed_) / (1.0 - fixed_);
-	// 	// rhs_->update(gamma_-1.0, *residue_, gamma_);
-	// 	// rhs_->scale(facB_);
-	// }
-	
+	rhs_->update(facA_, *x, facB_);
+
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);
 	INFO("                gamma = " << gamma_);
@@ -336,80 +326,9 @@ void Topo<Model, ParameterList>::computeRHS() // THIS IS A TEST VERSION
 
 //==================================================================
 template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::testRHS()
+bool Topo<Model, ParameterList>::monitor()
 {
-	// Backup
- 	VectorPtr stateCopy = model_->getState('C');
-	double factor;
-	
-	// Set landmask (A) in the model
-	model_->setLandMask(landMasks_[a_[k_]]);	
-
-	// Evaluate and compute RHS (A)
-	model_->computeRHS();
-
-	// Get a copy of RHS (A)
-	VectorPtr rhsA = model_->getRHS('C');
-
-	INFO("*test* ||F(x )|| = " <<  rhsA->norm() <<
-		 " facA " << facA_ << " : " << facA_ * rhsA->norm());
-
-	// Predictor for A's state
-	factor = -1.0 * pow(sin(M_PI * delta_ / 2), 2) * (delta_ - a_[k_]);
-	stateView_->update(factor, *stateDot_, 1.0);
-	INFO("*test*  factor = " << factor);
-	
-	// Evaluate and compute RHS (A)
-	model_->computeRHS();
-
-	// Get a copy of RHS (A)
-	rhsA = model_->getRHS('C');
-
-	INFO("*test* ||F(xp)|| = " <<  rhsA->norm() <<
-		 " facA " << facA_ << " : " << facA_ * rhsA->norm());
-
-	// Restore backup
-	stateView_->update(1.0, *stateCopy, 0.0);
-	
-	// set landmask (B) in the model
-	model_->setLandMask(landMasks_[b_[k_]]);
-
-	// Evaluate and compute RHS (B)
-	model_->computeRHS();
-	
-	// Let our rhs be a view
-	*rhs_ = *model_->getRHS('V');
-
-	INFO("*test* ||F(x )|| = " <<  rhs_->norm() <<
-		 " facB " << facB_ << " : " << facB_ * rhs_->norm());
-	
-	// Predictor for B's state
-	double r = 0.0;
-	double nrm = rhs_->norm();
-	double oldNorm = nrm;
-	while (nrm <= oldNorm)
-	{
-		oldNorm = nrm;
-		
-		// Restore backup
-		stateView_->update(1.0, *stateCopy, 0.0);
-
-		factor = -1.0 * r * pow(cos(M_PI * delta_ / 2),2) * (delta_ - b_[k_]);
-		stateView_->update(factor, *stateDot_, 1.0);
-		INFO("*test*  factor = " << factor << " r = " << r);
-	
-		// Evaluate and compute RHS (B)
-		model_->computeRHS();
-		
-		// Let our rhs be a view
-		*rhs_ = *model_->getRHS('V');
-
-		nrm = rhs_->norm();
-		
-		INFO("*test* ||F(xp)|| = " <<  rhs_->norm() <<
-			 " facB " << facB_ << " : " << facB_ * rhs_->norm());
-		r += .1;
-	}   
+	return normfB_ < stopTol_;
 }
 
 //==================================================================
@@ -450,26 +369,19 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::computeJacobian()
 {
 	INFO("Topo: compute Jacobian...");
-	// Get Jacobians
-	// if (!model_->isCurrentMask(landMasks_[a_[k_]].label))
-	// 	model_->setLandMask(landMasks_[a_[k_]]);
-
-	// model_->computeJacobian();
-	// *matA_ = *model_->getJacobian();
 
 	if (!model_->isCurrentMask(landMasks_[b_[k_]].label))
 		model_->setLandMask(landMasks_[b_[k_]]);
-
+	
 	model_->computeJacobian();
 	*matB_ = *model_->getJacobian();
-
+	
 	combMat_.A      = matA_;
 	combMat_.B      = matB_;
 	combMat_.PA     = PreconPtr();
 	combMat_.PB     = PreconPtr();
 	combMat_.facA   = facA_;
 	combMat_.facB   = facB_;		
-	combMat_.dhat   = target_;
 	combMat_.isPrec = false;
 	combMat_.precType = 0;
 
@@ -510,7 +422,6 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	INFO("Topo: build preconditioner...");
 	combPrec_.facA   = facA_;
 	combPrec_.facB   = facB_;		
-	combPrec_.dhat   = target_;		
 
 	//------------------------------------------------------------------
 	// Preconditioner A 
@@ -705,6 +616,67 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	INFO("  TOPO:  solve... done");
 	TIMER_STOP("  TOPO:  solve...");
 }
+//==================================================================
+template<typename Model, typename ParameterList>
+int Topo<Model, ParameterList>::corrector()
+{
+	INFO("Topo: corrector...");
+	
+	model_->setLandMask(landMasks_[b_[k_]]);	
+	model_->computeJacobian();
+	rhsView_->putScalar(0.0);
+	solView_->putScalar(0.0);
+	model_->computeRHS();
+
+	// force initializations VERY IMPORTANT!
+	model_->buildPreconditioner(true);
+	model_->initializeSolver();
+
+	double oldNorm = normfB_;
+	int	iter = 0;
+	int maxBTiter = 10;
+
+	while ((iter < maxNRit_) && (normfB_ > tolNR_))
+	{
+		iter++;
+		rhsView_->scale(-1.0);
+		model_->solve(rhsView_);
+		stateView_->update(1.0, *solView_, 1.0);
+		model_->computeRHS();
+ 		normfB_ = rhsView_->norm();
+		INFO("  NR " << iter);
+		INFO("     norm fB = " << normfB_);
+		INFO("    testnorm = " << 2 * oldNorm);
+		INFO("        tol  = " << tolNR_);
+
+		// relaxed backtracking
+		double r = -1.0; // reduction
+		int iterBT = 0;
+		while (normfB_ > 2*oldNorm && iterBT < maxBTiter)
+		{
+			iterBT++;
+			r /= 2.0;
+			INFO("                   r  = " << r);
+			stateView_->update(r, *solView_, 1.0);
+			model_->computeRHS();
+			normfB_ = rhsView_->norm();
+			INFO("              norm fB = " << normfB_);
+		}
+		
+		oldNorm = normfB_;
+		model_->computeJacobian();
+		model_->recomputePreconditioner();
+	}
+
+	if (iter >= maxNRit_)
+	{
+		INFO("Topo: corrector failed! ");
+		return 1;
+	}
+			
+	INFO("Topo: corrector... done");
+	return 0;
+}
 
 //==================================================================
 template<typename Model, typename ParameterList>
@@ -729,28 +701,17 @@ void Topo<Model, ParameterList>::postProcess()
 {
 	// For plotting we use the landmask nearest to delta, so we round.
 	int r = static_cast<int>(std::round(delta_));
-	model_->setLandMask(landMasks_[r], true);
-
-	// If we are near a landmask we reset new land values
-	if (std::abs(facA_) < 1e-3)
-	{
-		model_->applyLandMask(landMasks_[b_[k_]], 0.0);
-	}
-	else if (std::abs(facB_) < 1e-3)
-	{
-		model_->applyLandMask(landMasks_[a_[k_]], 0.0);
-	}
-	
+	model_->setLandMask(landMasks_[k_+r], true);
 	model_->postProcess();
 
 	if (storeEverything_)
 	{
 		std::stringstream fname1, fname2;
 		fname1 << "state_topo_" << std::setprecision(4)
-			  << delta_;
+			   << k_ + delta_;
 		model_->copyFiles(fname1.str());
 		fname2 << "mask_" << std::setprecision(4)
-			   <<  r;
+			   << k_ + r;
 		model_->copyMask(fname2.str());
 	}
 }

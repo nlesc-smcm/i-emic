@@ -109,8 +109,29 @@ int main(int argc, char **argv)
 				 RCP<Teuchos::ParameterList> >
 		continuation(topo, continuationParams);
 	
-	// Run continuation
-	continuation.run();
+	// Run
+	topo->postProcess();
+	int nMasks = topo->nMasks();
+	int status = 0;
+	for (int maskIdx = 0; maskIdx != nMasks-1; maskIdx++)
+	{
+		topo->setMaskIndex(maskIdx);
+		topo->setPar(0.0);
+		topo->predictor();
+		continuation.run();
+
+		topo->preProcess();		
+		status = topo->corrector();		
+		
+		if (status)
+		{
+			INFO("Corrector failed! Abort");
+			break;
+		}
+		
+		topo->setPar(1.0);
+		topo->postProcess();
+	}
 	
 	ocean = Teuchos::null;
 	topo  = Teuchos::null;

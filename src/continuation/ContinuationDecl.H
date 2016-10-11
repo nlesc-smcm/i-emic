@@ -96,6 +96,7 @@ class Continuation
 	int maxAllowedIterations_;    // if more then we decrease the step-size
 	double newtonTolerance_;      // set the tolerance in the Newton corrector
 	double destinationTolerance_; // set the tolerance for the final convergence
+	bool userDetect_;             // let model class determine a simple monitor
 	double tanScaling_;           // scaling of the state tangent
 	bool rejectFailedNewton_;     // set to false if you feel lucky
 	double practicalTol_;         // actual tolerance used for the problem
@@ -159,6 +160,7 @@ private:
 	void restore();
 	void analyzeHist();
 	void testCopyView();
+	void initialize();
 
 	// Create initial Euler tangent
 	void createInitialTangent();
@@ -185,7 +187,8 @@ private:
 	// Detect special points.
 	// Modes: 'D' : converge on destination
 	//        'P' : converge on first sign switch in parDot (not impl yet)
-	void detect(char mode = 'D');	
+	void detect(char mode = 'D');
+	void userDetect(); // let model::monitor define stopping criterion
 	void adjustStep();
 	void reset();
 	void info();

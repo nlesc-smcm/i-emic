@@ -197,6 +197,9 @@ public:
  	//! Build preconditioner
 	void buildPreconditioner(bool forceInit = false);
 
+	//! Initialize solver
+	void initializeSolver();
+
 	//! Get pointer to preconditioning operator
 	PreconPtr getPreconPtr() { return precPtr_; }
 
@@ -231,6 +234,9 @@ public:
 					   LandMask mask, double factor);	
 	void applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 					   LandMask maskA, LandMask maskB);
+
+	//! Additional monitor for continuation
+	bool monitor(){return false;}
 		
 	//! Pre and post-convergence processing
 	void preProcess();
@@ -294,7 +300,6 @@ private:
 
 	// Initializer members
 	void initializeOcean();
-	void initializeSolver();
 	void initializePreconditioner();
 	void initializeBelos();
 	void initializeIDR();

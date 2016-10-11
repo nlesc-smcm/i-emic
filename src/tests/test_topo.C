@@ -199,7 +199,6 @@ TEST(Topo, RHS)
 	topo->computeRHS();
 	topo->computeJacobian();
 	topo->preProcess();
-	topo->testRHS();
 }
 
 //------------------------------------------------------------------
