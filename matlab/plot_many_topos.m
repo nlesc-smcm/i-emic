@@ -79,19 +79,12 @@ dx         = (xu(n+1)-xu(1))/n;
 dy         = (yv(m+1)-yv(1))/m;
 dz         = (zw(l+1)-zw(1))/l;
 
-
 % change longitudinal view
 div   = floor(n/4);
 div   = 1;
 natl  = [div:n,1:div-1]; % NA focus
 pacf  = 1:n;             % PA focus
 range = natl;
-
-srf = [];
-greyness = .5;
-srf(:,:,1) = (1-greyness*(interp2(surfm(range,:)','linear')));
-srf(:,:,2) = (1-greyness*(interp2(surfm(range,:)','linear')));
-srf(:,:,3) = (1-greyness*(interp2(surfm(range,:)','linear')));
 
 [qz,dfzt,dfzw] = gridstretch(zw);
 
@@ -191,36 +184,68 @@ for file = 2:numel(filenames)
   par2 = pars(file);
 
   % - GET LANDMASK ----------------------------------------------------
+  maskfiles{floor(par1)+1}
   [~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,landm1] = ...
   readfort44(maskfiles{floor(par1)+1});
-  surfm = landm1(2:n+1,2:m+1,l+1);  %Only interior surface points
-  srf1(:,:,1) = (1-greyness*(interp2(surfm(range,:)','linear')));
-  srf1(:,:,2) = (1-greyness*(interp2(surfm(range,:)','linear')));
-  srf1(:,:,3) = (1-greyness*(interp2(surfm(range,:)','linear')));
+  landm1 = landm1(2:n+1,2:m+1,2:l+1);  %Only interior points
 
+  maskfiles{floor(par1)+2}
   [~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,landm2] = ...
   readfort44(maskfiles{min(floor(par1)+2,numel(maskfiles))});
-  surfm = landm2(2:n+1,2:m+1,l+1);  %Only interior surface points
-  srf2(:,:,1) = (1-greyness*(interp2(surfm(range,:)','linear')));
-  srf2(:,:,2) = (1-greyness*(interp2(surfm(range,:)','linear')));
-  srf2(:,:,3) = (1-greyness*(interp2(surfm(range,:)','linear')));
+  landm2 = landm2(2:n+1,2:m+1,2:l+1);  %Only interior points
 
+  srf1 = squeeze(sum(landm1,3));
+  msrf1 = max(max(srf1));
+  srf1 = round(srf1 / max(msrf1,1));
+  srf2 = squeeze(sum(landm2,3));
+  msrf2 = max(max(srf2));
+  srf2 = round(srf2 / max(msrf2,1));
+
+  
   delta1 = par1 - floor(par1);
   delta2 = par2 - floor(par2);
   srfl  = (1-delta1)*srf1   + delta1*srf2;
   srfr  = (1-delta2)*srf1   + delta2*srf2;
   landm = (1-delta2)*landm1 + delta2*landm2;  
-  landm_int  = round(landm(2:n+1,2:m+1,2:l+1));
+  landm_int  = landm2;
+
+  if abs(par2 - round(par2)) < 1e-7
+	   prange = [par1:par_incr:par2,par2,par2];
+  else
+	prange = [par1:par_incr:par2];
+  end
   
-  for pr = parb:par_incr:pare
+  for pr = prange
 
 	if pr < par1 || pr > par2
 	  continue;
 	end
 	% HOMOTOPY --------------------------------------------------------
-	a = (pr-par1) / (par2-par1);
+	a = (pr - par1) / (par2 - par1);
+	
 	sol = (1-a)*sol1 + a*sol2;
-	srf = (1-a)*srfl + a*srfr;
+
+	a = pr - floor(par1);
+	srf = (1-a)*srf1 + a*srf2;
+	1-a
+	a
+	
+	% create image
+	[m,n] = size(srf);
+	srf_img = zeros(n,m,3);
+	srf_img(:,:,1) = srf';
+	srf_img(:,:,2) = srf';
+	srf_img(:,:,3) = srf';
+	
+	%figure(1)
+	%imagesc(srf1'); set(gca,'ydir','normal')
+	
+	%figure(2)
+	%imagesc(srf2'); set(gca,'ydir','normal')
+
+	%figure(3)
+	%imagesc(srf'); set(gca,'ydir','normal')
+
 	
 	%% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
 	[u,v,w,p,T,S] = extractsol(sol);
@@ -325,8 +350,7 @@ for file = 2:numel(filenames)
 
 	  contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
 	  %imagesc(RtD*x,RtD*(y),img,'AlphaData',.5); hold on
-	  image(RtD*x,RtD*(y),srf,'AlphaData',.9); hold on
-	  %contours = [fliplr(1-logspace(0.1,log10(abs(minval)),30)),-1+logspace(-.1,log10(abs(maxval)),10)]
+	  image(RtD*x,RtD*(y),srf_img,'AlphaData',.9); hold on
 	  contours = linspace(minval,maxval,25);
 	  %contour(RtD*x,RtD*y,(surfm(range,:)'),1,'k-','linewidth',1); hold on
 	  contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', ...

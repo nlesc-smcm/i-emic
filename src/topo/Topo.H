@@ -635,6 +635,7 @@ int Topo<Model, ParameterList>::corrector()
 	double oldNorm = normfB_;
 	int	iter = 0;
 	int maxBTiter = 10;
+	double increase = 10.0;
 
 	while ((iter < maxNRit_) && (normfB_ > tolNR_))
 	{
@@ -646,13 +647,13 @@ int Topo<Model, ParameterList>::corrector()
  		normfB_ = rhsView_->norm();
 		INFO("  NR " << iter);
 		INFO("     norm fB = " << normfB_);
-		INFO("    testnorm = " << 2 * oldNorm);
+		INFO("    testnorm = " << increase * oldNorm);
 		INFO("        tol  = " << tolNR_);
 
 		// relaxed backtracking
 		double r = -1.0; // reduction
 		int iterBT = 0;
-		while (normfB_ > 2*oldNorm && iterBT < maxBTiter)
+		while (normfB_ > increase*oldNorm && iterBT < maxBTiter)
 		{
 			iterBT++;
 			r /= 2.0;
