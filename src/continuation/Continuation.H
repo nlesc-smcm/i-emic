@@ -432,6 +432,8 @@ newtonCorrector()
 	VectorPtr y;             // solution of solve with dFdPar
 	VectorPtr z;             // solution of solve with F
 	double    parDir;        // direction for the parameter
+
+	double iniNorm = rhsCopy_->norm();
 	
 	newtonIter_ = 0;	
 	while (newtonIter_ < maxNewtonIterations_)
@@ -544,6 +546,10 @@ newtonCorrector()
 		
 		if (normRHStest_ < practicalTol_ && newtonIter_ >= minNewtonIterations_)
 			break;
+
+		// if there is a real improvement we recompute the preconditioner
+		// if ((normRHStest_ < normRHS_) && (normRHStest_ < iniNorm))
+		// 	model_->preProcess();
 	}
 
 	// Keep the last obtained y in stateDot, such that it can be used by

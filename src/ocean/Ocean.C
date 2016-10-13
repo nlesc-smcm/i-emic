@@ -656,7 +656,7 @@ void Ocean::solve(VectorPtr rhs)
 		else
 			idrSolver_.setRHS(getVector('V',rhs->getOceanVector()));
 	}
-
+	
 	// ---------------------------------------------------------------------
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs
 	TIMER_START("Ocean: solve...");
@@ -689,8 +689,11 @@ void Ocean::solve(VectorPtr rhs)
 		iters = belosSolver_->getNumIters();
 		tol   = belosSolver_->achievedTol();
 		INFO("Ocean: FGMRES, i = " << iters << ", ||r|| = " << tol);
-
 		TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
+
+		if (tol > .9) // stagnation maybe a new precon helps
+			recompPreconditioner_ = true;
+					 
 	}
 	else if (solverType_ == 'I')
 	{

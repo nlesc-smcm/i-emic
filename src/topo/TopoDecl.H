@@ -156,8 +156,10 @@ private:
 	bool usePredictor_;
 	
 	//! NR params for corrector
+	bool useCorrector_;
 	int maxNRit_;
 	double tolNR_;
+	double increaseBT_;
 
 public:	
 	//! default constructor

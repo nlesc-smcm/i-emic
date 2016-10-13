@@ -32,8 +32,10 @@ Topo(Model model, ParameterList pars)
 	storeEverything_    (pars->get("Store everything", false)),
 	solverInitialized_  (false),
 	usePredictor_       (pars->get("Use predictor type (I)", true)),
+	useCorrector_       (pars->get("Use corrector", true)),
 	maxNRit_            (pars->get("Max Newton steps", 20)),
-	tolNR_              (pars->get("Tolerance in Newton iteration", 1e-6))
+	tolNR_              (pars->get("Tolerance in Newton iteration", 1e-6)),
+	increaseBT_         (pars->get("Test norm increase factor", 2.0))
 {
 	INFO("Topo constructor...");
 
@@ -621,21 +623,28 @@ template<typename Model, typename ParameterList>
 int Topo<Model, ParameterList>::corrector()
 {
 	INFO("Topo: corrector...");
+
+	if (!useCorrector_)
+	{
+		INFO("Topo: corrector disabled! ");
+		return 1;
+	}
 	
 	model_->setLandMask(landMasks_[b_[k_]]);	
 	model_->computeJacobian();
 	rhsView_->putScalar(0.0);
 	solView_->putScalar(0.0);
 	model_->computeRHS();
-
+	
 	// force initializations VERY IMPORTANT!
 	model_->buildPreconditioner(true);
 	model_->initializeSolver();
 
 	double oldNorm = normfB_;
+	double iniNorm = normfB_;
+
 	int	iter = 0;
 	int maxBTiter = 10;
-	double increase = 10.0;
 
 	while ((iter < maxNRit_) && (normfB_ > tolNR_))
 	{
@@ -647,13 +656,13 @@ int Topo<Model, ParameterList>::corrector()
  		normfB_ = rhsView_->norm();
 		INFO("  NR " << iter);
 		INFO("     norm fB = " << normfB_);
-		INFO("    testnorm = " << increase * oldNorm);
+		INFO("    testnorm = " << increaseBT_ * oldNorm);
 		INFO("        tol  = " << tolNR_);
 
 		// relaxed backtracking
 		double r = -1.0; // reduction
 		int iterBT = 0;
-		while (normfB_ > increase*oldNorm && iterBT < maxBTiter)
+		while (normfB_ > increaseBT_ * oldNorm && iterBT < maxBTiter)
 		{
 			iterBT++;
 			r /= 2.0;
@@ -666,7 +675,12 @@ int Topo<Model, ParameterList>::corrector()
 		
 		oldNorm = normfB_;
 		model_->computeJacobian();
-		model_->recomputePreconditioner();
+		
+		// only recompute when we believe the solution
+		if (normfB_ < iniNorm && (iter % 5 == 0))
+		{
+			// model_->recomputePreconditioner();
+		}
 	}
 
 	if (iter >= maxNRit_)
