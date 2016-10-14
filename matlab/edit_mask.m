@@ -1,8 +1,22 @@
-function [] = edit_mask(mask_name)
+function [] = edit_mask(mask_name, overwrite)
+  if nargin < 2
+	overwrite = false
+  end
 
   M = load([mask_name, '.mat']);
   maskp    = M.maskp;
-  dmp_name = [mask_name,'.dmp'];  
+
+  if overwrite
+	dmp_name = mask_name
+  else
+	dmp_name = [mask_name,'.dmp'];
+  end
+
+  if overwrite
+	plot_title = [mask_name, ' OVERWRITE MODE!'];
+  else
+	plot_title = mask_name
+  end
   
   fprintf('Usage: \n')
   fprintf('  Left mouse:    decrease depth\n')
@@ -10,7 +24,9 @@ function [] = edit_mask(mask_name)
   fprintf('  Middle mouse:  quit\n')
 
   new_maskp = isolate_basin(maskp);
-  imagesc(new_maskp); set(gca,'ydir','normal'); 
+  imagesc(new_maskp); set(gca,'ydir','normal');
+  title(plot_title, 'interpreter', 'none')
+  colorbar
 
   l = max(max(maskp));
 
@@ -30,11 +46,15 @@ function [] = edit_mask(mask_name)
 	  end
 	  
 	  new_maskp = isolate_basin(new_maskp);
-	  imagesc(new_maskp); set(gca,'ydir','normal');	
+	  imagesc(new_maskp); set(gca,'ydir','normal');
+	  title(plot_title, 'interpreter', 'none')
+	  colorbar
 	end
 
 	maskdiff = new_maskp - maskp;
 	imagesc(maskdiff); set(gca,'ydir','normal');
+	title(plot_title, 'interpreter', 'none')
+	colorbar
 
 	title('difference')
 
@@ -46,7 +66,9 @@ function [] = edit_mask(mask_name)
 	  transform_mask(dmp_name, true);
 	  break;
 	else
-	  imagesc(new_maskp); set(gca,'ydir','normal');	
+	  imagesc(new_maskp); set(gca,'ydir','normal');
+	  title(plot_title, 'interpreter', 'none')
+	  colorbar
 	end
 	
   end
