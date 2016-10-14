@@ -8,7 +8,6 @@
 atlantic = true;
 glbl     = true;
 pacific  = false;
-specify_mask = false;%true;
 
 fprintf(1,'----------------------------------------------\n')
 
@@ -59,10 +58,10 @@ greyness = 1;
 
 if specify_mask
   shared_dir = [getenv('SHARED_DIR'), '/i-emic/data/mkmask/paleo/'];
-  current_mask = 'Mask_25Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
+  
   M = load([shared_dir,current_mask,'.mat']); 
   maskp = M.maskp';
-  pw = .3;
+  pw = .2;
   mx = max(max(abs(maskp).^pw))
   srf(:,:,1) = (greyness*((maskp(range,:)'))).^pw;
   srf(:,:,2) = (greyness*((maskp(range,:)'))).^pw;
@@ -82,7 +81,7 @@ srf(srf>1) = 1;
 %% - READ SOLUTION - -------------------------------------------------
 
 [lab icp par xl xlp det sig sol solup soleig] = ...
-readfort3(la,'fort.3');
+readfort3(la,current_sol);
 
 %% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
 [u,v,w,p,T,S] = extractsol(sol);
@@ -172,14 +171,14 @@ end
 %% - PLOT THE RESULTS - ----------------------------------------------
 figure(1)
 img = PSIB(2:end,:)';
-minPSIB = min(PSIB(:));
-maxPSIB = max(PSIB(:));
+minPSIB = min(PSIB(:))
+maxPSIB = max(PSIB(:))
 image(RtD*x,RtD*(y),srf,'AlphaData',1); set(gca,'ydir','normal');hold on
-contours = linspace(minPSIB,maxPSIB,15);
-contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', 'on','linewidth',3); hold off;
+contours = linspace(minPSIB,maxPSIB,20);
+contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', 'on','linewidth',1.5); hold off;
 colorbar
-caxis([minPSIB,maxPSIB])
-title('Barotropic Streamfunction');
+caxis([-45,40])
+title(['Barotropic Streamfunction (Sv) ', additional]);
 
 
 if glbl
@@ -192,17 +191,21 @@ if glbl
 end
 
 xlabel('Longitude')
-ylabel('Latitude')
-exportfig('bstream.eps',10,[50,25])
+ylabel('Latitude'); 
+exportfig(['bstream',fname_additional,'.eps'],14,[25,15])
 
 %%% 
 figure(2)
 contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',40);
 colorbar
-title('MOC (Sv)')
+cmin = min(min(PSIG(:,1:9)))
+cmax = max(max(PSIG(:,1:9)))
+caxis([-35,30])
+title(['MOC (Sv) ',additional])
 xlabel('latitude')
 ylabel('depth (m)')
-exportfig('mstream.eps',10,[20,7])
+exportfig(['mstream',fname_additional,'.eps'],14,[25,15])
+return
 
 %%
 if atlantic
@@ -218,7 +221,7 @@ end
 %% -------------------------------------------------------
 figure(3)
 Tsurf = T(:,:,l);
-minT = T0+min(min(Tsurf));
+maxT = T0+min(min(Tsurf));
 maxT = T0+max(max(Tsurf));
 % for j = 1:m
 %  for i = 1:n
