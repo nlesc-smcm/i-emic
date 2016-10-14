@@ -115,7 +115,7 @@ module m_usr
   real, parameter :: udim     = 0.1e+00
   real, parameter :: gdim     = 9.8e+00
   real, parameter :: rhodim   = 1.0e+03
-  real, parameter :: t0       = 15.0
+  real, parameter :: t0       = 15
   real, parameter :: deltat   = 1.0
   real, parameter :: s0       = 35.0
   real, parameter :: cp0      = 4.2e+03
