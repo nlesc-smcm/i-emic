@@ -123,8 +123,9 @@ run()
 
 	createInitialTangent(); // Create the first tangent
 
-	detect(); // Detect special points (initialization)
-	
+	detect();     // Detect special points
+	userDetect(); // Use additional targets provided by model class
+
 	int status = 0;
 
 	while (!destinationReached_ && step_ != maxSteps_)
@@ -142,6 +143,7 @@ run()
 		
 		detect();     // Detect special points
 		userDetect(); // Use additional targets provided by model class
+		
 		adjustStep(); // step size adjustment
 	}
 	info();
