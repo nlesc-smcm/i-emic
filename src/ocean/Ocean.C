@@ -542,6 +542,7 @@ void Ocean::initializeSolver()
 	
 	// Get the requested solver type
 	solverType_ = solverParams_->get("Ocean solver type", 'F');
+	recompTol_  = solverParams_->get("Tolerance recompute preconditioner", 0.9);
 	
 	// Initialize the preconditioner
 	if (!precInitialized_)
@@ -588,11 +589,10 @@ void Ocean::initializeBelos()
 	// A few FGMRES parameters are made available in solver_params.xml:
 	int gmresIters  = solverParams_->get("FGMRES iterations", 500);
 	double gmresTol = solverParams_->get("FGMRES tolerance", 1e-8);
+	int maxrestarts = solverParams_->get("FGMRES restarts", 0);
 	int output      = solverParams_->get("FGMRES output", 100);
-		
 	
 	int NumGlobalElements = state_->GlobalLength();
-	int maxrestarts       = 0;
 	int blocksize         = 1; // number of vectors in rhs
 	int maxiters          = NumGlobalElements/blocksize - 1;
 
@@ -621,6 +621,7 @@ void Ocean::initializeBelos()
 			(problem_, belosParamList_));
 
 }
+
 //=====================================================================
 void Ocean::solve(VectorPtr rhs)
 {
@@ -691,8 +692,11 @@ void Ocean::solve(VectorPtr rhs)
 		INFO("Ocean: FGMRES, i = " << iters << ", ||r|| = " << tol);
 		TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 
-		if (tol > .9) // stagnation maybe a new precon helps
+		if (tol > recompTol_) // stagnation, maybe a new precon helps
+		{
+			INFO("Ocean: FGMRES, stagnation: " << recompTol_);
 			recompPreconditioner_ = true;
+		}
 					 
 	}
 	else if (solverType_ == 'I')

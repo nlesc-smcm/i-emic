@@ -111,9 +111,10 @@ int main(int argc, char **argv)
 	
 	// Run
 	topo->postProcess();
-	int nMasks = topo->nMasks();
+	int nMasks    = topo->nMasks();
+	int startMask = topo->startMaskIdx();
 	int status = 0;
-	for (int maskIdx = 0; maskIdx != nMasks-1; maskIdx++)
+	for (int maskIdx = startMask; maskIdx != nMasks-1; maskIdx++)
 	{
 		topo->setMaskIndex(maskIdx);
 		topo->setPar(0.0);

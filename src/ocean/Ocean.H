@@ -89,6 +89,9 @@ protected:
 	// 'F' Flexible GMRES (Belos/Trilinos)
 	// 'I' IDR 
 	char solverType_;
+
+	// Tolerance for recomputing preconditioner
+	double recompTol_;
 	
 	bool   solverInitialized_;
 	bool   precInitialized_;
