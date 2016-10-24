@@ -131,7 +131,12 @@ int main(int argc, char **argv)
 		}
 		
 		topo->setPar(1.0);
-		topo->postProcess();
+
+		if (argc == 1)
+			topo->postProcess();
+		else
+			std::cout << " arguments given, no usage yet" << std::endl;		
+		
 	}
 	
 	ocean = Teuchos::null;

@@ -659,8 +659,9 @@ int Topo<Model, ParameterList>::corrector()
 		stateView_->update(1.0, *solView_, 1.0);
 		model_->computeRHS();
  		normfB_ = rhsView_->norm();
+
 		INFO("  NR " << iter);
-		INFO("     norm fB = " << normfB_);
+		INFO("  NR norm fB = " << normfB_);
 		INFO("    testnorm = " << increaseBT_ * oldNorm);
 		INFO("        tol  = " << tolNR_);
 
@@ -675,17 +676,12 @@ int Topo<Model, ParameterList>::corrector()
 			stateView_->update(r, *solView_, 1.0);
 			model_->computeRHS();
 			normfB_ = rhsView_->norm();
-			INFO("              norm fB = " << normfB_);
+			INFO("   back track norm fB = " << normfB_);
 		}
 		
 		oldNorm = normfB_;
 		model_->computeJacobian();
-		
-		// only recompute when we believe the solution
-		if (normfB_ < iniNorm && (iter % 5 == 0))
-		{
-			// model_->recomputePreconditioner();
-		}
+		rhsView_->print("residual");
 	}
 
 	if (iter >= maxNRit_)

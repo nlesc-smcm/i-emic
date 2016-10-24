@@ -1,9 +1,15 @@
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
 
-res  = load(fname);
+RtD   = 180/pi;              %[-]     Radians to degrees
 
+res  = load(fname);
+%tol = 1e-7;
+%res(res>tol)  =  1;
+%res(res<-tol)  = -1;
 % pargrid line color
 pcol = [.3 .3 .3];
+
+surfacemask = landm(2:end-1,2:end-1,l+1);
 
 % parallel grid dimensions (horizontal)
 npN = 1;
@@ -50,12 +56,42 @@ end
 [u,v,w,p,T,S] = extractsol(sol);
 
 level = l;
-figure(1); imagesc(u(:,:,level)'); title('u'); set(gca,'ydir','normal'); colorbar;
-figure(2); imagesc(v(:,:,level)'); title('v'); set(gca,'ydir','normal'); colorbar;
-figure(3); imagesc(w(:,:,level)'); title('w'); set(gca,'ydir','normal'); colorbar;
-figure(4); imagesc(p(:,:,level)'); title('p'); set(gca,'ydir','normal'); colorbar;
-figure(5); imagesc(T(:,:,level)'); title('T'); set(gca,'ydir','normal'); colorbar;
-figure(6); imagesc(S(:,:,level)'); title('S'); set(gca,'ydir','normal'); colorbar;
+
+land = max(p(:))*(logical(p == 0)-.5);
+figure(4); imagesc(p(:,:,level)'); title('p');
+set(gca,'ydir','normal');
+colormap(parula)
+hold on
+contour(land(:,:,level)',2)
+colorbar
+hold off
+
+return
+
+figure(1); imagesc(RtD*x,RtD*(y),u(:,:,level)');
+title('u'); set(gca,'ydir','normal');
+colormap(parula)
+colorbar
+xlabel('Longitude')
+ylabel('Latitude'); 
+
+figure(2); imagesc(RtD*x,RtD*(y),v(:,:,level)');
+title('v'); set(gca,'ydir','normal');
+colormap(parula)
+colorbar
+xlabel('Longitude')
+ylabel('Latitude'); 
+
+figure(3); imagesc(w(:,:,level)'); title('w'); set(gca,'ydir','normal');
+colormap(parula)
+colorbar
+
+figure(5); imagesc(T(:,:,level)'); title('T'); set(gca,'ydir','normal');
+colormap(parula)
+colorbar
+figure(6); imagesc(S(:,:,level)'); title('S'); set(gca,'ydir','normal');
+colormap(parula)
+colorbar
 
 landm_int = landm(2:end-1, 2:end-1, 2:end-1);
 

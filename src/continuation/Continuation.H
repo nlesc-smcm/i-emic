@@ -247,6 +247,7 @@ createInitialTangent()
 	// To obtain the solution from this solve without the risk
 	// of altering it we get a copy.
 	stateDot_ = model_->getSolution('C');
+	stateDot_->print("initial_tangent");
 	
 	// We scale the tangent of the state and parameter such they are
 	// normalized.
