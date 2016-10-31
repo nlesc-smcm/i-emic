@@ -57,16 +57,16 @@ end
 
 level = l;
 
-land = max(p(:))*(logical(p == 0)-.5);
+land = (logical(p == 0)-.5);
 figure(4); imagesc(p(:,:,level)'); title('p');
 set(gca,'ydir','normal');
 colormap(parula)
 hold on
-contour(land(:,:,level)',2)
+mxp = max(max(max(p)));
+%contour(mxp*land(:,:,level)',4)
 colorbar
 hold off
 
-return
 
 figure(1); imagesc(RtD*x,RtD*(y),u(:,:,level)');
 title('u'); set(gca,'ydir','normal');
@@ -86,10 +86,17 @@ figure(3); imagesc(w(:,:,level)'); title('w'); set(gca,'ydir','normal');
 colormap(parula)
 colorbar
 
-figure(5); imagesc(T(:,:,level)'); title('T'); set(gca,'ydir','normal');
+figure(5); imagesc(T(:,:,level)'); title('T'); set(gca,'ydir','normal'); hold on
+mxT = max(max(max(T)));
+%contour(mxT*land(:,:,level)',4);
+hold off
 colormap(parula)
 colorbar
-figure(6); imagesc(S(:,:,level)'); title('S'); set(gca,'ydir','normal');
+figure(6); imagesc(S(:,:,level)'); title('S'); set(gca,'ydir','normal'); hold on
+mxS = max(max(max(S)));
+%contour(mxS*land(:,:,level)',4);
+hold off
+
 colormap(parula)
 colorbar
 

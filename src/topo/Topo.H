@@ -682,6 +682,7 @@ int Topo<Model, ParameterList>::corrector()
 		oldNorm = normfB_;
 		model_->computeJacobian();
 		rhsView_->print("residual");
+		solView_->print("solution");
 	}
 
 	if (iter >= maxNRit_)

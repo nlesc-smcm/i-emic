@@ -176,6 +176,7 @@ maxPSIB = max(PSIB(:))
 image(RtD*x,RtD*(y),srf,'AlphaData',1); set(gca,'ydir','normal');hold on
 contours = linspace(minPSIB,maxPSIB,20);
 contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', 'on','linewidth',1.5); hold off;
+%imagesc(RtD*x,RtD*(y),img(:,range),'AlphaData',1); hold off;
 colorbar
 caxis([-45,40])
 title(['Barotropic Streamfunction (Sv) ', additional]);
@@ -196,11 +197,11 @@ exportfig(['bstream',fname_additional,'.eps'],14,[25,15])
 
 %%% 
 figure(2)
-contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',40);
+contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
 colorbar
 cmin = min(min(PSIG(:,1:9)))
 cmax = max(max(PSIG(:,1:9)))
-caxis([-35,30])
+caxis([-40,40])
 title(['MOC (Sv) ',additional])
 xlabel('latitude')
 ylabel('depth (m)')
