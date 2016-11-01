@@ -1,11 +1,11 @@
-[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
+[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('mask_1.mask');
 
 RtD   = 180/pi;              %[-]     Radians to degrees
 
 res  = load(fname);
-%tol = 1e-7;
-%res(res>tol)  =  1;
-%res(res<-tol)  = -1;
+tol = 1e-7;
+res(res>tol)  =  1;
+res(res<-tol)  = -1;
 % pargrid line color
 pcol = [.3 .3 .3];
 
@@ -58,6 +58,7 @@ end
 level = l;
 
 land = (logical(p == 0)-.5);
+land = landm(2:end-1,2:end-1,2:l+1); 
 figure(4); imagesc(p(:,:,level)'); title('p');
 set(gca,'ydir','normal');
 colormap(parula)
@@ -67,20 +68,36 @@ mxp = max(max(max(p)));
 colorbar
 hold off
 
+cmap = [0,0,.85;
+		1,1,1;
+	    .85,0,0;
+		.85,.85,.85];
 
-figure(1); imagesc(RtD*x,RtD*(y),u(:,:,level)');
-title('u'); set(gca,'ydir','normal');
-colormap(parula)
-colorbar
-xlabel('Longitude')
-ylabel('Latitude'); 
+figure(1);
+img = 2*land(:,:,level)' + u(:,:,level)';
+imagesc(RtD*x,RtD*(y), img);
+set(gca,'ydir','normal');
 
-figure(2); imagesc(RtD*x,RtD*(y),v(:,:,level)');
-title('v'); set(gca,'ydir','normal');
-colormap(parula)
-colorbar
+%title('u');
+colormap(cmap)
 xlabel('Longitude')
-ylabel('Latitude'); 
+ylabel('Latitude');
+exportfig('tangent_u.eps',10,[15,10])
+
+figure(2);
+img = 2*land(:,:,level)' + v(:,:,level)';
+imagesc(RtD*x,RtD*(y), img);
+set(gca,'ydir','normal');
+
+%title('u');
+colormap(cmap)
+xlabel('Longitude')
+ylabel('Latitude');
+
+exportfig('tangent_v.eps',10,[15,10])
+
+return
+
 
 figure(3); imagesc(w(:,:,level)'); title('w'); set(gca,'ydir','normal');
 colormap(parula)
@@ -88,7 +105,6 @@ colorbar
 
 figure(5); imagesc(T(:,:,level)'); title('T'); set(gca,'ydir','normal'); hold on
 mxT = max(max(max(T)));
-%contour(mxT*land(:,:,level)',4);
 hold off
 colormap(parula)
 colorbar
