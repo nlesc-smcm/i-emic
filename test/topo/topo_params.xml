@@ -27,7 +27,7 @@
   <!-- M : no preconditioning   -->
   <Parameter name="Preconditioning type" type="char" value="M" />
   
-  <Parameter name="Stopping tolerance homotopy" type="double" value="10.0" />
+  <Parameter name="Stopping tolerance homotopy" type="double" value="0.5" />
 
   <!-- Predictor params -->
   <Parameter name="Use predictor type (I)" type="bool" value="true" />

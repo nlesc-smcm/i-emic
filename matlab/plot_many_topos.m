@@ -26,12 +26,12 @@ switch (plottype)
 end
 
 % Create array of strings with filenames of the states (UNIX)
-[s,statenames] = system('ls -rt state_topo_*[0-9]* | sed "s/ / /" | sort ')
-newlines = find(statenames == char(10));
+[s,statenames] = system('ls -rt state_topo_*[0-9]* | sed "s/ / /" | sort -V')
+newlines  = find(statenames == char(10));
 filenames = [];
-pars = [];
-begin = 1;
-k = 1;
+pars      = [];
+begin     = 1;
+k         = 1;
 for i = 1:numel(statenames)
   if i == newlines(k)
 	filenames{k} = sprintf('%s',statenames(begin:i-1));
@@ -44,7 +44,7 @@ end
 filenames'
 pars'
 
-[s,masknames]  = system('ls -rt mask_*[0-9]* | sed "s/ / /" | sort ')
+[s,masknames]  = system('ls -rt mask_*[0-9]* | sed "s/ / /" | sort -V')
 newlines = find(masknames == char(10));
 maskfiles = [];
 begin = 1;
@@ -360,9 +360,15 @@ for file = 2:numel(filenames)
 	  colorbar
 	  caxis([minval,maxval])
 	  xlabel('Longitude')
-	  title(['Barotropic Streamfunction ', sprintf('%5.4f',pr)], 'interpreter', 'none');
-	  ylabel('Latitude')
 
+	  if (abs(round(pr)-pr)>1e-6)
+		title('Barotropic Streamfunction: Continuation');
+	  else
+		title('Barotropic Streamfunction: Corrector');
+	  end
+	  
+	  ylabel('Latitude')
+	  
       if div > 1
 		xtl  = get(gca,'xticklabel');
 		xtl2 = xtl;

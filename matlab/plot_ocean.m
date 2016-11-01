@@ -19,10 +19,16 @@ T0    = 15;                  %[deg C] Reference temperature
 S0    = 35;                  %[psu]   Reference salinity
 RtD   = 180/pi;              %[-]     Radians to degrees
 
-%% - READ MASK - -----------------------------------------------------
+%% - READ MASK ------------------------------------------------------
 
-[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
-readfort44('fort.44'); 
+if specify_fort44
+   [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
+   readfort44(fort44_name);
+else
+   [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
+readfort44('fort.44');
+end
+
 
 surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
 landm_int  = landm(2:n+1,2:m+1,2:l+1);
@@ -52,7 +58,6 @@ else
   range = pacf;
 end
 
-
 srf = [];
 greyness = 1;
 
@@ -72,14 +77,13 @@ else
   srf(:,:,2) = (1-greyness*((surfm(range,:)')));
   srf(:,:,3) = (1-greyness*((surfm(range,:)')));
 end
+
 srf(srf<0) = 0;
 srf(srf>1) = 1;
-
 
 [qz,dfzt,dfzw] = gridstretch(zw);
 
 %% - READ SOLUTION - -------------------------------------------------
-
 [lab icp par xl xlp det sig sol solup soleig] = ...
 readfort3(la,current_sol);
 
@@ -99,6 +103,15 @@ if atlantic
 end
 
 %% - INTEGRATIONS - --------------------------------------------------
+% Divergence
+%[DIV,UHX,VHY] = ...
+%divergence(u*udim,v*udim,zw*hdim,[y;ymax]*r0dim,[x;xmax]*cos(yv(2:m+1))'*r0dim); 
+
+%norm(DIV)
+
+%figure(2); imagesc(DIV'); set(gca,'ydir','normal'); colorbar
+
+
 % Barotropic streamfunction;
 PSIB = bstream(u*udim,zw*hdim,[y;ymax]*r0dim);
 
@@ -171,14 +184,26 @@ end
 %% - PLOT THE RESULTS - ----------------------------------------------
 figure(1)
 img = PSIB(2:end,:)';
+
+if specify_caxis
+minPSIB = -15;
+maxPSIB = 15;
+else
 minPSIB = min(PSIB(:))
 maxPSIB = max(PSIB(:))
-image(RtD*x,RtD*(y),srf,'AlphaData',1); set(gca,'ydir','normal');hold on
+end
+
+image(RtD*x,RtD*(y),1-srf,'AlphaData',1); set(gca,'ydir','normal');hold on
 contours = linspace(minPSIB,maxPSIB,20);
 contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', 'on','linewidth',1.5); hold off;
 colorbar
-caxis([-45,40])
-title(['Barotropic Streamfunction (Sv) ', additional]);
+
+if specify_caxis
+  caxis([minPSIB, maxPSIB]);
+end
+
+t = title(['Barotropic Streamfunction (Sv)', additional],'fontname','fixedwidth');
+
 
 
 if glbl
@@ -193,6 +218,7 @@ end
 xlabel('Longitude')
 ylabel('Latitude'); 
 exportfig(['bstream',fname_additional,'.eps'],14,[25,15])
+return
 
 %%% 
 figure(2)
@@ -200,7 +226,9 @@ contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',40);
 colorbar
 cmin = min(min(PSIG(:,1:9)))
 cmax = max(max(PSIG(:,1:9)))
-caxis([-35,30])
+if specify_caxis
+  caxis([-35,30])
+end
 title(['MOC (Sv) ',additional])
 xlabel('latitude')
 ylabel('depth (m)')
