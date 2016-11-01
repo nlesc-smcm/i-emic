@@ -1,9 +1,15 @@
-[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
+[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('mask_1.mask');
+
+RtD   = 180/pi;              %[-]     Radians to degrees
 
 res  = load(fname);
-
+tol = 1e-7;
+res(res>tol)  =  1;
+res(res<-tol)  = -1;
 % pargrid line color
 pcol = [.3 .3 .3];
+
+surfacemask = landm(2:end-1,2:end-1,l+1);
 
 % parallel grid dimensions (horizontal)
 npN = 1;
@@ -50,12 +56,65 @@ end
 [u,v,w,p,T,S] = extractsol(sol);
 
 level = l;
-figure(1); imagesc(u(:,:,level)'); title('u'); set(gca,'ydir','normal'); colorbar;
-figure(2); imagesc(v(:,:,level)'); title('v'); set(gca,'ydir','normal'); colorbar;
-figure(3); imagesc(w(:,:,level)'); title('w'); set(gca,'ydir','normal'); colorbar;
-figure(4); imagesc(p(:,:,level)'); title('p'); set(gca,'ydir','normal'); colorbar;
-figure(5); imagesc(T(:,:,level)'); title('T'); set(gca,'ydir','normal'); colorbar;
-figure(6); imagesc(S(:,:,level)'); title('S'); set(gca,'ydir','normal'); colorbar;
+
+land = (logical(p == 0)-.5);
+land = landm(2:end-1,2:end-1,2:l+1); 
+figure(4); imagesc(p(:,:,level)'); title('p');
+set(gca,'ydir','normal');
+colormap(parula)
+hold on
+mxp = max(max(max(p)));
+%contour(mxp*land(:,:,level)',4)
+colorbar
+hold off
+
+cmap = [0,0,.85;
+		1,1,1;
+	    .85,0,0;
+		.85,.85,.85];
+
+figure(1);
+img = 2*land(:,:,level)' + u(:,:,level)';
+imagesc(RtD*x,RtD*(y), img);
+set(gca,'ydir','normal');
+
+%title('u');
+colormap(cmap)
+xlabel('Longitude')
+ylabel('Latitude');
+exportfig('tangent_u.eps',10,[15,10])
+
+figure(2);
+img = 2*land(:,:,level)' + v(:,:,level)';
+imagesc(RtD*x,RtD*(y), img);
+set(gca,'ydir','normal');
+
+%title('u');
+colormap(cmap)
+xlabel('Longitude')
+ylabel('Latitude');
+
+exportfig('tangent_v.eps',10,[15,10])
+
+return
+
+
+figure(3); imagesc(w(:,:,level)'); title('w'); set(gca,'ydir','normal');
+colormap(parula)
+colorbar
+
+figure(5); imagesc(T(:,:,level)'); title('T'); set(gca,'ydir','normal'); hold on
+mxT = max(max(max(T)));
+hold off
+colormap(parula)
+colorbar
+figure(6); imagesc(S(:,:,level)'); title('S'); set(gca,'ydir','normal'); hold on
+mxS = max(max(max(S)));
+%contour(mxS*land(:,:,level)',4);
+hold off
+
+colormap(parula)
+colorbar
 
 landm_int = landm(2:end-1, 2:end-1, 2:end-1);
 

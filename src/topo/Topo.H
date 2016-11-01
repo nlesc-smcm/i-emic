@@ -29,41 +29,22 @@ Topo(Model model, ParameterList pars)
 	nMasks_             (pars->get("Number of mask files", 0)),
 	delta_              (pars->get("Delta", 0.0)),
 	stopTol_            (pars->get("Stopping tolerance homotopy", 5.0)),
+	startMask_          (pars->get("Starting mask", 0)),
 	storeEverything_    (pars->get("Store everything", false)),
 	solverInitialized_  (false),
 	usePredictor_       (pars->get("Use predictor type (I)", true)),
 	useCorrector_       (pars->get("Use corrector", true)),
 	maxNRit_            (pars->get("Max Newton steps", 20)),
 	tolNR_              (pars->get("Tolerance in Newton iteration", 1e-6)),
-	increaseBT_         (pars->get("Test norm increase factor", 2.0))
+	increaseBT_         (pars->get("Test norm increase factor", 2.0)),
+	disablePostprocess_ (pars->get("Disable postprocessing", false))
 {
 	INFO("Topo constructor...");
 
 	double nrm1, nrm2;
 
-	// Set the parameters and coefficients
-	modelPar_ = model_->getPar();
-	setPar(delta_);	
-
-	model_->computeRHS();
-	nrm1 = model_->getRHS('V')->norm();
-
-	loadMaskFileNames();
-	loadMasks();
-	
-	model_->setLandMask(landMasks_[0], true);
-	
-	// We initialize our vectors with model vectors.
-	stateView_ = model_->getState('V');
-	solView_   = model_->getSolution('V');
-	stateDot_  = model_->getState('C');
-	stateDot_->zero();
-	rhs_       = model_->getRHS('C');
-	rhsView_   = model_->getRHS('V');
-	dFdPar_    = model_->getRHS('C');
-	
 	// Setup indices k,a and b
-	k_ = 0;
+	k_ = startMask_;
 	a_ = std::vector<int>(nMasks_);
 	b_ = std::vector<int>(nMasks_);	
 	a_[0] = 0;
@@ -74,9 +55,32 @@ Topo(Model model, ParameterList pars)
 		b_[k+1] = b_[k] + 1;
 	}
 
+	// Set the parameters and coefficients
+	modelPar_ = model_->getPar();
+	setPar(delta_);	
+
+	model_->computeRHS();
+	nrm1 = model_->getRHS('V')->norm();
+
+	loadMaskFileNames(); // load filenames
+	loadMasks();         // load actual data
+
+	// Set the starting mask A
+	model_->setLandMask(landMasks_[a_[k_]], true);
+	
+	// We initialize our vectors with model vectors.
+	stateView_ = model_->getState('V');
+	solView_   = model_->getSolution('V');
+	stateDot_  = model_->getState('C');
+	stateDot_->zero();
+	rhs_       = model_->getRHS('C');
+	rhsView_   = model_->getRHS('V');
+	dFdPar_    = model_->getRHS('C');
+	
 	model_->computeRHS();
 	nrm2 = model_->getRHS('V')->norm();
-	
+
+	// Check whether ocean has been setup with the same a_[k_]-th mask
 	if (std::abs(nrm1 - nrm2) > 1e-10)
 		ERROR("Norms should not differ much! Choose correct initial landmask!"
 			  , __FILE__, __LINE__);
@@ -86,11 +90,11 @@ Topo(Model model, ParameterList pars)
 
 	initPrecs_ = std::vector<bool>(nMasks_, false);
 
-	// Apply landmask B to state 
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
 	model_->computeRHS();
 
+	// --> deprecated
 	residue_ = model_->getRHS('C');
 	
 	INFO("Topo constructor... done");
@@ -618,6 +622,7 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	INFO("  TOPO:  solve... done");
 	TIMER_STOP("  TOPO:  solve...");
 }
+
 //==================================================================
 template<typename Model, typename ParameterList>
 int Topo<Model, ParameterList>::corrector()
@@ -654,8 +659,9 @@ int Topo<Model, ParameterList>::corrector()
 		stateView_->update(1.0, *solView_, 1.0);
 		model_->computeRHS();
  		normfB_ = rhsView_->norm();
+
 		INFO("  NR " << iter);
-		INFO("     norm fB = " << normfB_);
+		INFO("  NR norm fB = " << normfB_);
 		INFO("    testnorm = " << increaseBT_ * oldNorm);
 		INFO("        tol  = " << tolNR_);
 
@@ -670,17 +676,13 @@ int Topo<Model, ParameterList>::corrector()
 			stateView_->update(r, *solView_, 1.0);
 			model_->computeRHS();
 			normfB_ = rhsView_->norm();
-			INFO("              norm fB = " << normfB_);
+			INFO("   back track norm fB = " << normfB_);
 		}
 		
 		oldNorm = normfB_;
 		model_->computeJacobian();
-		
-		// only recompute when we believe the solution
-		if (normfB_ < iniNorm && (iter % 5 == 0))
-		{
-			// model_->recomputePreconditioner();
-		}
+		rhsView_->print("residual");
+		solView_->print("solution");
 	}
 
 	if (iter >= maxNRit_)
@@ -714,21 +716,26 @@ void Topo<Model, ParameterList>::preProcess()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::postProcess()
 {
-	// For plotting we use the landmask nearest to delta, so we round.
-	int r = static_cast<int>(std::round(delta_));
-	model_->setLandMask(landMasks_[k_+r], true);
-	model_->postProcess();
-
-	if (storeEverything_)
+	if (!disablePostprocess_)
 	{
-		std::stringstream fname1, fname2;
-		fname1 << "state_topo_" << std::setprecision(4)
-			   << k_ + delta_;
-		model_->copyFiles(fname1.str());
-		fname2 << "mask_" << std::setprecision(4)
-			   << k_ + r;
-		model_->copyMask(fname2.str());
+		// For plotting we use the landmask nearest to delta, so we round.
+		int r = static_cast<int>(std::round(delta_));
+		model_->setLandMask(landMasks_[k_+r], true);
+		model_->postProcess();
+
+		if (storeEverything_)
+		{
+			std::stringstream fname1, fname2;
+			fname1 << "state_topo_" << std::setprecision(4)
+				   << k_ + delta_;
+			model_->copyFiles(fname1.str());
+			fname2 << "mask_" << std::setprecision(4)
+				   << k_ + r;
+			model_->copyMask(fname2.str());
+		}
 	}
+	else
+		INFO("Topo: postprocessing disabled!");
 }
 
 #endif

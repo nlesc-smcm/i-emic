@@ -78,6 +78,9 @@ private:
 	//! Continuation parameter
 	//!  ranging continually from 0 to nMasks-1
 	double delta_;
+
+	//! Mask to start at
+	double startMask_; 
 	double gamma_;
 
 	//! The model's continuation parameter, which we might
@@ -161,6 +164,10 @@ private:
 	double tolNR_;
 	double increaseBT_;
 
+	//! Optionally disable postprocessing routine
+	//! Convenient when profiling.
+	bool disablePostprocess_;
+
 public:	
 	//! default constructor
 	Topo(){};
@@ -181,6 +188,9 @@ public:
 	//! set the mask index
 	void setMaskIndex(int index);
 
+	//! return starting mask index
+	int startMaskIdx() {return startMask_;}
+
 	//! get the state of the model
 	//!   mode: 'C' copy
 	//!         'V' view
@@ -190,7 +200,7 @@ public:
 	//!   mode: 'C' copy
 	//!         'V' view
 	VectorPtr getRHS(char mode = 'C');
-
+	
 	//! get the solution of the model after a call to solve()
 	//!   mode: 'C' copy
 	//!         'V' view
