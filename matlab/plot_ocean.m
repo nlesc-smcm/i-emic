@@ -52,7 +52,6 @@ else
   range = pacf;
 end
 
-
 srf = [];
 greyness = 1;
 
