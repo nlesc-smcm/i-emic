@@ -4,7 +4,7 @@ function [] = plot_ocean(solfile, datafile, title_add, fname_add)
 %
 %  Father is M. den Toom, who conceived it 06-11-08     
 %
-%  Modified by Erik, 2015 -> t.e.mulder@uu.nl
+%  Modified by Erik, 2015/2016 -> t.e.mulder@uu.nl
 %---------------------------------------------------------------------
 
 title_additional = '';
