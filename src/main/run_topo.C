@@ -110,7 +110,6 @@ int main(int argc, char **argv)
 		continuation(topo, continuationParams);
 	
 	// Run
-	topo->postProcess();
 	int nMasks    = topo->nMasks();
 	int startMask = topo->startMaskIdx();
 	int status = 0;

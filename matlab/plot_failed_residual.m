@@ -6,11 +6,13 @@ function [] = plot_failed_residual(fname, maskname, level)
   if nargin < 2
 	maskname = 'fort.44';
   end
+
+  [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
+  readfort44(maskname);
+  
   if nargin < 3
 	level = l;
   end
-
-  [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44(maskname);
 
   RtD   = 180/pi;              %[-]     Radians to degrees
   
