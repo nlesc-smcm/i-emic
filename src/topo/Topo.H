@@ -656,6 +656,7 @@ int Topo<Model, ParameterList>::corrector()
 		iter++;
 		rhsView_->scale(-1.0);
 		model_->solve(rhsView_);
+		model_->printResidual(rhsView_);
 		stateView_->update(1.0, *solView_, 1.0);
 		model_->computeRHS();
  		normfB_ = rhsView_->norm();
@@ -681,7 +682,7 @@ int Topo<Model, ParameterList>::corrector()
 		
 		oldNorm = normfB_;
 		model_->computeJacobian();
-		rhsView_->print("residual");
+		rhsView_->print("rhs");
 		solView_->print("solution");
 	}
 

@@ -49,14 +49,14 @@ function [] = plot_init_tangent(fname, maskname)
   colormap(cmap)
   xlabel('Longitude')
   ylabel('Latitude');
-  colorbar
+  %colorbar
   title('u');
   exportfig('tangent_u.eps',10,[15,10]);
   
   figure(2);
   img = 2*land(:,:,level)' + v(:,:,level)';
   imagesc(RtD*x,RtD*(y), img);
-  colorbar
+  %colorbar
   title('v')
   set(gca,'ydir','normal');
 
