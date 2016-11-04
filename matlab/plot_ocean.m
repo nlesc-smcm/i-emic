@@ -54,7 +54,6 @@ srf(srf<0) = 0;
 srf(srf>1) = 1;
 
 % - Deduce grid stretching
-
 [qz,dfzt,dfzw] = gridstretch(zw);
 
 %% - READ SOLUTION - -------------------------------------------------
