@@ -15,7 +15,7 @@ if nargin < 1
    solfile = 'fort.3';
 end
 if nargin < 2
-   datafile = 'fort.44';
+   maskfile = 'fort.44';
    specify_mask = false;
 end
 if nargin >= 3
@@ -36,7 +36,7 @@ RtD   = 180/pi;              %[-]     Radians to degrees
 %% - READ MASK - -----------------------------------------------------
 
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
-readfort44(datafile);
+readfort44(maskfile);
 
 surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
 landm_int  = landm(2:n+1,2:m+1,2:l+1);
@@ -54,7 +54,6 @@ srf(srf<0) = 0;
 srf(srf>1) = 1;
 
 % - Deduce grid stretching
-
 [qz,dfzt,dfzw] = gridstretch(zw);
 
 %% - READ SOLUTION - -------------------------------------------------
@@ -112,7 +111,7 @@ contour(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1.5); hold off;
 %imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold off;
 colorbar
 title(['Barotropic Streamfunction (Sv) ', title_additional]);
-caxis([-40,40]);
+
 xlabel('Longitude')
 ylabel('Latitude'); 
 exportfig(['bstream',fname_additional,'.eps'],14,[25,15])
