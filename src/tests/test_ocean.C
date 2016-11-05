@@ -29,7 +29,8 @@
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
 #include "THCMdefs.H"
-#include "Topo.H"
+
+#include "gtest/gtest.h" // google test
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
@@ -77,70 +78,79 @@ void initializeEnvironment(int argc, char **argv)
 }
 
 //------------------------------------------------------------------
+namespace // local unnamed namespace (similar to static in C)
+{	
+	RCP<Ocean>  ocean;
+}
+
+//------------------------------------------------------------------
+class IEMIC : public testing::Environment
+{
+public:
+	// constructor
+	IEMIC()
+		{}
+
+	// destructor
+	~IEMIC()
+		{}
+};
+
+
+//------------------------------------------------------------------
+TEST(Ocean, Initialization)
+{
+	bool failed = false;
+	try
+	{
+		// Create parallel Ocean 
+		RCP<Teuchos::ParameterList> oceanParams =
+			rcp(new Teuchos::ParameterList);
+		updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+		ocean = Teuchos::rcp(new Ocean(comm, oceanParams));	
+	}
+	catch (...)
+	{
+		failed = true;
+	}
+	
+	EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(Ocean, RHSNorm)
+{
+	ocean->computeRHS();
+	double stateNorm = ocean->getState('V')->norm();
+	double rhsNorm   = ocean->getRHS('V')->norm();
+	std::cout << "stateNorm = " << stateNorm << std::endl;
+	std::cout << "RHSNorm   = " << rhsNorm   << std::endl;
+	EXPECT_LT(rhsNorm, 1e-6);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
+	// Initialize the environment:
 	initializeEnvironment(argc, argv);
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");
 
-	// Create parallel Ocean 
-	RCP<Teuchos::ParameterList> oceanParams =
-		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+	::testing::InitGoogleTest(&argc, argv);
+	::testing::AddGlobalTestEnvironment(new IEMIC);
 
-	Teuchos::RCP<Ocean> ocean = Teuchos::rcp(new Ocean(comm, oceanParams));	
+	// -------------------------------------------------------
+	// TESTING 
+	int out = RUN_ALL_TESTS();
+	// -------------------------------------------------------
 
-	// Create topography class
-	RCP<Teuchos::ParameterList> topoParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("topo_params.xml", topoParams.ptr());
-
-	RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > > topo =
-		rcp(new Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-			(ocean, topoParams));
-	
-	// Create parameter object for continuation
-	RCP<Teuchos::ParameterList> continuationParams =
-		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("continuation_params.xml",
-								continuationParams.ptr());
-	
-	// Create continuation
-	Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >,
-				 RCP<Teuchos::ParameterList> >
-		continuation(topo, continuationParams);
-	
-	// Run
-	int nMasks    = topo->nMasks();
-	int startMask = topo->startMaskIdx();
-	int status = 0;
-	for (int maskIdx = startMask; maskIdx != nMasks-1; maskIdx++)
-	{
-		topo->setMaskIndex(maskIdx);
-		topo->setPar(0.0);
-		topo->predictor();
-		continuation.run();
-
-		topo->preProcess();		
-		status = topo->corrector();		
-		
-		if (status)
-		{
-			INFO("Corrector failed! Abort");
-			break;
-		}
-		
-		topo->setPar(1.0);
-
-		if (argc == 1)
-			topo->postProcess();
-		else
-			std::cout << " arguments given, no usage yet" << std::endl;		
-		
-	}
-	
+	// Get rid of possibly parallel objects for a clean ending.
 	ocean = Teuchos::null;
-	topo  = Teuchos::null;
 	
 	comm->Barrier();
+	std::cout << "TEST exit code proc #" << comm->MyPID()
+			  << " " << out << std::endl;
+	
 	MPI_Finalize();
+	return out;
 }

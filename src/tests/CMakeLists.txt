@@ -19,14 +19,17 @@ set(TESTS_INCLUDE_DIRS
 add_executable(test_supervec test_supervec.C)
 add_executable(test_jdqz test_jdqz.C)
 add_executable(test_topo test_topo.C)
+add_executable(test_ocean test_ocean.C)
 
 target_compile_definitions(test_supervec PUBLIC ${COMP_IDENT})
 target_compile_definitions(test_jdqz PUBLIC ${COMP_IDENT})
 target_compile_definitions(test_topo PUBLIC ${COMP_IDENT})
+target_compile_definitions(test_ocean PUBLIC ${COMP_IDENT})
 
 target_include_directories(test_supervec PUBLIC ${TESTS_INCLUDE_DIRS})
 target_include_directories(test_jdqz PUBLIC ${TESTS_INCLUDE_DIRS})
 target_include_directories(test_topo PUBLIC ${TESTS_INCLUDE_DIRS})
+target_include_directories(test_ocean PUBLIC ${TESTS_INCLUDE_DIRS})
 
 # Google test
 if (NOT GTEST_FOUND)
@@ -62,12 +65,18 @@ target_link_libraries(test_topo PUBLIC ${I-EMIC_LIBS})
 target_link_libraries(test_topo PUBLIC ${library_dependencies})
 target_link_libraries(test_topo PUBLIC ${GTEST_LIBRARIES})
 
+target_link_libraries(test_ocean PUBLIC ${I-EMIC_LIBS})
+target_link_libraries(test_ocean PUBLIC ${library_dependencies})
+target_link_libraries(test_ocean PUBLIC ${GTEST_LIBRARIES})
+
 # Pthread
 find_package(Threads)
 target_link_libraries(test_supervec PUBLIC ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(test_jdqz PUBLIC ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(test_topo PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(test_jdqz  PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(test_topo  PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(test_ocean PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS test_supervec DESTINATION test/default)
 install(TARGETS test_jdqz DESTINATION test/jdqz)
 install(TARGETS test_topo DESTINATION test/topo)
+install(TARGETS test_ocean DESTINATION test/ocean)

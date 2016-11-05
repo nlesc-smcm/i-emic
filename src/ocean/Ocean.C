@@ -50,8 +50,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	precInitialized_     (false),  // Preconditioner needs initialization
 	recompPreconditioner_(true),   // We need a preconditioner to start with
 	idrSolver_           (*this),  // Initialize IDR solver with current object (ocean);
-	inputFile_           (oceanParamList->get("Input file", "ocean.h5")),
-	outputFile_          (oceanParamList->get("Output file", "ocean.h5")),
+	inputFile_           (oceanParamList->get("Input file", "ocean_input.h5")),
+	outputFile_          (oceanParamList->get("Output file", "ocean_output.h5")),
 	loadState_           (oceanParamList->get("Load state", false)),
 	saveState_           (oceanParamList->get("Save state", false)),
 	saveMask_            (oceanParamList->get("Save mask", true)),
