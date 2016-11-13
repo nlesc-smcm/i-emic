@@ -5,8 +5,9 @@ readfort44(datafile);
 
 N = max([n,m]);
 maskp     = -sum(landm(2:end-1,2:end-1,2:end-1)-1,3)';
-int_maskp = maskp; %monitor
+int_maskp = zeros(m,n); %monitor
 tmp_maskp = maskp; %temporary
+trs_maskp = zeros(m,n);
 
 coordinates = [];
 l = max(max(maskp));
@@ -59,7 +60,7 @@ if use_mouse
   pause(.2);
 
 else
-  coordinates = [1,1;3,5]; % test coordinates
+  coordinates = [47,5;49,12]; % test coordinates
 end
 
 assert(norm(size(coordinates)-[2,2])==0);
@@ -79,6 +80,7 @@ y2 = coordinates(2,2);
 x = linspace(x1,x2,100*N);
 fun = @(X) A*X+B;
 list = []; dd = [];
+
 x0 = x1;
 y0 = fun(x0);
 add_incr  = false;
@@ -122,7 +124,7 @@ end
 
 hold off
 pause(.2);
-
+colorbar
 disp([list,dd])
 
 %end
