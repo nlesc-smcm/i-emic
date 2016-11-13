@@ -1,11 +1,11 @@
-function [] = plot_ocean(solfile, datafile, title_add, fname_add)
-  %---------------------------------------------------------------------
-  % PLOTTHCM - Mother script for plotting THCM output
-  %
-  %  Father is M. den Toom, who conceived it 06-11-08     
-  %
-  %  Modified by Erik, 2015/2016 -> t.e.mulder@uu.nl
-  %---------------------------------------------------------------------
+function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
+%---------------------------------------------------------------------
+% PLOTTHCM - Mother script for plotting THCM output
+%  usage: plot_ocean(solfile, datafile, title_add, fname_add)
+%
+%  Father is M. den Toom, who conceived it 06-11-08     
+%  Modified by Erik, 2015/2016 -> t.e.mulder@uu.nl
+%---------------------------------------------------------------------
 
   title_additional = '';
   fname_additional = '';
@@ -44,7 +44,7 @@ function [] = plot_ocean(solfile, datafile, title_add, fname_add)
   dy         = (yv(m+1)-yv(1))/m;
   dz         = (zw(l+1)-zw(1))/l;
 
-  % - Create surface landmask image
+								% - Create surface landmask image
   srf = [];
   greyness = 1;
   srf(:,:,1) = (1-greyness*((surfm')));
@@ -53,7 +53,7 @@ function [] = plot_ocean(solfile, datafile, title_add, fname_add)
   srf(srf<0) = 0;
   srf(srf>1) = 1;
 
-  % - Deduce grid stretching
+								% - Deduce grid stretching
   [qz,dfzt,dfzw] = gridstretch(zw);
 
   %% - READ SOLUTION - -------------------------------------------------
@@ -67,7 +67,7 @@ function [] = plot_ocean(solfile, datafile, title_add, fname_add)
   % Barotropic streamfunction;
   PSIB = bstream(u*udim,zw*hdim,[y;ymax]*r0dim);
 
-  % Overturning streamfunction
+								% Overturning streamfunction
   PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
   PSIG = [zeros(m+1,1) PSIG];
 
@@ -106,17 +106,18 @@ function [] = plot_ocean(solfile, datafile, title_add, fname_add)
   minPSIB = min(PSIB(:))
   maxPSIB = max(PSIB(:))
   image(RtD*x,RtD*(y),srf,'AlphaData',1); set(gca,'ydir','normal');hold on
-  contours = linspace(minPSIB,maxPSIB,20);
-  contour(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1.5); hold off;
-  %imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold off;
+  contours = linspace(minPSIB,maxPSIB,40);
+  contour(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',.5); hold off;
+				  %imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold off;
   colorbar
   title(['Barotropic Streamfunction (Sv) ', title_additional]);
 
   xlabel('Longitude')
   ylabel('Latitude'); 
   exportfig(['bstream',fname_additional,'.eps'],14,[25,15])
+  return
 
-  %%% 
+%%% 
   figure(2)
   contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
   colorbar
@@ -137,11 +138,11 @@ function [] = plot_ocean(solfile, datafile, title_add, fname_add)
   img  = T0 + Tsurf';
   contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
   set(gca,'color',[0.65,0.65,0.65]);
-  %image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
+					%image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
   contours = linspace(minT,maxT,20);
   imagesc(RtD*x,RtD*(y),img);
-  %imagesc(RtD*x,RtD*(y),img)
-  %set(gca,'ydir','normal');
+								%imagesc(RtD*x,RtD*(y),img)
+								%set(gca,'ydir','normal');
   hold off
 
   colorbar
@@ -154,9 +155,9 @@ function [] = plot_ocean(solfile, datafile, title_add, fname_add)
   %% -------------------------------------------------------
   figure(4)
   contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
-  %imagesc(RtD*yv(1:end-1),z*hdim,Tp'+T0);
-  %set(gca,'ydir','normal');
-  %pcolor(RtD*yv(1:end-1),z*hdim,Tp'+T0);
+							  %imagesc(RtD*yv(1:end-1),z*hdim,Tp'+T0);
+							  %set(gca,'ydir','normal');
+							  %pcolor(RtD*yv(1:end-1),z*hdim,Tp'+T0);
   colorbar
   title('Temperature')
   xlabel('Latitude')
@@ -166,9 +167,9 @@ function [] = plot_ocean(solfile, datafile, title_add, fname_add)
   %%
   figure(6)
   contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
-  %imagesc(Sp'+S0);
-  %set(gca,'ydir','normal')
-  %pcolor(RtD*yv(1:end-1),z*hdim,Sp'+S0);
+							   %imagesc(Sp'+S0);
+							   %set(gca,'ydir','normal')
+							   %pcolor(RtD*yv(1:end-1),z*hdim,Sp'+S0);
   colorbar
   title('Isohalines')
   xlabel('Latitude')
@@ -196,10 +197,10 @@ function [] = plot_ocean(solfile, datafile, title_add, fname_add)
   contours = linspace(minS,maxS,40);
   contourf(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1); hold off
 
-  %imagesc(RtD*x,RtD*(y),img);
+								%imagesc(RtD*x,RtD*(y),img);
   set(gca,'ydir','normal');
   grid on
-  %caxis([minS,maxS]);
+								%caxis([minS,maxS]);
   colorbar
   title('Surface Salinity', 'interpreter', 'none');
   xlabel('Longitude');
@@ -207,9 +208,5 @@ function [] = plot_ocean(solfile, datafile, title_add, fname_add)
 
 
   exportfig('sss.eps',10,[50,25])
-
-
-  imagesc(u(:,:,l)');set(gca,'ydir','normal')
-  colorbar
 
 end
