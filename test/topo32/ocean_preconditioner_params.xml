@@ -472,7 +472,7 @@
       <Parameter name="Conv" type="string" value="r0"/>
       <Parameter name="Scaling" type="string" value="None"/>
       <Parameter name="Overlap" type="int" value="1"/>
-      <Parameter name="Precond" type="string" value="None"/>
+      <Parameter name="Precond" type="string" value="dom_decomp"/>
       <Parameter name="Subdomain_Solve" type="string" value="ilut"/>
       <Parameter name="Graph_Fill" type="double" value="1.0"/>
       <Parameter name="ILUT_Fill" type="double" value="1.0"/>

@@ -5,6 +5,7 @@ function [] = edit_mask(mask_name, overwrite)
 
   M = load([mask_name, '.mat']);
   maskp    = M.maskp;
+  
 
   if overwrite
 	dmp_name = mask_name
@@ -32,7 +33,7 @@ function [] = edit_mask(mask_name, overwrite)
 
   while true		
 	while true
-		  
+	  
 	  [x,y,button] = ginput(1);
 	  x = round(x);
 	  y = round(y);
@@ -62,7 +63,8 @@ function [] = edit_mask(mask_name, overwrite)
 
 	if (char == 'y')
 	  maskp = new_maskp;
-	  save([dmp_name, '.mat'], 'maskp');
+	  M.maskp = maskp;
+	  save([dmp_name, '.mat'], '-struct', 'M');
 	  transform_mask(dmp_name, true);
 	  break;
 	else
