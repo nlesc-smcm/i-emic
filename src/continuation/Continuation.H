@@ -80,6 +80,9 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 initialize()
 {
+	// (Re)Initialize step size
+	ds_ = dsInit_;
+	
 	// Get views of the important components of the model
 	stateView_ = model_->getState('V');
 	rhsView_   = model_->getRHS('V');
