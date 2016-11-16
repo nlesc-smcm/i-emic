@@ -1,7 +1,7 @@
-shared_dir = [getenv('SHARED_DIR'), '/i-emic/data/mkmask/paleo/'];
+shared_dir = [getenv('SHARED_DIR'), '/i-emic/data/mkmask/'];
 
-mask_name_1 = 'Mask_20Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
-mask_name_2 = 'Mask_15Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8';
+mask_name_1 = 'paleo/Mask_55Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.dmp';
+mask_name_2 = 'paleo2/Mask_55Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.dmp';
 
 M1 = load([shared_dir, mask_name_1, '.mat']);
 M2 = load([shared_dir, mask_name_2, '.mat']);

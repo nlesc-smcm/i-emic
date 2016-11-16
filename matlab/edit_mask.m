@@ -64,7 +64,7 @@ function [] = edit_mask(mask_name, overwrite)
 	if (char == 'y')
 	  maskp = new_maskp;
 	  M.maskp = maskp;
-	  save([dmp_name, '.mat'], '-struct', 'M');
+	  save([dmp_name, '.mat'], '-struct', '-mat' , 'M');
 	  transform_mask(dmp_name, true);
 	  break;
 	else
