@@ -106,7 +106,7 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
   minPSIB = min(PSIB(:))
   maxPSIB = max(PSIB(:))
   image(RtD*x,RtD*(y),srf,'AlphaData',1); set(gca,'ydir','normal');hold on
-  contours = linspace(minPSIB,maxPSIB,40);
+  contours = linspace(minPSIB,maxPSIB,50);
   contour(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',.5); hold off;
 				  %imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold off;
   colorbar
