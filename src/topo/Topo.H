@@ -727,7 +727,7 @@ void Topo<Model, ParameterList>::postProcess()
 		if (storeEverything_)
 		{
 			std::stringstream fname1, fname2;
-			fname1 << "state_topo_" << std::setprecision(4)
+			fname1 << "state_topo_" << std::setprecision(12)
 				   << k_ + delta_;
 			model_->copyFiles(fname1.str());
 			fname2 << "mask_" << std::setprecision(4)

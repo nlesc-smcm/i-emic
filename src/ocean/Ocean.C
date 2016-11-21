@@ -489,6 +489,10 @@ void Ocean::preProcess()
 	// Enable computation of preconditioner
 	recompPreconditioner_ = true;
 	INFO("Ocean pre-processing: enabling computation of preconditioner.");
+	
+	// Output datafiles (fort.3 fort.44)
+	printFiles(); // not sure if this is not too much...
+	
 }
 
 //====================================================================

@@ -7,6 +7,11 @@ function [] = plot_failed_residual(fname, maskname, level)
 	maskname = 'fort.44';
   end
 
+  if isempty(maskname)
+	
+  else
+	
+  end
   
   [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
   readfort44(maskname);
@@ -41,7 +46,7 @@ function [] = plot_failed_residual(fname, maskname, level)
   land = landm(2:end-1,2:end-1,2:l+1); 
 
   figure(1);
-  mx = max(max(u(:,:,level)'));
+  mx = max(max(abs(u(:,:,level))'));
   img = -mx*2*land(:,:,level)' + u(:,:,level)';
   imagesc(RtD*x,RtD*(y), img);
   set(gca,'ydir','normal');
@@ -53,7 +58,7 @@ function [] = plot_failed_residual(fname, maskname, level)
   title('u')  
 
   figure(2);
-  mx = max(max(v(:,:,level)'));
+  mx = max(max(abs(v(:,:,level))'));
   img = -mx*2*land(:,:,level)' + v(:,:,level)';
   imagesc(RtD*x,RtD*(y), img);
   colorbar
@@ -64,7 +69,7 @@ function [] = plot_failed_residual(fname, maskname, level)
   ylabel('Latitude');
 
   figure(3);
-  mx = max(max(w(:,:,level)'));
+  mx = max(max(abs(w(:,:,level))'));
   img = -mx*2*land(:,:,level)' + w(:,:,level)';
   imagesc(RtD*x,RtD*(y), img);
   colorbar
@@ -75,7 +80,7 @@ function [] = plot_failed_residual(fname, maskname, level)
   ylabel('Latitude');
 
   figure(4);
-  mx  = max(max(p(:,:,level)'));
+  mx  = max(max(abs(p(:,:,level))'));
   img = -mx*2*land(:,:,level)' + p(:,:,level)';
   imagesc(RtD*x,RtD*(y), img);
   colorbar
@@ -86,7 +91,7 @@ function [] = plot_failed_residual(fname, maskname, level)
   ylabel('Latitude');
 
   figure(5);
-  mx  = max(max(T(:,:,level)'));
+  mx  = max(max(abs(T(:,:,level))'));
   img = -mx*2*land(:,:,level)' + T(:,:,level)';
   imagesc(RtD*x,RtD*(y), img);
   colorbar
@@ -97,7 +102,7 @@ function [] = plot_failed_residual(fname, maskname, level)
   ylabel('Latitude');
 
   figure(6);
-  mx  =  max(max(S(:,:,level)'));
+  mx  =  max(max(abs(S(:,:,level))'));
   img = -mx*2*land(:,:,level)' + S(:,:,level)';
   imagesc(RtD*x,RtD*(y), img);
   colorbar
