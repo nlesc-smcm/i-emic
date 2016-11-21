@@ -1,4 +1,4 @@
-function [path] = compute_transports(solfile, datafile, trpath)
+function [transport, trpath] = compute_transports(solfile, datafile, trpath)
 
   transmode = 2;
   if nargin < 3

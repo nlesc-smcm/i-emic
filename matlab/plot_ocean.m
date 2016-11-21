@@ -106,8 +106,8 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
   minPSIB = min(PSIB(:))
   maxPSIB = max(PSIB(:))
   image(RtD*x,RtD*(y),srf,'AlphaData',1); set(gca,'ydir','normal');hold on
-  contours = linspace(minPSIB,maxPSIB,40);
-  contour(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',.5); hold off;
+  contours = linspace(minPSIB,maxPSIB,30);
+  contour(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1); hold off;
 				  %imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold off;
   colorbar
   title(['Barotropic Streamfunction (Sv) ', title_additional]);
@@ -115,7 +115,7 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
   xlabel('Longitude')
   ylabel('Latitude'); 
   exportfig(['bstream',fname_additional,'.eps'],14,[25,15])
-  return
+
 
 %%% 
   figure(2)
@@ -128,7 +128,8 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
   ylabel('depth (m)')
   exportfig(['mstream',fname_additional,'.eps'],14,[25,15])
 
-
+  return
+  
   %% -------------------------------------------------------
   figure(3)
   Tsurf = T(:,:,l);
