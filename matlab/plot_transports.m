@@ -46,7 +46,19 @@ labels = {'65Ma', ...,
 		   '30Ma', ...,
 		   '25Ma', ...,
 		   '20Ma', ...
-		  }
+		 };
+
+fnamelabels = {'-1', ...,
+			   '-2', ...,
+			   '-3', ...,
+			   '-4', ...,
+			   '-5', ...,
+			   '-6', ...,
+			   '-7', ...,
+			   '-8', ...,
+			   '-9', ...,
+			   '-10', ...
+			  };
 
 N = 8;
 	
@@ -84,6 +96,6 @@ fprintf('\n\n');
 exportfig('transports65to20.eps',10,[16,12]);
 
 for i = 1:N  
-  plot_ocean(statefiles{i},datafiles{i},labels{i},labels{i})
+  plot_ocean(statefiles{i},datafiles{i},labels{i},fnamelabels{i})
 end
 									
