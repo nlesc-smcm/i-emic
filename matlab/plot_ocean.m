@@ -47,9 +47,13 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
 								% - Create surface landmask image
   srf = [];
   greyness = 1;
-  srf(:,:,1) = (1-greyness*((surfm')));
-  srf(:,:,2) = (1-greyness*((surfm')));
-  srf(:,:,3) = (1-greyness*((surfm')));
+  summask = sum(landm_int,3);
+  summask = summask / max(max(abs(summask)));
+  summask = summask.^2;
+  
+  srf(:,:,1) = (1-greyness*((summask')));
+  srf(:,:,2) = (1-greyness*((summask')));
+  srf(:,:,3) = (1-greyness*((summask')));
   srf(srf<0) = 0;
   srf(srf>1) = 1;
 
