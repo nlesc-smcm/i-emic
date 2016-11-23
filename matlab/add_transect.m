@@ -1,9 +1,13 @@
 function [] = add_transect(mask_name);
-  %% append_transect(mask_name);
+  %% add_transect(mask_name);
   %%
-  %% Append a transect to mask mask_name
+  %% Append a transect to mask file: mask_name
   %%  mask_name should be the name of a .mat file
-  %%  with at least the field maskp 	 
+  %%  with at least the field maskp
+  %%
+  %% Transect data is denoted with 2 capitals
+  %% Basin data is identified with 4 capitals
+  
 		 
   M = load([mask_name, '.mat']);
 
@@ -43,22 +47,33 @@ function [] = add_transect(mask_name);
 	end
   end
   
-  figure(1);
   counter = 0;
+  reset_mask = tmp_maskp;
   while true
-	counter = counter+1;
-
+	
 	fprintf('\n  Set transect...\n');
 	[coords, status] = getcoordinates(tmp_maskp);
+	
+	if size(coords,1) == 2
+	  d = coords(2,:) - coords(1,:);
+	  if d(1) ~= 0 && d(2) ~= 0
+		fprintf('We only allow straight meridional and zonal transects!\n')
+		fprintf('Resetting...\n');
+		tmp_maskp = reset_mask;
+		continue
+	  end
+	end
+
+	counter = counter+1;
 	
 	if status == 1
 	  break;
 	end
 	
 	trpath = getpath(coords,int_maskp);
-
+	
 	%% Display
-	mx= max(max(abs(maskp)));
+	mx = max(max(abs(maskp)));
 	for i = 1:size(trpath,1);
 	  tmp_maskp(trpath(i,2),trpath(i,1)) = mx+4*trpath(i,3);
 	end	
