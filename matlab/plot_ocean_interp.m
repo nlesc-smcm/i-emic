@@ -1,27 +1,4 @@
-function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
-%---------------------------------------------------------------------
-% PLOTTHCM - Mother script for plotting THCM output
-%  usage: plot_ocean(solfile, datafile, title_add, fname_add)
-%
-%  Father is M. den Toom, who conceived it 06-11-08     
-%  Modified by Erik, 2015/2016 -> t.e.mulder@uu.nl
-%---------------------------------------------------------------------
-
-  title_additional = '';
-  fname_additional = '';
-  specify_mask = true; 
-
-  if nargin < 1
-	solfile = 'fort.3';
-  end
-  if nargin < 2
-	maskfile = 'fort.44';
-	specify_mask = false;
-  end
-  if nargin >= 3
-	title_additional = title_add;
-	fname_additional = fname_add;
-  end
+function [] = plot_ocean_interp(k,solfile1,solfile2, maskfile1,maskfile2, title_additional, fname_additional)
 
   fprintf(1,'----------------------------------------------\n')
 
@@ -35,9 +12,14 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
 
   %% - READ MASK - -----------------------------------------------------
 
-  [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
-  readfort44(maskfile);
+  [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm1] = ...
+  readfort44(maskfile1);
 
+  [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm2] = ...
+  readfort44(maskfile2);
+
+  landm = (1-k)*landm1 + k*landm2;
+  
   surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
   landm_int  = landm(2:n+1,2:m+1,2:l+1);
   dx         = (xu(n+1)-xu(1))/n;
@@ -61,11 +43,14 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
   [qz,dfzt,dfzw] = gridstretch(zw);
 
   %% - READ SOLUTION - -------------------------------------------------
-  [lab icp par xl xlp det sig sol solup soleig] = ...
-  readfort3(la, solfile);
+  [lab icp par xl xlp det sig sol1 solup soleig] = ...
+  readfort3(la, solfile1);
+
+  [lab icp par xl xlp det sig sol2 solup soleig] = ...
+  readfort3(la, solfile2);
 
   %% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
-  [u,v,w,p,T,S] = extractsol(sol);
+  [u,v,w,p,T,S] = extractsol((1-k)*sol1+k*sol2);
 
   %% - INTEGRATIONS - --------------------------------------------------
   % Barotropic streamfunction;
