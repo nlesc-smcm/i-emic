@@ -180,7 +180,8 @@ set(gca,'xtick',1:N)
 set(gca,'xticklabel',labels)
 grid on
 ylabel('MOC (Sv)')
-title('Extremum at latitude')
+ti = sprintf('Extremum at latitudes %dN and %dS', latN, latS);
+title(ti)
 exportfig('overturningLatitudes.eps',10,[16,10]);
 
 figure(3)
@@ -189,4 +190,3 @@ set(gca,'ydir','normal');
 set(gca,'xtick',1:N)
 set(gca,'xticklabel',labels)
 colorbar
-
