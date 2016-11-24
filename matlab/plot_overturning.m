@@ -180,7 +180,7 @@ set(gca,'xtick',1:N)
 set(gca,'xticklabel',labels)
 grid on
 ylabel('MOC (Sv)')
-ti = sprintf('Extremum at latitudes %dN and %dS', latN, latS);
+ti = sprintf('Extremum at latitudes %dN or %dS', abs(latN), abs(latS));
 title(ti)
 exportfig('overturningLatitudes.eps',10,[16,10]);
 
