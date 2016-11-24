@@ -96,7 +96,7 @@ if mode == 1
   xlim([.5,N+.5]);
 
   fprintf('\n\n');
-  exportfig('transports65to20.eps',10,[16,12]);
+  exportfig('transports65to20.eps',10,[16,10]);
 end
 
 % plot all solutions

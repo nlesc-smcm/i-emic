@@ -1,3 +1,5 @@
+create_data = true;
+
 SHARED_DIR = getenv('SHARED_DIR');
 
 statefiles = {'state_topo_0',...,
@@ -37,27 +39,28 @@ original_masks = {'paleo2/Mask_65Ma_lon1.5-3-358.5_lat-79.5-3-79.5_qz1.8.dmp',..
 				 };
 
 labels = {'65Ma', ...,
-		   '60Ma', ...,
-		   '55Ma', ...,
-		   '50Ma', ...,
-		   '45Ma', ...,
-		   '40Ma', ...,
-		   '35Ma', ...,
-		   '30Ma', ...,
-		   '25Ma', ...,
-		   '20Ma', ...
+		  '60Ma', ...,
+		  '55Ma', ...,
+		  '50Ma', ...,
+		  '45Ma', ...,
+		  '40Ma', ...,
+		  '35Ma', ...,
+		  '30Ma', ...,
+		  '25Ma', ...,
+		  '20Ma', ...
 		 };
 
 N = 10;
 
 MASK_PATH = [SHARED_DIR,'/i-emic/data/mkmask/'];
 
-% Define basins:
+								% Define basins:
 basins = {'NOPA','SOPA','INOC','NOAT','SOAT'};
 
 M = numel(basins);
 
-data = zeros(M,N,4);
+[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
+readfort44(datafiles{1});
 
 %% - DEFINE CONSTANTS - ----------------------------------------------
 udim  = 0.1;                 %[m/s]   Velocity scale
@@ -66,116 +69,124 @@ T0    = 15;                  %[deg C] Reference temperature
 S0    = 35;                  %[psu]   Reference salinity
 RtD   = 180/pi;              %[-]     Radians to degrees
 
-HOFF = [];
+if create_data
 
-for i = 1:N
-  fname = [MASK_PATH,original_masks{i},'.mat'];
-  fprintf('\n------------\nloading %s\n',fname);
-  Mstruct = load(fname);
-
-  [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
-  readfort44(datafiles{i});
-  dx         = (xu(n+1)-xu(1))/n;
-  dy         = (yv(m+1)-yv(1))/m;
-  dz         = (zw(l+1)-zw(1))/l;
-
-  %% get the range in which we are interested
-  %% in the z-direction everything below 1000m
-  %% in the y-direction at latitudes 40N and 40S
-  minDepth = 1000;
-  latN   = 45;
-  latS   = -35;
+  MOCdata = zeros(M,N,6);
+  HOVdata = zeros(m+1,N,M);
   
-  zrange = (zw*hdim' < -minDepth);
-  yrdim  = RtD*([y;ymax+dy/2] - dy/2);
-  yrange = (abs(yrdim - latN) == min(abs(yrdim - latN))) + ...
-		   (abs(yrdim - latS) == min(abs(yrdim - latS)));
+  for i = 1:N
+	fname = [MASK_PATH,original_masks{i},'.mat'];
+	fprintf('\n------------\nloading %s\n',fname);
+	Mstruct = load(fname);
 
-  zrange = logical(zrange);
-  yrange = logical(yrange);
+	[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
+	readfort44(datafiles{i});
+	dx         = (xu(n+1)-xu(1))/n;
+	dy         = (yv(m+1)-yv(1))/m;
+	dz         = (zw(l+1)-zw(1))/l;
 
-
-  [lab icp par xl xlp det sig sol solup soleig] = ...
-  readfort3(0, statefiles{i});
-
-  %% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
-  [~,v,~,~,~,~] = extractsol(sol);
-  
-  % figure(1)
-   PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
-   PSIG = [zeros(m+1,1) PSIG];
-  % contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
-  % colorbar  
-
-  for j = 1:M
-	v_restr   = v;
-	basinmask = Mstruct.(basins{j});
-	fprintf('  Basin: %s\n   ', basins{j});
-	basinmask = repmat(basinmask',[1 1 l]);
- 	v_restr(basinmask == 0) = 0;
-
-	% figure(2);
-	% imagesc(sum(v_restr,3)');
-	% set(gca,'ydir','normal');
+	%% get the range in which we are interested
+	%% in the z-direction everything below 1000m
+	%% in the y-direction at latitudes 40N and 40S
+	minDepth = 1000;
+	latN   =  42;
+	latS   = -38;
 	
-	%figure(3)
-	PSIG = mstream(v_restr*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
+	zrange = (zw*hdim' < -minDepth);
+	yrdim  = RtD*([y;ymax+dy/2] - dy/2);
+	yrange = (abs(yrdim - latN) == min(abs(yrdim - latN))) + ...
+			 (abs(yrdim - latS) == min(abs(yrdim - latS)));
+
+	zrange = logical(zrange);
+	yrange = logical(yrange);
+
+	[lab icp par xl xlp det sig sol solup soleig] = ...
+	readfort3(0, statefiles{i});
+
+	%% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
+	[~,v,~,~,~,~] = extractsol(sol);
+	
+								% figure(1)
+	PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
 	PSIG = [zeros(m+1,1) PSIG];
-	PSIG(:,~zrange) = 0;
-	%PSIGplot = PSIG;
-	%PSIGplot(:,~zrange) = NaN;
-	%PSIG
-	
-	contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
-	colorbar
+			   % contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
+			   % colorbar  
 
-	if (basins{j} == 'SOPA')
-	   HOFF = [HOFF, min(PSIG,[],2)];
-	end	   
-	
-	psiMaxGlb = max(max(PSIG(:,zrange)));
-	psiMinGlb = min(min(PSIG(:,zrange)));
-	psiMaxLat = max(max(PSIG(yrange,zrange)));
-	psiMinLat = min(min(PSIG(yrange,zrange)));
-	data(j,i,:) = [psiMinGlb,psiMaxGlb,psiMinLat,psiMaxLat];
+	for j = 1:M
+	  v_restr   = v;
+	  basinmask = Mstruct.(basins{j});
+	  fprintf('  Basin: %s\n   ', basins{j});
+	  basinmask = repmat(basinmask',[1 1 l]);
+ 	  v_restr(basinmask == 0) = 0;
 
-  end						   		
+								% figure(2);
+								% imagesc(sum(v_restr,3)');
+								% set(gca,'ydir','normal');
+	  
+								%figure(3)
+	  PSIG = mstream(v_restr*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
+	  PSIG = [zeros(m+1,1) PSIG];
+	  PSIG(:,~zrange) = 0;
+	  
+								%PSIGplot = PSIG;
+								%PSIGplot(:,~zrange) = NaN;
+								%PSIG
+	  
+				%contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
+				%colorbar
+
+								% create Hovmoller data
+	  HOVdata(:,i,j) = min(PSIG,[],2);
+	  
+	  psiMaxGlb = max(max(PSIG(:,zrange)));
+	  psiMinGlb = min(min(PSIG(:,zrange)));
+
+ 	  if abs(psiMaxGlb) > abs(psiMinGlb)
+		psiExtGlb = psiMaxGlb;
+	  else
+		psiExtGlb = psiMinGlb;
+	  end	
+
+	  psiMaxLat = max(max(PSIG(yrange,zrange)));
+	  psiMinLat = min(min(PSIG(yrange,zrange)));
+
+	  if abs(psiMaxLat) > abs(psiMinLat)
+		psiExtLat = psiMaxLat;
+	  else
+		psiExtLat = psiMinLat;
+	  end	
+
+	  MOCdata(j,i,:) = [psiMinGlb,psiMaxGlb,...
+						psiMinLat,psiMaxLat,...
+						psiExtGlb,psiExtLat];
+	end						   		
+  end
 end
 
-
 figure(1)
-plot(data(:,:,1)','.--','linewidth',1.0,'markersize',15)
+plot(MOCdata(:,:,5)','.--','linewidth',1.0,'markersize',15)
 legend(basins,'location','northwest')
 set(gca,'xtick',1:N)
-set(gca,'xticklabels',labels)
+set(gca,'xticklabel',labels)
 grid on
 ylabel('MOC (Sv)')
+title('Extremum in basin')
+exportfig('overturningBasins.eps',10,[16,10]);
 
 figure(2)
-plot(data(:,:,2)','.--','linewidth',1.0,'markersize',15)
+plot(MOCdata(:,:,6)','.--','linewidth',1.0,'markersize',15)
 legend(basins,'location','northwest')
 set(gca,'xtick',1:N)
-set(gca,'xticklabels',labels)
+set(gca,'xticklabel',labels)
 grid on
 ylabel('MOC (Sv)')
+title('Extremum at latitude')
+exportfig('overturningLatitudes.eps',10,[16,10]);
 
 figure(3)
-plot(data(:,:,3)','.--','linewidth',1.0,'markersize',15)
-legend(basins,'location','northwest')
+imagesc(1:N, RtD*([y;ymax+dy/2]-dy/2), HOVdata(:,:,2));
+set(gca,'ydir','normal');
 set(gca,'xtick',1:N)
-set(gca,'xticklabels',labels)
-grid on
-ylabel('MOC (Sv)')
+set(gca,'xticklabel',labels)
+colorbar
 
-figure(4)
-plot(data(:,:,4)','.--','linewidth',1.0,'markersize',15)
-legend(basins,'location','northwest')
-set(gca,'xtick',1:N)
-set(gca,'xticklabels',labels)
-grid on
-ylabel('MOC (Sv)')
-
-imagesc(1:N, RtD*([y;ymax+dy/2]-dy/2), HOFF)
-set(gca,'xtick',1:N)
-set(gca,'xticklabels',labels)
-set(gca,'ydir','normal')
