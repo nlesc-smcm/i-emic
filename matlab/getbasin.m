@@ -30,4 +30,7 @@ function [mask_out] = getbasin(coords, mask_in)
 	mask_out(y2+1:end,:)  = 0;
 	mask_out(:,x1+1:x2-1) = 0;
   end
+
+  % this needs some work
+  %mask_out = isolate_basin(mask_out);
 end

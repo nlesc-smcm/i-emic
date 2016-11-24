@@ -52,7 +52,7 @@ function [] = add_basin(mask_name);
 	set(gca,'ytick',linspace(1,m,5))
 	grid on
 	
-	char = input('Satsified? y/n/q ', 's');
+	char = input('Satisfied? y/n/q ', 's');
 	if char == 'n'
 	  continue
 	elseif char == 'q'

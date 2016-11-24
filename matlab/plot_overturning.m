@@ -77,6 +77,22 @@ for i = 1:N
   dy         = (yv(m+1)-yv(1))/m;
   dz         = (zw(l+1)-zw(1))/l;
 
+  %% get the range in which we are interested
+  %% in the z-direction everything below 1000m
+  %% in the y-direction at latitudes 40N and 40S
+  minDepth = 1000;
+  latN   = 40;
+  latS   = -40;
+  
+  zrange = (zw*hdim' < -minDepth);
+  yrdim  = RtD*([y;ymax+dy/2] - dy/2);
+  yrange = (abs(yrdim - latN) == min(abs(yrdim - latN))) + ...
+		   (abs(yrdim - latS) == min(abs(yrdim - latS)));
+
+  zrange = logical(zrange);
+  yrange = logical(yrange);
+
+
   [lab icp par xl xlp det sig sol solup soleig] = ...
   readfort3(0, statefiles{i});
 
@@ -89,10 +105,11 @@ for i = 1:N
   contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
   colorbar
   
+  
   for j = 1:M
 	v_restr   = v;
 	basinmask = Mstruct.(basins{j});
-	fprintf('  basin: %s\n', basins{j});
+	fprintf('  Basin: %s\n   ', basins{j});
 	basinmask = repmat(basinmask',[1 1 l]);
 	v_restr(basinmask==0) = 0;
 
@@ -103,8 +120,14 @@ for i = 1:N
 	figure(3)
 	PSIG = mstream(v_restr*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
 	PSIG = [zeros(m+1,1) PSIG];
+	%PSIG(:,~zrange) = 0;
 	contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
 	colorbar
+	psiMaxGlb = max(max(PSIG(:,zrange)));
+	psiMinGlb = min(min(PSIG(:,zrange)));
+	psiMaxLat = max(max(PSIG(yrange,zrange)));
+	psiMinLat = min(min(PSIG(yrange,zrange)));
+	disp([psiMinGlb,psiMaxGlb,psiMinLat,psiMaxLat])
 	input('');
   end						   		
 end
