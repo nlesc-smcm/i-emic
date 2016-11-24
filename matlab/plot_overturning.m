@@ -48,7 +48,7 @@ labels = {'65Ma', ...,
 		   '20Ma', ...
 		 };
 
-N = 2;
+N = 10;
 
 MASK_PATH = [SHARED_DIR,'/i-emic/data/mkmask/'];
 
@@ -57,7 +57,7 @@ basins = {'NOPA','SOPA','INOC','NOAT','SOAT'};
 
 M = numel(basins);
 
-overturning = zeros(M,N);
+data = zeros(M,N,4);
 
 %% - DEFINE CONSTANTS - ----------------------------------------------
 udim  = 0.1;                 %[m/s]   Velocity scale
@@ -65,6 +65,8 @@ r0dim = 6.4e6;               %[m]     Radius of Earth
 T0    = 15;                  %[deg C] Reference temperature
 S0    = 35;                  %[psu]   Reference salinity
 RtD   = 180/pi;              %[-]     Radians to degrees
+
+HOFF = [];
 
 for i = 1:N
   fname = [MASK_PATH,original_masks{i},'.mat'];
@@ -81,8 +83,8 @@ for i = 1:N
   %% in the z-direction everything below 1000m
   %% in the y-direction at latitudes 40N and 40S
   minDepth = 1000;
-  latN   = 40;
-  latS   = -40;
+  latN   = 45;
+  latS   = -35;
   
   zrange = (zw*hdim' < -minDepth);
   yrdim  = RtD*([y;ymax+dy/2] - dy/2);
@@ -99,35 +101,81 @@ for i = 1:N
   %% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
   [~,v,~,~,~,~] = extractsol(sol);
   
-  figure(1)
-  PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
-  PSIG = [zeros(m+1,1) PSIG];
-  contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
-  colorbar
-  
-  
+  % figure(1)
+   PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
+   PSIG = [zeros(m+1,1) PSIG];
+  % contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
+  % colorbar  
+
   for j = 1:M
 	v_restr   = v;
 	basinmask = Mstruct.(basins{j});
 	fprintf('  Basin: %s\n   ', basins{j});
 	basinmask = repmat(basinmask',[1 1 l]);
-	v_restr(basinmask==0) = 0;
+ 	v_restr(basinmask == 0) = 0;
 
-	figure(2);
-	imagesc(sum(v_restr,3)');
-	set(gca,'ydir','normal');
+	% figure(2);
+	% imagesc(sum(v_restr,3)');
+	% set(gca,'ydir','normal');
 	
-	figure(3)
+	%figure(3)
 	PSIG = mstream(v_restr*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
 	PSIG = [zeros(m+1,1) PSIG];
-	%PSIG(:,~zrange) = 0;
+	PSIG(:,~zrange) = 0;
+	%PSIGplot = PSIG;
+	%PSIGplot(:,~zrange) = NaN;
+	%PSIG
+	
 	contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
 	colorbar
+
+	if (basins{j} == 'SOPA')
+	   HOFF = [HOFF, min(PSIG,[],2)];
+	end	   
+	
 	psiMaxGlb = max(max(PSIG(:,zrange)));
 	psiMinGlb = min(min(PSIG(:,zrange)));
 	psiMaxLat = max(max(PSIG(yrange,zrange)));
 	psiMinLat = min(min(PSIG(yrange,zrange)));
-	disp([psiMinGlb,psiMaxGlb,psiMinLat,psiMaxLat])
-	input('');
+	data(j,i,:) = [psiMinGlb,psiMaxGlb,psiMinLat,psiMaxLat];
+
   end						   		
 end
+
+
+figure(1)
+plot(data(:,:,1)','.--','linewidth',1.0,'markersize',15)
+legend(basins,'location','northwest')
+set(gca,'xtick',1:N)
+set(gca,'xticklabels',labels)
+grid on
+ylabel('MOC (Sv)')
+
+figure(2)
+plot(data(:,:,2)','.--','linewidth',1.0,'markersize',15)
+legend(basins,'location','northwest')
+set(gca,'xtick',1:N)
+set(gca,'xticklabels',labels)
+grid on
+ylabel('MOC (Sv)')
+
+figure(3)
+plot(data(:,:,3)','.--','linewidth',1.0,'markersize',15)
+legend(basins,'location','northwest')
+set(gca,'xtick',1:N)
+set(gca,'xticklabels',labels)
+grid on
+ylabel('MOC (Sv)')
+
+figure(4)
+plot(data(:,:,4)','.--','linewidth',1.0,'markersize',15)
+legend(basins,'location','northwest')
+set(gca,'xtick',1:N)
+set(gca,'xticklabels',labels)
+grid on
+ylabel('MOC (Sv)')
+
+imagesc(1:N, RtD*([y;ymax+dy/2]-dy/2), HOFF)
+set(gca,'xtick',1:N)
+set(gca,'xticklabels',labels)
+set(gca,'ydir','normal')
