@@ -82,4 +82,13 @@ function [] = view_mask(mask_name)
 	  end
 	end
   end
+    xt = linspace(1,n,7);
+  set(gca,'xtick',xt);
+  set(gca,'xticklabels',linspace(0,360,numel(xt)))
+  xlabel('Longitude')
+  
+  yt = linspace(1,m,9);
+  set(gca,'ytick',yt);
+  set(gca,'yticklabels',linspace(-80,80,numel(yt)))
+  ylabel('Latitude')
 end
