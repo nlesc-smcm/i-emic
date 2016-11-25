@@ -89,7 +89,7 @@ if create_data
 	%% in the z-direction everything below 1000m
 	%% in the y-direction at latitudes 40N and 40S
 	minDepth = 1000;
-	latN   =  42;
+	latN   =  38;
 	latS   = -38;
 	
 	zrange = (zw*hdim' < -minDepth);
@@ -135,7 +135,7 @@ if create_data
 				%contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
 				%colorbar
 
-								% create Hovmoller data
+	  % create Hovmoller data
 	  HOVdata(:,i,j) = min(PSIG,[],2);
 	  
 	  psiMaxGlb = max(max(PSIG(:,zrange)));
@@ -163,30 +163,35 @@ if create_data
   end
 end
 
+leg = {'NoPa','SoPa','InOc','NoAt','SoAt'};
+
 figure(1)
 plot(MOCdata(:,:,5)','.--','linewidth',1.0,'markersize',15)
-legend(basins,'location','northwest')
+legend(leg,'location','northwest')
 set(gca,'xtick',1:N)
 set(gca,'xticklabel',labels)
 grid on
 ylabel('MOC (Sv)')
-title('Extremum in basin')
-exportfig('overturningBasins.eps',10,[16,10]);
+title('MOC extremum in basin')
+exportfig('overturningBasins.eps',9,[14,8]);
+
 
 figure(2)
 plot(MOCdata(:,:,6)','.--','linewidth',1.0,'markersize',15)
-legend(basins,'location','northwest')
+legend(leg,'location','northwest')
 set(gca,'xtick',1:N)
 set(gca,'xticklabel',labels)
 grid on
 ylabel('MOC (Sv)')
-ti = sprintf('Extremum at latitudes %dN or %dS', abs(latN), abs(latS));
+ti = sprintf('MOC extremum at latitudes %dN or %dS', abs(latN), abs(latS));
 title(ti)
-exportfig('overturningLatitudes.eps',10,[16,10]);
+ylim([-20,13])
+exportfig('overturningLatitudes.eps',9,[14,8]);
 
 figure(3)
-imagesc(1:N, RtD*([y;ymax+dy/2]-dy/2), HOVdata(:,:,2));
+imagesc(1:N, RtD*([y;ymax+dy/2]-dy/2), HOVdata(:,:,5));
 set(gca,'ydir','normal');
 set(gca,'xtick',1:N)
 set(gca,'xticklabel',labels)
 colorbar
+exportfig('overturningLatitudes.eps',9,[14,8]);

@@ -67,7 +67,7 @@ N = 10;
 MASK_PATH = [SHARED_DIR,'/i-emic/data/mkmask/'];
 
 % Define transects:
-transects = {'DR','IN','PA','SA','TA','TE'}
+transects = {'DR','IN','PA','AG','TA','TE'}
 
 M = numel(transects)
 
@@ -87,7 +87,7 @@ if mode == 1
   end
 
   plot(transports','.--','linewidth',1.0,'markersize',15)
-
+  
   legend(transects,'location','northwest')
   set(gca,'xtick',1:N)
   set(gca,'xticklabels',labels)
@@ -96,7 +96,7 @@ if mode == 1
   xlim([.5,N+.5]);
 
   fprintf('\n\n');
-  exportfig('transports65to20.eps',10,[16,10]);
+  exportfig('transports65to20.eps',9,[14,8])
 end
 
 % plot all solutions
@@ -104,7 +104,6 @@ if mode == 2
   for i = 1:N  
 	plot_ocean(statefiles{i},datafiles{i},labels{i},labels{i})
   end
-  
 end
 
 % create interpolated plots for a movie
