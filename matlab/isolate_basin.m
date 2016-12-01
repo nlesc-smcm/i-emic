@@ -1,6 +1,6 @@
-function [new_mask] = isolate_basin(original_mask, level)
+function [new_mask] = isolate_basin(mask_in, level)
 		 
-  maskp = original_mask;
+  maskp = mask_in;
   [m,n,l] = size(maskp);
 
   if (l > 1)
