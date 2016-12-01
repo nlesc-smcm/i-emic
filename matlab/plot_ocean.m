@@ -115,13 +115,11 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
 				  %imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold off;
   colorbar
   title(['Barotropic Streamfunction (Sv) ', title_additional]);
-
-  caxis([-40,40]);
   xlabel('Longitude')
   ylabel('Latitude'); 
   exportfig(['bstream',fname_additional,'.eps'],14,[25,15])
 
-
+  return 
 %%% 
   figure(2)
   contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);

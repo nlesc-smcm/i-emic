@@ -515,12 +515,12 @@ void Topo<Model, ParameterList>::initializeSolver()
 	problem_->setRightPrec(combPrecPtr);
 
 	// A few FGMRES parameters are made available in solver_params.xml:
-	int gmresIters  = solverParams_->get("FGMRES iterations", 500);
-	double gmresTol = solverParams_->get("FGMRES tolerance", 1e-8);
-	int output      = solverParams_->get("FGMRES output", 100);
+	int gmresIters  = solverParams_->get("Topo FGMRES iterations", 400);
+	double gmresTol = solverParams_->get("Topo FGMRES tolerance", 1e-2);
+	int output      = solverParams_->get("Topo FGMRES output", 20);
 
 	int NumGlobalElements = stateView_->getOceanVector()->GlobalLength();
-	int maxrestarts       = solverParams_->get("FGMRES restarts", 0);
+	int maxrestarts       = solverParams_->get("Topo FGMRES restarts", 2);
 	int blocksize         = 1; // number of vectors in rhs
 	int maxiters          = NumGlobalElements / blocksize - 1;
 
