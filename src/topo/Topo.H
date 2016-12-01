@@ -28,8 +28,8 @@ Topo(Model model, ParameterList pars)
 	pars_               (pars),
 	nMasks_             (pars->get("Number of mask files", 0)),
 	delta_              (pars->get("Delta", 0.0)),
-	stopTol_            (pars->get("Stopping tolerance homotopy", 5.0)),
 	startMask_          (pars->get("Starting mask", 0)),
+	stopTol_            (pars->get("Stopping tolerance homotopy", 5.0)),
 	storeEverything_    (pars->get("Store everything", false)),
 	solverInitialized_  (false),
 	usePredictor_       (pars->get("Use predictor type (I)", true)),
@@ -646,7 +646,7 @@ int Topo<Model, ParameterList>::corrector()
 	model_->initializeSolver();
 
 	double oldNorm = normfB_;
-	double iniNorm = normfB_;
+	// double iniNorm = normfB_;
 
 	int	iter = 0;
 	int maxBTiter = 10;
