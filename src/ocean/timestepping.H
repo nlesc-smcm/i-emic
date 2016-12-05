@@ -1,3 +1,7 @@
+//// ---------------------------------------------------
+//// THIS CODE IS BROKEN BUT IT MAY SERVE AS AN EXAMPLE
+//// ---------------------------------------------------
+
 #ifndef TEST_H
 #define TEST_H
 
@@ -78,11 +82,11 @@ public:
 			
 			*B_ = THCM::Instance().DiagB();
 			
-			int NumMyElements = Jacp->Map().NumMyElements();
+			int NumMyElements     = Jacp->Map().NumMyElements();
 			int *MyGlobalElements = Jacp->Map().MyGlobalElements();
 			int index;
 			double diag;
-//shit asserten			
+
 			for (int i = 0; i != NumMyElements; ++i)
 			{
 				diag = (*B_)[i] / dt_;

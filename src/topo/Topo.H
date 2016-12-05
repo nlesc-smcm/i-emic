@@ -382,6 +382,21 @@ void Topo<Model, ParameterList>::computeJacobian()
 	model_->computeJacobian();
 	*matB_ = *model_->getJacobian();
 	
+	
+	int NumMyElements     = matB_->Map().NumMyElements();
+	int *MyGlobalElements = matB_->Map().MyGlobalElements();
+
+	// Scale entire matrix
+	// matB_->Scale(facB_);
+
+	// // Add diagonal
+	// for (int i = 0; i != NumMyElements; ++i)
+	// {
+	// 	matB_->SumIntoGlobalValues(MyGlobalElements[i], 1,
+	// 							   &facA_, MyGlobalElements + i);
+	// }
+	// matB_->FillComplete();
+	
 	combMat_.A      = matA_;
 	combMat_.B      = matB_;
 	combMat_.PA     = PreconPtr();
@@ -429,6 +444,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	combPrec_.facA   = facA_;
 	combPrec_.facB   = facB_;		
 
+	// DEPRECATED
 	//------------------------------------------------------------------
 	// Preconditioner A 
 	//------------------------------------------------------------------
@@ -454,9 +470,11 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 
 	if (!model_->isCurrentMask(landMasks_[b_[k_]].label))
 		model_->setLandMask(landMasks_[b_[k_]]);
-		
+
 	model_->computeJacobian();
-	*matB_ = *(model_->getJacobian());		
+	*matB_ = *(model_->getJacobian());
+
+	//computeJacobian(); // compute and adjust the jacobian matrix
 	
 	if ( !initPrecs_[b_[k_]] )
 	{
@@ -469,8 +487,8 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 
 	//------------------------------------------------------------------	
 	combPrec_.A        = matA_;
-	combPrec_.B        = matB_;
 	combPrec_.PA       = precA_;
+	combPrec_.B        = matB_;	
 	combPrec_.PB       = precB_;
 	combPrec_.isPrec   = true;
 	combPrec_.precType = pars_->get("Preconditioning type", 'H');
