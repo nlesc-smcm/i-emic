@@ -213,7 +213,7 @@ void Topo<Model, ParameterList>::setMaskIndex(int index)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::setPar(double par)
 {
-	if (par < 0 || par > nMasks_ - 1)
+	if (par < 0 || par > nMasks_)
 	{
 		std::stringstream err;
 		err << "Topo: invalid parameter, par = " << par; 
@@ -231,13 +231,6 @@ void Topo<Model, ParameterList>::setPar(double par)
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
 	facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
 	
-	// if (std::abs(facA_ + facB_ - 1.0) > 1e-7)
-	// {
-	// 	std::stringstream errmsg;
-	// 	errmsg << "facA and facB do not add up to 1.0";
-	// 	errmsg << " facA + facB = " << facA_ + facB_;
-	// 	ERROR(errmsg.str(), __FILE__, __LINE__);
-	// }
 }
 
 //==================================================================
@@ -335,15 +328,26 @@ void Topo<Model, ParameterList>::computeRHS()
 	// Get the view	
 	*rhs_ = *model_->getRHS('V');
 
-	// dangerous
-	CHECK_ZERO(rhs_->getOceanVector()->Multiply(1.0, *(rhs_->getOceanVector()),
-												*(vecM_->getOceanVector()), 0.0));
-
 	normfB_ = rhs_->norm();
 	INFO("              norm fB = " << normfB_);
+
+	// Scale the RHS, such that the w and p rows remain.
+	Vector scaleVec(*vecM_);	
+	scaleVec.scale(facB_); // apply delta
 	
-	rhs_->update(facA_, *x, facB_);
+	int NumMyElements     = scaleVec.getOceanVector()->Map().NumMyElements();
+	int *MyGlobalElements = scaleVec.getOceanVector()->Map().MyGlobalElements();
+	for (int i = 0; i != NumMyElements; ++i)
+		if ( ((MyGlobalElements[i] % _NUN_) == (WW-1)) ||
+			 ((MyGlobalElements[i] % _NUN_) == (PP-1)) )
+			(*(scaleVec.getOceanVector()))[i] = 1.0;
+
+	CHECK_ZERO(rhs_->getOceanVector()->Multiply(1.0, *(rhs_->getOceanVector()),
+												*(scaleVec.getOceanVector()), 0.0));
+
+	rhs_->update(facA_, *x, 1.0);
 	x->print("X");
+	rhs_->print("rhs");
 
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);
@@ -404,7 +408,15 @@ void Topo<Model, ParameterList>::computeJacobian()
 	matB_ = model_->getJacobian();	
 
 	Vector leftScale(*vecM_);
+	
+	// Put delta on the nonzeros
 	leftScale.scale(facB_);
+
+	// Set zeros to 1, let scaling have no effect at land and w,p points.
+	int NumMyElements = leftScale.getOceanVector()->Map().NumMyElements();
+	for (int i = 0; i != NumMyElements; ++i)
+		if (std::abs((*leftScale.getOceanVector())[i]) < 1e-12)
+			(*leftScale.getOceanVector())[i] = 1.0;
 	
 	//Row scale matrix
 	CHECK_ZERO( matB_->LeftScale(*(leftScale.getOceanVector()) ));
@@ -417,7 +429,7 @@ void Topo<Model, ParameterList>::computeJacobian()
 	VectorPtr tmp = model_->getSolution('C');
 	tmp->putScalar(0.0);
 	matB_->ExtractDiagonalCopy(*(tmp->getOceanVector()));
-	tmp->print("diag");
+	tmp->print("diag");	
 	tmp->update(facA_, *vecM_, 1.0);
 	tmp->print("tmp");
 	matB_->ReplaceDiagonalValues(*(tmp->getOceanVector()));
