@@ -107,6 +107,9 @@ private:
 	//!  is initialized with a view from the model's solution	
 	VectorPtr solView_;
 
+	//! Diagonal matrix M, ignoring diagnostic equations w,p
+	VectorPtr vecM_;
+	
 	//! Integer for selecting the right landmask.
 	//!  k_ = floor(delta_)
 	int k_;
@@ -167,6 +170,9 @@ private:
 	//! Optionally disable postprocessing routine
 	//! Convenient when profiling.
 	bool disablePostprocess_;
+
+	//! Flag to determine prec recomputing
+	bool recompPreconditioner_;
 
 public:	
 	//! default constructor
@@ -308,13 +314,16 @@ namespace Belos
 					if (Op.precType == 'H') // Use homotopy
 					{
 						Epetra_MultiVector tmp = y;	
-						Op.PA->ApplyInverse(x, tmp);
+						// Op.PA->ApplyInverse(x, tmp);
 						Op.PB->ApplyInverse(x, y);
-						y.Update(Op.facA, tmp, Op.facB);
+						// y.Update(Op.facA, tmp, Op.facB);
 					}
 					else if (Op.precType == 'M') 
 					{
-						y = x;
+						if (Op.facB > 0.0)
+							Op.PB->ApplyInverse(x, y);
+						else
+							y = x;
 					}
 					else if (Op.precType == 'N') // Apply scaling
 					{
@@ -333,7 +342,7 @@ namespace Belos
 				else
 				{
 					Op.B->Apply(x,y);
-					y.Update(Op.facA, x, Op.facB); 
+					//y.Update(Op.facA, x, Op.facB);
 				}
 			}
 		

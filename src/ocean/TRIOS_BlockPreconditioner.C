@@ -2105,10 +2105,8 @@ namespace TRIOS {
      
 	int BlockPreconditioner::Compute()
 	{
-		if (verbose>5)
-		{
-			INFO("Compute Ocean Preconditioner for " << jacobian->Label());
-		}
+		INFO("  Compute Ocean Preconditioner for " << jacobian->Label());
+
 		if (needs_setup) Setup2(); // allocate memory, build submaps...
 		// This has to be done exactly once,
 		// but not before the Jacobian is there.

@@ -320,7 +320,7 @@ void Ocean::setLandMask(LandMask mask, bool global)
 	
 	if (global)
 		THCM::Instance().setLandMask(mask.global);
-
+	
 	currentMask_ = mask.label;
 	INFO("Ocean: set landmask " << mask.label << "... done");
 }
@@ -524,8 +524,7 @@ void Ocean::initializePreconditioner()
 	precPtr_ = Teuchos::rcp(new TRIOS::BlockPreconditioner
 							(jac_, domain_, *precParams));
 	
-	precPtr_->Initialize(); // Initialize
-	precPtr_->Compute();    // Compute
+	precPtr_->Initialize();  // Initialize
 
 	precInitialized_ = true;
 
@@ -902,6 +901,29 @@ Teuchos::RCP<SuperVector> Ocean::getRHS(char mode)
 {
 	return getVector(mode, rhs_);
 }
+
+//====================================================================
+Teuchos::RCP<SuperVector> Ocean::getM(char mode)
+{
+	RCP<Epetra_Vector> vecM =
+		rcp(new Epetra_Vector(*sol_));
+	
+	vecM->PutScalar(1.0);
+	
+	int NumMyElements     = vecM->Map().NumMyElements();
+	int *MyGlobalElements = vecM->Map().MyGlobalElements();
+	
+	for (int i = 0; i != NumMyElements; ++i)
+	{
+		// Ignoring w and p equations
+		if ( ((MyGlobalElements[i] % _NUN_) == (WW-1)) ||
+			 ((MyGlobalElements[i] % _NUN_) == (PP-1)) )
+			(*vecM)[i] = 0;
+	}
+
+	return getVector(mode, vecM);
+}
+
 
 //====================================================================
 Teuchos::RCP<SuperVector> Ocean::applyMatrix(SuperVector const &v)

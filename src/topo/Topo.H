@@ -24,20 +24,21 @@ template<typename Model, typename ParameterList>
 Topo<Model, ParameterList>::
 Topo(Model model, ParameterList pars)
 	:
-	model_              (model),
-	pars_               (pars),
-	nMasks_             (pars->get("Number of mask files", 0)),
-	delta_              (pars->get("Delta", 0.0)),
-	startMask_          (pars->get("Starting mask", 0)),
-	stopTol_            (pars->get("Stopping tolerance homotopy", 5.0)),
-	storeEverything_    (pars->get("Store everything", false)),
-	solverInitialized_  (false),
-	usePredictor_       (pars->get("Use predictor type (I)", true)),
-	useCorrector_       (pars->get("Use corrector", true)),
-	maxNRit_            (pars->get("Max Newton steps", 20)),
-	tolNR_              (pars->get("Tolerance in Newton iteration", 1e-6)),
-	increaseBT_         (pars->get("Test norm increase factor", 2.0)),
-	disablePostprocess_ (pars->get("Disable postprocessing", false))
+	model_               (model),
+	pars_                (pars),
+	nMasks_              (pars->get("Number of mask files", 0)),
+	delta_               (pars->get("Delta", 0.0)),
+	startMask_           (pars->get("Starting mask", 0)),
+	stopTol_             (pars->get("Stopping tolerance homotopy", 5.0)),
+	storeEverything_     (pars->get("Store everything", false)),
+	solverInitialized_   (false),
+	usePredictor_        (pars->get("Use predictor type (I)", true)),
+	useCorrector_        (pars->get("Use corrector", true)),
+	maxNRit_             (pars->get("Max Newton steps", 20)),
+	tolNR_               (pars->get("Tolerance in Newton iteration", 1e-6)),
+	increaseBT_          (pars->get("Test norm increase factor", 2.0)),
+	disablePostprocess_  (pars->get("Disable postprocessing", false)),
+	recompPreconditioner_(true)
 {
 	INFO("Topo constructor...");
 
@@ -96,12 +97,21 @@ Topo(Model model, ParameterList pars)
 
 	// --> deprecated
 	residue_ = model_->getRHS('C');
+
+	// Obtain M, binary diagonal matrix to select transient parts,
+	// implemented as a vector
+	vecM_ = model_->getM('C');
+	
+	// Zero out land points
+	model_->applyLandMask(vecM_->getOceanVector(), landMasks_[b_[k_]], 0.0);
+			
+	vecM_->print("vecM");
 	
 	INFO("Topo constructor... done");
 }
 
 //==================================================================
-// constructor
+// destructor
 template<typename Model, typename ParameterList>
 Topo<Model, ParameterList>::
 ~Topo()
@@ -221,13 +231,13 @@ void Topo<Model, ParameterList>::setPar(double par)
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
 	facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
 	
-	if (std::abs(facA_ + facB_ - 1.0) > 1e-7)
-	{
-		std::stringstream errmsg;
-		errmsg << "facA and facB do not add up to 1.0";
-		errmsg << " facA + facB = " << facA_ + facB_;
-		ERROR(errmsg.str(), __FILE__, __LINE__);
-	}
+	// if (std::abs(facA_ + facB_ - 1.0) > 1e-7)
+	// {
+	// 	std::stringstream errmsg;
+	// 	errmsg << "facA and facB do not add up to 1.0";
+	// 	errmsg << " facA + facB = " << facA_ + facB_;
+	// 	ERROR(errmsg.str(), __FILE__, __LINE__);
+	// }
 }
 
 //==================================================================
@@ -308,6 +318,11 @@ void Topo<Model, ParameterList>::computeRHS()
 
 	// Overwrite state with initial
 	x->update(-1.0, *stateCopy_, 1.0);
+
+	// dangerous
+	CHECK_ZERO(x->getOceanVector()->Multiply(1.0, *(x->getOceanVector()),
+											 *(vecM_->getOceanVector()), 0.0));
+	
 	INFO("            norm x-xA = " << x->norm());
 	
 	// Set landmask (B) in the model
@@ -319,10 +334,16 @@ void Topo<Model, ParameterList>::computeRHS()
 	
 	// Get the view	
 	*rhs_ = *model_->getRHS('V');
+
+	// dangerous
+	CHECK_ZERO(rhs_->getOceanVector()->Multiply(1.0, *(rhs_->getOceanVector()),
+												*(vecM_->getOceanVector()), 0.0));
+
 	normfB_ = rhs_->norm();
 	INFO("              norm fB = " << normfB_);
 	
 	rhs_->update(facA_, *x, facB_);
+	x->print("X");
 
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);
@@ -380,22 +401,43 @@ void Topo<Model, ParameterList>::computeJacobian()
 		model_->setLandMask(landMasks_[b_[k_]]);
 	
 	model_->computeJacobian();
-	*matB_ = *model_->getJacobian();
-	
-	
-	int NumMyElements     = matB_->Map().NumMyElements();
-	int *MyGlobalElements = matB_->Map().MyGlobalElements();
+	matB_ = model_->getJacobian();	
 
-	// Scale entire matrix
-	// matB_->Scale(facB_);
+	Vector leftScale(*vecM_);
+	leftScale.scale(facB_);
+	
+	//Row scale matrix
+	CHECK_ZERO( matB_->LeftScale(*(leftScale.getOceanVector()) ));
+	
+	// Check length
+	assert(matB_->NumGlobalDiagonals() ==
+		   vecM_->getOceanVector()->GlobalLength());
 
-	// // Add diagonal
+	// Obtain diagonal of matrix
+	VectorPtr tmp = model_->getSolution('C');
+	tmp->putScalar(0.0);
+	matB_->ExtractDiagonalCopy(*(tmp->getOceanVector()));
+	tmp->print("diag");
+	tmp->update(facA_, *vecM_, 1.0);
+	tmp->print("tmp");
+	matB_->ReplaceDiagonalValues(*(tmp->getOceanVector()));
+
+	matB_->SetLabel("TopoCont Jacobian");
+	
+	// int NumMyElements     = matB_->Map().NumMyElements();
+	// int *MyGlobalElements = matB_->Map().MyGlobalElements();	
+
+	// Vector diag = matB_->Extra
+	// // Add diagonal TEMPORARY THIS IS SPECIFICALLY FOR OCEAN
 	// for (int i = 0; i != NumMyElements; ++i)
 	// {
-	// 	matB_->SumIntoGlobalValues(MyGlobalElements[i], 1,
-	// 							   &facA_, MyGlobalElements + i);
+	// 	// Ignoring w and p equations
+	// 	if ( (MyGlobalElements[i] % 6 != 2) &&
+	// 		 (MyGlobalElements[i] % 6 != 3) )
+	// 		CHECK_ZERO(matB_->SumIntoGlobalValues(MyGlobalElements[i], 1,
+	// 											  &facA_, MyGlobalElements + i));
 	// }
-	// matB_->FillComplete();
+	// CHECK_ZERO(matB_->FillComplete());
 	
 	combMat_.A      = matA_;
 	combMat_.B      = matB_;
@@ -440,7 +482,12 @@ double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::buildPreconditioner()
 {
+	if (!recompPreconditioner_)
+		return;
+
 	INFO("Topo: build preconditioner...");
+	
+	recompPreconditioner_ = false;
 	combPrec_.facA   = facA_;
 	combPrec_.facB   = facB_;		
 
@@ -449,20 +496,20 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	// Preconditioner A 
 	//------------------------------------------------------------------
 
-	if (!model_->isCurrentMask(landMasks_[a_[k_]].label))
-		model_->setLandMask(landMasks_[a_[k_]]);
+	// if (!model_->isCurrentMask(landMasks_[a_[k_]].label))
+	// 	model_->setLandMask(landMasks_[a_[k_]]);
 		
-	model_->computeJacobian();
-	*matA_ = *(model_->getJacobian());
+	// model_->computeJacobian();
+	// *matA_ = *(model_->getJacobian());
 	
-	if ( !initPrecs_[a_[k_]] )
-	{
-		initPrecs_[a_[k_]] = true;
-		model_->buildPreconditioner(true);
-		precA_ = model_->getPreconPtr();
-	}	
+	// if ( !initPrecs_[a_[k_]] )
+	// {
+	// 	initPrecs_[a_[k_]] = true;
+	// 	model_->buildPreconditioner(true);
+	// 	precA_ = model_->getPreconPtr();
+	// }	
 
-	precA_->Compute();
+	// precA_->Compute();
 	
 	//------------------------------------------------------------------
 	// Preconditioner B
@@ -471,23 +518,26 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	if (!model_->isCurrentMask(landMasks_[b_[k_]].label))
 		model_->setLandMask(landMasks_[b_[k_]]);
 
-	model_->computeJacobian();
-	*matB_ = *(model_->getJacobian());
-
-	//computeJacobian(); // compute and adjust the jacobian matrix
+	// model_->computeJacobian();
+	// *matB_ = *(model_->getJacobian());
+	
+	computeJacobian(); // compute and adjust the jacobian matrix
 	
 	if ( !initPrecs_[b_[k_]] )
 	{
 		initPrecs_[b_[k_]] = true;
 		model_->buildPreconditioner(true);
 		precB_ = model_->getPreconPtr();
+		recompPreconditioner_ = true;
 	}
-
-	precB_->Compute();
+	else
+	{
+		precB_->Compute();
+	}
 
 	//------------------------------------------------------------------	
 	combPrec_.A        = matA_;
-	combPrec_.PA       = precA_;
+	combPrec_.PA       = PreconPtr(); // DEPRECATED
 	combPrec_.B        = matB_;	
 	combPrec_.PB       = precB_;
 	combPrec_.isPrec   = true;
@@ -500,6 +550,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::initializeSolver()
 {
+	INFO("Topo: initialize solver...");
 	solverParams_ = rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
 	
@@ -567,6 +618,7 @@ void Topo<Model, ParameterList>::initializeSolver()
 			(problem_, belosParamList_));
 
 	solverInitialized_ = true;
+	INFO("Topo: initialize solver... done");
 }
 
 //==================================================================
@@ -576,7 +628,9 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	// Check whether solver is initialized, if not perform the
 	// initialization here
 	if (!solverInitialized_)
-		initializeSolver();	
+		initializeSolver();
+	
+	buildPreconditioner();			
 
 	TIMER_START("  TOPO:  solve...");
 	INFO("  TOPO:  solve...");
@@ -728,6 +782,8 @@ void Topo<Model, ParameterList>::applyPrecon(Vector const &v, Vector &out)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::preProcess()
 {
+	recompPreconditioner_ = true;
+	INFO("Topo  pre-processing: enabling computation of preconditioner.");
 	model_->preProcess();
 }
 

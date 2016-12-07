@@ -182,6 +182,9 @@ public:
 	Teuchos::RCP<SuperVector> getState(char mode = 'C');
 	Teuchos::RCP<SuperVector> getRHS(char mode = 'C');
 
+	//! Binary diagonal for UVTS parts
+	Teuchos::RCP<SuperVector> getM(char mode = 'C');
+
 	//! Return pointer to Jacobian
 	Teuchos::RCP<Epetra_CrsMatrix> getJacobian() {return jac_;}
 	
