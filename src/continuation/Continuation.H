@@ -17,9 +17,9 @@ Continuation<Model, ParameterList>::
 Continuation(Model model, ParameterList pars)
 	:
 	model_(model),
-	dsInit_                (pars->get("initial step size", 0.02)),
+	dsInit_                (pars->get("initial step size", 0.01)),
 	dsMin_                 (pars->get("minimum step size", 1.0e-5)),
-	dsMax_                 (pars->get("maximum step size", 1.0e01)),
+	dsMax_                 (pars->get("maximum step size", 1.0e-1)),
 	scale1_                (pars->get("increase step size", 1.25)),
 	scale2_                (pars->get("decrease step size", 1.25)),
 	epsilon_               (pars->get("epsilon increment", 1.0e-8)),

@@ -224,8 +224,13 @@ void Topo<Model, ParameterList>::setPar(double par)
 	delta_ = par;
 
 	// calculate coefficients
-	facA_ = 1 - delta_;
-	facB_ = delta_;
+	// facA_ = 1 - delta_;
+	// facB_ = delta_;
+
+	// set coefficients
+	
+	facA_  = pow(cos(M_PI * delta_ / 2), 2);
+	facB_  = pow(sin(M_PI * delta_ / 2), 2);
 
 	// correct for small values	
 	facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
@@ -359,7 +364,7 @@ void Topo<Model, ParameterList>::computeRHS()
 template<typename Model, typename ParameterList>
 bool Topo<Model, ParameterList>::monitor()
 {
-	return normfB_ < stopTol_;
+	return (normfB_ < stopTol_) || (delta_ > 1.0);
 }
 
 //==================================================================
