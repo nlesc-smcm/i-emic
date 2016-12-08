@@ -10,6 +10,7 @@
 #include <math.h> // pow(), sqrt()
 #include <ctime>
 #include <iomanip>
+
 //======================================================================
 //Constructor
 template<typename Model, typename ParameterList>
@@ -250,7 +251,9 @@ createInitialTangent()
 	// To obtain the solution from this solve without the risk
 	// of altering it we get a copy.
 	stateDot_ = model_->getSolution('C');
-	stateDot_->print("initial_tangent");
+	std::stringstream fname;
+	fname << "init_tan_" << std::setprecision(4) << par_;		
+	stateDot_->print(fname.str());
 	
 	// We scale the tangent of the state and parameter such they are
 	// normalized.
@@ -291,7 +294,6 @@ computeDFDPar(char mode)
 	// Update dFdPar_ such that it contains (F(par+eps) - F(par))/eps
 	dFdPar_->update(-1.0 / epsilon_, *rhsCopy_, 1.0 / epsilon_);
 	INFO("       |  (F(x,l+eps) - F(x,l)) / eps = " << dFdPar_->norm());
-
 }
 
 //======================================================================
@@ -654,15 +656,16 @@ detect(char mode)
 		if (busy)
 		{
 			INFO("  secant: f1 = " << f1 << " f0 = " << f0);
-			INFO("          ds = " << ds_);
+			INFO("      old ds = " << ds_);
 			ds_ = -f1 * ds_ / (f1 - f0);   // secant method
-			INFO("          ds = " << ds_);
+			INFO("      new ds = " << ds_);
 			createTangent('S');
 		}
 
 		signMonitor_ = SGN(f1);	
 		
-		if (busy && std::abs(f1) < destinationTolerance_)
+		if (busy && std::abs(f1) < destinationTolerance_
+			&& rhsView_->norm() < destinationTolerance_)
 		{
 			if (idx == destinations_.size())
 				destinationReached_ = true;

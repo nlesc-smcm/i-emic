@@ -190,8 +190,8 @@ int main(int argc, char **argv)
 		TIMER_STOP ("  TOPO:  Corrector");
 		
 		if (status)
-		{
-			INFO("Corrector failed! Abort");
+		{			
+			INFO(" Corrector failed! Abort");
 			break;
 		}
 		

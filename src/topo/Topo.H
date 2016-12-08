@@ -105,8 +105,6 @@ Topo(Model model, ParameterList pars)
 	// Zero out land points
 	model_->applyLandMask(vecM_->getOceanVector(), landMasks_[b_[k_]], 0.0);
 			
-	vecM_->print("vecM");
-	
 	INFO("Topo constructor... done");
 }
 
@@ -135,17 +133,13 @@ void Topo<Model, ParameterList>::predictor()
 		INFO("  k = " << k_ << " a[k] = " << a_[k_] << " b[k] = " << b_[k_]);
 		INFO("  using differences between " <<
 			 landMasks_[b_[k_]].label << " and " << landMasks_[a_[k_]].label);
-	
-		rhsView_->print("topores1");
-		stateView_->print("topox1");
-		
+			
 		model_->applyLandMask(stateView_->getOceanVector(),
 							  landMasks_[a_[k_]],
 							  landMasks_[b_[k_]]);
 	
 		model_->computeRHS();
-		rhsView_->print("topores2");
-		stateView_->print("topox2");
+
 		INFO("  nrm after  applyLandmask: " << rhsView_->norm());
 		INFO("Topo: predictor... done");
 	}
@@ -351,8 +345,6 @@ void Topo<Model, ParameterList>::computeRHS()
 												*(scaleVec.getOceanVector()), 0.0));
 
 	rhs_->update(facA_, *x, 1.0);
-	x->print("X");
-	rhs_->print("rhs");
 
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);
@@ -434,9 +426,7 @@ void Topo<Model, ParameterList>::computeJacobian()
 	VectorPtr tmp = model_->getSolution('C');
 	tmp->putScalar(0.0);
 	matB_->ExtractDiagonalCopy(*(tmp->getOceanVector()));
-	tmp->print("diag");	
 	tmp->update(facA_, *vecM_, 1.0);
-	tmp->print("tmp");
 	matB_->ReplaceDiagonalValues(*(tmp->getOceanVector()));
 
 	matB_->SetLabel("TopoCont Jacobian");
@@ -455,7 +445,7 @@ void Topo<Model, ParameterList>::computeJacobian()
 	// 											  &facA_, MyGlobalElements + i));
 	// }
 	// CHECK_ZERO(matB_->FillComplete());
-	
+
 	combMat_.A      = matA_;
 	combMat_.B      = matB_;
 	combMat_.PA     = PreconPtr();
@@ -473,26 +463,11 @@ void Topo<Model, ParameterList>::computeJacobian()
 }
 
 //==================================================================
+// DEPRECATED
 template<typename Model, typename ParameterList>
 double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 {
-	Vector resA = *getSolution('C');
-	Vector resB = *getSolution('C');
-	resA.zero();
-	resB.zero();
-	
-	combMat_.A->Apply(*solView_->getOceanVector(),
-					  *resA.getOceanVector());
-
-	combMat_.B->Apply(*solView_->getOceanVector(),
-					  *resB.getOceanVector());
-	resA.scale(facA_);
-	resB.scale(facB_);
-	
-	resA.update(1.0, *b, -1.0);
-	resB.update(1.0, resA, -1.0);
-	INFO("             ||b-(A+B)x|| / ||b||: " << resB.norm() / b->norm());
-	return resB.norm();	
+	return 0.0; 
 }
 
 //==================================================================
@@ -505,54 +480,21 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 	INFO("Topo: build preconditioner...");
 	
 	recompPreconditioner_ = false;
+	
 	combPrec_.facA   = facA_;
-	combPrec_.facB   = facB_;		
+	combPrec_.facB   = facB_;
 
-	// DEPRECATED
-	//------------------------------------------------------------------
-	// Preconditioner A 
-	//------------------------------------------------------------------
-
-	// if (!model_->isCurrentMask(landMasks_[a_[k_]].label))
-	// 	model_->setLandMask(landMasks_[a_[k_]]);
-		
-	// model_->computeJacobian();
-	// *matA_ = *(model_->getJacobian());
-	
-	// if ( !initPrecs_[a_[k_]] )
-	// {
-	// 	initPrecs_[a_[k_]] = true;
-	// 	model_->buildPreconditioner(true);
-	// 	precA_ = model_->getPreconPtr();
-	// }	
-
-	// precA_->Compute();
-	
-	//------------------------------------------------------------------
-	// Preconditioner B
-	//------------------------------------------------------------------
-
-	if (!model_->isCurrentMask(landMasks_[b_[k_]].label))
-		model_->setLandMask(landMasks_[b_[k_]]);
-
-	// model_->computeJacobian();
-	// *matB_ = *(model_->getJacobian());
-	
-	computeJacobian(); // compute and adjust the jacobian matrix
-	
+	// If the landmask is new we need to rebuild the preconditioner
 	if ( !initPrecs_[b_[k_]] )
 	{
 		initPrecs_[b_[k_]] = true;
 		model_->buildPreconditioner(true);
 		precB_ = model_->getPreconPtr();
-		recompPreconditioner_ = true;
-	}
-	else
-	{
-		precB_->Compute();
 	}
 
-	//------------------------------------------------------------------	
+	// Compute preconditioner
+	precB_->Compute();
+
 	combPrec_.A        = matA_;
 	combPrec_.PA       = PreconPtr(); // DEPRECATED
 	combPrec_.B        = matB_;	
@@ -567,6 +509,9 @@ void Topo<Model, ParameterList>::buildPreconditioner()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::initializeSolver()
 {
+	if (solverInitialized_)
+		return;
+	
 	INFO("Topo: initialize solver...");
 	solverParams_ = rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
@@ -574,24 +519,11 @@ void Topo<Model, ParameterList>::initializeSolver()
 	// Belos LinearProblem setup
 	Teuchos::RCP<Combined_Operator<Model> > combMatPtr =
 		Teuchos::rcp(&combMat_, false);
-
-	// Create a temporary solution [x1,x2]^T
-	int indices[2] = {0,0};
-	Teuchos::RCP<Epetra_MultiVector> soltmp =
-		Teuchos::rcp(new Epetra_MultiVector(Copy, *(solView_->getOceanVector()),
-											indices, 2));
-
-	// Create a temporary right hand side [b,0]^T
-	Teuchos::RCP<Epetra_MultiVector> btmp =
-		Teuchos::rcp(new Epetra_MultiVector(Copy, *(rhs_->getOceanVector()),
-											indices, 2));
-
-	(*btmp)(1)->PutScalar(0.0);
 	
 	problem_ =
 		rcp(new Belos::LinearProblem
 			<double, Epetra_MultiVector, Combined_Operator<Model> >
-			(combMatPtr, soltmp, btmp));
+			(combMatPtr, solView_->getOceanVector(), rhs_->getOceanVector()));
 			
 	buildPreconditioner();
 
@@ -603,10 +535,10 @@ void Topo<Model, ParameterList>::initializeSolver()
 	// A few FGMRES parameters are made available in solver_params.xml:
 	int gmresIters  = solverParams_->get("Topo FGMRES iterations", 400);
 	double gmresTol = solverParams_->get("Topo FGMRES tolerance", 1e-2);
+	int maxrestarts = solverParams_->get("Topo FGMRES restarts", 2);
 	int output      = solverParams_->get("Topo FGMRES output", 20);
 
 	int NumGlobalElements = stateView_->getOceanVector()->GlobalLength();
-	int maxrestarts       = solverParams_->get("Topo FGMRES restarts", 2);
 	int blocksize         = 1; // number of vectors in rhs
 	int maxiters          = NumGlobalElements / blocksize - 1;
 
@@ -642,12 +574,9 @@ void Topo<Model, ParameterList>::initializeSolver()
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::solve(VectorPtr b)
 {
-	// Check whether solver is initialized, if not perform the
-	// initialization here
-	if (!solverInitialized_)
-		initializeSolver();
 	
-	buildPreconditioner();			
+	initializeSolver();    // Initialize solver
+	buildPreconditioner(); // Build preconditioner			
 
 	TIMER_START("  TOPO:  solve...");
 	INFO("  TOPO:  solve...");
@@ -660,22 +589,8 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 
 	solView_->putScalar(0.0);
 
-	// Create a temporary solution multivector with two vectors
-	int indices[2] = {0,0};
-	Teuchos::RCP<Epetra_MultiVector> soltmp =
-		Teuchos::rcp(new Epetra_MultiVector(Copy, *(solView_->getOceanVector()),
-											indices, 2));
+	set = problem_->setProblem(solView_->getOceanVector(), b->getOceanVector());
 
-	// Create a temporary right hand side [b,0]^T
-	Teuchos::RCP<Epetra_MultiVector> btmp =
-		Teuchos::rcp(new Epetra_MultiVector(Copy, *(b->getOceanVector()),
-											indices, 2));
-	(*btmp)(1)->PutScalar(0.0);
-	set = problem_->setProblem(soltmp, btmp);
-
-	INFO("             " << " number of vectors in soltmp " << soltmp->NumVectors());
-	INFO("             " << " number of vectors in btmp   " << btmp->NumVectors());
-		
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
 	try
@@ -687,9 +602,6 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 		INFO("Ocean: exception caught: " << e.what());
 	}
 
-	// Put the solution in solView
-	solView_->getOceanVector()->Update(1.0, *(*soltmp)(0), 0.0);
-
 	innerIters = belosSolver_->getNumIters();
 	innerTol   = belosSolver_->achievedTol();
 
@@ -700,6 +612,7 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	
 	combMat_.B->Apply(*solView_->getOceanVector(),
 					  *resB.getOceanVector());
+
 	resB.update(1.0, *b, -facB_);
 	resB.update(-facA_, *solView_, 1.0);
 		
@@ -721,7 +634,7 @@ int Topo<Model, ParameterList>::corrector()
 	if (!useCorrector_)
 	{
 		INFO("Topo: corrector disabled! ");
-		return 1;
+		return 0;
 	}
 	
 	model_->setLandMask(landMasks_[b_[k_]]);	
@@ -771,8 +684,6 @@ int Topo<Model, ParameterList>::corrector()
 		
 		oldNorm = normfB_;
 		model_->computeJacobian();
-		rhsView_->print("rhs");
-		solView_->print("solution");
 	}
 
 	if (iter >= maxNRit_)
