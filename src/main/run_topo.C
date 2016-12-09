@@ -169,32 +169,21 @@ int main(int argc, char **argv)
 	// Run
 	int nMasks    = topo->nMasks();
 	int startMask = topo->startMaskIdx();
-	int status = 0;
+
 	for (int maskIdx = startMask; maskIdx != nMasks-1; maskIdx++)
 	{
 		topo->setMaskIndex(maskIdx);		
 		topo->setPar(0.0);
+		topo->initialize();		
 
-		TIMER_START("  TOPO:  Predictor I");
+		TIMER_START("  TOPO:  Predictor");
 		topo->predictor();
-		TIMER_STOP ("  TOPO:  Predictor I");
+		TIMER_STOP ("  TOPO:  Predictor");
 
-		TIMER_START("  TOPO:  Predictor II");
+		TIMER_START("  TOPO:  Homotopy Continuation");
 		continuation.run();
-		TIMER_STOP ("  TOPO:  Predictor II");
-
-		topo->preProcess();
-		
-		TIMER_START("  TOPO:  Corrector");
-		status = topo->corrector();
-		TIMER_STOP ("  TOPO:  Corrector");
-		
-		if (status)
-		{			
-			INFO(" Corrector failed! Abort");
-			break;
-		}
-		
+		TIMER_STOP ("  TOPO:  Homotopy Continuation");
+			
 		topo->setPar(1.0);
 
 		if (argc == 1)

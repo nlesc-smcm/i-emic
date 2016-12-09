@@ -113,6 +113,10 @@ class Continuation
 	// S: Secant
 	char tangentType_;
 
+	// S: Solve J dx = - dF
+	// A: Assign  dx = -DF (when J approx I)
+	char initialTangent_;
+
 	// Specify a bound on the RHS computed from the predicted state
 	// If it exceeds the bound we choose a smaller step size-ds
 	double predictorBound_;

@@ -35,12 +35,14 @@ Continuation(Model model, ParameterList pars)
 	newtonTolerance_       (pars->get("Newton tolerance", 1.0e-3)),
 	destinationTolerance_  (pars->get("destination tolerance", 1.0e-5)),
 	userDetect_            (pars->get("enable custom monitor", false)),
-	tanScaling_            (pars->get("state tangent scaling", 1.0e-6)),	
+	tanScaling_            (pars->get("state tangent scaling", 1.0e-6)),
+
 	rejectFailedNewton_    (pars->get("reject failed iteration", true)),
 	cycleTolerance_        (pars->get("enable tolerance cycling", false)),
 	usePracticalTol_       (pars->get("enable practical tolerance", false)),
 	newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
 	tangentType_           (pars->get("tangent type", 'E')),
+	initialTangent_        (pars->get("initial tangent type", 'S')),	
 	predictorBound_        (pars->get("predictor bound", 100.0)),
 	signMonitor_           (0)
 {
@@ -98,12 +100,22 @@ initialize()
 	storage_.par0   = par_;
 	storage_.state0 = model_->getState('C');
 
+	// initializations for detect()
+	signMonitor_ = 0;
+	secant_      = false;
+	activeDest_  = -999; // hopefully this is never an actual dest^^
+	
 	// scaling
 	zeta_ = 1.0 / stateView_->length();
 
 	newtonIter_ = 0;	
 	backTrack_  = 0;	
 	parDotSign_ = 1;
+
+	// initializations for main loop
+	step_ = 0;
+	destinationReached_ = false;
+
 	
 	if (userDetect_) { INFO("Continuation: custom monitor enabled");}
 	else { INFO("Continuation: custom monitor disabled");}	
@@ -119,11 +131,6 @@ run()
 	INFO("Continuation::run initialize... done");
 
 	TIMER_START("Continuation: run");
-
-	// set all the appropriate initial flags and counters
-	step_ = 0;
-	secant_ = false;
-	destinationReached_ = false;
 
 	createInitialTangent(); // Create the first tangent
 
@@ -242,18 +249,27 @@ createInitialTangent()
 
 	// 1) Compute dFdPar_, force computation of RHS
 	computeDFDPar('F');
+	dFdPar_->print("dFdpar");
 
-	// 2) Solve J*stateDot_ = -dFdPar_
-	model_->computeJacobian();
-	dFdPar_->scale(-1.0);
-	model_->solve(dFdPar_);
+	if (initialTangent_ == 'S')	// 2a) Solve J*stateDot_ = -dFdPar_
+	{
+		model_->preProcess();
+		model_->computeJacobian();
+		dFdPar_->scale(-1.0);
+		model_->solve(dFdPar_);
+		stateDot_ = model_->getSolution('C');
+	}
+	else if (initialTangent_ == 'A') // 2b) Solve stateDot_ = -dFdPar_
+	{
+		stateDot_ = model_->getSolution('C');
+		dFdPar_->scale(-1.0);
+		*stateDot_ = *dFdPar_;
+	}
 
-	// To obtain the solution from this solve without the risk
-	// of altering it we get a copy.
-	stateDot_ = model_->getSolution('C');
 	std::stringstream fname;
 	fname << "init_tan_" << std::setprecision(4) << par_;		
 	stateDot_->print(fname.str());
+	getchar();
 	
 	// We scale the tangent of the state and parameter such they are
 	// normalized.

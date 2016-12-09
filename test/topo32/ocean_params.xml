@@ -5,7 +5,7 @@
   <!-- an old state (true) or with a zero solution (false).                  -->
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
-  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Load state" type="bool" value="true"/>
   <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean_input.h5" />
   <Parameter name="Output file" type="string" value="ocean_output.h5" />
@@ -56,12 +56,12 @@
 	<!-- 1: no land                                 -->
     <!-- others not tested, but this is 'itopo' in  -->
     <!-- THCM language                              -->
-    <Parameter name="Topography" type="int" value="1"/>
+    <Parameter name="Topography" type="int" value="0"/>
     <!-- remove bottom profile? (flat in THCM)      -->
     <Parameter name="Flat Bottom" type="bool" value="0"/>
     <!-- read mask from a file in mkmask The filename is hard-coded in   -->
     <!-- topo.F90.                                                       -->
-    <Parameter name="Read Land Mask" type="bool" value="0"/>
+    <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
     <Parameter name="Land Mask" type="string" value="topotest32/test0"/>
 

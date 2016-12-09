@@ -98,7 +98,6 @@ private:
 	//!  is initialized with a copy from the model's rhs	
 	VectorPtr rhs_;
 	VectorPtr rhsView_;
-	VectorPtr residue_;	
 
 	//! Derivative with respect to delta
 	VectorPtr dFdPar_;
@@ -183,6 +182,9 @@ public:
 	
 	//! destructor
 	~Topo();
+
+	//! initializations that we might want to repeat
+	void initialize();
 
 	//! get continuation parameter
 	double getPar();

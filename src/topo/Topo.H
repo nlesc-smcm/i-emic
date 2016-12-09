@@ -32,7 +32,7 @@ Topo(Model model, ParameterList pars)
 	stopTol_             (pars->get("Stopping tolerance homotopy", 5.0)),
 	storeEverything_     (pars->get("Store everything", false)),
 	solverInitialized_   (false),
-	usePredictor_        (pars->get("Use predictor type (I)", true)),
+	usePredictor_        (pars->get("Use predictor", true)),
 	useCorrector_        (pars->get("Use corrector", true)),
 	maxNRit_             (pars->get("Max Newton steps", 20)),
 	tolNR_               (pars->get("Tolerance in Newton iteration", 1e-6)),
@@ -86,25 +86,13 @@ Topo(Model model, ParameterList pars)
 		ERROR("Norms should not differ much! Choose correct initial landmask!"
 			  , __FILE__, __LINE__);
 
-	matA_  = rcp(new Matrix(*model_->getJacobian()));
-	matB_  = rcp(new Matrix(*model_->getJacobian()));
-
+	// A boolean array to indicate whether we have initialized the
+	//  associated preconditioner
 	initPrecs_ = std::vector<bool>(nMasks_, false);
 
-	// Set landmask (B) in the model
-	model_->setLandMask(landMasks_[b_[k_]]);
-	model_->computeRHS();
-
-	// --> deprecated
-	residue_ = model_->getRHS('C');
-
-	// Obtain M, binary diagonal matrix to select transient parts,
-	// implemented as a vector
-	vecM_ = model_->getM('C');
+	// More initializations that we might want to repeat
+	initialize();
 	
-	// Zero out land points
-	model_->applyLandMask(vecM_->getOceanVector(), landMasks_[b_[k_]], 0.0);
-			
 	INFO("Topo constructor... done");
 }
 
@@ -115,6 +103,28 @@ Topo<Model, ParameterList>::
 ~Topo()
 {
 	INFO("Topo destructor");
+}
+
+//==================================================================
+// initialize
+template<typename Model, typename ParameterList>
+void Topo<Model, ParameterList>::initialize()
+{
+	INFO("Topo: initialize...");
+	matA_  = rcp(new Matrix(*model_->getJacobian()));
+	matB_  = rcp(new Matrix(*model_->getJacobian()));
+
+	// Set landmask (B) in the model
+	model_->setLandMask(landMasks_[b_[k_]]);
+
+	// Obtain M, binary diagonal matrix to select transient parts,
+	// implemented as a vector
+	vecM_ = model_->getM('C');
+	
+	// Zero out land points
+	model_->applyLandMask(vecM_->getOceanVector(), landMasks_[b_[k_]], 0.0);
+	
+	INFO("Topo: initialize... done");
 }
 
 //==================================================================
@@ -142,8 +152,7 @@ void Topo<Model, ParameterList>::predictor()
 
 		INFO("  nrm after  applyLandmask: " << rhsView_->norm());
 		INFO("Topo: predictor... done");
-	}
-	
+	}	
 	stateCopy_ = model_->getState('C');
 }
 
@@ -310,12 +319,11 @@ void Topo<Model, ParameterList>::computeRHS()
 
 	// Overwrite state with initial
 	x->update(-1.0, *stateCopy_, 1.0);
+	INFO("            norm x-xA = " << x->norm());
 
 	// dangerous
 	CHECK_ZERO(x->getOceanVector()->Multiply(1.0, *(x->getOceanVector()),
 											 *(vecM_->getOceanVector()), 0.0));
-	
-	INFO("            norm x-xA = " << x->norm());
 	
 	// Set landmask (B) in the model
 	if (!model_->isCurrentMask(landMasks_[b_[k_]].label))
@@ -330,16 +338,17 @@ void Topo<Model, ParameterList>::computeRHS()
 	normfB_ = rhs_->norm();
 	INFO("              norm fB = " << normfB_);
 
-	// Scale the RHS, such that the w and p rows remain.
+	// Scale the RHS, skipping land, w and p rows.
+
 	Vector scaleVec(*vecM_);	
-	scaleVec.scale(facB_); // apply delta
+		
+	int NumMyElements  = scaleVec.getOceanVector()->Map().NumMyElements();
 	
-	int NumMyElements     = scaleVec.getOceanVector()->Map().NumMyElements();
-	int *MyGlobalElements = scaleVec.getOceanVector()->Map().MyGlobalElements();
 	for (int i = 0; i != NumMyElements; ++i)
-		if ( ((MyGlobalElements[i] % _NUN_) == (WW-1)) ||
-			 ((MyGlobalElements[i] % _NUN_) == (PP-1)) )
-			(*(scaleVec.getOceanVector()))[i] = 1.0;
+		if  (std::abs((*scaleVec.getOceanVector())[i]) < 1e-12)
+			(*scaleVec.getOceanVector())[i] = 1.0;
+		else
+			(*scaleVec.getOceanVector())[i] = facB_;
 
 	CHECK_ZERO(rhs_->getOceanVector()->Multiply(1.0, *(rhs_->getOceanVector()),
 												*(scaleVec.getOceanVector()), 0.0));
@@ -405,23 +414,24 @@ void Topo<Model, ParameterList>::computeJacobian()
 	matB_ = model_->getJacobian();	
 
 	Vector leftScale(*vecM_);
+
+	// to maintain correct sparsity pattern
+	// double factor = (std::abs(facB_) < 1e-16) ? 1e-16 : facB_;
 	
-	// Put delta on the nonzeros
-	leftScale.scale(facB_);
+	// leftScale.scale(facB_);
 
 	// Set zeros to 1, let scaling have no effect at land and w,p points.
+	// Apply scaling to other points
 	int NumMyElements = leftScale.getOceanVector()->Map().NumMyElements();
 	for (int i = 0; i != NumMyElements; ++i)
 		if (std::abs((*leftScale.getOceanVector())[i]) < 1e-12)
 			(*leftScale.getOceanVector())[i] = 1.0;
+		else
+			(*leftScale.getOceanVector())[i] = facB_;
 	
 	//Row scale matrix
 	CHECK_ZERO( matB_->LeftScale(*(leftScale.getOceanVector()) ));
 	
-	// Check length
-	assert(matB_->NumGlobalDiagonals() ==
-		   vecM_->getOceanVector()->GlobalLength());
-
 	// Obtain diagonal of matrix
 	VectorPtr tmp = model_->getSolution('C');
 	tmp->putScalar(0.0);
@@ -431,21 +441,6 @@ void Topo<Model, ParameterList>::computeJacobian()
 
 	matB_->SetLabel("TopoCont Jacobian");
 	
-	// int NumMyElements     = matB_->Map().NumMyElements();
-	// int *MyGlobalElements = matB_->Map().MyGlobalElements();	
-
-	// Vector diag = matB_->Extra
-	// // Add diagonal TEMPORARY THIS IS SPECIFICALLY FOR OCEAN
-	// for (int i = 0; i != NumMyElements; ++i)
-	// {
-	// 	// Ignoring w and p equations
-	// 	if ( (MyGlobalElements[i] % 6 != 2) &&
-	// 		 (MyGlobalElements[i] % 6 != 3) )
-	// 		CHECK_ZERO(matB_->SumIntoGlobalValues(MyGlobalElements[i], 1,
-	// 											  &facA_, MyGlobalElements + i));
-	// }
-	// CHECK_ZERO(matB_->FillComplete());
-
 	combMat_.A      = matA_;
 	combMat_.B      = matB_;
 	combMat_.PA     = PreconPtr();
@@ -467,7 +462,7 @@ void Topo<Model, ParameterList>::computeJacobian()
 template<typename Model, typename ParameterList>
 double Topo<Model, ParameterList>::computeResidual(VectorPtr b)
 {
-	return 0.0; 
+	return 0.0;
 }
 
 //==================================================================
@@ -710,7 +705,8 @@ void Topo<Model, ParameterList>::applyPrecon(Vector const &v, Vector &out)
 template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::preProcess()
 {
-	recompPreconditioner_ = true;
+	solverInitialized_    = false;  
+	recompPreconditioner_ = true; 
 	INFO("Topo  pre-processing: enabling computation of preconditioner.");
 	model_->preProcess();
 }

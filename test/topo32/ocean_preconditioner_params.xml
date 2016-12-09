@@ -24,6 +24,13 @@
   <!-- relaxation parameter for block-Gauss-Seidel preconditioner -->
   <!-- currently it seems that 1.0 is a good choice               -->
   <Parameter name="Relaxation: Damping Factor" type="double" value="1.0"/>
+
+  <!-- Parameters for the direct 'Ap' solve -->
+  <ParameterList name="Ap Solver">
+      <!-- S: solve the square part of Gw (ignoring surface P)  -->
+      <!-- F: solve the full Ap matrix                          -->
+      <Parameter name="Full or square" type="char" value="F"/>
+  </ParameterList>
   
   <!-- Parameters for the Krylov solver for the 'Auv' diagonal block       -->
   <!-- This solver is used inside the 'Simple' preconditioner              -->
@@ -433,9 +440,18 @@
 
     <!-- fix Chat's diagonal if it is singular -->
     <Parameter name="Fix singular Chat" type="bool" value="false"/>
+
+    <!-- Tolerance for Chat fix -->
+    <Parameter name="Fix Chat tolerance" type="double" value="1e2"/>
+
+	<!-- Print indices where Chat's diagonal is zero -->
+    <Parameter name="Print zero diagonal indices" type="bool" value="false"/>	
     
     <!-- scale the Chat solve -->
     <Parameter name="Scale Chat" type="bool" value="false"/>
+
+    <!-- fix A11's diagonal if it is singular -->
+    <Parameter name="Fix singular A11" type="bool" value="false"/>
 
     <!-- enable repartitioning for Chat (requires Zoltan/Isorropia) -->
     <Parameter name="Repartition Chat" type="bool" value="0"/>
@@ -466,18 +482,19 @@
     <ParameterList name="Chat Solver">
       <!-- can be "AztecOO" or "None" -->
       <Parameter name="Method" type="string" value="AztecOO"/>
-      <Parameter name="Max Num Iter" type="int" value="100"/>
+      <Parameter name="Max Num Iter" type="int" value="400"/>
       <Parameter name="Tol" type="double" value="1.0e-3"/>
       <Parameter name="Solver" type="string" value="GMRESR"/>
       <Parameter name="Conv" type="string" value="r0"/>
       <Parameter name="Scaling" type="string" value="None"/>
       <Parameter name="Overlap" type="int" value="1"/>
       <Parameter name="Precond" type="string" value="dom_decomp"/>
+      <Parameter name="Poly_Ord" type="int" value="4"/>
       <Parameter name="Subdomain_Solve" type="string" value="ilut"/>
       <Parameter name="Graph_Fill" type="double" value="1.0"/>
       <Parameter name="ILUT_Fill" type="double" value="1.0"/>
       <Parameter name="Drop" type="double" value="1.0e-8"/>
-      <Parameter name="KSpace" type="int" value="50"/>
+      <Parameter name="KSpace" type="int" value="100"/>
       <Parameter name="Orthog" type="string" value="Classic"/>
       <Parameter name="Output" type="int" value="0"/>
     </ParameterList><!-- } Grad-Div Solver -->
@@ -488,11 +505,10 @@
     <ParameterList name="Chat Precond">
       
       <Parameter name="Method" type="string" value="None"/>
-
       <!-- Ifpack -->
       
-      <Parameter name="Ifpack Method" type="string" value="Amesos stand-alone"/>
-      <Parameter name="amesos: solver type" type="string" value="Amesos_Klu"/>
+      <Parameter name="Ifpack Method" type="string" value="ILU"/>
+      <Parameter name="amesos: solver type" type="string" value="Amesos_Superlu"/>
       <Parameter name="Ifpack Overlap Level" type="int" value="0"/>
 
       <!-- Parameters for the Ifpack/MRILU solver { -->
@@ -538,8 +554,8 @@
   <!-- Parameters for the Krylov solver for ATS { -->
   <ParameterList name="ATS Solver">
 	<Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="20"/>
-    <Parameter name="Tolerance" type="double" value="1.0e-5"/>
+    <Parameter name="Max Num Iter" type="int" value="15"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
     <Parameter name="Output" type="int" value="1"/>

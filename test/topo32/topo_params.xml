@@ -8,7 +8,7 @@
   
   <Parameter name="Mask file 0" type="string" value="topotest32/test0"/>
   <Parameter name="Mask file 1" type="string" value="topotest32/test1"/>
-  <Parameter name="Mask file 2" type="string" value="topotest32/test1"/>
+  <Parameter name="Mask file 2" type="string" value="topotest32/test2"/>
   
   <Parameter name="Delta" type="double" value="0.0"/>
   
