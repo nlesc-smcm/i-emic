@@ -27,7 +27,7 @@ Topo(Model model, ParameterList pars)
 	model_               (model),
 	pars_                (pars),
 	nMasks_              (pars->get("Number of mask files", 0)),
-	delta_               (pars->get("Delta", 0.0)),
+	deltaInit_           (pars->get("Delta", 0.0)),
 	startMask_           (pars->get("Starting mask", 0)),
 	stopTol_             (pars->get("Stopping tolerance homotopy", 5.0)),
 	storeEverything_     (pars->get("Store everything", false)),
@@ -57,7 +57,7 @@ Topo(Model model, ParameterList pars)
 	}
 
 	// Set the parameters and coefficients
-	modelPar_ = model_->getPar();
+	delta_ = deltaInit_;
 	setPar(delta_);	
 
 	model_->computeRHS();
@@ -113,6 +113,9 @@ void Topo<Model, ParameterList>::initialize()
 	INFO("Topo: initialize...");
 	matA_  = rcp(new Matrix(*model_->getJacobian()));
 	matB_  = rcp(new Matrix(*model_->getJacobian()));
+
+	delta_ = deltaInit_;
+	setPar(delta_);
 
 	// Set landmask (B) in the model
 	model_->setLandMask(landMasks_[b_[k_]]);
