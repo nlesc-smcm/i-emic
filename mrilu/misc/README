@@ -1,0 +1,99 @@
+                                                            2002-03-11
+
+This directory contains the sources of miscellaneous subroutines.  The
+file  Makefile  is used to place the corresponding object files in the
+library  $NUMBASE/lib/libgen.a
+
+The functions or subroutines are:
+cputime     cputime.c, cputime.h:
+            C-function returns the CPU time in seconds.
+cputime_    cputime_.c
+            C-function, wrapper for the function  cputime.
+cscvec      Calculates matrix-vector product, where the matrix is
+            stored in CSC format.
+csr2csc     Copies a matrix, A, from CSR format into a matrix, B, in
+            CSC format.
+csrvec      Calculates matrix-vector product, where the matrix is
+            stored in CSR format.
+dasum       Computes the sum of the absolute values of a double
+            precision vector.
+daxpy       Updates vector, y, by adding scalar, a, times vector, x:
+            y := y + alpha*x
+dcopy       Copies a double precision vector, x, into a double precision
+            vector, y.
+ddot        Computes the dot product of two double precision vectors.
+dgeco       Factors a double precision matrix by gaussian elimination
+            and estimates the condition of the matrix.
+            From the package LINPACK.
+dgedi       Computes the determinant and inverse of a matrix
+            using the factors computed by dgeco or dgefa.
+            From the package LINPACK.
+dgefa       Factors a double precision matrix by gaussian elimination.
+            From the package LINPACK.
+dgemm*      Performs one of the matrix-matrix operations
+               C := alpha*op(A)*op(B) + beta*C,
+            where  op(X) is one of
+               op(X) = X   or   op(X) = X',
+            and  alpha and beta are scalars, and A, B and C are matrices,
+            with  op(A)  an  MxK  matrix,  op(B)  a  KxN  matrix and
+            C an  MxN  matrix.
+dger        Performs the rank 1 operation:
+               A := alpha*x*y' + A,
+            where  alpha  is a scalar,  x  is an M-element vector,
+            y  is an N-element vector and  A  is an MxN matrix.
+dgesl       Solves the double precision linear system
+               A*x = b
+            or
+               trans(A)*x = b
+            using the factors of A computed by  dgeco  or  dgefa.
+dgetf2      Computes an LU factorization of a general MxN matrix  A
+            using partial pivoting with row interchanges.
+            The factorization has the form
+               A = P * L * U
+            where P is a permutation matrix, L is lower triangular with
+            unit diagonal elements (lower trapezoidal if M > N), and U is
+            upper triangular (upper trapezoidal if M < N).
+            This is the right-looking Level 2 BLAS version of the algorithm.
+dgetrf      Computes an LU factorization of a general MxN matrix  A
+            using partial pivoting with row interchanges.
+            The factorization has the form
+               A = P * L * U
+            where P is a permutation matrix, L is lower triangular with
+            unit diagonal elements (lower trapezoidal if M > N), and U is
+            upper triangular (upper trapezoidal if M < N).
+            This is the right-looking Level 3 BLAS version of the algorithm.
+dgetrs      Solves a system of linear equations
+               A * x = b  or  A' * x = b
+            with a general NxN matrix A using the LU factorization computed
+            by  dgetrf.
+disorta     Sorts the values of a double precision vector in such a
+            way that the absolute values in the vector are in ascending
+            or descending order. The same interchanges are made in the
+            accompaning integer vector.
+dlaswp      Performs a series of row interchanges on a matrix.
+dperv       Permutes a double precision vector.
+dscal       Scales a double precision vector by a constant.
+dscalv      Scales a double precision vector by a vector.
+dsecnd      Function returns the user time for a process in seconds.
+dsprav      SPReads a double precision scalar, Alpha, into a Vector, y:
+dswap       Interchanges the values of two vectors.
+dtrsm       Solves one of the matrix equations
+               op(A)*X = alpha*B,   or   X*op(A) = alpha*B,
+            where  alpha  is a scalar,  X  and  B  are MxN matrices,
+            A is a unit, or non-unit,  upper or lower triangular matrix
+            and  op(A)  is one  of
+               op(A) = A   or   op(A) = A'.
+icopy       Copies an integer vector, x, into an integer vector, y.
+idamax      Returns the first index of an element in a vector having the
+            maximum absolute value.
+ilaenv      Choose problem-dependent parameters for the local environment.
+iperv       Permutes an integer vector.
+isprav      SPReads an integer scalar, Alpha, into a Vector, y:
+linklist    Constructs, per column(/row) of the CSR(/CSC) matrix A, a LINKed
+            LIST of the indices in 'jcoA' of the nonzero elements of A.
+lsame       Checks if two characters are the same, regardless of case.
+machar      Determines the parameters of the floating-point arithmetic
+            system.  From the package BLAS.
+mult        Multiply a general double precision matrix by a vector.
+            From the package NAPACK.
+xerbla      An error handler for the LAPACK routines.

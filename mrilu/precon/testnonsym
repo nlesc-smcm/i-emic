@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# File: testnonsym        Test executable program  nonsym  (1997-12-04)
+#
+# Last update:  2002-09-25
+#
+# 
+# Usage:  testnonsym  filenm, ...
+#
+if [ ${#} -gt 0 ]
+then
+  for name in $*
+  do
+#    echo Argument: "$name"
+    nonsym <"$name" >"$name".out
+    diff -EbwB "$name".res "$name".out
+    rm -f "$name".out
+  done
+else
+  echo
+  echo "Usage:"
+  echo "  testnonsym <filename>, ..."
+  echo
+fi
+#
+# End of  testnonsym

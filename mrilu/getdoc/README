@@ -1,0 +1,7 @@
+                                                            1998-01-20
+
+This directory contains:
+.  The files to produce the executable program  getdoc  which extracts
+   a document file from a properly commented Fortran source program.
+.  The executable file  showdoc
+Inspect the  Makefile  for the details.

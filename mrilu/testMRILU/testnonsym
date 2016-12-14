@@ -1,0 +1,38 @@
+#!/bin/sh
+#
+# File: testnonsym        Test executable program  nonsym  (1997-12-04)
+#
+# Last update:  2002-09-25
+#
+# 
+# Usage:  testnonsym  bindir filenm, ...
+#
+if [ ${#} -gt 1 ]
+then
+  cd data
+  for name in $2
+  do
+#    cd data
+#    echo Argument: "$name"
+    $1/nonsym <"$name" >"$name".out
+    if [ "`diff -qbwB "$name".res "$name".out`" != "" ]
+    then 
+      echo
+      echo "---------------------------------------------------------------------"
+      echo "Problem: $name"
+      echo "---------------------------------------------------------------------"
+      echo
+    diff -bwB "$name".res "$name".out
+    fi
+    rm -f "$name".out
+#    cd ..
+  done
+  cd ..
+else
+  echo
+  echo "Usage:"
+  echo "  testnonsym <bindir> <filename>, ..."
+  echo
+fi
+#
+# End of  testnonsym

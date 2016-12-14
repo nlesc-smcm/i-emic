@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# File: testall        Test executable program  nonsym  (1997-12-04)
+#
+# Last update:  2009-11-20
+#
+# 
+# Usage:  testall  bindir, ...
+#
+./testnonsym $1 data
+./testnonsym $1 ena1
+./testnonsym $1 ena1s
+./testnonsym $1 ena2
+./testnonsym $1 ena2s
+./testnonsym $1 ena4
+./testnonsym $1 eugen
+./testnonsym $1 eugen1
+./testnonsym $1 eugen3
+./testnonsym $1 eugenrcm
+./testnonsym $1 eugens
+./testnonsym $1 eugexschur
+./testnonsym $1 opgave1
+./testnonsym $1 opgave2
+./testnonsym $1 euggmr
+./testnonsym $1 eugbcgr
+./testnonsym $1 apple
+./testnonsym $1 appli
+./testnonsym $1 ident
+./testnonsym $1 AmriluF
+./testnonsym $1 AmriluT
+./testnschmat $1 replmat

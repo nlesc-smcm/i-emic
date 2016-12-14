@@ -1,0 +1,320 @@
+#/bin/bash
+# This script set the proper environment variables. Then current setting
+# of the environment have preference.
+#
+#   NUMBASE  the root directory of numerical mathematics
+#   MAKE     the make program
+#   ARFLAGS  the ar flags
+#   LDFLAGS  the ld flags (assume C-compiler as linker)
+#   CC       the C-compiler
+#   CFLAGS   the C-compiler flags
+#   CPPFLAGS the C-pre-processor flags
+#   CXX      the C++-compiler
+#   MPI_CC   the C-compiler for MPI
+#   F77      the Fortran 77-compiler
+#   FFLAGS   the Fortran flags
+#   FPPFLAGS the Fortran-pre-processor flags
+#   MPI_77   the Fortran 77-compiler for MPI
+#   F90      the Fortran 90-compiler
+#   MPI90    the Fortran 90-compiler for MPI
+#   
+#
+#   LIB_X11  the X11 lib path
+#   LD_LIBRARY_PATH for the intel compilers
+#   LDFLAGS  the list of -L flags
+#   CVSROOT the root directory for CVS
+# determine OS-type
+
+echo
+
+if [ -z "$OSTYPE" ]; then OSTYPE=$(uname -s); fi
+
+echo "OS-type                    : $OSTYPE"
+
+# determine optimalization
+
+if [ -z "$OPT" ]; then OPT=none; fi
+
+echo "Optimalization             : $OPT"
+
+# determine make program
+
+if [ -z "$MAKE" ]; then
+  if [ "${OSTYPE}" = "IRIX" ]; then
+    MAKE='gmake'
+  else
+    MAKE='make'
+  fi
+fi
+
+echo "make                       : $MAKE"
+
+# determine ar flags
+
+if [ -z "$ARFLAGS" ]; then
+  ARFLAGS='-crsv'
+fi
+
+echo "ar flags                   : $ARFLAGS"
+
+# determine C-compiler
+
+if [ -z "$CC" ] && $(which icc > /dev/null ); then CC='icc'; fi
+if [ -z "$CC" ] && $(which c89 > /dev/null ); then CC='c89'; fi
+if [ -z "$CC" ] && $(which cc  > /dev/null ); then CC='cc' ; fi
+if [ -z "$CC" ] && $(which gcc > /dev/null ); then CC='gcc'; fi
+
+if [ -z "$CC" ] ; then echo "No C-compiler found"; exit -1; fi
+
+echo "C-compiler                 : $CC"
+
+# determine C-flags
+
+if [ -z "$CFLAGS" ]; then
+  if [ "${CC}" = "icc" ]; then
+    CFLAGS='-ansi -Wall'
+    if [ "${OPT}" = "debug" ]; then CFLAGS="$CFLAGS"                          ;fi
+    if [ "${OPT}" = "optim" ]; then CFLAGS="$CFLAGS"                          ;fi
+    if [ "${OPT}" = "prof"  ]; then CFLAGS="$CFLAGS"                          ;fi
+    if [ "${OPT}" = "none"  ]; then CFLAGS="$CFLAGS"                          ;fi
+  fi
+  if [ "${CC}" = "c89" ]; then
+    CFLAGS='+w1'
+    if [ "${OPT}" = "debug" ]; then CFLAGS="$CFLAGS +O0"                      ;fi
+    if [ "${OPT}" = "optim" ]; then CFLAGS="$CFLAGS +ESlit +O2 +Osize -s"     ;fi
+    if [ "${OPT}" = "prof"  ]; then CFLAGS="$CFLAGS -O +Osize"                ;fi
+    if [ "${OPT}" = "none"  ]; then CFLAGS="$CFLAGS -O +Osize"                ;fi
+  fi
+  if [ "${CC}" = "cc" ] && [ "${OSTYPE}" = "IRIX" ]; then
+    CFLAGS='-ansi'
+    if [ "${OPT}" = "debug" ]; then CFLAGS="$CFLAGS -fullwarn -O0"            ;fi
+    if [ "${OPT}" = "optim" ]; then CFLAGS="$CFLAGS -O2"                      ;fi
+    if [ "${OPT}" = "prof"  ]; then CFLAGS="$CFLAGS -O1"                      ;fi
+    if [ "${OPT}" = "none"  ]; then CFLAGS="$CFLAGS -O1"                      ;fi
+  fi
+  if [ "${CC}" = "cc" ] && [ "${OSTYPE}" = "OSF1" ]; then
+    CFLAGS='-std1 -msg_warn level4 -readonly_strings'
+    if [ "${OPT}" = "debug" ]; then CFLAGS="$CFLAGS -O0 -g2 -pg -trapuv"      ;fi
+    if [ "${OPT}" = "optim" ]; then CFLAGS="$CFLAGS -O2 -g0 -nopg"            ;fi
+    if [ "${OPT}" = "prof"  ]; then CFLAGS="$CFLAGS -O -g0 -nopg"             ;fi
+    if [ "${OPT}" = "none"  ]; then CFLAGS="$CFLAGS -O -g0 -nopg"             ;fi
+  fi
+  if [ "${CC}" = "gcc" ]; then
+    CFLAGS='-ansi -Wall'
+    if [ "${OPT}" = "debug" ]; then CFLAGS="$CFLAGS -O0 -pg"                  ;fi
+    if [ "${OPT}" = "optim" ]; then CFLAGS="$CFLAGS -O2 -s"                   ;fi
+    if [ "${OPT}" = "prof"  ]; then CFLAGS="$CFLAGS -O1"                      ;fi
+    if [ "${OPT}" = "none"  ]; then CFLAGS="$CFLAGS -O1"                      ;fi
+  fi
+fi
+
+echo "C-flags                    : $CFLAGS"
+
+# determine ld program
+
+LD=$CC
+
+echo "ld program                 : $LD"
+
+# determine ld-flags
+
+if [ -z "$LDFLAGS" ]; then
+  if [ "${CC}" = "icc" ]; then
+    LDFLAGS=""
+    if [ "${OPT}" = "debug" ]; then LDFLAGS="$LDFLAGS -qp -p"                   ;fi
+    if [ "${OPT}" = "optim" ]; then LDFLAGS="$LDFLAGS"                          ;fi
+    if [ "${OPT}" = "prof"  ]; then LDFLAGS="$LDFLAGS -qp -p"                   ;fi
+    if [ "${OPT}" = "none"  ]; then LDFLAGS="$LDFLAGS"                          ;fi
+  fi
+  if [ "${CC}" = "c89" ]; then
+    LDFLAGS=""
+    if [ "${OPT}" = "debug" ]; then LDFLAGS="$LDFLAGS -G"                       ;fi
+    if [ "${OPT}" = "optim" ]; then LDFLAGS="$LDFLAGS -s"                       ;fi
+    if [ "${OPT}" = "prof"  ]; then LDFLAGS="$LDFLAGS -G"                       ;fi
+    if [ "${OPT}" = "none"  ]; then LDFLAGS="$LDFLAGS"                          ;fi
+  fi
+  if [ "${CC}" = "cc" ] && [ "${OSTYPE}" = "IRIX" ]; then
+    LDFLAGS=""
+    if [ "${OPT}" = "debug" ]; then LDFLAGS="$LDFLAGS -p"                       ;fi
+    if [ "${OPT}" = "optim" ]; then LDFLAGS="$LDFLAGS -c"                       ;fi
+    if [ "${OPT}" = "prof"  ]; then LDFLAGS="$LDFLAGS -p"                       ;fi
+    if [ "${OPT}" = "none"  ]; then LDFLAGS="$LDFLAGS"                          ;fi
+  fi
+  if [ "${CC}" = "cc" ] && [ "${OSTYPE}" = "OSF1" ]; then
+    LDFLAGS=""
+    if [ "${OPT}" = "debug" ]; then LDFLAGS="$LDFLAGS"                          ;fi
+    if [ "${OPT}" = "optim" ]; then LDFLAGS="$LDFLAGS"                          ;fi
+    if [ "${OPT}" = "prof"  ]; then LDFLAGS="$LDFLAGS"                          ;fi
+    if [ "${OPT}" = "none"  ]; then LDFLAGS="$LDFLAGS"                          ;fi
+  fi
+  if [ "${CC}" = "gcc" ]; then
+    LDFLAGS=""
+    if [ "${OPT}" = "debug" ]; then LDFLAGS="$LDFLAGS -pg"                      ;fi
+    if [ "${OPT}" = "optim" ]; then LDFLAGS="$LDFLAGS -s"                       ;fi
+    if [ "${OPT}" = "prof"  ]; then LDFLAGS="$LDFLAGS -pg"                      ;fi
+    if [ "${OPT}" = "none"  ]; then LDFLAGS="$LDFLAGS"                          ;fi
+  fi
+fi
+
+echo "ld flags                   : $LDFLAGS"
+
+# determine C-pre-processor flags
+
+if [ -z "$CPPFLAGS" ]; then
+    if [ "${OPT}" = "debug" ]; then CPPFLAGS="-DDEBUG" ;fi
+    if [ "${OPT}" = "optim" ]; then CPPFLAGS="-DOPTIM" ;fi
+    if [ "${OPT}" = "prof"  ]; then CPPFLAGS=""        ;fi
+    if [ "${OPT}" = "none"  ]; then CPPFLAGS=""        ;fi
+fi
+
+echo "C-pre-processor flags      : $CPPFLAGS"
+
+# determine C++-compiler
+
+if [ -z "$CXX" ] && $(which icc > /dev/null ); then CXX=icc; fi
+if [ -z "$CXX" ] && $(which g++ > /dev/null ); then CXX=g++; fi
+if [ -z "$CXX" ] && $(which c++ > /dev/null ); then CXX=c++; fi
+
+if [ -z "$CXX" ] ; then echo "No C++-compiler found"; exit -1; fi
+
+echo "C++-compiler               : $CXX"
+
+# determine Fortran 77-compiler
+
+if [ -z "$F77" ] && $(which ifort  > /dev/null ); then F77=ifort ; fi
+if [ -z "$F77" ] && $(which fort77 > /dev/null ); then F77=fort77; fi
+if [ -z "$F77" ] && $(which g77    > /dev/null ); then F77=g77   ; fi
+if [ -z "$F77" ] && $(which f77    > /dev/null ); then F77=f77   ; fi
+
+if [ -z "$F77" ] ; then echo "No Fortran 77-compiler found"; exit -1; fi
+
+echo "Fortran 77-compiler        : $F77"
+
+# determine Fortran-flags
+
+if [ -z "$FFLAGS" ]; then
+  if [ "${F77}" = "ifort" ]; then
+    FFLAGS='-i4 -u'
+    if [ "${OPT}" = "debug" ]; then FFLAGS="$FFLAGS -CB -CU -CV -d2 -g -O0 -qp -p"     ;fi
+    if [ "${OPT}" = "optim" ]; then FFLAGS="$FFLAGS -O2 -sox- -axK -tpp6"     ;fi
+    if [ "${OPT}" = "prof"  ]; then FFLAGS="$FFLAGS -O -qp -p"                ;fi
+    if [ "${OPT}" = "none"  ]; then FFLAGS="$FFLAGS -O"                       ;fi
+  fi
+  if [ "${F77}" = "fort77" ]; then
+    FFLAGS='-AMrS +DAportable -u'
+    if [ "${OPT}" = "debug" ]; then FFLAGS="$FFLAGS -C -G +O0 +T"             ;fi
+    if [ "${OPT}" = "optim" ]; then FFLAGS="$FFLAGS +O2 +Osize -s"            ;fi
+    if [ "${OPT}" = "prof"  ]; then FFLAGS="$FFLAGS -G +O2"                   ;fi
+    if [ "${OPT}" = "none"  ]; then FFLAGS="$FFLAGS +O2 +Osize"               ;fi
+  fi
+  if [ "${F77}" = "f77" ] && [ "${OSTYPE}" = "IRIX" ]; then
+    FFLAGS='-u'
+    if [ "${OPT}" = "debug" ]; then FFLAGS="$FFLAGS -C -DDEBUG -O0 -p -trapuv";fi
+    if [ "${OPT}" = "optim" ]; then FFLAGS="$FFLAGS -DOPTIM -O2"              ;fi
+    if [ "${OPT}" = "prof"  ]; then FFLAGS="$FFLAGS -O2 -p"                   ;fi
+    if [ "${OPT}" = "none"  ]; then FFLAGS="$FFLAGS -O2"                      ;fi
+  fi
+  if [ "${F77}" = "f77" ] && [ "${OSTYPE}" = "OSF1" ]; then
+    FFLAGS='-col72 -double_size 64 -f77 -integer_size 32 -nocpp -u -warn unused'
+    if [ "${OPT}" = "debug" ]; then FFLAGS="$FFLAGS -check bounds -g2 -O0 -pg -v"         ;fi
+    if [ "${OPT}" = "optim" ]; then FFLAGS="$FFLAGS -arch host -fast -g0 -O4 -tune host"  ;fi
+    if [ "${OPT}" = "prof"  ]; then FFLAGS="$FFLAGS -g0 -O2 -pg"                          ;fi
+    if [ "${OPT}" = "none"  ]; then FFLAGS="$FFLAGS -g0 -O2"                              ;fi
+  fi
+  if [ "${F77}" = "g77" ]; then
+    FFLAGS='-Wall -Wimplicit'
+    if [ "${OPT}" = "debug" ]; then FFLAGS="$FFLAGS -fbounds-check -O0 -pg"   ;fi
+    if [ "${OPT}" = "optim" ]; then FFLAGS="$FFLAGS -O2 -s"                   ;fi
+    if [ "${OPT}" = "prof"  ]; then FFLAGS="$FFLAGS -fbounds-check -O -pg"    ;fi
+    if [ "${OPT}" = "none"  ]; then FFLAGS="$FFLAGS -fbounds-check -O"        ;fi
+  fi
+fi
+
+echo "Fortran-flags              : $FFLAGS"
+
+# determine Fortran-pre-processor flags
+
+if [ -z "$FPPFLAGS" ]; then
+    FPPFLAGS="  "
+    if [ "${OPT}" = "debug" ]; then FPPFLAGS="$FPPFLAGS -DDEBUG" ;fi
+    if [ "${OPT}" = "optim" ]; then FPPFLAGS="$FPPFLAGS -DOPTIM" ;fi
+    if [ "${OPT}" = "prof"  ]; then FPPFLAGS="$FPPFLAGS"         ;fi
+    if [ "${OPT}" = "none"  ]; then FPPFLAGS="$FPPFLAGS"         ;fi
+fi
+
+echo "Fortran-pre-processor flags: $FPPFLAGS"
+
+# determine Fortran 90-compiler
+
+if [ -z "$F90" ] && $(which ifort    > /dev/null ); then F90=ifort   ; fi
+if [ -z "$F90" ] && $(which f90      > /dev/null ); then F90=f90     ; fi
+
+if [ -z "$F90" ] ; then echo "No Fortran 90-compiler found"; exit -1; fi
+
+echo "Fortran 90-compiler        : $F90"
+
+echo
+
+# Determine X11 library
+
+if [ -z "$LIB_X11" ]; then
+    if   [ -d $NUMBASE/usr/X11R6 ]; then LIB_X11="$NUMBASE/usr/X11R6/lib" ;
+    elif [ -d $NUMBASE/usr/X11 ]  ; then LIB_X11="$NUMBASE/usr/X11/lib" ;
+    elif [ -d /usr/X11R6 ]        ; then LIB_X11="/usr/X11R6/lib" ;
+    elif [ -d /usr/X11 ]          ; then LIB_X11="/usr/X11/lib" ;
+    fi
+fi
+
+if [ -z "$LIB_X11" ] ; then echo "X11 library found"; exit -1; fi
+
+echo "X11 libarary               : $LIB_X11"
+
+LD_LIBRARY_PATH=""
+# Library load path for shared libraries
+
+if [ "${CC}" = "icc" ] || [ "${CXX}" = "icc" ]; then
+  if   [ -d $NUMBASE/opt/intel_fc_80 ]; 
+    then LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$NUMBASE/opt/intel_cc_80/lib" ; 
+  fi
+fi
+if [ "${F77}" = "ifort" ] || [ "${F90}" = "ifort" ]; then
+  if   [ -d $NUMBASE/opt/intel_fc_80 ]; 
+    then LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$NUMBASE/opt/intel_fc_80/lib" ; 
+  fi
+fi
+
+echo "Library load path          : $LD_LIBRARY_PATH"
+
+echo
+
+if [ $1 ]; then
+  echo "Creating file        : $1"
+  echo "export NUMBASE=\"$NUMBASE\""    > $1
+  echo "export MAKE=\"$MAKE\""       >> $1
+  echo "export ARFLAGS=\"$ARFLAGS\""    >> $1
+  echo "export LD=\"$LD\""         >> $1
+  echo "export LDFLAGS=\"$LDFLAGS\""    >> $1
+  echo "export CC=\"$CC\""         >> $1
+  echo "export CFLAGS=\"$CFLAGS\""     >> $1
+  echo "export CPPFLAGS=\"$CPPFLAGS\""   >> $1
+  echo "export CXX=\"$CXX\""        >> $1
+  echo "export MPI_CC=\"$MPI_CC\""     >> $1
+  echo "export F77=\"$F77\""        >> $1
+  echo "export FPPFLAGS=\"$FPPFLAGS\""   >> $1
+  echo "export FFLAGS=\"$FFLAGS\""   >> $1
+  echo "export MPI_F77=\"$MPI_F77\""    >> $1
+  echo "export F90=\"$F90\""        >> $1 
+  echo "export MPI_F90=\"$MPI_F90\""    >> $1
+  echo "export LIB_X11=\"$LIB_X11\""    >> $1
+  echo "export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH\""    >> $1
+  chmod u=rwx,g=rx,o=rx $1
+  echo
+fi
+
+
+
+
+
+
+
+

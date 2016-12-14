@@ -1,0 +1,53 @@
+ARCH=ia64_ifort
+NUMBASE=/home/mfo/wubs/MRILU8
+####MKLPATH=/usr/intel/mkl/10.0.3.020/lib/em64t
+####LDLIBES=mkl_blas95
+SOURCEDIR=$(NUMBASE)
+OSNAME=
+MAKE=make
+ARFLAGS=-crsv
+LD=icc
+LDFLAGS=
+CC=icc
+CFLAGS=-ansi -Wall
+CPPFLAGS=
+CXX=icc
+MPI_CC=
+# NOT sorted out
+#      LDLIBES="$LDLIBES svml"
+#      echo "-lsvml     Using Short Vector Math Library"
+#    LD_LIBRARY_PATH=":$FC_PATH/lib:$CC_PATH/lib"
+F77=ifort
+FPPFLAGS=
+FFLAGS=-i4 -u  -DWITH_UNION
+# "-i_dynamic         Allow addressing in large memory"
+FFLAGS+=  -i_dynamic
+# Optimization
+#   -O3        Optimalization level 3"
+#   -ip        Single file interprocedural optimization"
+#   -static    Prevents linking with shared libraries"
+FFLAGS+= -O3 -ip -static
+#  Safe compilation for debugging
+#    -O0        Optimalization level 0, no optimalization"
+#    -CB        Runtime checks for out-of-bounds array subscript/substring refs"
+#FFLAGS+= -O0 -CB
+#  The DEBUG flag gives the possibility to print entry and exit of each called 
+#  subroutine
+#FFLAGS+=-g -DDEBUG
+#FFLAGS+= -par-report3
+# "-parallel  Enable the auto-parallelizer to generate multi-threaded code"
+FFLAGS+= -parallel
+# "-openmp    Loading with OpenMP"
+LDFLAGS+= -openmp
+#Not sorted out
+# MKL library: blas etc
+#MKL_LIB=/usr/intel/mkl/10.0.3.020/lib/em64t
+#LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MKL_LIB
+#/usr/intel/cce/10.1.015/lib:/usr/intel/fce/10.1.015/lib
+##FFLAGS+=-DMKL
+
+#MPI_F77=
+F90=ifort
+MPI_F90=
+MODFLAG=-module 
+LIB_X11=/usr/X11R6/lib
