@@ -13,7 +13,7 @@ function [] = plot_init_tangent(fname, maskname)
 
   res  = load(fname);
 
-  tol = 1e-7;
+  tol = 1e-1;
   res(res>tol)  =  1;
   res(res<-tol)  = -1;
 

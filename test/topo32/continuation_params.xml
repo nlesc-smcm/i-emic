@@ -73,7 +73,7 @@
   <!-- Type of the initial tangent                                   -->
   <!--     S: Solve                                                  -->
   <!--     A: Assign                                                 -->
-  <Parameter name="initial tangent type" type="char" value="A"/>
+  <Parameter name="initial tangent type" type="char" value="S"/>
 
   <!-- Bound on RHS in predicted state                                -->
   <Parameter name="predictor bound" type="double" value="3000.0"/>

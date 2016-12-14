@@ -76,16 +76,12 @@ private:
 	std::vector<LandMask> landMasks_;
 
 	//! Continuation parameter
-	//!  ranging continually from 0 to nMasks-1
+	double deltaInit_;
 	double delta_;
 
 	//! Mask to start at
 	double startMask_; 
 	double gamma_;
-
-	//! The model's continuation parameter, which we might
-	//! want to affect as well
-	double modelPar_;
 
 	//! State
 	VectorPtr stateView_;
@@ -110,7 +106,7 @@ private:
 	VectorPtr vecM_;
 	
 	//! Integer for selecting the right landmask.
-	//!  k_ = floor(delta_)
+	//!  in general k_ = floor(delta_)
 	int k_;
 
 	//! Homotopy factors
