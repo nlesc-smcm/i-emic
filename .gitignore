@@ -9,6 +9,7 @@
 
 !external/
 !jdqzpp/
+!mrilu/
 
 !gmressolver/
 !supervector/
