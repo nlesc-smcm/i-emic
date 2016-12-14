@@ -1,4 +1,4 @@
-NUMBASE=~/mrilu
+NUMBASE=/home/erik/mrilu
 #!/bin/sh
 #
 # File:  showdoc  (1997-08-13)
