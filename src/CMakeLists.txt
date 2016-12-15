@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 2.8.12.2)
 project(i-emic)
 
 # Trying to find Trilinos
-if (DEFINED ENV{TRILINOS_DIR})
+if (DEFINED ENV{TRILINOS_DIR} AND NOT DEFINED Trilinos_DIR)
   set (Trilinos_DIR $ENV{TRILINOS_DIR}/lib/cmake/Trilinos)
-  message ("-- Trilinos directory: " ${Trilinos_DIR})
 endif ()
+message ("-- Trilinos directory: " ${Trilinos_DIR})
 
 # ------------------------------------------------------------------
 # Trilinos
@@ -42,7 +42,7 @@ include_directories(${Trilinos_TPL_INCLUDE_DIRS})
 
 set(library_directories ${Trilinos_LIBRARY_DIRS})
 list(APPEND library_directories ${Trilinos_TPL_LIBRARY_DIRS})
-list(APPEND library_directories $ENV{MRILU_DIR}/lib/) # MRILU
+list(APPEND library_directories ${MRILU_DIR}/lib/) # MRILU
 
 set(library_dependencies ${Trilinos_LIBRARIES})
 list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
@@ -65,6 +65,7 @@ message("-- JDQZ++ source dir: " ${source_dir})
 
 include_directories(${JDQZPP_INCLUDE_DIR})
 list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
+
 link_directories(${library_directories})
 
 # ------------------------------------------------------------------
@@ -111,4 +112,6 @@ if(CCACHE_FOUND)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
   message("-- CCACHE found and applied")
+else ()
+  message("-- CCACHE not found!")
 endif(CCACHE_FOUND)

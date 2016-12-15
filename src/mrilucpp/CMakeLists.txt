@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
   
 set(MRILUCPP_INCLUDE_DIRS
   ../utils/
-  $ENV{MRILU_DIR}/mod
+  ${MRILU_DIR}/mod
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
