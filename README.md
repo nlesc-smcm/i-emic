@@ -13,14 +13,7 @@
 - jdqzpp        (external project, fetched and installed by cmake)
 
 ### Compilers
-Depending on architecture:
-
-Intel:  
- - ifort
-
-Gnu:  
- - gfortran
-
+Depending on architecture: ifort, gfortran, mpicc, mpicpc, mpic++, etc... 
 
 ## Environment variables
 Define the following envorinment variables:
@@ -31,13 +24,13 @@ Define the following envorinment variables:
 
 
 ## Installation:
-  - Install metis
-  - Install parmetis (requires openmpi)
-  - Install MRILU  
-	Read instructions and example include files
-  - Patch Trilinos to enable `Ifpack_MRILU`, see `notes/patch`
-  - Install Trilinos, see example `*.cmake` files in `notes/`  
-  In `*.cmake` file: adjust `METIS_LIBRARY_DIRS`,`TPL_METIS_INCLUDE_DIRS`
+  * Install metis
+  * Install parmetis (requires openmpi)
+  * Install MRILU  
+   *  Read instructions and example include files in `mrilu/`
+  * Patch Trilinos to enable `Ifpack_MRILU`, see `notes/patch`
+  * Install Trilinos, see example `*.cmake` files in `notes/`  
+   * In `*.cmake` file: adjust `METIS_LIBRARY_DIRS`,`TPL_METIS_INCLUDE_DIRS`
   `ParMETIS_LIBRARY_DIRS` and `TPL_ParMETIS_INCLUDE_DIRS`
 	  
 
