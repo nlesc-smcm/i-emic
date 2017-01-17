@@ -1,4 +1,4 @@
-mode = 1;
+mode = 2;
 
 SHARED_DIR = getenv('SHARED_DIR');
 

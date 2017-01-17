@@ -114,19 +114,19 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
   contour(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1); hold off;
 				  %imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold off;
   colorbar
-  title(['Barotropic Streamfunction (Sv) ', title_additional]);
+  %title(['Barotropic Streamfunction (Sv) ', title_additional]);
   xlabel('Longitude')
   ylabel('Latitude'); 
   exportfig(['bstream',fname_additional,'.eps'],14,[25,15])
 
-  return 
+   
 %%% 
   figure(2)
   contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
   colorbar
   cmin = min(min(PSIG(:,1:9)))
   cmax = max(max(PSIG(:,1:9)))
-  title(['MOC (Sv) ',title_additional])
+  %title(['MOC (Sv) ',title_additional])
   xlabel('latitude')
   ylabel('depth (m)')
   exportfig(['mstream',fname_additional,'.eps'],14,[25,15])
