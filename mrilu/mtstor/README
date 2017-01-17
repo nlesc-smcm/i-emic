@@ -1,0 +1,72 @@
+                                                            2002-12-03
+
+This directory contains the sources of the subroutines to allocate and
+releas storage in the work space buffer arrays for the (parts of) sparse
+and full matrices.
+Furthermore it contains the sources of subroutines to check and extract
+pointers in the work space buffer.
+
+The file  Makefile  is used to place the corresponding object files in
+the library
+  $NUMBASE/lib/libprecon.a
+
+The include file:
+build.inc    Defines the storage types and the offsets in the storage
+             descriptors.
+
+The functions and subroutines are:
+chkcnt       Check the storage structure of a MLP type representation
+             of a preconditioner and count the number of non-zeros.
+mterrmsg     Issue an error message given an error code from one of the
+             above mentioned subroutines.
+wacsc        Allocates a storage descriptor and the segments to represent
+             a sparse matrix in Compact Sparse Column (CSC) format.
+wacsr        Allocates a storage descriptor and the segments to represent
+             a sparse matrix in Compact Sparse Row (CSR) format.
+wadia        Allocates a storage descriptor and the segments to represent
+             a sparse (block-) DIAagonal matrix. The elements in the blocks
+             are stored in column major order.
+wafm         Allocates a matrix descriptor and the segment for a
+             Full Matrix, FMtp, in the workspace buffer.
+wamlp        Allocates a storage descriptor for a MLP type matrix.
+wapffp       Allocates a partition descriptor and the segments for the
+             last, a PFFP type, partition in a MLP type matrix.
+wapldu       Allocates a partition descriptor and the segments for a
+             PLDU type partition in a MLP type matrix.
+waprc        Allocates a descriptor and segments for a complete
+             preconditioner.
+wapsfp       Allocates a partition descriptor and the segments for the
+             last, a PSFP type, partition in a MLP type matrix.
+wascde       Allocates a storage descriptor and the segments to represent
+             a Schur-Complement, Diagonal Extracted, matrix.
+wcscde       Get the indices of the descriptors for the 2 Components of a
+             Schur-Complement, Diagonal Extracted, matrix.
+weblksz      Extract the block size of the blocks in the block-diagonal
+             part of a matrix.
+wecsc        Extracts the indices of the constituent segments to represent
+             a sparse matrix in Compact Sparse Column (CSC) format.
+wecsr        Extracts the indices of the constituent segments to represent
+             a sparse matrix in Compact Sparse Row (CSR) format.
+wedia        Extracts the index of the constituent segment to represent
+             a sparse (block-) DIAagonal matrix. The elements in the blocks
+             are stored in column major order.
+wennz        Extract the order and the number of nonzeros in a matrix
+             stored in the workspace buffer.
+weprc        Extracts the indices of the constituent parts of a complete
+             Preconditioner of a matrix.
+wescde       Extracts the indices of the constituent segments to represent
+             a Schur-Complement, Diagonal Extracted, matrix.
+wfree        Free the storage descriptor and the referenced descriptors
+             and segments.
+wmaxnnz      Routine to return the maximum amount of space available for
+             a CSR/CSC stored matrix of dimension N
+wrdacsr      Read a CSR stored matrix from an ASCII file and store this
+             matrix into the workspace buffer.
+wrdastc      Read a matrix, stored in 'stencil' format, from an ASCII
+             file and store this matrix into the workspace buffer.
+wrdavec      Read a vector from an ASCII file and store this vector
+             into the workspace buffer.
+wrdbcsr      Read a CSR stored matrix from a binary file and store this
+             matrix into the workspace buffer.
+wrdbvec      Read a vector from a binary file and store this vector
+             into the workspace buffer.

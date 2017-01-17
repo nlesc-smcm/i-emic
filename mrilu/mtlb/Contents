@@ -1,0 +1,23 @@
+% NUMATH functions and scripts.
+%
+% Conversion functions:
+%    CSR2SP      Converts matrix in CSR format into MATLAB sparse array.
+%    SP2CSR      Converts MATLAB sparse matrix into CSR format.
+%
+% Input/Output functions:
+%    RDACSR      Reads sparse matrix in CSR format from ASCII file.
+%    RDAVEC      Reads vector from ASCII file.
+%    RDBCSR      Reads sparse matrix, in CSR format, from unformatted file.
+%    RDBVEC      Reads vector from Fortran unformatted file.
+%    WRTACSR     Writes sparse matrix, in CSR format, to ASCII file.
+%    WRTAVEC     Writes a vector to ASCII file.
+%    WRTBCSR     Writes sparse matrix, in CSR format, to an unformatted file.
+%    WRTBVEC     Writes vector to an Fortran unformatted file.
+%
+% Visualisation functions:
+%    VSM         Visualize Sparse Matrix.
+%    VSMCSR      Visualize Sparse Matrix given in CSR format.
+%
+% Scripts:
+%    GENMAT      Generates sparse matrices
+%

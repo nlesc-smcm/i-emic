@@ -1,0 +1,24 @@
+
+ This program extracts the documentation lines from Fortran programs.
+ These documentation lines can consist of comment lines and statement
+ lines.  The lines to be extracted start after the comment line:
+   C#begindoc
+ and end just before the comment line:
+   C#enddoc
+ Only the extracted lines are copied, verbatim, to the output file.
+
+ The program can be called in the following tree ways:
+   getdoc
+      The lines are read from the standard input file and the extracted
+      lines are copied to the standard output file.
+   getdoc <inpfilenm>
+      The filename <inpfilenm> should have the suffix ".f" or ".F".
+      The output filename is <inpfilenm> in which the suffix has changed
+      to  ".txt".
+      The lines are read from the input file <inpfilenm> and the extracted
+      lines are copied to the output file.
+   getdoc <inpfilenm> <outpfilenm>
+      The filename <inpfilenm> should have the suffix ".f" or ".F".
+      The lines are read from the input file <inpfilenm> and the extracted
+      lines are copied to the output file <outpfilenm>.
+

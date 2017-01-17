@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# File: testnschmat        Test executable program  nonsym  (1997-12-04)
+#
+# Last update:  2009-11-20
+#
+# 
+# Usage:  testnonsym  filenm, ...
+#
+if [ ${#} -gt 0 ]
+then
+  for name in $2
+  do
+    cd data
+    echo Argument: "$name"
+    $1/nschmat <"$name" >"$name".out
+    if [ "`diff -qbwB "$name".res "$name".out`" != "" ]
+    then 
+      echo
+      echo "---------------------------------------------------------------------"
+      echo "Problem: $name"
+      echo "---------------------------------------------------------------------"
+      echo
+    diff -bwB "$name".res "$name".out
+    fi
+    rm -f "$name".out
+#    cd ..
+  done
+  cd ..
+else
+  echo
+  echo "Usage:"
+  echo "  testnschmat <filename>, ..."
+  echo
+fi
+#
+# End of  testnschmat

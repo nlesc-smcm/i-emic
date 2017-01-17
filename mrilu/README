@@ -1,0 +1,61 @@
+Installation notes on MRILU and how to get started.    
+December 8, 2009
+
+Building the MRILU library.
+Computer and compiler specific settings can be set in "makefile.inc". 
+Examples of these are given in directory "makefile_inc_examples".
+Obligitory is to set SOURCEDIR the  
+parent directory of the mrilu source directory "mrilu", and NUMBASE which 
+is where the library has to go. The 
+installation will create a directory $NUMBASE/machine_type, where 
+it will put  the library, modules, and executables. Hence if you 
+have various computers using the same file system, you can do with 
+one source using the same NUMBASE. 
+The library is built by the command "make install".
+
+After a successful install one can check the installation by the command
+"make test". This will compare (in fact using diff) the output 
+on your computer with that of ours 
+on a sequence of problems. If the results are more or less the 
+same your library is working correctly.
+
+Short description of contents of some directories
+$NUMBASE/doc:  Documentation of the files available in the library 
+and the binaries. At any time (at least if you have put the bin 
+directory below in your path) you can look to a file description by
+using "showdoc", for instance "showdoc bepnum".
+$NUMBASE/machine_type/bin: number of binaries for conversion, 
+testing, the sparse matrix visualizer vsm and showdoc.
+$NUMBASE/machine_type/lib: the libraries
+$NUMBASE/mrilu/mtlb: files for io between CSR format and sparse 
+matlab format, and a call to vsm from within MATLAB. 
+
+
+
+Functionality
+The programs are in the $NUMBASE/machine_type/bin. To use the programs below it is
+handy to extend the PATH variable with this directory.
+
+"vsm" is a separate program, which is a very powerful sparse matrix 
+visualizer. "vsm" without arguments gives a short guide. 
+
+For the use of MRILU I suggest to  study nonsym.F90 
+in "testMRILU" for the solution of a system or the single 
+application of the preconditioner. 
+
+If one wants to apply a fixed preconditioner to an altering matrix 
+one has to take a look at nschmat. 
+
+Instead of reading parameters from an input file which is done for 
+testing one can initialize parameters using iniprc, inisol, inivis 
+and iniglb for preconditioner, solver, visualization, global settings, 
+respectively.
+
+I realize that this description is short. Moreover, the descriptions in the 
+files may contain errors. However, the code is in use on a regular
+basis and I have a lot of confidence in it.
+
+Please let me know whether there are problems or bugs and mail
+to f.w.wubs@rug.nl
+
+

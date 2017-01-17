@@ -1,0 +1,326 @@
+SUBROUTINE cmpsccsrd (Nupp, maxoffnz, a, SchTol, SC)
+
+USE m_dump
+USE m_build
+
+INTEGER							, INTENT(IN)  	:: Nupp
+INTEGER							, INTENT(IN)  	:: maxoffnz
+TYPE (csrdmatrix) 					, POINTER	:: a
+DOUBLE PRECISION					, INTENT(IN)  	:: SchTol
+TYPE (scdematrix) 					, POINTER	:: SC
+
+!     Compute Schur-complement from CSRD-type matrix.
+!     Only called from the subroutine  schurcmpl!
+
+!     Arguments:
+!     ==========
+!     A%N       	i   Number of rows/columns in matrix A.
+!     Nupp    		i   Size of the upper partition.
+!     A%dia%BlkSiz   	i   Number of rows/columns in a diagonal block.
+!                  	    Each of 'A%N' and 'Nupp' should be an integer
+!                  	    multiple of 'A%dia%BlkSiz'.
+!     MaxOffNz 		i   Maximum number of off-diagonal non-zeros that can
+!                  	    be stored in new Schur-complement 'SC'.
+!     A%Lotr   		i   A%Lotr(i), Nupp+1 <= i <= A%N, index in 'A%offd%jco' and
+!                  	   'A%offd%co' of last nonzero in 'i'-th row of A_21.
+!     A%offd%beg     	i   A%offd%beg(i): index in 'A%offd%jco' and 'A%offd%co' of the first
+!                  	    off-diagonal element in row i of matrix A.
+!     A%offd%jco     	i   A%offd%jco(nz): column number of off-diagonal element A%offd%co(nz).
+!     A%offd%co      	i   A%offd%co(nz): value of off-diagonal element.
+!     A%dia%com     	i   Contains the elements of the diagonal blocks:
+!                  	    A%dia%com(1:Nupp*A%dia%BlkSiz): contains the inverse of the
+!                     	    block-diagonal of A_11,  inv(A_11).
+!                  	    A%dia%com(Nupp*A%dia%BlkSiz+1:A%N*A%dia%BlkSiz): contains the block-diagonal of A_22.
+!                  	    Each diagonal block is stored in column major order.
+!     SchTol   		i   All non-zero off-diagonal elements of the Schur-
+!                  	    complement, S, to be stored into 'SC' should be greater than 'SchTol'.
+!     sc%offd%beg    	o   sc%offd%beg(i): index in 'sc%offd%jco' and 'sc%offd%co' of the first
+!                  	    off-diagonal element in row i of matrix SC.
+!     sc%offd%jco    	o   sc%offd%jco(nz): column number of off-diagonal element sc%offd%co(nz).
+!     sc%offd%co     	o   sc%offd%co(nz): value of off-diagonal element of SC.
+!     sc%dia%com    	o   The values of the elements in the diagonal blocks of
+!                  	    matrix SC, stored in column major order.
+
+!     Array arguments used as local variables:
+!     ========================================
+!     ColNr    ColNr(i), 1 <= i <= NnzRow <= A%N-Nupp, column number
+!              of i-th element that should be stored in the new
+!              Schur-complement.
+!     StorCol  StorCol(i), Nupp+1 <= i <= A%N,
+!              = .TRUE.  Element in column 'i' of actual row should be
+!                     stored in new Schur-complement.
+!              = .FALSE.   Element in column 'i' of actual row should not be
+!                     stored in new Schur-complement.
+!     ValCol   ValCol(i), Nupp+1 <= i <= A%N, value to be stored in
+!              column 'i' of actual row of the new Schur-complement.
+
+!     Local Parameters:
+!     =================
+CHARACTER (LEN=*), PARAMETER :: rounam = 'cmpsccsrd'
+
+!     Local Variables:
+!     ================
+!     Row   Nupp+1 <= Row <= A%N, the number of the actual row.
+!     NnzRow   Number of nonzeros in actual row 'Row'.
+!     Sc%offd%nnz    Number of non-zeros in off-diagonal part of the new
+!              Schur-complement 'SC'.
+
+INTEGER 					:: basecol, BaseRow, col, scnnz, BlkSiz, i, ier
+INTEGER 					:: Row, nnzrow
+INTEGER 					:: nza12, nza21, nza22, nz
+INTEGER 					:: cola21, rowa12
+DOUBLE PRECISION 				:: fact
+LOGICAL, ALLOCATABLE, DIMENSION(:)              :: StorCol
+INTEGER, ALLOCATABLE, DIMENSION(:)              :: ColNr
+DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:)     :: ValCol
+
+#ifdef DEBUG
+
+!     TRACE INFORMATION
+PRINT '(A, X, A)' , 'Entry:', rounam
+#endif
+
+ALLOCATE( StorCol(Nupp+1:A%n), STAT=ier )
+IF (ier /= 0) CALL dump(__FILE__,__LINE__,'Allocation error')
+ALLOCATE( ColNr(1:A%n-Nupp), STAT=ier )
+IF (ier /= 0) CALL dump(__FILE__,__LINE__,'Allocation error')
+ALLOCATE( ValCol(Nupp+1:A%n), STAT=ier )
+IF (ier /= 0) CALL dump(__FILE__,__LINE__,'Allocation error')
+
+!     Clear column search pointer:
+
+StorCol = .false.
+
+!     Initialise number of nonzeros and pointer to first non-zero in
+!     'SC':
+scnnz          = 0
+SC%offd%beg(1) = 1
+
+!     Construct Schur-Complement, of size (A%N-Nupp), in
+!     'SC' and 'SCd':
+
+BlkSiz = A%dia%BlkSiz
+
+IF (BlkSiz > 1) THEN
+  DO Row = Nupp+1, A%n
+    BaseRow = ((Row - 1) / BlkSiz) * BlkSiz
+    
+!        Copy row 'Row - BaseRow' of actual block in A22d into new row:
+    
+    FORALL (i = 1:BlkSiz) ColNr(i) = BaseRow+i
+    StorCol(BaseRow+1:BaseRow+BlkSiz) = .true.
+    ValCol(BaseRow+1:BaseRow+BlkSiz)  = A%dia%com(Row - BaseRow,BaseRow+1:BaseRow+BlkSiz)
+    nnzrow = BlkSiz
+
+    
+!   {  NnzRow = BlkSiz  }
+    
+!   Copy non-zero off-diagonal elements in row 'Row' of A_22 into new row:
+    
+    DO nza22 = A%lotr(Row)+1, A%offd%beg(Row+1)-1
+      nnzrow = nnzrow + 1
+      
+      col          = A%offd%jco(nza22)
+      ColNr(nnzrow) = col
+      StorCol(col) = .true.
+      ValCol(col)  = A%offd%co(nza22)
+    END DO
+    
+!   Subtract product  A_21*(1/D)*A_12  from  A_22
+    
+!   For each non-zero in row of A_21:
+
+    DO nza21 = A%offd%beg(Row), A%lotr(Row)
+      cola21 = A%offd%jco(nza21)
+      
+      basecol = ((cola21 - 1) / BlkSiz) * BlkSiz
+      DO rowa12 = basecol+1, basecol+BlkSiz
+        
+!       Common factor for all non-zeros in row of A_12
+        fact = A%offd%co(nza21)*A%dia%com(cola21-basecol,rowa12)
+        
+!              For each non-zero in row of A_12:
+        DO nza12 = A%offd%beg(rowa12), A%offd%beg(rowa12+1)-1
+          
+          col = A%offd%jco(nza12)
+          
+          IF (StorCol(col)) THEN
+!           An existing element:
+            
+            ValCol(col) = ValCol(col) - fact*A%offd%co(nza12)
+          ELSE
+!           A new element, insert into new row:
+            
+            nnzrow        = nnzrow + 1
+            ColNr(nnzrow) = col
+            StorCol(col) = .true.
+            ValCol(col)  = - fact * A%offd%co(nza12)
+          END IF
+        END DO
+      END DO
+    END DO
+    
+    
+    IF (scnnz + (nnzrow - BlkSiz) > maxoffnz) THEN
+!           Not enough space left to store off-diagonals of 'Row'.
+      PRINT '(A, 2X, A, A, /, 3X, A, I8, /, 3X, A, I8)' ,  &
+          'Error in', rounam, '.  Not enough space to store Schur-complement!',  &
+          'Detected when storing row:         ', Row-Nupp,  &
+          'Number of rows in Schur-complement:', A%n-Nupp
+      CALL dump(__FILE__,__LINE__, 'Not enough space left to store off-diagonals!')
+    END IF
+    
+!   Off-diagonal elements:
+    
+!   Store off-diagonal elements, with absolute value > 'SchTol', into
+!   the approximate Schur-complement 'SC'.  Off-diagonal elements
+!   with absolute value <= SchTol in row 'Row' are lumped onto the
+!   diagonal element in this row.
+    
+!   For each off-diagonal non-zero in new row:
+    DO nz = BlkSiz+1, nnzrow
+      col          = ColNr(nz)
+      StorCol(col) = .false.
+      
+      IF (DABS(ValCol(col)) > SchTol) THEN
+!              Element cannot be lumped, store off-diagonal:
+        
+        scnnz              = scnnz + 1
+        SC%offd%co(SCnnz)  = ValCol(col)
+        SC%offd%jco(SCnnz) = col - Nupp
+      ELSE
+!              Lump off-diagonal onto main diagonal:
+         ValCol(Row) = ValCol(Row) + ValCol(col)
+      END IF
+    END DO
+    
+!   Pointer to first non-zero Off-diagonal in next row:
+
+    SC%offd%beg(Row-Nupp+1) = SCnnz + 1
+    
+    
+!   Block Diagonal elements:
+    
+!   Store the block part of the actual row into block diagonal part
+!   of Schur complement 'SCd':
+    
+    DO nz = BaseRow+1, BaseRow+BlkSiz
+      col          = ColNr(nz-BaseRow)
+      StorCol(col) = .false.
+      SC%dia%com(Row - BaseRow,nz-Nupp) = ValCol(col)
+    END DO
+  END DO
+ELSE
+!     {  BlkSiz = 1  }
+  DO Row = Nupp+1, A%n
+    
+!        Add Block diagonal element of A_22 to the temporary store:
+    
+    nnzrow = 1
+    
+    ColNr(nnzrow)   = Row
+    StorCol(Row) = .true.
+    ValCol(Row)  = A%dia%com(1,Row)
+    
+!        {  NnzRow = BlkSiz = 1  }
+    
+!        Copy non-zero off-diagonal elements in row 'Row' of A_22 into
+!        new row:
+    
+    DO nza22 = A%lotr(Row)+1, A%offd%beg(Row+1)-1
+      nnzrow = nnzrow + 1
+      
+      col          = A%offd%jco(nza22)
+      ColNr(nnzrow) = col
+      StorCol(col) = .true.
+      ValCol(col)  = A%offd%co(nza22)
+    END DO
+    
+!        Subtract product  A_21*(1/D)*A_12  from  A_22
+    
+!        For each non-zero in row of A_21:
+    DO nza21 = A%offd%beg(Row), A%lotr(Row)
+      cola21 = A%offd%jco(nza21)
+      
+!           Common factor for all non-zeros in row of A_12
+      fact = A%offd%co(nza21)*A%dia%com(1,cola21)
+!            IF (fact .NE. 0.0D0) THEN
+      
+!           For each non-zero in row of A_12:
+      DO nza12 = A%offd%beg(cola21), A%offd%beg(cola21+1)-1
+        
+        col = A%offd%jco(nza12)
+        
+        IF (StorCol(col)) THEN
+!                 An existing element:
+          
+          ValCol(col) = ValCol(col) - fact*A%offd%co(nza12)
+        ELSE
+!                 A new element, insert into new row:
+          
+          nnzrow        = nnzrow + 1
+          ColNr(nnzrow) = col
+          StorCol(col) = .true.
+          ValCol(col)  = - (fact * A%offd%co(nza12))
+        END IF
+      END DO
+!            ENDIF
+    END DO
+    
+    
+    IF (SCnnz + (nnzrow - BlkSiz) > maxoffnz) THEN
+!           Not enough space left to store off-diagonals of 'Row'.
+      PRINT '(A, 2X, A, A, /, 3X, A, I8, /, 3X, A, I8)' ,  &
+          'Error in', rounam, '.  Not enough space to store Schur-complement!',  &
+          'Detected when storing row:         ', Row-Nupp,  &
+          'Number of rows in Schur-complement:', A%n-Nupp
+      CALL dump(__FILE__,__LINE__, 'Not enough space left to store off-diagonals!')
+    END IF
+    
+!        Off-diagonal elements:
+    
+!        Store off-diagonal elements, with absolute value > 'SchTol', into
+!        the approximate Schur-complement 'SC'.  Off-diagonal elements
+!        with absolute value <= SchTol in row 'Row' are lumped onto the
+!        diagonal element in this row.
+    
+!        For each off-diagonal non-zero in new row:
+    DO nz = BlkSiz+1, nnzrow
+      col          = ColNr(nz)
+      StorCol(col) = .false.
+      
+      IF (DABS(ValCol(col)) > SchTol) THEN
+!              Element cannot be lumped, store off-diagonal:
+        
+        SCnnz        = SCnnz + 1
+        SC%offd%co(SCnnz)  = ValCol(col)
+        SC%offd%jco(SCnnz) = col - Nupp
+      ELSE
+!              Lump off-diagonal onto main diagonal:
+         ValCol(Row) = ValCol(Row) + ValCol(col)
+       END IF
+    END DO
+    
+!        Pointer to first non-zero Off-diagonal in next row:
+    SC%offd%beg(Row-Nupp+1) = SCnnz + 1
+    
+    
+!        Diagonal elements:
+    
+!        Store the Diagonal element of the actual row into the diagonal
+!        part of the Schur complement 'SC%dia':
+    
+    StorCol(Row)      = .false.
+    SC%dia%com(1,Row - Nupp) = ValCol(Row)
+  END DO
+END IF
+SC%offd%nnz = SCnnz
+
+DEALLOCATE( StorCol, STAT=ier )
+IF (ier /= 0) CALL dump(__FILE__,__LINE__,'Deallocation error')
+DEALLOCATE( ColNr, STAT=ier )
+IF (ier /= 0) CALL dump(__FILE__,__LINE__,'Deallocation error')
+DEALLOCATE( ValCol, STAT=ier )
+IF (ier /= 0) CALL dump(__FILE__,__LINE__,'Deallocation error')
+
+END SUBROUTINE cmpsccsrd

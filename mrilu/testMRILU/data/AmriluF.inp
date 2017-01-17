@@ -1,0 +1,50 @@
+Parameters controlling the Problem definition:
+ 5        Read or generate system of equations
+(1=conv-diff,2=conv-diff-3d,3=ASCII(STC),4=Binary(CSR),5=ASCII(CSR))
+ 6        Size of diagonal blocks in matrix linear system.
+ 70       If system generated, # x- & y-intervals 
+ 1        "    "        "    , problem type     (1,4=DDDD, 2,3=DDNN,5,6=NNNN)
+ 1.0D0    "    "        "    , Grid Stretching [0.0001,10000]
+ 0.0D0    "    "        "    , Convection Term, coefficient U_x
+ 0.0D0    "    "        "    , Convection Term, coefficient U_y
+ T        Modify rhs to give solution X=(1,2,...)                (T/F)
+Parameters controlling the visualisation of sub-matrices:
+ F        Visualise (scaled) matrix A                            (T/F)
+ 0        Visualise First  0  Schur-complement matrices 0,1,2,...
+ F        Visualise Last Schur-complement                        (T/F)
+ F        Visualise ILDU factorization of Last Schur-complement  (T/F)
+ 0        Visualise first  0  reordered matrices 0,1,2,...
+Parameters controlling the construction of the preconditioner:
+ F        Scale rowsums of |A| to 1                              (T/F)
+ F        Apply Reverse Cuthill-McKee reordering                 (T/F)
+ F        Use exact elimination to reduce original linear system (T/F)
+ 0.0D0    Gustafsson's modification in constructing ML-Precond. (0.0,1.0)
+ F        Compute Lump Space Once i.s.o. at each new Schur-comp.
+          in construction ML-Precond. (CLSOnce)                  (T/F)
+ 1.0D0    New Lump Space Factor (used if .NOT. CLSOnce) (0.0,1.0)
+ 0.02D0    Lump space tolerance (0.0,10.0)
+ 0.2D0    Element Factor for element to be lumped. (0.0,1.0)
+ 0.8D0    Reduction factor for Lump Space (0.0,1.0)
+ 0.0D0    Schur Tolerance; min value in Schur Complement (0.0,0.01)
+ 1.00D-3  Density limit of last block (0.0,1.0)
+ 0.0      Global fraction limit of last block (0.0,1.0)
+ 0.0      Local fraction limit of last block (0.0,1.0)
+ 6.75D-1  Sparsety Limit of last block (0.0,1.0)
+ 9        ILU Type factorization of last block;
+          (0 = ILU0, 1 = ILU(1), 2 = ILU(2), ..., 9 = ILUT)
+ 2.50D-3  Drop Tolerance in ILUT factorization of last block (0.0,1.0)
+ 0.0D0    Compensation factor for diagonal in ILU factorization
+          of last block. (0.0,1.0)
+ 0.20D0   Change Pivot Tolerance (in ILUT factorization) (0.0,1.0)
+ 1.0D-10  LU Tolerance, LUTol.
+          IF  MIN(|diag(U)|)/MAX(|diag(U)|) < LUTol  THEN  singular.
+ T        Singular U-factor allowed.                             (T/F)
+ F        Calls applprc instead of solprc                        (T/F)
+Parameters controlling the CG-like solver:
+ 1        Type of Congruent Gradient solver:  use CG, Bi-CGSTAB or GMRES
+          (0=CG, 1=BiCGSTAB, 2=BiCGSTAB-R, 3=GMRES(M))
+ 20       M, the dimension of the subspace used in GMres.
+ 40       Maximum number of iterations in CG-like solver.
+ 1.0D-6   Required reduction of (prec.) residual r_i with respect to r_0
+ 1.0D-6   Required size of (prec./rel. w.r.t. b) residual r_i
+

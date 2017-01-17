@@ -1,0 +1,23 @@
+ARCH=ppc_64_xlf95
+NUMBASE=/home/djansen/MRILU8
+SOURCEDIR=$(NUMBASE)
+OSNAME=
+MAKE=make
+ARFLAGS=-crsv
+LD=xlc
+OPT=-O3 -qarch=auto -qcache=auto -qtune=auto -qhot
+LDFLAGS=$(OPT)
+CC=xlc
+CFLAGS=$(OPT)
+CPPFLAGS=
+CXX=xlC
+MPI_CC=
+F77=xlf95
+FPPFLAGS=
+FFLAGS= -c -qfree=F90 -qautodbl=dbl4 -qwarn64 \
+-qzerosize -q64 -qnosave ${OPT}
+MPI_F77=
+F90=xlf95
+MPI_F90=
+MODFLAG=-qmoddir=
+LIB_X11=/usr/X11R6/lib
