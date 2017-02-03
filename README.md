@@ -2,17 +2,20 @@
 
 ## Dependencies:
 
-- cmake
-- lapack        (`liblapack-dev` in ubuntu repository, `mkl` on intel)
-- blas          (`libblas-dev` in ubuntu repository, `mkl` on intel)
-- openmpi       (`libopenmpi-dev` in ubuntu repository)
-- hdf5-openmpi  (`libhdf5-openmpi-dev` in ubuntu repository, `hdf5/impi` on intel)
-- metis         (`wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-5.1.0.tar.gz`)
-- parmetis      (`wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz`)
-- mrilu         (available in this repository)
-- Trilinos      <https://trilinos.org/download/>
-- jdqzpp        (external project, fetched and installed by cmake)
-- gtest
+|:----------------|-------------------------------------------------------------:|
+|- Cmake          | (version 2.8.12.2 or higher)                                 |
+|- lapack         | (`liblapack-dev` in ubuntu repository, `mkl` on intel)       |
+|- blas           | (`libblas-dev` in ubuntu repository, `mkl` on intel)         |
+|- openmpi        | (`libopenmpi-dev` in ubuntu repository)|
+|- hdf5-openmpi   | (`libhdf5-openmpi-dev` in ubuntu repository, `hdf5/impi` on intel)|
+|- metis          | (`wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-5.1.0.tar.gz`)|
+|- parmetis       | (`wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz`)|
+|- mrilu          | (available in this repository)|
+|- Trilinos       | <https://trilinos.org/download/>|
+|- jdqzpp         | (external project, fetched and installed by cmake)|
+|- gtest          |
+
+
 
 ### Compilers
 Depending on architecture: ifort, gfortran, mpicc, mpicpc, mpic++, etc... 
@@ -54,4 +57,6 @@ Define the following environment variables:
 
   * Install I-EMIC
 	* Create build directory
-	* Create cmake script
+	* Create cmake script, see for examples `notes/i-emic_cmake_examples`
+	* Run cmake script
+    * make install -j<#procs>
