@@ -117,6 +117,8 @@ TEST(Ocean, Initialization)
 	EXPECT_EQ(failed, false);
 }
 
+
+
 //------------------------------------------------------------------
 TEST(Ocean, RHSNorm)
 {
@@ -126,6 +128,32 @@ TEST(Ocean, RHSNorm)
 	std::cout << "stateNorm = " << stateNorm << std::endl;
 	std::cout << "RHSNorm   = " << rhsNorm   << std::endl;
 	EXPECT_LT(rhsNorm, 1e-6);
+}
+
+//------------------------------------------------------------------
+TEST(Ocean, Continuation)
+{
+	bool failed = false;
+	try
+	{
+		// Create continuation params
+		RCP<Teuchos::ParameterList> continuationParams =
+			rcp(new Teuchos::ParameterList);
+		updateParametersFromXmlFile("continuation_params.xml",
+									continuationParams.ptr());
+
+		// Create contination
+		Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
+			continuation(ocean, continuationParams);
+
+		// Run continuation
+		continuation.run();
+	}
+	catch (...)
+	{
+		failed = true;
+	}
+	EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------

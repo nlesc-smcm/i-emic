@@ -150,8 +150,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
 	std::string probdesc = paramList.get("Problem Description","Unnamed");
 
-	n = paramList.get("Global Grid-Size n", 64);
-	m = paramList.get("Global Grid-Size m", 64);
+	n = paramList.get("Global Grid-Size n", 16);
+	m = paramList.get("Global Grid-Size m", 16);
 	l = paramList.get("Global Grid-Size l", 16);
 
 	//=================================================
@@ -197,7 +197,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	alphaS           = paramList.get("Linear EOS: alpha S",7.6e-4);
 	tres             = paramList.get("Restoring Temperature Profile",1);
 	sres             = paramList.get("Restoring Salinity Profile",1);
-	ite              = paramList.get("Levitus T",2);
+	ite              = paramList.get("Levitus T",1);
 	its              = paramList.get("Levitus S",1);
 	internal_forcing = paramList.get("Levitus Internal T/S",false);
 	bool rd_spertm   = paramList.get("Read Salinity Perturbation Mask",false);
@@ -214,7 +214,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 		}
     }
 
-	iza  = paramList.get("Wind Forcing",1);
+	iza  = paramList.get("Wind Forcing",2);
 
 	int dof = _NUN_; // number of unknowns, defined in THCMdefs.H
 
@@ -1323,21 +1323,37 @@ void THCM::ReadParameters(Teuchos::ParameterList& plist)
 	double val;
 	std::string label;
 	try {
-		for (int i=0;i<=_NPAR_+_NPAR_TRILI;i++)
+		for (int i=0; i<= _NPAR_ + _NPAR_TRILI; i++)
 		{
 			label = int2par(i); 
 			if (plist.isParameter(label))
 			{
-				val = plist.get(label,0.0);
+				val = plist.get(label,defaultParameter(label));
 				this->setParameter(label,val);
 			}
 		}
-    } catch(...){ERROR("Exception while reading parameter starting values!",__FILE__,__LINE__);}   
+    }
+	catch(...)
+	{
+		ERROR("Exception while reading parameter starting values!",__FILE__,__LINE__);
+	}   
+}
+
+//=============================================================================
+double THCM::defaultParameter(std::string const &label)
+{
+	if (!label.compare("Combined Forcing"))    return 0.0;
+	if (!label.compare("Solar Forcing"))       return 0.0;
+	if (!label.compare("Salinity Forcing"))    return 1.0;
+	if (!label.compare("Wind Forcing"))        return 1.0;
+	if (!label.compare("Temperature Forcing")) return 10.0;
+	if (!label.compare("SPL1"))                return 2.0e3;
+	if (!label.compare("SPL2"))                return 0.01;	
 }
 
 //=============================================================================
 // convert parameter name to integer
-int THCM::par2int(std::string label)
+int THCM::par2int(std::string const &label)
 {
 	// parameter numbering in fortran code
 	int TIME   =  0;
@@ -1397,7 +1413,7 @@ int THCM::par2int(std::string label)
 
 //=============================================================================
 // convert parameter name to integer
-std::string THCM::int2par(int index)
+std::string const THCM::int2par(int index)
 {
 	std::string label = "Invalid Parameter Index";
 

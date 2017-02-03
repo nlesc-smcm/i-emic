@@ -42,7 +42,8 @@ Continuation(Model model, ParameterList pars)
 	usePracticalTol_       (pars->get("enable practical tolerance", false)),
 	newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
 	tangentType_           (pars->get("tangent type", 'E')),
-	initialTangent_        (pars->get("initial tangent type", 'S')),	
+	initialTangent_        (pars->get("initial tangent type", 'S')),
+	printImportantVectors_ (pars->get("print important vectors", false)),
 	predictorBound_        (pars->get("predictor bound", 100.0)),
 	signMonitor_           (0)
 {
@@ -192,9 +193,12 @@ step()
 		return 1; // Consider this step failed
 	}
 
-	// Print the residual and last solution from linear solve
-	rhsView_->print("residual");
-	model_->getSolution('V')->print("solution");
+	if (printImportantVectors_)
+	{
+		// Print the residual and last solution from linear solve
+		rhsView_->print("residual");
+		model_->getSolution('V')->print("solution");
+	}
 		
 	// Put the parameter and norm of the state in the history
 	parHist_.push_back(par_);
@@ -249,7 +253,8 @@ createInitialTangent()
 
 	// 1) Compute dFdPar_, force computation of RHS
 	computeDFDPar('F');
-	dFdPar_->print("dFdpar");
+	
+	if (printImportantVectors_) dFdPar_->print("dFdpar");
 
 	if (initialTangent_ == 'S')	// 2a) Solve J*stateDot_ = -dFdPar_
 	{
@@ -259,17 +264,19 @@ createInitialTangent()
 		model_->solve(dFdPar_);
 		stateDot_ = model_->getSolution('C');
 	}
-	else if (initialTangent_ == 'A') // 2b) Solve stateDot_ = -dFdPar_
+	else if (initialTangent_ == 'A') // 2b) Do stateDot_ = -dFdPar_
 	{
 		stateDot_ = model_->getSolution('C');
 		dFdPar_->scale(-1.0);
 		*stateDot_ = *dFdPar_;
 	}
 
-	std::stringstream fname;
-	fname << "init_tan_" << std::setprecision(4) << par_;		
-	stateDot_->print(fname.str());
-	getchar();
+	if (printImportantVectors_) // Print initial tangent
+	{
+			std::stringstream fname;
+		fname << "init_tan_" << std::setprecision(4) << par_;		
+		stateDot_->print(fname.str());
+	}
 	
 	// We scale the tangent of the state and parameter such they are
 	// normalized.
@@ -507,8 +514,6 @@ newtonCorrector()
 		
 		model_->solve(R);
 		z = model_->getSolution('C');
-		model_->printResidual(R);
-		z->print("solution");
 		
 		// Determine the directions.....................................
 		// First for the parameter:
@@ -640,7 +645,7 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 detect(char mode)
 {
-	int idx = 0;
+	size_t idx = 0;
 	bool busy = false;
 	for (auto &dest: destinations_)
 	{
@@ -782,8 +787,12 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 reset()
 {
-	rhsView_->print("failed_rhs"); // Print failed residual
-	model_->getSolution('V')->print("failed_sol"); // Print failed solution
+	if (printImportantVectors_)
+	{
+		rhsView_->print("failed_rhs"); // Print failed residual
+		model_->getSolution('V')->print("failed_sol"); // Print failed solution
+	}
+	
 	INFO("***********************************************");
 	INFO("Continuation: reset... ");	
 	INFO("|                step: " << step_);
@@ -802,9 +811,6 @@ reset()
 	INFO("|             new par: " << par_);
 	INFO("|       new step size: " << ds_);
 	INFO("***********************************************");
-
-	// I don't think we need this:
-	// createInitialTangent();
 }
 
 //======================================================================
