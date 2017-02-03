@@ -18,6 +18,7 @@
 !atmosphere/
 !main/
 !coupledmodel/
+!coupled/
 !tests/
 !thetastepper/
 !continuation/

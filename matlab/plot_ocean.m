@@ -4,7 +4,7 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
 %  usage: plot_ocean(solfile, datafile, title_add, fname_add)
 %
 %  Father is M. den Toom, who conceived it 06-11-08     
-%  Modified by Erik, 2015/2016 -> t.e.mulder@uu.nl
+%  Modified by Erik, 2015/2016/2017 -> t.e.mulder@uu.nl
 %---------------------------------------------------------------------
 
   title_additional = '';
@@ -44,7 +44,7 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
   dy         = (yv(m+1)-yv(1))/m;
   dz         = (zw(l+1)-zw(1))/l;
 
-								% - Create surface landmask image
+ % - Create surface landmask image
   srf = [];
   greyness = 1;
   summask = sum(landm_int,3);
@@ -140,7 +140,7 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
   %title(['Barotropic Streamfunction (Sv) ', title_additional]);
   xlabel('Longitude')
   ylabel('Latitude');
-  caxis([-40,40]);
+  %caxis([-40,40]);
   exportfig(['bstream',fname_additional,'.eps'],10,[19,11])
 
 %%%
@@ -155,12 +155,26 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
   %title(['MOC (Sv) ',title_additional])
   xlabel('latitude')
   ylabel('depth (m)')
-  caxis([-40,40])
+  %caxis([-40,40])
   colormap(col_white)
 
   exportfig(['mstream',fname_additional,'.eps'],10,[19,10])
-  return
   
+
+  %% -------------------------------------------------------
+  figure(4)
+  contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
+							  %imagesc(RtD*yv(1:end-1),z*hdim,Tp'+T0);
+							  %set(gca,'ydir','normal');
+							  %pcolor(RtD*yv(1:end-1),z*hdim,Tp'+T0);
+  colorbar
+  title('Temperature')
+  xlabel('Latitude')
+  ylabel('z (m)')
+  colormap(col_white)
+  exportfig('isothermals.eps',10,[20,7])
+  return
+
   %% -------------------------------------------------------
   figure(3)
   Tsurf = T(:,:,l);
@@ -181,20 +195,9 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
   title('Surface Temperature', 'interpreter', 'none');
   xlabel('Longitude');
   ylabel('Latitude');
-
+  colormap(col_white)
   exportfig('sst.eps',10,[50,25])
 
-  %% -------------------------------------------------------
-  figure(4)
-  contourf(RtD*yv(1:end-1),z*hdim,Tl'+T0,15);
-							  %imagesc(RtD*yv(1:end-1),z*hdim,Tp'+T0);
-							  %set(gca,'ydir','normal');
-							  %pcolor(RtD*yv(1:end-1),z*hdim,Tp'+T0);
-  colorbar
-  title('Temperature')
-  xlabel('Latitude')
-  ylabel('z (m)')
-  exportfig('isothermals.eps',10,[20,7])
 
   %%
   figure(6)
