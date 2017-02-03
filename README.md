@@ -59,3 +59,8 @@ Define the following environment variables:
 	* Create cmake script, see for examples `notes/i-emic_cmake_examples`
 	* Run cmake script
     * make install -j<#procs>
+
+
+# General remarks
+
+- The test code serves as example code

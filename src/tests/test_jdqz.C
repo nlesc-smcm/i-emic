@@ -149,7 +149,7 @@ TEST(JDQZ, Atmosphere)
 	SuperVector y = *atmos->getSolution();
 	x.zero(); y.zero();
 
-	// JDQZ needs complex arithmatic, that's why we create a ComplexSuperVector
+	// JDQZ needs complex arithmetic, that's why we create a ComplexSuperVector
 	ComplexSuperVector z(x, y);
 	ComplexSuperVector residue(x,y);
 	ComplexSuperVector tmp(x,y);
