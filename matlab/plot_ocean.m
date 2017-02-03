@@ -27,11 +27,11 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
 
   %% - DEFINE CONSTANTS - ----------------------------------------------
 
-  udim  = 0.1;                 %[m/s]   Velocity scale
-  r0dim = 6.4e6;               %[m]     Radius of Earth
-  T0    = 15;                  %[deg C] Reference temperature
-  S0    = 35;                  %[psu]   Reference salinity
-  RtD   = 180/pi;              %[-]     Radians to degrees
+  udim  = 0.1;                 %[m/s]    Velocity scale
+  r0dim = 6.4e6;               %[m]      Radius of Earth
+  T0    = 15;                  %[deg C]  Reference temperature
+  S0    = 35;                  %[psu]    Reference salinity
+  RtD   = 180/pi;              %[-]      Radians to degrees
 
   %% - READ MASK - -----------------------------------------------------
 
@@ -103,34 +103,62 @@ function [] = plot_ocean(solfile, maskfile, title_add, fname_add)
 	end
   end
 
+  % --- Create colormaps
+  par = [0    0.4470    0.7410;  0.8500    0.3250    0.0980];
+  neg  = par(1,:); 
+  pos  = par(2,:); 
+  N1   = 64;
+  N2   = 64;
+  mid  = [1,1,1];
+  col1 = [linspace(neg(1),mid(1),N1)',linspace(neg(2),mid(2),N1)',linspace(neg(3),mid(3),N1)'];
+  col2 = [linspace(mid(1),pos(1),N2)',linspace(mid(2),pos(2),N2)',linspace(mid(3),pos(3),N2)'];
+  col_white  = [col1;col2];
+
+  mid  = [1,1,1];
+  col1 = [linspace(neg(1),mid(1),N1)',linspace(neg(2),mid(2),N1)',linspace(neg(3),mid(3),N1)'];
+  col2 = [linspace(mid(1),pos(1),N2)',linspace(mid(2),pos(2),N2)',linspace(mid(3),pos(3),N2)'];
+  col_black  = [col1;col2];
+
+
 
   %% - PLOT THE RESULTS - ----------------------------------------------
   figure(1)
-  img = PSIB(2:end,:)';
-  minPSIB = min(PSIB(:))
-  maxPSIB = max(PSIB(:))
-  image(RtD*x,RtD*(y),srf,'AlphaData',1); set(gca,'ydir','normal');hold on
-  contours = linspace(minPSIB,maxPSIB,30);
-  contour(RtD*x,RtD*(y),img,contours,'Visible', 'on','linewidth',1); hold off;
-				  %imagesc(RtD*x,RtD*(y),img,'AlphaData',1); hold off;
+  img  = PSIB(2:end,:)';
+  imgp = img; imgp(imgp<0)=NaN;
+  imgn = img; imgn(imgn>-0)=NaN;
+
+  contourf(RtD*x,RtD*(y),imgp,15,'LineStyle','none'); hold on;
+  contourf(RtD*x,RtD*(y),imgn,15,'LineStyle','none'); hold on;
+
+  plot_mask(summask,x,y); hold on
+
+  contour(RtD*x,RtD*(y),imgp,15,'k'); hold on;
+  contour(RtD*x,RtD*(y),imgn,15,'k--'); hold off;
+  
   colorbar
+  colormap(col_black)
   %title(['Barotropic Streamfunction (Sv) ', title_additional]);
   xlabel('Longitude')
-  ylabel('Latitude'); 
-  exportfig(['bstream',fname_additional,'.eps'],14,[25,15])
+  ylabel('Latitude');
+  caxis([-40,40]);
+  exportfig(['bstream',fname_additional,'.eps'],10,[19,11])
 
-   
-%%% 
+%%%
   figure(2)
-  contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',30);
+  PSIGp = PSIG; PSIGp(PSIGp<0) = NaN;
+  PSIGn = PSIG; PSIGn(PSIGn>0)  = NaN;
+  contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGp',15); hold on
+  contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGn',15,'--'); hold off
   colorbar
   cmin = min(min(PSIG(:,1:9)))
   cmax = max(max(PSIG(:,1:9)))
   %title(['MOC (Sv) ',title_additional])
   xlabel('latitude')
   ylabel('depth (m)')
-  exportfig(['mstream',fname_additional,'.eps'],14,[25,15])
+  caxis([-40,40])
+  colormap(col_white)
 
+  exportfig(['mstream',fname_additional,'.eps'],10,[19,10])
   return
   
   %% -------------------------------------------------------

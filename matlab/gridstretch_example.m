@@ -21,7 +21,7 @@ end
 
 plot(ze*H,'.-'); hold on
 
-qz = 2.25;
+qz = 1.8;
 tz = fz(ze,qz); % transformed grid
 
 plot(tz*H,'.-'); hold off
