@@ -2,7 +2,8 @@
 
 ## Dependencies:
 
-|:-------------- |:---------------------------------------------------------------------------------- |
+|                |                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------- |
 | Cmake          | (version 2.8.12.2 or higher)                                                       |
 | lapack         | (`liblapack-dev` in ubuntu repository, `mkl` on intel)                             |
 | blas           | (`libblas-dev` in ubuntu repository, `mkl` on intel)                               |
@@ -13,9 +14,7 @@
 | mrilu          | (available in this repository)                                                     | 
 | Trilinos       | <https://trilinos.org/download/>                                                   |
 | jdqzpp         | (external project, fetched and installed by cmake)                                 |
-| gtest          |                                                                                    |
-
-
+| gtest          |  <https://github.com/google/googletest/>                                           |
 
 ### Compilers
 Depending on architecture: ifort, gfortran, mpicc, mpicpc, mpic++, etc... 
