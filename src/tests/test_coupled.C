@@ -108,7 +108,9 @@ int main(int argc, char **argv)
 	// -------------------------------------------------------
 
 	// Get rid of possibly parallel objects for a clean ending.
-	ocean = Teuchos::null;
+	ocean        = Teuchos::null;
+	atmos        = std::shared_ptr<Atmosphere>();
+	coupledModel = std::shared_ptr<CoupledModel>();
 	
 	comm->Barrier();
 	std::cout << "TEST exit code proc #" << comm->MyPID()

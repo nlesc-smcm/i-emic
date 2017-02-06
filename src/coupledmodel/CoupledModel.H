@@ -62,7 +62,8 @@ private:
 	//   'B': backward block Gauss Seidel with sub-model solves
 	//   'I': IDR(s)
 	//   'G': GMRES(r)
-	char   solvingScheme_;
+	//   'F': FGMRES (Belos)
+	char solvingScheme_;
 
 	bool useScaling_;  // scale the problem before a solve
 	
