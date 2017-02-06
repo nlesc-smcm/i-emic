@@ -101,11 +101,12 @@ int main(int argc, char **argv)
 		throw std::runtime_error("ERROR: Specify output streams");
 
 	::testing::InitGoogleTest(&argc, argv);
-
+	
 	// -------------------------------------------------------
 	// TESTING 
 	int out = RUN_ALL_TESTS();
 	// -------------------------------------------------------
+	
 
 	// Get rid of possibly parallel objects for a clean ending.
 	ocean        = Teuchos::null;
@@ -115,7 +116,8 @@ int main(int argc, char **argv)
 	comm->Barrier();
 	std::cout << "TEST exit code proc #" << comm->MyPID()
 			  << " " << out << std::endl;
-	
+
+
 	MPI_Finalize();
 	return out;
 }

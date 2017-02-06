@@ -211,6 +211,20 @@ void CoupledModel::initializeGMRES()
 	gmresInitialized_ = true;
 }
 
+//====================================================================
+void CoupledModel::initializeFGMRES()
+{
+	INFO("CoupledModel: initialize FGMRES...");
+
+	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
+		rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
+	
+	
+	
+	INFO("CoupledModel: initialize FGMRES done");
+}
+
 //------------------------------------------------------------------
 void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 {
@@ -230,6 +244,8 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 		IDRSolve(rhs);
 	else if (solvingScheme_ == 'G') // GMRES on complete matrix
 		GMRESSolve(rhs);
+	else if (solvingScheme_ == 'F') // FGMRES (Belos) on complete matrix
+		FGMRESSolve(rhs);
 	else
  		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
@@ -295,6 +311,10 @@ void CoupledModel::GMRESSolve(std::shared_ptr<SuperVector> rhs)
 	TRACK_ITERATIONS("CoupledModel GMRES iterations...", iters);
 	TRACK_RESIDUAL("CoupledModel GMRES residual...", nrm);
 }
+
+//------------------------------------------------------------------
+void CoupledModel::FGMRESSolve(std::shared_ptr<SuperVector> rhs)
+{}
 
 //------------------------------------------------------------------
 void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)

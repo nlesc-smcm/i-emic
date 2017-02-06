@@ -117,6 +117,7 @@ public:
 	
 	void initializeIDR();
 	void initializeGMRES();
+	void initializeFGMRES();
 	
 	// coupled   mode 'C'
 	// decoupled mode 'D'
@@ -162,6 +163,9 @@ private:
 	
 	// Solve the system using GMRES(r)
 	void GMRESSolve(std::shared_ptr<SuperVector> rhs);
+
+	// Solve the system using FGMRES
+	void FGMRESSolve(std::shared_ptr<SuperVector> rhs);
 	
 	// For internal use: both modes for the underlying
 	// getSolution methods can be called here.
