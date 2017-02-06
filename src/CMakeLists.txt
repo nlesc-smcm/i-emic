@@ -42,9 +42,10 @@ include_directories(${Trilinos_TPL_INCLUDE_DIRS})
 
 set(library_directories ${Trilinos_LIBRARY_DIRS})
 list(APPEND library_directories ${Trilinos_TPL_LIBRARY_DIRS})
+
 list(APPEND library_directories ${MRILU_DIR}/lib/) # MRILU
 
-set(library_dependencies ${Trilinos_LIBRARIES})
+list(APPEND library_dependencies ${Trilinos_LIBRARIES})
 list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
 
 # Locate JDQZPP external project
@@ -96,7 +97,7 @@ set(I-EMIC_LIBS
 
 # ------------------------------------------------------------------
 # Get targets and dependencies of the components
-add_subdirectory(ocean)
+add_subdirectory(ocean)	  
 add_subdirectory(mrilucpp)
 add_subdirectory(atmosphere)
 add_subdirectory(coupledmodel)

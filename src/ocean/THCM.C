@@ -1348,7 +1348,8 @@ double THCM::defaultParameter(std::string const &label)
 	if (!label.compare("Wind Forcing"))        return 1.0;
 	if (!label.compare("Temperature Forcing")) return 10.0;
 	if (!label.compare("SPL1"))                return 2.0e3;
-	if (!label.compare("SPL2"))                return 0.01;	
+	if (!label.compare("SPL2"))                return 0.01;
+	return 0.0; 
 }
 
 //=============================================================================

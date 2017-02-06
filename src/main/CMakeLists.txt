@@ -11,6 +11,7 @@ set(MAIN_INCLUDE_DIRS
   ../newton/
   ../continuation/
   ../topo/
+  ../mrilucpp/
   )
 
 target_link_libraries(run_coupled PUBLIC ${I-EMIC_LIBS})

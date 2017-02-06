@@ -48,7 +48,7 @@ Define the following environment variables:
   
 		* Pass an extra flag to ifpack: `-D Ifpack_CXX_FLAGS:STRING="-DHAVE_IFPACK_MRILU" \`
 		
-		* Let `src/mrilucpp/Ifpack_MRILU.h` be available in the `PATH` when compiling Trilinos.
+		* Let `src/mrilucpp/Ifpack_MRILU.h` be available when compiling Trilinos, for instance add `-D Ifpack_CXX_FLAGS:STRING="-DHAVE_IFPACK_MRILU" \`
 
 	* Make cmake script executable and run it, install Trilinos 
 	  * Possible failures: no lapack, blas or hdf5 libs. `hdf5-openmpi` might install in `/usr/include/hdf5/openmpi`, so you could extend `CPATH` and `LD_LIBRARY_PATH` appropriately.

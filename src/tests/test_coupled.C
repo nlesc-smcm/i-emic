@@ -70,6 +70,29 @@ TEST(CoupledModel, Initialization)
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, Continuation)
+{
+	bool failed = false;
+	try
+	{
+		// Create continuation
+		RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
+		updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
+		
+		Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
+			continuation(coupledModel, continuationParams);
+
+		continuation.run();
+	}
+	catch (...)
+	{
+		failed = true;
+	}
+	
+	EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
 	// Initialize the environment:
