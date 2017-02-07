@@ -58,6 +58,7 @@
 !Makefile.*
 
 !CMakeLists.*
+!*.cmake
 
 !*.m
 !*.xml
