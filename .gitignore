@@ -16,6 +16,7 @@
 !utils/
 !ocean/
 !atmosphere/
+!atmos/
 !main/
 !coupledmodel/
 !coupled/

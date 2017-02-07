@@ -26,7 +26,7 @@ if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU") #gfortran, gcc
   
   set (CMAKE_Fortran_FLAGS
 	"-g -u -O0 -ffixed-line-length-132 -fdefault-real-8 -ffree-line-length-none -DASCII_TOPO")
-  set (CMAKE_CXX_FLAGS "-g -std=c++11 -O0 -Wall -Wno-deprecated-declarations")
+  set (CMAKE_CXX_FLAGS "-g -std=c++11 -O0 -Wall -Wno-deprecated-declarations -DDEBUGGING_NEW")
   set (COMP_IDENT GNU)
   
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel") #ifort, icc

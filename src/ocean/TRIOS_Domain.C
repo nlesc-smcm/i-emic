@@ -232,25 +232,6 @@ namespace TRIOS
 		// between the two maps)
 		as2std  = Teuchos::rcp(new Epetra_Import(*AssemblyMap,*StandardMap));
 		std2sol = Teuchos::null;
-/*
-  INFO("importer: "<<*as2std);
-  Epetra_Vector test_as(*AssemblyMap);
-  Epetra_Vector test_so(*SolveMap);
-  
-  for (int i=0;i<test_as.MyLength();i++)
-  {
-  test_as[i]=i;
-  }
-  this->Assembly2Solve(test_as,test_so);
-  INFO("assembly vector: "<<test_as);
-  INFO("solve vector: "<<test_so);
-  this->Solve2Assembly(test_so,test_as);
-  INFO("new assembly vector: "<<test_as);
-  
-
-//  DEBUG("Importer: "<<std::endl)
-//  DEBUG( (*Importer) );
-*/
 
 		// determine the physical bounds of the subdomain
 		// (must be passed to THCM)
@@ -267,14 +248,14 @@ namespace TRIOS
 		zmin_loc = zmin + Loff*dz;
 		zmax_loc = zmin + (Loff+lloc)*dz;
 
-		DEBVAR(xmin);
-		DEBVAR(xmax);
-		DEBVAR(ymin);
-		DEBVAR(ymax);
-		DEBVAR(xmin_loc);
-		DEBVAR(xmax_loc);
-		DEBVAR(ymin_loc);
-		DEBVAR(ymax_loc);
+		DEBV(xmin);
+		DEBV(xmax);
+		DEBV(ymin);
+		DEBV(ymax);
+		DEBV(xmin_loc);
+		DEBV(xmax_loc);
+		DEBV(ymin_loc);
+		DEBV(ymax_loc);
 	}
 
 	// find out wether a particular local index is on a ghost node
@@ -286,15 +267,12 @@ namespace TRIOS
 		bool result = false;
 
 
-//    DEBUG("GHOST CHECK: li (C++) = "<<ind);
-
 		// find out where the point is
 		Utils::ind2sub(nloc,mloc,lloc,nun_,row,i,j,k,xx);
     
 		// ghost nodes at periodic boundary only if more than one proc in x-direction
 		bool perio = periodic&&xparallel;
 
-//    DEBUG("GHOST CHECK: i,j,k,xx (C++) = "<<i<<", "<<j<<", "<<k<<", "<<xx);
 
 		for (int ii=0;ii<num_ghosts;ii++)
 		{
@@ -306,11 +284,9 @@ namespace TRIOS
 			result = result||(k==lloc-1-ii && pidL<npL-1);
 		}
 
-//    DEBVAR(result);
+		//    DEBVAR(result);
 		return result;
-
     }
-
 
 // public map creation function (can only create a limited range of maps)
 	Teuchos::RCP<Epetra_Map> Domain::CreateSolveMap(int nun_, bool depth_av) const

@@ -19,15 +19,30 @@ private:
 	//! serial atmosphere class, working on subdomains
 	std::shared_ptr<Atmosphere> atmos_;
 
+	//! communicator object
+	Teuchos::RCP<Epetra_Comm> comm_;
+
+	//! grid size
+	int n_,m_,l_;
+
+	//! periodic bdc
+	bool periodic_;
+
+	//! degrees of freedom
+	int dof_;
+	
+	//! grid dimensions
+	double xmin_,xmax_,ymin_,ymax_;
+
+	//! TRIOS domain object for parallelization strategy
+	Teuchos::RCP<TRIOS::Domain> domain_;
 
 public:
 	//! Constructor based on paramterlist
-	AtmospherePar(ParameterList params);
+	AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList params);
 	
-	~AtmospherePar(){INFO("AtmospherePar destructor");}
+	~AtmospherePar() {INFO("AtmospherePar destructor");}
 
-	
-	
-}
+};
 	
 #endif

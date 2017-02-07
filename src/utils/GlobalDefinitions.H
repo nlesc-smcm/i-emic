@@ -74,13 +74,25 @@ extern std::stack<Timer> timerStack;
 #endif
 
 #ifndef DEBUG
-#  ifdef DEBUGGING
+#  ifdef DEBUGGING_OLD
 #    define DEBUG(s) (*outFile) << s << std::endl;
 // # stringifies variable s: 
 #    define DEBVAR(s) (*outFile) << #s << ": " << s << std::endl;
 #  else
 #    define DEBUG(s)
 #    define DEBVAR(s)
+#  endif
+#endif
+
+// For new debug statements
+#ifndef DEB
+#  ifdef DEBUGGING_NEW
+#    define DEB(s) (*outFile) << s << std::endl;
+// # stringifies variable s: 
+#    define DEBV(s) (*outFile) << #s << ": " << s << std::endl;
+#  else
+#    define DEB(s)
+#    define DEBV(s)
 #  endif
 #endif
 
