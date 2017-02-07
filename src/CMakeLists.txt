@@ -87,9 +87,9 @@ list(APPEND library_dependencies ${EXTRA_LIBS})
 # ------------------------------------------------------------------
 # Internal I-EMIC shared libraries
 set(I-EMIC_LIBS
-  ocean
-  atmosphere
   coupledmodel
+  atmosphere
+  ocean
   supervector
   utils
   jdqz_tools

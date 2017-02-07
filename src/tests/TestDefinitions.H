@@ -28,6 +28,7 @@
 #include "CoupledModel.H"
 #include "Continuation.H"
 #include "Atmosphere.H"
+#include "AtmospherePar.H"
 #include "GlobalDefinitions.H"
 #include "THCMdefs.H"
 #include "JDQZInterface.H"

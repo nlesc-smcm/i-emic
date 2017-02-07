@@ -13,7 +13,32 @@ namespace
 //------------------------------------------------------------------
 TEST(ALL, Initialization)
 {
-	
+	bool failed = false;
+	// Create atmosphere parameters
+	RCP<Teuchos::ParameterList> atmosphereParams =
+		rcp(new Teuchos::ParameterList);
+	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+
+	try
+	{
+		atmos = std::make_shared<Atmosphere>(atmosphereParams);
+	}
+	catch (...)
+	{
+		failed = true;
+	}
+	EXPECT_EQ(failed, false);
+
+	failed = false;
+	try
+	{
+		atmosPar = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+	}
+	catch (...)
+	{
+		failed = true;
+	}
+	EXPECT_EQ(failed, false);
 }
 
 
