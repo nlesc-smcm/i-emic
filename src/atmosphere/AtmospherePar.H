@@ -19,6 +19,9 @@ private:
 	//! serial atmosphere class, working on subdomains
 	std::shared_ptr<Atmosphere> atmos_;
 
+	//! parameterlist
+	ParameterList params_;
+
 	//! communicator object
 	Teuchos::RCP<Epetra_Comm> comm_;
 
@@ -36,6 +39,12 @@ private:
 
 	//! TRIOS domain object for parallelization strategy
 	Teuchos::RCP<TRIOS::Domain> domain_;
+
+	//! Standard map, without ghost nodes (non-overlapping).
+	Teuchos::RCP<Epetra_Map> standardMap_;
+
+	//! Standard map, without ghost nodes (overlapping).
+	Teuchos::RCP<Epetra_Map> assemblyMap_;	
 
 public:
 	//! Constructor based on paramterlist

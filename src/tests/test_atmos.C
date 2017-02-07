@@ -41,7 +41,6 @@ TEST(ALL, Initialization)
 	EXPECT_EQ(failed, false);
 }
 
-
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {

@@ -248,14 +248,14 @@ namespace TRIOS
 		zmin_loc = zmin + Loff*dz;
 		zmax_loc = zmin + (Loff+lloc)*dz;
 
-		DEBV(xmin);
-		DEBV(xmax);
-		DEBV(ymin);
-		DEBV(ymax);
-		DEBV(xmin_loc);
-		DEBV(xmax_loc);
-		DEBV(ymin_loc);
-		DEBV(ymax_loc);
+		DEBVAR(xmin);
+		DEBVAR(xmax);
+		DEBVAR(ymin);
+		DEBVAR(ymax);
+		DEBVAR(xmin_loc);
+		DEBVAR(xmax_loc);
+		DEBVAR(ymin_loc);
+		DEBVAR(ymax_loc);
 	}
 
 	// find out wether a particular local index is on a ghost node
