@@ -246,7 +246,7 @@ SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
 
   if (a_reinit.eq.1) then
      !  A few initializations need to be repeated
-     call vmix_init	! ATvS-Mix  USES LANDMASK
+     call vmix_init    ! ATvS-Mix  USES LANDMASK
      call forcing      ! USES LANDMASK
   endif
 

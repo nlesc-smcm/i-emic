@@ -1,4 +1,3 @@
-
 #include "Atmosphere.H"
 #include "AtmosphereDefinitions.H"
 #include "SuperVector.H"
@@ -19,7 +18,68 @@
 extern "C" _SUBROUTINE_(getooa)(double*, double*);
 
 //==================================================================
-// Constructor, specify horizontal grid dimensions
+// Constructor for use with parallel atmosphere 
+Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
+					   double xmin, double xmax, double ymin, double ymax,
+					   ParameterList params)
+	:
+	params_   (params),
+
+// grid --------------------------------------------------------------------
+	n_               (n),
+	m_               (m),
+	l_               (l),
+
+	xmin_            (xmin),	 
+	xmax_            (xmax),	 
+	ymin_            (ymin),	 
+	ymax_            (ymax),
+
+	periodic_        (periodic),
+
+	use_landmask_    (params->get("Use land mask from Ocean", false)),
+
+// solvers ------------------------------------------------------------------
+	preconditioner_  (params->get("Preconditioner", 'J')),
+
+// physics ------------------------------------------------------------------
+	rhoa_            (params->get("atmospheric density",1.25)),
+	hdima_           (params->get("atmospheric scale height",8400.)),
+	cpa_             (params->get("heat capacity",1000.)),
+	d0_              (params->get("constant eddy diffusivity",3.1e+06)),
+	arad_            (params->get("radiative flux param A",216.0)),
+	brad_            (params->get("radiative flux param B",1.5)),
+	sun0_            (params->get("solar constant",1360.)),
+	c0_              (params->get("atmospheric absorption coefficient",0.43)),
+	ce_              (params->get("exchange coefficient ce",1.3e-03)),
+	ch_              (params->get("exchange coefficient ch",0.94 * ce_)),
+	uw_              (params->get("mean atmospheric surface wind speed",8.5)),
+	t0_              (params->get("reference temperature",15.0)),
+	udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
+	r0dim_           (params->get("radius of the earth",6.37e+06)),
+	
+// continuation ---------------------------------------------------------------- 
+	allParameters_   ({ "Combined Forcing", "Solar Forcing" }), 
+	parName_         (params->get("Continuation parameter",
+								  "Combined Forcing")),
+// starting values 
+	comb_            (params->get("Combined Forcing", 0.0)),
+	sunp_            (params->get("Solar Forcing", 1.0)),
+		
+// input/output (of no use in parallel setup ------------------------------------
+	inputFile_       (""),
+	outputFile_      (""),
+	loadState_       (false),
+	saveState_       (false),	
+	storeEverything_ (false)
+{
+	INFO("Atmosphere: constructor for parallel use...")
+	setup();
+	INFO("Atmosphere: constructor for parallel use done")
+}
+	
+//==================================================================
+// Constructor for standalone serial use
 Atmosphere::Atmosphere(ParameterList params)
 	:
 	params_          (params),
@@ -59,14 +119,30 @@ Atmosphere::Atmosphere(ParameterList params)
 	sunp_            (params->get("Solar Forcing", 1.0)),
 		
 // input/output  --------------------------------------------------------------
-	inputFile_       (params->get("Input file", "atmos.h5")),
-	outputFile_      (params->get("Output file", "atmos.h5")),
+	inputFile_       (params->get("Input file", "atmos_input.h5")),
+	outputFile_      (params->get("Output file", "atmos_output.h5")),
 	loadState_       (params->get("Load state", false)),
 	saveState_       (params->get("Save state", false)),	
 	storeEverything_  (params->get("Store everything", false))
 {
 	INFO("Atmosphere: constructor...");
 
+	// Define domain
+	xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
+	xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
+	ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
+	ymax_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
+
+	// More factorized setup stuff
+	setup();
+	
+	INFO("Atmosphere: constructor... done");
+		
+}
+
+//==================================================================
+void Atmosphere::setup()
+{
 	// Dimension of atmosphere
 	dim_ = m_ * n_ * l_;
 
@@ -76,8 +152,6 @@ Atmosphere::Atmosphere(ParameterList params)
 
 	// Leading dimension of banded matrix
 	ldimA_  = 2 * ksub_ + 1 + ksup_;
-	
-	// Continuation parameter
 	
 	// Filling the coefficients
 	muoa_ =  rhoa_ * ch_ * cpa_ * uw_;
@@ -113,11 +187,6 @@ Atmosphere::Atmosphere(ParameterList params)
 
 	// Construct dependency grid:
 	Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
-
-	xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
-	xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
-	ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
-	ymax_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
 	
 	// Set the grid increments
 	dx_ = (xmax_ - xmin_) / n_;
@@ -164,7 +233,6 @@ Atmosphere::Atmosphere(ParameterList params)
 	if (loadState_)
 		loadStateFromFile(inputFile_);
 
-	INFO("Atmosphere: constructor... done");
 }
 
 //-----------------------------------------------------------------------------
@@ -878,7 +946,10 @@ void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
 		solve(v, out);
 	}
 	else
+	{
+		INFO("Atmosphere: no preconditioner");
 		out.assign(v.getAtmosVector());
+	}
 	TIMER_STOP("Atmosphere: apply preconditioning");
 }
 

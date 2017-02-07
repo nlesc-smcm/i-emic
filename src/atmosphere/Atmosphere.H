@@ -184,9 +184,17 @@ private:
 	bool storeEverything_;	
 	
 public:
+	// Constructor for use with parallel atmosphere 
+	Atmosphere(int n, int m, int l, bool periodic,
+			   double xmin, double xmax, double ymin, double ymax,
+			   ParameterList params);
+
 	// Constructor, specify horizontal grid dimensions
 	//  > the number of vertical layers is assumed 1 at this point
 	Atmosphere(ParameterList params);
+
+	// General setup things for both constructors
+	void setup();
 
 	// Destructor
 	virtual ~Atmosphere();
