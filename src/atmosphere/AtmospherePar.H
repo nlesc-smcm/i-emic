@@ -79,7 +79,7 @@ public:
 
 	// Let the atmos object use idealized values,
 	// mainly for testing purposes
-	void idealized() { atmos_->idealized(); }
+	void idealized();
 		
 };
 	

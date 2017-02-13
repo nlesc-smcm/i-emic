@@ -22,13 +22,13 @@ CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
 	
 	stateView_(std::make_shared<SuperVector>
 			   (ocean->getState('V')->getOceanVector(),
-				atmos->getState('V')->getAtmosVector())),
+				atmos->getState('V'))),
 	solView_(std::make_shared<SuperVector>
 			 (ocean->getSolution('V')->getOceanVector(),
-			  atmos->getSolution('V')->getAtmosVector())),
+			  atmos->getSolution('V'))),
 	rhsView_(std::make_shared<SuperVector>
 			 (ocean->getRHS('V')->getOceanVector(),
-			  atmos->getRHS('V')->getAtmosVector())),
+			  atmos->getRHS('V'))),
 	
 	useExistingState_ (params->get("Use existing state", false)),
 	parName_          (params->get("Continuation parameter",
@@ -562,7 +562,7 @@ std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode)
 	{
 		return std::make_shared<SuperVector>(
 			ocean_->getSolution('C')->getOceanVector(),
-			atmos_->getSolution('C')->getAtmosVector() );
+			atmos_->getSolution('C'));
 	}
 	else
 	{
@@ -577,7 +577,7 @@ std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode1,
 {
 	return std::make_shared<SuperVector>(
 		ocean_->getSolution(mode1)->getOceanVector(),
-		atmos_->getSolution(mode2)->getAtmosVector() );
+		atmos_->getSolution(mode2));
 }
 
 //------------------------------------------------------------------
@@ -589,7 +589,7 @@ std::shared_ptr<SuperVector> CoupledModel::getState(char mode)
 	{
 		return std::make_shared<SuperVector>(
 			ocean_->getState('C')->getOceanVector(),
-			atmos_->getState('C')->getAtmosVector() );
+			atmos_->getState('C'));
 	}
 	else
 	{
@@ -607,7 +607,7 @@ std::shared_ptr<SuperVector> CoupledModel::getRHS(char mode)
 	{
 		return std::make_shared<SuperVector>(
 			ocean_->getRHS('C')->getOceanVector(),
-			atmos_->getRHS('C')->getAtmosVector() );
+			atmos_->getRHS('C'));
 	}
 	else
 	{

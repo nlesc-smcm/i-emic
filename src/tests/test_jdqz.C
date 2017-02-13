@@ -145,8 +145,8 @@ TEST(JDQZ, Atmosphere)
 	atmos->printJacobian("atmos_testjac");
 
 	INFO("Creating ComplexSuperVector...");
-	SuperVector x = *atmos->getSolution();
-	SuperVector y = *atmos->getSolution();
+	SuperVector x(atmos->getSolution());
+	SuperVector y(atmos->getSolution());
 	x.zero(); y.zero();
 
 	// JDQZ needs complex arithmetic, that's why we create a ComplexSuperVector

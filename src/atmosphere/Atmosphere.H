@@ -33,14 +33,12 @@
 class DependencyGrid;
 class Atom;
 
-using std::array;
-using std::vector;
-
 class Atmosphere
 {
 public:
 	using VectorPtr     = std::shared_ptr<SuperVector>;
-	using CRSMat        = std::map<std::string, vector<double> >; 
+	//	using VectorPtr     = std::shared_ptr<vector<doubel> >;
+	using CRSMat        = std::map<std::string, std::vector<double> >; 
 	using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
 
 private:
@@ -76,6 +74,9 @@ private:
 
 	// Periodic boundary conditions in x-direction
 	bool periodic_;
+
+	// Find out whether we are part of a domain decomposition
+	bool parallel_;
 
 	// Specify whether we should use a land mask
 	bool use_landmask_;
@@ -215,12 +216,12 @@ public:
 	// Return the Jacobian matrix in CRS format
 	std::shared_ptr<CRSMat> getJacobian();
 
-	std::shared_ptr<SuperVector> getSolution (char mode = 'C');
-	std::shared_ptr<SuperVector> getState    (char mode = 'C');
-	std::shared_ptr<SuperVector> getRHS      (char mode = 'C');
-
+	std::shared_ptr<std::vector<double> > getSolution (char mode = 'C'); // deprecated
+	std::shared_ptr<std::vector<double> > getState(char Mode = 'C');
+	std::shared_ptr<std::vector<double> > getRHS      (char mode = 'C'); // deprecated
+	
 	// Apply the Jacobian to a vector and return the result u = J*v
-	std::shared_ptr<SuperVector> applyMatrix(SuperVector const &v);
+	std::shared_ptr<std::vector<double> > applyMatrix(SuperVector const &v);
 	void applyMatrix(SuperVector const &v, SuperVector &out);
 
 	// Apply the preconditioner inverse to a vector and return
@@ -245,7 +246,7 @@ public:
 	// ! Put default fields in atmosphere and ocean
 	void idealizedOcean();
 	void idealizedState();
-	void idealized() { idealizedOcean(); idealizedState();}
+	void idealized();
 	void zeroOcean();
 	void zeroState();
 
@@ -259,7 +260,10 @@ public:
 	void setSurfaceMask(std::shared_ptr<std::vector<int> > surfm);
 	
 private:
-	std::shared_ptr<SuperVector> getVector
+	// std::shared_ptr<SuperVector> getVector
+	// (char mode, std::shared_ptr<std::vector<double> > vec); // deprecated
+
+	std::shared_ptr<std::vector<double> > getVector
 	(char mode, std::shared_ptr<std::vector<double> > vec);
 	
 	// ! Apply local discretization
@@ -275,7 +279,7 @@ private:
 	double matvec(int row);
 
 	// ! Compute residual
-	double computeResidual(std::shared_ptr<SuperVector> rhs);
+	double computeResidual(std::shared_ptr<std::vector<double> > rhs);
 	double computeResidual(SuperVector const &rhs,
 						   SuperVector const &x);
 

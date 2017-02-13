@@ -19,7 +19,7 @@
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- Starting parameters -->
-  <Parameter name="Combined Forcing" type="double" value="0.0"/>
+  <Parameter name="Combined Forcing" type="double" value="0.1"/>
   <Parameter name="Solar Forcing"    type="double" value="1.0"/>
   
   <!-- Periodic boundary conditions in x-direction                -->

@@ -1,6 +1,5 @@
 #include "Atmosphere.H"
 #include "AtmosphereDefinitions.H"
-#include "SuperVector.H"
 
 #include <math.h>
 #include <iostream>
@@ -16,6 +15,8 @@
 #include "THCMdefs.H"
 
 extern "C" _SUBROUTINE_(getooa)(double*, double*);
+
+extern "C" double ddot_(int *N, double *X, int *INCX, double *Y, int *INCY);
 
 //==================================================================
 // Constructor for use with parallel atmosphere 
@@ -36,7 +37,7 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
 	ymax_            (ymax),
 
 	periodic_        (periodic),
-
+	
 	use_landmask_    (params->get("Use land mask from Ocean", false)),
 
 // solvers ------------------------------------------------------------------
@@ -73,9 +74,10 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
 	saveState_       (false),	
 	storeEverything_ (false)
 {
-	INFO("Atmosphere: constructor for parallel use...")
+	INFO("Atmosphere: constructor for parallel use...");
+	parallel_ = true;
 	setup();
-	INFO("Atmosphere: constructor for parallel use done")
+	INFO("Atmosphere: constructor for parallel use done");
 }
 	
 //==================================================================
@@ -133,7 +135,9 @@ Atmosphere::Atmosphere(ParameterList params)
 	ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
 	ymax_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
 
-	// More factorized setup stuff
+	parallel_ = false; // this is not the constructor for parallel use.
+
+	// More factorized setup stuff			
 	setup();
 	
 	INFO("Atmosphere: constructor... done");
@@ -272,6 +276,25 @@ void Atmosphere::idealizedState()
 		}
 }
 
+//------------------------------------------------------------------
+void Atmosphere::idealized()
+{
+	idealizedOcean();
+	idealizedState();
+	
+#ifdef DEBUGGING_NEW
+	if (!parallel_)
+	{
+		write(*state_, "state.txt");
+		double dot;
+		int incX = 1;
+		int incY = 1;
+		dot = ddot_(&dim_, &(*state_)[0], &incX, &(*state_)[0], &incY);
+		INFO("Atmosphere idealized state norm: " << sqrt(dot));
+	}
+#endif
+}
+
 //-----------------------------------------------------------------------------
 void Atmosphere::zeroState()
 {
@@ -358,6 +381,18 @@ void Atmosphere::computeRHS()
 			(*rhs_)[row-1] = value;
 		}
 
+#ifdef DEBUGGING_NEW
+	if (!parallel_)
+	{
+		write(*rhs_, "rhs.txt"); 
+		int incX = 1;
+		int incY = 1;
+		double dot;
+		dot = ddot_(&dim_, &(*rhs_)[0], &incX, &(*rhs_)[0], &incY);
+		INFO("Atmosphere rhs norm: " << sqrt(dot));
+	}
+#endif
+	
 	TIMER_STOP("Atmosphere: compute RHS...");
 }
 
@@ -586,14 +621,10 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 }
 
 //----------------------------------------------------------------------------
-double Atmosphere::computeResidual(std::shared_ptr<SuperVector> rhs)
+double Atmosphere::computeResidual(std::shared_ptr<std::vector<double> > rhs)
 {
-	std::shared_ptr<SuperVector> x = getSolution('C'); // obtain solution
-	std::shared_ptr<SuperVector> b =
-		std::make_shared<SuperVector>(rhs->getAtmosVector());
-	x->linearTransformation(getJacobian());            // calculate J*x
-	x->update(-1, *b, 1);                              // calculate Jx - b
-	return x->norm();                                  // return ||b-Jx||
+	WARNING("NOT IMPLEMENTED: Atmosphere::computeResidual(std::shared_ptr<std::vector<double> > rhs)", __FILE__, __LINE__);
+	return 0.0;
 }
 
 //----------------------------------------------------------------------------
@@ -820,48 +851,46 @@ void Atmosphere::test()
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<SuperVector> Atmosphere::getVector
+std::shared_ptr<std::vector<double> > Atmosphere::getVector
 (char mode, std::shared_ptr<std::vector<double> > vec)
 {
 	if (mode == 'C')      // copy
 	{
 		std::shared_ptr<std::vector<double> > copy =
 			std::make_shared<std::vector<double> >(*vec); 
-		std::shared_ptr<SuperVector> ptr = std::make_shared<SuperVector>(copy);
-		return ptr;
+		return copy;
 	}
 	else if (mode == 'V') // view
 	{
-		std::shared_ptr<SuperVector> ptr = std::make_shared<SuperVector>(vec);
-		return ptr;
+		return vec;
 	}
 	else
 	{
 		WARNING("invalid mode", __FILE__, __LINE__);
-		return std::shared_ptr<SuperVector>();
+		return std::shared_ptr<std::vector<double> >();
 	}	
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<SuperVector> Atmosphere::getSolution(char mode)
+std::shared_ptr<std::vector<double> > Atmosphere::getSolution(char mode)
 {
 	return getVector(mode, sol_);
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<SuperVector> Atmosphere::getState(char mode)
+std::shared_ptr<std::vector<double> > Atmosphere::getState(char mode)
 {
 	return getVector(mode, state_);
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<SuperVector> Atmosphere::getRHS(char mode)
+std::shared_ptr<std::vector<double> > Atmosphere::getRHS(char mode)
 {
 	return getVector(mode, rhs_);
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<SuperVector> Atmosphere::applyMatrix(SuperVector const &v)
+std::shared_ptr<std::vector<double> > Atmosphere::applyMatrix(SuperVector const &v)
 {
 	std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
 	std::shared_ptr<std::vector<double> > result =
@@ -1131,8 +1160,6 @@ int Atmosphere::saveStateToFile(std::string const &filename)
 	dataset_id   = H5Dcreate2(file_id, "/State/Values", H5T_IEEE_F64LE, dataspace_id,
 							  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
-	INFO("   state: ||x|| = " << getState()->norm());
-
 	// Write to the dataset
 	status.push_back(H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
 							  &(*state_)[0]));	
@@ -1214,7 +1241,6 @@ int Atmosphere::loadStateFromFile(std::string const &filename)
 							 H5S_ALL, H5P_DEFAULT, &(*state_)[0]));
 	status.push_back(H5Dclose(dataset_id));
 	
-	INFO("   state: ||x|| = " << getState()->norm());
 	
 	// Open parameter dataset and load all parameters
 	std::stringstream ss;

@@ -71,6 +71,81 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 void AtmospherePar::computeRHS()
 {
 	INFO("AtmosepherePar: computeRHS...");
+
+	// local problem size
+	int numMyElements = assemblyMap_->NumMyElements();
+
+	// compute local rhs and check bounds
 	atmos_->computeRHS();
-	INFO("AtmosepherePar: computeRHS done");
+ 	std::shared_ptr<std::vector<double> > rhs = atmos_->getRHS('V');
+	if ((int) rhs->size() != numMyElements)
+	{
+		ERROR("RHS incorrect size", __FILE__, __LINE__);
+	}
+
+	// obtain view
+	double *rhs_tmp;
+	localRHS_->ExtractView(&rhs_tmp);
+
+	// fill view
+	for (int i = 0; i != numMyElements; ++i)
+	{
+		rhs_tmp[i] = (*rhs)[i];
+	}
+
+	// set datamember
+	domain_->Assembly2Solve(*localRHS_, *rhs_);
+
+#ifdef DEBUGGING_NEW
+	std::ofstream file;
+	file.open("rhs" + std::to_string(comm_->MyPID()) + ".txt");
+	rhs_->Print(file);
+	file.close();
+	double nrm;
+	rhs_->Norm2(&nrm);
+	INFO("AtmospherePar rhs norm: " << nrm);
+#endif
+		
+	INFO("AtmospherePar: computeRHS done");
+}
+
+//==================================================================
+void AtmospherePar::idealized()
+{
+	// initialize local rhs with idealized values
+	atmos_->idealized();
+
+	// local problem size
+	int numMyElements = assemblyMap_->NumMyElements();
+
+	// obtain view of assembly state
+	double *state_tmp;
+	localState_->ExtractView(&state_tmp);
+
+	// obtain local state and check bounds
+	std::shared_ptr<std::vector<double> > state = atmos_->getState('V');
+	if ((int) state->size() != numMyElements)
+	{
+		ERROR("state incorrect size", __FILE__, __LINE__);
+	}
+
+	// fill assembly view with local state
+	for (int i = 0; i != numMyElements; ++i)
+	{
+		state_tmp[i] = (*state)[i];
+	}
+	
+	// set solvemap state
+	domain_->Assembly2Solve(*localState_, *state_);
+
+#ifdef DEBUGGING_NEW
+	std::ofstream file;
+	file.open("state" + std::to_string(comm_->MyPID()) + ".txt");
+	state_->Print(file);
+	file.close();
+	double nrm;
+	state_->Norm2(&nrm);
+	INFO("AtmospherePar idealized state norm: " << nrm);
+#endif
+	
 }
