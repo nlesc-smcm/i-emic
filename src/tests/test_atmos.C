@@ -42,6 +42,27 @@ TEST(ALL, Initialization)
 }
 
 //------------------------------------------------------------------
+TEST(ALL, RHS)
+{
+	bool failed = false;
+	try
+	{
+		// Set idealized state in both models
+		atmos->idealized();
+		atmosPar->idealized();
+
+		// Compute RHS in both models
+		atmos->computeRHS();
+		atmosPar->computeRHS();
+	}
+	catch (...)
+	{
+		failed = true;		
+	}
+	EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
 	// Initialize the environment:

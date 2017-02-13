@@ -1105,10 +1105,8 @@ void Atmosphere::postProcess()
 			std::ifstream src2(outputFile_.c_str(), std::ios::binary);
 			std::ofstream dst2(ss.str(), std::ios::binary);
 			dst2 << src2.rdbuf();
-		}
-			
+		}			
 	}
-
 }
 
 //-----------------------------------------------------------------------------
@@ -1146,7 +1144,8 @@ int Atmosphere::saveStateToFile(std::string const &filename)
 
 	// Now we are going to write all available continuation parameters
 	group_id = H5Gcreate2(file_id, "/Parameters", H5P_DEFAULT,
-						  H5P_DEFAULT, H5P_DEFAULT);     // Create a new group 
+						  H5P_DEFAULT, H5P_DEFAULT);     // Create a new group
+	
 	std::stringstream ss;
 	double par;
 	for (auto const &parameter : allParameters_)

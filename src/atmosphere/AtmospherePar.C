@@ -10,7 +10,11 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 	n_               (params->get("Global Grid-Size n", 16)),
 	m_               (params->get("Global Grid-Size m", 16)),
 	l_               (params->get("Global Grid-Size l", 1)),
-	periodic_        (params->get("Periodic", false))
+	periodic_        (params->get("Periodic", false)),
+	inputFile_       (params->get("Input file", "atmos_input.h5")),
+	outputFile_      (params->get("Output file", "atmos_output.h5")),
+	loadState_       (params->get("Load state", false)),
+	saveState_       (params->get("Save state", false))
 {
 	INFO("AtmospherePar: constructor...");
 	// Define degrees of freedom
@@ -41,14 +45,32 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 	int mloc = domain_->LocalM();
 	int lloc = domain_->LocalL();
 
+	// Obtain overlapping and non-overlapping maps	
+	assemblyMap_ = domain_->GetAssemblyMap();
+	standardMap_ = domain_->GetStandardMap();
+
+	// Create overlapping and non-overlapping states
+	state_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+	rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+	localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+	localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_)); 
+
 	// Create local Atmosphere object
+	// Periodicity is handled by Atmosphere if there is a single
+	// core in the x-direction. 
 	Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
 	bool perio = (periodic_ && xComm->NumProc() == 1);
 	atmos_ = std::make_shared<Atmosphere>(nloc, mloc, lloc, perio,
 										  xminloc, xmaxloc, yminloc, ymaxloc,
 										  params_);
-
-	
 	
 	INFO("AtmospherePar: constructor done");
+}
+
+//==================================================================
+void AtmospherePar::computeRHS()
+{
+	INFO("AtmosepherePar: computeRHS...");
+	atmos_->computeRHS();
+	INFO("AtmosepherePar: computeRHS done");
 }

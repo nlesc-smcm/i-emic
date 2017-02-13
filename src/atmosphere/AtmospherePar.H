@@ -40,18 +40,47 @@ private:
 	//! TRIOS domain object for parallelization strategy
 	Teuchos::RCP<TRIOS::Domain> domain_;
 
-	//! Standard map, without ghost nodes (non-overlapping).
+	//! standard map, without ghost nodes (non-overlapping).
 	Teuchos::RCP<Epetra_Map> standardMap_;
 
-	//! Standard map, without ghost nodes (overlapping).
-	Teuchos::RCP<Epetra_Map> assemblyMap_;	
+	//! assembly map, with ghost nodes (overlapping).
+	Teuchos::RCP<Epetra_Map> assemblyMap_;
+
+	//! parallel atmosphere state (non-overlapping)
+	Teuchos::RCP<Epetra_Vector> state_;
+
+	//! parallel atmosphere state (overlapping)
+	Teuchos::RCP<Epetra_Vector> localState_;
+
+	//! parallel atmosphere state (non-overlapping)
+	Teuchos::RCP<Epetra_Vector> rhs_;
+
+	//! parallel atmosphere state (overlapping)
+	Teuchos::RCP<Epetra_Vector> localRHS_;
+
+	//! input file (HDF5)
+	std::string const inputFile_;
+
+	//! output file (HDF5)
+	std::string const outputFile_;
+
+	//! input/output flags
+	bool loadState_, saveState_;
 
 public:
-	//! Constructor based on paramterlist
+	//! Constructor based on parameterlist
 	AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList params);
 	
 	~AtmospherePar() {INFO("AtmospherePar destructor");}
 
+	void computeRHS();
+
+	void setState(Teuchos::RCP<Epetra_Vector> input);
+
+	// Let the atmos object use idealized values,
+	// mainly for testing purposes
+	void idealized() { atmos_->idealized(); }
+		
 };
 	
 #endif

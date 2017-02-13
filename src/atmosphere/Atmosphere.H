@@ -107,7 +107,7 @@ private:
 
 	// Complete jacobian in CRS form
 	std::shared_ptr<CRSMat> jac_;
-
+	
  	// Pivot array for lapack
 	std::vector<int> ipiv_;
 
@@ -203,6 +203,7 @@ public:
 	// Needs some factorization
 	void solve(std::shared_ptr<SuperVector> rhs =
 			   std::shared_ptr<SuperVector>());
+	
 	void solve(SuperVector const &rhs, SuperVector &out);
 	
 	// Compute the right hand side
@@ -214,9 +215,9 @@ public:
 	// Return the Jacobian matrix in CRS format
 	std::shared_ptr<CRSMat> getJacobian();
 
-	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
-	std::shared_ptr<SuperVector> getState(char mode = 'C');
-	std::shared_ptr<SuperVector> getRHS(char mode = 'C');
+	std::shared_ptr<SuperVector> getSolution (char mode = 'C');
+	std::shared_ptr<SuperVector> getState    (char mode = 'C');
+	std::shared_ptr<SuperVector> getRHS      (char mode = 'C');
 
 	// Apply the Jacobian to a vector and return the result u = J*v
 	std::shared_ptr<SuperVector> applyMatrix(SuperVector const &v);
@@ -244,6 +245,7 @@ public:
 	// ! Put default fields in atmosphere and ocean
 	void idealizedOcean();
 	void idealizedState();
+	void idealized() { idealizedOcean(); idealizedState();}
 	void zeroOcean();
 	void zeroState();
 
