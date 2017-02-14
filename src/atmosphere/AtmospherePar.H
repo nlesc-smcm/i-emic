@@ -26,7 +26,7 @@ private:
 	Teuchos::RCP<Epetra_Comm> comm_;
 
 	//! grid size
-	int n_,m_,l_;
+	int n_,m_,l_, dim_;
 
 	//! periodic bdc
 	bool periodic_;
@@ -75,11 +75,16 @@ public:
 
 	void computeRHS();
 
-	void setState(Teuchos::RCP<Epetra_Vector> input);
+	void setState(Teuchos::RCP<Epetra_Vector> input) { state_ = input; }
 
 	// Let the atmos object use idealized values,
 	// mainly for testing purposes
 	void idealized();
+
+	// Obtain problem size
+	int  dim() { return dim_; }
+
+	Teuchos::RCP<Epetra_Vector> getState() { return state_; }
 		
 };
 	

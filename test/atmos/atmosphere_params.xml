@@ -23,7 +23,7 @@
   <Parameter name="Solar Forcing"    type="double" value="1.0"/>
   
   <!-- Periodic boundary conditions in x-direction                -->
-  <Parameter name="Periodic" type="bool" value="true"             />
+  <Parameter name="Periodic" type="bool" value="false"             />
 
   <!-- Choose to use the ocean's landmask if available              -->
   <Parameter name="Use land mask from Ocean" type="bool" value="false"/>

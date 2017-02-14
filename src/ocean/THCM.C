@@ -540,7 +540,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	DEBUG("call get_array_sizes...");
 	F90NAME(m_mat,get_array_sizes)(&nrows,&nnz);
 	INFO("Allocating Fortran CSR arrays, nrows=" << nrows << ", nnz=" << nnz);
-
+	
 	// allocate the memory
 	begA = new int[nrows+1];
 	coA  = new double[nnz];

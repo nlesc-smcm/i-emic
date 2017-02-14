@@ -17,8 +17,10 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 	saveState_       (params->get("Save state", false))
 {
 	INFO("AtmospherePar: constructor...");
+
 	// Define degrees of freedom
 	dof_ = ATMOS_NUN_;
+	dim_ = n_ * m_ * l_ * dof_;
 	
 	// Define domain
 	xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
@@ -72,12 +74,23 @@ void AtmospherePar::computeRHS()
 {
 	INFO("AtmosepherePar: computeRHS...");
 
+	// Create assembly state
+	domain_->Solve2Assembly(*state_, *localState_);
+	
 	// local problem size
 	int numMyElements = assemblyMap_->NumMyElements();
+
+	std::shared_ptr<std::vector<double> > localState =
+		std::make_shared<std::vector<double> >(numMyElements, 0.0);
+
+	localState_->ExtractCopy(&(*localState)[0], numMyElements);
+
+	atmos_->setState(localState);
 
 	// compute local rhs and check bounds
 	atmos_->computeRHS();
  	std::shared_ptr<std::vector<double> > rhs = atmos_->getRHS('V');
+	
 	if ((int) rhs->size() != numMyElements)
 	{
 		ERROR("RHS incorrect size", __FILE__, __LINE__);
@@ -97,10 +110,14 @@ void AtmospherePar::computeRHS()
 	domain_->Assembly2Solve(*localRHS_, *rhs_);
 
 #ifdef DEBUGGING_NEW
-	std::ofstream file;
-	file.open("rhs" + std::to_string(comm_->MyPID()) + ".txt");
-	rhs_->Print(file);
-	file.close();
+	std::ofstream file1, file2;
+	file1.open("rhs_epetra" + std::to_string(comm_->MyPID()) + ".txt");
+	file2.open("rhs_atmos" + std::to_string(comm_->MyPID()) + ".txt");
+	rhs_->Print(file1);
+	for (auto &it: *rhs)
+		file2 << it << " ";
+	file1.close();
+	file2.close();
 	double nrm;
 	rhs_->Norm2(&nrm);
 	INFO("AtmospherePar rhs norm: " << nrm);
@@ -139,10 +156,15 @@ void AtmospherePar::idealized()
 	domain_->Assembly2Solve(*localState_, *state_);
 
 #ifdef DEBUGGING_NEW
-	std::ofstream file;
-	file.open("state" + std::to_string(comm_->MyPID()) + ".txt");
-	state_->Print(file);
-	file.close();
+	std::ofstream file1,file2;
+	file1.open("state_epetra" + std::to_string(comm_->MyPID()) + ".txt");
+	file2.open("state_atmos" + std::to_string(comm_->MyPID()) + ".txt");
+	state_->Print(file1);
+	for (auto &it: *state)
+		file2 << it << " ";
+
+	file1.close();
+	file2.close();
 	double nrm;
 	state_->Norm2(&nrm);
 	INFO("AtmospherePar idealized state norm: " << nrm);

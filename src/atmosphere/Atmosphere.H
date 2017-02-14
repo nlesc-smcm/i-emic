@@ -216,9 +216,11 @@ public:
 	// Return the Jacobian matrix in CRS format
 	std::shared_ptr<CRSMat> getJacobian();
 
-	std::shared_ptr<std::vector<double> > getSolution (char mode = 'C'); // deprecated
-	std::shared_ptr<std::vector<double> > getState(char Mode = 'C');
-	std::shared_ptr<std::vector<double> > getRHS      (char mode = 'C'); // deprecated
+	std::shared_ptr<std::vector<double> > getSolution (char mode = 'C'); 
+	std::shared_ptr<std::vector<double> > getState    (char Mode = 'C');
+	std::shared_ptr<std::vector<double> > getRHS      (char mode = 'C');
+
+	void setState(std::shared_ptr<std::vector<double> > in) { state_ = in; }
 	
 	// Apply the Jacobian to a vector and return the result u = J*v
 	std::shared_ptr<std::vector<double> > applyMatrix(SuperVector const &v);
@@ -238,6 +240,7 @@ public:
 
 	void test();
 	void setOceanTemperature(std::vector<double> const &sst);
+	int  dim() { return dim_; }
 
 	// ! Pre and post-convergence processing
 	void preProcess();

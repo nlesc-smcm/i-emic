@@ -147,9 +147,6 @@ Atmosphere::Atmosphere(ParameterList params)
 //==================================================================
 void Atmosphere::setup()
 {
-	// Dimension of atmosphere
-	dim_ = m_ * n_ * l_;
-
 	// Number of super and sub-diagonal bands in banded matrix
 	ksub_ = std::max(n_, m_);
 	ksup_ = std::max(n_, m_);
@@ -167,6 +164,9 @@ void Atmosphere::setup()
 	
 	np_  = ATMOS_NP_;   // all neighbouring points including the center
 	nun_ = ATMOS_NUN_;  // only temperature ATMOS_TT_
+
+	// Problem size
+	dim_ = m_ * n_ * l_ * nun_;
 	
 	// Initialize state, rhs and solution of linear solve with zeros
 	rhs_   = std::make_shared<std::vector<double> >(dim_, 0.0);
@@ -256,8 +256,8 @@ void Atmosphere::idealizedOcean()
 		for (int j = 1; j <= m_; ++j)
 		{
 			value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
-			row   = find_row(i,j,l_,ATMOS_TT_)-1;
-			surfaceTemp_[row] = value;
+			row   = find_row(i,j,l_,ATMOS_TT_) - 1;
+			surfaceTemp_[row] = 0;
 		}
 }
 
@@ -272,7 +272,7 @@ void Atmosphere::idealizedState()
 		{
 			value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 			row   = find_row(i,j,l_,ATMOS_TT_)-1;
-			(*state_)[row] = value;
+			(*state_)[row] = 1.0;
 		}
 }
 

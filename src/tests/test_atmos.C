@@ -47,10 +47,30 @@ TEST(ALL, RHS)
 	bool failed = false;
 	try
 	{
-		// Set idealized state in both models
-		atmos->idealized();
-		atmosPar->idealized();
+		// Check dimensions
+		int dim1 = atmos->dim();
+		int dim2 = atmosPar->dim();
+		EXPECT_EQ(dim1, dim2);
 
+		// Create random state from atmosPar standardMap state
+		Teuchos::RCP<Epetra_Vector> state_par = atmosPar->getState();
+		Teuchos::RCP<Epetra_BlockMap> gmap = Utils::AllGather(state_par->Map());
+		Teuchos::RCP<Epetra_Import> imp =
+			Teuchos::rcp(new Epetra_Import(*gmap, state_par->Map()));
+		state_par->Random();
+		Teuchos::RCP<Epetra_Vector> gathered =
+			Teuchos::rcp(new Epetra_Vector(*gmap));
+
+		gathered->Import(*state_par, *imp, Insert);
+
+		std::shared_ptr< std::vector<double> > state =
+			std::make_shared<std::vector<double> >(dim1, 0.0);
+		
+		gathered->ExtractCopy(&(*state)[0], dim1);
+
+		atmos->setState(state);
+		atmosPar->setState(state_par);
+		
 		// Compute RHS in both models
 		atmos->computeRHS();
 		atmosPar->computeRHS();
