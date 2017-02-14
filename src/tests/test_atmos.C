@@ -11,7 +11,7 @@ namespace
 
 
 //------------------------------------------------------------------
-TEST(ALL, Initialization)
+TEST(Atmosphere, Initialization)
 {
 	bool failed = false;
 	// Create atmosphere parameters
@@ -42,7 +42,7 @@ TEST(ALL, Initialization)
 }
 
 //------------------------------------------------------------------
-TEST(ALL, RHS)
+TEST(Atmosphere, RHS)
 {
 	bool failed = false;
 	try
@@ -53,31 +53,141 @@ TEST(ALL, RHS)
 		EXPECT_EQ(dim1, dim2);
 
 		// Create random state from atmosPar standardMap state
-		Teuchos::RCP<Epetra_Vector> state_par = atmosPar->getState();
-		Teuchos::RCP<Epetra_BlockMap> gmap = Utils::AllGather(state_par->Map());
+		Teuchos::RCP<Epetra_Vector> state_par = atmosPar->getState('C');
+
+		state_par->SetSeed(rand() % 100);		
+		INFO("TEST(Atmosphere, RHS): seed = " << state_par->Seed());
+
+		// Randomize and scale standardMap state
+
+		state_par->Random();
+
+		// Create gather scheme: map and importer
+		Teuchos::RCP<Epetra_BlockMap> gmap =
+			Utils::AllGather(state_par->Map());
 		Teuchos::RCP<Epetra_Import> imp =
 			Teuchos::rcp(new Epetra_Import(*gmap, state_par->Map()));
-		state_par->Random();
+
+		// Create vector to hold the gathered state
 		Teuchos::RCP<Epetra_Vector> gathered =
 			Teuchos::rcp(new Epetra_Vector(*gmap));
 
+		// Gather the state into <gathered>
 		gathered->Import(*state_par, *imp, Insert);
 
+		// Create full state for serial atmosphere
 		std::shared_ptr< std::vector<double> > state =
 			std::make_shared<std::vector<double> >(dim1, 0.0);
-		
+
+		// Extract state from gathered
 		gathered->ExtractCopy(&(*state)[0], dim1);
 
+		// Put the full state in the serial atmosphere
 		atmos->setState(state);
+
+		// Put the standardMap parallel state into the parallel atmosphere
 		atmosPar->setState(state_par);
 		
 		// Compute RHS in both models
 		atmos->computeRHS();
 		atmosPar->computeRHS();
+
+		// Obtain RHS from both models
+		Teuchos::RCP<Epetra_Vector> rhsPar = atmosPar->getRHS('V');
+		std::shared_ptr<std::vector<double> > rhsSer = atmos->getRHS('V');
+
+		// Check norms parallel and serial rhs
+		EXPECT_NEAR(norm(rhsPar), norm(rhsSer), 1e-7);
+		INFO("TEST(Atmosphere, RHS): serial norm = " << norm(rhsSer));
+		INFO("TEST(Atmosphere, RHS): parall norm = " << norm(rhsPar));
 	}
 	catch (...)
 	{
 		failed = true;		
+	}
+	EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(Atmosphere, State)
+{
+	bool failed = false;
+	try
+	{
+		// Obtain state from both models
+		Teuchos::RCP<Epetra_Vector> statePar = atmosPar->getState('V');
+		std::shared_ptr<std::vector<double> > stateSer = atmos->getState('V');
+
+		// Check norms parallel and serial rhs
+		EXPECT_NEAR(norm(statePar), norm(stateSer), 1e-7);
+	}
+	catch(...)
+	{
+		failed = true;
+	}
+	EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(Atmosphere, SurfaceTemperature)
+{
+	bool failed = false;
+	try
+	{
+		// Obtain map for surface valeus
+		Teuchos::RCP<Epetra_BlockMap> surfmap = atmosPar->getStandardSurfaceMap();
+
+		// Create random vector from surface map
+		Teuchos::RCP<Epetra_Vector> surfvals = Teuchos::rcp(new Epetra_Vector(*surfmap));
+		surfvals->SetSeed(rand() % 100);		
+		INFO("TEST(Atmosphere, SurfaceTemperature): seed = " << surfvals->Seed());
+
+		surfvals->Random();
+		surfvals->Scale(1e1);
+
+		// Create gather map
+		Teuchos::RCP<Epetra_BlockMap> gmap =
+			Utils::AllGather(*surfmap);
+
+		// Create import strategy
+		Teuchos::RCP<Epetra_Import> gimp =
+			Teuchos::rcp(new Epetra_Import(*gmap, *surfmap));
+
+		// Create gather vector
+		Teuchos::RCP<Epetra_Vector> gathered = Teuchos::rcp(new Epetra_Vector(*gmap));
+
+		// Gather <surfvals> into <gathered>
+		gathered->Import(*surfvals, *gimp, Insert);
+
+		// Create vector for serial atmosphere
+		int size = surfmap->NumGlobalElements();
+		std::shared_ptr<std::vector<double> > fullsurfvals =
+			std::make_shared<std::vector<double> >(size);
+
+		// Extract gathered 
+		gathered->ExtractCopy(&(*fullsurfvals)[0], size);
+
+		// Put the randomized ocean surface values in both models
+		atmos->setOceanTemperature(*fullsurfvals);
+		atmosPar->setOceanTemperature(surfvals);
+
+		// Compute RHS in both models
+		atmos->computeRHS();
+		atmosPar->computeRHS();
+
+		// Obtain RHS from both models
+		Teuchos::RCP<Epetra_Vector> rhsPar = atmosPar->getRHS('V');
+		std::shared_ptr<std::vector<double> > rhsSer = atmos->getRHS('V');
+
+		// Check norms parallel and serial rhs
+		EXPECT_NEAR(norm(rhsPar), norm(rhsSer), 1e-7);
+		INFO("TEST(Atmosphere, SurfaceTemperature): serial norm = " << norm(rhsSer));
+		INFO("TEST(Atmosphere, SurfaceTemperature): parall norm = " << norm(rhsPar));
+
+	}
+	catch (...)
+	{
+		failed = true;
 	}
 	EXPECT_EQ(failed, false);
 }

@@ -23,6 +23,8 @@
 #include <array>
 #include <stack>
 #include <string>
+#include <math.h> // sqrt
+#include <time.h> // for seeding
 
 #include "SuperVector.H"
 #include "CoupledModel.H"
@@ -37,6 +39,9 @@
 #include "jdqz.H"
 
 #include "gtest/gtest.h" // google test
+
+// We need this to compute norms
+extern "C" double ddot_(int *N, double *X, int *INCX, double *Y, int *INCY);
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
@@ -82,4 +87,26 @@ void initializeEnvironment(int argc, char **argv)
 	comm = rcp(new Epetra_SerialComm());
 #endif
 	outFile = outputFiles(); 	// Initialize output files
+
+	// seed random number generator
+	srand(time(NULL));
+}
+
+//------------------------------------------------------------------
+double norm(Teuchos::RCP<Epetra_Vector> vec)
+{
+	double nrm;
+	vec->Norm2(&nrm);
+	return nrm;
+}
+
+//------------------------------------------------------------------
+double norm(std::shared_ptr<std::vector<double> > vec)
+{
+	int dim = (int) vec->size();
+	int incX = 1;
+	int incY = 1;
+	double dot;
+	dot = ddot_(&dim, &(*vec)[0], &incX, &(*vec)[0], &incY);   
+	return sqrt(dot);
 }

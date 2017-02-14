@@ -257,7 +257,7 @@ void Atmosphere::idealizedOcean()
 		{
 			value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 			row   = find_row(i,j,l_,ATMOS_TT_) - 1;
-			surfaceTemp_[row] = 0;
+			surfaceTemp_[row] = value;
 		}
 }
 
@@ -272,7 +272,7 @@ void Atmosphere::idealizedState()
 		{
 			value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
 			row   = find_row(i,j,l_,ATMOS_TT_)-1;
-			(*state_)[row] = 1.0;
+			(*state_)[row] = value;
 		}
 }
 
@@ -281,18 +281,6 @@ void Atmosphere::idealized()
 {
 	idealizedOcean();
 	idealizedState();
-	
-#ifdef DEBUGGING_NEW
-	if (!parallel_)
-	{
-		write(*state_, "state.txt");
-		double dot;
-		int incX = 1;
-		int incY = 1;
-		dot = ddot_(&dim_, &(*state_)[0], &incX, &(*state_)[0], &incY);
-		INFO("Atmosphere idealized state norm: " << sqrt(dot));
-	}
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -381,18 +369,6 @@ void Atmosphere::computeRHS()
 			(*rhs_)[row-1] = value;
 		}
 
-#ifdef DEBUGGING_NEW
-	if (!parallel_)
-	{
-		write(*rhs_, "rhs.txt"); 
-		int incX = 1;
-		int incY = 1;
-		double dot;
-		dot = ddot_(&dim_, &(*rhs_)[0], &incX, &(*rhs_)[0], &incY);
-		INFO("Atmosphere rhs norm: " << sqrt(dot));
-	}
-#endif
-	
 	TIMER_STOP("Atmosphere: compute RHS...");
 }
 

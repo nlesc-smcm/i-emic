@@ -51,17 +51,26 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 	assemblyMap_ = domain_->GetAssemblyMap();
 	standardMap_ = domain_->GetStandardMap();
 
-	// Create overlapping and non-overlapping states
+	// Obtain special maps
+	// depth-averaged, single unknown for ocean surface temperature
+	standardSurfaceMap_ = domain_->CreateStandardMap(1, true);
+	assemblySurfaceMap_ = domain_->CreateAssemblyMap(1, true);
+
+	// Create overlapping and non-overlapping vectors
 	state_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
 	rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
-	localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
-	localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_)); 
+    sst_       	= Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
-	// Create local Atmosphere object
+	localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+	localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+	localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+
 	// Periodicity is handled by Atmosphere if there is a single
 	// core in the x-direction. 
 	Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
 	bool perio = (periodic_ && xComm->NumProc() == 1);
+	
+	// Create local Atmosphere object
 	atmos_ = std::make_shared<Atmosphere>(nloc, mloc, lloc, perio,
 										  xminloc, xmaxloc, yminloc, ymaxloc,
 										  params_);
@@ -89,9 +98,9 @@ void AtmospherePar::computeRHS()
 
 	// compute local rhs and check bounds
 	atmos_->computeRHS();
- 	std::shared_ptr<std::vector<double> > rhs = atmos_->getRHS('V');
+ 	std::shared_ptr<std::vector<double> > localRHS = atmos_->getRHS('V');
 	
-	if ((int) rhs->size() != numMyElements)
+	if ((int) localRHS->size() != numMyElements)
 	{
 		ERROR("RHS incorrect size", __FILE__, __LINE__);
 	}
@@ -103,25 +112,11 @@ void AtmospherePar::computeRHS()
 	// fill view
 	for (int i = 0; i != numMyElements; ++i)
 	{
-		rhs_tmp[i] = (*rhs)[i];
+		rhs_tmp[i] = (*localRHS)[i];
 	}
 
 	// set datamember
 	domain_->Assembly2Solve(*localRHS_, *rhs_);
-
-#ifdef DEBUGGING_NEW
-	std::ofstream file1, file2;
-	file1.open("rhs_epetra" + std::to_string(comm_->MyPID()) + ".txt");
-	file2.open("rhs_atmos" + std::to_string(comm_->MyPID()) + ".txt");
-	rhs_->Print(file1);
-	for (auto &it: *rhs)
-		file2 << it << " ";
-	file1.close();
-	file2.close();
-	double nrm;
-	rhs_->Norm2(&nrm);
-	INFO("AtmospherePar rhs norm: " << nrm);
-#endif
 		
 	INFO("AtmospherePar: computeRHS done");
 }
@@ -154,20 +149,48 @@ void AtmospherePar::idealized()
 	
 	// set solvemap state
 	domain_->Assembly2Solve(*localState_, *state_);
-
-#ifdef DEBUGGING_NEW
-	std::ofstream file1,file2;
-	file1.open("state_epetra" + std::to_string(comm_->MyPID()) + ".txt");
-	file2.open("state_atmos" + std::to_string(comm_->MyPID()) + ".txt");
-	state_->Print(file1);
-	for (auto &it: *state)
-		file2 << it << " ";
-
-	file1.close();
-	file2.close();
-	double nrm;
-	state_->Norm2(&nrm);
-	INFO("AtmospherePar idealized state norm: " << nrm);
-#endif
 	
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> AtmospherePar::getVector(char mode, Teuchos::RCP<Epetra_Vector> vec)
+{
+	if (mode == 'C') // copy
+	{
+    	Teuchos::RCP<Epetra_Vector> copy = Teuchos::rcp(new Epetra_Vector(*vec));
+		return copy;
+    }
+	else if (mode == 'V')
+		return vec;
+	else
+	{
+		WARNING("Invalid mode", __FILE__, __LINE__);
+		return Teuchos::null;
+	}
+	
+}
+
+
+//==================================================================
+void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> in)
+{
+	if (!(in->Map().SameAs(*standardSurfaceMap_)))
+	{
+		ERROR("Map of ocean surface input vector not same as surface map", __FILE__, __LINE__);
+	}
+
+	// assign to our own datamember
+	sst_ = in;
+
+	// create assembly 
+	domain_->Solve2Assembly(*sst_, *localSST_);
+
+	// local vector size
+	int numMyElements = assemblySurfaceMap_->NumMyElements();
+
+	std::shared_ptr<std::vector<double> > localSST =
+		std::make_shared<std::vector<double> >(numMyElements, 0.0);
+
+	localSST_->ExtractCopy(&(*localSST)[0], numMyElements);
+	atmos_->setOceanTemperature(*localSST);	
 }
