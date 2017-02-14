@@ -193,6 +193,13 @@ TEST(Atmosphere, SurfaceTemperature)
 }
 
 //------------------------------------------------------------------
+TEST(Atmosphere, Jacobian)
+{
+	atmos->computeJacobian();
+	atmosPar->computeJacobian();
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
 	// Initialize the environment:
@@ -206,7 +213,6 @@ int main(int argc, char **argv)
 	// TESTING 
 	int out = RUN_ALL_TESTS();
 	// -------------------------------------------------------
-	
 
 	// Get rid of possibly parallel objects for a clean ending.
 	atmos     = std::shared_ptr<Atmosphere>();
@@ -215,7 +221,6 @@ int main(int argc, char **argv)
 	comm->Barrier();
 	std::cout << "TEST exit code proc #" << comm->MyPID()
 			  << " " << out << std::endl;
-
 
 	MPI_Finalize();
 	return out;

@@ -651,7 +651,7 @@ void SuperVector::linearTransformation(std::shared_ptr<std::map<std::string,
 			last    = (*mat)["beg"][row] - 1;
 			for (int col = first; col <= last; ++col)
 			{
-				result[row-1] += (*mat)["ico"][col-1] *
+				result[row-1] += (*mat)["co"][col-1] *
 					(*atmosVector_)[(*mat)["jco"][col-1]-1];
 			}			
 		}

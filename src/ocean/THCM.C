@@ -591,7 +591,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	// require building a whole new matrix. As we can't predict
 	// where convective adjustment will happen, we assume it hap-
 	// pens everywhere.
-	localMatrixGraph=this->CreateMaximalGraph();
+	localMatrixGraph = this->CreateMaximalGraph();
 
 	if (SolveMap!=StandardMap)
     {
@@ -1722,7 +1722,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
 		for (int j=1;j<=m;j++)
 			for (int i=1;i<=n;i++)
 			{
-				int lidU = FIND_ROW2(_NUN_,n,m,l,i-1,j-1,k-1,UU);
+				int lidU = FIND_ROW2(_NUN_, n ,m, l, i-1, j-1, k-1, UU);
 				int gidU = AssemblyMap->GID(lidU);
 				if (StandardMap->MyGID(gidU)) // otherwise: ghost cell, not in Jacobian
 				{

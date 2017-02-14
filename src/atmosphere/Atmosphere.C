@@ -338,10 +338,10 @@ std::shared_ptr<Atmosphere::CRSMat> Atmosphere::getJacobian()
 {
 	std::shared_ptr<CRSMat> jacMap;
 	jacMap = std::make_shared<CRSMat>();
-	(*jacMap)["ico"] = ico_;	
+	(*jacMap)["co"]  = co_;
 	(*jacMap)["jco"] = jco_;
 	(*jacMap)["beg"] = beg_;
-	return jacMap;		
+	return jacMap;
 }
 
 //-----------------------------------------------------------------------------
@@ -381,7 +381,7 @@ double Atmosphere::matvec(int row)
 	int last  = beg_[row] - 1;
 	double result = 0.0;
 	for (int j = first; j <= last; ++j)
-		result += ico_[j-1] * (*state_)[jco_[j-1]-1];
+		result += co_[j-1] * (*state_)[jco_[j-1]-1];
 
 	return result;
 }
@@ -478,7 +478,7 @@ void Atmosphere::assemble()
 
 	// clear old CRS matrix
 	beg_.clear();
-	ico_.clear();
+	co_.clear();
 	jco_.clear();
 
 	// Clear banded storage (just to be sure)
@@ -513,7 +513,7 @@ void Atmosphere::assemble()
 							if (std::abs(value) > 0)
 							{
 								// CRS --------------------------------------
-								ico_.push_back(value);
+								co_.push_back(value);
 								col = find_row(i2,j2,k2,B);
 								jco_.push_back(col);
 
@@ -700,7 +700,7 @@ void Atmosphere::writeAll()
 
 	write(*sol_, "atmos_sol.txt"); 
 	write(*rhs_, "atmos_rhs.txt"); 
-	write(ico_, "atmos_ico.txt"); 
+	write(co_,   "atmos_co.txt"); 
 	write(jco_, "atmos_jco.txt"); 
 	write(beg_, "atmos_beg.txt"); 
 	write(bandedA_, "atmos_bandedA.txt"); 	
@@ -882,7 +882,7 @@ std::shared_ptr<std::vector<double> > Atmosphere::applyMatrix(SuperVector const 
 		first   = beg_[row-1];
 		last    = beg_[row] - 1;
 		for (int col = first; col <= last; ++col)
-			(*result)[row-1] += ico_[col-1] * (*atmosVector)[jco_[col-1]-1];
+			(*result)[row-1] += co_[col-1] * (*atmosVector)[jco_[col-1]-1];
 	}
 	return getVector('V', result);
 }
@@ -906,7 +906,7 @@ void Atmosphere::applyMatrix(SuperVector const &v, SuperVector &out)
 		
 		(*result)[row-1] = 0;
 		for (int col = first; col <= last; ++col)
-			(*result)[row-1] += ico_[col-1] * (*atmosVector)[jco_[col-1]-1];
+			(*result)[row-1] += co_[col-1] * (*atmosVector)[jco_[col-1]-1];
 	}
 	TIMER_STOP("Atmosphere: apply matrix");
 }
@@ -943,7 +943,7 @@ void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
 				if (row == jco_[col-1])
 					(*result)[row-1] = scaling
 						* (*atmosVector)[jco_[col-1]-1]
-						/ ico_[col-1] ;
+						/ co_[col-1] ;
 		}
 	}
 	else if (preconditioner_ == 'D')

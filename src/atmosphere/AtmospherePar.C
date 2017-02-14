@@ -65,6 +65,11 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 	localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 	localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
+	// create graph
+	createMatrixGraph();
+		
+	// jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
+
 	// Periodicity is handled by Atmosphere if there is a single
 	// core in the x-direction. 
 	Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
@@ -193,4 +198,82 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> in)
 
 	localSST_->ExtractCopy(&(*localSST)[0], numMyElements);
 	atmos_->setOceanTemperature(*localSST);	
+}
+
+
+//==================================================================
+void AtmospherePar::computeJacobian()
+{
+	// compute jacobian in local atmosphere
+	atmos_->computeJacobian();
+
+	// obtain CRS matrix from local atmosphere
+	std::shared_ptr<Atmosphere::CRSMat> localJac =
+		atmos_->getJacobian();
+
+	// max nonzeros per row
+	const int maxnnz = ATMOS_NUN_ * ATMOS_NP_ + 1;
+
+	// indices array
+	int indices[maxnnz];
+	
+	// values array
+	double values[maxnnz];
+	
+	int numMyElements = assemblyMap_->NumMyElements();
+	assert(numMyElements == (int) (*localJac)["beg"].size() - 1);
+
+	int index, numentries;
+	for (int i = 0; i < numMyElements; ++i)
+	{
+		if (!domain_->IsGhost(i))
+		{
+			index = (*localJac)["beg"][i]; // beg contains 1-based indices!
+			numentries = (*localJac)["beg"][i+1] - index;
+			for (int j = 0; j < numentries; ++j)
+			{
+				indices[j] = assemblyMap_->GID((*localJac)["jco"][index-1+j]);
+				values[j] = (*localJac)["co"][index-1+j];
+			}
+			
+//			int ierr = jac_->ReplaceGlobalValues(assemblyMap_->GID(i),
+//													 numentries,
+//													 values, indices);
+		}
+	}
+}
+
+//==================================================================
+// Very similar to the THCM function
+// Create a graph to initialize the Jacobian
+void AtmospherePar::createMatrixGraph()
+{
+	int n    = domain_->LocalN();
+	int m    = domain_->LocalM();
+	int l    = domain_->LocalL();
+	int ndim = standardMap_->NumMyElements();
+	int *numEntriesPerRow = new int[ndim];
+
+	for (int k = 1; k <= l; k++)
+		for (int j = 1; j <= m; j++)
+			for (int i = 1; i <= n; i++)
+			{
+				// get 1-based row from local atmos, convert to 0-based
+				int lidU = atmos_->find_row(i, j, k, ATMOS_TT_) - 1;
+
+				// get global id of row
+				int gidU = assemblyMap_->GID(lidU);
+
+				if (standardMap_->MyGID(gidU)) // otherwise: ghost cell
+				{
+					// obtain local id
+					int lid0 = standardMap_->LID(gidU) - 1;
+					for (int xx = 1; xx <= dof_; ++xx)
+					{
+						// better safe than sorry
+						numEntriesPerRow[lid0+xx] = ATMOS_NP_;
+					}
+				}
+			}
+	
 }

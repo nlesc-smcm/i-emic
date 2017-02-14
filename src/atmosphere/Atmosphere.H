@@ -102,7 +102,7 @@ private:
 	std::shared_ptr<std::vector<double> > sol_;
 
 	// CRS matrix arrays storing the Jacobian
-	std::vector<double> ico_;
+	std::vector<double> co_;
 	std::vector<double> jco_;
 	std::vector<double> beg_;
 
@@ -298,6 +298,16 @@ private:
 	void shift(int i, int j, int k,
 			   int &i2, int &j2, int &k2, int loc);
 
+	// ! Assemble the dependency grid into a matrix in crs form
+	void assemble();
+
+	// Create dense matrix storage to use with lapack functions
+	void buildDenseA();
+
+	// Write vector to output file
+	void write(std::vector<double> &vector, const std::string &filename);
+
+public:
 	// ! Find row in vector or matrix corresponding to unknown
 	// ! XX at grid point (i,j,k).
 	// ! Input and output are expected to be 1-based.
@@ -316,27 +326,17 @@ private:
 	// ! |            (1,1,2) |      ( 6*n*m+1, ...  ,6*n*m+6) |
 	// ! +-----------------------------------------------------+
 	int find_row(int i, int j, int k, int XX);
-
-	// ! Assemble the dependency grid into a matrix in crs form
-	void assemble();
-
-	// Create dense matrix storage to use with lapack functions
-	void buildDenseA();
-
-	// Write vector to output file
-	void write(std::vector<double> &vector, const std::string &filename);
-
-public:
+	
 	// ! Write everything to output files.
 	void writeAll();
 	void printJacobian(std::string const filename)
 		{
-			// ico should be co
-			std::stringstream ico_fname, jco_fname, beg_fname;
-			ico_fname << filename << ".ico";
+
+			std::stringstream co_fname, jco_fname, beg_fname;
+			co_fname  << filename << ".co";
 			jco_fname << filename << ".jco";
 		    beg_fname << filename << ".beg";
-			write(ico_, ico_fname.str());
+			write(co_,  co_fname.str());
 			write(jco_, jco_fname.str());
 			write(beg_, beg_fname.str());
 		}

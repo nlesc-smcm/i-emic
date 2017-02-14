@@ -81,6 +81,9 @@ private:
 	//! input/output flags
 	bool loadState_, saveState_;
 
+	//! Jacobian 
+	Teuchos::RCP<Epetra_CrsMatrix> jac_;
+
 public:
 	//! Constructor based on parameterlist
 	AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList params);
@@ -88,6 +91,7 @@ public:
 	~AtmospherePar() {INFO("AtmospherePar destructor");}
 
 	void computeRHS();
+	void computeJacobian();
 
 	void setState(Teuchos::RCP<Epetra_Vector> input) { state_ = input; }
 	void setOceanTemperature(Teuchos::RCP<Epetra_Vector> in);
@@ -105,6 +109,9 @@ public:
 
 	Teuchos::RCP<Epetra_BlockMap> getStandardSurfaceMap() {return standardSurfaceMap_;}
 	Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() {return assemblySurfaceMap_;}
+
+private:
+	void createMatrixGraph();
 };
 	
 #endif
