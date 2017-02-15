@@ -70,29 +70,12 @@ TEST(Atmosphere, RHS)
 		INFO("TEST(Atmosphere, RHS): seed = " << state_par->Seed());
 
 		// Randomize and scale standardMap state
-
 		state_par->Random();
-
-		// Create gather scheme: map and importer
-		Teuchos::RCP<Epetra_BlockMap> gmap =
-			Utils::AllGather(state_par->Map());
-		Teuchos::RCP<Epetra_Import> imp =
-			Teuchos::rcp(new Epetra_Import(*gmap, state_par->Map()));
-
-		// Create vector to hold the gathered state
-		Teuchos::RCP<Epetra_Vector> gathered =
-			Teuchos::rcp(new Epetra_Vector(*gmap));
-
-		// Gather the state into <gathered>
-		gathered->Import(*state_par, *imp, Insert);
-
-		// Create full state for serial atmosphere
-		std::shared_ptr< std::vector<double> > state =
-			std::make_shared<std::vector<double> >(dim1, 0.0);
-
-		// Extract state from gathered
-		gathered->ExtractCopy(&(*state)[0], dim1);
-
+		
+		// Gather state_par into std::vector
+		std::shared_ptr<std::vector<double> > state =
+			getGatheredVector(state_par);
+		
 		// Put the full state in the serial atmosphere
 		atmos->setState(state);
 
@@ -209,10 +192,39 @@ TEST(Atmosphere, Jacobian)
 	bool failed = false;
 	try
 	{
-	atmos->computeJacobian();
-	atmosPar->computeJacobian();
+		atmos->computeJacobian();
+		atmosPar->computeJacobian();
+
+		// Obtain vector and randomize
+		Teuchos::RCP<Epetra_Vector> x = atmosPar->getState('C');
+		x->Random();
+		x->Scale(1e1);
+
+		// Gather randomized vector
+		std::shared_ptr<std::vector<double> > gx = getGatheredVector(x);
+
+		// Check the gather routine
+		EXPECT_NEAR(norm(gx), norm(x), 1e-7);
+
+		std::shared_ptr<std::vector<double> > outSer =
+			std::make_shared<std::vector<double> >(gx->size(), 0.0);
+
+		// apply serial Jacobian
+		atmos->applyMatrix(gx, outSer);
+
+		Teuchos::RCP<Epetra_Vector> outPar = atmosPar->getState('C');
+		outPar->PutScalar(0.0);
+
+		// apply parallel Jacobian
+		atmosPar->applyMatrix(x, outPar);
+
+		// check results
+		EXPECT_NEAR(norm(outSer), norm(outPar), 1e-7);
+
+		INFO("TEST(Atmosphere, apply Jacobian): ||serial out|| = " << norm(outSer));
+		INFO("TEST(Atmosphere, apply Jacobian): ||parall out|| = " << norm(outPar));
 	}
-		catch (std::exception const &e)
+	catch (std::exception const &e)
 	{
 		INFO("TEST(Atmosphere, Initialization) exception: " << e.what());
 		failed = true;

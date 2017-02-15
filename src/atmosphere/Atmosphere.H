@@ -225,6 +225,8 @@ public:
 	// Apply the Jacobian to a vector and return the result u = J*v
 	std::shared_ptr<std::vector<double> > applyMatrix(SuperVector const &v);
 	void applyMatrix(SuperVector const &v, SuperVector &out);
+	void applyMatrix(std::shared_ptr<std::vector<double> > const &v,
+					 std::shared_ptr<std::vector<double> > &out);
 
 	// Apply the preconditioner inverse to a vector and return
 	// the result u = P^{-1}*v

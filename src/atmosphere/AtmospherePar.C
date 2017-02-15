@@ -207,8 +207,6 @@ void AtmospherePar::computeJacobian()
 	// set all entries to zero
 	CHECK_ZERO(jac_->PutScalar(0.0));
 
-	jac_->Print(std::cout);
-
 	// compute jacobian in local atmosphere
 	atmos_->computeJacobian();
 	
@@ -292,6 +290,13 @@ void AtmospherePar::computeJacobian()
 
 	// Finalize matrix
 	CHECK_ZERO(jac_->FillComplete());
+}
+
+//==================================================================
+void AtmospherePar::applyMatrix(Teuchos::RCP<Epetra_Vector> const &in,
+								Teuchos::RCP<Epetra_Vector> &out)
+{
+	jac_->Apply(*in, *out);
 }
 
 //==================================================================

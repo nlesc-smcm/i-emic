@@ -892,21 +892,27 @@ void Atmosphere::applyMatrix(SuperVector const &v, SuperVector &out)
 {
  	std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
 	std::shared_ptr<std::vector<double> > result = out.getAtmosVector();
-	
+	applyMatrix(atmosVector, result);
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::applyMatrix(std::shared_ptr<std::vector<double> > const &v,
+							 std::shared_ptr<std::vector<double> > &out)
+{
 	int first;
 	int last;	
 	
 	TIMER_START("Atmosphere: apply matrix");
 	// Perform matrix vector product
 	// 1->0 based... horrible... 
-	for (size_t row = 1; row <= atmosVector->size(); ++row)
+	for (size_t row = 1; row <= v->size(); ++row)
 	{
 		first = beg_[row-1];
 		last  = beg_[row] - 1;
 		
-		(*result)[row-1] = 0;
+		(*out)[row-1] = 0;
 		for (int col = first; col <= last; ++col)
-			(*result)[row-1] += co_[col-1] * (*atmosVector)[jco_[col-1]-1];
+			(*out)[row-1] += co_[col-1] * (*v)[jco_[col-1]-1];
 	}
 	TIMER_STOP("Atmosphere: apply matrix");
 }

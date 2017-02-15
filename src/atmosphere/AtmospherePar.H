@@ -96,6 +96,9 @@ public:
 	void computeRHS();
 	void computeJacobian();
 
+	void applyMatrix(Teuchos::RCP<Epetra_Vector> const &in,
+					 Teuchos::RCP<Epetra_Vector> &out);
+
 	void setState(Teuchos::RCP<Epetra_Vector> input) { state_ = input; }
 	void setOceanTemperature(Teuchos::RCP<Epetra_Vector> in);
 
