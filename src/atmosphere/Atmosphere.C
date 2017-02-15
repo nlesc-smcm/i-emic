@@ -321,15 +321,15 @@ void Atmosphere::computeJacobian()
 	discretize(4, tyy);
 	
 	// Al(:,:,:,:,TT,TT) = Ad * (txx + tyy) + tc - bmua*tc2
-	txx.update(Ad_, Ad_, tyy, 1, tc, -bmua_, tc2);
-	//--> range array should have size 8 here!
-	Al_->set({1,n_,1,m_,1,l_,1,np_}, 1, 1, txx);
+	txx.update(Ad_, Ad_, tyy, 1.0, tc, -bmua_, tc2);
+
+	// Set atom in dependency grid
+	Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_TT_, txx);
+
 	boundaries();
 	assemble();
 	buildLU_ = true;
 
-	//jac_ = getJacobian();
-	
 	TIMER_STOP("Atmosphere: compute Jacobian...");
 }
 
@@ -1315,7 +1315,6 @@ void DependencyGrid::set(int const (&range)[8], int A, int B, Atom &atom)
 						atom.get(i,j,k,loc);
  				}
 }
-
 
 //=============================================================================
 // / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / //

@@ -259,7 +259,7 @@ namespace TRIOS
 	}
 
 	// find out wether a particular local index is on a ghost node
-	bool Domain::IsGhost(int ind,int nun_) const
+	bool Domain::IsGhost(int ind, int nun_) const
     {
 		int i,j,k,xx;
 		int row = ind; 

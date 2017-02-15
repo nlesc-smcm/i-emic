@@ -68,7 +68,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 	// create graph
 	createMatrixGraph();
 		
-	// jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
+	jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
 
 	// Periodicity is handled by Atmosphere if there is a single
 	// core in the x-direction. 
@@ -204,9 +204,14 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> in)
 //==================================================================
 void AtmospherePar::computeJacobian()
 {
+	// set all entries to zero
+	CHECK_ZERO(jac_->PutScalar(0.0));
+
+	jac_->Print(std::cout);
+
 	// compute jacobian in local atmosphere
 	atmos_->computeJacobian();
-
+	
 	// obtain CRS matrix from local atmosphere
 	std::shared_ptr<Atmosphere::CRSMat> localJac =
 		atmos_->getJacobian();
@@ -219,28 +224,74 @@ void AtmospherePar::computeJacobian()
 	
 	// values array
 	double values[maxnnz];
-	
+
+	// check size
 	int numMyElements = assemblyMap_->NumMyElements();
 	assert(numMyElements == (int) (*localJac)["beg"].size() - 1);
 
+	// loop over local elements
 	int index, numentries;
 	for (int i = 0; i < numMyElements; ++i)
 	{
-		if (!domain_->IsGhost(i))
+		// ignore ghost rows
+		if (!domain_->IsGhost(i, ATMOS_NUN_))
 		{
+			// obtain indices and values from CRS container
 			index = (*localJac)["beg"][i]; // beg contains 1-based indices!
 			numentries = (*localJac)["beg"][i+1] - index;
 			for (int j = 0; j < numentries; ++j)
 			{
-				indices[j] = assemblyMap_->GID((*localJac)["jco"][index-1+j]);
-				values[j] = (*localJac)["co"][index-1+j];
+				indices[j] = assemblyMap_->GID((*localJac)["jco"][index-1+j] - 1);
+				values[j]  = (*localJac)["co"][index-1+j];
 			}
-			
-//			int ierr = jac_->ReplaceGlobalValues(assemblyMap_->GID(i),
-//													 numentries,
-//													 values, indices);
+
+			// put values in Jacobian
+			int ierr = jac_->ReplaceGlobalValues(assemblyMap_->GID(i),
+												 numentries,
+												 values, indices);
+			// debugging
+			if (ierr != 0)
+			{
+				for (int ii = 0; ii < numentries; ++ii)
+				{
+					std::cout << "proc" << comm_->MyPID()
+							  << " entries: (" << indices[ii]
+							  << " " << values[ii] << ")" <<  std::endl;
+					
+					std::cout << "proc" << comm_->MyPID() << " "
+							  << assemblyMap_->GID(i) << std::endl;
+					
+					INFO(" debug info: " << indices[ii] << " " << values[ii]);
+				}
+				
+				INFO(" GRID: "<< assemblyMap_->GID(i));
+				INFO(" number of entries: " << numentries);
+				INFO(" numMyElements: " << numMyElements);
+				INFO(" is ghost " << domain_->IsGhost(i, ATMOS_NUN_));
+				INFO(" maxnnz: " << maxnnz);
+
+				CHECK_ZERO(jac_->ExtractGlobalRowCopy(assemblyMap_->GID(i),
+													  maxnnz, numentries,
+													  values, indices));
+				INFO("\noriginal row: ");
+				INFO("number of entries: "<<numentries);
+
+				for (int ii = 0; ii < numentries; ++ii)
+				{
+					std::cout << "proc" << comm_->MyPID()
+							  << " entries: (" << indices[ii]
+							  << " " << values[ii] << ")" <<  std::endl;
+					INFO(" debug info: " << indices[ii] << " " << values[ii]);
+				}
+
+				INFO ("Error in ReplaceGlobalValues: " << ierr);
+				ERROR("Error in ReplaceGlobalValues", __FILE__, __LINE__);
+			}
 		}
 	}
+
+	// Finalize matrix
+	CHECK_ZERO(jac_->FillComplete());
 }
 
 //==================================================================
@@ -248,32 +299,73 @@ void AtmospherePar::computeJacobian()
 // Create a graph to initialize the Jacobian
 void AtmospherePar::createMatrixGraph()
 {
-	int n    = domain_->LocalN();
-	int m    = domain_->LocalM();
-	int l    = domain_->LocalL();
-	int ndim = standardMap_->NumMyElements();
-	int *numEntriesPerRow = new int[ndim];
+	// We know from the discretization that we have at
+	// most 5 dependencies in each row. --> This will change, obviously, when extending
+	// the atmosphere model. If the number of dependencies varies greatly per row
+	// we need to supply them differently (variable). 
+	int maxDeps = 5;
+	matrixGraph_ = Teuchos::rcp(new Epetra_CrsGraph(Copy, *standardMap_, maxDeps, false));
 
-	for (int k = 1; k <= l; k++)
-		for (int j = 1; j <= m; j++)
-			for (int i = 1; i <= n; i++)
+	// Here we start specifying the indices
+	int indices[maxDeps];
+
+	// Get global domain size
+	int N = domain_->GlobalN();
+	int M = domain_->GlobalM();
+	int L = domain_->GlobalL();
+
+	// Get our local range in all directions
+	// 0-based
+	int I0 = domain_->FirstRealI();
+	int J0 = domain_->FirstRealJ();
+	int K0 = domain_->FirstRealK();
+	int I1 = domain_->LastRealI();
+	int J1 = domain_->LastRealJ();
+	int K1 = domain_->LastRealK();
+
+	int pos; // position in indices array, not really useful here
+	for (int k = K0; k <= K1; ++k)								 
+		for (int j = J0; j <= J1; ++j)
+			for (int i = I0; i <= I1; ++i)
 			{
-				// get 1-based row from local atmos, convert to 0-based
-				int lidU = atmos_->find_row(i, j, k, ATMOS_TT_) - 1;
+				// Obtain row corresponding to i,j,k,TT, using 0-based find_row
+				int gidU = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, i, j, k, ATMOS_TT_);
+				int gid0 = gidU - 1; // used as offset
 
-				// get global id of row
-				int gidU = assemblyMap_->GID(lidU);
+				pos = 0;
 
-				if (standardMap_->MyGID(gidU)) // otherwise: ghost cell
-				{
-					// obtain local id
-					int lid0 = standardMap_->LID(gidU) - 1;
-					for (int xx = 1; xx <= dof_; ++xx)
-					{
-						// better safe than sorry
-						numEntriesPerRow[lid0+xx] = ATMOS_NP_;
-					}
-				}
+				// Specify dependencies, see Atmosphere::discretize()
+				// ATMOS_TT_: 5-point stencil
+				insert_graph_entry(indices, pos, i, j, k, ATMOS_TT_, N, M, L);
+				insert_graph_entry(indices, pos, i-1, j, k, ATMOS_TT_, N, M, L);
+				insert_graph_entry(indices, pos, i+1, j, k, ATMOS_TT_, N, M, L);
+				insert_graph_entry(indices, pos, i, j-1, k, ATMOS_TT_, N, M, L);
+				insert_graph_entry(indices, pos, i, j+1, k, ATMOS_TT_, N, M, L);
+
+				// Insert dependencies in matrixGraph
+				CHECK_ZERO(matrixGraph_->InsertGlobalIndices(gid0+ATMOS_TT_, pos, indices));
 			}
 	
+	// Finalize matrixgraph
+	CHECK_ZERO(matrixGraph_->FillComplete());
+}
+
+//=============================================================================
+// Copied from THCM, adjusted for AtmospherePar
+void AtmospherePar::insert_graph_entry(int* indices, int& pos,
+									   int i, int j, int k, int xx,
+									   int N, int M, int L) const
+{
+	int ii = i; // if x-boundary is periodic i may be out of bounds.
+	// ii will be adjusted in that case:
+	if (domain_->IsPeriodic())
+    {
+		ii = MOD((double)i, (double)N);
+    }
+	if ((ii>=0) && (j>=0) && (k>=0) &&
+		(ii< N) && (j< M) && (k< L) )
+	{
+		// find index using 0-based find_row
+        indices[pos++] = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, ii, j, k, xx);
+	}
 }

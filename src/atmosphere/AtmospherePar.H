@@ -81,8 +81,11 @@ private:
 	//! input/output flags
 	bool loadState_, saveState_;
 
-	//! Jacobian 
+	//! Jacobian matrix
 	Teuchos::RCP<Epetra_CrsMatrix> jac_;
+
+	//! matrix graph, necessary to build Jacobian matrix
+	Teuchos::RCP<Epetra_CrsGraph> matrixGraph_; 
 
 public:
 	//! Constructor based on parameterlist
@@ -111,7 +114,11 @@ public:
 	Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() {return assemblySurfaceMap_;}
 
 private:
+	// A few functions borrowed from THCM, --> could be factorized when bored
 	void createMatrixGraph();
+	void insert_graph_entry(int* indices, int& pos,
+							int i, int j, int k, int xx,
+							int N, int M, int L) const;
 };
 	
 #endif

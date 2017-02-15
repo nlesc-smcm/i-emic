@@ -805,7 +805,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 #endif
 		for (int i = 0; i<imax; i++)
 		{
-			if (!domain->IsGhost(i))
+			if (!domain->IsGhost(i, _NUN_))
 			{
 				index = begA[i]; // note that these arrays use 1-based indexing
 				numentries = begA[i+1] - index;
@@ -826,6 +826,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
 					INFO("GRID: "<<AssemblyMap->GID(i))
 						INFO("number of entries: "<<numentries);
+
 					(std::cout) << "entries: ";
 					for (int j=0;j<numentries;j++) (std::cout) << "("<<indices[j]<<" "<<values[j]<<") ";
 
@@ -895,7 +896,7 @@ void THCM::evaluateB(void)
 	FNAME(fillcolb)();
 	for (int i = 0; i<NumMyElements; i++)
     {
-		if (!domain->IsGhost(i))
+		if (!domain->IsGhost(i,_NUN_))
 		{
 			// reconstruct the diagonal matrix B
 			int lid = StandardMap->LID(AssemblyMap->GID(i));
@@ -1722,7 +1723,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
 		for (int j=1;j<=m;j++)
 			for (int i=1;i<=n;i++)
 			{
-				int lidU = FIND_ROW2(_NUN_, n ,m, l, i-1, j-1, k-1, UU);
+				int lidU = FIND_ROW2(_NUN_,n,m,l,i-1,j-1,k-1,UU);
 				int gidU = AssemblyMap->GID(lidU);
 				if (StandardMap->MyGID(gidU)) // otherwise: ghost cell, not in Jacobian
 				{

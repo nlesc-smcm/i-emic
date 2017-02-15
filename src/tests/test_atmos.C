@@ -34,8 +34,19 @@ TEST(Atmosphere, Initialization)
 	{
 		atmosPar = std::make_shared<AtmospherePar>(comm, atmosphereParams);
 	}
+	catch (std::exception const &e)
+	{
+		INFO("TEST(Atmosphere, Initialization) exception: " << e.what());
+		failed = true;
+	}
+	catch (int error)
+	{
+		INFO("TEST(Atmosphere, Initialization) exception: error code = " << error);
+		failed = true;
+	}
 	catch (...)
 	{
+		INFO("TEST(Atmosphere, Initialization) some exception thrown...");
 		failed = true;
 	}
 	EXPECT_EQ(failed, false);
@@ -195,8 +206,28 @@ TEST(Atmosphere, SurfaceTemperature)
 //------------------------------------------------------------------
 TEST(Atmosphere, Jacobian)
 {
+	bool failed = false;
+	try
+	{
 	atmos->computeJacobian();
 	atmosPar->computeJacobian();
+	}
+		catch (std::exception const &e)
+	{
+		INFO("TEST(Atmosphere, Initialization) exception: " << e.what());
+		failed = true;
+	}
+	catch (int error)
+	{
+		INFO("TEST(Atmosphere, Initialization) exception: error code = " << error);
+		failed = true;
+	}
+	catch (...)
+	{
+		INFO("TEST(Atmosphere, Initialization) some exception thrown...");
+		failed = true;
+	}
+	EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------

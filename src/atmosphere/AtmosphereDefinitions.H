@@ -21,5 +21,18 @@
 # define ATMOS_TT_ 1
 #endif
 
+// Input is expected 1-based
+// Output is 1-based
+#ifndef FIND_ROW_ATMOS1
+# define FIND_ROW_ATMOS1(nun_, n, m, l, i, j, k, XX)				\
+	((nun_) * ((k-1)*(n)*(m)+ (n)*(j-1) + (i-1)) + (XX))
+#endif
+
+// Input is expected 1-based
+// Output is 1-based
+#ifndef FIND_ROW_ATMOS0
+# define FIND_ROW_ATMOS0(nun_, n, m, l, i, j, k, XX)				\
+	((nun_) * ((k)*(n)*(m)+ (n)*(j) + (i)) + (XX) - 1)
+#endif
 
 #endif
