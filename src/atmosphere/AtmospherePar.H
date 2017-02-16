@@ -1,7 +1,10 @@
 #ifndef ATMOSPHEREPAR_H
 #define ATMOSPHEREPAR_H
 
-//! For the parallelization strategy we make use of the TRIOS routines
+//! This class takes care of the parallelization of the atmosphere model.
+//! For the domain decomposition we make use of the TRIOS_Domain stuff.
+//! This als ensures that, in a coupled case, we can move parallel objects
+//! around with maps that make sense.
 
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
@@ -16,7 +19,7 @@ public:
 	using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
 	
 private:	
-	//! serial atmosphere class, working on subdomains
+	//! serial atmosphere class, working on local subdomains
 	std::shared_ptr<Atmosphere> atmos_;
 
 	//! parameterlist
