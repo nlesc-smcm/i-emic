@@ -11,6 +11,7 @@
 
 //------------------------------------------------------------------
 // This class combines rcp's to two multivectors
+//  --> this should generalize to n multivectors
 //------------------------------------------------------------------
 
 class Combined_MultiVec
@@ -253,7 +254,6 @@ public:
 			return info;
 		}
 };
-
 
 
 //------------------------------------------------------------------

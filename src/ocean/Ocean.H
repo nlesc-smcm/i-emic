@@ -33,7 +33,6 @@
 #include <Ifpack_Preconditioner.h>
 
 #include "GlobalDefinitions.H"
-#include "SuperVector.H"
 #include "IDRSolver.H"
 
 #include <string>
@@ -64,7 +63,7 @@ class Ocean
 	
 public:
 	
-	using VectorPtr = Teuchos::RCP<SuperVector>;
+	using VectorPtr = Teuchos::RCP<Epetra_Vector>;
 	using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
 	using PreconPtr = Teuchos::RCP<Ifpack_Preconditioner>;
 	using LandMask  = maskStruct;
@@ -107,9 +106,6 @@ protected:
 				 <double, Epetra_MultiVector, Epetra_Operator> > problem_;	
 	Teuchos::RCP<Belos::BlockGmresSolMgr
 				 <double, Epetra_MultiVector, Epetra_Operator> > belosSolver_;
-
-	// IDR solver
-	IDRSolver<Ocean, Teuchos::RCP<SuperVector> > idrSolver_;
 
 	Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 	
@@ -175,27 +171,26 @@ public:
 	void computeRHS();
 	void computeJacobian();
 	
-	//! All get...() functions that return a VectorPtr type should accept
+	//! All get...() functions that return a VectorPtr type accept
 	//! a character specifying the access the user has: Copy 'C' or View 'V'
-	//! By default this should be copy. 
-	Teuchos::RCP<SuperVector> getSolution(char mode = 'C');
-	Teuchos::RCP<SuperVector> getState(char mode = 'C');
-	Teuchos::RCP<SuperVector> getRHS(char mode = 'C');
+	//! By default this is a copy. 
+	Teuchos::RCP<My_Epetra_Vector> getSolution(char mode = 'C');
+	Teuchos::RCP<My_Epetra_Vector> getState(char mode = 'C');
+	Teuchos::RCP<My_Epetra_Vector> getRHS(char mode = 'C');
 
 	//! Binary diagonal for UVTS parts
-	Teuchos::RCP<SuperVector> getM(char mode = 'C');
+	Teuchos::RCP<Combined_MultiVec> getM(char mode = 'C');
 
 	//! Return pointer to Jacobian
 	Teuchos::RCP<Epetra_CrsMatrix> getJacobian() {return jac_;}
 	
-	//! Apply the Jacobian to a vector and return the result u = J*v
-	Teuchos::RCP<SuperVector> applyMatrix(SuperVector const &v);
-	void applyMatrix(SuperVector const &v, SuperVector &out);
+	//! Apply the Jacobian matrix to a vector
+	//! out = J*v
+	void applyMatrix(Epetra_Vector const &v, Epetra_Vector &out);
 	
-	//! Apply the preconditioner inverse to a vector and return
-	//! the result u = P^{-1}*v
-	Teuchos::RCP<SuperVector> applyPrecon(SuperVector const &v);
-	void applyPrecon(SuperVector const &v, SuperVector &out);
+	//! Apply the preconditioner inverse to a vector 
+	//! out = P^{-1}*v
+	void applyPrecon(Epetra_Vector const &v, Epetra_Vector &out);
 
 	//! Set prec recompute flag
 	void recomputePreconditioner() { recompPreconditioner_ = true; }

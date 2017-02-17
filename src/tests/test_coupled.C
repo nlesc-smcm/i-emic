@@ -4,9 +4,9 @@
 
 namespace // local unnamed namespace (similar to static in C)
 {	
-	RCP<Ocean>                    ocean;
-	std::shared_ptr<Atmosphere>   atmos;
-	std::shared_ptr<CoupledModel> coupledModel;
+	std::shared_ptr<Ocean>         ocean;
+	std::shared_ptr<AtmospherePar> atmos;
+	std::shared_ptr<CoupledModel>  coupledModel;
 }
 
 //------------------------------------------------------------------
@@ -19,7 +19,8 @@ TEST(Ocean, Initialization)
 		RCP<Teuchos::ParameterList> oceanParams =
 			rcp(new Teuchos::ParameterList);
 		updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-		ocean = Teuchos::rcp(new Ocean(comm, oceanParams));	
+		
+		ocean = std::make_shared<Ocean>(comm, oceanParams);	
 	}
 	catch (...)
 	{
@@ -39,6 +40,7 @@ TEST(Atmosphere, Initialization)
 		RCP<Teuchos::ParameterList> atmosphereParams =
 			rcp(new Teuchos::ParameterList);
 		updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+		
 		atmos = std::make_shared<Atmosphere>(atmosphereParams);
 	}
 	catch (...)

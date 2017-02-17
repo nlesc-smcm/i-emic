@@ -1,7 +1,7 @@
 #include "CoupledModel.H"
 #include "Ocean.H"
-#include "Atmosphere.H"
-#include "SuperVector.H"
+#include "AtmospherePar.H"
+#include "Combined_MultiVec.H"
 
 #include <vector>
 #include <memory>
@@ -13,14 +13,14 @@
 
 //==================================================================
 // constructor
-CoupledModel::CoupledModel(Teuchos::RCP<Ocean> ocean,
-						   std::shared_ptr<Atmosphere> atmos,
+CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
+						   std::shared_ptr<AtmospherePar> atmos,
 						   Teuchos::RCP<Teuchos::ParameterList> params)
 	:
 	ocean_(ocean),
 	atmos_(atmos),
 	
-	stateView_(std::make_shared<SuperVector>
+	stateView_(std::make_shared<Combined_MulitVec>
 			   (ocean->getState('V')->getOceanVector(),
 				atmos->getState('V'))),
 	solView_(std::make_shared<SuperVector>

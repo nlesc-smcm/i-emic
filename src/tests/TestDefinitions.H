@@ -46,6 +46,7 @@ extern "C" double ddot_(int *N, double *X, int *INCX, double *Y, int *INCY);
 //------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;
+using std::shared_ptr;
 
 //------------------------------------------------------------------
 // A few globals (see GlobalDefinitions.H)
