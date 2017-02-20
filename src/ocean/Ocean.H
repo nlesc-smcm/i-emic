@@ -33,7 +33,6 @@
 #include <Ifpack_Preconditioner.h>
 
 #include "GlobalDefinitions.H"
-#include "IDRSolver.H"
 
 #include <string>
 
@@ -73,17 +72,17 @@ protected:
 	// 
 	Teuchos::RCP<THCM> thcm_;
 	
-	Teuchos::RCP<Epetra_Vector> state_;
-	Teuchos::RCP<Epetra_Vector> rhs_;
-	Teuchos::RCP<Epetra_Vector> massMatrix_;	
+	VectorPtr state_;
+	VectorPtr rhs_;
+	VectorPtr massMatrix_;	
 	
-	Teuchos::RCP<Epetra_CrsMatrix> jac_;
+	MatrixPtr jac_;
 	Teuchos::RCP<Epetra_Comm> comm_;
 	
-	Teuchos::RCP<Epetra_Vector> rowScaling_;
-	Teuchos::RCP<Epetra_Vector> colScaling_;
-	Teuchos::RCP<Epetra_Vector> rowScalingRecipr_;
-	Teuchos::RCP<Epetra_Vector> colScalingRecipr_;
+	VectorPtr rowScaling_;
+	VectorPtr colScaling_;
+	VectorPtr rowScalingRecipr_;
+	VectorPtr colScalingRecipr_;
 
 	// 'F' Flexible GMRES (Belos/Trilinos)
 	// 'I' IDR 
@@ -96,7 +95,7 @@ protected:
 	bool   precInitialized_;
 	bool   recompPreconditioner_;
 	
-	Teuchos::RCP<Epetra_Vector> sol_;
+	VectorPtr sol_;
 
 	Teuchos::RCP<Teuchos::ParameterList> solverParams_;
 	
@@ -150,7 +149,7 @@ protected:
 	Teuchos::RCP<Epetra_Map> mapU_;
 
 	// Rows corresponding to singular pressure points
-	Teuchos::RCP<Epetra_Vector> singRows_;
+	VectorPtr singRows_;
 
 public:
 
@@ -171,18 +170,18 @@ public:
 	void computeRHS();
 	void computeJacobian();
 	
-	//! All get...() functions that return a VectorPtr type accept
+	//! All get...() functions that return a VectorPtr accept
 	//! a character specifying the access the user has: Copy 'C' or View 'V'
 	//! By default this is a copy. 
-	Teuchos::RCP<My_Epetra_Vector> getSolution(char mode = 'C');
-	Teuchos::RCP<My_Epetra_Vector> getState(char mode = 'C');
-	Teuchos::RCP<My_Epetra_Vector> getRHS(char mode = 'C');
+	VectorPtr getSolution(char mode = 'C');
+	VectorPtr getState(char mode = 'C');
+	VectorPtr getRHS(char mode = 'C');
 
 	//! Binary diagonal for UVTS parts
 	Teuchos::RCP<Combined_MultiVec> getM(char mode = 'C');
 
 	//! Return pointer to Jacobian
-	Teuchos::RCP<Epetra_CrsMatrix> getJacobian() {return jac_;}
+	MatrixPtr getJacobian() {return jac_;}
 	
 	//! Apply the Jacobian matrix to a vector
 	//! out = J*v
@@ -231,9 +230,9 @@ public:
 
 	//! Apply landmask 
 	void applyLandMask(LandMask mask, double factor);	
-	void applyLandMask(Teuchos::RCP<Epetra_Vector> x,
+	void applyLandMask(VectorPtr x,
 					   LandMask mask, double factor);	
-	void applyLandMask(Teuchos::RCP<Epetra_Vector> x,
+	void applyLandMask(VectorPtr x,
 					   LandMask maskA, LandMask maskB);
 
 	//! Additional monitor for continuation
@@ -260,9 +259,6 @@ public:
 	void getAtmosBlock(std::vector<double> &values,
 					   std::vector<int> &row_inds);
 	
-	std::shared_ptr<std::vector<double> >
-	getLandTemperature(std::shared_ptr<std::vector<double> > tatm);
-	
 	// Obtain ocean/land surface temperature
 	std::shared_ptr<std::vector<double> > getSurfaceT();
 	
@@ -279,8 +275,8 @@ public:
 	// Scale the matrix and rhs of the problem
 	void scaleProblem(VectorPtr rhs = Teuchos::null);
 	void unscaleProblem(VectorPtr rhs = Teuchos::null);
-	Teuchos::RCP<Epetra_Vector> getRowScaling();
-	Teuchos::RCP<Epetra_Vector> getColScaling();
+	VectorPtr getRowScaling();
+	VectorPtr getColScaling();
 
 	int loadState() { return loadStateFromFile(inputFile_); }
 	int saveState() { return saveStateToFile(outputFile_); }
@@ -309,11 +305,9 @@ private:
 	// singular Schur complement.
 	// Based on these rows we will try to create a better landmask.
 	int analyzeJacobian();
-
 	
-	Teuchos::RCP<SuperVector>
-	getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
+	VectorPtr getVector(char mode, VectorPtr vec);
 
-	void inspectVector(Teuchos::RCP<Epetra_Vector> x);
+	void inspectVector(VectorPtr x);
 };
 #endif

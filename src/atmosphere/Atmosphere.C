@@ -8,8 +8,6 @@
 #include <iomanip>
 #include <algorithm> // std::fill in assemble
 
-#include <hdf5.h>
-
 // stuff that is not so modular right now
 #include "GlobalDefinitions.H"
 #include "THCMdefs.H"
@@ -231,12 +229,9 @@ void Atmosphere::setup()
 						(1 - albe_[j]));				
 	}
 
-	// construct the continuation parameter list
-	
-	// If specified we load a pre-existing state and parameter (x,l)
-	if (loadState_)
-		loadStateFromFile(inputFile_);
 
+	if (periodic_)
+		ERROR("Periodicity not implemented for serial atmosphere! Use more cores!", __FILE__, __LINE__);
 }
 
 //-----------------------------------------------------------------------------
@@ -558,15 +553,7 @@ extern "C" void dgbtrs_(char *TRANS, int *N, int *KL, int *KU, int *NRHS,
 						int *INFO);
 
 //-----------------------------------------------------------------------------
-void Atmosphere::solve(std::shared_ptr<SuperVector> rhs)
-{
-	SuperVector tmp = *rhs;
-	solve(*rhs, tmp);
-	sol_ = tmp.getAtmosVector();
-}
-
-//-----------------------------------------------------------------------------
-void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
+void Atmosphere::solve(std::shared_ptr<std::vector<double> > const &rhs)
 {
 	TIMER_START("Atmosphere: solve...");
 	
@@ -583,40 +570,19 @@ void Atmosphere::solve(SuperVector const &rhs, SuperVector &out)
 		buildLU_ = false; // until next request
 		TIMER_STOP("Atmosphere: build LU (dgbtrf)");
 	}
-		
-	out.assign(rhs.getAtmosVector());
-	std::shared_ptr<std::vector<double> > sol = out.getAtmosVector();
+
+	// copy rhs into sol
+	*sol_  = *rhs;
 
 	TIMER_START("Atmosphere: solve (dgbtrs)");
 	char trans  = 'N';
+	
+	// at entry sol contains the rhs, at exit it contains the solution
 	dgbtrs_(&trans, &dim, &ksub_, &ksup_, &nrhs,
-			&bandedA_[0], &ldimA_, &ipiv_[0],  &(*sol)[0], &ldb, &info);
+			&bandedA_[0], &ldimA_, &ipiv_[0],  &(*sol_)[0], &ldb, &info);
 	TIMER_STOP("Atmosphere: solve (dgbtrs)");
 	
 	TIMER_STOP("Atmosphere: solve...");
-}
-
-//----------------------------------------------------------------------------
-double Atmosphere::computeResidual(std::shared_ptr<std::vector<double> > rhs)
-{
-	WARNING("NOT IMPLEMENTED: Atmosphere::computeResidual(std::shared_ptr<std::vector<double> > rhs)", __FILE__, __LINE__);
-	return 0.0;
-}
-
-//----------------------------------------------------------------------------
-double Atmosphere::computeResidual(SuperVector const &rhs,
-								   SuperVector const &x)
-{
-	SuperVector r;
-	r.assign(x.getAtmosVector());
-	
-	SuperVector b;
-	b.assign(rhs.getAtmosVector());
-	
-	applyMatrix(x, r);
-	r.update(1, b, -1);
-	
-	return r.norm();     // return ||b-Jx||
 }
 
 //-----------------------------------------------------------------------------
@@ -694,22 +660,6 @@ void Atmosphere::write(std::vector<double> &vector, const std::string &filename)
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::writeAll()
-{
-	std::cout << "Writing everything to output files..." << std::endl;
-
-	write(*sol_, "atmos_sol.txt"); 
-	write(*rhs_, "atmos_rhs.txt"); 
-	write(co_,   "atmos_co.txt"); 
-	write(jco_, "atmos_jco.txt"); 
-	write(beg_, "atmos_beg.txt"); 
-	write(bandedA_, "atmos_bandedA.txt"); 	
-	write(frc_, "atmos_frc.txt");           
-	write(surfaceTemp_, "atmos_oceanTemp.txt");
-	write(*state_, "atmos_state.txt");       
-}
-
-//-----------------------------------------------------------------------------
 int Atmosphere::find_row(int i, int j, int k, int XX)
 {
 	// 1-based	
@@ -771,62 +721,6 @@ void Atmosphere::shift(int i, int j, int k,
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::test()
-{
-	std::cout << "Atmosphere: tests" << std::endl;
-	
-	
-	std::cout << "            testing shift..." << std::endl;
-
-	int i = 2;
-	int j = 3;
-	int k = 1;
-
-	int i2, j2, k2;
-	
-	int loc = 21;
-	
-	std::cout << "  +----------++-------++----------+ " << '\n'
-			  << "  | 12 15 18 || 3 6 9 || 21 24 27 | " << '\n'
-			  << "  | 11 14 17 || 2 5 8 || 20 23 26 | " << '\n'
-			  << "  | 10 13 16 || 1 4 7 || 19 22 25 | " << '\n'
-			  << "  |  below   || center||  above   | " << '\n'
-			  << "  +----------++-------++----------+ " << std::endl;
-	
-	std::cout << "(i,j,k,loc) = "
-			  << "(" << i << ", " << j << ", "
-			  << k << ", " << loc << ")" << std::endl;
-	
-	shift(i,j,k,i2,j2,k2,loc);
-	std::cout << "(i,j,k,loc) = "
-			  << "(" << i << ", " << j << ", "
-			  << k << ", " << loc << ")" << std::endl;
-
-	std::cout << "shift gives: " 
-			  << "(" << i2 << ", " << j2 << ", " << k2 << ")" << std::endl;
-	
-	std::cout << "  test matvec(row), result is in atmos_test.txt" << std::endl;
-	
-	computeJacobian();
-	
-	std::vector<double> test;
-	int row;
-	for (int j = 1; j <= m_; ++j)
-	{
-		for (int i = 1; i <= n_; ++i)
-		{
-			row = find_row(i,j,l_,ATMOS_TT_);
-			test.push_back(matvec(row));
-		}
-	}
-	std::ofstream atmos_test;
-	atmos_test.open("atmos_test.txt");
-	for (auto &i : test)
-		atmos_test << std::setprecision(12) << i << '\n';
-	atmos_test.close();
-}
-
-//-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getVector
 (char mode, std::shared_ptr<std::vector<double> > vec)
 {
@@ -866,36 +760,6 @@ std::shared_ptr<std::vector<double> > Atmosphere::getRHS(char mode)
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<std::vector<double> > Atmosphere::applyMatrix(SuperVector const &v)
-{
-	std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
-	std::shared_ptr<std::vector<double> > result =
-		std::make_shared<std::vector<double> > (atmosVector->size(),0.0);
-	
-	int first;
-	int last;	
-	
-	// Perform matrix vector product
-	// 1->0 based... horrible... 
-	for (size_t row = 1; row <= atmosVector->size(); ++row)
-	{
-		first   = beg_[row-1];
-		last    = beg_[row] - 1;
-		for (int col = first; col <= last; ++col)
-			(*result)[row-1] += co_[col-1] * (*atmosVector)[jco_[col-1]-1];
-	}
-	return getVector('V', result);
-}
-
-//-----------------------------------------------------------------------------
-void Atmosphere::applyMatrix(SuperVector const &v, SuperVector &out)
-{
- 	std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
-	std::shared_ptr<std::vector<double> > result = out.getAtmosVector();
-	applyMatrix(atmosVector, result);
-}
-
-//-----------------------------------------------------------------------------
 void Atmosphere::applyMatrix(std::shared_ptr<std::vector<double> > const &v,
 							 std::shared_ptr<std::vector<double> > &out)
 {
@@ -915,53 +779,6 @@ void Atmosphere::applyMatrix(std::shared_ptr<std::vector<double> > const &v,
 			(*out)[row-1] += co_[col-1] * (*v)[jco_[col-1]-1];
 	}
 	TIMER_STOP("Atmosphere: apply matrix");
-}
-
-//-----------------------------------------------------------------------------
-std::shared_ptr<SuperVector> Atmosphere::applyPrecon(SuperVector const &v)
-{
-	// Do nothing
-	std::shared_ptr<SuperVector> result = std::make_shared<SuperVector>(v);
-	return result;
-}
-
-//-----------------------------------------------------------------------------
-void Atmosphere::applyPrecon(SuperVector const &v, SuperVector &out)
-{
-	TIMER_START("Atmosphere: apply preconditioning");
-	if (preconditioner_ == 'J')
-	{
-		std::shared_ptr<std::vector<double> > atmosVector = v.getAtmosVector();
-		std::shared_ptr<std::vector<double> > result = out.getAtmosVector();
-		int first;
-		int last;
-		double scaling = 1;
-		
-		// Perform matrix vector product
-		// 1->0 based... horrible... 
-		for (size_t row = 1; row <= atmosVector->size(); ++row)
-		{
-			first = beg_[row-1];
-			last  = beg_[row] - 1;
-			
-			(*result)[row-1] = 0;
-			for (int col = first; col <= last; ++col)
-				if (row == jco_[col-1])
-					(*result)[row-1] = scaling
-						* (*atmosVector)[jco_[col-1]-1]
-						/ co_[col-1] ;
-		}
-	}
-	else if (preconditioner_ == 'D')
-	{
-		solve(v, out);
-	}
-	else
-	{
-		INFO("Atmosphere: no preconditioner");
-		out.assign(v.getAtmosVector());
-	}
-	TIMER_STOP("Atmosphere: apply preconditioning");
 }
 
 // ---------------------------------------------------------------------------
@@ -1008,6 +825,7 @@ double Atmosphere::getPar(std::string const &parName)
 }
 
 //-----------------------------------------------------------------------------
+// --> Parallelize
 void Atmosphere::getOceanBlock(std::vector<double> &values,
 							   std::vector<int> &rows)
 {
@@ -1073,203 +891,6 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 		INFO(i->c_str());
 }
 
-//-----------------------------------------------------------------------------
-void Atmosphere::preProcess()
-{
-	// nothing to do here (yet)
-}
-
-//-----------------------------------------------------------------------------
-void Atmosphere::postProcess()
-{
-	if (saveState_)
-		saveStateToFile(outputFile_);
-	
-	write(*state_, "atmos_state.txt");
-
-	// get parameter idx
-	size_t paridx;
-	for (size_t i = 0; i != allParameters_.size(); ++i)
-		if (allParameters_[i].compare(parName_) == 0)
-		{
-			paridx = i;
-			break;
-		}
-
-	if (storeEverything_)
-	{
-		// Copy state
-		std::stringstream ss;
-		ss << "atmos_state_par" << paridx << "_" << std::setfill('_')
-		   << std::setprecision(4)  << std::setw(6) << getPar(parName_);
-		
-		INFO("copying atmos_state.txt to " << ss.str());
-		
-		std::ifstream src1("atmos_state.txt", std::ios::binary);
-		std::ofstream dst1(ss.str(), std::ios::binary);
-		dst1 << src1.rdbuf();
-		
-		if (saveState_)
-		{
-			ss << ".h5";
-			INFO("copying " << outputFile_ << " to " << ss.str());
-			std::ifstream src2(outputFile_.c_str(), std::ios::binary);
-			std::ofstream dst2(ss.str(), std::ios::binary);
-			dst2 << src2.rdbuf();
-		}			
-	}
-}
-
-//-----------------------------------------------------------------------------
-int Atmosphere::saveStateToFile(std::string const &filename)
-{
-	INFO("Writing to " << filename);
-	
-    hid_t       file_id, group_id, dataspace_id, dataset_id;
- 	hsize_t     dim_state = state_->size();
-	hsize_t     dim_par   = 1; // writing one parameter at a time
-
-	std::vector<herr_t> status;
-	
-	// Create a new file 
-	file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-
-    // Create a group 
-	group_id = H5Gcreate2(file_id, "/State", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-
-	// Create the data space and dataset
-	dataspace_id = H5Screate_simple(1, &dim_state, NULL);
-	dataset_id   = H5Dcreate2(file_id, "/State/Values", H5T_IEEE_F64LE, dataspace_id,
-							  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-
-	// Write to the dataset
-	status.push_back(H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-							  &(*state_)[0]));	
-
-	// Close dataset, dataspace and group
-	status.push_back(H5Dclose(dataset_id));
-	status.push_back(H5Sclose(dataspace_id ));
-	status.push_back(H5Gclose(group_id));
-
-	// Now we are going to write all available continuation parameters
-	group_id = H5Gcreate2(file_id, "/Parameters", H5P_DEFAULT,
-						  H5P_DEFAULT, H5P_DEFAULT);     // Create a new group
-	
-	std::stringstream ss;
-	double par;
-	for (auto const &parameter : allParameters_)
-	{
-		ss << "/Parameters/" << parameter;
-		dataspace_id = H5Screate_simple(1, &dim_par, NULL);  // Create data space and dataset
-		dataset_id   = H5Dcreate2(file_id, ss.str().c_str(), H5T_IEEE_F64LE,
-								  dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-
-		par = getPar(parameter);
-		status.push_back(H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-								  &par));	                 // Write
-		
-		INFO("   " << parameter << " = " << par);
-
-		// Close everything
-		status.push_back(H5Dclose(dataset_id));
-		status.push_back(H5Sclose(dataspace_id));
-		
-		// Reset stringstream
-		ss.str("");
-		ss.clear();
-	}
-	
-	status.push_back(H5Gclose(group_id));
-	status.push_back(H5Fclose(file_id)); 	// Close the file
-	
-	// Check for errors
-	for (auto const &st : status)
-		if (st != 0)
-		{
-			WARNING("status[" << &st - &status[0] << "] not ok", __FILE__, __LINE__);
-			return 2;
-		}
-	INFO("Writing to " << filename << " done");
-	return 0;
-}
-
-//-----------------------------------------------------------------------------
-int Atmosphere::loadStateFromFile(std::string const &filename)
-{
-	INFO("Loading from " << filename);
-	
-	hid_t    file_id, dataset_id;
-	std::vector<herr_t>  status;
-	
-	// Check whether file exists
-	std::ifstream file(filename);
-	if (!file)
-	{
-		WARNING("Can't open " << filename
-				<< " continue with trivial state", __FILE__, __LINE__);
-		return 1;
-	}
-	else file.close();
-	
-	// Open existing file
-	file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-	
-	// Open state dataset
-	dataset_id = H5Dopen2(file_id, "/State/Values", H5P_DEFAULT);
-	
-	// Read state from dataset and close it
-	state_->assign(dim_, 0.0);
-	status.push_back(H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL,
-							 H5S_ALL, H5P_DEFAULT, &(*state_)[0]));
-	status.push_back(H5Dclose(dataset_id));
-	
-	
-	// Open parameter dataset and load all parameters
-	std::stringstream ss;
-	double par;
-	for (auto const &parameter : allParameters_)
-	{
-		ss << "/Parameters/" << parameter;
-
-		// Open dataset
-		dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT);
-		
-		// Read from dataset
-		status.push_back(H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL,
-								 H5S_ALL, H5P_DEFAULT, &par));
-
-		if (status.back() < 0)
-		{
-			WARNING("read failed: "<< status.back() << " " << ss.str().c_str(),
-					__FILE__, __LINE__);
-			continue;
-		}
-		
-		setPar(parameter, par);
-		
-		// Close dataset 
-		status.push_back(H5Dclose(dataset_id));
-		INFO("   " << parameter << " = " << par);
-
-		// Reset stringstream
-		ss.str("");
-		ss.clear();
-	}
-	
-	// Close file
-	status.push_back(H5Fclose(file_id));	
-	
-	// Check for errors
-	for (auto const &st : status)
-		if (st != 0)
-		{
-			WARNING("status[" << &st - &status[0] << "] not ok",
-					__FILE__, __LINE__);
-			return 2;
-		}
-	INFO("Loading from " << filename << " done");
-	return 0;
-}
 
 //=============================================================================
 // / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / //

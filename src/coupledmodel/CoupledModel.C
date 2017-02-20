@@ -20,15 +20,12 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	ocean_(ocean),
 	atmos_(atmos),
 	
-	stateView_(std::make_shared<Combined_MulitVec>
-			   (ocean->getState('V')->getOceanVector(),
-				atmos->getState('V'))),
-	solView_(std::make_shared<SuperVector>
-			 (ocean->getSolution('V')->getOceanVector(),
-			  atmos->getSolution('V'))),
-	rhsView_(std::make_shared<SuperVector>
-			 (ocean->getRHS('V')->getOceanVector(),
-			  atmos->getRHS('V'))),
+	stateView_(std::make_shared<Combined_MultiVec>
+			   (ocean->getState('V'), atmos->getState('V'))),	
+	solView_(std::make_shared<Combined_MultiVec>
+			 (ocean->getSolution('V'), atmos->getSolution('V'))),
+	rhsView_(std::make_shared<Combined_MultiVec>
+			 (ocean->getRHS('V'), atmos->getRHS('V'))),
 	
 	useExistingState_ (params->get("Use existing state", false)),
 	parName_          (params->get("Continuation parameter",
@@ -37,11 +34,6 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	useScaling_       (params->get("Use scaling", false)),
 	iterGS_           (params->get("Max GS iterations", 10)),
 	toleranceGS_      (params->get("GS tolerance", 1e-1)),
-	
-	useHash_          (params->get("Use hashing", true)),
-	syncHash_         (-1),
-	rhsHash_          (-1),
-	jacHash_          (-1),
 	syncCtr_          (0),
 	
 	buildPrecEvery_   (params->get("Rebuild preconditioner stride", 1)),
@@ -101,16 +93,6 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 //------------------------------------------------------------------
 void CoupledModel::synchronize()
 {
-	// A synchronization is only necessary when the states have actually
-	// changed, so we compute, compare and store a hash
-	if (useHash_)
-	{
-		std::size_t hash = stateView_->hash();
-		if (hash == syncHash_)
-			return;
-		else
-			syncHash_ = hash;
-	}
 
 	TIMER_START("CoupledModel: synchronize...");
 
@@ -136,17 +118,6 @@ void CoupledModel::computeJacobian()
 {
 	TIMER_START("CoupledModel: compute Jacobian");
 	
-	// Check whether the combined (state,par) vector has changed,
-	// if so continue, if not return
-	if (useHash_)
-	{
-		std::size_t hash = getHash();
-		if (hash == jacHash_)
-			return;
-		else
-			jacHash_ = hash;
-	}
-	
 	// Synchronize the states
 	if (solvingScheme_ != 'D') { synchronize(); }
 	
@@ -165,19 +136,8 @@ void CoupledModel::computeJacobian()
 void CoupledModel::computeRHS()
 {
 	TIMER_START("CoupledModel compute RHS");
-	
-	// Check whether the combined (state,par) vector has changed,
-	// if so continue, if not return
-	if (useHash_)
-	{
-		std::size_t hash = getHash();
-		if (hash == rhsHash_)
-			return;
-		else
-			rhsHash_ = hash;
-	}
-	
-	// Synchronize the states
+		
+	// Synchronize the states in the fully coupled case
 	if (solvingScheme_ != 'D') { synchronize(); }
 	
 	ocean_->computeRHS();	// Ocean
@@ -187,63 +147,32 @@ void CoupledModel::computeRHS()
 }
 
 //====================================================================
-void CoupledModel::initializeIDR()
-{
-	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
-		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
-	
-	idrSolver_.setParameters(solverParams_);
-	idrSolver_.setSolution(getSolution('V'));
-	idrSolver_.setRHS(getRHS('V'));
-	clearSPFreq_ = solverParams_->get("Clear search space frequency", 2);
-	idrInitialized_ = true;
-}
-
-//====================================================================
-void CoupledModel::initializeGMRES()
-{
-	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
-		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
-	
-	gmresSolver_.setParameters(solverParams_);
-	gmresInitialized_ = true;
-}
-
-//====================================================================
 void CoupledModel::initializeFGMRES()
 {
 	INFO("CoupledModel: initialize FGMRES...");
 
 	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
 		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
-	
-	
+	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());	
 	
 	INFO("CoupledModel: initialize FGMRES done");
 }
 
 //------------------------------------------------------------------
-void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
+void CoupledModel::solve(std::shared_ptr<Combined_MultiVec> rhs)
 {
 	// Start solve
 	TIMER_START("CoupledModel: solve...");
 	if (useScaling_)
-		ocean_->scaleProblem(Teuchos::rcp(rhs.get(), false));
+		ocean_->scaleProblem(rhs->First());
 	
 	if (solvingScheme_ == 'D') // fully decoupled solve
 	{
-		ocean_->solve(Teuchos::rcp(rhs.get(), false));
-		atmos_->solve(rhs);
+		ocean_->solve(rhs->First());
+		atmos_->solve(rhs->Second());
 	}
 	else if (solvingScheme_ == 'B') // backward block GS solve
 		blockGSSolve(rhs);
-	else if (solvingScheme_ == 'I') // IDR on complete matrix
-		IDRSolve(rhs);
-	else if (solvingScheme_ == 'G') // GMRES on complete matrix
-		GMRESSolve(rhs);
 	else if (solvingScheme_ == 'F') // FGMRES (Belos) on complete matrix
 		FGMRESSolve(rhs);
 	else
@@ -251,7 +180,7 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 				__FILE__, __LINE__);
 
 	if (useScaling_)
-		ocean_->unscaleProblem(Teuchos::rcp(rhs.get(), false));
+		ocean_->unscaleProblem(rhs->First());
 
 	INFO("CoupledModel residual = " << computeResidual(rhs));
 	
@@ -261,63 +190,11 @@ void CoupledModel::solve(std::shared_ptr<SuperVector> rhs)
 }
 
 //------------------------------------------------------------------
-void CoupledModel::IDRSolve(std::shared_ptr<SuperVector> rhs)
-{
-	if (!idrInitialized_)
-		initializeIDR();
-		
-
-	// Clear the search space every X calls:
-	if (idrSolveCtr_ % clearSPFreq_ == 0)
-		idrSolver_.clearSearchSpace();
-		
-	idrSolveCtr_++;
- 	solView_->zero();
-	idrSolver_.setSolution(getSolution('V'));
-	idrSolver_.setRHS(rhs);
-
-	INFO("CoupledModel: IDR solve...");
-	idrSolver_.solve();
-	INFO("CoupledModel: IDR solve... done");
-		
-	int iters    = idrSolver_.getNumIters();
-	double nrm   = idrSolver_.explicitResNorm();
-	double res   = computeResidual(rhs);
-
-	INFO("CoupledModel IDR, i = " << iters << " exp res norm: " << nrm);
-	INFO("CoupledModel residual = " << res);		
-	TRACK_ITERATIONS("CoupledModel IDR iterations...", iters);
-}
-
-//------------------------------------------------------------------
-void CoupledModel::GMRESSolve(std::shared_ptr<SuperVector> rhs)
-{
-	if (!gmresInitialized_)
-		initializeGMRES();
-		
-	solView_->zero();
-	gmresSolver_.setSolution(getSolution('V'));
-	gmresSolver_.setRHS(rhs);
-
-	INFO("CoupledModel: GMRES solve...");
-	gmresSolver_.solve();
-	INFO("CoupledModel: GMRES solve... done");
-	
-	int iters    = gmresSolver_.getNumIters();
-	double nrm   = gmresSolver_.residual();
-
-	INFO("CoupledModel GMRES, i = " << iters << " exp res norm: " << nrm);
-
-	TRACK_ITERATIONS("CoupledModel GMRES iterations...", iters);
-	TRACK_RESIDUAL("CoupledModel GMRES residual...", nrm);
-}
-
-//------------------------------------------------------------------
-void CoupledModel::FGMRESSolve(std::shared_ptr<SuperVector> rhs)
+void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 {}
 
 //------------------------------------------------------------------
-void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
+void CoupledModel::blockGSSolve(std::shared_ptr<Combined_MultiVec> rhs)
 {
 	// ***************************************************************
  	// Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
@@ -337,7 +214,7 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 	double old_residual = computeResidual(rhs);
 	
     // Initialize solution [x1;x2] = 0
- 	std::shared_ptr<SuperVector> x = getSolution('C', 'C');
+ 	std::shared_ptr<Combined_MultiVec> x = getSolution('C');
 	x->zero();
 
 	// Start iteration
@@ -352,7 +229,7 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 		atmos_->solve(x);
 
 		// Retrieve solution
-		x = getSolution('C','C');
+		x = getSolution('C');
 
 		// Create -B*x2 + b1
 		x->linearTransformation(*B_, *rowsB_, 'A', 'O');
@@ -362,7 +239,7 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 		ocean_->solve(Teuchos::rcp(x.get(), false));
 
 		// Retrieve solution
-		x = getSolution('C','C');
+		x = getSolution('C');
 		
 		// Calculate residual
 		residual = computeResidual(rhs);
@@ -390,229 +267,126 @@ void CoupledModel::blockGSSolve(std::shared_ptr<SuperVector> rhs)
 }
 
 //------------------------------------------------------------------
-std::shared_ptr<SuperVector>
-CoupledModel::applyMatrix(SuperVector const &v)
-{
-	TIMER_START("CoupledModel: apply matrix...");
-	std::shared_ptr<SuperVector> x = std::make_shared<SuperVector>(v);
-	SuperVector y(v);
-	SuperVector z(v);
-	
-	x->linearTransformation(ocean_->getJacobian());   // A*x1
-	x->linearTransformation(atmos_->getJacobian());   // D*x2
-
-	y.linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
-	y.zeroAtmos();
-	z.linearTransformation(*C_, *rowsB_, 'O', 'A');  // C*x1
-	z.zeroOcean();
-
-	x->update(1, y, 1);                              // A*x1 + B*x2
-	x->update(1, z, 1);                              // D*x2 + C*x1
-	TIMER_STOP("CoupledModel: apply matrix...");
-	return x;
-}
-
-//------------------------------------------------------------------
-void CoupledModel::applyMatrix(SuperVector const &v, SuperVector &out, char mode)
+// 	out = [A B; C D] * [v1; v2]
+void CoupledModel::applyMatrix(Combined_MultiVec const &v,
+							   Combined_MultiVec &out, char mode)
 {
 	TIMER_START("CoupledModel: apply matrix...");
 
-	out.zero();	// Initialize output	
-	// Fill the ocean and atmos part of output
-	ocean_->applyMatrix(v, out);  // A*x1
-	atmos_->applyMatrix(v, out);  // D*x2
+	// Initialize output	
+	out.PutScalar(0.0);	  
 
-	if (mode == 'C') // Applying coupling blocks
+	// Apply the diagonal blocks
+	ocean_->applyMatrix(*v.First(),  *out.First());   // A*v1
+	atmos_->applyMatrix(*v.Second(), *out.Second());  // D*v2
+
+	if (mode == 'C') 
 	{
-		// Make temporary copies of v to store linear transformations
-		SuperVector y(v);
-		SuperVector z(v);
-		SuperVector t(z);
+		// Obtain temporary vector
+		Combined_MultiVec z(v);
+		z.PutScalar(0.0);
 
-		// Perform mappings
-		y.linearTransformation(*B_, *rowsB_, 'A', 'O');  // B*x2
-		C21_.applyMatrix(t, z);
+		// Apply coupling blocks --> Parallelize
+		// C12_.applyMatrix(v.Second(), z.First());
+		// C21_.applyMatrix(v.First(), z.Second());
 
-		// Just to be sure
-		y.zeroAtmos();
-		z.zeroOcean();        
+		INFO("CoupledModel::applyMatrix not fully implemented yet!!");
 
-		out.update(1,y,1);  // A*x1 + B*x2
-		out.update(1,z,1);  // D*x2 + C*x1
+		out.Update(1.0, z, 1);  
 	}	
 	TIMER_STOP("CoupledModel: apply matrix...");
 }
 
 //------------------------------------------------------------------
-std::shared_ptr<SuperVector>
-CoupledModel::applyPrecon(SuperVector const &v)
-{
-	TIMER_START("CoupledModel: apply preconditioner1...");
-	SuperVector tmp1 = *(ocean_->applyPrecon(v));
-	SuperVector tmp2 = *(atmos_->applyPrecon(v));
-	TIMER_STOP("CoupledModel: apply preconditioner1...");	
-	return std::make_shared<SuperVector>(tmp1.getOceanVector(),
-										 tmp2.getAtmosVector());
-}
-
-//------------------------------------------------------------------
-void CoupledModel::applyPrecon(SuperVector const &v, SuperVector &out, char mode)
+void CoupledModel::applyPrecon(Combined_MultiVec const &v,
+							   Combined_MultiVec &out, char mode)
 {
 	TIMER_START("CoupledModel: apply preconditioner2...");	
 
-	out.zero();	// Initialize output
+	out.PutScalar(0.0);	// Initialize output
 
 	if ((mode == 'C') && (iterGS_ != 0))
 	{
-		SuperVector x1(out);
-		SuperVector x2(out);
-		SuperVector b1(v);
-		SuperVector b2(v);
-		SuperVector t(x1);
-
-		b1.zeroAtmos();
-		b2.zeroOcean();
-
-		for (int i = 0; i != iterGS_; ++i)
-		{
-			t = x1;
-			C21_.applyMatrix(t, x1);   // C21*x1
-			
-			x1.zeroOcean();
-			x1.update(1.0, b2, -1.0);
-			atmos_->applyPrecon(x1, x2);
-			
-			x2.linearTransformation(*B_, *rowsB_, 'A', 'O');
-			x2.zeroAtmos();
-			x2.update(1.0, b1, -1.0);
-
-			TIMER_START("CoupledModel: ocean prec");
-			ocean_->applyPrecon(x2, x1);
-			TIMER_STOP("CoupledModel: ocean prec");
-		}
-		
-		out.assign(x1.getOceanVector());
-		
-		t = x1;
-		C21_.applyMatrix(t, x1);
-		x1.zeroOcean();
-		x1.update(1.0, b2, -1.0);
-		atmos_->applyPrecon(x1, x2);
-		out.assign(x2.getAtmosVector());
-		
-		/*
-		SuperVector x1(v);
-		SuperVector x2(v);
-		x1.zeroAtmos();
-		x2.zeroOcean();
-		
-		SuperVector t1(v);
-		SuperVector t2(v);
-
-		ocean_->applyPrecon(v, t1);
- 		t1.linearTransformation(*C_, *rowsB_, 'O', 'A'); 
-		t1.zeroOcean();
-		t1.update(1.0, x2, -1.0);
-		atmos_->applyPrecon(t1, t2);
-		out.assign(t2.getAtmosVector());
-		t2.linearTransformation(*B_, *rowsB_, 'A', 'O');
-		t2.zeroAtmos();
-		t2.update(1.0, x1, -1.0);
-		ocean_->applyPrecon(t2, out);
-		*/
+		INFO("CoupledModel::applyPrecon coupled preconditioning not implemented yet!!");
 	}
 	else
 	{
-		ocean_->applyPrecon(v, out);
-		atmos_->applyPrecon(v, out);
+		ocean_->applyPrecon(*v.First(),  *out.First() );
+		atmos_->applyPrecon(*v.Second(), *out.Second());
 	}
 
 	TIMER_STOP("CoupledModel: apply preconditioner2...");	
 }
 
 //------------------------------------------------------------------
-double CoupledModel::computeResidual(std::shared_ptr<SuperVector> rhs)
+double CoupledModel::computeResidual(std::shared_ptr<Combined_MultiVec> rhs)
 {
-	SuperVector r(*solView_);
+	Combined_MultiVec r(*solView_);
 	applyMatrix(*solView_, r);
-	double rhsNorm = rhs->norm();
-	r.update(1, *rhs, -1); //  b-Jx
-	r.scale(1.0 / rhsNorm);
-	double relResidual = r.norm('E', "relative residual");     // ||b-Jx||/||b||
+
+	double rhsNorm;
+	rhs->Norm2(*rhsNorm);
+	
+	r.Update(1, *rhs, -1); //  b-Jx
+	r.Scale(1.0 / rhsNorm);
+	double relResidual;
+	r.Norm2(&relResidual); // ||b-Jx||/||b||
+	
 	return relResidual;
 }
 
-//----------------------------------------------------------------------------
-double CoupledModel::computeResidual(SuperVector const &rhs,
-									 SuperVector const &x, char mode)
-{
-	SuperVector r(x);
-	applyMatrix(x, r, mode);
-	r.update(1, rhs, -1);	
-	return r.norm('V');     // return ||b-Jx||
-}
-
 //------------------------------------------------------------------
-std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode)
+std::shared_ptr<Combined_MultiVec> CoupledModel::getSolution(char mode)
 {
 	// obtain solution based on mode
 	if (mode == 'V') // View
 		return solView_;
 	else if (mode == 'C') // Copy
 	{
-		return std::make_shared<SuperVector>(
-			ocean_->getSolution('C')->getOceanVector(),
+		return std::make_shared<Combined_MultiVec>(
+			ocean_->getSolution('C'),
 			atmos_->getSolution('C'));
 	}
 	else
 	{
 		WARNING("Invalid mode", __FILE__, __LINE__);
-		return std::shared_ptr<SuperVector>();
+		return std::shared_ptr<Combined_MultiVec>();
 	}
 }
 
 //------------------------------------------------------------------
-std::shared_ptr<SuperVector> CoupledModel::getSolution(char mode1,
-													   char mode2)
-{
-	return std::make_shared<SuperVector>(
-		ocean_->getSolution(mode1)->getOceanVector(),
-		atmos_->getSolution(mode2));
-}
-
-//------------------------------------------------------------------
-std::shared_ptr<SuperVector> CoupledModel::getState(char mode)
+std::shared_ptr<Combined_MultiVec> CoupledModel::getState(char mode)
 {
 	if (mode == 'V') // View
 		return stateView_;
 	else if (mode == 'C') // Copy
 	{
-		return std::make_shared<SuperVector>(
-			ocean_->getState('C')->getOceanVector(),
+		return std::make_shared<Combined_MultiVec>(
+			ocean_->getState('C'),
 			atmos_->getState('C'));
 	}
 	else
 	{
 		WARNING("Invalid mode", __FILE__, __LINE__);
-		return std::shared_ptr<SuperVector>();
+		return std::shared_ptr<Combined_MultiVec>();
 	}
 }
 
 //------------------------------------------------------------------
-std::shared_ptr<SuperVector> CoupledModel::getRHS(char mode)
+std::shared_ptr<Combined_MultiVec> CoupledModel::getRHS(char mode)
 {
 	if (mode == 'V') // View
 		return rhsView_;
 	else if (mode == 'C') // Copy
 	{
-		return std::make_shared<SuperVector>(
-			ocean_->getRHS('C')->getOceanVector(),
+		return std::make_shared<Combined_MultiVec>(
+			ocean_->getRHS('C'),
 			atmos_->getRHS('C'));
 	}
 	else
 	{
 		WARNING("Invalid mode", __FILE__, __LINE__);
-		return std::shared_ptr<SuperVector>();
+		return std::shared_ptr<Combined_MultiVec>();
 	}
 }
 
@@ -622,7 +396,7 @@ double CoupledModel::getPar()
 	double par_ocean = ocean_->getPar(parName_);
 	double par_atmos = atmos_->getPar(parName_);
 
-	// For the case that the internal parameters are not the same we 
+	// In the case that the internal parameters are not the same, 
 	// we return the maximum. This happens when we perform continuations
 	// in parameters that do not exist in all models. 
 	return std::max(par_ocean, par_atmos);
@@ -650,120 +424,7 @@ void CoupledModel::postProcess()
 	if (solvingScheme_ == 'D')
 		synchronize();
 
-	// Let the models do their own post-processing as well	
+	// Let the models do their own post-processing
 	ocean_->postProcess();
 	atmos_->postProcess();
-}
-
-//------------------------------------------------------------------
-void CoupledModel::printJacobian(std::string const filename) const
-{
-	std::stringstream ocean_fname, atmos_fname;
-	ocean_fname << filename << ".ocean";
-	atmos_fname << filename << ".atmos";
-
-	DUMP(ocean_fname.str().c_str(), *(ocean_->getJacobian()));
-
-	ocean_fname << ".rhs";
-	DUMP_VECTOR(ocean_fname.str().c_str(), *(ocean_->getRHS()->getOceanVector()));
-	atmos_->printJacobian(atmos_fname.str());			
-}
-
-//------------------------------------------------------------------
-// This is a copy of the code in main.C --> should be factorized
-void CoupledModel::printProfile(ProfileType profile)	
-{
-	std::ostringstream profilefile("profile_output");   // setting up a filename
-	std::ofstream file(profilefile.str().c_str());      // setup output file
-
-	// Set format flags
-	file << std::left;
-
-	// Define line format
-#ifndef LINE
-# define LINE(s1, s2, s3, s4, s5, s6, s7, s8, s9)						\
-	{																	\
-		int sp = 3;  int it = 5;  int id = 5;							\
-		int db = 12; int st = 45;										\
-		file << std::setw(id) << s1	<< std::setw(sp) << s2				\
-			 << std::setw(st) << s3 << std::setw(sp) << s4				\
-			 << std::setw(db) << s5	<< std::setw(sp) << s6				\
-			 << std::setw(it) << s7	<< std::setw(sp) << s8				\
-			 << std::setw(db) << s9	<< std::endl;						\
-	}
-#endif
-
-	// Header
-	LINE("", "", "", "", "cumul.", "", "calls", "", "average");
-	
-	// Display timings of the separate models, summing
-	int counter = 0;
-	for (auto const &map : profile)
-		if (map.first.compare(0,8,"_NOTIME_") != 0)
-		{
-			counter++;
-			std::stringstream s;
-			s << " (" << counter << ")";
-			LINE(s.str(), "", map.first, ":", map.second[0], "",
-				 map.second[1], "", map.second[2]);
-		}
-
-	// Newline
-	file << std::endl;
-	
-	// Display iteration information
-	for (auto const &map : profile)
-		if (map.first.compare(0,8,"_NOTIME_") == 0 )
-		{
-			counter++;
-			std::stringstream s;
-			s << " (" << counter << ")";
-			LINE(s.str(), "", map.first.substr(8), ":", map.second[0], "",
-				 map.second[1], "", map.second[2]);
-		}
-}
-
-//------------------------------------------------------------------
-std::size_t CoupledModel::getHash()
-{
-	// create hash function
-	std::hash<double> double_hash;
-	
-	// first we obtain the hash of stateView
-	std::size_t seed = stateView_->hash();
-
-	// then we extend and manipulate it with the current parameter
-	seed ^= double_hash(getPar()) + (seed << 6);
-	return seed;
-}
-
-//------------------------------------------------------------------
-void CoupledModel::test()
-{
-	INFO("CoupledModel views...");
-	INFO("state:  " << stateView_->norm());
-	INFO("length: " << stateView_->length());
-	INFO("sol:    " << solView_->norm());
-	INFO("rhs:    " << rhsView_->norm());
-
-	std::cout << "CoupledModel: stateView..." << std::endl;
-	std::cout << " length: " << stateView_->length()  << std::endl;
-	std::cout << " norm:   " << stateView_->norm()    << std::endl;
-}
-
-//-----------------------------------------------------------------------------
-template<typename T>
-void CoupledModel::write(std::vector<T> &vector, const std::string &filename)
-{
-	if (!vector.empty())
-	{
-		std::ofstream atmos_ofstream;
-		atmos_ofstream.open(filename);
-		for (auto &i : vector)
-			atmos_ofstream << std::setprecision(12) << i << '\n';
-		atmos_ofstream.close();
-	}
-	else
-		std::cout << "WARNING (Atmosphere::write): vector is empty"
-				  << __FILE__ <<  __LINE__ << std::endl;
 }

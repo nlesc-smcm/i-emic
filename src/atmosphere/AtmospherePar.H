@@ -97,12 +97,19 @@ public:
 	~AtmospherePar() {INFO("AtmospherePar destructor");}
 
 	void computeRHS();
+
 	void computeJacobian();
 
 	void applyMatrix(Teuchos::RCP<Epetra_Vector> const &in,
 					 Teuchos::RCP<Epetra_Vector> &out);
 
+	void applyPrecon(Teuchos::RCP<Epetra_Vector> const &in,
+					 Teuchos::RCP<Epetra_Vector> &out);
+
+	void solve(Teuchos::RCP<Epetra_Vector> rhs);	
+
 	void setState(Teuchos::RCP<Epetra_Vector> input) { state_ = input; }
+
 	void setOceanTemperature(Teuchos::RCP<Epetra_Vector> in);
 
 	// Let the atmos object use idealized values,
@@ -115,6 +122,7 @@ public:
 	Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return getVector(mode, state_); }
 	Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')   { return getVector(mode, rhs_); }
 	Teuchos::RCP<Epetra_Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
+
 
 	Teuchos::RCP<Epetra_BlockMap> getStandardSurfaceMap() {return standardSurfaceMap_;}
 	Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() {return assemblySurfaceMap_;}

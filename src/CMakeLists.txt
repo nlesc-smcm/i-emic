@@ -72,7 +72,6 @@ link_directories(${library_directories})
 # ------------------------------------------------------------------
 # Additional libraries
 set(EXTRA_LIBS
-  hdf5
   ifpack_mrilu
   mrilucpp
   precon

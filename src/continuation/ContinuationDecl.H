@@ -1,5 +1,5 @@
 //======================================================================
-// Author T.E.Mulder 2014/2015/2016 (t.e.mulder@uu.nl)
+// Author T.E.Mulder 2015 (t.e.mulder@uu.nl)
 //======================================================================
 #ifndef CONTINUATIONDECL_H
 #define CONTINUATIONDECL_H

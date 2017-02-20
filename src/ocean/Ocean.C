@@ -20,7 +20,6 @@
 
 //=====================================================================
 #include "Ocean.H"
-#include "SuperVector.H"
 #include "THCM.H"
 #include "THCMdefs.H"
 #include "TRIOS_Domain.H"
@@ -864,18 +863,16 @@ void Ocean::computeJacobian()
 }
 
 //====================================================================
-Teuchos::RCP<SuperVector> Ocean::getVector(char mode, RCP<Epetra_Vector> vec)
+Teuchos::RCP<Epetra_Vector> Ocean::getVector(char mode, RCP<Epetra_Vector> vec)
 {
 	if (mode == 'C') // copy
 	{
 		RCP<Epetra_Vector> copy = rcp(new Epetra_Vector(*vec));
-		RCP<SuperVector> ptr    = rcp(new SuperVector(copy));
-		return ptr;
+		return copy;
 	}
 	else if (mode == 'V') // view
 	{
-		RCP<SuperVector> ptr = rcp(new SuperVector(vec));
-		return ptr;
+		return vec;
 	}
 	else
 	{
@@ -885,25 +882,25 @@ Teuchos::RCP<SuperVector> Ocean::getVector(char mode, RCP<Epetra_Vector> vec)
 }
 
 //====================================================================
-Teuchos::RCP<SuperVector> Ocean::getSolution(char mode)
+Teuchos::RCP<Epetra_Vector> Ocean::getSolution(char mode)
 {
 	return getVector(mode, sol_);
 }
 
 //====================================================================
-Teuchos::RCP<SuperVector> Ocean::getState(char mode)
+Teuchos::RCP<Epetra_Vector> Ocean::getState(char mode)
 {
 	return getVector(mode, state_);
 }
 
 //====================================================================
-Teuchos::RCP<SuperVector> Ocean::getRHS(char mode)
+Teuchos::RCP<Epetra_Vector> Ocean::getRHS(char mode)
 {
 	return getVector(mode, rhs_);
 }
 
 //====================================================================
-Teuchos::RCP<SuperVector> Ocean::getM(char mode)
+Teuchos::RCP<Epetra_Vector> Ocean::getM(char mode)
 {
 	RCP<Epetra_Vector> vecM =
 		rcp(new Epetra_Vector(*sol_));
@@ -924,24 +921,11 @@ Teuchos::RCP<SuperVector> Ocean::getM(char mode)
 	return getVector(mode, vecM);
 }
 
-
 //====================================================================
-Teuchos::RCP<SuperVector> Ocean::applyMatrix(SuperVector const &v)
+void Ocean::applyMatrix(Epetra_Vector const &v, Epetra_Vector &out)
 {
 	TIMER_START("Ocean: apply matrix...");
-	RCP<Epetra_Vector> result =
-		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
-	jac_->Apply(*(v.getOceanVector()), *result);
-
-	TIMER_STOP("Ocean: apply matrix...");
-	return getVector('V', result);
-}
-
-//====================================================================
-void Ocean::applyMatrix(SuperVector const &v, SuperVector &out)
-{
-	TIMER_START("Ocean: apply matrix...");
-	jac_->Apply(*(v.getOceanVector()), *(out.getOceanVector()));
+	jac_->Apply(v, out);
 	TIMER_STOP("Ocean: apply matrix...");
 }
 
@@ -963,7 +947,7 @@ void Ocean::buildPreconditioner(bool forceInit)
 }
 
 //====================================================================
-void Ocean::applyPrecon(SuperVector const &v, SuperVector &out)
+void Ocean::applyPrecon(Epetra_Vector const &v, Epetra_Vector &out)
 {
 	if (!precInitialized_) // Initialize preconditioner
 		initializePreconditioner();
@@ -972,21 +956,12 @@ void Ocean::applyPrecon(SuperVector const &v, SuperVector &out)
 	buildPreconditioner();	
 
 	TIMER_START("Ocean: apply preconditioning...");
-	precPtr_->ApplyInverse(*(v.getOceanVector()), *(out.getOceanVector()));
+	precPtr_->ApplyInverse(v, out);
 	TIMER_STOP("Ocean: apply preconditioning...");
 }
 
 //====================================================================
-Teuchos::RCP<SuperVector> Ocean::applyPrecon(SuperVector const &v)
-{
-	RCP<Epetra_Vector> result =
-		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
-	RCP<SuperVector> out = getVector('V', result);
-	applyPrecon(v, *out);
-	return out;
-}
-
-//====================================================================
+// --> Parallelize
 void Ocean::setAtmosphere(std::vector<double> const &atmos)
 {
 	TIMER_START("Ocean: set atmosphere...");
@@ -998,6 +973,7 @@ void Ocean::setAtmosphere(std::vector<double> const &atmos)
 //====================================================================
 // Return the coupling block containing the contribution of the
 // atmosphere to the ocean
+// --> Parallelize
 void Ocean::getAtmosBlock(std::vector<double> &values,
 						  std::vector<int> &row_inds)
 {
@@ -1035,23 +1011,6 @@ void Ocean::getAtmosBlock(std::vector<double> &values,
 }
 
 //====================================================================
-// --> deprecated?
-std::shared_ptr<std::vector<double> >
-Ocean::getLandTemperature(std::shared_ptr<std::vector<double> > tatm)
-{
-	// Here we calculate and return the landtemperature based
-	// on the provided atmosphere temperature
-	std::shared_ptr<std::vector<double> > land =
-		std::make_shared<std::vector<double> >(M_*N_, 0.0);
-	
-	//F90NAME(m_global,get_land_temp)(&(*land)[0]);
-
-	//for *autosd
-	
-	return land;
-}
-
-//====================================================================
 std::shared_ptr<std::vector<int> > Ocean::getSurfaceTRows()
 {
 	std::shared_ptr<std::vector<int> > rows =
@@ -1066,6 +1025,7 @@ std::shared_ptr<std::vector<int> > Ocean::getSurfaceTRows()
 
 //====================================================================
 // Fill and return a copy of the surface temperature
+// --> Parallelize
 std::shared_ptr<std::vector<double> > Ocean::getSurfaceT()
 {
 	TIMER_START("Ocean: get surface temperature...");
