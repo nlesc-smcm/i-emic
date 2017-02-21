@@ -27,13 +27,14 @@
 //!
 //! A Model should maintain its own Vector, which we expect
 //! to be of pointer type as well and named VectorPtr.
-//! A Vector is expected to implement the following members:
+//! A Vector is expected to have the Epetra_MultiVector style members:
 //!
-//!  void    update()
-//!  void    print()
-//!  int     length()
-//!  double  norm()
-//!  double  dot()
+//!  void    Update()
+//!  void    Print()
+//!  int     GlobalLength()
+//!  double  Norm()
+//!  double  Dot()
+//!  ... perhaps a few others
 //!
 //! Furthermore, a Vector should support copy construction.
 //!  
