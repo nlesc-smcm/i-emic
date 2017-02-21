@@ -63,17 +63,23 @@ private:
 	//! parallel atmosphere state (overlapping)
 	Teuchos::RCP<Epetra_Vector> localState_;
 
-	//! parallel atmosphere state (non-overlapping)
+ 	//! parallel atmosphere rhs (non-overlapping)
 	Teuchos::RCP<Epetra_Vector> rhs_;
 
-	//! parallel atmosphere state (overlapping)
+	//! parallel atmosphere rhs (overlapping)
 	Teuchos::RCP<Epetra_Vector> localRHS_;
 
-	//! parallel atmosphere state (non-overlapping)
+	//! parallel atmosphere sst (non-overlapping)
 	Teuchos::RCP<Epetra_Vector> sst_;
 
-	//! parallel atmosphere state (overlapping)
+	//! parallel atmosphere sst (overlapping)
 	Teuchos::RCP<Epetra_Vector> localSST_;
+
+	//! parallel atmosphere sol (non-overlapping)
+	Teuchos::RCP<Epetra_Vector> rhs_;
+	
+	//! parallel atmosphere sol (overlapping)
+	Teuchos::RCP<Epetra_Vector> localSol_;
 
 	//! input file (HDF5)
 	std::string const inputFile_;
@@ -106,17 +112,17 @@ public:
 	void applyPrecon(Teuchos::RCP<Epetra_Vector> const &in,
 					 Teuchos::RCP<Epetra_Vector> &out);
 
-	void solve(Teuchos::RCP<Epetra_Vector> rhs);	
+	void solve(Teuchos::RCP<Epetra_Vector> b);
 
 	void setState(Teuchos::RCP<Epetra_Vector> input) { state_ = input; }
 
 	void setOceanTemperature(Teuchos::RCP<Epetra_Vector> in);
 
-	// Let the atmos object use idealized values,
-	// mainly for testing purposes
+	//! Let the atmos object use idealized values,
+	//! mainly for testing purposes
 	void idealized();
 
-	// Obtain problem size
+	//! Obtain problem size
 	int  dim() { return dim_; }
 
 	Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return getVector(mode, state_); }
@@ -128,8 +134,18 @@ public:
 	Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() {return assemblySurfaceMap_;}
 
 private:
-	// A few functions borrowed from THCM, --> could be factorized when bored
+	//! solve with right hand side b on assembly subdomains
+	//! using dgbtrf and dgbtrs
+	void solveSubDomain(Teuchos::RCP<Epetra_Vector> b);
+
+	//! create dependency graph for the Jacobian matrix
+	//! function borrowed from THCM,
+	//! --> could be factorized within the project when bored
 	void createMatrixGraph();
+
+	//! insert a dependency into the graph
+	//! function borrowed from THCM,
+	//! --> could be factorized within the project when bored
 	void insert_graph_entry(int* indices, int& pos,
 							int i, int j, int k, int xx,
 							int N, int M, int L) const;

@@ -59,10 +59,12 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 	// Create overlapping and non-overlapping vectors
 	state_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
 	rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+	sol_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     sst_       	= Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
 	localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 	localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+	localSol_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 	localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
 	// create graph
@@ -297,6 +299,61 @@ void AtmospherePar::applyMatrix(Teuchos::RCP<Epetra_Vector> const &in,
 								Teuchos::RCP<Epetra_Vector> &out)
 {
 	jac_->Apply(*in, *out);
+}
+
+//==================================================================
+void AtmospherePar::applyPrecon(Teuchos::RCP<Epetra_Vector> const &in,
+								Teuchos::RCP<Epetra_Vector> &out)
+{
+	// Todo
+}
+
+//==================================================================
+void AtmospherePar::solve(Teuchos::RCP<Epetra_Vector> const &b)
+{
+	solveSubDomain(b);
+}
+
+//==================================================================
+void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_Vector> const &b)
+{
+	if (!(rhs->Map().SameAs(*standardMap_)))
+	{
+		ERROR("AtmospherePar::solve, map of b not same as standard map",
+			  __FILE__, __LINE__);
+	}
+
+	// obtain assembly vector, put b in sol
+	domain_->Solve2Assembly(*b, *localSol_);
+
+	// local vector size
+	int numMyElements = assemblyMap_->NumMyElements();
+
+	// create local vector
+	std::shared_ptr<std::vector<double> > localSol =
+		std::make_shared<std::vector<double> >(numMyElements, 0.0);
+
+	// extract assembly into local vector
+	localB_->ExtractCopy(&(*localSol)[0], numMyElements);
+
+	// solve using serial model
+	atmos_->solve(localSol);
+
+	// obtain solution
+	localSol = atmos_->getSolution('C');
+
+	// obtain view
+	double *sol_tmp;
+	localSol_->ExtractView(&sol_tmp);
+
+	// fill view
+	for (int i = 0; i != numMyElements; ++i)
+	{
+		sol_tmp[i] = (*localSol)[i];
+	}
+
+	// obtain the solution for the standard map
+	domain_->Assembly2Solve(*localSol_, *sol_);
 }
 
 //==================================================================
