@@ -305,7 +305,8 @@ void AtmospherePar::applyMatrix(Teuchos::RCP<Epetra_Vector> const &in,
 void AtmospherePar::applyPrecon(Teuchos::RCP<Epetra_Vector> const &in,
 								Teuchos::RCP<Epetra_Vector> &out)
 {
-	// Todo
+	solve(in);
+	out = getSolution('C');
 }
 
 //==================================================================
@@ -339,10 +340,10 @@ void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_Vector> const &b)
 	// solve using serial model
 	atmos_->solve(localSol);
 
-	// obtain solution
-	localSol = atmos_->getSolution('C');
+	// obtain view of solution
+	localSol = atmos_->getSolution('V');
 
-	// obtain view
+	// obtain our view of assembly localSol
 	double *sol_tmp;
 	localSol_->ExtractView(&sol_tmp);
 
@@ -352,7 +353,7 @@ void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_Vector> const &b)
 		sol_tmp[i] = (*localSol)[i];
 	}
 
-	// obtain the solution for the standard map
+	// obtain the standard map solution
 	domain_->Assembly2Solve(*localSol_, *sol_);
 }
 
