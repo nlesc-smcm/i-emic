@@ -99,10 +99,10 @@ void CoupledModel::synchronize()
 	syncCtr_++; // Keep track of synchronizations
 	
 	// Copy the atmosphere from the current combined state
-	std::vector<double> atmos(*(stateView_->getAtmosVector()));
-
+	Teuchos::RCP<Epetra_Vector> localAtmos (*(atmos_->getLocalState()));
+	
 	// Copy the surface temperature from the ocean model
-	std::vector<double> sst(*(ocean_->getSurfaceT()));
+	Teuchos::RCP<Epetra_Vector> localOcean (*(ocean_->getSST()));
 	
 	// Set the atmosphere in the ocean
 	ocean_->setAtmosphere(atmos);

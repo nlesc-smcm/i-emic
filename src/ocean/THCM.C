@@ -355,6 +355,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	// read wind, temperature and salinity forcing and distribute it among
 	// processors
 	Teuchos::RCP<Epetra_Map> wind_map_loc   = domain->CreateAssemblyMap(1,true);
+	Teuchos::RCP<Epetra_Map> atmos_map_loc  = domain->CreateAssemblyMap(1,true);
+	
 	Teuchos::RCP<Epetra_Map> lev_map_loc    = wind_map_loc;
 	Teuchos::RCP<Epetra_Map> intlev_map_loc = domain->CreateAssemblyMap(1,false);
 	Teuchos::RCP<Epetra_Vector> taux_loc    = Teuchos::rcp(new Epetra_Vector(*wind_map_loc));
@@ -1097,72 +1099,19 @@ std::shared_ptr<std::vector<int> > THCM::getSurfaceMask()
 }
 		
 //=============================================================================
-void THCM::setAtmosphere(std::vector<double> const &atmosvec)
+void THCM::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmos)
 {
-	// Create a gather map
-	Teuchos::RCP<Epetra_Map> atmos_map_dist = domain->CreateStandardMap(1, true);
-	Teuchos::RCP<Epetra_Map> atmos_map_root = Utils::Gather(*atmos_map_dist, 0);
-
-	// Copy atmosphere to non-const vector
-	std::vector<double> atmosCpy(atmosvec);
-	
-	// Insert the atmosphere
-	Teuchos::RCP<Epetra_Vector> atmos_glob =
-		Teuchos::rcp(new Epetra_Vector(Copy, *atmos_map_root, &atmosCpy[0]));
-
-	// Distribute the atmosphere
-	Teuchos::RCP<Epetra_MultiVector> atmos_dist =
-		Utils::Scatter(*atmos_glob, *atmos_map_dist);
-
-	// Create assembly vector
-	Teuchos::RCP<Epetra_Map> atmos_map_loc  = domain->CreateAssemblyMap(1, true);
-	Teuchos::RCP<Epetra_Vector> atmos_loc =
-		Teuchos::rcp(new Epetra_Vector(*atmos_map_loc));
-
-	// Import overlap
-	Teuchos::RCP<Epetra_Import> atmos_loc2dist =
-		Teuchos::rcp(new Epetra_Import(*atmos_map_loc, *atmos_map_dist));
-
-	// Insert the assembly into THCM
-	atmos_loc->Import(*atmos_dist, *atmos_loc2dist, Insert);
-	double *atmos;
-	atmos_loc->ExtractView(&atmos);
-	F90NAME(m_inserts, insert_atmosphere)(atmos);	
-}	
-
-//=============================================================================
-void THCM::setAtmosphereTest()
-{
-	// This is a test.
-	// We build an idealized atmosphere on the assembly map to give to THCM
-	Teuchos::RCP<Epetra_Map> atmos_map_loc = domain->CreateAssemblyMap(1, true);
-	Teuchos::RCP<Epetra_Vector> atmos_loc  =
-		Teuchos::rcp(new Epetra_Vector(*atmos_map_loc));
-
-	int nloc       =  domain->LocalN();
-	int mloc       =  domain->LocalM();
-	double yminLoc =  domain->YminLoc();
-	double ymaxLoc =  domain->YmaxLoc();
-	double ymax    =  domain->Ymax();
-	double dyLoc   = (ymaxLoc - yminLoc) / (mloc - 1);
-	double y       =  yminLoc;
-	
-	double value = 0;
-	int idx      = 0;
-	for (int j = 0; j != mloc; ++j)
+	if (!(in->Map().SameAs(*SolveMap)))
 	{
-		y = yminLoc + j * dyLoc;
-		for (int i = 0; i != nloc; ++i)
-		{
-			value = cos(PI_ * y / ymax);
-			(*atmos_loc)[idx] = value;
-			++idx;
-		}
+		ERROR("Map of atmos input vector not same as solvemap", __FILE__, __LINE__);
 	}
-	double *atmos_loc_array;
-	atmos_loc->ExtractView(&atmos_loc_array);
-	F90NAME(m_inserts, insert_atmosphere)(atmos_loc_array);
-}
+
+	Teuchos::RCP<
+	
+	double *tmp_atmos
+	atmos->ExtractView(&tmp_atmos);
+	F90NAME(m_inserts, insert_atmosphere)(tmp_atmos);	
+}	
 
 //=============================================================================
 // Recompute scaling for the linear system

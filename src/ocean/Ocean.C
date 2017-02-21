@@ -962,7 +962,7 @@ void Ocean::applyPrecon(Epetra_Vector const &v, Epetra_Vector &out)
 
 //====================================================================
 // --> Parallelize
-void Ocean::setAtmosphere(std::vector<double> const &atmos)
+void Ocean::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmos)
 {
 	TIMER_START("Ocean: set atmosphere...");
 	// This is a job for THCM

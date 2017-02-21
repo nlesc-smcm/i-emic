@@ -27,7 +27,7 @@
 //!
 //! A Model should maintain its own Vector, which we expect
 //! to be of pointer type as well and named VectorPtr.
-//! A Vector is expected to have the Epetra_MultiVector style members:
+//! A Vector is expected to have an Epetra_MultiVector style interface:
 //!
 //!  void    Update()         update
 //!  void    Print()          print to ostream
@@ -35,8 +35,6 @@
 //!  double  Norm()           2-norm
 //!  double  Dot()            dot
 //!
-//! Furthermore, a Vector should support copy construction.
-//!  
 //! The templated type ParameterList should be a pointer 
 //! to a parameter storing object having a .get() method.
 
