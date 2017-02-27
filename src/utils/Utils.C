@@ -397,9 +397,9 @@ Teuchos::RCP<Epetra_Vector> Utils::RestrictVector(Epetra_Vector const &vector,
 	// Create the output vector
 	Teuchos::RCP<Epetra_Vector> restrictedVector =
 		Teuchos::rcp(new Epetra_Vector(*indexMap) );
-
-
+	
 	TIMER_STOP("Utils: restrict vector");
+	
 	TIMER_START("Utils: restrict vector import");
 
 	// Create importer

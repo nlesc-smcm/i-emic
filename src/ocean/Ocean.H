@@ -52,7 +52,7 @@ class Epetra_CrsMatrix;
 class Ocean
 {
 	// We need both a distributed and a global version of the land mask, so
-	// we use a struct.
+	// we use the following struct.
 	struct maskStruct
 	{
 		Teuchos::RCP<Epetra_IntVector> local;
@@ -132,24 +132,27 @@ protected:
 	bool saveState_;
 	bool saveMask_;
 
-	// Enable saving every state in multiple formats
+	//! Enable saving every state in multiple formats
 	bool storeEverything_;
 	
-	// Continuation parameter name.
-	// For a list of possible names see THCM::par2int()
+	//! Continuation parameter name.
+	//! For a list of possible names see THCM::par2int()
 	std::string parName_;
 
-	// Landmask file
+	//! Landmask file
 	std::string landmaskFile_;
 
-	// Row map for pressure points P
+	//! Row map for pressure points P
 	Teuchos::RCP<Epetra_Map> mapP_;
 
-	// Row map for velocity U
+	//! Row map for velocity U
 	Teuchos::RCP<Epetra_Map> mapU_;
 
-	// Rows corresponding to singular pressure points
+	//! Rows corresponding to singular pressure points
 	VectorPtr singRows_;
+
+	//! Surface temperature importer
+	Teuchos::RCP<Epetra_Import> surfaceTimporter_;
 
 public:
 
@@ -252,7 +255,7 @@ public:
 	// models:
 
 	// Obtain an external atmosphere
-	void setAtmosphere(std::vector<double> const &atmos);
+	void setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmos);
 
     // Get the atmosphere to ocean
 	// contribution in the Jacobian, see forcing.F90.
@@ -260,11 +263,8 @@ public:
 					   std::vector<int> &row_inds);
 	
 	// Obtain ocean/land surface temperature
-	std::shared_ptr<std::vector<double> > getSurfaceT();
+	Teuchos::RCP<Epetra_Vector> getSurfaceT();
 	
-	// Get the rows in the matrix associated with surface temperature
-	std::shared_ptr<std::vector<int> > getSurfaceTRows();
-
 	// Get the ocean's current landmask (gathered on all procs);
 	std::shared_ptr<std::vector<int> > getLandMask()    { return landmask_; }
 

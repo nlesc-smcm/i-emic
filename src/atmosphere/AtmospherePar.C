@@ -177,6 +177,14 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::getVector(char mode, Teuchos::RCP<Epe
 	
 }
 
+//==================================================================
+Teuchos::RCP<Epetra_Vector> AtmospherePar::getT()
+{
+	// for now we just return a copy of the state
+	// when the atmosphere grows we need an import operation here
+
+	return getVector('C', state_);
+}
 
 //==================================================================
 void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> in)
@@ -202,6 +210,18 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> in)
 	atmos_->setOceanTemperature(*localSST);	
 }
 
+//==================================================================
+void AtmospherePar::setLandMask(Teuchos::RCP<Epetra_IntVector> const &mask)
+{
+	// create rcp
+	int numMyElements = mask.local->numMyElements();
+	std::shared_ptr<std::vector<int> > landmask =
+		std::make_shared<std::vector<int> >(numMyElements, 0);
+	
+	CHECK_ZERO(mask.local->ExtractCopy(&landmask, numMyElements));
+
+	atmos_->setSurfaceMask(landmask);
+}
 
 //==================================================================
 void AtmospherePar::computeJacobian()

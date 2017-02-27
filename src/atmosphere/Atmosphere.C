@@ -203,9 +203,8 @@ void Atmosphere::setup()
 		xc_.push_back(xmin_ + (i - 0.5) * dx_);
 	}
 
-	double Os = 0.0;
-	if (use_landmask_)
-		FNAME(getooa)(&Ooa_, &Os );
+	// Get ocean parameters
+	FNAME(getooa)(&Ooa_, &Os );
 	
 	// Fill y and latitude-based arrays
 	yv_.reserve(m_+1);
@@ -294,7 +293,7 @@ void Atmosphere::zeroOcean()
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::setOceanTemperature(std::vector<double> const &surftemp)
+void Atmosphere::xsetOceanTemperature(std::vector<double> const &surftemp)
 {
 	// Set surface temperature (copy)
 	surfaceTemp_ = surftemp;
@@ -860,10 +859,32 @@ void Atmosphere::getOceanBlock(std::vector<double> &values,
 //-----------------------------------------------------------------------------
 void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 {
-	if ((int) surfm->size() != n_*m_)
-		WARNING("surfm->size() not ok:",  __FILE__, __LINE__);
+	// clear current mask
+	surfmask_->clear();
+	
+	if ((int) surfm->size() < dim_)
+		ERROR("surfm->size() not ok:",  __FILE__, __LINE__);
+	else if ((int) surfm->size() > dim_)
+	{
+		// in this case we assume we receive an ocean landmask
+		// with boundaries, which implies that the final
+		// (n_+2) * (m_+2) entries are meaningful for us.
+		maskdim = (n_+2) * (m_+2);
+		
+		surfm->erase(surfm.begin(), surfm.begin() + surfm.size() - maskdim);
 
-	surfmask_ = surfm;
+		// now we put surfm in our datamember, without borders
+		for (int j = 1; j != m_+1; ++j)
+			for (int i = 1; i != n_+1; ++i)
+			{
+				surfmask_->push_back((*surfm)[j*(n_+2) + i]);
+			}
+		
+	}
+	else // we trust surfm
+	{
+		surfmask_ = surfm;
+	}
 
 	INFO("Printing surface mask available in Atmosphere");
 	std::ostringstream string;

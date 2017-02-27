@@ -27,7 +27,7 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	rhsView_(std::make_shared<Combined_MultiVec>
 			 (ocean->getRHS('V'), atmos->getRHS('V'))),
 	
-	useExistingState_ (params->get("Use existing state", false)),
+	useExistingState_ (false),
 	parName_          (params->get("Continuation parameter",
 								   "Combined Forcing")),
 	solvingScheme_    (params->get("Solving scheme", 'G')),
@@ -43,42 +43,38 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	gmresInitialized_ (false),
 	idrSolveCtr_      (0)
 {
-	// let the models get their state from a file
-	if (useExistingState_)
-	{
-		int status = atmos_->loadState();
-		status += ocean_->loadState();
-		INFO("CoupledModel load status = " << status);
-	}
-
 	// Let the sub-models know our continuation parameter
-	ocean_->setParName(parName_);	
+	ocean_->setParName(parName_);
 	atmos_->setParName(parName_);
 	
 	// Communicate surface landmask
+	LandMask mask = ocean_->getLandMask();
+	atmos_->setLandMask(mask.local); // only RCP<Epetra_IntVector> 
+	ocean_->setLandMask(mask);		
+	
 	atmos_->setSurfaceMask(ocean_->getSurfaceMask());
 
-	// Setup coupling blocks
-	std::vector<double> C12values;
-	std::vector<int>    C12rows;
-	ocean_->getAtmosBlock(C12values, C12rows); 
+	// // Setup coupling blocks
+	// std::vector<double> C12values;
+	// std::vector<int>    C12rows;
+	// ocean_->getAtmosBlock(C12values, C12rows); 
 	
-	std::vector<double> C21values;
-	std::vector<int>    C21rows;
-	atmos_->getOceanBlock(C21values, C21rows);
+	// std::vector<double> C21values;
+	// std::vector<int>    C21rows;
+	// atmos_->getOceanBlock(C21values, C21rows);
 
-	// A->O and O->A coupling blocks
-	C12_ = CouplingBlock("AO", C12values, C12rows, C21rows);
-	C21_ = CouplingBlock("OA", C21values, C21rows, C12rows);
+	// // A->O and O->A coupling blocks
+	// C12_ = CouplingBlock("AO", C12values, C12rows, C21rows);
+	// C21_ = CouplingBlock("OA", C21values, C21rows, C12rows);
 	
-	C12_.info();
-	C21_.info();
+	// C12_.info();
+	// C21_.info();
 
-	// Get the contribution of the atmosphere to the ocean in the Jacobian	
-	B_     = std::make_shared<std::vector<double> >(C12values);
-	rowsB_ = std::make_shared<std::vector<int> >(C12rows);
-	// Get the contribution of the ocean to the atmosphere in the Jacobian
-	C_     = std::make_shared<std::vector<double> >(C21values);
+	// // Get the contribution of the atmosphere to the ocean in the Jacobian	
+	// B_     = std::make_shared<std::vector<double> >(C12values);
+	// rowsB_ = std::make_shared<std::vector<int> >(C12rows);
+	// // Get the contribution of the ocean to the atmosphere in the Jacobian
+	// C_     = std::make_shared<std::vector<double> >(C21values);
 	
 	// Output parameters
 	INFO(*params);
@@ -86,11 +82,12 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	// Synchronize state
 	synchronize();
 	
-	if (!useExistingState_) // Since there is no pre-existing state we can do this
-		postProcess();	
 }
 
 //------------------------------------------------------------------
+// Here we throw Epetra_Vectors around. Inside the models we should check
+// that the maps are correct, which in fact checks that the domain decompositions
+// are compatible.
 void CoupledModel::synchronize()
 {
 
@@ -98,11 +95,11 @@ void CoupledModel::synchronize()
 
 	syncCtr_++; // Keep track of synchronizations
 	
-	// Copy the atmosphere from the current combined state
-	std::vector<double> atmos(*(stateView_->getAtmosVector()));
+	// Get the atmosphere temperature
+	Teuchos::RCP<Epetra_Vector> atmos = atmos_->getT();
 
-	// Copy the surface temperature from the ocean model
-	std::vector<double> sst(*(ocean_->getSurfaceT()));
+	// Get sst restricted state vector from ocean model
+	Teuchos::RCP<Epetra_Vector> sst = ocean_->getSurfaceT();
 	
 	// Set the atmosphere in the ocean
 	ocean_->setAtmosphere(atmos);

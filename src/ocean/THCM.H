@@ -125,6 +125,7 @@ public:
 	  0  for w,p    
 	  1 for T,S     
 	*/
+	
 	void evaluateB();
 
 	//! ------------------- I-EMIC couplings -----------------------------
@@ -134,7 +135,7 @@ public:
 	int coupled_atm;
 
 	//! Copy an atmosphere in the ocean model
-	void setAtmosphere(std::vector<double> const &atmos);
+	void setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmos);
 
 	//! Test 
 	void setAtmosphereTest();
@@ -263,9 +264,11 @@ private:
 	//!@{
 	//! overlapping map for 'THCM objects': 
 	Teuchos::RCP<Epetra_Map> AssemblyMap;
+	Teuchos::RCP<Epetra_Map> AssemblySurfaceMap;
 
 	//! non-overlapping map for Trilinos objects: 
-	Teuchos::RCP<Epetra_Map> StandardMap;  
+	Teuchos::RCP<Epetra_Map> StandardMap;
+	Teuchos::RCP<Epetra_Map> StandardSurfaceMap;  
   
 	//! non-overlapping load-balanced map for Trilinos objects 
 	//! (may contain non-rectangular subdomains)               
@@ -274,8 +277,13 @@ private:
   
 	//! used only to define vector format (i.e. map), I think
 	Teuchos::RCP<Epetra_Vector> initialSolution;
+
 	//! used to import current approximation to THCM:
 	Teuchos::RCP<Epetra_Vector> localSol;
+
+	//! used to import atmosphere into THCM
+	Teuchos::RCP<Epetra_Vector> localAtmosT;
+	
 	//! used to export computed RHS vector to Trilinos:
 	Teuchos::RCP<Epetra_Vector> localRhs;
   

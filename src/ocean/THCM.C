@@ -355,6 +355,13 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	// read wind, temperature and salinity forcing and distribute it among
 	// processors
 	Teuchos::RCP<Epetra_Map> wind_map_loc   = domain->CreateAssemblyMap(1,true);
+
+	StandardSurfaceMap = domain->CreateStandardMap(1,true);
+	AssemblySurfaceMap = domain->CreateAssemblyMap(1,true);
+
+	as2std_surf =
+		Teuchos::rcp(new Epetra_Import(*AssemblySurfaceMap, *StandardSurfaceMap));
+	
 	Teuchos::RCP<Epetra_Map> lev_map_loc    = wind_map_loc;
 	Teuchos::RCP<Epetra_Map> intlev_map_loc = domain->CreateAssemblyMap(1,false);
 	Teuchos::RCP<Epetra_Vector> taux_loc    = Teuchos::rcp(new Epetra_Vector(*wind_map_loc));
@@ -386,8 +393,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	Teuchos::RCP<Epetra_Map> wind_map_dist = domain->CreateStandardMap(1,true);
 	Teuchos::RCP<Epetra_Map> wind_map_root = Utils::Gather(*wind_map_dist,0);
 
-	Teuchos::RCP<Epetra_Vector> taux_glob     = Teuchos::rcp(new Epetra_Vector(*wind_map_root));
-	Teuchos::RCP<Epetra_Vector> tauy_glob     = Teuchos::rcp(new Epetra_Vector(*wind_map_root));
+	Teuchos::RCP<Epetra_Vector> taux_glob =
+		Teuchos::rcp(new Epetra_Vector(*wind_map_root));
+	Teuchos::RCP<Epetra_Vector> tauy_glob =
+		Teuchos::rcp(new Epetra_Vector(*wind_map_root));
 
 	double *taux_g, *tauy_g;
 	CHECK_ZERO(taux_glob->ExtractView(&taux_g));
@@ -425,6 +434,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	DEBUG("Initialize Temperature and Salinity forcing...");
 
 	Teuchos::RCP<Epetra_Map> lev_map_dist  = domain->CreateStandardMap(1,true);
+	
+	StandardSurfaceMap = lev_map_dist;
+	
 	Teuchos::RCP<Epetra_Map> lev_map_root  = Utils::Gather(*lev_map_dist,0);
 
 	Teuchos::RCP<Epetra_Map> intlev_map_dist  = domain->CreateStandardMap(1,false);
@@ -533,6 +545,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	localDiagB      = Teuchos::rcp(new Epetra_Vector(*StandardMap));
 	localRhs        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
 	localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+	localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
 
 	// allocate mem for the CSR matrix in THCM.	
 	// first ask how big it should be:
@@ -915,10 +928,8 @@ void THCM::evaluateB(void)
 #endif
 	domain->Standard2Solve(*localDiagB,*diagB);
 }	
-	
-//=============================================================================
-// I-EMIC stuff
-//=============================================================================
+
+//==================================================================
 // Get current global landmask including borders
 std::shared_ptr<std::vector<int> > THCM::getLandMask()
 {
@@ -1097,37 +1108,22 @@ std::shared_ptr<std::vector<int> > THCM::getSurfaceMask()
 }
 		
 //=============================================================================
-void THCM::setAtmosphere(std::vector<double> const &atmosvec)
+void THCM::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmosT)
 {
-	// Create a gather map
-	Teuchos::RCP<Epetra_Map> atmos_map_dist = domain->CreateStandardMap(1, true);
-	Teuchos::RCP<Epetra_Map> atmos_map_root = Utils::Gather(*atmos_map_dist, 0);
 
-	// Copy atmosphere to non-const vector
-	std::vector<double> atmosCpy(atmosvec);
-	
-	// Insert the atmosphere
-	Teuchos::RCP<Epetra_Vector> atmos_glob =
-		Teuchos::rcp(new Epetra_Vector(Copy, *atmos_map_root, &atmosCpy[0]));
+	if (!(atmosT->Map().SameAs(StandardSurfaceMap)))
+	{
+		ERROR("Map of atmosT input vector not same as standard surface map",
+			  __FILE__, __LINE__);
+	}
 
-	// Distribute the atmosphere
-	Teuchos::RCP<Epetra_MultiVector> atmos_dist =
-		Utils::Scatter(*atmos_glob, *atmos_map_dist);
-
-	// Create assembly vector
-	Teuchos::RCP<Epetra_Map> atmos_map_loc  = domain->CreateAssemblyMap(1, true);
-	Teuchos::RCP<Epetra_Vector> atmos_loc =
-		Teuchos::rcp(new Epetra_Vector(*atmos_map_loc));
-
-	// Import overlap
-	Teuchos::RCP<Epetra_Import> atmos_loc2dist =
-		Teuchos::rcp(new Epetra_Import(*atmos_map_loc, *atmos_map_dist));
-
-	// Insert the assembly into THCM
-	atmos_loc->Import(*atmos_dist, *atmos_loc2dist, Insert);
-	double *atmos;
-	atmos_loc->ExtractView(&atmos);
-	F90NAME(m_inserts, insert_atmosphere)(atmos);	
+	// Standard2Assembly
+	// Import atmosT into local atmosT 
+	CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf, Insert);
+		
+	double *atmosT;
+	localAtmosT->ExtractView(&atmosT);
+	F90NAME(m_inserts, insert_atmosphere)(atmosT);	
 }	
 
 //=============================================================================
@@ -1547,7 +1543,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 
 	DEBUG("Create local (land-)maps...");
 
-	// create an non-overlapping distributed map
+	// create a non-overlapping distributed map
 	int i0 = domain->FirstRealI()+1; // 'grid-style' indexing is 1-based
 	int i1 = domain->LastRealI()+1;
 	int j0 = domain->FirstRealJ()+1;
@@ -1586,9 +1582,12 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 	DEBUG("Create local vectors...");
 
 	// distributed non-overlapping version of landm
-	Teuchos::RCP<Epetra_IntVector> landm_loc0 = Teuchos::rcp(new Epetra_IntVector(*landmap_loc0));
+	Teuchos::RCP<Epetra_IntVector> landm_loc0 =
+		Teuchos::rcp(new Epetra_IntVector(*landmap_loc0));
+	
 	// distributed overlapping version of landm
-	Teuchos::RCP<Epetra_IntVector> landm_loc = Teuchos::rcp(new Epetra_IntVector(*landmap_loc));
+	Teuchos::RCP<Epetra_IntVector> landm_loc =
+		Teuchos::rcp(new Epetra_IntVector(*landmap_loc));
 
 	DEBUG("Create importers...");
 

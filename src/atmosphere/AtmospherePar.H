@@ -118,6 +118,8 @@ public:
 
 	void setOceanTemperature(Teuchos::RCP<Epetra_Vector> in);
 
+	void setLandMask(Teuchos::RCP<Epetra_IntVector> const &mask);
+
 	//! Let the atmos object use idealized values,
 	//! mainly for testing purposes
 	void idealized();
@@ -126,9 +128,11 @@ public:
 	int  dim() { return dim_; }
 
 	Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return getVector(mode, state_); }
-	Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return getVector(mode, sol_); }
+	Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return getVector(mode, sol_); } 
 	Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')   { return getVector(mode, rhs_); }
 	Teuchos::RCP<Epetra_Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
+
+	Teuchos::RCP<Epetra_Vector> getT();
 
 
 	Teuchos::RCP<Epetra_BlockMap> getStandardSurfaceMap() {return standardSurfaceMap_;}

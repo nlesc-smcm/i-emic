@@ -28,6 +28,7 @@ class CoupledModel
 {
 public:
 	using VectorPtr = std::shared_ptr<Combined_MultiVec>;
+	using LandMask  = Ocean::LandMask;
 	
 private:
 	//! Adjacency graph describing the couplings between the models

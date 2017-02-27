@@ -458,7 +458,8 @@ namespace TRIOS
 	(const Epetra_Vector& source, Epetra_Vector& target) const
 	{
 #ifdef TESTING
-        if (!(source.Map().SameAs(*AssemblyMap)&&target.Map().SameAs(*StandardMap)))
+        if (!(source.Map().SameAs(*AssemblyMap) &&
+			  target.Map().SameAs(*StandardMap)))
 		{
 			ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}
@@ -467,13 +468,13 @@ namespace TRIOS
         return 0;
 	}
 
-
 	//
 	int Domain::Standard2Assembly
 	(const Epetra_Vector& source, Epetra_Vector& target) const
 	{
 #ifdef TESTING
-        if (!(source.Map().SameAs(*StandardMap)&&target.Map().SameAs(*AssemblyMap)))
+        if (!(source.Map().SameAs(*StandardMap) &&
+			  target.Map().SameAs(*AssemblyMap)))
 		{
 			ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
 		}

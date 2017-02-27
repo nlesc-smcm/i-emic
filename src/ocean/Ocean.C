@@ -123,6 +123,29 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
 	// Inspect current state
 	inspectVector(state_);
+
+	//------------------------------------------------------------------
+	// Create surface temperature restrict/import strategy
+	//------------------------------------------------------------------
+	// Create list of surface temp row indices
+	std::vector<int> tRows;
+
+	for (int j = 0; j != M_; ++j)
+		for (int i = 0; i != N_; ++i)
+			tRows.push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));
+
+	// Create restricted map
+	Teuchos::RCP<Epetra_BlockMap> indexMap =
+		Utils::CreateSubMap(state_->Map(), tRows);
+
+	// Create the SST vector
+	sst_ = Teuchos::rcp(new Epetra_Vector(*indexMap));
+
+	// Create importer
+	// Target map: indexMap
+	// Source map: state_->Map()
+	Teuchos::RCP<Epetra_Import> surfaceTimporter_ =
+		Teuchos::rcp(new Epetra_Import(*indexMap, state_->Map()));
 	
 	INFO("Ocean: constructor... done");
 }
@@ -284,6 +307,12 @@ void Ocean::inspectVector(Teuchos::RCP<Epetra_Vector> x)
 }
 
 //====================================================================
+Ocean::LandMask Ocean::getLandMask()
+{
+	return getLandMask("current");
+}	
+
+//====================================================================
 Ocean::LandMask Ocean::getLandMask(std::string const &fname)
 {
 	LandMask mask;
@@ -300,9 +329,9 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname)
 		// If we find singular pressure rows we adjust the current landmask
 		mask.local = THCM::Instance().getLandMask("current", singRows_);
 		
-		//  Putting a fixed version of the landmask back in THCM		
+		//  Putting a fixed version of the landmask back in THCM
 		THCM::Instance().setLandMask(mask.local);
-		THCM::Instance().evaluate(*state_, Teuchos::null, true);		
+		THCM::Instance().evaluate(*state_, Teuchos::null, true);
 	}
 	
 	// Get the current global landmask from THCM.
@@ -961,8 +990,7 @@ void Ocean::applyPrecon(Epetra_Vector const &v, Epetra_Vector &out)
 }
 
 //====================================================================
-// --> Parallelize
-void Ocean::setAtmosphere(std::vector<double> const &atmos)
+void Ocean::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmos)
 {
 	TIMER_START("Ocean: set atmosphere...");
 	// This is a job for THCM
@@ -1011,44 +1039,15 @@ void Ocean::getAtmosBlock(std::vector<double> &values,
 }
 
 //====================================================================
-std::shared_ptr<std::vector<int> > Ocean::getSurfaceTRows()
-{
-	std::shared_ptr<std::vector<int> > rows =
-		std::make_shared<std::vector<int> >();
-
-	for (int j = 0; j != M_; ++j)
-		for (int i = 0; i != N_; ++i)
-			rows->push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));	
-	
-	return rows;
-}
-
-//====================================================================
 // Fill and return a copy of the surface temperature
-// --> Parallelize
-std::shared_ptr<std::vector<double> > Ocean::getSurfaceT()
+Teuchos::RCP<Epetra_Vetor> Ocean::getSurfaceT()
 {
 	TIMER_START("Ocean: get surface temperature...");
 	
-	// Get list of global rows corresponding to surface temperature
-	std::shared_ptr<std::vector<int> > rows = getSurfaceTRows();
+	sst_->Import(*state_, *surfaceTimporter_, Insert);
 	
-	// Get a restricted Epetra_Vector containing only the surface temp values
-	Teuchos::RCP<Epetra_Vector> restricted = Utils::RestrictVector(*state_, *rows);
-	
-	// Gather restricted vector to all procs
-	Teuchos::RCP<Epetra_MultiVector> gathered = Utils::AllGather(*restricted);
-
-	// The local array should be allocated
-	int numel = rows->size();
-	std::shared_ptr<std::vector<double> > surfaceT =
-		std::make_shared<std::vector<double> >(numel, 0.0);
-
-	// Get the values
-	gathered->ExtractCopy(&(*surfaceT)[0], numel);
-
 	TIMER_STOP("Ocean: get surface temperature...");	
-	return surfaceT;
+	return sst_;
 }
 
 //=====================================================================
