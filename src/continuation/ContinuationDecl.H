@@ -27,17 +27,14 @@
 //!
 //! A Model should maintain its own Vector, which we expect
 //! to be of pointer type as well and named VectorPtr.
-//! A Vector is expected to have the Epetra_MultiVector style members:
+//! A Vector is expected to have an Epetra_MultiVector style interface:
 //!
-//!  void    Update()
-//!  void    Print()
-//!  int     GlobalLength()
-//!  double  Norm()
-//!  double  Dot()
-//!  ... perhaps a few others
+//!  void    Update()         update
+//!  void    Print()          print to ostream
+//!  int     GlobalLength()   length of vector
+//!  double  Norm()           2-norm
+//!  double  Dot()            dot
 //!
-//! Furthermore, a Vector should support copy construction.
-//!  
 //! The templated type ParameterList should be a pointer 
 //! to a parameter storing object having a .get() method.
 
@@ -201,6 +198,16 @@ private:
 	void reset();
 	void info();
 	void modelInfo();
+
+	//! compute norm vector
+	double norm(VectorPtr const &vec) const;
+
+	//! print vector
+	void print(VectorPtr const &vec, std::string const &fname) const;
+
+	//! compute dot: result = (vec1,vec2)
+	//! does not support block result, returns only first double
+	double dot(VectorPtr const &vec1, VectorPtr const &vec2) const;
 };
 
 #endif

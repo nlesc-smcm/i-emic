@@ -165,7 +165,16 @@ public:
 			return info;
 		}
 
-	// this = scalarThis*this + scalarA*A + scalarB*B
+	// this = scalarA*A + scalarThis*this 
+	int Update(double scalarA, const Combined_MultiVec &A, double scalarThis)
+		{
+			int info = 0;
+			info =  first_->Update(scalarA,  *A.First(),  scalarThis);
+			info += second_->Update(scalarA, *A.Second(), scalarThis);
+			return info;
+		}
+
+	// this = scalarA*A + scalarB*B + scalarThis*this
 	int Update(double scalarA, const Combined_MultiVec &A,
 			   double scalarB, const Combined_MultiVec &B, double scalarThis)
 		{
@@ -177,17 +186,18 @@ public:
 	
 	// b[j] := this[j]^T * A[j]
 	// Not 100% sure
-	int Dot(const Combined_MultiVec& A, std::vector<double> &b) const
+	int Dot(const Combined_MultiVec& A, std::vector<double> &b1) const
 		{
-			// copy b
-			std::vector<double> b2 = b;
+			// we need two arrays storing results
+			std::vector<double> b2 = b1;
 
 			int info = 0;
-			info += first_->Dot(*A.First(), &b[0]);
+			info += first_->Dot(*A.First(), &b1[0]);
 			info += second_->Dot(*A.Second(), &b2[0]);
 
+			// combine the results
 			for (int i = 0; i != numVecs_; ++i)
-				b[i] += b2[i];
+				b1[i] += b2[i];
 
 			return info;
 		}
@@ -260,6 +270,12 @@ public:
 			info += first_->PutScalar(alpha);
 			info += second_->PutScalar(alpha);
 			return info;
+		}
+
+	void Print(std::ostream &os) const
+		{
+			first_->Print(os);
+			second_->Print(os);
 		}
 };
 

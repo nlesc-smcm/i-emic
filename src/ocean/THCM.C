@@ -355,7 +355,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 	// read wind, temperature and salinity forcing and distribute it among
 	// processors
 	Teuchos::RCP<Epetra_Map> wind_map_loc   = domain->CreateAssemblyMap(1,true);
-
+	
 	StandardSurfaceMap = domain->CreateStandardMap(1,true);
 	AssemblySurfaceMap = domain->CreateAssemblyMap(1,true);
 
@@ -1121,44 +1121,10 @@ void THCM::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmosT)
 	// Import atmosT into local atmosT 
 	CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf, Insert);
 		
-	double *atmosT;
-	localAtmosT->ExtractView(&atmosT);
-	F90NAME(m_inserts, insert_atmosphere)(atmosT);	
+	double *locAtmosT;
+	localAtmosT->ExtractView(&locAtmosT);
+	F90NAME(m_inserts, insert_atmosphere)(locAtmosT);	
 }	
-
-//=============================================================================
-void THCM::setAtmosphereTest()
-{
-	// This is a test.
-	// We build an idealized atmosphere on the assembly map to give to THCM
-	Teuchos::RCP<Epetra_Map> atmos_map_loc = domain->CreateAssemblyMap(1, true);
-	Teuchos::RCP<Epetra_Vector> atmos_loc  =
-		Teuchos::rcp(new Epetra_Vector(*atmos_map_loc));
-
-	int nloc       =  domain->LocalN();
-	int mloc       =  domain->LocalM();
-	double yminLoc =  domain->YminLoc();
-	double ymaxLoc =  domain->YmaxLoc();
-	double ymax    =  domain->Ymax();
-	double dyLoc   = (ymaxLoc - yminLoc) / (mloc - 1);
-	double y       =  yminLoc;
-	
-	double value = 0;
-	int idx      = 0;
-	for (int j = 0; j != mloc; ++j)
-	{
-		y = yminLoc + j * dyLoc;
-		for (int i = 0; i != nloc; ++i)
-		{
-			value = cos(PI_ * y / ymax);
-			(*atmos_loc)[idx] = value;
-			++idx;
-		}
-	}
-	double *atmos_loc_array;
-	atmos_loc->ExtractView(&atmos_loc_array);
-	F90NAME(m_inserts, insert_atmosphere)(atmos_loc_array);
-}
 
 //=============================================================================
 // Recompute scaling for the linear system
