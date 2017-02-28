@@ -41,7 +41,7 @@ TEST(Atmosphere, Initialization)
 			rcp(new Teuchos::ParameterList);
 		updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
 		
-		atmos = std::make_shared<Atmosphere>(atmosphereParams);
+		atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
 	}
 	catch (...)
 	{
@@ -71,28 +71,28 @@ TEST(CoupledModel, Initialization)
 	EXPECT_EQ(failed, false);
 }
 
-//------------------------------------------------------------------
-TEST(CoupledModel, Continuation)
-{
-	bool failed = false;
-	try
-	{
-		// Create continuation
-		RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
-		updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
+// //------------------------------------------------------------------
+// TEST(CoupledModel, Continuation)
+// {
+// 	bool failed = false;
+// 	try
+// 	{
+// 		// Create continuation
+// 		RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
+// 		updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
 		
-		Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
-			continuation(coupledModel, continuationParams);
+// 		Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
+// 			continuation(coupledModel, continuationParams);
 
-		continuation.run();
-	}
-	catch (...)
-	{
-		failed = true;
-	}
+// 		continuation.run();
+// 	}
+// 	catch (...)
+// 	{
+// 		failed = true;
+// 	}
 	
-	EXPECT_EQ(failed, false);
-}
+// 	EXPECT_EQ(failed, false);
+// }
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)
@@ -109,10 +109,9 @@ int main(int argc, char **argv)
 	int out = RUN_ALL_TESTS();
 	// -------------------------------------------------------
 	
-
 	// Get rid of possibly parallel objects for a clean ending.
-	ocean        = Teuchos::null;
-	atmos        = std::shared_ptr<Atmosphere>();
+	ocean        = std::shared_ptr<Ocean>();
+	atmos        = std::shared_ptr<AtmospherePar>();
 	coupledModel = std::shared_ptr<CoupledModel>();
 	
 	comm->Barrier();

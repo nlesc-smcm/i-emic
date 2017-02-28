@@ -35,6 +35,68 @@
 
 namespace Utils
 {
+	//! Obtain 2-norm of vectorPtr, more convenient interface
+	template<typename VectorPtr>
+	double norm(VectorPtr const &vec)
+	{
+		double norm = 0;
+		vec->Norm2(&norm);
+		return norm;
+	}
+
+	// //! Obtain 2-norm of vector
+	// template<typename Vector>
+	// double norm(Vector const &vec)
+	// {
+	// 	double norm = 0;
+	// 	vec.Norm2(&norm);
+	// 	return norm;
+	// }
+	
+	//! Print vectorPtr
+	template<typename VectorPtr>
+	void print(VectorPtr const &vec, std::string const &fname)
+	{
+		// This does not behave well in parallel,
+		// perhaps use a gather on the vector first
+		std::ofstream file;
+		file.open(fname);
+		vec->Print(file);
+		file.close();
+	}
+	
+	// //! Print vector
+	// template<typename Vector>
+	// void print(Vector const &vec, std::string const &fname)
+	// {
+	// 	// This does not behave well in parallel,
+	// 	// perhaps use a gather on the vector first
+	// 	std::ofstream file;
+	// 	file.open(fname);
+	// 	vec.Print(file);
+	// 	file.close();
+	// }
+
+	//! Compute dot product of two vectors
+	// template<typename Vector>
+	// double dot(Vector const &vec1,
+	// 		   Vector const &vec2)
+	// {
+	// 	double result = 0;
+	// 	vec1.Dot(vec2, &result);
+	// 	return result;	
+	// }
+
+	//! Compute dot product of two vectorPtrs
+	template<typename VectorPtr>
+	double dot(VectorPtr const &vec1,
+			   VectorPtr const &vec2)
+	{
+		double result = 0;
+		vec1->Dot(*vec2, &result);
+		return result;	
+	}
+	
 	//! split a cartesian box into nparts subdomains in a somehow 'good' way.
 	//! This function just tells you how many subdomains there should be in 
 	//! every direction. Returns 1 if no splitting was found.

@@ -2,7 +2,7 @@
 #define COUPLEDMODEL_H
 
 #include "Ocean.H"
-#include "Atmosphere.H"
+#include "AtmospherePar.H"
 #include "Combined_MultiVec.H"
 #include "IDRSolver.H"
 #include "GMRESSolver.H"
@@ -23,6 +23,8 @@
 
 //! Forward declarations
 class Epetra_Comm;
+class Epetra_IntVector;
+class Epetra_Vector;
 
 class CoupledModel
 {
@@ -36,7 +38,7 @@ private:
     //! Graph couplings_;
 
 	//! Trilinos-based parallel implicit ocean model (Trilinos-THCM) 
-	stdLLshared_ptr<Ocean>  ocean_;
+	std::shared_ptr<Ocean>  ocean_;
 
 	//! Parallel implicit atmosphere model
 	std::shared_ptr<AtmospherePar> atmos_;
@@ -64,14 +66,17 @@ private:
 	int iterGS_;
 
 	//! Tolerance in GS preconditioning scheme
-	double toleranceGS_;  
+	double toleranceGS_;
+
+	//! keep track of syncs
+	int syncCtr_;
 
 	//! Trilinos MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
 	
 public:
 	CoupledModel(std::shared_ptr<Ocean> ocean,
-				 std::shared_ptr<Atmosphere> atmos,
+				 std::shared_ptr<AtmospherePar> atmos,
 		         Teuchos::RCP<Teuchos::ParameterList> params);
 	
 	~CoupledModel() { INFO("CoupledModel destructor"); }

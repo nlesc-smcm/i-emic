@@ -8,10 +8,14 @@
 
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
+#include <Epetra_CrsGraph.h>
+#include <Epetra_IntVector.h>
+#include <Epetra_Vector.h>
+#include <Epetra_CrsMatrix.h>
+
 #include "Atmosphere.H"
 #include "TRIOS_Domain.H"
 #include "GlobalDefinitions.H"
-
 
 class AtmospherePar
 {
@@ -74,10 +78,10 @@ private:
 
 	//! parallel atmosphere sst (overlapping)
 	Teuchos::RCP<Epetra_Vector> localSST_;
-
-	//! parallel atmosphere sol (non-overlapping)
-	Teuchos::RCP<Epetra_Vector> rhs_;
 	
+	//! parallel atmosphere sol (non-overlapping)
+	Teuchos::RCP<Epetra_Vector> sol_;
+
 	//! parallel atmosphere sol (overlapping)
 	Teuchos::RCP<Epetra_Vector> localSol_;
 
@@ -106,19 +110,37 @@ public:
 
 	void computeJacobian();
 
-	void applyMatrix(Teuchos::RCP<Epetra_Vector> const &in,
-					 Teuchos::RCP<Epetra_Vector> &out);
+	void applyMatrix(Epetra_MultiVector const &in,
+					 Epetra_MultiVector &out);
 
-	void applyPrecon(Teuchos::RCP<Epetra_Vector> const &in,
-					 Teuchos::RCP<Epetra_Vector> &out);
+	void applyPrecon(Epetra_MultiVector &in,
+					 Epetra_MultiVector &out);
 
-	void solve(Teuchos::RCP<Epetra_Vector> b);
+	void solve(Teuchos::RCP<Epetra_MultiVector> const &b);
 
 	void setState(Teuchos::RCP<Epetra_Vector> input) { state_ = input; }
 
 	void setOceanTemperature(Teuchos::RCP<Epetra_Vector> in);
 
 	void setLandMask(Teuchos::RCP<Epetra_IntVector> const &mask);
+
+	//! set continuation parameter
+	void setPar(double value) {atmos_->setPar(value); }
+
+	//! set parameter
+	void setPar(std::string const &parName, double value) {atmos_->setPar(parName, value); }
+
+	//! Set continuation parameter name
+	void setParName(std::string const &parName) { atmos_->setParName(parName); }
+
+	//! Get continuation parameter
+	double getPar() { return atmos_->getPar(); }
+
+	//! Get continuation parameter
+	double getPar(std::string const &parName) { return atmos_->getPar(parName); }
+
+	void preProcess() {}
+	void postProcess() {}
 
 	//! Let the atmos object use idealized values,
 	//! mainly for testing purposes
@@ -127,6 +149,7 @@ public:
 	//! Obtain problem size
 	int  dim() { return dim_; }
 
+	
 	Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return getVector(mode, state_); }
 	Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return getVector(mode, sol_); } 
 	Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')   { return getVector(mode, rhs_); }
@@ -141,7 +164,7 @@ public:
 private:
 	//! solve with right hand side b on assembly subdomains
 	//! using dgbtrf and dgbtrs
-	void solveSubDomain(Teuchos::RCP<Epetra_Vector> b);
+	void solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b);
 
 	//! create dependency graph for the Jacobian matrix
 	//! function borrowed from THCM,

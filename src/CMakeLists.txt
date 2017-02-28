@@ -79,6 +79,7 @@ set(EXTRA_LIBS
   misc
   iosrc
   gfortran
+  hdf5
   )
 
 list(APPEND library_dependencies ${EXTRA_LIBS})

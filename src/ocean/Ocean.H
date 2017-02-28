@@ -33,6 +33,7 @@
 #include <Ifpack_Preconditioner.h>
 
 #include "GlobalDefinitions.H"
+#include "Combined_MultiVec.H"
 
 #include <string>
 
@@ -44,6 +45,7 @@ namespace TRIOS
 
 class Epetra_Comm;
 class Epetra_Vector;
+class Epetra_IntVector;
 class Epetra_MultiVector;
 class Epetra_Operator;
 class Epetra_CrsMatrix;
@@ -74,6 +76,7 @@ protected:
 	
 	VectorPtr state_;
 	VectorPtr rhs_;
+	VectorPtr sst_;
 	VectorPtr massMatrix_;	
 	
 	MatrixPtr jac_;
@@ -164,7 +167,7 @@ public:
 	~Ocean();
 
 	//! Solve may optionally accept an rhs of VectorPointer type
-	void solve(VectorPtr rhs = Teuchos::null);
+	void solve(Teuchos::RCP<Epetra_MultiVector> rhs = Teuchos::null);
 
 	//! Calculate explicit residual norm
 	double explicitResNorm(VectorPtr rhs);
@@ -181,18 +184,18 @@ public:
 	VectorPtr getRHS(char mode = 'C');
 
 	//! Binary diagonal for UVTS parts
-	Teuchos::RCP<Combined_MultiVec> getM(char mode = 'C');
+	Teuchos::RCP<Epetra_Vector> getM(char mode = 'C');
 
 	//! Return pointer to Jacobian
 	MatrixPtr getJacobian() {return jac_;}
 	
 	//! Apply the Jacobian matrix to a vector
 	//! out = J*v
-	void applyMatrix(Epetra_Vector const &v, Epetra_Vector &out);
+	void applyMatrix(Epetra_MultiVector const &v, Epetra_MultiVector &out);
 	
 	//! Apply the preconditioner inverse to a vector 
 	//! out = P^{-1}*v
-	void applyPrecon(Epetra_Vector const &v, Epetra_Vector &out);
+	void applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out);
 
 	//! Set prec recompute flag
 	void recomputePreconditioner() { recompPreconditioner_ = true; }
@@ -217,6 +220,9 @@ public:
 	double getPar();
 	double getPar(std::string const &parName);
 
+	//! Get current landmask
+	LandMask getLandMask();
+	
 	//! Get global and local (distributed) landmask arrays.
 	//! This routine also tests the obtained landmask and it will
 	//! therefore also be set in THCM.
@@ -264,13 +270,7 @@ public:
 	
 	// Obtain ocean/land surface temperature
 	Teuchos::RCP<Epetra_Vector> getSurfaceT();
-	
-	// Get the ocean's current landmask (gathered on all procs);
-	std::shared_ptr<std::vector<int> > getLandMask()    { return landmask_; }
-
-	// Get the ocean's current surface landmask (gathered on all procs);
-	std::shared_ptr<std::vector<int> > getSurfaceMask() { return surfmask_; }
-	
+		
 	// ---------------------------------------------------------------
 	// Scale the matrix and rhs of the problem
 	void scaleProblem(VectorPtr rhs = Teuchos::null);
@@ -299,7 +299,6 @@ private:
 	void initializeOcean();
 	void initializePreconditioner();
 	void initializeBelos();
-	void initializeIDR();
 
 	// This function finds the pressure rows that will give a
 	// singular Schur complement.

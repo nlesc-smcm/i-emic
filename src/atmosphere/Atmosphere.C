@@ -63,14 +63,7 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
 								  "Combined Forcing")),
 // starting values 
 	comb_            (params->get("Combined Forcing", 0.0)),
-	sunp_            (params->get("Solar Forcing", 1.0)),
-		
-// input/output (of no use in parallel setup ------------------------------------
-	inputFile_       (""),
-	outputFile_      (""),
-	loadState_       (false),
-	saveState_       (false),	
-	storeEverything_ (false)
+	sunp_            (params->get("Solar Forcing", 1.0))		
 {
 	INFO("Atmosphere: constructor for parallel use...");
 	parallel_ = true;
@@ -116,14 +109,7 @@ Atmosphere::Atmosphere(ParameterList params)
 								  "Combined Forcing")),
 // starting values 
 	comb_            (params->get("Combined Forcing", 0.0)),
-	sunp_            (params->get("Solar Forcing", 1.0)),
-		
-// input/output  --------------------------------------------------------------
-	inputFile_       (params->get("Input file", "atmos_input.h5")),
-	outputFile_      (params->get("Output file", "atmos_output.h5")),
-	loadState_       (params->get("Load state", false)),
-	saveState_       (params->get("Save state", false)),	
-	storeEverything_  (params->get("Store everything", false))
+	sunp_            (params->get("Solar Forcing", 1.0))		
 {
 	INFO("Atmosphere: constructor...");
 
@@ -204,7 +190,7 @@ void Atmosphere::setup()
 	}
 
 	// Get ocean parameters
-	FNAME(getooa)(&Ooa_, &Os );
+	FNAME(getooa)(&Ooa_, &Os_ );
 	
 	// Fill y and latitude-based arrays
 	yv_.reserve(m_+1);
@@ -224,7 +210,7 @@ void Atmosphere::setup()
 		datv_.push_back(0.9 + 1.5 * exp(-12 * yv_[j] * yv_[j] / PI_));
 		suna_.push_back(As_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
 						(1 - albe_[j]));
-		suno_.push_back(Os*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
+		suno_.push_back(Os_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
 						(1 - albe_[j]));				
 	}
 
@@ -293,7 +279,7 @@ void Atmosphere::zeroOcean()
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::xsetOceanTemperature(std::vector<double> const &surftemp)
+void Atmosphere::setOceanTemperature(std::vector<double> const &surftemp)
 {
 	// Set surface temperature (copy)
 	surfaceTemp_ = surftemp;
@@ -863,15 +849,17 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 	surfmask_->clear();
 	
 	if ((int) surfm->size() < dim_)
+	{
 		ERROR("surfm->size() not ok:",  __FILE__, __LINE__);
+	}
 	else if ((int) surfm->size() > dim_)
 	{
 		// in this case we assume we receive an ocean landmask
 		// with boundaries, which implies that the final
 		// (n_+2) * (m_+2) entries are meaningful for us.
-		maskdim = (n_+2) * (m_+2);
+		int maskdim = (n_+2) * (m_+2);
 		
-		surfm->erase(surfm.begin(), surfm.begin() + surfm.size() - maskdim);
+		surfm->erase(surfm->begin(), surfm->begin() + surfm->size() - maskdim);
 
 		// now we put surfm in our datamember, without borders
 		for (int j = 1; j != m_+1; ++j)

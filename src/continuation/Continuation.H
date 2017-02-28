@@ -7,6 +7,8 @@
 //======================================================================
 #include "ContinuationDecl.H"
 #include "GlobalDefinitions.H"
+#include "Utils.H"
+
 #include <math.h> // pow(), sqrt()
 #include <ctime>
 #include <iomanip>
@@ -196,13 +198,13 @@ step()
 	if (printImportantVectors_)
 	{
 		// Print the residual and last solution from linear solve
-		print(rhsView_, "residual");
-		print(model_->getSolution('V'), "solution");
+		Utils::print(rhsView_, "residual");
+		Utils::print(model_->getSolution('V'), "solution");
 	}
 		
 	// Put the parameter and norm of the state in the history
 	parHist_.push_back(par_);
-	stateNormHist_.push_back(norm(stateView_));
+	stateNormHist_.push_back(Utils::norm(stateView_));
 
 	// Inspect the history for weird behaviour
 	analyzeHist();
@@ -254,7 +256,7 @@ createInitialTangent()
 	// 1) Compute dFdPar_, force computation of RHS
 	computeDFDPar('F');
 	
-	if (printImportantVectors_) print(dFdPar_, "dFdpar"); 
+	if (printImportantVectors_) Utils::print(dFdPar_, "dFdpar"); 
 
 	if (initialTangent_ == 'S')	// 2a) Solve J*stateDot_ = -dFdPar_
 	{
@@ -275,7 +277,7 @@ createInitialTangent()
 	{
 			std::stringstream fname;
 		fname << "init_tan_" << std::setprecision(4) << par_;		
-		print(stateDot_, fname.str());
+		Utils::print(stateDot_, fname.str());
 	}
 	
 	// We scale the tangent of the state and parameter such they are
@@ -297,7 +299,7 @@ computeDFDPar(char mode)
 		model_->computeRHS();
 	
 	INFO("    creating dFdPar...");	
-	INFO("       |                       F(x,l) = " << norm(rhsView_));
+	INFO("       |                       F(x,l) = " << Utils::norm(rhsView_));
 	// Get a copy of this RHS, store it in our rhsCopy_ member
 	rhsCopy_ = model_->getRHS('C');
 	
@@ -306,7 +308,7 @@ computeDFDPar(char mode)
 	model_->computeRHS();             // compute new RHS     --> F(par+eps)
 	INFO("       |                            l = " << par_);
 	INFO("       |                          eps = " << epsilon_);
-	INFO("       |                  F(x, l+eps) = " << norm(rhsView_));
+	INFO("       |                  F(x, l+eps) = " << Utils::norm(rhsView_));
 	model_->setPar(par_);             // restore parameter   --> par
 
 	// Get a copy of the new RHS F(par+eps), put it in dFdPar_
@@ -314,7 +316,7 @@ computeDFDPar(char mode)
 
 	// Update dFdPar_ such that it contains (F(par+eps) - F(par))/eps
 	dFdPar_->Update(-1.0 / epsilon_, *rhsCopy_, 1.0 / epsilon_);
-	INFO("       |  (F(x,l+eps) - F(x,l)) / eps = " << norm(dFdPar_));
+	INFO("       |  (F(x,l+eps) - F(x,l)) / eps = " << Utils::norm(dFdPar_));
 }
 
 //======================================================================
@@ -399,11 +401,11 @@ normalize()
 	// -----------------------------------------------------------------
 
 	// 1) scale stateDot
-	zeta_ = tanScaling_ / norm(stateDot_);
+	zeta_ = tanScaling_ / Utils::norm(stateDot_);
 	stateDot_->Scale(zeta_);
 
 	// 2) compute norm of combined vector
-	double nrm      = norm(stateDot_);
+	double nrm      = Utils::norm(stateDot_);
 	double normComb = sqrt(nrm * nrm + 1);
 
 	// 3) scale the components
@@ -431,15 +433,15 @@ eulerPredictor()
 	
 	INFO("   |                   old par: " << storage_.par0);
 	INFO("   |             predicted par: " << par_);
-	INFO("   |            norm old state: " << storage_.norm(state0));
-	INFO("   |      norm predicted state: " << norm(stateView_));
+	INFO("   |            norm old state: " << Utils::norm(storage_.state0));
+	INFO("   |      norm predicted state: " << Utils::norm(stateView_));
 
 	// Make sure the model has the same par
 	model_->setPar(par_);
 
 	// Test whether our prediction is acceptable
 	model_->computeRHS();
-	double rhsNrm = norm(rhsView_);
+	double rhsNrm = Utils::norm(rhsView_);
 	INFO("   |                  norm rhs: " << rhsNrm);
 	if (rhsNrm > predictorBound_) 
 	{
@@ -478,7 +480,7 @@ newtonCorrector()
 		// > Note that we cannot use the current rhs in the model
 		//   since at this point it corresponds to F(par+eps)
 		VectorPtr R = rhsCopy_;
-		normRHS_    = norm(rhsCopy_);
+		normRHS_    = Utils::norm(rhsCopy_);
 
 		R->Scale(-1.0);
 		
@@ -491,8 +493,8 @@ newtonCorrector()
 		//   normalization.
 		VectorPtr state0 = storage_.state0;
 		double    par0   = storage_.par0;
-		double    r      =  ds_ - dot(stateDot_, stateView_) * zeta_
-			- dot(stateDot_, state0) * zeta_
+		double    r      =  ds_ - Utils::dot(stateDot_, stateView_) * zeta_
+			- Utils::dot(stateDot_, state0) * zeta_
 			- parDot_ * (par_ - par0);
 
 		// At this point the model contains the predicted state and
@@ -516,11 +518,11 @@ newtonCorrector()
 		// Determine the directions.....................................
 		// First for the parameter:
 		if (newtChordHybr_)
-			parDir = (r - zeta_ * dot(stateDot_, z))
-				/ (parDot_ + zeta_ * dot(stateDot_, stateDot_));			
+			parDir = (r - zeta_ * Utils::dot(stateDot_, z))
+				/ (parDot_ + zeta_ * Utils::dot(stateDot_, stateDot_));			
 		else
-			parDir = (r - zeta_ * dot(stateDot_, z))
-				/ (parDot_ - zeta_ * dot(stateDot_, y));
+			parDir = (r - zeta_ * Utils::dot(stateDot_, z))
+				/ (parDot_ - zeta_ * Utils::dot(stateDot_, y));
 
 		// Then for the state:
 		//  we perform an update on z
@@ -541,7 +543,7 @@ newtonCorrector()
 
 		// test new RHS, if it satisfies the tolerance we exit the loop		
 		model_->computeRHS();
-		normRHStest_ = norm(rhsView_);
+		normRHStest_ = Utils::norm(rhsView_);
 
 		// if we don't see a decrease we run the backtracking routine
 		if (backTracking_ and (normRHS_ < normRHStest_) )
@@ -552,10 +554,10 @@ newtonCorrector()
 		}
 
 		// if we see a drastic increase in |dx| we also quit the corrector
-		if (norm(stateDir) > 1e3 * norm(state0) && norm(state0) > 0)
+		if (Utils::norm(stateDir) > 1e3 * Utils::norm(state0) && Utils::norm(state0) > 0)
 		{
-			WARNING("  |dx| = " << norm(stateDir)
-					<< " >> old |x| = " << norm(state0), __FILE__, __LINE__);
+			WARNING("  |dx| = " << Utils::norm(stateDir)
+					<< " >> old |x| = " << Utils::norm(state0), __FILE__, __LINE__);
 			return 1;
 		}				
 		
@@ -564,10 +566,10 @@ newtonCorrector()
 		INFO("                          tolerance: " << practicalTol_);
 		INFO("                  previous residual: " << normRHS_);
 		INFO("                              ||R||: " << normRHStest_);
-		INFO("                             ||dx||: " << norm(stateDir));
+		INFO("                             ||dx||: " << Utils::norm(stateDir));
 		INFO("                             ||dl||: " << std::abs(parDir));
-		INFO("                              ||x||: " << norm(stateView_));
-		INFO("                          old ||x||: " << norm(state0));
+		INFO("                              ||x||: " << Utils::norm(stateView_));
+		INFO("                          old ||x||: " << Utils::norm(state0));
 		INFO("----------------------------------------------------------");
 		
 		if (normRHStest_ < practicalTol_ && newtonIter_ >= minNewtonIterations_)
@@ -620,7 +622,7 @@ runBackTracking(VectorPtr stateDir, double parDir)
 
 		// Compute new RHS and obtain its norm
 		model_->computeRHS();
-		normRHStest_ = norm(rhsView_);
+		normRHStest_ = Utils::norm(rhsView_);
 
 		INFO("    backtracking step " << backTrack_ <<
 			 ", norm: " << normRHStest_ << " < " << normRHS_ * increase << " ? ");
@@ -684,7 +686,7 @@ detect(char mode)
 		signMonitor_ = SGN(f1);	
 		
 		if (busy && std::abs(f1) < destinationTolerance_
-			&& norm(rhsView_) < destinationTolerance_)
+			&& Utils::norm(rhsView_) < destinationTolerance_)
 		{
 			if (idx == destinations_.size())
 				destinationReached_ = true;
@@ -787,17 +789,17 @@ reset()
 {
 	if (printImportantVectors_)
 	{
-		print(rhsView_, "failed_rhs"); // Print failed residual
-		print(model_->getSolution('V'), "failed_sol"); // Print failed solution
+		Utils::print(rhsView_, "failed_rhs"); // Print failed residual
+		Utils::print(model_->getSolution('V'), "failed_sol"); // Print failed solution
 	}
 	
 	INFO("***********************************************");
 	INFO("Continuation: reset... ");	
 	INFO("|                step: " << step_);
 	INFO("|           step size: " << ds_);
-	INFO("|          norm state: " << norm(stateView_));
-	INFO("|          norm   rhs: " << norm(rhsView_));
-	INFO("|  norm stored state0: " << norm(storage_.state0));
+	INFO("|          norm state: " << Utils::norm(stateView_));
+	INFO("|          norm   rhs: " << Utils::norm(rhsView_));
+	INFO("|  norm stored state0: " << Utils::norm(storage_.state0));
  	INFO("|                 par: " << par_);
 	INFO("| -------------------------------------------  ");
 	
@@ -805,7 +807,7 @@ reset()
 	int s = SGN(ds_);	
 	ds_ = s * MAX(s * ds_ / scale2_, dsMin_);
 	
-	INFO("|      new norm state: " << norm(stateView_));
+	INFO("|      new norm state: " << Utils::norm(stateView_));
 	INFO("|             new par: " << par_);
 	INFO("|       new step size: " << ds_);
 	INFO("***********************************************");
@@ -846,38 +848,6 @@ restore()
 
 //======================================================================
 template<typename Model, typename ParameterList>
-double Continuation<Model, ParameterList>::
-norm(VectorPtr const &vec) const
-{
-	double norm = 0;
-	vec->Norm2(&norm);
-	return norm;
-}
-
-//======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
-print(VectorPtr const &vec, std::string const &fname) const
-{
-	// this might not behave well in parallel
-	std::ofstream file;
-	file.open(fname);
-	vec->Print(file);
-	file.close();	
-}
-
-//======================================================================
-template<typename Model, typename ParameterList>
-double Continuation<Model, ParameterList>::
-dot(VectorPtr const &vec1, VectorPtr const &vec2) const
-{
-	double result = 0;
-	vec1->Dot(*vec2, &result);
-	return result;
-}
-
-//======================================================================
-template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 test()
 {
@@ -896,17 +866,17 @@ testCopyView()
 	VectorPtr copy1 = model_->getState('C');
 	VectorPtr view2 = model_->getState('V');
 	VectorPtr copy2 = model_->getState('C');
-	INFO("view1      norm: " << norm(view1));
-	INFO("view2      norm: " << norm(view2));
-	INFO("copy1      norm: " << norm(copy1));
-	INFO("copy2      norm: " << norm(copy2));
+	INFO("view1      norm: " << Utils::norm(view1));
+	INFO("view2      norm: " << Utils::norm(view2));
+	INFO("copy1      norm: " << Utils::norm(copy1));
+	INFO("copy2      norm: " << Utils::norm(copy2));
 	
 	INFO("Testing view");
 	INFO("Scaling view1 with 2 ---------------");
 	view1->Scale(2.0);
-	INFO("view1      norm: " << norm(view1));
-	INFO("view2      norm: " << norm(view2));
-	if (norm(view1) != norm(view2))
+	INFO("view1      norm: " << Utils::norm(view1));
+	INFO("view2      norm: " << Utils::norm(view2));
+	if (Utils::norm(view1) != Utils::norm(view2))
 	{
 		INFO("Test failed: ||view1|| != ||view2||");
 	}
@@ -919,9 +889,9 @@ testCopyView()
 	INFO("Testing copy");
 	INFO("Scaling copy1 with 3 ---------------");
 	copy1->Scale(3.0);
-	INFO("copy1      norm: " << norm(copy1));
-	INFO("copy2      norm: " << norm(copy2));
-	if (norm(copy1) == norm(copy2))
+	INFO("copy1      norm: " << Utils::norm(copy1));
+	INFO("copy2      norm: " << Utils::norm(copy2));
+	if (Utils::norm(copy1) == Utils::norm(copy2))
 	{
 		INFO("Test failed: ||copy1|| == ||copy2||");
 	}
@@ -958,8 +928,8 @@ info()
 		INFO("             step:  " << step_);
 	}
 
-	INFO("            ||x||:  " << norm(stateView_));
-	INFO("      ||d/ds(x)||:  " << norm(stateDot_));
+	INFO("            ||x||:  " << Utils::norm(stateView_));
+	INFO("      ||d/ds(x)||:  " << Utils::norm(stateDot_));
 	INFO("     newton iters:  " << newtonIter_);
 	INFO("-----------------------------------------\n");
 }
@@ -972,9 +942,9 @@ modelInfo()
 	INFO(std::setprecision(10));
 	INFO("-----------------------------------------");
 	INFO("Model view: ");
-	INFO("     norm state :  " << norm(stateView_));
-	INFO("     norm rhs   :  " << norm(rhsView_));
-	INFO("     norm sol   :  " << norm(solView_));
+	INFO("     norm state :  " << Utils::norm(stateView_));
+	INFO("     norm rhs   :  " << Utils::norm(rhsView_));
+	INFO("     norm sol   :  " << Utils::norm(solView_));
 	INFO("    parameter   :  " << model_->getPar());
 	INFO("-----------------------------------------");
 }

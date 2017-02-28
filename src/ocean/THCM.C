@@ -1069,49 +1069,12 @@ void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask)
 	if (Comm->MyPID() == 0)
 		F90NAME(m_global, set_landm)(&(*landmask)[0]);
 }
-
-//=============================================================================
-std::shared_ptr<std::vector<int> > THCM::getSurfaceMask()
-{
-	// length of landmask array
-	size_t dim_landmask = (n+2)*(m+2)*(l+la+2);
-	size_t dim_surfmask = n*m;
-	
-	// Initialize land and surf masks
-	std::vector<int> landm(dim_landmask, 0);
-	std::shared_ptr<std::vector<int> > surfm =
-		std::make_shared<std::vector<int> >();
-	
-	// Let THCM fill the landmask array on proc = 0
-	if (Comm->MyPID() == 0)
-		F90NAME(m_global,get_current_landm)(&landm[0]);
-
-	// Isolate the surface
-	landm.erase(landm.begin(), landm.begin() + l*(m+2)*(n+2));	
-	landm.erase(landm.begin() + (m+2)*(n+2), landm.end());
-
-	// Put a version without borders in surfm
-	for (int j = 1; j != m+1; ++j)
-		for (int i = 1; i != n+1; ++i)
-			surfm->push_back(landm[j*(n+2) + i]);
-
-	if (surfm->size() != dim_surfmask)
-		WARNING("Something is wrong!!", __FILE__, __LINE__);
-
-#ifdef HAVE_MPI 
-	// Get the MpiComm from Epetra
-	Epetra_MpiComm const MpiComm =
-		dynamic_cast<Epetra_MpiComm const &>(*Comm); 
-	MPI_Bcast(&(*surfm)[0], dim_surfmask, MPI_INTEGER, 0, MpiComm.GetMpiComm());
-#endif 
-	return surfm;
-}
 		
 //=============================================================================
 void THCM::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmosT)
 {
 
-	if (!(atmosT->Map().SameAs(StandardSurfaceMap)))
+	if (!(atmosT->Map().SameAs(*StandardSurfaceMap)))
 	{
 		ERROR("Map of atmosT input vector not same as standard surface map",
 			  __FILE__, __LINE__);
@@ -1119,7 +1082,7 @@ void THCM::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmosT)
 
 	// Standard2Assembly
 	// Import atmosT into local atmosT 
-	CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf, Insert);
+	CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf, Insert));
 		
 	double *locAtmosT;
 	localAtmosT->ExtractView(&locAtmosT);
@@ -1150,9 +1113,9 @@ void THCM::RecomputeScaling(void)
 	Comm->SumAll(ldb,gdb,_NUN_*_NUN_);
 
 	for (int i=0;i<_NUN_*_NUN_;i++)
-    {
+	{
 		gdb[i]/=Comm->NumProc();
-    }
+	}
 	// compute row- and column scaling
 	F90NAME(m_scaling,compute)(gdb,rowscal,colscal);
 
@@ -1160,10 +1123,10 @@ void THCM::RecomputeScaling(void)
 	// note: the scaling matrices in Trilinos are
 	// defined as the inverse of those in THCM
 	for (int i=0;i<len;i++)
-    {
+	{
 		(*local_row_scaling)[i] = 1.0/rowscal[i];
 		(*local_col_scaling)[i] = 1.0/colscal[i];
-    }
+	}
 
 	// kick out the ghost nodes:
 	domain->Assembly2Solve(*local_row_scaling,*row_scaling);
@@ -1173,21 +1136,21 @@ void THCM::RecomputeScaling(void)
 	// we need this because of our special block scaling for the
 	// ATS matrix in the preconditioner.
 	for (int i = TT-1; i < row_scaling->MyLength(); i += _NUN_)
-    {
+	{
 		double mean = 0.5*((*row_scaling)[i]+(*row_scaling)[i+1]);
 		(*row_scaling)[i] = mean;
 		(*row_scaling)[i+1] = mean;
 		mean = 0.5*((*col_scaling)[i]+(*col_scaling)[i+1]);
 		(*col_scaling)[i] = mean;
 		(*col_scaling)[i+1] = mean;
-    }
+	}
 
 	delete [] rowscal;
 	delete [] colscal;
 
 	// (2) diagonal row scaling for T and S (obsolete!)
 	if (row_scaling_TS!=Teuchos::null)
-    {
+	{
 		CHECK_ZERO(Jac->ExtractDiagonalCopy(*row_scaling_TS));
 		for (int i=0;i<row_scaling_TS->MyLength();i+=_NUN_)
 		{
@@ -1200,7 +1163,7 @@ void THCM::RecomputeScaling(void)
 				(*row_scaling_TS)[j] = 1.0/(*row_scaling_TS)[j]; //T,S
 			}
 		}
-    }// additional T/S scaling (obsolete)
+	}// additional T/S scaling (obsolete)
 }
 
 //=============================================================================
@@ -1226,7 +1189,7 @@ void THCM::normalizePressure(Epetra_Vector& soln) const
 	//subtract reference value from all 'P' points except land cells
 	// TODO: 1) we do not handle land cells correctly here, yet!
 	//       2) the whole thing seems to go wrong...
-    //  for (int i=PP;i<=soln.MyLength();i+=_NUN_) soln[i-1] -= ref_value;
+	//  for (int i=PP;i<=soln.MyLength();i+=_NUN_) soln[i-1] -= ref_value;
 }
 
 //=============================================================================
@@ -1245,17 +1208,17 @@ void THCM::stopTiming(std::string fname,bool print)
 	T=timerList.sublist("timers").get(fname,T);
 	double elapsed=0;
 	if (T!=Teuchos::null)
-    {
+	{
 		elapsed=T->ElapsedTime();
-    }
+	}
 	int ncalls=timerList.sublist("number of calls").get(fname,0);
 	double total_time=timerList.sublist("total time").get(fname,0.0);
 	timerList.sublist("number of calls").set(fname,ncalls+1);
 	timerList.sublist("total time").set(fname,total_time+elapsed);
 	if (print)
-    {
+	{
 		(std::cout) << "### timing: "<<fname<<" "<<elapsed<<std::endl;
-    }
+	}
 }
 
 //=============================================================================
@@ -1269,13 +1232,13 @@ void THCM::printTiming(std::ostream& os)
 	Teuchos::ParameterList& ncallsList=timerList.sublist("number of calls");
 	Teuchos::ParameterList& elapsedList=timerList.sublist("total time");
 	for (Teuchos::ParameterList::ConstIterator i=ncallsList.begin();i!=ncallsList.end();i++)
-    {
+	{
 		const std::string& fname = i->first;
 		int ncalls = ncallsList.get(fname,0);
 		double elapsed = elapsedList.get(fname,0.0);
 		os << fname << "\t" <<ncalls<<"\t"<<elapsed<<"\t"
 		   << ((ncalls>0)? elapsed/(double)ncalls : 0.0) <<std::endl;
-    }
+	}
 	os << "====================================================="<<std::endl;
 	DEBUG(timerList);
 }
@@ -1295,7 +1258,7 @@ void THCM::ReadParameters(Teuchos::ParameterList& plist)
 				this->setParameter(label,val);
 			}
 		}
-    }
+	}
 	catch(...)
 	{
 		ERROR("Exception while reading parameter starting values!",__FILE__,__LINE__);
@@ -1369,7 +1332,7 @@ int THCM::par2int(std::string const &label)
 	else if (label == "Seasonal Forcing (Wind)")         return SEASW;
 	else if (label == "Mass")                            return MASS;
 	else
-    {
+	{
 		INFO("TCHM: Invalid continuation parameter label: '" << label << "'");
 	}
 	return -1;
@@ -1431,9 +1394,9 @@ std::string const THCM::int2par(int index)
 	else if (index==SEASS)  label = "Seasonal Forcing (Salinity)";
 	else if (index==MASS)   label = "Mass";
 	else
-    {
+	{
 		ERROR("Parameter index is invalid!",__FILE__,__LINE__);
-    }
+	}
 	return label;
 }
 
@@ -1442,15 +1405,15 @@ bool THCM::setParameter(std::string label, double value)
 {
 	int param = par2int(label);
 	if (param>0 && param<=_NPAR_) // time (0) and exp/seas (31/32) are not passed to THCM
-    {
+	{
 		FNAME(setparcs)(&param,&value);
-    }
+	}
 	else if (param<0)
-    {
+	{
 		ERROR("Invalid Parameter",__FILE__,__LINE__);
-    }
+	}
 	else if (param==0) // 0 is non-dimensional time
-    {
+	{
 		// set monthly forcing data
 		bool time_dep_forcing = paramList.get("Time Dependent Forcing",false);
 		if ((value>=0.0) && time_dep_forcing)
@@ -1480,7 +1443,7 @@ bool THCM::setParameter(std::string label, double value)
 				F90NAME(m_monthly,update_internal_forcing)(&val,&gammaT,&gammaS);
 			}
 		}
-    }
+	}
 	return true;
 }
 
@@ -1489,9 +1452,9 @@ bool THCM::getParameter(std::string label, double& value)
 {
 	int param = par2int(label);
 	if (param>0 && param<=_NPAR_) // time (0) and exp (_NPAR_+1) are not passed to THCM
-    {
+	{
 		FNAME(getparcs)(&param,&value);
-    }
+	}
 	// The rest is not implemented
 	return true;
 }
@@ -1573,7 +1536,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 	landm_loc0->PutValue(-999);
 	landm_loc->PutValue(42);
 
-    // scatter
+	// scatter
 	CHECK_ZERO(landm_loc0->Export(*landm_glb, *scatter,Insert));
 
 	// get boundaries correct
@@ -1586,23 +1549,23 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 // implement integral condition for S in Jacobian and B-matrix
 void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 {
-    int N=domain->GlobalN();
-    int M=domain->GlobalM();
-    int L=domain->GlobalL();
+	int N=domain->GlobalN();
+	int M=domain->GlobalM();
+	int L=domain->GlobalL();
 
-    int lastrow = rowintcon_;
+	int lastrow = rowintcon_;
 
-    int root = Comm->NumProc()-1;
+	int root = Comm->NumProc()-1;
 
-    Teuchos::RCP<Epetra_MultiVector> intcond_glob =
-        Utils::Gather(*intcond_coeff,root);
+	Teuchos::RCP<Epetra_MultiVector> intcond_glob =
+		Utils::Gather(*intcond_coeff,root);
 
-    if (A.MyGRID(lastrow))
+	if (A.MyGRID(lastrow))
 	{
 		if (Comm->MyPID()!=root)
-        {
+		{
 			ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
-        }
+		}
 		int lid = B.Map().LID(lastrow);
 		B[lid] = 0.0; // no more time-dependence for this S-point
 		int len = N*M*L;
@@ -1627,18 +1590,18 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 		  values[0]=1.0;
 		*/
 		if (A.Filled())
-        {
+		{
 			CHECK_NONNEG(A.ReplaceGlobalValues(lastrow,len,values,indices));
-        }
+		}
 		else
-        {
+		{
 			CHECK_NONNEG(A.InsertGlobalValues(lastrow,len,values,indices));
-        }
+		}
 
 		delete []  values;
 		delete []  indices;
 	}
-    else if (Comm->MyPID()==root)
+	else if (Comm->MyPID()==root)
 	{
 		ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
 	}
@@ -1924,7 +1887,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
 
 #ifndef NO_INTCOND
 	if (sres==0)
-    {
+	{
 		int grid = rowintcon_;
 		if (StandardMap->MyGID(grid))
 		{
@@ -1942,7 +1905,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
 			CHECK_NONNEG(graph->InsertGlobalIndices(grid,len,inds));
 			delete [] inds;
 		}
-    }
+	}
 #endif
 	CHECK_ZERO(graph->FillComplete());
 
@@ -1960,13 +1923,13 @@ void THCM::insert_graph_entry(int* indices, int& pos,
 	int ii=i; // if x-boundary is periodic i may be out of bounds.
 	// ii will be adjusted in that case:
 	if (domain->IsPeriodic())
-    {
+	{
 		ii = MOD((double)i,(double)N);
-    }
+	}
 	if ((ii>=0) && (j>=0) && (k>=0) &&
 		(ii< N) && (j< M) && (k< L) )
 	{
-        indices[pos++] = FIND_ROW2(_NUN_,N,M,L,ii,j,k,xx);
+		indices[pos++] = FIND_ROW2(_NUN_,N,M,L,ii,j,k,xx);
 	}
 }
 
@@ -1974,7 +1937,7 @@ void THCM::insert_graph_entry(int* indices, int& pos,
 // set vmix_fix
 void THCM::fixMixing(int value)
 {
-    if (vmix_GLB)
+	if (vmix_GLB)
 	{
 		INFO("setting vmix_fix to "<<value);
 		F90NAME(m_mix,set_vmix_fix)(&value);
@@ -2047,7 +2010,7 @@ void THCM::SetupMonthlyForcing()
 		Teuchos::rcp(new Epetra_Import(*intlev_map_loc,*intlev_map_dist));
 
 	for (int month=1;month<=12;month++)
-    {
+	{
 		if (Comm->MyPID()==0)
 		{
 			F90NAME(m_global,get_monthly_forcing)(tatm_g,emip_g,taux_g,tauy_g,&month);
@@ -2088,13 +2051,13 @@ void THCM::SetupMonthlyForcing()
 		{
 			F90NAME(m_monthly,set_internal_forcing)(ctemp,csalt,&month);
 		}
-    }
+	}
 }
 
 
 //=============================================================================
 extern "C" {
-
+		
 // this is a cheat for the fortran routine fsint from forcing.F90
 #ifdef HUYGENS
 	void thcm_forcing_integral(double* qfun2, double* y, int* landm, double* fsint)
@@ -2174,4 +2137,4 @@ extern "C" {
 		}
 		return nullSpace;
 	}
-};
+}

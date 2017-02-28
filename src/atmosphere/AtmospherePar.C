@@ -98,7 +98,7 @@ void AtmospherePar::computeRHS()
 
 	std::shared_ptr<std::vector<double> > localState =
 		std::make_shared<std::vector<double> >(numMyElements, 0.0);
-
+	
 	localState_->ExtractCopy(&(*localState)[0], numMyElements);
 
 	atmos_->setState(localState);
@@ -214,11 +214,11 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> in)
 void AtmospherePar::setLandMask(Teuchos::RCP<Epetra_IntVector> const &mask)
 {
 	// create rcp
-	int numMyElements = mask.local->numMyElements();
+	int numMyElements = mask->MyLength();
 	std::shared_ptr<std::vector<int> > landmask =
 		std::make_shared<std::vector<int> >(numMyElements, 0);
 	
-	CHECK_ZERO(mask.local->ExtractCopy(&landmask, numMyElements));
+	CHECK_ZERO(mask->ExtractCopy(&(*landmask)[0]));
 
 	atmos_->setSurfaceMask(landmask);
 }
@@ -315,37 +315,39 @@ void AtmospherePar::computeJacobian()
 }
 
 //==================================================================
-void AtmospherePar::applyMatrix(Teuchos::RCP<Epetra_Vector> const &in,
-								Teuchos::RCP<Epetra_Vector> &out)
+void AtmospherePar::applyMatrix(Epetra_MultiVector const &in,
+								Epetra_MultiVector &out)
 {
-	jac_->Apply(*in, *out);
+	jac_->Apply(in, out);
 }
 
 //==================================================================
-void AtmospherePar::applyPrecon(Teuchos::RCP<Epetra_Vector> const &in,
-								Teuchos::RCP<Epetra_Vector> &out)
+void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
+								Epetra_MultiVector &out)
 {
-	solve(in);
-	out = getSolution('C');
+	solve(Teuchos::rcp(&in, false)); // -->
+	out = *getSolution('C'); // copy solution
 }
 
 //==================================================================
-void AtmospherePar::solve(Teuchos::RCP<Epetra_Vector> const &b)
+void AtmospherePar::solve(Teuchos::RCP<Epetra_MultiVector> const &b)
 {
+	// For now our only option is to use banded solves on the subdomains
+	// Later we can put more options here.
 	solveSubDomain(b);
 }
 
 //==================================================================
-void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_Vector> const &b)
+void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b)
 {
-	if (!(rhs->Map().SameAs(*standardMap_)))
+	if (!(b->Map().SameAs(*standardMap_)))
 	{
 		ERROR("AtmospherePar::solve, map of b not same as standard map",
 			  __FILE__, __LINE__);
 	}
 
-	// obtain assembly vector, put b in sol
-	domain_->Solve2Assembly(*b, *localSol_);
+	// obtain assembly from Epetra_Vector, put b in sol
+	domain_->Solve2Assembly(*(*b)(0), *localSol_);
 
 	// local vector size
 	int numMyElements = assemblyMap_->NumMyElements();
@@ -355,7 +357,7 @@ void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_Vector> const &b)
 		std::make_shared<std::vector<double> >(numMyElements, 0.0);
 
 	// extract assembly into local vector
-	localB_->ExtractCopy(&(*localSol)[0], numMyElements);
+	localSol_->ExtractCopy(&(*localSol)[0], numMyElements);
 
 	// solve using serial model
 	atmos_->solve(localSol);

@@ -143,7 +143,6 @@ public:
 	//! Return a shared pointer to the ocean's gathered landmask
 	//! for use in the atmosphere
 	std::shared_ptr<std::vector<int> > getLandMask();
-	std::shared_ptr<std::vector<int> > getSurfaceMask();
 
 	//! Return distributed mask read from maskName
 	//! A fix vector can be supplied containing additional grid points that
@@ -265,6 +264,9 @@ private:
 	//! overlapping map for 'THCM objects': 
 	Teuchos::RCP<Epetra_Map> AssemblyMap;
 	Teuchos::RCP<Epetra_Map> AssemblySurfaceMap;
+
+	//! Surface assembly to standardmap importer
+	Teuchos::RCP<Epetra_Import> as2std_surf;
 
 	//! non-overlapping map for Trilinos objects: 
 	Teuchos::RCP<Epetra_Map> StandardMap;

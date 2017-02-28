@@ -225,6 +225,15 @@ public:
 			return info;
 		}
 
+	int Norm2(double *result) const
+		{
+			std::vector<double> tmp(numVecs_, 0.0);
+			int info = Norm2(tmp);
+			for (int i = 0; i != numVecs_; ++i)
+				result[i] = tmp[i];
+			return info;
+		}
+	
 	int Norm2(std::vector<double> &result) const
 		{
 			// copy result vector

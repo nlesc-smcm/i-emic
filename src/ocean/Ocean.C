@@ -48,7 +48,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	solverInitialized_   (false),  // Solver needs initialization
 	precInitialized_     (false),  // Preconditioner needs initialization
 	recompPreconditioner_(true),   // We need a preconditioner to start with
-	idrSolver_           (*this),  // Initialize IDR solver with current object (ocean);
+
 	inputFile_           (oceanParamList->get("Input file",  "ocean_input.h5")),
 	outputFile_          (oceanParamList->get("Output file", "ocean_output.h5")),
 	loadState_           (oceanParamList->get("Load state", false)),
@@ -119,7 +119,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
 	// Get current global masks to communicate with an Atmosphere
 	landmask_ = THCM::Instance().getLandMask();
-	surfmask_ = THCM::Instance().getSurfaceMask();
+	// surfmask_ = THCM::Instance().getSurfaceMask();
 
 	// Inspect current state
 	inspectVector(state_);
@@ -582,22 +582,14 @@ void Ocean::initializeSolver()
 	// Initialize the requested solver
 	if (solverType_ == 'F')
 		initializeBelos();
-	else if (solverType_ == 'I')
-		initializeIDR();
+	else
+		ERROR("No solver specified", __FILE__, __LINE__);
 	
 	solverInitialized_ = true;
 	
 	// Now that the solver and preconditioner are initialized we are allowed to
 	// perform a solve.
 	INFO("Ocean: initialize solver... done");
-}
-
-//====================================================================
-void Ocean::initializeIDR()
-{
-	idrSolver_.setParameters(solverParams_);
-	idrSolver_.setSolution(getSolution('V'));
-	idrSolver_.setRHS(getRHS('V'));
 }
 
 //====================================================================
@@ -654,7 +646,7 @@ void Ocean::initializeBelos()
 }
 
 //=====================================================================
-void Ocean::solve(VectorPtr rhs)
+void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
 {
 	// Check whether solver is initialized, if not perform the
 	// initialization here
@@ -674,20 +666,12 @@ void Ocean::solve(VectorPtr rhs)
 		if (rhs == Teuchos::null)
 			set = problem_->setProblem(sol_, rhs_);
 		else
-			set = problem_->setProblem(sol_, rhs->getOceanVector());
+			set = problem_->setProblem(sol_, rhs);
 		TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 								   "*** Belos::LinearProblem failed to setup");
 	}
-	else if (solverType_ == 'I')
-	{
-		// Setup IDR: for our IDRSolver member we supply a view of the
-		//            solution and the RHS:
-		idrSolver_.setSolution(getSolution('V'));
-		if (rhs == Teuchos::null)
-			idrSolver_.setRHS(getRHS('V'));
-		else
-			idrSolver_.setRHS(getVector('V',rhs->getOceanVector()));
-	}
+	else
+		ERROR("No solver specified", __FILE__, __LINE__);
 	
 	// ---------------------------------------------------------------------
 	// Start solving J*x = F, where J = jac_, x = sol_ and F = rhs
@@ -706,9 +690,9 @@ void Ocean::solve(VectorPtr rhs)
 			INFO("Ocean: exception caught: " << e.what());
 		}
 	}
-	else if (solverType_ == 'I')
+	else 
 	{
-		idrSolver_.solve();
+		ERROR("No solve specified", __FILE__, __LINE__);
 	}
 	
 	INFO("Ocean: solve... done");
@@ -730,12 +714,9 @@ void Ocean::solve(VectorPtr rhs)
 		}
 					 
 	}
-	else if (solverType_ == 'I')
+	else 
 	{
-		iters = idrSolver_.getNumIters();
-		INFO("Ocean: IDR, i = " << iters
-			 << " residual = " << idrSolver_.explicitResNorm());
-		TRACK_ITERATIONS("Ocean: IDR iterations...", iters);
+		ERROR("No solve specified", __FILE__, __LINE__);
 	}
 }
 
@@ -745,7 +726,7 @@ double Ocean::explicitResNorm(VectorPtr rhs)
 	RCP<Epetra_Vector> Ax =
 		rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
 	jac_->Apply(*sol_, *Ax);
-	Ax->Update(1.0, *(rhs->getOceanVector()), -1.0);
+	Ax->Update(1.0, *rhs, -1.0);
 	double nrm;
 	Ax->Norm2(&nrm);
 	return nrm;
@@ -757,9 +738,9 @@ void Ocean::printResidual(VectorPtr rhs)
 	VectorPtr Ax = getSolution('C');
 	VectorPtr  x = getSolution('C');
 	applyMatrix(*x, *Ax);
-	Ax->update(1.0, *rhs, -1.0);
-	Ax->norm('E',"ocean ||b-Ax||");
-	Ax->print("residual");
+	Ax->Update(1.0, *rhs, -1.0);
+	INFO("Ocean: ||b - A*x|| = " << Utils::norm(Ax));
+	Utils::print(Ax, "residual");
 }
 
 //=====================================================================
@@ -812,9 +793,7 @@ void Ocean::scaleProblem(VectorPtr rhs)
  	// (rhs->getOceanVector())->Multiply(1.0, *rowScalingRecipr_,
 	// 								  *(rhs->getOceanVector()), 0.0);
 	
-	(rhs->getOceanVector())->Multiply(1.0, *rowScaling_,
-									  *(rhs->getOceanVector()), 0.0);
-
+	rhs->Multiply(1.0, *rowScaling_, *rhs, 0.0);
 	
 	// recompPreconditioner_ = true;
 	// sol_->ReciprocalMultiply(1.0, *colScaling, *sol_, 0.0);
@@ -842,8 +821,7 @@ void Ocean::unscaleProblem(VectorPtr rhs)
 	jac_->LeftScale(*rowScalingRecipr_);
 	// jac_->LeftScale(*rowScaling_);
 	
-	(rhs->getOceanVector())->Multiply(1.0, *rowScalingRecipr_,
-									  *(rhs->getOceanVector()), 0.0);
+	rhs->Multiply(1.0, *rowScalingRecipr_, *rhs, 0.0);
 	// (rhs->getOceanVector())->Multiply(1.0, *rowScaling_,
 	// 								  *(rhs->getOceanVector()), 0.0);
 
@@ -929,6 +907,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::getRHS(char mode)
 }
 
 //====================================================================
+// Obtain M, binary diagonal matrix to select transient parts.
 Teuchos::RCP<Epetra_Vector> Ocean::getM(char mode)
 {
 	RCP<Epetra_Vector> vecM =
@@ -951,7 +930,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::getM(char mode)
 }
 
 //====================================================================
-void Ocean::applyMatrix(Epetra_Vector const &v, Epetra_Vector &out)
+void Ocean::applyMatrix(Epetra_MultiVector const &v, Epetra_MultiVector &out)
 {
 	TIMER_START("Ocean: apply matrix...");
 	jac_->Apply(v, out);
@@ -976,7 +955,7 @@ void Ocean::buildPreconditioner(bool forceInit)
 }
 
 //====================================================================
-void Ocean::applyPrecon(Epetra_Vector const &v, Epetra_Vector &out)
+void Ocean::applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out)
 {
 	if (!precInitialized_) // Initialize preconditioner
 		initializePreconditioner();
@@ -1005,42 +984,42 @@ void Ocean::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmos)
 void Ocean::getAtmosBlock(std::vector<double> &values,
 						  std::vector<int> &row_inds)
 {
-	double Ooa, Os;
-	FNAME(getooa)(&Ooa, &Os);
-	values = std::vector<double>(N_ * M_, -Ooa);
-	INFO("Ocean: Ooa = " << Ooa);
+	// double Ooa, Os;
+	// FNAME(getooa)(&Ooa, &Os);
+	// values = std::vector<double>(N_ * M_, -Ooa);
+	// INFO("Ocean: Ooa = " << Ooa);
 	
-	// Apply Surface mask to values
-	int ctr  = 0;
-	int lctr = 0;
-	for (int j = 0; j != M_; ++j)
-		for (int i = 0; i != N_; ++i)
-		{			
-			if ((*surfmask_)[j*N_+i] == 1)
-			{
-				values[ctr] = 0.0;
-				lctr++;
-			}
-			ctr++;
-		}
+	// // Apply Surface mask to values
+	// int ctr  = 0;
+	// int lctr = 0;
+	// for (int j = 0; j != M_; ++j)
+	// 	for (int i = 0; i != N_; ++i)
+	// 	{			
+	// 		if ((*surfmask_)[j*N_+i] == 1)
+	// 		{
+	// 			values[ctr] = 0.0;
+	// 			lctr++;
+	// 		}
+	// 		ctr++;
+	// 	}
 
-	// clear row_inds
-	row_inds = std::vector<int>(N_ * M_, 0);
+	// // clear row_inds
+	// row_inds = std::vector<int>(N_ * M_, 0);
 	
-	// fill with surface temperature values
-	int idx = 0;
-	for (int j = 0; j != M_; ++j)
-		for (int i = 0; i != N_; ++i)
-		{
-			row_inds[idx] = (FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));
-			idx++;
-		}
-	INFO("  A->O block, zeros due to surfacemask --> " << lctr);
+	// // fill with surface temperature values
+	// int idx = 0;
+	// for (int j = 0; j != M_; ++j)
+	// 	for (int i = 0; i != N_; ++i)
+	// 	{
+	// 		row_inds[idx] = (FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));
+	// 		idx++;
+	// 	}
+	// INFO("  A->O block, zeros due to surfacemask --> " << lctr);
 }
 
 //====================================================================
 // Fill and return a copy of the surface temperature
-Teuchos::RCP<Epetra_Vetor> Ocean::getSurfaceT()
+Teuchos::RCP<Epetra_Vector> Ocean::getSurfaceT()
 {
 	TIMER_START("Ocean: get surface temperature...");
 	

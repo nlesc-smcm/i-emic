@@ -10,7 +10,9 @@
  **********************************************************************/
 #include "Utils.H"
 #include "EpetraExt_MatrixMatrix.h"
+
 //========================================================================================
+
 int Utils::SplitBox(int nx, int ny, int nz,
 					int nparts, int& ndx, int& ndy, int& ndz,
 					int sx, int sy, int sz)

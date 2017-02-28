@@ -8,6 +8,8 @@
 #include <functional>
 
 #include <Epetra_Comm.h>
+#include <Epetra_IntVector.h>
+#include <Epetra_Vector.h>
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
@@ -27,21 +29,13 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	rhsView_(std::make_shared<Combined_MultiVec>
 			 (ocean->getRHS('V'), atmos->getRHS('V'))),
 	
-	useExistingState_ (false),
 	parName_          (params->get("Continuation parameter",
 								   "Combined Forcing")),
 	solvingScheme_    (params->get("Solving scheme", 'G')),
-	useScaling_       (params->get("Use scaling", false)),
+
 	iterGS_           (params->get("Max GS iterations", 10)),
 	toleranceGS_      (params->get("GS tolerance", 1e-1)),
-	syncCtr_          (0),
-	
-	buildPrecEvery_   (params->get("Rebuild preconditioner stride", 1)),
-	idrSolver_        (*this),
-	gmresSolver_      (*this),
-	idrInitialized_   (false),
-	gmresInitialized_ (false),
-	idrSolveCtr_      (0)
+	syncCtr_          (0)
 {
 	// Let the sub-models know our continuation parameter
 	ocean_->setParName(parName_);
@@ -52,7 +46,7 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	atmos_->setLandMask(mask.local); // only RCP<Epetra_IntVector> 
 	ocean_->setLandMask(mask);		
 	
-	atmos_->setSurfaceMask(ocean_->getSurfaceMask());
+	atmos_->setLandMask(ocean_->getLandMask().local);
 
 	// // Setup coupling blocks
 	// std::vector<double> C12values;
@@ -120,11 +114,6 @@ void CoupledModel::computeJacobian()
 	
 	ocean_->computeJacobian();	// Ocean
 	atmos_->computeJacobian();	// Atmosphere
-
-	// Now that there is a new Jacobian we can also recompute the preconditioners
-	// --> weird place to do this...
-	if (syncCtr_ % buildPrecEvery_ == 0)
-		ocean_->recomputePreconditioner();
 	
 	TIMER_STOP("CoupledModel: compute Jacobian");
 }
@@ -160,8 +149,6 @@ void CoupledModel::solve(std::shared_ptr<Combined_MultiVec> rhs)
 {
 	// Start solve
 	TIMER_START("CoupledModel: solve...");
-	if (useScaling_)
-		ocean_->scaleProblem(rhs->First());
 	
 	if (solvingScheme_ == 'D') // fully decoupled solve
 	{
@@ -176,9 +163,6 @@ void CoupledModel::solve(std::shared_ptr<Combined_MultiVec> rhs)
  		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
 
-	if (useScaling_)
-		ocean_->unscaleProblem(rhs->First());
-
 	INFO("CoupledModel residual = " << computeResidual(rhs));
 	
 	// Update the profile after a solve
@@ -191,6 +175,7 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 {}
 
 //------------------------------------------------------------------
+// not implemented
 void CoupledModel::blockGSSolve(std::shared_ptr<Combined_MultiVec> rhs)
 {
 	// ***************************************************************
@@ -207,59 +192,59 @@ void CoupledModel::blockGSSolve(std::shared_ptr<Combined_MultiVec> rhs)
 	//  (because it's cheap)
 	// ***************************************************************
 
-	double residual;
-	double old_residual = computeResidual(rhs);
+	// double residual;
+	// double old_residual = computeResidual(rhs);
 	
     // Initialize solution [x1;x2] = 0
- 	std::shared_ptr<Combined_MultiVec> x = getSolution('C');
-	x->zero();
+ 	// std::shared_ptr<Combined_MultiVec> x = getSolution('C');
+	// x->PutScalar(0.0);
 
 	// Start iteration
-	int i;
-	for (i = 1; i <= iterGS_; ++i)
-	{
-		// Create -C*x1 + b2
-		x->linearTransformation(*C_, *rowsB_, 'O', 'A');
-		x->update(1, *rhs, -1);
+	// int i;
+	// for (i = 1; i <= iterGS_; ++i)
+	// {
+	// 	// Create -C*x1 + b2
+	// 	x->linearTransformation(*C_, *rowsB_, 'O', 'A');
+	// 	x->update(1, *rhs, -1);
 
-		// Solve D*x2 = -C*x1 + b2
-		atmos_->solve(x);
+	// 	// Solve D*x2 = -C*x1 + b2
+	// 	atmos_->solve(x);
 
-		// Retrieve solution
-		x = getSolution('C');
+	// 	// Retrieve solution
+	// 	x = getSolution('C');
 
-		// Create -B*x2 + b1
-		x->linearTransformation(*B_, *rowsB_, 'A', 'O');
-		x->update(1, *rhs, -1);
+	// 	// Create -B*x2 + b1
+	// 	x->linearTransformation(*B_, *rowsB_, 'A', 'O');
+	// 	x->update(1, *rhs, -1);
 
-		// Solve A*x1 = -B*x2 + b1
-		ocean_->solve(Teuchos::rcp(x.get(), false));
+	// 	// Solve A*x1 = -B*x2 + b1
+	// 	ocean_->solve(Teuchos::rcp(x.get(), false));
 
-		// Retrieve solution
-		x = getSolution('C');
+	// 	// Retrieve solution
+	// 	x = getSolution('C');
 		
-		// Calculate residual
-		residual = computeResidual(rhs);
-		INFO("CoupledModel: blockGS, i = " << i
-			 << ", ||b-Jx||/||b|| = " << residual << ", tol = " << toleranceGS_);
+	// 	// Calculate residual
+	// 	residual = computeResidual(rhs);
+	// 	INFO("CoupledModel: blockGS, i = " << i
+	// 		 << ", ||b-Jx||/||b|| = " << residual << ", tol = " << toleranceGS_);
 
-		if (residual > old_residual)
-			WARNING("INCREASING RESIDUAL!", __FILE__, __LINE__);
+	// 	if (residual > old_residual)
+	// 		WARNING("INCREASING RESIDUAL!", __FILE__, __LINE__);
 		
-		if (residual < toleranceGS_)
-			break;
-	}
+	// 	if (residual < toleranceGS_)
+	// 		break;
+	// }
 
-	// Do a final solve with D
-	// Create -C*x1 + b2 and solve D*x2 = -C*x1 + b2
-	x->linearTransformation(*C_, *rowsB_, 'O', 'A');
-	x->update(1, *rhs, -1);
-	atmos_->solve(x);
+	// // Do a final solve with D
+	// // Create -C*x1 + b2 and solve D*x2 = -C*x1 + b2
+	// x->linearTransformation(*C_, *rowsB_, 'O', 'A');
+	// x->update(1, *rhs, -1);
+	// atmos_->solve(x);
 
-	TRACK_ITERATIONS("CoupledModel: blockGS iterations...", i);
+	// TRACK_ITERATIONS("CoupledModel: blockGS iterations...", i);
 	
-	if (i == iterGS_)
-		WARNING("GS tolerance not reached...", __FILE__, __LINE__);
+	// if (i == iterGS_)
+	// 	WARNING("GS tolerance not reached...", __FILE__, __LINE__);
 
 }
 
@@ -318,16 +303,16 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &v,
 //------------------------------------------------------------------
 double CoupledModel::computeResidual(std::shared_ptr<Combined_MultiVec> rhs)
 {
-	Combined_MultiVec r(*solView_);
-	applyMatrix(*solView_, r);
-
-	double rhsNorm;
-	rhs->Norm2(*rhsNorm);
+	std::shared_ptr<Combined_MultiVec> r =
+		std::make_shared<Combined_MultiVec>(*solView_);
 	
-	r.Update(1, *rhs, -1); //  b-Jx
-	r.Scale(1.0 / rhsNorm);
-	double relResidual;
-	r.Norm2(&relResidual); // ||b-Jx||/||b||
+	applyMatrix(*solView_, *r);
+
+	double rhsNorm = Utils::norm(rhs);
+	
+	r->Update(1, *rhs, -1); //  b-Jx
+	r->Scale(1.0 / rhsNorm);
+	double relResidual = Utils::norm(r); // ||b-Jx||/||b||
 	
 	return relResidual;
 }

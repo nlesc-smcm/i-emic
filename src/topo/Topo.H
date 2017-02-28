@@ -121,7 +121,7 @@ void Topo<Model, ParameterList>::initialize()
 	model_->setLandMask(landMasks_[b_[k_]]);
 
 	// Obtain M, binary diagonal matrix to select transient parts,
-	// implemented as a vector
+	// implemented as a vectorw
 	vecM_ = model_->getM('C');
 	
 	// Zero out land points

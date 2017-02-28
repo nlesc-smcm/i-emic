@@ -139,6 +139,7 @@ private:
 	double   Ad_;  //!  rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
 	double   As_;  //!  sun0*(1 - c0)/(4*muoa)
 	double  Ooa_;  //!  ...? something in the ocean
+	double   Os_;  //!  ...? something in the ocean
 
     //! Latitude-dependent albedo
 	std::vector<double> albe_;
