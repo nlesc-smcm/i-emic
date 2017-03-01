@@ -87,9 +87,9 @@ void initializeEnvironment(int argc, char **argv)
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {	
-	RCP<Ocean>                    ocean;
-	std::shared_ptr<AtmospherePar>   atmos;
-	std::shared_ptr<CoupledModel> coupledModel;
+	std::shared_ptr<Ocean>         ocean;
+	std::shared_ptr<AtmospherePar> atmos;
+	std::shared_ptr<CoupledModel>  coupledModel;
 }
 
 //------------------------------------------------------------------
@@ -103,14 +103,14 @@ public:
 			RCP<Teuchos::ParameterList> oceanParams =
 				rcp(new Teuchos::ParameterList);
 			updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-			ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
+			ocean = std::make_shared<Ocean>(comm, oceanParams);
 	
 			// Create Atmosphere object
 			RCP<Teuchos::ParameterList> atmosphereParams =
 				rcp(new Teuchos::ParameterList);
 			updateParametersFromXmlFile("atmosphere_params.xml",
 										atmosphereParams.ptr());
-			atmos = std::make_shared<AtmospherePar>(atmosphereParams);
+			atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
 		
 			// Create CoupledModel
 			RCP<Teuchos::ParameterList> coupledmodelParams =
@@ -145,20 +145,20 @@ TEST(JDQZ, Atmosphere)
 	INFO("Creating ComplexVector...");
 	Teuchos::RCP<Epetra_Vector> x(atmos->getSolution('C'));
 	Teuchos::RCP<Epetra_Vector> y(atmos->getSolution('C'));
-	x.zero(); y.zero();
+	x->PutScalar(0.0); y->PutScalar(0.0);
 
 	// JDQZ needs complex arithmetic, that's why we create a ComplexSuperVector
-	ComplexVector z(x, y);
-	ComplexVector residue(x,y);
-	ComplexVector tmp(x,y);
+	ComplexVector<Epetra_Vector> z(*x, *y);
+	ComplexVector<Epetra_Vector> residue(*x, *y);
+	ComplexVector<Epetra_Vector> tmp(*x, *y);
 
 	INFO("Building JDQZInterface...");
-	JDQZInterface<std::shared_ptr<AtmospherePar> >
-		matrix(atmos, z);	
+	JDQZInterface<std::shared_ptr<AtmospherePar>,
+				  ComplexVector<Epetra_Vector > >	matrix(atmos, z);	
 	
 	INFO("Building JDQZ...");
-	JDQZ<JDQZInterface<std::shared_ptr<AtmospherePar> > >
-		jdqz(matrix, z);
+	JDQZ<JDQZInterface<std::shared_ptr<AtmospherePar>,
+					   ComplexVector<Epetra_Vector > > > jdqz(matrix, z);
 
 	INFO("Setting parameters...");
 	std::map<std::string, double> list;	
@@ -180,9 +180,9 @@ TEST(JDQZ, Atmosphere)
 	INFO("Starting JDQZ solve...");
 	jdqz.solve();
 
-	std::vector<ComplexVector>    eivec = jdqz.getEigenVectors();
-	std::vector<std::complex<double> > alpha = jdqz.getAlpha();
-	std::vector<std::complex<double> > beta  = jdqz.getBeta();
+	std::vector<ComplexVector<Epetra_Vector> > eivec = jdqz.getEigenVectors();
+	std::vector<std::complex<double> >         alpha = jdqz.getAlpha();
+	std::vector<std::complex<double> >         beta  = jdqz.getBeta();
 
 
 	for (int j = 0; j != jdqz.kmax(); ++j)
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 	// -------------------------------------------------------
 	
 	// Get rid of possibly parallel objects:
-	ocean        = Teuchos::null;
+	ocean        = std::shared_ptr<Ocean>();
 	atmos        = std::shared_ptr<AtmospherePar>();
 	coupledModel = std::shared_ptr<CoupledModel>();
 	

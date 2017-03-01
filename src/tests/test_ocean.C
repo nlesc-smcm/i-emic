@@ -123,8 +123,8 @@ TEST(Ocean, Initialization)
 TEST(Ocean, RHSNorm)
 {
 	ocean->computeRHS();
-	double stateNorm = ocean->getState('V')->norm();
-	double rhsNorm   = ocean->getRHS('V')->norm();
+	double stateNorm = Utils::norm(ocean->getState('V'));
+	double rhsNorm   = Utils::norm(ocean->getRHS('V'));
 	std::cout << "stateNorm = " << stateNorm << std::endl;
 	std::cout << "RHSNorm   = " << rhsNorm   << std::endl;
 	EXPECT_LT(rhsNorm, 1e-6);

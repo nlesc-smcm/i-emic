@@ -160,13 +160,13 @@ TEST(Topo, Copy)
 	double nrmC, nrmV;
 	Ocean::VectorPtr solCopy = topo->getSolution('C');
 	Ocean::VectorPtr solView = topo->getSolution('V');
-	nrmC = solCopy->norm();
-	nrmV = solView->norm();
+	nrmC = Utils::norm(solCopy);
+	nrmV = Utils::norm(solView);
 	EXPECT_NEAR(nrmC, nrmV, tol);
 	
-	solCopy->putScalar(3.14);
-	nrmC = solCopy->norm();
-	nrmV = solView->norm();
+	solCopy->PutScalar(3.14);
+	nrmC = Utils::norm(solCopy);
+	nrmV = Utils::norm(solView);
 
 	EXPECT_NE(nrmC, nrmV);
 }
@@ -178,16 +178,16 @@ TEST(Topo, View)
 	double nrmC, nrmV;
 	Ocean::VectorPtr solCopy = topo->getSolution('C');
 	Ocean::VectorPtr solView = topo->getSolution('V');
-	nrmC = solCopy->norm();
-	nrmV = solView->norm();
+	nrmC = Utils::norm(solCopy);
+	nrmV = Utils::norm(solView);
 	EXPECT_NEAR(nrmC, nrmV, tol);
 	
-	solView->putScalar(3.14);
+	solView->PutScalar(3.14);
 	
-	nrmC = solCopy->norm();
-	nrmV = solView->norm();
+	nrmC = Utils::norm(solCopy);
+	nrmV = Utils::norm(solView);
 
-	solView->putScalar(0.0);
+	solView->PutScalar(0.0);
 	
 	EXPECT_NE(nrmC, nrmV);
 }

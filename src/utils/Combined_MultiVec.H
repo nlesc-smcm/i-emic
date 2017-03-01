@@ -8,6 +8,7 @@
 #include "BelosMultiVec.hpp"
 #include "BelosOperator.hpp"
 #include "BelosTypes.hpp"
+#include "BelosEpetraAdapter.hpp"
 
 //------------------------------------------------------------------
 // This class combines rcp's to two multivectors

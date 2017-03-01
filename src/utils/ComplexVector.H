@@ -16,6 +16,7 @@ public:
 	//! real part
 	ComplexVector(Vector const &re)
 		:
+		tmp_(re),
 		real(re),
 		imag(re)
 		{
@@ -23,15 +24,25 @@ public:
 		}
 
 	//! constructor accepting a real and an imaginary part
-	ComplexVector(Vector &re, Vector &im)
+	ComplexVector(Vector const &re, Vector const &im)
 		:
+		tmp_(re),
 		real(re),
 		imag(im)
 		{
 			assert(real.GlobalLength() == imag.GlobalLength());
 		}
-		
 
+	//! constructor accepting a real and an imaginary part
+	ComplexVector(ComplexVector const &other)
+		:
+		tmp_(other.real),
+		real(other.real),
+		imag(other.imag)
+		{
+			assert(real.GlobalLength() == imag.GlobalLength());
+		}
+		
 	//! assignment operator
 	void operator=(ComplexVector const &other)
 		{
@@ -53,7 +64,7 @@ public:
 		{
 			double rePart = Utils::dot(&real, &other.real) +
 				Utils::dot(&imag, &other.imag);
-			double imPart = Utils::dot(&real.dot, &other.imag) -
+			double imPart = Utils::dot(&real, &other.imag) -
 				Utils::dot(&imag, &other.real);
 			std::complex<double> result(rePart, imPart);
 			return result;			
@@ -62,7 +73,7 @@ public:
 	//! this = a*x + this
 	void axpy(std::complex<double> a, ComplexVector const &x)
 		{
-			assert(this->length() == x.GlobalLength());
+			assert(this->length() == x.length());
 
 			real.Update( a.real(), x.real, 1.0);
 			real.Update(-a.imag(), x.imag, 1.0);
@@ -76,7 +87,7 @@ public:
 	void axpby(std::complex<double> a, ComplexVector const &x,
 			   std::complex<double> b)
 		{
-			assert(this->length() == x.GlobalLength());
+			assert(this->length() == x.length());
 			scale(b);
 			axpy(a, x);			
 		}
