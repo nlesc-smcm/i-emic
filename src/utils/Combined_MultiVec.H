@@ -185,7 +185,6 @@ public:
 		}
 	
 	// b[j] := this[j]^T * A[j]
-	// Not 100% sure
 	int Dot(const Combined_MultiVec& A, std::vector<double> &b1) const
 		{
 			// we need two arrays storing results
@@ -199,6 +198,16 @@ public:
 			for (int i = 0; i != numVecs_; ++i)
 				b1[i] += b2[i];
 
+			return info;
+		}
+
+	// result[j] := this[j]^T * A[j]
+	int Dot(const Combined_MultiVec& A, double *result) const
+		{
+			std::vector<double> tmp(numVecs_, 0.0);
+			int info = Dot(A, tmp);
+			for (int i = 0; i != numVecs_; ++i)
+				result[i] = tmp[i];
 			return info;
 		}
 

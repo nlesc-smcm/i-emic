@@ -24,10 +24,11 @@
 #include <stack>
 #include <string>
 
-#include "SuperVector.H"
+#include "Combined_MultiVec.H"
+#include "ComplexVector.H"
 #include "CoupledModel.H"
 #include "Continuation.H"
-#include "Atmosphere.H"
+#include "AtmospherePar.H"
 #include "GlobalDefinitions.H"
 #include "THCMdefs.H"
 #include "JDQZInterface.H"
@@ -87,7 +88,7 @@ void initializeEnvironment(int argc, char **argv)
 namespace // local unnamed namespace (similar to static in C)
 {	
 	RCP<Ocean>                    ocean;
-	std::shared_ptr<Atmosphere>   atmos;
+	std::shared_ptr<AtmospherePar>   atmos;
 	std::shared_ptr<CoupledModel> coupledModel;
 }
 
@@ -109,7 +110,7 @@ public:
 				rcp(new Teuchos::ParameterList);
 			updateParametersFromXmlFile("atmosphere_params.xml",
 										atmosphereParams.ptr());
-			atmos = std::make_shared<Atmosphere>(atmosphereParams);
+			atmos = std::make_shared<AtmospherePar>(atmosphereParams);
 		
 			// Create CoupledModel
 			RCP<Teuchos::ParameterList> coupledmodelParams =
@@ -141,25 +142,22 @@ TEST(JDQZ, Atmosphere)
 	continuation.run();
 
 	// Then we are going to calculate the eigenvalues of the Atmosphere Jacobian
-	INFO("Printing Jacobians...");
-	atmos->printJacobian("atmos_testjac");
-
-	INFO("Creating ComplexSuperVector...");
-	SuperVector x(atmos->getSolution());
-	SuperVector y(atmos->getSolution());
+	INFO("Creating ComplexVector...");
+	Teuchos::RCP<Epetra_Vector> x(atmos->getSolution('C'));
+	Teuchos::RCP<Epetra_Vector> y(atmos->getSolution('C'));
 	x.zero(); y.zero();
 
 	// JDQZ needs complex arithmetic, that's why we create a ComplexSuperVector
-	ComplexSuperVector z(x, y);
-	ComplexSuperVector residue(x,y);
-	ComplexSuperVector tmp(x,y);
+	ComplexVector z(x, y);
+	ComplexVector residue(x,y);
+	ComplexVector tmp(x,y);
 
 	INFO("Building JDQZInterface...");
-	JDQZInterface<std::shared_ptr<Atmosphere> >
+	JDQZInterface<std::shared_ptr<AtmospherePar> >
 		matrix(atmos, z);	
 	
 	INFO("Building JDQZ...");
-	JDQZ<JDQZInterface<std::shared_ptr<Atmosphere> > >
+	JDQZ<JDQZInterface<std::shared_ptr<AtmospherePar> > >
 		jdqz(matrix, z);
 
 	INFO("Setting parameters...");
@@ -182,7 +180,7 @@ TEST(JDQZ, Atmosphere)
 	INFO("Starting JDQZ solve...");
 	jdqz.solve();
 
-	std::vector<ComplexSuperVector>    eivec = jdqz.getEigenVectors();
+	std::vector<ComplexVector>    eivec = jdqz.getEigenVectors();
 	std::vector<std::complex<double> > alpha = jdqz.getAlpha();
 	std::vector<std::complex<double> > beta  = jdqz.getBeta();
 
@@ -219,7 +217,7 @@ int main(int argc, char **argv)
 	
 	// Get rid of possibly parallel objects:
 	ocean        = Teuchos::null;
-	atmos        = std::shared_ptr<Atmosphere>();
+	atmos        = std::shared_ptr<AtmospherePar>();
 	coupledModel = std::shared_ptr<CoupledModel>();
 	
 	comm->Barrier();

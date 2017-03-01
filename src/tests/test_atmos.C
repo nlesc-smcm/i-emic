@@ -216,7 +216,7 @@ TEST(Atmosphere, Jacobian)
 		outPar->PutScalar(0.0);
 
 		// apply parallel Jacobian
-		atmosPar->applyMatrix(x, outPar);
+		atmosPar->applyMatrix(*x, *outPar);
 
 		// check results
 		EXPECT_NEAR(norm(outSer), norm(outPar), 1e-7);

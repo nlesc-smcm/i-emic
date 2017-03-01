@@ -29,7 +29,7 @@
 
 #include "SuperVector.H"
 #include "CoupledModel.H"
-#include "Atmosphere.H"
+#include "AtmospherePar.H"
 #include "ThetaStepper.H"
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
@@ -92,7 +92,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
 
 	// Create parallelized Ocean object
-	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
+	std::shared_ptr<Ocean> ocean = std::make_shared<Ocean>(Comm, oceanParams);
 
 	//------------------------------------------------------------------
 	// Create parameter object for Atmosphere
@@ -100,8 +100,8 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
 
     // Create Atmosphere object
-	std::shared_ptr<Atmosphere> atmos =
-		std::make_shared<Atmosphere>(atmosphereParams);
+	std::shared_ptr<AtmospherePar> atmos =
+		std::make_shared<AtmospherePar>(Comm, atmosphereParams);
 
 	//------------------------------------------------------------------
     // Create parameter object for coupledmodel

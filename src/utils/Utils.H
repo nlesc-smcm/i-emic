@@ -87,7 +87,7 @@ namespace Utils
 	// 	return result;	
 	// }
 
-	//! Compute dot product of two vectorPtrs
+	//! Compute dot product of two vectors
 	template<typename VectorPtr>
 	double dot(VectorPtr const &vec1,
 			   VectorPtr const &vec2)

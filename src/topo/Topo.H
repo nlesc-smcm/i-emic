@@ -61,7 +61,7 @@ Topo(Model model, ParameterList pars)
 	setPar(delta_);	
 
 	model_->computeRHS();
-	nrm1 = model_->getRHS('V')->norm();
+	nrm1 = Utils::norm(model_->getRHS('V'));
 
 	loadMaskFileNames(); // load filenames
 	loadMasks();         // load actual data
@@ -73,13 +73,13 @@ Topo(Model model, ParameterList pars)
 	stateView_ = model_->getState('V');
 	solView_   = model_->getSolution('V');
 	stateDot_  = model_->getState('C');
-	stateDot_->zero();
+	stateDot_->PutScalar(0.0);
 	rhs_       = model_->getRHS('C');
 	rhsView_   = model_->getRHS('V');
 	dFdPar_    = model_->getRHS('C');
 	
 	model_->computeRHS();
-	nrm2 = model_->getRHS('V')->norm();
+	nrm2 = Utils::norm(model_->getRHS('V'));
 
 	// Check whether ocean has been setup with the same a_[k_]-th mask
 	if (std::abs(nrm1 - nrm2) > 1e-10)
@@ -125,7 +125,7 @@ void Topo<Model, ParameterList>::initialize()
 	vecM_ = model_->getM('C');
 	
 	// Zero out land points
-	model_->applyLandMask(vecM_->getOceanVector(), landMasks_[b_[k_]], 0.0);
+	model_->applyLandMask(vecM_, landMasks_[b_[k_]], 0.0);
 	
 	INFO("Topo: initialize... done");
 }
@@ -141,19 +141,17 @@ void Topo<Model, ParameterList>::predictor()
 			model_->setLandMask(landMasks_[b_[k_]]);
 		
 		model_->computeRHS();		
-		INFO("  nrm before applyLandmask: " << rhsView_->norm());
+		INFO("  nrm before applyLandmask: " << Utils::norm(rhsView_));
 
 		INFO("  k = " << k_ << " a[k] = " << a_[k_] << " b[k] = " << b_[k_]);
 		INFO("  using differences between " <<
 			 landMasks_[b_[k_]].label << " and " << landMasks_[a_[k_]].label);
 			
-		model_->applyLandMask(stateView_->getOceanVector(),
-							  landMasks_[a_[k_]],
-							  landMasks_[b_[k_]]);
+		model_->applyLandMask(stateView_, landMasks_[a_[k_]], landMasks_[b_[k_]]);
 	
 		model_->computeRHS();
 
-		INFO("  nrm after  applyLandmask: " << rhsView_->norm());
+		INFO("  nrm after  applyLandmask: " << Utils::norm(rhsView_));
 		INFO("Topo: predictor... done");
 	}	
 	stateCopy_ = model_->getState('C');
@@ -321,12 +319,11 @@ void Topo<Model, ParameterList>::computeRHS()
 	VectorPtr x = model_->getState('C');
 
 	// Overwrite state with initial
-	x->update(-1.0, *stateCopy_, 1.0);
-	INFO("            norm x-xA = " << x->norm());
+	x->Update(-1.0, *stateCopy_, 1.0);
+	INFO("            norm x-xA = " << Utils::norm(x));
 
 	// dangerous
-	CHECK_ZERO(x->getOceanVector()->Multiply(1.0, *(x->getOceanVector()),
-											 *(vecM_->getOceanVector()), 0.0));
+	CHECK_ZERO(x->Multiply(1.0, *(x), *(vecM_), 0.0));
 	
 	// Set landmask (B) in the model
 	if (!model_->isCurrentMask(landMasks_[b_[k_]].label))
@@ -338,30 +335,28 @@ void Topo<Model, ParameterList>::computeRHS()
 	// Get the view	
 	*rhs_ = *model_->getRHS('V');
 
-	normfB_ = rhs_->norm();
+	normfB_ = Utils::norm(rhs_);
 	INFO("              norm fB = " << normfB_);
 
 	// Scale the RHS, skipping land, w and p rows.
-
-	Vector scaleVec(*vecM_);	
+	VectorPtr scaleVec = model_->getM('C');	
 		
-	int NumMyElements  = scaleVec.getOceanVector()->Map().NumMyElements();
+	int NumMyElements  = scaleVec->Map().NumMyElements();
 	
 	for (int i = 0; i != NumMyElements; ++i)
-		if  (std::abs((*scaleVec.getOceanVector())[i]) < 1e-12)
-			(*scaleVec.getOceanVector())[i] = 1.0;
+		if  (std::abs((*scaleVec)[i]) < 1e-12)
+			(*scaleVec)[i] = 1.0;
 		else
-			(*scaleVec.getOceanVector())[i] = facB_;
+			(*scaleVec)[i] = facB_;
 
-	CHECK_ZERO(rhs_->getOceanVector()->Multiply(1.0, *(rhs_->getOceanVector()),
-												*(scaleVec.getOceanVector()), 0.0));
+	CHECK_ZERO(rhs_->Multiply(1.0, *rhs_, *scaleVec, 0.0));
 
-	rhs_->update(facA_, *x, 1.0);
+	rhs_->Update(facA_, *x, 1.0);
 
 	INFO("                 facA = " << facA_);
 	INFO("                 facB = " << facB_);
 	INFO("                gamma = " << gamma_);
-	INFO("facA*(x-xA) + facB*fB = " << rhs_->norm());
+	INFO("facA*(x-xA) + facB*fB = " << Utils::norm(rhs_));
 }
 
 //==================================================================
@@ -416,7 +411,7 @@ void Topo<Model, ParameterList>::computeJacobian()
 	model_->computeJacobian();
 	matB_ = model_->getJacobian();	
 
-	Vector leftScale(*vecM_);
+	VectorPtr leftScale = model_->getM('C');
 
 	// to maintain correct sparsity pattern
 	// double factor = (std::abs(facB_) < 1e-16) ? 1e-16 : facB_;
@@ -425,22 +420,22 @@ void Topo<Model, ParameterList>::computeJacobian()
 
 	// Set zeros to 1, let scaling have no effect at land and w,p points.
 	// Apply scaling to other points
-	int NumMyElements = leftScale.getOceanVector()->Map().NumMyElements();
+	int NumMyElements = leftScale->Map().NumMyElements();
 	for (int i = 0; i != NumMyElements; ++i)
-		if (std::abs((*leftScale.getOceanVector())[i]) < 1e-12)
-			(*leftScale.getOceanVector())[i] = 1.0;
+		if (std::abs((*leftScale)[i]) < 1e-12)
+			(*leftScale)[i] = 1.0;
 		else
-			(*leftScale.getOceanVector())[i] = facB_;
+			(*leftScale)[i] = facB_;
 	
 	//Row scale matrix
-	CHECK_ZERO( matB_->LeftScale(*(leftScale.getOceanVector()) ));
+	CHECK_ZERO( matB_->LeftScale(*(leftScale) ));
 	
 	// Obtain diagonal of matrix
 	VectorPtr tmp = model_->getSolution('C');
-	tmp->putScalar(0.0);
-	matB_->ExtractDiagonalCopy(*(tmp->getOceanVector()));
-	tmp->update(facA_, *vecM_, 1.0);
-	matB_->ReplaceDiagonalValues(*(tmp->getOceanVector()));
+	tmp->PutScalar(0.0);
+	matB_->ExtractDiagonalCopy(*(tmp));
+	tmp->Update(facA_, *vecM_, 1.0);
+	matB_->ReplaceDiagonalValues(*(tmp));
 
 	matB_->SetLabel("TopoCont Jacobian");
 	
@@ -521,7 +516,7 @@ void Topo<Model, ParameterList>::initializeSolver()
 	problem_ =
 		rcp(new Belos::LinearProblem
 			<double, Epetra_MultiVector, Combined_Operator<Model> >
-			(combMatPtr, solView_->getOceanVector(), rhs_->getOceanVector()));
+			(combMatPtr, solView_, rhs_));
 			
 	buildPreconditioner();
 
@@ -536,7 +531,7 @@ void Topo<Model, ParameterList>::initializeSolver()
 	int maxrestarts = solverParams_->get("Topo FGMRES restarts", 2);
 	int output      = solverParams_->get("Topo FGMRES output", 20);
 
-	int NumGlobalElements = stateView_->getOceanVector()->GlobalLength();
+	int NumGlobalElements = stateView_->GlobalLength();
 	int blocksize         = 1; // number of vectors in rhs
 	int maxiters          = NumGlobalElements / blocksize - 1;
 
@@ -583,11 +578,11 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	double innerTol, outerTol;
 	bool   set;
 	
-	Vector resB = *getSolution('C');	
+	VectorPtr resB = getSolution('C');	
 
-	solView_->putScalar(0.0);
+	solView_->PutScalar(0.0);
 
-	set = problem_->setProblem(solView_->getOceanVector(), b->getOceanVector());
+	set = problem_->setProblem(solView_, b);
 
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
@@ -606,15 +601,14 @@ void Topo<Model, ParameterList>::solve(VectorPtr b)
 	INFO("  TOPO: FGMRES, inner = " <<
 		 innerIters << ", ||r|| = " << innerTol);
 	
-	INFO("  TOPO: FGMRES  ||x|| = " << solView_->norm());
+	INFO("  TOPO: FGMRES  ||x|| = " << Utils::norm(solView_));
 	
-	combMat_.B->Apply(*solView_->getOceanVector(),
-					  *resB.getOceanVector());
+	combMat_.B->Apply(*solView_, *resB);
 
-	resB.update(1.0, *b, -facB_);
-	resB.update(-facA_, *solView_, 1.0);
+	resB->Update(1.0, *b, -facB_);
+	resB->Update(-facA_, *solView_, 1.0);
 		
-	outerTol = resB.norm();
+	outerTol = Utils::norm(resB);
 	INFO("  TOPO: FGMRES, actual ||r|| = " << outerTol);
 		
 	TRACK_ITERATIONS("  TOPO: FGMRES iterations...", innerIters);		

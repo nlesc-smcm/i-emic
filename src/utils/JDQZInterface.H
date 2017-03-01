@@ -1,7 +1,7 @@
 #ifndef JDQZINTERFACE_H
 #define JDQZINTERFACE_H
 
-#include "SuperVector.H"
+#include "ComplexVector.H"
 
 // Class to interface one of our models to the JDQZ++ eigenvalue solver.
 
@@ -10,7 +10,7 @@ class JDQZInterface
 {
 public:
 	// Define vector type
-	using Vector = ComplexSuperVector;
+	using Vector = ComplexVector;
 	
 private:
 
