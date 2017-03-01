@@ -44,9 +44,6 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	// Communicate surface landmask
 	LandMask mask = ocean_->getLandMask();
 	atmos_->setLandMask(mask.local); // only RCP<Epetra_IntVector> 
-	ocean_->setLandMask(mask);		
-	
-	atmos_->setLandMask(ocean_->getLandMask().local);
 
 	// // Setup coupling blocks
 	// std::vector<double> C12values;

@@ -191,7 +191,7 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> in)
 {
 	if (!(in->Map().SameAs(*standardSurfaceMap_)))
 	{
-		ERROR("Map of ocean surface input vector not same as surface map", __FILE__, __LINE__);
+		CHECK_ZERO(in->ReplaceMap(*standardSurfaceMap_));
 	}
 
 	// assign to our own datamember
@@ -215,6 +215,7 @@ void AtmospherePar::setLandMask(Teuchos::RCP<Epetra_IntVector> const &mask)
 {
 	// create rcp
 	int numMyElements = mask->MyLength();
+
 	std::shared_ptr<std::vector<int> > landmask =
 		std::make_shared<std::vector<int> >(numMyElements, 0);
 	

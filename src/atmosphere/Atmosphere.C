@@ -856,12 +856,13 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 	{
 		// in this case we assume we receive an ocean landmask
 		// with boundaries, which implies that the final
-		// (n_+2) * (m_+2) entries are meaningful for us.
-		int maskdim = (n_+2) * (m_+2);
+		// 2 * (n_+2) * (m_+2) entries are meaningful for us.
+		// The final (n_+2) * (m_+2) entries contain ones.
+		int maskdim = 2 * (n_+2) * (m_+2);
 		
 		surfm->erase(surfm->begin(), surfm->begin() + surfm->size() - maskdim);
 
-		// now we put surfm in our datamember, without borders
+		// now we put the first layer of surfm in our datamember, without borders
 		for (int j = 1; j != m_+1; ++j)
 			for (int i = 1; i != n_+1; ++i)
 			{
@@ -895,7 +896,7 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 	}
 	smask.close();
 
-	// Print to output file
+	// Reverse print to output file
 	for (auto i = stringvec.rbegin(); i != stringvec.rend(); ++i)
 		INFO(i->c_str());
 }

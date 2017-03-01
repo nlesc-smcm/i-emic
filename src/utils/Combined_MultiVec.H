@@ -149,8 +149,11 @@ public:
 	// Get number of vectors in each multivector
 	int NumVecs() const {return numVecs_;}
 
-	// Get the length of a vector in the combined multivector
+	// Get the global length of the combined multivector
 	int GlobalLength() const {return first_->GlobalLength() + second_->GlobalLength();}
+
+	// Get the local length of the combined multivector
+	int MyLength() const {return first_->MyLength() + second_->MyLength();}
 
 	// Query the stride
 	bool ConstantStride() const {return first_->ConstantStride() && second_->ConstantStride();}

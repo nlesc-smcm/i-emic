@@ -71,28 +71,77 @@ TEST(CoupledModel, Initialization)
 	EXPECT_EQ(failed, false);
 }
 
-// //------------------------------------------------------------------
-// TEST(CoupledModel, Continuation)
-// {
-// 	bool failed = false;
-// 	try
-// 	{
-// 		// Create continuation
-// 		RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
-// 		updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
+//------------------------------------------------------------------
+TEST(CoupledModel, inspectState)
+{
+	bool failed = false;
+	try
+	{
+		std::shared_ptr<Combined_MultiVec> state = coupledModel->getState('V');
+		state->Random();
 		
-// 		Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
-// 			continuation(coupledModel, continuationParams);
+		int firstL  = state->First()->GlobalLength();
+		int secondL = state->Second()->GlobalLength();
+		int stateL  = state->GlobalLength();
 
-// 		continuation.run();
-// 	}
-// 	catch (...)
-// 	{
-// 		failed = true;
-// 	}
+		INFO(" global 1: " << firstL << " 2: " << secondL
+			 << " 1+2: " << stateL);
+			
+		EXPECT_EQ(firstL + secondL, stateL);
+									
+		firstL  = state->First()->MyLength();
+		secondL = state->Second()->MyLength();
+		stateL  = state->MyLength();
+
+		INFO(" local 1: " << firstL << " 2: " << secondL
+			 << " 1+2: " << stateL);									
+
+		EXPECT_EQ(firstL + secondL, stateL);
+
+		double firstNrm = Utils::norm(state->First());
+		double secndNrm = Utils::norm(state->Second());
+		double stateNrm = Utils::norm(state);
+		
+		EXPECT_NEAR(stateNrm, sqrt(pow(firstNrm,2) + pow(secndNrm,2)), 1e-7);
+
+		INFO(" norm 1: " << firstNrm << " 2: " << secndNrm
+			 << " 1+2: " << stateNrm);
+	}
+	catch (...)
+	{
+		failed = true;
+	}
+
+	EXPECT_EQ(failed, false);
+}
+
+TEST(CoupledModel, applyMatrix)
+{
+	bool failed = false;
+
+	try
+	{
+		std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
+		std::shared_ptr<Combined_MultiVec> y = coupledModel->getState('C');
+
+		double normIn = Utils::norm(y);
+		
+		coupledModel->applyMatrix(*x, *y);
+
+		double normOut = Utils::norm(y);
+
+		EXPECT_NE(normIn, normOut);
+		INFO("norm in: " << normIn << " norm out: " << normOut);
+			
+		
+	}
+	catch (...)
+	{
+		
+	}
 	
-// 	EXPECT_EQ(failed, false);
-// }
+	EXPECT_EQ(failed, false);
+}
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)

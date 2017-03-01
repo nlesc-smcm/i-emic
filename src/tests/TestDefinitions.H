@@ -60,12 +60,12 @@ RCP<Epetra_Comm>  comm;         // communicator object
 RCP<std::ostream> outputFiles()
 {
 	Teuchos::RCP<std::ostream> outFile;
-	if (comm->MyPID() < 1)
+	if (comm->MyPID() < 4)
 	{
 		std::ostringstream infofile;     // setting up a filename
 
-		infofile    << "info_"    << comm->MyPID()   << ".txt";
-
+		infofile  << "info_"    << comm->MyPID()   << ".txt";
+		
 		std::cout << "info for CPU" << comm->MyPID() << " is written to "
 				  << infofile.str().c_str() << std::endl;
 

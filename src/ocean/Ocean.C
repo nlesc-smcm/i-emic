@@ -147,10 +147,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	surfaceTimporter_ =
 		Teuchos::rcp(new Epetra_Import(*indexMap, state_->Map()));
 
-#ifdef DEBUGGING_NEW
-	surfaceTimporter_->Print(std::cout);
-#endif 
-	
 	INFO("Ocean: constructor... done");
 }
 
