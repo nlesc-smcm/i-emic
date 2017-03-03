@@ -81,6 +81,8 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 	atmos_ = std::make_shared<Atmosphere>(nloc, mloc, lloc, perio,
 										  xminloc, xmaxloc, yminloc, ymaxloc,
 										  params_);
+
+	surfmask_ = std::make_shared<std::vector<int> >();
 	
 	INFO("AtmospherePar: constructor done");
 }
@@ -187,6 +189,19 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::getT()
 }
 
 //==================================================================
+std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> ocean)
+{
+	// The contribution of the ocean in the atmosphere is a
+	// diagonal of ones, see the forcing.
+
+	// We are going to create a 0-based global CRS matrix for this block
+	std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
+	for (int k = 0; k != l_; ++k);
+
+	return block;
+}
+
+//==================================================================
 void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> in)
 {
 	if (!(in->Map().SameAs(*standardSurfaceMap_)))
@@ -211,15 +226,75 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> in)
 }
 
 //==================================================================
-void AtmospherePar::setLandMask(Teuchos::RCP<Epetra_IntVector> const &mask)
+void AtmospherePar::setLandMask(Utils::MaskStruct const &mask)
 {
+	// create global surface mask
+	// we do the same thing for the local mask in the Atmosphere object 
+	surfmask_->clear();
+
+	if ((int) mask.global->size() < (n_*m_))
+	{
+		ERROR("mask.global->size() not ok:",  __FILE__, __LINE__);
+	}
+	else if ((int) mask.global->size() > (n_*m_))
+	{
+		// in this case we assume we receive an ocean landmask
+		// with boundaries, which implies that the final
+		// 2 * (n_+2) * (m_+2) entries are meaningful for us.
+		// The final (n_+2) * (m_+2) entries contain ones.
+		int maskdim = 2 * (n_+2) * (m_+2);
+		
+		mask.global->erase(mask.global->begin(),
+						   mask.global->begin() + mask.global->size() - maskdim);
+
+		// now we put the first layer of the remaining mask.global
+		// in our datamember, without borders.
+		for (int j = 1; j != m_+1; ++j)
+			for (int i = 1; i != n_+1; ++i)
+			{
+				surfmask_->push_back((*mask.global)[j*(n_+2) + i]);
+			}
+		
+	}
+	else // we trust surfm
+	{
+		surfmask_ = mask.global;
+	}
+	
+#ifdef DEBUGGING_NEW
+	INFO("Printing surface mask available in (global) Atmosphere");
+	std::ostringstream string;
+	std::ofstream smask;
+	smask.open("surfmask");
+
+	std::vector<std::string> stringvec;
+	int ctr = 0;
+	for (auto &l: *surfmask_)
+	{
+		ctr++;
+		string << l;
+		smask  << l << '\n'; // write to file
+		if (ctr % n_ == 0)
+		{
+			stringvec.push_back(string.str());
+			string.str("");
+			string.clear();
+		}
+	}
+	smask.close();
+
+	// Reverse print to output file
+	for (auto i = stringvec.rbegin(); i != stringvec.rend(); ++i)
+		INFO(i->c_str());
+#endif 
+	
 	// create rcp
-	int numMyElements = mask->MyLength();
+	int numMyElements = mask.local->MyLength();
 
 	std::shared_ptr<std::vector<int> > landmask =
 		std::make_shared<std::vector<int> >(numMyElements, 0);
 	
-	CHECK_ZERO(mask->ExtractCopy(&(*landmask)[0]));
+	CHECK_ZERO(mask.local->ExtractCopy(&(*landmask)[0]));
 
 	atmos_->setSurfaceMask(landmask);
 }
@@ -234,7 +309,7 @@ void AtmospherePar::computeJacobian()
 	atmos_->computeJacobian();
 	
 	// obtain CRS matrix from local atmosphere
-	std::shared_ptr<Atmosphere::CRSMat> localJac =
+	std::shared_ptr<Utils::CRSMat> localJac =
 		atmos_->getJacobian();
 
 	// max nonzeros per row
@@ -248,7 +323,7 @@ void AtmospherePar::computeJacobian()
 
 	// check size
 	int numMyElements = assemblyMap_->NumMyElements();
-	assert(numMyElements == (int) (*localJac)["beg"].size() - 1);
+	assert(numMyElements == (int) localJac->beg.size() - 1);
 
 	// loop over local elements
 	int index, numentries;
@@ -258,12 +333,12 @@ void AtmospherePar::computeJacobian()
 		if (!domain_->IsGhost(i, ATMOS_NUN_))
 		{
 			// obtain indices and values from CRS container
-			index = (*localJac)["beg"][i]; // beg contains 1-based indices!
-			numentries = (*localJac)["beg"][i+1] - index;
+			index = localJac->beg[i]; // beg contains 1-based indices!
+			numentries = localJac->beg[i+1] - index;
 			for (int j = 0; j < numentries; ++j)
 			{
-				indices[j] = assemblyMap_->GID((*localJac)["jco"][index-1+j] - 1);
-				values[j]  = (*localJac)["co"][index-1+j];
+				indices[j] = assemblyMap_->GID(localJac->jco[index-1+j] - 1);
+				values[j]  = localJac->co[index-1+j];
 			}
 
 			// put values in Jacobian
@@ -386,7 +461,8 @@ void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b)
 void AtmospherePar::createMatrixGraph()
 {
 	// We know from the discretization that we have at
-	// most 5 dependencies in each row. --> This will change, obviously, when extending
+	// most 5 dependencies in each row.
+	// --> This will change, obviously, when extending
 	// the atmosphere model. If the number of dependencies varies greatly per row
 	// we need to supply them differently (variable). 
 	int maxDeps = 5;

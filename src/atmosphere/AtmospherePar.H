@@ -17,6 +17,8 @@
 #include "TRIOS_Domain.H"
 #include "GlobalDefinitions.H"
 
+class Ocean;
+
 class AtmospherePar
 {
 public:
@@ -99,7 +101,10 @@ private:
 	Teuchos::RCP<Epetra_CrsMatrix> jac_;
 
 	//! matrix graph, necessary to build Jacobian matrix
-	Teuchos::RCP<Epetra_CrsGraph> matrixGraph_; 
+	Teuchos::RCP<Epetra_CrsGraph> matrixGraph_;
+
+	//! global surface mask
+	std::shared_ptr<std::vector<int> > surfmask_;
 
 public:
 	//! Constructor based on parameterlist
@@ -123,7 +128,7 @@ public:
 
 	void setOceanTemperature(Teuchos::RCP<Epetra_Vector> in);
 
-	void setLandMask(Teuchos::RCP<Epetra_IntVector> const &mask);
+	void setLandMask(Utils::MaskStruct const &mask);
 
 	//! set continuation parameter
 	void setPar(double value) {atmos_->setPar(value); }
@@ -155,12 +160,18 @@ public:
 	Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return getVector(mode, sol_); } 
 	Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')   { return getVector(mode, rhs_); }
 	Teuchos::RCP<Epetra_Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
+	Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
+
+	//! Return pointer to domain object
+	Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
 
 	Teuchos::RCP<Epetra_Vector> getT();
 
-
 	Teuchos::RCP<Epetra_BlockMap> getStandardSurfaceMap() {return standardSurfaceMap_;}
 	Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() {return assemblySurfaceMap_;}
+
+	//! Get ocean dependency
+	std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean);
 
 private:
 	//! solve with right hand side b on assembly subdomains

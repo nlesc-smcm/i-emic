@@ -30,7 +30,7 @@ class CoupledModel
 {
 public:
 	using VectorPtr = std::shared_ptr<Combined_MultiVec>;
-	using LandMask  = Ocean::LandMask;
+	using LandMask  = Utils::MaskStruct;
 	
 private:
 	//! Adjacency graph describing the couplings between the models
@@ -73,6 +73,9 @@ private:
 
 	//! Trilinos MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
+
+	CouplingBlock<std::shared_ptr<Ocean>,
+				  std::shared_ptr<AtmospherePar> > C12_;
 	
 public:
 	CoupledModel(std::shared_ptr<Ocean> ocean,

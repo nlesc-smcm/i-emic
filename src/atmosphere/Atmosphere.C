@@ -20,7 +20,7 @@ extern "C" double ddot_(int *N, double *X, int *INCX, double *Y, int *INCY);
 // Constructor for use with parallel atmosphere 
 Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
 					   double xmin, double xmax, double ymin, double ymax,
-					   ParameterList params)
+					   Teuchos::RCP<Teuchos::ParameterList> params)
 	:
 	params_   (params),
 
@@ -73,7 +73,7 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
 	
 //==================================================================
 // Constructor for standalone serial use
-Atmosphere::Atmosphere(ParameterList params)
+Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
 	:
 	params_          (params),
 
@@ -314,14 +314,13 @@ void Atmosphere::computeJacobian()
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<Atmosphere::CRSMat> Atmosphere::getJacobian()
+std::shared_ptr<Utils::CRSMat> Atmosphere::getJacobian()
 {
-	std::shared_ptr<CRSMat> jacMap;
-	jacMap = std::make_shared<CRSMat>();
-	(*jacMap)["co"]  = co_;
-	(*jacMap)["jco"] = jco_;
-	(*jacMap)["beg"] = beg_;
-	return jacMap;
+	std::shared_ptr<Utils::CRSMat> jac = std::make_shared<Utils::CRSMat>();
+	jac->co  = co_;
+	jac->jco = jco_;
+	jac->beg = beg_;
+	return jac;
 }
 
 //-----------------------------------------------------------------------------
@@ -808,6 +807,9 @@ double Atmosphere::getPar(std::string const &parName)
 	else // If parameter not available we return 0
 		return 0;
 }
+
+//------------------------------------------------------------------
+
 
 //-----------------------------------------------------------------------------
 // --> Parallelize

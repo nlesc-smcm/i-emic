@@ -140,7 +140,6 @@ namespace TRIOS {
 		// split up row map:
 		if (verbose>5) INFO("$   Split main map into uv|w|p|TS maps...");
 
-
 		//  DEBVAR(*RowMap);
 
 		const int labelUV[2] = {UU, VV};

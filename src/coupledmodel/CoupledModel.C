@@ -43,29 +43,10 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	
 	// Communicate surface landmask
 	LandMask mask = ocean_->getLandMask();
-	atmos_->setLandMask(mask.local); // only RCP<Epetra_IntVector> 
+	atmos_->setLandMask(mask); 
 
-	// // Setup coupling blocks
-	// std::vector<double> C12values;
-	// std::vector<int>    C12rows;
-	// ocean_->getAtmosBlock(C12values, C12rows); 
-	
-	// std::vector<double> C21values;
-	// std::vector<int>    C21rows;
-	// atmos_->getOceanBlock(C21values, C21rows);
-
-	// // A->O and O->A coupling blocks
-	// C12_ = CouplingBlock("AO", C12values, C12rows, C21rows);
-	// C21_ = CouplingBlock("OA", C21values, C21rows, C12rows);
-	
-	// C12_.info();
-	// C21_.info();
-
-	// // Get the contribution of the atmosphere to the ocean in the Jacobian	
-	// B_     = std::make_shared<std::vector<double> >(C12values);
-	// rowsB_ = std::make_shared<std::vector<int> >(C12rows);
-	// // Get the contribution of the ocean to the atmosphere in the Jacobian
-	// C_     = std::make_shared<std::vector<double> >(C21values);
+	C12_ = CouplingBlock<std::shared_ptr<Ocean>,
+						 std::shared_ptr<AtmospherePar> >(ocean_, atmos_);
 	
 	// Output parameters
 	INFO(*params);

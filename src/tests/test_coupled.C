@@ -115,6 +115,32 @@ TEST(CoupledModel, inspectState)
 	EXPECT_EQ(failed, false);
 }
 
+
+//------------------------------------------------------------------
+TEST(CoupledModel, computeJacobian)
+{
+	bool failed = false;
+	try
+	{
+		coupledModel->computeJacobian();
+		Teuchos::RCP<Epetra_CrsMatrix> atmosJac = atmos->getJacobian();
+		Teuchos::RCP<Epetra_CrsMatrix> oceanJac = ocean->getJacobian();
+
+		Utils::print(atmosJac, "atmosJac");
+		Utils::print(oceanJac, "oceanJac");
+
+		Utils::print(&atmosJac->ColMap(), "atmosJacColMap");
+		Utils::print(&atmosJac->DomainMap(), "atmosJacDomainMap");
+		
+	}
+	catch (...)
+	{
+		
+	}
+	EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
 TEST(CoupledModel, applyMatrix)
 {
 	bool failed = false;

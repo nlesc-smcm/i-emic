@@ -35,6 +35,23 @@
 
 namespace Utils
 {
+	//! A simple struct to store CRS info
+	struct CRSMat
+	{
+		std::vector<double> co;
+		std::vector<int>    jco;
+		std::vector<int>    beg;	
+	};
+
+	//! We need both a distributed and a global version of the land mask, so
+	//! we use the following struct.
+	struct MaskStruct
+	{
+		Teuchos::RCP<Epetra_IntVector> local;
+		std::shared_ptr<std::vector<int> > global;
+		std::string label;
+	};
+	
 	//! Obtain 2-norm of vectorPtr, more convenient interface
 	template<typename VectorPtr>
 	double norm(VectorPtr const &vec)

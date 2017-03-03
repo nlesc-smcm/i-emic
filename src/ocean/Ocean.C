@@ -979,7 +979,7 @@ void Ocean::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmos)
 
 //====================================================================
 // Return the coupling block containing the contribution of the
-// atmosphere to the ocean
+// atmosphere to the ocean. 
 // --> Parallelize
 void Ocean::getAtmosBlock(std::vector<double> &values,
 						  std::vector<int> &row_inds)

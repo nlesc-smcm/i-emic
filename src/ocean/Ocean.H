@@ -34,6 +34,7 @@
 
 #include "GlobalDefinitions.H"
 #include "Combined_MultiVec.H"
+#include "Utils.H"
 
 #include <string>
 
@@ -52,22 +53,13 @@ class Epetra_CrsMatrix;
 
 
 class Ocean
-{
-	// We need both a distributed and a global version of the land mask, so
-	// we use the following struct.
-	struct maskStruct
-	{
-		Teuchos::RCP<Epetra_IntVector> local;
-		std::shared_ptr<std::vector<int> > global;
-		std::string label;
-	};
-	
+{	
 public:
 	
 	using VectorPtr = Teuchos::RCP<Epetra_Vector>;
 	using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
 	using PreconPtr = Teuchos::RCP<Ifpack_Preconditioner>;
-	using LandMask  = maskStruct;
+	using LandMask  = Utils::MaskStruct;
 
 protected:
 	
@@ -188,6 +180,9 @@ public:
 
 	//! Return pointer to Jacobian
 	MatrixPtr getJacobian() {return jac_;}
+
+	//! Return pointer to domain object
+	Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
 	
 	//! Apply the Jacobian matrix to a vector
 	//! out = J*v

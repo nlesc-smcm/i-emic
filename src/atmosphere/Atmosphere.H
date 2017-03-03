@@ -17,7 +17,10 @@
 #include <memory>
 #include <array>
 #include <map>
+
 #include "MultiArray.H"
+#include "Utils.H"
+
 #include "AtmosphereDefinitions.H"
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
@@ -27,12 +30,8 @@ class Atom;
 
 class Atmosphere
 {
-public:
-	using CRSMat        = std::map<std::string, std::vector<double> >; 
-	using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
-
-private:
-	ParameterList params_;
+	//! Parameterlist
+	Teuchos::RCP<Teuchos::ParameterList> params_;
 	
 	int n_;   //! #grid-points in east-west (x) direction
 	int m_;   //! #grid-points in north-south (y) direction
@@ -93,19 +92,16 @@ private:
 
 	// CRS matrix arrays storing the Jacobian
 	std::vector<double> co_;
-	std::vector<double> jco_;
-	std::vector<double> beg_;
+	std::vector<int> jco_;
+	std::vector<int> beg_;
 
-	// Complete jacobian in CRS form
-	std::shared_ptr<CRSMat> jac_;
-	
  	// Pivot array for lapack
 	std::vector<int> ipiv_;
 
-	std::vector<double> bandedA_;      // Banded matrix storage
-	int  ksub_;                        // Number of subdiagonals
-	int  ksup_;                        // Number of superdiagonals
-	int  ldimA_;                       // Leading dimension of banded storage
+	std::vector<double> bandedA_; // Banded matrix storage
+	int  ksub_;                   // Number of subdiagonals
+	int  ksup_;                   // Number of superdiagonals
+	int  ldimA_;                  // Leading dimension of banded storage
 	bool buildLU_;
 
 	// Preconditioner: 'J': Jacobi
@@ -168,10 +164,10 @@ public:
 	//! Constructor for use with parallel atmosphere 
 	Atmosphere(int n, int m, int l, bool periodic,
 			   double xmin, double xmax, double ymin, double ymax,
-			   ParameterList params);
+			   Teuchos::RCP<Teuchos::ParameterList> params);
 
 	//! Constructor
-	Atmosphere(ParameterList params);
+	Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params);
 
 	//! General setup things for both constructors
 	void setup();
@@ -189,7 +185,7 @@ public:
 	void computeJacobian();
 
 	//! Return the Jacobian matrix in CRS format
-	std::shared_ptr<CRSMat> getJacobian();
+	std::shared_ptr<Utils::CRSMat> getJacobian();
 
 	std::shared_ptr<std::vector<double> > getSolution (char mode = 'C'); 
 	std::shared_ptr<std::vector<double> > getState    (char Mode = 'C');
