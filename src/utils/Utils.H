@@ -47,8 +47,16 @@ namespace Utils
 	//! we use the following struct.
 	struct MaskStruct
 	{
+		//! distributed
 		Teuchos::RCP<Epetra_IntVector> local;
+
+		//! global
 		std::shared_ptr<std::vector<int> > global;
+
+		//! global surface (withouth boundaries)
+		std::shared_ptr<std::vector<int> > global_surface;
+
+		//! mask name
 		std::string label;
 	};
 	
@@ -74,8 +82,8 @@ namespace Utils
 	template<typename VectorPtr>
 	void print(VectorPtr const &vec, std::string const &fname)
 	{
-		// This does not behave well in parallel,
-		// perhaps use a gather on the vector first
+		// This does not necessarily behave well in parallel,
+		// use separate filenames or a gather on the vector.
 		std::ofstream file;
 		file.open(fname);
 		vec->Print(file);

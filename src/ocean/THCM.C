@@ -945,14 +945,13 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 	if (Comm->MyPID() == 0)
 		F90NAME(m_global, get_current_landm)(&(*landm)[0]);
 
-#ifdef HAVE_MPI 
 	// Get the MpiComm from Epetra
 	Epetra_MpiComm const MpiComm =
 		dynamic_cast<Epetra_MpiComm const &>(*Comm);
 
 	// Broadcast the landmask
 	MPI_Bcast(&(*landm)[0], dim, MPI_INTEGER, 0, MpiComm.GetMpiComm());
-#endif 
+	
 	return landm;
 }
 

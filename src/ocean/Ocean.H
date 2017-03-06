@@ -33,6 +33,7 @@
 #include <Ifpack_Preconditioner.h>
 
 #include "GlobalDefinitions.H"
+#include "THCMdefs.H"
 #include "Combined_MultiVec.H"
 #include "Utils.H"
 
@@ -40,6 +41,7 @@
 
 // forward declarations
 class THCM;
+class AtmospherePar;
 
 namespace TRIOS
 { class Domain; }
@@ -109,12 +111,6 @@ protected:
 	// Problem dimensions:
 	int N_, M_, L_;
 
-	// Gathererd landmask, including borders and lids
-	std::shared_ptr<std::vector<int> > landmask_;
-
-	// Gathered surface mask, without borders
-	std::shared_ptr<std::vector<int> > surfmask_;
-
 	// Label of current mask
 	std::string currentMask_;
 
@@ -148,6 +144,9 @@ protected:
 
 	//! Surface temperature importer
 	Teuchos::RCP<Epetra_Import> surfaceTimporter_;
+
+	//! Land mask
+	Utils::MaskStruct landmask_;
 
 public:
 
@@ -251,6 +250,13 @@ public:
 	int getMdim() { return M_;}
 	int getLdim() { return L_;}
 
+	//! Get the degrees of freedom
+	int dof() { return _NUN_; }
+
+	//! Get row at the interface, XX is 1-based, i and j 0-based
+	int interface_row(int i, int j, int XX)
+		{ return FIND_ROW2(_NUN_, N_, M_, L_, i, j, L_-1, XX); }
+
 	// ---------------------------------------------------------------
 	// The following functions are required for the coupling with other
 	// models:
@@ -262,6 +268,10 @@ public:
 	// contribution in the Jacobian, see forcing.F90.
 	void getAtmosBlock(std::vector<double> &values,
 					   std::vector<int> &row_inds);
+
+	//! Returns the atmos->ocean coupling block in the Jacobian matrix.
+	//! I.e. the derivative of our RHS with respect to the atmosphere.
+	std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
 	
 	// Obtain ocean/land surface temperature
 	Teuchos::RCP<Epetra_Vector> getSurfaceT();

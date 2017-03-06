@@ -153,8 +153,10 @@ public:
 	void idealized();
 
 	//! Obtain problem size
-	int  dim() { return dim_; }
+	int dim() { return dim_; }
 
+	//! Obtain degrees of freedom
+	int dof() { return dof_; }
 	
 	Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return getVector(mode, state_); }
 	Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return getVector(mode, sol_); } 
@@ -172,6 +174,10 @@ public:
 
 	//! Get ocean dependency
 	std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean);
+
+	//! Get row at the interface, XX is 1-based, i and j 0-based
+	int interface_row(int i, int j, int XX)
+		{ return FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, l_-1, ATMOS_TT_); }
 
 private:
 	//! solve with right hand side b on assembly subdomains

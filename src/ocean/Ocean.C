@@ -20,6 +20,7 @@
 
 //=====================================================================
 #include "Ocean.H"
+#include "AtmospherePar.H"
 #include "THCM.H"
 #include "THCMdefs.H"
 #include "TRIOS_Domain.H"
@@ -98,28 +99,11 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 	// the Jacobian, solution and rhs
 	initializeOcean();
 
-	// Analyze Jacobian and print/fix impossible land points
-	while( analyzeJacobian() )
-	{
-		// If we find singular pressure rows we adjust the current landmask
-		INFO(" Fixing landmask " << landmaskFile_);
-		
-		Teuchos::RCP<Epetra_IntVector> landmask =
-			THCM::Instance().getLandMask("current", singRows_);
-		
-		INFO(" Putting a fixed version of " << landmaskFile_ <<
-			 "  back in THCM...");
-		
-		THCM::Instance().setLandMask(landmask);
-		THCM::Instance().evaluate(*state_, Teuchos::null, true);		
-	}	
+	// Obtain adjusted landmask 
+	landmask_ = getLandMask("current");
 
 	// Initialize preconditioner
 	initializePreconditioner();
-
-	// Get current global masks to communicate with an Atmosphere
-	landmask_ = THCM::Instance().getLandMask();
-	// surfmask_ = THCM::Instance().getSurfaceMask();
 
 	// Inspect current state
 	inspectVector(state_);
@@ -336,7 +320,32 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname)
 	
 	// Get the current global landmask from THCM.
 	mask.global = THCM::Instance().getLandMask();
+
+	// Copy to tmp
+	std::vector<int> tmp(*mask.global);
+	
+	// Erase everything but upper 2 layers
+    tmp.erase(tmp.begin(), tmp.begin() + tmp.size() -
+			  ( 2 * (M_+2) * (N_+2) ));
+	
+	// Create global surface mask rcp
+	mask.global_surface = std::make_shared<std::vector<int> >();
+
+	// Put the first layer of the remaining tmp mask
+	// in mask.global_surface, without borders.
+	for (int j = 1; j != M_+1; ++j)
+		for (int i = 1; i != N_+1; ++i)
+		{
+			mask.global_surface->push_back(tmp[j*(N_+2) + i]);
+		}
+
+	assert( (int) mask.global_surface->size() == N_*M_ );
+
+
+	// Set label
 	mask.label = fname;
+
+	// Return the struct
 	return mask;
 }
 
@@ -1015,6 +1024,47 @@ void Ocean::getAtmosBlock(std::vector<double> &values,
 	// 		idx++;
 	// 	}
 	// INFO("  A->O block, zeros due to surfacemask --> " << lctr);
+}
+
+//==================================================================
+// Return global 0-based CRS matrix for coupling with atmosphere.
+// The CouplingBlock class builds a parallel coupling block from this CRS struct.
+std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> atmos)
+{
+	// initialize empty crs matrix
+	std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
+
+	// this block has values -Ooa on the surface temperature points
+	double Ooa, Os;
+	FNAME(getooa)(&Ooa, &Os);
+	int T = 1; // in the Atmosphere temperature is the first unknown
+
+	// fill CRS struct
+	int el_ctr = 0;
+	for (int k = 0; k != L_; ++k)
+		for (int j = 0; j != M_; ++j)
+			for (int i = 0; i != N_; ++i)
+				for (int xx = UU; xx <= SS; ++xx)
+				{
+					block->beg.push_back(el_ctr);
+					if ( (k == L_-1) && // surface
+						 (xx == TT) )
+					{
+						if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
+						{
+							block->co.push_back(-Ooa);
+							block->jco.push_back(atmos->interface_row(i,j,T) );
+							el_ctr++;
+						}
+					}
+				}
+
+	// final entry in beg ( == nnz)
+	block->beg.push_back(el_ctr);
+
+	assert( (int) block->co.size() == block->beg.back());
+	
+	return block;
 }
 
 //====================================================================

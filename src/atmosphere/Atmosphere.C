@@ -877,6 +877,8 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 		surfmask_ = surfm;
 	}
 
+#ifdef DEBUGGING_NEW
+	
 	INFO("Printing surface mask available in Atmosphere");
 	std::ostringstream string;
 	std::ofstream smask;
@@ -901,6 +903,8 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
 	// Reverse print to output file
 	for (auto i = stringvec.rbegin(); i != stringvec.rend(); ++i)
 		INFO(i->c_str());
+
+#endif
 }
 
 

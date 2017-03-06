@@ -18,6 +18,8 @@ set(OCEAN_INCLUDE_DIRS
   ../idrsolver/
   ../mrilucpp/
   ../utils/
+  ../atmosphere/
+  ../multiarray/
   )
 
 target_include_directories(ocean PUBLIC ${OCEAN_INCLUDE_DIRS})

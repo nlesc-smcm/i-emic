@@ -28,8 +28,8 @@
 	((nun_) * ((k-1)*(n)*(m)+ (n)*(j-1) + (i-1)) + (XX))
 #endif
 
-// Input is expected 1-based
-// Output is 1-based
+// Input is expected 0-based (except XX)
+// Output is 0-based
 #ifndef FIND_ROW_ATMOS0
 # define FIND_ROW_ATMOS0(nun_, n, m, l, i, j, k, XX)				\
 	((nun_) * ((k)*(n)*(m)+ (n)*(j) + (i)) + (XX) - 1)

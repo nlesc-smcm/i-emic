@@ -1,5 +1,6 @@
 #include "AtmospherePar.H"
 #include "AtmosphereDefinitions.H"
+#include "Ocean.H"
 
 //==================================================================
 // Constructor
@@ -193,11 +194,33 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
 {
 	// The contribution of the ocean in the atmosphere is a
 	// diagonal of ones, see the forcing.
+	
+	// check surfmask
+	assert((int) surfmask_->size() == m_*n_);
 
 	// We are going to create a 0-based global CRS matrix for this block
 	std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
-	for (int k = 0; k != l_; ++k);
 
+	int el_ctr = 0;
+	int T = 5; // in THCM temperature is the fifth unknown 
+
+	// loop over our unknowns
+	for (int j = 0; j != m_; ++j)
+		for (int i = 0; i != n_; ++i)
+			for (int xx = ATMOS_TT_; xx <= ATMOS_TT_; ++xx)
+			{
+				block->beg.push_back(el_ctr);
+				if ( (*surfmask_)[j*n_+i] == 0 ) // non-land
+				{
+					block->co.push_back(1.0);
+					block->jco.push_back(ocean->interface_row(i,j,T));
+					el_ctr++;
+				}
+			}
+	block->beg.push_back(el_ctr);
+	
+	assert( (int) block->co.size() == block->beg.back());
+	
 	return block;
 }
 
@@ -232,33 +255,13 @@ void AtmospherePar::setLandMask(Utils::MaskStruct const &mask)
 	// we do the same thing for the local mask in the Atmosphere object 
 	surfmask_->clear();
 
-	if ((int) mask.global->size() < (n_*m_))
+	if ((int) mask.global_surface->size() < (n_*m_))
 	{
-		ERROR("mask.global->size() not ok:",  __FILE__, __LINE__);
-	}
-	else if ((int) mask.global->size() > (n_*m_))
-	{
-		// in this case we assume we receive an ocean landmask
-		// with boundaries, which implies that the final
-		// 2 * (n_+2) * (m_+2) entries are meaningful for us.
-		// The final (n_+2) * (m_+2) entries contain ones.
-		int maskdim = 2 * (n_+2) * (m_+2);
-		
-		mask.global->erase(mask.global->begin(),
-						   mask.global->begin() + mask.global->size() - maskdim);
-
-		// now we put the first layer of the remaining mask.global
-		// in our datamember, without borders.
-		for (int j = 1; j != m_+1; ++j)
-			for (int i = 1; i != n_+1; ++i)
-			{
-				surfmask_->push_back((*mask.global)[j*(n_+2) + i]);
-			}
-		
+		ERROR("mask.global_surface->size() not ok:",  __FILE__, __LINE__);
 	}
 	else // we trust surfm
 	{
-		surfmask_ = mask.global;
+		surfmask_ = mask.global_surface;
 	}
 	
 #ifdef DEBUGGING_NEW
@@ -308,7 +311,7 @@ void AtmospherePar::computeJacobian()
 	// compute jacobian in local atmosphere
 	atmos_->computeJacobian();
 	
-	// obtain CRS matrix from local atmosphere
+	// obtain 1-based CRS matrix from local atmosphere
 	std::shared_ptr<Utils::CRSMat> localJac =
 		atmos_->getJacobian();
 

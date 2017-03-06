@@ -74,8 +74,13 @@ private:
 	//! Trilinos MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
 
+	//! Coupling block atmos -> ocean
 	CouplingBlock<std::shared_ptr<Ocean>,
 				  std::shared_ptr<AtmospherePar> > C12_;
+
+	//! Coupling block ocean -> atmos
+	CouplingBlock<std::shared_ptr<AtmospherePar>,
+				  std::shared_ptr<Ocean> > C21_;
 	
 public:
 	CoupledModel(std::shared_ptr<Ocean> ocean,

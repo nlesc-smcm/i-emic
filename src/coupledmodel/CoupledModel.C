@@ -47,6 +47,9 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 
 	C12_ = CouplingBlock<std::shared_ptr<Ocean>,
 						 std::shared_ptr<AtmospherePar> >(ocean_, atmos_);
+
+	C21_ = CouplingBlock<std::shared_ptr<AtmospherePar>,
+						 std::shared_ptr<Ocean> >(atmos_, ocean_);
 	
 	// Output parameters
 	INFO(*params);
@@ -247,8 +250,8 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 		z.PutScalar(0.0);
 
 		// Apply coupling blocks --> Parallelize
-		// C12_.applyMatrix(v.Second(), z.First());
-		// C21_.applyMatrix(v.First(), z.Second());
+		C12_.applyMatrix(*v.Second(), *z.First());
+		C21_.applyMatrix(*v.First(),  *z.Second());
 
 		INFO("CoupledModel::applyMatrix not fully implemented yet!!");
 

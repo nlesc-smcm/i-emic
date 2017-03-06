@@ -17,7 +17,7 @@
 #define PI_ 3.14159265358979323846
 // ordering of variables (should be consistent with fortran 
 // function find_row2 in matetc.f, beware, however, that    
-// this one is 0-based!)                                    
+// this one is 0-based! <except for the XX-part> )                                    
 #define FIND_ROW2(nun_,n,m,l,i,j,k,XX)				\
 	((nun_)*((k)*(n)*(m)+ (n)*(j) + (i))+(XX)-1)
 
