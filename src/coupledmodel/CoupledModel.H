@@ -15,6 +15,13 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 
+#include "BelosConfigDefs.hpp"
+#include "BelosMultiVec.hpp"
+#include "BelosOperator.hpp"
+#include "BelosTypes.hpp"
+#include <BelosLinearProblem.hpp>
+#include <BelosBlockGmresSolMgr.hpp>
+
 //! This class assembles multiple sub-models into a CoupledModel. Which models and couplings are used should be supplied in the accompanying xml file (coupledmodel_params.xml).
 
 //! Most routines in CoupledModel simply call their corresponding routines in the sub-models. For instance, a call to computeJacobian() translates to a call to computeJacobian() in the sub-models.
@@ -22,9 +29,13 @@
 //! The frequency at which the states of the sub-models are synchronized depends on the solving scheme. 
 
 //! Forward declarations
+
 class Epetra_Comm;
 class Epetra_IntVector;
 class Epetra_Vector;
+
+template<typename ModelPtr>
+class Coupled_Operator;
 
 class CoupledModel
 {
@@ -42,7 +53,7 @@ private:
 
 	//! Parallel implicit atmosphere model
 	std::shared_ptr<AtmospherePar> atmos_;
-
+	
 	//! Combined state vector
 	std::shared_ptr<Combined_MultiVec> stateView_;
 
@@ -81,6 +92,15 @@ private:
 	//! Coupling block ocean -> atmos
 	CouplingBlock<std::shared_ptr<AtmospherePar>,
 				  std::shared_ptr<Ocean> > C21_;
+	
+	Teuchos::RCP
+	<Belos::LinearProblem
+	 <double, Combined_MultiVec, Coupled_Operator<CoupledModel> > > problem_;	
+	
+	Teuchos::RCP
+	<Belos::BlockGmresSolMgr
+	 <double, Combined_MultiVec, Coupled_Operator<CoupledModel> > > belosSolver_;
+	
 	
 public:
 	CoupledModel(std::shared_ptr<Ocean> ocean,
@@ -167,5 +187,58 @@ private:
 	void synchronize();
 
 };
+
+//=============================================================================
+
+
+template <typename Model>
+class Coupled_Operator
+{
+	Model &model_; // We hold a reference to the model
+	bool isPrec_;
+
+public:
+	Coupled_Operator(Model &model, bool isPrec)
+		:
+		model_(model),
+		isPrec_(isPrec)		
+		{}
+
+	bool isPrec() { return isPrec_; }
+
+	void ApplyInverse(Combined_MultiVec const &x, Combined_MultiVec &y)
+		{ model_->applyPrecon(x, y); }
+	
+	void ApplyMatrix(Combined_MultiVec const &x, Combined_MultiVec &y)
+		{ model_->applyMatrix(x, y); }	
+};
+
+//-----------------------------------------------------------------------------
+namespace Belos
+{
+	template <typename Model>
+	class OperatorTraits <double, Combined_MultiVec, Coupled_Operator<Model> >
+	{
+	public:
+		static void
+		Apply (Coupled_Operator<Model> const &Op,
+			   Combined_MultiVec const &x,
+			   Combined_MultiVec &y,
+			   int trans = 0)
+			{
+				if ( Op.isPrec() )
+				{
+					Op.ApplyInverse(x, y);
+				}
+				else
+				{
+					Op.ApplyMatrix(x, y);
+				}
+			}
+
+		static bool
+		HasApplyTranspose (const Coupled_Operator<Model> &Op) { return false; }
+	};
+} 
 
 #endif

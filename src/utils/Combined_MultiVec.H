@@ -306,6 +306,7 @@ public:
 // Specialization of MultiVectorTraits for Belos,
 //  adapted from BelosEpetraAdapter.hpp, for better documentation go there.
 //------------------------------------------------------------------
+
 namespace Belos
 {
 	template<>

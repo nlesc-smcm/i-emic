@@ -120,7 +120,25 @@ void CoupledModel::initializeFGMRES()
 
 	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
 		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());	
+	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
+
+	// Construct operator
+	Teuchos::RCP<Coupled_Operator<CoupledModel> > coupledMatrix =
+		Teuchos::rcp(new Coupled_Operator<CoupledModel>(*this, false) );
+
+	// Construct vectors
+	Teuchos::RCP<Combined_MultiVec> solV =
+		Teuchos::rcp(new Combined_MultiVec
+					 (ocean_->getSolution('V'), atmos_->getSolution('V')));
+
+	Teuchos::RCP<Combined_MultiVec> rhsC =
+		Teuchos::rcp(new Combined_MultiVec
+					 (ocean_->getRHS('C'), atmos_->getRHS('C')));
+	
+	problem_ =
+		Teuchos::rcp(new Belos::LinearProblem
+					 <double, Combined_MultiVec, Coupled_Operator<CoupledModel> >
+					 (coupledMatrix, solV, rhsC));
 	
 	INFO("CoupledModel: initialize FGMRES done");
 }
@@ -156,7 +174,6 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 {}
 
 //------------------------------------------------------------------
-// not implemented
 void CoupledModel::blockGSSolve(std::shared_ptr<Combined_MultiVec> rhs)
 {
 	// ***************************************************************
@@ -173,64 +190,12 @@ void CoupledModel::blockGSSolve(std::shared_ptr<Combined_MultiVec> rhs)
 	//  (because it's cheap)
 	// ***************************************************************
 
-	// double residual;
-	// double old_residual = computeResidual(rhs);
-	
-    // Initialize solution [x1;x2] = 0
- 	// std::shared_ptr<Combined_MultiVec> x = getSolution('C');
-	// x->PutScalar(0.0);
-
-	// Start iteration
-	// int i;
-	// for (i = 1; i <= iterGS_; ++i)
-	// {
-	// 	// Create -C*x1 + b2
-	// 	x->linearTransformation(*C_, *rowsB_, 'O', 'A');
-	// 	x->update(1, *rhs, -1);
-
-	// 	// Solve D*x2 = -C*x1 + b2
-	// 	atmos_->solve(x);
-
-	// 	// Retrieve solution
-	// 	x = getSolution('C');
-
-	// 	// Create -B*x2 + b1
-	// 	x->linearTransformation(*B_, *rowsB_, 'A', 'O');
-	// 	x->update(1, *rhs, -1);
-
-	// 	// Solve A*x1 = -B*x2 + b1
-	// 	ocean_->solve(Teuchos::rcp(x.get(), false));
-
-	// 	// Retrieve solution
-	// 	x = getSolution('C');
-		
-	// 	// Calculate residual
-	// 	residual = computeResidual(rhs);
-	// 	INFO("CoupledModel: blockGS, i = " << i
-	// 		 << ", ||b-Jx||/||b|| = " << residual << ", tol = " << toleranceGS_);
-
-	// 	if (residual > old_residual)
-	// 		WARNING("INCREASING RESIDUAL!", __FILE__, __LINE__);
-		
-	// 	if (residual < toleranceGS_)
-	// 		break;
-	// }
-
-	// // Do a final solve with D
-	// // Create -C*x1 + b2 and solve D*x2 = -C*x1 + b2
-	// x->linearTransformation(*C_, *rowsB_, 'O', 'A');
-	// x->update(1, *rhs, -1);
-	// atmos_->solve(x);
-
-	// TRACK_ITERATIONS("CoupledModel: blockGS iterations...", i);
-	
-	// if (i == iterGS_)
-	// 	WARNING("GS tolerance not reached...", __FILE__, __LINE__);
+	ERROR("blockGSSolve not implemented, look in git history", __FILE__, __LINE__);
 
 }
 
 //------------------------------------------------------------------
-// 	out = [A B; C D] * [v1; v2]
+// 	out = [J1 C12; C21 J2] * [v1; v2]
 void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 							   Combined_MultiVec &out, char mode)
 {
@@ -249,7 +214,7 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 		Combined_MultiVec z(v);
 		z.PutScalar(0.0);
 
-		// Apply coupling blocks --> Parallelize
+		// Apply coupling blocks
 		C12_.applyMatrix(*v.Second(), *z.First());
 		C21_.applyMatrix(*v.First(),  *z.Second());
 
