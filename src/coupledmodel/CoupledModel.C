@@ -72,10 +72,10 @@ void CoupledModel::synchronize()
 	syncCtr_++; // Keep track of synchronizations
 	
 	// Set atmosphere data in the ocean
-	ocean_->synchronize(atmos_);
+	// ocean_->synchronize(atmos_);
 	
 	// Set ocean data in atmosphere
-	atmos_->synchronize(ocean_);
+   	// atmos_->synchronize(ocean_);
 	
 	TIMER_STOP("CoupledModel: synchronize...");
 }
@@ -123,31 +123,29 @@ void CoupledModel::initializeFGMRES()
 
 	// Construct preconditioning operator
 	Teuchos::RCP<BelosOp<CoupledModel> > coupledPrec =
-		Teuchos::rcp(new BelosOp<CoupledModel>(*this, false) );
+		Teuchos::rcp(new BelosOp<CoupledModel>(*this, true) );
 
-	// Construct vectors
+	// Construct non-owning rcps to vectors
 	Teuchos::RCP<Combined_MultiVec> solV =
-		Teuchos::rcp(new Combined_MultiVec
-					 (ocean_->getSolution('V'), atmos_->getSolution('V')));
+		Teuchos::rcp(&(*solView_), false);
 
-	Teuchos::RCP<Combined_MultiVec> rhsC =
-		Teuchos::rcp(new Combined_MultiVec
-					 (ocean_->getRHS('C'), atmos_->getRHS('C')));
+	Teuchos::RCP<Combined_MultiVec> rhsV =
+		Teuchos::rcp(&(*rhsView_), false);
 	
 	// Construct linear problem
 	problem_ =
 		Teuchos::rcp(new Belos::LinearProblem
 					 <double, Combined_MultiVec,
 					 BelosOp<CoupledModel> >
-					 (coupledMatrix, solV, rhsC));
+					 (coupledMatrix, solV, rhsV));
 
 	// Set preconditioning
 	problem_->setRightPrec(coupledPrec);
-
-	int gmresIters  = solverParams->get("Topo FGMRES iterations", 400);
-	double gmresTol = solverParams->get("Topo FGMRES tolerance", 1e-2);
-	int maxrestarts = solverParams->get("Topo FGMRES restarts", 2);
-	int output      = solverParams->get("Topo FGMRES output", 20);
+	
+	int gmresIters  = solverParams->get("FGMRES iterations", 400);
+	double gmresTol = solverParams->get("FGMRES tolerance", 1e-2);
+	int maxrestarts = solverParams->get("FGMRES restarts", 2);
+	int output      = solverParams->get("FGMRES output", 20);
 
 	int NumGlobalElements = stateView_->GlobalLength();
 	int blocksize         = 1; // number of vectors in rhs
@@ -178,6 +176,8 @@ void CoupledModel::initializeFGMRES()
 		Teuchos::rcp(new Belos::BlockGmresSolMgr
 					 <double, Combined_MultiVec, BelosOp<CoupledModel> >
 					 (problem_, belosParamList));
+
+	solverInitialized_ = true;
 	
 	INFO("CoupledModel: initialize FGMRES done");
 }
@@ -201,10 +201,6 @@ void CoupledModel::solve(std::shared_ptr<Combined_MultiVec> rhs)
  		WARNING("(CoupledModel::Solve()) Invalid mode!",
 				__FILE__, __LINE__);
 
-	INFO("CoupledModel residual = " << computeResidual(rhs));
-	
-	// Update the profile after a solve
-	// printProfile(profile);
 	TIMER_STOP("CoupledModel: solve...");
 }
 
@@ -213,6 +209,34 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 {
 	if (!solverInitialized_)
 		initializeFGMRES();
+
+	ocean_->buildPreconditioner();
+
+	Teuchos::RCP<Combined_MultiVec> solV =
+		Teuchos::rcp(&(*solView_), false);
+
+	Teuchos::RCP<Combined_MultiVec> rhsV =
+		Teuchos::rcp(&(*rhs), false);
+	
+	solView_->PutScalar(0.0);
+
+	bool set = problem_->setProblem(solV, rhsV);
+
+	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
+							   "*** Belos::LinearProblem failed to setup");
+	try
+	{
+		belosSolver_->solve(); 	// Solve
+	}
+	catch (std::exception const &e)
+	{
+		INFO("Ocean: exception caught: " << e.what());
+	}
+
+	int iters  = belosSolver_->getNumIters();
+	double tol = belosSolver_->achievedTol();
+
+	INFO(" CoupledModel: FGMRES, iters = " << iters << ", ||r|| = " << tol);
 }
 
 //------------------------------------------------------------------
@@ -260,8 +284,6 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 		C12_.applyMatrix(*v.Second(), *z.First());
 		C21_.applyMatrix(*v.First(),  *z.Second());
 
-		INFO("CoupledModel::applyMatrix not fully implemented yet!!");
-
 		out.Update(1.0, z, 1);  
 	}	
 	TIMER_STOP("CoupledModel: apply matrix...");
@@ -275,15 +297,11 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &v,
 
 	out.PutScalar(0.0);	// Initialize output
 
-	if ((mode == 'C') && (iterGS_ != 0))
-	{
-		INFO("CoupledModel::applyPrecon coupled preconditioning not implemented yet!!");
-	}
-	else
-	{
-		ocean_->applyPrecon(*v.First(),  *out.First() );
-		atmos_->applyPrecon(*v.Second(), *out.Second());
-	}
+	//ocean_->applyPrecon(*v.First(),  *out.First() );
+	//atmos_->applyPrecon(*v.Second(), *out.Second());
+
+	*out.First() = *v.First();	
+	*out.Second() = *v.Second();
 
 	TIMER_STOP("CoupledModel: apply preconditioner2...");	
 }
@@ -291,16 +309,17 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &v,
 //------------------------------------------------------------------
 double CoupledModel::computeResidual(std::shared_ptr<Combined_MultiVec> rhs)
 {
-	std::shared_ptr<Combined_MultiVec> r =
-		std::make_shared<Combined_MultiVec>(*solView_);
+
+	Combined_MultiVec b = *getSolution('C');
+	b.PutScalar(0.0);
 	
-	applyMatrix(*solView_, *r);
+	applyMatrix(*solView_, b);
 
 	double rhsNorm = Utils::norm(rhs);
 	
-	r->Update(1, *rhs, -1); //  b-Jx
-	r->Scale(1.0 / rhsNorm);
-	double relResidual = Utils::norm(r); // ||b-Jx||/||b||
+	b.Update(1, *rhs, -1); //  b-Jx
+	b.Scale(1.0 / rhsNorm);
+	double relResidual = Utils::norm(&b); // ||b-Jx||/||b||
 	
 	return relResidual;
 }

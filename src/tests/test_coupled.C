@@ -93,9 +93,8 @@ TEST(CoupledModel, inspectState)
 		secondL = state->Second()->MyLength();
 		stateL  = state->MyLength();
 
-		INFO(" local 1: " << firstL << " 2: " << secondL
-			 << " 1+2: " << stateL);									
-
+		INFO( " local 1: " << firstL << " 2: " << secondL
+			 << " 1+2: " << stateL );
 		EXPECT_EQ(firstL + secondL, stateL);
 
 		double firstNrm = Utils::norm(state->First());
@@ -104,8 +103,8 @@ TEST(CoupledModel, inspectState)
 		
 		EXPECT_NEAR(stateNrm, sqrt(pow(firstNrm,2) + pow(secndNrm,2)), 1e-7);
 
-		INFO(" norm 1: " << firstNrm << " 2: " << secndNrm
-			 << " 1+2: " << stateNrm);
+		INFO( " norm 1: " << firstNrm << " 2: " << secndNrm
+			  << " 1+2: " << stateNrm << std::endl );
 	}
 	catch (...)
 	{
@@ -135,7 +134,7 @@ TEST(CoupledModel, computeJacobian)
 	}
 	catch (...)
 	{
-		
+		failed = true;
 	}
 	EXPECT_EQ(failed, false);
 }
@@ -157,17 +156,65 @@ TEST(CoupledModel, applyMatrix)
 		double normOut = Utils::norm(y);
 
 		EXPECT_NE(normIn, normOut);
-		INFO("norm in: " << normIn << " norm out: " << normOut);
-			
 		
 	}
 	catch (...)
 	{
-		
+		failed = true;
 	}
 	
 	EXPECT_EQ(failed, false);
 }
+
+//------------------------------------------------------------------
+TEST(CoupledModel, Newton)
+{
+	// One step in a 'natural continuation'
+	
+	// initialize state in model
+	std::shared_ptr<Combined_MultiVec> stateV = 
+		coupledModel->getState('V');
+	stateV->PutScalar(0.0);
+
+	// set parameter
+	coupledModel->setPar(0.0001);
+
+	// try to converge
+	int maxit = 10;
+	for (int i = 0; i != maxit; ++i)
+	{
+		coupledModel->computeRHS();
+		coupledModel->computeJacobian();
+	
+		std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('C');
+		b->Scale(-1.0);
+		
+		double normb = Utils::norm(b);
+		
+		coupledModel->solve(b);
+
+		std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');		
+		std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
+
+		INFO(" ||x||  = " << Utils::norm(stateV) );
+		stateV->Update(1.0, *x, 1.0); // x = x + dx;
+		
+		coupledModel->applyMatrix(*x, *y);
+
+		y->Update(1.0, *b, -1.0);
+		y->Scale(1./normb);
+
+		Utils::print(y, "residual");
+	
+		INFO(" ocean ||r|| / ||b||  = " << Utils::norm(y->First()));
+		INFO(" atmos ||r|| / ||b||  = " << Utils::norm(y->Second()));
+		INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
+
+		INFO(" ||F|| = " << normb);
+		
+	}
+}
+
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)

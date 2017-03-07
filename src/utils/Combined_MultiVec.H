@@ -326,7 +326,7 @@ namespace Belos
 
 				return Teuchos::rcp
 					(new Combined_MultiVec(mv.First()->Map(),
-										   mv.First()->Map(), numVecs, false));
+										   mv.Second()->Map(), numVecs, false));
 			}
 
 		static Teuchos::RCP<Combined_MultiVec>

@@ -92,7 +92,7 @@ public:
 				}
 			}
 			else
-				ERROR("Local case not implemented yet!", __FILE__, __LINE__);
+				ERROR("Local CRS case not implemented yet!", __FILE__, __LINE__);
 
 			// Finalize
 			CHECK_ZERO(block_->FillComplete(
