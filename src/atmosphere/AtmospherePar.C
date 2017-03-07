@@ -181,7 +181,7 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::getVector(char mode, Teuchos::RCP<Epe
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> AtmospherePar::getT()
+Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
 {
 	// for now we just return a copy of the state
 	// when the atmosphere grows we need an import operation here
@@ -225,15 +225,25 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
 }
 
 //==================================================================
-void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> in)
+void AtmospherePar::synchronize(std::shared_ptr<Ocean> ocean)
 {
-	if (!(in->Map().SameAs(*standardSurfaceMap_)))
+	// Get ocean surface temperature
+	Teuchos::RCP<Epetra_Vector> sst = ocean->interfaceT();
+
+	setOceanTemperature(sst);
+}
+
+//==================================================================
+void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
+{
+	// Replace map if necessary
+	if (!(sst->Map().SameAs(*standardSurfaceMap_)))
 	{
-		CHECK_ZERO(in->ReplaceMap(*standardSurfaceMap_));
+		CHECK_ZERO(sst->ReplaceMap(*standardSurfaceMap_));
 	}
 
 	// assign to our own datamember
-	sst_ = in;
+	sst_ = sst;
 
 	// create assembly 
 	domain_->Solve2Assembly(*sst_, *localSST_);

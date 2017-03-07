@@ -11,6 +11,7 @@
 #include <Epetra_IntVector.h>
 #include <Epetra_Vector.h>
 #include <Teuchos_RCP.hpp>
+#include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
 //==================================================================
@@ -24,10 +25,10 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	
 	stateView_(std::make_shared<Combined_MultiVec>
 			   (ocean->getState('V'), atmos->getState('V'))),	
-	solView_(std::make_shared<Combined_MultiVec>
-			 (ocean->getSolution('V'), atmos->getSolution('V'))),
-	rhsView_(std::make_shared<Combined_MultiVec>
-			 (ocean->getRHS('V'), atmos->getRHS('V'))),
+	solView_  (std::make_shared<Combined_MultiVec>
+			   (ocean->getSolution('V'), atmos->getSolution('V'))),
+	rhsView_  (std::make_shared<Combined_MultiVec>
+			   (ocean->getRHS('V'), atmos->getRHS('V'))),
 	
 	parName_          (params->get("Continuation parameter",
 								   "Combined Forcing")),
@@ -35,7 +36,8 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 
 	iterGS_           (params->get("Max GS iterations", 10)),
 	toleranceGS_      (params->get("GS tolerance", 1e-1)),
-	syncCtr_          (0)
+	syncCtr_          (0),
+	solverInitialized_(false)
 {
 	// Let the sub-models know our continuation parameter
 	ocean_->setParName(parName_);
@@ -55,8 +57,7 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 	INFO(*params);
 
 	// Synchronize state
-	synchronize();
-	
+	synchronize();	
 }
 
 //------------------------------------------------------------------
@@ -70,17 +71,11 @@ void CoupledModel::synchronize()
 
 	syncCtr_++; // Keep track of synchronizations
 	
-	// Get the atmosphere temperature
-	Teuchos::RCP<Epetra_Vector> atmos = atmos_->getT();
-
-	// Get sst restricted state vector from ocean model
-	Teuchos::RCP<Epetra_Vector> sst = ocean_->getSurfaceT();
+	// Set atmosphere data in the ocean
+	ocean_->synchronize(atmos_);
 	
-	// Set the atmosphere in the ocean
-	ocean_->setAtmosphere(atmos);
-	
-	// Set the SST in the atmosphere
-	atmos_->setOceanTemperature(sst);
+	// Set ocean data in atmosphere
+	atmos_->synchronize(ocean_);
 	
 	TIMER_STOP("CoupledModel: synchronize...");
 }
@@ -118,13 +113,17 @@ void CoupledModel::initializeFGMRES()
 {
 	INFO("CoupledModel: initialize FGMRES...");
 
-	Teuchos::RCP<Teuchos::ParameterList> solverParams_ =
+	Teuchos::RCP<Teuchos::ParameterList> solverParams =
 		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
+	updateParametersFromXmlFile("solver_params.xml", solverParams.ptr());
 
-	// Construct operator
-	Teuchos::RCP<Coupled_Operator<CoupledModel> > coupledMatrix =
-		Teuchos::rcp(new Coupled_Operator<CoupledModel>(*this, false) );
+	// Construct matrix operator
+	Teuchos::RCP<BelosOp<CoupledModel> > coupledMatrix =
+		Teuchos::rcp(new BelosOp<CoupledModel>(*this, false) );
+
+	// Construct preconditioning operator
+	Teuchos::RCP<BelosOp<CoupledModel> > coupledPrec =
+		Teuchos::rcp(new BelosOp<CoupledModel>(*this, false) );
 
 	// Construct vectors
 	Teuchos::RCP<Combined_MultiVec> solV =
@@ -135,10 +134,50 @@ void CoupledModel::initializeFGMRES()
 		Teuchos::rcp(new Combined_MultiVec
 					 (ocean_->getRHS('C'), atmos_->getRHS('C')));
 	
+	// Construct linear problem
 	problem_ =
 		Teuchos::rcp(new Belos::LinearProblem
-					 <double, Combined_MultiVec, Coupled_Operator<CoupledModel> >
+					 <double, Combined_MultiVec,
+					 BelosOp<CoupledModel> >
 					 (coupledMatrix, solV, rhsC));
+
+	// Set preconditioning
+	problem_->setRightPrec(coupledPrec);
+
+	int gmresIters  = solverParams->get("Topo FGMRES iterations", 400);
+	double gmresTol = solverParams->get("Topo FGMRES tolerance", 1e-2);
+	int maxrestarts = solverParams->get("Topo FGMRES restarts", 2);
+	int output      = solverParams->get("Topo FGMRES output", 20);
+
+	int NumGlobalElements = stateView_->GlobalLength();
+	int blocksize         = 1; // number of vectors in rhs
+	int maxiters          = NumGlobalElements / blocksize - 1;
+
+	// Create Belos parameterlist
+	Teuchos::RCP<Teuchos::ParameterList> belosParamList =
+		rcp(new Teuchos::ParameterList());
+	
+	belosParamList->set("Block Size", blocksize);
+	belosParamList->set("Flexible Gmres", true);
+	belosParamList->set("Adaptive Block Size", true);
+	belosParamList->set("Num Blocks", gmresIters);
+	belosParamList->set("Maximum Restarts", maxrestarts);
+	belosParamList->set("Orthogonalization","DGKS");
+	belosParamList->set("Output Frequency", output);
+	belosParamList->set("Verbosity", Belos::TimingDetails +
+						 Belos::Errors +
+						 Belos::Warnings +
+						 Belos::StatusTestDetails );
+	belosParamList->set("Maximum Iterations", maxiters); 
+	belosParamList->set("Convergence Tolerance", gmresTol); 
+	belosParamList->set("Explicit Residual Test", false); 
+	belosParamList->set("Implicit Residual Scaling", "Norm of RHS");
+
+	// Belos block FGMRES setup
+	belosSolver_ =
+		Teuchos::rcp(new Belos::BlockGmresSolMgr
+					 <double, Combined_MultiVec, BelosOp<CoupledModel> >
+					 (problem_, belosParamList));
 	
 	INFO("CoupledModel: initialize FGMRES done");
 }
@@ -171,7 +210,10 @@ void CoupledModel::solve(std::shared_ptr<Combined_MultiVec> rhs)
 
 //------------------------------------------------------------------
 void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
-{}
+{
+	if (!solverInitialized_)
+		initializeFGMRES();
+}
 
 //------------------------------------------------------------------
 void CoupledModel::blockGSSolve(std::shared_ptr<Combined_MultiVec> rhs)

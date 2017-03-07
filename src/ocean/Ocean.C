@@ -20,7 +20,6 @@
 
 //=====================================================================
 #include "Ocean.H"
-#include "AtmospherePar.H"
 #include "THCM.H"
 #include "THCMdefs.H"
 #include "TRIOS_Domain.H"
@@ -978,52 +977,14 @@ void Ocean::applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out)
 }
 
 //====================================================================
-void Ocean::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmos)
+void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
 {
 	TIMER_START("Ocean: set atmosphere...");
+	
+	Teuchos::RCP<Epetra_Vector> atmosT = atmos->interfaceT();
 	// This is a job for THCM
-	THCM::Instance().setAtmosphere(atmos);
+	THCM::Instance().setAtmosphere(atmosT);
 	TIMER_STOP("Ocean: set atmosphere...");
-}
-
-//====================================================================
-// Return the coupling block containing the contribution of the
-// atmosphere to the ocean. 
-// --> Parallelize
-void Ocean::getAtmosBlock(std::vector<double> &values,
-						  std::vector<int> &row_inds)
-{
-	// double Ooa, Os;
-	// FNAME(getooa)(&Ooa, &Os);
-	// values = std::vector<double>(N_ * M_, -Ooa);
-	// INFO("Ocean: Ooa = " << Ooa);
-	
-	// // Apply Surface mask to values
-	// int ctr  = 0;
-	// int lctr = 0;
-	// for (int j = 0; j != M_; ++j)
-	// 	for (int i = 0; i != N_; ++i)
-	// 	{			
-	// 		if ((*surfmask_)[j*N_+i] == 1)
-	// 		{
-	// 			values[ctr] = 0.0;
-	// 			lctr++;
-	// 		}
-	// 		ctr++;
-	// 	}
-
-	// // clear row_inds
-	// row_inds = std::vector<int>(N_ * M_, 0);
-	
-	// // fill with surface temperature values
-	// int idx = 0;
-	// for (int j = 0; j != M_; ++j)
-	// 	for (int i = 0; i != N_; ++i)
-	// 	{
-	// 		row_inds[idx] = (FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));
-	// 		idx++;
-	// 	}
-	// INFO("  A->O block, zeros due to surfacemask --> " << lctr);
 }
 
 //==================================================================
@@ -1069,7 +1030,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
 
 //====================================================================
 // Fill and return a copy of the surface temperature
-Teuchos::RCP<Epetra_Vector> Ocean::getSurfaceT()
+Teuchos::RCP<Epetra_Vector> Ocean::interfaceT()
 {
 	TIMER_START("Ocean: get surface temperature...");
 	

@@ -9,9 +9,11 @@ set(ATMOSPHERE_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-add_library(atmosphere SHARED Atmosphere.C AtmospherePar.C)
+add_library(atmosphere STATIC Atmosphere.C AtmospherePar.C)
 
 target_compile_definitions(atmosphere PUBLIC ${COMP_IDENT})
+
+target_link_libraries(atmosphere ocean)
 
 target_include_directories(atmosphere PUBLIC ${ATMOSPHERE_INCLUDE_DIRS})
 

@@ -9,7 +9,6 @@ namespace
 	std::shared_ptr<AtmospherePar> atmosPar;
 }
 
-
 //------------------------------------------------------------------
 TEST(Atmosphere, Initialization)
 {

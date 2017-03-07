@@ -126,7 +126,10 @@ public:
 
 	void setState(Teuchos::RCP<Epetra_Vector> input) { state_ = input; }
 
-	void setOceanTemperature(Teuchos::RCP<Epetra_Vector> in);
+	//! Receive ocean data
+	void synchronize(std::shared_ptr<Ocean> ocean);
+
+	void setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst);
 
 	void setLandMask(Utils::MaskStruct const &mask);
 
@@ -167,7 +170,8 @@ public:
 	//! Return pointer to domain object
 	Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
 
-	Teuchos::RCP<Epetra_Vector> getT();
+	//! Get temperature at interface (which is everywhere at this point)
+	Teuchos::RCP<Epetra_Vector> interfaceT();
 
 	Teuchos::RCP<Epetra_BlockMap> getStandardSurfaceMap() {return standardSurfaceMap_;}
 	Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() {return assemblySurfaceMap_;}

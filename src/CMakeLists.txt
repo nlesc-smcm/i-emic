@@ -90,8 +90,8 @@ set(I-EMIC_LIBS
   coupledmodel
   atmosphere
   ocean
-  supervector
   utils
+  supervector
   jdqz_tools
   )
 

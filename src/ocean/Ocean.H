@@ -33,6 +33,7 @@
 #include <Ifpack_Preconditioner.h>
 
 #include "GlobalDefinitions.H"
+#include "AtmospherePar.H"
 #include "THCMdefs.H"
 #include "Combined_MultiVec.H"
 #include "Utils.H"
@@ -41,7 +42,6 @@
 
 // forward declarations
 class THCM;
-class AtmospherePar;
 
 namespace TRIOS
 { class Domain; }
@@ -253,7 +253,8 @@ public:
 	//! Get the degrees of freedom
 	int dof() { return _NUN_; }
 
-	//! Get row at the interface, XX is 1-based, i and j 0-based
+	//! Get row at the interface, XX is 1-based, i and j are 0-based.
+	//! The interface is at surface points.
 	int interface_row(int i, int j, int XX)
 		{ return FIND_ROW2(_NUN_, N_, M_, L_, i, j, L_-1, XX); }
 
@@ -261,20 +262,15 @@ public:
 	// The following functions are required for the coupling with other
 	// models:
 
-	// Obtain an external atmosphere
-	void setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmos);
-
-    // Get the atmosphere to ocean
-	// contribution in the Jacobian, see forcing.F90.
-	void getAtmosBlock(std::vector<double> &values,
-					   std::vector<int> &row_inds);
+	// Receive atmosphere data
+	void synchronize(std::shared_ptr<AtmospherePar> atmos);
 
 	//! Returns the atmos->ocean coupling block in the Jacobian matrix.
 	//! I.e. the derivative of our RHS with respect to the atmosphere.
 	std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
 	
-	// Obtain ocean/land surface temperature
-	Teuchos::RCP<Epetra_Vector> getSurfaceT();
+	// Obtain interface (surface) temperature
+	Teuchos::RCP<Epetra_Vector> interfaceT();
 		
 	// ---------------------------------------------------------------
 	// Scale the matrix and rhs of the problem

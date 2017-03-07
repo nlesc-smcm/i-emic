@@ -35,7 +35,7 @@ class Epetra_IntVector;
 class Epetra_Vector;
 
 template<typename ModelPtr>
-class Coupled_Operator;
+class BelosOp;
 
 class CoupledModel
 {
@@ -82,6 +82,9 @@ private:
 	//! keep track of syncs
 	int syncCtr_;
 
+	//! initialization flag
+	bool solverInitialized_; 
+
 	//! Trilinos MPI-like communicator
 	Teuchos::RCP<Epetra_Comm> comm_;
 
@@ -95,11 +98,11 @@ private:
 	
 	Teuchos::RCP
 	<Belos::LinearProblem
-	 <double, Combined_MultiVec, Coupled_Operator<CoupledModel> > > problem_;	
+	 <double, Combined_MultiVec, BelosOp<CoupledModel> > > problem_;	
 	
 	Teuchos::RCP
 	<Belos::BlockGmresSolMgr
-	 <double, Combined_MultiVec, Coupled_Operator<CoupledModel> > > belosSolver_;
+	 <double, Combined_MultiVec, BelosOp<CoupledModel> > > belosSolver_;
 	
 	
 public:
@@ -189,39 +192,40 @@ private:
 };
 
 //=============================================================================
-
+// This class wraps a model into an operator suitable for use with Belos.
+// We need it for CoupledModel, so we put it here.
 
 template <typename Model>
-class Coupled_Operator
+class BelosOp
 {
-	Model &model_; // We hold a reference to the model
+	Model &model_; // hold a reference to the model
 	bool isPrec_;
 
 public:
-	Coupled_Operator(Model &model, bool isPrec)
+	BelosOp(Model &model, bool isPrec)
 		:
 		model_(model),
 		isPrec_(isPrec)		
 		{}
 
-	bool isPrec() { return isPrec_; }
+	bool isPrec() const { return isPrec_; } 
 
-	void ApplyInverse(Combined_MultiVec const &x, Combined_MultiVec &y)
-		{ model_->applyPrecon(x, y); }
+	void ApplyInverse(Combined_MultiVec const &x, Combined_MultiVec &y) const
+		{ model_.applyPrecon(x, y); }
 	
-	void ApplyMatrix(Combined_MultiVec const &x, Combined_MultiVec &y)
-		{ model_->applyMatrix(x, y); }	
+	void ApplyMatrix(Combined_MultiVec const &x, Combined_MultiVec &y) const
+		{ model_.applyMatrix(x, y); }	
 };
 
 //-----------------------------------------------------------------------------
 namespace Belos
 {
 	template <typename Model>
-	class OperatorTraits <double, Combined_MultiVec, Coupled_Operator<Model> >
+	class OperatorTraits <double, Combined_MultiVec, BelosOp<Model> >
 	{
 	public:
 		static void
-		Apply (Coupled_Operator<Model> const &Op,
+		Apply (BelosOp<Model> const &Op,
 			   Combined_MultiVec const &x,
 			   Combined_MultiVec &y,
 			   int trans = 0)
@@ -237,7 +241,7 @@ namespace Belos
 			}
 
 		static bool
-		HasApplyTranspose (const Coupled_Operator<Model> &Op) { return false; }
+		HasApplyTranspose (const BelosOp<Model> &Op) { return false; }
 	};
 } 
 
