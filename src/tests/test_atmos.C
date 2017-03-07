@@ -242,29 +242,40 @@ TEST(Atmosphere, Jacobian)
 }
 
 //------------------------------------------------------------------
-TEST(Atmosphere, solve)
+TEST(Atmosphere, Newton)
 {
 	Teuchos::RCP<Epetra_Vector> state = atmosPar->getState('V');
 	state->PutScalar(0.0);
-	atmosPar->setPar(0.01);
-	atmosPar->computeRHS();
-	atmosPar->computeJacobian();
+	atmosPar->setPar(0.1);
 
 	Teuchos::RCP<Epetra_Vector> b = atmosPar->getRHS('V');
 	Teuchos::RCP<Epetra_Vector> x = atmosPar->getSolution('V');
-	Teuchos::RCP<Epetra_Vector> r = atmosPar->getSolution('C');
+	
+	int maxit = 4;
+	for (int i = 0; i != maxit; ++i)
+	{
+		atmosPar->computeRHS();
+		atmosPar->computeJacobian();
 
-	atmosPar->applyMatrix(*x, *r);
-	r->Update(1.0, *b, -1.0);
-	INFO(" before solve  ||b-Ax|| = " << Utils::norm(r) );
+	
+	
+		Teuchos::RCP<Epetra_Vector> r = atmosPar->getSolution('C');
 
-	r->PutScalar(0.0);
-	atmosPar->solve(b);
-	atmosPar->applyMatrix(*x, *r);
-	r->Update(1.0, *b, -1.0);
-	INFO(" after solve   ||b-Ax|| = " << Utils::norm(r) );
+		INFO(" ||b|| = " << Utils::norm(b) );
+				
+		b->Scale(-1.0);
+		r->PutScalar(0.0);
+		atmosPar->solve(b);
+		atmosPar->applyMatrix(*x, *r);
+		r->Update(1.0, *b, -1.0);
+		INFO(" ||r|| = " << Utils::norm(r) );
 
-	EXPECT_NEAR(Utils::norm(r), 0, 1e-7);
+		state->Update(1.0, *x, 1.0);
+		
+		EXPECT_NEAR(Utils::norm(r), 0, 1e-7);
+	}
+	
+	EXPECT_NEAR(Utils::norm(b), 0, 1e-7);
 }
 
 //------------------------------------------------------------------
