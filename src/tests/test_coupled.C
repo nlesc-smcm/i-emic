@@ -190,8 +190,7 @@ TEST(CoupledModel, View)
 //------------------------------------------------------------------
 TEST(CoupledModel, Newton)
 {
-	// One step in a 'natural continuation'
-	
+	// One step in a 'natural continuation'	
 	// initialize state in model
 	std::shared_ptr<Combined_MultiVec> stateV = 
 		coupledModel->getState('V');

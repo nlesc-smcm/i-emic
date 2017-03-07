@@ -255,9 +255,7 @@ TEST(Atmosphere, Newton)
 	for (int i = 0; i != maxit; ++i)
 	{
 		atmosPar->computeRHS();
-		atmosPar->computeJacobian();
-
-	
+		atmosPar->computeJacobian();	
 	
 		Teuchos::RCP<Epetra_Vector> r = atmosPar->getSolution('C');
 

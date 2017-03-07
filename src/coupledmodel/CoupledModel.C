@@ -301,10 +301,10 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &v,
 	out.PutScalar(0.0);	// Initialize output
 
 	// ocean_->applyPrecon(*v.First(),  *out.First() );
-	// atmos_->applyPrecon(*v.Second(), *out.Second());
+	atmos_->applyPrecon(*v.Second(), *out.Second());
 
 	*out.First() = *v.First();	
-	*out.Second() = *v.Second();
+	// *out.Second() = *v.Second();
 
 	TIMER_STOP("CoupledModel: apply preconditioner2...");	
 }
