@@ -271,8 +271,11 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 	out.PutScalar(0.0);	  
 
 	// Apply the diagonal blocks
-	ocean_->applyMatrix(*v.First(),  *out.First());   // A*v1
-	atmos_->applyMatrix(*v.Second(), *out.Second());  // D*v2
+	// ocean_->applyMatrix(*v.First(),  *out.First());
+	atmos_->applyMatrix(*v.Second(), *out.Second());
+
+	*out.First()  = *v.First();
+	//*out.Second() = *v.Second();
 
 	if (mode == 'C') 
 	{
@@ -281,10 +284,10 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 		z.PutScalar(0.0);
 
 		// Apply coupling blocks
-		C12_.applyMatrix(*v.Second(), *z.First());
-		C21_.applyMatrix(*v.First(),  *z.Second());
-
-		out.Update(1.0, z, 1);  
+		// C12_.applyMatrix(*v.Second(), *z.First());
+		// C21_.applyMatrix(*v.First(),  *z.Second());
+		
+		out.Update(1.0, z, 1.0);  
 	}	
 	TIMER_STOP("CoupledModel: apply matrix...");
 }
@@ -297,8 +300,8 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &v,
 
 	out.PutScalar(0.0);	// Initialize output
 
-	//ocean_->applyPrecon(*v.First(),  *out.First() );
-	//atmos_->applyPrecon(*v.Second(), *out.Second());
+	// ocean_->applyPrecon(*v.First(),  *out.First() );
+	// atmos_->applyPrecon(*v.Second(), *out.Second());
 
 	*out.First() = *v.First();	
 	*out.Second() = *v.Second();

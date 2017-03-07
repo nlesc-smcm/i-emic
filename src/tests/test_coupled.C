@@ -1,7 +1,6 @@
 #include "TestDefinitions.H"
 
 //------------------------------------------------------------------
-
 namespace // local unnamed namespace (similar to static in C)
 {	
 	std::shared_ptr<Ocean>         ocean;
@@ -167,6 +166,28 @@ TEST(CoupledModel, applyMatrix)
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, View)
+{
+	std::shared_ptr<Combined_MultiVec> stateV = 
+		coupledModel->getState('V');
+
+	std::shared_ptr<Combined_MultiVec> rhsV = 
+		coupledModel->getRHS('V');
+
+ 	stateV->PutScalar(0.0);
+	coupledModel->computeRHS();	
+	
+ 	double norm1 = Utils::norm(rhsV);
+
+	stateV->PutScalar(1.0);
+	coupledModel->computeRHS();
+
+	double norm2 = Utils::norm(rhsV);
+
+	EXPECT_NE(norm1, norm2);
+}
+
+//------------------------------------------------------------------
 TEST(CoupledModel, Newton)
 {
 	// One step in a 'natural continuation'
@@ -177,26 +198,38 @@ TEST(CoupledModel, Newton)
 	stateV->PutScalar(0.0);
 
 	// set parameter
-	coupledModel->setPar(0.0001);
-
+	coupledModel->setPar(0.01);
+	
+	std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('V');
+	
 	// try to converge
 	int maxit = 10;
 	for (int i = 0; i != maxit; ++i)
 	{
+		stateV->First()->PutScalar(0.0);
+
 		coupledModel->computeRHS();
-		coupledModel->computeJacobian();
-	
-		std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('C');
-		b->Scale(-1.0);
 		
-		double normb = Utils::norm(b);
+		coupledModel->computeJacobian();	
+
+		b->Scale(-1.0);
+		b->First()->PutScalar(0.0);
+
+		INFO(" ocean F  = " << Utils::norm(b->First()) );
+		INFO(" atmos F  = " << Utils::norm(b->Second()) );
+		
+		double normb = Utils::norm(b);		
 		
 		coupledModel->solve(b);
 
 		std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');		
 		std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
 
-		INFO(" ||x||  = " << Utils::norm(stateV) );
+		INFO(" ocean x  = " << Utils::norm(stateV->First()) );
+		INFO(" atmos x  = " << Utils::norm(stateV->Second()) );
+		INFO(" ocean dx = " << Utils::norm(x->First()) );
+		INFO(" atmos dx = " << Utils::norm(x->Second()) );
+		
 		stateV->Update(1.0, *x, 1.0); // x = x + dx;
 		
 		coupledModel->applyMatrix(*x, *y);
@@ -209,9 +242,6 @@ TEST(CoupledModel, Newton)
 		INFO(" ocean ||r|| / ||b||  = " << Utils::norm(y->First()));
 		INFO(" atmos ||r|| / ||b||  = " << Utils::norm(y->Second()));
 		INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
-
-		INFO(" ||F|| = " << normb);
-		
 	}
 }
 

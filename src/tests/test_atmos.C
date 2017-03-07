@@ -242,6 +242,32 @@ TEST(Atmosphere, Jacobian)
 }
 
 //------------------------------------------------------------------
+TEST(Atmosphere, solve)
+{
+	Teuchos::RCP<Epetra_Vector> state = atmosPar->getState('V');
+	state->PutScalar(0.0);
+	atmosPar->setPar(0.01);
+	atmosPar->computeRHS();
+	atmosPar->computeJacobian();
+
+	Teuchos::RCP<Epetra_Vector> b = atmosPar->getRHS('V');
+	Teuchos::RCP<Epetra_Vector> x = atmosPar->getSolution('V');
+	Teuchos::RCP<Epetra_Vector> r = atmosPar->getSolution('C');
+
+	atmosPar->applyMatrix(*x, *r);
+	r->Update(1.0, *b, -1.0);
+	INFO(" before solve  ||b-Ax|| = " << Utils::norm(r) );
+
+	r->PutScalar(0.0);
+	atmosPar->solve(b);
+	atmosPar->applyMatrix(*x, *r);
+	r->Update(1.0, *b, -1.0);
+	INFO(" after solve   ||b-Ax|| = " << Utils::norm(r) );
+
+	EXPECT_NEAR(Utils::norm(r), 0, 1e-7);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
 	// Initialize the environment:
