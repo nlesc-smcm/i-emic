@@ -195,31 +195,39 @@ TEST(CoupledModel, Newton)
 	std::shared_ptr<Combined_MultiVec> stateV = 
 		coupledModel->getState('V');
 	stateV->PutScalar(0.0);
+						   
+	std::shared_ptr<Combined_MultiVec> solV = 
+		coupledModel->getSolution('V');
+	solV->PutScalar(0.0);
 
 	// set parameter
-	coupledModel->setPar(0.01);
-	
-	std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('V');
+	coupledModel->setPar(0.0001);
 	
 	// try to converge
-	int maxit = 10;
+	int maxit = 3;
+	std::shared_ptr<Combined_MultiVec> b;
 	for (int i = 0; i != maxit; ++i)
 	{
-		stateV->First()->PutScalar(0.0);
-
 		coupledModel->computeRHS();
 		
 		coupledModel->computeJacobian();	
 
-		b->Scale(-1.0);
-		b->First()->PutScalar(0.0);
-
-		INFO(" ocean F  = " << Utils::norm(b->First()) );
-		INFO(" atmos F  = " << Utils::norm(b->Second()) );
+		b = coupledModel->getRHS('C');
 		
-		double normb = Utils::norm(b);		
+		CHECK_ZERO(b->Scale(-1.0));
+		
+		double normb = Utils::norm(b);
+		double modelNorm = Utils::norm(coupledModel->getRHS('V'));
 		
 		coupledModel->solve(b);
+
+		modelNorm = Utils::norm(coupledModel->getRHS('V'));				
+
+		INFO(" norm b              " << normb);
+		INFO(" norm b in model     " << modelNorm);
+		
+		INFO(" ocean F  = " << Utils::norm(coupledModel->getRHS('V')->First()) );
+		INFO(" atmos F  = " << Utils::norm(coupledModel->getRHS('V')->Second()) );
 
 		std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');		
 		std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');

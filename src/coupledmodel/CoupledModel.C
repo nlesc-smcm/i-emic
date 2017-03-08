@@ -72,10 +72,10 @@ void CoupledModel::synchronize()
 	syncCtr_++; // Keep track of synchronizations
 	
 	// Set atmosphere data in the ocean
-	// ocean_->synchronize(atmos_);
+	ocean_->synchronize(atmos_);
 	
 	// Set ocean data in atmosphere
-   	// atmos_->synchronize(ocean_);
+   	atmos_->synchronize(ocean_);
 	
 	TIMER_STOP("CoupledModel: synchronize...");
 }
@@ -104,6 +104,14 @@ void CoupledModel::computeRHS()
 	
 	ocean_->computeRHS();	// Ocean
 	atmos_->computeRHS(); 	// Atmosphere
+
+#ifdef DEBUGGING_NEW
+	INFO("CoupledModel::computeRHS ocean ||rhs|| = " << Utils::norm(ocean_->getRHS('V')));
+	INFO("CoupledModel::computeRHS atmos ||rhs|| = " << Utils::norm(atmos_->getRHS('V')));
+
+	Utils::print(ocean_->getRHS('V'), "oceanRHS");
+	Utils::print(atmos_->getRHS('V'), "atmosRHS");
+#endif
 	
 	TIMER_STOP("CoupledModel compute RHS");
 }
@@ -218,10 +226,10 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 	Teuchos::RCP<Combined_MultiVec> rhsV =
 		Teuchos::rcp(&(*rhs), false);
 	
-	solView_->PutScalar(0.0);
+	solV->PutScalar(0.0);
 
 	bool set = problem_->setProblem(solV, rhsV);
-
+	
 	TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
 							   "*** Belos::LinearProblem failed to setup");
 	try
@@ -271,11 +279,12 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 	out.PutScalar(0.0);	  
 
 	// Apply the diagonal blocks
-	// ocean_->applyMatrix(*v.First(),  *out.First());
-	atmos_->applyMatrix(*v.Second(), *out.Second());
+	// *out.First()  = *v.First();
+	 ocean_->applyMatrix(*v.First(),  *out.First());
 
-	*out.First()  = *v.First();
 	//*out.Second() = *v.Second();
+	atmos_->applyMatrix(*v.Second(), *out.Second());
+				 
 
 	if (mode == 'C') 
 	{
@@ -300,11 +309,11 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &v,
 
 	out.PutScalar(0.0);	// Initialize output
 
-	// ocean_->applyPrecon(*v.First(),  *out.First() );
+	ocean_->applyPrecon(*v.First(),  *out.First() );
 	atmos_->applyPrecon(*v.Second(), *out.Second());
 
-	*out.First() = *v.First();	
-	// *out.Second() = *v.Second();
+	// *out.First() = *v.First();	
+	//*out.Second() = *v.Second();
 
 	TIMER_STOP("CoupledModel: apply preconditioner2...");	
 }

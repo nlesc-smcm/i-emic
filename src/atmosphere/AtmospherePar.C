@@ -414,8 +414,16 @@ void AtmospherePar::applyMatrix(Epetra_MultiVector const &in,
 void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
 								Epetra_MultiVector &out)
 {
-	solve(Teuchos::rcp(&in, false)); // -->
+
+	solveSubDomain(Teuchos::rcp(&in, false)); 
 	out = *getSolution('C'); // copy solution
+
+	// Epetra_MultiVector r = out;
+	// jac_->Apply(out, r);
+	// r.Update(1.0, in, -1.0);
+
+	// INFO("applyPrecon residual " << Utils::norm(&r));	
+
 }
 
 //==================================================================
