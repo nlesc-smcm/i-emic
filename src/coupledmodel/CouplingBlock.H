@@ -119,6 +119,8 @@ public:
 	//------------------------------------------------------------------
 	void applyMatrix(Epetra_MultiVector const &in, Epetra_MultiVector &out)
 		{
+			assert(block_->DomainMap().SameAs(in.Map()));
+			assert(block_->RangeMap().SameAs(out.Map()));
 			CHECK_ZERO(block_->Apply(in, out));
 		}
 

@@ -293,7 +293,7 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 		z.PutScalar(0.0);
 
 		// Apply coupling blocks
-		// C12_.applyMatrix(*v.Second(), *z.First());
+		C12_.applyMatrix(*v.Second(), *z.First());
 		// C21_.applyMatrix(*v.First(),  *z.Second());
 		
 		out.Update(1.0, z, 1.0);  

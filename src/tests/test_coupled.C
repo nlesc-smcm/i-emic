@@ -139,6 +139,9 @@ TEST(CoupledModel, computeJacobian)
 }
 
 //------------------------------------------------------------------
+// We need this information from THCM
+extern "C" _SUBROUTINE_(getooa)(double*, double*);
+
 TEST(CoupledModel, applyMatrix)
 {
 	bool failed = false;
@@ -155,6 +158,83 @@ TEST(CoupledModel, applyMatrix)
 		double normOut = Utils::norm(y);
 
 		EXPECT_NE(normIn, normOut);
+
+		// Test the coupling blocks in the matrix separately
+		
+		CouplingBlock<std::shared_ptr<Ocean>,
+					  std::shared_ptr<AtmospherePar> > C12(ocean, atmos);
+		
+		CouplingBlock<std::shared_ptr<AtmospherePar>,
+					  std::shared_ptr<Ocean> > C21(atmos, ocean);
+
+		Teuchos::RCP<Epetra_MultiVector> oceanVec = x->First();
+		Teuchos::RCP<Epetra_MultiVector> atmosVec = x->Second();
+		
+		double value[3] = {1.234, 2.12, -23.5};
+
+		// Test atmos -> ocean coupling
+		for (int v = 0; v != 3; ++v)
+		{
+			atmosVec->PutScalar(value[v]);
+			oceanVec->PutScalar(0.0);
+		
+			C12.applyMatrix(*atmosVec, *oceanVec);
+
+			// Get ocean parameters
+			double Ooa, Os;
+			FNAME(getooa)(&Ooa, &Os );
+
+			double max = 0;
+			double el;
+			for (int i = 0; i != oceanVec->MyLength(); ++i)
+			{
+				el = std::abs( (*oceanVec)[0][i] );
+				max = (el > max) ? el : max;
+			}
+
+			EXPECT_NEAR( std::abs(-Ooa * value[v]), max, 1e-7);
+		}
+
+		// Test ocean -> atmos coupling
+		for (int v = 0; v != 3; ++v)
+		{
+			oceanVec->PutScalar(0.0);
+			for (int i = 4; i < oceanVec->MyLength(); i+=6)
+			{
+				(*oceanVec)[0][i] = value[v];
+			}
+			
+			atmosVec->PutScalar(0.0);
+		
+			C21.applyMatrix(*oceanVec, *atmosVec);
+
+			double max = 0;
+			double el;
+			for (int i = 0; i != atmosVec->MyLength(); ++i)
+			{
+				el = std::abs( (*atmosVec)[0][i] );
+				max = (el > max) ? el : max;
+			}
+			EXPECT_NEAR( std::abs(value[v]), max, 1e-7);
+
+			oceanVec->PutScalar(0.0);
+			for (int i = 3; i < oceanVec->MyLength(); i+=6)
+			{
+				(*oceanVec)[0][i] = value[v];
+			}
+			
+			atmosVec->PutScalar(0.0);		
+			C21.applyMatrix(*oceanVec, *atmosVec);
+
+			max = 0;
+			for (int i = 0; i != atmosVec->MyLength(); ++i)
+			{
+				el = std::abs( (*atmosVec)[0][i] );
+				max = (el > max) ? el : max;
+			}
+			EXPECT_NE( std::abs(value[v]), max);
+
+		}		
 		
 	}
 	catch (...)
@@ -201,10 +281,10 @@ TEST(CoupledModel, Newton)
 	solV->PutScalar(0.0);
 
 	// set parameter
-	coupledModel->setPar(0.0001);
+	coupledModel->setPar(0.01);
 	
 	// try to converge
-	int maxit = 3;
+	int maxit = 4;
 	std::shared_ptr<Combined_MultiVec> b;
 	for (int i = 0; i != maxit; ++i)
 	{
@@ -249,7 +329,10 @@ TEST(CoupledModel, Newton)
 		INFO(" ocean ||r|| / ||b||  = " << Utils::norm(y->First()));
 		INFO(" atmos ||r|| / ||b||  = " << Utils::norm(y->Second()));
 		INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
+		INFO("               ||b||  = " << normb);
 	}
+	
+	EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.01);
 }
 
 

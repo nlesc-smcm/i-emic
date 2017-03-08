@@ -25,6 +25,7 @@
 #include <string>
 #include <math.h> // sqrt
 #include <time.h> // for seeding
+#include <sstream>
 
 #include "SuperVector.H"
 #include "CoupledModel.H"
