@@ -1,4 +1,4 @@
-g#ifndef COUPLEDMODEL_H
+#ifndef COUPLEDMODEL_H
 #define COUPLEDMODEL_H
 
 #include "Ocean.H"

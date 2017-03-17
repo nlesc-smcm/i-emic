@@ -3,14 +3,14 @@
 <!--                                   -->
 <!-- ********************************* -->
 
-<ParameterList name="solver"> 
+<ParameterList name="solver">
 
   <!-- ..................................................................-->
-  <!-- FGMRES (Belos) parameters                                         -->  
+  <!-- FGMRES (Belos) parameters                                         -->
   <!-- ..................................................................-->
-  <Parameter name="FGMRES tolerance" type="double" value="1e-2"/>
-  <Parameter name="FGMRES iterations" type="int" value="400"/>
+  <Parameter name="FGMRES tolerance" type="double" value="1e-1"/>
+  <Parameter name="FGMRES iterations" type="int" value="40"/>
   <Parameter name="FGMRES restarts" type="int" value="0"/>
-  <Parameter name="FGMRES output" type="int" value="1"/> <!-- Output Frequency -->
+  <Parameter name="FGMRES output" type="int" value="20"/> <!-- Output Frequency -->
 
 </ParameterList>

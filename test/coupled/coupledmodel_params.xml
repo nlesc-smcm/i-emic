@@ -3,7 +3,6 @@
 <!--                                   -->
 <!-- ********************************* -->
 
-
 <ParameterList name="CoupledModel parameters">
 
   <!-- Specify whether the coupled model should initialize with  -->
@@ -17,7 +16,7 @@
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-  
+
   <!-- Select the solving and synchronization mode.                                    -->
   <!-- Synchronization depends on the solving method.                                  -->
   <!--  mode 'D': decoupled, the systems are solved separately and the solutions are   -->
@@ -47,5 +46,5 @@
   <Parameter name="Use hashing" type="bool" value="true"/>
 
   <Parameter name="Rebuild preconditioner stride" type="int" value="1"/>
-  
+
 </ParameterList>
