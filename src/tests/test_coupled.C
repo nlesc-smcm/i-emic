@@ -281,10 +281,10 @@ TEST(CoupledModel, Newton)
 	solV->PutScalar(0.0);
 
 	// set parameter
-	coupledModel->setPar(0.01);
+	coupledModel->setPar(0.0001);
 	
 	// try to converge
-	int maxit = 4;
+	int maxit = 10;
 	std::shared_ptr<Combined_MultiVec> b;
 	for (int i = 0; i != maxit; ++i)
 	{
