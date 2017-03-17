@@ -281,7 +281,7 @@ TEST(CoupledModel, Newton)
     solV->PutScalar(0.0);
 
     // set parameter
-    coupledModel->setPar(0.01);
+    coupledModel->setPar(0.0001);
 
     // try to converge
     int maxit = 3;
@@ -294,20 +294,17 @@ TEST(CoupledModel, Newton)
 
         b = coupledModel->getRHS('C');
 
+        INFO(" ocean F  = " << Utils::norm(coupledModel->getRHS('V')->First()) );
+        INFO(" atmos F  = " << Utils::norm(coupledModel->getRHS('V')->Second()) );
+
         CHECK_ZERO(b->Scale(-1.0));
 
         double normb = Utils::norm(b);
-        double modelNorm = Utils::norm(coupledModel->getRHS('V'));
 
         coupledModel->solve(b);
 
-        modelNorm = Utils::norm(coupledModel->getRHS('V'));
-
         INFO(" norm b              " << normb);
-        INFO(" norm b in model     " << modelNorm);
 
-        INFO(" ocean F  = " << Utils::norm(coupledModel->getRHS('V')->First()) );
-        INFO(" atmos F  = " << Utils::norm(coupledModel->getRHS('V')->Second()) );
 
         std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');
         std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
@@ -329,7 +326,6 @@ TEST(CoupledModel, Newton)
         INFO(" ocean ||r|| / ||b||  = " << Utils::norm(y->First()));
         INFO(" atmos ||r|| / ||b||  = " << Utils::norm(y->Second()));
         INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
-        INFO("               ||b||  = " << normb);
     }
 
     EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.01);
