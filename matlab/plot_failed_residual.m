@@ -1,123 +1,123 @@
 function [] = plot_failed_residual(fname, maskname, level)
 
-  if nargin < 1
-	fname = 'residual.ocean';
-  end
-  if nargin < 2
-	maskname = 'fort.44';
-  end
+    if nargin < 1
+        fname = 'residual.ocean';
+    end
+    if nargin < 2
+        maskname = 'fort.44';
+    end
 
-  if isempty(maskname)
-	
-  else
-	
-  end
-  
-  [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
-  readfort44(maskname);
-  
-  if nargin < 3
-	level = l;
-  end
-  
-  fprintf(' using %s and %s at level %d\n', fname, maskname, level);
+    if isempty(maskname)
 
-  RtD   = 180/pi;              %[-]     Radians to degrees
-  
+    else
 
-  res  = load(fname);
+    end
 
-  sol = zeros(nun,n,m,l+la);
-  idx = 1;
-  for k = 1:l+la
-	for j = 1:m
-	  for i = 1:n
-		for XX = 1:nun
-		  sol(XX,i,j,k) = res(idx);
-		  idx = idx + 1;
-		end
-	  end
-	end
-  end
+    [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
+        readfort44(maskname);
 
-  [u,v,w,p,T,S] = extractsol(sol);
+    if nargin < 3
+        level = l;
+    end
+
+    fprintf(' using %s and %s at level %d\n', fname, maskname, level);
+
+    RtD   = 180/pi;              %[-]     Radians to degrees
 
 
-  land = landm(2:end-1,2:end-1,2:l+1); 
+    res  = load(fname);
 
-  figure(1);
-  mx = max(max(abs(u(:,:,level))'));
-  img = -mx*2*land(:,:,level)' + u(:,:,level)';
-  imagesc(RtD*x,RtD*(y), img);
-  set(gca,'ydir','normal');
+    sol = zeros(nun,n,m,l+la);
+    idx = 1;
+    for k = 1:l+la
+        for j = 1:m
+            for i = 1:n
+                for XX = 1:nun
+                    sol(XX,i,j,k) = res(idx);
+                    idx = idx + 1;
+                end
+            end
+        end
+    end
 
-  colormap(parula)
-  xlabel('Longitude')
-  ylabel('Latitude');
-  colorbar
-  title('u')  
+    [u,v,w,p,T,S] = extractsol(sol);
 
-  figure(2);
-  mx = max(max(abs(v(:,:,level))'));
-  img = -mx*2*land(:,:,level)' + v(:,:,level)';
-  imagesc(RtD*x,RtD*(y), img);
-  colorbar
-  title('v')
-  set(gca,'ydir','normal');
-  colormap(parula)
-  xlabel('Longitude')
-  ylabel('Latitude');
 
-  figure(3);
-  mx = max(max(abs(w(:,:,level))'));
-  img = -mx*2*land(:,:,level)' + w(:,:,level)';
-  imagesc(RtD*x,RtD*(y), img);
-  colorbar
-  title('w')
-  set(gca,'ydir','normal');
-  colormap(parula)
-  xlabel('Longitude')
-  ylabel('Latitude');
+    land = landm(2:end-1,2:end-1,2:l+1);
 
-  figure(4);
-  mx  = max(max(abs(p(:,:,level))'));
-  img = -mx*2*land(:,:,level)' + p(:,:,level)';
-  imagesc(RtD*x,RtD*(y), img);
-  colorbar
-  title('p')
-  set(gca,'ydir','normal');
-  colormap(parula)
-  xlabel('Longitude')
-  ylabel('Latitude');
+    figure(1);
+    mx = max(max(abs(u(:,:,level))'));
+    img = -mx*2*land(:,:,level)' + u(:,:,level)';
+    imagesc(RtD*x,RtD*(y), img);
+    set(gca,'ydir','normal');
 
-  figure(5);
-  mx  = max(max(abs(T(:,:,level))'));
-  img = -mx*2*land(:,:,level)' + T(:,:,level)';
-  imagesc(RtD*x,RtD*(y), img);
-  colorbar
-  title('T')
-  set(gca,'ydir','normal');
-  colormap(parula)
-  xlabel('Longitude')
-  ylabel('Latitude');
+    colormap(parula)
+    xlabel('Longitude')
+    ylabel('Latitude');
+    colorbar
+    title('u')
 
-  figure(6);
-  mx  =  max(max(abs(S(:,:,level))'));
-  img = -mx*2*land(:,:,level)' + S(:,:,level)';
-  imagesc(RtD*x,RtD*(y), img);
-  colorbar
-  title('S')
-  set(gca,'ydir','normal');
-  colormap(parula)
-  xlabel('Longitude')
-  ylabel('Latitude');
+    figure(2);
+    mx = max(max(abs(v(:,:,level))'));
+    img = -mx*2*land(:,:,level)' + v(:,:,level)';
+    imagesc(RtD*x,RtD*(y), img);
+    colorbar
+    title('v')
+    set(gca,'ydir','normal');
+    colormap(parula)
+    xlabel('Longitude')
+    ylabel('Latitude');
 
-  fprintf('|u| = %e\n',norm(u(:)));
-  fprintf('|v| = %e\n',norm(v(:)));
-  fprintf('|w| = %e\n',norm(w(:)));
-  fprintf('|p| = %e\n',norm(p(:)));
-  fprintf('|T| = %e\n',norm(T(:)));
-  fprintf('|S| = %e\n',norm(S(:)));
-  fprintf('---------\n');
-  fprintf('|X| = %e\n',norm(res(:)));
+    figure(3);
+    mx = max(max(abs(w(:,:,level))'));
+    img = -mx*2*land(:,:,level)' + w(:,:,level)';
+    imagesc(RtD*x,RtD*(y), img);
+    colorbar
+    title('w')
+    set(gca,'ydir','normal');
+    colormap(parula)
+    xlabel('Longitude')
+    ylabel('Latitude');
+
+    figure(4);
+    mx  = max(max(abs(p(:,:,level))'));
+    img = -mx*2*land(:,:,level)' + p(:,:,level)';
+    imagesc(RtD*x,RtD*(y), img);
+    colorbar
+    title('p')
+    set(gca,'ydir','normal');
+    colormap(parula)
+    xlabel('Longitude')
+    ylabel('Latitude');
+
+    figure(5);
+    mx  = max(max(abs(T(:,:,level))'));
+    img = -mx*2*land(:,:,level)' + T(:,:,level)';
+    imagesc(RtD*x,RtD*(y), img);
+    colorbar
+    title('T')
+    set(gca,'ydir','normal');
+    colormap(parula)
+    xlabel('Longitude')
+    ylabel('Latitude');
+
+    figure(6);
+    mx  =  max(max(abs(S(:,:,level))'));
+    img = -mx*2*land(:,:,level)' + S(:,:,level)';
+    imagesc(RtD*x,RtD*(y), img);
+    colorbar
+    title('S')
+    set(gca,'ydir','normal');
+    colormap(parula)
+    xlabel('Longitude')
+    ylabel('Latitude');
+
+    fprintf('|u| = %e\n',norm(u(:)));
+    fprintf('|v| = %e\n',norm(v(:)));
+    fprintf('|w| = %e\n',norm(w(:)));
+    fprintf('|p| = %e\n',norm(p(:)));
+    fprintf('|T| = %e\n',norm(T(:)));
+    fprintf('|S| = %e\n',norm(S(:)));
+    fprintf('---------\n');
+    fprintf('|X| = %e\n',norm(res(:)));
 end
