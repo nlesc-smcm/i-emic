@@ -5,475 +5,483 @@
 //==================================================================
 // Constructor
 AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
-	:
-	params_          (params),
-	comm_            (comm),
-	n_               (params->get("Global Grid-Size n", 16)),
-	m_               (params->get("Global Grid-Size m", 16)),
-	l_               (params->get("Global Grid-Size l", 1)),
-	periodic_        (params->get("Periodic", false)),
-	inputFile_       (params->get("Input file", "atmos_input.h5")),
-	outputFile_      (params->get("Output file", "atmos_output.h5")),
-	loadState_       (params->get("Load state", false)),
-	saveState_       (params->get("Save state", false))
+    :
+    params_          (params),
+    comm_            (comm),
+    n_               (params->get("Global Grid-Size n", 16)),
+    m_               (params->get("Global Grid-Size m", 16)),
+    l_               (params->get("Global Grid-Size l", 1)),
+    periodic_        (params->get("Periodic", false)),
+    inputFile_       (params->get("Input file", "atmos_input.h5")),
+    outputFile_      (params->get("Output file", "atmos_output.h5")),
+    loadState_       (params->get("Load state", false)),
+    saveState_       (params->get("Save state", false))
 {
-	INFO("AtmospherePar: constructor...");
+    INFO("AtmospherePar: constructor...");
 
-	// Define degrees of freedom
-	dof_ = ATMOS_NUN_;
-	dim_ = n_ * m_ * l_ * dof_;
-	
-	// Define domain
-	xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
-	xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
-	ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
-	ymax_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
+    // Define degrees of freedom
+    dof_ = ATMOS_NUN_;
+    dim_ = n_ * m_ * l_ * dof_;
 
-	// Create domain object
-	domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, l_, dof_,
-											 xmin_, xmax_, ymin_, ymax_,
-											 periodic_, 1.0, comm_));
+    // Define domain
+    xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
+    xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
+    ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
+    ymax_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
 
-	// Compute 2D decomposition
-	domain_->Decomp2D();
+    // Create domain object
+    domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, l_, dof_,
+                                             xmin_, xmax_, ymin_, ymax_,
+                                             periodic_, 1.0, comm_));
 
-	// Obtain local dimensions
-	double xminloc = domain_->XminLoc();
-	double xmaxloc = domain_->XmaxLoc();
-	double yminloc = domain_->YminLoc();
-	double ymaxloc = domain_->YmaxLoc();
+    // Compute 2D decomposition
+    domain_->Decomp2D();
 
-	// Obtain local grid dimensions
-	int nloc = domain_->LocalN();
-	int mloc = domain_->LocalM();
-	int lloc = domain_->LocalL();
+    // Obtain local dimensions
+    double xminloc = domain_->XminLoc();
+    double xmaxloc = domain_->XmaxLoc();
+    double yminloc = domain_->YminLoc();
+    double ymaxloc = domain_->YmaxLoc();
 
-	// Obtain overlapping and non-overlapping maps	
-	assemblyMap_ = domain_->GetAssemblyMap();
-	standardMap_ = domain_->GetStandardMap();
+    // Obtain local grid dimensions
+    int nloc = domain_->LocalN();
+    int mloc = domain_->LocalM();
+    int lloc = domain_->LocalL();
 
-	// Obtain special maps
-	// depth-averaged, single unknown for ocean surface temperature
-	standardSurfaceMap_ = domain_->CreateStandardMap(1, true);
-	assemblySurfaceMap_ = domain_->CreateAssemblyMap(1, true);
+    // Obtain overlapping and non-overlapping maps
+    assemblyMap_ = domain_->GetAssemblyMap();
+    standardMap_ = domain_->GetStandardMap();
 
-	// Create overlapping and non-overlapping vectors
-	state_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
-	rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
-	sol_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
-    sst_       	= Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    // Obtain special maps
+    // depth-averaged, single unknown for ocean surface temperature
+    standardSurfaceMap_ = domain_->CreateStandardMap(1, true);
+    assemblySurfaceMap_ = domain_->CreateAssemblyMap(1, true);
 
-	localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
-	localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
-	localSol_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
-	localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    // Create overlapping and non-overlapping vectors
+    state_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+    rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+    sol_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+    sst_            = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
-	// create graph
-	createMatrixGraph();
-		
-	jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
+    localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localSol_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
-	// Periodicity is handled by Atmosphere if there is a single
-	// core in the x-direction. 
-	Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
-	bool perio = (periodic_ && xComm->NumProc() == 1);
-	
-	// Create local Atmosphere object
-	atmos_ = std::make_shared<Atmosphere>(nloc, mloc, lloc, perio,
-										  xminloc, xmaxloc, yminloc, ymaxloc,
-										  params_);
+    // create graph
+    createMatrixGraph();
 
-	surfmask_ = std::make_shared<std::vector<int> >();
-	
-	INFO("AtmospherePar: constructor done");
+    jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
+
+    // Periodicity is handled by Atmosphere if there is a single
+    // core in the x-direction.
+    Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
+    bool perio = (periodic_ && xComm->NumProc() == 1);
+
+    // Create local Atmosphere object
+    atmos_ = std::make_shared<Atmosphere>(nloc, mloc, lloc, perio,
+                                          xminloc, xmaxloc, yminloc, ymaxloc,
+                                          params_);
+
+    surfmask_ = std::make_shared<std::vector<int> >();
+
+    INFO("AtmospherePar: constructor done");
 }
 
 //==================================================================
 void AtmospherePar::computeRHS()
 {
-	INFO("AtmosepherePar: computeRHS...");
+    INFO("AtmosepherePar: computeRHS...");
 
-	// Create assembly state
-	domain_->Solve2Assembly(*state_, *localState_);
-	
-	// local problem size
-	int numMyElements = assemblyMap_->NumMyElements();
+    // Create assembly state
+    domain_->Solve2Assembly(*state_, *localState_);
 
-	std::shared_ptr<std::vector<double> > localState =
-		std::make_shared<std::vector<double> >(numMyElements, 0.0);
-	
-	localState_->ExtractCopy(&(*localState)[0], numMyElements);
+    // local problem size
+    int numMyElements = assemblyMap_->NumMyElements();
 
-	atmos_->setState(localState);
+    std::shared_ptr<std::vector<double> > localState =
+        std::make_shared<std::vector<double> >(numMyElements, 0.0);
 
-	// compute local rhs and check bounds
-	atmos_->computeRHS();
- 	std::shared_ptr<std::vector<double> > localRHS = atmos_->getRHS('V');
-	
-	if ((int) localRHS->size() != numMyElements)
-	{
-		ERROR("RHS incorrect size", __FILE__, __LINE__);
-	}
+    localState_->ExtractCopy(&(*localState)[0], numMyElements);
 
-	// obtain view
-	double *rhs_tmp;
-	localRHS_->ExtractView(&rhs_tmp);
+    atmos_->setState(localState);
 
-	// fill view
-	for (int i = 0; i != numMyElements; ++i)
-	{
-		rhs_tmp[i] = (*localRHS)[i];
-	}
+    // compute local rhs and check bounds
+    atmos_->computeRHS();
+    std::shared_ptr<std::vector<double> > localRHS = atmos_->getRHS('V');
 
-	// set datamember
-	domain_->Assembly2Solve(*localRHS_, *rhs_);
-		
-	INFO("AtmospherePar: computeRHS done");
+    if ((int) localRHS->size() != numMyElements)
+    {
+        ERROR("RHS incorrect size", __FILE__, __LINE__);
+    }
+
+    // obtain view
+    double *rhs_tmp;
+    localRHS_->ExtractView(&rhs_tmp);
+
+    // fill view
+    for (int i = 0; i != numMyElements; ++i)
+    {
+        rhs_tmp[i] = (*localRHS)[i];
+    }
+
+    // set datamember
+    domain_->Assembly2Solve(*localRHS_, *rhs_);
+
+    INFO("AtmospherePar: computeRHS done");
 }
 
 //==================================================================
 void AtmospherePar::idealized()
 {
-	// initialize local rhs with idealized values
-	atmos_->idealized();
+    // initialize local rhs with idealized values
+    atmos_->idealized();
 
-	// local problem size
-	int numMyElements = assemblyMap_->NumMyElements();
+    // local problem size
+    int numMyElements = assemblyMap_->NumMyElements();
 
-	// obtain view of assembly state
-	double *state_tmp;
-	localState_->ExtractView(&state_tmp);
+    // obtain view of assembly state
+    double *state_tmp;
+    localState_->ExtractView(&state_tmp);
 
-	// obtain local state and check bounds
-	std::shared_ptr<std::vector<double> > state = atmos_->getState('V');
-	if ((int) state->size() != numMyElements)
-	{
-		ERROR("state incorrect size", __FILE__, __LINE__);
-	}
+    // obtain local state and check bounds
+    std::shared_ptr<std::vector<double> > state = atmos_->getState('V');
+    if ((int) state->size() != numMyElements)
+    {
+        ERROR("state incorrect size", __FILE__, __LINE__);
+    }
 
-	// fill assembly view with local state
-	for (int i = 0; i != numMyElements; ++i)
-	{
-		state_tmp[i] = (*state)[i];
-	}
-	
-	// set solvemap state
-	domain_->Assembly2Solve(*localState_, *state_);
-	
+    // fill assembly view with local state
+    for (int i = 0; i != numMyElements; ++i)
+    {
+        state_tmp[i] = (*state)[i];
+    }
+
+    // set solvemap state
+    domain_->Assembly2Solve(*localState_, *state_);
+
 }
 
 //==================================================================
 Teuchos::RCP<Epetra_Vector> AtmospherePar::getVector(char mode, Teuchos::RCP<Epetra_Vector> vec)
 {
-	if (mode == 'C') // copy
-	{
-    	Teuchos::RCP<Epetra_Vector> copy = Teuchos::rcp(new Epetra_Vector(*vec));
-		return copy;
+    if (mode == 'C') // copy
+    {
+        Teuchos::RCP<Epetra_Vector> copy = Teuchos::rcp(new Epetra_Vector(*vec));
+        return copy;
     }
-	else if (mode == 'V')
-		return vec;
-	else
-	{
-		WARNING("Invalid mode", __FILE__, __LINE__);
-		return Teuchos::null;
-	}
-	
+    else if (mode == 'V')
+        return vec;
+    else
+    {
+        WARNING("Invalid mode", __FILE__, __LINE__);
+        return Teuchos::null;
+    }
+
 }
 
 //==================================================================
 Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
 {
-	// for now we just return a copy of the state
-	// when the atmosphere grows we need an import operation here
+    // for now we just return a copy of the state
+    // when the atmosphere grows we need an import operation here
 
-	return getVector('C', state_);
+    return getVector('C', state_);
 }
 
 //==================================================================
 std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> ocean)
 {
-	// The contribution of the ocean in the atmosphere is a
-	// diagonal of ones, see the forcing.
-	
-	// check surfmask
-	assert((int) surfmask_->size() == m_*n_);
+    // The contribution of the ocean in the atmosphere is a
+    // diagonal of ones, see the forcing.
 
-	// We are going to create a 0-based global CRS matrix for this block
-	std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
+    // check surfmask
+    assert((int) surfmask_->size() == m_*n_);
 
-	int el_ctr = 0;
-	int T = 5; // in THCM temperature is the fifth unknown 
+    // We are going to create a 0-based global CRS matrix for this block
+    std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
-	// loop over our unknowns
-	for (int j = 0; j != m_; ++j)
-		for (int i = 0; i != n_; ++i)
-			for (int xx = ATMOS_TT_; xx <= ATMOS_TT_; ++xx)
-			{
-				block->beg.push_back(el_ctr);
-				if ( (*surfmask_)[j*n_+i] == 0 ) // non-land
-				{
-					block->co.push_back(1.0);
-					block->jco.push_back(ocean->interface_row(i,j,T));
-					el_ctr++;
-				}
-			}
-	block->beg.push_back(el_ctr);
-	
-	assert( (int) block->co.size() == block->beg.back());
-	
-	return block;
+    int el_ctr = 0;
+    int T = 5; // in THCM temperature is the fifth unknown
+
+    // loop over our unknowns
+    for (int j = 0; j != m_; ++j)
+        for (int i = 0; i != n_; ++i)
+            for (int xx = ATMOS_TT_; xx <= ATMOS_TT_; ++xx)
+            {
+                block->beg.push_back(el_ctr);
+                if ( (*surfmask_)[j*n_+i] == 0 ) // non-land
+                {
+                    block->co.push_back(1.0);
+                    block->jco.push_back(ocean->interface_row(i,j,T));
+                    el_ctr++;
+                }
+            }
+    block->beg.push_back(el_ctr);
+
+    assert( (int) block->co.size() == block->beg.back());
+
+    return block;
 }
 
 //==================================================================
 void AtmospherePar::synchronize(std::shared_ptr<Ocean> ocean)
 {
-	// Get ocean surface temperature
-	Teuchos::RCP<Epetra_Vector> sst = ocean->interfaceT();
+    // Get ocean surface temperature
+    Teuchos::RCP<Epetra_Vector> sst = ocean->interfaceT();
 
-	setOceanTemperature(sst);
+    setOceanTemperature(sst);
 }
 
 //==================================================================
 void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
 {
-	// Replace map if necessary
-	if (!(sst->Map().SameAs(*standardSurfaceMap_)))
-	{
-		CHECK_ZERO(sst->ReplaceMap(*standardSurfaceMap_));
-	}
+    // Replace map if necessary
+    if (!(sst->Map().SameAs(*standardSurfaceMap_)))
+    {
+        CHECK_ZERO(sst->ReplaceMap(*standardSurfaceMap_));
+    }
 
-	// assign to our own datamember
-	sst_ = sst;
+    // assign to our own datamember
+    sst_ = sst;
 
-	// create assembly 
-	domain_->Solve2Assembly(*sst_, *localSST_);
+    // create assembly
+    domain_->Solve2Assembly(*sst_, *localSST_);
 
-	// local vector size
-	int numMyElements = assemblySurfaceMap_->NumMyElements();
+    // local vector size
+    int numMyElements = assemblySurfaceMap_->NumMyElements();
 
-	std::shared_ptr<std::vector<double> > localSST =
-		std::make_shared<std::vector<double> >(numMyElements, 0.0);
+    std::shared_ptr<std::vector<double> > localSST =
+        std::make_shared<std::vector<double> >(numMyElements, 0.0);
 
-	localSST_->ExtractCopy(&(*localSST)[0], numMyElements);
-	atmos_->setOceanTemperature(*localSST);	
+    localSST_->ExtractCopy(&(*localSST)[0], numMyElements);
+    atmos_->setOceanTemperature(*localSST);
 }
 
 //==================================================================
 void AtmospherePar::setLandMask(Utils::MaskStruct const &mask)
 {
-	// create global surface mask
-	// we do the same thing for the local mask in the Atmosphere object 
-	surfmask_->clear();
+    // create global surface mask
+    // we do the same thing for the local mask in the Atmosphere object
+    surfmask_->clear();
 
-	if ((int) mask.global_surface->size() < (n_*m_))
-	{
-		ERROR("mask.global_surface->size() not ok:",  __FILE__, __LINE__);
-	}
-	else // we trust surfm
-	{
-		surfmask_ = mask.global_surface;
-	}
-	
+    if ((int) mask.global_surface->size() < (n_*m_))
+    {
+        ERROR("mask.global_surface->size() not ok:",  __FILE__, __LINE__);
+    }
+    else // we trust surfm
+    {
+        surfmask_ = mask.global_surface;
+    }
+
 #ifdef DEBUGGING_NEW
-	INFO("Printing surface mask available in (global) Atmosphere");
-	std::ostringstream string;
-	std::ofstream smask;
-	smask.open("surfmask");
+    INFO("Printing surface mask available in (global) Atmosphere");
+    std::ostringstream string;
+    std::ofstream smask;
+    smask.open("surfmask");
 
-	std::vector<std::string> stringvec;
-	int ctr = 0;
-	for (auto &l: *surfmask_)
-	{
-		ctr++;
-		string << l;
-		smask  << l << '\n'; // write to file
-		if (ctr % n_ == 0)
-		{
-			stringvec.push_back(string.str());
-			string.str("");
-			string.clear();
-		}
-	}
-	smask.close();
+    std::vector<std::string> stringvec;
+    int ctr = 0;
+    for (auto &l: *surfmask_)
+    {
+        ctr++;
+        string << l;
+        smask  << l << '\n'; // write to file
+        if (ctr % n_ == 0)
+        {
+            stringvec.push_back(string.str());
+            string.str("");
+            string.clear();
+        }
+    }
+    smask.close();
 
-	// Reverse print to output file
-	for (auto i = stringvec.rbegin(); i != stringvec.rend(); ++i)
-		INFO(i->c_str());
-#endif 
-	
-	// create rcp
-	int numMyElements = mask.local->MyLength();
+    // Reverse print to output file
+    for (auto i = stringvec.rbegin(); i != stringvec.rend(); ++i)
+        INFO(i->c_str());
+#endif
 
-	std::shared_ptr<std::vector<int> > landmask =
-		std::make_shared<std::vector<int> >(numMyElements, 0);
-	
-	CHECK_ZERO(mask.local->ExtractCopy(&(*landmask)[0]));
+    // create rcp
+    int numMyElements = mask.local->MyLength();
 
-	atmos_->setSurfaceMask(landmask);
+    std::shared_ptr<std::vector<int> > landmask =
+        std::make_shared<std::vector<int> >(numMyElements, 0);
+
+    CHECK_ZERO(mask.local->ExtractCopy(&(*landmask)[0]));
+
+    atmos_->setSurfaceMask(landmask);
 }
 
 //==================================================================
 void AtmospherePar::computeJacobian()
 {
-	// set all entries to zero
-	CHECK_ZERO(jac_->PutScalar(0.0));
+    // set all entries to zero
+    CHECK_ZERO(jac_->PutScalar(0.0));
 
-	// compute jacobian in local atmosphere
-	atmos_->computeJacobian();
-	
-	// obtain 1-based CRS matrix from local atmosphere
-	std::shared_ptr<Utils::CRSMat> localJac =
-		atmos_->getJacobian();
+    // compute jacobian in local atmosphere
+    atmos_->computeJacobian();
 
-	// max nonzeros per row
-	const int maxnnz = ATMOS_NUN_ * ATMOS_NP_ + 1;
+    // obtain 1-based CRS matrix from local atmosphere
+    std::shared_ptr<Utils::CRSMat> localJac =
+        atmos_->getJacobian();
 
-	// indices array
-	int indices[maxnnz];
-	
-	// values array
-	double values[maxnnz];
+    // max nonzeros per row
+    const int maxnnz = ATMOS_NUN_ * ATMOS_NP_ + 1;
 
-	// check size
-	int numMyElements = assemblyMap_->NumMyElements();
-	assert(numMyElements == (int) localJac->beg.size() - 1);
+    // indices array
+    int indices[maxnnz];
 
-	// loop over local elements
-	int index, numentries;
-	for (int i = 0; i < numMyElements; ++i)
-	{
-		// ignore ghost rows
-		if (!domain_->IsGhost(i, ATMOS_NUN_))
-		{
-			// obtain indices and values from CRS container
-			index = localJac->beg[i]; // beg contains 1-based indices!
-			numentries = localJac->beg[i+1] - index;
-			for (int j = 0; j < numentries; ++j)
-			{
-				indices[j] = assemblyMap_->GID(localJac->jco[index-1+j] - 1);
-				values[j]  = localJac->co[index-1+j];
-			}
+    // values array
+    double values[maxnnz];
 
-			// put values in Jacobian
-			int ierr = jac_->ReplaceGlobalValues(assemblyMap_->GID(i),
-												 numentries,
-												 values, indices);
-			// debugging
-			if (ierr != 0)
-			{
-				for (int ii = 0; ii < numentries; ++ii)
-				{
-					std::cout << "proc" << comm_->MyPID()
-							  << " entries: (" << indices[ii]
-							  << " " << values[ii] << ")" <<  std::endl;
-					
-					std::cout << "proc" << comm_->MyPID() << " "
-							  << assemblyMap_->GID(i) << std::endl;
-					
-					INFO(" debug info: " << indices[ii] << " " << values[ii]);
-				}
-				
-				INFO(" GRID: "<< assemblyMap_->GID(i));
-				INFO(" number of entries: " << numentries);
-				INFO(" numMyElements: " << numMyElements);
-				INFO(" is ghost " << domain_->IsGhost(i, ATMOS_NUN_));
-				INFO(" maxnnz: " << maxnnz);
+    // check size
+    int numMyElements = assemblyMap_->NumMyElements();
+    assert(numMyElements == (int) localJac->beg.size() - 1);
 
-				CHECK_ZERO(jac_->ExtractGlobalRowCopy(assemblyMap_->GID(i),
-													  maxnnz, numentries,
-													  values, indices));
-				INFO("\noriginal row: ");
-				INFO("number of entries: "<<numentries);
+    // loop over local elements
+    int index, numentries;
+    for (int i = 0; i < numMyElements; ++i)
+    {
+        // ignore ghost rows
+        if (!domain_->IsGhost(i, ATMOS_NUN_))
+        {
+            // obtain indices and values from CRS container
+            index = localJac->beg[i]; // beg contains 1-based indices!
+            numentries = localJac->beg[i+1] - index;
+            for (int j = 0; j < numentries; ++j)
+            {
+                indices[j] = assemblyMap_->GID(localJac->jco[index-1+j] - 1);
+                values[j]  = localJac->co[index-1+j];
+            }
 
-				for (int ii = 0; ii < numentries; ++ii)
-				{
-					std::cout << "proc" << comm_->MyPID()
-							  << " entries: (" << indices[ii]
-							  << " " << values[ii] << ")" <<  std::endl;
-					INFO(" debug info: " << indices[ii] << " " << values[ii]);
-				}
+            // put values in Jacobian
+            int ierr = jac_->ReplaceGlobalValues(assemblyMap_->GID(i),
+                                                 numentries,
+                                                 values, indices);
+            // debugging
+            if (ierr != 0)
+            {
+                for (int ii = 0; ii < numentries; ++ii)
+                {
+                    std::cout << "proc" << comm_->MyPID()
+                              << " entries: (" << indices[ii]
+                              << " " << values[ii] << ")" <<  std::endl;
 
-				INFO ("Error in ReplaceGlobalValues: " << ierr);
-				ERROR("Error in ReplaceGlobalValues", __FILE__, __LINE__);
-			}
-		}
-	}
+                    std::cout << "proc" << comm_->MyPID() << " "
+                              << assemblyMap_->GID(i) << std::endl;
 
-	// Finalize matrix
-	CHECK_ZERO(jac_->FillComplete());
+                    INFO(" debug info: " << indices[ii] << " " << values[ii]);
+                }
+
+                INFO(" GRID: "<< assemblyMap_->GID(i));
+                INFO(" number of entries: " << numentries);
+                INFO(" numMyElements: " << numMyElements);
+                INFO(" is ghost " << domain_->IsGhost(i, ATMOS_NUN_));
+                INFO(" maxnnz: " << maxnnz);
+
+                CHECK_ZERO(jac_->ExtractGlobalRowCopy(assemblyMap_->GID(i),
+                                                      maxnnz, numentries,
+                                                      values, indices));
+                INFO("\noriginal row: ");
+                INFO("number of entries: "<<numentries);
+
+                for (int ii = 0; ii < numentries; ++ii)
+                {
+                    std::cout << "proc" << comm_->MyPID()
+                              << " entries: (" << indices[ii]
+                              << " " << values[ii] << ")" <<  std::endl;
+                    INFO(" debug info: " << indices[ii] << " " << values[ii]);
+                }
+
+                INFO ("Error in ReplaceGlobalValues: " << ierr);
+                ERROR("Error in ReplaceGlobalValues", __FILE__, __LINE__);
+            }
+        }
+    }
+
+    // Finalize matrix
+    CHECK_ZERO(jac_->FillComplete());
 }
 
 //==================================================================
 void AtmospherePar::applyMatrix(Epetra_MultiVector const &in,
-								Epetra_MultiVector &out)
+                                Epetra_MultiVector &out)
 {
-	jac_->Apply(in, out);
+    jac_->Apply(in, out);
 }
 
 //==================================================================
 void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
-								Epetra_MultiVector &out)
+                                Epetra_MultiVector &out)
 {
 
-	solveSubDomain(Teuchos::rcp(&in, false)); 
-	out = *getSolution('C'); // copy solution
+    // solveSubDomain(Teuchos::rcp(&in, false));
+    // out = *getSolution('C'); // copy solution
 
-	// Epetra_MultiVector r = out;
-	// jac_->Apply(out, r);
-	// r.Update(1.0, in, -1.0);
+    // Epetra_MultiVector r = out;
+    // jac_->Apply(out, r);
+    // r.Update(1.0, in, -1.0);
 
-	// INFO("applyPrecon residual " << Utils::norm(&r));	
+    // jac_->ApplyInverse(in, out);
+
+    Epetra_Vector diag = *in(0);
+    diag.PutScalar(0.0);
+    jac_->ExtractDiagonalCopy(diag);
+    out = in;
+    out.ReciprocalMultiply(1.0, diag, out, 0.0);
+
+    // INFO("applyPrecon residual " << Utils::norm(&r));
 
 }
 
 //==================================================================
 void AtmospherePar::solve(Teuchos::RCP<Epetra_MultiVector> const &b)
 {
-	// For now our only option is to use banded solves on the subdomains
-	// Later we can put more options here.
-	solveSubDomain(b);
+    // For now our only option is to use banded solves on the subdomains
+    // Later we can put more options here.
+    solveSubDomain(b);
 }
 
 //==================================================================
 void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b)
 {
-	if (!(b->Map().SameAs(*standardMap_)))
-	{
-		ERROR("AtmospherePar::solve, map of b not same as standard map",
-			  __FILE__, __LINE__);
-	}
+    if (!(b->Map().SameAs(*standardMap_)))
+    {
+        ERROR("AtmospherePar::solve, map of b not same as standard map",
+              __FILE__, __LINE__);
+    }
 
-	// obtain assembly from Epetra_Vector, put b in sol
-	domain_->Solve2Assembly(*(*b)(0), *localSol_);
+    // obtain assembly from Epetra_Vector, put b in sol
+    CHECK_ZERO(domain_->Solve2Assembly(*(*b)(0), *localSol_));
 
-	// local vector size
-	int numMyElements = assemblyMap_->NumMyElements();
+    // local vector size
+    int numMyElements = assemblyMap_->NumMyElements();
 
-	// create local vector
-	std::shared_ptr<std::vector<double> > localSol =
-		std::make_shared<std::vector<double> >(numMyElements, 0.0);
+    // create local vector
+    std::shared_ptr<std::vector<double> > localSol =
+        std::make_shared<std::vector<double> >(numMyElements, 0.0);
 
-	// extract assembly into local vector
-	localSol_->ExtractCopy(&(*localSol)[0], numMyElements);
+    // extract assembly into local vector
+    localSol_->ExtractCopy(&(*localSol)[0], numMyElements);
 
-	// solve using serial model
-	atmos_->solve(localSol);
+    // solve using serial model
+    atmos_->solve(localSol);
 
-	// obtain view of solution
-	localSol = atmos_->getSolution('V');
+    // obtain view of solution
+    localSol = atmos_->getSolution('V');
 
-	// obtain our view of assembly localSol
-	double *sol_tmp;
-	localSol_->ExtractView(&sol_tmp);
+    // obtain our view of assembly localSol
+    double *sol_tmp;
+    localSol_->ExtractView(&sol_tmp);
 
-	// fill view
-	for (int i = 0; i != numMyElements; ++i)
-	{
-		sol_tmp[i] = (*localSol)[i];
-	}
+    // fill view
+    for (int i = 0; i != numMyElements; ++i)
+    {
+        sol_tmp[i] = (*localSol)[i];
+    }
 
-	// obtain the standard map solution
-	domain_->Assembly2Solve(*localSol_, *sol_);
+    // obtain the standard map solution
+    domain_->Assembly2Solve(*localSol_, *sol_);
 }
 
 //==================================================================
@@ -481,74 +489,74 @@ void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b)
 // Create a graph to initialize the Jacobian
 void AtmospherePar::createMatrixGraph()
 {
-	// We know from the discretization that we have at
-	// most 5 dependencies in each row.
-	// --> This will change, obviously, when extending
-	// the atmosphere model. If the number of dependencies varies greatly per row
-	// we need to supply them differently (variable). 
-	int maxDeps = 5;
-	matrixGraph_ = Teuchos::rcp(new Epetra_CrsGraph(Copy, *standardMap_, maxDeps, false));
+    // We know from the discretization that we have at
+    // most 5 dependencies in each row.
+    // --> This will change, obviously, when extending
+    // the atmosphere model. If the number of dependencies varies greatly per row
+    // we need to supply them differently (variable).
+    int maxDeps = 5;
+    matrixGraph_ = Teuchos::rcp(new Epetra_CrsGraph(Copy, *standardMap_, maxDeps, false));
 
-	// Here we start specifying the indices
-	int indices[maxDeps];
+    // Here we start specifying the indices
+    int indices[maxDeps];
 
-	// Get global domain size
-	int N = domain_->GlobalN();
-	int M = domain_->GlobalM();
-	int L = domain_->GlobalL();
+    // Get global domain size
+    int N = domain_->GlobalN();
+    int M = domain_->GlobalM();
+    int L = domain_->GlobalL();
 
-	// Get our local range in all directions
-	// 0-based
-	int I0 = domain_->FirstRealI();
-	int J0 = domain_->FirstRealJ();
-	int K0 = domain_->FirstRealK();
-	int I1 = domain_->LastRealI();
-	int J1 = domain_->LastRealJ();
-	int K1 = domain_->LastRealK();
+    // Get our local range in all directions
+    // 0-based
+    int I0 = domain_->FirstRealI();
+    int J0 = domain_->FirstRealJ();
+    int K0 = domain_->FirstRealK();
+    int I1 = domain_->LastRealI();
+    int J1 = domain_->LastRealJ();
+    int K1 = domain_->LastRealK();
 
-	int pos; // position in indices array, not really useful here
-	for (int k = K0; k <= K1; ++k)								 
-		for (int j = J0; j <= J1; ++j)
-			for (int i = I0; i <= I1; ++i)
-			{
-				// Obtain row corresponding to i,j,k,TT, using 0-based find_row
-				int gidU = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, i, j, k, ATMOS_TT_);
-				int gid0 = gidU - 1; // used as offset
+    int pos; // position in indices array, not really useful here
+    for (int k = K0; k <= K1; ++k)
+        for (int j = J0; j <= J1; ++j)
+            for (int i = I0; i <= I1; ++i)
+            {
+                // Obtain row corresponding to i,j,k,TT, using 0-based find_row
+                int gidU = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, i, j, k, ATMOS_TT_);
+                int gid0 = gidU - 1; // used as offset
 
-				pos = 0;
+                pos = 0;
 
-				// Specify dependencies, see Atmosphere::discretize()
-				// ATMOS_TT_: 5-point stencil
-				insert_graph_entry(indices, pos, i, j, k, ATMOS_TT_, N, M, L);
-				insert_graph_entry(indices, pos, i-1, j, k, ATMOS_TT_, N, M, L);
-				insert_graph_entry(indices, pos, i+1, j, k, ATMOS_TT_, N, M, L);
-				insert_graph_entry(indices, pos, i, j-1, k, ATMOS_TT_, N, M, L);
-				insert_graph_entry(indices, pos, i, j+1, k, ATMOS_TT_, N, M, L);
+                // Specify dependencies, see Atmosphere::discretize()
+                // ATMOS_TT_: 5-point stencil
+                insert_graph_entry(indices, pos, i, j, k, ATMOS_TT_, N, M, L);
+                insert_graph_entry(indices, pos, i-1, j, k, ATMOS_TT_, N, M, L);
+                insert_graph_entry(indices, pos, i+1, j, k, ATMOS_TT_, N, M, L);
+                insert_graph_entry(indices, pos, i, j-1, k, ATMOS_TT_, N, M, L);
+                insert_graph_entry(indices, pos, i, j+1, k, ATMOS_TT_, N, M, L);
 
-				// Insert dependencies in matrixGraph
-				CHECK_ZERO(matrixGraph_->InsertGlobalIndices(gid0+ATMOS_TT_, pos, indices));
-			}
-	
-	// Finalize matrixgraph
-	CHECK_ZERO(matrixGraph_->FillComplete());
+                // Insert dependencies in matrixGraph
+                CHECK_ZERO(matrixGraph_->InsertGlobalIndices(gid0+ATMOS_TT_, pos, indices));
+            }
+
+    // Finalize matrixgraph
+    CHECK_ZERO(matrixGraph_->FillComplete());
 }
 
 //=============================================================================
 // Copied from THCM, adjusted for AtmospherePar
 void AtmospherePar::insert_graph_entry(int* indices, int& pos,
-									   int i, int j, int k, int xx,
-									   int N, int M, int L) const
+                                       int i, int j, int k, int xx,
+                                       int N, int M, int L) const
 {
-	int ii = i; // if x-boundary is periodic i may be out of bounds.
-	// ii will be adjusted in that case:
-	if (domain_->IsPeriodic())
+    int ii = i; // if x-boundary is periodic i may be out of bounds.
+    // ii will be adjusted in that case:
+    if (domain_->IsPeriodic())
     {
-		ii = MOD((double)i, (double)N);
+        ii = MOD((double)i, (double)N);
     }
-	if ((ii>=0) && (j>=0) && (k>=0) &&
-		(ii< N) && (j< M) && (k< L) )
-	{
-		// find index using 0-based find_row
+    if ((ii>=0) && (j>=0) && (k>=0) &&
+        (ii< N) && (j< M) && (k< L) )
+    {
+        // find index using 0-based find_row
         indices[pos++] = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, ii, j, k, xx);
-	}
+    }
 }
