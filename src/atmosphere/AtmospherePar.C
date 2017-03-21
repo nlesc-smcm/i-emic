@@ -414,36 +414,19 @@ void AtmospherePar::applyMatrix(Epetra_MultiVector const &in,
 void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
                                 Epetra_MultiVector &out)
 {
-
-    solveSubDomain(Teuchos::rcp(&in, false));
-    out = *getSolution('C'); // copy solution
-
-    // Epetra_MultiVector r = out;
-    // jac_->Apply(out, r);
-    // r.Update(1.0, in, -1.0);
-
-    // jac_->ApplyInverse(in, out);
-
-    // Epetra_Vector diag = *in(0);
-    // diag.PutScalar(0.0);
-    // jac_->ExtractDiagonalCopy(diag);
-    // out = in;
-    // out.ReciprocalMultiply(1.0, diag, out, 0.0);
-
-    // INFO("applyPrecon residual " << Utils::norm(&r));
-
-    // compute residual
-    Epetra_Vector r = *in(0);
-    r.PutScalar(0.0);
-    applyMatrix(out, r);
-    r.Update(1.0,in,-1.0);
-
-    INFO("AtmospherePar::applyPrecon ||in|| = "
-         << Utils::norm(&in));
-    INFO("AtmospherePar::applyPrecon ||out|| = "
-         << Utils::norm(&out));
-    INFO("AtmospherePar::applyPrecon residual ||in-A*out|| = "
-         << Utils::norm(&r));
+    if (1) // full solve
+    {
+        solveSubDomain(Teuchos::rcp(&in, false));
+        out = *getSolution('C'); // copy solution
+    }
+    else // diagonal
+    {
+        Epetra_Vector diag = *in(0);
+        diag.PutScalar(0.0);
+        jac_->ExtractDiagonalCopy(diag);
+        out = in;
+        out.ReciprocalMultiply(1.0, diag, out, 0.0);
+    }
 }
 
 //==================================================================
@@ -494,6 +477,20 @@ void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b)
 
     // obtain the standard map solution
     domain_->Assembly2Solve(*localSol_, *sol_);
+
+#ifdef DEBUGGING_NEW
+
+    Utils::print(localSol_, "atmoslocalSol");
+    Utils::print(sol_,      "atmoslocalSol");
+    
+    // compute atmosphere residual
+    Epetra_MultiVector r = *b;
+    r.PutScalar(0.0);
+    applyMatrix(*sol_, r);
+    r.Update(1.0,*b,-1.0);
+    INFO("AtmospherePar::solveSubDomain ||b-Ax|| = " <<
+         Utils::norm(&r));
+#endif
 }
 
 //==================================================================

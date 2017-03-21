@@ -283,12 +283,13 @@ TEST(CoupledModel, Newton)
     solV->PutScalar(0.0);
 
     // set parameter
-    coupledModel->setPar(0.001);
+    coupledModel->setPar(0.01);
 
     // try to converge
-    int maxit = 3;
+    int maxit = 10;
     std::shared_ptr<Combined_MultiVec> b;
-    for (int i = 0; i != maxit; ++i)
+    int niter = 0;
+    for (; niter != maxit; ++niter)
     {
         coupledModel->computeRHS();
 
@@ -325,9 +326,14 @@ TEST(CoupledModel, Newton)
         INFO(" ocean ||r|| / ||b||  = " << Utils::norm(y->First()));
         INFO(" atmos ||r|| / ||b||  = " << Utils::norm(y->Second()));
         INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
+
+        if (Utils::norm(coupledModel->getRHS('V')) < 0.001)
+            break;
     }
 
-    EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.01);
+    EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.001);
+    EXPECT_LT(niter, 10);
+    INFO("CoupledModel, Newton converged in " << niter << " iterations");
 }
 
 

@@ -2,7 +2,7 @@
 /*
   Atmosphere is a model within the I-EMIC. It is a reimplementation of the
   energy balance model already available in the old THCM code. However,
-  this implementation is able to be run within a domain decomposition. 
+  this implementation is able to be run within a domain decomposition.
 
   Although this is a 2D model we maintain notation of the 3D ocean model.
 
@@ -30,262 +30,262 @@ class Atom;
 
 class Atmosphere
 {
-	//! Parameterlist
-	Teuchos::RCP<Teuchos::ParameterList> params_;
-	
-	int n_;   //! #grid-points in east-west (x) direction
-	int m_;   //! #grid-points in north-south (y) direction
-	int l_;   //! #grid-points in vertical (z) direction
-	int dim_; //! full dimension of the problem
+    //! Parameterlist
+    Teuchos::RCP<Teuchos::ParameterList> params_;
 
-	//! #neighbours, for example in a 3D grid:
-	//!   stencil np = 27:
-	//!   +----------++-------++----------+
+    int n_;   //! #grid-points in east-west (x) direction
+    int m_;   //! #grid-points in north-south (y) direction
+    int l_;   //! #grid-points in vertical (z) direction
+    int dim_; //! full dimension of the problem
+
+    //! #neighbours, for example in a 3D grid:
+    //!   stencil np = 27:
+    //!   +----------++-------++----------+
     //!   | 12 15 18 || 3 6 9 || 21 24 27 |
     //!   | 11 14 17 || 2 5 8 || 20 23 26 |
     //!   | 10 13 16 || 1 4 7 || 19 22 25 |
     //!   |  below   || center||  above   |
     //!   +----------++-------++----------+
-	int np_;  //! #neighbouring points
-	int nun_; //! #unknowns
+    int np_;  //! #neighbouring points
+    int nun_; //! #unknowns
 
-	std::shared_ptr<DependencyGrid> Al_;
-	
-	double xmin_, xmax_; //! limits in x-direction 
-	double ymin_, ymax_; //! limits in y-direction 
+    std::shared_ptr<DependencyGrid> Al_;
 
-	double dx_, dy_; //! grid increments
-	
-	std::vector<double> xc_;  //! x-grid ( cell centers)
-	std::vector<double> xu_;  //! x-grid ( [u,v]-nodes)
-	std::vector<double> yc_;  //! y-grid ( cell centers)
-	std::vector<double> yv_;  //! y-grid ( [u,v]-nodes)
+    double xmin_, xmax_; //! limits in x-direction
+    double ymin_, ymax_; //! limits in y-direction
 
-	// Periodic boundary conditions in x-direction
-	bool periodic_;
+    double dx_, dy_; //! grid increments
 
-	// Find out whether we are part of a domain decomposition
-	bool parallel_;
+    std::vector<double> xc_;  //! x-grid ( cell centers)
+    std::vector<double> xu_;  //! x-grid ( [u,v]-nodes)
+    std::vector<double> yc_;  //! y-grid ( cell centers)
+    std::vector<double> yv_;  //! y-grid ( [u,v]-nodes)
 
-	// Specify whether we should use a land mask
-	bool use_landmask_;
-	
-	// Surface mask
-	std::shared_ptr<std::vector<int> > surfmask_;
-	
-	// Ocean surface temperature
-	std::vector<double> surfaceTemp_;
+    // Periodic boundary conditions in x-direction
+    bool periodic_;
 
-	// Forcing vector
-	std::vector<double> frc_;
+    // Find out whether we are part of a domain decomposition
+    bool parallel_;
 
-	// State of the atmosphere,
-	// wrapped in a shared_ptr so we can safely hand out
-	// a view of this member.
-	std::shared_ptr<std::vector<double> > state_;
+    // Specify whether we should use a land mask
+    bool use_landmask_;
 
-	// Right hand side of the discretized system of ODE's
-	std::shared_ptr<std::vector<double> > rhs_;
+    // Surface mask
+    std::shared_ptr<std::vector<int> > surfmask_;
 
-	// Solution vector
-	std::shared_ptr<std::vector<double> > sol_;
+    // Ocean surface temperature
+    std::vector<double> surfaceTemp_;
 
-	// CRS matrix arrays storing the Jacobian
-	std::vector<double> co_;
-	std::vector<int> jco_;
-	std::vector<int> beg_;
+    // Forcing vector
+    std::vector<double> frc_;
 
- 	// Pivot array for lapack
-	std::vector<int> ipiv_;
+    // State of the atmosphere,
+    // wrapped in a shared_ptr so we can safely hand out
+    // a view of this member.
+    std::shared_ptr<std::vector<double> > state_;
 
-	std::vector<double> bandedA_; // Banded matrix storage
-	int  ksub_;                   // Number of subdiagonals
-	int  ksup_;                   // Number of superdiagonals
-	int  ldimA_;                  // Leading dimension of banded storage
-	bool buildLU_;
+    // Right hand side of the discretized system of ODE's
+    std::shared_ptr<std::vector<double> > rhs_;
 
-	// Preconditioner: 'J': Jacobi
-	//                 'D': Full solve using native solving scheme
-	//                 'N': None
-	char preconditioner_;
-	
-	// Parameters	
-	double   rhoa_; //! atmospheric density \[\rho_a\]
-	double  hdima_; //! atmospheric scale height \[H_a\]
-	double    cpa_; //! heat capacity \[C_{pa}\]
-	double     d0_; //! constant eddy diffusivity \[D_0\]
-	double   arad_; //! radiative flux param A
-	double   brad_; //! radiative flux param B
-	double   sun0_; //! solar constant \[\Sigma_0\]        
-	double     c0_; //! atmospheric absorption coefficient
-	double     ce_; //! exchange coefficient 
-	double     ch_; //! exchange coefficient \[C_H\]
-	double     uw_; //! mean atmospheric surface wind speed \[|V_a|\] 
-	double     t0_; //! reference temperature
-	
-	// Necessary for nondimensionalizations:
-	double   udim_; //! typical horizontal velocity of the ocean
-	double  r0dim_; //! radius of the earth
+    // Solution vector
+    std::shared_ptr<std::vector<double> > sol_;
 
-	// Coefficients
-	double muoa_;  //! constant exchange coefficient
-	double amua_;  //! (arad+brad*t0)/muoa
-	double bmua_;  //!  brad/muoa
-	double   Ai_;  //!  rhoa*hdima*cpa*udim/(r0dim*muoa)
-	double   Ad_;  //!  rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
-	double   As_;  //!  sun0*(1 - c0)/(4*muoa)
-	double  Ooa_;  //!  ...? something in the ocean
-	double   Os_;  //!  ...? something in the ocean
+    // CRS matrix arrays storing the Jacobian
+    std::vector<double> co_;
+    std::vector<int> jco_;
+    std::vector<int> beg_;
+
+    // Pivot array for lapack
+    std::vector<int> ipiv_;
+
+    std::vector<double> bandedA_; // Banded matrix storage
+    int  ksub_;                   // Number of subdiagonals
+    int  ksup_;                   // Number of superdiagonals
+    int  ldimA_;                  // Leading dimension of banded storage
+    bool buildLU_;
+
+    // Preconditioner: 'J': Jacobi
+    //                 'D': Full solve using native solving scheme
+    //                 'N': None
+    char preconditioner_;
+
+    // Parameters
+    double   rhoa_; //! atmospheric density \[\rho_a\]
+    double  hdima_; //! atmospheric scale height \[H_a\]
+    double    cpa_; //! heat capacity \[C_{pa}\]
+    double     d0_; //! constant eddy diffusivity \[D_0\]
+    double   arad_; //! radiative flux param A
+    double   brad_; //! radiative flux param B
+    double   sun0_; //! solar constant \[\Sigma_0\]
+    double     c0_; //! atmospheric absorption coefficient
+    double     ce_; //! exchange coefficient
+    double     ch_; //! exchange coefficient \[C_H\]
+    double     uw_; //! mean atmospheric surface wind speed \[|V_a|\]
+    double     t0_; //! reference temperature
+
+    // Necessary for nondimensionalizations:
+    double   udim_; //! typical horizontal velocity of the ocean
+    double  r0dim_; //! radius of the earth
+
+    // Coefficients
+    double muoa_;  //! constant exchange coefficient
+    double amua_;  //! (arad+brad*t0)/muoa
+    double bmua_;  //!  brad/muoa
+    double   Ai_;  //!  rhoa*hdima*cpa*udim/(r0dim*muoa)
+    double   Ad_;  //!  rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
+    double   As_;  //!  sun0*(1 - c0)/(4*muoa)
+    double  Ooa_;  //!  ...? something in the ocean
+    double   Os_;  //!  ...? something in the ocean
 
     //! Latitude-dependent albedo
-	std::vector<double> albe_;
+    std::vector<double> albe_;
 
-	//! Latitudinal dependence of eddy diffusivity:
-	//!  0.9 + 1.5 * exp(-12*yc(j)*yc(j)/pi)
-	std::vector<double> datc_; //! (defined on cell centers)
-	std::vector<double> datv_; //! (defined on [u,v]-nodes)
-	
-	//! Latitudinal dependence of short-wave radiative flux:
-	//!  As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
-	std::vector<double> suna_;
+    //! Latitudinal dependence of eddy diffusivity:
+    //!  0.9 + 1.5 * exp(-12*yc(j)*yc(j)/pi)
+    std::vector<double> datc_; //! (defined on cell centers)
+    std::vector<double> datv_; //! (defined on [u,v]-nodes)
 
-	//!  Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
-	std::vector<double> suno_;
+    //! Latitudinal dependence of short-wave radiative flux:
+    //!  As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
+    std::vector<double> suna_;
 
-	//! -------------------------------------------------------
-	//! Continuation 
-	//! -------------------------------------------------------
-	std::vector<std::string> allParameters_;
-	std::string parName_;
-	double      comb_; //! combined forcing
-	double      sunp_; //! solar forcing    
-	
+    //!  Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
+    std::vector<double> suno_;
+
+    //! -------------------------------------------------------
+    //! Continuation
+    //! -------------------------------------------------------
+    std::vector<std::string> allParameters_;
+    std::string parName_;
+    double      comb_; //! combined forcing
+    double      sunp_; //! solar forcing
+
 public:
-	//! Constructor for use with parallel atmosphere 
-	Atmosphere(int n, int m, int l, bool periodic,
-			   double xmin, double xmax, double ymin, double ymax,
-			   Teuchos::RCP<Teuchos::ParameterList> params);
+    //! Constructor for use with parallel atmosphere
+    Atmosphere(int n, int m, int l, bool periodic,
+               double xmin, double xmax, double ymin, double ymax,
+               Teuchos::RCP<Teuchos::ParameterList> params);
 
-	//! Constructor
-	Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params);
+    //! Constructor
+    Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params);
 
-	//! General setup things for both constructors
-	void setup();
+    //! General setup things for both constructors
+    void setup();
 
-	//! Destructor
-	virtual ~Atmosphere();
+    //! Destructor
+    virtual ~Atmosphere();
 
-	//! Solve the matrix
-	void solve(std::shared_ptr<std::vector<double> > const &rhs);
-	
-	//! Compute the right hand side
-	void computeRHS();
+    //! Solve the matrix
+    void solve(std::shared_ptr<std::vector<double> > const &rhs);
 
-	//! Compute the Jacobian matrix
-	void computeJacobian();
+    //! Compute the right hand side
+    void computeRHS();
 
-	//! Return the Jacobian matrix in CRS format
-	std::shared_ptr<Utils::CRSMat> getJacobian();
+    //! Compute the Jacobian matrix
+    void computeJacobian();
 
-	std::shared_ptr<std::vector<double> > getSolution (char mode = 'C'); 
-	std::shared_ptr<std::vector<double> > getState    (char Mode = 'C');
-	std::shared_ptr<std::vector<double> > getRHS      (char mode = 'C');
+    //! Return the Jacobian matrix in CRS format
+    std::shared_ptr<Utils::CRSMat> getJacobian();
 
-	void setState(std::shared_ptr<std::vector<double> > in) { state_ = in; }
-	
-	//! Apply the Jacobian to a vector and return the result u = J*v
-	void applyMatrix(std::shared_ptr<std::vector<double> > const &v,
-					 std::shared_ptr<std::vector<double> > &out);
+    std::shared_ptr<std::vector<double> > getSolution (char mode = 'C');
+    std::shared_ptr<std::vector<double> > getState    (char Mode = 'C');
+    std::shared_ptr<std::vector<double> > getRHS      (char mode = 'C');
 
-	//! Getters and setter for the continuation parameters
-	void    setPar(double value);
-	void    setPar(std::string const &parName, double value);
-	void    setParName(std::string const &parName) {parName_ = parName; }
-	double  getPar();
-	double  getPar(std::string const &parName);
+    void setState(std::shared_ptr<std::vector<double> > in) { state_ = in; }
 
-	//! Accept ocean temperature vector
-	void setOceanTemperature(std::vector<double> const &sst);
+    //! Apply the Jacobian to a vector and return the result u = J*v
+    void applyMatrix(std::vector<double>  const &v,
+                     std::vector<double>  &out);
 
-	//! Return problem dimension
-	int  dim() { return dim_; }
+    //! Getters and setter for the continuation parameters
+    void    setPar(double value);
+    void    setPar(std::string const &parName, double value);
+    void    setParName(std::string const &parName) {parName_ = parName; }
+    double  getPar();
+    double  getPar(std::string const &parName);
 
-	//! Put default fields in atmosphere and ocean
-	void idealizedOcean();
-	void idealizedState();
-	void idealized();
-	void zeroOcean();
-	void zeroState();
+    //! Accept ocean temperature vector
+    void setOceanTemperature(std::vector<double> const &sst);
 
-	//! -------------------------------------------------------
-	void getOceanBlock(std::vector<double> &values,
-					   std::vector<int> &rows);
-	
-	//! --------------------------------------------------------
-	//! Set an external 2D surface mask in the atmosphere.
-	//! The size of the vector should be n*m.
-	void setSurfaceMask(std::shared_ptr<std::vector<int> > surfm);
-	
+    //! Return problem dimension
+    int  dim() { return dim_; }
+
+    //! Put default fields in atmosphere and ocean
+    void idealizedOcean();
+    void idealizedState();
+    void idealized();
+    void zeroOcean();
+    void zeroState();
+
+    //! -------------------------------------------------------
+    void getOceanBlock(std::vector<double> &values,
+                       std::vector<int> &rows);
+
+    //! --------------------------------------------------------
+    //! Set an external 2D surface mask in the atmosphere.
+    //! The size of the vector should be n*m.
+    void setSurfaceMask(std::shared_ptr<std::vector<int> > surfm);
+
 private:
 
-	std::shared_ptr<std::vector<double> > getVector
-	(char mode, std::shared_ptr<std::vector<double> > vec);
-	
-	//! Apply local discretization
-	void discretize(int type, Atom &atom);
+    std::shared_ptr<std::vector<double> > getVector
+    (char mode, std::shared_ptr<std::vector<double> > vec);
 
-	//! Apply boundary conditions in dependency grid
-	void boundaries();
+    //! Apply local discretization
+    void discretize(int type, Atom &atom);
+
+    //! Apply boundary conditions in dependency grid
+    void boundaries();
 
     //! Create forcing vector
-	void forcing();
-	
-	//! Perform the dot product of a single row with the state vector
-	double matvec(int row);
+    void forcing();
+
+    //! Perform the dot product of a single row with the state vector
+    double matvec(int row);
 
     //! Defines location of neighbouring grid points
-	//! +----------++-------++----------+
-	//! | 12 15 18 || 3 6 9 || 21 24 27 |
-	//! | 11 14 17 || 2 5 8 || 20 23 26 |
-	//! | 10 13 16 || 1 4 7 || 19 22 25 |
-	//! |  below   || center||  above   |
-	//! +----------++-------++----------+
-	//! shift(i,j,k,i2,j2,k2,loc) sets the neighbour at location loc
-	//!  w.r.t. the center of the stencil (5) defined above
-	void shift(int i, int j, int k,
-			   int &i2, int &j2, int &k2, int loc);
+    //! +----------++-------++----------+
+    //! | 12 15 18 || 3 6 9 || 21 24 27 |
+    //! | 11 14 17 || 2 5 8 || 20 23 26 |
+    //! | 10 13 16 || 1 4 7 || 19 22 25 |
+    //! |  below   || center||  above   |
+    //! +----------++-------++----------+
+    //! shift(i,j,k,i2,j2,k2,loc) sets the neighbour at location loc
+    //!  w.r.t. the center of the stencil (5) defined above
+    void shift(int i, int j, int k,
+               int &i2, int &j2, int &k2, int loc);
 
-	//! Assemble the dependency grid into a matrix in crs form
-	void assemble();
+    //! Assemble the dependency grid into a matrix in crs form
+    void assemble();
 
-	//! Write vector to output file
-	void write(std::vector<double> &vector, const std::string &filename);
+    //! Write vector to output file
+    void write(std::vector<double> &vector, const std::string &filename);
 
 public:
-	//! Find row in vector or matrix corresponding to unknown
-	//! XX at grid point (i,j,k).
-	//! Input and output are expected to be 1-based.
-	//! +-----------------------------------------------------+
-	//! | Example for nun=6:                                  |
-	//! | grid point (i,j,k) | row: (  u,  v,  w,  p,  T,  S) |
-	//! |--------------------+--------------------------------|
-	//! |            (1,1,1) |      (  1,  2,  3,  4,  5,  6) |
-	//! |            (2,1,1) |      (  7,  8,  9, 10, 11, 12) |
-	//! |                    |                                |
-	//! |            (n,1,1) |      ( 6*(n-1)+1,  ...   ,6*n) |
-	//! |                    |                                |
-	//! |            (1,2,1) |      ( 6*n+1, ...      ,6*n+6) |
-	//! |            (2,2,1) |      ( 6*n+7,  ...    ,6*n+12) |
-	//! |                    |                                |
-	//! |            (1,1,2) |      ( 6*n*m+1, ...  ,6*n*m+6) |
-	//! +-----------------------------------------------------+
-	int find_row(int i, int j, int k, int XX);
-	
-	//! Write everything to output files.
-	void writeAll();
-	
+    //! Find row in vector or matrix corresponding to unknown
+    //! XX at grid point (i,j,k).
+    //! Input and output are expected to be 1-based.
+    //! +-----------------------------------------------------+
+    //! | Example for nun=6:                                  |
+    //! | grid point (i,j,k) | row: (  u,  v,  w,  p,  T,  S) |
+    //! |--------------------+--------------------------------|
+    //! |            (1,1,1) |      (  1,  2,  3,  4,  5,  6) |
+    //! |            (2,1,1) |      (  7,  8,  9, 10, 11, 12) |
+    //! |                    |                                |
+    //! |            (n,1,1) |      ( 6*(n-1)+1,  ...   ,6*n) |
+    //! |                    |                                |
+    //! |            (1,2,1) |      ( 6*n+1, ...      ,6*n+6) |
+    //! |            (2,2,1) |      ( 6*n+7,  ...    ,6*n+12) |
+    //! |                    |                                |
+    //! |            (1,1,2) |      ( 6*n*m+1, ...  ,6*n*m+6) |
+    //! +-----------------------------------------------------+
+    int find_row(int i, int j, int k, int XX);
+
+    //! Write everything to output files.
+    void writeAll();
+
 private:
-	
+
 };
 
 //==================================================================
@@ -297,16 +297,16 @@ private:
 class DependencyGrid
 {
     MultiArray<double, 6> grid_;
-	int n_, m_, l_, np_, nun_;
-	
-public:
-	DependencyGrid(int n, int m, int l, int np, int nun);
-	~DependencyGrid();
+    int n_, m_, l_, np_, nun_;
 
-	double get(int i, int j, int k, int loc, int A, int B);
-	void   set(int i, int j, int k, int loc, int A, int B, double value);
-	void   set(int const (&range)[8], int A, int B, Atom &atom);
-	void   add(double scalar, Atom &atom);
+public:
+    DependencyGrid(int n, int m, int l, int np, int nun);
+    ~DependencyGrid();
+
+    double get(int i, int j, int k, int loc, int A, int B);
+    void   set(int i, int j, int k, int loc, int A, int B, double value);
+    void   set(int const (&range)[8], int A, int B, Atom &atom);
+    void   add(double scalar, Atom &atom);
 
 };
 
@@ -318,21 +318,21 @@ public:
 //==================================================================
 class Atom
 {
-	MultiArray<double, 4> atom_;
-	int n_, m_, l_, np_;
-	
+    MultiArray<double, 4> atom_;
+    int n_, m_, l_, np_;
+
 public:
-	Atom(int n, int m, int l, int np);
-	~Atom();
+    Atom(int n, int m, int l, int np);
+    ~Atom();
 
-	double get(int i, int j, int k, int loc);
-	void   set(int i, int j, int k, int loc, double value);
-	void   set(int const (&range)[6], int loc, double value);
+    double get(int i, int j, int k, int loc);
+    void   set(int i, int j, int k, int loc, double value);
+    void   set(int const (&range)[6], int loc, double value);
 
-	void update(double scalarThis,
-				double scalarA, Atom &A,
-				double scalarB, Atom &B,
-				double scalarC, Atom &C);
+    void update(double scalarThis,
+                double scalarA, Atom &A,
+                double scalarB, Atom &B,
+                double scalarC, Atom &C);
 };
 
 #endif

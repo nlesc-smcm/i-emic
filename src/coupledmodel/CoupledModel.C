@@ -14,6 +14,7 @@
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
+
 //==================================================================
 // constructor
 CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
@@ -230,13 +231,14 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 
     TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
                                "*** Belos::LinearProblem failed to setup");
+
     try
     {
         belosSolver_->solve();      // Solve
     }
     catch (std::exception const &e)
     {
-        INFO("Ocean: exception caught: " << e.what());
+        INFO("CoupledModel: exception caught: " << e.what());
     }
 
     int iters  = belosSolver_->getNumIters();
@@ -248,21 +250,6 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 
     INFO(" CoupledModel: FGMRES, iters = " << iters << ", ||r|| = " << tol);
 
-#ifdef DEBUGGING_NEW
-    // compute residual
-    std::shared_ptr<Combined_MultiVec> r = getSolution('C');
-    applyMatrix(*solView_, *r);
-    r->Update(1.0, *rhs, -1.0);
-    double normb = Utils::norm(rhs);
-    INFO(" CoupledModel: FGMRES ||x1|| = "
-         << Utils::norm(solView_->First()));
-    INFO(" CoupledModel: FGMRES ||x2|| = "
-         << Utils::norm(solView_->Second()));
-    INFO(" CoupledModel: FGMRES ||r1|| = "
-         << Utils::norm(r->First()) / normb);
-    INFO(" CoupledModel: FGMRES ||r2|| = "
-         << Utils::norm(r->Second()) / normb);
-#endif
 }
 
 //------------------------------------------------------------------

@@ -209,7 +209,7 @@ TEST(Atmosphere, Jacobian)
             std::make_shared<std::vector<double> >(gx->size(), 0.0);
 
         // apply serial Jacobian
-        atmos->applyMatrix(gx, outSer);
+        atmos->applyMatrix(*gx, *outSer);
 
         Teuchos::RCP<Epetra_Vector> outPar = atmosPar->getState('C');
         outPar->PutScalar(0.0);
@@ -251,7 +251,7 @@ TEST(Atmosphere, Newton)
     Teuchos::RCP<Epetra_Vector> b = atmosPar->getRHS('V');
     Teuchos::RCP<Epetra_Vector> x = atmosPar->getSolution('V');
 
-    int maxit = 2;
+    int maxit = 5;
     for (int i = 0; i != maxit; ++i)
     {
         atmosPar->computeRHS();
@@ -264,6 +264,7 @@ TEST(Atmosphere, Newton)
         b->Scale(-1.0);
         r->PutScalar(0.0);
         atmosPar->solve(b);
+        
         atmosPar->applyMatrix(*x, *r);
         r->Update(1.0, *b, -1.0);
         INFO(" ||r|| = " << Utils::norm(r) );
