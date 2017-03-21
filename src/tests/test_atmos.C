@@ -251,27 +251,32 @@ TEST(Atmosphere, Newton)
     Teuchos::RCP<Epetra_Vector> b = atmosPar->getRHS('V');
     Teuchos::RCP<Epetra_Vector> x = atmosPar->getSolution('V');
 
-    int maxit = 5;
+    int maxit = 4;
     for (int i = 0; i != maxit; ++i)
     {
+        INFO(" old ||b|| = " << Utils::norm(b) );
         atmosPar->computeRHS();
+        INFO(" new ||b|| = " << Utils::norm(b) );
         atmosPar->computeJacobian();
 
         Teuchos::RCP<Epetra_Vector> r = atmosPar->getSolution('C');
 
-        INFO(" ||b|| = " << Utils::norm(b) );
-
         b->Scale(-1.0);
         r->PutScalar(0.0);
+
+        INFO(" old ||x|| = " << Utils::norm(x) );
         atmosPar->solve(b);
-        
+        INFO(" new ||x|| = " << Utils::norm(x) );
+
         atmosPar->applyMatrix(*x, *r);
         r->Update(1.0, *b, -1.0);
-        INFO(" ||r|| = " << Utils::norm(r) );
-
-        state->Update(1.0, *x, 1.0);
 
         EXPECT_NEAR(Utils::norm(r), 0, 1e-7);
+        INFO("     ||r|| = " << Utils::norm(r) << std::endl);
+
+        state->Update(1.0, *x, 1.0);
+        b->Scale(-1.0);
+
     }
 
     EXPECT_NEAR(Utils::norm(b), 0, 1e-7);

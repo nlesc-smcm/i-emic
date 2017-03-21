@@ -15,7 +15,9 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     inputFile_       (params->get("Input file", "atmos_input.h5")),
     outputFile_      (params->get("Output file", "atmos_output.h5")),
     loadState_       (params->get("Load state", false)),
-    saveState_       (params->get("Save state", false))
+    saveState_       (params->get("Save state", false)),
+    precInitialized_ (false),
+    recomputePrec_   (false)
 {
     INFO("AtmospherePar: constructor...");
 
@@ -411,15 +413,50 @@ void AtmospherePar::applyMatrix(Epetra_MultiVector const &in,
 }
 
 //==================================================================
+void AtmospherePar::initializePrec()
+{
+    INFO("AtmospherePar: initialize preconditioner...");
+    Ifpack Factory;
+    string precType = "Amesos"; // direct solve on subdomains
+    int overlapLevel = 1;  // rows overlap among processors
+
+    // Create preconditioner
+    precPtr_ = Teuchos::rcp(Factory.Create(precType, jac_.get(), overlapLevel));
+    precPtr_->Initialize();
+    precPtr_->Compute();
+    precInitialized_ = true;
+    INFO("AtmospherePar: initialize preconditioner... done");
+}
+
+//==================================================================
+void AtmospherePar::preProcess()
+{
+    recomputePrec_ = true;
+}
+
+//==================================================================
 void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
                                 Epetra_MultiVector &out)
 {
-    if (1) // full solve
+    if (1) // ifpack preconditioning
+    {
+        if (!precInitialized_)
+        {
+            initializePrec();
+        }
+        if (recomputePrec_)
+        {
+            precPtr_->Compute();
+            recomputePrec_ = false;
+        }
+        precPtr_->ApplyInverse(in, out);
+    }
+    else if (0) // full solve
     {
         solveSubDomain(Teuchos::rcp(&in, false));
         out = *getSolution('C'); // copy solution
     }
-    else // diagonal
+    else if (0) // diagonal
     {
         Epetra_Vector diag = *in(0);
         diag.PutScalar(0.0);
@@ -432,12 +469,13 @@ void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
 //==================================================================
 void AtmospherePar::solve(Teuchos::RCP<Epetra_MultiVector> const &b)
 {
-    // For now our only option is to use banded solves on the subdomains
-    // Later we can put more options here.
-    solveSubDomain(b);
+    // when using the preconditioner as a solver make sure
+    // the overlap is large enough
+    applyPrecon(*b, *sol_);
 }
 
 //==================================================================
+//--> this is something Ifpack can do better (I guess)
 void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b)
 {
     if (!(b->Map().SameAs(*standardMap_)))
@@ -483,15 +521,22 @@ void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b)
 
 #ifdef DEBUGGING_NEW
 
-    Utils::print(localSol_, "atmoslocalSol" + std::to_string(comm_->MyPID()) );
+    Utils::print(localSol_, "atmosDistrSol" + std::to_string(comm_->MyPID()) );
+    Utils::print(*localSol, "atmosLocalSol" + std::to_string(comm_->MyPID()) );
     Utils::print(sol_,      "atmosSol" + std::to_string(comm_->MyPID()) );
 
-    std::shared_ptr<std::vector<double> > localRes = atmos_->getCurrResVec(localSol, localB);
+    std::shared_ptr<std::vector<double> > localRes =
+        atmos_->getCurrResVec(localSol, localB);
+
+    Utils::print(*localRes, "atmosLocalRes" + std::to_string(comm_->MyPID()) );
+
     // compute atmosphere residual
     Epetra_MultiVector r = *b;
     r.PutScalar(0.0);
     applyMatrix(*sol_, r);
     r.Update(1.0,*b,-1.0);
+    Utils::print(&r, "atmosRes" + std::to_string(comm_->MyPID()) );
+
     INFO("AtmospherePar::solveSubDomain ||b-Ax|| = " <<
          Utils::norm(&r));
 #endif

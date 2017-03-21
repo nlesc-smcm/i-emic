@@ -568,9 +568,6 @@ void Atmosphere::solve(std::shared_ptr<std::vector<double> > const &rhs)
     TIMER_STOP("Atmosphere: solve (dgbtrs)");
 
     TIMER_STOP("Atmosphere: solve...");
-
-#ifdef DEBUGGING_NEW
-#endif
 }
 
 //------------------------------------------------------------------

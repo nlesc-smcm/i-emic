@@ -10,6 +10,8 @@
 #include "BelosTypes.hpp"
 #include "BelosEpetraAdapter.hpp"
 
+#include "Utils.H"
+
 //------------------------------------------------------------------
 // This class combines rcp's to two multivectors
 //  --> this should generalize to n multivectors
