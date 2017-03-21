@@ -455,9 +455,12 @@ void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b)
     // create local vector
     std::shared_ptr<std::vector<double> > localSol =
         std::make_shared<std::vector<double> >(numMyElements, 0.0);
+    std::shared_ptr<std::vector<double> > localB =
+        std::make_shared<std::vector<double> >(numMyElements, 0.0);
 
     // extract assembly into local vector
     localSol_->ExtractCopy(&(*localSol)[0], numMyElements);
+    localSol_->ExtractCopy(&(*localB)[0], numMyElements);
 
     // solve using serial model
     atmos_->solve(localSol);
@@ -480,9 +483,10 @@ void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b)
 
 #ifdef DEBUGGING_NEW
 
-    Utils::print(localSol_, "atmoslocalSol");
-    Utils::print(sol_,      "atmoslocalSol");
-    
+    Utils::print(localSol_, "atmoslocalSol" + std::to_string(comm_->MyPID()) );
+    Utils::print(sol_,      "atmosSol" + std::to_string(comm_->MyPID()) );
+
+    std::shared_ptr<std::vector<double> > localRes = atmos_->getCurrResVec(localSol, localB);
     // compute atmosphere residual
     Epetra_MultiVector r = *b;
     r.PutScalar(0.0);

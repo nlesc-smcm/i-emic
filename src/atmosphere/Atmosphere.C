@@ -570,12 +570,20 @@ void Atmosphere::solve(std::shared_ptr<std::vector<double> > const &rhs)
     TIMER_STOP("Atmosphere: solve...");
 
 #ifdef DEBUGGING_NEW
-    std::vector<double> r = *sol_;
-    applyMatrix(*sol_, r);
-    Utils::update(1.0, *rhs, -1.0, r);
-    double norm = Utils::norm(r);
-    INFO("Atmosphere (serial) ||b-Ax|| = " << norm );
 #endif
+}
+
+//------------------------------------------------------------------
+std::shared_ptr<std::vector<double> >
+Atmosphere::getCurrResVec(std::shared_ptr<std::vector<double> > const &x,
+                          std::shared_ptr<std::vector<double> > const &rhs)
+{
+    std::shared_ptr<std::vector<double> > r =
+        std::make_shared<std::vector<double> >(*x);
+
+    applyMatrix(*x, *r);
+    Utils::update(1.0, *rhs, -1.0, *r);
+    return r;
 }
 
 //-----------------------------------------------------------------------------

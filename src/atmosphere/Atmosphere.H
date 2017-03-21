@@ -178,6 +178,11 @@ public:
     //! Solve the matrix
     void solve(std::shared_ptr<std::vector<double> > const &rhs);
 
+    //! Compute and get current residual vector
+    std::shared_ptr<std::vector<double> >
+    getCurrResVec(std::shared_ptr<std::vector<double> > const &x,
+                  std::shared_ptr<std::vector<double> > const &rhs);
+
     //! Compute the right hand side
     void computeRHS();
 
