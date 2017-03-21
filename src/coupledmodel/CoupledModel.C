@@ -176,8 +176,6 @@ void CoupledModel::initializeFGMRES()
                         Belos::StatusTestDetails );
     belosParamList->set("Maximum Iterations", maxiters);
     belosParamList->set("Convergence Tolerance", gmresTol);
-    belosParamList->set("Explicit Residual Test", false);
-    belosParamList->set("Implicit Residual Scaling", "Norm of RHS");
 
     // Belos block FGMRES setup
     belosSolver_ =
@@ -242,9 +240,29 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
     }
 
     int iters  = belosSolver_->getNumIters();
+    bool loa   = belosSolver_->isLOADetected();
+    if (loa)
+        INFO(" CoupledModel: FGMRES loss of accuracy detected");
+
     double tol = belosSolver_->achievedTol();
 
     INFO(" CoupledModel: FGMRES, iters = " << iters << ", ||r|| = " << tol);
+
+#ifdef DEBUGGING_NEW
+    // compute residual
+    std::shared_ptr<Combined_MultiVec> r = getSolution('C');
+    applyMatrix(*solView_, *r);
+    r->Update(1.0, *rhs, -1.0);
+    double normb = Utils::norm(rhs);
+    INFO(" CoupledModel: FGMRES ||x1|| = "
+         << Utils::norm(solView_->First()));
+    INFO(" CoupledModel: FGMRES ||x2|| = "
+         << Utils::norm(solView_->Second()));
+    INFO(" CoupledModel: FGMRES ||r1|| = "
+         << Utils::norm(r->First()) / normb);
+    INFO(" CoupledModel: FGMRES ||r2|| = "
+         << Utils::norm(r->Second()) / normb);
+#endif
 }
 
 //------------------------------------------------------------------
@@ -299,6 +317,9 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
         out.Update(1.0, z, 1.0);
     }
     TIMER_STOP("CoupledModel: apply matrix...");
+
+    #ifdef DEBUGGING_NEW
+    #endif
 }
 
 //------------------------------------------------------------------

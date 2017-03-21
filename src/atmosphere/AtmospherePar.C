@@ -415,8 +415,8 @@ void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
                                 Epetra_MultiVector &out)
 {
 
-    // solveSubDomain(Teuchos::rcp(&in, false));
-    // out = *getSolution('C'); // copy solution
+    solveSubDomain(Teuchos::rcp(&in, false));
+    out = *getSolution('C'); // copy solution
 
     // Epetra_MultiVector r = out;
     // jac_->Apply(out, r);
@@ -424,14 +424,26 @@ void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
 
     // jac_->ApplyInverse(in, out);
 
-    Epetra_Vector diag = *in(0);
-    diag.PutScalar(0.0);
-    jac_->ExtractDiagonalCopy(diag);
-    out = in;
-    out.ReciprocalMultiply(1.0, diag, out, 0.0);
+    // Epetra_Vector diag = *in(0);
+    // diag.PutScalar(0.0);
+    // jac_->ExtractDiagonalCopy(diag);
+    // out = in;
+    // out.ReciprocalMultiply(1.0, diag, out, 0.0);
 
     // INFO("applyPrecon residual " << Utils::norm(&r));
 
+    // compute residual
+    Epetra_Vector r = *in(0);
+    r.PutScalar(0.0);
+    applyMatrix(out, r);
+    r.Update(1.0,in,-1.0);
+
+    INFO("AtmospherePar::applyPrecon ||in|| = "
+         << Utils::norm(&in));
+    INFO("AtmospherePar::applyPrecon ||out|| = "
+         << Utils::norm(&out));
+    INFO("AtmospherePar::applyPrecon residual ||in-A*out|| = "
+         << Utils::norm(&r));
 }
 
 //==================================================================

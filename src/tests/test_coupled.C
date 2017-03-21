@@ -274,14 +274,16 @@ TEST(CoupledModel, Newton)
     // initialize state in model
     std::shared_ptr<Combined_MultiVec> stateV =
         coupledModel->getState('V');
+
     stateV->PutScalar(0.0);
 
     std::shared_ptr<Combined_MultiVec> solV =
         coupledModel->getSolution('V');
+
     solV->PutScalar(0.0);
 
     // set parameter
-    coupledModel->setPar(0.0001);
+    coupledModel->setPar(0.001);
 
     // try to converge
     int maxit = 3;
@@ -302,9 +304,6 @@ TEST(CoupledModel, Newton)
         double normb = Utils::norm(b);
 
         coupledModel->solve(b);
-
-        INFO(" norm b              " << normb);
-
 
         std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');
         std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
