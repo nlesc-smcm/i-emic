@@ -251,8 +251,9 @@ TEST(Atmosphere, Newton)
     Teuchos::RCP<Epetra_Vector> b = atmosPar->getRHS('V');
     Teuchos::RCP<Epetra_Vector> x = atmosPar->getSolution('V');
 
-    int maxit = 4;
-    for (int i = 0; i != maxit; ++i)
+    int maxit = 20;
+    int niter = 0;
+    for (; niter != maxit; ++niter)
     {
         INFO(" old ||b|| = " << Utils::norm(b) );
         atmosPar->computeRHS();
@@ -271,13 +272,16 @@ TEST(Atmosphere, Newton)
         atmosPar->applyMatrix(*x, *r);
         r->Update(1.0, *b, -1.0);
 
-        EXPECT_NEAR(Utils::norm(r), 0, 1e-7);
+        EXPECT_NEAR(Utils::norm(r), 0, 1e-2);
         INFO("     ||r|| = " << Utils::norm(r) << std::endl);
 
         state->Update(1.0, *x, 1.0);
         b->Scale(-1.0);
-
+        if (Utils::norm(b) < 1e-7)
+            break;
     }
+
+    INFO("Newton converged in " << niter << " iterations.");
 
     EXPECT_NEAR(Utils::norm(b), 0, 1e-7);
 }

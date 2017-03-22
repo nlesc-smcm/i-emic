@@ -417,9 +417,8 @@ void AtmospherePar::initializePrec()
 {
     INFO("AtmospherePar: initialize preconditioner...");
     Ifpack Factory;
-    string precType = "Amesos"; // direct solve on subdomains
-    int overlapLevel = 1;  // rows overlap among processors
-
+    string precType = "Amesos"; // direct solve on subdomains with some overlap
+    int overlapLevel = params_->get("Ifpack overlap level", 0);
     // Create preconditioner
     precPtr_ = Teuchos::rcp(Factory.Create(precType, jac_.get(), overlapLevel));
     precPtr_->Initialize();
