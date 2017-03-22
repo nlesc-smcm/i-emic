@@ -381,7 +381,6 @@ TEST(CoupledModel, Newton)
     INFO("CoupledModel, Newton converged in " << niter << " iterations");
 }
 
-
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {
