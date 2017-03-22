@@ -303,24 +303,31 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 }
 
 //------------------------------------------------------------------
-// Mz = x
+// Apply preconditioning:
+// 1.5 step in the block gauss seidel scheme
+//           [M1 C12] * [z1] = [     ] * [z1] + [x1]
+//           [    M2]   [z2]   [C21  ]   [z2]   [x2]
 void CoupledModel::applyPrecon(Combined_MultiVec const &x,
                                Combined_MultiVec &z, char mode)
 {
-    TIMER_START("CoupledModel: apply preconditioner2...");
-
-    z.PutScalar(0.0);  // Initialize zput
-
-    ocean_->applyPrecon( *x.First(), *z.First() );
+    TIMER_START("CoupledModel: apply preconditioner...");
 
     Combined_MultiVec tmp(x);
     tmp.PutScalar(0.0);
-    C21_.applyMatrix(*z.First(), *tmp.Second());
-    tmp.Second()->Update(1.0, *x.Second(), -1.0);
 
+    z.PutScalar(0.0);  // Initialize output
+
+    // z2 = inv(M2)*x2
     atmos_->applyPrecon(*x.Second(), *z.Second());
+    C12_.applyMatrix(*z.Second(), *tmp.First());
+    tmp.First()->Update(1.0, *x.First(), -1.0);
+    ocean_->applyPrecon(*tmp.First(), *z.First());
 
-    TIMER_STOP("CoupledModel: apply preconditioner2...");
+    C21_.applyMatrix(*z.First(), *tmp.Second());
+    tmp.Second()->Update(1.0, *x.Second(), 1.0);
+    atmos_->applyPrecon(*tmp.Second(), *z.Second());
+
+    TIMER_STOP("CoupledModel: apply preconditioner...");
 }
 
 //------------------------------------------------------------------
