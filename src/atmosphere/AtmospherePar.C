@@ -63,7 +63,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     state_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     sol_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
-    sst_            = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    sst_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -242,7 +242,16 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
     if (!(sst->Map().SameAs(*standardSurfaceMap_)))
     {
         CHECK_ZERO(sst->ReplaceMap(*standardSurfaceMap_));
+        INFO("Replacing sst map with standard surface map");
     }
+
+#ifdef DEBUGGING_NEW
+    double minValue, maxValue;
+    sst->MinValue(&minValue);
+    sst->MaxValue(&maxValue);
+    INFO("AtmospherePar::setOceanTemperature min(sst) = " << minValue);
+    INFO("AtmospherePar::setOceanTemperature max(sst) = " << maxValue);
+#endif
 
     // assign to our own datamember
     sst_ = sst;

@@ -142,6 +142,9 @@ protected:
     //! Rows corresponding to singular pressure points
     VectorPtr singRows_;
 
+    //! Index map for surface T values
+    Teuchos::RCP<Epetra_BlockMap> tIndexMap_;
+
     //! Surface temperature importer
     Teuchos::RCP<Epetra_Import> surfaceTimporter_;
 

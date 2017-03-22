@@ -118,17 +118,17 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
             tRows.push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));
 
     // Create restricted map
-    Teuchos::RCP<Epetra_BlockMap> indexMap =
+    tIndexMap_ =
         Utils::CreateSubMap(state_->Map(), tRows);
 
     // Create the SST vector
-    sst_ = Teuchos::rcp(new Epetra_Vector(*indexMap));
+    sst_ = Teuchos::rcp(new Epetra_Vector(*tIndexMap_));
 
     // Create importer
-    // Target map: indexMap
+    // Target map: tIndexMap
     // Source map: state_->Map()
     surfaceTimporter_ =
-        Teuchos::rcp(new Epetra_Import(*indexMap, state_->Map()));
+        Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
 
     INFO("Ocean: constructor... done");
 }
@@ -1040,8 +1040,11 @@ Teuchos::RCP<Epetra_Vector> Ocean::interfaceT()
 {
     TIMER_START("Ocean: get surface temperature...");
 
-    sst_->Import(*state_, *surfaceTimporter_, Insert);
-
+    if (!(sst_->Map().SameAs(*tIndexMap_)))
+    {
+        CHECK_ZERO(sst_->ReplaceMap(*tIndexMap_));
+    }
+    CHECK_ZERO(sst_->Import(*state_, *surfaceTimporter_, Insert));
     TIMER_STOP("Ocean: get surface temperature...");
     return sst_;
 }
