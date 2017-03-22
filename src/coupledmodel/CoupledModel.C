@@ -303,16 +303,22 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 }
 
 //------------------------------------------------------------------
-void CoupledModel::applyPrecon(Combined_MultiVec const &v,
-                               Combined_MultiVec &out, char mode)
+// Mz = x
+void CoupledModel::applyPrecon(Combined_MultiVec const &x,
+                               Combined_MultiVec &z, char mode)
 {
     TIMER_START("CoupledModel: apply preconditioner2...");
 
-    out.PutScalar(0.0);  // Initialize output
+    z.PutScalar(0.0);  // Initialize zput
 
-    ocean_->applyPrecon(*v.First(),  *out.First() );
+    ocean_->applyPrecon( *x.First(), *z.First() );
 
-    atmos_->applyPrecon(*v.Second(), *out.Second());
+    Combined_MultiVec tmp(x);
+    tmp.PutScalar(0.0);
+    C21_.applyMatrix(*z.First(), *tmp.Second());
+    tmp.Second()->Update(1.0, *x.Second(), -1.0);
+
+    atmos_->applyPrecon(*x.Second(), *z.Second());
 
     TIMER_STOP("CoupledModel: apply preconditioner2...");
 }
