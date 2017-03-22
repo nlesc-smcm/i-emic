@@ -79,10 +79,10 @@ private:
     //! parallel atmosphere rhs (overlapping)
     Teuchos::RCP<Epetra_Vector> localRHS_;
 
-    //! parallel atmosphere sst (non-overlapping)
+    //! parallel sst (non-overlapping)
     Teuchos::RCP<Epetra_Vector> sst_;
 
-    //! parallel atmosphere sst (overlapping)
+    //! parallel sst (overlapping)
     Teuchos::RCP<Epetra_Vector> localSST_;
 
     //! parallel atmosphere sol (non-overlapping)
@@ -146,6 +146,8 @@ public:
     void synchronize(std::shared_ptr<Ocean> ocean);
 
     void setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst);
+
+    Teuchos::RCP<Epetra_Vector> getLocalOceanT() {return localSST_; }
 
     void setLandMask(Utils::MaskStruct const &mask);
 

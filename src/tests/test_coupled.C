@@ -268,6 +268,51 @@ TEST(CoupledModel, View)
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, Synchronization)
+{
+    std::shared_ptr<Combined_MultiVec> stateV =
+        coupledModel->getState('V');
+
+    stateV->First()->PutScalar(1.234);
+    stateV->Second()->PutScalar(2.345);
+
+    coupledModel->computeRHS();
+
+    Teuchos::RCP<Epetra_Vector> oceanAtmosT = ocean->getLocalAtmosT();
+
+    double maxValue, minValue, meanValue;
+    oceanAtmosT->MaxValue(&maxValue);
+    EXPECT_EQ(maxValue, 2.345);
+    oceanAtmosT->MinValue(&minValue);
+    EXPECT_EQ(minValue, 2.345);
+
+    if (oceanAtmosT->Map().UniqueGIDs())
+    {
+        oceanAtmosT->MeanValue(&meanValue);
+        EXPECT_EQ(meanValue, 2.345);
+    }
+    else
+        INFO(" oceanAtmosT (overl.) GID's not unique, which is fine in parallel.");
+
+    Teuchos::RCP<Epetra_Vector> atmosOceanT = atmos->getLocalOceanT();
+
+    Utils::print(atmosOceanT, "atmosOceanT" + std::to_string(comm->MyPID()));
+
+    atmosOceanT->MaxValue(&maxValue);
+    EXPECT_EQ(maxValue, 1.234);
+    atmosOceanT->MinValue(&minValue);
+    EXPECT_EQ(minValue, 1.234);
+
+    if (atmosOceanT->Map().UniqueGIDs())
+    {
+        atmosOceanT->MeanValue(&meanValue);
+        EXPECT_EQ(meanValue, 1.234);
+    }
+    else
+        INFO(" atmosOceanT (overl.) GID's not unique, which is fine in parallel.");
+}
+
+//------------------------------------------------------------------
 TEST(CoupledModel, Newton)
 {
     // One step in a 'natural continuation'

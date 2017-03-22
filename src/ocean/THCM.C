@@ -1089,6 +1089,12 @@ void THCM::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmosT)
 }
 
 //=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosT()
+{
+    return localAtmosT;
+}
+
+//=============================================================================
 // Recompute scaling for the linear system
 void THCM::RecomputeScaling(void)
 {

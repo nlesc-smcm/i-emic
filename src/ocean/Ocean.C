@@ -988,6 +988,12 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
 }
 
 //==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosT()
+{
+    return THCM::Instance().getLocalAtmosT();
+}
+
+//==================================================================
 // Return global 0-based CRS matrix for coupling with atmosphere.
 // The CouplingBlock class builds a parallel coupling block from this CRS struct.
 std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> atmos)

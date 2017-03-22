@@ -272,7 +272,8 @@ TEST(Atmosphere, Newton)
         atmosPar->applyMatrix(*x, *r);
         r->Update(1.0, *b, -1.0);
 
-        EXPECT_NEAR(Utils::norm(r), 0, 1e-2);
+        EXPECT_NEAR(Utils::norm(r), 0, 1e-1);
+
         INFO("     ||r|| = " << Utils::norm(r) << std::endl);
 
         state->Update(1.0, *x, 1.0);

@@ -265,6 +265,9 @@ public:
     // Receive atmosphere data
     void synchronize(std::shared_ptr<AtmospherePar> atmos);
 
+    //! Obtain data for debugging
+    Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
+
     //! Returns the atmos->ocean coupling block in the Jacobian matrix.
     //! I.e. the derivative of our RHS with respect to the atmosphere.
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);

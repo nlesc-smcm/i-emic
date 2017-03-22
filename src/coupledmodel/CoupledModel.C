@@ -73,10 +73,10 @@ void CoupledModel::synchronize()
     syncCtr_++; // Keep track of synchronizations
 
     // Set atmosphere data in the ocean
-    // ocean_->synchronize(atmos_);
+    ocean_->synchronize(atmos_);
 
     // Set ocean data in atmosphere
-    // atmos_->synchronize(ocean_);
+    atmos_->synchronize(ocean_);
 
     TIMER_STOP("CoupledModel: synchronize...");
 }
