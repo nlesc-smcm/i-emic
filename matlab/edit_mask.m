@@ -24,6 +24,7 @@ function [] = edit_mask(mask_name, overwrite)
     fprintf('  Right mouse:   increase depth\n')
     fprintf('  Middle mouse:  quit\n')
 
+    fhandle = figure('Position',[100,100,1100,600]);
     new_maskp = isolate_basin(maskp);
     imagesc(new_maskp); set(gca,'ydir','normal');
     title(plot_title, 'interpreter', 'none')
