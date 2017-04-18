@@ -167,7 +167,9 @@ public:
     double getPar(std::string const &parName) { return atmos_->getPar(parName); }
 
     void preProcess();
-    void postProcess() {}
+    void postProcess();
+
+    void printState(std::string const &fname);
 
     //! Let the atmos object use idealized values,
     //! mainly for testing purposes

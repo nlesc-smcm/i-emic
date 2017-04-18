@@ -12,6 +12,7 @@ function [] = exportfig(string,fs,dims)
   set(gcf,'paperposition',[1,1,width,height])
   set(gcf,'papersize',[width,height])
   fprintf('saving to %s...\n', string);
-  print(string, '-depsc2', '-painters');
+  print(string, '-depsc2', '-painters', '-opengl');
+  %print(string, '-depsc2', '-painters');
 end
 

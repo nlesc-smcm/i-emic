@@ -443,6 +443,40 @@ void AtmospherePar::preProcess()
 }
 
 //==================================================================
+void AtmospherePar::postProcess()
+{
+    // save state -> hdf5
+    // todo
+
+    // print state
+    printState("state.atmos");
+}
+
+//==================================================================
+void AtmospherePar::printState(std::string const &fname)
+{
+
+    // Gather state on process 0
+    Teuchos::RCP<Epetra_MultiVector> state = Utils::Gather(*state_, 0);
+
+    // Print from process 0
+    INFO("AtmospherePar: writing state to " << fname );
+    std::ofstream file;
+    file.open(fname);
+    int length = state->GlobalLength();
+    double *localState;
+    (*state)(0)->ExtractView(&localState);
+
+    if (comm_->MyPID() == 0)
+        for (int i = 0; i != length; ++i)
+        {
+            file << localState[i] << std::endl;
+        }
+
+    file.close();
+}
+
+//==================================================================
 void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
                                 Epetra_MultiVector &out)
 {

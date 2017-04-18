@@ -8,7 +8,7 @@ srf(:,:,1) = (1-greyness*(surfm'));
 srf(:,:,2) = (1-greyness*(surfm'));
 srf(:,:,3) = (1-greyness*(surfm'));
 
-state  = importdata('atmos_state.txt');
+state  = importdata('state.atmos');
 
 T0  = 15.0;   %//! reference temperature
 RtD = 180/pi;

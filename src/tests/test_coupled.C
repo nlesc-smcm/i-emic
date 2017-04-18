@@ -289,7 +289,7 @@ TEST(CoupledModel, Synchronization)
     if (oceanAtmosT->Map().UniqueGIDs())
     {
         oceanAtmosT->MeanValue(&meanValue);
-        EXPECT_EQ(meanValue, 2.345);
+        EXPECT_NEAR(meanValue, 2.345, 1e-7);
     }
     else
         INFO(" oceanAtmosT (overl.) GID's not unique, which is fine in parallel.");
@@ -306,7 +306,7 @@ TEST(CoupledModel, Synchronization)
     if (atmosOceanT->Map().UniqueGIDs())
     {
         atmosOceanT->MeanValue(&meanValue);
-        EXPECT_EQ(meanValue, 1.234);
+        EXPECT_NEAR(meanValue, 1.234, 1e-7);
     }
     else
         INFO(" atmosOceanT (overl.) GID's not unique, which is fine in parallel.");
@@ -379,6 +379,34 @@ TEST(CoupledModel, Newton)
     EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.001);
     EXPECT_LT(niter, 10);
     INFO("CoupledModel, Newton converged in " << niter << " iterations");
+}
+
+//------------------------------------------------------------------
+TEST(CoupledModel, Continuation)
+{
+    bool failed = false;
+    try
+    {
+        // Create continuation parameters
+        Teuchos::RCP<Teuchos::ParameterList> cparams =
+            Teuchos::rcp(new Teuchos::ParameterList);
+        updateParametersFromXmlFile("continuation_params.xml",
+                                    cparams.ptr() );
+
+        // Create continuation
+        Continuation<std::shared_ptr<CoupledModel>,
+                     Teuchos::RCP<Teuchos::ParameterList> >
+            continuation(coupledModel, cparams);
+
+        // Run continuation
+        continuation.run();
+    }
+    catch (...)
+    {
+        failed = true;
+    }
+
+    EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------
