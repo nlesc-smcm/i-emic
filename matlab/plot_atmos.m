@@ -17,12 +17,12 @@ Ta  = reshape(T0 + state,n,m);
 Tz  = mean(Ta,1); % zonal mean
 
 %%
-colormap default
 figure(10)
+
 img = Ta';
 contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
-image(RtD*x,RtD*(y),srf,'AlphaData',.2); 
-c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1); 
+image(RtD*x,RtD*(y),srf,'AlphaData',.2);
+c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1);
 colorbar
 caxis([min(min(Ta)),max(max(Ta))])
 hold off
@@ -32,14 +32,14 @@ xlabel('Longitude')
 ylabel('Latitude')
 exportfig('atmosTemp.eps')
 
-		 
+
 %%
-colormap default
 figure(11)
+
 img = (Ta-repmat(Tz,n,1))';
 contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
-image(RtD*x,RtD*(y),srf,'AlphaData',.2); 
-c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1); 
+image(RtD*x,RtD*(y),srf,'AlphaData',.2);
+c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1);
 colorbar
 caxis([min(min(img)),max(max(img))])
 hold off
@@ -49,4 +49,4 @@ xlabel('Longitude')
 ylabel('Latitude')
 exportfig('atmosTemp.eps')
 
-		 
+

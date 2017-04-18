@@ -33,10 +33,8 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 
     parName_          (params->get("Continuation parameter",
                                    "Combined Forcing")),
-    solvingScheme_    (params->get("Solving scheme", 'G')),
+    solvingScheme_    (params->get("Solving scheme", 'C')),
 
-    iterGS_           (params->get("Max GS iterations", 10)),
-    toleranceGS_      (params->get("GS tolerance", 1e-1)),
     syncCtr_          (0),
     solverInitialized_(false)
 {
@@ -195,18 +193,9 @@ void CoupledModel::solve(std::shared_ptr<Combined_MultiVec> rhs)
     // Start solve
     TIMER_START("CoupledModel: solve...");
 
-    if (solvingScheme_ == 'D') // fully decoupled solve
-    {
-        ocean_->solve(rhs->First());
-        atmos_->solve(rhs->Second());
-    }
-    else if (solvingScheme_ == 'B') // backward block GS solve
-        blockGSSolve(rhs);
-    else if (solvingScheme_ == 'F') // FGMRES (Belos) on complete matrix
-        FGMRESSolve(rhs);
-    else
-        WARNING("(CoupledModel::Solve()) Invalid mode!",
-                __FILE__, __LINE__);
+    // FGMRES with the coupled system.
+    // The type of coupling is determined in applyMatrix() and applyPrecon().
+    FGMRESSolve(rhs);
 
     TIMER_STOP("CoupledModel: solve...");
 }
@@ -231,7 +220,6 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 
     TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
                                "*** Belos::LinearProblem failed to setup");
-
     try
     {
         belosSolver_->solve();      // Solve
@@ -253,30 +241,8 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 }
 
 //------------------------------------------------------------------
-void CoupledModel::blockGSSolve(std::shared_ptr<Combined_MultiVec> rhs)
-{
-    // ***************************************************************
-    // Notation: J = [A,B;C,D], x = [x1;x2], b = [b1;b2]
-    //           M = [A, 0; 0, D], E = [0, 0; -C, 0], F = [0, -B; 0, 0]
-    //
-    // Symmetric block GS: (M-F)*x^{k+1/2} = E*x^{k} + b
-    //                     (M-E)*x^{k+1)   = F*x^{k+1/2) + b
-    //
-    // This leads to iteratively solving   D*x2 = -C*x1 + b2
-    //                                     A*x1 = -B*x2 + b1
-    //
-    // After the iteration we do a final solve with  D*x2 = -C*x1 + b2
-    //  (because it's cheap)
-    // ***************************************************************
-
-    ERROR("blockGSSolve not implemented, look in git history", __FILE__, __LINE__);
-
-}
-
-//------------------------------------------------------------------
 //      out = [J1 C12; C21 J2] * [v1; v2]
-void CoupledModel::applyMatrix(Combined_MultiVec const &v,
-                               Combined_MultiVec &out, char mode)
+void CoupledModel::applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &out)
 {
     TIMER_START("CoupledModel: apply matrix...");
 
@@ -287,7 +253,7 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
     ocean_->applyMatrix(*v.First(),  *out.First());
     atmos_->applyMatrix(*v.Second(), *out.Second());
 
-    if (mode == 'C')
+    if (solvingScheme_ == 'C')
     {
         // Obtain temporary vector
         Combined_MultiVec z(v);
@@ -303,29 +269,35 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v,
 }
 
 //------------------------------------------------------------------
-// Apply preconditioning:
-// 1.5 step in the block gauss seidel scheme
-//           [M1 C12] * [z1] = [     ] * [z1] + [x1]
-//           [    M2]   [z2]   [C21  ]   [z2]   [x2]
-void CoupledModel::applyPrecon(Combined_MultiVec const &x,
-                               Combined_MultiVec &z, char mode)
+void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
 {
     TIMER_START("CoupledModel: apply preconditioner...");
 
-    Combined_MultiVec tmp(x);
-    tmp.PutScalar(0.0);
-
     z.PutScalar(0.0);  // Initialize output
 
-    // z2 = inv(M2)*x2
-    atmos_->applyPrecon(*x.Second(), *z.Second());
-    C12_.applyMatrix(*z.Second(), *tmp.First());
-    tmp.First()->Update(1.0, *x.First(), -1.0);
-    ocean_->applyPrecon(*tmp.First(), *z.First());
+    if (solvingScheme_ == 'C')
+    {
+        Combined_MultiVec tmp(x);
+        tmp.PutScalar(0.0);
 
-    C21_.applyMatrix(*z.First(), *tmp.Second());
-    tmp.Second()->Update(1.0, *x.Second(), 1.0);
-    atmos_->applyPrecon(*tmp.Second(), *z.Second());
+        atmos_->applyPrecon(*x.Second(), *z.Second()); //  inv(M2)*x2
+        C12_.applyMatrix(*z.Second(), *tmp.First());
+        tmp.First()->Update(1.0, *x.First(), -1.0);
+        ocean_->applyPrecon(*tmp.First(), *z.First()); // inv(M1)*(x1-C12*z2^1)
+
+        C21_.applyMatrix(*z.First(), *tmp.Second());
+        tmp.Second()->Update(1.0, *x.Second(), 1.0);
+        atmos_->applyPrecon(*tmp.Second(), *z.Second()); // inv(M2)*(x2+C21*z1^1)
+    }
+    else if (solvingScheme_ == 'D')
+    {
+        atmos_->applyPrecon(*x.Second(), *z.Second());
+        ocean_->applyPrecon(*x.First() , *z.First() );
+    }
+    else
+    {
+        WARNING("Invalid solving scheme ", __FILE__, __LINE__);
+    }
 
     TIMER_STOP("CoupledModel: apply preconditioner...");
 }

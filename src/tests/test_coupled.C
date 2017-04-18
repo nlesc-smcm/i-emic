@@ -382,6 +382,7 @@ TEST(CoupledModel, Newton)
 }
 
 //------------------------------------------------------------------
+// full continuation
 TEST(CoupledModel, Continuation)
 {
     bool failed = false;
@@ -410,6 +411,38 @@ TEST(CoupledModel, Continuation)
 }
 
 //------------------------------------------------------------------
+// using the solution from the previous continuation we check the
+// integrity of the Jacobian matrix
+TEST(CoupledModel, SmallPerturbation)
+{
+    std::shared_ptr<Combined_MultiVec> x  = coupledModel->getState('V');
+    std::shared_ptr<Combined_MultiVec> xp = coupledModel->getState('C');
+    xp->Scale(0.01);                // perturbation
+    double nrmxp = Utils::norm(xp); 
+    x->Update(1.0, *xp, 1.0);       // perturb state
+    coupledModel->computeRHS();
+
+    // temporary
+    Combined_MultiVec tmp(*x);
+    tmp.PutScalar(0.0);
+
+    double nrmp = Utils::norm(coupledModel->getRHS('V')); // perturbed norm
+    INFO("Perturbed norm: " << nrmp / nrmxp);
+
+    x->Update(-1.0, *xp, 1.0);   // unperturb state
+    coupledModel->computeRHS();
+    coupledModel->computeJacobian();
+
+    coupledModel->applyMatrix(*xp, tmp);
+    tmp.Update(1.0,*coupledModel->getRHS('V'),1.0);
+
+    double nrm = Utils::norm(&tmp); // perturbed norm
+    INFO("Linearized norm: " << nrm / nrmxp);
+
+    EXPECT_NEAR(nrm / nrmxp ,nrmp / nrmxp,1e-03);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:
@@ -420,7 +453,7 @@ int main(int argc, char **argv)
     ::testing::InitGoogleTest(&argc, argv);
 
     // -------------------------------------------------------
-    // TESTING
+    // TESTINGv
     int out = RUN_ALL_TESTS();
     // -------------------------------------------------------
 

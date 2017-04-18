@@ -251,6 +251,7 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
     sst->MaxValue(&maxValue);
     INFO("AtmospherePar::setOceanTemperature min(sst) = " << minValue);
     INFO("AtmospherePar::setOceanTemperature max(sst) = " << maxValue);
+    Utils::print(sst, "sst");
 #endif
 
     // assign to our own datamember

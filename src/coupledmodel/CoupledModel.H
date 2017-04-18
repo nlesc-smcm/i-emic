@@ -70,16 +70,9 @@ private:
     std::string parName_;
 
     //! Solving scheme
-    //!   'D': decoupled
-    //!   'B': backward block Gauss Seidel with sub-model solves
-    //!   'F': FGMRES (Belos)
+    //!   'D': decoupled  (weakly coupled at post-processing)
+    //!   'C': coupled    (strongly coupled in FGMRES)
     char solvingScheme_;
-
-    //! Max iterations in GS preconditioning scheme
-    int iterGS_;
-
-    //! Tolerance in GS preconditioning scheme
-    double toleranceGS_;
 
     //! keep track of syncs
     int syncCtr_;
@@ -127,15 +120,20 @@ public:
     void initializeFGMRES();
 
     //! Apply the Jacobian matrix: out=J*v
-    //!   coupled   mode 'C'
-    //!   decoupled mode 'D'
-    //!
-    void applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &out, char mode = 'C');
+    void applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &out);
 
     //! Apply the preconditioning: out=inv(P)*v
-    //!   coupled   mode 'C'
-    //!   decoupled mode 'D'
-    void applyPrecon(Combined_MultiVec const &v, Combined_MultiVec &out, char mode = 'C');
+    //! In the coupled case: 1.5 step in the block gauss seidel scheme
+    //!
+    //!        z = inv(P)*x  <=>  P*z = x  -> iterate with
+    //!
+    //!           [M1 C12] * [z1] = [     ] * [z1] + [x1]
+    //!           [    M2]   [z2]   [C21  ]   [z2]   [x2]
+    //!
+    //! z1^0 = 0 => z2^1 = inv(M2)*x2
+    //!          => z1^1 = inv(M1)*(x1-C12*z2^1)
+    //!          => z2^1 = inv(M2)*(x2+C21*z1^1)
+    void applyPrecon(Combined_MultiVec const &v, Combined_MultiVec &out);
 
     //! Apply the mass matrix: out=B*v
     void applyMassMatrix(Combined_MultiVec const &v, Combined_MultiVec &out);
@@ -169,8 +167,6 @@ public:
     bool monitor() { return false; }
 
 private:
-    //! Solve the system with a few symmetric block GS iterations
-    void blockGSSolve(std::shared_ptr<Combined_MultiVec> rhs);
 
     //! Solve the system using FGMRES
     void FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs);

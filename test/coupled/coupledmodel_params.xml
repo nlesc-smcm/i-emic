@@ -19,15 +19,11 @@
 
   <!-- Select the solving and synchronization mode.                                    -->
   <!-- Synchronization depends on the solving method.                                  -->
-  <!--  mode 'D': decoupled, the systems are solved separately and the solutions are   -->
-  <!--            synchronized after the Newton process has converged.                 -->
-  <!--  mode 'B': Solve coupled system using backward block GS iterations              -->
-  <!--            The solutions are synchronized before every computation of the RHS   -->
-  <!--            and the Jacobian.                                                    -->
-  <!--  mode 'F': Use FGMRES (Belos) for the complete system.                          -->
-  <!--            The solutions are synchronized before every computation of the RHS   -->
-  <!--            and the Jacobian.                                                    -->
-  <Parameter name="Solving scheme" type="char" value="F"/>
+  <!--  mode 'D': decoupled, off-diagonal blocks are ignored in the matrix and prec,   -->
+  <!--            and synchronization of states occur at post processing.              -->
+  <!--  mode 'C': coupled, off-diagonal blocks are included in the matrix and prec,    -->
+  <!--            and synchronization of states occur at every RHS and J computation.  -->
+  <Parameter name="Solving scheme" type="char" value="C"/>
 
   <!-- Scale the problem before a solve                -->
   <Parameter name="Use scaling" type="bool" value="false"/>

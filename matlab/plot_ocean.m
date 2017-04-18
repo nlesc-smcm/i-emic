@@ -18,6 +18,10 @@ function [] = plot_ocean(solfile, maskfile, opts)
         specify_mask = true;
     end
 
+    if nargin < 3
+        opts.everything = true;
+    end
+
     if isfield(opts, 'title_add')
         plot_title = true;
     else
@@ -123,6 +127,8 @@ function [] = plot_ocean(solfile, maskfile, opts)
 
 
     if isfield(opts, 'bstream') || isfield(opts, 'everything')
+        figure(1);
+
         % - INTEGRATIONS - --------------------------------------------------
         % Barotropic streamfunction;
         PSIB = bstream(u*udim,zw*hdim,[y;ymax]*r0dim);
@@ -161,6 +167,7 @@ function [] = plot_ocean(solfile, maskfile, opts)
     end
 
     if isfield(opts, 'mstream') || isfield(opts, 'everything')
+        figure(2);
         % PLOT OVERTURNING STREAMFUNCTION
 
         % Compute overturning streamfunction
@@ -172,8 +179,8 @@ function [] = plot_ocean(solfile, maskfile, opts)
         contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGp',15); hold on
         contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGn',15,'--'); hold off
         colorbar
-        cmin = min(min(PSIG(:,1:9)))
-        cmax = max(max(PSIG(:,1:9)))
+        cmin = min(min(PSIG(:,1:9)));
+        cmax = max(max(PSIG(:,1:9)));
 
         if plot_title
             title(['MOC (Sv) ',opts.title_add])
@@ -186,7 +193,6 @@ function [] = plot_ocean(solfile, maskfile, opts)
             caxis([opts.caxis_min,opts.caxis_max])
         end
 
-
         colormap(col_white)
 
         if export_to_file
@@ -195,7 +201,7 @@ function [] = plot_ocean(solfile, maskfile, opts)
     end
 
     if isfield(opts, 'everything')
-
+        figure(3);
         % - CHECK SALINITY - ------------------------------------------------
         check = checksal(S,x,y,dfzt);
         vol   = sum(sum(1-surfm).*cos(y'))*dx*dy;
@@ -235,11 +241,13 @@ function [] = plot_ocean(solfile, maskfile, opts)
         xlabel('Latitude')
         ylabel('z (m)')
         colormap(col_white)
-        exportfig('isothermals.eps',10,[20,7])
+        if export_to_file
+            exportfig('isothermals.eps',10,[20,7])
+        end
 
 
         % -------------------------------------------------------
-
+        figure(4);
         Tsurf = T(:,:,l);
         minT = T0+min(min(Tsurf));
         maxT = T0+max(max(Tsurf));
@@ -258,9 +266,13 @@ function [] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         colormap(col_white)
-        exportfig('sst.eps',10,[50,25])
 
-        %
+        if export_to_file
+            exportfig('sst.eps',10,[50,25])
+        end
+
+        figure(5);
+        colormap(col_white)
 
         contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
         %imagesc(Sp'+S0);
@@ -271,7 +283,9 @@ function [] = plot_ocean(solfile, maskfile, opts)
         xlabel('Latitude')
         ylabel('z (m)')
 
-        exportfig('isohalines.eps',10,[20,7])
+        if export_to_file
+            exportfig('isohalines.eps',10,[20,7])
+        end
 
     end
 
