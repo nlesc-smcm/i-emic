@@ -78,10 +78,10 @@
     <!-- Starting Parameters -->
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-      <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
+      <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.25"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-      <Parameter name="Temperature Forcing" type="double" value="10.0"/>
+      <Parameter name="Temperature Forcing" type="double" value="0.0"/>
       <Parameter name="SPL1"                type="double" value="2.0e3"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>
     </ParameterList>

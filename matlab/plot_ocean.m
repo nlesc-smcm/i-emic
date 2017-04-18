@@ -108,6 +108,7 @@ function [] = plot_ocean(solfile, maskfile, opts)
     [u,v,w,p,T,S] = extractsol(sol);
 
     % --- Create colormaps
+
     par = [0    0.4470    0.7410;  0.8500    0.3250    0.0980];
     neg  = par(1,:);
     pos  = par(2,:);
@@ -116,7 +117,7 @@ function [] = plot_ocean(solfile, maskfile, opts)
     mid  = [1,1,1];
     col1 = [linspace(neg(1),mid(1),N1)',linspace(neg(2),mid(2),N1)',linspace(neg(3),mid(3),N1)'];
     col2 = [linspace(mid(1),pos(1),N2)',linspace(mid(2),pos(2),N2)',linspace(mid(3),pos(3),N2)'];
-    col_white  = [col1;col2];
+    col_white = [col1;col2];
 
     mid  = [1,1,1];
     col1 = [linspace(neg(1),mid(1),N1)',linspace(neg(2),mid(2),N1)',linspace(neg(3),mid(3),N1)'];
