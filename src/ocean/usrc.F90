@@ -92,7 +92,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   call grid         ! 
   call stpnt        ! 
   call mixe         ! 
-  call vmix_init	! ATvS-Mix  USES LANDMASK
+  call vmix_init    ! ATvS-Mix  USES LANDMASK
   call atmos_coef   ! 
   call forcing      ! USES LANDMASK
 
@@ -129,7 +129,7 @@ SUBROUTINE mixe
   do i=1,n
      do j=1,m
         emix(i,j,0) = 0.0
-	    do k=1,l-1
+        do k=1,l-1
            emix(i,j,k)= - sin(pi*(x(i)-xmin)/(xmax-xmin))*   &
                 (cos((pi/2)*(y(j)-ymin)/(ymax-ymin)) + 0.2)         &
                 *zw(k)
@@ -185,6 +185,21 @@ SUBROUTINE getooa(o_Ooa, o_Os)
   o_Ooa = Ooa
   o_Os  = Os
 end subroutine getooa
+
+!**********************************************************
+SUBROUTINE get_constants(o_r0dim, o_udim, o_hdim)
+  !     interface to get a few model constants
+  use, intrinsic :: iso_c_binding
+  use m_usr
+  use m_atm
+  implicit none
+  real(c_double) o_r0dim, o_udim, o_hdim
+
+  o_r0dim = r0dim;
+  o_udim  = udim;
+  o_hdim  = hdim;
+  
+end subroutine get_constants
 
 !***********************************************************
 SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
@@ -510,7 +525,7 @@ SUBROUTINE lin
   xes    = par(NLES)
   bi     = par(BIOT)
   Ra     = par(RAYL)
-  !      rintt  = par(IFRICT)	! ATvS-Mix
+  !      rintt  = par(IFRICT)   ! ATvS-Mix
 
   Al = 0.0
 
@@ -690,7 +705,7 @@ SUBROUTINE nlin_rhs(un)
   call tnlin(3,utx,u,v,w,t,rho)
   call tnlin(5,vty,u,v,w,t,rho)
   call tnlin(7,wtz,u,v,w,t,rho)
-  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT)+ utx+vty+wtz		! ATvS-Mix
+  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT)+ utx+vty+wtz        ! ATvS-Mix
 #endif
 
   ! ------------------------------------------------------------------
@@ -700,7 +715,7 @@ SUBROUTINE nlin_rhs(un)
   call tnlin(3,usx,u,v,w,s,rho)
   call tnlin(5,vsy,u,v,w,s,rho)
   call tnlin(7,wsz,u,v,w,s,rho)
-  Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS)+ usx+vsy+wsz		! ATvS-Mix
+  Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS)+ usx+vsy+wsz        ! ATvS-Mix
 #endif
 
 end SUBROUTINE nlin_rhs
@@ -810,7 +825,7 @@ SUBROUTINE nlin_jac(un)
   Al(:,:,1:l,:,TT,UU) = Al(:,:,1:l,:,TT,UU) + urTx
   Al(:,:,1:l,:,TT,VV) = Al(:,:,1:l,:,TT,VV) + vrTy
   Al(:,:,1:l,:,TT,WW) = Al(:,:,1:l,:,TT,WW) + wrTz
-  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT) + Utrx + Vtry + Wtrz		! ATvS-Mix
+  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT) + Utrx + Vtry + Wtrz        ! ATvS-Mix
 #endif
 
   ! ------------------------------------------------------------------
@@ -914,7 +929,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         w(i,j,0)   = 0.0
         p(i,j,l+1) = 0.0
         p(i,j,0)   = 0.0
-	    IF (la == 0) t(i,j,l+1) = t(i,j,l)
+        IF (la == 0) t(i,j,l+1) = t(i,j,l)
         t(i,j,0)   = t(i,j,1)
         s(i,j,l+1) = s(i,j,l)
         s(i,j,0)   = s(i,j,1)
@@ -981,12 +996,17 @@ SUBROUTINE stpnt!(un)
   !     PARAMETERS:
   !*******************************************************
   ! when data are used, tmax comes from windfit
-  ! otherwise tmax comes from wfun... 
+  ! otherwise tmax comes from wfun...
 
   par(AL_T)   =  0.1/(2*omegadim*rhodim*hdim*udim*dz*dfzT(l))
-  par(RAYL)   =  alphaT*gdim*hdim/(2*omegadim*udim*r0dim)	! Ra
-  par(EK_V)   =  av/(2*omegadim*hdim*hdim)   		        ! E_V
-  par(EK_H)   =  ah/(2*omegadim*r0dim*r0dim)	            ! E_H
+  par(RAYL)   =  alphaT*gdim*hdim/(2*omegadim*udim*r0dim)   ! Ra
+  par(EK_V)   =  av/(2*omegadim*hdim*hdim)                  ! E_V
+  par(EK_H)   =  ah/(2*omegadim*r0dim*r0dim)                ! E_H
+
+  !MdT \/
+  par(RAYL)   = par(RAYL)*par(EK_H)            ! Rescaled Ra
+  !MdT /\
+
   par(ROSB)   =  udim/(2*omegadim*r0dim)                    ! Rossby Number
   par(HMTP)   =  0.0
   par(SUNP)   =  0.0
@@ -1003,7 +1023,7 @@ SUBROUTINE stpnt!(un)
   par(CMPR)   =  0.0
   par(ALPC)   =  1.0
   par(ENER)   =  1.0e+02
-  par(MIXP)   =  0.0	   ! ATvS-Mix
+  par(MIXP)   =  0.0       ! ATvS-Mix
   par(MKAP)   =  0.0       ! Gent-Mcwilliams  ! ATvS-Mix
   par(SPL1)   =  2.0e+03   ! 1.25  !tanh      ! ATvS-Mix
   par(SPL2)   =  0.01      ! neutral physics

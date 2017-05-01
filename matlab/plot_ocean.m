@@ -148,6 +148,9 @@ function [] = plot_ocean(solfile, maskfile, opts)
 
         if fix_caxis
             caxis([opts.caxis_min,opts.caxis_max])
+        else
+            crange = max(abs(min(caxis)),abs(max(caxis)));
+            caxis([-crange, crange]);
         end
 
         colorbar
@@ -192,6 +195,9 @@ function [] = plot_ocean(solfile, maskfile, opts)
 
         if fix_caxis
             caxis([opts.caxis_min,opts.caxis_max])
+        else
+            crange = max(abs(min(caxis)),abs(max(caxis)));
+            caxis([-crange, crange]);
         end
 
         colormap(col_white)
@@ -242,6 +248,9 @@ function [] = plot_ocean(solfile, maskfile, opts)
         xlabel('Latitude')
         ylabel('z (m)')
         colormap(col_white)
+        crange = max(abs(caxis))-T0;
+        caxis([T0-crange, T0+crange]);
+
         if export_to_file
             exportfig('isothermals.eps',10,[20,7])
         end
@@ -268,12 +277,16 @@ function [] = plot_ocean(solfile, maskfile, opts)
         ylabel('Latitude');
         colormap(col_white)
 
+        crange = max(abs(min(caxis)),abs(max(caxis)))-T0;
+        caxis(T0+[-crange, crange]);
+
+
         if export_to_file
             exportfig('sst.eps',10,[50,25])
         end
 
         figure(5);
-        colormap(col_white)
+
 
         contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
         %imagesc(Sp'+S0);
@@ -283,6 +296,11 @@ function [] = plot_ocean(solfile, maskfile, opts)
         title('Isohalines')
         xlabel('Latitude')
         ylabel('z (m)')
+
+        colormap(col_white)
+        crange = max(abs(min(caxis)),abs(max(caxis)))-S0;
+        caxis(S0+[-crange, crange])
+
 
         if export_to_file
             exportfig('isohalines.eps',10,[20,7])

@@ -385,7 +385,7 @@ real FUNCTION temfun(xx,yy)
   if (ymin.ge.0.0) then ! Northern hemisphere
      temfun = cos(pi*(yy-ymin)/(ymax-ymin))
   else
-     temfun = cos(pi*yy/ymax)
+     temfun = cos(pi*yy/ymax) + par(CMPR)*sin(pi*yy/ymax)
   end if
 end FUNCTION temfun
 
@@ -400,7 +400,7 @@ real FUNCTION salfun(xx,yy)
      salfun = cos(pi*(yy-ymin)/(ymax-ymin))
      ! salfun=0.0
   else
-     salfun = cos(pi*yy/ymax)
+     salfun = cos(pi*yy/ymax)/cos(yy)
 
   end if
 end FUNCTION salfun

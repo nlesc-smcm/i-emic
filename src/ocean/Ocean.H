@@ -35,6 +35,7 @@
 #include "GlobalDefinitions.H"
 #include "AtmospherePar.H"
 #include "THCMdefs.H"
+#include "OceanGrid.H"
 #include "Combined_MultiVec.H"
 #include "Utils.H"
 
@@ -93,6 +94,9 @@ protected:
     bool   recompPreconditioner_;
 
     VectorPtr sol_;
+
+    // grid representation of the state
+    Teuchos::RCP<OceanGrid> grid_;
 
     Teuchos::RCP<Teuchos::ParameterList> solverParams_;
 

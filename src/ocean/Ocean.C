@@ -39,6 +39,7 @@ extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
 extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(setparcs)(int*,double*);
 extern "C" _SUBROUTINE_(getooa)(double*, double*);
+extern "C" _SUBROUTINE_(get_constants)(double*, double*, double*);
 
 //=====================================================================
 // Constructor:
@@ -78,9 +79,14 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
     // Get domain object and get the problem dimensions
     domain_ = THCM::Instance().GetDomain();
+
     N_ = domain_->GlobalN();
     M_ = domain_->GlobalM();
     L_ = domain_->GlobalL();
+
+    // grid representation of te state
+    grid_   = rcp(new OceanGrid(domain_));
+
 
     // Read starting parameters from xml
     Teuchos::ParameterList& startList =
@@ -541,6 +547,22 @@ void Ocean::postProcess()
 
     if (storeEverything_)
         copyFiles(); // Copy fortran and hdf5 files
+
+    // compute streamfunctions and output data
+    grid_->ImportData(*state_);
+    double psiMax = grid_->psimMax();
+    double psiMin = grid_->psimMin();
+
+    double r0dim, udim, hdim;
+    FNAME(get_constants)(&r0dim, &udim, &hdim);
+
+    const double transc = r0dim * hdim * udim;
+    psiMax = psiMax * transc * 1e-6; // conversion to Sv
+    psiMin = psiMin * transc * 1e-6; //
+
+    INFO("max MOC = " << psiMax);
+    INFO("min MOC = " << psiMin);
+    INFO("    sum = " << psiMax + psiMin);
 }
 
 //=====================================================================
