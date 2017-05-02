@@ -560,9 +560,8 @@ void Ocean::postProcess()
     psiMax = psiMax * transc * 1e-6; // conversion to Sv
     psiMin = psiMin * transc * 1e-6; //
 
-    INFO("max MOC = " << psiMax);
-    INFO("min MOC = " << psiMin);
-    INFO("    sum = " << psiMax + psiMin);
+    INFO(std::endl << "MOC+ = " << psiMax << " MOC- = "
+         << psiMin << " MOC+ + MOC- = " << psiMax + psiMin << std::endl);
 }
 
 //=====================================================================

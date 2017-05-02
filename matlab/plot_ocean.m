@@ -178,14 +178,15 @@ function [] = plot_ocean(solfile, maskfile, opts)
         PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
         PSIG = [zeros(m+1,1) PSIG];
 
-        PSIGp = PSIG; PSIGp(PSIGp<0) = NaN;
+        PSIGp = PSIG; PSIGp(PSIGp<0)  = NaN;
         PSIGn = PSIG; PSIGn(PSIGn>0)  = NaN;
         contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGp',15); hold on
         contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGn',15,'--'); hold off
         colorbar
         cmin = min(min(PSIG(:,1:9)));
         cmax = max(max(PSIG(:,1:9)));
-
+        fprintf('MOC+ = %f MOC- = %f MOC+ + MOC- = %f \n', max(PSIG(:)), ...
+                min(PSIG(:)), max(PSIG(:)) + min(PSIG(:)))
         if plot_title
             title(['MOC (Sv) ',opts.title_add])
         end

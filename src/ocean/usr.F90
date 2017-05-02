@@ -110,8 +110,8 @@ module m_usr
 
   !===== FIXED PARAMETERS ======================================================
 
-  real, parameter :: omegadim = 7.292e-05
-  real, parameter :: r0dim    = 6.37e+06
+  real, parameter :: omegadim = 7.272e-05
+  real, parameter :: r0dim    = 6.371e+06
   real, parameter :: udim     = 0.1e+00
   real, parameter :: gdim     = 9.8e+00
   real, parameter :: rhodim   = 1.0e+03

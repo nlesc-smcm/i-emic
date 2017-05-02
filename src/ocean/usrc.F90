@@ -89,11 +89,11 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
      end do
   end do
 
-  call grid         ! 
-  call stpnt        ! 
-  call mixe         ! 
+  call grid         !
+  call stpnt        !
+  call mixe         !
   call vmix_init    ! ATvS-Mix  USES LANDMASK
-  call atmos_coef   ! 
+  call atmos_coef   !
   call forcing      ! USES LANDMASK
 
   _INFO_('THCM: init...  done')
@@ -198,7 +198,7 @@ SUBROUTINE get_constants(o_r0dim, o_udim, o_hdim)
   o_r0dim = r0dim;
   o_udim  = udim;
   o_hdim  = hdim;
-  
+
 end subroutine get_constants
 
 !***********************************************************
@@ -248,16 +248,16 @@ SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
         enddo
      enddo
   enddo
-  
+
   ! Let the dummy cells be land
   if (.not.periodic) then
      landm(0,:,:)   = LAND
      landm(n+1,:,:) = LAND
   end if
-  landm(:,0,:)    = LAND   
+  landm(:,0,:)    = LAND
   landm(:,m+1,:)  = LAND
   landm(:,:,0)    = LAND
-  landm(:,:,l+1)  = LAND 
+  landm(:,:,l+1)  = LAND
 
   if (a_reinit.eq.1) then
      !  A few initializations need to be repeated
@@ -265,7 +265,7 @@ SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
      call forcing      ! USES LANDMASK
   endif
 
-!  _INFO_('THCM: usrc.F90 set_landmask...  done')  
+!  _INFO_('THCM: usrc.F90 set_landmask...  done')
 end subroutine set_landmask
 
 !*****************************************************************************
@@ -342,7 +342,7 @@ SUBROUTINE matrix(un,sig1,sig2)
 
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
-     
+
      if (((vmix_temp.eq.1).or.(vmix_salt.eq.1)).and.(vmix_dim.gt.0)) then
         call vmix_jac(un)
      endif
@@ -396,21 +396,21 @@ SUBROUTINE rhs(un,B)
   real mix(ndim) ! ATvS-Mix
   real    Au(ndim), time0, time1
   integer i,j,k,k1,row,find_row2, mode, iter
-  
+
   !call writeparameters
   mix  = 0.0
-  Al   = 0
+  Al   = -1
   begA = 0
   coA  = 0
   jcoA = 0
-  call lin              !--> wordt misschien te vaak aangeroepen?
+  call lin              !
 #ifndef THCM_LINEAR
   call nlin_rhs(un)
 #endif
-  call forcing          !--> wordt misschien te vaak aangeroepen?
-  call boundaries       !--> wordt misschien te vaak aangeroepen?
+  call forcing          !
+  call boundaries       !
   call assemble
-  call matAvec(un,Au)   !--> Tamelijk fancy dus leg uit wat hier gebeurt!
+  call matAvec(un,Au)   !
   ! ATvS-Mix ---------------------------------------------------------------------
   if (vmix_flag.ge.1) then
      mode=vmix_fix
@@ -433,11 +433,11 @@ SUBROUTINE rhs(un,B)
   ! --------------------------------------------------------------------- ATvS-Mix
 
   _DEBUG2_("p0 = ", p0) !-->Residue Continuation
-  
+
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
 
 #if 1
-  if(ires == 0) then 
+  if(ires == 0) then
      DO i = 1, n
         DO j = 1, m
            DO k = 1, l
@@ -449,8 +449,15 @@ SUBROUTINE rhs(un,B)
         ENDDO
      ENDDO
   endif
-#endif 
-  
+#endif
+
+  open(15,file='Frc.co')
+  do i=1,ndim
+     write(15,*) Frc(i)
+  enddo
+  close(15)
+
+
   _DEBUG2_("maxval rhs= ", maxval(abs(B)))
 
 end SUBROUTINE rhs
@@ -542,7 +549,8 @@ SUBROUTINE lin
   call coriolis(1,fv)
   call gradp(1,px)
   Al(:,:,1:l,:,UU,UU) = -EH * (uxx+uyy+ucsi) -EV * uzz ! + rintt*u ! ATvS-Mix
-  Al(:,:,1:l,:,UU,VV) = -fv - EH*vxs
+  ! Al(:,:,1:l,:,UU,VV) = -fv - EH*vxs 
+  Al(:,:,1:l,:,UU,VV) = - EH*vxs !MdT
   Al(:,:,1:l,:,UU,PP) =  px
 
   ! ------------------------------------------------------------------
@@ -557,7 +565,8 @@ SUBROUTINE lin
   call vderiv(7,v)      !--> kan weg: v doet niks
   call coriolis(2,fu)
   call gradp(2,py)
-  Al(:,:,1:l,:,VV,UU) =  fu - EH*uxs
+  ! Al(:,:,1:l,:,VV,UU) =  fu - EH*uxs
+  Al(:,:,1:l,:,VV,UU) =  - EH*uxs
   Al(:,:,1:l,:,VV,VV) = -EH*(vxx + vyy + vcsi) - EV*vzz !+ rintt*v ! ATvS-Mix
   Al(:,:,1:l,:,VV,PP) =  py
 
@@ -1080,7 +1089,7 @@ SUBROUTINE atmos_coef
   ! open(8, file = rundir//'suno.txt')
   ! write(8, *) suno
   ! close(8)
-  
+
 END SUBROUTINE atmos_coef
 
 !******************************************************************

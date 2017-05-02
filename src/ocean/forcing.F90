@@ -100,7 +100,7 @@ SUBROUTINE forcing
      call qint(emip,salcor)
      call qint(spert,spertcor)
 
-     write(*,*) salcor, spertcor
+     write(*,*) salcor, spertcor, par(SPER)
   else
      salcor   = 0.0
      spertcor = 0.0
