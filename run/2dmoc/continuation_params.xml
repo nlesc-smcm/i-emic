@@ -5,7 +5,7 @@
 <ParameterList name="Continuation parameters">
 
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="-1.0e-4"/>
+  <Parameter name="initial step size" type="double" value="1.0e-4"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>
   <Parameter name="maximum step size" type="double" value="1.0e-1"/>
 
@@ -38,20 +38,10 @@
   <!-- *******************************************************  -->
 
   <!-- Finite difference with which dFdpar is calculated -->
-  <Parameter name="epsilon increment" type="double" value="1.0e-8"/>
+  <Parameter name="epsilon increment" type="double" value="1.0e-6"/>
 
-  <!-- Scaling of the state tangent, which needs to be several orders -->
-  <!-- smaller than the parameter tangent -->
-  <Parameter name="state tangent scaling" type="double" value="1e-3"/>
-
-  <!-- reject solution from failed Newton iteration -->
-  <Parameter name="reject failed iteration" type="bool" value="true"/>
-
-  <!-- cycle between multiples of the tolerance -->
-  <Parameter name="enable tolerance cycling" type="bool" value="false"/>
-
-  <!-- use alternative definition for the Newton tolerance-->
-  <Parameter name="enable practical tolerance" type="bool" value="false"/>
+  <!-- Additional scaling <zeta> of the state tangent -->
+  <Parameter name="state tangent scaling" type="double" value="1.0"/>
 
   <!-- experimental rhs scaling -->
   <Parameter name="enable rhs scaling" type="bool" value="false"/>

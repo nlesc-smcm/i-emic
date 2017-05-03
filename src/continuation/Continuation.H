@@ -44,7 +44,7 @@ Continuation(Model model, ParameterList pars)
     usePracticalTol_       (pars->get("enable practical tolerance", false)),
     newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
     tangentType_           (pars->get("tangent type", 'E')),
-    initialTangent_        (pars->get("initial tangent type", 'S')),
+    initialTangent_        (pars->get("initial tangent type", 'E')),
     printImportantVectors_ (pars->get("print important vectors", false)),
     predictorBound_        (pars->get("predictor bound", 100.0)),
     signMonitor_           (0)
@@ -258,7 +258,7 @@ createInitialTangent()
 
     if (printImportantVectors_) Utils::print(dFdPar_, "dFdpar");
 
-    if (initialTangent_ == 'S')     // 2a) Solve J*stateDot_ = -dFdPar_
+    if (initialTangent_ == 'E')     // 2a) Solve J*dxdpar = -dFdPar_
     {
         model_->preProcess();
         model_->computeJacobian();
@@ -393,24 +393,23 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 normalize()
 {
-    // -----------------------------------------------------------------
-    // We normalize the tangent of the branch (stateDot, parDot)
-    // 1) First we scale the tangent of the state
-    // 2) Then we compute the norm of the combined vector
-    // 3) Finally we normalize (stateDot, parDot)
-    // -----------------------------------------------------------------
+    // At this point we assume statedot contains a derivative with respect to
+    // the parameter
 
-    // 1) scale stateDot
+    // obtain scaling
     zeta_ = tanScaling_ / stateDot_->GlobalLength();
-    stateDot_->Scale(zeta_);
 
-    // 2) compute norm of combined vector
-    double nrm      = Utils::norm(stateDot_);
-    double normComb = sqrt(nrm * nrm + 1);
+    // compute ||dx/dpar||
+    double nrm = Utils::norm(stateDot_);
 
-    // 3) scale the components
-    stateDot_->Scale(1.0 / normComb);
+    // compute sqrt(1+zeta*||dx/dpar||^2)
+    double normComb = sqrt(zeta_ * nrm * nrm + 1);
+
+    // dpar/ds = 1 / sqrt(1 + zeta*||dx/dpar||^2)
     parDot_ = 1.0 / normComb;
+
+    // dx/ds = dx/dpar * dpar/ds
+    stateDot_->Scale(parDot_);
 }
 
 //======================================================================
