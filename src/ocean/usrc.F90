@@ -399,7 +399,7 @@ SUBROUTINE rhs(un,B)
 
   !call writeparameters
   mix  = 0.0
-  Al   = -1
+  Al   = 0
   begA = 0
   coA  = 0
   jcoA = 0
@@ -451,12 +451,11 @@ SUBROUTINE rhs(un,B)
   endif
 #endif
 
-  open(15,file='Frc.co')
-  do i=1,ndim
-     write(15,*) Frc(i)
-  enddo
-  close(15)
-
+  ! open(15,file='Frc.co')
+  ! do i=1,ndim
+  !    write(15,*) Frc(i)
+  ! enddo
+  ! close(15)
 
   _DEBUG2_("maxval rhs= ", maxval(abs(B)))
 
@@ -549,8 +548,8 @@ SUBROUTINE lin
   call coriolis(1,fv)
   call gradp(1,px)
   Al(:,:,1:l,:,UU,UU) = -EH * (uxx+uyy+ucsi) -EV * uzz ! + rintt*u ! ATvS-Mix
-  ! Al(:,:,1:l,:,UU,VV) = -fv - EH*vxs 
-  Al(:,:,1:l,:,UU,VV) = - EH*vxs !MdT
+  Al(:,:,1:l,:,UU,VV) = -fv - EH*vxs
+  ! Al(:,:,1:l,:,UU,VV) = - EH*vxs ! for 2DMOC case
   Al(:,:,1:l,:,UU,PP) =  px
 
   ! ------------------------------------------------------------------
@@ -565,8 +564,8 @@ SUBROUTINE lin
   call vderiv(7,v)      !--> kan weg: v doet niks
   call coriolis(2,fu)
   call gradp(2,py)
-  ! Al(:,:,1:l,:,VV,UU) =  fu - EH*uxs
-  Al(:,:,1:l,:,VV,UU) =  - EH*uxs
+  Al(:,:,1:l,:,VV,UU) =  fu - EH*uxs
+  ! Al(:,:,1:l,:,VV,UU) =  - EH*uxs ! for 2dMOC case
   Al(:,:,1:l,:,VV,VV) = -EH*(vxx + vyy + vcsi) - EV*vzz !+ rintt*v ! ATvS-Mix
   Al(:,:,1:l,:,VV,PP) =  py
 
@@ -1012,9 +1011,9 @@ SUBROUTINE stpnt!(un)
   par(EK_V)   =  av/(2*omegadim*hdim*hdim)                  ! E_V
   par(EK_H)   =  ah/(2*omegadim*r0dim*r0dim)                ! E_H
 
-  !MdT \/
-  par(RAYL)   = par(RAYL)*par(EK_H)            ! Rescaled Ra
-  !MdT /\
+  ! !MdT \/
+  ! par(RAYL)   = par(RAYL)*par(EK_H)            ! Rescaled Ra (2DMOC case)
+  ! !MdT /\
 
   par(ROSB)   =  udim/(2*omegadim*r0dim)                    ! Rossby Number
   par(HMTP)   =  0.0
