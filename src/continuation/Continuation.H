@@ -366,6 +366,7 @@ createTangent(char mode)
             // To obtain the solution from this solve without the risk
             // of altering it we get a copy.
             stateDot_ = model_->getSolution('C');
+
         }
         else if (newtonIter_ != 0)
         {
@@ -378,12 +379,12 @@ createTangent(char mode)
         }
         else
             WARNING(" undefined behaviour!",__FILE__, __LINE__);
+
+        // Adjust (normalize) the Euler tangent
+        normalize();
     }
     else
         WARNING(" invalid mode!",__FILE__, __LINE__);
-
-    // Normalize the combined tangent
-    normalize();
 
     INFO("Continuation: create tangent " << mode << " done");
 }
@@ -409,7 +410,7 @@ normalize()
     parDot_ = 1.0 / normComb;
 
     // dx/ds = dx/dpar * dpar/ds
-    stateDot_->Scale(parDot_);
+    stateDot_->Scale(-parDot_);
 }
 
 //======================================================================
@@ -483,18 +484,20 @@ newtonCorrector()
 
         R->Scale(-1.0);
 
-        // Obtain the lower part (r) of the continuation RHS,
-        // Here we compute
-        // r = ds - stateDot'*(state1 - state0)*zeta
-        //           - parDot*(par2   - par0)
-        // > zeta is an additional scaling for the state tangent
-        //   and makes sure that we have a proper parDot after
-        //   normalization.
-        VectorPtr state0 = storage_.state0;
-        double    par0   = storage_.par0;
-        double    r      =  ds_ - Utils::dot(stateDot_, stateView_) * zeta_
-            - Utils::dot(stateDot_, state0) * zeta_
-            - parDot_ * (par_ - par0);
+        // Obtain the lower part (rbp in bag.f) of the continuation RHS,
+
+
+        // (state1 - state0)
+        VectorPtr stateDiff = storage_.state0;
+        stateDiff->Update(1.0, *stateView_, -1.0);
+
+        // (par2   - par0)
+        double parDiff = par_ - storage_.par0;
+
+        // rbp = ds*ds - (state1 - state0)^T * (state1 - state0) * zeta
+        //             - (par2   - par0)^2
+        double rbp = (ds_ * ds_) - Utils::dot(stateDiff, stateDiff) * zeta_
+            - (parDiff  * parDiff);
 
         // At this point the model contains the predicted state and
         // parameter. The Jacobian will be computed based on the
@@ -517,11 +520,11 @@ newtonCorrector()
         // Determine the directions.....................................
         // First for the parameter:
         if (newtChordHybr_)
-            parDir = (r - zeta_ * Utils::dot(stateDot_, z))
-                / (parDot_ + zeta_ * Utils::dot(stateDot_, stateDot_));
+            parDir = (rbp - 2 * zeta_ * Utils::dot(stateDiff, z))
+                / (2 * parDiff + 2 * zeta_ * Utils::dot(stateDiff, stateDot_));
         else
-            parDir = (r - zeta_ * Utils::dot(stateDot_, z))
-                / (parDot_ - zeta_ * Utils::dot(stateDot_, y));
+            parDir = (rbp - 2 * zeta_ * Utils::dot(stateDiff, z))
+                / (2 * parDiff - 2 * zeta_ * Utils::dot(stateDiff, y));
 
         // Then for the state:
         //  we perform an update on z
@@ -553,22 +556,26 @@ newtonCorrector()
         }
 
         // if we see a drastic increase in |dx| we also quit the corrector
-        if (Utils::norm(stateDir) > 1e3 * Utils::norm(state0) && Utils::norm(state0) > 0)
+        if (Utils::norm(stateDir) > 1e3 * Utils::norm(storage_.state0) &&
+            Utils::norm(storage_.state0) > 0)
         {
             WARNING("  |dx| = " << Utils::norm(stateDir)
-                    << " >> old |x| = " << Utils::norm(state0), __FILE__, __LINE__);
+                    << " >> old |x| = " << Utils::norm(storage_.state0),
+                    __FILE__, __LINE__);
             return 1;
         }
 
         INFO("----------------------------------------------------------");
         INFO("           Newton corrector    iter: " << newtonIter_ );
         INFO("                          tolerance: " << practicalTol_);
-        INFO("                  previous residual: " << normRHS_);
         INFO("                              ||R||: " << normRHStest_);
+        INFO("                          old ||R||: " << normRHS_);
         INFO("                             ||dx||: " << Utils::norm(stateDir));
-        INFO("                             ||dl||: " << std::abs(parDir));
         INFO("                              ||x||: " << Utils::norm(stateView_));
-        INFO("                          old ||x||: " << Utils::norm(state0));
+        INFO("                          old ||x||: " << Utils::norm(storage_.state0));
+        INFO("                               dl  : " << parDir);
+        INFO("                                l  : " << par_);
+        INFO("                            old l  : " << storage_.par0);
         INFO("----------------------------------------------------------");
 
         if (normRHStest_ < practicalTol_ && newtonIter_ >= minNewtonIterations_)

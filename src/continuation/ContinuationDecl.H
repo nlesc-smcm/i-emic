@@ -68,7 +68,8 @@ class Continuation
     std::vector<double> destinations_; // parameter destinations
     double activeDest_; // the active destination in detect()
 
-    double zeta_;  // additional scaling for stateDot
+    //! zeta is an additional scaling for the state tangent
+    double zeta_;
 
     double scale1_; // conservative scaling for adaptive step
     double scale2_; // drastic scaling for  resetting adaptive step

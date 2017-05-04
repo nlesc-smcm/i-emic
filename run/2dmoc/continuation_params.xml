@@ -5,7 +5,7 @@
 <ParameterList name="Continuation parameters">
 
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="1.0e-4"/>
+  <Parameter name="initial step size" type="double" value="1.0e-2"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>
   <Parameter name="maximum step size" type="double" value="1.0e-1"/>
 
@@ -41,7 +41,7 @@
   <Parameter name="epsilon increment" type="double" value="1.0e-6"/>
 
   <!-- Additional scaling <zeta> of the state tangent -->
-  <Parameter name="state tangent scaling" type="double" value="1.0"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0e"/>
 
   <!-- experimental rhs scaling -->
   <Parameter name="enable rhs scaling" type="bool" value="false"/>
@@ -55,7 +55,7 @@
   <!-- Type of the tangent that is calculated during the continuation -->
   <!--     E: Euler                                                   -->
   <!--     S: Secant                                                  -->
-  <Parameter name="tangent type" type="char" value="S"/>
+  <Parameter name="tangent type" type="char" value="E"/>
 
   <!-- Bound on RHS in predicted state                                -->
   <Parameter name="predictor bound" type="double" value="100.0"/>
