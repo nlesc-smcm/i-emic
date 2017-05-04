@@ -580,8 +580,8 @@ newtonCorrector()
         INFO("----------------------------------------------------------");
         INFO("           Newton corrector    iter: " << newtonIter_ );
         INFO("                          tolerance: " << practicalTol_);
-        INFO("                              ||R||: " << normRHStest_);
         INFO("                          old ||R||: " << normRHS_);
+        INFO("                              ||R||: " << normRHStest_);
         INFO("                             ||dx||: " << Utils::norm(stateDir));
         INFO("                              ||x||: " << Utils::norm(stateView_));
         INFO("                          old ||x||: " << Utils::norm(storage_.state0));
