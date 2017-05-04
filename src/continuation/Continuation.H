@@ -272,6 +272,8 @@ createInitialTangent()
         dFdPar_->Scale(-1.0);
         *stateDot_ = *dFdPar_;
     }
+    else
+        WARNING(" initialTangent invalid!" , __FILE__, __LINE__);
 
     if (printImportantVectors_) // Print initial tangent
     {
@@ -283,6 +285,7 @@ createInitialTangent()
     // We scale the tangent of the state and parameter such they are
     // normalized.
     normalize();
+
     INFO("                 ||state|| = " << Utils::norm(stateView_));
     INFO("              ||stateDot|| = " << Utils::norm(stateDot_));
     INFO("                  parDot   = " << parDot_);
