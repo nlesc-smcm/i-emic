@@ -63,7 +63,7 @@ class Continuation
     double ds_;     // continuation step-size
     double dsInit_; // initial continuation step-size
     double dsMin_;  // minimum continuation step-size
-    double dsMax_;  // maximum continuation step-size
+    double dsMax_;  // maximum continuation step-size (absolute)
 
     std::vector<double> destinations_; // parameter destinations
     double activeDest_; // the active destination in detect()

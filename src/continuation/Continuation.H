@@ -283,6 +283,10 @@ createInitialTangent()
     // We scale the tangent of the state and parameter such they are
     // normalized.
     normalize();
+    INFO("                 ||state|| = " << Utils::norm(stateView_));
+    INFO("              ||stateDot|| = " << Utils::norm(stateDot_));
+    INFO("                  parDot   = " << parDot_);
+    INFO("                      ds   = " << ds_);
     INFO("Continuation: create initial tangent... done");
 }
 
@@ -338,16 +342,17 @@ createTangent(char mode)
         // Get a copy of the current state
         stateDot_ = model_->getState('C');
 
-        // Get the previous state and par from our storage
-        VectorPtr state0 = storage_.state0;
+        // Get the previous state, par and ds from our storage
+        // These are used to compute a secant tangent
         double    par0   = storage_.par0;
+        double    ds0    = storage_.ds0;
 
-        // Compute stateDot = (state1 - state0)/ds
-        stateDot_->Update(-1.0 / ds_, *state0, 1.0 / ds_);
+        // Compute stateDot = (state1 - state0)/ds0
+        stateDot_->Update(-1.0 / ds0, *storage_.state0, 1.0 / ds0);
 
         // Compute parDot = (par1 - par0)/ds
         par_    = model_->getPar();      // update our par_
-        parDot_ = (par_ - par0) / ds_;
+        parDot_ = (par_ - par0) / ds0;
 
     }
     else if (mode == 'E')  // Euler
@@ -386,6 +391,12 @@ createTangent(char mode)
     else
         WARNING(" invalid mode!",__FILE__, __LINE__);
 
+    INFO("                ||state0|| = " << Utils::norm(storage_.state0));
+    INFO("                 ||state|| = " << Utils::norm(stateView_));
+    INFO("              ||stateDot|| = " << Utils::norm(stateDot_));
+    INFO("                  parDot   = " << parDot_);
+    INFO("                      ds0  = " << storage_.ds0);
+    INFO("                      ds   = " << ds_);
     INFO("Continuation: create tangent " << mode << " done");
 }
 
@@ -398,7 +409,7 @@ normalize()
     // the parameter
 
     // obtain scaling
-    zeta_ = tanScaling_ / stateDot_->GlobalLength();
+    zeta_ = 1.0 / stateDot_->GlobalLength();
 
     // compute ||dx/dpar||
     double nrm = Utils::norm(stateDot_);
@@ -410,7 +421,7 @@ normalize()
     parDot_ = 1.0 / normComb;
 
     // dx/ds = dx/dpar * dpar/ds
-    stateDot_->Scale(-parDot_);
+    stateDot_->Scale(parDot_);
 }
 
 //======================================================================
@@ -485,11 +496,9 @@ newtonCorrector()
         R->Scale(-1.0);
 
         // Obtain the lower part (rbp in bag.f) of the continuation RHS,
-
-
         // (state1 - state0)
-        VectorPtr stateDiff = storage_.state0;
-        stateDiff->Update(1.0, *stateView_, -1.0);
+        VectorPtr stateDiff = model_->getState('C');
+        stateDiff->Update(-1.0, *storage_.state0, 1.0);
 
         // (par2   - par0)
         double parDiff = par_ - storage_.par0;
