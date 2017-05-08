@@ -265,6 +265,15 @@ public:
             return info;
         }
 
+    int NormInf(double *result) const
+        {
+            std::vector<double> tmp(numVecs_, 0.0);
+            int info = NormInf(tmp);
+            for (int i = 0; i != numVecs_; ++i)
+                result[i] = tmp[i];
+            return info;
+        }
+
     int NormInf(std::vector<double> &result) const
         {
             std::vector<double> result_tmp = result;

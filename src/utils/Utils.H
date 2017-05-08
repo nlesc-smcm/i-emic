@@ -79,6 +79,15 @@ namespace Utils
         return norm;
     }
 
+    //! Obtain inf-norm of vectorPtr, more convenient interface
+    template<typename VectorPtr>
+    double normInf(VectorPtr const &vec)
+    {
+        double norm = 0;
+        vec->NormInf(&norm);
+        return norm;
+    }
+
     //! Obtain 2-norm of std::vector<double>
     double norm(std::vector<double> &vec);
 

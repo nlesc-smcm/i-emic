@@ -227,8 +227,6 @@ computeTolerance()
     // Scale the requested tolerance with sqrt(n)
     if (usePracticalTol_)
         practicalTol_ = newtonTolerance_ * sqrt(stateView_->GlobalLength());
-    else if (secant_)
-        practicalTol_ = destinationTolerance_;
     else
         practicalTol_ = newtonTolerance_;
 
@@ -412,7 +410,7 @@ normalize()
     // the parameter
 
     // obtain scaling
-    zeta_ = 1.0 / stateDot_->GlobalLength();
+    zeta_ = tanScaling_ / stateDot_->GlobalLength();
 
     // compute ||dx/dpar||
     double nrm = Utils::norm(stateDot_);
@@ -478,9 +476,15 @@ newtonCorrector()
     VectorPtr z;             // solution of solve with F
     double    parDir;        // direction for the parameter
 
+    double res0   = 100.0;
+    double res    = 100.0;
+    double normDX = 100.0;
+
     newtonIter_ = 0;
     while (newtonIter_ < maxNewtonIterations_)
     {
+        // save the old residual
+        res0 = res;
 
         // Taking the derivative of the RHS w.r.t. the continuation
         // parameter using a finite difference. In the first iteration
@@ -547,12 +551,12 @@ newtonCorrector()
 
         //  let that be the new direction
         stateDir = z;
-
+        
         // Update the state and the parameter in the model
         stateView_->Update(1.0, *stateDir, 1.0);
         par_ = par_ + parDir;  // update our parameter
         model_->setPar(par_);  // set it in the model
-
+        
         ++newtonIter_;
 
         // test new RHS, if it satisfies the tolerance we exit the loop
@@ -577,11 +581,16 @@ newtonCorrector()
             return 1;
         }
 
+        // obtain the residual
+        normDX = Utils::normInf(stateDir);                              
+        res = std::max(std::abs(parDir), normDX);
+
         INFO("----------------------------------------------------------");
         INFO("           Newton corrector    iter: " << newtonIter_ );
-        INFO("                          tolerance: " << practicalTol_);
         INFO("                          old ||R||: " << normRHS_);
         INFO("                              ||R||: " << normRHStest_);
+        INFO("          res = max(dl,||dx||_inf) : " << res << " <? " << practicalTol_);
+        INFO("                         res0/ res : " << res0 / res);
         INFO("                             ||dx||: " << Utils::norm(stateDir));
         INFO("                              ||x||: " << Utils::norm(stateView_));
         INFO("                          old ||x||: " << Utils::norm(storage_.state0));
@@ -590,7 +599,7 @@ newtonCorrector()
         INFO("                            old l  : " << storage_.par0);
         INFO("----------------------------------------------------------");
 
-        if (normRHStest_ < practicalTol_ && newtonIter_ >= minNewtonIterations_)
+        if (res < practicalTol_ && newtonIter_ >= minNewtonIterations_)
             break;
 
     }
@@ -602,7 +611,7 @@ newtonCorrector()
     // Do some administrative work
     TRACK_ITERATIONS("Continuation: Newton iterations...", newtonIter_);
 
-    if (normRHStest_ > practicalTol_)
+    if (res > practicalTol_)
     {
         WARNING("Continuation: Newton failed after " << newtonIter_ << " steps",
                 __FILE__, __LINE__);
@@ -703,8 +712,7 @@ detect(char mode)
 
         signMonitor_ = SGN(f1);
 
-        if (busy && std::abs(f1) < destinationTolerance_
-            && Utils::norm(rhsView_) < destinationTolerance_)
+        if (busy && std::abs(f1) < destinationTolerance_)
         {
             if (idx == destinations_.size())
                 destinationReached_ = true;
