@@ -9,7 +9,7 @@
   <Parameter name="minimum step size" type="double"  value="1.0e-8"/>
   <Parameter name="maximum step size" type="double"  value="10"/>
   <Parameter name="increase step size" type="double" value="1.1"/>
-  <Parameter name="decrease step size" type="double" value="1.1"/>
+  <Parameter name="decrease step size" type="double" value="1.2"/>
 
   <!-- Define the destination value for the continuation parameter -->
   <Parameter name="destination 0" type="double" value="1.0"/>
@@ -26,7 +26,7 @@
 
   <!-- Tolerance when converging on destination   -->
   <!--  for the secant process in detect()        -->
-  <Parameter name="destination tolerance" type="double" value="1.0e-6"/>
+  <Parameter name="destination tolerance" type="double" value="1.0e-4"/>
 
   <!-- Define the optimal range of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
@@ -49,7 +49,7 @@
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->
   <!-- arclength parameterization.                                    -->
-  <Parameter name="state tangent scaling" type="double" value="1.0e-2"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0e-0"/>
 
   <!-- reject solution from failed Newton iteration -->
   <Parameter name="reject failed iteration" type="bool" value="true"/>
@@ -80,6 +80,6 @@
   <Parameter name="initial tangent type" type="char" value="E"/>
 
   <!-- Bound on RHS in predicted state                                -->
-  <Parameter name="predictor bound" type="double" value="10.0"/>
+  <Parameter name="predictor bound" type="double" value="1.0"/>
 
 </ParameterList>

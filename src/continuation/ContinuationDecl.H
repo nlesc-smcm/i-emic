@@ -134,6 +134,7 @@ class Continuation
     {
         VectorPtr state0;     // prev state
         VectorPtr state00;    // prev prev state
+        VectorPtr stateDot0;  // prev d/ds state
         double par0;          // prev par
         double par00;         // prev prev par
         double ds0;           // prev ds

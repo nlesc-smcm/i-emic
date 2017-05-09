@@ -109,7 +109,7 @@ initialize()
     activeDest_  = -999; // hopefully this is never an actual dest^^
 
     // scaling
-    zeta_ = 1.0 / stateView_->GlobalLength();
+    zeta_ = tanScaling_ / stateView_->GlobalLength();
 
     newtonIter_ = 0;
     backTrack_  = 0;
@@ -409,9 +409,6 @@ normalize()
     // At this point we assume statedot contains a derivative with respect to
     // the parameter
 
-    // obtain scaling
-    zeta_ = tanScaling_ / stateDot_->GlobalLength();
-
     // compute ||dx/dpar||
     double nrm = Utils::norm(stateDot_);
 
@@ -518,7 +515,8 @@ newtonCorrector()
         // At this point the model contains the predicted state and
         // parameter. The Jacobian will be computed based on the
         // predicted data.
-        model_->computeJacobian();
+        // if (newtonIter_ == 0)   // 
+            model_->computeJacobian();
 
         // Now we will perform 2 solves to solve the bordered system:
         // In both cases we obtain copies of the solution. Both copies
@@ -708,6 +706,7 @@ detect(char mode)
             ds_ = -f1 * ds_ / (f1 - f0);   // secant method
             INFO("      new ds = " << ds_);
             createTangent('S');
+            newtChordHybr_ = false;
         }
 
         signMonitor_ = SGN(f1);
@@ -824,6 +823,7 @@ reset()
     INFO("|                step: " << step_);
     INFO("|           step size: " << ds_);
     INFO("|          norm state: " << Utils::norm(stateView_));
+    INFO("|     norm d/ds state: " << Utils::norm(stateDot_));
     INFO("|          norm   rhs: " << Utils::norm(rhsView_));
     INFO("|  norm stored state0: " << Utils::norm(storage_.state0));
     INFO("|                 par: " << par_);
@@ -834,6 +834,7 @@ reset()
     ds_ = s * MAX(s * ds_ / scale2_, dsMin_);
 
     INFO("|      new norm state: " << Utils::norm(stateView_));
+    INFO("| new norm d/ds state: " << Utils::norm(stateDot_));
     INFO("|             new par: " << par_);
     INFO("|       new step size: " << ds_);
     INFO("***********************************************");
@@ -845,12 +846,18 @@ void Continuation<Model, ParameterList>::
 store()
 {
     // We keep two previous states, state0 and state00
-    storage_.state00 = storage_.state0;
-    storage_.state0  = model_->getState('C');
-    storage_.par00   = storage_.par0;
-    storage_.par0    = model_->getPar();
-    storage_.ds00    = storage_.ds0;
-    storage_.ds0     = ds_;
+    storage_.state00   = storage_.state0;
+    storage_.state0    = model_->getState('C');
+
+    // We make a copy of the previous d/ds state
+    storage_.stateDot0 = model_->getState('C');
+    storage_.stateDot0->Update(1.0, *stateDot_, 0.0);
+
+    // We keep two previous parameters and steps
+    storage_.par00     = storage_.par0;
+    storage_.par0      = model_->getPar();
+    storage_.ds00      = storage_.ds0;
+    storage_.ds0       = ds_;
 }
 
 //======================================================================
@@ -863,8 +870,9 @@ restore()
 
     model_->setPar(storage_.par0);
 
-    par_ = storage_.par0;
-    ds_  = storage_.ds0;
+    par_      = storage_.par0;
+    ds_       = storage_.ds0;
+    stateDot_ = storage_.stateDot0;
 
     storage_.state0  = storage_.state00;
     storage_.state00 = model_->getState('C'); // why?
