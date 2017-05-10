@@ -117,6 +117,7 @@ initialize()
 
     // initializations for main loop
     step_ = 0;
+    resetCounter_ = 0;
     destinationReached_ = false;
 
 
@@ -515,8 +516,7 @@ newtonCorrector()
         // At this point the model contains the predicted state and
         // parameter. The Jacobian will be computed based on the
         // predicted data.
-        // if (newtonIter_ == 0)   // 
-            model_->computeJacobian();
+        model_->computeJacobian();
 
         // Now we will perform 2 solves to solve the bordered system:
         // In both cases we obtain copies of the solution. Both copies
@@ -535,7 +535,7 @@ newtonCorrector()
         // First for the parameter:
         if (newtChordHybr_)
             parDir = (rbp - 2 * zeta_ * Utils::dot(stateDiff, z))
-                / (2 * parDiff + 2 * zeta_ * Utils::dot(stateDiff, stateDot_));
+                / (2 * parDiff + 2 * (zeta_ / parDiff) * Utils::dot(stateDiff, stateDiff));
         else
             parDir = (rbp - 2 * zeta_ * Utils::dot(stateDiff, z))
                 / (2 * parDiff - 2 * zeta_ * Utils::dot(stateDiff, y));
@@ -706,7 +706,6 @@ detect(char mode)
             ds_ = -f1 * ds_ / (f1 - f0);   // secant method
             INFO("      new ds = " << ds_);
             createTangent('S');
-            newtChordHybr_ = false;
         }
 
         signMonitor_ = SGN(f1);
@@ -962,9 +961,12 @@ info()
         INFO("             step:  " << step_);
     }
 
+
     INFO("            ||x||:  " << Utils::norm(stateView_));
     INFO("      ||d/ds(x)||:  " << Utils::norm(stateDot_));
     INFO("     newton iters:  " << newtonIter_);
+
+    INFO("           resets:  " << resetCounter_);
     INFO("-----------------------------------------\n");
 }
 

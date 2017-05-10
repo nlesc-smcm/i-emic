@@ -88,7 +88,9 @@ class Continuation
     int step_;                 // continuation step counter
     int maxSteps_;             // maximum number of continuation steps:
 
-        int newtonIter_;              // newton iteration counter
+    int resetCounter_;         // reset counter
+
+    int newtonIter_;              // newton iteration counter
     int maxNewtonIterations_;     // set the max for the Newton iterations
     int minNewtonIterations_;     // set the min for the Newton iterations
     int minAllowedIterations_;    // if less then we increase the step-size
