@@ -116,10 +116,11 @@ initialize()
     parDotSign_ = 1;
 
     // initializations for main loop
-    step_ = 0;
-    resetCounter_ = 0;
+    step_               = 0;
+    resetCounter_       = 0;
     destinationReached_ = false;
-
+    abortFlag_          = false;
+    fixStepSize_        = false;
 
     if (userDetect_) { INFO("Continuation: custom monitor enabled");}
     else { INFO("Continuation: custom monitor disabled");}
@@ -143,7 +144,7 @@ run()
 
     int status = 0;
 
-    while (!destinationReached_ && step_ != maxSteps_)
+    while (!destinationReached_ && (step_ != maxSteps_) && !abortFlag_)
     {
         ++step_;          // Increment step counter
         info();           // Print continuation summary
@@ -158,7 +159,6 @@ run()
 
         detect();     // Detect special points
         userDetect(); // Use additional targets provided by model class
-
         adjustStep(); // step size adjustment
     }
     info();
@@ -753,8 +753,13 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 adjustStep()
 {
-    if (secant_)  // Secant detection in process
+    // adjustStep is disabled during a secant process
+    // or when requested with fixStepSize_
+    if (secant_ || fixStepSize_)  
+    {
+        fixStepSize_ = false;
         return;   // Do nothing
+    }
 
     if (newtonIter_ < minAllowedIterations_)
     {
@@ -828,9 +833,22 @@ reset()
     INFO("|                 par: " << par_);
     INFO("| -------------------------------------------  ");
 
-    restore();
+    restore(); // restore old model state
+
+    // create new step size
     int s = SGN(ds_);
     ds_ = s * MAX(s * ds_ / scale2_, dsMin_);
+
+    resetCounter_++;
+
+    // fix step size for next step
+    fixStepSize_ = true; 
+
+    if (ds_ == dsMin_)
+    {
+        abortFlag_ = true;
+        WARNING("Reached dsMin, continuation failed", __FILE__, __LINE__);
+    }
 
     INFO("|      new norm state: " << Utils::norm(stateView_));
     INFO("| new norm d/ds state: " << Utils::norm(stateDot_));
@@ -945,12 +963,14 @@ info()
 
     INFO(std::setprecision(8));
     INFO("-----------------------------------------");
-    INFO("Continuation summary, " << std::asctime(std::localtime(&result)));
-    INFO("        step size:  " << ds_);
-    INFO("  parameter value:  " << par_);
-    INFO("    destination f:  " << destinations_.front());
-    INFO("    destination b:  " << destinations_.back());
-    INFO("        d/ds(par):  " << parDot_);
+    INFO("Continuation summary:  " << std::asctime(std::localtime(&result)));
+    INFO(" destination reached:  " << destinationReached_);
+    INFO("             aborted:  " << abortFlag_);
+    INFO("           step size:  " << ds_);
+    INFO("     parameter value:  " << par_);
+    INFO("       destination f:  " << destinations_.front());
+    INFO("       destination b:  " << destinations_.back());
+    INFO("           d/ds(par):  " << parDot_);
 
     if (maxSteps_ >= 0)
     {
@@ -962,11 +982,11 @@ info()
     }
 
 
-    INFO("            ||x||:  " << Utils::norm(stateView_));
-    INFO("      ||d/ds(x)||:  " << Utils::norm(stateDot_));
-    INFO("     newton iters:  " << newtonIter_);
+    INFO("               ||x||:  " << Utils::norm(stateView_));
+    INFO("         ||d/ds(x)||:  " << Utils::norm(stateDot_));
+    INFO("        newton iters:  " << newtonIter_);
 
-    INFO("           resets:  " << resetCounter_);
+    INFO("              resets:  " << resetCounter_);
     INFO("-----------------------------------------\n");
 }
 

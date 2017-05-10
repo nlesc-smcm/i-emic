@@ -76,6 +76,8 @@ class Continuation
 
     double epsilon_; // variation used for finite difference
 
+    bool abortFlag_;            // status flag when aborting
+    bool fixStepSize_;          // disable adjustStep()
     bool destinationReached_;   // status flag when destination reached
     bool secant_;               // status flag giving detect() power over ds
 
