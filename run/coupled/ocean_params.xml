@@ -11,8 +11,6 @@
   <!-- specified in coupledmodel_params.xml                                  -->
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="true"/>
-  <Parameter name="Input file"  type="string" value="ocean_input.h5" />
-  <Parameter name="Output file" type="string" value="ocean_output.h5" />
 
   <!-- To keep track of each converged state, enable this.    -->
   <!-- Only useful when you enable <Save state>               -->
@@ -54,7 +52,7 @@
     <!-- global number of grid points in y-direction -->
     <Parameter name="Global Grid-Size m" type="int" value="16"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="16"/>
+    <Parameter name="Global Grid-Size l" type="int" value="8"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
@@ -116,7 +114,7 @@
     <!-- 0: data,                         -->
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
-    <Parameter name="Wind Forcing" type="int" value="2"/>
+    <Parameter name="Wind Forcing Type" type="int" value="2"/>
     <!-- Type of scaling applied to the linear systems.                            -->
     <!-- We currently support "None" and "THCM"                                    -->
     <!-- "None" is not really recomended.                                          -->

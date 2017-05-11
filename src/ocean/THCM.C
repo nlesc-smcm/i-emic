@@ -214,7 +214,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         }
     }
 
-    iza  = paramList.get("Wind Forcing",2);
+    iza  = paramList.get("Wind Forcing Type",2);
 
     int dof = _NUN_; // number of unknowns, defined in THCMdefs.H
 

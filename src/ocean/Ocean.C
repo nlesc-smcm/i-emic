@@ -1205,7 +1205,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
     if (!file)
     {
         WARNING("Can't open " << filename
-                << " continue with trivial state", __FILE__, __LINE__);
+                << ", continue with trivial state", __FILE__, __LINE__);
 
         // initialize trivial ocean
         state_->PutScalar(0.0);

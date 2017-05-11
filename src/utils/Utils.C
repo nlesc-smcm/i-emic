@@ -50,6 +50,7 @@ void Utils::print(std::vector<double> const &vec, std::string const &fname)
         file << el << std::endl;
 }
 
+//! We do a recursion for originalPars, not for dominantPars
 void Utils::overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPars,
                                 Teuchos::RCP<Teuchos::ParameterList> dominantPars)
 {
@@ -57,14 +58,40 @@ void Utils::overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPar
         dominantPars->begin() == dominantPars->end() )
         WARNING("Feeding empty list into overwriteParameters", __FILE__, __LINE__);
 
-    INFO("Overwriting parameters: \n   " << originalPars->name() << " <-- "
-         << dominantPars->name());
-    
     for (ConstIterator i = originalPars->begin(); i != originalPars->end(); ++i)
     {
-         const std::string &name_i = originalPars->name(i);
          const Teuchos::ParameterEntry &entry_i = originalPars->entry(i);
-         INFO(name_i);
+         const std::string &name_i = originalPars->name(i);
+         
+         if (entry_i.isList()) // skipping the sublists first
+         {
+             Teuchos::RCP<Teuchos::ParameterList> sublist =
+                 Teuchos::rcp(new Teuchos::ParameterList
+                              (originalPars->sublist(name_i)));
+             
+             std::stringstream ss;
+             ss << originalPars->name() << "::" << name_i;
+             sublist->setName(ss.str());
+             overwriteParameters(sublist, dominantPars);
+         }
+         else
+         {
+             if (dominantPars->isParameter(name_i))
+             {
+                 const Teuchos::ParameterEntry &entry_j =
+                     dominantPars->getEntry(name_i);
+
+                 if (entry_i != entry_j)
+                 {
+
+                     INFO(" " << originalPars->name() << "::"
+                          << name_i << " = " << entry_i << " <-- "
+                          << dominantPars->name() << "::" << name_i
+                          << " = " << entry_j);
+                     originalPars->setEntry(name_i, entry_j);
+                 }
+             }
+         }
     }
 }
 

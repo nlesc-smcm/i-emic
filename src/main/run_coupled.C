@@ -109,6 +109,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
     continuationParams->setName("Continuation parameters");
 
+    INFO("Overwriting:");
     // The Continuation and CoupledModel parameterlists overwrite settings
     Utils::overwriteParameters(oceanParams,        coupledmodelParams);
     Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
@@ -117,7 +118,6 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     Utils::overwriteParameters(atmosphereParams,   continuationParams);
     Utils::overwriteParameters(coupledmodelParams, continuationParams);
 
-    getchar();
     
     // Create parallelized Ocean object
     std::shared_ptr<Ocean> ocean = std::make_shared<Ocean>(Comm, oceanParams);
