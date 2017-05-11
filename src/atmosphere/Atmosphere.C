@@ -809,11 +809,9 @@ double Atmosphere::getPar()
 }
 
 // ---------------------------------------------------------------------------
-// Adjust parameter
+// Get parameter value
 double Atmosphere::getPar(std::string const &parName)
 {
-    parName_ = parName; // Overwrite our parameter name
-
     if (parName.compare("Combined Forcing") == 0)
         return comb_;
     else if (parName.compare("Solar Forcing") == 0)
@@ -822,7 +820,24 @@ double Atmosphere::getPar(std::string const &parName)
         return 0;
 }
 
-//------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+std::string const Atmosphere::int2par(int ind)
+{
+    return allParameters_[ind];
+}
+
+//-----------------------------------------------------------------------------
+int const Atmosphere::par2int(std::string const &label)
+{
+    for (size_t i = 0; i < allParameters_.size(); ++i)
+    {
+        if (label == allParameters_[i])
+            return (int) i;
+    }
+    WARNING("Parameter name " << label << " is not represented in Atmosphere",
+            __FILE__, __LINE__);
+    return -1;
+}
 
 
 //-----------------------------------------------------------------------------

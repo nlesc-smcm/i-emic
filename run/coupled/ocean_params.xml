@@ -3,18 +3,19 @@
 <!--                                 -->
 <!-- ******************************* -->
 
-<ParameterList name="Ocean">
+<ParameterList name="Ocean parameters">
 
   <!-- Specify whether the ocean model should initialize with                -->
   <!-- an old state (true) or with a zero solution (false).                  -->
-  <!-- In a coupled situation this will be partly overruled by the parameter -->
-  <!-- specified in CoupledModel                                             -->
+  <!-- In a coupled situation this will be partly overruled by the parameters-->
+  <!-- specified in coupledmodel_params.xml                                  -->
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean_input.h5" />
   <Parameter name="Output file" type="string" value="ocean_output.h5" />
 
-  <!-- To keep track of each converged state, enable this. -->
+  <!-- To keep track of each converged state, enable this.    -->
+  <!-- Only useful when you enable <Save state>               -->
   <Parameter name="Store everything" type="bool" value="false" />
 
   <!-- Continuation parameter name                                    -->
@@ -79,7 +80,7 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.25"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.2"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
       <Parameter name="Temperature Forcing" type="double" value="0.0"/>
       <Parameter name="SPL1"                type="double" value="2.0e3"/>

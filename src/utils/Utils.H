@@ -15,6 +15,8 @@
 
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_ArrayView.hpp"
+#include <Teuchos_ParameterList.hpp>
+
 #include "Epetra_Map.h"
 #include "Epetra_CrsMatrix.h"
 #include "Epetra_Vector.h"
@@ -143,6 +145,11 @@ namespace Utils
         vec1->Dot(*vec2, &result);
         return result;
     }
+
+    //! The parameters in dominantPars will overwrite parameters in originalPars
+    //! that have the same name.
+    void overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPars,
+                             Teuchos::RCP<Teuchos::ParameterList> dominantPars);
 
     //! split a cartesian box into nparts subdomains in a somehow 'good' way.
     //! This function just tells you how many subdomains there should be in

@@ -208,12 +208,22 @@ public:
     void    setParName(std::string const &parName) {parName_ = parName; }
     double  getPar();
     double  getPar(std::string const &parName);
+    std::string const getParName() { return parName_; }
 
     //! Accept ocean temperature vector
     void setOceanTemperature(std::vector<double> const &sst);
 
     //! Return problem dimension
     int  dim() { return dim_; }
+
+    //! Return number of continuation parameters
+    int  npar() { return (int) allParameters_.size(); }
+
+    //! Return parameter name, supply index
+    std::string const int2par(int ind);
+
+    //! Return parameter index, supply name
+    int const par2int(std::string const &name);
 
     //! Put default fields in atmosphere and ocean
     void idealizedOcean();

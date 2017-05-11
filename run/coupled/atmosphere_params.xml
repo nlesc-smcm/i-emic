@@ -3,11 +3,11 @@
   <!-- Specify whether the ocean model should initialize with     -->
   <!-- an old state (true) or with a zero solution (false).       -->
   <Parameter name="Load state" type="bool" value="false" />
-  <Parameter name="Save state" type="bool" value="false" />
+  <Parameter name="Save state" type="bool" value="true" />
   <Parameter name="Input file"  type="string" value="atmos_input.h5" />
   <Parameter name="Output file" type="string" value="atmos_output.h5" />
 
-  <!-- To keep track of each converged state, enable this. -->
+  <!-- To store each converged state, enable this. -->
   <Parameter name="Store everything" type="bool" value="false" />
 
   <!-- Continuation parameter name                                    -->

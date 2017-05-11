@@ -1166,11 +1166,10 @@ void Ocean::copyMask(std::string const &filename)
 //=====================================================================
 int Ocean::saveStateToFile(std::string const &filename)
 {
-    INFO("Writing to " << filename);
+    INFO("_________________________________________________________");
+    INFO("Writing ocean state and parameters to " << filename);
 
-    double nrm;
-    state_->Norm2(&nrm);
-    INFO("   state: ||x|| = " << nrm);
+    INFO("   ocean state: ||x|| = " << Utils::norm(state_));
 
     // Write state, map and continuation parameter
     EpetraExt::HDF5 HDF5(*comm_);
@@ -1188,30 +1187,31 @@ int Ocean::saveStateToFile(std::string const &filename)
         INFO("   " << parName << " = " << parValue);
         HDF5.Write("Parameters", parName.c_str(), parValue);
     }
-    INFO("Writing to " << filename << " done");
+    INFO("_________________________________________________________");
     return 0;
 }
 
 // =====================================================================
 int Ocean::loadStateFromFile(std::string const &filename)
 {
-
+    INFO("Loading state from " << filename);
+    
+    // To be sure that the state is properly initialized,
+    // we obtain the state vector from THCM.
+    state_ = THCM::Instance().getSolution();
+    
     // Check whether file exists
-    INFO("Loading from " << filename);
-
     std::ifstream file(filename);
     if (!file)
     {
         WARNING("Can't open " << filename
                 << " continue with trivial state", __FILE__, __LINE__);
+
+        // initialize trivial ocean
         state_->PutScalar(0.0);
-        initializeOcean();
         return 1;
     }
     else file.close();
-
-    // Obtain state vector from THCM and put in datamember
-    state_ = THCM::Instance().getSolution();
 
     // Create HDF5 object
     EpetraExt::HDF5 HDF5(*comm_);
@@ -1230,10 +1230,8 @@ int Ocean::loadStateFromFile(std::string const &filename)
 
     // Import state from HDF5 into state_ datamember
     state_->Import(*((*readState)(0)), *lin2solve, Insert);
-
-    double nrm;
-    state_->Norm2(&nrm);
-    INFO("   state: ||x|| = " << nrm);
+ 
+    INFO("   ocean state: ||x|| = " << Utils::norm(state_));
 
     // Interface between HDF5 and the THCM parameters,
     // put all the (_NPAR_ = 30) THCM parameters back in THCM.
@@ -1257,7 +1255,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
         setPar(parName, parValue);
         INFO("   " << parName << " = " << parValue);
     }
-    INFO("Loading from " << filename << " done");
+    INFO("Loading state from " << filename << " done");
     return 0;
 }
 

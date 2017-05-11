@@ -98,7 +98,7 @@ private:
     std::string const outputFile_;
 
     //! input/output flags
-    bool loadState_, saveState_;
+    bool loadState_, saveState_, storeEverything_;
 
     //! preconditioning initialization flag
     bool precInitialized_;
@@ -166,6 +166,9 @@ public:
     //! Get continuation parameter
     double getPar(std::string const &parName) { return atmos_->getPar(parName); }
 
+    //! Get continuation parameter name
+    std::string const getParName() { return atmos_->getParName(); }
+
     void preProcess();
     void postProcess();
 
@@ -219,6 +222,17 @@ private:
     void insert_graph_entry(int* indices, int& pos,
                             int i, int j, int k, int xx,
                             int N, int M, int L) const;
+
+    //! HDF5-based load function for the state and parameters
+    int loadStateFromFile(std::string const &name);
+    
+    //! HDF5-based save function for the state and parameters
+    int saveStateToFile(std::string const &name);
+
+    //! Copy HDF5
+    void copyFiles();
+    
+
 };
 
 #endif

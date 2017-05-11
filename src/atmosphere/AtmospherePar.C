@@ -2,6 +2,11 @@
 #include "AtmosphereDefinitions.H"
 #include "Ocean.H"
 
+// Import/export
+#include <EpetraExt_Exception.h>
+#include <EpetraExt_HDF5.h>
+
+
 //==================================================================
 // Constructor
 AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
@@ -16,6 +21,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     outputFile_      (params->get("Output file", "atmos_output.h5")),
     loadState_       (params->get("Load state", false)),
     saveState_       (params->get("Save state", false)),
+    storeEverything_ (params->get("Store everything", false)),
     precInitialized_ (false),
     recomputePrec_   (false)
 {
@@ -86,6 +92,10 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
                                           params_);
 
     surfmask_ = std::make_shared<std::vector<int> >();
+
+    // Import existing state
+    if (loadState_)
+        loadStateFromFile(inputFile_);
 
     INFO("AtmospherePar: constructor done");
 }
@@ -447,34 +457,11 @@ void AtmospherePar::preProcess()
 void AtmospherePar::postProcess()
 {
     // save state -> hdf5
-    // todo
+    if (saveState_)
+        saveStateToFile(outputFile_); // Save to hdf5
 
-    // print state
-    printState("state.atmos");
-}
-
-//==================================================================
-void AtmospherePar::printState(std::string const &fname)
-{
-
-    // Gather state on process 0
-    Teuchos::RCP<Epetra_MultiVector> state = Utils::Gather(*state_, 0);
-
-    // Print from process 0
-    INFO("AtmospherePar: writing state to " << fname );
-    std::ofstream file;
-    file.open(fname);
-    int length = state->GlobalLength();
-    double *localState;
-    (*state)(0)->ExtractView(&localState);
-
-    if (comm_->MyPID() == 0)
-        for (int i = 0; i != length; ++i)
-        {
-            file << localState[i] << std::endl;
-        }
-
-    file.close();
+    if (saveState_ && storeEverything_)
+        copyFiles();
 }
 
 //==================================================================
@@ -659,5 +646,119 @@ void AtmospherePar::insert_graph_entry(int* indices, int& pos,
     {
         // find index using 0-based find_row
         indices[pos++] = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, ii, j, k, xx);
+    }
+}
+
+//=============================================================================
+// This is pretty similar to the routine in Ocean, so we could factorize it in Utils.
+int AtmospherePar::loadStateFromFile(std::string const &filename)
+{
+    INFO("Loading atmos state and parameters from " << filename);
+
+    // Check whether file exists
+    std::ifstream file(filename);
+    if (!file)
+    {
+        WARNING("Can't open " << filename
+                << " continue with trivial state", __FILE__, __LINE__);
+
+        // initialize trivial ocean
+        state_->PutScalar(0.0);
+        return 1;
+    }
+    else file.close();
+
+    // Create HDF5 object
+    EpetraExt::HDF5 HDF5(*comm_);
+    Epetra_MultiVector *readState;
+
+    // Read state
+    HDF5.Open(filename);
+    HDF5.Read("State", readState);
+
+    // Create importer
+    // target map: thcm domain SolveMap
+    // source map: state with linear map  as read by HDF5.Read
+    Teuchos::RCP<Epetra_Import> lin2solve =
+        Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
+                                       readState->Map() ));
+
+    // Import state from HDF5 into state_ datamember
+    state_->Import(*((*readState)(0)), *lin2solve, Insert);
+
+    INFO("   atmos state: ||x|| = " << Utils::norm(state_));
+
+    // Interface between HDF5 and the atmosphere parameters,
+    // put all the <npar> parameters back in atmos.
+    std::string parName;
+    double parValue;
+    for (int par = 0; par < atmos_->npar(); ++par)
+    {
+        parName  = atmos_->int2par(par);
+
+        // Read continuation parameter and put it in THCM
+        try
+        {
+            HDF5.Read("Parameters", parName.c_str(), parValue);
+        }
+        catch (EpetraExt::Exception &e)
+        {
+            e.Print();
+            continue;
+        }
+
+        setPar(parName, parValue);
+        INFO("   " << parName << " = " << parValue);
+    }
+    
+    INFO("Loading atmos state and parameters from " << filename << " done");
+    return 0;
+}
+
+//=============================================================================
+int AtmospherePar::saveStateToFile(std::string const &filename)
+{
+    INFO("_________________________________________________________");
+    INFO("Writing atmos state and parameters to " << filename);
+
+    INFO("   atmos state: ||x|| = " << Utils::norm(state_));
+
+    // Write state, map and continuation parameter
+    EpetraExt::HDF5 HDF5(*comm_);
+    HDF5.Create(filename);
+    HDF5.Write("State", *state_);
+
+    // Interface between HDF5 and the atmos parameters,
+    // store all the <npar> atmos parameters in an HDF5 file.
+    std::string parName;
+    double parValue;
+    for (int par = 0; par < atmos_->npar(); ++par)
+    {
+        parName  = atmos_->int2par(par);
+        parValue = getPar(parName);
+        INFO("   " << parName << " = " << parValue);
+        HDF5.Write("Parameters", parName.c_str(), parValue);
+    }
+    INFO("_________________________________________________________");
+    return 0;
+}
+
+//=============================================================================
+// Similar to the routine in Ocean, so we could factorize this in Utils.
+void AtmospherePar::copyFiles()
+{
+    if (comm_->MyPID() == 0)
+    {
+        //Create filename
+        std::stringstream ss;
+        ss << "atmos_state_par" << std::setprecision(4) << std::setfill('_')
+           << std::setw(2) << atmos_->par2int(atmos_->getParName()) << "_"
+           << std::setw(6) << atmos_->getPar() << ".h5";
+
+        //Copy hdf5
+        INFO("copying " << outputFile_ << " to " << ss.str());
+        std::ifstream src(outputFile_.c_str(), std::ios::binary);
+        std::ofstream dst(ss.str(), std::ios::binary);
+        dst << src.rdbuf();
     }
 }

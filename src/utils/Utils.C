@@ -11,6 +11,7 @@
 #include "Utils.H"
 #include "EpetraExt_MatrixMatrix.h"
 
+using ConstIterator = Teuchos::ParameterList::ConstIterator;
 //========================================================================================
 
 //! Obtain 2-norm of std::vector<double>
@@ -49,6 +50,23 @@ void Utils::print(std::vector<double> const &vec, std::string const &fname)
         file << el << std::endl;
 }
 
+void Utils::overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPars,
+                                Teuchos::RCP<Teuchos::ParameterList> dominantPars)
+{
+    if (originalPars->begin() == originalPars->end() ||
+        dominantPars->begin() == dominantPars->end() )
+        WARNING("Feeding empty list into overwriteParameters", __FILE__, __LINE__);
+
+    INFO("Overwriting parameters: \n   " << originalPars->name() << " <-- "
+         << dominantPars->name());
+    
+    for (ConstIterator i = originalPars->begin(); i != originalPars->end(); ++i)
+    {
+         const std::string &name_i = originalPars->name(i);
+         const Teuchos::ParameterEntry &entry_i = originalPars->entry(i);
+         INFO(name_i);
+    }
+}
 
 int Utils::SplitBox(int nx, int ny, int nz,
                     int nparts, int& ndx, int& ndy, int& ndz,

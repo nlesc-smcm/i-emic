@@ -8,7 +8,9 @@ srf(:,:,1) = (1-greyness*(surfm'));
 srf(:,:,2) = (1-greyness*(surfm'));
 srf(:,:,3) = (1-greyness*(surfm'));
 
-state  = importdata('state.atmos');
+atmos_nun = 1;
+atmos_l = 1;
+state  = readhdf5('atmos_output.h5', atmos_nun, n, m, atmos_l);
 
 T0  = 15.0;   %//! reference temperature
 RtD = 180/pi;

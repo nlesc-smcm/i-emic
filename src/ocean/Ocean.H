@@ -220,6 +220,7 @@ public:
     // Return continuation parameter value
     double getPar();
     double getPar(std::string const &parName);
+    std::string const getParName() { return parName_; }
 
     //! Get current landmask
     LandMask getLandMask();

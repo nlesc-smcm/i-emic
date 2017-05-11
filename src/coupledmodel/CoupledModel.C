@@ -53,6 +53,7 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                          std::shared_ptr<Ocean> >(atmos_, ocean_);
 
     // Output parameters
+    INFO("CoupledModel parameters:");
     INFO(*params);
 
     // Synchronize state
