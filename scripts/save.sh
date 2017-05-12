@@ -85,7 +85,7 @@ echo ""
 echo "Overview of labels; the order is based on time of label creation." > $all_logs
 echo "" >> $all_logs
 
-for logfile in `find $rundir -name $logfile -printf "%T+%p\n" | sort`
+for logfile in `find $runid -name $logfile -printf "%T+%p\n" | sort`
 do
     cat ${logfile/*$runid/$runid} >> $all_logs
 done

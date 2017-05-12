@@ -9,7 +9,7 @@
   <!--           "Solar Forcing"                                              -->
   <!--           "Salinity Forcing"                                           -->
   <!--           "Wind Forcing"                                               -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Salinity Forcing"/>
 
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size"  type="double"  value="1.0e-2"/>
@@ -42,7 +42,7 @@
   <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="6"/>
+  <Parameter name="maximum Newton iterations" type="int" value="10"/>
 
   <!-- Backtracking options -->
   <Parameter name="enable backtracking" type="bool" value="false"/>
@@ -53,7 +53,7 @@
   <!-- *******************************************************  -->
 
   <!-- Finite difference with which dFdpar is calculated -->
-  <Parameter name="epsilon increment" type="double" value="1.0e-6"/>
+  <Parameter name="epsilon increment" type="double" value="1.0e-4"/>
 
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->
