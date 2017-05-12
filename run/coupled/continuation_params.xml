@@ -12,11 +12,13 @@
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double"  value="1.0e-2"/>
-  <Parameter name="minimum step size" type="double"  value="1.0e-8"/>
-  <Parameter name="maximum step size" type="double"  value="10"/>
-  <Parameter name="increase step size" type="double" value="1.1"/>
-  <Parameter name="decrease step size" type="double" value="1.2"/>
+  <Parameter name="initial step size"  type="double"  value="1.0e-2"/>
+  <Parameter name="minimum step size"  type="double"  value="1.0e-8"/>
+  <Parameter name="maximum step size"  type="double"  value="10"/>
+
+  <!-- Define the scalings when increasing or decreasing the step size -->
+  <Parameter name="increase step size" type="double"  value="1.1"/>
+  <Parameter name="decrease step size" type="double"  value="1.2"/>
 
   <!-- Define the destination value for the continuation parameter -->
   <Parameter name="destination 0" type="double" value="1.0"/>

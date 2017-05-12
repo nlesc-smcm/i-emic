@@ -54,8 +54,9 @@ class Continuation
 
     VectorPtr dFdPar_;    // derivative of the rhs w.r.t. continuation par.
 
-    double par_;       // continuation parameter
-    double parDot_;    // derivative of cont. parameter w.r.t. arclength par.
+    double par_;          // continuation parameter
+    double startingPar_;  // starting value continuation parameter
+    double parDot_;       // derivative of cont. parameter w.r.t. arclength par.
 
     std::vector<double> parHist_;        // parameter history
     std::vector<double> stateNormHist_;  // state history

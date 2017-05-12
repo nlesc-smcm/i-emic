@@ -90,10 +90,11 @@ initialize()
     ds_ = dsInit_;
 
     // Get views of the important components of the model
-    stateView_ = model_->getState('V');
-    rhsView_   = model_->getRHS('V');
-    solView_   = model_->getSolution('V');
-    par_       = model_->getPar();
+    stateView_   = model_->getState('V');
+    rhsView_     = model_->getRHS('V');
+    solView_     = model_->getSolution('V');
+    par_         = model_->getPar();
+    startingPar_ = model_->getPar();
 
     // print some info on the model
     modelInfo();
@@ -968,17 +969,17 @@ info()
     INFO("             aborted:  " << abortFlag_);
     INFO("           step size:  " << ds_);
     INFO("     parameter value:  " << par_);
-    INFO("       destination f:  " << destinations_.front());
-    INFO("       destination b:  " << destinations_.back());
+    INFO("      starting value:  " << startingPar_);
+    INFO("   destination value:  " << destinations_.back());
     INFO("           d/ds(par):  " << parDot_);
 
     if (maxSteps_ >= 0)
     {
-        INFO("             step:  " << step_ << "/" << maxSteps_);
+        INFO("                step:  " << step_ << "/" << maxSteps_);
     }
     else
     {
-        INFO("             step:  " << step_);
+        INFO("                step:  " << step_);
     }
 
 
