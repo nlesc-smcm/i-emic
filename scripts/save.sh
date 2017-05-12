@@ -2,8 +2,8 @@
 
 if [ $# -ne 2 ]
 then
-    echo "usage: ./add runid label"
-    echo " some more documentation"
+    echo "usage: ./save runid label"
+    echo "          "
     exit
 fi
 
@@ -51,13 +51,14 @@ do
 done
 
 echo ""
-echo "Extending log" $logdir
+echo "Building log" $logdir
 echo ""
 
 contpar=`grep '\"Continuation parameter\"' continuation_params.xml | sed 's/.*value=\"//' | sed 's/\".*//'`
 initstep=`grep '\"initial step size\"' continuation_params.xml | sed 's/.*value=\"//' | sed 's/\".*//'`
 maxnumstep=`grep '\"maximum number of steps\"' continuation_params.xml | sed 's/.*value=\"//' | sed 's/\".*//'`
 destvalue=`grep 'summary' -A20  info_0.txt | tail -n 21 | grep 'destination value' | sed 's/.*: //'`
+parvalue=`grep 'summary' -A20  info_0.txt | tail -n 21 | grep 'parameter value' | sed 's/.*: //'`
 startvalue=`grep 'summary' -A20  info_0.txt | tail -n 21 | grep 'starting value' | sed 's/.*: //'`
 numsteps=`grep 'summary' -A20  info_0.txt | tail -n 21 | grep 'step:' | sed 's/.*: //'`
 numresets=`grep 'summary' -A20  info_0.txt | tail -n 21 | grep 'resets:' | sed 's/.*: //'`
@@ -67,6 +68,7 @@ echo 'LABEL' $label ': ' $label_description > $logdir/$logfile
 echo '      Continuation summary ' >> $logdir/$logfile
 echo '      starting label: ' $startlabel >> $logdir/$logfile
 echo '           parameter: ' $contpar >> $logdir/$logfile
+echo '     parameter value: ' $parvalue >> $logdir/$logfile
 echo '      starting value: ' $startvalue >> $logdir/$logfile
 echo '   destination value: ' $destvalue >> $logdir/$logfile
 echo '        initial step: ' $initstep >> $logdir/$logfile
@@ -76,7 +78,11 @@ echo '              resets: ' $numresets >> $logdir/$logfile
 echo "" >> $logdir/$logfile
 
 all_logs=$runid/cont.log
-echo "Overview of labels" > $all_logs
+
+echo "Collecting all logs in " $all_logs
+echo ""                        
+
+echo "Overview of labels; the order is based on time of label creation." > $all_logs
 echo "" >> $all_logs
 
 for logfile in `find $rundir -name $logfile -printf "%T+%p\n" | sort`
