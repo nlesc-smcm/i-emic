@@ -417,7 +417,7 @@ void Atmosphere::discretize(int type, Atom &atom)
         for (int i = 1; i != n_+1; ++i)
             for (int j = 1; j != m_+1; ++j)
             {
-                cosdx2i = 1.0 / pow(cos(yc_[j]), 2);
+                cosdx2i = 1.0 / pow(cos(yc_[j]) * dx_, 2);
                 val2 = datc_[j] * cosdx2i;
                 val8 = val2;
                 val5 = -2 * val2;
