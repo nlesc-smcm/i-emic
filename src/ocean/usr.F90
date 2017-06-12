@@ -110,6 +110,7 @@ module m_usr
 
   !===== FIXED PARAMETERS ======================================================
 
+  ! real, parameter :: omegadim = 7.272e-05  ! 2DMOC
   real, parameter :: omegadim = 7.292e-05
   real, parameter :: r0dim    = 6.37e+06
   real, parameter :: udim     = 0.1e+00
@@ -127,9 +128,10 @@ module m_usr
   real, parameter :: alpt2    = 8.3e-02 ! b2/b1 - 3*t0*b3/b1
   real, parameter :: alpt3    = 6.6e-04 ! b3/b1
   ! Mixing parameters
+  ! real, parameter :: ah       = 2.2e+12 !2D case (zonally averaged)
   real, parameter :: ah       = 2.5e+05 !2 deg resolution
-  !real, parameter :: ah       = 1.0e+05 !1 deg resolution
-  !real, parameter :: ah       = 1.0e+04 !0.5 deg resolution
+  ! real, parameter :: ah       = 1.0e+05 !1 deg resolution
+  ! real, parameter :: ah       = 1.0e+04 !0.5 deg resolution
   real, parameter :: av       = 1.0e-03
   real, parameter :: kappah   = 1.0e+03
   real, parameter :: kappav   = 1.0e-04
@@ -172,7 +174,7 @@ contains
     l=dim_l
     ndim = m*n*(l+la)*nun
 
-    allocate(x(n),y(m),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l),&
+    allocate(x(n),y(0:m+1),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l),&
          dfzT(l),dfzW(0:l))
 
     allocate(kapv(0:l),kaph(l),emix(n,m,0:l))

@@ -2,8 +2,8 @@
 #define COUPLEDMODEL_H
 
 #include "Ocean.H"
-#include "Atmosphere.H"
-#include "SuperVector.H"
+#include "AtmospherePar.H"
+#include "Combined_MultiVec.H"
 #include "IDRSolver.H"
 #include "GMRESSolver.H"
 
@@ -15,185 +15,232 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 
-// This class assembles multiple sub-models into a CoupledModel. Which models and couplings are used should be supplied in the accompanying xml file (coupledmodel_params.xml). For the state we designed a special container called a SuperVector, see it's class header for more documentation.
+#include "BelosConfigDefs.hpp"
+#include "BelosMultiVec.hpp"
+#include "BelosOperator.hpp"
+#include "BelosTypes.hpp"
+#include <BelosLinearProblem.hpp>
+#include <BelosBlockGmresSolMgr.hpp>
 
-// Most routines in CoupledModel simply call their corresponding routines in the sub-models. For instance, a call to computeJacobian() translates to a call to computeJacobian() in the sub-models.
+//! This class assembles multiple sub-models into a CoupledModel. Which models and couplings
+// are used should be supplied in the accompanying xml file (coupledmodel_params.xml).
 
-// The frequency at which the states of the sub-models are synchronized depends on the solving scheme. Moreover we use hashes to make sure nothing is computed and synchronized too often
+//! Most routines in CoupledModel simply call their corresponding routines in the sub-models.
+// For instance, a call to computeJacobian() translates to a call to computeJacobian() in the sub-models.
 
-// Forward declarations
+//! The frequency at which the states of the sub-models are synchronized depends on the solving scheme.
+
+//! Forward declarations
+
 class Epetra_Comm;
+class Epetra_IntVector;
+class Epetra_Vector;
+
+template<typename ModelPtr>
+class BelosOp;
 
 class CoupledModel
 {
 public:
-	using VectorPtr = std::shared_ptr<SuperVector>;
-	
+    using VectorPtr = std::shared_ptr<Combined_MultiVec>;
+    using LandMask  = Utils::MaskStruct;
+
 private:
-	// Adjacency graph describing the couplings between the models
-	// NOT IMPLEMENTED YET
-    // Graph couplings_;
+    //! Adjacency graph describing the couplings between the models
+    //! NOT IMPLEMENTED YET
+    //! Graph couplings_;
 
-	// Trilinos-based parallel implicit ocean model (Trilinos-THCM) 
-	Teuchos::RCP<Ocean>  ocean_;
+    //! Trilinos-based parallel implicit ocean model (Trilinos-THCM)
+    std::shared_ptr<Ocean>  ocean_;
 
-	CouplingBlock C12_, C21_;
-	
-	// STL std::vector-based implicit atmosphere model with a banded Lapack solver
-	std::shared_ptr<Atmosphere> atmos_;
+    //! Parallel implicit atmosphere model
+    std::shared_ptr<AtmospherePar> atmos_;
 
-	// Combined state, right hand side and solution
-	std::shared_ptr<SuperVector> stateView_;
-	std::shared_ptr<SuperVector> solView_;
-	std::shared_ptr<SuperVector> rhsView_;
+    //! Combined state vector
+    std::shared_ptr<Combined_MultiVec> stateView_;
 
-	// Let the models load existing states during initialization
-	// saving is done from the postprocess operation
-	// The respective in- and output files need to be set in the
-	// separate model parameters
-	bool useExistingState_;
+    //! Combined solution vector
+    std::shared_ptr<Combined_MultiVec> solView_;
 
-	// Determines the continuation parameter
-	// For a list see THCM::par2int()
-	std::string parName_;
-	
-	// Solving scheme
-	//   'D': decoupled
-	//   'B': backward block Gauss Seidel with sub-model solves
-	//   'I': IDR(s)
-	//   'G': GMRES(r)
-	//   'F': FGMRES (Belos)
-	char solvingScheme_;
+    //! Combined rhs vectir
+    std::shared_ptr<Combined_MultiVec> rhsView_;
 
-	bool useScaling_;  // scale the problem before a solve
-	
-	int    iterGS_;      // Max iterations in GS scheme
-	double toleranceGS_; // Tolerance in GS scheme
+    //! Determines the continuation parameter
+    //! For a list see THCM::par2int()
+    std::string parName_;
 
-	// Use hashing to decide to act based on whether a state has changed
-	// Hashes should be remembered for each task they get used for.
-	bool useHash_;  // flag to turn hashing on/off
-	std::size_t syncHash_; // hash to base synchronize() decision on
-	std::size_t rhsHash_;  // hash to base computeRHS() decision on	
-	std::size_t jacHash_;  // hash to base computeJacobian() decision on
+    //! Solving scheme
+    //!   'D': decoupled  (weakly coupled at post-processing)
+    //!   'C': coupled    (strongly coupled in FGMRES)
+    char solvingScheme_;
 
-	// Synchronization counter
-	int syncCtr_;
+    //! keep track of syncs
+    int syncCtr_;
 
-	// Preconditioning strategy based on changes in state
-	int buildPrecEvery_;
+    //! initialization flag
+    bool solverInitialized_;
 
-	// IDR and GMRES solve members
-	IDRSolver<CoupledModel, std::shared_ptr<SuperVector> > idrSolver_;
-	GMRESSolver<CoupledModel, std::shared_ptr<SuperVector> > gmresSolver_;
-	bool idrInitialized_;
-	bool gmresInitialized_;
-	int idrSolveCtr_;
-	int clearSPFreq_;
-	
-	// Trilinos' MPI-like communicator
-	Teuchos::RCP<Epetra_Comm> comm_;
+    //! Trilinos MPI-like communicator
+    Teuchos::RCP<Epetra_Comm> comm_;
 
-	// Atmosphere -> Ocean block in Jacobian
-	std::shared_ptr<std::vector<double> > B_;	
-	std::shared_ptr<std::vector<int> > rowsB_;
+    //! Coupling block atmos -> ocean
+    CouplingBlock<std::shared_ptr<Ocean>,
+                  std::shared_ptr<AtmospherePar> > C12_;
 
-	// Ocean -> Atmosphere block in Jacobian
-	std::shared_ptr<std::vector<double> > C_;	
-	std::shared_ptr<std::vector<int> > rowsC_;
-	
+    //! Coupling block ocean -> atmos
+    CouplingBlock<std::shared_ptr<AtmospherePar>,
+                  std::shared_ptr<Ocean> > C21_;
+
+    Teuchos::RCP
+    <Belos::LinearProblem
+     <double, Combined_MultiVec, BelosOp<CoupledModel> > > problem_;
+
+    Teuchos::RCP
+    <Belos::BlockGmresSolMgr
+     <double, Combined_MultiVec, BelosOp<CoupledModel> > > belosSolver_;
+
+
 public:
-	CoupledModel(Teuchos::RCP<Ocean> ocean,
-				 std::shared_ptr<Atmosphere> atmos,
-		         Teuchos::RCP<Teuchos::ParameterList> params);
-	
-	~CoupledModel(){INFO("CoupledModel destructor");}
+    CoupledModel(std::shared_ptr<Ocean> ocean,
+                 std::shared_ptr<AtmospherePar> atmos,
+                 Teuchos::RCP<Teuchos::ParameterList> params);
 
-	void computeJacobian();
-	void computeRHS();
+    ~CoupledModel() { INFO("CoupledModel destructor"); }
 
-	// Solve the models
-	void solve(std::shared_ptr<SuperVector> rhs = std::shared_ptr<SuperVector>());
-	
-	void initializeIDR();
-	void initializeGMRES();
-	void initializeFGMRES();
-	
-	// coupled   mode 'C'
-	// decoupled mode 'D'
-	void applyMatrix(SuperVector const &v, SuperVector &out, char mode = 'C');
-	void applyPrecon(SuperVector const &v, SuperVector &out, char mode = 'C');
-	void applyMassMatrix(SuperVector const &v, SuperVector &out);
+    //! Compute Jacobian matrix
+    void computeJacobian();
 
-	// these are deprecated
-	std::shared_ptr<SuperVector> applyMatrix(SuperVector const &v);
-	std::shared_ptr<SuperVector> applyPrecon(SuperVector const &v);
+    //! Compute RHS
+    void computeRHS();
 
-	std::shared_ptr<SuperVector> getSolution(char mode = 'C');
-	std::shared_ptr<SuperVector> getState(char mode = 'C');
-	std::shared_ptr<SuperVector> getRHS(char mode = 'C');
+    //! Solve Jx=b
+    void solve(std::shared_ptr<Combined_MultiVec> rhs);
 
-	// Getters and setters for the continuation parameter
-	//  Used by Continuation class
-	void   setPar(double value);
-	double getPar();
+    //! Initialize FGMRES (Belos) solver
+    void initializeFGMRES();
 
-	// A controlling scheme might allow some pre-processing,
-	// for instance at the start of a Newton process.
-	void preProcess();
-	
-	// Similarly we can supply some post-processing, for instance when
-	// a Newton process has converged.
-	void postProcess();
+    //! Apply the Jacobian matrix: out=J*v
+    void applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &out);
 
-	// Print the Jacobian
-	void printJacobian(std::string const filename) const;
+    //! Apply the preconditioning: out=inv(P)*v
+    //! In the coupled case: 1.5 step in the block gauss seidel scheme
+    //!
+    //!        z = inv(P)*x  <=>  P*z = x  -> iterate with
+    //!
+    //!           [M1 C12] * [z1] = [     ] * [z1] + [x1]
+    //!           [    M2]   [z2]   [C21  ]   [z2]   [x2]
+    //!
+    //! z1^0 = 0 => z2^1 = inv(M2)*x2
+    //!          => z1^1 = inv(M1)*(x1-C12*z2^1)
+    //!          => z2^1 = inv(M2)*(x2+C21*z1^1)
+    void applyPrecon(Combined_MultiVec const &v, Combined_MultiVec &out);
 
-	void printResidual(VectorPtr b){}
+    //! Apply the mass matrix: out=B*v
+    void applyMassMatrix(Combined_MultiVec const &v, Combined_MultiVec &out);
 
-	// Additional monitor for continuation
-	bool monitor(){return false;}
+    //! Get an RCP to the solution vector
+    std::shared_ptr<Combined_MultiVec> getSolution(char mode = 'C');
+
+    //! Get an RCP to the state vector
+    std::shared_ptr<Combined_MultiVec> getState(char mode = 'C');
+
+    //! Get an RCP to the rhs vector
+    std::shared_ptr<Combined_MultiVec> getRHS(char mode = 'C');
+
+    //! Set the continuation parameter
+    void setPar(double value);
+
+    //! Get the continuation parameter
+    double getPar();
+
+    //! Pre-processing.
+    //! A controlling scheme might allow some pre-processing,
+    //! for instance at the start of a Newton process.
+    void preProcess();
+
+    //! Post-processing.
+    //! Similarly we can supply some post-processing, for instance when
+    //! a Newton process has converged.
+    void postProcess();
+
+    //! Additional monitor for continuation
+    bool monitor() { return false; }
 
 private:
-	// Solve the system with a few symmetric block GS iterations
-	void blockGSSolve(std::shared_ptr<SuperVector> rhs);
 
-	// Solve the system using IDR(s)
-	void IDRSolve(std::shared_ptr<SuperVector> rhs);
-	
-	// Solve the system using GMRES(r)
-	void GMRESSolve(std::shared_ptr<SuperVector> rhs);
+    //! Solve the system using FGMRES
+    void FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs);
 
-	// Solve the system using FGMRES
-	void FGMRESSolve(std::shared_ptr<SuperVector> rhs);
-	
-	// For internal use: both modes for the underlying
-	// getSolution methods can be called here.
-	std::shared_ptr<SuperVector> getSolution(char mode1, char mode2);
+    //! For internal use: both modes for the underlying
+    //! getSolution methods can be called here.
+    std::shared_ptr<Combined_MultiVec> getSolution(char mode1, char mode2);
 
-	// Compute the residual ||b-Jx||
-	double computeResidual(std::shared_ptr<SuperVector> rhs);
-	// coupled   mode 'C'
-	// decoupled mode 'D'
-	double computeResidual(SuperVector const &rhs,
-						   SuperVector const &x,
-						   char mode = 'C');
-		
-	// Synchronize the states between the models that are needed to communicate
-	void synchronize();
+    //! Compute the residual ||b-Jx||
+    double computeResidual(std::shared_ptr<Combined_MultiVec> rhs);
 
-	// Create a hash of the extended state + parameter in an XOR / rotating manner
-	std::size_t getHash();
+    //! coupled   mode 'C'
+    //! decoupled mode 'D'
+    double computeResidual(Combined_MultiVec const &rhs,
+                           Combined_MultiVec const &x,
+                           char mode = 'C');
 
-	// Output, same as in Atmosphere but templated
-	template<typename T>
-	void write(std::vector<T> &vector, const std::string &filename);
+    //! Synchronize the states between the models that are needed to communicate
+    void synchronize();
 
-	// print profile
-	void printProfile(ProfileType profile);
-	
-	// A few tests are collected here
-	void test();
 };
+
+//=============================================================================
+// This class wraps a model into an operator suitable for use with Belos.
+// We need it for CoupledModel, so we put it here.
+
+template <typename Model>
+class BelosOp
+{
+    Model &model_; // hold a reference to the model
+    bool isPrec_;
+
+public:
+    BelosOp(Model &model, bool isPrec)
+        :
+        model_(model),
+        isPrec_(isPrec)
+        {}
+
+    bool isPrec() const { return isPrec_; }
+
+    void ApplyInverse(Combined_MultiVec const &x, Combined_MultiVec &y) const
+        { model_.applyPrecon(x, y); }
+
+    void ApplyMatrix(Combined_MultiVec const &x, Combined_MultiVec &y) const
+        { model_.applyMatrix(x, y); }
+};
+
+//-----------------------------------------------------------------------------
+namespace Belos
+{
+    template <typename Model>
+    class OperatorTraits <double, Combined_MultiVec, BelosOp<Model> >
+    {
+    public:
+        static void
+        Apply (BelosOp<Model> const &Op,
+               Combined_MultiVec const &x,
+               Combined_MultiVec &y,
+               int trans = 0)
+            {
+                if ( Op.isPrec() )
+                {
+                    Op.ApplyInverse(x, y);
+                }
+                else
+                {
+                    Op.ApplyMatrix(x, y);
+                }
+            }
+
+        static bool
+        HasApplyTranspose (const BelosOp<Model> &Op) { return false; }
+    };
+}
 
 #endif

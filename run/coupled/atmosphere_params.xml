@@ -1,0 +1,61 @@
+<ParameterList name="Atmosphere parameters">
+
+  <!-- Specify whether the ocean model should initialize with     -->
+  <!-- an old state (true) or with a zero solution (false).       -->
+  <Parameter name="Load state" type="bool" value="false" />
+  <Parameter name="Save state" type="bool" value="true" />
+
+  <!-- To store each converged state, enable this. -->
+  <Parameter name="Store everything" type="bool" value="false" />
+
+  <!-- Continuation parameter name                                    -->
+  <!-- In a coupled situation this will be overruled by the parameter -->
+  <!-- specified in CoupledModel                                      -->
+  <!--                                                                -->
+  <!-- Options:  "Combined Forcing" -->
+  <!--           "Solar Forcing"    -->
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+
+  <!-- Starting parameters -->
+  <Parameter name="Combined Forcing" type="double" value="0.0"/>
+  <Parameter name="Solar Forcing"    type="double" value="1.0"/>
+
+  <!-- Periodic boundary conditions in x-direction                -->
+  <Parameter name="Periodic" type="bool" value="false"             />
+
+  <!-- Choose to use the ocean's landmask if available              -->
+  <Parameter name="Use land mask from Ocean" type="bool" value="true"/>
+
+  <!-- western, eastern, southern and northern domain bounds      -->
+  <Parameter name="Global Bound xmin" type="double" value="286"    />
+  <Parameter name="Global Bound xmax" type="double" value="350"    />
+  <Parameter name="Global Bound ymin" type="double" value="10"    />
+  <Parameter name="Global Bound ymax" type="double" value="74"     />
+
+  <!-- global number of grid points in x,y and z-directions       -->
+  <Parameter name="Global Grid-Size n" type="int" value="16"       />
+  <Parameter name="Global Grid-Size m" type="int" value="16"       />
+  <Parameter name="Global Grid-Size l" type="int" value="1"        />
+
+  <!-- Atmosphere physical parameters -->
+  <Parameter name="atmospheric density"                 type="double" value="1.25"     />
+  <Parameter name="atmospheric scale height"            type="double" value="8400"     />
+  <Parameter name="heat capacity"                       type="double" value="1000"     />
+  <Parameter name="radiative flux param A"              type="double" value="216.0"    />
+  <Parameter name="radiative flux param B"              type="double" value="1.5"      />
+  <Parameter name="solar constant"                      type="double" value="1360."    />
+  <Parameter name="atmospheric absorption coefficient"  type="double" value="0.43"     />
+  <Parameter name="exchange coefficient ce"             type="double" value="1.3e-03"  />
+  <Parameter name="exchange coefficient ch"             type="double" value="1.222e-03"/>
+  <Parameter name="mean atmospheric surface wind speed" type="double" value="8.5"      />
+  <Parameter name="reference temperature"               type="double" value="15.0"     />
+  <Parameter name="horizontal velocity of the ocean"    type="double" value="0.1e00"   />
+  <Parameter name="radius of the earth"                 type="double" value="6.37e06"  />
+
+  <!-- Preconditioner parameters.                                         -->
+  <!-- When using the parallel solve routine, the overlap level should be -->
+  <!-- significant.                                                       -->
+  <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.         -->
+  <Parameter name="Ifpack overlap level" type="int" value="0" />
+
+</ParameterList>

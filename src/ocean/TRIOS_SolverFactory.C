@@ -59,606 +59,602 @@ using std::min;
 namespace TRIOS {
 
 // create an algebraic preconditioner (i.e. for a submatrix)
-	Teuchos::RCP<Epetra_Operator> SolverFactory::CreateAlgebraicPrecond(Epetra_CrsMatrix& A, 
-																		Teuchos::ParameterList& plist, int verbose)
-	{
-		string PrecType = plist.get("Method","Ifpack"); 
-		DEBUG("Enter SolverFactory::CreateAlgebraicPrecond ("+PrecType+")");
-		
-		Teuchos::RCP<Epetra_Operator> prec;
-		
-		bool is_ifpack = (PrecType=="Ifpack");
+    Teuchos::RCP<Epetra_Operator> SolverFactory::CreateAlgebraicPrecond(Epetra_CrsMatrix& A,
+                                                                        Teuchos::ParameterList& plist, int verbose)
+    {
+        string PrecType = plist.get("Method","Ifpack");
+        DEBUG("Enter SolverFactory::CreateAlgebraicPrecond ("+PrecType+")");
 
-		if (is_ifpack)
-		{
-			int OverlapLevel = plist.get("Ifpack Overlap Level",0); 
-			string SubType = plist.get("Ifpack Method","ILUT");
-			Teuchos::RCP<Ifpack_Preconditioner> Prec;
-			if (SubType=="MRILU")
-			{
-				int out = plist.sublist("MRILU").get("Output Level",0);
-				if (verbose>5) out = max(out,verbose); 
-				if (verbose<5) out = min(out,verbose); 
-				plist.sublist("MRILU").set("Output Level",out);
-			}
-			Ifpack PreconditionerFactory;
-			prec = Teuchos::rcp(PreconditionerFactory.Create(SubType,
-															 &A, OverlapLevel) );
-			Prec = Teuchos::rcp_dynamic_cast<Ifpack_Preconditioner>(prec);
+        Teuchos::RCP<Epetra_Operator> prec;
 
-			CHECK_ZERO(Prec->SetParameters(plist));
-			CHECK_ZERO(Prec->Initialize());
-		}
-		else if (PrecType=="ML")
-		{
+        bool is_ifpack = (PrecType=="Ifpack");
+
+        if (is_ifpack)
+        {
+            int OverlapLevel = plist.get("Ifpack Overlap Level",0);
+            string SubType = plist.get("Ifpack Method","ILUT");
+            Teuchos::RCP<Ifpack_Preconditioner> Prec;
+            if (SubType=="MRILU")
+            {
+                int out = plist.sublist("MRILU").get("Output Level",0);
+                if (verbose>5) out = max(out,verbose);
+                if (verbose<5) out = min(out,verbose);
+                plist.sublist("MRILU").set("Output Level",out);
+            }
+            Ifpack PreconditionerFactory;
+            prec = Teuchos::rcp(PreconditionerFactory.Create(SubType,
+                                                             &A, OverlapLevel) );
+            Prec = Teuchos::rcp_dynamic_cast<Ifpack_Preconditioner>(prec);
+
+            CHECK_ZERO(Prec->SetParameters(plist));
+            CHECK_ZERO(Prec->Initialize());
+        }
+        else if (PrecType=="ML")
+        {
 #ifndef NO_ML
-			
-			Teuchos::ParameterList& mllist = plist.sublist("ML");
-			if (A.Comm().MyPID()==0)
-			{
-				int out = mllist.get("output",0);
-				if (verbose>5) out = max(out,verbose);
-				if (verbose<5) out = min(out,verbose);
-				mllist.set("output",out);
-				if (out>=10)
-				{
-					plist.sublist("smoother: ifpack list").sublist("MRILU").set("Output Level",10);
-				}
-        
-				if (out>0)
-				{
-					std::cout << "Constructing Multi-Level Preconditioner for ";
-					std::cout << A.Label()<<"\n";
-				}
-			}
-			if (mllist.get("smoother: type","Aztec")=="Aztec")
-			{      
-				// TODO: is this a memory hole? looks like one to me...
-				int *az_options = new int[AZ_OPTIONS_SIZE];
-				double *az_params = new double[AZ_PARAMS_SIZE];
-      
-				AZ_defaults(az_options,az_params);
 
-				Teuchos::ParameterList& azlist = mllist.sublist("smoother: aztec list");
+            Teuchos::ParameterList& mllist = plist.sublist("ML");
+            if (A.Comm().MyPID()==0)
+            {
+                int out = mllist.get("output",0);
+                if (verbose>5) out = max(out,verbose);
+                if (verbose<5) out = min(out,verbose);
+                mllist.set("output",out);
+                if (out>=10)
+                {
+                    plist.sublist("smoother: ifpack list").sublist("MRILU").set("Output Level",10);
+                }
 
-				// some reasonable default options for Krylov smoothers:
-				az_options[AZ_solver]=AZ_GMRESR;
-				az_options[AZ_scaling]=AZ_none;
-				az_options[AZ_precond]=AZ_dom_decomp;
-				az_options[AZ_subdomain_solve]=AZ_ilut;
-				az_options[AZ_max_iter]=3;
-				az_options[AZ_output]=0;
-				az_options[AZ_overlap]=0;
-				az_options[AZ_print_freq]=0;
-      
-				az_params[AZ_tol]=0.0;
-				az_params[AZ_drop]=1.0e-12;
-				az_params[AZ_ilut_fill]=2.0;
-      
-				ExtractAztecOptions(azlist,az_options,az_params);
-      
-				Teuchos::RCP<std::vector<int> > options = Teuchos::rcp(new std::vector<int>(AZ_OPTIONS_SIZE));
-				Teuchos::RCP<std::vector<double> > params = Teuchos::rcp(new std::vector<double>(AZ_PARAMS_SIZE));
-				for (int i=0;i<AZ_OPTIONS_SIZE;i++) (*options)[i]=az_options[i];
-				for (int i=0;i<AZ_PARAMS_SIZE;i++) (*params)[i]=az_params[i];
+                if (out>0)
+                {
+                    std::cout << "Constructing Multi-Level Preconditioner for ";
+                    std::cout << A.Label()<<"\n";
+                }
+            }
+            if (mllist.get("smoother: type","Aztec")=="Aztec")
+            {
 
-				mllist.set("smoother: Aztec options",options);
-				mllist.set("smoother: Aztec params",params);
-				// to avoid problems with parameter validation, delete the list
-			}
+                Teuchos::RCP<std::vector<int> > az_options =
+                    Teuchos::rcp(new std::vector<int>(AZ_OPTIONS_SIZE));
+                Teuchos::RCP<std::vector<double> > az_params =
+                    Teuchos::rcp(new std::vector<double>(AZ_PARAMS_SIZE));
 
-			if (mllist.isSublist("smoother: aztec list"))
-			{
-				mllist.remove("smoother: aztec list");
-			}
+                AZ_defaults(&(*az_options)[0], &(*az_params)[0]);
 
-			string smoo = mllist.get("smoother: type","Aztec");
-			if (smoo=="IFPACK")
-			{
-				//Teuchos::ParameterList& ifp_list=mllist.sublist("smoother: ifpack list");
-				string ifp_type=mllist.get("smoother: ifpack type","Amesos");
-				const char *str1 = ifp_type.c_str();
-				const char *str2 = "block relaxation";
-				int len = 16;
-      
-				// I experimented with Line relaxation in trilinos_thcm, but
-				// it the DD-MRILU approach was far superior.
-				if (memcmp(str1,str2,len)==0)
-				{
-					ERROR("line relaxation no longer supported",__FILE__,__LINE__);
-				}
-			}
+                Teuchos::ParameterList& azlist = mllist.sublist("smoother: aztec list");
 
-			bool visualize = mllist.get("viz: enable",false);
-			int repartition = mllist.get("repartition: enable",0);
-			// I had something here in trilinos_thcm, but I don't know if it ever worked.
-			if (visualize||repartition)
-			{
-				ERROR("visualization and repartitioning not supported",__FILE__,__LINE__);
-			}
-			prec = Teuchos::rcp(new ML_Epetra::MultiLevelPreconditioner(A,mllist,false));
+                // some reasonable default options for Krylov smoothers:
+                (*az_options)[AZ_solver]=AZ_GMRESR;
+                (*az_options)[AZ_scaling]=AZ_none;
+                (*az_options)[AZ_precond]=AZ_dom_decomp;
+                (*az_options)[AZ_subdomain_solve]=AZ_ilut;
+                (*az_options)[AZ_max_iter]=3;
+                (*az_options)[AZ_output]=0;
+                (*az_options)[AZ_overlap]=0;
+                (*az_options)[AZ_print_freq]=0;
+
+                (*az_params)[AZ_tol]=0.0;
+                (*az_params)[AZ_drop]=1.0e-12;
+                (*az_params)[AZ_ilut_fill]=2.0;
+
+                ExtractAztecOptions( azlist, &(*az_options)[0], &(*az_params)[0] );
+
+                mllist.set("smoother: Aztec options",az_options);
+                mllist.set("smoother: Aztec params",az_params);
+            }
+
+            if (mllist.isSublist("smoother: aztec list"))
+            {
+                mllist.remove("smoother: aztec list");
+            }
+
+            string smoo = mllist.get("smoother: type","Aztec");
+            if (smoo=="IFPACK")
+            {
+                //Teuchos::ParameterList& ifp_list=mllist.sublist("smoother: ifpack list");
+                string ifp_type=mllist.get("smoother: ifpack type","Amesos");
+                const char *str1 = ifp_type.c_str();
+                const char *str2 = "block relaxation";
+                int len = 16;
+
+                // I experimented with Line relaxation in trilinos_thcm, but
+                // it the DD-MRILU approach was far superior.
+                if (memcmp(str1,str2,len)==0)
+                {
+                    ERROR("line relaxation no longer supported",__FILE__,__LINE__);
+                }
+            }
+
+            bool visualize = mllist.get("viz: enable",false);
+            int repartition = mllist.get("repartition: enable",0);
+            // I had something here in trilinos_thcm, but I don't know if it ever worked.
+            if (visualize||repartition)
+            {
+                ERROR("visualization and repartitioning not supported",__FILE__,__LINE__);
+            }
+            prec = Teuchos::rcp(new ML_Epetra::MultiLevelPreconditioner(A,mllist,false));
 #else
-			HYMLS::Tools::Error("ML is not available, choose another preconditioner!",__FILE__,__LINE__);
+            HYMLS::Tools::Error("ML is not available, choose another preconditioner!",__FILE__,__LINE__);
 #endif
-		}
-		else if (PrecType=="ParaSails")
-		{
+        }
+        else if (PrecType=="ParaSails")
+        {
 #ifdef HAVE_PARASAILS
-			prec = Teuchos::rcp(new ParaSailsPrecond(A,plist));
+            prec = Teuchos::rcp(new ParaSailsPrecond(A,plist));
 #else
-			ERROR("ParaSails is not available, choose another preconditioner!",__FILE__,__LINE__);
+            ERROR("ParaSails is not available, choose another preconditioner!",__FILE__,__LINE__);
 #endif
-		}
-		else if (PrecType=="None")
-		{
-			prec=Teuchos::rcp(new IdentityOperator(A.RangeMap(),A.DomainMap(),A.Comm()));
-		}
-		else
-		{
-			ERROR("Bad Preconditioner Type: "+PrecType,__FILE__,__LINE__);
-		}
-		bool eigen_analysis = plist.get("Analyze Preconditioned Spectrum",false);      
-		// for the eigen-analysis after computing the precond, 
-		// we need access to the operator in a straight-forward way
-		if (eigen_analysis)
-		{
-			Teuchos::RCP<const Epetra_Operator> eig_op = Teuchos::rcp(&A,false);
-			plist.set("Eigen-Analysis: Operator", eig_op);
-		}
-		DEBUG("Leave SolverFactory::CreateAlgebraicPrecond ("+PrecType+")");
-		return prec;
-	}
+        }
+        else if (PrecType=="None")
+        {
+            prec=Teuchos::rcp(new IdentityOperator(A.RangeMap(),A.DomainMap(),A.Comm()));
+        }
+        else
+        {
+            ERROR("Bad Preconditioner Type: "+PrecType,__FILE__,__LINE__);
+        }
+        bool eigen_analysis = plist.get("Analyze Preconditioned Spectrum",false);
+        // for the eigen-analysis after computing the precond,
+        // we need access to the operator in a straight-forward way
+        if (eigen_analysis)
+        {
+            Teuchos::RCP<const Epetra_Operator> eig_op = Teuchos::rcp(&A,false);
+            plist.set("Eigen-Analysis: Operator", eig_op);
+        }
+        DEBUG("Leave SolverFactory::CreateAlgebraicPrecond ("+PrecType+")");
+        return prec;
+    }
 
 // create an algebraic preconditinoer (i.e. for a submatrix)
-	void SolverFactory::ComputeAlgebraicPrecond(Teuchos::RCP<Epetra_Operator> P, Teuchos::ParameterList& plist)
-	{
-		string PrecType = plist.get("Method","None"); 
-		DEBUG("Enter SolverFactory::ComputeAlgebraicPrecond ("+PrecType+")"); 
+    void SolverFactory::ComputeAlgebraicPrecond(Teuchos::RCP<Epetra_Operator> P, Teuchos::ParameterList& plist)
+    {
+        string PrecType = plist.get("Method","None");
+        DEBUG("Enter SolverFactory::ComputeAlgebraicPrecond ("+PrecType+")");
 
-		bool is_ifpack = (PrecType=="Ifpack");
-		if (is_ifpack)
-		{
-			Teuchos::RCP<Ifpack_Preconditioner> Prec = 
-				Teuchos::rcp_dynamic_cast<Ifpack_Preconditioner>(P);
+        bool is_ifpack = (PrecType=="Ifpack");
+        if (is_ifpack)
+        {
+            Teuchos::RCP<Ifpack_Preconditioner> Prec =
+                Teuchos::rcp_dynamic_cast<Ifpack_Preconditioner>(P);
 
 #ifdef DEBUGGING
-			string SubType   = plist.get("Ifpack Method","None");
-			int overlapLevel = plist.get("Ifpack Overlap Level", 0);
-			DEBVAR(SubType);
-			if (SubType=="ILU")
-			{
-				Teuchos::RCP<Ifpack_AdditiveSchwarz<Ifpack_ILU> > ilu = 
-					Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILU> >(Prec, overlapLevel);
-				const Epetra_RowMatrix& Aloc = dynamic_cast<const Epetra_RowMatrix&>(ilu->Inverse()->Matrix());
-				//MatrixUtils::PrintRowMatrix(Aloc,*debug);
-			}
-			else if (SubType=="ILUT")
-			{
-				Teuchos::RCP<Ifpack_AdditiveSchwarz<Ifpack_ILUT> > ilu = 
-					Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILUT> >(Prec, overlapLevel);
-				const Epetra_RowMatrix& Aloc = dynamic_cast<const Epetra_RowMatrix&>(ilu->Inverse()->Matrix());
-				//MatrixUtils::PrintRowMatrix(Aloc,*debug);
-			}
-			else if (SubType=="MRILU")
-			{
-				/*
-				  Teuchos::RCP<Ifpack_AdditiveSchwarz<MRILU_Prec> > ilu = 
-				  Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<MRILU_Prec> >(Prec);
-				*/
-			}
+            string SubType   = plist.get("Ifpack Method","None");
+            int overlapLevel = plist.get("Ifpack Overlap Level", 0);
+            DEBVAR(SubType);
+            if (SubType=="ILU")
+            {
+                Teuchos::RCP<Ifpack_AdditiveSchwarz<Ifpack_ILU> > ilu =
+                    Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILU> >(Prec, overlapLevel);
+                const Epetra_RowMatrix& Aloc = dynamic_cast<const Epetra_RowMatrix&>(ilu->Inverse()->Matrix());
+                //MatrixUtils::PrintRowMatrix(Aloc,*debug);
+            }
+            else if (SubType=="ILUT")
+            {
+                Teuchos::RCP<Ifpack_AdditiveSchwarz<Ifpack_ILUT> > ilu =
+                    Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILUT> >(Prec, overlapLevel);
+                const Epetra_RowMatrix& Aloc = dynamic_cast<const Epetra_RowMatrix&>(ilu->Inverse()->Matrix());
+                //MatrixUtils::PrintRowMatrix(Aloc,*debug);
+            }
+            else if (SubType=="MRILU")
+            {
+                /*
+                  Teuchos::RCP<Ifpack_AdditiveSchwarz<MRILU_Prec> > ilu =
+                  Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<MRILU_Prec> >(Prec);
+                */
+            }
 #endif
-			// perform factorization...
-			CHECK_ZERO(Prec->Compute());
+            // perform factorization...
+            CHECK_ZERO(Prec->Compute());
 
 #ifdef DEBUGGING
-			if (SubType=="ILUT stand-alone")
-			{
-				Teuchos::RCP<Ifpack_ILUT> ilut = Teuchos::rcp_dynamic_cast<Ifpack_ILUT>(Prec);
-				//DEBVAR(ilut->L());
-				//DEBVAR(ilut->U());
-			}
-			else if (SubType=="ILU stand-alone")
-			{
-				Teuchos::RCP<Ifpack_ILU> ilu = Teuchos::rcp_dynamic_cast<Ifpack_ILU>(Prec);
-				//DEBVAR(ilu->L());
-				//DEBVAR(ilu->U());
-			}
-			else if (SubType=="ILU")
-			{
-				Teuchos::RCP<Ifpack_AdditiveSchwarz<Ifpack_ILU> > ilu = 
-					Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILU> >(Prec);
-				//DEBVAR(ilu->Inverse()->L());
-				//DEBVAR(ilu->Inverse()->U());
-			}
-			else if (SubType=="ILUT")
-			{
-				Teuchos::RCP<Ifpack_AdditiveSchwarz<Ifpack_ILUT> > ilu = 
-					Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILUT> >(Prec);
-				//DEBVAR(ilu->Inverse()->L());
-				//DEBVAR(ilu->Inverse()->U());
-			}
-#endif    
-		}
+            if (SubType=="ILUT stand-alone")
+            {
+                Teuchos::RCP<Ifpack_ILUT> ilut = Teuchos::rcp_dynamic_cast<Ifpack_ILUT>(Prec);
+                //DEBVAR(ilut->L());
+                //DEBVAR(ilut->U());
+            }
+            else if (SubType=="ILU stand-alone")
+            {
+                Teuchos::RCP<Ifpack_ILU> ilu = Teuchos::rcp_dynamic_cast<Ifpack_ILU>(Prec);
+                //DEBVAR(ilu->L());
+                //DEBVAR(ilu->U());
+            }
+            else if (SubType=="ILU")
+            {
+                Teuchos::RCP<Ifpack_AdditiveSchwarz<Ifpack_ILU> > ilu =
+                    Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILU> >(Prec);
+                //DEBVAR(ilu->Inverse()->L());
+                //DEBVAR(ilu->Inverse()->U());
+            }
+            else if (SubType=="ILUT")
+            {
+                Teuchos::RCP<Ifpack_AdditiveSchwarz<Ifpack_ILUT> > ilu =
+                    Teuchos::rcp_dynamic_cast<Ifpack_AdditiveSchwarz<Ifpack_ILUT> >(Prec);
+                //DEBVAR(ilu->Inverse()->L());
+                //DEBVAR(ilu->Inverse()->U());
+            }
+#endif
+        }
 #ifndef NO_ML //[
-		else if (PrecType=="ML")
-		{
-    
-			Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> Prec = 
-				Teuchos::rcp_dynamic_cast<ML_Epetra::MultiLevelPreconditioner>(P);
+        else if (PrecType=="ML")
+        {
 
-			Teuchos::ParameterList& mllist = plist.sublist("ML");
-			if (Prec->Comm().MyPID() == 0)
-			{
-				if (mllist.get("output", 0) > 0)
-				{
-					std::cout << "Computing Multi-Level Preconditioner for ";
-					std::cout << Prec->RowMatrix().Label()<<"\n";
-				}
-			}
+            Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> Prec =
+                Teuchos::rcp_dynamic_cast<ML_Epetra::MultiLevelPreconditioner>(P);
 
-			Prec->ComputePreconditioner();
+            Teuchos::ParameterList& mllist = plist.sublist("ML");
+            if (Prec->Comm().MyPID() == 0)
+            {
+                if (mllist.get("output", 0) > 0)
+                {
+                    std::cout << "Computing Multi-Level Preconditioner for ";
+                    std::cout << Prec->RowMatrix().Label()<<"\n";
+                }
+            }
 
-			// this has no effect unless the user sets "viz: enable" to true:
-			if (mllist.get("viz: enable",false)==true)
-			{
-				Prec->VisualizeAggregates();
-			}
-    
+            Prec->ComputePreconditioner();
+
+            // this has no effect unless the user sets "viz: enable" to true:
+            if (mllist.get("viz: enable",false)==true)
+            {
+                Prec->VisualizeAggregates();
+            }
+
 //#ifdef TESTING //[
-			bool analyze_cycle = plist.get("ML: Analyze Cycle",false);
-			bool test_smoothers = plist.get("ML: Test Smoothers",false);
-			if (test_smoothers || analyze_cycle)
-			{
-				// ML dumps all of its output to std::cout
-				std::ostream& os = std::cout;
-				//int NumSmoo = mllist.get("smoother: sweeps",1);
-				int NumCycles = mllist.get("cycle applications",1);
-				int NumPre=0, NumPost=0;
-				string PreOrPost = mllist.get("smoother: pre or post","both");
-				if ((PreOrPost=="pre")||(PreOrPost=="both"))
-				{
-					NumPre=NumCycles;
-				}
-				if ((PreOrPost=="post")||(PreOrPost=="both"))
-				{
-					NumPost=NumCycles;
-				}
-      
-      
-				if (analyze_cycle) 
-				{
-					if (Prec->Comm().MyPID()==0)
-					{
-						os << "Print hierarchy and analyze effect of MG cycle on a random vector\n";
-						os << "Matrix in question: " << Prec->RowMatrix().Label();
-					}
-					Prec->AnalyzeHierarchy(true,NumPre,NumPost,NumCycles);
-				}
-				if (test_smoothers)    
-				{
-					if (Prec->Comm().MyPID()==0)
-					{
-						os << "Test various Smoothers for ";
-						os << Prec->RowMatrix().Label()<<"\n";
-					}
-					Prec->TestSmoothers(plist.sublist("ML: Smoother Test"));
-				}
-			}
-			bool dump_matrices = plist.get("ML: Dump Matrices",false);      
-			if (dump_matrices) DumpMLHierarchy(P);
+            bool analyze_cycle = plist.get("ML: Analyze Cycle",false);
+            bool test_smoothers = plist.get("ML: Test Smoothers",false);
+            if (test_smoothers || analyze_cycle)
+            {
+                // ML dumps all of its output to std::cout
+                std::ostream& os = std::cout;
+                //int NumSmoo = mllist.get("smoother: sweeps",1);
+                int NumCycles = mllist.get("cycle applications",1);
+                int NumPre=0, NumPost=0;
+                string PreOrPost = mllist.get("smoother: pre or post","both");
+                if ((PreOrPost=="pre")||(PreOrPost=="both"))
+                {
+                    NumPre=NumCycles;
+                }
+                if ((PreOrPost=="post")||(PreOrPost=="both"))
+                {
+                    NumPost=NumCycles;
+                }
+
+
+                if (analyze_cycle)
+                {
+                    if (Prec->Comm().MyPID()==0)
+                    {
+                        os << "Print hierarchy and analyze effect of MG cycle on a random vector\n";
+                        os << "Matrix in question: " << Prec->RowMatrix().Label();
+                    }
+                    Prec->AnalyzeHierarchy(true,NumPre,NumPost,NumCycles);
+                }
+                if (test_smoothers)
+                {
+                    if (Prec->Comm().MyPID()==0)
+                    {
+                        os << "Test various Smoothers for ";
+                        os << Prec->RowMatrix().Label()<<"\n";
+                    }
+                    Prec->TestSmoothers(plist.sublist("ML: Smoother Test"));
+                }
+            }
+            bool dump_matrices = plist.get("ML: Dump Matrices",false);
+            if (dump_matrices) DumpMLHierarchy(P);
 
 //#endif //]
-		}//ML
+        }//ML
 #endif //]
 #ifdef HAVE_PARASAILS
-		else if (PrecType=="ParaSails")
-		{
-			Teuchos::rcp_dynamic_cast<ParaSailsPrecond>(P)->Compute();
-		}
+        else if (PrecType=="ParaSails")
+        {
+            Teuchos::rcp_dynamic_cast<ParaSailsPrecond>(P)->Compute();
+        }
 #endif
-		else if (PrecType=="None")
-		{
-			// ... //
-		}
-		else
-		{
-			ERROR("Bad preconditiner type: "+PrecType,__FILE__,__LINE__);
-		}
-		bool eigen_analysis = plist.get("Analyze Preconditioned Spectrum",false);      
-		if (eigen_analysis) AnalyzeSpectrum(plist,P);
-  
-		DEBUG("Leave SolverFactory::ComputeAlgebraicPrecond ("+PrecType+")");
-	}
+        else if (PrecType=="None")
+        {
+            // ... //
+        }
+        else
+        {
+            ERROR("Bad preconditiner type: "+PrecType,__FILE__,__LINE__);
+        }
+        bool eigen_analysis = plist.get("Analyze Preconditioned Spectrum",false);
+        if (eigen_analysis) AnalyzeSpectrum(plist,P);
 
-// note: we can currently only return the 'Teuchos::RCP<AztecOO>' type. Once Belos is 
+        DEBUG("Leave SolverFactory::ComputeAlgebraicPrecond ("+PrecType+")");
+    }
+
+// note: we can currently only return the 'Teuchos::RCP<AztecOO>' type. Once Belos is
 // available this should be redefined, but that means that Aztec will no longer
 // be supported by our class.
-	Teuchos::RCP<AztecOO> SolverFactory::CreateKrylovSolver(Teuchos::ParameterList& plist,int verbose)
-	{  
-		Teuchos::RCP<AztecOO> Solver = Teuchos::null;
-		std::string SolverType = plist.get("Method","AztecOO");
-		if (SolverType == "AztecOO")
-		{
-			Solver = Teuchos::rcp(new AztecOO() );
-			Solver->SetOutputStream(*outFile);
-			Solver->SetErrorStream(*outFile);
-			if (verbose > 5)  plist.set("Output",1);      
-			if (verbose == 0) plist.set("Output",0);
-			Solver->SetParameters(plist);
-		}
-		else if (SolverType != "None")
-		{
-			ERROR("Invalid Solver Method: "+SolverType,__FILE__,__LINE__);
-		}  
-		return Solver;
-	}
-  
+    Teuchos::RCP<AztecOO> SolverFactory::CreateKrylovSolver(Teuchos::ParameterList& plist,int verbose)
+    {
+        Teuchos::RCP<AztecOO> Solver = Teuchos::null;
+        std::string SolverType = plist.get("Method","AztecOO");
+        if (SolverType == "AztecOO")
+        {
+            Solver = Teuchos::rcp(new AztecOO() );
+            Solver->SetOutputStream(*outFile);
+            Solver->SetErrorStream(*outFile);
+            if (verbose > 5)  plist.set("Output",1);
+            if (verbose == 0) plist.set("Output",0);
+            Solver->SetParameters(plist);
+        }
+        else if (SolverType != "None")
+        {
+            ERROR("Invalid Solver Method: "+SolverType,__FILE__,__LINE__);
+        }
+        return Solver;
+    }
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // convert Teuchos::ParameterList entries to aztec options without an actual AztecOO              //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-	void SolverFactory::ExtractAztecOptions(Teuchos::ParameterList& azlist,int* options, double* params)
-	{
+    void SolverFactory::ExtractAztecOptions(Teuchos::ParameterList& azlist,int* options, double* params)
+    {
 
 // note: this is basically copied from class AztecOO in Trilinos 7.0.4
 
-		Teuchos::ParameterList::ConstIterator 
-			pl_iter = azlist.begin(), pl_end  = azlist.end();
+        Teuchos::ParameterList::ConstIterator
+            pl_iter = azlist.begin(), pl_end  = azlist.end();
 
-		for(; pl_iter != pl_end; ++pl_iter) 
-		{
-			//create an upper-case copy of the entry's name and prepend AZ_ if necessary
-//    string name = AztecOO_uppercase((*pl_iter).first);
-			string name = Teuchos::StrUtils::allCaps((*pl_iter).first);
- 
-			if (!(name[0] == 'A' && name[1] == 'Z')) 
-			{
-				string az_("AZ_");
-				name=az_+name;
-			}
-
-			const Teuchos::ParameterEntry& entry = (*pl_iter).second;
-			Teuchos::map<string,int>& azoo_key_map = AztecOO_key_map();
-			Teuchos::map<string,int>::iterator result = azoo_key_map.find(name);
-			bool entry_used = false;
-
-			if (result != azoo_key_map.end()) 
-			{
-				int offset = (*result).second;
-				if (offset < 0) return;
-
-				int dummy_int;
-				double dummy_double;
-				string dummy_string;
-
-				if (entry.isType<int>() || entry.isType<unsigned>()) 
-				{
-					if (offset < AZ_FIRST_USER_OPTION) 
-					{
-						int ival = entry.getValue(&dummy_int);
-						options[offset]=ival;
-						entry_used = true;
-					}
-				}
-				else if (entry.isType<string>()) 
-				{
-					if (offset < AZ_FIRST_USER_OPTION) 
-					{
-						string sname = Teuchos::StrUtils::allCaps(entry.getValue(&dummy_string));
-						if (!(sname[0] == 'A' && sname[1] == 'Z')) 
-						{
-							string az_("AZ_");
-							sname=az_+sname;
-						}
-						Teuchos::map<string,int>& val_map = AztecOO_value_map();
-						Teuchos::map<string,int>::iterator result = val_map.find(sname);
-						if (result != val_map.end()) 
-						{
-							options[offset] = (*result).second;
-							entry_used = true;
-						}
-					}
-				}
-				else if (entry.isType<double>()) 
-				{
-					if (offset < AZ_FIRST_USER_PARAM) 
-					{
-						double entry_value = entry.getValue(&dummy_double);
-						params[offset] = entry_value;
-						entry_used = true;
-					}
-				}
-			}
-			if (!entry_used) 
-			{
-				ERROR("your Aztec option '"+name+"' was not used!",__FILE__,__LINE__);
-			}
-		}
-	}
-
-
-
-
-	void SolverFactory::DumpMLHierarchy(Teuchos::RCP<Epetra_Operator> P)
-	{
-		Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> Prec = 
-			Teuchos::rcp_dynamic_cast<ML_Epetra::MultiLevelPreconditioner>(P);
-		const ML* ml = Prec->GetML();
-		int num_levels = ml->ML_num_actual_levels;
-		Epetra_CrsMatrix* Ai;
-		for (int i=0;i<num_levels;i++)
+        for(; pl_iter != pl_end; ++pl_iter)
         {
-			std::stringstream fname;
-			fname<<"ML_Matrix_Level_"<<i<<".txt";
-			CHECK_ZERO(ML_Operator2EpetraCrsMatrix(&(ml->Amat[i]), Ai));
+            //create an upper-case copy of the entry's name and prepend AZ_ if necessary
+//    string name = AztecOO_uppercase((*pl_iter).first);
+            string name = Teuchos::StrUtils::allCaps((*pl_iter).first);
 
-			delete Ai;
+            if (!(name[0] == 'A' && name[1] == 'Z'))
+            {
+                string az_("AZ_");
+                name=az_+name;
+            }
+
+            const Teuchos::ParameterEntry& entry = (*pl_iter).second;
+            Teuchos::map<string,int>& azoo_key_map = AztecOO_key_map();
+            Teuchos::map<string,int>::iterator result = azoo_key_map.find(name);
+            bool entry_used = false;
+
+            if (result != azoo_key_map.end())
+            {
+                int offset = (*result).second;
+                if (offset < 0) return;
+
+                int dummy_int;
+                double dummy_double;
+                string dummy_string;
+
+                if (entry.isType<int>() || entry.isType<unsigned>())
+                {
+                    if (offset < AZ_FIRST_USER_OPTION)
+                    {
+                        int ival = entry.getValue(&dummy_int);
+                        options[offset]=ival;
+                        entry_used = true;
+                    }
+                }
+                else if (entry.isType<string>())
+                {
+                    if (offset < AZ_FIRST_USER_OPTION)
+                    {
+                        string sname = Teuchos::StrUtils::allCaps(entry.getValue(&dummy_string));
+                        if (!(sname[0] == 'A' && sname[1] == 'Z'))
+                        {
+                            string az_("AZ_");
+                            sname=az_+sname;
+                        }
+                        Teuchos::map<string,int>& val_map = AztecOO_value_map();
+                        Teuchos::map<string,int>::iterator result = val_map.find(sname);
+                        if (result != val_map.end())
+                        {
+                            options[offset] = (*result).second;
+                            entry_used = true;
+                        }
+                    }
+                }
+                else if (entry.isType<double>())
+                {
+                    if (offset < AZ_FIRST_USER_PARAM)
+                    {
+                        double entry_value = entry.getValue(&dummy_double);
+                        params[offset] = entry_value;
+                        entry_used = true;
+                    }
+                }
+            }
+            if (!entry_used)
+            {
+                ERROR("your Aztec option '"+name+"' was not used!",__FILE__,__LINE__);
+            }
         }
-	}
+    }
 
 
-// analyze spectrum of an operator inv(P)A-I, if P is a good preconditioner, 
+
+
+    void SolverFactory::DumpMLHierarchy(Teuchos::RCP<Epetra_Operator> P)
+    {
+        Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> Prec =
+            Teuchos::rcp_dynamic_cast<ML_Epetra::MultiLevelPreconditioner>(P);
+        const ML* ml = Prec->GetML();
+        int num_levels = ml->ML_num_actual_levels;
+        Epetra_CrsMatrix* Ai;
+        for (int i=0;i<num_levels;i++)
+        {
+            std::stringstream fname;
+            fname<<"ML_Matrix_Level_"<<i<<".txt";
+            CHECK_ZERO(ML_Operator2EpetraCrsMatrix(&(ml->Amat[i]), Ai));
+
+            delete Ai;
+        }
+    }
+
+
+// analyze spectrum of an operator inv(P)A-I, if P is a good preconditioner,
 // this operator should have no dominant eigenmodes
-	void SolverFactory::AnalyzeSpectrum(Teuchos::ParameterList& plist, Teuchos::RCP<const Epetra_Operator> Prec)
-	{
+    void SolverFactory::AnalyzeSpectrum(Teuchos::ParameterList& plist, Teuchos::RCP<const Epetra_Operator> Prec)
+    {
 #ifdef HAVE_ANASAZI
-		Teuchos::RCP<const Epetra_Operator> A = null;
-		A=plist.get("Eigen-Analysis: Operator", A);
-  
-		if (A->Comm().MyPID()==0)
-		{
-			std::cout << "##############################################################################\n";
-			std::cout << "# Eigen-Analysis of preconditioner for "<<A->Label()<<std::endl;
-			std::cout << "##############################################################################\n";
-		}
+        Teuchos::RCP<const Epetra_Operator> A = null;
+        A=plist.get("Eigen-Analysis: Operator", A);
 
-		// the mass-matrix is not required. If it is non-null, the initial guess 
-		// is pre-multiplied by M, i.e. to get 0's into the conti-equation etc.
-		Teuchos::RCP<Epetra_CrsMatrix> M = null;
-		M=plist.get("Eigen-Analysis: Mass-Matrix", M);
-  
-		// this should have been set in 'CreateAlgebraicPrecond'
-		if (A==null) ERROR("SolverFactory::AnalyzeSpectrum: matrix pointer not set",__FILE__,__LINE__);
-  
-		typedef double ScalarType;
-		typedef Teuchos::ScalarTraits<ScalarType>          SCT;
-		typedef SCT::magnitudeType               MagnitudeType;
-		typedef Epetra_MultiVector                          MV;
-		typedef Epetra_Operator                       OP;
-		typedef Anasazi::MultiVecTraits<ScalarType,MV>     MVT;
-		typedef Anasazi::OperatorTraits<ScalarType,MV,OP>  OPT;
+        if (A->Comm().MyPID()==0)
+        {
+            std::cout << "##############################################################################\n";
+            std::cout << "# Eigen-Analysis of preconditioner for "<<A->Label()<<std::endl;
+            std::cout << "##############################################################################\n";
+        }
 
-		int ierr;
-  
-		// create operator P\A-I
-		Teuchos::RCP<Epetra_Operator> MyOp;
-		MyOp = Teuchos::rcp(new PAmI_Operator(A,Prec));
+        // the mass-matrix is not required. If it is non-null, the initial guess
+        // is pre-multiplied by M, i.e. to get 0's into the conti-equation etc.
+        Teuchos::RCP<Epetra_CrsMatrix> M = null;
+        M=plist.get("Eigen-Analysis: Mass-Matrix", M);
 
-		// ************************************
-		// Start the block Arnoldi iteration
-		// ***********************************
-		//
-		//  Variables used for the Block Krylov Schur Method
-		//
-		bool boolret;
-		int MyPID = Prec->Comm().MyPID();
+        // this should have been set in 'CreateAlgebraicPrecond'
+        if (A==null) ERROR("SolverFactory::AnalyzeSpectrum: matrix pointer not set",__FILE__,__LINE__);
 
-		bool verbose = true;
-		bool debug = false;
-		std::string which("LM");
+        typedef double ScalarType;
+        typedef Teuchos::ScalarTraits<ScalarType>          SCT;
+        typedef SCT::magnitudeType               MagnitudeType;
+        typedef Epetra_MultiVector                          MV;
+        typedef Epetra_Operator                       OP;
+        typedef Anasazi::MultiVecTraits<ScalarType,MV>     MVT;
+        typedef Anasazi::OperatorTraits<ScalarType,MV,OP>  OPT;
 
-		int nev = 20;
-		int blockSize = 1;
-		int numBlocks = 50;
-		int maxRestarts = 100;
-		//int stepSize = 5;
-		double tol = 1e-6;
+        int ierr;
 
-		// Create a sort manager to pass into the block Krylov-Schur solver manager
-		//  Make sure the reference-counted pointer is of type Anasazi::SortManager<>
-		//  The block Krylov-Schur solver manager uses Anasazi::BasicSort<> by default,
-		//  so you can also pass in the parameter "Which", instead of a sort manager.
-		Teuchos::RCP<Anasazi::SortManager<ScalarType> > MySort =
-			Teuchos::rcp( new Anasazi::BasicSort<ScalarType>( which ) );
+        // create operator P\A-I
+        Teuchos::RCP<Epetra_Operator> MyOp;
+        MyOp = Teuchos::rcp(new PAmI_Operator(A,Prec));
 
-		// Set verbosity level
-		int verbosity = Anasazi::Errors + Anasazi::Warnings;
-		if (verbose) {
-			verbosity += Anasazi::FinalSummary + Anasazi::TimingDetails;
-		}
-		if (debug) {
-			verbosity += Anasazi::Debug;
-		}
-		//
-		// Create parameter list to pass into solver manager
-		//
-		Teuchos::ParameterList MyPL;
-		MyPL.set( "Verbosity", verbosity );
-		MyPL.set( "Sort Manager", MySort );
-		//MyPL.set( "Which", which );
-		MyPL.set( "Block Size", blockSize );
-		MyPL.set( "Num Blocks", numBlocks );
-		MyPL.set( "Maximum Restarts", maxRestarts );
-		//MyPL.set( "Step Size", stepSize );
-		MyPL.set( "Convergence Tolerance", tol );
+        // ************************************
+        // Start the block Arnoldi iteration
+        // ***********************************
+        //
+        //  Variables used for the Block Krylov Schur Method
+        //
+        bool boolret;
+        int MyPID = Prec->Comm().MyPID();
 
-		// Create an Epetra_MultiVector for an initial vector to start the solver.
-		// Note:  This needs to have the same number of columns as the blocksize.
-		Teuchos::RCP<Epetra_MultiVector> ivec = 
-			Teuchos::rcp( new Epetra_MultiVector(A->OperatorRangeMap(), blockSize) );
-		ivec->Random();
-  
-		if (M!=null)
-		{
-			Epetra_MultiVector tmp = *ivec;
-			CHECK_ZERO(M->Multiply(false,tmp,*ivec));
-		}
+        bool verbose = true;
+        bool debug = false;
+        std::string which("LM");
 
-		// Create the eigenproblem.
-		Teuchos::RCP<Anasazi::BasicEigenproblem<double, MV, OP> > MyProblem =
-			Teuchos::rcp( new Anasazi::BasicEigenproblem<double, MV, OP>(MyOp, ivec) );
+        int nev = 20;
+        int blockSize = 1;
+        int numBlocks = 50;
+        int maxRestarts = 100;
+        //int stepSize = 5;
+        double tol = 1e-6;
 
-		// Inform the eigenproblem that the operator A is symmetric
-		MyProblem->setHermitian(false);
+        // Create a sort manager to pass into the block Krylov-Schur solver manager
+        //  Make sure the reference-counted pointer is of type Anasazi::SortManager<>
+        //  The block Krylov-Schur solver manager uses Anasazi::BasicSort<> by default,
+        //  so you can also pass in the parameter "Which", instead of a sort manager.
+        Teuchos::RCP<Anasazi::SortManager<ScalarType> > MySort =
+            Teuchos::rcp( new Anasazi::BasicSort<ScalarType>( which ) );
 
-		// Set the number of eigenvalues requested
-		MyProblem->setNEV( nev );
+        // Set verbosity level
+        int verbosity = Anasazi::Errors + Anasazi::Warnings;
+        if (verbose) {
+            verbosity += Anasazi::FinalSummary + Anasazi::TimingDetails;
+        }
+        if (debug) {
+            verbosity += Anasazi::Debug;
+        }
+        //
+        // Create parameter list to pass into solver manager
+        //
+        Teuchos::ParameterList MyPL;
+        MyPL.set( "Verbosity", verbosity );
+        MyPL.set( "Sort Manager", MySort );
+        //MyPL.set( "Which", which );
+        MyPL.set( "Block Size", blockSize );
+        MyPL.set( "Num Blocks", numBlocks );
+        MyPL.set( "Maximum Restarts", maxRestarts );
+        //MyPL.set( "Step Size", stepSize );
+        MyPL.set( "Convergence Tolerance", tol );
 
-		// Inform the eigenproblem that you are finishing passing it information
-		boolret = MyProblem->setProblem();
-		if (boolret != true) {
-			if (verbose && MyPID == 0) {
-				cout << "Anasazi::BasicEigenproblem::setProblem() returned with error." << endl;
-			}
-			ERROR("AnalyzeSpectrum: Could not create Anasazi Problem!",__FILE__,__LINE__);
-		}
+        // Create an Epetra_MultiVector for an initial vector to start the solver.
+        // Note:  This needs to have the same number of columns as the blocksize.
+        Teuchos::RCP<Epetra_MultiVector> ivec =
+            Teuchos::rcp( new Epetra_MultiVector(A->OperatorRangeMap(), blockSize) );
+        ivec->Random();
 
-		// Initialize the Block Arnoldi solver
-		Anasazi::BlockKrylovSchurSolMgr<double, MV, OP> MySolverMgr(MyProblem, MyPL);
+        if (M!=null)
+        {
+            Epetra_MultiVector tmp = *ivec;
+            CHECK_ZERO(M->Multiply(false,tmp,*ivec));
+        }
 
-		// Solve the problem to the specified tolerances or length
-		Anasazi::ReturnType returnCode;
-		returnCode = MySolverMgr.solve();
-		if (returnCode != Anasazi::Converged && MyPID==0 && verbose) {
-			cout << "Anasazi::EigensolverMgr::solve() returned unconverged." << endl;
-		}
+        // Create the eigenproblem.
+        Teuchos::RCP<Anasazi::BasicEigenproblem<double, MV, OP> > MyProblem =
+            Teuchos::rcp( new Anasazi::BasicEigenproblem<double, MV, OP>(MyOp, ivec) );
 
-		// Get the Ritz values from the eigensolver
-		std::vector<Anasazi::Value<double> > ritzValues = MySolverMgr.getRitzValues();
+        // Inform the eigenproblem that the operator A is symmetric
+        MyProblem->setHermitian(false);
+
+        // Set the number of eigenvalues requested
+        MyProblem->setNEV( nev );
+
+        // Inform the eigenproblem that you are finishing passing it information
+        boolret = MyProblem->setProblem();
+        if (boolret != true) {
+            if (verbose && MyPID == 0) {
+                cout << "Anasazi::BasicEigenproblem::setProblem() returned with error." << endl;
+            }
+            ERROR("AnalyzeSpectrum: Could not create Anasazi Problem!",__FILE__,__LINE__);
+        }
+
+        // Initialize the Block Arnoldi solver
+        Anasazi::BlockKrylovSchurSolMgr<double, MV, OP> MySolverMgr(MyProblem, MyPL);
+
+        // Solve the problem to the specified tolerances or length
+        Anasazi::ReturnType returnCode;
+        returnCode = MySolverMgr.solve();
+        if (returnCode != Anasazi::Converged && MyPID==0 && verbose) {
+            cout << "Anasazi::EigensolverMgr::solve() returned unconverged." << endl;
+        }
+
+        // Get the Ritz values from the eigensolver
+        std::vector<Anasazi::Value<double> > ritzValues = MySolverMgr.getRitzValues();
 
 
-		// Output computed eigenvalues and their direct residuals
-		if (verbose && MyPID==0) {
-			int numritz = (int)ritzValues.size();
-			cout.setf(std::ios_base::right, std::ios_base::adjustfield);
-			cout<<endl<< "Computed Ritz Values"<< endl;
-			if (MyProblem->isHermitian()) {
-				cout<< std::setw(16) << "Real Part"
-					<< endl;
-				cout<<"-----------------------------------------------------------"<<endl;
-				for (int i=0; i<numritz; i++) {
-					cout<< std::setw(16) << ritzValues[i].realpart
-						<< endl;
-				}
-				cout<<"-----------------------------------------------------------"<<endl;
-			}
-			else {
-				cout<< std::setw(16) << "Real Part"
-					<< std::setw(16) << "Imag Part"
-					<< endl;
-				cout<<"-----------------------------------------------------------"<<endl;
-				for (int i=0; i<numritz; i++) {
-					cout<< std::setw(16) << ritzValues[i].realpart
-						<< std::setw(16) << ritzValues[i].imagpart
-						<< endl;
-				}
-				cout<<"-----------------------------------------------------------"<<endl;
-			}
-		}
+        // Output computed eigenvalues and their direct residuals
+        if (verbose && MyPID==0) {
+            int numritz = (int)ritzValues.size();
+            cout.setf(std::ios_base::right, std::ios_base::adjustfield);
+            cout<<endl<< "Computed Ritz Values"<< endl;
+            if (MyProblem->isHermitian()) {
+                cout<< std::setw(16) << "Real Part"
+                    << endl;
+                cout<<"-----------------------------------------------------------"<<endl;
+                for (int i=0; i<numritz; i++) {
+                    cout<< std::setw(16) << ritzValues[i].realpart
+                        << endl;
+                }
+                cout<<"-----------------------------------------------------------"<<endl;
+            }
+            else {
+                cout<< std::setw(16) << "Real Part"
+                    << std::setw(16) << "Imag Part"
+                    << endl;
+                cout<<"-----------------------------------------------------------"<<endl;
+                for (int i=0; i<numritz; i++) {
+                    cout<< std::setw(16) << ritzValues[i].realpart
+                        << std::setw(16) << ritzValues[i].imagpart
+                        << endl;
+                }
+                cout<<"-----------------------------------------------------------"<<endl;
+            }
+        }
 #endif
-	}
+    }
 
 
 

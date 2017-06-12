@@ -26,7 +26,7 @@
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-  
+
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->
@@ -43,7 +43,7 @@
     <Parameter name="Periodic" type="bool" value="0"/>
     <!-- depth of the ocean -->
     <Parameter name="Depth hdim" type="double" value="4000"/>
-    
+
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
@@ -74,24 +74,24 @@
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
     <Parameter name="Coupled Atmosphere" type="int" value="1"/>
     <!-- =============================================================== -->
-	
+
     <!-- Starting Parameters -->
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-      <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
+      <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.3"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-      <Parameter name="Temperature Forcing" type="double" value="10.0"/>
+      <Parameter name="Temperature Forcing" type="double" value="0.0"/>
       <Parameter name="SPL1"                type="double" value="2.0e3"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>
     </ParameterList>
-	
+
     <!-- Mixing parameter (vmix_GLB in THCM)                                   -->
-	<!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
-	<!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                               -->
-	<!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                               -->
+    <!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
+    <!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                               -->
+    <!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                               -->
     <Parameter name="Mixing" type="int" value="1"/>
-	
+
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>
     <!-- Taper (tap in usr.F90) -->
@@ -110,7 +110,7 @@
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->
-    <Parameter name="Levitus T" type="int" value="1"/>    
+    <Parameter name="Levitus T" type="int" value="1"/>
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
     <Parameter name="Levitus S" type="int" value="1"/>
@@ -122,8 +122,8 @@
     <!-- Type of scaling applied to the linear systems.                            -->
     <!-- We currently support "None" and "THCM"                                    -->
     <!-- "None" is not really recomended.                                          -->
-    <Parameter name="Scaling" type="string" value="THCM"/> 
+    <Parameter name="Scaling" type="string" value="THCM"/>
 
   </ParameterList> <!-- } THCM -->
-  
+
 </ParameterList> <!-- } -->

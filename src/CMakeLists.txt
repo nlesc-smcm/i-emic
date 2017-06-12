@@ -72,7 +72,6 @@ link_directories(${library_directories})
 # ------------------------------------------------------------------
 # Additional libraries
 set(EXTRA_LIBS
-  hdf5
   ifpack_mrilu
   mrilucpp
   precon
@@ -80,6 +79,7 @@ set(EXTRA_LIBS
   misc
   iosrc
   gfortran
+  hdf5
   )
 
 list(APPEND library_dependencies ${EXTRA_LIBS})
@@ -90,8 +90,8 @@ set(I-EMIC_LIBS
   coupledmodel
   atmosphere
   ocean
-  supervector
   utils
+  supervector
   jdqz_tools
   )
 

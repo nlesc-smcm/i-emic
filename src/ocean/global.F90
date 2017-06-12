@@ -6,11 +6,11 @@
 ! * contact: jonas@math.rug.nl                                         *
 ! **********************************************************************/
 
-! This module contains variables from usr.F90 which are adjusted to 	
-! represent the global domain in a parallel computation. This informa- 
-! tion is used for I/O purposes, i.e. to read land-cells etc. m_global 
-! should be used sparsely and with care to avoid confusions with the	
-! subdomain (usr.F90).							
+! This module contains variables from usr.F90 which are adjusted to
+! represent the global domain in a parallel computation. This informa-
+! tion is used for I/O purposes, i.e. to read land-cells etc. m_global
+! should be used sparsely and with care to avoid confusions with the
+! subdomain (usr.F90).
 
 module m_global
 
@@ -45,7 +45,7 @@ module m_global
   real,dimension(nf,2) :: sig
   real :: xl, xlp, det, tval
 
-  integer :: ndim = 0 
+  integer :: ndim = 0
 
   ! here are some things we cannot use from m_usr as they may (and are
   ! likely to) differ between the computational and global domains
@@ -53,7 +53,7 @@ module m_global
   real, dimension(:),allocatable :: x,y,z,xu,yv,zw,ze,zwe
   real :: dx, dy, dz
   integer, dimension(:,:,:),allocatable :: landm
-  real, dimension(:,:), allocatable :: taux, tauy, tatm, emip, spert 
+  real, dimension(:,:), allocatable :: taux, tauy, tatm, emip, spert
   logical ::  periodic
   real, dimension(:,:,:), allocatable :: internal_temp,internal_salt
 
@@ -61,8 +61,8 @@ module m_global
 
 contains
 
-  !! allocate memory for the global data structures. You are allowed	
-  !! to specify m,n,l to be 0 so that no memory is allocated (most	
+  !! allocate memory for the global data structures. You are allowed
+  !! to specify m,n,l to be 0 so that no memory is allocated (most
   !! subdomains will only use xmin,xmax,ymin and ymax)
   subroutine initialize(a_n,a_m,a_l,&
        a_xmin,a_xmax,a_ymin,a_ymax,a_hdim,a_qz,&
@@ -114,7 +114,7 @@ contains
        flat      = .false.
     end if
     if (a_rd_mask .ne. 0) then
-       rd_mask   = .true.    
+       rd_mask   = .true.
     else
        rd_mask   = .false.
     end if
@@ -123,9 +123,9 @@ contains
     SRES     = a_SRES
     iza      = a_iza
     ite      = a_ite
-    its      = a_its 
+    its      = a_its
     if (a_rd_spertm .ne. 0) then
-       rd_spertm = .true.    
+       rd_spertm = .true.
     else
        rd_spertm = .false.
     end if
@@ -178,7 +178,7 @@ contains
 
   end subroutine deallocate_global
 
-  !! this is meant as an interface for the C++ code, it just calls 
+  !! this is meant as an interface for the C++ code, it just calls
   !! deallocate_global, really:
   subroutine finalize()
 
@@ -229,7 +229,7 @@ contains
        x(i) = (real(i)-0.5)*dx + xmin
        xu(i)= (real(i)    )*dx + xmin
     ENDDO
-    
+
     xu(0) = xmin
     DO j=1,m
        y(j) = (real(j)-0.5)*dy + ymin
@@ -251,9 +251,9 @@ contains
 
   end subroutine g_grid
 
-  !! this is supposed to be called once by the root            
-  !! proc with a standard 0:n+1,0:m+1,0:l+la+1 1D C            
-  !! array which is then distributed to all the subdomains      
+  !! this is supposed to be called once by the root
+  !! proc with a standard 0:n+1,0:m+1,0:l+la+1 1D C
+  !! array which is then distributed to all the subdomains
   !! and re-inserted into the subdomains when calling usrc:init
   subroutine get_landm(cland)
 
@@ -276,7 +276,7 @@ contains
              pos=pos+1
           end do
        end do
-    end do    
+    end do
     _INFO_('THCM: global.F90 get_landm... done')
   end subroutine get_landm
 
@@ -300,24 +300,24 @@ contains
              pos=pos+1
           end do
        end do
-    end do    
+    end do
     _INFO_('THCM: global.F90 get_current_landm... done')
   end subroutine get_current_landm
-  
+
   !! Similar but vice versa, set landm from c array
   subroutine set_landm(cland)
-    
+
     use, intrinsic :: iso_c_binding
     implicit none
-        
+
     integer(c_int), dimension((n+2)*(m+2)*(l+la+2)) :: cland
     integer :: i,j,k,pos
 
 
 !    _INFO_('THCM: global.F90 set_landm...')
-    
+
     landm = 0;
-    
+
     pos = 1
     do k=0,l+la+1
        do j=0,m+1
@@ -338,30 +338,30 @@ contains
           enddo
        enddo
     enddo
-    
+
 !    write(*,*) '_______ set_landm ____________', z(l)*hdim
 !
 !    do j = m+1, 0, -1
 !       write(*,'(  92i1)') landm(:,j,l)
 !    enddo
-    
 
-!    _INFO_('THCM: global.F90 set_landm... done')    
-  end subroutine set_landm    
 
-  !! this is supposed to be called once by the root            
-  !! proc with standard 1:n+1,0:m 1D C                         
-  !!arrays which are then distributed to all the subdomains    
+!    _INFO_('THCM: global.F90 set_landm... done')
+  end subroutine set_landm
+
+  !! this is supposed to be called once by the root
+  !! proc with standard 1:n+1,0:m 1D C
+  !!arrays which are then distributed to all the subdomains
   !! and re-inserted into the subdomains when calling usrc:init
   !  subroutine get_levitus(sres,ctatm,cemip)
-  !  
+  !
   !  implicit none
-  !  
+  !
   !  integer :: SRES
   !  real, dimension(n*m) :: ctatm, cemip
-  !  
+  !
   !  integer :: i,j,pos
-  !      
+  !
   !  if (SRES.eq.1) then
   !    call levitus_sal
   !  else
@@ -369,7 +369,7 @@ contains
   !    call read_forcing(emip,15)
   !  end if
   !  call levitus_sst
-  !  
+  !
   !  pos = 1
   !  do j=1,m
   !    do i=1,n
@@ -378,7 +378,7 @@ contains
   !      pos = pos+1
   !    end do
   !  end do
-  !  
+  !
   !  end subroutine get_levitus
 
   subroutine get_windfield(ctaux,ctauy)
@@ -387,10 +387,10 @@ contains
     implicit none
 
     real(c_double), dimension(n*m) :: ctaux, ctauy
-    real, dimension(n) :: tauz 
+    real, dimension(n) :: tauz
     integer :: i,j,pos
 
-    if(iza.ne.2) then    
+    if(iza.ne.2) then
        call windfit        ! read data with subroutine from forcing.F90
        if(iza.eq.1) then   ! average zonally
           do j=1,m
@@ -433,7 +433,7 @@ contains
              call read_forcing(tatm,14)
           else                ! read sst
              _INFO_("Read sst from levitus...")
-             call levitus_sst 
+             call levitus_sst
           end if
        else if (ite.eq.1) then  ! idealized forcing, set in forcing.F90
           _INFO_("Using idealized temperature forcing, see forcing.F90")
@@ -469,7 +469,7 @@ contains
 
     write(f99,*) 'reading internal temperature forcing from "'//topdir//'levitus/new/t00an1'//'"'
     call levitus_internal(topdir//'levitus/new/t00an1',internal_temp,.false.,'TEMP')
-    !call levitus_internal(topdir//'levitus/new/avtemp',internal_temp,.false.,'TEMP')                            
+    !call levitus_internal(topdir//'levitus/new/avtemp',internal_temp,.false.,'TEMP')
 
     pos = 1
     do k=1,l
@@ -495,7 +495,7 @@ contains
        if (SRES.eq.0) then ! read (virtual) salt flux and store it in emip
           call read_forcing(emip,15)
        else                ! read sss
-          call levitus_sal 
+          call levitus_sal
        end if
     else                  ! idealized forcing, set in forcing.F90
        emip(1:n,1:m) = 0.0
@@ -559,10 +559,10 @@ contains
 
   end subroutine get_spert
 
-  !! get levitus T and S for a certain month. These 
-  !! will be distributed by the C++ code and passed 
-  !! back into m_monthly by calling set_levitus     
-  !! 0<=month<=11 indicates which month you want.   
+  !! get levitus T and S for a certain month. These
+  !! will be distributed by the C++ code and passed
+  !! back into m_monthly by calling set_levitus
+  !! 0<=month<=11 indicates which month you want.
   subroutine get_monthly_forcing(ctatm,cemip,ctaux,ctauy,month)
 
     use, intrinsic :: iso_c_binding
@@ -681,17 +681,17 @@ contains
     integer :: i,j,k,pos
     real :: dep
 
-    ! keep annual mean data in backup locations    
+    ! keep annual mean data in backup locations
     temp_bak(:,:,:) = internal_temp
     salt_bak(:,:,:) = internal_salt
 
-    write(ibuf,'(1I2.2)') month 
+    write(ibuf,'(1I2.2)') month
     write(f99,*) 'reading internal seasonal temperature forcing from "'//topdir//'levitus/monthly/t'//ibuf//'an1'//'"'
     call levitus_internal(topdir//'levitus/monthly/t'//ibuf//'an1',internal_temp,.true.,'TEMP')
     write(f99,*) 'reading internal seasonal salinity forcing from "'//topdir//'levitus/monthly/s'//ibuf//'an1'//'"'
-    call levitus_internal(topdir//'levitus/monthly/s'//ibuf//'an1',internal_salt,.true.,'SALT')    
+    call levitus_internal(topdir//'levitus/monthly/s'//ibuf//'an1',internal_salt,.true.,'SALT')
 
-    ! note: the monthly mean data sets only contain temperature and salt up to a depth of 
+    ! note: the monthly mean data sets only contain temperature and salt up to a depth of
     ! 1500m. For any layers deeper than that we use the annual mean value instead.
     do k=l,1,-1
        dep=-z(k)*hdim
@@ -710,13 +710,13 @@ contains
 
              csalt(pos) = internal_salt(i,j,k)
 
-             pos = pos+1                                
+             pos = pos+1
           end do
        end do
     end do
 
-    ! restore annual mean data in original arrays                                                                       
-    internal_temp(:,:,:) = temp_bak                                  
+    ! restore annual mean data in original arrays
+    internal_temp(:,:,:) = temp_bak
     internal_salt(:,:,:) = salt_bak
 
   end subroutine get_monthly_internal_forcing

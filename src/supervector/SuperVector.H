@@ -142,7 +142,7 @@ public:
 	void linearTransformation(std::vector<double> const &values,
 							  std::vector<int> const &indices,
 							  char domain, char range);
-
+	
 	// Apply a linear mapping given by an Epetra_CrsMatrix,
 	//  only capable of mapping the ocean to the ocean.
 	void linearTransformation(Teuchos::RCP<Epetra_CrsMatrix> mat);
@@ -165,38 +165,6 @@ private:
 	void componentNorms() const;
 
 	double &operatorIndex(int index) const;
-	
-};
-
-class ComplexSuperVector
-{
-	SuperVector tmp_;
-
-public:
-
-	SuperVector real;
-	SuperVector imag;
-	
-	ComplexSuperVector();
-	ComplexSuperVector(SuperVector &re);
-	ComplexSuperVector(SuperVector &re, SuperVector &im);
-
-	// Overloaded assignment operator
-	void operator=(ComplexSuperVector const &other);
-
-	int length() const {return real.length();}
-	
-	double norm() const;
-
-	std::complex<double> dot(ComplexSuperVector const &other) const;
-	void axpy(std::complex<double> a, ComplexSuperVector const &x);
-	void axpby(std::complex<double> a, ComplexSuperVector const &x,
-			   std::complex<double> b);
-	void scale(std::complex<double> a);
-	void zero();
-	void random();
-
-	void print(){real.print(); imag.print();}
 	
 };
 

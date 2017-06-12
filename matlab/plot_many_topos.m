@@ -1,6 +1,6 @@
 % decide which plot to show in movie
 str = ['select plottype: \n(0) surftemp, (1) barstreamfunc,',...
-	   '(2) isothermals, (3) moc, (4) amoc (5) zonal surface vel.\n'];
+       '(2) isothermals, (3) moc, (4) amoc (5) zonal surface vel.\n'];
 plottype = input(str);
 
 surftemp      = false;
@@ -12,17 +12,17 @@ zonalsurf     = false;
 
 switch (plottype)
   case 0
-	surftemp = true;
+    surftemp = true;
   case 1
-	barstreamfunc = true;
+    barstreamfunc = true;
   case 2
-	isothermals = true;
+    isothermals = true;
   case 3
-	moc = true;
+    moc = true;
   case 4
-	amoc = true;
+    amoc = true;
   case 5
-	zonalsurf = true;
+    zonalsurf = true;
 end
 
 % Create array of strings with filenames of the states (UNIX)
@@ -34,10 +34,10 @@ begin     = 1;
 k         = 1;
 for i = 1:numel(statenames)
   if i == newlines(k)
-	filenames{k} = sprintf('%s',statenames(begin:i-1));
-	pars(k) = str2num(sprintf('%s',statenames(begin+11:i-1)));
-	k = k+1;
-	begin = i + 1;
+    filenames{k} = sprintf('%s',statenames(begin:i-1));
+    pars(k) = str2num(sprintf('%s',statenames(begin+11:i-1)));
+    k = k+1;
+    begin = i + 1;
   end
 end
 
@@ -51,9 +51,9 @@ begin = 1;
 k = 1;
 for i = 1:numel(masknames)
   if i == newlines(k)
-	maskfiles{k} = sprintf('%s',masknames(begin:i-1));
-	k = k+1;
-	begin = i + 1;
+    maskfiles{k} = sprintf('%s',masknames(begin:i-1));
+    k = k+1;
+    begin = i + 1;
   end
 end
 
@@ -120,16 +120,16 @@ if amoc
   % Atlantic v
   v_atl = v;
   for j = 1:m
-	for i = 1:n
-	  if surfm_atl(i,j) ~= 0
-		v_atl(i,j,:) = 0;
-	  end
-	end
+    for i = 1:n
+      if surfm_atl(i,j) ~= 0
+        v_atl(i,j,:) = 0;
+      end
+    end
   end
   % Atlantic overturning streamfunction
   APSIG = mstream(v_atl(:,atl_j,:)*udim,[x;xmax]*cos(yv(atl_j))'*r0dim,...
-				  zw*hdim);
-  
+                  zw*hdim);
+
   APSIG = [zeros(size(APSIG,1),1) APSIG];
   minAPSIG = min(APSIG(:));
   maxAPSIG = max(APSIG(:));
@@ -201,216 +201,216 @@ for file = 2:numel(filenames)
   msrf2 = max(max(srf2));
   srf2 = round(srf2 / max(msrf2,1));
 
-  
+
   delta1 = par1 - floor(par1);
   delta2 = par2 - floor(par2);
   srfl  = (1-delta1)*srf1   + delta1*srf2;
   srfr  = (1-delta2)*srf1   + delta2*srf2;
-  landm = (1-delta2)*landm1 + delta2*landm2;  
+  landm = (1-delta2)*landm1 + delta2*landm2;
   landm_int  = landm2;
 
   if abs(par2 - round(par2)) < 1e-7
-	   prange = [par1:par_incr:par2,par2,par2];
+       prange = [par1:par_incr:par2,par2,par2];
   else
-	prange = [par1:par_incr:par2];
+    prange = [par1:par_incr:par2];
   end
-  
+
   for pr = prange
 
-	if pr < par1 || pr > par2
-	  continue;
-	end
-	% HOMOTOPY --------------------------------------------------------
-	a = (pr - par1) / (par2 - par1);
-	
-	sol = (1-a)*sol1 + a*sol2;
+    if pr < par1 || pr > par2
+      continue;
+    end
+    % HOMOTOPY --------------------------------------------------------
+    a = (pr - par1) / (par2 - par1);
 
-	a = pr - floor(par1);
-	srf = (1-a)*srf1 + a*srf2;
-	1-a
-	a
-	
-	% create image
-	[m,n] = size(srf);
-	srf_img = zeros(n,m,3);
-	srf_img(:,:,1) = srf';
-	srf_img(:,:,2) = srf';
-	srf_img(:,:,3) = srf';
-	
-	%figure(1)
-	%imagesc(srf1'); set(gca,'ydir','normal')
-	
-	%figure(2)
-	%imagesc(srf2'); set(gca,'ydir','normal')
+    sol = (1-a)*sol1 + a*sol2;
 
-	%figure(3)
-	%imagesc(srf'); set(gca,'ydir','normal')
+    a = pr - floor(par1);
+    srf = (1-a)*srf1 + a*srf2;
+    1-a
+    a
 
-	
-	%% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
-	[u,v,w,p,T,S] = extractsol(sol);
+    % create image
+    [m,n] = size(srf);
+    srf_img = zeros(n,m,3);
+    srf_img(:,:,1) = srf';
+    srf_img(:,:,2) = srf';
+    srf_img(:,:,3) = srf';
 
-	%for k = 1:l
-	%  for j = 1:m
-	%	for i = 1:n
-	%	  if landm2(i+1,j+1,k+1) == 1
-	%		u(i,j,k) = 0;
-	%	  end
-	%	end
-	%  end
-	%end
+    %figure(1)
+    %imagesc(srf1'); set(gca,'ydir','normal')
 
-	%% - INTEGRATIONS - --------------------------------------------------
-	% Barotropic streamfunction
-	if barstreamfunc
-	  PSIB = bstream(u*udim,zw*hdim,[y;ymax]*r0dim);
-	end
+    %figure(2)
+    %imagesc(srf2'); set(gca,'ydir','normal')
 
-	if moc
-	  % Overturning streamfunction
-	  PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
-	  PSIG = [zeros(size(PSIG,1),1) PSIG];
-	end
+    %figure(3)
+    %imagesc(srf'); set(gca,'ydir','normal')
 
-	if amoc
-	  % Atlantic v
-	  v_atl = v;
-	  for j = 1:m
-		for i = 1:n
-		  if surfm_atl(i,j) ~= 0
-			v_atl(i,j,:) = 0;
-		  end
-		end
-	  end
-	  % Atlantic overturning streamfunction
-	  APSIG = mstream(v_atl(:,atl_j,:)*udim,[x;xmax]*cos(yv(atl_j))'*r0dim,...
-					  zw*hdim);
-	  
-	  APSIG = [zeros(size(APSIG,1),1) APSIG];
-	end
 
-	if zonalsurf
-	   USURF = u(:,:,end) * udim;
-	end
+    %% - EXTRACT SOLUTION COMPONENTS - -----------------------------------
+    [u,v,w,p,T,S] = extractsol(sol);
 
-	%% Create Temperature
-	% build longitudinal average over non-land cells
-	if isothermals
-	  Tl = zeros(m,l);
-	  for k = 1:l
-		for j = 1:m
-		  count = 0;
-		  for i=1:n            
-			if landm_int(i,j,k) == 0
-			  count = count + 1;
-			  Tl(j,k) = Tl(j,k) + T(i,j,k);
-			end
-		  end
-		  Tl(j,k) = Tl(j,k) / count;
-		end
-	  end
-	end
-	
-	if surftemp %----------------------------------
+    %for k = 1:l
+    %  for j = 1:m
+    %   for i = 1:n
+    %     if landm2(i+1,j+1,k+1) == 1
+    %       u(i,j,k) = 0;
+    %     end
+    %   end
+    %  end
+    %end
 
-	  Tsurf = T(:,:,l);
-	  %## for j = 1:m
-	  %## 	for i = 1:n
-	  %## 	  if surfm(i,j) == 1
-	  %## 		Tsurf(i,j) = -999;
-	  %## 	  end
-	  %## 	end
-	  %## end
-	  img  = T0 + Tsurf(range,:)';
-%	  contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
-%	  set(gca,'color',[0.65,0.65,0.65]);
-%	  image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
-%	  contours = linspace(minT,maxT,40);
-	  imagesc(RtD*x,RtD*(y),img); hold off
-	  set(gca,'ydir','normal')
-	  
-	  colorbar
-	  caxis([minT,maxT]);
-	  title(['Surface Temperature ', sprintf('%5.4f',pr)], 'interpreter', 'none');
-	  xlabel('Longitude');
-	  ylabel('Latitude');
-	  
-	  xtl  = get(gca,'xticklabel');
-	  xtl2 = xtl;
-	  for i = 1:numel(xtl)
-		xtl2{i} = num2str( str2num(xtl{i}) + round(RtD*x(div),-1) - 360 );
-	  end
-	  set(gca,'xticklabel',xtl2);
-	  
-	elseif barstreamfunc %----------------------------------
+    %% - INTEGRATIONS - --------------------------------------------------
+    % Barotropic streamfunction
+    if barstreamfunc
+      PSIB = bstream(u*udim,zw*hdim,[y;ymax]*r0dim);
+    end
 
-	  img = PSIB(2:end,:)';
-	  minval = minPSIB;
-	  maxval = maxPSIB;
+    if moc
+      % Overturning streamfunction
+      PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
+      PSIG = [zeros(size(PSIG,1),1) PSIG];
+    end
 
-	  contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
-	  %imagesc(RtD*x,RtD*(y),img,'AlphaData',.5); hold on
-	  image(RtD*x,RtD*(y),srf_img,'AlphaData',.9); hold on
-	  contours = linspace(minval,maxval,25);
-	  %contour(RtD*x,RtD*y,(surfm(range,:)'),1,'k-','linewidth',1); hold on
-	  contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', ...
-			  'on','linewidth',2); hold on
+    if amoc
+      % Atlantic v
+      v_atl = v;
+      for j = 1:m
+        for i = 1:n
+          if surfm_atl(i,j) ~= 0
+            v_atl(i,j,:) = 0;
+          end
+        end
+      end
+      % Atlantic overturning streamfunction
+      APSIG = mstream(v_atl(:,atl_j,:)*udim,[x;xmax]*cos(yv(atl_j))'*r0dim,...
+                      zw*hdim);
 
-	  hold off
-	  colorbar
-	  caxis([minval,maxval])
-	  xlabel('Longitude')
+      APSIG = [zeros(size(APSIG,1),1) APSIG];
+    end
 
-	  if (abs(round(pr)-pr)>1e-6)
-		title('Barotropic Streamfunction: Continuation');
-	  else
-		title('Barotropic Streamfunction: Corrector');
-	  end
-	  
-	  ylabel('Latitude')
-	  
+    if zonalsurf
+       USURF = u(:,:,end) * udim;
+    end
+
+    %% Create Temperature
+    % build longitudinal average over non-land cells
+    if isothermals
+      Tl = zeros(m,l);
+      for k = 1:l
+        for j = 1:m
+          count = 0;
+          for i=1:n
+            if landm_int(i,j,k) == 0
+              count = count + 1;
+              Tl(j,k) = Tl(j,k) + T(i,j,k);
+            end
+          end
+          Tl(j,k) = Tl(j,k) / count;
+        end
+      end
+    end
+
+    if surftemp %----------------------------------
+
+      Tsurf = T(:,:,l);
+      %## for j = 1:m
+      %##   for i = 1:n
+      %##     if surfm(i,j) == 1
+      %##       Tsurf(i,j) = -999;
+      %##     end
+      %##   end
+      %## end
+      img  = T0 + Tsurf(range,:)';
+%     contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
+%     set(gca,'color',[0.65,0.65,0.65]);
+%     image(RtD*x,RtD*(y),srf,'AlphaData',0.5); hold on
+%     contours = linspace(minT,maxT,40);
+      imagesc(RtD*x,RtD*(y),img); hold off
+      set(gca,'ydir','normal')
+
+      colorbar
+      caxis([minT,maxT]);
+      title(['Surface Temperature ', sprintf('%5.4f',pr)], 'interpreter', 'none');
+      xlabel('Longitude');
+      ylabel('Latitude');
+
+      xtl  = get(gca,'xticklabel');
+      xtl2 = xtl;
+      for i = 1:numel(xtl)
+        xtl2{i} = num2str( str2num(xtl{i}) + round(RtD*x(div),-1) - 360 );
+      end
+      set(gca,'xticklabel',xtl2);
+
+    elseif barstreamfunc %----------------------------------
+
+      img = PSIB(2:end,:)';
+      minval = minPSIB;
+      maxval = maxPSIB;
+
+      contourf(RtD*x,RtD*(y),img(:,range),20,'Visible', 'off'); hold on;
+      %imagesc(RtD*x,RtD*(y),img,'AlphaData',.5); hold on
+      image(RtD*x,RtD*(y),srf_img,'AlphaData',.9); hold on
+      contours = linspace(minval,maxval,25);
+      %contour(RtD*x,RtD*y,(surfm(range,:)'),1,'k-','linewidth',1); hold on
+      contour(RtD*x,RtD*(y),img(:,range),contours,'Visible', ...
+              'on','linewidth',2); hold on
+
+      hold off
+      colorbar
+      caxis([minval,maxval])
+      xlabel('Longitude')
+
+      if (abs(round(pr)-pr)>1e-6)
+        title('Barotropic Streamfunction: Continuation');
+      else
+        title('Barotropic Streamfunction: Corrector');
+      end
+
+      ylabel('Latitude')
+
       if div > 1
-		xtl  = get(gca,'xticklabel');
-		xtl2 = xtl;
-	  
-		for i = 1:numel(xtl)
-		  xtl2{i} = num2str( str2num(xtl{i}) + round(RtD*x(div),-1) - 360 );
-		end
-		set(gca,'xticklabel',xtl2);
-	  end
+        xtl  = get(gca,'xticklabel');
+        xtl2 = xtl;
 
-	  elseif moc
-	  contours = linspace(minPSIG,maxPSIG,40);
-	  contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',contours,'linewidth',2);
-	  colorbar
-	  title(['MOC (Sv) ', sprintf('%5.4f',pr)],'interpreter', 'none');
-	  xlabel('latitude')
-	  ylabel('depth (m)')
-	  
-	elseif amoc % ---------------------------------------------------
-	  contours = linspace(minAPSIG,maxAPSIG,40);
-	  contourf(RtD*[y(atl_j);y(max(atl_j))+dy]-dy/2,zw*hdim',APSIG',contours,'linewidth',2);
-	  colorbar
-	  caxis([minAPSIG,maxAPSIG]);
-	  title(['AMOC (Sv) ', sprintf('%5.4f',pr)], 'interpreter', 'none');
-	  xlabel('latitude')
-	  ylabel('depth (m)')
+        for i = 1:numel(xtl)
+          xtl2{i} = num2str( str2num(xtl{i}) + round(RtD*x(div),-1) - 360 );
+        end
+        set(gca,'xticklabel',xtl2);
+      end
 
-	elseif zonalsurf % ---------------------------------------------------
-	  contours = linspace(minU,maxU,40);
-	  imagesc(RtD*x,RtD*y, USURF');
-	  set(gca,'ydir','normal');
-	  colorbar
-	  caxis([minU,maxU]);
-	  title(['Surface zonal velocity (m/s) ', sprintf('%5.4f',pr)], 'interpreter', 'none');
-	  xlabel('lon')
-	  ylabel('lat')		   
-	end
-	
-	fprintf('parameter: %f %f %f %f\n', pr, par1, par_incr, par2);	
-	%----------------------------------
-	frame = getframe(gcf);
-	writeVideo(writerObj, frame);
+      elseif moc
+      contours = linspace(minPSIG,maxPSIG,40);
+      contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIG',contours,'linewidth',2);
+      colorbar
+      title(['MOC (Sv) ', sprintf('%5.4f',pr)],'interpreter', 'none');
+      xlabel('latitude')
+      ylabel('depth (m)')
+
+    elseif amoc % ---------------------------------------------------
+      contours = linspace(minAPSIG,maxAPSIG,40);
+      contourf(RtD*[y(atl_j);y(max(atl_j))+dy]-dy/2,zw*hdim',APSIG',contours,'linewidth',2);
+      colorbar
+      caxis([minAPSIG,maxAPSIG]);
+      title(['AMOC (Sv) ', sprintf('%5.4f',pr)], 'interpreter', 'none');
+      xlabel('latitude')
+      ylabel('depth (m)')
+
+    elseif zonalsurf % ---------------------------------------------------
+      contours = linspace(minU,maxU,40);
+      imagesc(RtD*x,RtD*y, USURF');
+      set(gca,'ydir','normal');
+      colorbar
+      caxis([minU,maxU]);
+      title(['Surface zonal velocity (m/s) ', sprintf('%5.4f',pr)], 'interpreter', 'none');
+      xlabel('lon')
+      ylabel('lat')
+    end
+
+    fprintf('parameter: %f %f %f %f\n', pr, par1, par_incr, par2);
+    %----------------------------------
+    frame = getframe(gcf);
+    writeVideo(writerObj, frame);
   end
 end
 close(writerObj);

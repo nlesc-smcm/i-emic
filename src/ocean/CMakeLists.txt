@@ -11,17 +11,21 @@ set(CPP_SOURCES Ocean.C THCM.C OceanGrid.C
   TRIOS_Domain.C TRIOS_BlockPreconditioner.C TRIOS_Saddlepoint.C
   TRIOS_SolverFactory.C TRIOS_Static.C)
 
-add_library(ocean SHARED ${FORTRAN_SOURCES} ${CPP_SOURCES})
+add_library(ocean STATIC ${FORTRAN_SOURCES} ${CPP_SOURCES})
 
 set(OCEAN_INCLUDE_DIRS
   ../supervector/
   ../idrsolver/
   ../mrilucpp/
   ../utils/
+  ../atmosphere/
+  ../multiarray/
   )
 
 target_include_directories(ocean PUBLIC ${OCEAN_INCLUDE_DIRS})
 target_include_directories(ocean PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(ocean atmosphere)
 
 target_compile_definitions(ocean PUBLIC DATA_DIR=${DATA_DIR} ${COMP_IDENT})
 

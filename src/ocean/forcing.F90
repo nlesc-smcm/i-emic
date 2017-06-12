@@ -2,7 +2,7 @@
 
 !****************************************************************************
 SUBROUTINE forcing
-  !     Shape of wind-forcing and buoyancy forcing 
+  !     Shape of wind-forcing and buoyancy forcing
   use m_usr
   use m_atm
   implicit none
@@ -15,7 +15,7 @@ SUBROUTINE forcing
   integer find_row2
   real :: max_internal_forcing
 
-  if (iout.eq.0) then 
+  if (iout.eq.0) then
      write(f99,*) '===========FORCING============'
   endif
 
@@ -23,32 +23,32 @@ SUBROUTINE forcing
   ! ------------------------------------------------------------------
   ! Determine wind forcing
   ! ------------------------------------------------------------------
-  
+
   sigma = par(COMB)*par(WIND)*par(AL_T)
 
   if (iza.eq.2) then        ! idealized wind forcing
      do j=1,m
         do i=1,n
-           taux(i,j) = wfun(xu(i),yv(j),1) 
-           tauy(i,j) = wfun(xu(i),yv(j),2)                 
+           taux(i,j) = wfun(xu(i),yv(j),1)
+           tauy(i,j) = wfun(xu(i),yv(j),2)
         enddo
      enddo
   endif
 
   do j = 1,m-1
-     do i = 1, n                          
-        Frc(find_row2(i,j,l,UU)) = sigma * taux(i,j) 
+     do i = 1, n
+        Frc(find_row2(i,j,l,UU)) = sigma * taux(i,j)
         Frc(find_row2(i,j,l,VV)) = sigma * tauy(i,j)
      enddo
   enddo
- 
+
   ! ------------------------------------------------------------------
   ! Determine atmospheric temperature forcing
   ! ------------------------------------------------------------------
-  
+
   etabi = par(COMB)*par(TEMP)*(1 - TRES + TRES*par(BIOT))
-  
-  ! idealized temperature forcing 
+
+  ! idealized temperature forcing
   if ((ite.eq.1).and.(coupled_atm.eq.0)) then
      do j=1,m
         do i=1,n
@@ -58,7 +58,7 @@ SUBROUTINE forcing
   endif
 
   ! correct for nonzero flux
-  if ((TRES.eq.0).and.(coupled_atm.eq.0)) then      
+  if ((TRES.eq.0).and.(coupled_atm.eq.0)) then
      call qint(tatm,temcor)
   else
      temcor = 0.0
@@ -70,12 +70,12 @@ SUBROUTINE forcing
                 par(COMB) * par(SUNP) * (suna(j) - amua)
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
-           
+
         else if (coupled_atm.eq.1) then ! coupled externally
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l)) &
-                +  Ooa * tatm(i,j) 
-           
+                +  Ooa * tatm(i,j)
+
         else  ! ocean-only
            Frc(find_row2(i,j,l,TT)) = etabi * ( tatm(i,j) - temcor )
         endif
@@ -85,7 +85,7 @@ SUBROUTINE forcing
   ! ------------------------------------------------------------------
   ! Determine salinity forcing
   ! ------------------------------------------------------------------
-  
+
   gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT))
 
   if (its.eq.1) then        ! idealized salinity forcing
@@ -114,16 +114,16 @@ SUBROUTINE forcing
   enddo
 
   ! ------------------------------------------------------------------
-  ! Determine forcing in the z-direction 
+  ! Determine forcing in the z-direction
   ! ------------------------------------------------------------------
-  
+
   max_internal_forcing=0.0
   OPEN(50,FILE='frc.txt',STATUS='unknown')
   REWIND(50)
 
   do k=1,l-1
      do j=1,m
-        do i=1,n 
+        do i=1,n
            Frc(find_row2(i,j,k,WW)) = -par(COMB)*(1-landm(i,j,k))*par(RAYL)*  &
                 (par(LAMB)*(internal_salt(i,j,k) + internal_salt(i,j,k+1))/2. &
                 -(internal_temp(i,j,k)+internal_temp(i,j,k+1))/2.)
@@ -166,7 +166,7 @@ SUBROUTINE windfit
   liwrk=n+nx
 
   open(10,file=topdir//'wind/trtau.dat',action='read')
-  read(10,*) 
+  read(10,*)
   do i=1,nx
      read(10,*) xx(i)
   enddo
@@ -199,7 +199,7 @@ SUBROUTINE windfit
   enddo
   call itplbv(f99,ny,nx,yy,xx,ff1,n*m,yi,xi,dumx)
   call itplbv(f99,ny,nx,yy,xx,ff2,n*m,yi,xi,dumy)
-#else      
+#else
   ! ACN original interpolation:
   call e01daf(nx,ny,xx,yy,ff1,px,py,lambda,mu,cspl,wrk,ifail)
   call e02dff(n,m,px,py,xh,yh,lambda,mu,cspl,dumx,wrk2,lwrk,&
@@ -224,8 +224,8 @@ SUBROUTINE windfit
 end subroutine windfit
 
 !****************************************************************************
-! put wind field for a certain month (1-12) into arrays taux, tauy in  
-! module m_global. This is used for the seasonal cycle problem.        
+! put wind field for a certain month (1-12) into arrays taux, tauy in
+! module m_global. This is used for the seasonal cycle problem.
 !****************************************************************************
 
 SUBROUTINE windfit_monthly(month)
@@ -298,7 +298,7 @@ SUBROUTINE windfit_monthly(month)
   enddo
   call itplbv(f99,ny,nx,yy,xx,ff1,n*m,yi,xi,dumx)
   call itplbv(f99,ny,nx,yy,xx,ff2,n*m,yi,xi,dumy)
-#else      
+#else
   ! ACN original interpolation:
   call e01daf(nx,ny,xx,yy,ff1,px,py,lambda,mu,cspl,wrk,ifail)
   call e02dff(n,m,px,py,xh,yh,lambda,mu,cspl,dumx,wrk2,lwrk,&
@@ -328,7 +328,7 @@ SUBROUTINE read_spertm
   implicit none
   integer, dimension(n+2,m+2) :: dum
   integer i, j
-  integer status 
+  integer status
 
   open(unit=42,file='spertm_name.txt',status='old',err=995)
   read(unit=42,fmt='(A100)',iostat=status,end=10) spertmaskfile
@@ -455,7 +455,7 @@ SUBROUTINE tempfit
   close(10)
   !
   ifail = 0
-#ifndef HAVE_NAG      
+#ifndef HAVE_NAG
   ! ACN alternative interpolation if nag-library is not available:
   do i = 1,n
      do j = 1,m
@@ -473,7 +473,7 @@ SUBROUTINE tempfit
 #endif
   DO i=1,n
      DO j=1,m
-        tatm(i,j) = dumx(m*(i-1) + j) 
+        tatm(i,j) = dumx(m*(i-1) + j)
      ENDDO
   ENDDO
 
@@ -492,7 +492,7 @@ SUBROUTINE tempfit
   write(f99,*) 'fit of temperature field done, tatmmax  = ', tatmmax
 
 999 format(2i4)
-998 format(5e16.8,i5,e14.6)     
+998 format(5e16.8,i5,e14.6)
 
 END SUBROUTINE tempfit
 
@@ -569,7 +569,7 @@ SUBROUTINE diagnose_restoring_sflux(un,filename)
   sflux = missing
   p15i = 1.0/par(SALT)
   !
-  ! Construct internal and surface salt flux implied by relaxation 
+  ! Construct internal and surface salt flux implied by relaxation
   !
   do k = 1,l
      !       amp = par(INTRS)
@@ -611,7 +611,7 @@ SUBROUTINE diagnose_restoring_tflux(un,filename)
   tflux = missing
   p17i = 1.0/par(TEMP)
   !
-  ! Construct internal and surface heat flux implied by relaxation 
+  ! Construct internal and surface heat flux implied by relaxation
   !
   do k = 1,l
      !       amp = par(INTRT)
@@ -639,7 +639,7 @@ SUBROUTINE qint3(fl)
   !
   ! Subtracts net flux from flux field.
   ! Note that integral is according to dz(l)/dz(k) scaling of flux.
-  !  
+  !
   use m_usr
   implicit none
   real fl(n,m,l), sint, svol, int

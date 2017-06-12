@@ -89,18 +89,21 @@ void testOcean(RCP<Epetra_Comm> Comm)
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");	
 	
-	//------------------------------------------------------------------
 	// Create parameter object for Ocean
 	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-	
-	// Create parallelized Ocean object
-	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
-
-	//------------------------------------------------------------------
+    oceanParams->setName("Ocean parameters");
+    
  	// Create parameter object for continuation
 	RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
+    continuationParams->setName("Continuation parameters");
+
+    INFO("Overwriting:");
+    Utils::overwriteParameters(oceanParams, continuationParams);
+
+	// Create parallelized Ocean object
+	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
 	
 	// Create continuation
 	Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >

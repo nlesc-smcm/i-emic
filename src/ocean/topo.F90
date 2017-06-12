@@ -1,12 +1,12 @@
 #include "fdebug.h"
 ! this module has been made 'global' i.e. it uses m_global instead
-! of m_global and should be used only by the root process in case 
+! of m_global and should be used only by the root process in case
 ! Trilinos-THCM is run in parallel
 !***************************************************************
 SUBROUTINE topofit
-#ifndef HAVE_NAG      
+#ifndef HAVE_NAG
   USE m_itplbv
-#endif      
+#endif
   use m_global
   implicit none
 
@@ -31,16 +31,17 @@ SUBROUTINE topofit
   liwrk=n+nd
 
   ido = 1
+  depth = 0
 
   ! disabling this whole thing...
-#ifdef TOPO10 
-  
+#ifdef TOPO10
+
   IF (ido == 1) THEN ! debugging, file topo10.binnew cannot be read
 
 #ifdef ASCII_TOPO
      open(unit=10,file=topdir//'topo/topo10.asc',&
           form='formatted',status='old',action='read', iostat=ierr)
-#else      
+#else
      open(unit=10,file=topdir//'topo/topo10.binnew',&
           form='unformatted',status='old',action='read', iostat=ierr)
 #endif
@@ -51,14 +52,14 @@ SUBROUTINE topofit
 #ifndef ASCII_TOPO
      read(10) d10
 #else
-     
+
      do j=1,md
         do i=1,nd
            read(10,'(1I6)') d10(i,j)
         end do
      end do
-     
-#endif      
+
+#endif
      close(10)
      if (xmax .gt. 2*pi) then
         DO j=1,md
@@ -110,7 +111,7 @@ SUBROUTINE topofit
      call e01daf(nd,md,xd,yd,rd,px,py,lambda,mu,cspl,wrk,ifail)
      call e02dff(n,m,px,py,x,y,lambda,mu,cspl,dumd,wrk2,lwrk,&
           &            iwrk,liwrk,ifail)
-#endif     
+#endif
      DO i=1,n
         DO j=1,m
            depth(i,j) = dumd(m*(i-1)+j)
@@ -119,12 +120,12 @@ SUBROUTINE topofit
   ENDIF
 
 #endif
-  
+
   IF (rd_mask) THEN
-     _DEBUG_('call readmask...') 
+     _DEBUG_('call readmask...')
      call readmask
   ELSE
-     _DEBUG_('call depth3land...') 
+     _DEBUG_('call depth3land...')
      call depth3land(depth)
   ENDIF
   _DEBUG_('leave topofit')
@@ -133,7 +134,7 @@ END SUBROUTINE topofit
 SUBROUTINE readmask
   use m_global
   implicit none
-  integer i,j,k       
+  integer i,j,k
   integer nw,nnw,nsw,ns,ne,nne,nse,nn,nsum,status
 
   ! if all worked out fine, the C++ program should have placed
@@ -142,7 +143,7 @@ SUBROUTINE readmask
   open(UNIT=42,file='mask_name.txt',status='old',err=123)
   read(unit=42,fmt='(A999)',iostat=status,end=10) maskfile
 
-10 continue      
+10 continue
   close(42)
 
   write(*,*) '===========TOPOGRAPHY==================================='
@@ -154,7 +155,7 @@ SUBROUTINE readmask
   landm = LAND
 
   do k = 0, l+la+1
-     read(500,*) 
+     read(500,*)
      do j = m+1, 0, -1
         read(500,'(362i1)',iostat=status) (landm(i,j,k),i=0,n+1)
      enddo
@@ -162,7 +163,7 @@ SUBROUTINE readmask
 
   close(500)
 
-  
+
   ! do k = 1, l
   !    do i = 3, n-2
   !       do j = 2, m-1
@@ -174,10 +175,10 @@ SUBROUTINE readmask
   !             nne =  landm(i+1,j+1,k)
   !             nse =  landm(i+1,j-1,k)
   !             ns  =  landm(i,j-1,k)
-  !             nn  =  landm(i,j+1,k) 
+  !             nn  =  landm(i,j+1,k)
 
   !             nsum = nw+ne+ns+nn
-  !             if (nsum.gt.2) then                      
+  !             if (nsum.gt.2) then
   !                landm(i,j,k) = LAND ! disabled this hack?
   !             endif
 
@@ -189,7 +190,7 @@ SUBROUTINE readmask
   !       enddo
   !    enddo
   ! enddo
-  !      
+  !
   do i = 1, n
      do j = 1, m
         do k = l, 2,-1
@@ -244,6 +245,7 @@ SUBROUTINE depth3land(depth)
   real     ph1,ph2,ph3,ph4,thn,tha,thsa,thd
 
   _DEBUG_('entering depth3land...')
+  
   depth = depth / hdim
 
   landm = LAND
@@ -257,7 +259,7 @@ SUBROUTINE depth3land(depth)
   landm(1:n,1:m,l+1:l+la) = ATMOS
 
   SELECT CASE(itopo)
-  CASE(0) ! topography from data  
+  CASE(0) ! topography from data
      i = n/2
      j = m/2
      k = l
@@ -272,7 +274,7 @@ SUBROUTINE depth3land(depth)
      rowintcon = -1
      write(*,*) 'integral condition ',i,j,k,landm(i,j,k),rowintcon
      ! END CASE 0
-  CASE(1) ! no continents  
+  CASE(1) ! no continents
      _DEBUG_('case 1: no continents')
      i = n
      j = m
@@ -283,7 +285,7 @@ SUBROUTINE depth3land(depth)
      landm(1:n,1:m,1:l) = OCEAN
      !         landm(7:9,1:m,1:5) = LAND
      ! END CASE 1
-  CASE(2) ! Miocene 
+  CASE(2) ! Miocene
      i = n-1
      j = m/2
      k = l-1
@@ -304,9 +306,9 @@ SUBROUTINE depth3land(depth)
      !     south america
      !
      DO i=1,n
-        IF ((x(i).lt.ph2).and.(x(i).gt.ph1)) THEN 
+        IF ((x(i).lt.ph2).and.(x(i).gt.ph1)) THEN
            DO j = 1,m
-              IF ((y(j).lt.0.).and.(y(j).gt.thd)) THEN           
+              IF ((y(j).lt.0.).and.(y(j).gt.thd)) THEN
                  DO k = 1,l
                     landm(i,j,k) = LAND
                  ENDDO
@@ -318,10 +320,10 @@ SUBROUTINE depth3land(depth)
      !     south africa
      !
      DO i=1,n
-        IF ((x(i).lt.ph4).and.(x(i).gt.ph3)) THEN 
+        IF ((x(i).lt.ph4).and.(x(i).gt.ph3)) THEN
            DO j = 1,m
-              IF ((y(j).lt.thn).and.(y(j).gt.thsa)) THEN           
-                 !              IF ((y(j).lt.0.).and.(y(j).gt.thd)) THEN           
+              IF ((y(j).lt.thn).and.(y(j).gt.thsa)) THEN
+                 !              IF ((y(j).lt.0.).and.(y(j).gt.thd)) THEN
                  DO k = 1,l
                     landm(i,j,k) = LAND
                  ENDDO
@@ -333,9 +335,9 @@ SUBROUTINE depth3land(depth)
      !    north america
      !
      DO i=1,n
-        IF ((x(i).lt.ph2).and.(x(i).gt.ph1)) THEN 
+        IF ((x(i).lt.ph2).and.(x(i).gt.ph1)) THEN
            DO j = 1,m
-              IF ((y(j).lt.ymax).and.(y(j).gt.tha)) THEN           
+              IF ((y(j).lt.ymax).and.(y(j).gt.tha)) THEN
                  DO k = 1,l
                     landm(i,j,k) = LAND
                  ENDDO
@@ -347,9 +349,9 @@ SUBROUTINE depth3land(depth)
      !    asia
      !
      DO i=1,n
-        IF ((x(i).lt.ph4).and.(x(i).gt.ph3)) THEN 
+        IF ((x(i).lt.ph4).and.(x(i).gt.ph3)) THEN
            DO j = 1,m
-              IF ((y(j).lt.ymax).and.(y(j).gt.tha)) THEN           
+              IF ((y(j).lt.ymax).and.(y(j).gt.tha)) THEN
                  DO k = 1,l
                     landm(i,j,k) = LAND
                  ENDDO
@@ -369,7 +371,7 @@ SUBROUTINE depth3land(depth)
      !     landm(18:20,3:14,1:l) = LAND
      landm(18:20,1:16,1:l) = LAND
      ! END CASE 3
-  CASE(4) !DB - DH case 
+  CASE(4) !DB - DH case
      i = n
      j = m
      k = l
@@ -380,7 +382,7 @@ SUBROUTINE depth3land(depth)
      !     landm(1:1,1:m,1:l) = LAND
      !     landm(n:n,1:m,1:l) = LAND
      landm(22:24,6:m,1:l) = LAND
-     ! resolution 40 x 30 x 16 , domain 100-260 x -60 - 60 
+     ! resolution 40 x 30 x 16 , domain 100-260 x -60 - 60
      ! END CASE 4
   END SELECT
 
@@ -574,7 +576,7 @@ FUNCTION atl(xin,yin)
   x_afr = 20.          ! Africa                 (20E)
   x_mam = 290.-1.5*y   ! Middle American land bridge
   !
-  atl = .true. 
+  atl = .true.
   if ((y.ge.-55).and.(y.lt.0)) then
      !     if (y.lt.0) then
      if  ((x.ge.x_afr).and.(x.le.x_sam)) atl = .false.

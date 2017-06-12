@@ -217,8 +217,8 @@ namespace TRIOS {
 		
 		//! returns true if the given local index 'li' is on a ghost-node.
 		//! optionally 'nun' can be specified to indicate the unknowns per 
-		//! grid point (defaults to 6).
-		bool IsGhost(int li,int nun_=6) const;
+		//! grid point
+		bool IsGhost(int li, int nun_) const;
       
 		//! if true, the domain is periodic in the x-direction.
 		bool IsPeriodic() const {return periodic;}

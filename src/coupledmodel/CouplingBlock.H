@@ -5,8 +5,6 @@
 #include <string>
 #include <memory> // shared_ptr
 
-#include "SuperVector.H"
-
 #include <Epetra_Map.h>
 #include <Epetra_BlockMap.h>
 #include <Epetra_Vector.h>
@@ -14,64 +12,120 @@
 #include <Epetra_Import.h>
 #include <Teuchos_RCP.hpp>
 
+template<typename ModelRow, typename ModelCol>
 class CouplingBlock
 {
-// string defining the coupling type
-	std::string coupling_;
-	
-// Storage for sparse coupling block
-	std::vector<double> values_;
-	std::vector<int>    row_ind_;
-	std::vector<int>    col_ind_;
-	
-	std::vector<int>    unique_row_ind_;
-	std::vector<int>    unique_col_ind_;
+    ModelRow modelRow_;
+    ModelCol modelCol_;
 
-// Dimensions
-	int n_, m_;
+    Teuchos::RCP<Epetra_CrsMatrix> block_;
 
-	Teuchos::RCP<Epetra_BlockMap> indexMap_;    // Submap based on restriction indices
-	Teuchos::RCP<Epetra_BlockMap> gatherMap_;   // Gathered indexMap_
-	Teuchos::RCP<Epetra_Vector> restrVec_;      // Distributed restricted vector
-	Teuchos::RCP<Epetra_Import> restrImp_;      // Importer for restricted vector
-	Teuchos::RCP<Epetra_Import> gatherImp_;     // Importer for gathered restr vector
-	Teuchos::RCP<Epetra_MultiVector> gathered_; // Gathered restricted vector
-
-	bool initialized_;
+    Teuchos::RCP<TRIOS::Domain> modelRowDomain_;
+    Teuchos::RCP<TRIOS::Domain> modelColDomain_;
 
 public:
-// Default constructor
-	CouplingBlock();
-	
-// Constructor
-	CouplingBlock(std::string const &coupling,
-				  std::vector<double> const &values,
-				  std::vector<int> const &row_ind,
-				  std::vector<int> const &col_ind);
 
-// Destructor
-	~CouplingBlock()
-		{
-			INFO("CouplingBlock destructor");
-		};
+    //------------------------------------------------------------------
+    // Default constructor
+    CouplingBlock() {}
 
-// Fill our storage
-	void setValues(std::vector<double> const &values);
-	void setColInd(std::vector<int> const &col_ind);
-	void setRowInd(std::vector<int> const &row_ind);
-	
-// Apply the coupling block
-	void applyMatrix(SuperVector const &v, SuperVector &out);
+    //------------------------------------------------------------------
+    // Constructor
+    CouplingBlock(ModelRow modelRow, ModelCol modelCol)
+        :
+        modelRow_(modelRow),
+        modelCol_(modelCol)
+        {
+            modelRowDomain_ = modelRow_->getDomain();
+            modelColDomain_ = modelCol_->getDomain();
 
-	void info();
+            block_ =
+                Teuchos::rcp(
+                    new Epetra_CrsMatrix(Copy,
+                                         *modelRowDomain_->GetSolveMap(),
+                                         *modelColDomain_->GetColMap(), 0));
 
-private:
-	void initialize();
-	void initializeOA(Epetra_BlockMap const &map);
-	void initializeAO();
-	void applyOA(SuperVector const &v, SuperVector &out);
-	void applyAO(SuperVector const &v, SuperVector &out);
-	std::vector<int> find_unique(std::vector<int> const &in);
+
+            // obtain 0-based CRS matrix from modelRow
+            std::shared_ptr<Utils::CRSMat> blockCRS =
+                modelRow_->getBlock(modelCol_);
+
+            // construct CRS matrix
+
+            // max nonzeros per row using dof in models
+            // and max neighbours=27
+            const int maxnnz =
+                (modelRow_->dof() + modelCol_->dof()) * 27 + 1;
+
+            // indices array
+            int indices[maxnnz];
+
+            // values array
+            double values[maxnnz];
+
+            // local size
+            int numMyElements = block_->RowMap().NumMyElements();
+            int numGlElements = block_->RowMap().NumGlobalElements();
+
+            // global case
+            if (numGlElements == (int) blockCRS->beg.size() - 1)
+            {
+                int gRow, index, numentries;
+
+                // fill Epetra CRS from global CRSMat
+                for (int i = 0; i < numMyElements; ++i)
+                {
+                    gRow       = block_->RowMap().GID(i);
+                    index      = blockCRS->beg[gRow];
+                    numentries = blockCRS->beg[gRow+1] - index;
+                    for (int j = 0; j < numentries; ++j)
+                    {
+                        indices[j] = blockCRS->jco[index+j];
+                        values[j]  = blockCRS->co[index+j];
+                    }
+
+                    int ierr =
+                        block_->InsertGlobalValues(gRow, numentries,
+                                                   values, indices);
+
+                    if (ierr != 0)
+                        ERROR("Error in InsertGlobalValues", __FILE__, __LINE__);
+                }
+            }
+            else
+                ERROR("Local CRS case not implemented yet!", __FILE__, __LINE__);
+
+            // Finalize
+            CHECK_ZERO(block_->FillComplete(
+                           *modelColDomain_->GetSolveMap(),
+                           *modelRowDomain_->GetSolveMap()));
+
+
+#ifdef DEBUGGING_NEW
+            Utils::print(block_,
+                         "block" + std::to_string(modelRow_->dof()) + "_" +
+                         std::to_string(
+                             modelRowDomain_->GetComm()->MyPID() ) );
+#endif
+        }
+
+    //------------------------------------------------------------------
+    // Destructor
+    ~CouplingBlock()
+        {
+            INFO("CouplingBlock destructor");
+        }
+
+
+    //------------------------------------------------------------------
+    void applyMatrix(Epetra_MultiVector const &in, Epetra_MultiVector &out)
+        {
+            assert(block_->DomainMap().SameAs(in.Map()));
+            assert(block_->RangeMap().SameAs(out.Map()));
+            CHECK_ZERO(block_->Apply(in, out));
+        }
+
+
 };
 
 #endif

@@ -89,11 +89,11 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
      end do
   end do
 
-  call grid         ! 
-  call stpnt        ! 
-  call mixe         ! 
-  call vmix_init	! ATvS-Mix  USES LANDMASK
-  call atmos_coef   ! 
+  call grid         !
+  call stpnt        !
+  call mixe         !
+  call vmix_init    ! ATvS-Mix  USES LANDMASK
+  call atmos_coef   !
   call forcing      ! USES LANDMASK
 
   _INFO_('THCM: init...  done')
@@ -129,7 +129,7 @@ SUBROUTINE mixe
   do i=1,n
      do j=1,m
         emix(i,j,0) = 0.0
-	    do k=1,l-1
+        do k=1,l-1
            emix(i,j,k)= - sin(pi*(x(i)-xmin)/(xmax-xmin))*   &
                 (cos((pi/2)*(y(j)-ymin)/(ymax-ymin)) + 0.2)         &
                 *zw(k)
@@ -186,6 +186,21 @@ SUBROUTINE getooa(o_Ooa, o_Os)
   o_Os  = Os
 end subroutine getooa
 
+!**********************************************************
+SUBROUTINE get_constants(o_r0dim, o_udim, o_hdim)
+  !     interface to get a few model constants
+  use, intrinsic :: iso_c_binding
+  use m_usr
+  use m_atm
+  implicit none
+  real(c_double) o_r0dim, o_udim, o_hdim
+
+  o_r0dim = r0dim;
+  o_udim  = udim;
+  o_hdim  = hdim;
+
+end subroutine get_constants
+
 !***********************************************************
 SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
   ! interface to set a new landmask
@@ -233,16 +248,16 @@ SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
         enddo
      enddo
   enddo
-  
+
   ! Let the dummy cells be land
   if (.not.periodic) then
      landm(0,:,:)   = LAND
      landm(n+1,:,:) = LAND
   end if
-  landm(:,0,:)    = LAND   
+  landm(:,0,:)    = LAND
   landm(:,m+1,:)  = LAND
   landm(:,:,0)    = LAND
-  landm(:,:,l+1)  = LAND 
+  landm(:,:,l+1)  = LAND
 
   if (a_reinit.eq.1) then
      !  A few initializations need to be repeated
@@ -250,7 +265,7 @@ SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
      call forcing      ! USES LANDMASK
   endif
 
-!  _INFO_('THCM: usrc.F90 set_landmask...  done')  
+!  _INFO_('THCM: usrc.F90 set_landmask...  done')
 end subroutine set_landmask
 
 !*****************************************************************************
@@ -327,7 +342,7 @@ SUBROUTINE matrix(un,sig1,sig2)
 
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
      if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
-     
+
      if (((vmix_temp.eq.1).or.(vmix_salt.eq.1)).and.(vmix_dim.gt.0)) then
         call vmix_jac(un)
      endif
@@ -381,21 +396,21 @@ SUBROUTINE rhs(un,B)
   real mix(ndim) ! ATvS-Mix
   real    Au(ndim), time0, time1
   integer i,j,k,k1,row,find_row2, mode, iter
-  
+
   !call writeparameters
   mix  = 0.0
   Al   = 0
   begA = 0
   coA  = 0
   jcoA = 0
-  call lin              !--> wordt misschien te vaak aangeroepen?
+  call lin              !
 #ifndef THCM_LINEAR
   call nlin_rhs(un)
 #endif
-  call forcing          !--> wordt misschien te vaak aangeroepen?
-  call boundaries       !--> wordt misschien te vaak aangeroepen?
+  call forcing          !
+  call boundaries       !
   call assemble
-  call matAvec(un,Au)   !--> Tamelijk fancy dus leg uit wat hier gebeurt!
+  call matAvec(un,Au)   !
   ! ATvS-Mix ---------------------------------------------------------------------
   if (vmix_flag.ge.1) then
      mode=vmix_fix
@@ -417,12 +432,12 @@ SUBROUTINE rhs(un,B)
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
-  _DEBUG2_("p0 = ", p0) !-->Residue Continuation
-  
+  _DEBUG2_("p0 = ", p0) ! Residue Continuation
+
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
 
 #if 1
-  if(ires == 0) then 
+  if(ires == 0) then
      DO i = 1, n
         DO j = 1, m
            DO k = 1, l
@@ -434,8 +449,14 @@ SUBROUTINE rhs(un,B)
         ENDDO
      ENDDO
   endif
-#endif 
-  
+#endif
+
+  ! open(15,file='Frc.co')
+  ! do i=1,ndim
+  !    write(15,*) Frc(i)
+  ! enddo
+  ! close(15)
+
   _DEBUG2_("maxval rhs= ", maxval(abs(B)))
 
 end SUBROUTINE rhs
@@ -510,39 +531,41 @@ SUBROUTINE lin
   xes    = par(NLES)
   bi     = par(BIOT)
   Ra     = par(RAYL)
-  !      rintt  = par(IFRICT)	! ATvS-Mix
+  !      rintt  = par(IFRICT)   ! ATvS-Mix
 
   Al = 0.0
 
   ! ------------------------------------------------------------------
   ! u-equation
   ! ------------------------------------------------------------------
-  call uderiv(1,ub)     !--> kan weg: ub doet niks --> bottom friction stuff --> precompiler flag
+  call uderiv(1,ub)     
   call uderiv(2,uxx)
   call uderiv(3,uyy)
   call uderiv(4,uzz)
   call uderiv(5,ucsi)
   call uderiv(6,vxs)
-  call uderiv(7,u)      !--> kan weg: u doet niks --> compilerflag
+  call uderiv(7,u)      
   call coriolis(1,fv)
   call gradp(1,px)
   Al(:,:,1:l,:,UU,UU) = -EH * (uxx+uyy+ucsi) -EV * uzz ! + rintt*u ! ATvS-Mix
   Al(:,:,1:l,:,UU,VV) = -fv - EH*vxs
+  ! Al(:,:,1:l,:,UU,VV) = - EH*vxs ! for 2DMOC case
   Al(:,:,1:l,:,UU,PP) =  px
 
   ! ------------------------------------------------------------------
   ! v-equation
   ! ------------------------------------------------------------------
-  call vderiv(1,vb )    !--> kan weg: vb doet niks
+  call vderiv(1,vb )    
   call vderiv(2,vxx)
   call vderiv(3,vyy)
   call vderiv(4,vzz)
   call vderiv(5,vcsi)
   call vderiv(6,uxs)
-  call vderiv(7,v)      !--> kan weg: v doet niks
+  call vderiv(7,v)      
   call coriolis(2,fu)
   call gradp(2,py)
   Al(:,:,1:l,:,VV,UU) =  fu - EH*uxs
+  ! Al(:,:,1:l,:,VV,UU) =  - EH*uxs ! for 2dMOC case
   Al(:,:,1:l,:,VV,VV) = -EH*(vxx + vyy + vcsi) - EV*vzz !+ rintt*v ! ATvS-Mix
   Al(:,:,1:l,:,VV,PP) =  py
 
@@ -690,7 +713,7 @@ SUBROUTINE nlin_rhs(un)
   call tnlin(3,utx,u,v,w,t,rho)
   call tnlin(5,vty,u,v,w,t,rho)
   call tnlin(7,wtz,u,v,w,t,rho)
-  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT)+ utx+vty+wtz		! ATvS-Mix
+  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT)+ utx+vty+wtz        ! ATvS-Mix
 #endif
 
   ! ------------------------------------------------------------------
@@ -700,7 +723,7 @@ SUBROUTINE nlin_rhs(un)
   call tnlin(3,usx,u,v,w,s,rho)
   call tnlin(5,vsy,u,v,w,s,rho)
   call tnlin(7,wsz,u,v,w,s,rho)
-  Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS)+ usx+vsy+wsz		! ATvS-Mix
+  Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS)+ usx+vsy+wsz        ! ATvS-Mix
 #endif
 
 end SUBROUTINE nlin_rhs
@@ -810,7 +833,7 @@ SUBROUTINE nlin_jac(un)
   Al(:,:,1:l,:,TT,UU) = Al(:,:,1:l,:,TT,UU) + urTx
   Al(:,:,1:l,:,TT,VV) = Al(:,:,1:l,:,TT,VV) + vrTy
   Al(:,:,1:l,:,TT,WW) = Al(:,:,1:l,:,TT,WW) + wrTz
-  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT) + Utrx + Vtry + Wtrz		! ATvS-Mix
+  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT) + Utrx + Vtry + Wtrz        ! ATvS-Mix
 #endif
 
   ! ------------------------------------------------------------------
@@ -914,7 +937,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         w(i,j,0)   = 0.0
         p(i,j,l+1) = 0.0
         p(i,j,0)   = 0.0
-	    IF (la == 0) t(i,j,l+1) = t(i,j,l)
+        IF (la == 0) t(i,j,l+1) = t(i,j,l)
         t(i,j,0)   = t(i,j,1)
         s(i,j,l+1) = s(i,j,l)
         s(i,j,0)   = s(i,j,1)
@@ -981,12 +1004,17 @@ SUBROUTINE stpnt!(un)
   !     PARAMETERS:
   !*******************************************************
   ! when data are used, tmax comes from windfit
-  ! otherwise tmax comes from wfun... 
+  ! otherwise tmax comes from wfun...
 
   par(AL_T)   =  0.1/(2*omegadim*rhodim*hdim*udim*dz*dfzT(l))
-  par(RAYL)   =  alphaT*gdim*hdim/(2*omegadim*udim*r0dim)	! Ra
-  par(EK_V)   =  av/(2*omegadim*hdim*hdim)   		        ! E_V
-  par(EK_H)   =  ah/(2*omegadim*r0dim*r0dim)	            ! E_H
+  par(RAYL)   =  alphaT*gdim*hdim/(2*omegadim*udim*r0dim)   ! Ra
+  par(EK_V)   =  av/(2*omegadim*hdim*hdim)                  ! E_V
+  par(EK_H)   =  ah/(2*omegadim*r0dim*r0dim)                ! E_H
+
+  ! !MdT \/
+  ! par(RAYL)   = par(RAYL)*par(EK_H)            ! Rescaled Ra (2DMOC case)
+  ! !MdT /\
+
   par(ROSB)   =  udim/(2*omegadim*r0dim)                    ! Rossby Number
   par(HMTP)   =  0.0
   par(SUNP)   =  0.0
@@ -1003,7 +1031,7 @@ SUBROUTINE stpnt!(un)
   par(CMPR)   =  0.0
   par(ALPC)   =  1.0
   par(ENER)   =  1.0e+02
-  par(MIXP)   =  0.0	   ! ATvS-Mix
+  par(MIXP)   =  0.0       ! ATvS-Mix
   par(MKAP)   =  0.0       ! Gent-Mcwilliams  ! ATvS-Mix
   par(SPL1)   =  2.0e+03   ! 1.25  !tanh      ! ATvS-Mix
   par(SPL2)   =  0.01      ! neutral physics
@@ -1043,24 +1071,10 @@ SUBROUTINE atmos_coef
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
 
-  ! write(*,*) "thcm -->   bi: ", par(BIOT)
-  ! write(*,*) "thcm --> dzne: ", dzne
-  ! write(*,*) "thcm -->   dz: ", dz
-  ! write(*,*) "thcm -->  Ooa: ", Ooa
-  ! write(*,*) "thcm -->   Os: ", Os
-  ! write(*,*) " "
-  ! write(*,*) "thcm --> sun0: ", sun0
-  ! write(*,*) "thcm --> amua: ", amua
-  ! write(*,*) "thcm --> bmua: ", bmua
-  ! write(*,*) "thcm --> muoa: ", muoa
-  ! write(*,*) "thcm -->   Ai: ", Ai
-  ! write(*,*) "thcm -->   Ad: ", Ad
-  ! write(*,*) "thcm -->   As: ", As
-
   ! open(8, file = rundir//'suno.txt')
   ! write(8, *) suno
   ! close(8)
-  
+
 END SUBROUTINE atmos_coef
 
 !******************************************************************

@@ -1,5 +1,5 @@
 //=======================================================================
-// Main continuation of the coupled model 
+// Main continuation of the coupled model
 //=======================================================================
 #include <Epetra_config.h>
 
@@ -29,7 +29,7 @@
 
 #include "SuperVector.H"
 #include "CoupledModel.H"
-#include "Atmosphere.H"
+#include "AtmospherePar.H"
 #include "ThetaStepper.H"
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
@@ -57,77 +57,90 @@ void              printProfile(ProfileType profile);
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {
-	// Initialize the environment:
-	//  - MPI
-	//  - output files
-	//  - returns Trilinos' communicator Epetra_Comm
-	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
-	
-	runCoupledModel(Comm);
+    // Initialize the environment:
+    //  - MPI
+    //  - output files
+    //  - returns Trilinos' communicator Epetra_Comm
+    RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
-	// print the profile
-	if (Comm->MyPID() == 0)
-		printProfile(profile);
-	
+    runCoupledModel(Comm);
+
+    // print the profile
+    if (Comm->MyPID() == 0)
+        printProfile(profile);
+
     //--------------------------------------------------------
-	// Finalize MPI
-	//--------------------------------------------------------
-	MPI_Finalize();	
+    // Finalize MPI
+    //--------------------------------------------------------
+    MPI_Finalize();
 }
 
 //------------------------------------------------------------------
 void runCoupledModel(RCP<Epetra_Comm> Comm)
 {
-	TIMER_START("Total time...");
+    TIMER_START("Total time...");
 
-	TIMER_START("Total initialization");
-	//------------------------------------------------------------------
-	// Check if outFile is specified
-	if (outFile == Teuchos::null)
-		throw std::runtime_error("ERROR: Specify output streams");	
-	
-	//------------------------------------------------------------------
-	// Create parameter object for Ocean
-	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+    TIMER_START("Total initialization");
+    //------------------------------------------------------------------
+    // Check if outFile is specified
+    if (outFile == Teuchos::null)
+        throw std::runtime_error("ERROR: Specify output streams");
 
-	// Create parallelized Ocean object
-	RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
 
-	//------------------------------------------------------------------
-	// Create parameter object for Atmosphere
-	RCP<Teuchos::ParameterList> atmosphereParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+    // First we create a bunch of parameterlists
+    
+    // Create parameter object for Ocean
+    RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
+    updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+    oceanParams->setName("Ocean parameters");
 
-    // Create Atmosphere object
-	std::shared_ptr<Atmosphere> atmos =
-		std::make_shared<Atmosphere>(atmosphereParams);
+    // Create parameter object for Atmosphere
+    RCP<Teuchos::ParameterList> atmosphereParams = rcp(new Teuchos::ParameterList);
+    updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+    atmosphereParams->setName("Atmosphere parameters");
 
-	//------------------------------------------------------------------
-    // Create parameter object for coupledmodel
-	RCP<Teuchos::ParameterList> coupledmodelParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("coupledmodel_params.xml", coupledmodelParams.ptr());
+    // Create parameter object for CoupledModel
+    RCP<Teuchos::ParameterList> coupledmodelParams = rcp(new Teuchos::ParameterList);
+    updateParametersFromXmlFile("coupledmodel_params.xml", coupledmodelParams.ptr());
+    coupledmodelParams->setName("CoupledModel parameters");
 
-	// Create CoupledModel
-	std::shared_ptr<CoupledModel> coupledModel =
-		std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
+    // Create parameter object for Continuation
+    RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
+    updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
+    continuationParams->setName("Continuation parameters");
 
-	//------------------------------------------------------------------
- 	// Create parameter object for continuation
-	RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
-	
-	// Create Continuation
-	Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
-		continuation(coupledModel, continuationParams);
+    INFO("Overwriting:");
+    // The Continuation and CoupledModel parameterlists overwrite settings
+    Utils::overwriteParameters(oceanParams,        coupledmodelParams);
+    Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
 
-	TIMER_STOP("Total initialization");
-	
-	// Run continuation
-	continuation.run();
+    Utils::overwriteParameters(oceanParams,        continuationParams);
+    Utils::overwriteParameters(atmosphereParams,   continuationParams);
+    Utils::overwriteParameters(coupledmodelParams, continuationParams);
 
-	//------------------------------------------------------------------
-	TIMER_STOP("Total time...");		
+    
+    // Create parallelized Ocean object
+    std::shared_ptr<Ocean> ocean = std::make_shared<Ocean>(Comm, oceanParams);
+
+    // Create parallelized Atmosphere object
+    std::shared_ptr<AtmospherePar> atmos =
+        std::make_shared<AtmospherePar>(Comm, atmosphereParams);
+
+    // Create CoupledModel
+    std::shared_ptr<CoupledModel> coupledModel =
+        std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
+
+    // Create Continuation
+    Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
+        continuation(coupledModel, continuationParams);
+
+    TIMER_STOP("Total initialization");
+
+    // Run continuation
+    continuation.run();
+
+    //------------------------------------------------------------------
+    TIMER_STOP("Total time...");
 }
 
 //------------------------------------------------------------------
@@ -136,98 +149,98 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
 {
 #ifdef HAVE_MPI
-	MPI_Init(&argc, &argv);
-	RCP<Epetra_MpiComm> Comm =
-		rcp(new Epetra_MpiComm(MPI_COMM_WORLD));
+    MPI_Init(&argc, &argv);
+    RCP<Epetra_MpiComm> Comm =
+        rcp(new Epetra_MpiComm(MPI_COMM_WORLD));
 #else
-	RCP<Epetra_SerialComm> Comm =
-		rcp(new Epetra_SerialComm());
+    RCP<Epetra_SerialComm> Comm =
+        rcp(new Epetra_SerialComm());
 #endif
-	// Specify output files
-	outFile = outputFiles(Comm);
-	return Comm;
+    // Specify output files
+    outFile = outputFiles(Comm);
+    return Comm;
 }
 
 //------------------------------------------------------------------
 Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 {
-	// Setup output files "fname_#.txt" for P==0 && P==1, other processes
-	// will get a blackholestream.
-	Teuchos::RCP<std::ostream> outFile;
-	if (Comm->MyPID() < 2)
-	{
-		std::ostringstream infofile;     // setting up a filename
+    // Setup output files "fname_#.txt" for P==0 && P==1, other processes
+    // will get a blackholestream.
+    Teuchos::RCP<std::ostream> outFile;
+    if (Comm->MyPID() < 2)
+    {
+        std::ostringstream infofile;     // setting up a filename
 
-		infofile    << "info_"    << Comm->MyPID()   << ".txt";
+        infofile    << "info_"    << Comm->MyPID()   << ".txt";
 
-		std::cout << "info for CPU" << Comm->MyPID() << " is written to "
-				  << infofile.str().c_str() << std::endl;
+        std::cout << "info for CPU" << Comm->MyPID() << " is written to "
+                  << infofile.str().c_str() << std::endl;
 
-		outFile =
-			Teuchos::rcp(new std::ofstream(infofile.str().c_str()));
-	}
-	else
-	{
-		outFile =
-			Teuchos::rcp(new Teuchos::oblackholestream());
-	}
-	return outFile;
+        outFile =
+            Teuchos::rcp(new std::ofstream(infofile.str().c_str()));
+    }
+    else
+    {
+        outFile =
+            Teuchos::rcp(new Teuchos::oblackholestream());
+    }
+    return outFile;
 }
 
 //------------------------------------------------------------------
 void printProfile(ProfileType profile)
 {
-	if (timerStack.empty() == false)
-		WARNING("Unequal amount of TIMER_START and TIMER_STOP uses",
-				__FILE__, __LINE__);
-	
-	std::ostringstream profilefile("profile_output");   // setting up a filename
-	std::ofstream file(profilefile.str().c_str());      // setup output file
+    if (timerStack.empty() == false)
+        WARNING("Unequal amount of TIMER_START and TIMER_STOP uses",
+                __FILE__, __LINE__);
 
-	// Set format flags
-	file << std::left;
+    std::ostringstream profilefile("profile_output");   // setting up a filename
+    std::ofstream file(profilefile.str().c_str());      // setup output file
 
-	// Define line format
+    // Set format flags
+    file << std::left;
+
+    // Define line format
 #ifndef LINE
-# define LINE(s1, s2, s3, s4, s5, s6, s7, s8, s9)						\
-	{																	\
-		int sp = 3;  int it = 5;  int id = 5;							\
-		int db = 12; int st = 45;										\
-		file << std::setw(id) << s1	<< std::setw(sp) << s2				\
-			 << std::setw(st) << s3 << std::setw(sp) << s4				\
-			 << std::setw(db) << s5	<< std::setw(sp) << s6				\
-			 << std::setw(it) << s7	<< std::setw(sp) << s8				\
-			 << std::setw(db) << s9	<< std::endl;						\
-	}
+# define LINE(s1, s2, s3, s4, s5, s6, s7, s8, s9)                       \
+    {                                                                   \
+        int sp = 3;  int it = 5;  int id = 5;                           \
+        int db = 12; int st = 45;                                       \
+        file << std::setw(id) << s1     << std::setw(sp) << s2              \
+             << std::setw(st) << s3 << std::setw(sp) << s4              \
+             << std::setw(db) << s5     << std::setw(sp) << s6              \
+             << std::setw(it) << s7     << std::setw(sp) << s8              \
+             << std::setw(db) << s9     << std::endl;                       \
+    }
 #endif
 
-	// Header
-	LINE("", "", "", "", "cumul.", "", "calls", "", "average");
-	
-	// Display timings of the separate models, summing
-	int counter = 0;
-	for (auto const &map : profile)
-		if (map.first.compare(0,8,"_NOTIME_") != 0)
-		{
-			counter++;
-			std::stringstream s;
-			s << " (" << counter << ")";
-			LINE(s.str(), "", map.first, ":", map.second[0], "",
-				 map.second[1], "", map.second[2]);
-		}
+    // Header
+    LINE("", "", "", "", "cumul.", "", "calls", "", "average");
 
-	// Newline
-	file << std::endl;
-	
-	// Display iteration information
-	for (auto const &map : profile)
-		if (map.first.compare(0,8,"_NOTIME_") == 0 )
-		{
-			counter++;
-			std::stringstream s;
-			s << " (" << counter << ")";
-			LINE(s.str(), "", map.first.substr(8), ":", map.second[0], "",
-				 map.second[1], "", map.second[2]);
-		}
-	
+    // Display timings of the separate models, summing
+    int counter = 0;
+    for (auto const &map : profile)
+        if (map.first.compare(0,8,"_NOTIME_") != 0)
+        {
+            counter++;
+            std::stringstream s;
+            s << " (" << counter << ")";
+            LINE(s.str(), "", map.first, ":", map.second[0], "",
+                 map.second[1], "", map.second[2]);
+        }
+
+    // Newline
+    file << std::endl;
+
+    // Display iteration information
+    for (auto const &map : profile)
+        if (map.first.compare(0,8,"_NOTIME_") == 0 )
+        {
+            counter++;
+            std::stringstream s;
+            s << " (" << counter << ")";
+            LINE(s.str(), "", map.first.substr(8), ":", map.second[0], "",
+                 map.second[1], "", map.second[2]);
+        }
+
 }

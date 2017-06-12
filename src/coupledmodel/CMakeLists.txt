@@ -11,7 +11,7 @@ set(COUPLEDMODEL_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-add_library(coupledmodel SHARED CoupledModel.C CouplingBlock.C)
+add_library(coupledmodel SHARED CoupledModel.C)
 
 target_compile_definitions(coupledmodel PUBLIC ${COMP_IDENT})
 

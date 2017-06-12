@@ -261,8 +261,8 @@ SUBROUTINE tderiv(type,atom)
      do i=1,n
         do k = 1, l
            do j = 1, m
-              atom(i,j,k,4) = (dy2i * cos(yv(j-1))/cos(y(j)))*(1 - landm(i,j,l))
-              atom(i,j,k,6) = (dy2i * cos(yv(j))/cos(y(j)))*(1 - landm(i,j,l))
+              atom(i,j,k,4) = (dy2i * cos(yv(j-1)) / cos(y(j)))*(1 - landm(i,j,l))
+              atom(i,j,k,6) = (dy2i * cos(yv(j)) / cos(y(j)))*(1 - landm(i,j,l))
               atom(i,j,k,5) = -(atom(i,j,k,4) + atom(i,j,k,6))
            enddo
         enddo

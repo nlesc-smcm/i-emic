@@ -292,7 +292,7 @@ struct Combined_Operator
 };
 
 //------------------------------------------------------------------
-// Specialization of OperatorTraits
+// Specialization of OperatorTraits for Combined_Operator
 //------------------------------------------------------------------
 namespace Belos
 {
