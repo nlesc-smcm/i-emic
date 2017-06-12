@@ -37,6 +37,7 @@ SUBROUTINE grid
   y(0) = y(1) - dy;
   y(m+1) = y(m) + dy;
   yv(0) = ymin
+  
   DO k=1,l
      ze(k)  = (real(k)-0.5)*dz + zmin
      zwe(k) = (real(k)    )*dz + zmin

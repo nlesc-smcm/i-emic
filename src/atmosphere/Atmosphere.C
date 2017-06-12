@@ -145,7 +145,7 @@ void Atmosphere::setup()
     bmua_ =  brad_ / muoa_;
     Ai_   =  rhoa_ * hdima_ * cpa_ * udim_ / (r0dim_ * muoa_);
     Ad_   =  rhoa_ * hdima_ * cpa_ * d0_ / (muoa_ * r0dim_ * r0dim_);
-    As_   =  sun0_ * (1 - c0_) / (4 * muoa_);
+    As_   =  sun0_ * (1 - c0_) / (4 * muoa_);    
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
     nun_ = ATMOS_NUN_;  // only temperature ATMOS_TT_
@@ -378,6 +378,7 @@ void Atmosphere::forcing()
             row = find_row(i, j, l_, ATMOS_TT_);
 
             // Apply surface mask and calculate land temperatures
+            // This is a copy of legacy stuff, can be simplified
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
             {
                 value = comb_ * sunp_ * suno_[j] / Ooa_;
@@ -591,6 +592,10 @@ Atmosphere::getCurrResVec(std::shared_ptr<std::vector<double> > const &x,
 //! | 10 13 16 || 1 4 7 || 19 22 25 |
 //! |  below   || center||  above   |
 //! +----------++-------++----------+
+//!
+//!  No flow boundaries.
+//!  For instance, dependencies on non-existent grid points at the western boundary
+//!  are replaced with dependencies on the central grid point as T_{i-1} = T_{i}
 void Atmosphere::boundaries()
 {
 
@@ -603,9 +608,9 @@ void Atmosphere::boundaries()
                 east   = i+1;
                 north  = j+1;
                 south  = j-1;
-
+                
                 // western boundary
-                if (west == 0 && !periodic_)
+                if (west == 0)
                 {
                     Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_,
                              Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +
@@ -614,7 +619,7 @@ void Atmosphere::boundaries()
                 }
 
                 // eastern boundary
-                if (east == n_+1 && !periodic_)
+                if (east == n_+1)
                 {
                     Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_,
                              Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +

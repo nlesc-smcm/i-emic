@@ -205,7 +205,7 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
 std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> ocean)
 {
     // The contribution of the ocean in the atmosphere is a
-    // diagonal of ones, see the forcing.
+    // diagonal of ones, see the forcing in Atmosphere.C.
 
     // check surfmask
     assert((int) surfmask_->size() == m_*n_);

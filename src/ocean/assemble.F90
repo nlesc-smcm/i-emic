@@ -348,7 +348,7 @@ SUBROUTINE intcond
 
   !     Replace S equation with an 'integral' condition for s
 
-  ! this is now done in Trilinos, so we simply ! --> wat is dit... waarom, waar?
+  ! this is now done in Trilinos, so we simply ! 
   return
 
   if( SRES == 1 ) return

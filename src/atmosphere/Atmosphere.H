@@ -118,8 +118,8 @@ class Atmosphere
     double   brad_; //! radiative flux param B
     double   sun0_; //! solar constant \[\Sigma_0\]
     double     c0_; //! atmospheric absorption coefficient
-    double     ce_; //! exchange coefficient
-    double     ch_; //! exchange coefficient \[C_H\]
+    double     ce_; //! exchange coefficient (Dalton number)
+    double     ch_; //! exchange coefficient \[C_H\] (Stanton number)
     double     uw_; //! mean atmospheric surface wind speed \[|V_a|\]
     double     t0_; //! reference temperature
 
@@ -306,8 +306,8 @@ private:
 //==================================================================
 //! Dependency grid:
 //! A multidimensional array describing the dependencies among the unknowns:
-//! grid(i,j,k,21,U,V) = c   <=>   d/dt U|(i,j,k) = ... + c * V|(i-1,j+1,k+1)
-//! grid(i,j,k,13,U,V) = d   <=>   d/dt U|(i,j,k) = ... + d * V|(i,j-1,k-1)
+//! grid(i,j,k,21,U,V) = c   <=>   (...) * d/dt U|(i,j,k) = ... + c * V|(i-1,j+1,k+1)
+//! grid(i,j,k,13,U,V) = d   <=>   (...) * d/dt U|(i,j,k) = ... + d * V|(i,j-1,k-1)
 //==================================================================
 class DependencyGrid
 {
@@ -328,8 +328,8 @@ public:
 //==================================================================
 //! Atom:
 //! A multidimensional array describing anonymous dependencies among neighbours:
-//! atom(i,j,k,21) = c   <=>   d/dt {}|(i,j,k) = ... + c * {}|(i-1,j+1,k+1)
-//! atom(i,j,k,13) = d   <=>   d/dt {}|(i,j,k) = ... + d * {}|(i,j-1,k-1)
+//! atom(i,j,k,21) = c   <=>   (...) * d/dt {}|(i,j,k) = ... + c * {}|(i-1,j+1,k+1)
+//! atom(i,j,k,13) = d   <=>   (...) * d/dt {}|(i,j,k) = ... + d * {}|(i,j-1,k-1)
 //==================================================================
 class Atom
 {

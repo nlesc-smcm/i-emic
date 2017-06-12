@@ -1530,7 +1530,7 @@ namespace TRIOS {
         if (zero_init)
             CHECK_ZERO(yzuvp.PutScalar(0.0));
 
-        { // --> in a scope for some reason?
+        { 
             if (SppSolver!=Teuchos::null)
             {
                 // (d) solve Saddlepoint problem yzuvp = Spp\bzuvp
@@ -1593,7 +1593,7 @@ namespace TRIOS {
 
         // yTS2 = bTS - yTS - yTS2
         CHECK_ZERO(yTS2.Update(1.0,bTS,-DampingFactor,yTS,-DampingFactor));
-        { // --> scope?
+        { 
             this->SolveATS(yTS2,yTS,tolATS,nitATS);
         }
 #endif

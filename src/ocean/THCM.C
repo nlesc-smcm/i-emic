@@ -590,13 +590,16 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         delete [] values;
         delete [] indices;
         domain->Assembly2Solve(*intcond_tmp,*intcond_coeff);
-#ifdef STORE_MATRICES
+
+#ifdef DEBUGGING_NEW
         std::ofstream ofs("intcond.txt");
         ofs << *intcond_coeff;
         ofs.close();
 #endif
+        
     }
 #endif
+    
     // create a graph describing the maximal matrix pattern.
     // Note that in LOCA we can't change the pattern of the matrix
     // during the continuation process as we pass pointers to LOCA
@@ -1563,7 +1566,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
     int root = Comm->NumProc()-1;
 
     Teuchos::RCP<Epetra_MultiVector> intcond_glob =
-        Utils::Gather(*intcond_coeff,root);
+        Utils::Gather(*intcond_coeff, root);
 
     if (A.MyGRID(lastrow))
     {

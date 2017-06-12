@@ -432,7 +432,7 @@ SUBROUTINE rhs(un,B)
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
-  _DEBUG2_("p0 = ", p0) !-->Residue Continuation
+  _DEBUG2_("p0 = ", p0) ! Residue Continuation
 
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
 
@@ -538,13 +538,13 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! u-equation
   ! ------------------------------------------------------------------
-  call uderiv(1,ub)     !--> kan weg: ub doet niks --> bottom friction stuff --> precompiler flag
+  call uderiv(1,ub)     
   call uderiv(2,uxx)
   call uderiv(3,uyy)
   call uderiv(4,uzz)
   call uderiv(5,ucsi)
   call uderiv(6,vxs)
-  call uderiv(7,u)      !--> kan weg: u doet niks --> compilerflag
+  call uderiv(7,u)      
   call coriolis(1,fv)
   call gradp(1,px)
   Al(:,:,1:l,:,UU,UU) = -EH * (uxx+uyy+ucsi) -EV * uzz ! + rintt*u ! ATvS-Mix
@@ -555,13 +555,13 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! v-equation
   ! ------------------------------------------------------------------
-  call vderiv(1,vb )    !--> kan weg: vb doet niks
+  call vderiv(1,vb )    
   call vderiv(2,vxx)
   call vderiv(3,vyy)
   call vderiv(4,vzz)
   call vderiv(5,vcsi)
   call vderiv(6,uxs)
-  call vderiv(7,v)      !--> kan weg: v doet niks
+  call vderiv(7,v)      
   call coriolis(2,fu)
   call gradp(2,py)
   Al(:,:,1:l,:,VV,UU) =  fu - EH*uxs
@@ -1070,20 +1070,6 @@ SUBROUTINE atmos_coef
   DO j = 0,m
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
-
-  ! write(*,*) "thcm -->   bi: ", par(BIOT)
-  ! write(*,*) "thcm --> dzne: ", dzne
-  ! write(*,*) "thcm -->   dz: ", dz
-  ! write(*,*) "thcm -->  Ooa: ", Ooa
-  ! write(*,*) "thcm -->   Os: ", Os
-  ! write(*,*) " "
-  ! write(*,*) "thcm --> sun0: ", sun0
-  ! write(*,*) "thcm --> amua: ", amua
-  ! write(*,*) "thcm --> bmua: ", bmua
-  ! write(*,*) "thcm --> muoa: ", muoa
-  ! write(*,*) "thcm -->   Ai: ", Ai
-  ! write(*,*) "thcm -->   Ad: ", Ad
-  ! write(*,*) "thcm -->   As: ", As
 
   ! open(8, file = rundir//'suno.txt')
   ! write(8, *) suno
