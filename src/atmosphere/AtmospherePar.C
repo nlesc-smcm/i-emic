@@ -97,6 +97,33 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     if (loadState_)
         loadStateFromFile(inputFile_);
 
+    //------------------------------------------------------------------
+    // Create atmosphere temperature restrict/import strategy
+    //------------------------------------------------------------------
+    
+    // Obtain rows containing temperature
+    std::vector<int> tRows;
+    for (int j = 0; j != m_; ++j)
+        for (int i = 0; i != n_; ++i)
+            tRows.push_back(
+                FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_-1,
+                                i, j, l_, ATMOS_TT_));
+
+    HIER VERDER!!!
+
+    // Create restricted map
+    tIndexMap_ =
+        Utils::CreateSubMap(state_->Map(), tRows);
+
+    // Create the atmosphere T vector
+    atmosT_ = Teuchos::rcp(new Epetra_Vector(*tIndexMap_));
+
+    // Create importer
+    // Target map: tIndexMap
+    // Source map: state_->Map()
+    atmosTimporter_ =
+        Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
+
     INFO("AtmospherePar: constructor done");
 }
 
@@ -195,10 +222,14 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::getVector(char mode, Teuchos::RCP<Epe
 //==================================================================
 Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
 {
-    // for now we just return a copy of the state
-    // when the atmosphere grows we need an import operation here
-
-    return getVector('C', state_);
+    TIMER_START("Atmosphere: get atmosphere temperature...");
+    if (!(atmosT_->Map().SameAs(*tIndexMap_)))
+    {
+        CHECK_ZERO(atmosT_->ReplaceMap(*tIndexMap_));
+    }
+    CHECK_ZERO(atmosT_->Import(*state_, *atmosTimporter_, Insert));
+    TIMER_STOP("Atmosphere: get atmosphere temperature...");
+    return getVector('C', atmosT_);         
 }
 
 //==================================================================

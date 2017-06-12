@@ -70,6 +70,12 @@ private:
     //! parallel atmosphere state (non-overlapping)
     Teuchos::RCP<Epetra_Vector> state_;
 
+    //! Index map for atmosphere T values
+    Teuchos::RCP<Epetra_BlockMap> tIndexMap_;
+
+    //! parallel atmosphere temperature vector (non-overlapping)
+    Teuchos::RCP<Epetra_Vector> atmosT_;
+
     //! parallel atmosphere state (overlapping)
     Teuchos::RCP<Epetra_Vector> localState_;
 
@@ -90,6 +96,9 @@ private:
 
     //! parallel atmosphere sol (overlapping)
     Teuchos::RCP<Epetra_Vector> localSol_;
+
+    //! Atmosphere temperature importer
+    Teuchos::RCP<Epetra_Import> atmosTimporter_;
 
     //! input file (HDF5)
     std::string const inputFile_;
