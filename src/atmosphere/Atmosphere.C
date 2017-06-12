@@ -44,27 +44,38 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
 
 // physics ------------------------------------------------------------------
     rhoa_            (params->get("atmospheric density",1.25)),
+    rhoo_            (params->get("oceanic density",1024)),
     hdima_           (params->get("atmospheric scale height",8400.)),
+    hdimq_           (params->get("humidity scale height",1800.)),
+    hdim_            (params->get("vertical length scale",5000.)),
     cpa_             (params->get("heat capacity",1000.)),
     d0_              (params->get("constant eddy diffusivity",3.1e+06)),
+    kappa_           (params->get("humidity eddy diffusivity",1e+06)),
     arad_            (params->get("radiative flux param A",216.0)),
     brad_            (params->get("radiative flux param B",1.5)),
     sun0_            (params->get("solar constant",1360.)),
     c0_              (params->get("atmospheric absorption coefficient",0.43)),
-    ce_              (params->get("exchange coefficient ce",1.3e-03)),
+    ce_              (params->get("Dalton number",1.3e-03)),
     ch_              (params->get("exchange coefficient ch",0.94 * ce_)),
     uw_              (params->get("mean atmospheric surface wind speed",8.5)),
-    t0_              (params->get("reference temperature",15.0)),
+    t0a_             (params->get("reference temperature atmosphere",15.0)), //(C)
+    t0o_             (params->get("reference temperature ocean",15.0)),      //(C)
+    t0i_             (params->get("reference temperature ice",0.0)),         //(C) 
+    q0_              (params->get("reference humidity",0.015)), // (kg/kg)
+    qdim_            (params->get("humidity scale", 0.01)),  // (kg/kg)
+    
     udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
     r0dim_           (params->get("radius of the earth",6.37e+06)),
 
 // continuation ----------------------------------------------------------------
-    allParameters_   ({ "Combined Forcing", "Solar Forcing" }),
+    allParameters_   ({ "Combined Forcing", "Solar Forcing", "Humidity Forcing" }),
     parName_         (params->get("Continuation parameter",
                                   "Combined Forcing")),
+    
 // starting values
     comb_            (params->get("Combined Forcing", 0.0)),
-    sunp_            (params->get("Solar Forcing", 1.0))
+    sunp_            (params->get("Solar Forcing", 1.0)),
+    humf_            (params->get("Humidity Forcing", 1.0))
 {
     INFO("Atmosphere: constructor for parallel use...");
     parallel_ = true;
@@ -90,17 +101,26 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
 
 // physics ------------------------------------------------------------------
     rhoa_            (params->get("atmospheric density",1.25)),
+    rhoo_            (params->get("oceanic density",1024)),
     hdima_           (params->get("atmospheric scale height",8400.)),
+    hdimq_           (params->get("humidity scale height",1800.)),
+    hdim_            (params->get("vertical length scale",5000.)),
     cpa_             (params->get("heat capacity",1000.)),
     d0_              (params->get("constant eddy diffusivity",3.1e+06)),
+    kappa_           (params->get("humidity eddy diffusivity",1e+06)),
     arad_            (params->get("radiative flux param A",216.0)),
     brad_            (params->get("radiative flux param B",1.5)),
     sun0_            (params->get("solar constant",1360.)),
     c0_              (params->get("atmospheric absorption coefficient",0.43)),
-    ce_              (params->get("exchange coefficient ce",1.3e-03)),
+    ce_              (params->get("Dalton number",1.3e-03)),
     ch_              (params->get("exchange coefficient ch",0.94 * ce_)),
     uw_              (params->get("mean atmospheric surface wind speed",8.5)),
-    t0_              (params->get("reference temperature",15.0)),
+    t0a_             (params->get("reference temperature atmosphere",15.0)), //(C)
+    t0o_             (params->get("reference temperature ocean",15.0)),      //(C)
+    t0i_             (params->get("reference temperature ice",0.0)),         //(C) 
+    q0_              (params->get("reference humidity",0.015)), // (kg/kg)
+    qdim_            (params->get("humidity scale", 0.01)),  // (kg/kg)
+    
     udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
     r0dim_           (params->get("radius of the earth",6.37e+06)),
 
@@ -110,7 +130,8 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
                                   "Combined Forcing")),
 // starting values
     comb_            (params->get("Combined Forcing", 0.0)),
-    sunp_            (params->get("Solar Forcing", 1.0))
+    sunp_            (params->get("Solar Forcing", 1.0)),
+    humf_            (params->get("Humidity Forcing", 1.0))
 {
     INFO("Atmosphere: constructor...");
 
@@ -132,23 +153,50 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
 //==================================================================
 void Atmosphere::setup()
 {
-    // Number of super and sub-diagonal bands in banded matrix
-    ksub_ = std::max(n_, m_);
-    ksup_ = std::max(n_, m_);
+    if (!parallel_)
+    {
+        // Number of super and sub-diagonal bands in banded matrix
+        ksub_ = std::max(n_, m_);
+        ksup_ = std::max(n_, m_);
 
-    // Leading dimension of banded matrix
-    ldimA_  = 2 * ksub_ + 1 + ksup_;
+        // Leading dimension of banded matrix
+        ldimA_  = 2 * ksub_ + 1 + ksup_;
+    } 
 
-    // Filling the coefficients
+    // Filling the coefficients 
     muoa_ =  rhoa_ * ch_ * cpa_ * uw_;
-    amua_ = (arad_ + brad_ * t0_) / muoa_;
+    amua_ = (arad_ + brad_ * t0a_) / muoa_;
     bmua_ =  brad_ / muoa_;
     Ai_   =  rhoa_ * hdima_ * cpa_ * udim_ / (r0dim_ * muoa_);
     Ad_   =  rhoa_ * hdima_ * cpa_ * d0_ / (muoa_ * r0dim_ * r0dim_);
-    As_   =  sun0_ * (1 - c0_) / (4 * muoa_);    
+    As_   =  sun0_ * (1 - c0_) / (4 * muoa_);
+
+    // Filling coefficients (humidity specific)
+    double nuq = (rhoo_ / rhoa_) * (hdim_ / hdimq_);
+    double eta = (rhoa_ / rhoo_) * ce_ * uw_;
+    Phv_       = kappa_ / (udim_ * r0dim_);
+    nuqeta_    = nuq * eta;
+    
+    // Parameters for saturation humidity over ocean and ice
+    double c1 = 3.8e-3;  // (kg / kg)
+    double c2 = 21.87;   //
+    double c3 = 265.5;   // (K)
+    double c4 = 17.67;   //
+    double c5 = 243.5;   // (K) 
+
+    // Calculate saturation humidity derivatives at ref. temps
+    double t0oK = t0o_ + C2K_; // reference ocean temp in K
+    dqso_       = (c1 * c4 * c5) / pow(t0oK + c5, 2);
+    dqso_       *= exp( (c4 * t0oK) / (t0oK + c5) );
+    double t0iK = t0o_ + C2K_; // reference ice temp in K
+    dqsi_       = (c1 * c2 * c3) / pow(t0iK + c3, 2);
+    dqsi_       *= exp( (c2 * t0iK) / (t0iK + c3) );
+
+    // Idealized precipitation
+    P_ = 1.0;
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
-    nun_ = ATMOS_NUN_;  // only temperature ATMOS_TT_
+    nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_ 
 
     // Problem size
     dim_ = m_ * n_ * l_ * nun_;
@@ -167,9 +215,12 @@ void Atmosphere::setup()
     // Initialize forcing with zeros
     frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
 
-    // Initialize banded storage
-    bandedA_     = std::vector<double>(ldimA_  * dim_, 0.0);
-    buildLU_     = true;
+    if (!parallel_)
+    {
+        // Initialize banded storage
+        bandedA_ = std::vector<double>(ldimA_  * dim_, 0.0);
+        buildLU_ = true;
+    }
 
     // Create pivot array for use in lapack
     ipiv_ = std::vector<int> (n_*m_*l_+1, 0);
@@ -237,7 +288,7 @@ void Atmosphere::idealizedOcean()
         for (int j = 1; j <= m_; ++j)
         {
             value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
-            row   = find_row(i,j,l_,ATMOS_TT_) - 1;
+            row   = find_surface_row(i,j,l_,ATMOS_TT_) - 1;
             surfaceTemp_[row] = value;
         }
 }
@@ -284,6 +335,7 @@ void Atmosphere::setOceanTemperature(std::vector<double> const &surftemp)
 {
     // Set surface temperature (copy)
     surfaceTemp_ = surftemp;
+    assert((int) surfaceTemp_.size() == n_ * m_);
 }
 
 //-----------------------------------------------------------------------------
@@ -293,23 +345,39 @@ void Atmosphere::computeJacobian()
 
     Atom tc (n_, m_, l_, np_);
     Atom tc2(n_, m_, l_, np_);
-    Atom txx(n_, m_, l_, np_);
-    Atom tyy(n_, m_, l_, np_);
-
+    Atom txx(n_, m_, l_, np_); 
+    Atom tyy(n_, m_, l_, np_); 
+    
     discretize(1, tc);
-    discretize(2, tc2);
-    discretize(3, txx);
-    discretize(4, tyy);
+    discretize(2, tc2); 
+    discretize(3, txx); // longitudinal diffusion
+    discretize(4, tyy); // meridional diffusion
 
-    // Al(:,:,:,:,TT,TT) = Ad * (txx + tyy) + tc - bmua*tc2
-    txx.update(Ad_, Ad_, tyy, 1.0, tc, -bmua_, tc2);
+    // Al(:,:,:,:,TT,TT) = Ad * (txx + tyy) - tc - bmua*tc2
+    txx.update(Ad_, Ad_, tyy, -1.0, tc, -bmua_, tc2);
 
-    // Set atom in dependency grid
+    // Set temperature atom in dependency grid
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_TT_, txx);
+    
+    Atom qc (n_, m_, l_, np_);
+    Atom qxx(n_, m_, l_, np_);
+    Atom qyy(n_, m_, l_, np_);
+
+    discretize(1, qc);   // over land no evaporation
+    discretize(3, qxx);  // longitudinal diffusion
+    discretize(4, qyy);  // meridional diffusion
+
+    // adjust parameter for continuation
+    double nuqetaCont = nuqeta_ * comb_ * humf_;
+    qxx.update(Phv_, Phv_, qyy, -nuqetaCont, qc);
+    
+    // Set humidity atom in dependency grid
+    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
 
     boundaries();
     assemble();
-    buildLU_ = true;
+
+    if (!parallel_) buildLU_ = true;
 
     TIMER_STOP("Atmosphere: compute Jacobian...");
 }
@@ -343,11 +411,12 @@ void Atmosphere::computeRHS()
     int row;
     for (int i = 1; i <= n_; ++i)
         for (int j = 1; j <= m_; ++j)
-        {
-            row   = find_row(i, j, l_, ATMOS_TT_);
-            value = matvec(row) + frc_[row-1];
-            (*rhs_)[row-1] = value;
-        }
+            for (int XX = 1; XX <= nun_; ++XX)
+            {
+                row   = find_row(i, j, l_, XX);
+                value = matvec(row) + frc_[row-1];
+                (*rhs_)[row-1] = value;
+            }
 
     TIMER_STOP("Atmosphere: compute RHS...");
 }
@@ -355,14 +424,18 @@ void Atmosphere::computeRHS()
 //-----------------------------------------------------------------------------
 double Atmosphere::matvec(int row)
 {
+    TIMER_START("Atmosphere: matvec...");
+    
     // Returns inner product of a row in the matrix with the state.
-    // > ugly stuff with 1 to 0 based...
+    // > ugly stuff with 1 to 0 based...    
     int first = beg_[row-1];
     int last  = beg_[row] - 1;
     double result = 0.0;
     for (int j = first; j <= last; ++j)
         result += co_[j-1] * (*state_)[jco_[j-1]-1];
 
+
+    TIMER_STOP("Atmosphere: matvec...");
     return result;
 }
 
@@ -370,27 +443,52 @@ double Atmosphere::matvec(int row)
 void Atmosphere::forcing()
 {
     double value;
-    int row;
+    int forcingRow, surfaceRow;
 
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
-            row = find_row(i, j, l_, ATMOS_TT_);
+            // ------------ Temperature forcing
+            surfaceRow = find_surface_row(i, j, l_, ATMOS_TT_);
+            forcingRow = find_row(i, j, l_, ATMOS_TT_);
 
             // Apply surface mask and calculate land temperatures
             // This is a copy of legacy stuff, can be simplified
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
             {
                 value = comb_ * sunp_ * suno_[j] / Ooa_;
-                surfaceTemp_[row-1] = value + (*state_)[row-1];
+                surfaceTemp_[surfaceRow-1] = value + (*state_)[forcingRow-1];
                 value += comb_ * sunp_ * (suna_[j] - amua_);
             }
             else // above ocean
             {
-                value = surfaceTemp_[row-1] +
+                value = surfaceTemp_[surfaceRow-1] +
                     comb_ * sunp_ * (suna_[j] - amua_);
             }
-            frc_[row-1] = value;
+            frc_[forcingRow-1] = value;
+
+            // ------------ Humidity forcing
+            forcingRow = find_row(i, j, l_, ATMOS_QQ_);
+
+            // Again, check whether we are above land
+            if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
+            {
+                value = 0;
+            }
+            else
+            {
+                // --> when ice is available, this should check whether
+                // the surface is ice or water. At this point this
+                // is only for ocean surface temperature
+
+                // E (evaporation) part
+                value = comb_ * humf_ * nuqeta_ * (1. / qdim_)
+                    * dqso_ * surfaceTemp_[surfaceRow-1];
+
+                // P (precipitation) part
+                value -= comb_ * humf_ * nuqeta_ * P_;
+            }
+            frc_[forcingRow-1] = value;
         }
 }
 
@@ -400,8 +498,8 @@ void Atmosphere::discretize(int type, Atom &atom)
     switch (type)
     {
         double val2, val4, val5, val6, val8;
-    case 1: // tc
-        atom.set({1,n_,1,m_,1,l_}, 5, -1.0);
+    case 1: // tc (without land points)
+        atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
 
         // Apply land mask
         if (use_landmask_)
@@ -410,7 +508,7 @@ void Atmosphere::discretize(int type, Atom &atom)
                     if ((*surfmask_)[(j-1)*n_+(i-1)])
                         atom.set(i, j, l_, 5, 0.0);
         break;
-    case 2: // tc2
+    case 2: // tc2 (with land points)
         atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
         break;
     case 3: // txx
@@ -463,7 +561,7 @@ void Atmosphere::assemble()
     jco_.clear();
 
     // Clear banded storage (just to be sure)
-    std::fill(bandedA_.begin(), bandedA_.end(), 0.0);
+    if (!parallel_) std::fill(bandedA_.begin(), bandedA_.end(), 0.0);
 
     int i2,j2,k2; // will contain neighbouring grid pointes given by shift()
     int row;
@@ -501,17 +599,20 @@ void Atmosphere::assemble()
                                 // increment the element counter
                                 ++elm_ctr;
 
-                                // BND --------------------------------------
-                                // get row index for banded storage
-                                rowb = row - col + kdiag;
+                                if (!parallel_)
+                                {
+                                    // BND --------------------------------------
+                                    // get row index for banded storage
+                                    rowb = row - col + kdiag;
 
-                                // put matrix values in column major fashion
-                                // in the array
-                                //  > go from 1 to 0-based
-                                rowb = rowb;
-                                colb = col;
-                                idx  = rowb + (colb - 1) * ldimA_ - 1;
-                                bandedA_[idx] = value;
+                                    // put matrix values in column major fashion
+                                    // in the array
+                                    //  > go from 1 to 0-based
+                                    rowb = rowb;
+                                    colb = col;
+                                    idx  = rowb + (colb - 1) * ldimA_ - 1;
+                                    bandedA_[idx] = value;
+                                }
                             }
                         }
                     }
@@ -539,8 +640,16 @@ extern "C" void dgbtrs_(char *TRANS, int *N, int *KL, int *KU, int *NRHS,
                         int *INFO);
 
 //-----------------------------------------------------------------------------
+// In parallel setup we use Ifpack
 void Atmosphere::solve(std::shared_ptr<std::vector<double> > const &rhs)
 {
+    if (parallel_)
+    {
+        ERROR("Non-parallel solve called in parallel setting",
+              __FILE__, __LINE__);
+        return;
+    }
+    
     TIMER_START("Atmosphere: solve...");
 
     int dim     = n_*m_*l_;
@@ -585,7 +694,7 @@ Atmosphere::getCurrResVec(std::shared_ptr<std::vector<double> > const &x,
 }
 
 //-----------------------------------------------------------------------------
-//! size of stencil/neighbourhood:
+//! Size of stencil/neighbourhood:
 //! +----------++-------++----------+
 //! | 12 15 18 || 3 6 9 || 21 24 27 |
 //! | 11 14 17 || 2 5 8 || 20 23 26 |
@@ -593,7 +702,7 @@ Atmosphere::getCurrResVec(std::shared_ptr<std::vector<double> > const &x,
 //! |  below   || center||  above   |
 //! +----------++-------++----------+
 //!
-//!  No flow boundaries.
+//!  No flow boundaries for both TT an QQ.
 //!  For instance, dependencies on non-existent grid points at the western boundary
 //!  are replaced with dependencies on the central grid point as T_{i-1} = T_{i}
 void Atmosphere::boundaries()
@@ -603,48 +712,49 @@ void Atmosphere::boundaries()
     for (int i = 1; i <= n_; ++i)
         for (int j = 1; j <= m_; ++j)
             for (int k = 1; k <= l_; ++k)
-            {
-                west   = i-1;
-                east   = i+1;
-                north  = j+1;
-                south  = j-1;
+                for (int XX = 1; XX <= nun_; ++XX)
+                {
+                    west   = i-1;
+                    east   = i+1;
+                    north  = j+1;
+                    south  = j-1;
                 
-                // western boundary
-                if (west == 0)
-                {
-                    Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_,
-                             Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +
-                             Al_->get(i,j,k,2,ATMOS_TT_,ATMOS_TT_));
-                    Al_->set(i,j,k,2,ATMOS_TT_,ATMOS_TT_, 0.0);
-                }
+                    // western boundary
+                    if (west == 0)
+                    {
+                        Al_->set(i,j,k,5,XX,XX,
+                                 Al_->get(i,j,k,5,XX,XX) +
+                                 Al_->get(i,j,k,2,XX,XX));
+                        Al_->set(i,j,k,2,XX,XX, 0.0);
+                    }
 
-                // eastern boundary
-                if (east == n_+1)
-                {
-                    Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_,
-                             Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +
-                             Al_->get(i,j,k,8,ATMOS_TT_,ATMOS_TT_));
-                    Al_->set(i,j,k,8,ATMOS_TT_,ATMOS_TT_, 0.0);
-                }
+                    // eastern boundary
+                    if (east == n_+1)
+                    {
+                        Al_->set(i,j,k,5,XX,XX,
+                                 Al_->get(i,j,k,5,XX,XX) +
+                                 Al_->get(i,j,k,8,XX,XX));
+                        Al_->set(i,j,k,8,XX,XX, 0.0);
+                    }
 
-                // northern boundary
-                if (north == m_+1)
-                {
-                    Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_,
-                             Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +
-                             Al_->get(i,j,k,6,ATMOS_TT_,ATMOS_TT_));
-                    Al_->set(i,j,k,6,ATMOS_TT_,ATMOS_TT_, 0.0);
-                }
+                    // northern boundary
+                    if (north == m_+1)
+                    {
+                        Al_->set(i,j,k,5,XX,XX,
+                                 Al_->get(i,j,k,5,XX,XX) +
+                                 Al_->get(i,j,k,6,XX,XX));
+                        Al_->set(i,j,k,6,XX,XX, 0.0);
+                    }
 
-                // southern boundary
-                if (south == 0)
-                {
-                    Al_->set(i,j,k,5,ATMOS_TT_,ATMOS_TT_,
-                             Al_->get(i,j,k,5,ATMOS_TT_,ATMOS_TT_) +
-                             Al_->get(i,j,k,4,ATMOS_TT_,ATMOS_TT_));
-                    Al_->set(i,j,k,4,ATMOS_TT_,ATMOS_TT_, 0.0);
+                    // southern boundary
+                    if (south == 0)
+                    {
+                        Al_->set(i,j,k,5,XX,XX,
+                                 Al_->get(i,j,k,5,XX,XX) +
+                                 Al_->get(i,j,k,4,XX,XX));
+                        Al_->set(i,j,k,4,XX,XX, 0.0);
+                    }
                 }
-            }
 }
 
 //-----------------------------------------------------------------------------
@@ -667,6 +777,14 @@ int Atmosphere::find_row(int i, int j, int k, int XX)
 {
     // 1-based
     return nun_ * ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
+}
+
+//-----------------------------------------------------------------------------
+int Atmosphere::find_surface_row(int i, int j, int k, int XX)
+{
+    // 1-based
+    // find_row for surfaceTemp values
+    return ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
 }
 
 //-----------------------------------------------------------------------------
@@ -801,6 +919,8 @@ void Atmosphere::setPar(std::string const &parName, double value)
         comb_ = value;
     else if (parName.compare("Solar Forcing") == 0)
         sunp_ = value;
+    else if (parName.compare("Humidity Forcing") == 0)
+        humf_ = value;
 
     // If parameter not available we take no action
 }
@@ -821,6 +941,8 @@ double Atmosphere::getPar(std::string const &parName)
         return comb_;
     else if (parName.compare("Solar Forcing") == 0)
         return sunp_;
+    else if (parName.compare("Humidity Forcing") == 0)
+        return humf_;
     else // If parameter not available we return 0
         return 0;
 }
@@ -842,40 +964,6 @@ int const Atmosphere::par2int(std::string const &label)
     WARNING("Parameter name " << label << " is not represented in Atmosphere",
             __FILE__, __LINE__);
     return -1;
-}
-
-
-//-----------------------------------------------------------------------------
-// --> Parallelize
-void Atmosphere::getOceanBlock(std::vector<double> &values,
-                               std::vector<int> &rows)
-{
-    // The contribution of the ocean in the atmosphere is a
-    // diagonal of ones, see the forcing.
-    values = std::vector<double>(m_*n_, 1.0);
-    rows   = std::vector<int>(m_*n_, 0);
-
-    for (int i = 0; i != m_*n_; ++i)
-        rows[i] = i;
-
-    // Apply surface mask
-    if ((int) surfmask_->size() != m_*n_)
-        ERROR("Surface mask is not set", __FILE__, __LINE__);
-
-    int idx = 0;
-    int ctr = 0;
-    for (int j = 0; j != m_; ++j)
-        for (int i = 0; i != n_; ++i)
-        {
-            if ((*surfmask_)[j*n_+i])
-            {
-                values[idx] = 0.0;
-                ctr++;
-            }
-            idx++;
-        }
-
-    INFO("  O->A block, zeros due to surfacemask --> " << ctr);
 }
 
 //-----------------------------------------------------------------------------
@@ -1038,6 +1126,25 @@ void Atom::set(int const (&range)[6], int loc, double value)
             {
                 atom_(i-1, j-1, k-1, loc-1) = value;
             }
+}
+
+//-----------------------------------------------------------------------------
+// this = scalThis*this+scalA*A+scalB*B
+void Atom::update(double scalarThis,
+                  double scalarA, Atom &A,
+                  double scalarB, Atom &B)
+{
+    for (int i = 1; i != n_+1; ++i)
+        for (int j = 1; j != m_+1; ++j)
+            for (int k = 1; k != l_+1; ++k)
+                for (int loc = 1; loc != np_+1; ++loc)
+                {
+                    // converting to 0-based
+                    atom_(i-1, j-1, k-1, loc-1) =
+                        scalarThis * atom_(i-1, j-1, k-1, loc-1) +
+                        scalarA*A.get(i, j, k, loc) +
+                        scalarB*B.get(i, j, k, loc);
+                }
 }
 
 //-----------------------------------------------------------------------------

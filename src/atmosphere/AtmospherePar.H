@@ -207,9 +207,6 @@ public:
         { return FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, l_-1, ATMOS_TT_); }
 
 private:
-    //! solve with right hand side b on assembly subdomains
-    //! using dgbtrf and dgbtrs
-    void solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b);
 
     //! create dependency graph for the Jacobian matrix
     //! function borrowed from THCM,

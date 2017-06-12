@@ -204,8 +204,8 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
 //==================================================================
 std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> ocean)
 {
-    // The contribution of the ocean in the atmosphere is a
-    // diagonal of ones, see the forcing in Atmosphere.C.
+    // The contribution of the ocean in the atmosphere
+    // see the forcing in Atmosphere.C.
 
     // check surfmask
     assert((int) surfmask_->size() == m_*n_);
@@ -216,19 +216,27 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
     int el_ctr = 0;
     int T = 5; // in THCM temperature is the fifth unknown
 
-    // loop over our unknowns
+    // Get dependency of humidity on ocean temperature
+    double oceanDep = atmos_->getDqDTo();
+        
+        // loop over our unknowns
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
-            for (int xx = ATMOS_TT_; xx <= ATMOS_TT_; ++xx)
+            for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
             {
                 block->beg.push_back(el_ctr);
                 if ( (*surfmask_)[j*n_+i] == 0 ) // non-land
                 {
-                    block->co.push_back(1.0);
+                    if (xx == ATMOS_TT_)
+                        block->co.push_back(1.0);
+                    else if (xx == ATMOS_QQ_)
+                        block->co.push_back(oceanDep);
+                    
                     block->jco.push_back(ocean->interface_row(i,j,T));
                     el_ctr++;
                 }
             }
+    
     block->beg.push_back(el_ctr);
 
     assert( (int) block->co.size() == block->beg.back());
@@ -468,108 +476,24 @@ void AtmospherePar::postProcess()
 void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
                                 Epetra_MultiVector &out)
 {
-    if (1) // ifpack preconditioning
+    if (!precInitialized_)
     {
-        if (!precInitialized_)
-        {
-            initializePrec();
-        }
-        if (recomputePrec_)
-        {
-            precPtr_->Compute();
-            recomputePrec_ = false;
-        }
-        precPtr_->ApplyInverse(in, out);
+        initializePrec();
     }
-    else if (0) // full solve
+    if (recomputePrec_)
     {
-        solveSubDomain(Teuchos::rcp(&in, false));
-        out = *getSolution('C'); // copy solution
+        precPtr_->Compute();
+        recomputePrec_ = false;
     }
-    else if (0) // diagonal
-    {
-        Epetra_Vector diag = *in(0);
-        diag.PutScalar(0.0);
-        jac_->ExtractDiagonalCopy(diag);
-        out = in;
-        out.ReciprocalMultiply(1.0, diag, out, 0.0);
-    }
+    precPtr_->ApplyInverse(in, out);
 }
 
 //==================================================================
 void AtmospherePar::solve(Teuchos::RCP<Epetra_MultiVector> const &b)
 {
     // when using the preconditioner as a solver make sure
-    // the overlap is large enough
+    // the overlap is large enough (depending on number of cores obv).
     applyPrecon(*b, *sol_);
-}
-
-//==================================================================
-//--> this is something Ifpack can do better (I guess)
-void AtmospherePar::solveSubDomain(Teuchos::RCP<Epetra_MultiVector> const &b)
-{
-    if (!(b->Map().SameAs(*standardMap_)))
-    {
-        ERROR("AtmospherePar::solve, map of b not same as standard map",
-              __FILE__, __LINE__);
-    }
-
-    // obtain assembly from Epetra_Vector, put b in sol
-    CHECK_ZERO(domain_->Solve2Assembly(*(*b)(0), *localSol_));
-
-    // local vector size
-    int numMyElements = assemblyMap_->NumMyElements();
-
-    // create local vector
-    std::shared_ptr<std::vector<double> > localSol =
-        std::make_shared<std::vector<double> >(numMyElements, 0.0);
-    std::shared_ptr<std::vector<double> > localB =
-        std::make_shared<std::vector<double> >(numMyElements, 0.0);
-
-    // extract assembly into local vector
-    localSol_->ExtractCopy(&(*localSol)[0], numMyElements);
-    localSol_->ExtractCopy(&(*localB)[0], numMyElements);
-
-    // solve using serial model
-    atmos_->solve(localSol);
-
-    // obtain view of solution
-    localSol = atmos_->getSolution('V');
-
-    // obtain our view of assembly localSol
-    double *sol_tmp;
-    localSol_->ExtractView(&sol_tmp);
-
-    // fill view
-    for (int i = 0; i != numMyElements; ++i)
-    {
-        sol_tmp[i] = (*localSol)[i];
-    }
-
-    // obtain the standard map solution
-    domain_->Assembly2Solve(*localSol_, *sol_);
-
-#ifdef DEBUGGING_NEW
-
-    Utils::print(localSol_, "atmosDistrSol" + std::to_string(comm_->MyPID()) );
-    Utils::print(*localSol, "atmosLocalSol" + std::to_string(comm_->MyPID()) );
-    Utils::print(sol_,      "atmosSol" + std::to_string(comm_->MyPID()) );
-
-    std::shared_ptr<std::vector<double> > localRes =
-        atmos_->getCurrResVec(localSol, localB);
-
-    Utils::print(*localRes, "atmosLocalRes" + std::to_string(comm_->MyPID()) );
-
-    // compute atmosphere residual
-    Epetra_MultiVector r = *b;
-    r.PutScalar(0.0);
-    applyMatrix(*sol_, r);
-    r.Update(1.0,*b,-1.0);
-    Utils::print(&r, "atmosRes" + std::to_string(comm_->MyPID()) );
-
-    INFO("AtmospherePar::solveSubDomain ||b-Ax|| = " <<
-         Utils::norm(&r));
-#endif
 }
 
 //==================================================================
@@ -615,14 +539,15 @@ void AtmospherePar::createMatrixGraph()
 
                 // Specify dependencies, see Atmosphere::discretize()
                 // ATMOS_TT_: 5-point stencil
-                insert_graph_entry(indices, pos, i, j, k, ATMOS_TT_, N, M, L);
+                insert_graph_entry(indices, pos, i, j, k,   ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i-1, j, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i+1, j, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i, j-1, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_TT_, N, M, L);
 
                 // Insert dependencies in matrixGraph
-                CHECK_ZERO(matrixGraph_->InsertGlobalIndices(gid0+ATMOS_TT_, pos, indices));
+                CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
+                               gid0 + ATMOS_TT_, pos, indices));
             }
 
     // Finalize matrixgraph
@@ -710,12 +635,13 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
         setPar(parName, parValue);
         INFO("   " << parName << " = " << parValue);
     }
-    
+
     INFO("Loading atmos state and parameters from " << filename << " done");
     return 0;
 }
 
 //=============================================================================
+// Again, pretty similar to the routine in Ocean, so we could factorize this in Utils.
 int AtmospherePar::saveStateToFile(std::string const &filename)
 {
     INFO("_________________________________________________________");

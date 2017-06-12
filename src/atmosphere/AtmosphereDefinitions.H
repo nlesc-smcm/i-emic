@@ -6,7 +6,13 @@
 # define PI_ 3.14159265358979323846
 #endif
 
-// Number of points in neighbourhood
+//! Number of points in neighbourhood:
+//! +----------++-------++----------+
+//! | 12 15 18 || 3 6 9 || 21 24 27 |
+//! | 11 14 17 || 2 5 8 || 20 23 26 |
+//! | 10 13 16 || 1 4 7 || 19 22 25 |
+//! |  below   || center||  above   |
+//! +----------++-------++----------+
 #ifndef ATMOS_NP_
 # define ATMOS_NP_ 27
 #endif
@@ -16,9 +22,15 @@
 # define ATMOS_NUN_ 2
 #endif
 
-// The one unknown we have in this model
+// The unknowns we have in this model
 #ifndef ATMOS_TT_
-# define ATMOS_TT_ 1
+# define ATMOS_TT_ 1 // Atmospheric temperature
+# define ATMOS_QQ_ 2 // Vapor anomaly
+#endif
+
+// Difference Celsius and Kelvin
+#ifndef C2K_
+# define C2K_ 273.15
 #endif
 
 // Input is expected 1-based

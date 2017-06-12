@@ -111,9 +111,13 @@ class Atmosphere
 
     // Parameters
     double   rhoa_; //! atmospheric density \[\rho_a\]
+    double   rhoo_; //! oceanic density \[\rho_o\]
     double  hdima_; //! atmospheric scale height \[H_a\]
+    double  hdimq_; //! humidity scale height \[H_q\]
+    double   hdim_; //! vertical length scale \[H\]
     double    cpa_; //! heat capacity \[C_{pa}\]
     double     d0_; //! constant eddy diffusivity \[D_0\]
+    double  kappa_; //! humidity eddy diffusivity \[\kappa\]    
     double   arad_; //! radiative flux param A
     double   brad_; //! radiative flux param B
     double   sun0_; //! solar constant \[\Sigma_0\]
@@ -121,11 +125,23 @@ class Atmosphere
     double     ce_; //! exchange coefficient (Dalton number)
     double     ch_; //! exchange coefficient \[C_H\] (Stanton number)
     double     uw_; //! mean atmospheric surface wind speed \[|V_a|\]
-    double     t0_; //! reference temperature
+    double    t0a_; //! reference temperature atmosphere
+    double    t0o_; //! reference temperature ocean
+    double    t0i_; //! reference temperature ice
+    double     q0_; //! reference humidity (kg / kg)
+    double   qdim_; //! humidity scale (kg / kg)
 
     // Necessary for nondimensionalizations:
     double   udim_; //! typical horizontal velocity of the ocean
     double  r0dim_; //! radius of the earth
+
+    double Phv_;     //! horizontal Peclet number for vaport transport
+    double nuqeta_;  //! (hdim_ / hdimq_) * ce_ * uw_
+
+    double dqso_;  //! derivative sat. humidity w.r.t. T, at t0o (ocean).
+    double dqsi_;  //! derivative sat. humidity w.r.t. T, at t0i (ice).
+
+    double P_;     //! Idealized precipitation
 
     // Coefficients
     double muoa_;  //! constant exchange coefficient
@@ -157,8 +173,10 @@ class Atmosphere
     //! -------------------------------------------------------
     std::vector<std::string> allParameters_;
     std::string parName_;
+
     double      comb_; //! combined forcing
     double      sunp_; //! solar forcing
+    double      humf_; //! humidity forcing
 
 public:
     //! Constructor for use with parallel atmosphere
@@ -232,9 +250,9 @@ public:
     void zeroOcean();
     void zeroState();
 
-    //! -------------------------------------------------------
-    void getOceanBlock(std::vector<double> &values,
-                       std::vector<int> &rows);
+    //! Get the dependency of q on ocean temperature
+    double getDqDTo() { return comb_ * humf_ *
+            nuqeta_ * dqso_ / qdim_; }
 
     //! --------------------------------------------------------
     //! Set an external 2D surface mask in the atmosphere.
@@ -270,7 +288,7 @@ private:
     void shift(int i, int j, int k,
                int &i2, int &j2, int &k2, int loc);
 
-    //! Assemble the dependency grid into a matrix in crs form
+    //! Assemble the dependency grid into a matrix in CRS form
     void assemble();
 
     //! Write vector to output file
@@ -295,6 +313,7 @@ public:
     //! |            (1,1,2) |      ( 6*n*m+1, ...  ,6*n*m+6) |
     //! +-----------------------------------------------------+
     int find_row(int i, int j, int k, int XX);
+    int find_surface_row(int i, int j, int k, int XX);
 
     //! Write everything to output files.
     void writeAll();
@@ -343,6 +362,10 @@ public:
     double get(int i, int j, int k, int loc);
     void   set(int i, int j, int k, int loc, double value);
     void   set(int const (&range)[6], int loc, double value);
+
+    void update(double scalarThis,
+                double scalarA, Atom &A,
+                double scalarB, Atom &B);
 
     void update(double scalarThis,
                 double scalarA, Atom &A,
