@@ -13,7 +13,7 @@
 
 // Number of unknowns
 #ifndef ATMOS_NUN_
-# define ATMOS_NUN_ 1
+# define ATMOS_NUN_ 2
 #endif
 
 // The one unknown we have in this model
