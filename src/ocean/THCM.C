@@ -356,6 +356,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // processors
     Teuchos::RCP<Epetra_Map> wind_map_loc   = domain->CreateAssemblyMap(1,true);
 
+    // Single-unknown surface maps
     StandardSurfaceMap = domain->CreateStandardMap(1,true);
     AssemblySurfaceMap = domain->CreateAssemblyMap(1,true);
 
@@ -1078,8 +1079,8 @@ void THCM::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmosT)
 
     if (!(atmosT->Map().SameAs(*StandardSurfaceMap)))
     {
-        ERROR("Map of atmosT input vector not same as standard surface map",
-              __FILE__, __LINE__);
+        INFO("THCM::setAtmosphere: atmosT map -> StandardSurfaceMap");
+        CHECK_ZERO(atmosT->ReplaceMap(*StandardSurfaceMap));
     }
 
     // Standard2Assembly

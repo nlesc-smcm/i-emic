@@ -17,6 +17,7 @@
 
 #include "Utils.H"
 #include "THCMdefs.H"
+#include "GlobalDefinitions.H"
 
 #ifdef HAVE_MPI
 #  include "Epetra_MpiComm.h"
@@ -457,7 +458,7 @@ namespace TRIOS
     int Domain::Assembly2Standard
     (const Epetra_Vector& source, Epetra_Vector& target) const
     {
-#ifdef TESTING
+#ifdef DEBUGGING_NEW
         if (!(source.Map().SameAs(*AssemblyMap) &&
               target.Map().SameAs(*StandardMap)))
         {
@@ -472,7 +473,7 @@ namespace TRIOS
     int Domain::Standard2Assembly
     (const Epetra_Vector& source, Epetra_Vector& target) const
     {
-#ifdef TESTING
+#ifdef DEBUGGING_NEW
         if (!(source.Map().SameAs(*StandardMap) &&
               target.Map().SameAs(*AssemblyMap)))
         {
@@ -487,7 +488,7 @@ namespace TRIOS
     int Domain::Standard2Solve
     (const Epetra_Vector& source, Epetra_Vector& target) const
     {
-#ifdef TESTING
+#ifdef DEBUGGING_NEW
         if (!(source.Map().SameAs(*StandardMap)&&target.Map().SameAs(*SolveMap)))
         {
             ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
@@ -508,7 +509,7 @@ namespace TRIOS
     int Domain::Solve2Standard
     (const Epetra_Vector& source, Epetra_Vector& target) const
     {
-#ifdef TESTING
+#ifdef DEBUGGING_NEW
         if (!(source.Map().SameAs(*SolveMap)&&target.Map().SameAs(*StandardMap)))
         {
             ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
@@ -529,9 +530,11 @@ namespace TRIOS
     int Domain::Solve2Assembly
     (const Epetra_Vector& source, Epetra_Vector& target) const
     {
-#ifdef TESTING
-        if (!(source.Map().SameAs(*SolveMap)&&target.Map().SameAs(*AssemblyMap)))
+#ifdef DEBUGGING_NEW
+        if (!(source.Map().SameAs(*SolveMap) && target.Map().SameAs(*AssemblyMap)))
         {
+            INFO("source.Map() != SolveMap " << !source.Map().SameAs(*SolveMap));
+            INFO("target.Map() != AssemblyMap " << !target.Map().SameAs(*AssemblyMap));
             ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
         }
 #endif
@@ -548,13 +551,12 @@ namespace TRIOS
         return 0;
     }
 
-
     //
     int Domain::Assembly2Solve
     (const Epetra_Vector& source, Epetra_Vector& target) const
     {
 //        DEBUG("Enter Assembly2Solve");
-#ifdef TESTING
+#ifdef DEBUGGING_NEW
         if (!(source.Map().SameAs(*AssemblyMap)&&target.Map().SameAs(*SolveMap)))
         {
             ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
@@ -579,7 +581,7 @@ namespace TRIOS
     int Domain::Standard2Solve
     (const Epetra_CrsMatrix& source, Epetra_CrsMatrix& target) const
     {
-#ifdef TESTING
+#ifdef DEBUGGING_NEW
         if (!(source.RowMap().SameAs(*StandardMap)&&target.RowMap().SameAs(*SolveMap)))
         {
             ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);

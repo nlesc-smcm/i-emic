@@ -153,16 +153,6 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
 //==================================================================
 void Atmosphere::setup()
 {
-    if (!parallel_)
-    {
-        // Number of super and sub-diagonal bands in banded matrix
-        ksub_ = std::max(n_, m_);
-        ksup_ = std::max(n_, m_);
-
-        // Leading dimension of banded matrix
-        ldimA_  = 2 * ksub_ + 1 + ksup_;
-    } 
-
     // Filling the coefficients 
     muoa_ =  rhoa_ * ch_ * cpa_ * uw_;
     amua_ = (arad_ + brad_ * t0a_) / muoa_;
@@ -213,17 +203,24 @@ void Atmosphere::setup()
     surfaceTemp_ = std::vector<double>(n_ * m_, 0.0);
 
     // Initialize forcing with zeros
-    frc_ = std::vector<double>(n_ * m_ * l_, 0.0);
+    frc_ = std::vector<double>(dim_, 0.0);
 
     if (!parallel_)
     {
+        // Number of super and sub-diagonal bands in banded matrix
+        ksub_ = nun_ * std::max(n_, m_);
+        ksup_ = nun_ * std::max(n_, m_);
+
+        // Leading dimension of banded matrix
+        ldimA_  = 2 * ksub_ + 1 + ksup_;
+
         // Initialize banded storage
         bandedA_ = std::vector<double>(ldimA_  * dim_, 0.0);
         buildLU_ = true;
+        // Create pivot array for use in lapack
+        ipiv_ = std::vector<int> (dim_+1, 0);
     }
 
-    // Create pivot array for use in lapack
-    ipiv_ = std::vector<int> (n_*m_*l_+1, 0);
 
     // Construct dependency grid:
     Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);

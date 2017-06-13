@@ -57,14 +57,18 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     int lloc = domain_->LocalL();
 
     // Obtain overlapping and non-overlapping maps
-    assemblyMap_ = domain_->GetAssemblyMap();
-    standardMap_ = domain_->GetStandardMap();
+    assemblyMap_ = domain_->GetAssemblyMap(); // overlapping
+    standardMap_ = domain_->GetStandardMap(); // non-overlapping
 
     // Obtain special maps
     // depth-averaged, single unknown for ocean surface temperature
     standardSurfaceMap_ = domain_->CreateStandardMap(1, true);
     assemblySurfaceMap_ = domain_->CreateAssemblyMap(1, true);
 
+    // Create Import object for single unknown surface values
+    as2std_surf_ =
+        Teuchos::rcp(new Epetra_Import(*assemblySurfaceMap_, *standardSurfaceMap_));
+        
     // Create overlapping and non-overlapping vectors
     state_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
@@ -106,10 +110,8 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
             tRows.push_back(
-                FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_-1,
-                                i, j, l_, ATMOS_TT_));
-
-    HIER VERDER!!!
+                FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                i, j, l_-1, ATMOS_TT_));
 
     // Create restricted map
     tIndexMap_ =
@@ -225,11 +227,12 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
     TIMER_START("Atmosphere: get atmosphere temperature...");
     if (!(atmosT_->Map().SameAs(*tIndexMap_)))
     {
+        INFO("Replacing atmosT_ map -> tIndexMap_");
         CHECK_ZERO(atmosT_->ReplaceMap(*tIndexMap_));
     }
     CHECK_ZERO(atmosT_->Import(*state_, *atmosTimporter_, Insert));
     TIMER_STOP("Atmosphere: get atmosphere temperature...");
-    return getVector('C', atmosT_);         
+    return getVector('C', atmosT_);
 }
 
 //==================================================================
@@ -290,8 +293,8 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
     // Replace map if necessary
     if (!(sst->Map().SameAs(*standardSurfaceMap_)))
     {
+        INFO("AtmospherePar::setOceanTemperature sst map -> standardSurfaceMap_");
         CHECK_ZERO(sst->ReplaceMap(*standardSurfaceMap_));
-        INFO("Replacing sst map with standard surface map");
     }
 
 #ifdef DEBUGGING_NEW
@@ -307,7 +310,8 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
     sst_ = sst;
 
     // create assembly
-    domain_->Solve2Assembly(*sst_, *localSST_);
+    // domain_->Solve2Assembly(*sst_, *localSST_);
+    CHECK_ZERO(localSST_->Import(*sst_, *as2std_surf_, Insert));
 
     // local vector size
     int numMyElements = assemblySurfaceMap_->NumMyElements();
@@ -534,7 +538,7 @@ void AtmospherePar::createMatrixGraph()
 {
     // We know from the discretization that we have at
     // most 5 dependencies in each row.
-    // --> This will change, obviously, when extending
+    // This will change, obviously, when extending
     // the atmosphere model. If the number of dependencies varies greatly per row
     // we need to supply them differently (variable).
     int maxDeps = 5;
@@ -558,18 +562,20 @@ void AtmospherePar::createMatrixGraph()
     int K1 = domain_->LastRealK();
 
     int pos; // position in indices array, not really useful here
+    int gidU, gid0;
     for (int k = K0; k <= K1; ++k)
         for (int j = J0; j <= J1; ++j)
             for (int i = I0; i <= I1; ++i)
             {
+                // T-equation
                 // Obtain row corresponding to i,j,k,TT, using 0-based find_row
-                int gidU = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, i, j, k, ATMOS_TT_);
-                int gid0 = gidU - 1; // used as offset
+                gidU = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, i, j, k, ATMOS_TT_);
+                gid0 = gidU - 1; // used as offset
 
                 pos = 0;
 
                 // Specify dependencies, see Atmosphere::discretize()
-                // ATMOS_TT_: 5-point stencil
+                // ATMOS_TT_-ATMOS_TT_: 5-point stencil
                 insert_graph_entry(indices, pos, i, j, k,   ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i-1, j, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i+1, j, k, ATMOS_TT_, N, M, L);
@@ -579,6 +585,22 @@ void AtmospherePar::createMatrixGraph()
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
                                gid0 + ATMOS_TT_, pos, indices));
+
+                // Q-equation
+                
+                pos = 0;
+
+                // Specify dependencies, see Atmosphere::discretize()
+                // ATMOS_QQ_-ATMOS_QQ_: 5-point stencil
+                insert_graph_entry(indices, pos, i, j, k,   ATMOS_QQ_, N, M, L);
+                insert_graph_entry(indices, pos, i-1, j, k, ATMOS_QQ_, N, M, L);
+                insert_graph_entry(indices, pos, i+1, j, k, ATMOS_QQ_, N, M, L);
+                insert_graph_entry(indices, pos, i, j-1, k, ATMOS_QQ_, N, M, L);
+                insert_graph_entry(indices, pos, i, j+1, k, ATMOS_QQ_, N, M, L);
+
+                // Insert dependencies in matrixGraph
+                CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
+                               gid0 + ATMOS_QQ_, pos, indices));
             }
 
     // Finalize matrixgraph
@@ -632,6 +654,9 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
     HDF5.Open(filename);
     HDF5.Read("State", readState);
 
+    if (readState->GlobalLength() != dim_)
+        ERROR("Incompatible state", __FILE__, __LINE__);
+    
     // Create importer
     // target map: thcm domain SolveMap
     // source map: state with linear map  as read by HDF5.Read
@@ -643,7 +668,7 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
     state_->Import(*((*readState)(0)), *lin2solve, Insert);
 
     INFO("   atmos state: ||x|| = " << Utils::norm(state_));
-
+    
     // Interface between HDF5 and the atmosphere parameters,
     // put all the <npar> parameters back in atmos.
     std::string parName;

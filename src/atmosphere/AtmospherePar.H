@@ -67,6 +67,9 @@ private:
     //! assembly map, with ghost nodes (overlapping).
     Teuchos::RCP<Epetra_Map> assemblySurfaceMap_;
 
+    //! Surface assembly to standardmap importer
+    Teuchos::RCP<Epetra_Import> as2std_surf_;
+
     //! parallel atmosphere state (non-overlapping)
     Teuchos::RCP<Epetra_Vector> state_;
 
