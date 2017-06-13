@@ -182,6 +182,12 @@ void Atmosphere::setup()
     dqsi_       = (c1 * c2 * c3) / pow(t0iK + c3, 2);
     dqsi_       *= exp( (c2 * t0iK) / (t0iK + c3) );
 
+    INFO("Atmosphere parameters: ");
+    INFO("     mu = " << muoa_);
+    INFO(" B / mu = " << bmua_);
+    INFO("     Ad = " << Ad_);
+    INFO("    Phv = " << Phv_);        
+
     // Idealized precipitation
     P_ = 1.0;
 
@@ -361,8 +367,8 @@ void Atmosphere::computeJacobian()
     Atom qyy(n_, m_, l_, np_);
 
     discretize(1, qc);   // over land no evaporation
-    discretize(3, qxx);  // longitudinal diffusion
-    discretize(4, qyy);  // meridional diffusion
+    discretize(5, qxx);  // longitudinal diffusion
+    discretize(6, qyy);  // meridional diffusion
 
     // adjust parameter for continuation
     double nuqetaCont = nuqeta_ * comb_ * humf_;
@@ -484,6 +490,9 @@ void Atmosphere::forcing()
 
                 // P (precipitation) part
                 value -= comb_ * humf_ * nuqeta_ * P_;
+                
+                // idealized
+                value = comb_ * humf_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
             }
             frc_[forcingRow-1] = value;
         }
@@ -533,6 +542,41 @@ void Atmosphere::discretize(int type, Atom &atom)
             {
                 val4 = dy2i * datv_[j-1] * cos(yv_[j-1]) / cos(yc_[j]);
                 val6 = dy2i * datv_[j]   * cos(yv_[j])   / cos(yc_[j]);
+                val5 = -(val4 + val6);
+
+                for (int k = 1; k != l_+1; ++k)
+                {
+                    atom.set(i, j, k, 4, val4);
+                    atom.set(i, j, k, 6, val6);
+                    atom.set(i, j, k, 5, val5);
+                }
+            }
+        break;
+    case 5: // qxx
+        double cosdx2i;
+        for (int i = 1; i != n_+1; ++i)
+            for (int j = 1; j != m_+1; ++j)
+            {
+                cosdx2i = 1.0 / pow(cos(yc_[j]) * dx_, 2);
+                val2 = cosdx2i;
+                val8 = val2;
+                val5 = -2 * val2;
+
+                for (int k = 1; k != l_+1; ++k)
+                {
+                    atom.set(i, j, k, 2, val2);
+                    atom.set(i, j, k, 8, val8);
+                    atom.set(i, j, k, 5, val5);
+                }
+            }
+        break;
+    case 6: // tyy
+        double dy2i = 1.0 / pow(dy_, 2);
+        for (int i = 1; i != n_+1; ++i)
+            for (int j = 1; j != m_+1; ++j)
+            {
+                val4 = dy2i * cos(yv_[j-1]) / cos(yc_[j]);
+                val6 = dy2i * cos(yv_[j])   / cos(yc_[j]);
                 val5 = -(val4 + val6);
 
                 for (int k = 1; k != l_+1; ++k)
@@ -1162,5 +1206,20 @@ void Atom::update(double scalarThis,
                         scalarA*A.get(i, j, k, loc) +
                         scalarB*B.get(i, j, k, loc) +
                         scalarC*C.get(i, j, k, loc);
+                }
+}
+
+//-----------------------------------------------------------------------------
+// this = scalThis*this
+void Atom::scale(double scalarThis)                
+{
+    for (int i = 1; i != n_+1; ++i)
+        for (int j = 1; j != m_+1; ++j)
+            for (int k = 1; k != l_+1; ++k)
+                for (int loc = 1; loc != np_+1; ++loc)
+                {
+                    // converting to 0-based
+                    atom_(i-1, j-1, k-1, loc-1) =
+                        scalarThis * atom_(i-1, j-1, k-1, loc-1);
                 }
 }

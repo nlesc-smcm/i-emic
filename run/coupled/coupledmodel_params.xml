@@ -11,7 +11,7 @@
   <!-- old states (true) or with a trivial solution (false).     -->
   <!-- The sub-models maintain names for the input files.        -->
   <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Save state" type="bool" value="false"/>
+  <Parameter name="Save state" type="bool" value="true"/>
 
   <!-- To keep track of each converged state, enable this.    -->
   <!-- Only useful when you enable <Save state>               -->

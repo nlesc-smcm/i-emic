@@ -2,6 +2,7 @@ function [sol, pars] = readhdf5(file, nun, n, m, l)
 
 % load state
     sol = h5read(file, '/State/Values');
+    
     sol = reshape(sol, nun, n, m, l);
 
     % load parameters

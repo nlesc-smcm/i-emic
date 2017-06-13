@@ -1,4 +1,4 @@
-function [] = plot_atmos(fname)
+function [state] = plot_atmos(fname)
 
     if nargin < 1
         fname = 'atmos_output.h5';
@@ -8,20 +8,28 @@ function [] = plot_atmos(fname)
     surfm      = landm(2:n+1,2:m+1,l+1);    %Only interior surface points
     landm_int  = landm(2:n+1,2:m+1,2:l+1);
 
+    dx = (xmax-xmin)/n
+    dy = (ymax-ymin)/m
+    x(2)-x(1)
+    y(2)-y(1)
+    return
+    
     srf = [];
     greyness = .85;
     srf(:,:,1) = (1-greyness*(surfm'));
     srf(:,:,2) = (1-greyness*(surfm'));
     srf(:,:,3) = (1-greyness*(surfm'));
 
-    atmos_nun = 1;
+    atmos_nun = 2;
     atmos_l = 1;
     state  = readhdf5(fname, atmos_nun, n, m, atmos_l);
 
     T0  = 15.0;   %//! reference temperature
-    RtD = 180/pi;
-
-    Ta  = reshape(T0 + state,n,m);
+    q0  = 0.0015;
+    RtD = 180/pi;    
+    
+    Ta  = T0 + squeeze(state(1,:,:,:));
+    qa  = q0 + squeeze(state(2,:,:,:));
     Tz  = mean(Ta,1); % zonal mean
 
     figure(10)
@@ -53,5 +61,21 @@ function [] = plot_atmos(fname)
     xlabel('Longitude')
     ylabel('Latitude')
     exportfig('atmosTemp.eps')
+    
+    figure(12)
+
+    img = 1000 * qa';
+    contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
+    image(RtD*x,RtD*(y),srf,'AlphaData',.2);
+    c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1);
+    colorbar
+    caxis([min(min(qa)),max(max(qa))])
+    hold off
+    drawnow
+    title('Atmospheric humidity (g / kg)')
+    xlabel('Longitude')
+    ylabel('Latitude')
+    exportfig('atmosq.eps')
+
 
 end

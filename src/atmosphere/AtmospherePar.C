@@ -262,9 +262,14 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
                 if ( (*surfmask_)[j*n_+i] == 0 ) // non-land
                 {
                     if (xx == ATMOS_TT_)
+                    {
                         block->co.push_back(1.0);
+                    }
                     else if (xx == ATMOS_QQ_)
-                        block->co.push_back(oceanDep);
+                    {
+                        //block->co.push_back(oceanDep);
+                        block->co.push_back(0.0);
+                    }
                     
                     block->jco.push_back(ocean->interface_row(i,j,T));
                     el_ctr++;
@@ -466,6 +471,10 @@ void AtmospherePar::computeJacobian()
 
     // Finalize matrix
     CHECK_ZERO(jac_->FillComplete());
+
+#ifdef DEBUGGING_NEW
+    DUMPMATLAB("atmos_jac", *jac_);
+#endif
 }
 
 //==================================================================

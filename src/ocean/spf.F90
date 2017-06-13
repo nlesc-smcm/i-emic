@@ -849,9 +849,9 @@ SUBROUTINE yderiv(type,atom)
      cosdx2i = (1.0/(cos(y)*dx))**2
      DO j = 1,m
         DO i = 1,n
-           atom(i,j,:,2) =     dat(j) * cosdx2i(j)
-           atom(i,j,:,5) =-2 * dat(j) * cosdx2i(j)
-           atom(i,j,:,8) =     dat(j) * cosdx2i(j)
+           atom(i,j,:,2) =      dat(j) * cosdx2i(j)
+           atom(i,j,:,5) = -2 * dat(j) * cosdx2i(j)
+           atom(i,j,:,8) =      dat(j) * cosdx2i(j)
         ENDDO
      ENDDO
   CASE(3)

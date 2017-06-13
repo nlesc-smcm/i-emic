@@ -371,6 +371,9 @@ public:
                 double scalarA, Atom &A,
                 double scalarB, Atom &B,
                 double scalarC, Atom &C);
+
+    void scale(double scalarThis);
+
 };
 
 #endif

@@ -362,7 +362,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     as2std_surf =
         Teuchos::rcp(new Epetra_Import(*AssemblySurfaceMap, *StandardSurfaceMap));
-
+    
     Teuchos::RCP<Epetra_Map> lev_map_loc    = wind_map_loc;
     Teuchos::RCP<Epetra_Map> intlev_map_loc = domain->CreateAssemblyMap(1,false);
     Teuchos::RCP<Epetra_Vector> taux_loc    = Teuchos::rcp(new Epetra_Vector(*wind_map_loc));
