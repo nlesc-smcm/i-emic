@@ -164,8 +164,8 @@ void Atmosphere::setup()
     // Filling coefficients (humidity specific)
     double nuq = (rhoo_ / rhoa_) * (hdim_ / hdimq_);
     double eta = (rhoa_ / rhoo_) * ce_ * uw_;
-    Phv_       = kappa_ / (udim_ * r0dim_);
-    nuqeta_    = nuq * eta;
+    Phv_       = qdim_ * kappa_ / (udim_ * r0dim_);
+    nuqeta_    = qdim_ * nuq * eta;
     
     // Parameters for saturation humidity over ocean and ice
     double c1 = 3.8e-3;  // (kg / kg)
@@ -504,6 +504,7 @@ void Atmosphere::discretize(int type, Atom &atom)
     switch (type)
     {
         double val2, val4, val5, val6, val8;
+        double cosdx2i, dy2i;
     case 1: // tc (without land points)
         atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
 
@@ -518,7 +519,6 @@ void Atmosphere::discretize(int type, Atom &atom)
         atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
         break;
     case 3: // txx
-        double cosdx2i;
         for (int i = 1; i != n_+1; ++i)
             for (int j = 1; j != m_+1; ++j)
             {
@@ -536,7 +536,7 @@ void Atmosphere::discretize(int type, Atom &atom)
             }
         break;
     case 4: // tyy
-        double dy2i = 1.0 / pow(dy_, 2);
+        dy2i = 1.0 / pow(dy_, 2);
         for (int i = 1; i != n_+1; ++i)
             for (int j = 1; j != m_+1; ++j)
             {
@@ -553,7 +553,6 @@ void Atmosphere::discretize(int type, Atom &atom)
             }
         break;
     case 5: // qxx
-        double cosdx2i;
         for (int i = 1; i != n_+1; ++i)
             for (int j = 1; j != m_+1; ++j)
             {
@@ -571,7 +570,7 @@ void Atmosphere::discretize(int type, Atom &atom)
             }
         break;
     case 6: // tyy
-        double dy2i = 1.0 / pow(dy_, 2);
+        dy2i = 1.0 / pow(dy_, 2);
         for (int i = 1; i != n_+1; ++i)
             for (int j = 1; j != m_+1; ++j)
             {
