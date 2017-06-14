@@ -147,7 +147,6 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
     setup();
 
     INFO("Atmosphere: constructor... done");
-
 }
 
 //==================================================================
@@ -342,6 +341,25 @@ void Atmosphere::setOceanTemperature(std::vector<double> const &surftemp)
 }
 
 //-----------------------------------------------------------------------------
+void Atmosphere::intcondCoeff(std::vector<double> &val, std::vector<double> &ind)
+{
+    // clear arrays
+    val.clear();
+    ind.clear();
+
+    // Obtain values and indices to compute integral
+    // 1-based!
+    for (int k = 1; k <= l_; ++k)
+        for (int j = 1; j <= m_; ++j)
+            for (int i = 1; i <= n_; ++i)
+            {
+                // dx and dy are not necessary but I leave them in anyway
+                val.push_back(cos(yc_[j]) * dx_ * dy_);
+                ind.push_back(find_row(i,j,k, ATMOS_QQ_));
+            }
+}
+
+//-----------------------------------------------------------------------------
 void Atmosphere::computeJacobian()
 {
     TIMER_START("Atmosphere: compute Jacobian...");
@@ -373,9 +391,11 @@ void Atmosphere::computeJacobian()
     // adjust parameter for continuation
     double nuqetaCont = nuqeta_ * comb_ * humf_;
     qxx.update(Phv_, Phv_, qyy, -nuqetaCont, qc);
+
+    discretize(2, qc);   
     
     // Set humidity atom in dependency grid
-    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
+    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qc);
 
     boundaries();
     assemble();
@@ -493,6 +513,9 @@ void Atmosphere::forcing()
                 
                 // idealized
                 value = comb_ * humf_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+
+                // --> hack
+                value = 0.0;
             }
             frc_[forcingRow-1] = value;
         }

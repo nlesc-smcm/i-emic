@@ -8,12 +8,6 @@ function [state] = plot_atmos(fname)
     surfm      = landm(2:n+1,2:m+1,l+1);    %Only interior surface points
     landm_int  = landm(2:n+1,2:m+1,2:l+1);
 
-    dx = (xmax-xmin)/n
-    dy = (ymax-ymin)/m
-    x(2)-x(1)
-    y(2)-y(1)
-    return
-    
     srf = [];
     greyness = .85;
     srf(:,:,1) = (1-greyness*(surfm'));

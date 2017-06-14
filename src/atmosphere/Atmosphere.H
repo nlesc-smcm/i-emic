@@ -254,6 +254,9 @@ public:
     double getDqDTo() { return comb_ * humf_ *
             nuqeta_ * dqso_ / qdim_; }
 
+    //! Get the dA_{ij} coefficients for surface integrals with q
+    void intcondCoeff(std::vector<double> &val, std::vector<double> &ind);
+
     //! --------------------------------------------------------
     //! Set an external 2D surface mask in the atmosphere.
     //! The size of the vector should be n*m.

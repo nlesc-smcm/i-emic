@@ -100,6 +100,12 @@ private:
     //! parallel atmosphere sol (overlapping)
     Teuchos::RCP<Epetra_Vector> localSol_;
 
+    //! row in rhs and matrix for integral condition q
+    int rowIntCon_;
+
+    //! coefficients for integral condition
+    Teuchos::RCP<Epetra_Vector> intcondCoeff_;
+
     //! Atmosphere temperature importer
     Teuchos::RCP<Epetra_Import> atmosTimporter_;
 

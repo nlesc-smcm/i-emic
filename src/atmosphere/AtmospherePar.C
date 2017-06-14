@@ -126,6 +126,39 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     atmosTimporter_ =
         Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
 
+    //------------------------------------------------------------------
+    // Create parallelized integration coef. for integral condition q
+    //------------------------------------------------------------------
+
+    rowIntCon_ = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                 n_-1, m_-1, l_-1, ATMOS_QQ_);
+
+    intcondCoeff_ = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+    Teuchos::RCP<Epetra_Vector> intcondLocal =
+        Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+
+    std::vector<double> vals, inds;
+
+    atmos_->intcondCoeff(vals, inds);
+
+    for (size_t idx = 0; idx != inds.size(); ++idx)
+    {
+        (*intcondLocal)[inds[idx]-1] = vals[idx];
+    }
+
+    domain_->Assembly2Solve(*intcondLocal, *intcondCoeff_);
+
+#ifdef DEBUGGING_NEW
+    std::stringstream ss1, ss2;
+    ss1 << "intcondq" << comm_->MyPID() << ".txt";
+    ss2 << "intcondq" << comm_->MyPID() << "orig.txt";
+    Utils::print(intcondCoeff_, ss1.str());
+    Utils::print(vals, ss2.str());
+    
+#endif
+
+    getchar();
+
     INFO("AtmospherePar: constructor done");
 }
 
