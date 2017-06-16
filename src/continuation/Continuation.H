@@ -352,11 +352,11 @@ createTangent(char mode)
 
         // Compute stateDot = (state1 - state0)/ds0
         stateDot_->Update(-1.0 / ds0, *storage_.state0, 1.0 / ds0);
-
+        
         // Compute parDot = (par1 - par0)/ds
         par_    = model_->getPar();      // update our par_
         parDot_ = (par_ - par0) / ds0;
-
+        
     }
     else if (mode == 'E')  // Euler
     {
@@ -469,7 +469,7 @@ int Continuation<Model, ParameterList>::
 newtonCorrector()
 {
     INFO("Continuation: Newton corrector...");
-    char      mode;              // mode for ComputeDFDPar()
+    char      mode;          // mode for ComputeDFDPar()
     VectorPtr stateDir;      // direction for the state
     VectorPtr y;             // solution of solve with dFdPar
     VectorPtr z;             // solution of solve with F

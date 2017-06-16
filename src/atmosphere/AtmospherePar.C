@@ -157,7 +157,8 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     
 #endif
 
-    getchar();
+HIERNA:
+    acceptance test schrijven die intcondCoeff_->Dot(state_) == 0 vraagt
 
     INFO("AtmospherePar: constructor done");
 }
