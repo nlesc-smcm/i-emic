@@ -153,12 +153,8 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     ss1 << "intcondq" << comm_->MyPID() << ".txt";
     ss2 << "intcondq" << comm_->MyPID() << "orig.txt";
     Utils::print(intcondCoeff_, ss1.str());
-    Utils::print(vals, ss2.str());
-    
+    Utils::print(vals, ss2.str());    
 #endif
-
-HIERNA:
-    acceptance test schrijven die intcondCoeff_->Dot(state_) == 0 vraagt
 
     INFO("AtmospherePar: constructor done");
 }
@@ -200,9 +196,16 @@ void AtmospherePar::computeRHS()
         rhs_tmp[i] = (*localRHS)[i];
     }
 
-    // set datamember
+    // assemble distributed rhs into global rhs
     domain_->Assembly2Solve(*localRHS_, *rhs_);
 
+    // set integral condition RHS
+    double intcond = Utils::dot(intcondCoeff_, state_);
+
+    if (rhs_->Map().MyGID(rowIntCon_))
+        (*rhs_)[rhs_->Map().LID(rowIntCon_)] = intcond;
+    
+    
     INFO("AtmospherePar: computeRHS done");
 }
 
@@ -285,7 +288,7 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
     int T = 5; // in THCM temperature is the fifth unknown
 
     // Get dependency of humidity on ocean temperature
-    double oceanDep = atmos_->getDqDTo();
+    double dqdt = atmos_->getDqDTo();
         
         // loop over our unknowns
     for (int j = 0; j != m_; ++j)
@@ -302,7 +305,7 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
                     else if (xx == ATMOS_QQ_)
                     {
                         //block->co.push_back(oceanDep);
-                        block->co.push_back(0.0);
+                        block->co.push_back(dqdt);
                     }
                     
                     block->jco.push_back(ocean->interface_row(i,j,T));
@@ -503,6 +506,53 @@ void AtmospherePar::computeJacobian()
         }
     }
 
+    //------------------------------------------------------------------
+    // Implementation of integral condition
+    //------------------------------------------------------------------
+    int root = comm_->NumProc()-1;
+    Teuchos::RCP<Epetra_MultiVector> intcondGlob =
+        Utils::Gather(*intcondCoeff_, root);
+
+    // If we have row rowIntCon_
+    if (jac_->MyGRID(rowIntCon_))
+    {
+        if (comm_->MyPID() != root)
+        {
+            ERROR("Q-integral condition should be on last processor!", __FILE__, __LINE__);
+        }
+
+        int len = n_ * m_ * l_; 
+        int icinds[len];
+        double icvals[len];
+
+        int pos=0;
+        int gid;
+        for (int i = 0; i != n_; ++i)
+            for (int j = 0; j != m_; ++j)
+                for (int k = 0; k != l_; ++k)
+                {
+                    gid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
+                    icinds[pos] = gid;
+                    icvals[pos] = (*intcondGlob)[0][gid];
+                    pos++;
+                }
+
+        if (jac_->Filled())
+        {
+            CHECK_NONNEG(jac_->ReplaceGlobalValues(rowIntCon_, len, icvals, icinds));
+        }
+        else
+        {
+            CHECK_NONNEG(jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds));
+        }
+    }
+    else if (comm_->MyPID() == root)
+    {
+        ERROR("Q-integral condition should be on last processor!", __FILE__, __LINE__);
+    }
+
+    //------------------------------------------------------------------
+
     // Finalize matrix
     CHECK_ZERO(jac_->FillComplete());
 
@@ -641,10 +691,16 @@ void AtmospherePar::createMatrixGraph()
                 insert_graph_entry(indices, pos, i, j-1, k, ATMOS_QQ_, N, M, L);
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_QQ_, N, M, L);
 
+                // Skip the final insertion when we are at rowIntCon_
+                if ( (gid0 + ATMOS_QQ_) == rowIntCon_ ) continue; 
+                    
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
                                gid0 + ATMOS_QQ_, pos, indices));
             }
+
+    // Create graph entries for integral condition row
+    
 
     // Finalize matrixgraph
     CHECK_ZERO(matrixGraph_->FillComplete());

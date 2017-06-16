@@ -3,27 +3,57 @@
 <!--                                   -->
 <!-- ********************************* -->
 
+<!-- These parameters will overwrite the corresponding parameters in the  -->
+<!-- submodels ocean and atmosphere.                                      -->
 <ParameterList name="CoupledModel parameters">
 
   <!-- Specify whether the coupled model should initialize with  -->
   <!-- old states (true) or with a trivial solution (false).     -->
   <!-- The sub-models maintain names for the input files.        -->
-  <Parameter name="Use existing state" type="bool" value="false"/>
+  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Save state" type="bool" value="true"/>
+
+  <!-- To keep track of each converged state, enable this.    -->
+  <!-- Only useful when you enable <Save state>               -->
+  <Parameter name="Store everything" type="bool" value="false" />
 
   <!-- Continuation parameter -->
   <!-- Options:  "Combined Forcing" -->
   <!--           "Solar Forcing"    -->
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
+  <!--           "Humidity Forcing"     -->
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
-  <!-- Select the solving and synchronization mode.                                    -->
-  <!-- Synchronization depends on the solving method.                                  -->
-  <!--  mode 'D': decoupled, off-diagonal blocks are ignored in the matrix and prec,   -->
-  <!--            and synchronization of states occur at post processing.              -->
-  <!--  mode 'C': coupled, off-diagonal blocks are included in the matrix and prec,    -->
-  <!--            and synchronization of states occur at every RHS and J computation.  -->
-  <Parameter name="Solving scheme" type="char" value="C"/>
 
+  <!-- We determine the horizontal extend and grid size at the coupled level. -->
+  <!-- Depth and other dimensions are specific for each submodel.             -->
+
+  <!-- western domain bound -->
+  <Parameter name="Global Bound xmin" type="double" value="286"/>
+  <!-- eastern domain bound -->
+  <Parameter name="Global Bound xmax" type="double" value="350"/>
+  <!-- southern domain bound -->
+  <Parameter name="Global Bound ymin" type="double" value="10"/>
+  <!-- northern domain bound -->
+  <Parameter name="Global Bound ymax" type="double" value="74"/>
+  <!-- global number of grid points in x-direction -->
+  <Parameter name="Global Grid-Size n" type="int" value="16"/>
+  <!-- global number of grid points in y-direction -->
+  <Parameter name="Global Grid-Size m" type="int" value="16"/>
+
+  <!-- periodic boundary conditions in x-direction -->
+  <Parameter name="Periodic" type="bool" value="false"/>
+
+  <!-- Starting parameters -->
+  <Parameter name="Combined Forcing"    type="double" value="0.0"/>
+  <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+  <Parameter name="Salinity Forcing"    type="double" value="0.2"/>
+  <Parameter name="Wind Forcing"        type="double" value="1.0"/>
+  <Parameter name="Temperature Forcing" type="double" value="0.0"/>
+  <Parameter name="Humidity Forcing"    type="double" value="1.0"/>
+
+  <!-- D: decoupled -->
+  <Parameter name="Solving scheme" type="char" value="C"/>
 
 </ParameterList>

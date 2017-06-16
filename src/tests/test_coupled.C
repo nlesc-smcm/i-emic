@@ -6,6 +6,52 @@ namespace // local unnamed namespace (similar to static in C)
     std::shared_ptr<Ocean>         ocean;
     std::shared_ptr<AtmospherePar> atmos;
     std::shared_ptr<CoupledModel>  coupledModel;
+    RCP<Teuchos::ParameterList> oceanParams;
+    RCP<Teuchos::ParameterList> atmosphereParams;
+    RCP<Teuchos::ParameterList> coupledmodelParams;
+    RCP<Teuchos::ParameterList> continuationParams;
+}
+
+//------------------------------------------------------------------
+TEST(ParameterLists, Initialization)
+{
+    bool failed = false;
+    try
+    {
+        // Create parameter object for Ocean
+        oceanParams = rcp(new Teuchos::ParameterList);
+        updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+        oceanParams->setName("Ocean parameters");
+
+        // Create parameter object for Atmosphere
+        atmosphereParams = rcp(new Teuchos::ParameterList);
+        updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+        atmosphereParams->setName("Atmosphere parameters");
+
+        // Create parameter object for CoupledModel
+        coupledmodelParams = rcp(new Teuchos::ParameterList);
+        updateParametersFromXmlFile("coupledmodel_params.xml", coupledmodelParams.ptr());
+        coupledmodelParams->setName("CoupledModel parameters");
+
+        // Create parameter object for Continuation
+        continuationParams = rcp(new Teuchos::ParameterList);
+        updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
+        continuationParams->setName("Continuation parameters");
+
+        INFO("Overwriting:");
+        // The Continuation and CoupledModel parameterlists overwrite settings
+        Utils::overwriteParameters(oceanParams,        coupledmodelParams);
+        Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
+
+        Utils::overwriteParameters(oceanParams,        continuationParams);
+        Utils::overwriteParameters(atmosphereParams,   continuationParams);
+        Utils::overwriteParameters(coupledmodelParams, continuationParams);
+    }
+    catch (...)
+    {
+        failed = true;
+    }
+    EXPECT_EQ(failed,false);
 }
 
 //------------------------------------------------------------------
@@ -15,10 +61,6 @@ TEST(Ocean, Initialization)
     try
     {
         // Create parallel Ocean
-        RCP<Teuchos::ParameterList> oceanParams =
-            rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-
         ocean = std::make_shared<Ocean>(comm, oceanParams);
     }
     catch (...)
@@ -36,10 +78,6 @@ TEST(Atmosphere, Initialization)
     try
     {
         // Create atmosphere
-        RCP<Teuchos::ParameterList> atmosphereParams =
-            rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
-
         atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
     }
     catch (...)
@@ -57,10 +95,7 @@ TEST(CoupledModel, Initialization)
     try
     {
         // Create coupledmodel
-        RCP<Teuchos::ParameterList> coupledModelParams =
-            rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("coupledmodel_params.xml", coupledModelParams.ptr());
-        coupledModel = std::make_shared<CoupledModel>(ocean,atmos,coupledModelParams);
+        coupledModel = std::make_shared<CoupledModel>(ocean,atmos,coupledmodelParams);
     }
     catch (...)
     {
@@ -328,7 +363,7 @@ TEST(CoupledModel, Newton)
     solV->PutScalar(0.0);
 
     // set parameter
-    coupledModel->setPar(0.01);
+    coupledModel->setPar(0.005);
 
     // try to converge
     int maxit = 10;
@@ -372,13 +407,27 @@ TEST(CoupledModel, Newton)
         INFO(" atmos ||r|| / ||b||  = " << Utils::norm(y->Second()));
         INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
 
-        if (Utils::norm(coupledModel->getRHS('V')) < 0.001)
+        if (Utils::norm(coupledModel->getRHS('V')) < 0.01)
             break;
     }
 
-    EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.001);
+    EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.01);
     EXPECT_LT(niter, 10);
     INFO("CoupledModel, Newton converged in " << niter << " iterations");
+}
+
+//------------------------------------------------------------------
+// 1st integral condition test for atmosphere
+TEST(CoupledModel, AtmosphereIntegralCondition1)
+{
+    Teuchos::RCP<Epetra_Vector> intCoeff = atmos->getIntCoeff();
+    Teuchos::RCP<Epetra_Vector> atmosX   = atmos->getState('C');
+
+    double result = Utils::dot(intCoeff, atmosX);
+
+    INFO("  atmosphere integral condition on q: " << result);
+    
+    EXPECT_NEAR(result, 0.0, 1e-7);
 }
 
 //------------------------------------------------------------------
@@ -388,16 +437,25 @@ TEST(CoupledModel, Continuation)
     bool failed = false;
     try
     {
-        // Create continuation parameters
-        Teuchos::RCP<Teuchos::ParameterList> cparams =
-            Teuchos::rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("continuation_params.xml",
-                                    cparams.ptr() );
-
+        // One step in an arclength continuation
+        // initialize state in model
+        std::shared_ptr<Combined_MultiVec> stateV =
+            coupledModel->getState('V');
+        
+        stateV->PutScalar(0.0);
+        
+        std::shared_ptr<Combined_MultiVec> solV =
+            coupledModel->getSolution('V');
+        
+        solV->PutScalar(0.0);
+        
+        // set initial parameter
+        coupledModel->setPar(0.0);
+        
         // Create continuation
         Continuation<std::shared_ptr<CoupledModel>,
                      Teuchos::RCP<Teuchos::ParameterList> >
-            continuation(coupledModel, cparams);
+            continuation(coupledModel, continuationParams);
 
         // Run continuation
         continuation.run();
@@ -408,6 +466,20 @@ TEST(CoupledModel, Continuation)
     }
 
     EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+// 2nd integral condition test
+TEST(CoupledModel, AtmosphereIntegralCondition2)
+{
+    Teuchos::RCP<Epetra_Vector> intCoeff = atmos->getIntCoeff();
+    Teuchos::RCP<Epetra_Vector> atmosX   = atmos->getState('C');
+
+    double result = Utils::dot(intCoeff, atmosX);
+
+    INFO("  atmosphere integral condition on q: " << result);
+
+    EXPECT_NEAR(result, 0.0, 1e-7);
 }
 
 //------------------------------------------------------------------

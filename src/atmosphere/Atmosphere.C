@@ -384,7 +384,7 @@ void Atmosphere::computeJacobian()
     Atom qxx(n_, m_, l_, np_);
     Atom qyy(n_, m_, l_, np_);
 
-    discretize(1, qc);   // over land no evaporation
+    discretize(1, qc );  // over land no evaporation
     discretize(5, qxx);  // longitudinal diffusion
     discretize(6, qyy);  // meridional diffusion
 
@@ -392,10 +392,10 @@ void Atmosphere::computeJacobian()
     double nuqetaCont = nuqeta_ * comb_ * humf_;
     qxx.update(Phv_, Phv_, qyy, -nuqetaCont, qc);
 
-    discretize(2, qc);   
+    // discretize(2, qc);
     
     // Set humidity atom in dependency grid
-    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qc);
+    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
 
     boundaries();
     assemble();
@@ -512,10 +512,8 @@ void Atmosphere::forcing()
                 value -= comb_ * humf_ * nuqeta_ * P_;
                 
                 // idealized
-                value = comb_ * humf_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+                // value = comb_ * humf_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));                
 
-                // --> hack
-                value = 0.0;
             }
             frc_[forcingRow-1] = value;
         }
@@ -533,24 +531,26 @@ void Atmosphere::discretize(int type, Atom &atom)
 
         // Apply land mask
         if (use_landmask_)
-            for (int j = 1; j <= m_; ++j)
-                for (int i = 1; i <= n_; ++i)
-                    if ((*surfmask_)[(j-1)*n_+(i-1)])
-                        atom.set(i, j, l_, 5, 0.0);
+            for (int k = 1; k <= l_; ++k)
+                for (int j = 1; j <= m_; ++j)
+                    for (int i = 1; i <= n_; ++i)
+                        if ((*surfmask_)[(j-1)*n_+(i-1)])
+                            atom.set(i, j, k, 5, 0.0);
         break;
+        
     case 2: // tc2 (with land points)
         atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
         break;
     case 3: // txx
-        for (int i = 1; i != n_+1; ++i)
-            for (int j = 1; j != m_+1; ++j)
+        for (int i = 1; i <= n_; ++i)
+            for (int j = 1; j <= m_; ++j)
             {
                 cosdx2i = 1.0 / pow(cos(yc_[j]) * dx_, 2);
                 val2 = datc_[j] * cosdx2i;
                 val8 = val2;
                 val5 = -2 * val2;
 
-                for (int k = 1; k != l_+1; ++k)
+                for (int k = 1; k <= l_; ++k)
                 {
                     atom.set(i, j, k, 2, val2);
                     atom.set(i, j, k, 8, val8);
@@ -560,14 +560,14 @@ void Atmosphere::discretize(int type, Atom &atom)
         break;
     case 4: // tyy
         dy2i = 1.0 / pow(dy_, 2);
-        for (int i = 1; i != n_+1; ++i)
-            for (int j = 1; j != m_+1; ++j)
+        for (int i = 1; i <= n_; ++i)
+            for (int j = 1; j <= m_; ++j)
             {
                 val4 = dy2i * datv_[j-1] * cos(yv_[j-1]) / cos(yc_[j]);
                 val6 = dy2i * datv_[j]   * cos(yv_[j])   / cos(yc_[j]);
                 val5 = -(val4 + val6);
 
-                for (int k = 1; k != l_+1; ++k)
+                for (int k = 1; k <= l_; ++k)
                 {
                     atom.set(i, j, k, 4, val4);
                     atom.set(i, j, k, 6, val6);
@@ -576,15 +576,15 @@ void Atmosphere::discretize(int type, Atom &atom)
             }
         break;
     case 5: // qxx
-        for (int i = 1; i != n_+1; ++i)
-            for (int j = 1; j != m_+1; ++j)
+        for (int i = 1; i <= n_; ++i)
+            for (int j = 1; j <= m_; ++j)
             {
                 cosdx2i = 1.0 / pow(cos(yc_[j]) * dx_, 2);
                 val2 = cosdx2i;
                 val8 = val2;
                 val5 = -2 * val2;
 
-                for (int k = 1; k != l_+1; ++k)
+                for (int k = 1; k <= l_; ++k)
                 {
                     atom.set(i, j, k, 2, val2);
                     atom.set(i, j, k, 8, val8);
@@ -594,14 +594,14 @@ void Atmosphere::discretize(int type, Atom &atom)
         break;
     case 6: // tyy
         dy2i = 1.0 / pow(dy_, 2);
-        for (int i = 1; i != n_+1; ++i)
-            for (int j = 1; j != m_+1; ++j)
+        for (int i = 1; i <= n_; ++i)
+            for (int j = 1; j <= m_; ++j)
             {
                 val4 = dy2i * cos(yv_[j-1]) / cos(yc_[j]);
                 val6 = dy2i * cos(yv_[j])   / cos(yc_[j]);
                 val5 = -(val4 + val6);
 
-                for (int k = 1; k != l_+1; ++k)
+                for (int k = 1; k <= l_; ++k)
                 {
                     atom.set(i, j, k, 4, val4);
                     atom.set(i, j, k, 6, val6);

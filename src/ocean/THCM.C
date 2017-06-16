@@ -876,8 +876,9 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         CHECK_ZERO(localJac->FillComplete());
 
         // redistribute according to SolveMap (may be load-balanced)
-        domain->Standard2Solve(*localDiagB, *diagB);
-        domain->Standard2Solve(*localJac, *Jac);
+        // standard and solve maps are equal
+        domain->Standard2Solve(*localDiagB, *diagB); // no effect
+        domain->Standard2Solve(*localJac, *Jac);     // no effect
         CHECK_ZERO(Jac->FillComplete());
 
         if (scaling_type == "THCM")
@@ -1576,11 +1577,11 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
             ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
         }
         int lid = B.Map().LID(lastrow);
-        B[lid] = 0.0; // no more time-dependence for this S-point
+        B[lid]  = 0.0;   // no more time-dependence for this S-point
         int len = N*M*L;
+        
         double *values = new double[len];
-        int *indices = new int[len];
-
+        int *indices   = new int[len];
 
         int pos=0;
         for (int i=0;i<N;i++)
@@ -1888,7 +1889,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
                 insert_graph_entry(indices,pos,i,j,k-1,TT,N,M,L);
                 insert_graph_entry(indices,pos,i,j,k+1,TT,N,M,L);
 #ifndef NO_INTCOND
-                if ((sres==0)&&((gid0+SS)==rowintcon_)) break;
+                if ((sres==0)&&((gid0+SS)==rowintcon_)) continue;
 #endif
                 DEBUG_GRAPH_ROW(SS)
                     CHECK_ZERO(graph->InsertGlobalIndices(gid0+SS,pos,indices));

@@ -213,6 +213,9 @@ public:
 
     //! Get temperature at interface (which is everywhere at this point)
     Teuchos::RCP<Epetra_Vector> interfaceT();
+    
+    //! Get integral coefficients
+    Teuchos::RCP<Epetra_Vector> getIntCoeff() { return intcondCoeff_; } 
 
     Teuchos::RCP<Epetra_BlockMap> getStandardSurfaceMap() {return standardSurfaceMap_;}
     Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() {return assemblySurfaceMap_;}
@@ -245,8 +248,7 @@ private:
     int saveStateToFile(std::string const &name);
 
     //! Copy HDF5
-    void copyFiles();
-    
+    void copyFiles();    
 
 };
 

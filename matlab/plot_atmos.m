@@ -58,7 +58,7 @@ function [state] = plot_atmos(fname)
     
     figure(12)
 
-    img = 1000 * qa';
+    img = qa';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
     c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1);
