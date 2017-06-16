@@ -700,7 +700,22 @@ void AtmospherePar::createMatrixGraph()
             }
 
     // Create graph entries for integral condition row
-    
+    if (standardMap_->MyGID(rowIntCon_))
+    {
+        int len = n_ * m_ * l_; 
+        int icinds[len];
+        int gcid;
+        pos = 0;
+        for (int i = 0; i != n_; ++i)
+            for (int j = 0; j != m_; ++j)
+                for (int k = 0; k != l_; ++k)
+                {
+                    gcid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
+                    icinds[pos] = gcid;
+                    pos++;
+                }
+        CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(rowIntCon_, len, icinds));
+    }
 
     // Finalize matrixgraph
     CHECK_ZERO(matrixGraph_->FillComplete());
