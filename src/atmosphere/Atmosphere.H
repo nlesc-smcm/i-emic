@@ -90,6 +90,12 @@ class Atmosphere
     // Solution vector
     std::shared_ptr<std::vector<double> > sol_;
 
+    // Integral condition coefficients (only in serial case)
+    std::shared_ptr<std::vector<double> > intcondCoeff_;
+
+    // Integral condition row (only in serial case)
+    int rowIntCon_;
+
     // CRS matrix arrays storing the Jacobian
     std::vector<double> co_;
     std::vector<int> jco_;

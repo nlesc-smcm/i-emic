@@ -5,7 +5,7 @@
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
 /**********************************************************************
- * Modified and Extended by Erik, Utrecht University 2014/15          *
+ * Modified and extended by Erik, Utrecht University 2014/15/16/17    *
  * contact: t.e.mulder@uu.nl                                          *
  **********************************************************************/
 #include "Utils.H"
@@ -39,7 +39,6 @@ void Utils::update(double scalarA, std::vector<double> &A,
     // update B
     daxpy_(&N, &scalarA, &A[0], &incX, &B[0], &incY);
 }
-
 
 //! Print std vector
 void Utils::print(std::vector<double> const &vec, std::string const &fname)

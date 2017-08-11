@@ -146,6 +146,23 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
     // More factorized setup stuff
     setup();
 
+    // ------------------------------------------------------------------
+    // Create serial integration coefficients for integral condition on q
+    // ------------------------------------------------------------------
+    rowIntCon_ = find_row(n_, m_, l_, ATMOS_QQ_); // use the final q-row (1-based!!)
+
+    // Initialize integral condition coefficients
+    intcondCoeff_ = std::make_shared<std::vector<double> >(dim_, 0.0);
+    
+    std::vector<double> vals, inds; // obtain indices and values for integration
+    intcondCoeff(vals, inds);
+
+    // Fill coefficients
+    for (size_t idx = 0; idx != inds.size(); ++idx)
+    {
+        (*intcondCoeff_)[inds[idx]-1] = vals[idx];
+    }
+
     INFO("Atmosphere: constructor... done");
 }
 
@@ -440,6 +457,17 @@ void Atmosphere::computeRHS()
                 value = matvec(row) + frc_[row-1];
                 (*rhs_)[row-1] = value;
             }
+
+    if (!parallel_)
+    {
+        // apply integral condition in final row
+        double integral;
+        int incX = 1;
+        int incY = 1;
+        integral = ddot_(&dim_, &(*intcondCoeff_)[0], &incX,
+                         &(*state_)[0], &incY);
+        (*rhs_)[rowIntCon_-1] = integral;
+    }
 
     TIMER_STOP("Atmosphere: compute RHS...");
 }

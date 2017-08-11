@@ -679,8 +679,7 @@ void AtmospherePar::createMatrixGraph()
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
                                gid0 + ATMOS_TT_, pos, indices));
 
-                // Q-equation
-                
+                // Q-equation                
                 pos = 0;
 
                 // Specify dependencies, see Atmosphere::discretize()
