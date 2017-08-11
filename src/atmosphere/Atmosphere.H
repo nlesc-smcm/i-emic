@@ -300,6 +300,8 @@ private:
     //! Assemble the dependency grid into a matrix in CRS form
     void assemble();
 
+    void initcond();
+
     //! Write vector to output file
     void write(std::vector<double> &vector, const std::string &filename);
 

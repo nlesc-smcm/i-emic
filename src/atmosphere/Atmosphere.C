@@ -465,7 +465,7 @@ void Atmosphere::computeRHS()
         int incX = 1;
         int incY = 1;
         integral = ddot_(&dim_, &(*intcondCoeff_)[0], &incX,
-                         &(*state_)[0], &incY);
+                         &(*state_)[0], &incY);        
         (*rhs_)[rowIntCon_-1] = integral;
     }
 
@@ -711,6 +711,23 @@ void Atmosphere::assemble()
 
     // final element of beg
     beg_.push_back(elm_ctr);
+
+    if (!parallel_) initcond();
+
+}
+
+//----------------------------------------------------------------------------
+void Atmosphere::initcond()
+{
+    // clear intcon row
+    int first = beg_[rowIntCon_-1];
+    int last  = beg_[rowIntCon_] - 1;
+    std::cout << "first: "    << first              << std::endl;
+    std::cout << "last : "    << last               << std::endl;
+    std::cout << "size co_ "  << co_.size()         << std::endl;
+    std::cout << co_[first-1] << " " << co_[last-1] << std::endl;
+
+    getchar();
 }
 
 //-----------------------------------------------------------------------------

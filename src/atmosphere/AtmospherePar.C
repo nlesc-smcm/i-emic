@@ -527,15 +527,25 @@ void AtmospherePar::computeJacobian()
 
         int pos=0;
         int gid;
-        for (int i = 0; i != n_; ++i)
-            for (int j = 0; j != m_; ++j)
-                for (int k = 0; k != l_; ++k)
+        for (int k = 0; k != l_; ++k)
+            for (int j = 0; j != m_; ++j)    
+                for (int i = 0; i != n_; ++i)        
                 {
                     gid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
                     icinds[pos] = gid;
                     icvals[pos] = (*intcondGlob)[0][gid];
                     pos++;
                 }
+
+#ifdef DEBUGGING_NEW
+        for (int i = 0; i != len; ++i)
+        {
+            std::cout << i << " " <<  icinds[i] << " " << icvals[i] << std::endl;
+        }
+        std::cout << std::endl;
+        getchar();
+#endif
+        
 
         if (jac_->Filled())
         {
@@ -705,19 +715,22 @@ void AtmospherePar::createMatrixGraph()
         int icinds[len];
         int gcid;
         pos = 0;
-        for (int i = 0; i != n_; ++i)
+        for (int k = 0; k != l_; ++k)
             for (int j = 0; j != m_; ++j)
-                for (int k = 0; k != l_; ++k)
+                for (int i = 0; i != n_; ++i)
                 {
                     gcid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
                     icinds[pos] = gcid;
                     pos++;
                 }
+        
         CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(rowIntCon_, len, icinds));
+
     }
 
     // Finalize matrixgraph
-    CHECK_ZERO(matrixGraph_->FillComplete());
+    CHECK_ZERO(matrixGraph_->FillComplete() );
+
 }
 
 //=============================================================================
