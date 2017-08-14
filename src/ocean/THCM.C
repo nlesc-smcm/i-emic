@@ -841,8 +841,8 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                     (std::cout) <<" while inserting/replacing values in local Jacobian" << std::endl;
                     DEBUG(" ERROR while inserting/replacing values in local Jacobian");
 
-                    INFO("GRID: "<<AssemblyMap->GID(i))
-                        INFO("number of entries: "<<numentries);
+                    INFO("GRID: " << AssemblyMap->GID(i));
+                    INFO("number of entries: " << numentries);
 
                     (std::cout) << "entries: ";
                     for (int j=0;j<numentries;j++) (std::cout) << "("<<indices[j]<<" "<<values[j]<<") ";

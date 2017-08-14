@@ -727,7 +727,6 @@ void Atmosphere::initcond()
     std::cout << "size co_ "  << co_.size()         << std::endl;
     std::cout << co_[first-1] << " " << co_[last-1] << std::endl;
 
-    getchar();
 }
 
 //-----------------------------------------------------------------------------

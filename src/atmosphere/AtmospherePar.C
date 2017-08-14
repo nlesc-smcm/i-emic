@@ -31,6 +31,10 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     dof_ = ATMOS_NUN_;
     dim_ = n_ * m_ * l_ * dof_;
 
+    // Set integral condition row
+    rowIntCon_ = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                 n_-1, m_-1, l_-1, ATMOS_QQ_);
+
     // Define domain
     xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
     xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
@@ -130,9 +134,8 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     // Create parallelized integration coef. for integral condition q
     //------------------------------------------------------------------
 
-    rowIntCon_ = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
-                                 n_-1, m_-1, l_-1, ATMOS_QQ_);
 
+    INFO("AtmospherePar constructor: integral condition in row " << rowIntCon_);
     intcondCoeff_ = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     Teuchos::RCP<Epetra_Vector> intcondLocal =
         Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -536,24 +539,24 @@ void AtmospherePar::computeJacobian()
                     icvals[pos] = (*intcondGlob)[0][gid];
                     pos++;
                 }
-
-#ifdef DEBUGGING_NEW
-        for (int i = 0; i != len; ++i)
-        {
-            std::cout << i << " " <<  icinds[i] << " " << icvals[i] << std::endl;
-        }
-        std::cout << std::endl;
-        getchar();
-#endif
         
-
+        int ierr;
         if (jac_->Filled())
         {
-            CHECK_NONNEG(jac_->ReplaceGlobalValues(rowIntCon_, len, icvals, icinds));
+            ierr = jac_->ReplaceGlobalValues(rowIntCon_, len, icvals, icinds);
         }
         else
         {
-            CHECK_NONNEG(jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds));
+            ierr = jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds);
+        }
+        if (ierr != 0)
+        {
+            INFO( "Insertion ERROR! " << ierr << " filled = "
+                  << jac_->Filled());
+            INFO( " while inserting/replacing values in local Jacobian");
+            INFO( "  GRID: " << rowIntCon_);
+            ERROR("Error during insertion/replacing of values in local Jacobian",
+                  __FILE__, __LINE__);
         }
     }
     else if (comm_->MyPID() == root)
@@ -569,6 +572,7 @@ void AtmospherePar::computeJacobian()
 #ifdef DEBUGGING_NEW
     DUMPMATLAB("atmos_jac", *jac_);
 #endif
+            
 }
 
 //==================================================================
@@ -725,12 +729,19 @@ void AtmospherePar::createMatrixGraph()
                 }
         
         CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(rowIntCon_, len, icinds));
-
     }
 
     // Finalize matrixgraph
     CHECK_ZERO(matrixGraph_->FillComplete() );
 
+#ifdef DEBUGGING_NEW
+    std::ofstream file;
+    file.open("atmos_graph");
+    INFO("Integral condition in row " << rowIntCon_);
+    matrixGraph_->PrintGraphData(file);
+    file.close();
+#endif
+    
 }
 
 //=============================================================================

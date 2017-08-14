@@ -194,6 +194,8 @@ TEST(Atmosphere, Jacobian)
         atmos->computeJacobian();
         atmosPar->computeJacobian();
 
+        getchar();
+
         // Obtain vector and randomize
         Teuchos::RCP<Epetra_Vector> x = atmosPar->getState('C');
         x->Random();
