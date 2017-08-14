@@ -722,11 +722,12 @@ void Atmosphere::initcond()
     // clear intcon row
     int first = beg_[rowIntCon_-1];
     int last  = beg_[rowIntCon_] - 1;
+
     std::cout << "first: "    << first              << std::endl;
     std::cout << "last : "    << last               << std::endl;
     std::cout << "size co_ "  << co_.size()         << std::endl;
     std::cout << co_[first-1] << " " << co_[last-1] << std::endl;
-
+    
 }
 
 //-----------------------------------------------------------------------------

@@ -1599,13 +1599,24 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
           indices[0]=lastrow;
           values[0]=1.0;
         */
+        
+        int ierr;
         if (A.Filled())
         {
-            CHECK_NONNEG(A.ReplaceGlobalValues(lastrow,len,values,indices));
+            ierr = A.ReplaceGlobalValues(lastrow,len,values,indices);
         }
         else
         {
-            CHECK_NONNEG(A.InsertGlobalValues(lastrow,len,values,indices));
+            ierr = A.InsertGlobalValues(lastrow,len,values,indices);
+        }
+        if (ierr != 0)
+        {
+            INFO( "Insertion ERROR! " << ierr << " filled = "
+                  << A.Filled());
+            INFO( " while inserting/replacing values in local Jacobian");
+            INFO( "  GRID: " << lastrow);
+            ERROR("Error during insertion/replacing of values in local Jacobian",
+                  __FILE__, __LINE__);
         }
 
         delete []  values;
