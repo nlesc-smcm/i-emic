@@ -146,12 +146,10 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
     // More factorized setup stuff
     setup();
 
-    // ------------------------------------------------------------------
-    // Create serial integration coefficients for integral condition on q
-    // ------------------------------------------------------------------
+    // Set row for integral condition (only in serial case)
     rowIntCon_ = find_row(n_, m_, l_, ATMOS_QQ_); // use the final q-row (1-based!!)
 
-    // Initialize integral condition coefficients
+    // Create serial integration coefficients for integral condition on q
     intcondCoeff_ = std::make_shared<std::vector<double> >(dim_, 0.0);
     
     std::vector<double> vals, inds; // obtain indices and values for integration
@@ -458,16 +456,20 @@ void Atmosphere::computeRHS()
                 (*rhs_)[row-1] = value;
             }
 
-    if (!parallel_)
+    // Check integral condition
+    if (!parallel_) 
     {
-        // apply integral condition in final row
         double integral;
         int incX = 1;
         int incY = 1;
+        
         integral = ddot_(&dim_, &(*intcondCoeff_)[0], &incX,
-                         &(*state_)[0], &incY);        
-        (*rhs_)[rowIntCon_-1] = integral;
+                         &(*state_)[0], &incY);
+
+        if (std::abs((*rhs_)[rowIntCon_-1] - integral) > 1e-7)
+            ERROR("Error in integral condition", __FILE__, __LINE__);                    
     }
+
 
     TIMER_STOP("Atmosphere: compute RHS...");
 }
@@ -545,6 +547,10 @@ void Atmosphere::forcing()
             }
             frc_[forcingRow-1] = value;
         }
+
+    // adjust to allow for integral condition in the serial case
+    if (!parallel_)
+        frc_[rowIntCon_-1] = 0.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -712,6 +718,7 @@ void Atmosphere::assemble()
     // final element of beg
     beg_.push_back(elm_ctr);
 
+    // in the serial case we replace the final row with coefficients for the integral condition
     if (!parallel_) initcond();
 
 }
@@ -719,15 +726,22 @@ void Atmosphere::assemble()
 //----------------------------------------------------------------------------
 void Atmosphere::initcond()
 {
-    // clear intcon row
-    int first = beg_[rowIntCon_-1];
-    int last  = beg_[rowIntCon_] - 1;
+    // we need to assume that the integral condition row is the final row in the matrix
+    int first = beg_[rowIntCon_ - 1];
+    int last  = beg_[rowIntCon_];
 
-    std::cout << "first: "    << first              << std::endl;
-    std::cout << "last : "    << last               << std::endl;
-    std::cout << "size co_ "  << co_.size()         << std::endl;
-    std::cout << co_[first-1] << " " << co_[last-1] << std::endl;
+    // erase intcon row in co_ and jco and end pointer in beg
+    co_.erase(co_.begin()   + first - 1, co_.begin()  + last - 1);
+    jco_.erase(jco_.begin() + first - 1, jco_.begin() + last - 1);
+    beg_.erase(beg_.begin() + rowIntCon_);
+
+    // append crs arrays with integral coefficients and column indices
+    std::vector<double> vals,inds;
+    intcondCoeff(vals, inds);
     
+    co_.insert(co_.end(), vals.begin(), vals.end());
+    jco_.insert(jco_.end(), inds.begin(), inds.end());    
+    beg_.push_back(first + vals.size());
 }
 
 //-----------------------------------------------------------------------------
