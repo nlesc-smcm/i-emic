@@ -14,6 +14,19 @@
 using ConstIterator = Teuchos::ParameterList::ConstIterator;
 //========================================================================================
 
+
+//! simple dot wrapper
+double Utils::dot(std::vector<double> &vec1, std::vector<double> &vec2)
+{
+    assert(vec1.size() == vec2.size());
+    int dim = (int) vec1.size();
+    int incX = 1;
+    int incY = 1;
+    double dot;
+    dot = ddot_(&dim, &vec1[0], &incX, &vec2[0], &incY);
+    return dot;
+}
+
 //! Obtain 2-norm of std::vector<double>
 double Utils::norm(std::vector<double> &vec)
 {

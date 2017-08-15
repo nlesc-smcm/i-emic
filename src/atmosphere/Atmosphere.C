@@ -15,8 +15,6 @@
 
 extern "C" _SUBROUTINE_(getooa)(double*, double*);
 
-extern "C" double ddot_(int *N, double *X, int *INCX, double *Y, int *INCY);
-
 //==================================================================
 // Constructor for use with parallel atmosphere
 Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
@@ -463,11 +461,10 @@ void Atmosphere::computeRHS()
         int incX = 1;
         int incY = 1;
         
-        integral = ddot_(&dim_, &(*intcondCoeff_)[0], &incX,
-                         &(*state_)[0], &incY);
+        integral = Utils::dot(*intcondCoeff_, *state_);
 
         if (std::abs((*rhs_)[rowIntCon_-1] - integral) > 1e-7)
-            ERROR("Error in integral condition", __FILE__, __LINE__);                    
+            ERROR("Error in integral condition", __FILE__, __LINE__);
     }
 
 
