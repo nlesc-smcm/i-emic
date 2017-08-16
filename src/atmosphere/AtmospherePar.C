@@ -134,7 +134,6 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     // Create parallelized integration coef. for integral condition q
     //------------------------------------------------------------------
 
-
     INFO("AtmospherePar constructor: integral condition in row " << rowIntCon_);
     intcondCoeff_ = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     Teuchos::RCP<Epetra_Vector> intcondLocal =
@@ -737,7 +736,6 @@ void AtmospherePar::createMatrixGraph()
 #ifdef DEBUGGING_NEW
     std::ofstream file;
     file.open("atmos_graph");
-    INFO("Integral condition in row " << rowIntCon_);
     matrixGraph_->PrintGraphData(file);
     file.close();
 #endif

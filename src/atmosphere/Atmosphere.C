@@ -539,8 +539,7 @@ void Atmosphere::forcing()
                 value -= comb_ * humf_ * nuqeta_ * P_;
                 
                 // idealized
-                // value = comb_ * humf_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));                
-
+                // value = comb_ * humf_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
             }
             frc_[forcingRow-1] = value;
         }

@@ -38,7 +38,7 @@ TEST(ParameterLists, Initialization)
         updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
         continuationParams->setName("Continuation parameters");
 
-        INFO("Overwriting:");
+        INFO('\n' << "Overwriting:");
         // The Continuation and CoupledModel parameterlists overwrite settings
         Utils::overwriteParameters(oceanParams,        coupledmodelParams);
         Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
@@ -46,6 +46,7 @@ TEST(ParameterLists, Initialization)
         Utils::overwriteParameters(oceanParams,        continuationParams);
         Utils::overwriteParameters(atmosphereParams,   continuationParams);
         Utils::overwriteParameters(coupledmodelParams, continuationParams);
+        INFO('\n');
     }
     catch (...)
     {
@@ -425,6 +426,7 @@ TEST(CoupledModel, AtmosphereIntegralCondition1)
 
     double result = Utils::dot(intCoeff, atmosX);
 
+    INFO("  atmosphere state norm: " << Utils::norm(atmosX));
     INFO("  atmosphere integral condition on q: " << result);
     
     EXPECT_NEAR(result, 0.0, 1e-7);
@@ -477,6 +479,7 @@ TEST(CoupledModel, AtmosphereIntegralCondition2)
 
     double result = Utils::dot(intCoeff, atmosX);
 
+    INFO("  atmosphere state norm: " << Utils::norm(atmosX));
     INFO("  atmosphere integral condition on q: " << result);
 
     EXPECT_NEAR(result, 0.0, 1e-7);
