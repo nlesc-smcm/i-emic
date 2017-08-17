@@ -111,11 +111,6 @@ private:
     //! parallel precipitation field (overlapping)
     Teuchos::RCP<Epetra_Vector> localP_;
 
-    //! row in rhs and matrix for integral condition q
-    int rowIntCon_;
-
-    //! coefficients for integral condition
-    Teuchos::RCP<Epetra_Vector> intcondCoeff_;
 
     //! Atmosphere temperature importer
     Teuchos::RCP<Epetra_Import> atmosTimporter_;
@@ -128,6 +123,17 @@ private:
 
     //! input/output flags
     bool loadState_, saveState_, saveEP_, saveEveryStep_;
+
+
+    //! flag allowing to disable integral condition
+    bool useIntCondQ_;
+    
+    //! row in rhs and matrix for integral condition q
+    int rowIntCon_;
+
+    //! coefficients for integral condition
+    Teuchos::RCP<Epetra_Vector> intcondCoeff_;
+
 
     //! preconditioning initialization flag
     bool precInitialized_;

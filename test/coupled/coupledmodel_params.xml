@@ -25,7 +25,6 @@
   <!--           "Humidity Forcing"     -->
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
-
   <!-- We determine the horizontal extend and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
 

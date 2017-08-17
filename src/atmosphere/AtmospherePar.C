@@ -23,6 +23,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     saveState_       (params->get("Save state", false)),
     saveEP_          (params->get("Save E and P fields", false)),
     saveEveryStep_   (params->get("Save every step", false)),
+    useIntCondQ_     (params->get("Use integral condition on q", true)),
     precInitialized_ (false),
     recomputePrec_   (false)
 {
@@ -33,8 +34,11 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     dim_ = n_ * m_ * l_ * dof_;
 
     // Set integral condition row
-    rowIntCon_ = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
-                                 n_-1, m_-1, l_-1, ATMOS_QQ_);
+    if (useIntCondQ_)
+        rowIntCon_ = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                     n_-1, m_-1, l_-1, ATMOS_QQ_);
+    else
+        rowIntCon_ = -1;
 
     // Define domain
     xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
@@ -141,7 +145,17 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     // Create parallelized integration coef. for integral condition q
     //------------------------------------------------------------------
 
-    INFO("AtmospherePar constructor: integral condition in row " << rowIntCon_);
+    if (useIntCondQ_)
+    {
+        INFO("AtmospherePar constructor: integral condition in row "
+             << rowIntCon_);
+    }
+    else
+    {
+        WARNING("AtmposherePar: integral condition on q disabled!",
+                __FILE__, __LINE__);
+    }
+    
     intcondCoeff_ = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     Teuchos::RCP<Epetra_Vector> intcondLocal =
         Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -211,7 +225,7 @@ void AtmospherePar::computeRHS()
     // set integral condition RHS
     double intcond = Utils::dot(intcondCoeff_, state_);
 
-    if (rhs_->Map().MyGID(rowIntCon_))
+    if (rhs_->Map().MyGID(rowIntCon_) && useIntCondQ_)
         (*rhs_)[rhs_->Map().LID(rowIntCon_)] = intcond;
     
     
@@ -523,7 +537,7 @@ void AtmospherePar::computeJacobian()
         Utils::Gather(*intcondCoeff_, root);
 
     // If we have row rowIntCon_
-    if (jac_->MyGRID(rowIntCon_))
+    if (jac_->MyGRID(rowIntCon_) && useIntCondQ_)
     {
         if (comm_->MyPID() != root)
         {
@@ -565,7 +579,7 @@ void AtmospherePar::computeJacobian()
                   __FILE__, __LINE__);
         }
     }
-    else if (comm_->MyPID() == root)
+    else if (comm_->MyPID() == root && useIntCondQ_)
     {
         ERROR("Q-integral condition should be on last processor!", __FILE__, __LINE__);
     }
@@ -711,7 +725,7 @@ void AtmospherePar::createMatrixGraph()
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_QQ_, N, M, L);
 
                 // Skip the final insertion when we are at rowIntCon_
-                if ( (gid0 + ATMOS_QQ_) == rowIntCon_ ) continue; 
+                if ( (gid0 + ATMOS_QQ_) == rowIntCon_ && useIntCondQ_) continue; 
                     
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
@@ -719,7 +733,7 @@ void AtmospherePar::createMatrixGraph()
             }
 
     // Create graph entries for integral condition row
-    if (standardMap_->MyGID(rowIntCon_))
+    if (standardMap_->MyGID(rowIntCon_) && useIntCondQ_)
     {
         int len = n_ * m_ * l_; 
         int icinds[len];
