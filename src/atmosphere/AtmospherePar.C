@@ -21,7 +21,8 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     outputFile_      (params->get("Output file", "atmos_output.h5")),
     loadState_       (params->get("Load state", false)),
     saveState_       (params->get("Save state", false)),
-    storeEverything_ (params->get("Store everything", false)),
+    saveEP_          (params->get("Save E and P fields", false)),
+    saveEveryStep_   (params->get("Save every step", false)),
     precInitialized_ (false),
     recomputePrec_   (false)
 {
@@ -48,7 +49,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 
     // Compute 2D decomposition
     domain_->Decomp2D();
-
+ 
     // Obtain local dimensions
     double xminloc = domain_->XminLoc();
     double xmaxloc = domain_->XmaxLoc();
@@ -78,11 +79,17 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     sol_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     sst_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    E_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    P_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localE_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+
+    
 
     // create graph
     createMatrixGraph();
@@ -609,7 +616,7 @@ void AtmospherePar::postProcess()
     if (saveState_)
         saveStateToFile(outputFile_); // Save to hdf5
 
-    if (saveState_ && storeEverything_)
+    if (saveState_ && saveEveryStep_)
         copyFiles();
 }
 
@@ -832,6 +839,35 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
 }
 
 //=============================================================================
+void AtmospherePar::getEPfields()
+{
+    // compute the fields in the serial model
+    atmos_->computeEvaporation();
+    atmos_->computePrecipitation();
+    
+    std::shared_ptr<std::vector<double> > localE = atmos_->getE('V');
+    std::shared_ptr<std::vector<double> > localP = atmos_->getP('V');
+    
+
+    double *tmpE;
+    double *tmpP;
+    localE_->ExtractView( &tmpE );
+    localP_->ExtractView( &tmpP );
+    
+    
+    int numMyElements = assemblySurfaceMap_->NumMyElements();
+
+    for (int i = 0; i != numMyElements; ++i)
+    {
+        tmpE[i] = (*localE)[i];
+        tmpP[i] = (*localP)[i];
+    }
+    // Export assembly map surface values to standard map
+    E_->Export(*localE_, *as2std_surf_, Zero);
+    P_->Export(*localP_, *as2std_surf_, Zero);
+}
+
+//=============================================================================
 // Again, pretty similar to the routine in Ocean, so we could factorize this in Utils.
 int AtmospherePar::saveStateToFile(std::string const &filename)
 {
@@ -844,6 +880,14 @@ int AtmospherePar::saveStateToFile(std::string const &filename)
     EpetraExt::HDF5 HDF5(*comm_);
     HDF5.Create(filename);
     HDF5.Write("State", *state_);
+
+    if (saveEP_)
+    {
+        // Write evaporation and precipitation fields as well
+        getEPfields();
+        HDF5.Write("E", *E_);
+        HDF5.Write("P", *P_);
+    }
 
     // Interface between HDF5 and the atmos parameters,
     // store all the <npar> atmos parameters in an HDF5 file.

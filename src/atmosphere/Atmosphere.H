@@ -138,26 +138,30 @@ class Atmosphere
     double   qdim_; //! humidity scale (kg / kg)
 
     // Necessary for nondimensionalizations:
-    double   udim_; //! typical horizontal velocity of the ocean
-    double  r0dim_; //! radius of the earth
+    double   udim_;  //! typical horizontal velocity of the ocean
+    double  r0dim_;  //! radius of the earth
 
     double Phv_;     //! horizontal Peclet number for vaport transport
     double nuqeta_;  //! (hdim_ / hdimq_) * ce_ * uw_
 
-    double dqso_;  //! derivative sat. humidity w.r.t. T, at t0o (ocean).
-    double dqsi_;  //! derivative sat. humidity w.r.t. T, at t0i (ice).
+    double dqso_;    //! derivative sat. humidity w.r.t. T, at t0o (ocean).
+    double dqsi_;    //! derivative sat. humidity w.r.t. T, at t0i (ice).
 
-    double P_;     //! Idealized precipitation
+    //! Evaporation field
+    std::shared_ptr<std::vector<double> > E_;
+
+    //! Precipitation, --> idealized for now
+    std::shared_ptr<std::vector<double> > P_;
 
     // Coefficients
-    double muoa_;  //! constant exchange coefficient
-    double amua_;  //! (arad+brad*t0)/muoa
-    double bmua_;  //!  brad/muoa
-    double   Ai_;  //!  rhoa*hdima*cpa*udim/(r0dim*muoa)
-    double   Ad_;  //!  rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
-    double   As_;  //!  sun0*(1 - c0)/(4*muoa)
-    double  Ooa_;  //!  ...? something in the ocean
-    double   Os_;  //!  ...? something in the ocean
+    double muoa_;   //! constant exchange coefficient
+    double amua_;   //! (arad+brad*t0)/muoa
+    double bmua_;   //!  brad/muoa
+    double   Ai_;   //!  rhoa*hdima*cpa*udim/(r0dim*muoa)
+    double   Ad_;   //!  rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
+    double   As_;   //!  sun0*(1 - c0)/(4*muoa)
+    double  Ooa_;   //!  ...? some combination of ocean coeffs, see THCM
+    double   Os_;   //!  ...? some combination of ocean coeffs, see THCM
 
     //! Latitude-dependent albedo
     std::vector<double> albe_;
@@ -213,12 +217,17 @@ public:
     //! Compute the Jacobian matrix
     void computeJacobian();
 
+    void computeEvaporation();
+    void computePrecipitation();
+
     //! Return the Jacobian matrix in CRS format
     std::shared_ptr<Utils::CRSMat> getJacobian();
 
     std::shared_ptr<std::vector<double> > getSolution (char mode = 'C');
     std::shared_ptr<std::vector<double> > getState    (char Mode = 'C');
     std::shared_ptr<std::vector<double> > getRHS      (char mode = 'C');
+    std::shared_ptr<std::vector<double> > getE        (char mode = 'C');
+    std::shared_ptr<std::vector<double> > getP        (char mode = 'C');
 
     void setState(std::shared_ptr<std::vector<double> > in) { state_ = in; }
 
@@ -324,7 +333,7 @@ public:
     //! |            (1,1,2) |      ( 6*n*m+1, ...  ,6*n*m+6) |
     //! +-----------------------------------------------------+
     int find_row(int i, int j, int k, int XX);
-    int find_surface_row(int i, int j, int k, int XX);
+    int find_surface_row(int i, int j);
 
     //! Write everything to output files.
     void writeAll();

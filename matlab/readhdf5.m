@@ -1,11 +1,27 @@
-function [sol, pars] = readhdf5(file, nun, n, m, l)
+function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
 
-% load state
+    if nargin < 6
+        opts.tmp = 0
+    end
+    
+    if isfield(opts, 'readE')
+        readE = opts.readE;
+    else
+        readE = false;
+    end
+
+    if isfield(opts, 'readP')
+        readP = opts.readP;
+    else
+        readP = false;
+    end
+    
+    % read state
     sol = h5read(file, '/State/Values');
     
     sol = reshape(sol, nun, n, m, l);
 
-    % load parameters
+    % read parameters
     info  = h5info(file, '/Parameters');
     npars = size(info.Datasets, 1);
 
@@ -15,4 +31,14 @@ function [sol, pars] = readhdf5(file, nun, n, m, l)
         pars.(fieldname) = ...
             h5read(file, ['/Parameters/' parname]);
     end
+    
+    % read additional fields if requested
+    if readE
+        additional.E = h5read(file, '/E/Values');
+    end
+    
+    if readP
+        additional.P = h5read(file, '/P/Values');
+    end
+
 end

@@ -7,8 +7,11 @@
   <Parameter name="Input file"  type="string" value="atmos_input.h5" />
   <Parameter name="Output file" type="string" value="atmos_output.h5" />
 
+  <!-- Save evaporation and precipitation fields -->
+  <Parameter name="Save E and P fields" type="bool" value="true" />
+  
   <!-- To keep track of each converged state, enable this. -->
-  <Parameter name="Store everything" type="bool" value="false" />
+  <Parameter name="Save every step" type="bool" value="false" />
 
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->

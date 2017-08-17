@@ -36,7 +36,7 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
     periodic_        (periodic),
 
     use_landmask_    (params->get("Use land mask from Ocean", false)),
-
+    
 // solvers ------------------------------------------------------------------
     preconditioner_  (params->get("Preconditioner", 'J')),
 
@@ -200,9 +200,6 @@ void Atmosphere::setup()
     INFO("     Ad = " << Ad_);
     INFO("    Phv = " << Phv_);        
 
-    // Idealized precipitation
-    P_ = 1.0;
-
     np_  = ATMOS_NP_;   // all neighbouring points including the center
     nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_ 
 
@@ -213,6 +210,12 @@ void Atmosphere::setup()
     rhs_   = std::make_shared<std::vector<double> >(dim_, 0.0);
     sol_   = std::make_shared<std::vector<double> >(dim_, 0.0);
     state_ = std::make_shared<std::vector<double> >(dim_, 0.0);
+
+    // Initialize fields for evaporation and precipitation at surface
+    E_     = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+
+    // Idealized precipitation, for now
+    P_     = std::make_shared<std::vector<double> >(m_ * n_, 1.0);
 
     // Initialize surface mask
     surfmask_ = std::make_shared<std::vector<int> >();
@@ -303,7 +306,7 @@ void Atmosphere::idealizedOcean()
         for (int j = 1; j <= m_; ++j)
         {
             value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
-            row   = find_surface_row(i,j,l_,ATMOS_TT_) - 1;
+            row   = find_surface_row(i,j) - 1;
             surfaceTemp_[row] = value;
         }
 }
@@ -457,11 +460,7 @@ void Atmosphere::computeRHS()
     // Check integral condition
     if (!parallel_) 
     {
-        double integral;
-        int incX = 1;
-        int incY = 1;
-        
-        integral = Utils::dot(*intcondCoeff_, *state_);
+        double integral = Utils::dot(*intcondCoeff_, *state_);
 
         if (std::abs((*rhs_)[rowIntCon_-1] - integral) > 1e-7)
             ERROR("Error in integral condition", __FILE__, __LINE__);
@@ -493,21 +492,21 @@ double Atmosphere::matvec(int row)
 void Atmosphere::forcing()
 {
     double value;
-    int forcingRow, surfaceRow;
+    int temRow, humRow, surfaceRow;
 
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
             // ------------ Temperature forcing
-            surfaceRow = find_surface_row(i, j, l_, ATMOS_TT_);
-            forcingRow = find_row(i, j, l_, ATMOS_TT_);
+            surfaceRow = find_surface_row(i, j);
+            temRow = find_row(i, j, l_, ATMOS_TT_);
 
             // Apply surface mask and calculate land temperatures
             // This is a copy of legacy stuff, can be simplified
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
             {
                 value = comb_ * sunp_ * suno_[j] / Ooa_;
-                surfaceTemp_[surfaceRow-1] = value + (*state_)[forcingRow-1];
+                surfaceTemp_[surfaceRow-1] = value + (*state_)[temRow-1];
                 value += comb_ * sunp_ * (suna_[j] - amua_);
             }
             else // above ocean
@@ -515,11 +514,11 @@ void Atmosphere::forcing()
                 value = surfaceTemp_[surfaceRow-1] +
                     comb_ * sunp_ * (suna_[j] - amua_);
             }
-            frc_[forcingRow-1] = value;
+            frc_[temRow-1] = value;
 
             // ------------ Humidity forcing
-            forcingRow = find_row(i, j, l_, ATMOS_QQ_);
-
+            humRow = find_row(i, j, l_, ATMOS_QQ_);
+                        
             // Again, check whether we are above land
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
             {
@@ -531,22 +530,57 @@ void Atmosphere::forcing()
                 // the surface is ice or water. At this point this
                 // is only for ocean surface temperature
 
-                // E (evaporation) part
+                // E (evaporation) forcing 
                 value = comb_ * humf_ * nuqeta_ * (1. / qdim_)
                     * dqso_ * surfaceTemp_[surfaceRow-1];
 
-                // P (precipitation) part
-                value -= comb_ * humf_ * nuqeta_ * P_;
+                // P (precipitation) forcing 
+                value -= comb_ * humf_ * nuqeta_ * (*P_)[surfaceRow-1];
                 
                 // idealized
                 // value = comb_ * humf_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
             }
-            frc_[forcingRow-1] = value;
+            frc_[humRow-1] = value;
         }
 
     // adjust to allow for integral condition in the serial case
     if (!parallel_)
         frc_[rowIntCon_-1] = 0.0;
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::computeEvaporation()
+{
+    int humRow, surfaceRow;
+
+    for (int j = 1; j <= m_; ++j)
+        for (int i = 1; i <= n_; ++i)
+        {
+            surfaceRow = find_surface_row(i, j);
+            humRow = find_row(i, j, l_, ATMOS_QQ_);                        
+            
+            if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
+            {
+                // do nothing
+            }
+            else
+            {
+                // --> when ice is available, this should check whether
+                // the surface is ice or water. At this point this
+                // is only for ocean surface temperature
+                
+                // E (evaporation) part
+                (*E_)[surfaceRow-1] = comb_ * humf_ * nuqeta_ *
+                    ( (1. / qdim_) * dqso_ * surfaceTemp_[surfaceRow-1]
+                      - (*state_)[humRow-1] );
+                
+            }
+        }
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::computePrecipitation()
+{
 }
 
 //-----------------------------------------------------------------------------
@@ -898,11 +932,11 @@ int Atmosphere::find_row(int i, int j, int k, int XX)
 }
 
 //-----------------------------------------------------------------------------
-int Atmosphere::find_surface_row(int i, int j, int k, int XX)
+int Atmosphere::find_surface_row(int i, int j)
 {
     // 1-based
     // find_row for surfaceTemp values
-    return ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
+    return n_ * (j-1) + i;
 }
 
 //-----------------------------------------------------------------------------
@@ -996,6 +1030,18 @@ std::shared_ptr<std::vector<double> > Atmosphere::getState(char mode)
 std::shared_ptr<std::vector<double> > Atmosphere::getRHS(char mode)
 {
     return getVector(mode, rhs_);
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<std::vector<double> > Atmosphere::getE(char mode)
+{
+    return getVector(mode, E_);
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<std::vector<double> > Atmosphere::getP(char mode)
+{
+    return getVector(mode, P_);
 }
 
 //-----------------------------------------------------------------------------

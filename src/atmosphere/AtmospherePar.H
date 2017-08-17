@@ -19,7 +19,6 @@
 #include "TRIOS_Domain.H"
 #include "GlobalDefinitions.H"
 
-
 class Ocean;
 
 class AtmospherePar
@@ -100,6 +99,18 @@ private:
     //! parallel atmosphere sol (overlapping)
     Teuchos::RCP<Epetra_Vector> localSol_;
 
+    //! parallel evaporation field (non-overlapping)
+    Teuchos::RCP<Epetra_Vector> E_;
+
+    //! parallel evaporation field (overlapping)
+    Teuchos::RCP<Epetra_Vector> localE_;
+
+    //! parallel precipitation field (non-overlapping)
+    Teuchos::RCP<Epetra_Vector> P_;
+
+    //! parallel precipitation field (overlapping)
+    Teuchos::RCP<Epetra_Vector> localP_;
+
     //! row in rhs and matrix for integral condition q
     int rowIntCon_;
 
@@ -116,7 +127,7 @@ private:
     std::string const outputFile_;
 
     //! input/output flags
-    bool loadState_, saveState_, storeEverything_;
+    bool loadState_, saveState_, saveEP_, saveEveryStep_;
 
     //! preconditioning initialization flag
     bool precInitialized_;
@@ -151,7 +162,6 @@ public:
 
     void applyPrecon(Epetra_MultiVector &in,
                      Epetra_MultiVector &out);
-
 
     //! initialize preconditioner
     void initializePrec();
@@ -208,17 +218,20 @@ public:
     Teuchos::RCP<Epetra_Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
 
+    //! Obtain evaporation and precipitation from serial atmosphere model
+    void getEPfields();
+
     //! Return pointer to domain object
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
 
     //! Get temperature at interface (which is everywhere at this point)
     Teuchos::RCP<Epetra_Vector> interfaceT();
     
-    //! Get integral coefficients
+    //! Get integral condition coefficients
     Teuchos::RCP<Epetra_Vector> getIntCoeff() { return intcondCoeff_; } 
 
-    Teuchos::RCP<Epetra_BlockMap> getStandardSurfaceMap() {return standardSurfaceMap_;}
-    Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() {return assemblySurfaceMap_;}
+    Teuchos::RCP<Epetra_BlockMap> getStandardSurfaceMap() { return standardSurfaceMap_; }
+    Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() { return assemblySurfaceMap_; }
 
     //! Get ocean dependency
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean);
