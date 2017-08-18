@@ -66,7 +66,7 @@ function [state,pars,add] = plot_atmos(fname)
     img = qa';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1);
+    c = contour(RtD*x,RtD*(y),img,5,'Visible', 'on','linewidth',1);
     colorbar
     caxis([min(min(qa)),max(max(qa))])
     hold off
@@ -75,20 +75,26 @@ function [state,pars,add] = plot_atmos(fname)
     xlabel('Longitude')
     ylabel('Latitude')
     exportfig('atmosq.eps')
+
+    figure(13)
+    surf(qa')
     
-    figure(13) 
+    figure(14) 
     E(E==0)=NaN;
     img = E';
     contourf(RtD*x,RtD*(y),img,10,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
     c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1);
     colorbar
-    caxis([min(min(E)),max(max(E))])
+
     hold off
     drawnow
     title('Evaporation')
     xlabel('Longitude')
     ylabel('Latitude')
+    
+    
+    
 
     
 

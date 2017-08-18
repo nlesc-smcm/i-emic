@@ -33,6 +33,7 @@
   <Parameter name="Use land mask from Ocean" type="bool" value="true"/>
 
   <!-- Specify whether to use the integral condition on q, enabled by default -->
+  <!-- (only for testing purposes)                                            -->
   <Parameter name="Use integral condition on q" type="bool" value="true"/>
 
   <!-- western, eastern, southern and northern domain bounds      -->

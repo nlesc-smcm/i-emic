@@ -551,8 +551,8 @@ void AtmospherePar::computeJacobian()
         int pos=0;
         int gid;
         for (int k = 0; k != l_; ++k)
-            for (int j = 0; j != m_; ++j)    
-                for (int i = 0; i != n_; ++i)        
+            for (int j = 0; j != m_; ++j)
+                for (int i = 0; i != n_; ++i)
                 {
                     gid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
                     icinds[pos] = gid;

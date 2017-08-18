@@ -215,7 +215,7 @@ void Atmosphere::setup()
     E_     = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
     // Idealized precipitation, for now
-    P_     = std::make_shared<std::vector<double> >(m_ * n_, 1.0);
+    P_     = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
     // Initialize surface mask
     surfmask_ = std::make_shared<std::vector<int> >();

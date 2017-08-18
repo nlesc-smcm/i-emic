@@ -15,7 +15,8 @@
   <Parameter name="Output file" type="string" value="ocean_output.h5" />
 
   <!-- To keep track of each converged state, enable this. -->
-  <Parameter name="Store everything" type="bool" value="false" />
+  <!-- Only useful when you enable <Save state>            -->
+  <Parameter name="Save every step" type="bool" value="false" />
 
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->
@@ -118,7 +119,7 @@
     <!-- 0: data,                         -->
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
-    <Parameter name="Wind Forcing" type="int" value="2"/>
+    <Parameter name="Wind Forcing Type" type="int" value="2"/>
     <!-- Type of scaling applied to the linear systems.                            -->
     <!-- We currently support "None" and "THCM"                                    -->
     <!-- "None" is not really recomended.                                          -->
