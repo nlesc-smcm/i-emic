@@ -76,9 +76,6 @@ function [state,pars,add] = plot_atmos(fname)
     ylabel('Latitude')
     exportfig('atmosq.eps')
 
-    figure(13)
-    surf(qa')
-    
     figure(14) 
     E(E==0)=NaN;
     img = E';

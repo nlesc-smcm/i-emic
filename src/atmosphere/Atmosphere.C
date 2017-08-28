@@ -198,7 +198,9 @@ void Atmosphere::setup()
     INFO("     mu = " << muoa_);
     INFO(" B / mu = " << bmua_);
     INFO("     Ad = " << Ad_);
-    INFO("    Phv = " << Phv_);        
+    INFO("    Phv = " << Phv_);
+
+    INFO("  DqDt0 = " <<  nuqeta_ * dqso_ / qdim_);        
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
     nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_ 

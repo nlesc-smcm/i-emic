@@ -43,8 +43,16 @@ public:
                 Teuchos::rcp(
                     new Epetra_CrsMatrix(Copy,
                                          *modelRowDomain_->GetSolveMap(),
-                                         *modelColDomain_->GetColMap(), 0));
+                                         *modelColDomain_->GetColMap(), 0) );
 
+            // initial compute
+            computeBlock();
+        }
+
+    //------------------------------------------------------------------
+    void computeBlock()
+        {
+            TIMER_START("CouplingBlock: compute block");
 
             // obtain 0-based CRS matrix from modelRow
             std::shared_ptr<Utils::CRSMat> blockCRS =
@@ -84,16 +92,26 @@ public:
                         values[j]  = blockCRS->co[index+j];
                     }
 
-                    int ierr =
-                        block_->InsertGlobalValues(gRow, numentries,
-                                                   values, indices);
+                    int ierr;
+                    if (block_->Filled())
+                    {
+                        ierr =
+                            block_->ReplaceGlobalValues(gRow, numentries,
+                                                        values, indices);
+                    }
+                    else
+                    {
+                        ierr =
+                            block_->InsertGlobalValues(gRow, numentries,
+                                                       values, indices);
+                    }
 
                     if (ierr != 0)
                         ERROR("Error in InsertGlobalValues", __FILE__, __LINE__);
                 }
             }
             else
-                ERROR("Local CRS case not implemented yet!", __FILE__, __LINE__);
+                ERROR("Local CRS case not implemented!", __FILE__, __LINE__);
 
             // Finalize
             CHECK_ZERO(block_->FillComplete(
@@ -107,6 +125,7 @@ public:
                          std::to_string(
                              modelRowDomain_->GetComm()->MyPID() ) );
 #endif
+            TIMER_STOP("CouplingBlock: compute block");
         }
 
     //------------------------------------------------------------------
@@ -120,11 +139,12 @@ public:
     //------------------------------------------------------------------
     void applyMatrix(Epetra_MultiVector const &in, Epetra_MultiVector &out)
         {
+            TIMER_START("CouplingBlock: apply matrix...");
             assert(block_->DomainMap().SameAs(in.Map()));
             assert(block_->RangeMap().SameAs(out.Map()));
             CHECK_ZERO(block_->Apply(in, out));
+            TIMER_STOP("CouplingBlock: apply matrix...");
         }
-
 
 };
 

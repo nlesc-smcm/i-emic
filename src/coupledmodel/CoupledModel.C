@@ -90,6 +90,8 @@ void CoupledModel::computeJacobian()
 
     ocean_->computeJacobian();  // Ocean
     atmos_->computeJacobian();  // Atmosphere
+    // C12_.computeBlock();       // Recompute Ocean <- Atmos dependence
+    // C21_.computeBlock();       // Recompute Atmos <- Ocean dependence
 
     TIMER_STOP("CoupledModel: compute Jacobian");
 }

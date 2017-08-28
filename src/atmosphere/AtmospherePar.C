@@ -185,8 +185,8 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 //==================================================================
 void AtmospherePar::computeRHS()
 {
-    INFO("AtmosepherePar: computeRHS...");
-
+    TIMER_START("AtmosepherePar: computeRHS...");
+    
     // Create assembly state
     domain_->Solve2Assembly(*state_, *localState_);
 
@@ -229,7 +229,7 @@ void AtmospherePar::computeRHS()
         (*rhs_)[rhs_->Map().LID(rowIntCon_)] = intcond;
     
     
-    INFO("AtmospherePar: computeRHS done");
+    TIMER_STOP("AtmospherePar: computeRHS done");
 }
 
 //==================================================================
@@ -312,8 +312,8 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
 
     // Get dependency of humidity on ocean temperature
     double dqdt = atmos_->getDqDTo();
-        
-        // loop over our unknowns
+
+    // loop over our unknowns
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
             for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
@@ -335,7 +335,8 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
                     el_ctr++;
                 }
             }
-    
+
+
     block->beg.push_back(el_ctr);
 
     assert( (int) block->co.size() == block->beg.back());
@@ -361,15 +362,6 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
         INFO("AtmospherePar::setOceanTemperature sst map -> standardSurfaceMap_");
         CHECK_ZERO(sst->ReplaceMap(*standardSurfaceMap_));
     }
-
-#ifdef DEBUGGING_NEW
-    double minValue, maxValue;
-    sst->MinValue(&minValue);
-    sst->MaxValue(&maxValue);
-    INFO("AtmospherePar::setOceanTemperature min(sst) = " << minValue);
-    INFO("AtmospherePar::setOceanTemperature max(sst) = " << maxValue);
-    Utils::print(sst, "sst");
-#endif
 
     // assign to our own datamember
     sst_ = sst;
@@ -445,6 +437,7 @@ void AtmospherePar::setLandMask(Utils::MaskStruct const &mask)
 //==================================================================
 void AtmospherePar::computeJacobian()
 {
+    TIMER_START("AtmospherePar: compute Jacobian...");
     // set all entries to zero
     CHECK_ZERO(jac_->PutScalar(0.0));
 
@@ -592,14 +585,17 @@ void AtmospherePar::computeJacobian()
 #ifdef DEBUGGING_NEW
     DUMPMATLAB("atmos_jac", *jac_);
 #endif
-            
+
+    TIMER_STOP("AtmospherePar: compute Jacobian...");
 }
 
 //==================================================================
 void AtmospherePar::applyMatrix(Epetra_MultiVector const &in,
                                 Epetra_MultiVector &out)
 {
+    TIMER_START("AtmospherePar: apply matrix...");
     jac_->Apply(in, out);
+    TIMER_STOP("AtmospherePar: apply matrix...");
 }
 
 //==================================================================
@@ -638,6 +634,7 @@ void AtmospherePar::postProcess()
 void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
                                 Epetra_MultiVector &out)
 {
+    TIMER_START("AtmospherePar: apply preconditioner...");
     if (!precInitialized_)
     {
         initializePrec();
@@ -648,6 +645,7 @@ void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
         recomputePrec_ = false;
     }
     precPtr_->ApplyInverse(in, out);
+    TIMER_STOP("AtmospherePar: apply preconditioner...");
 }
 
 //==================================================================
@@ -701,7 +699,7 @@ void AtmospherePar::createMatrixGraph()
 
                 pos = 0;
 
-                // Specify dependencies, see Atmosphere::discretize()
+                // Specify dependencies, see AtmospherePar::discretize()
                 // ATMOS_TT_-ATMOS_TT_: 5-point stencil
                 insert_graph_entry(indices, pos, i, j, k,   ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i-1, j, k, ATMOS_TT_, N, M, L);
@@ -716,7 +714,7 @@ void AtmospherePar::createMatrixGraph()
                 // Q-equation                
                 pos = 0;
 
-                // Specify dependencies, see Atmosphere::discretize()
+                // Specify dependencies, see AtmospherePar::discretize()
                 // ATMOS_QQ_-ATMOS_QQ_: 5-point stencil
                 insert_graph_entry(indices, pos, i, j, k,   ATMOS_QQ_, N, M, L);
                 insert_graph_entry(indices, pos, i-1, j, k, ATMOS_QQ_, N, M, L);

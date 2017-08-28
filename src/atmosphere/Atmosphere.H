@@ -264,7 +264,7 @@ public:
     void idealized();
     void zeroOcean();
     void zeroState();
-
+    
     //! Get the dependency of q on ocean temperature
     double getDqDTo() { return comb_ * humf_ *
             nuqeta_ * dqso_ / qdim_; }
