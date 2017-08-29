@@ -78,8 +78,7 @@ void Utils::overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPar
          if (entry_i.isList()) // skipping the sublists first
          {
              Teuchos::RCP<Teuchos::ParameterList> sublist =
-                 Teuchos::rcp(new Teuchos::ParameterList
-                              (originalPars->sublist(name_i)));
+                 Teuchos::rcp(&originalPars->sublist(name_i), false);
              
              std::stringstream ss;
              ss << originalPars->name() << "::" << name_i;
