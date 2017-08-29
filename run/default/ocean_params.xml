@@ -49,7 +49,7 @@
     <!-- global number of grid points in x-direction -->
     <Parameter name="Global Grid-Size n" type="int" value="16"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="16"/>
+    <Parameter name="Global Grid-Size m" type="int" value="18"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="16"/>
 
@@ -70,7 +70,7 @@
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
-    <Parameter name="Coupled Atmosphere" type="int" value="1"/>
+    <Parameter name="Coupled Atmosphere" type="int" value="0"/>
     <!-- =============================================================== -->
 	
     <!-- Starting Parameters -->

@@ -11,7 +11,7 @@
   <!-- old states (true) or with a trivial solution (false).     -->
   <!-- The sub-models maintain names for the input files.        -->
   <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Save state" type="bool" value="false"/>
+  <Parameter name="Save state" type="bool" value="true"/>
 
   <Parameter name="Problem Description" type="string" value="Coupled run"/>
   <!-- To keep track of each converged state, enable this.    -->
@@ -39,9 +39,9 @@
   <!-- northern domain bound -->
   <Parameter name="Global Bound ymax" type="double" value="74"/>
   <!-- global number of grid points in x-direction -->
-  <Parameter name="Global Grid-Size n" type="int" value="16"/>
+  <Parameter name="Global Grid-Size n" type="int" value="32"/>
   <!-- global number of grid points in y-direction -->
-  <Parameter name="Global Grid-Size m" type="int" value="17"/>
+  <Parameter name="Global Grid-Size m" type="int" value="32"/>
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="false"/>

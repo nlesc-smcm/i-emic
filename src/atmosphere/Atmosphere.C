@@ -159,6 +159,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
         (*intcondCoeff_)[inds[idx]-1] = vals[idx];
     }
 
+
     INFO("Atmosphere: constructor... done");
 }
 
