@@ -90,11 +90,14 @@ class Atmosphere
     // Solution vector
     std::shared_ptr<std::vector<double> > sol_;
 
+    // Integral condition row (only in serial case)
+    int rowIntCon_;
+
     // Integral condition coefficients (only in serial case)
     std::shared_ptr<std::vector<double> > intcondCoeff_;
 
-    // Integral condition row (only in serial case)
-    int rowIntCon_;
+    // Precipitation integral coefficients (only in serial case)
+    std::shared_ptr<std::vector<double> > precipIntCo_;
 
     // CRS matrix arrays storing the Jacobian
     std::vector<double> co_;
@@ -270,7 +273,7 @@ public:
             nuqeta_ * dqso_ / qdim_; }
 
     //! Get the dA_{ij} coefficients for surface integrals with q
-    void intcondCoeff(std::vector<double> &val, std::vector<double> &ind);
+    void integralCoeff(std::vector<double> &val, std::vector<double> &ind, int nun = 2);
 
     //! --------------------------------------------------------
     //! Set an external 2D surface mask in the atmosphere.

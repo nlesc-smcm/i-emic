@@ -149,15 +149,29 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
 
     // Create serial integration coefficients for integral condition on q
     intcondCoeff_ = std::make_shared<std::vector<double> >(dim_, 0.0);
-    
-    std::vector<double> vals, inds; // obtain indices and values for integration
-    intcondCoeff(vals, inds);
+
+    // obtain indices and values for integration
+    std::vector<double> vals, inds; 
+    integralCoeff(vals, inds);
 
     // Fill coefficients
     for (size_t idx = 0; idx != inds.size(); ++idx)
     {
         (*intcondCoeff_)[inds[idx]-1] = vals[idx];
     }
+
+    // Create serial integration coefficients for precipitation integral
+    precipIntCo_ = std::make_shared<std::vector<double> >(m_*n_, 0.0);
+    integralCoeff(vals, inds, 1);
+
+    // Fill coefficients
+    for (size_t idx = 0; idx != inds.size(); ++idx)
+    {
+        (*intcondCoeff_)[inds[idx]-1] = vals[idx];
+    }
+
+        
+
 
 
     INFO("Atmosphere: constructor... done");
@@ -215,10 +229,10 @@ void Atmosphere::setup()
     state_ = std::make_shared<std::vector<double> >(dim_, 0.0);
 
     // Initialize fields for evaporation and precipitation at surface
-    E_     = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+    E_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
     // Idealized precipitation, for now
-    P_     = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+    P_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
     // Initialize surface mask
     surfmask_ = std::make_shared<std::vector<int> >();
@@ -360,21 +374,24 @@ void Atmosphere::setOceanTemperature(std::vector<double> const &surftemp)
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::intcondCoeff(std::vector<double> &val, std::vector<double> &ind)
+void Atmosphere::integralCoeff(std::vector<double> &val,
+                              std::vector<double> &ind, int nun)
 {
-    // clear arrays
+    // Clear arrays
     val.clear();
     ind.clear();
 
+    // Assuming that nun > 1 implies we want the integral coefficients
+    // at the QQ points
+    int XX = (nun == 1) ? ATMOS_TT_ : ATMOS_QQ_;
     // Obtain values and indices to compute integral
     // 1-based!
     for (int k = 1; k <= l_; ++k)
         for (int j = 1; j <= m_; ++j)
             for (int i = 1; i <= n_; ++i)
             {
-                // dx and dy are not necessary but I leave them in anyway
                 val.push_back(cos(yc_[j]) * dx_ * dy_);
-                ind.push_back(find_row(i,j,k, ATMOS_QQ_));
+                ind.push_back(FIND_ROW_ATMOS1(nun, n_, m_, l_, i, j, k, XX));
             }
 }
 
@@ -496,6 +513,7 @@ void Atmosphere::forcing()
 {
     double value;
     int temRow, humRow, surfaceRow;
+    
 
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
@@ -536,7 +554,7 @@ void Atmosphere::forcing()
                 // E (evaporation) forcing 
                 value = comb_ * humf_ * nuqeta_ * (1. / qdim_)
                     * dqso_ * surfaceTemp_[surfaceRow-1];
-
+                
                 // P (precipitation) forcing 
                 value -= comb_ * humf_ * nuqeta_ * (*P_)[surfaceRow-1];
                 
@@ -584,6 +602,7 @@ void Atmosphere::computeEvaporation()
 //-----------------------------------------------------------------------------
 void Atmosphere::computePrecipitation()
 {
+    
 }
 
 //-----------------------------------------------------------------------------
@@ -770,7 +789,7 @@ void Atmosphere::initcond()
 
     // append crs arrays with integral coefficients and column indices
     std::vector<double> vals,inds;
-    intcondCoeff(vals, inds);
+    integralCoeff(vals, inds);
     
     co_.insert(co_.end(), vals.begin(), vals.end());
     jco_.insert(jco_.end(), inds.begin(), inds.end());    

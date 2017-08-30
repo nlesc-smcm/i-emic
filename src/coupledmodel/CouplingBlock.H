@@ -135,7 +135,6 @@ public:
             INFO("CouplingBlock destructor");
         }
 
-
     //------------------------------------------------------------------
     void applyMatrix(Epetra_MultiVector const &in, Epetra_MultiVector &out)
         {
@@ -145,7 +144,6 @@ public:
             CHECK_ZERO(block_->Apply(in, out));
             TIMER_STOP("CouplingBlock: apply matrix...");
         }
-
 };
 
 #endif

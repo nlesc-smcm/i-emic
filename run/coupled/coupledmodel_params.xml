@@ -39,9 +39,9 @@
   <!-- northern domain bound -->
   <Parameter name="Global Bound ymax" type="double" value="74"/>
   <!-- global number of grid points in x-direction -->
-  <Parameter name="Global Grid-Size n" type="int" value="32"/>
+  <Parameter name="Global Grid-Size n" type="int" value="16"/>
   <!-- global number of grid points in y-direction -->
-  <Parameter name="Global Grid-Size m" type="int" value="32"/>
+  <Parameter name="Global Grid-Size m" type="int" value="16"/>
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="false"/>

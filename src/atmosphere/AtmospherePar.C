@@ -162,7 +162,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 
     std::vector<double> vals, inds;
 
-    atmos_->intcondCoeff(vals, inds);
+    atmos_->integralCoeff(vals, inds);
 
     for (size_t idx = 0; idx != inds.size(); ++idx)
     {

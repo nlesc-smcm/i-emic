@@ -134,6 +134,8 @@ private:
     //! coefficients for integral condition
     Teuchos::RCP<Epetra_Vector> intcondCoeff_;
 
+    //! coefficients for precipitation integral
+    Teuchos::RCP<Epetra_Vector> precipIntCo_;
 
     //! preconditioning initialization flag
     bool precInitialized_;
