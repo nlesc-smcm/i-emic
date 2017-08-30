@@ -161,18 +161,23 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
     }
 
     // Create serial integration coefficients for precipitation integral
-    precipIntCo_ = std::make_shared<std::vector<double> >(m_*n_, 0.0);
-    integralCoeff(vals, inds, 1);
+    // Use 1 dof and ignore land
+    precipIntCo_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+    integralCoeff(vals, inds, 1, true);
 
+    // test indices
+    assert(inds.back()-1 < precipIntCo_->size());
+    
     // Fill coefficients
     for (size_t idx = 0; idx != inds.size(); ++idx)
     {
-        (*intcondCoeff_)[inds[idx]-1] = vals[idx];
+        (*precipIntCo_)[inds[idx]-1] = vals[idx];
     }
 
-        
+    // Total surface area (ignoring land)
+    totalArea_ = Utils::sum(*precipIntCo_);
 
-
+    INFO("Atmosphere: total E,P area = " << totalArea_);
 
     INFO("Atmosphere: constructor... done");
 }
@@ -375,7 +380,7 @@ void Atmosphere::setOceanTemperature(std::vector<double> const &surftemp)
 
 //-----------------------------------------------------------------------------
 void Atmosphere::integralCoeff(std::vector<double> &val,
-                              std::vector<double> &ind, int nun)
+                               std::vector<double> &ind, int nun, bool ignoreLand)
 {
     // Clear arrays
     val.clear();
@@ -390,6 +395,9 @@ void Atmosphere::integralCoeff(std::vector<double> &val,
         for (int j = 1; j <= m_; ++j)
             for (int i = 1; i <= n_; ++i)
             {
+                if (use_landmask_ && ignoreLand && (*surfmask_)[(j-1)*n_+(i-1)])
+                    continue;
+                
                 val.push_back(cos(yc_[j]) * dx_ * dy_);
                 ind.push_back(FIND_ROW_ATMOS1(nun, n_, m_, l_, i, j, k, XX));
             }
@@ -458,8 +466,15 @@ void Atmosphere::computeRHS()
 
     std::fill(rhs_->begin(), rhs_->end(), 0.0);
 
-    // If necessary compute a new Jacobian
-    //  if (recomputeJacobian_)
+    // In parallel, computing E and P are directed by AtmospherePar.
+    // Otherwise we do this here
+    if (!parallel_)
+    {
+        computeEvaporation();   // 
+        computePrecipitation(); //
+    }
+
+    // Compute new Jacobian
     computeJacobian();
 
     // Compute the forcing
@@ -477,7 +492,7 @@ void Atmosphere::computeRHS()
                 (*rhs_)[row-1] = value;
             }
 
-    // Check integral condition
+    // Check integral condition (from matvec vs dot)
     if (!parallel_) 
     {
         double integral = Utils::dot(*intcondCoeff_, *state_);
@@ -485,7 +500,6 @@ void Atmosphere::computeRHS()
         if (std::abs((*rhs_)[rowIntCon_-1] - integral) > 1e-7)
             ERROR("Error in integral condition", __FILE__, __LINE__);
     }
-
 
     TIMER_STOP("Atmosphere: compute RHS...");
 }
@@ -513,7 +527,6 @@ void Atmosphere::forcing()
 {
     double value;
     int temRow, humRow, surfaceRow;
-    
 
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
@@ -581,28 +594,40 @@ void Atmosphere::computeEvaporation()
             humRow = find_row(i, j, l_, ATMOS_QQ_);                        
             
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
-            {
-                // do nothing
-            }
-            else
-            {
-                // --> when ice is available, this should check whether
-                // the surface is ice or water. At this point this
-                // is only for ocean surface temperature
+                continue; // do nothing
+
+            // --> when ice is available, this should check whether
+            // the surface is ice or water. At this point this
+            // is only for ocean surface temperature
                 
-                // E (evaporation) part
-                (*E_)[surfaceRow-1] = comb_ * humf_ * nuqeta_ *
-                    ( (1. / qdim_) * dqso_ * surfaceTemp_[surfaceRow-1]
-                      - (*state_)[humRow-1] );
-                
-            }
+            // E (evaporation) part
+            (*E_)[surfaceRow-1] = comb_ * humf_ * nuqeta_ *
+                ( (1. / qdim_) * dqso_ * surfaceTemp_[surfaceRow-1]
+                  - (*state_)[humRow-1] );                
+
         }
 }
 
 //-----------------------------------------------------------------------------
 void Atmosphere::computePrecipitation()
 {
+    // In a parallel setting, precipitation is governed by AtmospherePar
+    if (parallel_)
+        return; // do nothing
     
+    double integral = Utils::dot(*precipIntCo_, *E_) / totalArea_;
+    int surfaceRow;
+    for (int j = 1; j <= m_; ++j)
+        for (int i = 1; i <= n_; ++i)
+        {
+            if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
+                continue; // do nothing
+
+            surfaceRow = find_surface_row(i, j);
+            (*P_)[surfaceRow-1] = integral;
+        }
+    
+    INFO("Atmosphere: precipitation P_ = " << integral);
 }
 
 //-----------------------------------------------------------------------------
@@ -1064,6 +1089,12 @@ std::shared_ptr<std::vector<double> > Atmosphere::getE(char mode)
 std::shared_ptr<std::vector<double> > Atmosphere::getP(char mode)
 {
     return getVector(mode, P_);
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<std::vector<double> > Atmosphere::getPrecipIntCo(char mode)
+{
+    return getVector(mode, precipIntCo_);
 }
 
 //-----------------------------------------------------------------------------

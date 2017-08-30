@@ -111,7 +111,6 @@ private:
     //! parallel precipitation field (overlapping)
     Teuchos::RCP<Epetra_Vector> localP_;
 
-
     //! Atmosphere temperature importer
     Teuchos::RCP<Epetra_Import> atmosTimporter_;
 
@@ -123,7 +122,6 @@ private:
 
     //! input/output flags
     bool loadState_, saveState_, saveEP_, saveEveryStep_;
-
 
     //! flag allowing to disable integral condition
     bool useIntCondQ_;
@@ -137,6 +135,9 @@ private:
     //! coefficients for precipitation integral
     Teuchos::RCP<Epetra_Vector> precipIntCo_;
 
+    //! total area for E,P
+    double totalArea_;
+    
     //! preconditioning initialization flag
     bool precInitialized_;
 
@@ -164,6 +165,8 @@ public:
     void computeRHS();
 
     void computeJacobian();
+
+    void computePrecipitation();
 
     void applyMatrix(Epetra_MultiVector const &in,
                      Epetra_MultiVector &out);
@@ -220,10 +223,18 @@ public:
     //! Obtain degrees of freedom
     int dof() { return dof_; }
 
+    Teuchos::RCP<Epetra_Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
+
     Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return getVector(mode, state_); }
     Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return getVector(mode, sol_); }
     Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')   { return getVector(mode, rhs_); }
-    Teuchos::RCP<Epetra_Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
+
+    Teuchos::RCP<Epetra_Vector> getE(char mode = 'C')   { return getVector(mode, E_); }
+    Teuchos::RCP<Epetra_Vector> getP(char mode = 'C')   { return getVector(mode, P_); }
+
+    Teuchos::RCP<Epetra_Vector> getPrecipIntCo(char mode = 'C')
+        { return getVector(mode, precipIntCo_); }
+
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
 
     //! Obtain evaporation and precipitation from serial atmosphere model

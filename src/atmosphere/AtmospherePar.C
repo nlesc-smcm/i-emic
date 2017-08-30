@@ -179,6 +179,35 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     Utils::print(vals, ss2.str());    
 #endif
 
+    //------------------------------------------------------------------
+    // Create parallelized integration coefficients for precipitation
+    //------------------------------------------------------------------
+
+    precipIntCo_ = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    Teuchos::RCP<Epetra_Vector> precipIntCoLocal =
+        Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+
+    // Obtain integration coefficients for precipitation integral
+    // Use 1 dof and ignore land
+    atmos_->integralCoeff(vals, inds, 1, true);
+
+    // test indices
+    assert(inds.back()-1 < precipIntCoLocal->MyLength());
+
+    // fill local precipitation integration coefficients
+    for (size_t idx = 0; idx != inds.size(); ++idx)
+    {
+        (*precipIntCoLocal)[inds[idx]-1] = vals[idx];
+    }
+
+    // Export assembly map surface integration coeffs to standard map
+    CHECK_ZERO(precipIntCo_->Export(*precipIntCoLocal, *as2std_surf_, Zero));
+
+    // Obtain total integration area (sum of absolute values)
+    precipIntCo_->Norm1(&totalArea_);
+
+    INFO("AtmospherePar: total E,P area = " << totalArea_);
+
     INFO("AtmospherePar: constructor done");
 }
 
@@ -186,12 +215,17 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 void AtmospherePar::computeRHS()
 {
     TIMER_START("AtmosepherePar: computeRHS...");
+
+    //------------------------------------------------------------------
+    // Put our state in serial Atmosphere
+    //------------------------------------------------------------------
     
     // Create assembly state
     domain_->Solve2Assembly(*state_, *localState_);
 
     // local problem size
-    int numMyElements = assemblyMap_->NumMyElements();
+    int numMyElements        = assemblyMap_->NumMyElements();
+    int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
 
     std::shared_ptr<std::vector<double> > localState =
         std::make_shared<std::vector<double> >(numMyElements, 0.0);
@@ -200,7 +234,23 @@ void AtmospherePar::computeRHS()
 
     atmos_->setState(localState);
 
+    //------------------------------------------------------------------
+    // Compute and put our precipitation field in serial Atmosphere
+    //------------------------------------------------------------------    
+    computePrecipitation();    
+
+    CHECK_ZERO(localP_->Import(*P_, *as2std_surf_, Insert));
+
+    std::shared_ptr<std::vector<double> > localP =
+        std::make_shared<std::vector<double> >(numMySurfaceElements, 0.0);
+
+    localP_->ExtractCopy(&(*localP)[0], numMySurfaceElements);
+    
+    atmos_->setPrecipitation(localP);
+
+    //------------------------------------------------------------------
     // compute local rhs and check bounds
+    //------------------------------------------------------------------    
     atmos_->computeRHS();
     std::shared_ptr<std::vector<double> > localRHS = atmos_->getRHS('V');
 
@@ -222,7 +272,9 @@ void AtmospherePar::computeRHS()
     // assemble distributed rhs into global rhs
     domain_->Assembly2Solve(*localRHS_, *rhs_);
 
+    //------------------------------------------------------------------
     // set integral condition RHS
+    //------------------------------------------------------------------
     double intcond = Utils::dot(intcondCoeff_, state_);
 
     if (rhs_->Map().MyGID(rowIntCon_) && useIntCondQ_)
@@ -590,6 +642,53 @@ void AtmospherePar::computeJacobian()
 }
 
 //==================================================================
+void AtmospherePar::computePrecipitation()
+{
+    // compute E in serial Atmosphere
+    atmos_->computeEvaporation();
+
+    // obtain view of E from serial Atmosphere
+    std::shared_ptr<std::vector<double> > localE = atmos_->getE('V');
+
+    // assign obtained E values to distributed vector (overlapping)
+    double *tmpE;
+    localE_->ExtractView( &tmpE );    
+
+    int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
+
+    for (int i = 0; i != numMySurfaceElements; ++i)
+    {
+        tmpE[i] = (*localE)[i];
+    }
+
+    // export overlapping into non-overlapping E values
+    CHECK_ZERO(E_->Export(*localE_, *as2std_surf_, Zero));
+
+    // compute integral
+    double integral = Utils::dot(precipIntCo_, E_) / totalArea_;
+
+    int numGlobalElements = P_->Map().NumGlobalElements();
+    std::cout << surfmask_->size() << std::endl;
+    std::cout << numGlobalElements << std::endl; getchar();
+    // assert((int) surfmask_->size() == numGlobalElements);
+    
+    // for (int j = 0; j != m_; ++j)
+    //     for (int i = 0; i != n_; ++i)
+    //     {
+    //         if ((*surfmask_)[j*n_+i] == 0) // non-land
+    //         {
+    //             row = FIND_ROW_ATMOS0(1, n_, m_, l_, i, j, 0, 1);
+    //             lid = P_->Map().LID(row);
+    //             if (lid >= 0)
+                    
+    //         }
+    //     }
+            
+
+    
+}
+
+//==================================================================
 void AtmospherePar::applyMatrix(Epetra_MultiVector const &in,
                                 Epetra_MultiVector &out)
 {
@@ -819,7 +918,7 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
                                        readState->Map() ));
 
     // Import state from HDF5 into state_ datamember
-    state_->Import(*((*readState)(0)), *lin2solve, Insert);
+    CHECK_ZERO(state_->Import(*((*readState)(0)), *lin2solve, Insert));
 
     INFO("   atmos state: ||x|| = " << Utils::norm(state_));
     
@@ -875,8 +974,8 @@ void AtmospherePar::getEPfields()
         tmpP[i] = (*localP)[i];
     }
     // Export assembly map surface values to standard map
-    E_->Export(*localE_, *as2std_surf_, Zero);
-    P_->Export(*localP_, *as2std_surf_, Zero);
+    CHECK_ZERO(E_->Export(*localE_, *as2std_surf_, Zero));
+    CHECK_ZERO(P_->Export(*localP_, *as2std_surf_, Zero));
 }
 
 //=============================================================================

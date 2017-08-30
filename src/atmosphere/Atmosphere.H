@@ -99,6 +99,9 @@ class Atmosphere
     // Precipitation integral coefficients (only in serial case)
     std::shared_ptr<std::vector<double> > precipIntCo_;
 
+    // Total sea surface area
+    double totalArea_;
+
     // CRS matrix arrays storing the Jacobian
     std::vector<double> co_;
     std::vector<int> jco_;
@@ -226,13 +229,16 @@ public:
     //! Return the Jacobian matrix in CRS format
     std::shared_ptr<Utils::CRSMat> getJacobian();
 
-    std::shared_ptr<std::vector<double> > getSolution (char mode = 'C');
-    std::shared_ptr<std::vector<double> > getState    (char Mode = 'C');
-    std::shared_ptr<std::vector<double> > getRHS      (char mode = 'C');
-    std::shared_ptr<std::vector<double> > getE        (char mode = 'C');
-    std::shared_ptr<std::vector<double> > getP        (char mode = 'C');
+    std::shared_ptr<std::vector<double> > getSolution    (char mode = 'C');
+    std::shared_ptr<std::vector<double> > getState       (char Mode = 'C');
+    std::shared_ptr<std::vector<double> > getRHS         (char mode = 'C');
+    std::shared_ptr<std::vector<double> > getE           (char mode = 'C');
+    std::shared_ptr<std::vector<double> > getP           (char mode = 'C');
+    std::shared_ptr<std::vector<double> > getPrecipIntCo (char mode = 'C');
+    
 
     void setState(std::shared_ptr<std::vector<double> > in) { state_ = in; }
+    void setPrecipitation(std::shared_ptr<std::vector<double> > in) { P_ = in; }
 
     //! Apply the Jacobian to a vector and return the result u = J*v
     void applyMatrix(std::vector<double>  const &v,
@@ -273,7 +279,9 @@ public:
             nuqeta_ * dqso_ / qdim_; }
 
     //! Get the dA_{ij} coefficients for surface integrals with q
-    void integralCoeff(std::vector<double> &val, std::vector<double> &ind, int nun = 2);
+    void integralCoeff(std::vector<double> &val,
+                       std::vector<double> &ind,
+                       int nun = 2, bool ignoreLand = false);
 
     //! --------------------------------------------------------
     //! Set an external 2D surface mask in the atmosphere.

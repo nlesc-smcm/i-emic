@@ -148,7 +148,10 @@ namespace Utils
 
     //! Compute dot product of two vectors
     double dot(std::vector<double> &vec1, std::vector<double> &vec2);
-    
+
+    //! Compute sum of a vector
+    double sum(std::vector<double> &vec);
+
     //! The parameters in dominantPars will overwrite parameters in originalPars
     //! that have the same name.
     void overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPars,

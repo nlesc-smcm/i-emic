@@ -15,7 +15,7 @@ using ConstIterator = Teuchos::ParameterList::ConstIterator;
 //========================================================================================
 
 
-//! simple dot wrapper
+//! simple ddot wrapper
 double Utils::dot(std::vector<double> &vec1, std::vector<double> &vec2)
 {
     assert(vec1.size() == vec2.size());
@@ -27,7 +27,16 @@ double Utils::dot(std::vector<double> &vec1, std::vector<double> &vec2)
     return dot;
 }
 
-//! Obtain 2-norm of std::vector<double>
+//! simple summation
+double Utils::sum(std::vector<double> &vec)
+{
+    double result = 0.0;
+    for (auto &e: vec)
+        result += e;
+    return result;        
+}
+
+//! Obtain 2-norm of std::vector<double> using ddot
 double Utils::norm(std::vector<double> &vec)
 {
     int dim = (int) vec.size();

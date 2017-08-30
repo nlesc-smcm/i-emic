@@ -173,7 +173,7 @@ TEST(Atmosphere, SurfaceTemperature)
         std::shared_ptr<std::vector<double> > rhsSer = atmos->getRHS('V');
 
         // Check norms parallel and serial rhs
-        EXPECT_NEAR(norm(rhsPar), norm(rhsSer), 1e-7);
+        EXPECT_NEAR(norm(rhsPar), norm(rhsSer), 1e-6);
         INFO("TEST(Atmosphere, SurfaceTemperature): serial norm = " << norm(rhsSer));
         INFO("TEST(Atmosphere, SurfaceTemperature): parall norm = " << norm(rhsPar));
 
@@ -242,6 +242,36 @@ TEST(Atmosphere, Jacobian)
 }
 
 //------------------------------------------------------------------
+TEST(Atmosphere, EPfields)
+{
+    atmos->computeRHS();
+    atmosPar->computeRHS();
+    
+    // get serial integral coefficients and evaporation field
+    std::shared_ptr<std::vector<double> > serPco = atmos->getPrecipIntCo();
+    std::shared_ptr<std::vector<double> > serE = atmos->getE();
+
+    // get parallel integral coefficients and evaporation field
+    Teuchos::RCP<Epetra_Vector> parPco = atmosPar->getPrecipIntCo();
+    Teuchos::RCP<Epetra_Vector> parE = atmosPar->getE();
+
+    // compute area
+    double serArea, parArea;
+    serArea = Utils::sum(*serPco);
+    parPco->Norm1(&parArea);
+    EXPECT_NEAR(serArea, parArea,1e-7);
+
+    // compute dot products / integrals
+    double serInt, parInt;
+    serInt = Utils::dot(*serPco, *serE) / serArea;
+    parInt = Utils::dot(parPco, parE) / parArea;
+    EXPECT_NEAR(serInt, parInt, 1e-7);
+    EXPECT_NE(serInt, 0.0);
+    EXPECT_NE(parInt, 0.0);
+    
+}
+
+//------------------------------------------------------------------
 TEST(Atmosphere, Newton)
 {
     Teuchos::RCP<Epetra_Vector> state = atmosPar->getState('V');
@@ -251,7 +281,7 @@ TEST(Atmosphere, Newton)
     Teuchos::RCP<Epetra_Vector> b = atmosPar->getRHS('V');
     Teuchos::RCP<Epetra_Vector> x = atmosPar->getSolution('V');
 
-    int maxit = 20;
+    int maxit = 10;
     int niter = 0;
     for (; niter != maxit; ++niter)
     {
