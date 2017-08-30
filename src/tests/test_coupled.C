@@ -1,5 +1,5 @@
 #include "TestDefinitions.H"
-
+#include <limits>
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
@@ -431,6 +431,17 @@ TEST(CoupledModel, AtmosphereIntegralCondition1)
     
     EXPECT_NEAR(result, 0.0, 1e-7);
 }
+
+//------------------------------------------------------------------
+TEST(CoupledModel, AtmosphereEPfields)
+{
+    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
+    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    int nnzE = Utils::nnz(E, std::numeric_limits<double>::min() );
+    int nnzP = Utils::nnz(P, std::numeric_limits<double>::min() );
+    EXPECT_EQ(nnzE, nnzP);
+}
+
 
 //------------------------------------------------------------------
 // full continuation

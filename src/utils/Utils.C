@@ -36,6 +36,21 @@ double Utils::sum(std::vector<double> &vec)
     return result;        
 }
 
+//! count number of nonzeros using a threshold
+int Utils::nnz(Teuchos::RCP<Epetra_Vector> vec, double t)
+{
+    int numMyElements = vec->Map().NumMyElements();
+    int numInts = 0;
+    int numIntsGlob = 0;
+    for (int i = 0; i != numMyElements; ++i)
+    {
+        if ((*vec)[i] > t)
+            numInts++;
+    }
+    vec->Map().Comm().SumAll(&numInts, &numIntsGlob, 1);
+    return numIntsGlob;
+}
+
 //! Obtain 2-norm of std::vector<double> using ddot
 double Utils::norm(std::vector<double> &vec)
 {

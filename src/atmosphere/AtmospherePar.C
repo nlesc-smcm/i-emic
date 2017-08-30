@@ -110,7 +110,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
                                           xminloc, xmaxloc, yminloc, ymaxloc,
                                           params_);
 
-    surfmask_ = std::make_shared<std::vector<int> >();
+    surfmask_ = std::make_shared<std::vector<int> >(m_ * n_, 0);
 
     // Import existing state
     if (loadState_)
@@ -141,6 +141,16 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     atmosTimporter_ =
         Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
 
+
+    setupIntCoeff();
+    
+
+    INFO("AtmospherePar: constructor done");
+}
+
+//==================================================================
+void AtmospherePar::setupIntCoeff()
+{
     //------------------------------------------------------------------
     // Create parallelized integration coef. for integral condition q
     //------------------------------------------------------------------
@@ -207,8 +217,6 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     precipIntCo_->Norm1(&totalArea_);
 
     INFO("AtmospherePar: total E,P area = " << totalArea_);
-
-    INFO("AtmospherePar: constructor done");
 }
 
 //==================================================================
@@ -484,6 +492,10 @@ void AtmospherePar::setLandMask(Utils::MaskStruct const &mask)
     CHECK_ZERO(mask.local->ExtractCopy(&(*landmask)[0]));
 
     atmos_->setSurfaceMask(landmask);
+
+    // Some of the integral coefficients depend on the mask
+    // so we repeat that setup.
+    setupIntCoeff();
 }
 
 //==================================================================
@@ -668,24 +680,17 @@ void AtmospherePar::computePrecipitation()
     double integral = Utils::dot(precipIntCo_, E_) / totalArea_;
 
     int numGlobalElements = P_->Map().NumGlobalElements();
-    std::cout << surfmask_->size() << std::endl;
-    std::cout << numGlobalElements << std::endl; getchar();
-    // assert((int) surfmask_->size() == numGlobalElements);
-    
-    // for (int j = 0; j != m_; ++j)
-    //     for (int i = 0; i != n_; ++i)
-    //     {
-    //         if ((*surfmask_)[j*n_+i] == 0) // non-land
-    //         {
-    //             row = FIND_ROW_ATMOS0(1, n_, m_, l_, i, j, 0, 1);
-    //             lid = P_->Map().LID(row);
-    //             if (lid >= 0)
-                    
-    //         }
-    //     }
-            
+    int numMyElements = P_->Map().NumMyElements();
+    assert((int) surfmask_->size() == numGlobalElements);
 
-    
+    // fill P_ in parallel
+    int gid;
+    for (int i = 0; i != numMyElements; ++i)
+    {
+        gid = P_->Map().GID(i);
+        if ((*surfmask_)[gid] == 0)
+            (*P_)[i] = integral;
+    }    
 }
 
 //==================================================================

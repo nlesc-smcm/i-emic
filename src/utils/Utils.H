@@ -114,28 +114,6 @@ namespace Utils
     void print(std::vector<double> const &vec, std::string const &fname);
 
 
-    // //! Print vector
-    // template<typename Vector>
-    // void print(Vector const &vec, std::string const &fname)
-    // {
-    //      // This does not behave well in parallel,
-    //      // perhaps use a gather on the vector first
-    //      std::ofstream file;
-    //      file.open(fname);
-    //      vec.Print(file);
-    //      file.close();
-    // }
-
-    //! Compute dot product of two vectors
-    // template<typename Vector>
-    // double dot(Vector const &vec1,
-    //             Vector const &vec2)
-    // {
-    //      double result = 0;
-    //      vec1.Dot(vec2, &result);
-    //      return result;
-    // }
-
     //! Compute dot product of two vectors
     template<typename VectorPtr>
     double dot(VectorPtr const &vec1,
@@ -151,6 +129,8 @@ namespace Utils
 
     //! Compute sum of a vector
     double sum(std::vector<double> &vec);
+
+    int nnz(Teuchos::RCP<Epetra_Vector> vec, double t = 1e-12);
 
     //! The parameters in dominantPars will overwrite parameters in originalPars
     //! that have the same name.

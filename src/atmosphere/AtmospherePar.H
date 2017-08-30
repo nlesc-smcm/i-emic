@@ -162,6 +162,9 @@ public:
 
     ~AtmospherePar() {INFO("AtmospherePar destructor");}
 
+    //! Setup integral coefficients
+    void setupIntCoeff();
+
     void computeRHS();
 
     void computeJacobian();

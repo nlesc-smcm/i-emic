@@ -145,39 +145,11 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
     setup();
 
     // Set row for integral condition (only in serial case)
-    rowIntCon_ = find_row(n_, m_, l_, ATMOS_QQ_); // use the final q-row (1-based!!)
+    // use the final q-row (1-based!!)
+    rowIntCon_ = find_row(n_, m_, l_, ATMOS_QQ_); 
 
-    // Create serial integration coefficients for integral condition on q
-    intcondCoeff_ = std::make_shared<std::vector<double> >(dim_, 0.0);
-
-    // obtain indices and values for integration
-    std::vector<double> vals, inds; 
-    integralCoeff(vals, inds);
-
-    // Fill coefficients
-    for (size_t idx = 0; idx != inds.size(); ++idx)
-    {
-        (*intcondCoeff_)[inds[idx]-1] = vals[idx];
-    }
-
-    // Create serial integration coefficients for precipitation integral
-    // Use 1 dof and ignore land
-    precipIntCo_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
-    integralCoeff(vals, inds, 1, true);
-
-    // test indices
-    assert(inds.back()-1 < precipIntCo_->size());
-    
-    // Fill coefficients
-    for (size_t idx = 0; idx != inds.size(); ++idx)
-    {
-        (*precipIntCo_)[inds[idx]-1] = vals[idx];
-    }
-
-    // Total surface area (ignoring land)
-    totalArea_ = Utils::sum(*precipIntCo_);
-
-    INFO("Atmosphere: total E,P area = " << totalArea_);
+    // Setup coefficients for integrals
+    setupIntCoeff();
 
     INFO("Atmosphere: constructor... done");
 }
@@ -240,7 +212,7 @@ void Atmosphere::setup()
     P_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
     // Initialize surface mask
-    surfmask_ = std::make_shared<std::vector<int> >();
+    surfmask_ = std::make_shared<std::vector<int> >(m_ * n_);
 
     // Initialize land/ocean surface temperature
     surfaceTemp_ = std::vector<double>(n_ * m_, 0.0);
@@ -316,6 +288,42 @@ void Atmosphere::setup()
 Atmosphere::~Atmosphere()
 {
     INFO("Atmosphere destructor");
+}
+
+//------------------------------------------------------------------
+void Atmosphere::setupIntCoeff()
+{
+    // Create serial integration coefficients for integral condition on q
+    intcondCoeff_ = std::make_shared<std::vector<double> >(dim_, 0.0);
+
+    // obtain indices and values for integration
+    std::vector<double> vals, inds; 
+    integralCoeff(vals, inds);
+
+    // Fill coefficients
+    for (size_t idx = 0; idx != inds.size(); ++idx)
+    {
+        (*intcondCoeff_)[inds[idx]-1] = vals[idx];
+    }
+
+    // Create serial integration coefficients for precipitation integral
+    // Use 1 dof and ignore land
+    precipIntCo_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+    integralCoeff(vals, inds, 1, true);
+
+    // test indices
+    assert(inds.back()-1 < precipIntCo_->size());
+    
+    // Fill coefficients
+    for (size_t idx = 0; idx != inds.size(); ++idx)
+    {
+        (*precipIntCo_)[inds[idx]-1] = vals[idx];
+    }
+
+    // Total surface area (ignoring land)
+    totalArea_ = Utils::sum(*precipIntCo_);
+
+    INFO("Atmosphere: total E,P area = " << totalArea_);
 }
 
 //-----------------------------------------------------------------------------

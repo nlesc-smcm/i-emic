@@ -268,7 +268,18 @@ TEST(Atmosphere, EPfields)
     EXPECT_NEAR(serInt, parInt, 1e-7);
     EXPECT_NE(serInt, 0.0);
     EXPECT_NE(parInt, 0.0);
-    
+
+    atmos->computePrecipitation();
+    atmosPar->computePrecipitation();
+
+    std::shared_ptr<std::vector<double> > serP = atmos->getP();
+    Teuchos::RCP<Epetra_Vector> parP = atmosPar->getP();
+
+    double serNrm, parNrm;
+    serNrm = Utils::norm(*serP);
+    parNrm = Utils::norm(parP);
+    EXPECT_NEAR(serNrm, parNrm, 1e-7);
+    EXPECT_GT(serNrm, 0.0);
 }
 
 //------------------------------------------------------------------

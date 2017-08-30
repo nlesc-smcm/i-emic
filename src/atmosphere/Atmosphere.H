@@ -206,6 +206,9 @@ public:
     //! General setup things for both constructors
     void setup();
 
+    //! Setup integral coefficients
+    void setupIntCoeff();
+
     //! Destructor
     virtual ~Atmosphere();
 
@@ -277,7 +280,7 @@ public:
     //! Get the dependency of q on ocean temperature
     double getDqDTo() { return comb_ * humf_ *
             nuqeta_ * dqso_ / qdim_; }
-
+    
     //! Get the dA_{ij} coefficients for surface integrals with q
     void integralCoeff(std::vector<double> &val,
                        std::vector<double> &ind,
