@@ -108,8 +108,13 @@ SUBROUTINE forcing
 
   do j=1,m
      do i=1,n
-        Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &
-             par(SPER) * (1 - SRES + SRES*par(BIOT)) * ( spert(i,j) - spertcor )
+        if (coupled_atm.eq.1) then
+           
+        else
+
+           Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &
+                par(SPER) * (1 - SRES + SRES*par(BIOT)) * ( spert(i,j) - spertcor )
+        end if
      enddo
   enddo
 

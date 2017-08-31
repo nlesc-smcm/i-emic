@@ -1,6 +1,6 @@
 #include "fdefs.h"
 
-module m_inserts
+module m_probe
 
   use m_usr
 
@@ -8,50 +8,50 @@ module m_inserts
 
 contains
 
-  subroutine insert_atmosphere_t(inserted_atmos_temp)
+  subroutine get_atmosphere_t(atmos_temp)
 
     use, intrinsic :: iso_c_binding
     use m_par  
     use m_usr
 
     implicit none
-    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_temp
+    real(c_double), dimension(m*n) :: atmos_temp
     integer :: i,j,pos
 
     if (coupled_atm.eq.1) then
        pos = 1
        do j = 1,m
           do i = 1,n
-             tatm(i,j) = inserted_atmos_temp(pos)
+             atmos_temp(pos) = tatm(i,j)
              pos = pos + 1
           end do
        end do
     else
-       _INFO2_("Not inserting atmosphere T : coupled_atm=", coupled_atm)
+       _INFO_("No coupling, not obtaining any data")
     end if
-  end subroutine insert_atmosphere_t
+  end subroutine get_atmosphere_t
 
-  subroutine insert_atmosphere_ep(inserted_atmos_ep)
+  subroutine get_atmosphere_ep(atmos_ep)
 
     use, intrinsic :: iso_c_binding
     use m_par  
     use m_usr
 
     implicit none
-    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_ep
+    real(c_double), dimension(m*n) :: atmos_ep
     integer :: i,j,pos
 
     if (coupled_atm.eq.1) then
        pos = 1
        do j = 1,m
           do i = 1,n
-             epfield(i,j) = inserted_atmos_ep(pos)
+             atmos_ep(pos) = epfield(i,j)
              pos = pos + 1
           end do
        end do
     else
-       _INFO2_("Not inserting atmosphere EP : coupled_atm=", coupled_atm)
+       _INFO_("No coupling, not obtaining any data")
     end if
-  end subroutine insert_atmosphere_ep
+  end subroutine get_atmosphere_ep
 
-end module m_inserts
+end module m_probe
