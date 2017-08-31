@@ -435,11 +435,44 @@ TEST(CoupledModel, AtmosphereIntegralCondition1)
 //------------------------------------------------------------------
 TEST(CoupledModel, AtmosphereEPfields)
 {
-    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
-    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
-    int nnzE = Utils::nnz(E, std::numeric_limits<double>::min() );
-    int nnzP = Utils::nnz(P, std::numeric_limits<double>::min() );
-    EXPECT_EQ(nnzE, nnzP);
+    bool failed = false;
+    try
+    {
+        Teuchos::RCP<Epetra_Vector> E = atmos->getE();
+        Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+        std::ofstream fileE, fileP;
+        fileE.open("fileE.txt");
+        fileP.open("fileP.txt");
+        E->Print(fileE);
+        P->Print(fileP);
+        fileE.close(); fileP.close();
+
+        double tol = 1e-12;
+    
+        int nnzE = Utils::nnz(E, tol);
+        int nnzP = Utils::nnz(P, tol);
+        EXPECT_EQ(nnzE, nnzP);
+
+        int nelE = E->Map().NumMyElements();
+        int nelP = P->Map().NumMyElements();
+
+        EXPECT_EQ(nelE, nelP);
+
+        // expecting data distributions to be equal
+        for (int i = 0; i != nelE; ++i)
+        {
+            if ( std::abs((*E)[i]) > tol )
+            {
+                EXPECT_GT( std::abs((*P)[i]), tol );
+            }
+        }
+    }
+    catch (...)
+    {
+        failed = true;
+    }
+
+    EXPECT_EQ(failed, false);    
 }
 
 

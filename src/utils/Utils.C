@@ -44,7 +44,7 @@ int Utils::nnz(Teuchos::RCP<Epetra_Vector> vec, double t)
     int numIntsGlob = 0;
     for (int i = 0; i != numMyElements; ++i)
     {
-        if ((*vec)[i] > t)
+        if (std::abs((*vec)[i]) > t)
             numInts++;
     }
     vec->Map().Comm().SumAll(&numInts, &numIntsGlob, 1);

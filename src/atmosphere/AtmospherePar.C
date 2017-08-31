@@ -463,7 +463,9 @@ void AtmospherePar::setLandMask(Utils::MaskStruct const &mask)
     smask.open("surfmask");
 
     std::vector<std::string> stringvec;
-    int ctr = 0;
+    int ctr  = 0;
+    int ctr0 = 0;
+    int ctr1 = 0;
     for (auto &l: *surfmask_)
     {
         ctr++;
@@ -475,12 +477,18 @@ void AtmospherePar::setLandMask(Utils::MaskStruct const &mask)
             string.str("");
             string.clear();
         }
+        if (l == 0)
+            ctr0++;
+        else
+            ctr1++;
     }
     smask.close();
 
     // Reverse print to output file
     for (auto i = stringvec.rbegin(); i != stringvec.rend(); ++i)
         INFO(i->c_str());
+
+    INFO("surfmask zeros: " << ctr0 << ", ones: " << ctr1);
 #endif
 
     // create rcp
