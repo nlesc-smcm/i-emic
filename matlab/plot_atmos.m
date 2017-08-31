@@ -76,9 +76,10 @@ function [state,pars,add] = plot_atmos(fname)
     ylabel('Latitude')
     exportfig('atmosq.eps')
 
-    figure(14) 
-    E(E==0)=NaN;
-    img = E';
+    figure(13) 
+    EmP = E-P;
+    EmP(EmP==0)=NaN;
+    img = EmP';
     contourf(RtD*x,RtD*(y),img,10,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
     c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1);
@@ -86,13 +87,8 @@ function [state,pars,add] = plot_atmos(fname)
 
     hold off
     drawnow
-    title('Evaporation')
+    title('E-P')
     xlabel('Longitude')
     ylabel('Latitude')
     
-    
-    
-
-    
-
 end

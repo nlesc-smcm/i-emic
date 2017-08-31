@@ -312,17 +312,29 @@ TEST(CoupledModel, Synchronization)
     stateV->First()->PutScalar(1.234);
     stateV->Second()->PutScalar(2.345);
 
+    // Set a small parameter
+    coupledModel->setPar(0.005);
+
+    // At RHS computation the coupledModel synchronizes the states
     coupledModel->computeRHS();
 
-    Teuchos::RCP<Epetra_Vector> oceanAtmosT = ocean->getLocalAtmosT();
+    Teuchos::RCP<Epetra_Vector> oceanAtmosT  = ocean->getLocalAtmosT();
+    Teuchos::RCP<Epetra_Vector> oceanAtmosEP = ocean->getLocalAtmosEP();
+
+    Utils::print(oceanAtmosT,  "oceanAtmosT.txt");
+    Utils::print(oceanAtmosEP, "oceanAtmosEP.txt");
 
     double maxValue, minValue, meanValue;
     oceanAtmosT->MaxValue(&maxValue);
     EXPECT_EQ(maxValue, 2.345);
+
     oceanAtmosT->MinValue(&minValue);
     EXPECT_EQ(minValue, 2.345);
 
-    if (oceanAtmosT->Map().UniqueGIDs())
+    oceanAtmosEP->MaxValue(&maxValue);
+    EXPECT_GT(std::abs(maxValue), 0.0);
+
+    if ( oceanAtmosT->Map().UniqueGIDs() )
     {
         oceanAtmosT->MeanValue(&meanValue);
         EXPECT_NEAR(meanValue, 2.345, 1e-7);
@@ -440,12 +452,9 @@ TEST(CoupledModel, AtmosphereEPfields)
     {
         Teuchos::RCP<Epetra_Vector> E = atmos->getE();
         Teuchos::RCP<Epetra_Vector> P = atmos->getP();
-        std::ofstream fileE, fileP;
-        fileE.open("fileE.txt");
-        fileP.open("fileP.txt");
-        E->Print(fileE);
-        P->Print(fileP);
-        fileE.close(); fileP.close();
+
+        Utils::print(E, "file.txt");
+        Utils::print(P, "file.txt");
 
         double tol = 1e-12;
     

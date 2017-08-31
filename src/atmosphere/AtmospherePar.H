@@ -169,7 +169,8 @@ public:
 
     void computeJacobian();
 
-    void computePrecipitation();
+    //! Compute E and P fields
+    void computeEP();
 
     void applyMatrix(Epetra_MultiVector const &in,
                      Epetra_MultiVector &out);
@@ -241,14 +242,14 @@ public:
 
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
 
-    //! Obtain evaporation and precipitation from serial atmosphere model
-    void getEPfields();
-
     //! Return pointer to domain object
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
 
-    //! Get temperature at interface (which is everywhere at this point)
+    //! Get temperature at interface 
     Teuchos::RCP<Epetra_Vector> interfaceT();
+
+    //! Get E-P at interface 
+    Teuchos::RCP<Epetra_Vector> interfaceEP();
     
     //! Get integral condition coefficients
     Teuchos::RCP<Epetra_Vector> getIntCoeff() { return intcondCoeff_; } 

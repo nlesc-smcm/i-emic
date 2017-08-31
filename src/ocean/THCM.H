@@ -134,11 +134,17 @@ public:
     //!   1: accepting external atmosphere
     int coupled_atm;
 
-    //! Copy an atmosphere in the ocean model
-    void setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmos);
+    //! Set atmosphere temperature in the ocean model
+    void setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmos);
+
+    //! Set atmosphere E-P field in the ocean model
+    void setAtmosphereEP(Teuchos::RCP<Epetra_Vector> const &atmos);
 
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
+
+    //! Obtain local atmosphere temperature vector
+    Teuchos::RCP<Epetra_Vector> getLocalAtmosEP();
 
     //! Test
     void setAtmosphereTest();
@@ -286,8 +292,11 @@ private:
     //! used to import current approximation to THCM:
     Teuchos::RCP<Epetra_Vector> localSol;
 
-    //! used to import atmosphere into THCM
+    //! used to import atmosphere temperature into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosT;
+
+    //! used to import atmosphere EP field into THCM
+    Teuchos::RCP<Epetra_Vector> localAtmosEP;
 
     //! used to export computed RHS vector to Trilinos:
     Teuchos::RCP<Epetra_Vector> localRhs;

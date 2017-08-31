@@ -128,7 +128,10 @@ extern "C" {
     //---------------------- I-EMIC couplings--------------------------------------
     // Extensions created for communication within the I-EMIC
     //
-    _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere)(double *atmos);
+    _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_t)(double *atmosT);
+    _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_ep)(double *atmosEP);
+    _MODULE_SUBROUTINE_(m_probe, get_atmosphere_t)(double *atmosT);
+    _MODULE_SUBROUTINE_(m_probe, get_atmosphere_ep)(double *atmosEP);
     _MODULE_SUBROUTINE_(m_global, get_land_temp)(double *land);
     //-----------------------------------------------------------------------------
 
@@ -547,6 +550,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localRhs        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
     localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
     localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosEP    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -1075,12 +1079,12 @@ void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask)
 }
 
 //=============================================================================
-void THCM::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmosT)
+void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
 {
 
     if (!(atmosT->Map().SameAs(*StandardSurfaceMap)))
     {
-        INFO("THCM::setAtmosphere: atmosT map -> StandardSurfaceMap");
+        INFO("THCM::setAtmosphereT: atmosT map -> StandardSurfaceMap");
         CHECK_ZERO(atmosT->ReplaceMap(*StandardSurfaceMap));
     }
 
@@ -1090,13 +1094,44 @@ void THCM::setAtmosphere(Teuchos::RCP<Epetra_Vector> const &atmosT)
 
     double *locAtmosT;
     localAtmosT->ExtractView(&locAtmosT);
-    F90NAME(m_inserts, insert_atmosphere)(locAtmosT);
+    F90NAME(m_inserts, insert_atmosphere_t)( locAtmosT );
+}
+
+//=============================================================================
+void THCM::setAtmosphereEP(Teuchos::RCP<Epetra_Vector> const &atmosEP)
+{
+
+    if (!(atmosEP->Map().SameAs(*StandardSurfaceMap)))
+    {
+        INFO("THCM::setAtmosphereEP: atmosEP map -> StandardSurfaceMap");
+        CHECK_ZERO(atmosEP->ReplaceMap(*StandardSurfaceMap));
+    }
+
+    // Standard2Assembly
+    // Import atmosEP into local atmosEP
+    CHECK_ZERO(localAtmosEP->Import(*atmosEP, *as2std_surf, Insert));
+
+    double *locAtmosEP;
+    localAtmosEP->ExtractView(&locAtmosEP);
+    F90NAME(m_inserts, insert_atmosphere_ep)( locAtmosEP );
 }
 
 //=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosT()
 {
+    double *locAtmosT;
+    localAtmosT->ExtractView(&locAtmosT);
+    F90NAME(m_probe, get_atmosphere_t )( locAtmosT );
     return localAtmosT;
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosEP()
+{
+    double *locAtmosEP;
+    localAtmosEP->ExtractView(&locAtmosEP);
+    F90NAME(m_probe, get_atmosphere_ep )( locAtmosEP );
+    return localAtmosEP;
 }
 
 //=============================================================================

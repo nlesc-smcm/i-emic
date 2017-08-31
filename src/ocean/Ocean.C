@@ -1002,9 +1002,13 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
 {
     TIMER_START("Ocean: set atmosphere...");
 
-    Teuchos::RCP<Epetra_Vector> atmosT = atmos->interfaceT();
+    Teuchos::RCP<Epetra_Vector> atmosT  = atmos->interfaceT();
+    Teuchos::RCP<Epetra_Vector> atmosEP = atmos->interfaceEP();
+
     // This is a job for THCM
-    THCM::Instance().setAtmosphere(atmosT);
+    THCM::Instance().setAtmosphereT(atmosT);
+    THCM::Instance().setAtmosphereEP(atmosEP);
+    
     TIMER_STOP("Ocean: set atmosphere...");
 }
 
@@ -1012,6 +1016,12 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
 Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosT()
 {
     return THCM::Instance().getLocalAtmosT();
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosEP()
+{
+    return THCM::Instance().getLocalAtmosEP();
 }
 
 //==================================================================

@@ -126,7 +126,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
         for (int i = 0; i != n_; ++i)
             tRows.push_back(
                 FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
-                                i, j, l_-1, ATMOS_TT_));
+                                i, j, 0, ATMOS_TT_));
 
     // Create restricted map
     tIndexMap_ =
@@ -243,9 +243,10 @@ void AtmospherePar::computeRHS()
     atmos_->setState(localState);
 
     //------------------------------------------------------------------
-    // Compute and put our precipitation field in serial Atmosphere
+    // Compute E and P, put our precipitation field in serial Atmosphere
+    // E is already present in serial Atmosphere
     //------------------------------------------------------------------    
-    computePrecipitation();    
+    computeEP();    
 
     CHECK_ZERO(localP_->Import(*P_, *as2std_surf_, Insert));
 
@@ -353,6 +354,18 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
     CHECK_ZERO(atmosT_->Import(*state_, *atmosTimporter_, Insert));
     TIMER_STOP("Atmosphere: get atmosphere temperature...");
     return getVector('C', atmosT_);
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceEP()
+{
+    // We need to obtain E-P fields based on our state first.
+    computeEP();
+    
+    // construct E-P with copy P field
+    Teuchos::RCP<Epetra_Vector> EmP = Teuchos::rcp( new Epetra_Vector(*E_) );
+    EmP->Update(-1.0, *P_, 1.0);
+    return EmP;
 }
 
 //==================================================================
@@ -662,7 +675,7 @@ void AtmospherePar::computeJacobian()
 }
 
 //==================================================================
-void AtmospherePar::computePrecipitation()
+void AtmospherePar::computeEP()
 {
     // compute E in serial Atmosphere
     atmos_->computeEvaporation();
@@ -698,7 +711,7 @@ void AtmospherePar::computePrecipitation()
         gid = P_->Map().GID(i);
         if ((*surfmask_)[gid] == 0)
             (*P_)[i] = integral;
-    }    
+    }
 }
 
 //==================================================================
@@ -963,36 +976,8 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
 }
 
 //=============================================================================
-void AtmospherePar::getEPfields()
-{
-    // compute the fields in the serial model
-    atmos_->computeEvaporation();
-    atmos_->computePrecipitation();
-    
-    std::shared_ptr<std::vector<double> > localE = atmos_->getE('V');
-    std::shared_ptr<std::vector<double> > localP = atmos_->getP('V');
-    
-
-    double *tmpE;
-    double *tmpP;
-    localE_->ExtractView( &tmpE );
-    localP_->ExtractView( &tmpP );
-    
-    
-    int numMyElements = assemblySurfaceMap_->NumMyElements();
-
-    for (int i = 0; i != numMyElements; ++i)
-    {
-        tmpE[i] = (*localE)[i];
-        tmpP[i] = (*localP)[i];
-    }
-    // Export assembly map surface values to standard map
-    CHECK_ZERO(E_->Export(*localE_, *as2std_surf_, Zero));
-    CHECK_ZERO(P_->Export(*localP_, *as2std_surf_, Zero));
-}
-
-//=============================================================================
-// Again, pretty similar to the routine in Ocean, so we could factorize this in Utils.
+// Again, pretty similar to the routine in Ocean,
+//  so we could factorize this in Utils when bored.
 int AtmospherePar::saveStateToFile(std::string const &filename)
 {
     INFO("_________________________________________________________");
@@ -1008,7 +993,6 @@ int AtmospherePar::saveStateToFile(std::string const &filename)
     if (saveEP_)
     {
         // Write evaporation and precipitation fields as well
-        getEPfields();
         HDF5.Write("E", *E_);
         HDF5.Write("P", *P_);
     }
