@@ -306,23 +306,31 @@ TEST(CoupledModel, View)
 //------------------------------------------------------------------
 TEST(CoupledModel, Synchronization)
 {
+    bool failed = false;
+
     std::shared_ptr<Combined_MultiVec> stateV =
         coupledModel->getState('V');
 
-    stateV->First()->PutScalar(1.234);
-    stateV->Second()->PutScalar(2.345);
+    try
+    {
+        stateV->First()->PutScalar(1.234);
+        stateV->Second()->PutScalar(2.345);
 
-    // Set a small parameter
-    coupledModel->setPar(0.005);
+        // Set a small parameter
+        coupledModel->setPar(0.005);
 
-    // At RHS computation the coupledModel synchronizes the states
-    coupledModel->computeRHS();
-
+        // At RHS computation the coupledModel synchronizes the states
+        coupledModel->computeRHS();
+    }
+    catch (...)
+    {
+        failed = true;
+    }
+    EXPECT_EQ(failed, false);
+    
+    
+    // Obtain atmosphere temperature existing in ocean
     Teuchos::RCP<Epetra_Vector> oceanAtmosT  = ocean->getLocalAtmosT();
-    Teuchos::RCP<Epetra_Vector> oceanAtmosEP = ocean->getLocalAtmosEP();
-
-    Utils::print(oceanAtmosT,  "oceanAtmosT.txt");
-    Utils::print(oceanAtmosEP, "oceanAtmosEP.txt");
 
     double maxValue, minValue, meanValue;
     oceanAtmosT->MaxValue(&maxValue);
@@ -330,9 +338,6 @@ TEST(CoupledModel, Synchronization)
 
     oceanAtmosT->MinValue(&minValue);
     EXPECT_EQ(minValue, 2.345);
-
-    oceanAtmosEP->MaxValue(&maxValue);
-    EXPECT_GT(std::abs(maxValue), 0.0);
 
     if ( oceanAtmosT->Map().UniqueGIDs() )
     {
@@ -358,6 +363,33 @@ TEST(CoupledModel, Synchronization)
     }
     else
         INFO(" atmosOceanT (overl.) GID's not unique, which is fine in parallel.");
+
+    // Randomize combined state
+    stateV->Random();
+    
+    try
+    {
+        // At RHS computation the coupledModel synchronizes the states
+        coupledModel->computeRHS();    
+    }
+    catch (...)
+    {
+        failed = true;
+    }
+    EXPECT_EQ(failed, false);
+    
+    Teuchos::RCP<Epetra_Vector> oceanAtmosEP = ocean->getLocalAtmosEP();
+        
+#ifdef GNU
+    Utils::print(oceanAtmosT,  "oceanAtmosT" +
+                 std::to_string(oceanAtmosT->Map().Comm().MyPID()) + ".txt");
+    Utils::print(oceanAtmosEP,  "oceanAtmosEP" +
+                 std::to_string(oceanAtmosEP->Map().Comm().MyPID()) + ".txt");
+#endif
+
+    oceanAtmosEP->MaxValue(&maxValue);
+    EXPECT_GT(std::abs(maxValue), 0.0);
+    getchar();
 }
 
 //------------------------------------------------------------------

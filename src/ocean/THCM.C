@@ -1100,7 +1100,9 @@ void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
 //=============================================================================
 void THCM::setAtmosphereEP(Teuchos::RCP<Epetra_Vector> const &atmosEP)
 {
-
+    double value; atmosEP->MaxValue(&value);    
+    std::cout << "THCM::setAtmosphereEP() max input atmosEP = " << value << std::endl;
+    
     if (!(atmosEP->Map().SameAs(*StandardSurfaceMap)))
     {
         INFO("THCM::setAtmosphereEP: atmosEP map -> StandardSurfaceMap");
@@ -1131,6 +1133,9 @@ Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosEP()
     double *locAtmosEP;
     localAtmosEP->ExtractView(&locAtmosEP);
     F90NAME(m_probe, get_atmosphere_ep )( locAtmosEP );
+    double maxValue;
+    localAtmosEP->MaxValue(&maxValue);
+    INFO("THCM::getLocalAtmosEP(): localAtmosEP->MaxValue = " << maxValue);
     return localAtmosEP;
 }
 
