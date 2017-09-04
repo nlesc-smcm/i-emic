@@ -20,6 +20,8 @@ if (NOT DEFINED MRILU_DIR)
 endif ()
 message("-- Looking for MRILU in ${MRILU_DIR}")
 
+enable_testing()
+
 add_subdirectory(src)
 
 # If no CMAKE_INSTALl_PREFIX is available we set it to the current source dir

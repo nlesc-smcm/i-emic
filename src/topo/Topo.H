@@ -169,7 +169,12 @@ void Topo<Model, ParameterList>::loadMaskFileNames()
     {
         fileID << "Mask file " << i;
         landMaskFileNames_[i] = pars_->get(fileID.str().c_str(), "");
-        assert(landMaskFileNames_[i] != "");
+        if (landMaskFileNames_[i] != "")
+        {
+            INFO(" nMasks = " << nMasks_);
+            ERROR(" LandMaskFileNames or nMasks invalid ",
+                  __FILE__, __LINE__);
+        }
         INFO("  " << fileID.str() << ": " << landMaskFileNames_[i]);
         fileID.str("");
         fileID.clear();
@@ -493,7 +498,7 @@ void Topo<Model, ParameterList>::buildPreconditioner()
     combPrec_.B        = matB_;
     combPrec_.PB       = precB_;
     combPrec_.isPrec   = true;
-    combPrec_.precType = pars_->get("Preconditioning type", 'H');
+    combPrec_.precType = pars_->get("Preconditioning type", 'M');
 
     INFO("Topo: build preconditioner... done");
 }

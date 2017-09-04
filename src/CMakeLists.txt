@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 2.8.12.2)
-project(i-emic)
 
 # Trying to find Trilinos
 if (DEFINED ENV{TRILINOS_DIR} AND NOT DEFINED Trilinos_DIR)

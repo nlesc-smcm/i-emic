@@ -140,28 +140,30 @@ int main(int argc, char **argv)
 	if (outFile == Teuchos::null)
 		throw std::runtime_error("ERROR: Specify output streams");
 
-	// Create parallel Ocean 
+	// Create parameters parallel Ocean 
 	RCP<Teuchos::ParameterList> oceanParams =
 		rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
 
-	Teuchos::RCP<Ocean> ocean = Teuchos::rcp(new Ocean(comm, oceanParams));	
-
-	// Create topography class
+	// Create parameters for topography continuation class
 	RCP<Teuchos::ParameterList> topoParams = rcp(new Teuchos::ParameterList);
 	updateParametersFromXmlFile("topo_params.xml", topoParams.ptr());
 
+    // Create parameter object for continuation
+	RCP<Teuchos::ParameterList> continuationParams =
+		rcp(new Teuchos::ParameterList);
+    updateParametersFromXmlFile("continuation_params.xml",
+								continuationParams.ptr());
+
+    // Create ocean
+	Teuchos::RCP<Ocean> ocean = Teuchos::rcp(new Ocean(comm, oceanParams));	
+
+    // Create topography continuation class
 	RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > > topo =
 		rcp(new Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >
 			(ocean, topoParams));
-	
-	// Create parameter object for continuation
-	RCP<Teuchos::ParameterList> continuationParams =
-		rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("continuation_params.xml",
-								continuationParams.ptr());
-	
-	// Create continuation
+		
+	// Create continuation 
 	Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >,
 				 RCP<Teuchos::ParameterList> >
 		continuation(topo, continuationParams);

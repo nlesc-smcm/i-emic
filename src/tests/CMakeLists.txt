@@ -22,6 +22,13 @@ add_executable(test_ocean    test_ocean.C)
 add_executable(test_coupled  test_coupled.C)
 add_executable(test_atmos    test_atmos.C)
 
+message(${PROJECT_SOURCE_DIR}/test/jdqz)
+
+add_test(NAME test_jdqz COMMAND  test_jdqz       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/jdqz)
+add_test(NAME test_topo COMMAND  test_topo       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/topo)
+add_test(NAME test_ocean COMMAND  test_ocean     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/ocean)
+add_test(NAME test_coupled COMMAND  test_coupled WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/coupled)
+add_test(NAME test_atmos COMMAND  test_atmos     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/atmos)
 
 target_compile_definitions(test_jdqz PUBLIC ${COMP_IDENT})
 target_compile_definitions(test_topo PUBLIC ${COMP_IDENT})

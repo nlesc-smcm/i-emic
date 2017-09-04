@@ -99,30 +99,33 @@ public:
 	// constructor
 	IEMIC()
 		{
-			// Create parallel Ocean 
+			// Create parameters 
 			RCP<Teuchos::ParameterList> oceanParams =
 				rcp(new Teuchos::ParameterList);
 			updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-			ocean = std::make_shared<Ocean>(comm, oceanParams);
 	
-			// Create Atmosphere object
 			RCP<Teuchos::ParameterList> atmosphereParams =
 				rcp(new Teuchos::ParameterList);
 			updateParametersFromXmlFile("atmosphere_params.xml",
 										atmosphereParams.ptr());
-			atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
 		
-			// Create CoupledModel
 			RCP<Teuchos::ParameterList> coupledmodelParams =
 				rcp(new Teuchos::ParameterList);
 			updateParametersFromXmlFile("coupledmodel_params.xml",
 										coupledmodelParams.ptr());
+
+            INFO('\n' << "Overwriting:");
+            // The Continuation and CoupledModel parameterlists overwrite settings
+            Utils::overwriteParameters(oceanParams,        coupledmodelParams);
+            Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
+            
+            // Create models
+ 			ocean = std::make_shared<Ocean>(comm, oceanParams);
+			atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
 			coupledModel =
 				std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
-			
-		
 		}
-
+    
 	// destructor
 	~IEMIC()
 		{}
@@ -131,73 +134,82 @@ public:
 //------------------------------------------------------------------
 TEST(JDQZ, Atmosphere)
 {
-	// Create Continuation
-	RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
+    bool failed = false;
+    try
+    {
+        // Create Continuation
+        RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
+        updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
 	
-	Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
-		continuation(coupledModel, continuationParams);
+        Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
+            continuation(coupledModel, continuationParams);
 
-	// We perform a continuation with the coupled model
-	continuation.run();
+        // We perform a continuation with the coupled model
+        continuation.run();
 
-	// Then we are going to calculate the eigenvalues of the Atmosphere Jacobian
-	INFO("Creating ComplexVector...");
-	Teuchos::RCP<Epetra_Vector> x(atmos->getSolution('C'));
-	Teuchos::RCP<Epetra_Vector> y(atmos->getSolution('C'));
-	x->PutScalar(0.0); y->PutScalar(0.0);
+        // Then we are going to calculate the eigenvalues of the Atmosphere Jacobian
+        INFO("Creating ComplexVector...");
+        Teuchos::RCP<Epetra_Vector> x(atmos->getSolution('C'));
+        Teuchos::RCP<Epetra_Vector> y(atmos->getSolution('C'));
+        x->PutScalar(0.0); y->PutScalar(0.0);
 
-	// JDQZ needs complex arithmetic, that's why we create a ComplexSuperVector
-	ComplexVector<Epetra_Vector> z(*x, *y);
-	ComplexVector<Epetra_Vector> residue(*x, *y);
-	ComplexVector<Epetra_Vector> tmp(*x, *y);
+        // JDQZ needs complex arithmetic, that's why we create a ComplexSuperVector
+        ComplexVector<Epetra_Vector> z(*x, *y);
+        ComplexVector<Epetra_Vector> residue(*x, *y);
+        ComplexVector<Epetra_Vector> tmp(*x, *y);
 
-	INFO("Building JDQZInterface...");
-	JDQZInterface<std::shared_ptr<AtmospherePar>,
-				  ComplexVector<Epetra_Vector > >	matrix(atmos, z);	
+        INFO("Building JDQZInterface...");
+        JDQZInterface<std::shared_ptr<AtmospherePar>,
+                      ComplexVector<Epetra_Vector > >	matrix(atmos, z);	
 	
-	INFO("Building JDQZ...");
-	JDQZ<JDQZInterface<std::shared_ptr<AtmospherePar>,
-					   ComplexVector<Epetra_Vector > > > jdqz(matrix, z);
+        INFO("Building JDQZ...");
+        JDQZ<JDQZInterface<std::shared_ptr<AtmospherePar>,
+                           ComplexVector<Epetra_Vector > > > jdqz(matrix, z);
 
-	INFO("Setting parameters...");
-	std::map<std::string, double> list;	
-	list["Shift (real part)"]         = 0.0;
-	list["Number of eigenvalues"]     = 8;
-	list["Max size search space"]     = 35;
-	list["Min size search space"]     = 10;
-	list["Max JD iterations"]         = 500;
-	list["Tracking parameter"]        = 1e-8;
-	list["Criterion for Ritz values"] = 0;
-	list["Linear solver"]             = 1;
-	list["GMRES search space"]        = 20;
-	list["Verbosity"]                 = 5;		
-	MyParameterList params(list);
+        INFO("Setting parameters...");
+        std::map<std::string, double> list;	
+        list["Shift (real part)"]         = 0.0;
+        list["Number of eigenvalues"]     = 8;
+        list["Max size search space"]     = 35;
+        list["Min size search space"]     = 10;
+        list["Max JD iterations"]         = 500;
+        list["Tracking parameter"]        = 1e-8;
+        list["Criterion for Ritz values"] = 0;
+        list["Linear solver"]             = 1;
+        list["GMRES search space"]        = 20;
+        list["Verbosity"]                 = 5;		
+        MyParameterList params(list);
 	
-	jdqz.setParameters(params);
-	jdqz.printParameters();
+        jdqz.setParameters(params);
+        jdqz.printParameters();
 
-	INFO("Starting JDQZ solve...");
-	jdqz.solve();
+        INFO("Starting JDQZ solve...");
+        jdqz.solve();
 
-	std::vector<ComplexVector<Epetra_Vector> > eivec = jdqz.getEigenVectors();
-	std::vector<std::complex<double> >         alpha = jdqz.getAlpha();
-	std::vector<std::complex<double> >         beta  = jdqz.getBeta();
+        std::vector<ComplexVector<Epetra_Vector> > eivec = jdqz.getEigenVectors();
+        std::vector<std::complex<double> >         alpha = jdqz.getAlpha();
+        std::vector<std::complex<double> >         beta  = jdqz.getBeta();
 
-
-	for (int j = 0; j != jdqz.kmax(); ++j)
-	{
-		residue.zero();
-		tmp.zero();
-		matrix.AMUL(eivec[j], residue);
-		residue.scale(beta[j]);
-		matrix.BMUL(eivec[j], tmp);
-		residue.axpy(-alpha[j], tmp);
-		std::cout << "alpha: " << std::setw(30) << alpha[j]
-				  << " beta: " << std::setw(30) << beta[j]
-				  << " " << residue.norm() << std::endl;
-		
-	}
+        EXPECT_GT(jdqz.kmax(), 0);
+        for (int j = 0; j != jdqz.kmax(); ++j)
+        {
+            residue.zero();
+            tmp.zero();
+            matrix.AMUL(eivec[j], residue);
+            residue.scale(beta[j]);
+            matrix.BMUL(eivec[j], tmp);
+            residue.axpy(-alpha[j], tmp);
+            std::cout << "alpha: " << std::setw(30) << alpha[j]
+                      << " beta: " << std::setw(30) << beta[j]
+                      << " " << residue.norm() << std::endl;
+            EXPECT_LT(residue.norm(), 1e-7);
+        }
+    }
+    catch (...)
+    {
+        failed = true;
+    }
+    EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------
