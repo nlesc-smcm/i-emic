@@ -21,7 +21,7 @@
   <!--           "Solar Forcing"    -->
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Wind Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -73,11 +73,11 @@
 	
     <!-- Starting Parameters -->
     <ParameterList name="Starting Parameters">
-      <Parameter name="Combined Forcing"    type="double" value="0.0"/>
+      <Parameter name="Combined Forcing"    type="double" value="1.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.2"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-      <Parameter name="Temperature Forcing" type="double" value="0.0"/>
+      <Parameter name="Temperature Forcing" type="double" value="1.5"/>
       <Parameter name="SPL1"                type="double" value="2.0e3"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>	  
     </ParameterList>

@@ -208,6 +208,7 @@ TEST(JDQZ, Atmosphere)
     catch (...)
     {
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed, false);
 }

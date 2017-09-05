@@ -5,18 +5,10 @@
 
 <ParameterList name="Continuation parameters">
 
-  <!-- This option will override the continuation parameter in the models     -->
-  <!-- Options:  "Combined Forcing"                                           -->
-  <!--           "Solar Forcing"                                              -->
-  <!--           "Salinity Forcing"                                           -->
-  <!--           "Wind Forcing"                                               -->
-  <!--           "Humidity Forcing"                                           -->
-  <Parameter name="Continuation parameter" type="string" value="Wind Forcing"/>
-
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="1.0e-2"/>
+  <Parameter name="initial step size" type="double" value="1.0e-1"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>
-  <Parameter name="maximum step size" type="double" value="1.0e-1"/>
+  <Parameter name="maximum step size" type="double" value="1.0e0"/>
 
   <!-- Define the destination value for the continuation parameter -->
   <!-- Several destinations are allowed, in that case specify      -->
@@ -28,11 +20,11 @@
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-2"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-6"/>
 
   <!-- Tolerance when converging on destination         -->
   <!--  for secant process in detect()                  -->
-  <Parameter name="destination tolerance" type="double" value="1.0e-4"/>
+  <Parameter name="destination tolerance" type="double" value="1.0e-6"/>
 
   <!-- Define the optimal interval for the amount of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
@@ -41,6 +33,9 @@
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
   <Parameter name="maximum Newton iterations" type="int" value="10"/>
 
+  <!-- Disable or enable backtracking -->
+  <Parameter name="enable backtracking" type="bool" value="false"/>
+    
   <!-- Set the number of backtracking steps -->
   <Parameter name="backtracking steps" type="int" value="0"/>
 
@@ -82,6 +77,6 @@
   <!-- Bound on RHS in predicted state.                        -->
   <!-- If in the predicting phase the norm becomes too big the -->
   <!-- continuation step size is reduced.                      -->
-  <Parameter name="predictor bound" type="double" value="3000.0"/>
+  <Parameter name="predictor bound" type="double" value="100.0"/>
 
 </ParameterList>

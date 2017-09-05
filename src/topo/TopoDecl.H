@@ -239,7 +239,7 @@ public:
 
 	//! get copy of a_ 
 	std::vector<int> getA() { return a_; }
-	
+    
 	//! get copy of b_ 
 	std::vector<int> getB() { return b_; }
 

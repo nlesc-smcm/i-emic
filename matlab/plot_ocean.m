@@ -183,8 +183,8 @@ function [] = plot_ocean(solfile, maskfile, opts)
         contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGp',15); hold on
         contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGn',15,'--'); hold off
         colorbar
-        cmin = min(min(PSIG(:,1:9)));
-        cmax = max(max(PSIG(:,1:9)));
+        cmin = min(min(PSIG(:)));
+        cmax = max(max(PSIG(:)));
         fprintf('MOC+ = %f MOC- = %f MOC+ + MOC- = %f \n', max(PSIG(:)), ...
                 min(PSIG(:)), max(PSIG(:)) + min(PSIG(:)))
         if plot_title

@@ -25,6 +25,7 @@ TEST(Atmosphere, Initialization)
     catch (...)
     {
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed, false);
 
@@ -47,6 +48,7 @@ TEST(Atmosphere, Initialization)
     {
         INFO("TEST(Atmosphere, Initialization) some exception thrown...");
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed, false);
 }
@@ -97,6 +99,7 @@ TEST(Atmosphere, RHS)
     catch (...)
     {
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed, false);
 }
@@ -181,6 +184,7 @@ TEST(Atmosphere, SurfaceTemperature)
     catch (...)
     {
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed, false);
 }
@@ -237,6 +241,7 @@ TEST(Atmosphere, Jacobian)
     {
         INFO("TEST(Atmosphere, Initialization) some exception thrown...");
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed, false);
 }

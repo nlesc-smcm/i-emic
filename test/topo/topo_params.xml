@@ -5,7 +5,7 @@
 <ParameterList name="Topo parameters">
 
   <!--  -->
-  <Parameter name="Number of mask files" type="int" value="14"/>
+  <Parameter name="Number of mask files" type="int" value="3"/>
 
   <Parameter name="Mask file 0" type="string"
 	     value="test8x8x4/test1"/>

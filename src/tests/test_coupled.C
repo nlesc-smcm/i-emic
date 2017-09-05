@@ -51,6 +51,7 @@ TEST(ParameterLists, Initialization)
     catch (...)
     {
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed,false);
 }
@@ -67,6 +68,7 @@ TEST(Ocean, Initialization)
     catch (...)
     {
         failed = true;
+        throw;
     }
 
     EXPECT_EQ(failed, false);
@@ -84,6 +86,7 @@ TEST(Atmosphere, Initialization)
     catch (...)
     {
         failed = true;
+        throw;
     }
 
     EXPECT_EQ(failed, false);
@@ -101,6 +104,7 @@ TEST(CoupledModel, Initialization)
     catch (...)
     {
         failed = true;
+        throw;
     }
 
     EXPECT_EQ(failed, false);
@@ -144,6 +148,7 @@ TEST(CoupledModel, inspectState)
     catch (...)
     {
         failed = true;
+        throw;
     }
 
     EXPECT_EQ(failed, false);
@@ -170,6 +175,7 @@ TEST(CoupledModel, computeJacobian)
     catch (...)
     {
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed, false);
 }
@@ -276,6 +282,7 @@ TEST(CoupledModel, applyMatrix)
     catch (...)
     {
         failed = true;
+        throw;
     }
 
     EXPECT_EQ(failed, false);
@@ -325,6 +332,7 @@ TEST(CoupledModel, Synchronization)
     catch (...)
     {
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed, false);
     
@@ -375,6 +383,7 @@ TEST(CoupledModel, Synchronization)
     catch (...)
     {
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed, false);
     
@@ -511,6 +520,7 @@ TEST(CoupledModel, AtmosphereEPfields)
     catch (...)
     {
         failed = true;
+        throw;
     }
 
     EXPECT_EQ(failed, false);    
@@ -550,6 +560,7 @@ TEST(CoupledModel, Continuation)
     catch (...)
     {
         failed = true;
+        throw;
     }
 
     EXPECT_EQ(failed, false);

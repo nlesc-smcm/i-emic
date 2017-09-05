@@ -112,6 +112,7 @@ TEST(Ocean, Initialization)
 	catch (...)
 	{
 		failed = true;
+        throw;
 	}
 	
 	EXPECT_EQ(failed, false);
@@ -132,6 +133,7 @@ TEST(Topo, Initialization)
 	catch (...)
 	{
 		failed = true;
+        throw;
 	}
 	EXPECT_EQ(failed, false);
 }
@@ -143,8 +145,8 @@ TEST(Topo, Arrays)
 	std::vector<int> b = topo->getB();
 	int N = topo->nMasks();
 
-	std::vector<int> aref = {0,2,2,4,4,6,6,8};
-	std::vector<int> bref = {1,1,3,3,5,5,7,7};
+	std::vector<int> aref = {0,1,2,3,4,5,6,7};
+	std::vector<int> bref = {1,2,3,4,5,6,7,8};
 
 	for (int i = 0; i != std::min(N, 8); ++i)
 	{
@@ -195,10 +197,20 @@ TEST(Topo, View)
 //------------------------------------------------------------------
 TEST(Topo, RHS)
 {
-	topo->setPar(0.3);
-	topo->computeRHS();
-	topo->computeJacobian();
-	topo->preProcess();
+    bool failed = false;
+    try
+    {
+        topo->setPar(0.3);
+        topo->computeRHS();
+        topo->computeJacobian();
+        topo->preProcess();
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------
@@ -206,24 +218,31 @@ TEST(Topo, SpinupContinuation)
 {
 	bool failed = false;
 	try
-	{	
+	{
+        // not sure if needed
+        ocean->setPar(0.0);
+        ocean->getState('V')->PutScalar(0.0);
+        topo->getSolution('V')->PutScalar(0.0); // superfluous
+        
 		// Create parameter object for continuation
 		RCP<Teuchos::ParameterList> continuationParams =
 			rcp(new Teuchos::ParameterList);
 		updateParametersFromXmlFile("spinup_continuation_params.xml",
 									continuationParams.ptr());
 
-		// Create continuation
-		Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >,
-					 RCP<Teuchos::ParameterList> >
-			continuation(topo, continuationParams);
-
+		// Create spinup continuation
+        Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
+            continuation(ocean, continuationParams);
+        
 		// Run continuation
+        INFO(" Running spinup...");
 		continuation.run();
+        INFO(" Running spinup... done");
 	}
 	catch (...)
 	{
 		failed = true;
+        throw;
 	}
 	
 	EXPECT_EQ(failed, false);
@@ -234,14 +253,17 @@ TEST(Topo, TopoContinuation)
 {
 	bool failed = false;
 	try
-	{	
+	{
+        // not sure if needed
+        topo->setPar(0.0);
+
 		// Create parameter object for continuation
 		RCP<Teuchos::ParameterList> continuationParams =
 			rcp(new Teuchos::ParameterList);
 		updateParametersFromXmlFile("topo_continuation_params.xml",
 									continuationParams.ptr());
         
-		// Create continuation
+		// Create topo continuation
 		Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >,
 					 RCP<Teuchos::ParameterList> >
 			continuation(topo, continuationParams);
@@ -250,25 +272,29 @@ TEST(Topo, TopoContinuation)
         int nMasks    = topo->nMasks();
         int startMask = topo->startMaskIdx();
 
+        INFO(" Running topo cont...");// Run continuation
+        
         for (int maskIdx = startMask; maskIdx != nMasks-1; maskIdx++)
         {
             topo->setMaskIndex(maskIdx);		
             topo->initialize();		
 
             topo->predictor();
+            
             continuation.run();
 			
             topo->setPar(1.0);
-
+            INFO("    topo cont postprocess ");
             topo->postProcess();
-        }        
+        }
+        INFO(" Running topo cont... done");            
+                    
         
-		// Run continuation
-		continuation.run();
 	}
 	catch (...)
 	{
 		failed = true;
+        throw;
 	}
 	
 	EXPECT_EQ(failed, false);

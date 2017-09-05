@@ -71,6 +71,7 @@ Topo(Model model, ParameterList pars)
 
     // We initialize our vectors with model vectors.
     stateView_ = model_->getState('V');
+    stateCopy_ = model_->getState('C');
     solView_   = model_->getSolution('V');
     stateDot_  = model_->getState('C');
     stateDot_->PutScalar(0.0);
@@ -169,7 +170,8 @@ void Topo<Model, ParameterList>::loadMaskFileNames()
     {
         fileID << "Mask file " << i;
         landMaskFileNames_[i] = pars_->get(fileID.str().c_str(), "");
-        if (landMaskFileNames_[i] != "")
+
+        if (landMaskFileNames_[i] == "")
         {
             INFO(" nMasks = " << nMasks_);
             ERROR(" LandMaskFileNames or nMasks invalid ",

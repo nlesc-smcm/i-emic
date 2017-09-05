@@ -112,6 +112,7 @@ TEST(Ocean, Initialization)
     catch (...)
     {
         failed = true;
+        throw;
     }
 
     EXPECT_EQ(failed, false);
@@ -152,6 +153,7 @@ TEST(Ocean, Continuation)
     catch (...)
     {
         failed = true;
+        throw;
     }
     EXPECT_EQ(failed, false);
 }
