@@ -109,9 +109,9 @@ SUBROUTINE forcing
   do j=1,m
      do i=1,n
         if (coupled_atm.eq.1) then
-           
+           ! -- this is not yet an equivalent salinity flux
+           Frc(find_row2(i,j,l,SS)) = par(COMB)*par(SALT)*700*epfield(i,j) 
         else
-
            Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &
                 par(SPER) * (1 - SRES + SRES*par(BIOT)) * ( spert(i,j) - spertcor )
         end if
