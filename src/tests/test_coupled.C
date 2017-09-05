@@ -398,7 +398,6 @@ TEST(CoupledModel, Synchronization)
 
     oceanAtmosEP->MaxValue(&maxValue);
     EXPECT_GT(std::abs(maxValue), 0.0);
-    getchar();
 }
 
 //------------------------------------------------------------------
