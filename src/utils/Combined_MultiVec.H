@@ -308,6 +308,14 @@ public:
             return info;
         }
 
+    size_t hash() const
+        {
+            size_t seed = 0;
+            seed ^= Utils::hash(first_);
+            seed ^= Utils::hash(second_);
+            return seed;
+        }        
+
     void Print(std::ostream &os) const
         {
             first_->Print(os);

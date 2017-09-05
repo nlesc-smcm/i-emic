@@ -26,7 +26,7 @@ contains
              pos = pos + 1
           end do
        end do
-       _INFO2_("++ Inserting T: tatm(5,5) = ", tatm(5,5))
+       !_INFO2_("++ Inserting T: tatm(5,5) = ", tatm(5,5))
     else
        _INFO2_("Not inserting atmosphere T : coupled_atm=", coupled_atm)
     end if
@@ -50,7 +50,7 @@ contains
              pos = pos + 1
           end do
        end do
-       _INFO2_("++ Inserting EP: epfield(5,5) = ", epfield(5,5))
+       !_INFO2_("++ Inserting EP: epfield(5,5) = ", epfield(5,5))
     else
        _INFO2_("Not inserting atmosphere EP : coupled_atm=", coupled_atm)
     end if

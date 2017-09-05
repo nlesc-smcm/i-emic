@@ -116,6 +116,9 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     if (loadState_)
         loadStateFromFile(inputFile_);
 
+    // Create hash of state
+    stateHash_ = 2;
+    
     //------------------------------------------------------------------
     // Create atmosphere temperature restrict/import strategy
     //------------------------------------------------------------------
@@ -141,9 +144,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     atmosTimporter_ =
         Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
 
-
-    setupIntCoeff();
-    
+    setupIntCoeff();  
 
     INFO("AtmospherePar: constructor done");
 }
@@ -220,22 +221,57 @@ void AtmospherePar::setupIntCoeff()
 }
 
 //==================================================================
+void AtmospherePar::distributeState()
+{
+    // Check if state is new
+    size_t tmpHash = Utils::hash(state_);
+
+    if (stateHash_ == tmpHash)
+    {
+#ifdef DEBUGGING_NEW
+        INFO(" distributeState(): do nothing");
+#endif
+        return; // do nothing
+    }
+    else
+    {
+        stateHash_ = tmpHash; // set new hash and continue
+    }
+    
+    // Create assembly state
+    domain_->Solve2Assembly(*state_, *localState_);
+
+    // local problem size
+    int numMyElements = assemblyMap_->NumMyElements();
+
+    std::shared_ptr<std::vector<double> > localState =
+        std::make_shared<std::vector<double> >(numMyElements, 0.0);
+
+    localState_->ExtractCopy(&(*localState)[0], numMyElements);
+
+    atmos_->setState(localState);
+}
+
+//==================================================================
 void AtmospherePar::computeRHS()
 {
     TIMER_START("AtmosepherePar: computeRHS...");
-    INFO("AtmosepherePar: computeRHS...");
+    INFO("AtmospherePar: computeRHS...");
 
     //------------------------------------------------------------------
-    // Put parallel state in serial atmosphere. 
+    // Put parallel state in serial atmosphere.
+    distributeState();
+
     // Compute E and P, put our precipitation field in serial Atmosphere
     // E is already present in serial Atmosphere
+    // E-P not computed if state is not updated (through hashing)
     //------------------------------------------------------------------    
-    computeEP();    // this is superfluous in combination with synchronizations
+    computeEP();
 
     CHECK_ZERO(localP_->Import(*P_, *as2std_surf_, Insert));
 
-    int numMyElements        = assemblyMap_->NumMyElements();
     int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
+    int numMyElements        = assemblyMap_->NumMyElements();
 
     std::shared_ptr<std::vector<double> > localP =
         std::make_shared<std::vector<double> >(numMySurfaceElements, 0.0);
@@ -277,7 +313,7 @@ void AtmospherePar::computeRHS()
         (*rhs_)[rhs_->Map().LID(rowIntCon_)] = intcond;
     
 
-    INFO("AtmosepherePar: computeRHS... done");
+    INFO("AtmospherePar: computeRHS... done");
     TIMER_STOP("AtmospherePar: computeRHS...");
 }
 
@@ -347,7 +383,10 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
 //==================================================================
 Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceEP()
 {
-    // We need to obtain E-P fields based on our state first.
+    // Put parallel atmosphere state in serial model
+    distributeState();
+    
+    // We need to obtain E-P fields based on our state
     computeEP();
     
     // construct E-P with copy P field
@@ -668,23 +707,13 @@ void AtmospherePar::computeEP()
 {
     INFO( "AtmospherePar: computing E, P" );
 
-    //------------------------------------------------------------------
-    // Put our state in serial Atmosphere
-    //------------------------------------------------------------------
-    
-    // Create assembly state
-    domain_->Solve2Assembly(*state_, *localState_);
+    // Check if state is new
+    size_t tmpHash = Utils::hash(state_);
 
-    // local problem size
-    int numMyElements        = assemblyMap_->NumMyElements();
-    int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
-
-    std::shared_ptr<std::vector<double> > localState =
-        std::make_shared<std::vector<double> >(numMyElements, 0.0);
-
-    localState_->ExtractCopy(&(*localState)[0], numMyElements);
-
-    atmos_->setState(localState);
+    if (stateHash_ == tmpHash)
+        return; // do nothing
+    else        
+        stateHash_ = tmpHash; // set new hash and continue
     
     // compute E in serial Atmosphere
     atmos_->computeEvaporation();
@@ -696,7 +725,7 @@ void AtmospherePar::computeEP()
     double *tmpE;
     localE_->ExtractView( &tmpE );    
 
-    numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
+    int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
 
     for (int i = 0; i != numMySurfaceElements; ++i)
     {
@@ -706,13 +735,11 @@ void AtmospherePar::computeEP()
     // export overlapping into non-overlapping E values
     CHECK_ZERO(E_->Export(*localE_, *as2std_surf_, Zero));
 
-    INFO( "  |E| = " << Utils::norm(E_) );
-
     // compute integral
     double integral = Utils::dot(precipIntCo_, E_) / totalArea_;
 
     int numGlobalElements = P_->Map().NumGlobalElements();
-     numMyElements = P_->Map().NumMyElements();
+    int numMyElements = P_->Map().NumMyElements();
     assert((int) surfmask_->size() == numGlobalElements);
 
     // fill P_ in parallel
@@ -724,7 +751,6 @@ void AtmospherePar::computeEP()
             (*P_)[i] = integral;
     }
 
-    INFO( "  |P| = " << Utils::norm(P_) );
     INFO( "AtmospherePar: computing E, P done " );
 }
 

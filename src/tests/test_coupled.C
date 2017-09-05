@@ -460,11 +460,11 @@ TEST(CoupledModel, Newton)
         INFO(" atmos ||r|| / ||b||  = " << Utils::norm(y->Second()));
         INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
 
-        if (Utils::norm(coupledModel->getRHS('V')) < 0.01)
+        if (Utils::norm(coupledModel->getRHS('V')) < 0.1)
             break;
     }
 
-    EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.01);
+    EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.1);
     EXPECT_LT(niter, 10);
     INFO("CoupledModel, Newton converged in " << niter << " iterations");
 }
@@ -481,7 +481,7 @@ TEST(CoupledModel, AtmosphereIntegralCondition1)
     INFO("  atmosphere state norm: " << Utils::norm(atmosX));
     INFO("  atmosphere integral condition on q: " << result);
     
-    EXPECT_NEAR(result, 0.0, 1e-7);
+    EXPECT_NEAR(result, 0.0, 1e-4);
 }
 
 //------------------------------------------------------------------
@@ -490,6 +490,7 @@ TEST(CoupledModel, AtmosphereEPfields)
     bool failed = false;
     try
     {
+        atmos->computeEP();
         Teuchos::RCP<Epetra_Vector> E = atmos->getE();
         Teuchos::RCP<Epetra_Vector> P = atmos->getP();
 
@@ -613,6 +614,28 @@ TEST(CoupledModel, SmallPerturbation)
 }
 
 //------------------------------------------------------------------
+// Test hashing functions of Combined_MultiVec and Utils
+TEST(CoupledModel, Hashing)
+{
+    std::shared_ptr<Combined_MultiVec> x  = coupledModel->getState('C');
+    std::size_t hash1 = x->hash(); INFO(" hash1 = " << hash1);
+    std::size_t hash2 = x->hash(); INFO(" hash2 = " << hash2);
+    EXPECT_EQ(hash1, hash2);
+
+    x->Scale(1.0001);
+    
+    std::size_t hash3 = x->hash(); INFO(" hash3 = " << hash3);
+
+    EXPECT_NE(hash2, hash3);
+    
+    x->PutScalar(1.00001);
+    std::size_t hash4 = x->hash(); INFO(" hash4 = " << hash4);
+    
+    EXPECT_NE(hash3, hash4);
+    
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:
@@ -635,8 +658,7 @@ int main(int argc, char **argv)
     comm->Barrier();
     std::cout << "TEST exit code proc #" << comm->MyPID()
               << " " << out << std::endl;
-
-
+    
     MPI_Finalize();
     return out;
 }

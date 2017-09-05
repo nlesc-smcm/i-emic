@@ -678,7 +678,7 @@ std::size_t SuperVector::hash() const
     if (haveAtmosVector_)
     {
         for (size_t i = 0; i < atmosVector_->size(); ++i)
-            seed ^= double_hash((*atmosVector_)[i]) + (seed << 6);
+            seed ^= double_hash( (*atmosVector_)[i] ) + (seed << 6);
     }
     return seed;
 }

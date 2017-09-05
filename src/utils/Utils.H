@@ -137,6 +137,10 @@ namespace Utils
     void overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPars,
                              Teuchos::RCP<Teuchos::ParameterList> dominantPars);
 
+    //! Hashing an Epetra_MultiVector
+    size_t hash(Teuchos::RCP<Epetra_MultiVector> vec);
+    
+    //------------------------------------------------------------------
     //! split a cartesian box into nparts subdomains in a somehow 'good' way.
     //! This function just tells you how many subdomains there should be in
     //! every direction. Returns 1 if no splitting was found.

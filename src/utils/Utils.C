@@ -10,6 +10,9 @@
  **********************************************************************/
 #include "Utils.H"
 #include "EpetraExt_MatrixMatrix.h"
+#include <functional> // for std::hash
+#include <cstdlib>    // for rand();
+
 
 using ConstIterator = Teuchos::ParameterList::ConstIterator;
 //========================================================================================
@@ -130,6 +133,28 @@ void Utils::overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPar
     }
 }
 
+//=============================================================================
+size_t Utils::hash(Teuchos::RCP<Epetra_MultiVector> vec)
+{
+    // Using an XOR and rotate hash on std::hash
+    // This seems to work OK
+    size_t seed = 2;
+    std::hash<double> double_hash;
+
+    // Loop over the vectors in the multivector, create hash
+    int numVectors = vec->NumVectors();
+    int numMyElements;
+    for (int j = 0; j < numVectors; ++j)
+    {
+        numMyElements = (*vec)(j)->Map().NumMyElements();
+        for (int i = 0; i < numMyElements; ++i)
+            seed ^= double_hash((*(*vec)(0))[i]) + (seed << 6) + (seed >> 2);
+    }
+    
+    return seed;
+}
+
+//=============================================================================
 int Utils::SplitBox(int nx, int ny, int nz,
                     int nparts, int& ndx, int& ndy, int& ndz,
                     int sx, int sy, int sz)

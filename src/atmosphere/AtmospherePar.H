@@ -114,6 +114,9 @@ private:
     //! Atmosphere temperature importer
     Teuchos::RCP<Epetra_Import> atmosTimporter_;
 
+    //! State hash
+    size_t stateHash_;
+    
     //! input file (HDF5)
     std::string const inputFile_;
 
@@ -170,6 +173,7 @@ public:
     void computeJacobian();
 
     //! Compute E and P fields
+    //! If stateHash is not updated, nothing happens here
     void computeEP();
 
     void applyMatrix(Epetra_MultiVector const &in,
@@ -285,7 +289,10 @@ private:
     int saveStateToFile(std::string const &name);
 
     //! Copy HDF5
-    void copyFiles();    
+    void copyFiles();
+
+    //! Distribute parallel state in serial model
+    void distributeState();
 
 };
 
