@@ -221,23 +221,10 @@ void AtmospherePar::setupIntCoeff()
 }
 
 //==================================================================
+// --> If this turns out costly we might need to optimize using stateHash
 void AtmospherePar::distributeState()
 {
-    // Check if state is new
-    size_t tmpHash = Utils::hash(state_);
-
-    if (stateHash_ == tmpHash)
-    {
-#ifdef DEBUGGING_NEW
-        INFO(" distributeState(): do nothing");
-#endif
-        return; // do nothing
-    }
-    else
-    {
-        stateHash_ = tmpHash; // set new hash and continue
-    }
-    
+    TIMER_START("AtmospherePar: distribute state...");
     // Create assembly state
     domain_->Solve2Assembly(*state_, *localState_);
 
@@ -250,6 +237,8 @@ void AtmospherePar::distributeState()
     localState_->ExtractCopy(&(*localState)[0], numMyElements);
 
     atmos_->setState(localState);
+    
+    TIMER_STOP("AtmospherePar: distribute state...");
 }
 
 //==================================================================
@@ -703,18 +692,12 @@ void AtmospherePar::computeJacobian()
 }
 
 //==================================================================
+// --> If it turns out costly we might need to optimize using stateHash
 void AtmospherePar::computeEP()
 {
     INFO( "AtmospherePar: computing E, P" );
-
-    // Check if state is new
-    size_t tmpHash = Utils::hash(state_);
-
-    if (stateHash_ == tmpHash)
-        return; // do nothing
-    else        
-        stateHash_ = tmpHash; // set new hash and continue
-    
+    TIMER_START("AtmospherePar: compute E P...");
+        
     // compute E in serial Atmosphere
     atmos_->computeEvaporation();
 
@@ -731,7 +714,7 @@ void AtmospherePar::computeEP()
     {
         tmpE[i] = (*localE)[i];
     }
-
+    
     // export overlapping into non-overlapping E values
     CHECK_ZERO(E_->Export(*localE_, *as2std_surf_, Zero));
 
@@ -752,6 +735,7 @@ void AtmospherePar::computeEP()
     }
 
     INFO( "AtmospherePar: computing E, P done " );
+    TIMER_STOP("AtmospherePar: compute E P...");
 }
 
 //==================================================================
