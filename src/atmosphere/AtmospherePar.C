@@ -352,11 +352,7 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceEP()
     
     // construct E-P with copy P field
     Teuchos::RCP<Epetra_Vector> EmP = Teuchos::rcp( new Epetra_Vector(*E_) );
-    INFO("AtmospherePar::interfaceEP(): |E| = " << Utils::norm(E_));
-    INFO("AtmospherePar::interfaceEP(): |E| (tmp) = " << Utils::norm(EmP));
-    INFO("AtmospherePar::interfaceEP(): |P| = " << Utils::norm(E_));        
     CHECK_ZERO(EmP->Update(-1.0, *P_, 1.0));
-    INFO("AtmospherePar::interfaceEP(): |E-P| = " << Utils::norm(EmP));
 
     return EmP;
 }

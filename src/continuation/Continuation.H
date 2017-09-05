@@ -658,7 +658,8 @@ runBackTracking(VectorPtr stateDir, double parDir)
 
     TRACK_ITERATIONS("Continuation: backtracking steps...", backTrack_);
 
-    if (normRHStest_ > normRHS_ * increase)
+    if ( (normRHStest_ > normRHS_ * increase) &&
+         (numBackTrackingSteps_ > 0) )
     {
         WARNING("Continuation: backtracking failed ", __FILE__, __LINE__);
         return 1;
