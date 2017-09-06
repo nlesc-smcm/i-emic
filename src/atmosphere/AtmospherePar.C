@@ -375,12 +375,14 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceEP()
     // Put parallel atmosphere state in serial model
     distributeState();
     
-    // We need to obtain E-P fields based on our state
+    // We need to obtain E andP fields based on our state
     computeEP();
     
-    // construct E-P with copy P field
+    // construct E-P field with copy P field
     Teuchos::RCP<Epetra_Vector> EmP = Teuchos::rcp( new Epetra_Vector(*E_) );
     CHECK_ZERO(EmP->Update(-1.0, *P_, 1.0));
+
+    // scale E-P with v to get 
 
     return EmP;
 }
@@ -425,7 +427,6 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
                     el_ctr++;
                 }
             }
-
 
     block->beg.push_back(el_ctr);
 

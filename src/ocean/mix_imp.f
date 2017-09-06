@@ -325,14 +325,14 @@ Call structure DSM and FDJS
 !     *     Calculate fluxes on east, north and top faces ==============================
 
 !     *     Initialize arrays
-      Ftxe(:,:,:)    = 0.0
-      Fsxe(:,:,:)    = 0.0
-      Ftyn(:,:,:)    = 0.0
-      Fsyn(:,:,:)    = 0.0
-      Ftzt(:,:,:)    = 0.0
-      Fszt(:,:,:)    = 0.0
-      Ftimp(:,:,:)   = 0.0
-      Fsimp(:,:,:)   = 0.0
+      Ftxe(:,:,:)   = 0.0
+      Fsxe(:,:,:)   = 0.0
+      Ftyn(:,:,:)   = 0.0
+      Fsyn(:,:,:)   = 0.0
+      Ftzt(:,:,:)   = 0.0
+      Fszt(:,:,:)   = 0.0
+      Ftimp(:,:,:)  = 0.0
+      Fsimp(:,:,:)  = 0.0
 
 !     *L0s  start loop over k,j,i
       do k=1,l

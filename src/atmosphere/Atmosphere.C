@@ -166,10 +166,10 @@ void Atmosphere::setup()
     As_   =  sun0_ * (1 - c0_) / (4 * muoa_);
 
     // Filling coefficients (humidity specific)
-    double nuq = (rhoo_ / rhoa_) * (hdim_ / hdimq_);
+    double nuq = qdim_ * (rhoo_ / rhoa_) * (hdim_ / hdimq_);
     double eta = (rhoa_ / rhoo_) * ce_ * uw_;
     Phv_       = qdim_ * kappa_ / (udim_ * r0dim_);
-    nuqeta_    = qdim_ * nuq * eta;
+    nuqeta_    = nuq * eta;
     
     // Parameters for saturation humidity over ocean and ice
     double c1 = 3.8e-3;  // (kg / kg)
@@ -182,6 +182,7 @@ void Atmosphere::setup()
     double t0oK = t0o_ + C2K_; // reference ocean temp in K
     dqso_       = (c1 * c4 * c5) / pow(t0oK + c5, 2);
     dqso_       *= exp( (c4 * t0oK) / (t0oK + c5) );
+
     double t0iK = t0o_ + C2K_; // reference ice temp in K
     dqsi_       = (c1 * c2 * c3) / pow(t0iK + c3, 2);
     dqsi_       *= exp( (c2 * t0iK) / (t0iK + c3) );
@@ -447,6 +448,7 @@ void Atmosphere::computeJacobian()
     // discretize(2, qc);
     
     // Set humidity atom in dependency grid
+    // Al(:,:,:,:,QQ,QQ) = Phv * (qxx + qyy) - nuqeta * qc
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
 
     boundaries();
@@ -660,6 +662,7 @@ void Atmosphere::discretize(int type, Atom &atom)
     case 2: // tc2 (with land points)
         atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
         break;
+        
     case 3: // txx
         for (int i = 1; i <= n_; ++i)
             for (int j = 1; j <= m_; ++j)
@@ -677,6 +680,7 @@ void Atmosphere::discretize(int type, Atom &atom)
                 }
             }
         break;
+        
     case 4: // tyy
         dy2i = 1.0 / pow(dy_, 2);
         for (int i = 1; i <= n_; ++i)
@@ -694,6 +698,7 @@ void Atmosphere::discretize(int type, Atom &atom)
                 }
             }
         break;
+        
     case 5: // qxx
         for (int i = 1; i <= n_; ++i)
             for (int j = 1; j <= m_; ++j)
@@ -711,6 +716,7 @@ void Atmosphere::discretize(int type, Atom &atom)
                 }
             }
         break;
+        
     case 6: // tyy
         dy2i = 1.0 / pow(dy_, 2);
         for (int i = 1; i <= n_; ++i)

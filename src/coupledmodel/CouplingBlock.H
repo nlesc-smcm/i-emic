@@ -64,7 +64,7 @@ public:
             // and max neighbours=27
             const int maxnnz =
                 (modelRow_->dof() + modelCol_->dof()) * 27 + 1;
-
+            
             // indices array
             int indices[maxnnz];
 

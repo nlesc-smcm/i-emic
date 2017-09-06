@@ -17,6 +17,9 @@ module m_atm
       real, parameter ::   brad = 1.5        ! radiative flux param B
       real, parameter ::   sun0 = 1360.      ! solar constant \[\Sigma_0\]
 
+      real, parameter ::    nus = 700.       ! convert E-P field to e
+                                             ! quivalent salinity field
+
       real    Ai, Ad, As, Aa, Os, Aoa, Ooa, amua, bmua
       real, allocatable, dimension(:) ::    dat, davt, albe, suna, suno,upa
 

@@ -826,7 +826,7 @@ reset()
 
     INFO("***********************************************");
     INFO("Continuation: reset... ");
-    INFO("|                step: " << step_);
+    INFO("|                step: " << --step_);
     INFO("|           step size: " << ds_);
     INFO("|          norm state: " << Utils::norm(stateView_));
     INFO("|     norm d/ds state: " << Utils::norm(stateDot_));

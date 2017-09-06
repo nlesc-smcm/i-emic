@@ -70,11 +70,11 @@
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
     <Parameter name="Land Mask" type="string" value="mask_natl16"/>
 
-    <!-- ==================== Coupling ================================= -->
-    <!-- Flag enabling the coupling with an atmosphere                   -->
-    <!--   0: standalone thcm, 1: accepting external atmosphere          -->
+    <!-- ==================== Coupling ===================================== -->
+    <!-- Flag enabling the coupling with an atmosphere through <coupled_atm> -->
+    <!--   0: standalone thcm, 1: accepting external atmosphere              -->
     <Parameter name="Coupled Atmosphere" type="int" value="1"/>
-    <!-- =============================================================== -->
+    <!-- =================================================================== -->
 
     <!-- Starting Parameters -->
     <ParameterList name="Starting Parameters">
@@ -100,6 +100,7 @@
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
+    <!-- Has no effect when coupled -->
     <Parameter name="Restoring Temperature Profile" type="int" value="1"/>
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
