@@ -277,9 +277,15 @@ public:
     void zeroOcean();
     void zeroState();
     
-    //! Get the dependency of q on ocean temperature
+    //! Get the dependency of the q equation on ocean temperature
     double getDqDTo() { return comb_ * humf_ *
             nuqeta_ * dqso_ / qdim_; }
+
+
+    //! Obtain derivatives of E,P
+    void getEPderiv(double &dEdT, double &dEdq,
+                    double &dPdT, double &dPdq);
+
     
     //! Get the dA_{ij} coefficients for surface integrals with q
     void integralCoeff(std::vector<double> &val,

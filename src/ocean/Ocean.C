@@ -40,6 +40,7 @@ extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(setparcs)(int*,double*);
 extern "C" _SUBROUTINE_(getooa)(double*, double*);
 extern "C" _SUBROUTINE_(get_constants)(double*, double*, double*);
+extern "C" _SUBROUTINE_(set_ep_constants)(double*, double*, double*, double*);
 
 //=====================================================================
 // Constructor:
@@ -1002,13 +1003,23 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
 {
     TIMER_START("Ocean: set atmosphere...");
 
+    // Obtain and set atmosphere T at the interface
     Teuchos::RCP<Epetra_Vector> atmosT  = atmos->interfaceT();
-    Teuchos::RCP<Epetra_Vector> atmosEP = atmos->interfaceEP();
-
-    // This is a job for THCM
     THCM::Instance().setAtmosphereT(atmosT);
+
+    // Obtain and set E-P field at the interface
+    Teuchos::RCP<Epetra_Vector> atmosEP = atmos->interfaceEP();
     THCM::Instance().setAtmosphereEP(atmosEP);
-    
+
+    // We also need to know the derivatives of E-P 
+    // with respect to To and q.
+    // These are constant and could be obtained at construction
+    // but I believe the call belongs here.
+    double dEdT, dEdq, dPdT, dPdq;
+    atmos->getEPderiv(dEdT, dEdq, dPdT, dPdq);
+
+    FNAME(set_ep_constants)( &dEdT, &dEdq, &dPdT, &dPdq );
+   
     TIMER_STOP("Ocean: set atmosphere...");
 }
 

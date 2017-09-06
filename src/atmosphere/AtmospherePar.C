@@ -764,6 +764,13 @@ void AtmospherePar::initializePrec()
 }
 
 //==================================================================
+void AtmospherePar::getEPderiv(double &dEdT, double &dEdq,
+                               double &dPdT, double &dPdq)
+{
+    atmos_->getEPderiv(dEdT, dEdq, dPdT, dPdq);
+}
+
+//==================================================================
 void AtmospherePar::preProcess()
 {
     recomputePrec_ = true;

@@ -1,7 +1,6 @@
 
 module m_atm
 
-
       real, parameter ::  hdima = 8400.      ! atmospheric scale height \[H_a\]
       real, parameter ::   rhoa = 1.25       ! atmospheric density \[\rho_a\]
       real, parameter ::   uatm = 0.0        ! advection?? not in the paper
@@ -19,7 +18,9 @@ module m_atm
 
       real, parameter ::    nus = 700.       ! convert E-P field to e
                                              ! quivalent salinity field
-
+      
+      real dedt, dedq, dpdt, dpdq
+      
       real    Ai, Ad, As, Aa, Os, Aoa, Ooa, amua, bmua
       real, allocatable, dimension(:) ::    dat, davt, albe, suna, suno,upa
 

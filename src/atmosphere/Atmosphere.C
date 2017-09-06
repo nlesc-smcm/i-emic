@@ -183,7 +183,7 @@ void Atmosphere::setup()
     dqso_       = (c1 * c4 * c5) / pow(t0oK + c5, 2);
     dqso_       *= exp( (c4 * t0oK) / (t0oK + c5) );
 
-    double t0iK = t0o_ + C2K_; // reference ice temp in K
+    double t0iK = t0i_ + C2K_; // reference ice temp in K
     dqsi_       = (c1 * c2 * c3) / pow(t0iK + c3, 2);
     dqsi_       *= exp( (c2 * t0iK) / (t0iK + c3) );
 
@@ -385,6 +385,16 @@ void Atmosphere::setOceanTemperature(std::vector<double> const &surftemp)
     // Set surface temperature (copy)
     surfaceTemp_ = surftemp;
     assert((int) surfaceTemp_.size() == n_ * m_);
+}
+
+//==================================================================
+void Atmosphere::getEPderiv(double &dEdT, double &dEdq,
+                               double &dPdT, double &dPdq)
+{
+    dEdT = 1.2;
+    dEdq = 2.2;
+    dPdT = 0.0;
+    dPdq = 0.0;
 }
 
 //-----------------------------------------------------------------------------

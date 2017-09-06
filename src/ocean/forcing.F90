@@ -25,7 +25,7 @@ SUBROUTINE forcing
   ! ------------------------------------------------------------------
 
   sigma = par(COMB)*par(WIND)*par(AL_T)
-
+  
   if (iza.eq.2) then        ! idealized wind forcing
      do j=1,m
         do i=1,n
@@ -34,7 +34,7 @@ SUBROUTINE forcing
         enddo
      enddo
   endif
-
+  
   do j = 1,m-1
      do i = 1, n
         Frc(find_row2(i,j,l,UU)) = sigma * taux(i,j)
@@ -109,7 +109,6 @@ SUBROUTINE forcing
   do j=1,m
      do i=1,n
         if (coupled_atm.eq.1) then
-           ! -- this is not yet an equivalent salinity flux
            Frc(find_row2(i,j,l,SS)) = par(COMB)*par(SALT)*nus*epfield(i,j) 
         else
            Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &

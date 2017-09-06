@@ -270,7 +270,8 @@ public:
     // The following functions are required for the coupling with other
     // models:
 
-    // Receive atmosphere data
+    //! Receive atmosphere data
+    //! This routine is called from a CoupledModel object
     void synchronize(std::shared_ptr<AtmospherePar> atmos);
 
     //! Obtain atmos temp data for debugging

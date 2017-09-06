@@ -201,6 +201,22 @@ SUBROUTINE get_constants(o_r0dim, o_udim, o_hdim)
 
 end subroutine get_constants
 
+!**********************************************************
+SUBROUTINE set_ep_constants(i_dedt, i_dedq, i_dpdt, i_dpdq)
+  !     interface to get a few model constants
+  use, intrinsic :: iso_c_binding
+  use m_usr
+  use m_atm
+  implicit none
+  real(c_double) i_dedt, i_dedq, i_dpdt, i_dpdq
+
+  dedt = i_dedt
+  dedq = i_dedq
+  dpdt = i_dpdt
+  dpdq = i_dpdq  
+
+end subroutine set_EP_constants
+
 !***********************************************************
 SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
   ! interface to set a new landmask
@@ -609,7 +625,13 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! S-equation
   ! ------------------------------------------------------------------
-  Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
+  if (coupled_atm.eq.1) then
+     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
+     Al(:,:,1:l,:,SS,TT) = par(COMB) * par(SALT) * nus * dEdT * tc
+     _INFO2_('THCM dEdT = ', dEdT)
+  else
+     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
+  endif
 
   ! ------------------------------------------------------------------
   ! atmosphere layer

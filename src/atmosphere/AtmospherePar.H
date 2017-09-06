@@ -213,6 +213,10 @@ public:
     //! Get continuation parameter
     double getPar(std::string const &parName) { return atmos_->getPar(parName); }
 
+    //! Get derivatives of E and P wrt To and q
+    void getEPderiv(double &dEdT, double &dEdq,
+                    double &dPdT, double &dPdq);
+    
     //! Get continuation parameter name
     std::string const getParName() { return atmos_->getParName(); }
 
