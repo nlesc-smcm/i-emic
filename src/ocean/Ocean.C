@@ -38,7 +38,7 @@ using Teuchos::rcp;
 extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
 extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(setparcs)(int*,double*);
-extern "C" _SUBROUTINE_(getooa)(double*, double*);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*);
 extern "C" _SUBROUTINE_(get_constants)(double*, double*, double*);
 extern "C" _SUBROUTINE_(set_ep_constants)(double*, double*, double*, double*);
 
@@ -1050,13 +1050,17 @@ Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosP()
 // The CouplingBlock class builds a parallel coupling block from this CRS struct.
 std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> atmos)
 {
-    // initialize empty crs matrix
+    // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
     // this block has values -Ooa on the surface temperature points
-    double Ooa, Os;
-    FNAME(getooa)(&Ooa, &Os);
-    int T = 1; // in the Atmosphere temperature is the first unknown
+    double Ooa, Os, qdep;
+    FNAME(getdeps)(&Ooa, &Os, &qdep);
+
+    INFO("CouplingBlock: getBlock()... Ooa = " << Ooa << ", qdep = " << qdep);
+    
+    int T = 1; // in the Atmosphere, temperature is the first unknown
+    int Q = 2; // in the Atmosphere, humidity is the second unknown
 
     // fill CRS struct
     int el_ctr = 0;
@@ -1066,16 +1070,25 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                 for (int xx = UU; xx <= SS; ++xx)
                 {
                     block->beg.push_back(el_ctr);
-                    if ( (k == L_-1) && // surface
-                         (xx == TT) )
+                    if ( (k == L_-1) && (xx == TT) ) // surface T row
                     {
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
-                            block->co.push_back(-Ooa);
+                            block->co.push_back(-Ooa);                            
                             block->jco.push_back(atmos->interface_row(i,j,T) );
                             el_ctr++;
                         }
                     }
+                    else if ( (k == L_-1) && (xx == SS) ) // surface S row
+                    {
+                        if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
+                        {
+                            block->co.push_back(qdep);
+                            block->jco.push_back(atmos->interface_row(i,j,Q) );
+                            el_ctr++;
+                        }
+                    }
+                        
                 }
 
     // final entry in beg ( == nnz)

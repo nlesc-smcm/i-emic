@@ -35,7 +35,7 @@
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-4"/>
 
   <!-- Tolerance when converging on destination   -->
   <!--  for the secant process in detect()        -->
@@ -57,7 +57,7 @@
   <!-- *******************************************************  -->
 
   <!-- Finite difference with which dFdpar is calculated -->
-  <Parameter name="epsilon increment" type="double" value="1.0e-4"/>
+  <Parameter name="epsilon increment" type="double" value="1.0e-5"/>
 
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->
@@ -69,7 +69,7 @@
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
-  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
+  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
 
   <Parameter name="backtracking increase" type="double" value="1.2"/>
 

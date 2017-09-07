@@ -27,12 +27,15 @@ function [state,pars,add] = plot_atmos(fname)
     q0  = 0.0015;
     RtD = 180/pi;    
     
-    Ta  = T0 + squeeze(state(1,:,:,:));
-    qa  = q0 + squeeze(state(2,:,:,:));
+    tdim = 1;
+    qdim = 0.01;
+    
+    Ta  = T0 + tdim * squeeze(state(1,:,:,:));
+    qa  = q0 + qdim * squeeze(state(2,:,:,:));
     Tz  = mean(Ta,1); % zonal mean
     qz  = mean(qa,1); % zonal mean
 
-    figure(10)
+    figure(9)
 
     img = Ta';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
@@ -47,9 +50,7 @@ function [state,pars,add] = plot_atmos(fname)
     ylabel('Latitude')
     exportfig('atmosTemp.eps')
 
-    figure(11)
-    subplot(1,2,1)
-
+    figure(10)
     img = (Ta-repmat(Tz,n,1))';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
@@ -62,7 +63,7 @@ function [state,pars,add] = plot_atmos(fname)
     xlabel('Longitude')
     ylabel('Latitude')
 
-    subplot(1,2,2)
+    figure(11)
     img = (qa-repmat(qz,n,1))';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
@@ -84,7 +85,7 @@ function [state,pars,add] = plot_atmos(fname)
     caxis([min(min(qa)),max(max(qa))])
     hold off
     drawnow
-    title('Atmospheric humidity (g / kg)')
+    title('Atmospheric humidity (kg / kg)')
     xlabel('Longitude')
     ylabel('Latitude')
     exportfig('atmosq.eps')

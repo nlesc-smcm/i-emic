@@ -306,6 +306,26 @@ function [] = plot_ocean(solfile, maskfile, opts)
         if export_to_file
             exportfig('isohalines.eps',10,[20,7])
         end
+        
+        figure(6);
+        Ssurf = S(:,:,l);
+        minS  = S0+min(min(Ssurf));
+        maxS  = S0+max(max(Ssurf));
+        
+        img  = S0 + Ssurf';
+        contourf(RtD*x,RtD*(y),img,20,'Visible', 'on'); hold on;
+        set(gca,'color',[0.65,0.65,0.65]);
+
+        contours = linspace(minT,maxT,20);
+        %imagesc(RtD*x,RtD*(y),img);
+
+        hold off
+
+        colorbar
+        title('Surface Salinity', 'interpreter', 'none');
+        xlabel('Longitude');
+        ylabel('Latitude');
+        colormap(col_white)
 
     end
 

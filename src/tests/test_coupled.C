@@ -182,7 +182,7 @@ TEST(CoupledModel, computeJacobian)
 
 //------------------------------------------------------------------
 // We need this information from THCM
-extern "C" _SUBROUTINE_(getooa)(double*, double*);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*);
 
 TEST(CoupledModel, applyMatrix)
 {
@@ -223,8 +223,8 @@ TEST(CoupledModel, applyMatrix)
             C12.applyMatrix(*atmosVec, *oceanVec);
 
             // Get ocean parameters
-            double Ooa, Os;
-            FNAME(getooa)(&Ooa, &Os );
+            double Ooa, Os, qdep;
+            FNAME(getdeps)(&Ooa, &Os, &qdep);
 
             double max = 0;
             double el;

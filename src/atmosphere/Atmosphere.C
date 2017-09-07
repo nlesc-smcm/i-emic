@@ -13,7 +13,7 @@
 #include "THCMdefs.H"
 #include "Utils.H"
 
-extern "C" _SUBROUTINE_(getooa)(double*, double*);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*);
 
 //==================================================================
 // Constructor for use with parallel atmosphere
@@ -255,7 +255,8 @@ void Atmosphere::setup()
     }
 
     // Get ocean parameters
-    FNAME(getooa)(&Ooa_, &Os_ );
+    double tmp;
+    FNAME(getdeps)(&Ooa_, &Os_, &tmp);
 
     // Fill y and latitude-based arrays
     yv_.reserve(m_+1);

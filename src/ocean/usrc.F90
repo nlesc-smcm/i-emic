@@ -175,16 +175,17 @@ SUBROUTINE getparcs(param,value)
 end subroutine getparcs
 
 !***********************************************************
-SUBROUTINE getooa(o_Ooa, o_Os)
-  !     interface to get Ooa
+SUBROUTINE getdeps(o_Ooa, o_Os, o_qdep)
+  !     interface to get Ooa and other dependencies on external model
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_atm
   implicit none
-  real(c_double) o_Ooa, o_Os
-  o_Ooa = Ooa
-  o_Os  = Os
-end subroutine getooa
+  real(c_double) o_Ooa, o_Os, o_qdep
+  o_Ooa  = Ooa
+  o_Os   = Os
+  o_qdep = - par(COMB) * par(SALT) * nus * eta
+end subroutine getdeps
 
 !**********************************************************
 SUBROUTINE get_constants(o_r0dim, o_udim, o_hdim)
@@ -625,10 +626,11 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! S-equation
   ! ------------------------------------------------------------------
+
   if (coupled_atm.eq.1) then
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
-     ! this might be off by a minus sign
-     Al(:,:,1:l,:,SS,TT) = par(COMB) * par(SALT) * nus * &
+     ! minus sign is added as we take -Au in rhs computation...
+     Al(:,:,1:l,:,SS,TT) = - par(COMB) * par(SALT) * nus * &
           eta * (deltat / qdim) * dqso * sc
   else
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
