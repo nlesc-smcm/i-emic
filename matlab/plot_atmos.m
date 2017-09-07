@@ -30,13 +30,14 @@ function [state,pars,add] = plot_atmos(fname)
     Ta  = T0 + squeeze(state(1,:,:,:));
     qa  = q0 + squeeze(state(2,:,:,:));
     Tz  = mean(Ta,1); % zonal mean
+    qz  = mean(qa,1); % zonal mean
 
     figure(10)
 
     img = Ta';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1);
+    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
     colorbar
     caxis([min(min(Ta)),max(max(Ta))])
     hold off
@@ -47,26 +48,38 @@ function [state,pars,add] = plot_atmos(fname)
     exportfig('atmosTemp.eps')
 
     figure(11)
+    subplot(1,2,1)
 
     img = (Ta-repmat(Tz,n,1))';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1);
+    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
     colorbar
     caxis([min(min(img)),max(max(img))])
     hold off
     drawnow
-    title('Atmospheric temperature anomaly')
+    title('Ta anomaly')
     xlabel('Longitude')
     ylabel('Latitude')
-    exportfig('atmosTemp.eps')
+
+    subplot(1,2,2)
+    img = (qa-repmat(qz,n,1))';
+    contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
+    image(RtD*x,RtD*(y),srf,'AlphaData',.2);
+    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
+    colorbar
+    caxis([min(min(img)),max(max(img))])
+    hold off
+    drawnow
+    title('qa anomaly')
+    xlabel('Longitude')
+    ylabel('Latitude')
     
     figure(12)
-
     img = qa';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,5,'Visible', 'on','linewidth',1);
+    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
     colorbar
     caxis([min(min(qa)),max(max(qa))])
     hold off
@@ -82,7 +95,7 @@ function [state,pars,add] = plot_atmos(fname)
     img = EmP';
     contourf(RtD*x,RtD*(y),img,10,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on','linewidth',1);
+    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
     colorbar
 
     hold off

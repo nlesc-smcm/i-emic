@@ -264,11 +264,11 @@ function [] = plot_ocean(solfile, maskfile, opts)
         maxT = T0+max(max(Tsurf));
 
         img  = T0 + Tsurf';
-        contourf(RtD*x,RtD*(y),img,20,'Visible', 'off'); hold on;
+        contourf(RtD*x,RtD*(y),img,20,'Visible', 'on'); hold on;
         set(gca,'color',[0.65,0.65,0.65]);
 
         contours = linspace(minT,maxT,20);
-        imagesc(RtD*x,RtD*(y),img);
+        %imagesc(RtD*x,RtD*(y),img);
 
         hold off
 

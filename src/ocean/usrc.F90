@@ -629,7 +629,7 @@ SUBROUTINE lin
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
      ! this might be off by a minus sign
      Al(:,:,1:l,:,SS,TT) = par(COMB) * par(SALT) * nus * &
-          eta * (deltat / qdim) * dqso
+          eta * (deltat / qdim) * dqso * sc
   else
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
      _INFO2_('SRES = ', SRES)

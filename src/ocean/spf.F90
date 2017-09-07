@@ -240,10 +240,10 @@ SUBROUTINE tderiv(type,atom)
   !
   atom = 0.0
   SELECT CASE(type)
-  CASE(1)
+  CASE(1) ! surface central points
      atom(:,:,L,5) = 1.0
      if(la > 0) atom(:,:,L,23) = -1.0 ! atmosphere
-  CASE(2)
+  CASE(2) ! surface central points
      atom(:,:,L,5) = 1.0
   CASE(3)
      cosdx2i = (1.0/(cos(y)*dx))**2

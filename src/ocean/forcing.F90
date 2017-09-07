@@ -70,7 +70,7 @@ SUBROUTINE forcing
                 par(COMB) * par(SUNP) * (suna(j) - amua)
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
-
+           
         else if (coupled_atm.eq.1) then ! coupled externally
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l)) &
