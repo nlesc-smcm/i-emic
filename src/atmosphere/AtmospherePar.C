@@ -736,6 +736,8 @@ void AtmospherePar::computeEP()
     // compute integral
     double integral = Utils::dot(precipIntCo_, E_) / totalArea_;
 
+    integral = 0.0; // testing!!
+
     int numGlobalElements = P_->Map().NumGlobalElements();
     int numMyElements = P_->Map().NumMyElements();
     assert((int) surfmask_->size() == numGlobalElements);

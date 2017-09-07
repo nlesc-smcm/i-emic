@@ -1083,7 +1083,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                     {
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
-                            block->co.push_back(-qdep);
+                            block->co.push_back(qdep);
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
                         }
