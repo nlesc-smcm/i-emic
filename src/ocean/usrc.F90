@@ -627,12 +627,13 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   if (coupled_atm.eq.1) then
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
-     Al(:,:,1:l,:,SS,TT) = par(COMB) * par(SALT) * nus * dEdT * tc
+     !Al(:,:,1:l,:,SS,TT) = par(COMB) * par(SALT) * nus * dEdT * tc
      _INFO2_('THCM dEdT = ', dEdT)
   else
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
+     _INFO2_('SRES = ', SRES)
   endif
-
+  
   ! ------------------------------------------------------------------
   ! atmosphere layer
   ! ------------------------------------------------------------------
