@@ -58,7 +58,8 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
     uw_              (params->get("mean atmospheric surface wind speed",8.5)),
     t0a_             (params->get("reference temperature atmosphere",15.0)), //(C)
     t0o_             (params->get("reference temperature ocean",15.0)),      //(C)
-    t0i_             (params->get("reference temperature ice",0.0)),         //(C) 
+    t0i_             (params->get("reference temperature ice",0.0)),         //(C)
+    tdim_            (params->get("temperature scale", 1.0)),
     q0_              (params->get("reference humidity",0.015)), // (kg/kg)
     qdim_            (params->get("humidity scale", 0.01)),  // (kg/kg)
     
@@ -166,10 +167,9 @@ void Atmosphere::setup()
     As_   =  sun0_ * (1 - c0_) / (4 * muoa_);
 
     // Filling coefficients (humidity specific)
-    double nuq = qdim_ * (rhoo_ / rhoa_) * (hdim_ / hdimq_);
-    double eta = (rhoa_ / rhoo_) * ce_ * uw_;
-    Phv_       = qdim_ * kappa_ / (udim_ * r0dim_);
-    nuqeta_    = nuq * eta;
+    nuq_  = qdim_ * (rhoo_ / rhoa_) * (hdim_ / hdimq_);
+    eta_  = (rhoa_ / rhoo_) * ce_ * uw_;
+    Phv_  = qdim_ * kappa_ / (udim_ * r0dim_);
     
     // Parameters for saturation humidity over ocean and ice
     double c1 = 3.8e-3;  // (kg / kg)
@@ -193,7 +193,7 @@ void Atmosphere::setup()
     INFO("     Ad = " << Ad_);
     INFO("    Phv = " << Phv_);
 
-    INFO("  DqDt0 = " <<  nuqeta_ * dqso_ / qdim_);        
+    INFO("  DqDt0 = " <<  nuq_ * eta_ * dqso_ / qdim_);        
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
     nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_ 
@@ -388,13 +388,10 @@ void Atmosphere::setOceanTemperature(std::vector<double> const &surftemp)
 }
 
 //==================================================================
-void Atmosphere::getEPderiv(double &dEdT, double &dEdq,
-                               double &dPdT, double &dPdq)
+void Atmosphere::getEPconstants(double &qdim, double &nuq,
+                                double &eta, double &dqso)
 {
-    dEdT = 1.2;
-    dEdq = 2.2;
-    dPdT = 0.0;
-    dPdq = 0.0;
+    qdim = qdim_; nuq = nuq_; eta = eta_; dqso = dqso_;
 }
 
 //-----------------------------------------------------------------------------
@@ -451,14 +448,14 @@ void Atmosphere::computeJacobian()
     discretize(5, qxx);  // longitudinal diffusion
     discretize(6, qyy);  // meridional diffusion
 
-    // adjust parameter for continuation
-    double nuqetaCont = nuqeta_ * comb_ * humf_;
+    // multiply parameters with continuation control pars
+    double nuqetaCont = comb_ * humf_ * nuq_ * eta_ ;
     qxx.update(Phv_, Phv_, qyy, -nuqetaCont, qc);
 
     // discretize(2, qc);
     
     // Set humidity atom in dependency grid
-    // Al(:,:,:,:,QQ,QQ) = Phv * (qxx + qyy) - nuqeta * qc
+    // Al(:,:,:,:,QQ,QQ) = Phv * (qxx + qyy) - nuq * eta * qc
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
 
     boundaries();
@@ -563,7 +560,7 @@ void Atmosphere::forcing()
                 surfaceTemp_[surfaceRow-1] = value + (*state_)[temRow-1];
                 value += comb_ * sunp_ * (suna_[j] - amua_);
             }
-            else // above ocean
+            else // above ocean 
             {
                 value = surfaceTemp_[surfaceRow-1] +
                     comb_ * sunp_ * (suna_[j] - amua_);
@@ -584,13 +581,16 @@ void Atmosphere::forcing()
                 // the surface is ice or water. At this point this
                 // is only for ocean surface temperature
 
-                // E (evaporation) forcing 
-                value = comb_ * humf_ * nuqeta_ * (1. / qdim_)
+                // E (evaporation) forcing (ocean state part)
+                value =  nuq_ * eta_ * ( tdim_ / qdim_ )
                     * dqso_ * surfaceTemp_[surfaceRow-1];
                 
                 // P (precipitation) forcing 
-                value -= comb_ * humf_ * nuqeta_ * (*P_)[surfaceRow-1];
-                
+                value -=  nuq_ * (*P_)[surfaceRow-1];
+
+                // Apply continuation control parameters 
+                value *= comb_ * humf_ ;
+                                
                 // idealized
                 // value = comb_ * humf_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
             }
@@ -621,8 +621,8 @@ void Atmosphere::computeEvaporation()
             // is only for ocean surface temperature
                 
             // E (evaporation) part
-            (*E_)[surfaceRow-1] = comb_ * humf_ * nuqeta_ *
-                ( (1. / qdim_) * dqso_ * surfaceTemp_[surfaceRow-1]
+            (*E_)[surfaceRow-1] =  eta_ *
+                ( (tdim_ / qdim_) * dqso_ * surfaceTemp_[surfaceRow-1]
                   - (*state_)[humRow-1] );                
 
         }

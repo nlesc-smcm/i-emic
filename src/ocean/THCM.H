@@ -135,16 +135,22 @@ public:
     int coupled_atm;
 
     //! Set atmosphere temperature in the ocean model
-    void setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmos);
+    void setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT);
 
-    //! Set atmosphere E-P field in the ocean model
-    void setAtmosphereEP(Teuchos::RCP<Epetra_Vector> const &atmos);
+    //! Set atmosphere humidity field in the ocean model
+    void setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ);
+    
+    //! Set atmosphere precipitation field in the ocean model
+    void setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP);
 
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
 
     //! Obtain local atmosphere temperature vector
-    Teuchos::RCP<Epetra_Vector> getLocalAtmosEP();
+    Teuchos::RCP<Epetra_Vector> getLocalAtmosQ();
+
+    //! Obtain local atmosphere temperature vector
+    Teuchos::RCP<Epetra_Vector> getLocalAtmosP();
 
     //! Test
     void setAtmosphereTest();
@@ -295,8 +301,11 @@ private:
     //! used to import atmosphere temperature into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosT;
 
-    //! used to import atmosphere EP field into THCM
-    Teuchos::RCP<Epetra_Vector> localAtmosEP;
+    //! used to import atmosphere humidity field into THCM
+    Teuchos::RCP<Epetra_Vector> localAtmosQ;
+
+    //! used to import atmosphere precipitation field into THCM
+    Teuchos::RCP<Epetra_Vector> localAtmosP;
 
     //! used to export computed RHS vector to Trilinos:
     Teuchos::RCP<Epetra_Vector> localRhs;

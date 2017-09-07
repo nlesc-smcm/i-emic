@@ -202,18 +202,18 @@ SUBROUTINE get_constants(o_r0dim, o_udim, o_hdim)
 end subroutine get_constants
 
 !**********************************************************
-SUBROUTINE set_ep_constants(i_dedt, i_dedq, i_dpdt, i_dpdq)
+SUBROUTINE set_ep_constants(i_qdim, i_nuq, i_eta, i_dqso)
   !     interface to get a few model constants
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_atm
   implicit none
-  real(c_double) i_dedt, i_dedq, i_dpdt, i_dpdq
+  real(c_double) i_qdim, i_nuq, i_eta, i_dqso
 
-  dedt = i_dedt
-  dedq = i_dedq
-  dpdt = i_dpdt
-  dpdq = i_dpdq  
+  qdim = i_qdim 
+  nuq  = i_nuq  
+  eta  = i_eta  
+  dqso = i_dqso 
 
 end subroutine set_EP_constants
 
@@ -627,8 +627,9 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   if (coupled_atm.eq.1) then
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
-     !Al(:,:,1:l,:,SS,TT) = par(COMB) * par(SALT) * nus * dEdT * tc
-     _INFO2_('THCM dEdT = ', dEdT)
+     ! this might be off by a minus sign
+     Al(:,:,1:l,:,SS,TT) = par(COMB) * par(SALT) * nus * &
+          eta * (deltat / qdim) * dqso
   else
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
      _INFO2_('SRES = ', SRES)

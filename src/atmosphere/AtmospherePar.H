@@ -75,8 +75,14 @@ private:
     //! Index map for atmosphere T values
     Teuchos::RCP<Epetra_BlockMap> tIndexMap_;
 
+    //! Index map for atmosphere Q values
+    Teuchos::RCP<Epetra_BlockMap> qIndexMap_;
+
     //! parallel atmosphere temperature vector (non-overlapping)
     Teuchos::RCP<Epetra_Vector> atmosT_;
+
+    //! parallel atmosphere humidity vector (non-overlapping)
+    Teuchos::RCP<Epetra_Vector> atmosQ_;
 
     //! parallel atmosphere state (overlapping)
     Teuchos::RCP<Epetra_Vector> localState_;
@@ -113,6 +119,9 @@ private:
 
     //! Atmosphere temperature importer
     Teuchos::RCP<Epetra_Import> atmosTimporter_;
+
+    //! Atmosphere humidity importer
+    Teuchos::RCP<Epetra_Import> atmosQimporter_;
 
     //! State hash
     size_t stateHash_;
@@ -214,8 +223,8 @@ public:
     double getPar(std::string const &parName) { return atmos_->getPar(parName); }
 
     //! Get derivatives of E and P wrt To and q
-    void getEPderiv(double &dEdT, double &dEdq,
-                    double &dPdT, double &dPdq);
+    void getEPconstants(double &qdim, double &nuq,
+                        double &eta, double &dqso);
     
     //! Get continuation parameter name
     std::string const getParName() { return atmos_->getParName(); }
@@ -256,8 +265,11 @@ public:
     //! Get temperature at interface 
     Teuchos::RCP<Epetra_Vector> interfaceT();
 
-    //! Get E-P at interface 
-    Teuchos::RCP<Epetra_Vector> interfaceEP();
+    //! Get humidity at interface 
+    Teuchos::RCP<Epetra_Vector> interfaceQ();
+
+    //! Get precipitation at interface 
+    Teuchos::RCP<Epetra_Vector> interfaceP();
     
     //! Get integral condition coefficients
     Teuchos::RCP<Epetra_Vector> getIntCoeff() { return intcondCoeff_; } 

@@ -140,6 +140,7 @@ class Atmosphere
     double    t0a_; //! reference temperature atmosphere
     double    t0o_; //! reference temperature ocean
     double    t0i_; //! reference temperature ice
+    double   tdim_; //! temperature scale
     double     q0_; //! reference humidity (kg / kg)
     double   qdim_; //! humidity scale (kg / kg)
 
@@ -148,7 +149,8 @@ class Atmosphere
     double  r0dim_;  //! radius of the earth
 
     double Phv_;     //! horizontal Peclet number for vaport transport
-    double nuqeta_;  //! (hdim_ / hdimq_) * ce_ * uw_
+    double nuq_;     //! qdim_ * (rhoo_ / rhoa_) * (hdim_ / hdimq_)
+    double eta_;     //! (rhoa_ / rhoo_) * ce_ * uw_;
 
     double dqso_;    //! derivative sat. humidity w.r.t. T, at t0o (ocean).
     double dqsi_;    //! derivative sat. humidity w.r.t. T, at t0i (ice).
@@ -159,7 +161,7 @@ class Atmosphere
     //! Precipitation, --> idealized for now
     std::shared_ptr<std::vector<double> > P_;
 
-    // Coefficients
+    //! Coefficients
     double muoa_;   //! constant exchange coefficient
     double amua_;   //! (arad+brad*t0)/muoa
     double bmua_;   //!  brad/muoa
@@ -278,14 +280,11 @@ public:
     void zeroState();
     
     //! Get the dependency of the q equation on ocean temperature
-    double getDqDTo() { return comb_ * humf_ *
-            nuqeta_ * dqso_ / qdim_; }
-
+    double getDqDTo() { return comb_ * humf_ * nuq_ * eta_ * dqso_ / qdim_; }
 
     //! Obtain derivatives of E,P
-    void getEPderiv(double &dEdT, double &dEdq,
-                    double &dPdT, double &dPdq);
-
+    void getEPconstants(double &qdim, double &nuq,
+                        double &eta, double &dqso);
     
     //! Get the dA_{ij} coefficients for surface integrals with q
     void integralCoeff(std::vector<double> &val,

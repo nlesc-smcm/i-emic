@@ -387,16 +387,16 @@ TEST(CoupledModel, Synchronization)
     }
     EXPECT_EQ(failed, false);
     
-    Teuchos::RCP<Epetra_Vector> oceanAtmosEP = ocean->getLocalAtmosEP();
+    Teuchos::RCP<Epetra_Vector> oceanAtmosP = ocean->getLocalAtmosP();
         
 #ifdef GNU
     Utils::print(oceanAtmosT,  "oceanAtmosT" +
                  std::to_string(oceanAtmosT->Map().Comm().MyPID()) + ".txt");
-    Utils::print(oceanAtmosEP,  "oceanAtmosEP" +
-                 std::to_string(oceanAtmosEP->Map().Comm().MyPID()) + ".txt");
+    Utils::print(oceanAtmosP,  "oceanAtmosP" +
+                 std::to_string(oceanAtmosP->Map().Comm().MyPID()) + ".txt");
 #endif
 
-    oceanAtmosEP->MaxValue(&maxValue);
+    oceanAtmosP->MaxValue(&maxValue);
     EXPECT_GT(std::abs(maxValue), 0.0);
 }
 

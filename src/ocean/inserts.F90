@@ -8,21 +8,22 @@ module m_inserts
 
 contains
 
-  subroutine insert_atmosphere_t(inserted_atmos_temp)
+  !!------------------------------------------------------------------
+  subroutine insert_atmosphere_t(inserted_atmos_t)
 
     use, intrinsic :: iso_c_binding
     use m_par  
     use m_usr
 
     implicit none
-    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_temp
+    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_t
     integer :: i,j,pos
 
     if (coupled_atm.eq.1) then
        pos = 1
        do j = 1,m
           do i = 1,n
-             tatm(i,j) = inserted_atmos_temp(pos)
+             tatm(i,j) = inserted_atmos_t(pos)
              pos = pos + 1
           end do
        end do
@@ -32,28 +33,53 @@ contains
     end if
   end subroutine insert_atmosphere_t
 
-  subroutine insert_atmosphere_ep(inserted_atmos_ep)
-
+  !!------------------------------------------------------------------
+  subroutine insert_atmosphere_q(inserted_atmos_q)
+    
     use, intrinsic :: iso_c_binding
     use m_par  
     use m_usr
 
     implicit none
-    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_ep
+    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_q
     integer :: i,j,pos
 
     if (coupled_atm.eq.1) then
        pos = 1
        do j = 1,m
           do i = 1,n
-             epfield(i,j) = inserted_atmos_ep(pos)
+             qatm(i,j) = inserted_atmos_q(pos)
              pos = pos + 1
           end do
        end do
-       !_INFO2_("++ Inserting EP: epfield(5,5) = ", epfield(5,5))
     else
-       _INFO2_("Not inserting atmosphere EP : coupled_atm=", coupled_atm)
+       _INFO2_("Not inserting atmosphere q : coupled_atm =", coupled_atm)
     end if
-  end subroutine insert_atmosphere_ep
+  end subroutine insert_atmosphere_q
+
+  !!------------------------------------------------------------------
+  subroutine insert_atmosphere_p(inserted_atmos_p)
+    
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_p
+    integer :: i,j,pos
+
+    if (coupled_atm.eq.1) then
+       pos = 1
+       do j = 1,m
+          do i = 1,n
+             pfield(i,j) = inserted_atmos_p(pos)
+             pos = pos + 1
+          end do
+       end do
+       !_INFO2_("++ Inserting EP: pfield(5,5) = ", pfield(5,5))
+    else
+       _INFO2_("Not inserting atmosphere P : coupled_atm=", coupled_atm)
+    end if
+  end subroutine insert_atmosphere_p
 
 end module m_inserts

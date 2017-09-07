@@ -1007,18 +1007,22 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
     Teuchos::RCP<Epetra_Vector> atmosT  = atmos->interfaceT();
     THCM::Instance().setAtmosphereT(atmosT);
 
-    // Obtain and set E-P field at the interface
-    Teuchos::RCP<Epetra_Vector> atmosEP = atmos->interfaceEP();
-    THCM::Instance().setAtmosphereEP(atmosEP);
+    // Obtain and set humidity field at the interface
+    Teuchos::RCP<Epetra_Vector> atmosQ  = atmos->interfaceQ();
+    THCM::Instance().setAtmosphereQ(atmosQ);
 
-    // We also need to know the derivatives of E-P 
-    // with respect to To and q.
-    // These are constant and could be obtained at construction
+    // Obtain and set precipitation field at the interface
+    Teuchos::RCP<Epetra_Vector> atmosP  = atmos->interfaceP();
+    THCM::Instance().setAtmosphereP(atmosP);
+
+    // We also need to know a few atmospheric constants to compute
+    // E, P and their derivatives w.r.t. To and q
+    // These could be obtained at construction
     // but I believe the call belongs here.
-    double dEdT, dEdq, dPdT, dPdq;
-    atmos->getEPderiv(dEdT, dEdq, dPdT, dPdq);
+    double qdim, nuq, eta, dqso;
+    atmos->getEPconstants( qdim, nuq, eta, dqso );
 
-    FNAME(set_ep_constants)( &dEdT, &dEdq, &dPdT, &dPdq );
+    FNAME(set_ep_constants)( &qdim, &nuq, &eta, &dqso );
    
     TIMER_STOP("Ocean: set atmosphere...");
 }
@@ -1030,9 +1034,15 @@ Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosT()
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosEP()
+Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosQ()
 {
-    return THCM::Instance().getLocalAtmosEP();
+    return THCM::Instance().getLocalAtmosQ();
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosP()
+{
+    return THCM::Instance().getLocalAtmosP();
 }
 
 //==================================================================

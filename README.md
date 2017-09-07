@@ -12,7 +12,7 @@
 | metis          | (`wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-5.1.0.tar.gz`)        |
 | parmetis       | (`wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz`)  |
 | mrilu          | (available in this repository)                                                     | 
-| Trilinos       | <https://trilinos.org/download/>                                                   |
+| Trilinos       | <https://trilinos.org/download/>  (this project is tested to work with v11.12)     |
 | jdqzpp         | (external project, fetched and installed by cmake)                                 |
 | gtest          |  <https://github.com/google/googletest/>                                           |
 
@@ -24,7 +24,7 @@ Define the following environment variables:
 
 - `PLAT`: platform type, only used in a few batch scripts
 - `SHARED_DIR`: base dir of project: `{SHARED_DIR}/i-emic`
-- `MRILU_DIR`: installation directory of mrilu: `{MRILU_DIR}/{lib,mod,...}` 
+- `MRILU_DIR`: installation directory of mrilu: `{MRILU_DIR}/{lib,mod,...}`
 
 
 ## Installation:
@@ -63,4 +63,4 @@ Define the following environment variables:
 
 # General remarks
 
-- The test code serves as example code
+- See the test code for examples ^^

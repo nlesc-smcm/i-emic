@@ -109,7 +109,10 @@ SUBROUTINE forcing
   do j=1,m
      do i=1,n
         if (coupled_atm.eq.1) then
-           Frc(find_row2(i,j,l,SS)) = par(COMB)*par(SALT)*nus*epfield(i,j) 
+           ! nus*(E-P) without the sst dependency, which is taken care of in usrc.F90
+           ! this might be off by a minus sign
+           Frc(find_row2(i,j,l,SS)) = par(COMB) * par(SALT) * nus * &
+                ( -eta * qatm(i,j) - pfield(i,j) )
         else
            Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &
                 par(SPER) * (1 - SRES + SRES*par(BIOT)) * ( spert(i,j) - spertcor )

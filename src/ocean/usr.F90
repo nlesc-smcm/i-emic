@@ -86,12 +86,12 @@ module m_usr
   !
   !     The subdomain forcing fields are mostly set by forcing, which is called
   !     from init.
-  !     tatm and epfields may be set by an external ocean model, see inserts.F90.
+  !     tatm, qatm and pfield may be set by an external ocean model, see inserts.F90.
 
   real, allocatable, dimension(:)     :: Frc
   real, allocatable, dimension(:,:)   :: taux, tauy
   real, allocatable, dimension(:,:)   :: tatm, emip, spert
-  real, allocatable, dimension(:,:)   :: epfield
+  real, allocatable, dimension(:,:)   :: qatm, pfield
   real, allocatable, dimension(:,:,:) :: internal_temp, internal_salt
   real, allocatable, dimension(:,:,:) :: ftlev, fslev
   !--obsolete---
@@ -188,7 +188,7 @@ contains
 
     allocate(Frc(ndim), taux(n,m), tauy(n,m), tx(n,m), ty(n,m))
     allocate(ft(n,m), fs(n,m), tatm(n,m), emip(n,m), spert(n,m))
-    allocate(epfield(n,m))
+    allocate(qatm(n,m), pfield(n,m))
     allocate(ftlev(n,m,l), fslev(n,m,l))
     allocate(internal_temp(n,m,l), internal_salt(n,m,l))
     taux  = 0.0
@@ -216,7 +216,7 @@ contains
 
     deallocate(Frc, taux, tauy, tx, ty)
     deallocate(ft, fs, tatm, emip, spert)
-    deallocate(epfield)
+    deallocate(qatm, pfield)
     deallocate(ftlev, fslev)
     deallocate(internal_temp,internal_salt)
     deallocate(pv_adj)

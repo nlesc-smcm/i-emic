@@ -277,8 +277,11 @@ public:
     //! Obtain atmos temp data for debugging
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
 
-    //! Obtain atmos E-P data for debugging
-    Teuchos::RCP<Epetra_Vector> getLocalAtmosEP();
+    //! Obtain atmos humidity for debugging
+    Teuchos::RCP<Epetra_Vector> getLocalAtmosQ();
+
+    //! Obtain atmos P data for debugging
+    Teuchos::RCP<Epetra_Vector> getLocalAtmosP();
     
     //! Returns the atmos->ocean coupling block in the Jacobian matrix.
     //! I.e. the derivative of our RHS with respect to the atmosphere.

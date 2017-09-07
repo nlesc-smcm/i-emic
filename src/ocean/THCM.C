@@ -129,9 +129,11 @@ extern "C" {
     // Extensions created for communication within the I-EMIC
     //
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_t)(double *atmosT);
-    _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_ep)(double *atmosEP);
+    _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_q)(double *atmosQ);
+    _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_p)(double *atmosP);
     _MODULE_SUBROUTINE_(m_probe, get_atmosphere_t)(double *atmosT);
-    _MODULE_SUBROUTINE_(m_probe, get_atmosphere_ep)(double *atmosEP);
+    _MODULE_SUBROUTINE_(m_probe, get_atmosphere_q)(double *atmosQ);
+    _MODULE_SUBROUTINE_(m_probe, get_atmosphere_p)(double *atmosP);
     _MODULE_SUBROUTINE_(m_global, get_land_temp)(double *land);
     //-----------------------------------------------------------------------------
 
@@ -549,8 +551,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localDiagB      = Teuchos::rcp(new Epetra_Vector(*StandardMap));
     localRhs        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
     localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+
+    // Our copies of atmospheric entities
     localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosEP    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosP     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -1098,45 +1103,68 @@ void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
 }
 
 //=============================================================================
-void THCM::setAtmosphereEP(Teuchos::RCP<Epetra_Vector> const &atmosEP)
+void THCM::setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ)
 {
-    double value; atmosEP->MaxValue(&value);    
-    std::cout << "THCM::setAtmosphereEP() max input atmosEP = " << value << std::endl;
     
-    if (!(atmosEP->Map().SameAs(*StandardSurfaceMap)))
+    if (!(atmosQ->Map().SameAs(*StandardSurfaceMap)))
     {
-        INFO("THCM::setAtmosphereEP: atmosEP map -> StandardSurfaceMap");
-        CHECK_ZERO(atmosEP->ReplaceMap(*StandardSurfaceMap));
+        INFO("THCM::setAtmosphereEP: atmosQ map -> StandardSurfaceMap");
+        CHECK_ZERO( atmosQ->ReplaceMap(*StandardSurfaceMap) );
     }
 
     // Standard2Assembly
-    // Import atmosEP into local atmosEP
-    CHECK_ZERO(localAtmosEP->Import(*atmosEP, *as2std_surf, Insert));
+    // Import atmosQ into local atmosQ
+    CHECK_ZERO( localAtmosQ->Import(*atmosQ, *as2std_surf, Insert) );
 
-    double *locAtmosEP;
-    localAtmosEP->ExtractView(&locAtmosEP);
-    F90NAME(m_inserts, insert_atmosphere_ep)( locAtmosEP );
+    double *tmpAtmosQ;
+    localAtmosQ->ExtractView(&tmpAtmosQ);
+    F90NAME(m_inserts, insert_atmosphere_q)( tmpAtmosQ );
+}
+
+//=============================================================================
+void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
+{
+    
+    if (!(atmosP->Map().SameAs(*StandardSurfaceMap)))
+    {
+        INFO("THCM::setAtmosphereEP: atmosP map -> StandardSurfaceMap");
+        CHECK_ZERO(atmosP->ReplaceMap(*StandardSurfaceMap));
+    }
+
+    // Standard2Assembly
+    // Import atmosP into local atmosP
+    CHECK_ZERO(localAtmosP->Import(*atmosP, *as2std_surf, Insert));
+
+    double *tmpAtmosP;
+    localAtmosP->ExtractView(&tmpAtmosP);
+    F90NAME(m_inserts, insert_atmosphere_p)( tmpAtmosP );
 }
 
 //=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosT()
 {
-    double *locAtmosT;
-    localAtmosT->ExtractView(&locAtmosT);
-    F90NAME(m_probe, get_atmosphere_t )( locAtmosT );
+    double *tmpAtmosT;
+    localAtmosT->ExtractView(&tmpAtmosT);
+    F90NAME(m_probe, get_atmosphere_t )( tmpAtmosT );
     return localAtmosT;
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosEP()
+Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosQ()
 {
-    double *locAtmosEP;
-    localAtmosEP->ExtractView(&locAtmosEP);
-    F90NAME(m_probe, get_atmosphere_ep )( locAtmosEP );
-    double maxValue;
-    localAtmosEP->MaxValue(&maxValue);
-    INFO("THCM::getLocalAtmosEP(): localAtmosEP->MaxValue = " << maxValue);
-    return localAtmosEP;
+    double *tmpAtmosQ;
+    localAtmosP->ExtractView(&tmpAtmosQ);
+    F90NAME(m_probe, get_atmosphere_q )( tmpAtmosQ );
+    return localAtmosQ;
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosP()
+{
+    double *tmpAtmosP;
+    localAtmosP->ExtractView(&tmpAtmosP);
+    F90NAME(m_probe, get_atmosphere_p )( tmpAtmosP );
+    return localAtmosP;
 }
 
 //=============================================================================

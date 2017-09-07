@@ -123,26 +123,32 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     // Create atmosphere temperature restrict/import strategy
     //------------------------------------------------------------------
     
-    // Obtain rows containing temperature
-    std::vector<int> tRows;
+    // Obtain separate rows containing temperature or humidity
+    std::vector<int> tRows, qRows;
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
+        {
             tRows.push_back(
                 FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
                                 i, j, 0, ATMOS_TT_));
+            qRows.push_back(
+                FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                i, j, 0, ATMOS_QQ_));
+        }
 
-    // Create restricted map
-    tIndexMap_ =
-        Utils::CreateSubMap(state_->Map(), tRows);
+    // Create restricted maps
+    tIndexMap_ = Utils::CreateSubMap(state_->Map(), tRows);
+    qIndexMap_ = Utils::CreateSubMap(state_->Map(), qRows);
 
-    // Create the atmosphere T vector
+    // Create atmosphere T and Q vectors
     atmosT_ = Teuchos::rcp(new Epetra_Vector(*tIndexMap_));
+    atmosQ_ = Teuchos::rcp(new Epetra_Vector(*qIndexMap_));
 
-    // Create importer
-    // Target map: tIndexMap
+    // Create importers
+    // Target map: tIndexMap, qIndexMap
     // Source map: state_->Map()
-    atmosTimporter_ =
-        Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
+    atmosTimporter_ = Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
+    atmosQimporter_ = Teuchos::rcp(new Epetra_Import(*qIndexMap_, state_->Map()));
 
     setupIntCoeff();  
 
@@ -370,21 +376,29 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceEP()
+Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceQ()
+{
+    TIMER_START("Atmosphere: get atmosphere humidity...");
+    if (!(atmosQ_->Map().SameAs(*qIndexMap_)))
+    {
+        INFO("Replacing atmosQ_ map -> qIndexMap_");
+        CHECK_ZERO(atmosQ_->ReplaceMap(*qIndexMap_));
+    }
+    CHECK_ZERO(atmosQ_->Import(*state_, *atmosQimporter_, Insert));
+    TIMER_STOP("Atmosphere: get atmosphere humidity...");
+    return getVector('C', atmosQ_);
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceP()
 {
     // Put parallel atmosphere state in serial model
     distributeState();
     
-    // We need to obtain E andP fields based on our state
+    // We need to obtain E and P fields based on our state
     computeEP();
     
-    // construct E-P field with copy P field
-    Teuchos::RCP<Epetra_Vector> EmP = Teuchos::rcp( new Epetra_Vector(*E_) );
-    CHECK_ZERO(EmP->Update(-1.0, *P_, 1.0));
-
-    // scale E-P with v to get 
-
-    return EmP;
+    return P_;
 }
 
 //==================================================================
@@ -764,10 +778,10 @@ void AtmospherePar::initializePrec()
 }
 
 //==================================================================
-void AtmospherePar::getEPderiv(double &dEdT, double &dEdq,
-                               double &dPdT, double &dPdq)
+void AtmospherePar::getEPconstants(double &qdim, double &nuq,
+                                   double &eta, double &dqso)
 {
-    atmos_->getEPderiv(dEdT, dEdq, dPdT, dPdq);
+    atmos_->getEPconstants(qdim, nuq, eta, dqso);
 }
 
 //==================================================================

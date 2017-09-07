@@ -54,7 +54,6 @@ module m_global
   real :: dx, dy, dz
   integer, dimension(:,:,:),allocatable :: landm
   real, dimension(:,:), allocatable :: taux, tauy, tatm, emip, spert
-  real, dimension(:,:), allocatable :: epfield
   logical ::  periodic
   real, dimension(:,:,:), allocatable :: internal_temp,internal_salt
 

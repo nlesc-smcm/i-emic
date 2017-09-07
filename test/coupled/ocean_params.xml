@@ -105,7 +105,7 @@
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
     <!-- Freshwater Forcing (ifw in THCM) -->
     <!-- 0: data, 1: idealized            -->
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
