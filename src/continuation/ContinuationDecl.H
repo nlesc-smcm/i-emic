@@ -1,5 +1,5 @@
 //======================================================================
-// Author T.E.Mulder 2015 (t.e.mulder@uu.nl)
+// Author T.E.Mulder 2015/16/17 (t.e.mulder@uu.nl)
 //======================================================================
 #ifndef CONTINUATIONDECL_H
 #define CONTINUATIONDECL_H
@@ -73,7 +73,7 @@ class Continuation
     double zeta_;
 
     double scale1_; // conservative scaling for adaptive step
-    double scale2_; // drastic scaling for  resetting adaptive step
+    double scale2_; // drastic scaling for adaptive step reset
 
     double epsilon_; // variation used for finite difference
 
@@ -215,6 +215,9 @@ private:
     //! compute dot: result = (vec1,vec2)
     //! does not support block result, returns only first double
     double dot(VectorPtr const &vec1, VectorPtr const &vec2) const;
+
+    //! write essential continuation data to datafile
+    void writeData() {} ;
 };
 
 #endif

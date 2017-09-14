@@ -634,7 +634,6 @@ SUBROUTINE lin
           eta * (deltat / qdim) * dqso * sc
   else
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
-     _INFO2_('SRES = ', SRES)
   endif
   
   ! ------------------------------------------------------------------

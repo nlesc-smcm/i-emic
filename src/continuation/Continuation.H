@@ -217,6 +217,9 @@ step()
     // Let the model do some administrative work at the end of a succesful step
     model_->postProcess();
 
+    // Write continuation data to file
+    writeData();
+
     TIMER_STOP("Continuation: step");
     return 0; // Exiting normally
 }

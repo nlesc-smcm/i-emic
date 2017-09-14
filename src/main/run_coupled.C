@@ -50,7 +50,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm);
 
 // These are duplicated from test.C -> factorize and put them in a namespace
 //------------------------------------------------------------------
-RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
+void outputFiles(RCP<Epetra_Comm> Comm);
 RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv);
 void              printProfile(ProfileType profile);
 
@@ -148,21 +148,24 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 //------------------------------------------------------------------
 RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
 {
+    // Setup MPI communicator
+
 #ifdef HAVE_MPI
     MPI_Init(&argc, &argv);
     RCP<Epetra_MpiComm> Comm =
-        rcp(new Epetra_MpiComm(MPI_COMM_WORLD));
+        rcp(new Epetra_MpiComm(MPI_COMM_WORLD) );
 #else
     RCP<Epetra_SerialComm> Comm =
-        rcp(new Epetra_SerialComm());
+        rcp(new Epetra_SerialComm() );
 #endif
+    
     // Specify output files
-    outFile = outputFiles(Comm);
+    outputFiles(Comm);
     return Comm;
 }
 
 //------------------------------------------------------------------
-Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
+void outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 {
     // Setup output files "fname_#.txt" for P==0 && P==1, other processes
     // will get a blackholestream.
@@ -184,7 +187,6 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
         outFile =
             Teuchos::rcp(new Teuchos::oblackholestream());
     }
-    return outFile;
 }
 
 //------------------------------------------------------------------

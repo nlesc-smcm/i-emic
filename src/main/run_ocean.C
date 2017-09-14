@@ -49,7 +49,7 @@ ProfileType       profile;      // profile
 std::stack<Timer> timerStack;   // timing stack
 
 //------------------------------------------------------------------
-void testOcean(RCP<Epetra_Comm> Comm);
+void run(RCP<Epetra_Comm> Comm);
 
 //------------------------------------------------------------------
 RCP<std::ostream> outputFiles(RCP<Epetra_Comm> Comm);
@@ -65,9 +65,8 @@ int main(int argc, char **argv)
 	//  - returns Trilinos' communicator Epetra_Comm
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
-	// test the coupled model
-	testOcean(Comm);
-	//	testOcean(Comm);
+	// run the ocean model
+	run(Comm);
 
 	// print the profile
 	if (Comm->MyPID() == 0)
@@ -80,7 +79,7 @@ int main(int argc, char **argv)
 }
 
 //------------------------------------------------------------------
-void testOcean(RCP<Epetra_Comm> Comm)
+void run(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
 
@@ -99,6 +98,7 @@ void testOcean(RCP<Epetra_Comm> Comm)
 	updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
     continuationParams->setName("Continuation parameters");
 
+    // Let the continuation parameters dominate over ocean parameters
     INFO("Overwriting:");
     Utils::overwriteParameters(oceanParams, continuationParams);
 
