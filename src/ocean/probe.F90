@@ -1,7 +1,7 @@
 #include "fdefs.h"
 
 module m_probe
-
+  
   use m_usr
 
   implicit none
@@ -79,5 +79,49 @@ contains
        _INFO_("No coupling, not obtaining any data")
     end if
   end subroutine get_atmosphere_p
+
+  !!------------------------------------------------------------------
+  subroutine compute_evap(ocean_evap, un)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+    use m_atm
+
+    implicit none
+
+    ! import/export
+    real(c_double), dimension(m*n)  :: ocean_evap
+    real(c_double), dimension(ndim) :: un
+
+    ! local
+    integer :: i,j,pos
+
+    ! external
+    integer find_row2
+
+    if (coupled_atm.eq.1) then
+       pos = 1
+       do j = 1,m
+          do i = 1,n
+             
+             ocean_evap(pos) = eta * ((deltat / qdim) * &
+                  dqso * un(find_row2(i,j,l,TT)) - &
+                  qatm(i,j)) * (1 - landm(i,j,l))
+             pos = pos + 1
+          end do
+       end do
+
+       _INFO2_("  thcm probe:  eta    = ", eta)
+       _INFO2_("  thcm probe:  deltat = ", deltat)
+       _INFO2_("  thcm probe:  qdim   = ", qdim)
+       _INFO2_("  thcm probe:  dqso   = ", dqso)
+
+    else
+       _INFO_("No coupling, not obtaining any data")
+    end if
+
+  end subroutine compute_evap
+
 
 end module m_probe

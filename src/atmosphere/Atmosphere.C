@@ -605,7 +605,6 @@ void Atmosphere::computeEvaporation()
                 ( (tdim_ / qdim_) * dqso_ * surfaceTemp_[surfaceRow-1]
                   - (*state_)[humRow-1] );                
         }
-    
 }
 
 //-----------------------------------------------------------------------------

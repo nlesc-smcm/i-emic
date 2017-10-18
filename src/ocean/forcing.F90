@@ -111,7 +111,6 @@ SUBROUTINE forcing
      do i=1,n
         if (coupled_atm.eq.1) then
            ! nus*(E-P) without the sst dependency, which is taken care of in usrc.F90
-
            Frc(find_row2(i,j,l,SS)) =  par(COMB) * par(SALT) * nus * &
                 ( -eta * qatm(i,j) - pfield(i,j) )
         else

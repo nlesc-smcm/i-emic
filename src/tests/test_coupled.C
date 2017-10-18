@@ -386,12 +386,17 @@ TEST(CoupledModel, Synchronization)
     }
     EXPECT_EQ(failed, false);
 
+    // Evaporation is calculated simultaneously in Ocean and in Atmosphere
+    // during the RHS computation above.
+    // Here we check whether they return the same vector.
+    Teuchos::RCP<Epetra_Vector> atmosE = atmos->getE();
+    Teuchos::RCP<Epetra_Vector> oceanE = ocean->getE();
+    double nrmAtmosE = Utils::norm(atmosE);
+    double nrmOceanE = Utils::norm(oceanE);
+    EXPECT_NEAR(nrmAtmosE, nrmOceanE, 1e-7);
+
     // Precipitation should have been calculated in the atmosphere model
     Teuchos::RCP<Epetra_Vector> oceanAtmosP = ocean->getLocalAtmosP();
-
-    // Evaporation is calculated simultaneously in Ocean and in Atmosphere
-    // Teuchos::RCP<Epetra_Vector> oceanAtmosP = ocean->getLocalAtmosE();
-
         
 #ifdef GNU
     Utils::print(oceanAtmosT,  "oceanAtmosT" +

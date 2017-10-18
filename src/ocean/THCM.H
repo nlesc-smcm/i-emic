@@ -125,7 +125,6 @@ public:
       0  for w,p
       1 for T,S
     */
-
     void evaluateB();
 
     //! ------------------- I-EMIC couplings -----------------------------
@@ -146,11 +145,20 @@ public:
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
 
-    //! Obtain local atmosphere temperature vector
+    //! Obtain local atmosphere humidity vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosQ();
 
-    //! Obtain local atmosphere temperature vector
+    //! Obtain atmosphere humidity vector
+    Teuchos::RCP<Epetra_Vector> getAtmosQ();
+    
+    //! Obtain local atmosphere precipitation vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosP();
+
+    //! Obtain local ocean evaporation vector
+    Teuchos::RCP<Epetra_Vector> getLocalOceanE();
+
+    //! Obtain ocean evaporation vector
+    Teuchos::RCP<Epetra_Vector> getOceanE();
 
     //! Test
     void setAtmosphereTest();
@@ -307,7 +315,10 @@ private:
     //! used to import atmosphere precipitation field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosP;
 
-    //! used to export computed RHS vector to Trilinos:
+    //! used to extract evaporation field from THCM
+    Teuchos::RCP<Epetra_Vector> localOceanE;
+
+    //! used to export computed RHS vector from THCM:
     Teuchos::RCP<Epetra_Vector> localRhs;
 
     //! the diagonal matrix B stored as a vector

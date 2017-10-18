@@ -226,6 +226,7 @@ SUBROUTINE tderiv(type,atom)
   use m_usr
   implicit none
   !     1:  t
+  !     2:  t
   !     4:  txx 
   !     5:  tyy
   !     6:  tzz

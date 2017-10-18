@@ -282,7 +282,11 @@ public:
 
     //! Obtain atmos P data for debugging
     Teuchos::RCP<Epetra_Vector> getLocalAtmosP();
-    
+
+    //! Obtain ocean E data for debugging
+    Teuchos::RCP<Epetra_Vector> getLocalOceanE();
+    Teuchos::RCP<Epetra_Vector> getE();
+
     //! Returns the atmos->ocean coupling block in the Jacobian matrix.
     //! I.e. the derivative of our RHS with respect to the atmosphere.
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);

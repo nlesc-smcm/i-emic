@@ -134,6 +134,7 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_probe, get_atmosphere_t)(double *atmosT);
     _MODULE_SUBROUTINE_(m_probe, get_atmosphere_q)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_probe, get_atmosphere_p)(double *atmosP);
+    _MODULE_SUBROUTINE_(m_probe, compute_evap)(double *oceanE, double *x);
     _MODULE_SUBROUTINE_(m_global, get_land_temp)(double *land);
     //-----------------------------------------------------------------------------
 
@@ -441,8 +442,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     Teuchos::RCP<Epetra_Map> lev_map_dist  = domain->CreateStandardMap(1,true);
 
-    StandardSurfaceMap = lev_map_dist;
-
     Teuchos::RCP<Epetra_Map> lev_map_root  = Utils::Gather(*lev_map_dist,0);
 
     Teuchos::RCP<Epetra_Map> intlev_map_dist  = domain->CreateStandardMap(1,false);
@@ -556,6 +555,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localAtmosP     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localOceanE     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -1159,12 +1159,50 @@ Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosQ()
 }
 
 //=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getAtmosQ()
+{
+    Teuchos::RCP<Epetra_Vector> atmosQ =
+        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+
+    // Export assembly map surface evaporation to standard surface map
+    CHECK_ZERO(atmosQ->Export(*getLocalAtmosQ(), *as2std_surf, Zero));
+    return atmosQ;
+}
+
+//=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosP()
 {
     double *tmpAtmosP;
     localAtmosP->ExtractView(&tmpAtmosP);
     F90NAME(m_probe, get_atmosphere_p )( tmpAtmosP );
     return localAtmosP;
+}
+
+//============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getLocalOceanE()
+{
+    
+    double *tmpOceanE;
+    localOceanE->ExtractView(&tmpOceanE);
+
+    // localsol should contain something meaningful
+    double* solution;
+    localSol->ExtractView(&solution);
+
+    F90NAME(m_probe, compute_evap )( tmpOceanE, solution );
+
+    return localOceanE;
+}
+
+//============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getOceanE()
+{
+    Teuchos::RCP<Epetra_Vector> oceanE =
+        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+
+    // Export assembly map surface evaporation to standard surface map
+    CHECK_ZERO(oceanE->Export(*getLocalOceanE(), *as2std_surf, Zero));
+    return oceanE;
 }
 
 //=============================================================================
