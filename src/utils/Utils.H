@@ -103,7 +103,7 @@ namespace Utils
     void print(VectorPtr const &vec, std::string const &fname)
     {
         // This does not necessarily behave well in parallel,
-        // use separate filenames or a gather on the vector.
+        // use proc-dependent filenames or a gather on the vector.
         std::ofstream file;
         file.open(fname);
         vec->Print(file);

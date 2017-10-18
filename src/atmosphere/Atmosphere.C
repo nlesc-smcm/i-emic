@@ -35,50 +35,19 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
 
     periodic_        (periodic),
 
-    use_landmask_    (params->get("Use land mask from Ocean", false)),
-    
-// solvers ------------------------------------------------------------------
-    preconditioner_  (params->get("Preconditioner", 'J')),
-
-// physics ------------------------------------------------------------------
-    rhoa_            (params->get("atmospheric density",1.25)),
-    rhoo_            (params->get("oceanic density",1024)),
-    hdima_           (params->get("atmospheric scale height",8400.)),
-    hdimq_           (params->get("humidity scale height",1800.)),
-    hdim_            (params->get("vertical length scale",5000.)),
-    cpa_             (params->get("heat capacity",1000.)),
-    d0_              (params->get("constant eddy diffusivity",3.1e+06)),
-    kappa_           (params->get("humidity eddy diffusivity",1e+06)),
-    arad_            (params->get("radiative flux param A",216.0)),
-    brad_            (params->get("radiative flux param B",1.5)),
-    sun0_            (params->get("solar constant",1360.)),
-    c0_              (params->get("atmospheric absorption coefficient",0.43)),
-    ce_              (params->get("Dalton number",1.3e-03)),
-    ch_              (params->get("exchange coefficient ch",0.94 * ce_)),
-    uw_              (params->get("mean atmospheric surface wind speed",8.5)),
-    t0a_             (params->get("reference temperature atmosphere",15.0)), //(C)
-    t0o_             (params->get("reference temperature ocean",15.0)),      //(C)
-    t0i_             (params->get("reference temperature ice",0.0)),         //(C)
-    tdim_            (params->get("temperature scale", 1.0)),
-    q0_              (params->get("reference humidity",0.015)), // (kg/kg)
-    qdim_            (params->get("humidity scale", 0.01)),  // (kg/kg)
-    
-    udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
-    r0dim_           (params->get("radius of the earth",6.37e+06)),
-
-// continuation ----------------------------------------------------------------
-    allParameters_   ({ "Combined Forcing", "Solar Forcing", "Humidity Forcing" }),
-    parName_         (params->get("Continuation parameter",
-                                  "Combined Forcing")),
-    
-// starting values
-    comb_            (params->get("Combined Forcing", 0.0)),
-    sunp_            (params->get("Solar Forcing", 1.0)),
-    humf_            (params->get("Humidity Forcing", 1.0))
+    use_landmask_    (params->get("Use land mask from Ocean", false))
 {
     INFO("Atmosphere: constructor for parallel use...");
+
+    // Set non-grid (domain decomposition) related parameters
+    setParameters(params);
+
+    // Notify that we are now in parallel mode
     parallel_ = true;
+
+    // Other setup things
     setup();
+    
     INFO("Atmosphere: constructor for parallel use done");
 }
 
@@ -93,47 +62,13 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
     m_               (params->get("Global Grid-Size m", 16)),
     l_               (params->get("Global Grid-Size l", 1)),
     periodic_        (params->get("Periodic", false)),
-    use_landmask_    (params->get("Use land mask from Ocean", false)),
-
-// solvers ------------------------------------------------------------------
-    preconditioner_  (params->get("Preconditioner", 'J')),
-
-// physics ------------------------------------------------------------------
-    rhoa_            (params->get("atmospheric density",1.25)),
-    rhoo_            (params->get("oceanic density",1024)),
-    hdima_           (params->get("atmospheric scale height",8400.)),
-    hdimq_           (params->get("humidity scale height",1800.)),
-    hdim_            (params->get("vertical length scale",5000.)),
-    cpa_             (params->get("heat capacity",1000.)),
-    d0_              (params->get("constant eddy diffusivity",3.1e+06)),
-    kappa_           (params->get("humidity eddy diffusivity",1e+06)),
-    arad_            (params->get("radiative flux param A",216.0)),
-    brad_            (params->get("radiative flux param B",1.5)),
-    sun0_            (params->get("solar constant",1360.)),
-    c0_              (params->get("atmospheric absorption coefficient",0.43)),
-    ce_              (params->get("Dalton number",1.3e-03)),
-    ch_              (params->get("exchange coefficient ch",0.94 * ce_)),
-    uw_              (params->get("mean atmospheric surface wind speed",8.5)),
-    t0a_             (params->get("reference temperature atmosphere",15.0)), //(C)
-    t0o_             (params->get("reference temperature ocean",15.0)),      //(C)
-    t0i_             (params->get("reference temperature ice",0.0)),         //(C) 
-    q0_              (params->get("reference humidity",0.015)), // (kg/kg)
-    qdim_            (params->get("humidity scale", 0.01)),  // (kg/kg)
-    
-    udim_            (params->get("horizontal velocity of the ocean",0.1e+00)),
-    r0dim_           (params->get("radius of the earth",6.37e+06)),
-
-// continuation ----------------------------------------------------------------
-    allParameters_   ({ "Combined Forcing", "Solar Forcing" }),
-    parName_         (params->get("Continuation parameter",
-                                  "Combined Forcing")),
-// starting values
-    comb_            (params->get("Combined Forcing", 0.0)),
-    sunp_            (params->get("Solar Forcing", 1.0)),
-    humf_            (params->get("Humidity Forcing", 1.0))
+    use_landmask_    (params->get("Use land mask from Ocean", false))
 {
     INFO("Atmosphere: constructor...");
-
+    
+    // Set non-grid (domain decomposition) related parameters
+    setParameters(params);
+    
     // Define domain
     xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
     xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
@@ -154,6 +89,49 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
 
     INFO("Atmosphere: constructor... done");
 }
+
+//==================================================================
+void Atmosphere::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
+{
+    // physics ------------------------------------------------------------------
+    rhoa_            = params->get("atmospheric density",1.25);
+    rhoo_            = params->get("oceanic density",1024);
+    hdima_           = params->get("atmospheric scale height",8400.);
+    hdimq_           = params->get("humidity scale height",1800.);
+    hdim_            = params->get("vertical length scale",5000.);
+    cpa_             = params->get("heat capacity",1000.);
+    d0_              = params->get("constant eddy diffusivity",3.1e+06);
+    kappa_           = params->get("humidity eddy diffusivity",1e+06);
+    arad_            = params->get("radiative flux param A",216.0);
+    brad_            = params->get("radiative flux param B",1.5);
+    sun0_            = params->get("solar constant",1360.);
+    c0_              = params->get("atmospheric absorption coefficient",0.43);
+    ce_              = params->get("Dalton number",1.3e-03);
+    ch_              = params->get("exchange coefficient ch",0.94 * ce_);
+    uw_              = params->get("mean atmospheric surface wind speed",8.5);
+    t0a_             = params->get("reference temperature atmosphere",15.0); //(C)
+    t0o_             = params->get("reference temperature ocean",15.0);      //(C)
+    t0i_             = params->get("reference temperature ice",0.0);         //(C)
+    tdim_            = params->get("temperature scale", 1.0);
+    q0_              = params->get("reference humidity",0.015); // (kg/kg)
+    qdim_            = params->get("humidity scale", 0.01);  // (kg/kg)
+    
+    udim_            = params->get("horizontal velocity of the ocean",0.1e+00);
+    r0dim_           = params->get("radius of the earth",6.37e+06);
+
+// continuation ----------------------------------------------------------------
+    allParameters_   = { "Combined Forcing",
+                         "Solar Forcing",
+                         "Humidity Forcing" };
+    
+    parName_         = params->get("Continuation parameter",
+                                   "Combined Forcing");
+    
+// starting values
+    comb_            = params->get("Combined Forcing", 0.0);
+    sunp_            = params->get("Solar Forcing", 1.0);
+    humf_            = params->get("Humidity Forcing", 1.0);
+}   
 
 //==================================================================
 void Atmosphere::setup()
@@ -608,6 +586,7 @@ void Atmosphere::computeEvaporation()
 {
     int humRow, surfaceRow;
 
+    
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
@@ -620,13 +599,13 @@ void Atmosphere::computeEvaporation()
             // --> when ice is available, this should check whether
             // the surface is ice or water. At this point this
             // is only for ocean surface temperature
-                
+            
             // E (evaporation) part
             (*E_)[surfaceRow-1] =  eta_ *
                 ( (tdim_ / qdim_) * dqso_ * surfaceTemp_[surfaceRow-1]
                   - (*state_)[humRow-1] );                
-
         }
+    
 }
 
 //-----------------------------------------------------------------------------
@@ -634,7 +613,10 @@ void Atmosphere::computePrecipitation()
 {
     // In a parallel setting, precipitation is governed by AtmospherePar
     if (parallel_)
+    {
+        WARNING("Function should not be called in parallel.", __FILE__, __LINE__);
         return; // do nothing
+    }
     
     double integral = Utils::dot(*precipIntCo_, *E_) / totalArea_;
     int surfaceRow;
@@ -648,7 +630,6 @@ void Atmosphere::computePrecipitation()
             (*P_)[surfaceRow-1] = integral;
         }
     
-    INFO("Atmosphere: precipitation P_ = " << integral);
 }
 
 //-----------------------------------------------------------------------------

@@ -116,11 +116,6 @@ class Atmosphere
     int  ldimA_;                  // Leading dimension of banded storage
     bool buildLU_;
 
-    // Preconditioner: 'J': Jacobi
-    //                 'D': Full solve using native solving scheme
-    //                 'N': None
-    char preconditioner_;
-
     // Parameters
     double   rhoa_; //! atmospheric density \[\rho_a\]
     double   rhoo_; //! oceanic density \[\rho_o\]
@@ -205,6 +200,9 @@ public:
     //! Constructor
     Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params);
 
+    //! Parameter input routine
+    void setParameters(Teuchos::RCP<Teuchos::ParameterList> params);
+        
     //! General setup things for both constructors
     void setup();
 

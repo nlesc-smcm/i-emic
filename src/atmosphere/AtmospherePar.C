@@ -259,7 +259,7 @@ void AtmospherePar::computeRHS()
 
     // Compute E and P, put our precipitation field in serial Atmosphere
     // E is already present in serial Atmosphere
-    // E-P not computed if state is not updated (through hashing)
+    // --> If it turns out costly we might need to optimize using stateHash
     //------------------------------------------------------------------    
     computeEP();
 
@@ -452,9 +452,13 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
 //==================================================================
 void AtmospherePar::synchronize(std::shared_ptr<Ocean> ocean)
 {
+    // This is a simple interface. The atmosphere only needs the 
+    // ocean temperature at the ocean-atmosphere interface (SST).
+    
     // Get ocean surface temperature
     Teuchos::RCP<Epetra_Vector> sst = ocean->interfaceT();
 
+    // Set ocean surface temperature in parallel and serial atmosphere model.
     setOceanTemperature(sst);
 }
 
@@ -736,8 +740,6 @@ void AtmospherePar::computeEP()
     // compute integral
     double integral = Utils::dot(precipIntCo_, E_) / totalArea_;
 
-    integral = 0.0; // testing!!
-
     int numGlobalElements = P_->Map().NumGlobalElements();
     int numMyElements = P_->Map().NumMyElements();
     assert((int) surfmask_->size() == numGlobalElements);
@@ -750,6 +752,13 @@ void AtmospherePar::computeEP()
         if ((*surfmask_)[gid] == 0)
             (*P_)[i] = integral;
     }
+
+#ifdef DEBUGGING_NEW 
+    std::cout << " parallel P ";    
+    std::cout << (*P_)[0] << " ";
+    std::cout << std::endl;
+    INFO("AtmospherePar: precipitation P_ = " << integral);
+#endif
 
     INFO( "AtmospherePar: computing E, P done " );
     TIMER_STOP("AtmospherePar: compute E P...");

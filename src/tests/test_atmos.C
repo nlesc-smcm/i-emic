@@ -76,7 +76,7 @@ TEST(Atmosphere, RHS)
         // Gather state_par into std::vector
         std::shared_ptr<std::vector<double> > state =
             getGatheredVector(state_par);
-
+        
         // Put the full state in the serial atmosphere
         atmos->setState(state);
 
@@ -138,6 +138,7 @@ TEST(Atmosphere, SurfaceTemperature)
         surfvals->SetSeed(rand() % 100);
         INFO("TEST(Atmosphere, SurfaceTemperature): seed = " << surfvals->Seed());
 
+        // Randomize and scale
         surfvals->Random();
         surfvals->Scale(1e1);
 
@@ -163,6 +164,11 @@ TEST(Atmosphere, SurfaceTemperature)
         // Extract gathered
         gathered->ExtractCopy(&(*fullsurfvals)[0], size);
 
+        // Check norms randomized parallel and serial sst
+        EXPECT_NEAR(norm(surfvals), norm(fullsurfvals), 1e-6);
+        INFO("TEST SST: serial SST norm = " << norm(surfvals));
+        INFO("TEST SST: parall SST norm = " << norm(fullsurfvals));
+
         // Put the randomized ocean surface values in both models
         atmos->setOceanTemperature(*fullsurfvals);
         atmosPar->setOceanTemperature(surfvals);
@@ -174,11 +180,11 @@ TEST(Atmosphere, SurfaceTemperature)
         // Obtain RHS from both models
         Teuchos::RCP<Epetra_Vector> rhsPar = atmosPar->getRHS('V');
         std::shared_ptr<std::vector<double> > rhsSer = atmos->getRHS('V');
-
-        // Check norms parallel and serial rhs
+                
         EXPECT_NEAR(norm(rhsPar), norm(rhsSer), 1e-6);
-        INFO("TEST(Atmosphere, SurfaceTemperature): serial norm = " << norm(rhsSer));
-        INFO("TEST(Atmosphere, SurfaceTemperature): parall norm = " << norm(rhsPar));
+        INFO("TEST SST: serial RHS norm = " << norm(rhsSer));
+        INFO("TEST SST: parall RHS norm = " << norm(rhsPar));
+
 
     }
     catch (...)

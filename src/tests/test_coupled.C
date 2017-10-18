@@ -334,8 +334,7 @@ TEST(CoupledModel, Synchronization)
         failed = true;
         throw;
     }
-    EXPECT_EQ(failed, false);
-    
+    EXPECT_EQ(failed, false);    
     
     // Obtain atmosphere temperature existing in ocean
     Teuchos::RCP<Epetra_Vector> oceanAtmosT  = ocean->getLocalAtmosT();
@@ -378,7 +377,7 @@ TEST(CoupledModel, Synchronization)
     try
     {
         // At RHS computation the coupledModel synchronizes the states
-        coupledModel->computeRHS();    
+        coupledModel->computeRHS();
     }
     catch (...)
     {
@@ -386,8 +385,13 @@ TEST(CoupledModel, Synchronization)
         throw;
     }
     EXPECT_EQ(failed, false);
-    
+
+    // Precipitation should have been calculated in the atmosphere model
     Teuchos::RCP<Epetra_Vector> oceanAtmosP = ocean->getLocalAtmosP();
+
+    // Evaporation is calculated simultaneously in Ocean and in Atmosphere
+    // Teuchos::RCP<Epetra_Vector> oceanAtmosP = ocean->getLocalAtmosE();
+
         
 #ifdef GNU
     Utils::print(oceanAtmosT,  "oceanAtmosT" +

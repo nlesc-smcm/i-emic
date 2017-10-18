@@ -1016,7 +1016,7 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
     THCM::Instance().setAtmosphereP(atmosP);
 
     // We also need to know a few atmospheric constants to compute
-    // E, P and their derivatives w.r.t. To and q
+    // E, P and their derivatives w.r.t. SST (To) and humidity (q)
     // These could be obtained at construction
     // but I believe the call belongs here.
     double qdim, nuq, eta, dqso;
