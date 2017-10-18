@@ -754,9 +754,6 @@ void AtmospherePar::computeEP()
     }
 
 #ifdef DEBUGGING_NEW 
-    std::cout << " parallel P ";    
-    std::cout << (*P_)[0] << " ";
-    std::cout << std::endl;
     INFO("AtmospherePar: precipitation P_ = " << integral);
 #endif
 
