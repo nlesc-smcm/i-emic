@@ -273,7 +273,7 @@ function [] = plot_ocean(solfile, maskfile, opts)
         hold off
 
         colorbar
-        title('Surface Temperature', 'interpreter', 'none');
+        title('SST', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
         colormap(col_white)
@@ -309,20 +309,18 @@ function [] = plot_ocean(solfile, maskfile, opts)
         
         figure(6);
         Ssurf = S(:,:,l);
+        Sz = mean(Ssurf,1);
         minS  = S0+min(min(Ssurf));
         maxS  = S0+max(max(Ssurf));
         
-        img  = S0 + Ssurf';
-        contourf(RtD*x,RtD*(y),img,20,'Visible', 'on'); hold on;
+        img  = -Sz + Ssurf';
+        contourf(RtD*x, RtD*y, img, 20, 'Visible', 'on'); 
+
         set(gca,'color',[0.65,0.65,0.65]);
 
-        contours = linspace(minT,maxT,20);
-        %imagesc(RtD*x,RtD*(y),img);
-
-        hold off
 
         colorbar
-        title('Surface Salinity', 'interpreter', 'none');
+        title('SSS anomaly', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
         colormap(col_white)

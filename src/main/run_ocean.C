@@ -151,7 +151,7 @@ Teuchos::RCP<std::ostream> outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 	{
 		std::ostringstream infofile;     // setting up a filename
 
-		infofile    << "info_"    << Comm->MyPID()   << ".txt";
+		infofile    << "info_"  << Comm->MyPID()  << ".txt";
 
 		std::cout << "info for CPU" << Comm->MyPID() << " is written to "
 				  << infofile.str().c_str() << std::endl;

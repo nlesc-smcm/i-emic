@@ -169,7 +169,7 @@ void outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 {
     // Setup output files "fname_#.txt" for P==0 && P==1, other processes
     // will get a blackholestream.
-    Teuchos::RCP<std::ostream> outFile;
+    
     if (Comm->MyPID() < 2)
     {
         std::ostringstream infofile;     // setting up a filename
