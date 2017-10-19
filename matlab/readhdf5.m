@@ -16,20 +16,30 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         readP = false;
     end
     
+    if isfield(opts, 'readParameters')
+        readPars = opts.readParameters;
+    else
+        readPars = false;
+    end
+    
     % read state
     sol = h5read(file, '/State/Values');
     
     sol = reshape(sol, nun, n, m, l);
-
+    
     % read parameters
-    info  = h5info(file, '/Parameters');
-    npars = size(info.Datasets, 1);
+    if readPars
+        
+        info  = h5info(file, '/Parameters');
+        npars = size(info.Datasets, 1);
 
-    for i = 1:npars
-        parname   = info.Datasets(i).Name;
-        fieldname = regexprep(parname, ' |-', '_');
-        pars.(fieldname) = ...
-            h5read(file, ['/Parameters/' parname]);
+        for i = 1:npars
+            parname   = info.Datasets(i).Name;
+            fieldname = regexprep(parname, ' |-', '_');
+            pars.(fieldname) = ...
+                h5read(file, ['/Parameters/' parname]);
+        end
+        
     end
     
     % read additional fields if requested

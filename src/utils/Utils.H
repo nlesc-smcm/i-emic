@@ -4,24 +4,30 @@
  * as long as this header remains intact.                             *
  * contact: jonas@math.rug.nl                                         *
  **********************************************************************/
-/**********************************************************************
- * Put together/extended by T.E. Mulder, Utrecht University 2014/15   *
- * contact: t.e.mulder@uu.nl                                          *
- **********************************************************************/
-#ifndef UTILS_H
-#define UTILS_H
+
+/***************************************************
+ * Put together/extended by                        *
+ * T.E. Mulder, Utrecht University 2014/15/16/17   *
+ * contact: t.e.mulder@uu.nl                       *
+ ***************************************************/
 
 // A namespace with utils from hymls and trios that I need
 
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_ArrayView.hpp"
+#ifndef UTILS_H
+#define UTILS_H
+
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_ArrayView.hpp>
 #include <Teuchos_ParameterList.hpp>
 
-#include "Epetra_Map.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_Vector.h"
-#include "Epetra_IntVector.h"
-#include "Epetra_Import.h"
+#include <Epetra_Map.h>
+#include <Epetra_CrsMatrix.h>
+#include <Epetra_Vector.h>
+#include <Epetra_IntVector.h>
+#include <Epetra_Import.h>
+#include <EpetraExt_Exception.h>
+#include <EpetraExt_HDF5.h>
+
 
 #ifdef HAVE_MPI
 #  include <mpi.h>
@@ -35,6 +41,8 @@
 #include <math.h>
 
 #include "GlobalDefinitions.H"
+
+class Combined_MultiVec;
 
 // Perhaps some lapack is nice
 extern "C" void dscal_(int* N, double *DA, double *X, int *INCX);
@@ -139,6 +147,16 @@ namespace Utils
 
     //! Hashing an Epetra_MultiVector
     size_t hash(Teuchos::RCP<Epetra_MultiVector> vec);
+
+    //! Save an Epetra_Vector to an hdf5 binary
+    void save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename);
+
+    //! Save a combined multivector to several hdf5 binaries
+    void save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename);
+
+    //------------------------------------------------------------------
+    // Original Utils from Jonas
+    //------------------------------------------------------------------
     
     //------------------------------------------------------------------
     //! split a cartesian box into nparts subdomains in a somehow 'good' way.

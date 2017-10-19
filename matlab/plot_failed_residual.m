@@ -1,7 +1,7 @@
 function [] = plot_failed_residual(fname, maskname, level)
 
     if nargin < 1
-        fname = 'residual.ocean';
+        fname = 'failed_rhs';
     end
     if nargin < 2
         maskname = 'fort.44';

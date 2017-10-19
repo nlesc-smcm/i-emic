@@ -284,6 +284,9 @@ public:
     int interface_row(int i, int j, int XX)
         { return FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, l_-1, ATMOS_TT_); }
 
+    int loadState() { return loadStateFromFile(inputFile_); }
+    int saveState() { return saveStateToFile(outputFile_); }
+
 private:
 
     //! create dependency graph for the Jacobian matrix

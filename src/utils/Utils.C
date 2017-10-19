@@ -9,6 +9,7 @@
  * contact: t.e.mulder@uu.nl                                          *
  **********************************************************************/
 #include "Utils.H"
+#include "Combined_MultiVec.H"
 #include "EpetraExt_MatrixMatrix.h"
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
@@ -152,6 +153,29 @@ size_t Utils::hash(Teuchos::RCP<Epetra_MultiVector> vec)
     }
     
     return seed;
+}
+
+
+//============================================================================
+void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename)
+{
+    EpetraExt::HDF5 HDF5(vec->Map().Comm());
+    HDF5.Create(filename);
+
+    // plot scripts will expect an entry called "State"
+    HDF5.Write("State", *vec); 
+}
+
+//============================================================================
+// Not sure this is going to hold on Cartesius...
+void Utils::save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename)
+{
+    std::ostringstream fname1, fname2;
+    fname1 << filename << ".first.h5";
+    fname2 << filename << ".second.h5";
+
+    save( vec->First(),  fname1.str() );
+    save( vec->Second(), fname2.str() );
 }
 
 //=============================================================================

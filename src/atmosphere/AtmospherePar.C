@@ -1030,8 +1030,6 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
 }
 
 //=============================================================================
-// Again, pretty similar to the routine in Ocean,
-//  so we could factorize this in Utils when bored.
 int AtmospherePar::saveStateToFile(std::string const &filename)
 {
     INFO("_________________________________________________________");

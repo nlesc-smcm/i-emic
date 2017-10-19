@@ -823,8 +823,8 @@ reset()
 {
     if (printImportantVectors_)
     {
-        Utils::print(rhsView_, "failed_rhs"); // Print failed residual
-        Utils::print(model_->getSolution('V'), "failed_sol"); // Print failed solution
+        Utils::save(rhsView_, "failed_rhs"); // Print failed residual
+        Utils::save(model_->getSolution('V'), "failed_sol"); // Print failed solution
     }
 
     INFO("***********************************************");
