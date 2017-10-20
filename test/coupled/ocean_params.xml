@@ -101,7 +101,7 @@
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
     <!-- Has no effect when coupled -->
-    <Parameter name="Restoring Temperature Profile" type="int" value="1"/>
+    <Parameter name="Restoring Temperature Profile" type="int" value="0"/>
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->

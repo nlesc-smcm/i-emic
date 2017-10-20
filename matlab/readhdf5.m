@@ -28,6 +28,7 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
     sol = reshape(sol, nun, n, m, l);
     
     % read parameters
+    pars = [];
     if readPars
         
         info  = h5info(file, '/Parameters');
@@ -39,10 +40,11 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
             pars.(fieldname) = ...
                 h5read(file, ['/Parameters/' parname]);
         end
-        
+       
     end
     
     % read additional fields if requested
+    additional = [];
     if readE
         additional.E = h5read(file, '/E/Values');
     end

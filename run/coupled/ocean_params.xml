@@ -80,7 +80,7 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
       <Parameter name="Temperature Forcing" type="double" value="0.0"/>
       <Parameter name="SPL1"                type="double" value="2.0e3"/>
@@ -117,9 +117,9 @@
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
     <Parameter name="Wind Forcing Type" type="int" value="2"/>
-    <!-- Type of scaling applied to the linear systems.                            -->
-    <!-- We currently support "None" and "THCM"                                    -->
-    <!-- "None" is not really recomended.                                          -->
+    <!-- Type of scaling applied to the linear systems.          -->
+    <!-- We currently support "None" and "THCM"                  -->
+    <!-- "None" is not really recomended.                        -->
     <Parameter name="Scaling" type="string" value="THCM"/>
 
   </ParameterList> <!-- } THCM -->

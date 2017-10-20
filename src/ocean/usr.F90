@@ -32,6 +32,7 @@ module m_usr
 
   !     This is only used if SRES=0 (non-restoring salinity forcing),
   !     we set it to -1 to disable the integral condition
+  !     Integral condition is determined by c++ code
   integer :: rowintcon = -1
 
   !===== GLOBAL GRID VARIABLES =================================================
@@ -63,8 +64,8 @@ module m_usr
   integer :: SRES       = 1       ! restoring salt forcing
   integer :: iza        = 2       ! wind forcing, 0: data, 1: zon ave.,
                                   !               2: idealized
-  integer :: ite        = 1       ! temperature, 0: data, 1:idealized
   integer :: its        = 1       ! salinity, 0: data, 1: idealized
+  integer :: ite        = 1       ! temperature, 0: data, 1:idealized
 
   logical :: rd_spertm  = .false. ! read salinity perturbation mask
 

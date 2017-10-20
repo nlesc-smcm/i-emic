@@ -492,7 +492,8 @@ contains
     integer :: i,j,pos
 
     if (its.ne.1) then
-       if (SRES.eq.0) then ! read (virtual) salt flux and store it in emip
+       ! read (virtual) salt flux and store it in emip
+       if (SRES.eq.0 .and. coupled_atm.eq.0) then 
           call read_forcing(emip,15)
        else                ! read sss
           call levitus_sal

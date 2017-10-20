@@ -116,7 +116,7 @@
       filename = 'levitus.salt'
 
       if (rd) then 
-        if (SRES .eq. 0) filename = 'flux.salt'
+        if (SRES .eq. 0 .and. coupled_atm.eq.0) filename = 'flux.salt'
 !
 ! SRES = 1 :  read Levitus SSS for internal restoring from 'levitus.salt'
 !             created by this routine, with rd = .false.
@@ -126,7 +126,7 @@
 !
         write(f99,*) 'read salt forcing from: ',filename
         call read_internal_forcing(filename,fslev,33)
-        if (SRES.eq.0) call qint3(fslev)
+        if (SRES.eq.0 .and. coupled_atm.eq.0) call qint3(fslev)
       else
         write(f99,*) 'levitus salinity interpolation:'
         write(f99,*) 'model: level  depth   levitus: level depth   max'

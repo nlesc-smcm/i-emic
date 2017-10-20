@@ -279,15 +279,13 @@ function [] = plot_ocean(solfile, maskfile, opts)
         colormap(col_white)
 
         crange = max(abs(min(caxis)),abs(max(caxis)))-T0;
-        caxis(T0+[-crange, crange]);
-
+        % caxis(T0+[-crange, crange]);
 
         if export_to_file
             exportfig('sst.eps',10,[50,25])
         end
 
         figure(5);
-
 
         contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
         %imagesc(Sp'+S0);
@@ -299,30 +297,32 @@ function [] = plot_ocean(solfile, maskfile, opts)
         ylabel('z (m)')
 
         colormap(col_white)
-        crange = max(abs(min(caxis)),abs(max(caxis)))-S0;
-        caxis(S0+[-crange, crange])
+        %crange = max(abs(min(caxis)),abs(max(caxis)))-S0;
+        %caxis(S0+[-crange, crange])
 
 
         if export_to_file
             exportfig('isohalines.eps',10,[20,7])
         end
         
-        figure(6);
+        figure(6); 
         Ssurf = S(:,:,l);
         Sz = mean(Ssurf,1);
         minS  = S0+min(min(Ssurf));
         maxS  = S0+max(max(Ssurf));
         
-        img  = -Sz + Ssurf';
-        contourf(RtD*x, RtD*y, img, 20, 'Visible', 'on'); 
+        img  = S0 + Ssurf';
+        %contourf(RtD*x, RtD*y, img, 20, 'Visible', 'on'); 
+        imagesc(RtD*x, RtD*y, img);
 
         set(gca,'color',[0.65,0.65,0.65]);
-
+        set(gca,'ydir','normal');
 
         colorbar
-        title('SSS anomaly', 'interpreter', 'none');
+        title('SSS', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
+        
         colormap(col_white)
 
     end

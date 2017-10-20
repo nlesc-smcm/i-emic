@@ -199,9 +199,9 @@ step()
 
     if (printImportantVectors_)
     {
-        // Print the residual and last solution from linear solve
-        Utils::print(rhsView_, "residual");
-        Utils::print(model_->getSolution('V'), "solution");
+        // Save the residual and last solution from linear solve to binaries
+        Utils::save(rhsView_, "residual");
+        Utils::save(model_->getSolution('V'), "solution");
     }
 
     // Put the parameter and norm of the state in the history

@@ -25,7 +25,7 @@
   <!-- Several destinations are allowed, in that case specify      -->
   <!-- destination 1, destination 2, etc. as well                  -->
   
-  <Parameter name="destination 0" type="double" value=".1"/>
+  <Parameter name="destination 0" type="double" value="1"/>
 
   <!-- Let the model class define an additional stopping criterion -->
   <Parameter name="enable custom monitor" type="bool" value="false"/>
@@ -72,7 +72,7 @@
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
-  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
+  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
 
   <Parameter name="backtracking increase" type="double" value="1.2"/>
 
@@ -88,6 +88,5 @@
 
   <!-- Bound on RHS in predicted state                       -->
   <Parameter name="predictor bound" type="double" value="1.e1"/>
-
 
 </ParameterList>

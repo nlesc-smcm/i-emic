@@ -577,13 +577,16 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     rowintcon_=-1;
 #ifndef NO_INTCOND
-    if (sres == 0)
+    if ( (sres == 0) ) 
     {
         int N=domain->GlobalN();
         int M=domain->GlobalM();
         int L=domain->GlobalL();
+
         rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
         INFO("integral condition for S is in global row " << rowintcon_);
+            
+        
         intcond_coeff = Teuchos::rcp(new Epetra_Vector(*SolveMap));
         intcond_coeff->PutScalar(0.0);
         Teuchos::RCP<Epetra_Vector> intcond_tmp = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
@@ -593,12 +596,15 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         int *indices   = new int[nml];
         int len;
         F90NAME(m_thcm_utils, intcond_scaling)(values, indices, &len);
+
         for (int i=0;i<len;i++)
         {
             (*intcond_tmp)[indices[i]-1] = values[i];
         }
+        
         delete [] values;
         delete [] indices;
+        
         domain->Assembly2Solve(*intcond_tmp,*intcond_coeff);
 
 #ifdef DEBUGGING_NEW
@@ -714,8 +720,8 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                     bool computeJac)
 {
 
-#if defined(TESTING) && !defined(NO_INTCOND)
-    if (sres==0)
+#if defined(DEBUGGING_NEW) && !defined(NO_INTCOND)
+    if ( (sres == 0) ) 
     {
         double intcond;
         CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
@@ -766,7 +772,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         CHECK_ZERO(tmp_rhs->Scale(-1.0));
 
 #ifndef NO_INTCOND
-        if (sres==0)
+        if (sres == 0)
         {
             int lastrow = rowintcon_;
             double intcond;
@@ -821,7 +827,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         int imax = NumMyElements;
 #ifndef NO_INTCOND
-        if (sres==0)
+        if (sres == 0)
         {
             if (Jac->MyGRID(rowintcon_))
             {
@@ -931,7 +937,7 @@ void THCM::evaluateB(void)
         }//not a ghost?
     }//i-loop over rows
 #ifndef NO_INTCOND
-    if (sres==0)
+    if (sres == 0)
     {
         int lastrow = (domain->GlobalN())*(domain->GlobalM())*(domain->GlobalL());
         if (localDiagB->Map().MyGID(lastrow))
@@ -2006,14 +2012,16 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
                 insert_graph_entry(indices,pos,i,j,k-1,TT,N,M,L);
                 insert_graph_entry(indices,pos,i,j,k+1,TT,N,M,L);
 #ifndef NO_INTCOND
-                if ((sres==0)&&((gid0+SS)==rowintcon_)) continue;
+                if ( (sres == 0) &&
+                     ( (gid0+SS) == rowintcon_) )
+                    continue;
 #endif
                 DEBUG_GRAPH_ROW(SS)
                     CHECK_ZERO(graph->InsertGlobalIndices(gid0+SS,pos,indices));
             }
 
 #ifndef NO_INTCOND
-    if (sres==0)
+    if (sres == 0) 
     {
         int grid = rowintcon_;
         if (StandardMap->MyGID(grid))

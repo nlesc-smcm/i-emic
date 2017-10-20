@@ -58,11 +58,14 @@ SUBROUTINE forcing
   endif
 
   ! correct for nonzero flux
-  if ((TRES.eq.0).and.(coupled_atm.eq.0)) then
+  if (TRES.eq.0) then
      call qint(tatm,temcor)
   else
      temcor = 0.0
   end if
+
+  write(*,*) "temcor      ", temcor
+  
   do j=1,m
      do i=1,n
         if (la > 0) then      ! coupling to atmosphere
@@ -74,7 +77,7 @@ SUBROUTINE forcing
         else if (coupled_atm.eq.1) then ! coupled externally
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l)) &
-                +  Ooa * tatm(i,j)
+                +  Ooa * ( tatm(i,j) - temcor )
 
         else  ! ocean-only
            Frc(find_row2(i,j,l,TT)) = etabi * ( tatm(i,j) - temcor )
@@ -96,24 +99,26 @@ SUBROUTINE forcing
      enddo
   endif
 
-  if (SRES.eq.0) then       ! correct for nonzero flux
-     call qint(emip,salcor)
-     call qint(spert,spertcor)
-
-     write(*,*) salcor, spertcor
+  if (SRES.eq.0 .and. coupled_atm.eq.0) then   ! correct for nonzero flux
+     call qint(emip, salcor)
+     call qint(spert, spertcor)
   else
      salcor   = 0.0
      spertcor = 0.0
   end if
 
+  write(*,*) "salcor      ", salcor,      " spertcor      ", spertcor
+  write(*,*) "eta         ", eta,         " nus           ", nus
+  write(*,*) "qatm(10,10) ", qatm(10,10), " pfield(10,10) ", pfield(10,10)
 
   do j=1,m
      do i=1,n
-        if (coupled_atm.eq.1) then
            ! nus*(E-P) without the sst dependency, which is taken care of in usrc.F90
+        if (coupled_atm.eq.1) then
            Frc(find_row2(i,j,l,SS)) =  par(COMB) * par(SALT) * nus * &
                 ( -eta * qatm(i,j) - pfield(i,j) )
-        else
+           
+          else
            Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &
                 par(SPER) * (1 - SRES + SRES*par(BIOT)) * ( spert(i,j) - spertcor )
         end if

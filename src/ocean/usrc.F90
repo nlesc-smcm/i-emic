@@ -629,6 +629,7 @@ SUBROUTINE lin
 
   if (coupled_atm.eq.1) then
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
+
      ! minus sign is added as we take -Au in rhs computation...
      Al(:,:,1:l,:,SS,TT) = - par(COMB) * par(SALT) * nus * &
           eta * (deltat / qdim) * dqso * sc
