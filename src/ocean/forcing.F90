@@ -58,7 +58,7 @@ SUBROUTINE forcing
   endif
 
   ! correct for nonzero flux
-  if (TRES.eq.0) then
+  if ((TRES.eq.0).and.(coupled_atm.eq.0)) then
      call qint(tatm,temcor)
   else
      temcor = 0.0
@@ -89,7 +89,11 @@ SUBROUTINE forcing
   ! Determine salinity forcing
   ! ------------------------------------------------------------------
 
-  gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT))
+  if (coupled_atm.eq.1) then
+     gamma = par(COMB)*par(SALT)*nus !*(r0dim / udim)*
+  else 
+     gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT))
+  endif
 
   if (its.eq.1) then        ! idealized salinity forcing
      do j=1,m
@@ -110,13 +114,13 @@ SUBROUTINE forcing
   write(*,*) "salcor      ", salcor,      " spertcor      ", spertcor
   write(*,*) "eta         ", eta,         " nus           ", nus
   write(*,*) "qatm(10,10) ", qatm(10,10), " pfield(10,10) ", pfield(10,10)
+  write(*,*) "r0dim/udim  ", r0dim / udim
 
   do j=1,m
      do i=1,n
-           ! nus*(E-P) without the sst dependency, which is taken care of in usrc.F90
+        ! nus*(E-P) without the sst dependency, which is taken care of in usrc.F90
         if (coupled_atm.eq.1) then
-           Frc(find_row2(i,j,l,SS)) =  par(COMB) * par(SALT) * nus * &
-                ( -eta * qatm(i,j) - pfield(i,j) )
+           Frc(find_row2(i,j,l,SS)) =  gamma * ( -eta * qatm(i,j) - pfield(i,j) )
            
           else
            Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &

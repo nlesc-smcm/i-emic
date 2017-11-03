@@ -43,16 +43,17 @@
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="false"/>
-
+  
   <!-- Starting parameters -->
   <Parameter name="Combined Forcing"    type="double" value="0.0"/>
   <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-  <Parameter name="Salinity Forcing"    type="double" value="0.3"/>
+  <Parameter name="Salinity Forcing"    type="double" value="0.1"/>
   <Parameter name="Wind Forcing"        type="double" value="1.0"/>
   <Parameter name="Temperature Forcing" type="double" value="0.0"/>
   <Parameter name="Humidity Forcing"    type="double" value="1.0"/>
 
   <!-- D: decoupled -->
+  <!-- C: coupled   -->
   <Parameter name="Solving scheme" type="char" value="C"/>
 
 </ParameterList>

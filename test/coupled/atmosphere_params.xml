@@ -33,7 +33,7 @@
   <Parameter name="Use land mask from Ocean" type="bool" value="true"/>
 
   <!-- Specify whether to use the integral condition on q, enabled by default -->
-  <!-- (only for testing purposes)                                            -->
+  <!-- (disable only for testing purposes)                                    -->
   <Parameter name="Use integral condition on q" type="bool" value="true"/>
 
   <!-- western, eastern, southern and northern domain bounds      -->
@@ -43,14 +43,14 @@
   <Parameter name="Global Bound ymax" type="double" value="74"     />
 
   <!-- global number of grid points in x,y and z-directions       -->
+  <!-- we only have a single layer in the vertical                -->
   <Parameter name="Global Grid-Size n" type="int" value="16"       />
   <Parameter name="Global Grid-Size m" type="int" value="16"       />
-  <Parameter name="Global Grid-Size l" type="int" value="1"        />
 
-  <!-- Preconditioner parameters.                                         -->
-  <!-- When using the parallel solve routine, the overlap level should be -->
-  <!-- significant.                                                       -->
-  <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.         -->
+  <!-- Preconditioner parameters.                                                -->
+  <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.                -->
+  <!-- Preconditioning can be used as a pure linear solver as well, in that case -->
+  <!-- the overlap level should be significant (5 or higher).                    -->
   <Parameter name="Ifpack overlap level" type="int" value="0" />
 
 </ParameterList>

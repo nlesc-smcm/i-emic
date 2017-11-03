@@ -10,7 +10,7 @@
   <!--           "Salinity Forcing"                                           -->
   <!--           "Wind Forcing"                                               -->
   <!--           "Humidity Forcing"                                           -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Salinity Forcing"/>
 
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size"  type="double"  value="1.0e-2"/>
@@ -25,7 +25,7 @@
   <!-- Several destinations are allowed, in that case specify      -->
   <!-- destination 1, destination 2, etc. as well                  -->
   
-  <Parameter name="destination 0" type="double" value="1"/>
+  <Parameter name="destination 0" type="double" value=".1"/>
 
   <!-- Let the model class define an additional stopping criterion -->
   <Parameter name="enable custom monitor" type="bool" value="false"/>

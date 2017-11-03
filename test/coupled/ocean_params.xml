@@ -80,7 +80,7 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.3"/>
+      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
       <Parameter name="Temperature Forcing" type="double" value="0.0"/>
       <Parameter name="SPL1"                type="double" value="2.0e3"/>
@@ -97,11 +97,11 @@
     <Parameter name="Rho Mixing" type="bool" value="0"/>
     <!-- Taper (tap in usr.F90) -->
     <Parameter name="Taper" type="int" value="1"/>
-    <!-- Restoring Temperature-Profile (TRES in THCM) -->
-    <!-- 0: non-restoring                             -->
-    <!-- 1: restoring                                 -->
-    <!-- Has no effect when coupled -->
-    <Parameter name="Restoring Temperature Profile" type="int" value="0"/>
+    <!-- Restoring Temperature-Profile (TRES in THCM)         -->
+    <!-- 0: non-restoring                                     -->
+    <!-- 1: restoring                                         -->
+    <!-- Should not have an effect when coupled to atmosphere -->
+    <Parameter name="Restoring Temperature Profile" type="int" value="1"/>
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
@@ -109,9 +109,9 @@
     <!-- Freshwater Forcing (ifw in THCM) -->
     <!-- 0: data, 1: idealized            -->
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
-    <!-- Temperature forcing                                 -->
-    <!-- Levitus Temperature (ite in THCM)                   -->
-    <!-- 0: data, 1: idealized                               -->
+    <!-- Temperature forcing                     -->
+    <!-- Levitus Temperature (ite in THCM)       -->
+    <!-- 0: data, 1: idealized                   -->
     <Parameter name="Levitus T" type="int" value="1"/>
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
@@ -121,9 +121,9 @@
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
     <Parameter name="Wind Forcing Type" type="int" value="2"/>
-    <!-- Type of scaling applied to the linear systems.                            -->
-    <!-- We currently support "None" and "THCM"                                    -->
-    <!-- "None" is not really recomended.                                          -->
+    <!-- Type of scaling applied to the linear systems.            -->
+    <!-- We currently support "None" and "THCM"                    -->
+    <!-- "None" is not really recomended.                          -->
     <Parameter name="Scaling" type="string" value="THCM"/>
 
   </ParameterList> <!-- } THCM -->

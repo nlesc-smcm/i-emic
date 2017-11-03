@@ -50,7 +50,7 @@ SUBROUTINE fillcolB
      enddo
   endif
   if (rowintcon>0) then
-     !        if(SRES == 0) coB(rowintcon + SS) = 0.0 !zero in B for integral condition
+     ! if(SRES == 0) coB(rowintcon + SS) = 0.0 !zero in B for integral condition
      if(SRES == 0) coB(rowintcon) = 0.0 !zero in B for integral condition
   end if
 

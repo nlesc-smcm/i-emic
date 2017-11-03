@@ -505,7 +505,7 @@ SUBROUTINE lin
        &      uxs(n,m,l,np),fu(n,m,l,np),px(n,m,l,np)
   real ub(n,m,l,np),vb(n,m,l,np),sc(n,m,l,np),tcb(n,m,l,np)
   real    yc(n,m,la,np),yc2(n,m,la,np),yxx(n,m,la,np),yyy(n,m,la,np)
-  real    EH,EV,ph,pv,Ra,lambda, bi,ahcor
+  real    EH,EV,ph,pv,Ra,lambda, bi, ahcor, dedt
   real    hv(n,m,l,np),yadv(n,m,la,np)
   real    uxxc(n,m,l,np),uyyc(n,m,l,np),vxxc(n,m,l,np),vyyc(n,m,l,np)
   real    xes,rintb,rwint !, rintt ! ATvS-Mix
@@ -626,13 +626,12 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! S-equation
   ! ------------------------------------------------------------------
-
+  dedt = par(COMB) * par(SALT) * nus * eta * (deltat / qdim) * dqso
   if (coupled_atm.eq.1) then
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
 
-     ! minus sign is added as we take -Au in rhs computation...
-     Al(:,:,1:l,:,SS,TT) = - par(COMB) * par(SALT) * nus * &
-          eta * (deltat / qdim) * dqso * sc
+     ! minus sign and nondim added (we take -Au in rhs computation)
+     Al(:,:,1:l,:,SS,TT) = - dedt * sc !  * (r0dim / udim) 
   else
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
   endif
