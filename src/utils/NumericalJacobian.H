@@ -39,25 +39,25 @@ public:
 		    VectorPtr Fcopy = model->getRHS('C');
 			VectorPtr Fview = model->getRHS('V');
 
-			double nrm = state->norm();
+			double nrm = Utils::norm(state);
 			int elctr  = 0; // element counter
-			for (int j = 0; j != state->length(); ++j)
+
+			for (int j = 0; j != state->GlobalLength(); ++j)
 			{
-				state->updateElement(j, h_, 1.0);
-				Fview->zero();
+                (*state)[j] += h_;
+
+				Fview->PutScalar(0.0);
 				model->computeRHS();
 
-				state->updateElement(j, -h_, 1.0);
-				assert(std::abs(nrm - state->norm()) < 1e-12);
+                (*state)[j] -= h_;
+                
+				assert(std::abs(nrm - Utils::norm(state)) < 1e-12);
 				
-				Fview->update(-1.0/h_, *Fcopy, 1.0/h_);
-
-				if (state->haveOceanVector())
-					if (j >= state->getOceanVector()->GlobalLength())
-						Fview->print("F" + std::to_string(j));
+				Fview->Update(-1.0/h_, *Fcopy, 1.0/h_);
 				
 				colPtr_.push_back(elctr);
-				for (int i = 0; i != Fview->length(); ++i)
+
+				for (int i = 0; i != Fview->GlobalLength(); ++i)
 					if (std::abs((*Fview)[i]) > 1e-5)
 					{
 						values_.push_back((*Fview)[i]);
@@ -66,7 +66,11 @@ public:
 					}								
 				
 				if ( j % 100  == 0)
-					INFO("      " << j << " of " << state->length());
+                {
+					INFO(std::endl << "*-*-*-*- Num.Jac. column " << j
+                         << " of " << state->GlobalLength()
+                         << "-*-*-*-*" << std::endl);
+                }
 			}
 			
 			colPtr_.push_back(elctr);

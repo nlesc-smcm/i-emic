@@ -104,7 +104,7 @@ SUBROUTINE forcing
   endif
 
   if (SRES.eq.0 .and. coupled_atm.eq.0) then   ! correct for nonzero flux
-     call qint(emip, salcor)
+     call qint(emip,  salcor)
      call qint(spert, spertcor)
   else
      salcor   = 0.0

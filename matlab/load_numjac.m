@@ -3,7 +3,7 @@ function [J, co, ico, beg] = load_numjac(basename)
   co  = load([basename,'_co']);
   ico = load([basename,'_ico']);
   beg = load([basename,'_beg']);
-
+  
   M = max(ico);
   N = numel(beg)-1;
 

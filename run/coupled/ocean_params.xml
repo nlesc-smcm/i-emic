@@ -42,8 +42,6 @@
     <Parameter name="Global Bound ymax" type="double" value="74"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="0"/>
-    <!-- depth of the ocean -->
-    <Parameter name="Depth hdim" type="double" value="4000"/>
 
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->

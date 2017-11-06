@@ -137,6 +137,20 @@ public:
             return out;
         }
 
+    // Index operator (does not support multicore)
+    double &operator[](int index)
+        {
+            assert(first_->Map().Comm().NumProc() == 1);
+            
+            if (index >= first_->GlobalLength())
+            {
+                index -= first_->GlobalLength();
+                return (*(*second_)(0))[index];
+            }
+            else 
+                return (*(*first_)(0))[index];
+        }
+    
     // Get maps
     const Epetra_BlockMap &Map1() const {return first_->Map();  }
     const Epetra_BlockMap &Map2() const {return second_->Map(); }

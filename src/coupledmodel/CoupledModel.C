@@ -68,8 +68,7 @@ void CoupledModel::synchronize()
 {
 
     TIMER_START("CoupledModel: synchronize...");
-    INFO("CoupledModel: synchronize...");
-
+    
     syncCtr_++; // Keep track of synchronizations
 
     // Set atmosphere data in the ocean
@@ -78,7 +77,6 @@ void CoupledModel::synchronize()
     // Set ocean data in atmosphere
     atmos_->synchronize(ocean_);
 
-    INFO("CoupledModel: synchronize... done");
     TIMER_STOP("CoupledModel: synchronize...");
 }
 
@@ -110,11 +108,11 @@ void CoupledModel::computeRHS()
     atmos_->computeRHS();   // Atmosphere
 
 #ifdef DEBUGGING_NEW
-    INFO("CoupledModel::computeRHS ocean ||rhs|| = " << Utils::norm(ocean_->getRHS('V')));
-    INFO("CoupledModel::computeRHS atmos ||rhs|| = " << Utils::norm(atmos_->getRHS('V')));
+    // INFO("CoupledModel::computeRHS ocean ||rhs|| = " << Utils::norm(ocean_->getRHS('V')));
+    // INFO("CoupledModel::computeRHS atmos ||rhs|| = " << Utils::norm(atmos_->getRHS('V')));
 
-    Utils::print(ocean_->getRHS('V'), "oceanRHS");
-    Utils::print(atmos_->getRHS('V'), "atmosRHS");
+    // Utils::print(ocean_->getRHS('V'), "oceanRHS");
+    // Utils::print(atmos_->getRHS('V'), "atmosRHS");
 #endif
 
     TIMER_STOP("CoupledModel compute RHS");

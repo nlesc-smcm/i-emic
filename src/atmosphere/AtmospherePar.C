@@ -251,8 +251,7 @@ void AtmospherePar::distributeState()
 void AtmospherePar::computeRHS()
 {
     TIMER_START("AtmosepherePar: computeRHS...");
-    INFO("AtmospherePar: computeRHS...");
-
+    
     //------------------------------------------------------------------
     // Put parallel state in serial atmosphere.
     distributeState();
@@ -308,7 +307,6 @@ void AtmospherePar::computeRHS()
         (*rhs_)[rhs_->Map().LID(rowIntCon_)] = intcond;
     
 
-    INFO("AtmospherePar: computeRHS... done");
     TIMER_STOP("AtmospherePar: computeRHS...");
 }
 
@@ -367,7 +365,6 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
     TIMER_START("Atmosphere: get atmosphere temperature...");
     if (!(atmosT_->Map().SameAs(*tIndexMap_)))
     {
-        INFO("Replacing atmosT_ map -> tIndexMap_");
         CHECK_ZERO(atmosT_->ReplaceMap(*tIndexMap_));
     }
     CHECK_ZERO(atmosT_->Import(*state_, *atmosTimporter_, Insert));
@@ -381,7 +378,6 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceQ()
     TIMER_START("Atmosphere: get atmosphere humidity...");
     if (!(atmosQ_->Map().SameAs(*qIndexMap_)))
     {
-        INFO("Replacing atmosQ_ map -> qIndexMap_");
         CHECK_ZERO(atmosQ_->ReplaceMap(*qIndexMap_));
     }
     CHECK_ZERO(atmosQ_->Import(*state_, *atmosQimporter_, Insert));
@@ -468,7 +464,7 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
     // Replace map if necessary
     if (!(sst->Map().SameAs(*standardSurfaceMap_)))
     {
-        INFO("AtmospherePar::setOceanTemperature sst map -> standardSurfaceMap_");
+        // INFO("AtmospherePar::setOceanTemperature sst map -> standardSurfaceMap_");
         CHECK_ZERO(sst->ReplaceMap(*standardSurfaceMap_));
     }
 
@@ -714,7 +710,6 @@ void AtmospherePar::computeJacobian()
 // --> If it turns out costly we might need to optimize using stateHash
 void AtmospherePar::computeEP()
 {
-    INFO( "AtmospherePar: computing E, P" );
     TIMER_START("AtmospherePar: compute E P...");
         
     // compute E in serial Atmosphere
@@ -754,10 +749,9 @@ void AtmospherePar::computeEP()
     }
 
 #ifdef DEBUGGING_NEW 
-    INFO("AtmospherePar: precipitation P_ = " << integral);
+    // INFO("AtmospherePar: precipitation P_ = " << integral);
 #endif
 
-    INFO( "AtmospherePar: computing E, P done " );
     TIMER_STOP("AtmospherePar: compute E P...");
 }
 

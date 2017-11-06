@@ -731,7 +731,11 @@ bool THCM::evaluate(const Epetra_Vector& soln,
           double dz = 1.0/domain->GlobalL();
           intcond = intcond*dx*dy*dz;
         */
-        INFO("Salinity integral condition (should be 0): " << intcond);
+
+        // if (std::abs(intcond) > .01)
+        // {
+        //     INFO("Salinity integral condition (should be 0): " << intcond);
+        // }        
     }
 #endif
 
@@ -1095,7 +1099,7 @@ void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
 
     if (!(atmosT->Map().SameAs(*StandardSurfaceMap)))
     {
-        INFO("THCM::setAtmosphereT: atmosT map -> StandardSurfaceMap");
+        // INFO("THCM::setAtmosphereT: atmosT map -> StandardSurfaceMap");
         CHECK_ZERO(atmosT->ReplaceMap(*StandardSurfaceMap));
     }
 
@@ -1114,7 +1118,7 @@ void THCM::setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ)
     
     if (!(atmosQ->Map().SameAs(*StandardSurfaceMap)))
     {
-        INFO("THCM::setAtmosphereEP: atmosQ map -> StandardSurfaceMap");
+        // INFO("THCM::setAtmosphereEP: atmosQ map -> StandardSurfaceMap");
         CHECK_ZERO( atmosQ->ReplaceMap(*StandardSurfaceMap) );
     }
 
@@ -1133,7 +1137,7 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
     
     if (!(atmosP->Map().SameAs(*StandardSurfaceMap)))
     {
-        INFO("THCM::setAtmosphereEP: atmosP map -> StandardSurfaceMap");
+        // INFO("THCM::setAtmosphereEP: atmosP map -> StandardSurfaceMap");
         CHECK_ZERO(atmosP->ReplaceMap(*StandardSurfaceMap));
     }
 
