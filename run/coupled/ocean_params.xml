@@ -50,11 +50,11 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="16"/>
+    <Parameter name="Global Grid-Size n" type="int" value="8"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="16"/>
+    <Parameter name="Global Grid-Size m" type="int" value="8"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="16"/>
+    <Parameter name="Global Grid-Size l" type="int" value="8"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
@@ -105,7 +105,7 @@
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->

@@ -114,7 +114,7 @@ SUBROUTINE forcing
   write(*,*) "salcor      ", salcor,      " spertcor      ", spertcor
   write(*,*) "eta         ", eta,         " nus           ", nus
   write(*,*) "qatm(10,10) ", qatm(10,10), " pfield(10,10) ", pfield(10,10)
-  write(*,*) "r0dim/udim  ", r0dim / udim
+  write(*,*) "par(BIOT)   ", par(BIOT)
 
   do j=1,m
      do i=1,n

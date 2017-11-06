@@ -615,7 +615,7 @@ SUBROUTINE lin
   call tderiv(5,tzz)
   call tderiv(7,tcb)
 
-  if (la > 0) then
+  if (la > 0) then ! deprecated local atmosphere
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
   else if (coupled_atm.eq.1) then ! coupled with external atmos
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
@@ -1084,6 +1084,7 @@ SUBROUTINE atmos_coef
   As   = sun0*(1 - c0)/(4*muoa)
   Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
   Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
+  nus  = ( s0 * hdim ) / ( deltas * hdim*dzne)
   DO j = 1,m
      !       albe(j) = 0.15 + 0.05 * cos (y(j))
      albe(j) = 0.3

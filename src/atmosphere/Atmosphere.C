@@ -98,7 +98,7 @@ void Atmosphere::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     rhoo_            = params->get("oceanic density",1024);
     hdima_           = params->get("atmospheric scale height",8400.);
     hdimq_           = params->get("humidity scale height",1800.);
-    hdim_            = params->get("vertical length scale",5000.);
+    hdim_            = params->get("vertical length scale",4000.);
     cpa_             = params->get("heat capacity",1000.);
     d0_              = params->get("constant eddy diffusivity",3.1e+06);
     kappa_           = params->get("humidity eddy diffusivity",1e+06);

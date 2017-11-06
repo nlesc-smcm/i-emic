@@ -722,8 +722,6 @@ contains
 
   end subroutine get_monthly_internal_forcing
 
-
-
   subroutine compute_flux(sol)
 
     implicit none
@@ -756,6 +754,7 @@ contains
           endif
        enddo
     enddo
+
     call write_forcing("flux.heat",  hf,14)
     call write_forcing("tatm.out", tatm,14)
     call write_forcing("flux.salt", fwf,15)

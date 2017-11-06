@@ -123,6 +123,7 @@ module m_usr
 
   !--> perhaps better scaling in THCM if this would actually be used...
   real, parameter :: deltat   = 1.0
+  real, parameter :: deltas   = 1.0
   
   real, parameter :: s0       = 35.0
   real, parameter :: cp0      = 4.2e+03
