@@ -17,7 +17,7 @@ class CouplingBlock
 {
     ModelRow modelRow_;
     ModelCol modelCol_;
-
+    
     Teuchos::RCP<Epetra_CrsMatrix> block_;
 
     Teuchos::RCP<TRIOS::Domain> modelRowDomain_;
@@ -118,13 +118,6 @@ public:
                            *modelColDomain_->GetSolveMap(),
                            *modelRowDomain_->GetSolveMap()));
 
-
-#ifdef DEBUGGING_NEW
-            Utils::print(block_,
-                         "block" + std::to_string(modelRow_->dof()) + "_" +
-                         std::to_string(
-                             modelRowDomain_->GetComm()->MyPID() ) );
-#endif
             TIMER_STOP("CouplingBlock: compute block");
         }
 
@@ -144,6 +137,11 @@ public:
             CHECK_ZERO(block_->Apply(in, out));
             TIMER_STOP("CouplingBlock: apply matrix...");
         }
+
+    //------------------------------------------------------------------
+    // Get RCP to block
+    Teuchos::RCP<Epetra_CrsMatrix> getBlock() { return block_; } 
+        
 };
 
 #endif

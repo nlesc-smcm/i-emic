@@ -90,8 +90,11 @@ void CoupledModel::computeJacobian()
 
     ocean_->computeJacobian();  // Ocean
     atmos_->computeJacobian();  // Atmosphere
-    C12_.computeBlock();       // Recompute Ocean <- Atmos dependence
-    C21_.computeBlock();       // Recompute Atmos <- Ocean dependence
+    C12_.computeBlock();        // Recompute Ocean <- Atmos dependence
+    C21_.computeBlock();        // Recompute Atmos <- Ocean dependence
+
+#ifdef DEBUGGING_NEW
+#endif
 
     TIMER_STOP("CoupledModel: compute Jacobian");
 }
@@ -415,4 +418,15 @@ void CoupledModel::postProcess()
     // Let the models do their own post-processing
     ocean_->postProcess();
     atmos_->postProcess();
+}
+
+//------------------------------------------------------------------
+void CoupledModel::dumpBlocks()
+{
+    DUMPMATLAB("C11", *(ocean_->getJacobian()));
+    DUMPMATLAB("C22", *(atmos_->getJacobian()));
+    DUMPMATLAB("C12", *(C12_.getBlock()));
+    DUMPMATLAB("C21", *(C21_.getBlock()));
+
+    std::cout << *(C12_.getBlock()) << std::endl;
 }

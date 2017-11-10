@@ -166,6 +166,9 @@ public:
     //! Additional monitor for continuation
     bool monitor() { return false; }
 
+    //! Dump blocks
+    void dumpBlocks();
+
 private:
 
     //! Solve the system using FGMRES

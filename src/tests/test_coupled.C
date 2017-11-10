@@ -147,6 +147,9 @@ TEST(CoupledModel, inspectState)
 
         INFO( " norm 1: " << firstNrm << " 2: " << secndNrm
               << " 1+2: " << stateNrm << std::endl );
+
+        Utils::print(state->First(),  "rand_state_first");
+        Utils::print(state->Second(), "rand_state_second");
     }
     catch (...)
     {
@@ -157,13 +160,15 @@ TEST(CoupledModel, inspectState)
     EXPECT_EQ(failed, false);
 }
 
-
 //------------------------------------------------------------------
 TEST(CoupledModel, computeJacobian)
 {
     bool failed = false;
     try
     {
+        // Set a small parameter
+        coupledModel->setPar(0.1);
+
         coupledModel->computeJacobian();
         Teuchos::RCP<Epetra_CrsMatrix> atmosJac = atmos->getJacobian();
         Teuchos::RCP<Epetra_CrsMatrix> oceanJac = ocean->getJacobian();
@@ -174,6 +179,7 @@ TEST(CoupledModel, computeJacobian)
         Utils::print(&atmosJac->ColMap(), "atmosJacColMap");
         Utils::print(&atmosJac->DomainMap(), "atmosJacDomainMap");
 
+        coupledModel->dumpBlocks();
     }
     catch (...)
     {
@@ -195,12 +201,15 @@ TEST(CoupledModel, numericalJacobian)
         bool failed = false;    
         try
         {
-    
             INFO("compute njC");
+            
+            // Set a small parameter
+            coupledModel->setPar(0.1);
     
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> > njC;
 
+            njC.setTolerance(1e-8);            
             njC.compute(coupledModel, coupledModel->getState('V'));
 
             std::string fnameJnC("JnC");
@@ -374,7 +383,7 @@ TEST(CoupledModel, Synchronization)
         stateV->Second()->PutScalar(2.345);
 
         // Set a small parameter
-        coupledModel->setPar(0.005);
+        coupledModel->setPar(0.01);
 
         // At RHS computation the coupledModel synchronizes the states
         coupledModel->computeRHS();

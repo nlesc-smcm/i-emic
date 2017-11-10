@@ -12,6 +12,7 @@ class NumericalJacobian
 	std::vector<int>    rowIdx_;
 	std::vector<int>    colPtr_;
 	double h_;   // finite difference increment
+    double tol_; // tolerance
 
 public:
 	NumericalJacobian()
@@ -19,7 +20,8 @@ public:
 		values_   (std::vector<double>()),
 		rowIdx_   (std::vector<int>()),
 		colPtr_   (std::vector<int>()),
-		h_        (1e2)
+		h_        (1e2),
+        tol_      (1e-5)
 		{
 			INFO("NumericalJacobian: constructor");
 		}
@@ -93,6 +95,8 @@ public:
 				beg_str << i << '\n';			
 			beg_str.close();
 		}
+
+    void setTolerance(double tol) { tol_ = tol; }
 };
 
 

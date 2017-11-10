@@ -64,7 +64,7 @@ SUBROUTINE forcing
      temcor = 0.0
   end if
 
-  write(*,*) "temcor      ", temcor
+  ! write(*,*) "temcor      ", temcor
   
   do j=1,m
      do i=1,n
@@ -111,10 +111,10 @@ SUBROUTINE forcing
      spertcor = 0.0
   end if
 
-  write(*,*) "salcor      ", salcor,      " spertcor      ", spertcor
-  write(*,*) "eta         ", eta,         " nus           ", nus
-  write(*,*) "qatm(10,10) ", qatm(10,10), " pfield(10,10) ", pfield(10,10)
-  write(*,*) "par(BIOT)   ", par(BIOT)
+  !write(*,*) "salcor      ", salcor,      " spertcor      ", spertcor
+  !write(*,*) "eta         ", eta,         " nus           ", nus
+  !write(*,*) "qatm(10,10) ", qatm(10,10), " pfield(10,10) ", pfield(10,10)
+  !write(*,*) "par(BIOT)   ", par(BIOT)
 
   do j=1,m
      do i=1,n

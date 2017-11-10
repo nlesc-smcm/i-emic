@@ -12,5 +12,4 @@ function [out] = find_row(nun,n,m,l,irange,jrange,krange,XXrange)
 	  end
 	end
   end
-end					 
-
+end
