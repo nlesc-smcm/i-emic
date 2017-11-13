@@ -565,6 +565,13 @@ newtonCorrector()
         model_->computeRHS();
         normRHStest_ = Utils::norm(rhsView_);
 
+        // again, use predictor bound to select failures
+        if (normRHStest_ > predictorBound_)
+        {
+            INFO("   |     too big!");
+            return 1;
+        }
+
         // if we don't see a decrease we run the backtracking routine
         if (backTracking_ and (normRHS_ < normRHStest_) )
         {

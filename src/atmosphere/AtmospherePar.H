@@ -150,6 +150,9 @@ private:
     //! total area for E,P
     double totalArea_;
     
+    //! use idealized precipitation
+    bool useFixedPrecip_;
+
     //! preconditioning initialization flag
     bool precInitialized_;
 
@@ -282,7 +285,7 @@ public:
 
     //! Get row at the interface, XX is 1-based, i and j 0-based
     int interface_row(int i, int j, int XX)
-        { return FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, l_-1, ATMOS_TT_); }
+        { return FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, l_-1, XX); }
 
     int loadState() { return loadStateFromFile(inputFile_); }
     int saveState() { return saveStateToFile(outputFile_); }

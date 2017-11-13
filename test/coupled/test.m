@@ -1,3 +1,4 @@
+
 JnC = load_numjac('JnC');
 
 n = 6; m = 6; l = 4; dfo = 6; dfa = 2;
@@ -24,24 +25,37 @@ JnC11 = JnC(oce_idx, oce_idx);
 JnC12 = JnC(oce_idx, atm_idx);
 JnC21 = JnC(atm_idx, oce_idx);
 
-figure(1)
-spy([JnC11,JnC12;JnC21,JnC22]);
 
-figure(2)
-spy(JnC)
 
 C11 = load('C11'); C11 = spconvert(C11);
 C12 = load('C12'); C12 = spconvert(C12);
 C21 = load('C21'); C21 = spconvert(C21);
 C22 = load('C22'); C22 = spconvert(C22);
 
-aatm_idx = atm_idx - nocean;
-
-figure(3)
-spy(C12(surfb:surfe,:))
-
-
 
 numC12 = JnC(surfb:surfe, surfe+1:end);
 numC21 = JnC(surfe+1:end, surfb:surfe);
+numC11 = JnC(1:surfe, 1:surfe);
+numC22 = JnC(surfe+1:end, surfe+1:end);
 
+
+numC11 = numC11(oce_idx,oce_idx);
+C11    =    C11(oce_idx,oce_idx);
+
+atm_idx = atm_idx - surfe;
+numC22 = numC22(atm_idx,atm_idx);
+C22    =    C22(atm_idx,atm_idx);
+
+figure(1);
+spy(C11)
+figure(2);
+spy(numC11)
+figure(3);
+spy(abs(C11-numC11)>1e-3)
+
+figure(4);
+spy(C11)
+figure(5);
+spy(numC11)
+figure(6);
+spy(abs(C11-numC11)>1e-3)

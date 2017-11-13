@@ -575,9 +575,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     DEBVAR("call set_pointers...");
     F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA,jcoA,coA,coB);
 
-    rowintcon_=-1;
+    rowintcon_ = -1;
 #ifndef NO_INTCOND
-    if ( (sres == 0) ) 
+    if ( ( sres == 0 ) && ( coupled_atm >= 0 ) ) 
     {
         int N=domain->GlobalN();
         int M=domain->GlobalM();
@@ -721,7 +721,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 {
 
 #if defined(DEBUGGING_NEW) && !defined(NO_INTCOND)
-    if ( (sres == 0) ) 
+    if ( (sres == 0)  && ( coupled_atm >= 0 ) )
     {
         double intcond;
         CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
@@ -776,7 +776,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         CHECK_ZERO(tmp_rhs->Scale(-1.0));
 
 #ifndef NO_INTCOND
-        if (sres == 0)
+        if ((sres == 0) && (coupled_atm >= 0 ))
         {
             int lastrow = rowintcon_;
             double intcond;
@@ -831,7 +831,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         int imax = NumMyElements;
 #ifndef NO_INTCOND
-        if (sres == 0)
+        if ((sres == 0) && (coupled_atm >= 0 ))
         {
             if (Jac->MyGRID(rowintcon_))
             {
@@ -886,7 +886,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         } //i-loop over rows
 
 #ifndef NO_INTCOND
-        if (sres == 0)
+        if ((sres == 0) && (coupled_atm >= 0 ))
         {
             this->intcond_S(*localJac,*localDiagB);
         }
@@ -1147,6 +1147,11 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 
     double *tmpAtmosP;
     localAtmosP->ExtractView(&tmpAtmosP);
+
+#ifdef DEBUGGING_NEW
+    INFO("THCM:setAtmosphereP p(2) = " << tmpAtmosP[1]);
+#endif 
+    
     F90NAME(m_inserts, insert_atmosphere_p)( tmpAtmosP );
 }
 
@@ -2017,7 +2022,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
                 insert_graph_entry(indices,pos,i,j,k+1,TT,N,M,L);
 #ifndef NO_INTCOND
                 if ( (sres == 0) &&
-                     ( (gid0+SS) == rowintcon_) )
+                     ( (gid0+SS) == rowintcon_) && (coupled_atm >= 0 ))
                     continue;
 #endif
                 DEBUG_GRAPH_ROW(SS)
@@ -2025,7 +2030,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
             }
 
 #ifndef NO_INTCOND
-    if (sres == 0) 
+    if ((sres == 0) && (coupled_atm >= 0 ))
     {
         int grid = rowintcon_;
         if (StandardMap->MyGID(grid))

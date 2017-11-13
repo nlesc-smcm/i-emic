@@ -33,6 +33,14 @@
   <!-- Choose to use the ocean's landmask if available              -->
   <Parameter name="Use land mask from Ocean" type="bool" value="true"/>
 
+  <!-- Specify whether to use the integral condition on q, enabled by default -->
+  <!-- (disable only for testing purposes)                                    -->
+  <Parameter name="Use integral condition on q" type="bool" value="true"/>
+
+  <!-- Precipitation is an integral, for testing purposes we can switch that -->
+  <!-- off and use a fixed value (1.0).                                      -->
+  <Parameter name="Use idealized precipitation" type="bool" value="true"/>
+
   <!-- western, eastern, southern and northern domain bounds      -->
   <Parameter name="Global Bound xmin" type="double" value="286"    />
   <Parameter name="Global Bound xmax" type="double" value="350"    />
@@ -40,8 +48,8 @@
   <Parameter name="Global Bound ymax" type="double" value="74"     />
 
   <!-- global number of grid points in x,y and z-directions       -->
-  <Parameter name="Global Grid-Size n" type="int" value="6"       />
-  <Parameter name="Global Grid-Size m" type="int" value="6"       />
+  <Parameter name="Global Grid-Size n" type="int" value="16"       />
+  <Parameter name="Global Grid-Size m" type="int" value="16"       />
   <Parameter name="Global Grid-Size l" type="int" value="1"       />
 
   <!-- Preconditioner parameters.                                         -->

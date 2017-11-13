@@ -24,6 +24,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     saveEP_          (params->get("Save E and P fields", false)),
     saveEveryStep_   (params->get("Save every step", false)),
     useIntCondQ_     (params->get("Use integral condition on q", true)),
+    useFixedPrecip_  (params->get("Use idealized precipitation", false)),
     precInitialized_ (false),
     recomputePrec_   (false)
 {
@@ -404,13 +405,13 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
     // see the forcing in Atmosphere.C.
 
     // check surfmask
-    assert((int) surfmask_->size() == m_*n_);
+    assert( (int) surfmask_->size() == m_*n_ );
 
     // We are going to create a 0-based global CRS matrix for this block
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
     int el_ctr = 0;
-    int T = 5; // in THCM temperature is the fifth unknown
+    int T = 5; // (1-based) in THCM temperature is the fifth unknown
 
     // Get dependency of humidity on ocean temperature
     double dqdt = atmos_->getDqDTo();
@@ -421,7 +422,11 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
             for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
             {
                 block->beg.push_back(el_ctr);
-                if ( (*surfmask_)[j*n_+i] == 0 ) // non-land
+                
+                if ( (*surfmask_)[j*n_+i] == 0 &&   // non-land
+                     (rowIntCon_ != FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                                    i, j, l_-1, xx))
+                    ) // skip integral condition row
                 {
                     if (xx == ATMOS_TT_)
                     {
@@ -720,7 +725,8 @@ void AtmospherePar::computeEP()
 
     // assign obtained E values to distributed vector (overlapping)
     double *tmpE;
-    localE_->ExtractView( &tmpE );    
+    localE_->ExtractView( &tmpE );
+
 
     int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
 
@@ -733,10 +739,15 @@ void AtmospherePar::computeEP()
     CHECK_ZERO(E_->Export(*localE_, *as2std_surf_, Zero));
 
     // compute integral
-    double integral = Utils::dot(precipIntCo_, E_) / totalArea_;
+    double integral;
+    if (useFixedPrecip_)
+        integral = 1.0e-6;
+    else
+        integral = Utils::dot(precipIntCo_, E_) / totalArea_;
 
     int numGlobalElements = P_->Map().NumGlobalElements();
-    int numMyElements = P_->Map().NumMyElements();
+    int numMyElements     = P_->Map().NumMyElements();
+    
     assert((int) surfmask_->size() == numGlobalElements);
 
     // fill P_ in parallel
@@ -748,9 +759,9 @@ void AtmospherePar::computeEP()
             (*P_)[i] = integral;
     }
 
-#ifdef DEBUGGING_NEW 
-    // INFO("AtmospherePar: precipitation P_ = " << integral);
-#endif
+// #ifdef DEBUGGING_NEW 
+//     INFO("AtmospherePar: precipitation P_ = " << integral);
+// #endif
 
     TIMER_STOP("AtmospherePar: compute E P...");
 }

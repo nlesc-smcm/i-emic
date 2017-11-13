@@ -209,7 +209,8 @@ TEST(CoupledModel, numericalJacobian)
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> > njC;
 
-            njC.setTolerance(1e-8);            
+            njC.setTolerance(1e-13);
+            njC.seth(1e2);
             njC.compute(coupledModel, coupledModel->getState('V'));
 
             std::string fnameJnC("JnC");

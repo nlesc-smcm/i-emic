@@ -428,5 +428,6 @@ void CoupledModel::dumpBlocks()
     DUMPMATLAB("C12", *(C12_.getBlock()));
     DUMPMATLAB("C21", *(C21_.getBlock()));
 
+    std::cout << "----- _----- here comes C12" << std::endl;
     std::cout << *(C12_.getBlock()) << std::endl;
 }

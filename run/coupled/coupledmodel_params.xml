@@ -38,9 +38,9 @@
   <!-- northern domain bound -->
   <Parameter name="Global Bound ymax" type="double" value="74"/>
   <!-- global number of grid points in x-direction -->
-  <Parameter name="Global Grid-Size n" type="int" value="6"/>
+  <Parameter name="Global Grid-Size n" type="int" value="16"/>
   <!-- global number of grid points in y-direction -->
-  <Parameter name="Global Grid-Size m" type="int" value="6"/>
+  <Parameter name="Global Grid-Size m" type="int" value="16"/>
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="false"/>
@@ -49,7 +49,7 @@
   <Parameter name="Combined Forcing"    type="double" value="0.0"/>
   <Parameter name="Solar Forcing"       type="double" value="1.0"/>
   <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
-  <Parameter name="Wind Forcing"        type="double" value="0.0"/>
+  <Parameter name="Wind Forcing"        type="double" value="1.0"/>
   <Parameter name="Temperature Forcing" type="double" value="0.0"/>
   <Parameter name="Humidity Forcing"    type="double" value="1.0"/>
 

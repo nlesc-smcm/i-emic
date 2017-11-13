@@ -87,9 +87,10 @@
 
     <!-- Mixing parameter (vmix_GLB in THCM)                                   -->
     <!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
-    <!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                               -->
-    <!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                               -->
-    <Parameter name="Mixing" type="int" value="1"/>
+    <!-- Mixing = off                                                          -->
+    <!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                              -->
+    <!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                              -->
+    <Parameter name="Mixing" type="int" value="0"/>
 
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>
@@ -99,7 +100,7 @@
     <!-- 0: non-restoring                                     -->
     <!-- 1: restoring                                         -->
     <!-- Should not have an effect when coupled to atmosphere -->
-    <Parameter name="Restoring Temperature Profile" type="int" value="1"/>
+    <Parameter name="Restoring Temperature Profile" type="int" value="0"/>
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->

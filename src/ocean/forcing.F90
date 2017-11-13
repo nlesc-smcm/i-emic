@@ -112,9 +112,10 @@ SUBROUTINE forcing
   end if
 
   !write(*,*) "salcor      ", salcor,      " spertcor      ", spertcor
-  !write(*,*) "eta         ", eta,         " nus           ", nus
-  !write(*,*) "qatm(10,10) ", qatm(10,10), " pfield(10,10) ", pfield(10,10)
-  !write(*,*) "par(BIOT)   ", par(BIOT)
+  write(*,*)  " dQdq        ", par(COMB)*par(SALT)*nus*(-eta)
+  write(*,*)  " Ooa         ", Ooa
+  write(*,*)  " pfield(2,2) ", pfield(2,2) !, "qatm(2,2)   ", qatm(2,2)
+  !write(*,*) " par(BIOT)   ", par(BIOT)
 
   do j=1,m
      do i=1,n

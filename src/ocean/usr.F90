@@ -87,7 +87,7 @@ module m_usr
   !
   !     The subdomain forcing fields are mostly set by forcing, which is called
   !     from init.
-  !     tatm, qatm and pfield may be set by an external ocean model, see inserts.F90.
+  !     tatm, qatm and pfield will be set by an external coupled model, see inserts.F90.
 
   real, allocatable, dimension(:)     :: Frc
   real, allocatable, dimension(:,:)   :: taux, tauy

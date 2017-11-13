@@ -67,8 +67,11 @@ public:
 						elctr++;
 					}								
 				
-				if ( j % 100  == 0)
+				if ( j % 6  == 0)
                 {
+                    std::cout << std::endl << "*-*-*-*- Num.Jac. column " << j
+                              << " of " << state->GlobalLength()
+                              << "-*-*-*-*" << std::endl;
 					INFO(std::endl << "*-*-*-*- Num.Jac. column " << j
                          << " of " << state->GlobalLength()
                          << "-*-*-*-*" << std::endl);
@@ -97,6 +100,8 @@ public:
 		}
 
     void setTolerance(double tol) { tol_ = tol; }
+
+    void seth(double h) { h_ = h; }
 };
 
 

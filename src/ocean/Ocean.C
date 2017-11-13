@@ -1071,8 +1071,10 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
 
     INFO("CouplingBlock: getBlock()... Ooa = " << Ooa << ", qdep = " << qdep);
     
-    int T = 1; // in the Atmosphere, temperature is the first unknown
-    int Q = 2; // in the Atmosphere, humidity is the second unknown
+    int T = 1; // (1-based) in the Atmosphere, temperature is the first unknown
+    int Q = 2; // (1-based) in the Atmosphere, humidity is the second unknown
+
+    double rowIntCon = THCM::Instance().getRowIntCon();
 
     // fill CRS struct
     int el_ctr = 0;
@@ -1091,11 +1093,12 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                             el_ctr++;
                         }
                     }
-                    else if ( (k == L_-1) && (xx == SS) ) // surface S row
+                    else if ( (k == L_-1) && (xx == SS) && // surface S row
+                              FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, xx) != rowIntCon) 
                     {
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
-                            block->co.push_back(qdep);
+                            block->co.push_back(-qdep);
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
                         }
