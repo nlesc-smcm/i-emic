@@ -524,6 +524,8 @@ void Atmosphere::forcing()
     double value;
     int temRow, humRow, surfaceRow;
 
+    // INFO("Atmosphere::forcing P[0] = " << (*P_)[0] );
+    
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {

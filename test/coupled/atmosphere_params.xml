@@ -38,7 +38,7 @@
 
   <!-- Precipitation is an integral, for testing purposes we can switch that -->
   <!-- off and use a fixed value (1.0).                                      -->
-  <Parameter name="Use idealized precipitation" type="bool" value="true"/>
+  <Parameter name="Use idealized precipitation" type="bool" value="false"/>
 
   <!-- western, eastern, southern and northern domain bounds      -->
   <Parameter name="Global Bound xmin" type="double" value="286"    />

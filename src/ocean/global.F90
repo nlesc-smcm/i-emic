@@ -491,14 +491,14 @@ contains
     real(c_double), dimension(n*m) :: cemip
     integer :: i,j,pos
 
-    if (its.ne.1) then
+    if (its.ne.1 .and. coupled_atm.eq.0) then
        ! read (virtual) salt flux and store it in emip
-       if (SRES.eq.0 .and. coupled_atm.eq.0) then 
+       if (SRES.eq.0) then 
           call read_forcing(emip,15)
        else                ! read sss
           call levitus_sal
        end if
-    else                  ! idealized forcing, set in forcing.F90
+    else   ! idealized or coupled forcing, set in forcing.F90
        emip(1:n,1:m) = 0.0
     end if
 
@@ -619,7 +619,7 @@ contains
        ite=0 ! use tatm from now on
     end if
 
-    if (its==0) then
+    if (its.eq.0 .and. coupled_atm.eq.0) then
        fname = topdir//'levitus/monthly/s'//ibuf//'an1'
        write(f99,*) 'read levitus S from file"'//trim(fname)//'"'
        call levitus_interpol(trim(fname),emip,30.,40.,l,1)

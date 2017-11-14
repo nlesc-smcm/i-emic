@@ -142,6 +142,9 @@ public:
     //! Set atmosphere precipitation field in the ocean model
     void setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP);
 
+    //! Set atmosphere E-P field in the ocean model
+    void setAtmosphereEmiP(Teuchos::RCP<Epetra_Vector> const &atmosEmiP);
+
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
 
@@ -317,6 +320,9 @@ private:
 
     //! used to extract evaporation field from THCM
     Teuchos::RCP<Epetra_Vector> localOceanE;
+
+    //! used to import E-P field into THCM
+    Teuchos::RCP<Epetra_Vector> localAtmosEmiP;    
 
     //! used to export computed RHS vector from THCM:
     Teuchos::RCP<Epetra_Vector> localRhs;

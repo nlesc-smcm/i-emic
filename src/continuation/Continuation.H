@@ -565,10 +565,11 @@ newtonCorrector()
         model_->computeRHS();
         normRHStest_ = Utils::norm(rhsView_);
 
+        // if we see a drastic increase in |rhs| we quit the corrector
         // again, use predictor bound to select failures
         if (normRHStest_ > predictorBound_)
         {
-            INFO("   |     too big!");
+            INFO(" norm too big! " << normRHStest_);
             return 1;
         }
 
@@ -856,7 +857,7 @@ reset()
     // fix step size for next step
     fixStepSize_ = true; 
 
-    if (ds_ == dsMin_)
+    if (( ds_ <= dsMin_ ) && ( resetCounter_ >= 100 ))
     {
         abortFlag_ = true;
         WARNING("Reached dsMin, continuation failed", __FILE__, __LINE__);

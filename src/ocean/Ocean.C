@@ -1015,6 +1015,9 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
     Teuchos::RCP<Epetra_Vector> atmosP  = atmos->interfaceP();
     THCM::Instance().setAtmosphereP(atmosP);
 
+    Teuchos::RCP<Epetra_Vector> atmosEmiP  = atmos->interfaceEmiP();
+    THCM::Instance().setAtmosphereEmiP(atmosEmiP);
+    
     // We also need to know a few atmospheric constants to compute
     // E, P and their derivatives w.r.t. SST (To) and humidity (q)
     // These could be obtained at construction

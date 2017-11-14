@@ -14,8 +14,8 @@
 
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size"  type="double"  value="1.0e-2"/>
-  <Parameter name="minimum step size"  type="double"  value="1.0e-8"/>
-  <Parameter name="maximum step size"  type="double"  value="1.0e00"/>
+  <Parameter name="minimum step size"  type="double"  value="1.0e-3"/>
+  <Parameter name="maximum step size"  type="double"  value="1.0e-1"/>
 
   <!-- Define the scalings when increasing or decreasing the step size -->
   <Parameter name="increase step size" type="double"  value="1.1"/>
@@ -25,7 +25,7 @@
   <!-- Several destinations are allowed, in that case specify      -->
   <!-- destination 1, destination 2, etc. as well                  -->
   
-  <Parameter name="destination 0" type="double" value=".1"/>
+  <Parameter name="destination 0" type="double" value=".05"/>
 
   <!-- Let the model class define an additional stopping criterion -->
   <Parameter name="enable custom monitor" type="bool" value="false"/>

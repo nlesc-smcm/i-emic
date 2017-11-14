@@ -209,7 +209,7 @@ TEST(CoupledModel, numericalJacobian)
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> > njC;
 
-            njC.setTolerance(1e-13);
+            njC.setTolerance(1e-14);
             njC.seth(1e2);
             njC.compute(coupledModel, coupledModel->getState('V'));
 
@@ -465,8 +465,8 @@ TEST(CoupledModel, Synchronization)
                  std::to_string(oceanAtmosP->Map().Comm().MyPID()) + ".txt");
 #endif
 
-    oceanAtmosP->MaxValue(&maxValue);
-    EXPECT_GT(std::abs(maxValue), 0.0);
+    // oceanAtmosP->MaxValue(&maxValue);
+    // EXPECT_GT(std::abs(maxValue), 0.0);
 }
 
 

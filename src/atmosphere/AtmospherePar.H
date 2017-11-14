@@ -117,6 +117,9 @@ private:
     //! parallel precipitation field (overlapping)
     Teuchos::RCP<Epetra_Vector> localP_;
 
+    //! parallel E-P field (non-overlapping)
+    Teuchos::RCP<Epetra_Vector> EmiP_;
+    
     //! Atmosphere temperature importer
     Teuchos::RCP<Epetra_Import> atmosTimporter_;
 
@@ -273,7 +276,10 @@ public:
 
     //! Get precipitation at interface 
     Teuchos::RCP<Epetra_Vector> interfaceP();
-    
+
+    //! Get E-P at interface 
+    Teuchos::RCP<Epetra_Vector> interfaceEmiP();
+
     //! Get integral condition coefficients
     Teuchos::RCP<Epetra_Vector> getIntCoeff() { return intcondCoeff_; } 
 

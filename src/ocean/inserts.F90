@@ -82,4 +82,30 @@ contains
     end if
   end subroutine insert_atmosphere_p
 
+  !!------------------------------------------------------------------
+  subroutine insert_atmosphere_emip(inserted_atmos_emip)
+    
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_emip
+    integer :: i,j,pos
+
+    if (coupled_atm.eq.1) then
+       pos = 1
+       do j = 1,m
+          do i = 1,n
+             emip(i,j) = inserted_atmos_emip(pos)
+             pos = pos + 1
+          end do
+       end do
+       !_INFO2_("++ Inserting EP: pfield(5,5) = ", pfield(5,5))
+    else
+       _INFO2_("Not inserting atmosphere P : coupled_atm=", coupled_atm)
+    end if
+  end subroutine insert_atmosphere_emip
+
+  
 end module m_inserts

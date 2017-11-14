@@ -86,15 +86,14 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     sst_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     E_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     P_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    EmiP_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localE_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-
-    
+    localP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));    
 
     // create graph
     createMatrixGraph();
@@ -396,6 +395,18 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceP()
     computeEP();
     
     return P_;
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceEmiP()
+{
+    // Put parallel atmosphere state in serial model
+    distributeState();
+    
+    // We need to obtain E and P fields based on our state
+    computeEP();
+
+    return EmiP_;
 }
 
 //==================================================================
@@ -759,10 +770,13 @@ void AtmospherePar::computeEP()
             (*P_)[i] = integral;
     }
 
-// #ifdef DEBUGGING_NEW 
-//     INFO("AtmospherePar: precipitation P_ = " << integral);
-// #endif
+    // Create E-P field
+    EmiP_->Update(1.0, *E_, -1.0, *P_, 0.0);
 
+// #ifdef DEBUGGING_NEW 
+//     INFO("AtmospherePar: precipitation P_[0] = " << (*P_)[0]);
+// #endif
+    
     TIMER_STOP("AtmospherePar: compute E P...");
 }
 

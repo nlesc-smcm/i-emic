@@ -131,6 +131,7 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_t)(double *atmosT);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_q)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_p)(double *atmosP);
+    _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_emip)(double *atmosEmiP);
     _MODULE_SUBROUTINE_(m_probe, get_atmosphere_t)(double *atmosT);
     _MODULE_SUBROUTINE_(m_probe, get_atmosphere_q)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_probe, get_atmosphere_p)(double *atmosP);
@@ -556,6 +557,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localAtmosP     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localOceanE     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosEmiP  = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -1153,6 +1155,26 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 #endif 
     
     F90NAME(m_inserts, insert_atmosphere_p)( tmpAtmosP );
+}
+
+//=============================================================================
+void THCM::setAtmosphereEmiP(Teuchos::RCP<Epetra_Vector> const &atmosEmiP)
+{
+    
+    if (!(atmosEmiP->Map().SameAs(*StandardSurfaceMap)))
+    {
+        // INFO("THCM::setAtmosphereEP: atmosP map -> StandardSurfaceMap");
+        CHECK_ZERO(atmosEmiP->ReplaceMap(*StandardSurfaceMap));
+    }
+
+    // Standard2Assembly
+    // Import atmosP into local atmosP
+    CHECK_ZERO(localAtmosEmiP->Import(*atmosEmiP, *as2std_surf, Insert));
+
+    double *tmpAtmosEmiP;
+    localAtmosEmiP->ExtractView(&tmpAtmosEmiP);
+    
+    F90NAME(m_inserts, insert_atmosphere_emip)( tmpAtmosEmiP );
 }
 
 //=============================================================================

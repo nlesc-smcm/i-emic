@@ -46,6 +46,16 @@ public:
 
 			for (int j = 0; j != state->GlobalLength(); ++j)
 			{
+                if ( j % 6  == 0)
+                {
+                    std::cout << std::endl << "*-*-*-*- Num.Jac. column " << j
+                              << " of " << state->GlobalLength()
+                              << "-*-*-*-*" << std::endl;
+					INFO(std::endl << "*-*-*-*- Num.Jac. column " << j
+                         << " of " << state->GlobalLength()
+                         << "-*-*-*-*" << std::endl);
+                }
+
                 (*state)[j] += h_;
 
 				Fview->PutScalar(0.0);
@@ -60,22 +70,13 @@ public:
 				colPtr_.push_back(elctr);
 
 				for (int i = 0; i != Fview->GlobalLength(); ++i)
-					if (std::abs((*Fview)[i]) > 1e-5)
+					if (std::abs((*Fview)[i]) > tol_)
 					{
 						values_.push_back((*Fview)[i]);
 						rowIdx_.push_back(i);
 						elctr++;
 					}								
 				
-				if ( j % 6  == 0)
-                {
-                    std::cout << std::endl << "*-*-*-*- Num.Jac. column " << j
-                              << " of " << state->GlobalLength()
-                              << "-*-*-*-*" << std::endl;
-					INFO(std::endl << "*-*-*-*- Num.Jac. column " << j
-                         << " of " << state->GlobalLength()
-                         << "-*-*-*-*" << std::endl);
-                }
 			}
 			
 			colPtr_.push_back(elctr);
