@@ -503,7 +503,7 @@ int main(int argc, char **argv)
     ::testing::InitGoogleTest(&argc, argv);
 
     // -------------------------------------------------------
-    // TESTINGv
+    // TESTING
     int out = RUN_ALL_TESTS();
     // -------------------------------------------------------
 

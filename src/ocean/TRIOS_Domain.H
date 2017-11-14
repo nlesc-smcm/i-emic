@@ -51,7 +51,7 @@ namespace TRIOS {
 		Domain(int N, int M, int L, int dof,
 			   double xmin, double xmax, double ymin, double ymax, 
 			   bool periodic, double hdim, 
-			   Teuchos::RCP<Epetra_Comm> comm);
+			   Teuchos::RCP<Epetra_Comm> comm, int aux = 0);
       
 		//! Destructor
 		virtual ~Domain();
@@ -80,14 +80,6 @@ namespace TRIOS {
 		*/
 		void Decomp2D();
 
-		//! 3D domain decomposition (e.g. for Navier-Stokes) 
-		//! This function does not implement overlapping sub-
-		//! domains at the moment (the assembly map cannot   
-		//! be used properly), this feature is only required 
-		//! if a parallel CFD code (like trilinos_thcm) is   
-		//! using TRIOS and will have to be added later.
-		void Decomp3D();
-      
 		//! return number of grid cells in the subdomain  
 		//! in east-west direction (including ghost-nodes)
 		inline int LocalN() const {return nloc;} 
@@ -315,6 +307,9 @@ namespace TRIOS {
 		//! number of unknowns per grid cell
 		int dof_;
 
+		//! numbef of auxiliary unknowns
+		int aux_;
+        
     protected:
 
 		void CommonSetup();

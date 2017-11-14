@@ -34,7 +34,8 @@ namespace TRIOS
     */
     Domain::Domain(int N, int M, int L, int dof,
                    double Xmin, double Xmax, double Ymin, double Ymax,
-                   bool Periodic, double Hdim, Teuchos::RCP<Epetra_Comm> Comm)
+                   bool Periodic, double Hdim, Teuchos::RCP<Epetra_Comm> Comm,
+                   int aux)
         :
         comm(Comm),
         n(N), m(M), l(L),
@@ -42,12 +43,16 @@ namespace TRIOS
         zmin(-Hdim),
         zmax(0),
         periodic(Periodic),
-        dof_(dof)
+        dof_(dof),
+        aux_(aux)
     {
         //TODO: check if we want zmin=-Hdim or -1 (as in THCM)
-        int dim = m * n * l * dof_;
+        int dim = m * n * l * dof_ + aux_;
         int *MyGlobalElements = new int[dim];
-        for (int i = 0; i < dim; i++) MyGlobalElements[i] = i;
+
+        for (int i = 0; i < dim; i++)
+            MyGlobalElements[i] = i;
+        
         ColMap = Teuchos::rcp(new Epetra_Map(dim,dim,MyGlobalElements,0,*comm));
         delete [] MyGlobalElements;
     }
@@ -156,9 +161,10 @@ namespace TRIOS
         // at the domain boundaries. These are discarded only when
         // assembling global distributed vectors/matrices.
 
-        Teuchos::RCP<Epetra_Comm> xcomm = this->GetProcRow(0);
-        xparallel = (xcomm->NumProc()>1); // if there is only one subdomain in the
+        // if there is only one subdomain in the
         // x-direction, periodicity is left to THCM
+        Teuchos::RCP<Epetra_Comm> xcomm = this->GetProcRow(0);
+        xparallel = (xcomm->NumProc()>1); 
 
         if (pidM > 0)
         { mloc+=num_ghosts; Moff-=num_ghosts;}
@@ -175,40 +181,6 @@ namespace TRIOS
         CommonSetup();
     }
 
-    //=============================================================================
-    // 3D domain decomposition (for Navier-Stokes)
-    // This implementation is more modern than the Decomp2D function
-    // because we have lots of functionality from HYMLS we can use now.
-    // NOTE: we do not include overlap if this function is used, that
-    // would have to be added if we have a parallel code using 3D decom-
-    // positions.
-    void Domain::Decomp3D()
-    {
-
-        int nprocs = comm->NumProc();
-        int pid    = comm->MyPID();
-        Utils::SplitBox(n,m,l,nprocs,npN,npM,npL);
-        Utils::ind2sub(npN,npM,npL,pid,pidN,pidM,pidL);
-
-        Loff0 = pidL*(int)(l/npL);
-        Moff0 = pidM*(int)(m/npM);
-        Noff0 = pidN*(int)(n/npN);
-
-        Noff = Noff0;
-        Moff = Moff0;
-        Loff = Loff0;
-
-        mloc0 = (int)(m/npM);
-        nloc0 = (int)(n/npN);
-        lloc0 = (int)(l/npL);
-
-        nloc = nloc0;
-        mloc = mloc0;
-        lloc = lloc0;
-
-        CommonSetup();
-    }
-
     void Domain::CommonSetup()
     {
         INFO("processor position: (N,M,L) = ("<<pidN<<","<<pidM<<","<<pidL<<")");
@@ -217,18 +189,16 @@ namespace TRIOS
         INFO("  +++ including ghost nodes: +++");
         INFO("  subdomain offsets: "<<Noff<<","<<Moff<<","<<Loff);
         INFO("  grid dimension on subdomain: "<<nloc<<"x"<<mloc<<"x"<<lloc);
-        // create the maps:
+        INFO("  +++   auxiliary unknowns:  +++");
+        INFO("     " << aux_);
 
+        // create the maps:
         StandardMap = CreateStandardMap(dof_);
         AssemblyMap = CreateAssemblyMap(dof_);
 
         // no load-balancing object available, yet (has to be set by user)
         SolveMap = StandardMap;
 
-#ifdef DEBUGGING
-        comm->Barrier();
-        DEBUG("create importers...");
-#endif
         // finally make the Import/Export objects (transfer function
         // between the two maps)
         as2std  = Teuchos::rcp(new Epetra_Import(*AssemblyMap,*StandardMap));
@@ -249,14 +219,6 @@ namespace TRIOS
         zmin_loc = zmin + Loff*dz;
         zmax_loc = zmin + (Loff+lloc)*dz;
 
-        DEBVAR(xmin);
-        DEBVAR(xmax);
-        DEBVAR(ymin);
-        DEBVAR(ymax);
-        DEBVAR(xmin_loc);
-        DEBVAR(xmax_loc);
-        DEBVAR(ymin_loc);
-        DEBVAR(ymax_loc);
     }
 
     // find out wether a particular local index is on a ghost node
@@ -285,11 +247,10 @@ namespace TRIOS
             result = result||(k==lloc-1-ii && pidL<npL-1);
         }
 
-        //    DEBVAR(result);
         return result;
     }
 
-// public map creation function (can only create a limited range of maps)
+    // public map creation function (can only create a limited range of maps)
     Teuchos::RCP<Epetra_Map> Domain::CreateSolveMap(int nun_, bool depth_av) const
     {
         Teuchos::RCP<Epetra_Map> M=Teuchos::null;
@@ -341,7 +302,7 @@ namespace TRIOS
     Teuchos::RCP<Epetra_Map> Domain::CreateMap(int noff_, int moff_, int loff_,
                                                int nloc_, int mloc_, int lloc_, int nun_) const
     {
-        int NumMyElements     = mloc_ * nloc_ * lloc_ * nun_;
+        int NumMyElements     = mloc_ * nloc_ * lloc_ * nun_ + aux_;
         int NumGlobalElements = -1; // Let Epetra figure it out herself
 
         // Make lists of all global elements that belong to my subdomain
@@ -367,6 +328,13 @@ namespace TRIOS
                 }//i
             }//j
         }//k
+
+        // add auxiliary unknowns, every subdomain needs them, they're great
+        for (int aa = 1; aa <= aux_; ++aa)
+        {
+            MyGlobalElements[p] = FIND_ROW2(nun_, n, m, l, n-1, m-1, l-1, nun_) + aa;
+            p++;
+        }        
 
         // create the map
         Teuchos::RCP<Epetra_Map> M =

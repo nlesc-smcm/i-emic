@@ -46,7 +46,7 @@ public:
 
 			for (int j = 0; j != state->GlobalLength(); ++j)
 			{
-                if ( j % 6  == 0)
+                if ( j % 30  == 0)
                 {
                     std::cout << std::endl << "*-*-*-*- Num.Jac. column " << j
                               << " of " << state->GlobalLength()

@@ -114,7 +114,7 @@ SUBROUTINE forcing
   !write(*,*) "salcor      ", salcor,      " spertcor      ", spertcor
   !write(*,*)  " dQdq        ", par(COMB)*par(SALT)*nus*(-eta)
   !write(*,*)  " Ooa         ", Ooa
-  write(*,*)  " emip(1,1)   ", emip(1,1) !, "qatm(2,2)   ", qatm(2,2)
+  !write(*,*)  " emip(1,1)   ", emip(1,1) !, "qatm(2,2)   ", qatm(2,2)
   !write(*,*) " par(BIOT)   ", par(BIOT)
   
   do j=1,m

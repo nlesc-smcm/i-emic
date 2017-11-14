@@ -1150,9 +1150,9 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
     double *tmpAtmosP;
     localAtmosP->ExtractView(&tmpAtmosP);
 
-#ifdef DEBUGGING_NEW
-    INFO("THCM:setAtmosphereP p(2) = " << tmpAtmosP[1]);
-#endif 
+// #ifdef DEBUGGING_NEW
+//     INFO("THCM:setAtmosphereP p(2) = " << tmpAtmosP[1]);
+// #endif 
     
     F90NAME(m_inserts, insert_atmosphere_p)( tmpAtmosP );
 }
