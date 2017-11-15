@@ -201,6 +201,14 @@ TEST(Domain, Importers)
 }
 
 //------------------------------------------------------------------
+TEST(Domain, Gather)
+{
+    int last = FIND_ROW2(dof, n, m, l, n-1, m-1, l-1, dof) + aux;
+    Teuchos::RCP<Epetra_MultiVector> gvec = Utils::Gather(*vec, 0);
+    EXPECT_EQ( gvec->GlobalLength(), last + 1 );     
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:
