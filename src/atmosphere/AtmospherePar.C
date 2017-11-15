@@ -25,6 +25,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     saveEveryStep_   (params->get("Save every step", false)),
     useIntCondQ_     (params->get("Use integral condition on q", true)),
     useFixedPrecip_  (params->get("Use idealized precipitation", false)),
+    
     precInitialized_ (false),
     recomputePrec_   (false)
 {

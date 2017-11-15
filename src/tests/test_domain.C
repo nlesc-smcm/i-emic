@@ -7,34 +7,84 @@
 namespace // local unnamed namespace (similar to static in C)
 {
     RCP<TRIOS::Domain> domain;
+    
     RCP<Epetra_Map> standardMap;
     RCP<Epetra_Map> assemblyMap;
     RCP<Epetra_Map> stdSurfMap;
     RCP<Epetra_Map> asmSurfMap;
+    
     RCP<Epetra_Import> as2std;
     RCP<Epetra_Import> as2std_surf;
+    
     RCP<Epetra_Vector> vec;
     RCP<Epetra_Vector> localvec;
-    
+
+    std::shared_ptr<AtmospherePar> atmos;
+
+    RCP<Teuchos::ParameterList> atmosphereParams;    
     
     int n, m, l, dof, aux, periodic;
     double xmin,xmax,ymin,ymax;
 }
 
 //------------------------------------------------------------------
+TEST(Atmosphere, Initialization)
+{
+    bool failed = false;
+
+    // Create atmosphere parameters
+    atmosphereParams = rcp(new Teuchos::ParameterList);
+
+    updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
+
+    try
+    {
+        atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+    }
+    catch (std::exception const &e)
+    {
+        INFO("TEST(Atmosphere, Initialization) exception: " << e.what());
+        failed = true;
+    }
+    catch (int error)
+    {
+        INFO("TEST(Atmosphere, Initialization) exception: error code = " << error);
+        failed = true;
+    }
+    catch (...)
+    {
+        INFO("TEST(Atmosphere, Initialization) some exception thrown...");
+        failed = true;
+        throw;
+    }
+    
+    EXPECT_EQ(failed, false);
+}
+
+
+//------------------------------------------------------------------
 TEST(Domain, SimpleInit)
 {
     bool failed = false;
 
-    n = 6; m = 6; l = 1; dof = 2;
+    dof = ATMOS_NUN_;
 
     xmin = 286 * PI_ / 180;
     xmax = 350 * PI_ / 180;
     ymin =  10 * PI_ / 180;
     ymax =  74 * PI_ / 180;
 
-    periodic = 0;
+    xmin = atmosphereParams->get("Global Bound xmin", 286.0) * PI_ / 180.0;
+    xmax = atmosphereParams->get("Global Bound xmax", 350.0) * PI_ / 180.0;
+    ymin = atmosphereParams->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
+    ymax = atmosphereParams->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
 
+    n        = atmosphereParams->get("Global Grid-Size n", 16);
+    m        = atmosphereParams->get("Global Grid-Size m", 16);
+    l        = atmosphereParams->get("Global Grid-Size l", 1);
+    periodic = atmosphereParams->get("Periodic", false);
+
+    // without auxiliary unknowns
     aux = 0;
 
     int dim = n * m * l * dof + aux;
@@ -205,7 +255,14 @@ TEST(Domain, Gather)
 {
     int last = FIND_ROW2(dof, n, m, l, n-1, m-1, l-1, dof) + aux;
     Teuchos::RCP<Epetra_MultiVector> gvec = Utils::Gather(*vec, 0);
-    EXPECT_EQ( gvec->GlobalLength(), last + 1 );     
+    EXPECT_EQ( gvec->GlobalLength(), last + 1 );
+}
+
+
+//------------------------------------------------------------------
+TEST(Domain, MatVec)
+{
+    
 }
 
 //------------------------------------------------------------------
