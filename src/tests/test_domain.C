@@ -292,8 +292,9 @@ TEST(Domain, MatVec)
         return;
     }
 
+    EXPECT_EQ(vec->GlobalLength(), standardMap->NumGlobalElements());
+    EXPECT_EQ(vec->GlobalLength(), domain->GetSolveMap()->NumGlobalElements());
 
-    
 }
 
 //------------------------------------------------------------------

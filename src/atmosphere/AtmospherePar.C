@@ -863,7 +863,7 @@ void AtmospherePar::solve(Teuchos::RCP<Epetra_MultiVector> const &b)
 // Create a graph to initialize the Jacobian
 void AtmospherePar::createMatrixGraph()
 {
-    // We know from the discretization that we have at most 6
+    // We know from the discretization that we have at most 5 + aux
     // dependencies in each row. This will change, obviously, when
     // extending the atmosphere model. If the number of dependencies
     // varies greatly per row we need to supply them differently
@@ -1046,12 +1046,12 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
     HDF5.Open(filename);
     HDF5.Read("State", readState);
 
-    if ( readState->GlobalLength() != dim_ )
-        ERROR("Incompatible state", __FILE__, __LINE__);
-
+    if ( readState->GlobalLength() != domain_->GetSolveMap()->NumGlobalElements() )
+        WARNING("Loading state from differ #procs", __FILE__, __LINE__);
+    
     // Create importer
     // target map: thcm domain SolveMap
-    // source map: state with linear map  as read by HDF5.Read
+    // source map: state with linear map as read by HDF5.Read
     Teuchos::RCP<Epetra_Import> lin2solve =
         Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
                                        readState->Map() ));
