@@ -275,10 +275,17 @@ TEST(Domain, Gather)
         return;
     }
 
-
     int last = FIND_ROW2(dof, n, m, l, n-1, m-1, l-1, dof) + aux;
+
     Teuchos::RCP<Epetra_MultiVector> gvec = Utils::Gather(*vec, 0);
     EXPECT_EQ( gvec->GlobalLength(), last + 1 );
+
+    Teuchos::RCP<Epetra_Vector> intCondCoeff = atmos->getIntCoeff();
+
+    Teuchos::RCP<Epetra_MultiVector> gint =
+        Utils::Gather(*intCondCoeff, 1);
+    
+    EXPECT_EQ( gint->GlobalLength(), last + 1 );    
 }
 
 
@@ -290,11 +297,35 @@ TEST(Domain, MatVec)
         WARNING(" aux not set, test has no use", __FILE__, __LINE__);
         std::cout << " aux not set, test has no use" << std::endl;
         return;
-    }
 
+    }
     EXPECT_EQ(vec->GlobalLength(), standardMap->NumGlobalElements());
     EXPECT_EQ(vec->GlobalLength(), domain->GetSolveMap()->NumGlobalElements());
 
+    bool failed = false;
+    try
+    {
+        atmos->getState('V')->PutScalar(0.01);
+        atmos->setPar(0.01);
+        // atmos->computeJacobian();
+    }
+    catch (std::exception const &e)
+    {
+        INFO("TEST(Domain, MatVec) exception: " << e.what());
+        failed = true;
+    }
+    catch (int error)
+    {
+        INFO("TEST(Domain, MatVec) exception: error code = " << error);
+        failed = true;
+    }
+    catch (...)
+    {
+        INFO("TEST(Domain, MatVec) some exception thrown...");
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------

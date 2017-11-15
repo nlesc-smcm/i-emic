@@ -595,9 +595,8 @@ void AtmospherePar::computeJacobian()
     double values[maxnnz];
 
     // check size
-    int numMyElements = assemblyMap_->NumMyElements();
+    int numMyElements = assemblyMap_->NumMyElements() - aux_;
     assert(numMyElements == (int) localJac->beg.size() - 1);
-
     // loop over local elements
     int index, numentries;
     for (int i = 0; i < numMyElements; ++i)
@@ -659,13 +658,16 @@ void AtmospherePar::computeJacobian()
         }
     }
 
+
     //------------------------------------------------------------------
     // Implementation of integral condition
     //------------------------------------------------------------------
+    
     int root = comm_->NumProc()-1;
     Teuchos::RCP<Epetra_MultiVector> intcondGlob =
         Utils::Gather(*intcondCoeff_, root);
 
+    
     // If we have row rowIntCon_
     if (jac_->MyGRID(rowIntCon_) && useIntCondQ_)
     {
@@ -715,7 +717,6 @@ void AtmospherePar::computeJacobian()
     }
 
     //------------------------------------------------------------------
-
     // Finalize matrix
     CHECK_ZERO(jac_->FillComplete());
 
@@ -968,8 +969,8 @@ void AtmospherePar::createMatrixGraph()
     // Dependencies of the auxiliary unknown
     for (int aa = 1; aa <= aux_; ++aa)
     {
-        int len = n_ * m_ * l_ * dof_;
-        int icinds[len];
+        int len = n_ * m_ * l_ * dof_ + aux_;
+        int auxinds[len];
         int gcid;
         pos = 0;
         for (int k = 0; k != l_; ++k)
@@ -978,12 +979,16 @@ void AtmospherePar::createMatrixGraph()
                     for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
                 {
                     gcid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, xx);
-                    icinds[pos] = gcid;
+                    auxinds[pos] = gcid;
                     pos++;
                 }
+
+        // Add the dependencies on auxiliary unknowns
+        for (int aa = 1; aa <= aux_; ++aa)
+            auxinds[pos++] = last + aa;
         
         assert(len == pos);
-        CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(last + aa, len, icinds));
+        CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(last + aa, len, auxinds));
         
     }
 

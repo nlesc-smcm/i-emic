@@ -601,7 +601,6 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::Gather(const Epetra_CrsMatrix& mat, int ro
 
     Teuchos::RCP<Epetra_Import> import =
         Teuchos::rcp(new Epetra_Import(*rowmap,rowmap_dist) );
-
     CHECK_ZERO(gmat->Import(mat,*import,Insert));
     CHECK_ZERO(gmat->FillComplete());
     gmat->SetLabel(mat.Label());
@@ -611,12 +610,14 @@ Teuchos::RCP<Epetra_CrsMatrix> Utils::Gather(const Epetra_CrsMatrix& mat, int ro
 //========================================================================================
 Teuchos::RCP<Epetra_MultiVector> Utils::Gather(const Epetra_MultiVector& vec, int root)
 {
+
     const Epetra_BlockMap& map_dist = vec.Map();
     Teuchos::RCP<Epetra_BlockMap> map = Gather(map_dist,root);
     Teuchos::RCP<Epetra_MultiVector> gvec =
         Teuchos::rcp(new Epetra_MultiVector(*map,vec.NumVectors()));
     Teuchos::RCP<Epetra_Import> import =
-        Teuchos::rcp(new Epetra_Import(*map,map_dist) );
+        Teuchos::rcp(new Epetra_Import(*map,map_dist) );    
+
     CHECK_ZERO(gvec->Import(vec,*import,Insert));
     gvec->SetLabel(vec.Label());
     return gvec;
@@ -626,6 +627,7 @@ Teuchos::RCP<Epetra_MultiVector> Utils::Gather(const Epetra_MultiVector& vec, in
 // create "Gather" map from "Solve" map
 Teuchos::RCP<Epetra_BlockMap> Utils::Gather(const Epetra_BlockMap& map, int root)
 {
+        
     int ElementSize = map.ElementSize();
 #ifdef TESTING
     if (ElementSize != 1)
@@ -636,11 +638,13 @@ Teuchos::RCP<Epetra_BlockMap> Utils::Gather(const Epetra_BlockMap& map, int root
         ElementSize=1;
     }
 #endif
-    int NumMyElements = map.NumMyElements();
-    int NumGlobalElements = map.NumGlobalElements();
+    int NumMyElements       = map.NumMyElements();
+    int NumGlobalElements   = map.NumGlobalElements();
     const Epetra_Comm& Comm = map.Comm();
-    int *MyGlobalElements = new int[NumMyElements];
-    int *AllGlobalElements = NULL;
+    int *MyGlobalElements   = new int[NumMyElements];
+    int *AllGlobalElements  = NULL;
+
+        
     for (int i = 0; i < NumMyElements; i++)
     {
         MyGlobalElements[i] = map.GID(i);
@@ -681,6 +685,7 @@ Teuchos::RCP<Epetra_BlockMap> Utils::Gather(const Epetra_BlockMap& map, int root
         for (int i = 0; i < NumMyElements; i++)
             AllGlobalElements[i] = MyGlobalElements[i];
     }
+        
     if (Comm.MyPID()!=root)
     {
         NumMyElements=0;
@@ -694,16 +699,19 @@ Teuchos::RCP<Epetra_BlockMap> Utils::Gather(const Epetra_BlockMap& map, int root
         NumMyElements = std::distance(view.begin(), new_end);
         NumGlobalElements = NumMyElements;
     }
-    CHECK_ZERO(Comm.Broadcast(&NumGlobalElements, 1, 0));
+    CHECK_ZERO(Comm.Broadcast(&NumGlobalElements, 1, root));
     // build the new (gathered) map
     Teuchos::RCP<Epetra_BlockMap> gmap =
         Teuchos::rcp(new Epetra_BlockMap(NumGlobalElements, NumMyElements, AllGlobalElements,
                                          ElementSize, map.IndexBase(), Comm) );
-    if (Comm.MyPID()==root)
+
+        
+    if (Comm.MyPID() == root)
     {
         delete [] AllGlobalElements;
     }
     delete [] MyGlobalElements;
+        
     return gmap;
 }
 //========================================================================================
