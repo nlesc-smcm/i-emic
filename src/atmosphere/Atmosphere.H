@@ -258,8 +258,8 @@ public:
     //! Accept ocean temperature vector
     void setOceanTemperature(std::vector<double> const &sst);
 
-    //! Return problem dimension
-    int  dim() { return dim_; }
+    //! Return problem dimension (mainly for testing)
+    int  dim() { return dim_; } 
 
     //! Return number of continuation parameters
     int  npar() { return (int) allParameters_.size(); }

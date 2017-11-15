@@ -43,6 +43,9 @@ private:
     //! periodic bdc
     bool periodic_;
 
+    //! auxiliary unknowns resulting in a bordered system
+    int aux_;
+
     //! degrees of freedom
     int dof_;
 
@@ -244,7 +247,7 @@ public:
     //! mainly for testing purposes
     void idealized();
 
-    //! Obtain problem size
+    //! Obtain problem size (mainly for testing)
     int dim() { return dim_; }
 
     //! Obtain degrees of freedom

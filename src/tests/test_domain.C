@@ -113,8 +113,16 @@ TEST(Domain, SimpleInit)
 TEST(Domain, AuxInit)
 {
     // Now we test some auxiliary unknowns
-    aux = 2;
-    
+    aux = atmosphereParams->get("Auxiliary unknowns", 2);
+
+    if (aux <= 0)
+    {
+        WARNING(" aux not set, test has no use", __FILE__, __LINE__);
+        std::cout << " aux not set, test has no use" << std::endl;
+        return;
+    }
+
+        
     bool failed = false;
 
     try
@@ -132,7 +140,6 @@ TEST(Domain, AuxInit)
     EXPECT_EQ(failed, false);
 
     Teuchos::RCP<Epetra_Map> colmap = domain->GetColMap();
-
 
     int dim = n * m * l * dof + aux;
         
@@ -197,6 +204,14 @@ TEST(Domain, AuxInit)
 //------------------------------------------------------------------
 TEST(Domain, Importers)
 {
+    if (aux <= 0)
+    {
+        WARNING(" aux not set, test has no use", __FILE__, __LINE__);
+        std::cout << " aux not set, test has no use" << std::endl;
+        return;
+    }
+
+
     bool failed = false;
     try
     {
@@ -253,6 +268,14 @@ TEST(Domain, Importers)
 //------------------------------------------------------------------
 TEST(Domain, Gather)
 {
+    if (aux <= 0)
+    {
+        WARNING(" aux not set, test has no use", __FILE__, __LINE__);
+        std::cout << " aux not set, test has no use" << std::endl;
+        return;
+    }
+
+
     int last = FIND_ROW2(dof, n, m, l, n-1, m-1, l-1, dof) + aux;
     Teuchos::RCP<Epetra_MultiVector> gvec = Utils::Gather(*vec, 0);
     EXPECT_EQ( gvec->GlobalLength(), last + 1 );
@@ -262,6 +285,14 @@ TEST(Domain, Gather)
 //------------------------------------------------------------------
 TEST(Domain, MatVec)
 {
+    if (aux <= 0)
+    {
+        WARNING(" aux not set, test has no use", __FILE__, __LINE__);
+        std::cout << " aux not set, test has no use" << std::endl;
+        return;
+    }
+
+
     
 }
 

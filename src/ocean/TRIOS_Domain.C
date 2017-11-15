@@ -103,8 +103,8 @@ namespace TRIOS
         INFO("  npN = " << npN);
         INFO("  npM = " << npM << std::endl);
 
-        // find out where in the domain we are situated.
-        // the subdomains are numbered in a row-major 'matrix' fashion
+        // find out where in the domain we are situated. the
+        // subdomains are numbered in a row-major 'matrix' fashion
         //
         // P0 P1 P2  |
         //           m,pidM
@@ -113,8 +113,9 @@ namespace TRIOS
         //   --n->
         //   pidN
         //
-        // note that this corresponds to the column-major ordering in Fortran,
-        // i.e. i (n-direction) is the fastest index, and k (l-dir.) the slowest
+        // note that this corresponds to the column-major ordering in
+        // Fortran, i.e. i (n-direction) is the fastest index, and k
+        // (l-dir.) the slowest
 
         pidL = 0; // for reasons of generality
         pidN = pid % npN;
@@ -139,8 +140,8 @@ namespace TRIOS
         for (int i=0;i<std::min(remM,pidM);i++) Moff0++;
         for (int i=0;i<std::min(remN,pidN);i++) Noff0++;
 
-        //subdomain dimensions/offsets including ghost-nodes
-        // (will be added further down)
+        //subdomain dimensions/offsets including ghost-nodes (will be
+        // added further down)
         mloc=mloc0;
         nloc=nloc0;
         lloc=lloc0;
@@ -234,10 +235,10 @@ namespace TRIOS
         Utils::ind2sub(nloc,mloc,lloc,nun_,row,i,j,k,xx);
 
         // ghost nodes at periodic boundary only if more than one proc in x-direction
-        bool perio = periodic&&xparallel;
+        bool perio = periodic && xparallel;
 
 
-        for (int ii=0;ii<num_ghosts;ii++)
+        for (int ii = 0; ii < num_ghosts; ii++)
         {
             result = result||(i==ii && ((pidN>0)||perio));
             result = result||(i==nloc-1-ii && ((pidN<npN-1)||perio));

@@ -17,6 +17,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     m_               (params->get("Global Grid-Size m", 16)),
     l_               (params->get("Global Grid-Size l", 1)),
     periodic_        (params->get("Periodic", false)),
+    aux_             (params->get("Auxiliary unknowns", 0)),
     inputFile_       (params->get("Input file", "atmos_input.h5")),
     outputFile_      (params->get("Output file", "atmos_output.h5")),
     loadState_       (params->get("Load state", false)),
@@ -25,7 +26,9 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     saveEveryStep_   (params->get("Save every step", false)),
     useIntCondQ_     (params->get("Use integral condition on q", true)),
     useFixedPrecip_  (params->get("Use idealized precipitation", false)),
-    
+
+
+
     precInitialized_ (false),
     recomputePrec_   (false)
 {
@@ -51,11 +54,11 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     // Create domain object
     domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, l_, dof_,
                                              xmin_, xmax_, ymin_, ymax_,
-                                             periodic_, 1.0, comm_));
-    
+                                             periodic_, 1.0, comm_, aux_));
+
     // Compute 2D decomposition
     domain_->Decomp2D();
- 
+
     // Obtain local dimensions
     double xminloc = domain_->XminLoc();
     double xmaxloc = domain_->XmaxLoc();
@@ -79,7 +82,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     // Create Import object for single unknown surface values
     as2std_surf_ =
         Teuchos::rcp(new Epetra_Import(*assemblySurfaceMap_, *standardSurfaceMap_));
-        
+
     // Create overlapping and non-overlapping vectors
     state_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
@@ -119,11 +122,11 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 
     // Create hash of state
     stateHash_ = 2;
-    
+
     //------------------------------------------------------------------
     // Create atmosphere temperature restrict/import strategy
     //------------------------------------------------------------------
-    
+
     // Obtain separate rows containing temperature or humidity
     std::vector<int> tRows, qRows;
     for (int j = 0; j != m_; ++j)
@@ -151,7 +154,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     atmosTimporter_ = Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
     atmosQimporter_ = Teuchos::rcp(new Epetra_Import(*qIndexMap_, state_->Map()));
 
-    setupIntCoeff();  
+    setupIntCoeff();
 
     INFO("AtmospherePar: constructor done");
 }
@@ -173,7 +176,7 @@ void AtmospherePar::setupIntCoeff()
         WARNING("AtmposherePar: integral condition on q disabled!",
                 __FILE__, __LINE__);
     }
-    
+
     intcondCoeff_ = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     Teuchos::RCP<Epetra_Vector> intcondLocal =
         Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -194,7 +197,7 @@ void AtmospherePar::setupIntCoeff()
     ss1 << "intcondq" << comm_->MyPID() << ".txt";
     ss2 << "intcondq" << comm_->MyPID() << "orig.txt";
     Utils::print(intcondCoeff_, ss1.str());
-    Utils::print(vals, ss2.str());    
+    Utils::print(vals, ss2.str());
 #endif
 
     //------------------------------------------------------------------
@@ -244,7 +247,7 @@ void AtmospherePar::distributeState()
     localState_->ExtractCopy(&(*localState)[0], numMyElements);
 
     atmos_->setState(localState);
-    
+
     TIMER_STOP("AtmospherePar: distribute state...");
 }
 
@@ -252,7 +255,7 @@ void AtmospherePar::distributeState()
 void AtmospherePar::computeRHS()
 {
     TIMER_START("AtmosepherePar: computeRHS...");
-    
+
     //------------------------------------------------------------------
     // Put parallel state in serial atmosphere.
     distributeState();
@@ -260,7 +263,7 @@ void AtmospherePar::computeRHS()
     // Compute E and P, put our precipitation field in serial Atmosphere
     // E is already present in serial Atmosphere
     // --> If it turns out costly we might need to optimize using stateHash
-    //------------------------------------------------------------------    
+    //------------------------------------------------------------------
     computeEP();
 
     CHECK_ZERO(localP_->Import(*P_, *as2std_surf_, Insert));
@@ -272,12 +275,12 @@ void AtmospherePar::computeRHS()
         std::make_shared<std::vector<double> >(numMySurfaceElements, 0.0);
 
     localP_->ExtractCopy(&(*localP)[0], numMySurfaceElements);
-    
+
     atmos_->setPrecipitation(localP);
 
     //------------------------------------------------------------------
     // compute local rhs and check bounds
-    //------------------------------------------------------------------    
+    //------------------------------------------------------------------
     atmos_->computeRHS();
     std::shared_ptr<std::vector<double> > localRHS = atmos_->getRHS('V');
 
@@ -306,7 +309,7 @@ void AtmospherePar::computeRHS()
 
     if (rhs_->Map().MyGID(rowIntCon_) && useIntCondQ_)
         (*rhs_)[rhs_->Map().LID(rowIntCon_)] = intcond;
-    
+
 
     TIMER_STOP("AtmospherePar: computeRHS...");
 }
@@ -391,10 +394,10 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceP()
 {
     // Put parallel atmosphere state in serial model
     distributeState();
-    
+
     // We need to obtain E and P fields based on our state
     computeEP();
-    
+
     return P_;
 }
 
@@ -403,7 +406,7 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceEmiP()
 {
     // Put parallel atmosphere state in serial model
     distributeState();
-    
+
     // We need to obtain E and P fields based on our state
     computeEP();
 
@@ -434,7 +437,7 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
             for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
             {
                 block->beg.push_back(el_ctr);
-                
+
                 if ( (*surfmask_)[j*n_+i] == 0 &&   // non-land
                      (rowIntCon_ != FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
                                                     i, j, l_-1, xx))
@@ -449,7 +452,7 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
                         //block->co.push_back(oceanDep);
                         block->co.push_back(dqdt);
                     }
-                    
+
                     block->jco.push_back(ocean->interface_row(i,j,T));
                     el_ctr++;
                 }
@@ -465,9 +468,9 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
 //==================================================================
 void AtmospherePar::synchronize(std::shared_ptr<Ocean> ocean)
 {
-    // This is a simple interface. The atmosphere only needs the 
+    // This is a simple interface. The atmosphere only needs the
     // ocean temperature at the ocean-atmosphere interface (SST).
-    
+
     // Get ocean surface temperature
     Teuchos::RCP<Epetra_Vector> sst = ocean->interfaceT();
 
@@ -671,7 +674,7 @@ void AtmospherePar::computeJacobian()
             ERROR("Q-integral condition should be on last processor!", __FILE__, __LINE__);
         }
 
-        int len = n_ * m_ * l_; 
+        int len = n_ * m_ * l_;
         int icinds[len];
         double icvals[len];
 
@@ -686,7 +689,7 @@ void AtmospherePar::computeJacobian()
                     icvals[pos] = (*intcondGlob)[0][gid];
                     pos++;
                 }
-        
+
         int ierr;
         if (jac_->Filled())
         {
@@ -728,7 +731,7 @@ void AtmospherePar::computeJacobian()
 void AtmospherePar::computeEP()
 {
     TIMER_START("AtmospherePar: compute E P...");
-        
+
     // compute E in serial Atmosphere
     atmos_->computeEvaporation();
 
@@ -746,7 +749,7 @@ void AtmospherePar::computeEP()
     {
         tmpE[i] = (*localE)[i];
     }
-    
+
     // export overlapping into non-overlapping E values
     CHECK_ZERO(E_->Export(*localE_, *as2std_surf_, Zero));
 
@@ -759,7 +762,7 @@ void AtmospherePar::computeEP()
 
     int numGlobalElements = P_->Map().NumGlobalElements();
     int numMyElements     = P_->Map().NumMyElements();
-    
+
     assert((int) surfmask_->size() == numGlobalElements);
 
     // fill P_ in parallel
@@ -774,10 +777,10 @@ void AtmospherePar::computeEP()
     // Create E-P field
     EmiP_->Update(1.0, *E_, -1.0, *P_, 0.0);
 
-// #ifdef DEBUGGING_NEW 
+// #ifdef DEBUGGING_NEW
 //     INFO("AtmospherePar: precipitation P_[0] = " << (*P_)[0]);
 // #endif
-    
+
     TIMER_STOP("AtmospherePar: compute E P...");
 }
 
@@ -850,8 +853,8 @@ void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
 //==================================================================
 void AtmospherePar::solve(Teuchos::RCP<Epetra_MultiVector> const &b)
 {
-    // when using the preconditioner as a solver make sure
-    // the overlap is large enough (depending on number of cores obv).
+    // when using the preconditioner as a solver make sure the overlap
+    // is large enough (depending on number of cores obv).
     applyPrecon(*b, *sol_);
 }
 
@@ -860,13 +863,14 @@ void AtmospherePar::solve(Teuchos::RCP<Epetra_MultiVector> const &b)
 // Create a graph to initialize the Jacobian
 void AtmospherePar::createMatrixGraph()
 {
-    // We know from the discretization that we have at
-    // most 5 dependencies in each row.
-    // This will change, obviously, when extending
-    // the atmosphere model. If the number of dependencies varies greatly per row
-    // we need to supply them differently (variable).
-    int maxDeps = 5;
-    matrixGraph_ = Teuchos::rcp(new Epetra_CrsGraph(Copy, *standardMap_, maxDeps, false));
+    // We know from the discretization that we have at most 6
+    // dependencies in each row. This will change, obviously, when
+    // extending the atmosphere model. If the number of dependencies
+    // varies greatly per row we need to supply them differently
+    // (variable).
+    int maxDeps = 5 + aux_;
+    matrixGraph_ =
+        Teuchos::rcp(new Epetra_CrsGraph(Copy, *standardMap_, maxDeps, false));
 
     // Here we start specifying the indices
     int indices[maxDeps];
@@ -887,6 +891,10 @@ void AtmospherePar::createMatrixGraph()
 
     int pos; // position in indices array, not really useful here
     int gidU, gid0;
+
+    // last row in the grid, probably equal to rowIntCon_
+    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, N-1, M-1, L-1, ATMOS_NUN_);
+            
     for (int k = K0; k <= K1; ++k)
         for (int j = J0; j <= J1; ++j)
             for (int i = I0; i <= I1; ++i)
@@ -905,12 +913,16 @@ void AtmospherePar::createMatrixGraph()
                 insert_graph_entry(indices, pos, i+1, j, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i, j-1, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_TT_, N, M, L);
+                
+                // Add the dependencies on auxiliary unknowns
+                for (int aa = 1; aa <= aux_; ++aa)
+                    indices[pos++] = last + aa;
 
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
                                gid0 + ATMOS_TT_, pos, indices));
 
-                // Q-equation                
+                // Q-equation
                 pos = 0;
 
                 // Specify dependencies, see AtmospherePar::discretize()
@@ -921,9 +933,13 @@ void AtmospherePar::createMatrixGraph()
                 insert_graph_entry(indices, pos, i, j-1, k, ATMOS_QQ_, N, M, L);
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_QQ_, N, M, L);
 
+                // Add the dependencies on auxiliary unknowns
+                for (int aa = 1; aa <= aux_; ++aa)
+                    indices[pos++] = last + aa;
+
                 // Skip the final insertion when we are at rowIntCon_
-                if ( (gid0 + ATMOS_QQ_) == rowIntCon_ && useIntCondQ_) continue; 
-                    
+                if ( (gid0 + ATMOS_QQ_) == rowIntCon_ && useIntCondQ_) continue;
+
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
                                gid0 + ATMOS_QQ_, pos, indices));
@@ -932,7 +948,7 @@ void AtmospherePar::createMatrixGraph()
     // Create graph entries for integral condition row
     if (standardMap_->MyGID(rowIntCon_) && useIntCondQ_)
     {
-        int len = n_ * m_ * l_; 
+        int len = n_ * m_ * l_;
         int icinds[len];
         int gcid;
         pos = 0;
@@ -944,8 +960,31 @@ void AtmospherePar::createMatrixGraph()
                     icinds[pos] = gcid;
                     pos++;
                 }
-        
+
+        assert(len == pos);
         CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(rowIntCon_, len, icinds));
+    }
+
+    // Dependencies of the auxiliary unknown
+    for (int aa = 1; aa <= aux_; ++aa)
+    {
+        int len = n_ * m_ * l_ * dof_;
+        int icinds[len];
+        int gcid;
+        pos = 0;
+        for (int k = 0; k != l_; ++k)
+            for (int j = 0; j != m_; ++j)
+                for (int i = 0; i != n_; ++i)
+                    for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
+                {
+                    gcid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, xx);
+                    icinds[pos] = gcid;
+                    pos++;
+                }
+        
+        assert(len == pos);
+        CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(last + aa, len, icinds));
+        
     }
 
     // Finalize matrixgraph
@@ -953,11 +992,11 @@ void AtmospherePar::createMatrixGraph()
 
 #ifdef DEBUGGING_NEW
     std::ofstream file;
-    file.open("atmos_graph");
+    file.open("atmos_graph" + std::to_string(comm_->MyPID()));
     matrixGraph_->PrintGraphData(file);
     file.close();
 #endif
-    
+
 }
 
 //=============================================================================
@@ -1007,9 +1046,9 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
     HDF5.Open(filename);
     HDF5.Read("State", readState);
 
-    if (readState->GlobalLength() != dim_)
+    if ( readState->GlobalLength() != dim_ )
         ERROR("Incompatible state", __FILE__, __LINE__);
-    
+
     // Create importer
     // target map: thcm domain SolveMap
     // source map: state with linear map  as read by HDF5.Read
@@ -1021,7 +1060,7 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
     CHECK_ZERO(state_->Import(*((*readState)(0)), *lin2solve, Insert));
 
     INFO("   atmos state: ||x|| = " << Utils::norm(state_));
-    
+
     // Interface between HDF5 and the atmosphere parameters,
     // put all the <npar> parameters back in atmos.
     std::string parName;
