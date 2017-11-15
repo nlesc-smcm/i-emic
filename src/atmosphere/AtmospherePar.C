@@ -51,7 +51,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, l_, dof_,
                                              xmin_, xmax_, ymin_, ymax_,
                                              periodic_, 1.0, comm_));
-
+    
     // Compute 2D decomposition
     domain_->Decomp2D();
  
@@ -93,7 +93,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     localSol_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localE_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));    
+    localP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
     // create graph
     createMatrixGraph();

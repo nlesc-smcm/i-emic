@@ -7,12 +7,22 @@
 namespace // local unnamed namespace (similar to static in C)
 {
     RCP<TRIOS::Domain> domain;
+    RCP<Epetra_Map> standardMap;
+    RCP<Epetra_Map> assemblyMap;
+    RCP<Epetra_Map> stdSurfMap;
+    RCP<Epetra_Map> asmSurfMap;
+    RCP<Epetra_Import> as2std;
+    RCP<Epetra_Import> as2std_surf;
+    RCP<Epetra_Vector> vec;
+    RCP<Epetra_Vector> localvec;
+    
+    
     int n, m, l, dof, aux, periodic;
     double xmin,xmax,ymin,ymax;
 }
 
 //------------------------------------------------------------------
-TEST(Domain, Aux0)
+TEST(Domain, SimpleInit)
 {
     bool failed = false;
 
@@ -45,31 +55,17 @@ TEST(Domain, Aux0)
     Teuchos::RCP<Epetra_Map> colmap = domain->GetColMap();
 
     EXPECT_EQ(colmap->NumGlobalElements(), dim);
-    
-    std::cout << colmap->NumMyElements() << " "
-              << colmap->NumGlobalElements() << " "
-              << dim << std::endl;
 
     domain->Decomp2D();
 }
 
 //------------------------------------------------------------------
-TEST(Domain, Aux2)
+TEST(Domain, AuxInit)
 {
-    bool failed = false;
-
-    n = 6; m = 6; l = 1; dof = 2;
-
-    xmin = 286 * PI_ / 180;
-    xmax = 350 * PI_ / 180;
-    ymin =  10 * PI_ / 180;
-    ymax =  74 * PI_ / 180;
-
-    periodic = 0;
-
+    // Now we test some auxiliary unknowns
     aux = 2;
-
-    int dim = n * m * l * dof + aux;
+    
+    bool failed = false;
 
     try
     {
@@ -85,39 +81,123 @@ TEST(Domain, Aux2)
     
     EXPECT_EQ(failed, false);
 
-    //////////////////////////////////////////////
-
     Teuchos::RCP<Epetra_Map> colmap = domain->GetColMap();
+
+
+    int dim = n * m * l * dof + aux;
         
     EXPECT_EQ(colmap->NumGlobalElements(), dim);
     
-    std::cout << colmap->NumMyElements() << " "
-              << colmap->NumGlobalElements() << " "
-              << dim << std::endl;
-    
-    //////////////////////////////////////////////
+    ////////////////////////////////////////////
+    // Create maps
+    ////////////////////////////////////////////
 
     domain->Decomp2D();
 
-    Teuchos::RCP<Epetra_Map> standardMap = domain->GetStandardMap();
-    Teuchos::RCP<Epetra_Map> assemblyMap = domain->GetAssemblyMap();
+    standardMap = domain->GetStandardMap();
+    assemblyMap = domain->GetAssemblyMap();
 
-    Epetra_Vector vec(*standardMap);
-    Epetra_Vector localvec(*assemblyMap);
+    vec      = Teuchos::rcp(new Epetra_Vector(*standardMap));
+    localvec = Teuchos::rcp(new Epetra_Vector(*assemblyMap));
     
     int numMyStandardElements = standardMap->NumMyElements();
     int numMyAssemblyElements = assemblyMap->NumMyElements();
     
     for (int i = 0; i != numMyStandardElements; ++i)
-        vec[i] = i;
+        (*vec)[i] = 100 + (*vec).Map().GID(i);
 
+    int last = FIND_ROW2(dof, n, m, l, n-1, m-1, l-1, dof);
+    EXPECT_EQ( vec->Map().LID(last + aux) , numMyStandardElements -1 );
+
+    for (int i = 1; i <= aux; ++i)
+        (*vec)[numMyStandardElements - aux - 1  + i] = 10000 + i - 1;
+    
+    
     for (int i = 0; i != numMyAssemblyElements; ++i)
-        localvec[i] = i;
+        (*localvec)[i] = 1000 + localvec->Map().GID(i);
 
-    EXPECT_NE( numMyAssemblyElements, numMyStandardElements );
-    EXPECT_EQ( vec.Map().GID(numMyStandardElements-1), n*m*l*dof + aux - 1 );
+    
+    EXPECT_EQ( vec->Map().GID(numMyStandardElements-1), n*m*l*dof + aux - 1 );
 
-    // next: test importing and exporting between assembly and standard mapped vectors
+    ////////////////////////////////////////////
+    // Create surface maps
+    ////////////////////////////////////////////
+    
+    stdSurfMap = domain->CreateStandardMap(1, true);
+    asmSurfMap = domain->CreateAssemblyMap(1, true);
+
+    int numMyStdSurfElements = stdSurfMap->NumMyElements();
+    int numMyAsmSurfElements = asmSurfMap->NumMyElements();
+
+    if (comm->NumProc() > 1)
+    {
+        EXPECT_NE( numMyAssemblyElements, numMyStandardElements );
+        EXPECT_NE( numMyAsmSurfElements,  numMyStdSurfElements  );
+    }
+    else
+    {
+        EXPECT_EQ( numMyAssemblyElements, numMyStandardElements ); 
+        EXPECT_EQ( numMyAsmSurfElements,  numMyStdSurfElements  );
+    }
+
+    EXPECT_EQ( stdSurfMap->NumGlobalElements(), n*m );
+}
+
+
+//------------------------------------------------------------------
+TEST(Domain, Importers)
+{
+    bool failed = false;
+    try
+    {
+        as2std =
+            Teuchos::rcp(new Epetra_Import(*assemblyMap, *standardMap));
+        as2std_surf =
+            Teuchos::rcp(new Epetra_Import(*asmSurfMap,  *stdSurfMap));
+
+        // Import non-overlapping vec into overlapping localvec
+        CHECK_ZERO( localvec->Import(*vec, *as2std, Insert) );
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
+
+    // get the local index for the global final unknown
+    int last        = FIND_ROW2(dof, n, m, l, n-1, m-1, l-1, dof) + aux;
+    int locvec_last = localvec->Map().LID(last);
+    int vec_last    = vec->Map().LID(last);
+    
+    EXPECT_EQ( (*localvec)[locvec_last], 10000 + aux - 1 );
+
+    int numMyStandardElements = standardMap->NumMyElements();
+    int numMyAssemblyElements = assemblyMap->NumMyElements();
+
+    // Refill...
+    for (int i = 0; i != numMyStandardElements; ++i)
+        (*vec)[i] = 100 + (*vec).Map().GID(i);
+    
+    for (int i = 0; i != numMyAssemblyElements; ++i)
+        (*localvec)[i] = 1000 + localvec->Map().GID(i);
+    
+    for (int i = 1; i <= aux; ++i)
+        (*localvec)[locvec_last - aux + i] = 10000 + i - 1;
+    
+    try
+    {
+        // Export overlapping localvec into non-overlapping vec
+        CHECK_ZERO( vec->Export( *localvec, *as2std, Zero ) );
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
+
+    EXPECT_EQ( (*vec)[vec_last], 10000 + aux - 1 );
 }
 
 //------------------------------------------------------------------

@@ -302,7 +302,15 @@ namespace TRIOS
     Teuchos::RCP<Epetra_Map> Domain::CreateMap(int noff_, int moff_, int loff_,
                                                int nloc_, int mloc_, int lloc_, int nun_) const
     {
-        int NumMyElements     = mloc_ * nloc_ * lloc_ * nun_ + aux_;
+        // If a map is requested for all unknowns, we append the auxiliary unknowns as well.
+        // Otherwise, we create the original map. 
+        int NumMyElements;
+        if (nun_ == dof_)
+            NumMyElements = mloc_ * nloc_ * lloc_ * nun_ + aux_;
+        else
+            NumMyElements = mloc_ * nloc_ * lloc_ * nun_;
+       
+            
         int NumGlobalElements = -1; // Let Epetra figure it out herself
 
         // Make lists of all global elements that belong to my subdomain
@@ -329,12 +337,18 @@ namespace TRIOS
             }//j
         }//k
 
-        // add auxiliary unknowns, every subdomain needs them, they're great
-        for (int aa = 1; aa <= aux_; ++aa)
+        // Add auxiliary unknowns, every subdomain needs them, they're great
+        if (nun_ == dof_)
         {
-            MyGlobalElements[p] = FIND_ROW2(nun_, n, m, l, n-1, m-1, l-1, nun_) + aa;
-            p++;
-        }        
+            for (int aa = 1; aa <= aux_; ++aa)
+            {
+                MyGlobalElements[p] = FIND_ROW2(nun_, n, m, l, n-1, m-1, l-1, nun_) + aa;
+                p++;
+            }
+        }
+
+        // A little integrity check
+        assert(p == NumMyElements);
 
         // create the map
         Teuchos::RCP<Epetra_Map> M =

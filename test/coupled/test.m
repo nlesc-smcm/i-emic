@@ -47,18 +47,25 @@ numC22 = numC22(atm_idx,atm_idx);
 C22    =    C22(atm_idx,atm_idx);
 
 figure(1);
-spy(C11)
+spy(C11); 
+
 figure(2);
 spy(numC11)
+
 figure(3);
-spy(abs(C11-numC11)>1e-7)
+spy(abs(C11-numC11)>1e-4)
+
 
 figure(4);
 spy(C22)
+
 figure(5);
 spy(numC22)
+
 figure(6);
 spy(abs(C22-numC22)>1e-7)
 
+
 figure(7)
 spy([JnC11, JnC12; JnC21, JnC22])
+

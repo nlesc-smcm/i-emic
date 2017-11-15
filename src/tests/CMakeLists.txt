@@ -110,7 +110,7 @@ target_link_libraries(test_atmos    PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(intt_coupled  PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 
 
-install(TARGETS test_domain    DESTINATION test/jdqz)
+install(TARGETS test_domain    DESTINATION test/domain)
 install(TARGETS test_jdqz      DESTINATION test/jdqz)
 install(TARGETS test_topo      DESTINATION test/topo)
 install(TARGETS test_ocean     DESTINATION test/ocean)
