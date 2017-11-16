@@ -26,8 +26,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     saveEveryStep_   (params->get("Save every step", false)),
     useIntCondQ_     (params->get("Use integral condition on q", true)),
     useFixedPrecip_  (params->get("Use idealized precipitation", false)),
-
-
+    
 
     precInitialized_ (false),
     recomputePrec_   (false)
@@ -204,7 +203,7 @@ void AtmospherePar::setupIntCoeff()
     // Create parallelized integration coefficients for precipitation
     //------------------------------------------------------------------
 
-    precipIntCo_ = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    precipIntCo_ = Teuchos::rcp( new Epetra_Vector(*standardSurfaceMap_) );
     Teuchos::RCP<Epetra_Vector> precipIntCoLocal =
         Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
@@ -214,7 +213,7 @@ void AtmospherePar::setupIntCoeff()
 
     // test indices
     assert(inds.back()-1 < precipIntCoLocal->MyLength());
-
+    
     // fill local precipitation integration coefficients
     for (size_t idx = 0; idx != inds.size(); ++idx)
     {
@@ -222,7 +221,7 @@ void AtmospherePar::setupIntCoeff()
     }
 
     // Export assembly map surface integration coeffs to standard map
-    CHECK_ZERO(precipIntCo_->Export(*precipIntCoLocal, *as2std_surf_, Zero));
+    CHECK_ZERO( precipIntCo_->Export( *precipIntCoLocal, *as2std_surf_, Zero ) );
 
     // Obtain total integration area (sum of absolute values)
     precipIntCo_->Norm1(&totalArea_);
@@ -612,9 +611,6 @@ void AtmospherePar::computeJacobian()
                 indices[j] = assemblyMap_->GID(localJac->jco[index-1+j] - 1);
                 values[j]  = localJac->co[index-1+j];
             }
-
-            // add dependencies on auxiliary unknowns
-            for (int aa = 1; aa <= aux_; ++aa)
 
             // put values in Jacobian
             int ierr = jac_->ReplaceGlobalValues(assemblyMap_->GID(i),

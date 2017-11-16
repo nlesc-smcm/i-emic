@@ -48,6 +48,7 @@ class Atmosphere
     //!   +----------++-------++----------+
     int np_;  //! #neighbouring points
     int nun_; //! #unknowns
+    int aux_; //! number of auxiliary unknowns    
 
     std::shared_ptr<DependencyGrid> Al_;
 

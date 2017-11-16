@@ -28,6 +28,8 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
     m_               (m),
     l_               (l),
 
+    aux_             (params->get("Auxiliary unknowns", 0)),
+
     xmin_            (xmin),
     xmax_            (xmax),
     ymin_            (ymin),
@@ -35,6 +37,7 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
 
     periodic_        (periodic),
 
+// land mask ---------------------------------------------------------------
     use_landmask_    (params->get("Use land mask from Ocean", false))
 {
     INFO("Atmosphere: constructor for parallel use...");
@@ -47,7 +50,7 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
 
     // Other setup things
     setup();
-    
+
     INFO("Atmosphere: constructor for parallel use done");
 }
 
@@ -61,14 +64,15 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
     n_               (params->get("Global Grid-Size n", 16)),
     m_               (params->get("Global Grid-Size m", 16)),
     l_               (params->get("Global Grid-Size l", 1)),
+    aux_             (0),
     periodic_        (params->get("Periodic", false)),
     use_landmask_    (params->get("Use land mask from Ocean", false))
 {
     INFO("Atmosphere: constructor...");
-    
+
     // Set non-grid (domain decomposition) related parameters
     setParameters(params);
-    
+
     // Define domain
     xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
     xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
@@ -82,7 +86,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
 
     // Set row for integral condition (only in serial case)
     // use the final q-row (1-based!!)
-    rowIntCon_ = find_row(n_, m_, l_, ATMOS_QQ_); 
+    rowIntCon_ = find_row(n_, m_, l_, ATMOS_QQ_);
 
     // Setup coefficients for integrals
     setupIntCoeff();
@@ -115,7 +119,7 @@ void Atmosphere::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     tdim_            = params->get("temperature scale", 1.0);
     q0_              = params->get("reference humidity",0.015); // (kg/kg)
     qdim_            = params->get("humidity scale", 0.01);  // (kg/kg)
-    
+
     udim_            = params->get("horizontal velocity of the ocean",0.1e+00);
     r0dim_           = params->get("radius of the earth",6.37e+06);
 
@@ -123,20 +127,20 @@ void Atmosphere::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     allParameters_   = { "Combined Forcing",
                          "Solar Forcing",
                          "Humidity Forcing" };
-    
+
     parName_         = params->get("Continuation parameter",
                                    "Combined Forcing");
-    
+
 // starting values
     comb_            = params->get("Combined Forcing", 0.0);
     sunp_            = params->get("Solar Forcing", 1.0);
     humf_            = params->get("Humidity Forcing", 1.0);
-}   
+}
 
 //==================================================================
 void Atmosphere::setup()
 {
-    // Filling the coefficients 
+    // Filling the coefficients
     muoa_ =  rhoa_ * ch_ * cpa_ * uw_;
     amua_ = (arad_ + brad_ * t0a_) / muoa_;
     bmua_ =  brad_ / muoa_;
@@ -148,13 +152,13 @@ void Atmosphere::setup()
     nuq_  = qdim_ * (rhoo_ / rhoa_) * (hdim_ / hdimq_);
     eta_  = (rhoa_ / rhoo_) * ce_ * uw_;
     Phv_  = qdim_ * kappa_ / (udim_ * r0dim_);
-    
+
     // Parameters for saturation humidity over ocean and ice
     double c1 = 3.8e-3;  // (kg / kg)
     double c2 = 21.87;   //
     double c3 = 265.5;   // (K)
     double c4 = 17.67;   //
-    double c5 = 243.5;   // (K) 
+    double c5 = 243.5;   // (K)
 
     // Calculate saturation humidity derivatives at ref. temps
     double t0oK = t0o_ + C2K_; // reference ocean temp in K
@@ -171,10 +175,10 @@ void Atmosphere::setup()
     INFO("     Ad = " << Ad_);
     INFO("    Phv = " << Phv_);
 
-    INFO("  DqDt0 = " <<  nuq_ * eta_ * dqso_ / qdim_);        
+    INFO("  DqDt0 = " <<  nuq_ * eta_ * dqso_ / qdim_);
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
-    nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_ 
+    nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_
 
     // Problem size
     dim_ = m_ * n_ * l_ * nun_;
@@ -277,7 +281,7 @@ void Atmosphere::setupIntCoeff()
     intcondCoeff_ = std::make_shared<std::vector<double> >(dim_, 0.0);
 
     // obtain indices and values for integration
-    std::vector<double> vals, inds; 
+    std::vector<double> vals, inds;
     integralCoeff(vals, inds);
 
     // Fill coefficients
@@ -293,7 +297,7 @@ void Atmosphere::setupIntCoeff()
 
     // test indices
     assert(inds.back()-1 < precipIntCo_->size());
-    
+
     // Fill coefficients
     for (size_t idx = 0; idx != inds.size(); ++idx)
     {
@@ -392,7 +396,7 @@ void Atmosphere::integralCoeff(std::vector<double> &val,
             {
                 if (use_landmask_ && ignoreLand && (*surfmask_)[(j-1)*n_+(i-1)])
                     continue;
-                
+
                 val.push_back(cos(yc_[j]) * dx_ * dy_);
                 ind.push_back(FIND_ROW_ATMOS1(nun, n_, m_, l_, i, j, k, XX));
             }
@@ -405,11 +409,11 @@ void Atmosphere::computeJacobian()
 
     Atom tc (n_, m_, l_, np_);
     Atom tc2(n_, m_, l_, np_);
-    Atom txx(n_, m_, l_, np_); 
-    Atom tyy(n_, m_, l_, np_); 
-    
+    Atom txx(n_, m_, l_, np_);
+    Atom tyy(n_, m_, l_, np_);
+
     discretize(1, tc);
-    discretize(2, tc2); 
+    discretize(2, tc2);
     discretize(3, txx); // longitudinal diffusion
     discretize(4, tyy); // meridional diffusion
 
@@ -418,7 +422,7 @@ void Atmosphere::computeJacobian()
 
     // Set temperature atom in dependency grid
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_TT_, txx);
-    
+
     Atom qc (n_, m_, l_, np_);
     Atom qxx(n_, m_, l_, np_);
     Atom qyy(n_, m_, l_, np_);
@@ -426,17 +430,18 @@ void Atmosphere::computeJacobian()
     discretize(1, qc );  // over land no evaporation
     discretize(5, qxx);  // longitudinal diffusion
     discretize(6, qyy);  // meridional diffusion
-
+    
     // multiply parameters with continuation control pars
     double nuqetaCont = comb_ * humf_ * nuq_ * eta_ ;
     qxx.update(Phv_, Phv_, qyy, -nuqetaCont, qc);
 
-    // discretize(2, qc);
-    
     // Set humidity atom in dependency grid
     // Al(:,:,:,:,QQ,QQ) = Phv * (qxx + qyy) - nuq * eta * qc
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
 
+    // central P dependency can be implemented in this way
+    // todo -->>
+    
     boundaries();
     assemble();
 
@@ -466,7 +471,7 @@ void Atmosphere::computeRHS()
     // Otherwise we do this here
     if (!parallel_)
     {
-        computeEvaporation();   // 
+        computeEvaporation();   //
         computePrecipitation(); //
     }
 
@@ -489,7 +494,7 @@ void Atmosphere::computeRHS()
             }
 
     // Check integral condition (from matvec vs dot)
-    if (!parallel_) 
+    if (!parallel_)
     {
         double integral = Utils::dot(*intcondCoeff_, *state_);
 
@@ -504,9 +509,9 @@ void Atmosphere::computeRHS()
 double Atmosphere::matvec(int row)
 {
     TIMER_START("Atmosphere: matvec...");
-    
+
     // Returns inner product of a row in the matrix with the state.
-    // > ugly stuff with 1 to 0 based...    
+    // > ugly stuff with 1 to 0 based...
     int first = beg_[row-1];
     int last  = beg_[row] - 1;
     double result = 0.0;
@@ -525,7 +530,7 @@ void Atmosphere::forcing()
     int temRow, humRow, surfaceRow;
 
     // INFO("Atmosphere::forcing P[0] = " << (*P_)[0] );
-    
+
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
@@ -541,7 +546,7 @@ void Atmosphere::forcing()
                 surfaceTemp_[surfaceRow-1] = value + (*state_)[temRow-1];
                 value += comb_ * sunp_ * (suna_[j] - amua_);
             }
-            else // above ocean 
+            else // above ocean
             {
                 value = surfaceTemp_[surfaceRow-1] +
                     comb_ * sunp_ * (suna_[j] - amua_);
@@ -550,7 +555,7 @@ void Atmosphere::forcing()
 
             // ------------ Humidity forcing
             humRow = find_row(i, j, l_, ATMOS_QQ_);
-                        
+
             // Again, check whether we are above land
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
             {
@@ -565,13 +570,13 @@ void Atmosphere::forcing()
                 // E (evaporation) forcing (ocean state part)
                 value =  nuq_ * eta_ * ( tdim_ / qdim_ )
                     * dqso_ * surfaceTemp_[surfaceRow-1];
-                
-                // P (precipitation) forcing 
+
+                // P (precipitation) forcing
                 value -=  nuq_ * (*P_)[surfaceRow-1];
 
-                // Apply continuation control parameters 
+                // Apply continuation control parameters
                 value *= comb_ * humf_ ;
-                                
+
                 // idealized
                 // value = comb_ * humf_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
             }
@@ -588,24 +593,24 @@ void Atmosphere::computeEvaporation()
 {
     int humRow, surfaceRow;
 
-    
+
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
             surfaceRow = find_surface_row(i, j);
-            humRow = find_row(i, j, l_, ATMOS_QQ_);                        
-            
+            humRow = find_row(i, j, l_, ATMOS_QQ_);
+
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
                 continue; // do nothing
 
             // --> when ice is available, this should check whether
             // the surface is ice or water. At this point this
             // is only for ocean surface temperature
-            
+
             // E (evaporation) part
             (*E_)[surfaceRow-1] =  eta_ *
                 ( (tdim_ / qdim_) * dqso_ * surfaceTemp_[surfaceRow-1]
-                  - (*state_)[humRow-1] );                
+                  - (*state_)[humRow-1] );
         }
 }
 
@@ -618,7 +623,7 @@ void Atmosphere::computePrecipitation()
         WARNING("Function should not be called in parallel.", __FILE__, __LINE__);
         return; // do nothing
     }
-    
+
     double integral = Utils::dot(*precipIntCo_, *E_) / totalArea_;
     int surfaceRow;
     for (int j = 1; j <= m_; ++j)
@@ -630,7 +635,7 @@ void Atmosphere::computePrecipitation()
             surfaceRow = find_surface_row(i, j);
             (*P_)[surfaceRow-1] = integral;
         }
-    
+
 }
 
 //-----------------------------------------------------------------------------
@@ -651,11 +656,11 @@ void Atmosphere::discretize(int type, Atom &atom)
                         if ((*surfmask_)[(j-1)*n_+(i-1)])
                             atom.set(i, j, k, 5, 0.0);
         break;
-        
+
     case 2: // tc2 (with land points)
         atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
         break;
-        
+
     case 3: // txx
         for (int i = 1; i <= n_; ++i)
             for (int j = 1; j <= m_; ++j)
@@ -673,7 +678,7 @@ void Atmosphere::discretize(int type, Atom &atom)
                 }
             }
         break;
-        
+
     case 4: // tyy
         dy2i = 1.0 / pow(dy_, 2);
         for (int i = 1; i <= n_; ++i)
@@ -691,7 +696,7 @@ void Atmosphere::discretize(int type, Atom &atom)
                 }
             }
         break;
-        
+
     case 5: // qxx
         for (int i = 1; i <= n_; ++i)
             for (int j = 1; j <= m_; ++j)
@@ -709,7 +714,7 @@ void Atmosphere::discretize(int type, Atom &atom)
                 }
             }
         break;
-        
+
     case 6: // tyy
         dy2i = 1.0 / pow(dy_, 2);
         for (int i = 1; i <= n_; ++i)
@@ -756,7 +761,7 @@ void Atmosphere::assemble()
     for (int k = 1; k <= l_; ++k)
         for (int j = 1; j <= m_; ++j)
             for (int i = 1; i <= n_; ++i)
-                for (int A = 1; A <= nun_; ++A)
+                for (int A = 1; A <= (nun_ + aux_); ++A)
                 {
                     // Filling new row:
                     //  find the row corresponding to A at (i,j,k):
@@ -767,7 +772,7 @@ void Atmosphere::assemble()
                     {
                         // find index of neighbouring point loc
                         shift(i,j,k,i2,j2,k2,loc);
-                        for (int B = 1; B <= nun_; ++B)
+                        for (int B = 1; B <= (nun_ + aux_); ++B)
                         {
                             value = Al_->get(i,j,k,loc,A,B);
                             if (std::abs(value) > 0)
@@ -822,9 +827,9 @@ void Atmosphere::initcond()
     // append crs arrays with integral coefficients and column indices
     std::vector<double> vals,inds;
     integralCoeff(vals, inds);
-    
+
     co_.insert(co_.end(), vals.begin(), vals.end());
-    jco_.insert(jco_.end(), inds.begin(), inds.end());    
+    jco_.insert(jco_.end(), inds.begin(), inds.end());
     beg_.push_back(first + vals.size());
 }
 
@@ -855,7 +860,7 @@ void Atmosphere::solve(std::shared_ptr<std::vector<double> > const &rhs)
               __FILE__, __LINE__);
         return;
     }
-    
+
     TIMER_START("Atmosphere: solve...");
 
     int dim     = n_*m_*l_;
@@ -900,6 +905,7 @@ Atmosphere::getCurrResVec(std::shared_ptr<std::vector<double> > const &x,
 }
 
 //-----------------------------------------------------------------------------
+
 //! Size of stencil/neighbourhood:
 //! +----------++-------++----------+
 //! | 12 15 18 || 3 6 9 || 21 24 27 |
@@ -907,10 +913,11 @@ Atmosphere::getCurrResVec(std::shared_ptr<std::vector<double> > const &x,
 //! | 10 13 16 || 1 4 7 || 19 22 25 |
 //! |  below   || center||  above   |
 //! +----------++-------++----------+
-//!
-//!  No flow boundaries for both TT an QQ.
-//!  For instance, dependencies on non-existent grid points at the western boundary
-//!  are replaced with dependencies on the central grid point as T_{i-1} = T_{i}
+
+//!  No flow boundaries for both TT an QQ. For instance, dependencies
+//!  on non-existent grid points at the western boundary are added to
+//!  dependencies on the central grid point as T_{i-1} = T_{i}.
+
 void Atmosphere::boundaries()
 {
 
@@ -924,7 +931,7 @@ void Atmosphere::boundaries()
                     east   = i+1;
                     north  = j+1;
                     south  = j-1;
-                
+
                     // western boundary
                     if (west == 0)
                     {
@@ -982,6 +989,15 @@ void Atmosphere::write(std::vector<double> &vector, const std::string &filename)
 int Atmosphere::find_row(int i, int j, int k, int XX)
 {
     // 1-based
+
+    // P values are auxiliary and come after the final ordinary element
+    if (XX == ATMOS_PP_)
+        return dim_;
+    if (XX == ATMOS_PPL_)
+        return dim_ + 1;
+    if (XX == ATMOS_PPU_)
+        return dim_ + 2;
+    
     return nun_ * ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
 }
 
@@ -1394,7 +1410,7 @@ void Atom::update(double scalarThis,
 
 //-----------------------------------------------------------------------------
 // this = scalThis*this
-void Atom::scale(double scalarThis)                
+void Atom::scale(double scalarThis)
 {
     for (int i = 1; i != n_+1; ++i)
         for (int j = 1; j != m_+1; ++j)

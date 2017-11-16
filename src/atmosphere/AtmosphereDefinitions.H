@@ -22,10 +22,16 @@
 # define ATMOS_NUN_ 2
 #endif
 
-// The unknowns we have in this model
+// The unknowns we have in this model 
 #ifndef ATMOS_TT_
-# define ATMOS_TT_ 1 // Atmospheric temperature
-# define ATMOS_QQ_ 2 // Vapor anomaly
+# define ATMOS_TT_  1 // Atmospheric temperature
+# define ATMOS_QQ_  2 // Vapor anomaly
+
+// These are auxiliary and have a dedicated case in find_row
+# define ATMOS_PP_  3 // Global precipitation
+# define ATMOS_PPL_ 4 // Lower hemisphere box precipitation
+# define ATMOS_PPU_ 5 // Upper hemisphere box precipitation
+
 #endif
 
 // Difference Celsius and Kelvin
