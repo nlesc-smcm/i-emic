@@ -20,6 +20,7 @@
 !main/
 !coupledmodel/
 !coupled/
+!domain/
 !tests/
 !thetastepper/
 !continuation/
