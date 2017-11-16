@@ -375,9 +375,11 @@ public:
     DependencyGrid(int n, int m, int l, int np, int nun);
     ~DependencyGrid();
 
+    // these get and set members are all 1-based!
     double get(int i, int j, int k, int loc, int A, int B);
     void   set(int i, int j, int k, int loc, int A, int B, double value);
     void   set(int const (&range)[8], int A, int B, Atom &atom);
+    
     void   add(double scalar, Atom &atom);
 
 };

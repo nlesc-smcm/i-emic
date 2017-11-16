@@ -221,7 +221,7 @@ void Atmosphere::setup()
 
 
     // Construct dependency grid:
-    Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_);
+    Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_ + aux_);
 
     // Set the grid increments
     dx_ = (xmax_ - xmin_) / n_;
@@ -431,7 +431,7 @@ void Atmosphere::computeJacobian()
     discretize(5, qxx);  // longitudinal diffusion
     discretize(6, qyy);  // meridional diffusion
     
-    // multiply parameters with continuation control pars
+    // Multiply parameters with continuation control pars
     double nuqetaCont = comb_ * humf_ * nuq_ * eta_ ;
     qxx.update(Phv_, Phv_, qyy, -nuqetaCont, qc);
 
@@ -439,10 +439,18 @@ void Atmosphere::computeJacobian()
     // Al(:,:,:,:,QQ,QQ) = Phv * (qxx + qyy) - nuq * eta * qc
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
 
-    // central P dependency can be implemented in this way
-    // todo -->>
-    
+    // Central P dependency can be implemented in this way. Note that
+    // we cann add P dependencies in non-P rows, but it is not
+    // possible to use the stencil approach to add dependencies to a
+    // P-row, as there is only a single row corrsponding to, e.g.,
+    // ATMOS_PP_
+    qc.scale(-comb_ * humf_ * nuq_);
+    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
+
+    // Apply boundary conditions to stencil
     boundaries();
+
+    // Assemble stencil into CRS struct
     assemble();
 
     if (!parallel_) buildLU_ = true;
@@ -577,8 +585,6 @@ void Atmosphere::forcing()
                 // Apply continuation control parameters
                 value *= comb_ * humf_ ;
 
-                // idealized
-                // value = comb_ * humf_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
             }
             frc_[humRow-1] = value;
         }
@@ -761,7 +767,7 @@ void Atmosphere::assemble()
     for (int k = 1; k <= l_; ++k)
         for (int j = 1; j <= m_; ++j)
             for (int i = 1; i <= n_; ++i)
-                for (int A = 1; A <= (nun_ + aux_); ++A)
+                for (int A = 1; A <= nun_; ++A)
                 {
                     // Filling new row:
                     //  find the row corresponding to A at (i,j,k):
@@ -988,16 +994,19 @@ void Atmosphere::write(std::vector<double> &vector, const std::string &filename)
 //-----------------------------------------------------------------------------
 int Atmosphere::find_row(int i, int j, int k, int XX)
 {
+    ////////////////////////////////////////////
     // 1-based
-
+    ////////////////////////////////////////////
+    
     // P values are auxiliary and come after the final ordinary element
     if (XX == ATMOS_PP_)
-        return dim_;
-    if (XX == ATMOS_PPL_)
         return dim_ + 1;
-    if (XX == ATMOS_PPU_)
+    if (XX == ATMOS_PPL_)
         return dim_ + 2;
-    
+    if (XX == ATMOS_PPU_)
+        return dim_ + 3;
+
+    // ordinary 1-based find_row 
     return nun_ * ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
 }
 
@@ -1010,6 +1019,8 @@ int Atmosphere::find_surface_row(int i, int j)
 }
 
 //-----------------------------------------------------------------------------
+// --> Many of these points are never used. For the atmosphere model
+// we could use less neighbours and perhaps win a few ms.
 void Atmosphere::shift(int i, int j, int k,
                        int &i2, int &j2, int &k2, int loc)
 {

@@ -585,7 +585,7 @@ void AtmospherePar::computeJacobian()
         atmos_->getJacobian();
 
     // max nonzeros per row
-    const int maxnnz = ATMOS_NUN_ * ATMOS_NP_ + 1;
+    const int maxnnz = ATMOS_NUN_ * ATMOS_NP_ + 1 + aux_;
 
     // indices array
     int indices[maxnnz];
@@ -595,6 +595,11 @@ void AtmospherePar::computeJacobian()
 
     // check size
     int numMyElements = assemblyMap_->NumMyElements() - aux_;
+
+    std::cout << comm_->MyPID() << ": #beg " << localJac->beg.size() << std::endl;
+    std::cout << comm_->MyPID() << ": #jco " << localJac->jco.size() << std::endl;
+    std::cout << comm_->MyPID() << ": #co  " << localJac->co.size()  << std::endl;
+    
     assert(numMyElements == (int) localJac->beg.size() - 1);
     // loop over local elements
     int index, numentries;
@@ -615,25 +620,23 @@ void AtmospherePar::computeJacobian()
             // put values in Jacobian
             int ierr = jac_->ReplaceGlobalValues(assemblyMap_->GID(i),
                                                  numentries,
-                                                 values, indices);
+                                                 values, indices);            
             
-            
-            std::cout << comm_->MyPID() << ": " ;
-            for (int ee = 0 ; ee != numentries; ++ee)
-                std::cout << indices[ee] << " " << values[ee] << " ";
-            std::cout << std::endl;
-
-                    
             // debugging
             if (ierr != 0)
             {
+                std::cout << comm_->MyPID() << "::" << ierr << ":: " ;
+                for (int ee = 0 ; ee != numentries; ++ee)
+                    std::cout << indices[ee] << " | " << values[ee] << " || ";
+                std::cout << std::endl;
+                
                 for (int ii = 0; ii < numentries; ++ii)
                 {
-                    std::cout << "proc" << comm_->MyPID()
+                    std::cout << "proc " << comm_->MyPID()
                               << " entries: (" << indices[ii]
                               << " " << values[ii] << ")" <<  std::endl;
 
-                    std::cout << "proc" << comm_->MyPID() << " "
+                    std::cout << "proc " << comm_->MyPID() << " "
                               << assemblyMap_->GID(i) << std::endl;
 
                     INFO(" debug info: " << indices[ii] << " " << values[ii]);
@@ -899,7 +902,8 @@ void AtmospherePar::createMatrixGraph()
     int pos; // position in indices array, not really useful here
     int gidU, gid0;
 
-    // last row in the grid, probably equal to rowIntCon_
+    // Last ordinary row in the grid, probably equal to rowIntCon_,
+    // i.e., the last non-auxiliary row.
     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, N-1, M-1, L-1, ATMOS_NUN_);
             
     for (int k = K0; k <= K1; ++k)
@@ -955,7 +959,7 @@ void AtmospherePar::createMatrixGraph()
     // Create graph entries for integral condition row
     if (standardMap_->MyGID(rowIntCon_) && useIntCondQ_)
     {
-        int len = n_ * m_ * l_;
+        int len = n_ * m_ * l_ + aux_;
         int icinds[len];
         int gcid;
         pos = 0;
@@ -967,6 +971,13 @@ void AtmospherePar::createMatrixGraph()
                     icinds[pos] = gcid;
                     pos++;
                 }
+        
+        // Add the dependencies on auxiliary unknowns
+        for (int aa = 1; aa <= aux_; ++aa)
+        {
+            icinds[pos] = last + aa;
+            pos++;
+        }
 
         assert(len == pos);
         CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(rowIntCon_, len, icinds));
