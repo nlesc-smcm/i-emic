@@ -307,7 +307,7 @@ TEST(Domain, MatVec)
     {
         atmos->getState('V')->PutScalar(0.01);
         atmos->setPar(0.01);
-        // atmos->computeJacobian();
+        atmos->computeJacobian();
     }
     catch (std::exception const &e)
     {

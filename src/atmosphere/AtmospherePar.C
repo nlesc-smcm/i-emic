@@ -613,10 +613,21 @@ void AtmospherePar::computeJacobian()
                 values[j]  = localJac->co[index-1+j];
             }
 
+            // add dependencies on auxiliary unknowns
+            for (int aa = 1; aa <= aux_; ++aa)
+
             // put values in Jacobian
             int ierr = jac_->ReplaceGlobalValues(assemblyMap_->GID(i),
                                                  numentries,
                                                  values, indices);
+            
+            
+            std::cout << comm_->MyPID() << ": " ;
+            for (int ee = 0 ; ee != numentries; ++ee)
+                std::cout << indices[ee] << " " << values[ee] << " ";
+            std::cout << std::endl;
+
+                    
             // debugging
             if (ierr != 0)
             {
@@ -666,7 +677,6 @@ void AtmospherePar::computeJacobian()
     int root = comm_->NumProc()-1;
     Teuchos::RCP<Epetra_MultiVector> intcondGlob =
         Utils::Gather(*intcondCoeff_, root);
-
     
     // If we have row rowIntCon_
     if (jac_->MyGRID(rowIntCon_) && useIntCondQ_)
