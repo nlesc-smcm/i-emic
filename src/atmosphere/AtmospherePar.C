@@ -685,11 +685,11 @@ void AtmospherePar::computeJacobian()
             ERROR("Q-integral condition should be on last processor!", __FILE__, __LINE__);
         }
 
-        int len = n_ * m_ * l_;
+        int len = n_ * m_ * l_ + aux_;
         int icinds[len];
         double icvals[len];
 
-        int pos=0;
+        int pos = 0;
         int gid;
         for (int k = 0; k != l_; ++k)
             for (int j = 0; j != m_; ++j)
@@ -701,6 +701,19 @@ void AtmospherePar::computeJacobian()
                     pos++;
                 }
 
+        // add auxiliary dependencies
+        int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
+        for (int aa = 1; aa <= aux_; ++aa)
+        {
+            gid         = last + aa;
+            icinds[pos] = gid;
+            icvals[pos] = (*intcondGlob)[0][gid];
+            pos++;
+        }
+
+        // integrity check
+        assert(pos == len);
+        
         int ierr;
         if (jac_->Filled())
         {
@@ -925,9 +938,9 @@ void AtmospherePar::createMatrixGraph()
                 insert_graph_entry(indices, pos, i, j-1, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_TT_, N, M, L);
                 
-                // Add the dependencies on auxiliary unknowns
-                for (int aa = 1; aa <= aux_; ++aa)
-                    indices[pos++] = last + aa;
+                // T rows do not have dependencies on auxiliary unknowns
+                // for (int aa = 1; aa <= aux_; ++aa)
+                //     indices[pos++] = last + aa;
 
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(

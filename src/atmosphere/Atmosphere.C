@@ -400,6 +400,7 @@ void Atmosphere::integralCoeff(std::vector<double> &val,
                 val.push_back(cos(yc_[j]) * dx_ * dy_);
                 ind.push_back(FIND_ROW_ATMOS1(nun, n_, m_, l_, i, j, k, XX));
             }
+    
 }
 
 //-----------------------------------------------------------------------------

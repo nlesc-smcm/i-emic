@@ -288,7 +288,7 @@ public:
     //! Get the dA_{ij} coefficients for surface integrals with q
     void integralCoeff(std::vector<double> &val,
                        std::vector<double> &ind,
-                       int nun = 2, bool ignoreLand = false);
+                       int nun = ATMOS_NUN_, bool ignoreLand = false);
 
     //! --------------------------------------------------------
     //! Set an external 2D surface mask in the atmosphere.
