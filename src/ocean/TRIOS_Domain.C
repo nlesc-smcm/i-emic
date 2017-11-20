@@ -190,8 +190,7 @@ namespace TRIOS
         INFO("  +++ including ghost nodes: +++");
         INFO("  subdomain offsets: "<<Noff<<","<<Moff<<","<<Loff);
         INFO("  grid dimension on subdomain: "<<nloc<<"x"<<mloc<<"x"<<lloc);
-        INFO("  +++   auxiliary unknowns:  +++");
-        INFO("     " << aux_);
+        INFO("  +++   auxiliary unknowns:  +++  " << aux_);
 
         // create the maps:
         StandardMap = CreateStandardMap(dof_);

@@ -223,10 +223,14 @@ void AtmospherePar::setupIntCoeff()
     // Export assembly map surface integration coeffs to standard map
     CHECK_ZERO( precipIntCo_->Export( *precipIntCoLocal, *as2std_surf_, Zero ) );
 
+    // test
+    assert((*precipIntCo_)[ATMOS_TT_-1] == (*intcondCoeff_)[ATMOS_QQ_-1]);
+    
     // Obtain total integration area (sum of absolute values)
-    precipIntCo_->Norm1(&totalArea_);
+    precipIntCo_->Norm1(&totalArea_);    
 
     INFO("AtmospherePar: total E,P area = " << totalArea_);
+    INFO("AtmospherePar:    local dA[0] = " << (*precipIntCo_)[0]);
 }
 
 //==================================================================
@@ -668,9 +672,10 @@ void AtmospherePar::computeJacobian()
         }
     }
 
-
     //------------------------------------------------------------------
-    // Implementation of integral condition
+    // Implementation of integrals:
+    //  - integral condition on Q
+    //  - P integral in auxiliary row 
     //------------------------------------------------------------------
     
     int root = comm_->NumProc()-1;
@@ -678,19 +683,28 @@ void AtmospherePar::computeJacobian()
         Utils::Gather(*intcondCoeff_, root);
     
     // If we have row rowIntCon_
-    if (jac_->MyGRID(rowIntCon_) && useIntCondQ_)
+    if (jac_->MyGRID(rowIntCon_))
     {
         if (comm_->MyPID() != root)
         {
-            ERROR("Q-integral condition should be on last processor!", __FILE__, __LINE__);
+            ERROR("Integrals should be on last processor!", __FILE__, __LINE__);
         }
 
+        // length is the same for both integals
         int len = n_ * m_ * l_ + aux_;
-        int icinds[len];
-        double icvals[len];
+        int icinds[len];    // integral condition indices
+        int ipinds[len];    // P integral indices
+        double icvals[len]; // integral condition values
+        double ipvals[len]; // P integral values
 
+        // Obtain indices and values for integrals
         int pos = 0;
         int gid;
+
+        // Obtain some constants from local model
+        double qdim, nuq, eta, dqso;
+        atmos_->getEPconstants(qdim, nuq, eta, dqso);
+        
         for (int k = 0; k != l_; ++k)
             for (int j = 0; j != m_; ++j)
                 for (int i = 0; i != n_; ++i)
@@ -698,44 +712,69 @@ void AtmospherePar::computeJacobian()
                     gid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
                     icinds[pos] = gid;
                     icvals[pos] = (*intcondGlob)[0][gid];
+                    ipinds[pos] = gid;
+                    ipvals[pos] = (-eta / totalArea_ ) * (*intcondGlob)[0][gid];
                     pos++;
                 }
 
-        // add auxiliary dependencies
+        // Add auxiliary dependencies
         int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
         for (int aa = 1; aa <= aux_; ++aa)
         {
             gid         = last + aa;
             icinds[pos] = gid;
             icvals[pos] = (*intcondGlob)[0][gid];
+
+            // final dependency P -> P
+            if (aa == 1)
+            {
+                ipinds[pos] = gid;
+                ipvals[pos] = -1;
+            }
+            
             pos++;
         }
 
-        // integrity check
+        // Integrity check
         assert(pos == len);
-        
-        int ierr;
+
+        // Set indices and values for integrals
+        int icerr = 0;
+        int iperr = 0;
         if (jac_->Filled())
         {
-            ierr = jac_->ReplaceGlobalValues(rowIntCon_, len, icvals, icinds);
+            // Integral condition Q
+            if (useIntCondQ_)
+                icerr = jac_->ReplaceGlobalValues(rowIntCon_, len, icvals, icinds);
+
+            if (aux_ > 0)
+                // Global precipiation integral
+                iperr = jac_->ReplaceGlobalValues(last + 1, len, ipvals, ipinds);
         }
         else
         {
-            ierr = jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds);
+            if (useIntCondQ_)
+                icerr = jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds);
+                    
+            if (aux_ > 0)
+                iperr = jac_->InsertGlobalValues(last + 1, len, ipvals, ipinds);
         }
-        if (ierr != 0)
+            
+        if ((icerr != 0) || (iperr != 0))
         {
-            INFO( "Insertion ERROR! " << ierr << " filled = "
+            INFO( "Insertion ERROR! " << icerr << " " << iperr << " filled = "
                   << jac_->Filled());
             INFO( " while inserting/replacing values in local Jacobian");
             INFO( "  GRID: " << rowIntCon_);
             ERROR("Error during insertion/replacing of values in local Jacobian",
                   __FILE__, __LINE__);
         }
+
+        
     }
-    else if (comm_->MyPID() == root && useIntCondQ_)
+    else if (comm_->MyPID() == root)
     {
-        ERROR("Q-integral condition should be on last processor!", __FILE__, __LINE__);
+        ERROR("Integrals should be on last processor!", __FILE__, __LINE__);
     }
 
     //------------------------------------------------------------------
@@ -999,16 +1038,15 @@ void AtmospherePar::createMatrixGraph()
     // Dependencies of the auxiliary unknown
     for (int aa = 1; aa <= aux_; ++aa)
     {
-        int len = n_ * m_ * l_ * dof_ + aux_;
+        int len = n_ * m_ * l_ + aux_;
         int auxinds[len];
         int gcid;
         pos = 0;
         for (int k = 0; k != l_; ++k)
             for (int j = 0; j != m_; ++j)
                 for (int i = 0; i != n_; ++i)
-                    for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
                 {
-                    gcid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, xx);
+                    gcid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
                     auxinds[pos] = gcid;
                     pos++;
                 }

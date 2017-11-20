@@ -19,6 +19,8 @@ namespace // local unnamed namespace (similar to static in C)
     RCP<Epetra_Vector> vec;
     RCP<Epetra_Vector> localvec;
 
+    RCP<Epetra_CrsMatrix> mat;
+
     std::shared_ptr<AtmospherePar> atmos;
 
     RCP<Teuchos::ParameterList> atmosphereParams;    
@@ -106,7 +108,15 @@ TEST(Domain, SimpleInit)
 
     EXPECT_EQ(colmap->NumGlobalElements(), dim);
 
+
+    ////////////////////////////////////////////
+    // Create maps
+    ////////////////////////////////////////////
+
     domain->Decomp2D();
+
+    standardMap = domain->GetStandardMap();
+    assemblyMap = domain->GetAssemblyMap();
 }
 
 //------------------------------------------------------------------
@@ -121,7 +131,6 @@ TEST(Domain, AuxInit)
         std::cout << " aux not set, test has no use" << std::endl;
         return;
     }
-
         
     bool failed = false;
 
@@ -263,6 +272,10 @@ TEST(Domain, Importers)
     EXPECT_EQ(failed, false);
 
     EXPECT_EQ( (*vec)[vec_last], 10000 + aux - 1 );
+
+    EXPECT_EQ(vec->GlobalLength(), standardMap->NumGlobalElements());
+    EXPECT_EQ(vec->GlobalLength(), domain->GetSolveMap()->NumGlobalElements());
+    
 }
 
 //------------------------------------------------------------------
@@ -292,15 +305,6 @@ TEST(Domain, Gather)
 //------------------------------------------------------------------
 TEST(Domain, MatVec)
 {
-    if (aux <= 0)
-    {
-        WARNING(" aux not set, test has no use", __FILE__, __LINE__);
-        std::cout << " aux not set, test has no use" << std::endl;
-        return;
-
-    }
-    EXPECT_EQ(vec->GlobalLength(), standardMap->NumGlobalElements());
-    EXPECT_EQ(vec->GlobalLength(), domain->GetSolveMap()->NumGlobalElements());
 
     bool failed = false;
     try
@@ -308,6 +312,7 @@ TEST(Domain, MatVec)
         atmos->getState('V')->PutScalar(0.01);
         atmos->setPar(0.01);
         atmos->computeJacobian();
+        mat = atmos->getJacobian();
     }
     catch (std::exception const &e)
     {
@@ -326,6 +331,19 @@ TEST(Domain, MatVec)
         throw;
     }
     EXPECT_EQ(failed, false);
+
+    Teuchos::RCP<Epetra_Vector> x = Teuchos::rcp(new Epetra_Vector(*standardMap));
+    Teuchos::RCP<Epetra_Vector> b = Teuchos::rcp(new Epetra_Vector(*standardMap));
+
+    x->PutScalar(1.0);
+
+    mat->Apply(*x, *b);
+
+    atmos->solve(b);
+
+    Teuchos::RCP<Epetra_Vector> x2 = atmos->getSolution('C');
+
+    std::cout << *x2 << std::endl;    
 }
 
 //------------------------------------------------------------------

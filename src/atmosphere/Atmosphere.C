@@ -174,8 +174,11 @@ void Atmosphere::setup()
     INFO(" B / mu = " << bmua_);
     INFO("     Ad = " << Ad_);
     INFO("    Phv = " << Phv_);
-
-    INFO("  DqDt0 = " <<  nuq_ * eta_ * dqso_ / qdim_);
+    INFO("    nuq = " << nuq_);
+    INFO("    eta = " << eta_);
+    INFO("   dqso = " << dqso_);    
+    INFO(" A*DpDq = " << -eta_ * nuq_);
+    INFO("  DqDt0 = " << nuq_ * eta_ * dqso_ / qdim_);
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
     nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_
@@ -399,8 +402,7 @@ void Atmosphere::integralCoeff(std::vector<double> &val,
 
                 val.push_back(cos(yc_[j]) * dx_ * dy_);
                 ind.push_back(FIND_ROW_ATMOS1(nun, n_, m_, l_, i, j, k, XX));
-            }
-    
+            }    
 }
 
 //-----------------------------------------------------------------------------
@@ -440,13 +442,17 @@ void Atmosphere::computeJacobian()
     // Al(:,:,:,:,QQ,QQ) = Phv * (qxx + qyy) - nuq * eta * qc
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
 
-    // Central P dependency can be implemented in this way. Note that
-    // we cann add P dependencies in non-P rows, but it is not
-    // possible to use the stencil approach to add dependencies to a
-    // P-row, as there is only a single row corrsponding to, e.g.,
-    // ATMOS_PP_
-    qc.scale(-comb_ * humf_ * nuq_);
-    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
+    if (aux_ == 1)
+    {
+        // Central P dependency can be implemented in this way. Note that
+        // we can add P dependencies in non-P rows, but it is not possible
+        // to use the stencil approach to add dependencies to a P-row, as
+        // there is only a single row corrsponding to, e.g., ATMOS_PP_.
+        // The nested loop in assemble would give some trouble. The final
+        // P-row is implemented from the parallel side.
+        qc.scale(-comb_ * humf_ * nuq_);
+        Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
+    }
 
     // Apply boundary conditions to stencil
     boundaries();
