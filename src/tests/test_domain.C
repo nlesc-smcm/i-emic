@@ -349,21 +349,55 @@ TEST(Domain, MatVec)
     }
     EXPECT_EQ(failed, false);
 
-    Teuchos::RCP<Epetra_Vector> x = Teuchos::rcp(new Epetra_Vector(*standardMap));
-    Teuchos::RCP<Epetra_Vector> b = Teuchos::rcp(new Epetra_Vector(*standardMap));
+    Teuchos::RCP<Epetra_Vector> x = Teuchos::rcp(new Epetra_Vector(*standardMap) );
+    Teuchos::RCP<Epetra_Vector> b = Teuchos::rcp(new Epetra_Vector(*standardMap) );
     
     x->PutScalar(1.0);
+
+    double norm1 = Utils::norm(x);
     
     mat->Apply(*x, *b);
 
-    // std::cout << *mat << std::endl;
-    
     atmos->solve(b);
     
     Teuchos::RCP<Epetra_Vector> x2 = atmos->getSolution('C');
     
-    std::cout << *x2 << std::endl;
-    std::cout << Utils::norm(x2) << std::endl;
+    double norm2 = Utils::norm(x2);
+
+    // There may be a difference due to domain overlap in the Ifpack
+    // preconditioner that is used as a solver.
+    EXPECT_NEAR(norm1, norm2, 1e-3);
+}
+
+//------------------------------------------------------------------
+TEST(Domain, Values)
+{
+    Teuchos::RCP<Epetra_Vector> x      = Teuchos::rcp(new Epetra_Vector(*standardMap) );
+    Teuchos::RCP<Epetra_Vector> b      = Teuchos::rcp(new Epetra_Vector(*standardMap) );
+    Teuchos::RCP<Epetra_Vector> localb = Teuchos::rcp(new Epetra_Vector(*assemblyMap) );
+
+    x->Random();
+
+    mat->Apply(*x, *b);
+
+    domain->Solve2Assembly(*b, *localb);
+
+    comm->Barrier();
+    
+    double P = 0.0;
+    int last = n * m * l * dof + aux - 1;
+    int lid  = 0;
+    if ( standardMap->MyGID(last) )
+    {
+        lid = standardMap->LID(last);
+        P = (*b)[lid];
+    }
+    
+    comm->SumAll(&P, &P, 1);
+    int numMyLocalElements = assemblyMap->NumMyElements();
+
+    // The final element should be P
+    EXPECT_EQ(P, (*localb)[numMyLocalElements-1]);    
 }
 
 //------------------------------------------------------------------

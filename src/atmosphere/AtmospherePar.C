@@ -690,7 +690,7 @@ void AtmospherePar::computeJacobian()
         ERROR("Integral should be on last processor!", __FILE__, __LINE__);
     }
 
-    // length is the same for both integals
+    // length is the same for all QQ integrals
     int len = n_ * m_ * l_ + aux_;
     int icinds[len];    // integral condition indices
     int ipinds[len];    // P integral indices
