@@ -119,7 +119,11 @@ TEST(Domain, SimpleInit)
     assemblyMap = domain->GetAssemblyMap();
     
     EXPECT_EQ(standardMap->UniqueGIDs(), true);
-    EXPECT_EQ(assemblyMap->UniqueGIDs(), false);
+
+    if (comm->NumProc() > 1)
+        EXPECT_EQ(assemblyMap->UniqueGIDs(), false);
+    else
+        EXPECT_EQ(assemblyMap->UniqueGIDs(), true);
 
 }
 
@@ -167,12 +171,12 @@ TEST(Domain, AuxInit)
     standardMap = domain->GetStandardMap();
     assemblyMap = domain->GetAssemblyMap();
     
-    std::cout << *standardMap << std::endl;
-    std::cout << *assemblyMap << std::endl;
-    getchar();
-
     EXPECT_EQ(standardMap->UniqueGIDs(), true);
-    EXPECT_EQ(assemblyMap->UniqueGIDs(), false);
+
+    if (comm->NumProc() > 1)
+        EXPECT_EQ(assemblyMap->UniqueGIDs(), false);
+    else
+        EXPECT_EQ(assemblyMap->UniqueGIDs(), true);
 
     vec      = Teuchos::rcp(new Epetra_Vector(*standardMap));
     localvec = Teuchos::rcp(new Epetra_Vector(*assemblyMap));
@@ -194,8 +198,8 @@ TEST(Domain, AuxInit)
     for (int i = 0; i != numMyAssemblyElements; ++i)
         (*localvec)[i] = 1000 + localvec->Map().GID(i);
 
-    
-    EXPECT_EQ( vec->Map().GID(numMyStandardElements-1), n*m*l*dof + aux - 1 );
+    if (comm->MyPID() == (comm->NumProc() - 1))
+        EXPECT_EQ( vec->Map().GID(numMyStandardElements-1), n*m*l*dof + aux - 1 );
 
     ////////////////////////////////////////////
     // Create surface maps
@@ -283,7 +287,8 @@ TEST(Domain, Importers)
     }
     EXPECT_EQ(failed, false);
 
-    EXPECT_EQ( (*vec)[vec_last], 10000 + aux - 1 );
+    if (comm->MyPID() == (comm->NumProc() - 1))
+        EXPECT_EQ( (*vec)[vec_last], 10000 + aux - 1 );
 
     EXPECT_EQ(vec->GlobalLength(), standardMap->NumGlobalElements());
     EXPECT_EQ(vec->GlobalLength(), domain->GetSolveMap()->NumGlobalElements());
@@ -357,8 +362,8 @@ TEST(Domain, MatVec)
     
     Teuchos::RCP<Epetra_Vector> x2 = atmos->getSolution('C');
     
-    //std::cout << *x2 << std::endl;
-    //std::cout << Utils::norm(x2) << std::endl;
+    std::cout << *x2 << std::endl;
+    std::cout << Utils::norm(x2) << std::endl;
 }
 
 //------------------------------------------------------------------

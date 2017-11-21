@@ -738,29 +738,39 @@ void AtmospherePar::computeJacobian()
     // Integrity check
     assert(pos == len);
 
-    // Set indices and values for integrals
     int icerr = 0;
     int iperr = 0;
-    if (jac_->Filled())
-    {
-        // Integral condition Q
-        if ( (useIntCondQ_) && (jac_->MyGRID(rowIntCon_)) )
-            icerr = jac_->ReplaceGlobalValues(rowIntCon_, len, icvals, icinds);
+    int icerrGlob = 0;
+    int iperrGlob = 0;
 
-        if (aux_ > 0)
-            // Global precipiation integral
-            iperr = jac_->ReplaceGlobalValues(last + 1, len, ipvals, ipinds);
-    }
-    else
+    // Set indices and values for integrals. Integral rows are on final
+    // processor
+    if (jac_->MyGRID(rowIntCon_))
     {
-        if ( (useIntCondQ_) && (jac_->MyGRID(rowIntCon_)) )
-            icerr = jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds);
+        if (jac_->Filled())
+        {
+            // Integral condition Q
+            if (useIntCondQ_)
+                icerr = jac_->ReplaceGlobalValues(rowIntCon_, len, icvals, icinds);
+
+            if (aux_ > 0)
+                // Global precipiation integral
+                iperr = jac_->ReplaceGlobalValues(last + 1, len, ipvals, ipinds);
+        }
+        else
+        {
+            if (useIntCondQ_)
+                icerr = jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds);
                     
-        if (aux_ > 0)
-            iperr = jac_->InsertGlobalValues(last + 1, len, ipvals, ipinds);
+            if (aux_ > 0)
+                iperr = jac_->InsertGlobalValues(last + 1, len, ipvals, ipinds);
+        }
     }
+
+    comm_->SumAll(&icerr, &icerrGlob, 1);
+    comm_->SumAll(&iperr, &iperrGlob, 1);
             
-    if ((icerr != 0) || (iperr != 0))
+    if ((icerrGlob != 0) || (iperrGlob != 0))
     {
         INFO( "Insertion ERROR! " << icerr << " " << iperr << " filled = "
               << jac_->Filled());
@@ -1019,7 +1029,9 @@ void AtmospherePar::createMatrixGraph()
                     pos++;
                 }
         
-        // Add the dependencies on auxiliary unknowns
+        // Although they effectively do not exist, we still need to
+        // prepare dependencies on auxiliary unknowns as these are
+        // needed when filling the subdomain Jacobians.
         for (int aa = 1; aa <= aux_; ++aa)
         {
             icinds[pos] = last + aa;
@@ -1028,31 +1040,35 @@ void AtmospherePar::createMatrixGraph()
 
         assert(len == pos);
         CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(rowIntCon_, len, icinds));
+        INFO(" integral condition indices");
     }
 
-    // Dependencies of the auxiliary unknown
-    for (int aa = 1; aa <= aux_; ++aa)
+    // Dependencies of the auxiliary unknown, on the same proc as integral condition
+    if ( standardMap_->MyGID(rowIntCon_) )
     {
-        int len = n_ * m_ * l_ + aux_;
-        int auxinds[len];
-        int gcid;
-        pos = 0;
-        for (int k = 0; k != l_; ++k)
-            for (int j = 0; j != m_; ++j)
-                for (int i = 0; i != n_; ++i)
-                {
-                    gcid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
-                    auxinds[pos] = gcid;
-                    pos++;
-                }
-
-        // Add the dependencies on auxiliary unknowns
         for (int aa = 1; aa <= aux_; ++aa)
-            auxinds[pos++] = last + aa;
+        {
+            int len = n_ * m_ * l_ + aux_;
+            int auxinds[len];
+            int gcid;
+            pos = 0;
+            for (int k = 0; k != l_; ++k)
+                for (int j = 0; j != m_; ++j)
+                    for (int i = 0; i != n_; ++i)
+                    {
+                        gcid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
+                        auxinds[pos] = gcid;
+                        pos++;
+                    }
+
+            // Add the dependencies on auxiliary unknowns
+            for (int aa = 1; aa <= aux_; ++aa)
+                auxinds[pos++] = last + aa;
         
-        assert(len == pos);
-        CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(last + aa, len, auxinds));
-        
+            assert(len == pos);
+
+            CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(last + aa, len, auxinds));
+        }
     }
 
     // Finalize matrixgraph
