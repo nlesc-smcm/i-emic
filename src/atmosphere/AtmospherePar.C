@@ -189,7 +189,11 @@ void AtmospherePar::setupIntCoeff()
         (*intcondLocal)[inds[idx]-1] = vals[idx];
     }
 
+    // Assemble distributed version into non-overlapping vector
     domain_->Assembly2Solve(*intcondLocal, *intcondCoeff_);
+
+    // Create allgathered version
+    intcondGlob_ = Utils::AllGather(*intcondCoeff_);
 
 #ifdef DEBUGGING_NEW
     std::stringstream ss1, ss2;
@@ -679,103 +683,94 @@ void AtmospherePar::computeJacobian()
     //------------------------------------------------------------------
     
     int root = comm_->NumProc()-1;
-    Teuchos::RCP<Epetra_MultiVector> intcondGlob =
-        Utils::Gather(*intcondCoeff_, root);
     
     // If we have row rowIntCon_
-    if (jac_->MyGRID(rowIntCon_))
-    {
-        if (comm_->MyPID() != root)
-        {
-            ERROR("Integrals should be on last processor!", __FILE__, __LINE__);
-        }
-
-        // length is the same for both integals
-        int len = n_ * m_ * l_ + aux_;
-        int icinds[len];    // integral condition indices
-        int ipinds[len];    // P integral indices
-        double icvals[len]; // integral condition values
-        double ipvals[len]; // P integral values
-
-        // Obtain indices and values for integrals
-        int pos = 0;
-        int gid;
-
-        // Obtain some constants from local model
-        double qdim, nuq, eta, dqso;
-        atmos_->getEPconstants(qdim, nuq, eta, dqso);
-        
-        for (int k = 0; k != l_; ++k)
-            for (int j = 0; j != m_; ++j)
-                for (int i = 0; i != n_; ++i)
-                {
-                    gid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
-                    icinds[pos] = gid;
-                    icvals[pos] = (*intcondGlob)[0][gid];
-                    ipinds[pos] = gid;
-                    ipvals[pos] = (-eta / totalArea_ ) * (*intcondGlob)[0][gid];
-                    pos++;
-                }
-
-        // Add auxiliary dependencies
-        int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
-        for (int aa = 1; aa <= aux_; ++aa)
-        {
-            gid         = last + aa;
-            icinds[pos] = gid;
-            icvals[pos] = (*intcondGlob)[0][gid];
-
-            // final dependency P -> P
-            if (aa == 1)
-            {
-                ipinds[pos] = gid;
-                ipvals[pos] = -1;
-            }
-            
-            pos++;
-        }
-
-        // Integrity check
-        assert(pos == len);
-
-        // Set indices and values for integrals
-        int icerr = 0;
-        int iperr = 0;
-        if (jac_->Filled())
-        {
-            // Integral condition Q
-            if (useIntCondQ_)
-                icerr = jac_->ReplaceGlobalValues(rowIntCon_, len, icvals, icinds);
-
-            if (aux_ > 0)
-                // Global precipiation integral
-                iperr = jac_->ReplaceGlobalValues(last + 1, len, ipvals, ipinds);
-        }
-        else
-        {
-            if (useIntCondQ_)
-                icerr = jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds);
-                    
-            if (aux_ > 0)
-                iperr = jac_->InsertGlobalValues(last + 1, len, ipvals, ipinds);
-        }
-            
-        if ((icerr != 0) || (iperr != 0))
-        {
-            INFO( "Insertion ERROR! " << icerr << " " << iperr << " filled = "
-                  << jac_->Filled());
-            INFO( " while inserting/replacing values in local Jacobian");
-            INFO( "  GRID: " << rowIntCon_);
-            ERROR("Error during insertion/replacing of values in local Jacobian",
-                  __FILE__, __LINE__);
-        }
-
-        
-    }
-    else if (comm_->MyPID() == root)
+    if ( (jac_->MyGRID(rowIntCon_)) && (comm_->MyPID() != root) )
     {
         ERROR("Integrals should be on last processor!", __FILE__, __LINE__);
     }
+
+    // length is the same for both integals
+    int len = n_ * m_ * l_ + aux_;
+    int icinds[len];    // integral condition indices
+    int ipinds[len];    // P integral indices
+    double icvals[len]; // integral condition values
+    double ipvals[len]; // P integral values
+
+    // Obtain indices and values for integrals
+    int pos = 0;
+    int gid;
+
+    // Obtain some constants from local model
+    double qdim, nuq, eta, dqso;
+    atmos_->getEPconstants(qdim, nuq, eta, dqso);
+        
+    for (int k = 0; k != l_; ++k)
+        for (int j = 0; j != m_; ++j)
+            for (int i = 0; i != n_; ++i)
+            {
+                gid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
+                icinds[pos] = gid;
+                icvals[pos] = (*intcondGlob_)[0][gid];
+                ipinds[pos] = gid;
+                ipvals[pos] = (-eta / totalArea_ ) * (*intcondGlob_)[0][gid];
+                pos++;
+            }
+    
+    // Add auxiliary dependencies
+    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
+    for (int aa = 1; aa <= aux_; ++aa)
+    {
+        gid         = last + aa;
+        icinds[pos] = gid;
+        icvals[pos] = (*intcondGlob_)[0][gid];
+
+        // final dependency P -> P
+        if (aa == 1)
+        {
+            ipinds[pos] = gid;
+            ipvals[pos] = -1;
+        }
+            
+        pos++;
+    }
+
+    // Integrity check
+    assert(pos == len);
+
+    // Set indices and values for integrals
+    int icerr = 0;
+    int iperr = 0;
+    if (jac_->Filled())
+    {
+        // Integral condition Q
+        if ( (useIntCondQ_) && (jac_->MyGRID(rowIntCon_)) )
+            icerr = jac_->ReplaceGlobalValues(rowIntCon_, len, icvals, icinds);
+
+        if (aux_ > 0)
+            // Global precipiation integral
+            iperr = jac_->ReplaceGlobalValues(last + 1, len, ipvals, ipinds);
+    }
+    else
+    {
+        if ( (useIntCondQ_) && (jac_->MyGRID(rowIntCon_)) )
+            icerr = jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds);
+                    
+        if (aux_ > 0)
+            iperr = jac_->InsertGlobalValues(last + 1, len, ipvals, ipinds);
+    }
+            
+    if ((icerr != 0) || (iperr != 0))
+    {
+        INFO( "Insertion ERROR! " << icerr << " " << iperr << " filled = "
+              << jac_->Filled());
+        INFO( " while inserting/replacing values in local Jacobian");
+        INFO( "  GRID: " << rowIntCon_);
+        ERROR("Error during insertion/replacing of values in local Jacobian",
+              __FILE__, __LINE__);
+    }
+
+        
 
     //------------------------------------------------------------------
     // Finalize matrix

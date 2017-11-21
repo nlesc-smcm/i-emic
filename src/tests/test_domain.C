@@ -334,16 +334,19 @@ TEST(Domain, MatVec)
 
     Teuchos::RCP<Epetra_Vector> x = Teuchos::rcp(new Epetra_Vector(*standardMap));
     Teuchos::RCP<Epetra_Vector> b = Teuchos::rcp(new Epetra_Vector(*standardMap));
-
+    
     x->PutScalar(1.0);
-
+    
     mat->Apply(*x, *b);
 
+    // std::cout << *mat << std::endl;
+    
     atmos->solve(b);
-
+    
     Teuchos::RCP<Epetra_Vector> x2 = atmos->getSolution('C');
-
-    std::cout << *x2 << std::endl;    
+    
+    std::cout << *x2 << std::endl;
+    std::cout << Utils::norm(x2) << std::endl;
 }
 
 //------------------------------------------------------------------

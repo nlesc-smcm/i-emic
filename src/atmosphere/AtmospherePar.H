@@ -150,6 +150,9 @@ private:
     //! coefficients for integral condition
     Teuchos::RCP<Epetra_Vector> intcondCoeff_;
 
+    //! coefficients for integral condition gathered on every proc
+    Teuchos::RCP<Epetra_MultiVector> intcondGlob_;
+
     //! coefficients for precipitation integral
     Teuchos::RCP<Epetra_Vector> precipIntCo_;
 
