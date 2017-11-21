@@ -117,6 +117,10 @@ TEST(Domain, SimpleInit)
 
     standardMap = domain->GetStandardMap();
     assemblyMap = domain->GetAssemblyMap();
+    
+    EXPECT_EQ(standardMap->UniqueGIDs(), true);
+    EXPECT_EQ(assemblyMap->UniqueGIDs(), false);
+
 }
 
 //------------------------------------------------------------------
@@ -162,6 +166,13 @@ TEST(Domain, AuxInit)
 
     standardMap = domain->GetStandardMap();
     assemblyMap = domain->GetAssemblyMap();
+    
+    std::cout << *standardMap << std::endl;
+    std::cout << *assemblyMap << std::endl;
+    getchar();
+
+    EXPECT_EQ(standardMap->UniqueGIDs(), true);
+    EXPECT_EQ(assemblyMap->UniqueGIDs(), false);
 
     vec      = Teuchos::rcp(new Epetra_Vector(*standardMap));
     localvec = Teuchos::rcp(new Epetra_Vector(*assemblyMap));
@@ -173,7 +184,8 @@ TEST(Domain, AuxInit)
         (*vec)[i] = 100 + (*vec).Map().GID(i);
 
     int last = FIND_ROW2(dof, n, m, l, n-1, m-1, l-1, dof);
-    EXPECT_EQ( vec->Map().LID(last + aux) , numMyStandardElements -1 );
+    if (comm->MyPID() == (comm->NumProc() - 1))
+        EXPECT_EQ( vec->Map().LID(last + aux) , numMyStandardElements -1 );
 
     for (int i = 1; i <= aux; ++i)
         (*vec)[numMyStandardElements - aux - 1  + i] = 10000 + i - 1;
@@ -345,8 +357,8 @@ TEST(Domain, MatVec)
     
     Teuchos::RCP<Epetra_Vector> x2 = atmos->getSolution('C');
     
-    std::cout << *x2 << std::endl;
-    std::cout << Utils::norm(x2) << std::endl;
+    //std::cout << *x2 << std::endl;
+    //std::cout << Utils::norm(x2) << std::endl;
 }
 
 //------------------------------------------------------------------

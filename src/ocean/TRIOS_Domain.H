@@ -318,7 +318,8 @@ namespace TRIOS {
         
 		//! private map generating function
 		Teuchos::RCP<Epetra_Map> CreateMap(int noff_, int moff_, int loff_,
-										   int nloc_, int mloc_, int lloc_, int nun_) const;
+										   int nloc_, int mloc_, int lloc_,
+                                           int nun_,  bool addAux = false) const;
                               
     };
 

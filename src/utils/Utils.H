@@ -85,7 +85,7 @@ namespace Utils
     double norm(VectorPtr const &vec)
     {
         double norm = 0;
-        vec->Norm2(&norm);
+        CHECK_ZERO(vec->Norm2(&norm));
         return norm;
     }
 
@@ -94,7 +94,7 @@ namespace Utils
     double normInf(VectorPtr const &vec)
     {
         double norm = 0;
-        vec->NormInf(&norm);
+        CHECK_ZERO(vec->NormInf(&norm));
         return norm;
     }
 

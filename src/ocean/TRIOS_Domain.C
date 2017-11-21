@@ -261,14 +261,17 @@ namespace TRIOS
         else
         {
             ERROR("not implemented",__FILE__,__LINE__);
-//    int l_=depth_av?1:l;
-//    M = loadbal->createBalancedMap(l_,nun_);
         }
         return M;
     }
 
+    //=============================================================================
     Teuchos::RCP<Epetra_Map> Domain::CreateStandardMap(int nun_, bool depth_av) const
     {
+        // Add auxiliary unknowns at final processor, 
+        int root    = comm->NumProc() - 1;
+        bool addAux = (comm->MyPID() == root) ? true : false;
+        
         Teuchos::RCP<Epetra_Map> M = Teuchos::null;
         if (depth_av)
         {
@@ -276,7 +279,7 @@ namespace TRIOS
         }
         else
         {
-            M = CreateMap(Noff0, Moff0,Loff0,nloc0, mloc0, lloc0, nun_);
+            M = CreateMap(Noff0, Moff0,Loff0,nloc0, mloc0, lloc0, nun_, addAux);
         }
         return M;
     }
@@ -285,14 +288,17 @@ namespace TRIOS
     // Public map creation function (can only create a limited range of maps)
     Teuchos::RCP<Epetra_Map> Domain::CreateAssemblyMap(int nun_, bool depth_av) const
     {
+        // Add auxiliary unknowns at every processor
+        bool addAux = true;
+        
         Teuchos::RCP<Epetra_Map> M = Teuchos::null;
         if (depth_av) // create a map with a single vertical layer: 'depth-averaged'
         {
-            M = CreateMap(Noff, Moff,0,nloc, mloc, 1, nun_);
+            M = CreateMap(Noff, Moff, 0, nloc, mloc, 1, nun_);
         }
         else
         {
-            M = CreateMap(Noff, Moff,Loff,nloc, mloc, lloc, nun_);
+            M = CreateMap(Noff, Moff, Loff, nloc, mloc, lloc, nun_, addAux);
         }
         return M;
     }
@@ -300,12 +306,13 @@ namespace TRIOS
     //==========================================================================
     // This version is private and very general
     Teuchos::RCP<Epetra_Map> Domain::CreateMap(int noff_, int moff_, int loff_,
-                                               int nloc_, int mloc_, int lloc_, int nun_) const
+                                               int nloc_, int mloc_, int lloc_,
+                                               int nun_,  bool addAux) const
     {
         // If a map is requested for all unknowns, we append the auxiliary unknowns as well.
         // Otherwise, we create the original map. 
         int NumMyElements;
-        if (nun_ == dof_)
+        if (addAux)
             NumMyElements = mloc_ * nloc_ * lloc_ * nun_ + aux_;
         else
             NumMyElements = mloc_ * nloc_ * lloc_ * nun_;
@@ -338,7 +345,7 @@ namespace TRIOS
         }//k
 
         // Add auxiliary unknowns, every subdomain needs them, they're great
-        if (nun_ == dof_)
+        if (addAux)
         {
             for (int aa = 1; aa <= aux_; ++aa)
             {
@@ -346,7 +353,7 @@ namespace TRIOS
                 p++;
             }
         }
-
+        
         // A little integrity check
         assert(p == NumMyElements);
 

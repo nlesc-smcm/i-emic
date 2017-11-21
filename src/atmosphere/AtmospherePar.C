@@ -687,7 +687,7 @@ void AtmospherePar::computeJacobian()
     // If we have row rowIntCon_
     if ( (jac_->MyGRID(rowIntCon_)) && (comm_->MyPID() != root) )
     {
-        ERROR("Integrals should be on last processor!", __FILE__, __LINE__);
+        ERROR("Integral should be on last processor!", __FILE__, __LINE__);
     }
 
     // length is the same for both integals
