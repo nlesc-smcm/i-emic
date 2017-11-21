@@ -293,6 +293,8 @@ void AtmospherePar::computeRHS()
 
     if ((int) localRHS->size() != numMyElements)
     {
+        std::cout << numMyElements    << std::endl;
+        std::cout << localRHS->size() << std::endl;
         ERROR("RHS incorrect size", __FILE__, __LINE__);
     }
 
@@ -310,13 +312,37 @@ void AtmospherePar::computeRHS()
     domain_->Assembly2Solve(*localRHS_, *rhs_);
 
     //------------------------------------------------------------------
-    // set integral condition RHS
+    // set integral condition in RHS
     //------------------------------------------------------------------
     double intcond = Utils::dot(intcondCoeff_, state_);
 
     if (rhs_->Map().MyGID(rowIntCon_) && useIntCondQ_)
         (*rhs_)[rhs_->Map().LID(rowIntCon_)] = intcond;
 
+    //------------------------------------------------------------------
+    // specify precipitation integral in RHS
+    //------------------------------------------------------------------
+    double qdim, nuq, eta, dqso;
+    atmos_->getEPconstants(qdim, nuq, eta, dqso);
+    
+    double sstInt = Utils::dot(precipIntCo_, sst_) *
+        (eta / totalArea_) * ( dqso / qdim ) ;
+    
+    // This is the same as the integral condition above so this can
+    // probably be simplified. We can substitute it with 0 but for now
+    // we leave it and test that later.
+    double qInt = intcond * eta / totalArea_;
+
+    // The integrals and P are on the same processor
+    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
+    if ( rhs_->Map().MyGID(rowIntCon_) )
+    {
+        lid = rhs_->Map().LID(last + 1);
+        
+        // In matlab language: F(end+1) = -P - eta / A * (q * dA') +
+        // (eta / A) * (dqso / qdim) * (T * dA')
+        (*rhs_)[lid] = -(*state_)[lid] ....todo
+    }        
 
     TIMER_STOP("AtmospherePar: computeRHS...");
 }
@@ -328,7 +354,8 @@ void AtmospherePar::idealized()
     atmos_->idealized();
 
     // local problem size
-    int numMyElements = assemblyMap_->NumMyElements();
+    int numMyElements        = assemblyMap_->NumMyElements();
+    int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();    
 
     // obtain view of assembly state
     double *state_tmp;
@@ -341,15 +368,32 @@ void AtmospherePar::idealized()
         ERROR("state incorrect size", __FILE__, __LINE__);
     }
 
-    // fill assembly view with local state
+   // fill assembly view with local state
     for (int i = 0; i != numMyElements; ++i)
     {
         state_tmp[i] = (*state)[i];
     }
-
     // set solvemap state
     domain_->Assembly2Solve(*localState_, *state_);
 
+    // obtain view of sst 
+    double *sst_tmp;
+    localSST_->ExtractView(&sst_tmp);
+
+    // obtain local sst and check bounds
+    std::shared_ptr<std::vector<double> > sst = atmos_->getSST('V');
+    if ((int) sst->size() != numMySurfaceElements)
+    {
+        ERROR("sst incorrect size", __FILE__, __LINE__);
+    }
+
+    for (int i = 0; i != numMySurfaceElements; ++i)
+    {
+        sst_tmp[i] = (*sst)[i];
+    }
+
+    // Export local values to distributed non-overlapping sst_
+    CHECK_ZERO( sst_->Export( *localSST_, *as2std_surf_, Zero ) );
 }
 
 //==================================================================
@@ -519,7 +563,7 @@ void AtmospherePar::setLandMask(Utils::MaskStruct const &mask)
     // we do the same thing for the local mask in the Atmosphere object
     surfmask_->clear();
 
-    if ((int) mask.global_surface->size() < (n_*m_))
+    if ((int) mask.global_surface->size() < (m_ * n_))
     {
         ERROR("mask.global_surface->size() not ok:",  __FILE__, __LINE__);
     }

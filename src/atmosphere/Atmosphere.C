@@ -116,12 +116,12 @@ void Atmosphere::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     t0a_             = params->get("reference temperature atmosphere",15.0); //(C)
     t0o_             = params->get("reference temperature ocean",15.0);      //(C)
     t0i_             = params->get("reference temperature ice",0.0);         //(C)
-    tdim_            = params->get("temperature scale", 1.0);
+    tdim_            = params->get("temperature scale", 1.0); // ( not used)
     q0_              = params->get("reference humidity",0.015); // (kg/kg)
     qdim_            = params->get("humidity scale", 0.01);  // (kg/kg)
 
-    udim_            = params->get("horizontal velocity of the ocean",0.1e+00);
-    r0dim_           = params->get("radius of the earth",6.37e+06);
+    udim_            = params->get("horizontal velocity of the ocean", 0.1e+00);
+    r0dim_           = params->get("radius of the earth", 6.37e+06);
 
 // continuation ----------------------------------------------------------------
     allParameters_   = { "Combined Forcing",
@@ -184,7 +184,7 @@ void Atmosphere::setup()
     nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_
 
     // Problem size
-    dim_ = m_ * n_ * l_ * nun_;
+    dim_ = m_ * n_ * l_ * nun_ + aux_;
 
     // Initialize state, rhs and solution of linear solve with zeros
     rhs_   = std::make_shared<std::vector<double> >(dim_, 0.0);
@@ -197,11 +197,11 @@ void Atmosphere::setup()
     // Idealized precipitation, for now
     P_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
-    // Initialize surface mask
-    surfmask_ = std::make_shared<std::vector<int> >(m_ * n_);
-
     // Initialize land/ocean surface temperature
-    surfaceTemp_ = std::vector<double>(n_ * m_, 0.0);
+    sst_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+
+    // Initialize surface mask
+    surfmask_ = std::make_shared<std::vector<int> >(m_ * n_, 0);    
 
     // Initialize forcing with zeros
     frc_ = std::vector<double>(dim_, 0.0);
@@ -324,7 +324,7 @@ void Atmosphere::idealizedOcean()
         {
             value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
             row   = find_surface_row(i,j) - 1;
-            surfaceTemp_[row] = value;
+            (*sst_)[row] = value;
         }
 }
 
@@ -362,15 +362,15 @@ void Atmosphere::zeroState()
 void Atmosphere::zeroOcean()
 {
     // Set sst to zero
-    surfaceTemp_ = std::vector<double>(n_ * m_, 0.0);
+    sst_ = std::make_shared<std::vector<double> >(n_ * m_, 0.0);
 }
 
 //-----------------------------------------------------------------------------
-void Atmosphere::setOceanTemperature(std::vector<double> const &surftemp)
+void Atmosphere::setOceanTemperature(std::vector<double> const &sst)
 {
     // Set surface temperature (copy)
-    surfaceTemp_ = surftemp;
-    assert((int) surfaceTemp_.size() == n_ * m_);
+    *sst_ = sst;
+    assert((int) sst_->size() == n_ * m_);
 }
 
 //==================================================================
@@ -558,12 +558,12 @@ void Atmosphere::forcing()
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
             {
                 value = comb_ * sunp_ * suno_[j] / Ooa_;
-                surfaceTemp_[surfaceRow-1] = value + (*state_)[temRow-1];
+                (*sst_)[surfaceRow-1] = value + (*state_)[temRow-1];
                 value += comb_ * sunp_ * (suna_[j] - amua_);
             }
             else // above ocean
             {
-                value = surfaceTemp_[surfaceRow-1] +
+                value = (*sst_)[surfaceRow-1] +
                     comb_ * sunp_ * (suna_[j] - amua_);
             }
             frc_[temRow-1] = value;
@@ -583,8 +583,8 @@ void Atmosphere::forcing()
                 // is only for ocean surface temperature
 
                 // E (evaporation) forcing (ocean state part)
-                value =  nuq_ * eta_ * ( tdim_ / qdim_ )
-                    * dqso_ * surfaceTemp_[surfaceRow-1];
+                value =  nuq_ * eta_ * ( 1.0 / qdim_ )
+                    * dqso_ * (*sst_)[surfaceRow-1];
 
                 // P (precipitation) forcing
                 value -=  nuq_ * (*P_)[surfaceRow-1];
@@ -622,7 +622,7 @@ void Atmosphere::computeEvaporation()
 
             // E (evaporation) part
             (*E_)[surfaceRow-1] =  eta_ *
-                ( (tdim_ / qdim_) * dqso_ * surfaceTemp_[surfaceRow-1]
+                ( (1.0 / qdim_) * dqso_ * (*sst_)[surfaceRow-1]
                   - (*state_)[humRow-1] );
         }
 }
@@ -1007,11 +1007,11 @@ int Atmosphere::find_row(int i, int j, int k, int XX)
     
     // P values are auxiliary and come after the final ordinary element
     if (XX == ATMOS_PP_)
-        return dim_ + 1;
+        return dim_ - aux_ + 1;
     if (XX == ATMOS_PPL_)
-        return dim_ + 2;
+        return dim_ - aux_ + 2;
     if (XX == ATMOS_PPU_)
-        return dim_ + 3;
+        return dim_ - aux_ + 3;
 
     // ordinary 1-based find_row 
     return nun_ * ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
@@ -1118,6 +1118,12 @@ std::shared_ptr<std::vector<double> > Atmosphere::getState(char mode)
 std::shared_ptr<std::vector<double> > Atmosphere::getRHS(char mode)
 {
     return getVector(mode, rhs_);
+}
+
+//-----------------------------------------------------------------------------
+std::shared_ptr<std::vector<double> > Atmosphere::getSST(char mode)
+{
+    return getVector(mode, sst_);
 }
 
 //-----------------------------------------------------------------------------
@@ -1230,11 +1236,11 @@ void Atmosphere::setSurfaceMask(std::shared_ptr<std::vector<int> > surfm)
     // clear current mask
     surfmask_->clear();
 
-    if ((int) surfm->size() < dim_)
+    if ((int) surfm->size() < (m_* n_))
     {
         ERROR("surfm->size() not ok:",  __FILE__, __LINE__);
     }
-    else if ((int) surfm->size() > dim_)
+    else if ((int) surfm->size() > (m_ * n_))
     {
         // in this case we assume we receive an ocean landmask
         // with boundaries, which implies that the final

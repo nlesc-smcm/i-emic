@@ -74,8 +74,6 @@ class Atmosphere
     // Surface mask
     std::shared_ptr<std::vector<int> > surfmask_;
 
-    // Ocean surface temperature
-    std::vector<double> surfaceTemp_;
 
     // Forcing vector
     std::vector<double> frc_;
@@ -90,6 +88,9 @@ class Atmosphere
 
     // Solution vector
     std::shared_ptr<std::vector<double> > sol_;
+
+    // Ocean surface temperature
+    std::shared_ptr<std::vector<double> > sst_;
 
     // Integral condition row (only in serial case)
     int rowIntCon_;
@@ -136,7 +137,7 @@ class Atmosphere
     double    t0a_; //! reference temperature atmosphere
     double    t0o_; //! reference temperature ocean
     double    t0i_; //! reference temperature ice
-    double   tdim_; //! temperature scale
+    double   tdim_; //! temperature scale (not used)
     double     q0_; //! reference humidity (kg / kg)
     double   qdim_; //! humidity scale (kg / kg)
 
@@ -233,13 +234,14 @@ public:
     //! Return the Jacobian matrix in CRS format
     std::shared_ptr<Utils::CRSMat> getJacobian();
 
+    //! Get routines
     std::shared_ptr<std::vector<double> > getSolution    (char mode = 'C');
     std::shared_ptr<std::vector<double> > getState       (char Mode = 'C');
     std::shared_ptr<std::vector<double> > getRHS         (char mode = 'C');
+    std::shared_ptr<std::vector<double> > getSST         (char Mode = 'C');
     std::shared_ptr<std::vector<double> > getE           (char mode = 'C');
     std::shared_ptr<std::vector<double> > getP           (char mode = 'C');
     std::shared_ptr<std::vector<double> > getPrecipIntCo (char mode = 'C');
-    
 
     void setState(std::shared_ptr<std::vector<double> > in) { state_ = in; }
     void setPrecipitation(std::shared_ptr<std::vector<double> > in) { P_ = in; }

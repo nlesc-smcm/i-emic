@@ -400,6 +400,13 @@ TEST(Domain, Values)
     EXPECT_EQ(P, (*localb)[numMyLocalElements-1]);    
 }
 
+TEST(Domain, AtmosRHS)
+{
+    // Use idealized values in atmosphere model
+    atmos->idealized();
+    atmos->computeRHS();    
+}
+
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {
@@ -411,7 +418,7 @@ int main(int argc, char **argv)
     ::testing::InitGoogleTest(&argc, argv);
 
     // -------------------------------------------------------
-    // TESTINGv
+    // TESTING
     int out = RUN_ALL_TESTS();
     // -------------------------------------------------------
 
