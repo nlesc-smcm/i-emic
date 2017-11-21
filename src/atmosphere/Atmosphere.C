@@ -332,21 +332,36 @@ void Atmosphere::idealizedOcean()
 void Atmosphere::idealizedState()
 {
     // put idealized values in atmosphere
-    double value;
-    int row;
+    double valueTT, valueQQ, valuePP;
+    int rowTT, rowQQ, rowPP;
     for (int i = 1; i <= n_; ++i)
         for (int j = 1; j <= m_; ++j)
         {
-            value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
-            row   = find_row(i,j,l_,ATMOS_TT_)-1;
-            (*state_)[row] = value;
+            valueTT = cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+            valueQQ = cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+            rowTT   = find_row(i,j,l_,ATMOS_TT_)-1;
+            rowQQ   = find_row(i,j,l_,ATMOS_QQ_)-1;
+            (*state_)[rowTT] = valueTT;
+            (*state_)[rowQQ] = valueQQ;
         }
+    
+    // Compute evaporation based on idealized sst and q
+    computeEvaporation();
+
+    // We need integral coefficients
+    setupIntCoeff();
+
+    // Set idealized precipitation
+    rowPP = find_row(n_,m_,l_,ATMOS_PP_) - 1;
+
+    valuePP = Utils::dot(*precipIntCo_, *E_) / totalArea_;
+    (*state_)[rowPP] = valuePP;
 }
 
 //------------------------------------------------------------------
 void Atmosphere::idealized()
 {
-    idealizedOcean();
+    idealizedOcean();        
     idealizedState();
 }
 

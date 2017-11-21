@@ -50,6 +50,11 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
     ymax_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
 
+    INFO("Parallel atmosphere model: xmin = " << xmin_);
+    INFO("                           xmax = " << xmax_);
+    INFO("                           ymin = " << ymin_);
+    INFO("                           ymax = " << ymax_);
+
     // Create domain object
     domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, l_, dof_,
                                              xmin_, xmax_, ymin_, ymax_,
@@ -68,6 +73,11 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     int nloc = domain_->LocalN();
     int mloc = domain_->LocalM();
     int lloc = domain_->LocalL();
+
+    INFO("   Local atmosphere model: xmin = " << xminloc);
+    INFO("                           xmax = " << xmaxloc);
+    INFO("                           ymin = " << yminloc);
+    INFO("                           ymax = " << ymaxloc);
 
     // Obtain overlapping and non-overlapping maps
     assemblyMap_ = domain_->GetAssemblyMap(); // overlapping
@@ -335,15 +345,32 @@ void AtmospherePar::computeRHS()
 
     // The integrals and P are on the same processor
     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
+    int lid  = -1;
+
+    int root = comm_->NumProc()-1;
+    
+    // If we have row rowIntCon_
+    if ( (rhs_->Map().MyGID(rowIntCon_)) && (comm_->MyPID() != root) )
+    {
+        ERROR("Integral should be on last processor!", __FILE__, __LINE__);
+    }
+
     if ( rhs_->Map().MyGID(rowIntCon_) )
     {
         lid = rhs_->Map().LID(last + 1);
         
-        // In matlab language: F(end+1) = -P - eta / A * (q * dA') +
-        // (eta / A) * (dqso / qdim) * (T * dA')
-        (*rhs_)[lid] = -(*state_)[lid] ....todo
-    }        
+        // F(P) = -P - eta / A * (q * dA') + (eta / A) * (dqso / qdim)
+        // * (T * dA')
+        (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt;
+        
+        std::cout << "--" << (*rhs_)[lid] << "---" << (*state_)[lid] << " "
+                  << qInt << " " << sstInt << std::endl;        
+    }
 
+    INFO(" sst norm: " << Utils::norm(sst_) );
+    INFO(" state norm: " << Utils::norm(state_) );
+
+    
     TIMER_STOP("AtmospherePar: computeRHS...");
 }
 
@@ -822,9 +849,7 @@ void AtmospherePar::computeJacobian()
         INFO( "  GRID: " << rowIntCon_);
         ERROR("Error during insertion/replacing of values in local Jacobian",
               __FILE__, __LINE__);
-    }
-
-        
+    }        
 
     //------------------------------------------------------------------
     // Finalize matrix
