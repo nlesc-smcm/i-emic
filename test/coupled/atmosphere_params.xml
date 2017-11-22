@@ -36,6 +36,9 @@
   <!-- (disable only for testing purposes)                                    -->
   <Parameter name="Use integral condition on q" type="bool" value="true"/>
 
+  <!-- Auxiliary unknowns                                         -->
+  <Parameter name="Auxiliary unknowns" type="int" value="1"        />  
+
   <!-- Precipitation is an integral, for testing purposes we can switch that -->
   <!-- off and use a fixed value (1.0).                                      -->
   <Parameter name="Use idealized precipitation" type="bool" value="false"/>

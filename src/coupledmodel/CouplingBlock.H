@@ -107,7 +107,11 @@ public:
                     }
 
                     if (ierr != 0)
+                    {
+                        INFO ("Error in InsertGlobalValues: " << ierr);
+                        INFO (" Filled ? " << block_->Filled());
                         ERROR("Error in InsertGlobalValues", __FILE__, __LINE__);
+                    }
                 }
             }
             else

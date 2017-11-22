@@ -120,9 +120,6 @@ private:
     //! parallel precipitation field (overlapping)
     Teuchos::RCP<Epetra_Vector> localP_;
 
-    //! parallel E-P field (non-overlapping)
-    Teuchos::RCP<Epetra_Vector> EmiP_;
-    
     //! Atmosphere temperature importer
     Teuchos::RCP<Epetra_Import> atmosTimporter_;
 
@@ -235,8 +232,9 @@ public:
     double getPar(std::string const &parName) { return atmos_->getPar(parName); }
 
     //! Get derivatives of E and P wrt To and q
-    void getEPconstants(double &qdim, double &nuq,
-                        double &eta, double &dqso);
+    void getConstants(double &qdim, double &nuq,
+                      double &eta, double &dqso,
+                      double &dqdt);
     
     //! Get continuation parameter name
     std::string const getParName() { return atmos_->getParName(); }
@@ -283,9 +281,6 @@ public:
     //! Get precipitation at interface 
     Teuchos::RCP<Epetra_Vector> interfaceP();
 
-    //! Get E-P at interface 
-    Teuchos::RCP<Epetra_Vector> interfaceEmiP();
-
     //! Get integral condition coefficients
     Teuchos::RCP<Epetra_Vector> getIntCoeff() { return intcondCoeff_; } 
 
@@ -295,12 +290,27 @@ public:
     //! Get ocean dependency
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean);
 
-    //! Get row at the interface, XX is 1-based, i and j 0-based
+    //! Get row at the interface, XX is 1-based, i and j 0-based. The
+    //! result is also 0-based.
     int interface_row(int i, int j, int XX)
-        { return FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, l_-1, XX); }
+        {
+            if (XX > ATMOS_QQ_ && aux_ <= 0)
+                return -1;
+            
+            if (XX == ATMOS_PP_)
+                return dim_ - aux_;
+            
+            if (XX == ATMOS_PPL_)
+                return dim_ - aux_ + 1;
+            
+            if (XX == ATMOS_PPU_)
+                return dim_ - aux_ + 2;
+            
+            return FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, l_-1, XX);
+        }
 
     int loadState() { return loadStateFromFile(inputFile_); }
-    int saveState() { return saveStateToFile(outputFile_); }
+    int saveState() { return saveStateToFile(outputFile_);  }
 
 private:
 

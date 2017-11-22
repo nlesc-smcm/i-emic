@@ -53,7 +53,7 @@ namespace TRIOS
         for (int i = 0; i < dim; i++)
             MyGlobalElements[i] = i;
         
-        ColMap = Teuchos::rcp(new Epetra_Map(dim,dim,MyGlobalElements,0,*comm));
+        ColMap = Teuchos::rcp(new Epetra_Map(dim, dim, MyGlobalElements, 0, *comm));
         delete [] MyGlobalElements;
     }
 

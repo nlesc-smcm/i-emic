@@ -1,7 +1,7 @@
 
 JnC = load_numjac('JnC');
 
-n = 6; m = 6; l = 4; dfo = 6; dfa = 2;
+n = 6; m = 6; l = 4; dfo = 6; dfa = 2; aux = 1
 
 surfb = find_row(dfo, n, m ,l, 1, 1, 4, 1);
 surfe = find_row(dfo, n, m ,l, 6, 6, 4, dfo);
@@ -18,6 +18,9 @@ end
 
 for i = 1:dfa
     atm_idx = [atm_idx, (nocean+i:dfa:nocean+natmos)];
+end
+for i = 1:aux
+    atm_idx = [atm_idx, atm_idx(end) + i];
 end
 
 JnC22 = JnC(atm_idx, atm_idx);
@@ -36,7 +39,6 @@ numC12 = JnC(surfb:surfe, surfe+1:end);
 numC21 = JnC(surfe+1:end, surfb:surfe);
 numC11 = JnC(1:surfe, 1:surfe);
 numC22 = JnC(surfe+1:end, surfe+1:end);
-
 
 numC11 = numC11(oce_idx,oce_idx);
 C11    =    C11(oce_idx,oce_idx);
@@ -63,7 +65,6 @@ spy(numC22)
 
 figure(6);
 spy(abs(C22-numC22)>1e-7)
-
 
 figure(7)
 spy([JnC11, JnC12; JnC21, JnC22])

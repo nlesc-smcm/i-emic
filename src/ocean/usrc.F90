@@ -175,16 +175,17 @@ SUBROUTINE getparcs(param,value)
 end subroutine getparcs
 
 !***********************************************************
-SUBROUTINE getdeps(o_Ooa, o_Os, o_qdep)
+SUBROUTINE getdeps(o_Ooa, o_Os, o_gamma, o_eta)
   !     interface to get Ooa and other dependencies on external model
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_atm
   implicit none
-  real(c_double) o_Ooa, o_Os, o_qdep
-  o_Ooa  = Ooa
-  o_Os   = Os
-  o_qdep = - par(COMB) * par(SALT) * nus * eta
+  real(c_double) o_Ooa, o_Os, o_gamma, o_eta
+  o_Ooa   = Ooa
+  o_Os    = Os
+  o_gamma = - par(COMB) * par(SALT) * nus * eta
+  o_eta   = eta
 end subroutine getdeps
 
 !**********************************************************

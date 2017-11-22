@@ -478,7 +478,7 @@ TEST(Domain, numericalJacobian)
             comm->SumAll(&sum, &sum, 1);
             INFO("mat elements sum: " << sum);
             INFO("njc elements sum: " << njCsum);
-
+            
             EXPECT_NEAR(sum, njCsum, 1e-4);
 
         }

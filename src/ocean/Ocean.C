@@ -38,7 +38,7 @@ using Teuchos::rcp;
 extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
 extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(setparcs)(int*,double*);
-extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double*);
 extern "C" _SUBROUTINE_(get_constants)(double*, double*, double*);
 extern "C" _SUBROUTINE_(set_ep_constants)(double*, double*, double*, double*);
 
@@ -1015,18 +1015,15 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
     Teuchos::RCP<Epetra_Vector> atmosP  = atmos->interfaceP();
     THCM::Instance().setAtmosphereP(atmosP);
 
-    Teuchos::RCP<Epetra_Vector> atmosEmiP  = atmos->interfaceEmiP();
-    THCM::Instance().setAtmosphereEmiP(atmosEmiP);
-    
-    // We also need to know a few atmospheric constants to compute
-    // E, P and their derivatives w.r.t. SST (To) and humidity (q)
-    // These could be obtained at construction
-    // but I believe the call belongs here.
-    double qdim, nuq, eta, dqso;
-    atmos->getEPconstants( qdim, nuq, eta, dqso );
+    // We also need to know a few atmospheric constants to compute E,
+    // P and their derivatives w.r.t. SST (To) and humidity (q) These
+    // could be obtained at construction but, as they may depend on
+    // continuation parameters, the call belongs here.
+    double qdim, nuq, eta, dqso, dqdt;
+    atmos->getConstants( qdim, nuq, eta, dqso, dqdt);
 
     FNAME(set_ep_constants)( &qdim, &nuq, &eta, &dqso );
-   
+
     TIMER_STOP("Ocean: set atmosphere...");
 }
 
@@ -1069,18 +1066,21 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
     // this block has values -Ooa on the surface temperature points
-    double Ooa, Os, qdep;
-    FNAME(getdeps)(&Ooa, &Os, &qdep);
+    double Ooa, Os, gamma, eta;
+    FNAME(getdeps)(&Ooa, &Os, &gamma, &eta);
 
-    INFO("CouplingBlock: getBlock()... Ooa = " << Ooa << ", qdep = " << qdep);
-    
+    INFO("Ocean: getBlock() atmos specialization: Ooa = " << Ooa
+         << ", gamma = " << gamma << ", eta = " << eta);
+
     int T = 1; // (1-based) in the Atmosphere, temperature is the first unknown
     int Q = 2; // (1-based) in the Atmosphere, humidity is the second unknown
+    int P = 3; // (1-based) in the Atmosphere, precipitation is the final unknown
 
     double rowIntCon = THCM::Instance().getRowIntCon();
 
     // fill CRS struct
     int el_ctr = 0;
+    int col;
     for (int k = 0; k != L_; ++k)
         for (int j = 0; j != M_; ++j)
             for (int i = 0; i != N_; ++i)
@@ -1091,22 +1091,31 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                     {
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
-                            block->co.push_back(-Ooa);                            
+                            block->co.push_back(-Ooa);
                             block->jco.push_back(atmos->interface_row(i,j,T) );
                             el_ctr++;
                         }
                     }
                     else if ( (k == L_-1) && (xx == SS) && // surface S row
-                              FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, xx) != rowIntCon) 
+                              FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, xx) != rowIntCon)
                     {
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
-                            block->co.push_back(-qdep);
+                            // humidity dependency
+                            block->co.push_back(-gamma*eta);
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
+
+                            // precipitation dependency
+                            col = atmos->interface_row(i,j,P);
+                            if (col >= 0)
+                            {
+                                block->co.push_back(-gamma);
+                                block->jco.push_back(col);
+                                el_ctr++;
+                            }
                         }
                     }
-                        
                 }
 
     // final entry in beg ( == nnz)
@@ -1257,11 +1266,11 @@ int Ocean::saveStateToFile(std::string const &filename)
 int Ocean::loadStateFromFile(std::string const &filename)
 {
     INFO("Loading state from " << filename);
-    
+
     // To be sure that the state is properly initialized,
     // we obtain the state vector from THCM.
     state_ = THCM::Instance().getSolution();
-    
+
     // Check whether file exists
     std::ifstream file(filename);
     if (!file)
@@ -1292,7 +1301,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
 
     // Import state from HDF5 into state_ datamember
     state_->Import(*((*readState)(0)), *lin2solve, Insert);
- 
+
     INFO("   ocean state: ||x|| = " << Utils::norm(state_));
 
     // Interface between HDF5 and the THCM parameters,
@@ -1384,4 +1393,3 @@ void Ocean::setParameters(Teuchos::RCP<Teuchos::ParameterList> pars)
         setPar(parName, parValue);
     }
 }
-

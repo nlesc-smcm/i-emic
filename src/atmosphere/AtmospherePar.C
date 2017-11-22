@@ -26,7 +26,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     saveEveryStep_   (params->get("Save every step", false)),
     useIntCondQ_     (params->get("Use integral condition on q", true)),
     useFixedPrecip_  (params->get("Use idealized precipitation", false)),
-    
+
 
     precInitialized_ (false),
     recomputePrec_   (false)
@@ -35,7 +35,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 
     // Define degrees of freedom
     dof_ = ATMOS_NUN_;
-    dim_ = n_ * m_ * l_ * dof_;
+    dim_ = n_ * m_ * l_ * dof_ + aux_;
 
     // Set integral condition row
     if (useIntCondQ_)
@@ -99,7 +99,6 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     sst_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     E_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     P_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
-    EmiP_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -227,7 +226,7 @@ void AtmospherePar::setupIntCoeff()
 
     // test indices
     assert(inds.back()-1 < precipIntCoLocal->MyLength());
-    
+
     // fill local precipitation integration coefficients
     for (size_t idx = 0; idx != inds.size(); ++idx)
     {
@@ -239,9 +238,9 @@ void AtmospherePar::setupIntCoeff()
 
     // test
     assert((*precipIntCo_)[ATMOS_TT_-1] == (*intcondCoeff_)[ATMOS_QQ_-1]);
-    
+
     // Obtain total integration area (sum of absolute values)
-    precipIntCo_->Norm1(&totalArea_);    
+    precipIntCo_->Norm1(&totalArea_);
 
     INFO("AtmospherePar: total E,P area = " << totalArea_);
     INFO("AtmospherePar:    local dA[0] = " << (*precipIntCo_)[0]);
@@ -327,7 +326,7 @@ void AtmospherePar::computeRHS()
 
     // If we have row rowIntCon_
     int root = comm_->NumProc()-1;
-        
+
     if ( (rhs_->Map().MyGID(rowIntCon_)) && (comm_->MyPID() != root) )
     {
         ERROR("Integral should be on last processor!", __FILE__, __LINE__);
@@ -341,30 +340,30 @@ void AtmospherePar::computeRHS()
     //------------------------------------------------------------------
     // Specify precipitation integral in RHS if aux > 0
     //------------------------------------------------------------------
-    double qdim, nuq, eta, dqso;
-    atmos_->getEPconstants(qdim, nuq, eta, dqso);
-    
+    double qdim, nuq, eta, dqso, dqdt;
+    atmos_->getConstants(qdim, nuq, eta, dqso, dqdt);
+
     double sstInt = Utils::dot(precipIntCo_, sst_) *
         (eta / totalArea_) * ( dqso / qdim ) ;
-    
+
     // This is the same as the integral condition above so this can
     // probably be simplified. We can substitute it with 0 but for now
     // we leave it and test that later.
     double qInt = intcond * eta / totalArea_;
 
     // The integrals and P are on the same processor
-    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
-    int lid  = -1;    
-    
+    int last = FIND_ROW_ATMOS0( ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_ );
+    int lid  = -1;
+
     if ( rhs_->Map().MyGID(rowIntCon_) && (aux_ == 1) )
     {
         lid = rhs_->Map().LID(last + 1);
-        
+
         // F(P) = -P - eta / A * (q * dA') + (eta / A) * (dqso / qdim)
         // * (T * dA')
         (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt;
     }
-    
+
     TIMER_STOP("AtmospherePar: computeRHS...");
 }
 
@@ -377,7 +376,7 @@ void AtmospherePar::idealized(double precip)
     // local problem size
     int numMyElements        = assemblyMap_->NumMyElements();
     int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
-    
+
     // obtain view of assembly state
     double *state_tmp;
     localState_->ExtractView(&state_tmp);
@@ -396,10 +395,10 @@ void AtmospherePar::idealized(double precip)
     }
     // set solvemap state
     domain_->Assembly2Solve(*localState_, *state_);
-    
+
     INFO("Idealized state norm: " << Utils::norm(state_) );
-    
-    // obtain view of sst 
+
+    // obtain view of sst
     double *sst_tmp;
     localSST_->ExtractView(&sst_tmp);
 
@@ -478,18 +477,6 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceP()
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceEmiP()
-{
-    // Put parallel atmosphere state in serial model
-    distributeState();
-
-    // We need to obtain E and P fields based on our state
-    computeEP();
-
-    return EmiP_;
-}
-
-//==================================================================
 std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> ocean)
 {
     // The contribution of the ocean in the atmosphere
@@ -502,10 +489,10 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
     int el_ctr = 0;
-    int T = 5; // (1-based) in THCM temperature is the fifth unknown
+    int oceanTT = 5; // (1-based) in THCM temperature is the fifth unknown
 
-    // Get dependency of humidity on ocean temperature
-    double dqdt = atmos_->getDqDTo();
+    double qdim, nuq, eta, dqso, dqdt;
+    atmos_->getConstants(qdim, nuq, eta, dqso, dqdt);
 
     // loop over our unknowns
     for (int j = 0; j != m_; ++j)
@@ -529,10 +516,33 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
                         block->co.push_back(dqdt);
                     }
 
-                    block->jco.push_back(ocean->interface_row(i,j,T));
+                    block->jco.push_back(ocean->interface_row(i,j,oceanTT));
                     el_ctr++;
                 }
             }
+
+    // add dependencies of precipitation row
+    int qid;
+    double value;
+
+    if (aux_ == 1)
+    {
+        block->beg.push_back(el_ctr);
+        for (int j = 0; j != m_; ++j)
+            for (int i = 0; i != n_; ++i)
+            {
+                qid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                      i, j, l_-1, ATMOS_QQ_);
+
+                value = (*intcondGlob_)[0][qid] * (eta / totalArea_)
+                    * ( dqso / qdim );
+                    
+                block->co.push_back(value);
+                
+                block->jco.push_back(ocean->interface_row(i,j,oceanTT));
+                el_ctr++;
+            }
+    }
 
     block->beg.push_back(el_ctr);
 
@@ -676,7 +686,7 @@ void AtmospherePar::computeJacobian()
     std::cout << comm_->MyPID() << ": #beg " << localJac->beg.size() << std::endl;
     std::cout << comm_->MyPID() << ": #jco " << localJac->jco.size() << std::endl;
     std::cout << comm_->MyPID() << ": #co  " << localJac->co.size()  << std::endl;
-    
+
     assert(numMyElements == (int) localJac->beg.size() - 1);
     // loop over local elements
     int index, numentries;
@@ -697,8 +707,8 @@ void AtmospherePar::computeJacobian()
             // put values in Jacobian
             int ierr = jac_->ReplaceGlobalValues(assemblyMap_->GID(i),
                                                  numentries,
-                                                 values, indices);            
-            
+                                                 values, indices);
+
             // debugging
             if (ierr != 0)
             {
@@ -706,7 +716,7 @@ void AtmospherePar::computeJacobian()
                 for (int ee = 0 ; ee != numentries; ++ee)
                     std::cout << indices[ee] << " | " << values[ee] << " || ";
                 std::cout << std::endl;
-                
+
                 for (int ii = 0; ii < numentries; ++ii)
                 {
                     std::cout << "proc " << comm_->MyPID()
@@ -748,11 +758,11 @@ void AtmospherePar::computeJacobian()
     //------------------------------------------------------------------
     // Implementation of integrals:
     //  - integral condition on Q
-    //  - P integral in auxiliary row 
+    //  - P integral in auxiliary row
     //------------------------------------------------------------------
-    
+
     int root = comm_->NumProc()-1;
-    
+
     // If we have row rowIntCon_
     if ( (jac_->MyGRID(rowIntCon_)) && (comm_->MyPID() != root) )
     {
@@ -771,9 +781,9 @@ void AtmospherePar::computeJacobian()
     int gid;
 
     // Obtain some constants from local model
-    double qdim, nuq, eta, dqso;
-    atmos_->getEPconstants(qdim, nuq, eta, dqso);
-        
+    double qdim, nuq, eta, dqso, dqdt;
+    atmos_->getConstants(qdim, nuq, eta, dqso, dqdt);
+
     for (int k = 0; k != l_; ++k)
         for (int j = 0; j != m_; ++j)
             for (int i = 0; i != n_; ++i)
@@ -785,7 +795,7 @@ void AtmospherePar::computeJacobian()
                 ipvals[pos] = (-eta / totalArea_ ) * (*intcondGlob_)[0][gid];
                 pos++;
             }
-    
+
     // Add auxiliary dependencies
     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
     for (int aa = 1; aa <= aux_; ++aa)
@@ -800,7 +810,7 @@ void AtmospherePar::computeJacobian()
             ipinds[pos] = gid;
             ipvals[pos] = -1;
         }
-            
+
         pos++;
     }
 
@@ -830,7 +840,7 @@ void AtmospherePar::computeJacobian()
         {
             if (useIntCondQ_)
                 icerr = jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds);
-                    
+
             if (aux_ > 0)
                 iperr = jac_->InsertGlobalValues(last + 1, len, ipvals, ipinds);
         }
@@ -838,7 +848,7 @@ void AtmospherePar::computeJacobian()
 
     comm_->SumAll(&icerr, &icerrGlob, 1);
     comm_->SumAll(&iperr, &iperrGlob, 1);
-            
+
     if ((icerrGlob != 0) || (iperrGlob != 0))
     {
         INFO( "Insertion ERROR! " << icerr << " " << iperr << " filled = "
@@ -847,7 +857,7 @@ void AtmospherePar::computeJacobian()
         INFO( "  GRID: " << rowIntCon_);
         ERROR("Error during insertion/replacing of values in local Jacobian",
               __FILE__, __LINE__);
-    }        
+    }
 
     //------------------------------------------------------------------
     // Finalize matrix
@@ -869,51 +879,71 @@ void AtmospherePar::computeEP()
     // compute E in serial Atmosphere
     atmos_->computeEvaporation();
 
+    // compute/set precipitation P
+    int numGlobalElements = P_->Map().NumGlobalElements();
+    int numMyElements     = P_->Map().NumMyElements();
+
     // obtain view of E from serial Atmosphere
     std::shared_ptr<std::vector<double> > localE = atmos_->getE('V');
-
+        
     // assign obtained E values to distributed vector (overlapping)
     double *tmpE;
     localE_->ExtractView( &tmpE );
 
-
     int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
-
+        
     for (int i = 0; i != numMySurfaceElements; ++i)
     {
         tmpE[i] = (*localE)[i];
     }
-
+        
     // export overlapping into non-overlapping E values
     CHECK_ZERO(E_->Export(*localE_, *as2std_surf_, Zero));
 
-    // compute integral
-    double integral;
-    if (useFixedPrecip_)
-        integral = 1.0e-6;
-    else
-        integral = Utils::dot(precipIntCo_, E_) / totalArea_;
-
-    int numGlobalElements = P_->Map().NumGlobalElements();
-    int numMyElements     = P_->Map().NumMyElements();
-
-    assert((int) surfmask_->size() == numGlobalElements);
-
-    // fill P_ in parallel
-    int gid;
-    for (int i = 0; i != numMyElements; ++i)
+    // Without auxiliary unknowns we have to do the integral manually
+    if (aux_ <= 0)
     {
-        gid = P_->Map().GID(i);
-        if ((*surfmask_)[gid] == 0)
-            (*P_)[i] = integral;
+
+        // compute integral
+        double integral;
+        if (useFixedPrecip_)
+            integral = 1.0e-6;
+        else
+            integral = Utils::dot(precipIntCo_, E_) / totalArea_;
+        
+        
+        assert((int) surfmask_->size() == numGlobalElements);
+        
+        // fill P_ in parallel
+        int gid;
+        for (int i = 0; i != numMyElements; ++i)
+        {
+            gid = P_->Map().GID(i);
+            if ((*surfmask_)[gid] == 0)
+                (*P_)[i] = integral;
+        }
     }
-
-    // Create E-P field
-    EmiP_->Update(1.0, *E_, -1.0, *P_, 0.0);
-
-// #ifdef DEBUGGING_NEW
-//     INFO("AtmospherePar: precipitation P_[0] = " << (*P_)[0]);
-// #endif
+    else if (aux_ == 1)
+    {
+        double Pvalue = 0.0;
+        int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
+        int lid;
+        if (state_->Map().MyGID(last+1))
+        {
+            lid    = state_->Map().LID(last+1);
+            Pvalue = (*state_)[lid];
+        }
+        comm_->SumAll(&Pvalue, &Pvalue, 1.0);
+        
+        int gid;
+        for (int i = 0; i != numMyElements; ++i)
+        {
+            gid = P_->Map().GID(i);
+            if ((*surfmask_)[gid] == 0)
+                (*P_)[i] = Pvalue;
+        }
+    }
+    
 
     TIMER_STOP("AtmospherePar: compute E P...");
 }
@@ -943,10 +973,10 @@ void AtmospherePar::initializePrec()
 }
 
 //==================================================================
-void AtmospherePar::getEPconstants(double &qdim, double &nuq,
-                                   double &eta, double &dqso)
+void AtmospherePar::getConstants(double &qdim, double &nuq,
+                                 double &eta, double &dqso, double &dqdt)
 {
-    atmos_->getEPconstants(qdim, nuq, eta, dqso);
+    atmos_->getConstants(qdim, nuq, eta, dqso, dqdt);
 }
 
 //==================================================================
@@ -1029,7 +1059,7 @@ void AtmospherePar::createMatrixGraph()
     // Last ordinary row in the grid, probably equal to rowIntCon_,
     // i.e., the last non-auxiliary row.
     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, N-1, M-1, L-1, ATMOS_NUN_);
-            
+
     for (int k = K0; k <= K1; ++k)
         for (int j = J0; j <= J1; ++j)
             for (int i = I0; i <= I1; ++i)
@@ -1048,7 +1078,7 @@ void AtmospherePar::createMatrixGraph()
                 insert_graph_entry(indices, pos, i+1, j, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i, j-1, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_TT_, N, M, L);
-                
+
                 // T rows do not have dependencies on auxiliary unknowns
                 // for (int aa = 1; aa <= aux_; ++aa)
                 //     indices[pos++] = last + aa;
@@ -1095,7 +1125,7 @@ void AtmospherePar::createMatrixGraph()
                     icinds[pos] = gcid;
                     pos++;
                 }
-        
+
         // Although they effectively do not exist, we still need to
         // prepare dependencies on auxiliary unknowns as these are
         // needed when filling the subdomain Jacobians.
@@ -1131,7 +1161,7 @@ void AtmospherePar::createMatrixGraph()
             // Add the dependencies on auxiliary unknowns
             for (int aa = 1; aa <= aux_; ++aa)
                 auxinds[pos++] = last + aa;
-        
+
             assert(len == pos);
 
             CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(last + aa, len, auxinds));
@@ -1199,7 +1229,7 @@ int AtmospherePar::loadStateFromFile(std::string const &filename)
 
     if ( readState->GlobalLength() != domain_->GetSolveMap()->NumGlobalElements() )
         WARNING("Loading state from differ #procs", __FILE__, __LINE__);
-    
+
     // Create importer
     // target map: thcm domain SolveMap
     // source map: state with linear map as read by HDF5.Read
