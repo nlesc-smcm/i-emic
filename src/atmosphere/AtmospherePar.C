@@ -324,13 +324,22 @@ void AtmospherePar::computeRHS()
     //------------------------------------------------------------------
     // set integral condition in RHS
     //------------------------------------------------------------------
+
+    // If we have row rowIntCon_
+    int root = comm_->NumProc()-1;
+        
+    if ( (rhs_->Map().MyGID(rowIntCon_)) && (comm_->MyPID() != root) )
+    {
+        ERROR("Integral should be on last processor!", __FILE__, __LINE__);
+    }
+
     double intcond = Utils::dot(intcondCoeff_, state_);
 
     if (rhs_->Map().MyGID(rowIntCon_) && useIntCondQ_)
         (*rhs_)[rhs_->Map().LID(rowIntCon_)] = intcond;
 
     //------------------------------------------------------------------
-    // specify precipitation integral in RHS
+    // Specify precipitation integral in RHS if aux > 0
     //------------------------------------------------------------------
     double qdim, nuq, eta, dqso;
     atmos_->getEPconstants(qdim, nuq, eta, dqso);
@@ -347,15 +356,9 @@ void AtmospherePar::computeRHS()
     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
     int lid  = -1;
 
-    int root = comm_->NumProc()-1;
     
-    // If we have row rowIntCon_
-    if ( (rhs_->Map().MyGID(rowIntCon_)) && (comm_->MyPID() != root) )
-    {
-        ERROR("Integral should be on last processor!", __FILE__, __LINE__);
-    }
-
-    if ( rhs_->Map().MyGID(rowIntCon_) )
+    
+    if ( rhs_->Map().MyGID(rowIntCon_) && (aux_ == 1) )
     {
         lid = rhs_->Map().LID(last + 1);
         

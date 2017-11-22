@@ -377,7 +377,7 @@ void Atmosphere::zeroState()
 void Atmosphere::zeroOcean()
 {
     // Set sst to zero
-    sst_ = std::make_shared<std::vector<double> >(n_ * m_, 0.0);
+    *sst_ = std::vector<double>(m_ * n_, 0.0);
 }
 
 //-----------------------------------------------------------------------------
