@@ -26,7 +26,6 @@ JnC12 = JnC(oce_idx, atm_idx);
 JnC21 = JnC(atm_idx, oce_idx);
 
 
-
 C11 = load('C11'); C11 = spconvert(C11);
 C12 = load('C12'); C12 = spconvert(C12);
 C21 = load('C21'); C21 = spconvert(C21);

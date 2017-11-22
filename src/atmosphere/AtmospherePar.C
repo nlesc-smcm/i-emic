@@ -354,9 +354,7 @@ void AtmospherePar::computeRHS()
 
     // The integrals and P are on the same processor
     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
-    int lid  = -1;
-
-    
+    int lid  = -1;    
     
     if ( rhs_->Map().MyGID(rowIntCon_) && (aux_ == 1) )
     {
@@ -365,11 +363,7 @@ void AtmospherePar::computeRHS()
         // F(P) = -P - eta / A * (q * dA') + (eta / A) * (dqso / qdim)
         // * (T * dA')
         (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt;
-        
-        std::cout << "--" << (*rhs_)[lid] << "---" << (*state_)[lid] << " "
-                  << qInt << " " << sstInt << std::endl;        
     }
-
     
     TIMER_STOP("AtmospherePar: computeRHS...");
 }

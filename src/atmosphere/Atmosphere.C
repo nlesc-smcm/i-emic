@@ -206,7 +206,7 @@ void Atmosphere::setup()
     // Initialize fields for evaporation and precipitation at surface
     E_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
-    // Idealized precipitation, for now
+    // Precipitation 
     P_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
     // Initialize land/ocean surface temperature
@@ -468,12 +468,13 @@ void Atmosphere::computeJacobian()
 
     if (aux_ == 1)
     {
-        // Central P dependency can be implemented in this way. Note that
-        // we can add P dependencies in non-P rows, but it is not possible
-        // to use the stencil approach to add dependencies to a P-row, as
-        // there is only a single row corrsponding to, e.g., ATMOS_PP_.
-        // The nested loop in assemble would give some trouble. The final
-        // P-row is implemented from the parallel side.
+        // Central P dependency can be implemented in this way. Note
+        // that we can add P dependencies in non-P rows, but it is not
+        // possible to use the stencil approach to add dependencies to
+        // a P-row, as there is only a single row corrsponding to,
+        // e.g., ATMOS_PP_. The nested loop in assemble would give
+        // some trouble. The final P-row is implemented from the
+        // parallel side. (Similar to the integral condition.)
         qc.scale(-comb_ * humf_ * nuq_);
         Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
     }
@@ -557,7 +558,6 @@ double Atmosphere::matvec(int row)
     for (int j = first; j <= last; ++j)
         result += co_[j-1] * (*state_)[jco_[j-1]-1];
 
-
     TIMER_STOP("Atmosphere: matvec...");
     return result;
 }
@@ -567,8 +567,6 @@ void Atmosphere::forcing()
 {
     double value;
     int temRow, humRow, surfaceRow;
-
-    // INFO("Atmosphere::forcing P[0] = " << (*P_)[0] );
 
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
@@ -607,15 +605,11 @@ void Atmosphere::forcing()
                 // is only for ocean surface temperature
 
                 // E (evaporation) forcing (ocean state part)
-                value =  nuq_ * eta_ * ( 1.0 / qdim_ )
-                    * dqso_ * (*sst_)[surfaceRow-1];
-
-                // P (precipitation) forcing
-                value -=  nuq_ * (*P_)[surfaceRow-1];
+                value =  nuq_ * eta_ * ( dqso_ / qdim_ )
+                    * (*sst_)[surfaceRow-1];
 
                 // Apply continuation control parameters
                 value *= comb_ * humf_ ;
-
             }
             frc_[humRow-1] = value;
         }

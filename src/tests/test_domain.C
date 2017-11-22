@@ -327,7 +327,7 @@ TEST(Domain, MatVec)
     try
     {
         atmos->getState('V')->PutScalar(0.01);
-        atmos->setPar(0.01);
+        atmos->setPar(0.1);
         atmos->computeJacobian();
         mat = atmos->getJacobian();
     }
@@ -432,8 +432,73 @@ TEST(Domain, AtmosRHS)
     
     comm->SumAll(&Prhs, &Prhs, 1);
     EXPECT_EQ(Prhs, -defaultP);
+}
 
-    // RHS verder testen, forcing is nog niet OK
+//------------------------------------------------------------------
+TEST(Domain, numericalJacobian)
+{
+    // only do this test for small problems in serial
+    int nmax = 2e3;
+    
+    if ( (comm->NumProc() == 1) ||
+         (atmos->getState('V')->GlobalLength() < nmax) )
+    {
+        bool failed = false;    
+        try
+        {
+            INFO("compute njC");
+            
+            NumericalJacobian<std::shared_ptr<AtmospherePar>,
+                              Teuchos::RCP<Epetra_Vector> > njC;
+
+            njC.setTolerance(1e-12);
+            njC.seth(1e2);
+            njC.compute(atmos, atmos->getState('V'));
+
+            std::string fnameJnC("JnC");
+            
+            INFO(" Printing Numerical Jacobian " << fnameJnC);
+            
+            njC.print(fnameJnC);
+
+            double njCsum = njC.sumValues();
+
+            // create sum of values in mat
+            Epetra_Vector ones(*standardMap);
+            Epetra_Vector resl(*standardMap);
+            ones.PutScalar(1.0);
+            
+            mat->Apply(ones, resl);
+            
+            int numMyElements = standardMap->NumMyElements();
+            double sum = 0;
+            for (int i = 0; i != numMyElements; ++i)
+                sum += resl[i];
+            
+            comm->SumAll(&sum, &sum, 1);
+            INFO("mat elements sum: " << sum);
+            INFO("njc elements sum: " << njCsum);
+
+            EXPECT_NEAR(sum, njCsum, 1e-4);
+
+        }
+        catch (...)
+        {
+            failed = true;
+            throw;
+        }
+        EXPECT_EQ(failed, false);
+    }
+    
+    if (comm->NumProc() != 1)
+    {
+        INFO("****Numerical Jacobian test cannot run in parallel****");
+    }
+    
+    if (atmos->getState('V')->GlobalLength() > nmax)
+    {
+        INFO("****Numerical Jacobian test cannot run for this problem size****");
+    }
 }
 
 //------------------------------------------------------------------

@@ -75,8 +75,7 @@ public:
 						values_.push_back((*Fview)[i]);
 						rowIdx_.push_back(i);
 						elctr++;
-					}								
-				
+					}				
 			}
 			
 			colPtr_.push_back(elctr);
@@ -103,6 +102,14 @@ public:
     void setTolerance(double tol) { tol_ = tol; }
 
     void seth(double h) { h_ = h; }
+
+    double sumValues()
+        {
+            double sum = 0;
+            for (auto &el: values_)
+                sum += el;
+            return sum;
+        }
 };
 
 
