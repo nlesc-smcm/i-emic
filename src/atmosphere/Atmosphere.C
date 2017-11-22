@@ -42,6 +42,12 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
 {
     INFO("Atmosphere: constructor for parallel use...");
 
+    // Define domain
+    xmin_glob_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
+    xmax_glob_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
+    ymin_glob_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
+    ymax_glob_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
+    
     // Set non-grid (domain decomposition) related parameters
     setParameters(params);
 
@@ -74,10 +80,16 @@ Atmosphere::Atmosphere(Teuchos::RCP<Teuchos::ParameterList> params)
     setParameters(params);
 
     // Define domain
-    xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
-    xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
-    ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
-    ymax_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
+    xmin_glob_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
+    xmax_glob_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
+    ymin_glob_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
+    ymax_glob_ = params->get("Global Bound ymax", 74.0)  * PI_ / 180.0;
+
+    // Global domain is the local domain in the serial case
+    xmin_ = xmin_glob_;
+    xmax_ = xmax_glob_;
+    ymin_ = ymin_glob_;
+    ymax_ = ymax_glob_;
 
     parallel_ = false; // this is not the constructor for parallel use.
 
@@ -322,14 +334,14 @@ void Atmosphere::idealizedOcean()
     for (int i = 1; i <= n_; ++i)
         for (int j = 1; j <= m_; ++j)
         {
-            value = comb_ * sunp_ * cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+            value =  cos(PI_*(yc_[j]-ymin_glob_)/(ymax_glob_-ymin_glob_));
             row   = find_surface_row(i,j) - 1;
             (*sst_)[row] = value;
         }
-}
+}                                         
 
 //-----------------------------------------------------------------------------
-void Atmosphere::idealizedState()
+void Atmosphere::idealizedState(double precip)
 {
     // put idealized values in atmosphere
     double valueTT, valueQQ, valuePP;
@@ -337,32 +349,29 @@ void Atmosphere::idealizedState()
     for (int i = 1; i <= n_; ++i)
         for (int j = 1; j <= m_; ++j)
         {
-            valueTT = cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
-            valueQQ = cos(PI_*(yc_[j]-ymin_)/(ymax_-ymin_));
+            valueTT = cos(PI_*(yc_[j]-ymin_glob_)/(ymax_glob_-ymin_glob_));
+            valueQQ = cos(PI_*(yc_[j]-ymin_glob_)/(ymax_glob_-ymin_glob_));
             rowTT   = find_row(i,j,l_,ATMOS_TT_)-1;
             rowQQ   = find_row(i,j,l_,ATMOS_QQ_)-1;
             (*state_)[rowTT] = valueTT;
-            (*state_)[rowQQ] = valueQQ;
+            (*state_)[rowQQ] = valueQQ * dqso_ / qdim_;
         }
     
     // Compute evaporation based on idealized sst and q
     computeEvaporation();
 
-    // We need integral coefficients
-    setupIntCoeff();
-
     // Set idealized precipitation
     rowPP = find_row(n_,m_,l_,ATMOS_PP_) - 1;
 
-    valuePP = Utils::dot(*precipIntCo_, *E_) / totalArea_;
+    valuePP = precip;
     (*state_)[rowPP] = valuePP;
 }
 
 //------------------------------------------------------------------
-void Atmosphere::idealized()
+void Atmosphere::idealized(double precip)
 {
     idealizedOcean();        
-    idealizedState();
+    idealizedState(precip);
 }
 
 //-----------------------------------------------------------------------------

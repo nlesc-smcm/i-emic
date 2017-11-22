@@ -406,8 +406,14 @@ TEST(Domain, AtmosRHS)
 {
     // Use idealized values in atmosphere model
     atmos->getState('V')->PutScalar(0.0);
+
+    EXPECT_EQ(atmos->getState('V')->GlobalLength(), n * m * l * dof + aux);
+    
     atmos->getSolution('V')->PutScalar(0.0);
-    atmos->idealized();
+
+    double defaultP = 123.456;
+    
+    atmos->idealized(defaultP);
     atmos->computeRHS();
     Teuchos::RCP<Epetra_Vector> rhs = atmos->getRHS('C');
 
@@ -423,8 +429,9 @@ TEST(Domain, AtmosRHS)
         lid = standardMap->LID(last);
         Prhs = (*rhs)[lid];
     }
+    
     comm->SumAll(&Prhs, &Prhs, 1);
-    INFO("   F(P) = " << Prhs);
+    EXPECT_EQ(Prhs, -defaultP);
 
     // RHS verder testen, forcing is nog niet OK
 }

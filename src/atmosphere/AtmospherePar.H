@@ -248,7 +248,7 @@ public:
 
     //! Let the atmos object use idealized values,
     //! mainly for testing purposes
-    void idealized();
+    void idealized(double defP = 1.0);
 
     //! Obtain problem size (mainly for testing)
     int dim() { return dim_; }

@@ -370,23 +370,20 @@ void AtmospherePar::computeRHS()
                   << qInt << " " << sstInt << std::endl;        
     }
 
-    INFO(" sst norm: " << Utils::norm(sst_) );
-    INFO(" state norm: " << Utils::norm(state_) );
-
     
     TIMER_STOP("AtmospherePar: computeRHS...");
 }
 
 //==================================================================
-void AtmospherePar::idealized()
+void AtmospherePar::idealized(double precip)
 {
     // initialize local rhs with idealized values
-    atmos_->idealized();
+    atmos_->idealized(precip);
 
     // local problem size
     int numMyElements        = assemblyMap_->NumMyElements();
-    int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();    
-
+    int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
+    
     // obtain view of assembly state
     double *state_tmp;
     localState_->ExtractView(&state_tmp);
@@ -405,7 +402,9 @@ void AtmospherePar::idealized()
     }
     // set solvemap state
     domain_->Assembly2Solve(*localState_, *state_);
-
+    
+    INFO("Idealized state norm: " << Utils::norm(state_) );
+    
     // obtain view of sst 
     double *sst_tmp;
     localSST_->ExtractView(&sst_tmp);
@@ -424,6 +423,8 @@ void AtmospherePar::idealized()
 
     // Export local values to distributed non-overlapping sst_
     CHECK_ZERO( sst_->Export( *localSST_, *as2std_surf_, Zero ) );
+
+    INFO("Idealized   sst norm: " << Utils::norm(sst_) );
 }
 
 //==================================================================

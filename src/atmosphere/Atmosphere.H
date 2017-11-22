@@ -52,8 +52,10 @@ class Atmosphere
 
     std::shared_ptr<DependencyGrid> Al_;
 
-    double xmin_, xmax_; //! limits in x-direction
-    double ymin_, ymax_; //! limits in y-direction
+    double xmin_, xmax_;           //! local  limits in x-direction
+    double ymin_, ymax_;           //! local  limits in y-direction
+    double xmin_glob_, xmax_glob_; //! global limits in x-direction
+    double ymin_glob_, ymax_glob_; //! global limits in y-direction
 
     double dx_, dy_; //! grid increments
 
@@ -275,8 +277,8 @@ public:
 
     //! Put default fields in atmosphere and ocean
     void idealizedOcean();
-    void idealizedState();
-    void idealized();
+    void idealizedState(double defP = 1.0);
+    void idealized(double defP = 1.0);
     void zeroOcean();
     void zeroState();
     
