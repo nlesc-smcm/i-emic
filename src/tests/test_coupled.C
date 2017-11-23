@@ -169,6 +169,9 @@ TEST(CoupledModel, computeJacobian)
         // Set a small parameter
         coupledModel->setPar(0.1);
 
+        // randomize state
+        coupledModel->getState('V')->Random();
+
         coupledModel->computeJacobian();
         Teuchos::RCP<Epetra_CrsMatrix> atmosJac = atmos->getJacobian();
         Teuchos::RCP<Epetra_CrsMatrix> oceanJac = ocean->getJacobian();
@@ -193,32 +196,30 @@ TEST(CoupledModel, computeJacobian)
 TEST(CoupledModel, numericalJacobian)
 {
     // only do this test for small problems in serial
-    int nmax = 1e3;
-    
+    int nmax = 2e3;
+
     if ( (comm->NumProc() == 1) &&
          (coupledModel->getState('V')->GlobalLength() < nmax) )
     {
-        bool failed = false;    
+        bool failed = false;
         try
         {
             INFO("compute njC");
-            
-            // Set a small parameter
-            coupledModel->setPar(0.1);
-    
+
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> > njC;
 
-            njC.setTolerance(1e-14);
-            njC.seth(1e2);
+            njC.setTolerance(1e-10);
+            njC.seth(1);
             njC.compute(coupledModel, coupledModel->getState('V'));
 
             std::string fnameJnC("JnC");
-            
+
             INFO(" Printing Numerical Jacobian " << fnameJnC);
-            
+
             njC.print(fnameJnC);
 
+            // --> todo test equality of element sums (see test_domain.C)
         }
         catch (...)
         {
@@ -227,12 +228,12 @@ TEST(CoupledModel, numericalJacobian)
         }
         EXPECT_EQ(failed, false);
     }
-    
+
     if (comm->NumProc() != 1)
     {
         INFO("****Numerical Jacobian test cannot run in parallel****");
     }
-    
+
     if (coupledModel->getState('V')->GlobalLength() > nmax)
     {
         INFO("****Numerical Jacobian test cannot run for this problem size****");
@@ -241,7 +242,7 @@ TEST(CoupledModel, numericalJacobian)
 
 //------------------------------------------------------------------
 // We need this information from THCM
-extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double*);
 
 TEST(CoupledModel, applyMatrix)
 {
@@ -271,6 +272,9 @@ TEST(CoupledModel, applyMatrix)
         Teuchos::RCP<Epetra_MultiVector> oceanVec = x->First();
         Teuchos::RCP<Epetra_MultiVector> atmosVec = x->Second();
 
+        int n = ocean->getNdim();
+        int m = ocean->getMdim();
+        int l = ocean->getLdim();
         double value[3] = {1.234, 2.12, -23.5};
 
         // Test atmos -> ocean coupling
@@ -282,25 +286,45 @@ TEST(CoupledModel, applyMatrix)
             C12.applyMatrix(*atmosVec, *oceanVec);
 
             // Get ocean parameters
-            double Ooa, Os, qdep;
-            FNAME(getdeps)(&Ooa, &Os, &qdep);
+            double Ooa, Os, gamma, eta;
+            FNAME(getdeps)(&Ooa, &Os, &gamma, &eta);
 
-            double max = 0;
-            double el;
-            for (int i = 0; i != oceanVec->MyLength(); ++i)
+            // Test first surface element (temperature)
+            int surfbT = FIND_ROW2(_NUN_, n, m, l, 0, 0, l-1, TT);
+
+            INFO( "first surface element TT " << surfbT );
+
+            int lid;
+            double surfval;
+            if (oceanVec->Map().MyGID(surfbT))
             {
-                el = std::abs( (*oceanVec)[0][i] );
-                max = (el > max) ? el : max;
+                lid = oceanVec->Map().LID(surfbT);
+                surfval = (*oceanVec)[0][lid];
+                EXPECT_NEAR(-Ooa * value[v], surfval , 1e-7);
             }
 
-            EXPECT_NEAR( std::abs(-Ooa * value[v]), max, 1e-7);
+            // Test first surface element (salinity)
+            int surfbS = FIND_ROW2(_NUN_, n, m, l, 0, 0, l-1, SS);
+            INFO( "first surface element SS " << surfbS );
+
+            if (oceanVec->Map().MyGID(surfbS))
+            {
+                lid = oceanVec->Map().LID(surfbS);
+                surfval = (*oceanVec)[0][lid];
+                EXPECT_NEAR( (-eta * gamma - gamma ) *value[v], surfval , 1e-7);
+            }
         }
+
+        double qdim, nuq, eta, dqso, dqdt;
+        atmos->getConstants(qdim, nuq, eta, dqso, dqdt);
 
         // Test ocean -> atmos coupling
         for (int v = 0; v != 3; ++v)
         {
+            // Put values in temperature domain points. Atmosphere
+            // only depends on sst.
             oceanVec->PutScalar(0.0);
-            for (int i = 4; i < oceanVec->MyLength(); i+=6)
+            for (int i = TT-1; i < oceanVec->MyLength(); i += _NUN_)
             {
                 (*oceanVec)[0][i] = value[v];
             }
@@ -309,34 +333,56 @@ TEST(CoupledModel, applyMatrix)
 
             C21.applyMatrix(*oceanVec, *atmosVec);
 
-            double max = 0;
-            double el;
-            for (int i = 0; i != atmosVec->MyLength(); ++i)
+            // assume single atmosphere layer
+            l = 1;
+
+            // test atmos temperature point
+            int surfbT = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, 0, 0, l-1, ATMOS_TT_);
+
+            int lid;
+            double surfval;
+            if (atmosVec->Map().MyGID(surfbT))
             {
-                el = std::abs( (*atmosVec)[0][i] );
-                max = (el > max) ? el : max;
+                lid = atmosVec->Map().LID(surfbT);
+                surfval = (*atmosVec)[0][lid];
+                EXPECT_NEAR( value[v], surfval, 1e-7);
             }
-            EXPECT_NEAR( std::abs(value[v]), max, 1e-7);
 
-            oceanVec->PutScalar(0.0);
-            for (int i = 3; i < oceanVec->MyLength(); i+=6)
+            // Test atmos humidity point
+            int surfbQ = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, 0, 0, l-1, ATMOS_QQ_);
+
+            if (atmosVec->Map().MyGID(surfbQ))
             {
-                (*oceanVec)[0][i] = value[v];
+                lid = atmosVec->Map().LID(surfbQ);
+                surfval = (*atmosVec)[0][lid];
+                EXPECT_NEAR( dqdt * value[v], surfval, 1e-7);
             }
 
-            atmosVec->PutScalar(0.0);
-            C21.applyMatrix(*oceanVec, *atmosVec);
+            // Test final element in range (results from sst integral)
 
-            max = 0;
-            for (int i = 0; i != atmosVec->MyLength(); ++i)
+            // First check if we have auxiliary unknowns:
+            if (atmosVec->GlobalLength() > ATMOS_NUN_ * m * n * l)
             {
-                el = std::abs( (*atmosVec)[0][i] );
-                max = (el > max) ? el : max;
-            }
-            EXPECT_NE( std::abs(value[v]), max);
+                Teuchos::RCP<Epetra_Vector> precipintco = atmos->getPrecipIntCo();
+                double totalArea;
+                precipintco->Norm1(&totalArea);
 
+                Teuchos::RCP<Epetra_Vector> ones =
+                    Teuchos::rcp(new Epetra_Vector(*precipintco));
+                ones->PutScalar(1.0);
+
+                double sstInt = Utils::dot(precipintco, ones);
+                double intval = sstInt * (eta / totalArea) * (dqso / qdim);
+
+                int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);
+                if (atmosVec->Map().MyGID(last + 1))
+                {
+                    lid = atmosVec->Map().LID(last + 1);
+                    surfval = (*atmosVec)[0][lid];
+                    EXPECT_NEAR( intval * value[v], surfval, 1e-7);
+                }
+            }
         }
-
     }
     catch (...)
     {
@@ -393,8 +439,8 @@ TEST(CoupledModel, Synchronization)
         failed = true;
         throw;
     }
-    EXPECT_EQ(failed, false);    
-    
+    EXPECT_EQ(failed, false);
+
     // Obtain atmosphere temperature existing in ocean
     Teuchos::RCP<Epetra_Vector> oceanAtmosT  = ocean->getLocalAtmosT();
 
@@ -432,7 +478,7 @@ TEST(CoupledModel, Synchronization)
 
     // Randomize combined state
     stateV->Random();
-    
+
     try
     {
         // At RHS computation the coupledModel synchronizes the states
@@ -456,7 +502,7 @@ TEST(CoupledModel, Synchronization)
 
     // Precipitation should have been calculated in the atmosphere model
     Teuchos::RCP<Epetra_Vector> oceanAtmosP = ocean->getLocalAtmosP();
-        
+
 #ifdef GNU
     Utils::print(oceanAtmosT,  "oceanAtmosT" +
                  std::to_string(oceanAtmosT->Map().Comm().MyPID()) + ".txt");
@@ -479,16 +525,16 @@ TEST(CoupledModel, Hashing)
     EXPECT_EQ(hash1, hash2);
 
     x->Scale(1.0001);
-    
+
     std::size_t hash3 = x->hash(); INFO(" hash3 = " << hash3);
 
     EXPECT_NE(hash2, hash3);
-    
+
     x->PutScalar(1.00001);
     std::size_t hash4 = x->hash(); INFO(" hash4 = " << hash4);
-    
+
     EXPECT_NE(hash3, hash4);
-    
+
 }
 
 //------------------------------------------------------------------
@@ -534,7 +580,7 @@ int main(int argc, char **argv)
     comm->Barrier();
     std::cout << "TEST exit code proc #" << comm->MyPID()
               << " " << out << std::endl;
-    
+
     MPI_Finalize();
     return out;
 }

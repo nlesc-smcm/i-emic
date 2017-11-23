@@ -51,13 +51,13 @@
 
   <!-- global number of grid points in x,y and z-directions       -->
   <!-- we only have a single layer in the vertical                -->
-  <Parameter name="Global Grid-Size n" type="int" value="8"   />
-  <Parameter name="Global Grid-Size m" type="int" value="8"   />
+  <Parameter name="Global Grid-Size n" type="int" value="6"   />
+  <Parameter name="Global Grid-Size m" type="int" value="6"   />
 
   <!-- Preconditioner parameters.                                                -->
   <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.                -->
   <!-- Preconditioning can be used as a pure linear solver as well, in that case -->
   <!-- the overlap level should be significant (5 or higher).                    -->
-  <Parameter name="Ifpack overlap level" type="int" value="0" />
+  <Parameter name="Ifpack overlap level" type="int" value="2" />
 
 </ParameterList>

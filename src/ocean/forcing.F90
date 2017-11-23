@@ -113,15 +113,16 @@ SUBROUTINE forcing
 
   !write(*,*) "salcor      ", salcor,      " spertcor      ", spertcor
   !write(*,*)  " dQdq        ", par(COMB)*par(SALT)*nus*(-eta)
-  !write(*,*)  " Ooa         ", Ooa
-  !write(*,*)  " emip(1,1)   ", emip(1,1) !, "qatm(2,2)   ", qatm(2,2)
-  !write(*,*) " par(BIOT)   ", par(BIOT)
+  !write(*,*)  " par(COMB)   ", par(COMB)
+  !write(*,*)  " par(SALT)   ", par(SALT)
+  !write(*,*)  " nus         ", nus !, "qatm(2,2)   ", qatm(2,2)
+  !write(*,*)  " gamma       ", gamma
   
   do j=1,m
      do i=1,n
         ! nus*(E-P) without the sst dependency, which is taken care of in usrc.F90
         if (coupled_atm.eq.1) then
-           Frc(find_row2(i,j,l,SS)) =  gamma * ( -eta * qatm(i,j) - pfield(i,j) )
+           Frc(find_row2(i,j,l,SS)) = gamma * ( -eta * qatm(i,j) - pfield(i,j) )
         else
            Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &
                 par(SPER) * (1 - SRES + SRES*par(BIOT)) * ( spert(i,j) - spertcor )

@@ -99,9 +99,6 @@ public:
                     
                     for (int j = 0; j < numentries; ++j)
                     {
-                        std::cout << maxnnz << " " << index << " "
-                                  << j << " " << index + j << std::endl;
-                        
                         indices[j] = blockCRS->jco[index+j];
                         values[j]  = blockCRS->co[index+j];
                     }
