@@ -49,13 +49,42 @@ C22    =    C22(atm_idx,atm_idx);
 figure(1)
 JnCr = [JnC11, JnC12; JnC21, JnC22];
 spy(JnCr)
+title('C')
 
-figure(2)
+tol = 1e-5
+
+diff11 = abs(C11 - numC11)./abs(C11) > tol;
+if sum(diff11(:)) > 0
+    figure(2)
+    diff11 = abs(C11 - numC11)./abs(C11);
+    imagesc(diff11); colorbar
+    title('C11 diff')    
+    
+end
+
 C12    = C12(surfb:end,:);
 numC12 = numC12(1:end-1,:);
-diff12 = abs(C12 - numC12)./abs(C12) > 1e-5;
-spy(diff12);
+diff12 = abs(C12 - numC12)./abs(C12) > tol;
+if sum(diff12(:)) > 0
+    figure(3)
+    spy(diff12)
+    title('C12 diff')    
+end
 
-numC12(1:20,:)
+C21    = C21(:,surfb:end);
+numC21 = numC21(:,1:end-1);
+diff21 = abs(C21 - numC21)./abs(C21) > tol;
+if sum(diff21(:)) > 0
+    figure(4)
+    spy(diff21)
+    title('C21 diff')    
+end
+
+diff22 = abs(C22 - numC22)./abs(C22) > tol;
+if sum(diff22(:)) > 0
+    figure(5)
+    spy(diff22)
+    title('C22 diff')    
+end
 
 

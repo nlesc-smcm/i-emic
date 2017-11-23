@@ -236,9 +236,6 @@ void AtmospherePar::setupIntCoeff()
     // Export assembly map surface integration coeffs to standard map
     CHECK_ZERO( precipIntCo_->Export( *precipIntCoLocal, *as2std_surf_, Zero ) );
 
-    // test
-    assert((*precipIntCo_)[ATMOS_TT_-1] == (*intcondCoeff_)[ATMOS_QQ_-1]);
-
     // Obtain total integration area (sum of absolute values)
     precipIntCo_->Norm1(&totalArea_);
 
@@ -530,18 +527,19 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
         block->beg.push_back(el_ctr);
         for (int j = 0; j != m_; ++j)
             for (int i = 0; i != n_; ++i)
-            {
-                qid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
-                                      i, j, l_-1, ATMOS_QQ_);
+                if ( (*surfmask_)[j*n_+i] == 0)   // non-land
+                {
+                    qid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                          i, j, l_-1, ATMOS_QQ_);
 
-                value = (*intcondGlob_)[0][qid] * (eta / totalArea_)
-                    * ( dqso / qdim );
+                    value = (*intcondGlob_)[0][qid] * (eta / totalArea_)
+                        * ( dqso / qdim );
                     
-                block->co.push_back(value);
+                    block->co.push_back(value);
                 
-                block->jco.push_back(ocean->interface_row(i,j,oceanTT));
-                el_ctr++;
-            }
+                    block->jco.push_back(ocean->interface_row(i,j,oceanTT));
+                    el_ctr++;
+                }
     }
 
     block->beg.push_back(el_ctr);
