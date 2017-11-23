@@ -586,7 +586,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         int L=domain->GlobalL();
 
         rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
-        INFO("integral condition for S is in global row " << rowintcon_);
+        INFO("THCM: integral condition for S is in global row " << rowintcon_);
             
         
         intcond_coeff = Teuchos::rcp(new Epetra_Vector(*SolveMap));
@@ -737,7 +737,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         // if (std::abs(intcond) > .01)
         // {
         //     INFO("Salinity integral condition (should be 0): " << intcond);
-        // }        
+        // }
     }
 #endif
 

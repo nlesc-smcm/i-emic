@@ -66,11 +66,11 @@ public:
                 (modelRow_->dof() + modelCol_->dof()) * 27 + 1;
             
             // indices array
-            int indices[maxnnz];
+            std::vector<int> indices(maxnnz, 0);
 
             // values array
-            double values[maxnnz];
-
+            std::vector<double> values(maxnnz, 0.0);
+            
             // local size
             int numMyElements = block_->RowMap().NumMyElements();
             int numGlElements = block_->RowMap().NumGlobalElements();
@@ -86,8 +86,22 @@ public:
                     gRow       = block_->RowMap().GID(i);
                     index      = blockCRS->beg[gRow];
                     numentries = blockCRS->beg[gRow+1] - index;
+
+                    // if we encounter a dense row (probably an integral condition)
+                    if (numentries > maxnnz)
+                    {
+                        std::cout << "CouplingBlock: encountered dense row "
+                                  << gRow << std::endl;
+                        
+                        indices = std::vector<int>(numentries, 0);
+                        values  = std::vector<double>(numentries, 0);
+                    }
+                    
                     for (int j = 0; j < numentries; ++j)
                     {
+                        std::cout << maxnnz << " " << index << " "
+                                  << j << " " << index + j << std::endl;
+                        
                         indices[j] = blockCRS->jco[index+j];
                         values[j]  = blockCRS->co[index+j];
                     }
@@ -97,13 +111,13 @@ public:
                     {
                         ierr =
                             block_->ReplaceGlobalValues(gRow, numentries,
-                                                        values, indices);
+                                                        &values[0], &indices[0]);
                     }
                     else
                     {
                         ierr =
                             block_->InsertGlobalValues(gRow, numentries,
-                                                       values, indices);
+                                                       &values[0], &indices[0]);
                     }
 
                     if (ierr != 0)

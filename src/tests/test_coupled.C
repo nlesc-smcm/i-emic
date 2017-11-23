@@ -193,9 +193,9 @@ TEST(CoupledModel, computeJacobian)
 TEST(CoupledModel, numericalJacobian)
 {
     // only do this test for small problems in serial
-    int nmax = 2e3;
+    int nmax = 1e3;
     
-    if ( (comm->NumProc() == 1) ||
+    if ( (comm->NumProc() == 1) &&
          (coupledModel->getState('V')->GlobalLength() < nmax) )
     {
         bool failed = false;    
@@ -237,7 +237,6 @@ TEST(CoupledModel, numericalJacobian)
     {
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
-
 }
 
 //------------------------------------------------------------------
@@ -465,8 +464,8 @@ TEST(CoupledModel, Synchronization)
                  std::to_string(oceanAtmosP->Map().Comm().MyPID()) + ".txt");
 #endif
 
-    // oceanAtmosP->MaxValue(&maxValue);
-    // EXPECT_GT(std::abs(maxValue), 0.0);
+    oceanAtmosP->MaxValue(&maxValue);
+    EXPECT_GT(std::abs(maxValue), 0.0);
 }
 
 
@@ -490,6 +489,26 @@ TEST(CoupledModel, Hashing)
     
     EXPECT_NE(hash3, hash4);
     
+}
+
+//------------------------------------------------------------------
+TEST(CoupledModel, Solve)
+{
+    bool failed = false;
+    try
+    {
+        std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
+        std::shared_ptr<Combined_MultiVec> b = coupledModel->getState('C');
+        x->PutScalar(1.0);
+        coupledModel->applyMatrix(*x, *b);
+        coupledModel->solve(b);
+        std::shared_ptr<Combined_MultiVec> sol = coupledModel->getSolution('C');
+    }
+    catch (...)
+    {
+        failed = true;
+    }
+    EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------
