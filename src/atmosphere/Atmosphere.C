@@ -13,7 +13,7 @@
 #include "THCMdefs.H"
 #include "Utils.H"
 
-extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double *);
 
 //==================================================================
 // Constructor for use with parallel atmosphere
@@ -252,8 +252,8 @@ void Atmosphere::setup()
     }
 
     // Get ocean parameters
-    double tmp;
-    FNAME(getdeps)(&Ooa_, &Os_, &tmp);
+    double tmp1, tmp2;
+    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2);
 
     // Fill y and latitude-based arrays
     yv_.reserve(m_+1);
@@ -570,9 +570,12 @@ double Atmosphere::matvec(int row)
 //-----------------------------------------------------------------------------
 void Atmosphere::forcing()
 {
-    double value;
+    double value, tmp1, tmp2;
     int temRow, humRow, surfaceRow;
-
+    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2);
+    if (std::abs(Ooa_) < 1e-8)
+        WARNING(" Ooa_ mat give trouble", __FILE__, __LINE__);
+    
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
@@ -582,6 +585,7 @@ void Atmosphere::forcing()
 
             // Apply surface mask and calculate land temperatures
             // This is a copy of legacy stuff, can be simplified
+
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
             {
                 value = comb_ * sunp_ * suno_[j] / Ooa_;

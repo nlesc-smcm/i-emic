@@ -1,7 +1,7 @@
 clear all
 JnC = load_numjac('JnC');
 
-n = 6; m = 6; l = 4; dfo = 6; dfa = 2; aux = 1
+n = 8; m = 8; l = 4; dfo = 6; dfa = 2; aux = 1
 
 surfb = find_row(dfo, n, m ,l, 1, 1, l, 1);
 surfe = find_row(dfo, n, m ,l, n, m, l, dfo);

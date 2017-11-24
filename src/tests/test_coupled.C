@@ -250,6 +250,8 @@ TEST(CoupledModel, applyMatrix)
 
     try
     {
+        Utils::MaskStruct mask = ocean->getLandMask();
+        
         std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
         std::shared_ptr<Combined_MultiVec> y = coupledModel->getState('C');
 
@@ -290,28 +292,41 @@ TEST(CoupledModel, applyMatrix)
             FNAME(getdeps)(&Ooa, &Os, &gamma, &eta);
 
             // Test first surface element (temperature)
-            int surfbT = FIND_ROW2(_NUN_, n, m, l, 0, 0, l-1, TT);
+            int ii = 0;
+            int jj = 0;
+            int surfbT = FIND_ROW2(_NUN_, n, m, l, ii, jj, l-1, TT);
 
             INFO( "first surface element TT " << surfbT );
-
-            int lid;
-            double surfval;
-            if (oceanVec->Map().MyGID(surfbT))
+            
+            // If this point is on land the test does not make any sense
+            bool onLand = ((*mask.global_surface)[jj*n+ii] > 0) ? true : false;
+            
+            if (onLand)
             {
-                lid = oceanVec->Map().LID(surfbT);
-                surfval = (*oceanVec)[0][lid];
-                EXPECT_NEAR(-Ooa * value[v], surfval , 1e-7);
+                INFO(" ** applyMatrix is testing a land point, not useful... **");
             }
-
-            // Test first surface element (salinity)
-            int surfbS = FIND_ROW2(_NUN_, n, m, l, 0, 0, l-1, SS);
-            INFO( "first surface element SS " << surfbS );
-
-            if (oceanVec->Map().MyGID(surfbS))
+            else
             {
-                lid = oceanVec->Map().LID(surfbS);
-                surfval = (*oceanVec)[0][lid];
-                EXPECT_NEAR( (-eta * gamma - gamma ) *value[v], surfval , 1e-7);
+            
+                int lid;
+                double surfval;
+                if (oceanVec->Map().MyGID(surfbT) && !onLand)
+                {
+                    lid = oceanVec->Map().LID(surfbT);
+                    surfval = (*oceanVec)[0][lid];
+                    EXPECT_NEAR(-Ooa * value[v], surfval , 1e-7);
+                }
+
+                // Test first surface element (salinity)
+                int surfbS = FIND_ROW2(_NUN_, n, m, l, ii, jj, l-1, SS);
+                INFO( "first surface element SS " << surfbS );
+
+                if (oceanVec->Map().MyGID(surfbS))
+                {
+                    lid = oceanVec->Map().LID(surfbS);
+                    surfval = (*oceanVec)[0][lid];
+                    EXPECT_NEAR( (-eta * gamma - gamma ) *value[v], surfval , 1e-7);
+                }
             }
         }
 
@@ -337,49 +352,64 @@ TEST(CoupledModel, applyMatrix)
             l = 1;
 
             // test atmos temperature point
-            int surfbT = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, 0, 0, l-1, ATMOS_TT_);
+            int ii = 0;
+            int jj = 0;
+            int surfbT = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, ii, jj, l-1, ATMOS_TT_);
 
-            int lid;
-            double surfval;
-            if (atmosVec->Map().MyGID(surfbT))
+            INFO( "first surface element TT " << surfbT );
+
+            // If this point is on land the test does not make any sense
+            bool onLand = ((*mask.global_surface)[jj*n+ii] > 0) ? true : false;
+
+            if (onLand)
             {
-                lid = atmosVec->Map().LID(surfbT);
-                surfval = (*atmosVec)[0][lid];
-                EXPECT_NEAR( value[v], surfval, 1e-7);
+                INFO(" ** applyMatrix is testing a land point, not useful... **");
             }
-
-            // Test atmos humidity point
-            int surfbQ = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, 0, 0, l-1, ATMOS_QQ_);
-
-            if (atmosVec->Map().MyGID(surfbQ))
+            else
             {
-                lid = atmosVec->Map().LID(surfbQ);
-                surfval = (*atmosVec)[0][lid];
-                EXPECT_NEAR( dqdt * value[v], surfval, 1e-7);
-            }
 
-            // Test final element in range (results from sst integral)
-
-            // First check if we have auxiliary unknowns:
-            if (atmosVec->GlobalLength() > ATMOS_NUN_ * m * n * l)
-            {
-                Teuchos::RCP<Epetra_Vector> precipintco = atmos->getPrecipIntCo();
-                double totalArea;
-                precipintco->Norm1(&totalArea);
-
-                Teuchos::RCP<Epetra_Vector> ones =
-                    Teuchos::rcp(new Epetra_Vector(*precipintco));
-                ones->PutScalar(1.0);
-
-                double sstInt = Utils::dot(precipintco, ones);
-                double intval = sstInt * (eta / totalArea) * (dqso / qdim);
-
-                int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);
-                if (atmosVec->Map().MyGID(last + 1))
+                int lid;
+                double surfval;
+                if (atmosVec->Map().MyGID(surfbT))
                 {
-                    lid = atmosVec->Map().LID(last + 1);
+                    lid = atmosVec->Map().LID(surfbT);
                     surfval = (*atmosVec)[0][lid];
-                    EXPECT_NEAR( intval * value[v], surfval, 1e-7);
+                    EXPECT_NEAR( value[v], surfval, 1e-7);
+                }
+
+                // Test atmos humidity point
+                int surfbQ = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, ii, jj, l-1, ATMOS_QQ_);
+
+                if (atmosVec->Map().MyGID(surfbQ))
+                {
+                    lid = atmosVec->Map().LID(surfbQ);
+                    surfval = (*atmosVec)[0][lid];
+                    EXPECT_NEAR( dqdt * value[v], surfval, 1e-7);
+                }
+
+                // Test final element in range (results from sst integral)
+
+                // First check if we have auxiliary unknowns:
+                if (atmosVec->GlobalLength() > ATMOS_NUN_ * m * n * l)
+                {
+                    Teuchos::RCP<Epetra_Vector> precipintco = atmos->getPrecipIntCo();
+                    double totalArea;
+                    precipintco->Norm1(&totalArea);
+
+                    Teuchos::RCP<Epetra_Vector> ones =
+                        Teuchos::rcp(new Epetra_Vector(*precipintco));
+                    ones->PutScalar(1.0);
+
+                    double sstInt = Utils::dot(precipintco, ones);
+                    double intval = sstInt * (eta / totalArea) * (dqso / qdim);
+
+                    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);
+                    if (atmosVec->Map().MyGID(last + 1))
+                    {
+                        lid = atmosVec->Map().LID(last + 1);
+                        surfval = (*atmosVec)[0][lid];
+                        EXPECT_NEAR( intval * value[v], surfval, 1e-7);
+                    }
                 }
             }
         }
@@ -402,7 +432,7 @@ TEST(CoupledModel, View)
     std::shared_ptr<Combined_MultiVec> rhsV =
         coupledModel->getRHS('V');
 
-    stateV->PutScalar(0.0);
+    stateV->PutScalar(0.1);
     coupledModel->computeRHS();
 
     double norm1 = Utils::norm(rhsV);
@@ -510,8 +540,10 @@ TEST(CoupledModel, Synchronization)
                  std::to_string(oceanAtmosP->Map().Comm().MyPID()) + ".txt");
 #endif
 
+    // There should be something in there
     oceanAtmosP->MaxValue(&maxValue);
-    EXPECT_GT(std::abs(maxValue), 0.0);
+    oceanAtmosP->MinValue(&minValue);
+    EXPECT_GT(std::max(std::abs(maxValue), std::abs(minValue)), 0.0);
 }
 
 
