@@ -1,7 +1,7 @@
 clear all
 JnC = load_numjac('JnC');
 
-n = 8; m = 8; l = 4; dfo = 6; dfa = 2; aux = 1
+n = 6; m = 6; l = 4; dfo = 6; dfa = 2; aux = 1
 
 surfb = find_row(dfo, n, m ,l, 1, 1, l, 1);
 surfe = find_row(dfo, n, m ,l, n, m, l, dfo);
@@ -47,42 +47,47 @@ numC22 = numC22(atm_idx,atm_idx);
 C22    =    C22(atm_idx,atm_idx);
 
 figure(1)
-JnCr = [JnC11, JnC12; JnC21, JnC22];
-spy(JnCr)
-title('C')
+spy(C11)
+title('C11')
 
-tol = 1e-5
+
+figure(2)
+spy(JnC11)
+title('num C11')
+
+tol = 1e-6
 
 diff11 = abs(C11 - numC11)./abs(C11) > tol;
 if sum(diff11(:)) > 0
-    figure(2)
-    diff11 = abs(C11 - numC11)./abs(C11);
+    figure(3)
+    diff11 = abs(C11 - numC11)
     imagesc(diff11); colorbar
-    title('C11 diff')    
-    
+    title('C11 diff')
 end
+
+return 
 
 C12    = C12(surfb:end,:);
 numC12 = numC12(1:end-1,:);
 diff12 = abs(C12 - numC12)./abs(C12) > tol;
 if sum(diff12(:)) > 0
-    figure(3)
+    figure(4)
     spy(diff12)
-    title('C12 diff')    
+    title('C12 diff')
 end
 
 C21    = C21(:,surfb:end);
 numC21 = numC21(:,1:end-1);
 diff21 = abs(C21 - numC21)./abs(C21) > tol;
 if sum(diff21(:)) > 0
-    figure(4)
+    figure(5)
     spy(diff21)
     title('C21 diff')    
 end
 
 diff22 = abs(C22 - numC22)./abs(C22) > tol;
 if sum(diff22(:)) > 0
-    figure(5)
+    figure(6)
     spy(diff22)
     title('C22 diff')    
 end

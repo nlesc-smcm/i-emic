@@ -40,6 +40,7 @@ Continuation(Model model, ParameterList pars)
     tanScaling_            (pars->get("state tangent scaling", 1.0e-6)),
 
     rejectFailedNewton_    (pars->get("reject failed iteration", true)),
+    giveUpAtdsMin_         (pars->get("give up at minimum step size", false)),
     cycleTolerance_        (pars->get("enable tolerance cycling", false)),
     usePracticalTol_       (pars->get("enable practical tolerance", false)),
     newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
@@ -112,9 +113,10 @@ initialize()
     // scaling
     zeta_ = tanScaling_ / stateView_->GlobalLength();
 
-    newtonIter_ = 0;
-    backTrack_  = 0;
-    parDotSign_ = 1;
+    newtonIter_    = 0;
+    sumNewtonIter_ = 0;
+    backTrack_     = 0;
+    parDotSign_    = 1;
 
     // initializations for main loop
     step_               = 0;
@@ -144,6 +146,7 @@ run()
     userDetect(); // Use additional targets provided by model class
 
     int status = 0;
+    
 
     while (!destinationReached_ && (step_ != maxSteps_) && !abortFlag_)
     {
@@ -151,7 +154,7 @@ run()
         info();           // Print continuation summary
         store();          // Store the current state and parameter
         status = step();  // Perform a continuation step
-
+        
         if (status) // If step failed we continue
         {
             reset();                       // Reset the model
@@ -483,7 +486,7 @@ newtonCorrector()
     double normDX = 100.0;
 
     newtonIter_ = 0;
-    while (newtonIter_ < maxNewtonIterations_)
+    while ( newtonIter_ < maxNewtonIterations_ )
     {
         // save the old residual
         res0 = res;
@@ -560,6 +563,7 @@ newtonCorrector()
         model_->setPar(par_);  // set it in the model
         
         ++newtonIter_;
+        ++sumNewtonIter_;
 
         // test new RHS, if it satisfies the tolerance we exit the loop
         model_->computeRHS();
@@ -611,7 +615,6 @@ newtonCorrector()
 
         if (res < practicalTol_ && newtonIter_ >= minNewtonIterations_)
             break;
-
     }
 
     // Keep the last obtained y in stateDot, such that it can be used by
@@ -834,10 +837,10 @@ reset()
         Utils::save(rhsView_, "failed_rhs"); // Print failed residual
         Utils::save(model_->getSolution('V'), "failed_sol"); // Print failed solution
     }
-
+    
     INFO("***********************************************");
     INFO("Continuation: reset... ");
-    INFO("|                step: " << --step_);
+    INFO("|                step: " << --step_); // decrease number of steps
     INFO("|           step size: " << ds_);
     INFO("|          norm state: " << Utils::norm(stateView_));
     INFO("|     norm d/ds state: " << Utils::norm(stateDot_));
@@ -856,8 +859,8 @@ reset()
 
     // fix step size for next step
     fixStepSize_ = true; 
-
-    if (( ds_ <= dsMin_ ) && ( resetCounter_ >= 100 ))
+    
+    if (( ds_ <= dsMin_ ) && (( resetCounter_ >= 100 ) || giveUpAtdsMin_))
     {
         abortFlag_ = true;
         WARNING("Reached dsMin, continuation failed", __FILE__, __LINE__);
@@ -998,7 +1001,7 @@ info()
     INFO("               ||x||:  " << Utils::norm(stateView_));
     INFO("         ||d/ds(x)||:  " << Utils::norm(stateDot_));
     INFO("        newton iters:  " << newtonIter_);
-
+    INFO("    avg newton iters:  " << (double) sumNewtonIter_ / (step_ + resetCounter_));
     INFO("              resets:  " << resetCounter_);
     INFO("-----------------------------------------\n");
 }

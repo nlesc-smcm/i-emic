@@ -37,10 +37,6 @@
   <!-- (disable only for testing purposes)                                    -->
   <Parameter name="Use integral condition on q" type="bool" value="true"/>
 
-  <!-- Precipitation is an integral, for testing purposes we can switch that -->
-  <!-- off and use a fixed value (1.0).                                      -->
-  <Parameter name="Use idealized precipitation" type="bool" value="true"/>
-
   <!-- western, eastern, southern and northern domain bounds      -->
   <Parameter name="Global Bound xmin" type="double" value="286"    />
   <Parameter name="Global Bound xmax" type="double" value="350"    />
@@ -52,6 +48,9 @@
   <Parameter name="Global Grid-Size m" type="int" value="16"       />
   <Parameter name="Global Grid-Size l" type="int" value="1"       />
 
+  <!-- Auxiliary unknowns                                         -->
+  <Parameter name="Auxiliary unknowns" type="int" value="1"        />  
+  
   <!-- Preconditioner parameters.                                         -->
   <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.         -->
   <Parameter name="Ifpack overlap level" type="int" value="0" />

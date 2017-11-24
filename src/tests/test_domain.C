@@ -440,7 +440,7 @@ TEST(Domain, numericalJacobian)
     // only do this test for small problems in serial
     int nmax = 2e3;
     
-    if ( (comm->NumProc() == 1) ||
+    if ( (comm->NumProc() == 1) &&
          (atmos->getState('V')->GlobalLength() < nmax) )
     {
         bool failed = false;    

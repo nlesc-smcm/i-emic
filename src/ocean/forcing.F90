@@ -90,7 +90,7 @@ SUBROUTINE forcing
   ! ------------------------------------------------------------------
 
   if (coupled_atm.eq.1) then
-     gamma = par(COMB)*par(SALT)*nus !*(r0dim / udim)*
+     gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT)) * nus
   else 
      gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT))
   endif

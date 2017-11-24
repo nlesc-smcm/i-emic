@@ -184,7 +184,7 @@ SUBROUTINE getdeps(o_Ooa, o_Os, o_gamma, o_eta)
   real(c_double) o_Ooa, o_Os, o_gamma, o_eta
   o_Ooa   = Ooa
   o_Os    = Os
-  o_gamma = - par(COMB) * par(SALT) * nus 
+  o_gamma = - par(COMB) * par(SALT) * (1 - SRES + SRES*par(BIOT)) * nus 
   o_eta   = eta
 end subroutine getdeps
 
@@ -627,9 +627,11 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! S-equation
   ! ------------------------------------------------------------------
-  dedt = par(COMB) * par(SALT) * nus * eta * (deltat / qdim) * dqso
+  dedt = par(COMB) * par(SALT) * (1 - SRES + SRES*par(BIOT)) * nus * &
+       eta * (deltat / qdim) * dqso
+  
   if (coupled_atm.eq.1) then
-     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
+     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
 
      ! minus sign and nondim added (we take -Au in rhs computation)
      Al(:,:,1:l,:,SS,TT) = - dedt * sc !  * (r0dim / udim) 

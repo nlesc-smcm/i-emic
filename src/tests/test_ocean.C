@@ -30,6 +30,8 @@
 #include "GlobalDefinitions.H"
 #include "THCMdefs.H"
 
+#include "NumericalJacobian.H"
+
 #include "gtest/gtest.h" // google test
 
 //------------------------------------------------------------------
@@ -123,6 +125,7 @@ TEST(Ocean, Initialization)
 //------------------------------------------------------------------
 TEST(Ocean, RHSNorm)
 {
+    
     ocean->computeRHS();
     double stateNorm = Utils::norm(ocean->getState('V'));
     double rhsNorm   = Utils::norm(ocean->getRHS('V'));
@@ -132,11 +135,80 @@ TEST(Ocean, RHSNorm)
 }
 
 //------------------------------------------------------------------
+TEST(Ocean, ComputeJacobian)
+{
+    if (comm->NumProc() > 1)
+    {
+        WARNING("We are not going to do this in parallel...",
+                __FILE__, __LINE__);
+    }
+    else
+    {
+        bool failed = false;
+        try
+        {
+            ocean->setPar(0.1);
+            ocean->getState('V')->PutScalar(1.234);
+            ocean->computeJacobian();
+            Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
+            DUMPMATLAB("ocean_jac", *mat);
+        }
+        catch (...)
+        {
+            failed = true;
+        }
+        EXPECT_EQ(failed, false);
+    } 
+}
+
+//------------------------------------------------------------------
+TEST(Ocean, NumericalJacobian)
+{
+    // only do this test for small problems in serial
+    int nmax = 2e3;
+
+    if ( (comm->NumProc() == 1) &&
+         (ocean->getState('V')->GlobalLength() < nmax) )
+    {
+        bool failed = false;
+        try
+        {
+            NumericalJacobian<Teuchos::RCP<Ocean>,
+                              Teuchos::RCP<Epetra_Vector> > njmat;
+
+            njmat.setTolerance(1e-10);
+            njmat.seth(1);
+            njmat.compute(ocean, ocean->getState('V'));
+
+            std::string fname("ocean_numjac");
+            
+            INFO(" Printing numerical Jacbian " << fname);
+
+            njmat.print(fname);
+            
+        }
+        catch (...)
+        {
+            failed = true;
+        }
+        EXPECT_EQ(failed, false);
+    }
+    else
+    {
+        WARNING("We are not going to do this for this setup...",
+                __FILE__, __LINE__);
+    }
+}
+
+//------------------------------------------------------------------
 TEST(Ocean, Continuation)
 {
     bool failed = false;
     try
     {
+        ocean->setPar(0.0);
+        ocean->getState('V')->PutScalar(0.0);
+        
         // Create continuation params
         RCP<Teuchos::ParameterList> continuationParams =
             rcp(new Teuchos::ParameterList);

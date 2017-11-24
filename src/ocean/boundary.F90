@@ -164,7 +164,12 @@ subroutine boundaries
 
                  Frc(find_row2(i,j,k,WW)) = 0.0
                  Al(i,j,k, :,WW,: ) = 0.0
+                 Al(i,j,k, 5, :,WW) = 0.0 !MdT
+                 Al(i,j,k, 6, :,WW) = 0.0 !MdT
+                 Al(i,j,k, 8, :,WW) = 0.0 !MdT
+                 Al(i,j,k, 9, :,WW) = 0.0 !MdT
                  Al(i,j,k, 5,WW,WW) = 1.0
+
               endif
               if (top == ATMOS) then !
                  Al(i,j,k, 1,: ,UU) = Al(i,j,k,1,: ,UU) + Al(i,j,k,19,: ,UU) ! ACdN
@@ -183,9 +188,15 @@ subroutine boundaries
                  Al(i,j,k, 5,: ,VV) = Al(i,j,k,5,: ,VV) + Al(i,j,k,23,: ,VV) ! ACdN
                  Al(i,j,k, 5,SS,SS) = Al(i,j,k,5,SS,SS) + Al(i,j,k,23,SS,SS)
                  Al(i,j,k,23,SS,SS) = 0.0
+
                  Frc(find_row2(i,j,k,WW)) = 0.0
                  Al(i,j,k, :,WW,: ) = 0.0
+                 Al(i,j,k, 5, :,WW) = 0.0 !MdT
+                 Al(i,j,k, 6, :,WW) = 0.0 !MdT
+                 Al(i,j,k, 8, :,WW) = 0.0 !MdT
+                 Al(i,j,k, 9, :,WW) = 0.0 !MdT
                  Al(i,j,k, 5,WW,WW) = 1.0
+                 
               endif
               !	    if (southwt == LAND) then 	! 19
               if ((southwt == LAND).OR.(southwt ==ATMOS)) then 	! 19

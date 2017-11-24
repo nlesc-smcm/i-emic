@@ -49,11 +49,11 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="16"/>
+    <Parameter name="Global Grid-Size n" type="int" value="8"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="16"/>
+    <Parameter name="Global Grid-Size m" type="int" value="8"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="16"/>
+    <Parameter name="Global Grid-Size l" type="int" value="4"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
@@ -67,7 +67,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="0"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_natl16"/>
+    <Parameter name="Land Mask" type="string" value="mask_natll8"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -99,11 +99,11 @@
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Temperature Profile" type="int" value="1"/>
+    <Parameter name="Restoring Temperature Profile" type="int" value="0"/>
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
     <!-- Freshwater Forcing (ifw in THCM) -->
     <!-- 0: data, 1: idealized            -->
     <Parameter name="Freshwater Forcing" type="int" value="1"/>

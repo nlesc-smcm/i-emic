@@ -94,6 +94,7 @@ class Continuation
     int resetCounter_;         // reset counter
 
     int newtonIter_;              // newton iteration counter
+    int sumNewtonIter_;           // newton iteration counter
     int maxNewtonIterations_;     // set the max for the Newton iterations
     int minNewtonIterations_;     // set the min for the Newton iterations
     int minAllowedIterations_;    // if less then we increase the step-size
@@ -103,6 +104,7 @@ class Continuation
     bool userDetect_;             // let model class determine a simple monitor
     double tanScaling_;           // scaling of the state tangent
     bool rejectFailedNewton_;     // set to false if you feel lucky
+    bool giveUpAtdsMin_;          // give up at minimum step size
     double practicalTol_;         // actual tolerance used for the problem
     bool cycleTolerance_;         // if true we cycle between multiples of tol
     bool usePracticalTol_;        // if true we scale the tolerance
