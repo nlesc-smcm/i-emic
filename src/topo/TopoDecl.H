@@ -238,7 +238,7 @@ public:
 	void postProcess();
 
     //! gather important data to add to continuation summary
-    std::string const writeData()
+    std::string const writeData(bool describe = false)
         {
             return std::string("");
         }
