@@ -242,6 +242,9 @@ public:
     void preProcess();
     void postProcess();
 
+    //! Gather important continuation data to use in summary
+    std::string const writeData(bool describe = false); 
+
     void printState(std::string const &fname);
 
     //! Let the atmos object use idealized values,

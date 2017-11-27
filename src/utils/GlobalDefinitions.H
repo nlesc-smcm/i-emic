@@ -53,6 +53,11 @@ extern std::stack<Timer> timerStack;
 # define M_PI 3.14159265358979323846
 #endif
 
+// Precision is scientific output
+#ifndef _PRECISION_
+# define _PRECISION_ 4
+#endif
+
 #ifndef INFO
 #  define INFO(s) (*outFile) << s << std::endl; 
 #endif
@@ -230,7 +235,5 @@ public:
 //! not very useful for periodic boundaries...
 #  define MOD(x,y) (((double)(y)==0.0)? (double)(x): ((double)(x) - floor((double)(x)/((double)(y)))*((double)(y))))
 #endif
-
-
 
 #endif

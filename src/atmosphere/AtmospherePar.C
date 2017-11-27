@@ -995,6 +995,33 @@ void AtmospherePar::postProcess()
 }
 
 //==================================================================
+std::string const AtmospherePar::writeData(bool describe)
+{
+    std::ostringstream datastring;
+
+    if (describe)
+    {
+        datastring << std::setw(_PRECISION_ + 7)
+                   << "max(T)" 
+                   << std::setw(_PRECISION_ + 7) 
+                   << "max(Q)";
+        return datastring.str();
+    }
+    else
+    {    
+        datastring.precision(_PRECISION_);   
+    
+        double maxT, maxQ;        
+        interfaceT()->MaxValue(&maxT);
+        interfaceQ()->MaxValue(&maxQ);
+    
+        datastring << std::scientific << maxT << " " << maxQ;
+
+        return datastring.str();
+    }
+}
+
+//==================================================================
 void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
                                 Epetra_MultiVector &out)
 {

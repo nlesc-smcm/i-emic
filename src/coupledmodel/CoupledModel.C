@@ -14,7 +14,6 @@
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
-
 //==================================================================
 // constructor
 CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
@@ -33,10 +32,11 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 
     parName_          (params->get("Continuation parameter",
                                    "Combined Forcing")),
+    
     solvingScheme_    (params->get("Solving scheme", 'C')),
 
     syncCtr_          (0),
-    solverInitialized_(false)
+    solverInitialized_(false)    
 {
     // Let the sub-models know our continuation parameter
     ocean_->setParName(parName_);
@@ -92,9 +92,6 @@ void CoupledModel::computeJacobian()
     atmos_->computeJacobian();  // Atmosphere
     C12_.computeBlock();        // Recompute Ocean <- Atmos dependence
     C21_.computeBlock();        // Recompute Atmos <- Ocean dependence
-
-#ifdef DEBUGGING_NEW
-#endif
 
     TIMER_STOP("CoupledModel: compute Jacobian");
 }

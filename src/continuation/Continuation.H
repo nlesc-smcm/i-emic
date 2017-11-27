@@ -135,9 +135,10 @@ void Continuation<Model, ParameterList>::
 run()
 {
     INFO("Continuation::run initialize...");
-    initialize(); // core initializations
+    initialize();    // core initializations
+    writeData(true); // describe output data
     INFO("Continuation::run initialize... done");
-
+    
     TIMER_START("Continuation: run");
 
     createInitialTangent(); // Create the first tangent
@@ -145,8 +146,7 @@ run()
     detect();     // Detect special points
     userDetect(); // Use additional targets provided by model class
 
-    int status = 0;
-    
+    int status = 0;    
 
     while (!destinationReached_ && (step_ != maxSteps_) && !abortFlag_)
     {
@@ -1020,6 +1020,33 @@ modelInfo()
     INFO("     norm sol   :  " << Utils::norm(solView_));
     INFO("    parameter   :  " << model_->getPar());
     INFO("-----------------------------------------");
+}
+
+//======================================================================
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
+writeData(bool describe)
+{
+    std::ostringstream datastring;
+    if (describe)
+    {
+        datastring << std::setw(_PRECISION_ + 7)
+                   << " par " 
+                   << std::setw(_PRECISION_ + 7) 
+                   << " ||x|| " << " " 
+                   << model_->writeData(describe);
+    }
+    else
+    {
+
+        datastring.precision(_PRECISION_);
+
+        datastring << std::scientific <<  par_ << " " << 
+            Utils::norm(stateView_) << " " <<
+            model_->writeData();
+    
+    }
+    WRITECDATA(datastring.str());
 }
 
 #endif

@@ -253,6 +253,9 @@ public:
     void preProcess();
     void postProcess();
 
+    //! Gather important data to use in continuation summary
+    std::string const writeData(bool describe = false);
+
     //! Get functions for the grid dimensions
     int getNdim() { return N_;}
     int getMdim() { return M_;}

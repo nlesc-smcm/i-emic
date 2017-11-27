@@ -219,7 +219,7 @@ private:
     double dot(VectorPtr const &vec1, VectorPtr const &vec2) const;
 
     //! write essential continuation data to datafile
-    void writeData() {} ;
+    void writeData(bool describe = false);
 };
 
 #endif

@@ -22,13 +22,17 @@
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
 
-//! This class assembles multiple sub-models into a CoupledModel. Which models and couplings
-// are used should be supplied in the accompanying xml file (coupledmodel_params.xml).
+//! This class assembles multiple sub-models into a CoupledModel.
+// Which models and couplings are used should be supplied in the
+// accompanying xml file (coupledmodel_params.xml).
 
-//! Most routines in CoupledModel simply call their corresponding routines in the sub-models.
-// For instance, a call to computeJacobian() translates to a call to computeJacobian() in the sub-models.
+//! Most routines in CoupledModel simply call their corresponding
+// routines in the sub-models. For instance, a call to
+// computeJacobian() translates to a call to computeJacobian() in the
+// sub-models.
 
-//! The frequency at which the states of the sub-models are synchronized depends on the solving scheme.
+//! The frequency at which the states of the sub-models are
+//! synchronized depends on the solving scheme.
 
 //! Forward declarations
 
@@ -153,17 +157,26 @@ public:
     //! Get the continuation parameter
     double getPar();
 
-    //! Pre-processing.
-    //! A controlling scheme might allow some pre-processing,
-    //! for instance at the start of a Newton process.
+    //! Pre-processing. A controlling scheme might allow some
+    //! pre-processing, for instance at the start of a Newton process.
     void preProcess();
 
-    //! Post-processing.
-    //! Similarly we can supply some post-processing, for instance when
-    //! a Newton process has converged.
+    //! Post-processing. Similarly we can supply some post-processing,
+    //! for instance when a Newton process has converged.
     void postProcess();
 
-    //! Additional monitor for continuation
+    //! Gather important continuation data to use in summary file
+    std::string const writeData(bool describe = false)
+        {
+            std::ostringstream datastring;
+            datastring << ocean_->writeData(describe) << " "
+                       << atmos_->writeData(describe);
+
+            return datastring.str();
+        }
+
+    //! Additional monitor for continuation, return true if
+    //! destination reached
     bool monitor() { return false; }
 
     //! Dump blocks
@@ -174,8 +187,8 @@ private:
     //! Solve the system using FGMRES
     void FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs);
 
-    //! For internal use: both modes for the underlying
-    //! getSolution methods can be called here.
+    //! For internal use: both modes for the underlying getSolution
+    //! methods can be called here.
     std::shared_ptr<Combined_MultiVec> getSolution(char mode1, char mode2);
 
     //! Compute the residual ||b-Jx||
@@ -240,7 +253,7 @@ namespace Belos
                     Op.ApplyMatrix(x, y);
                 }
             }
-
+        
         static bool
         HasApplyTranspose (const BelosOp<Model> &Op) { return false; }
     };

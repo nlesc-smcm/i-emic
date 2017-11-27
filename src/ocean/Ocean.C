@@ -548,21 +548,41 @@ void Ocean::postProcess()
 
     if (storeEverything_)
         copyFiles(); // Copy fortran and hdf5 files
+}
 
-    // compute streamfunctions and output data
-    grid_->ImportData(*state_);
-    double psiMax = grid_->psimMax();
-    double psiMin = grid_->psimMin();
+//=====================================================================
+std::string const Ocean::writeData(bool describe)
+{
+    std::ostringstream datastring;
+    if (describe)
+    {
+        datastring << std::setw(_PRECISION_ + 7)
+                   << "max(Psi)" 
+                   << std::setw(_PRECISION_ + 7) 
+                   << "min(Psi)";
+        return datastring.str();
+    }
+    else
+    {
+        datastring.precision(_PRECISION_);
+    
+        // compute streamfunctions and output data
+        grid_->ImportData(*state_);
+        double psiMax = grid_->psimMax();
+        double psiMin = grid_->psimMin();
 
-    double r0dim, udim, hdim;
-    FNAME(get_constants)(&r0dim, &udim, &hdim);
+        double r0dim, udim, hdim;
+        FNAME(get_constants)(&r0dim, &udim, &hdim);
 
-    const double transc = r0dim * hdim * udim;
-    psiMax = psiMax * transc * 1e-6; // conversion to Sv
-    psiMin = psiMin * transc * 1e-6; //
+        const double transc = r0dim * hdim * udim;
+        psiMax = psiMax * transc * 1e-6; // conversion to Sv
+        psiMin = psiMin * transc * 1e-6; //
 
-    INFO(std::endl << "MOC+ = " << psiMax << " MOC- = "
-         << psiMin << " MOC+ + MOC- = " << psiMax + psiMin << std::endl);
+        datastring << std::scientific <<  psiMax << " "
+                   << psiMin;
+        
+        return datastring.str();    
+    }                           
 }
 
 //=====================================================================

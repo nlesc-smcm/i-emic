@@ -237,6 +237,12 @@ public:
 	//! perform some duties after important things have happened
 	void postProcess();
 
+    //! gather important data to add to continuation summary
+    std::string const writeData()
+        {
+            return std::string("");
+        }
+
 	//! get copy of a_ 
 	std::vector<int> getA() { return a_; }
     
