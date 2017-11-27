@@ -265,7 +265,10 @@ TEST(CoupledModel, Continuation)
                      Teuchos::RCP<Teuchos::ParameterList> >
             continuation(coupledModel, continuationParams);
 
-        // Run continuation
+        // Test continuation
+        continuation.test();
+         
+        // Run continuation        
         continuation.run();
     }
     catch (...)

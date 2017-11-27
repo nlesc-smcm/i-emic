@@ -53,10 +53,15 @@ extern std::stack<Timer> timerStack;
 # define M_PI 3.14159265358979323846
 #endif
 
-// Precision is scientific output
+// Precision in scientific output
 #ifndef _PRECISION_
 # define _PRECISION_ 4
 #endif
+
+// Set field width in data outputs
+#ifndef _FIELDWIDTH_
+# define _FIELDWIDTH_ 12
+#endif 
 
 #ifndef INFO
 #  define INFO(s) (*outFile) << s << std::endl; 

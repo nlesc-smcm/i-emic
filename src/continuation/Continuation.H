@@ -930,6 +930,7 @@ testCopyView()
 {
     INFO("******************************************************");
     INFO("Continuation: Test Copy / View behaviour of the model.");
+    
     VectorPtr view1 = model_->getState('V');
     VectorPtr copy1 = model_->getState('C');
     VectorPtr view2 = model_->getState('V');
@@ -944,14 +945,9 @@ testCopyView()
     view1->Scale(2.0);
     INFO("view1      norm: " << Utils::norm(view1));
     INFO("view2      norm: " << Utils::norm(view2));
-    if (Utils::norm(view1) != Utils::norm(view2))
-    {
-        INFO("Test failed: ||view1|| != ||view2||");
-    }
-    else
-    {
-        INFO("Test passed: ||view1|| == ||view2||");
-    }
+
+    assert(Utils::norm(view1) != Utils::norm(view2));
+
     INFO("Restore view: scale with 1/2");
     view1->Scale(0.5);
     INFO("Testing copy");
@@ -959,14 +955,9 @@ testCopyView()
     copy1->Scale(3.0);
     INFO("copy1      norm: " << Utils::norm(copy1));
     INFO("copy2      norm: " << Utils::norm(copy2));
-    if (Utils::norm(copy1) == Utils::norm(copy2))
-    {
-        INFO("Test failed: ||copy1|| == ||copy2||");
-    }
-    else
-    {
-        INFO("Test passed: ||copy1|| != ||copy2||");
-    }
+
+    assert(Utils::norm(copy1) == Utils::norm(copy2));
+    
     INFO("******************************************************");
 }
 
@@ -1030,10 +1021,10 @@ writeData(bool describe)
     std::ostringstream datastring;
     if (describe)
     {
-        datastring << std::setw(_PRECISION_ + 7)
-                   << " par " 
-                   << std::setw(_PRECISION_ + 7) 
-                   << " ||x|| " << " " 
+        datastring << std::setw(_FIELDWIDTH_)
+                   << "par" 
+                   << std::setw(_FIELDWIDTH_) 
+                   << "||x||"
                    << model_->writeData(describe);
     }
     else
@@ -1041,9 +1032,9 @@ writeData(bool describe)
 
         datastring.precision(_PRECISION_);
 
-        datastring << std::scientific <<  par_ << " " << 
-            Utils::norm(stateView_) << " " <<
-            model_->writeData();
+        datastring << std::scientific <<  std::setw(_FIELDWIDTH_) << par_
+                   << std::setw(_FIELDWIDTH_) <<  Utils::norm(stateView_)
+                   << model_->writeData();
     
     }
     WRITECDATA(datastring.str());

@@ -556,9 +556,9 @@ std::string const Ocean::writeData(bool describe)
     std::ostringstream datastring;
     if (describe)
     {
-        datastring << std::setw(_PRECISION_ + 7)
-                   << "max(Psi)" 
-                   << std::setw(_PRECISION_ + 7) 
+        datastring << std::setw(_FIELDWIDTH_)
+                   << "max(Psi)"
+                   << std::setw(_FIELDWIDTH_) 
                    << "min(Psi)";
         return datastring.str();
     }
@@ -578,8 +578,8 @@ std::string const Ocean::writeData(bool describe)
         psiMax = psiMax * transc * 1e-6; // conversion to Sv
         psiMin = psiMin * transc * 1e-6; //
 
-        datastring << std::scientific <<  psiMax << " "
-                   << psiMin;
+        datastring << std::scientific << std::setw(_FIELDWIDTH_) << psiMax
+                   << std::setw(_FIELDWIDTH_) << psiMin;
         
         return datastring.str();    
     }                           

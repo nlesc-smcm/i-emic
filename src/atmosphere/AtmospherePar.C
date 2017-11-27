@@ -1001,10 +1001,11 @@ std::string const AtmospherePar::writeData(bool describe)
 
     if (describe)
     {
-        datastring << std::setw(_PRECISION_ + 7)
+        datastring << std::setw(_FIELDWIDTH_)
                    << "max(T)" 
-                   << std::setw(_PRECISION_ + 7) 
+                   << std::setw(_FIELDWIDTH_) 
                    << "max(Q)";
+
         return datastring.str();
     }
     else
@@ -1015,7 +1016,8 @@ std::string const AtmospherePar::writeData(bool describe)
         interfaceT()->MaxValue(&maxT);
         interfaceQ()->MaxValue(&maxQ);
     
-        datastring << std::scientific << maxT << " " << maxQ;
+        datastring << std::scientific << std::setw(_FIELDWIDTH_)
+                   << maxT << std::setw(_FIELDWIDTH_) << maxQ;
 
         return datastring.str();
     }
