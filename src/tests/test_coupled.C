@@ -9,10 +9,10 @@ namespace // local unnamed namespace (similar to static in C)
     std::shared_ptr<Ocean>         ocean;
     std::shared_ptr<AtmospherePar> atmos;
     std::shared_ptr<CoupledModel>  coupledModel;
-    RCP<Teuchos::ParameterList> oceanParams;
-    RCP<Teuchos::ParameterList> atmosphereParams;
-    RCP<Teuchos::ParameterList> coupledmodelParams;
-    RCP<Teuchos::ParameterList> continuationParams;
+    RCP<Teuchos::ParameterList>    oceanParams;
+    RCP<Teuchos::ParameterList>    atmosphereParams;
+    RCP<Teuchos::ParameterList>    coupledmodelParams;
+    RCP<Teuchos::ParameterList>    continuationParams;
 }
 
 //------------------------------------------------------------------

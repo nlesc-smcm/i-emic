@@ -155,7 +155,7 @@ run()
         store();          // Store the current state and parameter
         status = step();  // Perform a continuation step
         
-        if (status) // If step failed we continue
+        if (status) // If step failed we reset and continue
         {
             reset();                       // Reset the model
             continue;                      // Skip the rest
@@ -194,6 +194,7 @@ step()
     }
 
     status = newtonCorrector(); // Apply Newton corrector
+    
     if (status)   // Failure
     {
         TIMER_STOP("Continuation: step");

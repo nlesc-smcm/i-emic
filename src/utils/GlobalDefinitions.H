@@ -127,8 +127,8 @@ extern std::stack<Timer> timerStack;
 	{																\
 		Timer timer;												\
 		timer.ResetStartTime();										\
-		if (profile.find(msg) == profile.end())						\
-			profile[msg] = 	std::array<double, PROFILE_ENTRIES>();	\
+		if (profile.find(msg) == profile.end())   \
+            profile[msg] = std::array<double, PROFILE_ENTRIES>(); \
 		timerStack.push(timer);										\
 	} 
 #endif
@@ -138,9 +138,9 @@ extern std::stack<Timer> timerStack;
 	{															\
 		double time = timerStack.top().ElapsedTime();			\
 		timerStack.pop();										\
-		profile[msg][0] += time;								\
-		profile[msg][1] += 1;									\
-		profile[msg][2] = profile[msg][0] / profile[msg][1];	\
+        profile[msg][0] += time;                               \
+        profile[msg][1] += 1;                                  \
+        profile[msg][2] = profile[msg][0] / profile[msg][1]; \
 	}
 #endif
 
@@ -151,12 +151,12 @@ extern std::stack<Timer> timerStack;
 	{															\
 		std::string msg(charmsg);								\
 		msg.insert(0, "_NOTIME_");								\
-		profile[msg] = (profile.count(msg)) ?					\
+        profile[msg] = (profile.count(msg)) ?         \
 			profile[msg] :										\
 			std::array<double, PROFILE_ENTRIES>();				\
-		profile[msg][0] += iters;								\
-		profile[msg][1] += 1;									\
-		profile[msg][2] = profile[msg][0] / profile[msg][1];	\
+        profile[msg][0] += iters;                              \
+        profile[msg][1] += 1;                                  \
+        profile[msg][2] = profile[msg][0] / profile[msg][1]; \
 	}
 #endif
 
@@ -165,12 +165,12 @@ extern std::stack<Timer> timerStack;
 	{															\
 		std::string msg(charmsg);								\
 		msg.insert(0, "_NOTIME_");								\
-		profile[msg] = (profile.count(msg)) ?					\
+        profile[msg] = (profile.count(msg)) ?         \
 			profile[msg] :										\
 			std::array<double, PROFILE_ENTRIES>();				\
-		profile[msg][0] += residual;							\
-		profile[msg][1] += 1;									\
-		profile[msg][2] = profile[msg][0] / profile[msg][1];	\
+        profile[msg][0] += residual;                           \
+        profile[msg][1] += 1;                                  \
+        profile[msg][2] = profile[msg][0] / profile[msg][1]; \
 	}
 #endif
 
