@@ -1,3 +1,6 @@
+#ifndef TESTDEFINITIONS_H
+#define TESTDEFINITIONS_H
+
 //=============================================================================
 // General definitions for tests
 //=============================================================================
@@ -31,15 +34,12 @@
 #include <time.h> // for seeding
 #include <sstream>
 
-#include "SuperVector.H"
-#include "CoupledModel.H"
-#include "Continuation.H"
-#include "Atmosphere.H"
-#include "AtmospherePar.H"
-#include "GlobalDefinitions.H"
+#include "../main/RunDefinitions.H"
+
 #include "THCMdefs.H"
 #include "JDQZInterface.H"
 #include "MyParameterList.H"
+#include "NumericalJacobian.H"
 
 #include "jdqz.H"
 
@@ -52,51 +52,6 @@ extern "C" double ddot_(int *N, double *X, int *INCX, double *Y, int *INCY);
 using Teuchos::RCP;
 using Teuchos::rcp;
 using std::shared_ptr;
-
-//------------------------------------------------------------------
-// A few globals (see GlobalDefinitions.H)
-//------------------------------------------------------------------
-RCP<std::ostream> outFile;      // output file
-ProfileType       profile;      // profile
-std::stack<Timer> timerStack;   // timing stack
-RCP<Epetra_Comm>  comm;         // communicator object
-
-//------------------------------------------------------------------
-RCP<std::ostream> outputFiles()
-{
-    Teuchos::RCP<std::ostream> outFile;
-    if (comm->MyPID() < 4)
-    {
-        std::ostringstream infofile;     // setting up a filename
-
-        infofile  << "info_"    << comm->MyPID()   << ".txt";
-
-        std::cout << "info for CPU" << comm->MyPID() << " is written to "
-                  << infofile.str().c_str() << std::endl;
-
-        outFile = Teuchos::rcp(new std::ofstream(infofile.str().c_str()));
-    }
-    else
-    {
-        outFile = Teuchos::rcp(new Teuchos::oblackholestream());
-    }
-    return outFile;
-}
-
-//------------------------------------------------------------------
-void initializeEnvironment(int argc, char **argv)
-{
-#ifdef HAVE_MPI           // Initialize communicator
-    MPI_Init(&argc, &argv);
-    comm = rcp(new Epetra_MpiComm(MPI_COMM_WORLD));
-#else
-    comm = rcp(new Epetra_SerialComm());
-#endif
-    outFile = outputFiles();    // Initialize output files
-
-    // seed random number generator
-    srand(time(NULL));
-}
 
 //------------------------------------------------------------------
 double norm(Teuchos::RCP<Epetra_Vector> vec)
@@ -146,3 +101,5 @@ getGatheredVector(Teuchos::RCP<Epetra_Vector> vec)
 
     return gvec;
 }
+
+#endif

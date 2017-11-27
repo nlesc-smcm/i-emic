@@ -27,6 +27,8 @@ namespace // local unnamed namespace (similar to static in C)
     
     int n, m, l, dof, aux, periodic;
     double xmin,xmax,ymin,ymax;
+
+    RCP<Epetra_Comm> comm;
 }
 
 //------------------------------------------------------------------
@@ -505,7 +507,7 @@ TEST(Domain, numericalJacobian)
 int main(int argc, char **argv)
 {
     // Initialize the environment:
-    initializeEnvironment(argc, argv);
+    comm = initializeEnvironment(argc, argv);
     if (outFile == Teuchos::null)
         throw std::runtime_error("ERROR: Specify output streams");
 

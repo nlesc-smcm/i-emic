@@ -7,6 +7,7 @@ namespace
 {
     std::shared_ptr<Atmosphere>    atmos;
     std::shared_ptr<AtmospherePar> atmosPar;
+    RCP<Epetra_Comm>               comm;
 }
 
 //------------------------------------------------------------------
@@ -343,7 +344,7 @@ TEST(Atmosphere, Newton)
 int main(int argc, char **argv)
 {
     // Initialize the environment:
-    initializeEnvironment(argc, argv);
+    comm = initializeEnvironment(argc, argv);
     if (outFile == Teuchos::null)
         throw std::runtime_error("ERROR: Specify output streams");
 

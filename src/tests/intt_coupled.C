@@ -10,6 +10,7 @@ namespace // local unnamed namespace (similar to static in C)
     RCP<Teuchos::ParameterList> atmosphereParams;
     RCP<Teuchos::ParameterList> coupledmodelParams;
     RCP<Teuchos::ParameterList> continuationParams;
+    RCP<Epetra_Comm>            comm;
 }
 
 //------------------------------------------------------------------
@@ -327,7 +328,7 @@ TEST(CoupledModel, SmallPerturbation)
 int main(int argc, char **argv)
 {
     // Initialize the environment:
-    initializeEnvironment(argc, argv);
+    comm = initializeEnvironment(argc, argv);
     if (outFile == Teuchos::null)
         throw std::runtime_error("ERROR: Specify output streams");
 

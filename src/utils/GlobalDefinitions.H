@@ -25,8 +25,9 @@
 #include <stack>
 #include <ctime>  // std::clock()
 
-// This outstream needs to be defined in the main routine.
+// These outstreams need to be defined in the main routine.
 extern Teuchos::RCP<std::ostream> outFile;
+extern Teuchos::RCP<std::ostream> cdataFile;
 
 //------------------------------------------------------------------
 // Setup profile:
@@ -54,6 +55,10 @@ extern std::stack<Timer> timerStack;
 
 #ifndef INFO
 #  define INFO(s) (*outFile) << s << std::endl; 
+#endif
+
+#ifndef WRITECDATA
+#  define WRITECDATA(s) (*cdataFile) << s << std::endl; 
 #endif
 
 #ifndef ERROR

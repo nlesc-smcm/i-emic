@@ -1,3 +1,6 @@
+#ifndef RUNDEFINITIONS_H
+#define RUNDEFINITIONS_H
+
 //=============================================================================
 // General definitions for runs
 //=============================================================================
@@ -41,6 +44,7 @@ using Teuchos::RCP;
 using Teuchos::rcp;
 
 RCP<std::ostream> outFile;      // output file
+RCP<std::ostream> cdataFile;    // cdata file
 ProfileType       profile;      // profile
 std::stack<Timer> timerStack;   // timing stack
 
@@ -52,7 +56,7 @@ void  outputFiles(RCP<Epetra_Comm> Comm)
     
     if (Comm->MyPID() < 2)
     {
-        std::ostringstream infofile;     // setting up a filename
+        std::ostringstream infofile;   // setting up a filename
 
         infofile    << "info_"    << Comm->MyPID()   << ".txt";
 
@@ -63,10 +67,25 @@ void  outputFiles(RCP<Epetra_Comm> Comm)
             Teuchos::rcp(new std::ofstream(infofile.str().c_str()));
     }
     else
+        outFile = Teuchos::rcp(new Teuchos::oblackholestream());
+
+    // Write continuation data on proc 0
+    if (Comm->MyPID() == 0)
     {
-        outFile =
-            Teuchos::rcp(new Teuchos::oblackholestream());
+        std::ostringstream cdatafile;  // setting up a filename
+
+        cdatafile << "cdata.txt";
+
+        std::cout << "continuation data is written to " <<  cdatafile.str().c_str()
+                  << " by CPU " << Comm->MyPID() << std::endl;            
+        
+        cdataFile =
+            Teuchos::rcp(new std::ofstream(cdatafile.str().c_str()));
     }
+    else
+        cdataFile = Teuchos::rcp(new Teuchos::oblackholestream());
+        
+    
 }
 
 //-----------------------------------------------------------------------------
@@ -147,3 +166,4 @@ void printProfile(ProfileType profile)
 }
 
 
+#endif
