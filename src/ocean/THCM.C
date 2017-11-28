@@ -2105,8 +2105,8 @@ void THCM::fixMixing(int value)
 {
     if (vmix_GLB)
     {
-        INFO("setting vmix_fix to "<<value);
-        F90NAME(m_mix,set_vmix_fix)(&value);
+        INFO("setting vmix_fix to " << value);
+        F90NAME(m_mix, set_vmix_fix)(&value);
     }
 }
 

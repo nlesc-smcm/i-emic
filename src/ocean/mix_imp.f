@@ -71,17 +71,17 @@ Call structure DSM and FDJS
       if (vmix_GLB.eq.0) then
          vmix_flag = 0
          vmix_diff = 1
-         vmix_out  = 0
+         vmix_out  = 1
          vmix_fix  = 1
       else if (vmix_GLB.eq.1) then
          vmix_flag = 1
          vmix_diff = 1
-         vmix_out  = 0
+         vmix_out  = 1
          vmix_fix  = 1
       else if (vmix_GLB.eq.2) then
          vmix_flag = 2
          vmix_diff = 1
-         vmix_out  = 0
+         vmix_out  = 1
          vmix_fix  = 1
       else
          vmix_flag = -1
@@ -137,6 +137,7 @@ Call structure DSM and FDJS
       use m_usr
       use m_mix
       implicit none
+
 !include 'usr.com'
 !include 'mix.com'
 

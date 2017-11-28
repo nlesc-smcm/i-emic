@@ -1,14 +1,13 @@
 cdata = dlmread('cdata.txt', ' ', 1, 0)
 
-plot(cdata(:,1),cdata(:,2)); hold on
-plot(cdata(:,1),cdata(:,3)); 
-plot(cdata(:,1),cdata(:,4)); 
-plot(cdata(:,1),cdata(:,5)); 
-plot(cdata(:,1),cdata(:,6)); 
+zero_idx = sum(cdata,1) == 0;
+cdata = cdata(:,~zero_idx);
 
-hold off
+for i = 2:size(cdata,2)
+    figure(i)
+    plot(cdata(:,1),cdata(:,i))
+    title(i)
+    xlabel('par')
+    grid on
 
-size(cdata)
-
-xlabel('par')
-grid on
+end

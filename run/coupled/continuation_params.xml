@@ -38,18 +38,18 @@
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-4"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-5"/>
 
   <!-- Tolerance when converging on destination   -->
   <!--  for the secant process in detect()        -->
-  <Parameter name="destination tolerance" type="double" value="1.0e-4"/>
+  <Parameter name="destination tolerance" type="double" value="1.0e-5"/>
 
   <!-- Define the optimal range of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
   <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="10"/>
+  <Parameter name="maximum Newton iterations" type="int" value="7"/>
  
   <!-- Backtracking options -->
   <Parameter name="enable backtracking" type="bool" value="false"/>
