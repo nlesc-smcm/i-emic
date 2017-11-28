@@ -24,6 +24,8 @@ do
     cp -v $model $runid/$newfile
 done
 
+# Copy parameter files-------------------------------------------------
+
 logdir=$runid/log_label_$label
 echo ""
 echo "Storing parameterlists in directory" $logdir
@@ -42,6 +44,8 @@ echo ""
 echo "Copy outputfiles to" $logdir
 echo ""
 
+## Copy info files -----------------------------------------------------
+
 for infofile in info_*.txt
 do
     newinfofile=${infofile/.txt/_lbl$label.txt}
@@ -49,6 +53,13 @@ do
     echo   $infofile '->' $logdir/$newinfofile
     cat    $infofile >> $logdir/$newinfofile
 done
+
+## Copy cdata file ----------------------------------------------------
+
+cdatafile=cdata.txt
+newcdatafile=${cdatafile/.txt/_lbl$label.txt}
+echo   $cdatafile '->' $logdir/$newcdatafile
+cat    $cdatafile > $logdir/$newcdatafile
 
 echo ""
 echo "Building log" $logdir
