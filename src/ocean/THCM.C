@@ -2103,9 +2103,9 @@ void THCM::insert_graph_entry(int* indices, int& pos,
 // set vmix_fix
 void THCM::fixMixing(int value)
 {
-    if (vmix_GLB)
+    if (vmix_GLB == 2)
     {
-        INFO("setting vmix_fix to " << value);
+        INFO(" ** fixing vmix_fix: " << value << " **");
         F90NAME(m_mix, set_vmix_fix)(&value);
     }
 }

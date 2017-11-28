@@ -172,6 +172,8 @@ TEST(CoupledModel, computeJacobian)
 
         // randomize state
         coupledModel->getState('V')->PutScalar(1.234);
+        coupledModel->getState('V')->Random();
+        coupledModel->getState('V')->Scale(10);
 
         coupledModel->computeJacobian();
         Teuchos::RCP<Epetra_CrsMatrix> atmosJac = atmos->getJacobian();
@@ -210,8 +212,8 @@ TEST(CoupledModel, numericalJacobian)
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> > njC;
 
-            njC.setTolerance(1e-10);
-            njC.seth(1e-5);
+            njC.setTolerance(1e-12);
+            njC.seth(1e-7);
             njC.compute(coupledModel, coupledModel->getState('V'));
 
             std::string fnameJnC("JnC");

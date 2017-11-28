@@ -2,7 +2,7 @@ C = load('ocean_jac'); C = spconvert(C);
 
 JnC = load_numjac('ocean_numjac');
 
-n = 8; m = 8; l = 4; dof = 6; 
+n = 6; m = 6; l = 4; dof = 6; 
 
 dim = n*m*l*dof;
 

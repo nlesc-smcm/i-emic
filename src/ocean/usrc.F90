@@ -353,20 +353,21 @@ SUBROUTINE matrix(un,sig1,sig2)
   ! ATvS-Mix ---------------------------------------------------------------------
   if (vmix_flag.ge.1) then
      call cpu_time(time0)
-     if (vmix_out.gt.0) write(*,'(a26)')"MIX| matrix...    "
-     if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     fix:   ', vmix_fix
+     if (vmix_out.gt.0) write(99,'(a26)')"MIX| matrix...    "
+     if (vmix_out.gt.0) write(99,'(a16,i10)') 'MIX|     fix:   ', vmix_fix
+     if (vmix_out.gt.0) write(99,'(a16,i10)') 'MIX|     flag:  ', vmix_flag
 
      if ((vmix_fix.eq.0).and.(vmix_flag.ge.2)) call vmix_control(un)
 
-     if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
-     if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
+     if (vmix_out.gt.0) write(99,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
+     if (vmix_out.gt.0) write(99,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
 
      if (((vmix_temp.eq.1).or.(vmix_salt.eq.1)).and.(vmix_dim.gt.0)) then
         call vmix_jac(un)
      endif
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
-     if (vmix_out.gt.0) write (*,'(a26, f10.3)') 'MIX|        ...matrix done', time1-time0
+     if (vmix_out.gt.0) write (99,'(a26, f10.3)') 'MIX|        ...matrix done', time1-time0
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
@@ -387,8 +388,7 @@ SUBROUTINE matrix(un,sig1,sig2)
         enddo
      enddo
   enddo
-
-
+  
   call boundaries
 
   call assemble
@@ -397,8 +397,8 @@ SUBROUTINE matrix(un,sig1,sig2)
 
   ! call writematrhs(0.0)
 
-  !     call writecsrmats
-  !     stop
+  ! call writecsrmats
+  ! stop
 end SUBROUTINE matrix
 !****************************************************************************
 SUBROUTINE rhs(un,B)
@@ -433,20 +433,20 @@ SUBROUTINE rhs(un,B)
   if (vmix_flag.ge.1) then
      mode=vmix_fix
      call cpu_time(time0)
-     if (vmix_out.gt.0) write(*,'(a26)')'MIX| rhs...               '
-     if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     fix:   ', vmix_fix
+     if (vmix_out.gt.0) write(99,'(a26)')'MIX| rhs...               '
+     if (vmix_out.gt.0) write(99,'(a16,i10)') 'MIX|     fix:   ', vmix_fix
 
      if ((vmix_fix.eq.0).and.(vmix_flag.ge.2)) call vmix_control(un)
 
-     if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
-     if (vmix_out.gt.0) write(*,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
+     if (vmix_out.gt.0) write(99,'(a16,i10)') 'MIX|     temp:  ', vmix_temp
+     if (vmix_out.gt.0) write(99,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
 
      if (((vmix_temp.eq.1).or.(vmix_salt.eq.1)).and.(vmix_dim.gt.0)) then
         call vmix_fun(un,mix,vmix_fix)
      endif
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
-     if (vmix_out.gt.0) write (*,'(a26,f10.3)') 'MIX|    ...rhs done',time1-time0
+     if (vmix_out.gt.0) write (99,'(a26,f10.3)') 'MIX|    ...rhs done',time1-time0
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 

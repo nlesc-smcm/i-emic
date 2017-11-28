@@ -55,13 +55,16 @@ figure(2)
 spy(JnC11)
 title('num C11')
 
-tol = 1e-6
+tol = 1e-4
 
 diff11 = abs(C11 - numC11)./abs(C11) > tol;
 if sum(diff11(:)) > 0
-    figure(3)
+    figure(3) 
+    spy(diff11)
+    figure(4)
     diff11 = abs(C11 - numC11)
     imagesc(diff11); colorbar
+    axis square
     title('C11 diff')
 end
 

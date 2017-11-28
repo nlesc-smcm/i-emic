@@ -53,10 +53,6 @@ Call structure DSM and FDJS
 !   |                                                |
 !   |                                                |
 !   |                                                |
-!   |                                                |
-!   |                                                |
-!   |                                                |
-!   |                                                |
 !   +------------------------------------------------+
       
       subroutine vmix_init
@@ -82,7 +78,7 @@ Call structure DSM and FDJS
          vmix_flag = 2
          vmix_diff = 1
          vmix_out  = 1
-         vmix_fix  = 1
+         vmix_fix  = 0
       else
          vmix_flag = -1
       endif
@@ -751,7 +747,7 @@ Call structure DSM and FDJS
       integer ix,iy,iz,ie,jx,jy,jz,je,s
       logical col
 
-      eps = 1.0e-08
+      eps = 1.0e-08 ! --> adjust?
 
       select case(vmix_diff)
 !     *     Forward differences

@@ -901,6 +901,7 @@ void Ocean::computeRHS()
 {
     // evaluate rhs in THCM with the current state
     TIMER_START("Ocean: compute RHS...");
+    THCM::Instance().fixMixing(0);
     THCM::Instance().evaluate(*state_, rhs_, false);
     TIMER_STOP("Ocean: compute RHS...");
 }
@@ -911,6 +912,7 @@ void Ocean::computeJacobian()
     TIMER_START("Ocean: compute Jacobian...");
 
     // Compute the Jacobian in THCM using the current state
+    THCM::Instance().fixMixing(0);
     THCM::Instance().evaluate(*state_, Teuchos::null, true);
 
     // Get the Jacobian from THCM

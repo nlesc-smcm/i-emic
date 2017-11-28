@@ -54,7 +54,6 @@ subroutine set_vmix_fix(vm_fix)
 implicit none
 
 integer :: vm_fix
-write (*,*) "~FDEBUG~ setting vmix_fix to ", vm_fix
 vmix_fix = vm_fix
 
 end subroutine set_vmix_fix

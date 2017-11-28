@@ -250,7 +250,7 @@ TEST(CoupledModel, Continuation)
         std::shared_ptr<Combined_MultiVec> stateV =
             coupledModel->getState('V');
         
-        stateV->PutScalar(0.0);
+        stateV->PutScalar(1.234);
         
         std::shared_ptr<Combined_MultiVec> solV =
             coupledModel->getSolution('V');
@@ -267,6 +267,9 @@ TEST(CoupledModel, Continuation)
 
         // Test continuation
         continuation.test();
+
+        stateV->PutScalar(0.0);
+        solV->PutScalar(0.0);
          
         // Run continuation        
         continuation.run();
@@ -279,6 +282,57 @@ TEST(CoupledModel, Continuation)
 
     EXPECT_EQ(failed, false);
 }
+
+//------------------------------------------------------------------
+TEST(CoupledModel, numericalJacobian)
+{
+    // only do this test for small problems in serial
+    int nmax = 2e3;
+
+    // get Jacobian blocks in the model
+    coupledModel->dumpBlocks();
+    
+    if ( (comm->NumProc() == 1) &&
+         (coupledModel->getState('V')->GlobalLength() < nmax) )
+    {
+        bool failed = false;
+        try
+        {
+            INFO("compute njC");
+
+            NumericalJacobian<std::shared_ptr<CoupledModel>,
+                              std::shared_ptr<Combined_MultiVec> > njC;
+
+            njC.setTolerance(1e-11);
+            njC.seth(1e-12);
+            njC.compute(coupledModel, coupledModel->getState('V'));
+
+            std::string fnameJnC("JnC");
+
+            INFO(" Printing Numerical Jacobian " << fnameJnC);
+
+            njC.print(fnameJnC);
+
+        }
+        catch (...)
+        {
+            failed = true;
+            throw;
+        }
+        EXPECT_EQ(failed, false);
+    }
+
+    if (comm->NumProc() != 1)
+    {
+        INFO("****Numerical Jacobian test cannot run in parallel****");
+    }
+
+    if (coupledModel->getState('V')->GlobalLength() > nmax)
+    {
+        INFO("****Numerical Jacobian test cannot run for this problem size****");
+    }
+}
+
 
 //------------------------------------------------------------------
 // 2nd integral condition test

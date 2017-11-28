@@ -49,9 +49,9 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="8"/>
+    <Parameter name="Global Grid-Size n" type="int" value="6"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="8"/>
+    <Parameter name="Global Grid-Size m" type="int" value="6"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="4"/>
 
@@ -88,8 +88,8 @@
 	
     <!-- Mixing parameter (vmix_GLB in THCM)                                   -->
 	<!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
-	<!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                               -->
-	<!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                               -->
+	<!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                              -->
+	<!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                              -->
     <Parameter name="Mixing" type="int" value="1"/>
 	
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->

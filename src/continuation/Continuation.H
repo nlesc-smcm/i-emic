@@ -935,6 +935,7 @@ testCopyView()
     VectorPtr copy1 = model_->getState('C');
     VectorPtr view2 = model_->getState('V');
     VectorPtr copy2 = model_->getState('C');
+    
     INFO("view1      norm: " << Utils::norm(view1));
     INFO("view2      norm: " << Utils::norm(view2));
     INFO("copy1      norm: " << Utils::norm(copy1));
@@ -942,21 +943,27 @@ testCopyView()
 
     INFO("Testing view");
     INFO("Scaling view1 with 2 ---------------");
+
     view1->Scale(2.0);
+    
     INFO("view1      norm: " << Utils::norm(view1));
     INFO("view2      norm: " << Utils::norm(view2));
 
-    assert(Utils::norm(view1) != Utils::norm(view2));
+    assert(Utils::norm(view1) == Utils::norm(view2));
 
     INFO("Restore view: scale with 1/2");
+    
     view1->Scale(0.5);
+    
     INFO("Testing copy");
     INFO("Scaling copy1 with 3 ---------------");
+    
     copy1->Scale(3.0);
+    
     INFO("copy1      norm: " << Utils::norm(copy1));
     INFO("copy2      norm: " << Utils::norm(copy2));
 
-    assert(Utils::norm(copy1) == Utils::norm(copy2));
+    assert(Utils::norm(copy1) != Utils::norm(copy2));
     
     INFO("******************************************************");
 }

@@ -46,7 +46,7 @@
 
   <!-- Define the optimal range of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
+  <Parameter name="maximum desired Newton iterations" type="int" value="3"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
   <Parameter name="maximum Newton iterations" type="int" value="7"/>
