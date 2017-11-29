@@ -53,6 +53,6 @@
   
   <!-- Preconditioner parameters.                                         -->
   <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.         -->
-  <Parameter name="Ifpack overlap level" type="int" value="0" />
+  <Parameter name="Ifpack overlap level" type="int" value="1" />
 
 </ParameterList>

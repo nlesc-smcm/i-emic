@@ -169,8 +169,21 @@ public:
     std::string const writeData(bool describe = false)
         {
             std::ostringstream datastring;
-            datastring << ocean_->writeData(describe) << " "
-                       << atmos_->writeData(describe);
+            if (describe)
+            {
+                datastring << std::setw(_FIELDWIDTH_/2)
+                           << "MV"
+                           << ocean_->writeData(describe) << " "
+                           << atmos_->writeData(describe) ;            
+            }
+            else
+            {
+                datastring.precision(_PRECISION_);
+                datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
+                           << belosSolver_->getNumIters();
+                datastring << ocean_->writeData(describe) << " "
+                           << atmos_->writeData(describe) ;
+            }
 
             return datastring.str();
         }

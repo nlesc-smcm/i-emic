@@ -1025,26 +1025,38 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 writeData(bool describe)
 {
-    std::ostringstream datastring;
+    // Write continuation data
+    std::ostringstream cdatastring;
     if (describe)
     {
-        datastring << std::setw(_FIELDWIDTH_)
-                   << "par" 
-                   << std::setw(_FIELDWIDTH_) 
-                   << "||x||"
-                   << model_->writeData(describe);
+        cdatastring << std::setw(_FIELDWIDTH_)
+                    << "par" 
+                    << std::setw(_FIELDWIDTH_) 
+                    << "ds"
+                    << std::setw(_FIELDWIDTH_) 
+                    << "||x||"
+                    << std::setw(_FIELDWIDTH_) 
+                    << "||F||"
+                    << std::setw(_FIELDWIDTH_/2) 
+                    << "NR"
+                    << model_->writeData(describe);
     }
     else
     {
 
-        datastring.precision(_PRECISION_);
+        cdatastring.precision(_PRECISION_);
 
-        datastring << std::scientific <<  std::setw(_FIELDWIDTH_) << par_
-                   << std::setw(_FIELDWIDTH_) <<  Utils::norm(stateView_)
-                   << model_->writeData();
+        cdatastring << std::scientific
+                    << std::setw(_FIELDWIDTH_) <<  par_
+                    << std::setw(_FIELDWIDTH_) <<  ds_
+                    << std::setw(_FIELDWIDTH_) <<  Utils::norm(stateView_)
+                    << std::setw(_FIELDWIDTH_) <<  Utils::norm(rhsView_)
+                    << std::setw(_FIELDWIDTH_/2) <<  newtonIter_
+
+                    << model_->writeData();
     
     }
-    WRITECDATA(datastring.str());
+    WRITECDATA(cdatastring.str());
 }
 
 #endif

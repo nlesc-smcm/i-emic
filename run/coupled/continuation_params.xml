@@ -5,7 +5,7 @@
 <ParameterList name="Continuation parameters">
 
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size"  type="double"  value="1.0e-3"/>
+  <Parameter name="initial step size"  type="double"  value="1.0e-2"/>
   <Parameter name="minimum step size"  type="double"  value="1.0e-8"/>
   <Parameter name="maximum step size"  type="double"  value="1.0e-1"/>
 
@@ -13,8 +13,8 @@
   <Parameter name="give up at minimum step size" type="bool" value="true"/>
 
   <!-- Define the scalings when increasing or decreasing the step size -->
-  <Parameter name="increase step size" type="double"  value="1.2"/>
-  <Parameter name="decrease step size" type="double"  value="1.2"/>
+  <Parameter name="increase step size" type="double"  value="1.05"/>
+  <Parameter name="decrease step size" type="double"  value="1.1"/>
 
   <!-- Define the destination value for the continuation parameter -->
   <!-- Several destinations are allowed, in that case specify      -->
@@ -37,11 +37,11 @@
   <Parameter name="destination tolerance" type="double" value="1.0e-3"/>
 
   <!-- Define the optimal range of Newton iterations -->
-  <Parameter name="minimum desired Newton iterations" type="int" value="2"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="3"/>
+  <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
+  <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="7"/>
+  <Parameter name="maximum Newton iterations" type="int" value="10"/>
  
   <!-- Backtracking options -->
   <Parameter name="enable backtracking" type="bool" value="false"/>
@@ -55,7 +55,7 @@
   <!-- *******************************************************  -->
 
   <!-- Finite difference with which dFdpar is calculated -->
-  <Parameter name="epsilon increment" type="double" value="1.0e-6"/>
+  <Parameter name="epsilon increment" type="double" value="1.0e-4"/>
 
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->
@@ -67,7 +67,7 @@
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
-  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
+  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
 
   <Parameter name="backtracking increase" type="double" value="1.2"/>
 
@@ -82,6 +82,6 @@
   <Parameter name="initial tangent type" type="char" value="E"/>
 
   <!-- Bound on RHS in predicted state                       -->
-  <Parameter name="predictor bound" type="double" value="1.e1"/>
+  <Parameter name="predictor bound" type="double" value="1.e5"/>
 
 </ParameterList>

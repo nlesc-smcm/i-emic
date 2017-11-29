@@ -51,7 +51,7 @@
   <Parameter name="Salinity Forcing"    type="double" value="1e-3"/>
   <Parameter name="Wind Forcing"        type="double" value="1.0"/>
   <Parameter name="Temperature Forcing" type="double" value="0.0"/>
-  <Parameter name="Humidity Forcing"    type="double" value="1.0"/>
+  <Parameter name="Humidity Forcing"    type="double" value="0.0"/>
 
   <!-- D: decoupled -->
   <Parameter name="Solving scheme" type="char" value="C"/>
