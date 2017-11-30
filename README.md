@@ -28,7 +28,14 @@ Define the following environment variables:
 
 
 ## Installation:
+  * Install cmake, lapack, blas, openmpi and hdf5-openmpi as described above.
+
   * Install gtest
+    *  On ubuntu with sudo priviliges: install libgtest-dev
+    *  cd /usr/src/gtest
+    *  sudo cmake CMakeLists.txt
+    *  sudo make
+    *  sudo cp *.a /usr/lib
 
   * Install metis
 
