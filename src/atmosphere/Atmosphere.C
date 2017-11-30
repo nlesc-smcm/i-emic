@@ -118,7 +118,7 @@ void Atmosphere::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     cpa_             = params->get("heat capacity",1000.);
     d0_              = params->get("constant eddy diffusivity",3.1e+06);
     kappa_           = params->get("humidity eddy diffusivity",1e+06);
-    arad_            = params->get("radiative flux param A",216.0);
+    arad_            = params->get("radiative flux param A",212.0);
     brad_            = params->get("radiative flux param B",1.5);
     sun0_            = params->get("solar constant",1360.);
     c0_              = params->get("atmospheric absorption coefficient",0.43);
@@ -129,7 +129,7 @@ void Atmosphere::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     t0o_             = params->get("reference temperature ocean",15.0);      //(C)
     t0i_             = params->get("reference temperature ice",0.0);         //(C)
     tdim_            = params->get("temperature scale", 1.0); // ( not used)
-    q0_              = params->get("reference humidity",0.015); // (kg/kg)
+    q0_              = params->get("reference humidity",15e-3); // (kg/kg)
     qdim_            = params->get("humidity scale", 0.01);  // (kg/kg)
 
     udim_            = params->get("horizontal velocity of the ocean", 0.1e+00);

@@ -51,14 +51,14 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
     
     T0  = 15.0;   %//! reference temperature
-    q0  = 0.0015;
+    q0  = 1.5e-3;
     RtD = 180/pi;    
     
     tdim = 1;
     qdim = 0.01;
     
     Ta  = T0 + tdim * squeeze(state(1,:,:,:));
-    qa  = q0 + qdim * squeeze(state(2,:,:,:));
+    qa  = qdim * squeeze(state(2,:,:,:));
     Tz  = mean(Ta,1); % zonal mean
     qz  = mean(qa,1); % zonal mean
 
@@ -96,7 +96,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
     c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
     colorbar
-    caxis([min(min(img)),max(max(img))])
+    %caxis([min(min(img)),max(max(img))])
     hold off
     drawnow
     title('qa anomaly')
@@ -109,10 +109,10 @@ function [state,pars,add] = plot_atmos(fname, opts)
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
     c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
     colorbar
-    caxis([min(min(qa)),max(max(qa))])
+    %caxis([min(min(qa)),max(max(qa))])
     hold off
     drawnow
-    title('Atmospheric humidity (kg / kg)')
+    title('Humidity anomaly (kg / kg)')
     xlabel('Longitude')
     ylabel('Latitude')
     exportfig('atmosq.eps')

@@ -55,4 +55,9 @@
   <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.         -->
   <Parameter name="Ifpack overlap level" type="int" value="1" />
 
+  <!-- Outgoing longwave radiation parameters -->
+  <Parameter name="radiative flux param A" type="double" value="216" />
+  <Parameter name="radiative flux param B" type="double" value="1.5" />
+ 
+
 </ParameterList>
