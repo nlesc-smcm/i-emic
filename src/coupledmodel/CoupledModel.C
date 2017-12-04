@@ -292,14 +292,10 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         tmp.Second()->Update(1.0, *x.Second(), 1.0);
         atmos_->applyPrecon(*tmp.Second(), *z.Second()); // inv(M2)*(x2+C21*z1^1)
     }
-    else if (solvingScheme_ == 'D')
+    else
     {
         atmos_->applyPrecon(*x.Second(), *z.Second());
         ocean_->applyPrecon(*x.First() , *z.First() );
-    }
-    else
-    {
-        WARNING("Invalid solving scheme ", __FILE__, __LINE__);
     }
 
     TIMER_STOP("CoupledModel: apply preconditioner...");
