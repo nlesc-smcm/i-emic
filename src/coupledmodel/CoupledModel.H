@@ -74,9 +74,15 @@ private:
     std::string parName_;
 
     //! Solving scheme
-    //!   'D': decoupled  (weakly coupled at post-processing)
-    //!   'C': coupled    (strongly coupled in FGMRES)
+    //!   'D': decoupled     (decoupled, syncs at post-processing)
+    //!   'Q': quasi-coupled (no coupling blocks, syncs at every NR step)
+    //!   'C': coupled       (fully coupled in FGMRES)
     char solvingScheme_;
+
+    //! Preconditioning
+    //!   'S': standard      (1.5 backward block Gauss Seidel)
+    //!   'D': diagonal      (do not incorporate coupling blocks in prec)
+    char precScheme_;
 
     //! keep track of syncs
     int syncCtr_;

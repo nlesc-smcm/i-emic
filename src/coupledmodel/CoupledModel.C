@@ -22,7 +22,7 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
     :
     ocean_(ocean),
     atmos_(atmos),
-
+    
     stateView_(std::make_shared<Combined_MultiVec>
                (ocean->getState('V'), atmos->getState('V'))),
     solView_  (std::make_shared<Combined_MultiVec>
@@ -34,6 +34,8 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                                    "Combined Forcing")),
     
     solvingScheme_    (params->get("Solving scheme", 'C')),
+    
+    precScheme_       (params->get("Preconditioning", 'F')),
 
     syncCtr_          (0),
     solverInitialized_(false)    
@@ -278,24 +280,44 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
 
     z.PutScalar(0.0);  // Initialize output
 
-    if (solvingScheme_ == 'C')
+    if (precScheme_ == 'D' || solvingScheme_ != 'C')
+    {
+        atmos_->applyPrecon(*x.Second(), *z.Second());
+        ocean_->applyPrecon(*x.First() , *z.First() );
+    }
+    else if (precScheme_ == 'B')
     {
         Combined_MultiVec tmp(x);
         tmp.PutScalar(0.0);
 
-        atmos_->applyPrecon(*x.Second(), *z.Second()); //  inv(M2)*x2
-        C12_.applyMatrix(*z.Second(), *tmp.First());
-        tmp.First()->Update(1.0, *x.First(), -1.0);
-        ocean_->applyPrecon(*tmp.First(), *z.First()); // inv(M1)*(x1-C12*z2^1)
+        atmos_->applyPrecon(*x.Second(), *z.Second()); //  z2   = inv(M2)*x2
+        C12_.applyMatrix(*z.Second(), *tmp.First());   //  tmp1 = C12*x2
+        tmp.First()->Update(1.0, *x.First(), -1.0);    //  tmp1 = x1 - C12*x2
+        ocean_->applyPrecon(*tmp.First(), *z.First()); //  z1   = inv(M1)*tmp1
 
-        C21_.applyMatrix(*z.First(), *tmp.Second());
-        tmp.Second()->Update(1.0, *x.Second(), 1.0);
-        atmos_->applyPrecon(*tmp.Second(), *z.Second()); // inv(M2)*(x2+C21*z1^1)
+    }
+    else if (precScheme_ == 'F' || precScheme_ == 'G')
+    {
+        Combined_MultiVec tmp(x);
+        tmp.PutScalar(0.0);
+        ocean_->applyPrecon(*x.First(), *z.First());     // z1   = inv(M1) * x1
+        C21_.applyMatrix(*z.First(), *tmp.Second());     // tmp2 = C21*z1
+        tmp.Second()->Update(1.0, *x.Second(), -1.0);    // tmp2 = x2 - C21*z1
+        atmos_->applyPrecon(*tmp.Second(), *z.Second()); // z2   = inv(M2)*tmp2 
+
+        if (precScheme_ == 'G')
+        {
+            C12_.applyMatrix(*z.Second(), *tmp.First());     // tmp1 = C12*z2
+            tmp.First()->Update(1.0, *x.First(), 1.0);       // tmp1 = x1 + C12*z2
+            ocean_->applyPrecon(*tmp.First(), *z.First());   //   z1 = inv(M1) * tmp1
+            C21_.applyMatrix(*z.First(), *tmp.Second());     // tmp2 = C21*z1
+            tmp.Second()->Update(1.0, *x.Second(), -1.0);    // tmp2 = x2 - C21*z1
+            atmos_->applyPrecon(*tmp.Second(), *z.Second()); // z2   = inv(M2)*tmp2 
+        }        
     }
     else
     {
-        atmos_->applyPrecon(*x.Second(), *z.Second());
-        ocean_->applyPrecon(*x.First() , *z.First() );
+        WARNING("Invalid Preconditioning scheme: " << precScheme_, __FILE__, __LINE__);
     }
 
     TIMER_STOP("CoupledModel: apply preconditioner...");

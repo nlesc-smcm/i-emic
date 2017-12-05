@@ -1,20 +1,37 @@
-system('tail -n +2 cdata.txt > cdata.tmp'); 
-cdata = load('cdata.tmp');
-system('head -n 1 cdata.txt > cdata.tmp');
-fid = fopen('cdata.tmp','r');
+function [titles, cdata] = plot_cdata(fname, lsty)
+    
+    if nargin < 2
+        lsty = 'k.-';
+    end
+    if (nargin < 1)
+        fname = 'cdata.txt'
+    end
 
-ncol = size(cdata,2);
+    system(['tail -n +2 ', fname, ' > tmp']); 
+    cdata = load('tmp');
+    system(['head -n 1 ', fname, ' > tmp']);
+    fid = fopen('tmp','r');
 
-titles = cell(ncol,1);
+    ncol = size(cdata,2);
 
-for i = 1:ncol
-    titles{i} = fscanf(fid,'%s',1);
-end
+    titles = cell(ncol,1);
 
-for i = 2:size(cdata,2)
-    figure(i)
-    plot(cdata(:,1),cdata(:,i));
-    title(titles{i})
-    xlabel('par');
-    grid on;
+    for i = 1:ncol
+        titles{i} = fscanf(fid,'%s',1);
+    end
+
+    for i = 2:size(cdata,2)
+        figure(i)
+        if strcmp(titles{i}, 'NR') || strcmp(titles{i}, 'ds') || ...
+                strcmp(titles{i}, '||F||') || strcmp(titles{i}, 'MV')
+            plot(cdata(:,1),cdata(:,i),lsty);
+            xlabel('par');
+        else
+            plot(cdata(:,1),cdata(:,i),lsty);
+            xlabel('par');
+        end
+        title(titles{i})
+        grid on;
+    end
+
 end
