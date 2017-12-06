@@ -92,8 +92,12 @@ void CoupledModel::computeJacobian()
 
     ocean_->computeJacobian();  // Ocean
     atmos_->computeJacobian();  // Atmosphere
-    C12_.computeBlock();        // Recompute Ocean <- Atmos dependence
-    C21_.computeBlock();        // Recompute Atmos <- Ocean dependence
+
+    if (solvingScheme_ == 'C')
+    {
+        C12_.computeBlock();   // Recompute Ocean <- Atmos dependence
+        C21_.computeBlock();   // Recompute Atmos <- Ocean dependence
+    }
 
     TIMER_STOP("CoupledModel: compute Jacobian");
 }
@@ -285,7 +289,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         atmos_->applyPrecon(*x.Second(), *z.Second());
         ocean_->applyPrecon(*x.First() , *z.First() );
     }
-    else if (precScheme_ == 'B')
+    else if (precScheme_ == 'B' && solvingScheme_ == 'C')
     {
         Combined_MultiVec tmp(x);
         tmp.PutScalar(0.0);
@@ -296,7 +300,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         ocean_->applyPrecon(*tmp.First(), *z.First()); //  z1   = inv(M1)*tmp1
 
     }
-    else if (precScheme_ == 'F' || precScheme_ == 'G')
+    else if ( (precScheme_ == 'F' || precScheme_ == 'G') && solvingScheme_ == 'C')
     {
         Combined_MultiVec tmp(x);
         tmp.PutScalar(0.0);
@@ -317,7 +321,8 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
     }
     else
     {
-        WARNING("Invalid Preconditioning scheme: " << precScheme_, __FILE__, __LINE__);
+        WARNING("Invalid prec/solve scheme: " << precScheme_ << " " << solvingScheme_,
+                __FILE__, __LINE__);
     }
 
     TIMER_STOP("CoupledModel: apply preconditioner...");

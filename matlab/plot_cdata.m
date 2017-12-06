@@ -6,19 +6,8 @@ function [titles, cdata] = plot_cdata(fname, lsty)
     if (nargin < 1)
         fname = 'cdata.txt'
     end
-
-    system(['tail -n +2 ', fname, ' > tmp']); 
-    cdata = load('tmp');
-    system(['head -n 1 ', fname, ' > tmp']);
-    fid = fopen('tmp','r');
-
-    ncol = size(cdata,2);
-
-    titles = cell(ncol,1);
-
-    for i = 1:ncol
-        titles{i} = fscanf(fid,'%s',1);
-    end
+    
+    [titles, cdata] = load_cdata(fname);
 
     for i = 2:size(cdata,2)
         figure(i)
