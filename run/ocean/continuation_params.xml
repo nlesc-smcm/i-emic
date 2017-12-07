@@ -5,13 +5,13 @@
 <ParameterList name="Continuation parameters">
 
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size"  type="double"  value="1.0e-2"/>
-  <Parameter name="minimum step size"  type="double"  value="1.0e-3"/>
+  <Parameter name="initial step size"  type="double"  value="1.0e-3"/>
+  <Parameter name="minimum step size"  type="double"  value="1.0e-5"/>
   <Parameter name="maximum step size"  type="double"  value="1.0e-1"/>
 
   <!-- Define the scalings when increasing or decreasing the step size -->
-  <Parameter name="increase step size" type="double"  value="1.5"/>
-  <Parameter name="decrease step size" type="double"  value="1.5"/>
+  <Parameter name="increase step size" type="double"  value="1.1"/>
+  <Parameter name="decrease step size" type="double"  value="1.1"/>
 
   <!-- Define the destination value for the continuation parameter -->
   <!-- Several destinations are allowed, in that case specify      -->
@@ -49,7 +49,7 @@
   <!-- *******************************************************  -->
 
   <!-- Finite difference with which dFdpar is calculated -->
-  <Parameter name="epsilon increment" type="double" value="1.0e-5"/>
+  <Parameter name="epsilon increment" type="double" value="1.0e-4"/>
 
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->
