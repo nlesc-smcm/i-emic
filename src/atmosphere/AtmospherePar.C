@@ -923,15 +923,16 @@ void AtmospherePar::computeEP()
     }
     else if (aux_ == 1)
     {
-        double Pvalue = 0.0;
+        double PvalueLoc = 0.0;
+        double Pvalue    = 0.0;
         int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
         int lid;
         if (state_->Map().MyGID(last+1))
         {
-            lid    = state_->Map().LID(last+1);
-            Pvalue = (*state_)[lid];
+            lid       = state_->Map().LID(last+1);
+            PvalueLoc = (*state_)[lid];
         }
-        comm_->SumAll(&Pvalue, &Pvalue, 1.0);
+        comm_->SumAll(&PvalueLoc, &Pvalue, 1.0);
         
         int gid;
         for (int i = 0; i != numMyElements; ++i)

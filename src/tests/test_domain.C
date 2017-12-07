@@ -395,12 +395,13 @@ TEST(Domain, Values)
         lid = standardMap->LID(last);
         P = (*b)[lid];
     }
-    
-    comm->SumAll(&P, &P, 1);
+
+    double Pall;
+    comm->SumAll(&P, &Pall, 1);
     int numMyLocalElements = assemblyMap->NumMyElements();
 
     // The final element should be P
-    EXPECT_EQ(P, (*localb)[numMyLocalElements-1]);    
+    EXPECT_EQ(Pall, (*localb)[numMyLocalElements-1]);    
 }
 
 //------------------------------------------------------------------
@@ -413,7 +414,7 @@ TEST(Domain, AtmosRHS)
     
     atmos->getSolution('V')->PutScalar(0.0);
 
-    double defaultP = 123.456;
+    double defaultP = 123.456;    
     
     atmos->idealized(defaultP);
     atmos->computeRHS();
@@ -426,14 +427,16 @@ TEST(Domain, AtmosRHS)
     int last = n * m * l * dof + aux - 1;
     int lid = -1;
     
+                   
     if ( comm->MyPID() == (comm->NumProc() - 1) )
     {
         lid = standardMap->LID(last);
         Prhs = (*rhs)[lid];
     }
-    
-    comm->SumAll(&Prhs, &Prhs, 1);
-    EXPECT_EQ(Prhs, -defaultP);
+
+    double PrhsAll;
+    comm->SumAll(&Prhs, &PrhsAll, 1);
+    EXPECT_EQ(PrhsAll, -defaultP);
 }
 
 //------------------------------------------------------------------
@@ -474,14 +477,16 @@ TEST(Domain, numericalJacobian)
             
             int numMyElements = standardMap->NumMyElements();
             double sum = 0;
+            double sumAll = 0;
             for (int i = 0; i != numMyElements; ++i)
                 sum += resl[i];
+
             
-            comm->SumAll(&sum, &sum, 1);
-            INFO("mat elements sum: " << sum);
+            comm->SumAll(&sum, &sumAll, 1);
+            INFO("mat elements sum: " << sumAll);
             INFO("njc elements sum: " << njCsum);
             
-            EXPECT_NEAR(sum, njCsum, 1e-4);
+            EXPECT_NEAR(sumAll, njCsum, 1e-4);
 
         }
         catch (...)

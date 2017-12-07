@@ -534,7 +534,6 @@ namespace TRIOS {
 
             INFO("Printing zero rows in Chat");
             EpetraExt::VectorToMatlabFile("zerorows", zeroRows);
-            getchar();
         }
 
 
