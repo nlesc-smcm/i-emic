@@ -1,5 +1,3 @@
 rm -rf CMakeCache.txt CMakeFiles
 
-cmake \
-\	
-../	
+cmake ../	
