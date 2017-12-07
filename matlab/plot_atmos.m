@@ -27,6 +27,13 @@ function [state,pars,add] = plot_atmos(fname, opts)
         opts.readP = readP;
     end
 
+    if isfield(opts, 'invert')
+        invert = opts.invert;
+    else
+        invert = false;
+        opts.invert = invert;
+    end
+
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
     surfm      = landm(2:n+1,2:m+1,l+1);    % Only interior surface points
     landm_int  = landm(2:n+1,2:m+1,2:l+1);
@@ -75,7 +82,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     title('Atmospheric temperature')
     xlabel('Longitude')
     ylabel('Latitude')
-    exportfig('atmosTemp.eps')
+    exportfig('atmosTemp.eps',10,[14,10],invert)
 
     figure(10)
     img = (Ta-repmat(Tz,n,1))';
@@ -115,7 +122,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     title('Humidity anomaly (kg / kg)')
     xlabel('Longitude')
     ylabel('Latitude')
-    exportfig('atmosq.eps')
+    exportfig('atmosq.eps',10,[14,10],invert)
     
     if readE && readP
         figure(13) 

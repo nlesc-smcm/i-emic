@@ -2,7 +2,7 @@
 rm -rf CMakeCache.txt
 rm -rf CMakeFiles
 
-module load cmake/3.0.1
+module load cmake
 module load mkl
 MKL_LIBS="mkl_intel_lp64;mkl_intel_thread;mkl_core;pthread"
 

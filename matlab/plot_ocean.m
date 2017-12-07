@@ -33,6 +33,12 @@ function [] = plot_ocean(solfile, maskfile, opts)
     else
         export_to_file = false;
     end
+    
+    if isfield(opts, 'invert')
+        invert = opts.invert
+    else
+        invert = false;
+    end
 
     % interpolation mode
     if isfield(opts, 'solfile2') && isfield(opts, 'maskfile2') ...
@@ -163,9 +169,8 @@ function [] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude')
         ylabel('Latitude');
 
-
         if export_to_file
-            exportfig(['bstream',opts.fname_add,'.eps'],10,[19,11])
+            exportfig(['bstream',opts.fname_add,'.eps'],10,[19,11],invert)
         end
 
     end
@@ -204,7 +209,7 @@ function [] = plot_ocean(solfile, maskfile, opts)
         colormap(col_white)
 
         if export_to_file
-            exportfig(['mstream',opts.fname_add,'.eps'],10,[19,10])
+            exportfig(['mstream',opts.fname_add,'.eps'],10,[19,10],invert)
         end
     end
 
@@ -253,7 +258,7 @@ function [] = plot_ocean(solfile, maskfile, opts)
         caxis([T0-crange, T0+crange]);
 
         if export_to_file
-            exportfig('isothermals.eps',10,[20,7])
+            exportfig('isothermals.eps',10,[20,7],invert)
         end
 
 
@@ -282,7 +287,7 @@ function [] = plot_ocean(solfile, maskfile, opts)
         % caxis(T0+[-crange, crange]);
 
         if export_to_file
-            exportfig('sst.eps',10,[50,25])
+            exportfig('sst.eps',10,[50,25],invert)
         end
 
         figure(5);
@@ -302,7 +307,7 @@ function [] = plot_ocean(solfile, maskfile, opts)
 
 
         if export_to_file
-            exportfig('isohalines.eps',10,[20,7])
+            exportfig('isohalines.eps',10,[20,7],invert)
         end
         
         figure(6); 

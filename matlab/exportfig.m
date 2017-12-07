@@ -31,12 +31,19 @@ function [] = exportfig(string,fs,dims,invert)
         set(legend,'color','k');
         set(legend,'edgecolor',[.5,.5,.5]);
         set(legend,'textcolor','w');        
+
+        title = get(gca,'title');
+        title.Color=[1,1,1];
+        
+        %set(colorbar, 'color', 'w');
+        
     end
     
     set(gcf,'inverthardcopy','off')
     fprintf('saving to %s...\n', string);
-    %print(string, '-depsc2', '-painters', '-opengl');
-    print(string, '-depsc2');
+    print(string, '-depsc2', '-painters', '-opengl');
+    %print(string, '-depsc2', '-painters');
+    %print(string, '-depsc2');
     %print(string)
     %saveas(gcf,string);
 end
