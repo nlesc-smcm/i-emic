@@ -8,7 +8,7 @@
   <!-- ..................................................................-->
   <!-- FGMRES (Belos) parameters                                         -->
   <!-- ..................................................................-->
-  <Parameter name="FGMRES tolerance" type="double" value="1e-3"/>
+  <Parameter name="FGMRES tolerance" type="double" value="1e-5"/>
   <Parameter name="FGMRES iterations" type="int" value="200"/>
   <Parameter name="FGMRES restarts" type="int" value="0"/>
   <Parameter name="FGMRES output" type="int" value="50"/> <!-- Output Frequency -->
