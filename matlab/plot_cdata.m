@@ -11,9 +11,8 @@ function [titles, cdata] = plot_cdata(fname, lsty)
 
     for i = 2:size(cdata,2)
         figure(i)
-        if strcmp(titles{i}, 'NR') || strcmp(titles{i}, 'ds') || ...
-                strcmp(titles{i}, '||F||') || strcmp(titles{i}, 'MV')
-            plot(cdata(:,1),cdata(:,i),lsty);
+        if strcmp(titles{i}, '||F||')
+            semilogy(cdata(:,1),cdata(:,i),lsty);
             xlabel('par');
         else
             plot(cdata(:,1),cdata(:,i),lsty);
