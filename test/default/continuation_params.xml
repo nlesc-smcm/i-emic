@@ -17,11 +17,11 @@
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-4"/>
 
   <!-- Tolerance when converging on destination         -->
   <!--  for both Newton and secant process in detect()  -->
-  <Parameter name="destination tolerance" type="double" value="1.0e-6"/>
+  <Parameter name="destination tolerance" type="double" value="1.0e-4"/>
   
   <!-- Define the optimal interval for the amount of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="4"/>
@@ -30,34 +30,23 @@
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
   <Parameter name="maximum Newton iterations" type="int" value="7"/>
 
+  <!-- Backtracking is disabled by default, I prefer resetting -->
+  <Parameter name="enable backtracking" type="bool" value="false"/>
+  
   <!-- Set the number of backtracking steps -->
-  <Parameter name="backtracking steps" type="int" value="5"/>
+  <Parameter name="backtracking steps" type="int" value="0"/>
 
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental, avoid them... -->
   <!-- *******************************************************  -->
 
-  <!-- Finite difference with which dFdpar is calculated -->
-  <Parameter name="epsilon increment" type="double" value="1.0e-5"/>
-  
-  <!-- Scaling of the state tangent, which needs to be several orders -->
-  <!-- smaller than the parameter tangent -->
-  <Parameter name="state tangent scaling" type="double" value="1.0e-5"/>
-
-  <!-- reject solution from failed Newton iteration -->
-  <Parameter name="reject failed iteration" type="bool" value="true"/>
-
-  <!-- cycle between multiples of the tolerance -->
-  <Parameter name="enable tolerance cycling" type="bool" value="false"/>
-
-  <!-- use alternative definition for the Newton tolerance-->
-  <Parameter name="enable practical tolerance" type="bool" value="false"/>
-
-  <!-- experimental rhs scaling -->
-  <Parameter name="enable rhs scaling" type="bool" value="false"/>
+  <!-- Scaling of the state tangent, which can be made several orders           -->
+  <!-- smaller than the parameter tangent.                                      -->
+  <!-- I believe this may decrease the algorithms capability to traverse folds. -->
+  <Parameter name="state tangent scaling" type="double" value="1.0e-2"/>
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
-  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
+  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
 
 </ParameterList>

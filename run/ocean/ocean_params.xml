@@ -1,22 +1,17 @@
-<!-- ******************************* -->
-<!-- Standard ocean model parameters -->
-<!--                                 -->
-<!-- ******************************* -->
-
-<ParameterList name="Ocean parameters">
+<!-- Ocean model parameters (mainly THCM) -->
+<ParameterList name="Ocean">
 
   <!-- Specify whether the ocean model should initialize with                -->
   <!-- an old state (true) or with a zero solution (false).                  -->
-  <!-- In a coupled situation this will be partly overruled by the parameters-->
-  <!-- specified in coupledmodel_params.xml                                  -->
+  <!-- In a coupled situation this will be partly overruled by the parameter -->
+  <!-- specified in CoupledModel                                             -->
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="false"/>
-  <Parameter name="Input file"  type="string" value="ocean_input.h5" />
-  <Parameter name="Output file" type="string" value="ocean_output.h5" />
+  <Parameter name="Input file"  type="string" value="ocean.h5" />
+  <Parameter name="Output file" type="string" value="ocean.h5" />
 
-  <!-- To keep track of each converged state, enable this.    -->
-  <!-- Only useful when you enable <Save state>               -->
-  <Parameter name="Save every step" type="bool" value="false" />
+  <!-- To keep track of each converged state, enable this. -->
+  <Parameter name="Store everything" type="bool" value="false" />
 
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->
@@ -27,11 +22,11 @@
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-
+  
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->
-    <Parameter name="Problem Description" type="string" value="Test"/>
+    <Parameter name="Problem Description" type="string" value="North Atlantic"/>
     <!-- western domain bound -->
     <Parameter name="Global Bound xmin" type="double" value="286"/>
     <!-- eastern domain bound -->
@@ -42,17 +37,19 @@
     <Parameter name="Global Bound ymax" type="double" value="74"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="0"/>
-
+    <!-- depth of the ocean -->
+    <Parameter name="Depth hdim" type="double" value="4000"/>
+    
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="8"/>
+    <Parameter name="Global Grid-Size n" type="int" value="16"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="8"/>
+    <Parameter name="Global Grid-Size m" type="int" value="16"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="8"/>
+    <Parameter name="Global Grid-Size l" type="int" value="16"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
@@ -73,25 +70,21 @@
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
     <Parameter name="Coupled Atmosphere" type="int" value="0"/>
     <!-- =============================================================== -->
-
-    <!-- Starting Parameters                                          -->
-    <!-- coupledmodel_params can overwrite these when running coupled -->
+	
+    <!-- Starting Parameters -->
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-      <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.1"/>
+      <Parameter name="Solar Forcing"       type="double" value="0.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-      <Parameter name="Temperature Forcing" type="double" value="1.0"/>
-      <Parameter name="SPL1"                type="double" value="2.0e3"/>
-      <Parameter name="SPL2"                type="double" value="0.01"/>
+	  <Parameter name="Temperature Forcing" type="double" value="10.0"/>
+	  <Parameter name="SPL1"                type="double" value="2.0e3"/>
+	  <Parameter name="SPL2"                type="double" value="0.01"/>	  
     </ParameterList>
-
-    <!-- Mixing parameter (vmix_GLB in THCM)                                   -->
-    <!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
-    <!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                               -->
-    <!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                               -->
+	
+    <!-- Mixing parameter (vmix_GLB in THCM)                                 -->
+	<!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely -->
     <Parameter name="Mixing" type="int" value="1"/>
-
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>
     <!-- Taper (tap in usr.F90) -->
@@ -99,15 +92,18 @@
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Temperature Profile" type="int" value="0"/>
+    <Parameter name="Restoring Temperature Profile" type="int" value="1"/>
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <!-- Freshwater Forcing (ifw in THCM) -->
+    <!-- 0: data, 1: idealized            -->
+    <Parameter name="Freshwater Forcing" type="int" value="1"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->
-    <Parameter name="Levitus T" type="int" value="1"/>
+    <Parameter name="Levitus T" type="int" value="1"/>    
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
     <Parameter name="Levitus S" type="int" value="1"/>
@@ -115,12 +111,12 @@
     <!-- 0: data,                         -->
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
-    <Parameter name="Wind Forcing Type" type="int" value="2"/>
-    <!-- Type of scaling applied to the linear systems.          -->
-    <!-- We currently support "None" and "THCM"                  -->
-    <!-- "None" is not really recomended.                        -->
-    <Parameter name="Scaling" type="string" value="THCM"/>
+    <Parameter name="Wind Forcing" type="int" value="2"/>
+    <!-- Type of scaling applied to the linear systems.                            -->
+    <!-- We currently support "None" and "THCM"                                    -->
+    <!-- "None" is not really recomended.                                          -->
+    <Parameter name="Scaling" type="string" value="THCM"/> 
 
   </ParameterList> <!-- } THCM -->
-
+  
 </ParameterList> <!-- } -->
