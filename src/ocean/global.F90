@@ -429,8 +429,7 @@ contains
     if (coupled_atm.ne.1) then
        if (ite.eq.0) then
           if (TRES.eq.0) then ! read heat flux and store it in tatm
-             _INFO_("Read heat flux and store it in tatm...")
-             call read_forcing(tatm,14)
+             _INFO_("Expecting heat flux to be provided by Ocean hdf5 interface...")
           else                ! read sst
              _INFO_("Read sst from levitus...")
              call levitus_sst
@@ -494,7 +493,7 @@ contains
     if (its.ne.1 .and. coupled_atm.eq.0) then
        ! read (virtual) salt flux and store it in emip
        if (SRES.eq.0) then 
-          call read_forcing(emip,15)
+          _INFO_("Expecting salinity flux to be provided by Ocean hdf5 interface...")
        else                ! read sss
           call levitus_sal
        end if

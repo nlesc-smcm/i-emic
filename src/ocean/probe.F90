@@ -1,7 +1,7 @@
 #include "fdefs.h"
 
 module m_probe
-  
+
   use m_usr
 
   implicit none
@@ -55,7 +55,7 @@ contains
        _INFO_("No coupling, not obtaining any data")
     end if
   end subroutine get_atmosphere_q
-  
+
   !!------------------------------------------------------------------
   subroutine get_atmosphere_p(atmos_p)
 
@@ -104,7 +104,7 @@ contains
        pos = 1
        do j = 1,m
           do i = 1,n
-             
+
              ocean_evap(pos) = eta * ((deltat / qdim) * &
                   dqso * un(find_row2(i,j,l,TT)) - &
                   qatm(i,j)) * (1 - landm(i,j,l))
@@ -123,5 +123,95 @@ contains
 
   end subroutine compute_evap
 
+  !!------------------------------------------------------------------
+  subroutine get_emip(cemip)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n) :: cemip
+    integer :: i,j,pos
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          cemip(pos) = emip(i,j)
+          pos = pos + 1
+       end do
+    end do
+  end subroutine get_emip
+
+  !!------------------------------------------------------------------
+  subroutine get_salflux(un, salflux)
+    use, intrinsic :: iso_c_binding
+    use m_par
+    use m_usr
+    implicit none
+    real(c_double), dimension(m*n) :: salflux
+    integer :: i,j,pos
+    real gamma
+
+    !     IMPORT/EXPORT
+    real(c_double),dimension(ndim) ::    un
+    
+    !     LOCAL
+    real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
+    real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
+    real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
+    
+
+    gamma = par(COMB) * par(SALT)
+
+    call usol(un,u,v,w,p,T,S)
+    
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          if (landm(i,j,l).eq.OCEAN) then
+             salflux(pos) = (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
+                  SRES * par(BIOT) * S(i,j,l) / gamma
+             pos = pos + 1
+          endif 
+       end do
+    end do
+    
+  end subroutine get_salflux
+
+  !!------------------------------------------------------------------
+  subroutine get_temflux(un, temflux)
+    use, intrinsic :: iso_c_binding
+    use m_par
+    use m_usr
+    implicit none
+    real(c_double), dimension(m*n) :: temflux
+    integer :: i,j,pos
+    real etabi
+
+    !     IMPORT/EXPORT
+    real(c_double),dimension(ndim) ::    un
+    
+    !     LOCAL
+    real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
+    real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
+    real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
+
+    etabi = par(COMB)*par(TEMP)
+
+    call usol(un,u,v,w,p,T,S)
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          if (landm(i,j,l).eq.OCEAN) then
+             temflux(pos) = (1 - TRES + TRES*par(BIOT)) * tatm(i,j) - &
+                  TRES * par(BIOT) * T(i,j,l) / etabi
+             pos = pos + 1
+          endif 
+       end do
+    end do
+    
+  end subroutine get_temflux
 
 end module m_probe

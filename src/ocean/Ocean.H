@@ -126,6 +126,10 @@ protected:
     bool loadState_;
     bool saveState_;
     bool saveMask_;
+    bool loadSalinityFlux_;
+    bool saveSalinityFlux_;
+    bool loadTemperatureFlux_;
+    bool saveTemperatureFlux_;
 
     //! Enable saving every state in multiple formats
     bool storeEverything_;

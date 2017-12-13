@@ -76,36 +76,52 @@ contains
              pos = pos + 1
           end do
        end do
-       !_INFO2_("++ Inserting EP: pfield(5,5) = ", pfield(5,5))
     else
        _INFO2_("Not inserting atmosphere P : coupled_atm=", coupled_atm)
     end if
   end subroutine insert_atmosphere_p
 
   !!------------------------------------------------------------------
-  subroutine insert_atmosphere_emip(inserted_atmos_emip)
-    
+  subroutine insert_emip(inserted_emip)
+
     use, intrinsic :: iso_c_binding
     use m_par  
     use m_usr
 
     implicit none
-    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_emip
+    real(c_double), dimension(m*n), intent(in) :: inserted_emip
     integer :: i,j,pos
 
-    if (coupled_atm.eq.1) then
-       pos = 1
-       do j = 1,m
-          do i = 1,n
-             emip(i,j) = inserted_atmos_emip(pos)
-             pos = pos + 1
-          end do
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          emip(i,j) = inserted_emip(pos)
+          pos = pos + 1
        end do
-       !_INFO2_("++ Inserting EP: pfield(5,5) = ", pfield(5,5))
-    else
-       _INFO2_("Not inserting atmosphere P : coupled_atm=", coupled_atm)
-    end if
-  end subroutine insert_atmosphere_emip
+    end do
 
-  
+  end subroutine insert_emip
+
+  !!------------------------------------------------------------------
+  subroutine insert_tatm(inserted_tatm)
+    
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+    
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_tatm
+    integer :: i,j,pos
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          tatm(i,j) = inserted_tatm(pos)
+          pos = pos + 1
+       end do
+    end do
+
+  end subroutine insert_tatm
+
+
 end module m_inserts

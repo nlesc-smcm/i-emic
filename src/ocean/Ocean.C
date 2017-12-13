@@ -53,9 +53,15 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
     inputFile_           (oceanParamList->get("Input file",  "ocean_input.h5")),
     outputFile_          (oceanParamList->get("Output file", "ocean_output.h5")),
+    
     loadState_           (oceanParamList->get("Load state", false)),
-    saveState_           (oceanParamList->get("Save state", false)),
+    saveState_           (oceanParamList->get("Save state", true)),
     saveMask_            (oceanParamList->get("Save mask", true)),
+    loadSalinityFlux_    (oceanParamList->get("Load salinity flux", false)),
+    saveSalinityFlux_    (oceanParamList->get("Save salinity flux", true)),
+    loadTemperatureFlux_ (oceanParamList->get("Load temperature flux", false)),
+    saveTemperatureFlux_ (oceanParamList->get("Save temperature flux", true)),
+
     storeEverything_     (oceanParamList->get("Store everything", false)),
 
     parName_             (oceanParamList->get("Continuation parameter",
@@ -88,7 +94,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     // grid representation of te state
     grid_   = rcp(new OceanGrid(domain_));
 
-
     // Read starting parameters from xml
     Teuchos::ParameterList& startList =
         thcmList.sublist("Starting Parameters");
@@ -96,6 +101,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
     // If specified we load a pre-existing state and parameters (x,l)
     // thereby overwriting the starting parameters
+    // This will be able to load salinity and temperature fluxes as well.
     if (loadState_)
         loadStateFromFile(inputFile_);
     else            // Initialize with trivial solution
@@ -1280,7 +1286,25 @@ int Ocean::saveStateToFile(std::string const &filename)
         INFO("   " << parName << " = " << parValue);
         HDF5.Write("Parameters", parName.c_str(), parValue);
     }
+    
+    if (saveSalinityFlux_)
+    {
+        // Write emip to ocean output file
+        INFO("Writing salinity flux to " << filename);
+        Teuchos::RCP<Epetra_Vector> salflux = THCM::Instance().getSalinityFlux();
+        HDF5.Write("SalinityFlux", *salflux);        
+    }
+
+    if (saveTemperatureFlux_)
+    {
+        // Write emip to ocean output file
+        INFO("Writing temperature flux to " << filename);
+        Teuchos::RCP<Epetra_Vector> temflux = THCM::Instance().getTemperatureFlux();
+        HDF5.Write("TemperatureFlux", *temflux);        
+    }
+    
     INFO("_________________________________________________________");
+    
     return 0;
 }
 
@@ -1314,9 +1338,9 @@ int Ocean::loadStateFromFile(std::string const &filename)
     HDF5.Open(filename);
     HDF5.Read("State", readState);
 
-    // Create importer
+    // Create import strategies
     // target map: thcm domain SolveMap
-    // source map: state with linear map  as read by HDF5.Read
+    // source map: state with linear map as read by HDF5.Read
     Teuchos::RCP<Epetra_Import> lin2solve =
         Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
                                        readState->Map() ));
@@ -1325,7 +1349,9 @@ int Ocean::loadStateFromFile(std::string const &filename)
     state_->Import(*((*readState)(0)), *lin2solve, Insert);
 
     INFO("   ocean state: ||x|| = " << Utils::norm(state_));
+    INFO("Loading state from " << filename << " done");
 
+    INFO("Loading parameters from " << filename);
     // Interface between HDF5 and the THCM parameters,
     // put all the (_NPAR_ = 30) THCM parameters back in THCM.
     std::string parName;
@@ -1348,7 +1374,58 @@ int Ocean::loadStateFromFile(std::string const &filename)
         setPar(parName, parValue);
         INFO("   " << parName << " = " << parValue);
     }
-    INFO("Loading state from " << filename << " done");
+          
+    INFO("Loading parameters from " << filename << " done");
+
+    if (loadSalinityFlux_)
+    {
+        INFO("Loading salinity flux from " << filename);
+
+        Epetra_MultiVector *readSalFlux;
+        HDF5.Read("SalinityFlux", readSalFlux);
+
+        // This should not be factorized as we cannot be sure what Map
+        // is going to come out of the HDF5.Read call.
+
+        Teuchos::RCP<Epetra_Vector> salflux = THCM::Instance().getSalinityFlux();
+        
+        Teuchos::RCP<Epetra_Import> lin2solve_surf =
+            Teuchos::rcp(new Epetra_Import( salflux->Map(),
+                                            readSalFlux->Map() ));
+
+        salflux->Import(*((*readSalFlux)(0)), *lin2solve_surf, Insert);
+
+        // Instruct THCM to set/insert this as the emip in the local model
+        THCM::Instance().setEmip(salflux);
+        
+        INFO("Loading salinity flux from " << filename << " done");
+    }
+
+    if (loadTemperatureFlux_)
+    {
+        INFO("Loading temperature flux from " << filename);
+
+        Epetra_MultiVector *readTemFlux;
+        HDF5.Read("TemperatureFlux", readTemFlux);
+
+        // This should not be factorized as we cannot be sure what Map
+        // is going to come out of the HDF5.Read call.
+
+        Teuchos::RCP<Epetra_Vector> temflux = THCM::Instance().getTemperatureFlux();
+        
+        Teuchos::RCP<Epetra_Import> lin2solve_surf =
+            Teuchos::rcp(new Epetra_Import( temflux->Map(),
+                                            readTemFlux->Map() ));
+
+        temflux->Import(*((*readTemFlux)(0)), *lin2solve_surf, Insert);
+
+        // Instruct THCM to set/insert this as tatm in the local model
+        THCM::Instance().setTatm(temflux);
+
+
+        INFO("Loading temperature flux from " << filename << " done");
+    }
+
     return 0;
 }
 

@@ -126,16 +126,20 @@ extern "C" {
                                                            double* gammat, double* gammas);
 
     //---------------------- I-EMIC couplings--------------------------------------
-    // Extensions created for communication within the I-EMIC
+    // Extensions created for communication within the I-EMIC 
     //
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_t)(double *atmosT);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_q)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_p)(double *atmosP);
-    _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_emip)(double *atmosEmiP);
-    _MODULE_SUBROUTINE_(m_probe, get_atmosphere_t)(double *atmosT);
-    _MODULE_SUBROUTINE_(m_probe, get_atmosphere_q)(double *atmosQ);
-    _MODULE_SUBROUTINE_(m_probe, get_atmosphere_p)(double *atmosP);
-    _MODULE_SUBROUTINE_(m_probe, compute_evap)(double *oceanE, double *x);
+    _MODULE_SUBROUTINE_(m_inserts, insert_emip)(double *emip);
+    _MODULE_SUBROUTINE_(m_inserts, insert_tatm)(double *emip);
+    _MODULE_SUBROUTINE_(m_probe,  get_emip)(double *emip);
+    _MODULE_SUBROUTINE_(m_probe,  get_salflux)(double *sol, double *salflux);
+    _MODULE_SUBROUTINE_(m_probe,  get_temflux)(double *sol, double *temflux);
+    _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_t)(double *atmosT);
+    _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_q)(double *atmosQ);
+    _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_p)(double *atmosP);
+    _MODULE_SUBROUTINE_(m_probe,  compute_evap)(double *oceanE, double *x);
     _MODULE_SUBROUTINE_(m_global, get_land_temp)(double *land);
     //-----------------------------------------------------------------------------
 
@@ -557,7 +561,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localAtmosP     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localOceanE     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosEmiP  = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localEmip       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localTatm       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSalFlux    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localTemFlux    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -1150,31 +1157,103 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
     double *tmpAtmosP;
     localAtmosP->ExtractView(&tmpAtmosP);
 
-// #ifdef DEBUGGING_NEW
-//     INFO("THCM:setAtmosphereP p(2) = " << tmpAtmosP[1]);
-// #endif 
-    
     F90NAME(m_inserts, insert_atmosphere_p)( tmpAtmosP );
 }
 
 //=============================================================================
-void THCM::setAtmosphereEmiP(Teuchos::RCP<Epetra_Vector> const &atmosEmiP)
+void THCM::setTatm(Teuchos::RCP<Epetra_Vector> const &tatm)
 {
     
-    if (!(atmosEmiP->Map().SameAs(*StandardSurfaceMap)))
+    if (!(tatm->Map().SameAs(*StandardSurfaceMap)))
     {
         // INFO("THCM::setAtmosphereEP: atmosP map -> StandardSurfaceMap");
-        CHECK_ZERO(atmosEmiP->ReplaceMap(*StandardSurfaceMap));
+        CHECK_ZERO(tatm->ReplaceMap(*StandardSurfaceMap));
     }
 
     // Standard2Assembly
     // Import atmosP into local atmosP
-    CHECK_ZERO(localAtmosEmiP->Import(*atmosEmiP, *as2std_surf, Insert));
+    CHECK_ZERO(localTatm->Import(*tatm, *as2std_surf, Insert));
 
-    double *tmpAtmosEmiP;
-    localAtmosEmiP->ExtractView(&tmpAtmosEmiP);
+    double *tmpTatm;
+    localTatm->ExtractView(&tmpTatm);
     
-    F90NAME(m_inserts, insert_atmosphere_emip)( tmpAtmosEmiP );
+    F90NAME(m_inserts, insert_tatm)( tmpTatm );
+}
+
+//=============================================================================
+void THCM::setEmip(Teuchos::RCP<Epetra_Vector> const &emip)
+{
+    
+    if (!(emip->Map().SameAs(*StandardSurfaceMap)))
+    {
+        // INFO("THCM::setAtmosphereEP: atmosP map -> StandardSurfaceMap");
+        CHECK_ZERO(emip->ReplaceMap(*StandardSurfaceMap));
+    }
+
+    // Standard2Assembly
+    // Import atmosP into local atmosP
+    CHECK_ZERO(localEmip->Import(*emip, *as2std_surf, Insert));
+
+    double *tmpEmip;
+    localEmip->ExtractView(&tmpEmip);
+    
+    F90NAME(m_inserts, insert_emip)( tmpEmip );
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getEmip()
+{
+    double* tmpEmip;
+    localEmip->ExtractView(&tmpEmip);
+    F90NAME(m_probe, get_emip )( tmpEmip );
+
+    Teuchos::RCP<Epetra_Vector> emip =
+        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+
+    // Export assembly map surface emip 
+    CHECK_ZERO(emip->Export(*localEmip, *as2std_surf, Zero));
+
+    return emip;        
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getSalinityFlux()
+{
+    double* tmpSalFlux;
+    localSalFlux->ExtractView(&tmpSalFlux);
+
+    double* solution;
+    localSol->ExtractView(&solution);
+
+    F90NAME(m_probe, get_salflux )( solution, tmpSalFlux );
+
+    Teuchos::RCP<Epetra_Vector> salflux =
+        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+
+    // Export assembly map surface salflux 
+    CHECK_ZERO(salflux->Export(*localSalFlux, *as2std_surf, Zero));
+
+    return salflux;    
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getTemperatureFlux()
+{
+    double* tmpTemFlux;
+    localTemFlux->ExtractView(&tmpTemFlux);
+
+    double* solution;
+    localSol->ExtractView(&solution);
+    
+    F90NAME(m_probe, get_temflux )( solution, tmpTemFlux );
+
+    Teuchos::RCP<Epetra_Vector> temflux =
+        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+
+    // Export assembly map surface temflux 
+    CHECK_ZERO(temflux->Export(*localTemFlux, *as2std_surf, Zero));
+
+    return temflux;    
 }
 
 //=============================================================================

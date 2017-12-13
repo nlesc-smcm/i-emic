@@ -142,9 +142,21 @@ public:
     //! Set atmosphere precipitation field in the ocean model
     void setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP);
 
-    //! Set atmosphere E-P field in the ocean model
-    void setAtmosphereEmiP(Teuchos::RCP<Epetra_Vector> const &atmosEmiP);
+    //! Set emip in the ocean model
+    void setEmip(Teuchos::RCP<Epetra_Vector> const &emip);
 
+    //! Set emip in the ocean model
+    void setTatm(Teuchos::RCP<Epetra_Vector> const &emip);
+    
+    //! Obtain non-overlapping emip
+    Teuchos::RCP<Epetra_Vector> getEmip();
+    
+    //! Obtain non-overlapping emip
+    Teuchos::RCP<Epetra_Vector> getSalinityFlux();
+
+    //! Obtain non-overlapping emip
+    Teuchos::RCP<Epetra_Vector> getTemperatureFlux();
+    
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
 
@@ -321,9 +333,18 @@ private:
     //! used to extract evaporation field from THCM
     Teuchos::RCP<Epetra_Vector> localOceanE;
 
-    //! used to import E-P field into THCM
-    Teuchos::RCP<Epetra_Vector> localAtmosEmiP;    
+    //! used to import emip field into THCM
+    Teuchos::RCP<Epetra_Vector> localEmip;    
 
+    //! used to import tatm field into THCM
+    Teuchos::RCP<Epetra_Vector> localTatm;    
+
+    //! used to obtain salinity flux from THCM
+    Teuchos::RCP<Epetra_Vector> localSalFlux;    
+
+    //! used to obtain temperature flux from THCM
+    Teuchos::RCP<Epetra_Vector> localTemFlux;    
+    
     //! used to export computed RHS vector from THCM:
     Teuchos::RCP<Epetra_Vector> localRhs;
 

@@ -64,11 +64,9 @@ SUBROUTINE forcing
      temcor = 0.0
   end if
 
-  ! write(*,*) "temcor      ", temcor
-  
   do j=1,m
      do i=1,n
-        if (la > 0) then      ! coupling to atmosphere
+        if (la > 0) then ! coupling to atmosphere
            Frc(find_row2(i,j,l+1,TT)) = &
                 par(COMB) * par(SUNP) * (suna(j) - amua)
            Frc(find_row2(i,j,l,TT)) = &
@@ -111,13 +109,6 @@ SUBROUTINE forcing
      spertcor = 0.0
   end if
 
-  !write(*,*) "salcor      ", salcor,      " spertcor      ", spertcor
-  !write(*,*)  " dQdq        ", par(COMB)*par(SALT)*nus*(-eta)
-  !write(*,*)  " par(COMB)   ", par(COMB)
-  !write(*,*)  " par(SALT)   ", par(SALT)
-  !write(*,*)  " nus         ", nus !, "qatm(2,2)   ", qatm(2,2)
-  !write(*,*)  " gamma       ", gamma
-  
   do j=1,m
      do i=1,n
         ! nus*(E-P) without the sst dependency, which is taken care of in usrc.F90
