@@ -1,4 +1,4 @@
-function [] = plot_ocean(solfile, maskfile, opts)
+function [sol, add] = plot_ocean(solfile, maskfile, opts)
 %---------------------------------------------------------------------
 % PLOTTHCM - Mother script for plotting THCM output
 %  usage: plot_ocean(solfile, maskfile, opts)
@@ -38,7 +38,7 @@ function [] = plot_ocean(solfile, maskfile, opts)
         invert = opts.invert
     else
         invert = false;
-    end
+    end    
 
     % interpolation mode
     if isfield(opts, 'solfile2') && isfield(opts, 'maskfile2') ...
@@ -96,14 +96,15 @@ function [] = plot_ocean(solfile, maskfile, opts)
 
     % - READ SOLUTION
     if strcmp(solfile(end-1:end),'h5')       % (.h5 version)
-        [sol] = readhdf5(solfile, nun, n, m, l);
+        [sol, pars, add] = readhdf5(solfile, nun, n, m, l, opts);
     else % (fort.3 version)
         [~,~,~,~,~,~,~,sol,~,~] = readfort3(la, solfile);
+        add = [];
     end
 
     if interp_mode
         if strcmp(solfile2(end-1:end),'h5')       % (.h5 version)
-            [sol2] = readhdf5(solfile2, nun, n, m, l);
+            [sol2] = readhdf5(solfile2, nun, n, m, l, opts);
         else % (fort.3 version)
             [~,~,~,~,~,~,~,sol2,~,~] = readfort3(la, solfile2);
         end
@@ -330,6 +331,36 @@ function [] = plot_ocean(solfile, maskfile, opts)
         
         colormap(col_white)
 
+    end
+    
+    if ( isfield(opts, 'salflux') || isfield(opts, 'everything') ) ...
+            && ~isempty(add)
+        
+        figure(7)
+        im = reshape(add.SalFlux,n,m);
+        imagesc(RtD*x, RtD*y, im');
+
+        set(gca, 'ydir', 'normal'); 
+        title('Salinity flux', 'interpreter', 'none');
+        xlabel('Longitude');
+        ylabel('Latitude');
+
+        im = zeros(n,m);
+        for i = 1:n
+            for j = 1:m
+                im(i,j) = salfun(x(i), y(j), ymin, ymax) - S(i,j,l);
+            end
+        end
+        
+        figure(8)
+        imagesc(RtD*x, RtD*y, im');
+
+        set(gca, 'ydir', 'normal'); 
+        title('Salinity flux', 'interpreter', 'none');
+        xlabel('Longitude');
+        ylabel('Latitude');
+
+        
     end
 
 end

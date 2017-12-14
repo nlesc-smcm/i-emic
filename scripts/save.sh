@@ -24,6 +24,9 @@ do
     cp -v $model $runid/$newfile
 done
 
+# Copy fort.44
+cp -v fort.44 $runid/fort.44
+
 # Copy parameter files-------------------------------------------------
 
 logdir=$runid/log_label_$label

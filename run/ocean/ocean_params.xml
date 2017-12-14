@@ -6,12 +6,13 @@
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
   <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Save state" type="bool" value="false"/>
-  <Parameter name="Input file"  type="string" value="ocean.h5" />
-  <Parameter name="Output file" type="string" value="ocean.h5" />
 
-  <!-- To keep track of each converged state, enable this. -->
-  <Parameter name="Store everything" type="bool" value="false" />
+  <!-- By default the salinity and temperature surface fluxes are written     -->
+  <!-- to <Output file>. Here we can choose to read them at initialization.   -->
+  <!-- Under restoring conditions (SRES or TRES set to 1) this would not make -->
+  <!-- any sense so a warning is given and the flag is set to false .         -->
+  <Parameter name="Load salinity flux" type="bool" value="false"/>
+  <Parameter name="Load temperature flux" type="bool" value="false"/>  
 
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->
@@ -75,7 +76,7 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.1"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
 	  <Parameter name="Temperature Forcing" type="double" value="10.0"/>
 	  <Parameter name="SPL1"                type="double" value="2.0e3"/>
@@ -97,9 +98,6 @@
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
     <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
-    <!-- Freshwater Forcing (ifw in THCM) -->
-    <!-- 0: data, 1: idealized            -->
-    <Parameter name="Freshwater Forcing" type="int" value="1"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->

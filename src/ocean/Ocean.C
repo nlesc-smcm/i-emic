@@ -80,6 +80,20 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     //  to THCM::Instance()
     thcm_ = rcp(new THCM(thcmList, comm_));
 
+    if (thcm_->getSRES() && loadSalinityFlux_)
+    {
+        WARNING(" SRES = 1 => loadSalinityFlux_ = false",
+                __FILE__, __LINE__);
+        loadSalinityFlux_ = false;
+    }
+
+    if (thcm_->getTRES() && loadTemperatureFlux_)
+    {
+        WARNING(" TRES = 1 => loadTemperatureFlux_ = false",
+                __FILE__, __LINE__);
+        loadTemperatureFlux_ = false;
+    }
+
     // Obtain solution vector from THCM
     state_ = THCM::Instance().getSolution();
     INFO("Ocean: Solution obtained from THCM");
@@ -562,10 +576,15 @@ std::string const Ocean::writeData(bool describe)
     std::ostringstream datastring;
     if (describe)
     {
+        if (solverInitialized_)
+            datastring << std::setw(_FIELDWIDTH_/2)
+                       << "MV";
+            
         datastring << std::setw(_FIELDWIDTH_)
                    << "max(Psi)"
                    << std::setw(_FIELDWIDTH_) 
                    << "min(Psi)";
+        
         return datastring.str();
     }
     else
@@ -584,8 +603,14 @@ std::string const Ocean::writeData(bool describe)
         psiMax = psiMax * transc * 1e-6; // conversion to Sv
         psiMin = psiMin * transc * 1e-6; //
 
-        datastring << std::scientific << std::setw(_FIELDWIDTH_) << psiMax
-                   << std::setw(_FIELDWIDTH_) << psiMin;
+        if (solverInitialized_)
+            datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
+                       << belosSolver_->getNumIters();
+
+        datastring << std::scientific << std::setw(_FIELDWIDTH_)
+                   << psiMax
+                   << std::setw(_FIELDWIDTH_)
+                   << psiMin;
         
         return datastring.str();    
     }                           

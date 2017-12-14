@@ -136,7 +136,6 @@ run()
 {
     INFO("Continuation::run initialize...");
     initialize();    // core initializations
-    writeData(true); // describe output data
     INFO("Continuation::run initialize... done");
     
     TIMER_START("Continuation: run");
@@ -222,7 +221,8 @@ step()
     model_->postProcess();
 
     // Write continuation data to file
-    writeData();
+    bool describe = (step_ == 1) ? true : false;
+    writeData(describe);
 
     TIMER_STOP("Continuation: step");
     return 0; // Exiting normally
@@ -1027,7 +1027,8 @@ writeData(bool describe)
 {
     // Write continuation data
     std::ostringstream cdatastring;
-    if (describe)
+
+    if (describe) // write description of entries
     {
         cdatastring << std::setw(_FIELDWIDTH_)
                     << "par" 
@@ -1040,22 +1041,23 @@ writeData(bool describe)
                     << std::setw(_FIELDWIDTH_/2) 
                     << "NR"
                     << model_->writeData(describe);
+
+        WRITECDATA(cdatastring.str());
     }
-    else
-    {
 
-        cdatastring.precision(_PRECISION_);
+    cdatastring.str("");
+    cdatastring.clear();
+    cdatastring.precision(_PRECISION_);
 
-        cdatastring << std::scientific
-                    << std::setw(_FIELDWIDTH_) <<  par_
-                    << std::setw(_FIELDWIDTH_) <<  ds_
-                    << std::setw(_FIELDWIDTH_) <<  Utils::norm(stateView_)
-                    << std::setw(_FIELDWIDTH_) <<  Utils::norm(rhsView_)
-                    << std::setw(_FIELDWIDTH_/2) <<  newtonIter_
+    cdatastring << std::scientific
+                << std::setw(_FIELDWIDTH_) <<  par_
+                << std::setw(_FIELDWIDTH_) <<  ds_
+                << std::setw(_FIELDWIDTH_) <<  Utils::norm(stateView_)
+                << std::setw(_FIELDWIDTH_) <<  Utils::norm(rhsView_)
+                << std::setw(_FIELDWIDTH_/2) <<  newtonIter_
 
-                    << model_->writeData();
-    
-    }
+                << model_->writeData();    
+
     WRITECDATA(cdatastring.str());
 }
 

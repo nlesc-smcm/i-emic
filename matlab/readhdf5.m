@@ -1,5 +1,6 @@
 function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
 
+    
     if nargin < 6
         opts.tmp = 0
     end
@@ -16,13 +17,28 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         readP = false;
     end
     
+    if isfield(opts, 'salflux')
+        readSalFlux = opts.salflux;
+    else
+        readSalFlux = false;
+    end
+
+    if isfield(opts, 'temflux')
+        readTemFlux = opts.temflux;
+    else
+        readTemFlux = false;
+    end
+
     if isfield(opts, 'readParameters')
         readPars = opts.readParameters;
     else
         readPars = false;
     end
     
+    %------------------------------------------------------------------
+    %------------------------------------------------------------------    
     % read state
+    
     sol = h5read(file, '/State/Values');
     
     dim = n*m*l*nun;
@@ -54,5 +70,12 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
     if readP
         additional.P = h5read(file, '/P/Values');
     end
+    
+    if readSalFlux
+        additional.SalFlux = h5read(file, '/SalinityFlux/Values');
+    end
 
+    if readTemFlux
+        additional.TemFlux = h5read(file, '/TemperatureFlux/Values');
+    end    
 end

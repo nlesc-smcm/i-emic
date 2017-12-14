@@ -245,6 +245,9 @@ public:
     //! get the SRES parameter (non-restoring salt condition)
     bool getSRES() const {return sres;}
 
+    //! get the TRES parameter (non-restoring temp condition)
+    bool getTRES() const {return tres;}
+
     //! ite/its=0 T/S forcing from data (Levitus)
     int ite,its;
 
