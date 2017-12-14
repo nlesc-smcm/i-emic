@@ -162,7 +162,7 @@ void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
     std::ostringstream fname;
     fname << filename << ".h5";
     EpetraExt::HDF5 HDF5(vec->Map().Comm());
-    HDF5.Create(fname);
+    HDF5.Create(fname.str());
 
     // plot scripts will expect an entry called "State"
     HDF5.Write("State", *vec); 
