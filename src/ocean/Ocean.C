@@ -26,7 +26,7 @@
 #include "TRIOS_BlockPreconditioner.H"
 #include "GlobalDefinitions.H"
 
-//==================================================================
+//=====================================================================
 #include <math.h>
 
 //=====================================================================
@@ -179,6 +179,10 @@ void Ocean::initializeOcean()
     // Initialize solution and rhs
     sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
     rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
+
+    // Compute right hand side and print its norm
+    computeRHS();
+    INFO("Ocean: initialization: ||F|| = " << Utils::norm(rhs_));
 
     // Get the rowmap for the pressure points
     Teuchos::RCP<Epetra_Map> RowMap = domain_->GetSolveMap();

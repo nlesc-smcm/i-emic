@@ -159,8 +159,10 @@ size_t Utils::hash(Teuchos::RCP<Epetra_MultiVector> vec)
 //============================================================================
 void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename)
 {
+    std::ostringstream fname;
+    fname << filename << ".h5";
     EpetraExt::HDF5 HDF5(vec->Map().Comm());
-    HDF5.Create(filename);
+    HDF5.Create(fname);
 
     // plot scripts will expect an entry called "State"
     HDF5.Write("State", *vec); 
@@ -171,8 +173,8 @@ void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
 void Utils::save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename)
 {
     std::ostringstream fname1, fname2;
-    fname1 << filename << ".first.h5";
-    fname2 << filename << ".second.h5";
+    fname1 << filename << ".first";
+    fname2 << filename << ".second";
 
     save( vec->First(),  fname1.str() );
     save( vec->Second(), fname2.str() );

@@ -104,10 +104,12 @@ SUBROUTINE forcing
   if (SRES.eq.0 .and. coupled_atm.eq.0) then   ! correct for nonzero flux
      call qint(emip,  salcor)
      call qint(spert, spertcor)
+     write(*,*) 'salcor', salcor, 'its', its
+     write(*,*) 'emip(4,4)', emip(4,4)
   else
      salcor   = 0.0
      spertcor = 0.0
-  end if
+  end if 
 
   do j=1,m
      do i=1,n
