@@ -344,22 +344,6 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         title('Salinity flux', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
-
-        im = zeros(n,m);
-        for i = 1:n
-            for j = 1:m
-                im(i,j) = salfun(x(i), y(j), ymin, ymax) - S(i,j,l);
-            end
-        end
-        
-        figure(8)
-        imagesc(RtD*x, RtD*y, im');
-
-        set(gca, 'ydir', 'normal'); 
-        title('Salinity flux', 'interpreter', 'none');
-        xlabel('Longitude');
-        ylabel('Latitude');
-
         
     end
 

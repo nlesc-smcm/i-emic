@@ -126,8 +126,8 @@ SUBROUTINE forcing
   ! ------------------------------------------------------------------
 
   max_internal_forcing=0.0
-  OPEN(50,FILE='frc.txt',STATUS='unknown')
-  REWIND(50)
+  !OPEN(50,FILE='frc.txt',STATUS='unknown')
+  !REWIND(50)
 
   do k=1,l-1
      do j=1,m
@@ -136,12 +136,12 @@ SUBROUTINE forcing
                 (par(LAMB)*(internal_salt(i,j,k) + internal_salt(i,j,k+1))/2. &
                 -(internal_temp(i,j,k)+internal_temp(i,j,k+1))/2.)
            max_internal_forcing = max(max_internal_forcing, abs(Frc(find_row2(i,j,k,WW))))
-           WRITE (50,*) Frc(find_row2(i,j,k,WW)),internal_temp(i,j,k)
+           !WRITE (50,*) Frc(find_row2(i,j,k,WW)),internal_temp(i,j,k)
         enddo
      enddo
   enddo
 
-  CLOSE(50)
+  !CLOSE(50)
 
   write(f99,*) 'par(RAYL): ',par(RAYL)
   write(f99,*) 'par(COMB): ',par(COMB)
