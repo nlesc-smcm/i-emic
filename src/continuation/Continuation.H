@@ -47,7 +47,7 @@ Continuation(Model model, ParameterList pars)
     tangentType_           (pars->get("tangent type", 'S')),
     initialTangent_        (pars->get("initial tangent type", 'E')),
     printImportantVectors_ (pars->get("print important vectors", false)),
-    predictorBound_        (pars->get("predictor bound", 100.0)),
+    predictorBound_        (pars->get("predictor bound", 1e5)),
     signMonitor_           (0)
 {
     // Set the step size
