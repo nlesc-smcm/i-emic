@@ -7,17 +7,17 @@
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size" type="double" value="1.0e-2"/>
   <Parameter name="minimum step size" type="double" value="1.0e-4"/>
-  <Parameter name="maximum step size" type="double" value="1.0e-1"/>
+  <Parameter name="maximum step size" type="double" value="1.0e0"/>
 
   <!-- Give up at minimum step size -->
   <Parameter name="give up at minimum step size" type="bool" value="true"/>
   
   <!-- Define the destination value for the continuation parameter -->
-  <Parameter name="destination 0" type="double" value="1.1"/>
+  <Parameter name="destination 0" type="double" value="1.0"/>
   
   <!-- Define the number of continuation steps               -->
   <!--   set to -1 to run until final destination is reached -->
-  <Parameter name="maximum number of steps" type="int" value="1"/>
+  <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
   <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
@@ -27,11 +27,11 @@
   <Parameter name="destination tolerance" type="double" value="1.0e-3"/>
   
   <!-- Define the optimal interval for the amount of Newton iterations -->
-  <Parameter name="minimum desired Newton iterations" type="int" value="4"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="5"/>
+  <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
+  <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
   
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="7"/>
+  <Parameter name="maximum Newton iterations" type="int" value="15"/>
 
   <!-- Backtracking is disabled by default, I prefer resetting -->
   <Parameter name="enable backtracking" type="bool" value="false"/>
