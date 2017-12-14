@@ -587,7 +587,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     rowintcon_ = -1;
 #ifndef NO_INTCOND
-    if ( ( sres == 0 ) && ( coupled_atm >= 0 ) ) 
+    if ( ( sres >= 0 ) && ( coupled_atm >= 0 ) ) 
     {
         int N=domain->GlobalN();
         int M=domain->GlobalM();
@@ -731,7 +731,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 {
 
 #if defined(DEBUGGING_NEW) && !defined(NO_INTCOND)
-    if ( (sres == 0)  && ( coupled_atm >= 0 ) )
+    if ( (sres >= 0)  && ( coupled_atm >= 0 ) )
     {
         double intcond;
         CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
@@ -742,10 +742,10 @@ bool THCM::evaluate(const Epetra_Vector& soln,
           intcond = intcond*dx*dy*dz;
         */
 
-        // if (std::abs(intcond) > .01)
-        // {
-        //     INFO("Salinity integral condition (should be 0): " << intcond);
-        // }
+        if (std::abs(intcond) > .1e-8)
+        {
+            INFO("Salinity integral condition (should be 0): " << intcond);
+        }
     }
 #endif
 
@@ -2333,12 +2333,12 @@ extern "C" {
                 //note: the fortran landm array is 0-based, so we add a 1 to i,j,k
                 int pl = FIND_ROW2(1,n+2,m+2,l+2,i+1,j+1,l,1);
                 int pq = FIND_ROW2(1,n,m,1,i,j,0,1);
-                lfsint = qfun2[pq] * cos(y[j]) * (1-landm[pl]) + lfsint;
-                lsint = cos(y[j]) * (1-landm[pl]) + lsint;
+                lfsint = qfun2[pq] * cos(y[j]) * (1 - landm[pl]) + lfsint;
+                lsint  = cos(y[j]) * (1 - landm[pl]) + lsint;
             }
         }
-        CHECK_ZERO(comm->SumAll(&lfsint,fsint,1));
-        CHECK_ZERO(comm->SumAll(&lsint,&sint,1));
+        CHECK_ZERO( comm->SumAll(&lfsint,fsint,1) );
+        CHECK_ZERO( comm->SumAll(&lsint,&sint,1) );
         *fsint = *fsint/sint;
         INFO("Flux correction equals "<<*fsint);
     }
