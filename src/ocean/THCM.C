@@ -4,6 +4,9 @@
  * Permission to use, copy, modify, redistribute is granted           *
  * as long as this header remains intact.                             *
  * contact: jonas@math.rug.nl                                         *
+ *                                                                    *
+ **********************************************************************/
+/* -Messed up by Erik                                                 *
  **********************************************************************/
 
 // for I-EMIC couplings
@@ -40,8 +43,7 @@
 #include "OceanGrid.H"
 #endif
 
-
-//=============================================================================
+//============================================================================
 extern "C" {
 
     // usrc.F90
@@ -585,9 +587,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     DEBVAR("call set_pointers...");
     F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA,jcoA,coA,coB);
 
-    rowintcon_ = -1;
+    // Initialize integral condition row, correction and coefficients
+    rowintcon_     = -1;
+    intCorrection_ = 0.0;
 #ifndef NO_INTCOND
-    if ( ( sres >= 0 ) && ( coupled_atm >= 0 ) ) 
+    if ( ( sres == 0 ) && ( coupled_atm >= 0 ) ) 
     {
         int N=domain->GlobalN();
         int M=domain->GlobalM();
@@ -617,10 +621,12 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         
         domain->Assembly2Solve(*intcond_tmp,*intcond_coeff);
 
+        intcond_coeff->Norm1(&totalVolume_);
+
 #ifdef DEBUGGING_NEW
         std::ofstream ofs("intcond.txt");
         ofs << *intcond_coeff;
-        ofs.close();
+        ofs.close();        
 #endif
         
     }
@@ -731,10 +737,11 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 {
 
 #if defined(DEBUGGING_NEW) && !defined(NO_INTCOND)
-    if ( (sres >= 0)  && ( coupled_atm >= 0 ) )
+    if ( (sres == 0)  && ( coupled_atm >= 0 ) )
     {
         double intcond;
         CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
+        intcond -= intCorrection_; // apply correction
         /*
           double dx = (xmax-xmin)/domain->GlobalN();
           double dy = (ymax-ymin)/domain->GlobalM();
@@ -742,7 +749,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
           intcond = intcond*dx*dy*dz;
         */
 
-        if (std::abs(intcond) > .1e-8)
+        if (std::abs(intcond) > 1e-6)
         {
             INFO("Salinity integral condition (should be 0): " << intcond);
         }
@@ -796,7 +803,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             //intcond = 0.0;
             if (tmp_rhs->Map().MyGID(lastrow))
             {
-                (*tmp_rhs)[tmp_rhs->Map().LID(lastrow)]=intcond;
+                (*tmp_rhs)[tmp_rhs->Map().LID(lastrow)] = intcond - intCorrection_;
             }
         }
 #endif
@@ -1776,6 +1783,75 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
     CHECK_ZERO(landm_loc->Import(*landm_loc0, *exchange,Insert));
 
     return landm_loc;
+}
+
+//=============================================================================
+void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
+{
+    if (sres != 0)
+    {
+        WARNING("This should not be called when SRES!=0",
+                __FILE__, __LINE__);
+        return;
+    }
+    else
+    {
+        // compute salinity integral, put it in correction
+        CHECK_ZERO(intcond_coeff->Dot(*vec, &intCorrection_));
+    }
+}
+
+//=============================================================================
+// Under non-restoring conditions: add a constant correction to the
+// salinity values in order to satisfy the integral condition.
+void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
+{
+    if (sres != 0)
+    {
+        WARNING("This should not be called when SRES!=0",
+                __FILE__, __LINE__);
+        return;
+    }
+    else
+    {
+        // compute salinity integral
+        double integral;
+        CHECK_ZERO(intcond_coeff->Dot(*vec, &integral));
+
+        if (std::abs(integral) > 1e-8)
+        {
+            INFO("Adjusting for nonzero salinity integral: " << integral);
+
+#ifdef DEBUGGING_NEW
+            Utils::save(vec, "vec_to_adjust");
+#endif
+            
+        }
+        else
+        {
+            return;
+        }
+
+        // add correction to salinity values
+        double correction = integral / totalVolume_;
+        int row, lid;
+        for (int k = 0; k != l; ++k)
+            for (int j = 0; j != m; ++j)
+                for (int i = 0; i != n; ++i)
+                {
+                    row = FIND_ROW2(_NUN_, n, m, l, i, j, k, SS);
+                    lid = vec->Map().LID(row);
+                    if (lid >= 0)
+                        (*vec)[lid] -= correction;
+                }
+#ifdef DEBUGGING_NEW
+        CHECK_ZERO(intcond_coeff->Dot(*vec, &integral));
+        assert(std::abs(integral) < 1e-8);
+        INFO("   integral     = " << integral);
+        INFO("         V      = " << totalVolume_);
+        INFO("   S correction = " << correction); 
+#endif
+    }
 }
 
 //=============================================================================

@@ -294,6 +294,15 @@ public:
     //! read THCM parameters from a ParameterList
     void ReadParameters(Teuchos::ParameterList& plist);
 
+    //! Under non-restoring conditions: get an integral from vec and
+    //! use that to correct the integral condition
+    void setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec);
+
+    //! Under non-restoring conditions: add a constant to the salinity
+    //! values in vec, to satisfy the integral condition.
+    void adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec);
+
+
 private:
 
     //! object for domain-decomposition:
@@ -448,8 +457,15 @@ private:
     //! which row is replaced by integral condition (global index of last row)
     int rowintcon_;
 
+    //! correction for the integral condition based on the salinity
+    //! integral of the initial state
+    double intCorrection_;
+
     //! vector with coefficients for integral condition (if sres=0)
     Teuchos::RCP<Epetra_Vector> intcond_coeff;
+
+    //! sum of integration coefficients (total volume)
+    double totalVolume_;
 
     //! pressure points where equation is replaced by P=0 (-1 means none)
     int rowPfix1, rowPfix2;
@@ -459,7 +475,7 @@ private:
 
     //! distribute land array after global initialization
     Teuchos::RCP<Epetra_IntVector> distributeLandMask(Teuchos::RCP<Epetra_IntVector> landm_glob);
-
+    
     //! implement integral condition for S in Jacobian and B-matrix
     void intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B);
 

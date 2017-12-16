@@ -133,7 +133,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
     // Inspect current state
     inspectVector(state_);
-
+    
     //------------------------------------------------------------------
     // Create surface temperature restrict/import strategy
     //------------------------------------------------------------------
@@ -182,7 +182,12 @@ void Ocean::initializeOcean()
 
     // Compute right hand side and print its norm
     computeRHS();
+    
+#ifdef DEBUGGING_NEW
     INFO("Ocean: initialization: ||F|| = " << Utils::norm(rhs_));
+    Utils::save(state_, "initialstate");
+    Utils::save(rhs_, "initialrhs");
+#endif    
 
     // Get the rowmap for the pressure points
     Teuchos::RCP<Epetra_Map> RowMap = domain_->GetSolveMap();
@@ -258,6 +263,7 @@ int Ocean::analyzeJacobian()
 }
 
 //==================================================================
+// --> This can be more efficient
 void Ocean::inspectVector(Teuchos::RCP<Epetra_Vector> x)
 {
     INFO("Ocean: inspect vector...");
@@ -1378,6 +1384,10 @@ int Ocean::loadStateFromFile(std::string const &filename)
     state_->Import(*((*readState)(0)), *lin2solve, Insert);
 
     INFO("   ocean state: ||x|| = " << Utils::norm(state_));
+
+    if (THCM::Instance().getSRES() == 0)
+        THCM::Instance().setIntCondCorrection(state_);
+    
     INFO("Loading state from " << filename << " done");
 
     INFO("Loading parameters from " << filename);
