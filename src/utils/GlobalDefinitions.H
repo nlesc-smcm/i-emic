@@ -71,13 +71,23 @@ extern std::stack<Timer> timerStack;
 #  define WRITECDATA(s) (*cdataFile) << s << std::endl; 
 #endif
 
+//! Fatal error handling
 #ifndef ERROR
-#  define ERROR(x,y,z)								\
-	{												\
-		(*outFile) << "**ERROR**: " << x << " "		\
-				   << y << " " << z << std::endl;	\
-		throw std::runtime_error(x);				\
-	}
+#  define ERROR(x,y,z)                                                  \
+	{                                                                   \
+		(*outFile) << "**ERROR**: " << x << " "                         \
+				   << y << " " << z << std::endl;                       \
+                                                                        \
+        std::cerr << "Fatal Error: "<< x << std::endl;                  \
+        std::cerr << "(in " << y << ", line "                           \
+                  << z << ")" << std::endl;                             \
+                                                                        \
+        int initialized = 0;                                            \
+        MPI_Initialized(&initialized);                                  \
+        if (initialized)                                                \
+            MPI_Abort(MPI_COMM_WORLD, -1);                              \
+        std::exit(-1);                                                  \
+}
 #endif
 
 #ifndef WARNING
@@ -221,17 +231,21 @@ public:
 
 // macros for checking Epetra calls
 #ifndef CHECK_ZERO
-#define CHECK_ZERO(funcall) {int ierr = funcall;						\
-		if (ierr) {INFO("Trilinos Error " << ierr << " returned from call " \
-						<< #funcall);									\
-			throw std::runtime_error("Trilinos Error...");}}
-#define CHECK_TRUE(funcall) {bool berr = funcall;						\
-		if (!berr) {INFO("Trilinos call " << #funcall << " returned false"); \
-			/*throw std::runtime_error("Trilinos Error...");*/}}
-#define CHECK_NONNEG(funcall) {int ierr = funcall;						\
-		if (ierr<0) {INFO("Trilinos Error " << ierr << " returned from call " \
-						  << #funcall);									\
-			/*throw std::runtime_error("Trilinos Error...");*/}}
+#define CHECK_ZERO(funcall) {                                           \
+        int ierr = funcall;                                             \
+        if (ierr) { ERROR("Trilinos Error " << ierr << " returned from call " \
+                          << #funcall, __FILE__, __LINE__);             \
+        }                                                               \
+    }                                                                   \
+ 
+#define CHECK_TRUE(funcall) {bool berr = funcall;                       \
+		if (!berr) {ERROR("Trilinos call " << #funcall << " returned false", __FILE__, __LINE__);} \
+
+
+#define CHECK_NONNEG(funcall) {int ierr = funcall;                      \
+        if (ierr<0) {ERROR("Trilinos Error " << ierr << " returned from call " \
+                           << #funcall. __FILE__, __LINE__);}           \
+        
 #endif
 
 #ifndef MOD

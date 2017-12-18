@@ -774,10 +774,11 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
         try
         {
             belosSolver_->solve();      // Solve
+
         }
         catch (std::exception const &e)
         {
-            INFO("Ocean: exception caught: " << e.what());
+            ERROR("Ocean: exception caught: " << e.what(), __FILE__, __LINE__);
         }
     }
     else
@@ -838,7 +839,7 @@ void Ocean::scaleProblem(VectorPtr rhs)
 {
     INFO("Ocean: scale problem...");
     if (rhs == Teuchos::null)
-        ERROR("DEPRECATED FUNCTIONALITY", __LINE__, __FILE__);
+        ERROR("DEPRECATED FUNCTIONALITY", __FILE__, __LINE__);
 
     // Not sure if this is the right approach and/or implemented correctly.
     // Scaling is obtained from THCM and then applied to the problem.
@@ -899,7 +900,7 @@ void Ocean::unscaleProblem(VectorPtr rhs)
 {
     INFO("Ocean: unscale problem...");
     if (rhs == Teuchos::null)
-        ERROR("DEPRECATED FUNCTIONALITY", __LINE__, __FILE__);
+        ERROR("DEPRECATED FUNCTIONALITY", __FILE__, __LINE__);
 
     //------------------------------------------------------
     //double nrm;
