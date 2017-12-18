@@ -248,6 +248,12 @@ public:
     //! get the TRES parameter (non-restoring temp condition)
     bool getTRES() const {return tres;}
 
+    //! get the its parameter (non-restoring salt condition)
+    bool getITS() const {return its;}
+
+    //! get the ite parameter (non-restoring temp condition)
+    bool getITE() const {return ite;}
+
     //! ite/its=0 T/S forcing from data (Levitus)
     int ite,its;
 

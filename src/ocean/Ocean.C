@@ -80,18 +80,17 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     //  to THCM::Instance()
     thcm_ = rcp(new THCM(thcmList, comm_));
 
-    if (thcm_->getSRES() && loadSalinityFlux_)
+    // Throw a few errors if the parameters are odd
+    if ((thcm_->getSRES() || thcm_->getITS()) && loadSalinityFlux_)
     {
-        WARNING(" SRES = 1 => loadSalinityFlux_ = false",
-                __FILE__, __LINE__);
-        loadSalinityFlux_ = false;
+        ERROR(" (SRES = 1 || ite = 1 ) => loadSalinityFlux_ = false",
+              __FILE__, __LINE__);
     }
-
-    if (thcm_->getTRES() && loadTemperatureFlux_)
+    
+    if ((thcm_->getTRES() || thcm_->getITE()) && loadTemperatureFlux_)
     {
-        WARNING(" TRES = 1 => loadTemperatureFlux_ = false",
-                __FILE__, __LINE__);
-        loadTemperatureFlux_ = false;
+        ERROR(" (TRES = 1 || its = 1) => loadTemperatureFlux_ = false",
+              __FILE__, __LINE__);
     }
 
     // Obtain solution vector from THCM

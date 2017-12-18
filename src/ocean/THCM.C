@@ -207,12 +207,12 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     vmix_GLB         = paramList.get("Mixing",1);
     rho_mixing       = paramList.get("Rho Mixing",true);
     tap              = paramList.get("Taper",1);
-    alphaT           = paramList.get("Linear EOS: alpha T",1.0e-4);
-    alphaS           = paramList.get("Linear EOS: alpha S",7.6e-4);
+    alphaT           = paramList.get("Linear EOS: alpha T", 1.0e-4);
+    alphaS           = paramList.get("Linear EOS: alpha S", 7.6e-4);
     tres             = paramList.get("Restoring Temperature Profile",1);
     sres             = paramList.get("Restoring Salinity Profile",1);
-    ite              = paramList.get("Levitus T",1);
-    its              = paramList.get("Levitus S",1);
+    ite              = paramList.get("Levitus T", 1);
+    its              = paramList.get("Levitus S", 1);
     internal_forcing = paramList.get("Levitus Internal T/S",false);
     bool rd_spertm   = paramList.get("Read Salinity Perturbation Mask",false);
     coupled_atm      = paramList.get("Coupled Atmosphere", 0);
