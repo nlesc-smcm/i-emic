@@ -116,20 +116,6 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 
     % --- Create colormaps
 
-    par = [0    0.4470    0.7410;  0.8500    0.3250    0.0980];
-    neg  = par(1,:);
-    pos  = par(2,:);
-    N1   = 64;
-    N2   = 64;
-    mid  = [1,1,1];
-    col1 = [linspace(neg(1),mid(1),N1)',linspace(neg(2),mid(2),N1)',linspace(neg(3),mid(3),N1)'];
-    col2 = [linspace(mid(1),pos(1),N2)',linspace(mid(2),pos(2),N2)',linspace(mid(3),pos(3),N2)'];
-    col_white = [col1;col2];
-
-    mid  = [1,1,1];
-    col1 = [linspace(neg(1),mid(1),N1)',linspace(neg(2),mid(2),N1)',linspace(neg(3),mid(3),N1)'];
-    col2 = [linspace(mid(1),pos(1),N2)',linspace(mid(2),pos(2),N2)',linspace(mid(3),pos(3),N2)'];
-    col_black = [col1;col2];
 
     % - PLOT BAROTROPIC STREAM FUNCTION
 
@@ -161,7 +147,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         end
 
         colorbar
-        colormap(col_black)
+        colormap(my_colmap(caxis))
 
         if plot_title
             title(['Barotropic Streamfunction (Sv) ', opts.title_add]);
@@ -202,12 +188,9 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 
         if fix_caxis
             caxis([opts.caxis_min,opts.caxis_max])
-        else
-            crange = max(abs(min(caxis)),abs(max(caxis)));
-            caxis([-crange, crange]);
         end
 
-        colormap(col_white)
+        colormap(my_colmap(caxis))
 
         if export_to_file
             exportfig(['mstream',opts.fname_add,'.eps'],10,[19,10],invert)
@@ -254,10 +237,10 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         title('Temperature')
         xlabel('Latitude')
         ylabel('z (m)')
-        colormap(col_white)
-        crange = max(abs(caxis))-T0;
-        caxis([T0-crange, T0+crange]);
-
+        colormap(my_colmap(caxis,T0))
+        %crange = max(abs(caxis))-T0;
+        %caxis([T0-crange, T0+crange]);
+         
         if export_to_file
             exportfig('isothermals.eps',10,[20,7],invert)
         end
@@ -282,9 +265,9 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         title('SST', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
-        colormap(col_white)
+        colormap(my_colmap(caxis,T0))
 
-        crange = max(abs(min(caxis)),abs(max(caxis)))-T0;
+        % crange = max(abs(min(caxis)),abs(max(caxis)))-T0;
         % caxis(T0+[-crange, crange]);
 
         if export_to_file
@@ -302,7 +285,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Latitude')
         ylabel('z (m)')
 
-        colormap(col_white)
+        colormap(my_colmap(caxis,S0))
         %crange = max(abs(min(caxis)),abs(max(caxis)))-S0;
         %caxis(S0+[-crange, crange])
 
@@ -329,7 +312,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         
-        colormap(col_white)
+        colormap(my_colmap(caxis,S0))
 
     end
     
