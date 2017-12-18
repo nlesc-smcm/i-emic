@@ -12,11 +12,11 @@
   <!-- Give up at minimum step size -->
   <Parameter name="give up at minimum step size" type="bool" value="true"/>
 
-  <Parameter name="increase step size" type="double" value="1.05"/>
+  <Parameter name="increase step size" type="double" value="1.1"/>
   <Parameter name="decrease step size" type="double" value="2.0"/>
   
   <!-- Define the destination value for the continuation parameter -->
-  <Parameter name="destination 0" type="double" value="0.0"/>
+  <Parameter name="destination 0" type="double" value="1.0"/>
   
   <!-- Define the number of continuation steps               -->
   <!--   set to -1 to run until final destination is reached -->
@@ -34,7 +34,7 @@
   <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
   
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="12"/>
+  <Parameter name="maximum Newton iterations" type="int" value="20"/>
 
   <!-- Backtracking is disabled by default, I prefer resetting -->
   <Parameter name="enable backtracking" type="bool" value="false"/>
@@ -46,20 +46,22 @@
   <Parameter name="print important vectors" type="bool" value="true"/>
 
   <!-- *******************************************************  -->
-  <!-- The following parameters are experimental, avoid them... -->
+  <!-- The following parameters are experimental                -->
   <!-- *******************************************************  -->
 
-  <!-- Scaling of the state tangent, which can be made several orders           -->
-  <!-- smaller than the parameter tangent.                                      -->
-  <!-- I believe this may decrease the algorithms capability to traverse folds. -->
+  <!-- Scaling of the state tangent, which can be made several orders      -->
+  <!-- smaller than the parameter tangent.                                 -->
+  <!-- I believe this affects the algorithms capability to traverse folds. -->
   <Parameter name="state tangent scaling" type="double" value="1.0e-1"/>
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
   <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
 
+  <!-- If predicted rhs is larger than this value we reject the prediction. -->
   <Parameter name="predictor bound" type="double" value="10"/>
 
+  <!-- Secant 'S' or Euler 'E' based tangent. -->
   <Parameter name="tangent type" type="char" value="S"/>
   
 </ParameterList>
