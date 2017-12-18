@@ -239,12 +239,14 @@ public:
     }                                                                   \
  
 #define CHECK_TRUE(funcall) {bool berr = funcall;                       \
-		if (!berr) {ERROR("Trilinos call " << #funcall << " returned false", __FILE__, __LINE__);}} \
+		if (!berr) {ERROR("Trilinos call " << #funcall                  \
+                          << " returned false", __FILE__, __LINE__);}}  \
 
 
 #define CHECK_NONNEG(funcall) {int ierr = funcall;                      \
-        if (ierr<0) { ERROR("Trilinos Error " << ierr << " returned from call " \
-                            << #funcall, __FILE__, __LINE__); }}       \
+        if (ierr<0) { ERROR("Trilinos call " << #funcall                \
+                            << " returned negative: "                   \
+                            << ierr , __FILE__, __LINE__); }}           \
         
 #endif
 
