@@ -172,11 +172,11 @@ contains
           if (landm(i,j,l).eq.OCEAN) then
              salflux(pos) = (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
                   SRES * par(BIOT) * S(i,j,l) / gamma
-             pos = pos + 1
-          endif 
+          endif
+          pos = pos + 1
        end do
     end do
-    
+
   end subroutine get_salflux
 
   !!------------------------------------------------------------------
@@ -191,7 +191,7 @@ contains
 
     !     IMPORT/EXPORT
     real(c_double),dimension(ndim) ::    un
-    
+
     !     LOCAL
     real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
     real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
@@ -207,11 +207,11 @@ contains
           if (landm(i,j,l).eq.OCEAN) then
              temflux(pos) = (1 - TRES + TRES*par(BIOT)) * tatm(i,j) - &
                   TRES * par(BIOT) * T(i,j,l) / etabi
-             pos = pos + 1
-          endif 
+          endif
+          pos = pos + 1
        end do
     end do
-    
+
   end subroutine get_temflux
 
 end module m_probe
