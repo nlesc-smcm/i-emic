@@ -1263,7 +1263,7 @@ namespace TRIOS {
         //TODO: test if this is a good idea
         //      we try to include the buoyancy based on x_init
 
-        if (true)
+        if (true) // this is a problem, don't know why yet
         {
             CHECK_ZERO(SubMatrix[_BwTS]->Multiply(false,xTS,yw));
             CHECK_ZERO(bw.Update(-1.0,yw,1.0));
