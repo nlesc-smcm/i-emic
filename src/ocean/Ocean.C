@@ -663,7 +663,7 @@ void Ocean::initializeSolver()
 
     // Get the requested solver type
     solverType_ = solverParams_->get("Ocean solver type", 'F');
-    recompTol_  = solverParams_->get("Tolerance recompute preconditioner", 0.9);
+    recompTol_  = solverParams_->get("Tolerance recompute preconditioner", 0.999);
 
     // Initialize the preconditioner
     if (!precInitialized_)

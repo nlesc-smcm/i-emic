@@ -5,6 +5,6 @@
   <!-- FGMRES (Belos) parameters                                         -->  
   <!-- ..................................................................-->
   <Parameter name="FGMRES tolerance" type="double" value="1e-2"/>
-  <Parameter name="FGMRES iterations" type="int" value="200"/>
+  <Parameter name="FGMRES iterations" type="int" value="300"/>
 
 </ParameterList>

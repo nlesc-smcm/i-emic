@@ -21,7 +21,7 @@
   <Parameter name="Zero Initial Guess" type="bool" value="1"/>
 
   <!-- Verbosity -->
-  <Parameter name="Verbosity" type="int" value="0"/>
+  <Parameter name="Verbosity" type="int" value="10"/>
 
   <!-- Permutation                                                              -->
   <!--     | Ap   0   0  BTS |      | Kuvp 0   0 Guv |      | Aw  0   0  Duv  | -->
@@ -427,14 +427,14 @@
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
     <Parameter name="Max Num Iter" type="int" value="10"/>
-    <Parameter name="Tolerance" type="double" value="1.0e-4"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-2"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
     <Parameter name="Output" type="int" value="1"/>
     <Parameter name="Scaling" type="string" value="None"/>
     <!-- don't touch this one, it's irrelevant -->
     <Parameter name="Precond" type="string" value="None"/>
-    <Parameter name="KSpace" type="int" value="10"/>
+    <Parameter name="KSpace" type="int" value="5"/>
     <Parameter name="Orthog" type="string" value="Classic"/>
   </ParameterList><!-- } Saddlepoint Solver -->
 
@@ -564,14 +564,14 @@
   <ParameterList name="ATS Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
     <Parameter name="Max Num Iter" type="int" value="10"/> <!-- candidate -->
-    <Parameter name="Tolerance" type="double" value="1.0e-4"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-2"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
     <Parameter name="Output" type="int" value="1"/>
     <Parameter name="Scaling" type="string" value="None"/> <!--indifferent -->
     <!-- don't touch this one, it's irrelevant -->
     <Parameter name="Precond" type="string" value="None"/>
-    <Parameter name="KSpace" type="int" value="20"/>
+    <Parameter name="KSpace" type="int" value="5"/>
     <Parameter name="Orthog" type="string" value="Classic"/>
   </ParameterList><!-- } ATS Solver -->
 
@@ -580,7 +580,7 @@
 
     <!-- for comments see "Auv Precond" list above -->
 
-    <Parameter name="Method" type="string" value="ML"/>
+    <Parameter name="Method" type="string" value="Ifpack"/>
     <Parameter name="Analyze Preconditioned Spectrum" type="bool" value="0"/>
 
     <!-- Ifpack -->
