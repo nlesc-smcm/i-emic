@@ -1260,10 +1260,11 @@ namespace TRIOS {
         Epetra_Vector yp(*mapP1);
         Epetra_Vector yTS(*mapTS);
 
-        //TODO: test if this is a good idea
-        //      we try to include the buoyancy based on x_init
 
-        if (true) // this is a problem, don't know why yet
+        // We try to include the buoyancy based on x_init. Apparantly,
+        // based on the number of max iterations, x may contain bad
+        // stuff... So let's switch this off.
+        if (false) 
         {
             CHECK_ZERO(SubMatrix[_BwTS]->Multiply(false,xTS,yw));
             CHECK_ZERO(bw.Update(-1.0,yw,1.0));
@@ -1277,8 +1278,6 @@ namespace TRIOS {
             CHECK_ZERO(xp.PutScalar(0.0));
             CHECK_ZERO(xTS.PutScalar(0.0));
         }
-
-
 
         if (scheme=="ILU")
         {
