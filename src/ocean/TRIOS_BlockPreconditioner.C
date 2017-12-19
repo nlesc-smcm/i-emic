@@ -1203,7 +1203,7 @@ namespace TRIOS {
 
         // cast blockvectors into vectors b=input, x=outpu
         const Epetra_Vector& b = *(input_vec);
-        Epetra_Vector& x =       *(result_vec);
+        Epetra_Vector& x       = *(result_vec);
 
         // make the solvers report to our own files
         // (note that Aztec uses a static stream

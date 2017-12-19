@@ -378,7 +378,7 @@ namespace TRIOS {
             Solver = Teuchos::rcp(new AztecOO() );
             Solver->SetOutputStream(*outFile);
             Solver->SetErrorStream(*outFile);
-            if (verbose > 5)  plist.set("Output",1);
+            if (verbose >  5) plist.set("Output",1);
             if (verbose == 0) plist.set("Output",0);
             Solver->SetParameters(plist);
         }

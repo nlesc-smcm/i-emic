@@ -747,7 +747,7 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
     buildPreconditioner();
 
     // Use trivial initial solution
-    sol_->Scale(0.0);
+    sol_->PutScalar(0.0);
 
     // Set the problem, rhs may be given as an argument to solve().
     if (solverType_ == 'F')

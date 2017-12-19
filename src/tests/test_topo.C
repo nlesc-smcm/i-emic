@@ -158,9 +158,9 @@ TEST(Topo, SpinupContinuation)
             continuation(ocean, continuationParams);
         
 		// Run continuation
-        INFO(" Running spinup...");
+        INFO("--**-- Topo test: running spinup...");
 		continuation.run();
-        INFO(" Running spinup... done");
+        INFO("--**-- Topo test: running spinup... done");
 	}
 	catch (...)
 	{
