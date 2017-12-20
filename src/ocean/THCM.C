@@ -749,7 +749,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
           intcond = intcond*dx*dy*dz;
         */
 
-        if (std::abs(intcond) > 1e-6)
+        if (std::abs(intcond) > 1e-4)
         {
             INFO("Salinity integral condition (should be 0): " << intcond);
         }

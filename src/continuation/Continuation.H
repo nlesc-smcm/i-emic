@@ -781,28 +781,28 @@ adjustStep()
     if (newtonIter_ < minAllowedIterations_)
     {
         INFO("\n      adjusting ds... ");
-        if (ds_ == dsMax_)
+        if (std::abs(ds_) == std::abs(dsMax_))
         {
             INFO("      ceiling found: " << ds_);
         }
         else
         {
             INFO("      old ds: " << ds_);
-            ds_ = SGN(ds_) * std::min(SGN(ds_) * ds_ * scale1_, dsMax_);
+            ds_ = SGN(ds_) * std::min(std::abs(ds_) * scale1_, std::abs(dsMax_));
             INFO("      new ds: " << ds_);
         }
     }
     else if (newtonIter_ > maxAllowedIterations_)
     {
         INFO("      adjusting ds... ");
-        if (ds_ == dsMin_)
+        if (std::abs(ds_) == std::abs(dsMin_))
         {
             INFO("      floor found: " << ds_);
         }
         else
         {
             INFO("      old ds: " << ds_);
-            ds_ = SGN(ds_) * std::max(SGN(ds_) * ds_ / scale2_, dsMin_);
+            ds_ = SGN(ds_) * std::max(std::abs(ds_) / scale2_, std::abs(dsMin_));
             INFO("      new ds: " << ds_);
         }
     }
@@ -854,14 +854,14 @@ reset()
 
     // create new step size
     int s = SGN(ds_);
-    ds_ = s * MAX(s * ds_ / scale2_, dsMin_);
+    ds_ = s * MAX(std::abs(ds_) / scale2_, std::abs(dsMin_));
 
     resetCounter_++;
 
     // fix step size for next step
     fixStepSize_ = true; 
     
-    if (( ds_ <= dsMin_ ) && (( resetCounter_ >= 100 ) || giveUpAtdsMin_))
+    if (( std::abs(ds_) <= std::abs(dsMin_) ) && (( resetCounter_ >= 100 ) || giveUpAtdsMin_))
     {
         abortFlag_ = true;
         WARNING("Reached dsMin, continuation failed", __FILE__, __LINE__);
