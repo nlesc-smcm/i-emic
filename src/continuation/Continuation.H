@@ -73,7 +73,8 @@ Continuation(Model model, ParameterList pars)
         ERROR("No destinations given in continuation xml!",
               __FILE__, __LINE__);
 
-    INFO(*pars);
+    INFO(std::endl << "Continuation parameter list: "
+         << std::endl << *pars << std::endl);
 }
 
 //======================================================================
@@ -116,7 +117,7 @@ initialize()
     // scaling
     if (normalizeStrategy_ == 'O')
         zeta_ = 1.0 / stateView_->GlobalLength();
-    else if (normalizeStrategy_ == 'O')
+    else if (normalizeStrategy_ == 'N')
         zeta_ = tanScaling_ / stateView_->GlobalLength();
     else
     {
