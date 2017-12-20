@@ -72,6 +72,8 @@ Continuation(Model model, ParameterList pars)
     if (destinations_.empty())
         ERROR("No destinations given in continuation xml!",
               __FILE__, __LINE__);
+
+    INFO(*pars);
 }
 
 //======================================================================
