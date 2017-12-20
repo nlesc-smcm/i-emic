@@ -443,7 +443,7 @@ normalize()
         stateDot_->Scale(1.0 / normComb);
         parDot_ = 1.0 / normComb;
     }
-    else if (normalizeStrategy_ == 'O')
+    else if (normalizeStrategy_ == 'N')
     {
         // At this point we assume statedot contains a derivative with respect to
         // the parameter
@@ -462,7 +462,7 @@ normalize()
     }
     else
     {
-        WARNING(" undefined behaviour!",__FILE__, __LINE__);
+        WARNING(" undefined normalization strategy!",__FILE__, __LINE__);
     }
     
 }

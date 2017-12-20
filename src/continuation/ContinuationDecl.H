@@ -103,6 +103,7 @@ class Continuation
     double destinationTolerance_; // set the tolerance for the final convergence
     bool userDetect_;             // let model class determine a simple monitor
     double tanScaling_;           // scaling of the state tangent
+    char normalizeStrategy_;      // normalization strategy 'O' old or 'N' new
     bool rejectFailedNewton_;     // set to false if you feel lucky
     bool giveUpAtdsMin_;          // give up at minimum step size
     double practicalTol_;         // actual tolerance used for the problem
