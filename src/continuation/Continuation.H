@@ -38,6 +38,7 @@ Continuation(Model model, ParameterList pars)
     destinationTolerance_  (pars->get("destination tolerance", 1.0e-4)),
     userDetect_            (pars->get("enable custom monitor", false)),
     tanScaling_            (pars->get("state tangent scaling", 1.0e0)),
+    normalizeStrategy_     (pars->get("normalize strategy", 'N')),
 
     rejectFailedNewton_    (pars->get("reject failed iteration", true)),
     giveUpAtdsMin_         (pars->get("give up at minimum step size", false)),
@@ -280,11 +281,13 @@ createInitialTangent()
         *stateDot_ = *dFdPar_;
     }
     else
+    {
         WARNING(" initialTangent invalid!" , __FILE__, __LINE__);
+    }
 
     if (printImportantVectors_) // Print initial tangent
     {
-            std::stringstream fname;
+        std::stringstream fname;
         fname << "init_tan_" << std::setprecision(4) << par_;
         Utils::print(stateDot_, fname.str());
     }
@@ -393,13 +396,17 @@ createTangent(char mode)
             stateDot_->Scale(-1.0);
         }
         else
+        {
             WARNING(" undefined behaviour!",__FILE__, __LINE__);
+        }
 
         // Adjust (normalize) the Euler tangent
         normalize();
     }
     else
+    {
         WARNING(" invalid mode!",__FILE__, __LINE__);
+    }
 
     INFO("                ||state0|| = " << Utils::norm(storage_.state0));
     INFO("                 ||state|| = " << Utils::norm(stateView_));
@@ -415,20 +422,49 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 normalize()
 {
-    // At this point we assume statedot contains a derivative with respect to
-    // the parameter
+    if (normalizeStrategy_ == 'O')
+    {
+        // -----------------------------------------------------------------
+        // We normalize the tangent of the branch (stateDot, parDot)
+        // 1) First we scale the tangent of the state
+        // 2) Then we compute the norm of the combined vector
+        // 3) Finally we normalize (stateDot, parDot)
+        // -----------------------------------------------------------------
 
-    // compute ||dx/dpar||
-    double nrm = Utils::norm(stateDot_);
+        // 1) scale stateDot
+        zeta_ = tanScaling_ / Utils::norm(stateDot_);
+        stateDot_->Scale(zeta_);
 
-    // compute sqrt(1+zeta*||dx/dpar||^2)
-    double normComb = sqrt(zeta_ * nrm * nrm + 1);
+        // 2) compute norm of combined vector
+        double nrm      = Utils::norm(stateDot_);
+        double normComb = sqrt(nrm * nrm + 1);
 
-    // dpar/ds = 1 / sqrt(1 + zeta*||dx/dpar||^2)
-    parDot_ = 1.0 / normComb;
+        // 3) scale the components
+        stateDot_->Scale(1.0 / normComb);
+        parDot_ = 1.0 / normComb;
+    }
+    else if (normalizeStrategy_ == 'O')
+    {
+        // At this point we assume statedot contains a derivative with respect to
+        // the parameter
 
-    // dx/ds = dx/dpar * dpar/ds
-    stateDot_->Scale(parDot_);
+        // compute ||dx/dpar||
+        double nrm = Utils::norm(stateDot_);
+
+        // compute sqrt(1+zeta*||dx/dpar||^2)
+        double normComb = sqrt(zeta_ * nrm * nrm + 1);
+
+        // dpar/ds = 1 / sqrt(1 + zeta*||dx/dpar||^2)
+        parDot_ = 1.0 / normComb;
+
+        // dx/ds = dx/dpar * dpar/ds
+        stateDot_->Scale(parDot_);
+    }
+    else
+    {
+        WARNING(" undefined behaviour!",__FILE__, __LINE__);
+    }
+    
 }
 
 //======================================================================
@@ -632,7 +668,9 @@ newtonCorrector()
         if (rejectFailedNewton_)
             return 1;
         else
+        {
             WARNING("Continuation: Proceeding with unconverged result",__FILE__, __LINE__);
+        }
     }
     else
         INFO("Continuation: corrector converged in " << newtonIter_ << " steps");
