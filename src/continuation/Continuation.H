@@ -114,7 +114,14 @@ initialize()
     activeDest_  = -999; // hopefully this is never an actual dest^^
 
     // scaling
-    zeta_ = tanScaling_ / stateView_->GlobalLength();
+    if (normalizeStrategy_ == 'O')
+        zeta_ = 1.0 / stateView_->GlobalLength();
+    else if (normalizeStrategy_ == 'O')
+        zeta_ = tanScaling_ / stateView_->GlobalLength();
+    else
+    {
+        WARNING(" undefined normalization strategy!",__FILE__, __LINE__);
+    }
 
     newtonIter_    = 0;
     sumNewtonIter_ = 0;
@@ -554,10 +561,26 @@ newtonCorrector()
         // (par2   - par0)
         double parDiff = par_ - storage_.par0;
 
-        // rbp = ds*ds - (state1 - state0)^T * (state1 - state0) * zeta
-        //             - (par2   - par0)^2
-        double rbp = (ds_ * ds_) - Utils::dot(stateDiff, stateDiff) * zeta_
-            - (parDiff  * parDiff);
+        // Create normalization constraint
+        double rbp;
+        if (normalizeStrategy_ == 'O')
+        {
+            // rbp = ds - d/ds state^T * (state1 - state0) * zeta
+            //             - d/ds par * (par1   - par0)
+            rbp = ds_ - Utils::dot(stateDot_, stateDiff) * zeta_
+                - parDot_ * parDiff;
+        }
+        else if (normalizeStrategy_ == 'N')
+        {
+            // rbp = ds*ds - (state1 - state0)^T * (state1 - state0) * zeta
+            //             - (par2   - par0)^2
+            rbp = (ds_ * ds_) - Utils::dot(stateDiff, stateDiff) * zeta_
+                - (parDiff  * parDiff);
+        }
+        else
+        {
+            WARNING(" undefined normalization strategy!",__FILE__, __LINE__);
+        }
 
         // At this point the model contains the predicted state and
         // parameter. The Jacobian will be computed based on the
@@ -579,12 +602,29 @@ newtonCorrector()
 
         // Determine the directions.....................................
         // First for the parameter:
-        if (newtChordHybr_)
-            parDir = (rbp - 2 * zeta_ * Utils::dot(stateDiff, z))
-                / (2 * parDiff + 2 * (zeta_ / parDiff) * Utils::dot(stateDiff, stateDiff));
+        if (normalizeStrategy_ == 'O')
+        {
+            if (newtChordHybr_)
+                parDir = (rbp - zeta_ * Utils::dot(stateDot_, z))
+                    / (parDot_ + zeta_ * Utils::dot(stateDot_, stateDot_));
+            else
+                parDir = (rbp - zeta_ * Utils::dot(stateDot_, z))
+                    / (parDot_ - zeta_ * Utils::dot(stateDot_, y));
+            
+        }
+        else if (normalizeStrategy_ == 'N')
+        {
+            if (newtChordHybr_)
+                parDir = (rbp - 2 * zeta_ * Utils::dot(stateDiff, z))
+                    / (2 * parDiff + 2 * (zeta_ / parDiff) * Utils::dot(stateDiff, stateDiff));
+            else
+                parDir = (rbp - 2 * zeta_ * Utils::dot(stateDiff, z))
+                    / (2 * parDiff - 2 * zeta_ * Utils::dot(stateDiff, y));
+        }
         else
-            parDir = (rbp - 2 * zeta_ * Utils::dot(stateDiff, z))
-                / (2 * parDiff - 2 * zeta_ * Utils::dot(stateDiff, y));
+        {
+            WARNING(" undefined normalization strategy!",__FILE__, __LINE__);
+        }
 
         // Then for the state:
         //  we perform an update on z
