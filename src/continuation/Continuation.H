@@ -265,7 +265,7 @@ createInitialTangent()
 
     if (printImportantVectors_) Utils::print(dFdPar_, "dFdpar");
 
-    if (initialTangent_ == 'E')     // 2a) Solve J*dxdpar = -dFdPar_
+    if ( (initialTangent_ == 'E') || (initialTangent_ == 'S'))   // 2a) Solve J*dxdpar = -dFdPar_
     {
         model_->preProcess();
         model_->computeJacobian();
