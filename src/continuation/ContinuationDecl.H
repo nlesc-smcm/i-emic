@@ -119,6 +119,11 @@ class Continuation
     // E: Euler
     // S: Secant
     char tangentType_;
+    
+    // Specify the residual test for convergence in the Newton process
+    // R: ||R||_2,            2-norm of R (augmented F) 
+    // D: ||(dx,dpar)||_inf,  inf-norm of the update (dx,dpar)
+    char residualTest_;
 
     // E: Euler, solve J dxdpar = -dF
     // A: Assign  dx = -DF (when J approx I)

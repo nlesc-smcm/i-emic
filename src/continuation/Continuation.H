@@ -46,6 +46,7 @@ Continuation(Model model, ParameterList pars)
     usePracticalTol_       (pars->get("enable practical tolerance", false)),
     newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
     tangentType_           (pars->get("tangent type", 'S')),
+    residualTest_          (pars->get("corrector residual test", 'D')),
     initialTangent_        (pars->get("initial tangent type", 'E')),
     printImportantVectors_ (pars->get("print important vectors", false)),
     predictorBound_        (pars->get("predictor bound", 1e5)),
@@ -676,8 +677,18 @@ newtonCorrector()
         }
 
         // obtain the residual
+        if (residualTest_ == 'R')
+        {
+        }
+        else if (residualTest_ == 'D')
+        {
         normDX = Utils::normInf(stateDir);                              
         res = std::max(std::abs(parDir), normDX);
+        }
+        else
+        {
+            WARNING(" undefined residual test!",__FILE__, __LINE__);
+        }
 
         INFO("----------------------------------------------------------");
         INFO("           Newton corrector    iter: " << newtonIter_ );
