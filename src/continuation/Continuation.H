@@ -676,18 +676,22 @@ newtonCorrector()
             return 1;
         }
 
+        // residual tests and printing --------------------------------------------
+        
         // obtain the residual
         if (residualTest_ == 'R')
         {
+            res = normRHStest_;
         }
         else if (residualTest_ == 'D')
         {
-        normDX = Utils::normInf(stateDir);                              
-        res = std::max(std::abs(parDir), normDX);
+            normDX = Utils::normInf(stateDir);                              
+            res = std::max(std::abs(parDir), normDX);
         }
         else
         {
             WARNING(" undefined residual test!",__FILE__, __LINE__);
+            res = 999;
         }
 
         INFO("----------------------------------------------------------");
