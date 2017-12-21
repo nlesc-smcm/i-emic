@@ -696,10 +696,19 @@ newtonCorrector()
 
         INFO("----------------------------------------------------------");
         INFO("           Newton corrector    iter: " << newtonIter_ );
-        INFO("                          old ||R||: " << normRHS_);
-        INFO("                              ||R||: " << normRHStest_);
-        INFO("          res = max(dl,||dx||_inf) : " << res << " <? " << practicalTol_);
-        INFO("                         res0/ res : " << res0 / res);
+        INFO("                       old ||R||_2 : " << normRHS_);
+        
+        if (residualTest_ == 'R')
+        {
+            INFO("                           ||R||_2 : " << res << " <? " << practicalTol_);
+        }
+        else if (residualTest_ == 'D')
+        {
+            INFO("                           ||R||_2 : " << res);                   
+            INFO("                   ||dx,dl||_inf   : " << res << " <? " << practicalTol_);
+        }
+        
+        INFO("                     old res / res : " << res0 / res);
         INFO("                             ||dx||: " << Utils::norm(stateDir));
         INFO("                              ||x||: " << Utils::norm(stateView_));
         INFO("                          old ||x||: " << Utils::norm(storage_.state0));
