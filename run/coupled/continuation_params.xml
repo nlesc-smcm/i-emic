@@ -57,17 +57,27 @@
   <!-- Finite difference with which dFdpar is calculated -->
   <Parameter name="epsilon increment" type="double" value="1.0e-4"/>
 
+  <!-- Normalization strategy                                -->
+  <!--     O: Old (ds)                                       -->
+  <!--     N: New (ds*ds)                                    -->
+  <Parameter name="normalize strategy" type="char" value="O"/>
+
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->
   <!-- arclength parameterization.                                    -->
-  <Parameter name="state tangent scaling" type="double" value="1.0e0"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0e-5"/>
 
   <!-- reject solution from failed Newton iteration -->
   <Parameter name="reject failed iteration" type="bool" value="true"/>
 
+  <!-- corrector residual test types:           -->
+  <!-- R:  ||R||_2                              -->
+  <!-- D:  ||(pardir, xdir)||_inf     (default) -->
+  <Parameter name="corrector residual test" type="char" value="R"/>
+
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
-  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
+  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
 
   <Parameter name="backtracking increase" type="double" value="1.2"/>
 

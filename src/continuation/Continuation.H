@@ -704,7 +704,7 @@ newtonCorrector()
         }
         else if (residualTest_ == 'D')
         {
-            INFO("                           ||R||_2 : " << res);                   
+            INFO("                           ||R||_2 : " << normRHStest_);                   
             INFO("                     ||dx,dl||_inf : " << res << " <? " << practicalTol_);
         }
         

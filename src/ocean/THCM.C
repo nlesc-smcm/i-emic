@@ -2376,7 +2376,6 @@ void THCM::SetupMonthlyForcing()
     }
 }
 
-
 //=============================================================================
 extern "C" {
 
@@ -2413,9 +2412,12 @@ extern "C" {
                 lsint  = cos(y[j]) * (1 - landm[pl]) + lsint;
             }
         }
+        
         CHECK_ZERO( comm->SumAll(&lfsint,fsint,1) );
         CHECK_ZERO( comm->SumAll(&lsint,&sint,1) );
+        
         *fsint = *fsint/sint;
+        
         INFO("Flux correction equals "<<*fsint);
     }
 
@@ -2451,6 +2453,7 @@ extern "C" {
                         }
                         pos+=_NUN_;
                     }
+            
             double nrm1,nrm2;
             CHECK_ZERO((*nullSpace)(0)->Norm2(&nrm1));
             CHECK_ZERO((*nullSpace)(1)->Norm2(&nrm2));
