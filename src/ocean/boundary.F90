@@ -164,10 +164,11 @@ subroutine boundaries
 
                  Frc(find_row2(i,j,k,WW)) = 0.0
                  Al(i,j,k, :,WW,: ) = 0.0
-                 Al(i,j,k, 5, :,WW) = 0.0 !MdT
-                 Al(i,j,k, 6, :,WW) = 0.0 !MdT
-                 Al(i,j,k, 8, :,WW) = 0.0 !MdT
-                 Al(i,j,k, 9, :,WW) = 0.0 !MdT
+                 ! preconditioner breakdown if we do this:
+                 !Al(i,j,k, 5, :,WW) = 0.0 !MdT
+                 !Al(i,j,k, 6, :,WW) = 0.0 !MdT
+                 !Al(i,j,k, 8, :,WW) = 0.0 !MdT
+                 !Al(i,j,k, 9, :,WW) = 0.0 !MdT
                  Al(i,j,k, 5,WW,WW) = 1.0
 
               endif
@@ -191,10 +192,11 @@ subroutine boundaries
 
                  Frc(find_row2(i,j,k,WW)) = 0.0
                  Al(i,j,k, :,WW,: ) = 0.0
-                 Al(i,j,k, 5, :,WW) = 0.0 !MdT
-                 Al(i,j,k, 6, :,WW) = 0.0 !MdT
-                 Al(i,j,k, 8, :,WW) = 0.0 !MdT
-                 Al(i,j,k, 9, :,WW) = 0.0 !MdT
+                 ! preconditioner breakdown if we do this:
+                 !Al(i,j,k, 5, :,WW) = 0.0 !MdT
+                 !Al(i,j,k, 6, :,WW) = 0.0 !MdT
+                 !Al(i,j,k, 8, :,WW) = 0.0 !MdT
+                 !Al(i,j,k, 9, :,WW) = 0.0 !MdT
                  Al(i,j,k, 5,WW,WW) = 1.0
                  
               endif
