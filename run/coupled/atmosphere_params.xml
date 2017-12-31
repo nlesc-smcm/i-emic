@@ -40,13 +40,13 @@
   <!-- western, eastern, southern and northern domain bounds      -->
   <Parameter name="Global Bound xmin" type="double" value="286"    />
   <Parameter name="Global Bound xmax" type="double" value="350"    />
-  <Parameter name="Global Bound ymin" type="double" value="10"    />
+  <Parameter name="Global Bound ymin" type="double" value="10"     />
   <Parameter name="Global Bound ymax" type="double" value="74"     />
 
   <!-- global number of grid points in x,y and z-directions       -->
   <Parameter name="Global Grid-Size n" type="int" value="16"       />
   <Parameter name="Global Grid-Size m" type="int" value="16"       />
-  <Parameter name="Global Grid-Size l" type="int" value="1"       />
+  <Parameter name="Global Grid-Size l" type="int" value="1"        />
 
   <!-- Auxiliary unknowns                                         -->
   <Parameter name="Auxiliary unknowns" type="int" value="1"        />  

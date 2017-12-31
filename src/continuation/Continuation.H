@@ -704,14 +704,14 @@ newtonCorrector()
         }
         else if (residualTest_ == 'D')
         {
-            INFO("                           ||R||_2 : " << res);                   
-            INFO("                   ||dx,dl||_inf   : " << res << " <? " << practicalTol_);
+            INFO("                           ||R||_2 : " << normRHStest_);                   
+            INFO("                     ||dx,dl||_inf : " << res << " <? " << practicalTol_);
         }
         
         INFO("                     old res / res : " << res0 / res);
-        INFO("                             ||dx||: " << Utils::norm(stateDir));
-        INFO("                              ||x||: " << Utils::norm(stateView_));
-        INFO("                          old ||x||: " << Utils::norm(storage_.state0));
+        INFO("                          ||dx||_2 : " << Utils::norm(stateDir));
+        INFO("                           ||x||_2 : " << Utils::norm(stateView_));
+        INFO("                       old ||x||_2 : " << Utils::norm(storage_.state0));
         INFO("                               dl  : " << parDir);
         INFO("                                l  : " << par_);
         INFO("                            old l  : " << storage_.par0);
