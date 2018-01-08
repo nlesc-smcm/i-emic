@@ -1,8 +1,13 @@
 function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
-
     
     if nargin < 6
         opts.tmp = 0
+    end
+    
+    if nargin < 2
+        no_reshape = true;
+    else
+        no_reshape = false;
     end
     
     if isfield(opts, 'readE')
@@ -41,9 +46,10 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
     
     sol = h5read(file, '/State/Values');
     
-    dim = n*m*l*nun;
-    
-    sol = reshape(sol(1:dim), nun, n, m, l);
+    if ~no_reshape
+        dim = n*m*l*nun;
+        sol = reshape(sol(1:dim), nun, n, m, l);
+    end
     
     % read parameters
     pars = [];

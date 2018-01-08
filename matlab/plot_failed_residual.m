@@ -1,14 +1,14 @@
 function [] = plot_failed_residual(fname, maskname, level)
 
     if nargin < 1
-        fname = 'failed_rhs';
+        fname = 'failed_rhs.h5';
     end
     if nargin < 2
         maskname = 'fort.44';
     end
 
     if isempty(maskname)
-
+        
     else
 
     end
@@ -25,7 +25,7 @@ function [] = plot_failed_residual(fname, maskname, level)
     RtD   = 180/pi;              %[-]     Radians to degrees
 
 
-    res  = load(fname);
+    res  = readhdf5(fname);
 
     sol = zeros(nun,n,m,l+la);
     idx = 1;

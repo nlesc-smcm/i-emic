@@ -95,12 +95,19 @@ initialize()
     // (Re)Initialize step size
     ds_ = dsInit_;
 
+    // Compute rhs of the model
+    model_->computeRHS();
+
     // Get views of the important components of the model
     stateView_   = model_->getState('V');
     rhsView_     = model_->getRHS('V');
     solView_     = model_->getSolution('V');
     par_         = model_->getPar();
     startingPar_ = model_->getPar();
+    
+    // Save the residual
+    if (printImportantVectors_)
+        Utils::save(rhsView_, "residual");
 
     // print some info on the model
     modelInfo();
@@ -275,7 +282,7 @@ createInitialTangent()
     // 1) Compute dFdPar_, force computation of RHS
     computeDFDPar('F');
 
-    if (printImportantVectors_) Utils::print(dFdPar_, "dFdpar");
+    if (printImportantVectors_) Utils::save(dFdPar_, "dFdpar");
 
     if ( (initialTangent_ == 'E') || (initialTangent_ == 'S'))   // 2a) Solve J*dxdpar = -dFdPar_
     {
@@ -716,6 +723,9 @@ newtonCorrector()
         INFO("                                l  : " << par_);
         INFO("                            old l  : " << storage_.par0);
         INFO("----------------------------------------------------------");
+
+        if (printImportantVectors_)
+            Utils::save(stateDir, "dx");
 
         if (res < practicalTol_ && newtonIter_ >= minNewtonIterations_)
             break;

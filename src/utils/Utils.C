@@ -159,6 +159,7 @@ size_t Utils::hash(Teuchos::RCP<Epetra_MultiVector> vec)
 //============================================================================
 void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename)
 {
+    INFO("Saving " << vec->Label() << " to " << filename);
     std::ostringstream fname;
     fname << filename << ".h5";
     EpetraExt::HDF5 HDF5(vec->Map().Comm());
