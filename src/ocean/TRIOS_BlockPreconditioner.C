@@ -1578,7 +1578,11 @@ namespace TRIOS {
 
         // yw = Aw\yw (lower tri-solve)
         Epetra_Vector rhsw = yw;
-        CHECK_ZERO(Aw->Solve(false,false,false,rhsw,yw));
+
+        // taking care of a no diagonal case
+        bool unitDiag = (Aw->NoDiagonal()) ? true : false;
+
+        CHECK_ZERO(Aw->Solve(false, false, unitDiag, rhsw, yw));
         //     Utils::TriSolve(*Aw,rhsw,yw);
 
         // temperature and salinity equations
@@ -2461,9 +2465,12 @@ namespace TRIOS {
             bhat[i] = b[i];
         }
 
+        // taking care of a no diagonal case
+        bool unitDiag = (Gw1->NoDiagonal()) ? true : false;
+
         if (ApType == 'S') // Only Square part of Gw
         {
-            CHECK_ZERO(Gw1->Solve(true, false, false, bhat, x));
+            CHECK_ZERO(Gw1->Solve(true, false, unitDiag, bhat, x));
         }
         else if (ApType == 'F') // Full Ap solve
         {
@@ -2473,7 +2480,7 @@ namespace TRIOS {
             Epetra_Vector wtmp(Mp1->DomainMap(), true);
             Epetra_Vector ztmp(Mp1->DomainMap(), true);
 
-            CHECK_ZERO(Gw1->Solve(true, false, false, bhat, wtmp));
+            CHECK_ZERO(Gw1->Solve(true, false, unitDiag, bhat, wtmp));
 
             CHECK_ZERO(Mp1->Multiply(false, wtmp, utmp));
 
