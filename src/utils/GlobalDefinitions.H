@@ -71,22 +71,22 @@ extern std::stack<Timer> timerStack;
 #  define WRITECDATA(s) (*cdataFile) << s << std::endl; 
 #endif
 
-//! Fatal error handling
+// ! Error reporting
 #ifndef ERROR
 #  define ERROR(x,y,z)                                                  \
 	{                                                                   \
 		(*outFile) << "**ERROR**: " << x << " "                         \
 				   << y << " " << z << std::endl;                       \
                                                                         \
-        std::cerr << "Fatal Error: "<< x << std::endl;                  \
+        std::cerr << "**ERROR**: "<< x << std::endl;                   \
         std::cerr << "(in " << y << ", line "                           \
                   << z << ")" << std::endl;                             \
                                                                         \
-        int initialized = 0;                                            \
+/*        int initialized = 0;                                          \
         MPI_Initialized(&initialized);                                  \
         if (initialized)                                                \
             MPI_Abort(MPI_COMM_WORLD, -1);                              \
-        std::exit(-1);                                                  \
+            std::exit(-1);                                       */     \
 }
 #endif
 
