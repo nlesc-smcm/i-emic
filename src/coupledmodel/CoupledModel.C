@@ -158,10 +158,10 @@ void CoupledModel::initializeFGMRES()
     // Set preconditioning
     problem_->setRightPrec(coupledPrec);
 
-    int gmresIters  = solverParams->get("FGMRES iterations", 400);
+    int gmresIters  = solverParams->get("FGMRES iterations", 200);
     double gmresTol = solverParams->get("FGMRES tolerance", 1e-2);
-    int maxrestarts = solverParams->get("FGMRES restarts", 2);
-    int output      = solverParams->get("FGMRES output", 20);
+    int maxrestarts = solverParams->get("FGMRES restarts", 0);
+    int output      = solverParams->get("FGMRES output", 1000);
 
     int NumGlobalElements = stateView_->GlobalLength();
     int blocksize         = 1; // number of vectors in rhs
