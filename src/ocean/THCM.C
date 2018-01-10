@@ -959,7 +959,6 @@ bool THCM::evaluate(const Epetra_Vector& soln,
     return true;
 }
 
-
 // just reconstruct the diagonal matrix B from THCM
 void THCM::evaluateB(void)
 {
@@ -970,15 +969,16 @@ void THCM::evaluateB(void)
 
     localDiagB->PutScalar(0.0);
     FNAME(fillcolb)();
-    for (int i = 0; i<NumMyElements; i++)
+    for (int i = 0; i < NumMyElements; i++)
     {
-        if (!domain->IsGhost(i,_NUN_))
+        if (!domain->IsGhost(i, _NUN_))
         {
             // reconstruct the diagonal matrix B
             int lid = StandardMap->LID(AssemblyMap->GID(i));
             (*localDiagB)[lid] = -coB[i];
-        }//not a ghost?
-    }//i-loop over rows
+        } // not a ghost?
+    } // i-loop over rows
+    
 #ifndef NO_INTCOND
     if (sres == 0)
     {

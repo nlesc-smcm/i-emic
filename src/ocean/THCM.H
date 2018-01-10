@@ -116,14 +116,10 @@ public:
     //! only recompute the diagonal matrix B
 
     /*! the matrix B is used by THCM to 'switch off' some equations.
-      It is diagonal and the diagonal entries can be accessed by
-      the function diagB().
-      We use the opposite sign as compared to THCM.
+      It is diagonal and the diagonal entries can be accessed by the
+      function diagB(). We use the opposite sign as compared to THCM.
       The entries of B are (see assemble.f::fillcolB and
-      usrc.F90::matrix):
-      Ro for u,v
-      0  for w,p
-      1 for T,S
+      usrc.F90::matrix): Ro for u,v 0 for w,p 1 for T,S
     */
     void evaluateB();
 
@@ -237,7 +233,7 @@ public:
     Teuchos::RCP<TRIOS::Domain> GetDomain() {return domain;}
 
     //! get the diagonal matrix B
-    Epetra_Vector& DiagB(){return *diagB;}
+    Teuchos::RCP<Epetra_Vector> DiagB(){return diagB;}
 
     //! return the communicator object
     Teuchos::RCP<Epetra_Comm> GetComm(){return Comm;}

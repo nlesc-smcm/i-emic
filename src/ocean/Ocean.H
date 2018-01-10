@@ -75,6 +75,7 @@ protected:
     VectorPtr massMatrix_;
 
     MatrixPtr jac_;
+    VectorPtr diagB_;
     Teuchos::RCP<Epetra_Comm> comm_;
 
     VectorPtr rowScaling_;
@@ -92,6 +93,7 @@ protected:
     bool   solverInitialized_;
     bool   precInitialized_;
     bool   recompPreconditioner_;
+    bool   recompMassMat_;
 
     VectorPtr sol_;
 
@@ -202,11 +204,18 @@ public:
     //! out = P^{-1}*v
     void applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out);
 
+    //! Apply the mass matrix
+    //! out = B*v
+    void applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out);
+
     //! Set prec recompute flag
     void recomputePreconditioner() { recompPreconditioner_ = true; }
 
     //! Build preconditioner
     void buildPreconditioner(bool forceInit = false);
+
+    //! Build mass matrix
+    void buildMassMat();
 
     //! Initialize solver
     void initializeSolver();
