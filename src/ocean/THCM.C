@@ -591,7 +591,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     rowintcon_     = -1;
     intCorrection_ = 0.0;
 #ifndef NO_INTCOND
-    if ( ( sres == 0 ) && ( coupled_atm >= 0 ) ) 
+    if (sres == 0) 
     {
         int N=domain->GlobalN();
         int M=domain->GlobalM();
@@ -737,7 +737,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 {
 
 #if defined(DEBUGGING_NEW) && !defined(NO_INTCOND)
-    if ( (sres == 0)  && ( coupled_atm >= 0 ) )
+    if (sres == 0)
     {
         double intcond;
         CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
@@ -789,11 +789,11 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         // export overlapping rhs to unique-id global rhs vector,
         // and load-balance for solve phase:
         domain->Assembly2Solve(*localRhs,*tmp_rhs);
-
+        
         CHECK_ZERO(tmp_rhs->Scale(-1.0));
-
+        
 #ifndef NO_INTCOND
-        if ((sres == 0) && (coupled_atm >= 0 ))
+        if (sres == 0)
         {
             int lastrow = rowintcon_;
             double intcond;
@@ -847,31 +847,25 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         int index, numentries;
 
         int imax = NumMyElements;
-#ifndef NO_INTCOND
-        if ((sres == 0) && (coupled_atm >= 0 ))
+
+        for (int i = 0; i < imax; i++)
         {
-            if (Jac->MyGRID(rowintcon_))
-            {
-                imax--;
-            }
-        }
-#endif
-        for (int i = 0; i<imax; i++)
-        {
-            if (!domain->IsGhost(i, _NUN_))
+            if (!domain->IsGhost(i, _NUN_) && (AssemblyMap->GID(i) != rowintcon_))
             {
                 index = begA[i]; // note that these arrays use 1-based indexing
                 numentries = begA[i+1] - index;
                 for (int j = 0; j <  numentries ; j++)
                 {
                     indices[j] = AssemblyMap->GID(jcoA[index-1+j] - 1);
-                    values[j] = coA[index - 1 + j];
+                    values[j]  = coA[index - 1 + j];
                 }
 
                 int ierr = localJac->ReplaceGlobalValues(AssemblyMap->GID(i), numentries,
                                                          values, indices);
 
-                if ((ierr!=0) && (ierr!=3))
+                // ierr == 3 probably means not all row entries are replaced,
+                // does not matter because we zeroed them.
+                if (((ierr!=0) && (ierr!=3)))
                 {
                     std::cout << "\n ERROR " << ierr;
                     std::cout << "\n myPID " << Comm->MyPID();
@@ -879,32 +873,47 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                               << std::endl;
 
                     INFO(" ERROR while inserting/replacing values in local Jacobian");
-
-                    std::cout << " GRID: " << AssemblyMap->GID(i) << std::endl;
+                    
+                    int GRID = AssemblyMap->GID(i);
+                    std::cout << " GRID: " << GRID << std::endl;
+                    std::cout << " max GRID: " << AssemblyMap->GID(imax-1) << std::endl;
                     std::cout << " number of entries: " << numentries << std::endl;
 
                     std::cout << " entries: ";
                     for (int j = 0; j < numentries; j++)
-                        std::cout << "("<<indices[j]<<" "<<values[j]<<") ";
+                        std::cout << "(" << indices[j] << " " << values[j] << ") ";
+                    std::cout << std::endl;
 
-                    std::cout << " maxlen:     " << maxlen << std::endl;
-                    std::cout << " numentries: " << numentries << std::endl;
+                    std::cout << " NumMyElements:        " << NumMyElements << std::endl;
+                    std::cout << " i:                    " << i << std::endl;
+                    std::cout << " imax:                 " << imax << std::endl;
+                    std::cout << " maxlen:               " << maxlen << std::endl;
+                    
+                    std::cout << " row:                  " << GRID << std::endl;
+                    std::cout << " have rowintcon:       " << localJac->MyGRID(rowintcon_)
+                              << std::endl;
+                    std::cout << " rowintcon:            " << rowintcon_ << std::endl;
+                    std::cout << " assembly rowintcon:   " << AssemblyMap->LID(rowintcon_)
+                              << std::endl;
+                    std::cout << " standard rowintcon:   " << StandardMap->LID(rowintcon_)
+                              << std::endl;
+                    int LRID = localJac->LRID(GRID);
+                    std::cout << " LRID:                 " << LRID << std::endl;
+                    std::cout << " graph inds in LRID:   " 
+                              << localJac->Graph().NumMyIndices(LRID) << std::endl;
 
-                    std::cout << " maxlen < numentries: " << (maxlen < numentries) << std::endl;
-                    
-                    CHECK_ZERO(localJac->ExtractGlobalRowCopy
-                               (AssemblyMap->GID(i), maxlen, numentries, values, indices));
-                    
-                    std::cout << "\noriginal row: ";
-                    std::cout << "number of entries: " << numentries;
+                    int ierr2 = localJac->ExtractGlobalRowCopy
+                        (AssemblyMap->GID(i), maxlen, numentries, values, indices);
+
+                    std::cout << "\noriginal row: " << std::endl;
+                    std::cout << "number of entries: " << numentries << std::endl;
                     std::cout << "entries: ";
                     
                     for (int j=0; j < numentries; j++)
                         std::cout << "(" << indices[j] << " " << values[j] << ") ";
                     std::cout << std::endl;
 
-                    // ierr == 3 probably means not all row entries are replaced,
-                    // does not matter because we zeroed them.
+                    CHECK_ZERO(ierr2);
                 }
 
                 // reconstruct the diagonal matrix B
@@ -916,7 +925,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         } //i-loop over rows
 
 #ifndef NO_INTCOND
-        if ((sres == 0) && (coupled_atm >= 0 ))
+        if (sres == 0)
         {
             this->intcond_S(*localJac,*localDiagB);
         }
@@ -2213,7 +2222,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
                 insert_graph_entry(indices,pos,i,j,k+1,TT,N,M,L);
 #ifndef NO_INTCOND
                 if ( (sres == 0) &&
-                     ( (gid0+SS) == rowintcon_) && (coupled_atm >= 0 ))
+                     ( (gid0+SS) == rowintcon_ ) )
                     continue;
 #endif
                 DEBUG_GRAPH_ROW(SS)
@@ -2221,7 +2230,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
             }
 
 #ifndef NO_INTCOND
-    if ((sres == 0) && (coupled_atm >= 0 ))
+    if (sres == 0)
     {
         int grid = rowintcon_;
         if (StandardMap->MyGID(grid))
