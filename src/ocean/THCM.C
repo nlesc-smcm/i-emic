@@ -875,20 +875,32 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 {
                     std::cout << "\n ERROR " << ierr;
                     std::cout << "\n myPID " << Comm->MyPID();
-                    std::cout <<"\n while inserting/replacing values in local Jacobian" << std::endl;
+                    std::cout <<"\n while inserting/replacing values in local Jacobian"
+                              << std::endl;
+
                     INFO(" ERROR while inserting/replacing values in local Jacobian");
 
                     std::cout << " GRID: " << AssemblyMap->GID(i) << std::endl;
                     std::cout << " number of entries: " << numentries << std::endl;
 
                     std::cout << " entries: ";
-                    for (int j=0;j<numentries;j++) (std::cout) << "("<<indices[j]<<" "<<values[j]<<") ";
+                    for (int j = 0; j < numentries; j++)
+                        std::cout << "("<<indices[j]<<" "<<values[j]<<") ";
 
-                    CHECK_ZERO(localJac->ExtractGlobalRowCopy(AssemblyMap->GID(i),maxlen,numentries,values,indices));
+                    std::cout << " maxlen:     " << maxlen << std::endl;
+                    std::cout << " numentries: " << numentries << std::endl;
+
+                    std::cout << " maxlen < numentries: " << (maxlen < numentries) << std::endl;
+                    
+                    CHECK_ZERO(localJac->ExtractGlobalRowCopy
+                               (AssemblyMap->GID(i), maxlen, numentries, values, indices));
+                    
                     std::cout << "\noriginal row: ";
                     std::cout << "number of entries: " << numentries;
                     std::cout << "entries: ";
-                    for (int j=0; j < numentries; j++) std::cout << "(" << indices[j] << " " << values[j] << ") ";
+                    
+                    for (int j=0; j < numentries; j++)
+                        std::cout << "(" << indices[j] << " " << values[j] << ") ";
                     std::cout << std::endl;
 
                     // ierr == 3 probably means not all row entries are replaced,
