@@ -427,6 +427,35 @@ TEST(CoupledModel, applyMatrix)
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, MassMatrix)
+{
+    // Combined_MultiVec v   = *coupledModel->getState('C');
+    // Combined_MultiVec out = *coupledModel->getState('C');
+    // v.PutScalar(0.0);
+    // out.Random();
+
+    // // coupledModel->applyMassMat(v, out);
+    
+    // Teuchos::RCP<Epetra_MultiVector> oceanVec = out.First();
+    // Teuchos::RCP<Epetra_MultiVector> atmosVec = out.Second();
+    
+    // int n = ocean->getNdim();
+    // int m = ocean->getMdim();
+    // int l = ocean->getLdim();
+
+    // std::ofstream file;
+    // file.open("massmat");
+    // file << out;
+    // file.close();
+    
+    // // auxiliary unknowns?
+    // if (atmosVec->GlobalLength() > ATMOS_NUN_ * m * n * l)
+    // {
+       
+    // }
+}
+
+//------------------------------------------------------------------
 TEST(CoupledModel, View)
 {
     std::shared_ptr<Combined_MultiVec> stateV =

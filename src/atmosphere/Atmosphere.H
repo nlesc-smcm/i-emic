@@ -91,6 +91,9 @@ class Atmosphere
     // Solution vector
     std::shared_ptr<std::vector<double> > sol_;
 
+    // // Mass matrix diagonal
+    // std::shared_ptr<std::vector<double> > diagB_;    
+
     // Ocean surface temperature
     std::shared_ptr<std::vector<double> > sst_;
 
@@ -230,6 +233,9 @@ public:
     //! Compute the Jacobian matrix
     void computeJacobian();
 
+    // //! Compute mass matrix
+    // void computeMassMat();    
+
     void computeEvaporation();
     void computePrecipitation();
 
@@ -240,6 +246,7 @@ public:
     std::shared_ptr<std::vector<double> > getSolution    (char mode = 'C');
     std::shared_ptr<std::vector<double> > getState       (char Mode = 'C');
     std::shared_ptr<std::vector<double> > getRHS         (char mode = 'C');
+//    std::shared_ptr<std::vector<double> > getDiagB       (char mode = 'C');
     std::shared_ptr<std::vector<double> > getSST         (char Mode = 'C');
     std::shared_ptr<std::vector<double> > getE           (char mode = 'C');
     std::shared_ptr<std::vector<double> > getP           (char mode = 'C');

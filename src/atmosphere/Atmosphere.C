@@ -193,7 +193,8 @@ void Atmosphere::setup()
     INFO("  DqDt0 = " << nuq_ * eta_ * dqso_ / qdim_);
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
-    nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_
+    nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_ (ATMOS_PP_ exists
+                        // at only aux_ points).
 
     // Problem size
     dim_ = m_ * n_ * l_ * nun_ + aux_;
@@ -202,6 +203,7 @@ void Atmosphere::setup()
     rhs_   = std::make_shared<std::vector<double> >(dim_, 0.0);
     sol_   = std::make_shared<std::vector<double> >(dim_, 0.0);
     state_ = std::make_shared<std::vector<double> >(dim_, 0.0);
+//    diagB_ = std::make_shared<std::vector<double> >(dim_, 0.0);
 
     // Initialize fields for evaporation and precipitation at surface
     E_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
@@ -276,8 +278,7 @@ void Atmosphere::setup()
         suno_.push_back(Os_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
                         (1 - albe_[j]));
     }
-
-
+    
     if (periodic_)
         ERROR("Periodicity not implemented for serial atmosphere! Use more cores!", __FILE__, __LINE__);
 }
@@ -431,7 +432,7 @@ void Atmosphere::integralCoeff(std::vector<double> &val,
 
                 val.push_back(cos(yc_[j]) * dx_ * dy_);
                 ind.push_back(FIND_ROW_ATMOS1(nun, n_, m_, l_, i, j, k, XX));
-            }    
+            }
 }
 
 //-----------------------------------------------------------------------------
@@ -504,6 +505,27 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getJacobian()
     jac->beg = beg_;
     return jac;
 }
+
+// //-----------------------------------------------------------------------------
+// void Atmosphere::computeMassMat()
+// {
+//     TIMER_START("Atmosphere: compute mass matrix...");
+
+//     // Only TT and QQ equations. Integral equations give a zero
+//     // diagonal element. This is taken care of on the parallel side.
+//     int rowTT, rowQQ;
+//     for (int i = 1; i <= n_; ++i)
+//         for (int j = 1; j <= m_; ++j)
+//             for (int k = 1; k <= l_; ++k)
+//             {
+//                 rowTT = find_row(i, j, k, ATMOS_TT_)-1;
+//                 rowQQ = find_row(i, j, k, ATMOS_QQ_)-1;
+//                 (*diagB_)[rowTT] = Ai_;
+//                 (*diagB_)[rowQQ] = qdim_;                
+//             }
+        
+//     TIMER_STOP("Atmosphere: compute mass matrix...");
+// }
 
 //-----------------------------------------------------------------------------
 void Atmosphere::computeRHS()
@@ -1146,6 +1168,12 @@ std::shared_ptr<std::vector<double> > Atmosphere::getRHS(char mode)
 {
     return getVector(mode, rhs_);
 }
+
+// //-----------------------------------------------------------------------------
+// std::shared_ptr<std::vector<double> > Atmosphere::getDiagB(char mode)
+// {
+//     return getVector(mode, diagB_);
+// }
 
 //-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getSST(char mode)

@@ -277,6 +277,21 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &ou
     TIMER_STOP("CoupledModel: apply matrix...");
 }
 
+// //------------------------------------------------------------------
+// void CoupledModel::applyMassMat(Combined_MultiVec const &v, Combined_MultiVec &out)
+// {
+//     TIMER_START("CoupledModel: apply mass matrix...");
+
+//     // Initialize output
+//     out.PutScalar(0.0);
+
+//     // Apply mass matrix
+//     ocean_->applyMassMat(*v.First(), *out.First());
+//     atmos_->applyMassMat(*v.Second(), *out.Second());
+    
+//     TIMER_STOP("CoupledModel: apply mass matrix...");    
+// }
+
 //------------------------------------------------------------------
 void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
 {

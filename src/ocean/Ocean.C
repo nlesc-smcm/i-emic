@@ -1009,7 +1009,9 @@ Teuchos::RCP<Epetra_Vector> Ocean::getRHS(char mode)
 }
 
 //====================================================================
-// Obtain M, binary diagonal matrix to select transient parts.
+// Obtain M, binary diagonal matrix to select transient parts. -->
+// this does not include a zero for an integral condition in the case
+// of non-restoring salinity forcing.
 Teuchos::RCP<Epetra_Vector> Ocean::getM(char mode)
 {
     RCP<Epetra_Vector> vecM =
