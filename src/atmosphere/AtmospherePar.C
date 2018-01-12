@@ -29,8 +29,8 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 
 
     precInitialized_ (false),
-    recomputePrec_   (false)
-//    recompMassMat_   (true)
+    recomputePrec_   (false),
+    recompMassMat_   (true)
 {
     INFO("AtmospherePar: constructor...");
 
@@ -96,7 +96,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     // Create overlapping and non-overlapping vectors
     state_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
-//    diagB_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+    diagB_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     sol_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     sst_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     E_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
@@ -104,7 +104,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
 
     localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
-//    localDiagB_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localDiagB_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localE_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -960,79 +960,78 @@ void AtmospherePar::applyMatrix(Epetra_MultiVector const &in,
     TIMER_STOP("AtmospherePar: apply matrix...");
 }
 
-// //====================================================================
-// void AtmospherePar::buildMassMat()
-// {
-//     if (recompMassMat_)
-//     {
-//         INFO("AtmospherePar: build mass matrix...");
-//         // compute mass matrix
-//         atmos_->computeMassMat();
+//====================================================================
+void AtmospherePar::buildMassMat()
+{
+    if (recompMassMat_)
+    {
+        INFO("AtmospherePar: build mass matrix...");
+        // compute mass matrix
+        atmos_->computeMassMat();
 
-//         int numMyElements = localDiagB_->Map().NumMyElements();
+        int numMyElements = localDiagB_->Map().NumMyElements();
         
-//         // obtain local diagonal
-//         std::shared_ptr<std::vector<double> > localDiagB =
-//             atmos_->getDiagB('V');
+        // obtain local diagonal
+        std::shared_ptr<std::vector<double> > localDiagB =
+            atmos_->getDiagB('V');
 
-//         if ((int) localDiagB->size() != numMyElements)
-//         {
-//             ERROR("Local diagB incorrect size", __FILE__, __LINE__);
-//         }
+        if ((int) localDiagB->size() != numMyElements)
+        {
+            ERROR("Local diagB incorrect size", __FILE__, __LINE__);
+        }
         
-//         // obtain view of assembly diagB 
-//         double *tmpview;
-//         localDiagB_->ExtractView(&tmpview);
+        // obtain view of assembly diagB 
+        double *tmpview;
+        localDiagB_->ExtractView(&tmpview);
         
-//         // fill view
-//         for (int i = 0; i != numMyElements; ++i)
-//         {
-//             tmpview[i] = (*localDiagB)[i];
-//         }
+        // fill view
+        for (int i = 0; i != numMyElements; ++i)
+        {
+            tmpview[i] = (*localDiagB)[i];
+        }
 
-//         domain_->Assembly2Solve(*localDiagB_, *diagB_);
+        domain_->Assembly2Solve(*localDiagB_, *diagB_);
 
-//         // Set zero for integral condition on QQ
-//         if ( useIntCondQ_ && diagB_->Map().MyGID(rowIntCon_) )
-//         {
-//             (*diagB_)[diagB_->Map().LID(rowIntCon_)] = 0.0;
-//         }
+        // Set zero for integral condition on QQ
+        if ( useIntCondQ_ && diagB_->Map().MyGID(rowIntCon_) )
+        {
+            (*diagB_)[diagB_->Map().LID(rowIntCon_)] = 0.0;
+        }
         
-//         // Set zero for integral equation for PP
-//         if (aux_ == 1)
-//         {
-//             int last =
-//                 FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
+        // Set zero for integral equation for PP
+        if (aux_ == 1)
+        {
+            int last =
+                FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
 
-//             int lid;
-//             if (diagB_->Map().MyGID(last+1))
-//             {
-//                 lid = state_->Map().LID(last+1);
-//                 (*diagB_)[lid] = 0.0;
-//             }
-//         }
-//         INFO("AtmospherePar: build mass matrix... done");
-//     }
+            int lid;
+            if (diagB_->Map().MyGID(last+1))
+            {
+                lid = state_->Map().LID(last+1);
+                (*diagB_)[lid] = 0.0;
+            }
+        }
+        INFO("AtmospherePar: build mass matrix... done");
+    }
     
-//     recompMassMat_ = false; // Disable subsequent recomputes
-// }
+    recompMassMat_ = false; // Disable subsequent recomputes
+}
 
+//==================================================================
+void AtmospherePar::applyMassMat(Epetra_MultiVector const &v,
+                                 Epetra_MultiVector &out)
+{
+    TIMER_START("AtmospherePar: apply mass matrix...");
 
-// //==================================================================
-// void AtmospherePar::applyMassMat(Epetra_MultiVector const &v,
-//                                  Epetra_MultiVector &out)
-// {
-//     TIMER_START("AtmospherePar: apply mass matrix...");
+    // Compute mass matrix
+    buildMassMat();
 
-//     // Compute mass matrix
-//     buildMassMat();
+    // element-wise multiplication (out = 0.0*out + 1.0*B*v)
+    out.Multiply(1.0, *diagB_, v, 0.0);
 
-//     // element-wise multiplication (out = 0.0*out + 1.0*B*v)
-//     out.Multiply(1.0, *diagB_, v, 0.0);
-
-//     TIMER_STOP("AtmospherePar: apply mass matrix...");
-// }
-
+    TIMER_STOP("AtmospherePar: apply mass matrix...");
+}
+ 
 //==================================================================
 void AtmospherePar::initializePrec()
 {
@@ -1059,7 +1058,7 @@ void AtmospherePar::getConstants(double &qdim, double &nuq,
 void AtmospherePar::preProcess()
 {
     recomputePrec_ = true;
-    // recompMassMat_ = true;
+    recompMassMat_ = true;
 }
 
 //==================================================================

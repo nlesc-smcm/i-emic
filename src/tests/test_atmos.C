@@ -197,44 +197,44 @@ TEST(Atmosphere, SurfaceTemperature)
 }
 
 
-// //------------------------------------------------------------------
-// TEST(AtmospherePar, MassMatrix)
-// {
-//     Epetra_Vector v   = *atmosPar->getState('C');
-//     Epetra_Vector out = *atmosPar->getState('C');
+//------------------------------------------------------------------
+TEST(AtmospherePar, MassMatrix)
+{
+    Epetra_Vector v   = *atmosPar->getState('C');
+    Epetra_Vector out = *atmosPar->getState('C');
 
-//     v.PutScalar(1.0);
-//     atmosPar->applyMassMat(v, out);
+    v.PutScalar(1.0);
+    atmosPar->applyMassMat(v, out);
 
-//     std::ofstream file;
-//     file.open("massmat");
-//     file << out;
-//     file.close();
+    std::ofstream file;
+    file.open("massmat");
+    file << out;
+    file.close();
 
-//     int numMyElements = out.Map().NumMyElements();
+    int numMyElements = out.Map().NumMyElements();
 
-//     double rhoa    = atmosphereParams->get("atmospheric density",1.25);
-//     double hdima   = atmosphereParams->get("atmospheric scale height",8400.);
-//     double cpa     = atmosphereParams->get("heat capacity",1000.);
-//     double udim    = atmosphereParams->get("horizontal velocity of the ocean", 0.1e+00);
-//     double r0dim   = atmosphereParams->get("radius of the earth", 6.37e+06);
-//     double ce      = atmosphereParams->get("Dalton number",1.3e-03);
-//     double ch      = atmosphereParams->get("exchange coefficient ch",0.94 * ce);
-//     double uw      = atmosphereParams->get("mean atmospheric surface wind speed",8.5);
-//     double qdim    = atmosphereParams->get("humidity scale", 0.01);  // (kg/kg)
+    double rhoa    = atmosphereParams->get("atmospheric density",1.25);
+    double hdima   = atmosphereParams->get("atmospheric scale height",8400.);
+    double cpa     = atmosphereParams->get("heat capacity",1000.);
+    double udim    = atmosphereParams->get("horizontal velocity of the ocean", 0.1e+00);
+    double r0dim   = atmosphereParams->get("radius of the earth", 6.37e+06);
+    double ce      = atmosphereParams->get("Dalton number",1.3e-03);
+    double ch      = atmosphereParams->get("exchange coefficient ch",0.94 * ce);
+    double uw      = atmosphereParams->get("mean atmospheric surface wind speed",8.5);
+    double qdim    = atmosphereParams->get("humidity scale", 0.01);  // (kg/kg)
 
-//     double muoa    =  rhoa * ch * cpa * uw;                       
-//     double Ai      =  rhoa * hdima * cpa * udim / (r0dim * muoa);
+    double muoa    =  rhoa * ch * cpa * uw;                       
+    double Ai      =  rhoa * hdima * cpa * udim / (r0dim * muoa);
 
-//     for (int i = 0; i < numMyElements; i+=ATMOS_NUN_)
-//     {
-//         EXPECT_EQ(out[i], Ai); // TT
-//         if (std::abs(out[i+1])>0) // QQ
-//             EXPECT_EQ(out[i+1], qdim); 
-//     }
+    for (int i = 0; i < numMyElements; i+=ATMOS_NUN_)
+    {
+        EXPECT_EQ(out[i], Ai); // TT
+        if (std::abs(out[i+1])>0) // QQ
+            EXPECT_EQ(out[i+1], qdim); 
+    }
 
-//     // check integral equations in test_coupled
-// }
+    // check integral equations in test_coupled
+}
 
 //------------------------------------------------------------------
 TEST(Atmosphere, Jacobian)
