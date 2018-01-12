@@ -162,6 +162,41 @@ TEST(CoupledModel, inspectState)
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, MassMatrix)
+{
+    Combined_MultiVec v   = *coupledModel->getState('C');
+    Combined_MultiVec out = *coupledModel->getState('C');
+    v.PutScalar(1.0);
+    out.Random();
+
+    coupledModel->applyMassMat(v, out);
+    
+    Teuchos::RCP<Epetra_MultiVector> oceanVec = out.First();
+    Teuchos::RCP<Epetra_MultiVector> atmosVec = out.Second();
+    
+    int n = ocean->getNdim();
+    int m = ocean->getMdim();
+
+    std::ofstream file;
+    file.open("massmat");
+    file << out;
+    file.close();
+
+    int last = ATMOS_NUN_ * m * n - 1;
+    
+    // auxiliary unknowns?
+    if (atmosVec->GlobalLength() > ATMOS_NUN_ * m * n)
+    {
+        int aux = atmosphereParams->get("Auxiliary unknowns", 0);
+        EXPECT_NE(aux, 0);
+        for (int i = 1; i <= aux; ++i)
+        {
+            // test stuff
+        }
+    }
+}
+
+//------------------------------------------------------------------
 TEST(CoupledModel, computeJacobian)
 {
     bool failed = false;
@@ -414,6 +449,11 @@ TEST(CoupledModel, applyMatrix)
                         EXPECT_NEAR( intval * value[v], surfval, 1e-7);
                     }
                 }
+                else
+                {
+                    int aux = atmosphereParams->get("Auxiliary unknowns", 0);
+                    EXPECT_EQ(aux, 0);
+                }
             }
         }
     }
@@ -424,35 +464,6 @@ TEST(CoupledModel, applyMatrix)
     }
 
     EXPECT_EQ(failed, false);
-}
-
-//------------------------------------------------------------------
-TEST(CoupledModel, MassMatrix)
-{
-    Combined_MultiVec v   = *coupledModel->getState('C');
-    Combined_MultiVec out = *coupledModel->getState('C');
-    v.PutScalar(0.0);
-    out.Random();
-
-    coupledModel->applyMassMat(v, out);
-    
-    Teuchos::RCP<Epetra_MultiVector> oceanVec = out.First();
-    Teuchos::RCP<Epetra_MultiVector> atmosVec = out.Second();
-    
-    int n = ocean->getNdim();
-    int m = ocean->getMdim();
-    int l = ocean->getLdim();
-
-    std::ofstream file;
-    file.open("massmat");
-    file << out;
-    file.close();
-    
-    // auxiliary unknowns?
-    if (atmosVec->GlobalLength() > ATMOS_NUN_ * m * n * l)
-    {
-        std::cout << "auxiliary unknowns" << std::endl;
-    }
 }
 
 //------------------------------------------------------------------
