@@ -377,6 +377,12 @@ TEST(Atmosphere, Newton)
 
     INFO("Newton converged in " << niter << " iterations.");
 
+    Teuchos::RCP<Epetra_CrsMatrix> jac = atmosPar->getJacobian();
+    Teuchos::RCP<Epetra_Vector> B = atmosPar->getDiagB();
+
+    DUMPMATLAB("atmos_jac", *jac);
+    DUMP_VECTOR("atmos_B", *B);
+
     EXPECT_NEAR(Utils::norm(b), 0, 1e-7);
 }
 

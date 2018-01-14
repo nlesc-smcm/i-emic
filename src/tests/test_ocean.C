@@ -123,8 +123,6 @@ TEST(Ocean, ComputeJacobian)
             ocean->setPar(0.1);
             ocean->getState('V')->PutScalar(1.234);
             ocean->computeJacobian();
-            Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
-            DUMPMATLAB("ocean_jac", *mat);
         }
         catch (...)
         {
@@ -194,6 +192,14 @@ TEST(Ocean, Continuation)
 
         // Run continuation
         continuation.run();
+
+        Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
+        DUMPMATLAB("ocean_jac", *mat);
+        
+        Teuchos::RCP<Epetra_Vector> diagB = ocean->getDiagB();
+        EXPECT_NE(Utils::norm(diagB), 0.0);
+        DUMP_VECTOR("ocean_B", *diagB);                        
+        
     }
     catch (...)
     {

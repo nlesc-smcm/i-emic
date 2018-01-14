@@ -2,9 +2,13 @@ C = load('ocean_jac'); C = spconvert(C);
 
 JnC = load_numjac('ocean_numjac');
 
+B = load('ocean_B');
+
 n = 6; m = 6; l = 4; dof = 6; 
 
 dim = n*m*l*dof;
+
+B = spdiags(B', 0, dim, dim);
 
 idx = [];
 
@@ -22,5 +26,5 @@ figure(2);
 spy(JnC);
 
 figure(3); 
-
-spy(abs(JnC-C)./abs(C)>1e-4);
+[V,D]=eigs(C,B,10,0,opts);
+plot(real(diag(D)),imag(diag(D)),'*')

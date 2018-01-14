@@ -165,8 +165,11 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     atmosTimporter_ = Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
     atmosQimporter_ = Teuchos::rcp(new Epetra_Import(*qIndexMap_, state_->Map()));
 
+    // Build diagonal mass matrix
+    buildMassMat();
+    
     setupIntCoeff();
-
+    
     INFO("AtmospherePar: constructor done");
 }
 

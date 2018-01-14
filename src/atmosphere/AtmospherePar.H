@@ -281,6 +281,7 @@ public:
 
     Teuchos::RCP<Epetra_Vector> getE(char mode = 'C')   { return getVector(mode, E_); }
     Teuchos::RCP<Epetra_Vector> getP(char mode = 'C')   { return getVector(mode, P_); }
+    Teuchos::RCP<Epetra_Vector> getDiagB(char mode = 'C')   { return getVector(mode, diagB_); }
 
     Teuchos::RCP<Epetra_Vector> getPrecipIntCo(char mode = 'C')
         { return getVector(mode, precipIntCo_); }

@@ -300,7 +300,7 @@ SUBROUTINE writeparams()
 end subroutine writeparams
 
 !*****************************************************************************
-SUBROUTINE matrix(un,sig1,sig2)
+SUBROUTINE matrix(un, sig1, sig2)
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_mix
