@@ -4,7 +4,8 @@
 namespace // local unnamed namespace (similar to static in C)
 {
 
-    RCP<Ocean>  ocean;
+    RCP<Teuchos::ParameterList> oceanParams;
+    RCP<Ocean> ocean;  
     RCP<Epetra_Comm>  comm; 
 }
 
@@ -29,8 +30,7 @@ TEST(Ocean, Initialization)
     try
     {
         // Create parallel Ocean
-        RCP<Teuchos::ParameterList> oceanParams =
-            rcp(new Teuchos::ParameterList);
+        oceanParams = rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
         ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
     }
@@ -48,13 +48,63 @@ TEST(Ocean, Initialization)
 //------------------------------------------------------------------
 TEST(Ocean, RHSNorm)
 {
-    
     ocean->computeRHS();
     double stateNorm = Utils::norm(ocean->getState('V'));
     double rhsNorm   = Utils::norm(ocean->getRHS('V'));
     std::cout << "stateNorm = " << stateNorm << std::endl;
     std::cout << "RHSNorm   = " << rhsNorm   << std::endl;
     EXPECT_LT(rhsNorm, 1e-6);
+}
+
+//------------------------------------------------------------------
+// Check mass matrix contents
+TEST(Ocean, MassMat)
+{
+    Epetra_Vector v   = *ocean->getState('C');
+    Epetra_Vector out = *ocean->getState('C');
+
+    v.PutScalar(1.0);
+    ocean->applyMassMat(v, out);
+
+    std::ofstream file;
+    file.open("massmat");
+    file << out;
+    file.close();       
+
+    int numMyElements = out.Map().NumMyElements();
+    double rosb = ocean->getPar("Rossby-Number");
+    
+    for (int i = 0; i < numMyElements; i+=_NUN_)
+    {
+        if (std::abs(out[i])>0) // UU
+            EXPECT_EQ(out[i], rosb);
+        
+        if (std::abs(out[i+1])>0) // VV
+            EXPECT_EQ(out[i+1], rosb);
+        
+        EXPECT_EQ(out[i+2], 0.0); // WW
+        EXPECT_EQ(out[i+3], 0.0); // PP
+        EXPECT_EQ(out[i+4], 1.0); // TT
+        if (std::abs(out[i+5])>0) // SS
+            EXPECT_EQ(out[i+5], 1.0); 
+    }
+
+    // check integral condition
+    int sres = oceanParams->get("Restoring Salinity Profile", 1);
+
+    if (sres == 0)
+    {
+        Teuchos::RCP<TRIOS::Domain> domain = ocean->getDomain();
+        int N = domain->GlobalN();
+        int M = domain->GlobalM();
+        int L = domain->GlobalL();
+        int rowIntCon = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
+        if (out.Map().MyGID(rowIntCon))
+        {
+            int lid = out.Map().LID(rowIntCon);
+            EXPECT_EQ(out[lid], 0.0);
+        }
+    }
 }
 
 //------------------------------------------------------------------
@@ -73,8 +123,6 @@ TEST(Ocean, ComputeJacobian)
             ocean->setPar(0.1);
             ocean->getState('V')->PutScalar(1.234);
             ocean->computeJacobian();
-            Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
-            DUMPMATLAB("ocean_jac", *mat);
         }
         catch (...)
         {
@@ -144,6 +192,14 @@ TEST(Ocean, Continuation)
 
         // Run continuation
         continuation.run();
+
+        Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
+        DUMPMATLAB("ocean_jac", *mat);
+        
+        Teuchos::RCP<Epetra_Vector> diagB = ocean->getDiagB();
+        EXPECT_NE(Utils::norm(diagB), 0.0);
+        DUMP_VECTOR("ocean_B", *diagB);                        
+        
     }
     catch (...)
     {

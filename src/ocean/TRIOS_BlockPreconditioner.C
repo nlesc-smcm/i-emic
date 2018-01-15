@@ -1072,7 +1072,7 @@ namespace TRIOS {
             DEBUG("Create SppSimplePrecond...");
             Teuchos::ParameterList& SimpleList = lsParams.sublist("Saddlepoint Preconditioner");
             // also pass on info about Auv solver (like tol, maxit etc)
-            SimpleList.sublist("Auv Solver") = lsParams.sublist("Auv Solver");
+            SimpleList.sublist("Auv Solver")  = lsParams.sublist("Auv Solver");
             SimpleList.sublist("Auv Precond") = lsParams.sublist("Auv Precond");
 
             // note: the parameters in "Simple: Auv Precond" are ignored as we already have

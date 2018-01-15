@@ -50,6 +50,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     solverInitialized_   (false),  // Solver needs initialization
     precInitialized_     (false),  // Preconditioner needs initialization
     recompPreconditioner_(true),   // We need a preconditioner to start with
+    recompMassMat_       (true),   // We need a mass matrix to start with
 
     inputFile_           (oceanParamList->get("Input file",  "ocean_input.h5")),
     outputFile_          (oceanParamList->get("Output file", "ocean_output.h5")),
@@ -174,6 +175,11 @@ void Ocean::initializeOcean()
     THCM::Instance().evaluate(*state_, Teuchos::null, true);
     jac_ = THCM::Instance().getJacobian();
     INFO("Ocean: Obtained Jacobian from THCM");
+
+    // Obtain mass matrix B from THCM. Note that we assume the mass
+    // matrix is independent of the state and parameters so we only
+    // compute it when asked for through recompMassMat_ flag.
+    buildMassMat();
 
     // Initialize solution and rhs
     sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
@@ -560,7 +566,10 @@ void Ocean::preProcess()
 {
     // Enable computation of preconditioner
     recompPreconditioner_ = true;
-    INFO("Ocean pre-processing: enabling computation of preconditioner.");
+    recompMassMat_        = true;
+    INFO("Ocean pre-processing:");
+    INFO("                      enabling computation of preconditioner.");
+    INFO("                      enabling computation of mass matrix.");
 
     // Output datafiles (fort.3 fort.44)
     printFiles(); // not sure if this is not too much...
@@ -1000,7 +1009,15 @@ Teuchos::RCP<Epetra_Vector> Ocean::getRHS(char mode)
 }
 
 //====================================================================
-// Obtain M, binary diagonal matrix to select transient parts.
+Teuchos::RCP<Epetra_Vector> Ocean::getDiagB(char mode)
+{
+    return getVector(mode, diagB_);
+}
+
+//====================================================================
+// Obtain M, binary diagonal matrix to select transient parts. -->
+// this does not include a zero for an integral condition in the case
+// of non-restoring salinity forcing.
 Teuchos::RCP<Epetra_Vector> Ocean::getM(char mode)
 {
     RCP<Epetra_Vector> vecM =
@@ -1059,6 +1076,27 @@ void Ocean::applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out)
     TIMER_START("Ocean: apply preconditioning...");
     precPtr_->ApplyInverse(v, out);
     TIMER_STOP("Ocean: apply preconditioning...");
+}
+
+//====================================================================
+void Ocean::buildMassMat()
+{
+    if (recompMassMat_)
+    {
+        THCM::Instance().evaluateB();
+        diagB_ = THCM::Instance().DiagB();
+    }
+    recompMassMat_ = false; // Disable subsequent recomputes
+}
+
+//====================================================================
+void Ocean::applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out)
+{
+    // Compute mass matrix
+    buildMassMat();
+
+    // element-wise multiplication (out = 0.0*out + 1.0*B*v)
+    out.Multiply(1.0, *diagB_, v, 0.0);
 }
 
 //====================================================================
@@ -1121,12 +1159,11 @@ Teuchos::RCP<Epetra_Vector> Ocean::getE()
 }
 
 //==================================================================
-// Return global 0-based CRS matrix for coupling with atmosphere.
-// The CouplingBlock class builds a parallel coupling block from this CRS struct.
 std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> atmos)
 {
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
+
 
     // this block has values -Ooa on the surface temperature points
     double Ooa, Os, gamma, eta;
@@ -1165,7 +1202,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
                             // humidity dependency
-                            block->co.push_back(-gamma*eta);
+                            block->co.push_back(gamma*eta);
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
 
@@ -1173,7 +1210,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                             col = atmos->interface_row(i,j,P);
                             if (col >= 0)
                             {
-                                block->co.push_back(-gamma);
+                                block->co.push_back(gamma);
                                 block->jco.push_back(col);
                                 el_ctr++;
                             }

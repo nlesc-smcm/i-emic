@@ -52,7 +52,7 @@
 #include "AnasaziBasicEigenproblem.hpp"
 #include "AnasaziEpetraAdapter.hpp"
 #endif
-// added_15_10_2014_erik max std stuff
+
 using std::max;
 using std::min;
 

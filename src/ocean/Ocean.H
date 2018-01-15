@@ -75,6 +75,7 @@ protected:
     VectorPtr massMatrix_;
 
     MatrixPtr jac_;
+    VectorPtr diagB_;
     Teuchos::RCP<Epetra_Comm> comm_;
 
     VectorPtr rowScaling_;
@@ -92,6 +93,7 @@ protected:
     bool   solverInitialized_;
     bool   precInitialized_;
     bool   recompPreconditioner_;
+    bool   recompMassMat_;
 
     VectorPtr sol_;
 
@@ -184,6 +186,7 @@ public:
     VectorPtr getSolution(char mode = 'C');
     VectorPtr getState(char mode = 'C');
     VectorPtr getRHS(char mode = 'C');
+    VectorPtr getDiagB(char mode = 'C');
 
     //! Binary diagonal for UVTS parts
     Teuchos::RCP<Epetra_Vector> getM(char mode = 'C');
@@ -202,11 +205,18 @@ public:
     //! out = P^{-1}*v
     void applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out);
 
+    //! Apply the mass matrix
+    //! out = B*v
+    void applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out);
+
     //! Set prec recompute flag
     void recomputePreconditioner() { recompPreconditioner_ = true; }
 
     //! Build preconditioner
     void buildPreconditioner(bool forceInit = false);
+
+    //! Build mass matrix
+    void buildMassMat();
 
     //! Initialize solver
     void initializeSolver();
@@ -294,8 +304,14 @@ public:
     Teuchos::RCP<Epetra_Vector> getLocalOceanE();
     Teuchos::RCP<Epetra_Vector> getE();
 
-    //! Returns the atmos->ocean coupling block in the Jacobian matrix.
-    //! I.e. the derivative of our RHS with respect to the atmosphere.
+    //! Returns the atmos->ocean coupling block in the Jacobian
+    //! matrix. I.e. the derivative of our RHS with respect to the
+    //! atmosphere. The CouplingBlock class builds a parallel coupling
+    //! block from the CRS struct. As the Oceans Jacobian is taken
+    //! negative in THCM, this couplingblock should be negated
+    //! correspondingly. This means that we add values -Ooa, gamma*eta
+    //! and gamma, where one would expect opposite signs based on
+    //! forcing.F90.
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
 
     // Obtain interface (surface) temperature

@@ -162,6 +162,61 @@ TEST(CoupledModel, inspectState)
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, MassMatrix)
+{
+    Combined_MultiVec v   = *coupledModel->getState('C');
+    Combined_MultiVec out = *coupledModel->getState('C');
+    v.PutScalar(1.0);
+    out.Random();
+
+    coupledModel->applyMassMat(v, out);
+    
+    Teuchos::RCP<Epetra_MultiVector> oceanB = out.First();
+    Teuchos::RCP<Epetra_MultiVector> atmosB = out.Second();
+    
+    int n = ocean->getNdim();
+    int m = ocean->getMdim();
+    int l = ocean->getLdim();
+
+    std::ofstream file;
+    file.open("massmat");
+    file << out;
+    file.close();
+
+    int atmosLast = ATMOS_NUN_ * m * n - 1;
+    int oceanLast = _NUN_ * m * n *l - 1;
+
+    // ocean integral condition
+    if (oceanB->Map().MyGID(oceanLast))
+    {
+        int lid = oceanB->Map().LID(oceanLast);
+        EXPECT_EQ(0.0, (*oceanB)[0][lid]);  
+    }
+
+    // atmos integral condition
+    if (atmosB->Map().MyGID(atmosLast))
+    {
+        int lid = atmosB->Map().LID(atmosLast);
+        EXPECT_EQ((*atmosB)[0][lid], 0.0);  
+    }
+    
+    // auxiliary integral equations 
+    if (atmosB->GlobalLength() > ATMOS_NUN_ * m * n)
+    {
+        int aux = atmosphereParams->get("Auxiliary unknowns", 0);
+        EXPECT_NE(aux, 0);
+        for (int i = 1; i <= aux; ++i)
+        {
+            if (atmosB->Map().MyGID(atmosLast+i))
+            {
+                int lid = atmosB->Map().LID(atmosLast+i);
+                EXPECT_EQ((*atmosB)[0][lid], 0.0);  
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------
 TEST(CoupledModel, computeJacobian)
 {
     bool failed = false;
@@ -413,6 +468,11 @@ TEST(CoupledModel, applyMatrix)
                         surfval = (*atmosVec)[0][lid];
                         EXPECT_NEAR( intval * value[v], surfval, 1e-7);
                     }
+                }
+                else
+                {
+                    int aux = atmosphereParams->get("Auxiliary unknowns", 0);
+                    EXPECT_EQ(aux, 0);
                 }
             }
         }

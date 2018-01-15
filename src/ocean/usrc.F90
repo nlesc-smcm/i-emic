@@ -184,7 +184,7 @@ SUBROUTINE getdeps(o_Ooa, o_Os, o_gamma, o_eta)
   real(c_double) o_Ooa, o_Os, o_gamma, o_eta
   o_Ooa   = Ooa
   o_Os    = Os
-  o_gamma = - par(COMB) * par(SALT) * (1 - SRES + SRES*par(BIOT)) * nus 
+  o_gamma = par(COMB) * par(SALT) * (1 - SRES + SRES*par(BIOT)) * nus 
   o_eta   = eta
 end subroutine getdeps
 
@@ -300,7 +300,7 @@ SUBROUTINE writeparams()
 end subroutine writeparams
 
 !*****************************************************************************
-SUBROUTINE matrix(un,sig1,sig2)
+SUBROUTINE matrix(un, sig1, sig2)
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_mix

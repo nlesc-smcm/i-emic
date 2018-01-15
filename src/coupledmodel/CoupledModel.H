@@ -132,6 +132,8 @@ public:
     //! Apply the Jacobian matrix: out=J*v
     void applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &out);
 
+    void applyMassMat(Combined_MultiVec const &v, Combined_MultiVec &out);
+
     //! Apply the preconditioning: out=inv(P)*v
     //! In the coupled case: 1.5 step in the block gauss seidel scheme
     //!

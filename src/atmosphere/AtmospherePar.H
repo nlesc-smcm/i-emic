@@ -96,6 +96,12 @@ private:
     //! parallel atmosphere rhs (overlapping)
     Teuchos::RCP<Epetra_Vector> localRHS_;
 
+    // //! parallel diagonal B (mass matrix, non-overlapping)
+    Teuchos::RCP<Epetra_Vector> diagB_;
+
+    // //! parallel diagonal B (mass matrix, overlapping)
+    Teuchos::RCP<Epetra_Vector> localDiagB_;
+
     //! parallel sst (non-overlapping)
     Teuchos::RCP<Epetra_Vector> sst_;
 
@@ -165,6 +171,9 @@ private:
     //! preconditioning computation flag
     bool recomputePrec_;
 
+    // //! mass matrix computation flag
+    bool recompMassMat_;
+
     //! ifpack preconditioner object
     Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 
@@ -197,9 +206,15 @@ public:
     void applyMatrix(Epetra_MultiVector const &in,
                      Epetra_MultiVector &out);
 
+    void applyMassMat(Epetra_MultiVector const &in,
+                      Epetra_MultiVector &out);
+
     void applyPrecon(Epetra_MultiVector &in,
                      Epetra_MultiVector &out);
 
+    //! build mass matrix
+    void buildMassMat();
+    
     //! initialize preconditioner
     void initializePrec();
 
@@ -266,6 +281,7 @@ public:
 
     Teuchos::RCP<Epetra_Vector> getE(char mode = 'C')   { return getVector(mode, E_); }
     Teuchos::RCP<Epetra_Vector> getP(char mode = 'C')   { return getVector(mode, P_); }
+    Teuchos::RCP<Epetra_Vector> getDiagB(char mode = 'C')   { return getVector(mode, diagB_); }
 
     Teuchos::RCP<Epetra_Vector> getPrecipIntCo(char mode = 'C')
         { return getVector(mode, precipIntCo_); }
