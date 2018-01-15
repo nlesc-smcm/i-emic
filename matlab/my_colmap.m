@@ -9,7 +9,7 @@ function [out] = my_colmap(colrange, mn, sze)
     end
 
     if nargin < 2
-        mn = 0;
+        mn = mean(colrange);
     end
 
     cmax = max(colrange);

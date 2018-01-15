@@ -285,7 +285,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Latitude')
         ylabel('z (m)')
 
-        colormap(my_colmap(caxis,S0))
+        colormap(my_colmap(caxis))
         %crange = max(abs(min(caxis)),abs(max(caxis)))-S0;
         %caxis(S0+[-crange, crange])
 
@@ -312,7 +312,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         
-        colormap(my_colmap(caxis,S0))
+        colormap(my_colmap(caxis))
 
     end
     
