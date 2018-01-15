@@ -1159,12 +1159,11 @@ Teuchos::RCP<Epetra_Vector> Ocean::getE()
 }
 
 //==================================================================
-// Return global 0-based CRS matrix for coupling with atmosphere.
-// The CouplingBlock class builds a parallel coupling block from this CRS struct.
 std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> atmos)
 {
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
+
 
     // this block has values -Ooa on the surface temperature points
     double Ooa, Os, gamma, eta;
@@ -1203,7 +1202,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
                             // humidity dependency
-                            block->co.push_back(-gamma*eta);
+                            block->co.push_back(gamma*eta);
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
 
@@ -1211,7 +1210,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                             col = atmos->interface_row(i,j,P);
                             if (col >= 0)
                             {
-                                block->co.push_back(-gamma);
+                                block->co.push_back(gamma);
                                 block->jco.push_back(col);
                                 el_ctr++;
                             }

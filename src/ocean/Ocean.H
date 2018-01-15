@@ -304,8 +304,14 @@ public:
     Teuchos::RCP<Epetra_Vector> getLocalOceanE();
     Teuchos::RCP<Epetra_Vector> getE();
 
-    //! Returns the atmos->ocean coupling block in the Jacobian matrix.
-    //! I.e. the derivative of our RHS with respect to the atmosphere.
+    //! Returns the atmos->ocean coupling block in the Jacobian
+    //! matrix. I.e. the derivative of our RHS with respect to the
+    //! atmosphere. The CouplingBlock class builds a parallel coupling
+    //! block from the CRS struct. As the Oceans Jacobian is taken
+    //! negative in THCM, this couplingblock should be negated
+    //! correspondingly. This means that we add values -Ooa, gamma*eta
+    //! and gamma, where one would expect opposite signs based on
+    //! forcing.F90.
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
 
     // Obtain interface (surface) temperature

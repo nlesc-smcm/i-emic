@@ -68,8 +68,6 @@ if sum(diff11(:)) > 0
     title('C11 diff')
 end
 
-return 
-
 C12    = C12(surfb:end,:);
 numC12 = numC12(1:end-1,:);
 diff12 = abs(C12 - numC12)./abs(C12) > tol;

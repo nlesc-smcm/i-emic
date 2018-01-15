@@ -786,10 +786,13 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         // compute right-hand-side on whole subdomain (by THCM)
         FNAME(rhs)(solution, RHS);
         TIMER_STOP("Ocean: compute rhs: fortran part");
+
         // export overlapping rhs to unique-id global rhs vector,
         // and load-balance for solve phase:
         domain->Assembly2Solve(*localRhs,*tmp_rhs);
-        
+
+        // Instead of scaling the RHS, scaling the Jacobian
+        // corresponds better to how the equations would be written.
         CHECK_ZERO(tmp_rhs->Scale(-1.0));
         
 #ifndef NO_INTCOND
@@ -930,6 +933,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             this->intcond_S(*localJac,*localDiagB);
         }
 #endif
+        
         //this->fixPressurePoints(*localJac,*localDiagB);
         CHECK_ZERO(localJac->FillComplete());
 
