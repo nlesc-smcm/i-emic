@@ -8,7 +8,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 %---------------------------------------------------------------------
 
     if nargin < 1
-        solfile = 'fort.3';
+        solfile = 'ocean_output.h5';
     end
 
     if nargin < 2

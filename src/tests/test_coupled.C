@@ -383,7 +383,7 @@ TEST(CoupledModel, applyMatrix)
                 {
                     lid = oceanVec->Map().LID(surfbS);
                     surfval = (*oceanVec)[0][lid];
-                    EXPECT_NEAR( (-eta * gamma - gamma ) *value[v], surfval , 1e-7);
+                    EXPECT_NEAR( (eta * gamma + gamma ) *value[v], surfval , 1e-7);
                 }
             }
         }
