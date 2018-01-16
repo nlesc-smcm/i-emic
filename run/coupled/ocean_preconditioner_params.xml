@@ -38,7 +38,7 @@
   <ParameterList name="Ap Solver">
       <!-- S: solve the square part of Gw (ignoring surface P)  -->
       <!-- F: solve the full Ap matrix                          -->
-      <Parameter name="Full or square" type="char" value="F"/>
+      <Parameter name="Full or square" type="char" value="S"/>
   </ParameterList>
 
   <!-- Parameters for the Krylov solver for the 'Auv' diagonal block       -->
@@ -426,7 +426,7 @@
   <!-- Solver parameters for the saddlepoint problem { -->
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="10"/>
+    <Parameter name="Max Num Iter" type="int" value="1"/>
     <Parameter name="Tolerance" type="double" value="1.0e-4"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
@@ -445,7 +445,7 @@
 
     <!-- mode of operation for the Simple preconditioner.                    -->
     <!-- "SI": Simple "SL": SimpleL (transposed) "SR": symmetrized = SimpleR -->
-    <Parameter name="Scheme" type="string" value="SR"/>
+    <Parameter name="Scheme" type="string" value="SI"/>
 
     <!-- fix Chat's diagonal if it is singular -->
     <Parameter name="Fix singular Chat" type="bool" value="false"/>
@@ -491,12 +491,12 @@
     <ParameterList name="Chat Solver">
       <!-- can be "AztecOO" or "None" -->
       <Parameter name="Method" type="string" value="AztecOO"/>
-      <Parameter name="Max Num Iter" type="int" value="400"/>
+      <Parameter name="Max Num Iter" type="int" value="100"/>
       <Parameter name="Tolerance" type="double" value="1.0e-5"/>
       <Parameter name="Solver" type="string" value="GMRESR"/>
       <Parameter name="Conv" type="string" value="r0"/>
       <Parameter name="Scaling" type="string" value="None"/>
-      <Parameter name="Overlap" type="int" value="5"/>
+      <Parameter name="Overlap" type="int" value="10"/>
       <Parameter name="Precond" type="string" value="dom_decomp"/>
       <Parameter name="Poly_Ord" type="int" value="4"/>
       <Parameter name="Subdomain_Solve" type="string" value="ilut"/>
@@ -563,7 +563,7 @@
   <!-- Parameters for the Krylov solver for ATS { -->
   <ParameterList name="ATS Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="15"/>
+    <Parameter name="Max Num Iter" type="int" value="20"/>
     <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
