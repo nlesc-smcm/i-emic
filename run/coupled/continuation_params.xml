@@ -5,16 +5,16 @@
 <ParameterList name="Continuation parameters">
 
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size"  type="double"  value="1.0e-2"/>
-  <Parameter name="minimum step size"  type="double"  value="1.0e-8"/>
-  <Parameter name="maximum step size"  type="double"  value="1.0e-1"/>
+  <Parameter name="initial step size"  type="double"  value="1.0e-3"/>
+  <Parameter name="minimum step size"  type="double"  value="1.0e-5"/>
+  <Parameter name="maximum step size"  type="double"  value="1.0e-2"/>
 
   <!-- Give up at minimum step size -->
   <Parameter name="give up at minimum step size" type="bool" value="true"/>
 
   <!-- Define the scalings when increasing or decreasing the step size -->
-  <Parameter name="increase step size" type="double"  value="1.05"/>
-  <Parameter name="decrease step size" type="double"  value="1.1"/>
+  <Parameter name="increase step size" type="double"  value="1.2"/>
+  <Parameter name="decrease step size" type="double"  value="1.5"/>
 
   <!-- Define the destination value for the continuation parameter -->
   <!-- Several destinations are allowed, in that case specify      -->
@@ -41,7 +41,7 @@
   <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="10"/>
+  <Parameter name="maximum Newton iterations" type="int" value="8"/>
  
   <!-- Backtracking options -->
   <Parameter name="enable backtracking" type="bool" value="false"/>
