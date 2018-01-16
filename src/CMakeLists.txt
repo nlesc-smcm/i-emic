@@ -81,6 +81,13 @@ set(EXTRA_LIBS
   hdf5
   )
 
+#if (Trilinos_TPL_LIBRARIES MATCHES "libhdf5")
+#  message("-- Trilinos determines hdf5 location.")
+#else ()
+#  message("-- We add hdf5 lib dependency manually.")
+#  list(APPEND EXTRA_LIBS "hdf5")
+#endif ()
+
 list(APPEND library_dependencies ${EXTRA_LIBS})
 
 # ------------------------------------------------------------------

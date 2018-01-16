@@ -70,6 +70,7 @@ if (NOT GTEST_FOUND)
   message(FATAL_ERROR "GTest not found, tests will not compile")
 endif ()
 
+include_directories(${GTEST_INCLUDE_DIRS})
 
 target_link_libraries(test_domain PUBLIC ${I-EMIC_LIBS})
 target_link_libraries(test_domain PUBLIC ${library_dependencies})
