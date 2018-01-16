@@ -69,6 +69,13 @@ TEST(JDQZ, Atmosphere)
         // We perform a continuation with the coupled model
         continuation.run();
 
+        // Dump the matrices for checking with another code
+        Teuchos::RCP<Epetra_CrsMatrix> jac = atmos->getJacobian();
+        Teuchos::RCP<Epetra_Vector> B = atmos->getDiagB();
+
+        DUMPMATLAB("atmos_jac", *jac);
+        DUMP_VECTOR("atmos_B", *B);
+
         // Then we are going to calculate the eigenvalues of the Atmosphere Jacobian
         INFO("Creating ComplexVector...");
         Teuchos::RCP<Epetra_Vector> x(atmos->getSolution('C'));
@@ -82,7 +89,7 @@ TEST(JDQZ, Atmosphere)
 
         INFO("Building JDQZInterface...");
         JDQZInterface<std::shared_ptr<AtmospherePar>,
-                      ComplexVector<Epetra_Vector > >	matrix(atmos, z);	
+                      ComplexVector<Epetra_Vector > >	matrix(atmos, z);
 	
         INFO("Building JDQZ...");
         JDQZ<JDQZInterface<std::shared_ptr<AtmospherePar>,
@@ -91,7 +98,7 @@ TEST(JDQZ, Atmosphere)
         INFO("Setting parameters...");
         std::map<std::string, double> list;	
         list["Shift (real part)"]         = 0.0;
-        list["Number of eigenvalues"]     = 8;
+        list["Number of eigenvalues"]     = 6;
         list["Max size search space"]     = 35;
         list["Min size search space"]     = 10;
         list["Max JD iterations"]         = 500;
@@ -121,9 +128,11 @@ TEST(JDQZ, Atmosphere)
             residue.scale(beta[j]);
             matrix.BMUL(eivec[j], tmp);
             residue.axpy(-alpha[j], tmp);
-            std::cout << "alpha: " << std::setw(30) << alpha[j]
-                      << " beta: " << std::setw(30) << beta[j]
-                      << " " << residue.norm() << std::endl;
+            std::cout << "alpha: " << std::setw(25) << alpha[j]
+                      << " beta: " << std::setw(25) << beta[j];
+            std::cout << " Re(alpha) / Re(beta): " << std::setw(10)
+                      << alpha[j].real() / beta[j].real() << std::endl;
+            std::cout << " residue: " << residue.norm() << std::endl;
             EXPECT_LT(residue.norm(), 1e-7);
         }
     }

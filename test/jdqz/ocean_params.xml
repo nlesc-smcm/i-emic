@@ -75,8 +75,8 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
-      <Parameter name="Wind Forcing"        type="double" value="0.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
+      <Parameter name="Wind Forcing"        type="double" value="1.0"/>
 	  <Parameter name="Temperature Forcing" type="double" value="0.0"/>
 	  <Parameter name="SPL1"                type="double" value="2.0e3"/>
 	  <Parameter name="SPL2"                type="double" value="0.01"/>	  
@@ -95,11 +95,11 @@
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Temperature Profile" type="int" value="1"/>
+    <Parameter name="Restoring Temperature Profile" type="int" value="0"/>
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
     <!-- Freshwater Forcing (ifw in THCM) -->
     <!-- 0: data, 1: idealized            -->
     <Parameter name="Freshwater Forcing" type="int" value="1"/>

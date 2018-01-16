@@ -301,8 +301,8 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         maxS  = S0+max(max(Ssurf));
         
         img  = S0 + Ssurf';
-        %contourf(RtD*x, RtD*y, img, 20, 'Visible', 'on'); 
-        imagesc(RtD*x, RtD*y, img);
+        contourf(RtD*x, RtD*y, img, 15, 'Visible', 'on'); 
+        %imagesc(RtD*x, RtD*y, img);
 
         set(gca,'color',[0.65,0.65,0.65]);
         set(gca,'ydir','normal');

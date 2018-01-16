@@ -34,8 +34,10 @@ public:
 	// Subroutine to compute r = Bq
 	void BMUL(VectorType const &q, VectorType &r)
 		{
-			r.real = q.real;
-			r.imag = q.imag;
+            model_->applyMassMat(q.real, r.real);
+            model_->applyMassMat(q.imag, r.imag);
+			// r.real = q.real;
+			// r.imag = q.imag;
 		}
 
 	// Subroutine to compute q = K^-1 q

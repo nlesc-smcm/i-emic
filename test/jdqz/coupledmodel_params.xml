@@ -18,11 +18,6 @@
   <!--           "Humidity Forcing"     -->
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
-  <!-- Select the solving and synchronization mode.   -->
-  <!-- D: decoupled                                   -->
-  <!-- C: decoupled                                   -->  
-  <Parameter name="Solving scheme" type="char" value="C"/>
-
     <!-- western domain bound -->
   <Parameter name="Global Bound xmin" type="double" value="286"/>
   <!-- eastern domain bound -->
@@ -38,6 +33,21 @@
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="false"/>
+
+    <!-- D: decoupled                                                     -->
+  <!--    (ignoring coupling blocks, synchronization after convergence) -->
+  <!-- Q: quasi-coupled                                                 -->
+  <!--    (ignoring coupling blocks, synchronization at every NR step)  -->
+  <!-- C: fully coupled                                                 -->
+  <!--    (including coupling blocks, synchronization at every NR step) -->
+  <Parameter name="Solving scheme" type="char" value="C"/>
+
+  <!-- Preconditioning                                        -->
+  <!-- B: 1 step backward block Gauss Seidel                  -->
+  <!-- F: 1 step forward block Gauss Seidel                   -->
+  <!-- G: 2 step forward block Gauss Seidel                   -->                       
+  <!-- D: diagonal, no coupling blocks                        -->
+  <Parameter name="Preconditioning" type="char" value="F"/>
 
 
   

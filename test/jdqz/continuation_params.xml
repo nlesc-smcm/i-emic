@@ -10,7 +10,7 @@
   <Parameter name="maximum step size" type="double" value="1.0e-1"/>
   
   <!-- Define the destination value for the continuation parameter -->
-  <Parameter name="destination 0" type="double" value="0.01"/>
+  <Parameter name="destination 0" type="double" value="0.05"/>
   
   <!-- Define the number of continuation steps              -->
   <!--   set to -1 to run indefinitely                      -->
