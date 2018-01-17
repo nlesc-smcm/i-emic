@@ -45,12 +45,12 @@
   <Parameter name="Global Grid-Size l" type="int" value="1"        />
 
   <!-- Auxiliary unknowns                                         -->
-  <Parameter name="Auxiliary unknowns" type="int" value="1"        />  
+  <Parameter name="Auxiliary unknowns" type="int" value="1"        />
 
   <!-- Preconditioner parameters.                                         -->
   <!-- When using the parallel solve routine, the overlap level should be -->
   <!-- significant.                                                       -->
   <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.         -->
-  <Parameter name="Ifpack overlap level" type="int" value="1" />
+  <Parameter name="Ifpack overlap level" type="int" value="10" />
 
 </ParameterList>

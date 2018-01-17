@@ -17,12 +17,15 @@ private:
 
 	// Problem size
 	size_t n_;
+
+    // Temporary vector
+    Vector tmp_;
 	
 
 public:
 	
 	JDQZInterface(Model model, VectorType v) :
-		model_(model), n_(v.length()) {}
+		model_(model), n_(v.length()), tmp_(v) {}
 	
  	// Subroutine to compute r = Aq
 	void AMUL(VectorType const &q, VectorType &r)
@@ -36,15 +39,15 @@ public:
 		{
             model_->applyMassMat(q.real, r.real);
             model_->applyMassMat(q.imag, r.imag);
-			// r.real = q.real;
-			// r.imag = q.imag;
 		}
 
 	// Subroutine to compute q = K^-1 q
 	void PRECON(VectorType &q)
 		{
-			// model_->applyPrecon(q.real(), q.real());
-			// model_->applyPrecon(q.imag(), q.imag());
+            tmp_.zero();
+			model_->applyPrecon(q.real, tmp_.real);
+			model_->applyPrecon(q.imag, tmp_.imag);
+            q = tmp_;
 		}
 	
 	size_t size() { return n_; }	
