@@ -90,7 +90,7 @@
     <!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
     <!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                               -->
     <!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                               -->
-    <Parameter name="Mixing" type="int" value="1">
+    <Parameter name="Mixing" type="int" value="1"/>
 
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>
