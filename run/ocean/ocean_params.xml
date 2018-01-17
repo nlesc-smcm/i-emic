@@ -26,7 +26,7 @@
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->
-    <Parameter name="Problem Description" type="string" value="Global"/>
+    <Parameter name="Problem Description" type="string" value="Global coarse"/>
     <!-- western domain bound -->
     <Parameter name="Global Bound xmin" type="double" value="0"/>
     <!-- eastern domain bound -->

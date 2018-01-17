@@ -75,7 +75,7 @@ SUBROUTINE forcing
         else if (coupled_atm.eq.1) then ! coupled externally
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l)) &
-                +  Ooa * ( tatm(i,j) - temcor )
+                +  Ooa * tatm(i,j)
 
         else  ! ocean-only
            Frc(find_row2(i,j,l,TT)) = etabi * ( tatm(i,j) - temcor )
@@ -88,7 +88,7 @@ SUBROUTINE forcing
   ! ------------------------------------------------------------------
 
   if (coupled_atm.eq.1) then
-     gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT)) * nus
+     gamma = par(COMB) * par(SALT) 
   else 
      gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT))
   endif
@@ -113,7 +113,8 @@ SUBROUTINE forcing
      do i=1,n
         ! nus*(E-P) without the sst dependency, which is taken care of in usrc.F90
         if (coupled_atm.eq.1) then
-           Frc(find_row2(i,j,l,SS)) = gamma * ( -eta * qatm(i,j) - pfield(i,j) )
+           Frc(find_row2(i,j,l,SS)) = gamma * nus * &
+                ( -eta * qatm(i,j) - pfield(i,j) )
         else
            Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &
                 par(SPER) * (1 - SRES + SRES*par(BIOT)) * ( spert(i,j) - spertcor )

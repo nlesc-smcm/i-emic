@@ -321,13 +321,31 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
         figure(7)
         im = reshape(add.SalFlux,n,m);
+        im(im==0) = NaN;
         imagesc(RtD*x, RtD*y, im');
 
         set(gca, 'ydir', 'normal'); 
         title('Salinity flux', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
+        colorbar;
         
     end
+    
+    if ( isfield(opts, 'temflux') || isfield(opts, 'everything') ) ...
+            && ~isempty(add)
+        
+        figure(8)
+        im = reshape(add.TemFlux,n,m);
+        imagesc(RtD*x, RtD*y, im');
+
+        set(gca, 'ydir', 'normal'); 
+        title('Temperature flux', 'interpreter', 'none');
+        xlabel('Longitude');
+        ylabel('Latitude');
+        colorbar;
+        
+    end
+
 
 end
