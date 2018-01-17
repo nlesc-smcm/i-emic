@@ -284,6 +284,33 @@ TEST(CoupledModel, Continuation)
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, EPIntegral)
+{
+    Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPrecipIntCo();
+    
+    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
+    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    
+    double integralE = Utils::dot(intcoeff, E);
+    EXPECT_GT(integralE, 0.0);
+                              
+    double integralP = Utils::dot(intcoeff, P);
+    EXPECT_GT(integralP, 0.0);
+    EXPECT_NEAR(integralE, integralP, 1e-8);
+
+    // Compute integral of E-P    
+    E->Update(-1.0, *P, 1.0);         
+    double integralEP = Utils::dot(intcoeff, E);
+    
+    EXPECT_NEAR(std::abs(integralEP), 0.0, 1e-8);
+
+    INFO(" int P   " << integralP);
+    INFO(" int E   " << integralE);
+    INFO(" int E-P " << integralEP);
+}
+
+
+//------------------------------------------------------------------
 TEST(CoupledModel, numericalJacobian)
 {
     // only do this test for small problems in serial
