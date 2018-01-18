@@ -10,6 +10,7 @@ namespace // local unnamed namespace (similar to static in C)
     RCP<Teuchos::ParameterList> atmosphereParams;
     RCP<Teuchos::ParameterList> coupledmodelParams;
     RCP<Teuchos::ParameterList> continuationParams;
+    RCP<Teuchos::ParameterList> jdqzParams;
     RCP<Epetra_Comm>            comm;
 }
 
@@ -38,6 +39,11 @@ TEST(ParameterLists, Initialization)
         continuationParams = rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
         continuationParams->setName("Continuation parameters");
+
+        // Create parameter object for Continuation
+        jdqzParams = rcp(new Teuchos::ParameterList);
+        updateParametersFromXmlFile("jdqz_params.xml", jdqzParams.ptr());
+        jdqzParams->setName("JDQZ parameters");
 
         INFO('\n' << "Overwriting:");
         // The Continuation and CoupledModel parameterlists overwrite settings
@@ -273,6 +279,9 @@ TEST(CoupledModel, Continuation)
          
         // Run continuation        
         continuation.run();
+
+        // Dump blocks
+        coupledModel->dumpBlocks();
     }
     catch (...)
     {
@@ -309,6 +318,39 @@ TEST(CoupledModel, EPIntegral)
     INFO(" int E-P " << integralEP);
 }
 
+//------------------------------------------------------------------
+TEST(CoupledModel, JDQZSolve)
+{
+    bool failed = false;
+    try
+    {
+        INFO("Creating ComplexVector...");
+        std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');
+        std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
+
+        x->PutScalar(0.0);
+        y->PutScalar(0.0);
+
+        ComplexVector<Combined_MultiVec> z(*x, *y);
+        ComplexVector<Combined_MultiVec> r(*x, *y); // residue
+        ComplexVector<Combined_MultiVec> t(*x, *y); // tmp
+
+        JDQZInterface<std::shared_ptr<CoupledModel>,
+                      ComplexVector<Combined_MultiVec> > matrix(coupledModel, z);
+
+        JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>, 
+                           ComplexVector<Combined_MultiVec> > > jdqz(matrix, z);
+
+        jdqz.setParameters(*jdqzParams);
+        jdqz.printParameters();
+
+    }
+    catch (...)
+    {
+        failed = true;
+    }
+    EXPECT_EQ(failed, false);
+}
 
 //------------------------------------------------------------------
 TEST(CoupledModel, numericalJacobian)
