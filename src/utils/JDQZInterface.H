@@ -50,7 +50,7 @@ public:
             q = tmp_;
 		}
 	
-	size_t size() { return n_; }	
+	size_t size() { return n_; }
 };
 
 #endif
