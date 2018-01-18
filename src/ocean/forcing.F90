@@ -100,20 +100,21 @@ SUBROUTINE forcing
         enddo
      enddo
   endif
-  
-  !if (SRES.eq.0 .and. coupled_atm.eq.0) then   ! correct for nonzero flux
-  !   call qint(emip,  salcor)
-  !   call qint(spert, spertcor)
-  !else
-  !   salcor   = 0.0
-  !   spertcor = 0.0
-  !end if   
+
+  if (SRES.eq.0.and.coupled_atm.eq.0) then   ! correct for nonzero flux
+     call qint(emip,  salcor)
+     call qint(spert, spertcor)
+     write(*,*) 'salcor=', salcor, ' spertcor=', spertcor
+  else
+     salcor   = 0.0
+     spertcor = 0.0
+  end if
 
   do j=1,m
      do i=1,n
         ! nus*(E-P) without the sst dependency, which is taken care of in usrc.F90
         if (coupled_atm.eq.1) then
-           Frc(find_row2(i,j,l,SS)) = gamma * nus * &
+           Frc(find_row2(i,j,l,SS)) = gamma * nus * qdim * &
                 ( -eta * qatm(i,j) - pfield(i,j) )
         else
            Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &

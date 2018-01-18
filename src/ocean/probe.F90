@@ -172,8 +172,8 @@ contains
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
              if (coupled_atm.eq.1) then
-                salflux(pos) = nus * dedt * T(i,j,l) -  &
-                     nus * (eta * qatm(i,j) + pfield(i,j) )
+                salflux(pos) = nus * qdim * dedt * T(i,j,l) -  &
+                     nus * qdim * (eta * qatm(i,j) + pfield(i,j) )
              else
                 salflux(pos) = (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
                      SRES * par(BIOT) * S(i,j,l) / gamma

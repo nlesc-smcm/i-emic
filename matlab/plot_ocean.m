@@ -147,7 +147,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         end
 
         colorbar
-        colormap(my_colmap(caxis))
+        colormap(my_colmap(caxis,0))
 
         if plot_title
             title(['Barotropic Streamfunction (Sv) ', opts.title_add]);
@@ -190,7 +190,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
             caxis([opts.caxis_min,opts.caxis_max])
         end
 
-        colormap(my_colmap(caxis))
+        colormap(my_colmap(caxis,0))
 
         if export_to_file
             exportfig(['mstream',opts.fname_add,'.eps'],10,[19,10],invert)
@@ -337,6 +337,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
         figure(8)
         im = reshape(add.TemFlux,n,m);
+        im(im==0) = NaN;
         imagesc(RtD*x, RtD*y, im');
 
         set(gca, 'ydir', 'normal'); 
