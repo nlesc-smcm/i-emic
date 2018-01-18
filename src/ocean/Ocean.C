@@ -1409,9 +1409,16 @@ int Ocean::loadStateFromFile(std::string const &filename)
             state_->PutScalar(0.0);
             return 1;
         }
-        else file.close();
+        else
+            file.close();
 
-        HDF5.Read("State", readState);
+        if (!HDF5.IsContained("State"))
+        {
+            ERROR("The group <State> is not contained in hdf5 " << filename,
+                  __FILE__, __LINE__);
+        }
+        
+        HDF5.Read("State", readState);      
 
         // Create import strategies
         // target map: thcm domain SolveMap
@@ -1442,6 +1449,12 @@ int Ocean::loadStateFromFile(std::string const &filename)
             // Read continuation parameter and put it in THCM
             try
             {
+                if (!HDF5.IsContained("Parameters"))
+                {
+                    ERROR("The group <Parameters> is not contained in hdf5 " << filename,
+                          __FILE__, __LINE__);
+                }
+
                 HDF5.Read("Parameters", parName.c_str(), parValue);
             }
             catch (EpetraExt::Exception &e)
@@ -1461,6 +1474,13 @@ int Ocean::loadStateFromFile(std::string const &filename)
         INFO("Loading salinity flux from " << filename);
 
         Epetra_MultiVector *readSalFlux;
+
+        if (!HDF5.IsContained("SalinityFlux"))
+        {
+            ERROR("The group <SalinityFlux> is not contained in hdf5 " << filename,
+                  __FILE__, __LINE__);
+        }
+
         HDF5.Read("SalinityFlux", readSalFlux);
 
         // This should not be factorized as we cannot be sure what Map
@@ -1477,7 +1497,32 @@ int Ocean::loadStateFromFile(std::string const &filename)
         // Instruct THCM to set/insert this as the emip in the local model
         THCM::Instance().setEmip(salflux);
         
+
+        if (HDF5.IsContained("AdaptedSalinityFlux"))
+        {
+            INFO(" detected AdaptedSalinityFlux in " << filename);
+            Epetra_MultiVector *readAdaptedSalFlux;
+            HDF5.Read("AdaptedSalinityFlux", readAdaptedSalFlux);
+            
+            assert(readAdaptedSalFlux->Map().SameAs(readSalFlux->Map()));
+            
+            Teuchos::RCP<Epetra_Vector> adaptedSalFlux =
+                Teuchos::rcp(new Epetra_Vector( salflux->Map() ) );
+
+            
+            // adaptedSalFlux->Import( *(readAdaptedSalFlux)(0), *lin2solve_surf
+
+            
+        }
+
+        if (HDF5.IsContained("AdaptedSalinityFlux_Mask"))
+        {
+            INFO(" detected AdaptedSalinityFlux_Mask in " << filename);
+            
+        }
+
         INFO("Loading salinity flux from " << filename << " done");
+        getchar();
     }
 
     if (loadTemperatureFlux_)
