@@ -1383,6 +1383,13 @@ int Ocean::saveStateToFile(std::string const &filename)
 // =====================================================================
 int Ocean::loadStateFromFile(std::string const &filename)
 {
+    // Create HDF5 object
+    EpetraExt::HDF5 HDF5(*comm_);
+    Epetra_MultiVector *readState;
+
+    // Read state
+    HDF5.Open(filename);
+
     if (loadState_)
     {
         INFO("Loading state from " << filename);
@@ -1404,12 +1411,6 @@ int Ocean::loadStateFromFile(std::string const &filename)
         }
         else file.close();
 
-        // Create HDF5 object
-        EpetraExt::HDF5 HDF5(*comm_);
-        Epetra_MultiVector *readState;
-
-        // Read state
-        HDF5.Open(filename);
         HDF5.Read("State", readState);
 
         // Create import strategies
@@ -1452,10 +1453,9 @@ int Ocean::loadStateFromFile(std::string const &filename)
             setPar(parName, parValue);
             INFO("   " << parName << " = " << parValue);
         }
+          
+        INFO("Loading parameters from " << filename << " done");
     }
-    
-    INFO("Loading parameters from " << filename << " done");
-
     if (loadSalinityFlux_)
     {
         INFO("Loading salinity flux from " << filename);
