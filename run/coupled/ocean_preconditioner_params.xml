@@ -572,12 +572,10 @@
   <ParameterList name="ATS Precond">
 
     <!-- for comments see "Auv Precond" list above -->
-
     <Parameter name="Method" type="string" value="ML"/>
     <Parameter name="Analyze Preconditioned Spectrum" type="bool" value="0"/>
 
     <!-- Ifpack -->
-
     <Parameter name="Ifpack Method" type="string" value="MRILU"/>
     <Parameter name="Ifpack Overlap Level" type="int" value="2"/>
 

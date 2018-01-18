@@ -116,7 +116,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     // If specified we load a pre-existing state and parameters (x,l)
     // thereby overwriting the starting parameters
     // This will be able to load salinity and temperature fluxes as well.
-    if (loadState_)
+    if (loadState_ || loadSalinityFlux_)
         loadStateFromFile(inputFile_);
     else            // Initialize with trivial solution
         state_->PutScalar(0.0);
@@ -1383,74 +1383,77 @@ int Ocean::saveStateToFile(std::string const &filename)
 // =====================================================================
 int Ocean::loadStateFromFile(std::string const &filename)
 {
-    INFO("Loading state from " << filename);
-
-    // To be sure that the state is properly initialized,
-    // we obtain the state vector from THCM.
-    state_ = THCM::Instance().getSolution();
-
-    // Check whether file exists
-    std::ifstream file(filename);
-    if (!file)
+    if (loadState_)
     {
-        WARNING("Can't open " << filename
-                << ", continue with trivial state", __FILE__, __LINE__);
+        INFO("Loading state from " << filename);
 
-        // initialize trivial ocean
-        state_->PutScalar(0.0);
-        return 1;
-    }
-    else file.close();
+        // To be sure that the state is properly initialized,
+        // we obtain the state vector from THCM.
+        state_ = THCM::Instance().getSolution();
 
-    // Create HDF5 object
-    EpetraExt::HDF5 HDF5(*comm_);
-    Epetra_MultiVector *readState;
+        // Check whether file exists
+        std::ifstream file(filename);
+        if (!file)
+        {
+            WARNING("Can't open " << filename
+                    << ", continue with trivial state", __FILE__, __LINE__);
 
-    // Read state
-    HDF5.Open(filename);
-    HDF5.Read("State", readState);
+            // initialize trivial ocean
+            state_->PutScalar(0.0);
+            return 1;
+        }
+        else file.close();
 
-    // Create import strategies
-    // target map: thcm domain SolveMap
-    // source map: state with linear map as read by HDF5.Read
-    Teuchos::RCP<Epetra_Import> lin2solve =
-        Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
-                                       readState->Map() ));
+        // Create HDF5 object
+        EpetraExt::HDF5 HDF5(*comm_);
+        Epetra_MultiVector *readState;
 
-    // Import state from HDF5 into state_ datamember
-    state_->Import(*((*readState)(0)), *lin2solve, Insert);
+        // Read state
+        HDF5.Open(filename);
+        HDF5.Read("State", readState);
 
-    INFO("   ocean state: ||x|| = " << Utils::norm(state_));
+        // Create import strategies
+        // target map: thcm domain SolveMap
+        // source map: state with linear map as read by HDF5.Read
+        Teuchos::RCP<Epetra_Import> lin2solve =
+            Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
+                                           readState->Map() ));
 
-    if (THCM::Instance().getSRES() == 0)
-        THCM::Instance().setIntCondCorrection(state_);
+        // Import state from HDF5 into state_ datamember
+        state_->Import(*((*readState)(0)), *lin2solve, Insert);
+
+        INFO("   ocean state: ||x|| = " << Utils::norm(state_));
+
+        if (THCM::Instance().getSRES() == 0)
+            THCM::Instance().setIntCondCorrection(state_);
     
-    INFO("Loading state from " << filename << " done");
+        INFO("Loading state from " << filename << " done");
 
-    INFO("Loading parameters from " << filename);
-    // Interface between HDF5 and the THCM parameters,
-    // put all the (_NPAR_ = 30) THCM parameters back in THCM.
-    std::string parName;
-    double parValue;
-    for (int par = 1; par <= _NPAR_; ++par)
-    {
-        parName  = THCM::Instance().int2par(par);
-
-        // Read continuation parameter and put it in THCM
-        try
+        INFO("Loading parameters from " << filename);
+        // Interface between HDF5 and the THCM parameters,
+        // put all the (_NPAR_ = 30) THCM parameters back in THCM.
+        std::string parName;
+        double parValue;
+        for (int par = 1; par <= _NPAR_; ++par)
         {
-            HDF5.Read("Parameters", parName.c_str(), parValue);
-        }
-        catch (EpetraExt::Exception &e)
-        {
-            e.Print();
-            continue;
-        }
+            parName  = THCM::Instance().int2par(par);
 
-        setPar(parName, parValue);
-        INFO("   " << parName << " = " << parValue);
+            // Read continuation parameter and put it in THCM
+            try
+            {
+                HDF5.Read("Parameters", parName.c_str(), parValue);
+            }
+            catch (EpetraExt::Exception &e)
+            {
+                e.Print();
+                continue;
+            }
+
+            setPar(parName, parValue);
+            INFO("   " << parName << " = " << parValue);
+        }
     }
-          
+    
     INFO("Loading parameters from " << filename << " done");
 
     if (loadSalinityFlux_)
