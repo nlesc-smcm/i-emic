@@ -858,7 +858,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         for (int i = 0; i < imax; i++)
         {
-            if (!domain->IsGhost(i, _NUN_) && (AssemblyMap->GID(i) != rowintcon_))
+        if (!domain->IsGhost(i, _NUN_) && (AssemblyMap->GID(i) != rowintcon_))
             {
                 index = begA[i]; // note that these arrays use 1-based indexing
                 numentries = begA[i+1] - index;
@@ -1660,7 +1660,7 @@ std::string const THCM::int2par(int index)
     else if (index==MIXP)   label = "MIXP";
     else if (index==RESC)   label = "RESC";
     else if (index==SPL1)   label = "SPL1";
-    else if (index==HMTP)   label = "Homotopy";
+    else if (index==HMTP)   label = "Salinity Homotopy";
     else if (index==SUNP)   label = "Solar Forcing";
     else if (index==PE_V)   label = "Vertical Peclet-Number";
     else if (index==PE_H)   label = "Horizontal Peclet-Number";
@@ -1681,7 +1681,7 @@ std::string const THCM::int2par(int index)
     else if (index==MKAP)   label = "MKAP";
     else if (index==SPL2)   label = "SPL2";
     else if (index==FPER)   label = "FPER";
-    else if (index==SPER)   label = "SPER";
+    else if (index==SPER)   label = "Salinity Perturbation";
     else if (index==EXPO)   label = "Exponent";
     else if (index==SEAS)   label = "Seasonal Forcing";
     else if (index==SEASW)  label = "Seasonal Forcing (Wind)";

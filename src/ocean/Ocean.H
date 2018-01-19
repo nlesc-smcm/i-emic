@@ -332,6 +332,12 @@ public:
     void copyFiles();
     void copyFiles(std::string const &fname);
     void copyMask(std::string const &fname);
+
+    void dumpBlocks()
+        {
+            DUMPMATLAB("ocean_jac", *jac_);
+        }
+    
 private:
     // HDF5-based save and load functions for the state and parameters
     int loadStateFromFile(std::string const &name);

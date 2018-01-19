@@ -115,9 +115,9 @@ function [state,pars,add] = plot_atmos(fname, opts)
     img = qa';
     img(img==0)=NaN;
     
-    plot_mask(summask,x,y);
-    hold on
+    %plot_mask(summask,x,y);
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); 
+    hold on
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
     c = contourf(RtD*x,RtD*(y),img,20,'k-','Visible', 'on', ...
                  'linewidth',1);

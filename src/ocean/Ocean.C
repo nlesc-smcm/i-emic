@@ -1451,19 +1451,20 @@ int Ocean::loadStateFromFile(std::string const &filename)
         // put all the (_NPAR_ = 30) THCM parameters back in THCM.
         std::string parName;
         double parValue;
+
+        if (!HDF5.IsContained("Parameters"))
+        {
+            ERROR("The group <Parameters> is not contained in hdf5 " << filename,
+                  __FILE__, __LINE__);
+        }
+
         for (int par = 1; par <= _NPAR_; ++par)
         {
             parName  = THCM::Instance().int2par(par);
-
+            
             // Read continuation parameter and put it in THCM
             try
             {
-                if (!HDF5.IsContained("Parameters"))
-                {
-                    ERROR("The group <Parameters> is not contained in hdf5 " << filename,
-                          __FILE__, __LINE__);
-                }
-
                 HDF5.Read("Parameters", parName.c_str(), parValue);
             }
             catch (EpetraExt::Exception &e)
