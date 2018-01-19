@@ -9,7 +9,7 @@ SUBROUTINE forcing
 
   real    sigma, etabi, gamma
   real    wfun, temfun, salfun
-  real    temcor, salcor, spertcor
+  real    temcor, salcor, adapted_salcor, spertcor
   integer i, j, k, row
   real    qfun2(n,m), fsint
   integer find_row2
@@ -103,8 +103,12 @@ SUBROUTINE forcing
 
   if (SRES.eq.0.and.coupled_atm.eq.0) then   ! correct for nonzero flux
      call qint(emip,  salcor)
+     call qint(adapted_emip, adapted_salcor)
      call qint(spert, spertcor)
-     write(*,*) 'salcor=', salcor, ' spertcor=', spertcor
+     !write(*,*) 'salcor=',salcor, ' adapted_salcor=', adapted_salcor, 'spertcor=', spertcor
+     !write(*,*) 'emip(10,10)', emip(10,10)
+     !write(*,*) 'adapted_emip(10,10)', adapted_emip(10,10)
+     !write(*,*) 'spert(10,10)', spert(10,10)
   else
      salcor   = 0.0
      spertcor = 0.0
@@ -117,7 +121,8 @@ SUBROUTINE forcing
            Frc(find_row2(i,j,l,SS)) = gamma * nus * qdim * &
                 ( -eta * qatm(i,j) - pfield(i,j) )
         else
-           Frc(find_row2(i,j,l,SS)) = gamma * ( emip(i,j) - salcor ) + &
+           Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &
+                gamma * par(HMTP) * ( adapted_emip(i,j) - salcor ) + &
                 par(SPER) * (1 - SRES + SRES*par(BIOT)) * ( spert(i,j) - spertcor )
         end if
      enddo

@@ -249,23 +249,23 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         % -------------------------------------------------------
         figure(4);
         Tsurf = T(:,:,l);
+        Tsurf(Tsurf == 0) = NaN;
         minT = T0+min(min(Tsurf));
         maxT = T0+max(max(Tsurf));
 
         img  = T0 + Tsurf';
-        contourf(RtD*x,RtD*(y),img,20,'Visible', 'on'); hold on;
+        imagesc(RtD*x,RtD*(y),img); hold on
+        contour(RtD*x,RtD*(y),img,20,'k-','Visible', 'on'); 
+        hold off;
+
         set(gca,'color',[0.65,0.65,0.65]);
-
-        contours = linspace(minT,maxT,20);
-        %imagesc(RtD*x,RtD*(y),img);
-
-        hold off
-
-        colorbar
+        set(gca,'ydir','normal')
         title('SST', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
-        colormap(my_colmap(caxis,T0))
+        cmap = [0,0,0; my_colmap(caxis,T0)];
+        colormap(cmap)
+        colorbar
 
         % crange = max(abs(min(caxis)),abs(max(caxis)))-T0;
         % caxis(T0+[-crange, crange]);
@@ -284,7 +284,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         title('Isohalines')
         xlabel('Latitude')
         ylabel('z (m)')
-
+        
         colormap(my_colmap(caxis))
         %crange = max(abs(min(caxis)),abs(max(caxis)))-S0;
         %caxis(S0+[-crange, crange])
@@ -296,15 +296,17 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
         figure(6); 
         Ssurf = S(:,:,l);
+        Ssurf(Ssurf == 0) = NaN;
         Sz = mean(Ssurf,1);
+        
         minS  = S0+min(min(Ssurf));
         maxS  = S0+max(max(Ssurf));
         
         img  = S0 + Ssurf';
-        contourf(RtD*x, RtD*y, img, 15, 'Visible', 'on'); 
-        %imagesc(RtD*x, RtD*y, img);
+        imagesc(RtD*x, RtD*y, img); hold on
+        contour(RtD*x, RtD*y, img, 20,'k-', 'Visible', 'on'); hold off
 
-        set(gca,'color',[0.65,0.65,0.65]);
+        %set(gca,'color',[0.65,0.65,0.65]);
         set(gca,'ydir','normal');
 
         colorbar
@@ -312,8 +314,9 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         
-        colormap(my_colmap(caxis))
-
+        cmap = [0,0,0; my_colmap(caxis)];
+        colormap(cmap)
+        
     end
     
     if ( isfield(opts, 'salflux') || isfield(opts, 'everything') ) ...
@@ -329,6 +332,9 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         colorbar;
+        cmap = [0,0,0; my_colmap(caxis)];
+        colormap(cmap)
+
         
     end
     
@@ -345,6 +351,9 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         colorbar;
+        cmap = [0,0,0; my_colmap(caxis)];
+        colormap(cmap)
+
         
     end
 

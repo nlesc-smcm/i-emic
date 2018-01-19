@@ -181,7 +181,7 @@ public:
             {
                 datastring << std::setw(_FIELDWIDTH_/2)
                            << "MV"
-                           << std::setw(_FIELDWIDTH_/2)
+                           << std::setw(_FIELDWIDTH_)
                            << "Tol"
                            << ocean_->writeData(describe) << " "
                            << atmos_->writeData(describe) ;            
@@ -191,7 +191,7 @@ public:
                 datastring.precision(_PRECISION_);
                 datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
                            << belosSolver_->getNumIters();
-                datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
+                datastring << std::scientific << std::setw(_FIELDWIDTH_)
                            << belosSolver_->achievedTol();
                 
                 datastring << ocean_->writeData(describe) << " "

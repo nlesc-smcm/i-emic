@@ -135,8 +135,12 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_q)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_p)(double *atmosP);
     _MODULE_SUBROUTINE_(m_inserts, insert_emip)(double *emip);
+    _MODULE_SUBROUTINE_(m_inserts, insert_adapted_emip)(double *emip);
+    _MODULE_SUBROUTINE_(m_inserts, insert_emip_pert)(double *emip);
     _MODULE_SUBROUTINE_(m_inserts, insert_tatm)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_emip)(double *emip);
+    _MODULE_SUBROUTINE_(m_probe,  get_adapted_emip)(double *emip);
+    _MODULE_SUBROUTINE_(m_probe,  get_emip_pert)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_salflux)(double *sol, double *salflux);
     _MODULE_SUBROUTINE_(m_probe,  get_temflux)(double *sol, double *temflux);
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_t)(double *atmosT);
@@ -560,14 +564,15 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
 
     // Our copies of atmospheric entities
-    localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosP     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localOceanE     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localEmip       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localTatm       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSalFlux    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localTemFlux    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosT      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosQ      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosP      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localOceanE      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localEmip        = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSurfTmp     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localTatm        = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSalFlux     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localTemFlux     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -1215,31 +1220,55 @@ void THCM::setTatm(Teuchos::RCP<Epetra_Vector> const &tatm)
 }
 
 //=============================================================================
-void THCM::setEmip(Teuchos::RCP<Epetra_Vector> const &emip)
+void THCM::setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode)
 {
     
     if (!(emip->Map().SameAs(*StandardSurfaceMap)))
     {
-        // INFO("THCM::setAtmosphereEP: atmosP map -> StandardSurfaceMap");
+        INFO("THCM::setEmip: emip map -> StandardSurfaceMap");
         CHECK_ZERO(emip->ReplaceMap(*StandardSurfaceMap));
     }
 
     // Standard2Assembly
     // Import atmosP into local atmosP
-    CHECK_ZERO(localEmip->Import(*emip, *as2std_surf, Insert));
+    CHECK_ZERO(localSurfTmp->Import(*emip, *as2std_surf, Insert));
 
     double *tmpEmip;
-    localEmip->ExtractView(&tmpEmip);
-    
-    F90NAME(m_inserts, insert_emip)( tmpEmip );
+    localSurfTmp->ExtractView(&tmpEmip);
+
+    if (mode == 'A')
+    {
+        F90NAME(m_inserts, insert_adapted_emip )( tmpEmip );
+    }
+    else if (mode == 'P')
+    {
+        F90NAME(m_inserts, insert_emip_pert )( tmpEmip );
+    }
+    else
+    {
+        F90NAME(m_inserts, insert_emip )( tmpEmip );
+    }
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_Vector> THCM::getEmip()
+Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
 {
     double* tmpEmip;
-    localEmip->ExtractView(&tmpEmip);
-    F90NAME(m_probe, get_emip )( tmpEmip );
+    localSurfTmp->ExtractView(&tmpEmip);
+
+    if (mode == 'A')
+    {
+        F90NAME(m_probe, get_adapted_emip )( tmpEmip );
+    }
+    else if (mode == 'P')
+    {
+        F90NAME(m_probe, get_emip_pert )( tmpEmip );
+    }
+    else
+    {
+        F90NAME(m_probe, get_emip )( tmpEmip );
+    }
+        
 
     Teuchos::RCP<Epetra_Vector> emip =
         Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
@@ -1569,7 +1598,7 @@ int THCM::par2int(std::string const &label)
     else if (label == "MIXP")                            return MIXP;
     else if (label == "RESC")                            return RESC;
     else if (label == "SPL1")                            return SPL1;
-    else if (label == "Homotopy")                        return HMTP;
+    else if (label == "Salinity Homotopy")               return HMTP;
     else if (label == "Solar Forcing")                   return SUNP;
     else if (label == "Vertical Peclet-Number")          return PE_V;
     else if (label == "Horizontal Peclet-Number")        return PE_H;
@@ -1587,7 +1616,7 @@ int THCM::par2int(std::string const &label)
     else if (label == "CMPR")                            return CMPR;
     else if (label == "ALPC")                            return ALPC;
     else if (label == "Energy")                          return ENER;
-    else if (label == "SPER")                            return SPER;
+    else if (label == "Salinity Perturbation")           return SPER;
     else if (label == "FPER")                            return FPER;
     else if (label == "MKAP")                            return MKAP;
     else if (label == "SPL2")                            return SPL2;
@@ -2444,7 +2473,7 @@ extern "C" {
         
         *fsint = *fsint/sint;
         
-        INFO("Flux correction equals "<<*fsint);
+        INFO("Flux correction equals " << *fsint);
     }
 
     Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()

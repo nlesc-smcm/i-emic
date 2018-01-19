@@ -37,6 +37,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
     surfm      = landm(2:n+1,2:m+1,l+1);    % Only interior surface points
     landm_int  = landm(2:n+1,2:m+1,2:l+1);
+    summask = sum(landm_int,3);
 
     srf = [];
     greyness = .85;
@@ -112,14 +113,21 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     figure(12)
     img = qa';
-    contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
+    img(img==0)=NaN;
+    
+    plot_mask(summask,x,y);
+    hold on
+    contourf(RtD*x,RtD*(y),img,20,'Visible','off'); 
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
+    c = contourf(RtD*x,RtD*(y),img,20,'k-','Visible', 'on', ...
+                 'linewidth',1);
+    
     colorbar
-    %caxis([min(min(qa)),max(max(qa))])
+    cmap = my_colmap(caxis);
+    colormap(cmap)
     hold off
     drawnow
-    title('Humidity anomaly (kg / kg)')
+    title('Humidity (kg / kg)')
     xlabel('Longitude')
     ylabel('Latitude')
     exportfig('atmosq.eps',10,[14,10],invert)

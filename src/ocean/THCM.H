@@ -139,13 +139,13 @@ public:
     void setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP);
 
     //! Set emip in the ocean model
-    void setEmip(Teuchos::RCP<Epetra_Vector> const &emip);
+    void setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode = 'D');
 
-    //! Set emip in the ocean model
+    //! Set tatm in the ocean model
     void setTatm(Teuchos::RCP<Epetra_Vector> const &emip);
     
     //! Obtain non-overlapping emip
-    Teuchos::RCP<Epetra_Vector> getEmip();
+    Teuchos::RCP<Epetra_Vector> getEmip(char mode = 'D');
     
     //! Obtain non-overlapping emip
     Teuchos::RCP<Epetra_Vector> getSalinityFlux();
@@ -350,6 +350,9 @@ private:
     //! used to import emip field into THCM
     Teuchos::RCP<Epetra_Vector> localEmip;    
 
+    //! a surface overlapping vector without meaning
+    Teuchos::RCP<Epetra_Vector> localSurfTmp;    
+    
     //! used to import tatm field into THCM
     Teuchos::RCP<Epetra_Vector> localTatm;    
 

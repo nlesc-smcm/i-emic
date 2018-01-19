@@ -598,7 +598,7 @@ std::string const Ocean::writeData(bool describe)
         {
             datastring << std::setw(_FIELDWIDTH_/2)
                        << "MV";
-            datastring << std::setw(_FIELDWIDTH_/2)
+            datastring << std::setw(_FIELDWIDTH_)
                        << "Tol";
 
         }
@@ -630,7 +630,7 @@ std::string const Ocean::writeData(bool describe)
         {
             datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
                        << belosSolver_->getNumIters();
-            datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
+            datastring << std::scientific << std::setw(_FIELDWIDTH_)
                        << belosSolver_->achievedTol();
         }
 
@@ -1517,21 +1517,31 @@ int Ocean::loadStateFromFile(std::string const &filename)
             
             Teuchos::RCP<Epetra_Vector> adaptedSalFlux =
                 Teuchos::rcp(new Epetra_Vector( salflux->Map() ) );
-
             
-            // adaptedSalFlux->Import( *(readAdaptedSalFlux)(0), *lin2solve_surf
-
+            adaptedSalFlux->Import( *((*readAdaptedSalFlux)(0)), *lin2solve_surf, Insert);
             
+            // Let THCM insert the adapted salinity flux
+            THCM::Instance().setEmip(adaptedSalFlux, 'A');
         }
 
         if (HDF5.IsContained("AdaptedSalinityFlux_Mask"))
         {
             INFO(" detected AdaptedSalinityFlux_Mask in " << filename);
+            Epetra_MultiVector *readSalFluxPert;
+            HDF5.Read("AdaptedSalinityFlux_Mask", readSalFluxPert);
             
+            assert(readSalFluxPert->Map().SameAs(readSalFlux->Map()));
+            
+            Teuchos::RCP<Epetra_Vector> salFluxPert =
+                Teuchos::rcp(new Epetra_Vector( salflux->Map() ) );
+            
+            salFluxPert->Import( *((*readSalFluxPert)(0)), *lin2solve_surf, Insert);
+            
+            // Let THCM insert the salinity flux perturbation mask
+            THCM::Instance().setEmip(salFluxPert, 'P');            
         }
 
         INFO("Loading salinity flux from " << filename << " done");
-        getchar();
     }
 
     if (loadTemperatureFlux_)
