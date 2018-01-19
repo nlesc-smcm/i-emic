@@ -344,6 +344,28 @@ TEST(CoupledModel, JDQZSolve)
         jdqz.setParameters(*jdqzParams);
         jdqz.printParameters();
 
+        jdqz.solve();
+
+        std::vector<ComplexVector<Combined_MultiVec> > eivec = jdqz.getEigenVectors();
+        std::vector<std::complex<double> >             alpha = jdqz.getAlpha();
+        std::vector<std::complex<double> >             beta  = jdqz.getBeta();
+
+        EXPECT_GT(jdqz.kmax(), 0);
+        for (int j = 0; j != jdqz.kmax(); ++j)
+        {
+            r.zero();
+            t.zero();
+            matrix.AMUL(eivec[j], r);
+            r.scale(beta[j]);
+            matrix.BMUL(eivec[j], t);
+            r.axpy(-alpha[j], t);
+            std::cout << "alpha: " << std::setw(30) << alpha[j]
+                      << " beta: " << std::setw(15) << beta[j];
+            std::cout << " alpha) / beta: " << std::setw(30)
+                      << alpha[j] / beta[j];
+            std::cout << " residue: " << r.norm() << std::endl;
+            EXPECT_LT(r.norm(), 1e-7);
+        }
     }
     catch (...)
     {
