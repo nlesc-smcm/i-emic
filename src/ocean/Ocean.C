@@ -595,8 +595,13 @@ std::string const Ocean::writeData(bool describe)
     if (describe)
     {
         if (solverInitialized_)
+        {
             datastring << std::setw(_FIELDWIDTH_/2)
                        << "MV";
+            datastring << std::setw(_FIELDWIDTH_/2)
+                       << "Tol";
+
+        }
             
         datastring << std::setw(_FIELDWIDTH_)
                    << "max(Psi)"
@@ -622,8 +627,12 @@ std::string const Ocean::writeData(bool describe)
         psiMin = psiMin * transc * 1e-6; //
 
         if (solverInitialized_)
+        {
             datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
                        << belosSolver_->getNumIters();
+            datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
+                       << belosSolver_->achievedTol();
+        }
 
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
                    << psiMax
