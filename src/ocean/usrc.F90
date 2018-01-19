@@ -184,7 +184,7 @@ SUBROUTINE getdeps(o_Ooa, o_Os, o_gamma, o_eta)
   real(c_double) o_Ooa, o_Os, o_gamma, o_eta
   o_Ooa   = Ooa
   o_Os    = Os
-  o_gamma = par(COMB) * par(SALT) * (1 - SRES + SRES*par(BIOT)) * nus 
+  o_gamma = par(COMB) * par(SALT) * (1 - SRES + SRES*par(BIOT)) * nus * qdim
   o_eta   = eta
 end subroutine getdeps
 
@@ -215,7 +215,7 @@ SUBROUTINE set_ep_constants(i_qdim, i_nuq, i_eta, i_dqso)
   qdim = i_qdim 
   nuq  = i_nuq  
   eta  = i_eta  
-  dqso = i_dqso 
+  dqso = i_dqso
 
 end subroutine set_EP_constants
 
@@ -627,11 +627,11 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! S-equation
   ! ------------------------------------------------------------------
-  dedt = par(COMB) * par(SALT) * (1 - SRES + SRES*par(BIOT)) * nus * &
+  dedt = par(COMB) * par(SALT) * nus * qdim * &
        eta * (deltat / qdim) * dqso
   
   if (coupled_atm.eq.1) then
-     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
+     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz 
 
      ! minus sign and nondim added (we take -Au in rhs computation)
      Al(:,:,1:l,:,SS,TT) = - dedt * sc !  * (r0dim / udim) 
@@ -1100,9 +1100,12 @@ SUBROUTINE atmos_coef
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
 
-  ! open(8, file = rundir//'suno.txt')
-  ! write(8, *) suno
-  ! close(8)
+  open(8, file = rundir//'suno.txt')
+  write(8, *) suno
+  close(8)
+  
+  write(*,*) 'OA pars:     dzne=', dzne, ' nus=', nus
+    
 
 END SUBROUTINE atmos_coef
 

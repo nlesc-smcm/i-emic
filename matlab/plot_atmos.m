@@ -129,9 +129,13 @@ function [state,pars,add] = plot_atmos(fname, opts)
         EmP = E-P;
         EmP(EmP==0)=NaN;
         img = EmP';
-        contourf(RtD*x,RtD*(y),img,10,'Visible','off'); hold on;
-        image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-        c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
+        %contourf(RtD*x,RtD*(y),img,10,'Visible','off'); hold on;
+        %image(RtD*x,RtD*(y),srf,'AlphaData',.2);
+        %c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
+        
+        imagesc(RtD*x,RtD*(y),img);
+        set(gca,'ydir','normal')
+        
         colorbar
 
         hold off

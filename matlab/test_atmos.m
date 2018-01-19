@@ -2,23 +2,19 @@ C = load('atmos_jac'); C = spconvert(C);
 
 B = load('atmos_B');
 
-n = 6; m = 6; l = 1; dof = 2; 
-
-dim = n*m*l*dof;
-
+dim = size(C,1);
 B = spdiags(B', 0, dim, dim);
-
-idx = [];
-
-for i = 1:dof;
-    idx = [idx, i:dof:dim];
-end
-
-C   = C(idx,idx); % reordering
 
 figure(1); 
 spy(C);
 
 figure(2);
-[V,D]=eigs(C,B,10,0,opts);
+opts.maxit = 1000;
+opts.tol = 1e-12;
+neig = 6;
+[V,D]=eigs(C,B,neig,0,opts);
+for i = 1:neig
+    fprintf('%3d: real: %2.5e imag: %2.5e \n', i, real(D(i,i)), ...
+            imag(D(i,i)));
+end
 plot(real(diag(D)),imag(diag(D)),'*')

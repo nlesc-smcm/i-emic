@@ -5,7 +5,7 @@
 <ParameterList name="Continuation parameters">
   
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="-1.0e-3"/>
+  <Parameter name="initial step size" type="double" value="1.0e-2"/>
   <Parameter name="minimum step size" type="double" value="1.0e-6"/>
   <Parameter name="maximum step size" type="double" value="1.0e0"/>
 
@@ -16,7 +16,7 @@
   <Parameter name="decrease step size" type="double" value="2.0"/>
   
   <!-- Define the destination value for the continuation parameter -->
-  <Parameter name="destination 0" type="double" value="0.8"/>
+  <Parameter name="destination 0" type="double" value="1.0"/>
   
   <!-- Define the number of continuation steps               -->
   <!--   set to -1 to run until final destination is reached -->
@@ -27,7 +27,7 @@
 
   <!-- Tolerance when converging on destination         -->
   <!--  for both Newton and secant process in detect()  -->
-  <Parameter name="destination tolerance" type="double" value="1.0e-3"/>
+  <Parameter name="destination tolerance" type="double" value="1.0e-5"/>
   
   <!-- Define the optimal interval for the amount of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
@@ -49,10 +49,20 @@
   <!-- The following parameters are experimental                -->
   <!-- *******************************************************  -->
 
+  <!-- Normalization strategy                                -->
+  <!--     O: Old (ds)                                       -->
+  <!--     N: New (ds*ds)                                    -->
+  <Parameter name="normalize strategy" type="char" value="N"/>
+
+  <!-- corrector residual test types:           -->
+  <!-- R:  ||R||_2                              -->
+  <!-- D:  ||(pardir, xdir)||_inf     (default) -->
+  <Parameter name="corrector residual test" type="char" value="R"/>
+
   <!-- Scaling of the state tangent, which can be made several orders      -->
   <!-- smaller than the parameter tangent.                                 -->
   <!-- I believe this affects the algorithms capability to traverse folds. -->
-  <Parameter name="state tangent scaling" type="double" value="1.0e-2"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0e0"/>
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
@@ -61,7 +71,14 @@
   <!-- If predicted rhs is larger than this value we reject the prediction. -->
   <Parameter name="predictor bound" type="double" value="10"/>
 
-  <!-- Secant 'S' or Euler 'E' based tangent. -->
+  <!-- Type of the tangent that is calculated during the continuation -->
+  <!--     E: Euler                                                   -->
+  <!--     S: Secant                                                  -->
   <Parameter name="tangent type" type="char" value="S"/>
+
+  <!-- Type of the initial tangent                           -->
+  <!--     E: Euler                                          -->
+  <!--     A: Assign                                         -->
+  <Parameter name="initial tangent type" type="char" value="E"/>
   
 </ParameterList>

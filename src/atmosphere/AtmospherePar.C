@@ -948,8 +948,7 @@ void AtmospherePar::computeEP()
             if ((*surfmask_)[gid] == 0)
                 (*P_)[i] = Pvalue;
         }
-    }
-    
+    }    
 
     TIMER_STOP("AtmospherePar: compute E P...");
 }

@@ -147,7 +147,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         end
 
         colorbar
-        colormap(my_colmap(caxis))
+        colormap(my_colmap(caxis,0))
 
         if plot_title
             title(['Barotropic Streamfunction (Sv) ', opts.title_add]);
@@ -190,7 +190,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
             caxis([opts.caxis_min,opts.caxis_max])
         end
 
-        colormap(my_colmap(caxis))
+        colormap(my_colmap(caxis,0))
 
         if export_to_file
             exportfig(['mstream',opts.fname_add,'.eps'],10,[19,10],invert)
@@ -301,8 +301,8 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         maxS  = S0+max(max(Ssurf));
         
         img  = S0 + Ssurf';
-        %contourf(RtD*x, RtD*y, img, 20, 'Visible', 'on'); 
-        imagesc(RtD*x, RtD*y, img);
+        contourf(RtD*x, RtD*y, img, 15, 'Visible', 'on'); 
+        %imagesc(RtD*x, RtD*y, img);
 
         set(gca,'color',[0.65,0.65,0.65]);
         set(gca,'ydir','normal');
@@ -321,13 +321,32 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
         figure(7)
         im = reshape(add.SalFlux,n,m);
+        im(im==0) = NaN;
         imagesc(RtD*x, RtD*y, im');
 
         set(gca, 'ydir', 'normal'); 
         title('Salinity flux', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
+        colorbar;
         
     end
+    
+    if ( isfield(opts, 'temflux') || isfield(opts, 'everything') ) ...
+            && ~isempty(add)
+        
+        figure(8)
+        im = reshape(add.TemFlux,n,m);
+        im(im==0) = NaN;
+        imagesc(RtD*x, RtD*y, im');
+
+        set(gca, 'ydir', 'normal'); 
+        title('Temperature flux', 'interpreter', 'none');
+        xlabel('Longitude');
+        ylabel('Latitude');
+        colorbar;
+        
+    end
+
 
 end

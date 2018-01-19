@@ -77,16 +77,16 @@ TEST(Ocean, MassMat)
     for (int i = 0; i < numMyElements; i+=_NUN_)
     {
         if (std::abs(out[i])>0) // UU
-            EXPECT_EQ(out[i], rosb);
+            EXPECT_EQ(out[i], -rosb);
         
         if (std::abs(out[i+1])>0) // VV
-            EXPECT_EQ(out[i+1], rosb);
+            EXPECT_EQ(out[i+1], -rosb);
         
         EXPECT_EQ(out[i+2], 0.0); // WW
         EXPECT_EQ(out[i+3], 0.0); // PP
-        EXPECT_EQ(out[i+4], 1.0); // TT
+        EXPECT_EQ(out[i+4], -1.0); // TT
         if (std::abs(out[i+5])>0) // SS
-            EXPECT_EQ(out[i+5], 1.0); 
+            EXPECT_EQ(out[i+5], -1.0); 
     }
 
     // check integral condition

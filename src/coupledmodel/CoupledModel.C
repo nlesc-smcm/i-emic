@@ -111,7 +111,7 @@ void CoupledModel::computeRHS()
     if (solvingScheme_ != 'D') { synchronize(); }
 
     ocean_->computeRHS();   // Ocean
-    atmos_->computeRHS();   // Atmosphere
+    atmos_->computeRHS();   // Atmosphere/
 
 #ifdef DEBUGGING_NEW
     // INFO("CoupledModel::computeRHS ocean ||rhs|| = " << Utils::norm(ocean_->getRHS('V')));
@@ -304,7 +304,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         atmos_->applyPrecon(*x.Second(), *z.Second());
         ocean_->applyPrecon(*x.First() , *z.First() );
     }
-    else if (precScheme_ == 'B' && solvingScheme_ == 'C')
+    else if ( (precScheme_ == 'B' || precScheme_ == 'C') && solvingScheme_ == 'C')
     {
         Combined_MultiVec tmp(x);
         tmp.PutScalar(0.0);
@@ -313,7 +313,13 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         C12_.applyMatrix(*z.Second(), *tmp.First());   //  tmp1 = C12*x2
         tmp.First()->Update(1.0, *x.First(), -1.0);    //  tmp1 = x1 - C12*x2
         ocean_->applyPrecon(*tmp.First(), *z.First()); //  z1   = inv(M1)*tmp1
-
+        if (precScheme_ == 'C')
+        {
+            C21_.applyMatrix(*z.First(), *tmp.Second());     // tmp2 = C21*x1
+            tmp.Second()->Update(1.0, *x.Second(), 1.0);
+            atmos_->applyPrecon(*tmp.Second(), *z.Second());
+        }
+            
     }
     else if ( (precScheme_ == 'F' || precScheme_ == 'G') && solvingScheme_ == 'C')
     {

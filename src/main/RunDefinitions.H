@@ -54,7 +54,7 @@ void  outputFiles(RCP<Epetra_Comm> Comm)
     // Setup output files "fname_#.txt" for P==0 && P==1, other processes
     // will get a blackholestream.
     
-  if (Comm->MyPID() < 1)
+  if (Comm->MyPID() < 10)
     {
         std::ostringstream infofile;   // setting up a filename
 

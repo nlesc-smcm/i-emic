@@ -116,7 +116,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     // If specified we load a pre-existing state and parameters (x,l)
     // thereby overwriting the starting parameters
     // This will be able to load salinity and temperature fluxes as well.
-    if (loadState_)
+    if (loadState_ || loadSalinityFlux_)
         loadStateFromFile(inputFile_);
     else            // Initialize with trivial solution
         state_->PutScalar(0.0);
@@ -1383,81 +1383,104 @@ int Ocean::saveStateToFile(std::string const &filename)
 // =====================================================================
 int Ocean::loadStateFromFile(std::string const &filename)
 {
-    INFO("Loading state from " << filename);
-
-    // To be sure that the state is properly initialized,
-    // we obtain the state vector from THCM.
-    state_ = THCM::Instance().getSolution();
-
-    // Check whether file exists
-    std::ifstream file(filename);
-    if (!file)
-    {
-        WARNING("Can't open " << filename
-                << ", continue with trivial state", __FILE__, __LINE__);
-
-        // initialize trivial ocean
-        state_->PutScalar(0.0);
-        return 1;
-    }
-    else file.close();
-
     // Create HDF5 object
     EpetraExt::HDF5 HDF5(*comm_);
     Epetra_MultiVector *readState;
 
     // Read state
     HDF5.Open(filename);
-    HDF5.Read("State", readState);
 
-    // Create import strategies
-    // target map: thcm domain SolveMap
-    // source map: state with linear map as read by HDF5.Read
-    Teuchos::RCP<Epetra_Import> lin2solve =
-        Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
-                                       readState->Map() ));
-
-    // Import state from HDF5 into state_ datamember
-    state_->Import(*((*readState)(0)), *lin2solve, Insert);
-
-    INFO("   ocean state: ||x|| = " << Utils::norm(state_));
-
-    if (THCM::Instance().getSRES() == 0)
-        THCM::Instance().setIntCondCorrection(state_);
-    
-    INFO("Loading state from " << filename << " done");
-
-    INFO("Loading parameters from " << filename);
-    // Interface between HDF5 and the THCM parameters,
-    // put all the (_NPAR_ = 30) THCM parameters back in THCM.
-    std::string parName;
-    double parValue;
-    for (int par = 1; par <= _NPAR_; ++par)
+    if (loadState_)
     {
-        parName  = THCM::Instance().int2par(par);
+        INFO("Loading state from " << filename);
 
-        // Read continuation parameter and put it in THCM
-        try
-        {
-            HDF5.Read("Parameters", parName.c_str(), parValue);
-        }
-        catch (EpetraExt::Exception &e)
-        {
-            e.Print();
-            continue;
-        }
+        // To be sure that the state is properly initialized,
+        // we obtain the state vector from THCM.
+        state_ = THCM::Instance().getSolution();
 
-        setPar(parName, parValue);
-        INFO("   " << parName << " = " << parValue);
-    }
+        // Check whether file exists
+        std::ifstream file(filename);
+        if (!file)
+        {
+            WARNING("Can't open " << filename
+                    << ", continue with trivial state", __FILE__, __LINE__);
+
+            // initialize trivial ocean
+            state_->PutScalar(0.0);
+            return 1;
+        }
+        else
+            file.close();
+
+        if (!HDF5.IsContained("State"))
+        {
+            ERROR("The group <State> is not contained in hdf5 " << filename,
+                  __FILE__, __LINE__);
+        }
+        
+        HDF5.Read("State", readState);      
+
+        // Create import strategies
+        // target map: thcm domain SolveMap
+        // source map: state with linear map as read by HDF5.Read
+        Teuchos::RCP<Epetra_Import> lin2solve =
+            Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
+                                           readState->Map() ));
+
+        // Import state from HDF5 into state_ datamember
+        state_->Import(*((*readState)(0)), *lin2solve, Insert);
+
+        INFO("   ocean state: ||x|| = " << Utils::norm(state_));
+
+        if (THCM::Instance().getSRES() == 0)
+            THCM::Instance().setIntCondCorrection(state_);
+    
+        INFO("Loading state from " << filename << " done");
+
+        INFO("Loading parameters from " << filename);
+        // Interface between HDF5 and the THCM parameters,
+        // put all the (_NPAR_ = 30) THCM parameters back in THCM.
+        std::string parName;
+        double parValue;
+        for (int par = 1; par <= _NPAR_; ++par)
+        {
+            parName  = THCM::Instance().int2par(par);
+
+            // Read continuation parameter and put it in THCM
+            try
+            {
+                if (!HDF5.IsContained("Parameters"))
+                {
+                    ERROR("The group <Parameters> is not contained in hdf5 " << filename,
+                          __FILE__, __LINE__);
+                }
+
+                HDF5.Read("Parameters", parName.c_str(), parValue);
+            }
+            catch (EpetraExt::Exception &e)
+            {
+                e.Print();
+                continue;
+            }
+
+            setPar(parName, parValue);
+            INFO("   " << parName << " = " << parValue);
+        }
           
-    INFO("Loading parameters from " << filename << " done");
-
+        INFO("Loading parameters from " << filename << " done");
+    }
     if (loadSalinityFlux_)
     {
         INFO("Loading salinity flux from " << filename);
 
         Epetra_MultiVector *readSalFlux;
+
+        if (!HDF5.IsContained("SalinityFlux"))
+        {
+            ERROR("The group <SalinityFlux> is not contained in hdf5 " << filename,
+                  __FILE__, __LINE__);
+        }
+
         HDF5.Read("SalinityFlux", readSalFlux);
 
         // This should not be factorized as we cannot be sure what Map
@@ -1474,7 +1497,32 @@ int Ocean::loadStateFromFile(std::string const &filename)
         // Instruct THCM to set/insert this as the emip in the local model
         THCM::Instance().setEmip(salflux);
         
+
+        if (HDF5.IsContained("AdaptedSalinityFlux"))
+        {
+            INFO(" detected AdaptedSalinityFlux in " << filename);
+            Epetra_MultiVector *readAdaptedSalFlux;
+            HDF5.Read("AdaptedSalinityFlux", readAdaptedSalFlux);
+            
+            assert(readAdaptedSalFlux->Map().SameAs(readSalFlux->Map()));
+            
+            Teuchos::RCP<Epetra_Vector> adaptedSalFlux =
+                Teuchos::rcp(new Epetra_Vector( salflux->Map() ) );
+
+            
+            // adaptedSalFlux->Import( *(readAdaptedSalFlux)(0), *lin2solve_surf
+
+            
+        }
+
+        if (HDF5.IsContained("AdaptedSalinityFlux_Mask"))
+        {
+            INFO(" detected AdaptedSalinityFlux_Mask in " << filename);
+            
+        }
+
         INFO("Loading salinity flux from " << filename << " done");
+        getchar();
     }
 
     if (loadTemperatureFlux_)

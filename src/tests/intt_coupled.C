@@ -10,6 +10,7 @@ namespace // local unnamed namespace (similar to static in C)
     RCP<Teuchos::ParameterList> atmosphereParams;
     RCP<Teuchos::ParameterList> coupledmodelParams;
     RCP<Teuchos::ParameterList> continuationParams;
+    RCP<Teuchos::ParameterList> jdqzParams;
     RCP<Epetra_Comm>            comm;
 }
 
@@ -38,6 +39,11 @@ TEST(ParameterLists, Initialization)
         continuationParams = rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
         continuationParams->setName("Continuation parameters");
+
+        // Create parameter object for Continuation
+        jdqzParams = rcp(new Teuchos::ParameterList);
+        updateParametersFromXmlFile("jdqz_params.xml", jdqzParams.ptr());
+        jdqzParams->setName("JDQZ parameters");
 
         INFO('\n' << "Overwriting:");
         // The Continuation and CoupledModel parameterlists overwrite settings
@@ -273,6 +279,9 @@ TEST(CoupledModel, Continuation)
          
         // Run continuation        
         continuation.run();
+
+        // Dump blocks
+        coupledModel->dumpBlocks();
     }
     catch (...)
     {
@@ -280,6 +289,66 @@ TEST(CoupledModel, Continuation)
         throw;
     }
 
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(CoupledModel, EPIntegral)
+{
+    Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPrecipIntCo();
+    
+    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
+    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    
+    double integralE = Utils::dot(intcoeff, E);
+    EXPECT_GT(integralE, 0.0);
+                              
+    double integralP = Utils::dot(intcoeff, P);
+    EXPECT_GT(integralP, 0.0);
+    EXPECT_NEAR(integralE, integralP, 1e-8);
+
+    // Compute integral of E-P    
+    E->Update(-1.0, *P, 1.0);         
+    double integralEP = Utils::dot(intcoeff, E);
+    
+    EXPECT_NEAR(std::abs(integralEP), 0.0, 1e-8);
+
+    INFO(" int P   " << integralP);
+    INFO(" int E   " << integralE);
+    INFO(" int E-P " << integralEP);
+}
+
+//------------------------------------------------------------------
+TEST(CoupledModel, JDQZSolve)
+{
+    bool failed = false;
+    try
+    {
+        INFO("Creating ComplexVector...");
+        std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');
+        std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
+
+        x->PutScalar(0.0);
+        y->PutScalar(0.0);
+
+        ComplexVector<Combined_MultiVec> z(*x, *y);
+        ComplexVector<Combined_MultiVec> r(*x, *y); // residue
+        ComplexVector<Combined_MultiVec> t(*x, *y); // tmp
+
+        JDQZInterface<std::shared_ptr<CoupledModel>,
+                      ComplexVector<Combined_MultiVec> > matrix(coupledModel, z);
+
+        JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>, 
+                           ComplexVector<Combined_MultiVec> > > jdqz(matrix, z);
+
+        jdqz.setParameters(*jdqzParams);
+        jdqz.printParameters();
+
+    }
+    catch (...)
+    {
+        failed = true;
+    }
     EXPECT_EQ(failed, false);
 }
 

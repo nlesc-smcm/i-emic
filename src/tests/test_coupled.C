@@ -589,6 +589,7 @@ TEST(CoupledModel, Synchronization)
     // Here we check whether they return the same vector.
     Teuchos::RCP<Epetra_Vector> atmosE = atmos->getE();
     Teuchos::RCP<Epetra_Vector> oceanE = ocean->getE();
+    
     double nrmAtmosE = Utils::norm(atmosE);
     double nrmOceanE = Utils::norm(oceanE);
     EXPECT_NEAR(nrmAtmosE, nrmOceanE, 1e-7);
@@ -607,8 +608,23 @@ TEST(CoupledModel, Synchronization)
     oceanAtmosP->MaxValue(&maxValue);
     oceanAtmosP->MinValue(&minValue);
     EXPECT_GT(std::max(std::abs(maxValue), std::abs(minValue)), 0.0);
+
 }
 
+//------------------------------------------------------------------
+TEST(CoupledModel, EPIntegral)
+{
+    Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPrecipIntCo();
+    
+    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
+    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    
+    double integralE = Utils::dot(intcoeff, E);
+    EXPECT_GT(integralE, 0.0);
+                              
+    double integralP = Utils::dot(intcoeff, P);
+    EXPECT_GT(integralP, 0.0);
+}
 
 //------------------------------------------------------------------
 // Test hashing functions of Combined_MultiVec and Utils

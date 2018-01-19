@@ -148,10 +148,11 @@ contains
     use, intrinsic :: iso_c_binding
     use m_par
     use m_usr
+    use m_atm
     implicit none
     real(c_double), dimension(m*n) :: salflux
     integer :: i,j,pos
-    real gamma
+    real gamma, dedt
 
     !     IMPORT/EXPORT
     real(c_double),dimension(ndim) ::    un
@@ -161,8 +162,8 @@ contains
     real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
     real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
     
-
-    gamma = par(COMB) * par(SALT)
+    gamma = par(COMB) * par(SALT) 
+    dedt  = eta * (deltat / qdim) * dqso
 
     call usol(un,u,v,w,p,T,S)
     
@@ -170,8 +171,13 @@ contains
     do j = 1,m
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
-             salflux(pos) = (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
-                  SRES * par(BIOT) * S(i,j,l) / gamma
+             if (coupled_atm.eq.1) then
+                salflux(pos) = nus * qdim * dedt * T(i,j,l) -  &
+                     nus * qdim * (eta * qatm(i,j) + pfield(i,j) )
+             else
+                salflux(pos) = (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
+                     SRES * par(BIOT) * S(i,j,l) / gamma
+             endif
           endif
           pos = pos + 1
        end do

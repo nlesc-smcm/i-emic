@@ -923,7 +923,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 int lid = StandardMap->LID(AssemblyMap->GID(i));
                 double mass_param = 1.0;
                 this->getParameter("Mass", mass_param);
-                (*localDiagB)[lid] = -coB[i] * mass_param;
+                (*localDiagB)[lid] = coB[i] * mass_param;
             } //not a ghost?
         } //i-loop over rows
 
@@ -979,7 +979,7 @@ void THCM::evaluateB(void)
         {
             // reconstruct the diagonal matrix B
             int lid = StandardMap->LID(AssemblyMap->GID(i));
-            (*localDiagB)[lid] = -coB[i];
+            (*localDiagB)[lid] = coB[i];
         } // not a ghost?
     } // i-loop over rows
     
