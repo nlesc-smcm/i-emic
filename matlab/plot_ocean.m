@@ -130,7 +130,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         img  = PSIB(2:end,:)';
         imgp = img; imgp(imgp<0)=NaN;
         imgn = img; imgn(imgn>-0)=NaN;
-
+        
         contourf(RtD*x,RtD*(y),imgp,15,'LineStyle','none'); hold on;
         contourf(RtD*x,RtD*(y),imgn,15,'LineStyle','none'); hold on;
 
@@ -142,9 +142,8 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         if fix_caxis
             caxis([opts.caxis_min,opts.caxis_max])
         else
-            crange = max(abs(min(caxis)),abs(max(caxis)));
-            caxis([-crange, crange]);
-        end
+            %caxis([cmin, cmax]);
+        end                              
 
         colorbar
         colormap(my_colmap(caxis,0))
@@ -172,11 +171,16 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 
         PSIGp = PSIG; PSIGp(PSIGp<0)  = NaN;
         PSIGn = PSIG; PSIGn(PSIGn>0)  = NaN;
+
+        % layers below 1km
+        blwkm = find(zw*hdim < -1000);
+        
+        cmin = min(min(PSIG(:,blwkm)));
+        cmax = max(max(PSIG(:,blwkm)));
+        
         contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGp',15); hold on
         contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGn',15,'--'); hold off
-        colorbar
-        cmin = min(min(PSIG(:)));
-        cmax = max(max(PSIG(:)));
+
         fprintf('MOC+ = %f MOC- = %f MOC+ + MOC- = %f \n', max(PSIG(:)), ...
                 min(PSIG(:)), max(PSIG(:)) + min(PSIG(:)))
         if plot_title
@@ -188,9 +192,12 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 
         if fix_caxis
             caxis([opts.caxis_min,opts.caxis_max])
+        else
+            caxis([cmin,cmax]);
         end
 
         colormap(my_colmap(caxis,0))
+        colorbar
 
         if export_to_file
             exportfig(['mstream',opts.fname_add,'.eps'],10,[19,10],invert)
@@ -263,7 +270,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         title('SST', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
-        cmap = [0,0,0; my_colmap(caxis,T0)];
+        cmap = [my_colmap(caxis,T0)];
         colormap(cmap)
         colorbar
 
@@ -276,7 +283,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 
         figure(5);
 
-        contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
+        contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,25);
         %imagesc(Sp'+S0);
         %set(gca,'ydir','normal')
         %pcolor(RtD*yv(1:end-1),z*hdim,Sp'+S0);
@@ -285,7 +292,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Latitude')
         ylabel('z (m)')
         
-        colormap(my_colmap(caxis))
+        colormap(my_colmap(caxis,S0))
         %crange = max(abs(min(caxis)),abs(max(caxis)))-S0;
         %caxis(S0+[-crange, crange])
 
@@ -314,7 +321,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         
-        cmap = [0,0,0; my_colmap(caxis)];
+        cmap = [my_colmap(caxis,S0)];
         colormap(cmap)
         
     end
@@ -332,7 +339,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         colorbar;
-        cmap = [0,0,0; my_colmap(caxis)];
+        cmap = [my_colmap(caxis,0)];
         colormap(cmap)
 
         
@@ -351,7 +358,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         colorbar;
-        cmap = [0,0,0; my_colmap(caxis)];
+        cmap = [my_colmap(caxis,0)];
         colormap(cmap)
 
         

@@ -75,11 +75,14 @@ function [state,pars,add] = plot_atmos(fname, opts)
     img = Ta';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
+    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
     colorbar
-    caxis([min(min(Ta)),max(max(Ta))])
+    cmap = my_colmap(caxis);
+    colormap(cmap)
+    colorbar
+
     hold off
-    drawnow
+    
     title('Atmospheric temperature')
     xlabel('Longitude')
     ylabel('Latitude')
@@ -89,11 +92,14 @@ function [state,pars,add] = plot_atmos(fname, opts)
     img = (Ta-repmat(Tz,n,1))';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
+    c = contour(RtD*x,RtD*(y),img,20,'Visible', ...
+                'on','linewidth', 1.5);
+
+    cmap = my_colmap(caxis);
+    colormap(cmap)
     colorbar
-    caxis([min(min(img)),max(max(img))])
+
     hold off
-    drawnow
     title('Ta anomaly')
     xlabel('Longitude')
     ylabel('Latitude')
@@ -102,30 +108,32 @@ function [state,pars,add] = plot_atmos(fname, opts)
     img = (qa-repmat(qz,n,1))';
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
-    colorbar
-    %caxis([min(min(img)),max(max(img))])
+    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
+
     hold off
-    drawnow
+    cmap = my_colmap(caxis);
+    colormap(cmap)
+    colorbar
+   
     title('qa anomaly')
     xlabel('Longitude')
     ylabel('Latitude')
     
     figure(12)
     img = qa';
-    img(img==0)=NaN;
-    
-    %plot_mask(summask,x,y);
-    contourf(RtD*x,RtD*(y),img,20,'Visible','off'); 
+
+    c = imagesc(RtD*x,RtD*(y),img); hold on
+    image(RtD*x,RtD*(y),srf,'AlphaData',.8);
+    set(gca,'ydir','normal')
     hold on
-    image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contourf(RtD*x,RtD*(y),img,20,'k-','Visible', 'on', ...
-                 'linewidth',1);
+    c = contour(RtD*x,RtD*(y),img,12,'Visible', 'on', ...
+                 'linewidth',1.5);
+    hold off
     
     colorbar
     cmap = my_colmap(caxis);
     colormap(cmap)
-    hold off
+
     drawnow
     title('Humidity (kg / kg)')
     xlabel('Longitude')
@@ -139,11 +147,14 @@ function [state,pars,add] = plot_atmos(fname, opts)
         img = EmP';
         %contourf(RtD*x,RtD*(y),img,10,'Visible','off'); hold on;
         %image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-        %c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1);
         
-        imagesc(RtD*x,RtD*(y),img);
+        imagesc(RtD*x,RtD*(y),img); hold on
+        c = contour(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
+                    'linewidth',.5);
+        hold off
         set(gca,'ydir','normal')
-        
+        cmap = my_colmap(caxis);
+        colormap(cmap)
         colorbar
 
         hold off
