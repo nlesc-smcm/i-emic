@@ -29,6 +29,8 @@ function [nrm] = plot_failed_residual(fname, maskname, level)
     res  = readhdf5(fname);
     size(res)
     
+    oceanRes = true;
+    atmosRes = false;    
     
     if strcmp(fname(end-7:end), 'first.h5')
         fprintf(' ocean residual\n');
@@ -118,12 +120,17 @@ function [nrm] = plot_failed_residual(fname, maskname, level)
 
         figure(6);
         mx  =  max(max(abs(S(:,:,level))'));
-        img = -mx*2*land(:,:,level)' + S(:,:,level)';
+        img =  S(:,:,level)';
+        img(img==0)=NaN;
         imagesc(RtD*x,RtD*(y), img);
         colorbar
         title('S')
         set(gca,'ydir','normal');
-        colormap(parula)
+
+        cmap = [0,0,0; my_colmap(caxis)];
+        colormap(cmap)
+
+        colormap(cmap)
         xlabel('Longitude')
         ylabel('Latitude');
 

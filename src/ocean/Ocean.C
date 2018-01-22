@@ -598,7 +598,7 @@ std::string const Ocean::writeData(bool describe)
         {
             datastring << std::setw(_FIELDWIDTH_/2)
                        << "MV";
-            datastring << std::setw(_FIELDWIDTH_/2)
+            datastring << std::setw(_FIELDWIDTH_)
                        << "Tol";
 
         }
@@ -630,7 +630,7 @@ std::string const Ocean::writeData(bool describe)
         {
             datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
                        << belosSolver_->getNumIters();
-            datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
+            datastring << std::scientific << std::setw(_FIELDWIDTH_)
                        << belosSolver_->achievedTol();
         }
 
@@ -1451,19 +1451,20 @@ int Ocean::loadStateFromFile(std::string const &filename)
         // put all the (_NPAR_ = 30) THCM parameters back in THCM.
         std::string parName;
         double parValue;
+
+        if (!HDF5.IsContained("Parameters"))
+        {
+            ERROR("The group <Parameters> is not contained in hdf5 " << filename,
+                  __FILE__, __LINE__);
+        }
+
         for (int par = 1; par <= _NPAR_; ++par)
         {
             parName  = THCM::Instance().int2par(par);
-
+            
             // Read continuation parameter and put it in THCM
             try
             {
-                if (!HDF5.IsContained("Parameters"))
-                {
-                    ERROR("The group <Parameters> is not contained in hdf5 " << filename,
-                          __FILE__, __LINE__);
-                }
-
                 HDF5.Read("Parameters", parName.c_str(), parValue);
             }
             catch (EpetraExt::Exception &e)
@@ -1517,21 +1518,31 @@ int Ocean::loadStateFromFile(std::string const &filename)
             
             Teuchos::RCP<Epetra_Vector> adaptedSalFlux =
                 Teuchos::rcp(new Epetra_Vector( salflux->Map() ) );
-
             
-            // adaptedSalFlux->Import( *(readAdaptedSalFlux)(0), *lin2solve_surf
-
+            adaptedSalFlux->Import( *((*readAdaptedSalFlux)(0)), *lin2solve_surf, Insert);
             
+            // Let THCM insert the adapted salinity flux
+            THCM::Instance().setEmip(adaptedSalFlux, 'A');
         }
 
         if (HDF5.IsContained("AdaptedSalinityFlux_Mask"))
         {
             INFO(" detected AdaptedSalinityFlux_Mask in " << filename);
+            Epetra_MultiVector *readSalFluxPert;
+            HDF5.Read("AdaptedSalinityFlux_Mask", readSalFluxPert);
             
+            assert(readSalFluxPert->Map().SameAs(readSalFlux->Map()));
+            
+            Teuchos::RCP<Epetra_Vector> salFluxPert =
+                Teuchos::rcp(new Epetra_Vector( salflux->Map() ) );
+            
+            salFluxPert->Import( *((*readSalFluxPert)(0)), *lin2solve_surf, Insert);
+            
+            // Let THCM insert the salinity flux perturbation mask
+            THCM::Instance().setEmip(salFluxPert, 'P');            
         }
 
         INFO("Loading salinity flux from " << filename << " done");
-        getchar();
     }
 
     if (loadTemperatureFlux_)

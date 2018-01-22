@@ -265,6 +265,8 @@ public:
 
 	//! apply plain NR iteration to current F, J and x
 	int corrector();
+
+    void dumpBlocks(){}
 	
 private:
   	//! load the mask filenames

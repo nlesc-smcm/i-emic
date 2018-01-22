@@ -952,6 +952,7 @@ reset()
     {
         Utils::save(rhsView_, "failed_rhs"); // Print failed residual
         Utils::save(model_->getSolution('V'), "failed_sol"); // Print failed solution
+        model_->dumpBlocks();
     }
     
     INFO("***********************************************");

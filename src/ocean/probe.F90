@@ -144,6 +144,46 @@ contains
   end subroutine get_emip
 
   !!------------------------------------------------------------------
+  subroutine get_adapted_emip(cemip)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n) :: cemip
+    integer :: i,j,pos
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          cemip(pos) = adapted_emip(i,j)
+          pos = pos + 1
+       end do
+    end do
+  end subroutine get_adapted_emip
+
+  !!------------------------------------------------------------------
+  subroutine get_emip_pert(cspert)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n) :: cspert
+    integer :: i,j,pos
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          cspert(pos) = spert(i,j)
+          pos = pos + 1
+       end do
+    end do
+  end subroutine get_emip_pert
+  
+  !!------------------------------------------------------------------
   subroutine get_salflux(un, salflux)
     use, intrinsic :: iso_c_binding
     use m_par

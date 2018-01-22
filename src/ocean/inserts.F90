@@ -103,6 +103,48 @@ contains
   end subroutine insert_emip
 
   !!------------------------------------------------------------------
+  subroutine insert_adapted_emip(inserted_aEmip)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_aEmip
+    integer :: i,j,pos
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          adapted_emip(i,j) = inserted_aEmip(pos)
+          pos = pos + 1
+       end do
+    end do
+
+  end subroutine insert_adapted_emip
+
+  !!------------------------------------------------------------------
+  subroutine insert_emip_pert(inserted_pEmip)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_pEmip
+    integer :: i,j,pos
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          spert(i,j) = inserted_pEmip(pos)
+          pos = pos + 1
+       end do
+    end do
+
+  end subroutine insert_emip_pert
+
+  !!------------------------------------------------------------------
   subroutine insert_tatm(inserted_tatm)
     
     use, intrinsic :: iso_c_binding
