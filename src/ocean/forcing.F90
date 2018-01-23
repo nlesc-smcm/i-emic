@@ -122,7 +122,7 @@ SUBROUTINE forcing
                 ( -eta * qatm(i,j) - pfield(i,j) )
         else
            Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &
-                gamma * par(HMTP) * ( adapted_emip(i,j) - salcor ) + &
+                gamma * par(HMTP) * ( adapted_emip(i,j) - adapted_salcor ) + &
                 par(SPER) * (1 - SRES + SRES*par(BIOT)) * ( spert(i,j) - spertcor )
         end if
      enddo
