@@ -6,13 +6,13 @@
   
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size" type="double" value="1.0e-2"/>
-  <Parameter name="minimum step size" type="double" value="1.0e-6"/>
+  <Parameter name="minimum step size" type="double" value="1.0e-8"/>
   <Parameter name="maximum step size" type="double" value="1.0e0"/>
 
   <!-- Give up at minimum step size -->
   <Parameter name="give up at minimum step size" type="bool" value="true"/>
 
-  <Parameter name="increase step size" type="double" value="1.1"/>
+  <Parameter name="increase step size" type="double" value="1.5"/>
   <Parameter name="decrease step size" type="double" value="2.0"/>
   
   <!-- Define the destination value for the continuation parameter -->
@@ -34,7 +34,7 @@
   <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
   
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="10"/>
+  <Parameter name="maximum Newton iterations" type="int" value="15"/>
 
   <!-- Backtracking is disabled by default, I prefer resetting -->
   <Parameter name="enable backtracking" type="bool" value="false"/>
@@ -62,14 +62,14 @@
   <!-- Scaling of the state tangent, which can be made several orders      -->
   <!-- smaller than the parameter tangent.                                 -->
   <!-- I believe this affects the algorithms capability to traverse folds. -->
-  <Parameter name="state tangent scaling" type="double" value="1.0e0"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0e-5"/>
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
   <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
 
   <!-- If predicted rhs is larger than this value we reject the prediction. -->
-  <Parameter name="predictor bound" type="double" value="10"/>
+  <Parameter name="predictor bound" type="double" value="1e5"/>
 
   <!-- Type of the tangent that is calculated during the continuation -->
   <!--     E: Euler                                                   -->

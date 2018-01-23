@@ -127,10 +127,6 @@ function [nrm] = plot_failed_residual(fname, maskname, level)
         title('S')
         set(gca,'ydir','normal');
 
-        cmap = [0,0,0; my_colmap(caxis)];
-        colormap(cmap)
-
-        colormap(cmap)
         xlabel('Longitude')
         ylabel('Latitude');
 

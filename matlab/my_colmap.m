@@ -5,7 +5,7 @@ function [out] = my_colmap(colrange, mn, sze)
 % sze      : number of colors
 
     if nargin < 3
-        sze = 128;
+        sze = 1e4;
     end
 
     if nargin < 2
