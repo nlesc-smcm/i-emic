@@ -1,19 +1,16 @@
 #!/bin/bash
-#SBATCH --time=01:00:00
+#SBATCH --time=10:00:00
 #SBATCH --ntasks=64
 
-cd ${HOME}/Projects/I-EMIC/rundir_profile
+cd ${HOME}/Projects/i-emic/run/present/coupled/
 
-# specify horizontal grid size
-n=180
-m=80
-fname=profile_${n}x${m}
+date=`date +%m%d%y-%H%M`
+fname=summary_$date
+fnameprev=summary_prev_$date
+infofile=info_$date
+cdatafile=cdata_$date
+profilef=profile_$date
 echo writing to $fname
-echo $n x $m >> $fname
-sed -i "s/Global Grid-Size n.*value.*/Global Grid-Size n\" type=\"int\" value=\"$n\"\/>/" \
-	ocean_params.xml
-sed -i "s/Global Grid-Size m.*value.*/Global Grid-Size m\" type=\"int\" value=\"$m\"\/>/" \
-	ocean_params.xml
 
 procs=1
 echo "Profile on:" ${PLAT} " in:" ${PWD} > $fname
@@ -21,14 +18,22 @@ echo "Profile on:" ${PLAT} " in:" ${PWD} > $fname
 # 1,2,4,8,16,32,64 procs
 for i in {3..7}
 do
-	echo "----------------------------------------------------------\
+    echo "----------------------------------------------------------\
 ----------------------------------" >> $fname
     echo "Run:   " $i >> $fname
-	echo "Run:   " $i 
- 	echo "#Procs:" $procs >> $fname
-	echo "#Procs:" $procs 
-	rm profile_output
-	srun -n $procs ./test > dump
-	cat profile_output >> $fname
-	procs=$(($procs*2))
+    echo "Run:   " $i 
+    echo "#Procs:" $procs >> $fname
+    echo "#Procs:" $procs 
+    
+    # backup old data
+    cat profile_output > $fnameprev
+    cat *.plot >> $fnameprev
+    cp -v info_0.txt $infofile
+    cp -v cdata.txt $cdatafile
+    cp -v profile_output $profilef
+
+    rm profile_output
+    srun -n $procs run_coupled > dump
+    cat profile_output >> $fname
+    procs=$(($procs*2))
 done

@@ -1112,11 +1112,15 @@ info()
         INFO("                step:  " << step_);
     }
 
-
     INFO("               ||x||:  " << Utils::norm(stateView_));
     INFO("         ||d/ds(x)||:  " << Utils::norm(stateDot_));
     INFO("        newton iters:  " << newtonIter_);
-    INFO("    avg newton iters:  " << (double) sumNewtonIter_ / (step_ + resetCounter_));
+
+    if ((step_ + resetCounter_) > 0)
+    {
+        INFO("    avg newton iters:  " << (double) sumNewtonIter_ / (step_ + resetCounter_));
+    }
+    
     INFO("              resets:  " << resetCounter_);
     INFO("-----------------------------------------\n");
 }
