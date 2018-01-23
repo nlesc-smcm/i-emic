@@ -484,8 +484,8 @@
     <ParameterList name="Chat Solver">
       <!-- can be "AztecOO" or "None" -->
       <Parameter name="Method" type="string" value="AztecOO"/>
-      <Parameter name="Max Num Iter" type="int" value="200"/>
-      <Parameter name="Tolerance" type="double" value="1.0e-3"/>
+      <Parameter name="Max Num Iter" type="int" value="500"/>
+      <Parameter name="Tolerance" type="double" value="1.0e-5"/>
       <Parameter name="Solver" type="string" value="GMRESR"/>
       <Parameter name="Conv" type="string" value="r0"/>
       <Parameter name="Scaling" type="string" value="None"/>
@@ -496,7 +496,7 @@
       <Parameter name="Graph_Fill" type="double" value="1.0"/>
       <Parameter name="ILUT_Fill" type="double" value="5.0"/>
       <Parameter name="Drop" type="double" value="1.0e-8"/>
-      <Parameter name="KSpace" type="int" value="100"/>
+      <Parameter name="KSpace" type="int" value="500"/>
       <Parameter name="Orthog" type="string" value="Classic"/>
       <Parameter name="Output" type="int" value="0"/>
     </ParameterList><!-- } Grad-Div Solver -->
@@ -688,8 +688,8 @@
         <Parameter name="Output" type="int" value="0"/>
       </ParameterList><!--}-->
 
-      <Parameter name="smoother: ifpack overlap" type="int" value="0"/>
-      <Parameter name="smoother: ifpack type" type="string" value="ILU"/>
+      <Parameter name="smoother: ifpack overlap" type="int" value="2"/>
+      <Parameter name="smoother: ifpack type" type="string" value="MRILU"/>
       <!--Parameter name="smoother: ifpack type" type="string"
           value="block relaxation (Amesos)"/-->
 
