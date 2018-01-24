@@ -3,7 +3,11 @@
    ======================================================================*/
 #ifndef CONTINUATIONDECL_H
 #define CONTINUATIONDECL_H
+
 #include <vector>
+#include "ComplexVector.H"
+#include "JDQZInterface.H"
+#include "jdqz.H"
 
 //! Pseudo-arclength continuation class using an
 //! Euler predictor and a Newton corrector.
@@ -46,7 +50,10 @@
 template<typename Model, typename ParameterList>
 class Continuation
 {
-    using VectorPtr = typename Model::element_type::VectorPtr;
+    using VectorPtr  = typename Model::element_type::VectorPtr;
+    using Vector     = typename VectorPtr::element_type;
+    using JDQZsolver = JDQZ<JDQZInterface<Model,
+                                          ComplexVector<Vector> > >;
     Model model_;
 
     //! copy of the state in the model
@@ -201,7 +208,9 @@ class Continuation
     //! ||F(x_old)||
     double normRHS_;              
     //! ||F(x_new)||
-    double normRHStest_;          
+    double normRHStest_;
+
+    bool eigenSolverSet_;
 
     //! See Store() and Restore() for its use
     struct Storage
@@ -224,6 +233,8 @@ class Continuation
 
     Storage storage_;
 
+    std::shared_ptr<JDQZsolver> jdqz_;
+
 public:
 
     //! default constructor
@@ -240,6 +251,9 @@ public:
 
     //! test
     void test();
+
+    //! set pointer to an eigenvalue solver
+    void setEigenSolver(std::shared_ptr<JDQZsolver> jdqz);        
 
 private:
 
@@ -285,7 +299,11 @@ private:
     void adjustStep();
     void reset();
     void info();
+    void finalize();
     void modelInfo();
+
+    //! solve generalized eigenvalue problem
+    void eigenSolver();
 
     //! write essential continuation data to datafile
     void writeData(bool describe = false);

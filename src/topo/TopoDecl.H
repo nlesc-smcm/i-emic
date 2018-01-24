@@ -228,6 +228,9 @@ public:
 	//! apply Jacobian matrix J*v
 	void applyMatrix(Vector const &v, Vector &out);
 
+    //! apply mass matrix B*v (not implemented)
+	void applyMassMat(Vector const &v, Vector &out){}
+
 	//! apply Preconditioning inv(P)*v
 	void applyPrecon(Vector const &v, Vector &out);
 

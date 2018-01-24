@@ -2,6 +2,7 @@
 #define COMPLEX_VEC_H
 
 #include "Utils.H"
+#include "GlobalDefinitions.H"
 
 template<typename Vector>
 class ComplexVector
@@ -42,6 +43,14 @@ public:
 		{
 			assert(real.GlobalLength() == imag.GlobalLength());
 		}
+
+    //! destructor
+    ~ComplexVector()
+        {
+            INFO("ComplexVector destructor called...");
+            std::cout << "ComplexVector destructor called..." << std::endl;
+        }
+    
 		
 	//! assignment operator
 	void operator=(ComplexVector const &other)

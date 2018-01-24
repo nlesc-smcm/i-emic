@@ -38,6 +38,10 @@
 #include "GlobalDefinitions.H"
 #include "Topo.H"
 
+#include "ComplexVector.H"
+#include "JDQZInterface.H"
+#include "jdqz.H"
+
 //-----------------------------------------------------------------------------
 
 using Teuchos::RCP;
@@ -165,5 +169,25 @@ void printProfile(ProfileType profile)
 
 }
 
+//-----------------------------------------------------------------------------
+Teuchos::RCP<Teuchos::ParameterList> obtainParams(std::string const &str,
+                                                  std::string const &name)
+{
+    RCP<Teuchos::ParameterList> pars = rcp(new Teuchos::ParameterList);
+    
+    std::ifstream file(str);
+    if (!file)
+    {
+        WARNING(str << ", " << name <<
+                " not found, continuing with defaults",
+                __FILE__, __LINE__);
+    }
+    else
+    {
+        updateParametersFromXmlFile(str.c_str(), pars.ptr());
+    }    
+    pars->setName(name.c_str());
+    return pars;
+}
 
 #endif

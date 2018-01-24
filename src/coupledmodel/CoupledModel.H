@@ -22,10 +22,6 @@
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
 
-#include "ComplexVector.H"
-#include "JDQZInterface.H"
-#include "jdqz.H"
-
 //! This class assembles multiple sub-models into a CoupledModel.
 // Which models and couplings are used should be supplied in the
 // accompanying xml file (coupledmodel_params.xml).
@@ -47,22 +43,11 @@ class Epetra_Vector;
 template<typename ModelPtr>
 class BelosOp;
 
-// template<typename Vector>
-// class ComplexVector;
-
-// template<typename Model, typename VectorType>
-// class JDQZInterface;
-
-// template<typename Matrix>
-// class JDQZ;
-
 class CoupledModel
 {
 public:
     using VectorPtr  = std::shared_ptr<Combined_MultiVec>;
     using LandMask   = Utils::MaskStruct;
-    using JDQZsolver = JDQZ<JDQZInterface<CoupledModel*,
-                                          ComplexVector<Combined_MultiVec> > >;
 
 private:
     //! Adjacency graph describing the couplings between the models
@@ -105,9 +90,6 @@ private:
     //! initialization flag linear solver
     bool solverInitialized_;
 
-    //! initialization flag jdqz
-    bool jdqzInitialized_;
-
     //! Trilinos MPI-like communicator
     Teuchos::RCP<Epetra_Comm> comm_;
 
@@ -127,8 +109,6 @@ private:
     <Belos::BlockGmresSolMgr
      <double, Combined_MultiVec, BelosOp<CoupledModel> > > belosSolver_;
 
-    std::unique_ptr<JDQZsolver> jdqz_;
-
 public:
     CoupledModel(std::shared_ptr<Ocean> ocean,
                  std::shared_ptr<AtmospherePar> atmos,
@@ -147,12 +127,6 @@ public:
 
     //! Initialize FGMRES (Belos) solver
     void initializeFGMRES();
-
-    //! Solve generalized eigenvalue problem
-    void eigenSolve();
-
-    //! Initialize JDQS generalized eigenvalue solver
-    void initializeJDQZ();
 
     //! Apply the Jacobian matrix: out=J*v
     void applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &out);

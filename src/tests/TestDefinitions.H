@@ -37,6 +37,7 @@
 #include "../main/RunDefinitions.H"
 
 #include "THCMdefs.H"
+#include "ComplexVector.H"
 #include "JDQZInterface.H"
 #include "MyParameterList.H"
 #include "NumericalJacobian.H"

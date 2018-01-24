@@ -52,7 +52,8 @@ Continuation(Model model, ParameterList pars)
     initialTangent_        (pars->get("initial tangent type", 'E')),
     printImportantVectors_ (pars->get("print important vectors", false)),
     predictorBound_        (pars->get("predictor bound", 1e5)),
-    signMonitor_           (0)
+    signMonitor_           (0),
+    eigenSolverSet_        (false)
 {
     // Set the step size
     ds_ = dsInit_;
@@ -187,7 +188,7 @@ run()
         adjustStep(); // step size adjustment
     }
     info();
-    modelInfo();
+    finalize();
     TIMER_STOP("Continuation: run");
     INFO("---------Finished continuation run--------------");
 }
@@ -238,6 +239,10 @@ step()
 
     // Create new tangents based on result from newtonCorrector
     createTangent(tangentType_);
+
+    // stability scheme = P => eigenvalues computed at every converged step
+    if (stabilityScheme_ == 'P')
+        eigenSolver();
 
     // Let the model do some administrative work at the end of a succesful step
     model_->postProcess();
@@ -1033,6 +1038,38 @@ restore()
     storage_.ds0     = storage_.ds00;
 }
 
+//=====================================================================
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
+setEigenSolver(std::shared_ptr<JDQZsolver> jdqz)
+{
+    jdqz_ = jdqz;
+    INFO("Continuation: set eigenvalue solver");
+    eigenSolverSet_ = true;
+    jdqz_->printParameters();
+    
+}
+
+//=====================================================================
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
+eigenSolver()
+{
+    if (stabilityScheme_ != 'N')
+    {
+        if (eigenSolverSet_)
+            jdqz_->solve();
+        else
+        {
+            WARNING("Eigen solver not set!", __FILE__, __LINE__);
+        }
+    }
+    else
+    {
+        WARNING("Faulty stability scheme!", __FILE__, __LINE__);
+    }
+}
+
 //======================================================================
 template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
@@ -1126,6 +1163,17 @@ info()
     
     INFO("              resets:  " << resetCounter_);
     INFO("-----------------------------------------\n");
+}
+
+//======================================================================
+template<typename Model, typename ParameterList>
+void Continuation<Model, ParameterList>::
+finalize()
+{
+    if (stabilityScheme_ == 'E')
+        eigenSolver();
+    
+    modelInfo();
 }
 
 //======================================================================

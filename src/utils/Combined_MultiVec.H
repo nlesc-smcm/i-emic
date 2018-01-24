@@ -12,10 +12,10 @@
 
 #include "Utils.H"
 
-//------------------------------------------------------------------
-// This class combines rcp's to two multivectors
-//  --> this should generalize to n multivectors
-//------------------------------------------------------------------
+//!------------------------------------------------------------------
+//! This class combines rcp's to two multivectors
+//!  --> this should generalize to n multivectors
+//!------------------------------------------------------------------
 
 class Combined_MultiVec
 {
@@ -27,7 +27,7 @@ class Combined_MultiVec
     Teuchos::RCP<Epetra_MultiVector> second_;
 
 public:
-    // default constructor
+    //! default constructor
     Combined_MultiVec()
         :
         numVecs_(0),
@@ -44,7 +44,7 @@ public:
             second_  = Teuchos::rcp(new Epetra_MultiVector(map2, numVectors, zeroOut));
         }
 
-    // Copy constructor
+    //! Copy constructor
     Combined_MultiVec(const Combined_MultiVec &source)
         :
         numVecs_(source.NumVecs())
@@ -69,13 +69,13 @@ public:
             second_ = Teuchos::rcp(new Epetra_MultiVector(mv2));
         }
 
-    // const
+    //! const
     Combined_MultiVec(Epetra_DataAccess CV, const Combined_MultiVec &source,
                       const std::vector<int> &index)
         :
         numVecs_(index.size())
         {
-            // cast to nonconst for Epetra_MultiVector
+            //! cast to nonconst for Epetra_MultiVector
             std::vector<int> &tmpInd = const_cast< std::vector<int>& >(index);
             first_  = Teuchos::rcp
                 (new Epetra_MultiVector(CV, *source.First(),  &tmpInd[0], index.size()));
@@ -83,13 +83,13 @@ public:
                 (new Epetra_MultiVector(CV, *source.Second(), &tmpInd[0], index.size()));
         }
 
-    // nonconst
+    //! nonconst
     Combined_MultiVec(Epetra_DataAccess CV, Combined_MultiVec &source,
                       const std::vector<int> &index)
         :
         numVecs_(index.size())
         {
-            // cast to nonconst for Epetra_MultiVector
+            //! cast to nonconst for Epetra_MultiVector
             std::vector<int> &tmpInd = const_cast< std::vector<int>& >(index);
             first_  = Teuchos::rcp
                 (new Epetra_MultiVector(CV, *source.First(),  &tmpInd[0], index.size()));
@@ -97,7 +97,7 @@ public:
                 (new Epetra_MultiVector(CV, *source.Second(), &tmpInd[0], index.size()));
         }
 
-    // const
+    //! const
     Combined_MultiVec(Epetra_DataAccess CV, const Combined_MultiVec &source,
                       int startIndex, int numVectors)
         :
@@ -109,7 +109,7 @@ public:
                 (new Epetra_MultiVector(CV, *source.Second(), startIndex, numVectors));
         }
 
-    // nonconst
+    //! nonconst
     Combined_MultiVec(Epetra_DataAccess CV, Combined_MultiVec &source,
                       int startIndex, int numVectors)
         :
@@ -121,7 +121,11 @@ public:
                 (new Epetra_MultiVector(CV, *source.Second(), startIndex, numVectors));
         }
 
-    // Assignment operator
+    //! destructor
+    ~Combined_MultiVec()
+        {}
+
+    //! Assignment operator
     Combined_MultiVec &operator=(const Combined_MultiVec &Source)
         {
             *first_  = *Source.First();
@@ -129,7 +133,7 @@ public:
             return *this;
         }
 
-    // Insertion operator
+    //! Insertion operator
     friend std::ostream &operator<<(std::ostream &out, const Combined_MultiVec &mv)
         {
             out << *mv.First()  << std::endl;
@@ -137,7 +141,7 @@ public:
             return out;
         }
 
-    // Index operator (does not support multicore)
+    //! Index operator (does not support multicore)
     double &operator[](int index)
         {
             assert(first_->Map().Comm().NumProc() == 1);
@@ -151,30 +155,30 @@ public:
                 return (*(*first_)(0))[index];
         }
     
-    // Get maps
+    //! Get maps
     const Epetra_BlockMap &Map1() const {return first_->Map();  }
     const Epetra_BlockMap &Map2() const {return second_->Map(); }
 
-    // Get the rcpointers
+    //! Get the rcpointers
     Teuchos::RCP<Epetra_MultiVector> First()  { return first_ ;}
     Teuchos::RCP<Epetra_MultiVector> Second() { return second_;}
 
     Teuchos::RCP<Epetra_MultiVector> First()  const { return first_ ;}
     Teuchos::RCP<Epetra_MultiVector> Second() const { return second_;}
 
-    // Get number of vectors in each multivector
+    //! Get number of vectors in each multivector
     int NumVecs() const {return numVecs_;}
 
-    // Get the global length of the combined multivector
+    //! Get the global length of the combined multivector
     int GlobalLength() const {return first_->GlobalLength() + second_->GlobalLength();}
 
-    // Get the local length of the combined multivector
+    //! Get the local length of the combined multivector
     int MyLength() const {return first_->MyLength() + second_->MyLength();}
 
-    // Query the stride
+    //! Query the stride
     bool ConstantStride() const {return first_->ConstantStride() && second_->ConstantStride();}
 
-    // this = alpha*A*B + scalarThis*this
+    //! this = alpha*A*B + scalarThis*this
     int Multiply(char transA, char transB, double scalarAB,
                  const Combined_MultiVec &A, const Epetra_MultiVector &B,
                  double scalarThis )
@@ -185,7 +189,7 @@ public:
             return info;
         }
 
-    // this = scalarA*A + scalarThis*this
+    //! this = scalarA*A + scalarThis*this
     int Update(double scalarA, const Combined_MultiVec &A, double scalarThis)
         {
             int info = 0;
@@ -194,7 +198,7 @@ public:
             return info;
         }
 
-    // this = scalarA*A + scalarB*B + scalarThis*this
+    //! this = scalarA*A + scalarB*B + scalarThis*this
     int Update(double scalarA, const Combined_MultiVec &A,
                double scalarB, const Combined_MultiVec &B, double scalarThis)
         {
@@ -204,24 +208,24 @@ public:
             return info;
         }
 
-    // b[j] := this[j]^T * A[j]
+    //! b[j] := this[j]^T * A[j]
     int Dot(const Combined_MultiVec& A, std::vector<double> &b1) const
         {
-            // we need two arrays storing results
+            //! we need two arrays storing results
             std::vector<double> b2 = b1;
 
             int info = 0;
             info += first_->Dot(*A.First(), &b1[0]);
             info += second_->Dot(*A.Second(), &b2[0]);
 
-            // combine the results
+            //! combine the results
             for (int i = 0; i != numVecs_; ++i)
                 b1[i] += b2[i];
 
             return info;
         }
 
-    // result[j] := this[j]^T * A[j]
+    //! result[j] := this[j]^T * A[j]
     int Dot(const Combined_MultiVec& A, double *result) const
         {
             std::vector<double> tmp(numVecs_, 0.0);
@@ -241,14 +245,14 @@ public:
 
     int Norm1(std::vector<double> &result) const
         {
-            // copy result vector
+            //! copy result vector
             std::vector<double> result_tmp = result;
 
             int info = 0;
             info =  first_->Norm1(&result[0]);
             info += second_->Norm1(&result_tmp[0]);
 
-            // combine results
+            //! combine results
             for (int i = 0; i != numVecs_; ++i)
                 result[i] += result_tmp[i];
             return info;
@@ -265,14 +269,14 @@ public:
 
     int Norm2(std::vector<double> &result) const
         {
-            // copy result vector
+            //! copy result vector
             std::vector<double> result_tmp = result;
 
             int info = 0;
             info =  first_->Norm2(&result[0]);
             info += second_->Norm2(&result_tmp[0]);
 
-            // combine results
+            //! combine results
             for (int i = 0; i != numVecs_; ++i)
                 result[i] = sqrt(pow(result[i],2) + pow(result_tmp[i],2));
 
@@ -296,14 +300,14 @@ public:
             info =  first_->NormInf(&result[0]);
             info += second_->NormInf(&result_tmp[0]);
 
-            // combine results
+            //! combine results
             for (int i = 0; i != numVecs_; ++i)
                 result[i] = std::max(result[i], result_tmp[i]);
 
             return info;
         }
 
-    // direct access to 2-norm
+    //! direct access to 2-norm
     double Norm() const { return Utils::norm(this); }
 
     int Random()
@@ -338,10 +342,10 @@ public:
 };
 
 
-//------------------------------------------------------------------
-// Specialization of MultiVectorTraits for Belos,
-//  adapted from BelosEpetraAdapter.hpp, for better documentation go there.
-//------------------------------------------------------------------
+//!------------------------------------------------------------------
+//! Specialization of MultiVectorTraits for Belos,
+//!  adapted from BelosEpetraAdapter.hpp, for better documentation go there.
+//!------------------------------------------------------------------
 
 namespace Belos
 {
@@ -429,7 +433,7 @@ namespace Belos
             {
                 const int inNumVecs  = mv.NumVecs();
                 const int outNumVecs = index.size();
-                // Simple, inexpensive tests of the index vector.
+                //! Simple, inexpensive tests of the index vector.
 
                 TEUCHOS_TEST_FOR_EXCEPTION(outNumVecs == 0, std::invalid_argument,
                                            "Belos::MultiVecTraits<double,Combined_MultiVec>::"
@@ -483,7 +487,7 @@ namespace Belos
                 const int inNumVecs  = mv.NumVecs();
                 const int outNumVecs = index.size();
 
-                // Simple, inexpensive tests of the index vector.
+                //! Simple, inexpensive tests of the index vector.
                 TEUCHOS_TEST_FOR_EXCEPTION(outNumVecs == 0, std::invalid_argument,
                                            "Belos::MultiVecTraits<double,Combined_MultiVec>::"
                                            "CloneView(mv, index = {}): The output view "
@@ -531,14 +535,14 @@ namespace Belos
         static int  GetNumberVecs    (const Combined_MultiVec& mv ) { return mv.NumVecs(); }
         static bool HasConstantStride(const Combined_MultiVec& mv ) { return mv.ConstantStride(); }
 
-        // Epetra style (we should compare this with just a bunch of updates)
+        //! Epetra style (we should compare this with just a bunch of updates)
         static void MvTimesMatAddMv (const double alpha,
                                      const Combined_MultiVec& A,
                                      const Teuchos::SerialDenseMatrix<int,double>& B,
                                      const double beta,
                                      Combined_MultiVec& mv)
             {
-                // Create Epetra_Multivector from SerialDenseMatrix
+                //! Create Epetra_Multivector from SerialDenseMatrix
                 Epetra_LocalMap LocalMap(B.numRows(), 0, mv.Map1().Comm());
                 Epetra_MultiVector B_Pvec(View, LocalMap, B.values(), B.stride(), B.numCols());
 
@@ -582,8 +586,8 @@ namespace Belos
         MvScale (Combined_MultiVec &mv,
                  const std::vector<double> &alpha)
             {
-                // Check to make sure the vector has the same number of entries
-                // as the multivector has columns.
+                //! Check to make sure the vector has the same number of entries
+                //! as the multivector has columns.
                 const int numvecs = mv.NumVecs();
 
                 TEUCHOS_TEST_FOR_EXCEPTION(
@@ -613,7 +617,7 @@ namespace Belos
         static void MvTransMv(const double alpha, const Combined_MultiVec &A,
                               const Combined_MultiVec &mv, Teuchos::SerialDenseMatrix<int,double> &B)
             {
-                // Create Epetra_MultiVector from SerialDenseMatrix
+                //! Create Epetra_MultiVector from SerialDenseMatrix
                 Epetra_LocalMap LocalMap(B.numRows(), 0, mv.Map1().Comm());
                 Epetra_MultiVector B_Pvec(View, LocalMap, B.values(), B.stride(), B.numCols());
                 int info = B_Pvec.Multiply('T', 'N', alpha, *A.First(), *mv.First(), 0.0);
@@ -693,15 +697,15 @@ namespace Belos
                     TEUCHOS_TEST_FOR_EXCEPTION(true, std::invalid_argument, os.str());
                 }
 
-                // Make a view of the columns of mv indicated by the index std::vector.
+                //! Make a view of the columns of mv indicated by the index std::vector.
                 Teuchos::RCP<Combined_MultiVec> mv_view = CloneViewNonConst(mv, index);
 
-                // View of columns [0, outNumVecs-1] of the source multivector A.
-                // If A has fewer columns than mv_view, then create a view of
-                // the first outNumVecs columns of A.
+                //! View of columns [0, outNumVecs-1] of the source multivector A.
+                //! If A has fewer columns than mv_view, then create a view of
+                //! the first outNumVecs columns of A.
                 Teuchos::RCP<const Combined_MultiVec> A_view;
                 if (outNumVecs == inNumVecs)
-                    A_view = Teuchos::rcpFromRef(A); // Const, non-owning RCP
+                    A_view = Teuchos::rcpFromRef(A); //! Const, non-owning RCP
                 else
                     A_view = CloneView(A, Teuchos::Range1D(0, outNumVecs - 1));
 
@@ -716,10 +720,10 @@ namespace Belos
                 const int numColsA  = A.NumVecs();
                 const int numColsMv = mv.NumVecs();
 
-                // 'index' indexes into mv; it's the index set of the target.
+                //! 'index' indexes into mv; it's the index set of the target.
                 const bool validIndex = index.lbound() >= 0 && index.ubound() < numColsMv;
 
-                // We can't take more columns out of A than A has.
+                //! We can't take more columns out of A than A has.
                 const bool validSource = index.size() <= numColsA;
 
                 if (! validIndex || ! validSource)
@@ -741,22 +745,22 @@ namespace Belos
                     TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error, "Should never get here!");
                 }
 
-                // View of columns [index.lbound(), index.ubound()] of the
-                // target multivector mv.  We avoid view creation overhead by
-                // only creating a view if the index range is different than [0,
-                // (# columns in mv) - 1].
+                //! View of columns [index.lbound(), index.ubound()] of the
+                //! target multivector mv.  We avoid view creation overhead by
+                //! only creating a view if the index range is different than [0,
+                //! (# columns in mv) - 1].
                 Teuchos::RCP<Combined_MultiVec> mv_view;
                 if (index.lbound() == 0 && index.ubound()+1 == numColsMv)
-                    mv_view = Teuchos::rcpFromRef(mv); // Non-const, non-owning RCP
+                    mv_view = Teuchos::rcpFromRef(mv); //! Non-const, non-owning RCP
                 else
                     mv_view = CloneViewNonConst(mv, index);
 
-                // View of columns [0, index.size()-1] of the source multivector
-                // A.  If A has fewer columns than mv_view, then create a view
-                // of the first index.size() columns of A.
+                //! View of columns [0, index.size()-1] of the source multivector
+                //! A.  If A has fewer columns than mv_view, then create a view
+                //! of the first index.size() columns of A.
                 Teuchos::RCP<const Combined_MultiVec> A_view;
                 if (index.size() == numColsA)
-                    A_view = Teuchos::rcpFromRef(A); // Const, non-owning RCP
+                    A_view = Teuchos::rcpFromRef(A); //! Const, non-owning RCP
                 else
                     A_view = CloneView(A, Teuchos::Range1D(0, index.size()-1));
 
@@ -781,11 +785,11 @@ namespace Belos
                     TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error, "Should never get here!");
                 }
 
-                // View of the first [0, numColsA-1] columns of mv.
+                //! View of the first [0, numColsA-1] columns of mv.
                 Teuchos::RCP<Combined_MultiVec> mv_view;
                 if (numColsMv == numColsA)
-                    mv_view = Teuchos::rcpFromRef(mv); // Non-const, non-owning RCP
-                else // numColsMv > numColsA
+                    mv_view = Teuchos::rcpFromRef(mv); //! Non-const, non-owning RCP
+                else //! numColsMv > numColsA
                     mv_view = CloneView(mv, Teuchos::Range1D(0, numColsA - 1));
 
                 *mv_view = A;
@@ -811,8 +815,8 @@ namespace Belos
                 os << mv << std::endl;
             }
 
-    }; // end of specialization
+    }; //! end of specialization
 
 
-} // end of Belos namespace
+} //! end of Belos namespace
 #endif
