@@ -39,6 +39,8 @@ Continuation(Model model, ParameterList pars)
     userDetect_            (pars->get("enable custom monitor", false)),
     tanScaling_            (pars->get("state tangent scaling", 1.0e0)),
     normalizeStrategy_     (pars->get("normalize strategy", 'N')),
+    
+    stabilityScheme_       (pars->get("compute stability", 'N')),
 
     rejectFailedNewton_    (pars->get("reject failed iteration", true)),
     giveUpAtdsMin_         (pars->get("give up at minimum step size", false)),
@@ -76,6 +78,7 @@ Continuation(Model model, ParameterList pars)
 
     INFO(std::endl << "Continuation parameter list: "
          << std::endl << *pars << std::endl);
+
 }
 
 //======================================================================

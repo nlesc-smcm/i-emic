@@ -72,7 +72,7 @@ SUBROUTINE forcing
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
            
-        else if (coupled_atm.eq.1) then ! coupled externally
+        else if (coupled_atm.eq.1) then ! coupled externallyx
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l)) &
                 +  Ooa * tatm(i,j)
@@ -116,7 +116,7 @@ SUBROUTINE forcing
 
   do j=1,m
      do i=1,n
-        ! nus*(E-P) without the sst dependency, which is taken care of in usrc.F90
+        ! nus*qdim*(E-P) without the sst dependency, which is taken care of in usrc.F90
         if (coupled_atm.eq.1) then
            Frc(find_row2(i,j,l,SS)) = gamma * nus * qdim * &
                 ( -eta * qatm(i,j) - pfield(i,j) )

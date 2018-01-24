@@ -1,11 +1,11 @@
 function [profile] = plot_profile(filename, range, start)
   % we assume that you are in a directory below the main
   % project directory, for instance proj_dir/rundir
-  system(['../scripts/gatherprofile.sh ' filename ' converted']);
+  system([getenv('SHARED_DIR'), '/i-emic/scripts/gatherprofile.sh ' filename ' converted']);
   profile = importdata('converted');
   N       = profile.data(1); % number of experiments
   M       = numel(profile.textdata);
-  cores   = 2.^(0:N-1);
+  cores   = 2.^(1:N);
   x_axis  = 1:N;
   x_axis  = cores;
 
