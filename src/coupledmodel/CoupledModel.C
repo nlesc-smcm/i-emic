@@ -14,6 +14,9 @@
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
+#include "JDQZInterface.H"
+#include "jdqz.H"
+
 //==================================================================
 // constructor
 CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
@@ -38,7 +41,8 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
     precScheme_       (params->get("Preconditioning", 'F')),
 
     syncCtr_          (0),
-    solverInitialized_(false)    
+    solverInitialized_(false),
+    jdqzInitialized_(true)    
 {
     // Let the sub-models know our continuation parameter
     ocean_->setParName(parName_);
@@ -347,6 +351,42 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
     }
 
     TIMER_STOP("CoupledModel: apply preconditioner...");
+}
+
+//------------------------------------------------------------------
+void CoupledModel::eigenSolve()
+{
+    if (!jdqzInitialized_)
+        initializeJDQZ();
+
+    jdqz_->solve();
+}
+
+//------------------------------------------------------------------
+void CoupledModel::initializeJDQZ()
+{
+    // Setup complex combined multivector
+    std::shared_ptr<Combined_MultiVec> re = getSolution('C');
+    std::shared_ptr<Combined_MultiVec> im = getSolution('C');
+
+    re->PutScalar(0.0);
+    im->PutScalar(0.0);
+
+    ComplexVector<Combined_MultiVec> z(*re, *im);
+
+    // Create JDQZ matrix interface for *this model
+    JDQZInterface<CoupledModel*,
+                  ComplexVector<Combined_MultiVec> > matrix(this, z);
+    
+    // Create parameter object for JDQZ
+    Teuchos::RCP<Teuchos::ParameterList> jdqzParams =
+        Teuchos::rcp(new Teuchos::ParameterList);
+    updateParametersFromXmlFile("jdqz_params.xml", jdqzParams.ptr());
+    jdqzParams->setName("JDQZ parameters");
+
+    // Create JDQZ solver (weak pointer)
+    jdqz_ = std::unique_ptr<JDQZsolver>(new JDQZsolver(matrix, z));
+    jdqz_->setParameters(*jdqzParams);
 }
 
 //------------------------------------------------------------------

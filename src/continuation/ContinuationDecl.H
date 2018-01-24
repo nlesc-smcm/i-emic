@@ -268,33 +268,28 @@ private:
     //! Modes: 'F' : force compute RHS
     //!        'A' : do not force compute RHS
     void computeDFDPar(char mode = 'A');
+    
     int  eulerPredictor();
     int  newtonCorrector();
+    
     int  runBackTracking(VectorPtr stateDir, double parDir);
 
     //! Detect special points.
     //! Modes: 'D' : converge on destination
     //!        'P' : converge on first sign switch in parDot (not impl yet)
     void detect(char mode = 'D');
+
     //! let model::monitor define stopping criterion
-    void userDetect(); 
+    void userDetect();
+    
     void adjustStep();
     void reset();
     void info();
     void modelInfo();
 
-    //! compute norm vector
-    double norm(VectorPtr const &vec) const;
-
-    //! print vector
-    void print(VectorPtr const &vec, std::string const &fname) const;
-
-    //! compute dot: result = (vec1,vec2)
-    //! does not support block result, returns only first double
-    double dot(VectorPtr const &vec1, VectorPtr const &vec2) const;
-
     //! write essential continuation data to datafile
     void writeData(bool describe = false);
+
 };
 
 #endif

@@ -40,7 +40,7 @@ TEST(ParameterLists, Initialization)
         updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
         continuationParams->setName("Continuation parameters");
 
-        // Create parameter object for Continuation
+        // Create parameter object for JDQZ
         jdqzParams = rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("jdqz_params.xml", jdqzParams.ptr());
         jdqzParams->setName("JDQZ parameters");
