@@ -22,6 +22,12 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         readP = false;
     end
     
+    if isfield(opts, 'readEV')
+        readEV = opts.readEV;
+    else
+        readEV = false;
+    end
+
     if isfield(opts, 'salflux')
         readSalFlux = opts.salflux;
     else
@@ -44,7 +50,19 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
     %------------------------------------------------------------------    
     % read state
     
-    sol = h5read(file, '/State/Values');
+    if readEV
+        kmax = 4 % hardcoded for now
+
+        if isfield(opts, 'eignum')
+            eign = opts.eignum;
+        else
+            eign = 0;
+        end
+
+        sol = h5read(file, ['/EV_Real_',num2str(eign),'/Values']);
+    else
+        sol = h5read(file, '/State/Values');
+    end
     
     if ~no_reshape
         dim = n*m*l*nun;

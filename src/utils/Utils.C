@@ -170,7 +170,6 @@ void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
 }
 
 //============================================================================
-// Not sure this is going to hold on Cartesius...
 void Utils::save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename)
 {
     std::ostringstream fname1, fname2;
@@ -179,6 +178,17 @@ void Utils::save(std::shared_ptr<Combined_MultiVec> vec, std::string const &file
 
     save( vec->First(),  fname1.str() );
     save( vec->Second(), fname2.str() );
+}
+
+//============================================================================
+void Utils::save(Combined_MultiVec const &vec, std::string const &filename)
+{
+    std::ostringstream fname1, fname2;
+    fname1 << filename << ".first";
+    fname2 << filename << ".second";
+
+    save( vec.First(),  fname1.str() );
+    save( vec.Second(), fname2.str() );
 }
 
 //=============================================================================

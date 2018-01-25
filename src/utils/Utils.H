@@ -153,6 +153,52 @@ namespace Utils
 
     //! Save a combined multivector to several hdf5 binaries
     void save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename);
+    void save(Combined_MultiVec const &vec, std::string const &filename);
+
+    //! Save eigenvectors
+    template <typename EigenSolver>
+    void saveEigenvectors(EigenSolver eigSolver, std::string const &filename)
+    {
+        auto eigvs = eigSolver->getEigenVectors();
+        auto alpha = eigSolver->getAlpha();
+        auto beta  = eigSolver->getBeta();
+
+        std::stringstream ss1, ss2, groupNameRe, groupNameIm;
+        ss1 << filename << ".first.h5";
+        ss2 << filename << ".second.h5";
+
+        // Two HDF5 objects for two destinations. We assume that the real
+        // and imaginary part have the same map.
+        EpetraExt::HDF5 HDF51(eigvs[0].real.First()->Map().Comm());
+        EpetraExt::HDF5 HDF52(eigvs[0].real.Second()->Map().Comm());
+
+        HDF51.Create(ss1.str().c_str());
+        HDF52.Create(ss2.str().c_str());
+    
+        size_t ctr = 0;
+        for (auto &vec: eigvs)
+        {
+            groupNameRe << "EV_Real_" << ctr;
+            groupNameIm << "EV_Imag_" << ctr;
+        
+            HDF51.Write(groupNameRe.str().c_str(),
+                        *vec.real.First()  );
+            HDF51.Write(groupNameIm.str().c_str(),
+                        *vec.imag.First()  );
+            HDF52.Write(groupNameRe.str().c_str(),
+                        *vec.real.Second() );
+            HDF52.Write(groupNameIm.str().c_str(),
+                        *vec.imag.Second() );
+
+            groupNameRe.str("");
+            groupNameRe.clear();
+            groupNameIm.str("");
+            groupNameIm.clear();
+
+            INFO("a / b = " << alpha[j] / beta[j]);
+            ctr++;
+        }        
+    }
 
     //------------------------------------------------------------------
     // Original Utils from Jonas

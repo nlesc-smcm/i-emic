@@ -1058,7 +1058,16 @@ eigenSolver()
     if (stabilityScheme_ != 'N')
     {
         if (eigenSolverSet_)
+        {
             jdqz_->solve();
+
+
+            // save eigenvectors
+            std::stringstream ss;
+            ss << "ev_step_" << step_;
+            
+            Utils::saveEigenvectors(jdqz_, ss.str());        
+        }
         else
         {
             WARNING("Eigen solver not set!", __FILE__, __LINE__);

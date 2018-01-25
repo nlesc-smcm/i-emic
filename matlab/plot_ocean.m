@@ -33,7 +33,11 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     else
         export_to_file = false;
     end
-    
+
+    if isfield(opts, 'readEV')
+        opts.everything = true;
+    end
+
     if isfield(opts, 'invert')
         invert = opts.invert
     else

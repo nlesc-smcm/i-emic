@@ -49,7 +49,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     
     // Create parameter object for Ocean
     RCP<Teuchos::ParameterList> oceanParams =
-        obtainParams("ocean_params", "Ocean parameters");
+        obtainParams("ocean_params.xml", "Ocean parameters");
 
     // Create parameter object for Atmosphere
     RCP<Teuchos::ParameterList> atmosphereParams =

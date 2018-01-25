@@ -314,6 +314,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         C12_.applyMatrix(*z.Second(), *tmp.First());   //  tmp1 = C12*x2
         tmp.First()->Update(1.0, *x.First(), -1.0);    //  tmp1 = x1 - C12*x2
         ocean_->applyPrecon(*tmp.First(), *z.First()); //  z1   = inv(M1)*tmp1
+
         if (precScheme_ == 'C')
         {
             C21_.applyMatrix(*z.First(), *tmp.Second());     // tmp2 = C21*x1

@@ -46,10 +46,7 @@ public:
 
     //! destructor
     ~ComplexVector()
-        {
-            INFO("ComplexVector destructor called...");
-            std::cout << "ComplexVector destructor called..." << std::endl;
-        }
+        {}
     
 		
 	//! assignment operator

@@ -179,7 +179,7 @@ Teuchos::RCP<Teuchos::ParameterList> obtainParams(std::string const &str,
     if (!file)
     {
         WARNING(str << ", " << name <<
-                " not found, continuing with defaults",
+                " not found, continuing with defaults at your own risk!",
                 __FILE__, __LINE__);
     }
     else
