@@ -24,10 +24,6 @@ int main(int argc, char **argv)
 
     runCoupledModel(Comm);
 
-    // print the profile
-    if (Comm->MyPID() == 0)
-        printProfile(profile);
-
     //--------------------------------------------------------
     // Finalize MPI
     //--------------------------------------------------------
@@ -108,6 +104,13 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 
     // Run continuation
     continuation.run();
+
+    // print the profile
+    if (Comm->MyPID() == 0)
+    {
+        printProfile(profile);
+        jdqz->printProfile("jdqz_profile");
+    }    
     
     TIMER_STOP("Total time...");
 }

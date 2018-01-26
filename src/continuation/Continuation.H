@@ -1046,8 +1046,7 @@ setEigenSolver(std::shared_ptr<JDQZsolver> jdqz)
     jdqz_ = jdqz;
     INFO("Continuation: set eigenvalue solver");
     eigenSolverSet_ = true;
-    jdqz_->printParameters();
-    
+    jdqz_->printParameters();    
 }
 
 //=====================================================================
