@@ -330,7 +330,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
     end
     
-    if ( isfield(opts, 'salflux') || isfield(opts, 'everything') ) ...
+    if ( isfield(opts, 'salflux') && isfield(opts, 'everything') ) ...
             && ~isempty(add)
         
         figure(7)
@@ -349,7 +349,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
     end
     
-    if ( isfield(opts, 'temflux') || isfield(opts, 'everything') ) ...
+    if ( isfield(opts, 'temflux') && isfield(opts, 'everything') ) ...
             && ~isempty(add)
         
         figure(8)

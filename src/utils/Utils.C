@@ -10,6 +10,7 @@
  **********************************************************************/
 #include "Utils.H"
 #include "Combined_MultiVec.H"
+#include "ComplexVector.H"
 #include "EpetraExt_MatrixMatrix.h"
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
@@ -190,6 +191,124 @@ void Utils::save(Combined_MultiVec const &vec, std::string const &filename)
     save( vec.First(),  fname1.str() );
     save( vec.Second(), fname2.str() );
 }
+
+//============================================================================
+// save eigenvectors based on combined_multivec
+void Utils::saveEigenvectors(std::vector<ComplexVector<Combined_MultiVec> > const &eigvs,
+                             std::vector<std::complex<double> > const &alpha,
+                             std::vector<std::complex<double> > const &beta,
+                             std::string const &filename)
+{        
+    std::stringstream ss1, ss2, groupNameRe, groupNameIm;
+    ss1 << filename << ".first.h5";
+    ss2 << filename << ".second.h5";
+
+    // Two HDF5 objects for two destinations. We assume that the real
+    // and imaginary part have the same map.
+    EpetraExt::HDF5 HDF51(eigvs[0].real.First()->Map().Comm());
+    EpetraExt::HDF5 HDF52(eigvs[0].real.Second()->Map().Comm());
+
+    HDF51.Create(ss1.str().c_str());
+    HDF52.Create(ss2.str().c_str());
+    
+    size_t ctr = 0;
+    for (auto &vec: eigvs)
+    {
+        groupNameRe << "EV_Real_" << ctr;
+        groupNameIm << "EV_Imag_" << ctr;
+        
+        HDF51.Write(groupNameRe.str().c_str(),
+                    *vec.real.First()  );
+        HDF51.Write(groupNameIm.str().c_str(),
+                    *vec.imag.First()  );
+        HDF52.Write(groupNameRe.str().c_str(),
+                    *vec.real.Second() );
+        HDF52.Write(groupNameIm.str().c_str(),
+                    *vec.imag.Second() );
+
+        groupNameRe.str("");
+        groupNameRe.clear();
+        groupNameIm.str("");
+        groupNameIm.clear();
+
+        INFO("a / b = " << alpha[ctr] / beta[ctr]);
+        ctr++;
+    }
+
+    saveEigenvalues(HDF51, alpha, beta, (int) eigvs.size());
+    saveEigenvalues(HDF52, alpha, beta, (int) eigvs.size());
+}
+
+//============================================================================
+// save eigenvectors based on epetra_vector
+void Utils::saveEigenvectors(std::vector<ComplexVector<Epetra_Vector> > const &eigvs,
+                             std::vector<std::complex<double> > const &alpha,
+                             std::vector<std::complex<double> > const &beta,
+                             std::string const &filename)
+{        
+    std::stringstream ss, groupNameRe, groupNameIm;
+    ss << filename << ".h5";
+
+    // We assume the imaginary and real part of the ComplexVector have the same Map
+    EpetraExt::HDF5 HDF5(eigvs[0].real.Map().Comm());
+
+    HDF5.Create(ss.str().c_str());
+    
+    size_t ctr = 0;
+    for (auto &vec: eigvs)
+    {
+        groupNameRe << "EV_Real_" << ctr;
+        groupNameIm << "EV_Imag_" << ctr;
+        
+        HDF5.Write(groupNameRe.str().c_str(),
+                    vec.real );
+        HDF5.Write(groupNameIm.str().c_str(),
+                    vec.imag );
+
+        groupNameRe.str("");
+        groupNameRe.clear();
+        groupNameIm.str("");
+        groupNameIm.clear();
+
+        INFO("a / b = " << alpha[ctr] / beta[ctr]);
+        ctr++;
+    }
+
+    saveEigenvalues(HDF5, alpha, beta, (int) eigvs.size());
+}
+
+//=============================================================================
+void Utils::saveEigenvalues(EpetraExt::HDF5 &HDF5,
+                            std::vector<std::complex<double> > const &alpha,
+                            std::vector<std::complex<double> > const &beta,
+                            int numEigs)
+{
+    std::stringstream nameRe, nameIm;
+    HDF5.Write("MetaData", "NumEigs", numEigs);
+
+    // Separate real and imaginary parts
+    std::vector<double> alphaRe(numEigs, 0.0);
+    std::vector<double> alphaIm(numEigs, 0.0);
+    std::vector<double> betaRe(numEigs, 0.0);
+    std::vector<double> betaIm(numEigs, 0.0);
+
+    for (int i = 0; i != numEigs; ++i)
+    {
+        alphaRe[i] = alpha[i].real();
+        alphaIm[i] = alpha[i].imag();
+        betaRe[i]  = beta[i].real();
+        betaIm[i]  = beta[i].imag();
+    }
+
+    
+    
+    HDF5.Write("EigenValues", "AlphaRe", H5T_NATIVE_DOUBLE, numEigs, &alphaRe[0]);
+    HDF5.Write("EigenValues", "AlphaIm", H5T_NATIVE_DOUBLE, numEigs, &alphaIm[0]);
+    HDF5.Write("EigenValues", "BetaRe",  H5T_NATIVE_DOUBLE, numEigs, &betaRe[0]);
+    HDF5.Write("EigenValues", "BetaIm",  H5T_NATIVE_DOUBLE, numEigs, &betaIm[0]);
+}
+
+
 
 //=============================================================================
 int Utils::SplitBox(int nx, int ny, int nz,

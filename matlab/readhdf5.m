@@ -45,22 +45,35 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
     else
         readPars = false;
     end
+
+    % initialize additional fields if requested
+    additional = [];
     
     %------------------------------------------------------------------
     %------------------------------------------------------------------    
     % read state
     
-    if readEV
-        kmax = 4 % hardcoded for now
+    if readEV % read eigenvector and values
+        kmax = h5read(file, '/MetaData/NumEigs');
 
-        if isfield(opts, 'eignum')
-            eign = opts.eignum;
+        if isfield(opts, 'evindex')
+            evindex = opts.evindex;
         else
-            eign = 0;
+            evindex = 0;
         end
 
-        sol = h5read(file, ['/EV_Real_',num2str(eign),'/Values']);
-    else
+        sol = h5read(file, ['/EV_Real_',num2str(evindex),['/' ...
+                            'Values']]);
+
+        alphaRe = h5read(file, '/EigenValues/AlphaRe');
+        alphaIm = h5read(file, '/EigenValues/AlphaIm');
+        betaRe  = h5read(file, '/EigenValues/BetaRe' );
+        betaIm  = h5read(file, '/EigenValues/BetaIm' );
+
+        additional.alpha = alphaRe + alphaIm*1i;
+        additional.beta  = betaRe + betaIm*1i;
+        
+    else % read normal state
         sol = h5read(file, '/State/Values');
     end
     
@@ -85,8 +98,6 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
        
     end
     
-    % read additional fields if requested
-    additional = [];
     if readE
         additional.E = h5read(file, '/E/Values');
     end
