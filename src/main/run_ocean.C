@@ -8,8 +8,11 @@
 using Teuchos::RCP;
 using Teuchos::rcp;
 
+using JDQZsolver = JDQZ<JDQZInterface<Teuchos::RCP<Ocean>, 
+                                      ComplexVector<Epetra_Vector> > >;
+
 //------------------------------------------------------------------
-void run(RCP<Epetra_Comm> Comm);
+void runOceanModel(RCP<Epetra_Comm> Comm);
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)
@@ -21,11 +24,7 @@ int main(int argc, char **argv)
 	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
 	// run the ocean model
-	run(Comm);
-
-	// print the profile
-	if (Comm->MyPID() == 0)
-		printProfile(profile);
+	runOceanModel(Comm);
 	
     //--------------------------------------------------------
 	// Finalize MPI
@@ -34,7 +33,7 @@ int main(int argc, char **argv)
 }
 
 //------------------------------------------------------------------
-void run(RCP<Epetra_Comm> Comm)
+void runOceanModel(RCP<Epetra_Comm> Comm)
 {
 	TIMER_START("Total time...");
 
@@ -53,8 +52,11 @@ void run(RCP<Epetra_Comm> Comm)
 	updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
     continuationParams->setName("Continuation parameters");
 
+    // Create parameter object for JDQZ
+    RCP<Teuchos::ParameterList> jdqzParams =
+        obtainParams("jdqz_params.xml", "JDQZ parameters"); 
+
     // Let the continuation parameters dominate over ocean parameters
-    INFO("Overwriting:");
     Utils::overwriteParameters(oceanParams, continuationParams);
 
 	// Create parallelized Ocean object
@@ -62,14 +64,34 @@ void run(RCP<Epetra_Comm> Comm)
 	
 	// Create continuation
 	Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-		continuation(ocean, continuationParams);
-	
-	// Run continuation
-	continuation.run();
+		continuation(ocean, continuationParams);	
 
-	// Calculate eigenvalues and eigenvectors
-	// JDQZMAT<Ocean> matrix;
-	// JDQZ<JDQZMAT<Ocean> > jdqz(matrix);
+    // Create JDQZ generalized eigenvalue solver:
+    // 1) Create a vector with complex arithmetic based on an Epetra_Vector
+    Epetra_Vector t = *ocean->getSolution('C');
+    t.PutScalar(0.0);
+    ComplexVector<Epetra_Vector> z(t);
+
+    // 2) Create JDQZ (mass) matrix and preconditioning interface
+    JDQZInterface<Teuchos::RCP<Ocean>,
+                  ComplexVector<Epetra_Vector> > matrix(ocean, z);
+
+    // 3) Create JDQZ solver
+    std::shared_ptr<JDQZsolver> jdqz = std::make_shared<JDQZsolver>(matrix, z);
+    jdqz->setParameters(*jdqzParams);
+
+    // Couple JDQZ to continuation
+    continuation.setEigenSolver(jdqz);
+
+    // Run continuation
+	continuation.run();
+    
+    // print the profile
+    if (Comm->MyPID() == 0)
+    {
+        printProfile(profile);
+        jdqz->printProfile("jdqz_profile");
+    }
 
 	//------------------------------------------------------------------
 	TIMER_STOP("Total time...");		
