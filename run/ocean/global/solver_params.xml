@@ -1,0 +1,10 @@
+<!-- LINEAR SOLVER PARAMETERS -->
+<ParameterList name="solver">
+  
+  <!-- ..................................................................-->
+  <!-- FGMRES (Belos) parameters                                         -->  
+  <!-- ..................................................................-->
+  <Parameter name="FGMRES tolerance" type="double" value="1e-3"/>
+  <Parameter name="FGMRES iterations" type="int" value="500"/>
+
+</ParameterList>
