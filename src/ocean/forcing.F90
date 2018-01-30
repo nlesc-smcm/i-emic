@@ -341,7 +341,7 @@ end subroutine windfit_monthly
 SUBROUTINE read_spertm
   use m_global
   implicit none
-  integer, dimension(n+2,m+2) :: dum
+  integer dum(0:n+1,0:m+1)
   integer i, j
   integer status
 
@@ -351,16 +351,23 @@ SUBROUTINE read_spertm
 10 continue
   close(42)
 
-  open(unit=50,file=rundir//'mkmask/'//trim(spertmaskfile),status='old',err=995)
-  do j = m+1, 0, -1
-     read(50,'(98(i1,x))') (dum(i,j),i=0,n+1)
-  enddo
-  close(50)
+  write(*,*) '===========SalinityPert============================================'
+  write(*,*) 'Salinity pert. mask is read in from file mkmask/'//trim(spertmaskfile)
+  write(*,*) '===========SalinityPert============================================'
 
-  do j=1,m
+
+  open(unit=50,file=topdir//'mkmask/'//trim(spertmaskfile),status='old',err=995)
+  do j = m+1, 0, -1
+     read(50,'(362i1)') (dum(i,j),i=0,n+1)
+  enddo
+  
+  close(50)
+  
+  do j=m,1,-1
      do i = 1,n
         spert(i,j) = real(1-dum(i,j))
      enddo
+     write(*,'(100i1)') (1-dum(i,j), i=1,n)
   enddo
 
   return
