@@ -134,7 +134,10 @@ protected:
     bool saveTemperatureFlux_;
 
     //! Enable saving every state in multiple formats
-    bool storeEverything_;
+    bool saveEveryStep_;
+
+    //! Use legacy fortran output fort.3
+    bool useFort3_;
 
     //! Continuation parameter name.
     //! For a list of possible names see THCM::par2int()
@@ -329,8 +332,7 @@ public:
 
     void setParameters(Teuchos::RCP<Teuchos::ParameterList> pars);
 
-    void copyFiles();
-    void copyFiles(std::string const &fname);
+    void copyFiles(std::string const &fname = "");
     void copyMask(std::string const &fname);
 
     void dumpBlocks()

@@ -45,6 +45,10 @@
       call write_geometry(44)
       close(44)
 
+      if (ofile.eq.0) then
+         return
+      endif
+
       u   = uloca(1:ndim)
       up  = 0
       w   = 0

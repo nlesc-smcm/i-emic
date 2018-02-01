@@ -17,7 +17,7 @@
   <!-- Starting mask -->
   <Parameter name="Starting mask" type="int" value="0" />
 
-  <Parameter name="Store everything" type="bool" value="false" />
+  <Parameter name="Save every step" type="bool" value="false" />
 
   <!-- M : no preconditioning   -->
   <Parameter name="Preconditioning type" type="char" value="M" />

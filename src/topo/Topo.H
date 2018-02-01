@@ -30,7 +30,7 @@ Topo(Model model, ParameterList pars)
     deltaInit_           (pars->get("Delta", 0.0)),
     startMask_           (pars->get("Starting mask", 0)),
     stopTol_             (pars->get("Stopping tolerance homotopy", 5.0)),
-    storeEverything_     (pars->get("Store everything", false)),
+    saveEveryStep_       (pars->get("Save every step", false)),
     solverInitialized_   (false),
     usePredictor_        (pars->get("Use predictor", true)),
     useCorrector_        (pars->get("Use corrector", true)),
@@ -726,7 +726,7 @@ void Topo<Model, ParameterList>::postProcess()
         model_->setLandMask(landMasks_[k_+r], true);
         model_->postProcess();
 
-        if (storeEverything_)
+        if (saveEveryStep_)
         {
             std::stringstream fname1, fname2;
             fname1 << "state_topo_" << std::setprecision(12)

@@ -134,7 +134,7 @@ private:
 	double stopTol_;
 
 	//! If every converged state deserves to be stored, enable this
-	bool storeEverything_;
+	bool saveEveryStep_;
 
 	//! Solver parameterlist
 	ParameterList solverParams_, belosParamList_;

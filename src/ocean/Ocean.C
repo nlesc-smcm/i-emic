@@ -62,8 +62,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     saveSalinityFlux_    (oceanParamList->get("Save salinity flux", true)),
     loadTemperatureFlux_ (oceanParamList->get("Load temperature flux", false)),
     saveTemperatureFlux_ (oceanParamList->get("Save temperature flux", true)),
-
-    storeEverything_     (oceanParamList->get("Store everything", false)),
+    
+    saveEveryStep_       (oceanParamList->get("Save every step", false)),
+    useFort3_            (oceanParamList->get("Use legacy fortran output", false)),
 
     parName_             (oceanParamList->get("Continuation parameter",
                                               "Combined Forcing")),
@@ -571,7 +572,7 @@ void Ocean::preProcess()
     INFO("                      enabling computation of preconditioner.");
     INFO("                      enabling computation of mass matrix.");
 
-    // Output datafiles (fort.3 fort.44)
+    // Output datafiles (hdf5, fort.44)
     printFiles(); // not sure if this is not too much...
 
 }
@@ -584,7 +585,7 @@ void Ocean::postProcess()
 
     printFiles(); // Print in standard fortran format
 
-    if (storeEverything_)
+    if (saveEveryStep_)
         copyFiles(); // Copy fortran and hdf5 files
 }
 
@@ -1253,21 +1254,38 @@ Teuchos::RCP<Epetra_Vector> Ocean::interfaceT()
 //=====================================================================
 void Ocean::printFiles()
 {
-    Teuchos::RCP<Epetra_MultiVector> solution = Utils::Gather(*state_, 0);
-    Teuchos::RCP<Epetra_MultiVector> rhs      = Utils::Gather(*rhs_, 0);
-    int filename = 3;
-    int label    = 2;
-    int length   = solution->GlobalLength();
+    // dummy set up, exit write function after creating fort.44
+    int filename = 0;
+    int label    = 0;
+    int length   = 1;
+    
+    Teuchos::RCP<Epetra_MultiVector> solution;
+    Teuchos::RCP<Epetra_MultiVector> rhs;
+    
+    if (useFort3_)
+    {
+        solution = Utils::Gather(*state_, 0);
+        rhs      = Utils::Gather(*rhs_, 0);
+
+        filename = 3;
+        label    = 2;
+        length   = solution->GlobalLength();
+    }
+
     double *solutionArray = new double[length];
     double *rhsArray = new double[length];
+
     if (comm_->MyPID() == 0)
     {
         INFO( "Writing to fort." << filename
               << " at label " << label);
 
-        (*solution)(0)->ExtractCopy(solutionArray);
-        (*rhs)(0)->ExtractCopy(rhsArray);
-
+        if (useFort3_)
+        {
+            (*solution)(0)->ExtractCopy(solutionArray);
+            (*rhs)(0)->ExtractCopy(rhsArray);
+        }
+        
         FNAME(write_data)(solutionArray, &filename, &label);
     }
 
@@ -1276,51 +1294,28 @@ void Ocean::printFiles()
 }
 
 //=====================================================================
-void Ocean::copyFiles()
-{
-    if (comm_->MyPID() == 0)
-    {
-        // Copy fort.3
-        std::stringstream ss;
-        ss << "ocean_state_par" << std::setprecision(4) << std::setfill('_')
-           << std::setw(2) << THCM::Instance().par2int(parName_) << "_"
-           << std::setw(6) << getPar(parName_);
-
-        INFO("copying fort.3 to " << ss.str());
-        std::ifstream src1("fort.3", std::ios::binary);
-        std::ofstream dst1(ss.str(), std::ios::binary);
-        dst1 << src1.rdbuf();
-
-        if (saveState_) // Copy hdf5
-        {
-            ss << ".h5";
-            INFO("copying " << outputFile_ << " to " << ss.str());
-            std::ifstream src2(outputFile_.c_str(), std::ios::binary);
-            std::ofstream dst2(ss.str(), std::ios::binary);
-            dst2 << src2.rdbuf();
-        }
-    }
-}
-
-//=====================================================================
 void Ocean::copyFiles(std::string const &filename)
 {
-    if (comm_->MyPID() == 0)
+    if ( (comm_->MyPID() == 0) && saveState_)
     {
-        INFO("copying fort.3 to " << filename);
-        std::ifstream src1("fort.3", std::ios::binary);
-        std::ofstream dst1(filename.c_str(), std::ios::binary);
-        dst1 << src1.rdbuf();
-
-        if (saveState_) // Copy hdf5
+        std::stringstream ss;
+        if (filename.length() == 0)
         {
-            std::string fnameCpy(filename);
-            fnameCpy.append(".h5");
-            INFO("copying " << outputFile_ << " to " << fnameCpy);
-            std::ifstream src2(outputFile_.c_str(), std::ios::binary);
-            std::ofstream dst2(fnameCpy.c_str(), std::ios::binary);
-            dst2 << src2.rdbuf();
+            ss << "ocean_state_par" << std::setprecision(4) << std::setfill('_')
+               << std::setw(2) << THCM::Instance().par2int(parName_) << "_"
+               << std::setw(6) << getPar(parName_);
+
         }
+        else
+        {
+            ss << filename;
+        }
+        
+        ss << ".h5";
+        INFO("copying " << outputFile_ << " to " << ss.str());
+        std::ifstream src2(outputFile_.c_str(), std::ios::binary);
+        std::ofstream dst2(ss.str(), std::ios::binary);
+        dst2 << src2.rdbuf();
     }
 }
 
