@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=10:00:00
-#SBATCH --ntasks=64
+#SBATCH --ntasks=256
 
 cd ${HOME}/Projects/i-emic/run/present/coupled/
 
@@ -15,15 +15,21 @@ echo writing to $fname
 procs=1
 echo "Profile on:" ${PLAT} " in:" ${PWD} > $fname
 
-# 1,2,4,8,16,32,64 procs
-for i in {3..7}
+# 1,2,4,8,16,32,64,128,256 procs
+for i in {1..9}
 do
     echo "----------------------------------------------------------\
 ----------------------------------" >> $fname
+    echo "----------------------------------------------------------\
+----------------------------------" 
+        
+    echo "date:  " $date >> $fname
+    echo "date:  " $date 
     echo "Run:   " $i >> $fname
     echo "Run:   " $i 
     echo "#Procs:" $procs >> $fname
-    echo "#Procs:" $procs 
+    echo "#Procs:" $procs
+
     
     # backup old data
     cat profile_output > $fnameprev
