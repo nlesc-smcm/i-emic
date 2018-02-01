@@ -322,6 +322,15 @@ createInitialTangent()
     // normalized.
     normalize();
 
+    // Test the matrix and rhs
+
+    VectorPtr tmp = model_->getSolution('C');
+    tmp->Scale(0.0);
+    model_->applyMatrix(*rhsView_, *tmp);
+
+
+    INFO("                   ||rhs|| = " << Utils::norm(rhsView_));
+    INFO("                   ||J*F|| = " << Utils::norm(tmp));
     INFO("                 ||state|| = " << Utils::norm(stateView_));
     INFO("              ||stateDot|| = " << Utils::norm(stateDot_));
     INFO("                  parDot   = " << parDot_);
