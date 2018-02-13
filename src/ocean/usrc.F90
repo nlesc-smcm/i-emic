@@ -175,17 +175,18 @@ SUBROUTINE getparcs(param,value)
 end subroutine getparcs
 
 !***********************************************************
-SUBROUTINE getdeps(o_Ooa, o_Os, o_gamma, o_eta)
+SUBROUTINE getdeps(o_Ooa, o_Os, o_gamma, o_eta, o_lvscq)
   !     interface to get Ooa and other dependencies on external model
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_atm
   implicit none
-  real(c_double) o_Ooa, o_Os, o_gamma, o_eta
+  real(c_double) o_Ooa, o_Os, o_gamma, o_eta, o_lvscq
   o_Ooa   = Ooa
   o_Os    = Os
   o_gamma = par(COMB) * par(SALT) * nus * qdim
   o_eta   = eta
+  o_lvscq = lvsc * qdim
 end subroutine getdeps
 
 !**********************************************************
@@ -616,10 +617,15 @@ SUBROUTINE lin
   call tderiv(5,tzz)
   call tderiv(7,tcb)
 
+  ! dependence of TT on TT through latent heat due to evaporation
+    dedt = lvsc * qdim * & 
+         eta * (deltat / qdim) * dqso
+
   if (la > 0) then ! deprecated local atmosphere
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
   else if (coupled_atm.eq.1) then ! coupled with external atmos
-     Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
+     Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + &
+          Ooa*tc + dedt*sc
   else
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
   endif
@@ -627,6 +633,7 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! S-equation
   ! ------------------------------------------------------------------
+  ! dependence of SS on TT through evaporation
   dedt = par(COMB) * par(SALT) * nus * qdim * &
        eta * (deltat / qdim) * dqso
   
@@ -1048,7 +1055,7 @@ SUBROUTINE stpnt!(un)
   par(SUNP)   =  0.0
   par(PE_H)   =  kappah/(udim*r0dim)            ! P_H0
   par(PE_V)   =  kappav*r0dim/(udim*hdim*hdim)  ! P_V0
-  par(P_VC)   =  2.5e+04*par(PE_V)   ! 5.0      ! P_VC
+  par(P_VC)   =  2.5e+04*par(PE_V)   ! 5.0  ! P_VC
   par(LAMB)   =  alphaS/alphaT     ! lambda
   par(SALT)   =  0.0               ! gamma
   par(WIND)   =  0.0               ! wind h
@@ -1087,7 +1094,8 @@ SUBROUTINE atmos_coef
   As   = sun0*(1 - c0)/(4*muoa)
   Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
   Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
-  nus  = ( s0 * hdim ) / ( deltas * hdim*dzne)
+  nus  = s0 * hdim  / ( deltas * hdim*dzne) ! without qdim!
+  lvsc = lv * r0dim / ( cp0 * hdim *dzne )  ! without qdim!
   DO j = 1,m
      !       albe(j) = 0.15 + 0.05 * cos (y(j))
      albe(j) = 0.3
@@ -1104,7 +1112,8 @@ SUBROUTINE atmos_coef
   write(8, *) suno
   close(8)
   
-  write(*,*) 'OA pars:     dzne=', dzne, ' nus=', nus
+  write(*,*) 'Ocean-Atmosohere pars:     dzne=', dzne,' hdim=', hdim
+  write(*,*) '                            nus=', nus, ' lvsc=', lvsc 
     
 
 END SUBROUTINE atmos_coef

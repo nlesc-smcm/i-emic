@@ -687,7 +687,7 @@
       </ParameterList><!--}-->
 
       <Parameter name="smoother: ifpack overlap" type="int" value="0"/>
-      <Parameter name="smoother: ifpack type" type="string" value="MRILU"/>
+      <Parameter name="smoother: ifpack type" type="string" value="ILU"/>
       <!--Parameter name="smoother: ifpack type" type="string"
           value="block relaxation (Amesos)"/-->
 

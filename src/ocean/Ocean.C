@@ -38,7 +38,7 @@ using Teuchos::rcp;
 extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
 extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(setparcs)(int*,double*);
-extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double*);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double*, double *);
 extern "C" _SUBROUTINE_(get_constants)(double*, double*, double*);
 extern "C" _SUBROUTINE_(set_ep_constants)(double*, double*, double*, double*);
 
@@ -1176,11 +1176,11 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
 
 
     // this block has values -Ooa on the surface temperature points
-    double Ooa, Os, gamma, eta;
-    FNAME(getdeps)(&Ooa, &Os, &gamma, &eta);
+    double Ooa, Os, gamma, eta, lvscq;
+    FNAME(getdeps)(&Ooa, &Os, &gamma, &eta, &lvscq);
 
     INFO("Ocean: getBlock() atmos specialization: Ooa = " << Ooa
-         << ", gamma = " << gamma << ", eta = " << eta);
+         << ", gamma = " << gamma << ", eta = " << eta << ", lvscq = " << lvscq);
 
     int T = 1; // (1-based) in the Atmosphere, temperature is the first unknown
     int Q = 2; // (1-based) in the Atmosphere, humidity is the second unknown
@@ -1201,8 +1201,14 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                     {
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
+                            // tatm dependency
                             block->co.push_back(-Ooa);
                             block->jco.push_back(atmos->interface_row(i,j,T) );
+                            el_ctr++;
+
+                            // qatm dependency
+                            block->co.push_back(-lvscq*eta);
+                            block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
                         }
                     }

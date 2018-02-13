@@ -118,7 +118,7 @@ module m_usr
   real, parameter :: r0dim    = 6.37e+06
   real, parameter :: udim     = 0.1e+00
   real, parameter :: gdim     = 9.8e+00
-  real, parameter :: rhodim   = 1.0e+03
+  real, parameter :: rhodim   = 1.024e+03
   real, parameter :: t0       = 15
 
   !--> perhaps better scaling in THCM if this would actually be used...
@@ -180,7 +180,7 @@ contains
     l=dim_l
     ndim = m*n*(l+la)*nun
 
-    allocate(x(n),y(m),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l),&
+    allocate(x(n),y(0:m+1),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l),&
          dfzT(l),dfzW(0:l))
 
     allocate(kapv(0:l),kaph(l),emix(n,m,0:l))

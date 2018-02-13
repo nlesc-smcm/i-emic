@@ -300,7 +300,7 @@ TEST(CoupledModel, numericalJacobian)
 
 //------------------------------------------------------------------
 // We need this information from THCM
-extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double*);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double*, double*);
 
 TEST(CoupledModel, applyMatrix)
 {
@@ -346,8 +346,8 @@ TEST(CoupledModel, applyMatrix)
             C12.applyMatrix(*atmosVec, *oceanVec);
 
             // Get ocean parameters
-            double Ooa, Os, gamma, eta;
-            FNAME(getdeps)(&Ooa, &Os, &gamma, &eta);
+            double Ooa, Os, gamma, eta, lvscq;
+            FNAME(getdeps)(&Ooa, &Os, &gamma, &eta, &lvscq);
 
             // Test first surface element (temperature)
             int ii = 0;
@@ -372,7 +372,7 @@ TEST(CoupledModel, applyMatrix)
                 {
                     lid = oceanVec->Map().LID(surfbT);
                     surfval = (*oceanVec)[0][lid];
-                    EXPECT_NEAR(-Ooa * value[v], surfval , 1e-7);
+                    EXPECT_NEAR(-(Ooa + lvscq * eta) * value[v], surfval , 1e-7);
                 }
 
                 // Test first surface element (salinity)

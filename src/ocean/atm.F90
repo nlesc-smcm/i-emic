@@ -15,8 +15,9 @@ module m_atm
       real, parameter ::   arad = 216.0      ! radiative flux param A
       real, parameter ::   brad = 1.5        ! radiative flux param B
       real, parameter ::   sun0 = 1360.      ! solar constant \[\Sigma_0\]
+      real, parameter ::     lv = 2.5e+06    ! latent heat of vaporization \[L_v\]
       
-      real    qdim, nuq, nus, eta, dqso
+      real    qdim, nuq, nus, eta, dqso, lvsc
       
       real    Ai, Ad, As, Aa, Os, Aoa, Ooa, amua, bmua
       real, allocatable, dimension(:) ::    dat, davt, albe, suna, suno,upa

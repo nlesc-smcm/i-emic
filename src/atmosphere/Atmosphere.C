@@ -13,7 +13,7 @@
 #include "THCMdefs.H"
 #include "Utils.H"
 
-extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double *);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double *, double *);
 
 //==================================================================
 // Constructor for use with parallel atmosphere
@@ -259,8 +259,8 @@ void Atmosphere::setup()
     }
 
     // Get ocean parameters
-    double tmp1, tmp2;
-    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2);
+    double tmp1, tmp2, tmp3;
+    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2, &tmp3);
 
     // Fill y and latitude-based arrays
     yv_.reserve(m_+1);
@@ -605,9 +605,9 @@ double Atmosphere::matvec(int row)
 //-----------------------------------------------------------------------------
 void Atmosphere::forcing()
 {
-    double value, tmp1, tmp2;
+    double value, tmp1, tmp2, tmp3;
     int temRow, humRow, surfaceRow;
-    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2);
+    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2, &tmp3);
     if (std::abs(Ooa_) < 1e-8)
         WARNING(" Ooa_ mat give trouble", __FILE__, __LINE__);
     

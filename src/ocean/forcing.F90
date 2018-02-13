@@ -72,10 +72,10 @@ SUBROUTINE forcing
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
            
-        else if (coupled_atm.eq.1) then ! coupled externallyx
+        else if (coupled_atm.eq.1) then ! coupled externally
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l)) &
-                +  Ooa * tatm(i,j)
+                +  Ooa * tatm(i,j) + lvsc * qdim * eta * qatm(i,j)
 
         else  ! ocean-only
            Frc(find_row2(i,j,l,TT)) = etabi * ( tatm(i,j) - temcor )
