@@ -435,6 +435,9 @@ private:
     //! periodic domain in x-direction?
     bool periodic;
 
+    //! compute salinity integral
+    bool comp_sal_int;
+
     //! inhomogeneous mixing?
     int ih;
 

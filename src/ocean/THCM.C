@@ -195,6 +195,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     bool   flat    = paramList.get("Flat Bottom", false);
     bool   rd_mask = paramList.get("Read Land Mask", false); //== false in experiment0
 
+    comp_sal_int = paramList.get("Compute salinity integral", true);
+
     if (rd_mask)
     {
         // we put the name of the desired mask in a file so it can be
@@ -595,47 +597,38 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // Initialize integral condition row, correction and coefficients
     rowintcon_     = -1;
     intCorrection_ = 0.0;
-#ifndef NO_INTCOND
-    if (sres == 0) 
-    {
-        int N=domain->GlobalN();
-        int M=domain->GlobalM();
-        int L=domain->GlobalL();
 
-        rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
-        INFO("THCM: integral condition for S is in global row " << rowintcon_);
+    // Obtain integral condition coefficients
+    int N=domain->GlobalN();
+    int M=domain->GlobalM();
+    int L=domain->GlobalL();
+
+    rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
+    INFO("THCM: integral condition for S is in global row " << rowintcon_);
             
         
-        intcond_coeff = Teuchos::rcp(new Epetra_Vector(*SolveMap));
-        intcond_coeff->PutScalar(0.0);
-        Teuchos::RCP<Epetra_Vector> intcond_tmp = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
-        int nml = (domain->LocalN())*(domain->LocalM())*(domain->LocalL());
+    intcond_coeff = Teuchos::rcp(new Epetra_Vector(*SolveMap));
+    intcond_coeff->PutScalar(0.0);
+    Teuchos::RCP<Epetra_Vector> intcond_tmp = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+    int nml = (domain->LocalN())*(domain->LocalM())*(domain->LocalL());
 
-        double *values = new double[nml];
-        int *indices   = new int[nml];
-        int len;
-        F90NAME(m_thcm_utils, intcond_scaling)(values, indices, &len);
+    double *values = new double[nml];
+    int *indices   = new int[nml];
+    int len;
+    F90NAME(m_thcm_utils, intcond_scaling)(values, indices, &len);
 
-        for (int i=0;i<len;i++)
-        {
-            (*intcond_tmp)[indices[i]-1] = values[i];
-        }
-        
-        delete [] values;
-        delete [] indices;
-        
-        domain->Assembly2Solve(*intcond_tmp,*intcond_coeff);
-
-        intcond_coeff->Norm1(&totalVolume_);
-
-#ifdef DEBUGGING_NEW
-        std::ofstream ofs("intcond.txt");
-        ofs << *intcond_coeff;
-        ofs.close();        
-#endif
-        
+    for (int i=0;i<len;i++)
+    {
+        (*intcond_tmp)[indices[i]-1] = values[i];
     }
-#endif
+        
+    delete [] values;
+    delete [] indices;
+        
+    domain->Assembly2Solve(*intcond_tmp,*intcond_coeff);
+
+    intcond_coeff->Norm1(&totalVolume_);
+
     
     // create a graph describing the maximal matrix pattern.
     // Note that in LOCA we can't change the pattern of the matrix
@@ -740,31 +733,21 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                     Teuchos::RCP<Epetra_Vector> tmp_rhs,
                     bool computeJac)
 {
-
-#if defined(DEBUGGING_NEW) && !defined(NO_INTCOND)
-    if (sres == 0)
+    if (comp_sal_int)
     {
         double intcond;
         CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
         intcond -= intCorrection_; // apply correction
-        /*
-          double dx = (xmax-xmin)/domain->GlobalN();
-          double dy = (ymax-ymin)/domain->GlobalM();
-          double dz = 1.0/domain->GlobalL();
-          intcond = intcond*dx*dy*dz;
-        */
 
-        if (std::abs(intcond) > 1e-4)
-        {
-            INFO("Salinity integral condition (should be 0): " << intcond);
-        }
+        INFO("Salinity integral condition: " << intcond);
+
     }
-#endif
-
+    
     if (!(soln.Map().SameAs(*SolveMap)))
     {
         ERROR("Map of solution vector not same as solve-map ",__FILE__,__LINE__);
     }
+
 
     // convert to standard distribution and
     // import values from ghost-nodes on neighbouring subdomains:

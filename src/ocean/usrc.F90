@@ -18,7 +18,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   implicit none
 
   integer(c_int) :: a_n,a_m,a_l,a_nmlglob
-  real(c_double)    :: a_xmin,a_xmax,a_ymin,a_ymax
+  real(c_double) :: a_xmin,a_xmax,a_ymin,a_ymax
   integer(c_int) :: a_periodic
   integer(c_int), dimension((a_n+2)*(a_m+2)*(a_l+2)) :: a_landm
   real(c_double), dimension(a_n*a_m) :: a_taux,a_tauy
@@ -34,6 +34,13 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   xmax    = a_xmax
   ymin    = a_ymin
   ymax    = a_ymax
+
+  !initialize atmos coefficients
+  qdim = 0.01
+  nuq  = 0.0
+  eta  = 0.0
+  dqso = 0.0
+
 
   if (a_periodic.eq.0) then
      periodic  =  .false.
@@ -423,6 +430,7 @@ SUBROUTINE rhs(un,B)
   coA  = 0
   jcoA = 0
   call lin              !
+  write(*,*) 'T(n,m,l)', un(find_row2(n,m,l,TT))
 #ifndef THCM_LINEAR
   call nlin_rhs(un)
 #endif
@@ -618,8 +626,10 @@ SUBROUTINE lin
   call tderiv(7,tcb)
 
   ! dependence of TT on TT through latent heat due to evaporation
-    dedt = lvsc * qdim * & 
-         eta * (deltat / qdim) * dqso
+  dedt = par(COMB) * par(TEMP) * lvsc * qdim * & 
+       eta * (deltat / qdim) * dqso
+
+  write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
 
   if (la > 0) then ! deprecated local atmosphere
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
@@ -1095,7 +1105,7 @@ SUBROUTINE atmos_coef
   Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
   Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
   nus  = s0 * hdim  / ( deltas * hdim*dzne) ! without qdim!
-  lvsc = lv * r0dim / ( cp0 * hdim *dzne )  ! without qdim!
+  lvsc = lv * r0dim / ( cp0 * hdim*dzne )  ! without qdim!
   DO j = 1,m
      !       albe(j) = 0.15 + 0.05 * cos (y(j))
      albe(j) = 0.3
@@ -1112,8 +1122,9 @@ SUBROUTINE atmos_coef
   write(8, *) suno
   close(8)
   
-  write(*,*) 'Ocean-Atmosohere pars:     dzne=', dzne,' hdim=', hdim
-  write(*,*) '                            nus=', nus, ' lvsc=', lvsc 
+  write(*,*) 'Ocean-Atmosphere pars:     dzne=', dzne,' hdim=', hdim
+  write(*,*) '                            nus=', nus, ' lvsc=', lvsc
+  write(*,*) '                            Ooa=', Ooa
     
 
 END SUBROUTINE atmos_coef

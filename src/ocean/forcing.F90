@@ -74,14 +74,19 @@ SUBROUTINE forcing
            
         else if (coupled_atm.eq.1) then ! coupled externally
            Frc(find_row2(i,j,l,TT)) = &
-                par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l)) &
-                +  Ooa * tatm(i,j) + lvsc * qdim * eta * qatm(i,j)
+                ( par(COMB) * par(SUNP) * suno(j)  &
+                +  Ooa * tatm(i,j) &
+                +  par(COMB) * par(TEMP) * lvsc * qdim * eta * qatm(i,j) ) &
+                * (1 - landm(i,j,l))
 
         else  ! ocean-only
            Frc(find_row2(i,j,l,TT)) = etabi * ( tatm(i,j) - temcor )
         endif
      enddo
   enddo
+
+  write(*,*) ' tatm(n/2,m/2)=', tatm(n/2,m/2), &
+       ' qatm(n/2,m/2)=',  qatm(n/2,m/2)
 
   ! ------------------------------------------------------------------
   ! Determine salinity forcing
@@ -119,7 +124,8 @@ SUBROUTINE forcing
         ! nus*qdim*(E-P) without the sst dependency, which is taken care of in usrc.F90
         if (coupled_atm.eq.1) then
            Frc(find_row2(i,j,l,SS)) = gamma * nus * qdim * &
-                ( -eta * qatm(i,j) - pfield(i,j) )
+                ( -eta * qatm(i,j) - pfield(i,j) ) &
+                * (1 - landm(i,j,l))
         else
            Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &
                 gamma * par(HMTP) * ( adapted_emip(i,j) - adapted_salcor ) + &
