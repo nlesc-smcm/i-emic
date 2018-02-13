@@ -145,6 +145,7 @@ class Atmosphere
     double   tdim_; //! temperature scale (not used)
     double     q0_; //! reference humidity (kg / kg)
     double   qdim_; //! humidity scale (kg / kg)
+    double     lv_; //! latent heat of vaporization (J / kg)
 
     // Necessary for nondimensionalizations:
     double   udim_;  //! typical horizontal velocity of the ocean
@@ -156,6 +157,8 @@ class Atmosphere
 
     double dqso_;    //! derivative sat. humidity w.r.t. T, at t0o (ocean).
     double dqsi_;    //! derivative sat. humidity w.r.t. T, at t0i (ice).
+
+    double lvscale_; //! latent heat due to P coeff
 
     //! Evaporation field
     std::shared_ptr<std::vector<double> > E_;

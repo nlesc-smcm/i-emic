@@ -17,7 +17,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     m_               (params->get("Global Grid-Size m", 16)),
     l_               (params->get("Global Grid-Size l", 1)),
     periodic_        (params->get("Periodic", false)),
-    aux_             (params->get("Auxiliary unknowns", 0)),
+    aux_             (params->get("Auxiliary unknowns", 1)),
     inputFile_       (params->get("Input file", "atmos_input.h5")),
     outputFile_      (params->get("Output file", "atmos_output.h5")),
     loadState_       (params->get("Load state", false)),
@@ -1186,9 +1186,9 @@ void AtmospherePar::createMatrixGraph()
                 insert_graph_entry(indices, pos, i, j-1, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_TT_, N, M, L);
 
-                // T rows do not have dependencies on auxiliary unknowns
-                // for (int aa = 1; aa <= aux_; ++aa)
-                //     indices[pos++] = last + aa;
+                // T rows have a dependency on aux rows
+                for (int aa = 1; aa <= aux_; ++aa)
+                    indices[pos++] = last + aa;
 
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(

@@ -301,10 +301,8 @@ TEST(CoupledModel, EPIntegral)
     Teuchos::RCP<Epetra_Vector> P = atmos->getP();
     
     double integralE = Utils::dot(intcoeff, E);
-    EXPECT_GT(integralE, 0.0);
                               
     double integralP = Utils::dot(intcoeff, P);
-    EXPECT_GT(integralP, 0.0);
     EXPECT_NEAR(integralE, integralP, 1e-8);
 
     // Compute integral of E-P    

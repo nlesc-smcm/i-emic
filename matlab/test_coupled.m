@@ -55,7 +55,7 @@ figure(2)
 spy(JnC11)
 title('num C11')
 
-tol = 1e-4
+tol = 1e-3
 
 diff11 = abs(C11 - numC11)./abs(C11) > tol;
 if sum(diff11(:)) > 0

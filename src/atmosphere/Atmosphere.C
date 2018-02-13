@@ -28,7 +28,7 @@ Atmosphere::Atmosphere(int n, int m, int l, bool periodic,
     m_               (m),
     l_               (l),
 
-    aux_             (params->get("Auxiliary unknowns", 0)),
+    aux_             (params->get("Auxiliary unknowns", 1)),
 
     xmin_            (xmin),
     xmax_            (xmax),
@@ -131,6 +131,7 @@ void Atmosphere::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     tdim_            = params->get("temperature scale", 1.0); // ( not used)
     q0_              = params->get("reference humidity",15e-3); // (kg/kg)
     qdim_            = params->get("humidity scale", 0.01);  // (kg/kg)
+    lv_              = params->get("latent heat of vaporization", 2.5e06); // (J/kg)
 
     udim_            = params->get("horizontal velocity of the ocean", 0.1e+00);
     r0dim_           = params->get("radius of the earth", 6.37e+06);
@@ -181,6 +182,9 @@ void Atmosphere::setup()
     dqsi_       = (c1 * c2 * c3) / pow(t0iK + c3, 2);
     dqsi_       *= exp( (c2 * t0iK) / (t0iK + c3) );
 
+    // latent heat due to precipiation coeff
+    lvscale_ = (rhoo_ * lv_ / muoa_) * (udim_ * hdim_ * qdim_ / r0dim_);
+
     INFO("Atmosphere parameters: ");
     INFO("     mu = " << muoa_);
     INFO(" B / mu = " << bmua_);
@@ -191,6 +195,7 @@ void Atmosphere::setup()
     INFO("   dqso = " << dqso_);    
     INFO(" A*DpDq = " << -eta_ * nuq_);
     INFO("  DqDt0 = " << nuq_ * eta_ * dqso_ / qdim_);
+    INFO("  lvsca = " << lvscale_);
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
     nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_ (ATMOS_PP_ exists
@@ -456,6 +461,21 @@ void Atmosphere::computeJacobian()
     // Set temperature atom in dependency grid
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_TT_, txx);
 
+    if (aux_ == 1) // latent heat due to precipitation
+    {
+        
+        // Central P dependency can be implemented in this way. Note
+        // that we can add P dependencies in non-P rows, but it is not
+        // possible to use the stencil approach to add dependencies to
+        // a P-row, as there is only a single row corrsponding to,
+        // e.g., ATMOS_PP_. The nested loop in assemble would give
+        // some trouble. The final P-row is implemented from the
+        // parallel side. (Similar to the integral condition.)        
+
+        tc.scale(lvscale_);
+        Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_PP_, tc);
+    }
+
     Atom qc (n_, m_, l_, np_);
     Atom qxx(n_, m_, l_, np_);
     Atom qyy(n_, m_, l_, np_);
@@ -474,13 +494,6 @@ void Atmosphere::computeJacobian()
 
     if (aux_ == 1)
     {
-        // Central P dependency can be implemented in this way. Note
-        // that we can add P dependencies in non-P rows, but it is not
-        // possible to use the stencil approach to add dependencies to
-        // a P-row, as there is only a single row corrsponding to,
-        // e.g., ATMOS_PP_. The nested loop in assemble would give
-        // some trouble. The final P-row is implemented from the
-        // parallel side. (Similar to the integral condition.)
         qc.scale(-comb_ * humf_ * nuq_);
         Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
     }

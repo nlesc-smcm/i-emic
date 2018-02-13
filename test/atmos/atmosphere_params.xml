@@ -39,6 +39,9 @@
   <Parameter name="Global Grid-Size m" type="int" value="16"       />
   <Parameter name="Global Grid-Size l" type="int" value="1"        />
 
+  <!-- Auxiliary unknowns                                         -->
+  <Parameter name="Auxiliary unknowns" type="int" value="0"  />  
+
   <!-- Atmosphere physical parameters -->
   <Parameter name="atmospheric density"                 type="double" value="1.25"     />
   <Parameter name="atmospheric scale height"            type="double" value="8400"     />
