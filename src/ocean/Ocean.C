@@ -1206,10 +1206,10 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                             block->jco.push_back(atmos->interface_row(i,j,T) );
                             el_ctr++;
 
-                            // qatm dependency
-                            block->co.push_back(-lvscq*eta);
-                            block->jco.push_back(atmos->interface_row(i,j,Q) );
-                            el_ctr++;
+                            // // qatm dependency
+                            // block->co.push_back(-lvscq*eta);
+                            // block->jco.push_back(atmos->interface_row(i,j,Q) );
+                            // el_ctr++;
                         }
                     }
                     else if ( (k == L_-1) && (xx == SS) && // surface S row

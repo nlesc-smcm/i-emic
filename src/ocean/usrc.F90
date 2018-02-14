@@ -635,7 +635,7 @@ SUBROUTINE lin
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
   else if (coupled_atm.eq.1) then ! coupled with external atmos
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + &
-          Ooa*tc + dedt*sc
+          Ooa*tc! + dedt*sc
   else
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
   endif

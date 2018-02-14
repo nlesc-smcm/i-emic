@@ -76,8 +76,8 @@ SUBROUTINE forcing
            Frc(find_row2(i,j,l,TT)) = &
                 ( par(COMB) * par(SUNP) * suno(j)  &
                 +  Ooa * tatm(i,j) &
-                +  par(COMB) * par(TEMP) * lvsc * qdim * eta * qatm(i,j) ) &
-                * (1 - landm(i,j,l))
+                !+  par(COMB) * par(TEMP) * lvsc * qdim * eta * qatm(i,j)  &
+                ) * (1 - landm(i,j,l))
 
         else  ! ocean-only
            Frc(find_row2(i,j,l,TT)) = etabi * ( tatm(i,j) - temcor )

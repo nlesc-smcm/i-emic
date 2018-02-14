@@ -372,7 +372,8 @@ TEST(CoupledModel, applyMatrix)
                 {
                     lid = oceanVec->Map().LID(surfbT);
                     surfval = (*oceanVec)[0][lid];
-                    EXPECT_NEAR(-(Ooa + lvscq * eta) * value[v], surfval , 1e-7);
+                    //EXPECT_NEAR(-(Ooa + lvscq * eta) * value[v], surfval , 1e-7);
+                    EXPECT_NEAR(-(Ooa  ) * value[v], surfval , 1e-7);
                 }
 
                 // Test first surface element (salinity)

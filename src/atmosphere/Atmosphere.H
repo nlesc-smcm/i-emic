@@ -157,6 +157,8 @@ class Atmosphere
 
     double qso_;     //! ocean sat. humidity [Bolton, 1980]
     double qsi_;     //! ice   sat. humidity [Bolton, 1980]
+    double Eo0_;     //! background evaporation
+    double Po0_;     //! background precipitation
     double dqso_;    //! derivative sat. humidity w.r.t. T, at t0o (ocean).
     double dqsi_;    //! derivative sat. humidity w.r.t. T, at t0i (ice).
 
