@@ -1105,7 +1105,7 @@ SUBROUTINE atmos_coef
   Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
   Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
   nus  = s0 * hdim  / ( deltas * hdim*dzne) ! without qdim!
-  lvsc = lv * r0dim / ( cp0 * hdim*dzne )  ! without qdim!
+  lvsc = lv * r0dim / (udim*cp0*hdim*dzne ) ! without qdim!
   DO j = 1,m
      !       albe(j) = 0.15 + 0.05 * cos (y(j))
      albe(j) = 0.3
@@ -1124,8 +1124,7 @@ SUBROUTINE atmos_coef
   
   write(*,*) 'Ocean-Atmosphere pars:     dzne=', dzne,' hdim=', hdim
   write(*,*) '                            nus=', nus, ' lvsc=', lvsc
-  write(*,*) '                            Ooa=', Ooa
-    
+  write(*,*) '                            Ooa=', Ooa, ' muoa=', muoa    
 
 END SUBROUTINE atmos_coef
 

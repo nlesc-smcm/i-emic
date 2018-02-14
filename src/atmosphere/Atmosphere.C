@@ -173,19 +173,22 @@ void Atmosphere::setup()
     double c4 = 17.67;   //
     double c5 = 243.5;   // (K)
 
+    // Calculate saturation specific humidity
+    // according to [Bolton,1980], T in \deg C
+    qso_   = c1 * exp(c4 * t0o_ / (t0o_ + c5));
+    qsi_   = c1 * exp(c2 * t0o_ / (t0o_ + c3));
+    
     // Calculate saturation humidity derivatives at ref. temps
-    double t0oK = t0o_ + C2K_; // reference ocean temp in K
-    dqso_       = (c1 * c4 * c5) / pow(t0oK + c5, 2);
-    dqso_       *= exp( (c4 * t0oK) / (t0oK + c5) );
+    dqso_  = (c1 * c4 * c5) / pow(t0o_ + c5, 2);
+    dqso_ *= exp( (c4 * t0o_) / (t0o_ + c5) );
 
-    double t0iK = t0i_ + C2K_; // reference ice temp in K
-    dqsi_       = (c1 * c2 * c3) / pow(t0iK + c3, 2);
-    dqsi_       *= exp( (c2 * t0iK) / (t0iK + c3) );
+    dqsi_  = (c1 * c2 * c3) / pow(t0i_ + c3, 2);
+    dqsi_ *= exp( (c2 * t0i_) / (t0i_ + c3) );
 
     // latent heat due to precipiation coeff
     lvscale_ = (rhoo_ * lv_ / muoa_) * (udim_ * hdim_ * qdim_ / r0dim_);
 
-    INFO("Atmosphere parameters: ");
+    INFO("Atmosphere computed parameters: ");
     INFO("     mu = " << muoa_);
     INFO(" B / mu = " << bmua_);
     INFO("     Ad = " << Ad_);
@@ -196,6 +199,10 @@ void Atmosphere::setup()
     INFO(" A*DpDq = " << -eta_ * nuq_);
     INFO("  DqDt0 = " << nuq_ * eta_ * dqso_ / qdim_);
     INFO("  lvsca = " << lvscale_);
+
+    INFO(std::endl << "Atmosphere all xml parameters: ");
+    INFO(*params_);
+    INFO(std::endl);
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
     nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_ (ATMOS_PP_ exists

@@ -155,6 +155,8 @@ class Atmosphere
     double nuq_;     //! qdim_ * (rhoo_ / rhoa_) * (hdim_ / hdimq_)
     double eta_;     //! (rhoa_ / rhoo_) * ce_ * uw_;
 
+    double qso_;     //! ocean sat. humidity [Bolton, 1980]
+    double qsi_;     //! ice   sat. humidity [Bolton, 1980]
     double dqso_;    //! derivative sat. humidity w.r.t. T, at t0o (ocean).
     double dqsi_;    //! derivative sat. humidity w.r.t. T, at t0i (ice).
 
