@@ -578,6 +578,29 @@ void Atmosphere::computeRHS()
     // Compute the forcing
     forcing();
 
+    // test heat fluxes
+    int idx = 5;
+    int jdx = 1;
+    while (use_landmask_ && (*surfmask_)[(jdx-1)*n_+(idx-1)])
+    {
+        idx++; jdx++;
+    }
+        
+    int surfaceRow = find_surface_row(idx, jdx);
+    int temRow     = find_row(idx, jdx, l_, ATMOS_TT_);
+     (*sst_)[surfaceRow-1];
+    
+    INFO("Atmosphere: compute RHS, sensible heat flux: To - Ta = "
+         <<  (*sst_)[surfaceRow-1] - (*state_)[temRow-1]
+        );
+    
+    int rowPP = find_row(n_,m_,l_,ATMOS_PP_) - 1;
+    INFO("Atmosphere: compute RHS, latent heat flux: P0 + qdim*P = "
+         << Po0_ + qdim_ * (*state_)[rowPP]
+         << " influence in eq: "
+         << rhoo_ * lv_ / muoa_ * (Po0_ + qdim_ * (*state_)[rowPP]) 
+        );    
+
     // Compute the right hand side rhs_
     double value;
     int row;

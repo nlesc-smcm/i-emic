@@ -364,8 +364,7 @@ TEST(CoupledModel, applyMatrix)
                 INFO(" ** applyMatrix is testing a land point, not useful... **");
             }
             else
-            {
-            
+            {            
                 int lid;
                 double surfval;
                 if (oceanVec->Map().MyGID(surfbT) && !onLand)
