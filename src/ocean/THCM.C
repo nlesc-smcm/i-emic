@@ -599,17 +599,23 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     intCorrection_ = 0.0;
 
     // Obtain integral condition coefficients
+    
     int N=domain->GlobalN();
     int M=domain->GlobalM();
     int L=domain->GlobalL();
 
-    rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
-    INFO("THCM: integral condition for S is in global row " << rowintcon_);
+    if (sres == 0)
+    {
+        rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
+        INFO("THCM: integral condition for S is in global row " << rowintcon_);
+    }
             
         
     intcond_coeff = Teuchos::rcp(new Epetra_Vector(*SolveMap));
     intcond_coeff->PutScalar(0.0);
-    Teuchos::RCP<Epetra_Vector> intcond_tmp = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+    Teuchos::RCP<Epetra_Vector> intcond_tmp =
+        Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+    
     int nml = (domain->LocalN())*(domain->LocalM())*(domain->LocalL());
 
     double *values = new double[nml];
