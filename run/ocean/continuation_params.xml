@@ -75,7 +75,7 @@
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
-  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
+  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
 
   <!-- If predicted rhs is larger than this value we reject the prediction. -->
   <Parameter name="predictor bound" type="double" value="1e3"/>
