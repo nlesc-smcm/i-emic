@@ -1104,7 +1104,7 @@ SUBROUTINE atmos_coef
   As   = sun0*(1 - c0)/(4*muoa)
   Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
   Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
-  nus  = s0 * hdim  / ( deltas * hdim*dzne) ! without qdim!
+  nus  = s0 * r0dim / (udim*deltas*hdim*dzne  ) ! without qdim!
   lvsc = lv * r0dim / (udim*cp0*hdim*dzne ) ! without qdim!
   DO j = 1,m
      !       albe(j) = 0.15 + 0.05 * cos (y(j))

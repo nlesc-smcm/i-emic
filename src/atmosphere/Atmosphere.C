@@ -162,9 +162,9 @@ void Atmosphere::setup()
     As_   =  sun0_ * (1 - c0_) / (4 * muoa_);
 
     // Filling coefficients (humidity specific)
-    nuq_  = (qdim_ / hdimq_ )* (rhoo_ / rhoa_) * (r0dim_ / udim_);
-    eta_  = (rhoa_ / rhoo_) * ce_ * uw_;
-    Phv_  = qdim_ * kappa_ / (udim_ * r0dim_);
+    nuq_ = (qdim_ / hdimq_ )* (rhoo_ / rhoa_) * (r0dim_ / udim_);
+    eta_ = (rhoa_ / rhoo_) * ce_ * uw_;
+    Phv_ =  qdim_ * kappa_ / (udim_ * r0dim_);
 
     // Parameters for saturation humidity over ocean and ice
     double c1 = 3.8e-3;  // (kg / kg)
@@ -695,7 +695,7 @@ void Atmosphere::forcing()
                 // is only for ocean surface temperature
 
                 // E (evaporation) forcing (ocean state part)
-                value =  nuq_ * eta_ * ( dqso_ / qdim_ )
+                value =  nuq_ * eta_ *  dqso_ * ( tdim_ / qdim_ )
                     * (*sst_)[surfaceRow-1];
 
                 // Apply continuation control parameters
@@ -730,7 +730,7 @@ void Atmosphere::computeEvaporation()
 
             // E (evaporation) part
             (*E_)[surfaceRow-1] =  eta_ *
-                ( (1.0 / qdim_) * dqso_ * (*sst_)[surfaceRow-1]
+                ( (tdim_ / qdim_) * dqso_ * (*sst_)[surfaceRow-1]
                   - (*state_)[humRow-1] );
         }
 }

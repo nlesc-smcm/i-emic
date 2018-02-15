@@ -411,9 +411,9 @@ real FUNCTION temfun(xx,yy)
   implicit none
   real    xx,yy
   if (ymin.ge.0.0) then ! Northern hemisphere
-     temfun = cos(pi*(yy-ymin)/(ymax-ymin))
+     temfun = cos(pi*(yy-ymin)/(ymax-ymin)) + par(CMPR)*sin(pi*yy/ymax)
   else
-     temfun = cos(pi*yy/ymax)
+     temfun = cos(pi*yy/ymax) + par(CMPR)*sin(pi*yy/ymax)
   end if
 end FUNCTION temfun
 

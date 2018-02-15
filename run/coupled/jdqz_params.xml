@@ -14,7 +14,7 @@
   <!-- eps -->
   <!-- Tolerance of the eigensolutions, -->
   <!-- $\| \beta \BA\Bx - \alpha \BB\Bx \| / | \alpha/\beta | < \epsilon$ -->
-  <Parameter name="Tolerance" type="double" value=" 1e-9"/>
+  <Parameter name="Tolerance" type="double" value=" 1e-6"/>
 
   <!-- kmax -->
   <!-- Number of wanted eigensolutions, on output: number of converged eigenpairs -->
@@ -22,11 +22,11 @@
 
   <!-- jmax -->
   <!-- Maximum size of the search space -->
-  <Parameter name="Max size search space" type="int" value="20"/>
+  <Parameter name="Max size search space" type="int" value="100"/>
 
   <!-- jmin -->
   <!-- Maximum number of Jacobi-Davidson iterations -->
-  <Parameter name="Min size search space" type="int" value="10"/>
+  <Parameter name="Min size search space" type="int" value="20"/>
 
   <!-- maxstep -->
   <!-- Maximum number of Jacobi-Davidson iterations -->
@@ -47,11 +47,11 @@
 
   <!-- m -->
   <!-- Searchspace gmres(m): -->
-  <Parameter name="GMRES search space" type="int" value="30"/>
+  <Parameter name="GMRES search space" type="int" value="100"/>
 
   <!-- maxnmv -->
   <!-- Maximum number of matvecs in cgstab or gmres -->
-  <Parameter name="Max mat-vec mults" type="int" value="100"/>
+  <Parameter name="Max mat-vec mults" type="int" value="200"/>
 
   <!-- testspace -->
   <!-- Determines how to expand the testspace W: -->

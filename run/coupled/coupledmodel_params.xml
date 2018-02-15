@@ -29,21 +29,21 @@
   <!-- We determine the horizontal extend and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
 
-  <!-- western domain bound -->
-  <Parameter name="Global Bound xmin" type="double" value="0"/>
+  <Parameter name="Global Bound xmin" type="double" value="290"/>
   <!-- eastern domain bound -->
-  <Parameter name="Global Bound xmax" type="double" value="360"/>
+  <Parameter name="Global Bound xmax" type="double" value="350"/>
   <!-- southern domain bound -->
-  <Parameter name="Global Bound ymin" type="double" value="-85.5"/>
+  <Parameter name="Global Bound ymin" type="double" value="10"/>
   <!-- northern domain bound -->
-  <Parameter name="Global Bound ymax" type="double" value="85.5"/>
+  <Parameter name="Global Bound ymax" type="double" value="74"/>
+  
   <!-- global number of grid points in x-direction -->
-  <Parameter name="Global Grid-Size n" type="int" value="48"/>
+  <Parameter name="Global Grid-Size n" type="int" value="16"/>
   <!-- global number of grid points in y-direction -->
-  <Parameter name="Global Grid-Size m" type="int" value="19"/>
+  <Parameter name="Global Grid-Size m" type="int" value="16"/>
 
   <!-- periodic boundary conditions in x-direction -->
-  <Parameter name="Periodic" type="bool" value="true"/>
+  <Parameter name="Periodic" type="bool" value="false"/>
 
   <!-- Starting parameters -->
   <Parameter name="Combined Forcing"    type="double" value="0.0"/>

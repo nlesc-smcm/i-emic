@@ -908,7 +908,6 @@ void AtmospherePar::computeEP()
     // Without auxiliary unknowns we have to do the integral manually
     if (aux_ <= 0)
     {
-
         // compute integral
         double integral;
         if (useFixedPrecip_)
@@ -934,6 +933,7 @@ void AtmospherePar::computeEP()
         double Pvalue    = 0.0;
         int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
         int lid;
+        
         if (state_->Map().MyGID(last+1))
         {
             lid       = state_->Map().LID(last+1);

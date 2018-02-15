@@ -142,7 +142,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if readE && readP
         figure(13) 
-        EmP = E-P;
+        EmP = (E-P);
         EmP(EmP==0)=NaN;
         img = EmP';
         %contourf(RtD*x,RtD*(y),img,10,'Visible','off'); hold on;
