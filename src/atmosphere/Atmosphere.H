@@ -299,7 +299,7 @@ public:
     //! Obtain derivatives of E,P
     void getConstants(double &qdim, double &nuq,
                       double &eta, double &dqso,
-                      double &dqdt);
+                      double &dqdt, double &Eo0);
     
     //! Get the dA_{ij} coefficients for surface integrals with q
     void integralCoeff(std::vector<double> &val,

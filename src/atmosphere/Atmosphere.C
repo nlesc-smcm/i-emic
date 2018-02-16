@@ -422,14 +422,15 @@ void Atmosphere::setOceanTemperature(std::vector<double> const &sst)
 
 //==================================================================
 void Atmosphere::getConstants(double &qdim, double &nuq,
-                                double &eta, double &dqso,
-                                double &dqdt)
+                              double &eta,  double &dqso,
+                              double &dqdt, double &Eo0)
 {
     qdim = qdim_;
     nuq  = nuq_;
     eta  = eta_;
     dqso = dqso_;
-    dqdt = comb_ * humf_ * nuq_ * eta_ * dqso_ / qdim_;    
+    dqdt = comb_ * humf_ * nuq_ * eta_ * dqso_ / qdim_;
+    Eo0  = Eo0_;    
 }
 
 //-----------------------------------------------------------------------------

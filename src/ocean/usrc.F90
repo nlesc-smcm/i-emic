@@ -212,18 +212,19 @@ SUBROUTINE get_constants(o_r0dim, o_udim, o_hdim)
 end subroutine get_constants
 
 !**********************************************************
-SUBROUTINE set_ep_constants(i_qdim, i_nuq, i_eta, i_dqso)
+SUBROUTINE set_ep_constants(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
   !     interface to get a few model constants
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_atm
   implicit none
-  real(c_double) i_qdim, i_nuq, i_eta, i_dqso
+  real(c_double) i_qdim, i_nuq, i_eta, i_dqso, i_eo0
 
   qdim = i_qdim 
   nuq  = i_nuq  
   eta  = i_eta  
   dqso = i_dqso
+  eo0  = i_eo0
 
 end subroutine set_EP_constants
 
@@ -626,16 +627,16 @@ SUBROUTINE lin
   call tderiv(7,tcb)
 
   ! dependence of TT on TT through latent heat due to evaporation
-  dedt = par(COMB) * par(TEMP) * lvsc * qdim * & 
-       eta * (deltat / qdim) * dqso
+  dedt =  par(COMB)*par(TEMP)*lvsc * qdim * eta * (deltat / qdim) * dqso
 
   write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
 
   if (la > 0) then ! deprecated local atmosphere
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
   else if (coupled_atm.eq.1) then ! coupled with external atmos
-     Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + &
-          Ooa*tc! + dedt*sc
+     Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz  &
+          + Ooa * tc & ! sensible heat flux
+          + dedt*sc    ! latent heat flux
   else
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
   endif

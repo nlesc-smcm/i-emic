@@ -287,7 +287,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 
         figure(5);
 
-        contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,25);
+        contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
         %imagesc(Sp'+S0);
         %set(gca,'ydir','normal')
         %pcolor(RtD*yv(1:end-1),z*hdim,Sp'+S0);

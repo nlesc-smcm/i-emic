@@ -388,8 +388,8 @@ TEST(CoupledModel, applyMatrix)
             }
         }
 
-        double qdim, nuq, eta, dqso, dqdt;
-        atmos->getConstants(qdim, nuq, eta, dqso, dqdt);
+        double qdim, nuq, eta, dqso, dqdt, Eo0;
+        atmos->getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
 
         // Test ocean -> atmos coupling
         for (int v = 0; v != 3; ++v)

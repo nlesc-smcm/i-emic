@@ -40,7 +40,7 @@ extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(setparcs)(int*,double*);
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double*, double *);
 extern "C" _SUBROUTINE_(get_constants)(double*, double*, double*);
-extern "C" _SUBROUTINE_(set_ep_constants)(double*, double*, double*, double*);
+extern "C" _SUBROUTINE_(set_ep_constants)(double*, double*, double*, double*, double*);
 
 //=====================================================================
 // Constructor:
@@ -1130,10 +1130,10 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
     // P and their derivatives w.r.t. SST (To) and humidity (q) These
     // could be obtained at construction but, as they may depend on
     // continuation parameters, the call belongs here.
-    double qdim, nuq, eta, dqso, dqdt;
-    atmos->getConstants( qdim, nuq, eta, dqso, dqdt);
+    double qdim, nuq, eta, dqso, dqdt, Eo0;
+    atmos->getConstants( qdim, nuq, eta, dqso, dqdt, Eo0);
 
-    FNAME(set_ep_constants)( &qdim, &nuq, &eta, &dqso );
+    FNAME(set_ep_constants)( &qdim, &nuq, &eta, &dqso, &Eo0 );
 
     TIMER_STOP("Ocean: set atmosphere...");
 }

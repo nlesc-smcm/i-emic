@@ -483,9 +483,9 @@
     <!-- Solver for Schur-complement inside Simple: { -->
     <ParameterList name="Chat Solver">
       <!-- can be "AztecOO" or "None" -->
-      <Parameter name="Method" type="string" value="AztecOO"/>
+      <Parameter name="Method" type="string" value="None"/>
       <Parameter name="Max Num Iter" type="int" value="500"/>
-      <Parameter name="Tolerance" type="double" value="1.0e-6"/>
+      <Parameter name="Tolerance" type="double" value="1.0e-3"/>
       <Parameter name="Solver" type="string" value="GMRESR"/>
       <Parameter name="Conv" type="string" value="r0"/>
       <Parameter name="Scaling" type="string" value="None"/>
@@ -506,7 +506,7 @@
     <!-- for comments see the "Auv Precond" list above {                    -->
     <ParameterList name="Chat Precond">
 
-      <Parameter name="Method" type="string" value="None"/>
+      <Parameter name="Method" type="string" value="Ifpack"/>
       <!-- Ifpack -->
 
       <Parameter name="Ifpack Method" type="string" value="Amesos stand-alone"/>
@@ -556,7 +556,7 @@
   <!-- Parameters for the Krylov solver for ATS { -->
   <ParameterList name="ATS Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="50"/> <!-- candidate -->
+    <Parameter name="Max Num Iter" type="int" value="100"/> <!-- candidate -->
     <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>

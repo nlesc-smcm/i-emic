@@ -249,7 +249,7 @@ public:
     //! Get derivatives of E and P wrt To and q
     void getConstants(double &qdim, double &nuq,
                       double &eta, double &dqso,
-                      double &dqdt);
+                      double &dqdt, double &Eo0);
     
     //! Get continuation parameter name
     std::string const getParName() { return atmos_->getParName(); }

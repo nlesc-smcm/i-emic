@@ -5,7 +5,7 @@
   <!-- an old state (true) or with a zero solution (false).                  -->
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
-  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Load state" type="bool" value="true"/>
 
   <!-- By default the salinity and temperature surface fluxes are written     -->
   <!-- to <Output file>. Here we can choose to read them at initialization.   -->
@@ -21,7 +21,7 @@
   <!--           "Solar Forcing"    -->
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Salinity Forcing"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -32,7 +32,7 @@
     <!-- eastern domain bound -->
     <Parameter name="Global Bound xmax" type="double" value="350"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="10"/>
+    <Parameter name="Global Bound ymin" type="double" value="-74"/>
     <!-- northern domain bound -->
     <Parameter name="Global Bound ymax" type="double" value="74"/>
     <!-- periodic boundary conditions in x-direction -->
@@ -43,13 +43,13 @@
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
-    <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
+    <Parameter name="Grid Stretching qz" type="double" value="2.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="16"/>
+    <Parameter name="Global Grid-Size n" type="int" value="8"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="16"/>
+    <Parameter name="Global Grid-Size m" type="int" value="32"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="16"/>
+    <Parameter name="Global Grid-Size l" type="int" value="8"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
@@ -76,10 +76,11 @@
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
       <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
-      <Parameter name="Wind Forcing"        type="double" value="1.0"/>
+      <Parameter name="Wind Forcing"        type="double" value="0.0"/>
 	  <Parameter name="Temperature Forcing" type="double" value="10.0"/>
 	  <Parameter name="SPL1"                type="double" value="2.0e3"/>
-	  <Parameter name="SPL2"                type="double" value="0.01"/>	  
+	  <Parameter name="SPL2"                type="double" value="0.01"/>
+      <Parameter name="P_VC"                type="double" value="0.0"/>
     </ParameterList>
 	
     <!-- Mixing parameter (vmix_GLB in THCM)                                 -->
@@ -96,7 +97,7 @@
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->
