@@ -135,7 +135,7 @@ module m_usr
   real, parameter :: alpt2    = 8.3e-02 ! b2/b1 - 3*t0*b3/b1
   real, parameter :: alpt3    = 6.6e-04 ! b3/b1
   ! Mixing parameters
-  ! real, parameter :: ah       = 2.2e+12 !2D case (zonally averaged)
+  ! real, parameter :: ah       = 2.2e+12 !2DMOC case (zonally averaged)
   real, parameter :: ah       = 2.5e+05 !2 deg resolution
   ! real, parameter :: ah       = 1.0e+05 !1 deg resolution
   ! real, parameter :: ah       = 1.0e+04 !0.5 deg resolution
