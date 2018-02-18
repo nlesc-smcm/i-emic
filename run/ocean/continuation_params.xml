@@ -5,7 +5,7 @@
 <ParameterList name="Continuation parameters">
   
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="1.0e-2"/>
+  <Parameter name="initial step size" type="double" value="1.0e-3"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>
   <Parameter name="maximum step size" type="double" value="1.0"/>
 
@@ -16,7 +16,7 @@
   <Parameter name="decrease step size" type="double" value="1.5"/>
   
   <!-- Define the destination value for the continuation parameter -->
-  <Parameter name="destination 0" type="double" value="0.0"/>
+  <Parameter name="destination 0" type="double" value="1.0"/>
   
   <!-- Define the number of continuation steps               -->
   <!--   set to -1 to run until final destination is reached -->
@@ -75,7 +75,7 @@
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
-  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
+  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
 
   <!-- If predicted rhs is larger than this value we reject the prediction. -->
   <Parameter name="predictor bound" type="double" value="1e1"/>
