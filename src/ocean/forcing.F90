@@ -105,21 +105,26 @@ SUBROUTINE forcing
            emip(i,j) = salfun(x(i),y(j))
         enddo
      enddo
+     call qint(emip,  salcor)
+  else
+     salcor = 0.0;
   endif
 
   if (SRES.eq.0.and.coupled_atm.eq.0) then   ! correct for nonzero flux
-     call qint(emip,  salcor)
+
      call qint(adapted_emip, adapted_salcor)
      call qint(spert, spertcor)
+
      !write(*,*) 'salcor=',salcor, ' adapted_salcor=', adapted_salcor, 'spertcor=', spertcor
      !write(*,*) 'emip(10,10)', emip(10,10)
      !write(*,*) 'adapted_emip(10,10)', adapted_emip(10,10)
      !write(*,*) 'spert(10,10)', spert(10,10)
+     
   else
-     salcor   = 0.0
+     adapted_salcor = 0.0
      spertcor = 0.0
   end if
-
+  
   do j=1,m
      do i=1,n
         ! nus*qdim*(E-P) without the sst dependency, which is taken care of in usrc.F90

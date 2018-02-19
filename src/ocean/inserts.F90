@@ -56,7 +56,7 @@ contains
        _INFO2_("Not inserting atmosphere q : coupled_atm =", coupled_atm)
     end if
   end subroutine insert_atmosphere_q
-
+  
   !!------------------------------------------------------------------
   subroutine insert_atmosphere_p(inserted_atmos_p)
     
