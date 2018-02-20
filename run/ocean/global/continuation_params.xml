@@ -12,8 +12,8 @@
   <!-- Give up at minimum step size -->
   <Parameter name="give up at minimum step size" type="bool" value="true"/>
 
-  <Parameter name="increase step size" type="double" value="1.5"/>
-  <Parameter name="decrease step size" type="double" value="2.0"/>
+  <Parameter name="increase step size" type="double" value="1.1"/>
+  <Parameter name="decrease step size" type="double" value="1.5"/>
   
   <!-- Define the destination value for the continuation parameter -->
   <Parameter name="destination 0" type="double" value="1.0"/>
@@ -23,25 +23,25 @@
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-5"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-4"/>
 
   <!-- Tolerance when converging on destination         -->
   <!--  for both Newton and secant process in detect()  -->
-  <Parameter name="destination tolerance" type="double" value="1.0e-5"/>
+  <Parameter name="destination tolerance" type="double" value="1.0e-6"/>
   
   <!-- Define the optimal interval for the amount of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
+  <Parameter name="maximum desired Newton iterations" type="int" value="3"/>
   
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="15"/>
+  <Parameter name="maximum Newton iterations" type="int" value="10"/>
 
   <!-- Backtracking is disabled by default, I prefer resetting -->
-  <Parameter name="enable backtracking" type="bool" value="true"/>
+  <Parameter name="enable backtracking" type="bool" value="false"/>
   
   <!-- Set the number of backtracking steps -->
   <Parameter name="backtracking steps" type="int" value="5"/>
-  <Parameter name="backtracking increase" type="double" value="1.2"/>
+  <Parameter name="backtracking increase" type="double" value="100"/>
 
   <!-- Print failed residuals etc. -->
   <Parameter name="print important vectors" type="bool" value="true"/>
@@ -49,7 +49,7 @@
   <!-- compute stability: 'N' never,                    -->
   <!--                    'E' at the end of a run,      -->
   <!--                    'P' at every converged point. -->
-  <Parameter name="compute stability" type="char" value="E" />
+  <Parameter name="compute stability" type="char" value="N" />
 
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental                -->
@@ -66,7 +66,7 @@
   <!-- corrector residual test types:           -->
   <!-- R:  ||R||_2                              -->
   <!-- D:  ||(pardir, xdir)||_inf     (default) -->
-  <Parameter name="corrector residual test" type="char" value="R"/>
+  <Parameter name="corrector residual test" type="char" value="D"/>
 
   <!-- Scaling of the state tangent, which can be made several orders      -->
   <!-- smaller than the parameter tangent.                                 -->
@@ -78,7 +78,7 @@
   <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
 
   <!-- If predicted rhs is larger than this value we reject the prediction. -->
-  <Parameter name="predictor bound" type="double" value="1e3"/>
+  <Parameter name="predictor bound" type="double" value="1e1"/>
 
   <!-- Type of the tangent that is calculated during the continuation -->
   <!--     E: Euler                                                   -->

@@ -431,7 +431,7 @@ SUBROUTINE rhs(un,B)
   coA  = 0
   jcoA = 0
   call lin              !
-  write(*,*) 'T(n,m,l)', un(find_row2(n,m,l,TT))
+  ! write(*,*) 'T(n,m,l)', un(find_row2(n,m,l,TT))
 #ifndef THCM_LINEAR
   call nlin_rhs(un)
 #endif
@@ -629,7 +629,7 @@ SUBROUTINE lin
   ! dependence of TT on TT through latent heat due to evaporation
   dedt =  par(COMB)*par(TEMP)*lvsc * qdim * eta * (deltat / qdim) * dqso
 
-  write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
+  ! write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
 
   if (la > 0) then ! deprecated local atmosphere
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
