@@ -86,8 +86,8 @@ SUBROUTINE forcing
      enddo
   enddo
 
-  write(*,*) ' tatm(n/2,m/2)=', tatm(n/2,m/2), &
-       ' qatm(n/2,m/2)=',  qatm(n/2,m/2)
+  ! write(*,*) ' tatm(n/2,m/2)=', tatm(n/2,m/2), &
+  !     ' qatm(n/2,m/2)=',  qatm(n/2,m/2)
 
   ! ------------------------------------------------------------------
   ! Determine salinity forcing
