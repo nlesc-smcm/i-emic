@@ -1089,6 +1089,25 @@ void Ocean::applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out)
 }
 
 //====================================================================
+// Not yet implemented!
+void Ocean::applyDiagInv(Epetra_MultiVector const &v, Epetra_MultiVector &out)
+{
+    assert(v.Map().SameAs(out.Map()));
+
+    Epetra_Vector diag(*rhs_);
+    diag.PutScalar(0.0);
+    jac_->ExtractDiagonalCopy(diag);
+
+    int numMyElements = diag.Map().NumMyElements();
+    for (int i = 0; i != numMyElements; ++i)
+        if (diag[i] == 0)
+            std::cout << "pid: " << diag.Map().Comm().MyPID() << " "
+                      << i << ": zero element in diagonal" << std::endl;
+
+    DUMP_VECTOR("diag", diag);
+}
+
+//====================================================================
 void Ocean::buildMassMat()
 {
     if (recompMassMat_)

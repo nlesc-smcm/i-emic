@@ -208,6 +208,10 @@ public:
     //! out = P^{-1}*v
     void applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out);
 
+    //! Apply the Jacobian's diagonal inverse to a vector
+    //! out = D^{-1}*v
+    void applyDiagInv(Epetra_MultiVector const &v, Epetra_MultiVector &out);
+
     //! Apply the mass matrix
     //! out = B*v
     void applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out);
