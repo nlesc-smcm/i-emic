@@ -723,6 +723,7 @@ void Ocean::initializeBelos()
     double gmresTol = solverParams_->get("FGMRES tolerance", 1e-8);
     int maxrestarts = solverParams_->get("FGMRES restarts", 0);
     int output      = solverParams_->get("FGMRES output", 100);
+    bool testExpl   = solverParams_->get("FGMRES explicit residual test", false);
 
     int NumGlobalElements = state_->GlobalLength();
     int blocksize         = 1; // number of vectors in rhs
@@ -743,8 +744,9 @@ void Ocean::initializeBelos()
                          Belos::StatusTestDetails );
     belosParamList_->set("Maximum Iterations", maxiters);
     belosParamList_->set("Convergence Tolerance", gmresTol);
-    belosParamList_->set("Explicit Residual Test", false);
-    belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
+    belosParamList_->set("Explicit Residual Test", testExpl);
+    // belosParamList_->set("Implicit Residual Scaling", "Norm of Preconditioned Initial Residual");
+    // belosParamList_->set("Explicit Residual Scaling", "Norm of RHS");
 
     // Belos block FGMRES setup
     belosSolver_ =
@@ -815,13 +817,18 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
         iters = belosSolver_->getNumIters();
         tol   = belosSolver_->achievedTol();
         INFO("Ocean: FGMRES, i = " << iters << ", ||r|| = " << tol);
+
+        Teuchos::RCP<Epetra_Vector> b =
+            Teuchos::rcp(new Epetra_Vector(*(*rhs)(0)));
+        INFO("        ||b-Ax|| = " << explicitResNorm(b));
+        
         TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 
-        if (tol > recompTol_) // stagnation, maybe a new precon helps
-        {
-            INFO("Ocean: FGMRES, stagnation: " << recompTol_);
-            recompPreconditioner_ = true;
-        }
+        // if (tol > recompTol_) // stagnation, maybe a new precon helps
+        // {
+        //     INFO("Ocean: FGMRES, stagnation: " << recompTol_);
+        //     recompPreconditioner_ = true;
+        // }
 
     }
     else
@@ -839,6 +846,7 @@ double Ocean::explicitResNorm(VectorPtr rhs)
     Ax->Update(1.0, *rhs, -1.0);
     double nrm;
     Ax->Norm2(&nrm);
+    Utils::save(Ax, "lsresidual");
     return nrm;
 }
 
