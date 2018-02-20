@@ -820,7 +820,8 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
 
         Teuchos::RCP<Epetra_Vector> b =
             Teuchos::rcp(new Epetra_Vector(*(*rhs)(0)));
-        INFO("        ||b-Ax|| = " << explicitResNorm(b));
+        double nrm = explicitResNorm(b);
+        INFO("        ||b-Ax|| = " << nrm);
         
         TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 
