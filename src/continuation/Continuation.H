@@ -335,6 +335,11 @@ createInitialTangent()
     INFO("              ||stateDot|| = " << Utils::norm(stateDot_));
     INFO("                  parDot   = " << parDot_);
     INFO("                      ds   = " << ds_);
+
+    if (printImportantVectors_)
+    {
+        Utils::save(model_->getSolution('V'), "stateDot");
+    }
     INFO("Continuation: create initial tangent... done");
 }
 
