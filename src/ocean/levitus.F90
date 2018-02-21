@@ -169,6 +169,8 @@
 
       call levitus_interpol(topdir//'levitus/new/t00an1',tatm,&
                                                     -5.,50.,l,1)
+      ! call levitus_interpol(topdir//'cesm/SST_38Ma.txt',tatm,&
+      !                                               -5.,50.,l,1)
       !call levitus_interpol(topdir//'levitus/new/avtemp',tatm,&
                                                     !-5.,50.,l,1)
 
@@ -196,6 +198,8 @@
 
       call levitus_interpol(topdir//'levitus/new/s00an1',emip,&
                                                           30.,40.,l,1)
+      ! call levitus_interpol(topdir//'cesm/SSS_38Ma.txt',emip,&
+      !                                                     20.,40.,l,1)
       !call levitus_interpol(topdir//'levitus/new/avsalt',emip,&
                                                           !30.,40.,l,1)
 

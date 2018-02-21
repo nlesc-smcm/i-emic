@@ -178,6 +178,7 @@ SUBROUTINE windfit
   !     CONSTANT
   integer nx,ny
   parameter(nx=145,ny=72)
+  ! parameter(nx=360,ny=180)
   integer ::lwrk,liwrk
   !     LOCAL
   integer i,j,ifail,px,py,iwrk(n+nx)
@@ -193,6 +194,7 @@ SUBROUTINE windfit
   liwrk=n+nx
 
   open(10,file=topdir//'wind/trtau.dat',action='read')
+  ! open(10,file=topdir//'cesm/wind_38Ma.txt',action='read')
   read(10,*)
   do i=1,nx
      read(10,*) xx(i)
