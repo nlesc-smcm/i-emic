@@ -57,8 +57,14 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         kmax = h5read(file, '/MetaData/NumEigs');
 
         if isfield(opts, 'evindex')
-            evindex = opts.evindex;
+            evindex = opts.evindex;            
         else
+            evindex = 0;
+        end
+        
+        if (evindex >= kmax || evindex < 0)
+            fprintf(['WARNING: evindex not available, reading ev 0.\' ...
+                     'n']);
             evindex = 0;
         end
 
