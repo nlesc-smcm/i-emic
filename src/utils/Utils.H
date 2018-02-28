@@ -131,7 +131,7 @@ namespace Utils
                VectorPtr const &vec2)
     {
         double result = 0;
-        vec1->Dot(*vec2, &result);
+        CHECK_ZERO(vec1->Dot(*vec2, &result));
         return result;
     }
 

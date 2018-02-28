@@ -150,7 +150,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         end                              
 
         colorbar
-        colormap(my_colmap(caxis,0))
+        colormap(my_colmap(caxis, 0))
 
         if plot_title
             title(['Barotropic Streamfunction (Sv) ', opts.title_add]);
@@ -200,7 +200,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
             caxis([cmin,cmax]);
         end
 
-        colormap(my_colmap(caxis,0))
+        colormap(my_colmap(caxis, 0))
         colorbar
 
         if export_to_file
@@ -248,7 +248,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         title('Temperature')
         xlabel('Latitude')
         ylabel('z (m)')
-        colormap(my_colmap(caxis,T0))
+        colormap(my_colmap(caxis))
         %crange = max(abs(caxis))-T0;
         %caxis([T0-crange, T0+crange]);
          
@@ -260,12 +260,14 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         % -------------------------------------------------------
         figure(4);
         Tsurf = T(:,:,l);
-        Tsurf(Tsurf == 0) = NaN;
         minT = T0+min(min(Tsurf));
         maxT = T0+max(max(Tsurf));
 
         img  = T0 + Tsurf';
         imagesc(RtD*x,RtD*(y),img); hold on
+        
+        Tsurf(Tsurf == 0) = NaN;
+        img  = T0 + Tsurf';
         contour(RtD*x,RtD*(y),img,20,'k-','Visible', 'on'); 
         hold off;
 
@@ -274,7 +276,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         title('SST', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
-        cmap = [my_colmap(caxis,T0)];
+        cmap = [my_colmap(caxis)];
         colormap(cmap)
         colorbar
 
@@ -307,7 +309,6 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
         figure(6); 
         Ssurf = S(:,:,l);
-        Ssurf(Ssurf == 0) = NaN;
         Sz = mean(Ssurf,1);
         
         minS  = S0+min(min(Ssurf));
@@ -315,6 +316,9 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
         img  = S0 + Ssurf';
         imagesc(RtD*x, RtD*y, img); hold on
+        
+        Ssurf(Ssurf == 0) = NaN;
+        img  = S0 + Ssurf';                
         contour(RtD*x, RtD*y, img, 20,'k-', 'Visible', 'on'); hold off
 
         %set(gca,'color',[0.65,0.65,0.65]);
@@ -325,7 +329,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         
-        cmap = [my_colmap(caxis,S0)];
+        cmap = [my_colmap(caxis)];
         colormap(cmap)
         
     end
@@ -343,7 +347,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         colorbar;
-        cmap = [my_colmap(caxis,0)];
+        cmap = [my_colmap(caxis)];
         colormap(cmap)
 
         
@@ -362,7 +366,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         colorbar;
-        cmap = [my_colmap(caxis,0)];
+        cmap = [my_colmap(caxis)];
         colormap(cmap)
 
         

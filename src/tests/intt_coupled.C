@@ -245,6 +245,32 @@ TEST(CoupledModel, AtmosphereEPfields)
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, EPIntegral)
+{
+    
+    Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPrecipIntCo();
+    
+    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
+    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    
+    double integralE = Utils::dot(intcoeff, E);
+    EXPECT_GT(std::abs(integralE), 0.0);
+                              
+    double integralP = Utils::dot(intcoeff, P);
+    EXPECT_GT(std::abs(integralP), 0.0);
+
+    double totalArea;
+    intcoeff->Norm1(&totalArea);
+
+    std::cout << "integralP = " << integralP << std::endl;
+    std::cout << "integralE = " << integralE << std::endl;
+    std::cout << "totalArea = " << totalArea << std::endl;
+
+    EXPECT_NEAR(integralP, integralE, 1e-7);
+}
+
+
+//------------------------------------------------------------------
 // full continuation
 TEST(CoupledModel, Continuation)
 {
@@ -293,7 +319,7 @@ TEST(CoupledModel, Continuation)
 }
 
 //------------------------------------------------------------------
-TEST(CoupledModel, EPIntegral)
+TEST(CoupledModel, EPIntegral2)
 {
     Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPrecipIntCo();
     

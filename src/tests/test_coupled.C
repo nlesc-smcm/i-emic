@@ -425,7 +425,6 @@ TEST(CoupledModel, applyMatrix)
             }
             else
             {
-
                 int lid;
                 double surfval;
                 if (atmosVec->Map().MyGID(surfbT))
@@ -448,31 +447,52 @@ TEST(CoupledModel, applyMatrix)
                 // Test final element in range (results from sst integral)
 
                 // First check if we have auxiliary unknowns:
+                int aux;
+                aux = atmosphereParams->get("Auxiliary unknowns", 0);
+                
                 if (atmosVec->GlobalLength() > ATMOS_NUN_ * m * n * l)
+                {
+                    EXPECT_GT(aux, 0);
+                }
+                else
+                {
+                    EXPECT_EQ(aux, 0);
+                }
+
+                // If we have auxiliary unknowns, these govern precipitation
+                if (aux > 0)
                 {
                     Teuchos::RCP<Epetra_Vector> precipintco = atmos->getPrecipIntCo();
                     double totalArea;
                     precipintco->Norm1(&totalArea);
+
+                    std::cout << std::endl;
+                    std::cout << " totalArea: " << totalArea << std::endl;
 
                     Teuchos::RCP<Epetra_Vector> ones =
                         Teuchos::rcp(new Epetra_Vector(*precipintco));
                     ones->PutScalar(1.0);
 
                     double sstInt = Utils::dot(precipintco, ones);
+                    std::cout << " sstInt: " << sstInt << std::endl;
+                                        
                     double intval = sstInt * (eta / totalArea) * (dqso / qdim);
+                    std::cout << " intval: " << intval << std::endl;
 
                     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);
+                    std::cout << " last  : " << last << std::endl;
+                                        
                     if (atmosVec->Map().MyGID(last + 1))
                     {
                         lid = atmosVec->Map().LID(last + 1);
                         surfval = (*atmosVec)[0][lid];
+                        std::cout << "  surfval        : " << surfval << std::endl;
+                        std::cout << "  value[v]       : " << value[v] << std::endl;
+                        std::cout << "  intval*value[v]: " << intval*value[v] << std::endl;
+                                            
                         EXPECT_NEAR( intval * value[v], surfval, 1e-7);
                     }
-                }
-                else
-                {
-                    int aux = atmosphereParams->get("Auxiliary unknowns", 0);
-                    EXPECT_EQ(aux, 0);
+                    std::cout << std::endl;
                 }
             }
         }
@@ -484,6 +504,58 @@ TEST(CoupledModel, applyMatrix)
     }
 
     EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(CoupledModel, Precipitation)
+{
+    std::shared_ptr<Combined_MultiVec> stateV =
+        coupledModel->getState('V');
+
+    stateV->Random();
+
+    // copy construct 
+    std::shared_ptr<Combined_MultiVec> b =
+        std::make_shared<Combined_MultiVec>(*stateV);
+
+    coupledModel->computeJacobian();
+    coupledModel->applyMatrix(*stateV, *b);
+
+    Teuchos::RCP<Epetra_MultiVector> atmb = b->Second();
+    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+
+    int numMyElements = P->Map().NumMyElements();
+    double Pval = 0.0;
+    for (int i = 0; i != numMyElements; ++i)
+    {
+        if (std::abs((*P)[i]) > 0)
+        {
+            Pval = (*P)[i];
+            break;
+        }
+    }
+    
+    std::cout << "Pval = " << Pval << std::endl;
+
+    int n = ocean->getNdim();
+    int m = ocean->getMdim();
+    // assume single atmosphere layer
+    int l = 1;
+
+    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);
+    int lid; 
+    double val;
+    if (atmb->Map().MyGID(last+1))
+    {
+        lid = atmb->Map().LID(last+1);
+        val = (*atmb)[0][lid];
+        std::cout << "b[last+1] = " << val << std::endl;
+
+    }
+
+        // EXPECT_EQ(
+    
+    
 }
 
 //------------------------------------------------------------------
@@ -609,21 +681,6 @@ TEST(CoupledModel, Synchronization)
     oceanAtmosP->MinValue(&minValue);
     EXPECT_GT(std::max(std::abs(maxValue), std::abs(minValue)), 0.0);
 
-}
-
-//------------------------------------------------------------------
-TEST(CoupledModel, EPIntegral)
-{
-    Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPrecipIntCo();
-    
-    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
-    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
-    
-    double integralE = Utils::dot(intcoeff, E);
-    EXPECT_GT(std::abs(integralE), 0.0);
-                              
-    double integralP = Utils::dot(intcoeff, P);
-    EXPECT_GT(std::abs(integralP), 0.0);
 }
 
 //------------------------------------------------------------------

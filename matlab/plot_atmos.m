@@ -60,10 +60,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     T0  = 15.0;   %//! reference temperature
     q0  = 8e-3;
+    q0  = 0;
     RtD = 180/pi;    
     
     tdim = 1;
     qdim = 1e-3;
+    qdim = 1;
     
     Ta  = T0 + tdim * squeeze(state(1,:,:,:));
     qa  = q0 + qdim * squeeze(state(2,:,:,:));
@@ -106,9 +108,18 @@ function [state,pars,add] = plot_atmos(fname, opts)
 
     figure(11)
     img = (qa-repmat(qz,n,1))';
-    contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
-    image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
+
+    imagesc(RtD*x,RtD*(y),img); hold on
+
+    %img(img == 0) = NaN;
+    %c = contour(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
+    %            'linewidth',.5);
+    
+    set(gca,'ydir','normal')
+    
+    %contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
+    %image(RtD*x,RtD*(y),srf,'AlphaData',.2);
+    %c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
 
     hold off
     cmap = my_colmap(caxis);
@@ -118,6 +129,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     title('qa anomaly')
     xlabel('Longitude')
     ylabel('Latitude')
+    exportfig('atmosqanom.eps',10,[14,10],invert)
     
     figure(12)
     img = qa';
@@ -143,12 +155,13 @@ function [state,pars,add] = plot_atmos(fname, opts)
     if readE && readP
         figure(13) 
         EmP = (E-P);
-        EmP(EmP==0)=NaN;
+
         img = EmP';
         %contourf(RtD*x,RtD*(y),img,10,'Visible','off'); hold on;
         %image(RtD*x,RtD*(y),srf,'AlphaData',.2);
         
         imagesc(RtD*x,RtD*(y),img); hold on
+        img(img == 0) = NaN;
         c = contour(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
                     'linewidth',.5);
         hold off
@@ -162,6 +175,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         title('E-P')
         xlabel('Longitude')
         ylabel('Latitude')
+        exportfig('atmosEmP.eps',10,[14,10],invert)
     end
     
 end

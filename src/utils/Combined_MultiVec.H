@@ -310,6 +310,14 @@ public:
     //! direct access to 2-norm
     double Norm() const { return Utils::norm(this); }
 
+    int SetSeed(unsigned int Seed_in)
+        {
+            int info = 0;
+            info += first_->SetSeed(Seed_in);
+            info += second_->SetSeed(Seed_in);
+            return info;
+        }        
+
     int Random()
         {
             int info = 0;

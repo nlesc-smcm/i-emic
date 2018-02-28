@@ -785,8 +785,9 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         // and load-balance for solve phase:
         domain->Assembly2Solve(*localRhs,*tmp_rhs);
 
-        // Instead of scaling the RHS, scaling the Jacobian
-        // corresponds better to how the equations would be written.
+        // Negating the RHS... Instead of scaling the RHS, scaling the
+        // Jacobian corresponds better to how the equations would be
+        // written.
         CHECK_ZERO(tmp_rhs->Scale(-1.0));
         
 #ifndef NO_INTCOND
