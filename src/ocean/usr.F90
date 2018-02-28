@@ -182,7 +182,7 @@ contains
 
     allocate(x(n),y(0:m+1),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l),&
          dfzT(l),dfzW(0:l))
-
+    
     allocate(kapv(0:l),kaph(l),emix(n,m,0:l))
     allocate(landm(0:n+1,0:m+1,0:l+la+1))
     landm=OCEAN;! in case no topology is read in
@@ -193,13 +193,17 @@ contains
     allocate(qatm(n,m), pfield(n,m), adapted_emip(n,m))
     allocate(ftlev(n,m,l), fslev(n,m,l))
     allocate(internal_temp(n,m,l), internal_salt(n,m,l))
-    taux  = 0.0
-    tauy  = 0.0
-    tatm  = 0.0
-    emip  = 0.0
-    spert = 0.0
+    taux   = 0.0
+    tauy   = 0.0
+    tatm   = 0.0
+    emip   = 0.0
+    spert  = 0.0
+    qatm   = 0.0
+    pfield = 0.0    
     internal_temp  = 0.0
     internal_salt  = 0.0
+    adapted_emip   = 0.0
+
     allocate(pv_adj(n,m,0:l))
   end subroutine allocate_usr
 
@@ -218,9 +222,9 @@ contains
 
     deallocate(Frc, taux, tauy, tx, ty)
     deallocate(ft, fs, tatm, emip, spert)
-    deallocate(qatm, pfield)
+    deallocate(qatm, pfield, adapted_emip)
     deallocate(ftlev, fslev)
-    deallocate(internal_temp,internal_salt)
+    deallocate(internal_temp, internal_salt)
     deallocate(pv_adj)
   end subroutine deallocate_usr
 

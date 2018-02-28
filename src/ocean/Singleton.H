@@ -33,8 +33,8 @@ protected:
 			INFO("Singleton constructor");
 			if (instance != Teuchos::null)
 			{
-				INFO("Warning: re-instantiating singleton object");
-			}
+				INFO("Warning: re-instantiating singleton object: \n " << instance);
+            }
 			instance = inst;
 		}
 	
@@ -48,4 +48,3 @@ protected:
 };
 
 #endif
-

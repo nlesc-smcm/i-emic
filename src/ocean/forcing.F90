@@ -49,20 +49,18 @@ SUBROUTINE forcing
   etabi = par(COMB)*par(TEMP)*(1 - TRES + TRES*par(BIOT))
 
   ! idealized temperature forcing
+  temcor = 0.0
   if ((ite.eq.1).and.(coupled_atm.eq.0)) then
+     
      do j=1,m
         do i=1,n
            tatm(i,j) = temfun(x(i),y(j))
         enddo
      enddo
+     
+     if (TRES.eq.0) call qint(tatm,  temcor)
+     
   endif
-
-  ! correct for nonzero flux
-  if ((TRES.eq.0).and.(coupled_atm.eq.0)) then
-     call qint(tatm,temcor)
-  else
-     temcor = 0.0
-  end if
 
   do j=1,m
      do i=1,n
@@ -86,9 +84,6 @@ SUBROUTINE forcing
      enddo
   enddo
 
-  ! write(*,*) ' tatm(n/2,m/2)=', tatm(n/2,m/2), &
-  !     ' qatm(n/2,m/2)=',  qatm(n/2,m/2)
-
   ! ------------------------------------------------------------------
   ! Determine salinity forcing
   ! ------------------------------------------------------------------
@@ -99,15 +94,17 @@ SUBROUTINE forcing
      gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT))
   endif
 
+  salcor = 0.0;
   if (its.eq.1) then  ! idealized salinity forcing
+
      do j=1,m
         do i=1,n
            emip(i,j) = salfun(x(i),y(j))
         enddo
      enddo
-     call qint(emip,  salcor)
-  else
-     salcor = 0.0;
+     
+     if (SRES.eq.0) call qint(emip,  salcor)
+
   endif
 
   if (SRES.eq.0.and.coupled_atm.eq.0) then   ! correct for nonzero flux
@@ -115,10 +112,10 @@ SUBROUTINE forcing
      call qint(adapted_emip, adapted_salcor)
      call qint(spert, spertcor)
 
-     !write(*,*) 'salcor=',salcor, ' adapted_salcor=', adapted_salcor, 'spertcor=', spertcor
-     !write(*,*) 'emip(10,10)', emip(10,10)
-     !write(*,*) 'adapted_emip(10,10)', adapted_emip(10,10)
-     !write(*,*) 'spert(10,10)', spert(10,10)
+     ! write(*,*) 'salcor=',salcor, ' adapted_salcor=', adapted_salcor, 'spertcor=', spertcor
+     ! write(*,*) 'emip(10,10)', emip(10,10)
+     ! write(*,*) 'adapted_emip(10,10)', adapted_emip(10,10)
+     ! write(*,*) 'spert(10,10)', spert(10,10)
      
   else
      adapted_salcor = 0.0

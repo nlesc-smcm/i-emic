@@ -20,7 +20,8 @@
 // As base class Singleton is templated we must instantiate it
 //----------------------------------------------------------------------
 
-template <typename THCM> Teuchos::RCP<THCM> Singleton<THCM>::instance;
+template <typename THCM>
+Teuchos::RCP<THCM> Singleton<THCM>::instance;
 
 namespace TRIOS
 {

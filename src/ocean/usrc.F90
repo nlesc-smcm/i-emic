@@ -41,7 +41,6 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   eta  = 0.0
   dqso = 0.0
 
-
   if (a_periodic.eq.0) then
      periodic  =  .false.
   else
@@ -118,7 +117,6 @@ subroutine finalize
   implicit none
 
   call deallocate_usr()
-
   call deallocate_mat()
   call deallocate_atm()
   call deallocate_res()

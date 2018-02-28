@@ -43,6 +43,7 @@ subroutine deallocate_mix()
    deallocate(vmix_row); 
    deallocate(vmix_col); 
    deallocate(vmix_ngrp);
+   deallocate(vmix_counts);
    deallocate(vmix_ipntr, vmix_jpntr);
 
 end subroutine deallocate_mix

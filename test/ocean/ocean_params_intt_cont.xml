@@ -5,9 +5,11 @@
 
 <ParameterList name="Ocean">
 
-  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Load state"            type="bool" value="true"/>
+  <Parameter name="Load salinity flux"    type="bool" value="true"/>
+  <Parameter name="Load temperature flux" type="bool" value="false"/>
 
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Salinity Forcing"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -31,9 +33,9 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="6"/>
+    <Parameter name="Global Grid-Size n" type="int" value="8"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="6"/>
+    <Parameter name="Global Grid-Size m" type="int" value="8"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="4"/>
 
@@ -42,14 +44,14 @@
     <!-- 1: no land                                 -->
     <!-- others not tested, but this is 'itopo' in  -->
     <!-- THCM language                              -->
-    <Parameter name="Topography" type="int" value="1"/>
+    <Parameter name="Topography" type="int" value="0"/>
     <!-- remove bottom profile? (flat in THCM)      -->
     <Parameter name="Flat Bottom" type="bool" value="0"/>
     <!-- read mask from a file in mkmask The filename is hard-coded in   -->
     <!-- topo.F90.                                                       -->
-    <Parameter name="Read Land Mask" type="bool" value="0"/>
+    <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_natll8"/>
+    <Parameter name="Land Mask" type="string" value="mask_natl8"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -66,19 +68,16 @@
       <Parameter name="Temperature Forcing" type="double" value="10.0"/>
       <Parameter name="SPL1"                type="double" value="2.0e3"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>
-
-      <!-- Ekman number times 64 -->
-      <!-- <Parameter name="Horizontal Ekman-Number" type="double" value="0.0027037"/> -->
-      <!-- <Parameter name="Vertical Ekman-Number" type="double" value="4.2855184e-07"/> -->
-
     </ParameterList>
 	
     <!-- Mixing parameter (vmix_GLB in THCM)                                   -->
 	<!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
+	<!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                              -->
+	<!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                              -->
     <Parameter name="Mixing" type="int" value="1"/>
 	
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
-    <Parameter name="Rho Mixing" type="bool" value="0"/>
+    <Parameter name="Rho Mixing" type="bool" value="1"/>
     <!-- Taper (tap in usr.F90) -->
     <Parameter name="Taper" type="int" value="1"/>
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
@@ -88,7 +87,7 @@
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
     <!-- Freshwater Forcing (ifw in THCM) -->
     <!-- 0: data, 1: idealized            -->
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
@@ -98,7 +97,7 @@
     <Parameter name="Levitus T" type="int" value="1"/>    
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
-    <Parameter name="Levitus S" type="int" value="1"/>
+    <Parameter name="Levitus S" type="int" value="0"/>
     <!-- Wind Forcing (iza in THCM)       -->
     <!-- 0: data,                         -->
     <!-- 1: zonally averaged              -->

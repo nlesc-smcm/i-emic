@@ -315,7 +315,7 @@ createInitialTangent()
     {
         std::stringstream fname;
         fname << "init_tan_" << std::setprecision(4) << par_;
-        Utils::print(stateDot_, fname.str());
+        Utils::save(stateDot_, fname.str());
     }
 
     // We scale the tangent of the state and parameter such they are

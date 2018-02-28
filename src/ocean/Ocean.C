@@ -117,10 +117,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     // If specified we load a pre-existing state and parameters (x,l)
     // thereby overwriting the starting parameters
     // This will be able to load salinity and temperature fluxes as well.
-    if (loadState_ || loadSalinityFlux_)
+
+    state_->PutScalar(0.0);            
+    if (loadState_ || loadSalinityFlux_ || loadTemperatureFlux_)
         loadStateFromFile(inputFile_);
-    else            // Initialize with trivial solution
-        state_->PutScalar(0.0);
 
     // Now that we have the state and parameters initialize
     // the Jacobian, solution and rhs
@@ -745,7 +745,9 @@ void Ocean::initializeBelos()
     belosParamList_->set("Maximum Iterations", maxiters);
     belosParamList_->set("Convergence Tolerance", gmresTol);
     belosParamList_->set("Explicit Residual Test", testExpl);
-    // belosParamList_->set("Implicit Residual Scaling", "Norm of Preconditioned Initial Residual");
+    belosParamList_->set("Implicit Residual Scaling", "Norm of Preconditioned Initial Residual");
+   //    belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
+   //    belosParamList_->set("Implicit Residual Scaling", "Norm of Initial Residual");
     // belosParamList_->set("Explicit Residual Scaling", "Norm of RHS");
 
     // Belos block FGMRES setup

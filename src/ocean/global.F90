@@ -134,33 +134,37 @@ contains
     coupled_atm = a_coupled_atm
     !===========================================================
 
-    if (n/=a_n .or. m/=a_m .or. l/=a_l) then
+    ! if (n/=a_n .or. m/=a_m .or. l/=a_l) then
+    
+    n = a_n
+    m = a_m
+    l = a_l
+    ndim = n*m*l*nun
 
-       n = a_n
-       m = a_m
-       l = a_l
-       ndim = n*m*l*nun
+    call deallocate_global
 
-       call deallocate_global
+    write(*,*) 'allocating fortran arrays'
+    allocate(u(ndim), up(ndim), w(ndim,nf))       
+    allocate(landm(0:n+1,0:m+1,0:l+la+1))
+    allocate(taux(n,m),tauy(n,m))
+    allocate(tatm(n,m),emip(n,m),spert(n,m))
+    allocate(internal_temp(n,m,l),internal_salt(n,m,l))
+    internal_salt=0.0
+    internal_temp=0.0
+    landm = 0
 
-       allocate(u(ndim), up(ndim), w(ndim,nf))
-       allocate(landm(0:n+1,0:m+1,0:l+la+1))
-       allocate(taux(n,m),tauy(n,m))
-       allocate(tatm(n,m),emip(n,m),spert(n,m))
-       allocate(internal_temp(n,m,l),internal_salt(n,m,l))
-       internal_salt=0.0
-       internal_temp=0.0
-       landm = 0
-
-       allocate(x(n),y(m),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l))
-       call g_grid
-    end if ! new dimensions?
+    allocate(x(n),y(m),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l))
+    
+    call g_grid
+    ! end if ! new dimensions?
 
   end subroutine initialize
 
   subroutine deallocate_global
 
     implicit none
+
+    write(*,*) 'deallocating fortran arrays'
 
     if (allocated(u)) deallocate(u)
     if (allocated(up)) deallocate(up)
@@ -169,12 +173,24 @@ contains
     if (allocated(x)) deallocate(x)
     if (allocated(y)) deallocate(y)
     if (allocated(z)) deallocate(z)
+    
     if (allocated(xu)) deallocate(xu)
     if (allocated(yv)) deallocate(yv)
     if (allocated(zw)) deallocate(zw)
     if (allocated(ze)) deallocate(ze)
     if (allocated(zwe)) deallocate(zwe)
+    
+    if (allocated(taux)) deallocate(taux)
+    if (allocated(tauy)) deallocate(tauy)
+    
     if (allocated(landm)) deallocate(landm)
+
+    if (allocated(tatm))  deallocate(tatm)
+    if (allocated(emip))  deallocate(emip)
+    if (allocated(spert)) deallocate(spert)
+    
+    if (allocated(internal_temp)) deallocate(internal_temp)
+    if (allocated(internal_salt)) deallocate(internal_salt)
 
   end subroutine deallocate_global
 
