@@ -56,8 +56,12 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                          std::shared_ptr<Ocean> >(atmos_, ocean_);
 
     // Output parameters
-    INFO("CoupledModel parameters:");
+    INFO("\nCoupledModel parameters:");
     INFO(*params);
+    INFO("\n--------------------------------------");
+    INFO("Ocean couplings: coupled_T = " << ocean_->getCoupledT());
+    INFO("                 coupled_S = " << ocean_->getCoupledS());
+    INFO("--------------------------------------\n");
 
     // Synchronize state
     synchronize();
@@ -114,14 +118,6 @@ void CoupledModel::computeRHS()
     ocean_->computeRHS();   // Ocean
     atmos_->computeRHS();   // Atmosphere/
 
-#ifdef DEBUGGING_NEW
-    // INFO("CoupledModel::computeRHS ocean ||rhs|| = " << Utils::norm(ocean_->getRHS('V')));
-    // INFO("CoupledModel::computeRHS atmos ||rhs|| = " << Utils::norm(atmos_->getRHS('V')));
-
-    // Utils::print(ocean_->getRHS('V'), "oceanRHS");
-    // Utils::print(atmos_->getRHS('V'), "atmosRHS");
-#endif
-
     TIMER_STOP("CoupledModel compute RHS");
 }
 
@@ -163,6 +159,8 @@ void CoupledModel::initializeFGMRES()
     double gmresTol = solverParams->get("FGMRES tolerance", 1e-2);
     int maxrestarts = solverParams->get("FGMRES restarts", 0);
     int output      = solverParams->get("FGMRES output", 1000);
+    bool testExpl   = solverParams->get("FGMRES explicit residual test",
+                                        false);
 
     int NumGlobalElements = stateView_->GlobalLength();
     int blocksize         = 1; // number of vectors in rhs
@@ -185,6 +183,9 @@ void CoupledModel::initializeFGMRES()
                         Belos::StatusTestDetails );
     belosParamList->set("Maximum Iterations", maxiters);
     belosParamList->set("Convergence Tolerance", gmresTol);
+    belosParamList->set("Explicit Residual Test", testExpl);
+    belosParamList->set("Implicit Residual Scaling",
+                        "Norm of Preconditioned Initial Residual");
 
     // Belos block FGMRES setup
     belosSolver_ =

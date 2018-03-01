@@ -74,14 +74,14 @@ extern "C" {
     //          ih,vmix_GLB,tap,rho_mixing,
     //          periodic,itopo,flat,rd_mask,
     //          TRES,SRES,iza,ite,its,rd_spertm
-    //          coupled_atm
+    //          coupled_T, coupled_S
     _MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
                                              double*,double*,double*,double*,double*,double*,
                                              double*,double*,
                                              int*,int*,int*,int*,
                                              int*,int*,int*,int*,
                                              int*,int*,int*,int*,int*,int*,
-                                             int*);
+                                             int*,int*);
 
     _MODULE_SUBROUTINE_(m_global,finalize)(void);
     _MODULE_SUBROUTINE_(m_global,get_landm)(int*);
@@ -221,7 +221,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     its              = paramList.get("Levitus S", 1);
     internal_forcing = paramList.get("Levitus Internal T/S",false);
     bool rd_spertm   = paramList.get("Read Salinity Perturbation Mask",false);
-    coupled_atm      = paramList.get("Coupled Atmosphere", 0);
+    coupled_T        = paramList.get("Coupled Temperature", 0);
+    coupled_S        = paramList.get("Coupled Salinity", 0);
 
     if (rd_spertm)
     {
@@ -307,7 +308,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &ih, &vmix_GLB, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres, &sres, &iza, &ite, &its, &ird_spertm,
-                                  &coupled_atm);
+                                  &coupled_T, &coupled_S);
 
     INFO("THCM init: m_global::initialize... done");
 

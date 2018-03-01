@@ -71,7 +71,8 @@
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
-    <Parameter name="Coupled Atmosphere" type="int" value="1"/>
+    <Parameter name="Coupled Temperature" type="int" value="1"/>
+    <Parameter name="Coupled Salinity"    type="int" value="1"/>
     <!-- =============================================================== -->
 
     <!-- Starting Parameters                                          -->

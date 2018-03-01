@@ -25,7 +25,7 @@ module m_global
        alphaT, alphaS,                       &
        ih, vmix_GLB, tap, rho_mixing,        &
        itopo, flat, rd_mask,                 &
-       coupled_atm,                          &
+       coupled_T, coupled_S,                 &
        TRES, SRES, iza, ite, its, rd_spertm, &
        rowintcon, f99, t0, s0
 
@@ -70,7 +70,7 @@ contains
        a_ih,a_vmix_GLB,a_tap,a_rho_mixing,&
        a_periodic,a_itopo,a_flat,a_rd_mask,&
        a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm,&
-       a_coupled_atm)
+       a_coupled_T, a_coupled_S)
 
     use, intrinsic :: iso_c_binding
     implicit none
@@ -81,7 +81,7 @@ contains
     integer(c_int) :: a_ih,a_vmix_GLB,a_tap,a_rho_mixing
     integer(c_int) :: a_periodic,a_itopo,a_flat,a_rd_mask
     integer(c_int) :: a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm
-    integer(c_int) :: a_coupled_atm
+    integer(c_int) :: a_coupled_T, a_coupled_S
 
     xmin  = a_xmin
     xmax  = a_xmax
@@ -131,7 +131,8 @@ contains
     end if
 
     !========= I-EMIC coupling  ================================
-    coupled_atm = a_coupled_atm
+    coupled_T = a_coupled_T
+    coupled_S = a_coupled_S
     !===========================================================
 
     ! if (n/=a_n .or. m/=a_m .or. l/=a_l) then
@@ -442,7 +443,7 @@ contains
     real(c_double), dimension(n*m) :: ctatm
     integer :: i,j,pos
 
-    if (coupled_atm.ne.1) then
+    if (coupled_T.eq.0) then
        if (ite.eq.0) then
           if (TRES.eq.0) then ! read heat flux and store it in tatm
              _INFO_("Expecting heat flux to be provided by Ocean hdf5 interface...")
@@ -458,7 +459,7 @@ contains
           _INFO2_("Invalid option assigned to ite: ", ite)
        end if
     else ! accepting external atmosphere within I-EMIC
-       _INFO_("Accepting external atmosphere, we are now part of the I-EMIC")
+       _INFO_(" Accepting atmospheric temperature, we are now part of the I-EMIC")
        _INFO_(" For now we put tatm = 0")
        tatm(1:n,1:m) = 0.0
     end if
@@ -470,7 +471,7 @@ contains
           pos = pos+1
        end do
     end do
-
+    
   end subroutine get_temforcing
 
   subroutine get_internal_temforcing(ctemp)
@@ -506,7 +507,7 @@ contains
     real(c_double), dimension(n*m) :: cemip
     integer :: i,j,pos
 
-    if (its.ne.1 .and. coupled_atm.eq.0) then
+    if ((its.eq.0).and.(coupled_S.eq.0)) then       
        ! read (virtual) salt flux and store it in emip
        if (SRES.eq.0) then 
           _INFO_("Expecting salinity flux to be provided by Ocean hdf5 interface...")
@@ -624,7 +625,7 @@ contains
 
     write(ibuf,'(1I2.2)') month
 
-    if (ite.eq.0) then
+    if ((ite.eq.0).and.(coupled_T.eq.0)) then
        fname = topdir//'levitus/monthly/t'//ibuf//'an1'
        write(f99,*) 'read levitus SST from file"'//trim(fname)//'"'
        call levitus_interpol(trim(fname),tatm,-5.,50.,l,1)
@@ -634,7 +635,7 @@ contains
        ite=0 ! use tatm from now on
     end if
 
-    if (its.eq.0 .and. coupled_atm.eq.0) then
+    if ((its.eq.0).and.(coupled_S.eq.0)) then
        fname = topdir//'levitus/monthly/s'//ibuf//'an1'
        write(f99,*) 'read levitus S from file"'//trim(fname)//'"'
        call levitus_interpol(trim(fname),emip,30.,40.,l,1)

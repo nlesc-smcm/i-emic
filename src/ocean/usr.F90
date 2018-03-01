@@ -78,10 +78,12 @@ module m_usr
   !integer :: FBS        = 0       ! fixed bottom salinity +1 , no flux 0
 
   !===== I-EMIC COUPLING FLAGS ==============================================
-  !     These are set in initialize in global.F90
+  !     These are set in global.F90::initialize 
   
-  integer :: coupled_atm = 0       ! 0: standalone thcm,
-                                   ! 1: accepting external atmosphere
+  integer :: coupled_T = 0         ! 0: uncoupled temperature
+                                   ! 1: temperature coupled to atmosphere
+  integer :: coupled_S = 0         ! 0: uncoupled salinity
+                                   ! 1: salinity coupled to atmosphere
   
   !===== FORCING FIELDS ========================================================
   !

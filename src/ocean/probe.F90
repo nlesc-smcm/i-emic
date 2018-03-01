@@ -19,7 +19,9 @@ contains
     real(c_double), dimension(m*n) :: atmos_temp
     integer :: i,j,pos
 
-    if (coupled_atm.eq.1) then
+    ! Coupling with T (sensible heat flux) would need the atmospheric
+    ! temperature tatm.
+    if (coupled_T.eq.1) then
        pos = 1
        do j = 1,m
           do i = 1,n
@@ -43,7 +45,9 @@ contains
     real(c_double), dimension(m*n) :: atmos_q
     integer :: i,j,pos
 
-    if (coupled_atm.eq.1) then
+    ! Coupling with T and S would both need atmospheric humidity qatm
+    ! (latent heat flux in T eq., E-P in S eq.).
+    if ((coupled_T.eq.1).or.(coupled_S.eq.1)) then
        pos = 1
        do j = 1,m
           do i = 1,n
@@ -67,7 +71,8 @@ contains
     real(c_double), dimension(m*n) :: atmos_p
     integer :: i,j,pos
 
-    if (coupled_atm.eq.1) then
+    ! Coupling with S would need precipitation P (E-P).
+    if (coupled_S.eq.1) then
        pos = 1
        do j = 1,m
           do i = 1,n
@@ -99,12 +104,12 @@ contains
 
     ! external
     integer find_row2
-
-    if (coupled_atm.eq.1) then
+    
+    if ((coupled_T.eq.1).or.(coupled_S.eq.1)) then
        pos = 1
        do j = 1,m
           do i = 1,n
-
+             
              ocean_evap(pos) = eta * ((deltat / qdim) * &
                   dqso * un(find_row2(i,j,l,TT)) - &
                   qatm(i,j)) * (1 - landm(i,j,l))
@@ -211,7 +216,7 @@ contains
     do j = 1,m
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
-             if (coupled_atm.eq.1) then
+             if ((coupled_T.eq.1).or.(coupled_S.eq.1)) then
                 salflux(pos) = nus * qdim * dedt * T(i,j,l) -  &
                      nus * qdim * (eta * qatm(i,j) + pfield(i,j) )
              else

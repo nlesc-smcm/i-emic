@@ -644,6 +644,18 @@ std::string const Ocean::writeData(bool describe)
     }                           
 }
 
+//==================================================================
+int Ocean::getCoupledT()
+{
+    return THCM::Instance().getCoupledT(); 
+}
+
+//==================================================================
+int Ocean::getCoupledS()
+{
+    return THCM::Instance().getCoupledS(); 
+}
+
 //=====================================================================
 // Setup block preconditioner parameters
 // --> xml files should have a better home
@@ -745,9 +757,11 @@ void Ocean::initializeBelos()
     belosParamList_->set("Maximum Iterations", maxiters);
     belosParamList_->set("Convergence Tolerance", gmresTol);
     belosParamList_->set("Explicit Residual Test", testExpl);
-    belosParamList_->set("Implicit Residual Scaling", "Norm of Preconditioned Initial Residual");
-   //    belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
-   //    belosParamList_->set("Implicit Residual Scaling", "Norm of Initial Residual");
+    belosParamList_->set("Implicit Residual Scaling",
+                         "Norm of Preconditioned Initial Residual");
+    
+    // belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
+    // belosParamList_->set("Implicit Residual Scaling", "Norm of Initial Residual");
     // belosParamList_->set("Explicit Residual Scaling", "Norm of RHS");
 
     // Belos block FGMRES setup

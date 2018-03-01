@@ -43,6 +43,27 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     else
         invert = false;
     end    
+    
+    restrict_sol = false;
+    rmask = [];
+    
+    if isfield(opts, 'restrict_sol') && ...
+            isfield(opts, 'rmask_file')
+        
+        restrict_sol = opts.restrict_sol;
+        rmask_file = opts.rmask_file;
+        
+    elseif isfield(opts, 'restrict_sol') && ...
+            ~isfield(opts, 'rmask_file')
+        
+        fprintf(['WARNING: An rmask_file should be supplied when ' ...
+                 'restrict_sol=true.\n']);
+    end
+        
+
+            
+            
+            
 
     % interpolation mode
     if isfield(opts, 'solfile2') && isfield(opts, 'maskfile2') ...
@@ -84,16 +105,6 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         landm = (1-k)*landm + k*landm2;
     end
 
-    surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
-    landm_int  = landm(2:n+1,2:m+1,2:l+1);
-    dx         = (xu(n+1)-xu(1))/n;
-    dy         = (yv(m+1)-yv(1))/m;
-    dz         = (zw(l+1)-zw(1))/l;
-
-    % - Create surface landmask image
-    summask = sum(landm_int,3);
-    summask = summask / max(max(abs(summask)));
-    summask = summask.^3;
 
     % - Deduce grid stretching
     [qz,dfzt,dfzw] = gridstretch(zw);
@@ -114,6 +125,36 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         end
         sol = (1-k)*sol+k*sol2;
     end
+    
+    if restrict_sol
+        
+        % load mask to restrict solution, assuming THCM input ordering
+        bmask = logical(flipud(load(rmask_file))');
+
+        % adjust landmask
+        landm = shiftdim(landm,2);
+        landm(2:l+1, bmask) = 1;
+        landm = shiftdim(landm,1);
+        
+        % cut borders
+        rmask = bmask(2:end-1,2:end-1);
+        % restrict solution
+        sol = shiftdim(sol, 3);
+        sol(:,:,rmask) = 0;
+        sol = shiftdim(sol, 1);        
+
+    end
+        
+    surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
+    landm_int  = landm(2:n+1,2:m+1,2:l+1);
+    dx         = (xu(n+1)-xu(1))/n;
+    dy         = (yv(m+1)-yv(1))/m;
+    dz         = (zw(l+1)-zw(1))/l;
+
+    % - Create surface landmask image
+    summask = sum(landm_int,3);
+    summask = summask / max(max(abs(summask)));
+    summask = summask.^3;        
 
     % - EXTRACT SOLUTION COMPONENTS - -----------------------------------
     [u,v,w,p,T,S] = extractsol(sol);
@@ -172,7 +213,8 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         % Compute overturning streamfunction
         PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
         PSIG = [zeros(m+1,1) PSIG];
-
+        
+        
         PSIGp = PSIG; PSIGp(PSIGp<0)  = NaN;
         PSIGn = PSIG; PSIGn(PSIGn>0)  = NaN;
 
@@ -181,7 +223,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
         cmin = min(min(PSIG(:,blwkm)));
         cmax = max(max(PSIG(:,blwkm)));
-        
+
         contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGp',15); hold on
         contourf(RtD*([y;ymax+dy/2]-dy/2),zw*hdim',PSIGn',15,'--'); hold off
 

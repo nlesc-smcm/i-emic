@@ -282,6 +282,10 @@ public:
     int getMdim() { return M_;}
     int getLdim() { return L_;}
 
+    //! Get coupling information
+    int getCoupledT();
+    int getCoupledS();
+
     //! Get the degrees of freedom
     int dof() { return _NUN_; }
 

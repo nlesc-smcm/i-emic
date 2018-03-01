@@ -124,11 +124,18 @@ public:
     */
     void evaluateB();
 
-    //! ------------------- I-EMIC couplings -----------------------------
-    //! Flag enabling the coupling with external atmosphere via the I-EMIC
-    //!   0: standalone thcm
-    //!   1: accepting external atmosphere
-    int coupled_atm;
+    //! ------------------- I-EMIC couplings --------------------
+    //!
+    //! Flags enabling the coupling with external atmosphere via the
+    //! I-EMIC, separated into a temperature and a salinity part.
+    //!
+    //! 0: standalone thcm
+    //! 1: accepting external atmosphere
+    //!
+    int coupled_T, coupled_S;
+
+    int getCoupledT() { return coupled_T; }
+    int getCoupledS() { return coupled_S; }
 
     //! Set atmosphere temperature in the ocean model
     void setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT);

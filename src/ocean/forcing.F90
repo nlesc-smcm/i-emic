@@ -50,7 +50,7 @@ SUBROUTINE forcing
 
   ! idealized temperature forcing
   temcor = 0.0
-  if ((ite.eq.1).and.(coupled_atm.eq.0)) then
+  if ((ite.eq.1).and.(coupled_T.eq.0)) then
      
      do j=1,m
         do i=1,n
@@ -70,12 +70,12 @@ SUBROUTINE forcing
            Frc(find_row2(i,j,l,TT)) = &
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
            
-        else if (coupled_atm.eq.1) then ! coupled externally
+        else if (coupled_T.eq.1) then ! coupled externally
            Frc(find_row2(i,j,l,TT)) = &
                 ( par(COMB) * par(SUNP) * suno(j)  &
                 +  Ooa * tatm(i,j) &
-                +  par(COMB)*par(TEMP)*lvsc * qdim * eta * qatm(i,j)   & ! latent heat 
-                -  par(COMB)*par(TEMP)*lvsc * eo0 &                      ! latent heat
+                ! +  par(COMB)*par(TEMP)*lvsc * qdim * eta * qatm(i,j)   & ! latent heat 
+                ! -  par(COMB)*par(TEMP)*lvsc * eo0 &                      ! latent heat
                 ) * (1 - landm(i,j,l))
 
         else  ! ocean-only
@@ -88,7 +88,7 @@ SUBROUTINE forcing
   ! Determine salinity forcing
   ! ------------------------------------------------------------------
 
-  if (coupled_atm.eq.1) then
+  if (coupled_S.eq.1) then
      gamma = par(COMB) * par(SALT) 
   else 
      gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT))
@@ -107,7 +107,7 @@ SUBROUTINE forcing
 
   endif
 
-  if (SRES.eq.0.and.coupled_atm.eq.0) then   ! correct for nonzero flux
+  if (SRES.eq.0.and.coupled_S.eq.0) then   ! correct for nonzero flux
 
      call qint(adapted_emip, adapted_salcor)
      call qint(spert, spertcor)
@@ -125,7 +125,7 @@ SUBROUTINE forcing
   do j=1,m
      do i=1,n
         ! nus*qdim*(E-P) without the sst dependency, which is taken care of in usrc.F90
-        if (coupled_atm.eq.1) then
+        if (coupled_S.eq.1) then
            Frc(find_row2(i,j,l,SS)) = gamma * nus * qdim * &
                 ( -eta * qatm(i,j) - pfield(i,j) ) &
                 * (1 - landm(i,j,l))

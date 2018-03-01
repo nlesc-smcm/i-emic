@@ -631,10 +631,10 @@ SUBROUTINE lin
 
   if (la > 0) then ! deprecated local atmosphere
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
-  else if (coupled_atm.eq.1) then ! coupled with external atmos
+  else if (coupled_T.eq.1) then ! coupled with external atmos
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz  &
-          + Ooa * tc & ! sensible heat flux
-          + dedt*sc    ! latent heat flux
+          + Ooa * tc     ! sensible heat flux
+     ! + dedt*sc    ! latent heat flux
   else
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
   endif
@@ -646,9 +646,9 @@ SUBROUTINE lin
   dedt = par(COMB) * par(SALT) * nus * qdim * &
        eta * (deltat / qdim) * dqso
   
-  if (coupled_atm.eq.1) then
-     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz 
-
+  if (coupled_S.eq.1) then ! coupled to atmosphere 
+     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
+     
      ! minus sign and nondim added (we take -Au in rhs computation)
      Al(:,:,1:l,:,SS,TT) = - dedt * sc !  * (r0dim / udim) 
   else

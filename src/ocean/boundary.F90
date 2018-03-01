@@ -426,24 +426,7 @@ subroutine boundaries
               do ii = 1, nun
                  Frc(find_row2(i,j,k,ii)) = 0.0
                  Al(i,j,k,5,ii,ii) = 1.0
-              enddo
-              if ( ( k == l ) .AND. (top == ATMOS)) then
-                 ! direct computation of land temperature             
-                 Al(i,j,l,5,TT,TT) = 1.0
-                 Al(i,j,l,23,TT,TT) = - 1.0
-                 Frc(find_row2(i,j,k,TT)) = par(COMB)*par(SUNP) * suno(j)/Ooa 
-              endif
-              
-#if 0 
-              ! I don't think this is a good idea: introducing land temp values
-              ! in the state could affect preconditioning
-              if ( ( k == l ) .AND. (coupled_atm .EQ. 1) ) then
-                 ! let the atmosphere be available via the forcing    ! Erik
-                 Al(i,j,l,5,TT,TT) = 1.0
-                 Frc(find_row2(i,j,k,TT)) = par(COMB)*par(SUNP) * suno(j)/Ooa + tatm(i,j)
-              endif
-#endif
-              
+              enddo              
            endif
         enddo
      enddo

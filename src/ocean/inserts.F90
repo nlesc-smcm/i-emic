@@ -19,7 +19,7 @@ contains
     real(c_double), dimension(m*n), intent(in) :: inserted_atmos_t
     integer :: i,j,pos
 
-    if (coupled_atm.eq.1) then
+    if (coupled_T.eq.1) then
        pos = 1
        do j = 1,m
           do i = 1,n
@@ -27,9 +27,6 @@ contains
              pos = pos + 1
           end do
        end do
-       !_INFO2_("++ Inserting T: tatm(5,5) = ", tatm(5,5))
-    else
-       _INFO2_("Not inserting atmosphere T : coupled_atm=", coupled_atm)
     end if
   end subroutine insert_atmosphere_t
 
@@ -44,7 +41,7 @@ contains
     real(c_double), dimension(m*n), intent(in) :: inserted_atmos_q
     integer :: i,j,pos
 
-    if (coupled_atm.eq.1) then
+    if ((coupled_T.eq.1).or.(coupled_S.eq.1)) then
        pos = 1
        do j = 1,m
           do i = 1,n
@@ -52,8 +49,6 @@ contains
              pos = pos + 1
           end do
        end do
-    else
-       _INFO2_("Not inserting atmosphere q : coupled_atm =", coupled_atm)
     end if
   end subroutine insert_atmosphere_q
   
@@ -68,7 +63,7 @@ contains
     real(c_double), dimension(m*n), intent(in) :: inserted_atmos_p
     integer :: i,j,pos
 
-    if (coupled_atm.eq.1) then
+    if (coupled_S.eq.1) then
        pos = 1
        do j = 1,m
           do i = 1,n
@@ -76,8 +71,6 @@ contains
              pos = pos + 1
           end do
        end do
-    else
-       _INFO2_("Not inserting atmosphere P : coupled_atm=", coupled_atm)
     end if
   end subroutine insert_atmosphere_p
 
