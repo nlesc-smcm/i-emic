@@ -39,12 +39,12 @@ TEST(Ocean, Continuation1)
         
         // Copy info
         std::ifstream src2("info_0.txt", std::ios::binary);
-        std::ifstream dst2("info_0.old", std::ios::binary);
+        std::ofstream dst2("info_0.old", std::ios::binary);
         dst2 << src2.rdbuf();
 
         // Copy cdata
         std::ifstream src3("cdata.txt", std::ios::binary);
-        std::ifstream dst3("cdata.old", std::ios::binary);
+        std::ofstream dst3("cdata.old", std::ios::binary);
         dst3 << src3.rdbuf();
 
         // Delete cdata        
