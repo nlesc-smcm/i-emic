@@ -33,24 +33,24 @@ TEST(Ocean, Continuation1)
         continuation.run();
 
         // Copy ocean_output.h5 to ocean_input.h5
-        std::ifstream src("ocean_output.h5", std::ios::binary);
-        std::ofstream dst("ocean_input.h5", std::ios::binary);
-        dst << src.rdbuf();
+        std::ifstream src1("ocean_output.h5", std::ios::binary);
+        std::ofstream dst1("ocean_input.h5", std::ios::binary);
+        dst1 << src1.rdbuf();
         
         // Copy info
-        src = std::ifstream("info_0.txt", std::ios::binary);
-        dst = std::ofstream("info_0.old", std::ios::binary);
-        dst << src.rdbuf();
+        std::ifstream src2("info_0.txt", std::ios::binary);
+        std::ifstream dst2("info_0.old", std::ios::binary);
+        dst2 << src2.rdbuf();
 
         // Copy cdata
-        src = std::ifstream("cdata.txt", std::ios::binary);
-        dst = std::ofstream("cdata.old", std::ios::binary);
-        dst << src.rdbuf();
+        std::ifstream src3("cdata.txt", std::ios::binary);
+        std::ifstream dst3("cdata.old", std::ios::binary);
+        dst3 << src3.rdbuf();
 
         // Delete cdata        
-        src.close();
-        src.open("cdata.txt", std::ofstream::out | std::ofstream::trunc);
-        src.close();
+        src3.close();
+        src3.open("cdata.txt", std::ofstream::out | std::ofstream::trunc);
+        src3.close();
     }
     catch (...)
     {
