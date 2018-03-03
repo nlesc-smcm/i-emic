@@ -1487,7 +1487,10 @@ int Ocean::loadStateFromFile(std::string const &filename)
         INFO("   ocean state: ||x|| = " << Utils::norm(state_));
 
         if (THCM::Instance().getSRES() == 0)
+        {
+            // THCM::Instance().adjustForIntCond(state_);
             THCM::Instance().setIntCondCorrection(state_);
+        }
     
         INFO("Loading state from " << filename << " done");
 

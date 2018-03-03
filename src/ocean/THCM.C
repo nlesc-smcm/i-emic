@@ -1848,8 +1848,10 @@ void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
 }
 
 //=============================================================================
-// Under non-restoring conditions: add a constant correction to the
-// salinity values in order to satisfy the integral condition.
+// Adjusting the integral condition using setIntCondCorrection above
+// is preferred. Under non-restoring conditions: add a constant
+// correction to the salinity values in order to satisfy the integral
+// condition.
 void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
 {
     if (sres != 0)

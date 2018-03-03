@@ -74,7 +74,7 @@
   <!-- Scaling of the state tangent, which can be made several orders      -->
   <!-- smaller than the parameter tangent.                                 -->
   <!-- I believe this affects the algorithms capability to traverse folds. -->
-  <Parameter name="state tangent scaling" type="double" value="1.0e-1"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0"/>
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
