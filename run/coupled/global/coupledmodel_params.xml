@@ -10,7 +10,7 @@
   <!-- Specify whether the coupled model should initialize with  -->
   <!-- old states (true) or with a trivial solution (false).     -->
   <!-- The sub-models maintain names for the input files.        -->
-  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Load state" type="bool" value="true"/>
   <Parameter name="Save state" type="bool" value="true"/>
 
   <Parameter name="Problem Description" type="string" value="Coupled run"/>
@@ -24,7 +24,7 @@
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
   <!--           "Humidity Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Salinity Forcing"/>
 
   <!-- We determine the horizontal extend and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
@@ -69,6 +69,6 @@
   <!-- F: 1 step forward block Gauss Seidel                   -->
   <!-- G: 2 step forward block Gauss Seidel                   -->                       
   <!-- D: diagonal, no coupling blocks                        -->
-  <Parameter name="Preconditioning" type="char" value="C"/>
+  <Parameter name="Preconditioning" type="char" value="B"/>
 
 </ParameterList>

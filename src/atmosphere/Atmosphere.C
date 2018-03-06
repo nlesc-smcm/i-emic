@@ -161,10 +161,12 @@ void Atmosphere::setup()
     Ad_   =  rhoa_ * hdima_ * cpa_ * d0_ / (muoa_ * r0dim_ * r0dim_);
     As_   =  sun0_ * (1 - c0_) / (4 * muoa_);
 
-    // Filling coefficients (humidity specific)
-    nuq_ = (qdim_ / hdimq_ )* (rhoo_ / rhoa_) * (r0dim_ / udim_);
-    eta_ = (rhoa_ / rhoo_) * ce_ * uw_;
+    // Filling coefficients (humidity specific) 
+    nuq_ = (qdim_ / hdimq_ )* (rhoo_ / rhoa_) * (r0dim_ / udim_); 
     Phv_ =  qdim_ * kappa_ / (udim_ * r0dim_);
+
+    // eta will be our continuation parameter for the humidity related physics
+    eta_ = comb_* humf_ * (rhoa_ / rhoo_) * ce_ * uw_;
 
     // Parameters for saturation humidity over ocean and ice
     double c1 = 3.8e-3;  // (kg / kg)
@@ -178,7 +180,7 @@ void Atmosphere::setup()
     qso_   = c1 * exp(c4 * t0o_ / (t0o_ + c5));
     qsi_   = c1 * exp(c2 * t0o_ / (t0o_ + c3));
 
-    // background evaporation and precipitation
+    // dimensional background evaporation and precipitation
     Eo0_ = eta_ * ( qso_ - q0_);
     Po0_ = Eo0_;
    
@@ -190,10 +192,10 @@ void Atmosphere::setup()
     dqsi_ *= exp( (c2 * t0i_) / (t0i_ + c3) );
 
     // order 1 state deviation response in  E
-    double Edev =  qdim_ * (eta_ * tdim_ / qdim_ * dqso_  - eta_ ) ;
+    double Edev = qdim_ * (eta_ * tdim_ / qdim_ * dqso_  - eta_ ) ;
 
-    // latent heat due to precipiation coeff
-    lvscale_ = (comb_* humf_ * rhoo_ * lv_ / muoa_) ;
+    // latent heat due to precipitation coeff
+    lvscale_ = 0.0; // (rhoo_ * lv_ / muoa_) ;
 
     INFO("Atmosphere computed parameters: ");
     INFO("       mu   = " << muoa_);
@@ -329,9 +331,9 @@ void Atmosphere::setupIntCoeff()
     }
 
     // Create serial integration coefficients for precipitation integral
-    // Use 1 dof and ignore land
+    // Use 1 dof and ignore land points
     precipIntCo_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
-    integralCoeff(vals, inds, 1, true);
+    integralCoeff(vals, inds, 1);
 
     // test indices
     assert(inds.back()-1 < precipIntCo_->size());
@@ -429,7 +431,7 @@ void Atmosphere::getConstants(double &qdim, double &nuq,
     nuq  = nuq_;
     eta  = eta_;
     dqso = dqso_;
-    dqdt = comb_ * humf_ * nuq_ * eta_ * dqso_ / qdim_;
+    dqdt = nuq_ * eta_ * dqso_ / qdim_;
     Eo0  = Eo0_;    
 }
 
@@ -444,6 +446,7 @@ void Atmosphere::integralCoeff(std::vector<double> &val,
     // Assuming that nun > 1 implies we want the integral coefficients
     // at the QQ points
     int XX = (nun == 1) ? ATMOS_TT_ : ATMOS_QQ_;
+
     // Obtain values and indices to compute integral
     // 1-based!
     for (int k = 1; k <= l_; ++k)
@@ -452,7 +455,7 @@ void Atmosphere::integralCoeff(std::vector<double> &val,
             {
                 if (use_landmask_ && ignoreLand && (*surfmask_)[(j-1)*n_+(i-1)])
                     continue;
-
+                
                 val.push_back(cos(yc_[j]) * dx_ * dy_);
                 ind.push_back(FIND_ROW_ATMOS1(nun, n_, m_, l_, i, j, k, XX));
             }
@@ -503,8 +506,8 @@ void Atmosphere::computeJacobian()
     discretize(6, qyy);  // meridional diffusion
     
     // Multiply parameters with continuation control pars
-    double nuqetaCont = comb_ * humf_ * nuq_ * eta_ ;
-    qxx.update(Phv_, Phv_, qyy, -nuqetaCont, qc);
+    double nuqeta = nuq_ * eta_ ;
+    qxx.update(Phv_, Phv_, qyy, -nuqeta, qc);
 
     // Set humidity atom in dependency grid
     // Al(:,:,:,:,QQ,QQ) = Phv * (qxx + qyy) - nuq * eta * qc
@@ -512,7 +515,7 @@ void Atmosphere::computeJacobian()
 
     if (aux_ == 1)
     {
-        qc.scale(-comb_ * humf_ * nuq_);
+        qc.scale(-nuq_);
         Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
     }
 
@@ -699,8 +702,6 @@ void Atmosphere::forcing()
                 value =  nuq_ * eta_ *  dqso_ * ( tdim_ / qdim_ )
                     * (*sst_)[surfaceRow-1];
 
-                // Apply continuation control parameters
-                value *= comb_ * humf_ ;
             }
             frc_[humRow-1] = value;
         }
@@ -950,7 +951,7 @@ void Atmosphere::initcond()
     std::vector<double> vals,inds;
     integralCoeff(vals, inds);
 
-    co_.insert(co_.end(), vals.begin(), vals.end());
+    co_.insert(co_.end() ,vals.begin(), vals.end());
     jco_.insert(jco_.end(), inds.begin(), inds.end());
     beg_.push_back(first + vals.size());
 }
@@ -1300,6 +1301,10 @@ void Atmosphere::setPar(std::string const &parName, double value)
         sunp_ = value;
     else if (parName.compare("Humidity Forcing") == 0)
         humf_ = value;
+
+    // The effects of comb_ and humf_ are combined in eta_, so here we
+    // update eta_.
+    eta_ = comb_* humf_ * (rhoa_ / rhoo_) * ce_ * uw_;
 
     // If parameter not available we take no action
 }

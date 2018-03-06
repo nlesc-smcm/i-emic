@@ -301,10 +301,11 @@ public:
                       double &eta, double &dqso,
                       double &dqdt, double &Eo0);
     
-    //! Get the dA_{ij} coefficients for surface integrals with q
+    //! Get the dA_{ij} coefficients for surface integrals with q. We
+    //! ignore land points by default. Also for the q integral.
     void integralCoeff(std::vector<double> &val,
                        std::vector<double> &ind,
-                       int nun = ATMOS_NUN_, bool ignoreLand = false);
+                       int nun = ATMOS_NUN_, bool ignoreLand = true);
 
     //! --------------------------------------------------------
     //! Set an external 2D surface mask in the atmosphere.

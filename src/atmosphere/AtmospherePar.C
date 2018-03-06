@@ -228,7 +228,7 @@ void AtmospherePar::setupIntCoeff()
 
     // Obtain integration coefficients for precipitation integral
     // Use 1 dof and ignore land
-    atmos_->integralCoeff(vals, inds, 1, true);
+    atmos_->integralCoeff(vals, inds, 1);
 
     // test indices
     assert(inds.back()-1 < precipIntCoLocal->MyLength());
@@ -333,7 +333,7 @@ void AtmospherePar::computeRHS()
     if ( (rhs_->Map().MyGID(rowIntCon_)) && (comm_->MyPID() != root) )
     {
         ERROR("Integral should be on last processor!", __FILE__, __LINE__);
-    }
+   }
 
     double intcond = Utils::dot(intcondCoeff_, state_);
 

@@ -4,11 +4,16 @@ function [state,pars,add] = plot_atmos(fname, opts)
         opts = [];
     end
 
+    
+    
     if nargin < 1
         fname = 'atmos_output.h5';
-
+    end
+    
+    if nargin < 2
         readE = true;
         readP = true;      
+        
         opts.readE = readE;
         opts.readP = readP;
     end
@@ -60,12 +65,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     T0  = 15.0;   %//! reference temperature
     q0  = 8e-3;
-    q0  = 0;
+    %q0  = 0;
     RtD = 180/pi;    
     
     tdim = 1;
     qdim = 1e-3;
-    qdim = 1;
+    %qdim = 1;
     
     Ta  = T0 + tdim * squeeze(state(1,:,:,:));
     qa  = q0 + qdim * squeeze(state(2,:,:,:));
@@ -153,10 +158,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
     exportfig('atmosq.eps',10,[14,10],invert)
     
     if readE && readP
+
         figure(13) 
-        EmP = (E-P);
+        EmP = qdim*(E-P)*3600*24*365;
 
         img = EmP';
+
         %contourf(RtD*x,RtD*(y),img,10,'Visible','off'); hold on;
         %image(RtD*x,RtD*(y),srf,'AlphaData',.2);
         
@@ -171,10 +178,13 @@ function [state,pars,add] = plot_atmos(fname, opts)
         colorbar
 
         hold off
-        drawnow
-        title('E-P')
+        
+        
+        
+        title('E-P (m/y)')
         xlabel('Longitude')
         ylabel('Latitude')
+        
         exportfig('atmosEmP.eps',10,[14,10],invert)
     end
     

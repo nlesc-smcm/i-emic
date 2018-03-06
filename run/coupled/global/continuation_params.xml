@@ -12,8 +12,8 @@
   <!-- Give up at minimum step size -->
   <Parameter name="give up at minimum step size" type="bool" value="true"/>
 
-  <Parameter name="increase step size" type="double" value="1.5"/>
-  <Parameter name="decrease step size" type="double" value="1.5"/>
+  <Parameter name="increase step size" type="double" value="2"/>
+  <Parameter name="decrease step size" type="double" value="3"/>
   
   <!-- Define the destination value for the continuation parameter -->
   <Parameter name="destination 0" type="double" value="1.0"/>
