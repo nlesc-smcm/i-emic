@@ -1218,7 +1218,6 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
-
     // this block has values -Ooa on the surface temperature points
     double Ooa, Os, gamma, eta, lvscq;
     FNAME(getdeps)(&Ooa, &Os, &gamma, &eta, &lvscq);

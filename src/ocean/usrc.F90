@@ -189,7 +189,7 @@ SUBROUTINE getdeps(o_Ooa, o_Os, o_gamma, o_eta, o_lvscq)
   real(c_double) o_Ooa, o_Os, o_gamma, o_eta, o_lvscq
   o_Ooa   = Ooa
   o_Os    = Os
-  o_gamma = par(COMB) * par(SALT) * nus * qdim
+  o_gamma = nus 
   o_eta   = eta
   o_lvscq = lvsc * qdim
 end subroutine getdeps
@@ -625,7 +625,7 @@ SUBROUTINE lin
   call tderiv(7,tcb)
 
   ! dependence of TT on TT through latent heat due to evaporation
-  dedt =  par(COMB)*par(TEMP)*lvsc * qdim * eta * (deltat / qdim) * dqso
+  ! dedt =  par(COMB)*par(TEMP)*lvsc * qdim * eta * (deltat / qdim) * dqso
 
   ! write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
 
@@ -643,8 +643,7 @@ SUBROUTINE lin
   ! S-equation
   ! ------------------------------------------------------------------
   ! dependence of SS on TT through evaporation
-  dedt = par(COMB) * par(SALT) * nus * qdim * &
-       eta * (deltat / qdim) * dqso
+  dedt = par(COMB) * par(SALT) * nus * (deltat / qdim) * dqso
   
   if (coupled_S.eq.1) then ! coupled to atmosphere 
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
