@@ -282,9 +282,6 @@ public:
     Teuchos::RCP<Epetra_Vector> getP(char mode = 'C')   { return getVector(mode, P_); }
     Teuchos::RCP<Epetra_Vector> getDiagB(char mode = 'C')   { return getVector(mode, diagB_); }
 
-    Teuchos::RCP<Epetra_Vector> getPrecipIntCo(char mode = 'C')
-        { return getVector(mode, pIntCoeff_); }
-
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
 
     //! Return pointer to domain object
@@ -299,8 +296,12 @@ public:
     //! Get precipitation at interface 
     Teuchos::RCP<Epetra_Vector> interfaceP();
 
-    //! Get integral condition coefficients
-    Teuchos::RCP<Epetra_Vector> getIntCoeff() { return intcondCoeff_; } 
+    //! Get integral condition coefficients for standard map
+    Teuchos::RCP<Epetra_Vector> getIntCoeff() { return intcondCoeff_; }
+
+    //! Get precipitation integral coefficients for surface map (nun=1)
+    Teuchos::RCP<Epetra_Vector> getPIntCoeff(char mode = 'C')
+        { return getVector(mode, pIntCoeff_); }
 
     Teuchos::RCP<Epetra_BlockMap> getStandardSurfaceMap() { return standardSurfaceMap_; }
     Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() { return assemblySurfaceMap_; }

@@ -248,7 +248,7 @@ TEST(CoupledModel, AtmosphereEPfields)
 TEST(CoupledModel, EPIntegral)
 {
     
-    Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPrecipIntCo();
+    Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPIntCoeff();
     
     Teuchos::RCP<Epetra_Vector> E = atmos->getE();
     Teuchos::RCP<Epetra_Vector> P = atmos->getP();
@@ -321,7 +321,7 @@ TEST(CoupledModel, Continuation)
 //------------------------------------------------------------------
 TEST(CoupledModel, EPIntegral2)
 {
-    Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPrecipIntCo();
+    Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPIntCoeff();
     
     Teuchos::RCP<Epetra_Vector> E = atmos->getE();
     Teuchos::RCP<Epetra_Vector> P = atmos->getP();

@@ -436,6 +436,10 @@ TEST(Domain, AtmosRHS)
 
     double PrhsAll;
     comm->SumAll(&Prhs, &PrhsAll, 1);
+
+    // Here we expect that 
+    // \sum_i (1 / A) * (tdim / qdim) * dqso * T * dA_i =
+    // \sum_i (1 / A) * (q_i * dA_i)
     EXPECT_EQ(PrhsAll, -defaultP);
 }
 

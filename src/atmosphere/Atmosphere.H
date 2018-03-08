@@ -2,9 +2,8 @@
 /*
   Atmosphere is a model within the I-EMIC. It is based on the energy
   balance model in the old THCM code. The atmosphere is extended with
-  a vapor anomaly model and latent heat fluxes. Moreover, this
-  implementation is meant to run within a parallel domain
-  decomposition.
+  a vapor anomaly model and latent heat fluxes. This implementation is
+  meant to run within a parallel domain decomposition.
 
   Although this is a 2D model we maintain some notation of the 3D
   ocean model.
@@ -122,7 +121,7 @@ private:
     std::shared_ptr<std::vector<double> > intcondCoeff_;
 
     // Precipitation integral coefficients (only in serial case)
-    std::shared_ptr<std::vector<double> > precipIntCo_;
+    std::shared_ptr<std::vector<double> > pIntCoeff_;
 
     // Total sea surface area
     double totalArea_;
@@ -185,7 +184,7 @@ private:
     //! Evaporation field
     std::shared_ptr<std::vector<double> > E_;
 
-    //! Precipitation, --> idealized for now
+    //! Precipitation
     std::shared_ptr<std::vector<double> > P_;
 
     //! Coefficients
@@ -275,7 +274,7 @@ public:
     std::shared_ptr<std::vector<double> > getSST         (char Mode = 'C');
     std::shared_ptr<std::vector<double> > getE           (char mode = 'C');
     std::shared_ptr<std::vector<double> > getP           (char mode = 'C');
-    std::shared_ptr<std::vector<double> > getPrecipIntCo (char mode = 'C');
+    std::shared_ptr<std::vector<double> > getPIntCoeff   (char mode = 'C');
 
     void setState(std::shared_ptr<std::vector<double> > in) { state_ = in; }
     void setPrecipitation(std::shared_ptr<std::vector<double> > in) { P_ = in; }
@@ -307,14 +306,15 @@ public:
     //! Return parameter index, supply name
     int const par2int(std::string const &name);
 
-    //! Put default fields in atmosphere and ocean
-    void idealizedOcean();
-    void idealizedState(double defP = 1.0);
+    //! Put default fields in atmosphere and ocean, accepts a value
+    //! for the homogeneous precipitation.
     void idealized(double defP = 1.0);
+
+    //! Zero atmosphere state and sst
     void zeroOcean();
     void zeroState();
     
-    //! Obtain 
+    //! Obtain parameters
     void getCommPars(CommPars &parStruct);
     
     //! Get the dA_{ij} coefficients for surface integrals with q. We

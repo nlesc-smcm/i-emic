@@ -407,7 +407,7 @@ TEST(CoupledModel, applyMatrix)
             CHECK_ZERO(atmosVec->PutScalar(0.0));
 
             // Perform matvec with coupling block
-            CHECK_ZERO(C21.applyMatrix(*oceanVec, *atmosVec));
+            C21.applyMatrix(*oceanVec, *atmosVec);
 
             // assume single atmosphere layer
             l = 1;
@@ -465,7 +465,7 @@ TEST(CoupledModel, applyMatrix)
                 // If we have auxiliary unknowns, these govern precipitation
                 if (aux > 0)
                 {
-                    Teuchos::RCP<Epetra_Vector> precipintco = atmos->getPrecipIntCo();
+                    Teuchos::RCP<Epetra_Vector> precipintco = atmos->getPIntCoeff();
                     double totalArea;
                     precipintco->Norm1(&totalArea);
 

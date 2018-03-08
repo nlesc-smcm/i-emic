@@ -336,54 +336,44 @@ void Atmosphere::setupIntCoeff()
 
     // Create serial integration coefficients for precipitation integral
     // Use 1 dof and ignore land points
-    precipIntCo_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+    pIntCoeff_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
     integralCoeff(vals, inds, 1);
 
     // test indices
-    assert(inds.back()-1 < precipIntCo_->size());
+    assert(inds.back()-1 < pIntCoeff_->size());
 
     // Fill coefficients
     for (size_t idx = 0; idx != inds.size(); ++idx)
     {
-        (*precipIntCo_)[inds[idx]-1] = vals[idx];
+        (*pIntCoeff_)[inds[idx]-1] = vals[idx];
     }
 
     // Total surface area (ignoring land)
-    totalArea_ = Utils::sum(*precipIntCo_);
+    totalArea_ = Utils::sum(*pIntCoeff_);
 
     INFO("Atmosphere: total E,P area = " << totalArea_);
 }
 
-//-----------------------------------------------------------------------------
-void Atmosphere::idealizedOcean()
-{
-    // put idealized values in the surface temperature
-    double value;
-    int row;
-    for (int i = 1; i <= n_; ++i)
-        for (int j = 1; j <= m_; ++j)
-        {
-            value =  cos(PI_*(yc_[j]-ymin_glob_)/(ymax_glob_-ymin_glob_));
-            row   =  find_surface_row(i,j) - 1;
-            (*sst_)[row] = value;
-        }
-}                                         
-
-//-----------------------------------------------------------------------------
-void Atmosphere::idealizedState(double precip)
+//------------------------------------------------------------------
+void Atmosphere::idealized(double precip)
 {
     // put idealized values in atmosphere
-    double valueTT, valueQQ, valuePP;
-    int rowTT, rowQQ, rowPP;
+    double value;
+    int rowSST, rowTT, rowQQ, rowPP;
     for (int i = 1; i <= n_; ++i)
         for (int j = 1; j <= m_; ++j)
         {
-            valueTT = cos(PI_*(yc_[j]-ymin_glob_)/(ymax_glob_-ymin_glob_));
-            valueQQ = cos(PI_*(yc_[j]-ymin_glob_)/(ymax_glob_-ymin_glob_));
-            rowTT   = find_row(i,j,l_,ATMOS_TT_)-1;
-            rowQQ   = find_row(i,j,l_,ATMOS_QQ_)-1;
-            (*state_)[rowTT] = valueTT;
-            (*state_)[rowQQ] = valueQQ * dqso_ / qdim_;
+            value = cos(PI_*(yc_[j]-ymin_glob_)/(ymax_glob_-ymin_glob_));
+
+            rowSST   = find_surface_row(i,j) - 1;
+            rowTT    = find_row(i,j,l_,ATMOS_TT_)-1;
+            rowQQ    = find_row(i,j,l_,ATMOS_QQ_)-1;
+
+            // These values are chosen such that the integrated
+            // evaporation is zero.
+            (*sst_)[rowSST]  = value;
+            (*state_)[rowTT] = value;            
+            (*state_)[rowQQ] = value * tdim_ * dqso_ / qdim_;
         }
     
     // Compute evaporation based on idealized sst and q
@@ -392,15 +382,7 @@ void Atmosphere::idealizedState(double precip)
     // Set idealized precipitation
     rowPP = find_row(n_ ,m_, l_, ATMOS_PP_) - 1;
 
-    valuePP = precip;
-    (*state_)[rowPP] = valuePP;
-}
-
-//------------------------------------------------------------------
-void Atmosphere::idealized(double precip)
-{
-    idealizedOcean();        
-    idealizedState(precip);
+    (*state_)[rowPP] = precip;
 }
 
 //-----------------------------------------------------------------------------
@@ -751,7 +733,7 @@ void Atmosphere::computePrecipitation()
         return; // do nothing
     }
 
-    double integral = Utils::dot(*precipIntCo_, *E_) / totalArea_;
+    double integral = Utils::dot(*pIntCoeff_, *E_) / totalArea_;
 
     int surfaceRow;
     for (int j = 1; j <= m_; ++j)
@@ -1260,9 +1242,9 @@ std::shared_ptr<std::vector<double> > Atmosphere::getP(char mode)
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<std::vector<double> > Atmosphere::getPrecipIntCo(char mode)
+std::shared_ptr<std::vector<double> > Atmosphere::getPIntCoeff(char mode)
 {
-    return getVector(mode, precipIntCo_);
+    return getVector(mode, pIntCoeff_);
 }
 
 //-----------------------------------------------------------------------------
