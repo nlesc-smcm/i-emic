@@ -344,8 +344,8 @@ void AtmospherePar::computeRHS()
     // Specify precipitation integral in RHS if aux > 0
     //------------------------------------------------------------------
     double qdim, nuq, eta, dqso, dqdt, Eo0;
-    atmos_->getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
-
+    getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
+o
     double sstInt = Utils::dot(precipIntCo_, sst_) *
         (eta / totalArea_) * ( dqso / qdim ) ;
 
@@ -495,7 +495,7 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
     int oceanTT = 5; // (1-based) in THCM temperature is the fifth unknown
 
     double qdim, nuq, eta, dqso, dqdt, Eo0;
-    atmos_->getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
+    getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
 
     // loop over our unknowns
     for (int j = 0; j != m_; ++j)
@@ -787,7 +787,7 @@ void AtmospherePar::computeJacobian()
 
     // Obtain some constants from local model
     double qdim, nuq, eta, dqso, dqdt, Eo0;
-    atmos_->getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
+    getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
 
     for (int k = 0; k != l_; ++k)
         for (int j = 0; j != m_; ++j)
