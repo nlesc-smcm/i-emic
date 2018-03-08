@@ -348,7 +348,7 @@ void AtmospherePar::computeRHS()
     getCommPars(pars);
 
     double sstInt = Utils::dot(pIntCoeff_, sst_) *
-        (1.0 / totalArea_) * ( pars.tdim / pars.qdim ) ;
+        (1.0 / totalArea_) * ( pars.tdim / pars.qdim ) * pars.dqso ;
 
     // This is the same as the integral condition above so this can
     // probably be simplified. We can substitute it with 0 but for now

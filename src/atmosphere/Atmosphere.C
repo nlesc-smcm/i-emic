@@ -364,7 +364,7 @@ void Atmosphere::idealizedOcean()
         for (int j = 1; j <= m_; ++j)
         {
             value =  cos(PI_*(yc_[j]-ymin_glob_)/(ymax_glob_-ymin_glob_));
-            row   = find_surface_row(i,j) - 1;
+            row   =  find_surface_row(i,j) - 1;
             (*sst_)[row] = value;
         }
 }                                         
