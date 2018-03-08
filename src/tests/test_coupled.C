@@ -388,8 +388,9 @@ TEST(CoupledModel, applyMatrix)
             }
         }
 
-        double qdim, nuq, eta, dqso, dqdt, Eo0;
-        atmos->getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
+        // qdim, nuq, eta, dqso, dqdt, Eo0;
+        AtmospherePar::CommPars pars;
+        atmos->getCommPars(pars);
 
         // Test ocean -> atmos coupling
         for (int v = 0; v != 3; ++v)
@@ -441,7 +442,7 @@ TEST(CoupledModel, applyMatrix)
                 {
                     lid = atmosVec->Map().LID(surfbQ);
                     surfval = (*atmosVec)[0][lid];
-                    EXPECT_NEAR( dqdt * value[v], surfval, 1e-7);
+                    EXPECT_NEAR( pars.dqdt * value[v], surfval, 1e-7);
                 }
 
                 // Test final element in range (results from sst integral)
@@ -476,7 +477,7 @@ TEST(CoupledModel, applyMatrix)
                     double sstInt = Utils::dot(precipintco, ones);
                     std::cout << " sstInt: " << sstInt << std::endl;
                                         
-                    double intval = sstInt * (eta / totalArea) * (dqso / qdim);
+                    double intval = sstInt * (pars.eta / totalArea) * (pars.dqso / pars.qdim);
                     std::cout << " intval: " << intval << std::endl;
 
                     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);

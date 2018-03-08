@@ -211,18 +211,26 @@ end subroutine get_constants
 
 !**********************************************************
 SUBROUTINE set_ep_constants(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
-  !     interface to get a few model constants
+  ! Interface to set a few model parameters relevant for E-P. These
+  ! parameters affect the sensitivity nus, which should be updated
+  ! here.
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_atm
   implicit none
   real(c_double) i_qdim, i_nuq, i_eta, i_dqso, i_eo0
-
+  real dzne
+  
   qdim = i_qdim 
   nuq  = i_nuq  
   eta  = i_eta  
   dqso = i_dqso
   eo0  = i_eo0
+
+  dzne = dz*dfzT(l)
+  
+  nus = ( par(COMB) * par(SALT) * s0 * eta * qdim * r0dim ) &
+       / ( deltas *udim * hdim * dzne )
 
 end subroutine set_EP_constants
 
@@ -642,14 +650,14 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! S-equation
   ! ------------------------------------------------------------------
-  ! dependence of SS on TT through evaporation
-  dedt = par(COMB) * par(SALT) * nus * (deltat / qdim) * dqso
+  ! dependence of SS on TT in evaporation term
+  dedt = nus * (deltat / qdim) * dqso
   
   if (coupled_S.eq.1) then ! coupled to atmosphere 
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
      
      ! minus sign and nondim added (we take -Au in rhs computation)
-     Al(:,:,1:l,:,SS,TT) = - dedt * sc !  * (r0dim / udim) 
+     Al(:,:,1:l,:,SS,TT) = - dedt * sc !  
   else
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
   endif
@@ -1102,8 +1110,8 @@ SUBROUTINE atmos_coef
   As   = sun0*(1 - c0)/(4*muoa)
   Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
   Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
-  nus  = s0 * r0dim / (udim*deltas*hdim*dzne  ) ! without qdim!
-  lvsc = lv * r0dim / (udim*cp0*hdim*dzne ) ! without qdim!
+  nus  = 0.0 ! postpone until set_ep_constants is called
+  lvsc = 0.0 ! ...
   DO j = 1,m
      !       albe(j) = 0.15 + 0.05 * cos (y(j))
      albe(j) = 0.3
@@ -1120,9 +1128,9 @@ SUBROUTINE atmos_coef
   write(8, *) suno
   close(8)
   
-  write(*,*) 'Ocean-Atmosphere pars:     dzne=', dzne,' hdim=', hdim
-  write(*,*) '                            nus=', nus, ' lvsc=', lvsc
-  write(*,*) '                            Ooa=', Ooa, ' muoa=', muoa    
+  ! write(*,*) 'Ocean-Atmosphere pars:     dzne=', dzne,' hdim=', hdim
+  ! write(*,*) '                            nus=', nus, ' lvsc=', lvsc
+  ! write(*,*) '                            Ooa=', Ooa, ' muoa=', muoa    
 
 END SUBROUTINE atmos_coef
 

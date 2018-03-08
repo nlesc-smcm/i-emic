@@ -124,11 +124,9 @@ SUBROUTINE forcing
   
   do j=1,m
      do i=1,n
-        ! nus*qdim*(E-P) without the sst dependency, which is taken care of in usrc.F90
-        if (coupled_S.eq.1) then              
-           Frc(find_row2(i,j,l,SS)) = gamma * nus * &
-                ( - qatm(i,j) - pfield(i,j) ) &
-                * (1 - landm(i,j,l))
+        if (coupled_S.eq.1) then
+           ! nus*(E-P) without the T dependency, which is taken care of in usrc.F90
+           Frc(find_row2(i,j,l,SS)) =  nus * (-qatm(i,j)-pfield(i,j)) * (1-landm(i,j,l))
         else
            Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &
                 gamma * par(HMTP) * ( adapted_emip(i,j) - adapted_salcor ) + &

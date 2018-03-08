@@ -222,8 +222,9 @@ void AtmospherePar::setupIntCoeff()
     // Create parallelized integration coefficients for precipitation
     //------------------------------------------------------------------
 
-    precipIntCo_ = Teuchos::rcp( new Epetra_Vector(*standardSurfaceMap_) );
-    Teuchos::RCP<Epetra_Vector> precipIntCoLocal =
+    pIntCoeff_ = Teuchos::rcp( new Epetra_Vector(*standardSurfaceMap_) );
+    
+    Teuchos::RCP<Epetra_Vector> pIntCoeffLocal =
         Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
     // Obtain integration coefficients for precipitation integral
@@ -231,22 +232,22 @@ void AtmospherePar::setupIntCoeff()
     atmos_->integralCoeff(vals, inds, 1);
 
     // test indices
-    assert(inds.back()-1 < precipIntCoLocal->MyLength());
+    assert(inds.back()-1 < pIntCoeffLocal->MyLength());
 
     // fill local precipitation integration coefficients
     for (size_t idx = 0; idx != inds.size(); ++idx)
     {
-        (*precipIntCoLocal)[inds[idx]-1] = vals[idx];
+        (*pIntCoeffLocal)[inds[idx]-1] = vals[idx];
     }
 
     // Export assembly map surface integration coeffs to standard map
-    CHECK_ZERO( precipIntCo_->Export( *precipIntCoLocal, *as2std_surf_, Zero ) );
+    CHECK_ZERO( pIntCoeff_->Export( *pIntCoeffLocal, *as2std_surf_, Zero ) );
 
     // Obtain total integration area (sum of absolute values)
-    precipIntCo_->Norm1(&totalArea_);
+    pIntCoeff_->Norm1(&totalArea_);
 
     INFO("AtmospherePar: total E,P area = " << totalArea_);
-    INFO("AtmospherePar:    local dA[0] = " << (*precipIntCo_)[0]);
+    INFO("AtmospherePar:    local dA[0] = " << (*pIntCoeff_)[0]);
 }
 
 //==================================================================
@@ -343,16 +344,16 @@ void AtmospherePar::computeRHS()
     //------------------------------------------------------------------
     // Specify precipitation integral in RHS if aux > 0
     //------------------------------------------------------------------
-    double qdim, nuq, eta, dqso, dqdt, Eo0;
-    getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
-o
-    double sstInt = Utils::dot(precipIntCo_, sst_) *
-        (eta / totalArea_) * ( dqso / qdim ) ;
+    AtmospherePar::CommPars pars;
+    getCommPars(pars);
+
+    double sstInt = Utils::dot(pIntCoeff_, sst_) *
+        (1.0 / totalArea_) * ( pars.tdim / pars.qdim ) ;
 
     // This is the same as the integral condition above so this can
     // probably be simplified. We can substitute it with 0 but for now
     // we leave it and test that later.
-    double qInt = intcond * eta / totalArea_;
+    double qInt = intcond  / totalArea_;
 
     // The integrals and P are on the same processor
     int last = FIND_ROW_ATMOS0( ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_ );
@@ -362,8 +363,8 @@ o
     {
         lid = rhs_->Map().LID(last + 1);
 
-        // F(P) = -P - eta / A * (q * dA') + (eta / A) * (dqso / qdim)
-        // * (T * dA')
+        // F = - P - \sum_i (1 / A) * (q_i * dA_i) +
+        //           \sum_i (1 / A) * (tdim / qdim) * dqso * T * dA_i
         (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt;
     }
 
@@ -494,8 +495,9 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
     int el_ctr = 0;
     int oceanTT = 5; // (1-based) in THCM temperature is the fifth unknown
 
-    double qdim, nuq, eta, dqso, dqdt, Eo0;
-    getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
+    // Obtain atmosphere commpars
+    Atmosphere::CommPars pars;
+    getCommPars(pars);
 
     // loop over our unknowns
     for (int j = 0; j != m_; ++j)
@@ -515,8 +517,7 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
                     }
                     else if (xx == ATMOS_QQ_)
                     {
-                        //block->co.push_back(oceanDep);
-                        block->co.push_back(dqdt);
+                        block->co.push_back(pars.dqdt);
                     }
 
                     block->jco.push_back(ocean->interface_row(i,j,oceanTT));
@@ -538,8 +539,8 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
                     qid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
                                           i, j, l_-1, ATMOS_QQ_);
 
-                    value = (*intcondGlob_)[0][qid] * (eta / totalArea_)
-                        * ( dqso / qdim );
+                    value = (*intcondGlob_)[0][qid] * (1.0 / totalArea_)
+                        * ( pars.tdim / pars.qdim ) * pars.dqso;
                     
                     block->co.push_back(value);
                 
@@ -786,8 +787,8 @@ void AtmospherePar::computeJacobian()
     int gid;
 
     // Obtain some constants from local model
-    double qdim, nuq, eta, dqso, dqdt, Eo0;
-    getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
+    AtmospherePar::CommPars pars;
+    getCommPars(pars);
 
     for (int k = 0; k != l_; ++k)
         for (int j = 0; j != m_; ++j)
@@ -797,7 +798,7 @@ void AtmospherePar::computeJacobian()
                 icinds[pos] = gid;
                 icvals[pos] = (*intcondGlob_)[0][gid];
                 ipinds[pos] = gid;
-                ipvals[pos] = (-eta / totalArea_ ) * (*intcondGlob_)[0][gid];
+                ipvals[pos] = (-1.0 / totalArea_ ) * (*intcondGlob_)[0][gid];
                 pos++;
             }
 
@@ -913,7 +914,7 @@ void AtmospherePar::computeEP()
         if (useFixedPrecip_)
             integral = 1.0e-6;
         else
-            integral = Utils::dot(precipIntCo_, E_) / totalArea_;
+            integral = Utils::dot(pIntCoeff_, E_) / totalArea_;
         
         
         assert((int) surfmask_->size() == numGlobalElements);
@@ -1050,11 +1051,9 @@ void AtmospherePar::initializePrec()
 }
 
 //==================================================================
-void AtmospherePar::getConstants(double &qdim, double &nuq,
-                                 double &eta, double &dqso,
-                                 double &dqdt, double &Eo0)
+void AtmospherePar::getCommPars(AtmospherePar::CommPars &parStruct)
 {
-    atmos_->getConstants(qdim, nuq, eta, dqso, dqdt, Eo0);
+    atmos_->getCommPars(parStruct);
 }
 
 //==================================================================

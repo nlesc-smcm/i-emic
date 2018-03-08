@@ -1,10 +1,13 @@
 //!------------------------------------------------------------------------
 /*
-  Atmosphere is a model within the I-EMIC. It is a reimplementation of the
-  energy balance model already available in the old THCM code. However,
-  this implementation is able to be run within a domain decomposition.
+  Atmosphere is a model within the I-EMIC. It is based on the energy
+  balance model in the old THCM code. The atmosphere is extended with
+  a vapor anomaly model and latent heat fluxes. Moreover, this
+  implementation is meant to run within a parallel domain
+  decomposition.
 
-  Although this is a 2D model we maintain notation of the 3D ocean model.
+  Although this is a 2D model we maintain some notation of the 3D
+  ocean model.
 
   Author: Erik -> t.e.mulder@uu.nl
 */
@@ -30,6 +33,21 @@ class Atom;
 
 class Atmosphere
 {
+public:
+
+    //! Parameters we need to communicate (see members for explanation).
+    struct CommPars
+    {
+        double tdim;
+        double qdim;
+        double nuq;
+        double eta;
+        double dqso;
+        double dqdt;
+        double Eo0;
+    };
+
+private:
     //! Parameterlist
     Teuchos::RCP<Teuchos::ParameterList> params_;
 
@@ -296,10 +314,8 @@ public:
     void zeroOcean();
     void zeroState();
     
-    //! Obtain derivatives of E,P
-    void getConstants(double &qdim, double &nuq,
-                      double &eta, double &dqso,
-                      double &dqdt, double &Eo0);
+    //! Obtain 
+    void getCommPars(CommPars &parStruct);
     
     //! Get the dA_{ij} coefficients for surface integrals with q. We
     //! ignore land points by default. Also for the q integral.
@@ -344,7 +360,8 @@ private:
     //! Assemble the dependency grid into a matrix in CRS form
     void assemble();
 
-    void initcond();
+    //! For serial use, apply integral condition after assemble
+    void intcond();
 
     //! Write vector to output file
     void write(std::vector<double> &vector, const std::string &filename);

@@ -1170,15 +1170,21 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
     Teuchos::RCP<Epetra_Vector> atmosP  = atmos->interfaceP();
     THCM::Instance().setAtmosphereP(atmosP);
 
-    // We also need to know a few atmospheric constants to compute E,
+    // We also need to know a few atmospheric parameters to compute E,
     // P and their derivatives w.r.t. SST (To) and humidity (q) These
-    // could be obtained at construction but, as they may depend on
-    // continuation parameters, the call belongs here.
-    double qdim, nuq, eta, dqso, dqdt, Eo0;
-    atmos->getConstants( qdim, nuq, eta, dqso, dqdt, Eo0);
-
-    FNAME(set_ep_constants)( &qdim, &nuq, &eta, &dqso, &Eo0 );
-
+    // may depend on continuation parameters, so the call belongs
+    // here.    
+    AtmospherePar::CommPars parStruct;
+    atmos->getCommPars(parStruct);
+    
+    // --> it should also be possible to pass the entire struct to
+    // --> fortran, need to figure that out...
+    FNAME( set_ep_constants )( &parStruct.qdim,
+                               &parStruct.nuq,
+                               &parStruct.eta,
+                               &parStruct.dqso,
+                               &parStruct.Eo0 );
+    
     TIMER_STOP("Ocean: set atmosphere...");
 }
 

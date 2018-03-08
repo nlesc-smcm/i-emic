@@ -1,10 +1,10 @@
 #ifndef ATMOSPHEREPAR_H
 #define ATMOSPHEREPAR_H
 
-//! This class takes care of the parallelization of the atmosphere model.
-//! For the domain decomposition we make use of the TRIOS_Domain stuff.
-//! This als ensures that, in a coupled case, we can move parallel objects
-//! around with maps that make sense.
+//! This class takes care of the parallelization of the atmosphere
+//! model. For the domain decomposition we make use of the
+//! TRIOS_Domain stuff. This als ensures that, in a coupled case, we
+//! can move parallel objects around with maps that make sense.
 
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
@@ -23,9 +23,10 @@ class Ocean;
 
 class AtmospherePar
 {
-public:
+public:    
     using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
-    using VectorPtr = Teuchos::RCP<Epetra_Vector>;
+    using VectorPtr     = Teuchos::RCP<Epetra_Vector>;
+    using CommPars      = Atmosphere::CommPars;
 
 private:
     //! serial atmosphere class, working on local subdomains
@@ -157,7 +158,7 @@ private:
     Teuchos::RCP<Epetra_MultiVector> intcondGlob_;
 
     //! coefficients for precipitation integral
-    Teuchos::RCP<Epetra_Vector> precipIntCo_;
+    Teuchos::RCP<Epetra_Vector> pIntCoeff_;
 
     //! total area for E,P
     double totalArea_;
@@ -246,10 +247,8 @@ public:
     //! Get continuation parameter
     double getPar(std::string const &parName) { return atmos_->getPar(parName); }
 
-    //! Get derivatives of E and P wrt To and q
-    void getConstants(double &qdim, double &nuq,
-                      double &eta, double &dqso,
-                      double &dqdt, double &Eo0);
+    //! Get parameters that we want to communicate
+    void getCommPars(CommPars &parStruct);
     
     //! Get continuation parameter name
     std::string const getParName() { return atmos_->getParName(); }
@@ -284,7 +283,7 @@ public:
     Teuchos::RCP<Epetra_Vector> getDiagB(char mode = 'C')   { return getVector(mode, diagB_); }
 
     Teuchos::RCP<Epetra_Vector> getPrecipIntCo(char mode = 'C')
-        { return getVector(mode, precipIntCo_); }
+        { return getVector(mode, pIntCoeff_); }
 
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
 
