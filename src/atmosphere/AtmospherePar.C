@@ -353,12 +353,12 @@ void AtmospherePar::computeRHS()
     // This is the same as the integral condition above so this can
     // probably be simplified. We can substitute it with 0 but for now
     // we leave it and test that later.
-    double qInt = intcond  / totalArea_;
+    double qInt = intcond * 1.0 / totalArea_;
 
     // The integrals and P are on the same processor
     int last = FIND_ROW_ATMOS0( ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_ );
     int lid  = -1;
-
+    
     if ( rhs_->Map().MyGID(rowIntCon_) && (aux_ == 1) )
     {
         lid = rhs_->Map().LID(last + 1);
@@ -367,6 +367,8 @@ void AtmospherePar::computeRHS()
         //           \sum_i (1 / A) * (tdim / qdim) * dqso * T * dA_i
         (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt;
     }
+
+    std::cout << (*state_)[lid] << " " << qInt << " " << sstInt << std::endl;
 
     TIMER_STOP("AtmospherePar: computeRHS...");
 }

@@ -390,7 +390,7 @@ void Atmosphere::idealizedState(double precip)
     computeEvaporation();
 
     // Set idealized precipitation
-    rowPP = find_row(n_,m_,l_,ATMOS_PP_) - 1;
+    rowPP = find_row(n_ ,m_, l_, ATMOS_PP_) - 1;
 
     valuePP = precip;
     (*state_)[rowPP] = valuePP;
@@ -652,11 +652,10 @@ double Atmosphere::matvec(int row)
 //-----------------------------------------------------------------------------
 void Atmosphere::forcing()
 {
-    double value, tmp1, tmp2, tmp3;
+    double value;
     int temRow, humRow, surfaceRow;
-    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2, &tmp3);
     if (std::abs(Ooa_) < 1e-8)
-        WARNING(" Ooa_ mat give trouble", __FILE__, __LINE__);
+        WARNING(" Ooa_ may give trouble", __FILE__, __LINE__);
     
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)

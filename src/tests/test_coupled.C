@@ -403,9 +403,11 @@ TEST(CoupledModel, applyMatrix)
                 (*oceanVec)[0][i] = value[v];
             }
 
-            atmosVec->PutScalar(0.0);
+            // Initialize atmosphere vector
+            CHECK_ZERO(atmosVec->PutScalar(0.0));
 
-            C21.applyMatrix(*oceanVec, *atmosVec);
+            // Perform matvec with coupling block
+            CHECK_ZERO(C21.applyMatrix(*oceanVec, *atmosVec));
 
             // assume single atmosphere layer
             l = 1;

@@ -19,8 +19,13 @@ module m_atm
       
       real    qdim, nuq, nus, eta, dqso, eo0, lvsc
       
-      real    Ai, Ad, As, Aa, Os, Aoa, Ooa, amua, bmua
-      real, allocatable, dimension(:) ::    dat, davt, albe, suna, suno,upa
+      real    Ai, Ad, As, Aa, Aoa, amua, bmua
+      
+      real ::  Ooa = 1.0 ! default value to avoid initialization
+                         ! issues, set in atmos_coeff
+      real ::   Os = 1.0 ! default value to avoid initialization
+                         ! issues, set in atmos_coeff
+      real, allocatable, dimension(:) ::  dat, davt, albe, suna, suno,upa
 
 contains
 
