@@ -606,6 +606,7 @@ namespace TRIOS {
                     // on the processor:
                     CHECK_ZERO(SubMatrix[i]->FillComplete(*SubMatrixDomainMap[i],
                                                           *SubMatrixRangeMap[i]));
+                    
                     SubMatrixColMap[i] = Utils::CompressColMap(*SubMatrix[i]);
                     SubMatrix[i]=Utils::ReplaceColMap(SubMatrix[i],*SubMatrixColMap[i]);
                 }

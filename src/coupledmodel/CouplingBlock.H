@@ -87,7 +87,7 @@ public:
                     index      = blockCRS->beg[gRow];
                     numentries = blockCRS->beg[gRow+1] - index;
 
-                    // if we encounter a dense row (probably an integral condition)
+                    // if we encounter a dense row (probably an integral equation)
                     if (numentries > maxnnz)
                     {
                         std::cout << "CouplingBlock: encountered dense row "

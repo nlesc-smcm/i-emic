@@ -164,8 +164,9 @@ void Atmosphere::setup()
     // Filling more coefficients (humidity specific)
     eta_ =  (rhoa_ / rhoo_) * ce_ * uw_;
         
-    // nuq will be our continuation parameter for the humidity related physics
-    nuq_ =  comb_* humf_ * (eta_ / hdimq_ ) * (rhoo_ / rhoa_) * (r0dim_ / udim_);
+    // nuq will be our continuation parameter for the humidity related
+    // physics and is set in setpar.
+    nuq_ =  0.0;
     
     Phv_ =  kappa_ / (udim_ * r0dim_);
 
@@ -209,7 +210,7 @@ void Atmosphere::setup()
     INFO("      eta   = " << eta_);
     INFO("     dqso   = " << dqso_);    
     INFO("   A*DpDq   = " << -eta_ * nuq_);
-    INFO("    DqDt0   = " << nuq_ * eta_ * dqso_ / qdim_);
+    INFO("    DqDt0   = " << nuq_ * tdim_ / qdim_ * dqso_);
     INFO("  lvscale   = " << lvscale_);
     INFO("      Eo0   = " << Eo0_);
     INFO("      Edev  = " << Edev);
@@ -491,11 +492,10 @@ void Atmosphere::computeJacobian()
     discretize(6, qyy);  // meridional diffusion
     
     // Multiply parameters with continuation control pars
-    double nuqeta = nuq_ * eta_ ;
-    qxx.update(Phv_, Phv_, qyy, -nuqeta, qc);
+    qxx.update(Phv_, Phv_, qyy, -nuq_, qc);
 
     // Set humidity atom in dependency grid
-    // Al(:,:,:,:,QQ,QQ) = Phv * (qxx + qyy) - nuq * eta * qc
+    // Al(:,:,:,:,QQ,QQ) = Phv * (qxx + qyy) - nuq * qc
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
 
     if (aux_ == 1)

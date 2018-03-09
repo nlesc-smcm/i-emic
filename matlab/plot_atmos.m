@@ -3,8 +3,6 @@ function [state,pars,add] = plot_atmos(fname, opts)
     if nargin < 2
         opts = [];
     end
-
-    
     
     if nargin < 1
         fname = 'atmos_output.h5';
@@ -63,14 +61,23 @@ function [state,pars,add] = plot_atmos(fname, opts)
         P = reshape(add.P,n,m);
     end
     
-    T0  = 15.0;   %//! reference temperature
-    q0  = 8e-3;
-    %q0  = 0;
+
     RtD = 180/pi;    
     
+    % reference temperature
+    T0  = 15.0;   
+    q0  = 8e-3;
+    
+    % scalings
     tdim = 1;
     qdim = 1e-3;
-    %qdim = 1;
+
+    % constants
+    rhoa = 1.25;
+    rhoo = 1024;
+    ce   = 1.3e-03;
+    uw   = 8.5
+    eta =  (rhoa / rhoo) * ce * uw
     
     Ta  = T0 + tdim * squeeze(state(1,:,:,:));
     qa  = q0 + qdim * squeeze(state(2,:,:,:));
@@ -160,7 +167,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     if readE && readP
 
         figure(13) 
-        EmP = qdim*(E-P)*3600*24*365;
+        EmP = eta*qdim*(E-P)*3600*24*365;
 
         img = EmP';
 

@@ -50,7 +50,7 @@
   <Parameter name="Solar Forcing"       type="double" value="1.0"/>
   <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
   <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-  <Parameter name="Temperature Forcing" type="double" value="1.0"/>
+  <Parameter name="Temperature Forcing" type="double" value="0.0"/>
   <Parameter name="Humidity Forcing"    type="double" value="1.0"/>
 
   <!-- D: decoupled                                                     -->

@@ -1224,12 +1224,9 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
-    // this block has values -Ooa on the surface temperature points
-    double Ooa, Os, gamma, eta, lvscq;
-    FNAME(getdeps)(&Ooa, &Os, &gamma, &eta, &lvscq);
-
-    INFO("Ocean: getBlock() atmos specialization: Ooa = " << Ooa
-         << ", gamma = " << gamma << ", eta = " << eta << ", lvscq = " << lvscq);
+    // This block has values -Ooa on the surface temperature points.
+    double Ooa, Os, nus, eta, lvscq;
+    FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvscq);
 
     int T = 1; // (1-based) in the Atmosphere, temperature is the first unknown
     int Q = 2; // (1-based) in the Atmosphere, humidity is the second unknown
@@ -1267,7 +1264,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
                             // humidity dependency
-                            block->co.push_back(gamma*eta);
+                            block->co.push_back(nus);
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
 
@@ -1275,7 +1272,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                             col = atmos->interface_row(i,j,P);
                             if (col >= 0)
                             {
-                                block->co.push_back(gamma);
+                                block->co.push_back(nus);
                                 block->jco.push_back(col);
                                 el_ctr++;
                             }
