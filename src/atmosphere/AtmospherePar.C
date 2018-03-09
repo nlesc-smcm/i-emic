@@ -368,8 +368,6 @@ void AtmospherePar::computeRHS()
         (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt;
     }
 
-    std::cout << (*state_)[lid] << " " << qInt << " " << sstInt << std::endl;
-
     TIMER_STOP("AtmospherePar: computeRHS...");
 }
 
@@ -689,10 +687,6 @@ void AtmospherePar::computeJacobian()
 
     // check size
     int numMyElements = assemblyMap_->NumMyElements() - aux_;
-
-    std::cout << comm_->MyPID() << ": #beg " << localJac->beg.size() << std::endl;
-    std::cout << comm_->MyPID() << ": #jco " << localJac->jco.size() << std::endl;
-    std::cout << comm_->MyPID() << ": #co  " << localJac->co.size()  << std::endl;
 
     assert(numMyElements == (int) localJac->beg.size() - 1);
     

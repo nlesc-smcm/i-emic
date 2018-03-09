@@ -110,10 +110,12 @@ contains
        do j = 1,m
           do i = 1,n
              
-             ocean_evap(pos) = eta * ((deltat / qdim) * &
+             ocean_evap(pos) = ((deltat / qdim) * &
                   dqso * un(find_row2(i,j,l,TT)) - &
                   qatm(i,j)) * (1 - landm(i,j,l))
+             
              pos = pos + 1
+             
           end do
        end do
 

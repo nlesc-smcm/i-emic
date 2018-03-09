@@ -479,7 +479,9 @@ TEST(CoupledModel, applyMatrix)
                     double sstInt = Utils::dot(precipintco, ones);
                     std::cout << " sstInt: " << sstInt << std::endl;
                                         
-                    double intval = sstInt * (pars.eta / totalArea) * (pars.dqso / pars.qdim);
+                    double intval = sstInt * (1.0 / totalArea) *
+                        (pars.tdim / pars.qdim) * pars.dqso;
+                    
                     std::cout << " intval: " << intval << std::endl;
 
                     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);
@@ -659,9 +661,9 @@ TEST(CoupledModel, Synchronization)
     }
     EXPECT_EQ(failed, false);
 
-    // Evaporation is calculated simultaneously in Ocean and in Atmosphere
-    // during the RHS computation above.
-    // Here we check whether they return the same vector.
+    // Evaporation is calculated simultaneously in Ocean and in
+    // Atmosphere during the RHS computation above. Here we check
+    // whether they return give the same nondimensional norm.
     Teuchos::RCP<Epetra_Vector> atmosE = atmos->getE();
     Teuchos::RCP<Epetra_Vector> oceanE = ocean->getE();
     

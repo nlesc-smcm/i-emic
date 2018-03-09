@@ -1350,16 +1350,15 @@ Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosP()
 
 //============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getLocalOceanE()
-{
-    
+{    
     double *tmpOceanE;
     localOceanE->ExtractView(&tmpOceanE);
-
+    
     // localsol should contain something meaningful
     double* solution;
     localSol->ExtractView(&solution);
 
-    F90NAME(m_probe, compute_evap )( tmpOceanE, solution );
+    F90NAME( m_probe, compute_evap )( tmpOceanE, solution );
 
     return localOceanE;
 }

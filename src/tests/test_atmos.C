@@ -221,7 +221,7 @@ TEST(AtmospherePar, MassMatrix)
     double ce      = atmosphereParams->get("Dalton number",1.3e-03);
     double ch      = atmosphereParams->get("exchange coefficient ch",0.94 * ce);
     double uw      = atmosphereParams->get("mean atmospheric surface wind speed",8.5);
-    double qdim    = atmosphereParams->get("humidity scale", 0.01);  // (kg/kg)
+//     double qdim    = atmosphereParams->get("humidity scale", 0.01);  // (kg/kg)
 
     double muoa    =  rhoa * ch * cpa * uw;                       
     double Ai      =  rhoa * hdima * cpa * udim / (r0dim * muoa);
@@ -230,7 +230,7 @@ TEST(AtmospherePar, MassMatrix)
     {
         EXPECT_EQ(out[i], Ai); // TT
         if (std::abs(out[i+1])>0) // QQ
-            EXPECT_EQ(out[i+1], qdim); 
+            EXPECT_EQ(out[i+1], 1.0); 
     }
 
     // check integral equations in test_coupled

@@ -178,11 +178,11 @@ TEST(CoupledModel, Newton)
         INFO(" atmos ||r|| / ||b||  = " << Utils::norm(y->Second()));
         INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
 
-        if (Utils::norm(coupledModel->getRHS('V')) < 0.1)
+        if (Utils::norm(coupledModel->getRHS('V')) < 0.001)
             break;
     }
 
-    EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.1);
+    EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 0.001);
     EXPECT_LT(niter, 10);
     INFO("CoupledModel, Newton converged in " << niter << " iterations");
 }
@@ -265,8 +265,10 @@ TEST(CoupledModel, EPIntegral)
     std::cout << "integralP = " << integralP << std::endl;
     std::cout << "integralE = " << integralE << std::endl;
     std::cout << "totalArea = " << totalArea << std::endl;
-
-    EXPECT_NEAR(integralP, integralE, 1e-7);
+    
+    EXPECT_NEAR( (integralP - integralE) / integralP, 0.0, 1e-7);
+    
+    getchar();
 }
 
 

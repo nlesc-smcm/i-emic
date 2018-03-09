@@ -189,7 +189,7 @@ SUBROUTINE getdeps(o_Ooa, o_Os, o_gamma, o_eta, o_lvscq)
   real(c_double) o_Ooa, o_Os, o_gamma, o_eta, o_lvscq
   o_Ooa   = Ooa
   o_Os    = Os
-  o_gamma = nus 
+  o_gamma = nus
   o_eta   = eta
   o_lvscq = lvsc * qdim
 end subroutine getdeps
