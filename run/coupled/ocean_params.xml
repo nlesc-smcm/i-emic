@@ -33,7 +33,7 @@
     <!-- a descriptive name to identify the settings -->
     <Parameter name="Problem Description" type="string" value="Test"/>
     <!-- western domain bound -->
-    <Parameter name="Global Bound xmin" type="double" value="290"/>
+    <Parameter name="Global Bound xmin" type="double" value="286"/>
     <!-- eastern domain bound -->
     <Parameter name="Global Bound xmax" type="double" value="350"/>
     <!-- southern domain bound -->
@@ -46,7 +46,7 @@
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
-    <Parameter name="Grid Stretching qz" type="double" value="2.0"/>
+    <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
     <!-- global number of grid points in x-direction -->
     <Parameter name="Global Grid-Size n" type="int" value="16"/>
     <!-- global number of grid points in y-direction -->
@@ -59,14 +59,14 @@
     <!-- 1: no land                                 -->
     <!-- others not tested, but this is 'itopo' in  -->
     <!-- THCM language                              -->
-    <Parameter name="Topography" type="int" value="0"/>
+    <Parameter name="Topography" type="int" value="1"/>
     <!-- remove bottom profile? (flat in THCM)      -->
-    <Parameter name="Flat Bottom" type="bool" value="1"/>
+    <Parameter name="Flat Bottom" type="bool" value="0"/>
     <!-- read mask from a file in mkmask The filename is hard-coded in   -->
     <!-- topo.F90.                                                       -->
-    <Parameter name="Read Land Mask" type="bool" value="1"/>
+    <Parameter name="Read Land Mask" type="bool" value="0"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_natl16_2"/>
+    <Parameter name="Land Mask" type="string" value="mask_natl16"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->

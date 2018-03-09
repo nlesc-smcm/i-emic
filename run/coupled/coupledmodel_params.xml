@@ -29,7 +29,7 @@
   <!-- We determine the horizontal extend and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
 
-  <Parameter name="Global Bound xmin" type="double" value="290"/>
+  <Parameter name="Global Bound xmin" type="double" value="286"/>
   <!-- eastern domain bound -->
   <Parameter name="Global Bound xmax" type="double" value="350"/>
   <!-- southern domain bound -->
@@ -67,6 +67,6 @@
   <!-- F: 1 step forward block Gauss Seidel                   -->
   <!-- G: 2 step forward block Gauss Seidel                   -->                       
   <!-- D: diagonal, no coupling blocks                        -->
-  <Parameter name="Preconditioning" type="char" value="C"/>
+  <Parameter name="Preconditioning" type="char" value="B"/>
 
 </ParameterList>

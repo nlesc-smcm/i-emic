@@ -346,8 +346,8 @@ TEST(CoupledModel, applyMatrix)
             C12.applyMatrix(*atmosVec, *oceanVec);
 
             // Get ocean parameters
-            double Ooa, Os, gamma, eta, lvscq;
-            FNAME(getdeps)(&Ooa, &Os, &gamma, &eta, &lvscq);
+            double Ooa, Os, nus, eta, lvscq;
+            FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvscq);
 
             // Test first surface element (temperature)
             int ii = 0;
@@ -383,7 +383,7 @@ TEST(CoupledModel, applyMatrix)
                 {
                     lid = oceanVec->Map().LID(surfbS);
                     surfval = (*oceanVec)[0][lid];
-                    EXPECT_NEAR( (eta * gamma + gamma ) *value[v], surfval , 1e-7);
+                    EXPECT_NEAR( (nus + nus ) * value[v], surfval , 1e-7);
                 }
             }
         }

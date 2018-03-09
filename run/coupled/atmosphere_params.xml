@@ -51,8 +51,8 @@
   <!-- Auxiliary unknowns                                         -->
   <Parameter name="Auxiliary unknowns" type="int" value="1"        />  
   
-  <!-- Preconditioner parameters.                                         -->
-  <Parameter name="Ifpack overlap level" type="int" value="10" />
+  <!-- Preconditioner parameters.                                 -->
+  <Parameter name="Ifpack overlap level" type="int" value="20" />
 
   <!-- Outgoing longwave radiation parameters -->
   <Parameter name="radiative flux param A" type="double" value="216" />
