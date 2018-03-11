@@ -188,12 +188,11 @@ void Ocean::initializeOcean()
 
     // Compute right hand side and print its norm
     computeRHS();
-    
-#ifdef DEBUGGING_NEW
+
+    // Export some diagnostics
     INFO("Ocean: initialization: ||F|| = " << Utils::norm(rhs_));
     Utils::save(state_, "initialstate");
-    Utils::save(rhs_, "initialrhs");
-#endif    
+    Utils::save(rhs_,   "initialrhs");
 
     // Get the rowmap for the pressure points
     Teuchos::RCP<Epetra_Map> RowMap = domain_->GetSolveMap();
