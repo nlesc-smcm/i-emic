@@ -1443,7 +1443,7 @@ int Ocean::saveStateToFile(std::string const &filename)
         HDF5.Write("MaskGlobal", "GlobalSize", (int) landmask_.global->size());
         
         HDF5.Write("MaskGlobal", "Surface", H5T_NATIVE_INT,
-                   landmask_.global->size(), &(*landmask_.global_surface)[0]);
+                   landmask_.global_surface->size(), &(*landmask_.global_surface)[0]);
         
         HDF5.Write("MaskGlobal", "Label", landmask_.label);
     }
@@ -1490,7 +1490,11 @@ int Ocean::loadStateFromFile(std::string const &filename)
             ERROR("The group <State> is not contained in hdf5 " << filename,
                   __FILE__, __LINE__);
         }
-        
+
+        // Read the state. To be able to restart with different
+        // numbers of procs we do not include the Map in the hdf5. The
+        // state as read here will have a linear map and we import it
+        // into the current domain decomposition.
         HDF5.Read("State", readState);      
 
         // Create import strategies
@@ -1649,47 +1653,47 @@ int Ocean::loadStateFromFile(std::string const &filename)
             !HDF5.IsContained("MaskGlobal")
             )
         {
-            ERROR("The group <Mask*> is not contained in hdf5 " << filename,
-                  __FILE__, __LINE__);
+            WARNING("The group <Mask*> is not contained in hdf5, continue with standard mask...\n  "
+                    << filename, __FILE__, __LINE__);
         }
-
-        //__________________________________________________ 
-        // We begin with the local (distributed) landmask
-        Epetra_IntVector *readMask;
+        else
+        {
+            //__________________________________________________ 
+            // We begin with the local (distributed) landmask
+            Epetra_IntVector *readMask;
         
-        // Obtain current mask to get distributed map
-        Teuchos::RCP<Epetra_IntVector> tmpMask =
-            THCM::Instance().getLandMask("current");
+            // Obtain current mask to get distributed map with current
+            // domain decomposition.
+            Teuchos::RCP<Epetra_IntVector> tmpMask =
+                THCM::Instance().getLandMask("current");
 
-        // Read mask in hdf5 with distributed map
-        INFO("Loading local mask from " << filename);
-        HDF5.Read("MaskLocal", readMask);
+            // Read mask in hdf5 with distributed map
+            HDF5.Read("MaskLocal", readMask);
 
-        // For some reason we're not allowed to use blockmaps in the
-        // above call, so next we do our own import:
-        Teuchos::RCP<Epetra_Import> lin2dstr =
-            Teuchos::rcp(new Epetra_Import( tmpMask->Map(),
-                                            readMask->Map() ));
+            Teuchos::RCP<Epetra_Import> lin2dstr =
+                Teuchos::rcp(new Epetra_Import( tmpMask->Map(),
+                                                readMask->Map() ));
 
-        tmpMask->Import(*readMask, *lin2dstr, Insert);
+            tmpMask->Import(*readMask, *lin2dstr, Insert);
 
-        // Put the new mask in THCM
-        THCM::Instance().setLandMask(tmpMask, true);
+            // Put the new mask in THCM
+            THCM::Instance().setLandMask(tmpMask, true);
 
-        //__________________________________________________
-        // Get global mask
-        int globMaskSize;
-        INFO("Loading global mask from " << filename);
-        HDF5.Read("MaskGlobal", "GlobalSize", globMaskSize);
+            //__________________________________________________
+            // Get global mask
+            int globMaskSize;
+            INFO("Loading global mask from " << filename);
+            HDF5.Read("MaskGlobal", "GlobalSize", globMaskSize);
 
-        std::shared_ptr<std::vector<int> > globmask =
-            std::make_shared<std::vector<int> >(globMaskSize, 0);
+            std::shared_ptr<std::vector<int> > globmask =
+                std::make_shared<std::vector<int> >(globMaskSize, 0);
 
-        HDF5.Read("MaskGlobal", "Global", H5T_NATIVE_INT,
-                  globMaskSize, &(*globmask)[0]);
+            HDF5.Read("MaskGlobal", "Global", H5T_NATIVE_INT,
+                      globMaskSize, &(*globmask)[0]);
 
-        // Put the new global mask in THCM
-        THCM::Instance().setLandMask(globmask);
+            // Put the new global mask in THCM
+            THCM::Instance().setLandMask(globmask);
+        }
     }
 
     return 0;

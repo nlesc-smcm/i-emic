@@ -11,7 +11,7 @@
   <!-- to <Output file>. Here we can choose to read them at initialization.   -->
   <!-- Under restoring conditions (SRES or TRES set to 1) this would not make -->
   <!-- any sense so a warning is given and the flag is set to false .         -->
-  <Parameter name="Load salinity flux" type="bool" value="false"/>
+  <Parameter name="Load salinity flux" type="bool" value="true"/>
 
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->
@@ -106,7 +106,7 @@
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->
