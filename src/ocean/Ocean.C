@@ -58,6 +58,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     loadState_           (oceanParamList->get("Load state", false)),
     saveState_           (oceanParamList->get("Save state", true)),
     saveMask_            (oceanParamList->get("Save mask", true)),
+    loadMask_            (oceanParamList->get("Load mask", true)),
     loadSalinityFlux_    (oceanParamList->get("Load salinity flux", false)),
     saveSalinityFlux_    (oceanParamList->get("Save salinity flux", true)),
     loadTemperatureFlux_ (oceanParamList->get("Load temperature flux", false)),
@@ -206,6 +207,7 @@ void Ocean::initializeOcean()
 //====================================================================
 int Ocean::analyzeJacobian()
 {
+    return 0; 
     // Make preparations for extracting pressure rows
     int dim = mapP_->NumMyElements();
 
@@ -228,6 +230,7 @@ int Ocean::analyzeJacobian()
         CHECK_ZERO(jac_->ExtractGlobalRowCopy(row, maxlen,
                                               len, &values[0],
                                               &indices[0]));
+
         sum = 0.0;
         el  = 0;
         for (int p = 0; p != len; p++)
@@ -1428,6 +1431,12 @@ int Ocean::saveStateToFile(std::string const &filename)
         INFO("Writing temperature flux to " << filename);
         Teuchos::RCP<Epetra_Vector> temflux = THCM::Instance().getTemperatureFlux();
         HDF5.Write("TemperatureFlux", *temflux);        
+    }
+
+    if (saveMask_)
+    {
+        INFO("Writing distributed and global mask to "  << filename);
+        HDF5.Write("LocalMask", *landmask_.local);        
     }
     
     INFO("_________________________________________________________");

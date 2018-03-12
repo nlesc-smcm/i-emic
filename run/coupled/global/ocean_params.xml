@@ -5,7 +5,7 @@
   <!-- an old state (true) or with a zero solution (false).                  -->
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
-  <Parameter name="Load state" type="bool" value="true"/>
+  <Parameter name="Load state" type="bool" value="false"/>
 
   <!-- By default the salinity and temperature surface fluxes are written     -->
   <!-- to <Output file>. Here we can choose to read them at initialization.   -->
@@ -63,7 +63,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask.glo2"/>
+    <Parameter name="Land Mask" type="string" value="mask.glo3"/>
 
     <!-- read salinity perturbation mask from a file in mkmask           -->
     <Parameter name="Read Salinity Perturbation Mask" type="bool" value="1"/>
@@ -80,7 +80,7 @@
     <!-- Starting Parameters -->
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"        type="double" value="0.0"/>
-      <Parameter name="Solar Forcing"           type="double" value="0.0"/>
+      <Parameter name="Solar Forcing"           type="double" value="1.0"/>
       <Parameter name="Salinity Forcing"        type="double" value="1.0"/>
       <Parameter name="Wind Forcing"            type="double" value="1.0"/>
       <Parameter name="Temperature Forcing"     type="double" value="0.0"/>
@@ -94,7 +94,7 @@
 	
     <!-- Mixing parameter (vmix_GLB in THCM)                                 -->
 	<!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely -->
-    <Parameter name="Mixing" type="int" value="1"/>
+    <Parameter name="Mixing" type="int" value="0"/>
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>
     <!-- Taper (tap in usr.F90) -->

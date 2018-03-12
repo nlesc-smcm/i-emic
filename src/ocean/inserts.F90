@@ -88,7 +88,7 @@ contains
     pos = 1
     do j = 1,m
        do i = 1,n
-          emip(i,j) = inserted_emip(pos)
+          emip(i,j) = inserted_emip(pos) * (1 - landm(i,j,l))
           pos = pos + 1
        end do
     end do

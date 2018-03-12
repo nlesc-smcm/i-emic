@@ -128,6 +128,7 @@ protected:
     bool loadState_;
     bool saveState_;
     bool saveMask_;
+    bool loadMask_;
     bool loadSalinityFlux_;
     bool saveSalinityFlux_;
     bool loadTemperatureFlux_;
