@@ -210,7 +210,7 @@ contains
     real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
     
     gamma = par(COMB) * par(SALT) 
-    dedt  = eta * (deltat / qdim) * dqso
+    dedt  = (deltat / qdim) * dqso
 
     call usol(un,u,v,w,p,T,S)
     
@@ -218,9 +218,9 @@ contains
     do j = 1,m
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
-             if ((coupled_T.eq.1).or.(coupled_S.eq.1)) then
-                salflux(pos) = nus * qdim * dedt * T(i,j,l) -  &
-                     nus * qdim * (eta * qatm(i,j) + pfield(i,j) )
+             if (coupled_S.eq.1) then
+                salflux(pos) = nus * dedt * T(i,j,l) / gamma -  &
+                     nus * ( qatm(i,j) + pfield(i,j) ) / gamma
              else
                 salflux(pos) = (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
                      SRES * par(BIOT) * S(i,j,l) / gamma
@@ -258,8 +258,12 @@ contains
     do j = 1,m
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
-             temflux(pos) = (1 - TRES + TRES*par(BIOT)) * tatm(i,j) - &
-                  TRES * par(BIOT) * T(i,j,l) / etabi
+             if (coupled_T.eq.0) then
+                temflux(pos) = (1 - TRES + TRES*par(BIOT)) * tatm(i,j) - &
+                     TRES * par(BIOT) * T(i,j,l) / etabi
+             else
+                ! not sure what this would be
+             endif
           endif
           pos = pos + 1
        end do
