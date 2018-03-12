@@ -207,7 +207,6 @@ void Ocean::initializeOcean()
 //====================================================================
 int Ocean::analyzeJacobian()
 {
-    return 0; 
     // Make preparations for extracting pressure rows
     int dim = mapP_->NumMyElements();
 
@@ -1436,7 +1435,17 @@ int Ocean::saveStateToFile(std::string const &filename)
     if (saveMask_)
     {
         INFO("Writing distributed and global mask to "  << filename);
-        HDF5.Write("LocalMask", *landmask_.local);        
+        HDF5.Write("MaskLocal", *landmask_.local);
+
+        HDF5.Write("MaskGlobal", "Global", H5T_NATIVE_INT,
+                   landmask_.global->size(), &(*landmask_.global)[0]);
+
+        HDF5.Write("MaskGlobal", "GlobalSize", (int) landmask_.global->size());
+        
+        HDF5.Write("MaskGlobal", "Surface", H5T_NATIVE_INT,
+                   landmask_.global->size(), &(*landmask_.global_surface)[0]);
+        
+        HDF5.Write("MaskGlobal", "Label", landmask_.label);
     }
     
     INFO("_________________________________________________________");
@@ -1606,6 +1615,11 @@ int Ocean::loadStateFromFile(std::string const &filename)
     if (loadTemperatureFlux_)
     {
         INFO("Loading temperature flux from " << filename);
+        if (!HDF5.IsContained("TemperatureFlux"))
+        {
+            ERROR("The group <SalinityFlux> is not contained in hdf5 " << filename,
+                  __FILE__, __LINE__);
+        }
 
         Epetra_MultiVector *readTemFlux;
         HDF5.Read("TemperatureFlux", readTemFlux);
@@ -1626,6 +1640,56 @@ int Ocean::loadStateFromFile(std::string const &filename)
 
 
         INFO("Loading temperature flux from " << filename << " done");
+    }
+
+    if (loadMask_)
+    {
+        INFO("Loading local mask from " << filename);
+        if (!HDF5.IsContained("MaskLocal") ||
+            !HDF5.IsContained("MaskGlobal")
+            )
+        {
+            ERROR("The group <Mask*> is not contained in hdf5 " << filename,
+                  __FILE__, __LINE__);
+        }
+
+        //__________________________________________________ 
+        // We begin with the local (distributed) landmask
+        Epetra_IntVector *readMask;
+        
+        // Obtain current mask to get distributed map
+        Teuchos::RCP<Epetra_IntVector> tmpMask =
+            THCM::Instance().getLandMask("current");
+
+        // Read mask in hdf5 with distributed map
+        INFO("Loading local mask from " << filename);
+        HDF5.Read("MaskLocal", readMask);
+
+        // For some reason we're not allowed to use blockmaps in the
+        // above call, so next we do our own import:
+        Teuchos::RCP<Epetra_Import> lin2dstr =
+            Teuchos::rcp(new Epetra_Import( tmpMask->Map(),
+                                            readMask->Map() ));
+
+        tmpMask->Import(*readMask, *lin2dstr, Insert);
+
+        // Put the new mask in THCM
+        THCM::Instance().setLandMask(tmpMask, true);
+
+        //__________________________________________________
+        // Get global mask
+        int globMaskSize;
+        INFO("Loading global mask from " << filename);
+        HDF5.Read("MaskGlobal", "GlobalSize", globMaskSize);
+
+        std::shared_ptr<std::vector<int> > globmask =
+            std::make_shared<std::vector<int> >(globMaskSize, 0);
+
+        HDF5.Read("MaskGlobal", "Global", H5T_NATIVE_INT,
+                  globMaskSize, &(*globmask)[0]);
+
+        // Put the new global mask in THCM
+        THCM::Instance().setLandMask(globmask);
     }
 
     return 0;
