@@ -431,10 +431,13 @@ double CoupledModel::getPar()
     double par_ocean = ocean_->getPar(parName_);
     double par_atmos = atmos_->getPar(parName_);
 
-    // In the case that the internal parameters are not the same,
-    // we return the maximum. This happens when we perform continuations
-    // in parameters that do not exist in all models.
-    return std::max(par_ocean, par_atmos);
+    // Parameter values are equal to the continuation parameter or 0.
+    
+    double parvalue = 0.0;
+    parvalue = (std::abs(par_ocean) > 0.0) ? par_ocean : parvalue;
+    parvalue = (std::abs(par_atmos) > 0.0) ? par_atmos : parvalue;
+
+    return parvalue;
 }
 
 //------------------------------------------------------------------
