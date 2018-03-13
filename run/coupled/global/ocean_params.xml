@@ -5,7 +5,7 @@
   <!-- an old state (true) or with a zero solution (false).                  -->
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
-  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Load state" type="bool" value="true"/>
 
   <!-- By default the salinity and temperature surface fluxes are written     -->
   <!-- to <Output file>. Here we can choose to read them at initialization.   -->
@@ -63,7 +63,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask.glo3"/>
+    <Parameter name="Land Mask" type="string" value="mask.glo2"/>
 
     <!-- read salinity perturbation mask from a file in mkmask           -->
     <Parameter name="Read Salinity Perturbation Mask" type="bool" value="1"/>

@@ -1936,7 +1936,8 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
                 {
                     int gid = FIND_ROW2(_NUN_,N,M,L,i,j,k,SS);
                     indices[pos] = gid;
-                    values[pos] = (*intcond_glob)[0][gid];
+                    // --> THIS SHOULD BE TESTED
+                    values[pos] = -(*intcond_glob)[0][gid];
                     pos++;
                 }
 

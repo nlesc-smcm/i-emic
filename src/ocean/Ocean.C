@@ -1244,7 +1244,8 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                 for (int xx = UU; xx <= SS; ++xx)
                 {
                     block->beg.push_back(el_ctr);
-                    if ( (k == L_-1) && (xx == TT) ) // surface T row
+                    // surface T row
+                    if ( (k == L_-1) && (xx == TT) && getCoupledT() ) 
                     {
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
@@ -1259,7 +1260,8 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                             // el_ctr++;
                         }
                     }
-                    else if ( (k == L_-1) && (xx == SS) && // surface S row
+                    // surface S row, exclude integral condition row
+                    else if ( (k == L_-1) && (xx == SS) && getCoupledS() && 
                               FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, xx) != rowIntCon)
                     {
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land

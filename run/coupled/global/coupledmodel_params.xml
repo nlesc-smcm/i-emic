@@ -11,6 +11,7 @@
   <!-- old states (true) or with a trivial solution (false).     -->
   <!-- The sub-models maintain names for the input files.        -->
   <Parameter name="Load state" type="bool" value="true"/>
+  <Parameter name="Save state" type="bool" value="true"/>
 
   <Parameter name="Problem Description" type="string" value="Coupled run"/>
   <!-- To keep track of each converged state, enable this.    -->
@@ -23,6 +24,7 @@
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
   <!--           "Humidity Forcing"     -->
+  <!-- <Parameter name="Continuation parameter" type="string" value="Solar Forcing"/> -->
   <Parameter name="Continuation parameter" type="string" value="Salinity Perturbation"/>
   <!-- <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/> -->
 

@@ -109,7 +109,7 @@ contains
     pos = 1
     do j = 1,m
        do i = 1,n
-          adapted_emip(i,j) = inserted_aEmip(pos)
+          adapted_emip(i,j) = inserted_aEmip(pos) * (1 - landm(i,j,l))
           pos = pos + 1
        end do
     end do
@@ -130,7 +130,7 @@ contains
     pos = 1
     do j = 1,m
        do i = 1,n
-          spert(i,j) = inserted_pEmip(pos)
+          spert(i,j) = inserted_pEmip(pos) * (1 - landm(i,j,l))
           pos = pos + 1
        end do
     end do
