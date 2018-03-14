@@ -157,7 +157,6 @@ TEST(CoupledModel, inspectState)
         failed = true;
         throw;
     }
-
     EXPECT_EQ(failed, false);
 }
 
@@ -728,6 +727,66 @@ TEST(CoupledModel, Solve)
         failed = true;
     }
     EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+// Here we are testing the implementation of the integral condition.
+// The result of a matrix vector product of the Jacobian with the
+// state vector should equal the value of the rhs in the integral
+// equation row <rowintcon>.
+TEST(CoupledModel, IntegralCondition)
+{
+    // Randomize coupledModel state
+    coupledModel->getState('V')->Random();
+    
+    std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
+    std::shared_ptr<Combined_MultiVec> b = coupledModel->getState('C');
+
+    // Compute rhs
+    coupledModel->computeRHS();
+    std::shared_ptr<Combined_MultiVec> F = coupledModel->getRHS('C');
+
+    // Compute Jacobian and matrix vector product
+    b->PutScalar(0.0);
+    coupledModel->computeJacobian();
+    coupledModel->applyMatrix(*x, *b);
+
+    Teuchos::RCP<Epetra_MultiVector> oceanB = b->First();
+    Teuchos::RCP<Epetra_MultiVector> oceanF = F->First();
+
+    int n = ocean->getNdim();
+    int m = ocean->getMdim();
+    int l = ocean->getLdim();
+
+    int oceanLast = _NUN_ * m * n *l - 1;
+    int lid = -1;
+    
+    double valueFloc = 0.0;
+    double valueBloc = 0.0;
+    double valueF    = 0.0;
+    double valueB    = 0.0;
+    
+    if (oceanF->Map().MyGID(oceanLast))
+    {
+        lid = oceanF->Map().LID(oceanLast);
+        valueFloc = (*oceanF)[0][lid];
+    }
+
+    if (oceanB->Map().MyGID(oceanLast))
+    {
+        lid = oceanB->Map().LID(oceanLast);
+        valueBloc = (*oceanB)[0][lid];
+    }
+    
+    comm->SumAll(&valueFloc, &valueF, 1);
+    comm->SumAll(&valueBloc, &valueB, 1);
+
+    INFO("\n *-* Integral condition           *-* ");
+    INFO("     RHS[oceanLast] = " << valueF);
+    INFO("   (J*x)[oceanLast] = " << valueB);
+    INFO(" *-*                              *-* \n");
+    
+    EXPECT_NEAR(valueF, valueB,1e-12);
 }
 
 //------------------------------------------------------------------
