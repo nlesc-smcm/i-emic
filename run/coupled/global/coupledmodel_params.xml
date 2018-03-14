@@ -24,7 +24,6 @@
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
   <!--           "Humidity Forcing"     -->
-  <!-- <Parameter name="Continuation parameter" type="string" value="Solar Forcing"/> -->
   <Parameter name="Continuation parameter" type="string" value="Salinity Perturbation"/>
   <!-- <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/> -->
 

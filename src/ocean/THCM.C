@@ -802,7 +802,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             //intcond = 0.0;
             if (tmp_rhs->Map().MyGID(lastrow))
             {
-                (*tmp_rhs)[tmp_rhs->Map().LID(lastrow)] = intcond - intCorrection_;
+                (*tmp_rhs)[tmp_rhs->Map().LID(lastrow)] = -intcond + intCorrection_;
             }
         }
 #endif
