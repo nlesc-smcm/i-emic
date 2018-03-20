@@ -38,9 +38,10 @@ using Teuchos::rcp;
 extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
 extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(setparcs)(int*,double*);
-extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double*, double *);
-extern "C" _SUBROUTINE_(get_constants)(double*, double*, double*);
-extern "C" _SUBROUTINE_(set_ep_constants)(double*, double*, double*, double*, double*);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
+                                 double*, double*, double*);
+extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
+extern "C" _SUBROUTINE_(set_parameters)(double*, double*, double*, double*, double*);
 
 //=====================================================================
 // Constructor:
@@ -622,7 +623,7 @@ std::string const Ocean::writeData(bool describe)
         double psiMin = grid_->psimMin();
 
         double r0dim, udim, hdim;
-        FNAME(get_constants)(&r0dim, &udim, &hdim);
+        FNAME(get_parameters)(&r0dim, &udim, &hdim);
 
         const double transc = r0dim * hdim * udim;
         psiMax = psiMax * transc * 1e-6; // conversion to Sv
@@ -1180,11 +1181,11 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
     
     // --> it should also be possible to pass the entire struct to
     // --> fortran, need to figure that out...
-    FNAME( set_ep_constants )( &parStruct.qdim,
-                               &parStruct.nuq,
-                               &parStruct.eta,
-                               &parStruct.dqso,
-                               &parStruct.Eo0 );
+    FNAME( set_parameters )( &parStruct.qdim,
+                             &parStruct.nuq,
+                             &parStruct.eta,
+                             &parStruct.dqso,
+                             &parStruct.Eo0 );
     
     TIMER_STOP("Ocean: set atmosphere...");
 }
@@ -1226,12 +1227,12 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
     // This block has values -Ooa on the surface temperature points.
-    double Ooa, Os, nus, eta, lvscq;
-    FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvscq);
+    double Ooa, Os, nus, eta, lvsc, qdim;
+    FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim);
 
     int T = 1; // (1-based) in the Atmosphere, temperature is the first unknown
     int Q = 2; // (1-based) in the Atmosphere, humidity is the second unknown
-    int P = 3; // (1-based) in the Atmosphere, precipitation is the final unknown
+    int P = 3; // (1-based) in the Atmosphere, global precipitation is an auxiliary
 
     double rowIntCon = THCM::Instance().getRowIntCon();
 
@@ -1244,6 +1245,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                 for (int xx = UU; xx <= SS; ++xx)
                 {
                     block->beg.push_back(el_ctr);
+
                     // surface T row
                     if ( (k == L_-1) && (xx == TT) && getCoupledT() ) 
                     {
@@ -1254,12 +1256,13 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                             block->jco.push_back(atmos->interface_row(i,j,T) );
                             el_ctr++;
 
-                            // // qatm dependency
-                            // block->co.push_back(-lvscq*eta);
-                            // block->jco.push_back(atmos->interface_row(i,j,Q) );
-                            // el_ctr++;
+                            // qatm dependency
+                            block->co.push_back(-lvsc * eta * qdim);
+                            block->jco.push_back(atmos->interface_row(i,j,Q) );
+                            el_ctr++;
                         }
                     }
+                    
                     // surface S row, exclude integral condition row
                     else if ( (k == L_-1) && (xx == SS) && getCoupledS() && 
                               FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, xx) != rowIntCon)

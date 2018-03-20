@@ -4,7 +4,7 @@ module m_atm
       real, parameter ::  hdima = 8400.      ! atmospheric scale height \[H_a\]
       real, parameter ::   rhoa = 1.25       ! atmospheric density \[\rho_a\]
       real, parameter ::   uatm = 0.0        ! advection?? not in the paper
-      real, parameter ::     ce = 1.3e-03    ! exchange coefficient 
+      real, parameter ::     ce = 1.3e-03    ! exchange coefficient (Dalton)
       real, parameter ::     ch = 0.94 * ce  ! exchange coefficient \[C_H\]
       real, parameter ::    cpa = 1000.      ! heat capacity \[C_{pa}\]
       real, parameter ::     uw = 8.5        ! mean atmospheric surface wind speed

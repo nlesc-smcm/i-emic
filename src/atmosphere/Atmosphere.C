@@ -13,7 +13,8 @@
 #include "THCMdefs.H"
 #include "Utils.H"
 
-extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*, double *, double *);
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
+                                 double*, double*, double*);
 
 //==================================================================
 // Constructor for use with parallel atmosphere
@@ -139,15 +140,17 @@ void Atmosphere::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
 // continuation ----------------------------------------------------------------
     allParameters_   = { "Combined Forcing",
                          "Solar Forcing",
-                         "Humidity Forcing" };
+                         "Humidity Forcing",
+                         "Latent Heat Forcing" };
 
     parName_         = params->get("Continuation parameter",
-                                   "Combined Forcing");
+                                   allParameters_[0]);
 
 // starting values
-    comb_            = params->get("Combined Forcing", 0.0);
-    sunp_            = params->get("Solar Forcing", 1.0);
-    humf_            = params->get("Humidity Forcing", 1.0);
+    comb_            = params->get(allParameters_[0], 0.0);
+    sunp_            = params->get(allParameters_[1], 1.0);
+    humf_            = params->get(allParameters_[2], 1.0);
+    latf_            = params->get(allParameters_[3], 1.0);
 }
 
 //==================================================================
@@ -199,7 +202,7 @@ void Atmosphere::setup()
     double Edev = eta_ * qdim_ * ( tdim_ / qdim_ * dqso_  - 1.0 ) ;
 
     // latent heat due to precipitation coeff
-    lvscale_ = 0.0; // (rhoo_ * lv_ / muoa_) ;
+    lvscale_ = rhoo_ * lv_ / muoa_ ;
 
     INFO("Atmosphere computed parameters: ");
     INFO("       mu   = " << muoa_);
@@ -264,7 +267,6 @@ void Atmosphere::setup()
         ipiv_ = std::vector<int> (dim_+1, 0);
     }
 
-
     // Construct dependency grid:
     Al_ = std::make_shared<DependencyGrid>(n_, m_, l_, np_, nun_ + aux_);
 
@@ -282,8 +284,8 @@ void Atmosphere::setup()
     }
 
     // Get ocean parameters
-    double tmp1, tmp2, tmp3;
-    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2, &tmp3);
+    double tmp1, tmp2, tmp3, tmp4;
+    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2, &tmp3, &tmp4);
 
     // Fill y and latitude-based arrays
     yv_.reserve(m_+1);
@@ -293,6 +295,7 @@ void Atmosphere::setup()
     datv_.reserve(m_+1);
     suna_.reserve(m_+1);
     suno_.reserve(m_+1);
+    
     for (int j = 0; j != m_+1; ++j)
     {
         yv_.push_back( ymin_ + j * dy_ );
@@ -474,12 +477,12 @@ void Atmosphere::computeJacobian()
         // Central P dependency can be implemented in this way. Note
         // that we can add P dependencies in non-P rows, but it is not
         // possible to use the stencil approach to add dependencies to
-        // a P-row, as there is only a single row corrsponding to,
+        // a P-row, as there is only a single row corresponding to,
         // e.g., ATMOS_PP_. The nested loop in assemble would give
         // some trouble. The final P-row is implemented from the
         // parallel side. (Similar to the integral condition.)        
 
-        tc.scale(lvscale_);
+        tc.scale(comb_ * latf_ * lvscale_ * eta_ * qdim_);
         Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_PP_, tc);
     }
 
@@ -661,11 +664,11 @@ void Atmosphere::forcing()
             {
                 value = (*sst_)[surfaceRow-1] +
                     comb_ * sunp_ * (suna_[j] - amua_);
-
+                
                 // latent heat due to precipitation (reference contribution)
-                value += lvscale_ * Po0_;
-
+                value += comb_ * latf_ * lvscale_ * Po0_;
             }
+            
             frc_[temRow-1] = value;
 
             // ------------ Humidity forcing
@@ -1282,12 +1285,14 @@ void Atmosphere::setPar(std::string const &parName, double value)
 {
     parName_ = parName; // Overwrite our parameter name
 
-    if (parName.compare("Combined Forcing") == 0)
+    if (parName.compare(allParameters_[0]) == 0)
         comb_ = value;
-    else if (parName.compare("Solar Forcing") == 0)
+    else if (parName.compare(allParameters_[1]) == 0)
         sunp_ = value;
-    else if (parName.compare("Humidity Forcing") == 0)
+    else if (parName.compare(allParameters_[2]) == 0)
         humf_ = value;
+    else if (parName.compare(allParameters_[3]) == 0)
+        latf_ = value;
 
     // The effects of comb_ and humf_ are combined in nuq_, so here we
     // update nuq_.
@@ -1308,12 +1313,14 @@ double Atmosphere::getPar()
 // Get parameter value
 double Atmosphere::getPar(std::string const &parName)
 {
-    if (parName.compare("Combined Forcing") == 0)
+    if (parName.compare(allParameters_[0]) == 0)
         return comb_;
-    else if (parName.compare("Solar Forcing") == 0)
+    else if (parName.compare(allParameters_[1]) == 0)
         return sunp_;
-    else if (parName.compare("Humidity Forcing") == 0)
+    else if (parName.compare(allParameters_[2]) == 0)
         return humf_;
+    else if (parName.compare(allParameters_[3]) == 0)
+        return latf_;
     else // If parameter not available we return 0
         return 0;
 }

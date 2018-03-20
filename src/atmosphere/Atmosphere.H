@@ -221,6 +221,7 @@ private:
     double      comb_; //! combined forcing
     double      sunp_; //! solar forcing
     double      humf_; //! humidity forcing
+    double      latf_; //! latent heat forcing
 
 public:
     //! Constructor for use with parallel atmosphere

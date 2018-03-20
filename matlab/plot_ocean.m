@@ -58,12 +58,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
         fprintf(['WARNING: An rmask_file should be supplied when ' ...
                  'restrict_sol=true.\n']);
-    end
-        
-
-            
-            
-            
+    end            
 
     % interpolation mode
     if isfield(opts, 'solfile2') && isfield(opts, 'maskfile2') ...
@@ -128,7 +123,9 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     
     if restrict_sol
         
-        % load mask to restrict solution, assuming THCM input ordering
+        % load mask to restrict solution, assuming THCM input
+        % ordering
+        fprintf('load mask to restrict solution: %s\n', rmask_file);
         bmask = logical(flipud(load(rmask_file))');
 
         % adjust landmask

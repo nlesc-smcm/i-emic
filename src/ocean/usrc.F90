@@ -180,22 +180,23 @@ SUBROUTINE getparcs(param,value)
 end subroutine getparcs
 
 !***********************************************************
-SUBROUTINE getdeps(o_Ooa, o_Os, o_nus, o_eta, o_lvscq)
+SUBROUTINE getdeps(o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim)
   !     interface to get Ooa and other dependencies on external model
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_atm
   implicit none
-  real(c_double) o_Ooa, o_Os, o_nus, o_eta, o_lvscq
+  real(c_double) o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim
   o_Ooa   = Ooa
   o_Os    = Os
   o_nus   = nus
   o_eta   = eta
-  o_lvscq = lvsc * qdim
+  o_lvsc  = lvsc
+  o_qdim  = qdim
 end subroutine getdeps
 
 !**********************************************************
-SUBROUTINE get_constants(o_r0dim, o_udim, o_hdim)
+SUBROUTINE get_parameters(o_r0dim, o_udim, o_hdim)
   !     interface to get a few model constants
   use, intrinsic :: iso_c_binding
   use m_usr
@@ -207,10 +208,10 @@ SUBROUTINE get_constants(o_r0dim, o_udim, o_hdim)
   o_udim  = udim;
   o_hdim  = hdim;
 
-end subroutine get_constants
+end subroutine get_parameters
 
 !**********************************************************
-SUBROUTINE set_ep_constants(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
+SUBROUTINE set_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
   ! Interface to set a few model parameters relevant for E-P. These
   ! parameters affect the sensitivity nus, which should be updated
   ! here.
@@ -220,7 +221,7 @@ SUBROUTINE set_ep_constants(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
   implicit none
   real(c_double) i_qdim, i_nuq, i_eta, i_dqso, i_eo0
   real dzne
-  
+
   qdim = i_qdim 
   nuq  = i_nuq  
   eta  = i_eta  
@@ -228,11 +229,16 @@ SUBROUTINE set_ep_constants(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
   eo0  = i_eo0
 
   dzne = dz*dfzT(l)
-  
-  nus = ( par(COMB) * par(SALT) * s0 * eta * qdim * r0dim ) &
+
+  nus  = ( par(COMB) * par(SALT) * s0 * eta * qdim * r0dim ) &
        / ( deltas * udim * hdim * dzne )
 
-end subroutine set_EP_constants
+  ! --> FIXME Instead of using par(TEMP) we should have a dedicated latent heat
+  ! continuation parameter.
+  lvsc =  par(COMB) * par(TEMP) * rhodim * lv * r0dim &
+       / (deltat * udim * cp0 * rhodim * hdim * dzne)
+
+end subroutine set_parameters
 
 !***********************************************************
 SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
@@ -633,16 +639,16 @@ SUBROUTINE lin
   call tderiv(7,tcb)
 
   ! dependence of TT on TT through latent heat due to evaporation
-  ! dedt =  par(COMB)*par(TEMP)*lvsc * qdim * eta * (deltat / qdim) * dqso
-
+  dedt =  lvsc * eta * qdim * (deltat / qdim) * dqso
+  
   ! write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
 
   if (la > 0) then ! deprecated local atmosphere
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
   else if (coupled_T.eq.1) then ! coupled with external atmos
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz  &
-          + Ooa * tc     ! sensible heat flux
-     ! + dedt*sc    ! latent heat flux
+          + Ooa * tc     & ! sensible heat flux
+          + dedt * sc      ! latent heat flux
   else
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
   endif
@@ -1110,7 +1116,8 @@ SUBROUTINE atmos_coef
   As   = sun0*(1 - c0)/(4*muoa)
   Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
   Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
-  nus  = 0.0 ! postpone until set_ep_constants is called
+  nus  = 0.0 ! postpone until set_parameters is called
+  ! lvsc = rhodim*lv*r0dim/(udim*cp0*rhodim*hdim*dzne)
   lvsc = 0.0 ! ...
   DO j = 1,m
      !       albe(j) = 0.15 + 0.05 * cos (y(j))
