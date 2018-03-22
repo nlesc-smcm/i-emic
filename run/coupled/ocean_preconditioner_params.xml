@@ -557,14 +557,14 @@
   <ParameterList name="ATS Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
     <Parameter name="Max Num Iter" type="int" value="10"/> <!-- candidate -->
-    <Parameter name="Tolerance" type="double" value="1.0e-3"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-5"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
     <Parameter name="Output" type="int" value="1"/>
     <Parameter name="Scaling" type="string" value="None"/> <!--indifferent -->
     <!-- don't touch this one, it's irrelevant -->
     <Parameter name="Precond" type="string" value="None"/>
-    <Parameter name="KSpace" type="int" value="20"/>
+    <Parameter name="KSpace" type="int" value="100"/>
     <Parameter name="Orthog" type="string" value="Classic"/>
   </ParameterList><!-- } ATS Solver -->
 

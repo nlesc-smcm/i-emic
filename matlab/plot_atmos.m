@@ -76,8 +76,8 @@ function [state,pars,add] = plot_atmos(fname, opts)
     rhoa = 1.25;
     rhoo = 1024;
     ce   = 1.3e-03;
-    uw   = 8.5
-    eta =  (rhoa / rhoo) * ce * uw
+    uw   = 8.5;
+    eta  =  (rhoa / rhoo) * ce * uw;
     
     Ta  = T0 + tdim * squeeze(state(1,:,:,:));
     qa  = q0 + qdim * squeeze(state(2,:,:,:));
