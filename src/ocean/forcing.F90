@@ -103,7 +103,7 @@ SUBROUTINE forcing
         enddo
      enddo
      
-     if (SRES.eq.0) call qint(emip,  salcor)
+     if (SRES.eq.0.and.coupled_S.eq.0) call qint(emip,  salcor)
 
   endif
 

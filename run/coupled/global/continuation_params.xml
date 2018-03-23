@@ -20,7 +20,7 @@
   
   <!-- Define the number of continuation steps               -->
   <!--   set to -1 to run until final destination is reached -->
-  <Parameter name="maximum number of steps" type="int" value="-1"/>
+  <Parameter name="maximum number of steps" type="int" value="-10"/>
 
   <!-- Tolerance in Newton process -->
   <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
