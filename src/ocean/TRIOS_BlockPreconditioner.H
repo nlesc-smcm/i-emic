@@ -217,7 +217,7 @@ namespace TRIOS {
 		double InitializeFlops() const;
 		double ComputeFlops() const;
 		double ApplyInverseFlops() const;
-		ostream& Print(std::ostream& os) const;
+        std::ostream& Print(std::ostream& os) const;
 #ifdef TESTING
 		//=============================================================================
 		// Get some temporary access for debugging

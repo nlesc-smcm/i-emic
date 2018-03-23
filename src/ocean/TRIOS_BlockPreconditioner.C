@@ -1465,8 +1465,8 @@ namespace TRIOS {
     double BlockPreconditioner::NormInf() const
     {
         // Not implemented: Throw an error!
-        cout << "ERROR: BlockPreconditioner::NormInf() - "
-             << "method is NOT implemented!!  " << endl;
+        std::cout << "ERROR: BlockPreconditioner::NormInf() - "
+                  << "method is NOT implemented!!  " << std::endl;
         throw "Error: method not implemented";
     }
 

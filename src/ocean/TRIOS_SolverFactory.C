@@ -62,7 +62,7 @@ namespace TRIOS {
     Teuchos::RCP<Epetra_Operator> SolverFactory::CreateAlgebraicPrecond(Epetra_CrsMatrix& A,
                                                                         Teuchos::ParameterList& plist, int verbose)
     {
-        string PrecType = plist.get("Method","Ifpack");
+        std::string PrecType = plist.get("Method","Ifpack");
         DEBUG("Enter SolverFactory::CreateAlgebraicPrecond ("+PrecType+")");
 
         Teuchos::RCP<Epetra_Operator> prec;
@@ -72,7 +72,7 @@ namespace TRIOS {
         if (is_ifpack)
         {
             int OverlapLevel = plist.get("Ifpack Overlap Level",0);
-            string SubType = plist.get("Ifpack Method","ILUT");
+            std::string SubType = plist.get("Ifpack Method","ILUT");
             Teuchos::RCP<Ifpack_Preconditioner> Prec;
             if (SubType=="MRILU")
             {
@@ -148,11 +148,11 @@ namespace TRIOS {
                 mllist.remove("smoother: aztec list");
             }
 
-            string smoo = mllist.get("smoother: type","Aztec");
+            std::string smoo = mllist.get("smoother: type","Aztec");
             if (smoo=="IFPACK")
             {
                 //Teuchos::ParameterList& ifp_list=mllist.sublist("smoother: ifpack list");
-                string ifp_type=mllist.get("smoother: ifpack type","Amesos");
+                std::string ifp_type=mllist.get("smoother: ifpack type","Amesos");
                 const char *str1 = ifp_type.c_str();
                 const char *str2 = "block relaxation";
                 int len = 16;
@@ -208,7 +208,7 @@ namespace TRIOS {
 // create an algebraic preconditinoer (i.e. for a submatrix)
     void SolverFactory::ComputeAlgebraicPrecond(Teuchos::RCP<Epetra_Operator> P, Teuchos::ParameterList& plist)
     {
-        string PrecType = plist.get("Method","None");
+        std::string PrecType = plist.get("Method","None");
         DEBUG("Enter SolverFactory::ComputeAlgebraicPrecond ("+PrecType+")");
 
         bool is_ifpack = (PrecType=="Ifpack");
@@ -218,7 +218,7 @@ namespace TRIOS {
                 Teuchos::rcp_dynamic_cast<Ifpack_Preconditioner>(P);
 
 #ifdef DEBUGGING
-            string SubType   = plist.get("Ifpack Method","None");
+            std::string SubType   = plist.get("Ifpack Method","None");
             int overlapLevel = plist.get("Ifpack Overlap Level", 0);
             DEBVAR(SubType);
             if (SubType=="ILU")
@@ -310,7 +310,7 @@ namespace TRIOS {
                 //int NumSmoo = mllist.get("smoother: sweeps",1);
                 int NumCycles = mllist.get("cycle applications",1);
                 int NumPre=0, NumPost=0;
-                string PreOrPost = mllist.get("smoother: pre or post","both");
+                std::string PreOrPost = mllist.get("smoother: pre or post","both");
                 if ((PreOrPost=="pre")||(PreOrPost=="both"))
                 {
                     NumPre=NumCycles;
@@ -406,18 +406,18 @@ namespace TRIOS {
         for(; pl_iter != pl_end; ++pl_iter)
         {
             //create an upper-case copy of the entry's name and prepend AZ_ if necessary
-//    string name = AztecOO_uppercase((*pl_iter).first);
-            string name = Teuchos::StrUtils::allCaps((*pl_iter).first);
+//    std::string name = AztecOO_uppercase((*pl_iter).first);
+            std::string name = Teuchos::StrUtils::allCaps((*pl_iter).first);
 
             if (!(name[0] == 'A' && name[1] == 'Z'))
             {
-                string az_("AZ_");
+                std::string az_("AZ_");
                 name=az_+name;
             }
 
             const Teuchos::ParameterEntry& entry = (*pl_iter).second;
-            Teuchos::map<string,int>& azoo_key_map = AztecOO_key_map();
-            Teuchos::map<string,int>::iterator result = azoo_key_map.find(name);
+            Teuchos::map<std::string,int>& azoo_key_map = AztecOO_key_map();
+            Teuchos::map<std::string,int>::iterator result = azoo_key_map.find(name);
             bool entry_used = false;
 
             if (result != azoo_key_map.end())
@@ -427,7 +427,7 @@ namespace TRIOS {
 
                 int dummy_int;
                 double dummy_double;
-                string dummy_string;
+                std::string dummy_string;
 
                 if (entry.isType<int>() || entry.isType<unsigned>())
                 {
@@ -438,18 +438,19 @@ namespace TRIOS {
                         entry_used = true;
                     }
                 }
-                else if (entry.isType<string>())
+                else if (entry.isType<std::string>())
                 {
                     if (offset < AZ_FIRST_USER_OPTION)
                     {
-                        string sname = Teuchos::StrUtils::allCaps(entry.getValue(&dummy_string));
+                        std::string sname = Teuchos::StrUtils::allCaps(
+                            entry.getValue(&dummy_string));
                         if (!(sname[0] == 'A' && sname[1] == 'Z'))
                         {
-                            string az_("AZ_");
+                            std::string az_("AZ_");
                             sname=az_+sname;
                         }
-                        Teuchos::map<string,int>& val_map = AztecOO_value_map();
-                        Teuchos::map<string,int>::iterator result = val_map.find(sname);
+                        Teuchos::map<std::string,int>& val_map = AztecOO_value_map();
+                        Teuchos::map<std::string,int>::iterator result = val_map.find(sname);
                         if (result != val_map.end())
                         {
                             options[offset] = (*result).second;
