@@ -35,7 +35,6 @@ cmake \
   -D CMAKE_CXX_COMPILER:STRING="mpiicpc" \
   -D CMAKE_Fortran_COMPILER:STRING="mpiifort" \
   -D CMAKE_CXX_FLAGS:STRING="-O3 -g -fopenmp -DMPICH_SKIP_MPICXX" \
-  -D Ifpack_CXX_FLAGS:STRING="-DHAVE_IFPACK_MRILU"\
 \
   -D Trilinos_ENABLE_Export_Makefiles:BOOL=ON \
   -D EpetraExt_USING_HDF5:BOOL=ON \

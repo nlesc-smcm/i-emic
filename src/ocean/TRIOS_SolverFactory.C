@@ -73,21 +73,30 @@ namespace TRIOS {
         {
             int OverlapLevel = plist.get("Ifpack Overlap Level",0);
             std::string SubType = plist.get("Ifpack Method","ILUT");
-            Teuchos::RCP<Ifpack_Preconditioner> Prec;
-            if (SubType=="MRILU")
+            if (SubType.find("MRILU") == 0)
             {
                 int out = plist.sublist("MRILU").get("Output Level",0);
                 if (verbose>5) out = max(out,verbose);
                 if (verbose<5) out = min(out,verbose);
                 plist.sublist("MRILU").set("Output Level",out);
             }
-            Ifpack PreconditionerFactory;
-            prec = Teuchos::rcp(PreconditionerFactory.Create(SubType,
-                                                             &A, OverlapLevel) );
-            Prec = Teuchos::rcp_dynamic_cast<Ifpack_Preconditioner>(prec);
+
+            Teuchos::RCP<Ifpack_Preconditioner> Prec;
+            if (SubType == "MRILU")
+                Prec = Teuchos::rcp(new Ifpack_AdditiveSchwarz<Ifpack_MRILU>(
+                                        &A, OverlapLevel));
+            else if (SubType == "MRILU stand-alone")
+                Prec = Teuchos::rcp(new Ifpack_MRILU(&A));
+            else
+            {
+                Ifpack PreconditionerFactory;
+                Prec = Teuchos::rcp(PreconditionerFactory.Create(
+                                        SubType, &A, OverlapLevel));
+            }
 
             CHECK_ZERO(Prec->SetParameters(plist));
             CHECK_ZERO(Prec->Initialize());
+            prec = Prec;
         }
         else if (PrecType=="ML")
         {
