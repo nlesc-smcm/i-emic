@@ -180,7 +180,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
                     'linewidth',.5);
         hold off
         set(gca,'ydir','normal')
-        cmap = my_colmap(caxis);
+        cmap = my_colmap(caxis,0);
         colormap(cmap)
         colorbar
 
