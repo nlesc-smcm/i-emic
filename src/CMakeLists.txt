@@ -54,7 +54,7 @@ set_directory_properties(PROPERTIES EP_PREFIX ${CMAKE_SOURCE_DIR}/src/external)
 
 ExternalProject_Add(jdqzpp
   GIT_REPOSITORY https://github.com/erik808/jdqzpp
-  GIT_TAG origin/master
+  GIT_TAG 7234bbd
 
   PREFIX ${CMAKE_SOURCE_DIR}/src/external/jdqzpp
 
