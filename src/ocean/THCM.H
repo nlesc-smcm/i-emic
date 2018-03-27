@@ -470,6 +470,9 @@ private:
     //! tres=0: non-restoring temperature forcing => integral condition in A and f
     int tres;
 
+    //! integral condition can have a negative or a positive sign
+    int intSign_;
+
     //! which row is replaced by integral condition (global index of last row)
     int rowintcon_;
 

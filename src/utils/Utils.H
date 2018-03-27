@@ -124,7 +124,6 @@ namespace Utils
     //! Print std vector
     void print(std::vector<double> const &vec, std::string const &fname);
 
-
     //! Compute dot product of two vectors
     template<typename VectorPtr>
     double dot(VectorPtr const &vec1,

@@ -53,7 +53,7 @@
   <!-- compute stability: 'N' never,                    -->
   <!--                    'E' at the end of a run,      -->
   <!--                    'P' at every converged point. -->
-  <Parameter name="compute stability" type="char" value="E" />
+  <Parameter name="compute stability" type="char" value="N" />
 
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental, avoid them... -->

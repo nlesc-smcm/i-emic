@@ -31,6 +31,16 @@ TEST(Ocean, Continuation1)
 
         // Run continuation
         continuation.run();
+        
+        // After the run get the Jacobian matrix 
+        Teuchos::RCP<Epetra_CrsMatrix> jac = ocean->getJacobian();
+        DUMPMATLAB("ocean_jac_init", *jac);
+
+        // Also get the mass matrix
+        Teuchos::RCP<Epetra_Vector> diagB = ocean->getDiagB();
+        EXPECT_NE(Utils::norm(diagB), 0.0);
+        DUMP_VECTOR("ocean_B_init", *diagB);                        
+
 
         // Copy ocean_output.h5 to ocean_input.h5
         std::ifstream src1("ocean_output.h5", std::ios::binary);
@@ -85,6 +95,16 @@ TEST(Ocean, Continuation2)
 
         // Run continuation
         continuation.run();
+
+        // After the run get the Jacobian matrix 
+        Teuchos::RCP<Epetra_CrsMatrix> jac = ocean->getJacobian();
+        DUMPMATLAB("ocean_jac_cont", *jac);
+
+        // Also get the mass matrix
+        Teuchos::RCP<Epetra_Vector> diagB = ocean->getDiagB();
+        EXPECT_NE(Utils::norm(diagB), 0.0);
+        DUMP_VECTOR("ocean_B_cont", *diagB);                        
+                
     }
     catch (...)
     {

@@ -217,6 +217,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     alphaS           = paramList.get("Linear EOS: alpha S", 7.6e-4);
     tres             = paramList.get("Restoring Temperature Profile",1);
     sres             = paramList.get("Restoring Salinity Profile",1);
+    intSign_         = paramList.get("Salinity Integral Sign", -1);
     ite              = paramList.get("Levitus T", 1);
     its              = paramList.get("Levitus S", 1);
     internal_forcing = paramList.get("Levitus Internal T/S",false);
@@ -802,7 +803,8 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             //intcond = 0.0;
             if (tmp_rhs->Map().MyGID(lastrow))
             {
-                (*tmp_rhs)[tmp_rhs->Map().LID(lastrow)] = -intcond + intCorrection_;
+                (*tmp_rhs)[tmp_rhs->Map().LID(lastrow)] =
+                    intSign_ * (intcond - intCorrection_);
             }
         }
 #endif
@@ -1936,8 +1938,8 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
                 {
                     int gid = FIND_ROW2(_NUN_,N,M,L,i,j,k,SS);
                     indices[pos] = gid;
-                    // --> THIS SHOULD BE TESTED
-                    values[pos] = -(*intcond_glob)[0][gid];
+                    
+                    values[pos] = intSign_ * (*intcond_glob)[0][gid];
                     pos++;
                 }
 

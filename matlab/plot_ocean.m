@@ -127,7 +127,6 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         % ordering
         fprintf('load mask to restrict solution: %s\n', rmask_file);
         bmask = logical(flipud(load(rmask_file))');
-
         % adjust landmask
         landm = shiftdim(landm,2);
         landm(2:l+1, bmask) = 1;
