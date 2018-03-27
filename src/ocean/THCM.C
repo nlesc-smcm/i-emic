@@ -677,11 +677,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 //      int M = domain->GlobalM();
 //      int L = domain->GlobalL();
 //
-// rowPfix1 = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
-// rowPfix2 = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
+    rowPfix1 = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
+    rowPfix2 = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
 
-    rowPfix1=-1;
-    rowPfix2=-1;
+    // rowPfix1=-1;
+    // rowPfix2=-1;
 
     // build vectonr with integral coefficients
     this->evaluateB();
@@ -930,7 +930,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         }
 #endif
         
-        //this->fixPressurePoints(*localJac,*localDiagB);
+        this->fixPressurePoints(*localJac,*localDiagB);
         CHECK_ZERO(localJac->FillComplete());
 
         // redistribute according to SolveMap (may be load-balanced)

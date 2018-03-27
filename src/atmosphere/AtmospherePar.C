@@ -803,7 +803,7 @@ void AtmospherePar::computeJacobian()
     {
         gid         = last + aa;
         icinds[pos] = gid;
-        icvals[pos] = (*intcondGlob_)[0][gid];
+        icvals[pos] = 0.0; 
 
         // final dependency P -> P
         if (aa == 1)
