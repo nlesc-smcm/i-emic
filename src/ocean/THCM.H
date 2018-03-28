@@ -498,7 +498,10 @@ private:
     //! implement integral condition for S in Jacobian and B-matrix
     void intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B);
 
-    //! implement dirichlet values P=0 in cells rowPfix1/2 (if >=0)
+    //! flag to switch Dirichlet values P=0 on/off
+    bool fixPressurePoints_;
+    
+    //! implement Dirichlet values P=0 in cells rowPfix1/2 (if >=0)
     void fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B);
 
     //! this subroutine defines the maximal matrix graph (pattern of nonzeros in the jacobian
