@@ -149,17 +149,33 @@ AMS(Model model, ParameterList pars,
         return newton<VectorPtr>(thetaF, thetaJ, x, 1e-8);
     };
 
+    auto vnorm = [](VectorPtr const &x) {
+        double tmp = 0;
+        int n = x->MyLength();
+        auto &map = x->Map();
+        Vector const &xref = *x;
+        for (int i = 0; i < n; i++)
+            if (map.GID(i) % 6 == 1)
+                tmp += xref[i] * xref[i];
+        double out = 0;
+        if (x->DistributedGlobal())
+            x->Comm().SumAll(&tmp, &out, 1);
+        else
+            out = tmp;
+        return sqrt(out);
+    };
+
     VectorPtr diff = Teuchos::rcp(new Vector(*sol1));
     diff->Update(-1.0, *sol2, 1.0);
-    double nrm = Utils::norm(diff);
+    double nrm = vnorm(diff);
 
-    auto dist_fun = [nrm, sol1, sol2](VectorPtr const &x) {
+    auto dist_fun = [nrm, vnorm, sol1, sol2](VectorPtr const &x) {
         VectorPtr d1v = Teuchos::rcp(new Vector(*x));
         d1v->Update(-1.0, *sol1, 1.0);
-        double d1 =  Utils::norm(d1v) / nrm;
+        double d1 =  vnorm(d1v) / nrm;
         VectorPtr d2v = Teuchos::rcp(new Vector(*x));
         d2v->Update(-1.0, *sol2, 1.0);
-        double d2 =  Utils::norm(d2v) / nrm;
+        double d2 =  vnorm(d2v) / nrm;
         double dist = 0.25 - 0.25 * exp(-0.5 * pow(d1 / 0.25, 2.))
         + 0.75 * exp(-0.5 * pow(d2 / 0.25, 2.));
         INFO("distance = " << dist);
