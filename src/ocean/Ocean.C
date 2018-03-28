@@ -74,7 +74,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
 
     landmaskFile_          (oceanParamList->sublist("THCM").get("Land Mask", "none")),
 
-    analyzeJacobian_       (oceanParamList->get("Analyze Jacobian", true))
+    analyzeJacobian_       (oceanParamList->get("Analyze Jacobian", true)),
+    shifted_               (false)
 {
     INFO("Ocean: constructor...");
 
@@ -1290,6 +1291,17 @@ void Ocean::computeJacobian()
     // Get the Jacobian from THCM
     jac_ = THCM::Instance().getJacobian();
 
+    if (shifted_)
+    {
+        computeMassMat();
+
+        // Put the shifted matrix in jac
+        Epetra_Vector diag(jac_->Map());
+        jac_->ExtractDiagonalCopy(diag);
+        diag.Update(shift_, *diagB_, 1.0);
+        jac_->ReplaceDiagonalValues(diag);
+    }
+
     TIMER_STOP("Ocean: compute Jacobian...");
 }
 
@@ -1432,6 +1444,13 @@ void Ocean::applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out)
 
     // element-wise multiplication (out = 0.0*out + 1.0*B*v)
     out.Multiply(1.0, *diagB_, v, 0.0);
+}
+
+//====================================================================
+void Ocean::setShift(double shift)
+{
+    shifted_ = shift != 0.0;
+    shift_ = shift;
 }
 
 //====================================================================

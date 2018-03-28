@@ -9,6 +9,7 @@ set(MAIN_INCLUDE_DIRS
   ../utils/
   ../dependencygrid/
   ../lyapunov/
+  ../ams/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
@@ -18,6 +19,7 @@ set(MAIN_SOURCES
   time_ocean.C
   time_coupled.C
   run_topo.C
+  run_ams.C
   )
 
 set(MAIN_LIBRARIES
