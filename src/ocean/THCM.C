@@ -1957,7 +1957,6 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
           indices[0]=lastrow;
           values[0]=1.0;
         */
-        std::cout << "setting integral coefficients in row " << lastrow << std::endl;
         int ierr;
         if (A.Filled())
         {
@@ -2001,11 +2000,8 @@ void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
             double *vals   = new double[numEntries];
             int *inds      = new int[numEntries];
 
-            CHECK_NONNEG(A.ExtractGlobalRowCopy(row, numEntries, numEntries, vals, inds));            
-
-            std::cout << "fixing pressure in row " << row << std::endl;
-            std::cout << "numentries in row " << A.NumMyEntries(lidA) << std::endl;
-
+            // Extract current row and zero out except diagonal
+            CHECK_NONNEG(A.ExtractGlobalRowCopy(row, numEntries, numEntries, vals, inds));
             for (int i = 0; i != numEntries; ++i)
             {
                 if (inds[i] == row)
