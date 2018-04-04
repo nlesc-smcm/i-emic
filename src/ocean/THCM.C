@@ -609,6 +609,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     if (sres == 0)
     {
+        // location of integral condition
         rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
         INFO("THCM: integral condition for S is in global row " << rowintcon_);
     }
@@ -802,15 +803,15 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 #ifndef NO_INTCOND
         if (sres == 0)
         {
-            int lastrow = rowintcon_;
+            int intcondrow = rowintcon_;
             double intcond;
             //TODO: check which is better:
             CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
             //std::cout << " dot product: "<<intcond << std::endl;
             //intcond = 0.0;
-            if (tmp_rhs->Map().MyGID(lastrow))
+            if (tmp_rhs->Map().MyGID(intcondrow))
             {
-                (*tmp_rhs)[tmp_rhs->Map().LID(lastrow)] =
+                (*tmp_rhs)[tmp_rhs->Map().LID(intcondrow)] =
                     intSign_ * (intcond - intCorrection_);
             }
         }
@@ -858,7 +859,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         for (int i = 0; i < imax; i++)
         {
-        if (!domain->IsGhost(i, _NUN_) && (AssemblyMap->GID(i) != rowintcon_))
+            if (!domain->IsGhost(i, _NUN_) && (AssemblyMap->GID(i) != rowintcon_))
             {
                 index = begA[i]; // note that these arrays use 1-based indexing
                 numentries = begA[i+1] - index;
@@ -993,10 +994,10 @@ void THCM::evaluateB(void)
 #ifndef NO_INTCOND
     if (sres == 0)
     {
-        int lastrow = (domain->GlobalN())*(domain->GlobalM())*(domain->GlobalL());
-        if (localDiagB->Map().MyGID(lastrow))
+        int intcondrow = (domain->GlobalN())*(domain->GlobalM())*(domain->GlobalL());
+        if (localDiagB->Map().MyGID(intcondrow))
         {
-            (*localDiagB)[localDiagB->Map().LID(lastrow)]=0.0;
+            (*localDiagB)[localDiagB->Map().LID(intcondrow)]=0.0;
         }
     }
 #endif
@@ -1920,20 +1921,20 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
     int M=domain->GlobalM();
     int L=domain->GlobalL();
 
-    int lastrow = rowintcon_;
+    int intcondrow = rowintcon_;
 
     int root = Comm->NumProc()-1;
 
     Teuchos::RCP<Epetra_MultiVector> intcond_glob =
         Utils::Gather(*intcond_coeff, root);
 
-    if (A.MyGRID(lastrow))
+    if (A.MyGRID(intcondrow))
     {
         if (Comm->MyPID()!=root)
         {
             ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
         }
-        int lid = B.Map().LID(lastrow);
+        int lid = B.Map().LID(intcondrow);
         B[lid]  = 0.0;   // no more time-dependence for this S-point
         int len = N*M*L;
         
@@ -1954,24 +1955,24 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 
         /*
           len=1;
-          indices[0]=lastrow;
+          indices[0]=intcondrow;
           values[0]=1.0;
         */
         int ierr;
         if (A.Filled())
         {
-            ierr = A.ReplaceGlobalValues(lastrow,len,values,indices);
+            ierr = A.ReplaceGlobalValues(intcondrow,len,values,indices);
         }
         else
         {
-            ierr = A.InsertGlobalValues(lastrow,len,values,indices);
+            ierr = A.InsertGlobalValues(intcondrow,len,values,indices);
         }
         if (ierr != 0)
         {
             INFO( "Insertion ERROR! " << ierr << " filled = "
                   << A.Filled());
             INFO( " while inserting/replacing values in local Jacobian");
-            INFO( "  GRID: " << lastrow);
+            INFO( "  GRID: " << intcondrow);
             ERROR("Error during insertion/replacing of values in local Jacobian",
                   __FILE__, __LINE__);
         }

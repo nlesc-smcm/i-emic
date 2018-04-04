@@ -34,8 +34,9 @@ SUBROUTINE grid
      y(j) = (real(j)-0.5)*dy + ymin
      yv(j)= (real(j)    )*dy + ymin
   ENDDO
-  y(0) = y(1) - dy;
+  y(0)   = y(1) - dy;
   y(m+1) = y(m) + dy;
+ 
   yv(0) = ymin
   
   DO k=1,l

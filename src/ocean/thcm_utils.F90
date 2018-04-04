@@ -299,7 +299,7 @@ implicit none
             do i = 1, n
                if ( landm(i,j,k) == OCEAN ) then
                   v = v + 1
-                  val(v) = cos(y(j)) * dfzT(k) * dx * dy * dz
+                  val(v) = cos(y(j)) * dfzT(k)
                   ind(v) = FIND_ROW2(i,j,k,SS)
                endif
             enddo

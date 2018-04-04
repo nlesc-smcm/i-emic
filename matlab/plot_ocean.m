@@ -350,8 +350,8 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
             exportfig('isohalines.eps',10,[20,7],invert)
         end
     end
-    if isfield(opts, 'sss') || isfield(opts, 'everything')
-    
+    if (isfield(opts, 'sss') || isfield(opts, 'everything') )
+        
         figure(6); 
         Ssurf = S(:,:,l);
         Sz = mean(Ssurf,1);

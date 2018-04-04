@@ -164,7 +164,7 @@ subroutine boundaries
 
                  Frc(find_row2(i,j,k,WW)) = 0.0
                  Al(i,j,k, :,WW,: ) = 0.0
-                 ! preconditioner breakdown if we do this:
+                 ! --> preconditioner breakdown if we do this:
                  !Al(i,j,k, 5, :,WW) = 0.0 !MdT
                  !Al(i,j,k, 6, :,WW) = 0.0 !MdT
                  !Al(i,j,k, 8, :,WW) = 0.0 !MdT
