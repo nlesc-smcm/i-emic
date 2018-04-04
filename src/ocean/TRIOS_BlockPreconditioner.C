@@ -949,8 +949,6 @@ namespace TRIOS {
                 coM[jj]*=scale;
             }
             ipb = mapPbar->GID(i);
-            std::cout << "ipb " << ipb << std::endl;
-            std::cout << "svs " << svs << std::endl;
 
             if (ipb >= 0)
             {

@@ -114,6 +114,29 @@ TEST(Ocean, Continuation2)
     EXPECT_EQ(failed, false);
 }
 
+extern "C" _MODULE_SUBROUTINE_(m_integrals, salt_advection)(double *un,
+                                                            double *check);
+//------------------------------------------------------------------
+TEST(Ocean, Integrals)
+{
+    RCP<Epetra_Vector> un = ocean->getState('C');   // copy of state
+    RCP<TRIOS::Domain> domain = ocean->getDomain(); // pointer to domain object
+
+    Utils::save(un, "un");
+    // Create local state including overlap
+    RCP<Epetra_Vector> lun = Teuchos::rcp(new Epetra_Vector(*domain->GetAssemblyMap()));
+
+    domain->Assembly2Solve(*un, *lun);
+
+    double *lunView;
+    double check = 1;
+    lun->ExtractView(&lunView);
+    
+    F90NAME(m_integrals, salt_advection )( lunView, &check );
+    std::cout << "PID = " << comm->MyPID()
+              << ",  local salt advection integral = " << check << std::endl;
+}
+
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {
