@@ -21,7 +21,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     if nargin < 3
         opts.everything = true;
     end
-
+     
     if isfield(opts, 'title_add')
         plot_title = true;
     else
@@ -246,7 +246,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         end
     end
 
-    if isfield(opts, 'everything')
+    if isfield(opts, 'temperature') || isfield(opts, 'everything')
         figure(3);
         % - CHECK SALINITY - ------------------------------------------------
         check = checksal(S,x,y,dfzt);
@@ -293,6 +293,10 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         if export_to_file
             exportfig('isothermals.eps',10,[20,7],invert)
         end
+    
+    end
+    
+    if isfield(opts, 'sst') || isfield(opts, 'everything')
 
 
         % -------------------------------------------------------
@@ -324,7 +328,8 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         if export_to_file
             exportfig('sst.eps',10,[50,25],invert)
         end
-
+    end
+    if isfield(opts, 'salinity') || isfield(opts, 'everything')
         figure(5);
 
         contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
@@ -344,7 +349,9 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         if export_to_file
             exportfig('isohalines.eps',10,[20,7],invert)
         end
-        
+    end
+    if isfield(opts, 'sss') || isfield(opts, 'everything')
+    
         figure(6); 
         Ssurf = S(:,:,l);
         Sz = mean(Ssurf,1);
