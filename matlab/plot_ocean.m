@@ -344,6 +344,8 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         if export_to_file
             exportfig('isohalines.eps',10,[20,7],invert)
         end
+    end
+    if (isfield(opts, 'sss') || isfield(opts, 'everything') )
         
         figure(6); 
         Ssurf = S(:,:,l);

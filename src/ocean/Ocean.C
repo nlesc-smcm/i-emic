@@ -196,6 +196,20 @@ void Ocean::initializeOcean()
     Utils::save(state_, "initialstate");
     Utils::save(rhs_,   "initialrhs");
 
+    // // Perturb model
+    // *sol_ = *state_; 
+    // double par = getPar();
+    // setPar(par + 1e-8);
+    // state_->PutScalar(1.0);
+    
+    // computeRHS();
+    // Utils::save(rhs_, "perturbedrhs");
+
+    // // Restore model
+    // setPar(par);                    
+    // *state_ = *sol_;
+    // sol_->PutScalar(0.0);
+    
     // Get the rowmap for the pressure points
     Teuchos::RCP<Epetra_Map> RowMap = domain_->GetSolveMap();
 
