@@ -949,7 +949,13 @@ namespace TRIOS {
                 coM[jj]*=scale;
             }
             ipb = mapPbar->GID(i);
-            CHECK_ZERO(Mzp->InsertGlobalValues(ipb, len, coM+begM[i], jcoM+begM[i]));
+            std::cout << "ipb " << ipb << std::endl;
+            std::cout << "svs " << svs << std::endl;
+
+            if (ipb >= 0)
+            {
+                CHECK_ZERO(Mzp->InsertGlobalValues(ipb, len, coM+begM[i], jcoM+begM[i]));
+            }
         }
 
 

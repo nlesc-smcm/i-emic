@@ -8,8 +8,10 @@ SUBROUTINE forcing
   implicit none
 
   real    sigma, etabi, gamma
-  real    wfun, temfun, salfun
-  real    temcor, salcor, adapted_salcor, spertcor
+
+  real wfun, temfun, salfun
+  real temcor
+  real salcor, adapted_salcor, spertcor
   integer i, j, k, row
   real    qfun2(n,m), fsint
   integer find_row2
@@ -412,7 +414,7 @@ real FUNCTION temfun(xx,yy)
   use m_par
   use m_global ! we need the global value of ymin and ymax here!
   implicit none
-  real    xx,yy
+  real xx,yy
   if (ymin.ge.0.0) then ! Northern hemisphere
      temfun = cos(pi*(yy-ymin)/(ymax-ymin))
   else
@@ -442,7 +444,7 @@ SUBROUTINE qint(field,cor)
   use m_usr
   implicit none
   integer i,j
-  real field(n,m),cor,sint
+  real  field(n,m),cor,sint
   ! This is an evil breach of concept, we call a C++ function from F90
   ! to compute the global integral:
   external thcm_forcing_integral

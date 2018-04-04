@@ -280,9 +280,9 @@ void OceanGrid::recomputePsiM()
 
     // vs(0:m,1:l)
     double *vs = new double[(m+1)*l];
+
 // k is 1-based in this indexing function for vs:
 #define IND_VS(j,k) (m+1)*((k)-1)+(j)
-
 
     // perform local integration
     // we perform the local integration into PsiM, which
@@ -523,6 +523,7 @@ void OceanGrid::recomputeMaxVel(void)
     DEBVAR(MaxW);
     recompute_MaxVel_=false;
 }
+
 
 // output to file stream
 std::ostream& OceanGrid::print(std::ostream& os) const

@@ -176,13 +176,20 @@ TEST(Ocean, Continuation)
         Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
             continuation(ocean, continuationParams);
 
-        // Run continuation
-        continuation.run();
-
         Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
         DUMPMATLAB("ocean_jac", *mat);
         
         Teuchos::RCP<Epetra_Vector> diagB = ocean->getDiagB();
+        EXPECT_NE(Utils::norm(diagB), 0.0);
+        DUMP_VECTOR("ocean_B", *diagB);                        
+
+        // Run continuation
+        continuation.run();
+
+        mat  = ocean->getJacobian();
+        DUMPMATLAB("ocean_jac", *mat);
+        
+        diagB = ocean->getDiagB();
         EXPECT_NE(Utils::norm(diagB), 0.0);
         DUMP_VECTOR("ocean_B", *diagB);                        
         

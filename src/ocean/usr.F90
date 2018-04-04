@@ -19,8 +19,8 @@ module m_usr
   integer :: l    = 0             ! z direction
   integer :: ndim = 0             ! total number of unknowns n*m*l*nun
 
-  real    :: xmin,xmax            ! limits in x direction
-  real    :: ymin,ymax            ! limits in y direction
+  real  :: xmin,xmax            ! limits in x direction
+  real  :: ymin,ymax            ! limits in y direction
 
   logical :: periodic             ! east-west periodicity on subdomain
 
@@ -117,7 +117,8 @@ module m_usr
 
   ! real, parameter :: omegadim = 7.272e-05  ! 2DMOC
   real, parameter :: omegadim = 7.292e-05
-  real, parameter :: r0dim    = 6.37e+06
+  ! real, parameter :: r0dim    = 6.371e+06 ! 2DMOC
+  real, parameter :: r0dim    = 6.37e+06 
   real, parameter :: udim     = 0.1e+00
   real, parameter :: gdim     = 9.8e+00
   real, parameter :: rhodim   = 1.024e+03

@@ -209,21 +209,22 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         }
     }
 
-    ih               = paramList.get("Inhomogeneous Mixing",0);
-    vmix_GLB         = paramList.get("Mixing",1);
-    rho_mixing       = paramList.get("Rho Mixing",true);
-    tap              = paramList.get("Taper",1);
-    alphaT           = paramList.get("Linear EOS: alpha T", 1.0e-4);
-    alphaS           = paramList.get("Linear EOS: alpha S", 7.6e-4);
-    tres             = paramList.get("Restoring Temperature Profile",1);
-    sres             = paramList.get("Restoring Salinity Profile",1);
-    intSign_         = paramList.get("Salinity Integral Sign", -1);
-    ite              = paramList.get("Levitus T", 1);
-    its              = paramList.get("Levitus S", 1);
-    internal_forcing = paramList.get("Levitus Internal T/S",false);
-    bool rd_spertm   = paramList.get("Read Salinity Perturbation Mask",false);
-    coupled_T        = paramList.get("Coupled Temperature", 0);
-    coupled_S        = paramList.get("Coupled Salinity", 0);
+    ih                 = paramList.get("Inhomogeneous Mixing",0);
+    vmix_GLB           = paramList.get("Mixing",1);
+    rho_mixing         = paramList.get("Rho Mixing",true);
+    tap                = paramList.get("Taper",1);
+    alphaT             = paramList.get("Linear EOS: alpha T", 1.0e-4);
+    alphaS             = paramList.get("Linear EOS: alpha S", 7.6e-4);
+    tres               = paramList.get("Restoring Temperature Profile",1);
+    sres               = paramList.get("Restoring Salinity Profile",1);
+    intSign_           = paramList.get("Salinity Integral Sign", -1);
+    ite                = paramList.get("Levitus T", 1);
+    its                = paramList.get("Levitus S", 1);
+    internal_forcing   = paramList.get("Levitus Internal T/S",false);
+    bool rd_spertm     = paramList.get("Read Salinity Perturbation Mask",false);
+    coupled_T          = paramList.get("Coupled Temperature", 0);
+    coupled_S          = paramList.get("Coupled Salinity", 0);
+    fixPressurePoints_ = paramList.get("Fix Pressure Points", false);
 
     if (rd_spertm)
     {
@@ -680,12 +681,16 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 //      int L = domain->GlobalL();
 //
 
-    // FIXME this needs an xml option
-    // rowPfix1 = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
-    // rowPfix2 = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
-
-    rowPfix1=-1;
-    rowPfix2=-1;
+    if (fixPressurePoints_)
+    {
+        rowPfix1 = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
+        rowPfix2 = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
+    }
+    else
+    {
+        rowPfix1 = -1;
+        rowPfix2 = -1;
+    }
 
     // build vectonr with integral coefficients
     this->evaluateB();
@@ -934,9 +939,10 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             this->intcond_S(*localJac,*localDiagB);
         }
 #endif
+        
+        if (fixPressurePoints_)
+            this->fixPressurePoints(*localJac,*localDiagB);
 
-        // FIXME this needs an xml option
-        // this->fixPressurePoints(*localJac,*localDiagB);
         CHECK_ZERO(localJac->FillComplete());
 
         // redistribute according to SolveMap (may be load-balanced)
@@ -1952,7 +1958,6 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
           indices[0]=intcondrow;
           values[0]=1.0;
         */
-        
         int ierr;
         if (A.Filled())
         {
@@ -1988,23 +1993,35 @@ void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
         int row = (i==1)? rowPfix1: rowPfix2;
         if (A.MyGRID(row))
         {
-            int lid = B.Map().LID(row);
-            B[lid] = 0.0; // no more time-dependence for this P-point
-            double values;
-            int indices;
+            int lidB = B.Map().LID(row);
+            int lidA = A.RowMap().LID(row);
+            B[lidB] = 0.0; // no more time-dependence for this P-point
 
-            int len=1;
-            indices=row;
-            values=1.0;
+            int numEntries = A.NumMyEntries(lidA);
+            double *vals   = new double[numEntries];
+            int *inds      = new int[numEntries];
+
+            // Extract current row and zero out except diagonal
+            CHECK_NONNEG(A.ExtractGlobalRowCopy(row, numEntries, numEntries, vals, inds));
+            for (int i = 0; i != numEntries; ++i)
+            {
+                if (inds[i] == row)
+                    vals[i] = 1.0;
+                else
+                    vals[i] = 0.0;
+            }
 
             if (A.Filled())
             {
-                CHECK_NONNEG(A.ReplaceGlobalValues(row,len,&values,&indices));
+                CHECK_NONNEG(A.ReplaceGlobalValues(row,numEntries,vals,inds));
             }
             else
             {
-                CHECK_NONNEG(A.InsertGlobalValues(row,len,&values,&indices));
+                CHECK_NONNEG(A.InsertGlobalValues(row,numEntries,vals,inds));
             }
+
+            delete [] vals;
+            delete [] inds;
         }
     }//for two pressure dirichlet values
 }

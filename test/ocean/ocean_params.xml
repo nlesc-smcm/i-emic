@@ -89,9 +89,13 @@
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
+
+    <!-- Put Dirichlet conditions P=0 at two surface pressure rows -->
+    <Parameter name="Fix Pressure Points" type="bool" value="false"/>
+    
     <!-- Freshwater Forcing (ifw in THCM) -->
-    <!-- 0: data, 1: idealized            -->
+    <!-- 0: data, 1: idealized            -->    
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->

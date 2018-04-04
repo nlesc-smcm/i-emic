@@ -20,7 +20,7 @@ SUBROUTINE uderiv(type,atom)
   !     IMPORT/EXPORT
   integer type,i,j,k
   real    atom(n,m,l,np)
-  real    cosdx2i(0:m),rdy2i,rdz2i,tand2(0:m),cosd2(0:m)
+  real    cosdx2i(0:m+1),rdy2i,rdz2i,tand2(0:m),cosd2(0:m)
   real    h1,h2
   real    amh,bmh,amhy,bmhy
   !   
@@ -180,7 +180,7 @@ SUBROUTINE pderiv(type,atom)
   !     IMPORT/EXPORT
   integer type,i,j,k
   real    atom(n,m,l,np)
-  real    cos2i(m),cos2v(0:m),dzi
+  real    cos2i(0:m),cos2v(0:m),dzi
   real    sf
   !
   atom = 0.0
@@ -235,7 +235,7 @@ SUBROUTINE tderiv(type,atom)
   real    atom(n,m,l,np)
   ! LOCAL
   integer i,j,k
-  real    tdxi,tandyi(m),cosdx2i(m),dy2i,dz2i,h1,h2
+  real    tdxi,tandyi(m),cosdx2i(0:m+1),dy2i,dz2i,h1,h2
   real    cos2i(m),sincos2i(m)
   real    vdif
   !
@@ -410,7 +410,7 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   real    dum1,dum2,dum3,dum4
   ! LOCAL
   integer i,j,k,k0,k1
-  real    costdxi(m),tdyi,tanr(m),tdzi,h1,h2
+  real    costdxi(0:m+1),tdyi,tanr(m),tdzi,h1,h2
   ! EXTERNAL
   real hs,itkm1,itk1,itkp1,iskm1,isk1,iskp1,jtkm1  
   real jtk1,jtkp1,jskm1,jsk1,jskp1,itkm2,itk2,itkp2,&
@@ -832,7 +832,7 @@ SUBROUTINE yderiv(type,atom)
   !     IMPORT/EXPORT
   integer type,i,j,k
   real    atom(n,m,la,np)
-  real    tdxi,tandyi(m),cosdx2i(m),dy2i,dz2i
+  real    tdxi,tandyi(m),cosdx2i(0:m+1),dy2i,dz2i
   real    cos2i(m),sincos2i(m)
   !
   atom = 0.0
