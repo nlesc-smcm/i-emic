@@ -464,7 +464,7 @@ SUBROUTINE rhs(un,B)
      if (vmix_out.gt.0) write(99,'(a16,i10)') 'MIX|     salt:  ', vmix_salt
 
      if (((vmix_temp.eq.1).or.(vmix_salt.eq.1)).and.(vmix_dim.gt.0)) then
-        call vmix_fun(un,mix,vmix_fix)
+        call vmix_fun(un, mix)
      endif
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
