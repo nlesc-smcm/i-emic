@@ -40,6 +40,8 @@ TEST(Ocean, RHSNorm)
     std::cout << "stateNorm = " << stateNorm << std::endl;
     std::cout << "RHSNorm   = " << rhsNorm   << std::endl;
     EXPECT_LT(rhsNorm, 1e-6);
+
+    
 }
 
 //------------------------------------------------------------------
@@ -200,6 +202,47 @@ TEST(Ocean, Continuation)
         throw;
     }
     EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+extern "C" _MODULE_SUBROUTINE_(m_integrals, salt_advection)(double *un,
+                                                            double *coeff);
+
+
+TEST(Ocean, Integrals)
+{
+    // rcpointer to domain object
+    RCP<TRIOS::Domain> domain = ocean->getDomain();
+    
+    // Create maps for the coefficients in the volume integrals 
+    RCP<Epetra_Map> standardVolumeMap = domain->CreateStandardMap(1,false);
+    RCP<Epetra_Map> assemblyVolumeMap = domain->CreateAssemblyMap(1,false);
+
+    // Import strategy for coefficients in the volume integrals
+    RCP<Epetra_Import> as2std_vol =
+        Teuchos::rcp(new Epetra_Import(*assemblyVolumeMap, *standardVolumeMap));
+
+    // Create vectors for the integral coefficients
+    RCP<Epetra_Vector> gCoeff = Teuchos::rcp(new Epetra_Vector(*standardVolumeMap));
+    RCP<Epetra_Vector> lCoeff = Teuchos::rcp(new Epetra_Vector(*assemblyVolumeMap));
+
+    // Create pointer to view of lCoeff entries
+    double *lCoeffView;
+    lCoeff->ExtractView(&lCoeffView);
+
+    // copy state
+    RCP<Epetra_Vector> un = ocean->getState('C');   
+
+    // Create local state, including overlap
+    RCP<Epetra_Vector> lun = Teuchos::rcp(new Epetra_Vector(*domain->GetAssemblyMap()));
+    domain->Solve2Assembly(*un, *lun);
+
+    // Create pointer to view of local state entries
+    double *lunView;
+    lun->ExtractView(&lunView);
+    
+    F90NAME(m_integrals, salt_advection )( lunView, lCoeffView );
+    Utils::save(lCoeff, "lCoeffView");      
 }
 
 //------------------------------------------------------------------
