@@ -355,6 +355,8 @@ public:
     void integralChecks(Teuchos::RCP<Epetra_Vector> state,
                         double &salt_advection,
                         double &salt_diffusion);
+
+    Teuchos::RCP<Epetra_Vector> getIntCondCoeff();
     
 private:
     // HDF5-based save and load functions for the state and parameters

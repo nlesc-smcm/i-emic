@@ -1,27 +1,55 @@
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
     readfort44('fort.44');
+dim = n*m*l*nun;
 
 idx = [];
-
 for i = 1:nun;
     idx = [idx, i:nun:dim];
 end
 
+idxu = [];
+for i = 1:nun;
+    idxu(i,:) = [i:nun:dim];
+end
+
 jjname = 'ocean_jac';
 mmname = 'ocean_B';
+icname = 'intcond_coeff';
 
 B  = load(mmname);
-
+IC = load(icname);
 C  = load(jjname); 
 C  = spconvert(C);
 
 Cr = C(idx,idx); % reordering
 
- figure(1); 
- spy(C);
+XX = 6;
+Ar = C(idxu(XX,:),idxu(XX,:));
+Ar = Ar(1:end-1,:) % cutoff final integral row
+IC = IC(idxu(XX,:)); 
+IC = IC(1:end-1); % cutoff final row
 
- figure(2); 
- spy(Cr);
+figure(1); 
+spy(C);
+nnz(C)
+
+figure(2); 
+spy(Cr);
+
+figure(3);
+spy(Ar);
+
+intAr = sum(diag(IC)*Ar,1);
+intAr = reshape(full(intAr), n, m, l);
+
+figure(4)
+for k=1:l
+    imagesc(intAr(:,:,k)');
+    colorbar;
+    title(['level ', num2str(k)]);
+    set(gca,'ydir', 'normal')
+    pause(0.5)
+end
 
 
 % jjname = 'ocean_jac_cont_-';

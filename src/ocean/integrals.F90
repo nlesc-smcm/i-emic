@@ -77,16 +77,14 @@ contains
           do i = 1, n
              if( landm(i,j,k) == OCEAN ) then
                 check(pos) =  cos(y(j)) * dfzT(k) * ( &
-                     ( s(i+1,j,k)   + s(i-1,j,k) - 2*s(i,j,k) ) + & 
-                     (c1*s(i,j+1,k) + c2*s(i,j-1,k)-(c1+c2)*s(i,j,k))/(dy*dy*cay)    + & 
-                     (h1*s(i,j,k+1) + h2*s(i,j,k-1)-(h1+h2)*s(i,j,k))/(dz*dz)        )
+                     (   s(i+1,j,k)+   s(i-1,j,k)-      2*s(i,j,k))/(dx*dx*cay*cay)+ & 
+                     (c1*s(i,j+1,k)+c2*s(i,j-1,k)-(c1+c2)*s(i,j,k))/(dy*dy*cay)    + & 
+                     (h1*s(i,j,k+1)+h2*s(i,j,k-1)-(h1+h2)*s(i,j,k))/(dz*dz)        )
              endif
              pos = pos + 1
           enddo
        enddo
     enddo
-
-
 
   end subroutine salt_diffusion
 

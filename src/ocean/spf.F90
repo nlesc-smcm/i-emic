@@ -180,7 +180,7 @@ SUBROUTINE pderiv(type,atom)
   !     IMPORT/EXPORT
   integer type,i,j,k
   real    atom(n,m,l,np)
-  real    cos2i(0:m),cos2v(0:m),dzi
+  real    cos2i(0:m+1),cos2v(0:m),dzi
   real    sf
   !
   atom = 0.0

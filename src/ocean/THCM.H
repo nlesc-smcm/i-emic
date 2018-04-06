@@ -270,6 +270,8 @@ public:
     //! get the global index of the row with the integral condition (if sres==0)
     int getRowIntCon() const {return rowintcon_;}
 
+    Teuchos::RCP<Epetra_Vector> getIntCondCoeff() { return intcond_coeff; }
+
     //! set the THCM flag 'vmix_fix' to 0 or 1
     //! note: vmix_fix doesn't have to be set if you have vmix_flag=1 in mix_imp.f
     //! (recommended). If you REALLY want vmix_flag=2, call this function in the NOX

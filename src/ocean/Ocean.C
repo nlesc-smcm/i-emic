@@ -1432,6 +1432,13 @@ void Ocean::integralChecks(Teuchos::RCP<Epetra_Vector> state,
                                     salt_diffusion);
 }
 
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getIntCondCoeff()
+{
+    return THCM::Instance().getIntCondCoeff();
+}
+
 //=====================================================================
 int Ocean::saveStateToFile(std::string const &filename)
 {

@@ -960,7 +960,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
            u(0,j,k)  = 0.0
            u(N,j,k)  = 0.0
            v(0,j,k)  = 0.0
-           v(N,j,k)= 0.0
+           v(N,j,k)  = 0.0
            p(0,j,k)  = 0.0
            p(N+1,j,k)= 0.0
            t(0,j,k)  = t(1,j,k)
@@ -973,7 +973,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
   do k = 1, l+la
      do i = 1, n
         u(i,0,k)  = 0.0
-        u(i,M,k)= 0.0
+        u(i,M,k)  = 0.0
         v(i,0,k)  = 0.0
         v(i,M,k)  = 0.0
         p(i,0,k)  = 0.0

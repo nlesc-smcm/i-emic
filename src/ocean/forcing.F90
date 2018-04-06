@@ -10,7 +10,7 @@ SUBROUTINE forcing
   real    sigma, etabi, gamma
 
   real wfun, temfun, salfun
-  real temcor
+  real temcor, check, area
   real salcor, adapted_salcor, spertcor
   integer i, j, k, row
   real    qfun2(n,m), fsint
@@ -101,12 +101,23 @@ SUBROUTINE forcing
 
      do j=1,m
         do i=1,n
-           emip(i,j) = salfun(x(i),y(j))
+           emip(i,j) = salfun(x(i),y(j)) * (1-landm(i,j,l))
         enddo
      enddo
      
      if (SRES.eq.0.and.coupled_S.eq.0) call qint(emip,  salcor)
 
+     check = 0.0;
+     area  = 0.0;
+     do j=1,m
+        do i=1,n
+           check = check + (emip(i,j) - salcor) * cos(y(j)) * (1-landm(i,j,l))
+           area  = area  + cos(y(j)) * (1-landm(i,j,l))
+        enddo
+     enddo
+    
+     write(*,*) '  Salinity flux correction check = ', check, area, salcor
+     
   endif
 
   if (SRES.eq.0.and.coupled_S.eq.0) then   ! correct for nonzero flux
@@ -443,12 +454,15 @@ SUBROUTINE qint(field,cor)
   ! Compute correction for nonzero flux
   use m_usr
   implicit none
-  integer i,j
-  real  field(n,m),cor,sint
+  integer i, j
+  real  field(n,m), cor, sint
+  external thcm_forcing_integral
+
   ! This is an evil breach of concept, we call a C++ function from F90
   ! to compute the global integral:
-  external thcm_forcing_integral
-  call thcm_forcing_integral(field,y,landm,cor)
+
+  call thcm_forcing_integral(field, y(1:m), landm, cor)
+
 end SUBROUTINE qint
 
 !**********************************************************************

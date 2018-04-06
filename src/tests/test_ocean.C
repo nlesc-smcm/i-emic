@@ -29,8 +29,6 @@ TEST(Ocean, Initialization)
     EXPECT_EQ(failed, false);
 }
 
-
-
 //------------------------------------------------------------------
 TEST(Ocean, RHSNorm)
 {
@@ -40,8 +38,6 @@ TEST(Ocean, RHSNorm)
     std::cout << "stateNorm = " << stateNorm << std::endl;
     std::cout << "RHSNorm   = " << rhsNorm   << std::endl;
     EXPECT_LT(rhsNorm, 1e-6);
-
-    
 }
 
 //------------------------------------------------------------------
@@ -104,7 +100,6 @@ TEST(Ocean, MassMat)
             EXPECT_EQ(out[lid], 0.0);
         }
     }
-
 }
 
 //------------------------------------------------------------------
@@ -207,6 +202,9 @@ TEST(Ocean, Continuation)
         EXPECT_NE(Utils::norm(diagB), 0.0);
         DUMP_VECTOR("ocean_B", *diagB);                        
         
+        RCP<Epetra_Vector> intcond_coeff = ocean->getIntCondCoeff();
+        DUMP_VECTOR("intcond_coeff", *intcond_coeff);                        
+                
     }
     catch (...)
     {

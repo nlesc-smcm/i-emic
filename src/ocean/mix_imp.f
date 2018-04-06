@@ -578,7 +578,7 @@ Call structure DSM and FDJS
       integer i,j,k
 
       do k=0,l+la+1
-         do j=0,m+1  !--> y is not defined at 0 and m+1, this is wrong
+         do j=0,m+1  !--> y might not be defined at 0 and m+1
             do i=0,n
                dCdx(i,j,k) = isoc(i+1,j,k) * isoc(i,j,k) * 
      &              ( C(i+1,j,k) - C(i,j,k) )/( dx * cos(y(j)) )
