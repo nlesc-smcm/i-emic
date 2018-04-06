@@ -51,30 +51,41 @@ TEST(Ocean, MassMat)
     Epetra_Vector v   = *ocean->getState('C');
     Epetra_Vector out = *ocean->getState('C');
 
+    Utils::MaskStruct mask = ocean->getLandMask();
+
     v.PutScalar(1.0);
     ocean->applyMassMat(v, out);
 
     std::ofstream file;
     file.open("massmat");
     file << out;
-    file.close();       
+    file.close();
 
-    int numMyElements = out.Map().NumMyElements();
+    int dim = mask.global_borderless->size();
+
+    EXPECT_EQ(dim * _NUN_, out.GlobalLength());
+
     double rosb = ocean->getPar("Rossby-Number");
-    
-    for (int i = 0; i < numMyElements; i+=_NUN_)
+
+    int gid = -1, lid = -1;
+    for (int i = 0; i < dim; ++i)
     {
-        if (std::abs(out[i])>0) // UU
-            EXPECT_EQ(out[i], -rosb);
+        gid = i * _NUN_;
+        lid = out.Map().LID(gid);
+        if ((lid >= 0) && ((*mask.global_borderless)[i] == 0))
+        {
+            if (std::abs(out[lid])>0) // UU
+                EXPECT_EQ(out[lid], -rosb);
         
-        if (std::abs(out[i+1])>0) // VV
-            EXPECT_EQ(out[i+1], -rosb);
+            if (std::abs(out[lid+1])>0) // VV
+                EXPECT_EQ(out[lid+1], -rosb);
         
-        EXPECT_EQ(out[i+2], 0.0); // WW
-        EXPECT_EQ(out[i+3], 0.0); // PP
-        EXPECT_EQ(out[i+4], -1.0); // TT
-        if (std::abs(out[i+5])>0) // SS
-            EXPECT_EQ(out[i+5], -1.0); 
+            EXPECT_EQ(out[lid+2], 0.0);  // WW
+            EXPECT_EQ(out[lid+3], 0.0);  // PP
+            EXPECT_EQ(out[lid+4], -1.0); // TT
+            if (std::abs(out[lid+5])>0)  // SS
+                EXPECT_EQ(out[lid+5], -1.0);
+        }
     }
 
     // check integral condition
@@ -93,6 +104,7 @@ TEST(Ocean, MassMat)
             EXPECT_EQ(out[lid], 0.0);
         }
     }
+
 }
 
 //------------------------------------------------------------------
@@ -204,46 +216,20 @@ TEST(Ocean, Continuation)
     EXPECT_EQ(failed, false);
 }
 
-//------------------------------------------------------------------
-extern "C" _MODULE_SUBROUTINE_(m_integrals, salt_advection)(double *un,
-                                                            double *coeff);
-
-
+//-------------------------------------------------------------------
 TEST(Ocean, Integrals)
 {
-    // rcpointer to domain object
-    RCP<TRIOS::Domain> domain = ocean->getDomain();
-    
-    // Create maps for the coefficients in the volume integrals 
-    RCP<Epetra_Map> standardVolumeMap = domain->CreateStandardMap(1,false);
-    RCP<Epetra_Map> assemblyVolumeMap = domain->CreateAssemblyMap(1,false);
+    double salt_advection = 0.0;
+    double salt_diffusion = 0.0;
 
-    // Import strategy for coefficients in the volume integrals
-    RCP<Epetra_Import> as2std_vol =
-        Teuchos::rcp(new Epetra_Import(*assemblyVolumeMap, *standardVolumeMap));
+    RCP<Epetra_Vector> un = ocean->getState('C');
+        
+    ocean->integralChecks(un, salt_advection, salt_diffusion);
 
-    // Create vectors for the integral coefficients
-    RCP<Epetra_Vector> gCoeff = Teuchos::rcp(new Epetra_Vector(*standardVolumeMap));
-    RCP<Epetra_Vector> lCoeff = Teuchos::rcp(new Epetra_Vector(*assemblyVolumeMap));
-
-    // Create pointer to view of lCoeff entries
-    double *lCoeffView;
-    lCoeff->ExtractView(&lCoeffView);
-
-    // copy state
-    RCP<Epetra_Vector> un = ocean->getState('C');   
-
-    // Create local state, including overlap
-    RCP<Epetra_Vector> lun = Teuchos::rcp(new Epetra_Vector(*domain->GetAssemblyMap()));
-    domain->Solve2Assembly(*un, *lun);
-
-    // Create pointer to view of local state entries
-    double *lunView;
-    lun->ExtractView(&lunView);
-    
-    F90NAME(m_integrals, salt_advection )( lunView, lCoeffView );
-    Utils::save(lCoeff, "lCoeffView");      
+    EXPECT_NEAR(salt_advection, 0.0, 1e-10);
+    EXPECT_NEAR(salt_diffusion, 0.0, 1e-10);
 }
+
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)

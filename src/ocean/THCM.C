@@ -138,6 +138,10 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_inserts, insert_adapted_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_inserts, insert_emip_pert)(double *emip);
     _MODULE_SUBROUTINE_(m_inserts, insert_tatm)(double *emip);
+    
+    _MODULE_SUBROUTINE_(m_integrals, salt_advection)(double *un, double *check);
+    _MODULE_SUBROUTINE_(m_integrals, salt_diffusion)(double *un, double *check);
+    
     _MODULE_SUBROUTINE_(m_probe,  get_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_adapted_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_emip_pert)(double *emip);
@@ -147,6 +151,7 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_q)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_p)(double *atmosP);
     _MODULE_SUBROUTINE_(m_probe,  compute_evap)(double *oceanE, double *x);
+    
     _MODULE_SUBROUTINE_(m_global, get_land_temp)(double *land);
     //-----------------------------------------------------------------------------
 
@@ -383,9 +388,19 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     StandardSurfaceMap = domain->CreateStandardMap(1,true);
     AssemblySurfaceMap = domain->CreateAssemblyMap(1,true);
 
+    // Surface assembly/standard import strategy
     as2std_surf =
         Teuchos::rcp(new Epetra_Import(*AssemblySurfaceMap, *StandardSurfaceMap));
     
+    // Single-unknown volume maps
+    StandardVolumeMap = domain->CreateStandardMap(1,false);
+    AssemblyVolumeMap = domain->CreateAssemblyMap(1,false);
+
+    // Volume assembly/standard import strategy
+    as2std_vol =
+        Teuchos::rcp(new Epetra_Import(*AssemblyVolumeMap, *StandardVolumeMap));
+        
+
     Teuchos::RCP<Epetra_Map> lev_map_loc    = wind_map_loc;
     Teuchos::RCP<Epetra_Map> intlev_map_loc = domain->CreateAssemblyMap(1,false);
     Teuchos::RCP<Epetra_Vector> taux_loc    = Teuchos::rcp(new Epetra_Vector(*wind_map_loc));
@@ -1911,6 +1926,86 @@ void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
         INFO("   S correction = " << correction); 
 #endif
     }
+}
+
+
+//=============================================================================
+//! Let THCM perform integral checks
+void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
+                          double &salt_advection,
+                          double &salt_diffusion)
+{
+    if (!(state->Map().SameAs(*StandardMap)))
+    {
+        ERROR("Map of input vector not same as standard map ",__FILE__,__LINE__);
+    }
+    
+    // Create vectors for integral coefficients
+    Teuchos::RCP<Epetra_Vector> globalCoeff =
+        Teuchos::rcp(new Epetra_Vector(*StandardVolumeMap));
+    Teuchos::RCP<Epetra_Vector> localCoeff =
+        Teuchos::rcp(new Epetra_Vector(*AssemblyVolumeMap));
+
+    // Create pointer to view of local coefficients
+    double *localCoeffView;
+    localCoeff->ExtractView(&localCoeffView);
+
+    // Create local state
+    Teuchos::RCP<Epetra_Vector> localState =
+        Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+
+    // Import into local state
+    domain->Solve2Assembly(*state, *localState);
+
+    // Create pointer to view of local state entries
+    double *localStateView;
+    localState->ExtractView(&localStateView);
+
+    // --------------------------------------------
+    // Compute salt advection volume integral
+    F90NAME( m_integrals, salt_advection )( localStateView, localCoeffView );
+
+    // Export local coefficients into global entries
+    CHECK_ZERO(globalCoeff->Export(*localCoeff, *as2std_vol, Zero));
+
+    // Compute integral on global non-overlapping domain
+    double localInt = 0.0;
+    for (int i = 0; i != globalCoeff->Map().NumMyElements(); ++i)
+        localInt += (*globalCoeff)[i];
+
+    // Sum over subdomains, obtain resulting integral
+    Comm->SumAll(&localInt, &salt_advection, 1);
+
+    std::cout << "Salt advection integral, PID = " << Comm->MyPID() << " lSum = " << localInt
+              << " gSum = " << salt_advection << std::endl;
+
+    // Reset local coefficients and integral
+    localCoeff->PutScalar(0.0);
+    localInt = 0.0;
+
+    // --------------------------------------------
+    // Compute salt diffusion volume integral
+    F90NAME( m_integrals, salt_diffusion )( localStateView, localCoeffView );
+
+    // Export local coefficients into global non overlapping entries
+    CHECK_ZERO(globalCoeff->Export(*localCoeff, *as2std_vol, Zero));
+
+    // std::ofstream file;
+    // std::stringstream ss;
+    // ss << "globalCoeff" << Comm->MyPID();
+    // file.open(ss.str());
+    // globalCoeff->Print(file);
+    // file.close();    
+    
+    // Compute integral on subdomains
+    for (int i = 0; i != globalCoeff->Map().NumMyElements(); ++i)
+        localInt += (*globalCoeff)[i];
+
+    // Sum over subdomains
+    Comm->SumAll(&localInt, &salt_diffusion, 1);
+
+    std::cout << "Salt diffusion integral, PID = " << Comm->MyPID() << " lSum = " << localInt
+              << " gSum = " << salt_diffusion << std::endl;
 }
 
 //=============================================================================

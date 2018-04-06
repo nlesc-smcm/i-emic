@@ -379,8 +379,21 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname)
     // Get the current global landmask from THCM.
     mask.global = THCM::Instance().getLandMask();
 
-    // Copy to tmp
-    std::vector<int> tmp(*mask.global);
+    // Copy to full global mask tmp
+    std::vector<int> tmp(*mask.global);    
+
+    // Create global borderless mask rcp
+    mask.global_borderless = std::make_shared<std::vector<int> >();
+
+    for (int k = 1; k != L_+1; ++k)
+        for (int j = 1; j != M_+1; ++j)
+            for (int i = 1; i != N_+1; ++i)
+            {
+                mask.global_borderless->push_back(tmp[k*(M_+2)*(N_+2) + j*(N_+2) + i]);
+            }
+
+    assert( (int) mask.global_borderless->size() == N_*M_*L_ );
+
 
     // Erase everything but upper 2 layers
     tmp.erase(tmp.begin(), tmp.begin() + tmp.size() -
@@ -398,7 +411,6 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname)
         }
 
     assert( (int) mask.global_surface->size() == N_*M_ );
-
 
     // Set label
     mask.label = fname;
@@ -1408,6 +1420,16 @@ void Ocean::copyMask(std::string const &filename)
         else
             WARNING("Saving mask not enabled in Ocean.", __FILE__, __LINE__);
     }
+}
+
+//==================================================================
+void Ocean::integralChecks(Teuchos::RCP<Epetra_Vector> state,
+                           double &salt_advection,
+                           double &salt_diffusion)
+{
+    THCM::Instance().integralChecks(state,
+                                    salt_advection,
+                                    salt_diffusion);
 }
 
 //=====================================================================

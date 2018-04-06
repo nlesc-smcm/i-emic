@@ -19,6 +19,8 @@
 //!     void computeJacobian()
 //!     void solve()
 //!
+//!     ... some more (see Continuation)
+//!
 //!   The VectorPtr type that is returned from the get{.} functions will have
 //!   to be known by the interface (e.g. Continuation) that calls this class.
 
@@ -330,7 +332,8 @@ public:
     Teuchos::RCP<Epetra_Vector> interfaceT();
 
     // ---------------------------------------------------------------
-    // Scale the matrix and rhs of the problem
+    // Scale the matrix and rhs of the problem. These things are
+    // confusing and not used.
     void scaleProblem(VectorPtr rhs = Teuchos::null);
     void unscaleProblem(VectorPtr rhs = Teuchos::null);
     VectorPtr getRowScaling();
@@ -348,6 +351,10 @@ public:
         {
             DUMPMATLAB("ocean_jac", *jac_);
         }
+
+    void integralChecks(Teuchos::RCP<Epetra_Vector> state,
+                        double &salt_advection,
+                        double &salt_diffusion);
     
 private:
     // HDF5-based save and load functions for the state and parameters

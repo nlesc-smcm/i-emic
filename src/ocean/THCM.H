@@ -312,7 +312,11 @@ public:
     //! values in vec, to satisfy the integral condition.
     void adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec);
 
-
+    //! Let THCM perform integral checks
+    void integralChecks(Teuchos::RCP<Epetra_Vector> state,
+                        double &salt_advection,
+                        double &salt_diffusion);
+    
 private:
 
     //! object for domain-decomposition:
@@ -324,13 +328,16 @@ private:
     //! overlapping map for 'THCM objects':
     Teuchos::RCP<Epetra_Map> AssemblyMap;
     Teuchos::RCP<Epetra_Map> AssemblySurfaceMap;
+    Teuchos::RCP<Epetra_Map> AssemblyVolumeMap;
 
     //! Surface assembly to standardmap importer
     Teuchos::RCP<Epetra_Import> as2std_surf;
+    Teuchos::RCP<Epetra_Import> as2std_vol;
 
     //! non-overlapping map for Trilinos objects:
     Teuchos::RCP<Epetra_Map> StandardMap;
     Teuchos::RCP<Epetra_Map> StandardSurfaceMap;
+    Teuchos::RCP<Epetra_Map> StandardVolumeMap;
 
     //! non-overlapping load-balanced map for Trilinos objects
     //! (may contain non-rectangular subdomains)

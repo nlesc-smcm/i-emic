@@ -76,7 +76,10 @@ namespace Utils
         //! global
         std::shared_ptr<std::vector<int> > global;
 
-        //! global surface (withouth boundaries)
+        //! global borderless
+        std::shared_ptr<std::vector<int> > global_borderless;
+
+        //! global surface (borderless)
         std::shared_ptr<std::vector<int> > global_surface;
 
         //! mask name
