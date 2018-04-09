@@ -25,13 +25,13 @@ Cr = C(idx,idx); % reordering
 
 XX = 6;
 Ar = C(idxu(XX,:),idxu(XX,:));
-Ar = Ar(1:end-1,:) % cutoff final integral row
+%Ar = Ar(1:end-1,:) % cutoff final integral row
 IC = IC(idxu(XX,:)); 
-IC = IC(1:end-1); % cutoff final row
+%IC = IC(1:end-1); % cutoff final row
 
 figure(1); 
 spy(C);
-nnz(C)
+nnz(C);
 
 figure(2); 
 spy(Cr);
@@ -41,14 +41,16 @@ spy(Ar);
 
 intAr = sum(diag(IC)*Ar,1);
 intAr = reshape(full(intAr), n, m, l);
-
-figure(4)
+cma = max(intAr(:));
+cmi = min(intAr(:));
 for k=1:l
+    figure(3+k)
     imagesc(intAr(:,:,k)');
     colorbar;
     title(['level ', num2str(k)]);
     set(gca,'ydir', 'normal')
-    pause(0.5)
+    caxis([cmi, cma])
+    drawnow
 end
 
 
@@ -69,7 +71,7 @@ end
 % B  = load(mmname);
 % B2 = load(mmname2);
 
-% dim = n*m*l*nun;
+
 
 % %B  = -ones(1, dim);
 % B2 = B;

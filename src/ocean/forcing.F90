@@ -107,16 +107,16 @@ SUBROUTINE forcing
      
      if (SRES.eq.0.and.coupled_S.eq.0) call qint(emip,  salcor)
 
-     check = 0.0;
-     area  = 0.0;
-     do j=1,m
-        do i=1,n
-           check = check + (emip(i,j) - salcor) * cos(y(j)) * (1-landm(i,j,l))
-           area  = area  + cos(y(j)) * (1-landm(i,j,l))
-        enddo
-     enddo
+     ! check = 0.0;
+     ! area  = 0.0;
+     ! do j=1,m
+     !    do i=1,n
+     !       check = check + (emip(i,j) - salcor) * cos(y(j)) * (1-landm(i,j,l))
+     !       area  = area  + cos(y(j)) * (1-landm(i,j,l))
+     !    enddo
+     ! enddo
     
-     write(*,*) '  Salinity flux correction check = ', check, area, salcor
+     ! write(*,*) '  Salinity flux correction check = ', check, area, salcor
      
   endif
 

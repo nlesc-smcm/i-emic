@@ -222,6 +222,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     alphaS             = paramList.get("Linear EOS: alpha S", 7.6e-4);
     tres               = paramList.get("Restoring Temperature Profile",1);
     sres               = paramList.get("Restoring Salinity Profile",1);
+    localSres_         = paramList.get("Local SRES Only", false);
     intSign_           = paramList.get("Salinity Integral Sign", -1);
     ite                = paramList.get("Levitus T", 1);
     its                = paramList.get("Levitus S", 1);
@@ -318,6 +319,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &coupled_T, &coupled_S);
 
     INFO("THCM init: m_global::initialize... done");
+
+    if (localSres_) // from here on we ignore the integral condition
+        sres = 1;
 
     // read topography data and convert it to a global land mask
     DEBUG("Initialize land mask...");

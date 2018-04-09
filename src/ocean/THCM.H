@@ -476,6 +476,10 @@ private:
     //! sres=0: non-restoring salt forcing => integral condition in A and f
     int sres;
 
+    //! While sres = 0 (flux forcing in the local model), do not
+    //! create integral condition.
+    bool localSres_;
+    
     //! tres=0: non-restoring temperature forcing => integral condition in A and f
     int tres;
 
