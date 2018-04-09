@@ -21,11 +21,69 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     if nargin < 3
         opts.everything = true;
     end
-     
+    
+    if isfield(opts, 'readEV')
+        opts.everything = true;
+    end
+    
     if isfield(opts, 'title_add')
         plot_title = true;
     else
         plot_title = false;
+    end
+    
+    if isfield(opts, 'everything')
+        plot_everything = opts.everything;
+    else
+        plot_everything = false;
+    end
+    
+    if isfield(opts, 'bstream')
+        plot_bstream = opts.bstream;
+    else
+        plot_bstream = false;
+    end
+    
+    if isfield(opts, 'mstream')
+        plot_mstream = opts.mstream;
+    else
+        plot_mstream = false;
+    end
+
+    if isfield(opts, 'temperature')
+        plot_temperature = opts.temperature;
+    else
+        plot_temperature = false;
+    end
+    
+    if isfield(opts, 'salinity')
+        plot_salinity = opts.salinity;
+    else
+        plot_salinity = false;
+    end
+
+    if isfield(opts, 'sst')
+        plot_sst = opts.sst;
+    else
+        plot_sst = false;
+    end
+
+    if isfield(opts, 'sss')
+        plot_sss = opts.sss;
+    else
+        plot_sss = false;
+    end
+
+    if isfield(opts, 'salflux')
+        plot_salflux = opts.salflux;
+    else
+        plot_salflux = false;
+    end
+
+    if isfield(opts, 'temflux')
+        plot_temflux = opts.temflux;
+    else
+        plot_temflux = false;
     end
 
     if isfield(opts, 'fname_add')
@@ -34,9 +92,6 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         export_to_file = false;
     end
 
-    if isfield(opts, 'readEV')
-        opts.everything = true;
-    end
 
     if isfield(opts, 'invert')
         invert = opts.invert
@@ -52,7 +107,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
         restrict_sol = opts.restrict_sol;
         rmask_file = opts.rmask_file;
-        
+        fprintf('Solution is restricted to mask %s\n', rmask_file);
     elseif isfield(opts, 'restrict_sol') && ...
             ~isfield(opts, 'rmask_file')
         
@@ -62,7 +117,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 
     % interpolation mode
     if isfield(opts, 'solfile2') && isfield(opts, 'maskfile2') ...
-        && isfield(opts, 'interp_par')
+            && isfield(opts, 'interp_par')
         interp_mode = true;
         k           = opts.interp_par;
         solfile2    = opts.solfile2;
@@ -140,7 +195,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         sol = shiftdim(sol, 1);        
 
     end
-        
+    
     surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
     landm_int  = landm(2:n+1,2:m+1,2:l+1);
     dx         = (xu(n+1)-xu(1))/n;
@@ -161,7 +216,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     % - PLOT BAROTROPIC STREAM FUNCTION
 
 
-    if isfield(opts, 'bstream') || isfield(opts, 'everything')
+    if plot_bstream || plot_everything
         figure(1);
 
         % - INTEGRATIONS - --------------------------------------------------
@@ -202,7 +257,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 
     end
 
-    if isfield(opts, 'mstream') || isfield(opts, 'everything')
+    if plot_mstream || plot_everything
         figure(2);
         % PLOT OVERTURNING STREAMFUNCTION
 
@@ -246,7 +301,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         end
     end
 
-    if isfield(opts, 'temperature') || isfield(opts, 'everything')
+    if plot_temperature || plot_everything
         figure(3);
         % - CHECK SALINITY - ------------------------------------------------
         check = checksal(S,x,y,dfzt);
@@ -289,14 +344,14 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         colormap(my_colmap(caxis))
         %crange = max(abs(caxis))-T0;
         %caxis([T0-crange, T0+crange]);
-         
+        
         if export_to_file
             exportfig('isothermals.eps',10,[20,7],invert)
         end
-    
+        
     end
     
-    if isfield(opts, 'sst') || isfield(opts, 'everything')
+    if plot_sst || plot_everything
 
 
         % -------------------------------------------------------
@@ -329,7 +384,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
             exportfig('sst.eps',10,[50,25],invert)
         end
     end
-    if isfield(opts, 'salinity') || isfield(opts, 'everything')
+    if plot_salinity || plot_everything
         figure(5);
 
         contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
@@ -350,7 +405,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
             exportfig('isohalines.eps',10,[20,7],invert)
         end
     end
-    if (isfield(opts, 'sss') || isfield(opts, 'everything') )
+    if ( plot_sss || plot_everything )
         
         figure(6); 
         Ssurf = S(:,:,l);
@@ -379,7 +434,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
     end
     
-    if ( isfield(opts, 'salflux') || isfield(opts, 'everything') ) ...
+    if ( plot_salflux || plot_everything )  ...
             && ~isempty(add)
         
         figure(7)
@@ -398,7 +453,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         
     end
     
-    if ( isfield(opts, 'temflux') || isfield(opts, 'everything') ) ...
+    if ( plot_temflux || plot_everything ) ...
             && ~isempty(add)
         
         figure(8)
