@@ -30,7 +30,8 @@ class TimeStepper
     std::function<T(T const &, double)> time_step_;
     std::function<double(T const &)> dist_fun_;
 
-    double rho_;
+    double adist_;
+    double bdist_;
     double cdist_;
 
 public:
@@ -40,7 +41,8 @@ public:
                 double rho);
     TimeStepper(std::function<T(T const &, double)> time_step,
                 std::function<double(T const &)> dist_fun,
-                double rho,
+                double adist,
+                double bdist,
                 double cdist);
 
     T transient(T x, double dt, double tmax) const;
@@ -70,18 +72,20 @@ TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step,
                             std::function<double(T const &)> dist_fun,
                             double rho)
     :
-    TimeStepper(time_step, dist_fun, rho, 2 * rho)
+    TimeStepper(time_step, dist_fun, rho, rho, 2 * rho)
 {}
 
 template<class T>
 TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step,
                             std::function<double(T const &)> dist_fun,
-                            double rho,
+                            double adist,
+                            double bdist,
                             double cdist)
     :
     time_step_(time_step),
     dist_fun_(dist_fun),
-    rho_(rho),
+    adist_(adist),
+    bdist_(bdist),
     cdist_(cdist)
 {
 }
@@ -98,7 +102,7 @@ template<class T>
 double TimeStepper<T>::transient_max_distance(
     T x, double dt, double tmax, double max_distance) const
 {
-    const double lim = max_distance - rho_;
+    const double lim = max_distance - bdist_;
     for (double t = 0; t < tmax; t += dt)
     {
         x = std::move(time_step_(x, dt));
@@ -151,13 +155,13 @@ void TimeStepper<T>::transient_ams(
 
         double dist = dist_fun_(x);
 
-        if (dist < rho_)
+        if (dist < adist_)
         {
             if (experiment.return_time < dt / 2.0)
                 experiment.return_time = t;
             break;
         }
-        else if (dist > 1 - rho_)
+        else if (dist > 1 - bdist_)
         {
             experiment.converged = true;
             experiment.xlist.push_back(x);

@@ -17,7 +17,8 @@ class AMS
     Model model_;
     double dt_;
     double tmax_;
-    double rho_;
+    double adist_;
+    double bdist_;
     double cdist_;
     double sigma_;
 
@@ -73,8 +74,9 @@ AMS(Model model, ParameterList pars,
     model_(model),
     dt_(pars->get("time step", 0.01)),
     tmax_(pars->get("maximum time", 1000.0)),
-    rho_(pars->get("A distance", 0.05)),
-    cdist_(pars->get("C distance", 0.1)),
+    adist_(pars->get("A distance", 0.05)),
+    bdist_(pars->get("B distance", adist_)),
+    cdist_(pars->get("C distance", 2 * adist_)),
     sigma_(pars->get("sigma", 1.0)),
     num_exp_(pars->get("number of experiments", 1000)),
     num_init_exp_(pars->get("number of initial experiments", num_exp_)),
@@ -149,13 +151,13 @@ AMS(Model model, ParameterList pars,
         return newton<VectorPtr>(thetaF, thetaJ, x, 1e-8);
     };
 
-    auto vnorm = [](VectorPtr const &x) {
+    auto var_norm = [](VectorPtr const &x, int var) {
         double tmp = 0;
         int n = x->MyLength();
         auto &map = x->Map();
         Vector const &xref = *x;
         for (int i = 0; i < n; i++)
-            if (map.GID(i) % 6 == 1)
+            if (map.GID(i) % 6 == var)
                 tmp += xref[i] * xref[i];
         double out = 0;
         if (x->DistributedGlobal())
@@ -165,24 +167,45 @@ AMS(Model model, ParameterList pars,
         return sqrt(out);
     };
 
-    VectorPtr diff = Teuchos::rcp(new Vector(*sol1));
-    diff->Update(-1.0, *sol2, 1.0);
-    double nrm = vnorm(diff);
+    double nrm[6];
+    for (int var = 0; var < 6; var++)
+    {
+        VectorPtr diff = Teuchos::rcp(new Vector(*sol1));
+        diff->Update(-1.0, *sol2, 1.0);
+        nrm[var] = var_norm(diff, var);
+    }
 
-    auto dist_fun = [nrm, vnorm, sol1, sol2](VectorPtr const &x) {
+    auto dist_fun_var = [nrm, var_norm, sol1, sol2](VectorPtr const &x, int var) {
         VectorPtr d1v = Teuchos::rcp(new Vector(*x));
         d1v->Update(-1.0, *sol1, 1.0);
-        double d1 =  vnorm(d1v) / nrm;
+        double d1 =  var_norm(d1v, var) / nrm[var];
         VectorPtr d2v = Teuchos::rcp(new Vector(*x));
         d2v->Update(-1.0, *sol2, 1.0);
-        double d2 =  vnorm(d2v) / nrm;
+        double d2 =  var_norm(d2v, var) / nrm[var];
         double dist = 0.25 - 0.25 * exp(-0.5 * pow(d1 / 0.25, 2.))
         + 0.75 * exp(-0.5 * pow(d2 / 0.25, 2.));
+        return dist;
+    };
+
+    auto dist_fun = [this, dist_fun_var](VectorPtr const &x) {
+        // BEGIN DEBUG
+        for (int var = 0; var < 6; var++)
+        {
+            double dist = dist_fun_var(x, var);
+            INFO("distance " << var << " = " << dist);
+        }
+
+        INFO(model_->writeData(true));
+        INFO(model_->writeData(false));
+        // END DEBUG
+
+        double dist = dist_fun_var(x, 1);
         INFO("distance = " << dist);
         return dist;
     };
 
-    timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(time_step, dist_fun, rho_, cdist_));
+    timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(
+                                    time_step, dist_fun, adist_, bdist_, cdist_));
 }
 
 //======================================================================
