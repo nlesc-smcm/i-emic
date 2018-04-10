@@ -99,14 +99,18 @@ AMS(Model model, ParameterList pars,
         // FIXME!!!
         // VectorPtr G = B(x);
 
-        // Compute noise
-        // FIXME!!! Doesn't work properly on more than 1 proc
+        // Compute noise for forcing which is independent per processor
         static thread_local std::random_device rd;
         static thread_local std::default_random_engine engine(rd());
         static thread_local std::normal_distribution<double> distribution(0.0, 1.0);
         static thread_local auto generator = std::bind(distribution, std::ref(engine));
 
-        int m = B->NumGlobalCols();
+        int m = B->NumMyCols();
+        if (!B->ColMap().UniqueGIDs())
+        {
+            ERROR("The values of B are distributed", __FILE__, __LINE__);
+        }
+
         Epetra_Vector pert(B->ColMap());
         std::generate(pert.Values(), pert.Values() + m, generator);
         VectorPtr G = model_->getState('C');
