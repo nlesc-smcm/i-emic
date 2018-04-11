@@ -180,10 +180,10 @@ void Atmosphere::setup()
     double c4 = 17.67;   //
     double c5 = 243.5;   // (K)
 
-    // Calculate saturation specific humidity
-    // according to [Bolton,1980], T in \deg C
+    // Calculate background saturation specific humidity according to
+    // [Bolton,1980], T in \deg C
     qso_   = c1 * exp(c4 * t0o_ / (t0o_ + c5));
-    qsi_   = c1 * exp(c2 * t0o_ / (t0o_ + c3));
+    qsi_   = c1 * exp(c2 * t0i_ / (t0i_ + c3));
 
     // Dimensional background evaporation and precipitation
     Eo0_ = eta_ * ( qso_ - q0_ );
