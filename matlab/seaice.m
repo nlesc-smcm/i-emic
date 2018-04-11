@@ -1,4 +1,4 @@
-function [] = seaice()
+function [J, Jr] = seaice()
     
     global xmin xmax ymin ymax RtD n m nun x y dx dy 
     global t0 tvar s0 svar q0 qvar ta0 tavar 
@@ -20,8 +20,8 @@ function [] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size
-    n = 32;
-    m = 16;
+    n = 16;
+    m = 8;
     
     % number of unknowns
     nun = 4;
@@ -53,8 +53,8 @@ function [] = seaice()
     % combined parameter
     zeta = ch * utau * rhoo * cpo;
     
-    % sublimation constants
-    % Parameters for saturation humidity over ocean and ice
+    % sublimation constants, parameters for saturation humidity over ocean
+    % and ice
     c1 = 3.8e-3;  % (kg / kg)
     c2 = 21.87;   %
     c3 = 265.5;   % (K)
@@ -101,18 +101,40 @@ function [] = seaice()
     tatm = idealizedTemp(t0o-1, tvar);
     qatm = idealizedTemp(q0, qvar);
     
-    x = zeros(dim, 1);
+    x = rand(dim, 1);
     
     F = rhs(x);   
     
-    ord = []
+    ord = [];
     for i = 1:nun
         ord = [ord, i:nun:dim];
     end
     
     semilogy(abs(F(ord)),'k.')
     
+    J = numjacob(@rhs, x);
+    
+    Jr = J(ord,ord);
+    
+    spy(J)
+    
 end
+
+function [J] = jac(x)
+
+    global m n nun y
+    
+    global sst sss qatm tatm 
+
+    global zeta Tf Lf rhoi rhoo E0 dEdT dEdq 
+    global sun0 S Ls alpha c0 muoa
+    global Ic
+    global taus epsilon
+    
+    
+
+end
+
 
 function [F] = rhs(x)
     
