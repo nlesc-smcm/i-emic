@@ -1,4 +1,4 @@
-function vsm (A,fnm,dir)
+function vsm(A,fnm,dir)
 % VSM  Visualize Sparse Matrix
 % VSM(A)         Uses a temporary binary file to be read by  vsm
 %                which visualizes the sparse matrix A.
@@ -9,14 +9,14 @@ function vsm (A,fnm,dir)
 %
 vsmopt = [' '];
 if nargin==1
-  vsmopt = ['-d', vsmopt];
-  fnm = tempname;
+    vsmopt = ['-d', vsmopt];
+    fnm = tempname;
 elseif nargin ~= 2
-  dir=[getenv('HOME'),'/',dir];
-  if dir(length(dir)) ~= '/'
-    dir = [dir, '/'];
-  end
-  fnm = [dir,fnm];
+    dir=[getenv('HOME'),'/',dir];
+    if dir(length(dir)) ~= '/'
+        dir = [dir, '/'];
+    end
+    fnm = [dir,fnm];
 end;
 %
 % Create the arrays beg, jco and co
@@ -26,5 +26,7 @@ beg=cumsum(full([1,sum(sparse(jco,ico,1))]));
 %
 wrtbcsr(beg,jco,co,fnm);
 %
-eval(['!vsm ', vsmopt, fnm , ' &']); 
+out = system(['vsm ', vsmopt, fnm , ' &']); 
+fprintf(' vsm exit status: %d\n', out);
 
+end

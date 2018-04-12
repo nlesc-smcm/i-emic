@@ -112,8 +112,8 @@ function [Jnum, Rnum, Janl, Ranl, Al] = seaice()
     end
 
     tic 
-    %Jnum = numjacob(@rhs, x);
-    %Rnum = Jnum(ord,ord);
+    Jnum = numjacob(@rhs, x);
+    Rnum = Jnum(ord,ord);
     toc
 
     tic
@@ -165,15 +165,8 @@ function [J,Al] = jac(x)
         ( 1 - tanh(epsilon * ( H - taus)).^2);
     Al(:,:,MM,MM) =  1;
     
-    tic
-    [co, ico, jco] = assemble(Al);
-    toc
-    tic
-    [cof, icof, jcof] = assemble_fast(Al);
-    toc
-    norm(co-cof)
-    norm(jco-jcof)
-    norm(ico-icof)
+    [co, ico, jco] = assemble_fast(Al);
+
     J = spconvert([ico,jco,co]);
 end
 
@@ -210,8 +203,7 @@ function [co, ico, jco, beg] = assemble(Al)
                 
                 for B = 1:nun
                     value = Al(i,j,A,B);
-                    col   = find_row(i,j,B);
-                    fprintf(' %d,%d  ', row,col); 
+                    
                     if (abs(value) > 0)
                         
                         ico_ctr = ico_ctr + 1;
@@ -230,7 +222,6 @@ function [co, ico, jco, beg] = assemble(Al)
                         jco(jco_ctr) = col;
                     end
                 end
-                fprintf('\n');
             end
         end
     end
@@ -250,35 +241,32 @@ function [co, ico, jco] = assemble_fast(Al)
     % located at the same grid point. Otherwise we would have a
     % higher dimensional Al. The fast version does not compute beg.
     
-    Al_dum = Al;    
-    Al_dum = 0;
+    val = zeros(m*n*nun*nun,1);
 
+    ctr = 0;
     for j = 1:m
         for i = 1:n
             for A = 1:nun
                 for B = 1:nun
-                    Al_dum(i,j,A,B) = j*i*A*B;
+                    ctr = ctr + 1;
+                    val(ctr) = Al(i,j,A,B);
                 end
             end
         end
     end
+    
+    id  = logical(abs(val)>0);
+    co  = val(id);
 
-    ord = Al_dum(:);
-   
     ndim = m*n*nun;
     
     ico = repmat((1:ndim),[nun,1]);
     ico = ico(:);
-
+    ico = ico(id);
+    
     jco = (1:nun:ndim) + repmat((0:nun-1)',[nun,1]);
     jco = jco(:);
-    
-    Alr = Al(ord);
-    id  = logical(abs(Alr)>0);
-
-    ico = ico(id);
     jco = jco(id);
-    co  = Alr(id);
 end
 
 function [F] = rhs(x)
