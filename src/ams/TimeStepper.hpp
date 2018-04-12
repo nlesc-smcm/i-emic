@@ -34,6 +34,10 @@ class TimeStepper
     double bdist_;
     double cdist_;
 
+    // RNG methods
+    bool engine_initialized_;
+    std::function<int(int, int)> randint_;
+
 public:
     TimeStepper(std::function<T(T const &, double)> time_step);
     TimeStepper(std::function<T(T const &, double)> time_step,
@@ -59,12 +63,19 @@ public:
 
     void ams(int num_exp, int num_init_exp,
              T const &x0, double dt, double tmax) const;
+
+    template<class URNG>
+    void set_random_engine(URNG &engine);
+
+protected:
+    int randint(int a, int b) const;
 };
 
 template<class T>
 TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step)
     :
-    time_step_(time_step)
+    time_step_(time_step),
+    engine_initialized_(false)
 {}
 
 template<class T>
@@ -86,7 +97,8 @@ TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step,
     dist_fun_(dist_fun),
     adist_(adist),
     bdist_(bdist),
-    cdist_(cdist)
+    cdist_(cdist),
+    engine_initialized_(false)
 {
 }
 
@@ -279,18 +291,14 @@ void TimeStepper<T>::ams(int num_exp, int num_init_exp,
 #pragma omp critical (experiments)
         {
 #pragma omp flush (unused_experiments)
-            std::random_device rd;
-            std::default_random_engine engine(rd());
-            std::uniform_int_distribution<int> int_distribution(
-                0, unused_experiments.size()-1);
-            int rnd_idx = int_distribution(engine);
+            int rnd_idx = randint(0, unused_experiments.size()-1);
             while (unused_experiments[rnd_idx]->max_distance <= exp->max_distance)
-                rnd_idx = int_distribution(engine);
-            
+                rnd_idx = randint(0, unused_experiments.size()-1);
+
             AMSExperiment<T> *rnd_exp = unused_experiments[rnd_idx];
             if (rnd_exp->dlist.size() == 0)
             {
-                std::cerr << "AMSExperiment<T> " << rnd_idx << " has size 0." << std::endl;
+                std::cerr << "Experiment " << rnd_idx << " has size 0." << std::endl;
                 exit(-1);
             }
 
@@ -398,6 +406,29 @@ void TimeStepper<T>::ams(int num_exp, int num_init_exp,
     tmax = 10;
     double tp = 1.0 -  exp(-1.0 / fpt * tmax);
     std::cout << "Transition probability T=" << tmax << ": " << tp << std::endl;
+}
+
+template<class T>
+template<class URNG>
+void TimeStepper<T>::set_random_engine(URNG &engine)
+{
+    randint_ = [&engine](int a, int b) {
+        static thread_local std::uniform_int_distribution<int> int_distribution(a, b);
+        return int_distribution(engine);
+    };
+    engine_initialized_ = true;
+}
+
+template<class T>
+int TimeStepper<T>::randint(int a, int b) const
+{
+    if (engine_initialized_)
+        return randint_(a, b);
+
+    static thread_local std::random_device rd;
+    static thread_local std::default_random_engine engine(rd());
+    static thread_local std::uniform_int_distribution<int> int_distribution(a, b);
+    return int_distribution(engine);
 }
 
 #endif
