@@ -20,8 +20,8 @@ function [Jnum, Rnum, Janl, Ranl, Al] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size
-    n = 16;
-    m = 8;
+    n = 12;
+    m = 10;
 
     % number of unknowns
     nun = 4;
@@ -111,12 +111,9 @@ function [Jnum, Rnum, Janl, Ranl, Al] = seaice()
         ord = [ord, i:nun:dim];
     end
 
-    figure(1);
-    semilogy(abs(F(ord)),'k.')
-
     tic 
-    Jnum = numjacob(@rhs, x);
-    Rnum = Jnum(ord,ord);
+    %Jnum = numjacob(@rhs, x);
+    %Rnum = Jnum(ord,ord);
     toc
 
     tic
@@ -167,9 +164,16 @@ function [J,Al] = jac(x)
     Al(:,:,MM,HH) = -(epsilon / 2) * ...
         ( 1 - tanh(epsilon * ( H - taus)).^2);
     Al(:,:,MM,MM) =  1;
-
-    [co, ico, jco, beg] = assemble(Al);
-
+    
+    tic
+    [co, ico, jco] = assemble(Al);
+    toc
+    tic
+    [cof, icof, jcof] = assemble_fast(Al);
+    toc
+    norm(co-cof)
+    norm(jco-jcof)
+    norm(ico-icof)
     J = spconvert([ico,jco,co]);
 end
 
@@ -191,6 +195,9 @@ function [co, ico, jco, beg] = assemble(Al)
     ico_ctr = 0;
     jco_ctr = 0;
     beg_ctr = 0;
+    
+    Al_dum = Al;
+    
     for j = 1:m
         for i = 1:n
             for A = 1:nun
@@ -200,19 +207,20 @@ function [co, ico, jco, beg] = assemble(Al)
                 % fill beg with element counter
                 beg_ctr = beg_ctr + 1;
                 beg(beg_ctr) = elm_ctr;
-
+                
                 for B = 1:nun
                     value = Al(i,j,A,B);
-
+                    col   = find_row(i,j,B);
+                    fprintf(' %d,%d  ', row,col); 
                     if (abs(value) > 0)
-
+                        
                         ico_ctr = ico_ctr + 1;
                         jco_ctr = jco_ctr + 1;
                         co_ctr  = co_ctr + 1;
                         elm_ctr = elm_ctr + 1;
 
                         % fill coefficient
-                        co(co_ctr)   = value;
+                        co(co_ctr) = value;
 
                         % fill row index
                         ico(ico_ctr) = row;
@@ -222,6 +230,7 @@ function [co, ico, jco, beg] = assemble(Al)
                         jco(jco_ctr) = col;
                     end
                 end
+                fprintf('\n');
             end
         end
     end
@@ -231,6 +240,45 @@ function [co, ico, jco, beg] = assemble(Al)
     ico = ico(1:ico_ctr);
     jco = jco(1:jco_ctr);
     beg = beg(1:beg_ctr);
+end
+
+function [co, ico, jco] = assemble_fast(Al)
+
+    global m n nun
+
+    % This is an assemble where we assume all dependencies are
+    % located at the same grid point. Otherwise we would have a
+    % higher dimensional Al. The fast version does not compute beg.
+    
+    Al_dum = Al;    
+    Al_dum = 0;
+
+    for j = 1:m
+        for i = 1:n
+            for A = 1:nun
+                for B = 1:nun
+                    Al_dum(i,j,A,B) = j*i*A*B;
+                end
+            end
+        end
+    end
+
+    ord = Al_dum(:);
+   
+    ndim = m*n*nun;
+    
+    ico = repmat((1:ndim),[nun,1]);
+    ico = ico(:);
+
+    jco = (1:nun:ndim) + repmat((0:nun-1)',[nun,1]);
+    jco = jco(:);
+    
+    Alr = Al(ord);
+    id  = logical(abs(Alr)>0);
+
+    ico = ico(id);
+    jco = jco(id);
+    co  = Alr(id);
 end
 
 function [F] = rhs(x)
@@ -278,8 +326,8 @@ function [F] = rhs(x)
 end
 
 function [row] = find_row(i,j,XX)
-    global n nun
 
+    global n nun    
     row = nun * ( (j-1) * n  + (i-1) ) + XX;
 end
 
