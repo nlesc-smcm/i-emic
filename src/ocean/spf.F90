@@ -20,7 +20,7 @@ SUBROUTINE uderiv(type,atom)
   !     IMPORT/EXPORT
   integer type,i,j,k
   real    atom(n,m,l,np)
-  real    cosdx2i(0:m+1),rdy2i,rdz2i,tand2(0:m),cosd2(0:m)
+  real    cosdx2i(0:m),rdy2i,rdz2i,tand2(0:m),cosd2(0:m)
   real    h1,h2
   real    amh,bmh,amhy,bmhy
   !   
