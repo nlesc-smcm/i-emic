@@ -1,4 +1,4 @@
-function [Jnum, Rnum, Janl, Ranl, Al] = seaice()
+function [J] = seaice()
 
     global xmin xmax ymin ymax RtD n m nun x y dx dy
     global t0 tvar s0 svar q0 qvar ta0 tavar
@@ -20,21 +20,28 @@ function [Jnum, Rnum, Janl, Ranl, Al] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size
-    n = 12;
-    m = 10;
+    n = 19;
+    m = 9;
 
     % number of unknowns
     nun = 4;
     dim = nun*n*m;
 
+    taus    = 0.01;    % m, threshold ice thickness
+    epsilon = 1e-4;    % Heavyside approximation steepness
+    
     % general physical constants
-    t0o  = 15;
-    tvar = 10;
-    t0i  = -15;
-    s0   = 35;
-    svar = 1;
-    q0   = 8e-3;
-    qvar = 3e-3;
+    t0o  =  15;
+    t0a  =  14;
+    t0i  = -10;
+    tvar =  10;
+    s0   =  35;
+    svar =  1;
+    q0   =  8e-3;
+    qvar =  3e-3;
+    H0   =  taus; 
+    Q0   =  2e3;
+    M0   =  0;
 
     % ice formation constants
     ch   = 0.0058;     % empirical constant
@@ -47,9 +54,6 @@ function [Jnum, Rnum, Janl, Ranl, Al] = seaice()
     Ls   = 2.835e6;    % J kg^{-1}, latent heat of sublimation of ice
     Ic   = 2.166;      % W m^{-1} K^{-1}, constant ice conductivity
 
-    taus    = 0.01;    % m, threshold ice thickness
-    epsilon = 1e-4;    % Heavyside approximation steepness
-
     % combined parameter
     zeta = ch * utau * rhoo * cpo;
 
@@ -58,8 +62,6 @@ function [Jnum, Rnum, Janl, Ranl, Al] = seaice()
     c1 = 3.8e-3;  % (kg / kg)
     c2 = 21.87;   %
     c3 = 265.5;   % (K)
-    c4 = 17.67;   %
-    c5 = 243.5;   % (K)
 
     ce  = 1.3e-03; % Dalton number
     uw  = 8.5;     % ms^{-1}, mean atmospheric surface wind speed
@@ -73,8 +75,8 @@ function [Jnum, Rnum, Janl, Ranl, Al] = seaice()
            exp( (c2 * t0i) / (t0i + c3) );
 
     % Background sublimation and derivatives
-    E0   =  eta * ( qsi - q0 );
-    dEdT =  eta * dqsi;
+    E0   =  eta * ( qsi - q0 )
+    dEdT =  eta *  dqsi;
     dEdq =  eta * -1;
 
     % Shortwave radiation constants and functions
@@ -88,9 +90,12 @@ function [Jnum, Rnum, Janl, Ranl, Al] = seaice()
 
     % latitudinal dependence shortwave radiation
     S = @(y) (1 - .482 * (3 * (sin(y)).^2 - 1.) / 2.);
-
+        
     % freezing temperature (dominant term)
     Tf = @(S) -0.0575 * S;
+    
+    % ice surface temperature (linearized)
+    Ti = @(Q,H,S) Tf(S) - t0i + Q0*H0 + H0*Q + Q0*H;
 
     % create grid
     grid();
@@ -98,29 +103,61 @@ function [Jnum, Rnum, Janl, Ranl, Al] = seaice()
     % initialize forcing and state
     sst  = idealizedTemp(t0o, tvar);
     sss  = idealizedSalt(s0, svar);
-    tatm = idealizedTemp(t0o-1, tvar);
+    tatm = idealizedTemp(t0a, tvar);
     qatm = idealizedTemp(q0, qvar);
 
     rng(1);
-    x = rand(dim, 1);
+    x = zeros(dim, 1);
+    %x = initialsol();
 
-    F = rhs(x);
+    % Newton solve
+    F    = rhs(x);
+    kmax = 10;
 
     ord = [];
     for i = 1:nun
         ord = [ord, i:nun:dim];
     end
+    
+    o22 = [];
+    for i = 2:nun
+        o22 = [o22, i:nun:dim];
+    end
 
-    tic 
-    Jnum = numjacob(@rhs, x);
-    Rnum = Jnum(ord,ord);
-    toc
+    for i = 1:kmax
+        J  = jac(x);
+        vsm(J(ord,ord))        
+        
+        % [L,U] = ilu(J,struct('type', 'ilutp','droptol', 1e-5, ...
+        %                      'udiag', 1, 'thresh', 0));
+        % dx = gmres(J, -F, 50, 1e-2, 100, L, U);
+        
+        dx = J \ -F;
+        
+        x  = x + dx;
+        
+        F  = rhs(x);
+        fprintf('%e %e\n', norm(dx), norm(F));
+        return;
+    end
+end
 
-    tic
-    [Janl, Al] = jac(x);
-    Ranl = Janl(ord,ord);
-    toc
+function [x] = initialsol()
 
+    global m n nun
+    dim = m*n*nun;
+    x = zeros(dim,1);
+    
+    H = 1e-4 * ones(n,m);
+    Q = 1e-4 * ones(n,m);
+    T = zeros(n,m);
+    M = zeros(n,m);
+    
+    x(1:nun:dim) = H(:);
+    x(2:nun:dim) = Q(:);
+    x(3:nun:dim) = T(:);
+    x(4:nun:dim) = M(:);
+    
 end
 
 function [J,Al] = jac(x)
