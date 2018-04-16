@@ -1,7 +1,8 @@
-function [J] = seaice()
+function [x] = seaice()
 
     global xmin xmax ymin ymax RtD n m nun x y dx dy
-    global t0 tvar s0 svar q0 qvar ta0 tavar
+    global t0o t0a t0i Q0 H0 M0
+    global tvar s0 svar q0 qvar ta0 tavar
 
     % forcing from external models
     global sst sss qatm tatm
@@ -11,6 +12,7 @@ function [J] = seaice()
     global sun0 S Ls alpha c0 muoa
     global Ic
     global taus epsilon
+    global Ti
 
     % specify physical dimensions
     RtD  = 180 / pi;
@@ -24,25 +26,24 @@ function [J] = seaice()
     m = 9;
 
     % number of unknowns
-    nun = 4;
+    nun = 3;
     dim = nun*n*m;
 
     taus    = 0.01;    % m, threshold ice thickness
-    epsilon = 1e-4;    % Heavyside approximation steepness
+    epsilon = 1e4;     % Heavyside approximation steepness
     
     % general physical constants
-    t0o  =  15;
+    t0o  =  5;
     t0a  =  14;
-    t0i  = -10;
+    t0i  = -15;
     tvar =  10;
     s0   =  35;
     svar =  1;
     q0   =  8e-3;
     qvar =  3e-3;
     H0   =  taus; 
-    Q0   =  2e3;
-    M0   =  0;
-
+    M0   =  1/2;
+    
     % ice formation constants
     ch   = 0.0058;     % empirical constant
     utau = 0.02;       % ms^{-1}, skin friction velocity
@@ -55,7 +56,7 @@ function [J] = seaice()
     Ic   = 2.166;      % W m^{-1} K^{-1}, constant ice conductivity
 
     % combined parameter
-    zeta = ch * utau * rhoo * cpo;
+    zeta = ch * utau * rhoo * cpo;    
 
     % sublimation constants, parameters for saturation humidity over ocean
     % and ice
@@ -70,15 +71,8 @@ function [J] = seaice()
 
     % Calculate background saturation specific humidity according to
     % [Bolton,1980], T in \deg C
-    qsi  = c1 * exp(c2 * t0i / (t0i + c3));
-    dqsi = (c1 * c2 * c3) / (t0i + c3).^2 * ...
-           exp( (c2 * t0i) / (t0i + c3) );
-
-    % Background sublimation and derivatives
-    E0   =  eta * ( qsi - q0 )
-    dEdT =  eta *  dqsi;
-    dEdq =  eta * -1;
-
+    qsi  = @(t0i) c1 * exp(c2 * t0i / (t0i + c3));
+    
     % Shortwave radiation constants and functions
     alpha = 0.3;  % albedo
     sun0  = 1360; % solar constant
@@ -92,19 +86,28 @@ function [J] = seaice()
     S = @(y) (1 - .482 * (3 * (sin(y)).^2 - 1.) / 2.);
         
     % freezing temperature (dominant term)
-    Tf = @(S) -0.0575 * S;
+    Tf = @(S) -0.0575 * (S + s0);
+    
+    % Background sublimation and derivatives
+    E0   =  eta * ( qsi(t0i) - q0 )
+    dqsi = (c1 * c2 * c3) / (t0i + c3).^2 * ...
+           exp( (c2 * t0i) / (t0i + c3) );
+    dEdT =  eta *  dqsi;
+    dEdq =  eta * -1;
+    
+    Q0 = zeta*(Tf(0) - t0o) - rhoo * Lf * E0
     
     % ice surface temperature (linearized)
-    Ti = @(Q,H,S) Tf(S) - t0i + Q0*H0 + H0*Q + Q0*H;
-
+    Ti = @(Q,H,S) Tf(S) - t0i + (Q0*H0 + H0*Q + Q0*H) / Ic;
+    
     % create grid
     grid();
 
     % initialize forcing and state
-    sst  = idealizedTemp(t0o, tvar);
-    sss  = idealizedSalt(s0, svar);
-    tatm = idealizedTemp(t0a, tvar);
-    qatm = idealizedTemp(q0, qvar);
+    sst  = idealizedTemp(0, tvar);
+    sss  = idealizedSalt(0, svar);
+    tatm = idealizedTemp(0, tvar);
+    qatm = idealizedTemp(0, qvar);
 
     rng(1);
     x = zeros(dim, 1);
@@ -123,23 +126,30 @@ function [J] = seaice()
     for i = 2:nun
         o22 = [o22, i:nun:dim];
     end
-
+    
+    F  = rhs(x);
     for i = 1:kmax
         J  = jac(x);
-        vsm(J(ord,ord))        
-        
-        % [L,U] = ilu(J,struct('type', 'ilutp','droptol', 1e-5, ...
-        %                      'udiag', 1, 'thresh', 0));
-        % dx = gmres(J, -F, 50, 1e-2, 100, L, U);
-        
         dx = J \ -F;
-        
         x  = x + dx;
-        
         F  = rhs(x);
-        fprintf('%e %e\n', norm(dx), norm(F));
-        return;
+        fprintf('%e %e %e\n', norm(dx), norm(F), condest(J));
     end
+    
+    [H,Q,M] = extractsol(x);
+    figure(1)
+    imagesc(RtD*x,RtD*y,H'+H0); set(gca,'ydir','normal'); colorbar
+    figure(2)
+    imagesc(RtD*x,RtD*y, M'+M0); set(gca,'ydir','normal'); colorbar
+    figure(3)
+    SST = sst'+t0o;
+    imagesc(RtD*x,RtD*y, SST); set(gca,'ydir','normal'); colorbar
+    min(SST(:))
+        
+    figure(4)
+    Tsi = Ti(Q,H,sss)'+t0i;
+    imagesc(RtD*x,RtD*y,Tsi); set(gca,'ydir','normal'); colorbar;
+    caxis([min(Tsi(:)),2])
 end
 
 function [x] = initialsol()
@@ -150,13 +160,11 @@ function [x] = initialsol()
     
     H = 1e-4 * ones(n,m);
     Q = 1e-4 * ones(n,m);
-    T = zeros(n,m);
     M = zeros(n,m);
     
     x(1:nun:dim) = H(:);
     x(2:nun:dim) = Q(:);
-    x(3:nun:dim) = T(:);
-    x(4:nun:dim) = M(:);
+    x(3:nun:dim) = M(:);
     
 end
 
@@ -165,19 +173,21 @@ function [J,Al] = jac(x)
     global m n nun y
 
     global sst sss qatm tatm
+    
+    global t0o t0a t0i Q0 H0
 
     global zeta Tf Lf rhoi rhoo E0 dEdT dEdq
     global sun0 S Ls alpha c0 muoa
     global Ic
     global taus epsilon
+    global Ti
 
-    [H, Qtsa, Tsi, Msi] = extractsol(x);
+    [H, Qtsa, Msi] = extractsol(x);
 
     % define indices for unknowns
     HH = 1;
     QQ = 2;
-    TT = 3;
-    MM = 4;
+    MM = 3;
 
     % initialize dependency grid
     Al = zeros(n, m, nun, nun);
@@ -185,27 +195,75 @@ function [J,Al] = jac(x)
     % define dependencies
 
     % dHdt equation
+    Al(:,:,HH,HH) =  rhoo / rhoi * dEdT * Q0 / Ic;
     Al(:,:,HH,QQ) = -1 / rhoi / Lf;
-    Al(:,:,HH,TT) =  rhoo / rhoi * dEdT;
 
     % Qtsa equation
-    Al(:,:,QQ,QQ) = -1;
-    Al(:,:,QQ,TT) = -muoa - rhoo * Ls * dEdT;
-
-    % Tsi equation
-    Al(:,:,TT,HH) = -Qtsa / Ic;
-    Al(:,:,TT,QQ) = -H / Ic;
-    Al(:,:,TT,TT) =  1;
+    Al(:,:,QQ,HH) = -muoa * Q0 / Ic - ...
+        rhoo * Ls * dEdT * Q0 / Ic;
+    Al(:,:,QQ,QQ) = -1 - ...
+        muoa * H0 / Ic - ...
+        rhoo * Ls * dEdT * H0 / Ic;
 
     % Msi equation
     Al(:,:,MM,HH) = -(epsilon / 2) * ...
-        ( 1 - tanh(epsilon * ( H - taus)).^2);
+        ( 1 - tanh(epsilon * (H0 + H - taus)).^2);
     Al(:,:,MM,MM) =  1;
     
     [co, ico, jco] = assemble_fast(Al);
 
     J = spconvert([ico,jco,co]);
 end
+
+function [F] = rhs(x)
+
+    global m n nun y
+
+    global sst sss qatm tatm
+ 
+    global t0o t0a t0i Q0 H0 M0
+     
+    global zeta Tf Lf rhoi rhoo E0 dEdT dEdq
+    global sun0 S Ls alpha c0 muoa
+    global Ic
+    global taus epsilon
+    global Ti
+   
+
+    [H, Qtsa, Msi] = extractsol(x);
+
+    F = zeros(size(x,1),1);
+
+    for j = 1:m
+        for i = 1:n
+            for XX = 1:nun
+                row = find_row(i,j,XX);
+                switch XX
+                  case 1
+                    Tsi = Ti(Qtsa(i,j), H(i,j), sst(i,j));
+                    
+                    val = (zeta * (Tf(sss(i,j)) - sst(i,j) - t0o) - Q0 - Qtsa(i,j)) / ...
+                          ( rhoi * Lf ) - ...
+                          ( rhoo / rhoi) * ...
+                          (E0 + dEdT * Tsi + dEdq * qatm(i,j));
+                  case 2
+                    Tsi = Ti(Qtsa(i,j), H(i,j), sst(i,j));
+                    
+                    val = -Qtsa(i,j) - Q0 + ...
+                          (sun0 / 4) * S(y(j)) * (1-alpha) * c0 - ...
+                          muoa * (t0i + Tsi - tatm(i,j) - t0a) - ...
+                          rhoo * Ls * (E0 + dEdT * Tsi + dEdq * qatm(i,j));
+                  case 3
+                    val = M0 + Msi(i,j) - ...
+                          (1/2) * (1 + tanh(epsilon * (H0 + H(i,j) - taus)));
+                end
+
+                F(row) = val;
+            end
+        end
+    end
+end
+
 
 function [co, ico, jco, beg] = assemble(Al)
 
@@ -306,69 +364,23 @@ function [co, ico, jco] = assemble_fast(Al)
     jco = jco(id);
 end
 
-function [F] = rhs(x)
-
-    global m n nun y
-
-    global sst sss qatm tatm
-
-    global zeta Tf Lf rhoi rhoo E0 dEdT dEdq
-    global sun0 S Ls alpha c0 muoa
-    global Ic
-    global taus epsilon
-
-    [H, Qtsa, Tsi, Msi] = extractsol(x);
-
-    F = zeros(size(x,1),1);
-
-    for j = 1:m
-        for i = 1:n
-            for XX = 1:nun
-                row = find_row(i,j,XX);
-                switch XX
-                  case 1
-                    val = (zeta * (Tf(sss(i,j)) - sst(i,j)) - Qtsa(i,j)) / ...
-                          ( rhoi * Lf ) - ...
-                          ( rhoo / rhoi) * ...
-                          (E0 + dEdT * Tsi(i,j) + dEdq * qatm(i,j));
-                  case 2
-                    val = -Qtsa(i,j) + ...
-                          (sun0 / 4) * S(y(j)) * (1-alpha) * c0 - ...
-                          muoa * (Tsi(i,j) - tatm(i,j)) - ...
-                          rhoo * Ls * (E0 + dEdT * Tsi(i,j) + dEdq * qatm(i,j));
-                  case 3
-                    val = Tsi(i,j) - Tf(sss(i,j)) - ...
-                          Qtsa(i,j) * H(i,j) / Ic;
-                  case 4
-                    val = Msi(i,j) - ...
-                          (1/2) * (1 + tanh(epsilon * (H(i,j) - taus)));
-                end
-
-                F(row) = val;
-            end
-        end
-    end
-end
-
 function [row] = find_row(i,j,XX)
 
     global n nun    
     row = nun * ( (j-1) * n  + (i-1) ) + XX;
 end
 
-function [H, Qtsa, Tsi, Msi] = extractsol(x)
+function [H, Qtsa, Msi] = extractsol(x)
 
     global n m nun
 
     H    = zeros(n,m);
     Qtsa = zeros(n,m);
-    Tsi  = zeros(n,m);
     Msi  = zeros(n,m);
 
     H(:)    = x(1:nun:end);
     Qtsa(:) = x(2:nun:end);
-    Tsi(:)  = x(3:nun:end);
-    Msi(:)  = x(4:nun:end);
+    Msi(:)  = x(3:nun:end);
 end
 
 function [] = grid()
