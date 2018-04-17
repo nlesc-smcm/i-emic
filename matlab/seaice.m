@@ -33,19 +33,20 @@ function [x] = seaice()
     epsilon = 1e4;     % Heavyside approximation steepness
     
     % general physical constants
-    t0o  =  5;
-    t0a  =  14;
+    t0o  =  7;
+    t0a  =  10;
     t0i  = -15;
-    tvar =  10;
+    tvar =  15;
     s0   =  35;
     svar =  1;
-    q0   =  8e-3;
-    qvar =  3e-3;
-    H0   =  taus; 
-    M0   =  1/2;
+    q0   =  1e-3;
+    qvar =  5e-4;
+    H0   =  taus;
+    M0   =  0;
     
     % ice formation constants
     ch   = 0.0058;     % empirical constant
+
     utau = 0.02;       % ms^{-1}, skin friction velocity
     rhoo = 1.024e3;    % kg m^{-3}, sea water density
     rhoi = 0.913e3;    % kg m^{-3}, ice density
@@ -74,13 +75,14 @@ function [x] = seaice()
     qsi  = @(t0i) c1 * exp(c2 * t0i / (t0i + c3));
     
     % Shortwave radiation constants and functions
-    alpha = 0.3;  % albedo
-    sun0  = 1360; % solar constant
-    c0    = 0.43; % atmospheric absorption coefficient
-    cpa   = 1000; % heat capacity
+    alpha = 0.3;      % albedo
+    sun0  = 1360;     % solar constant
+    c0    = 0.43;     % atmospheric absorption coefficient
+    Ch    = 1.22e-3;  % a constant...
+    cpa   = 1000;     % heat capacity
 
     % exchange coefficient
-    muoa  = rhoa * ch * cpa * uw;
+    muoa  = rhoa * Ch * cpa * uw;
 
     % latitudinal dependence shortwave radiation
     S = @(y) (1 - .482 * (3 * (sin(y)).^2 - 1.) / 2.);
@@ -95,8 +97,9 @@ function [x] = seaice()
     dEdT =  eta *  dqsi;
     dEdq =  eta * -1;
     
-    Q0 = zeta*(Tf(0) - t0o) - rhoo * Lf * E0
-    
+    % Background heat flux
+    Q0   = zeta*(Tf(0) - t0o) - rhoo * Lf * E0;
+
     % ice surface temperature (linearized)
     Ti = @(Q,H,S) Tf(S) - t0i + (Q0*H0 + H0*Q + Q0*H) / Ic;
     
@@ -110,11 +113,11 @@ function [x] = seaice()
     qatm = idealizedTemp(0, qvar);
 
     rng(1);
-    x = zeros(dim, 1);
+    X = rand(dim, 1);
     %x = initialsol();
 
     % Newton solve
-    F    = rhs(x);
+    F    = rhs(X);
     kmax = 10;
 
     ord = [];
@@ -127,29 +130,41 @@ function [x] = seaice()
         o22 = [o22, i:nun:dim];
     end
     
-    F  = rhs(x);
+    F  = rhs(X);
     for i = 1:kmax
-        J  = jac(x);
-        dx = J \ -F;
-        x  = x + dx;
-        F  = rhs(x);
-        fprintf('%e %e %e\n', norm(dx), norm(F), condest(J));
+        J  = jac(X);
+        dX = J \ -F;
+        X  = X + dX;
+        F  = rhs(X);
+        fprintf('%e %e %e\n', norm(dX), norm(F), condest(J));
     end
     
-    [H,Q,M] = extractsol(x);
+    [H,Q,M] = extractsol(X);
+   
     figure(1)
-    imagesc(RtD*x,RtD*y,H'+H0); set(gca,'ydir','normal'); colorbar
+    imagesc(RtD*x, RtD*y, (H'+H0).*M'); set(gca,'ydir','normal'); colorbar
+    title('H')
     figure(2)
-    imagesc(RtD*x,RtD*y, M'+M0); set(gca,'ydir','normal'); colorbar
+    imagesc(RtD*x, RtD*y, M'+M0); set(gca,'ydir','normal'); colorbar
+    title('M')
     figure(3)
     SST = sst'+t0o;
-    imagesc(RtD*x,RtD*y, SST); set(gca,'ydir','normal'); colorbar
+    imagesc(RtD*x, RtD*y, SST.*M'); set(gca,'ydir','normal'); colorbar
     min(SST(:))
-        
+    title('SST')        
     figure(4)
     Tsi = Ti(Q,H,sss)'+t0i;
-    imagesc(RtD*x,RtD*y,Tsi); set(gca,'ydir','normal'); colorbar;
-    caxis([min(Tsi(:)),2])
+    imagesc(RtD*x,RtD*y,Tsi.*M'); set(gca,'ydir','normal'); colorbar;
+    title('Ti')
+    
+    figure(5)
+    Qimg = Q' + Q0;
+    imagesc(RtD*x,RtD*y,Qimg.*M'); set(gca,'ydir','normal'); colorbar;
+    title('Q')
+    
+    
+    
+    % vsm(J(ord,ord))
 end
 
 function [x] = initialsol()
@@ -207,7 +222,7 @@ function [J,Al] = jac(x)
 
     % Msi equation
     Al(:,:,MM,HH) = -(epsilon / 2) * ...
-        ( 1 - tanh(epsilon * (H0 + H - taus)).^2);
+        ( 1 - tanh(epsilon * (H)).^2);
     Al(:,:,MM,MM) =  1;
     
     [co, ico, jco] = assemble_fast(Al);
@@ -255,7 +270,7 @@ function [F] = rhs(x)
                           rhoo * Ls * (E0 + dEdT * Tsi + dEdq * qatm(i,j));
                   case 3
                     val = M0 + Msi(i,j) - ...
-                          (1/2) * (1 + tanh(epsilon * (H0 + H(i,j) - taus)));
+                          (1/2) * (1 + tanh(epsilon * (H(i,j))));
                 end
 
                 F(row) = val;
