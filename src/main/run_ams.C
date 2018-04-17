@@ -11,6 +11,9 @@
 #include "Ocean.H"
 #include "AMS.H"
 
+#include "EpetraExt_RowMatrixOut.h"
+#include "EpetraExt_MultiVectorOut.h"
+
 //------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;
@@ -70,8 +73,15 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     RCP<Epetra_Vector> sol2 = ocean->getState('C');
     Utils::load(sol2, stateB);
 
+    // EpetraExt::MultiVectorToMatrixMarketFile("sol1.mtx", *sol1);
+    // EpetraExt::MultiVectorToMatrixMarketFile("sol2.mtx", *sol2);
+
     // Create ams
     AMS<RCP<Ocean> > ams(ocean, amsParams, sol1, sol2);
+
+    // ocean->computeJacobian();
+    // EpetraExt::RowMatrixToMatrixMarketFile("A.mtx", *ocean->getJacobian());
+    // EpetraExt::MultiVectorToMatrixMarketFile("M.mtx", *ocean->getDiagB());
 
     ams.run();
 
