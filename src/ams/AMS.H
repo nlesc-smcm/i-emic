@@ -19,6 +19,7 @@ class AMS
 {
     using VectorPtr  = typename Model::element_type::VectorPtr;
     using Vector     = typename VectorPtr::element_type;
+    using TimeStep   = typename std::function<VectorPtr(VectorPtr const &, double)>;
 
     Model model_;
     double dt_;
@@ -36,16 +37,17 @@ class AMS
 
     Teuchos::RCP<TimeStepper<VectorPtr> > timestepper_;
 
+    Teuchos::RCP<Epetra_CrsMatrix> B_;
     Teuchos::RCP<Epetra_MultiVector> V_;
-
+    Teuchos::RCP<Epetra_MatrixOrMultiVector> BV_;
 public:
     template<typename ParameterList>
     AMS(Model model, ParameterList pars,
         VectorPtr sol1, VectorPtr sol2);
     ~AMS();
 
-    void initialize();
-    void initialize_projected();
+    auto get_time_step();
+    auto get_projected_time_step();
 
     void run();
 
@@ -68,8 +70,7 @@ Teuchos::RCP<Vector> newton(
     for (int i = 0; i < 20; i++)
     {
         Teuchos::RCP<Vector> dx = Jsol(x, Fx);
-        std::cout << Utils::norm(x) << " " << Utils::norm(Fx) << " " << Utils::norm(dx) << " " << std::endl;
-        x->Update(-1.0, *dx, 1.0);
+        CHECK_ZERO(x->Update(-1.0, *dx, 1.0));
         Fx = F(x);
         nrm = Utils::norm(Fx);
         if (nrm < tol)
@@ -101,40 +102,106 @@ AMS(Model model, ParameterList pars,
     sol2_(sol2),
     V_(Teuchos::null)
 {
+    Epetra_CrsMatrix* Bptr;
+    CHECK_ZERO(EpetraExt::MatrixMarketFileToCrsMatrix(
+                   "B.mtx", *model_->getDomain()->GetSolveMap(), Bptr));
+    B_ = Teuchos::rcp(Bptr);
+
     std::string space = pars->get("space", "");
+    TimeStep time_step;
     if (space != "")
     {
         Epetra_MultiVector* Vptr;
         CHECK_ZERO(EpetraExt::MatrixMarketFileToMultiVector(
                        space.c_str(), *model_->getDomain()->GetSolveMap(), Vptr));
         V_ = Teuchos::rcp(Vptr);
-        initialize_projected();
+        
+        BV_ = Teuchos::rcp(new Epetra_MatrixOrMultiVector(
+                               B_->NumGlobalCols(), V_->NumVectors()));
+        CHECK_ZERO(B_->Multiply('T', *V_, *BV_));
+
+        time_step = get_projected_time_step();
     }
     else
-        initialize();
+        time_step = get_time_step();
+
+    INFO("Time step: " << dt_);
+
+    auto var_norm = [](VectorPtr const &x, int var) {
+        double tmp = 0;
+        int n = x->MyLength();
+        auto &map = x->Map();
+        Vector const &xref = *x;
+        for (int i = 0; i < n; i++)
+            if (map.GID(i) % 6 == var)
+                tmp += xref[i] * xref[i];
+        double out = 0;
+        if (x->DistributedGlobal())
+        {
+            CHECK_ZERO(x->Comm().SumAll(&tmp, &out, 1));
+        }
+        else
+        {
+            out = tmp;
+        }
+        return sqrt(out);
+    };
+
+    double nrm[6];
+    for (int var = 0; var < 6; var++)
+    {
+        VectorPtr diff = Teuchos::rcp(new Vector(*sol1_));
+        CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
+        nrm[var] = var_norm(diff, var);
+    }
+
+    auto dist_fun_var = [nrm, var_norm, this](VectorPtr const &x, int var) {
+        VectorPtr d1v = Teuchos::rcp(new Vector(*x));
+        CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
+        double d1 =  var_norm(d1v, var) / nrm[var];
+        VectorPtr d2v = Teuchos::rcp(new Vector(*x));
+        CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
+        double d2 =  var_norm(d2v, var) / nrm[var];
+        double dist = 0.25 - 0.25 * exp(-0.5 * pow(d1 / 0.25, 2.))
+        + 0.75 * exp(-0.5 * pow(d2 / 0.25, 2.));
+        return dist;
+    };
+
+    auto dist_fun = [this, dist_fun_var](VectorPtr const &x) {
+        // BEGIN DEBUG
+        for (int var = 0; var < 6; var++)
+        {
+            double dist = dist_fun_var(x, var);
+            INFO("distance " << var << " = " << dist);
+        }
+
+        INFO(model_->writeData(true));
+        INFO(model_->writeData(false));
+        // END DEBUG
+
+        double dist = dist_fun_var(x, 1);
+        INFO("distance = " << dist);
+        return dist;
+    };
+
+    timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(
+                                    time_step, dist_fun, adist_, bdist_, cdist_));
 
     static thread_local std::random_device rd;
     unsigned int seed = rd();
 
     int *seed_ptr = reinterpret_cast<int *>(&seed);
-    model->Comm()->Broadcast(seed_ptr, 1, 0);
+    CHECK_ZERO(model->Comm()->Broadcast(seed_ptr, 1, 0));
 
     static thread_local std::default_random_engine engine(seed);
     timestepper_->set_random_engine(engine);
 }
 
 template<typename Model>
-void AMS<Model>::initialize()
+auto AMS<Model>::get_time_step()
 {
-    Epetra_CrsMatrix* Bptr;
-    CHECK_ZERO(EpetraExt::MatrixMarketFileToCrsMatrix(
-                   "B.mtx", *model_->getDomain()->GetSolveMap(), Bptr));
-    Teuchos::RCP<Epetra_CrsMatrix> B = Teuchos::rcp(Bptr);
-
-    INFO("Time step: " << dt_);
-
     // Function to perform one stochastic time step
-    auto time_step = [this, B](VectorPtr const &x, double dt) {
+    return [this](VectorPtr const &x, double dt) {
         double theta = 1;
         double sig = 1.0 / (dt * theta);
 
@@ -149,16 +216,16 @@ void AMS<Model>::initialize()
         static thread_local std::normal_distribution<double> distribution(0.0, 1.0);
         static thread_local auto generator = std::bind(distribution, std::ref(engine));
 
-        int m = B->NumMyCols();
-        if (!B->ColMap().UniqueGIDs())
+        int m = B_->NumMyCols();
+        if (!B_->ColMap().UniqueGIDs())
         {
             ERROR("The values of B are distributed", __FILE__, __LINE__);
         }
 
-        Epetra_Vector pert(B->ColMap());
+        Epetra_Vector pert(B_->ColMap());
         std::generate(pert.Values(), pert.Values() + m, generator);
         VectorPtr G = model_->getState('C');
-        CHECK_ZERO(B->Apply(pert, *G));
+        CHECK_ZERO(B_->Apply(pert, *G));
         CHECK_ZERO(G->Scale(sqrt(dt_) * sigma_));
 
         // Deterministic theta stepper:
@@ -198,62 +265,6 @@ void AMS<Model>::initialize()
 
         return newton<Vector>(thetaF, thetaJ, x, 1e-8);
     };
-
-    auto var_norm = [](VectorPtr const &x, int var) {
-        double tmp = 0;
-        int n = x->MyLength();
-        auto &map = x->Map();
-        Vector const &xref = *x;
-        for (int i = 0; i < n; i++)
-            if (map.GID(i) % 6 == var)
-                tmp += xref[i] * xref[i];
-        double out = 0;
-        if (x->DistributedGlobal())
-            x->Comm().SumAll(&tmp, &out, 1);
-        else
-            out = tmp;
-        return sqrt(out);
-    };
-
-    double nrm[6];
-    for (int var = 0; var < 6; var++)
-    {
-        VectorPtr diff = Teuchos::rcp(new Vector(*sol1_));
-        diff->Update(-1.0, *sol2_, 1.0);
-        nrm[var] = var_norm(diff, var);
-    }
-
-    auto dist_fun_var = [nrm, var_norm, this](VectorPtr const &x, int var) {
-        VectorPtr d1v = Teuchos::rcp(new Vector(*x));
-        d1v->Update(-1.0, *sol1_, 1.0);
-        double d1 =  var_norm(d1v, var) / nrm[var];
-        VectorPtr d2v = Teuchos::rcp(new Vector(*x));
-        d2v->Update(-1.0, *sol2_, 1.0);
-        double d2 =  var_norm(d2v, var) / nrm[var];
-        double dist = 0.25 - 0.25 * exp(-0.5 * pow(d1 / 0.25, 2.))
-        + 0.75 * exp(-0.5 * pow(d2 / 0.25, 2.));
-        return dist;
-    };
-
-    auto dist_fun = [this, dist_fun_var](VectorPtr const &x) {
-        // BEGIN DEBUG
-        for (int var = 0; var < 6; var++)
-        {
-            double dist = dist_fun_var(x, var);
-            INFO("distance " << var << " = " << dist);
-        }
-
-        INFO(model_->writeData(true));
-        INFO(model_->writeData(false));
-        // END DEBUG
-
-        double dist = dist_fun_var(x, 1);
-        INFO("distance = " << dist);
-        return dist;
-    };
-
-    timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(
-                                    time_step, dist_fun, adist_, bdist_, cdist_));
 }
 
 Teuchos::RCP<Epetra_MatrixOrMultiVector> dot(
@@ -283,20 +294,10 @@ Teuchos::RCP<Epetra_Vector> AMS<Model>::prolongate(Epetra_MatrixOrMultiVector co
 }
 
 template<typename Model>
-void AMS<Model>::initialize_projected()
+auto AMS<Model>::get_projected_time_step()
 {
-    Epetra_CrsMatrix* Bptr;
-    CHECK_ZERO(EpetraExt::MatrixMarketFileToCrsMatrix(
-                   "B.mtx", *model_->getDomain()->GetSolveMap(), Bptr));
-    Teuchos::RCP<Epetra_CrsMatrix> B = Teuchos::rcp(Bptr);
-    auto BV = Teuchos::rcp(new Epetra_MatrixOrMultiVector(
-                               B->NumGlobalCols(), V_->NumVectors()));
-    CHECK_ZERO(B->Multiply('T', *V_, *BV));
-
-    INFO("Time step: " << dt_);
-
     // Function to perform one stochastic time step
-    auto time_step = [this, BV](VectorPtr const &x, double dt) {
+    return [this](VectorPtr const &x, double dt) {
         double theta = 1;
         double sig = 1.0 / (dt * theta);
 
@@ -315,11 +316,11 @@ void AMS<Model>::initialize_projected()
         static thread_local std::normal_distribution<double> distribution(0.0, 1.0);
         static thread_local auto generator = std::bind(distribution, std::ref(engine));
 
-        int m = BV->mat->M();
+        int m = BV_->mat->M();
         Epetra_MatrixOrMultiVector pert(m, 1);
         std::generate(pert.Values(), pert.Values() + m, generator);
-        auto G = Teuchos::rcp(new Epetra_MatrixOrMultiVector(BV->mat->N(), 1));
-        CHECK_ZERO(G->mat->Multiply('T', 'N', 1.0, *BV->mat, *pert.mat, 0.0));
+        auto G = Teuchos::rcp(new Epetra_MatrixOrMultiVector(BV_->mat->N(), 1));
+        CHECK_ZERO(G->mat->Multiply('T', 'N', 1.0, *BV_->mat, *pert.mat, 0.0));
         CHECK_ZERO(G->mat->Scale(sqrt(dt_) * sigma_));
 
         // Deterministic theta stepper:
@@ -375,62 +376,6 @@ void AMS<Model>::initialize_projected()
 
         return prolongate(*newton<SmallVector>(thetaF, thetaJ, xsmall, 1e-8));
     };
-
-    auto var_norm = [](VectorPtr const &x, int var) {
-        double tmp = 0;
-        int n = x->MyLength();
-        auto &map = x->Map();
-        Vector const &xref = *x;
-        for (int i = 0; i < n; i++)
-            if (map.GID(i) % 6 == var)
-                tmp += xref[i] * xref[i];
-        double out = 0;
-        if (x->DistributedGlobal())
-            x->Comm().SumAll(&tmp, &out, 1);
-        else
-            out = tmp;
-        return sqrt(out);
-    };
-
-    double nrm[6];
-    for (int var = 0; var < 6; var++)
-    {
-        VectorPtr diff = Teuchos::rcp(new Vector(*sol1_));
-        diff->Update(-1.0, *sol2_, 1.0);
-        nrm[var] = var_norm(diff, var);
-    }
-
-    auto dist_fun_var = [nrm, var_norm, this](VectorPtr const &x, int var) {
-        VectorPtr d1v = Teuchos::rcp(new Vector(*x));
-        d1v->Update(-1.0, *sol1_, 1.0);
-        double d1 =  var_norm(d1v, var) / nrm[var];
-        VectorPtr d2v = Teuchos::rcp(new Vector(*x));
-        d2v->Update(-1.0, *sol2_, 1.0);
-        double d2 =  var_norm(d2v, var) / nrm[var];
-        double dist = 0.25 - 0.25 * exp(-0.5 * pow(d1 / 0.25, 2.))
-        + 0.75 * exp(-0.5 * pow(d2 / 0.25, 2.));
-        return dist;
-    };
-
-    auto dist_fun = [this, dist_fun_var](VectorPtr const &x) {
-        // BEGIN DEBUG
-        for (int var = 0; var < 6; var++)
-        {
-            double dist = dist_fun_var(x, var);
-            INFO("distance " << var << " = " << dist);
-        }
-
-        INFO(model_->writeData(true));
-        INFO(model_->writeData(false));
-        // END DEBUG
-
-        double dist = dist_fun_var(x, 1);
-        INFO("distance = " << dist);
-        return dist;
-    };
-
-    timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(
-                                    time_step, dist_fun, adist_, bdist_, cdist_));
 }
 
 template<typename Model>
