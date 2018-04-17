@@ -12,6 +12,7 @@
 #include "Epetra_SerialDenseSolver.h"
 #include "EpetraExt_CrsMatrixIn.h"
 #include "EpetraExt_MultiVectorIn.h"
+#include "Epetra_MatrixOrMultiVector.h"
 
 template<typename Model>
 class AMS
@@ -49,9 +50,8 @@ public:
     void run();
 
 protected:
-    Teuchos::RCP<Epetra_SerialDenseMatrix> restrict(Epetra_MultiVector const &x) const;
-    Teuchos::RCP<Epetra_MultiVector> prolongate(Epetra_SerialDenseMatrix const &x) const;
-    Teuchos::RCP<Epetra_Vector> prolongate_vector(Epetra_SerialDenseMatrix const &x) const;
+    Teuchos::RCP<Epetra_MatrixOrMultiVector> restrict(Epetra_MultiVector const &x) const;
+    Teuchos::RCP<Epetra_Vector> prolongate(Epetra_MatrixOrMultiVector const &x) const;
 };
 
 template<typename Vector>
@@ -68,6 +68,7 @@ Teuchos::RCP<Vector> newton(
     for (int i = 0; i < 20; i++)
     {
         Teuchos::RCP<Vector> dx = Jsol(x, Fx);
+        std::cout << Utils::norm(x) << " " << Utils::norm(Fx) << " " << Utils::norm(dx) << " " << std::endl;
         x->Update(-1.0, *dx, 1.0);
         Fx = F(x);
         nrm = Utils::norm(Fx);
@@ -136,6 +137,7 @@ void AMS<Model>::initialize()
     auto time_step = [this, B](VectorPtr const &x, double dt) {
         double theta = 1;
         double sig = 1.0 / (dt * theta);
+
         *model_->getState('V') = *x;
 
         // FIXME!!!
@@ -156,8 +158,8 @@ void AMS<Model>::initialize()
         Epetra_Vector pert(B->ColMap());
         std::generate(pert.Values(), pert.Values() + m, generator);
         VectorPtr G = model_->getState('C');
-        B->Apply(pert, *G);
-        G->Scale(sqrt(dt_) * sigma_);
+        CHECK_ZERO(B->Apply(pert, *G));
+        CHECK_ZERO(G->Scale(sqrt(dt_) * sigma_));
 
         // Deterministic theta stepper:
         // M * u_n + dt * theta * F(u_(n+1)) + (1-theta) * F(u_n) - M * u_(n+1) = 0
@@ -170,14 +172,14 @@ void AMS<Model>::initialize()
 
             VectorPtr M = model_->getMassMat('V');
             VectorPtr ret = Teuchos::rcp(new Vector(*x));
-            ret->Update(-1.0, *xnew, 1.0);
-            ret->Multiply(1.0, *ret, *M, 0.0);
+            CHECK_ZERO(ret->Update(-1.0, *xnew, 1.0));
+            CHECK_ZERO(ret->Multiply(1.0, *ret, *M, 0.0));
 
             model_->computeRHS();
             VectorPtr Fxnew = model_->getRHS('V');
-            ret->Update(dt * theta, *Fxnew, 1.0);
-            ret->Update(dt * (1.0 - theta), *Fx, 1.0);
-            ret->Update(1.0, *G, 1.0);
+            CHECK_ZERO(ret->Update(dt * theta, *Fxnew, 1.0));
+            CHECK_ZERO(ret->Update(dt * (1.0 - theta), *Fx, 1.0));
+            CHECK_ZERO(ret->Update(1.0, *G, 1.0));
             return ret;
         };
 
@@ -187,7 +189,7 @@ void AMS<Model>::initialize()
         auto thetaJ = [this, sig](VectorPtr const &xnew, VectorPtr const &b) {
             *model_->getState('V') = *xnew;
             VectorPtr y = Teuchos::rcp(new Vector(*b));
-            y->Scale(sig);
+            CHECK_ZERO(y->Scale(sig));
             model_->setShift(-sig);
             model_->computeJacobian();
             model_->solve(y);
@@ -254,49 +256,29 @@ void AMS<Model>::initialize()
                                     time_step, dist_fun, adist_, bdist_, cdist_));
 }
 
-Teuchos::RCP<Epetra_SerialDenseMatrix> dot(
+Teuchos::RCP<Epetra_MatrixOrMultiVector> dot(
     Epetra_MultiVector const &x, Epetra_MultiVector const &y)
 {
     int m = x.NumVectors();
     int n = y.NumVectors();
-    Teuchos::RCP<Epetra_SerialDenseMatrix> out = Teuchos::rcp(
-        new Epetra_SerialDenseMatrix(m, n));
+    Teuchos::RCP<Epetra_MatrixOrMultiVector> out = Teuchos::rcp(
+        new Epetra_MatrixOrMultiVector(m, n));
 
-    Epetra_SerialComm comm;
-    Epetra_LocalMap map(m, 0, comm);
-    Epetra_MultiVector view(View, map, out->A(), out->LDA(), out->N());
-    view.Multiply('T', 'N', 1.0, x, y, 0.0);
+    CHECK_ZERO(out->Multiply('T', 'N', 1.0, x, y, 0.0));
     return out;
 }
 
 template<typename Model>
-Teuchos::RCP<Epetra_SerialDenseMatrix> AMS<Model>::restrict(Epetra_MultiVector const &x) const
+Teuchos::RCP<Epetra_MatrixOrMultiVector> AMS<Model>::restrict(Epetra_MultiVector const &x) const
 {
     return dot(*V_, x);
 }
 
 template<typename Model>
-Teuchos::RCP<Epetra_MultiVector> AMS<Model>::prolongate(Epetra_SerialDenseMatrix const &x) const
+Teuchos::RCP<Epetra_Vector> AMS<Model>::prolongate(Epetra_MatrixOrMultiVector const &x) const
 {
-    Teuchos::RCP<Epetra_MultiVector> out = Teuchos::rcp(
-        new Epetra_MultiVector(V_->Map(), x.N()));
-
-    Epetra_SerialComm comm;
-    Epetra_LocalMap map(x.M(), 0, comm);
-    Epetra_MultiVector view(View, map, x.A(), x.LDA(), x.N());
-    out->Multiply('N', 'N', 1.0, *V_, view, 0.0);
-    return out;
-}
-
-template<typename Model>
-Teuchos::RCP<Epetra_Vector> AMS<Model>::prolongate_vector(Epetra_SerialDenseMatrix const &x) const
-{
-    VectorPtr out = Teuchos::rcp(new Vector(V_->Map(), x.N()));
-
-    Epetra_SerialComm comm;
-    Epetra_LocalMap map(x.M(), 0, comm);
-    Epetra_MultiVector view(View, map, x.A(), x.LDA(), x.N());
-    out->Multiply('N', 'N', 1.0, *V_, view, 0.0);
+    VectorPtr out = Teuchos::rcp(new Vector(V_->Map()));
+    CHECK_ZERO(out->Multiply('N', 'N', 1.0, *V_, x, 0.0));
     return out;
 }
 
@@ -307,15 +289,22 @@ void AMS<Model>::initialize_projected()
     CHECK_ZERO(EpetraExt::MatrixMarketFileToCrsMatrix(
                    "B.mtx", *model_->getDomain()->GetSolveMap(), Bptr));
     Teuchos::RCP<Epetra_CrsMatrix> B = Teuchos::rcp(Bptr);
-    // Teuchos::RCP<Epetra_SerialDenseMatrix> BV = restrict(*B);
+    auto BV = Teuchos::rcp(new Epetra_MatrixOrMultiVector(
+                               B->NumGlobalCols(), V_->NumVectors()));
+    CHECK_ZERO(B->Multiply('T', *V_, *BV));
 
     INFO("Time step: " << dt_);
 
     // Function to perform one stochastic time step
-    auto time_step = [this, B](VectorPtr const &x, double dt) {
+    auto time_step = [this, BV](VectorPtr const &x, double dt) {
         double theta = 1;
         double sig = 1.0 / (dt * theta);
+
+        auto xsmall = restrict(*x);
         *model_->getState('V') = *x;
+
+        using SmallVector = Epetra_MatrixOrMultiVector;
+        using SmallVectorPtr = Teuchos::RCP<Epetra_MatrixOrMultiVector>;
 
         // FIXME!!!
         // VectorPtr G = B(x);
@@ -326,64 +315,65 @@ void AMS<Model>::initialize_projected()
         static thread_local std::normal_distribution<double> distribution(0.0, 1.0);
         static thread_local auto generator = std::bind(distribution, std::ref(engine));
 
-        int m = B->NumMyCols();
-        if (!B->ColMap().UniqueGIDs())
-        {
-            ERROR("The values of B are distributed", __FILE__, __LINE__);
-        }
-
-        Epetra_Vector pert(B->ColMap());
+        int m = BV->mat->M();
+        Epetra_MatrixOrMultiVector pert(m, 1);
         std::generate(pert.Values(), pert.Values() + m, generator);
-        VectorPtr G = model_->getState('C');
-        B->Apply(pert, *G);
-        G->Scale(sqrt(dt_) * sigma_);
+        auto G = Teuchos::rcp(new Epetra_MatrixOrMultiVector(BV->mat->N(), 1));
+        CHECK_ZERO(G->mat->Multiply('T', 'N', 1.0, *BV->mat, *pert.mat, 0.0));
+        CHECK_ZERO(G->mat->Scale(sqrt(dt_) * sigma_));
 
         // Deterministic theta stepper:
         // M * u_n + dt * theta * F(u_(n+1)) + (1-theta) * F(u_n) - M * u_(n+1) = 0
         // Noise is added in an explicit manner
         model_->computeRHS();
-        VectorPtr Fx = model_->getRHS('C');
+        auto Fx = restrict(*model_->getRHS('V'));
         INFO("||F|| = " << Utils::norm(Fx));
-        auto thetaF = [this, G, Fx, x, dt, theta](VectorPtr const &xnew) {
-            *model_->getState('V') = *xnew;
 
-            VectorPtr M = model_->getDiagB('V');
-            VectorPtr ret = Teuchos::rcp(new Vector(*x));
-            ret->Update(-1.0, *xnew, 1.0);
-            ret->Multiply(1.0, *ret, *M, 0.0);
+        auto tmp = Teuchos::rcp(new Epetra_MultiVector(*V_));
+
+        auto M = model_->getDiagB('V');
+        CHECK_ZERO(tmp->Multiply(1.0, *M, *V_, 0.0));
+        auto VMV = dot(*V_, *tmp);
+
+        auto thetaF = [this, &G, &Fx, &VMV, &xsmall, dt, theta](SmallVectorPtr const &xnew) {
+            *model_->getState('V') = *prolongate(*xnew);
+
+            auto ret = Teuchos::rcp(new SmallVector(*xsmall));
+            CHECK_ZERO(ret->Update(-1.0, *xnew, 1.0));
+            CHECK_ZERO(ret->mat->Multiply('N', 'N', 1.0, *VMV->mat, *ret->mat, 0.0));
 
             model_->computeRHS();
-            VectorPtr Fxnew = model_->getRHS('V');
-            ret->Update(dt * theta, *Fxnew, 1.0);
-            ret->Update(dt * (1.0 - theta), *Fx, 1.0);
-            ret->Update(1.0, *G, 1.0);
+            auto Fxnew = restrict(*model_->getRHS('V'));
+            CHECK_ZERO(ret->Update(dt * theta, *Fxnew, 1.0));
+            CHECK_ZERO(ret->Update(dt * (1.0 - theta), *Fx, 1.0));
+            CHECK_ZERO(ret->Update(1.0, *G, 1.0));
             return ret;
         };
 
         // J2 = theta * dt * J - M, so J2*x = b
         // We write this as
         // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
-        *model_->getState('V') = *x;
         model_->setShift(-sig);
         model_->computeJacobian();
-        auto AV = Teuchos::rcp(new Epetra_MultiVector(*V_));
-        model_->applyMatrix(*V_, *AV);
-        auto VAV = dot(*V_, *AV);
+        model_->applyMatrix(*V_, *tmp);
+        auto VAV = dot(*V_, *tmp);
 
         auto VAVsolver = Teuchos::rcp(new Epetra_SerialDenseSolver());
-        CHECK_ZERO(VAVsolver->SetMatrix(*VAV));
+        VAVsolver->FactorWithEquilibration(true);
+        CHECK_ZERO(VAVsolver->SetMatrix(*VAV->mat));
         CHECK_ZERO(VAVsolver->Factor());
 
-        auto thetaJ = [this, sig, VAVsolver](VectorPtr const &xnew, VectorPtr const &b) {
-            auto y = restrict(*b);
-            Epetra_SerialDenseMatrix z(*y);
-            y->Scale(sig);
-            VAVsolver->SetVectors(z, *y);
-            VAVsolver->Solve();
-            return prolongate_vector(z);
+        auto thetaJ = [this, sig, &VAVsolver](SmallVectorPtr const &xnew,
+                                              SmallVectorPtr const &b) {
+            auto y = Teuchos::rcp(new SmallVector(*b));
+            auto z = Teuchos::rcp(new SmallVector(*b));
+            CHECK_ZERO(y->Scale(sig));
+            CHECK_ZERO(VAVsolver->SetVectors(*z->mat, *y->mat));
+            CHECK_ZERO(VAVsolver->Solve());
+            return z;
         };
 
-        return newton<Vector>(thetaF, thetaJ, x, 1e-8);
+        return prolongate(*newton<SmallVector>(thetaF, thetaJ, xsmall, 1e-8));
     };
 
     auto var_norm = [](VectorPtr const &x, int var) {
