@@ -358,19 +358,14 @@ auto AMS<Model>::get_projected_time_step()
         model_->computeJacobian();
         model_->applyMatrix(*V_, *tmp);
         auto VAV = dot(*V_, *tmp);
+        CHECK_ZERO(VAV->Factor());
 
-        auto VAVsolver = Teuchos::rcp(new Epetra_SerialDenseSolver());
-        VAVsolver->FactorWithEquilibration(true);
-        CHECK_ZERO(VAVsolver->SetMatrix(*VAV->mat));
-        CHECK_ZERO(VAVsolver->Factor());
-
-        auto thetaJ = [this, sig, &VAVsolver](SmallVectorPtr const &xnew,
+        auto thetaJ = [this, sig, &VAV](SmallVectorPtr const &xnew,
                                               SmallVectorPtr const &b) {
             auto y = Teuchos::rcp(new SmallVector(*b));
             auto z = Teuchos::rcp(new SmallVector(*b));
             CHECK_ZERO(y->Scale(sig));
-            CHECK_ZERO(VAVsolver->SetVectors(*z->mat, *y->mat));
-            CHECK_ZERO(VAVsolver->Solve());
+            CHECK_ZERO(VAV->ApplyInverse(*y, *z));
             return z;
         };
 
