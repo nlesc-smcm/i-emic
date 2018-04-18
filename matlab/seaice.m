@@ -1,7 +1,7 @@
 function [x] = seaice()
 
     global xmin xmax ymin ymax RtD n m nun x y dx dy
-    global t0o t0a t0i Q0 H0 M0
+    global t0o t0a t0i Q0 Qvar H0 M0
     global tvar s0 svar q0 qvar ta0 tavar
 
     % forcing from external models
@@ -97,11 +97,12 @@ function [x] = seaice()
     dEdT =  eta *  dqsi;
     dEdq =  eta * -1;
     
-    % Background heat flux
+    % Background heat flux and variation
     Q0   = zeta*(Tf(0) - t0o) - rhoo * Lf * E0;
+    Qvar = zeta;
 
     % ice surface temperature (linearized)
-    Ti = @(Q,H,S) Tf(S) - t0i + (Q0*H0 + H0*Q + Q0*H) / Ic;
+    Ti = @(Q,H,S) Tf(S) - t0i + (Q0*H0 + H0*Qvar*Q + Q0*H) / Ic;
     
     % create grid
     grid();
@@ -131,40 +132,47 @@ function [x] = seaice()
     end
     
     F  = rhs(X);
-    for i = 1:kmax
-        J  = jac(X);
-        dX = J \ -F;
-        X  = X + dX;
-        F  = rhs(X);
-        fprintf('%e %e %e\n', norm(dX), norm(F), condest(J));
-    end
+    % for i = 1:kmax
+    %     J  = jac(X);
+    %     dX = J \ -F;
+    %     X  = X + dX;
+    %     F  = rhs(X);
+    %     fprintf('%e %e %e\n', norm(dX), norm(F), condest(J));
+    % end
     
-    [H,Q,M] = extractsol(X);
+    % [H,Q,M] = extractsol(X);
    
-    figure(1)
-    imagesc(RtD*x, RtD*y, (H'+H0).*M'); set(gca,'ydir','normal'); colorbar
-    title('H')
-    figure(2)
-    imagesc(RtD*x, RtD*y, M'+M0); set(gca,'ydir','normal'); colorbar
-    title('M')
-    figure(3)
-    SST = sst'+t0o;
-    imagesc(RtD*x, RtD*y, SST.*M'); set(gca,'ydir','normal'); colorbar
-    min(SST(:))
-    title('SST')        
-    figure(4)
-    Tsi = Ti(Q,H,sss)'+t0i;
-    imagesc(RtD*x,RtD*y,Tsi.*M'); set(gca,'ydir','normal'); colorbar;
-    title('Ti')
+    % figure(1)
+    % imagesc(RtD*x, RtD*y, (H'+H0).*M'); set(gca,'ydir','normal'); colorbar
+    % title('H')
+    % figure(2)
+    % imagesc(RtD*x, RtD*y, M'+M0); set(gca,'ydir','normal'); colorbar
+    % title('M')
+    % figure(3)
+    % SST = sst'+t0o;
+    % imagesc(RtD*x, RtD*y, SST.*M'); set(gca,'ydir','normal'); colorbar
+    % min(SST(:))
+    % title('SST')        
+    % figure(4)
+    % Tsi = Ti(Q,H,sss)'+t0i;
+    % imagesc(RtD*x,RtD*y,Tsi.*M'); set(gca,'ydir','normal'); colorbar;
+    % title('Ti')
     
-    figure(5)
-    Qimg = Q' + Q0;
-    imagesc(RtD*x,RtD*y,Qimg.*M'); set(gca,'ydir','normal'); colorbar;
-    title('Q')
+    % figure(5)
+    % Qimg = Q' + Q0;
+    % imagesc(RtD*x,RtD*y,Qimg.*M'); set(gca,'ydir','normal'); colorbar;
+    % title('Q')
     
+    J  = jac(X);
+    Jn = numjacob(@rhs, X);
+     
+    vsm(J(ord,ord) - Jn(ord,ord))
+    vsm(Jn(ord,ord))
+    vsm(J(ord,ord)) 
+    condest(J)
     
+    keyboard 
     
-    % vsm(J(ord,ord))
 end
 
 function [x] = initialsol()
@@ -189,7 +197,7 @@ function [J,Al] = jac(x)
 
     global sst sss qatm tatm
     
-    global t0o t0a t0i Q0 H0
+    global t0o t0a t0i Q0 Qvar H0
 
     global zeta Tf Lf rhoi rhoo E0 dEdT dEdq
     global sun0 S Ls alpha c0 muoa
@@ -210,16 +218,18 @@ function [J,Al] = jac(x)
     % define dependencies
 
     % dHdt equation
-    Al(:,:,HH,HH) =  rhoo / rhoi * dEdT * Q0 / Ic;
-    Al(:,:,HH,QQ) = -1 / rhoi / Lf;
+    Al(:,:,HH,HH) = -rhoo * Lf / zeta * dEdT * Q0 / Ic;
+    Al(:,:,HH,QQ) = -Qvar / zeta - ...
+        rhoo * Lf / zeta * dEdT * H0 * Qvar / Ic;
 
     % Qtsa equation
-    Al(:,:,QQ,HH) = -muoa * Q0 / Ic - ...
-        rhoo * Ls * dEdT * Q0 / Ic;
-    Al(:,:,QQ,QQ) = -1 - ...
-        muoa * H0 / Ic - ...
-        rhoo * Ls * dEdT * H0 / Ic;
+    Al(:,:,QQ,HH) = - Q0 / Ic - ...
+        rhoo * Ls / muoa * dEdT * Q0 / Ic;
 
+    Al(:,:,QQ,QQ) = -Qvar / muoa - ...
+        H0 * Qvar / Ic - ...
+        rhoo * Ls / muoa * dEdT * H0 * Qvar / Ic;
+    
     % Msi equation
     Al(:,:,MM,HH) = -(epsilon / 2) * ...
         ( 1 - tanh(epsilon * (H)).^2);
@@ -236,7 +246,7 @@ function [F] = rhs(x)
 
     global sst sss qatm tatm
  
-    global t0o t0a t0i Q0 H0 M0
+    global t0o t0a t0i Q0 Qvar H0 M0
      
     global zeta Tf Lf rhoi rhoo E0 dEdT dEdq
     global sun0 S Ls alpha c0 muoa
@@ -257,19 +267,21 @@ function [F] = rhs(x)
                   case 1
                     Tsi = Ti(Qtsa(i,j), H(i,j), sst(i,j));
                     
-                    val = (zeta * (Tf(sss(i,j)) - sst(i,j) - t0o) - Q0 - Qtsa(i,j)) / ...
-                          ( rhoi * Lf ) - ...
-                          ( rhoo / rhoi) * ...
-                          (E0 + dEdT * Tsi + dEdq * qatm(i,j));
+                    val = Tf(sss(i,j)) - sst(i,j) - t0o - ... 
+                          Q0/zeta - Qvar / zeta * Qtsa(i,j) - ...
+                          ( rhoo * Lf / zeta) * ...
+                          ( E0 + dEdT * Tsi + dEdq * qatm(i,j) );
                   case 2
                     Tsi = Ti(Qtsa(i,j), H(i,j), sst(i,j));
                     
-                    val = -Qtsa(i,j) - Q0 + ...
-                          (sun0 / 4) * S(y(j)) * (1-alpha) * c0 - ...
-                          muoa * (t0i + Tsi - tatm(i,j) - t0a) - ...
-                          rhoo * Ls * (E0 + dEdT * Tsi + dEdq * qatm(i,j));
+                    val = -1/muoa*(Q0 + Qvar * Qtsa(i,j)) + ...
+                          (sun0 / 4 / muoa) * S(y(j)) * (1-alpha) * c0 - ...
+                          (t0i + Tsi - tatm(i,j) - t0a) - ...
+                          (rhoo * Ls / muoa) * ...
+                          (E0 + dEdT * Tsi + dEdq * qatm(i,j));
+                    
                   case 3
-                    val = M0 + Msi(i,j) - ...
+                    val = Msi(i,j) - ...
                           (1/2) * (1 + tanh(epsilon * (H(i,j))));
                 end
 

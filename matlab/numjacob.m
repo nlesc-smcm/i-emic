@@ -1,6 +1,6 @@
 function [J] = numjacob(fun,u,varargin)
 N       = length(u);
-epsilon = 1e-6;
+epsilon = 1e-7;
 v       = zeros(N,1);
 J       = zeros(N);
 f       = feval(fun, u, varargin{:});
