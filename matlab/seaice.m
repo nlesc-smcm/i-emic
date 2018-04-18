@@ -1,4 +1,4 @@
-function [x] = seaice()
+function [X] = seaice()
 
     global xmin xmax ymin ymax RtD n m nun x y dx dy
     global t0o t0a t0i Q0 Qvar H0 M0
@@ -30,7 +30,7 @@ function [x] = seaice()
     dim = nun*n*m;
 
     taus    = 0.01;    % m, threshold ice thickness
-    epsilon = 1e4;     % Heavyside approximation steepness
+    epsilon = 1e1;     % Heavyside approximation steepness
     
     % general physical constants
     t0o  =  7;
@@ -91,7 +91,7 @@ function [x] = seaice()
     Tf = @(S) -0.0575 * (S + s0);
     
     % Background sublimation and derivatives
-    E0   =  eta * ( qsi(t0i) - q0 )
+    E0   =  eta * ( qsi(t0i) - q0 );
     dqsi = (c1 * c2 * c3) / (t0i + c3).^2 * ...
            exp( (c2 * t0i) / (t0i + c3) );
     dEdT =  eta *  dqsi;
@@ -114,7 +114,7 @@ function [x] = seaice()
     qatm = idealizedTemp(0, qvar);
 
     rng(1);
-    X = rand(dim, 1);
+    X = 1e8*randn(dim, 1);
     %x = initialsol();
 
     % Newton solve
@@ -132,47 +132,48 @@ function [x] = seaice()
     end
     
     F  = rhs(X);
-    % for i = 1:kmax
-    %     J  = jac(X);
-    %     dX = J \ -F;
-    %     X  = X + dX;
-    %     F  = rhs(X);
-    %     fprintf('%e %e %e\n', norm(dX), norm(F), condest(J));
-    % end
-    
-    % [H,Q,M] = extractsol(X);
+    for i = 1:kmax
+        J  = jac(X);
+        dX = J \ -F;
+        X  = X + dX;
+        F  = rhs(X);
+        fprintf('%e %e %e\n', norm(dX), norm(F), condest(J));
+        if norm(F) < 1e-12
+            break;
+        end
+    end
+
+    [H,Q,M] = extractsol(X);
    
-    % figure(1)
-    % imagesc(RtD*x, RtD*y, (H'+H0).*M'); set(gca,'ydir','normal'); colorbar
-    % title('H')
-    % figure(2)
-    % imagesc(RtD*x, RtD*y, M'+M0); set(gca,'ydir','normal'); colorbar
-    % title('M')
-    % figure(3)
-    % SST = sst'+t0o;
-    % imagesc(RtD*x, RtD*y, SST.*M'); set(gca,'ydir','normal'); colorbar
-    % min(SST(:))
-    % title('SST')        
-    % figure(4)
-    % Tsi = Ti(Q,H,sss)'+t0i;
-    % imagesc(RtD*x,RtD*y,Tsi.*M'); set(gca,'ydir','normal'); colorbar;
-    % title('Ti')
+    figure(1)
+    imagesc(RtD*x, RtD*y, (H'+H0).*M'); set(gca,'ydir','normal'); colorbar
+    title('H')
     
-    % figure(5)
-    % Qimg = Q' + Q0;
-    % imagesc(RtD*x,RtD*y,Qimg.*M'); set(gca,'ydir','normal'); colorbar;
-    % title('Q')
+    figure(2)
+    imagesc(RtD*x, RtD*y, M'+M0); set(gca,'ydir','normal'); colorbar
+    title('M')
     
-    J  = jac(X);
-    Jn = numjacob(@rhs, X);
-     
-    vsm(J(ord,ord) - Jn(ord,ord))
-    vsm(Jn(ord,ord))
-    vsm(J(ord,ord)) 
-    condest(J)
+    figure(3)
+    SST = sst'+t0o;
+    imagesc(RtD*x, RtD*y, SST.*M'); set(gca,'ydir','normal'); colorbar
+    title('SST')        
     
-    keyboard 
+    figure(4)
+    Tsi = Ti(Q,H,sss)'+t0i;
+    imagesc(RtD*x,RtD*y,Tsi.*M'); set(gca,'ydir','normal'); colorbar;
+    title('Ti')
     
+    figure(5)
+    Qimg = Qvar*Q' + Q0;
+    imagesc(RtD*x,RtD*y,Qimg.*M'); set(gca,'ydir','normal'); colorbar;
+    title('Q')
+    
+    % [J,Al] = jac(X);
+    % Jn = numjacob(@rhs, X);
+    % vsm(J(ord,ord))
+    % vsm(Jn(ord,ord))
+    % vsm(Jn(ord,ord)-J(ord,ord))
+    % keyboard
 end
 
 function [x] = initialsol()
@@ -223,11 +224,11 @@ function [J,Al] = jac(x)
         rhoo * Lf / zeta * dEdT * H0 * Qvar / Ic;
 
     % Qtsa equation
-    Al(:,:,QQ,HH) = - Q0 / Ic - ...
+    Al(:,:,QQ,HH) = Q0 / Ic + ...
         rhoo * Ls / muoa * dEdT * Q0 / Ic;
 
-    Al(:,:,QQ,QQ) = -Qvar / muoa - ...
-        H0 * Qvar / Ic - ...
+    Al(:,:,QQ,QQ) = Qvar / muoa + ...
+        H0 * Qvar / Ic + ...
         rhoo * Ls / muoa * dEdT * H0 * Qvar / Ic;
     
     % Msi equation
@@ -274,9 +275,9 @@ function [F] = rhs(x)
                   case 2
                     Tsi = Ti(Qtsa(i,j), H(i,j), sst(i,j));
                     
-                    val = -1/muoa*(Q0 + Qvar * Qtsa(i,j)) + ...
-                          (sun0 / 4 / muoa) * S(y(j)) * (1-alpha) * c0 - ...
-                          (t0i + Tsi - tatm(i,j) - t0a) - ...
+                    val = 1/muoa*(Q0 + Qvar * Qtsa(i,j)) - ...
+                          (sun0 / 4 / muoa) * S(y(j)) * (1-alpha) * c0 + ...
+                          (t0i + Tsi - tatm(i,j) - t0a) + ...
                           (rhoo * Ls / muoa) * ...
                           (E0 + dEdT * Tsi + dEdq * qatm(i,j));
                     
