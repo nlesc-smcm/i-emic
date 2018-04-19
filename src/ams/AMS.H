@@ -308,9 +308,6 @@ auto AMS<Model>::get_projected_time_step()
         auto xsmall = restrict(*x);
         *model_->getState('V') = *x;
 
-        using SmallVector = Epetra_MultiVector;
-        using SmallVectorPtr = Teuchos::RCP<Epetra_MultiVector>;
-
         // FIXME!!!
         // VectorPtr G = B(x);
 
@@ -340,10 +337,11 @@ auto AMS<Model>::get_projected_time_step()
         CHECK_ZERO(tmp->Multiply(1.0, *M, *V_, 0.0));
         auto VMV = dot(*V_, *tmp);
 
-        auto thetaF = [this, &G, &Fx, &VMV, &xsmall, dt, theta](SmallVectorPtr const &xnew) {
+        auto thetaF = [this, &G, &Fx, &VMV, &xsmall, dt, theta](
+            Teuchos::RCP<Epetra_MultiVector> const &xnew) {
             *model_->getState('V') = *prolongate(*xnew);
 
-            auto ret = Teuchos::rcp(new SmallVector(*xsmall));
+            auto ret = Teuchos::rcp(new Epetra_MultiVector(*xsmall));
             CHECK_ZERO(ret->Update(-1.0, *xnew, 1.0));
             CHECK_ZERO(ret->Multiply('N', 'N', 1.0, *VMV, *ret, 0.0));
 
@@ -370,8 +368,8 @@ auto AMS<Model>::get_projected_time_step()
         CHECK_ZERO(VAVsolver->SetMatrix(*VAVmat));
         CHECK_ZERO(VAVsolver->Factor());
 
-        auto thetaJ = [this, sig, &VAVsolver](SmallVectorPtr const &xnew,
-                                              SmallVectorPtr const &b) {
+        auto thetaJ = [this, sig, &VAVsolver](Teuchos::RCP<Epetra_MultiVector> const &xnew,
+                                              Teuchos::RCP<Epetra_MultiVector> const &b) {
             auto y = Teuchos::rcp(new Epetra_SerialDenseMatrix(
                                       Copy, b->Values(), b->Stride(),
                                       b->MyLength(), b->NumVectors()));
@@ -386,7 +384,7 @@ auto AMS<Model>::get_projected_time_step()
                                     y->A(), y->LDA(), y->N()));
         };
 
-        return prolongate(*newton<SmallVector>(thetaF, thetaJ, xsmall, 1e-8));
+        return prolongate(*newton<Epetra_MultiVector>(thetaF, thetaJ, xsmall, 1e-8));
     };
 }
 
