@@ -21,16 +21,16 @@ function [X] = seaice()
     ymin =  10 / RtD;
     ymax =  80 / RtD;
 
-    % specify grid size
-    n = 19;
-    m = 9;
+    % specify grid size (2deg)
+    n = 180;
+    m = 90;
 
     % number of unknowns
     nun = 3;
     dim = nun*n*m;
 
     taus    = 0.01;    % m, threshold ice thickness
-    epsilon = 1e1;     % Heavyside approximation steepness
+    epsilon = 1e2;     % Heavyside approximation steepness
     
     % general physical constants
     t0o  =  7;
@@ -51,7 +51,7 @@ function [X] = seaice()
     rhoo = 1.024e3;    % kg m^{-3}, sea water density
     rhoi = 0.913e3;    % kg m^{-3}, ice density
     rhoa = 1.25;       % kg m^{-3}, atmospheric density
-    cpo  = 4.2e3;      % J kg^{-1} K^{-1], sea water heat capacity
+    cpo  = 4.2e3;      % W s kg^{-1} K^{-1], sea water heat capacity
     Lf   = 3.347e5;    % J kg^{-1}, latent heat of fusion of ice
     Ls   = 2.835e6;    % J kg^{-1}, latent heat of sublimation of ice
     Ic   = 2.166;      % W m^{-1} K^{-1}, constant ice conductivity
@@ -108,7 +108,7 @@ function [X] = seaice()
     grid();
 
     % initialize forcing and state
-    sst  = idealizedTemp(0, tvar);
+    sst  = idealizedTemp(0, tvar) + randn(n,m);
     sss  = idealizedSalt(0, svar);
     tatm = idealizedTemp(0, tvar);
     qatm = idealizedTemp(0, qvar);
@@ -138,7 +138,7 @@ function [X] = seaice()
         X  = X + dX;
         F  = rhs(X);
         fprintf('%e %e %e\n', norm(dX), norm(F), condest(J));
-        if norm(F) < 1e-12
+        if norm(dX) < 1e-12
             break;
         end
     end
@@ -170,10 +170,10 @@ function [X] = seaice()
     
     % [J,Al] = jac(X);
     % Jn = numjacob(@rhs, X);
-    % vsm(J(ord,ord))
+    vsm(J(ord,ord))
     % vsm(Jn(ord,ord))
     % vsm(Jn(ord,ord)-J(ord,ord))
-    % keyboard
+    keyboard
 end
 
 function [x] = initialsol()
