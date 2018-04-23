@@ -343,7 +343,8 @@ auto AMS<Model>::get_projected_time_step()
 
             auto ret = Teuchos::rcp(new Epetra_MultiVector(*xsmall));
             CHECK_ZERO(ret->Update(-1.0, *xnew, 1.0));
-            CHECK_ZERO(ret->Multiply('N', 'N', 1.0, *VMV, *ret, 0.0));
+            auto tmp = Teuchos::rcp(new Epetra_MultiVector(*ret));
+            CHECK_ZERO(ret->Multiply('N', 'N', 1.0, *VMV, *tmp, 0.0));
 
             model_->computeRHS();
             auto Fxnew = restrict(*model_->getRHS('V'));
