@@ -29,17 +29,18 @@ Ar = C(idxu(XX,:),idxu(XX,:));
 IC = IC(idxu(XX,:)); 
 %IC = IC(1:end-1); % cutoff final row
 
-figure(1); 
-spy(C);
-nnz(C);
-
-figure(2); 
-spy(Cr);
-
-figure(3);
-spy(Ar);
+% figure(1); 
+% spy(C);
+% nnz(C);
+% 
+% figure(2); 
+% spy(Cr);
+% 
+% figure(3);
+% spy(Ar);
 
 intAr = sum(diag(IC)*Ar,1);
+
 intAr = reshape(full(intAr), n, m, l);
 cma = max(intAr(:));
 cmi = min(intAr(:));
@@ -49,10 +50,9 @@ for k=1:l
     colorbar;
     title(['level ', num2str(k)]);
     set(gca,'ydir', 'normal')
-    caxis([cmi, cma])
+    % caxis([cmi, cma])
     drawnow
 end
-
 
 % jjname = 'ocean_jac_cont_-';
 % mmname = 'ocean_B_cont_-';

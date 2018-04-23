@@ -297,6 +297,9 @@ public:
     int interface_row(int i, int j, int XX)
         { return FIND_ROW2(_NUN_, N_, M_, L_, i, j, L_-1, XX); }
 
+    //! Get salinity integral condition row
+    int getRowIntCon();
+
     // ---------------------------------------------------------------
     // The following functions are required for the coupling with other
     // models:

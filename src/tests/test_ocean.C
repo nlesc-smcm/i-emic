@@ -25,7 +25,7 @@ TEST(Ocean, Initialization)
         failed = true;
         throw;
     }
-
+    
     EXPECT_EQ(failed, false);
 }
 
@@ -223,16 +223,60 @@ TEST(Ocean, Integrals)
     RCP<Epetra_Vector> un = ocean->getState('C');
         
     ocean->integralChecks(un, salt_advection, salt_diffusion);
-
-    
     
     EXPECT_NEAR(salt_advection, 0.0, 1e-10);
 
     // This is not such a great test as it does not check the actual
     // discretisation.
     // EXPECT_NEAR(salt_diffusion, 0.0, 1e-10);
-}
 
+    Teuchos::RCP<Epetra_Vector> icCoef = ocean->getIntCondCoeff();
+    Teuchos::RCP<Epetra_Vector> x      = ocean->getSolution('V');
+    Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
+
+    
+    Teuchos::RCP<Epetra_Vector> e   = Teuchos::rcp(new Epetra_Vector(x->Map()));
+    Teuchos::RCP<Epetra_Vector> col = Teuchos::rcp(new Epetra_Vector(x->Map()));
+    
+    Teuchos::RCP<TRIOS::Domain> domain = ocean->getDomain();
+    int N = domain->GlobalN();
+    int M = domain->GlobalM();
+    int L = domain->GlobalL();
+
+    int rowS, lid;
+
+    int rowIntCon = ocean->getRowIntCon();
+    
+    int lidIntCon = e->Map().LID(rowIntCon);
+    if (lidIntCon >= 0)
+        (*icCoef)[lidIntCon] = 0;
+                        
+    std::vector<double> integrals;
+    double dot;
+    for (int k = 0; k != L-1; ++k) // not the top layer
+        for (int j = 0; j != M; ++j)
+            for (int i = 0; i != N; ++i)
+            {
+                rowS = FIND_ROW2(_NUN_,N,M,L,i,j,k,SS);
+                lid  = e->Map().LID(rowS);
+
+                if (lid >= 0)
+                    (*e)[lid] = 1;
+                
+                mat->Apply(*e, *col);
+                
+                if (lid >= 0)
+                    (*e)[lid] = 0;
+                
+                dot = Utils::dot(icCoef, col);
+                integrals.push_back(dot);
+            }
+        
+    for (auto &el: integrals)
+    {
+        EXPECT_NEAR(el, 0.0, 1e-7);
+    }
+}
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)

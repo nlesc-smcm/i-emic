@@ -102,6 +102,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   call atmos_coef   !
   call forcing      ! USES LANDMASK
 
+
   _INFO_('THCM: init...  done')
 end subroutine init
 
@@ -160,6 +161,8 @@ SUBROUTINE setparcs(param,value)
      WRITE(f99,*) 'error in transfer parameter to fortran'
   ENDIF
   !     ENDIF
+
+
 END SUBROUTINE setparcs
 
 !*****************************************************************************
@@ -342,15 +345,15 @@ SUBROUTINE matrix(un, sig1, sig2)
   !     clean old arrays:
   _DEBUG_("Zero out matrix arrays...")
   coB  = 0
-  Al   = 0
+  Al = 0
   begA(1:ndim+1) = 0
   coA(1:maxnnz)  = 0.D0
   jcoA(1:maxnnz) = 0
 
   _DEBUG_("Build diagonal matrix B...")
   call fillcolB
-  _DEBUG_("Build linear part of Jacobian...")
-  call lin
+   _DEBUG_("Build linear part of Jacobian...")
+   call lin
 #ifndef THCM_LINEAR
   _DEBUG_("Build nonlinear part of Jacobian...")
   call nlin_jac(un)

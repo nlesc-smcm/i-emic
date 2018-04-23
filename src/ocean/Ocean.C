@@ -1247,6 +1247,12 @@ Teuchos::RCP<Epetra_Vector> Ocean::getE()
 }
 
 //==================================================================
+int Ocean::getRowIntCon()
+{
+    return THCM::Instance().getRowIntCon();
+}
+
+//==================================================================
 std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> atmos)
 {
     // initialize empty CRS matrix
