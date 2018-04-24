@@ -15,11 +15,13 @@ end
 jjname = 'ocean_jac';
 mmname = 'ocean_B';
 icname = 'intcond_coeff';
+ints   = 'integrals2';
 
-B  = load(mmname);
-IC = load(icname);
-C  = load(jjname); 
-C  = spconvert(C);
+B    = load(mmname);
+IC   = load(icname);
+C    = load(jjname); 
+ints = load(ints); 
+C    = spconvert(C);
 
 Cr = C(idx,idx); % reordering
 

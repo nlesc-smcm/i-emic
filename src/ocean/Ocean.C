@@ -47,31 +47,32 @@ extern "C" _SUBROUTINE_(set_parameters)(double*, double*, double*, double*, doub
 // Constructor:
 Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     :
-    comm_                (Comm),   // Setting the communication object
-    solverInitialized_   (false),  // Solver needs initialization
-    precInitialized_     (false),  // Preconditioner needs initialization
-    recompPreconditioner_(true),   // We need a preconditioner to start with
-    recompMassMat_       (true),   // We need a mass matrix to start with
+    comm_                  (Comm),   // Setting the communication object
+    solverInitialized_     (false),  // Solver needs initialization
+    precInitialized_       (false),  // Preconditioner needs initialization
+    recompPreconditioner_  (true),   // We need a preconditioner to start with
+    recompMassMat_         (true),   // We need a mass matrix to start with
 
-    inputFile_           (oceanParamList->get("Input file",  "ocean_input.h5")),
-    outputFile_          (oceanParamList->get("Output file", "ocean_output.h5")),
+    inputFile_             (oceanParamList->get("Input file",  "ocean_input.h5")),
+    outputFile_            (oceanParamList->get("Output file", "ocean_output.h5")),
     
-    loadState_           (oceanParamList->get("Load state", false)),
-    saveState_           (oceanParamList->get("Save state", true)),
-    saveMask_            (oceanParamList->get("Save mask", true)),
-    loadMask_            (oceanParamList->get("Load mask", true)),
-    loadSalinityFlux_    (oceanParamList->get("Load salinity flux", false)),
-    saveSalinityFlux_    (oceanParamList->get("Save salinity flux", true)),
-    loadTemperatureFlux_ (oceanParamList->get("Load temperature flux", false)),
-    saveTemperatureFlux_ (oceanParamList->get("Save temperature flux", true)),
+    loadState_             (oceanParamList->get("Load state", false)),
+    saveState_             (oceanParamList->get("Save state", true)),
+    saveMask_              (oceanParamList->get("Save mask", true)),
+    loadMask_              (oceanParamList->get("Load mask", true)),
+    loadSalinityFlux_      (oceanParamList->get("Load salinity flux", false)),
+    saveSalinityFlux_      (oceanParamList->get("Save salinity flux", true)),
+    loadTemperatureFlux_   (oceanParamList->get("Load temperature flux", false)),
+    saveTemperatureFlux_   (oceanParamList->get("Save temperature flux", true)),
     
-    saveEveryStep_       (oceanParamList->get("Save every step", false)),
-    useFort3_            (oceanParamList->get("Use legacy fortran output", false)),
+    saveEveryStep_         (oceanParamList->get("Save every step", false)),
+    useFort3_              (oceanParamList->get("Use legacy fortran output", false)),
+    computeColumnIntegral_ (oceanParamList->get("Compute column integral", false)),
 
-    parName_             (oceanParamList->get("Continuation parameter",
+    parName_               (oceanParamList->get("Continuation parameter",
                                               "Combined Forcing")),
 
-    landmaskFile_        (oceanParamList->sublist("THCM").get("Land Mask", "none"))
+    landmaskFile_          (oceanParamList->sublist("THCM").get("Land Mask", "none"))
 {
     INFO("Ocean: constructor...");
 
@@ -614,7 +615,12 @@ void Ocean::postProcess()
     printFiles(); // Print in standard fortran format
 
     if (saveEveryStep_)
-        copyFiles(); // Copy fortran and hdf5 files
+        copyFiles();  // Copy fortran and hdf5 files
+
+    // Column integral can be used to check discretization: should be
+    // zero, excluding integral conditions.
+    if (computeColumnIntegral_) // Compute and save column integral
+        Utils::save(getColumnIntegral(), "columnIntegral");
 }
 
 //=====================================================================
@@ -1437,6 +1443,50 @@ void Ocean::integralChecks(Teuchos::RCP<Epetra_Vector> state,
                                     salt_advection,
                                     salt_diffusion);
 }
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getColumnIntegral()
+{
+
+    Teuchos::RCP<Epetra_Vector> icCoef = getIntCondCoeff();
+    
+    Teuchos::RCP<Epetra_Vector> e   = Teuchos::rcp(new Epetra_Vector(state_->Map()));
+    Teuchos::RCP<Epetra_Vector> tmp = Teuchos::rcp(new Epetra_Vector(state_->Map()));
+    Teuchos::RCP<Epetra_Vector> col = Teuchos::rcp(new Epetra_Vector(state_->Map()));
+
+    
+    int rowIntCon = getRowIntCon();
+    int lidIntCon = e->Map().LID(rowIntCon);
+    if (lidIntCon >= 0)
+        (*icCoef)[lidIntCon] = 0;
+
+    int rowS, lid;
+    double dot;
+    for (int k = 0; k != L_; ++k) 
+        for (int j = 0; j != M_; ++j)
+            for (int i = 0; i != N_; ++i)
+            {
+                rowS = FIND_ROW2(_NUN_,N_,M_,L_,i,j,k,SS);
+                                
+                lid  = e->Map().LID(rowS);
+                
+                if (lid >= 0)
+                    (*e)[lid] = 1;
+
+                col->PutScalar(0.0);
+                jac_->Apply(*e, *col);
+                dot = Utils::dot(icCoef, col);                
+
+                if (lid >= 0)
+                {
+                    (*e)[lid] = 0;
+                    (*tmp)[lid] = dot;
+                }
+            }
+    
+    return tmp;
+}
+
 
 
 //==================================================================

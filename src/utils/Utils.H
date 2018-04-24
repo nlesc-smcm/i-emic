@@ -153,7 +153,7 @@ namespace Utils
     //! Hashing an Epetra_MultiVector
     size_t hash(Teuchos::RCP<Epetra_MultiVector> vec);
 
-    //! Save an Epetra_Vector to an hdf5 binary
+    //! Save
     void save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename);
 
     //! Save a combined multivector to several hdf5 binaries

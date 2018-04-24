@@ -142,6 +142,10 @@ protected:
     //! Use legacy fortran output fort.3
     bool useFort3_;
 
+    //! Integrals of the columns of the Jacobian may indicate errors
+    //! in the discretization.
+    bool computeColumnIntegral_;
+
     //! Continuation parameter name.
     //! For a list of possible names see THCM::par2int()
     std::string parName_;
@@ -358,6 +362,8 @@ public:
     void integralChecks(Teuchos::RCP<Epetra_Vector> state,
                         double &salt_advection,
                         double &salt_diffusion);
+
+    Teuchos::RCP<Epetra_Vector> getColumnIntegral();
 
     Teuchos::RCP<Epetra_Vector> getIntCondCoeff();
     

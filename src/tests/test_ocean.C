@@ -131,7 +131,7 @@ TEST(Ocean, ComputeJacobian)
 TEST(Ocean, NumericalJacobian)
 {
     // only do this test for small problems in serial
-    int nmax = 2e3;
+    int nmax = 1e3;
 
     if ( (comm->NumProc() == 1) &&
          (ocean->getState('V')->GlobalLength() < nmax) )
@@ -236,6 +236,7 @@ TEST(Ocean, Integrals)
 
     
     Teuchos::RCP<Epetra_Vector> e   = Teuchos::rcp(new Epetra_Vector(x->Map()));
+    Teuchos::RCP<Epetra_Vector> tmp = Teuchos::rcp(new Epetra_Vector(x->Map()));
     Teuchos::RCP<Epetra_Vector> col = Teuchos::rcp(new Epetra_Vector(x->Map()));
     
     Teuchos::RCP<TRIOS::Domain> domain = ocean->getDomain();
@@ -253,29 +254,42 @@ TEST(Ocean, Integrals)
                         
     std::vector<double> integrals;
     double dot;
-    for (int k = 0; k != L-1; ++k) // not the top layer
+    for (int k = 0; k != L; ++k) 
         for (int j = 0; j != M; ++j)
             for (int i = 0; i != N; ++i)
             {
                 rowS = FIND_ROW2(_NUN_,N,M,L,i,j,k,SS);
+                                
                 lid  = e->Map().LID(rowS);
 
                 if (lid >= 0)
                     (*e)[lid] = 1;
-                
+
+                col->PutScalar(0.0);
                 mat->Apply(*e, *col);
-                
+                dot = Utils::dot(icCoef, col);                
+
                 if (lid >= 0)
-                    (*e)[lid] = 0;
-                
-                dot = Utils::dot(icCoef, col);
-                integrals.push_back(dot);
+                {
+                    (*e)[lid]   = 0;
+                    (*tmp)[lid] = dot;                    
+                }                
+
+                if (k < L-2) // here we test everything except the top rows
+                    integrals.push_back(dot);
             }
         
     for (auto &el: integrals)
     {
         EXPECT_NEAR(el, 0.0, 1e-7);
     }
+
+    Teuchos::RCP<Epetra_Vector> integrals2 = ocean->getColumnIntegral();
+
+    EXPECT_EQ(Utils::norm(tmp), Utils::norm(integrals2));
+    
+    DUMP_VECTOR("integrals", *tmp);
+    DUMP_VECTOR("integrals2", *integrals2);
 }
 
 //------------------------------------------------------------------
