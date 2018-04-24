@@ -391,7 +391,7 @@ SUBROUTINE setsres(tmp_sres)
 end SUBROUTINE setsres
 
 !*****************************************************************************
-SUBROUTINE matrix(un, sig1, sig2)
+SUBROUTINE matrix(un)
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_mix
@@ -404,9 +404,7 @@ SUBROUTINE matrix(un, sig1, sig2)
   !     sig2: w/p
   implicit none
   real(c_double),dimension(ndim) :: un
-  real(c_double) :: sig1,sig2
   real time0, time1
-  integer i,j,k,row,ii,find_row2
 
   An = Al
 
@@ -455,26 +453,6 @@ SUBROUTINE matrix(un, sig1, sig2)
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
-  call TIMER_START('shifting' // char(0))
-  do k = 1, l+la
-     do j = 1, m
-        do i = 1, n
-           do ii = 1,nun
-              row = find_row2(i,j,k,ii)
-              An(i,j,k,5,ii,ii) = An(i,j,k,5,ii,ii) - sig1*coB(row)
-           end do
-
-           ! note that B is 0 in W/P points, but we add something there, too
-           ! to make sure the diagonal gets included in the matrix (sig2~mach.eps)
-           row = find_row2(i,j,k,WW)
-           An(i,j,k,5,WW,WW) = An(i,j,k,5,WW,WW) - sig2
-           row = find_row2(i,j,k,PP)
-           An(i,j,k,5,PP,PP) = An(i,j,k,5,PP,PP) - sig2
-        enddo
-     enddo
-  enddo
-  call TIMER_STOP('shifting' // char(0))
-  
   call boundaries
 
   call assemble

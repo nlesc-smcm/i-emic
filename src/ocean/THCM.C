@@ -52,7 +52,7 @@ extern "C" {
     _SUBROUTINE_(writeparams)();
     _SUBROUTINE_(rhs)(double*,double*);
     _SUBROUTINE_(setsres)(int *);
-    _SUBROUTINE_(matrix)(double*,double*,double*);
+    _SUBROUTINE_(matrix)(double*);
 
     // input:   n,m,l,nmlglob
     //          xmin,xmax,ymin,ymax,
@@ -971,12 +971,12 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             FNAME(setsres)(&tmp_sres);
         }
 
-        FNAME(matrix)(solution,&sigmaUVTS,&sigmaWP);
+        FNAME(matrix)(solution);
 
         // Restore from the testing config
         if (maskTest)
             FNAME(setsres)(&sres);
-        
+
         TIMER_STOP("Ocean: compute jacobian: fortran part");
 
         const int maxlen = _NUN_*_NP_+1;    //nun*np+1 is max nonzeros per row
