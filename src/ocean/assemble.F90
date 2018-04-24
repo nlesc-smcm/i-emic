@@ -9,7 +9,6 @@ SUBROUTINE assemble
   call fillcolA
   call intcond
 
-  call packA
   call TIMER_STOP('assemble' // char(0))
 
 end SUBROUTINE assemble
@@ -172,9 +171,6 @@ SUBROUTINE fillcolA
                        ! find_row2(i,j,k,ii) returns the row in the matrix for variable
                        !  ii at grid point (i,j,k) (matetc.F90)
                        jcoA(v) = find_row2(i2,j2,k2,jj)
-                       if (jcoA(v).lt.0) then
-                          write(*,*) i, j, k, i2, j2, k2, jj, jcoA(v)
-                          endif
                        v = v + 1
                     end if
                  end do
@@ -285,49 +281,6 @@ SUBROUTINE intcond
 
 
 end SUBROUTINE intcond
-
-!****************************************************************************
-SUBROUTINE packA
-  !     remove zero entries in A
-  USE m_mat
-  use m_usr
-  implicit none
-
-  integer vn,v,begin,i,oldsize
-  integer ii,jj,kk,XX,i2,j2,k2
-
-  call TIMER_START('packA' // char(0))
-
-  vn = 1
-  oldsize = begA(ndim+1) - 1
-  do i = 1, ndim
-     begin = vn
-     do v = begA(i), begA(i+1) - 1
-        if (abs(coA(v)).gt.1.0e-15) then
-           coA(vn)  =  coA(v)
-           jcoA(vn) = jcoA(v)
-           vn = vn + 1
-           if ((jcoA(v).gt.ndim).or.(jcoA(v).lt.0)) then
-              write(*,*) 'row = ', i, 'col = ', jcoA(v), 'entry = ', coA(v)
-              call findex(i,ii,jj,kk,XX)
-              write(*,*) 'row grid point (i,j,k):',ii,jj,kk
-              write(*,*) 'variable',XX
-              vn = mod(v-1,27)+1
-              call shift(ii,jj,kk,i2,j2,k2,vn)
-              write(*,*) 'col grid point (i,j,k):',i2,j2,k2
-              !                  call findex(jcoA(v),ii,jj,kk,XX)
-              !                  write(*,*) ii,jj,kk,XX
-              stop 'in packA: index out of range'
-           endif
-        endif
-     enddo
-     begA(i) = begin
-  enddo
-  begA(ndim+1) = vn
-
-  call TIMER_STOP('packA' // char(0))
-
-end SUBROUTINE packA
 
 !****************************************************************************
 SUBROUTINE dirset(row,Fd)
