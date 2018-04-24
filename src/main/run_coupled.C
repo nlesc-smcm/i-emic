@@ -121,7 +121,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     // print the profile
     if (Comm->MyPID() == 0)
     {
-        printProfile(profile);
+        printProfile();
         jdqz->printProfile("jdqz_profile");
     }    
 }
