@@ -175,7 +175,6 @@ TEST(CoupledModel, MassMatrix)
     
     int n = ocean->getNdim();
     int m = ocean->getMdim();
-    int l = ocean->getLdim();
 
     std::ofstream file;
     file.open("massmat");
@@ -183,12 +182,12 @@ TEST(CoupledModel, MassMatrix)
     file.close();
 
     int atmosLast = ATMOS_NUN_ * m * n - 1;
-    int oceanLast = _NUN_ * m * n *l - 1;
+    int rowintcon = ocean->getRowIntCon();
 
     // ocean integral condition
-    if (oceanB->Map().MyGID(oceanLast))
+    if (oceanB->Map().MyGID(rowintcon))
     {
-        int lid = oceanB->Map().LID(oceanLast);
+        int lid = oceanB->Map().LID(rowintcon);
         EXPECT_EQ(0.0, (*oceanB)[0][lid]);  
     }
 
@@ -754,11 +753,7 @@ TEST(CoupledModel, IntegralCondition)
     Teuchos::RCP<Epetra_MultiVector> oceanB = b->First();
     Teuchos::RCP<Epetra_MultiVector> oceanF = F->First();
 
-    int n = ocean->getNdim();
-    int m = ocean->getMdim();
-    int l = ocean->getLdim();
-
-    int oceanLast = _NUN_ * m * n *l - 1;
+    int rowintcon = ocean->getRowIntCon();
     int lid = -1;
     
     double valueFloc = 0.0;
@@ -766,15 +761,15 @@ TEST(CoupledModel, IntegralCondition)
     double valueF    = 0.0;
     double valueB    = 0.0;
     
-    if (oceanF->Map().MyGID(oceanLast))
+    if (oceanF->Map().MyGID(rowintcon))
     {
-        lid = oceanF->Map().LID(oceanLast);
+        lid = oceanF->Map().LID(rowintcon);
         valueFloc = (*oceanF)[0][lid];
     }
 
-    if (oceanB->Map().MyGID(oceanLast))
+    if (oceanB->Map().MyGID(rowintcon))
     {
-        lid = oceanB->Map().LID(oceanLast);
+        lid = oceanB->Map().LID(rowintcon);
         valueBloc = (*oceanB)[0][lid];
     }
     
@@ -786,7 +781,7 @@ TEST(CoupledModel, IntegralCondition)
     INFO("   (J*x)[oceanLast] = " << valueB);
     INFO(" *-*                              *-* \n");
     
-    EXPECT_NEAR(valueF, valueB,1e-12);
+    EXPECT_NEAR(valueF, valueB, 1e-12);
 }
 
 //------------------------------------------------------------------
