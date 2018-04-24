@@ -151,14 +151,12 @@ SUBROUTINE fillcolA
   ! |     is stored in the row corresponding to ii|(i,j,k) and the column         |
   ! |     corresponding to jj|(i2,j2,k2).                                         |
   ! +-----------------------------------------------------------------------------+
-  ! begA = 0
-  coA = 0.0
+  begA = 0
   v = 1
   row = 1
   do k = 1, l+la
      do j = 1, m
         do i = 1, n
-
            do ii = 1, nun
               begA(row) = v
               do kk = 1,np
@@ -219,7 +217,11 @@ SUBROUTINE shift(i,j,k,i2,j2,k2,kk)
   end if
 
   if (periodic) then
-     i2 = mod(i2-1+n,n)+1
+     if (i2.eq.0) then
+        i2 = n
+     elseif (i2.eq.(n+1)) then
+        i2 = 1
+     endif
   endif
 
 end SUBROUTINE shift
