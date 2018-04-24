@@ -18,11 +18,14 @@ MODULE m_mat
 
   integer :: maxnnz !! allocated memory for jacobian matrix entries
 
-  real(c_double), dimension(:), POINTER :: coB
+  real(c_double), dimension(:), POINTER :: coB        
+
+  logical, dimension(:,:,:), ALLOCATABLE :: active
+  ! used to keep track on active couplings
 
 contains
 
-  !! allocates the Al and An arrays. The
+  !! allocates the Al array and 'active'. The
   !! CRS matrix A and B are allocated by C++ via 'allocate_crs' (below)
   subroutine allocate_mat
 
@@ -31,6 +34,7 @@ contains
 
     allocate(Al(n,m,l+la,np,nun,nun))
     allocate(An(n,m,l+la,np,nun,nun))
+    allocate(active(np,nun,nun))
 
   end subroutine allocate_mat
 
@@ -41,6 +45,7 @@ contains
 
     deallocate(Al)
     deallocate(An)
+    deallocate(active)
 
   end subroutine deallocate_mat
 

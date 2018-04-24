@@ -4,10 +4,13 @@ SUBROUTINE assemble
   use m_mat
   use m_usr
   implicit none
+  call TIMER_START('assemble' // char(0))
+  call preprocessA_old !--> is this always necessary?
   call fillcolA
   call intcond
 
   call packA
+  call TIMER_STOP('assemble' // char(0))
 
 end SUBROUTINE assemble
 
@@ -56,14 +59,62 @@ SUBROUTINE fillcolB
 end SUBROUTINE fillcolB
 
 !****************************************************************************
+SUBROUTINE preprocessA_old
+  USE m_mat
+  use m_usr
+  implicit none
+  integer i,j,k,ii,jj,kk,count
+
+  active = .false.
+  count = 0
+  do ii = 1,nun
+     do jj = 1,nun
+        do kk = 1,np
+           loop: do i = 1,n
+              do j = 1,m
+                 do k = 1,l+la
+                    ! --> 1.0E-10 small enough?
+                    if (abs(an(i,j,k,kk,ii,jj)) > 1.0E-10) then
+                       active(kk,ii,jj) = .true.
+                       cycle loop
+                    end if
+                 end do
+              end do
+           end do loop
+           !         if (active(kk,ii,jj)) then
+           !            count = count +1
+           !         end if
+        end do
+     end do
+  end do
+  !      write(f99,*) "total nnz in A:", nnz
+  !      write(f99,*) "with ", count, " active connections out of ", nun*nun*np
+#ifdef DEBUGGING
+  ! this can be useXul for determining the maximal matrix graph
+  open(42,file='active.txt')
+  do ii=1,nun
+     do jj=1,nun
+        do kk=1,np
+           if (active(kk,ii,jj)) then
+              write(42,*) ii,jj,kk
+           end if
+        end do
+     end do
+  end do
+  close(42)
+#endif
+end SUBROUTINE preprocessA_old
+
+!****************************************************************************
 SUBROUTINE fillcolA
   !     Fill the columns of A
   USE m_mat
   use m_usr
   implicit none
   integer find_row2
-  integer i,j,k,ii,jj,kk,v,w,is,js,ks,bis,row,i2,j2,k2
+  integer i,j,k,ii,jj,kk,v,row,i2,j2,k2
 
+  call TIMER_START('fillcolA' // char(0))
   !  +------------------------------------+
   !  |  stencil/neighbourhood             |
   !  | +----------++-------++----------+  |
@@ -101,35 +152,34 @@ SUBROUTINE fillcolA
   ! |     is stored in the row corresponding to ii|(i,j,k) and the column         |
   ! |     corresponding to jj|(i2,j2,k2).                                         |
   ! +-----------------------------------------------------------------------------+
+  ! begA = 0
   coA = 0.0
-  is  = nun        !--> any use?
-  js  = nun*n      !--> any use?
-  ks  = nun*n*m    !--> any use?
+  v = 1
+  row = 1
   do k = 1, l+la
      do j = 1, m
         do i = 1, n
 
-           do kk = 1,np
-
-              ! shift(i,j,k,i2,j2,k2,kk) returns the neighbour at location kk
-              !  w.r.t. the center of the stencil (5) defined above
-              call shift(i,j,k,i2,j2,k2,kk)
-              do ii = 1, nun
-
-                 ! find_row2(i,j,k,ii) returns the row in the matrix for variable
-                 !  ii at grid point (i,j,k) (matetc.F90)
-                 row = find_row2(i,j,k,ii)
-                 v   = nun*np*(row-1)
-                 begA(row) = v + 1   ! assuming every row will have nun*np entries
+           do ii = 1, nun
+              begA(row) = v
+              do kk = 1,np
+                 ! shift(i,j,k,i2,j2,k2,kk) returns the neighbour at location kk
+                 !  w.r.t. the center of the stencil (5) defined above
+                 call shift(i,j,k,i2,j2,k2,kk)
                  do jj = 1, nun
-                    ! --> 1.0E-10 small enough?
-                    if (abs(an(i,j,k,kk,ii,jj)) > 1.0E-10) then
-                       w = v + (jj-1)*np ! ? grouped ordering?
-                       coA(w+kk)  = an(i,j,k,kk,ii,jj)
-                       jcoA(w+kk) = find_row2(i2,j2,k2,jj)
+                    if (active(kk,ii,jj).and.abs(an(i,j,k,kk,ii,jj)).gt.1.0e-15) then
+                       coA(v)  = an(i,j,k,kk,ii,jj)
+                       ! find_row2(i,j,k,ii) returns the row in the matrix for variable
+                       !  ii at grid point (i,j,k) (matetc.F90)
+                       jcoA(v) = find_row2(i2,j2,k2,jj)
+                       if (jcoA(v).lt.0) then
+                          write(*,*) i, j, k, i2, j2, k2, jj, jcoA(v)
+                          endif
+                       v = v + 1
                     end if
                  end do
               end do
+              row = row + 1
            end do
 
         end do
@@ -137,53 +187,13 @@ SUBROUTINE fillcolA
   end do
 
   ! final element of beg{.} array should be final row + 1
-  begA(ndim + 1) = nun * np * ndim + 1
+  begA(ndim + 1) = v
 
-  ! --> what happens here?
-  if (periodic) then
-     bis= nun*(n-1)
-     do k = 1, l+la
-        do j = 1, m
-           do ii = 1, nun
-              row = find_row2(1,j,k,ii)
-              v = np * nun * (row - 1)
-              do jj = 1, nun
-                 w = v + (jj-1) * np
-                 jcoA(w+1) = find_row2(n,j-1,k  ,jj)
-                 jcoA(w+2) = find_row2(n,j  ,k  ,jj)
-                 jcoA(w+3) = find_row2(n,j+1,k  ,jj)
-                 jcoA(w+10)= find_row2(n,j-1,k-1,jj)
-                 jcoA(w+11)= find_row2(n,j  ,k-1,jj)
-                 jcoA(w+12)= find_row2(n,j+1,k-1,jj)
-                 jcoA(w+19)= find_row2(n,j-1,k+1,jj)
-                 jcoA(w+20)= find_row2(n,j  ,k+1,jj)
-                 jcoA(w+21)= find_row2(n,j+1,k+1,jj)
-              enddo
-           enddo
-           do ii = 1, nun
-              row = find_row2(n,j,k,ii)
-              v = np * nun * (row - 1)
-              do jj = 1, nun
-                 w = v + (jj - 1) * np
-                 jcoA(w+7) = find_row2(1,j-1,k  ,jj)
-                 jcoA(w+8) = find_row2(1,j  ,k  ,jj)
-                 jcoA(w+9) = find_row2(1,j+1,k  ,jj)
-                 jcoA(w+16)= find_row2(1,j-1,k-1,jj)
-                 jcoA(w+17)= find_row2(1,j  ,k-1,jj)
-                 jcoA(w+18)= find_row2(1,j+1,k-1,jj)
-                 jcoA(w+25)= find_row2(1,j-1,k+1,jj)
-                 jcoA(w+26)= find_row2(1,j  ,k+1,jj)
-                 jcoA(w+27)= find_row2(1,j+1,k+1,jj)
-              enddo
-           enddo
-        enddo
-     enddo
-  endif
-
+  call TIMER_STOP('fillcolA' // char(0))
 end SUBROUTINE fillcolA
 
 !****************************************************************************
-SUBROUTINE shift(i,j,k,i2,j2,k2,np)
+SUBROUTINE shift(i,j,k,i2,j2,k2,kk)
   ! Defines location of neighbouring grid points
   ! +----------++-------++----------+
   ! | 12 15 18 || 3 6 9 || 21 24 27 |
@@ -191,25 +201,31 @@ SUBROUTINE shift(i,j,k,i2,j2,k2,np)
   ! | 10 13 16 || 1 4 7 || 19 22 25 |
   ! |  below   || center||  above   |
   ! +----------++-------++----------+
-  ! shift(i,j,k,i2,j2,k2,np) returns the neighbour at location np
+  ! shift(i,j,k,i2,j2,k2,kk) returns the neighbour at location kk
   !  w.r.t. the center of the stencil (5) defined above
 
+  use m_usr
   implicit none
-  integer i,j,k,i2,j2,k2,np
+  integer i,j,k,i2,j2,k2,kk
 
-  if (np < 10) then
+  if (kk < 10) then
      k2 = k
-     j2 = j - 1 +  mod(np+2,3)
-     i2 = i - 1 + int((np-1)/3)
-  else if (np < 19) then
+     j2 = j - 1 + mod(kk+2,3)
+     i2 = i - 1 + int((kk-1)/3)
+  else if (kk < 19) then
      k2 = k - 1
-     j2 = j - 1 +  mod(np+2,3)
-     i2 = i - 1 + int((np-10)/3)
+     j2 = j - 1 + mod(kk+2,3)
+     i2 = i - 1 + int((kk-10)/3)
   else
      k2 = k + 1
-     j2 = j - 1 +  mod(np+2,3)
-     i2 = i - 1 + int((np-19)/3)
+     j2 = j - 1 + mod(kk+2,3)
+     i2 = i - 1 + int((kk-19)/3)
   end if
+
+  if (periodic) then
+     i2 = mod(i2-1+n,n)+1
+  endif
+
 end SUBROUTINE shift
 
 !****************************************************************************
@@ -280,6 +296,8 @@ SUBROUTINE packA
   integer vn,v,begin,i,oldsize
   integer ii,jj,kk,XX,i2,j2,k2
 
+  call TIMER_START('packA' // char(0))
+
   vn = 1
   oldsize = begA(ndim+1) - 1
   do i = 1, ndim
@@ -306,6 +324,8 @@ SUBROUTINE packA
      begA(i) = begin
   enddo
   begA(ndim+1) = vn
+
+  call TIMER_STOP('packA' // char(0))
 
 end SUBROUTINE packA
 
