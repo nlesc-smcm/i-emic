@@ -25,6 +25,8 @@ SUBROUTINE fillcolB
   integer find_row2
   integer i,j,k
 
+  call TIMER_START('fillcolB' // char(0))
+
   !     Put B in coB,  B is a diagonal matrix.
   !     PRINT *,'parROSB = ',par(ROSB)
   coB = 0.0
@@ -54,6 +56,8 @@ SUBROUTINE fillcolB
      ! if(SRES == 0) coB(rowintcon + SS) = 0.0 !zero in B for integral condition
      if(SRES == 0) coB(rowintcon) = 0.0 !zero in B for integral condition
   end if
+
+  call TIMER_STOP('fillcolB' // char(0))
 
 end SUBROUTINE fillcolB
 

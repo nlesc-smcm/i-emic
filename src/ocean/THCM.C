@@ -955,7 +955,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         tmpJac->PutScalar(0.0); // set all matrix entries to zero
         localDiagB->PutScalar(0.0);
 
-        if (sigmaUVTS||(sigmaWP>1.0e-14)) {
+        if (sigmaUVTS || sigmaWP) {
             ERROR("We do not allow THCM to shift the matrix anymore!",
                   __FILE__,__LINE__);
         }

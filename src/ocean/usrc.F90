@@ -434,6 +434,7 @@ SUBROUTINE matrix(un, sig1, sig2)
 
   ! ATvS-Mix ---------------------------------------------------------------------
   if (vmix_flag.ge.1) then
+     call TIMER_START('mixing' // char(0))
      call cpu_time(time0)
      if (vmix_out.gt.0) write(99,'(a26)')"MIX| matrix...    "
      if (vmix_out.gt.0) write(99,'(a16,i10)') 'MIX|     fix:   ', vmix_fix
@@ -450,9 +451,11 @@ SUBROUTINE matrix(un, sig1, sig2)
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
      if (vmix_out.gt.0) write (99,'(a26, f10.3)') 'MIX|        ...matrix done', time1-time0
+     call TIMER_STOP('mixing' // char(0))
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
+  call TIMER_START('shifting' // char(0))
   do k = 1, l+la
      do j = 1, m
         do i = 1, n
@@ -470,6 +473,7 @@ SUBROUTINE matrix(un, sig1, sig2)
         enddo
      enddo
   enddo
+  call TIMER_STOP('shifting' // char(0))
   
   call boundaries
 
@@ -808,6 +812,7 @@ SUBROUTINE nlin_rhs(un)
 
   real,dimension(:,:,:,:),pointer ::    usx,vsy,wsz
 
+  call TIMER_START('nlin_rhs' // char(0))
   usx=>utx
   vsy=>vty
   wsz=>wtz
@@ -874,6 +879,8 @@ SUBROUTINE nlin_rhs(un)
   An(:,:,1:l,:,SS,SS) = An(:,:,1:l,:,SS,SS)+ usx+vsy+wsz        ! ATvS-Mix
 #endif
 
+  call TIMER_STOP('nlin_rhs' // char(0))
+
 end SUBROUTINE nlin_rhs
 
 !****************************************************************************
@@ -906,6 +913,9 @@ SUBROUTINE nlin_jac(un)
   real uVrx(n,m,l,np),Vrvy(n,m,l,np),Vrwz(n,m,l,np),Urt2(n,m,l,np)
 
   real,dimension(:,:,:,:),pointer :: urSx,Usrx,vrSy,Vsry,wrSz,Wsrz
+
+  call TIMER_START('nlin_jac' // char(0))
+
   urSx=>urTx
   vrSy=>vrTy
   wrSz=>wrTz
@@ -994,6 +1004,8 @@ SUBROUTINE nlin_jac(un)
   An(:,:,1:l,:,SS,WW) = An(:,:,1:l,:,SS,WW) + wrSz
   An(:,:,1:l,:,SS,SS) = An(:,:,1:l,:,SS,SS) + Usrx + Vsry + Wsrz
 #endif
+
+  call TIMER_STOP('nlin_jac' // char(0))
 
 end SUBROUTINE nlin_jac
 !****************************************************************************
