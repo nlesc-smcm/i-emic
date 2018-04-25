@@ -286,6 +286,14 @@ int Ocean::analyzeJacobian()
     // integrals of its columns.
     Teuchos::RCP<Epetra_Vector> colInts = getColumnIntegral();
 
+    // We ignore the integral condition and its neighbours
+    int rowIntCon = getRowIntCon();
+    int lidIntCon = colInts->Map().LID(rowIntCon);
+    if (lidIntCon >= 0)
+        (*colInts)[lidIntCon] = 0;
+
+    // -->todo
+    
     INFO("  analyzeJacobian(): problem rows found: " << sumFound);
 
     return sumFound;
@@ -1463,30 +1471,29 @@ Teuchos::RCP<Epetra_Vector> Ocean::getColumnIntegral()
     // Rowscaling of the matrix with integral coefficients
     Teuchos::RCP<Epetra_Vector> icCoef =
         Teuchos::rcp(new Epetra_Vector(*getIntCondCoeff()));
-    
+
+    int rowIntCon = getRowIntCon();
+    int lidIntCon = icCoef->Map().LID(rowIntCon);
+    if (lidIntCon >= 0)
+        (*icCoef)[lidIntCon] = 0;
+
     mat->LeftScale(*icCoef);
 
-    DUMP_VECTOR("intcond_coef", *icCoef);
-    
     // Change integral coefficients into column selectors
-    for (int i = 0; i != icCoef->MyLength(); ++i)
+    for (int i = SS-1; i < icCoef->MyLength(); i+=_NUN_)
     {
-        if ( std::abs((*icCoef)[i]) > 0 )
-        {
-            (*icCoef)[i] = 1;
-        }
+        (*icCoef)[i] = 1;
     }
 
     mat->RightScale(*icCoef);
-
-    DUMP_VECTOR("selector", *icCoef);
 
     // Create vector that will contain the column integrals
     Teuchos::RCP<Epetra_Vector> sums =
         Teuchos::rcp(new Epetra_Vector(state_->Map()));
 
     // Integrate the columns of mat into sums
-    Utils::colSums(*mat, *sums);  
+    Utils::colSums(*mat, *sums);
+
     TIMER_STOP("Column integral");
     return sums;
 }
