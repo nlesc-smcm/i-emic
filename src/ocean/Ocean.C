@@ -362,6 +362,7 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname)
 {
     LandMask mask;
 
+    // Load the landmask fname
     mask.local = THCM::Instance().getLandMask(fname);
     THCM::Instance().setLandMask(mask.local);
     THCM::Instance().evaluate(*state_, Teuchos::null, true);
@@ -1449,52 +1450,25 @@ void Ocean::integralChecks(Teuchos::RCP<Epetra_Vector> state,
 Teuchos::RCP<Epetra_Vector> Ocean::getColumnIntegral()
 {
     TIMER_START("Column integral");
-    INFO("Ocean: computing column integrals of Jacobian");
+    INFO("Ocean: computing column volume integrals of Jacobian");
+
+    // Copy matrix
+    Teuchos::RCP<Epetra_CrsMatrix> mat =
+        Teuchos::rcp(new Epetra_CrsMatrix(*jac_));
     
+    // Rowscaling of the matrix with integral coefficients
     Teuchos::RCP<Epetra_Vector> icCoef = getIntCondCoeff();
+    mat->LeftScale(*icCoef);
 
-    Teuchos::RCP<Epetra_Vector> e   = Teuchos::rcp(new Epetra_Vector(state_->Map()));
-    Teuchos::RCP<Epetra_Vector> tmp = Teuchos::rcp(new Epetra_Vector(state_->Map()));
-    Teuchos::RCP<Epetra_Vector> col = Teuchos::rcp(new Epetra_Vector(state_->Map()));
+    // Create vector that will contain the column integrals
+    Teuchos::RCP<Epetra_Vector> sums =
+        Teuchos::rcp(new Epetra_Vector(state_->Map()));
 
-
-    int rowIntCon = getRowIntCon();
-    int lidIntCon = e->Map().LID(rowIntCon);
-    if (lidIntCon >= 0)
-        (*icCoef)[lidIntCon] = 0;
-
-    int rowS, lid;
-    double dot;
-    for (int k = 0; k != L_; ++k)
-        for (int j = 0; j != M_; ++j)
-            for (int i = 0; i != N_; ++i)
-            {
-                rowS = FIND_ROW2(_NUN_,N_,M_,L_,i,j,k,SS);
-
-                lid  = e->Map().LID(rowS);
-
-                if (lid >= 0)
-                    (*e)[lid] = 1;
-
-                col->PutScalar(0.0);
-                TIMER_START("Column integral p1");
-                jac_->Apply(*e, *col);
-                TIMER_STOP("Column integral p1");
-                TIMER_START("Column integral p2");
-                dot = Utils::dot(icCoef, col);
-                TIMER_STOP("Column integral p2");
-
-                if (lid >= 0)
-                {
-                    (*e)[lid] = 0;
-                    (*tmp)[lid] = dot;
-                }
-            }
+    // Integrate the columns of mat into sums
+    Utils::colSums(*mat, *sums);  
     TIMER_STOP("Column integral");
-    return tmp;
+    return sums;
 }
-
-
 
 //==================================================================
 Teuchos::RCP<Epetra_Vector> Ocean::getIntCondCoeff()

@@ -67,8 +67,8 @@ double Utils::norm(std::vector<double> &vec)
     return sqrt(dot);
 }
 
-//! Compute column sums. This is largely copied from
-//! Epetra_CrsMatrix::NormInf()
+//! Compute column sums. This is imitated from
+//! Epetra_CrsMatrix::NormOne()
 void Utils::colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums)
 {
     if (!mat.Filled())
@@ -76,16 +76,44 @@ void Utils::colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums)
         ERROR("Matrix not filled", __FILE__, __LINE__);
     }
 
-    if (!sums.Map().SameAs(mat.RangeMap()))
+    if (!sums.Map().SameAs(mat.DomainMap()))
     {
-        ERROR("Maps do not agree", __FILE__, __LINE__);
+        CHECK_ZERO(sums.ReplaceMap(mat.DomainMap()));
     }
 
+    double *sumVals = (double *) sums.Values();
     Epetra_MultiVector *tmp = 0;
-    if (mat.Exporter() != 0) // non-trivial exporter
+    int NumCols = mat.NumMyCols();
+
+    
+    if (mat.Importer() != 0) // non-trivial importer
     {
-        tmp = new Epetra_Vector(mat.RowMap());        
+        tmp     = new Epetra_Vector(mat.ColMap()); // import vector
+        sumVals = (double *) tmp->Values(); // point sumVals to tmp values
     }
+
+    for (int i = 0; i < NumCols; ++i)
+        sumVals[i] = 0.0;
+
+    int     NumEntries;
+    int    *ColIndices;
+    double *RowValues;
+    for (int i = 0; i < mat.NumMyRows(); ++i)
+    {
+        NumEntries = mat.NumMyEntries(i);
+        CHECK_ZERO(mat.ExtractMyRowView(i, NumEntries, RowValues, ColIndices));
+        for (int j = 0; j < NumEntries; ++j)
+            sumVals[ColIndices[j]] += RowValues[j];
+    }
+
+    if (mat.Importer() != 0) // non-trivial importer
+    {
+        sums.PutScalar(0.0);
+        CHECK_ZERO(sums.Export(*tmp, *mat.Importer(), Add));
+    }
+
+    if (tmp != 0)
+        delete tmp;
 }
 
 //! Update std::vector<double>, result is stored in B

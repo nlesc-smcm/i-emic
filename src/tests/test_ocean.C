@@ -251,10 +251,11 @@ TEST(Ocean, Integrals)
     int lidIntCon = e->Map().LID(rowIntCon);
     if (lidIntCon >= 0)
         (*icCoef)[lidIntCon] = 0;
-                        
+
+    TIMER_START("Test ocean: integral method 1");
     std::vector<double> integrals;
     double dot;
-    for (int k = 0; k != L; ++k) 
+    for (int k = 0; k != L; ++k)
         for (int j = 0; j != M; ++j)
             for (int i = 0; i != N; ++i)
             {
@@ -267,12 +268,12 @@ TEST(Ocean, Integrals)
 
                 col->PutScalar(0.0);
                 mat->Apply(*e, *col);
-                dot = Utils::dot(icCoef, col);                
+                dot = Utils::dot(icCoef, col);
 
                 if (lid >= 0)
                 {
                     (*e)[lid]   = 0;
-                    (*tmp)[lid] = dot;                    
+                    (*tmp)[lid] = dot;            
                 }                
 
                 if (k < L-2) // here we test everything except the top rows
@@ -283,13 +284,26 @@ TEST(Ocean, Integrals)
     {
         EXPECT_NEAR(el, 0.0, 1e-7);
     }
+    TIMER_STOP("Test ocean: integral method 1");
 
+    TIMER_START("Test ocean: integral method 2");
     Teuchos::RCP<Epetra_Vector> integrals2 = ocean->getColumnIntegral();
-
     EXPECT_EQ(Utils::norm(tmp), Utils::norm(integrals2));
+    TIMER_STOP("Test ocean: integral method 2");
+              
+    // Another, better way to do this
+    TIMER_START("Test ocean: integral method 3");    
+    mat->LeftScale(*icCoef);
+    Teuchos::RCP<Epetra_Vector> sums = Teuchos::rcp(new Epetra_Vector(*e));
+    sums->PutScalar(0.0);
+
+    Utils::colSums(*mat, *sums);
+    EXPECT_EQ(Utils::norm(tmp), Utils::norm(sums));
+    TIMER_STOP("Test ocean: integral method 3");
     
     DUMP_VECTOR("integrals", *tmp);
     DUMP_VECTOR("integrals2", *integrals2);
+    DUMP_VECTOR("integrals3", *sums);
 }
 
 //------------------------------------------------------------------
@@ -313,6 +327,11 @@ int main(int argc, char **argv)
     comm->Barrier();
     std::cout << "TEST exit code proc #" << comm->MyPID()
               << " " << out << std::endl;
+
+    if (comm->MyPID() == 0)
+    {
+        printProfile(profile);
+    }
 
     MPI_Finalize();
     return out;
