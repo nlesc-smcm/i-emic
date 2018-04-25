@@ -107,6 +107,9 @@ namespace Utils
     //! Obtain 2-norm of std::vector<double>
     double norm(std::vector<double> &vec);
 
+    //! Compute column sums of matrix mat and put them in vector sums
+    void colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums);
+
     //! Update std::vector<double>, result is stored in B
     //! B = scalarA*A+scalarB*B
     void update(double scalarA, std::vector<double> &A,

@@ -134,6 +134,11 @@ int main(int argc, char **argv)
     std::cout << "TEST exit code proc #" << comm->MyPID()
               << " " << out << std::endl;
 
+    if (comm->MyPID() == 0)
+    {
+        printProfile(profile);
+    }
+
     MPI_Finalize();
     return out;
 }

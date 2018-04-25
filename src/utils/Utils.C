@@ -67,6 +67,21 @@ double Utils::norm(std::vector<double> &vec)
     return sqrt(dot);
 }
 
+//! Compute column sums. This is largely copied from
+//! Epetra_CrsMatrix::NormInf()
+void Utils::colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums)
+{
+    if (!mat.Filled())
+    {
+        ERROR("Matrix not filled", __FILE__, __LINE__);
+    }
+
+    if (!sums.Map().SameAs(mat.RangeMap()))
+    {
+        ERROR("Maps do not agree", __FILE__, __LINE__);
+    }
+}
+
 //! Update std::vector<double>, result is stored in B
 //! B = scalarA*A+scalarB*B
 void Utils::update(double scalarA, std::vector<double> &A,

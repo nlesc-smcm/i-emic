@@ -55,7 +55,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
     inputFile_             (oceanParamList->get("Input file",  "ocean_input.h5")),
     outputFile_            (oceanParamList->get("Output file", "ocean_output.h5")),
-    
+
     loadState_             (oceanParamList->get("Load state", false)),
     saveState_             (oceanParamList->get("Save state", true)),
     saveMask_              (oceanParamList->get("Save mask", true)),
@@ -64,13 +64,13 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     saveSalinityFlux_      (oceanParamList->get("Save salinity flux", true)),
     loadTemperatureFlux_   (oceanParamList->get("Load temperature flux", false)),
     saveTemperatureFlux_   (oceanParamList->get("Save temperature flux", true)),
-    
+
     saveEveryStep_         (oceanParamList->get("Save every step", false)),
     useFort3_              (oceanParamList->get("Use legacy fortran output", false)),
     computeColumnIntegral_ (oceanParamList->get("Compute column integral", false)),
 
     parName_               (oceanParamList->get("Continuation parameter",
-                                              "Combined Forcing")),
+                                                "Combined Forcing")),
 
     landmaskFile_          (oceanParamList->sublist("THCM").get("Land Mask", "none"))
 {
@@ -91,7 +91,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
         ERROR(" (SRES = 1 || ite = 1 ) => loadSalinityFlux_ = false",
               __FILE__, __LINE__);
     }
-    
+
     if ((thcm_->getTRES() || thcm_->getITE()) && loadTemperatureFlux_)
     {
         ERROR(" (TRES = 1 || its = 1) => loadTemperatureFlux_ = false",
@@ -121,7 +121,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     // thereby overwriting the starting parameters
     // This will be able to load salinity and temperature fluxes as well.
 
-    state_->PutScalar(0.0);            
+    state_->PutScalar(0.0);
     if (loadState_ || loadSalinityFlux_ || loadTemperatureFlux_)
         loadStateFromFile(inputFile_);
 
@@ -137,7 +137,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
     // Inspect current state
     inspectVector(state_);
-    
+
     //------------------------------------------------------------------
     // Create surface temperature restrict/import strategy
     //------------------------------------------------------------------
@@ -160,6 +160,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     // Source map: state_->Map()
     surfaceTimporter_ =
         Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
+
+    INFO(*oceanParamList);
 
     INFO("Ocean: constructor... done");
 }
@@ -198,19 +200,19 @@ void Ocean::initializeOcean()
     Utils::save(rhs_,   "initialrhs");
 
     // // Perturb model
-    // *sol_ = *state_; 
+    // *sol_ = *state_;
     // double par = getPar();
     // setPar(par + 1e-8);
     // state_->PutScalar(1.0);
-    
+
     // computeRHS();
     // Utils::save(rhs_, "perturbedrhs");
 
     // // Restore model
-    // setPar(par);                    
+    // setPar(par);
     // *state_ = *sol_;
     // sol_->PutScalar(0.0);
-    
+
     // Get the rowmap for the pressure points
     Teuchos::RCP<Epetra_Map> RowMap = domain_->GetSolveMap();
 
@@ -381,7 +383,7 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname)
     mask.global = THCM::Instance().getLandMask();
 
     // Copy to full global mask tmp
-    std::vector<int> tmp(*mask.global);    
+    std::vector<int> tmp(*mask.global);
 
     // Create global borderless mask rcp
     mask.global_borderless = std::make_shared<std::vector<int> >();
@@ -618,7 +620,7 @@ void Ocean::postProcess()
         copyFiles();  // Copy fortran and hdf5 files
 
     // Column integral can be used to check discretization: should be
-    // zero, excluding integral conditions.
+    // zero, excluding integral condition and its dependencies.
     if (computeColumnIntegral_) // Compute and save column integral
         Utils::save(getColumnIntegral(), "columnIntegral");
 }
@@ -635,20 +637,19 @@ std::string const Ocean::writeData(bool describe)
                        << "MV";
             datastring << std::setw(_FIELDWIDTH_)
                        << "Tol";
-
         }
-            
+
         datastring << std::setw(_FIELDWIDTH_)
                    << "max(Psi)"
-                   << std::setw(_FIELDWIDTH_) 
+                   << std::setw(_FIELDWIDTH_)
                    << "min(Psi)";
-        
+
         return datastring.str();
     }
     else
     {
         datastring.precision(_PRECISION_);
-    
+
         // compute streamfunctions and output data
         grid_->ImportData(*state_);
         double psiMax = grid_->psimMax();
@@ -668,26 +669,26 @@ std::string const Ocean::writeData(bool describe)
             datastring << std::scientific << std::setw(_FIELDWIDTH_)
                        << belosSolver_->achievedTol();
         }
-
+        
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
                    << psiMax
                    << std::setw(_FIELDWIDTH_)
                    << psiMin;
-        
-        return datastring.str();    
-    }                           
+
+        return datastring.str();
+    }
 }
 
 //==================================================================
 int Ocean::getCoupledT()
 {
-    return THCM::Instance().getCoupledT(); 
+    return THCM::Instance().getCoupledT();
 }
 
 //==================================================================
 int Ocean::getCoupledS()
 {
-    return THCM::Instance().getCoupledS(); 
+    return THCM::Instance().getCoupledS();
 }
 
 //=====================================================================
@@ -793,7 +794,7 @@ void Ocean::initializeBelos()
     belosParamList_->set("Explicit Residual Test", testExpl);
     belosParamList_->set("Implicit Residual Scaling",
                          "Norm of Preconditioned Initial Residual");
-    
+
     // belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
     // belosParamList_->set("Implicit Residual Scaling", "Norm of Initial Residual");
     // belosParamList_->set("Explicit Residual Scaling", "Norm of RHS");
@@ -872,7 +873,7 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
             Teuchos::rcp(new Epetra_Vector(*(*rhs)(0)));
         double nrm = explicitResNorm(b);
         INFO("        ||b-Ax|| = " << nrm);
-        
+
         TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 
         // if (tol > recompTol_) // stagnation, maybe a new precon helps
@@ -1207,10 +1208,10 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
     // We also need to know a few atmospheric parameters to compute E,
     // P and their derivatives w.r.t. SST (To) and humidity (q) These
     // may depend on continuation parameters, so the call belongs
-    // here.    
+    // here.
     AtmospherePar::CommPars parStruct;
     atmos->getCommPars(parStruct);
-    
+
     // --> it should also be possible to pass the entire struct to
     // --> fortran, need to figure that out...
     FNAME( set_parameters )( &parStruct.qdim,
@@ -1218,7 +1219,7 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
                              &parStruct.eta,
                              &parStruct.dqso,
                              &parStruct.Eo0 );
-    
+
     TIMER_STOP("Ocean: set atmosphere...");
 }
 
@@ -1285,7 +1286,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                     block->beg.push_back(el_ctr);
 
                     // surface T row
-                    if ( (k == L_-1) && (xx == TT) && getCoupledT() ) 
+                    if ( (k == L_-1) && (xx == TT) && getCoupledT() )
                     {
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
                         {
@@ -1300,9 +1301,9 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                             el_ctr++;
                         }
                     }
-                    
+
                     // surface S row, exclude integral condition row
-                    else if ( (k == L_-1) && (xx == SS) && getCoupledS() && 
+                    else if ( (k == L_-1) && (xx == SS) && getCoupledS() &&
                               FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, xx) != rowIntCon)
                     {
                         if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
@@ -1354,10 +1355,10 @@ void Ocean::printFiles()
     int filename = 0;
     int label    = 0;
     int length   = 1;
-    
+
     Teuchos::RCP<Epetra_MultiVector> solution;
     Teuchos::RCP<Epetra_MultiVector> rhs;
-    
+
     if (useFort3_)
     {
         solution = Utils::Gather(*state_, 0);
@@ -1381,7 +1382,7 @@ void Ocean::printFiles()
             (*solution)(0)->ExtractCopy(solutionArray);
             (*rhs)(0)->ExtractCopy(rhsArray);
         }
-        
+
         FNAME(write_data)(solutionArray, &filename, &label);
     }
 
@@ -1406,7 +1407,7 @@ void Ocean::copyFiles(std::string const &filename)
         {
             ss << filename;
         }
-        
+
         ss << ".h5";
         INFO("copying " << outputFile_ << " to " << ss.str());
         std::ifstream src2(outputFile_.c_str(), std::ios::binary);
@@ -1447,14 +1448,16 @@ void Ocean::integralChecks(Teuchos::RCP<Epetra_Vector> state,
 //==================================================================
 Teuchos::RCP<Epetra_Vector> Ocean::getColumnIntegral()
 {
-
-    Teuchos::RCP<Epetra_Vector> icCoef = getIntCondCoeff();
+    TIMER_START("Column integral");
+    INFO("Ocean: computing column integrals of Jacobian");
     
+    Teuchos::RCP<Epetra_Vector> icCoef = getIntCondCoeff();
+
     Teuchos::RCP<Epetra_Vector> e   = Teuchos::rcp(new Epetra_Vector(state_->Map()));
     Teuchos::RCP<Epetra_Vector> tmp = Teuchos::rcp(new Epetra_Vector(state_->Map()));
     Teuchos::RCP<Epetra_Vector> col = Teuchos::rcp(new Epetra_Vector(state_->Map()));
 
-    
+
     int rowIntCon = getRowIntCon();
     int lidIntCon = e->Map().LID(rowIntCon);
     if (lidIntCon >= 0)
@@ -1462,20 +1465,24 @@ Teuchos::RCP<Epetra_Vector> Ocean::getColumnIntegral()
 
     int rowS, lid;
     double dot;
-    for (int k = 0; k != L_; ++k) 
+    for (int k = 0; k != L_; ++k)
         for (int j = 0; j != M_; ++j)
             for (int i = 0; i != N_; ++i)
             {
                 rowS = FIND_ROW2(_NUN_,N_,M_,L_,i,j,k,SS);
-                                
+
                 lid  = e->Map().LID(rowS);
-                
+
                 if (lid >= 0)
                     (*e)[lid] = 1;
 
                 col->PutScalar(0.0);
+                TIMER_START("Column integral p1");
                 jac_->Apply(*e, *col);
-                dot = Utils::dot(icCoef, col);                
+                TIMER_STOP("Column integral p1");
+                TIMER_START("Column integral p2");
+                dot = Utils::dot(icCoef, col);
+                TIMER_STOP("Column integral p2");
 
                 if (lid >= 0)
                 {
@@ -1483,7 +1490,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::getColumnIntegral()
                     (*tmp)[lid] = dot;
                 }
             }
-    
+    TIMER_STOP("Column integral");
     return tmp;
 }
 
@@ -1519,13 +1526,13 @@ int Ocean::saveStateToFile(std::string const &filename)
         INFO("   " << parName << " = " << parValue);
         HDF5.Write("Parameters", parName.c_str(), parValue);
     }
-    
+
     if (saveSalinityFlux_)
     {
         // Write emip to ocean output file
         INFO("Writing salinity flux to " << filename);
         Teuchos::RCP<Epetra_Vector> salflux = THCM::Instance().getSalinityFlux();
-        HDF5.Write("SalinityFlux", *salflux);        
+        HDF5.Write("SalinityFlux", *salflux);
     }
 
     if (saveTemperatureFlux_)
@@ -1533,7 +1540,7 @@ int Ocean::saveStateToFile(std::string const &filename)
         // Write emip to ocean output file
         INFO("Writing temperature flux to " << filename);
         Teuchos::RCP<Epetra_Vector> temflux = THCM::Instance().getTemperatureFlux();
-        HDF5.Write("TemperatureFlux", *temflux);        
+        HDF5.Write("TemperatureFlux", *temflux);
     }
 
     if (saveMask_)
@@ -1545,15 +1552,15 @@ int Ocean::saveStateToFile(std::string const &filename)
                    landmask_.global->size(), &(*landmask_.global)[0]);
 
         HDF5.Write("MaskGlobal", "GlobalSize", (int) landmask_.global->size());
-        
+
         HDF5.Write("MaskGlobal", "Surface", H5T_NATIVE_INT,
                    landmask_.global_surface->size(), &(*landmask_.global_surface)[0]);
-        
+
         HDF5.Write("MaskGlobal", "Label", landmask_.label);
     }
-    
+
     INFO("_________________________________________________________");
-    
+
     return 0;
 }
 
@@ -1599,7 +1606,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
         // numbers of procs we do not include the Map in the hdf5. The
         // state as read here will have a linear map and we import it
         // into the current domain decomposition.
-        HDF5.Read("State", readState);      
+        HDF5.Read("State", readState);
 
         // Create import strategies
         // target map: thcm domain SolveMap
@@ -1618,7 +1625,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
             // THCM::Instance().adjustForIntCond(state_);
             THCM::Instance().setIntCondCorrection(state_);
         }
-    
+
         INFO("Loading state from " << filename << " done");
 
         INFO("Loading parameters from " << filename);
@@ -1636,7 +1643,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
         for (int par = 1; par <= _NPAR_; ++par)
         {
             parName  = THCM::Instance().int2par(par);
-            
+
             // Read continuation parameter and put it in THCM
             try
             {
@@ -1651,7 +1658,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
             setPar(parName, parValue);
             INFO("   " << parName << " = " << parValue);
         }
-          
+
         INFO("Loading parameters from " << filename << " done");
     }
     if (loadSalinityFlux_)
@@ -1672,7 +1679,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
         // is going to come out of the HDF5.Read call.
 
         Teuchos::RCP<Epetra_Vector> salflux = THCM::Instance().getSalinityFlux();
-        
+
         Teuchos::RCP<Epetra_Import> lin2solve_surf =
             Teuchos::rcp(new Epetra_Import( salflux->Map(),
                                             readSalFlux->Map() ));
@@ -1681,21 +1688,21 @@ int Ocean::loadStateFromFile(std::string const &filename)
 
         // Instruct THCM to set/insert this as the emip in the local model
         THCM::Instance().setEmip(salflux);
-        
+
 
         if (HDF5.IsContained("AdaptedSalinityFlux"))
         {
             INFO(" detected AdaptedSalinityFlux in " << filename);
             Epetra_MultiVector *readAdaptedSalFlux;
             HDF5.Read("AdaptedSalinityFlux", readAdaptedSalFlux);
-            
+
             assert(readAdaptedSalFlux->Map().SameAs(readSalFlux->Map()));
-            
+
             Teuchos::RCP<Epetra_Vector> adaptedSalFlux =
                 Teuchos::rcp(new Epetra_Vector( salflux->Map() ) );
-            
+
             adaptedSalFlux->Import( *((*readAdaptedSalFlux)(0)), *lin2solve_surf, Insert);
-            
+
             // Let THCM insert the adapted salinity flux
             THCM::Instance().setEmip(adaptedSalFlux, 'A');
         }
@@ -1705,16 +1712,16 @@ int Ocean::loadStateFromFile(std::string const &filename)
             INFO(" detected AdaptedSalinityFlux_Mask in " << filename);
             Epetra_MultiVector *readSalFluxPert;
             HDF5.Read("AdaptedSalinityFlux_Mask", readSalFluxPert);
-            
+
             assert(readSalFluxPert->Map().SameAs(readSalFlux->Map()));
-            
+
             Teuchos::RCP<Epetra_Vector> salFluxPert =
                 Teuchos::rcp(new Epetra_Vector( salflux->Map() ) );
-            
+
             salFluxPert->Import( *((*readSalFluxPert)(0)), *lin2solve_surf, Insert);
-            
+
             // Let THCM insert the salinity flux perturbation mask
-            THCM::Instance().setEmip(salFluxPert, 'P');            
+            THCM::Instance().setEmip(salFluxPert, 'P');
         }
 
         INFO("Loading salinity flux from " << filename << " done");
@@ -1736,7 +1743,7 @@ int Ocean::loadStateFromFile(std::string const &filename)
         // is going to come out of the HDF5.Read call.
 
         Teuchos::RCP<Epetra_Vector> temflux = THCM::Instance().getTemperatureFlux();
-        
+
         Teuchos::RCP<Epetra_Import> lin2solve_surf =
             Teuchos::rcp(new Epetra_Import( temflux->Map(),
                                             readTemFlux->Map() ));
@@ -1762,10 +1769,10 @@ int Ocean::loadStateFromFile(std::string const &filename)
         }
         else
         {
-            //__________________________________________________ 
+            //__________________________________________________
             // We begin with the local (distributed) landmask
             Epetra_IntVector *readMask;
-        
+
             // Obtain current mask to get distributed map with current
             // domain decomposition.
             Teuchos::RCP<Epetra_IntVector> tmpMask =

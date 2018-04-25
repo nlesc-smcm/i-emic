@@ -10,6 +10,8 @@
   <Parameter name="Load temperature flux" type="bool" value="false"/>
 
   <Parameter name="Continuation parameter" type="string" value="Temperature Forcing"/>
+
+  <Parameter name="Compute column integral" type="bool" value="true"/>      
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -92,6 +94,7 @@
     <!-- The integral condition can be implemented with either a
          positive or a negative sign. Negative is the default. -->
     <Parameter name="Salinity Integral Sign" type="int" value="+1"/>
+    
     <!-- Freshwater Forcing (ifw in THCM) -->
     <!-- 0: data, 1: idealized            -->
     <Parameter name="Freshwater Forcing" type="int" value="1"/>
