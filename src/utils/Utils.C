@@ -80,6 +80,12 @@ void Utils::colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums)
     {
         ERROR("Maps do not agree", __FILE__, __LINE__);
     }
+
+    Epetra_MultiVector *tmp = 0;
+    if (mat.Exporter() != 0) // non-trivial exporter
+    {
+        tmp = new Epetra_Vector(mat.RowMap());        
+    }
 }
 
 //! Update std::vector<double>, result is stored in B
