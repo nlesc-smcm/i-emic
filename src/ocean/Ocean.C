@@ -279,12 +279,16 @@ int Ocean::analyzeJacobian()
         }
     }
 
-    int maxFound;
-    comm_->MaxAll(&singRowsFound, &maxFound, 1);
+    int sumFound;
+    comm_->SumAll(&singRowsFound, &sumFound, 1);
 
-    INFO("  analyzeJacobian(): problem rows found: " << maxFound);
+    // Another approach to analyze the Jacobian is through the volume
+    // integrals of its columns.
+    Teuchos::RCP<Epetra_Vector> colInts = getColumnIntegral();
 
-    return maxFound;
+    INFO("  analyzeJacobian(): problem rows found: " << sumFound);
+
+    return sumFound;
 }
 
 //==================================================================
@@ -293,12 +297,12 @@ void Ocean::inspectVector(Teuchos::RCP<Epetra_Vector> x)
 {
     INFO("Ocean: inspect vector...");
 
-    // for now we just check whether the surface w-values are zero
-    // if not we put them to zero
+    // for now we just check whether the surface w-values are zero, if
+    // not we put them to zero
 
-    // this setup lets us choose more rows in a layer to reset
-    // so now we are going to put the surface u,v,p anomalies to zero as well
-    // this is evil
+    // this setup lets us choose more rows in a layer to reset so now
+    // we could put the surface u,v,p anomalies to zero as well, but
+    // that is evil
 
     std::vector<int> rows;
     int lid = 0;
@@ -1457,8 +1461,25 @@ Teuchos::RCP<Epetra_Vector> Ocean::getColumnIntegral()
         Teuchos::rcp(new Epetra_CrsMatrix(*jac_));
     
     // Rowscaling of the matrix with integral coefficients
-    Teuchos::RCP<Epetra_Vector> icCoef = getIntCondCoeff();
+    Teuchos::RCP<Epetra_Vector> icCoef =
+        Teuchos::rcp(new Epetra_Vector(*getIntCondCoeff()));
+    
     mat->LeftScale(*icCoef);
+
+    DUMP_VECTOR("intcond_coef", *icCoef);
+    
+    // Change integral coefficients into column selectors
+    for (int i = 0; i != icCoef->MyLength(); ++i)
+    {
+        if ( std::abs((*icCoef)[i]) > 0 )
+        {
+            (*icCoef)[i] = 1;
+        }
+    }
+
+    mat->RightScale(*icCoef);
+
+    DUMP_VECTOR("selector", *icCoef);
 
     // Create vector that will contain the column integrals
     Teuchos::RCP<Epetra_Vector> sums =

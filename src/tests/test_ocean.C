@@ -290,20 +290,9 @@ TEST(Ocean, Integrals)
     Teuchos::RCP<Epetra_Vector> integrals2 = ocean->getColumnIntegral();
     EXPECT_EQ(Utils::norm(tmp), Utils::norm(integrals2));
     TIMER_STOP("Test ocean: integral method 2");
-              
-    // Another, better way to do this
-    TIMER_START("Test ocean: integral method 3");    
-    mat->LeftScale(*icCoef);
-    Teuchos::RCP<Epetra_Vector> sums = Teuchos::rcp(new Epetra_Vector(*e));
-    sums->PutScalar(0.0);
-
-    Utils::colSums(*mat, *sums);
-    EXPECT_EQ(Utils::norm(tmp), Utils::norm(sums));
-    TIMER_STOP("Test ocean: integral method 3");
-    
+                  
     DUMP_VECTOR("integrals", *tmp);
     DUMP_VECTOR("integrals2", *integrals2);
-    DUMP_VECTOR("integrals3", *sums);
 }
 
 //------------------------------------------------------------------
