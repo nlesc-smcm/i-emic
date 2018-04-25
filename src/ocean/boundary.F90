@@ -16,6 +16,8 @@ subroutine boundaries
   integer southee, easteast, northee, nnwest, nnorth, nneast
   integer nnorthee
 
+  call TIMER_START('boundaries' // char(0))
+
   !  new stencil:
   !    +----------++-------++----------+
   !    | 12 15 18 || 3 6 9 || 21 24 27 |
@@ -81,54 +83,54 @@ subroutine boundaries
               ! on mirror/boundary points
               if (bottom == LAND) then  ! 14
                  if ((westb==LAND).and.(southwb==LAND).and.(southb==LAND)) then
-                    An(i,j,k, 1,: ,UU) = An(i,j,k,1,: ,UU) + An(i,j,k,10,: ,UU) ! ACdN
-                    An(i,j,k, 1,: ,VV) = An(i,j,k,1,: ,VV) + An(i,j,k,10,: ,VV) ! ACdN
+                    An( 1,: ,UU,i,j,k) = An(1,: ,UU,i,j,k) + An(10,: ,UU,i,j,k) ! ACdN
+                    An( 1,: ,VV,i,j,k) = An(1,: ,VV,i,j,k) + An(10,: ,VV,i,j,k) ! ACdN
                  endif
-                 An(i,j,k,10,: ,UU) = 0.0
-                 An(i,j,k,10,: ,VV) = 0.0
+                 An(10,: ,UU,i,j,k) = 0.0
+                 An(10,: ,VV,i,j,k) = 0.0
                  if ((westb==LAND).and.(neastb==LAND).and.(northb==LAND)) then
-                    An(i,j,k, 2,: ,UU) = An(i,j,k,2,: ,UU) + An(i,j,k,11,: ,UU) ! ACdN
-                    An(i,j,k, 2,: ,VV) = An(i,j,k,2,: ,VV) + An(i,j,k,11,: ,VV) ! ACdN
+                    An( 2,: ,UU,i,j,k) = An(2,: ,UU,i,j,k) + An(11,: ,UU,i,j,k) ! ACdN
+                    An( 2,: ,VV,i,j,k) = An(2,: ,VV,i,j,k) + An(11,: ,VV,i,j,k) ! ACdN
                  endif
-                 An(i,j,k,11,: ,UU) = 0.0 !ACdN
-                 An(i,j,k,11,: ,VV) = 0.0 !ACdN
+                 An(11,: ,UU,i,j,k) = 0.0 !ACdN
+                 An(11,: ,VV,i,j,k) = 0.0 !ACdN
                  if ((eastb==LAND).and.(southeb==LAND).and.(southb==LAND)) then
-                    An(i,j,k, 4,: ,UU) = An(i,j,k,4,: ,UU) + An(i,j,k,13,: ,UU) ! ACdN
-                    An(i,j,k, 4,: ,VV) = An(i,j,k,4,: ,VV) + An(i,j,k,13,: ,VV) ! ACdN
+                    An( 4,: ,UU,i,j,k) = An(4,: ,UU,i,j,k) + An(13,: ,UU,i,j,k) ! ACdN
+                    An( 4,: ,VV,i,j,k) = An(4,: ,VV,i,j,k) + An(13,: ,VV,i,j,k) ! ACdN
                  endif
-                 An(i,j,k,13,: ,UU) = 0.0 !ACdN
-                 An(i,j,k,13,: ,VV) = 0.0 !ACdN
+                 An(13,: ,UU,i,j,k) = 0.0 !ACdN
+                 An(13,: ,VV,i,j,k) = 0.0 !ACdN
                  if ((eastb==LAND).and.(neastb==LAND).and.(northb==LAND)) then
-                    An(i,j,k, 5,: ,UU) = An(i,j,k,5,: ,UU) + An(i,j,k,14,: ,UU) ! ACdN
-                    An(i,j,k, 5,: ,VV) = An(i,j,k,5,: ,VV) + An(i,j,k,14,: ,VV) ! ACdN
+                    An( 5,: ,UU,i,j,k) = An(5,: ,UU,i,j,k) + An(14,: ,UU,i,j,k) ! ACdN
+                    An( 5,: ,VV,i,j,k) = An(5,: ,VV,i,j,k) + An(14,: ,VV,i,j,k) ! ACdN
                  endif
-                 An(i,j,k, 5,: ,TT) = An(i,j,k,5,: ,TT) + An(i,j,k,14,: ,TT) ! ACdN
-                 An(i,j,k, 5,: ,SS) = An(i,j,k,5,: ,SS) + An(i,j,k,14,: ,SS) ! ACdN
-                 An(i,j,k,14,: ,: ) = 0.0
+                 An( 5,: ,TT,i,j,k) = An(5,: ,TT,i,j,k) + An(14,: ,TT,i,j,k) ! ACdN
+                 An( 5,: ,SS,i,j,k) = An(5,: ,SS,i,j,k) + An(14,: ,SS,i,j,k) ! ACdN
+                 An(14,: ,: ,i,j,k) = 0.0
               endif
               if (southwb == LAND) then ! 10
-                 An(i,j,k,10,: ,: ) = 0.0
+                 An(10,: ,: ,i,j,k) = 0.0
               endif
               if (westb == LAND) then   ! 11
-                 An(i,j,k,11,: ,: ) = 0.0
+                 An(11,: ,: ,i,j,k) = 0.0
               endif
               if (nwestb == LAND) then  ! 12
-                 An(i,j,k,12,: ,: ) = 0.0
+                 An(12,: ,: ,i,j,k) = 0.0
               endif
               if (southb == LAND) then  ! 13
-                 An(i,j,k,13,: ,:)   = 0.0
+                 An(13,: ,:,i,j,k)   = 0.0
               endif
               if (northb == LAND) then  ! 15
-                 An(i,j,k,15,: ,:)  = 0.0
+                 An(15,: ,:,i,j,k)  = 0.0
               endif
               if (southeb == LAND) then ! 16
-                 An(i,j,k,16,: ,:)  = 0.0
+                 An(16,: ,:,i,j,k)  = 0.0
               endif
               if (eastb == LAND) then   ! 17
-                 An(i,j,k,17,: ,:)  = 0.0
+                 An(17,: ,:,i,j,k)  = 0.0
               endif
               if (neastb == LAND) then  ! 18
-                 An(i,j,k,18,: ,:)  = 0.0
+                 An(18,: ,:,i,j,k)  = 0.0
               endif
               if (top == LAND) then ! 23
                  ! cannot occur in real flow domain, LAND above OCEAN is illegal
@@ -137,229 +139,230 @@ subroutine boundaries
                     write(f99,*) i,j,k, landm(i  ,j  ,k),landm(i  ,j  ,k+1)
                  endif
                  if ((westt==LAND).and.(southwt==LAND).and.(southt==LAND)) then
-                    An(i,j,k, 1,: ,UU) = An(i,j,k,1,: ,UU) + An(i,j,k,19,: ,UU) ! ACdN
-                    An(i,j,k, 1,: ,VV) = An(i,j,k,1,: ,VV) + An(i,j,k,19,: ,VV) ! ACdN
+                    An( 1,: ,UU,i,j,k) = An(1,: ,UU,i,j,k) + An(19,: ,UU,i,j,k) ! ACdN
+                    An( 1,: ,VV,i,j,k) = An(1,: ,VV,i,j,k) + An(19,: ,VV,i,j,k) ! ACdN
                  endif
-                 An(i,j,k,19,: ,UU) = 0.0
-                 An(i,j,k,19,: ,VV) = 0.0
+                 An(19,: ,UU,i,j,k) = 0.0
+                 An(19,: ,VV,i,j,k) = 0.0
                  if ((westt==LAND).and.(nwestt==LAND).and.(northt==LAND)) then
-                    An(i,j,k, 2,: ,UU) = An(i,j,k,2,: ,UU) + An(i,j,k,20,: ,UU) ! ACdN
-                    An(i,j,k, 2,: ,VV) = An(i,j,k,2,: ,VV) + An(i,j,k,20,: ,VV) ! ACdN
+                    An( 2,: ,UU,i,j,k) = An(2,: ,UU,i,j,k) + An(20,: ,UU,i,j,k) ! ACdN
+                    An( 2,: ,VV,i,j,k) = An(2,: ,VV,i,j,k) + An(20,: ,VV,i,j,k) ! ACdN
                  endif
-                 An(i,j,k,20,: ,UU) = 0.0 !ACdN
-                 An(i,j,k,20,: ,VV) = 0.0 !ACdN
+                 An(20,: ,UU,i,j,k) = 0.0 !ACdN
+                 An(20,: ,VV,i,j,k) = 0.0 !ACdN
                  if ((eastt==LAND).and.(southet==LAND).and.(southt==LAND)) then
-                    An(i,j,k, 4,: ,UU) = An(i,j,k,4,: ,UU) + An(i,j,k,22,: ,UU) ! ACdN
-                    An(i,j,k, 4,: ,VV) = An(i,j,k,4,: ,VV) + An(i,j,k,22,: ,VV) ! ACdN
+                    An( 4,: ,UU,i,j,k) = An(4,: ,UU,i,j,k) + An(22,: ,UU,i,j,k) ! ACdN
+                    An( 4,: ,VV,i,j,k) = An(4,: ,VV,i,j,k) + An(22,: ,VV,i,j,k) ! ACdN
                  endif
-                 An(i,j,k,22,: ,UU) = 0.0 !ACdN
-                 An(i,j,k,22,: ,VV) = 0.0 !ACdN
+                 An(22,: ,UU,i,j,k) = 0.0 !ACdN
+                 An(22,: ,VV,i,j,k) = 0.0 !ACdN
                  if ((eastt==LAND).and.(neastt==LAND).and.(northt==LAND)) then
-                    An(i,j,k, 5,: ,UU) = An(i,j,k,5,: ,UU) + An(i,j,k,23,: ,UU) ! ACdN
-                    An(i,j,k, 5,: ,VV) = An(i,j,k,5,: ,VV) + An(i,j,k,23,: ,VV) ! ACdN
+                    An( 5,: ,UU,i,j,k) = An(5,: ,UU,i,j,k) + An(23,: ,UU,i,j,k) ! ACdN
+                    An( 5,: ,VV,i,j,k) = An(5,: ,VV,i,j,k) + An(23,: ,VV,i,j,k) ! ACdN
                  endif
-                 An(i,j,k, 5,: ,TT) = An(i,j,k,5,: ,TT) + An(i,j,k,23,: ,TT) ! ACdN
-                 An(i,j,k, 5,: ,SS) = An(i,j,k,5,: ,SS) + An(i,j,k,23,: ,SS) ! ACdN
-                 An(i,j,k,23,: ,: ) = 0.0
+                 An( 5,: ,TT,i,j,k) = An(5,: ,TT,i,j,k) + An(23,: ,TT,i,j,k) ! ACdN
+                 An( 5,: ,SS,i,j,k) = An(5,: ,SS,i,j,k) + An(23,: ,SS,i,j,k) ! ACdN
+                 An(23,: ,: ,i,j,k) = 0.0
 
                  Frc(find_row2(i,j,k,WW)) = 0.0
-                 An(i,j,k, :,WW,: ) = 0.0
+
+                 An( :,WW,: ,i,j,k) = 0.0
                  ! FIXME preconditioner breakdown if we remove the
                  ! connections, hence we try to maintain the
                  ! connection but make it inactive with 1e-10
-                 An(i,j,k, 5, :,WW) = 1.0e-10 !MdT !TEM
-                 An(i,j,k, 6, :,WW) = 1.0e-10 !MdT !TEM
-                 An(i,j,k, 8, :,WW) = 1.0e-10 !MdT !TEM
-                 An(i,j,k, 9, :,WW) = 1.0e-10 !MdT !TEM
-                 An(i,j,k, 5,WW,WW) = 1.0
+                 An( 5, :,WW,i,j,k) = 1.0e-10 !MdT !TEM
+                 An( 6, :,WW,i,j,k) = 1.0e-10 !MdT !TEM
+                 An( 8, :,WW,i,j,k) = 1.0e-10 !MdT !TEM
+                 An( 9, :,WW,i,j,k) = 1.0e-10 !MdT !TEM
+                 An( 5,WW,WW,i,j,k) = 1.0
 
               endif
               if (top == ATMOS) then ! deprecated in i-emic
-                 An(i,j,k, 1,: ,UU) = An(i,j,k,1,: ,UU) + An(i,j,k,19,: ,UU) ! ACdN
-                 An(i,j,k, 1,: ,VV) = An(i,j,k,1,: ,VV) + An(i,j,k,19,: ,VV) ! ACdN
-                 An(i,j,k,19,: ,UU) = 0.0
-                 An(i,j,k,19,: ,VV) = 0.0
-                 An(i,j,k, 2,: ,UU) = An(i,j,k,2,: ,UU) + An(i,j,k,20,: ,UU) ! ACdN
-                 An(i,j,k, 2,: ,VV) = An(i,j,k,2,: ,VV) + An(i,j,k,20,: ,VV) ! ACdN
-                 An(i,j,k,20,: ,UU) = 0.0 !ACdN
-                 An(i,j,k,20,: ,VV) = 0.0 !ACdN
-                 An(i,j,k, 4,: ,UU) = An(i,j,k,4,: ,UU) + An(i,j,k,22,: ,UU) ! ACdN
-                 An(i,j,k, 4,: ,VV) = An(i,j,k,4,: ,VV) + An(i,j,k,22,: ,VV) ! ACdN
-                 An(i,j,k,22,: ,UU) = 0.0 !ACdN
-                 An(i,j,k,22,: ,VV) = 0.0 !ACdN
-                 An(i,j,k, 5,: ,UU) = An(i,j,k,5,: ,UU) + An(i,j,k,23,: ,UU) ! ACdN
-                 An(i,j,k, 5,: ,VV) = An(i,j,k,5,: ,VV) + An(i,j,k,23,: ,VV) ! ACdN
-                 An(i,j,k, 5,SS,SS) = An(i,j,k,5,SS,SS) + An(i,j,k,23,SS,SS)
-                 An(i,j,k,23,SS,SS) = 0.0
+                 An( 1,: ,UU,i,j,k) = An(1,: ,UU,i,j,k) + An(19,: ,UU,i,j,k) ! ACdN
+                 An( 1,: ,VV,i,j,k) = An(1,: ,VV,i,j,k) + An(19,: ,VV,i,j,k) ! ACdN
+                 An(19,: ,UU,i,j,k) = 0.0
+                 An(19,: ,VV,i,j,k) = 0.0
+                 An( 2,: ,UU,i,j,k) = An(2,: ,UU,i,j,k) + An(20,: ,UU,i,j,k) ! ACdN
+                 An( 2,: ,VV,i,j,k) = An(2,: ,VV,i,j,k) + An(20,: ,VV,i,j,k) ! ACdN
+                 An(20,: ,UU,i,j,k) = 0.0 !ACdN
+                 An(20,: ,VV,i,j,k) = 0.0 !ACdN
+                 An( 4,: ,UU,i,j,k) = An(4,: ,UU,i,j,k) + An(22,: ,UU,i,j,k) ! ACdN
+                 An( 4,: ,VV,i,j,k) = An(4,: ,VV,i,j,k) + An(22,: ,VV,i,j,k) ! ACdN
+                 An(22,: ,UU,i,j,k) = 0.0 !ACdN
+                 An(22,: ,VV,i,j,k) = 0.0 !ACdN
+                 An( 5,: ,UU,i,j,k) = An(5,: ,UU,i,j,k) + An(23,: ,UU,i,j,k) ! ACdN
+                 An( 5,: ,VV,i,j,k) = An(5,: ,VV,i,j,k) + An(23,: ,VV,i,j,k) ! ACdN
+                 An( 5,SS,SS,i,j,k) = An(5,SS,SS,i,j,k) + An(23,SS,SS,i,j,k)
+                 An(23,SS,SS,i,j,k) = 0.0
 
                  Frc(find_row2(i,j,k,WW)) = 0.0
-                 An(i,j,k, :,WW,: ) = 0.0
+                 An( :,WW,: ,i,j,k) = 0.0
                  ! preconditioner breakdown if we do this:
-                 ! An(i,j,k, 5, :,WW) = 0.0 ! 1.0e-10 !MdT
-                 ! An(i,j,k, 6, :,WW) = 0.0 ! 1.0e-10 !MdT
-                 ! An(i,j,k, 8, :,WW) = 0.0 ! 1.0e-10 !MdT
-                 ! An(i,j,k, 9, :,WW) = 0.0 ! 1.0e-10 !MdT
-                 An(i,j,k, 5,WW,WW) = 1.0
+                 ! An( 5, :,WW,i,j,k) = 0.0 ! 1.0e-10 !MdT
+                 ! An( 6, :,WW,i,j,k) = 0.0 ! 1.0e-10 !MdT
+                 ! An( 8, :,WW,i,j,k) = 0.0 ! 1.0e-10 !MdT
+                 ! An( 9, :,WW,i,j,k) = 0.0 ! 1.0e-10 !MdT
+                 An( 5,WW,WW,i,j,k) = 1.0
 
               endif
               !     if (southwt == LAND) then   ! 19
               if ((southwt == LAND).OR.(southwt ==ATMOS)) then  ! 19
-                 An(i,j,k,19,: ,:)  = 0.0
+                 An(19,: ,:,i,j,k)  = 0.0
               endif
               !     if (westt == LAND) then     ! 20
               if ((westt == LAND).OR.(westt == ATMOS)) then     ! 20
-                 An(i,j,k,20,: ,: ) = 0.0
+                 An(20,: ,: ,i,j,k) = 0.0
               endif
               if ((nwestt == LAND).OR.(nwestt == ATMOS)) then   ! 21
-                 An(i,j,k,21,:,:)    = 0.0
+                 An(21,:,:,i,j,k)    = 0.0
               endif
               if ((southt == LAND).OR.(southt == ATMOS)) then   ! 22
-                 An(i,j,k,22,: ,:)   = 0.0
+                 An(22,: ,:,i,j,k)   = 0.0
               endif
               if ((northt == LAND).OR.(northt == ATMOS)) then   ! 24
-                 An(i,j,k,24,: ,:)  = 0.0
+                 An(24,: ,:,i,j,k)  = 0.0
               endif
               if ((southet == LAND).OR.(southet == ATMOS)) then ! 25
-                 An(i,j,k,25,: ,:)  = 0.0
+                 An(25,: ,:,i,j,k)  = 0.0
               endif
               if ((eastt == LAND).OR.(eastt == ATMOS)) then     ! 26
-                 An(i,j,k,26,: ,:)  = 0.0
+                 An(26,: ,:,i,j,k)  = 0.0
               endif
               if ((neastt == LAND).OR.(neastt == ATMOS)) then   ! 27
-                 An(i,j,k,27,: ,:)  = 0.0
+                 An(27,: ,:,i,j,k)  = 0.0
               endif
               if (southw == LAND) then  ! 1
-                 An(i,j,k, 1,: ,UU) = 0.0
-                 An(i,j,k, 1,: ,VV) = 0.0
+                 An( 1,: ,UU,i,j,k) = 0.0
+                 An( 1,: ,VV,i,j,k) = 0.0
               endif
               if (west == LAND) then    ! 2
-                 An(i,j,k, 5,: ,TT) = An(i,j,k,5,: ,TT) + An(i,j,k,2,: ,TT) ! ACdN
-                 An(i,j,k, 5,: ,SS) = An(i,j,k,5,: ,SS) + An(i,j,k,2,: ,SS) ! ACdN
-                 !              An(i,j,k, 5,TT,TT) = An(i,j,k,5,TT,TT) + An(i,j,k,2,TT,TT)
-                 !              An(i,j,k, 5,SS,SS) = An(i,j,k,5,SS,SS) + An(i,j,k,2,SS,SS)
-                 !              An(i,j,k, 5,TT,SS) = An(i,j,k,5,TT,SS) + An(i,j,k,2,TT,SS)
-                 !              An(i,j,k, 5,SS,TT) = An(i,j,k,5,SS,TT) + An(i,j,k,2,SS,TT)
-                 An(i,j,k, 2,: ,: ) = 0.0
-                 An(i,j,k, 1,: ,UU) = 0.0
-                 An(i,j,k, 1,: ,VV) = 0.0
+                 An( 5,: ,TT,i,j,k) = An(5,: ,TT,i,j,k) + An(2,: ,TT,i,j,k) ! ACdN
+                 An( 5,: ,SS,i,j,k) = An(5,: ,SS,i,j,k) + An(2,: ,SS,i,j,k) ! ACdN
+                 !              An( 5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(2,TT,TT,i,j,k)
+                 !              An( 5,SS,SS,i,j,k) = An(5,SS,SS,i,j,k) + An(2,SS,SS,i,j,k)
+                 !              An( 5,TT,SS,i,j,k) = An(5,TT,SS,i,j,k) + An(2,TT,SS,i,j,k)
+                 !              An( 5,SS,TT,i,j,k) = An(5,SS,TT,i,j,k) + An(2,SS,TT,i,j,k)
+                 An( 2,: ,: ,i,j,k) = 0.0
+                 An( 1,: ,UU,i,j,k) = 0.0
+                 An( 1,: ,VV,i,j,k) = 0.0
               endif
               if (nwest == LAND) then   ! 3
-                 An(i,j,k, 2,: ,UU) = 0.0
-                 An(i,j,k, 2,: ,VV) = 0.0
-                 An(i,j,k, 3,: ,UU) = 0.0
-                 An(i,j,k, 3,: ,VV) = 0.0
+                 An( 2,: ,UU,i,j,k) = 0.0
+                 An( 2,: ,VV,i,j,k) = 0.0
+                 An( 3,: ,UU,i,j,k) = 0.0
+                 An( 3,: ,VV,i,j,k) = 0.0
               elseif (j.lt.m) then
                  if (nnwest == LAND) then
-                    An(i,j,k, 3,: ,UU) = 0.0
-                    An(i,j,k, 3,: ,VV) = 0.0
+                    An( 3,: ,UU,i,j,k) = 0.0
+                    An( 3,: ,VV,i,j,k) = 0.0
                  endif
               endif
               if (south == LAND) then   ! 4
-                 An(i,j,k, 5,: ,SS) = An(i,j,k,5,: ,SS) + An(i,j,k,4,: ,SS) ! ACdN
-                 An(i,j,k, 5,: ,TT) = An(i,j,k,5,: ,TT) + An(i,j,k,4,: ,TT) ! ACdN
-                 !   An(i,j,k, 5,TT,TT) = An(i,j,k,5,TT,TT) + An(i,j,k,4,TT,TT)
-                 !   An(i,j,k, 5,SS,SS) = An(i,j,k,5,SS,SS) + An(i,j,k,4,SS,SS)
-                 !   An(i,j,k, 5,TT,SS) = An(i,j,k,5,TT,SS) + An(i,j,k,4,TT,SS)
-                 !   An(i,j,k, 5,SS,TT) = An(i,j,k,5,SS,TT) + An(i,j,k,4,SS,TT)
-                 An(i,j,k, 4,: ,: ) = 0.0
-                 An(i,j,k, 1,: ,UU) = 0.0
-                 An(i,j,k, 1,: ,VV) = 0.0
+                 An( 5,: ,SS,i,j,k) = An(5,: ,SS,i,j,k) + An(4,: ,SS,i,j,k) ! ACdN
+                 An( 5,: ,TT,i,j,k) = An(5,: ,TT,i,j,k) + An(4,: ,TT,i,j,k) ! ACdN
+                 !   An( 5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(4,TT,TT,i,j,k)
+                 !   An( 5,SS,SS,i,j,k) = An(5,SS,SS,i,j,k) + An(4,SS,SS,i,j,k)
+                 !   An( 5,TT,SS,i,j,k) = An(5,TT,SS,i,j,k) + An(4,TT,SS,i,j,k)
+                 !   An( 5,SS,TT,i,j,k) = An(5,SS,TT,i,j,k) + An(4,SS,TT,i,j,k)
+                 An( 4,: ,: ,i,j,k) = 0.0
+                 An( 1,: ,UU,i,j,k) = 0.0
+                 An( 1,: ,VV,i,j,k) = 0.0
               endif
               if (north == LAND) then   ! 6
-                 An(i,j,k, 2,: ,UU) = 0.0
-                 An(i,j,k, 2,: ,VV) = 0.0
+                 An( 2,: ,UU,i,j,k) = 0.0
+                 An( 2,: ,VV,i,j,k) = 0.0
                  !
                  ! continuity
                  !
-                 An(i,j,k, 2,PP,UU) = 0.0
-                 An(i,j,k, 2,PP,VV) = 0.0
-                 An(i,j,k, 5,PP,UU) = 0.0
-                 An(i,j,k, 5,PP,VV) = 0.0
+                 An( 2,PP,UU,i,j,k) = 0.0
+                 An( 2,PP,VV,i,j,k) = 0.0
+                 An( 5,PP,UU,i,j,k) = 0.0
+                 An( 5,PP,VV,i,j,k) = 0.0
                  !
                  ! theta momentum
                  !
                  Frc(find_row2(i,j,k,VV)) = 0.0
-                 An(i,j,k, :,VV,: ) = 0.0
-                 An(i,j,k, 5,: ,VV) = 0.0 ! ACdN
-                 An(i,j,k, 5,VV,VV) = 1.0
+                 An( :,VV,: ,i,j,k) = 0.0
+                 An( 5,: ,VV,i,j,k) = 0.0 ! ACdN
+                 An( 5,VV,VV,i,j,k) = 1.0
                  !
                  ! phi momentum
                  !
                  Frc(find_row2(i,j,k,UU)) = 0.0
-                 An(i,j,k, :,UU, :) = 0.0
-                 An(i,j,k, 5,: ,UU) = 0.0 ! ACdN
-                 An(i,j,k, 5,UU,UU) = 1.0
+                 An( :,UU, :,i,j,k) = 0.0
+                 An( 5,: ,UU,i,j,k) = 0.0 ! ACdN
+                 An( 5,UU,UU,i,j,k) = 1.0
                  !
                  ! tracers
                  !
-                 An(i,j,k, 5,: ,SS) = An(i,j,k,5,: ,SS) + An(i,j,k,6,: ,SS) ! ACdN
-                 An(i,j,k, 5,: ,TT) = An(i,j,k,5,: ,TT) + An(i,j,k,6,: ,TT) ! ACdN
-                 !   An(i,j,k, 5,TT,TT) = An(i,j,k,5,TT,TT) + An(i,j,k,6,TT,TT)
-                 !   An(i,j,k, 5,SS,SS) = An(i,j,k,5,SS,SS) + An(i,j,k,6,SS,SS)
-                 !   An(i,j,k, 5,TT,SS) = An(i,j,k,5,TT,SS) + An(i,j,k,6,TT,SS)
-                 !   An(i,j,k, 5,SS,TT) = An(i,j,k,5,SS,TT) + An(i,j,k,6,SS,TT)
-                 An(i,j,k, 6,: ,: ) = 0.0
+                 An( 5,: ,SS,i,j,k) = An(5,: ,SS,i,j,k) + An(6,: ,SS,i,j,k) ! ACdN
+                 An( 5,: ,TT,i,j,k) = An(5,: ,TT,i,j,k) + An(6,: ,TT,i,j,k) ! ACdN
+                 !   An( 5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(6,TT,TT,i,j,k)
+                 !   An( 5,SS,SS,i,j,k) = An(5,SS,SS,i,j,k) + An(6,SS,SS,i,j,k)
+                 !   An( 5,TT,SS,i,j,k) = An(5,TT,SS,i,j,k) + An(6,TT,SS,i,j,k)
+                 !   An( 5,SS,TT,i,j,k) = An(5,SS,TT,i,j,k) + An(6,SS,TT,i,j,k)
+                 An( 6,: ,: ,i,j,k) = 0.0
               elseif (j.lt.m) then
                  if (nnorth == LAND) then
-                    An(i,j,k, 3,: ,UU) = 0.0
-                    An(i,j,k, 3,: ,VV) = 0.0
-                    An(i,j,k, 6,: ,UU) = 0.0
-                    An(i,j,k, 6,: ,VV) = 0.0
+                    An( 3,: ,UU,i,j,k) = 0.0
+                    An( 3,: ,VV,i,j,k) = 0.0
+                    An( 6,: ,UU,i,j,k) = 0.0
+                    An( 6,: ,VV,i,j,k) = 0.0
                  endif
               endif
               if (southe == LAND) then  ! 7
-                 An(i,j,k, 4, :,UU) = 0.0
-                 An(i,j,k, 4, :,VV) = 0.0
-                 An(i,j,k, 7, :,UU) = 0.0
-                 An(i,j,k, 7, :,VV) = 0.0
+                 An( 4, :,UU,i,j,k) = 0.0
+                 An( 4, :,VV,i,j,k) = 0.0
+                 An( 7, :,UU,i,j,k) = 0.0
+                 An( 7, :,VV,i,j,k) = 0.0
               elseif (i.lt.n) then
                  if (southee == LAND) then
-                    An(i,j,k, 7,: ,UU) = 0.0
-                    An(i,j,k, 7,: ,VV) = 0.0
+                    An( 7,: ,UU,i,j,k) = 0.0
+                    An( 7,: ,VV,i,j,k) = 0.0
                  endif
               endif
               if (east == LAND) then    ! 8
-                 An(i,j,k, 4,: ,UU) = 0.0
-                 An(i,j,k, 4,: ,VV) = 0.0
+                 An( 4,: ,UU,i,j,k) = 0.0
+                 An( 4,: ,VV,i,j,k) = 0.0
                  !
                  ! continuity
                  !
-                 An(i,j,k, 4,PP,UU) = 0.0
-                 An(i,j,k, 4,PP,VV) = 0.0
-                 An(i,j,k, 5,PP,UU) = 0.0
-                 An(i,j,k, 5,PP,VV) = 0.0
+                 An( 4,PP,UU,i,j,k) = 0.0
+                 An( 4,PP,VV,i,j,k) = 0.0
+                 An( 5,PP,UU,i,j,k) = 0.0
+                 An( 5,PP,VV,i,j,k) = 0.0
                  !
                  ! phi momentum
                  !
                  Frc(find_row2(i,j,k,UU)) = 0.0
-                 An(i,j,k, :,UU,: ) = 0.0
-                 An(i,j,k, 5,: ,UU) = 0.0 ! ACdN
-                 An(i,j,k, 5,UU,UU) = 1.0
+                 An( :,UU,: ,i,j,k) = 0.0
+                 An( 5,: ,UU,i,j,k) = 0.0 ! ACdN
+                 An( 5,UU,UU,i,j,k) = 1.0
                  !
                  ! theta momentum
                  !
                  Frc(find_row2(i,j,k,VV)) = 0.0
-                 An(i,j,k, :,VV, :) = 0.0
-                 An(i,j,k, 5,: ,VV) = 0.0 ! ACdN
-                 An(i,j,k, 5,VV,VV) = 1.0
+                 An( :,VV, :,i,j,k) = 0.0
+                 An( 5,: ,VV,i,j,k) = 0.0 ! ACdN
+                 An( 5,VV,VV,i,j,k) = 1.0
                  !
                  ! tracers
                  !
-                 An(i,j,k, 5,: ,SS) = An(i,j,k,5,: ,SS) + An(i,j,k,8,: ,SS)
-                 An(i,j,k, 5,: ,TT) = An(i,j,k,5,: ,TT) + An(i,j,k,8,: ,TT)
-                 !   An(i,j,k, 5,TT,TT) = An(i,j,k,5,TT,TT) + An(i,j,k,8,TT,TT)
-                 !   An(i,j,k, 5,SS,SS) = An(i,j,k,5,SS,SS) + An(i,j,k,8,SS,SS)
-                 !   An(i,j,k, 5,TT,SS) = An(i,j,k,5,TT,SS) + An(i,j,k,8,TT,SS)
-                 !   An(i,j,k, 5,SS,TT) = An(i,j,k,5,SS,TT) + An(i,j,k,8,SS,TT)
-                 An(i,j,k, 8,: ,: ) = 0.0
-                 An(i,j,k, 7, :,UU) = 0.0
-                 An(i,j,k, 7, :,VV) = 0.0
+                 An( 5,: ,SS,i,j,k) = An(5,: ,SS,i,j,k) + An(8,: ,SS,i,j,k)
+                 An( 5,: ,TT,i,j,k) = An(5,: ,TT,i,j,k) + An(8,: ,TT,i,j,k)
+                 !   An( 5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(8,TT,TT,i,j,k)
+                 !   An( 5,SS,SS,i,j,k) = An(5,SS,SS,i,j,k) + An(8,SS,SS,i,j,k)
+                 !   An( 5,TT,SS,i,j,k) = An(5,TT,SS,i,j,k) + An(8,TT,SS,i,j,k)
+                 !   An( 5,SS,TT,i,j,k) = An(5,SS,TT,i,j,k) + An(8,SS,TT,i,j,k)
+                 An( 8,: ,: ,i,j,k) = 0.0
+                 An( 7, :,UU,i,j,k) = 0.0
+                 An( 7, :,VV,i,j,k) = 0.0
               elseif (i.lt.n) then
                  if (easteast == LAND) then
-                    An(i,j,k, 7,: ,UU) = 0.0
-                    An(i,j,k, 7,: ,VV) = 0.0
-                    An(i,j,k, 8,: ,UU) = 0.0
-                    An(i,j,k, 8,: ,VV) = 0.0
+                    An( 7,: ,UU,i,j,k) = 0.0
+                    An( 7,: ,VV,i,j,k) = 0.0
+                    An( 8,: ,UU,i,j,k) = 0.0
+                    An( 8,: ,VV,i,j,k) = 0.0
                  endif
               endif
               if (neast == LAND) then   ! 9
@@ -367,38 +370,38 @@ subroutine boundaries
                  ! phi momentum
                  !
                  Frc(find_row2(i,j,k,UU)) = 0.0
-                 An(i,j,k, :,UU,: ) = 0.0
-                 An(i,j,k, 5,: ,UU) = 0.0
-                 An(i,j,k, 5,UU,UU) = 1.0
+                 An( :,UU,: ,i,j,k) = 0.0
+                 An( 5,: ,UU,i,j,k) = 0.0
+                 An( 5,UU,UU,i,j,k) = 1.0
                  !
                  ! theta momentum
                  !
                  Frc(find_row2(i,j,k,VV)) = 0.0
-                 An(i,j,k, :,VV,: ) = 0.0
-                 An(i,j,k, 5,: ,VV) = 0.0
-                 An(i,j,k, 5,VV,VV) = 1.0
-                 An(i,j,k, 7, :,UU) = 0.0
-                 An(i,j,k, 7, :,VV) = 0.0
+                 An( :,VV,: ,i,j,k) = 0.0
+                 An( 5,: ,VV,i,j,k) = 0.0
+                 An( 5,VV,VV,i,j,k) = 1.0
+                 An( 7, :,UU,i,j,k) = 0.0
+                 An( 7, :,VV,i,j,k) = 0.0
               elseif ((i.lt.n).or.(j.lt.m)) then
                  if (i.lt.n) then
                     if (northee == LAND) then
-                       An(i,j,k, 8,: ,UU) = 0.0
-                       An(i,j,k, 8,: ,VV) = 0.0
-                       An(i,j,k, 9,: ,UU) = 0.0
-                       An(i,j,k, 9,: ,VV) = 0.0
+                       An( 8,: ,UU,i,j,k) = 0.0
+                       An( 8,: ,VV,i,j,k) = 0.0
+                       An( 9,: ,UU,i,j,k) = 0.0
+                       An( 9,: ,VV,i,j,k) = 0.0
                     elseif (j.lt.m) then
                        if (nnorthee == LAND) then
-                          An(i,j,k, 9,: ,UU) = 0.0
-                          An(i,j,k, 9,: ,VV) = 0.0
+                          An( 9,: ,UU,i,j,k) = 0.0
+                          An( 9,: ,VV,i,j,k) = 0.0
                        endif
                     endif
                  endif
                  if (j.lt.m) then
                     if (nneast == LAND) then
-                       An(i,j,k, 6,: ,UU) = 0.0
-                       An(i,j,k, 6,: ,VV) = 0.0
-                       An(i,j,k, 9,: ,UU) = 0.0
-                       An(i,j,k, 9,: ,VV) = 0.0
+                       An( 6,: ,UU,i,j,k) = 0.0
+                       An( 6,: ,VV,i,j,k) = 0.0
+                       An( 9,: ,UU,i,j,k) = 0.0
+                       An( 9,: ,VV,i,j,k) = 0.0
                     endif
                  endif
               endif
@@ -406,31 +409,33 @@ subroutine boundaries
            else if (center == ATMOS) then
               write(*,*) 'center is atmos'
               if (west == LAND) then
-                 An(i,j,k,5,TT,TT) = An(i,j,k,5,TT,TT) + An(i,j,k,2,TT,TT)
-                 An(i,j,k,2,TT,TT) = 0.0
+                 An(5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(2,TT,TT,i,j,k)
+                 An(2,TT,TT,i,j,k) = 0.0
               endif
               if (east == LAND) then
-                 An(i,j,k,5,TT,TT) = An(i,j,k,5,TT,TT) + An(i,j,k,8,TT,TT)
-                 An(i,j,k,8,TT,TT) = 0.0
+                 An(5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(8,TT,TT,i,j,k)
+                 An(8,TT,TT,i,j,k) = 0.0
               endif
               if (north == LAND) then
-                 An(i,j,k,5,TT,TT) = An(i,j,k,5,TT,TT) + An(i,j,k,6,TT,TT)
-                 An(i,j,k,6,TT,TT) = 0.0
+                 An(5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(6,TT,TT,i,j,k)
+                 An(6,TT,TT,i,j,k) = 0.0
               endif
               if (south == LAND) then
-                 An(i,j,k,5,TT,TT) = An(i,j,k,5,TT,TT) + An(i,j,k,4,TT,TT)
-                 An(i,j,k,4,TT,TT) = 0.0
+                 An(5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(4,TT,TT,i,j,k)
+                 An(4,TT,TT,i,j,k) = 0.0
               endif
               !------- CENTER = not OCEAN or ATMOSPHERE -----------------------------
               ! so this is probably on LAND
            else
-              An(i,j,k,:,:,:) = 0.0
+              An(:,:,:,i,j,k) = 0.0
               do ii = 1, nun
                  Frc(find_row2(i,j,k,ii)) = 0.0
-                 An(i,j,k,5,ii,ii) = 1.0
+                 An(5,ii,ii,i,j,k) = 1.0
               enddo
            endif
         enddo
      enddo
   enddo
+
+  call TIMER_STOP('boundaries' // char(0))
 end subroutine boundaries

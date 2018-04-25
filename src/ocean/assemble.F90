@@ -5,7 +5,6 @@ SUBROUTINE assemble
   use m_usr
   implicit none
   call TIMER_START('assemble' // char(0))
-  call preprocessA_old !--> is this always necessary?
   call fillcolA
   call intcond
 
@@ -62,53 +61,6 @@ SUBROUTINE fillcolB
 end SUBROUTINE fillcolB
 
 !****************************************************************************
-SUBROUTINE preprocessA_old
-  USE m_mat
-  use m_usr
-  implicit none
-  integer i,j,k,ii,jj,kk,count
-
-  active = .false.
-  count = 0
-  do ii = 1,nun
-     do jj = 1,nun
-        do kk = 1,np
-           loop: do i = 1,n
-              do j = 1,m
-                 do k = 1,l+la
-                    ! --> 1.0E-10 small enough?
-                    if (abs(an(i,j,k,kk,ii,jj)) > 1.0E-10) then
-                       active(kk,ii,jj) = .true.
-                       cycle loop
-                    end if
-                 end do
-              end do
-           end do loop
-           !         if (active(kk,ii,jj)) then
-           !            count = count +1
-           !         end if
-        end do
-     end do
-  end do
-  !      write(f99,*) "total nnz in A:", nnz
-  !      write(f99,*) "with ", count, " active connections out of ", nun*nun*np
-#ifdef DEBUGGING
-  ! this can be useXul for determining the maximal matrix graph
-  open(42,file='active.txt')
-  do ii=1,nun
-     do jj=1,nun
-        do kk=1,np
-           if (active(kk,ii,jj)) then
-              write(42,*) ii,jj,kk
-           end if
-        end do
-     end do
-  end do
-  close(42)
-#endif
-end SUBROUTINE preprocessA_old
-
-!****************************************************************************
 SUBROUTINE fillcolA
   !     Fill the columns of A
   USE m_mat
@@ -116,6 +68,7 @@ SUBROUTINE fillcolA
   implicit none
   integer find_row2
   integer i,j,k,ii,jj,kk,v,row,i2,j2,k2
+
 
   call TIMER_START('fillcolA' // char(0))
   !  +------------------------------------+
@@ -161,15 +114,17 @@ SUBROUTINE fillcolA
   do k = 1, l+la
      do j = 1, m
         do i = 1, n
+           Alocal = An(:,:,:,i,j,k)
            do ii = 1, nun
               begA(row) = v
               do kk = 1,np
-                 ! shift(i,j,k,i2,j2,k2,kk) returns the neighbour at location kk
-                 !  w.r.t. the center of the stencil (5) defined above
-                 call shift(i,j,k,i2,j2,k2,kk)
                  do jj = 1, nun
-                    if (active(kk,ii,jj).and.abs(an(i,j,k,kk,ii,jj)).gt.1.0e-15) then
-                       coA(v)  = an(i,j,k,kk,ii,jj)
+                    if (abs(Alocal(kk,ii,jj)).gt.1.0e-10) then
+                       coA(v) = Alocal(kk,ii,jj)
+                       ! shift(i,j,k,i2,j2,k2,kk) returns the neighbour at location kk
+                       !  w.r.t. the center of the stencil (5) defined above.
+                       !  it is faster to do this in here than outside of the loop.
+                       call shift(i,j,k,i2,j2,k2,kk)
                        ! find_row2(i,j,k,ii) returns the row in the matrix for variable
                        !  ii at grid point (i,j,k) (matetc.F90)
                        jcoA(v) = find_row2(i2,j2,k2,jj)
@@ -247,7 +202,7 @@ SUBROUTINE intcond
 
   !     Replace S equation with an 'integral' condition for s
 
-  ! this is now done in Trilinos, so we simply ! 
+  ! this is now done in Trilinos, so we simply !
   return
 
   if( SRES == 1 ) return

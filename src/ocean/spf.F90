@@ -8,7 +8,7 @@
 !  |  below   || center||  above   |
 !  +----------++-------++----------+
 
-!    atom(i,j,k,loc)
+!    atom(loc,i,j,k)
 
 SUBROUTINE uderiv(type,atom)
   use m_usr
@@ -19,7 +19,7 @@ SUBROUTINE uderiv(type,atom)
   !     4:  uzz
   !     IMPORT/EXPORT
   integer type,i,j,k
-  real    atom(n,m,l,np)
+  real    atom(np,n,m,l)
   real    cosdx2i(0:m),rdy2i,rdz2i,tand2(0:m),cosd2(0:m)
   real    h1,h2
   real    amh,bmh,bmhy
@@ -30,20 +30,20 @@ SUBROUTINE uderiv(type,atom)
      IF (itopo.eq.3) then
         DO i = 18,20
            DO j=1,3
-              atom(i,j,:,5) = 1.0
+              atom(5,i,j,:) = 1.0
            enddo
         enddo
      ELSE
-        atom(:,:,:,5) = 1.0
+        atom(5,:,:,:) = 1.0
      ENDIF
   CASE(2)
      ! u_xx
      cosdx2i = (1.0/(cos(yv)*dx))**2
      do j = 1, m - 1
         do i= 1, n
-           atom(i,j,:,2) =   amh(yv(j),ih)*cosdx2i(j)
-           atom(i,j,:,8) =   amh(yv(j),ih)*cosdx2i(j)
-           atom(i,j,:,5) = -(atom(i,j,:,2) + atom(i,j,:,8))
+           atom(2,i,j,:) =   amh(yv(j),ih)*cosdx2i(j)
+           atom(8,i,j,:) =   amh(yv(j),ih)*cosdx2i(j)
+           atom(5,i,j,:) = -(atom(2,i,j,:) + atom(8,i,j,:))
         enddo
      enddo
   CASE(3)
@@ -51,9 +51,9 @@ SUBROUTINE uderiv(type,atom)
      rdy2i = (1.0/dy)**2
      do i=1,n
         do j=1,m-1
-           atom(i,j,:,4) = rdy2i * bmh(y(j),ih)*cos(y(j))/cos(yv(j))
-           atom(i,j,:,6) = rdy2i * bmh(y(j+1),ih)*cos(y(j+1))/cos(yv(j))
-           atom(i,j,:,5) = -(atom(i,j,:,4) + atom(i,j,:,6))
+           atom(4,i,j,:) = rdy2i * bmh(y(j),ih)*cos(y(j))/cos(yv(j))
+           atom(6,i,j,:) = rdy2i * bmh(y(j+1),ih)*cos(y(j+1))/cos(yv(j))
+           atom(5,i,j,:) = -(atom(4,i,j,:) + atom(6,i,j,:))
         enddo
      enddo
   CASE(4)
@@ -61,31 +61,31 @@ SUBROUTINE uderiv(type,atom)
      DO k = 1, l
         h1 = 1./(dfzT(k)*dfzW(k))
         h2 = 1./(dfzT(k)*dfzW(k-1))
-        atom(:,:,k,14) = h2*rdz2i
-        atom(:,:,k,23) = h1*rdz2i
-        atom(:,:,k,5) = -(atom(:,:,k,14) + atom(:,:,k,23))
+        atom(14,:,:,k) = h2*rdz2i
+        atom(23,:,:,k) = h1*rdz2i
+        atom(5,:,:,k) = -(atom(14,:,:,k) + atom(23,:,:,k))
      ENDDO
   CASE(5)
      tand2 = 1 - tan(yv)*tan(yv)
      DO j = 1, m-1
-        atom(:,j,:,5) = bmh(yv(j),ih)*tand2(j)+tan(yv(j))*bmhy(yv(j),ih)
+        atom(5,:,j,:) = bmh(yv(j),ih)*tand2(j)+tan(yv(j))*bmhy(yv(j),ih)
      ENDDO
   CASE(6)
      tand2 = tan(yv)
      cosd2 = cos(yv)
      DO j = 1, m-1
-        atom(:,j,:,2)=(bmhy(yv(j),ih)-(amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j))/(dx*cosd2(j))
-        atom(:,j,:,8)=-(bmhy(yv(j),ih)-(amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j))/(dx*cosd2(j))
+        atom(2,:,j,:)=(bmhy(yv(j),ih)-(amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j))/(dx*cosd2(j))
+        atom(8,:,j,:)=-(bmhy(yv(j),ih)-(amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j))/(dx*cosd2(j))
      ENDDO
   CASE(7)
      IF (itopo.eq.3) then
         DO i = 18,20
            DO j=14,16
-              atom(i,j,:,5) = 1.0
+              atom(5,i,j,:) = 1.0
            enddo
         enddo
      ELSE
-        atom(:,:,:,5) = 1.0
+        atom(5,:,:,:) = 1.0
      ENDIF
   END SELECT
 
@@ -100,7 +100,7 @@ SUBROUTINE vderiv(type,atom)
   !     4:  vzz
   !     IMPORT/EXPORT
   integer type,i,j,k
-  real    atom(n,m,l,np)
+  real    atom(np,n,m,l)
   real    cosdx2i(0:m),dy2i,rdz2i,cosd2(0:m),tand2(0:m)
   real    h1,h2
   real    amh,bmh,bmhy
@@ -111,20 +111,20 @@ SUBROUTINE vderiv(type,atom)
      IF (itopo.eq.3) then
         DO i = 18,20
            DO j=1,3
-              atom(i,j,:,5) = 1.0
+              atom(5,i,j,:) = 1.0
            enddo
         enddo
      ELSE
-        atom(:,:,:,5) = 1.0
+        atom(5,:,:,:) = 1.0
      ENDIF
   CASE(2)
      ! vxx
      cosdx2i = (1.0/(cos(yv)*dx))**2
      do i=1,n
         do j = 1, m -1
-           atom(i,j,:,2) = bmh(yv(j),ih)*cosdx2i(j)
-           atom(i,j,:,5) =-2*bmh(yv(j),ih)*cosdx2i(j)
-           atom(i,j,:,8) = bmh(yv(j),ih)*cosdx2i(j)
+           atom(2,i,j,:) = bmh(yv(j),ih)*cosdx2i(j)
+           atom(5,i,j,:) =-2*bmh(yv(j),ih)*cosdx2i(j)
+           atom(8,i,j,:) = bmh(yv(j),ih)*cosdx2i(j)
         enddo
      enddo
   CASE(3)
@@ -132,9 +132,9 @@ SUBROUTINE vderiv(type,atom)
      dy2i = (1.0/dy)**2
      do i=1,n
         do j=1,m-1
-           atom(i,j,:,4) = dy2i* amh(y(j),ih)*cos(y(j))/cos(yv(j))
-           atom(i,j,:,6) = dy2i* amh(y(j+1),ih)*cos(y(j+1))/cos(yv(j))
-           atom(i,j,:,5) =-(atom(i,j,:,4) + atom(i,j,:,6))
+           atom(4,i,j,:) = dy2i* amh(y(j),ih)*cos(y(j))/cos(yv(j))
+           atom(6,i,j,:) = dy2i* amh(y(j+1),ih)*cos(y(j+1))/cos(yv(j))
+           atom(5,i,j,:) =-(atom(4,i,j,:) + atom(6,i,j,:))
         enddo
      enddo
   CASE(4)
@@ -142,30 +142,30 @@ SUBROUTINE vderiv(type,atom)
      DO k = 1, l
         h1 = 1./(dfzT(k)*dfzW(k))
         h2 = 1./(dfzT(k)*dfzW(k-1))
-        atom(:,:,k,14) = h2*rdz2i
-        atom(:,:,k,23) = h1*rdz2i
-        atom(:,:,k,5) = -(atom(:,:,k,14) + atom(:,:,k,23))
+        atom(14,:,:,k) = h2*rdz2i
+        atom(23,:,:,k) = h1*rdz2i
+        atom(5,:,:,k) = -(atom(14,:,:,k) + atom(23,:,:,k))
      ENDDO
   CASE(5)
      DO j = 1, m-1
-        atom(:,j,:,5)=bmh(yv(j),ih)-amh(yv(j),ih)*tan(yv(j))*tan(yv(j))+bmhy(yv(j),ih)*tan(yv(j))
+        atom(5,:,j,:)=bmh(yv(j),ih)-amh(yv(j),ih)*tan(yv(j))*tan(yv(j))+bmhy(yv(j),ih)*tan(yv(j))
      ENDDO
   CASE(6)
      tand2 = tan(yv)
      cosd2 = cos(yv)
      DO j = 1, m-1
-        atom(:,j,:,2)=-((amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j)-bmhy(yv(j),ih))/(dx*cosd2(j))
-        atom(:,j,:,8)= ((amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j)-bmhy(yv(j),ih))/(dx*cosd2(j))
+        atom(2,:,j,:)=-((amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j)-bmhy(yv(j),ih))/(dx*cosd2(j))
+        atom(8,:,j,:)= ((amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j)-bmhy(yv(j),ih))/(dx*cosd2(j))
      ENDDO
   CASE(7)
      IF (itopo.eq.3) then
         DO i = 18,20
            DO j=14,16
-              atom(i,j,:,5) = 1.0
+              atom(5,i,j,:) = 1.0
            enddo
         enddo
      ELSE
-        atom(:,:,:,5) = 1.0
+        atom(5,:,:,:) = 1.0
      ENDIF
   END SELECT
 
@@ -179,7 +179,7 @@ SUBROUTINE pderiv(type,atom)
   !     3:  wz
   !     IMPORT/EXPORT
   integer type,i,j,k
-  real    atom(n,m,l,np)
+  real    atom(np,n,m,l)
   real    cos2i(0:m+1),cos2v(0:m),dzi
 
   !
@@ -189,10 +189,10 @@ SUBROUTINE pderiv(type,atom)
      cos2i = 1.0/(2*cos(y)*dx)
      do j = 1, m
         do i= 1, n
-           atom(i,j,:,2) =-cos2i(j)
-           atom(i,j,:,4) = cos2i(j)
-           atom(i,j,:,1) =-cos2i(j)
-           atom(i,j,:,5) = cos2i(j)
+           atom(2,i,j,:) =-cos2i(j)
+           atom(4,i,j,:) = cos2i(j)
+           atom(1,i,j,:) =-cos2i(j)
+           atom(5,i,j,:) = cos2i(j)
         enddo
      enddo
   CASE(2)
@@ -200,23 +200,23 @@ SUBROUTINE pderiv(type,atom)
      cos2i = 1./(2*cos(y)*dy)
      do j = 1, m
         do i= 1, n
-           atom(i,j,:,4) = - cos2v(j-1) * cos2i(j)
-           atom(i,j,:,2) =   cos2v(j) * cos2i(j)
-           atom(i,j,:,1) = - cos2v(j-1) * cos2i(j)
-           atom(i,j,:,5) =   cos2v(j) * cos2i(j)
+           atom(4,i,j,:) = - cos2v(j-1) * cos2i(j)
+           atom(2,i,j,:) =   cos2v(j) * cos2i(j)
+           atom(1,i,j,:) = - cos2v(j-1) * cos2i(j)
+           atom(5,i,j,:) =   cos2v(j) * cos2i(j)
         enddo
      enddo
   CASE(3)
      dzi = 1.0/dz
      do k = 1, l
-        atom(:,:,k,5) = dzi/dfzT(k)
-        atom(:,:,k,14) =-dzi/dfzT(k)
+        atom(5,:,:,k) = dzi/dfzT(k)
+        atom(14,:,:,k) =-dzi/dfzT(k)
      enddo
   END SELECT
 
   ! scale continuity equation with constant factor
   !      DO k = 1,l
-  !        atom(:,:,k,:) = atom(:,:,k,:) * dfzT(k)
+  !        atom(:,:,:,k) = atom(:,:,:,k) * dfzT(k)
   !      END DO
 
 
@@ -232,7 +232,7 @@ SUBROUTINE tderiv(type,atom)
   !     6:  tzz
   !     IMPORT/EXPORT
   integer type
-  real    atom(n,m,l,np)
+  real    atom(np,n,m,l)
   ! LOCAL
   integer i,j,k
   real    cosdx2i(0:m+1),dy2i,dz2i,h1,h2
@@ -240,18 +240,18 @@ SUBROUTINE tderiv(type,atom)
   atom = 0.0
   SELECT CASE(type)
   CASE(1) ! surface central points
-     atom(:,:,L,5) = 1.0
-     if(la > 0) atom(:,:,L,23) = -1.0 ! atmosphere
+     atom(5,:,:,L) = 1.0
+     if(la > 0) atom(23,:,:,L) = -1.0 ! atmosphere
   CASE(2) ! surface central points
-     atom(:,:,L,5) = 1.0
+     atom(5,:,:,L) = 1.0
   CASE(3)
      cosdx2i = (1.0/(cos(y)*dx))**2
      do i=1,n
         do j=1,m
            do k=1,l
-              atom(i,j,k,2) = cosdx2i(j)*(1 - landm(i,j,l))
-              atom(i,j,k,5) =-2*cosdx2i(j)*(1 - landm(i,j,l))
-              atom(i,j,k,8) = cosdx2i(j)*(1 - landm(i,j,l))
+              atom(2,i,j,k) = cosdx2i(j)*(1 - landm(i,j,l))
+              atom(5,i,j,k) =-2*cosdx2i(j)*(1 - landm(i,j,l))
+              atom(8,i,j,k) = cosdx2i(j)*(1 - landm(i,j,l))
            enddo
         enddo
      enddo
@@ -260,9 +260,9 @@ SUBROUTINE tderiv(type,atom)
      do i=1,n
         do k = 1, l
            do j = 1, m
-              atom(i,j,k,4) = (dy2i * cos(yv(j-1)) / cos(y(j)))*(1 - landm(i,j,l))
-              atom(i,j,k,6) = (dy2i * cos(yv(j)) / cos(y(j)))*(1 - landm(i,j,l))
-              atom(i,j,k,5) = -(atom(i,j,k,4) + atom(i,j,k,6))
+              atom(4,i,j,k) = (dy2i * cos(yv(j-1)) / cos(y(j)))*(1 - landm(i,j,l))
+              atom(6,i,j,k) = (dy2i * cos(yv(j)) / cos(y(j)))*(1 - landm(i,j,l))
+              atom(5,i,j,k) = -(atom(4,i,j,k) + atom(6,i,j,k))
            enddo
         enddo
      enddo
@@ -273,9 +273,9 @@ SUBROUTINE tderiv(type,atom)
         h2 = 1./(dfzT(k)*dfzW(k-1))
         do j=1,m
            do i=1,n
-              atom(i,j,k,14) = h2*dz2i*(1 - landm(i,j,l))
-              atom(i,j,k,23) = h1*dz2i*(1 - landm(i,j,l))
-              atom(i,j,k,5) = -(atom(i,j,k,14) + atom(i,j,k,23))
+              atom(14,i,j,k) = h2*dz2i*(1 - landm(i,j,l))
+              atom(23,i,j,k) = h1*dz2i*(1 - landm(i,j,l))
+              atom(5,i,j,k) = -(atom(14,i,j,k) + atom(23,i,j,k))
            enddo
         enddo
      enddo
@@ -284,22 +284,22 @@ SUBROUTINE tderiv(type,atom)
      h2 = 1./(dfzT(k)*dfzW(k-1))
      do i=1,n
         do j=1,m
-           atom(i,j,k,14) = h2*dz2i*(1 - landm(i,j,l))
-           atom(i,j,k,23) = 0.0
-           atom(i,j,k,5)  = -(atom(i,j,k,14) + atom(i,j,k,23))
+           atom(14,i,j,k) = h2*dz2i*(1 - landm(i,j,l))
+           atom(23,i,j,k) = 0.0
+           atom(5,i,j,k)  = -(atom(14,i,j,k) + atom(23,i,j,k))
         enddo
      enddo
   CASE(6)
      DO i = 1,n
         DO j = 1,m
            DO k = 1,l
-              atom(i,j,k,23) = 1.0 * (1 - landm(i,j,l))
-              atom(i,j,k,5) = 1.0 * (1 - landm(i,j,l))
+              atom(23,i,j,k) = 1.0 * (1 - landm(i,j,l))
+              atom(5,i,j,k) = 1.0 * (1 - landm(i,j,l))
            ENDDO
         ENDDO
      ENDDO
   CASE(7)
-     atom(:,:,1,5) = 1.0
+     atom(5,:,:,1) = 1.0
   END SELECT
 
 end SUBROUTINE tderiv
@@ -315,7 +315,7 @@ SUBROUTINE coriolis(type,atom)
   !                                          *     i  i+1
   !     IMPORT/EXPORT                        *  i-1  i
   integer type
-  real    atom(n,m,l,np)
+  real    atom(np,n,m,l)
   !     LOCAL
   integer i,j
   real      corv(0:m)
@@ -325,13 +325,13 @@ SUBROUTINE coriolis(type,atom)
   if (type.EQ.1) then
      do i=1,n
         do j=1,m-1
-           atom(i,j,:,5) = corv(j)
+           atom(5,i,j,:) = corv(j)
         enddo
      enddo
   else if (type.EQ.2) then
      do i=1,n
         do j=1,m-1
-           atom(i,j,:,5) = corv(j)
+           atom(5,i,j,:) = corv(j)
         enddo
      enddo
   end if
@@ -344,7 +344,7 @@ SUBROUTINE gradp(type,atom)
   implicit none
   !     IMPORT/EXPORT
   integer type
-  real    atom(n,m,l,np)
+  real    atom(np,n,m,l)
   !     LOCAL
   integer i,j,k
   real    cosdxi(0:m),dyi,dzi
@@ -355,27 +355,27 @@ SUBROUTINE gradp(type,atom)
      cosdxi = 1./(2*cos(yv)*dx)
      do i=1,n
         do j = 1, m -1
-           atom(i,j,:,5) =-cosdxi(j)
-           atom(i,j,:,6) =-cosdxi(j)
-           atom(i,j,:,8) = cosdxi(j)
-           atom(i,j,:,9) = cosdxi(j)
+           atom(5,i,j,:) =-cosdxi(j)
+           atom(6,i,j,:) =-cosdxi(j)
+           atom(8,i,j,:) = cosdxi(j)
+           atom(9,i,j,:) = cosdxi(j)
         enddo
      enddo
   CASE(2)
      dyi = 1./(2*dy)
      do i=1,n
         do j = 1, m -1
-           atom(i,j,:,5) =-dyi
-           atom(i,j,:,8) =-dyi
-           atom(i,j,:,6) = dyi
-           atom(i,j,:,9) = dyi
+           atom(5,i,j,:) =-dyi
+           atom(8,i,j,:) =-dyi
+           atom(6,i,j,:) = dyi
+           atom(9,i,j,:) = dyi
         enddo
      enddo
   CASE(3)
      dzi = 1./dz
      do k = 1, l
-        atom(:,:,k,5) =-dzi/dfzW(k)
-        atom(:,:,k,23) = dzi/dfzW(k)
+        atom(5,:,:,k) =-dzi/dfzW(k)
+        atom(23,:,:,k) = dzi/dfzW(k)
      enddo
   END SELECT
 
@@ -387,11 +387,11 @@ SUBROUTINE masksi(atom, mask)
   ! sea ice mask atom
 
   ! IMPORT/EXPORT
-  real atom(n,m,l,np)
+  real atom(np,n,m,l)
   real mask(1:n, 1:m)
 
   atom = 0.0;
-  atom(:,:,l,5) = mask;
+  atom(5,:,:,l) = mask;
 
 end SUBROUTINE masksi
 
@@ -417,7 +417,7 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   !
   ! IMPORT/EXPORT
   integer type
-  real    atom(n,m,l,np)
+  real    atom(np,n,m,l)
   real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
   real    w(0:n+1,0:m+1,0:l+la)
   real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
@@ -437,17 +437,17 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   SELECT CASE(type)
   CASE(1)                   ! trT
      ! coefficienten voor u met T als basis; hier niet gebruikt.
-     atom(:,:,:,5) =1.0
+     atom(5,:,:,:) =1.0
   CASE(2)                   ! urTx
      ! coefficienten voor u met T als basis; hier alleen voor i-1,j (1) en i,j (4)
      costdxi = 1.0/(4*cos(y)*dx)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,2) = -(t(i,j,k)+t(i-1,j,k))*costdxi(j)*(1 - landm(i,j,l))
-              atom(i,j,k,4) =  (t(i+1,j,k)+t(i,j,k))*costdxi(j)*(1 - landm(i,j,l))
-              atom(i,j,k,1) = -(t(i,j,k)+t(i-1,j,k))*costdxi(j)*(1 - landm(i,j,l))
-              atom(i,j,k,5) =  (t(i+1,j,k)+t(i,j,k))*costdxi(j)*(1 - landm(i,j,l))
+              atom(2,i,j,k) = -(t(i,j,k)+t(i-1,j,k))*costdxi(j)*(1 - landm(i,j,l))
+              atom(4,i,j,k) =  (t(i+1,j,k)+t(i,j,k))*costdxi(j)*(1 - landm(i,j,l))
+              atom(1,i,j,k) = -(t(i,j,k)+t(i-1,j,k))*costdxi(j)*(1 - landm(i,j,l))
+              atom(5,i,j,k) =  (t(i+1,j,k)+t(i,j,k))*costdxi(j)*(1 - landm(i,j,l))
            ENDDO
         ENDDO
      ENDDO
@@ -457,9 +457,9 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,2) = -(u(i-1,j,k)+u(i-1,j-1,k))*costdxi(j)*(1 - landm(i,j,l))
-              atom(i,j,k,8) = (u(i,j,k)+u(i,j-1,k))*costdxi(j)*(1 - landm(i,j,l))
-              atom(i,j,k,5) = atom(i,j,k,2) + atom(i,j,k,8)
+              atom(2,i,j,k) = -(u(i-1,j,k)+u(i-1,j-1,k))*costdxi(j)*(1 - landm(i,j,l))
+              atom(8,i,j,k) = (u(i,j,k)+u(i,j-1,k))*costdxi(j)*(1 - landm(i,j,l))
+              atom(5,i,j,k) = atom(2,i,j,k) + atom(8,i,j,k)
            ENDDO
         ENDDO
      ENDDO
@@ -469,10 +469,10 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,4) = -costdxi(j)*(t(i,j,k)+t(i,j-1,k))*cos(yv(j-1))*(1 - landm(i,j,l))
-              atom(i,j,k,1) = -costdxi(j)*(t(i,j,k)+t(i,j-1,k))*cos(yv(j-1))*(1 - landm(i,j,l))
-              atom(i,j,k,5) = costdxi(j)*(t(i,j+1,k)+t(i,j,k))*cos(yv(j))*(1 - landm(i,j,l))
-              atom(i,j,k,2) = costdxi(j)*(t(i,j+1,k)+t(i,j,k))*cos(yv(j))*(1 - landm(i,j,l))
+              atom(4,i,j,k) = -costdxi(j)*(t(i,j,k)+t(i,j-1,k))*cos(yv(j-1))*(1 - landm(i,j,l))
+              atom(1,i,j,k) = -costdxi(j)*(t(i,j,k)+t(i,j-1,k))*cos(yv(j-1))*(1 - landm(i,j,l))
+              atom(5,i,j,k) = costdxi(j)*(t(i,j+1,k)+t(i,j,k))*cos(yv(j))*(1 - landm(i,j,l))
+              atom(2,i,j,k) = costdxi(j)*(t(i,j+1,k)+t(i,j,k))*cos(yv(j))*(1 - landm(i,j,l))
            ENDDO
         ENDDO
      ENDDO
@@ -482,9 +482,9 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,4) = -(v(i,j-1,k)+v(i-1,j-1,k))*costdxi(j)*cos(yv(j-1))*(1 - landm(i,j,l))
-              atom(i,j,k,6) = (v(i,j,k)+v(i-1,j,k))*costdxi(j)*cos(yv(j))*(1 - landm(i,j,l))
-              atom(i,j,k,5) = atom(i,j,k,4) + atom(i,j,k,6)
+              atom(4,i,j,k) = -(v(i,j-1,k)+v(i-1,j-1,k))*costdxi(j)*cos(yv(j-1))*(1 - landm(i,j,l))
+              atom(6,i,j,k) = (v(i,j,k)+v(i-1,j,k))*costdxi(j)*cos(yv(j))*(1 - landm(i,j,l))
+              atom(5,i,j,k) = atom(4,i,j,k) + atom(6,i,j,k)
            ENDDO
         ENDDO
      ENDDO
@@ -494,12 +494,12 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
      DO j = 1, m
         DO i = 1, n
            DO k = 1, l-1
-              atom(i,j,k,14) = -tdzi*(1 - landm(i,j,l))*(t(i,j,k)+t(i,j,k-1))/dfzT(k)
-              atom(i,j,k,5) = tdzi*(1 - landm(i,j,l))*(t(i,j,k+1)+t(i,j,k))/dfzT(k)
+              atom(14,i,j,k) = -tdzi*(1 - landm(i,j,l))*(t(i,j,k)+t(i,j,k-1))/dfzT(k)
+              atom(5,i,j,k) = tdzi*(1 - landm(i,j,l))*(t(i,j,k+1)+t(i,j,k))/dfzT(k)
            ENDDO
            k = l
-           atom(i,j,k,14) = -tdzi*(1 - landm(i,j,l))*(t(i,j,k)+t(i,j,k-1))/dfzT(k)
-           atom(i,j,k,5) = 0.0
+           atom(14,i,j,k) = -tdzi*(1 - landm(i,j,l))*(t(i,j,k)+t(i,j,k-1))/dfzT(k)
+           atom(5,i,j,k) = 0.0
         ENDDO
      ENDDO
   CASE(7)                   ! Wtrz
@@ -508,10 +508,10 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,14) = -w(i,j,k-1)*(1 - landm(i,j,l))*tdzi/dfzT(k)
-              atom(i,j,k,23) = w(i,j,k)*(1 - landm(i,j,l))*tdzi/dfzT(k)
+              atom(14,i,j,k) = -w(i,j,k-1)*(1 - landm(i,j,l))*tdzi/dfzT(k)
+              atom(23,i,j,k) = w(i,j,k)*(1 - landm(i,j,l))*tdzi/dfzT(k)
 
-              atom(i,j,k,5) =  atom(i,j,k,14) + atom(i,j,k,23)
+              atom(5,i,j,k) =  atom(14,i,j,k) + atom(23,i,j,k)
            ENDDO
         ENDDO
      ENDDO
@@ -528,7 +528,7 @@ SUBROUTINE wnlin(type,atom,t)
   !
   !     IMPORT/EXPORT
   integer type
-  real    atom(n,m,l,np)
+  real    atom(np,n,m,l)
   real    t(0:n+1,0:m+1,0:l+la+1)
   ! LOCAL
   integer i,j,k
@@ -540,8 +540,8 @@ SUBROUTINE wnlin(type,atom,t)
      DO k = 1,l-1
         DO j = 1,m
            DO i = 1,n
-              atom(i,j,k,23) = (t(i,j,k)+t(i,j,k+1))/2.
-              atom(i,j,k,5) = (t(i,j,k)+t(i,j,k+1))/2.
+              atom(23,i,j,k) = (t(i,j,k)+t(i,j,k+1))/2.
+              atom(5,i,j,k) = (t(i,j,k)+t(i,j,k+1))/2.
            ENDDO
         ENDDO
      ENDDO
@@ -549,8 +549,8 @@ SUBROUTINE wnlin(type,atom,t)
      DO k = 1,l-1
         DO j = 1,m
            DO i = 1,n
-              atom(i,j,k,23) = t(i,j,k+1)/4.
-              atom(i,j,k,5) = (t(i,j,k)+2*t(i,j,k+1))/4.
+              atom(23,i,j,k) = t(i,j,k+1)/4.
+              atom(5,i,j,k) = (t(i,j,k)+2*t(i,j,k+1))/4.
            ENDDO
         ENDDO
      ENDDO
@@ -558,8 +558,8 @@ SUBROUTINE wnlin(type,atom,t)
      DO k=1,l-1
         DO j = 1,m
            DO i = 1,n
-              atom(i,j,k,5) = 0.375*(t(i,j,k)+t(i,j,k+1))**2
-              atom(i,j,k,23) = 0.375*(t(i,j,k)+t(i,j,k+1))**2
+              atom(5,i,j,k) = 0.375*(t(i,j,k)+t(i,j,k+1))**2
+              atom(23,i,j,k) = 0.375*(t(i,j,k)+t(i,j,k+1))**2
            ENDDO
         ENDDO
      ENDDO
@@ -567,10 +567,10 @@ SUBROUTINE wnlin(type,atom,t)
      DO k=1,l-1
         DO j = 1,m
            DO i = 1,n
-              atom(i,j,k,5) = 0.125*(t(i,j,k)*t(i,j,k)+&
+              atom(5,i,j,k) = 0.125*(t(i,j,k)*t(i,j,k)+&
                    3*t(i,j,k+1)*t(i,j,k) +&
                    3*t(i,j,k+1)*t(i,j,k+1))
-              atom(i,j,k,23) = 0.125*t(i,j,k+1)*t(i,j,k+1)
+              atom(23,i,j,k) = 0.125*t(i,j,k+1)*t(i,j,k+1)
            ENDDO
         ENDDO
      ENDDO
@@ -594,7 +594,7 @@ SUBROUTINE unlin(type,atom,u,v,w)
   !
   ! IMPORT/EXPORT
   integer type
-  real    atom(n,m,l,np)
+  real    atom(np,n,m,l)
   real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
   real    w(0:n+1,0:m+1,0:l+la  )
 
@@ -609,10 +609,10 @@ SUBROUTINE unlin(type,atom,u,v,w)
      DO j = 1, m
         DO k = 1, l
            DO i = 1, n-1
-              atom(i,j,k,8) = u(i+1,j,k)*costdxi(j)
+              atom(8,i,j,k) = u(i+1,j,k)*costdxi(j)
            ENDDO
            DO i = 2,n
-              atom(i,j,k,2) = - u(i-1,j,k)*costdxi(j)
+              atom(2,i,j,k) = - u(i-1,j,k)*costdxi(j)
            ENDDO
         ENDDO
      ENDDO
@@ -621,10 +621,10 @@ SUBROUTINE unlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n-1
-              atom(i,j,k,8) = 2*u(i+1,j,k)*costdxi(j)
+              atom(8,i,j,k) = 2*u(i+1,j,k)*costdxi(j)
            ENDDO
            DO i=2,n
-              atom(i,j,k,2) = - 2*u(i-1,j,k)*costdxi(j)
+              atom(2,i,j,k) = - 2*u(i-1,j,k)*costdxi(j)
            ENDDO
         ENDDO
      ENDDO
@@ -633,10 +633,10 @@ SUBROUTINE unlin(type,atom,u,v,w)
      DO k = 1, l
         DO i = 1, n
            DO j = 2, m
-              atom(i,j,k,4) = -v(i,j-1,k)*cos(yv(j-1))*costdxi(j)
+              atom(4,i,j,k) = -v(i,j-1,k)*cos(yv(j-1))*costdxi(j)
            ENDDO
            DO j=1,m-1
-              atom(i,j,k,6) =  v(i,j+1,k)*cos(yv(j+1))*costdxi(j)
+              atom(6,i,j,k) =  v(i,j+1,k)*cos(yv(j+1))*costdxi(j)
            ENDDO
         ENDDO
      ENDDO
@@ -645,10 +645,10 @@ SUBROUTINE unlin(type,atom,u,v,w)
      DO k = 1, l
         DO i = 1, n
            DO j = 2, m
-              atom(i,j,k,4) =  -u(i,j-1,k)*cos(yv(j-1))*costdxi(j)
+              atom(4,i,j,k) =  -u(i,j-1,k)*cos(yv(j-1))*costdxi(j)
            ENDDO
            DO j=1,m-1
-              atom(i,j,k,6) =    u(i,j+1,k)*cos(yv(j+1))*costdxi(j)
+              atom(6,i,j,k) =    u(i,j+1,k)*cos(yv(j+1))*costdxi(j)
            ENDDO
         ENDDO
      ENDDO
@@ -657,9 +657,9 @@ SUBROUTINE unlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,23) =  (w(i,j,k)+w(i,j+1,k)+w(i+1,j,k)+w(i+1,j+1,k))*tdzi(k)
-              atom(i,j,k,14) = -(w(i,j,k-1)+w(i,j+1,k-1)+w(i+1,j,k-1)+w(i+1,j+1,k-1))*tdzi(k)
-              atom(i,j,k,5) = atom(i,j,k,14) + atom(i,j,k,23)
+              atom(23,i,j,k) =  (w(i,j,k)+w(i,j+1,k)+w(i+1,j,k)+w(i+1,j+1,k))*tdzi(k)
+              atom(14,i,j,k) = -(w(i,j,k-1)+w(i,j+1,k-1)+w(i+1,j,k-1)+w(i+1,j+1,k-1))*tdzi(k)
+              atom(5,i,j,k) = atom(14,i,j,k) + atom(23,i,j,k)
            ENDDO
         ENDDO
      ENDDO
@@ -668,14 +668,14 @@ SUBROUTINE unlin(type,atom,u,v,w)
      DO j = 1, m
         DO i = 1, n
            DO k = 1, l
-              atom(i,j,k,5)  = (u(i,j,k) + u(i,j,k+1))*tdzi(k)
-              atom(i,j,k,6)  = (u(i,j,k) + u(i,j,k+1))*tdzi(k)
-              atom(i,j,k,8)  = (u(i,j,k) + u(i,j,k+1))*tdzi(k)
-              atom(i,j,k,9)  = (u(i,j,k) + u(i,j,k+1))*tdzi(k)
-              atom(i,j,k,14) = - (u(i,j,k) + u(i,j,k-1))*tdzi(k)
-              atom(i,j,k,15) = - (u(i,j,k) + u(i,j,k-1))*tdzi(k)
-              atom(i,j,k,17) = - (u(i,j,k) + u(i,j,k-1))*tdzi(k)
-              atom(i,j,k,18) = - (u(i,j,k) + u(i,j,k-1))*tdzi(k)
+              atom(5,i,j,k)  = (u(i,j,k) + u(i,j,k+1))*tdzi(k)
+              atom(6,i,j,k)  = (u(i,j,k) + u(i,j,k+1))*tdzi(k)
+              atom(8,i,j,k)  = (u(i,j,k) + u(i,j,k+1))*tdzi(k)
+              atom(9,i,j,k)  = (u(i,j,k) + u(i,j,k+1))*tdzi(k)
+              atom(14,i,j,k) = - (u(i,j,k) + u(i,j,k-1))*tdzi(k)
+              atom(15,i,j,k) = - (u(i,j,k) + u(i,j,k-1))*tdzi(k)
+              atom(17,i,j,k) = - (u(i,j,k) + u(i,j,k-1))*tdzi(k)
+              atom(18,i,j,k) = - (u(i,j,k) + u(i,j,k-1))*tdzi(k)
            ENDDO
         ENDDO
      ENDDO
@@ -684,7 +684,7 @@ SUBROUTINE unlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,5) = v(i,j,k)*tanr(j)
+              atom(5,i,j,k) = v(i,j,k)*tanr(j)
            ENDDO
         ENDDO
      ENDDO
@@ -693,7 +693,7 @@ SUBROUTINE unlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,5) = u(i,j,k)*tanr(j)
+              atom(5,i,j,k) = u(i,j,k)*tanr(j)
            ENDDO
         ENDDO
      ENDDO
@@ -717,7 +717,7 @@ SUBROUTINE vnlin(type,atom,u,v,w)
   !
   ! IMPORT/EXPORT
   integer type
-  real    atom(n,m,l,np)
+  real    atom(np,n,m,l)
   real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
   real    w(0:n+1,0:m+1,0:l+la  )
 
@@ -732,10 +732,10 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n-1
-              atom(i,j,k,8) = u(i+1,j,k)*costdxi(j)
+              atom(8,i,j,k) = u(i+1,j,k)*costdxi(j)
            ENDDO
            DO i=2,n
-              atom(i,j,k,2) = - u(i-1,j,k)*costdxi(j)
+              atom(2,i,j,k) = - u(i-1,j,k)*costdxi(j)
            ENDDO
         ENDDO
      ENDDO
@@ -744,10 +744,10 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n-1
-              atom(i,j,k,8) = v(i+1,j,k)*costdxi(j)
+              atom(8,i,j,k) = v(i+1,j,k)*costdxi(j)
            ENDDO
            DO i=2,n
-              atom(i,j,k,2) = -v(i-1,j,k)*costdxi(j)
+              atom(2,i,j,k) = -v(i-1,j,k)*costdxi(j)
            ENDDO
         ENDDO
      ENDDO
@@ -756,10 +756,10 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      DO k = 1, l
         DO i = 1, n
            DO j = 1, m-1
-              atom(i,j,k,6) =  v(i,j+1,k)*cos(yv(j+1))*costdxi(j)
+              atom(6,i,j,k) =  v(i,j+1,k)*cos(yv(j+1))*costdxi(j)
            ENDDO
            DO j=2,m
-              atom(i,j,k,4) = -v(i,j-1,k)*cos(yv(j-1))*costdxi(j)
+              atom(4,i,j,k) = -v(i,j-1,k)*cos(yv(j-1))*costdxi(j)
            ENDDO
         ENDDO
      ENDDO
@@ -768,10 +768,10 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      DO k = 1, l
         DO i = 1, n
            DO j = 1, m-1
-              atom(i,j,k,6) =  2*v(i,j+1,k)*cos(yv(j+1))*costdxi(j)
+              atom(6,i,j,k) =  2*v(i,j+1,k)*cos(yv(j+1))*costdxi(j)
            ENDDO
            DO j=2,m
-              atom(i,j,k,4) =  -2*v(i,j-1,k)*cos(yv(j-1))*costdxi(j)
+              atom(4,i,j,k) =  -2*v(i,j-1,k)*cos(yv(j-1))*costdxi(j)
            ENDDO
         ENDDO
      ENDDO
@@ -780,9 +780,9 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,23) =  (w(i,j,k)+w(i,j+1,k)+w(i+1,j,k)+w(i+1,j+1,k))*tdzi(k)
-              atom(i,j,k,14) = -(w(i,j,k-1)+w(i,j+1,k-1)+w(i+1,j,k-1)+w(i+1,j+1,k-1))*tdzi(k)
-              atom(i,j,k,5) = atom(i,j,k,14) + atom(i,j,k,23)
+              atom(23,i,j,k) =  (w(i,j,k)+w(i,j+1,k)+w(i+1,j,k)+w(i+1,j+1,k))*tdzi(k)
+              atom(14,i,j,k) = -(w(i,j,k-1)+w(i,j+1,k-1)+w(i+1,j,k-1)+w(i+1,j+1,k-1))*tdzi(k)
+              atom(5,i,j,k) = atom(14,i,j,k) + atom(23,i,j,k)
            ENDDO
         ENDDO
      ENDDO
@@ -791,14 +791,14 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      DO j = 1, m
         DO i = 1, n
            DO k = 1, l
-              atom(i,j,k,5) = (v(i,j,k) + v(i,j,k+1))*tdzi(k)
-              atom(i,j,k,6) = (v(i,j,k) + v(i,j,k+1))*tdzi(k)
-              atom(i,j,k,8) = (v(i,j,k) + v(i,j,k+1))*tdzi(k)
-              atom(i,j,k,9) = (v(i,j,k) + v(i,j,k+1))*tdzi(k)
-              atom(i,j,k,14) = - (v(i,j,k) + v(i,j,k-1))*tdzi(k)
-              atom(i,j,k,15) = - (v(i,j,k) + v(i,j,k-1))*tdzi(k)
-              atom(i,j,k,17) = - (v(i,j,k) + v(i,j,k-1))*tdzi(k)
-              atom(i,j,k,18) = - (v(i,j,k) + v(i,j,k-1))*tdzi(k)
+              atom(5,i,j,k) = (v(i,j,k) + v(i,j,k+1))*tdzi(k)
+              atom(6,i,j,k) = (v(i,j,k) + v(i,j,k+1))*tdzi(k)
+              atom(8,i,j,k) = (v(i,j,k) + v(i,j,k+1))*tdzi(k)
+              atom(9,i,j,k) = (v(i,j,k) + v(i,j,k+1))*tdzi(k)
+              atom(14,i,j,k) = - (v(i,j,k) + v(i,j,k-1))*tdzi(k)
+              atom(15,i,j,k) = - (v(i,j,k) + v(i,j,k-1))*tdzi(k)
+              atom(17,i,j,k) = - (v(i,j,k) + v(i,j,k-1))*tdzi(k)
+              atom(18,i,j,k) = - (v(i,j,k) + v(i,j,k-1))*tdzi(k)
            ENDDO
         ENDDO
      ENDDO
@@ -808,7 +808,7 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,5) = u(i,j,k)*tanr(j)
+              atom(5,i,j,k) = u(i,j,k)*tanr(j)
            ENDDO
         ENDDO
      ENDDO
@@ -818,7 +818,7 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,5) = 2*u(i,j,k)*tanr(j)
+              atom(5,i,j,k) = 2*u(i,j,k)*tanr(j)
            ENDDO
         ENDDO
      ENDDO
@@ -838,7 +838,7 @@ SUBROUTINE yderiv(type,atom)
   !     6:  tzz
   !     IMPORT/EXPORT
   integer type,i,j
-  real    atom(n,m,la,np)
+  real    atom(np,n,m,la)
   real    cosdx2i(0:m+1),dy2i
 
   !
@@ -848,8 +848,8 @@ SUBROUTINE yderiv(type,atom)
      DO j = 1,m
         DO i = 1,n
            !         if(landm(i,j,l)/=LAND) then
-           atom(i,j,:,5)  = -1.0
-           atom(i,j,:,14) =  1.0
+           atom(5,i,j,:)  = -1.0
+           atom(14,i,j,:) =  1.0
            !         endif
         ENDDO
      ENDDO
@@ -857,28 +857,28 @@ SUBROUTINE yderiv(type,atom)
      cosdx2i = (1.0/(cos(y)*dx))**2
      DO j = 1,m
         DO i = 1,n
-           atom(i,j,:,2) =      dat(j) * cosdx2i(j)
-           atom(i,j,:,5) = -2 * dat(j) * cosdx2i(j)
-           atom(i,j,:,8) =      dat(j) * cosdx2i(j)
+           atom(2,i,j,:) =      dat(j) * cosdx2i(j)
+           atom(5,i,j,:) = -2 * dat(j) * cosdx2i(j)
+           atom(8,i,j,:) =      dat(j) * cosdx2i(j)
         ENDDO
      ENDDO
   CASE(3)
      dy2i = (1.0/dy)**2
      DO j = 1,m
         DO i = 1,n
-           atom(i,j,:,4) = dy2i*davt(j-1) * cos(yv(j-1)) / cos(y(j))
-           atom(i,j,:,6) = dy2i*davt(j)   * cos(yv(j))   / cos(y(j))
-           atom(i,j,:,5) = -(atom(i,j,:,4) + atom(i,j,:,6))
+           atom(4,i,j,:) = dy2i*davt(j-1) * cos(yv(j-1)) / cos(y(j))
+           atom(6,i,j,:) = dy2i*davt(j)   * cos(yv(j))   / cos(y(j))
+           atom(5,i,j,:) = -(atom(4,i,j,:) + atom(6,i,j,:))
         ENDDO
      ENDDO
   CASE(4)
-     atom(:,:,:,5) = 1.0
+     atom(5,:,:,:) = 1.0
   CASE(5)
      cosdx2i = 1.0/(2*cos(y)*dx)
      DO j = 1,m
         DO i = 1,n
-           atom(i,j,:,2) = - upa(j)*cosdx2i(j)
-           atom(i,j,:,8) =   upa(j)*cosdx2i(j)
+           atom(2,i,j,:) = - upa(j)*cosdx2i(j)
+           atom(8,i,j,:) =   upa(j)*cosdx2i(j)
         ENDDO
      ENDDO
      !
