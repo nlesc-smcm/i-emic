@@ -181,6 +181,7 @@ void Ocean::initializeOcean()
     // Obtain Jacobian from THCM
     THCM::Instance().evaluate(*state_, Teuchos::null, true);
     jac_ = THCM::Instance().getJacobian();
+
     INFO("Ocean: Obtained Jacobian from THCM");
 
     // Obtain mass matrix B from THCM. Note that we assume the mass
@@ -226,7 +227,7 @@ void Ocean::initializeOcean()
 //====================================================================
 int Ocean::analyzeJacobian()
 {
-    INFO("\n  <><>  analyze Jacobian");
+    INFO("\n  <><>  Analyze Jacobian...");
     
     // Make preparations for extracting pressure rows
     int dim = mapP_->NumMyElements();
@@ -278,12 +279,13 @@ int Ocean::analyzeJacobian()
             // These rows only depend on vertical velocity W.
             (*singRows_)[i] = 2;
             singRowsFound++;
+            std::cout << "  <><>  problem P row: " << row << std::endl;
         }
     }
 
-    int sumFoundP;
+    int sumFoundP = 0;
     comm_->SumAll(&singRowsFound, &sumFoundP, 1);
-    INFO("  <><>  problem P rows found: " << sumFoundP);        
+    INFO("  <><>  problem P rows found: " << sumFoundP);
 
     // Another approach to analyze the Jacobian is through the volume
     // integrals of its columns. This only makes sense when the volume
@@ -296,12 +298,20 @@ int Ocean::analyzeJacobian()
     Teuchos::RCP<Epetra_Vector> tmpB =
         Teuchos::rcp(new Epetra_Vector(*THCM::Instance().DiagB()));
 
-    // Compute test Jacobian and mass matrix
-    THCM::Instance().evaluate(*state_, Teuchos::null, true, true);
+
+    Teuchos::RCP<Epetra_Vector> pertState =
+        Teuchos::rcp(new Epetra_Vector(*state_));
+    pertState->PutScalar(1.0);
     
+    // Compute test Jacobian and mass matrix
+    THCM::Instance().evaluate(*pertState, Teuchos::null, true, true);
+
     // Copy the test Jacobian from THCM
     Teuchos::RCP<Epetra_CrsMatrix> mat =
         Teuchos::rcp(new Epetra_CrsMatrix(*THCM::Instance().getJacobian()));
+
+    DUMPMATLAB("ocean_jac", *mat);
+    DUMP_VECTOR("intcond_coeff", *getIntCondCoeff());
 
     // Restore the original Jacobian and mass matrix in THCM
     Teuchos::RCP<Epetra_CrsMatrix> jac = THCM::Instance().getJacobian();
@@ -331,24 +341,20 @@ int Ocean::analyzeJacobian()
     for (int i = 0; i != dim; ++i)
         if (std::abs(ints[i]) > 1e-7)
         {
-            INFO("  <><> GID = " << ints.Map().GID(i)
-                 << " value = " << std::abs(ints[i]));
-            
             (*singRows_)[i] = 2;
             badSintsfound++;
+            std::cout << "  <><>  nonzero column integral, " 
+                      << "  GID = " << ints.Map().GID(i)
+                      << " value = " << std::abs(ints[i]) << std::endl;
         }
     
     int sumFoundS = 0;
     comm_->SumAll(&badSintsfound, &sumFoundS, 1);
 
-    if (sumFoundS == 0)
-    {
-        INFO("  <><>  none \n");
-    }
-    else
-    {
-        INFO("  <><>  nonzero column integrals found: " << sumFoundS << '\n');
-    }
+    INFO("  <><>  nonzero column integrals found: " << sumFoundS << '\n');
+
+    // std::ofstream file("ints");
+    // file << ints;
 
     return sumFoundP + sumFoundS;
 }

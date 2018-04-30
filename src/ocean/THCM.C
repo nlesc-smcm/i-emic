@@ -633,32 +633,12 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
         INFO("THCM: integral condition for S is in global row " << rowintcon_);
     }
-            
-        
+
+    // Initialize integral coefficients
     intcond_coeff = Teuchos::rcp(new Epetra_Vector(*SolveMap));
-    intcond_coeff->PutScalar(0.0);
-    Teuchos::RCP<Epetra_Vector> intcond_tmp =
-        Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
-    
-    int nml = (domain->LocalN())*(domain->LocalM())*(domain->LocalL());
 
-    double *values = new double[nml];
-    int *indices   = new int[nml];
-    int len;
-    F90NAME(m_thcm_utils, intcond_scaling)(values, indices, &len);
-
-    for (int i=0;i<len;i++)
-    {
-        (*intcond_tmp)[indices[i]-1] = values[i];
-    }
-        
-    delete [] values;
-    delete [] indices;
-        
-    domain->Assembly2Solve(*intcond_tmp,*intcond_coeff);
-
-    intcond_coeff->Norm1(&totalVolume_);
-
+    // Obtain integral coefficients
+    getIntCondCoeff();
     
     // create a graph describing the maximal matrix pattern.
     // Note that in LOCA we can't change the pattern of the matrix
@@ -781,7 +761,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
         intcond -= intCorrection_; // apply correction
 
-        INFO("Salinity integral condition: " << intcond);
+        // INFO("Salinity integral condition: " << intcond);
 
     }
 
@@ -2464,6 +2444,37 @@ void THCM::insert_graph_entry(int* indices, int& pos,
     {
         indices[pos++] = FIND_ROW2(_NUN_,N,M,L,ii,j,k,xx);
     }
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getIntCondCoeff()
+{
+    intcond_coeff->PutScalar(0.0);
+    Teuchos::RCP<Epetra_Vector> intcond_tmp =
+        Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+    
+    int nml = (domain->LocalN())*(domain->LocalM())*(domain->LocalL());
+
+    double *values = new double[nml];
+    int *indices   = new int[nml];
+    int len;
+    F90NAME(m_thcm_utils, intcond_scaling)(values, indices, &len);
+
+    for (int i=0;i<len;i++)
+    {
+        (*intcond_tmp)[indices[i]-1] = values[i];
+    }
+        
+    delete [] values;
+    delete [] indices;
+        
+    domain->Assembly2Solve(*intcond_tmp,*intcond_coeff);
+
+    intcond_coeff->Norm1(&totalVolume_);
+
+    std::cout << "  total volume: " << totalVolume_ << std::endl;
+    
+    return intcond_coeff;
 }
 
 //=============================================================================

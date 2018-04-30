@@ -13,17 +13,18 @@ for i = 1:nun;
 end
 
 jjname = 'ocean_jac';
-jjname = 'mat';
-mmname = 'ocean_B';
+%jjname = 'mat';
+%mmname = 'ocean_B';
 icname = 'intcond_coeff';
-ints   = 'integrals2';
+%ints   = 'integrals2';
 
-B    = load(mmname);
+%B    = load(mmname);
 IC   = load(icname);
-ints = load(ints); 
+%ints = load(ints); 
 C    = load(jjname); 
 C    = spconvert(C);
 
+IC(22)
 
 Cr = C(idx,idx); % reordering
 
@@ -44,7 +45,7 @@ IC = IC(idxu(XX,:));
 % figure(3);
 % spy(Ar);
 
-intAr = sum(diag(IC)*Ar,1);
+intAr = sum(diag(IC(1:end-1))*Ar(1:end-1,:),1);
 
 intAr = reshape(full(intAr), n, m, l);
 cma = max(intAr(:));
