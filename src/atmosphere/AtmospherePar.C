@@ -612,38 +612,7 @@ void AtmospherePar::setLandMask(Utils::MaskStruct const &mask)
     }
 
 #ifdef DEBUGGING_NEW
-    INFO("Printing surface mask available in (global) Atmosphere");
-    std::ostringstream string;
-    std::ofstream smask;
-    smask.open("surfmask");
-
-    std::vector<std::string> stringvec;
-    int ctr  = 0;
-    int ctr0 = 0;
-    int ctr1 = 0;
-    for (auto &l: *surfmask_)
-    {
-        ctr++;
-        string << l;
-        smask  << l << '\n'; // write to file
-        if (ctr % n_ == 0)
-        {
-            stringvec.push_back(string.str());
-            string.str("");
-            string.clear();
-        }
-        if (l == 0)
-            ctr0++;
-        else
-            ctr1++;
-    }
-    smask.close();
-
-    // Reverse print to output file
-    for (auto i = stringvec.rbegin(); i != stringvec.rend(); ++i)
-        INFO(i->c_str());
-
-    INFO("surfmask zeros: " << ctr0 << ", ones: " << ctr1);
+    Utils::printSurfaceMask(surfmask_, "surfmask", n_);
 #endif
 
     // create rcp

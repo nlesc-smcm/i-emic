@@ -140,6 +140,45 @@ void Utils::print(std::vector<double> const &vec, std::string const &fname)
         file << el << std::endl;
 }
 
+//! Print surface mask to INFO and file fname
+void Utils::printSurfaceMask(std::shared_ptr<std::vector<int> > mask,
+                             std::string const &fname,
+                             int nDim)
+{
+    INFO("\nPrinting surface mask to " << fname);
+    std::ostringstream string;
+    std::ofstream smask;
+    smask.open(fname);
+
+    std::vector<std::string> stringvec;
+    int ctr  = 0;
+    int ctr0 = 0;
+    int ctr1 = 0;
+    for (auto &el: *mask)
+    {
+        ctr++;
+        string << el;
+        smask  << el << '\n'; // write to file
+        if (ctr % nDim == 0)
+        {
+            stringvec.push_back(string.str());
+            string.str("");
+            string.clear();
+        }
+        if (el == 0)
+            ctr0++;
+        else
+            ctr1++;
+    }
+    smask.close();
+
+    // Reverse print to output file
+    for (auto i = stringvec.rbegin(); i != stringvec.rend(); ++i)
+        INFO(i->c_str());
+
+    INFO("   surface mask zeros: " << ctr0 << ", ones: " << ctr1 << '\n');
+}
+
 //! We do a recursion for originalPars, not for dominantPars
 void Utils::overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPars,
                                 Teuchos::RCP<Teuchos::ParameterList> dominantPars)

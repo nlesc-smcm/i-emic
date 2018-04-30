@@ -144,7 +144,10 @@ protected:
 
     //! Integrals of the columns of the Jacobian may indicate errors
     //! in the discretization.
-    bool computeColumnIntegral_;
+    bool saveColumnIntegral_;
+
+    //! Maximum number of mask fixing cycles
+    int maxMaskFixes_;
 
     //! Continuation parameter name.
     //! For a list of possible names see THCM::par2int()
@@ -152,7 +155,7 @@ protected:
 
     //! Landmask file
     std::string landmaskFile_;
-
+    
     //! Row map for pressure points P
     Teuchos::RCP<Epetra_Map> mapP_;
 
@@ -161,6 +164,7 @@ protected:
 
     //! Rows corresponding to singular pressure points
     VectorPtr singRows_;
+
 
     //! Index map for surface T values
     Teuchos::RCP<Epetra_BlockMap> tIndexMap_;
@@ -363,10 +367,16 @@ public:
                         double &salt_advection,
                         double &salt_diffusion);
 
-    Teuchos::RCP<Epetra_Vector> getColumnIntegral();
+    Teuchos::RCP<Epetra_Vector> getColumnIntegral(Teuchos::RCP<Epetra_CrsMatrix> mat,
+                                                  bool useSRES = true);
 
     Teuchos::RCP<Epetra_Vector> getIntCondCoeff();
-    
+
+    // This function finds the pressure rows that will give a singular
+    // Schur complement. Based on these rows we will try to create a
+    // better landmask. 
+    int analyzeJacobian();
+
 private:
     // HDF5-based save and load functions for the state and parameters
     int loadStateFromFile(std::string const &name);
@@ -381,10 +391,6 @@ private:
     void initializePreconditioner();
     void initializeBelos();
 
-    // This function finds the pressure rows that will give a
-    // singular Schur complement.
-    // Based on these rows we will try to create a better landmask.
-    int analyzeJacobian();
 
     VectorPtr getVector(char mode, VectorPtr vec);
 

@@ -28,7 +28,6 @@
 #include <EpetraExt_Exception.h>
 #include <EpetraExt_HDF5.h>
 
-
 #ifdef HAVE_MPI
 #  include <mpi.h>
 #  include "Epetra_MpiComm.h"
@@ -129,6 +128,11 @@ namespace Utils
 
     //! Print std vector
     void print(std::vector<double> const &vec, std::string const &fname);
+
+    //! Print surface mask to INFO and file fname
+    void printSurfaceMask(std::shared_ptr<std::vector<int> > mask,
+                          std::string const &fname,
+                          int nDim);
 
     //! Compute dot product of two vectors
     template<typename VectorPtr>

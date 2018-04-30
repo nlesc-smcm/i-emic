@@ -51,6 +51,7 @@ extern "C" {
     _SUBROUTINE_(getparcs)(int*,double*);
     _SUBROUTINE_(writeparams)();
     _SUBROUTINE_(rhs)(double*,double*);
+    _SUBROUTINE_(setsres)(int *);
     _SUBROUTINE_(matrix)(double*,double*,double*);
 
     // input:   n,m,l,nmlglob
@@ -667,6 +668,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // where convective adjustment will happen, we assume it hap-
     // pens everywhere.
     localMatrixGraph = this->CreateMaximalGraph();
+    testMatrixGraph  = this->CreateMaximalGraph(false);
 
     if (SolveMap!=StandardMap)
     {
@@ -682,6 +684,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
     localJac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *localMatrixGraph));
     localJac->SetLabel("Local Jacobian");
+
+    testJac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *testMatrixGraph));
+    testJac->SetLabel("Testing Jacobian");
+
     Jac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *MatrixGraph));
     Jac->SetLabel("Jacobian");
 
@@ -766,7 +772,8 @@ Teuchos::RCP<Epetra_CrsMatrix> THCM::getJacobian()
 // Compute Jacobian and/or RHS.
 bool THCM::evaluate(const Epetra_Vector& soln,
                     Teuchos::RCP<Epetra_Vector> tmp_rhs,
-                    bool computeJac)
+                    bool computeJac,
+                    bool maskTest)
 {
     if (comp_sal_int)
     {
@@ -777,7 +784,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         INFO("Salinity integral condition: " << intcond);
 
     }
-    
+
     if (!(soln.Map().SameAs(*SolveMap)))
     {
         ERROR("Map of solution vector not same as solve-map ",__FILE__,__LINE__);
@@ -820,7 +827,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         CHECK_ZERO(tmp_rhs->Scale(-1.0));
         
 #ifndef NO_INTCOND
-        if (sres == 0)
+        if ((sres == 0) && !maskTest)
         {
             int intcondrow = rowintcon_;
             double intcond;
@@ -853,8 +860,13 @@ bool THCM::evaluate(const Epetra_Vector& soln,
     if(computeJac)
     {
         // INFO("Compute Jacobian...");
-
-        localJac->PutScalar(0.0); // set all matrix entries to zero
+        Teuchos::RCP<Epetra_CrsMatrix> tmpJac;
+        if (maskTest) // Use Jacobian based on testing graph
+            tmpJac = testJac;
+        else // Use Jacobian based on standard graph
+            tmpJac = localJac;
+        
+        tmpJac->PutScalar(0.0); // set all matrix entries to zero
         localDiagB->PutScalar(0.0);
 
         if (sigmaUVTS||(sigmaWP>1.0e-14)) {
@@ -865,7 +877,16 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         //Call the fortran routine, providing the solution vector,
         //and get back the three vectors of the sparse Jacobian (CSR form)
         TIMER_START("Ocean: compute jacobian: fortran part");
+
+        // If we test the mask we need non-restoring conditions in the matrix
+        int tmp_sres = (maskTest) ? 0 : sres;
+        FNAME(setsres)(&tmp_sres);
+        
         FNAME(matrix)(solution,&sigmaUVTS,&sigmaWP);
+
+        // Restore from the testing config
+        FNAME(setsres)(&sres);
+        
         TIMER_STOP("Ocean: compute jacobian: fortran part");
 
         const int maxlen = _NUN_*_NP_+1;    //nun*np+1 is max nonzeros per row
@@ -878,7 +899,8 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         for (int i = 0; i < imax; i++)
         {
-            if (!domain->IsGhost(i, _NUN_) && (AssemblyMap->GID(i) != rowintcon_))
+            if (!domain->IsGhost(i, _NUN_) &&
+                ( ( AssemblyMap->GID(i) != rowintcon_ ) || maskTest ) )
             {
                 index = begA[i]; // note that these arrays use 1-based indexing
                 numentries = begA[i+1] - index;
@@ -888,14 +910,20 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                     values[j]  = coA[index - 1 + j];
                 }
 
-                int ierr = localJac->ReplaceGlobalValues(AssemblyMap->GID(i), numentries,
+                int ierr = tmpJac->ReplaceGlobalValues(AssemblyMap->GID(i), numentries,
                                                          values, indices);
 
                 // ierr == 3 probably means not all row entries are replaced,
                 // does not matter because we zeroed them.
                 if (((ierr!=0) && (ierr!=3)))
                 {
+                    std::stringstream ss;
+                    ss << "graph_pid" << Comm->MyPID();
+                    std::ofstream file(ss.str());
+                    file << tmpJac->Graph();
+                    
                     std::cout << "\n ERROR " << ierr;
+                    std::cout << ((ierr == 2) ? ": value excluded" : "") << std::endl;
                     std::cout << "\n myPID " << Comm->MyPID();
                     std::cout <<"\n while inserting/replacing values in local Jacobian"
                               << std::endl;
@@ -918,19 +946,19 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                     std::cout << " maxlen:               " << maxlen << std::endl;
                     
                     std::cout << " row:                  " << GRID << std::endl;
-                    std::cout << " have rowintcon:       " << localJac->MyGRID(rowintcon_)
+                    std::cout << " have rowintcon:       " << tmpJac->MyGRID(rowintcon_)
                               << std::endl;
                     std::cout << " rowintcon:            " << rowintcon_ << std::endl;
                     std::cout << " assembly rowintcon:   " << AssemblyMap->LID(rowintcon_)
                               << std::endl;
                     std::cout << " standard rowintcon:   " << StandardMap->LID(rowintcon_)
                               << std::endl;
-                    int LRID = localJac->LRID(GRID);
+                    int LRID = tmpJac->LRID(GRID);
                     std::cout << " LRID:                 " << LRID << std::endl;
                     std::cout << " graph inds in LRID:   " 
-                              << localJac->Graph().NumMyIndices(LRID) << std::endl;
+                              << tmpJac->Graph().NumMyIndices(LRID) << std::endl;
 
-                    int ierr2 = localJac->ExtractGlobalRowCopy
+                    int ierr2 = tmpJac->ExtractGlobalRowCopy
                         (AssemblyMap->GID(i), maxlen, numentries, values, indices);
 
                     std::cout << "\noriginal row: " << std::endl;
@@ -953,21 +981,22 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         } //i-loop over rows
 
 #ifndef NO_INTCOND
-        if (sres == 0)
+        if ((sres == 0) && !maskTest)
         {
-            this->intcond_S(*localJac,*localDiagB);
+            std::cout << "entering intcond_S, " << maskTest << std::endl;
+            this->intcond_S(*tmpJac,*localDiagB);
         }
 #endif
         
         if (fixPressurePoints_)
-            this->fixPressurePoints(*localJac,*localDiagB);
+            this->fixPressurePoints(*tmpJac,*localDiagB);
 
-        CHECK_ZERO(localJac->FillComplete());
+        CHECK_ZERO(tmpJac->FillComplete());
 
         // redistribute according to SolveMap (may be load-balanced)
         // standard and solve maps are equal
         domain->Standard2Solve(*localDiagB, *diagB); // no effect
-        domain->Standard2Solve(*localJac, *Jac);     // no effect
+        domain->Standard2Solve(*tmpJac, *Jac);     // no effect
         CHECK_ZERO(Jac->FillComplete());
 
         if (scaling_type == "THCM")
@@ -2069,10 +2098,20 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
         }
         if (ierr != 0)
         {
-            INFO( "Insertion ERROR! " << ierr << " filled = "
-                  << A.Filled());
-            INFO( " while inserting/replacing values in local Jacobian");
-            INFO( "  GRID: " << intcondrow);
+            std::stringstream ss;
+            ss << "graph_pid" << Comm->MyPID();
+            std::ofstream file(ss.str());
+            file << A.Graph();
+
+            std::cout << "Insertion ERROR! " << ierr << ", filled = "
+                      << A.Filled() << std::endl;
+                    
+            std::cout << "\n ERROR " << ierr;
+            std::cout << ((ierr == 2) ? ": value excluded" : "") << std::endl;
+            std::cout << "\n myPID " << Comm->MyPID();
+
+            std::cout << " while inserting/replacing values in local Jacobian" << std::endl;
+            std::cout << "  GRID: " << intcondrow << std::endl;
             ERROR("Error during insertion/replacing of values in local Jacobian",
                   __FILE__, __LINE__);
         }
@@ -2127,7 +2166,7 @@ void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
+Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
 {
     DEBUG("Constructing maximal matrix graph...");
     int n=domain->LocalN();
@@ -2371,7 +2410,8 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
                 insert_graph_entry(indices,pos,i,j,k+1,TT,N,M,L);
 #ifndef NO_INTCOND
                 if ( (sres == 0) &&
-                     ( (gid0+SS) == rowintcon_ ) )
+                     ( (gid0+SS) == rowintcon_ ) &&
+                     useSRES)
                     continue;
 #endif
                 DEBUG_GRAPH_ROW(SS)
@@ -2379,7 +2419,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph()
             }
 
 #ifndef NO_INTCOND
-    if (sres == 0)
+    if ((sres == 0) && useSRES)
     {
         int grid = rowintcon_;
         if (StandardMap->MyGID(grid))

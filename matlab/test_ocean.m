@@ -13,17 +13,20 @@ for i = 1:nun;
 end
 
 jjname = 'ocean_jac';
+jjname = 'mat';
 mmname = 'ocean_B';
 icname = 'intcond_coeff';
 ints   = 'integrals2';
 
 B    = load(mmname);
 IC   = load(icname);
-C    = load(jjname); 
 ints = load(ints); 
+C    = load(jjname); 
 C    = spconvert(C);
 
+
 Cr = C(idx,idx); % reordering
+
 
 XX = 6;
 Ar = C(idxu(XX,:),idxu(XX,:));

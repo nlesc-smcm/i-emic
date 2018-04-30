@@ -324,6 +324,18 @@ SUBROUTINE writeparams()
 end subroutine writeparams
 
 !*****************************************************************************
+SUBROUTINE setsres(tmp_sres)
+  ! adjust sres parameter
+  use, intrinsic :: iso_c_binding
+  use m_usr
+  implicit none
+  integer(c_int) :: tmp_sres
+
+  sres = tmp_sres
+  
+end SUBROUTINE setsres
+
+!*****************************************************************************
 SUBROUTINE matrix(un, sig1, sig2)
   use, intrinsic :: iso_c_binding
   use m_usr

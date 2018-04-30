@@ -67,7 +67,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 
     saveEveryStep_         (oceanParamList->get("Save every step", false)),
     useFort3_              (oceanParamList->get("Use legacy fortran output", false)),
-    computeColumnIntegral_ (oceanParamList->get("Compute column integral", false)),
+    saveColumnIntegral_    (oceanParamList->get("Save column integral", false)),
+    maxMaskFixes_          (oceanParamList->get("Max mask fixes", 10)),
 
     parName_               (oceanParamList->get("Continuation parameter",
                                                 "Combined Forcing")),
@@ -225,6 +226,8 @@ void Ocean::initializeOcean()
 //====================================================================
 int Ocean::analyzeJacobian()
 {
+    INFO("\n  <><>  analyze Jacobian");
+    
     // Make preparations for extracting pressure rows
     int dim = mapP_->NumMyElements();
 
@@ -247,7 +250,6 @@ int Ocean::analyzeJacobian()
         CHECK_ZERO(jac_->ExtractGlobalRowCopy(row, maxlen,
                                               len, &values[0],
                                               &indices[0]));
-
         sum = 0.0;
         el  = 0;
         for (int p = 0; p != len; p++)
@@ -279,24 +281,76 @@ int Ocean::analyzeJacobian()
         }
     }
 
-    int sumFound;
-    comm_->SumAll(&singRowsFound, &sumFound, 1);
+    int sumFoundP;
+    comm_->SumAll(&singRowsFound, &sumFoundP, 1);
+    INFO("  <><>  problem P rows found: " << sumFoundP);        
 
     // Another approach to analyze the Jacobian is through the volume
-    // integrals of its columns.
-    Teuchos::RCP<Epetra_Vector> colInts = getColumnIntegral();
+    // integrals of its columns. This only makes sense when the volume
+    // integral of the forcing is zero and we temporarily disable the
+    // integral condition.
 
-    // We ignore the integral condition and its neighbours
-    int rowIntCon = getRowIntCon();
-    int lidIntCon = colInts->Map().LID(rowIntCon);
-    if (lidIntCon >= 0)
-        (*colInts)[lidIntCon] = 0;
+    // Copy the original Jacobian and mass matrix from THCM
+    Teuchos::RCP<Epetra_CrsMatrix> tmpJac =
+        Teuchos::rcp(new Epetra_CrsMatrix(*THCM::Instance().getJacobian()));
+    Teuchos::RCP<Epetra_Vector> tmpB =
+        Teuchos::rcp(new Epetra_Vector(*THCM::Instance().DiagB()));
 
-    // -->todo
+    // Compute test Jacobian and mass matrix
+    THCM::Instance().evaluate(*state_, Teuchos::null, true, true);
     
-    INFO("  analyzeJacobian(): problem rows found: " << sumFound);
+    // Copy the test Jacobian from THCM
+    Teuchos::RCP<Epetra_CrsMatrix> mat =
+        Teuchos::rcp(new Epetra_CrsMatrix(*THCM::Instance().getJacobian()));
 
-    return sumFound;
+    // Restore the original Jacobian and mass matrix in THCM
+    Teuchos::RCP<Epetra_CrsMatrix> jac = THCM::Instance().getJacobian();
+    *jac = *tmpJac;
+
+    Teuchos::RCP<Epetra_Vector> diagB = THCM::Instance().DiagB();
+    *diagB = *tmpB;                 
+    
+    // Compute column integrals for the salinity block
+    Teuchos::RCP<Epetra_Vector> colInts = getColumnIntegral(mat, false);
+
+    Teuchos::RCP<Epetra_Map> rowMap = domain_->GetSolveMap();
+    Teuchos::RCP<Epetra_Map> mapS =
+        Utils::CreateSubMap(*rowMap, _NUN_, SS);
+
+    Teuchos::RCP<Epetra_Import> importS =
+        Teuchos::rcp(new Epetra_Import(*rowMap, *mapS) );
+
+    Epetra_Vector ints(*mapS);
+    ints.Export(*colInts, *importS, Zero);
+    
+    assert(dim == ints.MyLength());
+
+    // At this point we use values in singrows to identify bad points
+    int badSintsfound = 0;
+    INFO("  <><>  nonzero integrals: ");
+    for (int i = 0; i != dim; ++i)
+        if (std::abs(ints[i]) > 1e-7)
+        {
+            INFO("  <><> GID = " << ints.Map().GID(i)
+                 << " value = " << std::abs(ints[i]));
+            
+            (*singRows_)[i] = 2;
+            badSintsfound++;
+        }
+    
+    int sumFoundS = 0;
+    comm_->SumAll(&badSintsfound, &sumFoundS, 1);
+
+    if (sumFoundS == 0)
+    {
+        INFO("  <><>  none \n");
+    }
+    else
+    {
+        INFO("  <><>  nonzero column integrals found: " << sumFoundS << '\n');
+    }
+
+    return sumFoundP + sumFoundS;
 }
 
 //==================================================================
@@ -382,11 +436,14 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname)
     // zero the singRows array
     singRows_->PutScalar(0.0);
 
-    while( analyzeJacobian() > 0 )
+    for (int i = 0; i != maxMaskFixes_; ++i)
     {
+        if ( analyzeJacobian() == 0 )
+            break;
+
         // If we find singular pressure rows we adjust the current landmask
         mask.local = THCM::Instance().getLandMask("current", singRows_);
-
+        
         //  Putting a fixed version of the landmask back in THCM
         THCM::Instance().setLandMask(mask.local);
         THCM::Instance().evaluate(*state_, Teuchos::null, true);
@@ -430,6 +487,9 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname)
 
     // Set label
     mask.label = fname;
+
+    // Print surface mask
+    Utils::printSurfaceMask(mask.global_surface, "surfmask", N_);
 
     // Return the struct
     return mask;
@@ -634,8 +694,8 @@ void Ocean::postProcess()
 
     // Column integral can be used to check discretization: should be
     // zero, excluding integral condition and its dependencies.
-    if (computeColumnIntegral_) // Compute and save column integral
-        Utils::save(getColumnIntegral(), "columnIntegral");
+    if (saveColumnIntegral_) // Compute and save column integral
+        Utils::save(getColumnIntegral(jac_), "columnIntegral");
 }
 
 //=====================================================================
@@ -1094,6 +1154,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::getRHS(char mode)
 //====================================================================
 Teuchos::RCP<Epetra_Vector> Ocean::getDiagB(char mode)
 {
+    diagB_ = THCM::Instance().DiagB();
     return getVector(mode, diagB_);
 }
 
@@ -1186,7 +1247,6 @@ void Ocean::buildMassMat()
     if (recompMassMat_)
     {
         THCM::Instance().evaluateB();
-        diagB_ = THCM::Instance().DiagB();
     }
     recompMassMat_ = false; // Disable subsequent recomputes
 }
@@ -1196,6 +1256,8 @@ void Ocean::applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out)
 {
     // Compute mass matrix
     buildMassMat();
+
+    diagB_ = THCM::Instance().DiagB();
 
     // element-wise multiplication (out = 0.0*out + 1.0*B*v)
     out.Multiply(1.0, *diagB_, v, 0.0);
@@ -1459,25 +1521,32 @@ void Ocean::integralChecks(Teuchos::RCP<Epetra_Vector> state,
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Ocean::getColumnIntegral()
+Teuchos::RCP<Epetra_Vector>
+Ocean::getColumnIntegral(Teuchos::RCP<Epetra_CrsMatrix> mat,
+                         bool useSRES)
 {
     TIMER_START("Column integral");
     INFO("Ocean: computing column volume integrals of Jacobian");
 
-    // Copy matrix
-    Teuchos::RCP<Epetra_CrsMatrix> mat =
-        Teuchos::rcp(new Epetra_CrsMatrix(*jac_));
-    
+    // Copy into tmp
+    Teuchos::RCP<Epetra_CrsMatrix> tmp_mat =
+        Teuchos::rcp(new Epetra_CrsMatrix(*mat));
+
     // Rowscaling of the matrix with integral coefficients
     Teuchos::RCP<Epetra_Vector> icCoef =
         Teuchos::rcp(new Epetra_Vector(*getIntCondCoeff()));
 
-    int rowIntCon = getRowIntCon();
-    int lidIntCon = icCoef->Map().LID(rowIntCon);
-    if (lidIntCon >= 0)
-        (*icCoef)[lidIntCon] = 0;
-
-    mat->LeftScale(*icCoef);
+    // Ignore the integral condition row if needed
+    int sres = THCM::Instance().getSRES();
+    if ( ( sres == 0 ) && useSRES )
+    {
+        int rowIntCon = getRowIntCon();
+        int lidIntCon = icCoef->Map().LID(rowIntCon);
+        if (lidIntCon >= 0)
+            (*icCoef)[lidIntCon] = 0;
+    }
+        
+    tmp_mat->LeftScale(*icCoef);
 
     // Change integral coefficients into column selectors
     for (int i = SS-1; i < icCoef->MyLength(); i+=_NUN_)
@@ -1485,14 +1554,14 @@ Teuchos::RCP<Epetra_Vector> Ocean::getColumnIntegral()
         (*icCoef)[i] = 1;
     }
 
-    mat->RightScale(*icCoef);
+    tmp_mat->RightScale(*icCoef);
 
     // Create vector that will contain the column integrals
     Teuchos::RCP<Epetra_Vector> sums =
         Teuchos::rcp(new Epetra_Vector(state_->Map()));
 
-    // Integrate the columns of mat into sums
-    Utils::colSums(*mat, *sums);
+    // Integrate the columns of mat  into sums
+    Utils::colSums(*tmp_mat, *sums);
 
     TIMER_STOP("Column integral");
     return sums;

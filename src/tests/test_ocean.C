@@ -287,12 +287,12 @@ TEST(Ocean, Integrals)
     TIMER_STOP("Test ocean: integral method 1");
 
     TIMER_START("Test ocean: integral method 2");
-    Teuchos::RCP<Epetra_Vector> integrals2 = ocean->getColumnIntegral();
+    Teuchos::RCP<Epetra_Vector> integrals2 = ocean->getColumnIntegral(mat);
     EXPECT_EQ(Utils::norm(tmp), Utils::norm(integrals2));
     TIMER_STOP("Test ocean: integral method 2");
-                  
-    DUMP_VECTOR("integrals", *tmp);
-    DUMP_VECTOR("integrals2", *integrals2);
+
+    int badRows = ocean->analyzeJacobian();
+    std::cout << badRows << std::endl;
 }
 
 //------------------------------------------------------------------

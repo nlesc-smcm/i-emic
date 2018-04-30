@@ -109,10 +109,16 @@ public:
 
       If computeJac=true the Jacobian is computed and can be obtained
       by calling getJacobian(). The Jacobian in THCM is A-sigma*B, but
-      we keep igma set to 0. Use diagB to access the B matrix.
+      we keep sigma set to 0. Use diagB to access the B matrix.
+
+      If maskTest is true we compute the Jacobian just for testing the
+      landmask. This means that we temporarily switch off restoring
+      conditions and the integral condition.
     */
     bool evaluate (const Epetra_Vector& solnVector,
-                   Teuchos::RCP<Epetra_Vector> rhsVector, bool computeJac=false);
+                   Teuchos::RCP<Epetra_Vector> rhsVector,
+                   bool computeJac = false,
+                   bool maskTest = false);
 
     //! only recompute the diagonal matrix B
 
@@ -389,7 +395,7 @@ private:
     Teuchos::RCP<Epetra_CrsMatrix> Jac;
 
     //! Jacobian based on standard subdomains
-    Teuchos::RCP<Epetra_CrsMatrix> localJac;
+    Teuchos::RCP<Epetra_CrsMatrix> localJac, testJac;
 
     //! static graph which defines the maximal pattern of non-zero entries.
     //! the matrix Jac is based on this graph, so depending on forcing and
@@ -397,7 +403,7 @@ private:
     Teuchos::RCP<Epetra_CrsGraph> MatrixGraph;
 
     //! same crs graph based on standard map
-    Teuchos::RCP<Epetra_CrsGraph> localMatrixGraph;
+    Teuchos::RCP<Epetra_CrsGraph> localMatrixGraph, testMatrixGraph;
 
     //! global communicator for 4D things
     Teuchos::RCP<EpetraExt::MultiComm> xyzt_comm;
@@ -519,7 +525,7 @@ private:
 
     //! this subroutine defines the maximal matrix graph (pattern of nonzeros in the jacobian
     //! if convective adjustment occurs in all cells).
-    Teuchos::RCP<Epetra_CrsGraph> CreateMaximalGraph();
+    Teuchos::RCP<Epetra_CrsGraph> CreateMaximalGraph(bool useSRES = true);
 
 
     //! private function used by CreateMaximalGraph()
