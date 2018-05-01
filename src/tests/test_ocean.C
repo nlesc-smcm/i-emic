@@ -288,7 +288,7 @@ TEST(Ocean, Integrals)
 
     TIMER_START("Test ocean: integral method 2");
     Teuchos::RCP<Epetra_Vector> integrals2 = ocean->getColumnIntegral(mat);
-    EXPECT_EQ(Utils::norm(tmp), Utils::norm(integrals2));
+    EXPECT_NEAR(Utils::norm(tmp), Utils::norm(integrals2), 1e-7);
     TIMER_STOP("Test ocean: integral method 2");
 
     int badRows = ocean->analyzeJacobian1();

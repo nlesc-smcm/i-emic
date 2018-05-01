@@ -68,7 +68,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     saveEveryStep_         (oceanParamList->get("Save every step", false)),
     useFort3_              (oceanParamList->get("Use legacy fortran output", false)),
     saveColumnIntegral_    (oceanParamList->get("Save column integral", false)),
-    maxMaskFixes_          (oceanParamList->get("Max mask fixes", 10)),
+    maxMaskFixes_          (oceanParamList->get("Max mask fixes", 5)),
 
     parName_               (oceanParamList->get("Continuation parameter",
                                                 "Combined Forcing")),
@@ -313,6 +313,9 @@ int Ocean::analyzeJacobian2()
     // Create converged test vector such that it satisfies boundary
     // conditions.
     Teuchos::RCP<Epetra_Vector> testvec = initialState();
+
+    // exaggerate a little
+    testvec->Scale(1e2);
     
     // Compute test Jacobian and mass matrix
     THCM::Instance().evaluate(*testvec, Teuchos::null, true, true);
@@ -351,7 +354,7 @@ int Ocean::analyzeJacobian2()
     // At this point we use values in singrows to identify bad points
     int badSintsfound = 0;
     for (int i = 0; i != dim; ++i)
-        if (std::abs(ints[i]) > 1e-7)
+        if (std::abs(ints[i]) > 1e-6)
         {
             (*singRows_)[i] = 2;
             badSintsfound++;
@@ -457,35 +460,38 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname, bool adjustMask)
 
         for (int i = 0; i != maxMaskFixes_; ++i)
         {
-            if ( analyzeJacobian1() == 0 )
-                break;
+            for (int j = 0; j != maxMaskFixes_; ++j)
+            {
+                if ( analyzeJacobian1() == 0 )
+                    break;
 
-            // If we find singular pressure rows we adjust the current landmask
-            mask.local = THCM::Instance().getLandMask("current", singRows_);
+                // If we find singular pressure rows we adjust the current landmask
+                mask.local = THCM::Instance().getLandMask("current", singRows_);
         
-            //  Putting a fixed version of the landmask back in THCM
-            THCM::Instance().setLandMask(mask.local);
+                //  Putting a fixed version of the landmask back in THCM
+                THCM::Instance().setLandMask(mask.local);
 
-            // Perform a Newton iteration to get a physical state before
-            // repeating the analysis.
-            THCM::Instance().evaluate(*state_, Teuchos::null, true);
-        }
+                // Perform a Newton iteration to get a physical state before
+                // repeating the analysis.
+                THCM::Instance().evaluate(*state_, Teuchos::null, true);
+            }
+            
+            for (int j = 0; j != maxMaskFixes_; ++j)
+            {
+                if ( analyzeJacobian2() == 0 )
 
-        // copying some code, sorry Sven
-        for (int i = 0; i != maxMaskFixes_; ++i)
-        {
-            if ( analyzeJacobian2() == 0 )
-                break;
+                    break;
 
-            // If we find singular pressure rows we adjust the current landmask
-            mask.local = THCM::Instance().getLandMask("current", singRows_);
+                // If we find singular pressure rows we adjust the current landmask
+                mask.local = THCM::Instance().getLandMask("current", singRows_);
         
-            //  Putting a fixed version of the landmask back in THCM
-            THCM::Instance().setLandMask(mask.local);
+                //  Putting a fixed version of the landmask back in THCM
+                THCM::Instance().setLandMask(mask.local);
 
-            // Perform a Newton iteration to get a physical state before
-            // repeating the analysis.
-            THCM::Instance().evaluate(*state_, Teuchos::null, true);
+                // Perform a Newton iteration to get a physical state before
+                // repeating the analysis.
+                THCM::Instance().evaluate(*state_, Teuchos::null, true);
+            }
         }
     }
 
@@ -938,7 +944,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::initialState()
     state_->PutScalar(0.0);
     computeRHS();
     INFO("Initial Newton iteration, norm rhs = " << Utils::norm(rhs_));
-    for (int k = 0; k != 3; ++k)
+    for (int k = 0; k != 1; ++k)
     {
         computeJacobian();
         rhs_->Scale(-1.0);
