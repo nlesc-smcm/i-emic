@@ -287,7 +287,8 @@ int Ocean::analyzeJacobian1()
 
     int sumFoundP = 0;
     comm_->SumAll(&singRowsFound, &sumFoundP, 1);
-    INFO("  <><>  problem P rows found: " << sumFoundP);
+    INFO("  <><>  problem P rows found  (local): " << singRowsFound);
+    INFO("  <><>  problem P rows found (global): " << sumFoundP);
 
     return sumFoundP;
 }
@@ -314,8 +315,8 @@ int Ocean::analyzeJacobian2()
     // conditions.
     Teuchos::RCP<Epetra_Vector> testvec = initialState();
 
-    // exaggerate a little
-    testvec->Scale(1e2);
+    // // exaggerate a little
+    // testvec->Scale(1e2);
     
     // Compute test Jacobian and mass matrix
     THCM::Instance().evaluate(*testvec, Teuchos::null, true, true);
@@ -458,11 +459,13 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname, bool adjustMask)
         // zero the singRows array
         singRows_->PutScalar(0.0);
 
+        int badProws = 1, badSints = 1;
         for (int i = 0; i != maxMaskFixes_; ++i)
         {
             for (int j = 0; j != maxMaskFixes_; ++j)
             {
-                if ( analyzeJacobian1() == 0 )
+                badProws = analyzeJacobian1();
+                if (badProws == 0)
                     break;
 
                 // If we find singular pressure rows we adjust the current landmask
@@ -474,12 +477,19 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname, bool adjustMask)
                 // Perform a Newton iteration to get a physical state before
                 // repeating the analysis.
                 THCM::Instance().evaluate(*state_, Teuchos::null, true);
+
+                // This adds the possibility of bad S integrals so we
+                // increase this counter
+                badSints++;
             }
+
+            if ( (badSints + badProws) == 0 )
+                break;
             
             for (int j = 0; j != maxMaskFixes_; ++j)
             {
-                if ( analyzeJacobian2() == 0 )
-
+                badSints = analyzeJacobian2();
+                if ( badSints == 0 )
                     break;
 
                 // If we find singular pressure rows we adjust the current landmask
@@ -491,7 +501,14 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname, bool adjustMask)
                 // Perform a Newton iteration to get a physical state before
                 // repeating the analysis.
                 THCM::Instance().evaluate(*state_, Teuchos::null, true);
+
+                // This adds the possibility of bad P rows so we
+                // increase this counter
+                badProws++;
             }
+            
+            if ( (badSints + badProws) == 0 )
+                break;
         }
     }
 
