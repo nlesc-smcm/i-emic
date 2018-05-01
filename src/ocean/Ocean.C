@@ -365,7 +365,7 @@ int Ocean::analyzeJacobian2()
 
     INFO("\n  <><>  nonzero column integrals found: " << sumFoundS << '\n');
 
-    DUMP_VECTOR("intcond_coeff", ints);
+    //  DUMP_VECTOR("intcond_coeff", ints);
     
     return sumFoundS;
 }

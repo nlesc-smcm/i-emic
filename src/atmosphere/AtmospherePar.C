@@ -834,9 +834,9 @@ void AtmospherePar::computeJacobian()
     // Finalize matrix
     CHECK_ZERO(jac_->FillComplete());
 
-#ifdef DEBUGGING_NEW
-    DUMPMATLAB("atmos_jac", *jac_);
-#endif
+// #ifdef DEBUGGING_NEW
+//     DUMPMATLAB("atmos_jac", *jac_);
+// #endif
 
     TIMER_STOP("AtmospherePar: compute Jacobian...");
 }
