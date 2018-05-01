@@ -130,8 +130,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     // the Jacobian, solution and rhs
     initializeOcean();
 
-    // Obtain adjusted landmask
-    landmask_ = getLandMask("current");
+    // Obtain landmask, in case this is a fresh start we probably need
+    // to make some adjustments in the landmask
+    bool adjustMask = (loadState_ && loadMask_) ? false : true;
+    landmask_ = getLandMask("current", adjustMask);
 
     // Initialize preconditioner
     initializePreconditioner();
@@ -225,9 +227,9 @@ void Ocean::initializeOcean()
 }
 
 //====================================================================
-int Ocean::analyzeJacobian()
+int Ocean::analyzeJacobian1()
 {
-    INFO("\n  <><>  Analyze Jacobian...");
+    INFO("\n  <><>  Analyze Jacobian P rows...");
     
     // Make preparations for extracting pressure rows
     int dim = mapP_->NumMyElements();
@@ -287,10 +289,20 @@ int Ocean::analyzeJacobian()
     comm_->SumAll(&singRowsFound, &sumFoundP, 1);
     INFO("  <><>  problem P rows found: " << sumFoundP);
 
+    return sumFoundP;
+}
+
+//==================================================================
+int Ocean::analyzeJacobian2()
+{
+
+    INFO("\n  <><>  Analyze Jacobian S column integrals...\n");
     // Another approach to analyze the Jacobian is through the volume
     // integrals of its columns. This only makes sense when the volume
     // integral of the forcing is zero and we temporarily disable the
-    // integral condition.
+    // integral condition. To get a meaningful test state we already
+    // use the solver so the mask-fix cycle using analyzeJacobian1
+    // should have been performed.
 
     // Copy the original Jacobian and mass matrix from THCM
     Teuchos::RCP<Epetra_CrsMatrix> tmpJac =
@@ -298,20 +310,20 @@ int Ocean::analyzeJacobian()
     Teuchos::RCP<Epetra_Vector> tmpB =
         Teuchos::rcp(new Epetra_Vector(*THCM::Instance().DiagB()));
 
-
-    Teuchos::RCP<Epetra_Vector> pertState =
-        Teuchos::rcp(new Epetra_Vector(*state_));
-    pertState->PutScalar(1.0);
+    // Create converged test vector such that it satisfies boundary
+    // conditions.
+    Teuchos::RCP<Epetra_Vector> testvec = initialState();
     
     // Compute test Jacobian and mass matrix
-    THCM::Instance().evaluate(*pertState, Teuchos::null, true, true);
+    THCM::Instance().evaluate(*testvec, Teuchos::null, true, true);
 
     // Copy the test Jacobian from THCM
     Teuchos::RCP<Epetra_CrsMatrix> mat =
         Teuchos::rcp(new Epetra_CrsMatrix(*THCM::Instance().getJacobian()));
 
-    DUMPMATLAB("ocean_jac", *mat);
-    DUMP_VECTOR("intcond_coeff", *getIntCondCoeff());
+    // DUMPMATLAB("ocean_jac", *mat);
+    // DUMP_VECTOR("intcond_coeff", *getIntCondCoeff());
+    // DUMP_VECTOR("testvec", *testvec);
 
     // Restore the original Jacobian and mass matrix in THCM
     Teuchos::RCP<Epetra_CrsMatrix> jac = THCM::Instance().getJacobian();
@@ -332,12 +344,12 @@ int Ocean::analyzeJacobian()
 
     Epetra_Vector ints(*mapS);
     ints.Export(*colInts, *importS, Zero);
-    
+
+    int dim = mapS->NumMyElements();
     assert(dim == ints.MyLength());
 
     // At this point we use values in singrows to identify bad points
     int badSintsfound = 0;
-    INFO("  <><>  nonzero integrals: ");
     for (int i = 0; i != dim; ++i)
         if (std::abs(ints[i]) > 1e-7)
         {
@@ -351,12 +363,11 @@ int Ocean::analyzeJacobian()
     int sumFoundS = 0;
     comm_->SumAll(&badSintsfound, &sumFoundS, 1);
 
-    INFO("  <><>  nonzero column integrals found: " << sumFoundS << '\n');
+    INFO("\n  <><>  nonzero column integrals found: " << sumFoundS << '\n');
 
-    // std::ofstream file("ints");
-    // file << ints;
-
-    return sumFoundP + sumFoundS;
+    DUMP_VECTOR("intcond_coeff", ints);
+    
+    return sumFoundS;
 }
 
 //==================================================================
@@ -424,13 +435,13 @@ void Ocean::inspectVector(Teuchos::RCP<Epetra_Vector> x)
 }
 
 //====================================================================
-Ocean::LandMask Ocean::getLandMask()
+Ocean::LandMask Ocean::getLandMask(bool adjustMask)
 {
-    return getLandMask("current");
+    return getLandMask("current", adjustMask);
 }
 
 //====================================================================
-Ocean::LandMask Ocean::getLandMask(std::string const &fname)
+Ocean::LandMask Ocean::getLandMask(std::string const &fname, bool adjustMask)
 {
     LandMask mask;
 
@@ -439,20 +450,43 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname)
     THCM::Instance().setLandMask(mask.local);
     THCM::Instance().evaluate(*state_, Teuchos::null, true);
 
-    // zero the singRows array
-    singRows_->PutScalar(0.0);
-
-    for (int i = 0; i != maxMaskFixes_; ++i)
+    if (adjustMask)
     {
-        if ( analyzeJacobian() == 0 )
-            break;
+        // zero the singRows array
+        singRows_->PutScalar(0.0);
 
-        // If we find singular pressure rows we adjust the current landmask
-        mask.local = THCM::Instance().getLandMask("current", singRows_);
+        for (int i = 0; i != maxMaskFixes_; ++i)
+        {
+            if ( analyzeJacobian1() == 0 )
+                break;
+
+            // If we find singular pressure rows we adjust the current landmask
+            mask.local = THCM::Instance().getLandMask("current", singRows_);
         
-        //  Putting a fixed version of the landmask back in THCM
-        THCM::Instance().setLandMask(mask.local);
-        THCM::Instance().evaluate(*state_, Teuchos::null, true);
+            //  Putting a fixed version of the landmask back in THCM
+            THCM::Instance().setLandMask(mask.local);
+
+            // Perform a Newton iteration to get a physical state before
+            // repeating the analysis.
+            THCM::Instance().evaluate(*state_, Teuchos::null, true);
+        }
+
+        // copying some code, sorry Sven
+        for (int i = 0; i != maxMaskFixes_; ++i)
+        {
+            if ( analyzeJacobian2() == 0 )
+                break;
+
+            // If we find singular pressure rows we adjust the current landmask
+            mask.local = THCM::Instance().getLandMask("current", singRows_);
+        
+            //  Putting a fixed version of the landmask back in THCM
+            THCM::Instance().setLandMask(mask.local);
+
+            // Perform a Newton iteration to get a physical state before
+            // repeating the analysis.
+            THCM::Instance().evaluate(*state_, Teuchos::null, true);
+        }
     }
 
     // Get the current global landmask from THCM.
@@ -884,6 +918,43 @@ void Ocean::initializeBelos()
             <double, Epetra_MultiVector, Epetra_Operator>
             (problem_, belosParamList_));
 
+}
+
+//=====================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::initialState()
+{
+    // Initialize result
+    Teuchos::RCP<Epetra_Vector> result =
+        Teuchos::rcp(new Epetra_Vector(*state_));
+
+    // Save state
+    Teuchos::RCP<Epetra_Vector> tmp =
+        Teuchos::rcp(new Epetra_Vector(*state_));
+        
+    // Do a few Newton steps to get a physical state
+    double par = getPar();
+    setPar(1e-8); // perturb parameter
+    // start from trivial solution
+    state_->PutScalar(0.0);
+    computeRHS();
+    INFO("Initial Newton iteration, norm rhs = " << Utils::norm(rhs_));
+    for (int k = 0; k != 3; ++k)
+    {
+        computeJacobian();
+        rhs_->Scale(-1.0);
+        solve(rhs_);
+        state_->Update(1.0, *sol_, 1.0);
+        computeRHS();
+        INFO("Initial Newton iteration, norm rhs = " << Utils::norm(rhs_));
+    }
+    *result = *state_;
+
+    // Restore parameter, sol and state
+    setPar(par);
+    *state_ = *tmp;
+    sol_->PutScalar(0.0);
+
+    return result;
 }
 
 //=====================================================================

@@ -255,12 +255,12 @@ public:
     std::string const getParName() { return parName_; }
 
     //! Get current landmask
-    LandMask getLandMask();
+    LandMask getLandMask(bool adjustMask = false);
 
     //! Get global and local (distributed) landmask arrays.
     //! This routine also tests the obtained landmask and it will
     //! therefore also be set in THCM.
-    LandMask getLandMask(std::string const & fname);
+    LandMask getLandMask(std::string const & fname, bool adjustMask = false);
 
     //! Check the current mask
     bool isCurrentMask(std::string const &label)
@@ -375,7 +375,12 @@ public:
     // This function finds the pressure rows that will give a singular
     // Schur complement. Based on these rows we will try to create a
     // better landmask. 
-    int analyzeJacobian();
+    int analyzeJacobian1();
+
+    // Here we integrate columns of the S Jacobian over the ocean
+    // volume. Nonzero integrals correspond to points in the mask we
+    // do not want.
+    int analyzeJacobian2();
 
 private:
     // HDF5-based save and load functions for the state and parameters
@@ -390,7 +395,9 @@ private:
     void initializeOcean();
     void initializePreconditioner();
     void initializeBelos();
-
+    
+    // Perform a Newton solve with a small perturbation in the parameter
+    Teuchos::RCP<Epetra_Vector> initialState(); 
 
     VectorPtr getVector(char mode, VectorPtr vec);
 

@@ -223,8 +223,7 @@ TEST(CoupledModel, computeJacobian)
         // Set a small parameter
         coupledModel->setPar(0.1);
 
-        // randomize state
-        coupledModel->getState('V')->PutScalar(1.234);
+        // randomize state       
         coupledModel->getState('V')->Random();
         coupledModel->getState('V')->Scale(10);
 
@@ -307,7 +306,18 @@ TEST(CoupledModel, applyMatrix)
 
     try
     {
+        // reset model
+        coupledModel->getState('V')->PutScalar(0.0);
+        coupledModel->setPar(0.0);
+        coupledModel->computeRHS(); // synchronize
+
+        // get mask
         Utils::MaskStruct mask = ocean->getLandMask();
+        atmos->setLandMask(mask);
+
+        // set values
+        coupledModel->getState('V')->Random();
+        coupledModel->setPar(0.1);
         
         std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
         std::shared_ptr<Combined_MultiVec> y = coupledModel->getState('C');
@@ -337,6 +347,9 @@ TEST(CoupledModel, applyMatrix)
         double value[3] = {1.234, 2.12, -23.5};
 
         // Test atmos -> ocean coupling
+        int ii = n-2;
+        int jj = m-2;
+            
         for (int v = 0; v != 3; ++v)
         {
             atmosVec->PutScalar(value[v]);
@@ -349,18 +362,17 @@ TEST(CoupledModel, applyMatrix)
             FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim);
 
             // Test first surface element (temperature)
-            int ii = 0;
-            int jj = 0;
             int surfbT = FIND_ROW2(_NUN_, n, m, l, ii, jj, l-1, TT);
 
-            INFO( "first surface element TT " << surfbT );
+            INFO( " surface element TT " << surfbT );
             
             // If this point is on land the test does not make any sense
             bool onLand = ((*mask.global_surface)[jj*n+ii] > 0) ? true : false;
             
             if (onLand)
             {
-                INFO(" ** applyMatrix is testing a land point, not useful... **");
+                ERROR(" ** applyMatrix is testing a land point, not useful... **",
+                      __FILE__, __LINE__);
             }
             else
             {            
@@ -375,7 +387,7 @@ TEST(CoupledModel, applyMatrix)
 
                 // Test first surface element (salinity)
                 int surfbS = FIND_ROW2(_NUN_, n, m, l, ii, jj, l-1, SS);
-                INFO( "first surface element SS " << surfbS );
+                INFO( " surface element SS " << surfbS );
 
                 if (oceanVec->Map().MyGID(surfbS))
                 {
@@ -411,18 +423,17 @@ TEST(CoupledModel, applyMatrix)
             l = 1;
 
             // test atmos temperature point
-            int ii = 0;
-            int jj = 0;
             int surfbT = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, ii, jj, l-1, ATMOS_TT_);
 
-            INFO( "first surface element TT " << surfbT );
+            INFO( " surface element TT " << surfbT );
 
             // If this point is on land the test does not make any sense
             bool onLand = ((*mask.global_surface)[jj*n+ii] > 0) ? true : false;
 
             if (onLand)
             {
-                INFO(" ** applyMatrix is testing a land point, not useful... **");
+                ERROR(" ** applyMatrix is testing a land point, not useful... **",
+                      __FILE__, __LINE__);
             }
             else
             {
@@ -661,9 +672,12 @@ TEST(CoupledModel, Synchronization)
 
     // Evaporation is calculated simultaneously in Ocean and in
     // Atmosphere during the RHS computation above. Here we check
-    // whether they return give the same nondimensional norm.
+    // whether they return the same nondimensional norm.
     Teuchos::RCP<Epetra_Vector> atmosE = atmos->getE();
     Teuchos::RCP<Epetra_Vector> oceanE = ocean->getE();
+
+    std::cout << *atmosE << std::endl;
+    std::cout << *oceanE << std::endl;
     
     double nrmAtmosE = Utils::norm(atmosE);
     double nrmOceanE = Utils::norm(oceanE);

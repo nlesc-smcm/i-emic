@@ -702,8 +702,7 @@ void Atmosphere::forcing()
 // Here we calculate nondimensionalized evaporation
 void Atmosphere::computeEvaporation()
 {
-    int humRow, surfaceRow;
-
+    int humRow, surfaceRow, ctr;
 
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
@@ -711,6 +710,9 @@ void Atmosphere::computeEvaporation()
             surfaceRow = find_surface_row(i, j);
             humRow = find_row(i, j, l_, ATMOS_QQ_);
 
+            // reset vector
+            (*E_)[surfaceRow-1] = 0.0;
+            
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
                 continue; // do nothing
 
@@ -721,6 +723,8 @@ void Atmosphere::computeEvaporation()
             // compute nondimensional E
             (*E_)[surfaceRow-1] =   (tdim_ / qdim_) * dqso_ * (*sst_)[surfaceRow-1]
                 - (*state_)[humRow-1] ;
+
+            ctr++;
         }
 }
 

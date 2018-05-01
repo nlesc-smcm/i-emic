@@ -490,7 +490,7 @@
     <!-- Solver for Schur-complement inside Simple: { -->
     <ParameterList name="Chat Solver">
       <!-- can be "AztecOO" or "None" -->
-      <Parameter name="Method" type="string" value="None"/>
+      <Parameter name="Method" type="string" value="AztecOO"/>
       <Parameter name="Max Num Iter" type="int" value="400"/>
       <Parameter name="Tol" type="double" value="1.0e-3"/>
       <Parameter name="Solver" type="string" value="GMRESR"/>
@@ -513,7 +513,7 @@
     <!-- for comments see the "Auv Precond" list above {                    -->
     <ParameterList name="Chat Precond">
       
-      <Parameter name="Method" type="string" value="Ifpack"/>
+      <Parameter name="Method" type="string" value="None"/>
       <!-- Ifpack -->
       
       <Parameter name="Ifpack Method" type="string" value="Amesos stand-alone"/>

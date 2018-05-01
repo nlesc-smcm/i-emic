@@ -612,6 +612,7 @@ void AtmospherePar::setLandMask(Utils::MaskStruct const &mask)
     }
 
 #ifdef DEBUGGING_NEW
+    INFO("Mask available in atmosphere:");
     Utils::printSurfaceMask(surfmask_, "surfmask", n_);
 #endif
 

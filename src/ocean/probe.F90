@@ -100,25 +100,30 @@ contains
     real(c_double), dimension(ndim) :: un
 
     ! local
-    integer :: i,j,pos
+    integer :: i,j,pos, ctr
 
     ! external
     integer find_row2
-    
+
+    ! reset vector
+    ocean_evap = 0
+
+    ctr = 0;
     if ((coupled_T.eq.1).or.(coupled_S.eq.1)) then
        pos = 1
        do j = 1,m
           do i = 1,n
-             
-             ocean_evap(pos) = ((deltat / qdim) * &
-                  dqso * un(find_row2(i,j,l,TT)) - &
-                  qatm(i,j)) * (1 - landm(i,j,l))
-             
+             if (landm(i,j,l).eq.0) then
+                ocean_evap(pos) = ((deltat / qdim) * &
+                     dqso * un(find_row2(i,j,l,TT)) - &
+                     qatm(i,j))
+                ctr = ctr + 1
+             endif
              pos = pos + 1
              
           end do
        end do
-
+       _INFO2_("  thcm probe:  ctr    = ", ctr)
        _INFO2_("  thcm probe:  eta    = ", eta)
        _INFO2_("  thcm probe:  deltat = ", deltat)
        _INFO2_("  thcm probe:  qdim   = ", qdim)

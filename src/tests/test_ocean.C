@@ -291,8 +291,12 @@ TEST(Ocean, Integrals)
     EXPECT_EQ(Utils::norm(tmp), Utils::norm(integrals2));
     TIMER_STOP("Test ocean: integral method 2");
 
-    int badRows = ocean->analyzeJacobian();
-    std::cout << badRows << std::endl;
+    int badRows = ocean->analyzeJacobian1();
+    std::cout << " bad P rows: " << badRows << std::endl;
+
+    badRows = ocean->analyzeJacobian1();
+    std::cout << " bad S ints: " << badRows << std::endl;
+       
 }
 
 //------------------------------------------------------------------
