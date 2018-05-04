@@ -256,11 +256,6 @@ SUBROUTINE stochastic_forcing
      endif
   enddo
 
-  ! Integral condition
-  if (SRES.EQ.0) then
-     begF(ndim+1) = begF(ndim)
-  endif
-
 end subroutine stochastic_forcing
 
 !******************************************************************

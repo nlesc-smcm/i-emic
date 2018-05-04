@@ -889,78 +889,83 @@ bool THCM::computeForcing()
 
     int NumMyElements = AssemblyMap->NumMyElements();
     int imax = NumMyElements;
+    int intcondrow = rowintcon_;
 
     FNAME(stochastic_forcing)();
 
     for (int i = 0; i < imax; i++)
     {
-        if (!domain->IsGhost(i, _NUN_))
+#ifndef NO_INTCOND
+        if (sres == 0 && AssemblyMap->GID(i) == intcondrow)
+            continue;
+#endif
+        if (domain->IsGhost(i, _NUN_))
+            continue;
+
+        index = begF[i]; // note that these arrays use 1-based indexing
+        numentries = begF[i+1] - index;
+        for (int j = 0; j <  numentries ; j++)
         {
-            index = begF[i]; // note that these arrays use 1-based indexing
-            numentries = begF[i+1] - index;
-            for (int j = 0; j <  numentries ; j++)
+            indices[j] = AssemblyMap->GID(jcoF[index-1+j] - 1);
+            values[j]  = coF[index - 1 + j];
+        }
+
+        if (localFrc->Filled())
+        {
+            int ierr = localFrc->ReplaceGlobalValues(AssemblyMap->GID(i), numentries,
+                                                     values, indices);
+
+            // ierr == 3 probably means not all row entries are replaced,
+            // does not matter because we zeroed them.
+            if (((ierr!=0) && (ierr!=3)))
             {
-                indices[j] = AssemblyMap->GID(jcoF[index-1+j] - 1);
-                values[j]  = coF[index - 1 + j];
+                std::cout << "\n ERROR " << ierr;
+                std::cout << "\n myPID " << Comm->MyPID();
+                std::cout <<"\n while inserting/replacing values in local Jacobian"
+                          << std::endl;
+
+                INFO(" ERROR while inserting/replacing values in local Jacobian");
+
+                int GRID = AssemblyMap->GID(i);
+                std::cout << " GRID: " << GRID << std::endl;
+                std::cout << " max GRID: " << AssemblyMap->GID(imax-1) << std::endl;
+                std::cout << " number of entries: " << numentries << std::endl;
+
+                std::cout << " entries: ";
+                for (int j = 0; j < numentries; j++)
+                    std::cout << "(" << indices[j] << " " << values[j] << ") ";
+                std::cout << std::endl;
+
+                std::cout << " NumMyElements:        " << NumMyElements << std::endl;
+                std::cout << " i:                    " << i << std::endl;
+                std::cout << " imax:                 " << imax << std::endl;
+                std::cout << " maxlen:               " << maxlen << std::endl;
+
+                std::cout << " row:                  " << GRID << std::endl;
+                int LRID = localFrc->LRID(GRID);
+                std::cout << " LRID:                 " << LRID << std::endl;
+                std::cout << " graph inds in LRID:   "
+                          << localFrc->Graph().NumMyIndices(LRID) << std::endl;
+
+                int ierr2 = localFrc->ExtractGlobalRowCopy(
+                    AssemblyMap->GID(i), maxlen, numentries, values, indices);
+
+                std::cout << "\noriginal row: " << std::endl;
+                std::cout << "number of entries: " << numentries << std::endl;
+                std::cout << "entries: ";
+
+                for (int j=0; j < numentries; j++)
+                    std::cout << "(" << indices[j] << " " << values[j] << ") ";
+                std::cout << std::endl;
+
+                CHECK_ZERO(ierr2);
             }
-
-            if (localFrc->Filled())
-            {
-                int ierr = localFrc->ReplaceGlobalValues(AssemblyMap->GID(i), numentries,
-                                                         values, indices);
-
-                // ierr == 3 probably means not all row entries are replaced,
-                // does not matter because we zeroed them.
-                if (((ierr!=0) && (ierr!=3)))
-                {
-                    std::cout << "\n ERROR " << ierr;
-                    std::cout << "\n myPID " << Comm->MyPID();
-                    std::cout <<"\n while inserting/replacing values in local Jacobian"
-                              << std::endl;
-
-                    INFO(" ERROR while inserting/replacing values in local Jacobian");
-
-                    int GRID = AssemblyMap->GID(i);
-                    std::cout << " GRID: " << GRID << std::endl;
-                    std::cout << " max GRID: " << AssemblyMap->GID(imax-1) << std::endl;
-                    std::cout << " number of entries: " << numentries << std::endl;
-
-                    std::cout << " entries: ";
-                    for (int j = 0; j < numentries; j++)
-                        std::cout << "(" << indices[j] << " " << values[j] << ") ";
-                    std::cout << std::endl;
-
-                    std::cout << " NumMyElements:        " << NumMyElements << std::endl;
-                    std::cout << " i:                    " << i << std::endl;
-                    std::cout << " imax:                 " << imax << std::endl;
-                    std::cout << " maxlen:               " << maxlen << std::endl;
-
-                    std::cout << " row:                  " << GRID << std::endl;
-                    int LRID = localFrc->LRID(GRID);
-                    std::cout << " LRID:                 " << LRID << std::endl;
-                    std::cout << " graph inds in LRID:   "
-                              << localFrc->Graph().NumMyIndices(LRID) << std::endl;
-
-                    int ierr2 = localFrc->ExtractGlobalRowCopy(
-                        AssemblyMap->GID(i), maxlen, numentries, values, indices);
-
-                    std::cout << "\noriginal row: " << std::endl;
-                    std::cout << "number of entries: " << numentries << std::endl;
-                    std::cout << "entries: ";
-
-                    for (int j=0; j < numentries; j++)
-                        std::cout << "(" << indices[j] << " " << values[j] << ") ";
-                    std::cout << std::endl;
-
-                    CHECK_ZERO(ierr2);
-                }
-            }
-            else
-            {
-                CHECK_ZERO(localFrc->InsertGlobalValues(AssemblyMap->GID(i), numentries,
-                                                        values, indices));
-            }
-        } //not a ghost?
+        }
+        else
+        {
+            CHECK_ZERO(localFrc->InsertGlobalValues(AssemblyMap->GID(i), numentries,
+                                                    values, indices));
+        }
     } //i-loop over rows
 
     CHECK_ZERO(localFrc->FillComplete());
