@@ -79,6 +79,7 @@ protected:
     VectorPtr massMatrix_;
 
     MatrixPtr jac_;
+    MatrixPtr frc_;
     VectorPtr diagB_;
 
     VectorPtr rowScaling_;
@@ -182,6 +183,7 @@ public:
 
     //! compute derivative of rhs
     void computeJacobian();
+    void computeForcing();
 
     //! compute mass matrix
     void computeMassMat();
@@ -199,6 +201,7 @@ public:
 
     //! Return pointer to Jacobian
     MatrixPtr getJacobian() {return jac_;}
+    MatrixPtr getForcing() {return frc_;}
 
     //! Return pointer to domain object
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }

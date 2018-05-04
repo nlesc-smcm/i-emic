@@ -163,6 +163,9 @@ public:
     */
     void evaluateB();
 
+    //! Compute the forcing matrix used for the stochasic forcing
+    bool computeForcing();
+
     //! ------------------- I-EMIC couplings --------------------
     //!Flags enabling the coupling with the I-EMIC, separated into a
     //!heat and a salinity flux contribution.
@@ -256,6 +259,9 @@ public:
 
     //! returns the Jacobian matrix (Global/Solve form)
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
+
+    //! returns the Forcing matrix (Global/Solve form)
+    Teuchos::RCP<Epetra_CrsMatrix> getForcing();
 
     //! get null space
     Teuchos::RCP<const Epetra_MultiVector> getNullSpace();
@@ -451,6 +457,12 @@ private:
     //! Jacobian based on standard subdomains
     Teuchos::RCP<Epetra_CrsMatrix> localJac, testJac;
 
+    //! Forcing in globally assembled and load-balanced
+    Teuchos::RCP<Epetra_CrsMatrix> Frc;
+
+    //! Forcing based on standard subdomains
+    Teuchos::RCP<Epetra_CrsMatrix> localFrc;
+
     //! static graph which defines the maximal pattern of non-zero entries.
     //! the matrix Jac is based on this graph, so depending on forcing and
     //! convective adjustment, it may contain some zeros
@@ -501,6 +513,12 @@ private:
     double* coA;
     //! values of the diagonal matrix B
     double* coB;
+    //! row pointer
+    int* begF;
+    //! column indices
+    int* jcoF;
+    //! values
+    double* coF;
     //!@}
 
     //! global grid dimensions
