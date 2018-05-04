@@ -212,9 +212,6 @@ auto AMS<Model>::get_time_step()
 
         *model_->getState('V') = *x;
 
-        // FIXME!!!
-        // VectorPtr G = B(x);
-
         // Compute noise for forcing which is independent per processor
         static thread_local std::random_device rd;
         static thread_local std::default_random_engine engine(rd());
@@ -307,9 +304,6 @@ auto AMS<Model>::get_projected_time_step()
 
         auto xsmall = restrict(*x);
         *model_->getState('V') = *x;
-
-        // FIXME!!!
-        // VectorPtr G = B(x);
 
         // Compute noise for forcing which is independent per processor
         static thread_local std::random_device rd;
