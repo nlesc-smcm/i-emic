@@ -63,67 +63,69 @@ function [nrm] = plot_failed_residual(fname, maskname, level)
     if (oceanRes)
         [u,v,w,p,T,S] = extractsol(sol);
 
-        % figure(1);
-        % mx = max(max(abs(u(:,:,level))'));
-        % img = -mx*2*land(:,:,level)' + u(:,:,level)';
-        % imagesc(RtD*x,RtD*(y), img);
-        % set(gca,'ydir','normal');
+        figure(1);
+        mx = max(max(abs(u(:,:,level))'));
+        img = -mx*2*land(:,:,level)' + u(:,:,level)';
+        imagesc(RtD*x,RtD*(y), img);
+        set(gca,'ydir','normal');
 
-        % colormap(parula)
-        % xlabel('Longitude')
-        % ylabel('Latitude');
-        % colorbar
-        % title('u')
+        colormap(parula)
+        xlabel('Longitude')
+        ylabel('Latitude');
+        colorbar
+        title('u')
 
-        % figure(2);
-        % mx = max(max(abs(v(:,:,level))'));
-        % img = -mx*2*land(:,:,level)' + v(:,:,level)';
-        % imagesc(RtD*x,RtD*(y), img);
-        % colorbar
-        % title('v')
-        % set(gca,'ydir','normal');
-        % colormap(parula)
-        % xlabel('Longitude')
-        % ylabel('Latitude');
+        figure(2);
+        mx = max(max(abs(v(:,:,level))'));
+        img = -mx*2*land(:,:,level)' + v(:,:,level)';
+        imagesc(RtD*x,RtD*(y), img);
+        colorbar
+        title('v')
+        set(gca,'ydir','normal');
+        colormap(parula)
+        xlabel('Longitude')
+        ylabel('Latitude');
 
-        % figure(3);
-        % mx = max(max(abs(w(:,:,level))'));
-        % img = -mx*2*land(:,:,level)' + w(:,:,level)';
-        % imagesc(RtD*x,RtD*(y), img);
-        % colorbar
-        % title('w')
-        % set(gca,'ydir','normal');
-        % colormap(parula)
-        % xlabel('Longitude')
-        % ylabel('Latitude');
+        figure(3);
+        mx = max(max(abs(w(:,:,level))'));
+        img = -mx*2*land(:,:,level)' + w(:,:,level)';
+        imagesc(RtD*x,RtD*(y), img);
+        colorbar
+        title('w')
+        set(gca,'ydir','normal');
+        colormap(parula)
+        xlabel('Longitude')
+        ylabel('Latitude');
 
-        % figure(4);
-        % mx  = max(max(abs(p(:,:,level))'));
-        % img = -mx*2*land(:,:,level)' + p(:,:,level)';
-        % imagesc(RtD*x,RtD*(y), img);
-        % colorbar
-        % title('p')
-        % set(gca,'ydir','normal');
-        % colormap(parula)
-        % xlabel('Longitude')
-        % ylabel('Latitude');
+        figure(4);
+        mx  = max(max(abs(p(:,:,level))'));
+        img = -mx*2*land(:,:,level)' + p(:,:,level)';
+        imagesc(RtD*x,RtD*(y), img);
+        colorbar
+        title('p')
+        set(gca,'ydir','normal');
+        colormap(parula)
+        xlabel('Longitude')
+        ylabel('Latitude');
 
-        % figure(5);
-        % mx  = max(max(abs(T(:,:,level))'));
-        % img = -mx*2*land(:,:,level)' + T(:,:,level)';
-        % imagesc(RtD*x,RtD*(y), img);
-        % colorbar
-        % title('T')
-        % set(gca,'ydir','normal');
-        % colormap(parula)
-        % xlabel('Longitude')
-        % ylabel('Latitude');
+        figure(5);
+        mx  = max(max(abs(T(:,:,level))'));
+        img = -mx*2*land(:,:,level)' + T(:,:,level)';
+        imagesc(RtD*x,RtD*(y), img);
+        colorbar
+        title('T')
+        set(gca,'ydir','normal');
+        colormap(parula)
+        xlabel('Longitude')
+        ylabel('Latitude');
          
         figure(6);
         mx  =  max(max(abs(S(:,:,level))'));
 
         %S(~logical(land)) = S(~logical(land)) - .2;
-        img =  S(:,:,level)' - 0.1*land(:,:,level)';
+        
+        img = S(:,:,level)';
+        img = img - 2*max(abs(img(:)))*land(:,:,level)';
 
         % img(img==0)=NaN;
         imagesc(RtD*x,RtD*(y), img);
