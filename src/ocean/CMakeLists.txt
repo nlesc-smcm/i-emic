@@ -17,6 +17,7 @@ set(OCEAN_INCLUDE_DIRS
   ../mrilucpp/
   ../utils/
   ../atmosphere/
+  ../seaice/
   ../dependencygrid/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )

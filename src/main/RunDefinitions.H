@@ -34,6 +34,7 @@
 #include "CoupledModel.H"
 #include "AtmospherePar.H"
 #include "Ocean.H"
+#include "SeaIce.H"
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
 #include "Topo.H"

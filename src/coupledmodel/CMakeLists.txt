@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 2.8.12.2)
   
 set(COUPLEDMODEL_INCLUDE_DIRS
   ../ocean/
-  ../utils/
   ../atmosphere/
+  ../seaice/
+  ../utils/  
   ../dependencygrid/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )

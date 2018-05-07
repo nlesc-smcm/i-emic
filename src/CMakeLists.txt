@@ -99,12 +99,11 @@ set(I-EMIC_LIBS
   coupledmodel
   atmosphere
   ocean
+  seaice
   utils
   dependencygrid
   jdqz_tools
   )
-
-message("-- " ${I-EMIC_LIBS})
 
 # ------------------------------------------------------------------
 # Get targets and dependencies of the components

@@ -1,10 +1,17 @@
+//!---------------------------------------------------------------------
+/*
+
+ This class takes care of the parallelization of the atmosphere model.
+ For the domain decomposition we make use of the TRIOS_Domain stuff.
+ This als ensures that, in a coupled case, we can move parallel
+ objects around with maps that make sense.
+
+*/
+//!--------------------------------------------------------------------
+
 #ifndef ATMOSPHEREPAR_H
 #define ATMOSPHEREPAR_H
 
-//! This class takes care of the parallelization of the atmosphere
-//! model. For the domain decomposition we make use of the
-//! TRIOS_Domain stuff. This als ensures that, in a coupled case, we
-//! can move parallel objects around with maps that make sense.
 
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
@@ -188,7 +195,7 @@ private:
     std::shared_ptr<std::vector<int> > surfmask_;
 
 public:
-    //! Constructor based on parameterlist
+    //! Constructor based on communicator and parameterlist
     AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList params);
 
     ~AtmospherePar() {INFO("AtmospherePar destructor");}
