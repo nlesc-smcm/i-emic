@@ -835,7 +835,7 @@ namespace TRIOS {
 
         begM[0]=0;
 
-        int kglob;
+        int kglob = -1;
         double sf; //scaling factor
 
         // build all Teuchos::null-vectors of Gw. Note that Gw does not
