@@ -510,8 +510,12 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname, bool adjustMask)
             if ( (badSints + badProws) == 0 )
                 break;
         }
-    }
 
+        // The solver of the ocean model should be reinitialized when
+        // analyzeJacobian2() is done.
+        solverInitialized_ = false;
+    }
+    
     // Get the current global landmask from THCM.
     mask.global = THCM::Instance().getLandMask();
 

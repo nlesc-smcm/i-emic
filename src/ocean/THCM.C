@@ -963,7 +963,6 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 #ifndef NO_INTCOND
         if ((sres == 0) && !maskTest)
         {
-            std::cout << "entering intcond_S, " << maskTest << std::endl;
             this->intcond_S(*tmpJac,*localDiagB);
         }
 #endif
@@ -2472,7 +2471,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getIntCondCoeff()
 
     intcond_coeff->Norm1(&totalVolume_);
 
-    std::cout << "  total volume: " << totalVolume_ << std::endl;
+    INFO("  total volume: " << totalVolume_);
     
     return intcond_coeff;
 }
