@@ -444,8 +444,8 @@ real FUNCTION salfun(xx,yy)
      salfun = cos(pi*(yy-ymin)/(ymax-ymin))
      ! salfun=0.0
   else
-     salfun = cos(pi*yy/ymax)/cos(yy)
-
+     ! salfun = cos(pi*yy/ymax)/cos(yy) ! 2DMOC
+     salfun = cos(pi*yy/ymax)
   end if
 end FUNCTION salfun
 

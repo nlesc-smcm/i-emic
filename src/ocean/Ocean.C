@@ -296,7 +296,6 @@ int Ocean::analyzeJacobian1()
 //==================================================================
 int Ocean::analyzeJacobian2()
 {
-
     INFO("\n  <><>  Analyze Jacobian S column integrals...\n");
     // Another approach to analyze the Jacobian is through the volume
     // integrals of its columns. This only makes sense when the volume
