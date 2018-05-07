@@ -83,6 +83,9 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     // EpetraExt::RowMatrixToMatrixMarketFile("A.mtx", *ocean->getJacobian());
     // EpetraExt::MultiVectorToMatrixMarketFile("M.mtx", *ocean->getDiagB());
 
+    ocean->computeForcing();
+    EpetraExt::RowMatrixToMatrixMarketFile("F.mtx", *ocean->getForcing());
+
     ams.run();
 
     TIMER_STOP("Total time...");

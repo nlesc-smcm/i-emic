@@ -6,7 +6,6 @@
 #include "Utils.H"
 #include "TimeStepper.hpp"
 
-#include "Epetra_SerialComm.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_SerialDenseMatrix.h"
 #include "Epetra_SerialDenseSolver.h"
@@ -53,6 +52,8 @@ public:
 protected:
     Teuchos::RCP<Epetra_MultiVector> restrict(Epetra_MultiVector const &x) const;
     Teuchos::RCP<Epetra_Vector> prolongate(Epetra_MultiVector const &x) const;
+
+    unsigned int get_seed();
 };
 
 template<typename Vector>
@@ -79,13 +80,6 @@ Teuchos::RCP<Vector> newton(
     return x;
 }
 
-Teuchos::RCP<Epetra_MultiVector> MakeLocalVector(int m, int n)
-{
-    Epetra_SerialComm comm;
-    Epetra_LocalMap map(m, 0, comm);
-    return Teuchos::rcp(new Epetra_MultiVector(map, n));
-}
-
 // =====================================================================
 // Class implementation
 
@@ -108,10 +102,8 @@ AMS(Model model, ParameterList pars,
     sol2_(sol2),
     V_(Teuchos::null)
 {
-    Epetra_CrsMatrix* Bptr;
-    CHECK_ZERO(EpetraExt::MatrixMarketFileToCrsMatrix(
-                   "B.mtx", *model_->getDomain()->GetSolveMap(), Bptr));
-    B_ = Teuchos::rcp(Bptr);
+    model_->computeForcing();
+    B_ = model_->getForcing();
 
     std::string space = pars->get("space", "");
     TimeStep time_step;
@@ -121,8 +113,8 @@ AMS(Model model, ParameterList pars,
         CHECK_ZERO(EpetraExt::MatrixMarketFileToMultiVector(
                        space.c_str(), *model_->getDomain()->GetSolveMap(), Vptr));
         V_ = Teuchos::rcp(Vptr);
-        
-        BV_ = MakeLocalVector(B_->NumGlobalCols(), V_->NumVectors());
+
+        BV_ = Teuchos::rcp(new Epetra_MultiVector(B_->ColMap(), V_->NumVectors()));
         CHECK_ZERO(B_->Multiply('T', *V_, *BV_));
 
         time_step = get_projected_time_step();
@@ -192,13 +184,7 @@ AMS(Model model, ParameterList pars,
     timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(
                                     time_step, dist_fun, adist_, bdist_, cdist_));
 
-    static thread_local std::random_device rd;
-    unsigned int seed = rd();
-
-    int *seed_ptr = reinterpret_cast<int *>(&seed);
-    CHECK_ZERO(model->Comm()->Broadcast(seed_ptr, 1, 0));
-
-    static thread_local std::default_random_engine engine(seed);
+    static thread_local std::default_random_engine engine(get_seed());
     timestepper_->set_random_engine(engine);
 }
 
@@ -215,8 +201,8 @@ auto AMS<Model>::get_time_step()
         // Compute noise for forcing which is independent per processor
         static thread_local std::random_device rd;
         static thread_local std::default_random_engine engine(rd());
-        static thread_local std::normal_distribution<double> distribution(0.0, 1.0);
-        static thread_local auto generator = std::bind(distribution, std::ref(engine));
+        std::normal_distribution<double> distribution(0.0, 1.0);
+        auto generator = std::bind(distribution, std::ref(engine));
 
         int m = B_->NumMyCols();
         if (!B_->ColMap().UniqueGIDs())
@@ -274,7 +260,9 @@ Teuchos::RCP<Epetra_MultiVector> dot(
 {
     int m = x.NumVectors();
     int n = y.NumVectors();
-    Teuchos::RCP<Epetra_MultiVector> out = MakeLocalVector(m, n);
+
+    Epetra_LocalMap map(m, 0, x.Comm());
+    Teuchos::RCP<Epetra_MultiVector> out = Teuchos::rcp(new Epetra_MultiVector(map, n));
 
     CHECK_ZERO(out->Multiply('T', 'N', 1.0, x, y, 0.0));
     return out;
@@ -305,18 +293,20 @@ auto AMS<Model>::get_projected_time_step()
         auto xsmall = restrict(*x);
         *model_->getState('V') = *x;
 
-        // Compute noise for forcing which is independent per processor
-        static thread_local std::random_device rd;
-        static thread_local std::default_random_engine engine(rd());
-        static thread_local std::normal_distribution<double> distribution(0.0, 1.0);
-        static thread_local auto generator = std::bind(distribution, std::ref(engine));
+        // Compute noise for forcing which is the same on every processor
+        std::default_random_engine engine(get_seed());
+        std::normal_distribution<double> distribution(0.0, 1.0);
+        auto generator = std::bind(distribution, std::ref(engine));
 
         int m = BV_->MyLength();
-        auto pert = MakeLocalVector(m, 1);
+        auto pert = Teuchos::rcp(new Epetra_MultiVector(BV_->Map(), 1));
         std::generate(pert->Values(), pert->Values() + m, generator);
-        auto G = MakeLocalVector(BV_->NumVectors(), 1);
+        Epetra_LocalMap Gmap(BV_->NumVectors(), 0, *model_->Comm());
+        auto G = Teuchos::rcp(new Epetra_MultiVector(Gmap, 1));
         CHECK_ZERO(G->Multiply('T', 'N', 1.0, *BV_, *pert, 0.0));
         CHECK_ZERO(G->Scale(sqrt(dt_) * sigma_));
+
+        // std::cout << *pert << std::endl;
 
         // Deterministic theta stepper:
         // M * u_n + dt * theta * F(u_(n+1)) + (1-theta) * F(u_n) - M * u_(n+1) = 0
@@ -327,7 +317,7 @@ auto AMS<Model>::get_projected_time_step()
 
         auto tmp = Teuchos::rcp(new Epetra_MultiVector(*V_));
 
-        auto M = model_->getDiagB('V');
+        auto M = model_->getMassMat('V');
         CHECK_ZERO(tmp->Multiply(1.0, *M, *V_, 0.0));
         auto VMV = dot(*V_, *tmp);
 
@@ -358,7 +348,6 @@ auto AMS<Model>::get_projected_time_step()
         auto VAVmat = Teuchos::rcp(new Epetra_SerialDenseMatrix(
                                        Copy, VAV->Values(), VAV->Stride(),
                                        VAV->MyLength(), VAV->NumVectors()));
-
         auto VAVsolver = Teuchos::rcp(new Epetra_SerialDenseSolver());
         CHECK_ZERO(VAVsolver->SetMatrix(*VAVmat));
         CHECK_ZERO(VAVsolver->Factor());
@@ -375,7 +364,7 @@ auto AMS<Model>::get_projected_time_step()
             CHECK_ZERO(VAVsolver->SetVectors(*y, *z));
             CHECK_NONNEG(VAVsolver->Solve());
             return Teuchos::rcp(new Epetra_MultiVector(
-                                    Copy, Epetra_LocalMap(y->M(), 0, Epetra_SerialComm()),
+                                    Copy, Epetra_LocalMap(y->M(), 0, *model_->Comm()),
                                     y->A(), y->LDA(), y->N()));
         };
 
@@ -393,6 +382,18 @@ template<typename Model>
 void AMS<Model>::run()
 {
     timestepper_->ams(num_exp_, num_init_exp_, sol1_, dt_, tmax_);
+}
+
+
+template<typename Model>
+unsigned int AMS<Model>::get_seed()
+{
+    static thread_local std::random_device rd;
+    unsigned int seed = rd();
+
+    int *seed_ptr = reinterpret_cast<int *>(&seed);
+    CHECK_ZERO(model_->Comm()->Broadcast(seed_ptr, 1, 0));
+    return seed;
 }
 
 #endif

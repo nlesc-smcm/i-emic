@@ -413,7 +413,7 @@ template<class URNG>
 void TimeStepper<T>::set_random_engine(URNG &engine)
 {
     randint_ = [&engine](int a, int b) {
-        static thread_local std::uniform_int_distribution<int> int_distribution(a, b);
+        std::uniform_int_distribution<int> int_distribution(a, b);
         return int_distribution(engine);
     };
     engine_initialized_ = true;
@@ -427,7 +427,7 @@ int TimeStepper<T>::randint(int a, int b) const
 
     static thread_local std::random_device rd;
     static thread_local std::default_random_engine engine(rd());
-    static thread_local std::uniform_int_distribution<int> int_distribution(a, b);
+    std::uniform_int_distribution<int> int_distribution(a, b);
     return int_distribution(engine);
 }
 
