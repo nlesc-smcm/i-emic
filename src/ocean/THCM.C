@@ -14,6 +14,7 @@
 #include <sstream>
 #include <memory>
 #include <vector>
+#include <algorithm>
 
 #include "Teuchos_StandardCatchMacros.hpp"
 
@@ -889,6 +890,7 @@ bool THCM::computeForcing()
 
     int NumMyElements = AssemblyMap->NumMyElements();
     int imax = NumMyElements;
+    std::vector<int> MyElements;
 
     FNAME(stochastic_forcing)();
 
@@ -907,6 +909,7 @@ bool THCM::computeForcing()
         {
             indices[j] = AssemblyMap->GID(jcoF[index-1+j] - 1);
             values[j]  = coF[index - 1 + j];
+            MyElements.push_back(indices[j]);
         }
 
         if (localFrc->Filled())
@@ -967,12 +970,15 @@ bool THCM::computeForcing()
         }
     } //i-loop over rows
 
-    CHECK_ZERO(localFrc->FillComplete());
+    auto last = std::unique(MyElements.begin(), MyElements.end());
+    Epetra_Map colMap(-1, (int)std::distance(MyElements.begin(), last),
+                      &MyElements[0], 0, *Comm);
+    CHECK_ZERO(localFrc->FillComplete(colMap, *StandardMap));
 
     // redistribute according to SolveMap (may be load-balanced)
     // standard and solve maps are equal
     domain->Standard2Solve(*localFrc, *Frc);     // no effect
-    CHECK_ZERO(Frc->FillComplete());
+    CHECK_ZERO(Frc->FillComplete(colMap, *SolveMap));
 
     return true;
 }
