@@ -4,10 +4,7 @@ set(COUPLEDMODEL_INCLUDE_DIRS
   ../ocean/
   ../utils/
   ../atmosphere/
-  ../supervector/
-  ../gmressolver/
-  ../idrsolver/
-  ../multiarray/
+  ../dependencygrid/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 

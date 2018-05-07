@@ -61,8 +61,6 @@ ExternalProject_Add(jdqzpp
   CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF
   )
 
-
-
 ExternalProject_Get_Property(jdqzpp source_dir)
 set(JDQZPP_INCLUDE_DIR ${source_dir}/include)
 set(JDQZPP_LIBRARY_DIR ${source_dir}/lib)
@@ -96,24 +94,30 @@ set(EXTRA_LIBS
 list(APPEND library_dependencies ${EXTRA_LIBS})
 
 # ------------------------------------------------------------------
-# Internal I-EMIC shared libraries
+# Internal I-EMIC libraries
 set(I-EMIC_LIBS
   coupledmodel
   atmosphere
   ocean
   utils
-  supervector
+  dependencygrid
   jdqz_tools
   )
 
+message("-- " ${I-EMIC_LIBS})
+
 # ------------------------------------------------------------------
 # Get targets and dependencies of the components
-add_subdirectory(ocean)	  
 add_subdirectory(mrilucpp)
+
+add_subdirectory(ocean)	  
 add_subdirectory(atmosphere)
+add_subdirectory(seaice)
 add_subdirectory(coupledmodel)
-add_subdirectory(supervector)
+
 add_subdirectory(utils)
+add_subdirectory(dependencygrid)
+
 add_subdirectory(main)
 add_subdirectory(tests)
 

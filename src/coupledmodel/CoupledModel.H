@@ -4,9 +4,6 @@
 #include "Ocean.H"
 #include "AtmospherePar.H"
 #include "Combined_MultiVec.H"
-#include "IDRSolver.H"
-#include "GMRESSolver.H"
-
 #include "CouplingBlock.H"
 
 #include <vector>

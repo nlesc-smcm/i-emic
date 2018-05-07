@@ -14,12 +14,11 @@ set(CPP_SOURCES Ocean.C THCM.C OceanGrid.C
 add_library(ocean STATIC ${FORTRAN_SOURCES} ${CPP_SOURCES})
 
 set(OCEAN_INCLUDE_DIRS
-  ../supervector/
-  ../idrsolver/
   ../mrilucpp/
   ../utils/
   ../atmosphere/
-  ../multiarray/
+  ../dependencygrid/
+  ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
 target_include_directories(ocean PUBLIC ${OCEAN_INCLUDE_DIRS})

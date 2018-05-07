@@ -7,12 +7,11 @@ add_executable(run_topo run_topo.C)
 
 set(MAIN_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ../thetastepper/
-  ../newton/
   ../continuation/
   ../topo/
   ../mrilucpp/
   ../utils/
+  ../dependencygrid/
   )
 
 target_link_libraries(run_coupled PUBLIC ${I-EMIC_LIBS})

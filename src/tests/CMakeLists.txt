@@ -5,12 +5,7 @@ set(TESTS_INCLUDE_DIRS
   ../ocean/
   ../atmosphere/
   ../coupledmodel/
-  ../supervector/
-  ../idrsolver/
-  ../multiarray/
-  ../gmressolver/
-  ../thetastepper/
-  ../newton/
+  ../dependencygrid/
   ../continuation/
   ../topo/
   ${CMAKE_CURRENT_SOURCE_DIR}

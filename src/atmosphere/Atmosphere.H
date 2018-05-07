@@ -20,21 +20,18 @@
 #include <array>
 #include <map>
 
-#include "MultiArray.H"
 #include "Utils.H"
+#include "DependencyGrid.H"
 
 #include "AtmosphereDefinitions.H"
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 
-class DependencyGrid;
-class Atom;
-
 class Atmosphere
 {
 public:
 
-    //! Parameters we need to communicate (see members for explanation).
+    //! Parameters we need to communicate (see datamembers for explanation).
     struct CommPars
     {
         double tdim;
@@ -392,62 +389,6 @@ public:
     void writeAll();
 
 private:
-
-};
-
-//==================================================================
-//! Dependency grid:
-//! A multidimensional array describing the dependencies among the unknowns:
-//! grid(i,j,k,21,U,V) = c   <=>   (...) * d/dt U|(i,j,k) = ... + c * V|(i-1,j+1,k+1)
-//! grid(i,j,k,13,U,V) = d   <=>   (...) * d/dt U|(i,j,k) = ... + d * V|(i,j-1,k-1)
-//==================================================================
-class DependencyGrid
-{
-    MultiArray<double, 6> grid_;
-    int n_, m_, l_, np_, nun_;
-
-public:
-    DependencyGrid(int n, int m, int l, int np, int nun);
-    ~DependencyGrid();
-
-    // these get and set members are all 1-based!
-    double get(int i, int j, int k, int loc, int A, int B);
-    void   set(int i, int j, int k, int loc, int A, int B, double value);
-    void   set(int const (&range)[8], int A, int B, Atom &atom);
-    
-    void   add(double scalar, Atom &atom);
-
-};
-
-//==================================================================
-//! Atom:
-//! A multidimensional array describing anonymous dependencies among neighbours:
-//! atom(i,j,k,21) = c   <=>   (...) * d/dt {}|(i,j,k) = ... + c * {}|(i-1,j+1,k+1)
-//! atom(i,j,k,13) = d   <=>   (...) * d/dt {}|(i,j,k) = ... + d * {}|(i,j-1,k-1)
-//==================================================================
-class Atom
-{
-    MultiArray<double, 4> atom_;
-    int n_, m_, l_, np_;
-
-public:
-    Atom(int n, int m, int l, int np);
-    ~Atom();
-
-    double get(int i, int j, int k, int loc);
-    void   set(int i, int j, int k, int loc, double value);
-    void   set(int const (&range)[6], int loc, double value);
-
-    void update(double scalarThis,
-                double scalarA, Atom &A,
-                double scalarB, Atom &B);
-
-    void update(double scalarThis,
-                double scalarA, Atom &A,
-                double scalarB, Atom &B,
-                double scalarC, Atom &C);
-
-    void scale(double scalarThis);
 
 };
 

@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 2.8.12.2)
+  
+set(SEAICE_INCLUDE_DIRS
+  ../ocean/
+  ../atmosphere/
+  ../utils/
+  ../dependencygrid/
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+
+add_library(seaice STATIC SeaIce.C)
+
+target_compile_definitions(seaice PUBLIC ${COMP_IDENT})
+
+target_link_libraries(seaice dependencygrid)
+target_link_libraries(seaice ocean)
+target_link_libraries(seaice atmosphere)
+
+target_include_directories(seaice PUBLIC ${ATMOSPHERE_INCLUDE_DIRS})
+
+install(TARGETS seaice DESTINATION lib)
