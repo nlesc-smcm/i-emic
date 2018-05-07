@@ -162,13 +162,10 @@ namespace TRIOS {
             {
                 //Teuchos::ParameterList& ifp_list=mllist.sublist("smoother: ifpack list");
                 std::string ifp_type=mllist.get("smoother: ifpack type","Amesos");
-                const char *str1 = ifp_type.c_str();
-                const char *str2 = "block relaxation";
-                int len = 16;
 
                 // I experimented with Line relaxation in trilinos_thcm, but
                 // it the DD-MRILU approach was far superior.
-                if (memcmp(str1,str2,len)==0)
+                if (ifp_type == "block relaxation")
                 {
                     ERROR("line relaxation no longer supported",__FILE__,__LINE__);
                 }
