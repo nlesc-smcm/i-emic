@@ -2149,7 +2149,7 @@ namespace TRIOS {
             {
                 INFO("build Mzp2...");
             }
-            Mzp2 = build_singular_matrix(Teuchos::rcp(tmpGw, false));
+            Mzp2 = build_singular_matrix(Teuchos::rcp(tmpGw));
             //TODO: should we or should we not delete this?
             // delete tmpGw;
         }
@@ -2273,7 +2273,7 @@ namespace TRIOS {
         CHECK_ZERO(Trans.CreateTranspose(true, tmpGw, SubMatrixRowMap[_Gw].get()));
 
         INFO("build Mzp2...");
-        Mzp2 = build_singular_matrix(Teuchos::rcp(tmpGw, false));
+        Mzp2 = build_singular_matrix(Teuchos::rcp(tmpGw));
         Teuchos::RCP<Epetra_CrsMatrix> T2 =
             Teuchos::rcp(new Epetra_CrsMatrix(Copy, (*Mzp2).RowMap(),
                                               (*SubMatrix[_Duv]).ColMap(),
