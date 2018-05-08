@@ -91,11 +91,11 @@ function [X] = seaice()
     Tf = @(S) -0.0575 * (S + s0);
     
     % Background sublimation and derivatives
-    E0   =  eta * ( qsi(t0i) - q0 );
-    dqsi = (c1 * c2 * c3) / (t0i + c3).^2 * ...
+    E0    =  eta * ( qsi(t0i) - q0 );
+    dqsi  = (c1 * c2 * c3) / (t0i + c3).^2 * ...
            exp( (c2 * t0i) / (t0i + c3) );
-    dEdT =  eta *  dqsi;
-    dEdq =  eta * -1;
+    dEdT  =  eta *  dqsi;
+    dEdq  =  eta * -1;
     
     % Background heat flux and variation
     Q0   = zeta*(Tf(0) - t0o) - rhoo * Lf * E0;
@@ -108,7 +108,7 @@ function [X] = seaice()
     grid();
 
     % initialize forcing and state
-    sst  = idealizedTemp(0, tvar) + randn(n,m);
+    sst  = idealizedTemp(0, tvar); % + randn(n,m);
     sss  = idealizedSalt(0, svar);
     tatm = idealizedTemp(0, tvar);
     qatm = idealizedTemp(0, qvar);

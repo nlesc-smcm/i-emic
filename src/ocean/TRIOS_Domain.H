@@ -169,12 +169,20 @@ namespace TRIOS {
 		//! global indices for the output of THCM on the subdomain)
 		Teuchos::RCP<Epetra_Map> GetAssemblyMap(){return AssemblyMap;}
 
+        //! The assembly surface map is a depth-averaged,
+        //! single-unknown variant of the assembly map.
+        Teuchos::RCP<Epetra_Map> GetAssemblySurfaceMap(){return AssemblyMap;}
+
 		//! The standard map is created during the Decomp2D call. 
 		//! It does not contain ghost nodes and is therefore      
 		//! more suitable for the solve phase in Trilinos. The    
 		//! indexing scheme and decomposition are the same as in  
 		//! the assembly map.                                     
 		Teuchos::RCP<Epetra_Map> GetStandardMap(){return StandardMap;}
+
+        //! The standard surface map is a depth-averaged,
+        //! single-unknown variant of the standard map.
+        Teuchos::RCP<Epetra_Map> GetStandardSurfaceMap(){return AssemblyMap;}
 
 		//! if you register a load-balancing object with this     
 		//! class, this map is made to optimize performance of    
@@ -242,8 +250,16 @@ namespace TRIOS {
 
 		//@{ \name Data Transfer functions between the three map-types
 		int Assembly2Standard(const Epetra_Vector& source, Epetra_Vector& target) const;
-		int Assembly2Solve(const Epetra_Vector& source, Epetra_Vector& target) const;
+        
+        int Assembly2StandardSurface(const Epetra_Vector& source,
+                                     Epetra_Vector& target) const;
+
+        int Assembly2Solve(const Epetra_Vector& source, Epetra_Vector& target) const;
 		int Standard2Assembly(const Epetra_Vector& source, Epetra_Vector& target) const;
+
+        int Standard2AssemblySurface(const Epetra_Vector& source,
+                                     Epetra_Vector& target) const;
+        
 		int Standard2Solve(const Epetra_Vector& source, Epetra_Vector& target) const;
 		int Solve2Assembly(const Epetra_Vector& source, Epetra_Vector& target) const;
 		int Solve2Standard(const Epetra_Vector& source, Epetra_Vector& target) const;
@@ -261,15 +277,22 @@ namespace TRIOS {
 
 		//! see GetStandardMap() for a description
 		Teuchos::RCP<Epetra_Map> StandardMap;
-      
-		//! see GetSolveMap() for a description
+
+        //! see GetAssemblySurfaceMap() for a description
+		Teuchos::RCP<Epetra_Map> AssemblySurfaceMap;
+
+		//! see GetStandardSurfaceMap() for a description
+		Teuchos::RCP<Epetra_Map> StandardSurfaceMap;
+
+        
+		//! see GetSolveMap() for a description --> deprecated
 		Teuchos::RCP<Epetra_Map> SolveMap;
       
 		//! see GetColMap() for a description
 		Teuchos::RCP<Epetra_Map> ColMap;
       
 		//! objects to transform the three vector types into one another
-		Teuchos::RCP<Epetra_Import> as2std,std2sol;
+		Teuchos::RCP<Epetra_Import> as2std,std2sol,as2std_surf;
       
 		int n,m,l; //!dimension of global domain
 		int lloc,mloc,nloc; //! dimension of local subdomain (incl. ghost-nodes)

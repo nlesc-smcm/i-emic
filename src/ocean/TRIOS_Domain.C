@@ -196,12 +196,22 @@ namespace TRIOS
         StandardMap = CreateStandardMap(dof_);
         AssemblyMap = CreateAssemblyMap(dof_);
 
+        // create surface single unknown maps:
+        StandardSurfaceMap = CreateStandardMap(1, true);
+        AssemblySurfaceMap = CreateAssemblyMap(1, true);
+
         // no load-balancing object available, yet (has to be set by user)
         SolveMap = StandardMap;
 
         // finally make the Import/Export objects (transfer function
         // between the two maps)
-        as2std  = Teuchos::rcp(new Epetra_Import(*AssemblyMap,*StandardMap));
+        as2std =
+            Teuchos::rcp(new Epetra_Import(*AssemblyMap,
+                                           *StandardMap));
+        as2std_surf =
+            Teuchos::rcp(new Epetra_Import(*AssemblySurfaceMap,
+                                           *StandardSurfaceMap));
+        
         std2sol = Teuchos::null;
 
         // determine the physical bounds of the subdomain
@@ -470,6 +480,35 @@ namespace TRIOS
         }
 #endif
         CHECK_ZERO(target.Import(source,*as2std,Insert));
+        return 0;
+    }
+
+        int Domain::Assembly2StandardSurface
+    (const Epetra_Vector& source, Epetra_Vector& target) const
+    {
+#ifdef DEBUGGING_NEW
+        if (!(source.Map().SameAs(*AssemblySurfaceMap) &&
+              target.Map().SameAs(*StandardSurfaceMap)))
+        {
+            ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
+        }
+#endif
+        CHECK_ZERO(target.Export(source,*as2std_surf,Zero));
+        return 0;
+    }
+
+    //
+    int Domain::Standard2AssemblySurface
+    (const Epetra_Vector& source, Epetra_Vector& target) const
+    {
+#ifdef DEBUGGING_NEW
+        if (!(source.Map().SameAs(*StandardSurfaceMap) &&
+              target.Map().SameAs(*AssemblySurfaceMap)))
+        {
+            ERROR("Invalid Transfer Function called!",__FILE__,__LINE__);
+        }
+#endif
+        CHECK_ZERO(target.Import(source,*as2std_surf,Insert));
         return 0;
     }
 
