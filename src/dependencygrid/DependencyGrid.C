@@ -24,6 +24,13 @@ DependencyGrid::~DependencyGrid()
 {}
 
 //-----------------------------------------------------------------------------
+double &DependencyGrid::operator() (int i, int j, int k, int loc, int A, int B)
+{
+    // converting to 0-based
+    return grid_(i-1, j-1, k-1, loc-1, A-1, B-1);
+}
+
+//-----------------------------------------------------------------------------
 double DependencyGrid::get(int i, int j, int k, int loc, int A, int B)
 {
     // converting to 0-based
@@ -35,6 +42,19 @@ void DependencyGrid::set(int i, int j, int k, int loc, int A, int B, double valu
 {
     // converting to 0-based
     grid_(i-1, j-1, k-1, loc-1, A-1, B-1) = value;
+}
+
+//-----------------------------------------------------------------------------
+void DependencyGrid::set(int const (&range)[8], int A, int B, double value)
+{
+    for (int i = range[0]; i != range[1]+1; ++i)
+        for (int j = range[2]; j != range[3]+1; ++j)
+            for (int k = range[4]; k != range[5]+1; ++k)
+                for (int loc = range[6]; loc != range[7]+1; ++loc)
+                {
+                    // converting to 0-based
+                    grid_(i-1, j-1, k-1, loc-1, A-1, B-1) = value;
+                }
 }
 
 //-----------------------------------------------------------------------------
@@ -50,6 +70,13 @@ void DependencyGrid::set(int const (&range)[8], int A, int B, Atom &atom)
                         atom.get(i,j,k,loc);
                 }
 }
+
+//-----------------------------------------------------------------------------
+void DependencyGrid::zero()
+{
+    grid_.assign(0.0);
+}
+
 
 //=============================================================================
 // / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / //

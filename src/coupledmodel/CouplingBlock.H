@@ -54,7 +54,7 @@ public:
         {
             TIMER_START("CouplingBlock: compute block");
 
-            // obtain 0-based CRS matrix from modelRow
+            // obtain 0-based global CRS matrix from modelRow
             std::shared_ptr<Utils::CRSMat> blockCRS =
                 modelRow_->getBlock(modelCol_);
 

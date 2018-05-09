@@ -399,8 +399,6 @@ private:
     // Perform a Newton solve with a small perturbation in the parameter
     Teuchos::RCP<Epetra_Vector> initialState(); 
 
-    VectorPtr getVector(char mode, VectorPtr vec);
-
     void inspectVector(VectorPtr x);
 };
 #endif

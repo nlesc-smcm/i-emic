@@ -1218,47 +1218,28 @@ void Ocean::computeJacobian()
 }
 
 //====================================================================
-Teuchos::RCP<Epetra_Vector> Ocean::getVector(char mode, RCP<Epetra_Vector> vec)
-{
-    if (mode == 'C') // copy
-    {
-        RCP<Epetra_Vector> copy = rcp(new Epetra_Vector(*vec));
-        return copy;
-    }
-    else if (mode == 'V') // view
-    {
-        return vec;
-    }
-    else
-    {
-        WARNING("Invalid mode", __FILE__, __LINE__);
-        return Teuchos::null;
-    }
-}
-
-//====================================================================
 Teuchos::RCP<Epetra_Vector> Ocean::getSolution(char mode)
 {
-    return getVector(mode, sol_);
+    return Utils::getVector(mode, sol_);
 }
 
 //====================================================================
 Teuchos::RCP<Epetra_Vector> Ocean::getState(char mode)
 {
-    return getVector(mode, state_);
+    return Utils::getVector(mode, state_);
 }
 
 //====================================================================
 Teuchos::RCP<Epetra_Vector> Ocean::getRHS(char mode)
 {
-    return getVector(mode, rhs_);
+    return Utils::getVector(mode, rhs_);
 }
 
 //====================================================================
 Teuchos::RCP<Epetra_Vector> Ocean::getDiagB(char mode)
 {
     diagB_ = THCM::Instance().DiagB();
-    return getVector(mode, diagB_);
+    return Utils::getVector(mode, diagB_);
 }
 
 //====================================================================
@@ -1283,7 +1264,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::getM(char mode)
             (*vecM)[i] = 0;
     }
 
-    return getVector(mode, vecM);
+    return Utils::getVector(mode, vecM);
 }
 
 //====================================================================

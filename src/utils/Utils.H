@@ -44,7 +44,12 @@
 class Combined_MultiVec;
 
 template<typename Vector>
+
 class ComplexVector;
+
+namespace TRIOS {
+    class Domain;
+}
 
 // Perhaps some lapack is nice
 extern "C" void dscal_(int* N, double *DA, double *X, int *INCX);
@@ -196,6 +201,23 @@ namespace Utils
         saveEigenvectors(eigvs, alpha, beta, filename);
     }
 
+    //!------------------------------------------------------------------
+    //! getVector wrapper to select view or copy (for Teuchos::RCP's)
+    Teuchos::RCP<Epetra_Vector> getVector(char mode,
+                                          Teuchos::RCP<Epetra_Vector> vec);
+
+    //!------------------------------------------------------------------
+    //! getVector wrapper to select view or copy (for shared_ptr's)
+    std::shared_ptr<std::vector<double> > getVector
+    (char mode, std::shared_ptr<std::vector<double> > vec);
+
+    //!------------------------------------------------------------------
+    //! Assemble local or global crs struct into an Epetra_CrsMatrix.
+    //! This handles both 0 and 1-based CRS structs.
+    void assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
+                     CRSMat const &crs, int const maxnnz,
+                     Teuchos::RCP<TRIOS::Domain> domain = Teuchos::null);
+    
     //------------------------------------------------------------------
     // Original Utils from Jonas
     //------------------------------------------------------------------

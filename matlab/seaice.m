@@ -22,8 +22,8 @@ function [X] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size (2deg)
-    n = 180;
-    m = 90;
+    n = 16;
+    m = 16;
 
     % number of unknowns
     nun = 3;
@@ -114,11 +114,16 @@ function [X] = seaice()
     qatm = idealizedTemp(0, qvar);
 
     rng(1);
-    X = 1e8*randn(dim, 1);
+    % X = 1e8*randn(dim, 1);
+    X = 1.234*ones(dim,1);
     %x = initialsol();
 
     % Newton solve
     F    = rhs(X);
+    [(1:dim)',F]
+    norm(F)
+    return
+    
     kmax = 10;
 
     ord = [];
@@ -266,14 +271,15 @@ function [F] = rhs(x)
                 row = find_row(i,j,XX);
                 switch XX
                   case 1
-                    Tsi = Ti(Qtsa(i,j), H(i,j), sst(i,j));
+                    Tsi = Ti(Qtsa(i,j), H(i,j), sss(i,j));
                     
                     val = Tf(sss(i,j)) - sst(i,j) - t0o - ... 
                           Q0/zeta - Qvar / zeta * Qtsa(i,j) - ...
                           ( rhoo * Lf / zeta) * ...
                           ( E0 + dEdT * Tsi + dEdq * qatm(i,j) );
+                    
                   case 2
-                    Tsi = Ti(Qtsa(i,j), H(i,j), sst(i,j));
+                    Tsi = Ti(Qtsa(i,j), H(i,j), sss(i,j));
                     
                     val = 1/muoa*(Q0 + Qvar * Qtsa(i,j)) - ...
                           (sun0 / 4 / muoa) * S(y(j)) * (1-alpha) * c0 + ...
@@ -296,7 +302,7 @@ end
 function [co, ico, jco, beg] = assemble(Al)
 
     global m n nun
-
+    
     % This is an assemble where we assume all dependencies are
     % located at the same grid point. Otherwise we would have a
     % higher dimensional Al.
@@ -311,8 +317,6 @@ function [co, ico, jco, beg] = assemble(Al)
     ico_ctr = 0;
     jco_ctr = 0;
     beg_ctr = 0;
-    
-    Al_dum = Al;
     
     for j = 1:m
         for i = 1:n

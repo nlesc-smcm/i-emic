@@ -7,8 +7,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     :
     params_          (params),
     comm_            (comm),
-    n_               (params->get("Global Grid-Size n", 180)),
-    m_               (params->get("Global Grid-Size m", 90)),
+    nGlob_           (params->get("Global Grid-Size n", 16)),
+    mGlob_           (params->get("Global Grid-Size m", 16)),
     periodic_        (params->get("Periodic", false)),
 
     taus_         (0.01),   // threshold ice thickness
@@ -93,12 +93,27 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
     ymax_ = params->get("Global Bound ymax", 80.0)  * PI_ / 180.0;
 
-    dof_  = SEAICE_NUN_;
+    dof_      = SEAICE_NUN_;
+    dimGlob_  = mGlob_ * nGlob_ * dof_;
 
     // Create domain object
-    domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, 1, dof_,
+    domain_ = Teuchos::rcp(new TRIOS::Domain(nGlob_, mGlob_, 1, dof_,
                                              xmin_, xmax_, ymin_, ymax_,
                                              periodic_, 1.0, comm_));
+    
+    // Compute 2D decomposition
+    domain_->Decomp2D();
+    
+    // local dimensions
+    xminLoc_ = domain_->XminLoc();
+    xmaxLoc_ = domain_->XmaxLoc();
+    yminLoc_ = domain_->YminLoc();
+    ymaxLoc_ = domain_->YmaxLoc();
+    
+    // local grid dimensions
+    nLoc_   =  domain_->LocalN();
+    mLoc_   =  domain_->LocalM();
+    dimLoc_ = mLoc_ * nLoc_ * dof_;
 
     // Obtain overlapping and non-overlapping maps
     assemblyMap_ = domain_->GetAssemblyMap(); // overlapping
@@ -119,7 +134,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     sss_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     tatm_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     qatm_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
-
+    
     // Local (overlapping) vectors
     localState_  = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localRHS_    = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -134,6 +149,9 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // Create local computational grid in x_, y_
     createGrid();
+
+    // Construct local dependency grid:
+    Al_ = std::make_shared<DependencyGrid>(nLoc_, mLoc_, 1, 1, dof_);
     
 }
 
@@ -146,6 +164,14 @@ void SeaIce::computeRHS()
     // obtain view of rhs, state and external data
     double *rhs, *state, *sst, *sss, *tatm, *qatm;
     localRHS_->ExtractView(&rhs);
+
+    domain_->Standard2Assembly(*state_, *localState_);
+    
+    domain_->Standard2AssemblySurface(*sst_,   *localSST_);
+    domain_->Standard2AssemblySurface(*sss_,   *localSSS_);
+    domain_->Standard2AssemblySurface(*tatm_,  *localAtmosT_);
+    domain_->Standard2AssemblySurface(*qatm_,  *localAtmosQ_);
+    
     localState_->ExtractView(&state);
     localSST_->ExtractView(&sst);
     localSSS_->ExtractView(&sss);
@@ -160,9 +186,9 @@ void SeaIce::computeRHS()
         {
             dr = j*nLoc_ + i;
             
-            Hval = state[find_row(i, j, SEAICE_HH_)];
-            Qval = state[find_row(i, j, SEAICE_QQ_)];
-            Mval = state[find_row(i, j, SEAICE_MM_)];
+            Hval = state[find_row0(i, j, SEAICE_HH_)];
+            Qval = state[find_row0(i, j, SEAICE_QQ_)];
+            Mval = state[find_row0(i, j, SEAICE_MM_)];
 
             Tsi = iceSurfT(Qval, Hval, sss[dr]);
             
@@ -178,26 +204,166 @@ void SeaIce::computeRHS()
                         ( rhoo_ * Lf_ / zeta_) * 
                         ( E0_ + dEdT_ * Tsi + dEdq_ * qatm[dr] );
 
+                    break;
+
                 case SEAICE_QQ_:       // Q row (heat flux)
                     
-                    val = 1 / muoa_ * (Q0_ + Qvar_ * Qval) - 
-                        (sun0_ / 4 / muoa_) * shortwaveS(y_[j]) * (1-alpha_) * c0_ + 
+                    val = 1. / muoa_ * (Q0_ + Qvar_ * Qval) - 
+                        (sun0_ / 4. / muoa_) * shortwaveS(y_[j]) * (1.-alpha_) * c0_ + 
                         (t0i_ + Tsi - tatm[dr] - t0a_) + 
                         (rhoo_ * Ls_ / muoa_) * 
-                        (E0_ + dEdT_ * Tsi + dEdq_ * qatm[dr]);                  
+                        (E0_ + dEdT_ * Tsi + dEdq_ * qatm[dr]);
+
+                    break; 
 
                 case SEAICE_MM_:       // M row (mask)
                     
                     val = Mval - 
-                        (1/2) * (1 + tanh(epsilon_ * Hval) );
-                    
+                        (1./2.) * (1. + tanh(epsilon_ * Hval) );
+
+                    break;                    
                 }
                 
-                rr = find_row(i, j, XX);
+                rr = find_row0(i, j, XX);
                 rhs[rr] = val;
             }
         }
-    domain_->Assembly2StandardSurface(*localRHS_, *rhs_);
+
+    domain_->Assembly2Standard(*localRHS_, *rhs_);
+}
+
+//=============================================================================
+void SeaIce::computeLocalJacobian()
+{
+    int HH = SEAICE_HH_;
+    int QQ = SEAICE_QQ_;
+    int MM = SEAICE_MM_;
+
+    // reset entries
+    Al_->zero();
+
+    // obtain local state
+    domain_->Standard2Assembly(*state_, *localState_);
+    double *state;
+    localState_->ExtractView(&state);
+
+    // our range is the entire local domain (1-based)
+    int range[8] = {1,nLoc_,1,mLoc_,1,1,1,1};
+
+    // initialize dependencies
+    double HH_HH, HH_QQ, QQ_HH, QQ_QQ, MM_MM;
+    Atom MM_HH(nLoc_, mLoc_, 1, 1);
+
+    // dHdt equation ----------------------
+    HH_HH = -rhoo_ * Lf_ / zeta_ * dEdT_ * Q0_ / Ic_;
+    Al_->set(range, HH, HH, HH_HH);
+
+    HH_QQ = -Qvar_ / zeta_ - 
+        rhoo_ * Lf_ / zeta_ * dEdT_ * H0_ * Qvar_ / Ic_;
+    Al_->set(range, HH, QQ, HH_QQ);
+
+    // Qtsa equation ----------------------
+    QQ_HH = Q0_ / Ic_ + 
+        rhoo_ * Ls_ / muoa_ * dEdT_ * Q0_ / Ic_;
+    Al_->set(range, QQ, HH, QQ_HH);
+
+    QQ_QQ = Qvar_ / muoa_ + 
+        H0_ * Qvar_ / Ic_ + 
+        rhoo_ * Ls_ / muoa_ * dEdT_ * H0_ * Qvar_ / Ic_;
+    Al_->set(range, QQ, QQ, QQ_QQ);
+
+    // Msi equation ----------------------
+    // fill atom for nonlinear contribution H
+    int ind;     // state index
+    double val;        
+    for (int j = 1; j <= mLoc_; ++j)
+        for (int i = 1; i <= nLoc_; ++i)
+        {
+            ind  = find_row1(i, j, HH); // H row
+            val  = -(epsilon_ / 2.0) * 
+                ( 1.0 - pow(tanh(epsilon_ * (state[ind])), 2) );
+            MM_HH.set( i, j, 1, 1, val);
+        }
+    
+    Al_->set(range, MM, HH, MM_HH);
+
+    MM_MM = 1.0;
+    Al_->set(range, MM, MM, MM_MM);
+}
+
+
+//=============================================================================
+void SeaIce::computeJacobian()
+{
+    // Create local dependency grid
+    computeLocalJacobian();
+
+    // Create local crs arrays
+    assemble();
+
+    // Obtain crs arrays
+    std::shared_ptr<Utils::CRSMat> localJac = getLocalJacobian();
+
+    //--------------------------------------------
+    // Create parallel crs matrix
+    //--------------------------------------------
+
+    // max nonzeros per row
+    const int maxnnz = dof_ + 1;
+
+    // --> todo
+    // Utils::assembleCRS( ... );
+
+    
+}
+
+//=============================================================================
+void SeaIce::assemble()
+{
+    // Assemble local Al_ into local crs vectors
+    // clear old CRS matrix
+    beg_.clear();
+    co_.clear();
+    jco_.clear();
+    
+    // We do this 1-based
+    int elm_ctr, col;
+    double value;
+    for (int j = 1; j <= mLoc_; ++j)
+        for (int i = 1; i <= nLoc_; ++i)
+            for (int A = 1; A <= dof_; ++A)
+            {
+                // fill beg with element cntr
+                beg_.push_back(elm_ctr);
+
+                for (int B = 1; B <= dof_; ++B)
+                {
+                    value = Al_->get( i, j, 1, 1, A, B );
+                    
+                    if (std::abs(value) > 0)
+                    {
+                        co_.push_back(value);
+
+                        // obtain column
+                        col = find_row1( i, j, A );
+                        jco_.push_back(col);
+                        ++elm_ctr;
+                    }
+                }
+            }
+
+    // final element of beg
+    beg_.push_back(elm_ctr);
+}
+
+//=============================================================================
+std::shared_ptr<Utils::CRSMat> SeaIce::getLocalJacobian()
+{
+    std::shared_ptr<Utils::CRSMat> jac = std::make_shared<Utils::CRSMat>();
+    jac->co  = co_;
+    jac->jco = jco_;
+    jac->beg = beg_;
+    return jac;
 }
 
 //=============================================================================
@@ -234,20 +400,10 @@ void SeaIce::idealizedForcing()
     domain_->Assembly2StandardSurface(*localAtmosQ_, *qatm_);
 }
 
-//=====Loc========================================================================
+//=============================================================================
 // Create local grid points
 void SeaIce::createGrid()
 {
-    // local dimensions
-    xminLoc_ = domain_->XminLoc();
-    xmaxLoc_ = domain_->XmaxLoc();
-    yminLoc_ = domain_->YminLoc();
-    ymaxLoc_ = domain_->YmaxLoc();
-    
-    // local grid dimensions
-    nLoc_  =  domain_->LocalN();
-    mLoc_  =  domain_->LocalM();
-
     dx_  =  (xmaxLoc_ - xminLoc_) / nLoc_;
     dy_  =  (ymaxLoc_ - yminLoc_) / mLoc_;
 

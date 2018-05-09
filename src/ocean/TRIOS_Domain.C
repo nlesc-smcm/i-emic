@@ -483,7 +483,7 @@ namespace TRIOS
         return 0;
     }
 
-        int Domain::Assembly2StandardSurface
+    int Domain::Assembly2StandardSurface
     (const Epetra_Vector& source, Epetra_Vector& target) const
     {
 #ifdef DEBUGGING_NEW

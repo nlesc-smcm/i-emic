@@ -171,7 +171,7 @@ namespace TRIOS {
 
         //! The assembly surface map is a depth-averaged,
         //! single-unknown variant of the assembly map.
-        Teuchos::RCP<Epetra_Map> GetAssemblySurfaceMap(){return AssemblyMap;}
+        Teuchos::RCP<Epetra_Map> GetAssemblySurfaceMap(){return AssemblySurfaceMap;}
 
 		//! The standard map is created during the Decomp2D call. 
 		//! It does not contain ghost nodes and is therefore      
@@ -182,7 +182,7 @@ namespace TRIOS {
 
         //! The standard surface map is a depth-averaged,
         //! single-unknown variant of the standard map.
-        Teuchos::RCP<Epetra_Map> GetStandardSurfaceMap(){return AssemblyMap;}
+        Teuchos::RCP<Epetra_Map> GetStandardSurfaceMap(){return StandardSurfaceMap;}
 
 		//! if you register a load-balancing object with this     
 		//! class, this map is made to optimize performance of    

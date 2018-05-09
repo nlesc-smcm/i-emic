@@ -278,16 +278,14 @@ public:
     //! Obtain degrees of freedom
     int dof() { return dof_; }
 
-    Teuchos::RCP<Epetra_Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec);
-
-    Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return getVector(mode, state_); }
-    Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return getVector(mode, sol_); }
+    Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return Utils::getVector(mode, state_); }
+    Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return Utils::getVector(mode, sol_); }
     
-    Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')   { return getVector(mode, rhs_); }
+    Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')   { return Utils::getVector(mode, rhs_); }
 
-    Teuchos::RCP<Epetra_Vector> getE(char mode = 'C')   { return getVector(mode, E_); }
-    Teuchos::RCP<Epetra_Vector> getP(char mode = 'C')   { return getVector(mode, P_); }
-    Teuchos::RCP<Epetra_Vector> getDiagB(char mode = 'C')   { return getVector(mode, diagB_); }
+    Teuchos::RCP<Epetra_Vector> getE(char mode = 'C')   { return Utils::getVector(mode, E_); }
+    Teuchos::RCP<Epetra_Vector> getP(char mode = 'C')   { return Utils::getVector(mode, P_); }
+    Teuchos::RCP<Epetra_Vector> getDiagB(char mode = 'C')   { return Utils::getVector(mode, diagB_); }
 
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
 
@@ -308,7 +306,7 @@ public:
 
     //! Get precipitation integral coefficients for surface map (nun=1)
     Teuchos::RCP<Epetra_Vector> getPIntCoeff(char mode = 'C')
-        { return getVector(mode, pIntCoeff_); }
+        { return Utils::getVector(mode, pIntCoeff_); }
 
     Teuchos::RCP<Epetra_BlockMap> getStandardSurfaceMap() { return standardSurfaceMap_; }
     Teuchos::RCP<Epetra_BlockMap> getAssemblySurfaceMap() { return assemblySurfaceMap_; }

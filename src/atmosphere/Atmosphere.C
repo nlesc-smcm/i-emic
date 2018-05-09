@@ -455,6 +455,9 @@ void Atmosphere::computeJacobian()
 {
     TIMER_START("Atmosphere: compute Jacobian...");
 
+    // Reset dependency grid
+    Al_->zero();
+    
     Atom tc (n_, m_, l_, np_);
     Atom tc2(n_, m_, l_, np_);
     Atom txx(n_, m_, l_, np_);
@@ -864,7 +867,7 @@ void Atmosphere::assemble()
 
     // Clear banded storage (just to be sure)
     if (!parallel_) std::fill(bandedA_.begin(), bandedA_.end(), 0.0);
-
+    
     int i2,j2,k2; // will contain neighbouring grid pointes given by shift()
     int row;
     int rowb; // for banded storage
@@ -1186,72 +1189,51 @@ void Atmosphere::shift(int i, int j, int k,
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<std::vector<double> > Atmosphere::getVector
-(char mode, std::shared_ptr<std::vector<double> > vec)
-{
-    if (mode == 'C')      // copy
-    {
-        std::shared_ptr<std::vector<double> > copy =
-            std::make_shared<std::vector<double> >(*vec);
-        return copy;
-    }
-    else if (mode == 'V') // view
-    {
-        return vec;
-    }
-    else
-    {
-        WARNING("invalid mode", __FILE__, __LINE__);
-        return std::shared_ptr<std::vector<double> >();
-    }
-}
-
-//-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getSolution(char mode)
 {
-    return getVector(mode, sol_);
+    return Utils::getVector(mode, sol_);
 }
 
 //-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getState(char mode)
 {
-    return getVector(mode, state_);
+    return Utils::getVector(mode, state_);
 }
 
 //-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getRHS(char mode)
 {
-    return getVector(mode, rhs_);
+    return Utils::getVector(mode, rhs_);
 }
 
 //-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getDiagB(char mode)
 {
-    return getVector(mode, diagB_);
+    return Utils::getVector(mode, diagB_);
 }
 
 //-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getSST(char mode)
 {
-    return getVector(mode, sst_);
+    return Utils::getVector(mode, sst_);
 }
 
 //-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getE(char mode)
 {
-    return getVector(mode, E_);
+    return Utils::getVector(mode, E_);
 }
 
 //-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getP(char mode)
 {
-    return getVector(mode, P_);
+    return Utils::getVector(mode, P_);
 }
 
 //-----------------------------------------------------------------------------
 std::shared_ptr<std::vector<double> > Atmosphere::getPIntCoeff(char mode)
 {
-    return getVector(mode, pIntCoeff_);
+    return Utils::getVector(mode, pIntCoeff_);
 }
 
 //-----------------------------------------------------------------------------

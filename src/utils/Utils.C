@@ -11,6 +11,7 @@
 #include "Utils.H"
 #include "Combined_MultiVec.H"
 #include "ComplexVector.H"
+#include "TRIOS_Domain.H"
 #include "EpetraExt_MatrixMatrix.h"
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
@@ -387,8 +388,6 @@ void Utils::saveEigenvalues(EpetraExt::HDF5 &HDF5,
         betaRe[i]  = beta[i].real();
         betaIm[i]  = beta[i].imag();
     }
-
-    
     
     HDF5.Write("EigenValues", "AlphaRe", H5T_NATIVE_DOUBLE, numEigs, &alphaRe[0]);
     HDF5.Write("EigenValues", "AlphaIm", H5T_NATIVE_DOUBLE, numEigs, &alphaIm[0]);
@@ -396,7 +395,135 @@ void Utils::saveEigenvalues(EpetraExt::HDF5 &HDF5,
     HDF5.Write("EigenValues", "BetaIm",  H5T_NATIVE_DOUBLE, numEigs, &betaIm[0]);
 }
 
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> Utils::getVector(char mode,
+                                             Teuchos::RCP<Epetra_Vector> vec)
+{
+    if (mode == 'C') // copy
+    {
+        Teuchos::RCP<Epetra_Vector> copy =
+            Teuchos::rcp(new Epetra_Vector(*vec));
+        return copy;
+    }
+    else if (mode == 'V') // view
+    {
+        return vec;
+    }
+    else
+    {
+        WARNING("Invalid mode", __FILE__, __LINE__);
+        return Teuchos::null;
+    }
+}
 
+//=============================================================================
+std::shared_ptr<std::vector<double> > Utils::getVector
+(char mode, std::shared_ptr<std::vector<double> > vec)
+{
+    if (mode == 'C')      // copy
+    {
+        std::shared_ptr<std::vector<double> > copy =
+            std::make_shared<std::vector<double> >(*vec);
+        return copy;
+    }
+    else if (mode == 'V') // view
+    {
+        return vec;
+    }
+    else
+    {
+        WARNING("invalid mode", __FILE__, __LINE__);
+        return std::shared_ptr<std::vector<double> >();
+    }
+}
+
+//=============================================================================
+void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
+                        CRSMat const &crs, int const maxnnz,
+                        Teuchos::RCP<TRIOS::Domain> domain = Teuchos::null)
+{
+    // we need domain information when the source crs is local
+    bool global = (domain == Teuchos::null) ? true : false;
+
+    // the beg array indicates whether the crs is 0 or 1-based
+    bool index0 = (crs.beg[0] == 0) ? true : false;
+
+    // indices array
+    std::vector<int> indices(maxnnz, 0);
+    
+    // values array
+    std::vector<double> values(maxnnz, 0.0);
+
+    // define the rowmap we use
+    Teuchos::RCP<Epetra_Map> rowMap;
+
+    if (global)
+    {
+        rowMap = Teuchos::rcp(new Epetra_Map(mat->RowMap()));
+        assert(rowMap->NumGlobalElements() == (int) crs.beg.size() - 1);
+    }
+    else
+    {
+        // in the case of a local crs assembly gives the GID's
+        rowMap = domain->GetAssemblyMap();
+        assert(rowMap->NumGlobalElements() == (int) crs.beg.size() - 1);        
+    }
+    
+    int numGlobalElements = rowMap->NumGlobalElements();
+    int numMyElements     = rowMap->NumMyElements();
+
+    int bRow, index, numEntries, col;
+    int offset = (index0) ? 0 : 1;
+    for (int lRow = 0; lRow < numMyElements; ++lRow)
+    {
+        gRow = rowMap->GID(lRow);
+        bRow = (global) ? gRow : lRow;
+        
+        index      = crs.beg[bRow];
+        numEntries = crs.beg[bRow+1] - index;
+
+        // if we encounter a dense row (probably an integral equation)
+        if (numEntries > maxnnz)
+        {
+            std::cout << "assembleCRS: encountered dense row "
+                      << gRow << std::endl;
+
+            // adjust arrays
+            indices = std::vector<int>(numEntries, 0);
+            values  = std::vector<double>(numEntries, 0);
+        }
+
+        for (int j = 0; j < numEntries; ++j)
+        {
+            // taking 0-1-basedness into account using offset
+            col = crs.jco[index + j - offset] - offset;
+            
+            indices[j] = (global) ? col : rowMap->GID(col);
+            values[j]  = crs.co[index + j - offset];
+        }
+        
+        int ierr;
+        if (mat->Filled())
+        {
+            ierr =
+                mat->ReplaceGlobalValues(gRow, numentries,
+                                         &values[0], &indices[0]);
+        }
+        else
+        {
+            ierr =
+                mat->InsertGlobalValues(gRow, numentries,
+                                           &values[0], &indices[0]);
+        }
+
+        if (ierr != 0)
+        {
+            INFO ("Error in Insert/ReplaceGlobalValues: " << ierr);
+            INFO (" Filled ? " << mat->Filled());
+            ERROR("Error in Insert/ReplaceGlobalValues", __FILE__, __LINE__);
+        }        
+    }
+}
 
 //=============================================================================
 int Utils::SplitBox(int nx, int ny, int nz,

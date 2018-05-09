@@ -424,24 +424,6 @@ void AtmospherePar::idealized(double precip)
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> AtmospherePar::getVector(char mode, Teuchos::RCP<Epetra_Vector> vec)
-{
-    if (mode == 'C') // copy
-    {
-        Teuchos::RCP<Epetra_Vector> copy = Teuchos::rcp(new Epetra_Vector(*vec));
-        return copy;
-    }
-    else if (mode == 'V')
-        return vec;
-    else
-    {
-        WARNING("Invalid mode", __FILE__, __LINE__);
-        return Teuchos::null;
-    }
-
-}
-
-//==================================================================
 Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
 {
     TIMER_START("Atmosphere: get atmosphere temperature...");
@@ -451,7 +433,7 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceT()
     }
     CHECK_ZERO(atmosT_->Import(*state_, *atmosTimporter_, Insert));
     TIMER_STOP("Atmosphere: get atmosphere temperature...");
-    return getVector('C', atmosT_);
+    return Utils::getVector('C', atmosT_);
 }
 
 //==================================================================
@@ -464,7 +446,7 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceQ()
     }
     CHECK_ZERO(atmosQ_->Import(*state_, *atmosQimporter_, Insert));
     TIMER_STOP("Atmosphere: get atmosphere humidity...");
-    return getVector('C', atmosQ_);
+    return Utils::getVector('C', atmosQ_);
 }
 
 //==================================================================

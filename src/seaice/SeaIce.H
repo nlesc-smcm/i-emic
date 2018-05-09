@@ -22,6 +22,8 @@
 
 #include "TRIOS_Domain.H"
 #include "GlobalDefinitions.H"
+#include "Utils.H"
+#include "DependencyGrid.H"
 
 // exp, pow, sin
 #include <math.h>
@@ -41,7 +43,7 @@ private:
     Teuchos::RCP<Epetra_Comm> comm_;
 
     //! global grid size
-    int n_,m_, dim_;
+    int nGlob_,mGlob_, dimGlob_;
 
     //! local grid size
     int nLoc_, mLoc_, dimLoc_;
@@ -129,6 +131,14 @@ private:
 
     //! overlapping localAtmosQ
     Teuchos::RCP<Epetra_Vector> localAtmosQ_;
+
+    //! matrix dependency grid
+    std::shared_ptr<DependencyGrid> Al_;
+
+    //! CRS matrix arrays storing the Jacobian
+    std::vector<double> co_;
+    std::vector<int> jco_;
+    std::vector<int> beg_;
     
     double taus_;     //! threshold ice thickness
     double epsilon_;  //! approximation steepness
@@ -202,16 +212,38 @@ public:
     //! compute right hand side
     void computeRHS();
 
+    //! compute jacobian
+    void computeJacobian();
+    
     //! set idealized forcing (idealized external model states)
     void idealizedForcing();
 
+    //! get CRS struct local Jacobian
+    std::shared_ptr<Utils::CRSMat> getLocalJacobian();
+
+    VectorPtr getState(char mode = 'C')
+        { return Utils::getVector(mode, state_); }
+    VectorPtr getSolution(char mode = 'C')
+        { return Utils::getVector(mode, sol_); }
+    VectorPtr getRHS(char mode = 'C')
+        { return Utils::getVector(mode, rhs_); }
+
+
 private:
+    //! create x_ and y_
     void createGrid();
+
+    //! create local jacobian
+    void computeLocalJacobian();
+
+    
+    //! Assemble dependency grid into CRS matrix
+    void assemble();
     
     //! latitudinal dependence shortwave radiation
     //! --> similar to atmos impl: can be factorized
     double shortwaveS(double y)
-        { return (1 - .482 * (3 * pow(sin(y),2) - 1.) / 2.); }
+        { return (1. - .482 * (3. * pow(sin(y), 2) - 1.) / 2.); }
 
     //! freezing temperature (dominant term)
     double freezingT(double S)
@@ -222,9 +254,12 @@ private:
         { return freezingT(S) - t0i_ + (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
 
     //! 0-based local find_row function
-    int find_row(int i, int j, int XX)
+    int find_row0(int i, int j, int XX)
         { return dof_ * ( j*nLoc_ + i) + XX - 1; }
-    
+
+    //! 1-based local find_row function
+    int find_row1(int i, int j, int XX)
+        { return dof_ * ( (j-1)*nLoc_ + (i-1)) + XX; }
 };
     
 #endif

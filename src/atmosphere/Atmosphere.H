@@ -328,9 +328,6 @@ public:
 
 private:
 
-    std::shared_ptr<std::vector<double> > getVector
-    (char mode, std::shared_ptr<std::vector<double> > vec);
-
     //! Apply local discretization
     void discretize(int type, Atom &atom);
 
