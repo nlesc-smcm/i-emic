@@ -152,7 +152,13 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // Construct local dependency grid:
     Al_ = std::make_shared<DependencyGrid>(nLoc_, mLoc_, 1, 1, dof_);
+
+    createMatrixGraph();
     
+    // Initialize Jacobian
+    jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
+
+    std::cout << jac_->Graph() << std::endl; getchar();
 }
 
 //=============================================================================
@@ -186,9 +192,9 @@ void SeaIce::computeRHS()
         {
             dr = j*nLoc_ + i;
             
-            Hval = state[find_row0(i, j, SEAICE_HH_)];
-            Qval = state[find_row0(i, j, SEAICE_QQ_)];
-            Mval = state[find_row0(i, j, SEAICE_MM_)];
+            Hval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_HH_)];
+            Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
+            Mval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_MM_)];
 
             Tsi = iceSurfT(Qval, Hval, sss[dr]);
             
@@ -224,7 +230,7 @@ void SeaIce::computeRHS()
                     break;                    
                 }
                 
-                rr = find_row0(i, j, XX);
+                rr = find_row0(nLoc_, mLoc_, i, j, XX);
                 rhs[rr] = val;
             }
         }
@@ -279,7 +285,7 @@ void SeaIce::computeLocalJacobian()
     for (int j = 1; j <= mLoc_; ++j)
         for (int i = 1; i <= nLoc_; ++i)
         {
-            ind  = find_row1(i, j, HH); // H row
+            ind  = find_row1(nLoc_, mLoc_, i, j, HH); // H row
             val  = -(epsilon_ / 2.0) * 
                 ( 1.0 - pow(tanh(epsilon_ * (state[ind])), 2) );
             MM_HH.set( i, j, 1, 1, val);
@@ -311,10 +317,9 @@ void SeaIce::computeJacobian()
     // max nonzeros per row
     const int maxnnz = dof_ + 1;
 
-    // --> todo
-    // Utils::assembleCRS( ... );
+    Utils::assembleCRS(jac_, *localJac, maxnnz, domain_);
 
-    
+    jac_->FillComplete();
 }
 
 //=============================================================================
@@ -345,7 +350,7 @@ void SeaIce::assemble()
                         co_.push_back(value);
 
                         // obtain column
-                        col = find_row1( i, j, A );
+                        col = find_row1(nLoc_, mLoc_,  i, j, A );
                         jco_.push_back(col);
                         ++elm_ctr;
                     }
@@ -412,4 +417,69 @@ void SeaIce::createGrid()
 
     for (int j = 0; j != mLoc_; ++j)
         y_.push_back(yminLoc_ + (j + 0.5) * dy_);
+}
+
+//=============================================================================
+// Create matrix graph
+void SeaIce::createMatrixGraph()
+{
+    // We do not have any spatial relation between the unknowns so
+    // maxDeps is at most the number of unknowns.
+    int maxDeps = dof_;
+    
+    matrixGraph_ =
+        Teuchos::rcp(new Epetra_CrsGraph(Copy, *standardMap_, maxDeps, false));
+
+    int indices[maxDeps];
+
+    // Get our local range in all directions
+    // 0-based
+    int I0 = domain_->FirstRealI();
+    int J0 = domain_->FirstRealJ();
+    int I1 = domain_->LastRealI();
+    int J1 = domain_->LastRealJ();
+
+    int pos; // position in indices array, not really useful here
+    int gidU, gid0;
+
+    for (int j = J0; j <= J1; ++j)
+        for (int i = I0; i <= I1; ++i)
+        {
+            // H-equation
+            gidU = find_row0(nGlob_, mGlob_, i, j, SEAICE_HH_);
+            gid0 = gidU - 1;
+
+            pos  = 0;
+            indices[pos++] = find_row0(nGlob_, mGlob_, i, j, SEAICE_HH_);
+            indices[pos++] = find_row0(nGlob_, mGlob_, i, j, SEAICE_QQ_);
+
+            CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
+                           gid0 + SEAICE_HH_, pos, indices));
+
+            // Q-equation
+            gidU = find_row0(nGlob_, mGlob_, i, j, SEAICE_QQ_);
+            gid0 = gidU - 1;
+
+            pos  = 0;
+            indices[pos++] = find_row0(nGlob_, mGlob_, i, j, SEAICE_HH_);
+            indices[pos++] = find_row0(nGlob_, mGlob_, i, j, SEAICE_QQ_);
+
+            CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
+                           gid0 + SEAICE_QQ_, pos, indices));
+
+            // M-equation
+            gidU = find_row0(nGlob_, mGlob_, i, j, SEAICE_MM_);
+            gid0 = gidU - 1;
+
+            pos  = 0;
+            indices[pos++] = find_row0(nGlob_, mGlob_, i, j, SEAICE_HH_);
+            indices[pos++] = find_row0(nGlob_, mGlob_, i, j, SEAICE_MM_);
+
+            CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
+                           gid0 + SEAICE_MM_, pos, indices));
+                            
+        }
+    
+    // Finalize matrixgraph
+    CHECK_ZERO(matrixGraph_->FillComplete() );
 }

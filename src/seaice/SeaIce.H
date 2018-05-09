@@ -135,6 +135,12 @@ private:
     //! matrix dependency grid
     std::shared_ptr<DependencyGrid> Al_;
 
+    //! matrix graph, necessary to build Jacobian matrix
+    Teuchos::RCP<Epetra_CrsGraph> matrixGraph_;
+    
+    //! Jacobian matrix
+    Teuchos::RCP<Epetra_CrsMatrix> jac_;
+
     //! CRS matrix arrays storing the Jacobian
     std::vector<double> co_;
     std::vector<int> jco_;
@@ -218,7 +224,10 @@ public:
     //! set idealized forcing (idealized external model states)
     void idealizedForcing();
 
-    //! get CRS struct local Jacobian
+    //! get pointer to jacobian matrix
+    Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
+    
+    //! get pointer to CRS struct local Jacobian
     std::shared_ptr<Utils::CRSMat> getLocalJacobian();
 
     VectorPtr getState(char mode = 'C')
@@ -233,9 +242,11 @@ private:
     //! create x_ and y_
     void createGrid();
 
+    //! create matrix graph
+    void createMatrixGraph();
+
     //! create local jacobian
     void computeLocalJacobian();
-
     
     //! Assemble dependency grid into CRS matrix
     void assemble();
@@ -254,12 +265,12 @@ private:
         { return freezingT(S) - t0i_ + (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
 
     //! 0-based local find_row function
-    int find_row0(int i, int j, int XX)
-        { return dof_ * ( j*nLoc_ + i) + XX - 1; }
-
+    int find_row0(int n, int m, int i, int j, int XX)
+        { return dof_ * ( j*n + i) + XX - 1; }
+    
     //! 1-based local find_row function
-    int find_row1(int i, int j, int XX)
-        { return dof_ * ( (j-1)*nLoc_ + (i-1)) + XX; }
+    int find_row1(int n, int m, int i, int j, int XX)
+        { return dof_ * ( (j-1)*n + (i-1)) + XX; }
 };
     
 #endif

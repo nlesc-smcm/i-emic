@@ -8,6 +8,7 @@
  * Modified and extended by Erik, Utrecht University 2014/15/16/17    *
  * contact: t.e.mulder@uu.nl                                          *
  **********************************************************************/
+
 #include "Utils.H"
 #include "Combined_MultiVec.H"
 #include "ComplexVector.H"
@@ -440,7 +441,7 @@ std::shared_ptr<std::vector<double> > Utils::getVector
 //=============================================================================
 void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
                         CRSMat const &crs, int const maxnnz,
-                        Teuchos::RCP<TRIOS::Domain> domain = Teuchos::null)
+                        Teuchos::RCP<TRIOS::Domain> domain)
 {
     // we need domain information when the source crs is local
     bool global = (domain == Teuchos::null) ? true : false;
@@ -469,10 +470,9 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
         assert(rowMap->NumGlobalElements() == (int) crs.beg.size() - 1);        
     }
     
-    int numGlobalElements = rowMap->NumGlobalElements();
     int numMyElements     = rowMap->NumMyElements();
 
-    int bRow, index, numEntries, col;
+    int bRow, gRow, index, numEntries, col;
     int offset = (index0) ? 0 : 1;
     for (int lRow = 0; lRow < numMyElements; ++lRow)
     {
@@ -506,13 +506,13 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
         if (mat->Filled())
         {
             ierr =
-                mat->ReplaceGlobalValues(gRow, numentries,
+                mat->ReplaceGlobalValues(gRow, numEntries,
                                          &values[0], &indices[0]);
         }
         else
         {
             ierr =
-                mat->InsertGlobalValues(gRow, numentries,
+                mat->InsertGlobalValues(gRow, numEntries,
                                            &values[0], &indices[0]);
         }
 
