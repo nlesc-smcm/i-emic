@@ -182,7 +182,7 @@ void TimeStepper<T>::transient_ams(
             max_distance = 1.0;
             break;
         }
-        if (dist > max_distance)
+        if (dist > max_distance + 0.0005)
         {
             experiment.xlist.push_back(x);
             experiment.tlist.push_back(t);
