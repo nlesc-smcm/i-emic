@@ -109,10 +109,20 @@ AMS(Model model, ParameterList pars,
     TimeStep time_step;
     if (space != "")
     {
+        // Use a map that is constructed with the most basic
+        // constructor for loading V since
+        // MatrixMarketFileToMultiVector does not allow for anything
+        // else...
+        Epetra_Map map(B_->NumGlobalRows(), 0, *model_->Comm());
         Epetra_MultiVector* Vptr;
         CHECK_ZERO(EpetraExt::MatrixMarketFileToMultiVector(
-                       space.c_str(), B_->RowMap(), Vptr));
-        V_ = Teuchos::rcp(Vptr);
+                       space.c_str(), map, Vptr));
+
+        Epetra_Import import(B_->RangeMap(), map);
+        V_ = Teuchos::rcp(new Epetra_MultiVector(B_->RangeMap(), Vptr->NumVectors()));
+        CHECK_ZERO(V_->Import(*Vptr, import, Insert));
+
+        delete Vptr;
 
         BV_ = Teuchos::rcp(new Epetra_MultiVector(B_->DomainMap(), V_->NumVectors()));
         CHECK_ZERO(B_->Multiply('T', *V_, *BV_));
