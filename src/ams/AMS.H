@@ -111,10 +111,10 @@ AMS(Model model, ParameterList pars,
     {
         Epetra_MultiVector* Vptr;
         CHECK_ZERO(EpetraExt::MatrixMarketFileToMultiVector(
-                       space.c_str(), *model_->getDomain()->GetSolveMap(), Vptr));
+                       space.c_str(), B_->RowMap(), Vptr));
         V_ = Teuchos::rcp(Vptr);
 
-        BV_ = Teuchos::rcp(new Epetra_MultiVector(B_->ColMap(), V_->NumVectors()));
+        BV_ = Teuchos::rcp(new Epetra_MultiVector(B_->DomainMap(), V_->NumVectors()));
         CHECK_ZERO(B_->Multiply('T', *V_, *BV_));
 
         time_step = get_projected_time_step();
@@ -212,6 +212,7 @@ auto AMS<Model>::get_time_step()
 
         Epetra_Vector pert(B_->ColMap());
         std::generate(pert.Values(), pert.Values() + m, generator);
+
         VectorPtr G = model_->getState('C');
         CHECK_ZERO(B_->Apply(pert, *G));
         CHECK_ZERO(G->Scale(sqrt(dt_) * sigma_));
@@ -293,20 +294,25 @@ auto AMS<Model>::get_projected_time_step()
         auto xsmall = restrict(*x);
         *model_->getState('V') = *x;
 
-        // Compute noise for forcing which is the same on every processor
-        std::default_random_engine engine(get_seed());
+        // Compute noise for forcing which is independent per processor
+        static thread_local std::random_device rd;
+        static thread_local std::default_random_engine engine(rd());
         std::normal_distribution<double> distribution(0.0, 1.0);
         auto generator = std::bind(distribution, std::ref(engine));
 
         int m = BV_->MyLength();
-        auto pert = Teuchos::rcp(new Epetra_MultiVector(BV_->Map(), 1));
-        std::generate(pert->Values(), pert->Values() + m, generator);
+        if (!BV_->Map().UniqueGIDs())
+        {
+            ERROR("The values of B are distributed", __FILE__, __LINE__);
+        }
+
+        Epetra_Vector pert(BV_->Map());
+        std::generate(pert.Values(), pert.Values() + m, generator);
+
         Epetra_LocalMap Gmap(BV_->NumVectors(), 0, *model_->Comm());
         auto G = Teuchos::rcp(new Epetra_MultiVector(Gmap, 1));
-        CHECK_ZERO(G->Multiply('T', 'N', 1.0, *BV_, *pert, 0.0));
+        CHECK_ZERO(G->Multiply('T', 'N', 1.0, *BV_, pert, 0.0));
         CHECK_ZERO(G->Scale(sqrt(dt_) * sigma_));
-
-        // std::cout << *pert << std::endl;
 
         // Deterministic theta stepper:
         // M * u_n + dt * theta * F(u_(n+1)) + (1-theta) * F(u_n) - M * u_(n+1) = 0
