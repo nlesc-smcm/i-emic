@@ -1,4 +1,4 @@
-function [X] = seaice()
+function [X, J, F] = seaice()
 
     global xmin xmax ymin ymax RtD n m nun x y dx dy
     global t0o t0a t0i Q0 Qvar H0 M0
@@ -115,15 +115,11 @@ function [X] = seaice()
 
     rng(1);
     % X = 1e8*randn(dim, 1);
-    X = 1.234*ones(dim,1);
+    X = 1.0*ones(dim,1);
     %x = initialsol();
 
     % Newton solve
     F    = rhs(X);
-    [(1:dim)',F]
-    norm(F)
-    return
-    
     kmax = 10;
 
     ord = [];
@@ -178,7 +174,7 @@ function [X] = seaice()
     vsm(J(ord,ord))
     % vsm(Jn(ord,ord))
     % vsm(Jn(ord,ord)-J(ord,ord))
-    keyboard
+
 end
 
 function [x] = initialsol()
