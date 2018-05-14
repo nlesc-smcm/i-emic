@@ -447,7 +447,15 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
     bool global = (domain == Teuchos::null) ? true : false;
 
     // the beg array indicates whether the crs is 0 or 1-based
-    bool index0 = (crs.beg[0] == 0) ? true : false;
+    bool index0;
+    if (crs.beg[0] == 0)
+        index0 = true;
+    else if (crs.beg[0] == 1)
+        index0 = false;
+    else
+    {
+        ERROR("What CRS format is this? ", __FILE__, __LINE__);
+    }
 
     // indices array
     std::vector<int> indices(maxnnz, 0);
@@ -513,17 +521,27 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
         {
             ierr =
                 mat->InsertGlobalValues(gRow, numEntries,
-                                           &values[0], &indices[0]);
+                                        &values[0], &indices[0]);
         }
 
         if (ierr != 0)
         {
-            INFO ("Error in Insert/ReplaceGlobalValues: " << ierr);
-            INFO (" Filled ? " << mat->Filled());
+            std::cout << "Error in Insert/ReplaceGlobalValues: " << ierr << std::endl;
+            std::cout << "Filled = " << mat->Filled() << std::endl;
+            std::cout << "  GRID = " << gRow << std::endl;
+            std::cout << "  LRID = " << mat->LRID(gRow) << std::endl;
+
+            std::cout << "indices : ";
+            for (int ii = 0; ii != numEntries; ++ii)
+            {
+                std::cout << indices[ii] << " ";
+            }
+            std::cout << std::endl;
+            
             ERROR("Error in Insert/ReplaceGlobalValues", __FILE__, __LINE__);
         }        
     }
-}
+ }
 
 //=============================================================================
 int Utils::SplitBox(int nx, int ny, int nz,

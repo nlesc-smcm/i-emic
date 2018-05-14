@@ -158,7 +158,6 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Initialize Jacobian
     jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
 
-    std::cout << jac_->Graph() << std::endl; getchar();
 }
 
 //=============================================================================
@@ -290,7 +289,6 @@ void SeaIce::computeLocalJacobian()
                 ( 1.0 - pow(tanh(epsilon_ * (state[ind])), 2) );
             MM_HH.set( i, j, 1, 1, val);
         }
-    
     Al_->set(range, MM, HH, MM_HH);
 
     MM_MM = 1.0;
@@ -301,6 +299,10 @@ void SeaIce::computeLocalJacobian()
 //=============================================================================
 void SeaIce::computeJacobian()
 {
+    
+    // set all entries to zero
+    CHECK_ZERO(jac_->PutScalar(0.0));
+
     // Create local dependency grid
     computeLocalJacobian();
 
@@ -332,7 +334,7 @@ void SeaIce::assemble()
     jco_.clear();
     
     // We do this 1-based
-    int elm_ctr, col;
+    int elm_ctr = 1, col;
     double value;
     for (int j = 1; j <= mLoc_; ++j)
         for (int i = 1; i <= nLoc_; ++i)
@@ -350,7 +352,7 @@ void SeaIce::assemble()
                         co_.push_back(value);
 
                         // obtain column
-                        col = find_row1(nLoc_, mLoc_,  i, j, A );
+                        col = find_row1(nLoc_, mLoc_,  i, j, B);
                         jco_.push_back(col);
                         ++elm_ctr;
                     }
@@ -457,9 +459,6 @@ void SeaIce::createMatrixGraph()
                            gid0 + SEAICE_HH_, pos, indices));
 
             // Q-equation
-            gidU = find_row0(nGlob_, mGlob_, i, j, SEAICE_QQ_);
-            gid0 = gidU - 1;
-
             pos  = 0;
             indices[pos++] = find_row0(nGlob_, mGlob_, i, j, SEAICE_HH_);
             indices[pos++] = find_row0(nGlob_, mGlob_, i, j, SEAICE_QQ_);
@@ -468,16 +467,34 @@ void SeaIce::createMatrixGraph()
                            gid0 + SEAICE_QQ_, pos, indices));
 
             // M-equation
-            gidU = find_row0(nGlob_, mGlob_, i, j, SEAICE_MM_);
-            gid0 = gidU - 1;
-
             pos  = 0;
             indices[pos++] = find_row0(nGlob_, mGlob_, i, j, SEAICE_HH_);
             indices[pos++] = find_row0(nGlob_, mGlob_, i, j, SEAICE_MM_);
 
-            CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
-                           gid0 + SEAICE_MM_, pos, indices));
-                            
+            int ierr = matrixGraph_->InsertGlobalIndices(
+                gid0 + SEAICE_MM_, pos, indices);
+
+            if (ierr != 0)
+            {
+                std::cout << "Error " << ierr
+                          << " in matrixGraph_->InsertGlobalIndices " << std::endl;
+                std::cout << "i: " << i << " j: " << j << std::endl;
+                std::cout << "matrixGraph_->IndicesAreLocal() = "
+                          << matrixGraph_->IndicesAreLocal() << std::endl;
+                std::cout << "indices: ";
+                for (int ii = 0; ii != pos; ++ii)
+                {                
+                    std::cout << indices[ii] << " ";
+                }
+                std::cout << std::endl;
+
+                std::cout << "GRID = " << gid0 + SEAICE_MM_ << std::endl;
+                std::cout << "LRID = " << matrixGraph_->LRID(gid0 + SEAICE_MM_);
+                std::cout << std::endl;
+
+                ERROR(" Error in InsertGlobalIndices ", __FILE__, __LINE__);
+            }
+            
         }
     
     // Finalize matrixgraph
