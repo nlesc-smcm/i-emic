@@ -212,8 +212,13 @@ void TimeStepper<T>::ams(int num_exp, int num_init_exp,
         transient_start(x0, dt, tmax,
                         experiments[i]);
 
-        transient_ams(
-            dt, tmax, experiments[i]);
+        if (experiments[i].xlist.size() == 0)
+        {
+            std::cerr << "Initialization failed" << std::endl;
+            exit(-1);
+        }
+
+        transient_ams(dt, tmax, experiments[i]);
 
         // Erase data that we do not need for later experiments
         if (i >= num_exp)
