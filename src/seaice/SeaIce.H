@@ -141,10 +141,19 @@ private:
     //! Jacobian matrix
     Teuchos::RCP<Epetra_CrsMatrix> jac_;
 
+    //! ifpack preconditioner object
+    Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
+
     //! CRS matrix arrays storing the Jacobian
     std::vector<double> co_;
     std::vector<int> jco_;
     std::vector<int> beg_;
+
+    //! preconditioning initialization flag
+    bool precInitialized_;
+
+    //! preconditioning computation flag
+    bool recomputePrec_;
     
     double taus_;     //! threshold ice thickness
     double epsilon_;  //! approximation steepness
@@ -220,6 +229,19 @@ public:
 
     //! compute jacobian
     void computeJacobian();
+
+    void applyMatrix(Epetra_MultiVector const &in,
+                     Epetra_MultiVector &out);
+
+    void applyMassMat(Epetra_MultiVector const &in,
+                      Epetra_MultiVector &out);
+
+    void applyPrecon(Epetra_MultiVector &in,
+                     Epetra_MultiVector &out);
+
+    void initializePrec();
+    
+    void solve(Teuchos::RCP<Epetra_MultiVector> const &b);    
     
     //! set idealized forcing (idealized external model states)
     void idealizedForcing();

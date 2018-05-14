@@ -475,7 +475,7 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
     {
         // in the case of a local crs assembly gives the GID's
         rowMap = domain->GetAssemblyMap();
-        assert(rowMap->NumGlobalElements() == (int) crs.beg.size() - 1);        
+        assert(rowMap->NumMyElements() == (int) crs.beg.size() - 1);        
     }
     
     int numMyElements     = rowMap->NumMyElements();
@@ -484,6 +484,11 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
     int offset = (index0) ? 0 : 1;
     for (int lRow = 0; lRow < numMyElements; ++lRow)
     {
+        if ( !global && domain->IsGhost(lRow) )
+        {
+            continue;
+        }
+        
         gRow = rowMap->GID(lRow);
         bRow = (global) ? gRow : lRow;
         
@@ -526,7 +531,8 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
 
         if (ierr != 0)
         {
-            std::cout << "Error in Insert/ReplaceGlobalValues: " << ierr << std::endl;
+            std::cout << "Error in Insert/ReplaceGlobalValues: "
+                      << ierr << std::endl;
             std::cout << "Filled = " << mat->Filled() << std::endl;
             std::cout << "  GRID = " << gRow << std::endl;
             std::cout << "  LRID = " << mat->LRID(gRow) << std::endl;
@@ -538,10 +544,12 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
             }
             std::cout << std::endl;
             
-            ERROR("Error in Insert/ReplaceGlobalValues", __FILE__, __LINE__);
-        }        
+            ERROR("Error in Insert/ReplaceGlobalValues",
+                  __FILE__, __LINE__);
+        }
+
     }
- }
+}
 
 //=============================================================================
 int Utils::SplitBox(int nx, int ny, int nz,

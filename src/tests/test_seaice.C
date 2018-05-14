@@ -103,6 +103,32 @@ TEST(SeaIce, computeJacobian)
 }
 
 //------------------------------------------------------------------
+TEST(SeaIce, solve)
+{
+    Teuchos::RCP<Epetra_Vector> state = seaIce->getState('V');
+    state->PutScalar(0.0);
+    seaIce->computeJacobian();
+    seaIce->computeRHS();
+
+    Teuchos::RCP<Epetra_Vector> b = seaIce->getRHS('C');
+
+    seaIce->solve(b);
+
+    Teuchos::RCP<Epetra_Vector> x = seaIce->getSolution('C');
+    Teuchos::RCP<Epetra_Vector> r = seaIce->getSolution('C');
+    r->PutScalar(0.0);
+
+    seaIce->applyMatrix(*x, *r);
+    r->Update(1.0, *b, -1.0);
+
+    double resNorm = Utils::norm(r);
+    std::cout << " || b - Ax || = " << resNorm << std::endl;
+    
+    EXPECT_NEAR(resNorm, 0, 1e-1);
+
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:

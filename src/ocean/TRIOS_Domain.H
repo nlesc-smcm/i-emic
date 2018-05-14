@@ -219,6 +219,7 @@ namespace TRIOS {
 		//! ghost-node. 'nun' is specified to indicate the unknowns
 		//! per grid point
 		bool IsGhost(int li, int nun_) const;
+		bool IsGhost(int li) const { return IsGhost(li, dof_); };
       
 		//! if true, the domain is periodic in the x-direction.
 		bool IsPeriodic() const {return periodic;}

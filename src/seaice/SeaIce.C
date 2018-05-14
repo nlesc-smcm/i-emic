@@ -11,6 +11,9 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     mGlob_           (params->get("Global Grid-Size m", 16)),
     periodic_        (params->get("Periodic", false)),
 
+    precInitialized_ (false),
+    recomputePrec_   (false),
+
     taus_         (0.01),   // threshold ice thickness
     epsilon_      (1e2),    // Heavyside approximation steepness
     
@@ -499,4 +502,53 @@ void SeaIce::createMatrixGraph()
     
     // Finalize matrixgraph
     CHECK_ZERO(matrixGraph_->FillComplete() );
+}
+
+//=============================================================================
+void SeaIce::initializePrec()
+{
+    Ifpack Factory;
+    string precType = "Amesos"; // direct solve on subdomains with some overlap
+    int overlapLevel = params_->get("Ifpack overlap level", 0);
+
+    // Create preconditioner
+    precPtr_ = Teuchos::rcp(Factory.Create(precType, jac_.get(), overlapLevel));
+    precPtr_->Initialize();
+    precPtr_->Compute();
+    precInitialized_ = true;
+}
+
+//=============================================================================
+void SeaIce::solve(Teuchos::RCP<Epetra_MultiVector> const &b)
+{
+    // when using the preconditioner as a solver make sure the overlap
+    // is large enough (depending on number of cores obv).
+    applyPrecon(*b, *sol_);
+}
+
+//=============================================================================
+void SeaIce::applyMatrix(Epetra_MultiVector const &in,
+                         Epetra_MultiVector &out)
+{
+    TIMER_START("SeaIce: apply matrix...");
+    jac_->Apply(in, out);
+    TIMER_STOP("SeaIce: apply matrix...");
+}
+
+//=============================================================================
+void SeaIce::applyPrecon(Epetra_MultiVector &in,
+                         Epetra_MultiVector &out)
+{
+    TIMER_START("SeaIce: apply preconditioner...");
+    if (!precInitialized_)
+    {
+        initializePrec();
+    }
+    if (recomputePrec_)
+    {
+        precPtr_->Compute();
+        recomputePrec_ = false;
+    }
+    precPtr_->ApplyInverse(in, out);
+    TIMER_STOP("SeaIce: apply preconditioner...");
 }
