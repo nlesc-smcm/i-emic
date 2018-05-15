@@ -63,9 +63,9 @@ public:
         size_(source.Size()),
         numVecs_(source.NumVecs())
         {
-            for (int index = 0; index != size_; ++index)
+            for (int i = 0; i != size_; ++i)
                 vectors_.push_back(
-                    Teuchos::rcp(new Epetra_MultiVector(*source(index))) );
+                    Teuchos::rcp(new Epetra_MultiVector(*source(i))) );
         }
 
     Combined_MultiVec(const Teuchos::RCP<Epetra_MultiVector> &mv1,
@@ -100,86 +100,96 @@ public:
         {
             //! cast to nonconst for Epetra_MultiVector
             std::vector<int> &tmpInd = const_cast< std::vector<int>& >(index);
-            first_  = Teuchos::rcp
-                (new Epetra_MultiVector(CV, *source.First(),  &tmpInd[0], index.size()));
-            second_ = Teuchos::rcp
-                (new Epetra_MultiVector(CV, *source.Second(), &tmpInd[0], index.size()));
-        }
 
+            for (int i = 0; i != size_; ++i)
+                vectors_.push_back(
+                    Teuchos::rcp(new Epetra_MultiVector(CV, *source(i),
+                                                        &tmpInd[0], index.size())) );
+        }
+    
     //! nonconst
     Combined_MultiVec(Epetra_DataAccess CV, Combined_MultiVec &source,
                       const std::vector<int> &index)
         :
+        size_(source.Size()),
         numVecs_(index.size())
         {
             //! cast to nonconst for Epetra_MultiVector
             std::vector<int> &tmpInd = const_cast< std::vector<int>& >(index);
-            first_  = Teuchos::rcp
-                (new Epetra_MultiVector(CV, *source.First(),  &tmpInd[0], index.size()));
-            second_ = Teuchos::rcp
-                (new Epetra_MultiVector(CV, *source.Second(), &tmpInd[0], index.size()));
+
+            for (int i = 0; i != size_; ++i)
+                vectors_.push_back(
+                    Teuchos::rcp(new Epetra_MultiVector(CV, *source(i),
+                                                        &tmpInd[0], index.size())) );
         }
 
     //! const
     Combined_MultiVec(Epetra_DataAccess CV, const Combined_MultiVec &source,
                       int startIndex, int numVectors)
         :
+        size_(source.Size()),
         numVecs_(numVectors)
         {
-            first_  = Teuchos::rcp
-                (new Epetra_MultiVector(CV, *source.First(),  startIndex, numVectors));
-            second_ = Teuchos::rcp
-                (new Epetra_MultiVector(CV, *source.Second(), startIndex, numVectors));
+            for (int i = 0; i != size_; ++i)
+                vectors_.push_back(
+                    Teuchos::rcp(new Epetra_MultiVector(CV, *source(i),
+                                                        startIndex, numVectors)) );
         }
 
     //! nonconst
     Combined_MultiVec(Epetra_DataAccess CV, Combined_MultiVec &source,
                       int startIndex, int numVectors)
         :
+        size_(source.Size()),
         numVecs_(numVectors)
         {
-            first_  = Teuchos::rcp
-                (new Epetra_MultiVector(CV, *source.First(),  startIndex, numVectors));
-            second_ = Teuchos::rcp
-                (new Epetra_MultiVector(CV, *source.Second(), startIndex, numVectors));
+            for (int i = 0; i != size_; ++i)
+                vectors_.push_back(
+                    Teuchos::rcp(new Epetra_MultiVector(CV, *source(i),
+                                                        startIndex, numVectors)) );
         }
 
     //! destructor
     ~Combined_MultiVec()
         {}
 
-    //! Assignment operator
-    Combined_MultiVec &operator=(const Combined_MultiVec &Source)
+    //! Assignment operator, assigning the multivectors
+    Combined_MultiVec &operator=(const Combined_MultiVec &source)
         {
-            *first_  = *Source.First();
-            *second_ = *Source.Second();
+            // require that we have the same shape (perhaps a bit
+            // strong requirement)
+            assert(size_    == source.Size());
+            assert(numVecs_ == source.NumVecs());
+            
+            for (int i = 0; i != size_; ++i)
+                *vectors_[i] = *source(i);
+
             return *this;
         }
 
     //! Insertion operator
     friend std::ostream &operator<<(std::ostream &out, const Combined_MultiVec &mv)
         {
-            out << *mv.First()  << std::endl;
-            out << *mv.Second() << std::endl;
+            for (int i = 0; i != mv.Size(); ++i)
+                out << *mv(i)  << std::endl;
+            
             return out;
         }
 
-    //! Index operator (does not support multicore)
+    //! Index operator non-const
+    Teuchos::RCP<Epetra_MultiVector> &operator()(int index) const
+        {
+            return vectors_[index];
+        }
+
+    //! Index operator non-const
     Teuchos::RCP<Epetra_MultiVector> &operator()(int index)
         {
             return vectors_[index];
         }
     
     //! Get maps
-    const Epetra_BlockMap &Map1() const {return first_->Map();  }
-    const Epetra_BlockMap &Map2() const {return second_->Map(); }
-
-    //! Get the rcpointers
-    Teuchos::RCP<Epetra_MultiVector> First()  { return first_ ;}
-    Teuchos::RCP<Epetra_MultiVector> Second() { return second_;}
-
-    Teuchos::RCP<Epetra_MultiVector> First()  const { return first_ ;}
-    Teuchos::RCP<Epetra_MultiVector> Second() const { return second_;}
+    const Epetra_BlockMap &Map(int index) const {return vectors_[index]->Map();  }
 
     //! Get number of combined multivectors
     int Size() const {return size_;}
@@ -188,31 +198,58 @@ public:
     int NumVecs() const {return numVecs_;}
 
     //! Get the global length of the combined multivector
-    int GlobalLength() const {return first_->GlobalLength() + second_->GlobalLength();}
+    int GlobalLength() const
+        {
+            int gLength = 0;
+            for (int i = 0; i != size_; ++i)
+                gLength += vectors_[i]->GlobalLength();
+            
+            return gLength;
+        }
 
     //! Get the local length of the combined multivector
-    int MyLength() const {return first_->MyLength() + second_->MyLength();}
+     int MyLength() const
+        {
+            int mLength = 0;
+            for (int i = 0; i != size_; ++i)
+                mLength += vectors_[i]->MyLength();
+            
+            return mLength;            
+        }
 
     //! Query the stride
-    bool ConstantStride() const {return first_->ConstantStride() && second_->ConstantStride();}
+    bool ConstantStride() const
+        {
+            bool cnstStride = true;
+            for (int i = 0; i != size_; ++i)
+                cnstStride = cnstStride && vectors_[i]->ConstantStride();
+
+            return cnstStride;
+        }
 
     //! this = alpha*A*B + scalarThis*this
     int Multiply(char transA, char transB, double scalarAB,
                  const Combined_MultiVec &A, const Epetra_MultiVector &B,
                  double scalarThis )
         {
+            assert(size_ == A.Size());
+
             int info = 0;
-            info =  first_->Multiply(transA, transB, scalarAB, *A.First(), B, scalarThis);
-            info += second_->Multiply(transA, transB, scalarAB, *A.Second(), B, scalarThis);
+            for (int i = 0; i != size_; ++i)
+                info += vectors_[i]->Multiply(transA, transB,
+                                              scalarAB, *A(i), B, scalarThis);
             return info;
         }
 
     //! this = scalarA*A + scalarThis*this
     int Update(double scalarA, const Combined_MultiVec &A, double scalarThis)
         {
+            assert(size_ == A.Size());
+
             int info = 0;
-            info =  first_->Update(scalarA,  *A.First(),  scalarThis);
-            info += second_->Update(scalarA, *A.Second(), scalarThis);
+             for (int i = 0; i != size_; ++i)
+                info += vectors_[i]->Update(scalarA, *A(i), scalarThis);
+
             return info;
         }
 
@@ -221,29 +258,36 @@ public:
                double scalarB, const Combined_MultiVec &B, double scalarThis)
         {
             int info = 0;
-            info =  first_->Update(scalarA,  *A.First(),  scalarB, *B.First(),  scalarThis);
-            info += second_->Update(scalarA, *A.Second(), scalarB, *B.Second(), scalarThis);
+            for (int i = 0; i != size_; ++i)
+                info += first_->Update(scalarA,  *A(i),  scalarB, *B(i),  scalarThis);
+
             return info;
         }
 
     //! b[j] := this[j]^T * A[j]
-    int Dot(const Combined_MultiVec& A, std::vector<double> &b1) const
+    int Dot(const Combined_MultiVec& A, std::vector<double> &b) const
         {
-            //! we need two arrays storing results
-            std::vector<double> b2 = b1;
+            assert(size_    == A.Size());
+            assert(numVecs_ == source.NumVecs());
+            assert(numVecs_ <= b.size());
 
+            // reset vector
+            std::fill(b.begin(), b.end(), 0.0);
+            
+            std::vector<double> tmp = b;
             int info = 0;
-            info += first_->Dot(*A.First(), &b1[0]);
-            info += second_->Dot(*A.Second(), &b2[0]);
 
-            //! combine the results
-            for (int i = 0; i != numVecs_; ++i)
-                b1[i] += b2[i];
+            for (int i = 0; i != size_; ++i)
+            {
+                info += first_->Dot (*A.First(),  &tmp[0]);
+                for (int j = 0; j != numVecs_; ++j)
+                    b[j] += tmp[j];
+            }
 
             return info;
         }
 
-    //! result[j] := this[j]^T * A[j]
+    // result[j] := this[j]^T * A[j]
     int Dot(const Combined_MultiVec& A, double *result) const
         {
             std::vector<double> tmp(numVecs_, 0.0);
@@ -255,24 +299,33 @@ public:
 
     int Scale(double scalarValue)
         {
+            assert(size_    == A.Size());
+
             int info = 0;
-            info =  first_->Scale(scalarValue);
-            info += second_->Scale(scalarValue);
+            for (int i = 0; i != size_; ++i)
+                info += vectors_[i]->Scale(scalarValue);
+
             return info;
         }
 
     int Norm1(std::vector<double> &result) const
         {
-            //! copy result vector
+            assert(numVecs_ <= result.size());
+
+            // reset result vector
+            std::fill(result.begin(), result.end(), 0.0);
+
+            // copy result vector
             std::vector<double> result_tmp = result;
 
             int info = 0;
-            info =  first_->Norm1(&result[0]);
-            info += second_->Norm1(&result_tmp[0]);
-
-            //! combine results
-            for (int i = 0; i != numVecs_; ++i)
-                result[i] += result_tmp[i];
+            for (int i = 0; i != size_; ++i)
+            {
+                info += vectors_[i]->Norm1(&result_tmp[0]);
+                for (int j = 0; j != numVecs_; ++j)
+                    result[j] += result_tmp[j];
+            }
+            
             return info;
         }
 
@@ -287,16 +340,25 @@ public:
 
     int Norm2(std::vector<double> &result) const
         {
-            //! copy result vector
+            assert(numVecs_ <= result.size());
+
+            // reset result vector
+            std::fill(result.begin(), result.end(), 0.0);
+
+            // copy result vector
             std::vector<double> result_tmp = result;
 
             int info = 0;
-            info =  first_->Norm2(&result[0]);
-            info += second_->Norm2(&result_tmp[0]);
+            for (int i = 0; i != size_; ++i)
+            {
+                info += vectors_[i]->Norm2(&result_tmp[0]);
+                for (int j = 0; j != numVecs_; ++j)
+                    result[j] += pow(result_tmp[j], 2);
+            }
 
-            //! combine results
-            for (int i = 0; i != numVecs_; ++i)
-                result[i] = sqrt(pow(result[i],2) + pow(result_tmp[i],2));
+            // take sqrt of summation per vec in multivec
+            for (int j = 0; j != numVecs_; ++j)
+                result[j] = sqrt(result[j]);
 
             return info;
         }
@@ -312,15 +374,24 @@ public:
 
     int NormInf(std::vector<double> &result) const
         {
+            assert(numVecs_ <= result.size());
+
+            // reset result vector
+            std::fill(result.begin(), result.end(), 0.0);
+
+            // copy result vector
             std::vector<double> result_tmp = result;
 
             int info = 0;
             info =  first_->NormInf(&result[0]);
             info += second_->NormInf(&result_tmp[0]);
 
-            //! combine results
-            for (int i = 0; i != numVecs_; ++i)
-                result[i] = std::max(result[i], result_tmp[i]);
+            for (int i = 0; i != size_; ++i)
+            {
+                info += vectors_[i]->NormInf(&result_tmp[0]);
+                for (int j = 0; j != numVecs_; ++j)
+                    result[i] = std::max(result[i], result_tmp[i]);
+            }
 
             return info;
         }
@@ -331,39 +402,43 @@ public:
     int SetSeed(unsigned int Seed_in)
         {
             int info = 0;
-            info += first_->SetSeed(Seed_in);
-            info += second_->SetSeed(Seed_in);
+            for (int i = 0; i != size_; ++i)
+                info += vectors_[i]->SetSeed(Seed_in);
+            
             return info;
         }        
 
     int Random()
         {
             int info = 0;
-            info += first_->Random();
-            info += second_->Random();
+            for (int i = 0; i != size_; ++i)
+                info += vectors_[i]->Random();
+            
             return info;
         }
 
     int PutScalar(double alpha)
         {
             int info = 0;
-            info += first_->PutScalar(alpha);
-            info += second_->PutScalar(alpha);
+            for (int i = 0; i != size_; ++i)
+                info += vectors_[i]->PutScalar(alpha);
+            
             return info;
         }
 
     size_t hash() const
         {
             size_t seed = 0;
-            seed ^= Utils::hash(first_);
-            seed ^= Utils::hash(second_);
+            for (int i = 0; i != size_; ++i)
+                seed ^= Utils::hash(vectors_[i]);
+            
             return seed;
         }        
 
     void Print(std::ostream &os) const
         {
-            first_->Print(os);
-            second_->Print(os);
+            for (int i = 0; i != size_; ++i)
+                vectors_[i]->Print(os);
         }
 };
 
