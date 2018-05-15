@@ -13,66 +13,89 @@
 #include "Utils.H"
 
 //!------------------------------------------------------------------
-//! This class combines rcp's to two multivectors
-//!  --> this should generalize to n multivectors
-//!------------------------------------------------------------------
+/*
+//! This class combines rcp's to multivectors and acts as a large
+//! vector with the correct traits to use with Belos. Vectors that are
+//! manipulated by the submodels differ in size and are therefore
+//! combined into a Combined_MultiVec.
+
+//! We require that the MultiVectors contain the same number of
+//! ordinary (Epetra) vectors.
+*/
+//! ------------------------------------------------------------------
 
 class Combined_MultiVec
 {
-    //! Number of vectors in each multivector
+
+    //! Number of combined Epetra_MultiVectors 
+    int size_;
+
+    //! Number of vectors in each MultiVector
     int numVecs_;
 
     //! Pointers to multivectors
-    Teuchos::RCP<Epetra_MultiVector> first_;
-    Teuchos::RCP<Epetra_MultiVector> second_;
-
+    std::vector<Teuchos::RCP<Epetra_MultiVector> > vectors_;
+    
 public:
     //! default constructor
     Combined_MultiVec()
         :
+        size_(0),
         numVecs_(0),
-        first_(NULL),
-        second_(NULL)
+        vectors_(std::vector<Teuchos::RCP<Epetra_MultiVector> >(0))
         {}
 
     Combined_MultiVec(const Epetra_BlockMap &map1, const Epetra_BlockMap &map2,
                       int numVectors, bool zeroOut = true)
         :
+        size_(2),
         numVecs_(numVectors)
         {
-            first_   = Teuchos::rcp(new Epetra_MultiVector(map1, numVectors, zeroOut));
-            second_  = Teuchos::rcp(new Epetra_MultiVector(map2, numVectors, zeroOut));
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(map1, numVectors, zeroOut)) );
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(map2, numVectors, zeroOut)) );
         }
 
     //! Copy constructor
     Combined_MultiVec(const Combined_MultiVec &source)
         :
+        size_(source.Size()),
         numVecs_(source.NumVecs())
         {
-            first_   = Teuchos::rcp(new Epetra_MultiVector(*source.First()));
-            second_  = Teuchos::rcp(new Epetra_MultiVector(*source.Second()));
+            for (int index = 0; index != size_; ++index)
+                vectors_.push_back(
+                    Teuchos::rcp(new Epetra_MultiVector(*source(index))) );
         }
 
     Combined_MultiVec(const Teuchos::RCP<Epetra_MultiVector> &mv1,
                       const Teuchos::RCP<Epetra_MultiVector> &mv2)
         :
-        numVecs_(std::min(mv1->NumVectors(), mv2->NumVectors())),
-        first_(mv1),
-        second_(mv2)
-        {}
-
+        size_(2),
+        numVecs_(mv1->NumVectors())
+        {
+            assert(mv1->NumVectors() == mv2->NumVectors());
+            vectors_.push_back(mv1);                       
+            vectors_.push_back(mv2);                       
+        }
+    
     Combined_MultiVec(const Epetra_MultiVector &mv1, const Epetra_MultiVector &mv2)
         :
-        numVecs_(std::min(mv1.NumVectors(), mv2.NumVectors()))
+        size_(2),
+        numVecs_(mv1.NumVectors())
         {
-            first_  = Teuchos::rcp(new Epetra_MultiVector(mv1));
-            second_ = Teuchos::rcp(new Epetra_MultiVector(mv2));
+            assert(mv1.NumVectors() == mv2.NumVectors());
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(mv1)) );
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(mv2)) );
         }
-
+    
     //! const
     Combined_MultiVec(Epetra_DataAccess CV, const Combined_MultiVec &source,
                       const std::vector<int> &index)
         :
+        size_(source.Size()),
         numVecs_(index.size())
         {
             //! cast to nonconst for Epetra_MultiVector
@@ -142,17 +165,9 @@ public:
         }
 
     //! Index operator (does not support multicore)
-    double &operator[](int index)
+    Teuchos::RCP<Epetra_MultiVector> &operator()(int index)
         {
-            assert(first_->Map().Comm().NumProc() == 1);
-            
-            if (index >= first_->GlobalLength())
-            {
-                index -= first_->GlobalLength();
-                return (*(*second_)(0))[index];
-            }
-            else 
-                return (*(*first_)(0))[index];
+            return vectors_[index];
         }
     
     //! Get maps
@@ -165,6 +180,9 @@ public:
 
     Teuchos::RCP<Epetra_MultiVector> First()  const { return first_ ;}
     Teuchos::RCP<Epetra_MultiVector> Second() const { return second_;}
+
+    //! Get number of combined multivectors
+    int Size() const {return size_;}
 
     //! Get number of vectors in each multivector
     int NumVecs() const {return numVecs_;}

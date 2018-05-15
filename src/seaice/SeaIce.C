@@ -325,6 +325,9 @@ void SeaIce::computeJacobian()
     Utils::assembleCRS(jac_, *localJac, maxnnz, domain_);
 
     jac_->FillComplete();
+
+    // With a new Jacobian we need to recompute the factorization
+    recomputePrec_ = true;
 }
 
 //=============================================================================
@@ -531,7 +534,9 @@ void SeaIce::applyMatrix(Epetra_MultiVector const &in,
                          Epetra_MultiVector &out)
 {
     TIMER_START("SeaIce: apply matrix...");
+    
     jac_->Apply(in, out);
+    
     TIMER_STOP("SeaIce: apply matrix...");
 }
 
@@ -550,5 +555,16 @@ void SeaIce::applyPrecon(Epetra_MultiVector &in,
         recomputePrec_ = false;
     }
     precPtr_->ApplyInverse(in, out);
+
+    // check matrix residual
+    Teuchos::RCP<Epetra_MultiVector> r =
+        Teuchos::rcp(new Epetra_MultiVector(in));;
+    
+    applyMatrix(out, *r);
+    r->Update(1.0, in, -1.0);
+    double rnorm = Utils::norm(r);
+
+    INFO("SeaIce: preconditioner residual: " << rnorm);
+    
     TIMER_STOP("SeaIce: apply preconditioner...");
 }

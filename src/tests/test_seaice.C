@@ -106,26 +106,38 @@ TEST(SeaIce, computeJacobian)
 TEST(SeaIce, solve)
 {
     Teuchos::RCP<Epetra_Vector> state = seaIce->getState('V');
-    state->PutScalar(0.0);
-    seaIce->computeJacobian();
-    seaIce->computeRHS();
-
-    Teuchos::RCP<Epetra_Vector> b = seaIce->getRHS('C');
-
-    seaIce->solve(b);
-
-    Teuchos::RCP<Epetra_Vector> x = seaIce->getSolution('C');
-    Teuchos::RCP<Epetra_Vector> r = seaIce->getSolution('C');
-    r->PutScalar(0.0);
-
-    seaIce->applyMatrix(*x, *r);
-    r->Update(1.0, *b, -1.0);
-
-    double resNorm = Utils::norm(r);
-    std::cout << " || b - Ax || = " << resNorm << std::endl;
+    Teuchos::RCP<Epetra_Vector> b, x, r;
+    double rNorm, bNorm, xNorm;
     
-    EXPECT_NEAR(resNorm, 0, 1e-1);
+    for (int i = 0; i != 5; ++i)
+    {
+        state->Random();
+        
+        seaIce->computeJacobian();
+        seaIce->computeRHS();
 
+        b = seaIce->getRHS('C');
+
+        seaIce->solve(b);
+        
+        x = seaIce->getSolution('C');
+        r = seaIce->getSolution('C');
+
+        r->PutScalar(0.0);
+
+        seaIce->applyMatrix(*x, *r);
+        r->Update(1.0, *b, -1.0);
+
+        rNorm = Utils::norm(r);
+        bNorm = Utils::norm(b);
+        xNorm = Utils::norm(x);
+
+        std::cout << " || b - Ax || = " << rNorm << std::endl;
+        std::cout << "        ||b|| = " << bNorm << std::endl;
+        std::cout << "        ||x|| = " << xNorm << std::endl;
+    
+        EXPECT_NEAR(rNorm, 0, 1e-4);
+    }
 }
 
 //------------------------------------------------------------------

@@ -820,6 +820,9 @@ void AtmospherePar::computeJacobian()
 //     DUMPMATLAB("atmos_jac", *jac_);
 // #endif
 
+    // With a new Jacobian we need to recompute the factorization
+    recomputePrec_ = true;
+
     TIMER_STOP("AtmospherePar: compute Jacobian...");
 }
 
@@ -1065,6 +1068,18 @@ void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
         recomputePrec_ = false;
     }
     precPtr_->ApplyInverse(in, out);
+
+        // check matrix residual
+    Teuchos::RCP<Epetra_MultiVector> r =
+        Teuchos::rcp(new Epetra_MultiVector(in));;
+    
+    applyMatrix(out, *r);
+    r->Update(1.0, in, -1.0);
+    double rnorm = Utils::norm(r);
+
+    INFO("AtmospherePar: preconditioner residual: " << rnorm);
+
+
     TIMER_STOP("AtmospherePar: apply preconditioner...");
 }
 
