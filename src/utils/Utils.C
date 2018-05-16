@@ -263,23 +263,23 @@ void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
 //============================================================================
 void Utils::save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename)
 {
-    std::ostringstream fname1, fname2;
-    fname1 << filename << ".first";
-    fname2 << filename << ".second";
-
-    save( vec->First(),  fname1.str() );
-    save( vec->Second(), fname2.str() );
+    for (int i = 0; i != vec->Size(); ++i)
+    {
+        std::stringstream fname;
+        fname << filename << "." << i;
+        save( (*vec)(i), fname.str());
+    }
 }
 
 //============================================================================
 void Utils::save(Combined_MultiVec const &vec, std::string const &filename)
 {
-    std::ostringstream fname1, fname2;
-    fname1 << filename << ".first";
-    fname2 << filename << ".second";
-
-    save( vec.First(),  fname1.str() );
-    save( vec.Second(), fname2.str() );
+    for (int i = 0; i != vec.Size(); ++i)
+    {
+        std::stringstream fname;
+        fname << filename << "." << i;
+        save( vec(i), fname.str());
+    }
 }
 
 //============================================================================
@@ -288,45 +288,45 @@ void Utils::saveEigenvectors(std::vector<ComplexVector<Combined_MultiVec> > cons
                              std::vector<std::complex<double> > const &alpha,
                              std::vector<std::complex<double> > const &beta,
                              std::string const &filename)
-{        
-    std::stringstream ss1, ss2, groupNameRe, groupNameIm;
-    ss1 << filename << ".first.h5";
-    ss2 << filename << ".second.h5";
-
-    // Two HDF5 objects for two destinations. We assume that the real
-    // and imaginary part have the same map.
-    EpetraExt::HDF5 HDF51(eigvs[0].real.First()->Map().Comm());
-    EpetraExt::HDF5 HDF52(eigvs[0].real.Second()->Map().Comm());
-
-    HDF51.Create(ss1.str().c_str());
-    HDF52.Create(ss2.str().c_str());
-    
-    size_t ctr = 0;
-    for (auto &vec: eigvs)
+{
+    // Iterate over number of combined multivectors. Each multivector
+    // gets its own HDF5 export process and corresponding file.
+    int size = eigvs[0].real.Size();    
+    for (int i = 0; i != size; ++i)
     {
-        groupNameRe << "EV_Real_" << ctr;
-        groupNameIm << "EV_Imag_" << ctr;
-        
-        HDF51.Write(groupNameRe.str().c_str(),
-                    *vec.real.First()  );
-        HDF51.Write(groupNameIm.str().c_str(),
-                    *vec.imag.First()  );
-        HDF52.Write(groupNameRe.str().c_str(),
-                    *vec.real.Second() );
-        HDF52.Write(groupNameIm.str().c_str(),
-                    *vec.imag.Second() );
+        std::stringstream ss, groupNameRe, groupNameIm;
+        ss << filename << "." << i << ".h5";
 
-        groupNameRe.str("");
-        groupNameRe.clear();
-        groupNameIm.str("");
-        groupNameIm.clear();
+        // Create HDF5 destination. We assume that the real and
+        // imaginary part have the same map.
+        EpetraExt::HDF5 HDF5(eigvs[0].real(i)->Map().Comm());
 
-        INFO("a / b = " << alpha[ctr] / beta[ctr]);
-        ctr++;
+        HDF5.Create(ss.str().c_str());
+
+        size_t ctr = 0;
+        for (auto &vec: eigvs)
+        {
+            groupNameRe << "EV_Real_" << ctr;
+            groupNameIm << "EV_Imag_" << ctr;
+
+            HDF5.Write( groupNameRe.str().c_str(),
+                        *vec.real(i) );
+            HDF5.Write( groupNameIm.str().c_str(),
+                        *vec.imag(i) );
+
+            // clear stringstreams
+            groupNameRe.str("");
+            groupNameRe.clear();
+            groupNameIm.str("");
+            groupNameIm.clear();
+
+            INFO("a / b = " << alpha[ctr] / beta[ctr]);
+            ctr++;
+        }
+
+        // save the eigenvalues to all hdf5 files.
+        saveEigenvalues(HDF5, alpha, beta, (int) eigvs.size());
     }
-
-    saveEigenvalues(HDF51, alpha, beta, (int) eigvs.size());
-    saveEigenvalues(HDF52, alpha, beta, (int) eigvs.size());
 }
 
 //============================================================================

@@ -261,8 +261,8 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &ou
     out.PutScalar(0.0);
 
     // Apply the diagonal blocks
-    ocean_->applyMatrix(*v.First(),  *out.First());
-    atmos_->applyMatrix(*v.Second(), *out.Second());
+    ocean_->applyMatrix(*v(OCEAN),  *out(OCEAN));
+    atmos_->applyMatrix(*v(ATMOS), *out(ATMOS));
 
     if (solvingScheme_ == 'C')
     {
@@ -271,8 +271,8 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &ou
         z.PutScalar(0.0);
 
         // Apply off-diagonal coupling blocks
-        C12_.applyMatrix(*v.Second(), *z.First());
-        C21_.applyMatrix(*v.First(),  *z.Second());
+        C12_.applyMatrix(*v(ATMOS), *z(OCEAN));
+        C21_.applyMatrix(*v(OCEAN),  *z(ATMOS));
 
         out.Update(1.0, z, 1.0);
     }
@@ -288,8 +288,8 @@ void CoupledModel::applyMassMat(Combined_MultiVec const &v, Combined_MultiVec &o
     out.PutScalar(0.0);
 
     // Apply mass matrix
-    ocean_->applyMassMat(*v.First(), *out.First());
-    atmos_->applyMassMat(*v.Second(), *out.Second());
+    ocean_->applyMassMat(*v(OCEAN), *out(OCEAN));
+    atmos_->applyMassMat(*v(ATMOS), *out(ATMOS));
     
     TIMER_STOP("CoupledModel: apply mass matrix...");    
 }
@@ -303,24 +303,24 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
 
     if (precScheme_ == 'D' || solvingScheme_ != 'C')
     {
-        atmos_->applyPrecon(*x.Second(), *z.Second());
-        ocean_->applyPrecon(*x.First() , *z.First() );
+        atmos_->applyPrecon(*x(ATMOS), *z(ATMOS));
+        ocean_->applyPrecon(*x(OCEAN) , *z(OCEAN) );
     }
     else if ( (precScheme_ == 'B' || precScheme_ == 'C') && solvingScheme_ == 'C')
     {
         Combined_MultiVec tmp(x);
         tmp.PutScalar(0.0);
 
-        atmos_->applyPrecon(*x.Second(), *z.Second()); //  z2   = inv(M2)*x2
-        C12_.applyMatrix(*z.Second(), *tmp.First());   //  tmp1 = C12*x2
-        tmp.First()->Update(1.0, *x.First(), -1.0);    //  tmp1 = x1 - C12*x2
-        ocean_->applyPrecon(*tmp.First(), *z.First()); //  z1   = inv(M1)*tmp1
+        atmos_->applyPrecon(*x(ATMOS), *z(ATMOS)); //  z2   = inv(M2)*x2
+        C12_.applyMatrix(*z(ATMOS), *tmp(OCEAN));   //  tmp1 = C12*x2
+        tmp(OCEAN)->Update(1.0, *x(OCEAN), -1.0);    //  tmp1 = x1 - C12*x2
+        ocean_->applyPrecon(*tmp(OCEAN), *z(OCEAN)); //  z1   = inv(M1)*tmp1
 
         if (precScheme_ == 'C')
         {
-            C21_.applyMatrix(*z.First(), *tmp.Second());     // tmp2 = C21*x1
-            tmp.Second()->Update(1.0, *x.Second(), 1.0);
-            atmos_->applyPrecon(*tmp.Second(), *z.Second());
+            C21_.applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*x1
+            tmp(ATMOS)->Update(1.0, *x(ATMOS), 1.0);
+            atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS));
         }
             
     }
@@ -328,19 +328,19 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
     {
         Combined_MultiVec tmp(x);
         tmp.PutScalar(0.0);
-        ocean_->applyPrecon(*x.First(), *z.First());     // z1   = inv(M1) * x1
-        C21_.applyMatrix(*z.First(), *tmp.Second());     // tmp2 = C21*z1
-        tmp.Second()->Update(1.0, *x.Second(), -1.0);    // tmp2 = x2 - C21*z1
-        atmos_->applyPrecon(*tmp.Second(), *z.Second()); // z2   = inv(M2)*tmp2 
+        ocean_->applyPrecon(*x(OCEAN), *z(OCEAN));     // z1   = inv(M1) * x1
+        C21_.applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*z1
+        tmp(ATMOS)->Update(1.0, *x(ATMOS), -1.0);    // tmp2 = x2 - C21*z1
+        atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS)); // z2   = inv(M2)*tmp2 
 
         if (precScheme_ == 'G')
         {
-            C12_.applyMatrix(*z.Second(), *tmp.First());     // tmp1 = C12*z2
-            tmp.First()->Update(1.0, *x.First(), 1.0);       // tmp1 = x1 + C12*z2
-            ocean_->applyPrecon(*tmp.First(), *z.First());   //   z1 = inv(M1) * tmp1
-            C21_.applyMatrix(*z.First(), *tmp.Second());     // tmp2 = C21*z1
-            tmp.Second()->Update(1.0, *x.Second(), -1.0);    // tmp2 = x2 - C21*z1
-            atmos_->applyPrecon(*tmp.Second(), *z.Second()); // z2   = inv(M2)*tmp2 
+            C12_.applyMatrix(*z(ATMOS), *tmp(OCEAN));     // tmp1 = C12*z2
+            tmp(OCEAN)->Update(1.0, *x(OCEAN), 1.0);       // tmp1 = x1 + C12*z2
+            ocean_->applyPrecon(*tmp(OCEAN), *z(OCEAN));   //   z1 = inv(M1) * tmp1
+            C21_.applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*z1
+            tmp(ATMOS)->Update(1.0, *x(ATMOS), -1.0);    // tmp2 = x2 - C21*z1
+            atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS)); // z2   = inv(M2)*tmp2 
         }        
     }
     else

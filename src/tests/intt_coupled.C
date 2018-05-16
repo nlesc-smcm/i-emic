@@ -148,8 +148,8 @@ TEST(CoupledModel, Newton)
 
         b = coupledModel->getRHS('C');
 
-        INFO(" ocean F  = " << Utils::norm(coupledModel->getRHS('V')->First()) );
-        INFO(" atmos F  = " << Utils::norm(coupledModel->getRHS('V')->Second()) );
+        INFO(" ocean F  = " << Utils::norm((*coupledModel->getRHS('V'))(0)) );
+        INFO(" atmos F  = " << Utils::norm((*coupledModel->getRHS('V'))(1)) );
 
         CHECK_ZERO(b->Scale(-1.0));
 
@@ -160,10 +160,10 @@ TEST(CoupledModel, Newton)
         std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');
         std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
 
-        INFO(" ocean x  = " << Utils::norm(stateV->First()) );
-        INFO(" atmos x  = " << Utils::norm(stateV->Second()) );
-        INFO(" ocean dx = " << Utils::norm(x->First()) );
-        INFO(" atmos dx = " << Utils::norm(x->Second()) );
+        INFO(" ocean x  = " << Utils::norm((*stateV)(0)) );
+        INFO(" atmos x  = " << Utils::norm((*stateV)(1)) );
+        INFO(" ocean dx = " << Utils::norm((*x)(0)) );
+        INFO(" atmos dx = " << Utils::norm((*x)(1)) );
 
         stateV->Update(1.0, *x, 1.0); // x = x + dx;
 
@@ -174,8 +174,8 @@ TEST(CoupledModel, Newton)
 
         Utils::print(y, "residual");
 
-        INFO(" ocean ||r|| / ||b||  = " << Utils::norm(y->First()));
-        INFO(" atmos ||r|| / ||b||  = " << Utils::norm(y->Second()));
+        INFO(" ocean ||r|| / ||b||  = " << Utils::norm((*y)(0)));
+        INFO(" atmos ||r|| / ||b||  = " << Utils::norm((*y)(1)));
         INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
 
         if (Utils::norm(coupledModel->getRHS('V')) < 1e-8)

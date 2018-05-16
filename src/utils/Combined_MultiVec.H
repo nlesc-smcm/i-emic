@@ -177,8 +177,9 @@ public:
         }
 
     //! Index operator non-const
-    Teuchos::RCP<Epetra_MultiVector> &operator()(int index) const
+    Teuchos::RCP<Epetra_MultiVector> const &operator()(int index) const
         {
+            assert( (index >= 0) && (index < size_) );
             return vectors_[index];
         }
 
@@ -186,6 +187,50 @@ public:
     Teuchos::RCP<Epetra_MultiVector> &operator()(int index)
         {
             return vectors_[index];
+        }
+
+    //! Local element access of the first vector in the multivectors
+    double const &operator[](int index) const
+        {
+            // bounds checking
+            assert( (index >= 0) && index < MyLength() );
+            
+            int end   = 0; // range ending
+            int start = 0; // range begin
+            for (int i = 0; i != size_; ++i)
+            {
+                end += vectors_[i]->MyLength();
+                if (index < end)
+                    return (*(*vectors_[i])(0))[index + start];
+                
+                start += end;
+            }
+            TEUCHOS_TEST_FOR_EXCEPTION(start == MyLength(), std::logic_error,
+                                       "undefined behaviour");
+
+            return (*(*vectors_[0])(0))[0];
+        }
+
+    //! Local element access of the first vector in the multivectors
+    double &operator[](int index)
+        {
+            // bounds checking
+            assert( (index >= 0) && index < MyLength() );
+            
+            int end   = 0; // range ending
+            int start = 0; // range begin
+            for (int i = 0; i != size_; ++i)
+            {
+                end += vectors_[i]->MyLength();
+                if (index < end)
+                    return (*(*vectors_[i])(0))[index + start];
+                
+                start += end;
+            }
+            TEUCHOS_TEST_FOR_EXCEPTION(start == MyLength(), std::logic_error,
+                                       "undefined behaviour");
+
+            return (*(*vectors_[0])(0))[0];
         }
     
     //! Get maps
@@ -259,7 +304,7 @@ public:
         {
             int info = 0;
             for (int i = 0; i != size_; ++i)
-                info += first_->Update(scalarA,  *A(i),  scalarB, *B(i),  scalarThis);
+                info += vectors_[i]->Update(scalarA,  *A(i),  scalarB, *B(i),  scalarThis);
 
             return info;
         }
@@ -268,8 +313,8 @@ public:
     int Dot(const Combined_MultiVec& A, std::vector<double> &b) const
         {
             assert(size_    == A.Size());
-            assert(numVecs_ == source.NumVecs());
-            assert(numVecs_ <= b.size());
+            assert(numVecs_ == A.NumVecs());
+            assert(numVecs_ <= (int) b.size());
 
             // reset vector
             std::fill(b.begin(), b.end(), 0.0);
@@ -279,7 +324,7 @@ public:
 
             for (int i = 0; i != size_; ++i)
             {
-                info += first_->Dot (*A.First(),  &tmp[0]);
+                info += vectors_[i]->Dot(*A(i),  &tmp[0]);
                 for (int j = 0; j != numVecs_; ++j)
                     b[j] += tmp[j];
             }
@@ -299,8 +344,6 @@ public:
 
     int Scale(double scalarValue)
         {
-            assert(size_    == A.Size());
-
             int info = 0;
             for (int i = 0; i != size_; ++i)
                 info += vectors_[i]->Scale(scalarValue);
@@ -310,7 +353,7 @@ public:
 
     int Norm1(std::vector<double> &result) const
         {
-            assert(numVecs_ <= result.size());
+            assert(numVecs_ <= (int) result.size());
 
             // reset result vector
             std::fill(result.begin(), result.end(), 0.0);
@@ -340,7 +383,7 @@ public:
 
     int Norm2(std::vector<double> &result) const
         {
-            assert(numVecs_ <= result.size());
+            assert(numVecs_ <= (int) result.size());
 
             // reset result vector
             std::fill(result.begin(), result.end(), 0.0);
@@ -374,7 +417,7 @@ public:
 
     int NormInf(std::vector<double> &result) const
         {
-            assert(numVecs_ <= result.size());
+            assert(numVecs_ <= (int) result.size());
 
             // reset result vector
             std::fill(result.begin(), result.end(), 0.0);
@@ -383,9 +426,6 @@ public:
             std::vector<double> result_tmp = result;
 
             int info = 0;
-            info =  first_->NormInf(&result[0]);
-            info += second_->NormInf(&result_tmp[0]);
-
             for (int i = 0; i != size_; ++i)
             {
                 info += vectors_[i]->NormInf(&result_tmp[0]);
@@ -465,9 +505,20 @@ namespace Belos
                     "Clone(mv, numVecs = " << numVecs << "): "
                     "outNumVecs must be positive.");
 
-                return Teuchos::rcp
-                    (new Combined_MultiVec(mv.First()->Map(),
-                                           mv.Second()->Map(), numVecs, false));
+                // --> how to generalize this..?
+                if (mv.Size() == 2)
+                {
+                    return Teuchos::rcp
+                        (new Combined_MultiVec(mv(0)->Map(),
+                                               mv(1)->Map(), numVecs, false));
+                }
+                else
+                {
+                    TEUCHOS_TEST_FOR_EXCEPTION(
+                        mv.Size() != 2, std::invalid_argument,
+                        " not yet implemented ");
+                    return Teuchos::null;
+                }
             }
 
         static Teuchos::RCP<Combined_MultiVec>
@@ -632,6 +683,7 @@ namespace Belos
                 }
                 return Teuchos::rcp (new Combined_MultiVec(View, mv, index.lbound(), index.size()));
             }
+
         static int  GetVecLength     (const Combined_MultiVec& mv ) { return mv.GlobalLength(); }
         static int  GetNumberVecs    (const Combined_MultiVec& mv ) { return mv.NumVecs(); }
         static bool HasConstantStride(const Combined_MultiVec& mv ) { return mv.ConstantStride(); }
@@ -644,7 +696,7 @@ namespace Belos
                                      Combined_MultiVec& mv)
             {
                 //! Create Epetra_Multivector from SerialDenseMatrix
-                Epetra_LocalMap LocalMap(B.numRows(), 0, mv.Map1().Comm());
+                Epetra_LocalMap LocalMap(B.numRows(), 0, mv.Map(0).Comm());
                 Epetra_MultiVector B_Pvec(View, LocalMap, B.values(), B.stride(), B.numCols());
 
                 const int info = mv.Multiply ('N', 'N', alpha, A, B_Pvec, beta);
@@ -719,10 +771,13 @@ namespace Belos
                               const Combined_MultiVec &mv, Teuchos::SerialDenseMatrix<int,double> &B)
             {
                 //! Create Epetra_MultiVector from SerialDenseMatrix
-                Epetra_LocalMap LocalMap(B.numRows(), 0, mv.Map1().Comm());
+                Epetra_LocalMap LocalMap(B.numRows(), 0, mv.Map(0).Comm());
                 Epetra_MultiVector B_Pvec(View, LocalMap, B.values(), B.stride(), B.numCols());
-                int info = B_Pvec.Multiply('T', 'N', alpha, *A.First(), *mv.First(), 0.0);
-                info    += B_Pvec.Multiply('T', 'N', alpha, *A.Second(), *mv.Second(), 1.0);
+
+                
+                int info = B_Pvec.Multiply('T', 'N', alpha, *A(0), *mv(0), 0.0);
+                for (int i = 1; i != mv.Size(); ++i)
+                    info += B_Pvec.Multiply('T', 'N', alpha, *A(i), *mv(i), 1.0);
 
                 TEUCHOS_TEST_FOR_EXCEPTION(info != 0, EpetraMultiVecFailure,
                                            "Belos::MultiVecTraits<double,Combined_MultiVec>::MvTransMv: "

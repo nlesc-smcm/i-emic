@@ -123,8 +123,8 @@ TEST(CoupledModel, inspectState)
         std::shared_ptr<Combined_MultiVec> state = coupledModel->getState('V');
         state->Random();
 
-        int firstL  = state->First()->GlobalLength();
-        int secondL = state->Second()->GlobalLength();
+        int firstL  = (*state)(0)->GlobalLength(); // ocean component
+        int secondL = (*state)(1)->GlobalLength(); // atmos component
         int stateL  = state->GlobalLength();
 
         INFO(" global 1: " << firstL << " 2: " << secondL
@@ -132,16 +132,16 @@ TEST(CoupledModel, inspectState)
 
         EXPECT_EQ(firstL + secondL, stateL);
 
-        firstL  = state->First()->MyLength();
-        secondL = state->Second()->MyLength();
+        firstL  = (*state)(0)->MyLength();
+        secondL = (*state)(1)->MyLength();
         stateL  = state->MyLength();
 
         INFO( " local 1: " << firstL << " 2: " << secondL
              << " 1+2: " << stateL );
         EXPECT_EQ(firstL + secondL, stateL);
 
-        double firstNrm = Utils::norm(state->First());
-        double secndNrm = Utils::norm(state->Second());
+        double firstNrm = Utils::norm((*state)(0));
+        double secndNrm = Utils::norm((*state)(1));
         double stateNrm = Utils::norm(state);
 
         EXPECT_NEAR(stateNrm, sqrt(pow(firstNrm,2) + pow(secndNrm,2)), 1e-7);
@@ -149,8 +149,8 @@ TEST(CoupledModel, inspectState)
         INFO( " norm 1: " << firstNrm << " 2: " << secndNrm
               << " 1+2: " << stateNrm << std::endl );
 
-        Utils::print(state->First(),  "rand_state_first");
-        Utils::print(state->Second(), "rand_state_second");
+        Utils::print((*state)(0),  "rand_state_first");
+        Utils::print((*state)(1), "rand_state_second");
     }
     catch (...)
     {
@@ -170,8 +170,8 @@ TEST(CoupledModel, MassMatrix)
 
     coupledModel->applyMassMat(v, out);
     
-    Teuchos::RCP<Epetra_MultiVector> oceanB = out.First();
-    Teuchos::RCP<Epetra_MultiVector> atmosB = out.Second();
+    Teuchos::RCP<Epetra_MultiVector> oceanB = out(0);
+    Teuchos::RCP<Epetra_MultiVector> atmosB = out(1);
     
     int n = ocean->getNdim();
     int m = ocean->getMdim();
@@ -338,8 +338,8 @@ TEST(CoupledModel, applyMatrix)
         CouplingBlock<std::shared_ptr<AtmospherePar>,
                       std::shared_ptr<Ocean> > C21(atmos, ocean);
 
-        Teuchos::RCP<Epetra_MultiVector> oceanVec = x->First();
-        Teuchos::RCP<Epetra_MultiVector> atmosVec = x->Second();
+        Teuchos::RCP<Epetra_MultiVector> oceanVec = (*x)(0);
+        Teuchos::RCP<Epetra_MultiVector> atmosVec = (*x)(1);
 
         int n = ocean->getNdim();
         int m = ocean->getMdim();
@@ -535,7 +535,7 @@ TEST(CoupledModel, Precipitation)
     coupledModel->computeJacobian();
     coupledModel->applyMatrix(*stateV, *b);
 
-    Teuchos::RCP<Epetra_MultiVector> atmb = b->Second();
+    Teuchos::RCP<Epetra_MultiVector> atmb = (*b)(1);
     Teuchos::RCP<Epetra_Vector> P = atmos->getP();
 
     int numMyElements = P->Map().NumMyElements();
@@ -604,8 +604,8 @@ TEST(CoupledModel, Synchronization)
 
     try
     {
-        stateV->First()->PutScalar(1.234);
-        stateV->Second()->PutScalar(2.345);
+        (*stateV)(0)->PutScalar(1.234);
+        (*stateV)(1)->PutScalar(2.345);
 
         // Set a small parameter
         coupledModel->setPar(0.01);
@@ -764,8 +764,8 @@ TEST(CoupledModel, IntegralCondition)
     coupledModel->computeJacobian();
     coupledModel->applyMatrix(*x, *b);
 
-    Teuchos::RCP<Epetra_MultiVector> oceanB = b->First();
-    Teuchos::RCP<Epetra_MultiVector> oceanF = F->First();
+    Teuchos::RCP<Epetra_MultiVector> oceanB = (*b)(0);
+    Teuchos::RCP<Epetra_MultiVector> oceanF = (*F)(0);
 
     int rowintcon = ocean->getRowIntCon();
     int lid = -1;

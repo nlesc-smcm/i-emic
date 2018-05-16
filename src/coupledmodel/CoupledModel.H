@@ -51,6 +51,9 @@ private:
     //! NOT IMPLEMENTED YET
     //! Graph couplings_;
 
+    //! enum containing model identifiers
+    enum ModelID {OCEAN, ATMOS, SEAICE};
+
     //! Trilinos-based parallel implicit ocean model (Trilinos-THCM)
     std::shared_ptr<Ocean>  ocean_;
 
