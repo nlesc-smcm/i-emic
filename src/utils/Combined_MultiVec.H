@@ -201,7 +201,7 @@ public:
             {
                 end += vectors_[i]->MyLength();
                 if (index < end)
-                    return (*(*vectors_[i])(0))[index + start];
+                    return (*(*vectors_[i])(0))[index - start];
                 
                 start += end;
             }
@@ -223,7 +223,7 @@ public:
             {
                 end += vectors_[i]->MyLength();
                 if (index < end)
-                    return (*(*vectors_[i])(0))[index + start];
+                    return (*(*vectors_[i])(0))[index - start];
                 
                 start += end;
             }
