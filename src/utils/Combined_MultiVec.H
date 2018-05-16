@@ -45,7 +45,10 @@ public:
         vectors_(std::vector<Teuchos::RCP<Epetra_MultiVector> >(0))
         {}
 
-    Combined_MultiVec(const Epetra_BlockMap &map1, const Epetra_BlockMap &map2,
+
+    //! constructor using 2 maps
+    Combined_MultiVec(const Epetra_BlockMap &map1,
+                      const Epetra_BlockMap &map2,
                       int numVectors, bool zeroOut = true)
         :
         size_(2),
@@ -55,6 +58,23 @@ public:
                 Teuchos::rcp(new Epetra_MultiVector(map1, numVectors, zeroOut)) );
             vectors_.push_back(
                 Teuchos::rcp(new Epetra_MultiVector(map2, numVectors, zeroOut)) );
+        }
+
+    //! constructor using 3 maps
+    Combined_MultiVec(const Epetra_BlockMap &map1,
+                      const Epetra_BlockMap &map2,
+                      const Epetra_BlockMap &map3,
+                      int numVectors, bool zeroOut = true)
+        :
+        size_(3),
+        numVecs_(numVectors)
+        {
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(map1, numVectors, zeroOut)) );
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(map2, numVectors, zeroOut)) );
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(map3, numVectors, zeroOut)) );
         }
 
     //! Copy constructor
@@ -68,6 +88,7 @@ public:
                     Teuchos::rcp(new Epetra_MultiVector(*source(i))) );
         }
 
+    //! constructor using 2 rcp's
     Combined_MultiVec(const Teuchos::RCP<Epetra_MultiVector> &mv1,
                       const Teuchos::RCP<Epetra_MultiVector> &mv2)
         :
@@ -75,20 +96,60 @@ public:
         numVecs_(mv1->NumVectors())
         {
             assert(mv1->NumVectors() == mv2->NumVectors());
+
             vectors_.push_back(mv1);                       
             vectors_.push_back(mv2);                       
         }
-    
-    Combined_MultiVec(const Epetra_MultiVector &mv1, const Epetra_MultiVector &mv2)
+
+    //! constructor using 3 rcp's    
+    Combined_MultiVec(const Teuchos::RCP<Epetra_MultiVector> &mv1,
+                      const Teuchos::RCP<Epetra_MultiVector> &mv2,
+                      const Teuchos::RCP<Epetra_MultiVector> &mv3)
+        :
+        size_(3),
+        numVecs_(mv1->NumVectors())
+        {
+            assert(mv1->NumVectors() == mv2->NumVectors());
+            assert(mv2->NumVectors() == mv3->NumVectors());
+
+            vectors_.push_back(mv1);
+            
+            vectors_.push_back(mv2);
+            vectors_.push_back(mv3);
+        }
+
+    //! constructor using 2 multivecs    
+    Combined_MultiVec(const Epetra_MultiVector &mv1,
+                      const Epetra_MultiVector &mv2)
         :
         size_(2),
         numVecs_(mv1.NumVectors())
         {
             assert(mv1.NumVectors() == mv2.NumVectors());
+
             vectors_.push_back(
                 Teuchos::rcp(new Epetra_MultiVector(mv1)) );
             vectors_.push_back(
                 Teuchos::rcp(new Epetra_MultiVector(mv2)) );
+        }
+    
+    //! constructor using 3 multivecs    
+    Combined_MultiVec(const Epetra_MultiVector &mv1,
+                      const Epetra_MultiVector &mv2,
+                      const Epetra_MultiVector &mv3)
+        :
+        size_(3),
+        numVecs_(mv1.NumVectors())
+        {
+            assert(mv1.NumVectors() == mv2.NumVectors());
+            assert(mv2.NumVectors() == mv3.NumVectors());
+
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(mv1)) );
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(mv2)) );
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(mv3)) );
         }
     
     //! const
@@ -156,11 +217,13 @@ public:
     //! Assignment operator, assigning the multivectors
     Combined_MultiVec &operator=(const Combined_MultiVec &source)
         {
-            // require that we have the same shape (perhaps a bit
-            // strong requirement)
+            // Require that we have the same shape. This might be a
+            // bit strong but Epetra_MultiVector asks the same.
             assert(size_    == source.Size());
             assert(numVecs_ == source.NumVecs());
-            
+
+            // Epetra_MultiVector checks whether the shapes of the
+            // multivectors are equal.
             for (int i = 0; i != size_; ++i)
                 *vectors_[i] = *source(i);
 
@@ -234,7 +297,12 @@ public:
         }
     
     //! Get maps
-    const Epetra_BlockMap &Map(int index) const {return vectors_[index]->Map();  }
+    const Epetra_BlockMap &Map(int index) const
+        {
+            assert(index >= 0); // input bounds check
+            assert(size_ >= 1); // data contents check
+            return vectors_[index]->Map();
+        }
 
     //! Get number of combined multivectors
     int Size() const {return size_;}
@@ -430,7 +498,7 @@ public:
             {
                 info += vectors_[i]->NormInf(&result_tmp[0]);
                 for (int j = 0; j != numVecs_; ++j)
-                    result[i] = std::max(result[i], result_tmp[i]);
+                    result[j] = std::max(result[j], result_tmp[j]);
             }
 
             return info;
@@ -510,12 +578,22 @@ namespace Belos
                 {
                     return Teuchos::rcp
                         (new Combined_MultiVec(mv(0)->Map(),
-                                               mv(1)->Map(), numVecs, false));
+                                               mv(1)->Map(),
+                                               numVecs, false));
+                }
+                else if (mv.Size() == 3)
+                {
+                    return Teuchos::rcp
+                        (new Combined_MultiVec(mv(0)->Map(),
+                                               mv(1)->Map(),
+                                               mv(2)->Map(),
+                                               numVecs, false));
                 }
                 else
                 {
                     TEUCHOS_TEST_FOR_EXCEPTION(
-                        mv.Size() != 2, std::invalid_argument,
+                        (mv.Size() < 2) || (mv.Size() > 3),
+                        std::invalid_argument,
                         " not yet implemented ");
                     return Teuchos::null;
                 }

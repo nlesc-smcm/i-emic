@@ -69,6 +69,22 @@ double Utils::norm(std::vector<double> &vec)
     return sqrt(dot);
 }
 
+//! Obtain 2-norm of multivec, more convenient interface
+double Utils::norm(Epetra_MultiVector &vec)
+{
+    double norm = 0;
+    CHECK_ZERO(vec.Norm2(&norm));
+    return norm;
+}
+
+//! Obtain 2-norm of multivec, more convenient interface
+double Utils::norm(Combined_MultiVec &vec)
+{
+    double norm = 0;
+    CHECK_ZERO(vec.Norm2(&norm));
+    return norm;
+}
+
 //! Compute column sums. This is imitated from
 //! Epetra_CrsMatrix::NormOne()
 void Utils::colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums)

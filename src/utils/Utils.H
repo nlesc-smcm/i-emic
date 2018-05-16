@@ -111,6 +111,12 @@ namespace Utils
     //! Obtain 2-norm of std::vector<double>
     double norm(std::vector<double> &vec);
 
+    //! Obtain 2-norm of std::vector<double>
+    double norm(Epetra_MultiVector &vec);
+
+    //! Obtain 2-norm of std::vector<double>
+    double norm(Combined_MultiVec &vec);
+
     //! Compute column sums of matrix mat and put them in vector sums
     void colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums);
 

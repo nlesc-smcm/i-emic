@@ -14,6 +14,7 @@ set(TESTS_INCLUDE_DIRS
 
 set(TEST_SOURCES
   test_domain.C
+  test_vector.C
   test_jdqz.C
   test_topo.C
   test_ocean.C
@@ -68,5 +69,4 @@ foreach(test_source ${TEST_SOURCES})
   # Pthread
   target_link_libraries(${test_name} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 
-  install(TARGETS ${test_name} DESTINATION test/domain)
 endforeach()
