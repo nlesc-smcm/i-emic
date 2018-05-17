@@ -119,6 +119,7 @@ TEST(Combined_MultiVec, Construction)
         // Randomize contents
         three_vec_ten.SetSeed(99);
         three_vec_ten.Random();
+        double originalNorm = Utils::norm(three_vec_ten);        
 
         // Check norms
         std::vector<double> twoNorms_ten(10);
@@ -144,13 +145,60 @@ TEST(Combined_MultiVec, Construction)
 
         std::vector<double> infNorms_five(5);
         three_vec_five.NormInf(infNorms_five);
-
         EXPECT_EQ(infNorms_five[3], infNorms_ten[5]);
+
+        // Check all norms of three_vec_ten        
+        double twoNorm, infNorm, oneNorm, tmp;
+        for (int v = 0; v != 10; ++v)
+        {
+            twoNorm = 0.0;
+            infNorm = 0.0;
+            oneNorm = 0.0;
+            
+            for (int i = 0; i != three_vec_ten.Size(); ++i)
+            {
+                (*three_vec_ten(i))(v)->Norm2(&tmp);
+                twoNorm += pow(tmp,2);
+                (*three_vec_ten(i))(v)->NormInf(&tmp);
+                infNorm = std::max(infNorm, tmp);
+                (*three_vec_ten(i))(v)->Norm1(&tmp);
+                oneNorm += tmp;
+            }
+            
+            EXPECT_EQ(oneNorms_ten[v], oneNorm);
+            EXPECT_EQ(infNorms_ten[v], infNorm);
+            EXPECT_EQ(twoNorms_ten[v], sqrt(twoNorm));
+        }
         
-        // todo:
-        //  some more norms checks
-        //  check whether dataAccess = View does give a view
-        //  SetSeed 
+        // Check whether dataAccess = View does give a view of a
+        // subset of vectors.
+        Combined_MultiVec view(View, three_vec_ten, index);
+        std::vector<double> twoNorms_five_view(5);
+        std::vector<double> twoNorms_five_copy(5);
+        view.Norm2(twoNorms_five_view);           // view
+        three_vec_five.Norm2(twoNorms_five_copy); // copy
+        EXPECT_EQ(twoNorms_five_view.size(), view.NumVecs());
+        for (int i = 0; i != view.NumVecs(); ++i)
+        {
+            EXPECT_EQ(twoNorms_five_view[i], twoNorms_ten[index[i]]);
+        }
+
+        // Randomize the original vector again
+        three_vec_ten.Random();
+        view.Norm2(twoNorms_five_view);
+        three_vec_ten.Norm2(twoNorms_ten);
+        three_vec_five.Norm2(twoNorms_five_copy);
+        for (int i = 0; i != view.NumVecs(); ++i)
+        {
+            EXPECT_EQ(twoNorms_five_view[i], twoNorms_ten[index[i]]);
+            EXPECT_NE(twoNorms_five_view[i],
+                      twoNorms_five_copy[i]);
+        }
+
+        // Set seed again contents
+        three_vec_ten.SetSeed(99);
+        three_vec_ten.Random();
+        EXPECT_EQ(Utils::norm(three_vec_ten), originalNorm);        
     }
     catch (...)
     {

@@ -309,6 +309,7 @@ public:
 
     //! Get number of vectors in each multivector
     int NumVecs() const {return numVecs_;}
+    int NumVectors() const {return numVecs_;}
 
     //! Get the global length of the combined multivector
     int GlobalLength() const

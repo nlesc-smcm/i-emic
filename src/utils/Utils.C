@@ -69,20 +69,36 @@ double Utils::norm(std::vector<double> &vec)
     return sqrt(dot);
 }
 
-//! Obtain 2-norm of multivec, more convenient interface
+//! Obtain 2-norm of first vec in multivec, more convenient interface
 double Utils::norm(Epetra_MultiVector &vec)
 {
-    double norm = 0;
-    CHECK_ZERO(vec.Norm2(&norm));
-    return norm;
+    std::vector<double> norm(vec.NumVectors());
+    CHECK_ZERO(vec.Norm2(&norm[0]));
+    return norm[0];
 }
 
-//! Obtain 2-norm of multivec, more convenient interface
+//! Obtain 2-norm of first vec in multivec, more convenient interface
 double Utils::norm(Combined_MultiVec &vec)
 {
-    double norm = 0;
-    CHECK_ZERO(vec.Norm2(&norm));
-    return norm;
+    std::vector<double> norm(vec.NumVectors());
+    CHECK_ZERO(vec.Norm2(&norm[0]));
+    return norm[0];
+}
+
+//! Obtain first inf-norm of Epetra_MultiVector
+double Utils::normInf(Epetra_MultiVector &vec)
+{
+    std::vector<double> norm(vec.NumVectors());
+    CHECK_ZERO(vec.NormInf(&norm[0]));
+    return norm[0];
+}
+
+//! Obtain first inf-norm of Combined_MultiVec
+double Utils::normInf(Combined_MultiVec &vec)
+{
+    std::vector<double> norm(vec.NumVectors());
+    CHECK_ZERO(vec.NormInf(&norm[0]));
+    return norm[0];
 }
 
 //! Compute column sums. This is imitated from
