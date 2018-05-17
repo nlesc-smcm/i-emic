@@ -141,7 +141,6 @@ private:
 public:
     CoupledModel(std::shared_ptr<Ocean> ocean,
                  std::shared_ptr<AtmospherePar> atmos,
-                 std::shared_ptr<SeaIce> seaice = nullptr,
                  Teuchos::RCP<Teuchos::ParameterList> params);
 
     ~CoupledModel() { INFO("CoupledModel destructor"); }

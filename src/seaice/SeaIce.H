@@ -20,6 +20,7 @@
 #include <Ifpack.h>
 #include <Ifpack_Preconditioner.h>
 
+#include "Model.H"
 #include "TRIOS_Domain.H"
 #include "GlobalDefinitions.H"
 #include "Utils.H"

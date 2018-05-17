@@ -22,13 +22,14 @@
 #include <Ifpack.h>
 #include <Ifpack_Preconditioner.h>
 
+#include "Model.H"
 #include "Atmosphere.H"
 #include "TRIOS_Domain.H"
 #include "GlobalDefinitions.H"
 
 class Ocean;
 
-class AtmospherePar: public Model
+class AtmospherePar : public Model
 {
 public:    
     using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;

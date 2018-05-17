@@ -9,18 +9,20 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
-
+// TODO: - factorize constructors for ocean+atmos, ocean+atmos+seaice
+//         - create setup routine that builds the identifiers
+//       - generalize this code
 
 //==================================================================
 // constructor
 CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                            std::shared_ptr<AtmospherePar> atmos,
-                           std::shared_ptr<SeaIce> seaice,
+                           //                         std::shared_ptr<SeaIce> seaice,
                            Teuchos::RCP<Teuchos::ParameterList> params)
     :
     ocean_(ocean),
     atmos_(atmos),
-    seaice_(seaice),
+//    seaice_(seaice),
     parName_          (params->get("Continuation parameter",
                                    "Combined Forcing")),
     
@@ -56,19 +58,19 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 
     if (useSeaIce_)
     {
-        models_.push_back(seaice);
+        // models_.push_back(seaice);
         SEAICE = ident++;
     }
 
     if (models_.size() == 2)
-    {    
+    {
         stateView_ = std::make_shared<Combined_MultiVec>
             (models_[0]->getState('V'),
-             models_[1]->getState('V'));
+             models_[1]->getState('V') );
         
         solView_   = std::make_shared<Combined_MultiVec>
             (models_[0]->getSolution('V'),
-             models_[1]->getSolution('V'));
+             models_[1]->getSolution('V') );
         
         rhsView_   = std::make_shared<Combined_MultiVec>
             (models_[0]->getRHS('V'),

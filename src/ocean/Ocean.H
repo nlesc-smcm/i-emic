@@ -58,11 +58,10 @@ class Epetra_Operator;
 class Epetra_CrsMatrix;
 
 
-class Ocean: public Model
+class Ocean : public Model
 {
 public:
 
-    using VectorPtr = Teuchos::RCP<Epetra_Vector>;
     using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
     using PreconPtr = Teuchos::RCP<Ifpack_Preconditioner>;
     using LandMask  = Utils::MaskStruct;
