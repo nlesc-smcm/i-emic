@@ -1,10 +1,6 @@
-#include "CoupledModel.H"
-#include "Ocean.H"
-#include "AtmospherePar.H"
-#include "Combined_MultiVec.H"
 
-#include <vector>
-#include <memory>
+#include "CoupledModel.H"
+
 #include <functional>
 
 #include <Epetra_Comm.h>
@@ -19,28 +15,66 @@
 // constructor
 CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                            std::shared_ptr<AtmospherePar> atmos,
+                           std::shared_ptr<SeaIce> seaice,
                            Teuchos::RCP<Teuchos::ParameterList> params)
     :
     ocean_(ocean),
     atmos_(atmos),
-    
-    stateView_(std::make_shared<Combined_MultiVec>
-               (ocean->getState('V'), atmos->getState('V'))),
-    solView_  (std::make_shared<Combined_MultiVec>
-               (ocean->getSolution('V'), atmos->getSolution('V'))),
-    rhsView_  (std::make_shared<Combined_MultiVec>
-               (ocean->getRHS('V'), atmos->getRHS('V'))),
-
+    seaice_(seaice),
     parName_          (params->get("Continuation parameter",
                                    "Combined Forcing")),
     
     solvingScheme_    (params->get("Solving scheme", 'C')),
     
     precScheme_       (params->get("Preconditioning", 'F')),
-
+    
+    useAtmos_         (params->get("Use atmosphere", true)),
+    useSeaIce_        (params->get("Use sea ice",    false)),
+    
     syncCtr_          (0),
     solverInitialized_(false)
 {
+    // Check xml sanity
+    if (!useAtmos_ && !useSeaIce_)
+    {
+        ERROR("At least one model should be coupled to the ocean model",
+              __FILE__, __LINE__);
+    }
+    std::vector<std::shared_ptr<Model> > models_;
+    
+    // set models and identifiers
+    int ident = 0;
+    models_.push_back(ocean); // we use ocean by default
+
+    OCEAN = ident++; 
+
+    if (useAtmos_)
+    {
+        models_.push_back(atmos);
+        ATMOS = ident++;
+    }
+
+    if (useSeaIce_)
+    {
+        models_.push_back(seaice);
+        SEAICE = ident++;
+    }
+
+    if (models_.size() == 2)
+    {    
+        stateView_ = std::make_shared<Combined_MultiVec>
+            (models_[0]->getState('V'),
+             models_[1]->getState('V'));
+        
+        solView_   = std::make_shared<Combined_MultiVec>
+            (models_[0]->getSolution('V'),
+             models_[1]->getSolution('V'));
+        
+        rhsView_   = std::make_shared<Combined_MultiVec>
+            (models_[0]->getRHS('V'),
+             models_[1]->getRHS('V'));
+    }
+    
     // Let the sub-models know our continuation parameter
     ocean_->setParName(parName_);
     atmos_->setParName(parName_);
@@ -59,8 +93,8 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
     INFO("\nCoupledModel parameters:");
     INFO(*params);
     INFO("\n--------------------------------------");
-    INFO("Ocean couplings: coupled_T = " << ocean_->getCoupledT());
-    INFO("                 coupled_S = " << ocean_->getCoupledS());
+    INFO("Ocean couplings: coupled_T = " << ocean_->getCoupledT() );
+    INFO("                 coupled_S = " << ocean_->getCoupledS() );
     INFO("--------------------------------------\n");
 
     // Synchronize state

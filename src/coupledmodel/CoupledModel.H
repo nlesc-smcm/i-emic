@@ -1,8 +1,13 @@
 #ifndef COUPLEDMODEL_H
 #define COUPLEDMODEL_H
 
+//! models
+#include "Model.H"
 #include "Ocean.H"
 #include "AtmospherePar.H"
+#include "SeaIce.H"
+
+//! vector and matrix helpers
 #include "Combined_MultiVec.H"
 #include "CouplingBlock.H"
 
@@ -19,20 +24,21 @@
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
 
+/*------------------------------------------------------------------
 //! This class assembles multiple sub-models into a CoupledModel.
-// Which models and couplings are used should be supplied in the
-// accompanying xml file (coupledmodel_params.xml).
+//! Which models and couplings are used should be supplied in the
+//! accompanying xml file (coupledmodel_params.xml).
 
 //! Most routines in CoupledModel simply call their corresponding
-// routines in the sub-models. For instance, a call to
-// computeJacobian() translates to a call to computeJacobian() in the
-// sub-models.
+//! routines in the sub-models. For instance, a call to
+//! computeJacobian() translates to a call to computeJacobian() in the
+//! sub-models.
 
 //! The frequency at which the states of the sub-models are
 //! synchronized depends on the solving scheme.
+------------------------------------------------------------------*/
 
 //! Forward declarations
-
 class Epetra_Comm;
 class Epetra_IntVector;
 class Epetra_Vector;
@@ -47,12 +53,9 @@ public:
     using LandMask   = Utils::MaskStruct;
 
 private:
-    //! Adjacency graph describing the couplings between the models
-    //! NOT IMPLEMENTED YET
-    //! Graph couplings_;
 
-    //! enum containing model identifiers
-    enum ModelID {OCEAN, ATMOS, SEAICE};
+    //! submodel identifiers
+    int OCEAN, ATMOS, SEAICE;
 
     //! Trilinos-based parallel implicit ocean model (Trilinos-THCM)
     std::shared_ptr<Ocean>  ocean_;
@@ -60,6 +63,9 @@ private:
     //! Parallel implicit atmosphere model
     std::shared_ptr<AtmospherePar> atmos_;
 
+    //! Parallel implicit sea ice model
+    std::shared_ptr<SeaIce> seaice_;
+    
     //! Combined state vector
     std::shared_ptr<Combined_MultiVec> stateView_;
 
@@ -84,6 +90,12 @@ private:
     //!   'D': diagonal      (do not incorporate coupling blocks in prec)
     char precScheme_;
 
+    //! select whether we should use the atmosphere model in the coupling
+    bool useAtmos_;
+
+    //! select whether we should use the sea ice model in the coupling
+    bool useSeaIce_;
+
     //! keep track of syncs
     int syncCtr_;
 
@@ -96,10 +108,27 @@ private:
     //! Coupling block atmos -> ocean
     CouplingBlock<std::shared_ptr<Ocean>,
                   std::shared_ptr<AtmospherePar> > C12_;
-
+    
+    //! Coupling block seaice -> ocean
+    CouplingBlock<std::shared_ptr<Ocean>,
+                  std::shared_ptr<SeaIce> > C13_;
+    
     //! Coupling block ocean -> atmos
     CouplingBlock<std::shared_ptr<AtmospherePar>,
                   std::shared_ptr<Ocean> > C21_;
+    
+    //! Coupling block seaice -> atmos
+    CouplingBlock<std::shared_ptr<AtmospherePar>,
+                  std::shared_ptr<SeaIce> > C23_;
+
+    //! Coupling block ocean -> seaice
+    CouplingBlock<std::shared_ptr<SeaIce>,
+                  std::shared_ptr<Ocean> > C31_;
+
+    //! Coupling block atmosphere -> seaice
+    CouplingBlock<std::shared_ptr<SeaIce>,
+                  std::shared_ptr<AtmospherePar> > C32_;
+
 
     Teuchos::RCP
     <Belos::LinearProblem
@@ -112,6 +141,7 @@ private:
 public:
     CoupledModel(std::shared_ptr<Ocean> ocean,
                  std::shared_ptr<AtmospherePar> atmos,
+                 std::shared_ptr<SeaIce> seaice = nullptr,
                  Teuchos::RCP<Teuchos::ParameterList> params);
 
     ~CoupledModel() { INFO("CoupledModel destructor"); }
@@ -128,18 +158,18 @@ public:
     //! Initialize FGMRES (Belos) solver
     void initializeFGMRES();
 
-    //! Apply the Jacobian matrix: out=J*v
+    //! Apply the Jacobian matrix: out = J*v
     void applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &out);
 
     void applyMassMat(Combined_MultiVec const &v, Combined_MultiVec &out);
 
-    //! Apply the preconditioning: out=inv(P)*v
+    //! Apply the preconditioning: out = inv(P)*v
     //! In the coupled case: 1.5 step in the block gauss seidel scheme
     //!
     //!        z = inv(P)*x  <=>  P*z = x  -> iterate with
     //!
-    //!           [M1 C12] * [z1] = [     ] * [z1] + [x1]
-    //!           [    M2]   [z2]   [C21  ]   [z2]   [x2]
+    //!           [M1 C12] * [z1] = [      ] * [z1] + [x1]
+    //!           [    M2]   [z2]   [C21   ]   [z2]   [x2]
     //!
     //! z1^0 = 0 => z2^1 = inv(M2)*x2
     //!          => z1^1 = inv(M1)*(x1-C12*z2^1)
@@ -257,6 +287,7 @@ public:
 };
 
 //-----------------------------------------------------------------------------
+// Specialize Belos::OperatorTraits using BelosOp
 namespace Belos
 {
     template <typename Model>

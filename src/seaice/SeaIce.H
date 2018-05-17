@@ -28,7 +28,7 @@
 // exp, pow, sin
 #include <math.h>
 
-class SeaIce
+class SeaIce : public Model
 {
 
 public:

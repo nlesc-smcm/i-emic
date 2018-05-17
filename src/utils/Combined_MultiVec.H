@@ -252,7 +252,7 @@ public:
             return vectors_[index];
         }
 
-    //! Local element access of the first vector in the multivectors
+    //! Local const element access of the first vector in the multivectors
     double const &operator[](int index) const
         {
             // bounds checking
@@ -274,26 +274,11 @@ public:
             return (*(*vectors_[0])(0))[0];
         }
 
-    //! Local element access of the first vector in the multivectors
+    //! Local non-const element access of the first vector in the multivectors
     double &operator[](int index)
         {
-            // bounds checking
-            assert( (index >= 0) && index < MyLength() );
-            
-            int end   = 0; // range ending
-            int start = 0; // range begin
-            for (int i = 0; i != size_; ++i)
-            {
-                end += vectors_[i]->MyLength();
-                if (index < end)
-                    return (*(*vectors_[i])(0))[index - start];
-                
-                start += end;
-            }
-            TEUCHOS_TEST_FOR_EXCEPTION(start == MyLength(), std::logic_error,
-                                       "undefined behaviour");
-
-            return (*(*vectors_[0])(0))[0];
+            const Combined_MultiVec &constMe = *this;
+            return const_cast<double &>(constMe.operator[](index));
         }
     
     //! Get maps
@@ -309,8 +294,8 @@ public:
 
     //! Get number of vectors in each multivector
     int NumVecs() const {return numVecs_;}
-    int NumVectors() const {return numVecs_;}
-
+    int NumVectors() const {return numVecs_;
+    }
     //! Get the global length of the combined multivector
     int GlobalLength() const
         {

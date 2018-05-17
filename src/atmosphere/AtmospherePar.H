@@ -28,7 +28,7 @@
 
 class Ocean;
 
-class AtmospherePar
+class AtmospherePar: public Model
 {
 public:    
     using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;

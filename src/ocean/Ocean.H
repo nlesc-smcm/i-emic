@@ -34,6 +34,7 @@
 #include <BelosEpetraAdapter.hpp>
 #include <Ifpack_Preconditioner.h>
 
+#include "Model.H"
 #include "GlobalDefinitions.H"
 #include "AtmospherePar.H"
 #include "THCMdefs.H"
@@ -57,7 +58,7 @@ class Epetra_Operator;
 class Epetra_CrsMatrix;
 
 
-class Ocean
+class Ocean: public Model
 {
 public:
 
