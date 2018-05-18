@@ -244,6 +244,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         }
     }
 
+    if (std::abs(intSign_) != 1)
+    {
+        ERROR("Invalid integral sign!", __FILE__, __LINE__);
+    }
+
     iza  = paramList.get("Wind Forcing Type",2);
 
     int dof = _NUN_; // number of unknowns, defined in THCMdefs.H

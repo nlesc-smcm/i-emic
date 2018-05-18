@@ -1048,7 +1048,9 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
         Teuchos::RCP<Epetra_Vector> b =
             Teuchos::rcp(new Epetra_Vector(*(*rhs)(0)));
         double nrm = explicitResNorm(b);
-        INFO("        ||b-Ax|| = " << nrm);
+        INFO("           ||b||         = " << Utils::norm(b));
+        INFO("           ||x||         = " << Utils::norm(sol_));
+        INFO("        ||b-Ax|| / ||b|| = " << nrm / Utils::norm(b));
 
         TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 
@@ -1057,7 +1059,6 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
         //     INFO("Ocean: FGMRES, stagnation: " << recompTol_);
         //     recompPreconditioner_ = true;
         // }
-
     }
     else
     {

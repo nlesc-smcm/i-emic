@@ -12,6 +12,8 @@ class Model
 public:
     
     using VectorPtr = Teuchos::RCP<Epetra_Vector>;
+
+    virtual ~Model() {}
     
     virtual VectorPtr getState(char mode) = 0;
     virtual VectorPtr getSolution(char mode) = 0;

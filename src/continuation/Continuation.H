@@ -288,11 +288,21 @@ createInitialTangent()
     //-----------------------------------------------------------------
 
     // 1) Compute dFdPar_, force computation of RHS
+    if (printImportantVectors_)
+    {
+        Utils::save(rhsView_, "F0");
+    }
+
     computeDFDPar('F');
 
-    if (printImportantVectors_) Utils::save(dFdPar_, "dFdpar");
+    if (printImportantVectors_)
+    {
+        Utils::save(dFdPar_, "dFdpar");
+        Utils::save(rhsView_, "F1");
+    }
 
-    if ( (initialTangent_ == 'E') || (initialTangent_ == 'S'))   // 2a) Solve J*dxdpar = -dFdPar_
+    // 2a) Solve J*dxdpar = -dFdPar_
+    if ( (initialTangent_ == 'E') || (initialTangent_ == 'S'))   
     {
         model_->preProcess();
         model_->computeJacobian();
@@ -341,6 +351,7 @@ createInitialTangent()
         Utils::save(model_->getSolution('V'), "stateDot");
     }
     INFO("Continuation: create initial tangent... done");
+//    getchar();
 }
 
 //======================================================================
