@@ -44,7 +44,7 @@ public:
                     new Epetra_CrsMatrix(Copy,
                                          *modelRowDomain_->GetSolveMap(),
                                          *modelColDomain_->GetColMap(), 0) );
-
+            
             // initial compute
             computeBlock();
         }

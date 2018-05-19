@@ -200,7 +200,9 @@ public:
     AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList params);
 
     ~AtmospherePar() {INFO("AtmospherePar destructor");}
-
+    
+    std::string const name() { return "Atmosphere"; }
+    
     //! Setup integral coefficients
     void setupIntCoeff();
 

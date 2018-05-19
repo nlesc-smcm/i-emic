@@ -17,19 +17,20 @@
 // constructor
 CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                            std::shared_ptr<AtmospherePar> atmos,
-                           //                         std::shared_ptr<SeaIce> seaice,
+                           std::shared_ptr<SeaIce> seaice,
                            Teuchos::RCP<Teuchos::ParameterList> params)
     :
     ocean_(ocean),
     atmos_(atmos),
-//    seaice_(seaice),
+    seaice_(seaice),
     parName_          (params->get("Continuation parameter",
                                    "Combined Forcing")),
     
     solvingScheme_    (params->get("Solving scheme", 'C')),
     
     precScheme_       (params->get("Preconditioning", 'F')),
-    
+
+    useOcean_         (params->get("Use ocean",      true)),
     useAtmos_         (params->get("Use atmosphere", true)),
     useSeaIce_        (params->get("Use sea ice",    false)),
     
@@ -37,18 +38,20 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
     solverInitialized_(false)
 {
     // Check xml sanity
-    if (!useAtmos_ && !useSeaIce_)
+    if (!useOcean_ && !useAtmos_ && !useSeaIce_)
     {
-        ERROR("At least one model should be coupled to the ocean model",
+        ERROR("At least one model should be active",
               __FILE__, __LINE__);
     }
-    std::vector<std::shared_ptr<Model> > models_;
     
     // set models and identifiers
     int ident = 0;
-    models_.push_back(ocean); // we use ocean by default
 
-    OCEAN = ident++; 
+    if (useOcean_)
+    {
+        models_.push_back(ocean);
+        OCEAN = ident++;
+    }
 
     if (useAtmos_)
     {
@@ -58,32 +61,47 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 
     if (useSeaIce_)
     {
-        // models_.push_back(seaice);
+        models_.push_back(seaice);
         SEAICE = ident++;
     }
 
-    if (models_.size() == 2)
-    {
-        stateView_ = std::make_shared<Combined_MultiVec>
-            (models_[0]->getState('V'),
-             models_[1]->getState('V') );
-        
-        solView_   = std::make_shared<Combined_MultiVec>
-            (models_[0]->getSolution('V'),
-             models_[1]->getSolution('V') );
-        
-        rhsView_   = std::make_shared<Combined_MultiVec>
-            (models_[0]->getRHS('V'),
-             models_[1]->getRHS('V'));
-    }
-    
-    // Let the sub-models know our continuation parameter
-    ocean_->setParName(parName_);
-    atmos_->setParName(parName_);
+    // default construction
+    stateView_ = std::make_shared<Combined_MultiVec>();
+    solView_   = std::make_shared<Combined_MultiVec>();
+    rhsView_   = std::make_shared<Combined_MultiVec>();
 
-    // Communicate surface landmask
-    LandMask mask = ocean_->getLandMask();
-    atmos_->setLandMask(mask);
+    for (auto &model: models_)
+    {
+        // create our collection of vector views
+        stateView_->AppendVector(model->getState('V'));
+        solView_->AppendVector(model->getSolution('V'));
+        rhsView_->AppendVector(model->getRHS('V'));
+        
+        // notify the models of the current continuation parameter
+        model->setParName(parName_);
+    }
+
+    // The landmask interface is still in the fortran code, so Ocean
+    // is responsible. In the case we don't have an ocean there is
+    // also no landmask. Communicate surface landmask
+    if (useOcean_)
+    {
+        LandMask mask = ocean_->getLandMask();
+        // Start at first model beyond Ocean
+        for (int i = 1; i < (int) models_.size(); ++i)
+            models_[i]->setLandMask(mask);
+    }
+
+    for (auto &modelRow: models_)
+        for (auto &modelCol: models_)
+        {
+            if (modelRow != modelCol)
+            {
+                std::cout << "row = " << modelRow->name() << " ";
+                std::cout << "col = " << modelCol->name() << std::endl;
+            }
+        }
+    
 
     C12_ = CouplingBlock<std::shared_ptr<Ocean>,
                          std::shared_ptr<AtmospherePar> >(ocean_, atmos_);

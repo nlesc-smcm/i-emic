@@ -3,15 +3,14 @@
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
+    RCP<Epetra_Comm>               comm;
+    
     std::shared_ptr<Ocean>         ocean;
     std::shared_ptr<AtmospherePar> atmos;
+    std::shared_ptr<SeaIce>        seaice;
     std::shared_ptr<CoupledModel>  coupledModel;
-    RCP<Teuchos::ParameterList> oceanParams;
-    RCP<Teuchos::ParameterList> atmosphereParams;
-    RCP<Teuchos::ParameterList> coupledmodelParams;
-    RCP<Teuchos::ParameterList> continuationParams;
-    RCP<Teuchos::ParameterList> jdqzParams;
-    RCP<Epetra_Comm>            comm;
+    std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
+    enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT, EIGEN};
 }
 
 //------------------------------------------------------------------
@@ -20,40 +19,41 @@ TEST(ParameterLists, Initialization)
     bool failed = false;
     try
     {
-        // Create parameter object for Ocean
-        oceanParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-        oceanParams->setName("Ocean parameters");
+        std::vector<string> files = {"ocean_params.xml",
+                                     "atmosphere_params.xml",
+                                     "dummy",
+                                     "coupledmodel_params.xml",
+                                     "continuation_params.xml",
+                                     "jdqz_params.xml"};
 
-        // Create parameter object for Atmosphere
-        atmosphereParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
-        atmosphereParams->setName("Atmosphere parameters");
+        std::vector<string> names = {"Ocean parameters",
+                                     "Atmosphere parameters",
+                                     "Sea ice parameters",
+                                     "CoupledModel parameters",
+                                     "Continuation parameters",
+                                     "JDQZ parameters"};
 
-        // Create parameter object for CoupledModel
-        coupledmodelParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("coupledmodel_params.xml", coupledmodelParams.ptr());
-        coupledmodelParams->setName("CoupledModel parameters");
-
-        // Create parameter object for Continuation
-        continuationParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
-        continuationParams->setName("Continuation parameters");
-
-        // Create parameter object for JDQZ
-        jdqzParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("jdqz_params.xml", jdqzParams.ptr());
-        jdqzParams->setName("JDQZ parameters");
-
+        for (int i = 0; i != (int) files.size(); ++i)
+        {
+            params.push_back(obtainParams(files[i], names[i]));
+        }
+        
         INFO('\n' << "Overwriting:");
-        // The Continuation and CoupledModel parameterlists overwrite settings
-        Utils::overwriteParameters(oceanParams,        coupledmodelParams);
-        Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
+        // Allow dominant parameterlists. Not that this trick uses a
+        // 'flattened' hierarchy. The Continuation and CoupledModel
+        // parameterlists are allowed to overwrite settings.
+        Utils::overwriteParameters(params[OCEAN],  params[COUPLED]);
+        Utils::overwriteParameters(params[ATMOS],  params[COUPLED]);
+        Utils::overwriteParameters(params[SEAICE], params[COUPLED]);
 
-        Utils::overwriteParameters(oceanParams,        continuationParams);
-        Utils::overwriteParameters(atmosphereParams,   continuationParams);
-        Utils::overwriteParameters(coupledmodelParams, continuationParams);
+
+        Utils::overwriteParameters(params[OCEAN],  params[CONT]);
+        Utils::overwriteParameters(params[ATMOS],  params[CONT]);
+        Utils::overwriteParameters(params[SEAICE], params[CONT]);
+
+        Utils::overwriteParameters(params[COUPLED], params[CONT]);
         INFO('\n');
+
     }
     catch (...)
     {
@@ -70,7 +70,7 @@ TEST(Ocean, Initialization)
     try
     {
         // Create parallel Ocean
-        ocean = std::make_shared<Ocean>(comm, oceanParams);
+        ocean = std::make_shared<Ocean>(comm, params[OCEAN]);
     }
     catch (...)
     {
@@ -88,7 +88,25 @@ TEST(Atmosphere, Initialization)
     try
     {
         // Create atmosphere
-        atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+        atmos = std::make_shared<AtmospherePar>(comm, params[ATMOS]);
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(SeaIce, Initialization)
+{
+    bool failed = false;
+    try
+    {
+        // Create atmosphere
+        seaice = std::make_shared<SeaIce>(comm, params[SEAICE]);
     }
     catch (...)
     {
@@ -106,7 +124,10 @@ TEST(CoupledModel, Initialization)
     try
     {
         // Create coupledmodel
-        coupledModel = std::make_shared<CoupledModel>(ocean,atmos,coupledmodelParams);
+        coupledModel = std::make_shared<CoupledModel>(ocean,
+                                                      atmos,
+                                                      seaice,
+                                                      params[COUPLED]);
     }
     catch (...)
     {
@@ -116,7 +137,6 @@ TEST(CoupledModel, Initialization)
 
     EXPECT_EQ(failed, false);
 }
-
 
 //------------------------------------------------------------------
 TEST(CoupledModel, Newton)
@@ -297,7 +317,7 @@ TEST(CoupledModel, Continuation)
         // Create continuation
         Continuation<std::shared_ptr<CoupledModel>,
                      Teuchos::RCP<Teuchos::ParameterList> >
-            continuation(coupledModel, continuationParams);
+            continuation(coupledModel, params[CONT]);
 
         // Test continuation
         continuation.test();
@@ -367,7 +387,7 @@ TEST(CoupledModel, JDQZSolve)
         JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>, 
                            ComplexVector<Combined_MultiVec> > > jdqz(matrix, z);
 
-        jdqz.setParameters(*jdqzParams);
+        jdqz.setParameters(*params[EIGEN]);
         jdqz.printParameters();
 
         jdqz.solve();

@@ -9,6 +9,7 @@ namespace // local unnamed namespace (similar to static in C)
 {	
 	std::shared_ptr<Ocean>         ocean;
 	std::shared_ptr<AtmospherePar> atmos;
+    std::shared_ptr<SeaIce>        seaice;
 	std::shared_ptr<CoupledModel>  coupledModel;
     RCP<Epetra_Comm>               comm;  
 
@@ -21,31 +22,37 @@ public:
 	// constructor
 	IEMIC()
 		{
-			// Create parameters 
-			RCP<Teuchos::ParameterList> oceanParams =
-				rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-	
-			RCP<Teuchos::ParameterList> atmosphereParams =
-				rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("atmosphere_params.xml",
-										atmosphereParams.ptr());
-		
-			RCP<Teuchos::ParameterList> coupledmodelParams =
-				rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("coupledmodel_params.xml",
-										coupledmodelParams.ptr());
+            // Create parameter object for Ocean
+            RCP<Teuchos::ParameterList> oceanParams =
+                obtainParams("ocean_params.xml", "Ocean parameters");
+
+            // Create parameter object for Atmosphere
+            RCP<Teuchos::ParameterList> atmosphereParams =
+                obtainParams("atmosphere_params.xml", "Atmosphere parameters"); 
+
+            // Create dummy parameter object for SeaIce
+            RCP<Teuchos::ParameterList> seaIceParams =
+                obtainParams("dummy", "Sea ice parameters"); 
+
+            // Create parameter object for CoupledModel
+            RCP<Teuchos::ParameterList> coupledmodelParams =
+                obtainParams("coupledmodel_params.xml", "CoupledModel parameters"); 
 
             INFO('\n' << "Overwriting:");
             // The Continuation and CoupledModel parameterlists overwrite settings
             Utils::overwriteParameters(oceanParams,        coupledmodelParams);
             Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
+            Utils::overwriteParameters(seaIceParams,       coupledmodelParams);
             
             // Create models
- 			ocean = std::make_shared<Ocean>(comm, oceanParams);
-			atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+ 			ocean  = std::make_shared<Ocean>(comm, oceanParams);
+			atmos  = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+            seaice = std::make_shared<SeaIce>(comm, seaIceParams);
 			coupledModel =
-				std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
+				std::make_shared<CoupledModel>(ocean,
+                                               atmos,
+                                               seaice,
+                                               coupledmodelParams);
 		}
     
 	// destructor

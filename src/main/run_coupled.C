@@ -41,46 +41,57 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     if (outFile == Teuchos::null)
         throw std::runtime_error("ERROR: Specify output streams");
 
-    // First we create a bunch of parameterlists
+    // First we create a bunch of parameterlists based on a bunch of
+    // xml files.
+    std::vector<string> files = {"ocean_params.xml",
+                                 "atmosphere_params.xml",
+                                 "dummy",
+                                 "coupledmodel_params.xml",
+                                 "continuation_params.xml",
+                                 "jdqz_params.xml"};
+
+    std::vector<string> names = {"Ocean parameters",
+                                 "Atmosphere parameters",
+                                 "Sea ice parameters",
+                                 "CoupledModel parameters",
+                                 "Continuation parameters",
+                                 "JDQZ parameters"};
     
-    // Create parameter object for Ocean
-    RCP<Teuchos::ParameterList> oceanParams =
-        obtainParams("ocean_params.xml", "Ocean parameters");
+    enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT, EIGEN };
 
-    // Create parameter object for Atmosphere
-    RCP<Teuchos::ParameterList> atmosphereParams =
-        obtainParams("atmosphere_params.xml", "Atmosphere parameters"); 
+    std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
 
-    // Create parameter object for CoupledModel
-    RCP<Teuchos::ParameterList> coupledmodelParams =
-        obtainParams("coupledmodel_params.xml", "CoupledModel parameters"); 
+    for (int i = 0; i != (int) files.size(); ++i)
+        params.push_back(obtainParams(files[i], names[i]));
 
-    // Create parameter object for Continuation
-    RCP<Teuchos::ParameterList> continuationParams =
-        obtainParams("continuation_params.xml", "Continuation parameters"); 
+    INFO('\n' << "Overwriting:");
+    // Allow dominant parameterlists. Not that this trick uses a
+    // 'flattened' hierarchy. The Continuation and CoupledModel
+    // parameterlists are allowed to overwrite settings.
+    Utils::overwriteParameters(params[OCEAN],  params[COUPLED]);
+    Utils::overwriteParameters(params[ATMOS],  params[COUPLED]);
+    Utils::overwriteParameters(params[SEAICE], params[COUPLED]);
 
-    // Create parameter object for JDQZ
-    RCP<Teuchos::ParameterList> jdqzParams =
-        obtainParams("jdqz_params.xml", "JDQZ parameters"); 
+    Utils::overwriteParameters(params[OCEAN],  params[CONT]);
+    Utils::overwriteParameters(params[ATMOS],  params[CONT]);
+    Utils::overwriteParameters(params[SEAICE], params[CONT]);
 
-    // The Continuation and CoupledModel parameterlists overwrite settings
-    Utils::overwriteParameters(oceanParams,        coupledmodelParams);
-    Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
-
-    Utils::overwriteParameters(oceanParams,        continuationParams);
-    Utils::overwriteParameters(atmosphereParams,   continuationParams);
-    Utils::overwriteParameters(coupledmodelParams, continuationParams);
+    Utils::overwriteParameters(params[COUPLED], params[CONT]);
     
     // Create parallelized Ocean object
-    std::shared_ptr<Ocean> ocean = std::make_shared<Ocean>(Comm, oceanParams);
+    std::shared_ptr<Ocean> ocean = std::make_shared<Ocean>(Comm, params[OCEAN]);
 
     // Create parallelized Atmosphere object
     std::shared_ptr<AtmospherePar> atmos =
-        std::make_shared<AtmospherePar>(Comm, atmosphereParams);
+        std::make_shared<AtmospherePar>(Comm, params[ATMOS]);
+
+    // Create parallelized Atmosphere object
+    std::shared_ptr<SeaIce> seaice =
+        std::make_shared<SeaIce>(Comm, params[SEAICE]);
 
     // Create CoupledModel
     std::shared_ptr<CoupledModel> coupledModel =
-        std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
+        std::make_shared<CoupledModel>(ocean, atmos, seaice, params[COUPLED]);
 
     // Create JDQZ generalized eigenvalue solver
     Combined_MultiVec t = *coupledModel->getSolution('C');
@@ -91,11 +102,11 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
                   ComplexVector<Combined_MultiVec> > matrix(coupledModel, z);
     
     std::shared_ptr<JDQZsolver> jdqz = std::make_shared<JDQZsolver>(matrix, z);
-    jdqz->setParameters(*jdqzParams);
+    jdqz->setParameters(*params[EIGEN]);
     
     // Create Continuation
     Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
-        continuation(coupledModel, continuationParams);
+        continuation(coupledModel, params[CONT]);
 
     // Couple JDQZ to continuation
     continuation.setEigenSolver(jdqz);

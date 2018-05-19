@@ -14,13 +14,14 @@
 
 //!------------------------------------------------------------------
 /*
-//! This class combines rcp's to multivectors and acts as a large
-//! vector with the correct traits to use with Belos. Vectors that are
-//! manipulated by the submodels differ in size and are therefore
-//! combined into a Combined_MultiVec.
+//! This class combines rcp's to Epetra_MultiVectors and acts as a
+//! large vector with the correct traits to use with Belos. The reason
+//! for such a class is that we need a unified vector interface for
+//! the collection of vectors that come from the submodels within the
+//! coupling.
 
-//! We require that the MultiVectors contain the same number of
-//! ordinary (Epetra) vectors.
+//! We require that the contained MultiVectors contain the same number
+//! of ordinary (Epetra) vectors.
 */
 //! ------------------------------------------------------------------
 
@@ -81,7 +82,7 @@ public:
     Combined_MultiVec(const Combined_MultiVec &source)
         :
         size_(source.Size()),
-        numVecs_(source.NumVecs())
+        numVecs_(source.NumVectors())
         {
             for (int i = 0; i != size_; ++i)
                 vectors_.push_back(
@@ -214,13 +215,38 @@ public:
     ~Combined_MultiVec()
         {}
 
+    //! Append a copy of an Epetra_MultiVector
+    void AppendVector(const Epetra_MultiVector &mv)
+        {
+            if (size_ >= 1)
+                assert(mv.NumVectors() == numVecs_);
+
+            // adjust datamembers
+            numVecs_ = mv.NumVectors();
+            size_++;
+            vectors_.push_back(
+                Teuchos::rcp(new Epetra_MultiVector(mv)) );
+        }
+
+    //! Append an rcp to an Epetra_MultiVector
+    void AppendVector(const Teuchos::RCP<Epetra_MultiVector> &mv)
+        {
+            if (size_ >= 1)
+                assert(mv->NumVectors() == numVecs_);
+
+            // adjust datamembers
+            numVecs_ = mv->NumVectors();
+            size_++;
+            vectors_.push_back(mv);
+        }
+
     //! Assignment operator, assigning the multivectors
     Combined_MultiVec &operator=(const Combined_MultiVec &source)
         {
             // Require that we have the same shape. This might be a
             // bit strong but Epetra_MultiVector asks the same.
             assert(size_    == source.Size());
-            assert(numVecs_ == source.NumVecs());
+            assert(numVecs_ == source.NumVectors());
 
             // Epetra_MultiVector checks whether the shapes of the
             // multivectors are equal.
@@ -293,9 +319,8 @@ public:
     int Size() const {return size_;}
 
     //! Get number of vectors in each multivector
-    int NumVecs() const {return numVecs_;}
-    int NumVectors() const {return numVecs_;
-    }
+    int NumVectors() const {return numVecs_;}
+    
     //! Get the global length of the combined multivector
     int GlobalLength() const
         {
@@ -367,7 +392,7 @@ public:
     int Dot(const Combined_MultiVec& A, std::vector<double> &b) const
         {
             assert(size_    == A.Size());
-            assert(numVecs_ == A.NumVecs());
+            assert(numVecs_ == A.NumVectors());
             assert(numVecs_ <= (int) b.size());
 
             // reset vector
@@ -594,7 +619,7 @@ namespace Belos
         static Teuchos::RCP<Combined_MultiVec>
         CloneCopy (const Combined_MultiVec &mv, const std::vector<int> &index)
             {
-                const int inNumVecs  = mv.NumVecs();
+                const int inNumVecs  = mv.NumVectors();
                 const int outNumVecs = index.size();
                 TEUCHOS_TEST_FOR_EXCEPTION(outNumVecs == 0, std::invalid_argument,
                                            "Belos::MultiVecTraits<double, Combined_MultiVec>::"
@@ -619,7 +644,7 @@ namespace Belos
         static Teuchos::RCP<Combined_MultiVec>
         CloneCopy (const Combined_MultiVec &mv, const Teuchos::Range1D &index)
             {
-                const int inNumVecs   = mv.NumVecs();
+                const int inNumVecs   = mv.NumVectors();
                 const int outNumVecs  = index.size();
                 const bool validRange = outNumVecs > 0 && index.lbound() >= 0 &&
                     index.ubound() < inNumVecs;
@@ -647,7 +672,7 @@ namespace Belos
         static Teuchos::RCP<Combined_MultiVec>
         CloneViewNonConst (Combined_MultiVec &mv, const std::vector<int> &index)
             {
-                const int inNumVecs  = mv.NumVecs();
+                const int inNumVecs  = mv.NumVectors();
                 const int outNumVecs = index.size();
                 //! Simple, inexpensive tests of the index vector.
 
@@ -675,7 +700,7 @@ namespace Belos
             {
                 const bool validRange = index.size() > 0 &&
                     index.lbound() >= 0 &&
-                    index.ubound() < mv.NumVecs();
+                    index.ubound() < mv.NumVectors();
 
                 if (! validRange)
                 {
@@ -687,10 +712,10 @@ namespace Belos
                                                os.str() << "Column index range must be nonempty.");
                     TEUCHOS_TEST_FOR_EXCEPTION(index.lbound() < 0, std::invalid_argument,
                                                os.str() << "Column index range must be nonnegative.");
-                    TEUCHOS_TEST_FOR_EXCEPTION(index.ubound() >= mv.NumVecs(),
+                    TEUCHOS_TEST_FOR_EXCEPTION(index.ubound() >= mv.NumVectors(),
                                                std::invalid_argument,
                                                os.str() << "Column index range must not exceed "
-                                               "number of vectors " << mv.NumVecs() << " in "
+                                               "number of vectors " << mv.NumVectors() << " in "
                                                "the input multivector.");
                 }
                 return Teuchos::rcp
@@ -700,7 +725,7 @@ namespace Belos
         static Teuchos::RCP<const Combined_MultiVec>
         CloneView(const Combined_MultiVec& mv, const std::vector<int>& index)
             {
-                const int inNumVecs  = mv.NumVecs();
+                const int inNumVecs  = mv.NumVectors();
                 const int outNumVecs = index.size();
 
                 //! Simple, inexpensive tests of the index vector.
@@ -728,7 +753,7 @@ namespace Belos
             {
                 const bool validRange = index.size() > 0 &&
                     index.lbound() >= 0 &&
-                    index.ubound() < mv.NumVecs();
+                    index.ubound() < mv.NumVectors();
                 if (! validRange)
                 {
                     std::ostringstream os;
@@ -739,17 +764,17 @@ namespace Belos
                                                os.str() << "Column index range must be nonempty.");
                     TEUCHOS_TEST_FOR_EXCEPTION(index.lbound() < 0, std::invalid_argument,
                                                os.str() << "Column index range must be nonnegative.");
-                    TEUCHOS_TEST_FOR_EXCEPTION(index.ubound() >= mv.NumVecs(),
+                    TEUCHOS_TEST_FOR_EXCEPTION(index.ubound() >= mv.NumVectors(),
                                                std::invalid_argument,
                                                os.str() << "Column index range must not exceed "
-                                               "number of vectors " << mv.NumVecs() << " in "
+                                               "number of vectors " << mv.NumVectors() << " in "
                                                "the input multivector.");
                 }
                 return Teuchos::rcp (new Combined_MultiVec(View, mv, index.lbound(), index.size()));
             }
 
         static int  GetVecLength     (const Combined_MultiVec& mv ) { return mv.GlobalLength(); }
-        static int  GetNumberVecs    (const Combined_MultiVec& mv ) { return mv.NumVecs(); }
+        static int  GetNumberVecs    (const Combined_MultiVec& mv ) { return mv.NumVectors(); }
         static bool HasConstantStride(const Combined_MultiVec& mv ) { return mv.ConstantStride(); }
 
         //! Epetra style (we should compare this with just a bunch of updates)
@@ -805,7 +830,7 @@ namespace Belos
             {
                 //! Check to make sure the vector has the same number of entries
                 //! as the multivector has columns.
-                const int numvecs = mv.NumVecs();
+                const int numvecs = mv.NumVectors();
 
                 TEUCHOS_TEST_FOR_EXCEPTION(
                     (int) alpha.size () != numvecs, EpetraMultiVecFailure,
@@ -869,7 +894,7 @@ namespace Belos
                 std::vector<double> &normvec,
                 NormType type = TwoNorm)
             {
-                if ((int) normvec.size() >= mv.NumVecs())
+                if ((int) normvec.size() >= mv.NumVectors())
                 {
                     int info = 0;
                     switch( type )
@@ -937,8 +962,8 @@ namespace Belos
                   const Teuchos::Range1D &index,
                   Combined_MultiVec &mv)
             {
-                const int numColsA  = A.NumVecs();
-                const int numColsMv = mv.NumVecs();
+                const int numColsA  = A.NumVectors();
+                const int numColsMv = mv.NumVectors();
 
                 //! 'index' indexes into mv; it's the index set of the target.
                 const bool validIndex = index.lbound() >= 0 && index.ubound() < numColsMv;

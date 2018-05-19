@@ -64,7 +64,6 @@ public:
 
     using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
     using PreconPtr = Teuchos::RCP<Ifpack_Preconditioner>;
-    using LandMask  = Utils::MaskStruct;
 
 protected:
 
@@ -184,6 +183,8 @@ public:
     //! destructor
     ~Ocean();
 
+    std::string const name() { return "Ocean"; }
+    
     //! Solve may optionally accept an rhs of VectorPointer type
     void solve(Teuchos::RCP<Epetra_MultiVector> rhs = Teuchos::null);
 
@@ -255,12 +256,12 @@ public:
     std::string const getParName() { return parName_; }
 
     //! Get current landmask
-    LandMask getLandMask(bool adjustMask = false);
+    Utils::MaskStruct getLandMask(bool adjustMask = false);
 
     //! Get global and local (distributed) landmask arrays.
     //! This routine also tests the obtained landmask and it will
     //! therefore also be set in THCM.
-    LandMask getLandMask(std::string const & fname, bool adjustMask = false);
+    Utils::MaskStruct getLandMask(std::string const & fname, bool adjustMask = false);
 
     //! Check the current mask
     bool isCurrentMask(std::string const &label)
@@ -269,14 +270,14 @@ public:
         }
 
     //! Set global and local (distributed) landmask arrays
-    void setLandMask(LandMask mask, bool global = false);
+    void setLandMask(Utils::MaskStruct const mask, bool global = false);
 
     //! Apply landmask
-    void applyLandMask(LandMask mask, double factor);
+    void applyLandMask(Utils::MaskStruct mask, double factor);
     void applyLandMask(VectorPtr x,
-                       LandMask mask, double factor);
+                       Utils::MaskStruct mask, double factor);
     void applyLandMask(VectorPtr x,
-                       LandMask maskA, LandMask maskB);
+                       Utils::MaskStruct maskA, Utils::MaskStruct maskB);
 
     //! Additional monitor for continuation
     bool monitor(){return false;}

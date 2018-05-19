@@ -6,14 +6,14 @@
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
+    RCP<Epetra_Comm>               comm;
+    
     std::shared_ptr<Ocean>         ocean;
     std::shared_ptr<AtmospherePar> atmos;
+    std::shared_ptr<SeaIce>        seaice;
     std::shared_ptr<CoupledModel>  coupledModel;
-    RCP<Teuchos::ParameterList>    oceanParams;
-    RCP<Teuchos::ParameterList>    atmosphereParams;
-    RCP<Teuchos::ParameterList>    coupledmodelParams;
-    RCP<Teuchos::ParameterList>    continuationParams;
-    RCP<Epetra_Comm>               comm;
+    std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
+    enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT};
 }
 
 //------------------------------------------------------------------
@@ -22,35 +22,37 @@ TEST(ParameterLists, Initialization)
     bool failed = false;
     try
     {
-        // Create parameter object for Ocean
-        oceanParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-        oceanParams->setName("Ocean parameters");
+        std::vector<string> files = {"ocean_params.xml",
+                                     "atmosphere_params.xml",
+                                     "dummy",
+                                     "coupledmodel_params.xml",
+                                     "continuation_params.xml"};
 
-        // Create parameter object for Atmosphere
-        atmosphereParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
-        atmosphereParams->setName("Atmosphere parameters");
+        std::vector<string> names = {"Ocean parameters",
+                                     "Atmosphere parameters",
+                                     "Sea ice parameters",
+                                     "CoupledModel parameters",
+                                     "Continuation parameters"};
 
-        // Create parameter object for CoupledModel
-        coupledmodelParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("coupledmodel_params.xml", coupledmodelParams.ptr());
-        coupledmodelParams->setName("CoupledModel parameters");
-
-        // Create parameter object for Continuation
-        continuationParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
-        continuationParams->setName("Continuation parameters");
+        for (int i = 0; i != (int) files.size(); ++i)
+            params.push_back(obtainParams(files[i], names[i]));
 
         INFO('\n' << "Overwriting:");
-        // The Continuation and CoupledModel parameterlists overwrite settings
-        Utils::overwriteParameters(oceanParams,        coupledmodelParams);
-        Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
+        // Allow dominant parameterlists. Not that this trick uses a
+        // 'flattened' hierarchy. The Continuation and CoupledModel
+        // parameterlists are allowed to overwrite settings.
+        Utils::overwriteParameters(params[OCEAN],  params[COUPLED]);
+        Utils::overwriteParameters(params[ATMOS],  params[COUPLED]);
+        Utils::overwriteParameters(params[SEAICE], params[COUPLED]);
 
-        Utils::overwriteParameters(oceanParams,        continuationParams);
-        Utils::overwriteParameters(atmosphereParams,   continuationParams);
-        Utils::overwriteParameters(coupledmodelParams, continuationParams);
+
+        Utils::overwriteParameters(params[OCEAN],  params[CONT]);
+        Utils::overwriteParameters(params[ATMOS],  params[CONT]);
+        Utils::overwriteParameters(params[SEAICE], params[CONT]);
+
+        Utils::overwriteParameters(params[COUPLED], params[CONT]);
         INFO('\n');
+
     }
     catch (...)
     {
@@ -67,7 +69,7 @@ TEST(Ocean, Initialization)
     try
     {
         // Create parallel Ocean
-        ocean = std::make_shared<Ocean>(comm, oceanParams);
+        ocean = std::make_shared<Ocean>(comm, params[OCEAN]);
     }
     catch (...)
     {
@@ -85,7 +87,25 @@ TEST(Atmosphere, Initialization)
     try
     {
         // Create atmosphere
-        atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+        atmos = std::make_shared<AtmospherePar>(comm, params[ATMOS]);
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(SeaIce, Initialization)
+{
+    bool failed = false;
+    try
+    {
+        // Create atmosphere
+        seaice = std::make_shared<SeaIce>(comm, params[SEAICE]);
     }
     catch (...)
     {
@@ -103,7 +123,10 @@ TEST(CoupledModel, Initialization)
     try
     {
         // Create coupledmodel
-        coupledModel = std::make_shared<CoupledModel>(ocean,atmos,coupledmodelParams);
+        coupledModel = std::make_shared<CoupledModel>(ocean,
+                                                      atmos,
+                                                      seaice,
+                                                      params[COUPLED]);
     }
     catch (...)
     {
@@ -137,7 +160,7 @@ TEST(CoupledModel, inspectState)
         stateL  = state->MyLength();
 
         INFO( " local 1: " << firstL << " 2: " << secondL
-             << " 1+2: " << stateL );
+              << " 1+2: " << stateL );
         EXPECT_EQ(firstL + secondL, stateL);
 
         double firstNrm = Utils::norm((*state)(0));
@@ -201,7 +224,7 @@ TEST(CoupledModel, MassMatrix)
     // auxiliary integral equations 
     if (atmosB->GlobalLength() > ATMOS_NUN_ * m * n)
     {
-        int aux = atmosphereParams->get("Auxiliary unknowns", 0);
+        int aux = params[ATMOS]->get("Auxiliary unknowns", 0);
         EXPECT_NE(aux, 0);
         for (int i = 1; i <= aux; ++i)
         {
@@ -460,7 +483,7 @@ TEST(CoupledModel, applyMatrix)
 
                 // First check if we have auxiliary unknowns:
                 int aux;
-                aux = atmosphereParams->get("Auxiliary unknowns", 0);
+                aux = params[ATMOS]->get("Auxiliary unknowns", 0);
                 
                 if (atmosVec->GlobalLength() > ATMOS_NUN_ * m * n * l)
                 {
@@ -567,7 +590,7 @@ TEST(CoupledModel, Precipitation)
 
     }
 
-        // EXPECT_EQ(
+    // EXPECT_EQ(
     
     
 }
@@ -816,6 +839,7 @@ int main(int argc, char **argv)
     // Get rid of possibly parallel objects for a clean ending.
     ocean        = std::shared_ptr<Ocean>();
     atmos        = std::shared_ptr<AtmospherePar>();
+    seaice       = std::shared_ptr<SeaIce>();
     coupledModel = std::shared_ptr<CoupledModel>();
 
     comm->Barrier();

@@ -225,6 +225,8 @@ public:
     //! destructor
     ~SeaIce() {};
 
+    std::string const name() { return "Sea ice"; }
+
     //! compute right hand side
     void computeRHS();
 
@@ -259,6 +261,12 @@ public:
         { return Utils::getVector(mode, sol_); }
     VectorPtr getRHS(char mode = 'C')
         { return Utils::getVector(mode, rhs_); }
+
+
+    void setParName(std::string const &parName) {}
+    
+    void setLandMask(Utils::MaskStruct const &mask) {}    
+
 
 
 private:

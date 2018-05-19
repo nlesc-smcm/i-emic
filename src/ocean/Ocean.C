@@ -438,15 +438,17 @@ void Ocean::inspectVector(Teuchos::RCP<Epetra_Vector> x)
 }
 
 //====================================================================
-Ocean::LandMask Ocean::getLandMask(bool adjustMask)
+Utils::MaskStruct Ocean::getLandMask(bool adjustMask)
 {
     return getLandMask("current", adjustMask);
 }
 
 //====================================================================
-Ocean::LandMask Ocean::getLandMask(std::string const &fname, bool adjustMask)
+//--> this is awkward and should be factorized. Why doesn't
+//setLandMask set the other struct members if they are available?
+Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
 {
-    LandMask mask;
+    Utils::MaskStruct mask;
 
     // Load the landmask fname
     mask.local = THCM::Instance().getLandMask(fname);
@@ -562,7 +564,10 @@ Ocean::LandMask Ocean::getLandMask(std::string const &fname, bool adjustMask)
 }
 
 //===================================================================
-void Ocean::setLandMask(LandMask mask, bool global)
+//--> this is awkward and should be factorized. Why doesn't
+//setLandMask create the other mask struct members if they are
+//available?
+void Ocean::setLandMask(Utils::MaskStruct const mask, bool global)
 {
     INFO("Ocean: set landmask " << mask.label << "...");
     THCM::Instance().setLandMask(mask.local);
@@ -575,7 +580,7 @@ void Ocean::setLandMask(LandMask mask, bool global)
 }
 
 //==================================================================
-void Ocean::applyLandMask(LandMask mask, double factor)
+void Ocean::applyLandMask(Utils::MaskStruct mask, double factor)
 {
 
     int nmask = mask.global->size();
@@ -606,7 +611,7 @@ void Ocean::applyLandMask(LandMask mask, double factor)
 
 //==================================================================
 void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
-                          LandMask mask, double factor)
+                          Utils::MaskStruct mask, double factor)
 {
     int nmask = mask.global->size();
     assert(nmask == (M_+2)*(N_+2)*(L_+2));
@@ -636,7 +641,8 @@ void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
 
 //==================================================================
 void Ocean::applyLandMask(Teuchos::RCP<Epetra_Vector> x,
-                          LandMask maskA, LandMask maskB)
+                          Utils::MaskStruct maskA,
+                          Utils::MaskStruct maskB)
 {
     INFO("Ocean: applyLandMask...");
     int nmask = maskA.global->size();

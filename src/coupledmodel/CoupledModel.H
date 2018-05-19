@@ -57,6 +57,9 @@ private:
     //! submodel identifiers
     int OCEAN, ATMOS, SEAICE;
 
+    //! vector containing pointers to the different submodels
+    std::vector<std::shared_ptr<Model> > models_;
+    
     //! Trilinos-based parallel implicit ocean model (Trilinos-THCM)
     std::shared_ptr<Ocean>  ocean_;
 
@@ -90,6 +93,9 @@ private:
     //!   'D': diagonal      (do not incorporate coupling blocks in prec)
     char precScheme_;
 
+    //! select whether we should use the ocean model in the coupling
+    bool useOcean_;
+
     //! select whether we should use the atmosphere model in the coupling
     bool useAtmos_;
 
@@ -105,6 +111,11 @@ private:
     //! Trilinos MPI-like communicator
     Teuchos::RCP<Epetra_Comm> comm_;
 
+    //! Coupling matrix containing off-diagonal CouplingBlocks
+    std::vector<std::vector<
+                    CouplingBlock<std::shared_ptr<Model>,
+                                  std::shared_ptr<Model> > > > C_;
+    
     //! Coupling block atmos -> ocean
     CouplingBlock<std::shared_ptr<Ocean>,
                   std::shared_ptr<AtmospherePar> > C12_;
@@ -129,7 +140,6 @@ private:
     CouplingBlock<std::shared_ptr<SeaIce>,
                   std::shared_ptr<AtmospherePar> > C32_;
 
-
     Teuchos::RCP
     <Belos::LinearProblem
      <double, Combined_MultiVec, BelosOp<CoupledModel> > > problem_;
@@ -141,6 +151,7 @@ private:
 public:
     CoupledModel(std::shared_ptr<Ocean> ocean,
                  std::shared_ptr<AtmospherePar> atmos,
+                 std::shared_ptr<SeaIce> seaice,
                  Teuchos::RCP<Teuchos::ParameterList> params);
 
     ~CoupledModel() { INFO("CoupledModel destructor"); }

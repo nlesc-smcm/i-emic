@@ -183,6 +183,10 @@ Teuchos::RCP<Teuchos::ParameterList> obtainParams(std::string const &str,
                 " not found, continuing with defaults at your own risk!",
                 __FILE__, __LINE__);
     }
+    else if (str == "dummy")
+    {
+        INFO("Continuing with dummy " << name);
+    }
     else
     {
         updateParametersFromXmlFile(str.c_str(), pars.ptr());
