@@ -237,6 +237,9 @@ public:
     //! Receive ocean data
     void synchronize(std::shared_ptr<Ocean> ocean);
 
+    //! Downcast to specific models
+    void synchronize(std::shared_ptr<Model> model);
+
     void setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst);
 
     Teuchos::RCP<Epetra_Vector> getLocalOceanT() {return localSST_; }

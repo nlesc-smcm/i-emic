@@ -329,6 +329,9 @@ public:
     //! This routine is called from a CoupledModel object
     void synchronize(std::shared_ptr<AtmospherePar> atmos);
 
+    //! Here we downcast to a specific model
+    void synchronize(std::shared_ptr<Model> model);
+    
     //! Obtain atmos temp data for debugging
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
 
@@ -353,20 +356,7 @@ public:
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
 
     //! Here we downcast to a specific model and call the correct getBlock routine
-    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model)
-        {
-            auto atmos  = std::dynamic_pointer_cast<AtmospherePar>(model);
-            auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
-            if (atmos)
-                return getBlock(atmos);
-            else if (seaice)
-                return getBlock(seaice);
-            else
-            {
-                ERROR("Ocean: downcasting failed", __FILE__, __LINE__);
-                return std::shared_ptr<Utils::CRSMat>();
-            }
-        }
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model);
 
     // Obtain interface (surface) temperature
     Teuchos::RCP<Epetra_Vector> interfaceT();

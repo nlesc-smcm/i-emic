@@ -35,6 +35,8 @@ public:
     virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model) = 0;
 
     virtual int dof() = 0;
+
+    virtual void synchronize(std::shared_ptr<Model> model) = 0;
 };
 
 #endif

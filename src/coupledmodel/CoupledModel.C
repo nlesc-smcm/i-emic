@@ -105,30 +105,26 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
         {
             if (models_[i] != models_[j])
             {
-                std::cout << "row = " << i << " " << models_[i]->name() << ",  ";
-                std::cout << "col = " << j << " " << models_[j]->name() << std::endl;
-                // C_[i][j] = Block(models_[i], models_[j]);
+                C_[i][j] = Block(models_[i], models_[j]);
+                INFO("Created CouplingBlock: " << C_[i][j].name());
             }
         }
-
-    auto atmosPtr = std::dynamic_pointer_cast<Ocean>(models_[ATMOS]);
-    std::cout << atmosPtr << std::endl;
-    
-    getchar();
-    
-    C12_ = CouplingBlock<std::shared_ptr<Ocean>,
-                         std::shared_ptr<AtmospherePar> >(ocean_, atmos_);
-
-    C21_ = CouplingBlock<std::shared_ptr<AtmospherePar>,
-                         std::shared_ptr<Ocean> >(atmos_, ocean_);
-
+   
     // Output parameters
     INFO("\nCoupledModel parameters:");
     INFO(*params);
     INFO("\n--------------------------------------");
-    INFO("Ocean couplings: coupled_T = " << ocean_->getCoupledT() );
-    INFO("                 coupled_S = " << ocean_->getCoupledS() );
+    auto oceanPtr = std::dynamic_pointer_cast<Ocean>(models_[OCEAN]);
+    if (oceanPtr)
+    {
+    INFO("Ocean couplings: coupled_T = " << oceanPtr->getCoupledT() );
+    INFO("                 coupled_S = " << oceanPtr->getCoupledS() );
     INFO("--------------------------------------\n");
+    }
+    else
+    {
+        ERROR("CoupledModel downcasting failed", __FILE__, __LINE__);
+    }
 
     // Synchronize state
     synchronize();
@@ -145,11 +141,12 @@ void CoupledModel::synchronize()
     
     syncCtr_++; // Keep track of synchronizations
 
-    // Set ocean data in atmosphere
-    atmos_->synchronize(ocean_);
-
-    // Set atmosphere data in the ocean
-    ocean_->synchronize(atmos_);
+    for (size_t i = 0; i != models_.size(); ++i)
+        for (size_t j = 0; j != models_.size(); ++j)
+        {
+            if (models_[i] != models_[j])
+                models_[i]->synchronize(models_[j]);
+        }
 
     TIMER_STOP("CoupledModel: synchronize...");
 }
@@ -167,8 +164,8 @@ void CoupledModel::computeJacobian()
 
     if (solvingScheme_ == 'C')
     {
-        C12_.computeBlock();   // Recompute Ocean <- Atmos dependence
-        C21_.computeBlock();   // Recompute Atmos <- Ocean dependence
+        C_[OCEAN][ATMOS].computeBlock();   // Recompute Ocean <- Atmos dependence
+        C_[ATMOS][OCEAN].computeBlock();   // Recompute Atmos <- Ocean dependence
     }
 
     TIMER_STOP("CoupledModel: compute Jacobian");
@@ -338,8 +335,8 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &ou
         z.PutScalar(0.0);
 
         // Apply off-diagonal coupling blocks
-        C12_.applyMatrix(*v(ATMOS), *z(OCEAN));
-        C21_.applyMatrix(*v(OCEAN),  *z(ATMOS));
+        C_[OCEAN][ATMOS].applyMatrix(*v(ATMOS), *z(OCEAN));
+        C_[ATMOS][OCEAN].applyMatrix(*v(OCEAN), *z(ATMOS));
 
         out.Update(1.0, z, 1.0);
     }
@@ -379,13 +376,13 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         tmp.PutScalar(0.0);
 
         atmos_->applyPrecon(*x(ATMOS), *z(ATMOS)); //  z2   = inv(M2)*x2
-        C12_.applyMatrix(*z(ATMOS), *tmp(OCEAN));   //  tmp1 = C12*x2
+        C_[OCEAN][ATMOS].applyMatrix(*z(ATMOS), *tmp(OCEAN));   //  tmp1 = C12*x2
         tmp(OCEAN)->Update(1.0, *x(OCEAN), -1.0);    //  tmp1 = x1 - C12*x2
         ocean_->applyPrecon(*tmp(OCEAN), *z(OCEAN)); //  z1   = inv(M1)*tmp1
 
         if (precScheme_ == 'C')
         {
-            C21_.applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*x1
+            C_[ATMOS][OCEAN].applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*x1
             tmp(ATMOS)->Update(1.0, *x(ATMOS), 1.0);
             atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS));
         }
@@ -396,16 +393,16 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         Combined_MultiVec tmp(x);
         tmp.PutScalar(0.0);
         ocean_->applyPrecon(*x(OCEAN), *z(OCEAN));     // z1   = inv(M1) * x1
-        C21_.applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*z1
+        C_[ATMOS][OCEAN].applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*z1
         tmp(ATMOS)->Update(1.0, *x(ATMOS), -1.0);    // tmp2 = x2 - C21*z1
         atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS)); // z2   = inv(M2)*tmp2 
 
         if (precScheme_ == 'G')
         {
-            C12_.applyMatrix(*z(ATMOS), *tmp(OCEAN));     // tmp1 = C12*z2
+            C_[OCEAN][ATMOS].applyMatrix(*z(ATMOS), *tmp(OCEAN));     // tmp1 = C12*z2
             tmp(OCEAN)->Update(1.0, *x(OCEAN), 1.0);       // tmp1 = x1 + C12*z2
             ocean_->applyPrecon(*tmp(OCEAN), *z(OCEAN));   //   z1 = inv(M1) * tmp1
-            C21_.applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*z1
+            C_[ATMOS][OCEAN].applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*z1
             tmp(ATMOS)->Update(1.0, *x(ATMOS), -1.0);    // tmp2 = x2 - C21*z1
             atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS)); // z2   = inv(M2)*tmp2 
         }        
@@ -539,6 +536,6 @@ void CoupledModel::dumpBlocks()
 {
     DUMPMATLAB("C11", *(ocean_->getJacobian()));
     DUMPMATLAB("C22", *(atmos_->getJacobian()));
-    DUMPMATLAB("C12", *(C12_.getBlock()));
-    DUMPMATLAB("C21", *(C21_.getBlock()));
+    DUMPMATLAB("C12", *(C_[OCEAN][ATMOS].getBlock()));
+    DUMPMATLAB("C21", *(C_[ATMOS][OCEAN].getBlock()));
 }

@@ -570,6 +570,21 @@ void AtmospherePar::synchronize(std::shared_ptr<Ocean> ocean)
 }
 
 //==================================================================
+void AtmospherePar::synchronize(std::shared_ptr<Model> model)
+{
+    auto ocean  = std::dynamic_pointer_cast<Ocean>(model);
+    auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
+    if (ocean)
+        return synchronize(ocean);
+    else if (seaice)
+        return synchronize(seaice);
+    else
+    {
+        ERROR("Atmosphere: downcasting failed", __FILE__, __LINE__);
+    }
+}
+
+//==================================================================
 void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
 {
     // Replace map if necessary

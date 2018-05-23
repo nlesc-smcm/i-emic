@@ -273,6 +273,8 @@ public:
 
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model)
         { return std::shared_ptr<Utils::CRSMat>(); }
+    
+    void synchronize(std::shared_ptr<Model> model) {}
 
     int dof() { return dof_; }
 

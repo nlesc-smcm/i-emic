@@ -23,12 +23,17 @@ class CouplingBlock
     Teuchos::RCP<TRIOS::Domain> modelRowDomain_;
     Teuchos::RCP<TRIOS::Domain> modelColDomain_;
 
+    std::string name_;
+
 public:
 
     //------------------------------------------------------------------
     // Default constructor
-    CouplingBlock() {}
-
+    CouplingBlock()
+        :
+        name_("None")
+        {}
+    
     //------------------------------------------------------------------
     // Constructor
     CouplingBlock(ModelRow modelRow, ModelCol modelCol)
@@ -47,6 +52,11 @@ public:
             
             // initial compute
             computeBlock();
+
+            // create name
+            std::stringstream ss;
+            ss << modelRow->name() << "-" << modelCol->name();
+            name_ = ss.str();
         }
 
     //------------------------------------------------------------------
@@ -138,10 +148,7 @@ public:
 
     //------------------------------------------------------------------
     // Destructor
-    ~CouplingBlock()
-        {
-            INFO("CouplingBlock destructor");
-        }
+    ~CouplingBlock() {}
 
     //------------------------------------------------------------------
     void applyMatrix(Epetra_MultiVector const &in, Epetra_MultiVector &out)
@@ -155,7 +162,9 @@ public:
 
     //------------------------------------------------------------------
     // Get RCP to block
-    Teuchos::RCP<Epetra_CrsMatrix> getBlock() { return block_; } 
+    Teuchos::RCP<Epetra_CrsMatrix> getBlock() { return block_; }
+
+    std::string const name() { return name_; }
         
 };
 
