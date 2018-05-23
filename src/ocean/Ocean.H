@@ -65,6 +65,7 @@ public:
 
     using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
     using PreconPtr = Teuchos::RCP<Ifpack_Preconditioner>;
+    using LandMask  = Utils::MaskStruct;
 
 protected:
 
@@ -233,7 +234,8 @@ public:
     void recomputePreconditioner() { recompPreconditioner_ = true; }
 
     //! Build preconditioner
-    void buildPreconditioner(bool forceInit = false);
+    void buildPreconditioner(bool forceInit);
+    void buildPreconditioner() { buildPreconditioner(false); }
 
     //! Build mass matrix
     void buildMassMat();
@@ -282,7 +284,7 @@ public:
             setLandMask(mask, false);
         }
     
-    void setLandMask(Utils::MaskStruct const &mask, bool global = false);
+    void setLandMask(Utils::MaskStruct const &mask, bool global);
 
     //! Apply landmask
     void applyLandMask(Utils::MaskStruct mask, double factor);

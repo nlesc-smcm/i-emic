@@ -25,13 +25,16 @@ class CouplingBlock
 
     std::string name_;
 
+    bool initialized_, computed_;
+
 public:
 
     //------------------------------------------------------------------
     // Default constructor
     CouplingBlock()
         :
-        name_("None")
+        name_("None"),
+        initialized_(false)
         {}
     
     //------------------------------------------------------------------
@@ -50,18 +53,24 @@ public:
                                          *modelRowDomain_->GetSolveMap(),
                                          *modelColDomain_->GetColMap(), 0) );
             
-            // initial compute
+
+            initialized_ = true;
+
+            // compute the block
             computeBlock();
 
             // create name
             std::stringstream ss;
             ss << modelRow->name() << "-" << modelCol->name();
             name_ = ss.str();
+
+
         }
 
     //------------------------------------------------------------------
     void computeBlock()
         {
+            assert(initialized_);
             TIMER_START("CouplingBlock: compute block");
 
             // obtain 0-based global CRS matrix from modelRow
@@ -143,6 +152,7 @@ public:
                            *modelColDomain_->GetSolveMap(),
                            *modelRowDomain_->GetSolveMap()));
 
+            computed_ = true;
             TIMER_STOP("CouplingBlock: compute block");
         }
 
@@ -153,6 +163,8 @@ public:
     //------------------------------------------------------------------
     void applyMatrix(Epetra_MultiVector const &in, Epetra_MultiVector &out)
         {
+            assert(initialized_ && computed_);
+            
             TIMER_START("CouplingBlock: apply matrix...");
             assert(block_->DomainMap().SameAs(in.Map()));
             assert(block_->RangeMap().SameAs(out.Map()));
@@ -162,7 +174,11 @@ public:
 
     //------------------------------------------------------------------
     // Get RCP to block
-    Teuchos::RCP<Epetra_CrsMatrix> getBlock() { return block_; }
+    Teuchos::RCP<Epetra_CrsMatrix> getBlock()
+        {
+            assert(initialized_ && computed_);
+            return block_;
+        }
 
     std::string const name() { return name_; }
         

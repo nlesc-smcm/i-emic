@@ -227,8 +227,8 @@ public:
     //! build mass matrix
     void buildMassMat();
     
-    //! initialize preconditioner
-    void initializePrec();
+    //! initialize pr    
+    void buildPreconditioner();
 
     void solve(Teuchos::RCP<Epetra_MultiVector> const &b);
 

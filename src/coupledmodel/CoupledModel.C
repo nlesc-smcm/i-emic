@@ -20,6 +20,9 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                            std::shared_ptr<SeaIce> seaice,
                            Teuchos::RCP<Teuchos::ParameterList> params)
     :
+    OCEAN(-1),
+    ATMOS(-1),
+    SEAICE(-1),
     ocean_(ocean),
     atmos_(atmos),
     seaice_(seaice),
@@ -103,7 +106,7 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
     for (size_t i = 0; i != models_.size(); ++i)
         for (size_t j = 0; j != models_.size(); ++j)
         {
-            if (models_[i] != models_[j])
+            if (i != j) // only off-diagonal blocks
             {
                 C_[i][j] = Block(models_[i], models_[j]);
                 INFO("Created CouplingBlock: " << C_[i][j].name());
@@ -113,17 +116,23 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
     // Output parameters
     INFO("\nCoupledModel parameters:");
     INFO(*params);
-    INFO("\n--------------------------------------");
-    auto oceanPtr = std::dynamic_pointer_cast<Ocean>(models_[OCEAN]);
-    if (oceanPtr)
+    INFO("\n");
+
+    // -->We could ask some model specific information here, but that
+    // -->would need dynamic_pointer_casts...
+    if (useOcean_)
     {
-    INFO("Ocean couplings: coupled_T = " << oceanPtr->getCoupledT() );
-    INFO("                 coupled_S = " << oceanPtr->getCoupledS() );
-    INFO("--------------------------------------\n");
-    }
-    else
-    {
-        ERROR("CoupledModel downcasting failed", __FILE__, __LINE__);
+        auto oceanPtr = std::dynamic_pointer_cast<Ocean>(models_[OCEAN]);
+        if (oceanPtr)
+        {
+            INFO("Ocean couplings: coupled_T = " << oceanPtr->getCoupledT() );
+            INFO("                 coupled_S = " << oceanPtr->getCoupledS() );
+            INFO("--------------------------------------\n");
+        }
+        else
+        {
+            ERROR("CoupledModel downcasting failed", __FILE__, __LINE__);
+        }
     }
 
     // Synchronize state
@@ -147,7 +156,7 @@ void CoupledModel::synchronize()
             if (models_[i] != models_[j])
                 models_[i]->synchronize(models_[j]);
         }
-
+    
     TIMER_STOP("CoupledModel: synchronize...");
 }
 
@@ -159,13 +168,17 @@ void CoupledModel::computeJacobian()
     // Synchronize the states
     if (solvingScheme_ != 'D') { synchronize(); }
 
-    ocean_->computeJacobian();  // Ocean
-    atmos_->computeJacobian();  // Atmosphere
-
-    if (solvingScheme_ == 'C')
+    for (size_t i = 0; i != models_.size(); ++i)
     {
-        C_[OCEAN][ATMOS].computeBlock();   // Recompute Ocean <- Atmos dependence
-        C_[ATMOS][OCEAN].computeBlock();   // Recompute Atmos <- Ocean dependence
+        models_[i]->computeJacobian();  // Ocean
+        if (solvingScheme_ == 'C')
+        {
+            for (size_t j = 0; j != models_.size(); ++j)
+            {
+                if (i != j)
+                    C_[i][j].computeBlock();
+            }
+        }
     }
 
     TIMER_STOP("CoupledModel: compute Jacobian");
@@ -179,8 +192,8 @@ void CoupledModel::computeRHS()
     // Synchronize the states in the fully coupled case
     if (solvingScheme_ != 'D') { synchronize(); }
 
-    ocean_->computeRHS();   // Ocean
-    atmos_->computeRHS();   // Atmosphere/
+    for (auto &model: models_)
+        model->computeRHS();
 
     TIMER_STOP("CoupledModel compute RHS");
 }
@@ -255,7 +268,7 @@ void CoupledModel::initializeFGMRES()
     belosSolver_ =
         Teuchos::rcp(new Belos::BlockGmresSolMgr
                      <double, Combined_MultiVec, BelosOp<CoupledModel> >
-                     (problem_, belosParamList));
+                     (problem_, belosParamList) );
 
     solverInitialized_ = true;
 
@@ -281,7 +294,8 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
     if (!solverInitialized_)
         initializeFGMRES();
 
-    ocean_->buildPreconditioner();
+    for (auto &model: models_)
+        model->buildPreconditioner();
 
     Teuchos::RCP<Combined_MultiVec> solV =
         Teuchos::rcp(&(*solView_), false);
@@ -325,20 +339,29 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &ou
     out.PutScalar(0.0);
 
     // Apply the diagonal blocks
-    ocean_->applyMatrix(*v(OCEAN),  *out(OCEAN));
-    atmos_->applyMatrix(*v(ATMOS), *out(ATMOS));
+    for (size_t i = 0; i != models_.size(); ++i)
+        models_[i]->applyMatrix(*v(i), *out(i));
 
     if (solvingScheme_ == 'C')
     {
         // Obtain temporary vector
         Combined_MultiVec z(v);
-        z.PutScalar(0.0);
-
+        
         // Apply off-diagonal coupling blocks
-        C_[OCEAN][ATMOS].applyMatrix(*v(ATMOS), *z(OCEAN));
-        C_[ATMOS][OCEAN].applyMatrix(*v(OCEAN), *z(ATMOS));
+        for (size_t j = 0; j != models_.size(); ++j)
+        {
+            // reset z
+            z.PutScalar(0.0);
 
-        out.Update(1.0, z, 1.0);
+            // fill z
+            for (size_t i = 0; i != models_.size(); ++i)
+            {
+                if (i != j)
+                    C_[i][j].applyMatrix(*v(j), *z(i));
+            }
+            
+            out.Update(1.0, z, 1.0);
+        }            
     }
     TIMER_STOP("CoupledModel: apply matrix...");
 }
@@ -352,8 +375,8 @@ void CoupledModel::applyMassMat(Combined_MultiVec const &v, Combined_MultiVec &o
     out.PutScalar(0.0);
 
     // Apply mass matrix
-    ocean_->applyMassMat(*v(OCEAN), *out(OCEAN));
-    atmos_->applyMassMat(*v(ATMOS), *out(ATMOS));
+    for (size_t i = 0; i != models_.size(); ++i)
+        models_[i]->applyMassMat(*v(i), *out(i));
     
     TIMER_STOP("CoupledModel: apply mass matrix...");    
 }

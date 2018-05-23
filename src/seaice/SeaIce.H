@@ -237,7 +237,7 @@ public:
                      Epetra_MultiVector &out);
 
     void applyMassMat(Epetra_MultiVector const &in,
-                      Epetra_MultiVector &out);
+                      Epetra_MultiVector &out) {}
 
     void applyPrecon(Epetra_MultiVector &in,
                      Epetra_MultiVector &out);
@@ -262,7 +262,6 @@ public:
     VectorPtr getRHS(char mode = 'C')
         { return Utils::getVector(mode, rhs_); }
 
-
     void setParName(std::string const &parName) {}
 
     Utils::MaskStruct getLandMask() {return Utils::MaskStruct();}
@@ -277,6 +276,8 @@ public:
     void synchronize(std::shared_ptr<Model> model) {}
 
     int dof() { return dof_; }
+
+    void buildPreconditioner() {}
 
 private:
     //! create x_ and y_

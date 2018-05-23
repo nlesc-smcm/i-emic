@@ -1,11 +1,14 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include <Teuchos_RCP.hpp>
-#include <TRIOS_Domain.H>
 #include "Utils.H"
 
 // forward declarations
+namespace Teuchos { template<class T> class RCP; }
+
+namespace TRIOS { class Domain; }
+
+class Epetra_MultiVector;
 class Epetra_Vector;
 
 class Model
@@ -37,6 +40,13 @@ public:
     virtual int dof() = 0;
 
     virtual void synchronize(std::shared_ptr<Model> model) = 0;
+
+    virtual void computeJacobian() = 0;
+
+    virtual void buildPreconditioner() = 0;
+
+    virtual void applyMatrix(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
+    virtual void applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
 };
 
 #endif

@@ -1020,17 +1020,24 @@ void AtmospherePar::applyMassMat(Epetra_MultiVector const &v,
 }
  
 //==================================================================
-void AtmospherePar::initializePrec()
+void AtmospherePar::buildPreconditioner()
 {
+    if (precInitialized_)
+        return;
+    
     INFO("AtmospherePar: initialize preconditioner...");
+    
     Ifpack Factory;
     string precType = "Amesos"; // direct solve on subdomains with some overlap
     int overlapLevel = params_->get("Ifpack overlap level", 0);
+    
     // Create preconditioner
     precPtr_ = Teuchos::rcp(Factory.Create(precType, jac_.get(), overlapLevel));
     precPtr_->Initialize();
     precPtr_->Compute();
+
     precInitialized_ = true;
+    
     INFO("AtmospherePar: initialize preconditioner... done");
 }
 
@@ -1094,7 +1101,7 @@ void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
     TIMER_START("AtmospherePar: apply preconditioner...");
     if (!precInitialized_)
     {
-        initializePrec();
+        buildPreconditioner();
     }
     if (recomputePrec_)
     {
