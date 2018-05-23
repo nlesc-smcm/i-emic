@@ -567,7 +567,7 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
 //--> this is awkward and should be factorized. Why doesn't
 //setLandMask create the other mask struct members if they are
 //available?
-void Ocean::setLandMask(Utils::MaskStruct const mask, bool global)
+void Ocean::setLandMask(Utils::MaskStruct const &mask, bool global)
 {
     INFO("Ocean: set landmask " << mask.label << "...");
     THCM::Instance().setLandMask(mask.local);

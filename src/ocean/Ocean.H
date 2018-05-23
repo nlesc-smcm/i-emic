@@ -37,6 +37,7 @@
 #include "Model.H"
 #include "GlobalDefinitions.H"
 #include "AtmospherePar.H"
+#include "SeaIce.H"
 #include "THCMdefs.H"
 #include "OceanGrid.H"
 #include "Combined_MultiVec.H"
@@ -256,8 +257,13 @@ public:
     std::string const getParName() { return parName_; }
 
     //! Get current landmask
-    Utils::MaskStruct getLandMask(bool adjustMask = false);
-
+    Utils::MaskStruct getLandMask()
+        {
+            return getLandMask(false);
+        }
+    
+    Utils::MaskStruct getLandMask(bool adjustMask);
+    
     //! Get global and local (distributed) landmask arrays.
     //! This routine also tests the obtained landmask and it will
     //! therefore also be set in THCM.
@@ -269,8 +275,14 @@ public:
             return (currentMask_ == label);
         }
 
+
     //! Set global and local (distributed) landmask arrays
-    void setLandMask(Utils::MaskStruct const mask, bool global = false);
+    void setLandMask(Utils::MaskStruct const &mask)
+        {
+            setLandMask(mask, false);
+        }
+    
+    void setLandMask(Utils::MaskStruct const &mask, bool global = false);
 
     //! Apply landmask
     void applyLandMask(Utils::MaskStruct mask, double factor);
@@ -339,6 +351,22 @@ public:
     //! and gamma, where one would expect opposite signs based on
     //! forcing.F90.
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
+
+    //! Here we downcast to a specific model and call the correct getBlock routine
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model)
+        {
+            auto atmos  = std::dynamic_pointer_cast<AtmospherePar>(model);
+            auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
+            if (atmos)
+                return getBlock(atmos);
+            else if (seaice)
+                return getBlock(seaice);
+            else
+            {
+                ERROR("Ocean: downcasting failed", __FILE__, __LINE__);
+                return std::shared_ptr<Utils::CRSMat>();
+            }
+        }
 
     // Obtain interface (surface) temperature
     Teuchos::RCP<Epetra_Vector> interfaceT();

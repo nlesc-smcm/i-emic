@@ -83,26 +83,39 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 
     // The landmask interface is still in the fortran code, so Ocean
     // is responsible. In the case we don't have an ocean there is
-    // also no landmask. Communicate surface landmask
+    // also no landmask. Communicate surface landmask:
     if (useOcean_)
     {
-        LandMask mask = ocean_->getLandMask();
+        LandMask mask = models_[OCEAN]->getLandMask();
         // Start at first model beyond Ocean
-        for (int i = 1; i < (int) models_.size(); ++i)
+        for (size_t i = 1; i <  models_.size(); ++i)
             models_[i]->setLandMask(mask);
-    }
+    }    
 
-    for (auto &modelRow: models_)
-        for (auto &modelCol: models_)
+
+    // Initialize CouplingBlock matrix
+    using Block = CouplingBlock<std::shared_ptr<Model>,
+                                std::shared_ptr<Model> >;
+
+    C_ = std::vector<std::vector<Block> >(models_.size(),
+                                          std::vector<Block>(models_.size()));
+    
+    for (size_t i = 0; i != models_.size(); ++i)
+        for (size_t j = 0; j != models_.size(); ++j)
         {
-            if (modelRow != modelCol)
+            if (models_[i] != models_[j])
             {
-                std::cout << "row = " << modelRow->name() << " ";
-                std::cout << "col = " << modelCol->name() << std::endl;
+                std::cout << "row = " << i << " " << models_[i]->name() << ",  ";
+                std::cout << "col = " << j << " " << models_[j]->name() << std::endl;
+                // C_[i][j] = Block(models_[i], models_[j]);
             }
         }
-    
 
+    auto atmosPtr = std::dynamic_pointer_cast<Ocean>(models_[ATMOS]);
+    std::cout << atmosPtr << std::endl;
+    
+    getchar();
+    
     C12_ = CouplingBlock<std::shared_ptr<Ocean>,
                          std::shared_ptr<AtmospherePar> >(ocean_, atmos_);
 

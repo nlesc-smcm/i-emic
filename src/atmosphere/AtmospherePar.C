@@ -1,6 +1,7 @@
 #include "AtmospherePar.H"
 #include "AtmosphereDefinitions.H"
 #include "Ocean.H"
+#include "SeaIce.H"
 
 // Import/export
 #include <EpetraExt_Exception.h>
@@ -535,6 +536,24 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
     assert( (int) block->co.size() == block->beg.back());
 
     return block;
+}
+
+
+//==================================================================
+std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Model> model)
+{
+    //! Here we downcast to a specific model and call the correct getBlock routine
+    auto ocean  = std::dynamic_pointer_cast<Ocean>(model);
+    auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
+    if (ocean)
+        return getBlock(ocean);
+    else if (seaice)
+        return getBlock(seaice);
+    else
+    {
+        ERROR("AtmospherePar: downcasting failed", __FILE__, __LINE__);
+        return std::shared_ptr<Utils::CRSMat>();
+    }
 }
 
 //==================================================================

@@ -264,10 +264,17 @@ public:
 
 
     void setParName(std::string const &parName) {}
+
+    Utils::MaskStruct getLandMask() {return Utils::MaskStruct();}
     
-    void setLandMask(Utils::MaskStruct const &mask) {}    
+    void setLandMask(Utils::MaskStruct const &mask) {}
 
+    Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
 
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model)
+        { return std::shared_ptr<Utils::CRSMat>(); }
+
+    int dof() { return dof_; }
 
 private:
     //! create x_ and y_
