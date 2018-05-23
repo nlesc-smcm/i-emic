@@ -541,7 +541,7 @@ void SeaIce::applyMatrix(Epetra_MultiVector const &in,
 }
 
 //=============================================================================
-void SeaIce::applyPrecon(Epetra_MultiVector &in,
+void SeaIce::applyPrecon(Epetra_MultiVector const &in,
                          Epetra_MultiVector &out)
 {
     TIMER_START("SeaIce: apply preconditioner...");

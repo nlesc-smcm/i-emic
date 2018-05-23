@@ -47,6 +47,7 @@ public:
 
     virtual void applyMatrix(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
     virtual void applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
+    virtual void applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
 };
 
 #endif

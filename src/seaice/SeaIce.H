@@ -239,7 +239,7 @@ public:
     void applyMassMat(Epetra_MultiVector const &in,
                       Epetra_MultiVector &out) {}
 
-    void applyPrecon(Epetra_MultiVector &in,
+    void applyPrecon(Epetra_MultiVector const &in,
                      Epetra_MultiVector &out);
 
     void initializePrec();

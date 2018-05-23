@@ -1095,7 +1095,7 @@ std::string const AtmospherePar::writeData(bool describe)
 }
 
 //==================================================================
-void AtmospherePar::applyPrecon(Epetra_MultiVector &in,
+void AtmospherePar::applyPrecon(Epetra_MultiVector const &in,
                                 Epetra_MultiVector &out)
 {
     TIMER_START("AtmospherePar: apply preconditioner...");
