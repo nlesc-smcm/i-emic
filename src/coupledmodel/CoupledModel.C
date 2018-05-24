@@ -9,9 +9,6 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
-// TODO: - factorize constructors for ocean+atmos, ocean+atmos+seaice
-//         - create setup routine that builds the identifiers
-//       - generalize this code
 
 //==================================================================
 // constructor
@@ -23,9 +20,6 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
     OCEAN(-1),
     ATMOS(-1),
     SEAICE(-1),
-    ocean_(ocean),
-    atmos_(atmos),
-    seaice_(seaice),
     parName_          (params->get("Continuation parameter",
                                    "Combined Forcing")),
     
@@ -382,6 +376,7 @@ void CoupledModel::applyMassMat(Combined_MultiVec const &v, Combined_MultiVec &o
 }
 
 //------------------------------------------------------------------
+//--> some code repetition can be resolved here
 void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
 {
     TIMER_START("CoupledModel: apply preconditioner...");
@@ -390,26 +385,52 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
 
     if (precScheme_ == 'D' || solvingScheme_ != 'C')
     {
-        atmos_->applyPrecon(*x(ATMOS), *z(ATMOS));
-        ocean_->applyPrecon(*x(OCEAN), *z(OCEAN) );
+        for (size_t i = 0; i != models_.size(); ++i)
+            models_[i]->applyPrecon(*x(i), *z(i));
     }
     else if ( (precScheme_ == 'B' || precScheme_ == 'C') && solvingScheme_ == 'C')
     {
-        Combined_MultiVec tmp(x);
-        tmp.PutScalar(0.0);
+        /*
+        //!--------------------------------------------------
+        //!Backward Block Gauss-Seidel (0-based indexing):
+        //!M_k z_k^{j+1} = x_k + \sum_{ i=0 }^{k-1} C_{ki} z_i^{j}
+        //!                    - \sum_{i=k+1}^{n-1} C_{ki} z_i^{j+1}
+        //!              =: b_k
+        //!--------------------------------------------------
+        */
 
-        atmos_->applyPrecon(*x(ATMOS), *z(ATMOS)); //  z2   = inv(M2)*x2
-        C_[OCEAN][ATMOS].applyMatrix(*z(ATMOS), *tmp(OCEAN));   //  tmp1 = C12*x2
-        tmp(OCEAN)->Update(1.0, *x(OCEAN), -1.0);    //  tmp1 = x1 - C12*x2
-        ocean_->applyPrecon(*tmp(OCEAN), *z(OCEAN)); //  z1   = inv(M1)*tmp1
+        Combined_MultiVec tmp(x);  // create temporary array
+        tmp.PutScalar(0.0);        
+        Combined_MultiVec b(x);    // create b
 
-        if (precScheme_ == 'C')
-        {
-            C_[ATMOS][OCEAN].applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*x1
-            tmp(ATMOS)->Update(1.0, *x(ATMOS), 1.0);
-            atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS));
-        }
-            
+        //--> this should be a parameter in xml and we should get rid
+        //--> of 'G' and 'C'
+        int maxPrecIters = (precScheme_ == 'C') ? 2 : 1;
+
+        double sign;
+        for (int iters = 0; iters != maxPrecIters; ++iters)
+            for (int k = (int) models_.size()-1; k >= 0; --k)
+            {                
+                *b(k) = *x(k); // reinitialize b(k) with x(k)
+                for (int i = 0; i < (int) models_.size(); ++i) // create summation
+                {
+                    if ( (i < k) && (iters > 0 ) ) // assuming z is initialised 0
+                        sign = 1.0;
+                    else if (i > k)
+                        sign = -1.0;
+                    else
+                        continue;
+                    
+                    tmp(k)->PutScalar(0.0);                // zero result
+                    C_[k][i].applyMatrix(*z(i), *tmp(k));  // MV
+                    b(k)->Update(sign, *tmp(k), 1.0);      // add MV to b
+                }
+                if ( (precScheme_ == 'C') &&
+                     (iters == maxPrecIters-1) &&
+                     (k == 0) ) break; // skip final solve (ocean)
+                
+                models_[k]->applyPrecon(*b(k), *z(k));     // solve M
+            }            
     }
     else if ( (precScheme_ == 'F' || precScheme_ == 'G') && solvingScheme_ == 'C')
     {
@@ -437,7 +458,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
             for (size_t k = 0; k != models_.size(); ++k)    // iterate over rows
             {
                 *b(k) = *x(k);  // reinitialize b(k) with x(k)
-                for (size_t i = 0; i < models_.size(); ++i)  // create \sum_{i=0}^{k-1} C_{ki} z_i
+                for (size_t i = 0; i < models_.size(); ++i)  // create summation
                 {
                     if (i < k)
                         sign = -1.0;
@@ -447,48 +468,11 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
                         continue; 
                 
                     tmp(k)->PutScalar(0.0);                 // just to be sure
-                    
-//                    std::cout << "C["<<k<<"]["<<i<<"] * z["<<i<<"]" << std::endl;
-
                     C_[k][i].applyMatrix(*z(i), *tmp(k));   // MV
-
-//                    std::cout << "b["<<k<<"] = b["<<k<<"] + "
-//                              << sign << " * C["<<k<<"]["<<i<<"] * z["<<i<<"]" << std::endl;
-                    
                     b(k)->Update(sign, *tmp(k), 1.0);       // add MV to b_k
-                    
-//                    std::cout << "||b["<<k<<"]|| = " << Utils::norm(b(k)) << std::endl;
                 }
-//                std::cout << "inv(M["<<k<<"])*b["<<k<<"]"<<std::endl;
-                models_[k]->applyPrecon(*b(k), *z(k));             // solve M_k
-//                std::cout << "||z["<<k<<"]|| = " << Utils::norm(z(k)) << std::endl;
+                models_[k]->applyPrecon(*b(k), *z(k));      // solve M_k
             }
-
-        Combined_MultiVec z2(z);
-
-        z.PutScalar(0.0);
-        tmp.PutScalar(0.0);
-                           
-        ocean_->applyPrecon(*x(OCEAN), *z(OCEAN));             // z1   = inv(M1) * x1
-        // std::cout << "norm(z(OCEAN)) " << Utils::norm(z(OCEAN)) << std::endl;
-        C_[ATMOS][OCEAN].applyMatrix(*z(OCEAN), *tmp(ATMOS));  // tmp2 = C21*z1
-        tmp(ATMOS)->Update(1.0, *x(ATMOS), -1.0);              // tmp2 = x2 - C21*z1
-        atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS));           // z2   = inv(M2)*tmp2
-
-        if (precScheme_ == 'G')
-        {
-            tmp.PutScalar(0.0);
-            C_[OCEAN][ATMOS].applyMatrix(*z(ATMOS), *tmp(OCEAN));     // tmp1 = C12*z2
-            tmp(OCEAN)->Update(1.0, *x(OCEAN), 1.0);       // tmp1 = x1 + C12*z2
-            ocean_->applyPrecon(*tmp(OCEAN), *z(OCEAN));   //   z1 = inv(M1) * tmp1
-            C_[ATMOS][OCEAN].applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*z1
-            tmp(ATMOS)->Update(1.0, *x(ATMOS), -1.0);    // tmp2 = x2 - C21*z1
-            atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS)); // z2   = inv(M2)*tmp2 
-        }
-
-        z2.Update(-1.0, z, 1.0);
-        // std::cout << "--- diff ----\n" << Utils::norm(z2) << std::endl;
-        // std::cout << Utils::normInf(z2) << std::endl;
     }
     else
     {
@@ -525,9 +509,13 @@ std::shared_ptr<Combined_MultiVec> CoupledModel::getSolution(char mode)
         return solView_;
     else if (mode == 'C') // Copy
     {
-        return std::make_shared<Combined_MultiVec>(
-            ocean_->getSolution('C'),
-            atmos_->getSolution('C'));
+        std::shared_ptr<Combined_MultiVec> out =
+            std::make_shared<Combined_MultiVec>();
+
+        for (auto &model: models_)
+            out->AppendVector(model->getSolution('C'));
+            
+        return out;
     }
     else
     {
@@ -543,9 +531,13 @@ std::shared_ptr<Combined_MultiVec> CoupledModel::getState(char mode)
         return stateView_;
     else if (mode == 'C') // Copy
     {
-        return std::make_shared<Combined_MultiVec>(
-            ocean_->getState('C'),
-            atmos_->getState('C'));
+        std::shared_ptr<Combined_MultiVec> out =
+            std::make_shared<Combined_MultiVec>();
+
+        for (auto &model: models_)
+            out->AppendVector(model->getState('C'));
+            
+        return out;
     }
     else
     {
@@ -561,9 +553,13 @@ std::shared_ptr<Combined_MultiVec> CoupledModel::getRHS(char mode)
         return rhsView_;
     else if (mode == 'C') // Copy
     {
-        return std::make_shared<Combined_MultiVec>(
-            ocean_->getRHS('C'),
-            atmos_->getRHS('C'));
+        std::shared_ptr<Combined_MultiVec> out =
+            std::make_shared<Combined_MultiVec>();
+
+        for (auto &model: models_)
+            out->AppendVector(model->getRHS('C'));
+            
+        return out;
     }
     else
     {
@@ -575,30 +571,29 @@ std::shared_ptr<Combined_MultiVec> CoupledModel::getRHS(char mode)
 //------------------------------------------------------------------
 double CoupledModel::getPar()
 {
-    double par_ocean = ocean_->getPar(parName_);
-    double par_atmos = atmos_->getPar(parName_);
-
     // Parameter values are equal to the continuation parameter or 0.
+    double par, out;
+    for (auto &model: models_)
+    {
+        par = model->getPar(parName_);
+        out = (std::abs(par) > 0.0) ? par : out;
+    }
     
-    double parvalue = 0.0;
-    parvalue = (std::abs(par_ocean) > 0.0) ? par_ocean : parvalue;
-    parvalue = (std::abs(par_atmos) > 0.0) ? par_atmos : parvalue;
-
-    return parvalue;
+    return out;
 }
 
 //------------------------------------------------------------------
 void CoupledModel::setPar(double value)
 {
-    ocean_->setPar(parName_, value);
-    atmos_->setPar(parName_, value);
+    for (auto &model: models_)
+        model->setPar(parName_, value);
 }
 
 //------------------------------------------------------------------
 void CoupledModel::preProcess()
 {
-    ocean_->preProcess();
-    atmos_->preProcess();
+    for (auto &model: models_)
+        model->preProcess();
 }
 
 //------------------------------------------------------------------
@@ -608,17 +603,59 @@ void CoupledModel::postProcess()
     // moment to synchronize
     if (solvingScheme_ == 'D')
         synchronize();
-
+    
     // Let the models do their own post-processing
-    ocean_->postProcess();
-    atmos_->postProcess();
+    for (auto &model: models_)
+        model->postProcess();
 }
+
+//------------------------------------------------------------------
+//! Gather important continuation data to use in summary file
+std::string const CoupledModel::writeData(bool describe)
+        {
+            std::ostringstream datastring;
+            if (describe)
+            {
+                datastring << std::setw(_FIELDWIDTH_/2)
+                           << "MV"
+                           << std::setw(_FIELDWIDTH_)
+                           << "Tol";
+                for (auto &model: models_)
+                    datastring << model->writeData(describe) << " ";   
+            }
+            else
+            {
+                datastring.precision(_PRECISION_);
+                datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
+                           << belosSolver_->getNumIters();
+                datastring << std::scientific << std::setw(_FIELDWIDTH_)
+                           << belosSolver_->achievedTol();
+                
+                for (auto &model: models_)
+                    datastring << model->writeData(describe) << " ";   
+            }
+
+            return datastring.str();
+        }
+
 
 //------------------------------------------------------------------
 void CoupledModel::dumpBlocks()
 {
-    DUMPMATLAB("C11", *(ocean_->getJacobian()));
-    DUMPMATLAB("C22", *(atmos_->getJacobian()));
-    DUMPMATLAB("C01", *(C_[OCEAN][ATMOS].getBlock()));
-    DUMPMATLAB("C10", *(C_[ATMOS][OCEAN].getBlock()));
+    std::stringstream ss;
+    for (size_t i = 0; i != models_.size(); ++i)
+    {
+        ss << "J_" << models_[i]->name();
+        DUMPMATLAB(ss.str().c_str(), *(models_[i]->getJacobian()));
+        for (size_t j = 0; j != models_.size(); ++j)
+        {
+            ss.str(""); 
+            if (i != j)
+            {
+                ss << "C_" << C_[i][j].name();
+                DUMPMATLAB(ss.str().c_str(), *(C_[i][j].getBlock()));
+            }
+                
+        }
+    }
 }

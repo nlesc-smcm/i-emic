@@ -264,6 +264,9 @@ public:
 
     void setParName(std::string const &parName) {}
 
+    double getPar(std::string const &parName) { return 0.0; }
+    void   setPar(std::string const &parName, double value) {}
+
     Utils::MaskStruct getLandMask() {return Utils::MaskStruct();}
     
     void setLandMask(Utils::MaskStruct const &mask) {}
@@ -278,6 +281,11 @@ public:
     int dof() { return dof_; }
 
     void buildPreconditioner() {}
+
+    void preProcess() {}
+    void postProcess() {}
+
+    std::string const writeData(bool describe) { return std::string(); }
 
 private:
     //! create x_ and y_

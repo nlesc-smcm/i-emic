@@ -59,16 +59,7 @@ private:
 
     //! vector containing pointers to the different submodels
     std::vector<std::shared_ptr<Model> > models_;
-    
-    //! Trilinos-based parallel implicit ocean model (Trilinos-THCM)
-    std::shared_ptr<Ocean>  ocean_;
-
-    //! Parallel implicit atmosphere model
-    std::shared_ptr<AtmospherePar> atmos_;
-
-    //! Parallel implicit sea ice model
-    std::shared_ptr<SeaIce> seaice_;
-    
+        
     //! Combined state vector
     std::shared_ptr<Combined_MultiVec> stateView_;
 
@@ -213,33 +204,8 @@ public:
     void postProcess();
 
     //! Gather important continuation data to use in summary file
-    std::string const writeData(bool describe = false)
-        {
-            std::ostringstream datastring;
-            if (describe)
-            {
-                datastring << std::setw(_FIELDWIDTH_/2)
-                           << "MV"
-                           << std::setw(_FIELDWIDTH_)
-                           << "Tol"
-                           << ocean_->writeData(describe) << " "
-                           << atmos_->writeData(describe) ;            
-            }
-            else
-            {
-                datastring.precision(_PRECISION_);
-                datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
-                           << belosSolver_->getNumIters();
-                datastring << std::scientific << std::setw(_FIELDWIDTH_)
-                           << belosSolver_->achievedTol();
-                
-                datastring << ocean_->writeData(describe) << " "
-                           << atmos_->writeData(describe) ;
-            }
-
-            return datastring.str();
-        }
-
+    std::string const writeData(bool describe = false);
+    
     //! Additional monitor for continuation, return true if
     //! destination reached
     bool monitor() { return false; }
