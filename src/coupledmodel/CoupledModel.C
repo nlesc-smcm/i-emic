@@ -423,6 +423,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         */
          
         Combined_MultiVec tmp(x);          // create temporary array
+        tmp.PutScalar(0.0);
         Combined_MultiVec b(x);            // initialize b_k with x_k
 
         double sign = 0.0;
@@ -430,42 +431,64 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         //--> this should be a parameter in xml and we should get rid
         //--> of 'G' and 'C'
         int maxPrecIters = (precScheme_ == 'G') ? 2 : 1;
-            
-        // for (int iters = 0; iters != maxPrecIters; ++iters)
-        //     for (size_t k = 0; k != models_.size(); ++k)    // iterate over rows
-        //     {
-        //         for (size_t i = 0; i < models_.size(); ++i)  // create \sum_{i=0}^{k-1} C_{ki} z_i
-        //         {
-        //             if (i < k)
-        //                 sign = -1.0;
-        //             else if ( (i > k) && (iters > 0 ) ) // assuming z is initialised 0
-        //                 sign =  1.0;
-        //             else
-        //                 continue; // skip i == k
+
+
+        for (int iters = 0; iters != maxPrecIters; ++iters)
+            for (size_t k = 0; k != models_.size(); ++k)    // iterate over rows
+            {
+                *b(k) = *x(k);  // reinitialize b(k) with x(k)
+                for (size_t i = 0; i < models_.size(); ++i)  // create \sum_{i=0}^{k-1} C_{ki} z_i
+                {
+                    if (i < k)
+                        sign = -1.0;
+                    else if ( (i > k) && (iters > 0 ) ) // assuming z is initialised 0
+                        sign =  1.0;
+                    else
+                        continue; 
                 
-        //             tmp(k)->PutScalar(0.0);                 // just to be sure
-        //             C_[k][i].applyMatrix(*z(i), *tmp(k));   // MV
-        //             b(k)->Update(1.0, *tmp(k), sign);       // add to b_k
-        //         }
-        //         models_[k]->applyPrecon(*b(k), *z(k));             // solve M_k  
-        //     }
-        
+                    tmp(k)->PutScalar(0.0);                 // just to be sure
+                    
+//                    std::cout << "C["<<k<<"]["<<i<<"] * z["<<i<<"]" << std::endl;
 
+                    C_[k][i].applyMatrix(*z(i), *tmp(k));   // MV
+
+//                    std::cout << "b["<<k<<"] = b["<<k<<"] + "
+//                              << sign << " * C["<<k<<"]["<<i<<"] * z["<<i<<"]" << std::endl;
+                    
+                    b(k)->Update(sign, *tmp(k), 1.0);       // add MV to b_k
+                    
+//                    std::cout << "||b["<<k<<"]|| = " << Utils::norm(b(k)) << std::endl;
+                }
+//                std::cout << "inv(M["<<k<<"])*b["<<k<<"]"<<std::endl;
+                models_[k]->applyPrecon(*b(k), *z(k));             // solve M_k
+//                std::cout << "||z["<<k<<"]|| = " << Utils::norm(z(k)) << std::endl;
+            }
+
+        Combined_MultiVec z2(z);
+
+        z.PutScalar(0.0);
         tmp.PutScalar(0.0);
-        ocean_->applyPrecon(*x(OCEAN), *z(OCEAN));     // z1   = inv(M1) * x1
-        C_[ATMOS][OCEAN].applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*z1
-        tmp(ATMOS)->Update(1.0, *x(ATMOS), -1.0);    // tmp2 = x2 - C21*z1
-        atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS)); // z2   = inv(M2)*tmp2 
+                           
+        ocean_->applyPrecon(*x(OCEAN), *z(OCEAN));             // z1   = inv(M1) * x1
+        // std::cout << "norm(z(OCEAN)) " << Utils::norm(z(OCEAN)) << std::endl;
+        C_[ATMOS][OCEAN].applyMatrix(*z(OCEAN), *tmp(ATMOS));  // tmp2 = C21*z1
+        tmp(ATMOS)->Update(1.0, *x(ATMOS), -1.0);              // tmp2 = x2 - C21*z1
+        atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS));           // z2   = inv(M2)*tmp2
 
-        // if (precScheme_ == 'G')
-        // {
-        //     C_[OCEAN][ATMOS].applyMatrix(*z(ATMOS), *tmp(OCEAN));     // tmp1 = C12*z2
-        //     tmp(OCEAN)->Update(1.0, *x(OCEAN), 1.0);       // tmp1 = x1 + C12*z2
-        //     ocean_->applyPrecon(*tmp(OCEAN), *z(OCEAN));   //   z1 = inv(M1) * tmp1
-        //     C_[ATMOS][OCEAN].applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*z1
-        //     tmp(ATMOS)->Update(1.0, *x(ATMOS), -1.0);    // tmp2 = x2 - C21*z1
-        //     atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS)); // z2   = inv(M2)*tmp2 
-        // }        
+        if (precScheme_ == 'G')
+        {
+            tmp.PutScalar(0.0);
+            C_[OCEAN][ATMOS].applyMatrix(*z(ATMOS), *tmp(OCEAN));     // tmp1 = C12*z2
+            tmp(OCEAN)->Update(1.0, *x(OCEAN), 1.0);       // tmp1 = x1 + C12*z2
+            ocean_->applyPrecon(*tmp(OCEAN), *z(OCEAN));   //   z1 = inv(M1) * tmp1
+            C_[ATMOS][OCEAN].applyMatrix(*z(OCEAN), *tmp(ATMOS));     // tmp2 = C21*z1
+            tmp(ATMOS)->Update(1.0, *x(ATMOS), -1.0);    // tmp2 = x2 - C21*z1
+            atmos_->applyPrecon(*tmp(ATMOS), *z(ATMOS)); // z2   = inv(M2)*tmp2 
+        }
+
+        z2.Update(-1.0, z, 1.0);
+        // std::cout << "--- diff ----\n" << Utils::norm(z2) << std::endl;
+        // std::cout << Utils::normInf(z2) << std::endl;
     }
     else
     {
@@ -596,6 +619,6 @@ void CoupledModel::dumpBlocks()
 {
     DUMPMATLAB("C11", *(ocean_->getJacobian()));
     DUMPMATLAB("C22", *(atmos_->getJacobian()));
-    DUMPMATLAB("C12", *(C_[OCEAN][ATMOS].getBlock()));
-    DUMPMATLAB("C21", *(C_[ATMOS][OCEAN].getBlock()));
+    DUMPMATLAB("C01", *(C_[OCEAN][ATMOS].getBlock()));
+    DUMPMATLAB("C10", *(C_[ATMOS][OCEAN].getBlock()));
 }
