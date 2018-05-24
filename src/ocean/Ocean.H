@@ -75,6 +75,7 @@ protected:
     VectorPtr state_;
     VectorPtr rhs_;
     VectorPtr sst_;
+    VectorPtr sss_;
     VectorPtr massMatrix_;
 
     MatrixPtr jac_;
@@ -166,12 +167,11 @@ protected:
     //! Rows corresponding to singular pressure points
     VectorPtr singRows_;
 
+    //! Index maps for surface T,S values
+    Teuchos::RCP<Epetra_BlockMap> tIndexMap_, sIndexMap_;
 
-    //! Index map for surface T values
-    Teuchos::RCP<Epetra_BlockMap> tIndexMap_;
-
-    //! Surface temperature importer
-    Teuchos::RCP<Epetra_Import> surfaceTimporter_;
+    //! Surface temperature and salinity importers
+    Teuchos::RCP<Epetra_Import> surfaceTimporter_, surfaceSimporter_;
 
     //! Land mask
     Utils::MaskStruct landmask_;
@@ -356,13 +356,17 @@ public:
     //! and gamma, where one would expect opposite signs based on
     //! forcing.F90.
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice);
 
     //! Here we downcast to a specific model and call the correct getBlock routine
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model);
 
-    // Obtain interface (surface) temperature
+    // Obtain interface surface temperature
     Teuchos::RCP<Epetra_Vector> interfaceT();
 
+    // Obtain interface surface salinity
+    Teuchos::RCP<Epetra_Vector> interfaceS();
+    
     // ---------------------------------------------------------------
     // Scale the matrix and rhs of the problem. These things are
     // confusing and not used.

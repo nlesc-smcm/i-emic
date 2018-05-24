@@ -1,5 +1,7 @@
 #include "SeaIce.H"
 #include "SeaIceDefinitions.H"
+#include "Ocean.H"
+#include "AtmospherePar.H"
 
 //=============================================================================
 // Constructor
@@ -298,7 +300,6 @@ void SeaIce::computeLocalJacobian()
     Al_->set(range, MM, MM, MM_MM);
 }
 
-
 //=============================================================================
 void SeaIce::computeJacobian()
 {
@@ -377,6 +378,105 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getLocalJacobian()
     jac->jco = jco_;
     jac->beg = beg_;
     return jac;
+}
+
+//=============================================================================
+std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Model> model)
+{
+    auto ocean = std::dynamic_pointer_cast<Ocean>(model);
+    auto atmos = std::dynamic_pointer_cast<AtmospherePar>(model);
+    if (atmos)
+        return getBlock(atmos);
+    else if (atmos)
+        return getBlock(ocean);
+    else
+    {
+        ERROR("SeaIce: downcasting failed", __FILE__, __LINE__);
+    }
+}
+
+//=============================================================================
+std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<AtmospherePar> atmos)
+{
+    // initialize empty CRS matrix
+    std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
+
+    // todo
+           
+    return block;   
+}
+
+//=============================================================================
+std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
+{
+    // initialize empty CRS matrix
+    std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
+
+    // todo
+           
+    return block;   
+}
+
+//=============================================================================
+void SeaIce::synchronize(std::shared_ptr<Model> model)
+{
+    auto atmos  = std::dynamic_pointer_cast<AtmospherePar>(model);
+    auto ocean  = std::dynamic_pointer_cast<Ocean>(model);
+
+    if (atmos)
+        return synchronize(atmos);
+    else if (ocean)
+        return synchronize(ocean);
+    else
+    {
+        ERROR("Ocean: downcasting failed", __FILE__, __LINE__);
+    }
+}
+
+//=============================================================================
+void SeaIce::synchronize(std::shared_ptr<Ocean> ocean)
+{
+    // Obtain surface ocean temperature
+    Teuchos::RCP<Epetra_Vector> sst = ocean->interfaceT();
+
+    // Replace map if necessary
+    if (!(sst->Map().SameAs(*standardSurfaceMap_)))
+    {
+        CHECK_ZERO(sst->ReplaceMap(*standardSurfaceMap_));
+    }
+
+    sst_ = sst;
+
+    // Obtain surface ocean salinity
+    Teuchos::RCP<Epetra_Vector> sss = ocean->interfaceS();
+
+    // Replace map if necessary
+    if (!(sss->Map().SameAs(*standardSurfaceMap_)))
+    {
+        CHECK_ZERO(sss->ReplaceMap(*standardSurfaceMap_));
+    }
+
+    sss_ = sss;
+}
+
+//=============================================================================
+void SeaIce::synchronize(std::shared_ptr<AtmospherePar> atmos)
+{
+    Teuchos::RCP<Epetra_Vector> tatm  = atmos->interfaceT();
+    if (!(tatm->Map().SameAs(*standardSurfaceMap_)))
+    {
+        CHECK_ZERO(tatm->ReplaceMap(*standardSurfaceMap_));
+    }
+
+    tatm_ = tatm;
+
+    Teuchos::RCP<Epetra_Vector> qatm  = atmos->interfaceQ();
+    if (!(qatm->Map().SameAs(*standardSurfaceMap_)))
+    {
+        CHECK_ZERO(qatm->ReplaceMap(*standardSurfaceMap_));
+    }
+
+    qatm_ = qatm;    
 }
 
 //=============================================================================

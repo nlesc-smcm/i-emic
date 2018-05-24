@@ -538,6 +538,16 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
     return block;
 }
 
+//==================================================================
+std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<SeaIce> seaice)
+{
+    // initialize empty CRS matrix
+    std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
+
+    // todo           
+    return block;   
+}
+
 
 //==================================================================
 std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Model> model)

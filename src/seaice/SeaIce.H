@@ -29,6 +29,10 @@
 // exp, pow, sin
 #include <math.h>
 
+// forward decl
+class AtmospherePar;
+class Ocean;
+
 class SeaIce : public Model
 {
 
@@ -237,7 +241,7 @@ public:
                      Epetra_MultiVector &out);
 
     void applyMassMat(Epetra_MultiVector const &in,
-                      Epetra_MultiVector &out) {}
+                      Epetra_MultiVector &out) { out.PutScalar(0.0); } // tmp
 
     void applyPrecon(Epetra_MultiVector const &in,
                      Epetra_MultiVector &out);
@@ -272,11 +276,14 @@ public:
     void setLandMask(Utils::MaskStruct const &mask) {}
 
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
-
-    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model)
-        { return std::shared_ptr<Utils::CRSMat>(); }
     
-    void synchronize(std::shared_ptr<Model> model) {}
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model);
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean);
+        
+    void synchronize(std::shared_ptr<Model> model);
+    void synchronize(std::shared_ptr<AtmospherePar> atmos);
+    void synchronize(std::shared_ptr<Ocean> ocean);
 
     int dof() { return dof_; }
 

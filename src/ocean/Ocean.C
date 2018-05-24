@@ -142,27 +142,36 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     inspectVector(state_);
 
     //------------------------------------------------------------------
-    // Create surface temperature restrict/import strategy
+    // Create surface temperature and salinity restrict/import strategies
     //------------------------------------------------------------------
-    // Create list of surface temp row indices
-    std::vector<int> tRows;
+    // Create lists of surface indices
+    std::vector<int> tRows, sRows;
 
     for (int j = 0; j != M_; ++j)
         for (int i = 0; i != N_; ++i)
+        {
             tRows.push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,TT));
+            sRows.push_back(FIND_ROW2(_NUN_, N_, M_, L_,i,j,L_-1,SS));
+        }
 
-    // Create restricted map
-    tIndexMap_ =
-        Utils::CreateSubMap(state_->Map(), tRows);
+    // Create restricted maps
+    tIndexMap_ = Utils::CreateSubMap(state_->Map(), tRows);
+    sIndexMap_ = Utils::CreateSubMap(state_->Map(), sRows);
 
-    // Create the SST vector
+    // Create SST vector
     sst_ = Teuchos::rcp(new Epetra_Vector(*tIndexMap_));
 
-    // Create importer
-    // Target map: tIndexMap
+    // Create SSS vector
+    sss_ = Teuchos::rcp(new Epetra_Vector(*tIndexMap_));
+
+    // Create import strategies
+    // Target map: IndexMap
     // Source map: state_->Map()
     surfaceTimporter_ =
         Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
+
+    surfaceSimporter_ =
+        Teuchos::rcp(new Epetra_Import(*sIndexMap_, state_->Map()));
 
     INFO(*oceanParamList);
 
@@ -1515,6 +1524,17 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
 }
 
 //==================================================================
+std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
+{
+    // initialize empty CRS matrix
+    std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
+
+    // todo
+           
+    return block;   
+}
+
+//==================================================================
 std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Model> model)
 {
     auto atmos  = std::dynamic_pointer_cast<AtmospherePar>(model);
@@ -1543,6 +1563,21 @@ Teuchos::RCP<Epetra_Vector> Ocean::interfaceT()
     CHECK_ZERO(sst_->Import(*state_, *surfaceTimporter_, Insert));
     TIMER_STOP("Ocean: get surface temperature...");
     return sst_;
+}
+
+//====================================================================
+// Fill and return a copy of the surface salinity
+Teuchos::RCP<Epetra_Vector> Ocean::interfaceS()
+{
+    TIMER_START("Ocean: get surface salinity...");
+
+    if (!(sss_->Map().SameAs(*sIndexMap_)))
+    {
+        CHECK_ZERO(sss_->ReplaceMap(*sIndexMap_));
+    }
+    CHECK_ZERO(sss_->Import(*state_, *surfaceSimporter_, Insert));
+    TIMER_STOP("Ocean: get surface salinity...");
+    return sss_;
 }
 
 //=====================================================================

@@ -322,6 +322,7 @@ public:
 
     //! Get ocean dependency
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean);
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice);
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model);
 
     //! Get row at the interface, XX is 1-based, i and j 0-based. The

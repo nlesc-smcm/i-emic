@@ -427,7 +427,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
                 }
                 if ( (precScheme_ == 'C') &&
                      (iters == maxPrecIters-1) &&
-                     (k == 0) ) break; // skip final solve (ocean)
+                     (k == OCEAN) ) break; // skip final solve (ocean)
                 
                 models_[k]->applyPrecon(*b(k), *z(k));     // solve M
             }            
