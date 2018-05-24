@@ -30,8 +30,8 @@
 #include <math.h>
 
 // forward decl
-class AtmospherePar;
 class Ocean;
+class AtmospherePar;
 
 class SeaIce : public Model
 {

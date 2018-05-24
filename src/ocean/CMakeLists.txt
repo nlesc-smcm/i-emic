@@ -26,6 +26,7 @@ target_include_directories(ocean PUBLIC ${OCEAN_INCLUDE_DIRS})
 target_include_directories(ocean PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(ocean atmosphere)
+target_link_libraries(ocean seaice)
 
 target_compile_definitions(ocean PUBLIC DATA_DIR=${DATA_DIR} ${COMP_IDENT})
 

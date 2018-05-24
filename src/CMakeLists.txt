@@ -98,8 +98,8 @@ list(APPEND library_dependencies ${EXTRA_LIBS})
 set(I-EMIC_LIBS
   coupledmodel
   atmosphere
-  ocean
   seaice
+  ocean 
   utils
   dependencygrid
   jdqz_tools
