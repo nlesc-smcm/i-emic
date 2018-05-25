@@ -41,6 +41,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     Lf_    (params->get("latent heat of fusion of ice, J kg^{-1}", 3.347e5)),
     Ls_    (params->get("latent heat of sublimation of ice, J kg^{-1}", 2.835e6)),
     Ic_    (params->get("constant ice conductivity, W m^{-1} K^{-1}", 2.166)),
+    a0_    (params->get("freezing temperature sensitivity", -0.0575)),
 
     // combined parameter
     zeta_  (ch_ * utau_ * rhoo_ * cpo_),
@@ -387,7 +388,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Model> model)
     auto atmos = std::dynamic_pointer_cast<AtmospherePar>(model);
     if (atmos)
         return getBlock(atmos);
-    else if (atmos)
+    else if (ocean)
         return getBlock(ocean);
     else
     {
@@ -401,9 +402,58 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<AtmospherePar> a
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
-    // todo
-           
-    return block;   
+    // construct global 0-based CRS matrix
+    int el_ctr = 0;
+
+    int T = 1; // (1-based) in the Atmosphere, temperature is the first unknown
+    int Q = 2; // (1-based) in the Atmosphere, humidity is the second unknown
+
+    // compute a few constant derivatives (see computeRHS)
+
+    // d / dq_atm (F_H)
+    double dqatmFH = -(rhoo_ * Lf_ / zeta_) * dEdq_;
+
+    // d / dt_atm (F_Q)
+    double dtatmFQ = -1;
+    
+    // d / dq_atm (F_Q)
+    double dqatmFQ =  (rhoo_ * Ls_ / muoa_) * dEdq_;
+    
+    for (int j = 0; j != mGlob_; ++j)
+        for (int i = 0; i != nGlob_; ++i)
+            for (int XX = 1; XX <= dof_; ++XX)
+            {
+                block->beg.push_back(el_ctr);
+                
+                switch (XX)
+                {
+                case SEAICE_HH_:
+                    block->co.push_back(dqatmFH);
+                    block->jco.push_back(atmos->interface_row(i,j,Q));
+                    el_ctr++;
+                    break;
+                    
+                case SEAICE_QQ_:
+                    block->co.push_back(dtatmFQ);
+                    block->jco.push_back(atmos->interface_row(i,j,T));
+                    el_ctr++;
+                    
+                    block->co.push_back(dqatmFQ);
+                    block->jco.push_back(atmos->interface_row(i,j,Q));
+                    el_ctr++;
+                    break;
+                }
+            }
+
+    // final entry in beg ( == nnz)
+    block->beg.push_back(el_ctr);
+
+    // final check;
+    assert( (int) block->co.size() == block->beg.back());
+
+    std::cout << "created block, dimension: " << mGlob_ * nGlob_ * dof_ << std::endl;
+    
+    return block;
 }
 
 //=============================================================================
@@ -413,7 +463,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
     // todo
-           
+    
     return block;   
 }
 

@@ -7,6 +7,11 @@
 <!-- submodels ocean and atmosphere.                                      -->
 <ParameterList name="CoupledModel parameters">
 
+  <!-- Select the models in use -->
+  <Parameter name="Use ocean"      type="bool" value="true"/>
+  <Parameter name="Use atmosphere" type="bool" value="true"/>
+  <Parameter name="Use sea ice"    type="bool" value="true"/>
+  
   <!-- Specify whether the coupled model should initialize with  -->
   <!-- old states (true) or with a trivial solution (false).     -->
   <!-- The sub-models maintain names for the input files.        -->

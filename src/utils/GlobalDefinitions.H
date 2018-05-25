@@ -61,14 +61,14 @@ extern std::stack<Timer> timerStack;
 // Set field width in data outputs (even)
 #ifndef _FIELDWIDTH_
 # define _FIELDWIDTH_ 14
-#endif 
+#endif
 
 #ifndef INFO
-#  define INFO(s) (*outFile) << s << std::endl; 
+#  define INFO(s) (*outFile) << s << std::endl;
 #endif
 
 #ifndef WRITECDATA
-#  define WRITECDATA(s) (*cdataFile) << s << std::endl; 
+#  define WRITECDATA(s) (*cdataFile) << s << std::endl;
 #endif
 
 // ! Error reporting
@@ -91,17 +91,20 @@ extern std::stack<Timer> timerStack;
 #endif
 
 #ifndef WARNING
-#  define WARNING(x,y,z)							\
-	{												\
-		(*outFile) << "**WARNING**: " << x << " "	\
-				   << y << " " << z << std::endl;	\
-	}
+#  define WARNING(x,y,z)                                                \
+	{                                                                   \
+		(*outFile) << "**WARNING**: " << x << " "                       \
+				   << y << " " << z << std::endl;                       \
+		std::cerr << "**WARNING**: " << x << " ";                       \
+        std::cerr << "(in " << y << ", line "                           \
+                  << z << ")" << std::endl;                             \
+}
 #endif
 
 #ifndef DEBUG
 #  ifdef DEBUGGING_OLD
 #    define DEBUG(s) (*outFile) << s << std::endl;
-// # stringifies variable s: 
+// # stringifies variable s:
 #    define DEBVAR(s) (*outFile) << #s << ": " << s << std::endl;
 #  else
 #    define DEBUG(s)
@@ -113,7 +116,7 @@ extern std::stack<Timer> timerStack;
 #ifndef DEB
 #  ifdef DEBUGGING_NEW
 #    define DEB(s) (*outFile) << s << std::endl;
-// # stringifies variable s: 
+// # stringifies variable s:
 #    define DEBV(s) (*outFile) << #s << ": " << s << std::endl;
 #  else
 #    define DEB(s)
@@ -122,7 +125,7 @@ extern std::stack<Timer> timerStack;
 #endif
 
 // Don't trust these dumps!! I think calling print on such objects is safer.
-#ifndef DUMP 
+#ifndef DUMP
 #  define DUMP(fname,mat) EpetraExt::RowMatrixToMatrixMarketFile(fname, mat);
 #endif
 
@@ -155,7 +158,7 @@ extern std::stack<Timer> timerStack;
 		if (profile.find(msg) == profile.end())   \
             profile[msg] = std::array<double, PROFILE_ENTRIES>(); \
 		timerStack.push(timer);										\
-	} 
+	}
 #endif
 
 #ifndef TIMER_STOP
@@ -209,7 +212,7 @@ public:
 		:
 		startTime_(0.0)
 		{}
-	
+
 	double wallTime()
 		{
 			int mpiInit;
@@ -219,10 +222,10 @@ public:
 			else
 				return (double) std::clock() / CLOCKS_PER_SEC;
 		}
-	
+
 	void ResetStartTime()
 		{ startTime_ = wallTime();}
-	
+
 	double ElapsedTime()
 		{ return (double) (wallTime() - startTime_); }
 };
@@ -237,7 +240,7 @@ public:
                           << #funcall, __FILE__, __LINE__);             \
         }                                                               \
     }                                                                   \
- 
+
 #define CHECK_TRUE(funcall) {bool berr = funcall;                       \
 		if (!berr) {ERROR("Trilinos call " << #funcall                  \
                           << " returned false", __FILE__, __LINE__);}}  \
@@ -247,7 +250,7 @@ public:
         if (ierr<0) { ERROR("Trilinos call " << #funcall                \
                             << " returned negative: "                   \
                             << ierr , __FILE__, __LINE__); }}           \
-        
+
 #endif
 
 #ifndef MOD

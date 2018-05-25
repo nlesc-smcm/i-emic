@@ -157,7 +157,7 @@ protected:
 
     //! Landmask file
     std::string landmaskFile_;
-    
+
     //! Row map for pressure points P
     Teuchos::RCP<Epetra_Map> mapP_;
 
@@ -186,7 +186,7 @@ public:
     ~Ocean();
 
     std::string const name() { return "Ocean"; }
-    
+
     //! Solve may optionally accept an rhs of VectorPointer type
     void solve(Teuchos::RCP<Epetra_MultiVector> rhs = Teuchos::null);
 
@@ -263,9 +263,9 @@ public:
         {
             return getLandMask(false);
         }
-    
+
     Utils::MaskStruct getLandMask(bool adjustMask);
-    
+
     //! Get global and local (distributed) landmask arrays.
     //! This routine also tests the obtained landmask and it will
     //! therefore also be set in THCM.
@@ -283,7 +283,7 @@ public:
         {
             setLandMask(mask, false);
         }
-    
+
     void setLandMask(Utils::MaskStruct const &mask, bool global);
 
     //! Apply landmask
@@ -323,17 +323,27 @@ public:
     //! Get salinity integral condition row
     int getRowIntCon();
 
-    // ---------------------------------------------------------------
-    // The following functions are required for the coupling with other
-    // models:
+    //! The following functions are required for the coupling with
+    //! other models. We use a pure abstract base class Model, from
+    //! which all other models are derived. CoupledModel knowns only
+    //! the base class, hence we need to downcast to specific derived
+    //! models. If we would omit one of the overloaded synchronize
+    //! methods we risk an infinite recursion.
+
+    //! |      ---Model---        |
+    //! |     /     |     \       |
+    //! | Ocean Atmosphere SeaIce |
 
     //! Receive atmosphere data
-    //! This routine is called from a CoupledModel object
     void synchronize(std::shared_ptr<AtmospherePar> atmos);
 
-    //! Here we downcast to a specific model
+    //! Receive sea ice data
+    void synchronize(std::shared_ptr<SeaIce> seaice) {}
+
+    //! This routine is called from a CoupledModel object; here we
+    //! downcast to a specific model.
     void synchronize(std::shared_ptr<Model> model);
-    
+
     //! Obtain atmos temp data for debugging
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
 
@@ -366,7 +376,7 @@ public:
 
     // Obtain interface surface salinity
     Teuchos::RCP<Epetra_Vector> interfaceS();
-    
+
     // ---------------------------------------------------------------
     // Scale the matrix and rhs of the problem. These things are
     // confusing and not used.
@@ -399,7 +409,7 @@ public:
 
     // This function finds the pressure rows that will give a singular
     // Schur complement. Based on these rows we will try to create a
-    // better landmask. 
+    // better landmask.
     int analyzeJacobian1();
 
     // Here we integrate columns of the S Jacobian over the ocean
@@ -420,9 +430,9 @@ private:
     void initializeOcean();
     void initializePreconditioner();
     void initializeBelos();
-    
+
     // Perform a Newton solve with a small perturbation in the parameter
-    Teuchos::RCP<Epetra_Vector> initialState(); 
+    Teuchos::RCP<Epetra_Vector> initialState();
 
     void inspectVector(VectorPtr x);
 };

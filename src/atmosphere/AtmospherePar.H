@@ -237,6 +237,9 @@ public:
     //! Receive ocean data
     void synchronize(std::shared_ptr<Ocean> ocean);
 
+    //! Receive ocean data
+    void synchronize(std::shared_ptr<SeaIce> seaice) {}
+
     //! Downcast to specific models
     void synchronize(std::shared_ptr<Model> model);
 

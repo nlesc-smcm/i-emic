@@ -44,38 +44,48 @@ public:
         modelRow_(modelRow),
         modelCol_(modelCol)
         {
+            // create name
+            std::stringstream ss;
+            ss << modelRow->name() << "-" << modelCol->name();
+            name_ = ss.str();
+
+            // obtain domains
             modelRowDomain_ = modelRow_->getDomain();
             modelColDomain_ = modelCol_->getDomain();
 
+            // initialize block
             block_ =
                 Teuchos::rcp(
                     new Epetra_CrsMatrix(Copy,
                                          *modelRowDomain_->GetSolveMap(),
                                          *modelColDomain_->GetColMap(), 0) );
             
-
             initialized_ = true;
 
             // compute the block
             computeBlock();
-
-            // create name
-            std::stringstream ss;
-            ss << modelRow->name() << "-" << modelCol->name();
-            name_ = ss.str();
-
-
         }
 
     //------------------------------------------------------------------
     void computeBlock()
         {
             assert(initialized_);
-            TIMER_START("CouplingBlock: compute block");
+
+            // local size
+            int numMyElements = block_->RowMap().NumMyElements();
+            int numGlElements = block_->RowMap().NumGlobalElements();
 
             // obtain 0-based global CRS matrix from modelRow
             std::shared_ptr<Utils::CRSMat> blockCRS =
                 modelRow_->getBlock(modelCol_);
+
+            // inspect CRS struct
+            if (blockCRS->beg.empty())
+            {
+                WARNING(name_ << ": Empty CRS struct, not computing coupling block",
+                        __FILE__, __LINE__);
+                return;
+            }
 
             // construct CRS matrix
 
@@ -90,18 +100,17 @@ public:
             // values array
             std::vector<double> values(maxnnz, 0.0);
             
-            // local size
-            int numMyElements = block_->RowMap().NumMyElements();
-            int numGlElements = block_->RowMap().NumGlobalElements();
 
             // global case
             if (numGlElements == (int) blockCRS->beg.size() - 1)
             {
+                TIMER_START("CouplingBlock: compute block");
+                
                 int gRow, index, numentries;
-
+                
                 // fill Epetra CRS from global CRSMat
                 for (int i = 0; i < numMyElements; ++i)
-                {
+                {                    
                     gRow       = block_->RowMap().GID(i);
                     index      = blockCRS->beg[gRow];
                     numentries = blockCRS->beg[gRow+1] - index;
@@ -135,17 +144,37 @@ public:
                             block_->InsertGlobalValues(gRow, numentries,
                                                        &values[0], &indices[0]);
                     }
-
+                    
                     if (ierr != 0)
                     {
-                        INFO ("Error in InsertGlobalValues: " << ierr);
+                        INFO (name_ << ": Error in InsertGlobalValues: " << ierr);
                         INFO (" Filled ? " << block_->Filled());
+                        std::cout << name_ << ": Error in Insert/ReplaceGlobalValues: "
+                                  << ierr << std::endl;
+                        std::cout << "Filled = " << block_->Filled() << std::endl;
+                        std::cout << "  GRID = " << gRow << std::endl;
+                        std::cout << "  LRID = " << block_->LRID(gRow) << std::endl;
+                        std::cout << " graph inds in LRID:   " 
+                              << block_->Graph().NumMyIndices(block_->LRID(gRow)) << std::endl;
+
+                        std::cout << "indices : ";
+                        for (int ii = 0; ii != numentries; ++ii)
+                        {
+                            std::cout << indices[ii] << " ";
+                        }
+                        std::cout << std::endl;
+
                         ERROR("Error in InsertGlobalValues", __FILE__, __LINE__);
                     }
                 }
+                
+                TIMER_STOP("CouplingBlock: compute block");
             }
             else
-                ERROR("Local CRS case not implemented!", __FILE__, __LINE__);
+            {
+                WARNING("Local CRS case not implemented! Continue with empty coupling block.", __FILE__, __LINE__);
+                return;
+            }
 
             // Finalize
             CHECK_ZERO(block_->FillComplete(
@@ -153,7 +182,7 @@ public:
                            *modelRowDomain_->GetSolveMap()));
 
             computed_ = true;
-            TIMER_STOP("CouplingBlock: compute block");
+
         }
 
     //------------------------------------------------------------------
@@ -163,7 +192,12 @@ public:
     //------------------------------------------------------------------
     void applyMatrix(Epetra_MultiVector const &in, Epetra_MultiVector &out)
         {
-            assert(initialized_ && computed_);
+            if (!computed_ || !initialized_)
+            {
+                WARNING("Trying to apply empty coupling block", __FILE__, __LINE__);
+                out.PutScalar(0.0);
+                return;
+            }
             
             TIMER_START("CouplingBlock: apply matrix...");
             assert(block_->DomainMap().SameAs(in.Map()));

@@ -486,7 +486,8 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
         index0 = false;
     else
     {
-        ERROR("What CRS format is this? ", __FILE__, __LINE__);
+        WARNING("What CRS format is this? Continue with empty matrix.", __FILE__, __LINE__);
+        return;
     }
 
     // indices array

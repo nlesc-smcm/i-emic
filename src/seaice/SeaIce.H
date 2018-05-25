@@ -185,6 +185,7 @@ private:
     double Lf_; //! latent heat of fusion of ice, J kg^{-1}
     double Ls_; //! latent heat of sublimation of ice, J kg^{-1}
     double Ic_; //! constant ice conductivity, W m^{-1} K^{-1}
+    double a0_; //! freezing temperature sensitivity
 
     //! combined parameter
     double zeta_;
@@ -314,7 +315,7 @@ private:
 
     //! freezing temperature (dominant term)
     double freezingT(double S)
-        { return -0.0575 * (S + s0_); }
+        { return a0_ * (S + s0_); }
 
     //! ice surface temperature (linearized)
     double iceSurfT(double Q, double H, double S)
