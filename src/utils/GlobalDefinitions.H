@@ -93,8 +93,6 @@ extern std::stack<Timer> timerStack;
 #ifndef WARNING
 #  define WARNING(x,y,z)                                                \
 	{                                                                   \
-		(*outFile) << "**WARNING**: " << x << " "                       \
-				   << y << " " << z << std::endl;                       \
 		std::cerr << "**WARNING**: " << x << " ";                       \
         std::cerr << "(in " << y << ", line "                           \
                   << z << ")" << std::endl;                             \

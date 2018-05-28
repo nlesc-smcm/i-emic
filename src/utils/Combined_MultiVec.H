@@ -275,6 +275,7 @@ public:
     //! Index operator non-const
     Teuchos::RCP<Epetra_MultiVector> &operator()(int index)
         {
+            assert( (index >= 0) && (index < size_) );
             return vectors_[index];
         }
 
@@ -289,10 +290,13 @@ public:
             for (int i = 0; i != size_; ++i)
             {
                 end += vectors_[i]->MyLength();
+
                 if (index < end)
+                {
                     return (*(*vectors_[i])(0))[index - start];
+                }
                 
-                start += end;
+                start += vectors_[i]->MyLength();
             }
             TEUCHOS_TEST_FOR_EXCEPTION(start == MyLength(), std::logic_error,
                                        "undefined behaviour");

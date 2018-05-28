@@ -164,6 +164,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Initialize Jacobian
     jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
 
+    // Initialize state
+    initializeState();
 }
 
 //=============================================================================
@@ -195,7 +197,7 @@ void SeaIce::computeRHS()
     for (int j = 0; j != mLoc_; ++j)
         for (int i = 0; i != nLoc_; ++i)
         {
-            dr = j*nLoc_ + i;
+            dr = j*nLoc_ + i; // surface position for vectors with dof=1
             
             Hval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_HH_)];
             Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
@@ -241,6 +243,7 @@ void SeaIce::computeRHS()
         }
 
     domain_->Assembly2Standard(*localRHS_, *rhs_);
+    INFO(" seaic F = " << Utils::norm(rhs_));
 }
 
 //=============================================================================
@@ -450,8 +453,6 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<AtmospherePar> a
 
     // final check;
     assert( (int) block->co.size() == block->beg.back());
-
-    std::cout << "created block, dimension: " << mGlob_ * nGlob_ * dof_ << std::endl;
     
     return block;
 }
@@ -462,8 +463,54 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
-    // todo
-    
+    int el_ctr = 0;
+
+    int T = 5; // (1-based) in the Ocean, temperature is the fifth unknown
+    int S = 6; // (1-based) in the Ocean, salinity is the sixth unknown
+
+    // compute a few constant derivatives (see computeRHS)
+
+    // d / dT (F_H)
+    double dTFH = -1;
+
+    // d / dS (F_H)
+    double dSFH = a0_ - ( rhoo_ * Lf_ / zeta_) * dEdT_ * a0_;
+
+    // d / dS (F_Q)
+    double dSFQ = a0_ + ( rhoo_ * Ls_ / muoa_) * dEdT_ * a0_;
+
+    for (int j = 0; j != mGlob_; ++j)
+        for (int i = 0; i != nGlob_; ++i)
+            for (int XX = 1; XX <= dof_; ++XX)
+            {
+                block->beg.push_back(el_ctr);
+                
+                switch (XX)
+                {
+                case SEAICE_HH_:
+                    block->co.push_back(dTFH);
+                    block->jco.push_back(ocean->interface_row(i,j,T));
+                    el_ctr++;
+                    
+                    block->co.push_back(dSFH);
+                    block->jco.push_back(ocean->interface_row(i,j,S));
+                    el_ctr++;                    
+                    break;
+                    
+                case SEAICE_QQ_:
+                    block->co.push_back(dSFQ);
+                    block->jco.push_back(ocean->interface_row(i,j,S));
+                    el_ctr++;                    
+                    break;
+                }
+            }
+
+        // final entry in beg ( == nnz)
+    block->beg.push_back(el_ctr);
+
+    // final check;
+    assert( (int) block->co.size() == block->beg.back());
+
     return block;   
 }
 
@@ -707,14 +754,44 @@ void SeaIce::applyPrecon(Epetra_MultiVector const &in,
     precPtr_->ApplyInverse(in, out);
 
     // check matrix residual
-    Teuchos::RCP<Epetra_MultiVector> r =
-        Teuchos::rcp(new Epetra_MultiVector(in));;
+    // Teuchos::RCP<Epetra_MultiVector> r =
+    //     Teuchos::rcp(new Epetra_MultiVector(in));;
     
-    applyMatrix(out, *r);
-    r->Update(1.0, in, -1.0);
-    double rnorm = Utils::norm(r);
+    // applyMatrix(out, *r);
+    // r->Update(1.0, in, -1.0);
+    // double rnorm = Utils::norm(r);
 
-    INFO("SeaIce: preconditioner residual: " << rnorm);
+    // INFO("SeaIce: preconditioner residual: " << rnorm);
     
     TIMER_STOP("SeaIce: apply preconditioner...");
 }
+
+//=============================================================================
+void SeaIce::initializeState()
+{
+    state_->PutScalar(0.0);
+    sol_->PutScalar(0.0);
+
+    int maxit = 5;
+    int it = 0;
+    computeRHS();
+    for (; it < maxit; ++it)
+    {                
+        computeJacobian();
+        rhs_->Scale(-1.0);
+        solve(rhs_);
+        state_->Update(1.0, *sol_, 1.0);
+        computeRHS();
+        INFO("SeaIce::initializeState() norm F = " << Utils::norm(rhs_));
+    }
+}
+
+
+//=============================================================================
+void SeaIce::preProcess()
+{}
+
+//=============================================================================
+void SeaIce::postProcess()
+{}
+

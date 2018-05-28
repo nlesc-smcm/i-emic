@@ -21,7 +21,7 @@ TEST(ParameterLists, Initialization)
     {
         std::vector<string> files = {"ocean_params.xml",
                                      "atmosphere_params.xml",
-                                     "dummy",
+                                     "seaice_params.xml",
                                      "coupledmodel_params.xml",
                                      "continuation_params.xml",
                                      "jdqz_params.xml"};
@@ -147,6 +147,7 @@ TEST(CoupledModel, Newton)
         coupledModel->getState('V');
 
     stateV->PutScalar(0.0);
+    seaice->initializeState();
 
     std::shared_ptr<Combined_MultiVec> solV =
         coupledModel->getSolution('V');
@@ -154,12 +155,14 @@ TEST(CoupledModel, Newton)
     solV->PutScalar(0.0);
 
     // set parameter
-    coupledModel->setPar(0.005);
+    coupledModel->setPar(0.01);
 
     // try to converge
     int maxit = 10;
     std::shared_ptr<Combined_MultiVec> b;
     int niter = 0;
+    std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('V');
+    std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
     for (; niter != maxit; ++niter)
     {
         coupledModel->computeRHS();
@@ -168,36 +171,29 @@ TEST(CoupledModel, Newton)
 
         b = coupledModel->getRHS('C');
 
-        INFO(" ocean F  = " << Utils::norm((*coupledModel->getRHS('V'))(0)) );
-        INFO(" atmos F  = " << Utils::norm((*coupledModel->getRHS('V'))(1)) );
-
         CHECK_ZERO(b->Scale(-1.0));
 
-        double normb = Utils::norm(b);
-
         coupledModel->solve(b);
-
-        std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');
-        std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
-
-        INFO(" ocean x  = " << Utils::norm((*stateV)(0)) );
-        INFO(" atmos x  = " << Utils::norm((*stateV)(1)) );
-        INFO(" ocean dx = " << Utils::norm((*x)(0)) );
-        INFO(" atmos dx = " << Utils::norm((*x)(1)) );
 
         stateV->Update(1.0, *x, 1.0); // x = x + dx;
 
         coupledModel->applyMatrix(*x, *y);
-
+        double normb = Utils::norm(b);
         y->Update(1.0, *b, -1.0);
         y->Scale(1./normb);
 
-        Utils::print(y, "residual");
+        Utils::print(y, "residual");        
+        
+        for (int i = 0; i != b->Size(); ++i)
+        {
+            INFO(" submodel " << i << " ||F|| = " << Utils::norm((*b)(i)));
+            INFO("   " << " dx = " << Utils::norm((*x)(i)));
+            INFO("   " << " ||r|| / ||b|| = " << Utils::norm((*y)(i)));
+        }
 
-        INFO(" ocean ||r|| / ||b||  = " << Utils::norm((*y)(0)));
-        INFO(" atmos ||r|| / ||b||  = " << Utils::norm((*y)(1)));
-        INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
-
+        INFO("   total ||r|| / ||b||  = " << Utils::norm(y));
+        INFO("   total          ||F|| = " << Utils::norm(b));
+        
         if (Utils::norm(coupledModel->getRHS('V')) < 1e-8)
             break;
     }
@@ -207,7 +203,8 @@ TEST(CoupledModel, Newton)
     INFO("CoupledModel, Newton converged in " << niter << " iterations");
 }
 
-//------------------------------------------------------------------
+
+//-----------------------------------------------------------------
 // 1st integral condition test for atmosphere
 TEST(CoupledModel, AtmosphereIntegralCondition1)
 {
@@ -221,6 +218,7 @@ TEST(CoupledModel, AtmosphereIntegralCondition1)
     
     EXPECT_NEAR(result, 0.0, 1e-4);
 }
+
 
 //------------------------------------------------------------------
 TEST(CoupledModel, AtmosphereEPfields)
@@ -291,7 +289,6 @@ TEST(CoupledModel, EPIntegral)
 
 }
 
-
 //------------------------------------------------------------------
 // full continuation
 TEST(CoupledModel, Continuation)
@@ -304,12 +301,11 @@ TEST(CoupledModel, Continuation)
         std::shared_ptr<Combined_MultiVec> stateV =
             coupledModel->getState('V');
         
-        stateV->PutScalar(1.234);
-        
         std::shared_ptr<Combined_MultiVec> solV =
             coupledModel->getSolution('V');
         
         solV->PutScalar(0.0);
+        seaice->initializeState();
         
         // set initial parameter
         coupledModel->setPar(0.0);
@@ -319,12 +315,6 @@ TEST(CoupledModel, Continuation)
                      Teuchos::RCP<Teuchos::ParameterList> >
             continuation(coupledModel, params[CONT]);
 
-        // Test continuation
-        continuation.test();
-
-        stateV->PutScalar(0.0);
-        solV->PutScalar(0.0);
-         
         // Run continuation        
         continuation.run();
 
@@ -340,6 +330,7 @@ TEST(CoupledModel, Continuation)
     EXPECT_EQ(failed, false);
 }
 
+/*
 //------------------------------------------------------------------
 TEST(CoupledModel, EPIntegral2)
 {
@@ -517,7 +508,7 @@ TEST(CoupledModel, SmallPerturbation)
 
     EXPECT_NEAR(nrm / nrmxp ,nrmp / nrmxp,1e-03);
 }
-
+*/
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {

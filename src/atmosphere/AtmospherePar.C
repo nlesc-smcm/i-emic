@@ -369,6 +369,8 @@ void AtmospherePar::computeRHS()
     }
 
     TIMER_STOP("AtmospherePar: computeRHS...");
+
+    INFO(" atmos F = " << Utils::norm(rhs_));
 }
 
 //==================================================================
@@ -1121,14 +1123,14 @@ void AtmospherePar::applyPrecon(Epetra_MultiVector const &in,
     precPtr_->ApplyInverse(in, out);
 
         // check matrix residual
-    Teuchos::RCP<Epetra_MultiVector> r =
-        Teuchos::rcp(new Epetra_MultiVector(in));;
+    // Teuchos::RCP<Epetra_MultiVector> r =
+    //     Teuchos::rcp(new Epetra_MultiVector(in));;
     
-    applyMatrix(out, *r);
-    r->Update(1.0, in, -1.0);
-    double rnorm = Utils::norm(r);
+    // applyMatrix(out, *r);
+    // r->Update(1.0, in, -1.0);
+    // double rnorm = Utils::norm(r);
 
-    INFO("AtmospherePar: preconditioner residual: " << rnorm);
+    // INFO("AtmospherePar: preconditioner residual: " << rnorm);
 
 
     TIMER_STOP("AtmospherePar: apply preconditioner...");

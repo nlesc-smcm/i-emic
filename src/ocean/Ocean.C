@@ -1216,6 +1216,8 @@ void Ocean::computeRHS()
     THCM::Instance().fixMixing(0);
     THCM::Instance().evaluate(*state_, rhs_, false);
     TIMER_STOP("Ocean: compute RHS...");
+
+    INFO(" ocean F = " << Utils::norm(rhs_));
 }
 
 //=====================================================================
@@ -1320,6 +1322,17 @@ void Ocean::applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out)
     TIMER_START("Ocean: apply preconditioning...");
     precPtr_->ApplyInverse(v, out);
     TIMER_STOP("Ocean: apply preconditioning...");
+
+    // check matrix residual
+    // Teuchos::RCP<Epetra_MultiVector> r =
+    //     Teuchos::rcp(new Epetra_MultiVector(v));;
+    
+    // applyMatrix(out, *r);
+    // r->Update(1.0, v, -1.0);
+    // double rnorm = Utils::norm(r);
+
+    // INFO("Ocean: preconditioner residual: " << rnorm);
+
 }
 
 //====================================================================

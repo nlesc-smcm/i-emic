@@ -4,8 +4,10 @@ function [J, co, ico, beg] = load_numjac(basename)
   ico = load([basename,'_ico']);
   beg = load([basename,'_beg']);
   
-  M = max(ico);
+  M = max(ico)+1;
   N = numel(beg)-1;
+  
+  [M,N]
 
   J = zeros(M,N);
   for j = 1:N

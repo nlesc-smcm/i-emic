@@ -325,7 +325,7 @@ public:
 
     //! The following functions are required for the coupling with
     //! other models. We use a pure abstract base class Model, from
-    //! which all other models are derived. CoupledModel knowns only
+    //! which all other models are derived. CoupledModel knows only
     //! the base class, hence we need to downcast to specific derived
     //! models. If we would omit one of the overloaded synchronize
     //! methods we risk an infinite recursion.

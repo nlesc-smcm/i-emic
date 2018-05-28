@@ -52,7 +52,6 @@ TEST(ParameterLists, Initialization)
 
         Utils::overwriteParameters(params[COUPLED], params[CONT]);
         INFO('\n');
-
     }
     catch (...)
     {
@@ -171,6 +170,16 @@ TEST(CoupledModel, inspectState)
         }
         
         EXPECT_NEAR(Utils::norm(state), sqrt(sumNorms), 1e-7);
+
+        std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
+        x->PutScalar(1.0);
+        
+        // Check whether the indexing works correctly
+        for (int i = 0; i != x->MyLength(); ++i)
+        {
+            EXPECT_EQ((*x)[i], 1);
+        }
+
     }
     catch (...)
     {
@@ -237,7 +246,6 @@ TEST(CoupledModel, MassMatrix)
     }
 }
 
-/*
 //------------------------------------------------------------------
 TEST(CoupledModel, computeJacobian)
 {
@@ -248,18 +256,23 @@ TEST(CoupledModel, computeJacobian)
         coupledModel->setPar(0.1);
 
         // randomize state       
-        coupledModel->getState('V')->Random();
-        coupledModel->getState('V')->Scale(10);
+        coupledModel->getState('V')->PutScalar(1.0);
+        coupledModel->getState('V')->Scale(1e-4);
 
         coupledModel->computeJacobian();
-        Teuchos::RCP<Epetra_CrsMatrix> atmosJac = atmos->getJacobian();
-        Teuchos::RCP<Epetra_CrsMatrix> oceanJac = ocean->getJacobian();
+        Teuchos::RCP<Epetra_CrsMatrix> atmosJac  = atmos->getJacobian();
+        Teuchos::RCP<Epetra_CrsMatrix> oceanJac  = ocean->getJacobian();
+        Teuchos::RCP<Epetra_CrsMatrix> seaiceJac = seaice->getJacobian();
 
-        Utils::print(atmosJac, "atmosJac");
-        Utils::print(oceanJac, "oceanJac");
-
+        Utils::print(atmosJac,  "atmosJac");
+        Utils::print(oceanJac,  "oceanJac");
+        Utils::print(seaiceJac, "seaiceJac");
+                                               
         Utils::print(&atmosJac->ColMap(), "atmosJacColMap");
         Utils::print(&atmosJac->DomainMap(), "atmosJacDomainMap");
+
+        Utils::print(&seaiceJac->ColMap(), "seaiceJacColMap");
+        Utils::print(&seaiceJac->DomainMap(), "seaiceJacDomainMap");
 
         coupledModel->dumpBlocks();
     }
@@ -269,20 +282,21 @@ TEST(CoupledModel, computeJacobian)
         throw;
     }
     EXPECT_EQ(failed, false);
+
 }
 
 //------------------------------------------------------------------
 TEST(CoupledModel, numericalJacobian)
 {
     // only do this test for small problems in serial
-    int nmax = 2e3;
+    int nmax = 1e3;
 
     if ( (comm->NumProc() == 1) &&
          (coupledModel->getState('V')->GlobalLength() < nmax) )
     {
         bool failed = false;
         try
-        {
+        {            
             INFO("compute njC");
 
             NumericalJacobian<std::shared_ptr<CoupledModel>,
@@ -318,6 +332,7 @@ TEST(CoupledModel, numericalJacobian)
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
 }
+
 
 //------------------------------------------------------------------
 // We need this information from THCM
@@ -543,7 +558,6 @@ TEST(CoupledModel, applyMatrix)
 
     EXPECT_EQ(failed, false);
 }
-
 //------------------------------------------------------------------
 TEST(CoupledModel, Precipitation)
 {
@@ -596,6 +610,7 @@ TEST(CoupledModel, Precipitation)
     
 }
 
+
 //------------------------------------------------------------------
 TEST(CoupledModel, View)
 {
@@ -604,6 +619,7 @@ TEST(CoupledModel, View)
 
     std::shared_ptr<Combined_MultiVec> rhsV =
         coupledModel->getRHS('V');
+
 
     stateV->PutScalar(0.1);
     coupledModel->computeRHS();
@@ -617,6 +633,7 @@ TEST(CoupledModel, View)
 
     EXPECT_NE(norm1, norm2);
 }
+
 
 //------------------------------------------------------------------
 TEST(CoupledModel, Synchronization)
@@ -723,7 +740,6 @@ TEST(CoupledModel, Synchronization)
     EXPECT_GT(std::max(std::abs(maxValue), std::abs(minValue)), 0.0);
 
 }
-
 //------------------------------------------------------------------
 // Test hashing functions of Combined_MultiVec and Utils
 TEST(CoupledModel, Hashing)
@@ -746,6 +762,7 @@ TEST(CoupledModel, Hashing)
 
 }
 
+
 //------------------------------------------------------------------
 TEST(CoupledModel, Solve)
 {
@@ -765,6 +782,8 @@ TEST(CoupledModel, Solve)
     }
     EXPECT_EQ(failed, false);
 }
+
+
 
 //------------------------------------------------------------------
 // Here we are testing the implementation of the integral condition.
@@ -821,7 +840,6 @@ TEST(CoupledModel, IntegralCondition)
     
     EXPECT_NEAR(valueF, valueB, 1e-12);
 }
-*/
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)

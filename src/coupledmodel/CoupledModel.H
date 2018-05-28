@@ -107,30 +107,6 @@ private:
                     CouplingBlock<std::shared_ptr<Model>,
                                   std::shared_ptr<Model> > > > C_;
     
-    //! Coupling block atmos -> ocean
-    CouplingBlock<std::shared_ptr<Ocean>,
-                  std::shared_ptr<AtmospherePar> > C12_;
-    
-    //! Coupling block seaice -> ocean
-    CouplingBlock<std::shared_ptr<Ocean>,
-                  std::shared_ptr<SeaIce> > C13_;
-    
-    //! Coupling block ocean -> atmos
-    CouplingBlock<std::shared_ptr<AtmospherePar>,
-                  std::shared_ptr<Ocean> > C21_;
-    
-    //! Coupling block seaice -> atmos
-    CouplingBlock<std::shared_ptr<AtmospherePar>,
-                  std::shared_ptr<SeaIce> > C23_;
-
-    //! Coupling block ocean -> seaice
-    CouplingBlock<std::shared_ptr<SeaIce>,
-                  std::shared_ptr<Ocean> > C31_;
-
-    //! Coupling block atmosphere -> seaice
-    CouplingBlock<std::shared_ptr<SeaIce>,
-                  std::shared_ptr<AtmospherePar> > C32_;
-
     Teuchos::RCP
     <Belos::LinearProblem
      <double, Combined_MultiVec, BelosOp<CoupledModel> > > problem_;

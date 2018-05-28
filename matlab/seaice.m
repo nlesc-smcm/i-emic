@@ -22,8 +22,8 @@ function [X, J, F] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size (2deg)
-    n = 16;
-    m = 16;
+    n = 6;
+    m = 6;
 
     % number of unknowns
     nun = 3;
@@ -114,9 +114,9 @@ function [X, J, F] = seaice()
     qatm = idealizedTemp(0, qvar);
 
     rng(1);
-    % X = 1e8*randn(dim, 1);
-    X = 1.0*ones(dim,1);
-    %x = initialsol();
+    X = 1e-4*randn(dim, 1);
+    % X = 1.0*ones(dim,1);
+    % X = initialsol();
 
     % Newton solve
     F    = rhs(X);
@@ -133,6 +133,10 @@ function [X, J, F] = seaice()
     end
     
     F  = rhs(X);
+    J  = jac(X);
+    vsm(J(ord,ord));
+    return
+        
     for i = 1:kmax
         J  = jac(X);
         dX = J \ -F;

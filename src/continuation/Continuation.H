@@ -1147,7 +1147,7 @@ testCopyView()
     INFO("Testing copy");
     INFO("Scaling copy1 with 3 ---------------");
     
-    copy1->Scale(3.0);
+    copy1->Random();
     
     INFO("copy1      norm: " << Utils::norm(copy1));
     INFO("copy2      norm: " << Utils::norm(copy2));

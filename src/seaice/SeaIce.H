@@ -230,7 +230,7 @@ public:
     //! destructor
     ~SeaIce() {};
 
-    std::string const name() { return "Sea ice"; }
+    std::string const name() { return "SeaIce"; }
 
     //! compute right hand side
     void computeRHS();
@@ -248,6 +248,8 @@ public:
                      Epetra_MultiVector &out);
 
     void initializePrec();
+
+    void initializeState();
     
     void solve(Teuchos::RCP<Epetra_MultiVector> const &b);    
     
@@ -290,8 +292,8 @@ public:
 
     void buildPreconditioner() {}
 
-    void preProcess() {}
-    void postProcess() {}
+    void preProcess();
+    void postProcess();
 
     std::string const writeData(bool describe) { return std::string(); }
 

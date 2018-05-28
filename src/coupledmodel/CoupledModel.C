@@ -347,14 +347,15 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &ou
             // reset z
             z.PutScalar(0.0);
 
-            // fill z
+            // fill components of z
             for (size_t i = 0; i != models_.size(); ++i)
             {
                 if (i != j)
                     C_[i][j].applyMatrix(*v(j), *z(i));
             }
-            
-            out.Update(1.0, z, 1.0);
+
+            // update with complete z
+            out.Update(1.0, z, 1.0);                                    
         }            
     }
     TIMER_STOP("CoupledModel: apply matrix...");
@@ -494,8 +495,8 @@ double CoupledModel::computeResidual(std::shared_ptr<Combined_MultiVec> rhs)
 
     double rhsNorm = Utils::norm(rhs);
 
-    b.Update(1, *rhs, -1); //  b-Jx
-    b.Scale(1.0 / rhsNorm);
+    b.Update(1, *rhs, -1);   // b-Jx
+    b.Scale(1.0 / rhsNorm);  
     double relResidual = Utils::norm(&b); // ||b-Jx||/||b||
 
     return relResidual;
@@ -645,6 +646,7 @@ void CoupledModel::dumpBlocks()
     std::stringstream ss;
     for (size_t i = 0; i != models_.size(); ++i)
     {
+        ss.str(""); 
         ss << "J_" << models_[i]->name();
         DUMPMATLAB(ss.str().c_str(), *(models_[i]->getJacobian()));
         for (size_t j = 0; j != models_.size(); ++j)

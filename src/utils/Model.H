@@ -12,6 +12,10 @@ class Epetra_MultiVector;
 class Epetra_CrsMatrix;
 class Epetra_Vector;
 
+class Ocean;
+class AtmospherePar;
+class SeaIce;
+
 class Model
 {
     
@@ -20,7 +24,6 @@ public:
     using VectorPtr = Teuchos::RCP<Epetra_Vector>;
     
     virtual ~Model() {}
-    
     
     virtual void computeRHS() = 0;
     virtual void computeJacobian() = 0;

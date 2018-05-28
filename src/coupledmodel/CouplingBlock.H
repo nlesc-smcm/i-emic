@@ -34,7 +34,8 @@ public:
     CouplingBlock()
         :
         name_("None"),
-        initialized_(false)
+        initialized_(false),
+        computed_(false)
         {}
     
     //------------------------------------------------------------------
@@ -59,7 +60,8 @@ public:
                     new Epetra_CrsMatrix(Copy,
                                          *modelRowDomain_->GetSolveMap(),
                                          *modelColDomain_->GetColMap(), 0) );
-            
+
+            computed_ = false;
             initialized_ = true;
 
             // compute the block
@@ -80,10 +82,15 @@ public:
                 modelRow_->getBlock(modelCol_);
 
             // inspect CRS struct
+            std::cout << " computing " << name_ << std::endl;
+
             if (blockCRS->beg.empty())
             {
+
                 WARNING(name_ << ": Empty CRS struct, not computing coupling block",
                         __FILE__, __LINE__);
+                std::cout << "   flags: " << computed_ << " "
+                          << initialized_ << std::endl;
                 return;
             }
 
@@ -172,7 +179,8 @@ public:
             }
             else
             {
-                WARNING("Local CRS case not implemented! Continue with empty coupling block.", __FILE__, __LINE__);
+                WARNING(name_ << ": local CRS case not implemented! Continue with empty coupling block.",
+                        __FILE__, __LINE__);
                 return;
             }
 
@@ -194,7 +202,7 @@ public:
         {
             if (!computed_ || !initialized_)
             {
-                WARNING("Trying to apply empty coupling block", __FILE__, __LINE__);
+                WARNING(name_ << ": trying to apply empty coupling block", __FILE__, __LINE__);
                 out.PutScalar(0.0);
                 return;
             }
@@ -210,7 +218,11 @@ public:
     // Get RCP to block
     Teuchos::RCP<Epetra_CrsMatrix> getBlock()
         {
-            assert(initialized_ && computed_);
+            if (!computed_ || !initialized_)
+            {
+                WARNING(name_ << ": returning empty coupling block", __FILE__, __LINE__);
+            }
+
             return block_;
         }
 
