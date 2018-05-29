@@ -10,7 +10,7 @@
   <!-- Select the models in use -->
   <Parameter name="Use ocean"      type="bool" value="true"/>
   <Parameter name="Use atmosphere" type="bool" value="true"/>
-  <Parameter name="Use sea ice"    type="bool" value="false"/>
+  <Parameter name="Use sea ice"    type="bool" value="true"/>
   
   <!-- Specify whether the coupled model should initialize with  -->
   <!-- old states (true) or with a trivial solution (false).     -->
@@ -61,6 +61,6 @@
   <!-- C: coupled   -->
   <Parameter name="Solving scheme" type="char" value="C"/>
 
-  <Parameter name="Preconditioning" type="char" value="F"/>
+  <Parameter name="Preconditioning" type="char" value="B"/>
     
 </ParameterList>

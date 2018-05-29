@@ -155,7 +155,7 @@ TEST(CoupledModel, Newton)
     solV->PutScalar(0.0);
 
     // set parameter
-    coupledModel->setPar(0.01);
+    coupledModel->setPar(0.005);
 
     // try to converge
     int maxit = 10;
@@ -300,12 +300,13 @@ TEST(CoupledModel, Continuation)
         // initialize state in model
         std::shared_ptr<Combined_MultiVec> stateV =
             coupledModel->getState('V');
-        
+        stateV->PutScalar(0.0);
+                               
         std::shared_ptr<Combined_MultiVec> solV =
             coupledModel->getSolution('V');
-        
         solV->PutScalar(0.0);
-        seaice->initializeState();
+                             
+        // seaice->initializeState();
         
         // set initial parameter
         coupledModel->setPar(0.0);

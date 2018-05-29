@@ -740,6 +740,43 @@ TEST(CoupledModel, Synchronization)
     EXPECT_GT(std::max(std::abs(maxValue), std::abs(minValue)), 0.0);
 
 }
+
+//------------------------------------------------------------------
+TEST(CoupledModel, Synchronization2)
+{
+    std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('V');
+    x->Random();
+    std::shared_ptr<Combined_MultiVec> b = coupledModel->getState('C');
+    b->PutScalar(0.0);
+    coupledModel->applyPrecon(*x, *b);
+
+    int numModels = b->Size();
+    std::vector<double> norms(numModels);
+    for (int i = 0; i != numModels; ++i)
+        norms[i] = Utils::norm((*b)(i));
+    
+    for (auto &v: norms)
+        std::cout << v << " ";
+    std::cout << std::endl;
+    
+    if (numModels > 2)
+    {
+        (*x)(2)->PutScalar(9.99);
+        b->PutScalar(0.0);
+        coupledModel->applyPrecon(*x, *b);
+        for (int i = 0; i != numModels; ++i)
+            norms[i] = Utils::norm((*b)(i));
+        
+        for (auto &v: norms)
+            std::cout << v << " ";
+        std::cout << std::endl;
+    }
+    getchar();
+}
+
+//------------------------------------------------------------------
+
+
 //------------------------------------------------------------------
 // Test hashing functions of Combined_MultiVec and Utils
 TEST(CoupledModel, Hashing)
