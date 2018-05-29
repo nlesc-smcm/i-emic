@@ -23,7 +23,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     t0o_   (params->get("background ocean temp t0o", 7)),
     t0a_   (params->get("background atmos temp t0a", 10)),
     t0i_   (params->get("background seaice temp t0i",-15)),
-    tvar_  (params->get("ocean temp variation tvar", 15)),
+    tvar_  (params->get("ocean temp variation tvar", 1)),
     s0_    (params->get("ocean background salinity s0", 35)),
     svar_  (params->get("ocean salinity variation svar", 1)),
     q0_    (params->get("atmos background humidity q0", 1e-3)),

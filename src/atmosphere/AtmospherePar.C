@@ -582,6 +582,19 @@ void AtmospherePar::synchronize(std::shared_ptr<Ocean> ocean)
 }
 
 //==================================================================
+void AtmospherePar::synchronize(std::shared_ptr<SeaIce> seaice)
+{
+    // Get sea ice mask
+    Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
+
+    // Get sea ice temperature
+    Teuchos::RCP<Epetra_Vector> sit = seaice->interfaceT();
+
+    setSeaIceMask(Msi);
+    setSeaIceTemperature(sit);
+}
+
+//==================================================================
 void AtmospherePar::synchronize(std::shared_ptr<Model> model)
 {
     auto ocean  = std::dynamic_pointer_cast<Ocean>(model);

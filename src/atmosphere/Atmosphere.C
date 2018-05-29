@@ -641,7 +641,8 @@ double Atmosphere::matvec(int row)
 void Atmosphere::forcing()
 {
     double value;
-    int temRow, humRow, surfaceRow;
+    int tr, hr, sr;
+    
     if (std::abs(Ooa_) < 1e-8)
         WARNING(" Ooa_ may give trouble", __FILE__, __LINE__);
     
@@ -649,8 +650,8 @@ void Atmosphere::forcing()
         for (int i = 1; i <= n_; ++i)
         {
             // ------------ Temperature forcing
-            surfaceRow = find_surface_row(i, j);
-            temRow = find_row(i, j, l_, ATMOS_TT_);
+            sr = find_surface_row(i, j) - 1;
+            tr = find_row(i, j, l_, ATMOS_TT_) - 1;
 
             // Apply surface mask and calculate land temperatures
             // This is a copy of legacy stuff, can be simplified
@@ -659,23 +660,24 @@ void Atmosphere::forcing()
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
             {
                 value = comb_ * sunp_ * suno_[j] / Ooa_;
-                (*sst_)[surfaceRow-1] = value + (*state_)[temRow-1];
+                (*sst_)[sr] = value + (*state_)[tr];
                 value += comb_ * sunp_ * (suna_[j] - amua_);
 
             }
             else // above ocean
             {
-                value = (*sst_)[surfaceRow-1] +
-                    comb_ * sunp_ * (suna_[j] - amua_);
+                // surface temperature, ice or sea: sit or sst 
+                Ts = (*sst_)[sr] * (1-Msi_[sr]) + (*sit_)[sr] * Msi_[sr];
+                value = Ts + comb_ * sunp_ * (suna_[j] - amua_);
                 
                 // latent heat due to precipitation (reference contribution)
                 value += comb_ * latf_ * lvscale_ * Po0_;
             }
             
-            frc_[temRow-1] = value;
+            frc_[tr] = value;
 
             // ------------ Humidity forcing
-            humRow = find_row(i, j, l_, ATMOS_QQ_);
+            hr = find_row(i, j, l_, ATMOS_QQ_) - 1;
 
             // Again, check whether we are above land
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
@@ -684,16 +686,19 @@ void Atmosphere::forcing()
             }
             else
             {
-                // --> when ice is available, this should check whether
-                // the surface is ice or water. At this point this
-                // is only for ocean surface temperature
+                // E (evaporation) forcing over ocean
+                Eoc =  nuq_ * dqso_ * ( tdim_ / qdim_ )
+                    * (*sst_)[sr];
+                
+                // E (evaporation) forcing over sea ice
+                Esi =  nuq_ * dqsi_ * ( tdim_ / qdim_ )
+                    * (*sit_)[sr];
 
-                // E (evaporation) forcing ( ocean state part )
-                value =  nuq_ * dqso_ * ( tdim_ / qdim_ )
-                    * (*sst_)[surfaceRow-1];
+                // combine the two
+                value = Eoc * (1-Msi_[sr]) + Esi * Msi_[sr];
 
             }
-            frc_[humRow-1] = value;
+            frc_[hr] = value;
         }
 
     // adjust to allow for integral condition in the serial case
