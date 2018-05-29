@@ -282,14 +282,13 @@ TEST(CoupledModel, computeJacobian)
         throw;
     }
     EXPECT_EQ(failed, false);
-
 }
 
 //------------------------------------------------------------------
 TEST(CoupledModel, numericalJacobian)
 {
     // only do this test for small problems in serial
-    int nmax = 1e3;
+    int nmax = 2e3;
 
     if ( (comm->NumProc() == 1) &&
          (coupledModel->getState('V')->GlobalLength() < nmax) )
@@ -745,36 +744,35 @@ TEST(CoupledModel, Synchronization)
 TEST(CoupledModel, Synchronization2)
 {
     std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('V');
-    x->Random();
-    std::shared_ptr<Combined_MultiVec> b = coupledModel->getState('C');
+    x->PutScalar(1e-4);
+    std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('C');
     b->PutScalar(0.0);
-    coupledModel->applyPrecon(*x, *b);
+    coupledModel->applyMatrix(*x, *b);
 
     int numModels = b->Size();
     std::vector<double> norms(numModels);
     for (int i = 0; i != numModels; ++i)
-        norms[i] = Utils::norm((*b)(i));
-    
-    for (auto &v: norms)
-        std::cout << v << " ";
-    std::cout << std::endl;
-    
-    if (numModels > 2)
-    {
-        (*x)(2)->PutScalar(9.99);
-        b->PutScalar(0.0);
-        coupledModel->applyPrecon(*x, *b);
-        for (int i = 0; i != numModels; ++i)
-            norms[i] = Utils::norm((*b)(i));
-        
-        for (auto &v: norms)
-            std::cout << v << " ";
-        std::cout << std::endl;
-    }
-    getchar();
-}
+        norms[i] = Utils::norm((*x)(i));
 
-//------------------------------------------------------------------
+    std::stringstream ss;
+    for (auto &v: norms)
+        ss << v << " ";
+    ss << std::endl;
+    
+    (*b)(b->Size()-1)->PutScalar(-1e-2);
+    coupledModel->solve(b);
+
+    x = coupledModel->getSolution('C');
+    for (int i = 0; i != numModels; ++i)
+        norms[i] = Utils::norm((*x)(i));
+        
+    for (auto &v: norms)
+        ss << v << " ";
+    ss << std::endl;
+
+
+    INFO(ss.str());
+}
 
 
 //------------------------------------------------------------------

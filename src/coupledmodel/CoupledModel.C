@@ -573,7 +573,7 @@ std::shared_ptr<Combined_MultiVec> CoupledModel::getRHS(char mode)
 double CoupledModel::getPar()
 {
     // Parameter values are equal to the continuation parameter or 0.
-    double par, out;
+    double par, out = 0.0;
     for (auto &model: models_)
     {
         par = model->getPar(parName_);

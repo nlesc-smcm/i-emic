@@ -103,7 +103,7 @@ TEST(SeaIce, computeJacobian)
 }
 
 //------------------------------------------------------------------
-TEST(SeaIce, solve)
+TEST(SeaIce, Solve)
 {
     Teuchos::RCP<Epetra_Vector> state = seaIce->getState('V');
     Teuchos::RCP<Epetra_Vector> b, x, r;
@@ -138,6 +138,29 @@ TEST(SeaIce, solve)
     
         EXPECT_NEAR(rNorm, 0, 1e-4);
     }
+}
+
+//------------------------------------------------------------------
+TEST(SeaIce, Newton)
+{
+    Teuchos::RCP<Epetra_Vector> state = seaIce->getState('V');
+    Teuchos::RCP<Epetra_Vector> b, x, r;
+
+    state->Random();
+    state->Scale(100);
+    seaIce->computeRHS();
+    for (int i = 0; i != 5; ++i)
+    {
+        seaIce->computeJacobian();
+        b = seaIce->getRHS('C');
+        b->Scale(-1.0);
+        seaIce->solve(b);
+        x = seaIce->getSolution('V');
+        state->Update(1.0, *x, 1.0);
+        seaIce->computeRHS();
+        std::cout << "||dx|| = " << Utils::norm(x) << std::endl;
+    }
+    EXPECT_LT(Utils::norm(x), 1e-8);
 }
 
 //------------------------------------------------------------------

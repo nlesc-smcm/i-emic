@@ -39,8 +39,8 @@ TEST(ParameterLists, Initialization)
         }
         
         INFO('\n' << "Overwriting:");
-        // Allow dominant parameterlists. Not that this trick uses a
-        // 'flattened' hierarchy. The Continuation and CoupledModel
+        // Allow dominant parameterlists. Not that this trick ignores
+        // any hierarchy. The Continuation and CoupledModel
         // parameterlists are allowed to overwrite settings.
         Utils::overwriteParameters(params[OCEAN],  params[COUPLED]);
         Utils::overwriteParameters(params[ATMOS],  params[COUPLED]);
@@ -306,7 +306,7 @@ TEST(CoupledModel, Continuation)
             coupledModel->getSolution('V');
         solV->PutScalar(0.0);
                              
-        // seaice->initializeState();
+        seaice->initializeState();
         
         // set initial parameter
         coupledModel->setPar(0.0);

@@ -61,6 +61,6 @@
   <!-- C: coupled   -->
   <Parameter name="Solving scheme" type="char" value="C"/>
 
-  <Parameter name="Preconditioning" type="char" value="B"/>
+  <Parameter name="Preconditioning" type="char" value="F"/>
     
 </ParameterList>
