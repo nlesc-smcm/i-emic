@@ -331,7 +331,7 @@ TEST(CoupledModel, Continuation)
     EXPECT_EQ(failed, false);
 }
 
-/*
+
 //------------------------------------------------------------------
 TEST(CoupledModel, EPIntegral2)
 {
@@ -509,7 +509,7 @@ TEST(CoupledModel, SmallPerturbation)
 
     EXPECT_NEAR(nrm / nrmxp ,nrmp / nrmxp,1e-03);
 }
-*/
+
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {
