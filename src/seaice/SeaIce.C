@@ -166,6 +166,14 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // Initialize state
     initializeState();
+
+    // Create importers for communication with other models
+    // FIXME: when T is available we need a submap for its values
+    // mapT = Utils::CreateSubMap(*standardMap_, dof_, SEAICE_TT_);
+    // mapM = Utils::CreateSubMap(*standardMap_, dof_, SEAICE_MM_);
+
+    // FIXME: after that we need import strategies to create interface
+    // functions
 }
 
 //=============================================================================

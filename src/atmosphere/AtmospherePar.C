@@ -99,6 +99,8 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     diagB_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     sol_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     sst_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    sit_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    Msi_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     E_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     P_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
@@ -107,6 +109,8 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     localDiagB_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSIT_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localMSI_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localE_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
@@ -347,6 +351,8 @@ void AtmospherePar::computeRHS()
     AtmospherePar::CommPars pars;
     getCommPars(pars);
 
+    // FIXME
+    // --> this should change into an integral of sigma
     double sstInt = Utils::dot(pIntCoeff_, sst_) *
         (1.0 / totalArea_) * ( pars.tdim / pars.qdim ) * pars.dqso ;
 
@@ -364,7 +370,10 @@ void AtmospherePar::computeRHS()
         lid = rhs_->Map().LID(last + 1);
 
         // F = - P - \sum_i (1 / A) * (q_i * dA_i) +
-        //           \sum_i (1 / A) * (tdim / qdim) * dqso * T * dA_i
+        //           \sum_i (1 / A) * (tdim / qdim) * sigma * dA_i
+        //
+        // sigma = dqso*To + Msi*(dqsi*Ti-dqso*To)
+        //
         (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt;
     }
 
@@ -582,16 +591,16 @@ void AtmospherePar::synchronize(std::shared_ptr<Ocean> ocean)
 }
 
 //==================================================================
+//--> todo
 void AtmospherePar::synchronize(std::shared_ptr<SeaIce> seaice)
 {
-    // Get sea ice mask
-    Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
-
-    // Get sea ice temperature
-    Teuchos::RCP<Epetra_Vector> sit = seaice->interfaceT();
-
-    setSeaIceMask(Msi);
-    setSeaIceTemperature(sit);
+    // // Get sea ice mask
+    // Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
+    // setSeaIceMask(Msi);
+    
+    // // Get sea ice temperature
+    // Teuchos::RCP<Epetra_Vector> sit = seaice->interfaceT();
+    // setSeaIceTemperature(sit);
 }
 
 //==================================================================
@@ -629,11 +638,50 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
     // local vector size
     int numMyElements = assemblySurfaceMap_->NumMyElements();
 
-    std::shared_ptr<std::vector<double> > localSST =
-        std::make_shared<std::vector<double> >(numMyElements, 0.0);
+    std::vector<double> localSST(numMyElements, 0.0);
 
-    localSST_->ExtractCopy(&(*localSST)[0], numMyElements);
-    atmos_->setOceanTemperature(*localSST);
+    localSST_->ExtractCopy(&localSST[0], numMyElements);
+    atmos_->setOceanTemperature(localSST);
+}
+
+//==================================================================
+void AtmospherePar::setSeaIceTemperature(Teuchos::RCP<Epetra_Vector> sit)
+{
+    // Replace map if necessary
+    if (!(sit->Map().SameAs(*standardSurfaceMap_)))
+    {
+        // INFO("AtmospherePar::setOceanTemperature sit map -> standardSurfaceMap_");
+        CHECK_ZERO(sit->ReplaceMap(*standardSurfaceMap_));
+    }
+
+    sit_ = sit;
+    CHECK_ZERO(localSIT_->Import(*sit_, *as2std_surf_, Insert));
+
+    // local vector size
+    int numMyElements = assemblySurfaceMap_->NumMyElements();
+
+    std::vector<double> localSIT(numMyElements, 0.0);
+
+    localSIT_->ExtractCopy(&localSIT[0], numMyElements);
+    atmos_->setOceanTemperature(localSIT);
+}
+
+//==================================================================
+void AtmospherePar::setSeaIceMask(Teuchos::RCP<Epetra_Vector> mask)
+{
+    if (!(mask->Map().SameAs(*standardSurfaceMap_)))
+    {
+        CHECK_ZERO(mask->ReplaceMap(*standardSurfaceMap_));
+    }
+
+    Msi_ = mask;
+    CHECK_ZERO(localMSI_->Import(*Msi_, *as2std_surf_, Insert));
+    int numMyElements = assemblySurfaceMap_->NumMyElements();
+    
+    std::vector<double> localMSI(numMyElements, 0.0);
+    localMSI_->ExtractCopy( &localMSI[0], numMyElements);
+
+    atmos_->setSeaIceMask(localMSI);
 }
 
 //==================================================================
@@ -891,7 +939,7 @@ void AtmospherePar::computeEP()
 {
     TIMER_START("AtmospherePar: compute E P...");
 
-    // compute E in serial Atmosphere
+    // compute E in local Atmosphere
     atmos_->computeEvaporation();
 
     // compute/set precipitation P

@@ -124,6 +124,18 @@ private:
     //! parallel atmosphere sol (overlapping)
     Teuchos::RCP<Epetra_Vector> localSol_;
 
+    //! parallel sit (non-overlapping)
+    Teuchos::RCP<Epetra_Vector> sit_;
+
+    //! parallel sit (overlapping)
+    Teuchos::RCP<Epetra_Vector> localSIT_;
+
+    //! parallel sea ice mask (non-overlapping)
+    Teuchos::RCP<Epetra_Vector> Msi_;
+
+    //! parallel sea ice mask (overlapping)
+    Teuchos::RCP<Epetra_Vector> localMSI_;
+
     //! parallel evaporation field (non-overlapping)
     Teuchos::RCP<Epetra_Vector> E_;
 
@@ -238,12 +250,16 @@ public:
     void synchronize(std::shared_ptr<Ocean> ocean);
 
     //! Receive ocean data
-    void synchronize(std::shared_ptr<SeaIce> seaice) {}
+    void synchronize(std::shared_ptr<SeaIce> seaice);
 
     //! Downcast to specific models
     void synchronize(std::shared_ptr<Model> model);
 
     void setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst);
+    
+    void setSeaIceTemperature(Teuchos::RCP<Epetra_Vector> sst);
+    
+    void setSeaIceMask(Teuchos::RCP<Epetra_Vector> sst);
 
     Teuchos::RCP<Epetra_Vector> getLocalOceanT() {return localSST_; }
 

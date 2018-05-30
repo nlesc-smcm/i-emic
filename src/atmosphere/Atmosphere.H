@@ -78,66 +78,74 @@ private:
     std::vector<double> yc_;  //! y-grid ( cell centers)
     std::vector<double> yv_;  //! y-grid ( [u,v]-nodes)
 
-    // Periodic boundary conditions in x-direction
+    //! Periodic boundary conditions in x-direction
     bool periodic_;
 
-    // Find out whether we are part of a domain decomposition
+    //! Find out whether we are part of a domain decomposition
     bool parallel_;
 
-    // Specify whether we should use a land mask
+    //! Specify whether we should use a land mask
     bool use_landmask_;
 
-    // Surface mask
+    //! Surface mask
     std::shared_ptr<std::vector<int> > surfmask_;
 
 
-    // Forcing vector
+    //! Forcing vector
     std::vector<double> frc_;
 
-    // State of the atmosphere,
-    // wrapped in a shared_ptr so we can safely hand out
-    // a view of this member.
+    //! State of the atmosphere,
+    //! wrapped in a shared_ptr so we can safely hand out
+    //! a view of this member.
     std::shared_ptr<std::vector<double> > state_;
 
-    // Right hand side of the discretized system of ODE's
+    //! Right hand side of the discretized system of ODE's
     std::shared_ptr<std::vector<double> > rhs_;
 
-    // Solution vector
+    //! Solution vector
     std::shared_ptr<std::vector<double> > sol_;
 
-    // // Mass matrix diagonal
+    //! Mass matrix diagonal
     std::shared_ptr<std::vector<double> > diagB_;    
 
-    // Ocean surface temperature
+    //! Ocean surface temperature
     std::shared_ptr<std::vector<double> > sst_;
 
-    // Integral condition row (only in serial case)
+    //! Sea ice surface temperature
+    std::shared_ptr<std::vector<double> > sit_;
+
+    //! Sea ice mask. In the local atmosphere model the sea ice mask
+    //! is used to select surface temperature sst or sit. See
+    //! forcing() and computeEvaporation().
+    std::shared_ptr<std::vector<double> > Msi_;
+
+    //! Integral condition row (only in serial case)
     int rowIntCon_;
 
-    // Integral condition coefficients (only in serial case)
+    //! Integral condition coefficients (only in serial case)
     std::shared_ptr<std::vector<double> > intcondCoeff_;
 
-    // Precipitation integral coefficients (only in serial case)
+    //! Precipitation integral coefficients (only in serial case)
     std::shared_ptr<std::vector<double> > pIntCoeff_;
 
-    // Total sea surface area
+    //! Total sea surface area
     double totalArea_;
 
-    // CRS matrix arrays storing the Jacobian
+    //! CRS matrix arrays storing the Jacobian
     std::vector<double> co_;
     std::vector<int> jco_;
     std::vector<int> beg_;
 
-    // Pivot array for lapack
+    //! Pivot array for lapack
     std::vector<int> ipiv_;
 
-    std::vector<double> bandedA_; // Banded matrix storage
-    int  ksub_;                   // Number of subdiagonals
-    int  ksup_;                   // Number of superdiagonals
-    int  ldimA_;                  // Leading dimension of banded storage
+    std::vector<double> bandedA_; //! Banded matrix storage
+    int  ksub_;                   //! Number of subdiagonals
+    int  ksup_;                   //! Number of superdiagonals
+    int  ldimA_;                  //! Leading dimension of banded storage
     bool buildLU_;
 
-    // Parameters
+    //! Parameters
     double   rhoa_; //! atmospheric density \[\rho_a\]
     double   rhoo_; //! oceanic density \[\rho_o\]
     double  hdima_; //! atmospheric scale height \[H_a\]
@@ -161,7 +169,7 @@ private:
     double   qdim_; //! humidity scale (kg / kg)
     double     lv_; //! latent heat of vaporization (J / kg)
 
-    // Necessary for nondimensionalizations:
+    //! Necessary for nondimensionalizations:
     double   udim_;  //! typical horizontal velocity of the ocean
     double  r0dim_;  //! radius of the earth
 
@@ -171,7 +179,8 @@ private:
 
     double qso_;     //! ocean sat. humidity [Bolton, 1980]
     double qsi_;     //! ice   sat. humidity [Bolton, 1980]
-    double Eo0_;     //! background evaporation
+    double Eo0_;     //! background evaporation over ocean
+    double Ei0_;     //! background evaporation over sea ice
     double Po0_;     //! background precipitation
     double dqso_;    //! derivative sat. humidity w.r.t. T, at t0o (ocean).
     double dqsi_;    //! derivative sat. humidity w.r.t. T, at t0i (ice).
@@ -255,7 +264,7 @@ public:
     //! Compute the Jacobian matrix
     void computeJacobian();
 
-    // //! Compute mass matrix
+    //!  Compute mass matrix
     void computeMassMat();    
 
     void computeEvaporation();
@@ -291,6 +300,12 @@ public:
 
     //! Accept ocean temperature vector
     void setOceanTemperature(std::vector<double> const &sst);
+
+    //! Accept sea ice temperature vector
+    void setSeaIceTemperature(std::vector<double> const &sit);
+
+    //! Accept sea ice mask
+    void setSeaIceMask(std::vector<double> const &Msi);
 
     //! Return problem dimension (mainly for testing)
     int  dim() { return dim_; } 

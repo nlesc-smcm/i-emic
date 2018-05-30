@@ -126,9 +126,9 @@ void Atmosphere::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     ce_              = params->get("Dalton number",1.3e-03);
     ch_              = params->get("exchange coefficient ch",0.94 * ce_);
     uw_              = params->get("mean atmospheric surface wind speed",8.5);
-    t0a_             = params->get("reference temperature atmosphere",15.0); //(C)
-    t0o_             = params->get("reference temperature ocean",15.0);      //(C)
-    t0i_             = params->get("reference temperature ice",0.0);         //(C)
+    t0a_             = params->get("background temperature atmosphere",15.0); //(C)
+    t0o_             = params->get("background temperature ocean",15.0);      //(C)
+    t0i_             = params->get("background temperature sea ice",-15.0);       //(C)
     tdim_            = params->get("temperature scale", 1.0); // ( not used)
     q0_              = params->get("reference humidity",8e-3); // (kg/kg)
     qdim_            = params->get("humidity scale", 1e-3);  // (kg/kg)
@@ -187,8 +187,9 @@ void Atmosphere::setup()
 
     // Dimensional background evaporation and precipitation
     Eo0_ = eta_ * ( qso_ - q0_ );
+    Ei0_ = eta_ * ( qsi_ - q0_ );
 
-    // Backgr. precipitation is taken equal to backgr. evaporation
+    // Backgr. precipitation is taken equal to backgr. evaporation over ocean
     Po0_ = Eo0_;
    
     // Calculate saturation humidity derivatives at ref. temps
@@ -242,8 +243,14 @@ void Atmosphere::setup()
     // Precipitation 
     P_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
-    // Initialize land/ocean surface temperature
+    // Initialize ocean surface temperature
     sst_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+
+    // Initialize sea ice surface temperature
+    sit_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+
+    // Sea ice mask
+    Msi_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
     // Initialize surface mask
     surfmask_ = std::make_shared<std::vector<int> >(m_ * n_, 0);    
@@ -407,9 +414,25 @@ void Atmosphere::zeroOcean()
 //-----------------------------------------------------------------------------
 void Atmosphere::setOceanTemperature(std::vector<double> const &sst)
 {
+    assert((int) sst.size() == n_ * m_);
     // Set surface temperature (copy)
-    *sst_ = sst;
-    assert((int) sst_->size() == n_ * m_);
+    *sst_ = sst;    
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::setSeaIceTemperature(std::vector<double> const &sit)
+{
+    assert((int) sit.size() == n_ * m_);
+    // Set surface temperature (copy)
+    *sit_ = sit;
+}
+
+//-----------------------------------------------------------------------------
+void Atmosphere::setSeaIceMask(std::vector<double> const &Msi)
+{
+    assert((int) Msi.size() == n_ * m_);
+    // Set surface temperature (copy)
+    *Msi_ = Msi;
 }
 
 //==================================================================
@@ -463,11 +486,12 @@ void Atmosphere::computeJacobian()
     Atom txx(n_, m_, l_, np_);
     Atom tyy(n_, m_, l_, np_);
 
-    discretize(1, tc);
-    discretize(2, tc2);
+    discretize(1, tc);  // sensible heat flux component
+    discretize(2, tc2); // outgoing longwave radiation component
     discretize(3, txx); // longitudinal diffusion
     discretize(4, tyy); // meridional diffusion
 
+    // Combine atoms:
     // Al(:,:,:,:,TT,TT) = Ad * (txx + tyy) - tc - bmua*tc2
     txx.update(Ad_, Ad_, tyy, -1.0, tc, -bmua_, tc2);
 
@@ -493,11 +517,11 @@ void Atmosphere::computeJacobian()
     Atom qxx(n_, m_, l_, np_);
     Atom qyy(n_, m_, l_, np_);
 
-    discretize(1, qc );  // over land no evaporation
+    discretize(1, qc );  // Evaporation component (over land no evaporation)
     discretize(5, qxx);  // longitudinal diffusion
     discretize(6, qyy);  // meridional diffusion
     
-    // Multiply parameters with continuation control pars
+    // Combine atoms
     qxx.update(Phv_, Phv_, qyy, -nuq_, qc);
 
     // Set humidity atom in dependency grid
@@ -506,6 +530,7 @@ void Atmosphere::computeJacobian()
 
     if (aux_ == 1)
     {
+        // Al(:,:,:,:,QQ, PP) = - nuq * P, for this we can reuse qc:
         qc.scale(-nuq_);
         Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
     }
@@ -640,8 +665,8 @@ double Atmosphere::matvec(int row)
 //-----------------------------------------------------------------------------
 void Atmosphere::forcing()
 {
-    double value;
-    int tr, hr, sr;
+    double value, Ts, Eo, Ei;
+    int tr, hr, sr; // indices
     
     if (std::abs(Ooa_) < 1e-8)
         WARNING(" Ooa_ may give trouble", __FILE__, __LINE__);
@@ -650,15 +675,19 @@ void Atmosphere::forcing()
         for (int i = 1; i <= n_; ++i)
         {
             // ------------ Temperature forcing
-            sr = find_surface_row(i, j) - 1;
-            tr = find_row(i, j, l_, ATMOS_TT_) - 1;
+            sr = find_surface_row(i, j) - 1;        // plain surface row
+            tr = find_row(i, j, l_, ATMOS_TT_) - 1; // temperature row
 
-            // Apply surface mask and calculate land temperatures
-            // This is a copy of legacy stuff, can be simplified
+            // Apply surface mask and calculate land temperatures.
+            // This is a copy of legacy stuff, can be put more
+            // clearly.
 
             // above land
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
             {
+                // Simplified expression by equating sensible and
+                // shortwave heat flux from the atmosphere into the
+                // land.
                 value = comb_ * sunp_ * suno_[j] / Ooa_;
                 (*sst_)[sr] = value + (*state_)[tr];
                 value += comb_ * sunp_ * (suna_[j] - amua_);
@@ -666,8 +695,14 @@ void Atmosphere::forcing()
             }
             else // above ocean
             {
-                // surface temperature, ice or sea: sit or sst 
-                Ts = (*sst_)[sr] * (1-Msi_[sr]) + (*sit_)[sr] * Msi_[sr];
+                // Sensible heat flux surface component. Sea surface
+                // temperature is corrected with sea ice surface
+                // temperature when Msi = 1 (sit - sst). In that case
+                // the background values need to be corrected as well
+                // (t0o_ - t0i_).
+                Ts = (*sst_)[sr] +
+                    (*Msi_)[sr] * ((*sit_)[sr] - ((*sst_)[sr]) + t0o_ - t0i_);
+                
                 value = Ts + comb_ * sunp_ * (suna_[j] - amua_);
                 
                 // latent heat due to precipitation (reference contribution)
@@ -677,27 +712,19 @@ void Atmosphere::forcing()
             frc_[tr] = value;
 
             // ------------ Humidity forcing
-            hr = find_row(i, j, l_, ATMOS_QQ_) - 1;
+            hr = find_row(i, j, l_, ATMOS_QQ_) - 1; // humidity row
 
             // Again, check whether we are above land
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
-            {
                 value = 0;
-            }
             else
             {
-                // E (evaporation) forcing over ocean
-                Eoc =  nuq_ * dqso_ * ( tdim_ / qdim_ )
-                    * (*sst_)[sr];
-                
-                // E (evaporation) forcing over sea ice
-                Esi =  nuq_ * dqsi_ * ( tdim_ / qdim_ )
-                    * (*sit_)[sr];
-
-                // combine the two
-                value = Eoc * (1-Msi_[sr]) + Esi * Msi_[sr];
-
+                // Evaporation/sublimation forcing
+                Eo = dqso_ * (*sst_)[sr];
+                Ei = dqsi_ * (*sit_)[sr];
+                value = nuq_ * (tdim_ / qdim_) * ( Eo + (*Msi_)[sr]*( Ei - Eo) );
             }
+            
             frc_[hr] = value;
         }
 
@@ -710,27 +737,25 @@ void Atmosphere::forcing()
 // Here we calculate nondimensionalized evaporation
 void Atmosphere::computeEvaporation()
 {
-    int humRow, surfaceRow, ctr;
-
+    int hr, sr, ctr;
+    double Eocean, Eseaice;
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
-            surfaceRow = find_surface_row(i, j);
-            humRow = find_row(i, j, l_, ATMOS_QQ_);
+            sr = find_surface_row(i, j) - 1;
+            hr = find_row(i, j, l_, ATMOS_QQ_) - 1;
 
-            // reset vector
-            (*E_)[surfaceRow-1] = 0.0;
+            // reset vector element
+            (*E_)[sr] = 0.0;
             
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
                 continue; // do nothing
 
-            // --> when ice is available, this should check whether
-            // the surface is ice or water. At this point this
-            // is only for ocean surface temperature
-
-            // compute nondimensional E
-            (*E_)[surfaceRow-1] =   (tdim_ / qdim_) * dqso_ * (*sst_)[surfaceRow-1]
-                - (*state_)[humRow-1] ;
+            // Compute nondimensional E based on surface temperature
+            // that van vary between sst and sit. 
+            Eocean  = (tdim_ / qdim_) * dqso_ * (*sst_)[sr];
+            Eseaice = (tdim_ / qdim_) * dqsi_ * (*sit_)[sr];
+            (*E_)[sr] = Eocean * (1-(*Msi_)[sr]) + Eseaice * (*Msi_)[sr] - (*state_)[hr];
 
             ctr++;
         }
@@ -739,7 +764,7 @@ void Atmosphere::computeEvaporation()
 //-----------------------------------------------------------------------------
 // With a nondimensional E, this computes the integral that gives a
 // nondimensional P. Only for serial use. In a parallel setting,
-// precipitation is governed by AtmospherePar.
+// precipitation is a global integral governed by AtmospherePar.
 void Atmosphere::computePrecipitation()
 {
     if (parallel_)
