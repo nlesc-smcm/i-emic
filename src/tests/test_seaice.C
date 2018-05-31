@@ -42,18 +42,19 @@ TEST(SeaIce, computeRHS)
     seaIce->computeRHS();
 
     // we know a few norms for the idealized case
-    EXPECT_NEAR(Utils::norm(rhs), 6.1874305776402e+03, 1e-7);
+    EXPECT_NEAR(Utils::norm(rhs), 6.029707151443e+03, 1e-7);
 
     state->PutScalar(1.0);     
     seaIce->computeRHS();
 
-    EXPECT_NEAR(Utils::norm(rhs), 4.825751331172339e+04, 1e-7);
+    EXPECT_NEAR(Utils::norm(rhs), 3.375072979252e+04, 1e-7);
 
     state->PutScalar(1.234);     
     seaIce->computeRHS();
 
-    EXPECT_NEAR(Utils::norm(rhs), 5.810287606919227e+04, 1e-7);
+    EXPECT_NEAR(Utils::norm(rhs), 4.141771047244e+04, 1e-7);
 }
+
 
 //------------------------------------------------------------------
 TEST(SeaIce, computeJacobian)
@@ -67,40 +68,41 @@ TEST(SeaIce, computeJacobian)
     DUMPMATLAB("seaice_jac", *jac);
     double normOne, normInf, normFrob;
     normInf = jac->NormInf();
-    EXPECT_NEAR(normInf, 2.712570151601840e+03, 1e-7);
+    EXPECT_NEAR(normInf, 2.079199128921e+03, 1e-7);
 
     normOne = jac->NormOne();
-    EXPECT_NEAR(normOne, 2.722944891390629e+03, 1e-7);
+    EXPECT_NEAR(normOne, 2.127721683616e+03, 1e-7);
 
     normFrob = jac->NormFrobenius();
-    EXPECT_NEAR(normFrob, 4.275055233767215e+04, 1e-7);
+    EXPECT_NEAR(normFrob, 3.322972397910e+04, 1e-7);
 
     state->PutScalar(1.0);
     seaIce->computeJacobian();
     jac = seaIce->getJacobian();
 
     normInf = jac->NormInf();
-    EXPECT_NEAR(normInf,  2.712570151601840e+03, 1e-7);
+    EXPECT_NEAR(normInf,  2.079199128921e+03, 1e-7);
 
     normOne = jac->NormOne();
-    EXPECT_NEAR(normOne,  2.672944891390629e+03, 1e-7);
+    EXPECT_NEAR(normOne,  2.077721683616e+03, 1e-7);
 
     normFrob = jac->NormFrobenius();
-    EXPECT_NEAR(normFrob, 4.274306639884469e+04, 1e-7);
+    EXPECT_NEAR(normFrob, 3.322009265079e+04, 1e-7);
 
     state->PutScalar(1.234);
     seaIce->computeJacobian();
     jac = seaIce->getJacobian();
 
     normInf = jac->NormInf();
-    EXPECT_NEAR(normInf, 2.712570151601840e+03, 1e-7);
+    EXPECT_NEAR(normInf, 2.079199128921e+03, 1e-7);
 
     normOne = jac->NormOne();
-    EXPECT_NEAR(normOne, 2.672944891390629e+03, 1e-7);
+    EXPECT_NEAR(normOne, 2.077721683616e+03, 1e-7);
 
     normFrob = jac->NormFrobenius();
-    EXPECT_NEAR(normFrob, 4.274306639884469e+04, 1e-7);    
+    EXPECT_NEAR(normFrob, 3.322009265079e+04, 1e-7);    
 }
+
 
 //------------------------------------------------------------------
 TEST(SeaIce, Solve)
@@ -139,6 +141,7 @@ TEST(SeaIce, Solve)
         EXPECT_NEAR(rNorm, 0, 1e-4);
     }
 }
+
 
 //------------------------------------------------------------------
 TEST(SeaIce, Newton)

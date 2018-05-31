@@ -137,6 +137,18 @@ private:
     //! overlapping localAtmosQ
     Teuchos::RCP<Epetra_Vector> localAtmosQ_;
 
+    //! map restricted to temperature values
+    Teuchos::RCP<Epetra_Map> mapT_;
+
+    //! map restricted to mask values
+    Teuchos::RCP<Epetra_Map> mapM_;
+
+    //! import strategy for temperature values
+    Teuchos::RCP<Epetra_Import> importT_;
+
+    //! import strategy for mask values
+    Teuchos::RCP<Epetra_Import> importM_;
+
     //! matrix dependency grid
     std::shared_ptr<DependencyGrid> Al_;
 
@@ -167,13 +179,10 @@ private:
     double t0o_; //! background ocean temp 
     double t0a_; //! background atmos temp t0a
     double t0i_; //! background seaice temp t0i
-    double tvar_; //! ocean temp variation tvar
-    double s0_; //! ocean background salinity s0
-    double svar_; //! ocean salinity variation svar
-    double q0_; //! atmos background humidity q0
-    double qvar_; //! atmos humidity variation qvar
-    double H0_; //! seaice background thickness H0
-    double M0_; //! seaice background mask M0
+    double s0_;  //! ocean background salinity s0
+    double q0_;  //! atmos background humidity q0
+    double H0_;  //! seaice background thickness H0
+    double M0_;  //! seaice background mask M0
 
     //! ice formation constants
     double ch_; //! empirical constant

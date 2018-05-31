@@ -12,14 +12,15 @@
 
 // Number of unknowns
 #ifndef SEAICE_NUN_
-# define SEAICE_NUN_ 3
+# define SEAICE_NUN_ 4
 #endif
 
 // The unknowns we have in this model 
 #ifndef SEAICE_HH_
-# define SEAICE_HH_  1 // Atmospheric temperature
-# define SEAICE_QQ_  2 // Vapor anomaly
-# define SEAICE_MM_  3 // Vapor anomaly
+# define SEAICE_HH_  1 // Sea ice thickness
+# define SEAICE_QQ_  2 // Heat flux
+# define SEAICE_MM_  3 // Sea ice mask
+# define SEAICE_TT_  4 // Sea ice surface temperature
 #endif
 
 #endif

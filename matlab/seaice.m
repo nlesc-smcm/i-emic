@@ -22,8 +22,8 @@ function [X, J, F] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size (2deg)
-    n = 6;
-    m = 6;
+    n = 16;
+    m = 16;
 
     % number of unknowns
     nun = 4;
@@ -108,15 +108,43 @@ function [X, J, F] = seaice()
     grid();
 
     % initialize forcing and state
-    sst  = idealizedTemp(0, tvar)  + randn(n,m);
+    sst  = idealizedTemp(0, tvar);
     sss  = idealizedSalt(0, svar);
     tatm = idealizedTemp(0, tvar);
     qatm = idealizedTemp(0, qvar);
 
-    rng(1);
-    X = 1e-4*randn(dim, 1);
-    % X = 1.0*ones(dim,1);
-    % X = initialsol();
+    % testing values
+    X = zeros(dim, 1);
+    F = rhs(X);
+    fprintf('X = 0,     ||F|| = %1.12e\n', norm(F));
+
+    X = ones(dim, 1);
+    F = rhs(X);
+    fprintf('X = 1,     ||F|| = %1.12e\n', norm(F));
+
+    X = 1.234*ones(dim, 1);
+    F = rhs(X);
+    fprintf('X = 1.234, ||F|| = %1.12e\n', norm(F));
+    
+    X = zeros(dim,1);
+    J = jac(X);
+    fprintf('X = 0,     ||J||inf = %1.12e\n', norm(J,Inf));
+    fprintf('X = 0,     ||J||one = %1.12e\n', norm(J,1));
+    fprintf('X = 0,     ||J||frb = %1.12e\n', norm(J,'fro'));
+
+    X = ones(dim,1);
+    J = jac(X);
+    fprintf('X = 1,     ||J||inf = %1.12e\n', norm(J,Inf));
+    fprintf('X = 1,     ||J||one = %1.12e\n', norm(J,1));
+    fprintf('X = 1,     ||J||frb = %1.12e\n', norm(J,'fro'));
+
+    X = 1234*ones(dim,1);
+    J = jac(X);
+    fprintf('X = 1.234, ||J||inf = %1.12e\n', norm(J,Inf));
+    fprintf('X = 1.234, ||J||one = %1.12e\n', norm(J,1));
+    fprintf('X = 1.234, ||J||frb = %1.12e\n', norm(J,'fro'));
+
+return;
 
     % Newton solve
     F    = rhs(X);
@@ -140,8 +168,6 @@ function [X, J, F] = seaice()
     vsm(Jn(ord,ord));
     condest(J)
     vsm(J(ord,ord)-Jn(ord,ord))
-    
-    return
     
     for i = 1:kmax
         J  = jac(X);
