@@ -1,7 +1,8 @@
+!killall vsm&
 clear all
 JnC = load_numjac('JnC');
 
-n = 6; m = 6; l = 4; dfo = 6; dfa = 2; aux = 1; dfs = 3;
+n = 6; m = 6; l = 4; dfo = 6; dfa = 2; aux = 1; dfs = 4;
 
 surfb = find_row(dfo, n, m ,l, 1, 1, l, 1);
 surfe = find_row(dfo, n, m ,l, n, m, l, dfo);
@@ -55,14 +56,20 @@ sei_idx = sei_idx - nocean - natmos - aux;
 
 C11 = load('J_Ocean');              C11 = spconvert(C11);
 C12 = load('C_Ocean-Atmosphere');   C12 = spconvert(C12);
+C12 = padding(C12, nocean, natmos + aux);
 %C13 = load('C_Ocean-SeaIce');       C13 = spconvert(C13);
 
 C21 = load('C_Atmosphere-Ocean');   C21 = spconvert(C21);
+C21 = padding(C21, natmos + aux, nocean);
 C22 = load('J_Atmosphere');         C22 = spconvert(C22);
 %C23 = load('C_Atmosphere-SeaIce');  C23 = spconvert(C23);
 
 C31 = load('C_SeaIce-Ocean');       C31 = spconvert(C31);
+C31 = padding(C31, nseaice, nocean);
+    
 C32 = load('C_SeaIce-Atmosphere');  C32 = spconvert(C32);
+C32 = padding(C32, nseaice, natmos + aux);
+
 C33 = load('J_SeaIce');             C33 = spconvert(C33);
 
 % block might be smaller
@@ -70,14 +77,17 @@ tr12 = size(C12,1);
 tr32 = size(C32,2);
 
 C11 = C11(oce_idx, oce_idx);
-C12 = C12(oce_idx(1:tr12), atm_idx);
+C12 = C12(oce_idx, atm_idx); 
 %C13 = C13(oce_idx, sei_idx);
 
-C21 = C21(atm_idx, oce_idx(1:tr12));
+C21 = C21(atm_idx, oce_idx);
 C22 = C22(atm_idx, atm_idx);
 %C23 = C23(atm_idx, sei_idx);
 
-C31 = C31(sei_idx(1:size(C32,1)), oce_idx);
-C32 = C32(sei_idx(1:size(C32,1)), atm_idx(1:size(C32,2)));
+C31 = C31(sei_idx, oce_idx);
+C32 = C32(sei_idx, atm_idx);
 C33 = C33(sei_idx, sei_idx);
+
+vsm(C21 - JnC21)
+
 

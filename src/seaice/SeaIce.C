@@ -165,11 +165,11 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     initializeState();
 
     // Create importers for communication with other models
-    mapT_ = Utils::CreateSubMap(*standardMap_, dof_, SEAICE_TT_);
     mapM_ = Utils::CreateSubMap(*standardMap_, dof_, SEAICE_MM_);
+    mapT_ = Utils::CreateSubMap(*standardMap_, dof_, SEAICE_TT_);
 
-    importT_ = Teuchos::rcp(new Epetra_Import(*mapT_, *standardMap_));
     importM_ = Teuchos::rcp(new Epetra_Import(*mapM_, *standardMap_));
+    importT_ = Teuchos::rcp(new Epetra_Import(*mapT_, *standardMap_));
 }
 
 //=============================================================================
@@ -597,6 +597,26 @@ void SeaIce::synchronize(std::shared_ptr<AtmospherePar> atmos)
     }
 
     qatm_ = qatm;
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> SeaIce::interfaceT()
+{
+    TIMER_START("SeaIce: get sea ice temperature...");
+    Teuchos::RCP<Epetra_Vector> T = Teuchos::rcp(new Epetra_Vector(*mapT_));
+    CHECK_ZERO(T->Import(*state_, *importT_, Insert));
+    TIMER_STOP("SeaIce: get sea ice temperature...");
+    return T;
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> SeaIce::interfaceM()
+{
+    TIMER_START("SeaIce: get sea ice mask...");
+    Teuchos::RCP<Epetra_Vector> M = Teuchos::rcp(new Epetra_Vector(*mapM_));
+    CHECK_ZERO(M->Import(*state_, *importM_, Insert));
+    TIMER_STOP("SeaIce: get sea ice mask...");
+    return M;
 }
 
 //=============================================================================

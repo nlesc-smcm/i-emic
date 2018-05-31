@@ -39,6 +39,7 @@ public:
         double nuq;
         double eta;
         double dqso;
+        double dqsi;
         double dqdt;
         double Eo0;
     };

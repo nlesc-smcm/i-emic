@@ -416,7 +416,7 @@ void Atmosphere::setOceanTemperature(std::vector<double> const &sst)
 {
     assert((int) sst.size() == n_ * m_);
     // Set surface temperature (copy)
-    *sst_ = sst;    
+    *sst_ = sst;
 }
 
 //-----------------------------------------------------------------------------
@@ -443,6 +443,7 @@ void Atmosphere::getCommPars(Atmosphere::CommPars &parStruct)
     parStruct.nuq  = nuq_;
     parStruct.eta  = eta_;
     parStruct.dqso = dqso_;
+    parStruct.dqsi = dqsi_;
     parStruct.dqdt = nuq_ * tdim_ / qdim_ * dqso_ ;
     parStruct.Eo0  = Eo0_;
 }
@@ -722,7 +723,7 @@ void Atmosphere::forcing()
                 // Evaporation/sublimation forcing
                 Eo = dqso_ * (*sst_)[sr];
                 Ei = dqsi_ * (*sit_)[sr];
-                value = nuq_ * (tdim_ / qdim_) * ( Eo + (*Msi_)[sr]*( Ei - Eo) );
+                value = nuq_ * ( tdim_ / qdim_ ) * ( Eo + (*Msi_)[sr]*( Ei - Eo) );
             }
             
             frc_[hr] = value;
@@ -755,7 +756,8 @@ void Atmosphere::computeEvaporation()
             // that van vary between sst and sit. 
             Eocean  = (tdim_ / qdim_) * dqso_ * (*sst_)[sr];
             Eseaice = (tdim_ / qdim_) * dqsi_ * (*sit_)[sr];
-            (*E_)[sr] = Eocean * (1-(*Msi_)[sr]) + Eseaice * (*Msi_)[sr] - (*state_)[hr];
+            (*E_)[sr] = Eocean * (1 - (*Msi_)[sr]) + Eseaice * (*Msi_)[sr] -
+                (*state_)[hr];
 
             ctr++;
         }

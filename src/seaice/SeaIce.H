@@ -297,6 +297,9 @@ public:
     void synchronize(std::shared_ptr<AtmospherePar> atmos);
     void synchronize(std::shared_ptr<Ocean> ocean);
 
+    Teuchos::RCP<Epetra_Vector> interfaceT();
+    Teuchos::RCP<Epetra_Vector> interfaceM();
+
     int dof() { return dof_; }
 
     void buildPreconditioner() {}

@@ -351,10 +351,27 @@ void AtmospherePar::computeRHS()
     AtmospherePar::CommPars pars;
     getCommPars(pars);
 
-    // FIXME
-    // --> this should change into an integral of sigma
-    double sstInt = Utils::dot(pIntCoeff_, sst_) *
-        (1.0 / totalArea_) * ( pars.tdim / pars.qdim ) * pars.dqso ;
+    // Here we integrate sigma = dqso * sst + Msi*(dqsi*sit-dqso*sst)
+    // using the increments in pIntCoeff.
+
+    assert(sst_->Map().SameAs(sit_->Map()));
+
+    Teuchos::RCP<Epetra_Vector> tmp =
+        Teuchos::rcp(new Epetra_Vector(*sit_));
+
+    // tmp = dqsi*sit-dqso*sst
+    tmp->Update(-pars.dqso, *sst_, pars.dqsi);
+
+    Teuchos::RCP<Epetra_Vector> sigma =
+        Teuchos::rcp(new Epetra_Vector(*sst_));
+
+    // Pointwise product and update:
+    // sigma = dqso * sst + Msi*(dqsi*sit-dqso*sst)
+    sigma->Multiply(1.0, *Msi_, *tmp, pars.dqso); 
+
+    // sigma is integrated and adjusted with (1/A)*(tdim/qdim)
+    double sstInt = Utils::dot(pIntCoeff_, sigma) *
+        (1.0 / totalArea_) * ( pars.tdim / pars.qdim ) ;
 
     // This is the same as the integral condition above so this can
     // probably be simplified. We can substitute it with 0 but for now
@@ -476,9 +493,11 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceP()
 //==================================================================
 std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> ocean)
 {
+    TIMER_START("AtmospherePar::getBlock(ocean)...");
     // The contribution of the ocean in the atmosphere
     // see the forcing in Atmosphere.C.
 
+    
     // check surfmask
     assert( (int) surfmask_->size() == m_*n_ );
 
@@ -491,32 +510,55 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
     // Obtain atmosphere commpars
     Atmosphere::CommPars pars;
     getCommPars(pars);
+    
+    // FIXME this now depends on sea mask: we enther the realm of
+    // non-constant coupling coefficients. For now we use an allgather
+    // to get the full sea ice mask, in the future we could let this
+    // block be partly computed by the local model and assemble here.
+    // Need to figure that out.
+    Teuchos::RCP<Epetra_MultiVector> Msi = Utils::AllGather(*Msi_);
+    
+    
+    int sr; // surface row
 
+    double dTFT;     // d / dT_ocean (F_T)
+    double dTFQ;     // d / dT_ocean (F_Q)
+    double M;        // Mask value
     // loop over our unknowns
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
+        {
+            sr   = j*n_+i; // set surface row
+
+            M = (*(*Msi)(0))[sr];
+
+            dTFT = 1.0 - M;
+            
+            dTFQ = pars.nuq * pars.tdim / pars.qdim * pars.dqso * (1.0 - M);
+            
             for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
             {
                 block->beg.push_back(el_ctr);
 
-                if ( (*surfmask_)[j*n_+i] == 0 &&   // non-land
+                if ( (*surfmask_)[sr] == 0 &&   // non-land
                      (rowIntCon_ != FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
                                                     i, j, l_-1, xx))
                     ) // skip integral condition row
                 {
                     if (xx == ATMOS_TT_)
                     {
-                        block->co.push_back(1.0);
+                        block->co.push_back(dTFT);
                     }
                     else if (xx == ATMOS_QQ_)
                     {
-                        block->co.push_back(pars.dqdt);
+                        block->co.push_back(dTFQ);
                     }
 
                     block->jco.push_back(ocean->interface_row(i,j,oceanTT));
                     el_ctr++;
                 }
             }
+        }
 
     // add dependencies of precipitation row
     int qid;
@@ -527,25 +569,31 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
         block->beg.push_back(el_ctr);
         for (int j = 0; j != m_; ++j)
             for (int i = 0; i != n_; ++i)
-                if ( (*surfmask_)[j*n_+i] == 0)   // non-land
+            {
+                sr   = j*n_+i; // set surface row
+                M = (*(*Msi)(0))[sr]; // sea ice mask
+                
+                if ( (*surfmask_)[sr] == 0)   // non-land
                 {
                     qid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
                                           i, j, l_-1, ATMOS_QQ_);
-
+                    
                     value = (*intcondGlob_)[0][qid] * (1.0 / totalArea_)
-                        * ( pars.tdim / pars.qdim ) * pars.dqso;
+                        * ( pars.tdim / pars.qdim ) * pars.dqso * (1.0 - M);
                     
                     block->co.push_back(value);
-                
+                    
                     block->jco.push_back(ocean->interface_row(i,j,oceanTT));
                     el_ctr++;
                 }
+            }
     }
 
     block->beg.push_back(el_ctr);
 
     assert( (int) block->co.size() == block->beg.back());
-
+    
+    TIMER_STOP("AtmospherePar::getBlock(ocean)...");
     return block;
 }
 
@@ -591,16 +639,15 @@ void AtmospherePar::synchronize(std::shared_ptr<Ocean> ocean)
 }
 
 //==================================================================
-//--> todo
 void AtmospherePar::synchronize(std::shared_ptr<SeaIce> seaice)
 {
-    // // Get sea ice mask
-    // Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
-    // setSeaIceMask(Msi);
+    // Get sea ice mask
+    Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
+    setSeaIceMask(Msi);
     
-    // // Get sea ice temperature
-    // Teuchos::RCP<Epetra_Vector> sit = seaice->interfaceT();
-    // setSeaIceTemperature(sit);
+    // Get sea ice temperature
+    Teuchos::RCP<Epetra_Vector> sit = seaice->interfaceT();
+    setSeaIceTemperature(sit);
 }
 
 //==================================================================
@@ -663,7 +710,7 @@ void AtmospherePar::setSeaIceTemperature(Teuchos::RCP<Epetra_Vector> sit)
     std::vector<double> localSIT(numMyElements, 0.0);
 
     localSIT_->ExtractCopy(&localSIT[0], numMyElements);
-    atmos_->setOceanTemperature(localSIT);
+    atmos_->setSeaIceTemperature(localSIT);
 }
 
 //==================================================================

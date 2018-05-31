@@ -255,9 +255,18 @@ TEST(CoupledModel, computeJacobian)
         // Set a small parameter
         coupledModel->setPar(0.1);
 
-        // randomize state       
-        coupledModel->getState('V')->PutScalar(1.0);
-        coupledModel->getState('V')->Scale(1e-4);
+        // put values in state
+        coupledModel->getState('V')->PutScalar(1e-4);
+
+        // Make sure that the sea ice mask has active and inactive parts
+        Teuchos::RCP<Epetra_Vector> seaice_state = seaice->getState('V');
+        Teuchos::RCP<Epetra_Vector> seaice_mask  = seaice->interfaceM();
+        seaice_mask->PutScalar(0.0);
+        for (int i = 0; i < seaice_mask->MyLength()/4; ++i)
+            (*seaice_mask)[i] = 1.0;
+               
+        Epetra_Import importM(seaice_mask->Map(), seaice_state->Map());
+        seaice_state->Export(*seaice_mask, importM, Zero);
 
         coupledModel->computeJacobian();
         Teuchos::RCP<Epetra_CrsMatrix> atmosJac  = atmos->getJacobian();
@@ -698,6 +707,13 @@ TEST(CoupledModel, Synchronization)
     // Randomize combined state
     stateV->Random();
 
+    // Make sure that the sea ice mask is inactive
+    Teuchos::RCP<Epetra_Vector> seaice_state = seaice->getState('V');
+    Teuchos::RCP<Epetra_Vector> seaice_mask  = seaice->interfaceM();
+    seaice_mask->PutScalar(0.0);
+    Epetra_Import importM(seaice_mask->Map(), seaice_state->Map());
+    seaice_state->Export(*seaice_mask, importM, Zero);
+
     try
     {
         // At RHS computation the coupledModel synchronizes the states
@@ -716,9 +732,6 @@ TEST(CoupledModel, Synchronization)
     Teuchos::RCP<Epetra_Vector> atmosE = atmos->getE();
     Teuchos::RCP<Epetra_Vector> oceanE = ocean->getE();
 
-    std::cout << *atmosE << std::endl;
-    std::cout << *oceanE << std::endl;
-    
     double nrmAtmosE = Utils::norm(atmosE);
     double nrmOceanE = Utils::norm(oceanE);
     EXPECT_NEAR(nrmAtmosE, nrmOceanE, 1e-7);

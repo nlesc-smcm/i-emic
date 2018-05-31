@@ -123,6 +123,7 @@ contains
              
           end do
        end do
+       
        _INFO2_("  thcm probe:  ctr    = ", ctr)
        _INFO2_("  thcm probe:  eta    = ", eta)
        _INFO2_("  thcm probe:  deltat = ", deltat)
