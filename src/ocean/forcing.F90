@@ -170,13 +170,13 @@ SUBROUTINE forcing
 
            ! Salinity flux from sea ice into the ocean (brine
            ! rejection or melt)
-           QSos = (                           & 
-                zeta * (a0 * s0 - t0)         & ! QTos component, background contribution
-                - Qvar * qsa(i,j) - Q0        & ! QTsa component, external contribution
+           QSos = (                     & 
+                zeta * (a0 * s0 - t0)   & ! QTos component, background contribution
+                - Qvar * qsa(i,j) - Q0  & ! QTsa component, external contribution
                 ) / (rhodim * Lf)
 
            ! Combine forcings through mask           
-           Frc(find_row2(i,j,l,SS)) = (         & 
+           Frc(find_row2(i,j,l,SS)) = (          & 
                 QSoa + msi(i,j) * (QSos - QSoa) & 
                 ) * (1-landm(i,j,l))
         else
