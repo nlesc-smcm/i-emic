@@ -62,7 +62,8 @@ C12 = padding(C12, nocean, natmos + aux);
 C21 = load('C_Atmosphere-Ocean');   C21 = spconvert(C21);
 C21 = padding(C21, natmos + aux, nocean);
 C22 = load('J_Atmosphere');         C22 = spconvert(C22);
-%C23 = load('C_Atmosphere-SeaIce');  C23 = spconvert(C23);
+C23 = load('C_Atmosphere-SeaIce');  C23 = spconvert(C23);
+C23 = padding(C23, natmos + aux, nseaice);
 
 C31 = load('C_SeaIce-Ocean');       C31 = spconvert(C31);
 C31 = padding(C31, nseaice, nocean);
@@ -82,12 +83,11 @@ C12 = C12(oce_idx, atm_idx);
 
 C21 = C21(atm_idx, oce_idx);
 C22 = C22(atm_idx, atm_idx);
-%C23 = C23(atm_idx, sei_idx);
+C23 = C23(atm_idx, sei_idx);
 
 C31 = C31(sei_idx, oce_idx);
 C32 = C32(sei_idx, atm_idx);
 C33 = C33(sei_idx, sei_idx);
 
-vsm(C21 - JnC21)
 
 

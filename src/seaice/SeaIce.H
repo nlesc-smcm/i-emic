@@ -300,6 +300,12 @@ public:
     Teuchos::RCP<Epetra_Vector> interfaceT();
     Teuchos::RCP<Epetra_Vector> interfaceM();
 
+    // global interface row
+    int interface_row(int i, int j, int XX)
+        {
+            return find_row0(nGlob_, mGlob_, i, j, XX);
+        }
+
     int dof() { return dof_; }
 
     void buildPreconditioner() {}

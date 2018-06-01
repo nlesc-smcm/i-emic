@@ -438,6 +438,8 @@ void Atmosphere::setSeaIceMask(std::vector<double> const &Msi)
 //==================================================================
 void Atmosphere::getCommPars(Atmosphere::CommPars &parStruct)
 {
+    parStruct.t0o  = t0o_;
+    parStruct.t0i  = t0i_;
     parStruct.tdim = tdim_;
     parStruct.qdim = qdim_;
     parStruct.nuq  = nuq_;
@@ -445,7 +447,6 @@ void Atmosphere::getCommPars(Atmosphere::CommPars &parStruct)
     parStruct.dqso = dqso_;
     parStruct.dqsi = dqsi_;
     parStruct.dqdt = nuq_ * tdim_ / qdim_ * dqso_ ;
-    parStruct.Eo0  = Eo0_;
 }
 
 //-----------------------------------------------------------------------------
@@ -702,7 +703,7 @@ void Atmosphere::forcing()
                 // the background values need to be corrected as well
                 // (t0o_ - t0i_).
                 Ts = (*sst_)[sr] +
-                    (*Msi_)[sr] * ((*sit_)[sr] - ((*sst_)[sr]) + t0o_ - t0i_);
+                    (*Msi_)[sr] * ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_);
                 
                 value = Ts + comb_ * sunp_ * (suna_[j] - amua_);
                 

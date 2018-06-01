@@ -494,9 +494,8 @@ Teuchos::RCP<Epetra_Vector> AtmospherePar::interfaceP()
 std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> ocean)
 {
     TIMER_START("AtmospherePar::getBlock(ocean)...");
-    // The contribution of the ocean in the atmosphere
-    // see the forcing in Atmosphere.C.
-
+    // Jacobian of the atmosphere with respect to the ocean model, see
+    // the forcing in Atmosphere.C.
     
     // check surfmask
     assert( (int) surfmask_->size() == m_*n_ );
@@ -511,7 +510,7 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
     Atmosphere::CommPars pars;
     getCommPars(pars);
     
-    // FIXME this now depends on sea mask: we enther the realm of
+    // FIXME: this now depends on sea mask: we enther the realm of
     // non-constant coupling coefficients. For now we use an allgather
     // to get the full sea ice mask, in the future we could let this
     // block be partly computed by the local model and assemble here.
@@ -562,7 +561,7 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
 
     // add dependencies of precipitation row
     int qid;
-    double value;
+    double dTFP; // d / dTo (F_P)
 
     if (aux_ == 1)
     {
@@ -578,10 +577,10 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
                     qid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
                                           i, j, l_-1, ATMOS_QQ_);
                     
-                    value = (*intcondGlob_)[0][qid] * (1.0 / totalArea_)
+                    dTFP = (*intcondGlob_)[0][qid] * (1.0 / totalArea_)
                         * ( pars.tdim / pars.qdim ) * pars.dqso * (1.0 - M);
                     
-                    block->co.push_back(value);
+                    block->co.push_back(dTFP);
                     
                     block->jco.push_back(ocean->interface_row(i,j,oceanTT));
                     el_ctr++;
@@ -600,10 +599,143 @@ std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<Ocean> oc
 //==================================================================
 std::shared_ptr<Utils::CRSMat> AtmospherePar::getBlock(std::shared_ptr<SeaIce> seaice)
 {
+    TIMER_START("AtmospherePar::getBlock(seaice)...");
+    // Jacobian of the atmosphere with respect to the sea ice model,
+    // see Atmosphere::forcing()
+    
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
-    // todo           
+    int el_ctr = 0;
+    
+    int seaiceMM = 3; // (1-based) mask unknown in the sea ice model
+    int seaiceTT = 4; // (1-based) temperature unknown in the sea ice model
+
+    // Obtain atmosphere parameters
+    Atmosphere::CommPars pars; getCommPars(pars);
+
+    double dMFT;   // d / dMsi (F_T)
+    double dMFQ;   // d / dMsi (F_Q)
+    double dTFT;   // d / dTsi (F_T)
+    double dTFQ;   // d / dTsi (F_Q)
+
+    int sr;     // surface row
+    double M;   // mask value
+    double To;  // sst value
+    double Ti;  // sit value
+    double Eo;  // evaporation value
+    double Ei;  // sublimation value
+
+    // FIXME: We use an allgather to get the full sea ice mask, sst
+    // and sit. In the future we could let this block be partly
+    // computed by the local model and assemble here. Need to figure
+    // that out.
+    Teuchos::RCP<Epetra_MultiVector> Msi = Utils::AllGather(*Msi_);
+    Teuchos::RCP<Epetra_MultiVector> sst = Utils::AllGather(*sst_);
+    Teuchos::RCP<Epetra_MultiVector> sit = Utils::AllGather(*sit_);
+    
+    for (int j = 0; j != m_; ++j)
+        for (int i = 0; i != n_; ++i)
+        {
+            sr = j*n_+i;
+
+            M  = (*(*Msi)(0))[sr];
+            To = (*(*sst)(0))[sr];
+            Ti = (*(*sit)(0))[sr];
+            
+            dMFT = Ti + pars.t0i - To - pars.t0o;
+            dTFT = M;
+                
+            Eo = pars.dqso * To;
+            Ei = pars.dqsi * Ti;
+
+            dMFQ = pars.nuq * pars.tdim / pars.qdim * (Ei - Eo);
+            dTFQ = pars.nuq * pars.tdim / pars.qdim * pars.dqsi * M;
+
+            for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
+            {
+                block->beg.push_back(el_ctr);
+
+                // skip land and integral condition
+                if ( (*surfmask_)[sr] == 0 &&   
+                     (rowIntCon_ != FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                                    i, j, l_-1, xx)))
+                {
+                    switch (xx)
+                    {
+
+                    case ATMOS_TT_:
+                        block->co.push_back(dMFT);
+                        block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
+                        el_ctr++;
+
+                        block->co.push_back(dTFT);
+                        block->jco.push_back(seaice->interface_row(i,j,seaiceTT));
+                        el_ctr++;
+                        break;
+
+                    case ATMOS_QQ_:
+                        block->co.push_back(dMFQ);
+                        block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
+                        el_ctr++;
+
+                        block->co.push_back(dTFQ);
+                        block->jco.push_back(seaice->interface_row(i,j,seaiceTT));
+                        el_ctr++;
+                        break;                        
+                    }
+                }                    
+            }
+        }
+
+    // add dependencies of precipitation row
+    int qid;
+    double dMFP; // d / dMsi (F_P)
+    double dTFP; // d / dTsi (F_P)
+    double dA;   // integral coefficient
+
+    if (aux_ == 1)
+    {
+        block->beg.push_back(el_ctr);
+        for (int j = 0; j != m_; ++j)
+            for (int i = 0; i != n_; ++i)
+            {
+                sr = j*n_+i; // set surface row
+                
+                M  = (*(*Msi)(0))[sr];
+                To = (*(*sst)(0))[sr];
+                Ti = (*(*sit)(0))[sr];
+                
+                
+                if ( (*surfmask_)[sr] == 0)   // non-land
+                {
+                    qid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                          i, j, l_-1, ATMOS_QQ_);
+
+                    dA   = (*intcondGlob_)[0][qid];
+                    
+                    dMFP = (1.0 / totalArea_)
+                        * ( pars.tdim / pars.qdim ) *
+                        (pars.dqsi * Ti - pars.dqso * To) * dA;
+                    
+                    block->co.push_back(dMFP);
+                    block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
+                    el_ctr++;
+
+                    dTFP = (1.0 / totalArea_)
+                        * ( pars.tdim / pars.qdim ) * pars.dqsi * M * dA;
+                    
+                    block->co.push_back(dTFP);
+                    block->jco.push_back(seaice->interface_row(i,j,seaiceTT));
+                    el_ctr++;
+                }
+            }
+    }
+
+    block->beg.push_back(el_ctr);
+    assert( (int) block->co.size() == block->beg.back());
+        
+    TIMER_STOP("AtmospherePar::getBlock(seaice)...");
     return block;   
 }
 

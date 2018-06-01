@@ -42,6 +42,8 @@ public:
         double dqsi;
         double dqdt;
         double Eo0;
+        double t0o;
+        double t0i;
     };
 
 private:
