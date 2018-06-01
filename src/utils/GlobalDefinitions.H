@@ -251,6 +251,15 @@ public:
 
 #endif
 
+// macro for checking and replacing maps
+#ifndef CHECK_MAP
+#define CHECK_MAP(vec, map) {                                           \
+        if (!(vec->Map().SameAs(*map)))                                 \
+        {                                                               \
+            CHECK_ZERO(vec->ReplaceMap(*map));                          \
+        }}
+#endif
+
 #ifndef MOD
 //! our own 'modulo' function, which behaves like mod in matlab.
 //! the C++ built-in '%' operator returns -1%n=-1 and is therefore
