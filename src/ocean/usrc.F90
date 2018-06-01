@@ -244,16 +244,18 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
 end subroutine set_atmos_parameters
 
 !**********************************************************
-SUBROUTINE set_seaice_parameters(i_zeta, i_a0, i_Lf, i_s0, i_rhoo)
+SUBROUTINE set_seaice_parameters(i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0)
   use, intrinsic :: iso_c_binding
   use m_usr 
   use m_ice
   implicit none
-  real(c_double) i_zeta, i_a0, i_Lf, i_s0, i_rhoo
+  real(c_double) i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0
 
   zeta = i_zeta ! combination of sea ice parameters
   a0   = i_a0   ! freezing temperature S sensitivity
   Lf   = i_Lf   ! latent heat of fusion of ice
+  Qvar = i_qvar ! typical QTsa heat flux variation
+  Q0   = i_q0   ! background QTsa 
 
   if (i_s0.ne.s0) then
      _INFO_('WARNING conflicting reference salinity s0')
@@ -564,12 +566,15 @@ SUBROUTINE lin
   real,target :: u(n,m,l,np),uy(n,m,l,np),ucsi(n,m,l,np),&
        &      uxx(n,m,l,np),uyy(n,m,l,np),uzz(n,m,l,np),&
        &      uxs(n,m,l,np),fu(n,m,l,np),px(n,m,l,np)
-  real ub(n,m,l,np),vb(n,m,l,np),sc(n,m,l,np),tcb(n,m,l,np), mc(n,m,l,np)
+  real    ub(n,m,l,np),vb(n,m,l,np),sc(n,m,l,np),tcb(n,m,l,np)
   real    yc(n,m,la,np),yc2(n,m,la,np),yxx(n,m,la,np),yyy(n,m,la,np)
   real    EH,EV,ph,pv,Ra,lambda, bi, ahcor, dedt
   real    hv(n,m,l,np),yadv(n,m,la,np)
   real    uxxc(n,m,l,np),uyyc(n,m,l,np),vxxc(n,m,l,np),vyyc(n,m,l,np)
   real    xes,rintb,rwint !, rintt ! ATvS-Mix
+
+  real    mc(n,m,l,np)
+  real    QSoa(n,m,l,np), QSos(n,m,l,np)
 
   ! original version:
   !      equivalence (u, v), (uy, vy), (ucsi, vcsi), (uxx, vxx, txx, uxc)
@@ -714,13 +719,21 @@ SUBROUTINE lin
   ! S-equation
   ! ------------------------------------------------------------------
   ! dependence of SS on TT in evaporation term
+  ! FIXME should get a different name
   dedt = nus * (deltat / qdim) * dqso
   
-  if (coupled_S.eq.1) then ! coupled to atmosphere 
-     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
+  if (coupled_S.eq.1) then ! coupled to atmosphere
+     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz &
+          - mc * zeta / (rhodim * Lf) 
      
      ! minus sign and nondim added (we take -Au in rhs computation)
-     Al(:,:,1:l,:,SS,TT) = - dedt * sc !  
+     QSoa = -dedt * sc            ! atmosphere to ocean salinity flux
+                                  ! internal component
+     QSos = zeta / (rhodim * Lf)  ! sea ice to ocean salinity flux
+                                  ! internal component
+
+     ! combine contributions with mask
+     Al(:,:,1:l,:,SS,TT) = QSoa + mc * (QSos - QSoa)
   else
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
   endif

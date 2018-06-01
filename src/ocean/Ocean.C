@@ -44,7 +44,8 @@ extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
 extern "C" _SUBROUTINE_(set_atmos_parameters)(double*, double*, double*,
                                               double*, double*);
 extern "C" _SUBROUTINE_(set_seaice_parameters)(double*, double*, double*,
-                                               double*, double*);
+                                               double*, double*, double*,
+                                               double*);
 
 //=====================================================================
 // Constructor:
@@ -1040,7 +1041,6 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
         try
         {
             belosSolver_->solve();      // Solve
-
         }
         catch (std::exception const &e)
         {
@@ -1418,10 +1418,10 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
 void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
 {
     TIMER_START("Ocean: set seaice...");
+    Teuchos::RCP<Epetra_Vector> Q = seaice->interfaceQ();
+    THCM::Instance().setSeaIceQ(Q);
     Teuchos::RCP<Epetra_Vector> M = seaice->interfaceM();
     THCM::Instance().setSeaIceM(M);
-    Teuchos::RCP<Epetra_Vector> T = seaice->interfaceT();
-    THCM::Instance().setSeaIceT(T);
 
     SeaIce::CommPars seaicePars;
     seaice->getCommPars(seaicePars);
@@ -1432,7 +1432,9 @@ void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
                                     &seaicePars.a0,
                                     &seaicePars.Lf,
                                     &seaicePars.s0,
-                                    &seaicePars.rhoo );
+                                    &seaicePars.rhoo,
+                                    &seaicePars.Qvar,
+                                    &seaicePars.Q0 );
 
     TIMER_STOP("Ocean: set seaice...");
 }

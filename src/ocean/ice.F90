@@ -6,6 +6,8 @@ module m_ice
   real :: zeta = 0.0 ! combination of sea ice parameters
   real :: a0   = 0.0 ! freezing temperature S sensitivity
   real :: Lf   = 0.0 ! latent heat of fusion of ice
+  real :: Qvar = 0.0 ! latent heat of fusion of ice
+  real :: Q0   = 0.0 ! latent heat of fusion of ice
 
  
 contains

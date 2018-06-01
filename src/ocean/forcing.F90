@@ -10,6 +10,7 @@ SUBROUTINE forcing
 
   real sigma, etabi, gamma
   real QToa, QTos
+  real QSoa, QSos 
 
   real wfun, temfun, salfun
   real temcor, check, area
@@ -86,7 +87,7 @@ SUBROUTINE forcing
 
            ! Heat flux forcing from sea ice into the ocean. External
            ! and background contributions.
-           QTos = zeta * a0 * s0 - t0
+           QTos = zeta * (a0 * s0 - t0)
 
            ! Combine forcings through mask
            Frc(find_row2(i,j,l,TT)) = (         &
@@ -162,8 +163,22 @@ SUBROUTINE forcing
   do j=1,m
      do i=1,n
         if (coupled_S.eq.1) then
-           ! nus*(E-P) without the T dependency, which is taken care of in usrc.F90
-           Frc(find_row2(i,j,l,SS)) =  nus * (-qatm(i,j)-patm(i,j)) * (1-landm(i,j,l))
+           ! Salinity flux from the atmosphere into the ocean, E-P
+           ! forcing, external contributions. Internals contributions
+           ! are added to the matrix in usrc.F90.
+           QSoa = nus * (-qatm(i,j) - patm(i,j)) 
+
+           ! Salinity flux from sea ice into the ocean (brine
+           ! rejection or melt)
+           QSos = (                           & 
+                zeta * (a0 * s0 - t0)         & ! QTos component, background contribution
+                - Qvar * qsa(i,j) - Q0        & ! QTsa component, external contribution
+                ) / (rhodim * Lf)
+
+           ! Combine forcings through mask           
+           Frc(find_row2(i,j,l,SS)) = (         & 
+                QSoa + msi(i,j) * (QSos - QSoa) & 
+                ) * (1-landm(i,j,l))
         else
            Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &
                 gamma * par(HMTP) * ( adapted_emip(i,j) - adapted_salcor ) + &

@@ -48,6 +48,8 @@ public:
         double Lf;
         double s0;
         double rhoo;
+        double Qvar;
+        double Q0;
     };
 
 
@@ -148,17 +150,23 @@ private:
     //! overlapping localAtmosQ
     Teuchos::RCP<Epetra_Vector> localAtmosQ_;
 
-    //! map restricted to temperature values
-    Teuchos::RCP<Epetra_Map> mapT_;
+    //! map restricted to heat flux values
+    Teuchos::RCP<Epetra_Map> mapQ_;
 
     //! map restricted to mask values
     Teuchos::RCP<Epetra_Map> mapM_;
 
-    //! import strategy for temperature values
-    Teuchos::RCP<Epetra_Import> importT_;
+    //! map restricted to temperature values
+    Teuchos::RCP<Epetra_Map> mapT_;
+
+    //! import strategy for heat flux values
+    Teuchos::RCP<Epetra_Import> importQ_;
 
     //! import strategy for mask values
     Teuchos::RCP<Epetra_Import> importM_;
+                                       
+    //! import strategy for temperature values
+    Teuchos::RCP<Epetra_Import> importT_;
 
     //! matrix dependency grid
     std::shared_ptr<DependencyGrid> Al_;
@@ -310,8 +318,9 @@ public:
     void synchronize(std::shared_ptr<AtmospherePar> atmos);
     void synchronize(std::shared_ptr<Ocean> ocean);
 
-    Teuchos::RCP<Epetra_Vector> interfaceT();
+    Teuchos::RCP<Epetra_Vector> interfaceQ();
     Teuchos::RCP<Epetra_Vector> interfaceM();
+    Teuchos::RCP<Epetra_Vector> interfaceT();
 
     // global interface row
     int interface_row(int i, int j, int XX)
