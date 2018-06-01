@@ -40,6 +40,17 @@ public:
     using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
     using VectorPtr     = Teuchos::RCP<Epetra_Vector>;
 
+    //! Parameters we need to communicate (see datamembers for explanation).
+    struct CommPars
+    {
+        double zeta;
+        double a0;
+        double Lf;
+        double s0;
+        double rhoo;
+    };
+
+
 private:
     //! parameterlist
     ParameterList params_;
@@ -277,6 +288,8 @@ public:
         { return Utils::getVector(mode, sol_); }
     VectorPtr getRHS(char mode = 'C')
         { return Utils::getVector(mode, rhs_); }
+
+    void getCommPars(CommPars &parStruct);
 
     void setParName(std::string const &parName) {}
 

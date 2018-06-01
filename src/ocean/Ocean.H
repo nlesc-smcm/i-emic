@@ -338,7 +338,7 @@ public:
     void synchronize(std::shared_ptr<AtmospherePar> atmos);
 
     //! Receive sea ice data
-    void synchronize(std::shared_ptr<SeaIce> seaice) {}
+    void synchronize(std::shared_ptr<SeaIce> seaice);
 
     //! This routine is called from a CoupledModel object; here we
     //! downcast to a specific model.

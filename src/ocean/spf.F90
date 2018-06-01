@@ -305,6 +305,7 @@ SUBROUTINE tderiv(type,atom)
   END SELECT
 
 end SUBROUTINE tderiv
+
 !*********************************************************
 SUBROUTINE coriolis(type,atom)
   use m_usr
@@ -381,6 +382,24 @@ SUBROUTINE gradp(type,atom)
   END SELECT
 
 end SUBROUTINE gradp
+!*******************************************************
+SUBROUTINE masksi(atom, mask)
+  use m_usr
+  implicit none
+  ! sea ice mask atom
+
+  ! IMPORT/EXPORT
+  real atom(n,m,l,np)
+  real mask(1:n, 1:m)
+
+  ! LOCAL
+  integer i,j,k
+
+  atom = 0.0;
+  atom(:,:,l,5) = mask;
+  
+end SUBROUTINE masksi
+
 !*******************************************************
 SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   use m_usr

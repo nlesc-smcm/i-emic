@@ -339,6 +339,8 @@ TEST(CoupledModel, numericalJacobian)
     {
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
+
+    // getchar();
 }
 
 

@@ -76,7 +76,7 @@ contains
        pos = 1
        do j = 1,m
           do i = 1,n
-             atmos_p(pos) = pfield(i,j)
+             atmos_p(pos) = patm(i,j)
              pos = pos + 1
           end do
        end do
@@ -226,7 +226,7 @@ contains
           if (landm(i,j,l).eq.OCEAN) then
              if (coupled_S.eq.1) then
                 salflux(pos) = nus * dedt * T(i,j,l) / gamma -  &
-                     nus * ( qatm(i,j) + pfield(i,j) ) / gamma
+                     nus * ( qatm(i,j) + patm(i,j) ) / gamma
              else
                 salflux(pos) = (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
                      SRES * par(BIOT) * S(i,j,l) / gamma

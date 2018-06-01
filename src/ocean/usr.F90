@@ -89,12 +89,15 @@ module m_usr
   !
   !     The subdomain forcing fields are mostly set by forcing, which is called
   !     from init.
-  !     tatm, qatm and pfield will be set by an external coupled model, see inserts.F90.
+  !
+  !   Set by an external coupled model (see inserts.F90):
+  !     tatm, qatm, patm, msi, tsi 
 
   real, allocatable, dimension(:)     :: Frc
   real, allocatable, dimension(:,:)   :: taux, tauy
   real, allocatable, dimension(:,:)   :: tatm, emip, spert, adapted_emip
-  real, allocatable, dimension(:,:)   :: qatm, pfield
+  real, allocatable, dimension(:,:)   :: qatm, patm
+  real, allocatable, dimension(:,:)   :: msi, tsi
   real, allocatable, dimension(:,:,:) :: internal_temp, internal_salt
   real, allocatable, dimension(:,:,:) :: ftlev, fslev
   !--obsolete---
@@ -193,7 +196,8 @@ contains
 
     allocate(Frc(ndim), taux(n,m), tauy(n,m), tx(n,m), ty(n,m))
     allocate(ft(n,m), fs(n,m), tatm(n,m), emip(n,m), spert(n,m))
-    allocate(qatm(n,m), pfield(n,m), adapted_emip(n,m))
+    allocate(qatm(n,m), patm(n,m), adapted_emip(n,m))
+    allocate(msi(n,m), tsi(n,m))
     allocate(ftlev(n,m,l), fslev(n,m,l))
     allocate(internal_temp(n,m,l), internal_salt(n,m,l))
     taux   = 0.0
@@ -202,7 +206,9 @@ contains
     emip   = 0.0
     spert  = 0.0
     qatm   = 0.0
-    pfield = 0.0    
+    patm   = 0.0
+    msi    = 0.0
+    tsi    = 0.0    
     internal_temp  = 0.0
     internal_salt  = 0.0
     adapted_emip   = 0.0
@@ -225,7 +231,8 @@ contains
 
     deallocate(Frc, taux, tauy, tx, ty)
     deallocate(ft, fs, tatm, emip, spert)
-    deallocate(qatm, pfield, adapted_emip)
+    deallocate(qatm, patm, adapted_emip)
+    deallocate(msi, tsi)
     deallocate(ftlev, fslev)
     deallocate(internal_temp, internal_salt)
     deallocate(pv_adj)

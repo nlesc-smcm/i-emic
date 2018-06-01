@@ -214,7 +214,7 @@ SUBROUTINE get_parameters(o_r0dim, o_udim, o_hdim)
 end subroutine get_parameters
 
 !**********************************************************
-SUBROUTINE set_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
+SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
   ! Interface to set a few model parameters relevant for E-P. These
   ! parameters affect the sensitivity nus, which should be updated
   ! here.
@@ -241,7 +241,29 @@ SUBROUTINE set_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
   lvsc =  par(COMB) * par(TEMP) * rhodim * lv * r0dim &
        / (deltat * udim * cp0 * rhodim * hdim * dzne)
 
-end subroutine set_parameters
+end subroutine set_atmos_parameters
+
+!**********************************************************
+SUBROUTINE set_seaice_parameters(i_zeta, i_a0, i_Lf, i_s0, i_rhoo)
+  use, intrinsic :: iso_c_binding
+  use m_usr 
+  use m_ice
+  implicit none
+  real(c_double) i_zeta, i_a0, i_Lf, i_s0, i_rhoo
+
+  zeta = i_zeta ! combination of sea ice parameters
+  a0   = i_a0   ! freezing temperature S sensitivity
+  Lf   = i_Lf   ! latent heat of fusion of ice
+
+  if (i_s0.ne.s0) then
+     _INFO_('WARNING conflicting reference salinity s0')
+  endif
+
+  if (i_rhoo.ne.rhodim) then
+     _INFO_('WARNING conflicting sea water density rhodim')
+  endif
+
+end subroutine set_seaice_parameters
 
 !***********************************************************
 SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
@@ -536,12 +558,13 @@ SUBROUTINE lin
   ! +---------------------------------------------------------------------+
   use m_usr
   use m_atm
+  use m_ice
   implicit none
   !     LOCAL
   real,target :: u(n,m,l,np),uy(n,m,l,np),ucsi(n,m,l,np),&
        &      uxx(n,m,l,np),uyy(n,m,l,np),uzz(n,m,l,np),&
        &      uxs(n,m,l,np),fu(n,m,l,np),px(n,m,l,np)
-  real ub(n,m,l,np),vb(n,m,l,np),sc(n,m,l,np),tcb(n,m,l,np)
+  real ub(n,m,l,np),vb(n,m,l,np),sc(n,m,l,np),tcb(n,m,l,np), mc(n,m,l,np)
   real    yc(n,m,la,np),yc2(n,m,la,np),yxx(n,m,la,np),yyy(n,m,la,np)
   real    EH,EV,ph,pv,Ra,lambda, bi, ahcor, dedt
   real    hv(n,m,l,np),yadv(n,m,la,np)
@@ -653,19 +676,38 @@ SUBROUTINE lin
   call tderiv(5,tzz)
   call tderiv(7,tcb)
 
+  call masksi(mc, msi); ! create sea ice mask atom
+
+  ! open(999, file='mc', form='unformatted', access='stream')
+  ! write(999) mc
+  ! close(999)
+  
   ! dependence of TT on TT through latent heat due to evaporation
   dedt =  lvsc * eta * qdim * (deltat / qdim) * dqso
   
   ! write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
 
   if (la > 0) then ! deprecated local atmosphere
+
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
+
   else if (coupled_T.eq.1) then ! coupled with external atmos
-     Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz  &
-          + Ooa * tc     & ! sensible heat flux
-          + dedt * sc      ! latent heat flux
+     ! FIXME is this too much mc*tc? TEM
+     
+     Al(:,:,1:l,:,TT,TT) =                &
+          - ph * (txx + tyy) - pv * tzz   & ! diffusive transport
+          + Ooa  * tc                     & ! sensible heat flux
+          + dedt * sc                     & ! latent heat flux
+          + mc * (zeta * tc - Ooa * tc)     ! correction for sea ice
+                                            ! heat flux
+
+     Al(:,:,1:l,:,TT,SS) = -zeta * a0 * mc  ! salinity dependence in
+                                            ! freezing temperature
+
   else
+     
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
+     
   endif
 
   ! ------------------------------------------------------------------

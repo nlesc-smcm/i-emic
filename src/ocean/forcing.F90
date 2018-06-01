@@ -5,9 +5,11 @@ SUBROUTINE forcing
   !     Shape of wind-forcing and buoyancy forcing
   use m_usr
   use m_atm
+  use m_ice
   implicit none
 
-  real    sigma, etabi, gamma
+  real sigma, etabi, gamma
+  real QToa, QTos
 
   real wfun, temfun, salfun
   real temcor, check, area
@@ -73,11 +75,22 @@ SUBROUTINE forcing
                 par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
            
         else if (coupled_T.eq.1) then ! coupled externally
-           Frc(find_row2(i,j,l,TT)) = &
-                ( par(COMB) * par(SUNP) * suno(j)  &
-                +  Ooa * tatm(i,j) &
-                +  lvsc * eta * qdim * qatm(i,j)   & ! latent heat 
-                -  lvsc * eo0 &                      ! latent heat
+
+           ! Heat flux forcing from the atmosphere into the ocean.
+           ! External and background contributions
+           QToa = &
+                par(COMB) * par(SUNP) * suno(j)  & ! shortwave heat flux
+                +  Ooa * tatm(i,j)               & ! sensible heat fux
+                +  lvsc * eta * qdim * qatm(i,j) & ! latent heat flux
+                -  lvsc * eo0                      ! latent heat flux
+
+           ! Heat flux forcing from sea ice into the ocean. External
+           ! and background contributions.
+           QTos = zeta * a0 * s0 - t0
+
+           ! Combine forcings through mask
+           Frc(find_row2(i,j,l,TT)) = (         &
+                QToa + msi(i,j) * (QTos - QToa) &  
                 ) * (1 - landm(i,j,l))
 
         else  ! ocean-only
@@ -150,7 +163,7 @@ SUBROUTINE forcing
      do i=1,n
         if (coupled_S.eq.1) then
            ! nus*(E-P) without the T dependency, which is taken care of in usrc.F90
-           Frc(find_row2(i,j,l,SS)) =  nus * (-qatm(i,j)-pfield(i,j)) * (1-landm(i,j,l))
+           Frc(find_row2(i,j,l,SS)) =  nus * (-qatm(i,j)-patm(i,j)) * (1-landm(i,j,l))
         else
            Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &
                 gamma * par(HMTP) * ( adapted_emip(i,j) - adapted_salcor ) + &

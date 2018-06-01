@@ -407,6 +407,17 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getLocalJacobian()
     return jac;
 }
 
+
+//=============================================================================
+void SeaIce::getCommPars(SeaIce::CommPars &parStruct)
+{
+    parStruct.zeta = zeta_;
+    parStruct.a0   = a0_;
+    parStruct.Lf   = Lf_;
+    parStruct.s0   = s0_;
+    parStruct.rhoo = rhoo_;
+}
+
 //=============================================================================
 std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Model> model)
 {

@@ -67,7 +67,7 @@ contains
        pos = 1
        do j = 1,m
           do i = 1,n
-             pfield(i,j) = inserted_atmos_p(pos)
+             patm(i,j) = inserted_atmos_p(pos)
              pos = pos + 1
           end do
        end do
@@ -75,6 +75,51 @@ contains
   end subroutine insert_atmosphere_p
 
   !!------------------------------------------------------------------
+  subroutine insert_seaice_m(inserted_seaice_m)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_seaice_m
+    integer :: i,j,pos
+
+    if (coupled_T.eq.1) then
+       pos = 1
+       do j = 1,m
+          do i = 1,n
+             msi(i,j) = inserted_seaice_m(pos)
+             pos = pos + 1
+          end do
+       end do
+    end if
+  end subroutine insert_seaice_m
+
+  !!------------------------------------------------------------------
+  subroutine insert_seaice_t(inserted_seaice_t)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_seaice_t
+    integer :: i,j,pos
+
+    if (coupled_T.eq.1) then
+       pos = 1
+       do j = 1,m
+          do i = 1,n
+             tsi(i,j) = inserted_seaice_t(pos)
+             pos = pos + 1
+          end do
+       end do
+    end if
+  end subroutine insert_seaice_t
+
+  !!------------------------------------------------------------------
+  !!FIXME superfluous?
   subroutine insert_emip(inserted_emip)
 
     use, intrinsic :: iso_c_binding

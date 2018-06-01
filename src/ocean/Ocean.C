@@ -41,7 +41,10 @@ extern "C" _SUBROUTINE_(setparcs)(int*,double*);
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*);
 extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
-extern "C" _SUBROUTINE_(set_parameters)(double*, double*, double*, double*, double*);
+extern "C" _SUBROUTINE_(set_atmos_parameters)(double*, double*, double*,
+                                              double*, double*);
+extern "C" _SUBROUTINE_(set_seaice_parameters)(double*, double*, double*,
+                                               double*, double*);
 
 //=====================================================================
 // Constructor:
@@ -1397,18 +1400,41 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
     // P and their derivatives w.r.t. SST (To) and humidity (q) These
     // may depend on continuation parameters, so the call belongs
     // here.
-    AtmospherePar::CommPars parStruct;
-    atmos->getCommPars(parStruct);
+    AtmospherePar::CommPars atmosPars;
+    atmos->getCommPars(atmosPars);
 
-    // --> it should also be possible to pass the entire struct to
+    //FIXME --> it should also be possible to pass the entire struct to
     // --> fortran, need to figure that out...
-    FNAME( set_parameters )( &parStruct.qdim,
-                             &parStruct.nuq,
-                             &parStruct.eta,
-                             &parStruct.dqso,
-                             &parStruct.Eo0 );
+    FNAME( set_atmos_parameters )( &atmosPars.qdim,
+                             &atmosPars.nuq,
+                             &atmosPars.eta,
+                             &atmosPars.dqso,
+                             &atmosPars.Eo0 );
 
     TIMER_STOP("Ocean: set atmosphere...");
+}
+
+//====================================================================
+void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
+{
+    TIMER_START("Ocean: set seaice...");
+    Teuchos::RCP<Epetra_Vector> M = seaice->interfaceM();
+    THCM::Instance().setSeaIceM(M);
+    Teuchos::RCP<Epetra_Vector> T = seaice->interfaceT();
+    THCM::Instance().setSeaIceT(T);
+
+    SeaIce::CommPars seaicePars;
+    seaice->getCommPars(seaicePars);
+
+    //FIXME --> it should also be possible to pass the entire struct to
+    // --> fortran, need to figure that out...
+    FNAME( set_seaice_parameters )( &seaicePars.zeta,
+                                    &seaicePars.a0,
+                                    &seaicePars.Lf,
+                                    &seaicePars.s0,
+                                    &seaicePars.rhoo );
+
+    TIMER_STOP("Ocean: set seaice...");
 }
 
 //==================================================================

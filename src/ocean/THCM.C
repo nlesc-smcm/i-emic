@@ -135,6 +135,8 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_t)(double *atmosT);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_q)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_p)(double *atmosP);
+    _MODULE_SUBROUTINE_(m_inserts, insert_seaice_m)(double *seaiceM);
+    _MODULE_SUBROUTINE_(m_inserts, insert_seaice_t)(double *seaiceT);
     _MODULE_SUBROUTINE_(m_inserts, insert_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_inserts, insert_adapted_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_inserts, insert_emip_pert)(double *emip);
@@ -594,15 +596,17 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
 
     // Our copies of atmospheric entities
-    localAtmosT      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosQ      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosP      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localOceanE      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localEmip        = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSurfTmp     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localTatm        = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSalFlux     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localTemFlux     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosP     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSeaiceM     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSeaiceT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localOceanE     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localEmip       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSurfTmp    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localTatm       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSalFlux    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localTemFlux    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -1180,13 +1184,7 @@ void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask)
 //=============================================================================
 void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
 {
-
-    if (!(atmosT->Map().SameAs(*StandardSurfaceMap)))
-    {
-        // INFO("THCM::setAtmosphereT: atmosT map -> StandardSurfaceMap");
-        CHECK_ZERO(atmosT->ReplaceMap(*StandardSurfaceMap));
-    }
-
+    CHECK_MAP(atmosT, StandardSurfaceMap);
     // Standard2Assembly
     // Import atmosT into local atmosT
     CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf, Insert));
@@ -1199,13 +1197,8 @@ void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
 //=============================================================================
 void THCM::setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ)
 {
+    CHECK_MAP(atmosQ, StandardSurfaceMap);
     
-    if (!(atmosQ->Map().SameAs(*StandardSurfaceMap)))
-    {
-        // INFO("THCM::setAtmosphereEP: atmosQ map -> StandardSurfaceMap");
-        CHECK_ZERO( atmosQ->ReplaceMap(*StandardSurfaceMap) );
-    }
-
     // Standard2Assembly
     // Import atmosQ into local atmosQ
     CHECK_ZERO( localAtmosQ->Import(*atmosQ, *as2std_surf, Insert) );
@@ -1218,14 +1211,8 @@ void THCM::setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ)
 //=============================================================================
 void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 {
+    CHECK_MAP(atmosP, StandardSurfaceMap);
     
-    if (!(atmosP->Map().SameAs(*StandardSurfaceMap)))
-    {
-        // INFO("THCM::setAtmosphereEP: atmosP map -> StandardSurfaceMap");
-        CHECK_ZERO(atmosP->ReplaceMap(*StandardSurfaceMap));
-    }
-
-    // Standard2Assembly
     // Import atmosP into local atmosP
     CHECK_ZERO(localAtmosP->Import(*atmosP, *as2std_surf, Insert));
 
@@ -1236,6 +1223,27 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 }
 
 //=============================================================================
+void THCM::setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM)
+{
+    CHECK_MAP(seaiceM, StandardSurfaceMap);
+    CHECK_ZERO(localSeaiceM->Import(*seaiceM, *as2std_surf ,Insert));
+    double *M;
+    localSeaiceM->ExtractView(&M);
+    F90NAME(m_inserts, insert_seaice_m)( M );
+}
+
+//=============================================================================
+void THCM::setSeaIceT(Teuchos::RCP<Epetra_Vector> const &seaiceT)
+{
+    CHECK_MAP(seaiceT, StandardSurfaceMap);
+    CHECK_ZERO(localSeaiceT->Import(*seaiceT, *as2std_surf ,Insert));
+    double *T;
+    localSeaiceT->ExtractView(&T);
+    F90NAME(m_inserts, insert_seaice_t)( T );
+}
+
+//=============================================================================
+//FIXME: superfluous?? ->setAtmosphereT()
 void THCM::setTatm(Teuchos::RCP<Epetra_Vector> const &tatm)
 {
     
