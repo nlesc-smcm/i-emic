@@ -146,6 +146,8 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_integrals, salt_diffusion)(double *un, double *check);
     
     _MODULE_SUBROUTINE_(m_probe,  get_emip)(double *emip);
+    _MODULE_SUBROUTINE_(m_probe,  get_suno)(double *suno);
+    _MODULE_SUBROUTINE_(m_probe,  get_derivatives)(double *sol, double *dftdm);
     _MODULE_SUBROUTINE_(m_probe,  get_adapted_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_emip_pert)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_salflux)(double *sol, double *salflux);
@@ -1294,6 +1296,19 @@ void THCM::setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode)
 }
 
 //=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getSunO()
+{
+    double *suno;
+    Epetra_Vector localSunO(*AssemblySurfaceMap);
+    localSunO.ExtractView(&suno);
+    F90NAME(m_probe, get_suno) ( suno );    
+    Teuchos::RCP<Epetra_Vector> out =
+        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    CHECK_ZERO(out->Export(localSunO, *as2std_surf, Zero));
+    return out;
+}
+
+//=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
 {
     double* tmpEmip;
@@ -1360,6 +1375,25 @@ Teuchos::RCP<Epetra_Vector> THCM::getTemperatureFlux()
     CHECK_ZERO(temflux->Export(*localTemFlux, *as2std_surf, Zero));
 
     return temflux;    
+}
+
+//=============================================================================
+THCM::Derivatives THCM::getDerivatives()
+{
+    Derivatives d;
+
+    double *solution;
+    localSol->ExtractView(&solution);
+
+    Epetra_Vector local_dftdm(*AssemblySurfaceMap);
+    double *dmdft;
+    local_dftdm.ExtractView(&dmdft);
+    F90NAME(m_probe, get_derivatives)( solution, dmdft);
+    
+    d.dFTdM = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    d.dFTdM->Export(local_dftdm, *as2std_surf, Zero);
+
+    return d;
 }
 
 //=============================================================================

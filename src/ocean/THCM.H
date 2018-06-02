@@ -89,6 +89,14 @@ class THCM :
 
 public:
 
+    //! Struct to hold pointers to derivative fields
+    struct Derivatives
+    {
+        //! Derivative of the temperature equation with respect to a
+        //! sea ice mask.
+        Teuchos::RCP<Epetra_Vector> dFTdM;
+    };
+
     //! Constructor
     THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
 
@@ -166,12 +174,17 @@ public:
     
     //! Obtain non-overlapping emip
     Teuchos::RCP<Epetra_Vector> getEmip(char mode = 'D');
+
+    //! Obtain shortwave radiation influence field
+    Teuchos::RCP<Epetra_Vector> getSunO();
     
     //! Obtain non-overlapping emip
     Teuchos::RCP<Epetra_Vector> getSalinityFlux();
 
     //! Obtain non-overlapping emip
     Teuchos::RCP<Epetra_Vector> getTemperatureFlux();
+
+    Derivatives getDerivatives();
     
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();

@@ -13,6 +13,7 @@ SUBROUTINE forcing
   real QSoa, QSos 
 
   real wfun, temfun, salfun
+  real QToaFun, QTosFun
   real temcor, check, area
   real salcor, adapted_salcor, spertcor
   integer i, j, k, row
@@ -90,8 +91,8 @@ SUBROUTINE forcing
            QTos = zeta * (a0 * s0 - t0)
 
            ! Combine forcings through mask
-           Frc(find_row2(i,j,l,TT)) = (         &
-                QToa + msi(i,j) * (QTos - QToa) &  
+           Frc(find_row2(i,j,l,TT)) = (          &
+                QToa + msi(i,j) * (QTos  - QToa) &  
                 ) * (1 - landm(i,j,l))
 
         else  ! ocean-only
@@ -215,6 +216,35 @@ SUBROUTINE forcing
   write(f99,*) 'maximum of internal forcing on w: ',max_internal_forcing
 
 end subroutine forcing
+
+!******************************************************************
+! Function to compute heat flux forcing from the atmosphere into the
+! ocean. External and background contributions.
+! real FUNCTION QToaFun(i_suno, i_tatm, i_qatm)
+!   use m_usr
+!   use m_atm
+!   implicit none
+!   real    i_suno, i_tatm, i_qatm
+
+!   QToaFun = &
+!        par(COMB) * par(SUNP) * i_suno   & ! shortwave heat flux
+!        +  Ooa * i_tatm                  & ! sensible heat fux
+!        +  lvsc * eta * qdim * i_qatm    & ! latent heat flux
+!        -  lvsc * eo0                      ! latent heat flux
+  
+! end FUNCTION QToaFun
+
+!******************************************************************
+! Heat flux forcing from sea ice into the ocean. Background
+! ! contributions.
+! real FUNCTION QTosFun()
+!   use m_usr
+!   use m_ice
+!   implicit none
+
+!   QTosFun = zeta * (a0 * s0 - t0)
+  
+! end FUNCTION QTosFun
 
 !****************************************************************************
 SUBROUTINE windfit

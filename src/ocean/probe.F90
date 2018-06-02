@@ -277,4 +277,75 @@ contains
 
   end subroutine get_temflux
 
+  !!--------------------------------------------------------------------
+  ! Obtain shortwave radiation influence field
+  subroutine get_suno( sunofield )
+    use, intrinsic :: iso_c_binding
+    use m_usr
+    use m_atm
+
+    real(c_double), dimension(m*n) :: sunofield
+    integer :: i,j,pos
+
+    pos = 1;
+    do j = 1,m
+       do i = 1,n
+          sunofield(pos) = suno(j)
+          pos = pos + 1
+       enddo
+    enddo
+  end subroutine get_suno
+
+  !!--------------------------------------------------------------------
+  ! Return a collection of derivatives of expressions found in lin and
+  ! forcing. The sign is taken positive, corresponding to the
+  ! implementation in forcing.
+  subroutine get_derivatives( un, dftdm )
+    use, intrinsic :: iso_c_binding
+    use m_usr
+    use m_atm
+    use m_ice
+
+    implicit none
+    real(c_double), dimension(m*n) :: dftdm
+    integer :: i,j,pos
+
+    !     IMPORT/EXPORT
+    real(c_double),dimension(ndim) :: un
+
+    !     LOCAL
+    real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
+    real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
+    real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
+    
+    real    QTos, QToa, To, Ta, So, qa
+
+    call usol(un,u,v,w,p,T,S)
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          if ( (landm(i,j,l).eq.OCEAN).and.(coupled_T.eq.1) ) then
+             To   = T(i,j,l)
+             Ta   = tatm(i,j)
+             So   = S(i,j,l)
+             qa   = qatm(i,j)
+             
+             QTos = zeta * (a0 * (So+s0) - (To+t0) ) !
+             
+             QToa = par(COMB) * par(SUNP) * suno(j)  & ! shortwave heat flux
+                  - Ooa * (To - Ta)                  & ! sensible heat flux
+                  - lvsc * eta * qdim *              & ! latent heat flux
+                  (deltat / qdim * dqso * To - qa)   & 
+                  - lvsc * eo0
+             
+             dftdm(pos) = QTos - QToa
+             
+          endif
+          pos = pos + 1
+       enddo
+    enddo
+    write(*,*) zeta, a0, s0, t0
+  end subroutine get_derivatives
+  
 end module m_probe

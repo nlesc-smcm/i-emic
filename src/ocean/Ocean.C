@@ -47,6 +47,8 @@ extern "C" _SUBROUTINE_(set_seaice_parameters)(double*, double*, double*,
                                                double*, double*, double*,
                                                double*);
 
+// extern "C" double FNAME(qtoafun)(double*, double*, double*);
+
 //=====================================================================
 // Constructor:
 Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
@@ -1510,7 +1512,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
     int Q = 2; // (1-based) in the Atmosphere, humidity is the second unknown
     int P = 3; // (1-based) in the Atmosphere, global precipitation is an auxiliary
 
-    double rowIntCon = THCM::Instance().getRowIntCon();
+    int rowIntCon = THCM::Instance().getRowIntCon();
 
     // FIXME if this block would be computed locally we would not need
     // an allgather
@@ -1596,9 +1598,55 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
 {
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
+    int rowIntCon = THCM::Instance().getRowIntCon();
 
-    // todo 
-           
+    //FIXME Gathers are unnecessary if we compute this block locally,
+    //preferably in the fortran code.
+    THCM::Derivatives d = THCM::Instance().getDerivatives();
+    Teuchos::RCP<Epetra_MultiVector> dFTdM = Utils::AllGather(*d.dFTdM);
+
+    int el_ctr = 0;
+    int sr; // surface row
+
+    int seaiceQQ = 2; // (1-based) heat flux unknown in the sea ice model
+    int seaiceMM = 3; // (1-based) mask unknown in the sea ice model
+
+    double dval1;
+        
+    for (int k = 0; k != L_; ++k)
+        for (int j = 0; j != M_; ++j)
+            for (int i = 0; i != N_; ++i)
+            {
+                sr    = j*N_+i; // surface row
+                dval1 = (*(*dFTdM)(0))[sr];
+                
+                // surface, non-land point
+                for (int XX = UU; XX <= SS; ++XX)
+                {
+                    block->beg.push_back(el_ctr);
+                    if ( ( k == L_-1 ) && 
+                         ( (*landmask_.global_surface)[sr] == 0 ))
+                    {
+                        // surface T row
+                        if ( (XX == TT) && getCoupledT() )
+                        {
+                            block->co.push_back( -dval1 );
+                            block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
+                            el_ctr++;
+                        }
+                        // surface S row, exclude integral condition row
+                        else if ((XX == SS) && getCoupledS() &&
+                                 FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, XX) != rowIntCon)
+                        {
+                            
+                        }                        
+                    }
+                }
+            }
+                
+    block->beg.push_back(el_ctr); 
+    assert( (int) block->co.size() == block->beg.back());
+               
     return block;   
 }
 

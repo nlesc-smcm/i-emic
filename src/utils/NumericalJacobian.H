@@ -88,15 +88,15 @@ public:
 			std::ofstream co_str, ico_str, beg_str;
 			co_str.open(basename + "_co");
 			for (auto &i: values_)
-				co_str << i << '\n';
+				co_str << std::scientific << std::setprecision(12) << i << '\n';
 			co_str.close();
 			ico_str.open(basename + "_ico");
 			for (auto &i: rowIdx_)
-				ico_str << i << '\n';
+				ico_str << std::scientific << std::setprecision(12) << i << '\n';
 			ico_str.close();
 			beg_str.open(basename + "_beg");
 			for (auto &i: colPtr_)
-				beg_str << i << '\n';
+				beg_str << std::scientific << std::setprecision(12) << i << '\n';
 			beg_str.close();
 		}
 

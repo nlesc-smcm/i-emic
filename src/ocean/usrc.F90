@@ -698,14 +698,14 @@ SUBROUTINE lin
 
   else if (coupled_T.eq.1) then ! coupled with external atmos
      ! FIXME is this too much mc*tc? TEM
-     
+
      Al(:,:,1:l,:,TT,TT) =                &
           - ph * (txx + tyy) - pv * tzz   & ! diffusive transport
           + Ooa  * tc                     & ! sensible heat flux
           + dedt * sc                     & ! latent heat flux
-          + mc * (zeta * tc - Ooa * tc)     ! correction for sea ice
-                                            ! heat flux
-
+          + mc * (zeta * tc  - Ooa * tc - & ! correction for sea ice
+               dedt * sc)     
+     
      Al(:,:,1:l,:,TT,SS) = -zeta * a0 * mc  ! salinity dependence in
                                             ! freezing temperature
 

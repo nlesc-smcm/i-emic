@@ -57,7 +57,8 @@ sei_idx = sei_idx - nocean - natmos - aux;
 C11 = load('J_Ocean');              C11 = spconvert(C11);
 C12 = load('C_Ocean-Atmosphere');   C12 = spconvert(C12);
 C12 = padding(C12, nocean, natmos + aux);
-%C13 = load('C_Ocean-SeaIce');       C13 = spconvert(C13);
+C13 = load('C_Ocean-SeaIce');       C13 = spconvert(C13);
+C13 = padding(C13, nocean, nseaice);
 
 C21 = load('C_Atmosphere-Ocean');   C21 = spconvert(C21);
 C21 = padding(C21, natmos + aux, nocean);
@@ -79,7 +80,7 @@ tr32 = size(C32,2);
 
 C11 = C11(oce_idx, oce_idx);
 C12 = C12(oce_idx, atm_idx); 
-%C13 = C13(oce_idx, sei_idx);
+C13 = C13(oce_idx, sei_idx);
 
 C21 = C21(atm_idx, oce_idx);
 C22 = C22(atm_idx, atm_idx);
