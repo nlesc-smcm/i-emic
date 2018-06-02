@@ -724,7 +724,7 @@ SUBROUTINE lin
   
   if (coupled_S.eq.1) then ! coupled to atmosphere
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz &
-          - mc * zeta / (rhodim * Lf) 
+          - mc * zeta * a0 / (rhodim * Lf) 
      
      ! minus sign and nondim added (we take -Au in rhs computation)
      QSoa = -dedt * sc            ! atmosphere to ocean salinity flux

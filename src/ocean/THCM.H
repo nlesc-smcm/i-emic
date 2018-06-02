@@ -95,6 +95,14 @@ public:
         //! Derivative of the temperature equation with respect to a
         //! sea ice mask.
         Teuchos::RCP<Epetra_Vector> dFTdM;
+
+        //! Derivative of the salinity equation with respect to sea
+        //!ice heat flux.
+        Teuchos::RCP<Epetra_Vector> dFSdQ;
+
+        //! Derivative of the salinity equation with respect to a
+        //! sea ice mask.
+        Teuchos::RCP<Epetra_Vector> dFSdM;
     };
 
     //! Constructor

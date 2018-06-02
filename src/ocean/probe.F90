@@ -300,7 +300,7 @@ contains
   ! Return a collection of derivatives of expressions found in lin and
   ! forcing. The sign is taken positive, corresponding to the
   ! implementation in forcing.
-  subroutine get_derivatives( un, dftdm )
+  subroutine get_derivatives( un, dftdm, dfsdq, dfsdm )
     use, intrinsic :: iso_c_binding
     use m_usr
     use m_atm
@@ -308,6 +308,9 @@ contains
 
     implicit none
     real(c_double), dimension(m*n) :: dftdm
+    real(c_double), dimension(m*n) :: dfsdq
+    real(c_double), dimension(m*n) :: dfsdm
+    
     integer :: i,j,pos
 
     !     IMPORT/EXPORT
@@ -318,33 +321,67 @@ contains
     real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
     real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
     
-    real    QTos, QToa, To, Ta, So, qa
-
+    real    QTos, QToa, To, Ta, So, qa, pa, Ms, qs
+    real    QSos, QSoa
+    
     call usol(un,u,v,w,p,T,S)
 
+    dftdm = 0.0;
+    dfsdq = 0.0;
+    dfsdm = 0.0;
+    
     pos = 1
     do j = 1,m
        do i = 1,n
-          if ( (landm(i,j,l).eq.OCEAN).and.(coupled_T.eq.1) ) then
-             To   = T(i,j,l)
-             Ta   = tatm(i,j)
-             So   = S(i,j,l)
-             qa   = qatm(i,j)
+          if (landm(i,j,l).eq.OCEAN) then
              
-             QTos = zeta * (a0 * (So+s0) - (To+t0) ) !
+             To   = T(i,j,l)     ! sea surface temperature sst
+             Ta   = tatm(i,j)    ! atmosphere temperature
+             So   = S(i,j,l)     ! sea surface salinity sss
+             qa   = qatm(i,j)    ! atmosphere humidity
+             pa   = patm(i,j)    ! atmosphere precipitation
+             Ms   = msi(i,j)     ! sea ice mask
+             qs   = qsa(i,j)     ! sea ice heat flux
+
+             if (coupled_T.eq.1)  then
+
+                ! dftdm part ------------------------------
+
+                QTos = zeta * (a0 * (So+s0) - (To+t0) ) !
+
+                QToa = par(COMB) * par(SUNP) * suno(j)  & ! shortwave heat flux
+                     - Ooa * (To - Ta)                  & ! sensible heat flux
+                     - lvsc * eta * qdim *              & ! latent heat flux
+                     (deltat / qdim * dqso * To - qa)   & 
+                     - lvsc * eo0
+
+                dftdm(pos) = QTos - QToa
+
+             endif
              
-             QToa = par(COMB) * par(SUNP) * suno(j)  & ! shortwave heat flux
-                  - Ooa * (To - Ta)                  & ! sensible heat flux
-                  - lvsc * eta * qdim *              & ! latent heat flux
-                  (deltat / qdim * dqso * To - qa)   & 
-                  - lvsc * eo0
-             
-             dftdm(pos) = QTos - QToa
-             
-          endif
-          pos = pos + 1
-       enddo
+             if (coupled_S.eq.1)  then
+
+                ! dfsdq part ------------------------------
+                dfsdq(pos) = -Qvar  / (rhodim * Lf) * Ms
+
+                ! dfsdm part ------------------------------
+                
+                QSos = (                              &
+                     zeta * (a0 * (So+s0) - (To+t0))  & ! QTos component
+                     - ( Qvar * qs + q0 ) )           & ! QTsa component
+                     / ( rhodim * Lf )
+
+                QSoa = nus * ( &
+                     (deltat / qdim) * dqso * To &
+                     - qa - pa)
+                
+                dfsdm(pos) = QSos - QSoa                
+                
+             endif
+       endif
+       pos = pos + 1
     enddo
+ enddo
     write(*,*) zeta, a0, s0, t0
   end subroutine get_derivatives
   

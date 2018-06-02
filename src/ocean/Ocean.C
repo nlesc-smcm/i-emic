@@ -1604,6 +1604,8 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
     //preferably in the fortran code.
     THCM::Derivatives d = THCM::Instance().getDerivatives();
     Teuchos::RCP<Epetra_MultiVector> dFTdM = Utils::AllGather(*d.dFTdM);
+    Teuchos::RCP<Epetra_MultiVector> dFSdQ = Utils::AllGather(*d.dFSdQ);
+    Teuchos::RCP<Epetra_MultiVector> dFSdM = Utils::AllGather(*d.dFSdM);
 
     int el_ctr = 0;
     int sr; // surface row
@@ -1611,14 +1613,18 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
     int seaiceQQ = 2; // (1-based) heat flux unknown in the sea ice model
     int seaiceMM = 3; // (1-based) mask unknown in the sea ice model
 
-    double dval1;
+    double dFTdMval;
+    double dFSdQval;
+    double dFSdMval;
         
     for (int k = 0; k != L_; ++k)
         for (int j = 0; j != M_; ++j)
             for (int i = 0; i != N_; ++i)
             {
-                sr    = j*N_+i; // surface row
-                dval1 = (*(*dFTdM)(0))[sr];
+                sr       = j*N_+i; // surface row
+                dFTdMval = (*(*dFTdM)(0))[sr];
+                dFSdQval = (*(*dFSdQ)(0))[sr];
+                dFSdMval = (*(*dFSdM)(0))[sr];
                 
                 // surface, non-land point
                 for (int XX = UU; XX <= SS; ++XX)
@@ -1630,7 +1636,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
                         // surface T row
                         if ( (XX == TT) && getCoupledT() )
                         {
-                            block->co.push_back( -dval1 );
+                            block->co.push_back( -dFTdMval );
                             block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
                             el_ctr++;
                         }
@@ -1638,7 +1644,13 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
                         else if ((XX == SS) && getCoupledS() &&
                                  FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, XX) != rowIntCon)
                         {
-                            
+                            block->co.push_back( -dFSdQval );
+                            block->jco.push_back(seaice->interface_row(i,j,seaiceQQ));
+                            el_ctr++;
+
+                            block->co.push_back( -dFSdMval );
+                            block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
+                            el_ctr++;                            
                         }                        
                     }
                 }
