@@ -574,24 +574,12 @@ void SeaIce::synchronize(std::shared_ptr<Ocean> ocean)
 {
     // Obtain surface ocean temperature
     Teuchos::RCP<Epetra_Vector> sst = ocean->interfaceT();
-
-    // Replace map if necessary
-    if (!(sst->Map().SameAs(*standardSurfaceMap_)))
-    {
-        CHECK_ZERO(sst->ReplaceMap(*standardSurfaceMap_));
-    }
-
+    CHECK_MAP(sst, standardSurfaceMap_);
     sst_ = sst;
 
     // Obtain surface ocean salinity
     Teuchos::RCP<Epetra_Vector> sss = ocean->interfaceS();
-
-    // Replace map if necessary
-    if (!(sss->Map().SameAs(*standardSurfaceMap_)))
-    {
-        CHECK_ZERO(sss->ReplaceMap(*standardSurfaceMap_));
-    }
-
+    CHECK_MAP(sss, standardSurfaceMap_);
     sss_ = sss;
 }
 
@@ -599,19 +587,11 @@ void SeaIce::synchronize(std::shared_ptr<Ocean> ocean)
 void SeaIce::synchronize(std::shared_ptr<AtmospherePar> atmos)
 {
     Teuchos::RCP<Epetra_Vector> tatm  = atmos->interfaceT();
-    if (!(tatm->Map().SameAs(*standardSurfaceMap_)))
-    {
-        CHECK_ZERO(tatm->ReplaceMap(*standardSurfaceMap_));
-    }
-
+    CHECK_MAP(tatm, standardSurfaceMap_);
     tatm_ = tatm;
 
     Teuchos::RCP<Epetra_Vector> qatm  = atmos->interfaceQ();
-    if (!(qatm->Map().SameAs(*standardSurfaceMap_)))
-    {
-        CHECK_ZERO(qatm->ReplaceMap(*standardSurfaceMap_));
-    }
-
+    CHECK_MAP(qatm, standardSurfaceMap_);
     qatm_ = qatm;
 }
 

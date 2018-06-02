@@ -176,8 +176,8 @@ SUBROUTINE forcing
                 ) / (rhodim * Lf)
 
            ! Combine forcings through mask           
-           Frc(find_row2(i,j,l,SS)) = (          & 
-                QSoa + msi(i,j) * (QSos - QSoa) & 
+           Frc(find_row2(i,j,l,SS)) = (         &
+                QSoa + msi(i,j) * (QSos - QSoa) &
                 ) * (1-landm(i,j,l))
         else
            Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &

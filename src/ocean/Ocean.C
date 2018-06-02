@@ -166,8 +166,14 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     sst_ = Teuchos::rcp(new Epetra_Vector(*tIndexMap_));
 
     // Create SSS vector
-    sss_ = Teuchos::rcp(new Epetra_Vector(*tIndexMap_));
+    sss_ = Teuchos::rcp(new Epetra_Vector(*sIndexMap_));
 
+    // Create Qsi vector
+    Qsi_ = Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
+    
+    // Create Msi vector
+    Msi_ = Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
+                        
     // Create import strategies
     // Target map: IndexMap
     // Source map: state_->Map()
@@ -1418,10 +1424,10 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
 void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
 {
     TIMER_START("Ocean: set seaice...");
-    Teuchos::RCP<Epetra_Vector> Q = seaice->interfaceQ();
-    THCM::Instance().setSeaIceQ(Q);
-    Teuchos::RCP<Epetra_Vector> M = seaice->interfaceM();
-    THCM::Instance().setSeaIceM(M);
+    Qsi_ = seaice->interfaceQ();
+    THCM::Instance().setSeaIceQ(Qsi_);
+    Msi_ = seaice->interfaceM();
+    THCM::Instance().setSeaIceM(Msi_);
 
     SeaIce::CommPars seaicePars;
     seaice->getCommPars(seaicePars);
@@ -1506,41 +1512,60 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
 
     double rowIntCon = THCM::Instance().getRowIntCon();
 
+    // FIXME if this block would be computed locally we would not need
+    // an allgather
+    Teuchos::RCP<Epetra_MultiVector> Msi = Utils::AllGather(*Msi_);
+    
     // fill CRS struct
     int el_ctr = 0;
     int col;
+    int sr;
+    double M; // sea ice mask value
+    double dTFT; // d / dtatm (F_T)
+    double dQFT; // d / dqatm (F_T)
+    double dQFS; // d / dqatm (F_S)
+    double dPFS; // d / dpatm (F_S)
     for (int k = 0; k != L_; ++k)
         for (int j = 0; j != M_; ++j)
             for (int i = 0; i != N_; ++i)
+            {
+                // surface row
+                sr = j*N_+i;
+
+                // sea ice mask value
+                M  = (*(*Msi)(0))[sr];
+                
                 for (int xx = UU; xx <= SS; ++xx)
                 {
                     block->beg.push_back(el_ctr);
 
-                    // surface T row
-                    if ( (k == L_-1) && (xx == TT) && getCoupledT() )
+                    if ( (k == L_-1) &&
+                         ( (*landmask_.global_surface)[sr] == 0 ) )
                     {
-                        if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
+                        // surface T row
+                        if ( (xx == TT) && getCoupledT() )
                         {
                             // tatm dependency
-                            block->co.push_back(-Ooa);
+                            dTFT = Ooa * (1.0 - M);
+                            // negating as the Jacobian is taken negative
+                            block->co.push_back( -dTFT );                            
                             block->jco.push_back(atmos->interface_row(i,j,T) );
                             el_ctr++;
 
                             // qatm dependency
-                            block->co.push_back(-lvsc * eta * qdim);
+                            dQFT = lvsc * eta * qdim * (1.0 - M);
+                            block->co.push_back(-dQFT);
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
                         }
-                    }
-
-                    // surface S row, exclude integral condition row
-                    else if ( (k == L_-1) && (xx == SS) && getCoupledS() &&
-                              FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, xx) != rowIntCon)
-                    {
-                        if ((*landmask_.global_surface)[j*N_+i] == 0) // non-land
+                        
+                        // surface S row, exclude integral condition row
+                        else if ((xx == SS) && getCoupledS() &&
+                                 FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, xx) != rowIntCon)
                         {
                             // humidity dependency
-                            block->co.push_back(nus);
+                            dQFS = -nus * (1.0 - M);
+                            block->co.push_back(-dQFS);
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
 
@@ -1548,13 +1573,15 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> at
                             col = atmos->interface_row(i,j,P);
                             if (col >= 0)
                             {
-                                block->co.push_back(nus);
+                                dPFS = -nus * (1.0 - M);
+                                block->co.push_back(-dPFS);
                                 block->jco.push_back(col);
                                 el_ctr++;
                             }
                         }
                     }
                 }
+            }
 
     // final entry in beg ( == nnz)
     block->beg.push_back(el_ctr);
@@ -1570,7 +1597,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
-    // todo
+    // todo 
            
     return block;   
 }
@@ -1596,11 +1623,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Model> model)
 Teuchos::RCP<Epetra_Vector> Ocean::interfaceT()
 {
     TIMER_START("Ocean: get surface temperature...");
-
-    if (!(sst_->Map().SameAs(*tIndexMap_)))
-    {
-        CHECK_ZERO(sst_->ReplaceMap(*tIndexMap_));
-    }
+    CHECK_MAP(sst_, tIndexMap_);
     CHECK_ZERO(sst_->Import(*state_, *surfaceTimporter_, Insert));
     TIMER_STOP("Ocean: get surface temperature...");
     return sst_;
@@ -1611,11 +1634,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::interfaceT()
 Teuchos::RCP<Epetra_Vector> Ocean::interfaceS()
 {
     TIMER_START("Ocean: get surface salinity...");
-
-    if (!(sss_->Map().SameAs(*sIndexMap_)))
-    {
-        CHECK_ZERO(sss_->ReplaceMap(*sIndexMap_));
-    }
+    CHECK_MAP(sss_, sIndexMap_);
     CHECK_ZERO(sss_->Import(*state_, *surfaceSimporter_, Insert));
     TIMER_STOP("Ocean: get surface salinity...");
     return sss_;
