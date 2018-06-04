@@ -21,8 +21,8 @@ ThetaStepper<Model, VectorPtr>::ThetaStepper(Model model)
 	timestepScale1_(1.20),
 	timestepScale2_(2.00),
 	timestepScale3_(1.05),
-	inYears_(2.0),
-	inDays_(2.0 * 365),
+	inYears_(2.02),
+	inDays_(2.02 * 365),
 	minAllowedIterations_(4),
 	maxAllowedIterations_(5)	
 {

@@ -1048,7 +1048,7 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
         Teuchos::RCP<Epetra_Vector> b =
             Teuchos::rcp(new Epetra_Vector(*(*rhs)(0)));
         double nrm = explicitResNorm(b);
-        INFO("        ||b-Ax|| = " << nrm);
+        INFO("        ||b-Ax|| / ||b|| = " << nrm / Utils::norm(b));
 
         TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 
@@ -1529,7 +1529,9 @@ Teuchos::RCP<Epetra_Vector> Ocean::interfaceT()
 //=====================================================================
 void Ocean::printFiles()
 {
-    // dummy set up, exit write function after creating fort.44
+    // This writes to fort.44. If requested we can also output the
+    // legacy fort.3 here. Default behaviour: exit write function
+    // after creating fort.44.
     int filename = 0;
     int label    = 0;
     int length   = 1;

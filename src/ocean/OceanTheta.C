@@ -86,20 +86,30 @@ void OceanTheta::restore()
 //=====================================================================
 void OceanTheta::computeRHS()
 {
+    THCM::Instance().fixMixing(0);
 	THCM::Instance().evaluate(*state_, rhs_, false);
 
     // Calculate mass matrix
 	THCM::Instance().evaluateB();
 
     // Get the mass matrix from THCM 
-	massMatrix_ = rcp(&THCM::Instance().DiagB(), false);
+	diagB_ = THCM::Instance().DiagB();
 
-    // Calculate d/dt x = (xnew - xold)/dt
-	stateDot_->Update(1.0 / timestep_, *state_, -1.0 / timestep_,
+    // Create timestep scaling vector
+    Epetra_Vector leftScale(*diagB_);
+    int numMyElements = leftScale.Map().NumMyElements();
+    for (int i = 0; i != numMyElements; ++i)
+        if (std::abs((*diagB_)[i]) < 1e-12)
+            leftScale[i] = 1.0;
+        else
+            leftScale[i] = timestep_;
+
+    // Calculate dx = (xnew - xold)
+	stateDot_->Update(1.0 , *state_, -1.0 ,
 					  *oldState_, 0.0);
 	
 	// Obtain number of local elements
-	int numMyElements     = stateDot_->Map().NumMyElements();
+	numMyElements  = stateDot_->Map().NumMyElements();
 
     // Get a list of the global element IDs owned by the calling proc
 	int *myGlobalElements = stateDot_->Map().MyGlobalElements();
@@ -108,13 +118,14 @@ void OceanTheta::computeRHS()
 	double value;
 	for (int i = 0; i != numMyElements; ++i)
 	{
-		value = (*massMatrix_)[i] * (*stateDot_)[i];
+		value = (*diagB_)[i] * (*stateDot_)[i];
 		stateDot_->ReplaceGlobalValues(1, &value, myGlobalElements + i);
 	}
 
     // The final theta timestepping rhs is given by
-	// -1 * (B d/dt x + theta*F(x) + (theta-1) * F(x_old))
+	// -1 * (B d x + dt*theta*F(x) + dt*(theta-1) * F(x_old))
 	rhs_->Update(theta_ - 1.0, *oldRhs_, theta_);
+    rhs_->Multiply(1.0, leftScale, *rhs_, 0.0);
 	rhs_->Update(1.0, *stateDot_, 1.0);
 	rhs_->Scale(-1.0);
 }
@@ -123,37 +134,45 @@ void OceanTheta::computeRHS()
 void OceanTheta::computeJacobian()
 {
     // Check theta
-	if (theta_ < 0 || theta_ > 1)
+	if (theta_ <= 0 || theta_ > 1)
 	{
 		WARNING("Ocean: Incorrect theta: " << theta_,
 				__FILE__, __LINE__);
 	}	
 
     // First compute the Jacobian in THCM using the current state
+    THCM::Instance().fixMixing(0);
 	THCM::Instance().evaluate(*state_, Teuchos::null, true);
 
     // Get the plain Jacobian from THCM
 	jac_ = THCM::Instance().getJacobian();
 
-    // Scale it with theta
-	jac_->Scale(theta_);
-
     // Get the mass matrix from THCM (which is actually just a
 	//    vector with diagonal elements)
 	// Wrap it in a non-owning RCP
-	massMatrix_ = rcp(&THCM::Instance().DiagB(), false);
+	diagB_ = THCM::Instance().DiagB();
+    Epetra_Vector leftScale(*diagB_);
+    int numMyElements = leftScale.Map().NumMyElements();
+    for (int i = 0; i != numMyElements; ++i)
+        if (std::abs((*diagB_)[i]) < 1e-12)
+            leftScale[i] = 1.0;
+        else
+            leftScale[i] = timestep_ * theta_;
 
+    CHECK_ZERO( jac_->LeftScale(leftScale) );
+      
     // Get the number of local elements
-	int numMyElements     =	jac_->Map().NumMyElements();
+	numMyElements =	jac_->Map().NumMyElements();
 
     // Get a list of the global element IDs owned by the calling proc
 	int *myGlobalElements = jac_->Map().MyGlobalElements();
 
-    // Add to the Jacobian the values B[i]/dt
+    // Add to the Jacobian the values B[i]. The result is B + dt *
+    // theta * J.
 	double value;
 	for (int i = 0; i != numMyElements; ++i)
 	{
-		value = (*massMatrix_)[i] / timestep_;
+		value = (*diagB_)[i];
 		jac_->SumIntoGlobalValues(myGlobalElements[i], 1,
 								  &value, myGlobalElements + i);
 	}

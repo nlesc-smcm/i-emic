@@ -97,6 +97,7 @@ public:
 			
 			return true;
 		}
+    
 	void exportMatrices()
 		{
 			*B_ = THCM::Instance().DiagB();
@@ -107,6 +108,7 @@ public:
 			int *MyGlobalElements = B->Map().MyGlobalElements();
 			int index;
 			double diag;
+            
 // TEUCHOS_ASSERT DIE MAPS VAN B_ EN B!!!!!
 			for (int i = 0; i != NumMyElements; ++i)
 			{

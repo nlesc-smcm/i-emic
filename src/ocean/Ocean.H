@@ -74,7 +74,6 @@ protected:
     VectorPtr state_;
     VectorPtr rhs_;
     VectorPtr sst_;
-    VectorPtr massMatrix_;
 
     MatrixPtr jac_;
     VectorPtr diagB_;
@@ -381,11 +380,12 @@ public:
     // volume. Nonzero integrals correspond to points in the mask we
     // do not want.
     int analyzeJacobian2();
-
-private:
+        
     // HDF5-based save and load functions for the state and parameters
     int loadStateFromFile(std::string const &name);
     int saveStateToFile(std::string const &name);
+
+private:
 
     // Write the state of the ocean to traditional fortran out files fort.*
     // Use matlab plot-scripts for visualization

@@ -49,6 +49,7 @@ using Teuchos::rcp;
 
 RCP<std::ostream> outFile;      // output file
 RCP<std::ostream> cdataFile;    // cdata file
+RCP<std::ostream> tdataFile;    // tdata file
 ProfileType       profile;      // profile
 std::stack<Timer> timerStack;   // timing stack
 
@@ -88,6 +89,22 @@ void  outputFiles(RCP<Epetra_Comm> Comm)
     }
     else
         cdataFile = Teuchos::rcp(new Teuchos::oblackholestream());
+        
+    // Write timestepping data on proc 0
+    if (Comm->MyPID() == 0)
+    {
+        std::ostringstream tdatafile;  // setting up a filename
+
+        tdatafile << "tdata.txt";
+
+        std::cout << "continuation data is written to " <<  tdatafile.str().c_str()
+                  << " by CPU " << Comm->MyPID() << std::endl;            
+        
+        tdataFile =
+            Teuchos::rcp(new std::ofstream(tdatafile.str().c_str()));
+    }
+    else
+        tdataFile = Teuchos::rcp(new Teuchos::oblackholestream());
         
     
 }

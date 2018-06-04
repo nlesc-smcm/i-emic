@@ -28,6 +28,7 @@
 // These outstreams need to be defined in the main routine.
 extern Teuchos::RCP<std::ostream> outFile;
 extern Teuchos::RCP<std::ostream> cdataFile;
+extern Teuchos::RCP<std::ostream> tdataFile;
 
 //------------------------------------------------------------------
 // Setup profile:
@@ -71,6 +72,10 @@ extern std::stack<Timer> timerStack;
 #  define WRITECDATA(s) (*cdataFile) << s << std::endl; 
 #endif
 
+#ifndef WRITETDATA
+#  define WRITETDATA(s) (*tdataFile) << s << std::endl; 
+#endif
+
 // ! Error reporting
 #ifndef ERROR
 #  define ERROR(x,y,z)                                                  \
@@ -95,6 +100,8 @@ extern std::stack<Timer> timerStack;
 	{												\
 		(*outFile) << "**WARNING**: " << x << " "	\
 				   << y << " " << z << std::endl;	\
+        std::cerr << "**WARNING**: " << x << " "    \
+                  << y << " " << z << std::endl;	\
 	}
 #endif
 
