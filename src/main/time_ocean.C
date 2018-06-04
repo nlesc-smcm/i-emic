@@ -107,14 +107,14 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         normF = Utils::norm(F);
         
         // Timestep adjustments
-        while (normF > 10)
-        {
-            dt = std::max(dt / dscale, mindt);
-            oceanTheta->setTimestep(dt);
-            oceanTheta->computeRHS();
-            normF = Utils::norm(F);
-            INFO("             ||F|| = " << normF);
-        }
+        // while (normF > 10)
+        // {
+        //     dt = std::max(dt / dscale, mindt);
+        //     oceanTheta->setTimestep(dt);
+        //     oceanTheta->computeRHS();
+        //     normF = Utils::norm(F);
+        //     INFO("             ||F|| = " << normF);
+        // }
 
         INFO("              step = " << step);
         INFO("              Newton solve, ||F|| = " << normF);
