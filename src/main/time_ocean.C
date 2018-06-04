@@ -92,7 +92,7 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
     bool test_step = ( nsteps < 0 ) ? true : step < nsteps;
         
-    while ( ( time < tend ) &&
+    while ( ( time < tend ) ||
             ( test_step ) )
     {
         INFO("----------------------------------------------------------");
@@ -131,8 +131,13 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
             normdx = Utils::normInf(dx);
             INFO("                            ||F||2   = " << normF);
             INFO("                           ||dx||inf = " << normdx);
-            if (( normF < Ntol) && ( normdx < Ntol) )
+            if ( normdx < Ntol )
                 break;
+            else if ( normdx > 1e2)
+            {
+                k = Niters;
+                break;
+            }
         }
         
         if (k == Niters)
