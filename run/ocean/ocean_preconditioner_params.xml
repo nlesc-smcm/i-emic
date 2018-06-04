@@ -38,9 +38,9 @@
   <!-- This solver is used inside the 'Simple' preconditioner              -->
   <ParameterList name="Auv Solver">
     <!-- up to now only "AztecOO" or "None" (just apply precond once) -->
-    <Parameter name="Method" type="string" value="None"/>
+    <Parameter name="Method" type="string" value="AztecOO"/>
     <!-- maximum number of iterations permitted -->
-    <Parameter name="Max Num Iter" type="int" value="1"/>
+    <Parameter name="Max Num Iter" type="int" value="3"/>
     <!-- (relative) convergence tolerance      -->
     <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <!-- options include "GMRES", "GMRESR", etc. -->
@@ -419,7 +419,7 @@
   <!-- Solver parameters for the saddlepoint problem { -->
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="1"/>
+    <Parameter name="Max Num Iter" type="int" value="3"/>
     <Parameter name="Tolerance" type="double" value="1.0e-4"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
@@ -438,7 +438,7 @@
 
     <!-- mode of operation for the Simple preconditioner.                    -->
     <!-- "SI": Simple "SL": SimpleL (transposed) "SR": symmetrized = SimpleR -->
-    <Parameter name="Scheme" type="string" value="SR"/>
+    <Parameter name="Scheme" type="string" value="SI"/>
 
     <!-- fix Chat's diagonal if it is singular -->
     <Parameter name="Fix singular Chat" type="bool" value="false"/>

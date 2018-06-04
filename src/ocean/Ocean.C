@@ -1987,6 +1987,63 @@ int Ocean::loadStateFromFile(std::string const &filename)
 }
 
 //====================================================================
+// Perform projection to vector: v = v - (v, s1) s1 - (v, s2) s2,
+// where s1 and s2 are pressure checkerboard modes.
+void Ocean::pressureProjection(Teuchos::RCP<Epetra_Vector> vec)
+{
+    assert(vec->Map().SameAs(state_->Map()));
+    
+    int grow = 0, lrow = 0, id3;
+    double sum1 = 0.0, sum2 = 0.0;
+    double gsum1 = 0.0, gsum2 = 0.0;
+
+    Teuchos::RCP<Epetra_Vector> s1 = Teuchos::rcp(new Epetra_Vector(*vec));
+    Teuchos::RCP<Epetra_Vector> s2 = Teuchos::rcp(new Epetra_Vector(*vec));
+    s1->PutScalar(0.0);
+    s2->PutScalar(0.0);
+    
+    for (int k = 0; k != L_; ++k)
+        for (int j = 0; j != M_; ++j)
+            for (int i = 0; i != N_; ++i)
+            {
+                // 3D mask index
+                id3 = FIND_ROW2(1, N_, M_, L_, i, j, k, 1);
+                if ((*landmask_.global_borderless)[id3] == 0)
+                {
+                    // obtain pressure row
+                    grow = FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, PP);
+                    lrow = vec->Map().LID(grow);
+                    if (lrow >= 0)
+                    {
+                        // create pressure modes
+                        if ( (i + j) % 2 == 0 )
+                        {
+                            (*s1)[lrow] = 1;
+                            sum1 = sum1 + 1.0;
+                        }
+                        else
+                        {
+                            (*s2)[lrow] = 1;
+                            sum2 = sum2 + 1.0;
+                        }
+                    }
+                }
+            }
+    
+    comm_->SumAll(&sum1, &gsum1, 1);
+    comm_->SumAll(&sum2, &gsum2, 1);
+
+    s1->Scale(1.0 / sqrt(sum1));
+    s2->Scale(1.0 / sqrt(sum2));
+
+    double dp1 = Utils::dot(vec, s1);
+    double dp2 = Utils::dot(vec, s2);
+    
+    // v = v - (v, s1) s1 - (v, s2) s2
+    vec->Update(-dp1, *s1, -dp2, *s2, 1.0);
+}
+
+//====================================================================
 // Adjust locally defined continuation parameter
 // This happens when Ocean is managed directly by Continuation
 double Ocean::getPar()

@@ -380,6 +380,9 @@ public:
     // volume. Nonzero integrals correspond to points in the mask we
     // do not want.
     int analyzeJacobian2();
+
+    // Project pressures modes from a state vector
+    void pressureProjection(Teuchos::RCP<Epetra_Vector> vec);
         
     // HDF5-based save and load functions for the state and parameters
     int loadStateFromFile(std::string const &name);

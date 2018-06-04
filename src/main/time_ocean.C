@@ -101,7 +101,8 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         oceanTheta->preProcess();
         oceanTheta->store();  // save current state to oldstate
 
-        // compute F: -1 * (B d/dt x + theta*F(x) + (theta-1) * F(x_old))
+        // compute time discretization -G:
+        // -G(x) =  -1 * (B d/dt x + theta*F(x) + (theta-1) * F(x_old))
         oceanTheta->setTimestep(dt);
         oceanTheta->computeRHS();
         normF = Utils::norm(F);
@@ -122,11 +123,22 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         // Newton solve
         int k = 0;
         for (; k != Niters; ++k)
-        {
+        { 
+            // create jacobian of time discretization
             oceanTheta->computeJacobian();
+
+            // solve J(x) dx = -G(x)
             oceanTheta->solve(F);
+
+            // correct for pressure modes (superfluous due to prec)
+            oceanTheta->pressureProjection(dx);
+
+            // update state
             x->Update(1.0, *dx, 1.0);
+
+            // compute time discretization -G(x)
             oceanTheta->computeRHS();
+            
             normF  = Utils::norm(F);
             normdx = Utils::normInf(dx);
             INFO("                            ||F||2   = " << normF);
