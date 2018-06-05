@@ -22,6 +22,8 @@ class AMS
     Model model_;
     double dt_;
     double tmax_;
+    double theta_;
+
     double adist_;
     double bdist_;
     double cdist_;
@@ -95,6 +97,7 @@ AMS(Model model, ParameterList pars,
     model_(model),
     dt_(pars->get("time step", 0.01)),
     tmax_(pars->get("maximum time", 1000.0)),
+    theta_(pars->get("theta", 1.0)),
     adist_(pars->get("A distance", 0.05)),
     bdist_(pars->get("B distance", adist_)),
     cdist_(pars->get("C distance", 2 * adist_)),
@@ -208,8 +211,7 @@ auto AMS<Model>::get_time_step()
 {
     // Function to perform one stochastic time step
     return [this](VectorPtr const &x, double dt) {
-        double theta = 1;
-        double sig = 1.0 / (dt * theta);
+        double sig = 1.0 / (dt * theta_);
 
         *model_->getState('V') = *x;
 
@@ -238,7 +240,7 @@ auto AMS<Model>::get_time_step()
         model_->computeRHS();
         VectorPtr Fx = model_->getRHS('C');
         INFO("||F|| = " << Utils::norm(Fx));
-        auto thetaF = [this, G, Fx, x, dt, theta](VectorPtr const &xnew) {
+        auto thetaF = [this, G, Fx, x, dt](VectorPtr const &xnew) {
             *model_->getState('V') = *xnew;
 
             VectorPtr M = model_->getMassMat('V');
@@ -248,8 +250,8 @@ auto AMS<Model>::get_time_step()
 
             model_->computeRHS();
             VectorPtr Fxnew = model_->getRHS('V');
-            CHECK_ZERO(ret->Update(dt * theta, *Fxnew, 1.0));
-            CHECK_ZERO(ret->Update(dt * (1.0 - theta), *Fx, 1.0));
+            CHECK_ZERO(ret->Update(dt * theta_, *Fxnew, 1.0));
+            CHECK_ZERO(ret->Update(dt * (1.0 - theta_), *Fx, 1.0));
             CHECK_ZERO(ret->Update(1.0, *G, 1.0));
             return ret;
         };
@@ -303,8 +305,7 @@ auto AMS<Model>::get_projected_time_step()
 {
     // Function to perform one stochastic time step
     return [this](VectorPtr const &x, double dt) {
-        double theta = 1;
-        double sig = 1.0 / (dt * theta);
+        double sig = 1.0 / (dt * theta_);
 
         auto xsmall = restrict(*x);
         *model_->getState('V') = *x;
@@ -342,7 +343,7 @@ auto AMS<Model>::get_projected_time_step()
         CHECK_ZERO(tmp->Multiply(1.0, *M, *V_, 0.0));
         auto VMV = dot(*V_, *tmp);
 
-        auto thetaF = [this, &G, &Fx, &VMV, &xsmall, dt, theta](
+        auto thetaF = [this, &G, &Fx, &VMV, &xsmall, dt](
             Teuchos::RCP<Epetra_MultiVector> const &xnew) {
             *model_->getState('V') = *prolongate(*xnew);
 
@@ -353,8 +354,8 @@ auto AMS<Model>::get_projected_time_step()
 
             model_->computeRHS();
             auto Fxnew = restrict(*model_->getRHS('V'));
-            CHECK_ZERO(ret->Update(dt * theta, *Fxnew, 1.0));
-            CHECK_ZERO(ret->Update(dt * (1.0 - theta), *Fx, 1.0));
+            CHECK_ZERO(ret->Update(dt * theta_, *Fxnew, 1.0));
+            CHECK_ZERO(ret->Update(dt * (1.0 - theta_), *Fx, 1.0));
             CHECK_ZERO(ret->Update(1.0, *G, 1.0));
             return ret;
         };
