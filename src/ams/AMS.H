@@ -27,8 +27,11 @@ class AMS
     double cdist_;
     double sigma_;
 
+    std::string method_;
+
     int num_exp_;
     int num_init_exp_;
+    int maxit_;
 
     VectorPtr sol1_;
     VectorPtr sol2_;
@@ -96,8 +99,10 @@ AMS(Model model, ParameterList pars,
     bdist_(pars->get("B distance", adist_)),
     cdist_(pars->get("C distance", 2 * adist_)),
     sigma_(pars->get("sigma", 1.0)),
+    method_(pars->get("method", "AMS")),
     num_exp_(pars->get("number of experiments", 1000)),
     num_init_exp_(pars->get("number of initial experiments", num_exp_)),
+    maxit_(pars->get("maximum iterations", num_exp_ * 10)),
     sol1_(sol1),
     sol2_(sol2),
     V_(Teuchos::null)
@@ -397,7 +402,12 @@ AMS<Model>::~AMS()
 template<typename Model>
 void AMS<Model>::run()
 {
-    timestepper_->ams(num_exp_, num_init_exp_, sol1_, dt_, tmax_);
+    if (method_ == "AMS")
+        timestepper_->ams(num_exp_, num_init_exp_, sol1_, dt_, tmax_);
+    else if (method_ == "TAMS")
+        timestepper_->tams(num_exp_, maxit_, sol1_, dt_, tmax_);
+    else
+        std::cerr << "Method " << method_ << " does not exist." << std::endl;
 }
 
 

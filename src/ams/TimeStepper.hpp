@@ -61,8 +61,14 @@ public:
         double dt, double tmax,
         AMSExperiment<T> &experiment) const;
 
+    void transient_tams(
+        double dt, double tmax,
+        AMSExperiment<T> &experiment) const;
+
     void ams(int num_exp, int num_init_exp,
              T const &x0, double dt, double tmax) const;
+
+    void tams(int num_exp, int maxit, T const &x0, double dt, double tmax) const;
 
     template<class URNG>
     void set_random_engine(URNG &engine);
@@ -174,6 +180,45 @@ void TimeStepper<T>::transient_ams(
             break;
         }
         else if (dist > 1 - bdist_)
+        {
+            experiment.converged = true;
+            experiment.xlist.push_back(x);
+            experiment.tlist.push_back(t);
+            experiment.dlist.push_back(1.0);
+            max_distance = 1.0;
+            break;
+        }
+        if (dist > max_distance + 0.0005)
+        {
+            experiment.xlist.push_back(x);
+            experiment.tlist.push_back(t);
+            experiment.dlist.push_back(dist);
+            max_distance = dist;
+        }
+    }
+
+    experiment.max_distance = max_distance;
+    experiment.time = t;
+}
+
+template<class T>
+void TimeStepper<T>::transient_tams(
+    double dt, double tmax,
+    AMSExperiment<T> &experiment) const
+{
+    T x(experiment.xlist.back());
+    double t = experiment.tlist.back();
+
+    double max_distance = experiment.max_distance;
+
+    experiment.initial_time = 0.0;
+
+    for (; t < tmax; t += dt)
+    {
+        x = std::move(time_step_(x, dt));
+
+        double dist = dist_fun_(x);
+        if (dist > 1 - bdist_)
         {
             experiment.converged = true;
             experiment.xlist.push_back(x);
@@ -410,6 +455,189 @@ void TimeStepper<T>::ams(int num_exp, int num_init_exp,
 
     tmax = 10;
     double tp = 1.0 -  exp(-1.0 / fpt * tmax);
+    std::cout << "Transition probability T=" << tmax << ": " << tp << std::endl;
+}
+
+
+template<class T>
+void TimeStepper<T>::tams(int num_exp, int maxit, T const &x0, double dt, double tmax) const
+{
+
+    int its = 0;
+    int converged = 0;
+    std::vector<AMSExperiment<T>> experiments(num_exp);
+
+#pragma omp parallel for default(none),                                 \
+    firstprivate(num_exp, dt, tmax),                                    \
+    shared(std::cout, its, experiments, converged, x0), schedule(dynamic)
+    for (int i = 0; i < num_exp; i++)
+    {
+        experiments[i].xlist.push_back(x0);
+        experiments[i].dlist.push_back(0);
+        experiments[i].tlist.push_back(0);
+
+        transient_tams(dt, tmax, experiments[i]);
+
+        if (experiments[i].converged)
+#pragma omp atomic
+            converged++;
+
+#pragma omp atomic
+        its++;
+
+        std::cout << "Initialization: " << its << " / " << num_exp << ", "
+                  << converged << " / " << num_exp
+                  << " converged with t="
+                  << experiments[i].time << std::endl;
+    }
+    std::cout << std::endl;
+
+    its = 0;
+    converged = 0;
+
+    std::vector<AMSExperiment<T> *> unconverged_experiments;
+    std::vector<AMSExperiment<T> *> unused_experiments;
+    std::vector<AMSExperiment<T> *> reactive_experiments;
+
+    for (int i = 0; i < num_exp; i++)
+        reactive_experiments.push_back(&experiments[i]);
+
+    for (auto exp: reactive_experiments)
+    {
+        if (!exp->converged)
+            unconverged_experiments.push_back(exp);
+        else
+            converged++;
+        unused_experiments.push_back(exp);
+    }
+
+    std::sort(unconverged_experiments.begin(),
+              unconverged_experiments.end(), AMSExperiment<T>::sort);
+
+#pragma omp parallel for default(none),                                 \
+    firstprivate(num_exp, maxit, dt, tmax),                             \
+    shared(std::cout, std::cerr, its, converged,                        \
+           experiments, unused_experiments, unconverged_experiments,    \
+           reactive_experiments),                                       \
+    schedule(static)
+    for (int i = 0; i < maxit; i++)
+    {
+        AMSExperiment<T> *exp = NULL;
+
+#pragma omp critical (experiments)
+        {
+#pragma omp flush (unconverged_experiments, unused_experiments)
+            if (unconverged_experiments.size() > 0 && unused_experiments.size() > 0)
+            {
+                exp = unconverged_experiments.back();
+                unconverged_experiments.pop_back();
+                unused_experiments.erase(
+                    std::find(unused_experiments.begin(),
+                              unused_experiments.end(), exp));
+            }
+        }
+
+        if (exp == NULL)
+            continue;
+
+        double max_distance = exp->max_distance;
+
+#pragma omp critical (experiments)
+        {
+#pragma omp flush (unused_experiments)
+            int rnd_idx = randint(0, unused_experiments.size()-1);
+            while (unused_experiments[rnd_idx]->max_distance <= exp->max_distance)
+                rnd_idx = randint(0, unused_experiments.size()-1);
+
+            AMSExperiment<T> *rnd_exp = unused_experiments[rnd_idx];
+            if (rnd_exp->dlist.size() == 0)
+            {
+                std::cerr << "Experiment " << rnd_idx << " has size 0." << std::endl;
+                exit(-1);
+            }
+
+            int same_distance_idx = -1;
+            while (++same_distance_idx < rnd_exp->dlist.size() &&
+                   rnd_exp->dlist[same_distance_idx] < exp->max_distance);
+
+            if (same_distance_idx == rnd_exp->dlist.size())
+            {
+                std::cerr << "Distance larger than " << exp->max_distance
+                          << " not found in experiment with max distance "
+                          << rnd_exp->max_distance << "." << std::endl;
+                exit(-1);
+            }
+
+            exp->xlist = std::vector<T>(
+                rnd_exp->xlist.begin(), rnd_exp->xlist.begin() + same_distance_idx + 1);
+            exp->dlist = std::vector<double>(
+                rnd_exp->dlist.begin(), rnd_exp->dlist.begin() + same_distance_idx + 1);
+            exp->tlist = std::vector<double>(
+                rnd_exp->tlist.begin(), rnd_exp->tlist.begin() + same_distance_idx + 1);
+        }
+
+        transient_tams(dt, tmax, *exp);
+
+#pragma omp critical (experiments)
+        {
+#pragma omp flush (experiments, unconverged_experiments, unused_experiments, \
+                   its, converged)
+            its++;
+            if (exp->converged)
+                converged++;
+            else
+                unconverged_experiments.push_back(exp);
+
+            unused_experiments.push_back(exp);
+
+            std::sort(unconverged_experiments.begin(),
+                      unconverged_experiments.end(), AMSExperiment<T>::sort);
+
+            std::cout << "TAMS: " << its << " / " << maxit << ", "
+                      << converged << " / " << num_exp
+                      << " converged with max distance "
+                      << max_distance << " -> "
+                      << exp->max_distance << " and t="
+                      << exp->time << std::endl;
+
+            // Cleanup
+            double min_max_distance = 1.0;
+            for (auto exp: reactive_experiments)
+                min_max_distance = std::min(min_max_distance, exp->max_distance);
+
+            if (its % 10 == 0)
+            {
+                std::cout << "Starting cleanup" << std::endl;
+                for (auto exp: unused_experiments)
+                {
+                    int min_max_idx = -1;
+                    while (++min_max_idx < exp->dlist.size() &&
+                           exp->dlist[min_max_idx] < min_max_distance);
+
+                    if (min_max_idx > 0)
+                    {
+                        exp->xlist = std::vector<T>(
+                            exp->xlist.begin() + min_max_idx,
+                            exp->xlist.end());
+                        exp->dlist = std::vector<double>(
+                            exp->dlist.begin() + min_max_idx,
+                            exp->dlist.end());
+                        exp->tlist = std::vector<double>(
+                            exp->tlist.begin() + min_max_idx,
+                            exp->tlist.end());
+                    }
+                }
+                std::cout << "Finished cleanup" << std::endl;
+            }
+        }
+    }
+    std::cout << std::endl;
+
+    double W = num_exp * pow(1.0 - 1.0 / (double)num_exp, its);
+    for (int i = 1; i < its; i++)
+        W += pow(1.0 - 1.0 / (double)num_exp, i);
+
+    double tp = (double)converged * pow(1.0 - 1.0 / (double)num_exp, its) / W;
     std::cout << "Transition probability T=" << tmax << ": " << tp << std::endl;
 }
 
