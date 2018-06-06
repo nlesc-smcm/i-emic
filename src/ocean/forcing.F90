@@ -224,7 +224,10 @@ SUBROUTINE stochastic_forcing
 
   integer i, j, k, row, prev_row, v
   integer find_row2
+  real oldpar
 
+  oldpar = par(SPER)
+  par(SPER) = 0.0
   call forcing
 
   v = 1
@@ -255,6 +258,9 @@ SUBROUTINE stochastic_forcing
         v = begF(i)
      endif
   enddo
+
+  par(SPER) = oldpar
+  call forcing
 
 end subroutine stochastic_forcing
 
