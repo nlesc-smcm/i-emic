@@ -211,8 +211,6 @@ void TimeStepper<T>::transient_tams(
 
     double max_distance = experiment.max_distance;
 
-    experiment.initial_time = 0.0;
-
     for (; t < tmax; t += dt)
     {
         x = std::move(time_step_(x, dt));
@@ -236,8 +234,8 @@ void TimeStepper<T>::transient_tams(
         }
     }
 
+    experiment.time = experiment.tlist.back();
     experiment.max_distance = max_distance;
-    experiment.time = t;
 }
 
 template<class T>
