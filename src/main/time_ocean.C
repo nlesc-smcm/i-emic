@@ -82,23 +82,27 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     double normdx = 0.0;     // keep track of update infnorm
     int    step   = 0;       // keep track of time steps
 
-    Teuchos::RCP<Epetra_Vector> F  = oceanTheta->getRHS('V');
-    Teuchos::RCP<Epetra_Vector> x  = oceanTheta->getState('V');
-    Teuchos::RCP<Epetra_Vector> dx = oceanTheta->getSolution('V');
-
+    Teuchos::RCP<Epetra_Vector> F    = oceanTheta->getRHS('V');
+    Teuchos::RCP<Epetra_Vector> x    = oceanTheta->getState('V');
+    Teuchos::RCP<Epetra_Vector> dx   = oceanTheta->getSolution('V');
+    Teuchos::RCP<Epetra_Vector> xdot = oceanTheta->getState('C');
+    Teuchos::RCP<Epetra_Vector> xold = oceanTheta->getState('C');
+    dx->PutScalar(0.0);
+    xdot->PutScalar(0.0);
+    xold->PutScalar(0.0);
+    
     oceanTheta->initializeSolver();
     writeData(oceanTheta, true, 0, 0, 0, 0); // write data to tdata.txt
     oceanTheta->setTheta(theta);
 
     bool test_step = ( nsteps < 0 ) ? true : step < nsteps;
-        
     while ( ( time < tend ) ||
             ( test_step ) )
     {
         INFO("----------------------------------------------------------");
-        INFO("Timestepping:    t = " << time * years << " y");
-        
-        oceanTheta->preProcess();
+        INFO("Timestepping:    t = " << time * years << " y");        
+
+        oceanTheta->preProcess();        
         oceanTheta->store();  // save current state to oldstate
 
         // compute time discretization -G:
@@ -119,6 +123,10 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
         INFO("              step = " << step);
         INFO("              Newton solve, ||F|| = " << normF);
+
+        // // Secant prediction (not sure if needed)
+        // x->Update(dt, *xdot, 1.0);
+        // *xold = *x;
         
         // Newton solve
         int k = 0;
@@ -154,20 +162,22 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         
         if (k == Niters)
         {
-            WARNING("Newton did not converge! ||F|| = " << normF << "\nRestoring model",
+            WARNING("Newton did not converge! ||F|| = "
+                    << normF << "\nRestoring model",
                     __FILE__, __LINE__);
             dt = std::max(dt / dscale, mindt);
             oceanTheta->restore();
             continue;
         }
-
+        
         oceanTheta->postProcess();
-
+        
         step++;
         time += dt;
-
+        
         std::stringstream outFile;
-        outFile << "ocean_time_" << std::setprecision(8) << time * years << ".h5";
+        outFile << "ocean_time_" << std::setprecision(8)
+                << time * years << ".h5";
         
         if ((output > 0) && ((step % output) == 0))
             oceanTheta->saveStateToFile(outFile.str());
@@ -181,6 +191,10 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
             dt = std::max(dt / dscale, mindt);
 
         test_step = ( nsteps < 0 ) ? true : step < nsteps;
+
+        // create tangent
+        xdot->Update(1.0/dt, *x, -1.0/dt, *xold, 0.0);
+        INFO(" ||xdot|| = " << Utils::norm(xdot));
     }
     
     // print the profile
@@ -200,12 +214,14 @@ void writeData(Teuchos::RCP<OceanTheta> model, bool describe,
 
     if (describe) // write description of entries
     {
-        cdatastring << std::setw(_FIELDWIDTH_)
+        cdatastring << std::setw(_FIELDWIDTH_) 
+                    << "time"
+                    << std::setw(_FIELDWIDTH_)
                     << "step" 
                     << std::setw(_FIELDWIDTH_) 
                     << "dt" 
-                    << std::setw(_FIELDWIDTH_) 
-                    << "time"
+                    << std::setw(_FIELDWIDTH_)
+                    << "|x|"
                     << std::setw(_FIELDWIDTH_) 
                     << "NR"
                     << model->writeData(describe);
@@ -219,9 +235,11 @@ void writeData(Teuchos::RCP<OceanTheta> model, bool describe,
         cdatastring.precision(_PRECISION_);
 
         cdatastring << std::scientific
-                    << std::setw(_FIELDWIDTH_) <<  step
-                    << std::setw(_FIELDWIDTH_) <<  dt
                     << std::setw(_FIELDWIDTH_) <<  time
+                    << std::setw(_FIELDWIDTH_) <<  step
+                    << std::setw(_FIELDWIDTH_) <<  dt  
+                    << std::setw(_FIELDWIDTH_)
+                    <<  Utils::norm(model->getState('V'))
                     << std::setw(_FIELDWIDTH_) <<  niters
                     << model->writeData();    
 

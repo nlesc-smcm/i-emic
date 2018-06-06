@@ -30,8 +30,8 @@ OceanTheta::OceanTheta(Teuchos::RCP<Epetra_Comm> Comm,
 {
 
 	// Initialize a few datamembers
-	oldState_ = rcp(new Epetra_Vector(*state_));
-	stateDot_ = rcp(new Epetra_Vector(*state_));
+	oldState_ = rcp(new Epetra_Vector(state_->Map()));
+    stateDot_ = rcp(new Epetra_Vector(state_->Map()));
 	oldRhs_   = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 }
 

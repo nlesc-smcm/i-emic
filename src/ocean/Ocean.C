@@ -996,44 +996,37 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
 
     // Use trivial initial solution
     sol_->PutScalar(0.0);
-
-    // Set the problem, rhs may be given as an argument to solve().
-    if (solverType_ == 'F')
-    {
-        bool set;
-        if (rhs == Teuchos::null)
-            set = problem_->setProblem(sol_, rhs_);
-        else
-            set = problem_->setProblem(sol_, rhs);
-        TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
-                                   "*** Belos::LinearProblem failed to setup");
-    }
+    
+    // Set right hand side    
+    Teuchos::RCP<Epetra_MultiVector> b;
+    if (rhs == Teuchos::null)
+        b = rhs_;
     else
-        ERROR("No solver specified", __FILE__, __LINE__);
+        b = rhs;
+    
+    bool set = problem_->setProblem(sol_, b);
+    
+    TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
+                               "*** Belos::LinearProblem failed to setup");
 
     // ---------------------------------------------------------------------
     // Start solving J*x = F, where J = jac_, x = sol_ and F = rhs
     TIMER_START("Ocean: solve...");
     INFO("Ocean: solve...");
+    INFO(" |x| = " << Utils::norm(sol_));
+    INFO(" |b| = " << Utils::norm(b));
+
     int    iters;
     double tol;
-    if (solverType_ == 'F')
+    try
     {
-        try
-        {
-            belosSolver_->solve();      // Solve
-
-        }
-        catch (std::exception const &e)
-        {
-            ERROR("Ocean: exception caught: " << e.what(), __FILE__, __LINE__);
-        }
+        belosSolver_->solve();      // Solve
     }
-    else
+    catch (std::exception const &e)
     {
-        ERROR("No solve specified", __FILE__, __LINE__);
+        ERROR("Ocean: exception caught: " << e.what(), __FILE__, __LINE__);
     }
-
+        
     INFO("Ocean: solve... done");
     TIMER_STOP("Ocean: solve...");
     // ---------------------------------------------------------------------
