@@ -73,18 +73,27 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     RCP<Epetra_Vector> sol2 = ocean->getState('C');
     Utils::load(sol2, stateB);
 
-    // EpetraExt::MultiVectorToMatrixMarketFile("sol1.mtx", *sol1);
-    // EpetraExt::MultiVectorToMatrixMarketFile("sol2.mtx", *sol2);
+    bool writeMatrices = amsParams->get("write matrices", false);
+
+    if (writeMatrices)
+    {
+        EpetraExt::MultiVectorToMatrixMarketFile("sol1.mtx", *sol1);
+        EpetraExt::MultiVectorToMatrixMarketFile("sol2.mtx", *sol2);
+
+        *ocean->getState('V') = *sol1;
+        ocean->computeJacobian();
+        EpetraExt::RowMatrixToMatrixMarketFile("A1.mtx", *ocean->getJacobian());
+        *ocean->getState('V') = *sol2;
+        ocean->computeJacobian();
+        EpetraExt::RowMatrixToMatrixMarketFile("A2.mtx", *ocean->getJacobian());
+        EpetraExt::MultiVectorToMatrixMarketFile("M.mtx", *ocean->getMassMat());
+
+        ocean->computeForcing();
+        EpetraExt::RowMatrixToMatrixMarketFile("F.mtx", *ocean->getForcing());
+    }
 
     // Create ams
     AMS<RCP<Ocean> > ams(ocean, amsParams, sol1, sol2);
-
-    // ocean->computeJacobian();
-    // EpetraExt::RowMatrixToMatrixMarketFile("A.mtx", *ocean->getJacobian());
-    // EpetraExt::MultiVectorToMatrixMarketFile("M.mtx", *ocean->getDiagB());
-
-    ocean->computeForcing();
-    EpetraExt::RowMatrixToMatrixMarketFile("F.mtx", *ocean->getForcing());
 
     ams.run();
 
