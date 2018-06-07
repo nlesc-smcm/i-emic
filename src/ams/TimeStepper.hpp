@@ -111,7 +111,7 @@ TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step,
 template<class T>
 T TimeStepper<T>::transient(T x, double dt, double tmax) const
 {
-    for (double t = 0; t <= tmax; t += dt)
+    for (double t = dt; t <= tmax; t += dt)
         x = std::move(time_step_(x, dt));
     return x;
 }
@@ -121,7 +121,7 @@ double TimeStepper<T>::transient_max_distance(
     T x, double dt, double tmax, double max_distance) const
 {
     const double lim = max_distance - bdist_;
-    for (double t = 0; t <= tmax; t += dt)
+    for (double t = dt; t <= tmax; t += dt)
     {
         x = std::move(time_step_(x, dt));
         if (dist_fun_(x) > lim)
@@ -139,7 +139,7 @@ void TimeStepper<T>::transient_start(
 
     experiment.initial_time = 0.0;
 
-    for (double t = 0; t <= tmax; t += dt)
+    for (double t = dt; t <= tmax; t += dt)
     {
         x = std::move(time_step_(x, dt));
 
@@ -162,12 +162,12 @@ void TimeStepper<T>::transient_ams(
     AMSExperiment<T> &experiment) const
 {
     T x(experiment.xlist.back());
-    double t = experiment.tlist.back();
+    double t = experiment.tlist.back() + dt;
     double tend = t + tmax;
 
     double max_distance = experiment.max_distance;
 
-    for (; t < tend; t += dt)
+    for (; t <= tend; t += dt)
     {
         x = std::move(time_step_(x, dt));
 
@@ -207,7 +207,7 @@ void TimeStepper<T>::transient_tams(
     AMSExperiment<T> &experiment) const
 {
     T x(experiment.xlist.back());
-    double t = experiment.tlist.back();
+    double t = experiment.tlist.back() + dt;
 
     double max_distance = experiment.max_distance;
 
