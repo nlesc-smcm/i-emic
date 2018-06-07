@@ -382,7 +382,7 @@ contains
        pos = pos + 1
     enddo
  enddo
-    write(*,*) zeta, a0, s0, t0
+ 
   end subroutine get_derivatives
   
 end module m_probe

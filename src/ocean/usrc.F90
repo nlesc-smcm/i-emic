@@ -382,8 +382,7 @@ SUBROUTINE matrix(un, sig1, sig2)
   real(c_double),dimension(ndim) :: un
   real(c_double) :: sig1,sig2
   real time0, time1
-  integer i,j,k,k1,row,ii,jj,kk,find_row2
-  integer ix, iy, iz,ie
+  integer i,j,k,row,ii,find_row2
 
   !     clean old arrays:
   _DEBUG_("Zero out matrix arrays...")
@@ -480,7 +479,7 @@ SUBROUTINE rhs(un,B)
   real(c_double),dimension(ndim) ::    un,B
   real mix(ndim) ! ATvS-Mix
   real    Au(ndim), time0, time1
-  integer i,j,k,k1,row,find_row2, mode, iter
+  integer i,j,k,k1,row,find_row2, mode
 
   !call writeparameters
   mix  = 0.0
@@ -575,10 +574,9 @@ SUBROUTINE lin
        &      uxs(n,m,l,np),fu(n,m,l,np),px(n,m,l,np)
   real    ub(n,m,l,np),vb(n,m,l,np),sc(n,m,l,np),tcb(n,m,l,np)
   real    yc(n,m,la,np),yc2(n,m,la,np),yxx(n,m,la,np),yyy(n,m,la,np)
-  real    EH,EV,ph,pv,Ra,lambda, bi, ahcor, dedt
-  real    hv(n,m,l,np),yadv(n,m,la,np)
-  real    uxxc(n,m,l,np),uyyc(n,m,l,np),vxxc(n,m,l,np),vyyc(n,m,l,np)
-  real    xes,rintb,rwint !, rintt ! ATvS-Mix
+  real    EH,EV,ph,pv,Ra,lambda, bi, dedt
+  real    yadv(n,m,la,np)
+  real    xes
 
   real    mc(n,m,l,np)
   real    QSoa(n,m,l,np), QSos(n,m,l,np)
@@ -785,11 +783,10 @@ SUBROUTINE nlin_rhs(un)
   real    rho(0:n+1,0:m+1,0:l+la+1)
   real,target ::    utx(n,m,l,np),vty(n,m,l,np),wtz(n,m,l,np)
   real    t2r(n,m,l,np),t3r(n,m,l,np)
-  real    cat1(n,m,l,np),cas1(n,m,l,np)
-  real    cat2(n,m,l,np),cas2(n,m,l,np)
+
   real    uux(n,m,l,np),uvy1(n,m,l,np),uwz(n,m,l,np),uvy2(n,m,l,np)
   real    uvx(n,m,l,np),vvy(n,m,l,np),vwz(n,m,l,np),ut2(n,m,l,np)
-  real    bolt(n,m,la,np)
+
   real    lambda,epsr,Ra,xes,pvc1,pvc2, pv
 
   real,dimension(:,:,:,:),pointer ::    usx,vsy,wsz
@@ -883,16 +880,11 @@ SUBROUTINE nlin_jac(un)
   real,target :: urTx(n,m,l,np),Utrx(n,m,l,np),&
        &        vrTy(n,m,l,np),Vtry(n,m,l,np)
   real,target :: wrTz(n,m,l,np),Wtrz(n,m,l,np)
-  real    cat1(n,m,l,np),cat2(n,m,l,np),&
-       &        cat3(n,m,l,np),cat4(n,m,l,np)
   real    t2r(n,m,l,np),t3r(n,m,l,np)
 
-  real    cas1(n,m,l,np),cas2(n,m,l,np),&
-       &        cas3(n,m,l,np),cas4(n,m,l,np)
-  real    bolt(n,m,la,np)
   real    lambda,epsr,Ra,xes,pvc1,pvc2,pv
-  real uux(n,m,l,np),uvy1(n,m,l,np),uwz(n,m,l,np),uvy2(n,m,l,np)
-  real uvx(n,m,l,np),vvry(n,m,l,np),vwz(n,m,l,np),wvrz(n,m,l,np)
+  real uvy1(n,m,l,np),uwz(n,m,l,np),uvy2(n,m,l,np)
+  real uvx(n,m,l,np),vwz(n,m,l,np)
   real Urux(n,m,l,np),Urvy1(n,m,l,np),Urwz(n,m,l,np),Urvy2(n,m,l,np)
   real uVrx(n,m,l,np),Vrvy(n,m,l,np),Vrwz(n,m,l,np),Urt2(n,m,l,np)
 
@@ -998,7 +990,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
   real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
   real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
   !     LOCAL
-  integer i,j,k,row
+  integer i,j,k
   !     EXTERNAL
   integer find_row2
 
@@ -1077,7 +1069,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         s(i,j,0)   = s(i,j,1)
      enddo
   enddo
-18 format(i4,i4,4(g12.4))
+
   do i=1,n
      do j=1,m
         do k=1,l
@@ -1109,7 +1101,7 @@ SUBROUTINE solu(un,u,v,w,p,t,s)
   real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
   integer find_row2
   !     LOCAL
-  integer i,j,k,row
+  integer i,j,k
 
   do k = 1, l+la
      do j = 1, m
@@ -1131,8 +1123,6 @@ SUBROUTINE stpnt!(un)
   use m_usr
   use m_atm
   implicit none
-  integer i,j,k,row,find_row2
-  !     real    un(ndim)
 
   !*******************************************************
   !     PARAMETERS:
@@ -1182,7 +1172,7 @@ SUBROUTINE atmos_coef
   implicit none
   !     LOCAL
   real muoa,dzne
-  integer i,j
+  integer j
   dzne = dz*dfzT(l)
   muoa = rhoa*ch*cpa*uw
   amua = (arad+brad*t0)/muoa

@@ -71,6 +71,7 @@ public:
     //------------------------------------------------------------------
     void computeBlock()
         {
+            INFO("CouplingBlock: computing " << name_);
             assert(initialized_);
 
             // local size
@@ -82,15 +83,12 @@ public:
                 modelRow_->getBlock(modelCol_);
 
             // inspect CRS struct
-            std::cout << " computing " << name_ << std::endl;
-
             if (blockCRS->beg.empty())
             {
 
-                WARNING(name_ << ": Empty CRS struct, not computing coupling block",
-                        __FILE__, __LINE__);
-                std::cout << "   flags: " << computed_ << " "
-                          << initialized_ << std::endl;
+                WARNING(name_ << ": Empty CRS struct, not computing coupling block"
+                        << "   flags: " << computed_ << " "
+                        << initialized_,  __FILE__, __LINE__);
                 return;
             }
 
