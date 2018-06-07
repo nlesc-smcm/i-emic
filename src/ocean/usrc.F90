@@ -104,8 +104,6 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   dzne = dz*dfzT(l)
   QTnd = r0dim / (udim * cp0 * rhodim * hdim * dzne )
   QSnd = s0 * r0dim / ( deltas * udim * hdim * dzne )
-
-  write(*,*) 'QTnd', QTnd, 'QSnd', QSnd
   
   call stpnt        !
   call mixe         !
@@ -1210,9 +1208,9 @@ SUBROUTINE atmos_coef
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
 
-  open(8, file = rundir//'suno.txt')
-  write(8, *) suno
-  close(8)
+  ! open(8, file = rundir//'suno.txt')
+  ! write(8, *) suno
+  ! close(8)
   
   ! write(*,*) 'Ocean-Atmosphere pars:     dzne=', dzne,' hdim=', hdim
   ! write(*,*) '                            nus=', nus, ' lvsc=', lvsc
