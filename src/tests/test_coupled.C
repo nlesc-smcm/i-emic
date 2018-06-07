@@ -136,7 +136,6 @@ TEST(CoupledModel, Initialization)
     EXPECT_EQ(failed, false);
 }
 
-
 //------------------------------------------------------------------
 TEST(CoupledModel, inspectState)
 {
@@ -256,9 +255,11 @@ TEST(CoupledModel, computeJacobian)
         coupledModel->setPar(0.1);
 
         // put values in state
-        coupledModel->getState('V')->PutScalar(1e-4);
+        coupledModel->getState('V')->Random();
+        coupledModel->getState('V')->Scale(1e-4);
 
-        // Make sure that the sea ice mask has active and inactive parts
+        // To check derivatives with sea ice mask components, we make
+        // sure that the sea ice mask has active and inactive parts:
         Teuchos::RCP<Epetra_Vector> seaice_state = seaice->getState('V');
         Teuchos::RCP<Epetra_Vector> seaice_mask  = seaice->interfaceM();
         seaice_mask->PutScalar(0.0);
@@ -311,7 +312,7 @@ TEST(CoupledModel, numericalJacobian)
                               std::shared_ptr<Combined_MultiVec> > njC;
 
             njC.setTolerance(1e-12);
-            njC.seth(1e-7);
+            njC.seth(1e-9);
             njC.compute(coupledModel, coupledModel->getState('V'));
 
             std::string fnameJnC("JnC");

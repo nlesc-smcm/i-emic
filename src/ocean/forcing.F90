@@ -88,7 +88,7 @@ SUBROUTINE forcing
 
            ! Heat flux forcing from sea ice into the ocean. External
            ! and background contributions.
-           QTos = zeta * (a0 * s0 - t0)
+           QTos = QTnd * zeta * (a0 * s0 - t0)
 
            ! Combine forcings through mask
            Frc(find_row2(i,j,l,TT)) = (          &
@@ -171,7 +171,7 @@ SUBROUTINE forcing
 
            ! Salinity flux from sea ice into the ocean (brine
            ! rejection or melt)
-           QSos = (                     & 
+           QSos = QSnd * (              & 
                 zeta * (a0 * s0 - t0)   & ! QTos component, background contribution
                 - Qvar * qsa(i,j) - Q0  & ! QTsa component, external contribution
                 ) / (rhodim * Lf)

@@ -90,5 +90,5 @@ C31 = C31(sei_idx, oce_idx);
 C32 = C32(sei_idx, atm_idx);
 C33 = C33(sei_idx, sei_idx);
 
-
+C = [C11, C12, C13; C21, C22, C23; C31, C32, C33];
 

@@ -24,6 +24,8 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   real(c_double), dimension(a_n*a_m) :: a_taux,a_tauy
   real(c_double), dimension(a_n*a_m) :: a_tatm,a_emip,a_spert
 
+  ! LOCAL
+  real    :: dzne
   integer :: i,j,k,pos
 
   _INFO_('THCM: init... ')
@@ -95,7 +97,16 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
      end do
   end do
 
-  call grid         !
+  call grid         
+
+  ! When the grid is known we can set nondimensionalization
+  ! coefficients for the body forcing.
+  dzne = dz*dfzT(l)
+  QTnd = r0dim / (udim * cp0 * rhodim * hdim * dzne )
+  QSnd = s0 * r0dim / ( deltas * udim * hdim * dzne )
+
+  write(*,*) 'QTnd', QTnd, 'QSnd', QSnd
+  
   call stpnt        !
   call mixe         !
   call vmix_init    ! ATvS-Mix  USES LANDMASK
@@ -233,14 +244,12 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
 
   dzne = dz*dfzT(l)
 
-  nus  = ( par(COMB) * par(SALT) * s0 * eta * qdim * r0dim ) &
-       / ( deltas * udim * hdim * dzne )
-
+  nus  =  par(COMB) * par(SALT) * eta * qdim * QSnd
+  
   ! --> FIXME Instead of using par(TEMP) we should have a dedicated latent heat
   ! continuation parameter.
-  lvsc =  par(COMB) * par(TEMP) * rhodim * lv * r0dim &
-       / (deltat * udim * cp0 * rhodim * hdim * dzne)
-
+  lvsc =  par(COMB) * par(TEMP) * rhodim * lv * QTnd
+  
 end subroutine set_atmos_parameters
 
 !**********************************************************
@@ -251,7 +260,7 @@ SUBROUTINE set_seaice_parameters(i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0)
   implicit none
   real(c_double) i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0
 
-  zeta = i_zeta ! combination of sea ice parameters
+  zeta = i_zeta ! combination of sea ice parameters 
   a0   = i_a0   ! freezing temperature S sensitivity
   Lf   = i_Lf   ! latent heat of fusion of ice
   Qvar = i_qvar ! typical QTsa heat flux variation
@@ -703,11 +712,11 @@ SUBROUTINE lin
           - ph * (txx + tyy) - pv * tzz   & ! diffusive transport
           + Ooa  * tc                     & ! sensible heat flux
           + dedt * sc                     & ! latent heat flux
-          + mc * (zeta * tc  - Ooa * tc - & ! correction for sea ice
-               dedt * sc)     
+          + mc * (QTnd * zeta * tc  -     & ! correction for sea ice
+          Ooa * tc - dedt * sc)     
      
-     Al(:,:,1:l,:,TT,SS) = -zeta * a0 * mc  ! salinity dependence in
-                                            ! freezing temperature
+     Al(:,:,1:l,:,TT,SS) = -QTnd * zeta * a0 * mc  ! salinity dependence in
+                                                   ! freezing temperature
 
   else
      
@@ -724,13 +733,13 @@ SUBROUTINE lin
   
   if (coupled_S.eq.1) then ! coupled to atmosphere
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz &
-          - mc * zeta * a0 / (rhodim * Lf) 
+          - mc * QSnd * zeta * a0 / (rhodim * Lf) 
      
      ! minus sign and nondim added (we take -Au in rhs computation)
      QSoa = -dedt * sc            ! atmosphere to ocean salinity flux
-                                  ! internal component
-     QSos = zeta / (rhodim * Lf)  ! sea ice to ocean salinity flux
-                                  ! internal component
+                                  ! internal component 
+     QSos = QSnd * zeta / (rhodim * Lf)  ! sea ice to ocean salinity flux
+                                         ! internal component
 
      ! combine contributions with mask
      Al(:,:,1:l,:,SS,TT) = QSoa + mc * (QSos - QSoa)

@@ -103,6 +103,10 @@ module m_usr
   !--obsolete---
   real, allocatable, dimension(:,:)   :: tx,ty,ft,fs
 
+  !     Nondimensionalization coefficients for temperature and
+  !     salinity body forcing.
+  real :: QTnd, QSnd 
+
   !===== OUTPUT ================================================================
   !     Output unit, formerly sent to fort.99. It is not yet clear how we can
   !     preserve THCM output on the subdomains meaningfully as the fortran files
