@@ -8,26 +8,26 @@ function [state,pars,add] = plot_atmos(fname, opts)
         fname = 'atmos_output.h5';
     end
     
-    if nargin < 2
-        readE = true;
-        readP = true;      
+    if nargin < 2 % defaults
+        readEP  = true;
+        readLST = false;      
         
-        opts.readE = readE;
-        opts.readP = readP;
+        opts.readEP  = readEP;
+        opts.readLST = readLST;
     end
     
-    if isfield(opts, 'readE')
-        readE = opts.readE;
+    if isfield(opts, 'readEP')
+        readEP = opts.readEP;
     else
-        readE = false;
-        opts.readE = readE;
+        readEP = false;
+        opts.readEP = readEP;
     end
 
-    if isfield(opts, 'readP')
-        readP = opts.readP;
+    if isfield(opts, 'readLST')
+        readLST = opts.readLST;
     else
-        readP = false;
-        opts.readP = readP;
+        readLST = false;
+        opts.readLST = readLST;
     end
 
     if isfield(opts, 'invert')
@@ -53,14 +53,15 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     [state,pars,add] = readhdf5(fname, atmos_nun, n, m, atmos_l,opts);
     
-    if readE
+    if readEP
         E = reshape(add.E,n,m);
-    end
-    
-    if readP
         P = reshape(add.P,n,m);
+
+    if readLST
+        LST = reshape(add.LST,n,m);
+        SST = reshape(add.SST,n,m);
     end
-    
+
 
     RtD = 180/pi;    
     
@@ -164,7 +165,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     ylabel('Latitude')
     exportfig('atmosq.eps',10,[14,10],invert)
     
-    if readE && readP
+    if readEP
 
         figure(13) 
         EmP = eta*qdim*(E-P)*3600*24*365;
@@ -193,6 +194,13 @@ function [state,pars,add] = plot_atmos(fname, opts)
         ylabel('Latitude')
         
         exportfig('atmosEmP.eps',10,[14,10],invert)
+    end
+    
+    if readLST
+        imagesc(RtD*x,RtD*(y), SST' + LST' + T0); set(gca,'ydir','normal')
+        colorbar
+        title('surface temperature')
+        
     end
     
 end

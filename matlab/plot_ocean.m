@@ -227,13 +227,15 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         imgp = img; imgp(imgp<0)=NaN;
         imgn = img; imgn(imgn>-0)=NaN;
         
-        contourf(RtD*x,RtD*(y),imgp,15,'LineStyle','none'); hold on;
-        contourf(RtD*x,RtD*(y),imgn,15,'LineStyle','none'); hold on;
+        %contourf(RtD*x,RtD*(y),imgp,10,'LineStyle','none'); hold on;
+        %contourf(RtD*x,RtD*(y),imgn,10,'LineStyle','none'); hold on;
+         
+        imagesc(RtD*x,RtD*(y),img); hold on; set(gca,'ydir','normal');
 
         plot_mask(summask,x,y); hold on
 
-        contour(RtD*x,RtD*(y),imgp,15,'k'); hold on;
-        contour(RtD*x,RtD*(y),imgn,15,'k--'); hold off;
+        contour(RtD*x,RtD*(y),imgp,10,'k'); hold on;
+        contour(RtD*x,RtD*(y),imgn,10,'k--'); hold off;
 
         if fix_caxis
             caxis([opts.caxis_min,opts.caxis_max])

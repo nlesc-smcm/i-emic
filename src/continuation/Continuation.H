@@ -351,7 +351,6 @@ createInitialTangent()
         Utils::save(model_->getSolution('V'), "stateDot");
     }
     INFO("Continuation: create initial tangent... done");
-//    getchar();
 }
 
 //======================================================================

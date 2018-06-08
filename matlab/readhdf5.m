@@ -10,22 +10,22 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         no_reshape = false;
     end
     
-    if isfield(opts, 'readE')
-        readE = opts.readE;
+    if isfield(opts, 'readEP')
+        readEP = opts.readEP;
     else
-        readE = false;
-    end
-
-    if isfield(opts, 'readP')
-        readP = opts.readP;
-    else
-        readP = false;
+        readEP = false;
     end
     
     if isfield(opts, 'readEV')
         readEV = opts.readEV;
     else
         readEV = false;
+    end
+
+    if isfield(opts, 'readLST')
+        readLST = opts.readLST;
+    else
+        readLST = false;
     end
 
     if isfield(opts, 'salflux')
@@ -104,12 +104,14 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
        
     end
     
-    if readE
+    if readEP
         additional.E = h5read(file, '/E/Values');
+        additional.P = h5read(file, '/P/Values');
     end
     
-    if readP
-        additional.P = h5read(file, '/P/Values');
+    if readLST
+        additional.LST = h5read(file, '/lst/Values');
+        additional.SST = h5read(file, '/sst/Values');
     end
     
     if readSalFlux

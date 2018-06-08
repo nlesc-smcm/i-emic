@@ -29,26 +29,26 @@
   <!-- We determine the horizontal extend and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
 
-  <Parameter name="Global Bound xmin" type="double" value="286"/>
+  <Parameter name="Global Bound xmin" type="double" value="0"/>
   <!-- eastern domain bound -->
-  <Parameter name="Global Bound xmax" type="double" value="350"/>
+  <Parameter name="Global Bound xmax" type="double" value="360"/>
   <!-- southern domain bound -->
-  <Parameter name="Global Bound ymin" type="double" value="10"/>
+  <Parameter name="Global Bound ymin" type="double" value="-85"/>
   <!-- northern domain bound -->
-  <Parameter name="Global Bound ymax" type="double" value="74"/>
+  <Parameter name="Global Bound ymax" type="double" value="85"/>
   
   <!-- global number of grid points in x-direction -->
-  <Parameter name="Global Grid-Size n" type="int" value="16"/>
+  <Parameter name="Global Grid-Size n" type="int" value="32"/>
   <!-- global number of grid points in y-direction -->
   <Parameter name="Global Grid-Size m" type="int" value="16"/>
 
   <!-- periodic boundary conditions in x-direction -->
-  <Parameter name="Periodic" type="bool" value="false"/>
+  <Parameter name="Periodic" type="bool" value="true"/>
 
   <!-- Starting parameters -->
   <Parameter name="Combined Forcing"    type="double" value="0.0"/>
   <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-  <Parameter name="Salinity Forcing"    type="double" value="1.0e-2"/>
+  <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
   <Parameter name="Wind Forcing"        type="double" value="1.0"/>
   <Parameter name="Temperature Forcing" type="double" value="1.0"/>
   <Parameter name="Humidity Forcing"    type="double" value="1.0"/>
@@ -67,6 +67,6 @@
   <!-- F: 1 step forward block Gauss Seidel                   -->
   <!-- G: 2 step forward block Gauss Seidel                   -->                       
   <!-- D: diagonal, no coupling blocks                        -->
-  <Parameter name="Preconditioning" type="char" value="B"/>
+  <Parameter name="Preconditioning" type="char" value="F"/>
 
 </ParameterList>

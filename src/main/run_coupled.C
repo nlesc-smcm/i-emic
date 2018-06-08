@@ -45,7 +45,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     // xml files.
     std::vector<string> files = {"ocean_params.xml",
                                  "atmosphere_params.xml",
-                                 "dummy",
+                                 "seaice_params.xml",
                                  "coupledmodel_params.xml",
                                  "continuation_params.xml",
                                  "jdqz_params.xml"};
