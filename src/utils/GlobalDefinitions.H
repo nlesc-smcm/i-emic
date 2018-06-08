@@ -177,6 +177,14 @@ public:
     std::string label();
 };
 
+class ScopeTimer
+{
+    std::string label_;
+public:
+    ScopeTimer(std::string const &label);
+    ~ScopeTimer();
+};
+
 void printProfile();
 
 extern "C" {
@@ -194,6 +202,10 @@ void track_residual_(char const *charmsg, double residual);
 
 #ifndef TIMER_STOP
 #  define TIMER_STOP(msg) timer_stop_(msg);
+#endif
+
+#ifndef TIMER_SCOPE
+#  define TIMER_SCOPE(msg) ScopeTimer Trying_to_start_multiple_timers_in_the_same_scope(msg);
 #endif
 
 // We can also keep track of different things, to distinguish these

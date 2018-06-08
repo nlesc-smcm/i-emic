@@ -69,6 +69,7 @@ Teuchos::RCP<Vector> newton(
     Teuchos::RCP<Vector> const &x0,
     double tol)
 {
+    TIMER_SCOPE("AMS: Newton");
     double nrm = -1;
     Teuchos::RCP<Vector> x = Teuchos::rcp(new Vector(*x0));
     Teuchos::RCP<Vector> Fx = F(x);
@@ -211,6 +212,7 @@ auto AMS<Model>::get_time_step()
 {
     // Function to perform one stochastic time step
     return [this](VectorPtr const &x, double dt) {
+        TIMER_SCOPE("AMS: Time step");
         double sig = 1.0 / (dt * theta_);
 
         *model_->getState('V') = *x;
@@ -241,6 +243,7 @@ auto AMS<Model>::get_time_step()
         VectorPtr Fx = model_->getRHS('C');
         INFO("||F|| = " << Utils::norm(Fx));
         auto thetaF = [this, G, Fx, x, dt](VectorPtr const &xnew) {
+            TIMER_SCOPE("AMS: F");
             *model_->getState('V') = *xnew;
 
             VectorPtr M = model_->getMassMat('V');
@@ -260,6 +263,7 @@ auto AMS<Model>::get_time_step()
         // We write this as
         // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
         auto thetaJ = [this, sig](VectorPtr const &xnew, VectorPtr const &b) {
+            TIMER_SCOPE("AMS: Jacobian solve");
             *model_->getState('V') = *xnew;
             VectorPtr y = Teuchos::rcp(new Vector(*b));
             CHECK_ZERO(y->Scale(sig));
@@ -305,11 +309,13 @@ auto AMS<Model>::get_projected_time_step()
 {
     // Function to perform one stochastic time step
     return [this](VectorPtr const &x, double dt) {
+        TIMER_SCOPE("AMS: Projected time step");
         double sig = 1.0 / (dt * theta_);
 
         auto xsmall = restrict(*x);
         *model_->getState('V') = *x;
 
+        TIMER_START("AMS: Compute noise");
         // Compute noise for forcing which is independent per processor
         static thread_local std::random_device rd;
         static thread_local std::default_random_engine engine(rd());
@@ -329,6 +335,7 @@ auto AMS<Model>::get_projected_time_step()
         auto G = Teuchos::rcp(new Epetra_MultiVector(Gmap, 1));
         CHECK_ZERO(G->Multiply('T', 'N', 1.0, *BV_, pert, 0.0));
         CHECK_ZERO(G->Scale(sqrt(dt_) * sigma_));
+        TIMER_STOP("AMS: Compute noise");
 
         // Deterministic theta stepper:
         // M * u_n + dt * theta * F(u_(n+1)) + (1-theta) * F(u_n) - M * u_(n+1) = 0
@@ -339,12 +346,15 @@ auto AMS<Model>::get_projected_time_step()
 
         auto tmp = Teuchos::rcp(new Epetra_MultiVector(*V_));
 
+        TIMER_START("AMS: Compute VMV");
         auto M = model_->getMassMat('V');
         CHECK_ZERO(tmp->Multiply(1.0, *M, *V_, 0.0));
         auto VMV = dot(*V_, *tmp);
+        TIMER_STOP("AMS: Compute VMV");
 
         auto thetaF = [this, &G, &Fx, &VMV, &xsmall, dt](
             Teuchos::RCP<Epetra_MultiVector> const &xnew) {
+            TIMER_SCOPE("AMS: Projected F");
             *model_->getState('V') = *prolongate(*xnew);
 
             auto ret = Teuchos::rcp(new Epetra_MultiVector(*xsmall));
@@ -360,6 +370,7 @@ auto AMS<Model>::get_projected_time_step()
             return ret;
         };
 
+        TIMER_START("AMS: Compute VAV solver");
         // J2 = theta * dt * J - M, so J2*x = b
         // We write this as
         // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
@@ -373,9 +384,11 @@ auto AMS<Model>::get_projected_time_step()
         auto VAVsolver = Teuchos::rcp(new Epetra_SerialDenseSolver());
         CHECK_ZERO(VAVsolver->SetMatrix(*VAVmat));
         CHECK_ZERO(VAVsolver->Factor());
+        TIMER_STOP("AMS: Compute VAV solver");
 
         auto thetaJ = [this, sig, &VAVsolver](Teuchos::RCP<Epetra_MultiVector> const &xnew,
                                               Teuchos::RCP<Epetra_MultiVector> const &b) {
+            TIMER_SCOPE("AMS: Projected jacobian solve");
             auto y = Teuchos::rcp(new Epetra_SerialDenseMatrix(
                                       Copy, b->Values(), b->Stride(),
                                       b->MyLength(), b->NumVectors()));

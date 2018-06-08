@@ -140,13 +140,14 @@ void timer_start_(char const *msg)
 
 void timer_stop_(char const *msg)
 {
+    std::string label = timerStack.top().label();
     double time = timerStack.top().ElapsedTime();
     bool sane = true;
-    if (!(msg == timerStack.top().label()))
+    if (msg != label)
     {
-        WARNING("msg and label not equal!\n" <<
+        WARNING("Timer msg and label not equal!\n" <<
                 "   msg = " << msg << "\n"
-                " label = " << timerStack.top().label() << "\n",
+                " label = " << label << "\n",
                 __FILE__, __LINE__);
         sane = false;
     }
@@ -156,7 +157,6 @@ void timer_stop_(char const *msg)
     profile[msg][1] += 1;
     profile[msg][2] = profile[msg][0] / profile[msg][1];
 }
-
 
 //------------------------------------------------------------------
 // Timer class implementation
@@ -189,6 +189,18 @@ double Timer::ElapsedTime()
 std::string Timer::label()
 {
     return label_;
+}
+
+ScopeTimer::ScopeTimer(std::string const &label)
+    :
+    label_(label)
+{
+    timer_start_(label.c_str());
+}
+
+ScopeTimer::~ScopeTimer()
+{
+    timer_stop_(label_.c_str());
 }
 
 //-----------------------------------------------------------------------------

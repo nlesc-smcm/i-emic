@@ -317,6 +317,7 @@ void TimeStepper<T>::ams(int num_exp, int num_init_exp,
     for (int i = 0; i < maxit; i++)
     {
         AMSExperiment<T> *exp = NULL;
+        int num_unused_exp = 0;
 
 #pragma omp critical (experiments)
         {
@@ -329,9 +330,10 @@ void TimeStepper<T>::ams(int num_exp, int num_init_exp,
                     std::find(unused_experiments.begin(),
                               unused_experiments.end(), exp));
             }
+            num_unused_exp = unused_experiments.size();
         }
 
-        if (exp == NULL)
+        if (exp == NULL || num_unused_exp == 0)
             continue;
 
         double max_distance = exp->max_distance;
@@ -521,6 +523,7 @@ void TimeStepper<T>::tams(int num_exp, int maxit, T const &x0, double dt, double
     for (int i = 0; i < maxit; i++)
     {
         AMSExperiment<T> *exp = NULL;
+        int num_unused_exp = 0;
 
 #pragma omp critical (experiments)
         {
@@ -533,9 +536,10 @@ void TimeStepper<T>::tams(int num_exp, int maxit, T const &x0, double dt, double
                     std::find(unused_experiments.begin(),
                               unused_experiments.end(), exp));
             }
+            num_unused_exp = unused_experiments.size();
         }
 
-        if (exp == NULL)
+        if (exp == NULL || num_unused_exp == 0)
             continue;
 
         double max_distance = exp->max_distance;
