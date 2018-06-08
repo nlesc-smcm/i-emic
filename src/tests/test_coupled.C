@@ -690,7 +690,7 @@ TEST(CoupledModel, Synchronization)
     else
         INFO(" oceanAtmosT (overl.) GID's not unique, which is fine in parallel.");
 
-    Teuchos::RCP<Epetra_Vector> atmosOceanT = atmos->getLocalOceanT();
+    Teuchos::RCP<Epetra_Vector> atmosOceanT = atmos->getLocalSST();
 
     Utils::print(atmosOceanT, "atmosOceanT" + std::to_string(comm->MyPID()));
 

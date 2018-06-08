@@ -111,6 +111,9 @@ private:
     //! Mass matrix diagonal
     std::shared_ptr<std::vector<double> > diagB_;    
 
+    //! Land surface temperature
+    std::shared_ptr<std::vector<double> > lst_;
+
     //! Ocean surface temperature
     std::shared_ptr<std::vector<double> > sst_;
 
@@ -307,6 +310,9 @@ public:
     //! Accept sea ice temperature vector
     void setSeaIceTemperature(std::vector<double> const &sit);
 
+    //! Get land temperature set in Atmosphere::forcing()
+    std::shared_ptr<std::vector<double> > getLandTemperature() { return lst_; }
+
     //! Accept sea ice mask
     void setSeaIceMask(std::vector<double> const &Msi);
 
@@ -398,7 +404,6 @@ public:
     //! |            (1,1,2) |      ( 6*n*m+1, ...  ,6*n*m+6) |
     //! +-----------------------------------------------------+
     int find_row(int i, int j, int k, int XX);
-    int find_surface_row(int i, int j);
 
     //! Write everything to output files.
     void writeAll();

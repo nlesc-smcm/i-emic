@@ -225,8 +225,8 @@ void Atmosphere::setup()
     INFO(std::endl);
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
-    nun_ = ATMOS_NUN_;  // ATMOS_TT_ and ATMOS_QQ_ (ATMOS_PP_ exists
-                        // at only aux_ points).
+    nun_ = ATMOS_NUN_;  // ATMOS_TT_, ATMOS_QQ_ (ATMOS_PP_
+                        // exists at only aux_ points).
 
     // Problem size
     dim_ = m_ * n_ * l_ * nun_ + aux_;
@@ -242,6 +242,9 @@ void Atmosphere::setup()
 
     // Precipitation 
     P_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+
+    // Initialize land surface temperature
+    lst_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
     // Initialize ocean surface temperature
     sst_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
@@ -376,7 +379,7 @@ void Atmosphere::idealized(double precip)
         {
             value = cos(PI_*(yc_[j]-ymin_glob_)/(ymax_glob_-ymin_glob_));
 
-            rowSST   = find_surface_row(i,j) - 1;
+            rowSST   = n_*(j-1) + (i-1);
             rowTT    = find_row(i,j,l_,ATMOS_TT_)-1;
             rowQQ    = find_row(i,j,l_,ATMOS_QQ_)-1;
 
@@ -415,7 +418,6 @@ void Atmosphere::zeroOcean()
 void Atmosphere::setOceanTemperature(std::vector<double> const &sst)
 {
     assert((int) sst.size() == n_ * m_);
-    // Set surface temperature (copy)
     *sst_ = sst;
 }
 
@@ -423,7 +425,6 @@ void Atmosphere::setOceanTemperature(std::vector<double> const &sst)
 void Atmosphere::setSeaIceTemperature(std::vector<double> const &sit)
 {
     assert((int) sit.size() == n_ * m_);
-    // Set surface temperature (copy)
     *sit_ = sit;
 }
 
@@ -431,7 +432,6 @@ void Atmosphere::setSeaIceTemperature(std::vector<double> const &sit)
 void Atmosphere::setSeaIceMask(std::vector<double> const &Msi)
 {
     assert((int) Msi.size() == n_ * m_);
-    // Set surface temperature (copy)
     *Msi_ = Msi;
 }
 
@@ -608,21 +608,6 @@ void Atmosphere::computeRHS()
         idx++; jdx++;
     }
         
-    // int surfaceRow = find_surface_row(idx, jdx);
-    // int temRow     = find_row(idx, jdx, l_, ATMOS_TT_);
-    //  (*sst_)[surfaceRow-1];
-    
-    // INFO("Atmosphere: compute RHS, sensible heat flux: To - Ta = "
-    //      <<  (*sst_)[surfaceRow-1] - (*state_)[temRow-1]
-    //     );
-    
-    // int rowPP = find_row(n_,m_,l_,ATMOS_PP_) - 1;
-    // INFO("Atmosphere: compute RHS, latent heat flux: P0 + qdim*P = "
-    //      << Po0_ + qdim_ * (*state_)[rowPP]
-    //      << " influence in eq: "
-    //      << rhoo_ * lv_ / muoa_ * (Po0_ + qdim_ * (*state_)[rowPP]) 
-    //     );    
-
     // Compute the right hand side rhs_
     double value;
     int row;
@@ -677,37 +662,41 @@ void Atmosphere::forcing()
         for (int i = 1; i <= n_; ++i)
         {
             // ------------ Temperature forcing
-            sr = find_surface_row(i, j) - 1;        // plain surface row
+            sr = n_*(j-1) + (i-1);                  // plain surface row
             tr = find_row(i, j, l_, ATMOS_TT_) - 1; // temperature row
 
             // Apply surface mask and calculate land temperatures.
-            // This is a copy of legacy stuff, can be put more
+            // This is a copy of legacy stuff, could be put more
             // clearly.
 
             // above land
-            if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
+            if (use_landmask_ && (*surfmask_)[sr])
             {
                 // Simplified expression by equating sensible and
                 // shortwave heat flux from the atmosphere into the
                 // land.
                 value = comb_ * sunp_ * suno_[j] / Ooa_;
-                (*sst_)[sr] = value + (*state_)[tr];
+
+                // set land temperature
+                (*lst_)[sr] = value + (*state_)[tr];
+
+                // set forcing
                 value += comb_ * sunp_ * (suna_[j] - amua_);
 
             }
-            else // above ocean
+            else // above ocean / sea ice
             {
                 // Sensible heat flux surface component. Sea surface
                 // temperature is corrected with sea ice surface
-                // temperature when Msi = 1 (sit - sst). In that case
+                // temperature (sit - sst) when Msi = 1. In that case
                 // the background values need to be corrected as well
-                // (t0o_ - t0i_).
+                // (t0i_ - t0o_).
                 Ts = (*sst_)[sr] +
                     (*Msi_)[sr] * ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_);
                 
                 value = Ts + comb_ * sunp_ * (suna_[j] - amua_);
                 
-                // latent heat due to precipitation (reference contribution)
+                // latent heat due to precipitation (background contribution)
                 value += comb_ * latf_ * lvscale_ * Po0_;
             }
             
@@ -744,7 +733,7 @@ void Atmosphere::computeEvaporation()
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
-            sr = find_surface_row(i, j) - 1;
+            sr = n_*(j-1) + (i-1);
             hr = find_row(i, j, l_, ATMOS_QQ_) - 1;
 
             // reset vector element
@@ -778,15 +767,16 @@ void Atmosphere::computePrecipitation()
 
     double integral = Utils::dot(*pIntCoeff_, *E_) / totalArea_;
 
-    int surfaceRow;
-    for (int j = 1; j <= m_; ++j)
-        for (int i = 1; i <= n_; ++i)
+    int sr; // surface row
+    for (int j = 0; j != m_; ++j)
+        for (int i = 0; i != n_; ++i)
         {
-            if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
+            sr = j*n_+i;
+
+            if (use_landmask_ && (*surfmask_)[sr])
                 continue; // do nothing
 
-            surfaceRow = find_surface_row(i, j);
-            (*P_)[surfaceRow-1] = integral;
+            (*P_)[sr] = integral;
         }
 }
 
@@ -1155,14 +1145,6 @@ int Atmosphere::find_row(int i, int j, int k, int XX)
 
     // ordinary 1-based find_row 
     return nun_ * ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
-}
-
-//-----------------------------------------------------------------------------
-int Atmosphere::find_surface_row(int i, int j)
-{
-    // 1-based
-    // find_row for surfaceTemp values
-    return n_ * (j-1) + i;
 }
 
 //-----------------------------------------------------------------------------

@@ -112,7 +112,13 @@ private:
     // //! parallel diagonal B (mass matrix, overlapping)
     Teuchos::RCP<Epetra_Vector> localDiagB_;
 
-    //! parallel sst (non-overlapping)
+    //! parallel land surface temperature lst (non-overlapping)
+    Teuchos::RCP<Epetra_Vector> lst_;
+
+    //! parallel lst (overlapping)
+    Teuchos::RCP<Epetra_Vector> localLST_;
+
+    //! parallel sea surface temperature sst (non-overlapping)
     Teuchos::RCP<Epetra_Vector> sst_;
 
     //! parallel sst (overlapping)
@@ -124,7 +130,7 @@ private:
     //! parallel atmosphere sol (overlapping)
     Teuchos::RCP<Epetra_Vector> localSol_;
 
-    //! parallel sit (non-overlapping)
+    //! parallel sea ice surface temperature sit (non-overlapping)
     Teuchos::RCP<Epetra_Vector> sit_;
 
     //! parallel sit (overlapping)
@@ -164,7 +170,7 @@ private:
     std::string const outputFile_;
 
     //! input/output flags
-    bool loadState_, saveState_, saveEP_, saveEveryStep_;
+    bool loadState_, saveState_, saveEveryStep_;
 
     //! flag allowing to disable integral condition
     bool useIntCondQ_;
@@ -261,7 +267,8 @@ public:
     
     void setSeaIceMask(Teuchos::RCP<Epetra_Vector> sst);
 
-    Teuchos::RCP<Epetra_Vector> getLocalOceanT() {return localSST_; }
+    Teuchos::RCP<Epetra_Vector> getLocalSST() {return localSST_; }
+    Teuchos::RCP<Epetra_Vector> getLandTemperature();
 
     void setLandMask(Utils::MaskStruct const &mask);
     

@@ -23,7 +23,6 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     outputFile_      (params->get("Output file", "atmos_output.h5")),
     loadState_       (params->get("Load state", false)),
     saveState_       (params->get("Save state", true)),
-    saveEP_          (params->get("Save E and P fields", true)),
     saveEveryStep_   (params->get("Save every step", false)),
     useIntCondQ_     (params->get("Use integral condition on q", true)),
     useFixedPrecip_  (params->get("Use idealized precipitation", false)),
@@ -98,6 +97,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     rhs_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     diagB_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     sol_        = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+    lst_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     sst_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     sit_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     Msi_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
@@ -108,6 +108,7 @@ AtmospherePar::AtmospherePar(Teuchos::RCP<Epetra_Comm> comm, ParameterList param
     localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localDiagB_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localLST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSST_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSIT_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localMSI_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -824,6 +825,22 @@ void AtmospherePar::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
 }
 
 //==================================================================
+Teuchos::RCP<Epetra_Vector> AtmospherePar::getLandTemperature()
+{
+    double *local;
+    localLST_->ExtractView(&local);
+    int numMyElements = localLST_->Map().NumMyElements();
+    std::shared_ptr<std::vector<double> > lst = atmos_->getLandTemperature();
+    
+    assert((int) lst->size() == numMyElements);
+    for (int i = 0; i != numMyElements; ++i)
+        local[i] = (*lst)[i];
+
+    CHECK_ZERO(lst_->Export(*localLST_, *as2std_surf_, Zero));
+    return lst_;
+}
+
+//==================================================================
 void AtmospherePar::setSeaIceTemperature(Teuchos::RCP<Epetra_Vector> sit)
 {
     // Replace map if necessary
@@ -1079,7 +1096,7 @@ void AtmospherePar::computeJacobian()
         {
             if (useIntCondQ_)
                 icerr = jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds);
-
+            
             if (aux_ > 0)
                 iperr = jac_->InsertGlobalValues(last + 1, len, ipvals, ipinds);
         }
@@ -1644,12 +1661,14 @@ int AtmospherePar::saveStateToFile(std::string const &filename)
     HDF5.Create(filename);
     HDF5.Write("State", *state_);
 
-    if (saveEP_)
-    {
-        // Write evaporation and precipitation fields as well
-        HDF5.Write("E", *E_);
-        HDF5.Write("P", *P_);
-    }
+    // Write evaporation and precipitation fields as well
+    HDF5.Write("E", *E_);
+    HDF5.Write("P", *P_);
+
+    // Write surface temperatures
+    getLandTemperature();
+    HDF5.Write("lst", *lst_);
+    HDF5.Write("sst", *sst_);
 
     // Interface between HDF5 and the atmos parameters,
     // store all the <npar> atmos parameters in an HDF5 file.
@@ -1662,6 +1681,7 @@ int AtmospherePar::saveStateToFile(std::string const &filename)
         INFO("   " << parName << " = " << parValue);
         HDF5.Write("Parameters", parName.c_str(), parValue);
     }
+    
     INFO("_________________________________________________________");
     return 0;
 }
