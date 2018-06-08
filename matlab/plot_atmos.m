@@ -185,8 +185,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         colormap(cmap)
         colorbar
 
-        hold off
-        
+        hold off      
         
         
         title('E-P (m/y)')
@@ -197,9 +196,15 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
     
     if readLST
-        imagesc(RtD*x,RtD*(y), SST' + LST' + T0); set(gca,'ydir','normal')
+        figure(14)
+        imagesc(RtD*x,RtD*(y), SST' + LST' + T0); set(gca,'ydir', ...
+                                                          'normal')
+        colormap(cmap)                
         colorbar
         title('surface temperature')
+        xlabel('Longitude')
+        ylabel('Latitude')
+        
         
     end
     

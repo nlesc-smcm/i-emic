@@ -321,8 +321,8 @@ void Atmosphere::setup()
     }
     
     if (periodic_)
-        ERROR("Periodicity not implemented for serial atmosphere! Use more cores!",
-              __FILE__, __LINE__);
+        WARNING("Periodicity not implemented for serial atmosphere! Use more cores!",
+                __FILE__, __LINE__);
 }
 
 //-----------------------------------------------------------------------------
