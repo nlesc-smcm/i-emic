@@ -32,7 +32,7 @@
 #include <string>
 
 #include "CoupledModel.H"
-#include "AtmospherePar.H"
+#include "Atmosphere.H"
 #include "Ocean.H"
 #include "SeaIce.H"
 #include "Continuation.H"

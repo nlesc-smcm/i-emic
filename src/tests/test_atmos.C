@@ -5,8 +5,8 @@
 //------------------------------------------------------------------
 namespace
 {
-    std::shared_ptr<Atmosphere>    atmos;
-    std::shared_ptr<AtmospherePar> atmosPar;
+    std::shared_ptr<AtmosLocal>    atmosLoc;
+    std::shared_ptr<Atmosphere>    atmosPar;
     RCP<Epetra_Comm>               comm;
     RCP<Teuchos::ParameterList>    atmosphereParams;
 }
@@ -21,7 +21,7 @@ TEST(Atmosphere, Initialization)
 
     try
     {
-        atmos = std::make_shared<Atmosphere>(atmosphereParams);
+        atmosLoc = std::make_shared<AtmosLocal>(atmosphereParams);
     }
     catch (...)
     {
@@ -33,7 +33,7 @@ TEST(Atmosphere, Initialization)
     failed = false;
     try
     {
-        atmosPar = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+        atmosPar = std::make_shared<Atmosphere>(comm, atmosphereParams);
     }
     catch (std::exception const &e)
     {
@@ -61,7 +61,7 @@ TEST(Atmosphere, RHS)
     try
     {
         // Check dimensions
-        int dim1 = atmos->dim();
+        int dim1 = atmosLoc->dim();
         int dim2 = atmosPar->dim();
         EXPECT_EQ(dim1, dim2);
 
@@ -79,18 +79,18 @@ TEST(Atmosphere, RHS)
             getGatheredVector(state_par);
         
         // Put the full state in the serial atmosphere
-        atmos->setState(state);
+        atmosLoc->setState(state);
 
         // Put the standardMap parallel state into the parallel atmosphere
         atmosPar->setState(state_par);
 
         // Compute RHS in both models
-        atmos->computeRHS();
+        atmosLoc->computeRHS();
         atmosPar->computeRHS();
 
         // Obtain RHS from both models
         Teuchos::RCP<Epetra_Vector> rhsPar = atmosPar->getRHS('V');
-        std::shared_ptr<std::vector<double> > rhsSer = atmos->getRHS('V');
+        std::shared_ptr<std::vector<double> > rhsSer = atmosLoc->getRHS('V');
 
         // Check norms parallel and serial rhs
         EXPECT_NEAR(norm(rhsPar), norm(rhsSer), 1e-7);
@@ -113,7 +113,7 @@ TEST(Atmosphere, State)
     {
         // Obtain state from both models
         Teuchos::RCP<Epetra_Vector> statePar = atmosPar->getState('V');
-        std::shared_ptr<std::vector<double> > stateSer = atmos->getState('V');
+        std::shared_ptr<std::vector<double> > stateSer = atmosLoc->getState('V');
 
         // Check norms parallel and serial rhs
         EXPECT_NEAR(norm(statePar), norm(stateSer), 1e-7);
@@ -171,16 +171,16 @@ TEST(Atmosphere, SurfaceTemperature)
         INFO("TEST SST: parall SST norm = " << norm(fullsurfvals));
 
         // Put the randomized ocean surface values in both models
-        atmos->setOceanTemperature(*fullsurfvals);
+        atmosLoc->setOceanTemperature(*fullsurfvals);
         atmosPar->setOceanTemperature(surfvals);
 
         // Compute RHS in both models
-        atmos->computeRHS();
+        atmosLoc->computeRHS();
         atmosPar->computeRHS();
 
         // Obtain RHS from both models
         Teuchos::RCP<Epetra_Vector> rhsPar = atmosPar->getRHS('V');
-        std::shared_ptr<std::vector<double> > rhsSer = atmos->getRHS('V');
+        std::shared_ptr<std::vector<double> > rhsSer = atmosLoc->getRHS('V');
                 
         EXPECT_NEAR(norm(rhsPar), norm(rhsSer), 1e-6);
         INFO("TEST SST: serial RHS norm = " << norm(rhsSer));
@@ -198,7 +198,7 @@ TEST(Atmosphere, SurfaceTemperature)
 
 
 //------------------------------------------------------------------
-TEST(AtmospherePar, MassMatrix)
+TEST(Atmosphere, MassMatrix)
 {
     Epetra_Vector v   = *atmosPar->getState('C');
     Epetra_Vector out = *atmosPar->getState('C');
@@ -242,7 +242,7 @@ TEST(Atmosphere, Jacobian)
     bool failed = false;
     try
     {
-        atmos->computeJacobian();
+        atmosLoc->computeJacobian();
         atmosPar->computeJacobian();
 
         // Obtain vector and randomize
@@ -260,7 +260,7 @@ TEST(Atmosphere, Jacobian)
             std::make_shared<std::vector<double> >(gx->size(), 0.0);
 
         // apply serial Jacobian
-        atmos->applyMatrix(*gx, *outSer);
+        atmosLoc->applyMatrix(*gx, *outSer);
 
         Teuchos::RCP<Epetra_Vector> outPar = atmosPar->getState('C');
         outPar->PutScalar(0.0);
@@ -296,12 +296,12 @@ TEST(Atmosphere, Jacobian)
 //------------------------------------------------------------------
 TEST(Atmosphere, EPfields)
 {
-    atmos->computeRHS();
+    atmosLoc->computeRHS();
     atmosPar->computeRHS();
     
     // get serial integral coefficients and evaporation field
-    std::shared_ptr<std::vector<double> > serPco = atmos->getPIntCoeff();
-    std::shared_ptr<std::vector<double> > serE = atmos->getE();
+    std::shared_ptr<std::vector<double> > serPco = atmosLoc->getPIntCoeff();
+    std::shared_ptr<std::vector<double> > serE = atmosLoc->getE();
 
     // get parallel integral coefficients and evaporation field
     Teuchos::RCP<Epetra_Vector> parPco = atmosPar->getPIntCoeff();
@@ -321,10 +321,10 @@ TEST(Atmosphere, EPfields)
     EXPECT_NE(serInt, 0.0);
     EXPECT_NE(parInt, 0.0);
 
-    atmos->computePrecipitation();
+    atmosLoc->computePrecipitation();
     atmosPar->computeEP();
 
-    std::shared_ptr<std::vector<double> > serP = atmos->getP();
+    std::shared_ptr<std::vector<double> > serP = atmosLoc->getP();
     Teuchos::RCP<Epetra_Vector> parP = atmosPar->getP();
 
     double serNrm, parNrm;
@@ -402,8 +402,8 @@ int main(int argc, char **argv)
     // -------------------------------------------------------
 
     // Get rid of possibly parallel objects for a clean ending.
-    atmos     = std::shared_ptr<Atmosphere>();
-    atmosPar  = std::shared_ptr<AtmospherePar>();
+    atmosLoc  = std::shared_ptr<AtmosLocal>();
+    atmosPar  = std::shared_ptr<Atmosphere>();
 
     comm->Barrier();
     std::cout << "TEST exit code proc #" << comm->MyPID()

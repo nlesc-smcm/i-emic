@@ -4,7 +4,7 @@
 //! models
 #include "Model.H"
 #include "Ocean.H"
-#include "AtmospherePar.H"
+#include "Atmosphere.H"
 #include "SeaIce.H"
 
 //! vector and matrix helpers
@@ -117,7 +117,7 @@ private:
 
 public:
     CoupledModel(std::shared_ptr<Ocean> ocean,
-                 std::shared_ptr<AtmospherePar> atmos,
+                 std::shared_ptr<Atmosphere> atmos,
                  std::shared_ptr<SeaIce> seaice,
                  Teuchos::RCP<Teuchos::ParameterList> params);
 
@@ -141,7 +141,7 @@ public:
     void applyMassMat(Combined_MultiVec const &v, Combined_MultiVec &out);
 
     //! Apply the preconditioning: out = inv(P)*v
-    //! In the coupled case: 1.5 step in the block gauss seidel scheme
+    //! Example: two models, 1.5 step in the block gauss seidel scheme
     //!
     //!        z = inv(P)*x  <=>  P*z = x  -> iterate with
     //!

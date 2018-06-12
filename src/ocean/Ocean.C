@@ -1388,7 +1388,7 @@ void Ocean::applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out)
 }
 
 //====================================================================
-void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
+void Ocean::synchronize(std::shared_ptr<Atmosphere> atmos)
 {
     TIMER_START("Ocean: set atmosphere...");
 
@@ -1408,7 +1408,7 @@ void Ocean::synchronize(std::shared_ptr<AtmospherePar> atmos)
     // P and their derivatives w.r.t. SST (To) and humidity (q) These
     // may depend on continuation parameters, so the call belongs
     // here.
-    AtmospherePar::CommPars atmosPars;
+    Atmosphere::CommPars atmosPars;
     atmos->getCommPars(atmosPars);
 
     //FIXME --> it should also be possible to pass the entire struct to
@@ -1450,7 +1450,7 @@ void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
 //==================================================================
 void Ocean::synchronize(std::shared_ptr<Model> model)
 {
-    auto atmos  = std::dynamic_pointer_cast<AtmospherePar>(model);
+    auto atmos  = std::dynamic_pointer_cast<Atmosphere>(model);
     auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
     if (atmos)
         return synchronize(atmos);
@@ -1499,7 +1499,7 @@ int Ocean::getRowIntCon()
 }
 
 //==================================================================
-std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<AtmospherePar> atmos)
+std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos)
 {
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
@@ -1665,7 +1665,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
 //==================================================================
 std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Model> model)
 {
-    auto atmos  = std::dynamic_pointer_cast<AtmospherePar>(model);
+    auto atmos  = std::dynamic_pointer_cast<Atmosphere>(model);
     auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
     if (atmos)
         return getBlock(atmos);

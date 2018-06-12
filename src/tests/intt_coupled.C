@@ -6,7 +6,7 @@ namespace // local unnamed namespace (similar to static in C)
     RCP<Epetra_Comm>               comm;
     
     std::shared_ptr<Ocean>         ocean;
-    std::shared_ptr<AtmospherePar> atmos;
+    std::shared_ptr<Atmosphere>    atmos;
     std::shared_ptr<SeaIce>        seaice;
     std::shared_ptr<CoupledModel>  coupledModel;
     std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
@@ -88,7 +88,7 @@ TEST(Atmosphere, Initialization)
     try
     {
         // Create atmosphere
-        atmos = std::make_shared<AtmospherePar>(comm, params[ATMOS]);
+        atmos = std::make_shared<Atmosphere>(comm, params[ATMOS]);
     }
     catch (...)
     {
@@ -527,7 +527,7 @@ int main(int argc, char **argv)
 
     // Get rid of possibly parallel objects for a clean ending.
     ocean        = std::shared_ptr<Ocean>();
-    atmos        = std::shared_ptr<AtmospherePar>();
+    atmos        = std::shared_ptr<Atmosphere>();
     coupledModel = std::shared_ptr<CoupledModel>();
 
     comm->Barrier();

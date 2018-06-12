@@ -3,7 +3,7 @@
   
   SeaIce is a simple 2D thermodynamic sea ice model relying on the
   ocean and atmosphere states. For testing we allow standalone
-  capabilities. Setup is similar to the AtmospherePar class.
+  capabilities. Setup is similar to the Atmosphere class.
   
 */
 //!---------------------------------------------------------------
@@ -31,7 +31,7 @@
 
 // forward decl
 class Ocean;
-class AtmospherePar;
+class Atmosphere;
 
 class SeaIce : public Model
 {
@@ -311,11 +311,11 @@ public:
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
     
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model);
-    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos);
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean);
         
     void synchronize(std::shared_ptr<Model> model);
-    void synchronize(std::shared_ptr<AtmospherePar> atmos);
+    void synchronize(std::shared_ptr<Atmosphere> atmos);
     void synchronize(std::shared_ptr<Ocean> ocean);
 
     Teuchos::RCP<Epetra_Vector> interfaceQ();

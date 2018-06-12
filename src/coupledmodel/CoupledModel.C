@@ -13,7 +13,7 @@
 //==================================================================
 // constructor
 CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
-                           std::shared_ptr<AtmospherePar> atmos,
+                           std::shared_ptr<Atmosphere> atmos,
                            std::shared_ptr<SeaIce> seaice,
                            Teuchos::RCP<Teuchos::ParameterList> params)
     :

@@ -13,7 +13,7 @@ class Epetra_CrsMatrix;
 class Epetra_Vector;
 
 class Ocean;
-class AtmospherePar;
+class Atmosphere;
 class SeaIce;
 
 class Model

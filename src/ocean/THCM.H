@@ -147,13 +147,11 @@ public:
     void evaluateB();
 
     //! ------------------- I-EMIC couplings --------------------
-    //!
-    //! Flags enabling the coupling with external atmosphere via the
-    //! I-EMIC, separated into a temperature and a salinity part.
+    //!Flags enabling the coupling with the I-EMIC, separated into a
+    //!heat and a salinity flux contribution.
     //!
     //! 0: standalone thcm
-    //! 1: accepting external atmosphere
-    //!
+    //! 1: accepting external forcing
     int coupled_T, coupled_S;
 
     int getCoupledT() { return coupled_T; }

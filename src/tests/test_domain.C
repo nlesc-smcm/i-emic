@@ -21,7 +21,7 @@ namespace // local unnamed namespace (similar to static in C)
 
     RCP<Epetra_CrsMatrix> mat;
 
-    std::shared_ptr<AtmospherePar> atmos;
+    std::shared_ptr<Atmosphere> atmos;
 
     RCP<Teuchos::ParameterList> atmosphereParams;    
     
@@ -43,7 +43,7 @@ TEST(Atmosphere, Initialization)
 
     try
     {
-        atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+        atmos = std::make_shared<Atmosphere>(comm, atmosphereParams);
     }
     catch (std::exception const &e)
     {
@@ -457,7 +457,7 @@ TEST(Domain, numericalJacobian)
         {
             INFO("compute njC");
             
-            NumericalJacobian<std::shared_ptr<AtmospherePar>,
+            NumericalJacobian<std::shared_ptr<Atmosphere>,
                               Teuchos::RCP<Epetra_Vector> > njC;
 
             njC.setTolerance(1e-12);

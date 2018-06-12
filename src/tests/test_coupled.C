@@ -9,7 +9,7 @@ namespace // local unnamed namespace (similar to static in C)
     RCP<Epetra_Comm>               comm;
     
     std::shared_ptr<Ocean>         ocean;
-    std::shared_ptr<AtmospherePar> atmos;
+    std::shared_ptr<Atmosphere>    atmos;
     std::shared_ptr<SeaIce>        seaice;
     std::shared_ptr<CoupledModel>  coupledModel;
     std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
@@ -86,7 +86,7 @@ TEST(Atmosphere, Initialization)
     try
     {
         // Create atmosphere
-        atmos = std::make_shared<AtmospherePar>(comm, params[ATMOS]);
+        atmos = std::make_shared<Atmosphere>(comm, params[ATMOS]);
     }
     catch (...)
     {
@@ -383,9 +383,9 @@ TEST(CoupledModel, applyMatrix)
         // Test the coupling blocks in the matrix separately
 
         CouplingBlock<std::shared_ptr<Ocean>,
-                      std::shared_ptr<AtmospherePar> > C12(ocean, atmos);
+                      std::shared_ptr<Atmosphere> > C12(ocean, atmos);
 
-        CouplingBlock<std::shared_ptr<AtmospherePar>,
+        CouplingBlock<std::shared_ptr<Atmosphere>,
                       std::shared_ptr<Ocean> > C21(atmos, ocean);
 
         Teuchos::RCP<Epetra_MultiVector> oceanVec = (*x)(0);
@@ -449,7 +449,7 @@ TEST(CoupledModel, applyMatrix)
         }
 
         // qdim, nuq, eta, dqso, dqdt, Eo0;
-        AtmospherePar::CommPars pars;
+        Atmosphere::CommPars pars;
         atmos->getCommPars(pars);
 
         // Test ocean -> atmos coupling
@@ -909,7 +909,7 @@ int main(int argc, char **argv)
 
     // Get rid of possibly parallel objects for a clean ending.
     ocean        = std::shared_ptr<Ocean>();
-    atmos        = std::shared_ptr<AtmospherePar>();
+    atmos        = std::shared_ptr<Atmosphere>();
     seaice       = std::shared_ptr<SeaIce>();
     coupledModel = std::shared_ptr<CoupledModel>();
 

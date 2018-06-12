@@ -82,8 +82,8 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     std::shared_ptr<Ocean> ocean = std::make_shared<Ocean>(Comm, params[OCEAN]);
 
     // Create parallelized Atmosphere object
-    std::shared_ptr<AtmospherePar> atmos =
-        std::make_shared<AtmospherePar>(Comm, params[ATMOS]);
+    std::shared_ptr<Atmosphere> atmos =
+        std::make_shared<Atmosphere>(Comm, params[ATMOS]);
 
     // Create parallelized Atmosphere object
     std::shared_ptr<SeaIce> seaice =

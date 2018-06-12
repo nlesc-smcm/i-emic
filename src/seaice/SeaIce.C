@@ -1,7 +1,7 @@
 #include "SeaIce.H"
 #include "SeaIceDefinitions.H"
 #include "Ocean.H"
-#include "AtmospherePar.H"
+#include "Atmosphere.H"
 
 //=============================================================================
 // Constructor
@@ -427,7 +427,7 @@ void SeaIce::getCommPars(SeaIce::CommPars &parStruct)
 std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Model> model)
 {
     auto ocean = std::dynamic_pointer_cast<Ocean>(model);
-    auto atmos = std::dynamic_pointer_cast<AtmospherePar>(model);
+    auto atmos = std::dynamic_pointer_cast<Atmosphere>(model);
     if (atmos)
         return getBlock(atmos);
     else if (ocean)
@@ -439,7 +439,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Model> model)
 }
 
 //=============================================================================
-std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<AtmospherePar> atmos)
+std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmos)
 {
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
@@ -556,7 +556,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
 //=============================================================================
 void SeaIce::synchronize(std::shared_ptr<Model> model)
 {
-    auto atmos  = std::dynamic_pointer_cast<AtmospherePar>(model);
+    auto atmos  = std::dynamic_pointer_cast<Atmosphere>(model);
     auto ocean  = std::dynamic_pointer_cast<Ocean>(model);
 
     if (atmos)
@@ -584,7 +584,7 @@ void SeaIce::synchronize(std::shared_ptr<Ocean> ocean)
 }
 
 //=============================================================================
-void SeaIce::synchronize(std::shared_ptr<AtmospherePar> atmos)
+void SeaIce::synchronize(std::shared_ptr<Atmosphere> atmos)
 {
     Teuchos::RCP<Epetra_Vector> tatm  = atmos->interfaceT();
     CHECK_MAP(tatm, standardSurfaceMap_);

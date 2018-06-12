@@ -36,7 +36,7 @@
 
 #include "Model.H"
 #include "GlobalDefinitions.H"
-#include "AtmospherePar.H"
+#include "Atmosphere.H"
 #include "SeaIce.H"
 #include "THCMdefs.H"
 #include "OceanGrid.H"
@@ -337,7 +337,7 @@ public:
     //! | Ocean Atmosphere SeaIce |
 
     //! Receive atmosphere data
-    void synchronize(std::shared_ptr<AtmospherePar> atmos);
+    void synchronize(std::shared_ptr<Atmosphere> atmos);
 
     //! Receive sea ice data
     void synchronize(std::shared_ptr<SeaIce> seaice);
@@ -367,7 +367,7 @@ public:
     //! correspondingly. This means that we add values -Ooa, gamma*eta
     //! and gamma, where one would expect opposite signs based on
     //! forcing.F90.
-    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos);
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice);
 
     //! Here we downcast to a specific model and call the correct getBlock routine

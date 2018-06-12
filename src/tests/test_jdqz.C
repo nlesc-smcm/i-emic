@@ -8,7 +8,7 @@ using Teuchos::rcp;
 namespace // local unnamed namespace (similar to static in C)
 {	
 	std::shared_ptr<Ocean>         ocean;
-	std::shared_ptr<AtmospherePar> atmos;
+	std::shared_ptr<Atmosphere>    atmos;
     std::shared_ptr<SeaIce>        seaice;
 	std::shared_ptr<CoupledModel>  coupledModel;
     RCP<Epetra_Comm>               comm;  
@@ -46,7 +46,7 @@ public:
             
             // Create models
  			ocean  = std::make_shared<Ocean>(comm, oceanParams);
-			atmos  = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+			atmos  = std::make_shared<Atmosphere>(comm, atmosphereParams);
             seaice = std::make_shared<SeaIce>(comm, seaIceParams);
 			coupledModel =
 				std::make_shared<CoupledModel>(ocean,
@@ -104,11 +104,11 @@ TEST(JDQZ, AtmosphereEigenvalues)
         ComplexVector<Epetra_Vector> tmp(*x, *y);
 
         INFO("Building JDQZInterface...");
-        JDQZInterface<std::shared_ptr<AtmospherePar>,
+        JDQZInterface<std::shared_ptr<Atmosphere>,
                       ComplexVector<Epetra_Vector > >	matrix(atmos, z);
 	
         INFO("Building JDQZ...");
-        JDQZ<JDQZInterface<std::shared_ptr<AtmospherePar>,
+        JDQZ<JDQZInterface<std::shared_ptr<Atmosphere>,
                            ComplexVector<Epetra_Vector > > > jdqz(matrix, z);
 
         INFO("Setting parameters...");
@@ -252,7 +252,7 @@ int main(int argc, char **argv)
 	
 	// Get rid of possibly parallel objects:
 	ocean        = std::shared_ptr<Ocean>();
-	atmos        = std::shared_ptr<AtmospherePar>();
+	atmos        = std::shared_ptr<Atmosphere>();
 	coupledModel = std::shared_ptr<CoupledModel>();
 	
 	comm->Barrier();
