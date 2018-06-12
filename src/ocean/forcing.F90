@@ -13,11 +13,10 @@ SUBROUTINE forcing
   real QSoa, QSos 
 
   real wfun, temfun, salfun
-  real QToaFun, QTosFun
+
   real temcor, check, area
   real salcor, adapted_salcor, spertcor
-  integer i, j, k, row
-  real    qfun2(n,m), fsint
+  integer i, j, k
   integer find_row2
   real :: max_internal_forcing
 
@@ -35,8 +34,8 @@ SUBROUTINE forcing
   if (iza.eq.2) then        ! idealized wind forcing
      do j=1,m
         do i=1,n
-           taux(i,j) = wfun(xu(i),yv(j),1)
-           tauy(i,j) = wfun(xu(i),yv(j),2)
+           taux(i,j) = wfun(yv(j), 1)
+           tauy(i,j) = wfun(yv(j), 2)
         enddo
      enddo
   endif
@@ -60,7 +59,7 @@ SUBROUTINE forcing
      
      do j=1,m
         do i=1,n
-           tatm(i,j) = temfun(x(i),y(j))
+           tatm(i,j) = temfun(y(j))
         enddo
      enddo
      
@@ -116,7 +115,7 @@ SUBROUTINE forcing
 
      do j=1,m
         do i=1,n
-           emip(i,j) = salfun(x(i),y(j)) * (1-landm(i,j,l))
+           emip(i,j) = salfun(y(j)) * (1-landm(i,j,l))
         enddo
      enddo
      
@@ -258,10 +257,10 @@ SUBROUTINE windfit
   ! parameter(nx=360,ny=180)
   integer ::lwrk,liwrk
   !     LOCAL
-  integer i,j,ifail,px,py,iwrk(n+nx)
-  real    wrk2(4*n+nx+4)
+  integer i,j,ifail
+
   real    xx(nx),yy(ny),ff1(nx*ny),ff2(nx*ny)
-  real    lambda(nx+4),mu(ny+4),cspl(nx*ny),wrk( (nx+6)*(ny+6) )
+
   real    dumx(n*m),dumy(n*m)
   real    xh(n),yh(m)
   real    xi(n*m), yi(n*m)
@@ -346,10 +345,10 @@ SUBROUTINE windfit_monthly(month)
   parameter(nx=144,ny=73)
   integer ::lwrk,liwrk
   !     LOCAL
-  integer i,j,k,ifail,px,py,iwrk(n+nx)
-  real    wrk2(4*n+nx+4)
+  integer i,j,k,ifail
+
   real    xx(nx),yy(ny),ff1(nx*ny),ff2(nx*ny)
-  real    lambda(nx+4),mu(ny+4),cspl(nx*ny),wrk( (nx+6)*(ny+6) )
+
   real    dumx(n*m),dumy(n*m)
   real    xh(n),yh(m)
   real    xi(n*m), yi(n*m)
@@ -363,10 +362,10 @@ SUBROUTINE windfit_monthly(month)
   dely=180.0/(ny-1)
 
   do i=1,nx
-     xx(i) = dble(i-1)*delx
+     xx(i) = (i-1)*delx
   enddo
   do j=1,ny
-     yy(j) = -90.0 + dble(j-1)*dely
+     yy(j) = -90.0 + (j-1)*dely
   enddo
   xx = xx*pi/180.
   yy = yy*pi/180.
@@ -471,12 +470,12 @@ SUBROUTINE read_spertm
 end subroutine read_spertm
 
 !****************************************************************************
-real FUNCTION wfun(xx,yy,v1)
+real FUNCTION wfun(yy,v1)
   use m_par
   use m_global ! we need the global value of ymin and ymax here!
   implicit none
   integer v1
-  real    xx,yy,asym
+  real    yy
   real :: tmax
   select case(v1)
   case(1)  ! x
@@ -490,11 +489,11 @@ real FUNCTION wfun(xx,yy,v1)
 end FUNCTION wfun
 
 !****************************************************************************
-real FUNCTION temfun(xx,yy)
+real FUNCTION temfun(yy)
   use m_par
   use m_global ! we need the global value of ymin and ymax here!
   implicit none
-  real xx,yy
+  real yy
   if (ymin.ge.0.0) then ! Northern hemisphere
      temfun = cos(pi*(yy-ymin)/(ymax-ymin))
   else
@@ -503,12 +502,11 @@ real FUNCTION temfun(xx,yy)
 end FUNCTION temfun
 
 !****************************************************************************
-real FUNCTION salfun(xx,yy)
+real FUNCTION salfun(yy)
   use m_par
   use m_global ! we need the global value of ymin and ymax here!
   implicit none
-  real    xx,yy
-  real    subtr
+  real    yy
   if (ymin.ge.0.0) then ! Northern hemisphere
      salfun = cos(pi*(yy-ymin)/(ymax-ymin))
      ! salfun=0.0
@@ -523,8 +521,7 @@ SUBROUTINE qint(field,cor)
   ! Compute correction for nonzero flux
   use m_usr
   implicit none
-  integer i, j
-  real  field(n,m), cor, sint
+  real  field(n,m), cor
   external thcm_forcing_integral
 
   ! This is an evil breach of concept, we call a C++ function from F90
@@ -544,10 +541,10 @@ SUBROUTINE tempfit
   parameter(nx=144,ny=73)
   integer ::lwrk,liwrk
   !     LOCAL
-  integer i,j,ifail,px,py,iwrk(n+nx)
-  real    wrk2(4*n+nx+4)
+  integer i,j,ifail
+
   real    xx(nx),yy(ny),t1(nx*ny)
-  real    lambda(nx+4),mu(ny+4),cspl(nx*ny),wrk( (nx+6)*(ny+6) )
+
   real    dumx(n*m), tatmmax
   real    xi(n*m), yi(n*m)
   !
@@ -759,7 +756,6 @@ SUBROUTINE qint3(fl)
   use m_usr
   implicit none
   real fl(n,m,l), sint, svol, int
-  integer i,j,k
 
   call ssint(fl,1,l,sint,svol)
 

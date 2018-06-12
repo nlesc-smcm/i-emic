@@ -29,7 +29,7 @@ module m_atm
 
 contains
 
-subroutine allocate_atm(n,m,l)
+subroutine allocate_atm(m)
 
       allocate(dat(m),davt(0:m),albe(m),suna(m),suno(m),upa(m));
 

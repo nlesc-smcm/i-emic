@@ -1,7 +1,7 @@
 !! A Fortran 90 replacement for the file 'par.com'.
 !! simply replace "include 'par.com'" by "use m_par"
 !! and everything should be fine. Note that the dimensions
-!! n,m,l are now set in the function usr::init instead of 
+!! n,m,l are now set in the function usr::init instead of
 !! being defined here.
 module m_par
   ! user parameters (previously located in usr.com)...........................
@@ -52,7 +52,7 @@ module m_par
   integer, parameter :: np   =  27
 
   ! number of adjustable parameters:
-  integer, parameter :: npar =  30	
+  integer, parameter :: npar =  30
 
   ! array containing all these parameters:
   real, dimension(npar) :: par
@@ -63,9 +63,9 @@ module m_par
   integer, parameter :: EK_V   =  3
   integer, parameter :: EK_H   =  4
   integer, parameter :: ROSB   =  5
-  integer, parameter :: MIXP   =  6		
+  integer, parameter :: MIXP   =  6
   integer, parameter :: RESC   =  7
-  integer, parameter :: SPL1   =  8		
+  integer, parameter :: SPL1   =  8
   integer, parameter :: HMTP   =  9
   integer, parameter :: SUNP   = 10
   integer, parameter :: PE_H   = 11
@@ -78,16 +78,16 @@ module m_par
   integer, parameter :: BIOT   = 18
   integer, parameter :: COMB   = 19
   integer, parameter :: ARCL   = 20
-  integer, parameter :: NLES   = 21     
-  integer, parameter :: IFRICB = 22   
-  integer, parameter :: CONT   = 23    
-  integer, parameter :: ENER   = 24    
-  integer, parameter :: ALPC   = 25    
-  integer, parameter :: CMPR   = 26    
-  integer, parameter :: FPER   = 27    
-  integer, parameter :: SPER   = 28    
-  integer, parameter :: MKAP   = 29		
-  integer, parameter :: SPL2   = 30		
+  integer, parameter :: NLES   = 21
+  integer, parameter :: IFRICB = 22
+  integer, parameter :: CONT   = 23
+  integer, parameter :: ENER   = 24
+  integer, parameter :: ALPC   = 25
+  integer, parameter :: CMPR   = 26
+  integer, parameter :: FPER   = 27
+  integer, parameter :: SPER   = 28
+  integer, parameter :: MKAP   = 29
+  integer, parameter :: SPL2   = 30
 
   ! enumeration to identify the unknowns
   integer, parameter :: UU = 1

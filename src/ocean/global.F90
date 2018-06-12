@@ -228,7 +228,7 @@ contains
     implicit none
     integer i,j,k
     !     EXTERNAL
-    real  dfdz,fz
+    real  fz
 
     write(*,*) '============GRID==========='
     write(*,10) xmin*180/pi,xmax*180/pi,ymin*180/pi,ymax*180/pi
@@ -689,7 +689,6 @@ contains
 
     integer(c_int), intent(in) :: month
     character(len=2) :: ibuf
-    character(len=1024) :: fname
     real, dimension(n,m,l) :: temp_bak, salt_bak
 
 
@@ -746,7 +745,7 @@ contains
     real, dimension(n,m,l+la) :: T,S
     real, dimension(n,m) :: hf,fwf
     integer :: i,j,k,row
-    real    :: temfun, salfun
+    real    :: salfun
 
     do k = 1, (l+la)
        do j = 1, m
