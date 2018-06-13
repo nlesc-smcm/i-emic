@@ -8,7 +8,6 @@
 #include <iomanip>
 #include <algorithm> // std::fill in assemble
 
-// stuff that is not so modular right now
 #include "GlobalDefinitions.H"
 #include "THCMdefs.H"
 #include "Utils.H"

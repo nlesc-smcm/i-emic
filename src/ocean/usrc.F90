@@ -51,7 +51,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
 
   call allocate_usr(a_n,a_m,a_l)
   call allocate_mat()
-  call allocate_atm(n,m,l)
+  call allocate_atm(m)
   call allocate_res(ndim)
   call allocate_mix()
 

@@ -22,7 +22,7 @@ SUBROUTINE fillcolB
   use m_atm
   implicit none
   integer find_row2
-  integer i,j,k,row
+  integer i,j,k
 
   !     Put B in coB,  B is a diagonal matrix.
   !     PRINT *,'parROSB = ',par(ROSB)
@@ -61,7 +61,7 @@ SUBROUTINE preprocessA
   USE m_mat
   use m_usr
   implicit none
-  integer i,j,k,ii,jj,kk, nnz, locnnz, count
+  integer i,j,k,ii,jj,kk
 
   active = .false.
 
@@ -91,7 +91,7 @@ SUBROUTINE preprocessA_old
   USE m_mat
   use m_usr
   implicit none
-  integer i,j,k,ii,jj,kk, nnz, locnnz, count
+  integer i,j,k,ii,jj,kk,count
 
   active = .false.
   count = 0
@@ -141,7 +141,7 @@ SUBROUTINE fillcolA
   use m_usr
   implicit none
   integer find_row2
-  integer i,j,k,ii,jj,kk,v,w,is,js,ks,bis,row,col,i2,j2,k2
+  integer i,j,k,ii,jj,kk,v,w,is,js,ks,bis,row,i2,j2,k2
 
   !  +------------------------------------+
   !  |  stencil/neighbourhood             |
@@ -298,7 +298,7 @@ SUBROUTINE intcond_old
   implicit none
   !      include 'mat.com'
   integer find_row2
-  integer i, j, k, v, L1, row
+  integer i, j, k, v, L1
   !     Replace p equation at part. point with
   !     a 'normalization' condition for p
   !     L1 = nun*((L/2-1)*N*M+ N*(M/2-1) + N/2-1) + PP
@@ -339,7 +339,7 @@ SUBROUTINE intcond
   implicit none
   !      include 'mat.com'
   integer find_row2
-  integer i, j, k, v, ic, row, shift, jcoIC(ndim)
+  integer i, j, k, v, ic, shift, jcoIC(ndim)
   real    coIC(ndim)
 
   !     Replace P equation with a 'normalization' condition for p
@@ -425,9 +425,6 @@ SUBROUTINE packA
      begA(i) = begin
   enddo
   begA(ndim+1) = vn
-  !     write(f99,999) oldsize,begA(ndim+1)-1
-
-999 format('size before and after packing: ',2i8)
 
 end SUBROUTINE packA
 
