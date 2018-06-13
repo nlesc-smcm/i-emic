@@ -740,24 +740,6 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
     return block;   
 }
 
-
-//==================================================================
-std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Model> model)
-{
-    //! Here we downcast to a specific model and call the correct getBlock routine
-    auto ocean  = std::dynamic_pointer_cast<Ocean>(model);
-    auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
-    if (ocean)
-        return getBlock(ocean);
-    else if (seaice)
-        return getBlock(seaice);
-    else
-    {
-        ERROR("Atmosphere: downcasting failed", __FILE__, __LINE__);
-        return std::shared_ptr<Utils::CRSMat>();
-    }
-}
-
 //==================================================================
 void Atmosphere::synchronize(std::shared_ptr<Ocean> ocean)
 {
@@ -781,21 +763,6 @@ void Atmosphere::synchronize(std::shared_ptr<SeaIce> seaice)
     // Get sea ice temperature
     Teuchos::RCP<Epetra_Vector> sit = seaice->interfaceT();
     setSeaIceTemperature(sit);
-}
-
-//==================================================================
-void Atmosphere::synchronize(std::shared_ptr<Model> model)
-{
-    auto ocean  = std::dynamic_pointer_cast<Ocean>(model);
-    auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
-    if (ocean)
-        return synchronize(ocean);
-    else if (seaice)
-        return synchronize(seaice);
-    else
-    {
-        ERROR("Atmosphere: downcasting failed", __FILE__, __LINE__);
-    }
 }
 
 //==================================================================

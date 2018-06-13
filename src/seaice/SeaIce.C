@@ -424,21 +424,6 @@ void SeaIce::getCommPars(SeaIce::CommPars &parStruct)
 }
 
 //=============================================================================
-std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Model> model)
-{
-    auto ocean = std::dynamic_pointer_cast<Ocean>(model);
-    auto atmos = std::dynamic_pointer_cast<Atmosphere>(model);
-    if (atmos)
-        return getBlock(atmos);
-    else if (ocean)
-        return getBlock(ocean);
-    else
-    {
-        ERROR("SeaIce: downcasting failed", __FILE__, __LINE__);
-    }
-}
-
-//=============================================================================
 std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmos)
 {
     // initialize empty CRS matrix
@@ -551,22 +536,6 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
     assert( (int) block->co.size() == block->beg.back());
 
     return block;
-}
-
-//=============================================================================
-void SeaIce::synchronize(std::shared_ptr<Model> model)
-{
-    auto atmos  = std::dynamic_pointer_cast<Atmosphere>(model);
-    auto ocean  = std::dynamic_pointer_cast<Ocean>(model);
-
-    if (atmos)
-        return synchronize(atmos);
-    else if (ocean)
-        return synchronize(ocean);
-    else
-    {
-        ERROR("Ocean: downcasting failed", __FILE__, __LINE__);
-    }
 }
 
 //=============================================================================

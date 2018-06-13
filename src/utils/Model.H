@@ -49,20 +49,71 @@ public:
     virtual std::string const name() = 0;
 
     virtual Teuchos::RCP<TRIOS::Domain> getDomain() = 0;
+
+    // Our own getBlock to distribute calls among submodels
+    template <typename T>
+    std::shared_ptr<Utils::CRSMat> getBlock(T model);
+
+    // getBlock members to compute derivative w.r.t. any other model. 
+    virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean) = 0;
+    virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos) = 0;
+    virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice) = 0;
+
+    // Our own synchronize to distribute synchronizations among submodels
+    template <typename T>
+    void synchronize(T model);
     
-    virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model) = 0;
+    virtual void synchronize(std::shared_ptr<Ocean> ocean) = 0;
+    virtual void synchronize(std::shared_ptr<Atmosphere> atmos) = 0;
+    virtual void synchronize(std::shared_ptr<SeaIce> seaice) = 0;
 
     virtual int dof() = 0;
-
-    virtual void synchronize(std::shared_ptr<Model> model) = 0;
-
+    
     virtual void buildPreconditioner() = 0;
 
     virtual void preProcess() = 0;
     virtual void postProcess() = 0;
 
     virtual std::string const writeData(bool describe) = 0;
-
 };
+
+template <typename T>
+std::shared_ptr<Utils::CRSMat> Model::getBlock(T model)
+{
+    auto ocean  = std::dynamic_pointer_cast<Ocean>(model);
+    auto atmos  = std::dynamic_pointer_cast<Atmosphere>(model);
+    auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
+
+    if (ocean)
+        return this->getBlock(ocean);
+    else if (atmos)
+        return this->getBlock(atmos);
+    else if (seaice)
+        return this->getBlock(seaice);
+    else
+    {
+        ERROR("Model: downcasting failed", __FILE__, __LINE__);
+        return std::shared_ptr<Utils::CRSMat>();
+    }
+}
+
+template <typename T>
+void Model::synchronize(T model)
+{
+    auto ocean  = std::dynamic_pointer_cast<Ocean>(model);
+    auto atmos  = std::dynamic_pointer_cast<Atmosphere>(model);
+    auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
+    
+    if (ocean)
+        return this->synchronize(ocean);
+    else if (atmos)
+        return this->synchronize(atmos);
+    else if (seaice)
+        return this->synchronize(seaice);
+    else
+    {
+        ERROR("Model: downcasting failed", __FILE__, __LINE__);
+    }
+}
 
 #endif

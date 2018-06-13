@@ -310,11 +310,13 @@ public:
 
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
     
-    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model);
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice)
+        { return std::make_shared<Utils::CRSMat>(); }
+            
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos);
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean);
         
-    void synchronize(std::shared_ptr<Model> model);
+    void synchronize(std::shared_ptr<SeaIce> seaice) {}
     void synchronize(std::shared_ptr<Atmosphere> atmos);
     void synchronize(std::shared_ptr<Ocean> ocean);
 

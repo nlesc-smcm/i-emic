@@ -148,7 +148,7 @@ void CoupledModel::synchronize()
         for (size_t j = 0; j != models_.size(); ++j)
         {
             if (models_[i] != models_[j])
-                models_[i]->synchronize(models_[j]);
+                models_[i]->synchronize<>(models_[j]);
         }
     
     TIMER_STOP("CoupledModel: synchronize...");

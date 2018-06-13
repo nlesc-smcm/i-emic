@@ -328,9 +328,8 @@ public:
     //! The following functions are required for the coupling with
     //! other models. We use a pure abstract base class Model, from
     //! which all other models are derived. CoupledModel knows only
-    //! the base class, hence we need to downcast to specific derived
-    //! models. If we would omit one of the overloaded synchronize
-    //! methods we risk an infinite recursion.
+    //! the base class, hence in Model we downcast to specific derived
+    //! models. 
 
     //! |      ---Model---        |
     //! |     /     |     \       |
@@ -342,9 +341,8 @@ public:
     //! Receive sea ice data
     void synchronize(std::shared_ptr<SeaIce> seaice);
 
-    //! This routine is called from a CoupledModel object; here we
-    //! downcast to a specific model.
-    void synchronize(std::shared_ptr<Model> model);
+    //! Meaningless: dummy implementation
+    void synchronize(std::shared_ptr<Ocean> ocean) {}
 
     //! Obtain atmos temp data for debugging
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
@@ -359,19 +357,22 @@ public:
     Teuchos::RCP<Epetra_Vector> getLocalOceanE();
     Teuchos::RCP<Epetra_Vector> getE();
 
-    //! Returns the atmos->ocean coupling block in the Jacobian
+    //! Returns the ocean-atmos coupling block in the Jacobian
     //! matrix. I.e. the derivative of our RHS with respect to the
     //! atmosphere. The CouplingBlock class builds a parallel coupling
     //! block from the CRS struct. As the Oceans Jacobian is taken
     //! negative in THCM, this couplingblock should be negated
-    //! correspondingly. This means that we add values -Ooa, gamma*eta
-    //! and gamma, where one would expect opposite signs based on
-    //! forcing.F90.
+    //! correspondingly. This means that we add values, i.e., -Ooa,
+    //! gamma*eta and gamma, where one would expect opposite signs
+    //! based on forcing.F90.
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos);
+
+    //! Return the ocean-seaice coupling block
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice);
 
-    //! Here we downcast to a specific model and call the correct getBlock routine
-    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model);
+    //! Dummy implementation but required by the base class.
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean)
+        { return std::shared_ptr<Utils::CRSMat>(); }
 
     // Obtain interface surface temperature
     Teuchos::RCP<Epetra_Vector> interfaceT();

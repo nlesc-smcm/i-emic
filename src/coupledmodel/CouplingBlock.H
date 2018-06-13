@@ -61,7 +61,7 @@ public:
                                          *modelRowDomain_->GetSolveMap(),
                                          *modelColDomain_->GetColMap(), 0) );
 
-            computed_ = false;
+            computed_    = false;
             initialized_ = true;
 
             // compute the block
@@ -81,11 +81,10 @@ public:
             // obtain 0-based global CRS matrix from modelRow
             std::shared_ptr<Utils::CRSMat> blockCRS =
                 modelRow_->getBlock(modelCol_);
-
+            
             // inspect CRS struct
             if (blockCRS->beg.empty())
             {
-
                 WARNING(name_ << ": Empty CRS struct, not computing coupling block"
                         << "   flags: " << computed_ << " "
                         << initialized_,  __FILE__, __LINE__);

@@ -1448,21 +1448,6 @@ void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
 }
 
 //==================================================================
-void Ocean::synchronize(std::shared_ptr<Model> model)
-{
-    auto atmos  = std::dynamic_pointer_cast<Atmosphere>(model);
-    auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
-    if (atmos)
-        return synchronize(atmos);
-    else if (seaice)
-        return synchronize(seaice);
-    else
-    {
-        ERROR("Ocean: downcasting failed", __FILE__, __LINE__);
-    }
-}
-
-//==================================================================
 Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosT()
 {
     return THCM::Instance().getLocalAtmosT();
@@ -1660,22 +1645,6 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
     assert( (int) block->co.size() == block->beg.back());
                
     return block;   
-}
-
-//==================================================================
-std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Model> model)
-{
-    auto atmos  = std::dynamic_pointer_cast<Atmosphere>(model);
-    auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
-    if (atmos)
-        return getBlock(atmos);
-    else if (seaice)
-        return getBlock(seaice);
-    else
-    {
-        ERROR("Ocean: downcasting failed", __FILE__, __LINE__);
-        return std::shared_ptr<Utils::CRSMat>();
-    }
 }
 
 //====================================================================

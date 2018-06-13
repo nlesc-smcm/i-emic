@@ -259,7 +259,7 @@ public:
     void synchronize(std::shared_ptr<SeaIce> seaice);
 
     //! Downcast to specific models
-    void synchronize(std::shared_ptr<Model> model);
+    void synchronize(std::shared_ptr<Atmosphere> atmos) {}
 
     void setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst);
     
@@ -348,8 +348,13 @@ public:
 
     //! Get ocean dependency
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean);
+
+    //! Get sea ice dependency
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice);
-    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Model> model);
+
+    //! Dummy implementation
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos)
+        { return std::shared_ptr<Utils::CRSMat>(); }
 
     //! Get row at the interface, XX is 1-based, i and j 0-based. The
     //! result is also 0-based.
