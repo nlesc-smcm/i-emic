@@ -6,7 +6,7 @@ subroutine boundaries
   implicit none
   integer find_row2
 
-  integer ii, i, j, k, e, v, row
+  integer ii, i, j, k
   integer east, west, north, south, center
   integer neast,nwest,southw,southe, top, bottom
   integer eastb, westb, northb, southb
@@ -17,18 +17,18 @@ subroutine boundaries
   integer nnorthee
 
   !  new stencil:
-  !    +----------++-------++----------+  
-  !    | 12 15 18 || 3 6 9 || 21 24 27 |  
-  !    | 11 14 17 || 2 5 8 || 20 23 26 |  
-  !    | 10 13 16 || 1 4 7 || 19 22 25 |  
-  !    |  below   || center||  above   |  
-  !    +----------++-------++----------+  
+  !    +----------++-------++----------+
+  !    | 12 15 18 || 3 6 9 || 21 24 27 |
+  !    | 11 14 17 || 2 5 8 || 20 23 26 |
+  !    | 10 13 16 || 1 4 7 || 19 22 25 |
+  !    |  below   || center||  above   |
+  !    +----------++-------++----------+
 
   ! Iterate over the flow domain
   do i = 1, n
      do j = 1, m
         do k = 1, l+la
-           
+
            ! Give all the neighbours appropriate names.
            ! The landmask contains additional dummy cells on all borders.
            southw    = landm(i-1,j-1,k  )   !  1
@@ -58,7 +58,7 @@ subroutine boundaries
            southet   = landm(i+1,j-1,k+1)   ! 25
            eastt     = landm(i+1,j  ,k+1)   ! 26
            neastt    = landm(i+1,j+1,k+1)   ! 27
-           
+
            if (i.lt.n) then
 
               ! Additional neighbours in the interior
@@ -66,7 +66,7 @@ subroutine boundaries
               easteast = landm(i+2,j  ,k  ) !
               northee  = landm(i+2,j+1,k  ) !
               if (j.lt.m) then
-                 nnorthee = landm(i+2,j+2,k) 
+                 nnorthee = landm(i+2,j+2,k)
               endif
            endif
            if (j.lt.m) then
@@ -79,7 +79,7 @@ subroutine boundaries
            if (center == OCEAN) then
               ! check bottom cell first in order to prevent double checks
               ! on mirror/boundary points
-              if (bottom == LAND) then	! 14
+              if (bottom == LAND) then  ! 14
                  if ((westb==LAND).and.(southwb==LAND).and.(southb==LAND)) then
                     Al(i,j,k, 1,: ,UU) = Al(i,j,k,1,: ,UU) + Al(i,j,k,10,: ,UU) ! ACdN
                     Al(i,j,k, 1,: ,VV) = Al(i,j,k,1,: ,VV) + Al(i,j,k,10,: ,VV) ! ACdN
@@ -106,31 +106,31 @@ subroutine boundaries
                  Al(i,j,k, 5,: ,SS) = Al(i,j,k,5,: ,SS) + Al(i,j,k,14,: ,SS) ! ACdN
                  Al(i,j,k,14,: ,: ) = 0.0
               endif
-              if (southwb == LAND) then	! 10
+              if (southwb == LAND) then ! 10
                  Al(i,j,k,10,: ,: ) = 0.0
               endif
-              if (westb == LAND) then	! 11
+              if (westb == LAND) then   ! 11
                  Al(i,j,k,11,: ,: ) = 0.0
               endif
-              if (nwestb == LAND) then	! 12
+              if (nwestb == LAND) then  ! 12
                  Al(i,j,k,12,: ,: ) = 0.0
               endif
-              if (southb == LAND) then	! 13
+              if (southb == LAND) then  ! 13
                  Al(i,j,k,13,: ,:)   = 0.0
               endif
-              if (northb == LAND) then 	! 15
+              if (northb == LAND) then  ! 15
                  Al(i,j,k,15,: ,:)  = 0.0
               endif
               if (southeb == LAND) then ! 16
                  Al(i,j,k,16,: ,:)  = 0.0
               endif
-              if (eastb == LAND) then 	! 17
+              if (eastb == LAND) then   ! 17
                  Al(i,j,k,17,: ,:)  = 0.0
               endif
-              if (neastb == LAND) then 	! 18
+              if (neastb == LAND) then  ! 18
                  Al(i,j,k,18,: ,:)  = 0.0
               endif
-              if (top == LAND) then	! 23 
+              if (top == LAND) then ! 23
                  ! cannot occur in real flow domain, LAND above OCEAN is illegal
                  if (k.lt.(l+la)) then
                     write(f99,*) "NB error in boundary.f: LAND above OCEAN"
@@ -198,39 +198,39 @@ subroutine boundaries
                  !Al(i,j,k, 8, :,WW) = 0.0 !MdT
                  !Al(i,j,k, 9, :,WW) = 0.0 !MdT
                  Al(i,j,k, 5,WW,WW) = 1.0
-                 
+
               endif
-              !	    if (southwt == LAND) then 	! 19
-              if ((southwt == LAND).OR.(southwt ==ATMOS)) then 	! 19
+              !     if (southwt == LAND) then   ! 19
+              if ((southwt == LAND).OR.(southwt ==ATMOS)) then  ! 19
                  Al(i,j,k,19,: ,:)  = 0.0
               endif
-              !	    if (westt == LAND) then 	! 20
-              if ((westt == LAND).OR.(westt == ATMOS)) then 	! 20
+              !     if (westt == LAND) then     ! 20
+              if ((westt == LAND).OR.(westt == ATMOS)) then     ! 20
                  Al(i,j,k,20,: ,: ) = 0.0
               endif
-              if ((nwestt == LAND).OR.(nwestt == ATMOS)) then 	! 21
+              if ((nwestt == LAND).OR.(nwestt == ATMOS)) then   ! 21
                  Al(i,j,k,21,:,:)    = 0.0
               endif
-              if ((southt == LAND).OR.(southt == ATMOS)) then 	! 22
+              if ((southt == LAND).OR.(southt == ATMOS)) then   ! 22
                  Al(i,j,k,22,: ,:)   = 0.0
               endif
-              if ((northt == LAND).OR.(northt == ATMOS)) then 	! 24
+              if ((northt == LAND).OR.(northt == ATMOS)) then   ! 24
                  Al(i,j,k,24,: ,:)  = 0.0
               endif
               if ((southet == LAND).OR.(southet == ATMOS)) then ! 25
                  Al(i,j,k,25,: ,:)  = 0.0
               endif
-              if ((eastt == LAND).OR.(eastt == ATMOS)) then 	! 26
+              if ((eastt == LAND).OR.(eastt == ATMOS)) then     ! 26
                  Al(i,j,k,26,: ,:)  = 0.0
               endif
-              if ((neastt == LAND).OR.(neastt == ATMOS)) then 	! 27
+              if ((neastt == LAND).OR.(neastt == ATMOS)) then   ! 27
                  Al(i,j,k,27,: ,:)  = 0.0
               endif
-              if (southw == LAND) then	! 1
+              if (southw == LAND) then  ! 1
                  Al(i,j,k, 1,: ,UU) = 0.0
                  Al(i,j,k, 1,: ,VV) = 0.0
               endif
-              if (west == LAND) then	! 2
+              if (west == LAND) then    ! 2
                  Al(i,j,k, 5,: ,TT) = Al(i,j,k,5,: ,TT) + Al(i,j,k,2,: ,TT) ! ACdN
                  Al(i,j,k, 5,: ,SS) = Al(i,j,k,5,: ,SS) + Al(i,j,k,2,: ,SS) ! ACdN
                  !              Al(i,j,k, 5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,2,TT,TT)
@@ -241,7 +241,7 @@ subroutine boundaries
                  Al(i,j,k, 1,: ,UU) = 0.0
                  Al(i,j,k, 1,: ,VV) = 0.0
               endif
-              if (nwest == LAND) then	! 3
+              if (nwest == LAND) then   ! 3
                  Al(i,j,k, 2,: ,UU) = 0.0
                  Al(i,j,k, 2,: ,VV) = 0.0
                  Al(i,j,k, 3,: ,UU) = 0.0
@@ -252,7 +252,7 @@ subroutine boundaries
                     Al(i,j,k, 3,: ,VV) = 0.0
                  endif
               endif
-              if (south == LAND) then	! 4 
+              if (south == LAND) then   ! 4
                  Al(i,j,k, 5,: ,SS) = Al(i,j,k,5,: ,SS) + Al(i,j,k,4,: ,SS) ! ACdN
                  Al(i,j,k, 5,: ,TT) = Al(i,j,k,5,: ,TT) + Al(i,j,k,4,: ,TT) ! ACdN
                  !   Al(i,j,k, 5,TT,TT) = Al(i,j,k,5,TT,TT) + Al(i,j,k,4,TT,TT)
@@ -261,14 +261,14 @@ subroutine boundaries
                  !   Al(i,j,k, 5,SS,TT) = Al(i,j,k,5,SS,TT) + Al(i,j,k,4,SS,TT)
                  Al(i,j,k, 4,: ,: ) = 0.0
                  Al(i,j,k, 1,: ,UU) = 0.0
-                 Al(i,j,k, 1,: ,VV) = 0.0        
+                 Al(i,j,k, 1,: ,VV) = 0.0
               endif
-              if (north == LAND) then	! 6 
+              if (north == LAND) then   ! 6
                  Al(i,j,k, 2,: ,UU) = 0.0
                  Al(i,j,k, 2,: ,VV) = 0.0
                  !
                  ! continuity
-                 !    
+                 !
                  Al(i,j,k, 2,PP,UU) = 0.0
                  Al(i,j,k, 2,PP,VV) = 0.0
                  Al(i,j,k, 5,PP,UU) = 0.0
@@ -305,7 +305,7 @@ subroutine boundaries
                     Al(i,j,k, 6,: ,VV) = 0.0
                  endif
               endif
-              if (southe == LAND) then	! 7
+              if (southe == LAND) then  ! 7
                  Al(i,j,k, 4, :,UU) = 0.0
                  Al(i,j,k, 4, :,VV) = 0.0
                  Al(i,j,k, 7, :,UU) = 0.0
@@ -316,7 +316,7 @@ subroutine boundaries
                     Al(i,j,k, 7,: ,VV) = 0.0
                  endif
               endif
-              if (east == LAND) then	! 8 
+              if (east == LAND) then    ! 8
                  Al(i,j,k, 4,: ,UU) = 0.0
                  Al(i,j,k, 4,: ,VV) = 0.0
                  !
@@ -360,7 +360,7 @@ subroutine boundaries
                     Al(i,j,k, 8,: ,VV) = 0.0
                  endif
               endif
-              if (neast == LAND) then	! 9
+              if (neast == LAND) then   ! 9
                  !
                  ! phi momentum
                  !
@@ -420,13 +420,13 @@ subroutine boundaries
                  Al(i,j,k,4,TT,TT) = 0.0
               endif
               !------- CENTER = not OCEAN or ATMOSPHERE -----------------------------
-              ! so this is probably on LAND 
+              ! so this is probably on LAND
            else
               Al(i,j,k,:,:,:) = 0.0
               do ii = 1, nun
                  Frc(find_row2(i,j,k,ii)) = 0.0
                  Al(i,j,k,5,ii,ii) = 1.0
-              enddo              
+              enddo
            endif
         enddo
      enddo

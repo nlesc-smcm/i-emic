@@ -14,22 +14,22 @@ SUBROUTINE uderiv(type,atom)
   use m_usr
   implicit none
   !     1:  u
-  !     2:  uxx   
-  !     3:  uyy  
-  !     4:  uzz 
+  !     2:  uxx
+  !     3:  uyy
+  !     4:  uzz
   !     IMPORT/EXPORT
   integer type,i,j,k
   real    atom(n,m,l,np)
   real    cosdx2i(0:m),rdy2i,rdz2i,tand2(0:m),cosd2(0:m)
   real    h1,h2
-  real    amh,bmh,amhy,bmhy
-  !   
+  real    amh,bmh,bmhy
+  !
   atom = 0.0
   SELECT CASE(type)
   CASE(1)
-     IF (itopo.eq.3) then 
+     IF (itopo.eq.3) then
         DO i = 18,20
-           DO j=1,3 
+           DO j=1,3
               atom(i,j,:,5) = 1.0
            enddo
         enddo
@@ -37,17 +37,17 @@ SUBROUTINE uderiv(type,atom)
         atom(:,:,:,5) = 1.0
      ENDIF
   CASE(2)
-     ! u_xx 
+     ! u_xx
      cosdx2i = (1.0/(cos(yv)*dx))**2
      do j = 1, m - 1
         do i= 1, n
            atom(i,j,:,2) =   amh(yv(j),ih)*cosdx2i(j)
            atom(i,j,:,8) =   amh(yv(j),ih)*cosdx2i(j)
-           atom(i,j,:,5) = -(atom(i,j,:,2) + atom(i,j,:,8))  
+           atom(i,j,:,5) = -(atom(i,j,:,2) + atom(i,j,:,8))
         enddo
-	 enddo
+     enddo
   CASE(3)
-     ! u_yy 
+     ! u_yy
      rdy2i = (1.0/dy)**2
      do i=1,n
         do j=1,m-1
@@ -78,7 +78,7 @@ SUBROUTINE uderiv(type,atom)
         atom(:,j,:,8)=-(bmhy(yv(j),ih)-(amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j))/(dx*cosd2(j))
      ENDDO
   CASE(7)
-     IF (itopo.eq.3) then 
+     IF (itopo.eq.3) then
         DO i = 18,20
            DO j=14,16
               atom(i,j,:,5) = 1.0
@@ -95,15 +95,15 @@ SUBROUTINE vderiv(type,atom)
   use m_usr
   implicit none
   !     1:  v
-  !     2:  vxx  
-  !     3:  vyy  
-  !     4:  vzz 
+  !     2:  vxx
+  !     3:  vyy
+  !     4:  vzz
   !     IMPORT/EXPORT
   integer type,i,j,k
   real    atom(n,m,l,np)
   real    cosdx2i(0:m),dy2i,rdz2i,cosd2(0:m),tand2(0:m)
   real    h1,h2
-  real    amh,bmh,amhy,bmhy
+  real    amh,bmh,bmhy
   !
   atom = 0.0
   SELECT CASE(type)
@@ -118,23 +118,23 @@ SUBROUTINE vderiv(type,atom)
         atom(:,:,:,5) = 1.0
      ENDIF
   CASE(2)
-     ! vxx 
+     ! vxx
      cosdx2i = (1.0/(cos(yv)*dx))**2
-	 do i=1,n
+     do i=1,n
         do j = 1, m -1
            atom(i,j,:,2) = bmh(yv(j),ih)*cosdx2i(j)
            atom(i,j,:,5) =-2*bmh(yv(j),ih)*cosdx2i(j)
            atom(i,j,:,8) = bmh(yv(j),ih)*cosdx2i(j)
         enddo
-	 enddo
+     enddo
   CASE(3)
-     ! vyy 
+     ! vyy
      dy2i = (1.0/dy)**2
      do i=1,n
-        do j=1,m-1 
+        do j=1,m-1
            atom(i,j,:,4) = dy2i* amh(y(j),ih)*cos(y(j))/cos(yv(j))
            atom(i,j,:,6) = dy2i* amh(y(j+1),ih)*cos(y(j+1))/cos(yv(j))
-           atom(i,j,:,5) =-(atom(i,j,:,4) + atom(i,j,:,6))  
+           atom(i,j,:,5) =-(atom(i,j,:,4) + atom(i,j,:,6))
         enddo
      enddo
   CASE(4)
@@ -181,7 +181,7 @@ SUBROUTINE pderiv(type,atom)
   integer type,i,j,k
   real    atom(n,m,l,np)
   real    cos2i(0:m+1),cos2v(0:m),dzi
-  real    sf
+
   !
   atom = 0.0
   SELECT CASE(type)
@@ -194,12 +194,12 @@ SUBROUTINE pderiv(type,atom)
            atom(i,j,:,1) =-cos2i(j)
            atom(i,j,:,5) = cos2i(j)
         enddo
-	 enddo
+     enddo
   CASE(2)
      cos2v = cos(yv)
      cos2i = 1./(2*cos(y)*dy)
      do j = 1, m
-	    do i= 1, n
+        do i= 1, n
            atom(i,j,:,4) = - cos2v(j-1) * cos2i(j)
            atom(i,j,:,2) =   cos2v(j) * cos2i(j)
            atom(i,j,:,1) = - cos2v(j-1) * cos2i(j)
@@ -208,13 +208,13 @@ SUBROUTINE pderiv(type,atom)
      enddo
   CASE(3)
      dzi = 1.0/dz
-     do k = 1, l 
+     do k = 1, l
         atom(:,:,k,5) = dzi/dfzT(k)
         atom(:,:,k,14) =-dzi/dfzT(k)
      enddo
   END SELECT
 
-  ! scale continuity equation with constant factor 
+  ! scale continuity equation with constant factor
   !      DO k = 1,l
   !        atom(:,:,k,:) = atom(:,:,k,:) * dfzT(k)
   !      END DO
@@ -227,7 +227,7 @@ SUBROUTINE tderiv(type,atom)
   implicit none
   !     1:  t
   !     2:  t
-  !     4:  txx 
+  !     4:  txx
   !     5:  tyy
   !     6:  tzz
   !     IMPORT/EXPORT
@@ -235,9 +235,7 @@ SUBROUTINE tderiv(type,atom)
   real    atom(n,m,l,np)
   ! LOCAL
   integer i,j,k
-  real    tdxi,tandyi(m),cosdx2i(0:m+1),dy2i,dz2i,h1,h2
-  real    cos2i(m),sincos2i(m)
-  real    vdif
+  real    cosdx2i(0:m+1),dy2i,dz2i,h1,h2
   !
   atom = 0.0
   SELECT CASE(type)
@@ -300,8 +298,8 @@ SUBROUTINE tderiv(type,atom)
            ENDDO
         ENDDO
      ENDDO
-  CASE(7) 
-     atom(:,:,1,5) = 1.0         
+  CASE(7)
+     atom(:,:,1,5) = 1.0
   END SELECT
 
 end SUBROUTINE tderiv
@@ -312,10 +310,10 @@ SUBROUTINE coriolis(type,atom)
   implicit none
   !     1: fv in the u momentum equation     *   u   u   j+1
   !     2: fu in the v momentum equation     *     v   v    j
-  !     1: v_ij + v_i+1j + v_ij-1 + v_i+1j-1 *   u h u h  j  
+  !     1: v_ij + v_i+1j + v_ij-1 + v_i+1j-1 *   u h u h  j
   !     2: u_ij + u_ij+1 + u_i-1j + u_i-1j+1 *     v   v    j-1
   !                                          *     i  i+1
-  !     IMPORT/EXPORT                        *  i-1  i   
+  !     IMPORT/EXPORT                        *  i-1  i
   integer type
   real    atom(n,m,l,np)
   !     LOCAL
@@ -323,19 +321,19 @@ SUBROUTINE coriolis(type,atom)
   real      corv(0:m)
   !
   atom = 0.0
-  corv = sin(yv) 
+  corv = sin(yv)
   if (type.EQ.1) then
-	 do i=1,n
+     do i=1,n
         do j=1,m-1
-           atom(i,j,:,5) = corv(j) 
+           atom(i,j,:,5) = corv(j)
         enddo
-	 enddo
+     enddo
   else if (type.EQ.2) then
-	 do i=1,n
+     do i=1,n
         do j=1,m-1
-           atom(i,j,:,5) = corv(j) 
+           atom(i,j,:,5) = corv(j)
         enddo
-	 enddo
+     enddo
   end if
   !
 end SUBROUTINE coriolis
@@ -344,7 +342,7 @@ end SUBROUTINE coriolis
 SUBROUTINE gradp(type,atom)
   use m_usr
   implicit none
-  !     IMPORT/EXPORT       
+  !     IMPORT/EXPORT
   integer type
   real    atom(n,m,l,np)
   !     LOCAL
@@ -355,24 +353,24 @@ SUBROUTINE gradp(type,atom)
   SELECT CASE(type)
   CASE(1)
      cosdxi = 1./(2*cos(yv)*dx)
-	 do i=1,n
+     do i=1,n
         do j = 1, m -1
            atom(i,j,:,5) =-cosdxi(j)
            atom(i,j,:,6) =-cosdxi(j)
            atom(i,j,:,8) = cosdxi(j)
            atom(i,j,:,9) = cosdxi(j)
         enddo
-	 enddo
-  CASE(2) 
+     enddo
+  CASE(2)
      dyi = 1./(2*dy)
-	 do i=1,n
+     do i=1,n
         do j = 1, m -1
            atom(i,j,:,5) =-dyi
            atom(i,j,:,8) =-dyi
            atom(i,j,:,6) = dyi
            atom(i,j,:,9) = dyi
         enddo
-	 enddo
+     enddo
   CASE(3)
      dzi = 1./dz
      do k = 1, l
@@ -392,32 +390,29 @@ SUBROUTINE masksi(atom, mask)
   real atom(n,m,l,np)
   real mask(1:n, 1:m)
 
-  ! LOCAL
-  integer i,j,k
-
   atom = 0.0;
   atom(:,:,l,5) = mask;
-  
+
 end SUBROUTINE masksi
 
 !*******************************************************
 SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   use m_usr
   implicit none
-  !     nonlinear terms for the t-equation                 
-  !                                                           
-  !                                                       
-  !       utx= (u_i-1j+u_ij)*(t_ij+1k-t_ij-1k)                  
+  !     nonlinear terms for the t-equation
+  !
+  !
+  !       utx= (u_i-1j+u_ij)*(t_ij+1k-t_ij-1k)
   !       vty= (v_ij+v_ij-1)*(tij+1k-t_ij-1k)
-  !       wtz= (w_ijv_ijk-1)*(tijk+1-t_ijk-1)  
-  !                     
-  !                                                           
-  !     1:  trT                                           
-  !     2:  urTx 
-  !     3:  Utrx           
-  !     4:  vrTy 
+  !       wtz= (w_ijv_ijk-1)*(tijk+1-t_ijk-1)
+  !
+  !
+  !     1:  trT
+  !     2:  urTx
+  !     3:  Utrx
+  !     4:  vrTy
   !     5:  Vtry
-  !     6:  wrTz 
+  !     6:  wrTz
   !     7:  Wtrz
   !
   ! IMPORT/EXPORT
@@ -431,7 +426,7 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   integer i,j,k,k0,k1
   real    costdxi(0:m+1),tdyi,tanr(m),tdzi,h1,h2
   ! EXTERNAL
-  real hs,itkm1,itk1,itkp1,iskm1,isk1,iskp1,jtkm1  
+  real hs,itkm1,itk1,itkp1,iskm1,isk1,iskp1,jtkm1
   real jtk1,jtkp1,jskm1,jsk1,jskp1,itkm2,itk2,itkp2,&
        iskm2,isk2,iskp2,jtkm2,jtk2,jtkp2,jskm2,jsk2,&
        jskp2, sech, lambda,gam,Ep,Em,eps,&
@@ -439,7 +434,7 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   !
   atom = 0.0
   gam = 1.0e-06
-  eps = 1.0 
+  eps = 1.0
   k0 = 1
   k1 = l
   lambda = par(LAMB)
@@ -451,7 +446,7 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   CASE(2)                   ! urTx
      ! coefficienten voor u met T als basis; hier alleen voor i-1,j (1) en i,j (4)
      costdxi = 1.0/(4*cos(y)*dx)
-     DO k = 1, l 
+     DO k = 1, l
         DO j = 1, m
            DO i = 1, n
               atom(i,j,k,2) = -(t(i,j,k)+t(i-1,j,k))*costdxi(j)*(1 - landm(i,j,l))
@@ -492,7 +487,7 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,4) = -(v(i,j-1,k)+v(i-1,j-1,k))*costdxi(j)*cos(yv(j-1))*(1 - landm(i,j,l)) 
+              atom(i,j,k,4) = -(v(i,j-1,k)+v(i-1,j-1,k))*costdxi(j)*cos(yv(j-1))*(1 - landm(i,j,l))
               atom(i,j,k,6) = (v(i,j,k)+v(i-1,j,k))*costdxi(j)*cos(yv(j))*(1 - landm(i,j,l))
               atom(i,j,k,5) = atom(i,j,k,4) + atom(i,j,k,6)
            ENDDO
@@ -534,7 +529,7 @@ SUBROUTINE wnlin(type,atom,t)
   use m_usr
   implicit none
   !
-  !     nonlinear terms for the w-equation   
+  !     nonlinear terms for the w-equation
   !
   !     IMPORT/EXPORT
   integer type
@@ -547,7 +542,7 @@ SUBROUTINE wnlin(type,atom,t)
   !
   SELECT CASE(type)
   CASE(1)            ! quadratic term jac
-     DO k = 1,l-1 
+     DO k = 1,l-1
         DO j = 1,m
            DO i = 1,n
               atom(i,j,k,23) = (t(i,j,k)+t(i,j,k+1))/2.
@@ -565,8 +560,8 @@ SUBROUTINE wnlin(type,atom,t)
         ENDDO
      ENDDO
   CASE(3)            ! cubic term jac
-     DO k=1,l-1 
-        DO j = 1,m       
+     DO k=1,l-1
+        DO j = 1,m
            DO i = 1,n
               atom(i,j,k,5) = 0.375*(t(i,j,k)+t(i,j,k+1))**2
               atom(i,j,k,23) = 0.375*(t(i,j,k)+t(i,j,k+1))**2
@@ -574,8 +569,8 @@ SUBROUTINE wnlin(type,atom,t)
         ENDDO
      ENDDO
   CASE(4)            ! cubic term rhs
-     DO k=1,l-1 
-        DO j = 1,m      
+     DO k=1,l-1
+        DO j = 1,m
            DO i = 1,n
               atom(i,j,k,5) = 0.125*(t(i,j,k)*t(i,j,k)+&
                    3*t(i,j,k+1)*t(i,j,k) +&
@@ -591,14 +586,14 @@ END SUBROUTINE wnlin
 SUBROUTINE unlin(type,atom,u,v,w)
   use m_usr
   implicit none
-  !     nonlinear terms for the t-equation                 
-  !                                                           
-  !     1:  uux                                          
-  !     2:  Urux 
-  !     3:  uvy1           
-  !     4:  Urvy1 
+  !     nonlinear terms for the t-equation
+  !
+  !     1:  uux
+  !     2:  Urux
+  !     3:  uvy1
+  !     4:  Urvy1
   !     5:  uwz
-  !     6:  Urwz 
+  !     6:  Urwz
   !     7:  uvy2
   !     8:  Urvy2
   !
@@ -629,7 +624,7 @@ SUBROUTINE unlin(type,atom,u,v,w)
      ENDDO
   CASE(2)                   ! Urux
      costdxi = 1.0/(2*cos(yv)*dx)
-     DO k = 1, l 
+     DO k = 1, l
         DO j = 1, m
            DO i = 1, n-1
               atom(i,j,k,8) = 2*u(i+1,j,k)*costdxi(j)
@@ -695,7 +690,7 @@ SUBROUTINE unlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,5) = v(i,j,k)*tanr(j) 
+              atom(i,j,k,5) = v(i,j,k)*tanr(j)
            ENDDO
         ENDDO
      ENDDO
@@ -704,7 +699,7 @@ SUBROUTINE unlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,5) = u(i,j,k)*tanr(j) 
+              atom(i,j,k,5) = u(i,j,k)*tanr(j)
            ENDDO
         ENDDO
      ENDDO
@@ -715,12 +710,12 @@ end SUBROUTINE unlin
 SUBROUTINE vnlin(type,atom,u,v,w)
   use m_usr
   implicit none
-  !     nonlinear terms for the t-equation                 
-  !                                                           
-  !     1:  uvx                                          
-  !     2:  uVrx 
-  !     3:  vvry           
-  !     4:  Vrvy 
+  !     nonlinear terms for the t-equation
+  !
+  !     1:  uvx
+  !     2:  uVrx
+  !     3:  vvry
+  !     4:  Vrvy
   !     5:  vwz
   !     6:  Vrwz
   !     7:  wvrz
@@ -739,9 +734,9 @@ SUBROUTINE vnlin(type,atom,u,v,w)
   atom = 0.0
   !
   SELECT CASE(type)
-  CASE(1)                   ! uvx 
+  CASE(1)                   ! uvx
      costdxi = 1.0/(2*cos(yv)*dx)
-     DO k = 1, l 
+     DO k = 1, l
         DO j = 1, m
            DO i = 1, n-1
               atom(i,j,k,8) = u(i+1,j,k)*costdxi(j)
@@ -753,7 +748,7 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      ENDDO
   CASE(2)                   ! uVrx
      costdxi = 1.0/(2*cos(yv)*dx)
-     DO k = 1, l 
+     DO k = 1, l
         DO j = 1, m
            DO i = 1, n-1
               atom(i,j,k,8) = v(i+1,j,k)*costdxi(j)
@@ -820,7 +815,7 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,5) = u(i,j,k)*tanr(j) 
+              atom(i,j,k,5) = u(i,j,k)*tanr(j)
            ENDDO
         ENDDO
      ENDDO
@@ -830,7 +825,7 @@ SUBROUTINE vnlin(type,atom,u,v,w)
      DO k = 1, l
         DO j = 1, m
            DO i = 1, n
-              atom(i,j,k,5) = 2*u(i,j,k)*tanr(j) 
+              atom(i,j,k,5) = 2*u(i,j,k)*tanr(j)
            ENDDO
         ENDDO
      ENDDO
@@ -901,15 +896,15 @@ END SUBROUTINE yderiv
 real FUNCTION amh(y,ih)
   implicit none
   !     IMPORT/EXPORT
-  real     x,y
-  real     ap 
+  real     y
+  real     ap
   integer ih
   !
   if (ih.eq.0) then
      amh = 1.0
-  else 
-     ap = 10.0 
-     amh = 1. + ap*exp(-5*y*y)  
+  else
+     ap = 10.0
+     amh = 1. + ap*exp(-5*y*y)
   endif
   !
 END FUNCTION amh
@@ -917,15 +912,15 @@ END FUNCTION amh
 real FUNCTION bmh(y,ih)
   implicit none
   !     IMPORT/EXPORT
-  real     x,y
-  real     bp 
-  integer ih 
+  real     y
+  real     bp
+  integer ih
   !
-  if (ih.eq.0) then 
+  if (ih.eq.0) then
      bmh = 1.0
   else
-     bp =10.0 
-     bmh = 1.0 + bp*exp(-5*y*y)  
+     bp =10.0
+     bmh = 1.0 + bp*exp(-5*y*y)
   endif
   !
 END FUNCTION bmh
@@ -934,13 +929,13 @@ real FUNCTION amhy(y,ih)
   implicit none
   !     IMPORT/EXPORT
   real     x,y
-  real     ap 
-  integer  ih 
+  real     ap
+  integer  ih
   !
-  if (ih.eq.0) then 
+  if (ih.eq.0) then
      amhy = 0.0
-  else 
-     ap = 10.0 
+  else
+     ap = 10.0
      amhy = -10.*ap*y*exp(-5*y*y)
   endif
   !
@@ -949,14 +944,14 @@ END FUNCTION amhy
 real FUNCTION bmhy(y,ih)
   implicit none
   !     IMPORT/EXPORT
-  real     x,y
-  real     bp 
-  integer ih 
+  real     y
+  real     bp
+  integer ih
   !
-  if (ih.eq.0) then 
+  if (ih.eq.0) then
      bmhy = 0.0
   else
-     bp = 10.0 
+     bp = 10.0
      bmhy = -10.*bp*y*exp(-5*y*y)
   endif
   !

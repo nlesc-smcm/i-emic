@@ -26,7 +26,7 @@
 
       integer, intent(in)    :: ofile
       integer, intent(inout) :: lab
-      integer  i, j, k, XX, row, j2, nskip
+      integer  i, j, k, XX, row, nskip
 
       real, dimension(n*m*(l+la)*nun)     :: uloca
 
@@ -138,7 +138,7 @@
       use m_global
       implicit none
       integer, intent(in) :: gfile
-      integer i, j, k
+      integer i, j
 
       
       write(gfile,"('Version   0',5i4)") n, m, l, nun, SLIP
@@ -288,11 +288,9 @@
       integer  irs,icpo
 !     LOCAL
       integer  i,j,k,XX,row
-      integer  LL,nskip,nf1,ndim1,lab,n11,m11,l11,nun11
+      integer  LL,nskip,nf1,ndim1,lab
       logical  eof4
-!     FUNCTION
-      real     g05caf,dum1,dum2
-!
+
       rewind 4
  100  CONTINUE   
 !         read(4,*,end=200) lab,icpo,nf1,ndim1,nskip,n11,m11,l11,nun11

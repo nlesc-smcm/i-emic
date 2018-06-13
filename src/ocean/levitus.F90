@@ -6,7 +6,7 @@
       integer k,klev,kk
       logical rd
       character*15 filename
-      real tatmmax,tatmmin,dep
+      real tatmmax,dep
 
 
       filename = 'levitus.temp'
@@ -100,7 +100,6 @@
         !call write_internal_forcing(filename,ftlev,34)
 !
 !
- 999  format(2(10x,i3,f9.3),2f8.3)
 
       end subroutine levitus_internal
 !**********************************************************************
@@ -229,9 +228,9 @@
       real     forc(n,m), lolimit, uplimit
       integer  k, klev
 ! LOCAL
-      real     xi, yj, for
-      integer  i, j, ii, jj, kl, nmis
-      integer  weight,iim,iip,jjm,jjp
+      real     for
+      integer  i, j, kl, nmis
+      integer  weight
       real     xilow, xihigh, yjlow, yjhigh
       integer  iilow, iihigh, jjlow, jjhigh
       integer, parameter :: nx  = 360
@@ -312,7 +311,6 @@
 !
 !     call smooth(forc,k)
 
- 999  format(2i3,6(1x,f9.3),f9.3,i3)
       end
 !******************************************************************      
       SUBROUTINE interpol(iilow,iihigh,jjlow,jjhigh,dat,for,weight)
