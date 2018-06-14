@@ -870,8 +870,14 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
     int dim    = map.NumMyElements(); // number of entries in original map
     int numel  = dim/dof;             // number of blocks
     int subdim = numel*nvars;         // number of entries in new map (<=dim)
-    if (numel * dof != dim)
-        ERROR("unexpected number of elements in map!",__FILE__,__LINE__);
+    if (numel * dof == dim-1)
+    {
+        INFO("Auxiliary unknown detected");
+    }
+    else if (numel * dof < dim-1)
+    {
+        ERROR("Invalid dimension detected", __FILE__, __LINE__);
+    }
 
     int *MyGlobalElements = new int[subdim];
 

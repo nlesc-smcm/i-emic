@@ -168,7 +168,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     mapQ_ = Utils::CreateSubMap(*standardMap_, dof_, SEAICE_QQ_);
     mapM_ = Utils::CreateSubMap(*standardMap_, dof_, SEAICE_MM_);
     mapT_ = Utils::CreateSubMap(*standardMap_, dof_, SEAICE_TT_);
-
+    
     importQ_ = Teuchos::rcp(new Epetra_Import(*mapQ_, *standardMap_));
     importM_ = Teuchos::rcp(new Epetra_Import(*mapM_, *standardMap_));
     importT_ = Teuchos::rcp(new Epetra_Import(*mapT_, *standardMap_));

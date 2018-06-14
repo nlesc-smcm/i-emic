@@ -85,18 +85,6 @@ private:
     //! parallel atmosphere state (non-overlapping)
     Teuchos::RCP<Epetra_Vector> state_;
 
-    //! Index map for atmosphere T values
-    Teuchos::RCP<Epetra_BlockMap> tIndexMap_;
-
-    //! Index map for atmosphere Q values
-    Teuchos::RCP<Epetra_BlockMap> qIndexMap_;
-
-    //! parallel atmosphere temperature vector (non-overlapping)
-    Teuchos::RCP<Epetra_Vector> atmosT_;
-
-    //! parallel atmosphere humidity vector (non-overlapping)
-    Teuchos::RCP<Epetra_Vector> atmosQ_;
-
     //! parallel atmosphere state (overlapping)
     Teuchos::RCP<Epetra_Vector> localState_;
 
@@ -154,11 +142,11 @@ private:
     //! parallel precipitation field (overlapping)
     Teuchos::RCP<Epetra_Vector> localP_;
 
-    //! Atmosphere temperature importer
-    Teuchos::RCP<Epetra_Import> atmosTimporter_;
-
-    //! Atmosphere humidity importer
-    Teuchos::RCP<Epetra_Import> atmosQimporter_;
+    //! State component maps
+    std::map<int, Teuchos::RCP<Epetra_Map> > Maps_;
+    
+    //! State component importers
+    std::map<int, Teuchos::RCP<Epetra_Import> > Imps_;
 
     //! State hash
     size_t stateHash_;
@@ -233,6 +221,8 @@ public:
     //! If stateHash is not updated, nothing happens here
     void computeEP();
 
+    //! fill epetra vector with constant P
+    void fillP();
     void applyMatrix(Epetra_MultiVector const &in,
                      Epetra_MultiVector &out);
 
@@ -327,6 +317,9 @@ public:
     //! Return pointer to domain object
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
 
+    //! Factorized interface routine
+    Teuchos::RCP<Epetra_Vector> interface(int XX);
+    
     //! Get temperature at interface 
     Teuchos::RCP<Epetra_Vector> interfaceT();
 
@@ -360,17 +353,19 @@ public:
     //! result is also 0-based.
     int interface_row(int i, int j, int XX)
         {
-            if (XX > ATMOS_QQ_ && aux_ <= 0)
-                return -1;
-            
-            if (XX == ATMOS_PP_)
-                return dim_ - aux_;
-            
-            if (XX == ATMOS_PPL_)
-                return dim_ - aux_ + 1;
-            
-            if (XX == ATMOS_PPU_)
-                return dim_ - aux_ + 2;
+            if (XX >= ATMOS_PP_)
+            {
+                if (aux_ <= 0)
+                {
+                    WARNING("Atmosphere: invalid row", __FILE__, __LINE__);
+                    return -1;
+                }
+                else
+                {
+                    // return rows beyond the regular n*m*l*dof
+                    return dim_ - aux_ + (XX - ATMOS_PP_);
+                }                    
+            }
             
             return FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, l_-1, XX);
         }

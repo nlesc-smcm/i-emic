@@ -139,37 +139,20 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Create hash of state
     stateHash_ = 2;
 
-    //------------------------------------------------------------------
-    // Create atmosphere temperature restrict/import strategy
-    //------------------------------------------------------------------
-
-    // Obtain separate rows containing temperature or humidity
-    std::vector<int> tRows, qRows;
-    for (int j = 0; j != m_; ++j)
-        for (int i = 0; i != n_; ++i)
-        {
-            tRows.push_back(
-                FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
-                                i, j, 0, ATMOS_TT_));
-            qRows.push_back(
-                FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
-                                i, j, 0, ATMOS_QQ_));
-        }
-
-    // Create restricted maps
-    tIndexMap_ = Utils::CreateSubMap(state_->Map(), tRows);
-    qIndexMap_ = Utils::CreateSubMap(state_->Map(), qRows);
-
-    // Create atmosphere T and Q vectors
-    atmosT_ = Teuchos::rcp(new Epetra_Vector(*tIndexMap_));
-    atmosQ_ = Teuchos::rcp(new Epetra_Vector(*qIndexMap_));
-
-    // Create importers
-    // Target map: tIndexMap, qIndexMap
+    // Create restricted maps and create importers:
+    // Target map: Maps_[i]
     // Source map: state_->Map()
-    atmosTimporter_ = Teuchos::rcp(new Epetra_Import(*tIndexMap_, state_->Map()));
-    atmosQimporter_ = Teuchos::rcp(new Epetra_Import(*qIndexMap_, state_->Map()));
+    std::map<int, Teuchos::RCP<Epetra_Map> >    Maps_;
+    std::map<int, Teuchos::RCP<Epetra_Import> > Imps_;
+    int XX = 0;
 
+    for (int i = 0; i != dof_; ++i)
+    {
+        XX = ATMOS_TT_ + i; // unknown
+        Maps_[XX] = Utils::CreateSubMap(*standardMap_, dof_, XX);
+        Imps_[XX] = Teuchos::rcp(new Epetra_Import(*Maps_[XX], *standardMap_));
+    }
+        
     // Build diagonal mass matrix
     buildMassMat();
     
@@ -454,41 +437,45 @@ void Atmosphere::idealized(double precip)
 }
 
 //==================================================================
+Teuchos::RCP<Epetra_Vector> Atmosphere::interface(int XX)
+{
+    if ( XX >= ATMOS_PP_ )
+    {
+        if ( aux_ <= 0 )
+        {
+            WARNING("Invalid XX", __FILE__, __LINE__);
+        }
+
+        fillP();
+        return Utils::getVector('C', P_);
+    }
+    else
+    {
+        Teuchos::RCP<Epetra_Vector> out =
+            Teuchos::rcp(new Epetra_Vector(*Maps_[XX]));
+
+        CHECK_ZERO(out->Import(*state_, *Imps_[XX], Insert));
+        return out;
+    }
+}
+
+
+//==================================================================
 Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceT()
 {
-    TIMER_START("Atmosphere: get atmosphere temperature...");
-    if (!(atmosT_->Map().SameAs(*tIndexMap_)))
-    {
-        CHECK_ZERO(atmosT_->ReplaceMap(*tIndexMap_));
-    }
-    CHECK_ZERO(atmosT_->Import(*state_, *atmosTimporter_, Insert));
-    TIMER_STOP("Atmosphere: get atmosphere temperature...");
-    return Utils::getVector('C', atmosT_);
+    return interface(ATMOS_TT_);
 }
 
 //==================================================================
 Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceQ()
 {
-    TIMER_START("Atmosphere: get atmosphere humidity...");
-    if (!(atmosQ_->Map().SameAs(*qIndexMap_)))
-    {
-        CHECK_ZERO(atmosQ_->ReplaceMap(*qIndexMap_));
-    }
-    CHECK_ZERO(atmosQ_->Import(*state_, *atmosQimporter_, Insert));
-    TIMER_STOP("Atmosphere: get atmosphere humidity...");
-    return Utils::getVector('C', atmosQ_);
+    return interface(ATMOS_QQ_);
 }
 
 //==================================================================
 Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceP()
 {
-    // Put parallel atmosphere state in serial model
-    distributeState();
-
-    // We need to obtain E and P fields based on our state
-    computeEP();
-
-    return P_;
+    return interface(ATMOS_PP_);
 }
 
 //==================================================================
@@ -1098,6 +1085,7 @@ void Atmosphere::computeJacobian()
 
 //==================================================================
 // --> If it turns out costly we might need to optimize using stateHash
+// --> FIXME Superfluous if aux = 1?
 void Atmosphere::computeEP()
 {
     TIMER_START("Atmosphere: compute E P...");
@@ -1148,30 +1136,43 @@ void Atmosphere::computeEP()
                 (*P_)[i] = integral;
         }
     }
-    else if (aux_ == 1)
-    {
-        double PvalueLoc = 0.0;
-        double Pvalue    = 0.0;
-        int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
-        int lid;
-        
-        if (state_->Map().MyGID(last+1))
-        {
-            lid       = state_->Map().LID(last+1);
-            PvalueLoc = (*state_)[lid];
-        }
-        comm_->SumAll(&PvalueLoc, &Pvalue, 1.0);
-        
-        int gid;
-        for (int i = 0; i != numMyElements; ++i)
-        {
-            gid = P_->Map().GID(i);
-            if ((*surfmask_)[gid] == 0)
-                (*P_)[i] = Pvalue;
-        }
-    }    
+    else if (aux_ == 1) // assume P in the state is up to date
+        fillP();
 
     TIMER_STOP("Atmosphere: compute E P...");
+}
+
+//==================================================================
+// set non mask points to global value
+void Atmosphere::fillP()
+{
+    if (aux_ <= 0)
+    {
+        ERROR("P is not auxiliary!", __FILE__, __LINE__);
+    }
+    
+    double PvalueLoc = 0.0;
+    double Pvalue    = 0.0;
+    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                               n_-1, m_-1, l_-1, ATMOS_NUN_);
+
+    int lid;    
+    if (state_->Map().MyGID(last+1))
+    {
+        lid       = state_->Map().LID(last+1);
+        PvalueLoc = (*state_)[lid];
+    }
+        
+    comm_->SumAll(&PvalueLoc, &Pvalue, 1.0);
+    
+    int gid;
+    int numMyElements = P_->Map().NumMyElements();
+    for (int i = 0; i != numMyElements; ++i)
+    {
+        gid = P_->Map().GID(i);
+        if ((*surfmask_)[gid] == 0) 
+            (*P_)[i] = Pvalue; 
+    }
 }
 
 //==================================================================

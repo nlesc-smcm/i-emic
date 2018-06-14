@@ -1135,13 +1135,15 @@ int AtmosLocal::find_row(int i, int j, int k, int XX)
     ////////////////////////////////////////////
     
     // P values are auxiliary and come after the final ordinary element
-    if (XX == ATMOS_PP_)
-        return dim_ - aux_ + 1;
-    if (XX == ATMOS_PPL_)
-        return dim_ - aux_ + 2;
-    if (XX == ATMOS_PPU_)
-        return dim_ - aux_ + 3;
-
+    if ( XX >= ATMOS_PP_ )
+    {
+        if (aux_ <= 0)
+        {
+            WARNING("AtmosLocal: invalid row", __FILE__, __LINE__);
+        }
+        else
+            return dim_ - aux_ + (XX - ATMOS_PP_) + 1;
+    }
     // ordinary 1-based find_row 
     return nun_ * ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
 }

@@ -17,7 +17,8 @@
 # define ATMOS_NP_ 27
 #endif
 
-// Number of unknowns
+// Number of ordinary unknowns (excluding auxiliary single-valued
+// unknowns).
 #ifndef ATMOS_NUN_
 # define ATMOS_NUN_ 2
 #endif
@@ -26,11 +27,10 @@
 #ifndef ATMOS_TT_
 # define ATMOS_TT_  1 // Atmospheric temperature
 # define ATMOS_QQ_  2 // Vapor anomaly
+// # define ATMOS_AA_  3 // Albedo
 
-// These are auxiliary and have a dedicated case in find_row
-# define ATMOS_PP_  3 // Global precipitation
-# define ATMOS_PPL_ 4 // Lower hemisphere box precipitation
-# define ATMOS_PPU_ 5 // Upper hemisphere box precipitation
+// Auxiliary with a dedicated case in find_row
+# define ATMOS_PP_  ATMOS_NUN_+1 // Global precipitation
 
 #endif
 

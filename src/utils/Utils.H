@@ -1,4 +1,4 @@
-/**********************************************************************
+/******************************x****************************************
  * Copyright by Jonas Thies, Univ. of Groningen 2006/7/8.             *
  * Permission to use, copy, modify, redistribute is granted           *
  * as long as this header remains intact.                             *
