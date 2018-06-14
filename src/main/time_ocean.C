@@ -194,7 +194,7 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
         // create tangent
         xdot->Update(1.0/dt, *x, -1.0/dt, *xold, 0.0);
-        INFO(" ||xdot|| = " << Utils::norm(xdot));
+        //    INFO(" ||xdot|| = " << Utils::norm(xdot));
     }
     
     // print the profile

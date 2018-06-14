@@ -1,59 +1,4 @@
 !**********************************************************************
-      subroutine levitus_t(rd)
-      use m_usr
-      use m_lev
-      implicit none
-      integer k,klev,kk
-      logical rd
-      character*15 filename
-      real tatmmax,tatmmin,dep
-
-
-      filename = 'levitus.temp'
-
-      if (rd) then
-        if ((TRES.eq.0).and.(coupled_T.eq.0)) filename = 'flux.temp'
-!
-! TRES = 1 :  read Levitus SST for internal restoring from 'levitus.temp'
-!             created by this routine, with rd = .false.
-! TRES = 0 :  read fluxes implied by internal relaxation from `flux.temp'
-!             diagnosed by routine `diagnose_tflux.
-!             Subtract integral for accuracy reasons.
-!
-        write(f99,*) 'read temperature forcing from: ',filename
-        call read_internal_forcing(filename,ftlev,34)
-        if (TRES.eq.0) call qint3(ftlev)
-      else
-
-        write(f99,*) 'levitus temperature interpolation:'
-        write(f99,*) 'model: level  depth   levitus: level depth   max'
-        do k=l,1,-1
-          dep = -z(k)*hdim
-          do kk=1,nlev
-             if (depth(kk).le.dep) klev = kk
-          enddo
-          !choose the followings
-          call levitus_interpol(topdir//'levitus/new/t00an1',&
-     &                            tatm,-5.,50.,k,klev)
-          !call levitus_interpol(topdir//'levitus/new/avtemp',&
-     !&                            tatm,-5.,50.,k,klev)
-  
-          tatmmax = maxval(tatm)
-          tatm = tatm - t0 
-          ftlev(:,:,k) = tatm
-          write(f99,999) k,dep,klev,depth(klev),tatmmax
-        enddo
-!
-        write(f99,*) 'write levitus temperature field to: ',filename
-        call write_internal_forcing(filename,ftlev,34)
-!
-      endif
-      tatm = ftlev(:,:,l)
-      internal_temp(:,:,:)=ftlev(:,:,:)
-!
- 999  format(2(10x,i3,f9.3),2f8.3)
-
-      end
 
       subroutine levitus_internal(filename,array,is_monthly,type)
       use m_global
@@ -103,75 +48,37 @@
  999  format(2(10x,i3,f9.3),2f8.3)
 
       end subroutine levitus_internal
-!**********************************************************************
-      subroutine levitus_s(rd)
-      use m_usr
-      use m_lev
-      implicit none
-      integer k,klev,kk
-      logical rd
-      character*15 filename
-      real emipmax,dep
 
-      filename = 'levitus.salt'
-
-      if (rd) then 
-        if ((SRES.eq.0).and.(coupled_S.eq.0)) filename = 'flux.salt'
-!
-! SRES = 1 :  read Levitus SSS for internal restoring from 'levitus.salt'
-!             created by this routine, with rd = .false.
-! SRES = 0 :  read fluxes implied by internal relaxation from `flux.salt'
-!             diagnosed by routine `diagnose_sflux.
-!             Subtract integral for accuracy reasons.
-!
-        write(f99,*) 'read salt forcing from: ',filename
-        call read_internal_forcing(filename,fslev,33)
-        if ((SRES.eq.0).and.(coupled_S.eq.0)) call qint3(fslev)
-      else
-        write(f99,*) 'levitus salinity interpolation:'
-        write(f99,*) 'model: level  depth   levitus: level depth   max'
-        do k=l,1,-1
-          dep = -z(k)*hdim
-          do kk=1,nlev
-             if (depth(kk).le.dep) klev = kk
-          enddo
-
-            !choose the followings
- 
-          call levitus_interpol(topdir//'levitus/new/s00an1',emip,&
-     &                 30.,40.,k,klev)
-          !call levitus_interpol(topdir//'levitus/new/avsalt',emip,&
-     !&                 30.,40.,k,klev)
-          emipmax = maxval(emip)
-          emip = emip - s0 
-          fslev(:,:,k) = emip
-          write(f99,999) k,dep,klev,depth(klev),emipmax
-        enddo
-!
-        write(f99,*) 'write levitus salinity field to: ',filename
-        call write_internal_forcing(filename,fslev,33)
-!
-      endif
-      emip = fslev(:,:,l)
-!
- 999  format(2(10x,i3,f9.3),2f8.3)
-
-      end
-!**********************************************************************
+      !**********************************************************************
       subroutine levitus_sst
-      use m_global
-      implicit none
-      real tatmmax
+        use m_global
+        implicit none
+        real tatmmax
+        integer status
 
-!      write(*,*) "ENTER LEVITUS_SST"
+        !      write(*,*) "ENTER LEVITUS_SST"
 
         !choose the followings
 
-      call levitus_interpol(topdir//'levitus/new/t00an1',tatm,&
-                                                    -5.,50.,l,1)
+      open(unit=42,file='sstf_name.txt', status='old')
+      read(unit=42,fmt='(A100)',iostat=status,end=303) sstfile
+      
+303   continue
+      close(42)
+      
+      write(*,*) '===========SSTforcing============================================'
+      write(*,*) 'SST forcing is read in from file '//trim(sstfile)
+      write(*,*) '===========SSTforcing============================================'
+
+
+      call levitus_interpol(topdir//trim(sstfile), tatm, &
+                                                   -5.,50.,l,1)
+
+      ! call levitus_interpol(topdir//'levitus/new/t00an1',tatm,&
+                                                    !-5.,50.,l,1)
       ! call levitus_interpol(topdir//'cesm/SST_38Ma.txt',tatm,&
       !                                               -5.,50.,l,1)
-      !call levitus_interpol(topdir//'levitus/new/avtemp',tatm,&
+      ! call levitus_interpol(topdir//'levitus/new/avtemp',tatm,&
                                                     !-5.,50.,l,1)
 
 
@@ -190,17 +97,31 @@
  
 !**********************************************************************
       subroutine levitus_sal
-      use m_global
-            implicit none
-      real emipmax
+        use m_global
+        implicit none
+        real emipmax
+        integer status
 
        !choose the followings
+      open(unit=42,file='sssf_name.txt', status='old')
+      read(unit=42,fmt='(A100)',iostat=status,end=304) sssfile
+      
+304   continue
+      close(42)
+      
+      write(*,*) '===========SSSforcing============================================'
+      write(*,*) 'SSS forcing is read in from file '//trim(sssfile)
+      write(*,*) '===========SSSforcing============================================'
 
-      call levitus_interpol(topdir//'levitus/new/s00an1',emip,&
-                                                          30.,40.,l,1)
+      call levitus_interpol(topdir//trim(sssfile), emip,&
+                                                   20.,40.,l,1)
+
+      ! call levitus_interpol(topdir//'levitus/new/s00an1',emip,&
+      !                                                     30.,40.,l,1)
+
       ! call levitus_interpol(topdir//'cesm/SSS_38Ma.txt',emip,&
       !                                                     20.,40.,l,1)
-      !call levitus_interpol(topdir//'levitus/new/avsalt',emip,&
+      ! call levitus_interpol(topdir//'levitus/new/avsalt',emip,&
                                                           !30.,40.,l,1)
 
       open(33,FILE=rundir//'fort.33')

@@ -197,11 +197,23 @@ SUBROUTINE windfit
   real    xh(n),yh(m)
   real    xi(n*m), yi(n*m)
   real :: tmax
-
+  integer status
+  
   lwrk=4*n+nx+4
   liwrk=n+nx
 
-  open(10,file=topdir//'wind/trtau.dat',action='read')
+  open(unit=42,file='windf_name.txt', status='old')
+  read(unit=42,fmt='(A100)',iostat=status,end=808) windfile
+
+808 continue
+  close(42)
+
+  write(*,*) '===========WindForcing============================================'
+  write(*,*) 'Wind forcing is read in from file '//trim(windfile)
+  write(*,*) '===========WindForcing============================================'
+
+  open(10,file=topdir//trim(windfile),action='read')
+  ! open(10,file=topdir//'wind/trtau.dat',action='read')
   ! open(10,file=topdir//'cesm/wind_38Ma.txt',action='read')
   read(10,*)
   do i=1,nx

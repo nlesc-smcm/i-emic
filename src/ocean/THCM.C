@@ -233,6 +233,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     coupled_S          = paramList.get("Coupled Salinity", 0);
     fixPressurePoints_ = paramList.get("Fix Pressure Points", false);
 
+    //------------------------------------------------------------------
     if (rd_spertm)
     {
         std::string spertm_file = paramList.get("Salinity Perturbation Mask",
@@ -244,7 +245,31 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         }
     }
 
+    //------------------------------------------------------------------
     iza  = paramList.get("Wind Forcing Type",2);
+    // Let THCM know the wind forcing file
+    std::string windf_file = paramList.get("Wind Forcing Data",
+                                           "wind/trtau.dat");
+
+    // Let THCM know the sst forcing file
+    std::string sst_file = paramList.get("Temperature Forcing Data",
+                                         "levitus/new/t00an1");
+
+    // Let THCM know the sss forcing file
+    std::string sss_file = paramList.get("Salinity Forcing Data",
+                                         "levitus/new/s00an1");
+
+    if (Comm->MyPID() == 0)
+    {
+        std::ofstream windfile("windf_name.txt", std::ios::trunc);
+        std::ofstream sstfile("sstf_name.txt",   std::ios::trunc);
+        std::ofstream sssfile("sssf_name.txt",   std::ios::trunc);
+        windfile << windf_file;
+        sstfile  << sst_file;
+        sssfile  << sss_file;
+    }
+    //-----------------------------------------------------------------
+
 
     int dof = _NUN_; // number of unknowns, defined in THCMdefs.H
 
@@ -448,6 +473,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     if (comm->MyPID()==0)
     {
+        std::cout << " obtaining windfield" << std::endl;
         F90NAME(m_global,get_windfield)(taux_g,tauy_g);
     }
 

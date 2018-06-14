@@ -58,6 +58,7 @@ module m_global
   real, dimension(:,:,:), allocatable :: internal_temp,internal_salt
 
   character(len=999) :: maskfile, spertmaskfile
+  character(len=999) :: windfile, sstfile, sssfile
 
 contains
 
@@ -407,6 +408,9 @@ contains
     real, dimension(n) :: tauz
     integer :: i,j,pos
 
+
+    write(*,*) iza
+    
     if(iza.ne.2) then
        call windfit        ! read data with subroutine from forcing.F90
        if(iza.eq.1) then   ! average zonally
@@ -746,7 +750,7 @@ contains
     real, dimension(n,m,l+la) :: T,S
     real, dimension(n,m) :: hf,fwf
     integer :: i,j,k,row
-    real    :: temfun, salfun
+    real    :: temfuon, salfun
 
     do k = 1, (l+la)
        do j = 1, m
