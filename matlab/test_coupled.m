@@ -2,7 +2,12 @@
 clear all
 JnC = load_numjac('JnC');
 
-n = 6; m = 6; l = 4; dfo = 6; dfa = 2; aux = 1; dfs = 4;
+vsm(JnC)
+
+[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
+    readfort44('fort.44');
+
+dfo = 6; dfa = 2; aux = 1; dfs = 4;
 
 surfb = find_row(dfo, n, m ,l, 1, 1, l, 1);
 surfe = find_row(dfo, n, m ,l, n, m, l, dfo);
@@ -21,17 +26,23 @@ for i = 1:dfo
     oce_idx = [oce_idx, (i:dfo:nocean)];
 end
 
+%oce_idx = sort(oce_idx);
+
 for i = 1:dfa
     atm_idx = [atm_idx, (nocean+i:dfa:nocean+natmos)];
 end
+
 
 for i = 1:aux
     atm_idx = [atm_idx, atm_idx(end) + i];
 end
 
+%atm_idx = sort(atm_idx);
+
 for i = 1:dfs
     sei_idx = [sei_idx, (nocean+natmos+aux+i:dfs:nocean+natmos+aux+nseaice)];
 end
+%sei_idx = sort(sei_idx);
 
 JnC11 = JnC(oce_idx, oce_idx);
 JnC22 = JnC(atm_idx, atm_idx);

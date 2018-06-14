@@ -133,8 +133,12 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     qdim_            = params->get("humidity scale", 1e-3);  // (kg/kg)
     lv_              = params->get("latent heat of vaporization", 2.5e06); // (J/kg)
 
+    tauf_            = params->get("", 1); // FIXME todo
+    tauc_            = params->get("", 1); // FIXME todo
+
     udim_            = params->get("horizontal velocity of the ocean", 0.1e+00);
     r0dim_           = params->get("radius of the earth", 6.37e+06);
+
 
 // continuation ----------------------------------------------------------------
     allParameters_   = { "Combined Forcing",
@@ -652,7 +656,7 @@ double AtmosLocal::matvec(int row)
 void AtmosLocal::forcing()
 {
     double value, Ts, Eo, Ei;
-    int tr, hr, sr; // indices
+    int tr, hr, sr, ar; // indices
     
     if (std::abs(Ooa_) < 1e-8)
         WARNING(" Ooa_ may give trouble", __FILE__, __LINE__);
@@ -660,10 +664,12 @@ void AtmosLocal::forcing()
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
-            // ------------ Temperature forcing
-            sr = n_*(j-1) + (i-1);                  // plain surface row
             tr = find_row(i, j, l_, ATMOS_TT_) - 1; // temperature row
+            hr = find_row(i, j, l_, ATMOS_QQ_) - 1; // humidity row
+            // ar = find_row(i, j, l_, ATMOS_AA_) - 1; // albedo row FIXME todo
+            sr = n_*(j-1) + (i-1);                  // plain surface row
 
+            // ------------ Temperature forcing
             // Apply surface mask and calculate land temperatures.
             // This is a copy of legacy stuff, could be put more
             // clearly.
@@ -702,8 +708,6 @@ void AtmosLocal::forcing()
             frc_[tr] = value;
 
             // ------------ Humidity forcing
-            hr = find_row(i, j, l_, ATMOS_QQ_) - 1; // humidity row
-
             // Again, check whether we are above land
             if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
                 value = 0;
@@ -716,6 +720,9 @@ void AtmosLocal::forcing()
             }
             
             frc_[hr] = value;
+            
+            // ------------ Albedo forcing FIXME todo
+            
         }
 
     // adjust to allow for integral condition in the serial case

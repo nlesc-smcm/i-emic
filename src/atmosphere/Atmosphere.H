@@ -2,10 +2,13 @@
 /*
 
  This class takes care of the parallelization of the local atmosphere
- model. For the domain decomposition we make use of the TRIOS_Domain
- stuff. This als ensures that, in a coupled case, we can move parallel
- objects around with maps that make sense.
+ model AtmosLocal. For the domain decomposition we make use of the
+ TRIOS_Domain stuff. This also ensures that, in a coupled case, we can
+ move parallel objects around with maps that make sense.
 
+ The physics are dealt with in AtmosLocal. Mos importantly in
+ AtmosLocal::forcing() and AtmosLocal::computeRHS().
+ 
 */
 //!--------------------------------------------------------------------
 

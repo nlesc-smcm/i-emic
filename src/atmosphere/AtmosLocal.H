@@ -176,6 +176,9 @@ private:
     double   qdim_; //! humidity scale (kg / kg)
     double     lv_; //! latent heat of vaporization (J / kg)
 
+    double   tauf_; //! FIXME todo
+    double   tauc_; //! FIXME todo
+    
     //! Necessary for nondimensionalizations:
     double   udim_;  //! typical horizontal velocity of the ocean
     double  r0dim_;  //! radius of the earth
@@ -350,6 +353,10 @@ public:
     //! Set an external 2D surface mask in the atmosphere.
     //! The size of the vector should be n*m.
     void setSurfaceMask(std::shared_ptr<std::vector<int> > surfm);
+
+    //! Compute land temperature based on atmospheric temperature and
+    //! shortwave radiative flux. FIXME todo
+    // void landTemperature(double Ta, double )
 
 private:
 
