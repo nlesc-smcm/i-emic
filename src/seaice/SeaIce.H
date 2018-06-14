@@ -150,23 +150,11 @@ private:
     //! overlapping localAtmosQ
     Teuchos::RCP<Epetra_Vector> localAtmosQ_;
 
-    //! map restricted to heat flux values
-    Teuchos::RCP<Epetra_Map> mapQ_;
-
-    //! map restricted to mask values
-    Teuchos::RCP<Epetra_Map> mapM_;
-
-    //! map restricted to temperature values
-    Teuchos::RCP<Epetra_Map> mapT_;
-
-    //! import strategy for heat flux values
-    Teuchos::RCP<Epetra_Import> importQ_;
-
-    //! import strategy for mask values
-    Teuchos::RCP<Epetra_Import> importM_;
-                                       
-    //! import strategy for temperature values
-    Teuchos::RCP<Epetra_Import> importT_;
+    //! State component maps
+    std::map<int, Teuchos::RCP<Epetra_Map> > Maps_;
+    
+    //! State component importers
+    std::map<int, Teuchos::RCP<Epetra_Import> > Imps_;
 
     //! matrix dependency grid
     std::shared_ptr<DependencyGrid> Al_;
@@ -320,6 +308,7 @@ public:
     void synchronize(std::shared_ptr<Atmosphere> atmos);
     void synchronize(std::shared_ptr<Ocean> ocean);
 
+    Teuchos::RCP<Epetra_Vector> interface(int XX);
     Teuchos::RCP<Epetra_Vector> interfaceQ();
     Teuchos::RCP<Epetra_Vector> interfaceM();
     Teuchos::RCP<Epetra_Vector> interfaceT();

@@ -27,7 +27,7 @@
 #ifndef ATMOS_TT_
 # define ATMOS_TT_  1 // Atmospheric temperature
 # define ATMOS_QQ_  2 // Vapor anomaly
-// # define ATMOS_AA_  3 // Albedo
+// # define ATMOS_AA_  3 // Albedo --> todo
 
 // Auxiliary with a dedicated case in find_row
 # define ATMOS_PP_  (ATMOS_NUN_+1) // Global precipitation

@@ -752,12 +752,7 @@ void Atmosphere::synchronize(std::shared_ptr<SeaIce> seaice)
 //==================================================================
 void Atmosphere::setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst)
 {
-    // Replace map if necessary
-    if (!(sst->Map().SameAs(*standardSurfaceMap_)))
-    {
-        // INFO("Atmosphere::setOceanTemperature sst map -> standardSurfaceMap_");
-        CHECK_ZERO(sst->ReplaceMap(*standardSurfaceMap_));
-    }
+    CHECK_MAP(sst, standardSurfaceMap_);
 
     // assign to our own datamember
     sst_ = sst;
