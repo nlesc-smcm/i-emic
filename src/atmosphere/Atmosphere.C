@@ -39,7 +39,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // Set integral condition row
     if (useIntCondQ_)
-        rowIntCon_ = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+        rowIntCon_ = FIND_ROW_ATMOS0(dof_, n_, m_, l_,
                                      n_-1, m_-1, l_-1, ATMOS_QQ_);
     else
         rowIntCon_ = -1;
@@ -73,12 +73,12 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     int nloc = domain_->LocalN();
     int mloc = domain_->LocalM();
     int lloc = domain_->LocalL();
-
+    
     INFO("   Local atmosphere model: xmin = " << xminloc);
     INFO("                           xmax = " << xmaxloc);
     INFO("                           ymin = " << yminloc);
     INFO("                           ymax = " << ymaxloc);
-
+    
     // Obtain overlapping and non-overlapping maps
     assemblyMap_ = domain_->GetAssemblyMap(); // overlapping
     standardMap_ = domain_->GetStandardMap(); // non-overlapping
@@ -142,17 +142,14 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Create restricted maps and create importers:
     // Target map: Maps_[i]
     // Source map: state_->Map()
-    std::map<int, Teuchos::RCP<Epetra_Map> >    Maps_;
-    std::map<int, Teuchos::RCP<Epetra_Import> > Imps_;
     int XX = 0;
-
     for (int i = 0; i != dof_; ++i)
     {
         XX = ATMOS_TT_ + i; // unknown
         Maps_[XX] = Utils::CreateSubMap(*standardMap_, dof_, XX);
         Imps_[XX] = Teuchos::rcp(new Epetra_Import(*Maps_[XX], *standardMap_));
     }
-        
+    
     // Build diagonal mass matrix
     buildMassMat();
     

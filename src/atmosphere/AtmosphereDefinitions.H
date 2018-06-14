@@ -30,7 +30,7 @@
 // # define ATMOS_AA_  3 // Albedo
 
 // Auxiliary with a dedicated case in find_row
-# define ATMOS_PP_  ATMOS_NUN_+1 // Global precipitation
+# define ATMOS_PP_  (ATMOS_NUN_+1) // Global precipitation
 
 #endif
 

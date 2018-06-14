@@ -367,7 +367,7 @@ public:
                 }                    
             }
             
-            return FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, l_-1, XX);
+            return FIND_ROW_ATMOS0(dof_, n_, m_, l_, i, j, l_-1, XX);
         }
 
     int loadState() { return loadStateFromFile(inputFile_); }

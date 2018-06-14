@@ -32,7 +32,7 @@ public:
 
             // Create dummy parameter object for SeaIce
             RCP<Teuchos::ParameterList> seaIceParams =
-                obtainParams("dummy", "Sea ice parameters"); 
+                obtainParams("seaice_params.xml", "Sea ice parameters"); 
 
             // Create parameter object for CoupledModel
             RCP<Teuchos::ParameterList> coupledmodelParams =
