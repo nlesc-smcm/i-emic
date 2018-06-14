@@ -112,14 +112,14 @@
     <Parameter name="Levitus T" type="int" value="0"/>
 
     <!-- If ite = 0, this specifies the temperature forcing data file -->
-    <Parameter name="Wind Forcing Data" type="string" value="levitus/new/t00an1"/>
+    <Parameter name="Temperature Forcing Data" type="string" value="levitus/new/t00an1"/>
 
     <!-- Levitus Salt (its in THCM)     -->
     <!-- 0: data, 1: idealized          -->
     <Parameter name="Levitus S" type="int" value="0"/>
 
     <!-- If its = 0, this specifies the salinity forcing data file -->
-    <Parameter name="Wind Forcing Data" type="string" value="levitus/new/s00an1"/>
+    <Parameter name="Salinity Forcing Data" type="string" value="levitus/new/s00an1"/>
 
     <!-- Wind Forcing (iza in THCM)       -->
     <!-- 0: data,                         -->
