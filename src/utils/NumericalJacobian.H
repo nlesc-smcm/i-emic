@@ -9,11 +9,19 @@ class NumericalJacobian
 {
 	// Compressed column storage for the matrix. Here, this is more
 	// convenient than CRS.
-	std::vector<double> values_;
-	std::vector<int>    rowIdx_;
-	std::vector<int>    colPtr_;
+	std::vector<double>     values_; // co
+	std::vector<int>        rowIdx_; // ico
+	std::vector<int>        colPtr_; // beg
+
 	double h_;   // finite difference increment
     double tol_; // tolerance
+
+    struct CCS // compressed column storage
+    {
+        std::vector<double> co;
+        std::vector<int>   ico;
+        std::vector<int>   beg;
+    };
 
 public:
 	NumericalJacobian()
@@ -110,6 +118,14 @@ public:
             for (auto &el: values_)
                 sum += el;
             return sum;
+        }
+
+    CCS getCCS()
+        {
+            CCS ccs;
+            ccs.co  = values_;
+            ccs.ico = rowIdx_;
+            ccs.beg = colPtr_;
         }
 };
 

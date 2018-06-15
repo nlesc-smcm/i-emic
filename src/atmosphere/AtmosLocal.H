@@ -176,6 +176,9 @@ private:
     double   qdim_; //! humidity scale (kg / kg)
     double     lv_; //! latent heat of vaporization (J / kg)
 
+    double     a0_; //! FIXME todo: reference albedo
+    double     da_; //! FIXME todo: albedo excursion
+    
     double   tauf_; //! FIXME todo
     double   tauc_; //! FIXME todo
     

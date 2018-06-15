@@ -17,7 +17,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     recomputePrec_   (false),
 
     taus_         (0.01),   // threshold ice thickness
-    epsilon_      (1e2),    // Heavyside approximation steepness
+    epsilon_      (1e-2),    // Heavyside approximation steepness
 
     // background mean values
     t0o_   (params->get("background ocean temp t0o", 7)),
@@ -242,7 +242,7 @@ void SeaIce::computeRHS()
                 case SEAICE_MM_:       // M row (mask)
 
                     val = Mval -
-                        (1./2.) * (1. + tanh(epsilon_ * Hval) );
+                        (1./2.) * (1. + tanh( Hval / epsilon_ ) );
 
                     break;
 
@@ -309,8 +309,8 @@ void SeaIce::computeLocalJacobian()
         for (int i = 1; i <= nLoc_; ++i)
         {
             ind  = find_row1(nLoc_, mLoc_, i, j, H); // H row
-            val  = -(epsilon_ / 2.0) *
-                ( 1.0 - pow(tanh(epsilon_ * (state[ind])), 2) );
+            val  = -(1 / (epsilon_ * 2.0) ) *
+                ( 1.0 - pow(tanh((state[ind]) / epsilon_), 2) );
             MM_HH.set( i, j, 1, 1, val);
         }
 

@@ -261,6 +261,7 @@ public:
 #endif
 
 #ifndef MOD
+
 //! our own 'modulo' function, which behaves like mod in matlab.
 //! the C++ built-in '%' operator returns -1%n=-1 and is therefore
 //! not very useful for periodic boundaries...

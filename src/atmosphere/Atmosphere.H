@@ -151,9 +151,6 @@ private:
     //! State component importers
     std::map<int, Teuchos::RCP<Epetra_Import> > Imps_;
 
-    //! State hash
-    size_t stateHash_;
-    
     //! input file (HDF5)
     std::string const inputFile_;
 
@@ -219,10 +216,6 @@ public:
     void computeRHS();
 
     void computeJacobian();
-
-    //! Compute E and P fields
-    //! If stateHash is not updated, nothing happens here
-    void computeEP();
 
     //! fill epetra vector with constant P
     void fillP();
@@ -308,12 +301,11 @@ public:
 
     Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return Utils::getVector(mode, state_); }
     Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return Utils::getVector(mode, sol_); }
-    
-    Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')   { return Utils::getVector(mode, rhs_); }
+    Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')      { return Utils::getVector(mode, rhs_); }
 
-    Teuchos::RCP<Epetra_Vector> getE(char mode = 'C')   { return Utils::getVector(mode, E_); }
-    Teuchos::RCP<Epetra_Vector> getP(char mode = 'C')   { return Utils::getVector(mode, P_); }
-    Teuchos::RCP<Epetra_Vector> getDiagB(char mode = 'C')   { return Utils::getVector(mode, diagB_); }
+    Teuchos::RCP<Epetra_Vector> getE(char mode = 'C');
+    Teuchos::RCP<Epetra_Vector> getP(char mode = 'C');
+    Teuchos::RCP<Epetra_Vector> getDiagB(char mode = 'C') { return Utils::getVector(mode, diagB_); }
 
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
 

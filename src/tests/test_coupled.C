@@ -300,6 +300,10 @@ TEST(CoupledModel, numericalJacobian)
     // only do this test for small problems in serial
     int nmax = 2e3;
 
+    Teuchos::RCP<Epetra_CrsMatrix> atmosJac  = atmos->getJacobian();
+    Teuchos::RCP<Epetra_CrsMatrix> oceanJac  = ocean->getJacobian();
+    Teuchos::RCP<Epetra_CrsMatrix> seaiceJac = seaice->getJacobian();
+
     if ( (comm->NumProc() == 1) &&
          (coupledModel->getState('V')->GlobalLength() < nmax) )
     {
@@ -340,10 +344,7 @@ TEST(CoupledModel, numericalJacobian)
     {
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
-
-    // getchar();
 }
-
 
 //------------------------------------------------------------------
 // We need this information from THCM

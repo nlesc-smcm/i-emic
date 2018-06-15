@@ -133,6 +133,9 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     qdim_            = params->get("humidity scale", 1e-3);  // (kg/kg)
     lv_              = params->get("latent heat of vaporization", 2.5e06); // (J/kg)
 
+    a0_              = params->get("reference albedo", 0.3);
+    da_              = params->get("albedo excursion", 0.5);
+    
     tauf_            = params->get("", 1); // FIXME todo
     tauc_            = params->get("", 1); // FIXME todo
 
@@ -228,7 +231,7 @@ void AtmosLocal::setup()
     INFO(std::endl);
 
     np_  = ATMOS_NP_;   // all neighbouring points including the center
-    nun_ = ATMOS_NUN_;  // ATMOS_TT_, ATMOS_QQ_ (ATMOS_PP_
+    nun_ = ATMOS_NUN_;  // ATMOS_TT_, ATMOS_QQ_, ATMOS_AA_ (ATMOS_PP_
                         // exists at only aux_ points).
 
     // Problem size
@@ -376,7 +379,7 @@ void AtmosLocal::idealized(double precip)
 {
     // put idealized values in atmosphere
     double value;
-    int rowSST, rowTT, rowQQ, rowPP;
+    int rowSST, rowTT, rowQQ, rowPP, rowAA;
     for (int i = 1; i <= n_; ++i)
         for (int j = 1; j <= m_; ++j)
         {
@@ -385,6 +388,7 @@ void AtmosLocal::idealized(double precip)
             rowSST   = n_*(j-1) + (i-1);
             rowTT    = find_row(i,j,l_,ATMOS_TT_)-1;
             rowQQ    = find_row(i,j,l_,ATMOS_QQ_)-1;
+            // rowAA    = find_row(i,j,l_,ATMOS_AA_)-1; // FIXME todo
 
             // These values are chosen such that the integrated
             // evaporation is zero.

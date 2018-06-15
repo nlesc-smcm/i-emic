@@ -136,10 +136,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     if (loadState_)
         loadStateFromFile(inputFile_);
 
-    // Create hash of state
-    stateHash_ = 2;
-
-    // Create restricted maps and create importers:
+    // Create restricted maps and their importers:
     // Target map: Maps_[i]
     // Source map: state_->Map()
     int XX = 0;
@@ -185,9 +182,7 @@ void Atmosphere::setupIntCoeff()
     atmos_->integralCoeff(vals, inds);
 
     for (size_t idx = 0; idx != inds.size(); ++idx)
-    {
         (*intcondLocal)[inds[idx]-1] = vals[idx];
-    }
 
     // Assemble distributed version into non-overlapping vector
     domain_->Assembly2Solve(*intcondLocal, *intcondCoeff_);
@@ -195,13 +190,13 @@ void Atmosphere::setupIntCoeff()
     // Create allgathered version
     intcondGlob_ = Utils::AllGather(*intcondCoeff_);
 
-#ifdef DEBUGGING_NEW
-    std::stringstream ss1, ss2;
-    ss1 << "intcondq" << comm_->MyPID() << ".txt";
-    ss2 << "intcondq" << comm_->MyPID() << "orig.txt";
-    Utils::print(intcondCoeff_, ss1.str());
-    Utils::print(vals, ss2.str());
-#endif
+// #ifdef DEBUGGING_NEW
+//     std::stringstream ss1, ss2;
+//     ss1 << "intcondq" << comm_->MyPID() << ".txt";
+//     ss2 << "intcondq" << comm_->MyPID() << "orig.txt";
+//     Utils::print(intcondCoeff_, ss1.str());
+//     Utils::print(vals, ss2.str());
+// #endif
 
     //------------------------------------------------------------------
     // Create parallelized integration coefficients for precipitation
@@ -216,14 +211,12 @@ void Atmosphere::setupIntCoeff()
     // Use 1 dof and ignore land
     atmos_->integralCoeff(vals, inds, 1);
 
-    // test indices
+    // Final index should equal local length in assemblysurfacemap
     assert(inds.back()-1 < pIntCoeffLocal->MyLength());
 
-    // fill local precipitation integration coefficients
+    // Fill local precipitation integration coefficients
     for (size_t idx = 0; idx != inds.size(); ++idx)
-    {
         (*pIntCoeffLocal)[inds[idx]-1] = vals[idx];
-    }
 
     // Export assembly map surface integration coeffs to standard map
     CHECK_ZERO( pIntCoeff_->Export( *pIntCoeffLocal, *as2std_surf_, Zero ) );
@@ -265,23 +258,26 @@ void Atmosphere::computeRHS()
     // Put parallel state in serial atmosphere.
     distributeState();
 
-    // Compute E and P, put our precipitation field in serial AtmosLocal
-    // E is already present in serial AtmosLocal
-    // --> If it turns out costly we might need to optimize using stateHash
-    //------------------------------------------------------------------
-    computeEP();
+    if (aux_ <= 0)    // Compute E and P, put our precipitation field
+                      // in serial AtmosLocal        
+    {                         
+        // compute and obtain evaporation field
+        getE();
 
-    CHECK_ZERO(localP_->Import(*P_, *as2std_surf_, Insert));
+        // compute and obtain precipitation field
+        getP();
 
-    int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
-    int numMyElements        = assemblyMap_->NumMyElements();
+        // return precipitation field to local atmosphere        
+        CHECK_ZERO(localP_->Import(*P_, *as2std_surf_, Insert));
 
-    std::shared_ptr<std::vector<double> > localP =
-        std::make_shared<std::vector<double> >(numMySurfaceElements, 0.0);
+        int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
+        std::shared_ptr<std::vector<double> > localP =
+            std::make_shared<std::vector<double> >(numMySurfaceElements, 0.0);
     
-    localP_->ExtractCopy(&(*localP)[0], numMySurfaceElements);
-
-    atmos_->setPrecipitation(localP);
+        localP_->ExtractCopy(&(*localP)[0], numMySurfaceElements);
+        
+        atmos_->setPrecipitation(localP);
+    }
 
     //------------------------------------------------------------------
     // compute local rhs and check bounds
@@ -289,6 +285,7 @@ void Atmosphere::computeRHS()
     atmos_->computeRHS();
     std::shared_ptr<std::vector<double> > localRHS = atmos_->getRHS('V');
 
+    int numMyElements = assemblyMap_->NumMyElements();
     if ((int) localRHS->size() != numMyElements)
     {
         std::cout << numMyElements    << std::endl;
@@ -296,15 +293,13 @@ void Atmosphere::computeRHS()
         ERROR("RHS incorrect size", __FILE__, __LINE__);
     }
 
-    // obtain view
+    // obtain view of overlapping rhs points
     double *rhs_tmp;
     localRHS_->ExtractView(&rhs_tmp);
 
     // fill view
     for (int i = 0; i != numMyElements; ++i)
-    {
         rhs_tmp[i] = (*localRHS)[i];
-    }
 
     // assemble distributed rhs into global rhs
     domain_->Assembly2Solve(*localRHS_, *rhs_);
@@ -319,7 +314,7 @@ void Atmosphere::computeRHS()
     if ( (rhs_->Map().MyGID(rowIntCon_)) && (comm_->MyPID() != root) )
     {
         ERROR("Integral should be on last processor!", __FILE__, __LINE__);
-   }
+    }
 
     double intcond = Utils::dot(intcondCoeff_, state_);
 
@@ -360,7 +355,7 @@ void Atmosphere::computeRHS()
     double qInt = intcond * 1.0 / totalArea_;
 
     // The integrals and P are on the same processor
-    int last = FIND_ROW_ATMOS0( ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_ );
+    int last = FIND_ROW_ATMOS0( ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_NUN_ );
     int lid  = -1;
     
     if ( rhs_->Map().MyGID(rowIntCon_) && (aux_ == 1) )
@@ -443,7 +438,7 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::interface(int XX)
             WARNING("Invalid XX", __FILE__, __LINE__);
         }
 
-        fillP();
+        getP();
         return Utils::getVector('C', P_);
     }
     else
@@ -455,7 +450,6 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::interface(int XX)
         return out;
     }
 }
-
 
 //==================================================================
 Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceT()
@@ -495,19 +489,19 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
     AtmosLocal::CommPars pars;
     getCommPars(pars);
     
-    // FIXME: this now depends on sea mask: we enther the realm of
-    // non-constant coupling coefficients. For now we use an allgather
-    // to get the full sea ice mask, in the future we could let this
-    // block be partly computed by the local model and assemble here.
-    // Need to figure that out.
+    // FIXME this now depends on the sea ice mask: we enther the realm
+    // of non-constant coupling coefficients. For now we use an
+    // allgather to get the full sea ice mask, in the future we could
+    // let this block be partly computed by the local model and
+    // assemble here. Need to figure that out.
     Teuchos::RCP<Epetra_MultiVector> Msi = Utils::AllGather(*Msi_);
-    
     
     int sr; // surface row
 
-    double dTFT;     // d / dT_ocean (F_T)
-    double dTFQ;     // d / dT_ocean (F_Q)
-    double M;        // Mask value
+    double dTFT;  // d / dT_ocean (F_T)
+    double dTFQ;  // d / dT_ocean (F_Q)
+    double M;     // Mask value
+    
     // loop over our unknowns
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
@@ -999,7 +993,7 @@ void Atmosphere::computeJacobian()
             }
 
     // Add auxiliary dependencies
-    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
+    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_NUN_);
     for (int aa = 1; aa <= aux_; ++aa)
     {
         gid         = last + aa;
@@ -1076,18 +1070,10 @@ void Atmosphere::computeJacobian()
 }
 
 //==================================================================
-// --> If it turns out costly we might need to optimize using stateHash
-// --> FIXME Superfluous if aux = 1?
-void Atmosphere::computeEP()
+Teuchos::RCP<Epetra_Vector> Atmosphere::getE(char mode)
 {
-    TIMER_START("Atmosphere: compute E P...");
-
     // compute E in local AtmosLocal
     atmos_->computeEvaporation();
-
-    // compute/set precipitation P
-    int numGlobalElements = P_->Map().NumGlobalElements();
-    int numMyElements     = P_->Map().NumMyElements();
 
     // obtain view of E from serial AtmosLocal
     std::shared_ptr<std::vector<double> > localE = atmos_->getE('V');
@@ -1099,72 +1085,65 @@ void Atmosphere::computeEP()
     int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
         
     for (int i = 0; i != numMySurfaceElements; ++i)
-    {
         tmpE[i] = (*localE)[i];
-    }
         
     // export overlapping into non-overlapping E values
     CHECK_ZERO(E_->Export(*localE_, *as2std_surf_, Zero));
 
-    // Without auxiliary unknowns we have to do the integral manually
-    if (aux_ <= 0)
-    {
-        // compute integral
-        double integral;
-        if (useFixedPrecip_)
-            integral = 1.0e-6;
-        else
-            integral = Utils::dot(pIntCoeff_, E_) / totalArea_;
-        
-        
-        assert((int) surfmask_->size() == numGlobalElements);
-        
-        // fill P_ in parallel
-        int gid;
-        for (int i = 0; i != numMyElements; ++i)
-        {
-            gid = P_->Map().GID(i);
-            if ((*surfmask_)[gid] == 0)
-                (*P_)[i] = integral;
-        }
-    }
-    else if (aux_ == 1) // assume P in the state is up to date
-        fillP();
-
-    TIMER_STOP("Atmosphere: compute E P...");
+    return Utils::getVector(mode, E_);
 }
 
 //==================================================================
-// set non mask points to global value
-void Atmosphere::fillP()
+Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
 {
+    // P is a single, globally computed unknown
+    double Pvalue;
+    int numGlobalElements = P_->Map().NumGlobalElements();
+    int numMyElements     = P_->Map().NumMyElements();
+    assert((int) surfmask_->size() == numGlobalElements);
+
+    // Without auxiliary unknowns we have to do the integral manually
     if (aux_ <= 0)
     {
-        ERROR("P is not auxiliary!", __FILE__, __LINE__);
+        if (useFixedPrecip_)
+            Pvalue = 1.0e-6;
+        else // compute integral, we assume E_ is up to date
+            Pvalue = Utils::dot(pIntCoeff_, E_) / totalArea_;
     }
-    
-    double PvalueLoc = 0.0;
-    double Pvalue    = 0.0;
-    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
-                               n_-1, m_-1, l_-1, ATMOS_NUN_);
-
-    int lid;    
-    if (state_->Map().MyGID(last+1))
+    else if (aux_ == 1) // when aux = 1, P is in the state and we can
+                        // simply fill a field
     {
-        lid       = state_->Map().LID(last+1);
-        PvalueLoc = (*state_)[lid];
+        // get last ordinary index
+        int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                   n_-1, m_-1, l_-1, ATMOS_NUN_);
+
+        // get P value
+        int lid;
+        double PvalueLoc;
+        if (state_->Map().MyGID(last+1))
+        {
+            lid       = state_->Map().LID(last+1);
+            PvalueLoc = (*state_)[lid];
+        }
+
+        // communicate Pvalue
+        comm_->SumAll(&PvalueLoc, &Pvalue, 1.0);
     }
-        
-    comm_->SumAll(&PvalueLoc, &Pvalue, 1.0);
-    
+    else
+    {
+        ERROR("Invalid aux", __FILE__, __LINE__);
+    }
+
+    // fill P_
     int gid;
-    int numMyElements = P_->Map().NumMyElements();
     for (int i = 0; i != numMyElements; ++i)
     {
         gid = P_->Map().GID(i);
-        if ((*surfmask_)[gid] == 0) 
-            (*P_)[i] = Pvalue; 
+        if ((*surfmask_)[gid] == 0)
+            (*P_)[i] = Pvalue;
     }
+
+    return Utils::getVector(mode, P_);
 }
 
 //==================================================================
@@ -1218,7 +1197,7 @@ void Atmosphere::buildMassMat()
         if (aux_ == 1)
         {
             int last =
-                FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_QQ_);
+                FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_NUN_);
 
             int lid;
             if (diagB_->Map().MyGID(last+1))
@@ -1392,23 +1371,22 @@ void Atmosphere::createMatrixGraph()
     int J1 = domain_->LastRealJ();
     int K1 = domain_->LastRealK();
 
-    int pos; // position in indices array, not really useful here
-    int gidU, gid0;
+    int pos; // position in indices array
+    int gidT, gid0;
 
-    // Last ordinary row in the grid, probably equal to rowIntCon_,
-    // i.e., the last non-auxiliary row.
+    // Last ordinary row in the grid, i.e., the last non-auxiliary row.
     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, N-1, M-1, L-1, ATMOS_NUN_);
 
     for (int k = K0; k <= K1; ++k)
         for (int j = J0; j <= J1; ++j)
             for (int i = I0; i <= I1; ++i)
             {
-                // T-equation
-                // Obtain row corresponding to i,j,k,TT, using 0-based find_row
-                gidU = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, i, j, k, ATMOS_TT_);
-                gid0 = gidU - 1; // used as offset
+                // Obtain offset row corresponding to i,j,k,TT
+                gidT = FIND_ROW_ATMOS0(ATMOS_NUN_, N, M, L, i, j, k, ATMOS_TT_);
+                gid0 = gidT - 1; // used as offset
+                pos  = 0;
 
-                pos = 0;
+                // T-equation
 
                 // Specify dependencies, see Atmosphere::discretize()
                 // ATMOS_TT_-ATMOS_TT_: 5-point stencil
@@ -1418,18 +1396,20 @@ void Atmosphere::createMatrixGraph()
                 insert_graph_entry(indices, pos, i, j-1, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_TT_, N, M, L);
 
+                // ATMOS_TT_-ATMOS_AA_ FIXME todo
+
                 // T rows have a dependency on aux rows
+                // ATMOS_TT_-ATMOS_PP_
                 for (int aa = 1; aa <= aux_; ++aa)
                     indices[pos++] = last + aa;
 
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
                                gid0 + ATMOS_TT_, pos, indices));
-
+                
                 // Q-equation
                 pos = 0;
 
-                // Specify dependencies, see Atmosphere::discretize()
                 // ATMOS_QQ_-ATMOS_QQ_: 5-point stencil
                 insert_graph_entry(indices, pos, i, j, k,   ATMOS_QQ_, N, M, L);
                 insert_graph_entry(indices, pos, i-1, j, k, ATMOS_QQ_, N, M, L);
@@ -1438,6 +1418,7 @@ void Atmosphere::createMatrixGraph()
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_QQ_, N, M, L);
 
                 // Add the dependencies on auxiliary unknowns
+                // ATMOS_QQ_-ATMOS_PP_
                 for (int aa = 1; aa <= aux_; ++aa)
                     indices[pos++] = last + aa;
 
@@ -1447,6 +1428,23 @@ void Atmosphere::createMatrixGraph()
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
                                gid0 + ATMOS_QQ_, pos, indices));
+
+                // A-equation
+                // pos = 0;
+
+                // // ATMOS_AA_-ATMOS_AA_: no spatial dependencies
+                // insert_graph_entry(indices, pos, i, j, k, ATMOS_AA_, N, M, L);
+
+                // // ATMOS_AA_-ATMOS_TT_: no spatial dependencies
+                // insert_graph_entry(indices, pos, i, j, k, ATMOS_TT_, N, M, L);
+
+                // // ATMOS_AA_-ATMOS_PP_
+                // for (int aa = 1; aa <= aux_; ++aa)
+                //     indices[pos++] = last + aa;
+                
+                // // Insert dependencies in matrixGraph
+                // CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
+                //                gid0 + ATMOS_AA_, pos, indices));
             }
 
     // Create graph entries for integral condition row
@@ -1486,14 +1484,14 @@ void Atmosphere::createMatrixGraph()
         {
             int len = n_ * m_ * l_ + aux_;
             int auxinds[len];
-            int gcid;
+            int gqid;
             pos = 0;
             for (int k = 0; k != l_; ++k)
                 for (int j = 0; j != m_; ++j)
                     for (int i = 0; i != n_; ++i)
                     {
-                        gcid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
-                        auxinds[pos] = gcid;
+                        gqid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_, i, j, k, ATMOS_QQ_);
+                        auxinds[pos] = gqid;
                         pos++;
                     }
 
@@ -1621,8 +1619,10 @@ int Atmosphere::saveStateToFile(std::string const &filename)
     HDF5.Create(filename);
     HDF5.Write("State", *state_);
 
-    // Write evaporation and precipitation fields as well
+    // Get and write evaporation and precipitation fields
+    getE();
     HDF5.Write("E", *E_);
+    getP();
     HDF5.Write("P", *P_);
 
     // Write surface temperatures

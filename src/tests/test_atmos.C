@@ -301,11 +301,11 @@ TEST(Atmosphere, EPfields)
     
     // get serial integral coefficients and evaporation field
     std::shared_ptr<std::vector<double> > serPco = atmosLoc->getPIntCoeff();
-    std::shared_ptr<std::vector<double> > serE = atmosLoc->getE();
+    std::shared_ptr<std::vector<double> > serE   = atmosLoc->getE();
 
     // get parallel integral coefficients and evaporation field
     Teuchos::RCP<Epetra_Vector> parPco = atmosPar->getPIntCoeff();
-    Teuchos::RCP<Epetra_Vector> parE = atmosPar->getE();
+    Teuchos::RCP<Epetra_Vector> parE   = atmosPar->getE();
 
     // compute area
     double serArea, parArea;
