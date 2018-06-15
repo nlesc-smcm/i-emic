@@ -317,7 +317,7 @@ TEST(CoupledModel, numericalJacobian)
                               std::shared_ptr<Combined_MultiVec> > njC;
             
             njC.setTolerance(1e-12);
-            njC.seth(1e-9);
+            njC.seth(1e-7);
             njC.compute(coupledModel, coupledModel->getState('V'));
 
             std::string fnameJnC("JnC");
@@ -328,17 +328,45 @@ TEST(CoupledModel, numericalJacobian)
             
             // test individual elements 
             NumericalJacobian<std::shared_ptr<CoupledModel>,
-                              std::shared_ptr<Combined_MultiVec> >::CCS ccs
-                = njC.getCCS();
+                              std::shared_ptr<Combined_MultiVec> >::CCS ccs;
+            njC.filCCS(ccs);
 
-            std::cout << ccs.beg[0] << std::endl;
-            std::cout << ccs.beg[1] << std::endl;
-            std::cout << ccs.beg[2] << std::endl;
-
-            // int myLength = coupledModel->getState('V')->MyLength();
-            // for (int j = 0; j != myLength
-            //          for (int i = ccs.beg[j]; i != 
+            EXPECT_NE(ccs.beg.back(), 0);
             
+            std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
+            x->PutScalar(0.0);
+            int myLength = x->MyLength();
+            EXPECT_EQ(myLength, ccs.beg.size() - 1);
+            
+            Combined_MultiVec e_i(*x);
+            Combined_MultiVec e_j(*x);
+            Combined_MultiVec tmp(*x);
+            
+            // assuming we run on a single core
+            int ico    = 0;
+            double Jij = 0.0;
+            for (int j = 0; j != myLength; ++j)
+            {
+                e_j[j] = 1;
+                tmp.PutScalar(0.0);
+
+                // tmp = jth column 
+                coupledModel->applyMatrix(e_j, tmp);
+                for (int i = ccs.beg[j]; i != ccs.beg[j+1]; ++i)
+                {
+                    ico = ccs.ico[i];
+                    e_i[ico] = 1;
+
+                    // get Jij component
+                    e_i.Dot(tmp, &Jij);
+                    
+                    std::cout << ccs.co[i] << " " << Jij << std::endl;
+                    EXPECT_NEAR(Jij, ccs.co[i], std::max(std::abs(Jij) * 1e-2, 1e-7));
+                    e_i[ico] = 0;
+                }
+                e_j[j] = 0; // reset value
+                getchar();
+            }            
         }
         catch (...)
         {

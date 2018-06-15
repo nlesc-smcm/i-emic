@@ -122,14 +122,12 @@ public:
                 sum += el;
             return sum;
         }
-
-    CCS getCCS()
+    
+    void filCCS(CCS &ccs)
         {
-            CCS ccs;
             ccs.co  = co_;
             ccs.ico = ico_;
             ccs.beg = beg_;
-            return ccs;
         }
 };
 
