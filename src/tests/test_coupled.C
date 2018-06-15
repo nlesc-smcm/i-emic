@@ -314,7 +314,7 @@ TEST(CoupledModel, numericalJacobian)
 
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> > njC;
-
+            
             njC.setTolerance(1e-12);
             njC.seth(1e-9);
             njC.compute(coupledModel, coupledModel->getState('V'));
@@ -324,8 +324,14 @@ TEST(CoupledModel, numericalJacobian)
             INFO(" Printing Numerical Jacobian " << fnameJnC);
 
             njC.print(fnameJnC);
+            
+            // test individual elements 
+            NumericalJacobian<std::shared_ptr<CoupledModel>,
+                              std::shared_ptr<Combined_MultiVec> >::CCS ccs
+                = njC.getCCS();
 
-            // --> todo test equality of element sums (see test_domain.C)
+            std::cout << ccs.beg[0] << std::endl; 
+            
         }
         catch (...)
         {
@@ -337,13 +343,16 @@ TEST(CoupledModel, numericalJacobian)
 
     if (comm->NumProc() != 1)
     {
+        std::cout << ("****Numerical Jacobian test cannot run in parallel****\n") ;
         INFO("****Numerical Jacobian test cannot run in parallel****");
     }
 
     if (coupledModel->getState('V')->GlobalLength() > nmax)
     {
+        std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
+
 }
 
 //------------------------------------------------------------------

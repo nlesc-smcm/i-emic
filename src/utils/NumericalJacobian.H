@@ -7,28 +7,31 @@
 template<typename ModelPtr, typename VectorPtr>
 class NumericalJacobian
 {
-	// Compressed column storage for the matrix. Here, this is more
-	// convenient than CRS.
-	std::vector<double>     values_; // co
-	std::vector<int>        rowIdx_; // ico
-	std::vector<int>        colPtr_; // beg
-
-	double h_;   // finite difference increment
-    double tol_; // tolerance
-
+public:
     struct CCS // compressed column storage
     {
         std::vector<double> co;
         std::vector<int>   ico;
         std::vector<int>   beg;
     };
+    
+private:
+	// Compressed column storage for the matrix. Here, this is more
+	// convenient than CRS.
+	std::vector<double>     co_; // co
+	std::vector<int>        ico_; // ico
+	std::vector<int>        beg_; // beg
+
+	double h_;   // finite difference increment
+    double tol_; // tolerance
+
 
 public:
 	NumericalJacobian()
 		:
-		values_   (std::vector<double>()),
-		rowIdx_   (std::vector<int>()),
-		colPtr_   (std::vector<int>()),
+		co_   (std::vector<double>()),
+		ico_   (std::vector<int>()),
+		beg_   (std::vector<int>()),
 		h_        (1e2),
         tol_      (1e-5)
 		{
@@ -41,9 +44,9 @@ public:
 			INFO(" ONLY DO THIS FOR SMALL PROBLEMS AND ON A SINGLE CORE!!");
 			INFO("  OTHERWISE I DON'T KNOW WHAT WILL HAPPEN!!\n");
 
-			values_.clear();
-			rowIdx_.clear();
-			colPtr_.clear();
+			co_.clear();
+			ico_.clear();
+			beg_.clear();
 
 			model->computeRHS();
 
@@ -76,18 +79,18 @@ public:
 
 				Fview->Update(-1.0/h_, *Fcopy, 1.0/h_);
 
-				colPtr_.push_back(elctr);
+				beg_.push_back(elctr);
 
 				for (int i = 0; i != Fview->MyLength(); ++i)
 					if (std::abs((*Fview)[i]) > tol_)
 					{
-						values_.push_back((*Fview)[i]);
-						rowIdx_.push_back(i);
+						co_.push_back((*Fview)[i]);
+						ico_.push_back(i);
 						elctr++;
 					}
 			}
 
-			colPtr_.push_back(elctr);
+			beg_.push_back(elctr);
 			INFO("Computing numerical Jacobian done");
 		}
 
@@ -95,15 +98,15 @@ public:
 		{
 			std::ofstream co_str, ico_str, beg_str;
 			co_str.open(basename + "_co");
-			for (auto &i: values_)
+			for (auto &i: co_)
 				co_str << std::scientific << std::setprecision(12) << i << '\n';
 			co_str.close();
 			ico_str.open(basename + "_ico");
-			for (auto &i: rowIdx_)
+			for (auto &i: ico_)
 				ico_str << std::scientific << std::setprecision(12) << i << '\n';
 			ico_str.close();
 			beg_str.open(basename + "_beg");
-			for (auto &i: colPtr_)
+			for (auto &i: beg_)
 				beg_str << std::scientific << std::setprecision(12) << i << '\n';
 			beg_str.close();
 		}
@@ -115,7 +118,7 @@ public:
     double sumValues()
         {
             double sum = 0;
-            for (auto &el: values_)
+            for (auto &el: co_)
                 sum += el;
             return sum;
         }
@@ -123,9 +126,10 @@ public:
     CCS getCCS()
         {
             CCS ccs;
-            ccs.co  = values_;
-            ccs.ico = rowIdx_;
-            ccs.beg = colPtr_;
+            ccs.co  = co_;
+            ccs.ico = ico_;
+            ccs.beg = beg_;
+            return ccs;
         }
 };
 
