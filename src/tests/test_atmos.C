@@ -322,10 +322,9 @@ TEST(Atmosphere, EPfields)
     EXPECT_NE(parInt, 0.0);
 
     atmosLoc->computePrecipitation();
-    atmosPar->computeEP();
 
-    std::shared_ptr<std::vector<double> > serP = atmosLoc->getP();
     Teuchos::RCP<Epetra_Vector> parP = atmosPar->getP();
+    std::shared_ptr<std::vector<double> > serP = atmosLoc->getP();
 
     double serNrm, parNrm;
     serNrm = Utils::norm(*serP);

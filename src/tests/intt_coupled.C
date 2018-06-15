@@ -226,7 +226,6 @@ TEST(CoupledModel, AtmosphereEPfields)
     bool failed = false;
     try
     {
-        atmos->computeEP();
         Teuchos::RCP<Epetra_Vector> E = atmos->getE();
         Teuchos::RCP<Epetra_Vector> P = atmos->getP();
 

@@ -304,6 +304,7 @@ TEST(CoupledModel, numericalJacobian)
     Teuchos::RCP<Epetra_CrsMatrix> oceanJac  = ocean->getJacobian();
     Teuchos::RCP<Epetra_CrsMatrix> seaiceJac = seaice->getJacobian();
 
+    
     if ( (comm->NumProc() == 1) &&
          (coupledModel->getState('V')->GlobalLength() < nmax) )
     {
@@ -330,7 +331,13 @@ TEST(CoupledModel, numericalJacobian)
                               std::shared_ptr<Combined_MultiVec> >::CCS ccs
                 = njC.getCCS();
 
-            std::cout << ccs.beg[0] << std::endl; 
+            std::cout << ccs.beg[0] << std::endl;
+            std::cout << ccs.beg[1] << std::endl;
+            std::cout << ccs.beg[2] << std::endl;
+
+            // int myLength = coupledModel->getState('V')->MyLength();
+            // for (int j = 0; j != myLength
+            //          for (int i = ccs.beg[j]; i != 
             
         }
         catch (...)
