@@ -186,7 +186,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
         Teuchos::rcp(new Epetra_Import(*sIndexMap_, state_->Map()));
 
     INFO(*oceanParamList);
-
+    INFO("\n");
+    INFO("Ocean couplings: coupled_T = " << getCoupledT() );
+    INFO("                 coupled_S = " << getCoupledS() );
+    INFO("\n");
     INFO("Ocean: constructor... done");
 }
 

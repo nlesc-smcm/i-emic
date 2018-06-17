@@ -115,6 +115,9 @@ private:
     <Belos::BlockGmresSolMgr
      <double, Combined_MultiVec, BelosOp<CoupledModel> > > belosSolver_;
 
+    // gid->coord mapping 
+    std::vector<std::array<int, 5> > gid2coord_;
+
 public:
     CoupledModel(std::shared_ptr<Ocean> ocean,
                  std::shared_ptr<Atmosphere> atmos,
@@ -188,6 +191,13 @@ public:
 
     //! Dump blocks
     void dumpBlocks();
+    
+    //! Build GID -> coordinate mapping
+    void createGID2CoordMap();
+    
+    //! Get GID -> coordinate mapping
+    void gid2coord(int const &gid, int &modelIdent,
+                   int &i, int &j, int &k, int &xx);
 
 private:
 

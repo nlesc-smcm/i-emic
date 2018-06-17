@@ -123,7 +123,7 @@ public:
             return sum;
         }
     
-    void filCCS(CCS &ccs)
+    void fillCCS(CCS &ccs)
         {
             ccs.co  = co_;
             ccs.ico = ico_;

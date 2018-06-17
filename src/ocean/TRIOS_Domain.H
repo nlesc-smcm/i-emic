@@ -104,6 +104,12 @@ namespace TRIOS {
 		//! in z direction 
 		inline int GlobalL() const {return l;}
 
+        //! return dof
+        inline int Dof() const {return dof_;}
+
+        //! return aux
+        inline int Aux() const {return aux_;}
+
 		//! get first global k index (z-direction) on the subdomain
 		//! (including ghost-nodes)
 		inline int FirstK(){return Loff;}
@@ -284,7 +290,6 @@ namespace TRIOS {
 
 		//! see GetStandardSurfaceMap() for a description
 		Teuchos::RCP<Epetra_Map> StandardSurfaceMap;
-
         
 		//! see GetSolveMap() for a description --> deprecated
 		Teuchos::RCP<Epetra_Map> SolveMap;
@@ -309,10 +314,9 @@ namespace TRIOS {
 		int pidL,pidM,pidN;
       
 		//! size of processor array
-		int npL,npM,npN;
+		int npL,npM,npN;      
       
-      
-		//! flag indicating if there are more than one subdomain in the x-direction
+		//! flag indicating if there is more than one subdomain in the x-direction
 		bool xparallel;
 
 		//! if true, the domain is periodic in the x-direction.
@@ -331,7 +335,10 @@ namespace TRIOS {
 		//! number of unknowns per grid cell
 		int dof_;
 
-		//! numbef of auxiliary unknowns
+		//! Number of auxiliary unknowns. Auxiliary unknowns do not
+        //! have grid coordinates and are appended at the end of the
+        //! ordinary map. Such rows can be used to compute
+        //! precipitation.
 		int aux_;
         
     protected:
@@ -344,7 +351,7 @@ namespace TRIOS {
 		Teuchos::RCP<Epetra_Map> CreateMap(int noff_, int moff_, int loff_,
 										   int nloc_, int mloc_, int lloc_,
                                            int nun_,  bool addAux = false) const;
-                              
+        
     };
 
 }// namespace TRIOS

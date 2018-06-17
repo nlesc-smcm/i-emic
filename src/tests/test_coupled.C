@@ -323,13 +323,13 @@ TEST(CoupledModel, numericalJacobian)
             std::string fnameJnC("JnC");
 
             INFO(" Printing Numerical Jacobian " << fnameJnC);
-
+            
             njC.print(fnameJnC);
             
             // test individual elements 
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> >::CCS ccs;
-            njC.filCCS(ccs);
+            njC.fillCCS(ccs);
 
             EXPECT_NE(ccs.beg.back(), 0);
             
@@ -343,29 +343,49 @@ TEST(CoupledModel, numericalJacobian)
             Combined_MultiVec tmp(*x);
             
             // assuming we run on a single core
-            int ico    = 0;
-            double Jij = 0.0;
-            for (int j = 0; j != myLength; ++j)
+            int    ico  = 0;
+            double Jij  = 0.0;
+            double error, diff;
+            for (int jco = 0; jco != myLength; ++jco)
             {
-                e_j[j] = 1;
+                e_j[jco] = 1;
                 tmp.PutScalar(0.0);
 
                 // tmp = jth column 
                 coupledModel->applyMatrix(e_j, tmp);
-                for (int i = ccs.beg[j]; i != ccs.beg[j+1]; ++i)
+                for (int i = ccs.beg[jco]; i != ccs.beg[jco+1]; ++i)
                 {
                     ico = ccs.ico[i];
                     e_i[ico] = 1;
 
                     // get Jij component
                     e_i.Dot(tmp, &Jij);
-                    
-                    std::cout << ccs.co[i] << " " << Jij << std::endl;
-                    EXPECT_NEAR(Jij, ccs.co[i], std::max(std::abs(Jij) * 1e-2, 1e-7));
                     e_i[ico] = 0;
+
+                    // difference between analytical and numerical value
+                    diff  = std::abs(Jij - ccs.co[i]);
+                    error = std::max(std::abs(Jij) * 1e-2, 1e-7);
+                    EXPECT_NEAR(diff, 0.0, error);
+                                                  
+                    if (diff > error) // some additional outputting
+                    {
+                        std::cout << "(" << ico << "," << jco << ") ";
+                        std::cout << "co: " << ccs.co[i] << " " << "Jij: " << Jij << std::endl;
+                        int mdl,i,j,k,xx;
+                        
+                        coupledModel->gid2coord(ico,mdl,i,j,k,xx);
+                        std::cout << "\nrow: mdl=" << mdl << " i=" << i << " j=" << j
+                                  << " k=" << k << " xx=" << xx << std::endl;
+                        
+                        coupledModel->gid2coord(jco,mdl,i,j,k,xx);
+                        std::cout << "col: mdl=" << mdl << " i=" << i << " j=" << j
+                                  << " k=" << k << " xx=" << xx << std::endl << std::endl;
+                    }
+                    
+
                 }
-                e_j[j] = 0; // reset value
-                getchar();
+                e_j[jco] = 0; // reset value
+                // getchar();
             }            
         }
         catch (...)

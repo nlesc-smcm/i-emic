@@ -17,9 +17,9 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                            std::shared_ptr<SeaIce> seaice,
                            Teuchos::RCP<Teuchos::ParameterList> params)
     :
-    OCEAN(-1),
-    ATMOS(-1),
-    SEAICE(-1),
+    OCEAN  (-1),
+    ATMOS  (-1),
+    SEAICE (-1),
     parName_          (params->get("Continuation parameter",
                                    "Combined Forcing")),
     
@@ -78,6 +78,10 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
         model->setParName(parName_);
     }
 
+    // Create the GID2Coord mapping where we use the model ordering
+    // that is in models_.
+    createGID2CoordMap();
+
     // The landmask interface is still in the fortran code, so Ocean
     // is responsible. In the case we don't have an ocean there is
     // also no landmask. Communicate surface landmask:
@@ -87,13 +91,12 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
         // Start at first model beyond Ocean
         for (size_t i = 1; i <  models_.size(); ++i)
             models_[i]->setLandMask(mask);
-    }    
-
+    }
 
     // Initialize CouplingBlock matrix
     using Block = CouplingBlock<std::shared_ptr<Model>,
                                 std::shared_ptr<Model> >;
-
+    
     C_ = std::vector<std::vector<Block> >(models_.size(),
                                           std::vector<Block>(models_.size()));
     
@@ -106,31 +109,75 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                 INFO("Created CouplingBlock: " << C_[i][j].name());
             }
         }
-   
+    
     // Output parameters
     INFO("\nCoupledModel parameters:");
     INFO(*params);
     INFO("\n");
 
-    // -->We could ask some model specific information here, but that
-    // -->would need dynamic_pointer_casts...
-    if (useOcean_)
-    {
-        auto oceanPtr = std::dynamic_pointer_cast<Ocean>(models_[OCEAN]);
-        if (oceanPtr)
-        {
-            INFO("Ocean couplings: coupled_T = " << oceanPtr->getCoupledT() );
-            INFO("                 coupled_S = " << oceanPtr->getCoupledS() );
-            INFO("--------------------------------------\n");
-        }
-        else
-        {
-            ERROR("CoupledModel downcasting failed", __FILE__, __LINE__);
-        }
-    }
-
     // Synchronize state
     synchronize();
+    
+}
+
+//------------------------------------------------------------------
+void CoupledModel::createGID2CoordMap()
+{
+    int N, M, L, dof, aux, modelIdent = 0;
+
+    gid2coord_.clear();
+        
+    for (auto &model: models_)
+    {
+        N = model->getDomain()->GlobalN();
+        M = model->getDomain()->GlobalM();
+        L = model->getDomain()->GlobalL();
+
+        dof = model->getDomain()->Dof();
+
+        // Auxiliary unknowns do not have grid coordinate and are
+        // appended at the end of the ordinary map.
+        aux = model->getDomain()->Aux();
+        
+        for (int k = 0; k != L; ++k)
+            for (int j = 0; j != M; ++j)
+                for (int i = 0; i != N; ++i)
+                    for (int xx = 1; xx <= dof; ++xx)
+                    {
+                        gid2coord_.push_back({modelIdent, i, j, k, xx});
+                    }
+
+        if (aux > 0)
+        {
+            for (int a = 1; a <= aux; ++a)
+                gid2coord_.push_back({modelIdent, 0, 0, 0, dof + a});
+        }
+        
+        modelIdent++;
+    }
+
+// #ifdef DEBUGGING_NEW
+//     for (auto &row: gid2coord_)
+//     {
+//         for (auto &element: row)
+//             std::cout << element << " ";
+//         std::cout << std::endl;
+//     }
+// #endif 
+    
+    assert((int) gid2coord_.size() == stateView_->GlobalLength());
+            
+}
+
+//------------------------------------------------------------------
+void CoupledModel::gid2coord(int const &gid, int &modelIdent,
+                             int &i, int &j, int &k, int &xx)
+{
+    modelIdent = gid2coord_[gid][0];
+    i          = gid2coord_[gid][1];
+    j          = gid2coord_[gid][2];
+    k          = gid2coord_[gid][3];
+    xx         = gid2coord_[gid][4];
 }
 
 //------------------------------------------------------------------
