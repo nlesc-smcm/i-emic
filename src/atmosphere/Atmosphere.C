@@ -511,7 +511,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
             M = (*(*Msi)(0))[sr];
 
             dTFT = 1.0 - M;
-            
+
             dTFQ = pars.nuq * pars.tdim / pars.qdim * pars.dqso * (1.0 - M);
             
             for (int xx = ATMOS_TT_; xx <= dof_; ++xx)

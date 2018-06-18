@@ -20,7 +20,7 @@
   <!-- Several destinations are allowed, in that case specify      -->
   <!-- destination 1, destination 2, etc. as well                  -->
   
-  <Parameter name="destination 0" type="double" value="1.0e-02"/>
+  <Parameter name="destination 0" type="double" value="1.0"/>
 
   <!-- Let the model class define an additional stopping criterion -->
   <Parameter name="enable custom monitor" type="bool" value="false"/>

@@ -164,15 +164,17 @@ subroutine boundaries
 
                  Frc(find_row2(i,j,k,WW)) = 0.0
                  Al(i,j,k, :,WW,: ) = 0.0
-                 ! --> preconditioner breakdown if we do this:
-                 !Al(i,j,k, 5, :,WW) = 0.0 !MdT
-                 !Al(i,j,k, 6, :,WW) = 0.0 !MdT
-                 !Al(i,j,k, 8, :,WW) = 0.0 !MdT
-                 !Al(i,j,k, 9, :,WW) = 0.0 !MdT
+                 ! FIXME preconditioner breakdown if we remove the
+                 ! connections, hence we try to maintain the
+                 ! connection but make it inactive with 1e-10
+                 Al(i,j,k, 5, :,WW) = 1.0e-10 !MdT !TEM
+                 Al(i,j,k, 6, :,WW) = 1.0e-10 !MdT !TEM
+                 Al(i,j,k, 8, :,WW) = 1.0e-10 !MdT !TEM
+                 Al(i,j,k, 9, :,WW) = 1.0e-10 !MdT !TEM
                  Al(i,j,k, 5,WW,WW) = 1.0
 
               endif
-              if (top == ATMOS) then !
+              if (top == ATMOS) then ! deprecated in i-emic
                  Al(i,j,k, 1,: ,UU) = Al(i,j,k,1,: ,UU) + Al(i,j,k,19,: ,UU) ! ACdN
                  Al(i,j,k, 1,: ,VV) = Al(i,j,k,1,: ,VV) + Al(i,j,k,19,: ,VV) ! ACdN
                  Al(i,j,k,19,: ,UU) = 0.0
@@ -193,10 +195,10 @@ subroutine boundaries
                  Frc(find_row2(i,j,k,WW)) = 0.0
                  Al(i,j,k, :,WW,: ) = 0.0
                  ! preconditioner breakdown if we do this:
-                 !Al(i,j,k, 5, :,WW) = 0.0 !MdT
-                 !Al(i,j,k, 6, :,WW) = 0.0 !MdT
-                 !Al(i,j,k, 8, :,WW) = 0.0 !MdT
-                 !Al(i,j,k, 9, :,WW) = 0.0 !MdT
+                 ! Al(i,j,k, 5, :,WW) = 0.0 ! 1.0e-10 !MdT
+                 ! Al(i,j,k, 6, :,WW) = 0.0 ! 1.0e-10 !MdT
+                 ! Al(i,j,k, 8, :,WW) = 0.0 ! 1.0e-10 !MdT
+                 ! Al(i,j,k, 9, :,WW) = 0.0 ! 1.0e-10 !MdT
                  Al(i,j,k, 5,WW,WW) = 1.0
 
               endif

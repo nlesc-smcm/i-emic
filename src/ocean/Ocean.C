@@ -79,7 +79,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     parName_               (oceanParamList->get("Continuation parameter",
                                                 "Combined Forcing")),
 
-    landmaskFile_          (oceanParamList->sublist("THCM").get("Land Mask", "none"))
+    landmaskFile_          (oceanParamList->sublist("THCM").get("Land Mask", "none")),
+
+    analyzeJacobian_       (oceanParamList->get("Analyze Jacobian", true))
 {
     INFO("Ocean: constructor...");
 
@@ -253,6 +255,9 @@ void Ocean::initializeOcean()
 //====================================================================
 int Ocean::analyzeJacobian1()
 {
+    if (!analyzeJacobian_)
+        return 0;
+    
     INFO("\n  <><>  Analyze Jacobian P rows...");
     
     // Make preparations for extracting pressure rows
@@ -320,6 +325,9 @@ int Ocean::analyzeJacobian1()
 //==================================================================
 int Ocean::analyzeJacobian2()
 {
+    if (!analyzeJacobian_)
+        return 0;
+    
     INFO("\n  <><>  Analyze Jacobian S column integrals...\n");
     // Another approach to analyze the Jacobian is through the volume
     // integrals of its columns. This only makes sense when the volume

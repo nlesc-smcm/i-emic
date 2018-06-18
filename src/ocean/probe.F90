@@ -347,7 +347,7 @@ contains
 
                 ! dftdm part ------------------------------
 
-                QTos = zeta * (a0 * (So+s0) - (To+t0) ) !
+                QTos = QTnd * zeta * (a0 * (So+s0) - (To+t0) ) !
 
                 QToa = par(COMB) * par(SUNP) * suno(j)  & ! shortwave heat flux
                      - Ooa * (To - Ta)                  & ! sensible heat flux
@@ -362,11 +362,11 @@ contains
              if (coupled_S.eq.1)  then
 
                 ! dfsdq part ------------------------------
-                dfsdq(pos) = -Qvar  / (rhodim * Lf) * Ms
+                dfsdq(pos) = -QSnd * Qvar  / (rhodim * Lf) * Ms
 
                 ! dfsdm part ------------------------------
                 
-                QSos = (                              &
+                QSos = QSnd * (                       &
                      zeta * (a0 * (So+s0) - (To+t0))  & ! QTos component
                      - ( Qvar * qs + q0 ) )           & ! QTsa component
                      / ( rhodim * Lf )

@@ -160,6 +160,9 @@ protected:
     //! Landmask file
     std::string landmaskFile_;
 
+    //! Select Jacobian analysis
+    bool analyzeJacobian_;
+
     //! Row map for pressure points P
     Teuchos::RCP<Epetra_Map> mapP_;
 

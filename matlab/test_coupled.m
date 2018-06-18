@@ -2,7 +2,7 @@
 clear all
 JnC = load_numjac('JnC');
 
-vsm(JnC)
+% vsm(JnC)
 
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
     readfort44('fort.44');
@@ -17,6 +17,8 @@ natmos  = n*m*dfa;
 nseaice = n*m*dfs;
 
 ndim = nocean + natmos + aux + nseaice;
+
+fr0 = @(dof,i,j,k,xx) k * n * m * dof + j * n * dof + i * dof + xx;
 
 atm_idx = [];
 oce_idx = [];
@@ -58,6 +60,7 @@ JnC31 = JnC(sei_idx, oce_idx);
 JnC32 = JnC(sei_idx, atm_idx);
 
 tot_idx = [oce_idx, atm_idx, sei_idx];
+JnC_ = JnC;
 JnC = JnC(tot_idx, tot_idx);
 
 % remove offsets of ranges
@@ -89,6 +92,10 @@ C33 = load('J_SeaIce');             C33 = spconvert(C33);
 tr12 = size(C12,1);
 tr32 = size(C32,2);
 
+C_ = [C11, C12, C13; C21, C22, C23; C31, C32, C33];
+
+C  = C_(tot_idx, tot_idx);
+
 C11 = C11(oce_idx, oce_idx);
 C12 = C12(oce_idx, atm_idx); 
 C13 = C13(oce_idx, sei_idx);
@@ -100,6 +107,4 @@ C23 = C23(atm_idx, sei_idx);
 C31 = C31(sei_idx, oce_idx);
 C32 = C32(sei_idx, atm_idx);
 C33 = C33(sei_idx, sei_idx);
-
-C = [C11, C12, C13; C21, C22, C23; C31, C32, C33];
 
