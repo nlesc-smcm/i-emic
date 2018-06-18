@@ -388,13 +388,14 @@ void AtmosLocal::idealized(double precip)
             rowSST   = n_*(j-1) + (i-1);
             rowTT    = find_row(i,j,l_,ATMOS_TT_)-1;
             rowQQ    = find_row(i,j,l_,ATMOS_QQ_)-1;
-            // rowAA    = find_row(i,j,l_,ATMOS_AA_)-1; // FIXME todo
+            rowAA    = find_row(i,j,l_,ATMOS_AA_)-1;
 
             // These values are chosen such that the integrated
             // evaporation is zero.
             (*sst_)[rowSST]  = value;
             (*state_)[rowTT] = value;            
             (*state_)[rowQQ] = value * tdim_ * dqso_ / qdim_;
+            (*state_)[rowAA] = a0_;
         }
     
     // Compute evaporation based on idealized sst and q
@@ -660,17 +661,19 @@ double AtmosLocal::matvec(int row)
 void AtmosLocal::forcing()
 {
     double value, Ts, Eo, Ei;
+    double Tl, P;
     int tr, hr, sr, ar; // indices
+    bool on_land;
     
     if (std::abs(Ooa_) < 1e-8)
-        WARNING(" Ooa_ may give trouble", __FILE__, __LINE__);
+        WARNING(" Ooa_ too small", __FILE__, __LINE__);
     
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
-        {
+        {            
             tr = find_row(i, j, l_, ATMOS_TT_) - 1; // temperature row
             hr = find_row(i, j, l_, ATMOS_QQ_) - 1; // humidity row
-            // ar = find_row(i, j, l_, ATMOS_AA_) - 1; // albedo row FIXME todo
+            ar = find_row(i, j, l_, ATMOS_AA_) - 1; // albedo row
             sr = n_*(j-1) + (i-1);                  // plain surface row
 
             // ------------ Temperature forcing
@@ -679,7 +682,8 @@ void AtmosLocal::forcing()
             // clearly.
 
             // above land
-            if (use_landmask_ && (*surfmask_)[sr])
+            on_land = use_landmask_ && (*surfmask_)[sr];
+            if (on_land)s
             {
                 // Simplified expression by equating sensible and
                 // shortwave heat flux from the atmosphere into the
@@ -713,7 +717,7 @@ void AtmosLocal::forcing()
 
             // ------------ Humidity forcing
             // Again, check whether we are above land
-            if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
+            if (on_land)
                 value = 0;
             else
             {
@@ -724,8 +728,18 @@ void AtmosLocal::forcing()
             }
             
             frc_[hr] = value;
-            
-            // ------------ Albedo forcing FIXME todo
+
+            // ------------ Albedo forcing: Here we use the full
+            // discretization as the tanh switching behaviour cannot
+            // be linearized. FIXME todo
+            // if (on_land)
+            // {
+            //     Tl = (*lst_)[sr]; // land temperature
+            //     P  = (*state_)[
+                      
+            //     value = a0_ + da_ * albedoFun( Tl,  )
+            //                                    }
+                    
             
         }
 

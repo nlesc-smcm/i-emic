@@ -1396,7 +1396,8 @@ void Atmosphere::createMatrixGraph()
                 insert_graph_entry(indices, pos, i, j-1, k, ATMOS_TT_, N, M, L);
                 insert_graph_entry(indices, pos, i, j+1, k, ATMOS_TT_, N, M, L);
 
-                // ATMOS_TT_-ATMOS_AA_ FIXME todo
+                // ATMOS_TT_-ATMOS_AA_
+                insert_graph_entry(indices, pos, i, j, k,   ATMOS_AA_, N, M, L);
 
                 // T rows have a dependency on aux rows
                 // ATMOS_TT_-ATMOS_PP_
@@ -1430,21 +1431,21 @@ void Atmosphere::createMatrixGraph()
                                gid0 + ATMOS_QQ_, pos, indices));
 
                 // A-equation
-                // pos = 0;
+                pos = 0;
 
-                // // ATMOS_AA_-ATMOS_AA_: no spatial dependencies
-                // insert_graph_entry(indices, pos, i, j, k, ATMOS_AA_, N, M, L);
+                // ATMOS_AA_-ATMOS_AA_: no spatial dependencies
+                insert_graph_entry(indices, pos, i, j, k, ATMOS_AA_, N, M, L);
 
-                // // ATMOS_AA_-ATMOS_TT_: no spatial dependencies
-                // insert_graph_entry(indices, pos, i, j, k, ATMOS_TT_, N, M, L);
+                // ATMOS_AA_-ATMOS_TT_: no spatial dependencies
+                insert_graph_entry(indices, pos, i, j, k, ATMOS_TT_, N, M, L);
 
-                // // ATMOS_AA_-ATMOS_PP_
-                // for (int aa = 1; aa <= aux_; ++aa)
-                //     indices[pos++] = last + aa;
+                // ATMOS_AA_-ATMOS_PP_
+                for (int aa = 1; aa <= aux_; ++aa)
+                    indices[pos++] = last + aa;
                 
-                // // Insert dependencies in matrixGraph
-                // CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
-                //                gid0 + ATMOS_AA_, pos, indices));
+                // Insert dependencies in matrixGraph
+                CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
+                               gid0 + ATMOS_AA_, pos, indices));
             }
 
     // Create graph entries for integral condition row
