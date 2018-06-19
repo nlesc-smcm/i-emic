@@ -20,7 +20,7 @@
 // Number of ordinary unknowns (excluding auxiliary single-valued
 // unknowns).
 #ifndef ATMOS_NUN_
-# define ATMOS_NUN_ 2
+# define ATMOS_NUN_ 3
 #endif
 
 // The unknowns we have in this model 

@@ -246,7 +246,7 @@ void SeaIce::computeRHS()
 
                     break;
 
-                case SEAICE_TT_:       // M row (mask)
+                case SEAICE_TT_:       // T row (surface temperature)
 
                     val = freezingT(sss[dr]) - Tval - t0i_ +
                         (Q0_*H0_ + H0_*Qvar_*Qval + Q0_*Hval) / Ic_;

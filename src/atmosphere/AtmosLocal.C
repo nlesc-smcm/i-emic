@@ -395,7 +395,8 @@ void AtmosLocal::idealized(double precip)
             rowSST   = n_*(j-1) + (i-1);
             rowTT    = find_row(i,j,l_,ATMOS_TT_)-1;
             rowQQ    = find_row(i,j,l_,ATMOS_QQ_)-1;
-            rowAA    = find_row(i,j,l_,ATMOS_AA_)-1;
+
+            rowAA  = find_row(i,j,l_,ATMOS_AA_)-1;
 
             // These values are chosen such that the integrated
             // evaporation is zero.
@@ -634,14 +635,24 @@ void AtmosLocal::computeRHS()
                 value = matvec(row) + frc_[row-1];
                 (*rhs_)[row-1] = value;
             }
-
+    
     // Check integral condition (from matvec vs dot)
     if (!parallel_)
     {
         double integral = Utils::dot(*intcondCoeff_, *state_);
 
         if (std::abs((*rhs_)[rowIntCon_-1] - integral) > 1e-7)
+        {
+            std::cout << "rhs[rowIntCon] = " << (*rhs_)[rowIntCon_-1];
+            std::cout << " integral = " << integral;
+            std::cout << " rowIntCon = " << rowIntCon_ - 1 << std::endl;
+
+            for (size_t i = 0; i != intcondCoeff_->size(); ++i)
+                std::cout << (*intcondCoeff_)[i] << " " << (*state_)[i] << std::endl;
+
             ERROR("Error in integral condition", __FILE__, __LINE__);
+            
+        }
     }
 
     TIMER_STOP("AtmosLocal: compute RHS...");
@@ -683,6 +694,7 @@ void AtmosLocal::forcing()
         {            
             tr = find_row(i, j, l_, ATMOS_TT_) - 1; // temperature row
             hr = find_row(i, j, l_, ATMOS_QQ_) - 1; // humidity row
+
             ar = find_row(i, j, l_, ATMOS_AA_) - 1; // albedo row
             sr = n_*(j-1) + (i-1);                  // plain surface row
 
@@ -1001,22 +1013,32 @@ void AtmosLocal::assemble()
 //----------------------------------------------------------------------------
 void AtmosLocal::intcond()
 {
-    // we need to assume that the integral condition row is the final row in the matrix
+    // We replace a row in the crs struct
     int first = beg_[rowIntCon_ - 1];
     int last  = beg_[rowIntCon_];
 
+    // create tmp beg array relative to integral condition row
+    std::vector<int> tmp;
+    for (int i = rowIntCon_; i < (int) beg_.size(); ++i)
+        tmp.push_back(beg_[i]-beg_[rowIntCon_]);
+    
     // erase intcon row in co_ and jco and end pointer in beg
-    co_.erase(co_.begin()   + first - 1, co_.begin()  + last - 1);
-    jco_.erase(jco_.begin() + first - 1, jco_.begin() + last - 1);
-    beg_.erase(beg_.begin() + rowIntCon_);
+    co_.erase  ( co_.begin() + first - 1,  co_.begin() + last - 1);
+    jco_.erase (jco_.begin() + first - 1, jco_.begin() + last - 1);
+    beg_.erase (beg_.begin() + rowIntCon_);
 
     // append crs arrays with integral coefficients and column indices
     std::vector<double> vals,inds;
     integralCoeff(vals, inds);
 
-    co_.insert(co_.end() ,vals.begin(), vals.end());
-    jco_.insert(jco_.end(), inds.begin(), inds.end());
-    beg_.push_back(first + vals.size());
+    co_.insert  (co_.begin() + first - 1, vals.begin(), vals.end());
+    jco_.insert (jco_.begin() + first - 1, inds.begin(), inds.end());
+    beg_.insert (beg_.begin() + rowIntCon_, first + vals.size() );
+
+    // let the rest of the beg array be relative to the new integral
+    // condition row
+    for (int i = rowIntCon_; i < (int) beg_.size(); ++i)
+        beg_[i] = tmp[i - rowIntCon_] + beg_[rowIntCon_];    
 }
 
 //-----------------------------------------------------------------------------

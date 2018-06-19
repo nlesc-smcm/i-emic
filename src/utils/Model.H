@@ -50,7 +50,7 @@ public:
 
     virtual Teuchos::RCP<TRIOS::Domain> getDomain() = 0;
 
-    // Our own getBlock to distribute calls among submodels
+    // Model's own getBlock to distribute calls among submodels
     template <typename T>
     std::shared_ptr<Utils::CRSMat> getBlock(T model);
 
@@ -75,6 +75,8 @@ public:
     virtual void postProcess() = 0;
 
     virtual std::string const writeData(bool describe) = 0;
+
+    
 };
 
 template <typename T>

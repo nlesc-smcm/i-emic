@@ -693,18 +693,17 @@ void CoupledModel::dumpBlocks()
     std::stringstream ss;
     for (size_t i = 0; i != models_.size(); ++i)
     {
-        ss.str(""); 
+        ss.str("");
         ss << "J_" << models_[i]->name();
         DUMPMATLAB(ss.str().c_str(), *(models_[i]->getJacobian()));
         for (size_t j = 0; j != models_.size(); ++j)
         {
-            ss.str(""); 
+            ss.str("");
             if (i != j)
             {
                 ss << "C_" << C_[i][j].name();
                 DUMPMATLAB(ss.str().c_str(), *(C_[i][j].getBlock()));
             }
-                
         }
     }
 }

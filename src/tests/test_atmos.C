@@ -273,6 +273,11 @@ TEST(Atmosphere, Jacobian)
 
         INFO("TEST(Atmosphere, apply Jacobian): ||serial out|| = " << norm(outSer));
         INFO("TEST(Atmosphere, apply Jacobian): ||parall out|| = " << norm(outPar));
+
+        // Write parallel Jacobian
+        Teuchos::RCP<Epetra_CrsMatrix> atmosJac  = atmosPar->getJacobian();
+        DUMPMATLAB("atmosJac", *atmosJac);
+        
     }
     catch (std::exception const &e)
     {
@@ -291,6 +296,61 @@ TEST(Atmosphere, Jacobian)
         throw;
     }
     EXPECT_EQ(failed, false);
+}
+
+//---------------------------------------------------------------------
+TEST(Atmosphere, numericalJacobian)
+{
+    // only do this test for small problems in serial
+    int nmax = 2e3;
+
+    if ( (comm->NumProc() == 1) &&
+         (atmosPar->getState('V')->GlobalLength() < nmax) )
+    {
+        bool failed = false;
+        try
+        {            
+            INFO("compute njC");
+            NumericalJacobian<std::shared_ptr<Atmosphere>,
+                              Teuchos::RCP<Epetra_Vector> > numJac;
+
+            numJac.setTolerance(1e-10);
+            numJac.seth(1e-4);
+            numJac.compute(atmosPar, atmosPar->getState('V'));
+            numJac.print("atmosNumJac");
+            
+            NumericalJacobian<std::shared_ptr<Atmosphere>,
+                              Teuchos::RCP<Epetra_Vector> >::CCS ccs;
+            numJac.fillCCS(ccs);
+
+            EXPECT_NE(ccs.beg.back(), 0);
+            
+            Teuchos::RCP<Epetra_Vector> x = atmosPar->getState('C');
+
+            testEntries(atmosPar, ccs, x);
+            
+        }
+        catch (...)
+        {
+            failed = true;
+            throw;
+        }
+        
+    
+        EXPECT_EQ(failed, false);
+    }
+    if (comm->NumProc() != 1)
+    {
+        std::cout << ("****Numerical Jacobian test cannot run in parallel****\n") ;
+        INFO("****Numerical Jacobian test cannot run in parallel****");
+    }
+
+    if (atmosPar->getState('V')->GlobalLength() > nmax)
+    {
+        std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
+        INFO("****Numerical Jacobian test cannot run for this problem size****");
+    }
+    getchar();
 }
 
 //------------------------------------------------------------------

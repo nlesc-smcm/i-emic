@@ -300,11 +300,6 @@ TEST(CoupledModel, numericalJacobian)
     // only do this test for small problems in serial
     int nmax = 2e3;
 
-    Teuchos::RCP<Epetra_CrsMatrix> atmosJac  = atmos->getJacobian();
-    Teuchos::RCP<Epetra_CrsMatrix> oceanJac  = ocean->getJacobian();
-    Teuchos::RCP<Epetra_CrsMatrix> seaiceJac = seaice->getJacobian();
-
-    
     if ( (comm->NumProc() == 1) &&
          (coupledModel->getState('V')->GlobalLength() < nmax) )
     {
@@ -332,63 +327,11 @@ TEST(CoupledModel, numericalJacobian)
             njC.fillCCS(ccs);
 
             EXPECT_NE(ccs.beg.back(), 0);
-            
+
             std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
-            x->PutScalar(0.0);
-            int myLength = x->MyLength();
-            EXPECT_EQ(myLength, ccs.beg.size() - 1);
-            
-            Combined_MultiVec e_i(*x);
-            Combined_MultiVec e_j(*x);
-            Combined_MultiVec tmp(*x);
-            
-            // assuming we run on a single core
-            int    ico  = 0;
-            double Jij  = 0.0;
-            double error, diff;
-            for (int jco = 0; jco != myLength; ++jco)
-            {
-                e_j[jco] = 1;
-                tmp.PutScalar(0.0);
 
-                // tmp = jth column 
-                coupledModel->applyMatrix(e_j, tmp);
-                for (int i = ccs.beg[jco]; i != ccs.beg[jco+1]; ++i)
-                {
-                    ico = ccs.ico[i];
-                    e_i[ico] = 1;
-
-                    // get Jij component
-                    e_i.Dot(tmp, &Jij);
-                    e_i[ico] = 0;
-
-                    // difference between analytical and numerical value
-                    diff  = std::abs(Jij - ccs.co[i]);
-                    
-                    
-                    error = 1e-2 * std::max(std::abs(Jij), std::abs(ccs.co[i]));
-                    EXPECT_NEAR(diff, 0.0, error);
-                                                  
-                    if (diff > error) // some additional outputting
-                    {
-                        std::cout << "(" << ico << "," << jco << ") ";
-                        std::cout << "co: " << ccs.co[i] << " " << "Jij: " << Jij << std::endl;
-                        int mdl,i,j,k,xx;
-                        
-                        coupledModel->gid2coord(ico,mdl,i,j,k,xx);
-                        std::cout << "\nrow: mdl=" << mdl << " i=" << i << " j=" << j
-                                  << " k=" << k << " xx=" << xx << std::endl;
-                        
-                        coupledModel->gid2coord(jco,mdl,i,j,k,xx);
-                        std::cout << "col: mdl=" << mdl << " i=" << i << " j=" << j
-                                  << " k=" << k << " xx=" << xx << std::endl << std::endl;
-                    }
-                    
-
-                }
-                e_j[jco] = 0; // reset value
-                // getchar();
-            }            
+            testEntries(coupledModel, ccs, x);
+                                          
         }
         catch (...)
         {
