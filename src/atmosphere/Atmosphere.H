@@ -209,6 +209,8 @@ public:
     ~Atmosphere() {INFO("Atmosphere destructor");}
     
     std::string const name() { return "Atmosphere"; }
+    virtual int const modelIdent() { return 1; }
+
     
     //! Setup integral coefficients
     void setupIntCoeff();
@@ -365,9 +367,9 @@ public:
             return FIND_ROW_ATMOS0(dof_, n_, m_, l_, i, j, l_-1, XX);
         }
 
-    // FIXME not implemented yet should be done through Model interface
-    int gid2coord(int const &gid, int &modelIdent,
-                  int &i, int &j, int &k, int &x) { return -1; }
+    // // FIXME not implemented yet should be done through Model interface
+    // int gid2coord(int const &gid, int &modelIdent,
+    //               int &i, int &j, int &k, int &x) { return -1; }
 
     int loadState() { return loadStateFromFile(inputFile_); }
     int saveState() { return saveStateToFile(outputFile_);  }

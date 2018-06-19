@@ -449,8 +449,8 @@ public:
     //! |                    |                                |
     //! |            (1,1,2) |      ( 6*n*m+1, ...  ,6*n*m+6) |
     //! +-----------------------------------------------------+
-    
     int find_row(int i, int j, int k, int XX);
+    
 
     //! Write everything to output files.
     void writeAll();

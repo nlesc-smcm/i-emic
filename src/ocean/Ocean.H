@@ -191,6 +191,7 @@ public:
     ~Ocean();
 
     std::string const name() { return "Ocean"; }
+    int const modelIdent() { return 0; }
 
     //! Solve may optionally accept an rhs of VectorPointer type
     void solve(Teuchos::RCP<Epetra_MultiVector> rhs = Teuchos::null);

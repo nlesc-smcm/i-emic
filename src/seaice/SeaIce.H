@@ -247,7 +247,8 @@ public:
     ~SeaIce() {};
 
     std::string const name() { return "SeaIce"; }
-
+    virtual int const modelIdent() { return 2; }
+    
     //! compute right hand side
     void computeRHS();
 

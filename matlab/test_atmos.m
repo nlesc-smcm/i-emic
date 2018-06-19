@@ -1,20 +1,17 @@
-C = load('atmos_jac'); C = spconvert(C);
+J  = load('atmosJac'); J = spconvert(J);
+Jn = load_numjac('atmosNumJac');
 
-B = load('atmos_B');
 
-dim = size(C,1);
-B = spdiags(B', 0, dim, dim);
+n   = 8
+m   = 8
+dfa = 3
+natmos  = n*m*dfa;
 
-figure(1); 
-spy(C);
+assert(size(Jn,1) == natmos)
 
-figure(2);
-opts.maxit = 1000;
-opts.tol = 1e-12;
-neig = 6;
-[V,D]=eigs(C,B,neig,0,opts);
-for i = 1:neig
-    fprintf('%3d: real: %2.5e imag: %2.5e \n', i, real(D(i,i)), ...
-            imag(D(i,i)));
+atm_idx = [];
+for i = 1:dfa
+    atm_idx = [atm_idx, (i:dfa:natmos)];
 end
-plot(real(diag(D)),imag(diag(D)),'*')
+
+vsm(Jn(atm_idx,atm_idx))

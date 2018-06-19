@@ -2,9 +2,10 @@
 #define MODEL_H
 
 #include "Utils.H"
+#include "TRIOS_Domain.H"
 
 // forward declarations
-namespace Teuchos { template<class T> class RCP; }
+// namespace Teuchos { template<class T> class RCP; }
 
 namespace TRIOS { class Domain; }
 
@@ -47,7 +48,8 @@ public:
     virtual void setLandMask(Utils::MaskStruct const &mask) = 0;    
 
     virtual std::string const name() = 0;
-
+    virtual int const modelIdent() = 0;
+    
     virtual Teuchos::RCP<TRIOS::Domain> getDomain() = 0;
 
     // Model's own getBlock to distribute calls among submodels
@@ -76,8 +78,27 @@ public:
 
     virtual std::string const writeData(bool describe) = 0;
 
+    void gid2coord(int const &gid, int &mdl,
+                   int &i, int &j, int &k, int &xx)
+        {
+            int N = getDomain()->GlobalN();
+            int M = getDomain()->GlobalM();
+ 
+            int dof = getDomain()->Dof();
+
+            mdl = modelIdent();
     
+            int tmp = gid;
+
+            xx  = tmp % dof;
+            tmp = (tmp - xx) / dof;
+            i   = tmp % N;
+            tmp = (tmp - i) / N;
+            j   = tmp % M;
+            k   = (tmp - j) / M;        
+        }    
 };
+
 
 template <typename T>
 std::shared_ptr<Utils::CRSMat> Model::getBlock(T model)
