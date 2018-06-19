@@ -176,15 +176,23 @@ private:
     double   qdim_; //! humidity scale (kg / kg)
     double     lv_; //! latent heat of vaporization (J / kg)
 
+    //! Necessary for nondimensionalizations:
+    double   udim_;  //! typical horizontal velocity of the ocean
+    double  r0dim_;  //! radius of the earth
+
+    //! Albedo parameters
     double     a0_; //! FIXME todo: reference albedo
     double     da_; //! FIXME todo: albedo excursion
     
     double   tauf_; //! FIXME todo
     double   tauc_; //! FIXME todo
-    
-    //! Necessary for nondimensionalizations:
-    double   udim_;  //! typical horizontal velocity of the ocean
-    double  r0dim_;  //! radius of the earth
+
+    double     Tm_; //! FIXME todo
+    double     Tr_; //! FIXME todo
+    double     Pa_; //! FIXME todo
+    double    epm_; //! FIXME todo
+    double    epr_; //! FIXME todo
+    double    epa_; //! FIXME todo
 
     double Phv_;     //! horizontal Peclet number for vaport transport
     double nuq_;     //! qdim_ * (rhoo_ / rhoa_) * (hdim_ / hdimq_)
@@ -396,7 +404,34 @@ private:
     //! Write vector to output file
     void write(std::vector<double> &vector, const std::string &filename);
 
+    //! Snow/ice albedo parametrization
+    double aF(double T, double P)
+        { return H(Tm_ - T, epm_) *
+                H(Tr_ - T, epr_) *
+                H(P - Pa_, epa_); }
+
+    //! aF derivative w.r.t. T
+    double daFdT(double T, double P)
+        { return H(P - Pa_, epa_) * (
+                -dHdx(Tm_ - T, epm_) * H(Tr_ - T, epr_) +
+                -dHdx(Tr_ - T, epr_) * H(Tm_ - T, epm_) ); }
+
+    //! aF derivative w.r.t. P
+    double daFdP(double T, double P)
+        { return dHdx(P - Pa_, epa_) *
+                H(Tm_ - T, epm_) *
+                H(Tr_ - T, epr_); }
+
+    //! Heavyside approximation
+    double H(double x, double eps)
+        { return (1./2.) *  (1.0 + tanh(x / eps)); }
+
+    //! Heavyside approximation derivative
+    double dHdx(double x, double eps)
+        { return (1./2.) *  (1.0 + tanh(x / eps)); }
+
 public:
+    
     //! Find row in vector or matrix corresponding to unknown
     //! XX at grid point (i,j,k).
     //! Input and output are expected to be 1-based.
@@ -414,6 +449,7 @@ public:
     //! |                    |                                |
     //! |            (1,1,2) |      ( 6*n*m+1, ...  ,6*n*m+6) |
     //! +-----------------------------------------------------+
+    
     int find_row(int i, int j, int k, int XX);
 
     //! Write everything to output files.

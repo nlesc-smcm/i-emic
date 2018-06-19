@@ -133,14 +133,23 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     qdim_            = params->get("humidity scale", 1e-3);  // (kg/kg)
     lv_              = params->get("latent heat of vaporization", 2.5e06); // (J/kg)
 
+    udim_            = params->get("horizontal velocity of the ocean", 0.1e+00);
+    r0dim_           = params->get("radius of the earth", 6.37e+06);
+
+    // Albedo parameters
     a0_              = params->get("reference albedo", 0.3);
     da_              = params->get("albedo excursion", 0.5);
     
-    tauf_            = params->get("", 1); // FIXME todo
-    tauc_            = params->get("", 1); // FIXME todo
+    tauf_            = params->get("", 1.0); // FIXME todo
+    tauc_            = params->get("", 1.0); // FIXME todo
 
-    udim_            = params->get("horizontal velocity of the ocean", 0.1e+00);
-    r0dim_           = params->get("radius of the earth", 6.37e+06);
+    Tm_              = params->get("", 0.0);  // FIXME todo
+    Tr_              = params->get("", 2.0);  // FIXME todo
+    Pa_              = params->get("", 0.1);  // FIXME todo
+    epm_             = params->get("", 2.0);  // FIXME todo
+    epr_             = params->get("", 0.1);  // FIXME todo
+    epa_             = params->get("", 0.01); // FIXME todo
+
 
 
 // continuation ----------------------------------------------------------------
@@ -320,10 +329,8 @@ void AtmosLocal::setup()
         albe_.push_back(0.3);
         datc_.push_back(0.9 + 1.5 * exp(-12 * yc_[j] * yc_[j] / PI_));
         datv_.push_back(0.9 + 1.5 * exp(-12 * yv_[j] * yv_[j] / PI_));
-        suna_.push_back(As_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
-                        (1 - albe_[j]));
-        suno_.push_back(Os_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.) *
-                        (1 - albe_[j]));
+        suna_.push_back(As_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.));
+        suno_.push_back(Os_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.));
     }
     
     if (periodic_)
@@ -658,10 +665,13 @@ double AtmosLocal::matvec(int row)
 }
 
 //-----------------------------------------------------------------------------
+// FIXME: we are messing up the philosophy here by adding local state
+// dependencies to the forcing. This means that we do not create a
+// complete Jacobian..
 void AtmosLocal::forcing()
 {
     double value, Ts, Eo, Ei;
-    double Tl, P;
+    double Tl, Ta, P, A;
     int tr, hr, sr, ar; // indices
     bool on_land;
     
@@ -676,6 +686,12 @@ void AtmosLocal::forcing()
             ar = find_row(i, j, l_, ATMOS_AA_) - 1; // albedo row
             sr = n_*(j-1) + (i-1);                  // plain surface row
 
+            // get albedo at this grid point (state component)
+            A  = (*state_)[ar];
+
+            // get atmospheric temp at this grid point (state component)
+            Ta = (*state_)[tr];
+            
             // ------------ Temperature forcing
             // Apply surface mask and calculate land temperatures.
             // This is a copy of legacy stuff, could be put more
@@ -683,19 +699,18 @@ void AtmosLocal::forcing()
 
             // above land
             on_land = use_landmask_ && (*surfmask_)[sr];
-            if (on_land)s
+            if (on_land)
             {
                 // Simplified expression by equating sensible and
                 // shortwave heat flux from the atmosphere into the
                 // land.
-                value = comb_ * sunp_ * suno_[j] / Ooa_;
+                value = comb_ * sunp_ * suno_[j]*(1-A)/Ooa_;
 
                 // set land temperature
-                (*lst_)[sr] = value + (*state_)[tr];
+                (*lst_)[sr] = value + Ta;
 
                 // set forcing
-                value += comb_ * sunp_ * (suna_[j] - amua_);
-
+                value += comb_ * sunp_ * (suna_[j]*(1-A) - amua_);
             }
             else // above ocean / sea ice
             {
@@ -707,7 +722,7 @@ void AtmosLocal::forcing()
                 Ts = (*sst_)[sr] +
                     (*Msi_)[sr] * ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_);
                 
-                value = Ts + comb_ * sunp_ * (suna_[j] - amua_);
+                value = Ts + comb_ * sunp_ * (suna_[j]*(1-A) - amua_);
                 
                 // latent heat due to precipitation (background contribution)
                 value += comb_ * latf_ * lvscale_ * Po0_;
@@ -729,20 +744,25 @@ void AtmosLocal::forcing()
             
             frc_[hr] = value;
 
-            // ------------ Albedo forcing: Here we use the full
-            // discretization as the tanh switching behaviour cannot
-            // be linearized. FIXME todo
-            // if (on_land)
-            // {
-            //     Tl = (*lst_)[sr]; // land temperature
-            //     P  = (*state_)[
-                      
-            //     value = a0_ + da_ * albedoFun( Tl,  )
-            //                                    }
-                    
+            // ------------ Albedo forcing
+            //
+            // Here we use the full nonlinear discretization as the
+            // tanh switching behaviour cannot be linearized.
             
+            if (on_land)
+            {
+                Tl = (*lst_)[sr]; // land temperature
+                P  = (*state_)[find_row(i,j,1,ATMOS_PP_)]; // global precipitation
+                value = (a0_ + da_ * aF( Tl, P ) - A) / tauf_;
+            }
+            else
+            {
+                value = (a0_ + da_ * (*Msi_)[sr] - A) / tauc_;
+            }
+            
+            frc_[ar] = value;
         }
-
+    
     // adjust to allow for integral condition in the serial case
     if (!parallel_)
         frc_[rowIntCon_-1] = 0.0;
