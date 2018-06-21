@@ -398,7 +398,8 @@ private:
     void write(std::vector<double> &vector, const std::string &filename);
 
     //! Land temperature is a function of albedo, atmospheric
-    //! temperature and latitude
+    //! temperature and latitude grid-box, expecting albedo A, Ta
+    //! anomaly and grid point j.
     double Tl(double A, double Ta, int j)
         { return Ta + comb_ * sunp_ * suno_[j] * (1 - A) / Ooa_; }
     
@@ -410,11 +411,17 @@ private:
     double dTldTa()
         { return 1.0; }
     
-    //! Snow/ice albedo parametrization
+    //! Snow/ice albedo parametrization expecting albedo A,
+    //! atmospheric temperature anomaly Ta, global precipitation
+    //! anomaly P and latitude grid-box j
     double aF(double A, double Ta, double P, int j)
-        { return H(Tm_ - Tl(A,Ta,j), epm_) *
+        {
+            P   = Po0_ + eta_ * qdim_ * P; // dimensional P
+            Ta += t0o_;                    // dimensional Ta
+            return H(Tm_ - Tl(A,Ta,j), epm_) *
                  H(Tr_ - Tl(A,Ta,j), epr_) *
-                 H(P - Pa_, epa_); }
+                 H(P - Pa_, epa_);
+        }
 
     //! aF derivative w.r.t. T, lazy: finite difference
     double daFdA(double A, double Ta, double P, int j)
