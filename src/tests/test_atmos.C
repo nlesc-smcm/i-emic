@@ -9,6 +9,7 @@ namespace
     std::shared_ptr<Atmosphere>    atmosPar;
     RCP<Epetra_Comm>               comm;
     RCP<Teuchos::ParameterList>    atmosphereParams;
+    Utils::MaskStruct              mask;
 }
 
 //------------------------------------------------------------------
@@ -186,7 +187,6 @@ TEST(Atmosphere, SurfaceTemperature)
         INFO("TEST SST: serial RHS norm = " << norm(rhsSer));
         INFO("TEST SST: parall RHS norm = " << norm(rhsPar));
 
-
     }
     catch (...)
     {
@@ -196,6 +196,45 @@ TEST(Atmosphere, SurfaceTemperature)
     EXPECT_EQ(failed, false);
 }
 
+//------------------------------------------------------------------
+TEST(Atmosphere, EPfields)
+{
+    atmosLoc->computeRHS();
+    atmosPar->computeRHS();
+    
+    // get serial integral coefficients and evaporation field
+    std::shared_ptr<std::vector<double> > serPco = atmosLoc->getPIntCoeff();
+    std::shared_ptr<std::vector<double> > serE   = atmosLoc->getE();
+
+    // get parallel integral coefficients and evaporation field
+    Teuchos::RCP<Epetra_Vector> parPco = atmosPar->getPIntCoeff();
+    Teuchos::RCP<Epetra_Vector> parE   = atmosPar->getE();
+
+    // compute area
+    double serArea, parArea;
+    serArea = Utils::sum(*serPco);
+    parPco->Norm1(&parArea);
+    EXPECT_NEAR(serArea, parArea,1e-7);
+
+    // compute dot products / integrals
+    double serInt, parInt;
+    serInt = Utils::dot(*serPco, *serE) / serArea;
+    parInt = Utils::dot(parPco, parE) / parArea;
+    EXPECT_NEAR(serInt, parInt, 1e-7);
+    EXPECT_NE(serInt, 0.0);
+    EXPECT_NE(parInt, 0.0);
+
+    atmosLoc->computePrecipitation();
+
+    Teuchos::RCP<Epetra_Vector> parP = atmosPar->getP();
+    std::shared_ptr<std::vector<double> > serP = atmosLoc->getP();
+
+    double serNrm, parNrm;
+    serNrm = Utils::norm(*serP);
+    parNrm = Utils::norm(parP);
+    EXPECT_NEAR(serNrm, parNrm, 1e-7);
+    EXPECT_GT(serNrm, 0.0);
+}
 
 //------------------------------------------------------------------
 TEST(Atmosphere, MassMatrix)
@@ -273,10 +312,6 @@ TEST(Atmosphere, Jacobian)
 
         INFO("TEST(Atmosphere, apply Jacobian): ||serial out|| = " << norm(outSer));
         INFO("TEST(Atmosphere, apply Jacobian): ||parall out|| = " << norm(outPar));
-
-        // Write parallel Jacobian
-        Teuchos::RCP<Epetra_CrsMatrix> atmosJac  = atmosPar->getJacobian();
-        DUMPMATLAB("atmosJac", *atmosJac);
         
     }
     catch (std::exception const &e)
@@ -299,8 +334,48 @@ TEST(Atmosphere, Jacobian)
 }
 
 //---------------------------------------------------------------------
+// We now switch on auxiliary unknowns and only test the parallel
+// atmosphere
+TEST(Atmosphere, Reinitialization)
+{
+    atmosphereParams->set("Auxiliary unknowns", 1);
+    // create new object
+    atmosPar = std::make_shared<Atmosphere>(comm, atmosphereParams);
+}
+
+//------------------------------------------------------------------
+// FIXME We still need the ocean class to given us the maskstruct...
+// this should definitely be factorized
+TEST(Atmosphere, SetMasks)
+{
+    Teuchos::RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
+    updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+    Ocean ocean(comm, oceanParams);
+
+    Utils::MaskStruct mask = ocean.getLandMask("mask_natl8");
+    atmosPar->setLandMask(mask);
+
+    Teuchos::RCP<Epetra_Vector> msi =
+        Teuchos::rcp(new Epetra_Vector(*atmosPar->getDomain()->GetStandardSurfaceMap()));
+
+    for (int i = 0; i < msi->MyLength() / 5; ++i)
+        (*msi)[i] = 1;
+
+    atmosPar->setSeaIceMask(msi);    
+}
+
+//------------------------------------------------------------------
 TEST(Atmosphere, numericalJacobian)
 {
+    atmosPar->getState('V')->Random();
+    atmosPar->setPar(0.1);
+
+    atmosPar->computeRHS();
+    atmosPar->computeJacobian();
+    
+    Teuchos::RCP<Epetra_CrsMatrix> atmosJac  = atmosPar->getJacobian();
+    DUMPMATLAB("atmosJac", *atmosJac);
+    
     // only do this test for small problems in serial
     int nmax = 2e3;
 
@@ -314,11 +389,11 @@ TEST(Atmosphere, numericalJacobian)
             NumericalJacobian<std::shared_ptr<Atmosphere>,
                               Teuchos::RCP<Epetra_Vector> > numJac;
 
-            numJac.setTolerance(1e-10);
+            numJac.setTolerance(1e-12);
             numJac.seth(1e-4);
             numJac.compute(atmosPar, atmosPar->getState('V'));
             numJac.print("atmosNumJac");
-            
+
             NumericalJacobian<std::shared_ptr<Atmosphere>,
                               Teuchos::RCP<Epetra_Vector> >::CCS ccs;
             numJac.fillCCS(ccs);
@@ -327,7 +402,7 @@ TEST(Atmosphere, numericalJacobian)
             
             Teuchos::RCP<Epetra_Vector> x = atmosPar->getState('C');
 
-            testEntries(atmosPar, ccs, x);
+            // testEntries(atmosPar, ccs, x);
             
         }
         catch (...)
@@ -349,50 +424,12 @@ TEST(Atmosphere, numericalJacobian)
     {
         std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
         INFO("****Numerical Jacobian test cannot run for this problem size****");
-    }
-    getchar();
+    }  
+
 }
 
-//------------------------------------------------------------------
-TEST(Atmosphere, EPfields)
-{
-    atmosLoc->computeRHS();
-    atmosPar->computeRHS();
-    
-    // get serial integral coefficients and evaporation field
-    std::shared_ptr<std::vector<double> > serPco = atmosLoc->getPIntCoeff();
-    std::shared_ptr<std::vector<double> > serE   = atmosLoc->getE();
 
-    // get parallel integral coefficients and evaporation field
-    Teuchos::RCP<Epetra_Vector> parPco = atmosPar->getPIntCoeff();
-    Teuchos::RCP<Epetra_Vector> parE   = atmosPar->getE();
-
-    // compute area
-    double serArea, parArea;
-    serArea = Utils::sum(*serPco);
-    parPco->Norm1(&parArea);
-    EXPECT_NEAR(serArea, parArea,1e-7);
-
-    // compute dot products / integrals
-    double serInt, parInt;
-    serInt = Utils::dot(*serPco, *serE) / serArea;
-    parInt = Utils::dot(parPco, parE) / parArea;
-    EXPECT_NEAR(serInt, parInt, 1e-7);
-    EXPECT_NE(serInt, 0.0);
-    EXPECT_NE(parInt, 0.0);
-
-    atmosLoc->computePrecipitation();
-
-    Teuchos::RCP<Epetra_Vector> parP = atmosPar->getP();
-    std::shared_ptr<std::vector<double> > serP = atmosLoc->getP();
-
-    double serNrm, parNrm;
-    serNrm = Utils::norm(*serP);
-    parNrm = Utils::norm(parP);
-    EXPECT_NEAR(serNrm, parNrm, 1e-7);
-    EXPECT_GT(serNrm, 0.0);
-}
-
+/*
 //------------------------------------------------------------------
 TEST(Atmosphere, Newton)
 {
@@ -444,6 +481,7 @@ TEST(Atmosphere, Newton)
 
     EXPECT_NEAR(Utils::norm(b), 0, 1e-7);
 }
+*/
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)

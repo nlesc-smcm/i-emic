@@ -35,10 +35,7 @@ AtmosLocal::AtmosLocal(int n, int m, int l, bool periodic,
     ymin_            (ymin),
     ymax_            (ymax),
 
-    periodic_        (periodic),
-
-// land mask ---------------------------------------------------------------
-    use_landmask_    (params->get("Use land mask from Ocean", false))
+    periodic_        (periodic)
 {
     INFO("AtmosLocal: constructor for parallel use...");
 
@@ -71,8 +68,7 @@ AtmosLocal::AtmosLocal(Teuchos::RCP<Teuchos::ParameterList> params)
     m_               (params->get("Global Grid-Size m", 16)),
     l_               (params->get("Global Grid-Size l", 1)),
     aux_             (0),
-    periodic_        (params->get("Periodic", false)),
-    use_landmask_    (params->get("Use land mask from Ocean", false))
+    periodic_        (params->get("Periodic", false))
 {
     INFO("AtmosLocal: constructor...");
 
@@ -315,7 +311,7 @@ void AtmosLocal::setup()
     // Fill y and latitude-based arrays
     yv_.reserve(m_+1);
     yc_.reserve(m_+1);
-    albe_.reserve(m_+1);
+
     datc_.reserve(m_+1);
     datv_.reserve(m_+1);
     suna_.reserve(m_+1);
@@ -326,7 +322,6 @@ void AtmosLocal::setup()
         yv_.push_back( ymin_ + j * dy_ );
         yc_.push_back( ymin_ + (j - 0.5) * dy_ );
 
-        albe_.push_back(0.3);
         datc_.push_back(0.9 + 1.5 * exp(-12 * yc_[j] * yc_[j] / PI_));
         datv_.push_back(0.9 + 1.5 * exp(-12 * yv_[j] * yv_[j] / PI_));
         suna_.push_back(As_*(1 - .482 * (3 * pow(sin(yc_[j]), 2) - 1.) / 2.));
@@ -392,15 +387,15 @@ void AtmosLocal::idealized(double precip)
         {
             value = cos(PI_*(yc_[j]-ymin_glob_)/(ymax_glob_-ymin_glob_));
 
-            rowSST   = n_*(j-1) + (i-1);
-            rowTT    = find_row(i,j,l_,ATMOS_TT_)-1;
-            rowQQ    = find_row(i,j,l_,ATMOS_QQ_)-1;
+            rowSST = n_*(j-1) + (i-1);
+            rowTT  = find_row(i,j,l_,ATMOS_TT_)-1;
+            rowQQ  = find_row(i,j,l_,ATMOS_QQ_)-1;
 
             rowAA  = find_row(i,j,l_,ATMOS_AA_)-1;
 
             // These values are chosen such that the integrated
             // evaporation is zero.
-            (*sst_)[rowSST]  = value;
+            (*sst_) [rowSST] = value;
             (*state_)[rowTT] = value;            
             (*state_)[rowQQ] = value * tdim_ * dqso_ / qdim_;
             (*state_)[rowAA] = a0_;
@@ -410,9 +405,11 @@ void AtmosLocal::idealized(double precip)
     computeEvaporation();
 
     // Set idealized precipitation
-    rowPP = find_row(n_ ,m_, l_, ATMOS_PP_) - 1;
-
-    (*state_)[rowPP] = precip;
+    if (aux_ == 1)
+    {
+        rowPP = find_row(n_ ,m_, l_, ATMOS_PP_) - 1;
+        (*state_)[rowPP] = precip;
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -483,7 +480,7 @@ void AtmosLocal::integralCoeff(std::vector<double> &val,
         for (int j = 1; j <= m_; ++j)
             for (int i = 1; i <= n_; ++i)
             {
-                if (use_landmask_ && ignoreLand && (*surfmask_)[(j-1)*n_+(i-1)])
+                if (ignoreLand && (*surfmask_)[(j-1)*n_+(i-1)])
                     continue;
                 
                 val.push_back(cos(yc_[j]) * dx_ * dy_);
@@ -498,7 +495,9 @@ void AtmosLocal::computeJacobian()
 
     // Reset dependency grid
     Al_->zero();
-    
+
+    //------------------------------------------------------------------
+    // Temperature equation dependencies
     Atom tc (n_, m_, l_, np_);
     Atom tc2(n_, m_, l_, np_);
     Atom txx(n_, m_, l_, np_);
@@ -531,6 +530,28 @@ void AtmosLocal::computeJacobian()
         Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_PP_, tc);
     }
 
+    // Temperature equation: albedo dependence TT_AA
+    Atom TT_AA(n_, m_, l_, np_);
+    bool on_land;
+    int sr, pr;
+    double dTdA;
+    for (int j = 1; j <= m_; ++j)
+        for (int i = 1; i <= n_; ++i)
+        {
+            sr = n_*(j-1) + (i-1); // surface row
+            on_land = (*surfmask_)[sr];
+            if (on_land)
+                dTdA =   dTldA(j) + dTadA(j);
+            else // above ocean / sea ice
+                dTdA =   dTadA(j);
+            
+            TT_AA.set(i, j, l_, 5, dTdA);                
+        }
+        
+    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_AA_, TT_AA);
+
+    //------------------------------------------------------------------
+    // Humidity equation    
     Atom qc (n_, m_, l_, np_);
     Atom qxx(n_, m_, l_, np_);
     Atom qyy(n_, m_, l_, np_);
@@ -544,15 +565,47 @@ void AtmosLocal::computeJacobian()
 
     // Set humidity atom in dependency grid
     // Al(:,:,:,:,QQ,QQ) = Phv * (qxx + qyy) - nuq * qc
-    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
-
+    Al_->set( {1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
     if (aux_ == 1)
     {
         // Al(:,:,:,:,QQ, PP) = - nuq * P, for this we can reuse qc:
         qc.scale(-nuq_);
-        Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
+        Al_->set( {1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
     }
 
+    //------------------------------------------------------------------
+    // Albedo equation, AA_AA dependency
+    Atom AA_AA(n_, m_, l_, np_);
+    double dAdA;
+    double A, Ta, P = 0;
+    int ar,tr;
+    for (int j = 1; j <= m_; ++j)
+        for (int i = 1; i <= n_; ++i)
+        {
+            sr = n_*(j-1) + (i-1); // surface row
+            ar = find_row(i, j, l_, ATMOS_AA_) - 1;
+            tr = find_row(i, j, l_, ATMOS_TT_) - 1;
+            if (aux_ == 1)
+                pr = find_row(i, j, l_, ATMOS_PP_) - 1; // precipitation row
+            else
+                pr = -1;
+
+            on_land = (*surfmask_)[sr];
+            A  = (*state_)[ar];
+            Ta = (*state_)[tr];
+            if (pr >= 0)
+                P  = (*state_)[pr];
+
+            double pert = 1e-10;
+            if (on_land)
+                dAdA = (da_ * daFdA(A, Ta, P, j) - 1) / tauf_;
+            else
+                dAdA = -1 / tauc_;
+            
+            AA_AA.set(i, j, l_, 5, dAdA);
+        }
+    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_AA_, ATMOS_AA_, AA_AA);
+    
     // Apply boundary conditions to stencil
     boundaries();
 
@@ -619,7 +672,7 @@ void AtmosLocal::computeRHS()
     // test heat fluxes
     int idx = 5;
     int jdx = 1;
-    while (use_landmask_ && (*surfmask_)[(jdx-1)*n_+(idx-1)])
+    while ((*surfmask_)[(jdx-1)*n_+(idx-1)])
     {
         idx++; jdx++;
     }
@@ -632,7 +685,14 @@ void AtmosLocal::computeRHS()
             for (int XX = 1; XX <= nun_; ++XX)
             {
                 row   = find_row(i, j, l_, XX);
-                value = matvec(row) + frc_[row-1];
+                value = 0.0;
+
+                // Nonlinear albedo equation is at this point computed
+                // in forcing. 
+                if (XX != ATMOS_AA_) 
+                    value += matvec(row);
+                
+                value += frc_[row-1];
                 (*rhs_)[row-1] = value;
             }
     
@@ -651,7 +711,6 @@ void AtmosLocal::computeRHS()
                 std::cout << (*intcondCoeff_)[i] << " " << (*state_)[i] << std::endl;
 
             ERROR("Error in integral condition", __FILE__, __LINE__);
-            
         }
     }
 
@@ -682,8 +741,8 @@ double AtmosLocal::matvec(int row)
 void AtmosLocal::forcing()
 {
     double value, Ts, Eo, Ei;
-    double Tl, Ta, P, A;
-    int tr, hr, sr, ar; // indices
+    double Ta, P = 0.0, A;
+    int tr, hr, sr, pr, ar; // indices
     bool on_land;
     
     if (std::abs(Ooa_) < 1e-8)
@@ -694,8 +753,12 @@ void AtmosLocal::forcing()
         {            
             tr = find_row(i, j, l_, ATMOS_TT_) - 1; // temperature row
             hr = find_row(i, j, l_, ATMOS_QQ_) - 1; // humidity row
-
             ar = find_row(i, j, l_, ATMOS_AA_) - 1; // albedo row
+            if (aux_ == 1)
+                pr = find_row(i, j, l_, ATMOS_PP_) - 1; // precipitation row
+            else
+                pr = -1;
+            
             sr = n_*(j-1) + (i-1);                  // plain surface row
 
             // get albedo at this grid point (state component)
@@ -710,19 +773,19 @@ void AtmosLocal::forcing()
             // clearly.
 
             // above land
-            on_land = use_landmask_ && (*surfmask_)[sr];
+            on_land = (*surfmask_)[sr];
             if (on_land)
             {
                 // Simplified expression by equating sensible and
                 // shortwave heat flux from the atmosphere into the
                 // land.
-                value = comb_ * sunp_ * suno_[j]*(1-A)/Ooa_;
-
-                // set land temperature
-                (*lst_)[sr] = value + Ta;
+                value = comb_ * sunp_ * suno_[j] / Ooa_ ;
 
                 // set forcing
-                value += comb_ * sunp_ * (suna_[j]*(1-A) - amua_);
+                value += comb_ * sunp_ * (suna_[j] - amua_);
+
+                // set land temperature
+                (*lst_)[sr] = Tl(A, Ta, j);
             }
             else // above ocean / sea ice
             {
@@ -734,7 +797,7 @@ void AtmosLocal::forcing()
                 Ts = (*sst_)[sr] +
                     (*Msi_)[sr] * ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_);
                 
-                value = Ts + comb_ * sunp_ * (suna_[j]*(1-A) - amua_);
+                value = Ts + comb_ * sunp_ * (suna_[j] - amua_);
                 
                 // latent heat due to precipitation (background contribution)
                 value += comb_ * latf_ * lvscale_ * Po0_;
@@ -760,12 +823,13 @@ void AtmosLocal::forcing()
             //
             // Here we use the full nonlinear discretization as the
             // tanh switching behaviour cannot be linearized.
-            
+
             if (on_land)
             {
-                Tl = (*lst_)[sr]; // land temperature
-                P  = (*state_)[find_row(i,j,1,ATMOS_PP_)]; // global precipitation
-                value = (a0_ + da_ * aF( Tl, P ) - A) / tauf_;
+                if (pr >= 0)
+                    P  = (*state_)[pr]; // global precipitation
+                
+                value = (a0_ + da_ * aF(A,Ta,P,j) - A) / tauf_;
             }
             else
             {
@@ -795,7 +859,7 @@ void AtmosLocal::computeEvaporation()
             // reset vector element
             (*E_)[sr] = 0.0;
             
-            if (use_landmask_ && (*surfmask_)[(j-1)*n_+(i-1)])
+            if ((*surfmask_)[(j-1)*n_+(i-1)])
                 continue; // do nothing
 
             // Compute nondimensional E based on surface temperature
@@ -829,7 +893,7 @@ void AtmosLocal::computePrecipitation()
         {
             sr = j*n_+i;
 
-            if (use_landmask_ && (*surfmask_)[sr])
+            if ((*surfmask_)[sr])
                 continue; // do nothing
 
             (*P_)[sr] = integral;
@@ -847,12 +911,11 @@ void AtmosLocal::discretize(int type, Atom &atom)
         atom.set({1,n_,1,m_,1,l_}, 5, 1.0);
 
         // Apply land mask
-        if (use_landmask_)
-            for (int k = 1; k <= l_; ++k)
-                for (int j = 1; j <= m_; ++j)
-                    for (int i = 1; i <= n_; ++i)
-                        if ((*surfmask_)[(j-1)*n_+(i-1)])
-                            atom.set(i, j, k, 5, 0.0);
+        for (int k = 1; k <= l_; ++k)
+            for (int j = 1; j <= m_; ++j)
+                for (int i = 1; i <= n_; ++i)
+                    if ((*surfmask_)[(j-1)*n_+(i-1)])
+                        atom.set(i, j, k, 5, 0.0);
         break;
 
     case 2: // tc2 (with land points)
@@ -1206,13 +1269,14 @@ int AtmosLocal::find_row(int i, int j, int k, int XX)
     {
         if (aux_ <= 0)
         {
-            WARNING("AtmosLocal: invalid row", __FILE__, __LINE__);
+            ERROR("AtmosLocal: invalid row", __FILE__, __LINE__);
+            return -1;
         }
         else
             return dim_ - aux_ + (XX - ATMOS_PP_) + 1;
     }
-    // ordinary 1-based find_row 
-    return nun_ * ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
+    else // ordinary 1-based find_row 
+        return nun_ * ((k-1)*n_*m_ + n_*(j-1) + (i-1)) + XX;
 }
 
 //-----------------------------------------------------------------------------

@@ -68,6 +68,9 @@ public:
 
     void scale(double scalarThis);
 
+    // this = vec.*this (pointwise) along dimension dim
+    void multiply(int dim, std::vector<double> &vec, double scalarThis);
+
 };
 
 

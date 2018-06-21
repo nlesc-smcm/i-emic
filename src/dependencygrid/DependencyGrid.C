@@ -1,5 +1,5 @@
 #include "DependencyGrid.H"
-
+#include <cassert>           
 //=============================================================================
 // / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / //
 //                                                                           //
@@ -166,7 +166,7 @@ void Atom::update(double scalarThis,
 }
 
 //-----------------------------------------------------------------------------
-// this = scalThis*this
+// this = scalarThis*this
 void Atom::scale(double scalarThis)
 {
     for (int i = 1; i != n_+1; ++i)
@@ -177,5 +177,33 @@ void Atom::scale(double scalarThis)
                     // converting to 0-based
                     atom_(i-1, j-1, k-1, loc-1) =
                         scalarThis * atom_(i-1, j-1, k-1, loc-1);
+                }
+}
+
+//-----------------------------------------------------------------------------
+// this = scalarThis * vec .* this (pointwise) along dimension dim
+void Atom::multiply(int dim, std::vector<double> &vec, double scalarThis)
+{
+    int len = (int) vec.size();
+    assert( (dim >= 1) && (dim <= 3));
+    if (dim == 1)
+        assert(len == n_+1);
+    else if(dim ==2)
+        assert(len == m_+1);
+    else if(dim ==3)
+        assert(len == l_+1);    
+        
+    int idx = 0;
+    for (int i = 1; i != n_+1; ++i)
+        for (int j = 1; j != m_+1; ++j)
+            for (int k = 1; k != l_+1; ++k)
+                for (int loc = 1; loc != np_+1; ++loc)
+                {
+                    idx = (dim == 1) ? i :
+                        ( (dim == 2) ? j : k );
+                    
+                    // converting to 0-based
+                    atom_(i-1, j-1, k-1, loc-1) = scalarThis *
+                        vec[idx] * atom_(i-1, j-1, k-1, loc-1);
                 }
 }

@@ -363,8 +363,8 @@ public:
                     return dim_ - aux_ + (XX - ATMOS_PP_);
                 }                    
             }
-            
-            return FIND_ROW_ATMOS0(dof_, n_, m_, l_, i, j, l_-1, XX);
+            else
+                return FIND_ROW_ATMOS0(dof_, n_, m_, l_, i, j, l_-1, XX);
         }
 
     // // FIXME not implemented yet should be done through Model interface

@@ -849,6 +849,8 @@ void Atmosphere::setLandMask(Utils::MaskStruct const &mask)
 
     CHECK_ZERO(mask.local->ExtractCopy(&(*landmask)[0]));
 
+    // local atmosphere builds its own landmask from full distributed
+    // mask
     atmos_->setSurfaceMask(landmask);
 
     // Some of the integral coefficients depend on the mask
@@ -908,10 +910,15 @@ void Atmosphere::computeJacobian()
             // debugging
             if (ierr != 0)
             {
-                std::cout << comm_->MyPID() << "::" << ierr << ":: " ;
-                for (int ee = 0 ; ee != numentries; ++ee)
-                    std::cout << indices[ee] << " | " << values[ee] << " || ";
-                std::cout << std::endl;
+                int grow = assemblyMap_->GID(i);
+                int lrid = jac_->Graph().LRID(grow);
+                std::cout << " my PID: " << comm_->MyPID()
+                          << ", ierr = " << ierr
+                          << ", GRID = " << grow
+                          << "  LRID = " << lrid << std::endl;
+                    
+                std::cout << " graph inds in LRID:   " 
+                          << jac_->Graph().NumMyIndices(lrid) << std::endl;
 
                 for (int ii = 0; ii < numentries; ++ii)
                 {
@@ -1424,11 +1431,16 @@ void Atmosphere::createMatrixGraph()
                     indices[pos++] = last + aa;
 
                 // Skip the final insertion when we are at rowIntCon_
-                if ( (gid0 + ATMOS_QQ_) == rowIntCon_ && useIntCondQ_) continue;
-
-                // Insert dependencies in matrixGraph
-                CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
-                               gid0 + ATMOS_QQ_, pos, indices));
+                if ( (gid0 + ATMOS_QQ_) == rowIntCon_ && useIntCondQ_)
+                {
+                    // do nothing
+                }
+                else
+                {
+                    // Insert dependencies in matrixGraph
+                    CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
+                                   gid0 + ATMOS_QQ_, pos, indices));
+                }
 
                 // A-equation
                 pos = 0;

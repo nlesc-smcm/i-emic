@@ -88,13 +88,9 @@ private:
     //! Find out whether we are part of a domain decomposition
     bool parallel_;
 
-    //! Specify whether we should use a land mask
-    bool use_landmask_;
-
     //! Surface mask
     std::shared_ptr<std::vector<int> > surfmask_;
-
-
+    
     //! Forcing vector
     std::vector<double> frc_;
 
@@ -223,9 +219,6 @@ private:
     double   As_;   //!  sun0*(1 - c0)/(4*muoa)
     double  Ooa_;   //!  ...? some combination of ocean coeffs, see THCM
     double   Os_;   //!  ...? some combination of ocean coeffs, see THCM
-
-    //! Latitude-dependent albedo
-    std::vector<double> albe_;
 
     //! Latitudinal dependence of eddy diffusivity:
     //!  0.9 + 1.5 * exp(-12*yc(j)*yc(j)/pi)
@@ -404,23 +397,40 @@ private:
     //! Write vector to output file
     void write(std::vector<double> &vector, const std::string &filename);
 
+    //! Land temperature is a function of albedo, atmospheric
+    //! temperature and latitude
+    double Tl(double A, double Ta, int j)
+        { return Ta + comb_ * sunp_ * suno_[j] * (1 - A) / Ooa_; }
+    
+    //! derivative of land temperature w.r.t. albedo
+    double dTldA(int j)
+        { return -comb_ * sunp_ * suno_[j] / Ooa_; }
+
+    //! derivative of land temperature w.r.t. atmospheric temperature
+    double dTldTa()
+        { return 1.0; }
+    
     //! Snow/ice albedo parametrization
-    double aF(double T, double P)
-        { return H(Tm_ - T, epm_) *
-                H(Tr_ - T, epr_) *
-                H(P - Pa_, epa_); }
+    double aF(double A, double Ta, double P, int j)
+        { return H(Tm_ - Tl(A,Ta,j), epm_) *
+                 H(Tr_ - Tl(A,Ta,j), epr_) *
+                 H(P - Pa_, epa_); }
 
-    //! aF derivative w.r.t. T
-    double daFdT(double T, double P)
-        { return H(P - Pa_, epa_) * (
-                -dHdx(Tm_ - T, epm_) * H(Tr_ - T, epr_) +
-                -dHdx(Tr_ - T, epr_) * H(Tm_ - T, epm_) ); }
+    //! aF derivative w.r.t. T, lazy: finite difference
+    double daFdA(double A, double Ta, double P, int j)
+        { return ( aF(A+1e-6,Ta,P,j) - aF(A,Ta,P,j) )/1e-6; }            
 
-    //! aF derivative w.r.t. P
-    double daFdP(double T, double P)
-        { return dHdx(P - Pa_, epa_) *
-                H(Tm_ - T, epm_) *
-                H(Tr_ - T, epr_); }
+    //! aF derivative w.r.t. P, lazy: finite difference
+    double daFdP(double A, double Ta, double P, int j)
+        { return ( aF(A,Ta,P+1e-6,j) - aF(A,Ta,P,j) )/1e-6; }            
+
+    //! aF derivative w.r.t. Ta, lazy: finite difference
+    double daFdTa(double A, double Ta, double P, int j)
+        { return ( aF(A,Ta,P,j) - aF(A,Ta,P,j) )/1e-6; }            
+
+    //! derivative of atmos temperature equation w.r.t. albedo
+    double dTadA(int j)
+        { return -comb_ * sunp_ * suna_[j]; }
 
     //! Heavyside approximation
     double H(double x, double eps)

@@ -79,15 +79,18 @@ public:
     virtual std::string const writeData(bool describe) = 0;
 
     void gid2coord(int const &gid, int &mdl,
+                   int &i, int &j, int &k, int &xx);
+
+};
+
+inline void Model::gid2coord(int const &gid, int &mdl,
                    int &i, int &j, int &k, int &xx)
         {
-            int N = getDomain()->GlobalN();
-            int M = getDomain()->GlobalM();
- 
-            int dof = getDomain()->Dof();
-
             mdl = modelIdent();
-    
+            
+            int N   = getDomain()->GlobalN();
+            int M   = getDomain()->GlobalM(); 
+            int dof = getDomain()->Dof();
             int tmp = gid;
 
             xx  = tmp % dof;
@@ -96,9 +99,7 @@ public:
             tmp = (tmp - i) / N;
             j   = tmp % M;
             k   = (tmp - j) / M;        
-        }    
-};
-
+        }
 
 template <typename T>
 std::shared_ptr<Utils::CRSMat> Model::getBlock(T model)

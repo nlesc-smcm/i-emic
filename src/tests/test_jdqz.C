@@ -30,7 +30,7 @@ public:
             RCP<Teuchos::ParameterList> atmosphereParams =
                 obtainParams("atmosphere_params.xml", "Atmosphere parameters"); 
 
-            // Create dummy parameter object for SeaIce
+            // Create parameter object for SeaIce
             RCP<Teuchos::ParameterList> seaIceParams =
                 obtainParams("seaice_params.xml", "Sea ice parameters"); 
 
@@ -48,6 +48,7 @@ public:
  			ocean  = std::make_shared<Ocean>(comm, oceanParams);
 			atmos  = std::make_shared<Atmosphere>(comm, atmosphereParams);
             seaice = std::make_shared<SeaIce>(comm, seaIceParams);
+
 			coupledModel =
 				std::make_shared<CoupledModel>(ocean,
                                                atmos,

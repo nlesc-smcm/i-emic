@@ -182,7 +182,6 @@ protected:
     Utils::MaskStruct landmask_;
 
 public:
-
     //! constructor
     Ocean(Teuchos::RCP<Epetra_Comm> Comm,
           Teuchos::RCP<Teuchos::ParameterList> oceanParamList);
