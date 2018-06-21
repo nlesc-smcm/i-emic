@@ -576,7 +576,10 @@ void AtmosLocal::computeJacobian()
     //------------------------------------------------------------------
     // Albedo equation, AA_AA dependency
     Atom AA_AA(n_, m_, l_, np_);
-    double dAdA;
+    Atom AA_TT(n_, m_, l_, np_);
+    Atom AA_PP(n_, m_, l_, np_);
+    
+    double dAdA, dAdT, dAdP;
     double A, Ta, P = 0;
     int ar,tr;
     for (int j = 1; j <= m_; ++j)
@@ -596,15 +599,27 @@ void AtmosLocal::computeJacobian()
             if (pr >= 0)
                 P  = (*state_)[pr];
 
-            double pert = 1e-10;
             if (on_land)
+            {
                 dAdA = (da_ * daFdA(A, Ta, P, j) - 1) / tauf_;
+                dAdP = (da_ * daFdP(A, Ta, P, j)) / tauf_;
+                dAdT = (da_ * daFdT(A, Ta, P, j)) / tauf_;
+            }            
             else
+            {
                 dAdA = -1 / tauc_;
+                dAdP = 0.0;
+                dAdT = 0.0;
+            }
             
             AA_AA.set(i, j, l_, 5, dAdA);
+            AA_PP.set(i, j, l_, 5, dAdP);
+            AA_TT.set(i, j, l_, 5, dAdT);
         }
+    
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_AA_, ATMOS_AA_, AA_AA);
+    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_AA_, ATMOS_PP_, AA_PP);
+    Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_AA_, ATMOS_TT_, AA_TT);
     
     // Apply boundary conditions to stencil
     boundaries();
@@ -830,6 +845,7 @@ void AtmosLocal::forcing()
                     P  = (*state_)[pr]; // global precipitation
                 
                 value = (a0_ + da_ * aF(A,Ta,P,j) - A) / tauf_;
+                //value = (a0_ + da_ * Ta * P - A) / tauf_;
             }
             else
             {

@@ -4,7 +4,7 @@
   I-EMIC. It is based on the energy balance model in the old THCM
   code. The atmosphere is extended with a vapor anomaly model and
   latent heat fluxes. This implementation is meant to run within a
-  parallel domain decomposition. 
+  parallel domain decomposition.
 
   Although this is a 2D model we maintain some notation of the 3D
   ocean model.
@@ -190,17 +190,20 @@ private:
     double    epr_; //! FIXME todo
     double    epa_; //! FIXME todo
 
-    double Phv_;     //! horizontal Peclet number for vaport transport
-    double nuq_;     //! qdim_ * (rhoo_ / rhoa_) * (hdim_ / hdimq_)
-    double eta_;     //! (rhoa_ / rhoo_) * ce_ * uw_;
+    //! Finite difference increment in albedo function derivatives
+    double df_ = 1-4;
 
-    double qso_;     //! ocean sat. humidity [Bolton, 1980]
-    double qsi_;     //! ice   sat. humidity [Bolton, 1980]
-    double Eo0_;     //! background evaporation over ocean
-    double Ei0_;     //! background evaporation over sea ice
-    double Po0_;     //! background precipitation
-    double dqso_;    //! derivative sat. humidity w.r.t. T, at t0o (ocean).
-    double dqsi_;    //! derivative sat. humidity w.r.t. T, at t0i (ice).
+    double Phv_;    //! horizontal Peclet number for vaport transport
+    double nuq_;    //! qdim_ * (rhoo_ / rhoa_) * (hdim_ / hdimq_)
+    double eta_;    //! (rhoa_ / rhoo_) * ce_ * uw_;
+
+    double qso_;    //! ocean sat. humidity [Bolton, 1980]
+    double qsi_;    //! ice   sat. humidity [Bolton, 1980]
+    double Eo0_;    //! background evaporation over ocean
+    double Ei0_;    //! background evaporation over sea ice
+    double Po0_;    //! background precipitation
+    double dqso_;   //! derivative sat. humidity w.r.t. T, at t0o (ocean).
+    double dqsi_;   //! derivative sat. humidity w.r.t. T, at t0i (ice).
 
     double lvscale_; //! latent heat due to P coeff
 
@@ -416,24 +419,25 @@ private:
     //! anomaly P and latitude grid-box j
     double aF(double A, double Ta, double P, int j)
         {
-            P   = Po0_ + eta_ * qdim_ * P; // dimensional P
-            Ta += t0o_;                    // dimensional Ta
+            // return H(t0o_ + Tm_ - Tl(A,Ta,j), epm_) *
+            //     H(t0o_ + Tr_ - Tl(A,Ta,j), epr_) *
+            //     H(Po0_ + eta_ * qdim_ * P - Pa_, epa_);
             return H(Tm_ - Tl(A,Ta,j), epm_) *
-                 H(Tr_ - Tl(A,Ta,j), epr_) *
-                 H(P - Pa_, epa_);
+                H(Tr_ - Tl(A,Ta,j), epr_) *
+                H(P - Pa_, epa_);
         }
 
     //! aF derivative w.r.t. T, lazy: finite difference
     double daFdA(double A, double Ta, double P, int j)
-        { return ( aF(A+1e-6,Ta,P,j) - aF(A,Ta,P,j) )/1e-6; }            
+        { return ( aF(A+df_,Ta,P,j) - aF(A,Ta,P,j) )/df_; }            
 
     //! aF derivative w.r.t. P, lazy: finite difference
     double daFdP(double A, double Ta, double P, int j)
-        { return ( aF(A,Ta,P+1e-6,j) - aF(A,Ta,P,j) )/1e-6; }            
+        { return ( aF(A,Ta,P+df_,j) - aF(A,Ta,P,j) )/df_; }            
 
     //! aF derivative w.r.t. Ta, lazy: finite difference
-    double daFdTa(double A, double Ta, double P, int j)
-        { return ( aF(A,Ta,P,j) - aF(A,Ta,P,j) )/1e-6; }            
+    double daFdT(double A, double Ta, double P, int j)
+        { return ( aF(A,Ta+df_,P,j) - aF(A,Ta,P,j) )/df_; }            
 
     //! derivative of atmos temperature equation w.r.t. albedo
     double dTadA(int j)

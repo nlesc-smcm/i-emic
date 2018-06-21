@@ -368,6 +368,7 @@ TEST(Atmosphere, SetMasks)
 TEST(Atmosphere, numericalJacobian)
 {
     atmosPar->getState('V')->Random();
+    atmosPar->getState('V')->PutScalar(0.0);
     atmosPar->setPar(0.1);
 
     atmosPar->computeRHS();
