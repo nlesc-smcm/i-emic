@@ -1411,6 +1411,10 @@ void Ocean::synchronize(std::shared_ptr<Atmosphere> atmos)
     Teuchos::RCP<Epetra_Vector> atmosQ  = atmos->interfaceQ();
     THCM::Instance().setAtmosphereQ(atmosQ);
 
+    // Obtain and set albedo field at the interface
+    Teuchos::RCP<Epetra_Vector> atmosA  = atmos->interfaceA();
+    THCM::Instance().setAtmosphereA(atmosA);
+
     // Obtain and set precipitation field at the interface
     Teuchos::RCP<Epetra_Vector> atmosP  = atmos->interfaceP();
     THCM::Instance().setAtmosphereP(atmosP);
