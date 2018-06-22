@@ -368,7 +368,7 @@ TEST(Atmosphere, SetMasks)
 TEST(Atmosphere, numericalJacobian)
 {
     atmosPar->getState('V')->Random();
-    atmosPar->getState('V')->PutScalar(0.0);
+    atmosPar->getState('V')->Scale(2.0);
     atmosPar->setPar(0.1);
 
     atmosPar->computeRHS();
@@ -391,7 +391,7 @@ TEST(Atmosphere, numericalJacobian)
                               Teuchos::RCP<Epetra_Vector> > numJac;
 
             numJac.setTolerance(1e-12);
-            numJac.seth(1e-4);
+            numJac.seth(1e-6);
             numJac.compute(atmosPar, atmosPar->getState('V'));
             numJac.print("atmosNumJac");
 
@@ -403,7 +403,7 @@ TEST(Atmosphere, numericalJacobian)
             
             Teuchos::RCP<Epetra_Vector> x = atmosPar->getState('C');
 
-            // testEntries(atmosPar, ccs, x);
+            testEntries(atmosPar, ccs, x);
             
         }
         catch (...)

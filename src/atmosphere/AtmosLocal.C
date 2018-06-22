@@ -140,11 +140,11 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     tauc_            = params->get("", 1.0); // FIXME todo
 
     Tm_              = params->get("", 0.0);  // FIXME todo
-    Tr_              = params->get("", 2.0);  // FIXME todo
-    Pa_              = params->get("", 0.1);  // FIXME todo
-    epm_             = params->get("", 2.0);  // FIXME todo
-    epr_             = params->get("", 0.1);  // FIXME todo
-    epa_             = params->get("", 0.01); // FIXME todo
+    Tr_              = params->get("", 0.0);  // FIXME todo
+    Pa_              = params->get("", 0.0);  // FIXME todo
+    epm_             = params->get("", 1.0e2);  // FIXME todo
+    epr_             = params->get("", 1.0e2);  // FIXME todo
+    epa_             = params->get("", 1.0e2); // FIXME todo
 
 
 
@@ -845,7 +845,7 @@ void AtmosLocal::forcing()
                     P  = (*state_)[pr]; // global precipitation
                 
                 value = (a0_ + da_ * aF(A,Ta,P,j) - A) / tauf_;
-                //value = (a0_ + da_ * Ta * P - A) / tauf_;
+                // value = (a0_ + da_ * Ta  - A) / tauf_;
             }
             else
             {

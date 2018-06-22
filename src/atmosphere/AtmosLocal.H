@@ -191,7 +191,7 @@ private:
     double    epa_; //! FIXME todo
 
     //! Finite difference increment in albedo function derivatives
-    double df_ = 1-4;
+    double df_ = 1e-6;
 
     double Phv_;    //! horizontal Peclet number for vaport transport
     double nuq_;    //! qdim_ * (rhoo_ / rhoa_) * (hdim_ / hdimq_)
@@ -422,9 +422,15 @@ private:
             // return H(t0o_ + Tm_ - Tl(A,Ta,j), epm_) *
             //     H(t0o_ + Tr_ - Tl(A,Ta,j), epr_) *
             //     H(Po0_ + eta_ * qdim_ * P - Pa_, epa_);
+
+            // return 5*Ta + 4*A + 3*P;
+            
+            // return H(Tm_ - Tl(A,Ta,j), epm_) *
+            //     H(Tr_ - Tl(A,Ta,j), epr_) *
+            //     H(P - Pa_, epa_);
+
             return H(Tm_ - Tl(A,Ta,j), epm_) *
-                H(Tr_ - Tl(A,Ta,j), epr_) *
-                H(P - Pa_, epa_);
+                H(Tr_ - Tl(A,Ta,j), epr_) * H(P - Pa_, epa_);
         }
 
     //! aF derivative w.r.t. T, lazy: finite difference
