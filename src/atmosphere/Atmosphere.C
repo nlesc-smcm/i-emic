@@ -464,6 +464,12 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceQ()
 }
 
 //==================================================================
+Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceA()
+{
+    return interface(ATMOS_AA_);
+}
+
+//==================================================================
 Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceP()
 {
     return interface(ATMOS_PP_);

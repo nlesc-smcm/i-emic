@@ -55,7 +55,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     eta_   ( ( rhoa_ / rhoo_ ) * ce_ * uw_),
 
 // Shortwave radiation constants and functions
-    alpha_   (params->get("albedo", 0.3)),
+    alpha_   (params->get("reference albedo", 0.3)),
     sun0_    (params->get("solar constant", 1360)),
     c0_      (params->get("atmospheric absorption coefficient", 0.43)),
     Ch_      (params->get("Ch", 1.22e-3)),
@@ -136,6 +136,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     sss_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     tatm_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     qatm_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    albe_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     // Local (overlapping) vectors
     localState_  = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -148,6 +149,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     localSSS_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosT_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosQ_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosA_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
     // Create local computational grid in x_, y_
     createGrid();
@@ -180,7 +182,7 @@ void SeaIce::computeRHS()
     localRHS_->PutScalar(0.0);
 
     // obtain view of rhs, state and external data
-    double *rhs, *state, *sst, *sss, *tatm, *qatm;
+    double *rhs, *state, *sst, *sss, *tatm, *qatm, *albe;
     localRHS_->ExtractView(&rhs);
 
     domain_->Standard2Assembly(*state_, *localState_);
@@ -189,21 +191,25 @@ void SeaIce::computeRHS()
     domain_->Standard2AssemblySurface(*sss_,   *localSSS_);
     domain_->Standard2AssemblySurface(*tatm_,  *localAtmosT_);
     domain_->Standard2AssemblySurface(*qatm_,  *localAtmosQ_);
+    domain_->Standard2AssemblySurface(*albe_,  *localAtmosA_);
 
     localState_->ExtractView(&state);
+    
     localSST_->ExtractView(&sst);
     localSSS_->ExtractView(&sss);
+    
     localAtmosT_->ExtractView(&tatm);
     localAtmosQ_->ExtractView(&qatm);
+    localAtmosA_->ExtractView(&albe);
 
     // row indices for rhs and data
-    int rr, dr;
+    int rr, sr;
     double Tsi, Hval, Qval, Mval, Tval, val;
     for (int j = 0; j != mLoc_; ++j)
         for (int i = 0; i != nLoc_; ++i)
         {
-            dr = j*nLoc_ + i; // surface position for vectors with dof=1
-
+            sr = j*nLoc_ + i; // surface position for vectors with dof=1
+            
             Hval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_HH_)];
             Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
             Mval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_MM_)];
@@ -212,7 +218,7 @@ void SeaIce::computeRHS()
             // Although T is part of the state, we substitute the sea
             // ice temperature equation in the H equation to improve
             // diagonal dominance in these rows.
-            Tsi = iceSurfT(Qval, Hval, sss[dr]);
+            Tsi = iceSurfT(Qval, Hval, sss[sr]);
 
             for (int XX = 1; XX <= dof_; ++XX)
             {
@@ -221,33 +227,33 @@ void SeaIce::computeRHS()
 
                 case SEAICE_HH_:      // H row (thickness)
 
-                    val = freezingT(sss[dr]) - sst[dr] - t0o_ -
+                    val = freezingT(sss[sr]) - sst[sr] - t0o_ -
                         Q0_ / zeta_ - Qvar_ / zeta_ * Qval -
                         ( rhoo_ * Lf_ / zeta_) *
-                        ( E0_ + dEdT_ * Tsi + dEdq_ * qatm[dr] );
+                        ( E0_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
 
                     break;
 
                 case SEAICE_QQ_:       // Q row (heat flux)
 
                     val = 1. / muoa_ * (Q0_ + Qvar_ * Qval) -
-                        (sun0_ / 4. / muoa_) * shortwaveS(y_[j]) * (1.-alpha_) * c0_ +
-                        (t0i_ + Tval - tatm[dr] - t0a_) +
+                        (sun0_ / 4. / muoa_) * shortwaveS(y_[j]) * (1.-albe[sr]) * c0_ +
+                        (t0i_ + Tval - tatm[sr] - t0a_) +
                         (rhoo_ * Ls_ / muoa_) *
-                        (E0_ + dEdT_ * Tval + dEdq_ * qatm[dr]);
+                        (E0_ + dEdT_ * Tval + dEdq_ * qatm[sr]);
 
                     break;
 
                 case SEAICE_MM_:       // M row (mask)
 
-                    val = - Mval +
+                    val = Mval -
                         (1./2.) * (1. + tanh( Hval / epsilon_ ) );
 
                     break;
 
                 case SEAICE_TT_:       // T row (surface temperature)
 
-                    val = freezingT(sss[dr]) - Tval - t0i_ +
+                    val = freezingT(sss[sr]) - Tval - t0i_ +
                         (Q0_*H0_ + H0_*Qvar_*Qval + Q0_*Hval) / Ic_;
 
                     break;
@@ -308,12 +314,12 @@ void SeaIce::computeLocalJacobian()
         for (int i = 1; i <= nLoc_; ++i)
         {
             ind  = find_row1(nLoc_, mLoc_, i, j, H); // H row
-            val  = (1 / (epsilon_ * 2.0) ) *
+            val  = -(1 / (epsilon_ * 2.0) ) *
                 ( 1.0 - pow(tanh((state[ind]) / epsilon_), 2) );
             MM_HH.set( i, j, 1, 1, val);
         }
 
-    MM_MM = -1.0;
+    MM_MM = 1.0;
 
     Al_->set(range, M, H, MM_HH);
     Al_->set(range, M, M, MM_MM);
@@ -408,6 +414,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getLocalJacobian()
     return jac;
 }
 
+
 //=============================================================================
 void SeaIce::getCommPars(SeaIce::CommPars &parStruct)
 {
@@ -430,8 +437,9 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     // construct global 0-based CRS matrix
     int el_ctr = 0;
 
-    int T = 1; // (1-based) in the Atmosphere, temperature is the first unknown
-    int Q = 2; // (1-based) in the Atmosphere, humidity is the second unknown
+    int T = ATMOS_TT_; // (1-based) in the Atmosphere, temperature is the first unknown
+    int Q = ATMOS_QQ_; // (1-based) in the Atmosphere, humidity is the second unknown
+    int A = ATMOS_AA_; // (1-based) in the Atmosphere, humidity is the second unknown
 
     // compute a few constant derivatives (see computeRHS)
 
@@ -444,7 +452,20 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     // d / dq_atm (F_Q)
     double dqatmFQ =  (rhoo_ * Ls_ / muoa_) * dEdq_;
 
+    // d / da_atm (F_Q)
+    double daatmFQ;
+    double tmp = 0.0;
+
     for (int j = 0; j != mGlob_; ++j)
+    {
+        int gid = j * nGlob_;                      
+        int lid = standardSurfaceMap_->LID(gid);   
+        
+        if (lid >= 0)
+            tmp = (sun0_ / 4. / muoa_) * shortwaveS(y_[lid / nLoc_]) * c0_;
+
+        comm_->SumAll(&tmp, &daatmFQ, 1);
+        
         for (int i = 0; i != nGlob_; ++i)
             for (int XX = 1; XX <= dof_; ++XX)
             {
@@ -466,9 +487,14 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
                     block->co.push_back(dqatmFQ);
                     block->jco.push_back(atmos->interface_row(i,j,Q));
                     el_ctr++;
+
+                    block->co.push_back(daatmFQ);
+                    block->jco.push_back(atmos->interface_row(i,j,A));
+                    el_ctr++;
                     break;
                 }
             }
+    }
 
     // final entry in beg ( == nnz)
     block->beg.push_back(el_ctr);
@@ -553,13 +579,21 @@ void SeaIce::synchronize(std::shared_ptr<Ocean> ocean)
 //=============================================================================
 void SeaIce::synchronize(std::shared_ptr<Atmosphere> atmos)
 {
+    // get atmosphere temperature
     Teuchos::RCP<Epetra_Vector> tatm  = atmos->interfaceT();
     CHECK_MAP(tatm, standardSurfaceMap_);
     tatm_ = tatm;
 
+    // get atmosphere humidity
     Teuchos::RCP<Epetra_Vector> qatm  = atmos->interfaceQ();
     CHECK_MAP(qatm, standardSurfaceMap_);
     qatm_ = qatm;
+
+    // get albedo
+    Teuchos::RCP<Epetra_Vector> albe  = atmos->interfaceA();
+    CHECK_MAP(albe, standardSurfaceMap_);
+    albe_ = albe;
+
 }
 
 //=============================================================================
@@ -602,11 +636,12 @@ void SeaIce::idealizedForcing()
     double svar = 1.0;
     double qvar = 5e-4;
     
-    double *sst, *sss, *tatm, *qatm;
+    double *sst, *sss, *tatm, *qatm, *albe;
     localSST_->ExtractView(&sst);
     localSSS_->ExtractView(&sss);
     localAtmosT_->ExtractView(&tatm);
     localAtmosQ_->ExtractView(&qatm);
+    localAtmosA_->ExtractView(&albe);
 
     int row;
     for (int j = 0; j != mLoc_; ++j)
@@ -618,6 +653,7 @@ void SeaIce::idealizedForcing()
             sss[row]  = svar * cos( PI_ * y_[j] / ymax_ ) / cos( y_[j] );
             tatm[row] = tvar * cos( PI_ * y_[j] / ymax_ );
             qatm[row] = qvar * cos( PI_ * y_[j] / ymax_ );
+            albe[row] = alpha_;
         }
 
     // Transfer data to non-overlapping vectors
@@ -625,6 +661,7 @@ void SeaIce::idealizedForcing()
     domain_->Assembly2StandardSurface(*localSSS_,     *sss_);
     domain_->Assembly2StandardSurface(*localAtmosT_, *tatm_);
     domain_->Assembly2StandardSurface(*localAtmosQ_, *qatm_);
+    domain_->Assembly2StandardSurface(*localAtmosA_, *albe_);
 }
 
 //=============================================================================

@@ -323,6 +323,9 @@ public:
     //! Get humidity at interface 
     Teuchos::RCP<Epetra_Vector> interfaceQ();
 
+    //! Get albedo at interface 
+    Teuchos::RCP<Epetra_Vector> interfaceA();
+
     //! Get precipitation at interface 
     Teuchos::RCP<Epetra_Vector> interfaceP();
 

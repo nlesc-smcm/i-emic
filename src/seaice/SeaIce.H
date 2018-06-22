@@ -126,6 +126,9 @@ private:
 
     //! non-overlapping qatm
     Teuchos::RCP<Epetra_Vector> qatm_;
+
+    //! non-overlapping albedo
+    Teuchos::RCP<Epetra_Vector> albe_;
     
     //! overlapping localState
     Teuchos::RCP<Epetra_Vector> localState_;
@@ -150,6 +153,9 @@ private:
 
     //! overlapping localAtmosQ
     Teuchos::RCP<Epetra_Vector> localAtmosQ_;
+
+    //! overlapping localAtmosA
+    Teuchos::RCP<Epetra_Vector> localAtmosA_;
 
     //! State component maps
     std::map<int, Teuchos::RCP<Epetra_Map> > Maps_;
@@ -226,7 +232,7 @@ private:
     double eta_;
 
     //! Shortwave radiation constants and functions
-    double alpha_; //! albedo
+    double alpha_; //! reference albedo
     double sun0_;  //! solar constant
     double c0_;    //! atmospheric absorption coefficient
     double Ch_;    //! Ch

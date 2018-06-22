@@ -320,7 +320,7 @@ void AtmosLocal::setup()
     for (int j = 0; j != m_+1; ++j)
     {
         yv_.push_back( ymin_ + j * dy_ );
-        yc_.push_back( ymin_ + (j - 0.5) * dy_ );
+        yc_.push_back( ymin_ + ( j - 0.5) * dy_ );
 
         datc_.push_back(0.9 + 1.5 * exp(-12 * yc_[j] * yc_[j] / PI_));
         datv_.push_back(0.9 + 1.5 * exp(-12 * yv_[j] * yv_[j] / PI_));

@@ -553,7 +553,7 @@ TEST(CoupledModel, applyMatrix)
                     
                     std::cout << " intval: " << intval << std::endl;
 
-                    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);
+                    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_NUN_);
                     std::cout << " last  : " << last << std::endl;
                                         
                     if (atmosVec->Map().MyGID(last + 1))
@@ -615,7 +615,7 @@ TEST(CoupledModel, Precipitation)
     // assume single atmosphere layer
     int l = 1;
 
-    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);
+    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_NUN_);
     int lid; 
     double val;
     if (atmb->Map().MyGID(last+1))
@@ -626,9 +626,8 @@ TEST(CoupledModel, Precipitation)
 
     }
 
-    // EXPECT_EQ(
-    
-    
+    // FIXME TODO
+    // EXPECT_EQ(    
 }
 
 
