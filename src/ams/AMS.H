@@ -184,16 +184,16 @@ AMS(Model model, ParameterList pars,
     };
 
     auto dist_fun = [this, dist_fun_var](VectorPtr const &x) {
-        // BEGIN DEBUG
-        for (int var = 0; var < 6; var++)
-        {
-            double dist = dist_fun_var(x, var);
-            INFO("distance " << var << " = " << dist);
-        }
+        // // BEGIN DEBUG
+        // for (int var = 0; var < 6; var++)
+        // {
+        //     double dist = dist_fun_var(x, var);
+        //     INFO("distance " << var << " = " << dist);
+        // }
 
-        INFO(model_->writeData(true));
-        INFO(model_->writeData(false));
-        // END DEBUG
+        // INFO(model_->writeData(true));
+        // INFO(model_->writeData(false));
+        // // END DEBUG
 
         double dist = dist_fun_var(x, 1);
         INFO("distance = " << dist);
@@ -241,7 +241,7 @@ auto AMS<Model>::get_time_step()
         // Noise is added in an explicit manner
         model_->computeRHS();
         VectorPtr Fx = model_->getRHS('C');
-        INFO("||F|| = " << Utils::norm(Fx));
+        // INFO("||F|| = " << Utils::norm(Fx));
         auto thetaF = [this, G, Fx, x, dt](VectorPtr const &xnew) {
             TIMER_SCOPE("AMS: F");
             *model_->getState('V') = *xnew;
@@ -280,6 +280,7 @@ auto AMS<Model>::get_time_step()
 Teuchos::RCP<Epetra_MultiVector> dot(
     Epetra_MultiVector const &x, Epetra_MultiVector const &y)
 {
+    TIMER_SCOPE("AMS: dot");
     int m = x.NumVectors();
     int n = y.NumVectors();
 
@@ -342,7 +343,7 @@ auto AMS<Model>::get_projected_time_step()
         // Noise is added in an explicit manner
         model_->computeRHS();
         auto Fx = restrict(*model_->getRHS('V'));
-        INFO("||F|| = " << Utils::norm(Fx));
+        // INFO("||F|| = " << Utils::norm(Fx));
 
         auto tmp = Teuchos::rcp(new Epetra_MultiVector(*V_));
 
@@ -370,10 +371,10 @@ auto AMS<Model>::get_projected_time_step()
             return ret;
         };
 
-        TIMER_START("AMS: Compute VAV solver");
         // J2 = theta * dt * J - M, so J2*x = b
         // We write this as
         // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
+        TIMER_START("AMS: Compute VAV");
         model_->setShift(-sig);
         model_->computeJacobian();
         model_->applyMatrix(*V_, *tmp);
@@ -384,7 +385,7 @@ auto AMS<Model>::get_projected_time_step()
         auto VAVsolver = Teuchos::rcp(new Epetra_SerialDenseSolver());
         CHECK_ZERO(VAVsolver->SetMatrix(*VAVmat));
         CHECK_ZERO(VAVsolver->Factor());
-        TIMER_STOP("AMS: Compute VAV solver");
+        TIMER_STOP("AMS: Compute VAV");
 
         auto thetaJ = [this, sig, &VAVsolver](Teuchos::RCP<Epetra_MultiVector> const &xnew,
                                               Teuchos::RCP<Epetra_MultiVector> const &b) {
