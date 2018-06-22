@@ -45,6 +45,8 @@ public:
         double Eo0;
         double t0o;
         double t0i;
+        double da;
+        double tauf;
     };
 
 private:

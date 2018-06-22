@@ -501,7 +501,9 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
     double dTFT;  // d / dT_ocean (F_T)
     double dTFQ;  // d / dT_ocean (F_Q)
     double M;     // Mask value
-    
+
+    bool on_ocean;
+    bool no_intrw;
     // loop over our unknowns
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
@@ -514,26 +516,31 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
 
             dTFQ = pars.nuq * pars.tdim / pars.qdim * pars.dqso * (1.0 - M);
             
+            on_ocean = ((*surfmask_)[sr] == 0);
             for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
             {
+                no_intrw = (rowIntCon_ != FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
+                                                          i, j, l_-1, xx));
+                
                 block->beg.push_back(el_ctr);
-
-                if ( (*surfmask_)[sr] == 0 &&   // non-land
-                     (rowIntCon_ != FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
-                                                    i, j, l_-1, xx))
-                    ) // skip integral condition row
+                
+                if ( on_ocean && no_intrw ) // ocean points and skip integral cond
                 {
-                    if (xx == ATMOS_TT_)
+                    switch (xx)
                     {
+                        
+                    case ATMOS_TT_:
                         block->co.push_back(dTFT);
-                    }
-                    else if (xx == ATMOS_QQ_)
-                    {
-                        block->co.push_back(dTFQ);
-                    }
+                        block->jco.push_back(ocean->interface_row(i,j,oceanTT));
+                        el_ctr++;
+                        break;
 
-                    block->jco.push_back(ocean->interface_row(i,j,oceanTT));
-                    el_ctr++;
+                    case ATMOS_QQ_:
+                        block->co.push_back( dTFQ );
+                        block->jco.push_back( ocean->interface_row(i,j,oceanTT) );
+                        el_ctr++;
+                        break;
+                    }
                 }
             }
         }
@@ -541,27 +548,27 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
     // add dependencies of precipitation row
     int qid;
     double dTFP; // d / dTo (F_P)
-
+    
     if (aux_ == 1)
     {
         block->beg.push_back(el_ctr);
         for (int j = 0; j != m_; ++j)
             for (int i = 0; i != n_; ++i)
             {
-                sr   = j*n_+i; // set surface row
-                M = (*(*Msi)(0))[sr]; // sea ice mask
+                sr = j*n_+i;                  // set surface row
+                M  = (*(*Msi)(0))[sr];        // sea ice mask
                 
                 if ( (*surfmask_)[sr] == 0)   // non-land
                 {
-                    qid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
-                                          i, j, l_-1, ATMOS_QQ_);
+                    qid = FIND_ROW_ATMOS0( ATMOS_NUN_, n_, m_, l_,
+                                           i, j, l_-1, ATMOS_QQ_ );
                     
-                    dTFP = (*intcondGlob_)[0][qid] * (1.0 / totalArea_)
-                        * ( pars.tdim / pars.qdim ) * pars.dqso * (1.0 - M);
+                    dTFP = ( *intcondGlob_ )[0][qid] * ( 1.0 / totalArea_ )
+                        * ( pars.tdim / pars.qdim ) * pars.dqso * ( 1.0 - M );
                     
-                    block->co.push_back(dTFP);
+                    block->co.push_back( dTFP );
                     
-                    block->jco.push_back(ocean->interface_row(i,j,oceanTT));
+                    block->jco.push_back( ocean->interface_row(i,j,oceanTT) );
                     el_ctr++;
                 }
             }
@@ -569,6 +576,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
 
     block->beg.push_back(el_ctr);
 
+    std::cout << block->co.size() << " " << block->beg.back() << std::endl;
     assert( (int) block->co.size() == block->beg.back());
     
     TIMER_STOP("Atmosphere::getBlock(ocean)...");
@@ -587,8 +595,8 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
 
     int el_ctr = 0;
     
-    int seaiceMM = 3; // (1-based) mask unknown in the sea ice model
-    int seaiceTT = 4; // (1-based) temperature unknown in the sea ice model
+    int seaiceMM = SEAICE_MM_; // (1-based) mask unknown in the sea ice model
+    int seaiceTT = SEAICE_TT_; // (1-based) temperature unknown in the sea ice model
 
     // Obtain atmosphere parameters
     AtmosLocal::CommPars pars; getCommPars(pars);
@@ -597,6 +605,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
     double dMFQ;   // d / dMsi (F_Q)
     double dTFT;   // d / dTsi (F_T)
     double dTFQ;   // d / dTsi (F_Q)
+    double dMFA;   // d / dMsi (F_A)
 
     int sr;     // surface row
     double M;   // mask value
@@ -630,6 +639,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
 
             dMFQ = pars.nuq * pars.tdim / pars.qdim * (Ei - Eo);
             dTFQ = pars.nuq * pars.tdim / pars.qdim * pars.dqsi * M;
+            dMFA = pars.da / pars.tauf;
 
             for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
             {
@@ -660,6 +670,12 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
 
                         block->co.push_back(dTFQ);
                         block->jco.push_back(seaice->interface_row(i,j,seaiceTT));
+                        el_ctr++;
+                        break;                        
+
+                    case ATMOS_AA_:
+                        block->co.push_back(dMFA);
+                        block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
                         el_ctr++;
                         break;                        
                     }

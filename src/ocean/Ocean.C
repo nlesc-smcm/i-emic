@@ -1504,9 +1504,9 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
     double Ooa, Os, nus, eta, lvsc, qdim;
     FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim);
 
-    int T = 1; // (1-based) in the Atmosphere, temperature is the first unknown
-    int Q = 2; // (1-based) in the Atmosphere, humidity is the second unknown
-    int P = 3; // (1-based) in the Atmosphere, global precipitation is an auxiliary
+    int T = ATMOS_TT_; // (1-based) in the Atmosphere, temperature is the first unknown
+    int Q = ATMOS_QQ_; // (1-based) in the Atmosphere, humidity is the second unknown
+    int P = ATMOS_PP_; // (1-based) in the Atmosphere, global precipitation is an auxiliary
 
     int rowIntCon = THCM::Instance().getRowIntCon();
 

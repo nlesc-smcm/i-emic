@@ -7,7 +7,7 @@ JnC = load_numjac('JnC');
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
     readfort44('fort.44');
 
-dfo = 6; dfa = 2; aux = 1; dfs = 4;
+dfo = 6; dfa = 3; aux = 1; dfs = 4;
 
 surfb = find_row(dfo, n, m ,l, 1, 1, l, 1);
 surfe = find_row(dfo, n, m ,l, n, m, l, dfo);

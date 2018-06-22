@@ -460,6 +460,8 @@ void AtmosLocal::getCommPars(AtmosLocal::CommPars &parStruct)
     parStruct.dqso = dqso_;
     parStruct.dqsi = dqsi_;
     parStruct.dqdt = nuq_ * tdim_ / qdim_ * dqso_ ;
+    parStruct.da   = da_;
+    parStruct.tauf = tauf_;
 }
 
 //-----------------------------------------------------------------------------
@@ -703,7 +705,8 @@ void AtmosLocal::computeRHS()
                 value = 0.0;
 
                 // Nonlinear albedo equation is at this point computed
-                // in forcing. 
+                // in forcing. FIXME, this is a HACK. I need to think
+                // about this a little longer.
                 if (XX != ATMOS_AA_) 
                     value += matvec(row);
                 
@@ -849,7 +852,7 @@ void AtmosLocal::forcing()
             }
             else
             {
-                value = (a0_ + da_ * (*Msi_)[sr] - A) / tauc_;
+                value = (a0_ + da_*(*Msi_)[sr] - A) / tauc_;
             }
             
             frc_[ar] = value;

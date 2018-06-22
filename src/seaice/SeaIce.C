@@ -1,5 +1,4 @@
 #include "SeaIce.H"
-#include "SeaIceDefinitions.H"
 #include "Ocean.H"
 #include "Atmosphere.H"
 
@@ -15,7 +14,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     precInitialized_ (false),
     recomputePrec_   (false),
-
+    
     taus_         (0.01),   // threshold ice thickness
     epsilon_      (1e-2),    // Heavyside approximation steepness
 
@@ -241,7 +240,7 @@ void SeaIce::computeRHS()
 
                 case SEAICE_MM_:       // M row (mask)
 
-                    val = Mval -
+                    val = - Mval +
                         (1./2.) * (1. + tanh( Hval / epsilon_ ) );
 
                     break;
@@ -309,12 +308,12 @@ void SeaIce::computeLocalJacobian()
         for (int i = 1; i <= nLoc_; ++i)
         {
             ind  = find_row1(nLoc_, mLoc_, i, j, H); // H row
-            val  = -(1 / (epsilon_ * 2.0) ) *
+            val  = (1 / (epsilon_ * 2.0) ) *
                 ( 1.0 - pow(tanh((state[ind]) / epsilon_), 2) );
             MM_HH.set( i, j, 1, 1, val);
         }
 
-    MM_MM = 1.0;
+    MM_MM = -1.0;
 
     Al_->set(range, M, H, MM_HH);
     Al_->set(range, M, M, MM_MM);
@@ -408,7 +407,6 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getLocalJacobian()
     jac->beg = beg_;
     return jac;
 }
-
 
 //=============================================================================
 void SeaIce::getCommPars(SeaIce::CommPars &parStruct)

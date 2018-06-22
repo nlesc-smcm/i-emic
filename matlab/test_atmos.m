@@ -1,6 +1,6 @@
 !killall vsm
-!../../build/src/tests/test_atmos
-old = load('Jno.mat')
+%!../../build/src/tests/test_atmos
+%old = load('Jno.mat')
 J   = load('atmosJac'); J = spconvert(J);
 Jn  = load_numjac('atmosNumJac');
 

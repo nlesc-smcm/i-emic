@@ -23,6 +23,7 @@
 #include "Model.H"
 #include "TRIOS_Domain.H"
 #include "GlobalDefinitions.H"
+#include "SeaIceDefinitions.H"
 #include "Utils.H"
 #include "DependencyGrid.H"
 
