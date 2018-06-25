@@ -196,7 +196,7 @@ AMS(Model model, ParameterList pars,
         // // END DEBUG
 
         double dist = dist_fun_var(x, 1);
-        std::cout << "distance = " << dist << std::endl;
+        INFO("distance = " << dist);
         return dist;
     };
 
