@@ -25,19 +25,19 @@ module m_atm
                          ! issues, set in atmos_coeff
       real ::   Os = 1.0 ! default value to avoid initialization
                          ! issues, set in atmos_coeff
-      real, allocatable, dimension(:) ::  dat, davt, albe, suna, suno,upa
+      real, allocatable, dimension(:) ::  dat, davt, suna, suno,upa
 
 contains
 
 subroutine allocate_atm(m)
 
-      allocate(dat(m),davt(0:m),albe(m),suna(m),suno(m),upa(m));
+      allocate(dat(m),davt(0:m),suna(m),suno(m),upa(m));
 
 end subroutine allocate_atm
 
 subroutine deallocate_atm()
 
-      deallocate(dat,davt,albe,suna,suno,upa);
+      deallocate(dat,davt,suna,suno,upa);
 
 end subroutine deallocate_atm
 

@@ -51,6 +51,28 @@ contains
        end do
     end if
   end subroutine insert_atmosphere_q
+
+  !!------------------------------------------------------------------
+  subroutine insert_atmosphere_a(inserted_atmos_a)
+    
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_a
+    integer :: i,j,pos
+
+    if (coupled_T.eq.1) then
+       pos = 1
+       do j = 1,m
+          do i = 1,n
+             albe(i,j) = inserted_atmos_a(pos)
+             pos = pos + 1
+          end do
+       end do
+    end if
+  end subroutine insert_atmosphere_a
   
   !!------------------------------------------------------------------
   subroutine insert_atmosphere_p(inserted_atmos_p)

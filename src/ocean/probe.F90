@@ -321,7 +321,7 @@ contains
     real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
     real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
     
-    real    QTos, QToa, To, Ta, So, qa, pa, Ms, qs
+    real    QTos, QToa, To, Ta, Ab, So, qa, pa, Ms, qs
     real    QSos, QSoa
     
     call usol(un,u,v,w,p,T,S)
@@ -336,8 +336,9 @@ contains
           if (landm(i,j,l).eq.OCEAN) then
              
              To   = T(i,j,l)     ! sea surface temperature sst
-             Ta   = tatm(i,j)    ! atmosphere temperature
              So   = S(i,j,l)     ! sea surface salinity sss
+             Ta   = tatm(i,j)    ! atmosphere temperature
+             Ab   = albe(i,j)    ! albedo
              qa   = qatm(i,j)    ! atmosphere humidity
              pa   = patm(i,j)    ! atmosphere precipitation
              Ms   = msi(i,j)     ! sea ice mask
@@ -349,7 +350,8 @@ contains
 
                 QTos = QTnd * zeta * (a0 * (So+s0) - (To+t0) ) !
 
-                QToa = par(COMB) * par(SUNP) * suno(j)  & ! shortwave heat flux
+                QToa = par(COMB) * par(SUNP)            &
+                     * suno(j) * (1 - Ab)               & ! shortwave heat flux
                      - Ooa * (To - Ta)                  & ! sensible heat flux
                      - lvsc * eta * qdim *              & ! latent heat flux
                      (deltat / qdim * dqso * To - qa)   & 
@@ -365,7 +367,6 @@ contains
                 dfsdq(pos) = -QSnd * Qvar  / (rhodim * Lf) * Ms
 
                 ! dfsdm part ------------------------------
-                
                 QSos = QSnd * (                       &
                      zeta * (a0 * (So+s0) - (To+t0))  & ! QTos component
                      - ( Qvar * qs + q0 ) )           & ! QTsa component

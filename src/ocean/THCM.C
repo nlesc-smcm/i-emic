@@ -134,6 +134,7 @@ extern "C" {
     //
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_t)(double *atmosT);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_q)(double *atmosQ);
+    _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_a)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_p)(double *atmosP);
     _MODULE_SUBROUTINE_(m_inserts, insert_seaice_q)(double *seaiceT);
     _MODULE_SUBROUTINE_(m_inserts, insert_seaice_m)(double *seaiceM);
@@ -601,9 +602,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // Our copies of atmospheric entities
     localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosA     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localAtmosP     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSeaiceQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSeaiceM     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSeaiceQ    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSeaiceM    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localOceanE     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localEmip       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localSurfTmp    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
@@ -1212,6 +1214,20 @@ void THCM::setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ)
 }
 
 //=============================================================================
+void THCM::setAtmosphereA(Teuchos::RCP<Epetra_Vector> const &atmosA)
+{
+    CHECK_MAP(atmosA, StandardSurfaceMap);
+    
+    // Standard2Assembly
+    // Import atmosQ into local atmosQ
+    CHECK_ZERO( localAtmosA->Import(*atmosA, *as2std_surf, Insert) );
+
+    double *tmpAtmosA;
+    localAtmosA->ExtractView(&tmpAtmosA);
+    F90NAME(m_inserts, insert_atmosphere_a)( tmpAtmosA );
+}
+
+//=============================================================================
 void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 {
     CHECK_MAP(atmosP, StandardSurfaceMap);
@@ -1374,8 +1390,8 @@ Teuchos::RCP<Epetra_Vector> THCM::getTemperatureFlux()
 
     // Export assembly map surface temflux 
     CHECK_ZERO(temflux->Export(*localTemFlux, *as2std_surf, Zero));
-
-    return temflux;    
+    
+    return temflux; 
 }
 
 //=============================================================================

@@ -51,8 +51,9 @@ SUBROUTINE forcing
   ! Determine atmospheric temperature forcing
   ! ------------------------------------------------------------------
 
-  etabi = par(COMB)*par(TEMP)*(1 - TRES + TRES*par(BIOT))
-
+  etabi =  par(COMB) * par(TEMP) * (1 - TRES + TRES*par(BIOT))
+  lvsc  =  par(COMB) * par(TEMP) * rhodim * lv * QTnd
+  
   ! idealized temperature forcing
   temcor = 0.0
   if ((ite.eq.1).and.(coupled_T.eq.0)) then
@@ -67,20 +68,16 @@ SUBROUTINE forcing
      
   endif
 
+
   do j=1,m
      do i=1,n
-        if (la > 0) then ! coupling to atmosphere
-           Frc(find_row2(i,j,l+1,TT)) = &
-                par(COMB) * par(SUNP) * (suna(j) - amua)
-           Frc(find_row2(i,j,l,TT)) = &
-                par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
-           
-        else if (coupled_T.eq.1) then ! coupled externally
+        if (coupled_T.eq.1) then ! coupled externally
 
            ! Heat flux forcing from the atmosphere into the ocean.
            ! External and background contributions
            QToa = &
-                par(COMB) * par(SUNP) * suno(j)  & ! shortwave heat flux
+                par(COMB) * par(SUNP)            & ! continuation pars
+                *  suno(j) * (1-albe(i,j))       & ! shortwave heat flux
                 +  Ooa * tatm(i,j)               & ! sensible heat fux
                 +  lvsc * eta * qdim * qatm(i,j) & ! latent heat flux
                 -  lvsc * eo0                      ! latent heat flux
@@ -107,7 +104,7 @@ SUBROUTINE forcing
   if (coupled_S.eq.1) then
      gamma = par(COMB) * par(SALT) 
   else 
-     gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT))
+     gamma = par(COMB) * par(SALT) * (1 - SRES + SRES*par(BIOT))
   endif
 
   salcor = 0.0;

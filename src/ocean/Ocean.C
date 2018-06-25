@@ -167,17 +167,17 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     sIndexMap_ = Utils::CreateSubMap(state_->Map(), sRows);
 
     // Create SST vector
-    sst_ = Teuchos::rcp(new Epetra_Vector(*tIndexMap_));
+    sst_  = Teuchos::rcp(new Epetra_Vector(*tIndexMap_));
 
     // Create SSS vector
-    sss_ = Teuchos::rcp(new Epetra_Vector(*sIndexMap_));
+    sss_  = Teuchos::rcp(new Epetra_Vector(*sIndexMap_));
 
     // Create Qsi vector
-    Qsi_ = Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
+    Qsi_  = Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
     
     // Create Msi vector
-    Msi_ = Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
-                        
+    Msi_  = Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
+    
     // Create import strategies
     // Target map: IndexMap
     // Source map: state_->Map()
@@ -249,7 +249,7 @@ void Ocean::initializeOcean()
     mapP_     = Utils::CreateSubMap(*RowMap, _NUN_, PP);
     mapU_     = Utils::CreateSubMap(*RowMap, _NUN_, UU);
 
-    singRows_ = Teuchos::rcp(new Epetra_Vector(*mapP_));
+    singRows_ = Teuchos::rcp(new Epetra_Vector( *mapP_ ) );
 }
 
 //====================================================================
@@ -1493,6 +1493,12 @@ Teuchos::RCP<Epetra_Vector> Ocean::getE()
 }
 
 //==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getSunO()
+{
+    return THCM::Instance().getSunO();
+}
+
+//==================================================================
 int Ocean::getRowIntCon()
 {
     return THCM::Instance().getRowIntCon();
@@ -1509,6 +1515,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
     FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim);
 
     int T = ATMOS_TT_; // (1-based) in the Atmosphere, temperature is the first unknown
+    int A = ATMOS_AA_; // (1-based) in the Atmosphere, temperature is the first unknown
     int Q = ATMOS_QQ_; // (1-based) in the Atmosphere, humidity is the second unknown
     int P = ATMOS_PP_; // (1-based) in the Atmosphere, global precipitation is an auxiliary
 
@@ -1516,17 +1523,28 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
 
     // FIXME if this block would be computed locally we would not need
     // an allgather
-    Teuchos::RCP<Epetra_MultiVector> Msi = Utils::AllGather(*Msi_);
+    Teuchos::RCP<Epetra_MultiVector> Msi  = Utils::AllGather(*Msi_);
+
+    // Obtain shortwave radiative heat (global) field --> FIXME
+    // factorize as this is constant
+    Teuchos::RCP<Epetra_MultiVector> suno =
+        Utils::AllGather(*THCM::Instance().getSunO());
     
     // fill CRS struct
     int el_ctr = 0;
     int col;
     int sr;
     double M; // sea ice mask value
+    double S; // shortwave radiative flux dependency
     double dTFT; // d / dtatm (F_T)
     double dQFT; // d / dqatm (F_T)
     double dQFS; // d / dqatm (F_S)
     double dPFS; // d / dpatm (F_S)
+    double dAFT; // d / dalbe (F_T)
+
+    double comb = getPar("Combined Forcing");
+    double sunp = getPar("Solar Forcing");
+    
     for (int k = 0; k != L_; ++k)
         for (int j = 0; j != M_; ++j)
             for (int i = 0; i != N_; ++i)
@@ -1536,6 +1554,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
 
                 // sea ice mask value
                 M  = (*(*Msi)(0))[sr];
+                S  = (*(*suno)(0))[sr];
                 
                 for (int xx = UU; xx <= SS; ++xx)
                 {
@@ -1554,8 +1573,16 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
                             block->jco.push_back(atmos->interface_row(i,j,T) );
                             el_ctr++;
 
+                            // albe dependency
+                            dAFT = -comb * sunp * S * (1.0 - M);
+                            // negating as the Jacobian is taken negative
+                            block->co.push_back( -dAFT );                            
+                            block->jco.push_back(atmos->interface_row(i,j,A) );
+                            el_ctr++;
+
                             // qatm dependency
                             dQFT = lvsc * eta * qdim * (1.0 - M);
+                            // negating as the Jacobian is taken negative
                             block->co.push_back(-dQFT);
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
@@ -1610,13 +1637,13 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
     int el_ctr = 0;
     int sr; // surface row
 
-    int seaiceQQ = 2; // (1-based) heat flux unknown in the sea ice model
-    int seaiceMM = 3; // (1-based) mask unknown in the sea ice model
+    int seaiceQQ = SEAICE_QQ_; // (1-based) heat flux unknown in the sea ice model
+    int seaiceMM = SEAICE_MM_; // (1-based) mask unknown in the sea ice model
 
     double dFTdMval;
     double dFSdQval;
     double dFSdMval;
-        
+
     for (int k = 0; k != L_; ++k)
         for (int j = 0; j != M_; ++j)
             for (int i = 0; i != N_; ++i)
@@ -1625,12 +1652,12 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
                 dFTdMval = (*(*dFTdM)(0))[sr];
                 dFSdQval = (*(*dFSdQ)(0))[sr];
                 dFSdMval = (*(*dFSdM)(0))[sr];
-                
+
                 // surface, non-land point
                 for (int XX = UU; XX <= SS; ++XX)
                 {
                     block->beg.push_back(el_ctr);
-                    if ( ( k == L_-1 ) && 
+                    if ( ( k == L_-1 ) &&
                          ( (*landmask_.global_surface)[sr] == 0 ))
                     {
                         // surface T row
@@ -1650,16 +1677,16 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
 
                             block->co.push_back( -dFSdMval );
                             block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
-                            el_ctr++;                            
-                        }                        
+                            el_ctr++;
+                        }
                     }
                 }
             }
-                
-    block->beg.push_back(el_ctr); 
+    
+    block->beg.push_back(el_ctr);
     assert( (int) block->co.size() == block->beg.back());
-               
-    return block;   
+    
+    return block;
 }
 
 //====================================================================

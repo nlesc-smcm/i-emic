@@ -377,7 +377,8 @@ TEST(CoupledModel, applyMatrix)
 
         // set values
         coupledModel->getState('V')->Random();
-        coupledModel->setPar(0.1);
+        double parValue = 0.1;
+        coupledModel->setPar(parValue);
         
         std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
         std::shared_ptr<Combined_MultiVec> y = coupledModel->getState('C');
@@ -409,6 +410,12 @@ TEST(CoupledModel, applyMatrix)
         // Test atmos -> ocean coupling
         int ii = n-2;
         int jj = m-2;
+
+        // Get shortwave radiative heat flux dependence
+        Teuchos::RCP<Epetra_MultiVector> suno =
+                Utils::AllGather(*ocean->getSunO());
+
+        double So = (*(*suno)(0))[jj*n + ii];
             
         for (int v = 0; v != 3; ++v)
         {
@@ -421,7 +428,7 @@ TEST(CoupledModel, applyMatrix)
             double Ooa, Os, nus, eta, lvsc, qdim;
             FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim);
 
-            // Test first surface element (temperature)
+            // Test center surface element (temperature)
             int surfbT = FIND_ROW2(_NUN_, n, m, l, ii, jj, l-1, TT);
 
             INFO( " surface element TT " << surfbT );
@@ -442,7 +449,8 @@ TEST(CoupledModel, applyMatrix)
                 {
                     lid = oceanVec->Map().LID(surfbT);
                     surfval = (*oceanVec)[0][lid];
-                    EXPECT_NEAR(-(Ooa + lvsc * eta * qdim) * value[v], surfval , 1e-7);
+                    EXPECT_NEAR(-(Ooa + lvsc * eta * qdim - parValue * So ) * value[v],
+                                surfval , 1e-7);
                 }
 
                 // Test first surface element (salinity)

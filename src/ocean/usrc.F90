@@ -1188,19 +1188,16 @@ SUBROUTINE atmos_coef
   lvsc = 0.0 ! ...
   DO j = 1,m
      !       albe(j) = 0.15 + 0.05 * cos (y(j))
-     albe(j) = 0.3
      dat(j)  = 0.9 + 1.5 * exp(-12*y(j)*y(j)/pi)
-     suno(j) = Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
-     suna(j) = As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
+     ! suno(j) = Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
+     ! suna(j) = As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
+     suno(j) = Os*(1-.482*(3*sin(y(j))**2-1.)/2.)
+     suna(j) = As*(1-.482*(3*sin(y(j))**2-1.)/2.)
   ENDDO
 
   DO j = 0,m
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
-
-  ! open(8, file = rundir//'suno.txt')
-  ! write(8, *) suno
-  ! close(8)
   
   ! write(*,*) 'Ocean-Atmosphere pars:     dzne=', dzne,' hdim=', hdim
   ! write(*,*) '                            nus=', nus, ' lvsc=', lvsc

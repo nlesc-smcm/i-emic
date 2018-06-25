@@ -360,6 +360,8 @@ public:
     Teuchos::RCP<Epetra_Vector> getLocalOceanE();
     Teuchos::RCP<Epetra_Vector> getE();
 
+    Teuchos::RCP<Epetra_Vector> getSunO();
+
     //! Returns the ocean-atmos coupling block in the Jacobian
     //! matrix. I.e. the derivative of our RHS with respect to the
     //! atmosphere. The CouplingBlock class builds a parallel coupling

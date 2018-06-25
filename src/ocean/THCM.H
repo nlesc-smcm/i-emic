@@ -162,7 +162,10 @@ public:
 
     //! Set atmosphere humidity field in the ocean model
     void setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ);
-    
+
+    //! Set atmosphere humidity field in the ocean model
+    void setAtmosphereA(Teuchos::RCP<Epetra_Vector> const &atmosA);
+
     //! Set atmosphere precipitation field in the ocean model
     void setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP);
 
@@ -388,6 +391,9 @@ private:
 
     //! used to import atmosphere humidity field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosQ;
+
+    //! used to import albedo field into THCM
+    Teuchos::RCP<Epetra_Vector> localAtmosA;
 
     //! used to import atmosphere precipitation field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosP;
