@@ -196,7 +196,7 @@ AMS(Model model, ParameterList pars,
         // // END DEBUG
 
         double dist = dist_fun_var(x, 1);
-        INFO("distance = " << dist);
+        std::cout << "distance = " << dist << std::endl;
         return dist;
     };
 
@@ -216,6 +216,7 @@ auto AMS<Model>::get_time_step()
         double sig = 1.0 / (dt * theta_);
 
         *model_->getState('V') = *x;
+        // model_->saveState();
 
         // Compute noise for forcing which is independent per processor
         static thread_local std::random_device rd;
@@ -315,6 +316,7 @@ auto AMS<Model>::get_projected_time_step()
 
         auto xsmall = restrict(*x);
         *model_->getState('V') = *x;
+        // model_->saveState();
 
         TIMER_START("AMS: Compute noise");
         // Compute noise for forcing which is independent per processor
