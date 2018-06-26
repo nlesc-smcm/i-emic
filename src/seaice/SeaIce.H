@@ -232,7 +232,8 @@ private:
     double eta_;
 
     //! Shortwave radiation constants and functions
-    double alpha_; //! reference albedo
+    double albe0_; //! reference albedo
+    double albed_; //! albedo excursion
     double sun0_;  //! solar constant
     double c0_;    //! atmospheric absorption coefficient
     double Ch_;    //! Ch

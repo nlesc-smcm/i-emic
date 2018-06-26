@@ -582,7 +582,6 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
 
     block->beg.push_back(el_ctr);
 
-    std::cout << block->co.size() << " " << block->beg.back() << std::endl;
     assert( (int) block->co.size() == block->beg.back());
     
     TIMER_STOP("Atmosphere::getBlock(ocean)...");
@@ -645,7 +644,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
 
             dMFQ = pars.nuq * pars.tdim / pars.qdim * (Ei - Eo);
             dTFQ = pars.nuq * pars.tdim / pars.qdim * pars.dqsi * M;
-            dMFA = pars.da / pars.tauf;
+            dMFA = 1.0 / pars.tauf;
 
             for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
             {

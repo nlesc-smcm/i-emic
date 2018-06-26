@@ -76,11 +76,11 @@ SUBROUTINE forcing
            ! Heat flux forcing from the atmosphere into the ocean.
            ! External and background contributions
            QToa = &
-                par(COMB) * par(SUNP)            & ! continuation pars
-                *  suno(j) * (1-albe(i,j))       & ! shortwave heat flux
-                +  Ooa * tatm(i,j)               & ! sensible heat fux
-                +  lvsc * eta * qdim * qatm(i,j) & ! latent heat flux
-                -  lvsc * eo0                      ! latent heat flux
+                par(COMB) * par(SUNP)                  & ! continuation pars
+                *  suno(j) * (1-albe0-albed*albe(i,j)) & ! shortwave heat flux
+                +  Ooa * tatm(i,j)                     & ! sensible heat fux
+                +  lvsc * eta * qdim * qatm(i,j)       & ! latent heat flux
+                -  lvsc * eo0                            ! latent heat flux
 
            ! Heat flux forcing from sea ice into the ocean. External
            ! and background contributions.

@@ -39,7 +39,7 @@ TEST(ParameterLists, Initialization)
 
         INFO('\n' << "Overwriting:");
 
-        // Allow dominant parameterlists. Not that this trick uses a
+        // Allow dominant parameterlists. Note that this trick uses a
         // 'flattened' hierarchy. The Continuation and CoupledModel
         // parameterlists are allowed to overwrite settings.
         Utils::overwriteParameters(params[OCEAN],  params[COUPLED]);
@@ -416,6 +416,9 @@ TEST(CoupledModel, applyMatrix)
                 Utils::AllGather(*ocean->getSunO());
 
         double So = (*(*suno)(0))[jj*n + ii];
+
+        Atmosphere::CommPars atmosPars;
+        atmos->getCommPars(atmosPars);
             
         for (int v = 0; v != 3; ++v)
         {
@@ -449,7 +452,7 @@ TEST(CoupledModel, applyMatrix)
                 {
                     lid = oceanVec->Map().LID(surfbT);
                     surfval = (*oceanVec)[0][lid];
-                    EXPECT_NEAR(-(Ooa + lvsc * eta * qdim - parValue * So ) * value[v],
+                    EXPECT_NEAR(-(Ooa + lvsc * eta * qdim - parValue * So * atmosPars.da ) * value[v],
                                 surfval , 1e-7);
                 }
 

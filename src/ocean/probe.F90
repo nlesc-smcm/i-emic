@@ -351,7 +351,7 @@ contains
                 QTos = QTnd * zeta * (a0 * (So+s0) - (To+t0) ) !
 
                 QToa = par(COMB) * par(SUNP)            &
-                     * suno(j) * (1 - Ab)               & ! shortwave heat flux
+                     * suno(j) * (1-albe0-albed*Ab)     & ! shortwave heat flux
                      - Ooa * (To - Ta)                  & ! sensible heat flux
                      - lvsc * eta * qdim *              & ! latent heat flux
                      (deltat / qdim * dqso * To - qa)   & 

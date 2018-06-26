@@ -90,6 +90,12 @@ namespace Utils
         std::string label;
     };
 
+    //! Obtain 2-norm of std::vector<double>
+    double norm(std::vector<double> &vec);
+
+    //! Obtain first 2-norm of Epetra_MultiVector
+    double norm(Epetra_MultiVector &vec);
+
     //! Obtain first 2-norm of vectorPtr, more convenient interface
     template<typename VectorPtr>
     double norm(VectorPtr const &vec)
@@ -99,21 +105,6 @@ namespace Utils
         return norm[0];
     }
 
-    //! Obtain first inf-norm of vectorPtr, more convenient interface
-    template<typename VectorPtr>
-    double normInf(VectorPtr const &vec)
-    {
-        std::vector<double> norm(vec->NumVectors());
-        CHECK_ZERO(vec->NormInf(&norm[0]));
-        return norm[0];
-    }
-
-    //! Obtain 2-norm of std::vector<double>
-    double norm(std::vector<double> &vec);
-
-    //! Obtain first 2-norm of Epetra_MultiVector
-    double norm(Epetra_MultiVector &vec);
-
     //! Obtain first 2-norm of Combined_MultiVec
     double norm(Combined_MultiVec &vec);
 
@@ -122,6 +113,15 @@ namespace Utils
 
     //! Obtain first inf-norm of Combined_MultiVec
     double normInf(Combined_MultiVec &vec);
+
+    //! Obtain first inf-norm of vectorPtr, more convenient interface
+    template<typename VectorPtr>
+    double normInf(VectorPtr const &vec)
+    {
+        std::vector<double> norm(vec->NumVectors());
+        CHECK_ZERO(vec->NormInf(&norm[0]));
+        return norm[0];
+    }
     
     //! Compute column sums of matrix mat and put them in vector sums
     void colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums);

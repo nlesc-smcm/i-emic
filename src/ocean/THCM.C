@@ -186,6 +186,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     //=================================================
     // TODO: implement atmosphere layer
+    // FIXME get rid of all la 
     la = 0;
     //=================================================
 

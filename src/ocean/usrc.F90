@@ -223,7 +223,7 @@ SUBROUTINE get_parameters(o_r0dim, o_udim, o_hdim)
 end subroutine get_parameters
 
 !**********************************************************
-SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
+SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_albed)
   ! Interface to set a few model parameters relevant for E-P. These
   ! parameters affect the sensitivity nus, which should be updated
   ! here.
@@ -231,14 +231,16 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
   use m_usr
   use m_atm
   implicit none
-  real(c_double) i_qdim, i_nuq, i_eta, i_dqso, i_eo0
+  real(c_double) i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_albed
   real dzne
 
-  qdim = i_qdim 
-  nuq  = i_nuq  
-  eta  = i_eta  
-  dqso = i_dqso
-  eo0  = i_eo0
+  qdim  = i_qdim 
+  nuq   = i_nuq  
+  eta   = i_eta  
+  dqso  = i_dqso
+  eo0   = i_eo0
+  albe0 = i_albe0
+  albed = i_albed
 
   dzne = dz*dfzT(l)
 

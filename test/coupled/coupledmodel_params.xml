@@ -38,9 +38,9 @@
   <!-- eastern domain bound -->
   <Parameter name="Global Bound xmax" type="double" value="350"/>
   <!-- southern domain bound -->
-  <Parameter name="Global Bound ymin" type="double" value="10"/>
+  <Parameter name="Global Bound ymin" type="double" value="30"/>
   <!-- northern domain bound -->
-  <Parameter name="Global Bound ymax" type="double" value="74"/>
+  <Parameter name="Global Bound ymax" type="double" value="88"/>
   <!-- global number of grid points in x-direction -->
   <Parameter name="Global Grid-Size n" type="int" value="6"/>
   <!-- global number of grid points in y-direction -->

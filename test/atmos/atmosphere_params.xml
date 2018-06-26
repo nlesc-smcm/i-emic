@@ -43,19 +43,11 @@
   <Parameter name="Auxiliary unknowns" type="int" value="0"  />  
 
   <!-- Atmosphere physical parameters -->
-  <Parameter name="atmospheric density"                 type="double" value="1.25"     />
-  <Parameter name="atmospheric scale height"            type="double" value="8400"     />
-  <Parameter name="heat capacity"                       type="double" value="1000"     />
-  <Parameter name="radiative flux param A"              type="double" value="216.0"    />
-  <Parameter name="radiative flux param B"              type="double" value="1.5"      />
-  <Parameter name="solar constant"                      type="double" value="1360."    />
-  <Parameter name="atmospheric absorption coefficient"  type="double" value="0.43"     />
-  <Parameter name="exchange coefficient ce"             type="double" value="1.3e-03"  />
-  <Parameter name="exchange coefficient ch"             type="double" value="1.222e-03"/>
-  <Parameter name="mean atmospheric surface wind speed" type="double" value="8.5"      />
-  <Parameter name="reference temperature"               type="double" value="15.0"     />
-  <Parameter name="horizontal velocity of the ocean"    type="double" value="0.1e00"   />
-  <Parameter name="radius of the earth"                 type="double" value="6.37e06"  />
+
+  <!-- testing parameters  -->
+  <Parameter name="melt temperature threshold (deg C)" type="double" value="14"/>
+  <Parameter name="rain/snow temperature threshold (deg C)" type="double" value="15"/>
+  <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="0.1"/>
 
   <!-- Preconditioner parameters.                                         -->
   <!-- When using the parallel solve routine, the overlap level should be -->

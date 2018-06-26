@@ -42,6 +42,7 @@ extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*);
 extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
 extern "C" _SUBROUTINE_(set_atmos_parameters)(double*, double*, double*,
+                                              double*, double*,
                                               double*, double*);
 extern "C" _SUBROUTINE_(set_seaice_parameters)(double*, double*, double*,
                                                double*, double*, double*,
@@ -1429,10 +1430,12 @@ void Ocean::synchronize(std::shared_ptr<Atmosphere> atmos)
     //FIXME --> it should also be possible to pass the entire struct to
     // --> fortran, need to figure that out...
     FNAME( set_atmos_parameters )( &atmosPars.qdim,
-                             &atmosPars.nuq,
-                             &atmosPars.eta,
-                             &atmosPars.dqso,
-                             &atmosPars.Eo0 );
+                                   &atmosPars.nuq,
+                                   &atmosPars.eta,
+                                   &atmosPars.dqso,
+                                   &atmosPars.Eo0,
+                                   &atmosPars.a0,
+                                   &atmosPars.da);
 
     TIMER_STOP("Ocean: set atmosphere...");
 }
@@ -1510,9 +1513,12 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
-    // This block has values -Ooa on the surface temperature points.
+    // get parameter dependencies
     double Ooa, Os, nus, eta, lvsc, qdim;
     FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim);
+    Atmosphere::CommPars atmosPars;
+    atmos->getCommPars(atmosPars);
+    double albed = atmosPars.da;
 
     int T = ATMOS_TT_; // (1-based) in the Atmosphere, temperature is the first unknown
     int A = ATMOS_AA_; // (1-based) in the Atmosphere, temperature is the first unknown
@@ -1574,7 +1580,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
                             el_ctr++;
 
                             // albe dependency
-                            dAFT = -comb * sunp * S * (1.0 - M);
+                            dAFT = -comb * sunp * S * albed * (1.0 - M);
                             // negating as the Jacobian is taken negative
                             block->co.push_back( -dAFT );                            
                             block->jco.push_back(atmos->interface_row(i,j,A) );

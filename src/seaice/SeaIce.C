@@ -55,7 +55,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     eta_   ( ( rhoa_ / rhoo_ ) * ce_ * uw_),
 
 // Shortwave radiation constants and functions
-    alpha_   (params->get("reference albedo", 0.3)),
+    albe0_   (params->get("reference albedo", 0.3)),
+    albed_   (params->get("albedo excursion", 0.5)),
     sun0_    (params->get("solar constant", 1360)),
     c0_      (params->get("atmospheric absorption coefficient", 0.43)),
     Ch_      (params->get("Ch", 1.22e-3)),
@@ -237,7 +238,8 @@ void SeaIce::computeRHS()
                 case SEAICE_QQ_:       // Q row (heat flux)
 
                     val = 1. / muoa_ * (Q0_ + Qvar_ * Qval) -
-                        (sun0_ / 4. / muoa_) * shortwaveS(y_[j]) * (1.-albe[sr]) * c0_ +
+                        (sun0_ / 4. / muoa_) * shortwaveS(y_[j]) *
+                        (1. - albe0_ - albed_*albe[sr]) * c0_ +
                         (t0i_ + Tval - tatm[sr] - t0a_) +
                         (rhoo_ * Ls_ / muoa_) *
                         (E0_ + dEdT_ * Tval + dEdq_ * qatm[sr]);
@@ -462,7 +464,8 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
         int lid = standardSurfaceMap_->LID(gid);   
         
         if (lid >= 0)
-            tmp = (sun0_ / 4. / muoa_) * shortwaveS(y_[lid / nLoc_]) * c0_;
+            tmp = (sun0_ / 4. / muoa_) *
+                shortwaveS(y_[lid / nLoc_]) * albed_ * c0_;
 
         comm_->SumAll(&tmp, &daatmFQ, 1);
         
@@ -593,7 +596,12 @@ void SeaIce::synchronize(std::shared_ptr<Atmosphere> atmos)
     Teuchos::RCP<Epetra_Vector> albe  = atmos->interfaceA();
     CHECK_MAP(albe, standardSurfaceMap_);
     albe_ = albe;
+    
+    Atmosphere::CommPars atmosPars;
+    atmos->getCommPars(atmosPars);
 
+    albe0_ = atmosPars.a0;
+    albed_ = atmosPars.da;
 }
 
 //=============================================================================
@@ -653,7 +661,7 @@ void SeaIce::idealizedForcing()
             sss[row]  = svar * cos( PI_ * y_[j] / ymax_ ) / cos( y_[j] );
             tatm[row] = tvar * cos( PI_ * y_[j] / ymax_ );
             qatm[row] = qvar * cos( PI_ * y_[j] / ymax_ );
-            albe[row] = alpha_;
+            albe[row] = 0.0;
         }
 
     // Transfer data to non-overlapping vectors

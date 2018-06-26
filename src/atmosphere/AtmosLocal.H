@@ -45,6 +45,7 @@ public:
         double Eo0;
         double t0o;
         double t0i;
+        double a0;
         double da;
         double tauf;
     };
@@ -403,14 +404,14 @@ private:
     void write(std::vector<double> &vector, const std::string &filename);
 
     //! Land temperature is a function of albedo, atmospheric
-    //! temperature and latitude grid-box, expecting albedo A, Ta
+    //! temperature and the latitude grid-box, expecting albedo A, Ta
     //! anomaly and grid point j.
     double Tl(double A, double Ta, int j)
-        { return Ta + comb_ * sunp_ * suno_[j] * (1 - A) / Ooa_; }
+        { return Ta + comb_ * sunp_ * suno_[j] * (1 - a0_ - da_*A) / Ooa_; }
     
     //! derivative of land temperature w.r.t. albedo
     double dTldA(int j)
-        { return -comb_ * sunp_ * suno_[j] / Ooa_; }
+        { return -comb_ * sunp_ * suno_[j] * da_ / Ooa_; }
 
     //! derivative of land temperature w.r.t. atmospheric temperature
     double dTldTa()
@@ -421,9 +422,10 @@ private:
     //! anomaly P and latitude grid-box j
     double aF(double A, double Ta, double P, int j)
         {
-            // return H(t0o_ + Tm_ - Tl(A,Ta,j), epm_) *
-            //     H(t0o_ + Tr_ - Tl(A,Ta,j), epr_) *
-            //     H(Po0_ + eta_ * qdim_ * P - Pa_, epa_);
+            return
+                H(Tm_ - Tl(A,Ta,j), epm_) *
+                H(Tr_ - Tl(A,Ta,j), epr_) *
+                H(P - Pa_, epa_);
 
             // return 5*Ta + 4*A + 3*P;
             
@@ -431,8 +433,8 @@ private:
             //     H(Tr_ - Tl(A,Ta,j), epr_) *
             //     H(P - Pa_, epa_);
 
-            return H(Tm_ - Tl(A,Ta,j), epm_) *
-                H(Tr_ - Tl(A,Ta,j), epr_) * H(P - Pa_, epa_);
+            // return H(Tm_ - Tl(A,Ta,j), epm_) *
+            //     H(Tr_ - Tl(A,Ta,j), epr_) * H(P - Pa_, epa_);
         }
 
     //! aF derivative w.r.t. T, lazy: finite difference
@@ -449,7 +451,7 @@ private:
 
     //! derivative of atmos temperature equation w.r.t. albedo
     double dTadA(int j)
-        { return -comb_ * sunp_ * suna_[j]; }
+        { return -comb_ * sunp_ * suna_[j] * da_; }
 
     //! Heavyside approximation
     double H(double x, double eps)

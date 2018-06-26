@@ -19,7 +19,6 @@ class CouplingBlock
     ModelCol modelCol_;
     
     Teuchos::RCP<Epetra_CrsMatrix> block_;
-
     Teuchos::RCP<TRIOS::Domain> modelRowDomain_;
     Teuchos::RCP<TRIOS::Domain> modelColDomain_;
 

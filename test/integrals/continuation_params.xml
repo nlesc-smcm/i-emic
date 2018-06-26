@@ -25,7 +25,7 @@
   
   <!-- Define the number of continuation steps                     -->
   <!--   set to -1 to run until convergence at final destination   -->
-  <Parameter name="maximum number of steps" type="int" value="2"/>
+  <Parameter name="maximum number of steps" type="int" value="3"/>
 
   <!-- Tolerance in Newton process -->
   <Parameter name="Newton tolerance" type="double" value="1.0e-6"/>
@@ -62,7 +62,7 @@
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->
   <!-- arclength parameterization.                                    -->
-  <Parameter name="state tangent scaling" type="double" value="1.0e-5"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0e-2"/>
 
   <!-- reject solution from failed Newton iteration -->
   <Parameter name="reject failed iteration" type="bool" value="true"/>
@@ -70,12 +70,12 @@
   <!-- Normalization strategy                                -->
   <!--     O: Old (ds)                                       -->
   <!--     N: New (ds*ds)                                    -->
-  <Parameter name="normalize strategy" type="char" value="O"/>
+  <Parameter name="normalize strategy" type="char" value="N"/>
 
   <!-- corrector residual test types:           -->
   <!-- R:  ||R||_2                              -->
   <!-- D:  ||(pardir, xdir)||_inf     (default) -->
-  <Parameter name="corrector residual test" type="char" value="R"/>
+  <Parameter name="corrector residual test" type="char" value="D"/>
 
   <!-- We can get rid of about half the solves in a continuation step, -->
   <!-- but this is only valid when dFdpar is approximately constant    -->

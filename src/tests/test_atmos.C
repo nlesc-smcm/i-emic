@@ -53,7 +53,20 @@ TEST(Atmosphere, Initialization)
         throw;
     }
     EXPECT_EQ(failed, false);
-}
+
+    atmosPar->setPar(0.0);
+    atmosLoc->setPar(0.0);
+
+    atmosPar->computeRHS();
+    atmosLoc->computeRHS();
+
+    // initial rhs should be equal
+    double normPar = Utils::norm(atmosPar->getRHS('V'));
+    double normSer = Utils::norm(*atmosLoc->getRHS('V'));
+    EXPECT_NEAR(normPar, normSer, 1e-7);
+    
+    // initial rhs should be small
+    EXPECT_LT(normPar, 1e-4);}
 
 //------------------------------------------------------------------
 TEST(Atmosphere, RHS)
@@ -78,7 +91,7 @@ TEST(Atmosphere, RHS)
         // Gather state_par into std::vector
         std::shared_ptr<std::vector<double> > state =
             getGatheredVector(state_par);
-        
+
         // Put the full state in the serial atmosphere
         atmosLoc->setState(state);
 
@@ -182,7 +195,7 @@ TEST(Atmosphere, SurfaceTemperature)
         // Obtain RHS from both models
         Teuchos::RCP<Epetra_Vector> rhsPar = atmosPar->getRHS('V');
         std::shared_ptr<std::vector<double> > rhsSer = atmosLoc->getRHS('V');
-                
+
         EXPECT_NEAR(norm(rhsPar), norm(rhsSer), 1e-6);
         INFO("TEST SST: serial RHS norm = " << norm(rhsSer));
         INFO("TEST SST: parall RHS norm = " << norm(rhsPar));
@@ -201,7 +214,7 @@ TEST(Atmosphere, EPfields)
 {
     atmosLoc->computeRHS();
     atmosPar->computeRHS();
-    
+
     // get serial integral coefficients and evaporation field
     std::shared_ptr<std::vector<double> > serPco = atmosLoc->getPIntCoeff();
     std::shared_ptr<std::vector<double> > serE   = atmosLoc->getE();
@@ -262,14 +275,14 @@ TEST(Atmosphere, MassMatrix)
     double uw      = atmosphereParams->get("mean atmospheric surface wind speed",8.5);
 //     double qdim    = atmosphereParams->get("humidity scale", 0.01);  // (kg/kg)
 
-    double muoa    =  rhoa * ch * cpa * uw;                       
+    double muoa    =  rhoa * ch * cpa * uw;
     double Ai      =  rhoa * hdima * cpa * udim / (r0dim * muoa);
 
     for (int i = 0; i < numMyElements; i+=ATMOS_NUN_)
     {
         EXPECT_EQ(out[i], Ai); // TT
         if (std::abs(out[i+1])>0) // QQ
-            EXPECT_EQ(out[i+1], 1.0); 
+            EXPECT_EQ(out[i+1], 1.0);
     }
 
     // check integral equations in test_coupled
@@ -312,7 +325,7 @@ TEST(Atmosphere, Jacobian)
 
         INFO("TEST(Atmosphere, apply Jacobian): ||serial out|| = " << norm(outSer));
         INFO("TEST(Atmosphere, apply Jacobian): ||parall out|| = " << norm(outPar));
-        
+
     }
     catch (std::exception const &e)
     {
@@ -361,7 +374,7 @@ TEST(Atmosphere, SetMasks)
     for (int i = 0; i < msi->MyLength() / 5; ++i)
         (*msi)[i] = 1;
 
-    atmosPar->setSeaIceMask(msi);    
+    atmosPar->setSeaIceMask(msi);
 }
 
 //------------------------------------------------------------------
@@ -373,10 +386,10 @@ TEST(Atmosphere, numericalJacobian)
 
     atmosPar->computeRHS();
     atmosPar->computeJacobian();
-    
+
     Teuchos::RCP<Epetra_CrsMatrix> atmosJac  = atmosPar->getJacobian();
     DUMPMATLAB("atmosJac", *atmosJac);
-    
+
     // only do this test for small problems in serial
     int nmax = 2e3;
 
@@ -385,7 +398,7 @@ TEST(Atmosphere, numericalJacobian)
     {
         bool failed = false;
         try
-        {            
+        {
             INFO("compute njC");
             NumericalJacobian<std::shared_ptr<Atmosphere>,
                               Teuchos::RCP<Epetra_Vector> > numJac;
@@ -400,19 +413,19 @@ TEST(Atmosphere, numericalJacobian)
             numJac.fillCCS(ccs);
 
             EXPECT_NE(ccs.beg.back(), 0);
-            
+
             Teuchos::RCP<Epetra_Vector> x = atmosPar->getState('C');
 
             testEntries(atmosPar, ccs, x);
-            
+
         }
         catch (...)
         {
             failed = true;
             throw;
         }
-        
-    
+
+
         EXPECT_EQ(failed, false);
     }
     if (comm->NumProc() != 1)
@@ -425,7 +438,7 @@ TEST(Atmosphere, numericalJacobian)
     {
         std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
         INFO("****Numerical Jacobian test cannot run for this problem size****");
-    }  
+    }
 
 }
 

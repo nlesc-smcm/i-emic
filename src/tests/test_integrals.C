@@ -36,7 +36,7 @@ TEST(ParameterLists, Initialization)
 
         INFO('\n' << "Overwriting:");
 
-        // Allow dominant parameterlists. Not that this trick uses a
+        // Allow dominant parameterlists. Note that this trick uses a
         // 'flattened' hierarchy. The Continuation and CoupledModel
         // parameterlists are allowed to overwrite settings.
         Utils::overwriteParameters(params[OCEAN],  params[COUPLED]);
@@ -56,6 +56,50 @@ TEST(ParameterLists, Initialization)
         throw;
     }
     EXPECT_EQ(failed,false);
+}
+
+//------------------------------------------------------------------
+TEST(CoupledModel, Initialization)
+{
+    bool failed = false;
+    try
+    {
+        ocean  = std::make_shared<Ocean>(comm, params[OCEAN]);
+        atmos  = std::make_shared<Atmosphere>(comm, params[ATMOS]);
+        seaice = std::make_shared<SeaIce>(comm, params[SEAICE]);
+        
+        coupledModel =
+            std::make_shared<CoupledModel>(ocean, atmos, seaice, params[COUPLED]);
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(CoupledModel, Continuation)
+{
+    bool failed = false;
+    try
+    {
+        // Create continuation
+        Continuation<std::shared_ptr<CoupledModel>,
+                     Teuchos::RCP<Teuchos::ParameterList> >
+            continuation(coupledModel, params[CONT]);
+
+        // Run continuation        
+        continuation.run();
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------
@@ -86,4 +130,3 @@ int main(int argc, char **argv)
     MPI_Finalize();
     return out;
 }
-

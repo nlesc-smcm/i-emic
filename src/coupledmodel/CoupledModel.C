@@ -156,17 +156,7 @@ void CoupledModel::createGID2CoordMap()
         modelIdent++;
     }
 
-// #ifdef DEBUGGING_NEW
-//     for (auto &row: gid2coord_)
-//     {
-//         for (auto &element: row)
-//             std::cout << element << " ";
-//         std::cout << std::endl;
-//     }
-// #endif 
-    
     assert((int) gid2coord_.size() == stateView_->GlobalLength());
-            
 }
 
 //------------------------------------------------------------------
