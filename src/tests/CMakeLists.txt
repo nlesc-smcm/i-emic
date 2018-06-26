@@ -23,6 +23,7 @@ set(TEST_SOURCES
   test_seaice.C
   test_coupled.C
   intt_coupled.C
+  test_integrals.C
   )
 
 # Google test

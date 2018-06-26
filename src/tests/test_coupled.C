@@ -38,13 +38,13 @@ TEST(ParameterLists, Initialization)
             params.push_back(obtainParams(files[i], names[i]));
 
         INFO('\n' << "Overwriting:");
+
         // Allow dominant parameterlists. Not that this trick uses a
         // 'flattened' hierarchy. The Continuation and CoupledModel
         // parameterlists are allowed to overwrite settings.
         Utils::overwriteParameters(params[OCEAN],  params[COUPLED]);
         Utils::overwriteParameters(params[ATMOS],  params[COUPLED]);
         Utils::overwriteParameters(params[SEAICE], params[COUPLED]);
-
 
         Utils::overwriteParameters(params[OCEAN],  params[CONT]);
         Utils::overwriteParameters(params[ATMOS],  params[CONT]);

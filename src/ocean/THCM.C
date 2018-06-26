@@ -599,7 +599,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localRhs        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
     localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
 
-    // Our copies of atmospheric entities
+    // 2D overlapping interface fields
     localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localAtmosA     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
@@ -1195,6 +1195,7 @@ void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
     CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf, Insert));
 
     double *locAtmosT;
+    
     localAtmosT->ExtractView(&locAtmosT);
     F90NAME(m_inserts, insert_atmosphere_t)( locAtmosT );
 }
