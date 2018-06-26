@@ -1395,13 +1395,13 @@ std::shared_ptr<std::vector<double> > AtmosLocal::getSST(char mode)
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<std::vector<double> > AtmosLocal::getE(char mode)
+std::shared_ptr<std::vector<double> > AtmosLocal::interfaceE(char mode)
 {
     return Utils::getVector(mode, E_);
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<std::vector<double> > AtmosLocal::getP(char mode)
+std::shared_ptr<std::vector<double> > AtmosLocal::interfaceP(char mode)
 {
     return Utils::getVector(mode, P_);
 }

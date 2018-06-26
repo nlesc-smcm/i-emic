@@ -54,6 +54,11 @@
   <Parameter name="Global Grid-Size n" type="int" value="6"   />
   <Parameter name="Global Grid-Size m" type="int" value="6"   />
 
+  <!-- testing parameters  -->
+  <Parameter name="melt temperature threshold (deg C)" type="double" value="14"/>
+  <Parameter name="rain/snow temperature threshold (deg C)" type="double" value="15"/>
+  <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="0.1"/>
+  
   <!-- Preconditioner parameters.                                                -->
   <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.                -->
   <!-- Preconditioning can be used as a pure linear solver as well, in that case -->

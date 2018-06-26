@@ -419,19 +419,14 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   integer type
   real    atom(n,m,l,np)
   real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
-  real    w(0:n+1,0:m+1,0:l+la  )
+  real    w(0:n+1,0:m+1,0:l+la)
   real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
-  real    dum1,dum2,dum3,dum4
   ! LOCAL
   integer i,j,k,k0,k1
-  real    costdxi(0:m+1),tdyi,tanr(m),tdzi,h1,h2
+  real    costdxi(0:m+1),tdzi
   ! EXTERNAL
-  real hs,itkm1,itk1,itkp1,iskm1,isk1,iskp1,jtkm1
-  real jtk1,jtkp1,jskm1,jsk1,jskp1,itkm2,itk2,itkp2,&
-       iskm2,isk2,iskp2,jtkm2,jtk2,jtkp2,jskm2,jsk2,&
-       jskp2, sech, lambda,gam,Ep,Em,eps,&
-       x1,x2,x3,y1,y2,y3
-  !
+  real lambda, gam, eps
+
   atom = 0.0
   gam = 1.0e-06
   eps = 1.0
@@ -602,10 +597,9 @@ SUBROUTINE unlin(type,atom,u,v,w)
   real    atom(n,m,l,np)
   real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
   real    w(0:n+1,0:m+1,0:l+la  )
-  real    dum1,dum2,dum3,dum4
-  ! LOCAL
-  integer i,j,k,k0
-  real    costdxi(0:m),tdyi,tanr(0:m),tdzi(1:l)
+
+  integer i,j,k
+  real    costdxi(0:m),tanr(0:m),tdzi(1:l)
   !
   atom = 0.0
   !
@@ -726,10 +720,9 @@ SUBROUTINE vnlin(type,atom,u,v,w)
   real    atom(n,m,l,np)
   real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
   real    w(0:n+1,0:m+1,0:l+la  )
-  real    dum1,dum2,dum3,dum4
-  ! LOCAL
-  integer i,j,k,k0
-  real    costdxi(0:m),tdyi,tanr(0:m),tdzi(1:l)
+
+  integer i,j,k
+  real    costdxi(0:m),tanr(0:m),tdzi(1:l)
   !
   atom = 0.0
   !
@@ -844,10 +837,10 @@ SUBROUTINE yderiv(type,atom)
   !     5:  tyy
   !     6:  tzz
   !     IMPORT/EXPORT
-  integer type,i,j,k
+  integer type,i,j
   real    atom(n,m,la,np)
-  real    tdxi,tandyi(m),cosdx2i(0:m+1),dy2i,dz2i
-  real    cos2i(m),sincos2i(m)
+  real    cosdx2i(0:m+1),dy2i
+
   !
   atom = 0.0
   SELECT CASE(type)
@@ -928,7 +921,7 @@ END FUNCTION bmh
 real FUNCTION amhy(y,ih)
   implicit none
   !     IMPORT/EXPORT
-  real     x,y
+  real     y
   real     ap
   integer  ih
   !

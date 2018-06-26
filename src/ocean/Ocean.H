@@ -358,7 +358,6 @@ public:
 
     //! Obtain ocean E data for debugging
     Teuchos::RCP<Epetra_Vector> getLocalOceanE();
-    Teuchos::RCP<Epetra_Vector> getE();
 
     Teuchos::RCP<Epetra_Vector> getSunO();
 
@@ -384,6 +383,10 @@ public:
 
     // Obtain interface surface salinity
     Teuchos::RCP<Epetra_Vector> interfaceS();
+
+    // Obtain evaporation as computed by ocean
+    Teuchos::RCP<Epetra_Vector> interfaceE();
+    
 
     // ---------------------------------------------------------------
     // Scale the matrix and rhs of the problem. These things are

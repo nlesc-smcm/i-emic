@@ -226,8 +226,8 @@ TEST(CoupledModel, AtmosphereEPfields)
     bool failed = false;
     try
     {
-        Teuchos::RCP<Epetra_Vector> E = atmos->getE();
-        Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+        Teuchos::RCP<Epetra_Vector> E = atmos->interfaceE();
+        Teuchos::RCP<Epetra_Vector> P = atmos->interfaceP();
 
         Utils::print(E, "file.txt");
         Utils::print(P, "file.txt");
@@ -267,8 +267,8 @@ TEST(CoupledModel, EPIntegral)
     
     Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPIntCoeff();
     
-    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
-    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    Teuchos::RCP<Epetra_Vector> E = atmos->interfaceE();
+    Teuchos::RCP<Epetra_Vector> P = atmos->interfaceP();
     
     double integralE = Utils::dot(intcoeff, E);
     EXPECT_GT(std::abs(integralE), 0.0);
@@ -336,8 +336,8 @@ TEST(CoupledModel, EPIntegral2)
 {
     Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPIntCoeff();
     
-    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
-    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    Teuchos::RCP<Epetra_Vector> E = atmos->interfaceE();
+    Teuchos::RCP<Epetra_Vector> P = atmos->interfaceP();
     
     double integralE = Utils::dot(intcoeff, E);
                               

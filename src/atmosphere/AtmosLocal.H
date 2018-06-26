@@ -299,9 +299,11 @@ public:
     std::shared_ptr<std::vector<double> > getRHS         (char mode = 'C');
     std::shared_ptr<std::vector<double> > getDiagB       (char mode = 'C');
     std::shared_ptr<std::vector<double> > getSST         (char Mode = 'C');
-    std::shared_ptr<std::vector<double> > getE           (char mode = 'C');
-    std::shared_ptr<std::vector<double> > getP           (char mode = 'C');
     std::shared_ptr<std::vector<double> > getPIntCoeff   (char mode = 'C');
+
+    std::shared_ptr<std::vector<double> > interfaceE     (char mode = 'C');
+    std::shared_ptr<std::vector<double> > interfaceP     (char mode = 'C');
+
 
     void setState(std::shared_ptr<std::vector<double> > in) { state_ = in; }
     void setPrecipitation(std::shared_ptr<std::vector<double> > in) { P_ = in; }

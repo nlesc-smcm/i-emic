@@ -1490,7 +1490,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::getLocalOceanE()
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Ocean::getE()
+Teuchos::RCP<Epetra_Vector> Ocean::interfaceE()
 {
     return THCM::Instance().getOceanE();
 }

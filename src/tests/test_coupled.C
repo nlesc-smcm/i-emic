@@ -606,7 +606,7 @@ TEST(CoupledModel, Precipitation)
     coupledModel->applyMatrix(*stateV, *b);
 
     Teuchos::RCP<Epetra_MultiVector> atmb = (*b)(1);
-    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    Teuchos::RCP<Epetra_Vector> P = atmos->interfaceP();
 
     int numMyElements = P->Map().NumMyElements();
     double Pval = 0.0;
@@ -752,8 +752,8 @@ TEST(CoupledModel, Synchronization)
     // Evaporation is calculated simultaneously in Ocean and in
     // Atmosphere during the RHS computation above. Here we check
     // whether they return the same nondimensional norm.
-    Teuchos::RCP<Epetra_Vector> atmosE = atmos->getE();
-    Teuchos::RCP<Epetra_Vector> oceanE = ocean->getE();
+    Teuchos::RCP<Epetra_Vector> atmosE = atmos->interfaceE();
+    Teuchos::RCP<Epetra_Vector> oceanE = ocean->interfaceE();
 
     double nrmAtmosE = Utils::norm(atmosE);
     double nrmOceanE = Utils::norm(oceanE);

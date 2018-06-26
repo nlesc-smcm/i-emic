@@ -476,6 +476,12 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceP()
 }
 
 //==================================================================
+Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceE()
+{
+    return getE();
+}
+
+//==================================================================
 std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean)
 {
     TIMER_START("Atmosphere::getBlock(ocean)...");
@@ -1104,7 +1110,7 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getE(char mode)
     atmos_->computeEvaporation();
 
     // obtain view of E from serial AtmosLocal
-    std::shared_ptr<std::vector<double> > localE = atmos_->getE('V');
+    std::shared_ptr<std::vector<double> > localE = atmos_->interfaceE('V');
         
     // assign obtained E values to distributed vector (overlapping)
     double *tmpE;

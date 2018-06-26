@@ -103,6 +103,21 @@ TEST(CoupledModel, Continuation)
 }
 
 //------------------------------------------------------------------
+TEST(Ocean, Integrate_E_min_P)
+{
+    Teuchos::RCP<Epetra_Vector> dA = atmos->getPIntCoeff('C');
+    Teuchos::RCP<Epetra_Vector> E  = ocean->interfaceE();
+    Teuchos::RCP<Epetra_Vector> P  = atmos->interfaceP();
+    
+    E->Update(-1.0, *P, 1.0);
+    double I = Utils::dot(E, dA);
+    EXPECT_LT(std::abs(I), 1e-7);
+
+    Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
+    std::cout << *Msi << std::endl;
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:

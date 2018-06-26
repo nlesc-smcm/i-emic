@@ -305,8 +305,6 @@ public:
     Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return Utils::getVector(mode, sol_); }
     Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')      { return Utils::getVector(mode, rhs_); }
 
-    Teuchos::RCP<Epetra_Vector> getE(char mode = 'C');
-    Teuchos::RCP<Epetra_Vector> getP(char mode = 'C');
     Teuchos::RCP<Epetra_Vector> getDiagB(char mode = 'C') { return Utils::getVector(mode, diagB_); }
 
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
@@ -328,6 +326,9 @@ public:
 
     //! Get precipitation at interface 
     Teuchos::RCP<Epetra_Vector> interfaceP();
+
+    //! Compute evaporation at interface
+    Teuchos::RCP<Epetra_Vector> interfaceE();
 
     //! Get integral condition coefficients for standard map
     Teuchos::RCP<Epetra_Vector> getIntCoeff() { return intcondCoeff_; }
@@ -378,6 +379,13 @@ public:
     int saveState() { return saveStateToFile(outputFile_);  }
 
 private:
+    
+    //! Private member to compute P if it is not an unknown in the
+    //! model.
+    Teuchos::RCP<Epetra_Vector> getP(char mode = 'C');
+
+    //! Private member to compute E
+    Teuchos::RCP<Epetra_Vector> getE(char mode = 'C');
 
     //! create dependency graph for the Jacobian matrix
     //! function borrowed from THCM,

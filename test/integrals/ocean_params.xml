@@ -66,13 +66,13 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="test6x6x4"/>
+    <Parameter name="Land Mask" type="string FIXME" value="test12x6x4"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
     <Parameter name="Coupled Temperature" type="int" value="1"/>
-    <Parameter name="Coupled Salinity" type="int" value="1"/>
+    <Parameter name="Coupled Salinity" type="int" value="0"/>
     <!-- =============================================================== -->
 
     <!-- Starting Parameters                                          -->
@@ -80,8 +80,8 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
-      <Parameter name="Wind Forcing"        type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
+      <Parameter name="Wind Forcing"        type="double" value="0.0"/>
       <Parameter name="Temperature Forcing" type="double" value="1.0"/>
       <Parameter name="SPL1"                type="double" value="1.25"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>
@@ -91,7 +91,7 @@
     <!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
     <!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                               -->
     <!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                               -->
-    <Parameter name="Mixing" type="int" value="1"/>
+    <Parameter name="Mixing" type="int" value="0"/>
 
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>
@@ -104,7 +104,7 @@
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->
