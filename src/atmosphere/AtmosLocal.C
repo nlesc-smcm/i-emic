@@ -150,7 +150,8 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     allParameters_   = { "Combined Forcing",
                          "Solar Forcing",
                          "Humidity Forcing",
-                         "Latent Heat Forcing" };
+                         "Latent Heat Forcing",
+                         "Albedo Forcing"};
 
     parName_         = params->get( "Continuation parameter",
                                     allParameters_[0] );
@@ -160,6 +161,7 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     sunp_            = params->get(allParameters_[1], 1.0);
     humf_            = params->get(allParameters_[2], 1.0);
     latf_            = params->get(allParameters_[3], 1.0);
+    albf_            = params->get(allParameters_[4], 1.0);
 }
 
 //==================================================================
@@ -175,7 +177,6 @@ void AtmosLocal::setup()
 
     // Filling more coefficients (humidity specific)
     eta_ =  (rhoa_ / rhoo_) * ce_ * uw_;
-
 
     // nuq will be our continuation parameter for the humidity related
     // physics and is set in setpar.
@@ -473,6 +474,9 @@ void AtmosLocal::getCommPars(AtmosLocal::CommPars &parStruct)
     parStruct.a0   = a0_;
     parStruct.da   = da_;
     parStruct.tauf = tauf_;
+    parStruct.tauc = tauc_;
+    parStruct.comb = comb_;
+    parStruct.albf = albf_;
 }
 
 //-----------------------------------------------------------------------------
@@ -614,9 +618,9 @@ void AtmosLocal::computeJacobian()
 
             if (on_land)
             {
-                dAdA = (daFdA(A, Ta, P, j) - 1) / tauf_;
-                dAdP = (daFdP(A, Ta, P, j)) / tauf_;
-                dAdT = (daFdT(A, Ta, P, j)) / tauf_;
+                dAdA = (comb_*albf_*daFdA(A, Ta, P, j) - 1) / tauf_;
+                dAdP = (comb_*albf_*daFdP(A, Ta, P, j)) / tauf_;
+                dAdT = (comb_*albf_*daFdT(A, Ta, P, j)) / tauf_;
             }
             else
             {
@@ -860,11 +864,11 @@ void AtmosLocal::forcing()
                 if (pr >= 0)
                     P  = (*state_)[pr]; // global precipitation
 
-                value = ( aF(A,Ta,P,j) - A ) / tauf_;
+                value = ( comb_ * albf_ * aF(A,Ta,P,j) - A ) / tauf_;
             }
             else
             {
-                value = ( (*Msi_)[sr] - A )  / tauc_;
+                value = ( comb_ * albf_ * (*Msi_)[sr] - A )  / tauc_;
             }
 
             frc_[ar] = value;
@@ -1457,6 +1461,8 @@ void AtmosLocal::setPar(std::string const &parName, double value)
         humf_ = value;
     else if (parName.compare(allParameters_[3]) == 0)
         latf_ = value;
+    else if (parName.compare(allParameters_[4]) == 0)
+        albf_ = value;
 
     // The effects of comb_ and humf_ are combined in nuq_, so here we
     // update nuq_.
@@ -1485,6 +1491,8 @@ double AtmosLocal::getPar(std::string const &parName)
         return humf_;
     else if (parName.compare(allParameters_[3]) == 0)
         return latf_;
+    else if (parName.compare(allParameters_[4]) == 0)
+        return albf_;
     else // If parameter not available we return 0
         return 0;
 }

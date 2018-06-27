@@ -48,6 +48,9 @@ public:
         double a0;
         double da;
         double tauf;
+        double tauc;
+        double comb;
+        double albf;
     };
 
 private:
@@ -248,6 +251,7 @@ private:
     double      sunp_; //! solar forcing
     double      humf_; //! humidity forcing
     double      latf_; //! latent heat forcing
+    double      albf_; //! albedo forcing
 
 public:
     //! Constructor for use with parallel atmosphere

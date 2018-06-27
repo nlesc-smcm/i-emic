@@ -648,9 +648,9 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
             Eo = pars.dqso * To;
             Ei = pars.dqsi * Ti;
 
-            dMFQ = pars.nuq * pars.tdim / pars.qdim * (Ei - Eo);
-            dTFQ = pars.nuq * pars.tdim / pars.qdim * pars.dqsi * M;
-            dMFA = 1.0 / pars.tauf;
+            dMFQ = pars.nuq  * pars.tdim / pars.qdim * (Ei - Eo);
+            dTFQ = pars.nuq  * pars.tdim / pars.qdim * pars.dqsi * M;
+            dMFA = pars.comb * pars.albf / pars.tauc;
 
             for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
             {

@@ -81,6 +81,19 @@ TEST(CoupledModel, Initialization)
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, RHS)
+{
+    atmos->computeRHS();
+    EXPECT_LT(Utils::norm(atmos->getRHS()), 1e-7);
+    seaice->computeRHS();
+    EXPECT_LT(Utils::norm(seaice->getRHS()), 1e-7);
+    ocean->computeRHS();
+    EXPECT_LT(Utils::norm(ocean->getRHS()), 1e-7);
+    coupledModel->computeRHS();
+    EXPECT_LT(Utils::norm(coupledModel->getRHS()), 1e-7);
+}
+
+//------------------------------------------------------------------
 TEST(CoupledModel, Continuation)
 {
     bool failed = false;
@@ -103,15 +116,16 @@ TEST(CoupledModel, Continuation)
 }
 
 //------------------------------------------------------------------
-TEST(Ocean, Integrate_E_min_P)
+TEST(Atmos, Integrate_E_min_P)
 {
     Teuchos::RCP<Epetra_Vector> dA = atmos->getPIntCoeff('C');
-    Teuchos::RCP<Epetra_Vector> E  = ocean->interfaceE();
+    Teuchos::RCP<Epetra_Vector> E  = atmos->interfaceE();
     Teuchos::RCP<Epetra_Vector> P  = atmos->interfaceP();
-    
+
     E->Update(-1.0, *P, 1.0);
     double I = Utils::dot(E, dA);
     EXPECT_LT(std::abs(I), 1e-7);
+
 
     Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
     std::cout << *Msi << std::endl;

@@ -30,7 +30,7 @@ contains
           end do
        end do
     else
-       _INFO_("No coupling, not obtaining any data")
+       _INFO_("**WARNING** No coupling, not obtaining any data")
     end if
   end subroutine get_atmosphere_t
 
@@ -56,7 +56,7 @@ contains
           end do
        end do
     else
-       _INFO_("No coupling, not obtaining any data")
+       _INFO_("**WARNING** No coupling, not obtaining any data")
     end if
   end subroutine get_atmosphere_q
 
@@ -81,7 +81,7 @@ contains
           end do
        end do
     else
-       _INFO_("No coupling, not obtaining any data")
+       _INFO_("**WARNING** No coupling, not obtaining any data")
     end if
   end subroutine get_atmosphere_p
 
@@ -131,7 +131,7 @@ contains
        _INFO2_("  thcm probe:  dqso   = ", dqso)
 
     else
-       _INFO_("No coupling, not obtaining any data")
+       _INFO_("**WARNING** No coupling, not obtaining any data")
     end if
 
   end subroutine compute_evap
