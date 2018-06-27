@@ -10,7 +10,7 @@
   <!-- In a coupled situation this will be partly overruled by the parameters-->
   <!-- specified in coupledmodel_params.xml                                  -->
   <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Save state" type="bool" value="false"/>
+  <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean_input.h5" />
   <Parameter name="Output file" type="string" value="ocean_output.h5" />
 
@@ -39,7 +39,7 @@
     <!-- southern domain bound -->
     <Parameter name="Global Bound ymin" type="double" value="10"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="74"/>
+    <Parameter name="Global Bound ymax" type="double" value="85"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="0"/>
 
@@ -50,7 +50,7 @@
     <!-- global number of grid points in x-direction -->
     <Parameter name="Global Grid-Size n" type="int" value="6"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="6"/>
+    <Parameter name="Global Grid-Size m" type="int" value="12"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="4"/>
 
@@ -66,12 +66,12 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string FIXME" value="test12x6x4"/>
+    <Parameter name="Land Mask" type="string" value="test6x12x4"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
-    <Parameter name="Coupled Temperature" type="int" value="1"/>
+    <Parameter name="Coupled Temperature" type="int" value="0"/>
     <Parameter name="Coupled Salinity" type="int" value="0"/>
     <!-- =============================================================== -->
 
@@ -79,10 +79,10 @@
     <!-- coupledmodel_params can overwrite these when running coupled -->
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-      <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+      <Parameter name="Solar Forcing"       type="double" value="0.0"/>
       <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
       <Parameter name="Wind Forcing"        type="double" value="0.0"/>
-      <Parameter name="Temperature Forcing" type="double" value="1.0"/>
+      <Parameter name="Temperature Forcing" type="double" value="10.0"/>
       <Parameter name="SPL1"                type="double" value="1.25"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>
     </ParameterList>
@@ -100,7 +100,7 @@
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Temperature Profile" type="int" value="0"/>
+    <Parameter name="Restoring Temperature Profile" type="int" value="1"/>
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->

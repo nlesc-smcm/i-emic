@@ -10,7 +10,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if nargin < 2 % defaults
         readEP  = true;
-        readLST = false;      
+        readLST = true;      
         
         opts.readEP  = readEP;
         opts.readLST = readLST;
@@ -48,7 +48,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     srf(:,:,2) = (1-greyness*(surfm'));
     srf(:,:,3) = (1-greyness*(surfm'));
 
-    atmos_nun = 2;
+    atmos_nun = 3;
     atmos_l = 1;
     
     [state,pars,add] = readhdf5(fname, atmos_nun, n, m, atmos_l,opts);
@@ -68,10 +68,13 @@ function [state,pars,add] = plot_atmos(fname, opts)
     % reference temperature
     T0  = 15.0;   
     q0  = 8e-3;
+    a0  = 0.3;
+
     
     % scalings
     tdim = 1;
     qdim = 1e-3;
+    adim = 0.5;
 
     % constants
     rhoa = 1.25;
@@ -82,6 +85,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     Ta  = T0 + tdim * squeeze(state(1,:,:,:));
     qa  = q0 + qdim * squeeze(state(2,:,:,:));
+    Aa  = a0 + adim * squeeze(state(3,:,:,:));
     Tz  = mean(Ta,1); % zonal mean
     qz  = mean(qa,1); % zonal mean
 
@@ -165,16 +169,49 @@ function [state,pars,add] = plot_atmos(fname, opts)
     ylabel('Latitude')
     exportfig('atmosq.eps',10,[14,10],invert)
     
+    figure(13)
+    img = Aa';
+    c = imagesc(RtD*x,RtD*(y),img); hold on
+    %image(RtD*x,RtD*(y),srf);
+    set(gca,'ydir','normal')
+    
+    colorbar
+    cmap = my_colmap(caxis);
+    colormap(cmap)
+
+    drawnow
+    title('Albedo')
+    xlabel('Longitude')
+    ylabel('Latitude')
+
+    
     if readEP
 
-        figure(13) 
-        EmP = eta*qdim*(E-P)*3600*24*365;
+        figure(14) 
+        Pd  = eta*qdim*P*3600*24*365;
 
+        img = P'
+        imagesc(RtD*x,RtD*(y),img); hold on
+        img(img == 0) = NaN;
+        c = contour(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
+                    'linewidth',.5);
+        hold off
+        set(gca,'ydir','normal')
+        cmap = my_colmap(caxis,0);
+        colormap(cmap)
+        colorbar
+
+        hold off              
+        
+        title('P (m/y)')
+        xlabel('Longitude')
+        ylabel('Latitude')
+        
+        figure(15)
+        
+        EmP = eta*qdim*(E-P)*3600*24*365;
         img = EmP';
 
-        %contourf(RtD*x,RtD*(y),img,10,'Visible','off'); hold on;
-        %image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-        
         imagesc(RtD*x,RtD*(y),img); hold on
         img(img == 0) = NaN;
         c = contour(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
@@ -196,12 +233,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
     
     if readLST
-        figure(14)
+        figure(16)
         imagesc(RtD*x,RtD*(y), SST' + LST' + T0); set(gca,'ydir', ...
                                                           'normal')
         colormap(cmap)                
         colorbar
-        title('surface temperature')
+        title('Surface temperature')
         xlabel('Longitude')
         ylabel('Latitude')
         

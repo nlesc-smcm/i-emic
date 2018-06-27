@@ -14,9 +14,9 @@
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
   
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="1.0e-1"/>
+  <Parameter name="initial step size" type="double" value="1.0e-3"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>
-  <Parameter name="maximum step size" type="double" value="1.0e-1"/>
+  <Parameter name="maximum step size" type="double" value="1.0"/>
   
   <!-- Define the destination value for the continuation parameter -->
   <!-- Several destinations are allowed, in that case specify      -->
@@ -32,7 +32,7 @@
   
   <!-- Tolerance when converging on destination         -->
   <!--  for secant process in detect()                  -->
-  <Parameter name="destination tolerance" type="double" value="1.0e-4"/>
+  <Parameter name="destination tolerance" type="double" value="1.0e-6"/>
   
   <!-- Define the optimal interval for the amount of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
@@ -57,12 +57,12 @@
   <!-- *******************************************************  -->
 
   <!-- Finite difference with which dFdpar is calculated -->
-  <Parameter name="epsilon increment" type="double" value="1.0e-6"/>
+  <Parameter name="epsilon increment" type="double" value="1.0e-3"/>
 
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->
   <!-- arclength parameterization.                                    -->
-  <Parameter name="state tangent scaling" type="double" value="1.0e-2"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0"/>
 
   <!-- reject solution from failed Newton iteration -->
   <Parameter name="reject failed iteration" type="bool" value="true"/>

@@ -1315,9 +1315,11 @@ std::string const Atmosphere::writeData(bool describe)
     if (describe)
     {
         datastring << std::setw(_FIELDWIDTH_)
-                   << "max(T)" 
+                   << "norm(T)" 
                    << std::setw(_FIELDWIDTH_) 
-                   << "max(Q)";
+                   << "norm(Q)"
+                   << std::setw(_FIELDWIDTH_)
+                   << "norm(A)";
 
         return datastring.str();
     }
@@ -1325,12 +1327,14 @@ std::string const Atmosphere::writeData(bool describe)
     {    
         datastring.precision(_PRECISION_);   
     
-        double maxT, maxQ;        
-        interfaceT()->MaxValue(&maxT);
-        interfaceQ()->MaxValue(&maxQ);
+
+        double normT = Utils::norm(interfaceT());
+        double normQ = Utils::norm(interfaceQ());
+        double normA = Utils::norm(interfaceA());
     
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
-                   << maxT << std::setw(_FIELDWIDTH_) << maxQ;
+                   << normT << std::setw(_FIELDWIDTH_) << normQ
+                   << std::setw(_FIELDWIDTH_) << normA;;
 
         return datastring.str();
     }

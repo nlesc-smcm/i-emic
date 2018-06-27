@@ -139,12 +139,12 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     tauf_            = params->get("", 1.0); // FIXME todo
     tauc_            = params->get("", 1.0); // FIXME todo
 
-    Tm_              = params->get("melt temperature threshold (deg C)", 0.0);          // FIXME todo
-    Tr_              = params->get("rain/snow temperature threshold (deg C)", 0.0);     // FIXME todo
-    Pa_              = params->get("accumulation precipitation threshold (m/y)", 0.0);  // FIXME todo
-    epm_             = params->get("", 1.0e2);  // FIXME todo
-    epr_             = params->get("", 1.0e2);  // FIXME todo
-    epa_             = params->get("", 1.0e2);  // FIXME todo
+    Tm_              = params->get("melt temperature threshold (deg C)", 0.0);          
+    Tr_              = params->get("rain/snow temperature threshold (deg C)", 0.0);     
+    Pa_              = params->get("accumulation precipitation threshold (m/y)", 0.0);  
+    epm_             = params->get("melt threshold width (deg C)", 1.0);  
+    epr_             = params->get("rain/snow threshold width (deg C)", 0.1); 
+    epa_             = params->get("accumulation threshold width (m/y)", 0.1); 
 
 // continuation ----------------------------------------------------------------
     allParameters_   = { "Combined Forcing",
@@ -185,15 +185,15 @@ void AtmosLocal::setup()
 
     // Parameters for saturation humidity over ocean and ice
     double c1 = 3.8e-3;  // (kg / kg)
-    double c2 = 21.87;   //
+    double c2 = 21.87;   // 
     double c3 = 265.5;   // (K)
-    double c4 = 17.67;   //
+    double c4 = 17.67;   // 
     double c5 = 243.5;   // (K)
 
     // Calculate background saturation specific humidity according to
     // [Bolton,1980], T in \deg C
-    qso_   = c1 * exp(c4 * t0o_ / (t0o_ + c5));
-    qsi_   = c1 * exp(c2 * t0i_ / (t0i_ + c3));
+    qso_   = c1 * exp( c4 * t0o_ / (t0o_ + c5) );
+    qsi_   = c1 * exp( c2 * t0i_ / (t0i_ + c3) );
 
     // Dimensional background evaporation and precipitation
     Eo0_ = eta_ * ( qso_ - q0_ );
@@ -203,9 +203,11 @@ void AtmosLocal::setup()
     Po0_ = Eo0_;
 
     // Convert threshold precipitation to threshold P deviation
-    Pa_ = Pa_ / 3600. / 24. / 365.;    // convert to m/s
-    Pa_ = (Pa_ - Po0_) / eta_ / qdim_; // convert to deviation
-
+    Pa_  = Pa_ / 3600. / 24. / 365.;    // convert to m/s
+    Pa_  = (Pa_ - Po0_) / eta_ / qdim_; // convert to deviation
+    epa_ = epa_ / 3600. / 24. / 365.;   // convert threshold width to m/s
+    epa_ = epa_ / eta_ / qdim_;         // convert to deviation
+    
     // Convert threshold temperatures to T deviations
     Tr_ = Tr_ - t0o_;
     Tm_ = Tm_ - t0o_;

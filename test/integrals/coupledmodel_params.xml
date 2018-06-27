@@ -10,7 +10,7 @@
   <!-- Select the models in use -->
   <Parameter name="Use ocean"      type="bool" value="true"/>
   <Parameter name="Use atmosphere" type="bool" value="true"/>
-  <Parameter name="Use sea ice"    type="bool" value="true"/>
+  <Parameter name="Use sea ice"    type="bool" value="false"/>
   
   <!-- Specify whether the coupled model should initialize with  -->
   <!-- old states (true) or with a trivial solution (false).     -->
@@ -44,7 +44,7 @@
   <!-- global number of grid points in x-direction -->
   <Parameter name="Global Grid-Size n" type="int" value="6"/>
   <!-- global number of grid points in y-direction -->
-  <Parameter name="Global Grid-Size m" type="int" value="6"/>
+  <Parameter name="Global Grid-Size m" type="int" value="12"/>
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="false"/>
@@ -54,7 +54,7 @@
   <Parameter name="Solar Forcing"       type="double" value="1.0"/>
   <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
   <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-  <Parameter name="Temperature Forcing" type="double" value="1.0"/>
+  <Parameter name="Temperature Forcing" type="double" value="15.0"/>
   <Parameter name="Humidity Forcing"    type="double" value="1.0"/>
 
   <!-- D: decoupled -->
