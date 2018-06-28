@@ -1,12 +1,3 @@
-<!-- **************************************** -->
-<!-- Standard ocean preconditioner parameters -->
-<!--                                          -->
-<!-- **************************************** -->
-
-<!-- Note that preconditioning of Chat can be more efficient by choosing -->
-<!-- a direct solver. For complex geometries, however, this would give   -->
-<!-- pivot errors, so this setup is the safest right now.                -->
-
 <ParameterList name="Block Preconditioner">              
   <!-- Preconditioner scheme: currently allowed are                    -->
   <!-- "ILU": involves the very expensive Schur-complement that        -->
@@ -34,22 +25,15 @@
   <!-- currently it seems that 1.0 is a good choice               -->
   <Parameter name="Relaxation: Damping Factor" type="double" value="1.0"/>
 
-  <!-- Parameters for the direct 'Ap' solve -->
-  <ParameterList name="Ap Solver">
-      <!-- S: solve the square part of Gw (ignoring surface P)  -->
-      <!-- F: solve the full Ap matrix                          -->
-      <Parameter name="Full or square" type="char" value="S"/>
-  </ParameterList>
-  
   <!-- Parameters for the Krylov solver for the 'Auv' diagonal block       -->
   <!-- This solver is used inside the 'Simple' preconditioner              -->
   <ParameterList name="Auv Solver">
     <!-- up to now only "AztecOO" or "None" (just apply precond once) -->
     <Parameter name="Method" type="string" value="AztecOO"/>
     <!-- maximum number of iterations permitted -->
-    <Parameter name="Max Num Iter" type="int" value="3"/>
+    <Parameter name="Max Num Iter" type="int" value="1"/>
     <!-- (relative) convergence tolerance      -->
-    <Parameter name="Tolerance" type="double" value="1.0e-8"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <!-- options include "GMRES", "GMRESR", etc. -->
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <!-- type of scaling for conv. criterion ("r0","no scaling", "rhs",...) -->
@@ -59,7 +43,7 @@
     <!-- unless you reaaly want to use an Aztec preconditioner, choose "None"! -->
     <Parameter name="Precond" type="string" value="None"/>
     <!-- max size of Krylov space before restart -->
-    <Parameter name="KSpace" type="int" value="20"/>
+    <Parameter name="KSpace" type="int" value="10"/>
     <!-- type of orthogonalization (fairly irrelevant) -->
     <Parameter name="Orthog" type="string" value="Classic"/>
   </ParameterList><!-- } Auv Solver -->
@@ -70,6 +54,8 @@
     
     <!-- supported values are "None", "Ifpack", "ML", "ParaSails" -->
     <Parameter name="Method" type="string" value="ML"/>
+    
+    <Parameter name="verbosity" type="int" value="1"/>
     
     <!-- Ifpack parameters -->
     
@@ -369,7 +355,7 @@
 	  
 	  <!-- settings for the "IFPACK" smoothers -->
 	  <Parameter name="smoother: ifpack overlap" type="int" value="0"/>
-	  <Parameter name="smoother: ifpack type" type="string" value="ILU"/>
+	  <Parameter name="smoother: ifpack type" type="string" value="MRILU"/>
 
 	  <!-- { -->
 	  <ParameterList name="smoother: ifpack list">
@@ -427,7 +413,7 @@
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
     <Parameter name="Max Num Iter" type="int" value="1"/>
-    <Parameter name="Tolerance" type="double" value="1.0e-4"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-2"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
     <Parameter name="Output" type="int" value="1"/>
@@ -445,7 +431,7 @@
     
     <!-- mode of operation for the Simple preconditioner.                    -->
     <!-- "SI": Simple "SL": SimpleL (transposed) "SR": symmetrized = SimpleR -->
-    <Parameter name="Scheme" type="string" value="SL"/>
+    <Parameter name="Scheme" type="string" value="SI"/>
 
     <!-- fix Chat's diagonal if it is singular -->
     <Parameter name="Fix singular Chat" type="bool" value="false"/>
@@ -491,19 +477,19 @@
     <ParameterList name="Chat Solver">
       <!-- can be "AztecOO" or "None" -->
       <Parameter name="Method" type="string" value="None"/>
-      <Parameter name="Max Num Iter" type="int" value="1"/>
-      <Parameter name="Tol" type="double" value="1.0e-3"/>
+      <Parameter name="Max Num Iter" type="int" value="800"/>
+      <Parameter name="Tolerance" type="double" value="1.0e-5"/>
       <Parameter name="Solver" type="string" value="GMRESR"/>
       <Parameter name="Conv" type="string" value="r0"/>
       <Parameter name="Scaling" type="string" value="None"/>
-      <Parameter name="Overlap" type="int" value="1"/>
+      <Parameter name="Overlap" type="int" value="10"/>
       <Parameter name="Precond" type="string" value="dom_decomp"/>
       <Parameter name="Poly_Ord" type="int" value="4"/>
       <Parameter name="Subdomain_Solve" type="string" value="ilut"/>
       <Parameter name="Graph_Fill" type="double" value="1.0"/>
-      <Parameter name="ILUT_Fill" type="double" value="1.0"/>
+      <Parameter name="ILUT_Fill" type="double" value="5.0"/>
       <Parameter name="Drop" type="double" value="1.0e-8"/>
-      <Parameter name="KSpace" type="int" value="100"/>
+      <Parameter name="KSpace" type="int" value="800"/>
       <Parameter name="Orthog" type="string" value="Classic"/>
       <Parameter name="Output" type="int" value="0"/>
     </ParameterList><!-- } Grad-Div Solver -->
@@ -558,20 +544,20 @@
   </ParameterList><!-- } Saddlepoint Preconditioner -->
 
   <!-- solve for variables rho/mu instead of T/S -->
-  <Parameter name="ATS: rho/mu Transform" type="bool" value="1"/>
+  <Parameter name="ATS: rho/mu Transform" type="bool" value="0"/>
 
   <!-- Parameters for the Krylov solver for ATS { -->
   <ParameterList name="ATS Solver">
 	<Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="20"/>
-    <Parameter name="Tolerance" type="double" value="1.0e-8"/>
+    <Parameter name="Max Num Iter" type="int" value="10"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-7"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
     <Parameter name="Output" type="int" value="1"/>
     <Parameter name="Scaling" type="string" value="None"/> <!--indifferent -->
     <!-- don't touch this one, it's irrelevant -->
     <Parameter name="Precond" type="string" value="None"/>
-    <Parameter name="KSpace" type="int" value="20"/>
+    <Parameter name="KSpace" type="int" value="500"/>
     <Parameter name="Orthog" type="string" value="Classic"/>
   </ParameterList><!-- } ATS Solver -->
   
@@ -607,7 +593,7 @@
       <Parameter name="xactelm" type="int" value="1"/>
       <Parameter name="clsonce" type="int" value="1"/>
       <Parameter name="nlsfctr" type="double" value="0.1"/>
-      <Parameter name="epsw" type="double" value="0.1"/>
+      <Parameter name="epsw" type="double" value="0.001"/>
       <Parameter name="elmfctr" type="double" value="0.2"/>
       <Parameter name="gusmod" type="int" value="0"/>
       <Parameter name="gusfctr" type="double" value="0.0"/>
@@ -618,7 +604,7 @@
       <Parameter name="locfrac" type="double" value="0.0"/>
       <Parameter name="sparslim" type="double" value="0.95"/>
       <Parameter name="ilutype" type="int" value="9"/>
-      <Parameter name="droptol" type="double" value="1.0e-5"/>
+      <Parameter name="droptol" type="double" value="0"/>
       <Parameter name="compfct" type="double" value="0.0"/>
       <Parameter name="cpivtol" type="double" value="0.875"/>
       <Parameter name="lutol" type="double" value="1.0e-10"/>
@@ -696,7 +682,7 @@
 	  </ParameterList><!--}-->
 
       <Parameter name="smoother: ifpack overlap" type="int" value="0"/>
-      <Parameter name="smoother: ifpack type" type="string" value="ILU"/>
+      <Parameter name="smoother: ifpack type" type="string" value="MRILU"/>
       <!--Parameter name="smoother: ifpack type" type="string" 
 		  value="block relaxation (Amesos)"/-->
       

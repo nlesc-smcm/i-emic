@@ -638,15 +638,50 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // Obtain integral condition coefficients
     
-    int N=domain->GlobalN();
-    int M=domain->GlobalM();
-    int L=domain->GlobalL();
+    int N = domain->GlobalN();
+    int M = domain->GlobalM();
+    int L = domain->GlobalL();
 
+    int Nic = paramList.get("Integral row coordinate i", N-1);
+    int Mic = paramList.get("Integral row coordinate j", M-1);
+    int midx;     // mask index
+    int mval = 1; // mask value
+    int tmp  = 0;
     if (sres == 0)
     {
+        if (comm->MyPID() == 0)
+        {
+            midx = FIND_ROW2(1, N+2, M+2, L+2, Nic + 1, Mic + 1, L, 1);
+            tmp = (*landm_glb)[midx];
+        }
+        comm->SumAll(&tmp, &mval, 1);
+        
+        if (mval != 0) // throw ERROR if integral row on land
+        {
+            if (comm->MyPID() == 0)
+            {
+                for (int j = M+1; j >= 0; --j)
+                {
+                    for (int i = 0; i != N+2; ++i)
+                    {
+                        midx = FIND_ROW2(1, N+2, M+2, L+2, i, j, L, 1);
+                        std::cout << (*landm_glb)[midx];
+                    }
+                    std::cout << std::endl;
+                }
+            }
+            
+            ERROR("Integral row coordinates ("
+                  << Nic << "," << Mic << ") give a land point! \n"
+                  << "  Please give better coordinates in xml.",
+                  __FILE__, __LINE__);
+        }        
+        
         // location of integral condition
-        rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
+        rowintcon_ = FIND_ROW2(_NUN_,N,M,L,Nic,Mic,L-1,SS);
+
         INFO("THCM: integral condition for S is in global row " << rowintcon_);
+        
     }
 
     // Initialize integral coefficients
@@ -1008,7 +1043,6 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 #endif
         }
 
-
     } // matrix
     return true;
 }
@@ -1050,7 +1084,6 @@ void THCM::evaluateB(void)
 // Get current global landmask including borders
 std::shared_ptr<std::vector<int> > THCM::getLandMask()
 {
-
     // length of landmask array
     int dim = (n+2)*(m+2)*(l+la+2);
 

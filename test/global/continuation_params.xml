@@ -5,13 +5,6 @@
 
 <ParameterList name="Continuation parameters">
   
-  <!-- This option will override the continuation parameter in the models     -->
-  <!-- Options:  "Combined Forcing"                                           -->
-  <!--           "Solar Forcing"                                              -->
-  <!--           "Salinity Forcing"                                           -->
-  <!--           "Wind Forcing"                                               -->
-  <!--           "Humidity Forcing"                                           -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
   
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size" type="double" value="1.0e-2"/>
@@ -25,7 +18,7 @@
   
   <!-- Define the number of continuation steps                     -->
   <!--   set to -1 to run until convergence at final destination   -->
-  <Parameter name="maximum number of steps" type="int" value="10"/>
+  <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
   <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
@@ -57,7 +50,7 @@
   <!-- *******************************************************  -->
 
   <!-- Finite difference with which dFdpar is calculated -->
-  <Parameter name="epsilon increment" type="double" value="1.0e-4"/>
+  <Parameter name="epsilon increment" type="double" value="1.0e-6"/>
 
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->

@@ -14,6 +14,12 @@
   <Parameter name="Input file"  type="string" value="ocean_input.h5" />
   <Parameter name="Output file" type="string" value="ocean_output.h5" />
 
+  <!-- By default the salinity and temperature surface fluxes are written     -->
+  <!-- to <Output file>. Here we can choose to read them at initialization.   -->
+  <!-- Under restoring conditions (SRES or TRES set to 1) this would not make -->
+  <!-- any sense so a warning is given and the flag is set to false .         -->
+  <Parameter name="Load salinity flux" type="bool" value="false"/>
+
   <!-- To keep track of each converged state, enable this.    -->
   <!-- Only useful when you enable <Save state>               -->
   <Parameter name="Save every step" type="bool" value="false" />
@@ -46,13 +52,21 @@
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
-    <Parameter name="Grid Stretching qz" type="double" value="1.0"/>
+    <Parameter name="Grid Stretching qz" type="double" value="2.0"/>
     <!-- global number of grid points in x-direction -->
     <Parameter name="Global Grid-Size n" type="int" value="48"/>
     <!-- global number of grid points in y-direction -->
     <Parameter name="Global Grid-Size m" type="int" value="19"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="4"/>
+
+    <!-- Supply 0-based surface coordinates for the integral condition
+         row, default is n-1, m-1. Make sure that the coordinate is
+         located on the last processors. -->
+    <Parameter name="Integral row coordinate i" type="int" value="46"/>
+    <Parameter name="Integral row coordinate j" type="int" value="16"/>
+
+    
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
@@ -72,17 +86,17 @@
     <!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
     <Parameter name="Coupled Temperature" type="int" value="1"/>
-    <Parameter name="Coupled Salinity" type="int" value="0"/>
+    <Parameter name="Coupled Salinity" type="int" value="1"/>
     <!-- =============================================================== -->
 
     <!-- Starting Parameters                                          -->
     <!-- coupledmodel_params can overwrite these when running coupled -->
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-      <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
-      <Parameter name="Wind Forcing"        type="double" value="0.0"/>
-      <Parameter name="Temperature Forcing" type="double" value="10.0"/>
+      <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.1"/>
+      <Parameter name="Wind Forcing"        type="double" value="1.0"/>
+      <Parameter name="Temperature Forcing" type="double" value="15.0"/>
       <Parameter name="SPL1"                type="double" value="1.25"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>
     </ParameterList>
@@ -104,7 +118,7 @@
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->

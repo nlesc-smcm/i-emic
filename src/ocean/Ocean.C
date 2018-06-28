@@ -477,8 +477,6 @@ Utils::MaskStruct Ocean::getLandMask(bool adjustMask)
 }
 
 //====================================================================
-//--> this is awkward and should be factorized. Why doesn't
-//setLandMask set the other struct members if they are available?
 Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
 {
     Utils::MaskStruct mask;
@@ -488,7 +486,11 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
     THCM::Instance().setLandMask(mask.local);
     THCM::Instance().evaluate(*state_, Teuchos::null, true);
 
-    if (adjustMask)
+    if (adjustMask) // FIXME the whole analyzeJacobian stuff should be
+                    // part of THCM such that we can postpone the
+                    // creation of the matrix graph. -> The integral
+                    // condition row needs to be chosen at an ocean
+                    // point.
     {
         // zero the singRows array
         singRows_->PutScalar(0.0);
@@ -597,9 +599,6 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
 }
 
 //===================================================================
-//--> this is awkward and should be factorized. Why doesn't
-//setLandMask create the other mask struct members if they are
-//available?
 void Ocean::setLandMask(Utils::MaskStruct const &mask, bool global)
 {
     INFO("Ocean: set landmask " << mask.label << "...");
