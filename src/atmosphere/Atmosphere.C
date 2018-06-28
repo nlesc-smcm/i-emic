@@ -1518,9 +1518,8 @@ void Atmosphere::createMatrixGraph()
 
         assert(len == pos);
         CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(rowIntCon_, len, icinds));
-        INFO(" integral condition indices");
     }
-
+    
     // Dependencies of the auxiliary unknown, on the same proc as integral condition
     if ( standardMap_->MyGID(rowIntCon_) )
     {
