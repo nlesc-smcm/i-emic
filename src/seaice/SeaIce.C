@@ -63,9 +63,21 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     cpa_     (params->get("heat capacity", 1000)),
 
 // exchange coefficient
-    muoa_    (rhoa_ * Ch_ * cpa_ * uw_)
+    muoa_    (rhoa_ * Ch_ * cpa_ * uw_)   
 
 {
+    // Continuation parameters
+    allParameters_ = { "Combined Forcing",
+                       "Solar Forcing",
+                       "Mask Forcing" };
+
+    parName_  = params->get( "Continuation parameter",
+                             allParameters_[0] );
+
+    comb_     = params->get(allParameters_[0], 0.0);
+    sunp_     = params->get(allParameters_[1], 1.0);
+    maskf_    = params->get(allParameters_[2], 1.0);               
+
     // Background sublimation and derivatives: calculate background
     // saturation specific humidity according to [Bolton,1980], T in
     // \deg C
@@ -226,37 +238,39 @@ void SeaIce::computeRHS()
                 switch (XX)
                 {
 
-                case SEAICE_HH_:      // H row (thickness)
+                case SEAICE_HH_:   // H row (thickness)
 
-                    val = freezingT(sss[sr]) - sst[sr] - t0o_ -
-                        Q0_ / zeta_ - Qvar_ / zeta_ * Qval -
+                    val = comb_ * ( freezingT(sss[sr]) - sst[sr]
+                                    - t0o_ - Q0_ / zeta_ )
+                        - Qvar_ / zeta_ * Qval -
                         ( rhoo_ * Lf_ / zeta_) *
-                        ( E0_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
-
+                        ( comb_ * E0_ + dEdT_ * Tsi + comb_ * dEdq_ * qatm[sr] );
+                    
                     break;
 
-                case SEAICE_QQ_:       // Q row (heat flux)
+                case SEAICE_QQ_:   // Q row (heat flux)
 
-                    val = 1. / muoa_ * (Q0_ + Qvar_ * Qval) -
-                        (sun0_ / 4. / muoa_) * shortwaveS(y_[j]) *
+                    val = comb_ / muoa_ * Q0_ + Qvar_ / muoa_ * Qval -
+                        (comb_ * sunp_ * sun0_ / 4. / muoa_) * shortwaveS(y_[j]) *
                         (1. - albe0_ - albed_*albe[sr]) * c0_ +
-                        (t0i_ + Tval - tatm[sr] - t0a_) +
+                        (Tval + comb_*(t0i_ - tatm[sr] - t0a_ )) +
                         (rhoo_ * Ls_ / muoa_) *
-                        (E0_ + dEdT_ * Tval + dEdq_ * qatm[sr]);
+                        (comb_*E0_ + dEdT_ * Tval + comb_*dEdq_ * qatm[sr]);
 
                     break;
 
-                case SEAICE_MM_:       // M row (mask)
+                case SEAICE_MM_:   // M row (mask)
 
                     val = Mval -
-                        (1./2.) * (1. + tanh( Hval / epsilon_ ) );
+                        (comb_*maskf_/2.) * (1. + tanh( Hval / epsilon_ ) );
 
                     break;
 
-                case SEAICE_TT_:       // T row (surface temperature)
+                case SEAICE_TT_:   // T row (surface temperature)
 
-                    val = freezingT(sss[sr]) - Tval - t0i_ +
-                        (Q0_*H0_ + H0_*Qvar_*Qval + Q0_*Hval) / Ic_;
+                    val = comb_* ( freezingT(sss[sr]) - t0i_ +
+                                   (Q0_*H0_ + H0_*Qvar_*Qval + Q0_*Hval) / Ic_ )
+                        - Tval ;
 
                     break;
                 }
@@ -428,6 +442,48 @@ void SeaIce::getCommPars(SeaIce::CommPars &parStruct)
     parStruct.Qvar = Qvar_;
     parStruct.Q0   = Q0_;
     
+}
+
+// ---------------------------------------------------------------------------
+// Adjust locally defined parameter
+double SeaIce::getPar()
+{
+    return getPar(parName_);
+}
+
+// ---------------------------------------------------------------------------
+// Get parameter value
+double SeaIce::getPar(std::string const &parName)
+{
+    if (parName.compare(allParameters_[0]) == 0)
+        return comb_;
+    else if (parName.compare(allParameters_[1]) == 0)
+        return sunp_;
+    else if (parName.compare(allParameters_[2]) == 0)
+        return maskf_;
+    else // If parameter not available we return 0
+        return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Set continuation parameter
+void SeaIce::setPar(double value)
+{
+    setPar(parName_, value);
+}
+
+// ---------------------------------------------------------------------------
+// Set specific continuation parameter
+void SeaIce::setPar(std::string const &parName, double value)
+{
+    parName_ = parName; // Overwrite our parameter name
+
+    if (parName.compare(allParameters_[0]) == 0)
+        comb_ = value;
+    else if (parName.compare(allParameters_[1]) == 0)
+        sunp_ = value;
+    else if (parName.compare(allParameters_[2]) == 0)
+        maskf_ = value;
 }
 
 //=============================================================================

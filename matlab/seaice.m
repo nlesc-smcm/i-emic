@@ -13,6 +13,12 @@ function [X, J, F] = seaice()
     global Ic
     global taus epsilon
     global Ti
+    
+    global combf solf maskf % continuation parameters
+    
+    combf = 0.1;
+    solf  = 1.0;
+    maskf = 1.0;
 
     % specify physical dimensions
     RtD  = 180 / pi;
@@ -29,8 +35,8 @@ function [X, J, F] = seaice()
     nun = 4;
     dim = nun*n*m;
 
-    taus    = 0.01;    % m, threshold ice thickness
-    epsilon = 1e2;     % Heavyside approximation steepness
+    taus    = 0.01;     % m, threshold ice thickness
+    epsilon = 1e-2;     % Heavyside approximation steepness
 
     % general physical constants
     t0o  =  7;
@@ -102,7 +108,7 @@ function [X, J, F] = seaice()
     Qvar = zeta;
 
     % ice surface temperature (linearized)
-    Ti = @(Q,H,S) Tf(S) - t0i + (Q0*H0 + H0*Qvar*Q + Q0*H) / Ic;
+    Ti = @(Q,H,S) combf * (Tf(S) - t0i) + (combf*Q0*H0 + H0*Qvar*Q + Q0*H) / Ic;
 
     % create grid
     grid();
@@ -116,15 +122,15 @@ function [X, J, F] = seaice()
     % testing values
     X = zeros(dim, 1);
     F = rhs(X);
-    fprintf('X = 0,     ||F|| = %1.12e\n', norm(F));
-
+    fprintf('X = 0,     ||F||two = %1.12e\n', norm(F));
+    
     X = ones(dim, 1);
     F = rhs(X);
-    fprintf('X = 1,     ||F|| = %1.12e\n', norm(F));
+    fprintf('X = 1,     ||F||two = %1.12e\n', norm(F));
 
     X = 1.234*ones(dim, 1);
     F = rhs(X);
-    fprintf('X = 1.234, ||F|| = %1.12e\n', norm(F));
+    fprintf('X = 1.234, ||F||two = %1.12e\n', norm(F));
     
     X = zeros(dim,1);
     J = jac(X);
@@ -138,15 +144,15 @@ function [X, J, F] = seaice()
     fprintf('X = 1,     ||J||one = %1.12e\n', norm(J,1));
     fprintf('X = 1,     ||J||frb = %1.12e\n', norm(J,'fro'));
 
-    X = 1234*ones(dim,1);
+    X = 1.234*ones(dim,1);
     J = jac(X);
     fprintf('X = 1.234, ||J||inf = %1.12e\n', norm(J,Inf));
     fprintf('X = 1.234, ||J||one = %1.12e\n', norm(J,1));
     fprintf('X = 1.234, ||J||frb = %1.12e\n', norm(J,'fro'));
-
-return;
-
+    
+    
     % Newton solve
+    X = zeros(dim,1);
     F    = rhs(X);
     kmax = 10;
 
@@ -161,14 +167,15 @@ return;
     end
 
     F  = rhs(X);
-
+    tic
     Jn = numjacob(@rhs, X);    
+    toc
     J  = jac(X);
     vsm(J(ord,ord));
     vsm(Jn(ord,ord));
     condest(J)
     vsm(J(ord,ord)-Jn(ord,ord))
-    
+         
     for i = 1:kmax
         J  = jac(X);
         dX = J \ -F;
@@ -249,6 +256,7 @@ function [J,Al] = jac(x)
     global Ic
     global taus epsilon
     global Ti
+    global combf solf maskf % continuation parameter
 
     [H, Qtsa, Msi] = extractsol(x);
 
@@ -274,13 +282,13 @@ function [J,Al] = jac(x)
     Al(:,:,QQ,TT) = 1 + rhoo * Ls / muoa * dEdT;
     
     % Msi equation
-    Al(:,:,MM,HH) = -(epsilon / 2) * ...
-        ( 1 - tanh(epsilon * (H)).^2);
+    Al(:,:,MM,HH) = -(combf * maskf / 2 / epsilon) * ...
+        ( 1 - tanh((H) / epsilon).^2);
     Al(:,:,MM,MM) =  1;
     
     % Tsi equation
-    Al(:,:,TT,HH) = Q0 / Ic;
-    Al(:,:,TT,QQ) = H0 * Qvar / Ic;
+    Al(:,:,TT,HH) = combf * Q0 / Ic;
+    Al(:,:,TT,QQ) = combf * H0 * Qvar / Ic;
     Al(:,:,TT,TT) = -1;
 
     [co, ico, jco] = assemble_fast(Al);
@@ -301,7 +309,7 @@ function [F] = rhs(x)
     global Ic
     global taus epsilon
     global Ti
-
+    global combf solf maskf % continuation parameters
 
     [H, Qtsa, Msi, T] = extractsol(x);
 
@@ -315,27 +323,28 @@ function [F] = rhs(x)
                   case 1
                     Tsi = Ti(Qtsa(i,j), H(i,j), sss(i,j));
 
-                    val = Tf(sss(i,j)) - sst(i,j) - t0o - ...
-                          Q0/zeta - Qvar / zeta * Qtsa(i,j) - ...
-                          ( rhoo * Lf / zeta) * ...
-                          ( E0 + dEdT * Tsi + dEdq * qatm(i,j) );
+                    val = combf * ( Tf(sss(i,j)) - sst(i,j) - t0o - ...
+                          Q0 / zeta ) - Qvar / zeta * Qtsa(i,j) - ...
+                          ( rhoo * Lf / zeta ) * ...
+                          ( combf * E0 + dEdT * Tsi + combf * dEdq * qatm(i,j) );
 
                   case 2
 
-                    val = 1/muoa*(Q0 + Qvar * Qtsa(i,j)) - ...
-                          (sun0 / 4 / muoa) * S(y(j)) * (1-alpha) * c0 + ...
-                          (t0i + T(i,j) - tatm(i,j) - t0a) + ...
+                    val = combf/muoa*Q0 + Qvar/muoa * Qtsa(i,j) - ...
+                          (combf * solf * sun0 / 4 / muoa) * S(y(j)) * (1-alpha) * c0 + ...
+                          (T(i,j) + combf * (t0i - tatm(i,j) - t0a) ) + ...
                           (rhoo * Ls / muoa) * ...
-                          (E0 + dEdT * T(i,j) + dEdq * qatm(i,j));
+                          (combf * E0 + dEdT * T(i,j) + combf * dEdq * qatm(i,j));
 
                   case 3
                     val = Msi(i,j) - ...
-                          (1/2) * (1 + tanh(epsilon * (H(i,j))));
+                          (combf * maskf / 2) * (1 + tanh( (H(i,j) / ...
+                                                            epsilon )));
                   
                   case 4
-                    val = Tf(sss(i,j)) - T(i,j) - t0i + ...
-                          (Q0*H0 + H0*Qvar*Qtsa(i,j) + Q0*H(i,j)) / ...
-                          Ic;
+                    val = combf * (Tf(sss(i,j)) - t0i + ...
+                          (Q0*H0 + H0*Qvar*Qtsa(i,j) + Q0*H(i,j)) / Ic) ... 
+                          - T(i,j);
                 end
 
                 F(row) = val;

@@ -247,6 +247,16 @@ private:
     double dEdT_;
     double dEdq_;
 
+    //! Continuation parameters
+    std::vector<std::string> allParameters_;
+
+    //! Current continuation parameter name
+    std::string parName_;
+
+    double      comb_; //! combined forcing
+    double      sunp_; //! solar forcing
+    double     maskf_; //! mask forcing
+
 public:
     //! Constructor based on communicator and parameterlist
     SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params);
@@ -298,8 +308,10 @@ public:
 
     void setParName(std::string const &parName) {}
 
-    double getPar(std::string const &parName) { return 0.0; }
-    void   setPar(std::string const &parName, double value) {}
+    double  getPar();
+    double  getPar(std::string const &parName);
+    void    setPar(double value);
+    void    setPar(std::string const &parName, double value);
 
     Utils::MaskStruct getLandMask() {return Utils::MaskStruct();}
     
@@ -355,13 +367,14 @@ private:
     double shortwaveS(double y)
         { return (1. - .482 * (3. * pow(sin(y), 2) - 1.) / 2.); }
 
-    //! freezing temperature (dominant term)
+    //! dimensional freezing temperature (dominant term)
     double freezingT(double S)
         { return a0_ * (S + s0_); }
 
-    //! ice surface temperature (linearized)
+    //! ice surface temperature deviation (linearized)
     double iceSurfT(double Q, double H, double S)
-        { return freezingT(S) - t0i_ + (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
+        { return comb_ * (freezingT(S) - t0i_) +
+                (comb_ * Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
 
     //! 0-based local find_row function
     int find_row0(int n, int m, int i, int j, int XX)
