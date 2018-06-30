@@ -152,7 +152,7 @@ function [X, J, F] = seaice()
     
     
     % Newton solve
-    X = zeros(dim,1);
+    X    = zeros(dim,1);
     F    = rhs(X);
     kmax = 10;
 
@@ -165,7 +165,8 @@ function [X, J, F] = seaice()
     for i = 2:nun
         o22 = [o22, i:nun:dim];
     end
-
+    
+    X  = 2*randn(dim,1);
     F  = rhs(X);
     tic
     Jn = numjacob(@rhs, X);    
@@ -175,7 +176,7 @@ function [X, J, F] = seaice()
     vsm(Jn(ord,ord));
     condest(J)
     vsm(J(ord,ord)-Jn(ord,ord))
-         
+    return         
     for i = 1:kmax
         J  = jac(X);
         dX = J \ -F;

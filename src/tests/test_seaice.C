@@ -134,6 +134,79 @@ TEST(SeaIce, computeJacobian)
     EXPECT_NEAR(normFrob, 3.379287916717e+03, 1e-7);
 }
 
+//------------------------------------------------------------------
+TEST(SeaIce, numericalJacobian)
+{
+    seaIce->setPar(1.0);
+        
+    Teuchos::RCP<Epetra_Vector> x = seaIce->getState('V');
+    x->Random();
+    x->Scale(0.1);
+
+    // int myEl = x->Map().NumMyElements();
+    // x->PutScalar(0.0);    
+    // // gradually changing thickness deviation
+    // for (int i = SEAICE_HH_-1; i < myEl; i += SEAICE_NUN_)
+    //     (*x)[i] = -.5 + ( (double) i / (myEl-1) );
+
+    seaIce->computeRHS();
+    seaIce->computeJacobian();
+
+    Teuchos::RCP<Epetra_CrsMatrix> seaIceJac  = seaIce->getJacobian();
+    DUMPMATLAB("seaIceJac", *seaIceJac);
+
+    // only do this test for small problems in serial
+    int nmax = 2e3;
+
+    if ( (comm->NumProc() == 1) &&
+         (seaIce->getState('V')->GlobalLength() < nmax) )
+    {
+        bool failed = false;
+        try
+        {
+            INFO("compute njC");
+            NumericalJacobian<std::shared_ptr<SeaIce>,
+                              Teuchos::RCP<Epetra_Vector> > numJac;
+
+            numJac.setTolerance(1e-12);
+            numJac.seth(1e-6);
+            numJac.compute(seaIce, seaIce->getState('V'));
+            numJac.print("seaIceNumJac");
+
+            NumericalJacobian<std::shared_ptr<SeaIce>,
+                              Teuchos::RCP<Epetra_Vector> >::CCS ccs;
+            numJac.fillCCS(ccs);
+
+            EXPECT_NE(ccs.beg.back(), 0);
+
+            Teuchos::RCP<Epetra_Vector> x = seaIce->getState('C');
+
+            testEntries(seaIce, ccs, x);
+
+        }
+        catch (...)
+        {
+            failed = true;
+            throw;
+        }
+
+
+        EXPECT_EQ(failed, false);
+    }
+    if (comm->NumProc() != 1)
+    {
+        std::cout << ("****Numerical Jacobian test cannot run in parallel****\n") ;
+        INFO("****Numerical Jacobian test cannot run in parallel****");
+    }
+
+    if (seaIce->getState('V')->GlobalLength() > nmax)
+    {
+        std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
+        INFO("****Numerical Jacobian test cannot run for this problem size****");
+    }
+
+}
+
 
 //------------------------------------------------------------------
 TEST(SeaIce, Solve)

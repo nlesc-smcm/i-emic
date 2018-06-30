@@ -15,7 +15,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     precInitialized_ (false),
     recomputePrec_   (false),
     
-    taus_         (0.01),   // threshold ice thickness
+    taus_         (0.01),    // threshold ice thickness
     epsilon_      (1e-2),    // Heavyside approximation steepness
 
     // background mean values
@@ -262,7 +262,7 @@ void SeaIce::computeRHS()
                 case SEAICE_MM_:   // M row (mask)
 
                     val = Mval -
-                        (comb_*maskf_/2.) * (1. + tanh( Hval / epsilon_ ) );
+                        (comb_ * maskf_ / 2.) * (1. + tanh( Hval / epsilon_ ) );
 
                     break;
 
@@ -329,9 +329,10 @@ void SeaIce::computeLocalJacobian()
     for (int j = 1; j <= mLoc_; ++j)
         for (int i = 1; i <= nLoc_; ++i)
         {
-            ind  = find_row1(nLoc_, mLoc_, i, j, H); // H row
-            val  = -(1 / (epsilon_ * 2.0) ) *
-                ( 1.0 - pow(tanh((state[ind]) / epsilon_), 2) );
+            ind  = find_row1(nLoc_, mLoc_, i, j, H)-1; // H row
+            val  = -(comb_ * maskf_ / 2.0 / epsilon_ ) *
+                ( 1.0 - pow( tanh( state[ind] / epsilon_ ), 2) );
+                        
             MM_HH.set( i, j, 1, 1, val);
         }
 
@@ -341,8 +342,8 @@ void SeaIce::computeLocalJacobian()
     Al_->set(range, M, M, MM_MM);
 
     // Tsi equation ------------------------------------
-    TT_HH = Q0_ / Ic_;
-    TT_QQ = H0_ * Qvar_ / Ic_;
+    TT_HH = comb_ * Q0_ / Ic_;
+    TT_QQ = comb_ * H0_ * Qvar_ / Ic_;
     TT_TT = -1.0;
 
     Al_->set(range, T, H, TT_HH);
@@ -502,13 +503,13 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     // compute a few constant derivatives (see computeRHS)
 
     // d / dq_atm (F_H)
-    double dqatmFH = -(rhoo_ * Lf_ / zeta_) * dEdq_;
+    double dqatmFH = -(comb_ * rhoo_ * Lf_ / zeta_) * dEdq_;
 
     // d / dt_atm (F_Q)
-    double dtatmFQ = -1;
+    double dtatmFQ = -comb_;
 
     // d / dq_atm (F_Q)
-    double dqatmFQ =  (rhoo_ * Ls_ / muoa_) * dEdq_;
+    double dqatmFQ =  (comb_ * rhoo_ * Ls_ / muoa_) * dEdq_;
 
     // d / da_atm (F_Q)
     double daatmFQ;
@@ -520,7 +521,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
         int lid = standardSurfaceMap_->LID(gid);   
         
         if (lid >= 0)
-            tmp = (sun0_ / 4. / muoa_) *
+            tmp = (comb_ * sunp_ * sun0_ / 4. / muoa_) *
                 shortwaveS(y_[lid / nLoc_]) * albed_ * c0_;
 
         comm_->SumAll(&tmp, &daatmFQ, 1);
@@ -578,13 +579,13 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
     // compute a few constant derivatives (see computeRHS)
 
     // d / dT (F_H)
-    double dTFH = -1;
+    double dTFH = -comb_;
 
     // d / dS (F_H)
-    double dSFH = a0_ - ( rhoo_ * Lf_ / zeta_) * dEdT_ * a0_;
+    double dSFH = comb_ * (a0_ - ( rhoo_ * Lf_ / zeta_) * dEdT_ * a0_);
 
     // d / dS (F_T)
-    double dSFT = a0_;
+    double dSFT = comb_ * a0_;
 
     for (int j = 0; j != mGlob_; ++j)
         for (int i = 0; i != nGlob_; ++i)
