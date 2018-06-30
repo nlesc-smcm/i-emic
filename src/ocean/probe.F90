@@ -376,7 +376,7 @@ contains
                      (deltat / qdim) * dqso * To &
                      - qa - pa)
                 
-                dfsdm(pos) = QSos - QSoa                
+                dfsdm(pos) = 0.0 !(QSos - QSoa )
                 
              endif
        endif

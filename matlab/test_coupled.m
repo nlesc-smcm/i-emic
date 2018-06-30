@@ -1,4 +1,3 @@
-!killall vsm&
 clear all
 JnC = load_numjac('JnC');
 

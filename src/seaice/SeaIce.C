@@ -175,8 +175,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Initialize Jacobian
     jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
 
-    // Initialize state
-    initializeState();
+    // Initialize state (superfluous now that we have continuation pars)
+    // initializeState();
 
     // Create importers for communication with other models
     int XX; 
@@ -582,10 +582,10 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
     double dTFH = -comb_;
 
     // d / dS (F_H)
-    double dSFH = comb_ * (a0_ - ( rhoo_ * Lf_ / zeta_) * dEdT_ * a0_);
+    double dSFH =  comb_ * (a0_ - ( rhoo_ * Lf_ / zeta_) * dEdT_ * a0_);
 
     // d / dS (F_T)
-    double dSFT = comb_ * a0_;
+    double dSFT =  comb_ * a0_;
 
     for (int j = 0; j != mGlob_; ++j)
         for (int i = 0; i != nGlob_; ++i)

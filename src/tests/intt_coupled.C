@@ -139,6 +139,19 @@ TEST(CoupledModel, Initialization)
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, RHS)
+{
+    coupledModel->computeRHS();
+    std::shared_ptr<Combined_MultiVec> F = coupledModel->getRHS('V');
+    for (int i = 0; i != F->Size(); ++i)
+    {
+        INFO(" submodel " << i << " ||F|| = " << Utils::norm((*F)(i)));
+    }
+    
+    EXPECT_LT(Utils::norm(F), 1e-7);
+}
+
+//------------------------------------------------------------------
 TEST(CoupledModel, Newton)
 {
     // One step in a 'natural continuation'
@@ -147,7 +160,6 @@ TEST(CoupledModel, Newton)
         coupledModel->getState('V');
 
     stateV->PutScalar(0.0);
-    seaice->initializeState();
 
     std::shared_ptr<Combined_MultiVec> solV =
         coupledModel->getSolution('V');
@@ -155,7 +167,7 @@ TEST(CoupledModel, Newton)
     solV->PutScalar(0.0);
 
     // set parameter
-    coupledModel->setPar(0.005);
+    coupledModel->setPar(0.001);
 
     // try to converge
     int maxit = 10;
@@ -163,26 +175,33 @@ TEST(CoupledModel, Newton)
     int niter = 0;
     std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('V');
     std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
-    for (; niter != maxit; ++niter)
+    coupledModel->computeRHS();
+    coupledModel->computeJacobian();
+            
+    for (; niter < maxit; ++niter)
     {
-        coupledModel->computeRHS();
-
         coupledModel->computeJacobian();
 
         b = coupledModel->getRHS('C');
 
         CHECK_ZERO(b->Scale(-1.0));
 
-        coupledModel->solve(b);
+        coupledModel->solve(b);  // J dx = - F
 
         stateV->Update(1.0, *x, 1.0); // x = x + dx;
+
+        coupledModel->computeRHS();
 
         coupledModel->applyMatrix(*x, *y);
         double normb = Utils::norm(b);
         y->Update(1.0, *b, -1.0);
-        y->Scale(1./normb);
+        y->Scale(1. / normb);
 
-        Utils::print(y, "residual");        
+        Utils::save(y, "residual");
+
+        INFO("\n ||r|| / ||b|| = " << Utils::norm(y));
+        INFO("        ||dx|| = " << Utils::norm(x) << " ");
+        INFO("         ||F|| = " << Utils::norm(b) << "\n");
         
         for (int i = 0; i != b->Size(); ++i)
         {
@@ -191,16 +210,78 @@ TEST(CoupledModel, Newton)
             INFO("   " << " ||r|| / ||b|| = " << Utils::norm((*y)(i)));
         }
 
-        INFO("   total ||r|| / ||b||  = " << Utils::norm(y));
-        INFO("   total          ||F|| = " << Utils::norm(b));
-        
         if (Utils::norm(coupledModel->getRHS('V')) < 1e-8)
             break;
     }
 
     EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 1e-8);
-    EXPECT_LT(niter, 10);
-    INFO("CoupledModel, Newton converged in " << niter << " iterations");
+    EXPECT_LT(niter, maxit);
+
+}
+
+//------------------------------------------------------------------
+TEST(CoupledModel, numericalJacobian)
+{
+    // only do this test for small problems in serial
+    int nmax = 2e3;
+
+    if ( (comm->NumProc() == 1) &&
+         (coupledModel->getState('V')->GlobalLength() < nmax) )
+    {
+        bool failed = false;
+        try
+        {
+            // get analytical jacobian blocks
+            coupledModel->computeJacobian();                
+            coupledModel->dumpBlocks();
+                                       
+            INFO("compute njC");       
+
+            NumericalJacobian<std::shared_ptr<CoupledModel>,
+                              std::shared_ptr<Combined_MultiVec> > njC;
+            
+            njC.setTolerance(1e-10);
+            njC.seth(1e-7);
+            njC.compute( coupledModel, coupledModel->getState('V') );
+
+            std::string fnameJnC("JnC");
+
+            INFO(" Printing Numerical Jacobian " << fnameJnC);
+            
+            njC.print(fnameJnC);
+            
+            // test individual elements 
+            NumericalJacobian<std::shared_ptr<CoupledModel>,
+                              std::shared_ptr<Combined_MultiVec> >::CCS ccs;
+            njC.fillCCS(ccs);
+
+            EXPECT_NE(ccs.beg.back(), 0);
+
+            std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
+
+            testEntries(coupledModel, ccs, x);
+                                          
+        }
+        catch (...)
+        {
+            failed = true;
+            throw;
+        }
+        EXPECT_EQ(failed, false);
+    }
+
+    if (comm->NumProc() != 1)
+    {
+        std::cout << ("****Numerical Jacobian test cannot run in parallel****\n") ;
+        INFO("****Numerical Jacobian test cannot run in parallel****");
+    }
+
+    if (coupledModel->getState('V')->GlobalLength() > nmax)
+    {
+        std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
+        INFO("****Numerical Jacobian test cannot run for this problem size****");
+    }
+    ERROR("",__FILE__, __LINE__);
 }
 
 
@@ -305,8 +386,6 @@ TEST(CoupledModel, Continuation)
             coupledModel->getSolution('V');
         solV->PutScalar(0.0);
                              
-        seaice->initializeState();
-        
         // set initial parameter
         coupledModel->setPar(0.0);
         
@@ -410,57 +489,6 @@ TEST(CoupledModel, JDQZSolve)
     }
     EXPECT_EQ(failed, false);
 }
-
-//------------------------------------------------------------------
-TEST(CoupledModel, numericalJacobian)
-{
-    // only do this test for small problems in serial
-    int nmax = 2e3;
-
-    // get Jacobian blocks in the model
-    coupledModel->dumpBlocks();
-    
-    if ( (comm->NumProc() == 1) &&
-         (coupledModel->getState('V')->GlobalLength() < nmax) )
-    {
-        bool failed = false;
-        try
-        {
-            INFO("compute njC");
-
-            NumericalJacobian<std::shared_ptr<CoupledModel>,
-                              std::shared_ptr<Combined_MultiVec> > njC;
-
-            njC.setTolerance(1e-11);
-            njC.seth(1e-12);
-            njC.compute(coupledModel, coupledModel->getState('V'));
-
-            std::string fnameJnC("JnC");
-
-            INFO(" Printing Numerical Jacobian " << fnameJnC);
-
-            njC.print(fnameJnC);
-
-        }
-        catch (...)
-        {
-            failed = true;
-            throw;
-        }
-        EXPECT_EQ(failed, false);
-    }
-
-    if (comm->NumProc() != 1)
-    {
-        INFO("****Numerical Jacobian test cannot run in parallel****");
-    }
-
-    if (coupledModel->getState('V')->GlobalLength() > nmax)
-    {
-        INFO("****Numerical Jacobian test cannot run for this problem size****");
-    }
-}
-
 
 //------------------------------------------------------------------
 // 2nd integral condition test
