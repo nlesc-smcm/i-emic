@@ -120,10 +120,10 @@ contains
                 ctr = ctr + 1
              endif
              pos = pos + 1
-             
+
           end do
        end do
-       
+
        _INFO2_("  thcm probe:  ctr    = ", ctr)
        _INFO2_("  thcm probe:  eta    = ", eta)
        _INFO2_("  thcm probe:  deltat = ", deltat)
@@ -195,7 +195,7 @@ contains
        end do
     end do
   end subroutine get_emip_pert
-  
+
   !!------------------------------------------------------------------
   subroutine get_salflux(un, salflux)
     use, intrinsic :: iso_c_binding
@@ -209,17 +209,17 @@ contains
 
     !     IMPORT/EXPORT
     real(c_double),dimension(ndim) ::    un
-    
+
     !     LOCAL
     real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
     real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
     real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
-    
+
     gamma = par(COMB) * par(SALT) 
     dedt  = (deltat / qdim) * dqso
 
     call usol(un,u,v,w,p,T,S)
-    
+
     pos = 1
     do j = 1,m
        do i = 1,n
@@ -310,7 +310,7 @@ contains
     real(c_double), dimension(m*n) :: dftdm
     real(c_double), dimension(m*n) :: dfsdq
     real(c_double), dimension(m*n) :: dfsdm
-    
+
     integer :: i,j,pos
 
     !     IMPORT/EXPORT
@@ -320,21 +320,22 @@ contains
     real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
     real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
     real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
-    
+
     real    QTos, QToa, To, Ta, Ab, So, qa, pa, Ms, qs
     real    QSos, QSoa
-    
+
+    real    sflux(n,m), check, area, integr
+
     call usol(un,u,v,w,p,T,S)
 
-    dftdm = 0.0;
-    dfsdq = 0.0;
-    dfsdm = 0.0;
-    
+    dftdm = 0.0 ! temperature equation derivative w.r.t. sea ice mask
+    dfsdq = 0.0 ! salinity equation derivative w.r.t. sea ice heat flux
+    dfsdm = 0.0 ! salinity equation derivative w.r.t. sea ice mask
     pos = 1
     do j = 1,m
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
-             
+
              To   = T(i,j,l)     ! sea surface temperature sst
              So   = S(i,j,l)     ! sea surface salinity sss
              Ta   = tatm(i,j)    ! atmosphere temperature
@@ -360,7 +361,7 @@ contains
                 dftdm(pos) = QTos - QToa
 
              endif
-             
+
              if (coupled_S.eq.1)  then
 
                 ! dfsdq part ------------------------------
@@ -375,15 +376,35 @@ contains
                 QSoa = nus * ( &
                      (deltat / qdim) * dqso * To &
                      - qa - pa)
+
+                ! total salinity flux
+                sflux(i,j) = (1-landm(i,j,l)) * ( &
+                     QSoa + msi(i,j) * (QSos - QSoa) &
+                     )                
                 
-                dfsdm(pos) = 0.0 !(QSos - QSoa )
-                
+                dfsdm(pos) = (QSos - QSoa)
+
              endif
-       endif
-       pos = pos + 1
+          endif
+          pos = pos + 1
+       enddo
     enddo
- enddo
- 
+    
+    call qint(sflux, scorr)
+
+    integr = 0.0;
+    check  = 0.0;
+    area   = 0.0;
+    do j=1,m
+       do i=1,n
+          integr = integr + sflux(i,j) * cos(y(j)) * (1-landm(i,j,l))
+          check  = check  + (sflux(i,j) - scorr) * cos(y(j)) * (1-landm(i,j,l))
+          area   = area   + cos(y(j)) * (1-landm(i,j,l))
+       enddo
+    enddo
+
+    write(*,*) '  salflux check = ', integr, check, area, scorr
+
   end subroutine get_derivatives
-  
+
 end module m_probe

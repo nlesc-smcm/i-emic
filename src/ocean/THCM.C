@@ -240,6 +240,14 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     coupled_S          = paramList.get("Coupled Salinity", 0);
     fixPressurePoints_ = paramList.get("Fix Pressure Points", false);
 
+    if ((coupled_S == 1) && (sres == 1))
+    {
+        WARNING("Incompatible parameters: coupled_S = " << coupled_S
+                << " sres = "
+                << sres << " setting sres = 0", __FILE__, __LINE__);
+        sres = 0;
+    }
+    
     if (rd_spertm)
     {
         std::string spertm_file = paramList.get("Salinity Perturbation Mask",

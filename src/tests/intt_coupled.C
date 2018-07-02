@@ -4,7 +4,6 @@
 namespace // local unnamed namespace (similar to static in C)
 {
     RCP<Epetra_Comm>               comm;
-    
     std::shared_ptr<Ocean>         ocean;
     std::shared_ptr<Atmosphere>    atmos;
     std::shared_ptr<SeaIce>        seaice;
@@ -167,41 +166,42 @@ TEST(CoupledModel, Newton)
     solV->PutScalar(0.0);
 
     // set parameter
-    coupledModel->setPar(0.001);
+    coupledModel->setPar(0.01);
 
     // try to converge
     int maxit = 10;
-    std::shared_ptr<Combined_MultiVec> b;
+    std::shared_ptr<Combined_MultiVec> F = coupledModel->getRHS('V');
+    std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('C');
     int niter = 0;
     std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('V');
     std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
-    coupledModel->computeRHS();
     coupledModel->computeJacobian();
+    coupledModel->computeRHS();
             
     for (; niter < maxit; ++niter)
     {
         coupledModel->computeJacobian();
-
-        b = coupledModel->getRHS('C');
-
+        coupledModel->computeRHS();
+        
+        b = coupledModel->getRHS('C');    
         CHECK_ZERO(b->Scale(-1.0));
 
         coupledModel->solve(b);  // J dx = - F
 
         stateV->Update(1.0, *x, 1.0); // x = x + dx;
 
+        coupledModel->computeJacobian();
         coupledModel->computeRHS();
 
         coupledModel->applyMatrix(*x, *y);
         double normb = Utils::norm(b);
         y->Update(1.0, *b, -1.0);
         y->Scale(1. / normb);
-
-        Utils::save(y, "residual");
+        
 
         INFO("\n ||r|| / ||b|| = " << Utils::norm(y));
         INFO("        ||dx|| = " << Utils::norm(x) << " ");
-        INFO("         ||F|| = " << Utils::norm(b) << "\n");
+        INFO("         ||F|| = " << Utils::norm(F) << "\n");
         
         for (int i = 0; i != b->Size(); ++i)
         {
@@ -209,14 +209,13 @@ TEST(CoupledModel, Newton)
             INFO("   " << " dx = " << Utils::norm((*x)(i)));
             INFO("   " << " ||r|| / ||b|| = " << Utils::norm((*y)(i)));
         }
-
         if (Utils::norm(coupledModel->getRHS('V')) < 1e-8)
             break;
     }
-
+    Utils::save(F, "F");
     EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 1e-8);
     EXPECT_LT(niter, maxit);
-
+    getchar();
 }
 
 //------------------------------------------------------------------

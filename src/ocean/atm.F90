@@ -19,7 +19,7 @@ module m_atm
       
       real    qdim, nuq, nus, eta, dqso, eo0, albe0, albed, lvsc
       
-      real    Ai, Ad, As, Aa, Aoa, amua, bmua
+      real    Ai, Ad, As, Aa, Aoa, amua, bmua, scorr
 
       real ::  Ooa = 1.0 ! default value to avoid initialization
                          ! issues, set in atmos_coeff

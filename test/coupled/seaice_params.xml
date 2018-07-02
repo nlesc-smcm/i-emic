@@ -6,6 +6,12 @@
   <Parameter name="Save state" type="bool" value="true"/>
 
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+
+  <!-- Starting parameters -->
+  <Parameter name="Combined Forcing" type="double" value="0.0"/>
+  <Parameter name="Solar Forcing"    type="double" value="1.0"/>
+  <Parameter name="Mask Forcing"     type="double" value="1.0e-1"/>
+
   
   <Parameter name="Global Bound xmin" type="double" value="286"/>
   <Parameter name="Global Bound xmax" type="double" value="350"/>

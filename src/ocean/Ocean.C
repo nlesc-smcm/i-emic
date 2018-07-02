@@ -1443,8 +1443,9 @@ void Ocean::synchronize(std::shared_ptr<Atmosphere> atmos)
 void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
 {
     TIMER_START("Ocean: set seaice...");
-    Qsi_ = seaice->interfaceQ();
+    Qsi_ = seaice->interfaceQ();    
     THCM::Instance().setSeaIceQ(Qsi_);
+    
     Msi_ = seaice->interfaceM();
     THCM::Instance().setSeaIceM(Msi_);
 

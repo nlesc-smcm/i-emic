@@ -16,7 +16,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     recomputePrec_   (false),
     
     taus_         (0.01),    // threshold ice thickness
-    epsilon_      (1e-2),    // Heavyside approximation steepness
+    epsilon_      (1),    // Heavyside approximation steepness
 
     // background mean values
     t0o_   (params->get("background ocean temp t0o", 7)),

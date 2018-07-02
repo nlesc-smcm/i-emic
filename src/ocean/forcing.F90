@@ -161,7 +161,7 @@ SUBROUTINE forcing
      do i=1,n
         if (coupled_S.eq.1) then
            ! Salinity flux from the atmosphere into the ocean, E-P
-           ! forcing, external contributions. Internals contributions
+           ! forcing, external contributions. Internal contributions
            ! are added to the matrix in usrc.F90.
            QSoa = nus * (-qatm(i,j) - patm(i,j)) 
 
@@ -174,8 +174,10 @@ SUBROUTINE forcing
 
            ! Combine forcings through mask           
            Frc(find_row2(i,j,l,SS)) = (         &
-                QSoa + 0.0 & ! * msi(i,j) * (QSos - QSoa) &
-                ) * (1-landm(i,j,l))
+                QSoa + msi(i,j) * (QSos - QSoa) &
+                -scorr) * (1-landm(i,j,l)) 
+           
+
         else
            Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &
                 gamma * par(HMTP) * ( adapted_emip(i,j) - adapted_salcor ) + &

@@ -59,14 +59,14 @@
     <!-- 1: no land                                 -->
     <!-- others not tested, but this is 'itopo' in  -->
     <!-- THCM language                              -->
-    <Parameter name="Topography" type="int" value="0"/>
+    <Parameter name="Topography" type="int" value="1"/>
     <!-- remove bottom profile? (flat in THCM)      -->
     <Parameter name="Flat Bottom" type="bool" value="0"/>
     <!-- read mask from a file in mkmask The filename is hard-coded in   -->
     <!-- topo.F90.                                                       -->
-    <Parameter name="Read Land Mask" type="bool" value="1"/>
+    <Parameter name="Read Land Mask" type="bool" value="0"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="test6x6x4"/>
+    <Parameter name="Land Mask" type="string" value=""/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -104,7 +104,7 @@
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->

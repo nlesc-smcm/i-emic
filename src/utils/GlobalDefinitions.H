@@ -75,12 +75,13 @@ extern std::stack<Timer> timerStack;
 #ifndef ERROR
 #  define ERROR(x,y,z)                                                  \
 	{                                                                   \
-		(*outFile) << "**ERROR**: " << x << " "                         \
-				   << y << " " << z << std::endl;                       \
-                                                                        \
-        std::cerr << "**ERROR**: "<< x << std::endl;                    \
+        std::cerr << "\n**ERROR**: "<< x << std::endl;                    \
         std::cerr << "(in " << y << ", line "                           \
-                  << z << ")" << std::endl;                             \
+                  << z << ")\n" << std::endl;                             \
+                                                                        \
+        (*outFile) << "\n**ERROR**: "<< x << std::endl;                   \
+        (*outFile) << "(in " << y << ", line "                          \
+                   << z << ")\n" << std::endl;                            \
                                                                         \
         int initialized = 0;                                            \
         MPI_Initialized(&initialized);                                  \
@@ -93,9 +94,12 @@ extern std::stack<Timer> timerStack;
 #ifndef WARNING
 #  define WARNING(x,y,z)                                                \
 	{                                                                   \
-		std::cerr << "**WARNING**: " << x << " ";                       \
+		std::cerr << "\n**WARNING**: " << x << " ";                       \
         std::cerr << "(in " << y << ", line "                           \
-                  << z << ")" << std::endl;                             \
+                  << z << ")\n" << std::endl;                             \
+		(*outFile) << "\n**WARNING**: " << x << " ";                      \
+        (*outFile) << "(in " << y << ", line "                          \
+                  << z << ")\n" << std::endl;                             \
 }
 #endif
 

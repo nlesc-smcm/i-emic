@@ -734,8 +734,10 @@ SUBROUTINE lin
           - mc * QSnd * zeta * a0 / (rhodim * Lf) 
      
      ! minus sign and nondim added (we take -Au in rhs computation)
+
      QSoa = -dedt * sc            ! atmosphere to ocean salinity flux
                                   ! internal component 
+
      QSos = QSnd * zeta / (rhodim * Lf)  ! sea ice to ocean salinity flux
                                          ! internal component
 
