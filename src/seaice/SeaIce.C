@@ -16,7 +16,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     recomputePrec_   (false),
     
     taus_         (0.01),    // threshold ice thickness
-    epsilon_      (1),    // Heavyside approximation steepness
+    epsilon_      (1.0e-2),  // Heavyside approximation steepness
 
     // background mean values
     t0o_   (params->get("background ocean temp t0o", 7)),
@@ -42,11 +42,13 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // combined parameter
     zeta_  (ch_ * utau_ * rhoo_ * cpo_),
 
-    // sublimation constants, parameters for saturation humidity over
-    // ice
+    // sublimation and evaporation constants, parameters for
+    // saturation humidity over ice
     c1_    (params->get("c1", 3.8e-3)),
     c2_    (params->get("c2", 21.87)),
     c3_    (params->get("c3", 265.5)),
+//    c4_    (params->get("c3", 17.67)), // FIXME todo
+//    c5_    (params->get("c3", 243.5)), // FIXME todo
 
     ce_    (params->get("Dalton number", 1.3e-03)),
     uw_    (params->get("mean atmospheric surface wind speed, ms^{-1}", 8.5)),

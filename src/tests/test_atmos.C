@@ -229,6 +229,9 @@ TEST(Atmosphere, EPfields)
     parPco->Norm1(&parArea);
     EXPECT_NEAR(serArea, parArea,1e-7);
 
+    std::cout << " area = " << std::setprecision(12) << serArea << " (serial model) "
+              << parArea << " (parallel model) " << std::endl;       
+
     // compute dot products / integrals
     double serInt, parInt;
     serInt = Utils::dot(*serPco, *serE) / serArea;

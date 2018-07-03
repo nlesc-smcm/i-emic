@@ -1,18 +1,20 @@
 function [X, J, F] = seaice()
 
-    global xmin xmax ymin ymax RtD n m nun x y dx dy
+    global xmin xmax ymin ymax RtD n m nun aux x y dx dy
+    global IC
     global t0o t0a t0i Q0 Qvar H0 M0
     global tvar s0 svar q0 qvar ta0 tavar
 
     % forcing from external models
-    global sst sss qatm tatm
+    global sst sss qatm patm tatm
 
     % model parameters and functions
-    global zeta Tf Lf rhoi rhoo E0 dEdT dEdq
+    global zeta a0 Tf Lf rhoi rhoo E0 dEdT dEdq
     global sun0 S Ls alpha c0 muoa
     global Ic
     global taus epsilon
     global Ti
+    global QSnd nus qdim dqso
     
     global combf solf maskf % continuation parameters
     
@@ -30,10 +32,12 @@ function [X, J, F] = seaice()
     % specify grid size (2deg)
     n = 16;
     m = 16;
-
+    
     % number of unknowns
+    aux = 1;
     nun = 4;
     dim = nun*n*m;
+    len = dim + aux;
 
     taus    = 0.01;     % m, threshold ice thickness
     epsilon = 1e-2;     % Heavyside approximation steepness
@@ -49,6 +53,11 @@ function [X, J, F] = seaice()
     qvar =  5e-4;
     H0   =  taus;
     M0   =  0;
+    
+    % THCM nondimensionalization 
+    QSnd = 2229500;
+    nus  = 3.0073211669921877E-003    
+    qdim = 1e-3;
 
     % ice formation constants
     ch   = 0.0058;     % empirical constant
@@ -70,6 +79,8 @@ function [X, J, F] = seaice()
     c1 = 3.8e-3;   % (kg / kg)
     c2 = 21.87;    %
     c3 = 265.5;    % (K)
+    c4 = 17.67;    % (K)
+    c5 = 243.5;    % (K)
 
     ce  = 1.3e-03; % Dalton number
     uw  = 8.5;     % ms^{-1}, mean atmospheric surface wind speed
@@ -94,12 +105,16 @@ function [X, J, F] = seaice()
     S = @(y) (1 - .482 * (3 * (sin(y)).^2 - 1.) / 2.);
 
     % freezing temperature (dominant term)
-    Tf = @(S) -0.0575 * (S + s0);
+    a0 = -0.0575;
+    Tf = @(S) a0 * (S + s0);
 
     % Background sublimation and derivatives
     E0    =  eta * ( qsi(t0i) - q0 );
+    dqso  = (c1 * c4 * c5) / (t0o + c5).^2 * ...
+            exp( (c4 * t0i) / (t0o + c5) );
+    
     dqsi  = (c1 * c2 * c3) / (t0i + c3).^2 * ...
-           exp( (c2 * t0i) / (t0i + c3) );
+            exp( (c2 * t0i) / (t0i + c3) );
     dEdT  =  eta *  dqsi;
     dEdq  =  eta * -1;
 
@@ -112,39 +127,45 @@ function [X, J, F] = seaice()
 
     % create grid
     grid();
+    
+    % create integral coefficients
+    IC = intcoeff();
+    A  = sum(IC);
+    fprintf(' total area = %2.12f\n', A);
 
     % initialize forcing and state
     sst  = idealizedTemp(0, tvar);
     sss  = idealizedSalt(0, svar);
     tatm = idealizedTemp(0, tvar);
     qatm = idealizedTemp(0, qvar);
+    patm = ones(n,m);
 
     % testing values
-    X = zeros(dim, 1);
+    X = zeros(len, 1);
     F = rhs(X);
     fprintf('X = 0,     ||F||two = %1.12e\n', norm(F));
     
-    X = ones(dim, 1);
+    X = ones(len, 1);
     F = rhs(X);
     fprintf('X = 1,     ||F||two = %1.12e\n', norm(F));
 
-    X = 1.234*ones(dim, 1);
+    X = 1.234*ones(len, 1);
     F = rhs(X);
     fprintf('X = 1.234, ||F||two = %1.12e\n', norm(F));
     
-    X = zeros(dim,1);
+    X = zeros(len, 1);
     J = jac(X);
     fprintf('X = 0,     ||J||inf = %1.12e\n', norm(J,Inf));
     fprintf('X = 0,     ||J||one = %1.12e\n', norm(J,1));
     fprintf('X = 0,     ||J||frb = %1.12e\n', norm(J,'fro'));
 
-    X = ones(dim,1);
+    X = ones(len, 1);
     J = jac(X);
     fprintf('X = 1,     ||J||inf = %1.12e\n', norm(J,Inf));
     fprintf('X = 1,     ||J||one = %1.12e\n', norm(J,1));
     fprintf('X = 1,     ||J||frb = %1.12e\n', norm(J,'fro'));
 
-    X = 1.234*ones(dim,1);
+    X = 1.234*ones(len, 1);
     J = jac(X);
     fprintf('X = 1.234, ||J||inf = %1.12e\n', norm(J,Inf));
     fprintf('X = 1.234, ||J||one = %1.12e\n', norm(J,1));
@@ -152,31 +173,32 @@ function [X, J, F] = seaice()
     
     
     % Newton solve
-    X    = zeros(dim,1);
+    X    = zeros(len, 1);
     F    = rhs(X);
-    kmax = 10;
 
+    kmax = 10;
     ord = [];
     for i = 1:nun
         ord = [ord, i:nun:dim];
     end
-
-    o22 = [];
-    for i = 2:nun
-        o22 = [o22, i:nun:dim];
+    if (aux == 1)
+        ord = [ord, len];
     end
     
-    X  = 2*randn(dim,1);
+    X  = 2*randn(len,1);
     F  = rhs(X);
     tic
     Jn = numjacob(@rhs, X);    
-    toc
+    vsm(Jn(ord,ord));
+    toc         
+
+    return
+    
     J  = jac(X);
     vsm(J(ord,ord));
-    vsm(Jn(ord,ord));
     condest(J)
     vsm(J(ord,ord)-Jn(ord,ord))
-    return         
+
     for i = 1:kmax
         J  = jac(X);
         dX = J \ -F;
@@ -300,6 +322,8 @@ end
 function [F] = rhs(x)
 
     global m n nun y
+    
+    global IC
 
     global sst sss qatm tatm
 
@@ -314,12 +338,12 @@ function [F] = rhs(x)
 
     [H, Qtsa, Msi, T] = extractsol(x);
 
-    F = zeros(size(x,1),1);
-
+    N = size(x,1);
+    F = zeros(N,1);
+    
     for j = 1:m
         for i = 1:n
             for XX = 1:nun
-                row = find_row(i,j,XX);
                 switch XX
                   case 1
                     Tsi = Ti(Qtsa(i,j), H(i,j), sss(i,j));
@@ -348,8 +372,75 @@ function [F] = rhs(x)
                           - T(i,j);
                 end
 
+                row = find_row(i,j,XX);
                 F(row) = val;
             end
+        end
+    end
+    
+    if ( (N - row) == 1 )  % auxiliary equation requested
+        [~, ~, ~, ~, g] = extractsol(x);
+        QS   = salflux(x);
+        A    = sum(IC);
+        F(N) = IC' * QS - g * A;
+    end       
+end
+
+% single dof
+function [QS] = salflux(x)
+
+    global n m nun aux
+    global sst sss qatm tatm patm
+    global t0o t0a t0i Q0 Qvar H0 M0
+    global zeta a0 Tf Lf rhoi rhoo E0 dEdT dEdq
+    global sun0 S Ls alpha c0 muoa
+    global Ic
+    global taus epsilon
+    global Ti
+    global combf solf maskf % continuation parameters
+    global nus QSnd qdim dqso
+    
+    len = n*m;
+    QS  = ones(len,1);
+
+    [H, Qtsa, Msi, T] = extractsol(x);
+    
+    for j = 1:m
+        for i = 1:n
+            
+            So = sss(i,j);
+            To = sst(i,j);
+            qs = Qtsa(i,j);
+            qa = qatm(i,j);
+            pa = patm(i,j);
+            
+            QSos = QSnd * (                       ... %
+                zeta * ( Tf(So) - (To+t0o) )      ...  % ! QTos component
+                - ( Qvar * qs + Q0 ) )           ...  % ! QTsa component
+                   / ( rhoo * Lf );
+
+            QSoa = nus * ( ...                   %
+                (1.0 / qdim) * dqso * To ...  %
+                - qa - pa);
+            
+            
+            sr = (j-1)*n+i;
+            QS(sr) = QSoa + Msi(i,j) * (QSos - QSoa);
+        end
+    end
+    
+end
+
+% integral coefficients for single dof surface row
+function [IC] = intcoeff()
+    global n m nun aux
+    global dx dy x y
+    len = n*m;
+    IC = zeros(len,1);
+    for j = 1:m
+        for i = 1:n
+            sr = (j-1)*n+i; % surface row
+            IC(sr) = cos(y(i)) * dx * dy;
         end
     end
 end
@@ -458,19 +549,27 @@ function [row] = find_row(i,j,XX)
     row = nun * ( (j-1) * n  + (i-1) ) + XX;
 end
 
-function [H, Qtsa, Msi, Tsi] = extractsol(x)
+function [H, Qtsa, Msi, Tsi, g] = extractsol(x)
 
-    global n m nun
+    global n m nun aux
 
     H    = zeros(n,m);
     Qtsa = zeros(n,m);
     Msi  = zeros(n,m);
     Tsi  = zeros(n,m);
-
-    H(:)    = x(1:nun:end);
-    Qtsa(:) = x(2:nun:end);
-    Msi(:)  = x(3:nun:end);
-    Tsi(:)  = x(4:nun:end);
+    
+    dim = n*m*nun;
+    
+    H(:)    = x(1:nun:dim);
+    Qtsa(:) = x(2:nun:dim);
+    Msi(:)  = x(3:nun:dim);
+    Tsi(:)  = x(4:nun:dim);
+    
+    if (aux == 1)
+        g = x(end);
+    else
+        g = [];
+    end
 end
 
 function [] = grid()
