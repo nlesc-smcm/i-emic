@@ -33,6 +33,7 @@ class TimeStepper
     double adist_;
     double bdist_;
     double cdist_;
+    double dist_tol_;
 
     // RNG methods
     bool engine_initialized_;
@@ -42,12 +43,14 @@ public:
     TimeStepper(std::function<T(T const &, double)> time_step);
     TimeStepper(std::function<T(T const &, double)> time_step,
                 std::function<double(T const &)> dist_fun,
-                double rho);
+                double rho,
+                double dist_tol);
     TimeStepper(std::function<T(T const &, double)> time_step,
                 std::function<double(T const &)> dist_fun,
                 double adist,
                 double bdist,
-                double cdist);
+                double cdist,
+                double dist_tol);
 
     T transient(T x, double dt, double tmax) const;
     double transient_max_distance(
@@ -87,9 +90,10 @@ TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step)
 template<class T>
 TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step,
                             std::function<double(T const &)> dist_fun,
-                            double rho)
+                            double rho,
+                            double dist_tol)
     :
-    TimeStepper(time_step, dist_fun, rho, rho, 2 * rho)
+    TimeStepper(time_step, dist_fun, rho, rho, 2 * rho, dist_tol)
 {}
 
 template<class T>
@@ -97,13 +101,15 @@ TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step,
                             std::function<double(T const &)> dist_fun,
                             double adist,
                             double bdist,
-                            double cdist)
+                            double cdist,
+                            double dist_tol)
     :
     time_step_(time_step),
     dist_fun_(dist_fun),
     adist_(adist),
     bdist_(bdist),
     cdist_(cdist),
+    dist_tol_(dist_tol),
     engine_initialized_(false)
 {
 }
@@ -188,7 +194,7 @@ void TimeStepper<T>::transient_ams(
             max_distance = 1.0;
             break;
         }
-        if (dist > max_distance + 0.0005)
+        if (dist > max_distance + dist_tol_)
         {
             experiment.xlist.push_back(x);
             experiment.tlist.push_back(t);
@@ -225,7 +231,7 @@ void TimeStepper<T>::transient_tams(
             max_distance = 1.0;
             break;
         }
-        if (dist > max_distance + 0.0005)
+        if (dist > max_distance + dist_tol_)
         {
             experiment.xlist.push_back(x);
             experiment.tlist.push_back(t);

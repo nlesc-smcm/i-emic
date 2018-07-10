@@ -27,6 +27,7 @@ class AMS
     double adist_;
     double bdist_;
     double cdist_;
+    double dist_tol_;
     double sigma_;
 
     std::string method_;
@@ -102,6 +103,7 @@ AMS(Model model, ParameterList pars,
     adist_(pars->get("A distance", 0.05)),
     bdist_(pars->get("B distance", adist_)),
     cdist_(pars->get("C distance", 2 * adist_)),
+    dist_tol_(pars->get("distance tolerance", 0.0005)),
     sigma_(pars->get("sigma", 1.0)),
     method_(pars->get("method", "AMS")),
     num_exp_(pars->get("number of experiments", 1000)),
@@ -201,7 +203,7 @@ AMS(Model model, ParameterList pars,
     };
 
     timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(
-                                    time_step, dist_fun, adist_, bdist_, cdist_));
+                                    time_step, dist_fun, adist_, bdist_, cdist_, dist_tol_));
 
     static thread_local std::default_random_engine engine(get_seed());
     timestepper_->set_random_engine(engine);
