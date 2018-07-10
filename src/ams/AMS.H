@@ -18,6 +18,7 @@ class AMS
     using VectorPtr  = typename Model::element_type::VectorPtr;
     using Vector     = typename VectorPtr::element_type;
     using TimeStep   = typename std::function<VectorPtr(VectorPtr const &, double)>;
+    using DistFun    = typename std::function<double(VectorPtr const &)>;
 
     Model model_;
     double dt_;
@@ -56,7 +57,7 @@ public:
     void run();
 
 protected:
-    Teuchos::RCP<Epetra_MultiVector> restrict(Epetra_MultiVector const &x) const;
+    Teuchos::RCP<Epetra_Vector> restrict(Epetra_MultiVector const &x) const;
     Teuchos::RCP<Epetra_Vector> prolongate(Epetra_MultiVector const &x) const;
 
     unsigned int get_seed();
@@ -85,6 +86,45 @@ Teuchos::RCP<Vector> newton(
     }
     std::cerr << "Newton unconverged with norm " << nrm << std::endl;
     return x;
+}
+
+// =====================================================================
+// Helper methods
+
+Teuchos::RCP<Epetra_MultiVector> dot(
+    Epetra_MultiVector const &x, Epetra_MultiVector const &y)
+{
+    TIMER_SCOPE("AMS: dot");
+    int m = x.NumVectors();
+    int n = y.NumVectors();
+
+    Epetra_LocalMap map(m, 0, x.Comm());
+    Teuchos::RCP<Epetra_MultiVector> out = Teuchos::rcp(new Epetra_MultiVector(map, n));
+
+    CHECK_ZERO(out->Multiply('T', 'N', 1.0, x, y, 0.0));
+    return out;
+}
+
+template<typename Model>
+Teuchos::RCP<Epetra_Vector> AMS<Model>::restrict(Epetra_MultiVector const &x) const
+{
+    TIMER_SCOPE("AMS: restrict");
+    int m = V_->NumVectors();
+
+    Epetra_LocalMap map(m, 0, x.Comm());
+    Teuchos::RCP<Epetra_Vector> out = Teuchos::rcp(new Epetra_Vector(map));
+
+    CHECK_ZERO(out->Multiply('T', 'N', 1.0, *V_, x, 0.0));
+    return out;
+}
+
+template<typename Model>
+Teuchos::RCP<Epetra_Vector> AMS<Model>::prolongate(Epetra_MultiVector const &x) const
+{
+    TIMER_SCOPE("AMS: prolongate");
+    VectorPtr out = Teuchos::rcp(new Vector(V_->Map()));
+    CHECK_ZERO(out->Multiply('N', 'N', 1.0, *V_, x, 0.0));
+    return out;
 }
 
 // =====================================================================
@@ -118,6 +158,7 @@ AMS(Model model, ParameterList pars,
 
     std::string space = pars->get("space", "");
     TimeStep time_step;
+    DistFun dist_fun;
     if (space != "")
     {
         // Use a map that is constructed with the most basic
@@ -139,68 +180,96 @@ AMS(Model model, ParameterList pars,
         CHECK_ZERO(B_->Multiply('T', *V_, *BV_));
 
         time_step = get_projected_time_step();
+
+        auto vvec = Teuchos::rcp(new Vector(B_->RangeMap()));
+        CHECK_ZERO(vvec->PutScalar(0.0));
+        for (int i = 0; i < vvec->MyLength(); i++)
+            if (vvec->Map().GID(i) % 6 == 1)
+                (*vvec)[i] = 1.0;
+
+        auto Vvvec = Teuchos::rcp(new Epetra_MultiVector(*V_));
+        CHECK_ZERO(Vvvec->Multiply(1.0, *vvec, *V_, 0.0));
+
+        auto VvvV = dot(*Vvvec, *Vvvec);
+
+        auto projected_v_norm = [VvvV](VectorPtr const &x) {
+            auto tmp = Teuchos::rcp(new Vector(*x));
+            CHECK_ZERO(tmp->Multiply('N', 'N', 1.0, *VvvV, *x, 0.0));
+            return sqrt((*dot(*x, *tmp))[0][0]);
+        };
+
+        sol1_ = restrict(*sol1_);
+        sol2_ = restrict(*sol2_);
+
+        auto diff = Teuchos::rcp(new Vector(*sol1_));
+        CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
+        double nrm = projected_v_norm(diff);
+
+        dist_fun = [nrm, projected_v_norm, this](VectorPtr const &x) {
+            VectorPtr d1v = Teuchos::rcp(new Vector(*x));
+            CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
+            double d1 =  projected_v_norm(d1v) / nrm;
+            VectorPtr d2v = Teuchos::rcp(new Vector(*x));
+            CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
+            double d2 =  projected_v_norm(d2v) / nrm;
+            double dist = 0.5 - 0.5 * exp(-0.5 * pow(d1 / 0.25, 2.))
+            + 0.5 * exp(-0.5 * pow(d2 / 0.25, 2.));
+            INFO("distance = " << dist);
+            return dist;
+        };
     }
     else
+    {
         time_step = get_time_step();
 
-    INFO("Time step: " << dt_);
+        auto var_norm = [](VectorPtr const &x, int var) {
+            double tmp = 0;
+            int n = x->MyLength();
+            auto &map = x->Map();
+            Vector const &xref = *x;
+            for (int i = 0; i < n; i++)
+                if (map.GID(i) % 6 == var)
+                    tmp += xref[i] * xref[i];
+            double out = 0;
+            if (x->DistributedGlobal())
+            {
+                CHECK_ZERO(x->Comm().SumAll(&tmp, &out, 1));
+            }
+            else
+            {
+                out = tmp;
+            }
+            return sqrt(out);
+        };
 
-    auto var_norm = [](VectorPtr const &x, int var) {
-        double tmp = 0;
-        int n = x->MyLength();
-        auto &map = x->Map();
-        Vector const &xref = *x;
-        for (int i = 0; i < n; i++)
-            if (map.GID(i) % 6 == var)
-                tmp += xref[i] * xref[i];
-        double out = 0;
-        if (x->DistributedGlobal())
+        double nrm[6];
+        for (int var = 0; var < 6; var++)
         {
-            CHECK_ZERO(x->Comm().SumAll(&tmp, &out, 1));
+            VectorPtr diff = Teuchos::rcp(new Vector(*sol1_));
+            CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
+            nrm[var] = var_norm(diff, var);
         }
-        else
-        {
-            out = tmp;
-        }
-        return sqrt(out);
-    };
 
-    double nrm[6];
-    for (int var = 0; var < 6; var++)
-    {
-        VectorPtr diff = Teuchos::rcp(new Vector(*sol1_));
-        CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
-        nrm[var] = var_norm(diff, var);
+        auto dist_fun_var = [nrm, var_norm, this](VectorPtr const &x, int var) {
+            VectorPtr d1v = Teuchos::rcp(new Vector(*x));
+            CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
+            double d1 =  var_norm(d1v, var) / nrm[var];
+            VectorPtr d2v = Teuchos::rcp(new Vector(*x));
+            CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
+            double d2 =  var_norm(d2v, var) / nrm[var];
+            double dist = 0.5 - 0.5 * exp(-0.5 * pow(d1 / 0.25, 2.))
+            + 0.5 * exp(-0.5 * pow(d2 / 0.25, 2.));
+            return dist;
+        };
+
+        dist_fun = [this, dist_fun_var](VectorPtr const &x) {
+            double dist = dist_fun_var(x, 1);
+            INFO("distance = " << dist);
+            return dist;
+        };
     }
 
-    auto dist_fun_var = [nrm, var_norm, this](VectorPtr const &x, int var) {
-        VectorPtr d1v = Teuchos::rcp(new Vector(*x));
-        CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
-        double d1 =  var_norm(d1v, var) / nrm[var];
-        VectorPtr d2v = Teuchos::rcp(new Vector(*x));
-        CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
-        double d2 =  var_norm(d2v, var) / nrm[var];
-        double dist = 0.25 - 0.25 * exp(-0.5 * pow(d1 / 0.25, 2.))
-        + 0.75 * exp(-0.5 * pow(d2 / 0.25, 2.));
-        return dist;
-    };
-
-    auto dist_fun = [this, dist_fun_var](VectorPtr const &x) {
-        // // BEGIN DEBUG
-        // for (int var = 0; var < 6; var++)
-        // {
-        //     double dist = dist_fun_var(x, var);
-        //     INFO("distance " << var << " = " << dist);
-        // }
-
-        // INFO(model_->writeData(true));
-        // INFO(model_->writeData(false));
-        // // END DEBUG
-
-        double dist = dist_fun_var(x, 1);
-        INFO("distance = " << dist);
-        return dist;
-    };
+    INFO("Time step: " << dt_);
 
     timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(
                                     time_step, dist_fun, adist_, bdist_, cdist_, dist_tol_));
@@ -280,34 +349,6 @@ auto AMS<Model>::get_time_step()
     };
 }
 
-Teuchos::RCP<Epetra_MultiVector> dot(
-    Epetra_MultiVector const &x, Epetra_MultiVector const &y)
-{
-    TIMER_SCOPE("AMS: dot");
-    int m = x.NumVectors();
-    int n = y.NumVectors();
-
-    Epetra_LocalMap map(m, 0, x.Comm());
-    Teuchos::RCP<Epetra_MultiVector> out = Teuchos::rcp(new Epetra_MultiVector(map, n));
-
-    CHECK_ZERO(out->Multiply('T', 'N', 1.0, x, y, 0.0));
-    return out;
-}
-
-template<typename Model>
-Teuchos::RCP<Epetra_MultiVector> AMS<Model>::restrict(Epetra_MultiVector const &x) const
-{
-    return dot(*V_, x);
-}
-
-template<typename Model>
-Teuchos::RCP<Epetra_Vector> AMS<Model>::prolongate(Epetra_MultiVector const &x) const
-{
-    VectorPtr out = Teuchos::rcp(new Vector(V_->Map()));
-    CHECK_ZERO(out->Multiply('N', 'N', 1.0, *V_, x, 0.0));
-    return out;
-}
-
 template<typename Model>
 auto AMS<Model>::get_projected_time_step()
 {
@@ -316,8 +357,7 @@ auto AMS<Model>::get_projected_time_step()
         TIMER_SCOPE("AMS: Projected time step");
         double sig = 1.0 / (dt * theta_);
 
-        auto xsmall = restrict(*x);
-        *model_->getState('V') = *x;
+        *model_->getState('V') = *prolongate(*x);
         // model_->saveState();
 
         TIMER_START("AMS: Compute noise");
@@ -357,14 +397,13 @@ auto AMS<Model>::get_projected_time_step()
         auto VMV = dot(*V_, *tmp);
         TIMER_STOP("AMS: Compute VMV");
 
-        auto thetaF = [this, &G, &Fx, &VMV, &xsmall, dt](
-            Teuchos::RCP<Epetra_MultiVector> const &xnew) {
+        auto thetaF = [this, &G, &Fx, &VMV, &x, dt](VectorPtr const &xnew) {
             TIMER_SCOPE("AMS: Projected F");
             *model_->getState('V') = *prolongate(*xnew);
 
-            auto ret = Teuchos::rcp(new Epetra_MultiVector(*xsmall));
+            auto ret = Teuchos::rcp(new Vector(*x));
             CHECK_ZERO(ret->Update(-1.0, *xnew, 1.0));
-            auto tmp = Teuchos::rcp(new Epetra_MultiVector(*ret));
+            auto tmp = Teuchos::rcp(new Vector(*ret));
             CHECK_ZERO(ret->Multiply('N', 'N', 1.0, *VMV, *tmp, 0.0));
 
             model_->computeRHS();
@@ -391,8 +430,8 @@ auto AMS<Model>::get_projected_time_step()
         CHECK_ZERO(VAVsolver->Factor());
         TIMER_STOP("AMS: Compute VAV");
 
-        auto thetaJ = [this, sig, &VAVsolver](Teuchos::RCP<Epetra_MultiVector> const &xnew,
-                                              Teuchos::RCP<Epetra_MultiVector> const &b) {
+        auto thetaJ = [this, sig, &VAVsolver](VectorPtr const &xnew,
+                                              VectorPtr const &b) {
             TIMER_SCOPE("AMS: Projected jacobian solve");
             auto y = Teuchos::rcp(new Epetra_SerialDenseMatrix(
                                       Copy, b->Values(), b->Stride(),
@@ -403,12 +442,12 @@ auto AMS<Model>::get_projected_time_step()
             CHECK_ZERO(z->Scale(sig));
             CHECK_ZERO(VAVsolver->SetVectors(*y, *z));
             CHECK_NONNEG(VAVsolver->Solve());
-            return Teuchos::rcp(new Epetra_MultiVector(
+            return Teuchos::rcp(new Vector(
                                     Copy, Epetra_LocalMap(y->M(), 0, *model_->Comm()),
-                                    y->A(), y->LDA(), y->N()));
+                                    y->A()));
         };
 
-        return prolongate(*newton<Epetra_MultiVector>(thetaF, thetaJ, xsmall, 1e-8));
+        return newton<Vector>(thetaF, thetaJ, x, 1e-8);
     };
 }
 
