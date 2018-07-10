@@ -60,7 +60,7 @@ JnC32 = JnC(sei_idx, atm_idx);
 
 tot_idx = [oce_idx, atm_idx, sei_idx];
 JnC_ = JnC;
-JnC = JnC(tot_idx, tot_idx);
+JnC  = JnC(tot_idx, tot_idx);
 
 % remove offsets of ranges
 oce_idx = oce_idx - 0;

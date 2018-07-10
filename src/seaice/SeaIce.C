@@ -23,7 +23,9 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     t0a_   (params->get("background atmos temp t0a", 10)),
     t0i_   (params->get("background seaice temp t0i",-15)),
     s0_    (params->get("ocean background salinity s0", 35)),
-    q0_    (params->get("atmos background humidity q0", 1e-3)),
+    q0_    (params->get("atmos reference humidity",8e-3)), 
+    qdim_  (params->get("atmos humidity scale", 1e-3)),
+    tdim_  (params->get("temperature scale", 1.0)), 
     H0_    (params->get("seaice background thickness H0", taus_)),
     M0_    (params->get("seaice background mask M0", 0)),
 
@@ -47,8 +49,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     c1_    (params->get("c1", 3.8e-3)),
     c2_    (params->get("c2", 21.87)),
     c3_    (params->get("c3", 265.5)),
-//    c4_    (params->get("c3", 17.67)), // FIXME todo
-//    c5_    (params->get("c3", 243.5)), // FIXME todo
+    c4_    (params->get("c3", 17.67)), // FIXME todo
+    c5_    (params->get("c3", 243.5)), // FIXME todo
 
     ce_    (params->get("Dalton number", 1.3e-03)),
     uw_    (params->get("mean atmospheric surface wind speed, ms^{-1}", 8.5)),
@@ -83,21 +85,32 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Background sublimation and derivatives: calculate background
     // saturation specific humidity according to [Bolton,1980], T in
     // \deg C
-    auto qsi = [&] (double t0i)
+    qsi_ = [&] (double t0i)
         {
             return c1_ * exp(c2_ * t0i / (t0i + c3_) );
         };
 
-    auto dqsi = [&] (double t0i)
+    qso_ = [&] (double t0o)
+        {
+            return c1_ * exp(c4_ * t0o / (t0i + c5_) );
+        };
+
+    dqsi_ = [&] (double t0i)
         {
             return (c1_ * c2_ * c3_) / pow(t0i + c3_, 2) *
             exp( (c2_ * t0i) / (t0i + c3_) );
         };
 
+    dqso_ = [&] (double t0o)
+        {
+            return (c1_ * c4_ * c5_) / pow(t0o + c5_, 2) *
+            exp( (c4_ * t0o) / (t0o + c5_) );
+        };
+
     // Background sublimation and derivatives
-    E0_    =  eta_ * ( qsi(t0i_) - q0_ );
-    dEdT_  =  eta_ *  dqsi(t0i_);
-    dEdq_  =  eta_ * -1;
+    E0_    =  eta_ * ( qsi_(t0i_) - q0_ );
+    dEdT_  =  eta_ * qdim_ * tdim_ / qdim_ * dqsi_(t0i_);
+    dEdq_  =  eta_ * qdim_ * -1;
 
     // background heat flux variation
     Qvar_  = zeta_;
@@ -151,6 +164,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     sss_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     tatm_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     qatm_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    patm_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     albe_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     // Local (overlapping) vectors
@@ -164,6 +178,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     localSSS_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosT_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosQ_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosP_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosA_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
     // Create local computational grid in x_, y_
@@ -246,7 +261,7 @@ void SeaIce::computeRHS()
                                     - t0o_ - Q0_ / zeta_ )
                         - Qvar_ / zeta_ * Qval -
                         ( rhoo_ * Lf_ / zeta_) *
-                        ( comb_ * E0_ + dEdT_ * Tsi + comb_ * dEdq_ * qatm[sr] );
+                        ( comb_ * E0_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
                     
                     break;
 
@@ -257,7 +272,7 @@ void SeaIce::computeRHS()
                         (1. - albe0_ - albed_*albe[sr]) * c0_ +
                         (Tval + comb_*(t0i_ - tatm[sr] - t0a_ )) +
                         (rhoo_ * Ls_ / muoa_) *
-                        (comb_*E0_ + dEdT_ * Tval + comb_*dEdq_ * qatm[sr]);
+                        (comb_*E0_ + dEdT_ * Tval +  dEdq_ * qatm[sr]);
 
                     break;
 
@@ -505,13 +520,13 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     // compute a few constant derivatives (see computeRHS)
 
     // d / dq_atm (F_H)
-    double dqatmFH = -(comb_ * rhoo_ * Lf_ / zeta_) * dEdq_;
+    double dqatmFH = -(rhoo_ * Lf_ / zeta_) * dEdq_;
 
     // d / dt_atm (F_Q)
     double dtatmFQ = -comb_;
 
     // d / dq_atm (F_Q)
-    double dqatmFQ =  (comb_ * rhoo_ * Ls_ / muoa_) * dEdq_;
+    double dqatmFQ =  (rhoo_ * Ls_ / muoa_) * dEdq_;
 
     // d / da_atm (F_Q)
     double daatmFQ;
@@ -655,7 +670,12 @@ void SeaIce::synchronize(std::shared_ptr<Atmosphere> atmos)
     Teuchos::RCP<Epetra_Vector> albe  = atmos->interfaceA();
     CHECK_MAP(albe, standardSurfaceMap_);
     albe_ = albe;
-    
+
+    // get precip
+    Teuchos::RCP<Epetra_Vector> patm  = atmos->interfaceP();
+    CHECK_MAP(patm, standardSurfaceMap_);
+    patm_ = patm;
+
     Atmosphere::CommPars atmosPars;
     atmos->getCommPars(atmosPars);
 
@@ -703,12 +723,13 @@ void SeaIce::idealizedForcing()
     double svar = 1.0;
     double qvar = 5e-4;
     
-    double *sst, *sss, *tatm, *qatm, *albe;
+    double *sst, *sss, *tatm, *qatm, *albe, *patm;
     localSST_->ExtractView(&sst);
     localSSS_->ExtractView(&sss);
     localAtmosT_->ExtractView(&tatm);
     localAtmosQ_->ExtractView(&qatm);
     localAtmosA_->ExtractView(&albe);
+    localAtmosP_->ExtractView(&patm);
 
     int row;
     for (int j = 0; j != mLoc_; ++j)
@@ -721,6 +742,7 @@ void SeaIce::idealizedForcing()
             tatm[row] = tvar * cos( PI_ * y_[j] / ymax_ );
             qatm[row] = qvar * cos( PI_ * y_[j] / ymax_ );
             albe[row] = 0.0;
+            patm[row] = 1.0;
         }
 
     // Transfer data to non-overlapping vectors
@@ -729,6 +751,7 @@ void SeaIce::idealizedForcing()
     domain_->Assembly2StandardSurface(*localAtmosT_, *tatm_);
     domain_->Assembly2StandardSurface(*localAtmosQ_, *qatm_);
     domain_->Assembly2StandardSurface(*localAtmosA_, *albe_);
+    domain_->Assembly2StandardSurface(*localAtmosP_, *patm_);
 }
 
 //=============================================================================

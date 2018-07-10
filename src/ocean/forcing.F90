@@ -75,6 +75,7 @@ SUBROUTINE forcing
 
            ! Heat flux forcing from the atmosphere into the ocean.
            ! External and background contributions
+           ! QToa = QSW − QSH − QLH
            QToa = &
                 par(COMB) * par(SUNP)                  & ! continuation pars
                 *  suno(j) * (1-albe0-albed*albe(i,j)) & ! shortwave heat flux

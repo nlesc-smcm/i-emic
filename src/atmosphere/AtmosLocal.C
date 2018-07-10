@@ -125,8 +125,8 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     t0o_             = params->get("background temperature ocean",15.0);      //(C)
     t0i_             = params->get("background temperature sea ice",-15.0);       //(C)
     tdim_            = params->get("temperature scale", 1.0); // ( not used)
-    q0_              = params->get("reference humidity",8e-3); // (kg/kg)
-    qdim_            = params->get("humidity scale", 1e-3);  // (kg/kg)
+    q0_              = params->get("atmos reference humidity",8e-3); // (kg/kg)
+    qdim_            = params->get("atmos humidity scale", 1e-3);  // (kg/kg)
     lv_              = params->get("latent heat of vaporization", 2.5e06); // (J/kg)
 
     udim_            = params->get("horizontal velocity of the ocean", 0.1e+00);
@@ -185,11 +185,11 @@ void AtmosLocal::setup()
     Phv_ =  kappa_ / (udim_ * r0dim_);
 
     // Parameters for saturation humidity over ocean and ice
-    double c1 = 3.8e-3;  // (kg / kg)
-    double c2 = 21.87;   // 
-    double c3 = 265.5;   // (K)
-    double c4 = 17.67;   // 
-    double c5 = 243.5;   // (K)
+    double c1 = 3.8e-3; // (kg / kg)
+    double c2 = 21.87;  // 
+    double c3 = 265.5;  // (K)
+    double c4 = 17.67;  // 
+    double c5 = 243.5;  // (K)
 
     // Calculate background saturation specific humidity according to
     // [Bolton,1980], T in \deg C

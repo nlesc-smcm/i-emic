@@ -127,6 +127,9 @@ private:
     //! non-overlapping qatm
     Teuchos::RCP<Epetra_Vector> qatm_;
 
+    //! non-overlapping patm
+    Teuchos::RCP<Epetra_Vector> patm_;
+
     //! non-overlapping albedo
     Teuchos::RCP<Epetra_Vector> albe_;
     
@@ -153,6 +156,9 @@ private:
 
     //! overlapping localAtmosQ
     Teuchos::RCP<Epetra_Vector> localAtmosQ_;
+
+    //! overlapping localAtmosP
+    Teuchos::RCP<Epetra_Vector> localAtmosP_;
 
     //! overlapping localAtmosA
     Teuchos::RCP<Epetra_Vector> localAtmosA_;
@@ -190,25 +196,27 @@ private:
     double epsilon_;  //! approximation steepness
     
     //! background mean values
-    double t0o_; //! background ocean temp 
-    double t0a_; //! background atmos temp t0a
-    double t0i_; //! background seaice temp t0i
-    double s0_;  //! ocean background salinity s0
-    double q0_;  //! atmos background humidity q0
-    double H0_;  //! seaice background thickness H0
-    double M0_;  //! seaice background mask M0
+    double t0o_;  //! background ocean temp 
+    double t0a_;  //! background atmos temp t0a
+    double t0i_;  //! background seaice temp t0i
+    double s0_;   //! ocean background salinity s0
+    double q0_;   //! atmos background humidity q0
+    double qdim_; //! atmos humidity scale
+    double tdim_; //! temperature scale
+    double H0_;   //! seaice background thickness H0
+    double M0_;   //! seaice background mask M0
 
     //! ice formation constants
-    double ch_; //! empirical constant
+    double ch_;   //! empirical constant
     double utau_; //! skin friction velocity, ms^{-1}
     double rhoo_; //! sea water density, kg m^{-3}
     double rhoi_; //! ice density, kg m^{-3}
     double rhoa_; //! atmospheric density, kg m^{-3}
-    double cpo_; //! sea water heat capacity, W s kg^{-1} K^{-1]
-    double Lf_; //! latent heat of fusion of ice, J kg^{-1}
-    double Ls_; //! latent heat of sublimation of ice, J kg^{-1}
-    double Ic_; //! constant ice conductivity, W m^{-1} K^{-1}
-    double a0_; //! freezing temperature sensitivity
+    double cpo_;  //! sea water heat capacity, W s kg^{-1} K^{-1]
+    double Lf_;   //! latent heat of fusion of ice, J kg^{-1}
+    double Ls_;   //! latent heat of sublimation of ice, J kg^{-1}
+    double Ic_;   //! constant ice conductivity, W m^{-1} K^{-1}
+    double a0_;   //! freezing temperature sensitivity
 
     //! combined parameter
     double zeta_;
@@ -224,6 +232,20 @@ private:
     double c1_;
     double c2_;
     double c3_;
+    double c4_;
+    double c5_;
+
+    //! function to compute background sublimation over ice
+    std::function<double(double)> qsi_;
+
+    //! function to compute background sublimation over water
+    std::function<double(double)> qso_;
+
+    //! function to compute background sublimation derivatve over ice
+    std::function<double(double)> dqsi_;
+
+    //! function to compute background sublimation derivative over water
+    std::function<double(double)> dqso_;
     
     double ce_; //! Dalton number
     double uw_; //! mean atmospheric surface wind speed, ms^{-1}

@@ -114,7 +114,6 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   call atmos_coef   !
   call forcing      ! USES LANDMASK
 
-
   _INFO_('THCM: init...  done')
 end subroutine init
 
@@ -173,7 +172,6 @@ SUBROUTINE setparcs(param,value)
      WRITE(f99,*) 'error in transfer parameter to fortran'
   ENDIF
   !     ENDIF
-
 
 END SUBROUTINE setparcs
 
@@ -249,7 +247,7 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_
 
   nus  =  par(COMB) * par(SALT) * eta * qdim * QSnd
 
-  !write(*,*) 'THCM: nondim constants: nus = ', nus
+  !   write(*,*) 'THCM: nondim constants: nus = ', nus
 
   ! --> FIXME Instead of using par(TEMP) we should have a dedicated latent heat
   ! continuation parameter.
