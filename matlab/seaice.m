@@ -18,7 +18,7 @@ function [X, J, F] = seaice()
 
     global combf solf maskf % continuation parameters
 
-    combf = 0.01;
+    combf = 1.0;
     solf  = 1.0;
     maskf = 1.0;
 
@@ -30,14 +30,14 @@ function [X, J, F] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size (2deg)
-    n = 4;
-    m = 4;
+    n = 2;
+    m = 16;
 
     % create grid
     grid();
 
     % number of unknowns
-    aux = 2;
+    aux = 1;
     nun = 4;
     dim = nun*n*m;
     len = dim + aux;
@@ -45,15 +45,23 @@ function [X, J, F] = seaice()
     taus    = 0.01;     % m, threshold ice thickness
     epsilon = 1e-2;     % Heavyside approximation steepness
 
+    % sublimation constants, parameters for saturation humidity over ocean
+    % and ice
+    c1 = 3.8e-3;   % (kg / kg)
+    c2 = 21.87;    %
+    c3 = 265.5;    % (K)
+    c4 = 17.67;    % (K)
+    c5 = 243.5;    % (K)
+
     % general physical constants
-    t0o  =  7;
-    t0a  =  10;
-    t0i  = -15;
+    t0o  =  15;
+    t0a  =  15;
+    t0i  =  c3*c4*t0o / (c2*c5+(c2-c4)*t0o);
     tvar =  15;
     s0   =  35;
     svar =  1;
     q0   =  8e-3;
-    qvar =  1;
+    qvar =  1e-3;
     H0   =  taus;
     M0   =  0;
 
@@ -72,28 +80,20 @@ function [X, J, F] = seaice()
     % combined parameter
     zeta = ch * utau * rhoo * cpo;
 
-    % sublimation constants, parameters for saturation humidity over ocean
-    % and ice
-    c1 = 3.8e-3;   % (kg / kg)
-    c2 = 21.87;    %
-    c3 = 265.5;    % (K)
-    c4 = 17.67;    % (K)
-    c5 = 243.5;    % (K)
-
     ce  = 1.3e-03; % Dalton number
     uw  = 8.5;     % ms^{-1}, mean atmospheric surface wind speed
 
     eta = ( rhoa / rhoo ) * ce * uw;
 
     % I-EMIC nondim components
-    qdim = 1e-3;
+    qdim = qvar;
     tdim = 1.0;
     nus  = eta * qdim;
 
     % Calculate background saturation specific humidity according to
     % [Bolton,1980], T in \deg C
-    qsi = @(t0i) c1 * exp(c2 * t0i / (t0i + c3));
-    qso = @(t0o) c1 * exp(c4 * t0o / (t0o + c5));
+    qsi = @(t0i) c1 * exp(c2 * t0i ./ (t0i + c3));
+    qso = @(t0o) c1 * exp(c4 * t0o ./ (t0o + c5));
 
     % Shortwave radiation constants and functions
     alpha = 0.3;      % albedo
@@ -114,7 +114,9 @@ function [X, J, F] = seaice()
 
     % Background sublimation and derivatives
     E0i   =  eta * ( qsi(t0i) - q0 );
+
     E0o   =  eta * ( qso(t0o) - q0 );
+
     dqso  = (c1 * c4 * c5) / (t0o + c5).^2 * ...
             exp( (c4 * t0i) / (t0o + c5) );
 
@@ -125,53 +127,59 @@ function [X, J, F] = seaice()
     dEdq  =  nus * -1;
 
     % Background heat flux and variation
-    Q0   = zeta*(Tf(0) - t0o) - rhoo * Lf * E0i;
+% $$$     Q0 = zeta*(Tf(0) - t0o) - rhoo * Lf * E0i;
+% $$$
+% $$$     Q0 = sun0 / 4 * S(mean(y)) * (1-alpha) * c0 - muoa * 2 - rhoo * ...
+% $$$          Ls * E0i;
+% $$$
+% $$$     Q0 = sun0 / 4 * S(mean(y)) * (1-0.8) * c0 - muoa * 10 - rhoo * ...
+% $$$          Ls * E0i;
 
-    % Q0   = sun0 / 4 / muoa * S(mean(y)) * (1-alpha) * c0 - rhoo * ...
-    %        Ls * E0i;
+    Q0 = -100;
 
     Qvar = zeta;
 
     % ice surface temperature (linearized)
-    Ti = @(Q,H,S) combf * (Tf(S) - t0i) + (combf*Q0*H0 + H0*Qvar*Q + Q0*H) / Ic;
-    
+    Ti = @(Q,H,S) combf * (Tf(S) - t0i) + (combf*Q0*H0 + H0*Qvar*Q ...
+                                           + Q0*H) / Ic;
+
     % create integral coefficients
     IC = intcoeff();
     A  = sum(IC);
     fprintf(' total area = %2.12f\n', A);
 
     % initialize forcing and state
-    sst  = idealizedTemp(0, tvar);
+    sst  = idealizedTemp(0, tvar)-10;
     sss  = idealizedSalt(0, svar);
-    tatm = idealizedTemp(0, tvar);
+    tatm = idealizedTemp(0, tvar)-10;
     qatm = idealizedTemp(0, qvar);
     patm = ones(n,m);
-
+    
     % testing values
 % $$$     X = zeros(len, 1);
 % $$$     F = rhs(X);
 % $$$     fprintf('X = 0,     ||F||two = %1.12e\n', norm(F));
-% $$$ 
+% $$$
 % $$$     X = ones(len, 1);
 % $$$     F = rhs(X);
 % $$$     fprintf('X = 1,     ||F||two = %1.12e\n', norm(F));
-% $$$ 
+% $$$
 % $$$     X = 1.234*ones(len, 1);
 % $$$     F = rhs(X);
 % $$$     fprintf('X = 1.234, ||F||two = %1.12e\n', norm(F));
-% $$$ 
+% $$$
 % $$$     X = zeros(len, 1);
 % $$$     J = jac(X);
 % $$$     fprintf('X = 0,     ||J||inf = %1.12e\n', norm(J,Inf));
 % $$$     fprintf('X = 0,     ||J||one = %1.12e\n', norm(J,1));
 % $$$     fprintf('X = 0,     ||J||frb = %1.12e\n', norm(J,'fro'));
-% $$$ 
+% $$$
 % $$$     X = ones(len, 1);
 % $$$     J = jac(X);
 % $$$     fprintf('X = 1,     ||J||inf = %1.12e\n', norm(J,Inf));
 % $$$     fprintf('X = 1,     ||J||one = %1.12e\n', norm(J,1));
 % $$$     fprintf('X = 1,     ||J||frb = %1.12e\n', norm(J,'fro'));
-% $$$ 
+% $$$
 % $$$     X = 1.234*ones(len, 1);
 % $$$     J = jac(X);
 % $$$     fprintf('X = 1.234, ||J||inf = %1.12e\n', norm(J,Inf));
@@ -187,98 +195,91 @@ function [X, J, F] = seaice()
         ord = [ord, ord(end)+1:len];
     end
 
-    X  = initialsol();
-    
-
-    F  = rhs(X);
-
-    tic
-    Jn = numjacob(@rhs, X);
-    toc
-
-    fprintf('condest =   %e\n', condest(Jn) );
-
-    F  = rhs(X);
-
-    J  = jac(X);
-
-    assert(size(J,1) == size(Jn,1))
-    
-% $$$     vsm(J(ord,ord));
-% $$$     vsm(Jn(ord,ord));
-% $$$     vsm(J(ord,ord)-Jn(ord,ord))
-    
-    X = zeros(len,1);
+    X = randn(len,1);
     F = rhs(X);
 
     FH = F(1:nun:dim);
 
-    fprintf('integral =  %e\n', IC'*FH );
+    fprintf('   integral =  %e\n', IC'*FH );
 
     for i = 1:aux
         fprintf(' F(aux %d) = %e\n', i, F(dim+i))
     end
 
     for i = 1:kmax
-        %J  = jac(X);
-        J  = numjacob(@rhs, X);
-        vsm(J(ord,ord));
+        J   = jac(X);
+        Jn  = numjacob(@rhs, X);
+
         dX = J \ -F;
         X  = X + dX;
+
         F  = rhs(X);
         fprintf('\n%2d| %e %e %e\n', i, norm(dX), norm(F), condest(J));
         if norm(dX) < 1e-12
             break;
         end
-        
-        FH = F(1:nun:dim);        
+
+        FH = F(1:nun:dim);
         fprintf('   integral =  %e\n', IC'*FH );
-        
+
         for i = 1:aux
             fprintf('   F(aux %d) = %e\n', i, F(dim+i))
         end
-        
+
     end
 
-    return
-
-
     [H,Q,M,T] = extractsol(X);
+    [~, QSos, ~, EmiP] = fluxes(X);
 
-    figure(1)
-    imagesc(RtD*x, RtD*y, (H'+H0).*M'); set(gca,'ydir','normal'); colorbar
-    title('H')
+% $$$     figure(1)
+% $$$     Himg = (H'+H0);
+% $$$     imagesc(RtD*x, RtD*y, Himg);
+% $$$     set(gca,'ydir','normal'); colorbar
+% $$$     title('H')
 
     figure(2)
-    imagesc(RtD*x, RtD*y, M'+M0); set(gca,'ydir','normal'); colorbar
+    imagesc(RtD*x, RtD*y, M'+M0);
+    set(gca,'ydir','normal'); colorbar
     title('M')
 
-    figure(3)
-    SST = sst'+t0o;
-    imagesc(RtD*x, RtD*y, SST.*M'); set(gca,'ydir','normal'); colorbar
-    title('SST')
+% $$$     figure(3)
+% $$$     SST = sst'+t0o;
+% $$$     imagesc(RtD*x, RtD*y, SST); set(gca,'ydir','normal'); colorbar
+% $$$     title('SST')
+% $$$     colormap(my_colmap(caxis, t0o));
 
-    figure(4)
-    Tsi = Ti(Q,H,sss)'+t0i;
-    imagesc(RtD*x,RtD*y,Tsi.*M'); set(gca,'ydir','normal'); colorbar;
-    title('Ti')
+% $$$     figure(4)
+% $$$     Tsi = Tf(sss') + (Q0*H0+H0*Qvar*Q'+Q0*H') / Ic;
+% $$$     imagesc(RtD*x,RtD*y,Tsi);
+% $$$     set(gca,'ydir','normal');
+% $$$     colorbar;
+% $$$     title('Ti_2')
 
     figure(5)
-    Tsi = T'+t0i;
-    imagesc(RtD*x,RtD*y,Tsi.*M'); set(gca,'ydir','normal'); colorbar;
+    Tsi = T' + t0i;
+    imagesc(RtD*x, RtD*y, Tsi);
+    set(gca,'ydir','normal');
+    colorbar;
     title('Ti')
 
-    figure(6)
-    Qimg = Qvar*Q' + Q0;
-    imagesc(RtD*x,RtD*y,Qimg.*M'); set(gca,'ydir','normal'); colorbar;
-    title('Q')
+% $$$     figure(6)
+% $$$     Qimg = Qvar*Q' + Q0;
+% $$$     imagesc(RtD*x,RtD*y,Qimg); set(gca,'ydir','normal'); colorbar;
+% $$$     title('Q')
+% $$$ 
+% $$$     figure(7)
+% $$$     imagesc(RtD*x,RtD*y,QSos'); set(gca,'ydir','normal'); colorbar;
+% $$$     title('Q_S^{os}')
+% $$$ 
+% $$$     figure(8)
+% $$$     imagesc(RtD*x,RtD*y,EmiP'); set(gca,'ydir','normal'); colorbar;
+% $$$     title('E_S - P')
+    
+    vsm(J(ord,ord));
+    vsm(Jn(ord,ord));
+    vsm(Jn(ord,ord)-J(ord,ord));
+    keyboard
 
-    % [J,Al] = jac(X);
-    % Jn = numjacob(@rhs, X);
-    % vsm(J(ord,ord))
-    % vsm(Jn(ord,ord))
-    % vsm(Jn(ord,ord)-J(ord,ord))
-    save('all.mat');
 end
 
 function [x] = initialsol()
@@ -310,7 +311,7 @@ function [J,Al] = jac(x)
     global m n nun aux y
 
     global IC
-    global sst sss qatm tatm
+    global sst sss qatm tatm patm
 
     global t0o t0a t0i Q0 Qvar H0
 
@@ -328,8 +329,7 @@ function [J,Al] = jac(x)
     QQ = 2;
     MM = 3;
     TT = 4;
-    AM = 5;
-    AX = 6;
+    GG = 5;
 
     % initialize dependency grid
     Al = zeros(n, m, nun, nun+aux);
@@ -341,10 +341,6 @@ function [J,Al] = jac(x)
 
     Al(:,:,HH,QQ) = -Qvar / zeta - ...
         rhoo * Lf / zeta * dEdT * H0 * Qvar / Ic;
-
-    if (aux > 0)
-        Al(:,:,HH,AX) = -1.0;
-    end
 
     % Qtsa equation
     Al(:,:,QQ,QQ) = Qvar / muoa;
@@ -364,73 +360,118 @@ function [J,Al] = jac(x)
 
     % auxiliary integrals
     if (aux > 0)
-        [~,Qsos,~,Es] = fluxes(x);
-        
+
+        [~,Qsos,~,EmiP] = fluxes(x);
+        A  = sum(IC);
+
+
         for j = 1:m
             for i = 1:n
                 sr = (j-1)*n+i;
-                
-                % dFAM / dM
-                row = find_row(i,j,AM);
-                col = find_row(i,j,MM);                
+
+                % dFGG / dQ
+                row = find_row(i,j,GG);
+                col = find_row(i,j,QQ);
                 ico = [ico; row];
                 jco = [jco; col];
-                co  = [co;  IC(sr)];
-                
-                % dFAX / dQ
-                row = find_row(i,j,AX);
-                col = find_row(i,j,QQ);                
-                val = IC(sr)* Msi(sr) * -Qvar/zeta;
-                ico = [ico; row];
-                jco = [jco; col];
-                co  = [co;  val];
-                
-                % dFAX / dM
-                row = find_row(i,j,AX);
+                val = 1.0 * IC(sr) * Msi(sr) * Qvar / rhoo / Lf;
+                co  = [co; val];
+
+                % dFGG / dM
+                row = find_row(i,j,GG);
                 col = find_row(i,j,MM);
                 ico = [ico; row];
                 jco = [jco; col];
-                val = IC(sr)*( Qsos(sr) - nus * Es(sr) )*rhoo*Lf/zeta;
-                co  = [co;  val];
+                val = IC(sr) * (Qsos(sr)-EmiP(sr));
+                co  = [co; val];
 
-                % dFAX / dT
-                row = find_row(i,j,AX);
-                col = find_row(i,j,TT);                
-                val = IC(sr)* Msi(sr) * -dEdT*rhoo*Lf/zeta ;
+                % dFGG / dT
+                row = find_row(i,j,GG);
+                col = find_row(i,j,TT);
                 ico = [ico; row];
                 jco = [jco; col];
-                co  = [co;  val];
-                
+                val = -1.0 * IC(sr)* Msi(sr) * dEdT;
+                co  = [co; val];
             end
         end
 
-        % dFAM / dAM
-        row = find_row(i,j,AM);
-        col = find_row(i,j,AM);
-        
-        ico = [ico; row];
-        jco = [jco; col];
-        co  = [co;  -1];       
+        %dFG / dG
+        row = find_row(i,j,GG);
+        col = find_row(i,j,GG);
 
-        % dFAX / dAM
-        row = find_row(i,j,AX);
-        col = find_row(i,j,AM);
-        
         ico = [ico; row];
-        jco = [jco; col];
-        val = -combf * E0i*rhoo*Lf/zeta - R(AX-nun);
-        co  = [co;  val];       
 
-        % dFAX / dAX
-        row = find_row(i,j,AX);
-        col = find_row(i,j,AX);
-        
-        ico = [ico; row];
         jco = [jco; col];
-        val = -R(AM-nun);
-        co  = [co;  val];       
-            
+        co  = [co;  -A];
+
     end
+
+
+% $$$         [~,Qsos,~,Es] = fluxes(x);
+% $$$
+% $$$         for j = 1:m
+% $$$             for i = 1:n
+% $$$                 sr = (j-1)*n+i;
+% $$$
+% $$$                 % dFAM / dM
+% $$$                 row = find_row(i,j,AM);
+% $$$                 col = find_row(i,j,MM);
+% $$$                 ico = [ico; row];
+% $$$                 jco = [jco; col];
+% $$$                 co  = [co;  IC(sr)];
+% $$$
+% $$$                 % dFAX / dQ
+% $$$                 row = find_row(i,j,AX);
+% $$$                 col = find_row(i,j,QQ);
+% $$$                 val = IC(sr)* Msi(sr) * -Qvar/zeta;
+% $$$                 ico = [ico; row];
+% $$$                 jco = [jco; col];
+% $$$                 co  = [co;  val];
+% $$$
+% $$$                 % dFAX / dM
+% $$$                 row = find_row(i,j,AX);
+% $$$                 col = find_row(i,j,MM);
+% $$$                 ico = [ico; row];
+% $$$                 jco = [jco; col];
+% $$$                 val = IC(sr)*( Qsos(sr) - nus * Es(sr) )*rhoo*Lf/zeta;
+% $$$                 co  = [co;  val];
+% $$$
+% $$$                 % dFAX / dT
+% $$$                 row = find_row(i,j,AX);
+% $$$                 col = find_row(i,j,TT);
+% $$$                 val = IC(sr)* Msi(sr) * -dEdT*rhoo*Lf/zeta ;
+% $$$                 ico = [ico; row];
+% $$$                 jco = [jco; col];
+% $$$                 co  = [co;  val];
+% $$$
+% $$$             end
+% $$$         end
+% $$$
+% $$$         % dFAM / dAM
+% $$$         row = find_row(i,j,AM);
+% $$$         col = find_row(i,j,AM);
+% $$$
+% $$$         ico = [ico; row];
+% $$$         jco = [jco; col];
+% $$$         co  = [co;  -1];
+% $$$
+% $$$         % dFAX / dAM
+% $$$         row = find_row(i,j,AX);
+% $$$         col = find_row(i,j,AM);
+% $$$
+% $$$         ico = [ico; row];
+% $$$         jco = [jco; col];
+% $$$         val = -combf * E0i*rhoo*Lf/zeta;
+% $$$         co  = [co;  val];
+% $$$
+% $$$         % dFAX / dAX
+% $$$         row = find_row(i,j,AX);
+% $$$         col = find_row(i,j,AX);
+% $$$
+% $$$         ico = [ico; row];
+% $$$         jco = [jco; col];
+% $$$         val = -1.0;
+% $$$         co  = [co;  val];
 
     J = spconvert([ico,jco,co]);
 
@@ -456,11 +497,7 @@ function [F] = rhs(x)
 
     [H, Qtsa, Msi, T, R] = extractsol(x);
 
-    I_M_   = 1;
-    I_CHI_ = 2;
-% $$$     I_MQs_ = 2;
-% $$$     I_MEs_ = 3;
-% $$$     I_GAM_ = 5;
+    G = 1;
 
     N = size(x,1);
     F = zeros(N,1);
@@ -471,17 +508,12 @@ function [F] = rhs(x)
                 switch XX
                   case 1
 
-                    Tsi = Ti(Qtsa(i,j), H(i,j), sss(i,j));
+                    Tsi = Ti( Qtsa(i,j), H(i,j), sss(i,j) );
 
-                    val = combf * ( Tf(sss(i,j)) - sst(i,j) - t0o - ...
-                          Q0 / zeta ) - Qvar / zeta * Qtsa(i,j) - ...
+                    val = combf * ( Tf(sss(i,j)) - sst(i,j) - t0o - Q0 / zeta ) ...
+                          - Qvar / zeta * Qtsa(i,j) - ...
                           ( rhoo * Lf / zeta ) * ...
-                          ( combf * E0i + dEdT * Tsi + dEdq * ...
-                            qatm(i,j));
-
-                    if (aux > 0)
-                        val = val - Msi(i,j)*R(I_CHI_)/(1-Msi(i,j)+R(I_M_));
-                    end                          
+                          ( combf * E0i + dEdT * Tsi + dEdq * qatm(i,j));
 
                   case 2
 
@@ -489,7 +521,8 @@ function [F] = rhs(x)
                           (combf * solf * sun0 / 4 / muoa) * S(y(j)) * (1-alpha) * c0 + ...
                           (T(i,j) + combf * (t0i - tatm(i,j) - t0a) ) + ...
                           (rhoo * Ls / muoa) * ...
-                          (combf * E0i + dEdT * T(i,j) + dEdq * qatm(i,j));
+                          (combf * E0i + dEdT * T(i,j) + dEdq * ...
+                           qatm(i,j));
 
                   case 3
 
@@ -500,8 +533,10 @@ function [F] = rhs(x)
                   case 4
 
                     val = combf * (Tf(sss(i,j)) - t0i + ...
-                          (Q0*H0 + H0*Qvar*Qtsa(i,j) + Q0*H(i,j)) / Ic) ...
+                                   (Q0*H0 + H0*Qvar*Qtsa(i,j) + Q0*H(i,j))/Ic) ...
                           - T(i,j);
+
+
                 end
 
                 row = find_row(i,j,XX);
@@ -512,27 +547,25 @@ function [F] = rhs(x)
 
     if (aux > 0)
         [~, ~, ~, ~, R] = extractsol(x);
-        [~,Qsos,~,Es] = fluxes(x);
+        [~,Qsos,~,EmiP] = fluxes(x);
 
 
         A = sum(IC);
 
         for aa = 1:aux
             switch aa
-              case I_M_
-                value = IC' * Msi(:) - R(I_M_);
-              case I_CHI_
-                value = (IC' * ( Msi(:) .* ( Qsos(:) - nus * Es(:) ) ) ...
-                        - combf * E0i * R(I_M_))*rhoo*Lf/zeta - R(I_CHI_);
+              case G
+                value = IC' * (Msi(:) .* (Qsos(:) - EmiP(:))) ...
+                        - R(G) * A;
+
             end
             F(row + aa) = value;
         end
-        %keyboard
     end
 end
 
 % single dof
-function [QS, QSos, QSoa, Es] = fluxes(x)
+function [QS, QSos, QSoa, EmiP] = fluxes(x)
 
     global n m nun aux
     global sst sss qatm tatm patm
@@ -552,7 +585,7 @@ function [QS, QSos, QSoa, Es] = fluxes(x)
 
     QSos = zeros(n,m);
     QSoa = zeros(n,m);
-    Es   = zeros(n,m); % dimensional sublimation term
+    EmiP = zeros(n,m); % dimensional sublimation term
 
     for j = 1:m
         for i = 1:n
@@ -571,13 +604,14 @@ function [QS, QSos, QSoa, Es] = fluxes(x)
                 (tdim / qdim) * dqso * To ...
                 - qa - pa);
 
-            Es(i,j) = tdim / qdim * dqsi * T(i,j) - qa;
+            EmiP(i,j) = nus * (tdim / qdim * dqsi * T(i,j) - qa - pa);
 
             % total salinity flux
             QS(i,j) = QSoa(i,j) + Msi(i,j) * (rhoo*Lf/zeta*QSos(i,j) - QSoa(i,j));
         end
     end
 end
+
 
 % integral coefficients for single dof surface row
 function [IC] = intcoeff()

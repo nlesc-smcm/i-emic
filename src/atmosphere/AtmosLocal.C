@@ -123,7 +123,6 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     uw_              = params->get("mean atmospheric surface wind speed",8.5);
     t0a_             = params->get("background temperature atmosphere",15.0); //(C)
     t0o_             = params->get("background temperature ocean",15.0);      //(C)
-    t0i_             = params->get("background temperature sea ice",-15.0);       //(C)
     tdim_            = params->get("temperature scale", 1.0); // ( not used)
     q0_              = params->get("atmos reference humidity",8e-3); // (kg/kg)
     qdim_            = params->get("atmos humidity scale", 1e-3);  // (kg/kg)
@@ -191,6 +190,10 @@ void AtmosLocal::setup()
     double c4 = 17.67;  // 
     double c5 = 243.5;  // (K)
 
+    // background ice temperature is chosen such that background
+    // evaporation and sublimation cancel.
+    t0i = c3*c4*t0o_ / (c2*c5+(c2-c4)*t0o_;
+
     // Calculate background saturation specific humidity according to
     // [Bolton,1980], T in \deg C
     qso_   = c1 * exp( c4 * t0o_ / (t0o_ + c5) );
@@ -199,6 +202,10 @@ void AtmosLocal::setup()
     // Dimensional background evaporation and precipitation
     Eo0_ = eta_ * ( qso_ - q0_ );
     Ei0_ = eta_ * ( qsi_ - q0_ );
+
+    // We will assume the background values are equal so they cancel
+    // later on.
+    assert(std::abs(Eo0_-Ei0_) < 1e-12);
 
     // Backgr. precipitation is taken equal to backgr. evaporation over ocean
     Po0_ = Eo0_;
