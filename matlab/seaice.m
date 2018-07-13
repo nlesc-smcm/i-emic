@@ -63,7 +63,6 @@ function [X, J, F] = seaice()
     q0   =  8e-3;
     qvar =  1e-3;
     H0   =  taus;
-    M0   =  0;
 
     % ice formation constants
     ch   = 0.0058;     % empirical constant
@@ -218,9 +217,10 @@ function [X, J, F] = seaice()
         if norm(dX) < 1e-12
             break;
         end
-
+        
+        [H,Q,M,T] = extractsol(X);        
         FH = F(1:nun:dim);
-        fprintf('   integral =  %e\n', IC'*FH );
+        fprintf('   integral =  %e\n', IC'*(M(:).*FH) );
 
         for i = 1:aux
             fprintf('   F(aux %d) = %e\n', i, F(dim+i))
@@ -238,7 +238,7 @@ function [X, J, F] = seaice()
 % $$$     title('H')
 
     figure(2)
-    imagesc(RtD*x, RtD*y, M'+M0);
+    imagesc(RtD*x, RtD*y, M');
     set(gca,'ydir','normal'); colorbar
     title('M')
 
@@ -257,6 +257,7 @@ function [X, J, F] = seaice()
 
     figure(5)
     Tsi = T' + t0i;
+    Tsi(M'<1e-2)=NaN;
     imagesc(RtD*x, RtD*y, Tsi);
     set(gca,'ydir','normal');
     colorbar;
@@ -535,8 +536,6 @@ function [F] = rhs(x)
                     val = combf * (Tf(sss(i,j)) - t0i + ...
                                    (Q0*H0 + H0*Qvar*Qtsa(i,j) + Q0*H(i,j))/Ic) ...
                           - T(i,j);
-
-
                 end
 
                 row = find_row(i,j,XX);
@@ -557,7 +556,6 @@ function [F] = rhs(x)
               case G
                 value = IC' * (Msi(:) .* (Qsos(:) - EmiP(:))) ...
                         - R(G) * A;
-
             end
             F(row + aa) = value;
         end
