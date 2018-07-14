@@ -19,8 +19,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     epsilon_      (1.0e-2),  // Heavyside approximation steepness
 
     // background mean values
-    t0o_   (params->get("background ocean temp t0o", 7)),
-    t0a_   (params->get("background atmos temp t0a", 10)),
+    t0o_   (params->get("background ocean temp t0o", 15)),
+    t0a_   (params->get("background atmos temp t0a", 15)),
     s0_    (params->get("ocean background salinity s0", 35)),
     q0_    (params->get("atmos reference humidity",8e-3)), 
     qdim_  (params->get("atmos humidity scale", 1e-3)),
@@ -48,8 +48,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     c1_    (params->get("c1", 3.8e-3)),
     c2_    (params->get("c2", 21.87)),
     c3_    (params->get("c3", 265.5)),
-    c4_    (params->get("c3", 17.67)), // FIXME todo
-    c5_    (params->get("c3", 243.5)), // FIXME todo
+    c4_    (params->get("c4", 17.67)),
+    c5_    (params->get("c5", 243.5)),
 
     ce_    (params->get("Dalton number", 1.3e-03)),
     uw_    (params->get("mean atmospheric surface wind speed, ms^{-1}", 8.5)),
@@ -67,7 +67,6 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
 // exchange coefficient
     muoa_    (rhoa_ * Ch_ * cpa_ * uw_)   
-
 {
     // Continuation parameters
     allParameters_ = { "Combined Forcing",
@@ -91,7 +90,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     qso_ = [&] (double t0o)
         {
-            return c1_ * exp(c4_ * t0o / (t0i + c5_) );
+            return c1_ * exp(c4_ * t0o / (t0o + c5_) );
         };
 
     dqsi_ = [&] (double t0i)
@@ -106,8 +105,17 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
             exp( (c4_ * t0o) / (t0o + c5_) );
         };
 
+    // Background sea ice surface temperature is chosen such that
+    // background evaporation and sublimation cancel:
+    t0i_  =  c3_*c4_*t0o_ / (c2_*c5_+(c2_-c4_)*t0o_);        
+    
     // Background sublimation and derivatives
-    E0_    =  eta_ * ( qsi_(t0i_) - q0_ );
+    E0i_   =  eta_ * ( qsi_(t0i_) - q0_ );
+    E0o_   =  eta_ * ( qso_(t0o_) - q0_ );
+
+    // Check whether background values cancel
+    assert(std::abs(E0o_-E0i_) < 1e-12);
+    
     dEdT_  =  eta_ * qdim_ * tdim_ / qdim_ * dqsi_(t0i_);
     dEdq_  =  eta_ * qdim_ * -1;
 
@@ -115,7 +123,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     Qvar_  = zeta_;
 
     // background heat flux
-    Q0_    = zeta_ * (freezingT(0) - t0o_) - rhoo_ * Lf_ * E0_;
+    // Q0_    = zeta_ * (freezingT(0) - t0o_) - rhoo_ * Lf_ * E0_;
+    Q0_ = -100.0;
 
     xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
     xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
@@ -124,11 +133,12 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     dof_      = SEAICE_NUN_;
     dimGlob_  = mGlob_ * nGlob_ * dof_;
-
+    aux_      = 1;
+    
     // Create domain object
     domain_ = Teuchos::rcp(new TRIOS::Domain(nGlob_, mGlob_, 1, dof_,
                                              xmin_, xmax_, ymin_, ymax_,
-                                             periodic_, 1.0, comm_));
+                                             periodic_, 1.0, comm_, aux_));
 
     // Compute 2D decomposition
     domain_->Decomp2D();
@@ -260,7 +270,7 @@ void SeaIce::computeRHS()
                                     - t0o_ - Q0_ / zeta_ )
                         - Qvar_ / zeta_ * Qval -
                         ( rhoo_ * Lf_ / zeta_) *
-                        ( comb_ * E0_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
+                        ( comb_ * E0i_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
                     
                     break;
 
@@ -271,7 +281,7 @@ void SeaIce::computeRHS()
                         (1. - albe0_ - albed_*albe[sr]) * c0_ +
                         (Tval + comb_*(t0i_ - tatm[sr] - t0a_ )) +
                         (rhoo_ * Ls_ / muoa_) *
-                        (comb_*E0_ + dEdT_ * Tval +  dEdq_ * qatm[sr]);
+                        (comb_*E0i_ + dEdT_ * Tval +  dEdq_ * qatm[sr]);
 
                     break;
 
@@ -295,7 +305,7 @@ void SeaIce::computeRHS()
                 rhs[rr] = val;
             }
         }
-
+    
     domain_->Assembly2Standard(*localRHS_, *rhs_);
     INFO(" seaic F = " << Utils::norm(rhs_));
 }
@@ -720,7 +730,7 @@ void SeaIce::idealizedForcing()
     // a few idealized variations
     double tvar = 15.0;
     double svar = 1.0;
-    double qvar = 5e-4;
+    double qvar = 1e-3;
     
     double *sst, *sss, *tatm, *qatm, *albe, *patm;
     localSST_->ExtractView(&sst);
@@ -736,9 +746,9 @@ void SeaIce::idealizedForcing()
         {
             row      = j * nLoc_ + i;
 
-            sst[row]  = tvar * cos( PI_ * y_[j] / ymax_ );
+            sst[row]  = tvar * cos( PI_ * y_[j] / ymax_ ) - 10.0;
             sss[row]  = svar * cos( PI_ * y_[j] / ymax_ ) / cos( y_[j] );
-            tatm[row] = tvar * cos( PI_ * y_[j] / ymax_ );
+            tatm[row] = tvar * cos( PI_ * y_[j] / ymax_ ) - 10.0;
             qatm[row] = qvar * cos( PI_ * y_[j] / ymax_ );
             albe[row] = 0.0;
             patm[row] = 1.0;

@@ -64,6 +64,9 @@ private:
     //! global grid size
     int nGlob_,mGlob_, dimGlob_;
 
+    //! auxiliary unknowns (integral correction gamma)
+    int aux_;
+
     //! local grid size
     int nLoc_, mLoc_, dimLoc_;
 
@@ -265,9 +268,10 @@ private:
     double muoa_;
 
     //! Background sublimation and derivatives
-    double E0_;
-    double dEdT_;
-    double dEdq_;
+    double E0i_;  // sublimation
+    double E0o_;  // evaporation
+    double dEdT_; // sublimation derivative to T
+    double dEdq_; // sublimation derivative to q
 
     //! Continuation parameters
     std::vector<std::string> allParameters_;

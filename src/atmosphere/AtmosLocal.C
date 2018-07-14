@@ -192,7 +192,7 @@ void AtmosLocal::setup()
 
     // background ice temperature is chosen such that background
     // evaporation and sublimation cancel.
-    t0i = c3*c4*t0o_ / (c2*c5+(c2-c4)*t0o_;
+    t0i_ = c3*c4*t0o_ / (c2*c5+(c2-c4)*t0o_);
 
     // Calculate background saturation specific humidity according to
     // [Bolton,1980], T in \deg C
@@ -410,7 +410,7 @@ void AtmosLocal::idealized(double precip)
             rowQQ  = find_row(i,j,l_,ATMOS_QQ_)-1;
 
             rowAA  = find_row(i,j,l_,ATMOS_AA_)-1;
-
+            
             // These values are chosen such that the integrated
             // evaporation is zero.
             (*sst_) [rowSST] = value;

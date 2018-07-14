@@ -30,7 +30,7 @@ function [X, J, F] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size (2deg)
-    n = 2;
+    n = 16;
     m = 16;
 
     % create grid
@@ -116,6 +116,7 @@ function [X, J, F] = seaice()
 
     E0o   =  eta * ( qso(t0o) - q0 );
 
+
     dqso  = (c1 * c4 * c5) / (t0o + c5).^2 * ...
             exp( (c4 * t0i) / (t0o + c5) );
 
@@ -139,7 +140,7 @@ function [X, J, F] = seaice()
     Qvar = zeta;
 
     % ice surface temperature (linearized)
-    Ti = @(Q,H,S) combf * (Tf(S) - t0i) + (combf*Q0*H0 + H0*Qvar*Q ...
+    Ti = @(comb, Q,H,S) comb * (Tf(S) - t0i) + (comb*Q0*H0 + H0*Qvar*Q ...
                                            + Q0*H) / Ic;
 
     % create integral coefficients
@@ -153,37 +154,44 @@ function [X, J, F] = seaice()
     tatm = idealizedTemp(0, tvar)-10;
     qatm = idealizedTemp(0, qvar);
     patm = ones(n,m);
+
+    % creating test values
+    fid = fopen('testResults', 'w');
+    for par = [1.0, 0.1]
+        combf = par;
+        for scale = [0.0, 1.0, 1.234]
+            X = scale*ones(len,1);
+            F = rhs(X);
+            fprintf('X = %1.3f, par = %1.1f, ||F||two = %1.12e\n', ...
+                    scale, combf, norm(F));
+            fprintf(fid, '%1.12e\n', norm(F));
+        end
+    end
     
-    % testing values
-% $$$     X = zeros(len, 1);
-% $$$     F = rhs(X);
-% $$$     fprintf('X = 0,     ||F||two = %1.12e\n', norm(F));
-% $$$
-% $$$     X = ones(len, 1);
-% $$$     F = rhs(X);
-% $$$     fprintf('X = 1,     ||F||two = %1.12e\n', norm(F));
-% $$$
-% $$$     X = 1.234*ones(len, 1);
-% $$$     F = rhs(X);
-% $$$     fprintf('X = 1.234, ||F||two = %1.12e\n', norm(F));
-% $$$
-% $$$     X = zeros(len, 1);
-% $$$     J = jac(X);
-% $$$     fprintf('X = 0,     ||J||inf = %1.12e\n', norm(J,Inf));
-% $$$     fprintf('X = 0,     ||J||one = %1.12e\n', norm(J,1));
-% $$$     fprintf('X = 0,     ||J||frb = %1.12e\n', norm(J,'fro'));
-% $$$
-% $$$     X = ones(len, 1);
-% $$$     J = jac(X);
-% $$$     fprintf('X = 1,     ||J||inf = %1.12e\n', norm(J,Inf));
-% $$$     fprintf('X = 1,     ||J||one = %1.12e\n', norm(J,1));
-% $$$     fprintf('X = 1,     ||J||frb = %1.12e\n', norm(J,'fro'));
-% $$$
-% $$$     X = 1.234*ones(len, 1);
-% $$$     J = jac(X);
-% $$$     fprintf('X = 1.234, ||J||inf = %1.12e\n', norm(J,Inf));
-% $$$     fprintf('X = 1.234, ||J||one = %1.12e\n', norm(J,1));
-% $$$     fprintf('X = 1.234, ||J||frb = %1.12e\n', norm(J,'fro'));
+    fprintf('\n');
+    fprintf(fid, '\n');
+    
+    for par = [1.0, 0.1]
+        combf = par;
+        for scale = [0.0,1.0,1.234]
+            X = scale*ones(len,1);
+            J = jac(X);
+            
+            fprintf('X = %1.3f, par = %1.1f, ||J||inf = %1.12e\n', ...
+                    scale, combf, norm(J,Inf));
+            fprintf('X = %1.3f, par = %1.1f, ||J||one = %1.12e\n', ...
+                    scale, combf, norm(J,1));
+            fprintf('X = %1.3f, par = %1.1f, ||J||frb = %1.12e\n', ...
+                    scale, combf, norm(J,'fro'));
+            
+            fprintf(fid, '%1.12e\n', norm(J,Inf));
+            fprintf(fid, '%1.12e\n', norm(J,1));
+            fprintf(fid, '%1.12e\n', norm(J,'fro'));
+        end
+    end
+    fprintf('\n');    
+
+    return
 
     kmax = 10;
     ord = [];
@@ -217,8 +225,8 @@ function [X, J, F] = seaice()
         if norm(dX) < 1e-12
             break;
         end
-        
-        [H,Q,M,T] = extractsol(X);        
+
+        [H,Q,M,T] = extractsol(X);
         FH = F(1:nun:dim);
         fprintf('   integral =  %e\n', IC'*(M(:).*FH) );
 
@@ -267,19 +275,19 @@ function [X, J, F] = seaice()
 % $$$     Qimg = Qvar*Q' + Q0;
 % $$$     imagesc(RtD*x,RtD*y,Qimg); set(gca,'ydir','normal'); colorbar;
 % $$$     title('Q')
-% $$$ 
+% $$$
 % $$$     figure(7)
 % $$$     imagesc(RtD*x,RtD*y,QSos'); set(gca,'ydir','normal'); colorbar;
 % $$$     title('Q_S^{os}')
-% $$$ 
+% $$$
 % $$$     figure(8)
 % $$$     imagesc(RtD*x,RtD*y,EmiP'); set(gca,'ydir','normal'); colorbar;
 % $$$     title('E_S - P')
-    
+
     vsm(J(ord,ord));
     vsm(Jn(ord,ord));
     vsm(Jn(ord,ord)-J(ord,ord));
-    keyboard
+
 
 end
 
@@ -492,7 +500,7 @@ function [F] = rhs(x)
     global zeta Tf Lf rhoi rhoo E0i E0o dEdT dEdq
     global sun0 S Ls alpha c0 muoa
     global Ic
-    global taus epsilon nus
+    global taus epsilon nus eta q0
     global Ti
     global combf solf maskf % continuation parameters
 
@@ -509,13 +517,15 @@ function [F] = rhs(x)
                 switch XX
                   case 1
 
-                    Tsi = Ti( Qtsa(i,j), H(i,j), sss(i,j) );
+                    Tsi = Ti(combf, Qtsa(i,j), H(i,j), sss(i,j) );
 
                     val = combf * ( Tf(sss(i,j)) - sst(i,j) - t0o - Q0 / zeta ) ...
                           - Qvar / zeta * Qtsa(i,j) - ...
                           ( rhoo * Lf / zeta ) * ...
                           ( combf * E0i + dEdT * Tsi + dEdq * qatm(i,j));
+                    if combf == 0.1
 
+                        end
                   case 2
 
                     val = combf/muoa*Q0 + Qvar/muoa * Qtsa(i,j) - ...
@@ -535,7 +545,7 @@ function [F] = rhs(x)
 
                     val = combf * (Tf(sss(i,j)) - t0i + ...
                                    (Q0*H0 + H0*Qvar*Qtsa(i,j) + Q0*H(i,j))/Ic) ...
-                          - T(i,j);
+                          - T(i,j); %FIXME too much combf here
                 end
 
                 row = find_row(i,j,XX);
@@ -557,7 +567,8 @@ function [F] = rhs(x)
                 value = IC' * (Msi(:) .* (Qsos(:) - EmiP(:))) ...
                         - R(G) * A;
             end
-            F(row + aa) = value;
+% $$$             F(row + aa) = value; %% FIXME
+            F(row + aa) = 0.0;
         end
     end
 end

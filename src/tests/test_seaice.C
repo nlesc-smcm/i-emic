@@ -39,37 +39,52 @@ TEST(SeaIce, computeRHS)
     Teuchos::RCP<Epetra_Vector> rhs   = seaIce->getRHS('V');
     seaIce->idealizedForcing();
     state->PutScalar(0.0);
+    
+    std::vector<double> testResults = {
+        3.568793775425e+02,
+1.233115440545e+03,
+1.457775247495e+03,
+3.570315950845e+01,
+6.853210866356e+02,
+8.433199241723e+02
+    };
+    
     seaIce->setPar("Combined Forcing", 1.0);
     seaIce->computeRHS();
 
     // we know a few norms for the idealized case
-    EXPECT_NEAR(Utils::norm(rhs), 6.029707151443e+03, 1e-7);
-
+    EXPECT_NEAR(Utils::norm(rhs), testResults[0], 1e-7);
+    
     state->PutScalar(1.0);     
     seaIce->computeRHS();
 
-    EXPECT_NEAR(Utils::norm(rhs), 3.375072979252e+04, 1e-7);
+
+    EXPECT_NEAR(Utils::norm(rhs), testResults[1], 1e-7);
 
     state->PutScalar(1.234);     
     seaIce->computeRHS();
 
-    EXPECT_NEAR(Utils::norm(rhs), 4.141771047244e+04, 1e-7);
+    EXPECT_NEAR(Utils::norm(rhs), testResults[2], 1e-7);
+
     seaIce->setPar("Combined Forcing", 0.1);
     state->PutScalar(0.0);        
     seaIce->computeRHS();
 
     // we know a few norms for the idealized case
-    EXPECT_NEAR(Utils::norm(rhs), 6.029707151443e+02, 1e-7);
+    EXPECT_NEAR(Utils::norm(rhs), testResults[3], 1e-7);
+
 
     state->PutScalar(1.0);     
     seaIce->computeRHS();
 
-    EXPECT_NEAR(Utils::norm(rhs), 3.346451471720e+03, 1e-7);
+    EXPECT_NEAR(Utils::norm(rhs), testResults[4], 1e-7);
 
     state->PutScalar(1.234);     
     seaIce->computeRHS();
 
-    EXPECT_NEAR(Utils::norm(rhs), 4.130427375713e+03, 1e-7);
+    EXPECT_NEAR(Utils::norm(rhs), testResults[5], 1e-7);
+    getchar();
+        
 }
 
 
@@ -84,54 +99,57 @@ TEST(SeaIce, computeJacobian)
     Teuchos::RCP<Epetra_CrsMatrix> jac = seaIce->getJacobian();
    
     DUMPMATLAB("seaice_jac", *jac);
+
+    std::vector<double> testResults = {};
+    
     double normOne, normInf, normFrob;
     normInf = jac->NormInf();
-    EXPECT_NEAR(normInf, 2.079199128921e+03, 1e-7);
+    EXPECT_NEAR(normInf, testResults[0], 1e-7);
 
     normOne = jac->NormOne();
-    EXPECT_NEAR(normOne, 2.127721683616e+03, 1e-7);
+    EXPECT_NEAR(normOne, testResults[1], 1e-7);
 
     normFrob = jac->NormFrobenius();
-    EXPECT_NEAR(normFrob, 3.322972397910e+04, 1e-7);
+    EXPECT_NEAR(normFrob, testResults[2], 1e-7);
 
     state->PutScalar(1.0);
     seaIce->computeJacobian();
     jac = seaIce->getJacobian();
 
     normInf = jac->NormInf();
-    EXPECT_NEAR(normInf,  2.079199128921e+03, 1e-7);
+    EXPECT_NEAR(normInf, testResults[3], 1e-7);
 
     normOne = jac->NormOne();
-    EXPECT_NEAR(normOne,  2.077721683616e+03, 1e-7);
+    EXPECT_NEAR(normOne, testResults[4], 1e-7);
 
     normFrob = jac->NormFrobenius();
-    EXPECT_NEAR(normFrob, 3.322009265079e+04, 1e-7);
+    EXPECT_NEAR(normFrob, testResults[5], 1e-7);
 
     state->PutScalar(1.234);
     seaIce->computeJacobian();
     jac = seaIce->getJacobian();
 
     normInf = jac->NormInf();
-    EXPECT_NEAR(normInf, 2.079199128921e+03, 1e-7);
+    EXPECT_NEAR(normInf, testResults[6], 1e-7);
 
     normOne = jac->NormOne();
-    EXPECT_NEAR(normOne, 2.077721683616e+03, 1e-7);
+    EXPECT_NEAR(normOne, testResults[7], 1e-7);
 
     normFrob = jac->NormFrobenius();
-    EXPECT_NEAR(normFrob, 3.322009265079e+04, 1e-7);
+    EXPECT_NEAR(normFrob, testResults[8], 1e-7);
 
     state->PutScalar(0.0);
     seaIce->setPar("Combined Forcing", 0.1);        
     seaIce->computeJacobian();
     
     normInf = jac->NormInf();
-    EXPECT_NEAR(normInf, 2.088199128921e+02, 1e-7);
+    EXPECT_NEAR(normInf, testResults[9], 1e-7);
 
     normOne = jac->NormOne();
-    EXPECT_NEAR(normOne, 2.144154293601e+02, 1e-7);
+    EXPECT_NEAR(normOne, testResults[10], 1e-7);
 
     normFrob = jac->NormFrobenius();
-    EXPECT_NEAR(normFrob, 3.379287916717e+03, 1e-7);
+    EXPECT_NEAR(normFrob, testResults[11], 1e-7);
 }
 
 //------------------------------------------------------------------
