@@ -42,11 +42,11 @@ TEST(SeaIce, computeRHS)
     
     std::vector<double> testResults = {
         3.568793775425e+02,
-1.233115440545e+03,
-1.457775247495e+03,
-3.570315950845e+01,
-6.853210866356e+02,
-8.433199241723e+02
+        1.233115773600e+03,
+        1.457775676498e+03,
+        3.570315950845e+01,
+        6.853216858970e+02,
+        8.433206657363e+02
     };
     
     seaIce->setPar("Combined Forcing", 1.0);
@@ -54,13 +54,11 @@ TEST(SeaIce, computeRHS)
 
     // we know a few norms for the idealized case
     EXPECT_NEAR(Utils::norm(rhs), testResults[0], 1e-7);
-    std::cout << *rhs << std::endl; getchar();
 
     state->PutScalar(1.0);     
     seaIce->computeRHS();
 
     EXPECT_NEAR(Utils::norm(rhs), testResults[1], 1e-7);
-    std::cout << *rhs << std::endl; getchar();
                                               
     state->PutScalar(1.234);     
     seaIce->computeRHS();
@@ -74,7 +72,6 @@ TEST(SeaIce, computeRHS)
     // we know a few norms for the idealized case
     EXPECT_NEAR(Utils::norm(rhs), testResults[3], 1e-7);
 
-
     state->PutScalar(1.0);     
     seaIce->computeRHS();
 
@@ -84,7 +81,6 @@ TEST(SeaIce, computeRHS)
     seaIce->computeRHS();
 
     EXPECT_NEAR(Utils::norm(rhs), testResults[5], 1e-7);
-    getchar();        
 }
 
 
@@ -95,10 +91,10 @@ TEST(SeaIce, computeJacobian)
     state->PutScalar(0.0);
     seaIce->setPar("Combined Forcing", 1.0);        
     seaIce->computeJacobian();
-    
     Teuchos::RCP<Epetra_CrsMatrix> jac = seaIce->getJacobian();
    
     DUMPMATLAB("seaice_jac", *jac);
+    getchar();    
 
     std::vector<double> testResults = {};
     
@@ -150,6 +146,7 @@ TEST(SeaIce, computeJacobian)
 
     normFrob = jac->NormFrobenius();
     EXPECT_NEAR(normFrob, testResults[11], 1e-7);
+
 }
 
 //------------------------------------------------------------------

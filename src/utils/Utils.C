@@ -508,7 +508,7 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
     {
         // in the case of a local crs assembly gives the GID's
         rowMap = domain->GetAssemblyMap();
-        assert(rowMap->NumMyElements() == (int) crs.beg.size() - 1);        
+        assert(rowMap->NumMyElements() == (int) crs.beg.size() - 1);
     }
     
     int numMyElements     = rowMap->NumMyElements();

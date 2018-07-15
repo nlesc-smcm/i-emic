@@ -201,7 +201,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     createIntCoeff();
 
     // Construct local dependency grid:
-    Al_ = std::make_shared<DependencyGrid>(nLoc_, mLoc_, 1, 1, dof_);
+    Al_ = std::make_shared<DependencyGrid>(nLoc_, mLoc_, 1, 1, dof_ + aux_);
 
     createMatrixGraph();
 
@@ -355,6 +355,8 @@ void SeaIce::computeRHS()
         // use integral in RHS
         int Grow = find_row0(nGlob_, mGlob_, 0, 0, SEAICE_GG_);
         Gval = state[Grow];
+
+        std::cout << " Grow = " << Grow << std::endl;
         
         (*rhs_)[Grow] = fluxInt - Gval * totalArea_;
     }
@@ -369,6 +371,7 @@ void SeaIce::computeLocalJacobian()
     int Q = SEAICE_QQ_;
     int M = SEAICE_MM_;
     int T = SEAICE_TT_;
+    int G = SEAICE_GG_;
 
     // reset entries
     Al_->zero();
@@ -382,7 +385,8 @@ void SeaIce::computeLocalJacobian()
     int range[8] = {1, nLoc_, 1, mLoc_, 1, 1, 1, 1};
 
     // initialize dependencies
-    double HH_HH, HH_QQ, QQ_QQ, QQ_TT, MM_MM, TT_HH, TT_QQ, TT_TT;
+    double HH_HH, HH_QQ, QQ_QQ, QQ_TT, MM_MM;
+    double TT_HH, TT_QQ, TT_TT, GG_GG;
     Atom MM_HH(nLoc_, mLoc_, 1, 1);
 
     // dHdt equation ----------------------------------
@@ -427,6 +431,10 @@ void SeaIce::computeLocalJacobian()
     Al_->set(range, T, H, TT_HH);
     Al_->set(range, T, Q, TT_QQ);
     Al_->set(range, T, T, TT_TT);
+
+    // Gamma equation ----------------------------------
+    GG_GG = -totalArea_;
+    Al_->set(range, G, G, GG_GG);
 }
 
 //=============================================================================
@@ -451,7 +459,10 @@ void SeaIce::computeJacobian()
 
     // max nonzeros per row
     const int maxnnz = dof_ + 1;
-
+    std::cout << "beg.size = " << localJac->beg.size() << std::endl;
+    std::cout << "myElemts = "
+              << domain_->GetAssemblyMap()->NumMyElements() << std::endl;
+    
     Utils::assembleCRS(jac_, *localJac, maxnnz, domain_);
 
     jac_->FillComplete();
@@ -479,7 +490,7 @@ void SeaIce::assemble()
                 // fill beg with element cntr
                 beg_.push_back(elm_ctr);
 
-                for (int B = 1; B <= dof_; ++B)
+                for (int B = 1; B <= (dof_ + aux_); ++B)
                 {
                     value = Al_->get( i, j, 1, 1, A, B );
 
@@ -495,6 +506,27 @@ void SeaIce::assemble()
                 }
             }
 
+    // auxiliary equation
+    if (aux_ == 1)
+    {
+        beg_.push_back(elm_ctr);
+        for (int j = 1; j <= mLoc_; ++j)
+            for (int i = 1; i <= nLoc_; ++i)
+                for (int B = 1; B <= (dof_ + aux_); ++B)
+                {
+                    value = Al_->get(i, j, 1, 1, SEAICE_GG_, B);
+                    if (std::abs(value) > 0)
+                    {
+                        co_.push_back(value);
+                        
+                        // obtain column
+                        col = find_row1(nLoc_, mLoc_,  i, j, B);
+                        jco_.push_back(col);
+                        ++elm_ctr;
+                    }
+                }
+    }
+    
     // final element of beg
     beg_.push_back(elm_ctr);
 }
@@ -1057,7 +1089,7 @@ int SeaIce::find_row0(int n, int m, int i, int j, int XX)
             return -1;
         }
         else
-            return dimGlob_ - aux_ + (XX - SEAICE_GG_) + 1 ;
+            return dimGlob_ + (XX - SEAICE_GG_);
     }
     else // ordinary 0-based find_row
         return dof_ * ( j*n + i) + XX - 1;
@@ -1077,7 +1109,7 @@ int SeaIce::find_row1(int n, int m, int i, int j, int XX)
             return -1;
         }
         else
-            return dimGlob_ + (XX - SEAICE_GG_); // slightly different from atmos impl.
+            return dimGlob_ + (XX - SEAICE_GG_) + 1; 
     }
     else // ordinary 1-based find_row
         return dof_ * ( (j-1)*n + (i-1)) + XX;

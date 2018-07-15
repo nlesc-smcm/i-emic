@@ -166,7 +166,6 @@ function [X, J, F] = seaice()
                     scale, combf, norm(F));
             fprintf(fid, '%1.12e\n', norm(F));
             F(end-10:end)
-            keyboard
         end
     end
     
