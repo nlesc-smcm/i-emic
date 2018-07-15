@@ -54,13 +54,14 @@ TEST(SeaIce, computeRHS)
 
     // we know a few norms for the idealized case
     EXPECT_NEAR(Utils::norm(rhs), testResults[0], 1e-7);
-    
+    std::cout << *rhs << std::endl; getchar();
+
     state->PutScalar(1.0);     
     seaIce->computeRHS();
 
-
     EXPECT_NEAR(Utils::norm(rhs), testResults[1], 1e-7);
-
+    std::cout << *rhs << std::endl; getchar();
+                                              
     state->PutScalar(1.234);     
     seaIce->computeRHS();
 
@@ -83,8 +84,7 @@ TEST(SeaIce, computeRHS)
     seaIce->computeRHS();
 
     EXPECT_NEAR(Utils::norm(rhs), testResults[5], 1e-7);
-    getchar();
-        
+    getchar();        
 }
 
 

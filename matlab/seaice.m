@@ -165,6 +165,8 @@ function [X, J, F] = seaice()
             fprintf('X = %1.3f, par = %1.1f, ||F||two = %1.12e\n', ...
                     scale, combf, norm(F));
             fprintf(fid, '%1.12e\n', norm(F));
+            F(end-10:end)
+            keyboard
         end
     end
     
@@ -556,10 +558,11 @@ function [F] = rhs(x)
 
     if (aux > 0)
         [~, ~, ~, ~, R] = extractsol(x);
-        [~,Qsos,~,EmiP] = fluxes(x);
-
-
+        [~,Qsos,~,EmiP,FluxDiff] = fluxes(x);
+        
         A = sum(IC);
+        IC'*FluxDiff(:)
+
 
         for aa = 1:aux
             switch aa
@@ -567,14 +570,13 @@ function [F] = rhs(x)
                 value = IC' * (Msi(:) .* (Qsos(:) - EmiP(:))) ...
                         - R(G) * A;
             end
-% $$$             F(row + aa) = value; %% FIXME
-            F(row + aa) = 0.0;
+            F(row + aa) = value; 
         end
     end
 end
 
 % single dof
-function [QS, QSos, QSoa, EmiP] = fluxes(x)
+function [QS, QSos, QSoa, EmiP, FluxDiff] = fluxes(x)
 
     global n m nun aux
     global sst sss qatm tatm patm
@@ -592,9 +594,10 @@ function [QS, QSos, QSoa, EmiP] = fluxes(x)
 
     [H, Qtsa, Msi, T] = extractsol(x);
 
-    QSos = zeros(n,m);
-    QSoa = zeros(n,m);
-    EmiP = zeros(n,m); % dimensional sublimation term
+    QSos     = zeros(n,m);
+    QSoa     = zeros(n,m);
+    EmiP     = zeros(n,m); % dimensional sublimation term
+    FluxDiff = zeros(n,m); % dimensional sublimation term
 
     for j = 1:m
         for i = 1:n
@@ -616,7 +619,10 @@ function [QS, QSos, QSoa, EmiP] = fluxes(x)
             EmiP(i,j) = nus * (tdim / qdim * dqsi * T(i,j) - qa - pa);
 
             % total salinity flux
-            QS(i,j) = QSoa(i,j) + Msi(i,j) * (rhoo*Lf/zeta*QSos(i,j) - QSoa(i,j));
+            QS(i,j) = QSoa(i,j) + Msi(i,j) * (rhoo*Lf/zeta*QSos(i,j) ...
+                                              - QSoa(i,j));
+            
+            FluxDiff(i,j) = Msi(i,j) * (QSos(i,j) - EmiP(i,j));
         end
     end
 end
@@ -626,14 +632,13 @@ end
 function [IC] = intcoeff()
     global n m nun aux
     global dx dy x y
-    len = n*m;
-    IC = zeros(len,1);
+    IC = zeros(n,m);
     for j = 1:m
         for i = 1:n
-            sr = (j-1)*n+i; % surface row
-            IC(sr) = cos( y(i) ) * dx * dy;
+            IC(i,j) = cos( y(j) ) * dx * dy;
         end
     end
+    IC = IC(:);
 end
 
 

@@ -21,6 +21,7 @@
 # define SEAICE_QQ_  2 // Heat flux
 # define SEAICE_MM_  3 // Sea ice mask
 # define SEAICE_TT_  4 // Sea ice surface temperature
+# define SEAICE_GG_  5 // Auxiliary integral correction
 #endif
 
 #endif

@@ -86,6 +86,9 @@ private:
     //! local grid increments
     double dx_, dy_;
 
+    //! total integration area
+    double totalArea_;
+
     //! local grid
     std::vector<double> x_, y_;
 
@@ -135,7 +138,10 @@ private:
 
     //! non-overlapping albedo
     Teuchos::RCP<Epetra_Vector> albe_;
-    
+
+    //! non-overlapping integral coefficients
+    Teuchos::RCP<Epetra_Vector> intCoeff_;
+
     //! overlapping localState
     Teuchos::RCP<Epetra_Vector> localState_;
 
@@ -166,6 +172,9 @@ private:
     //! overlapping localAtmosA
     Teuchos::RCP<Epetra_Vector> localAtmosA_;
 
+    //! non-overlapping integral coefficients
+    Teuchos::RCP<Epetra_Vector> localIntCoeff_;
+    
     //! State component maps
     std::map<int, Teuchos::RCP<Epetra_Map> > Maps_;
     
@@ -379,6 +388,9 @@ private:
     //! create x_ and y_
     void createGrid();
 
+    //! create integral coefficients
+    void createIntCoeff();
+
     //! create matrix graph
     void createMatrixGraph();
 
@@ -403,12 +415,10 @@ private:
                 (comb_ * Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
 
     //! 0-based local find_row function
-    int find_row0(int n, int m, int i, int j, int XX)
-        { return dof_ * ( j*n + i) + XX - 1; }
+    int find_row0(int n, int m, int i, int j, int XX);
     
     //! 1-based local find_row function
-    int find_row1(int n, int m, int i, int j, int XX)
-        { return dof_ * ( (j-1)*n + (i-1)) + XX; }
+    int find_row1(int n, int m, int i, int j, int XX);
 };
     
 #endif

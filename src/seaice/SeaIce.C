@@ -14,7 +14,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     precInitialized_ (false),
     recomputePrec_   (false),
-    
+
     taus_         (0.01),    // threshold ice thickness
     epsilon_      (1.0e-2),  // Heavyside approximation steepness
 
@@ -22,9 +22,9 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     t0o_   (params->get("background ocean temp t0o", 15)),
     t0a_   (params->get("background atmos temp t0a", 15)),
     s0_    (params->get("ocean background salinity s0", 35)),
-    q0_    (params->get("atmos reference humidity",8e-3)), 
+    q0_    (params->get("atmos reference humidity",8e-3)),
     qdim_  (params->get("atmos humidity scale", 1e-3)),
-    tdim_  (params->get("temperature scale", 1.0)), 
+    tdim_  (params->get("temperature scale", 1.0)),
     H0_    (params->get("seaice background thickness H0", taus_)),
     M0_    (params->get("seaice background mask M0", 0)),
 
@@ -66,7 +66,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     cpa_     (params->get("heat capacity", 1000)),
 
 // exchange coefficient
-    muoa_    (rhoa_ * Ch_ * cpa_ * uw_)   
+    muoa_    (rhoa_ * Ch_ * cpa_ * uw_)
 {
     // Continuation parameters
     allParameters_ = { "Combined Forcing",
@@ -78,7 +78,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     comb_     = params->get(allParameters_[0], 0.0);
     sunp_     = params->get(allParameters_[1], 1.0);
-    maskf_    = params->get(allParameters_[2], 1.0);               
+    maskf_    = params->get(allParameters_[2], 1.0);
 
     // Background sublimation and derivatives: calculate background
     // saturation specific humidity according to [Bolton,1980], T in
@@ -107,15 +107,15 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // Background sea ice surface temperature is chosen such that
     // background evaporation and sublimation cancel:
-    t0i_  =  c3_*c4_*t0o_ / (c2_*c5_+(c2_-c4_)*t0o_);        
-    
+    t0i_  =  c3_*c4_*t0o_ / (c2_*c5_+(c2_-c4_)*t0o_);
+
     // Background sublimation and derivatives
     E0i_   =  eta_ * ( qsi_(t0i_) - q0_ );
     E0o_   =  eta_ * ( qso_(t0o_) - q0_ );
 
     // Check whether background values cancel
     assert(std::abs(E0o_-E0i_) < 1e-12);
-    
+
     dEdT_  =  eta_ * qdim_ * tdim_ / qdim_ * dqsi_(t0i_);
     dEdq_  =  eta_ * qdim_ * -1;
 
@@ -133,8 +133,10 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     dof_      = SEAICE_NUN_;
     dimGlob_  = mGlob_ * nGlob_ * dof_;
+
+    // auxiliary integral correction
     aux_      = 1;
-    
+
     // Create domain object
     domain_ = Teuchos::rcp(new TRIOS::Domain(nGlob_, mGlob_, 1, dof_,
                                              xmin_, xmax_, ymin_, ymax_,
@@ -175,6 +177,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     qatm_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     patm_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     albe_       = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    intCoeff_   = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     // Local (overlapping) vectors
     localState_  = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -183,15 +186,19 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     localSol_    = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // External data (overlapping)
-    localSST_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localSSS_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localAtmosT_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localAtmosQ_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localAtmosP_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localAtmosA_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSST_      = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSSS_      = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosT_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosQ_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosP_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosA_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localIntCoeff_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
     // Create local computational grid in x_, y_
     createGrid();
+
+    // Create integral coefficients intCoeff_ and localIntCoeff_
+    createIntCoeff();
 
     // Construct local dependency grid:
     Al_ = std::make_shared<DependencyGrid>(nLoc_, mLoc_, 1, 1, dof_);
@@ -205,7 +212,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // initializeState();
 
     // Create importers for communication with other models
-    int XX; 
+    int XX;
     for (int i = 0; i != dof_; ++i)
     {
         XX = SEAICE_HH_ + i;
@@ -221,7 +228,8 @@ void SeaIce::computeRHS()
     localRHS_->PutScalar(0.0);
 
     // obtain view of rhs, state and external data
-    double *rhs, *state, *sst, *sss, *tatm, *qatm, *albe;
+    double *rhs, *state, *sst, *sss;
+    double *tatm, *qatm, *patm, *albe, *flxd;
     localRHS_->ExtractView(&rhs);
 
     domain_->Standard2Assembly(*state_, *localState_);
@@ -230,25 +238,36 @@ void SeaIce::computeRHS()
     domain_->Standard2AssemblySurface(*sss_,   *localSSS_);
     domain_->Standard2AssemblySurface(*tatm_,  *localAtmosT_);
     domain_->Standard2AssemblySurface(*qatm_,  *localAtmosQ_);
+    domain_->Standard2AssemblySurface(*patm_,  *localAtmosP_);
     domain_->Standard2AssemblySurface(*albe_,  *localAtmosA_);
 
     localState_->ExtractView(&state);
-    
+
     localSST_->ExtractView(&sst);
     localSSS_->ExtractView(&sss);
-    
+
     localAtmosT_->ExtractView(&tatm);
     localAtmosQ_->ExtractView(&qatm);
+    localAtmosP_->ExtractView(&patm);
     localAtmosA_->ExtractView(&albe);
+
+    // Create assembly and standard vectors to hold flux
+    /// difference for integral correction
+    Epetra_Vector fluxDiff(*standardSurfaceMap_);
+    Epetra_Vector localFluxDiff(*assemblySurfaceMap_);
+    localFluxDiff.ExtractView(&flxd);
+
+    // placeholder variables for flux difference
+    double QSos, EmiP;
 
     // row indices for rhs and data
     int rr, sr;
-    double Tsi, Hval, Qval, Mval, Tval, val;
+    double Tsi, Hval, Qval, Mval, Tval, Gval, val;
     for (int j = 0; j != mLoc_; ++j)
         for (int i = 0; i != nLoc_; ++i)
         {
             sr = j*nLoc_ + i; // surface position for vectors with dof=1
-            
+
             Hval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_HH_)];
             Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
             Mval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_MM_)];
@@ -271,7 +290,7 @@ void SeaIce::computeRHS()
                         - Qvar_ / zeta_ * Qval -
                         ( rhoo_ * Lf_ / zeta_) *
                         ( comb_ * E0i_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
-                    
+
                     break;
 
                 case SEAICE_QQ_:   // Q row (heat flux)
@@ -304,9 +323,42 @@ void SeaIce::computeRHS()
                 rr = find_row0(nLoc_, mLoc_, i, j, XX);
                 rhs[rr] = val;
             }
+
+            if (aux_ == 1)
+            {
+                ///////////////////////////////////////////////////////
+                // Compute flux difference over sea ice
+                ///////////////////////////////////////////////////////
+                QSos = (
+                    zeta_ * comb_ * ( freezingT(sss[sr])  // QTos component
+                                      - (sst[sr]+t0o_))
+                    - (Qvar_ * Qval + comb_ * Q0_)         // QTsa component
+                    ) / rhoo_ / Lf_;
+            
+                EmiP = dEdT_ * Tval + dEdq_ * qatm[sr]    // E component
+                    - eta_ * qdim_ * patm[sr];            // P component
+
+                flxd[sr] = Mval * (QSos - EmiP);
+            }
         }
     
     domain_->Assembly2Standard(*localRHS_, *rhs_);
+
+    if (aux_ == 1)
+    {
+        // create non-overlapping flux difference
+        domain_->Assembly2StandardSurface(localFluxDiff, fluxDiff);
+
+        // integrate flux difference over total surface area
+        double fluxInt;
+        intCoeff_->Dot(fluxDiff, &fluxInt);
+        // use integral in RHS
+        int Grow = find_row0(nGlob_, mGlob_, 0, 0, SEAICE_GG_);
+        Gval = state[Grow];
+        
+        (*rhs_)[Grow] = fluxInt - Gval * totalArea_;
+    }
+    
     INFO(" seaic F = " << Utils::norm(rhs_));
 }
 
@@ -358,7 +410,7 @@ void SeaIce::computeLocalJacobian()
             ind  = find_row1(nLoc_, mLoc_, i, j, H)-1; // H row
             val  = -(comb_ * maskf_ / 2.0 / epsilon_ ) *
                 ( 1.0 - pow( tanh( state[ind] / epsilon_ ), 2) );
-                        
+
             MM_HH.set( i, j, 1, 1, val);
         }
 
@@ -468,7 +520,7 @@ void SeaIce::getCommPars(SeaIce::CommPars &parStruct)
     parStruct.rhoo = rhoo_;
     parStruct.Qvar = Qvar_;
     parStruct.Q0   = Q0_;
-    
+
 }
 
 // ---------------------------------------------------------------------------
@@ -543,15 +595,15 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
 
     for (int j = 0; j != mGlob_; ++j)
     {
-        int gid = j * nGlob_;                      
-        int lid = standardSurfaceMap_->LID(gid);   
-        
+        int gid = j * nGlob_;
+        int lid = standardSurfaceMap_->LID(gid);
+
         if (lid >= 0)
             tmp = (comb_ * sunp_ * sun0_ / 4. / muoa_) *
                 shortwaveS(y_[lid / nLoc_]) * albed_ * c0_;
 
         comm_->SumAll(&tmp, &daatmFQ, 1);
-        
+
         for (int i = 0; i != nGlob_; ++i)
             for (int XX = 1; XX <= dof_; ++XX)
             {
@@ -731,7 +783,7 @@ void SeaIce::idealizedForcing()
     double tvar = 15.0;
     double svar = 1.0;
     double qvar = 1e-3;
-    
+
     double *sst, *sss, *tatm, *qatm, *albe, *patm;
     localSST_->ExtractView(&sst);
     localSSS_->ExtractView(&sss);
@@ -778,12 +830,25 @@ void SeaIce::createGrid()
 }
 
 //=============================================================================
+void SeaIce::createIntCoeff()
+{
+    // creating local integral coefficients
+    int idx = 0;
+    for (int j = 0; j != mLoc_; ++j)
+        for (int i = 0; i != nLoc_; ++i)
+            (*localIntCoeff_)[idx++] = cos(y_[j]) * dx_ * dy_;
+
+    domain_->Assembly2StandardSurface(*localIntCoeff_, *intCoeff_);
+    intCoeff_->Norm1(&totalArea_);
+}
+
+//=============================================================================
 // Create matrix graph
 void SeaIce::createMatrixGraph()
 {
     // We do not have any spatial relation between the unknowns so
     // maxDeps is at most the number of unknowns.
-    int maxDeps = dof_;
+    int maxDeps = dof_ + aux_;
 
     matrixGraph_ =
         Teuchos::rcp(new Epetra_CrsGraph(Copy, *standardMap_, maxDeps, false));
@@ -803,7 +868,10 @@ void SeaIce::createMatrixGraph()
     for (int j = J0; j <= J1; ++j)
         for (int i = I0; i <= I1; ++i)
         {
-            gidU = find_row0(nGlob_, mGlob_, i, j, SEAICE_HH_);
+            // first element at grid point
+            gidU = find_row0(nGlob_, mGlob_, i, j, 1);
+
+            // reference to offset with 1-based identifier
             gid0 = gidU - 1;
 
             // H-equation: connections to H and Q points
@@ -840,8 +908,48 @@ void SeaIce::createMatrixGraph()
                            gid0 + SEAICE_TT_, pos, indices));
         }
 
+
+    // Last ordinary row in the grid, i.e., the last non-auxiliary row.
+    int last = find_row0(nGlob_, mGlob_, nGlob_-1, mGlob_-1, SEAICE_NUN_);
+
+    // global auxiliary row
+    int auxRow = (aux_ == 1) ? last + aux_ : -1;
+    
+    // add entries for auxiliary condition
+    if ( ( aux_ == 1) && standardMap_->MyGID(auxRow) )
+    {
+        // For the integral correction dependencies in this model
+        // exist at nGlob_ * mGlob_ * 3 + aux_ points. Three of our
+        // unknowns are integrated: Q,M and T.
+        int len = nGlob_ * mGlob_ * 3 + aux_;
+        int auxInds[len];
+        int gid = 0;
+        pos = 0;
+        for (int j = 0; j < mGlob_; ++j)
+            for (int i = 0; i < nGlob_; ++i)
+                for (int xx = SEAICE_QQ_; xx <= SEAICE_TT_; ++xx)
+                {
+                    gid = find_row0(nGlob_, mGlob_, i, j, xx);
+                    auxInds[pos] = gid;
+                    pos++;
+                }
+
+        auxInds[pos++] = auxRow;
+
+        assert(len == pos);
+        CHECK_ZERO(matrixGraph_->InsertGlobalIndices(auxRow, len, auxInds));
+    }
+
     // Finalize matrixgraph
     CHECK_ZERO(matrixGraph_->FillComplete() );
+    
+#ifdef DEBUGGING_NEW
+    std::ofstream file;
+    file.open("seaice_graph" + std::to_string(comm_->MyPID()));
+    matrixGraph_->PrintGraphData(file);
+    file.close();
+#endif
+
 }
 
 //=============================================================================
@@ -934,4 +1042,44 @@ void SeaIce::preProcess()
 //=============================================================================
 void SeaIce::postProcess()
 {}
+
+//=============================================================================
+int SeaIce::find_row0(int n, int m, int i, int j, int XX)
+{
+    //////////////////////////////
+    // 0-based
+    //////////////////////////////
+    if (XX >= SEAICE_GG_)
+    {
+        if (aux_ <= 0)
+        {
+            ERROR("SeaIce: invalid row", __FILE__, __LINE__);
+            return -1;
+        }
+        else
+            return dimGlob_ - aux_ + (XX - SEAICE_GG_) + 1 ;
+    }
+    else // ordinary 0-based find_row
+        return dof_ * ( j*n + i) + XX - 1;
+}
+
+//=============================================================================
+int SeaIce::find_row1(int n, int m, int i, int j, int XX)
+{
+    //////////////////////////////
+    // 1-based
+    //////////////////////////////
+    if (XX >= SEAICE_GG_)
+    {
+        if (aux_ <= 0)
+        {
+            ERROR("SeaIce: invalid row", __FILE__, __LINE__);
+            return -1;
+        }
+        else
+            return dimGlob_ + (XX - SEAICE_GG_); // slightly different from atmos impl.
+    }
+    else // ordinary 1-based find_row
+        return dof_ * ( (j-1)*n + (i-1)) + XX;
+}
 
