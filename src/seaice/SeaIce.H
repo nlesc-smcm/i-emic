@@ -70,6 +70,10 @@ private:
     //! local grid size
     int nLoc_, mLoc_, dimLoc_;
 
+    //! Flux containers
+    std::vector<double> QSos_;
+    std::vector<double> EmiP_;
+
     //! info on periodicity is needed to get the correct domain
     //! decomposition
     bool periodic_;
@@ -88,6 +92,9 @@ private:
 
     //! total integration area
     double totalArea_;
+
+    //! Finite difference increment for lazy mask function derivative
+    double df_ = 1e-6;
 
     //! local grid
     std::vector<double> x_, y_;
@@ -301,6 +308,10 @@ public:
 
     std::string const name() { return "SeaIce"; }
     virtual int const modelIdent() { return 2; }
+
+    //! compute QSos and EmiP fluxes locally
+    void computeLocalFluxes(double *state, double *sss, double *sst,
+                            double *qatm, double *patm);
     
     //! compute right hand side
     void computeRHS();
@@ -413,6 +424,14 @@ private:
     double iceSurfT(double Q, double H, double S)
         { return comb_ * (freezingT(S) - t0i_) +
                 (comb_ * Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
+
+    //! sea ice mask as a function thickness anomaly H 
+    double maskFun(double H)
+        { return (comb_ * maskf_ / 2.) * (1. + tanh( H/ epsilon_ )); }
+    
+    //! sea ice mask function lazy derivative
+    double dMdH(double H)
+        { return ( maskFun(H+df_) - maskFun(H) )/df_; }                
 
     //! 0-based local find_row function
     int find_row0(int n, int m, int i, int j, int XX);

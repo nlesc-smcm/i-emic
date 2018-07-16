@@ -463,10 +463,6 @@ private:
     double H(double x, double eps)
         { return (1./2.) *  (1.0 + tanh(x / eps)); }
 
-    //! Heavyside approximation derivative
-    double dHdx(double x, double eps)
-        { return (1./2.) *  (1.0 + tanh(x / eps)); }
-
 public:
     
     //! Find row in vector or matrix corresponding to unknown

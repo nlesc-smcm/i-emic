@@ -41,12 +41,12 @@ TEST(SeaIce, computeRHS)
     state->PutScalar(0.0);
     
     std::vector<double> testResults = {
-        3.568793775425e+02,
-        1.233115773600e+03,
-        1.457775676498e+03,
-        3.570315950845e+01,
-        6.853216858970e+02,
-        8.433206657363e+02
+        8.892387368217e+01,
+        3.082878510115e+02,
+        3.644704505231e+02,
+        8.896160862096e+00,
+        1.713464472249e+02,
+        2.108470617124e+02
     };
     
     seaIce->setPar("Combined Forcing", 1.0);
@@ -92,11 +92,28 @@ TEST(SeaIce, computeJacobian)
     seaIce->setPar("Combined Forcing", 1.0);        
     seaIce->computeJacobian();
     Teuchos::RCP<Epetra_CrsMatrix> jac = seaIce->getJacobian();
-   
     DUMPMATLAB("seaice_jac", *jac);
-    getchar();    
 
-    std::vector<double> testResults = {};
+    std::vector<double> testResults = {
+        5.100000000000e+01,
+        9.650722460927e+01,
+        3.132487804551e+02,
+        4.947134256694e+01,
+        4.650722460927e+01,
+        2.410908510429e+02,
+        4.947134256694e+01,
+        4.650722460927e+01,
+        2.410908510429e+02,
+        4.188233484290e+01,
+        3.973464072736e+01,
+        1.570922632187e+02,
+        4.188233484290e+01,
+        3.973464084493e+01,
+        1.558139248051e+02,
+        4.188233484290e+01,
+        3.973464087244e+01,
+        1.558139248051e+02
+    };
     
     double normOne, normInf, normFrob;
     normInf = jac->NormInf();
@@ -152,12 +169,12 @@ TEST(SeaIce, computeJacobian)
 //------------------------------------------------------------------
 TEST(SeaIce, numericalJacobian)
 {
-    seaIce->setPar(1.0);
+    seaIce->setPar(0.85);
         
     Teuchos::RCP<Epetra_Vector> x = seaIce->getState('V');
+    >>>>>>>>> FIXME SEED RNG!!, check contents! ####>>>>>>>>
     x->Random();
-    x->Scale(0.1);
-
+    
     // int myEl = x->Map().NumMyElements();
     // x->PutScalar(0.0);    
     // // gradually changing thickness deviation
@@ -219,7 +236,6 @@ TEST(SeaIce, numericalJacobian)
         std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
-
 }
 
 

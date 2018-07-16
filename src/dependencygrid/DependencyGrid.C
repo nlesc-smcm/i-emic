@@ -108,6 +108,7 @@ double Atom::get(int i, int j, int k, int loc)
 }
 
 //-----------------------------------------------------------------------------
+// 1-based
 void Atom::set(int i, int j, int k, int loc, double value)
 {
     // converting to 0-based
@@ -115,6 +116,7 @@ void Atom::set(int i, int j, int k, int loc, double value)
 }
 
 //-----------------------------------------------------------------------------
+// 1-based
 void Atom::set(int const (&range)[6], int loc, double value)
 {
     for (int i = range[0]; i != range[1]+1; ++i)

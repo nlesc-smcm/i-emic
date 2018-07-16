@@ -55,7 +55,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     uw_    (params->get("mean atmospheric surface wind speed, ms^{-1}", 8.5)),
 
 // typical vertical velocity
-    eta_   ( ( rhoa_ / rhoo_ ) * ce_ * uw_),
+    eta_   ( 1e3*( rhoa_ / rhoo_ ) * ce_ * uw_),
 
 // Shortwave radiation constants and functions
     albe0_   (params->get("reference albedo", 0.3)),
@@ -156,6 +156,10 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     mLoc_   =  domain_->LocalM();
     dimLoc_ =  mLoc_ * nLoc_ * dof_;
 
+    // Local flux containers
+    QSos_ = std::vector<double>(mLoc_ * nLoc_);
+    EmiP_ = std::vector<double>(mLoc_ * nLoc_);
+
     // Obtain overlapping and non-overlapping maps
     assemblyMap_ = domain_->GetAssemblyMap(); // overlapping
     standardMap_ = domain_->GetStandardMap(); // non-overlapping
@@ -251,14 +255,14 @@ void SeaIce::computeRHS()
     localAtmosP_->ExtractView(&patm);
     localAtmosA_->ExtractView(&albe);
 
+    if (aux_ == 1)
+        computeLocalFluxes(state, sss, sst, qatm, patm);
+            
     // Create assembly and standard vectors to hold flux
     /// difference for integral correction
     Epetra_Vector fluxDiff(*standardSurfaceMap_);
     Epetra_Vector localFluxDiff(*assemblySurfaceMap_);
     localFluxDiff.ExtractView(&flxd);
-
-    // placeholder variables for flux difference
-    double QSos, EmiP;
 
     // row indices for rhs and data
     int rr, sr;
@@ -306,9 +310,8 @@ void SeaIce::computeRHS()
 
                 case SEAICE_MM_:   // M row (mask)
 
-                    val = Mval -
-                        (comb_ * maskf_ / 2.) * (1. + tanh( Hval / epsilon_ ) );
-
+                    val = Mval - maskFun(Hval);
+                    
                     break;
 
                 case SEAICE_TT_:   // T row (surface temperature)
@@ -326,19 +329,8 @@ void SeaIce::computeRHS()
 
             if (aux_ == 1)
             {
-                ///////////////////////////////////////////////////////
-                // Compute flux difference over sea ice
-                ///////////////////////////////////////////////////////
-                QSos = (
-                    zeta_ * comb_ * ( freezingT(sss[sr])  // QTos component
-                                      - (sst[sr]+t0o_))
-                    - (Qvar_ * Qval + comb_ * Q0_)         // QTsa component
-                    ) / rhoo_ / Lf_;
-            
-                EmiP = dEdT_ * Tval + dEdq_ * qatm[sr]    // E component
-                    - eta_ * qdim_ * patm[sr];            // P component
-
-                flxd[sr] = Mval * (QSos - EmiP);
+                // Flux difference over sea ice                
+                flxd[sr] = Mval * (QSos_[sr] - EmiP_[sr]);
             }
         }
     
@@ -356,8 +348,6 @@ void SeaIce::computeRHS()
         int Grow = find_row0(nGlob_, mGlob_, 0, 0, SEAICE_GG_);
         Gval = state[Grow];
 
-        std::cout << " Grow = " << Grow << std::endl;
-        
         (*rhs_)[Grow] = fluxInt - Gval * totalArea_;
     }
     
@@ -378,8 +368,21 @@ void SeaIce::computeLocalJacobian()
 
     // obtain local state
     domain_->Standard2Assembly(*state_, *localState_);
-    double *state;
+    
+    domain_->Standard2AssemblySurface(*sst_,   *localSST_);
+    domain_->Standard2AssemblySurface(*sss_,   *localSSS_);
+    domain_->Standard2AssemblySurface(*qatm_,  *localAtmosQ_);
+    domain_->Standard2AssemblySurface(*patm_,  *localAtmosP_);
+
+    double *state, *sst, *sss, *qatm, *patm;
     localState_->ExtractView(&state);
+    localSST_->ExtractView(&sst);
+    localSSS_->ExtractView(&sss);
+    localAtmosQ_->ExtractView(&qatm);
+    localAtmosP_->ExtractView(&patm);
+    
+    if (aux_ == 1)
+        computeLocalFluxes(state, sss, sst, qatm, patm);
 
     // our range is the entire local domain (1-based)
     int range[8] = {1, nLoc_, 1, mLoc_, 1, 1, 1, 1};
@@ -388,6 +391,9 @@ void SeaIce::computeLocalJacobian()
     double HH_HH, HH_QQ, QQ_QQ, QQ_TT, MM_MM;
     double TT_HH, TT_QQ, TT_TT, GG_GG;
     Atom MM_HH(nLoc_, mLoc_, 1, 1);
+    Atom GG_QQ(nLoc_, mLoc_, 1, 1);        
+    Atom GG_MM(nLoc_, mLoc_, 1, 1);
+    Atom GG_TT(nLoc_, mLoc_, 1, 1);
 
     // dHdt equation ----------------------------------
     HH_HH = -rhoo_ * Lf_ / zeta_ * dEdT_ * Q0_ / Ic_;
@@ -406,16 +412,19 @@ void SeaIce::computeLocalJacobian()
 
     // Msi equation -----------------------------------
     // fill atom for nonlinear contribution H
-    int ind;     // state index
+    int Hrow;     // state index
     double val;
-    for (int j = 1; j <= mLoc_; ++j)
-        for (int i = 1; i <= nLoc_; ++i)
+    for (int j = 0; j < mLoc_; ++j)
+        for (int i = 0; i < nLoc_; ++i)
         {
-            ind  = find_row1(nLoc_, mLoc_, i, j, H)-1; // H row
-            val  = -(comb_ * maskf_ / 2.0 / epsilon_ ) *
-                ( 1.0 - pow( tanh( state[ind] / epsilon_ ), 2) );
+            Hrow  = find_row0(nLoc_, mLoc_, i, j, H); // H row
 
-            MM_HH.set( i, j, 1, 1, val);
+            // val  = -(comb_ * maskf_ / 2.0 / epsilon_ ) *
+            //     ( 1.0 - pow( tanh( state[ind] / epsilon_ ), 2) );
+            
+            val = -dMdH(state[Hrow]);
+
+            MM_HH.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
         }
 
     MM_MM = 1.0;
@@ -432,8 +441,36 @@ void SeaIce::computeLocalJacobian()
     Al_->set(range, T, Q, TT_QQ);
     Al_->set(range, T, T, TT_TT);
 
-    // Gamma equation ----------------------------------
+    // Gamma integral equation ----------------------------------
+    int sr, Mrow;
+    double Mval, ICval;
+    for (int j = 0; j < mLoc_; ++j)
+        for (int i = 0; i < nLoc_; ++i)
+        {
+            sr    = j*nLoc_ + i;
+            Mrow  = find_row0(nLoc_, mLoc_, i, j, M); // M row
+            Mval  = state[Mrow];
+            ICval = (*localIntCoeff_)[sr];
+
+            // GG_QQ
+            val  = ICval * Mval * Qvar_ / rhoo_ / Lf_;
+            GG_QQ.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
+            
+            // GG_MM
+            val  = ICval * (QSos_[sr] - EmiP_[sr]);
+            GG_MM.set(i+1, j+1, 1, 1, val);
+
+            // GG_TT
+            val  = -1.0 * ICval * Mval * dEdT_;
+            GG_TT.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
+        }    
+
+    // diagonal dependence
     GG_GG = -totalArea_;
+
+    Al_->set(range, G, Q, GG_QQ);
+    Al_->set(range, G, M, GG_MM);
+    Al_->set(range, G, M, GG_TT);        
     Al_->set(range, G, G, GG_GG);
 }
 
@@ -539,6 +576,33 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getLocalJacobian()
     jac->jco = jco_;
     jac->beg = beg_;
     return jac;
+}
+
+//=============================================================================
+void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
+                                double *qatm, double *patm)
+
+{
+    assert((int) QSos_.size() == nLoc_ * mLoc_);
+    int sr;
+    double Qval, Tval;
+    for (int j = 0; j != mLoc_; ++j)
+        for (int i = 0; i != nLoc_; ++i)
+        {
+            sr   = j*nLoc_ + i;
+            
+            Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
+            Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
+
+            QSos_[sr] = (
+                zeta_ * comb_ * ( freezingT(sss[sr])   // QTos component
+                                  - (sst[sr]+t0o_))
+                - (Qvar_ * Qval + comb_ * Q0_)         // QTsa component
+                ) / rhoo_ / Lf_;
+            
+            EmiP_[sr] = dEdT_ * Tval + dEdq_ * qatm[sr] // E component
+                - eta_ * qdim_ * patm[sr];              // P component
+        }            
 }
 
 

@@ -30,8 +30,8 @@ function [X, J, F] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size (2deg)
-    n = 16;
-    m = 16;
+    n = 4;
+    m = 4;
 
     % create grid
     grid();
@@ -115,7 +115,6 @@ function [X, J, F] = seaice()
     E0i   =  eta * ( qsi(t0i) - q0 );
 
     E0o   =  eta * ( qso(t0o) - q0 );
-
 
     dqso  = (c1 * c4 * c5) / (t0o + c5).^2 * ...
             exp( (c4 * t0i) / (t0o + c5) );
@@ -373,7 +372,6 @@ function [J,Al] = jac(x)
 
         [~,Qsos,~,EmiP] = fluxes(x);
         A  = sum(IC);
-
 
         for j = 1:m
             for i = 1:n
