@@ -99,6 +99,9 @@ private:
     //! local grid
     std::vector<double> x_, y_;
 
+    //! global surface mask
+    std::shared_ptr<std::vector<int> > surfmask_;
+
     //! TRIOS domain object for parallelization strategy
     Teuchos::RCP<TRIOS::Domain> domain_;
 
@@ -359,9 +362,13 @@ public:
     void    setPar(double value);
     void    setPar(std::string const &parName, double value);
 
-    Utils::MaskStruct getLandMask() {return Utils::MaskStruct();}
+    Utils::MaskStruct getLandMask()
+        {
+            WARNING("Not implemented", __FILE__, __LINE__);
+            return Utils::MaskStruct();
+        }
     
-    void setLandMask(Utils::MaskStruct const &mask) {}
+    void setLandMask(Utils::MaskStruct const &mask);
 
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
     

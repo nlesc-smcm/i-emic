@@ -729,24 +729,23 @@ SUBROUTINE lin
   ! S-equation
   ! ------------------------------------------------------------------
   ! dependence of SS on TT in evaporation term
-  ! FIXME should get a different name
+  ! FIXME: naming is bad
   dedt = nus * (deltat / qdim) * dqso
-  
+
+  ! FIXME: ugly
   if (coupled_S.eq.1) then ! coupled to atmosphere
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz &
-          - mc *  par(COMB) * par(SALT) * QSnd * &
-          zeta * a0 / (rhodim * Lf) 
+          - mc * QSnd * zeta * a0 / (rhodim * Lf) 
      
-     ! minus sign and nondim added (we take -Au in rhs computation)
+     ! ! minus sign and nondim added (we take -Au in rhs computation)
 
      QSoa = -dedt * sc            ! atmosphere to ocean salinity flux
-                                  ! internal component 
+     !                              ! internal component 
 
-     QSos =  par(COMB) * par(SALT) * &
-          QSnd * zeta / (rhodim * Lf)    ! sea ice to ocean salinity flux
-                                         ! internal component
+     QSos =  QSnd * zeta / (rhodim * Lf)    ! sea ice to ocean salinity flux
+                                            ! internal component
 
-     ! combine contributions with mask
+     ! ! combine contributions with mask
      Al(:,:,1:l,:,SS,TT) = QSoa + mc * (QSos - QSoa)
   else
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc

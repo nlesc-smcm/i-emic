@@ -757,7 +757,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         rowPfix2 = -1;
     }
 
-    // build vectonr with integral coefficients
+    // build vector with integral coefficients
     this->evaluateB();
 
     scaling_type=paramList.get("Scaling","THCM");
@@ -1312,7 +1312,7 @@ void THCM::setSeaIceG(Teuchos::RCP<Epetra_Vector> const &seaiceG)
     CHECK_MAP(seaiceG, StandardSurfaceMap);
     CHECK_ZERO(localSeaiceG->Import(*seaiceG, *as2std_surf ,Insert));
     double *G;
-    localSeaiceM->ExtractView(&G);
+    localSeaiceG->ExtractView(&G);
     F90NAME(m_inserts, insert_seaice_g)( G );
 }
 

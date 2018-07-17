@@ -160,6 +160,9 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     QSos_ = std::vector<double>(mLoc_ * nLoc_);
     EmiP_ = std::vector<double>(mLoc_ * nLoc_);
 
+    // initialize mask
+    surfmask_ = std::make_shared<std::vector<int> >(mLoc_ * nLoc_);
+
     // Obtain overlapping and non-overlapping maps
     assemblyMap_ = domain_->GetAssemblyMap(); // overlapping
     standardMap_ = domain_->GetStandardMap(); // non-overlapping
@@ -345,8 +348,11 @@ void SeaIce::computeRHS()
         double fluxInt;
         intCoeff_->Dot(fluxDiff, &fluxInt);
 
-        std::cout << " gamma = " << fluxInt / totalArea_ << std::endl;
-
+        std::cout << std::setprecision(12) << " gamma = "
+                  << fluxInt / totalArea_ << " ";
+        std::cout << std::setprecision(5) << "  comb = "
+                  << comb_ << std::endl;
+        
         // use integral in RHS
         int Grow = find_row0(nGlob_, mGlob_, 0, 0, SEAICE_GG_);
         Gval = state[Grow];
@@ -379,9 +385,9 @@ void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
                 - (Qvar_ * Qval + comb_ * Q0_)         // QTsa component
                 ) / rhoo_ / Lf_;
             
-            // EmiP_[sr] = dEdT_ * Tval + dEdq_ * qatm[sr] // E component
-            //     - eta_ * qdim_ * patm[sr];              // P component
-            EmiP_[sr] = 0.0;
+            EmiP_[sr] = dEdT_ * Tval + dEdq_ * qatm[sr] // E component
+                - eta_ * qdim_ * patm[sr];              // P component
+            
         }            
 }
 
@@ -651,6 +657,25 @@ void SeaIce::setPar(double value)
     setPar(parName_, value);
 }
 
+//-----------------------------------------------------------------------------
+void SeaIce::setLandMask(Utils::MaskStruct const &mask)
+{
+    // create global surface mask
+    surfmask_->clear();
+
+    if ((int) mask.global_surface->size() < (mGlob_ * nGlob_))
+    {
+        ERROR("mask.global_surface->size() not ok:",  __FILE__, __LINE__);
+    }
+    else // we trust surfm
+    {
+        surfmask_ = mask.global_surface;
+    }
+
+    // adjust integral coefficients
+    createIntCoeff();
+}
+
 // ---------------------------------------------------------------------------
 // Set specific continuation parameter
 void SeaIce::setPar(std::string const &parName, double value)
@@ -737,7 +762,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     // auxiliary equation
     if (aux_ == 1)
     {
-        int sr;
+//        int sr;
         block->beg.push_back(el_ctr);
         for (int j = 0; j != mLoc_; ++j)
             for (int i = 0; i != nLoc_; ++i)
@@ -806,7 +831,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
     // auxiliary equation
     if (aux_ == 1)
     {
-        int sr;
+//        int sr;
         block->beg.push_back(el_ctr);
         for (int j = 0; j != mLoc_; ++j)
             for (int i = 0; i != nLoc_; ++i)
@@ -972,6 +997,22 @@ void SeaIce::createIntCoeff()
             (*localIntCoeff_)[idx++] = cos(y_[j]) * dx_ * dy_;
 
     domain_->Assembly2StandardSurface(*localIntCoeff_, *intCoeff_);
+
+    // disable land points in global vector
+    int lid, sr;
+    for (int j = 0; j != mGlob_; ++j)
+        for (int i = 0; i != nGlob_; ++i)
+        {
+            sr  = j * nGlob_ + i;
+            lid = intCoeff_->Map().LID(sr);
+            if ((lid >= 0) && ((*surfmask_)[sr]))
+                (*intCoeff_)[lid] = 0.0;
+        }
+
+    // distribute back to assembly map
+    domain_->Standard2AssemblySurface(*intCoeff_, *localIntCoeff_);
+
+    // obtain total area
     intCoeff_->Norm1(&totalArea_);
 }
 

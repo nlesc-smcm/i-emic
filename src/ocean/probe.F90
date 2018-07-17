@@ -369,26 +369,19 @@ contains
                 dfsdq(pos) = -QSnd * Qvar  / (rhodim * Lf) * Ms
 
                 ! dfsdm part ------------------------------
-                ! QSos = par(COMB) * par(SALT) * QSnd * (  &
-                !      zeta * (a0 * (So+s0) - (To+t0))     & ! QTos component
-                !      - ( Qvar * qs + q0 ) )              & ! QTsa component
-                !      / ( rhodim * Lf )
-
-                QSos =  (  &
-                     zeta * par(COMB) * (a0 * (So+s0) - (To+t0))     & ! QTos component
-                     - ( Qvar * qs + par(COMB) * q0 ) )              & ! QTsa component
+                QSos =  QSnd * (  &
+                     zeta * (a0 * (So+s0) - (To+t0))     & ! QTos component
+                     - ( Qvar * qs + q0 ) )              & ! QTsa component
                      / ( rhodim * Lf )
-
-                ! QSoa = nus * ( &
-                !      (deltat / qdim) * dqso * To &
-                !      - qa - pa)
-
-                QSoa = 0.0
-
+                
+                QSoa = nus * ( &
+                     (deltat / qdim) * dqso * To &
+                     - qa - pa)
+                
                 ! total salinity flux
                 sflux(i,j) = (1-landm(i,j,l)) * ( &
                      QSoa + msi(i,j) * (QSos - QSoa))
-                
+                                
                 dfsdm(pos) = (QSos - QSoa)
 
              endif
