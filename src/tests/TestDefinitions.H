@@ -139,7 +139,7 @@ void testEntries(ModelPtr model, CCS &ccs, VectorPtr x)
             // difference between analytical and numerical value
             diff  = std::abs(Jij - ccs.co[i]);                    
                     
-            error = 1e-2 * std::max(std::abs(Jij), std::abs(ccs.co[i]));
+            error = std::max(1e-2 * std::abs(Jij), 1e-10);
             EXPECT_NEAR(diff, 0.0, error);
                                                   
             if (diff > error) // some additional outputting

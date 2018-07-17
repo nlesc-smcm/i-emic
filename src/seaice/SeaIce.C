@@ -55,7 +55,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     uw_    (params->get("mean atmospheric surface wind speed, ms^{-1}", 8.5)),
 
 // typical vertical velocity
-    eta_   ( 1e3*( rhoa_ / rhoo_ ) * ce_ * uw_),
+    eta_   (( rhoa_ / rhoo_ ) * ce_ * uw_),
 
 // Shortwave radiation constants and functions
     albe0_   (params->get("reference albedo", 0.3)),
@@ -344,6 +344,7 @@ void SeaIce::computeRHS()
         // integrate flux difference over total surface area
         double fluxInt;
         intCoeff_->Dot(fluxDiff, &fluxInt);
+
         // use integral in RHS
         int Grow = find_row0(nGlob_, mGlob_, 0, 0, SEAICE_GG_);
         Gval = state[Grow];
@@ -352,6 +353,33 @@ void SeaIce::computeRHS()
     }
     
     INFO(" seaic F = " << Utils::norm(rhs_));
+}
+
+//=============================================================================
+void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
+                                double *qatm, double *patm)
+
+{
+    assert((int) QSos_.size() == nLoc_ * mLoc_);
+    int sr;
+    double Qval, Tval;
+    for (int j = 0; j != mLoc_; ++j)
+        for (int i = 0; i != nLoc_; ++i)
+        {
+            sr   = j*nLoc_ + i;
+            
+            Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
+            Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_TT_)];
+
+            QSos_[sr] = (
+                zeta_ * comb_ * ( freezingT(sss[sr])   // QTos component
+                                  - (sst[sr]+t0o_))
+                - (Qvar_ * Qval + comb_ * Q0_)         // QTsa component
+                ) / rhoo_ / Lf_;
+            
+            EmiP_[sr] = dEdT_ * Tval + dEdq_ * qatm[sr] // E component
+                - eta_ * qdim_ * patm[sr];              // P component
+        }            
 }
 
 //=============================================================================
@@ -453,7 +481,7 @@ void SeaIce::computeLocalJacobian()
             ICval = (*localIntCoeff_)[sr];
 
             // GG_QQ
-            val  = ICval * Mval * Qvar_ / rhoo_ / Lf_;
+            val  = -1.0 * ICval * Mval * Qvar_ / rhoo_ / Lf_;
             GG_QQ.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
             
             // GG_MM
@@ -463,14 +491,14 @@ void SeaIce::computeLocalJacobian()
             // GG_TT
             val  = -1.0 * ICval * Mval * dEdT_;
             GG_TT.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
-        }    
-
+        }
+    
     // diagonal dependence
     GG_GG = -totalArea_;
 
     Al_->set(range, G, Q, GG_QQ);
     Al_->set(range, G, M, GG_MM);
-    Al_->set(range, G, M, GG_TT);        
+    Al_->set(range, G, T, GG_TT);        
     Al_->set(range, G, G, GG_GG);
 }
 
@@ -496,10 +524,6 @@ void SeaIce::computeJacobian()
 
     // max nonzeros per row
     const int maxnnz = dof_ + 1;
-    std::cout << "beg.size = " << localJac->beg.size() << std::endl;
-    std::cout << "myElemts = "
-              << domain_->GetAssemblyMap()->NumMyElements() << std::endl;
-    
     Utils::assembleCRS(jac_, *localJac, maxnnz, domain_);
 
     jac_->FillComplete();
@@ -578,32 +602,6 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getLocalJacobian()
     return jac;
 }
 
-//=============================================================================
-void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
-                                double *qatm, double *patm)
-
-{
-    assert((int) QSos_.size() == nLoc_ * mLoc_);
-    int sr;
-    double Qval, Tval;
-    for (int j = 0; j != mLoc_; ++j)
-        for (int i = 0; i != nLoc_; ++i)
-        {
-            sr   = j*nLoc_ + i;
-            
-            Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
-            Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
-
-            QSos_[sr] = (
-                zeta_ * comb_ * ( freezingT(sss[sr])   // QTos component
-                                  - (sst[sr]+t0o_))
-                - (Qvar_ * Qval + comb_ * Q0_)         // QTsa component
-                ) / rhoo_ / Lf_;
-            
-            EmiP_[sr] = dEdT_ * Tval + dEdq_ * qatm[sr] // E component
-                - eta_ * qdim_ * patm[sr];              // P component
-        }            
-}
 
 
 //=============================================================================

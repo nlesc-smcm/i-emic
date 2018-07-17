@@ -427,7 +427,7 @@ private:
 
     //! sea ice mask as a function thickness anomaly H 
     double maskFun(double H)
-        { return (comb_ * maskf_ / 2.) * (1. + tanh( H/ epsilon_ )); }
+        { return (comb_ * maskf_ / 2.) * (1. + tanh( H / epsilon_ )); }
     
     //! sea ice mask function lazy derivative
     double dMdH(double H)

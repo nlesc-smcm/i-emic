@@ -92,12 +92,11 @@ TEST(SeaIce, computeJacobian)
     seaIce->setPar("Combined Forcing", 1.0);        
     seaIce->computeJacobian();
     Teuchos::RCP<Epetra_CrsMatrix> jac = seaIce->getJacobian();
-    DUMPMATLAB("seaice_jac", *jac);
 
     std::vector<double> testResults = {
-        5.100000000000e+01,
-        9.650722460927e+01,
-        3.132487804551e+02,
+        5.099999983333e+01,
+        9.650722444261e+01,
+        3.132487800295e+02,
         4.947134256694e+01,
         4.650722460927e+01,
         2.410908510429e+02,
@@ -106,7 +105,7 @@ TEST(SeaIce, computeJacobian)
         2.410908510429e+02,
         4.188233484290e+01,
         3.973464072736e+01,
-        1.570922632187e+02,
+        1.570922632102e+02,
         4.188233484290e+01,
         3.973464084493e+01,
         1.558139248051e+02,
@@ -172,7 +171,8 @@ TEST(SeaIce, numericalJacobian)
     seaIce->setPar(0.85);
         
     Teuchos::RCP<Epetra_Vector> x = seaIce->getState('V');
-    >>>>>>>>> FIXME SEED RNG!!, check contents! ####>>>>>>>>
+
+    x->SetSeed(1.0);
     x->Random();
     
     // int myEl = x->Map().NumMyElements();
@@ -200,7 +200,7 @@ TEST(SeaIce, numericalJacobian)
             NumericalJacobian<std::shared_ptr<SeaIce>,
                               Teuchos::RCP<Epetra_Vector> > numJac;
 
-            numJac.setTolerance(1e-12);
+            numJac.setTolerance(1e-14);
             numJac.seth(1e-6);
             numJac.compute(seaIce, seaIce->getState('V'));
             numJac.print("seaIceNumJac");

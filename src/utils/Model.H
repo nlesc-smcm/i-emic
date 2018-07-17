@@ -85,20 +85,34 @@ public:
 
 inline void Model::gid2coord(int const &gid, int &mdl,
                    int &i, int &j, int &k, int &xx)
-        {
+{
             mdl = modelIdent();
             
             int N   = getDomain()->GlobalN();
-            int M   = getDomain()->GlobalM(); 
+            int M   = getDomain()->GlobalM();
+            int L   = getDomain()->GlobalL();
             int dof = getDomain()->Dof();
-            int tmp = gid;
+            int dim = N*M*L*dof;
 
-            xx  = tmp % dof;
-            tmp = (tmp - xx) / dof;
-            i   = tmp % N;
-            tmp = (tmp - i) / N;
-            j   = tmp % M;
-            k   = (tmp - j) / M;        
+            int aux = gid - dim;
+            if (aux >= 0) // this is an auxiliary unknown
+            {
+                xx = dof + aux;
+                i  = 0;
+                j  = 0;
+                k  = 0;                         
+            }
+            else
+            {            
+                int tmp = gid;
+
+                xx  = tmp % dof;
+                tmp = (tmp - xx) / dof;
+                i   = tmp % N;
+                tmp = (tmp - i) / N;
+                j   = tmp % M;
+                k   = (tmp - j) / M;
+            }
         }
 
 template <typename T>

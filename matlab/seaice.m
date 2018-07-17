@@ -167,31 +167,29 @@ function [X, J, F] = seaice()
             F(end-10:end)
         end
     end
-    
+
     fprintf('\n');
     fprintf(fid, '\n');
-    
+
     for par = [1.0, 0.1]
         combf = par;
         for scale = [0.0,1.0,1.234]
             X = scale*ones(len,1);
             J = jac(X);
-            
+
             fprintf('X = %1.3f, par = %1.1f, ||J||inf = %1.12e\n', ...
                     scale, combf, norm(J,Inf));
             fprintf('X = %1.3f, par = %1.1f, ||J||one = %1.12e\n', ...
                     scale, combf, norm(J,1));
             fprintf('X = %1.3f, par = %1.1f, ||J||frb = %1.12e\n', ...
                     scale, combf, norm(J,'fro'));
-            
+
             fprintf(fid, '%1.12e\n', norm(J,Inf));
             fprintf(fid, '%1.12e\n', norm(J,1));
             fprintf(fid, '%1.12e\n', norm(J,'fro'));
         end
     end
-    fprintf('\n');    
-
-    return
+    fprintf('\n');
 
     kmax = 10;
     ord = [];
@@ -204,6 +202,14 @@ function [X, J, F] = seaice()
 
     X = randn(len,1);
     F = rhs(X);
+    J   = jac(X);
+    Jn  = numjacob(@rhs, X);
+
+    vsm(J(ord,ord));
+    vsm(Jn(ord,ord));
+    vsm(Jn(ord,ord)-J(ord,ord));
+
+    return;
 
     FH = F(1:nun:dim);
 
@@ -284,10 +290,6 @@ function [X, J, F] = seaice()
 % $$$     imagesc(RtD*x,RtD*y,EmiP'); set(gca,'ydir','normal'); colorbar;
 % $$$     title('E_S - P')
 
-    vsm(J(ord,ord));
-    vsm(Jn(ord,ord));
-    vsm(Jn(ord,ord)-J(ord,ord));
-
 
 end
 
@@ -356,8 +358,14 @@ function [J,Al] = jac(x)
     Al(:,:,QQ,TT) = 1 + rhoo * Ls / muoa * dEdT;
 
     % Msi equation
-    Al(:,:,MM,HH) = -(combf * maskf / 2 / epsilon) * ...
-        ( 1 - tanh(H / epsilon).^2);
+    for j = 1:m
+        for i = 1:n
+            Al(i,j,MM,HH) = -(combf * maskf / 2) * ( ...
+                tanh( (H(i,j) + 1e-6) / epsilon ) ...
+                - tanh( H(i,j) / epsilon ) ) / 1e-6;
+        end
+    end
+
     Al(:,:,MM,MM) =  1;
 
     % Tsi equation
@@ -382,7 +390,7 @@ function [J,Al] = jac(x)
                 col = find_row(i,j,QQ);
                 ico = [ico; row];
                 jco = [jco; col];
-                val = 1.0 * IC(sr) * Msi(sr) * Qvar / rhoo / Lf;
+                val = -1.0 * IC(sr) * Msi(sr) * Qvar / rhoo / Lf;
                 co  = [co; val];
 
                 % dFGG / dM
@@ -556,7 +564,7 @@ function [F] = rhs(x)
     if (aux > 0)
         [~, ~, ~, ~, R] = extractsol(x);
         [~,Qsos,~,EmiP,FluxDiff] = fluxes(x);
-        
+
         A = sum(IC);
         IC'*FluxDiff(:)
 
@@ -567,7 +575,7 @@ function [F] = rhs(x)
                 value = IC' * (Msi(:) .* (Qsos(:) - EmiP(:))) ...
                         - R(G) * A;
             end
-            F(row + aa) = value; 
+            F(row + aa) = value;
         end
     end
 end
@@ -618,7 +626,7 @@ function [QS, QSos, QSoa, EmiP, FluxDiff] = fluxes(x)
             % total salinity flux
             QS(i,j) = QSoa(i,j) + Msi(i,j) * (rhoo*Lf/zeta*QSos(i,j) ...
                                               - QSoa(i,j));
-            
+
             FluxDiff(i,j) = Msi(i,j) * (QSos(i,j) - EmiP(i,j));
         end
     end
