@@ -379,6 +379,7 @@ public:
     Teuchos::RCP<Epetra_Vector> interfaceQ();
     Teuchos::RCP<Epetra_Vector> interfaceM();
     Teuchos::RCP<Epetra_Vector> interfaceT();
+    Teuchos::RCP<Epetra_Vector> interfaceG();
 
     // global interface row
     int interface_row(int i, int j, int XX)

@@ -332,6 +332,7 @@ contains
     dfsdq = 0.0 ! salinity equation derivative w.r.t. sea ice heat flux
     dfsdm = 0.0 ! salinity equation derivative w.r.t. sea ice mask
     pos = 1
+    nus  = par(COMB) * par(SALT) * eta * qdim * QSnd
     do j = 1,m
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
@@ -368,19 +369,25 @@ contains
                 dfsdq(pos) = -QSnd * Qvar  / (rhodim * Lf) * Ms
 
                 ! dfsdm part ------------------------------
-                QSos = QSnd * (                       &
-                     zeta * (a0 * (So+s0) - (To+t0))  & ! QTos component
-                     - ( Qvar * qs + q0 ) )           & ! QTsa component
+                ! QSos = par(COMB) * par(SALT) * QSnd * (  &
+                !      zeta * (a0 * (So+s0) - (To+t0))     & ! QTos component
+                !      - ( Qvar * qs + q0 ) )              & ! QTsa component
+                !      / ( rhodim * Lf )
+
+                QSos =  (  &
+                     zeta * par(COMB) * (a0 * (So+s0) - (To+t0))     & ! QTos component
+                     - ( Qvar * qs + par(COMB) * q0 ) )              & ! QTsa component
                      / ( rhodim * Lf )
 
-                QSoa = nus * ( &
-                     (deltat / qdim) * dqso * To &
-                     - qa - pa)
+                ! QSoa = nus * ( &
+                !      (deltat / qdim) * dqso * To &
+                !      - qa - pa)
+
+                QSoa = 0.0
 
                 ! total salinity flux
                 sflux(i,j) = (1-landm(i,j,l)) * ( &
-                     QSoa + msi(i,j) * (QSos - QSoa) &
-                     )                
+                     QSoa + msi(i,j) * (QSos - QSoa))
                 
                 dfsdm(pos) = (QSos - QSoa)
 
@@ -399,11 +406,13 @@ contains
        do i=1,n
           integr = integr + sflux(i,j) * cos(y(j)) * (1-landm(i,j,l))
           check  = check  + (sflux(i,j) - scorr) * cos(y(j)) * (1-landm(i,j,l))
-          area   = area   + cos(y(j)) * (1-landm(i,j,l))
+          area   = area   +  cos(y(j)) * (1-landm(i,j,l))
        enddo
     enddo
 
-    write(*,*) '  salflux check = ', integr, check, area, scorr
+    !scorr = 0.0
+
+    write(*,*) 'salflux check = ', integr, check, area, scorr, gsi(1,1)
 
   end subroutine get_derivatives
 

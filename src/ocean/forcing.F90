@@ -157,7 +157,8 @@ SUBROUTINE forcing
      adapted_salcor = 0.0
      spertcor = 0.0
   end if
-  
+
+  nus  = par(COMB) * par(SALT) * eta * qdim * QSnd
   do j=1,m
      do i=1,n
         if (coupled_S.eq.1) then
@@ -168,7 +169,7 @@ SUBROUTINE forcing
 
            ! Salinity flux from sea ice into the ocean (brine
            ! rejection or melt)
-           QSos = QSnd * (              & 
+           QSos =  par(COMB) * par(SALT) * QSnd * (  & 
                 zeta * (a0 * s0 - t0)   & ! QTos component, background contribution
                 - Qvar * qsa(i,j) - Q0  & ! QTsa component, external contribution
                 ) / (rhodim * Lf)
@@ -176,8 +177,7 @@ SUBROUTINE forcing
            ! Combine forcings through mask           
            Frc(find_row2(i,j,l,SS)) = (         &
                 QSoa + msi(i,j) * (QSos - QSoa) &
-                -scorr) * (1-landm(i,j,l)) 
-           
+                -gsi(i,j)) * (1-landm(i,j,l)) 
 
         else
            Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &

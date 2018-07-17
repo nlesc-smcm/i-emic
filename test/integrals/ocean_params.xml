@@ -57,8 +57,8 @@
     <!-- Supply 0-based surface coordinates for the integral condition
          row, default is n-1, m-1. Make sure that the coordinate is
          located on the last processors. -->
-    <Parameter name="Integral row coordinate i" type="int" value="4"/>
-    <Parameter name="Integral row coordinate j" type="int" value="10"/>
+    <Parameter name="Integral row coordinate i" type="int" value="5"/>
+    <Parameter name="Integral row coordinate j" type="int" value="3"/>
 
     <!-- topography:                                -->
     <!-- 0: from data                               -->
@@ -85,9 +85,9 @@
     <!-- coupledmodel_params can overwrite these when running coupled -->
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-      <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
-      <Parameter name="Wind Forcing"        type="double" value="0.0"/>
+      <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
+      <Parameter name="Wind Forcing"        type="double" value="1.0"/>
       <Parameter name="Temperature Forcing" type="double" value="10.0"/>
       <Parameter name="SPL1"                type="double" value="1.25"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>
@@ -106,11 +106,11 @@
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Temperature Profile" type="int" value="1"/>
+    <Parameter name="Restoring Temperature Profile" type="int" value="0"/>
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->

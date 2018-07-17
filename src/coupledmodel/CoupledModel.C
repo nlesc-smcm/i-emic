@@ -34,6 +34,7 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
     syncCtr_          (0),
     solverInitialized_(false)
 {
+    
     // Check xml sanity
     if (!useOcean_ && !useAtmos_ && !useSeaIce_)
     {

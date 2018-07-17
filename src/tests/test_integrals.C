@@ -113,6 +113,7 @@ TEST(CoupledModel, Continuation)
         throw;
     }
     EXPECT_EQ(failed, false);
+    getchar();
 }
 
 //------------------------------------------------------------------

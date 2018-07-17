@@ -156,8 +156,6 @@ void testEntries(ModelPtr model, CCS &ccs, VectorPtr x)
                 std::cout << "col: mdl=" << mdl << " i=" << i << " j=" << j
                           << " k=" << k << " xx=" << xx << std::endl << std::endl;
             }
-                    
-
         }
         e_j[jco] = 0; // reset value
     }            

@@ -78,6 +78,7 @@ protected:
     VectorPtr sss_;
     VectorPtr Qsi_;
     VectorPtr Msi_;
+    VectorPtr Gsi_;
     VectorPtr massMatrix_;
 
     MatrixPtr jac_;

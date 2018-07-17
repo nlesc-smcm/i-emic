@@ -141,6 +141,28 @@ contains
   end subroutine insert_seaice_m
 
   !!------------------------------------------------------------------
+  subroutine insert_seaice_g(inserted_seaice_g)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_seaice_g
+    integer :: i,j,pos
+
+    if (coupled_S.eq.1) then
+       pos = 1
+       do j = 1,m
+          do i = 1,n
+             gsi(i,j) = inserted_seaice_g(pos)
+             pos = pos + 1
+          end do
+       end do
+    end if
+  end subroutine insert_seaice_g
+
+  !!------------------------------------------------------------------
   !!FIXME superfluous?
   subroutine insert_emip(inserted_emip)
 

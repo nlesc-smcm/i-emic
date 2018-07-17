@@ -175,6 +175,9 @@ public:
     //! Set sea ice surface temperature
     void setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM);
 
+    //! Set sea ice integral correction
+    void setSeaIceG(Teuchos::RCP<Epetra_Vector> const &seaiceG);
+
     //! Set emip in the ocean model
     void setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode = 'D');
 
@@ -403,6 +406,9 @@ private:
 
     //! used to import sea ice mask into THCM
     Teuchos::RCP<Epetra_Vector> localSeaiceM;
+
+    //! used to import sea ice integral correction into THCM
+    Teuchos::RCP<Epetra_Vector> localSeaiceG;
 
     //! used to extract evaporation field from THCM
     Teuchos::RCP<Epetra_Vector> localOceanE;

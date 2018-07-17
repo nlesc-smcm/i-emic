@@ -178,7 +178,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     
     // Create Msi vector
     Msi_  = Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
-    
+
+    // Create Gsi vector
+    Gsi_  = Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
+
     // Create import strategies
     // Target map: IndexMap
     // Source map: state_->Map()
@@ -1448,6 +1451,9 @@ void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
     
     Msi_ = seaice->interfaceM();
     THCM::Instance().setSeaIceM(Msi_);
+
+    Gsi_ = seaice->interfaceG();
+    THCM::Instance().setSeaIceG(Gsi_);
 
     SeaIce::CommPars seaicePars;
     seaice->getCommPars(seaicePars);

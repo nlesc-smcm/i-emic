@@ -245,13 +245,13 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_
 
   dzne = dz*dfzT(l)
 
-  nus  =  par(COMB) * par(SALT) * eta * qdim * QSnd
+  nus  = par(COMB) * par(SALT) * eta * qdim * QSnd
 
   !   write(*,*) 'THCM: nondim constants: nus = ', nus
 
   ! --> FIXME Instead of using par(TEMP) we should have a dedicated latent heat
   ! continuation parameter.
-  lvsc =  par(COMB) * par(TEMP) * rhodim * lv * QTnd
+  lvsc = par(COMB) * par(TEMP) * rhodim * lv * QTnd
   
 end subroutine set_atmos_parameters
 
@@ -734,14 +734,16 @@ SUBROUTINE lin
   
   if (coupled_S.eq.1) then ! coupled to atmosphere
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz &
-          - mc * QSnd * zeta * a0 / (rhodim * Lf) 
+          - mc *  par(COMB) * par(SALT) * QSnd * &
+          zeta * a0 / (rhodim * Lf) 
      
      ! minus sign and nondim added (we take -Au in rhs computation)
 
      QSoa = -dedt * sc            ! atmosphere to ocean salinity flux
                                   ! internal component 
 
-     QSos = QSnd * zeta / (rhodim * Lf)  ! sea ice to ocean salinity flux
+     QSos =  par(COMB) * par(SALT) * &
+          QSnd * zeta / (rhodim * Lf)    ! sea ice to ocean salinity flux
                                          ! internal component
 
      ! combine contributions with mask

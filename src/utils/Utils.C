@@ -867,29 +867,58 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
                                                    int dof, const int *var, int nvars)
 {
-    int dim    = map.NumMyElements(); // number of entries in original map
-    int numel  = dim/dof;             // number of blocks
-    int subdim = numel*nvars;         // number of entries in new map (<=dim)
-    if (numel * dof == dim-1)
+    int dim    = map.NumMyElements();     // number of entries in original map
+    int dimGlb = map.NumGlobalElements(); // number of global entries in original map
+    
+    int numBlocks     = dim/dof;        // number of blocks
+    int numBlocksGlb  = dimGlb/dof;     // number of blocks
+    
+    int subdim = numBlocks*nvars;       // number of entries in new map (<=dim)
+
+    if (numBlocks * dof < dim-1)
     {
-        INFO("Auxiliary unknown detected");
+        ERROR("\nInvalid dimension detected, possibly more \n" <<
+              " than one auxiliary equation in map... ",
+              __FILE__, __LINE__);
     }
-    else if (numel * dof < dim-1)
+
+    // Handle possible auxiliary variables
+    bool auxVar[nvars];
+    int  auxRws[nvars];
+    for (int j = 0; j < nvars; j++)
     {
-        ERROR("Invalid dimension detected", __FILE__, __LINE__);
-    }
+        if (var[j] > dof)
+        {
+            std::cout << " auxiliary variable detected: " << var[j] << std::endl;
+            auxVar[j] = true;
+            auxRws[j] = numBlocksGlb * dof + (var[j] - dof - 1);
+        }
+        else
+        {
+            auxVar[j] = false;
+            auxRws[j] = -1;
+        }
+    }           
 
     int *MyGlobalElements = new int[subdim];
 
     // take the entries from the old map that correspond
     // to those in 'vars' and put them in the input array
     // for the new map.
+    
     int k = 0;
-    for (int i  = 0; i < numel; i++)
+    for (int i  = 0; i < numBlocks; i++)
     {
         for (int j = 0; j < nvars; j++)
         {
-            MyGlobalElements[k] = map.GID(i*dof+(var[j]-1));
+            if (auxVar[j])
+            {
+                MyGlobalElements[k] = auxRws[j];
+            }
+            else
+            {
+                MyGlobalElements[k] = map.GID(i*dof+(var[j]-1));
+            }
             k++;
         }
     }

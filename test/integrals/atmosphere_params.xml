@@ -62,8 +62,7 @@
   <Parameter name="accumulation threshold width (m/y)" type="double" value="0.01"/>
   
   <Parameter name="rain/snow temperature threshold (deg C)" type="double" value="100"/>
-  <Parameter name="rain/snow threshold width (deg C)" type="double" value=".01"/>
-  
+  <Parameter name="rain/snow threshold width (deg C)" type="double" value=".01"/>  
   
   <!-- Preconditioner parameters.                                                -->
   <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.                -->

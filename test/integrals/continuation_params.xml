@@ -14,7 +14,7 @@
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
   
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="1.0e-3"/>
+  <Parameter name="initial step size" type="double" value="1.0e-1"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>
   <Parameter name="maximum step size" type="double" value="1.0"/>
   
@@ -57,7 +57,7 @@
   <!-- *******************************************************  -->
 
   <!-- Finite difference with which dFdpar is calculated -->
-  <Parameter name="epsilon increment" type="double" value="1.0e-4"/>
+  <Parameter name="epsilon increment" type="double" value="1.0e-6"/>
 
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->

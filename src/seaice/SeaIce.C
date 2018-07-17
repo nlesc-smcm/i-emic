@@ -217,7 +217,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // Create importers for communication with other models
     int XX;
-    for (int i = 0; i != dof_; ++i)
+    for (int i = 0; i < (dof_ + aux_); ++i)
     {
         XX = SEAICE_HH_ + i;
         Maps_[XX] = Utils::CreateSubMap(*standardMap_, dof_, XX);
@@ -345,6 +345,8 @@ void SeaIce::computeRHS()
         double fluxInt;
         intCoeff_->Dot(fluxDiff, &fluxInt);
 
+        std::cout << " gamma = " << fluxInt / totalArea_ << std::endl;
+
         // use integral in RHS
         int Grow = find_row0(nGlob_, mGlob_, 0, 0, SEAICE_GG_);
         Gval = state[Grow];
@@ -377,8 +379,9 @@ void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
                 - (Qvar_ * Qval + comb_ * Q0_)         // QTsa component
                 ) / rhoo_ / Lf_;
             
-            EmiP_[sr] = dEdT_ * Tval + dEdq_ * qatm[sr] // E component
-                - eta_ * qdim_ * patm[sr];              // P component
+            // EmiP_[sr] = dEdT_ * Tval + dEdq_ * qatm[sr] // E component
+            //     - eta_ * qdim_ * patm[sr];              // P component
+            EmiP_[sr] = 0.0;
         }            
 }
 
@@ -470,36 +473,39 @@ void SeaIce::computeLocalJacobian()
     Al_->set(range, T, T, TT_TT);
 
     // Gamma integral equation ----------------------------------
-    int sr, Mrow;
-    double Mval, ICval;
-    for (int j = 0; j < mLoc_; ++j)
-        for (int i = 0; i < nLoc_; ++i)
-        {
-            sr    = j*nLoc_ + i;
-            Mrow  = find_row0(nLoc_, mLoc_, i, j, M); // M row
-            Mval  = state[Mrow];
-            ICval = (*localIntCoeff_)[sr];
+    if (aux_ == 1)
+    {
+        int sr, Mrow;
+        double Mval, ICval;
+        for (int j = 0; j < mLoc_; ++j)
+            for (int i = 0; i < nLoc_; ++i)
+            {
+                sr    = j*nLoc_ + i;
+                Mrow  = find_row0(nLoc_, mLoc_, i, j, M); // M row
+                Mval  = state[Mrow];
+                ICval = (*localIntCoeff_)[sr];
 
-            // GG_QQ
-            val  = -1.0 * ICval * Mval * Qvar_ / rhoo_ / Lf_;
-            GG_QQ.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
+                // GG_QQ
+                val  = -1.0 * ICval * Mval * Qvar_ / rhoo_ / Lf_;
+                GG_QQ.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
             
-            // GG_MM
-            val  = ICval * (QSos_[sr] - EmiP_[sr]);
-            GG_MM.set(i+1, j+1, 1, 1, val);
+                // GG_MM
+                val  = ICval * (QSos_[sr] - EmiP_[sr]);
+                GG_MM.set(i+1, j+1, 1, 1, val);
 
-            // GG_TT
-            val  = -1.0 * ICval * Mval * dEdT_;
-            GG_TT.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
-        }
+                // GG_TT
+                val  = -1.0 * ICval * Mval * dEdT_;
+                GG_TT.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
+            }
     
-    // diagonal dependence
-    GG_GG = -totalArea_;
+        // diagonal dependence
+        GG_GG = -totalArea_;
 
-    Al_->set(range, G, Q, GG_QQ);
-    Al_->set(range, G, M, GG_MM);
-    Al_->set(range, G, T, GG_TT);        
-    Al_->set(range, G, G, GG_GG);
+        Al_->set(range, G, Q, GG_QQ);
+        Al_->set(range, G, M, GG_MM);
+        Al_->set(range, G, T, GG_TT);        
+        Al_->set(range, G, G, GG_GG);
+    }
 }
 
 //=============================================================================
@@ -728,6 +734,18 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
             }
     }
 
+    // auxiliary equation
+    if (aux_ == 1)
+    {
+        int sr;
+        block->beg.push_back(el_ctr);
+        for (int j = 0; j != mLoc_; ++j)
+            for (int i = 0; i != nLoc_; ++i)
+            {
+                // TODO
+            }
+    }
+
     // final entry in beg ( == nnz)
     block->beg.push_back(el_ctr);
 
@@ -784,6 +802,18 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
                     break;
                 }
             }
+
+    // auxiliary equation
+    if (aux_ == 1)
+    {
+        int sr;
+        block->beg.push_back(el_ctr);
+        for (int j = 0; j != mLoc_; ++j)
+            for (int i = 0; i != nLoc_; ++i)
+            {
+                // TODO
+            }
+    }
 
     // final entry in beg ( == nnz)
     block->beg.push_back(el_ctr);
@@ -862,6 +892,15 @@ Teuchos::RCP<Epetra_Vector> SeaIce::interfaceM()
 Teuchos::RCP<Epetra_Vector> SeaIce::interfaceT()
 {
     return interface(SEAICE_TT_);
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> SeaIce::interfaceG()
+{
+    if (aux_ == 1)
+        return interface(SEAICE_GG_);
+    else
+        return Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 }
 
 //=============================================================================
