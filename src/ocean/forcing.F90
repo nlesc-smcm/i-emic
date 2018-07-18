@@ -10,7 +10,8 @@ SUBROUTINE forcing
 
   real sigma, etabi, gamma
   real QToa, QTos
-  real QSoa, QSos 
+  real QSoa, QSos
+  real pQSnd
 
   real wfun, temfun, salfun
 
@@ -158,7 +159,8 @@ SUBROUTINE forcing
      spertcor = 0.0
   end if
 
-  nus  = par(COMB) * par(SALT) * eta * qdim * QSnd
+  nus   =  par(COMB) * par(SALT) * eta * qdim * QSnd
+  pQSnd =  par(COMB) * par(SALT) * QSnd
   do j=1,m
      do i=1,n
         if (coupled_S.eq.1) then
@@ -169,7 +171,7 @@ SUBROUTINE forcing
 
            ! Salinity flux from sea ice into the ocean (brine
            ! rejection or melt)
-           QSos =   QSnd * ( & 
+           QSos =  pQSnd * ( & 
                 zeta * (a0 * s0 - t0)  & ! QTos component, background contribution
                 - Qvar * qsa(i,j) - Q0 & ! QTsa component, external contribution
                 ) / (rhodim * Lf)

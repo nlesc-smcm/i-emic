@@ -323,6 +323,7 @@ contains
 
     real    QTos, QToa, To, Ta, Ab, So, qa, pa, Ms, qs
     real    QSos, QSoa
+    real    pQSnd
 
     real    sflux(n,m), check, area, integr
 
@@ -332,7 +333,8 @@ contains
     dfsdq = 0.0 ! salinity equation derivative w.r.t. sea ice heat flux
     dfsdm = 0.0 ! salinity equation derivative w.r.t. sea ice mask
     pos = 1
-    nus  = par(COMB) * par(SALT) * eta * qdim * QSnd
+    nus   = par(COMB) * par(SALT) * eta * qdim * QSnd
+    pQSnd = par(COMB) * par(SALT) * QSnd
     do j = 1,m
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
@@ -369,10 +371,16 @@ contains
                 dfsdq(pos) = -QSnd * Qvar  / (rhodim * Lf) * Ms
 
                 ! dfsdm part ------------------------------
-                QSos =  QSnd * (  &
-                     zeta * (a0 * (So+s0) - (To+t0))     & ! QTos component
+                QSos =  pQSnd * (  &
+                     zeta * (a0 * (s0+So) - (t0+To))     & ! QTos component
                      - ( Qvar * qs + q0 ) )              & ! QTsa component
                      / ( rhodim * Lf )
+
+                QSos =  QSos + QSnd * (  &
+                     zeta * (  (0.0))     & ! QTos component
+                     )                             & ! QTsa component
+                     / ( rhodim * Lf )
+
                 
                 QSoa = nus * ( &
                      (deltat / qdim) * dqso * To &
