@@ -171,19 +171,18 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     figure(13)
     img = Aa';
-    c = imagesc(RtD*x,RtD*(y),img); hold on
-    %image(RtD*x,RtD*(y),srf);
+    imagesc(RtD*x,RtD*(y),img); hold on
     set(gca,'ydir','normal')
     
+    %cmap = my_colmap(caxis);
+    colormap(gray)
     colorbar
-    cmap = my_colmap(caxis);
-    colormap(cmap)
 
-    drawnow
     title('Albedo')
     xlabel('Longitude')
     ylabel('Latitude')
-
+    exportfig('atmosA.eps',10,[14,10],invert)
+    keyboard
     
     if readEP
 

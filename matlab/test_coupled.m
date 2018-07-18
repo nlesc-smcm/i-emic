@@ -6,7 +6,7 @@ JnC = load_numjac('JnC');
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
     readfort44('fort.44');
 
-dfo = 6; dfa = 3; aux = 1; dfs = 4;
+dfo = 6; dfa = 3; auxa = 1; dfs = 4; auxs = 1
 
 surfb = find_row(dfo, n, m ,l, 1, 1, l, 1);
 surfe = find_row(dfo, n, m ,l, n, m, l, dfo);
@@ -15,7 +15,7 @@ nocean  = n*m*l*dfo;
 natmos  = n*m*dfa;
 nseaice = n*m*dfs;
 
-ndim = nocean + natmos + aux + nseaice;
+ndim = nocean + natmos + auxa + nseaice + auxs;
 
 fr0 = @(dof,i,j,k,xx) k * n * m * dof + j * n * dof + i * dof + xx;
 
@@ -34,14 +34,18 @@ for i = 1:dfa
 end
 
 
-for i = 1:aux
+for i = 1:auxa
     atm_idx = [atm_idx, atm_idx(end) + i];
 end
 
 %atm_idx = sort(atm_idx);
 
 for i = 1:dfs
-    sei_idx = [sei_idx, (nocean+natmos+aux+i:dfs:nocean+natmos+aux+nseaice)];
+    sei_idx = [sei_idx, (nocean+natmos+auxa+i:dfs:nocean+natmos+auxa+nseaice)];
+end
+
+for i = 1:auxs
+    sei_idx = [sei_idx, sei_idx(end) + i];
 end
 %sei_idx = sort(sei_idx);
 
@@ -65,25 +69,25 @@ JnC  = JnC(tot_idx, tot_idx);
 % remove offsets of ranges
 oce_idx = oce_idx - 0;
 atm_idx = atm_idx - nocean;
-sei_idx = sei_idx - nocean - natmos - aux;
+sei_idx = sei_idx - nocean - natmos - auxa;
 
 C11 = load('J_Ocean');              C11 = spconvert(C11);
 C12 = load('C_Ocean-Atmosphere');   C12 = spconvert(C12);
-C12 = padding(C12, nocean, natmos + aux);
+C12 = padding(C12, nocean, natmos + auxa);
 C13 = load('C_Ocean-SeaIce');       C13 = spconvert(C13);
-C13 = padding(C13, nocean, nseaice);
+C13 = padding(C13, nocean, nseaice + auxs);
 
 C21 = load('C_Atmosphere-Ocean');   C21 = spconvert(C21);
-C21 = padding(C21, natmos + aux, nocean);
+C21 = padding(C21, natmos + auxa, nocean);
 C22 = load('J_Atmosphere');         C22 = spconvert(C22);
 C23 = load('C_Atmosphere-SeaIce');  C23 = spconvert(C23);
-C23 = padding(C23, natmos + aux, nseaice);
+C23 = padding(C23, natmos + auxa, nseaice + auxs);
 
 C31 = load('C_SeaIce-Ocean');       C31 = spconvert(C31);
-C31 = padding(C31, nseaice, nocean);
+C31 = padding(C31, nseaice + auxs, nocean);
     
 C32 = load('C_SeaIce-Atmosphere');  C32 = spconvert(C32);
-C32 = padding(C32, nseaice, natmos + aux);
+C32 = padding(C32, nseaice + auxs, natmos + auxa);
 
 C33 = load('J_SeaIce');             C33 = spconvert(C33);
 
