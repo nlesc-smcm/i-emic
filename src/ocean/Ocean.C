@@ -39,7 +39,8 @@ extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
 extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(setparcs)(int*,double*);
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
-                                 double*, double*, double*);
+                                 double*, double*, double*,
+                                 double*);
 extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
 extern "C" _SUBROUTINE_(set_atmos_parameters)(double*, double*, double*,
                                               double*, double*,
@@ -1520,19 +1521,19 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
     // get parameter dependencies
-    double Ooa, Os, nus, eta, lvsc, qdim;
-    FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim);
+    double Ooa, Os, nus, eta, lvsc, qdim, pQSnd;
+    FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim, &pQSnd);
     Atmosphere::CommPars atmosPars;
     atmos->getCommPars(atmosPars);
     double albed = atmosPars.da;
 
-    int T = ATMOS_TT_; // (1-based) in the Atmosphere, temperature is the first unknown
-    int A = ATMOS_AA_; // (1-based) in the Atmosphere, temperature is the first unknown
-    int Q = ATMOS_QQ_; // (1-based) in the Atmosphere, humidity is the second unknown
-    int P = ATMOS_PP_; // (1-based) in the Atmosphere, global precipitation is an auxiliary
+    int T = ATMOS_TT_; // (1-based) atmos temperature: first unknown
+    int Q = ATMOS_QQ_; // (1-based) atmos humidity: second unknown
+    int A = ATMOS_AA_; // (1-based) atmos albedo: third unknown
+    int P = ATMOS_PP_; // (1-based) atmos global precipitation: auxiliary
 
     int rowIntCon = THCM::Instance().getRowIntCon();
-
+    
     // FIXME if this block would be computed locally we would not need
     // an allgather
     Teuchos::RCP<Epetra_MultiVector> Msi  = Utils::AllGather(*Msi_);
@@ -1626,7 +1627,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
 
     // final entry in beg ( == nnz)
     block->beg.push_back(el_ctr);
-
+    
     assert( (int) block->co.size() == block->beg.back());
 
     return block;
@@ -1645,16 +1646,19 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
     Teuchos::RCP<Epetra_MultiVector> dFTdM = Utils::AllGather(*d.dFTdM);
     Teuchos::RCP<Epetra_MultiVector> dFSdQ = Utils::AllGather(*d.dFSdQ);
     Teuchos::RCP<Epetra_MultiVector> dFSdM = Utils::AllGather(*d.dFSdM);
-
+    Teuchos::RCP<Epetra_MultiVector> dFSdG = Utils::AllGather(*d.dFSdG);
+    
     int el_ctr = 0;
     int sr; // surface row
 
     int seaiceQQ = SEAICE_QQ_; // (1-based) heat flux unknown in the sea ice model
     int seaiceMM = SEAICE_MM_; // (1-based) mask unknown in the sea ice model
+    int seaiceGG = SEAICE_GG_; // (1-based) auxiliary correction in the sea ice model
 
     double dFTdMval;
     double dFSdQval;
     double dFSdMval;
+    double dFSdGval;
 
     for (int k = 0; k != L_; ++k)
         for (int j = 0; j != M_; ++j)
@@ -1664,6 +1668,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
                 dFTdMval = (*(*dFTdM)(0))[sr];
                 dFSdQval = (*(*dFSdQ)(0))[sr];
                 dFSdMval = (*(*dFSdM)(0))[sr];
+                dFSdGval = (*(*dFSdG)(0))[sr];
 
                 // surface, non-land point
                 for (int XX = UU; XX <= SS; ++XX)
@@ -1689,6 +1694,10 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
 
                             block->co.push_back( -dFSdMval );
                             block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
+                            el_ctr++;
+
+                            block->co.push_back( -dFSdGval );
+                            block->jco.push_back(seaice->interface_row(i,j,seaiceGG));
                             el_ctr++;
                         }
                     }

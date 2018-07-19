@@ -2,6 +2,9 @@
 #include "Ocean.H"
 #include "Atmosphere.H"
 
+extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
+                                 double*, double*, double*, double *);
+
 //=============================================================================
 // Constructor
 SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
@@ -348,16 +351,16 @@ void SeaIce::computeRHS()
         double fluxInt;
         intCoeff_->Dot(fluxDiff, &fluxInt);
 
-        std::cout << std::setprecision(12) << " gamma = "
-                  << fluxInt / totalArea_ << " ";
-        std::cout << std::setprecision(5) << "  comb = "
-                  << comb_ << std::endl;
+        // std::cout << std::setprecision(12) << " gamma = "
+        //           << fluxInt / totalArea_ << " ";
+        // std::cout << std::setprecision(5) << "  comb = "
+        //           << comb_ << std::endl;
         
         // use integral in RHS
         int Grow = find_row0(nGlob_, mGlob_, 0, 0, SEAICE_GG_);
         Gval = state[Grow];
 
-        (*rhs_)[Grow] = fluxInt - Gval * totalArea_;
+        (*rhs_)[Grow] = pQSnd_ * fluxInt - Gval * totalArea_;
     }
     
     INFO(" seaic F = " << Utils::norm(rhs_));
@@ -489,7 +492,7 @@ void SeaIce::computeLocalJacobian()
                 sr    = j*nLoc_ + i;
                 Mrow  = find_row0(nLoc_, mLoc_, i, j, M); // M row
                 Mval  = state[Mrow];
-                ICval = (*localIntCoeff_)[sr];
+                ICval = (*localIntCoeff_)[sr] * pQSnd_;
 
                 // GG_QQ
                 val  = -1.0 * ICval * Mval * Qvar_ / rhoo_ / Lf_;
@@ -861,6 +864,11 @@ void SeaIce::synchronize(std::shared_ptr<Ocean> ocean)
     Teuchos::RCP<Epetra_Vector> sss = ocean->interfaceS();
     CHECK_MAP(sss, standardSurfaceMap_);
     sss_ = sss;
+
+    // Get ocean parameters
+    double tmp1, tmp2, tmp3, tmp4, tmp5, tmp6 ;
+    FNAME(getdeps)(&tmp1, &tmp2, &tmp3, &tmp4, &tmp5, &tmp6, &pQSnd_);
+
 }
 
 //=============================================================================

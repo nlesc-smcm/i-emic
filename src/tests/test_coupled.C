@@ -358,7 +358,8 @@ TEST(CoupledModel, numericalJacobian)
 //------------------------------------------------------------------
 // We need this information from THCM
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
-                                 double*, double*, double*);
+                                 double*, double*, double*,
+                                 double *);
 
 TEST(CoupledModel, applyMatrix)
 {
@@ -428,8 +429,8 @@ TEST(CoupledModel, applyMatrix)
             C12.applyMatrix(*atmosVec, *oceanVec);
 
             // Get ocean parameters
-            double Ooa, Os, nus, eta, lvsc, qdim;
-            FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim);
+            double Ooa, Os, nus, eta, lvsc, qdim, pQSnd;
+            FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim, &pQSnd);
 
             // Test center surface element (temperature)
             int surfbT = FIND_ROW2(_NUN_, n, m, l, ii, jj, l-1, TT);

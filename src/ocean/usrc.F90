@@ -193,19 +193,24 @@ SUBROUTINE getparcs(param,value)
 end subroutine getparcs
 
 !***********************************************************
-SUBROUTINE getdeps(o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim)
+SUBROUTINE getdeps(o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim, o_pqsnd)
   !     interface to get Ooa and other dependencies on external model
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_atm
   implicit none
-  real(c_double) o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim
+  real(c_double) o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim, o_pqsnd
+  real pQSnd
+
+  pQSnd = par(COMB) * par(SALT) * QSnd
+  
   o_Ooa   = Ooa
   o_Os    = Os
   o_nus   = nus
   o_eta   = eta
   o_lvsc  = lvsc
   o_qdim  = qdim
+  o_pqsnd = pQSnd
 end subroutine getdeps
 
 !**********************************************************

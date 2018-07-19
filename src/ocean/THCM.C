@@ -150,7 +150,8 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_probe,  get_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_suno)(double *suno);
     _MODULE_SUBROUTINE_(m_probe,  get_derivatives)(double *sol, double *dftdm,
-                                                   double *dfsdq, double *dfsdm);
+                                                   double *dfsdq, double *dfsdm,
+                                                   double *dfsdg);
     _MODULE_SUBROUTINE_(m_probe,  get_adapted_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_emip_pert)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_salflux)(double *sol, double *salflux);
@@ -1461,20 +1462,24 @@ THCM::Derivatives THCM::getDerivatives()
     Epetra_Vector local_dftdm(*AssemblySurfaceMap);
     Epetra_Vector local_dfsdq(*AssemblySurfaceMap);
     Epetra_Vector local_dfsdm(*AssemblySurfaceMap);
+    Epetra_Vector local_dfsdg(*AssemblySurfaceMap);
 
-    double *dftdm, *dfsdq, *dfsdm;
+    double *dftdm, *dfsdq, *dfsdm, *dfsdg;
     local_dftdm.ExtractView(&dftdm);
     local_dfsdq.ExtractView(&dfsdq);
     local_dfsdm.ExtractView(&dfsdm);
-    F90NAME(m_probe, get_derivatives)( solution, dftdm, dfsdq, dfsdm);
+    local_dfsdg.ExtractView(&dfsdg);
+    F90NAME(m_probe, get_derivatives)( solution, dftdm, dfsdq, dfsdm, dfsdg);
     
     d.dFTdM = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
     d.dFSdQ = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
     d.dFSdM = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    d.dFSdG = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
     
     d.dFTdM->Export(local_dftdm, *as2std_surf, Zero);
     d.dFSdQ->Export(local_dfsdq, *as2std_surf, Zero);
     d.dFSdM->Export(local_dfsdm, *as2std_surf, Zero);
+    d.dFSdG->Export(local_dfsdg, *as2std_surf, Zero);
 
     return d;
 }

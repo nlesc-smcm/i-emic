@@ -103,6 +103,10 @@ public:
         //! Derivative of the salinity equation with respect to a
         //! sea ice mask.
         Teuchos::RCP<Epetra_Vector> dFSdM;
+
+        //! Derivative of the salinity equation with respect to the
+        //! sea ice integral correction gamma. 
+        Teuchos::RCP<Epetra_Vector> dFSdG;
     };
 
     //! Constructor

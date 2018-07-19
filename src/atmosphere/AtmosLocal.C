@@ -13,7 +13,7 @@
 #include "Utils.H"
 
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
-                                 double*, double*, double*);
+                                 double*, double*, double*, double *);
 
 //==================================================================
 // Constructor for use with parallel atmosphere
@@ -323,8 +323,8 @@ void AtmosLocal::setup()
     }
 
     // Get ocean parameters
-    double tmp1, tmp2, tmp3, tmp4;
-    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2, &tmp3, &tmp4);
+    double tmp1, tmp2, tmp3, tmp4, tmp5;
+    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2, &tmp3, &tmp4, &tmp5);
 
     // Fill y and latitude-based arrays
     yv_.reserve(m_+1);

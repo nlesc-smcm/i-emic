@@ -300,7 +300,7 @@ contains
   ! Return a collection of derivatives of expressions found in lin and
   ! forcing. The sign is taken positive, corresponding to the
   ! implementation in forcing.
-  subroutine get_derivatives( un, dftdm, dfsdq, dfsdm )
+  subroutine get_derivatives( un, dftdm, dfsdq, dfsdm, dfsdg)
     use, intrinsic :: iso_c_binding
     use m_usr
     use m_atm
@@ -310,6 +310,7 @@ contains
     real(c_double), dimension(m*n) :: dftdm
     real(c_double), dimension(m*n) :: dfsdq
     real(c_double), dimension(m*n) :: dfsdm
+    real(c_double), dimension(m*n) :: dfsdg
 
     integer :: i,j,pos
 
@@ -332,6 +333,7 @@ contains
     dftdm = 0.0 ! temperature equation derivative w.r.t. sea ice mask
     dfsdq = 0.0 ! salinity equation derivative w.r.t. sea ice heat flux
     dfsdm = 0.0 ! salinity equation derivative w.r.t. sea ice mask
+    dfsdg = 0.0 ! salinity equation derivative w.r.t. sea ice int corr
     pos = 1
     cmb   = par(COMB)
     nus   = par(COMB) * par(SALT) * eta * qdim * QSnd
@@ -369,7 +371,7 @@ contains
              if (coupled_S.eq.1)  then
 
                 ! dfsdq part ------------------------------
-                dfsdq(pos) = -QSnd * Qvar  / (rhodim * Lf) * Ms
+                dfsdq(pos) = -pQSnd * Qvar  / (rhodim * Lf) * Ms
 
                 ! dfsdm part ------------------------------
                 QSos =   (  &
@@ -386,7 +388,9 @@ contains
                 sflux(i,j) = (1-landm(i,j,l)) * ( &
                      QSoa + msi(i,j) * (QSos - QSoa))
                                 
-                dfsdm(pos) = (QSos - QSoa)
+                dfsdm(pos) = pQSnd * (QSos - QSoa)
+                
+                dfsdg(pos) = -1.0;
 
              endif
           endif
@@ -394,8 +398,9 @@ contains
        enddo
     enddo
     
-    call qint(sflux, scorr)
-
+    ! testing salinity flux and corrections
+    call qint(sflux, scorr)                
+                                           
     integr = 0.0;
     check  = 0.0;
     area   = 0.0;

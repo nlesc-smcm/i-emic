@@ -292,6 +292,9 @@ private:
     double dEdT_; // sublimation derivative to T
     double dEdq_; // sublimation derivative to q
 
+    //! Ocean nondimensionalization prefactor
+    double pQSnd_;
+
     //! Continuation parameters
     std::vector<std::string> allParameters_;
 
