@@ -378,7 +378,6 @@ contains
                      zeta * cmb * (a0 * (s0+So) - (t0+To))     & ! QTos component
                      - ( Qvar * qs + cmb * q0 ) )              & ! QTsa component
                      / ( rhodim * Lf )
-
                 
                 QSoa = eta * qdim * ( &
                      (deltat / qdim) * dqso * To &
@@ -401,20 +400,20 @@ contains
     ! testing salinity flux and corrections
     call qint(sflux, scorr)                
                                            
-    integr = 0.0;
-    check  = 0.0;
-    area   = 0.0;
-    do j=1,m
-       do i=1,n
-          integr = integr + sflux(i,j) * cos(y(j)) * (1-landm(i,j,l))
-          check  = check  + (sflux(i,j) - gsi(i,j)) * cos(y(j)) * (1-landm(i,j,l))
-          area   = area   +  cos(y(j)) * (1-landm(i,j,l))
-       enddo
-    enddo
+    ! integr = 0.0;
+    ! check  = 0.0;
+    ! area   = 0.0;
+    ! do j=1,m
+    !    do i=1,n
+    !       integr = integr + sflux(i,j) * cos(y(j)) * (1-landm(i,j,l))
+    !       check  = check  + (sflux(i,j) - gsi(i,j)) * cos(y(j)) * (1-landm(i,j,l))
+    !       area   = area   +  cos(y(j)) * (1-landm(i,j,l))
+    !    enddo
+    ! enddo
+    
+    ! scorr = 0.0
 
-    !scorr = 0.0
-
-    write(*,*) 'salflux check = ', integr, check, area, scorr, gsi(1,1)
+    ! write(*,*) 'salflux check = ', integr, check, area, scorr, gsi(1,1)
 
   end subroutine get_derivatives
 

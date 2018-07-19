@@ -58,6 +58,17 @@ void DependencyGrid::set(int const (&range)[8], int A, int B, double value)
 }
 
 //-----------------------------------------------------------------------------
+void DependencyGrid::set(int i, int j, int k, int loc,
+                         int const (&range)[4], double value)
+{
+    for (int A = range[0]; A != range[1]+1; ++A)
+        for (int B = range[2]; B != range[3]+1; ++B)
+        {
+            grid_(i-1, j-1, k-1, loc-1, A-1, B-1) = value;
+        }    
+}
+
+//-----------------------------------------------------------------------------
 void DependencyGrid::set(int const (&range)[8], int A, int B, Atom &atom)
 {
     for (int i = range[0]; i != range[1]+1; ++i)

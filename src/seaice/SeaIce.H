@@ -152,6 +152,9 @@ private:
     //! non-overlapping integral coefficients
     Teuchos::RCP<Epetra_Vector> intCoeff_;
 
+    //! gathered global integral coefficients;
+    Teuchos::RCP<Epetra_Vector> globalIntCoeff_;
+
     //! overlapping localState
     Teuchos::RCP<Epetra_Vector> localState_;
 

@@ -515,6 +515,25 @@ void SeaIce::computeLocalJacobian()
         Al_->set(range, G, T, GG_TT);        
         Al_->set(range, G, G, GG_GG);
     }
+
+    //---------------------------------------------------------------
+    // Set land points to 1, RHS elements should be 0 at land points
+
+    // int sr;
+    // for (int j = 1; j <= mLoc_; ++j)
+    //     for (int i = 1; i <= nLoc_; ++i)
+    //         for (int A = 1; A <= (dof_+aux_); ++A)
+    //             for (int B = 1; B <= (dof_+aux_); ++B)
+    //                 {
+    //                     sr = j*nGlob_ + i;      // global surface index
+    //                     if ((*surfmask_)[sr])
+    //                     {
+    //                         if (B==A)
+    //                             Al_->set(i,j,1,1,A,B,1.0);
+    //                         else
+    //                             Al_->set(i,j,1,1,A,B,0.0);
+    //                     }
+    //                 }
 }
 
 //=============================================================================
@@ -704,10 +723,14 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
 
     int T = ATMOS_TT_; // (1-based) in the Atmosphere, temperature is the first unknown
     int Q = ATMOS_QQ_; // (1-based) in the Atmosphere, humidity is the second unknown
-    int A = ATMOS_AA_; // (1-based) in the Atmosphere, humidity is the second unknown
+    int A = ATMOS_AA_; // (1-based) in the Atmosphere, albedo is the third unknown
+    int P = ATMOS_PP_; // (1-based) in the Atmosphere, precipitation is auxiliary
+
+    // FIXME: build this block locally to avoid Msi gather
+    Teuchos::RCP<Epetra_Vector> Msi = interfaceM();
+    Teuchos::RCP<Epetra_MultiVector> MsiG = Utils::AllGather(*Msi);
 
     // compute a few constant derivatives (see computeRHS)
-
     // d / dq_atm (F_H)
     double dqatmFH = -(rhoo_ * Lf_ / zeta_) * dEdq_;
 
@@ -720,6 +743,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     // d / da_atm (F_Q)
     double daatmFQ;
     double tmp = 0.0;
+    int sr, col;
 
     for (int j = 0; j != mGlob_; ++j)
     {
@@ -736,28 +760,32 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
             for (int XX = 1; XX <= dof_; ++XX)
             {
                 block->beg.push_back(el_ctr);
-
-                switch (XX)
+                
+                sr = j*nGlob_ + i;            // global surface index
+                if ((*surfmask_)[sr] == 0)
                 {
-                case SEAICE_HH_:
-                    block->co.push_back(dqatmFH);
-                    block->jco.push_back(atmos->interface_row(i,j,Q));
-                    el_ctr++;
-                    break;
+                    switch (XX)
+                    {
+                    case SEAICE_HH_:
+                        block->co.push_back(dqatmFH);
+                        block->jco.push_back(atmos->interface_row(i,j,Q));
+                        el_ctr++;
+                        break;
 
-                case SEAICE_QQ_:
-                    block->co.push_back(dtatmFQ);
-                    block->jco.push_back(atmos->interface_row(i,j,T));
-                    el_ctr++;
+                    case SEAICE_QQ_:
+                        block->co.push_back(dtatmFQ);
+                        block->jco.push_back(atmos->interface_row(i,j,T));
+                        el_ctr++;
 
-                    block->co.push_back(dqatmFQ);
-                    block->jco.push_back(atmos->interface_row(i,j,Q));
-                    el_ctr++;
+                        block->co.push_back(dqatmFQ);
+                        block->jco.push_back(atmos->interface_row(i,j,Q));
+                        el_ctr++;
 
-                    block->co.push_back(daatmFQ);
-                    block->jco.push_back(atmos->interface_row(i,j,A));
-                    el_ctr++;
-                    break;
+                        block->co.push_back(daatmFQ);
+                        block->jco.push_back(atmos->interface_row(i,j,A));
+                        el_ctr++;
+                        break;
+                    }
                 }
             }
     }
@@ -765,13 +793,38 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     // auxiliary equation
     if (aux_ == 1)
     {
-//        int sr;
+        int sr;
+        double dQFG; // d / dQ (F_G)
+        double dPFG; // d / dQ (F_G)
+        double ICval, Mval;
         block->beg.push_back(el_ctr);
-        for (int j = 0; j != mLoc_; ++j)
-            for (int i = 0; i != nLoc_; ++i)
+        for (int j = 0; j != mGlob_; ++j)
+            for (int i = 0; i != nGlob_; ++i)
             {
-                // TODO
+                sr    = j*nGlob_ + i;            // global surface index
+
+                if ((*surfmask_)[sr] == 0)
+                {
+                    ICval = (*globalIntCoeff_)[sr];  // integral coefficient
+                    Mval  = (*(*MsiG)(0))[sr];        // mask value
+
+                    dQFG  = Mval * ICval * pQSnd_ * (-dEdq_);
+                    block->co.push_back(dQFG);
+                    block->jco.push_back(atmos->interface_row(i,j,Q));
+                    el_ctr++;
+
+                }
             }
+        col = atmos->interface_row(0,0,P);
+
+        double totalM = Utils::dot(intCoeff_, Msi);        
+        if (col >= 0)
+        {
+            dPFG  = totalM * pQSnd_ * eta_ * qdim_;
+            block->co.push_back(dPFG);
+            block->jco.push_back(col);
+            el_ctr++;
+        }
     }
 
     // final entry in beg ( == nnz)
@@ -805,41 +858,69 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
     // d / dS (F_T)
     double dSFT =  comb_ * a0_;
 
+    int sr;
     for (int j = 0; j != mGlob_; ++j)
         for (int i = 0; i != nGlob_; ++i)
             for (int XX = 1; XX <= dof_; ++XX)
             {
+                sr = j*nGlob_ + i;            // global surface index
+
                 block->beg.push_back(el_ctr);
 
-                switch (XX)
+                if ((*surfmask_)[sr] == 0)
                 {
-                case SEAICE_HH_:
-                    block->co.push_back(dTFH);
-                    block->jco.push_back(ocean->interface_row(i,j,T));
-                    el_ctr++;
+                    switch (XX)
+                    {
+                    case SEAICE_HH_:
+                        block->co.push_back(dTFH);
+                        block->jco.push_back(ocean->interface_row(i,j,T));
+                        el_ctr++;
 
-                    block->co.push_back(dSFH);
-                    block->jco.push_back(ocean->interface_row(i,j,S));
-                    el_ctr++;
-                    break;
+                        block->co.push_back(dSFH);
+                        block->jco.push_back(ocean->interface_row(i,j,S));
+                        el_ctr++;
+                        break;
 
-                case SEAICE_TT_:
-                    block->co.push_back(dSFT);
-                    block->jco.push_back(ocean->interface_row(i,j,S));
-                    el_ctr++;
-                    break;
+                    case SEAICE_TT_:
+                        block->co.push_back(dSFT);
+                        block->jco.push_back(ocean->interface_row(i,j,S));
+                        el_ctr++;
+                        break;
+                    }
                 }
             }
 
-    // auxiliary equation
+    // Auxiliary equation
+
+    // FIXME: build this block locally to avoid Msi gather
+    Teuchos::RCP<Epetra_MultiVector> MsiG = Utils::AllGather(*interfaceM());
+
     if (aux_ == 1)
     {
-//        int sr;
+        int sr;
+        double dTFG; // d / dTo (F_G)
+        double dSFG; // d / dSo (F_G)
+        double ICval, Mval; 
         block->beg.push_back(el_ctr);
-        for (int j = 0; j != mLoc_; ++j)
-            for (int i = 0; i != nLoc_; ++i)
+        for (int j = 0; j != mGlob_; ++j)
+            for (int i = 0; i != nGlob_; ++i)
             {
-                // TODO
+                sr    = j*nGlob_ + i;            // global surface index
+                ICval = (*globalIntCoeff_)[sr];  // integral coefficient
+                Mval  = (*(*MsiG)(0))[sr];        // mask value
+
+                if ((*surfmask_)[sr] == 0)
+                {
+                    dTFG  = Mval * ICval * pQSnd_ * zeta_ * comb_ * -1.0 / rhoo_ / Lf_;
+                    block->co.push_back(dTFG);
+                    block->jco.push_back( ocean->interface_row(i,j,T) );
+                    el_ctr++;
+
+                    dSFG  = Mval * ICval * pQSnd_ * zeta_ * comb_ * a0_ / rhoo_ / Lf_;
+                    block->co.push_back(dSFG);
+                    block->jco.push_back(ocean->interface_row(i,j,S));
+                    el_ctr++;
+                }
             }
     }
 
@@ -1022,6 +1103,10 @@ void SeaIce::createIntCoeff()
 
     // obtain total area
     intCoeff_->Norm1(&totalArea_);
+
+    // create global gathered vector
+    globalIntCoeff_ =
+        Teuchos::rcp(new Epetra_Vector( *(*Utils::AllGather(*intCoeff_))(0) ));
 }
 
 //=============================================================================

@@ -117,9 +117,9 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // create graph
     createMatrixGraph();
-
+    
     jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
-
+    
     // Periodicity is handled by AtmosLocal if there is a single
     // core in the x-direction.
     Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
@@ -516,6 +516,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
 
     bool on_ocean;
     bool no_intrw;
+
     // loop over our unknowns
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)

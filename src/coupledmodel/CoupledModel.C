@@ -136,21 +136,21 @@ void CoupledModel::createGID2CoordMap()
 
         dof = model->getDomain()->Dof();
 
-        // Auxiliary unknowns do not have grid coordinate and are
-        // appended at the end of the ordinary map.
+        // Auxiliary unknowns do not have a grid coordinate and are
+        // appended at the end of an ordinary map.
         aux = model->getDomain()->Aux();
         
         for (int k = 0; k != L; ++k)
             for (int j = 0; j != M; ++j)
                 for (int i = 0; i != N; ++i)
-                    for (int xx = 1; xx <= dof; ++xx)
+                    for (int xx = 0; xx < dof; ++xx)
                     {
                         gid2coord_.push_back({modelIdent, i, j, k, xx});
                     }
 
         if (aux > 0)
         {
-            for (int a = 1; a <= aux; ++a)
+            for (int a = 0; a < aux; ++a)
                 gid2coord_.push_back({modelIdent, 0, 0, 0, dof + a});
         }
         
