@@ -323,7 +323,7 @@ contains
 
     real    QTos, QToa, To, Ta, Ab, So, qa, pa, Ms, qs
     real    QSos, QSoa
-    real    pQSnd
+    real    cmb, pQSnd
 
     real    sflux(n,m), check, area, integr
 
@@ -333,6 +333,7 @@ contains
     dfsdq = 0.0 ! salinity equation derivative w.r.t. sea ice heat flux
     dfsdm = 0.0 ! salinity equation derivative w.r.t. sea ice mask
     pos = 1
+    cmb   = par(COMB)
     nus   = par(COMB) * par(SALT) * eta * qdim * QSnd
     pQSnd = par(COMB) * par(SALT) * QSnd
     do j = 1,m
@@ -371,18 +372,13 @@ contains
                 dfsdq(pos) = -QSnd * Qvar  / (rhodim * Lf) * Ms
 
                 ! dfsdm part ------------------------------
-                QSos =  pQSnd * (  &
-                     zeta * (a0 * (s0+So) - (t0+To))     & ! QTos component
-                     - ( Qvar * qs + q0 ) )              & ! QTsa component
-                     / ( rhodim * Lf )
-
-                QSos =  QSos + QSnd * (  &
-                     zeta * (  (0.0))     & ! QTos component
-                     )                             & ! QTsa component
+                QSos =   (  &
+                     zeta * cmb * (a0 * (s0+So) - (t0+To))     & ! QTos component
+                     - ( Qvar * qs + cmb * q0 ) )              & ! QTsa component
                      / ( rhodim * Lf )
 
                 
-                QSoa = nus * ( &
+                QSoa = eta * qdim * ( &
                      (deltat / qdim) * dqso * To &
                      - qa - pa)
                 
@@ -406,7 +402,7 @@ contains
     do j=1,m
        do i=1,n
           integr = integr + sflux(i,j) * cos(y(j)) * (1-landm(i,j,l))
-          check  = check  + (sflux(i,j) - scorr) * cos(y(j)) * (1-landm(i,j,l))
+          check  = check  + (sflux(i,j) - gsi(i,j)) * cos(y(j)) * (1-landm(i,j,l))
           area   = area   +  cos(y(j)) * (1-landm(i,j,l))
        enddo
     enddo

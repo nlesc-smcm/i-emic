@@ -585,7 +585,7 @@ SUBROUTINE lin
 
   real    mc(n,m,l,np)
   real    QSoa(n,m,l,np), QSos(n,m,l,np)
-  real    pQSnd
+  real    cmb, pQSnd
 
   ! original version:
   !      equivalence (u, v), (uy, vy), (ucsi, vcsi), (uxx, vxx, txx, uxc)
@@ -732,18 +732,19 @@ SUBROUTINE lin
   ! dependence of SS on TT in evaporation term
   ! FIXME: naming is bad
   dedt  = nus * (deltat / qdim) * dqso
+  cmb   = par(COMB)
   pQSnd = par(COMB) * par(SALT) * QSnd
   ! FIXME: ugly
   if (coupled_S.eq.1) then ! coupled to atmosphere
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz &
-          - mc * pQSnd * zeta * a0 / (rhodim * Lf) 
+          - mc * pQSnd * zeta * cmb * a0 / (rhodim * Lf) 
      
      ! ! minus sign and nondim added (we take -Au in rhs computation)
 
      QSoa = -dedt * sc            ! atmosphere to ocean salinity flux
      !                            ! internal component 
 
-     QSos =  pQSnd * zeta / (rhodim * Lf)    ! sea ice to ocean salinity flux
+     QSos =  pQSnd * zeta * cmb / (rhodim * Lf)    ! sea ice to ocean salinity flux
                                              ! internal component
 
      ! ! combine contributions with mask

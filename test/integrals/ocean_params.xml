@@ -57,7 +57,7 @@
     <!-- Supply 0-based surface coordinates for the integral condition
          row, default is n-1, m-1. Make sure that the coordinate is
          located on the last processors. -->
-    <Parameter name="Integral row coordinate i" type="int" value="1"/>
+    <Parameter name="Integral row coordinate i" type="int" value="4"/>
     <Parameter name="Integral row coordinate j" type="int" value="6"/>
 
     <!-- topography:                                -->
