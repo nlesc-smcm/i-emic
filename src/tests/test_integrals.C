@@ -127,7 +127,6 @@ TEST(Atmos, Integrate_E_min_P)
     EXPECT_LT(std::abs(I), 1e-7);
 
     Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
-//    std::cout << *Msi << std::endl;
 }
 
 //------------------------------------------------------------------

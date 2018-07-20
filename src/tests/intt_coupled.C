@@ -215,7 +215,6 @@ TEST(CoupledModel, Newton)
     Utils::save(F, "F");
     EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 1e-8);
     EXPECT_LT(niter, maxit);
-    getchar();
 }
 
 //------------------------------------------------------------------
@@ -240,7 +239,7 @@ TEST(CoupledModel, numericalJacobian)
                               std::shared_ptr<Combined_MultiVec> > njC;
             
             njC.setTolerance(1e-10);
-            njC.seth(1e-7);
+            njC.seth(1e-4);
             njC.compute( coupledModel, coupledModel->getState('V') );
 
             std::string fnameJnC("JnC");
@@ -280,7 +279,6 @@ TEST(CoupledModel, numericalJacobian)
         std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
-    ERROR("",__FILE__, __LINE__);
 }
 
 

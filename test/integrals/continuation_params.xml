@@ -28,7 +28,7 @@
   <Parameter name="maximum number of steps" type="int" value="5"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-6"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-4"/>
   
   <!-- Tolerance when converging on destination         -->
   <!--  for secant process in detect()                  -->
