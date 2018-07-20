@@ -1,3 +1,5 @@
+#include "GlobalDefinitions.H"
+
 #include "RAILS/Epetra_MultiVectorWrapper.hpp"
 #include "RAILS/Epetra_SerialDenseMatrixWrapper.hpp"
 #include "RAILS/Epetra_OperatorWrapper.hpp"
@@ -18,10 +20,13 @@
 template<typename Model>
 class LyapunovModel: public Model
 {
+    double trace_;
+    std::vector<double> eigenvalues_;
 public:
     using Model::Model;
 
     void postProcess();
+    std::string const writeData(bool describe = false);
 };
 
 template<typename Model>
@@ -104,13 +109,38 @@ void LyapunovModel<Model>::postProcess()
     Schur_wrapper.eigs(eigenvectors, eigenvalues,
                        eig_params.get("Number of Eigenvalues", 10));
 
-    double trace = Schur->Trace();
+    trace_ = Schur->Trace();
 
     int num_eigs = eigenvalues.M();
+    eigenvalues_.clear();
     for (int i = 0; i < num_eigs; i++)
     {
+        eigenvalues_.push_back(eigenvalues(i));
         std::cout << std::setw(20) << eigenvalues(i)
-                  << std::setw(20) << eigenvalues(i) / trace
+                  << std::setw(20) << eigenvalues(i) / trace_
                   << std::endl;
+    }
+}
+
+template<typename Model>
+std::string const LyapunovModel<Model>::writeData(bool describe)
+{
+    std::ostringstream datastring;
+    datastring << Model::writeData(describe);
+
+    if (describe)
+    {
+        datastring << std::setw(_FIELDWIDTH_)
+                   << "max(ev)";
+
+        return datastring.str();
+    }
+    else
+    {
+        datastring.precision(_PRECISION_);
+        datastring << std::scientific << std::setw(_FIELDWIDTH_)
+                   << eigenvalues_[0];
+
+        return datastring.str();
     }
 }
