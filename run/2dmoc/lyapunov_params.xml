@@ -1,0 +1,16 @@
+<ParameterList>
+  <ParameterList name="Lyapunov Solver">
+    <Parameter name="Maximum iterations" type="int" value="2000"/>
+    <Parameter name="Tolerance" type="double" value="1e-2"/>
+    <Parameter name="Expand Size" type="int" value="3"/>
+    <Parameter name="Lanczos iterations" type="int" value="10"/>
+    <Parameter name="Restart iterations" type="int" value="50"/>
+    <Parameter name="Restart tolerance" type="double" value="1e-5"/>
+  </ParameterList>
+
+  <ParameterList name="Eigenvalue Solver">
+    <Parameter name="Convergence Tolerance" type="double" value="1e-8"/>
+    <Parameter name="Step Size" type="int" value="10"/>
+    <Parameter name="Number of Eigenvalues" type="int" value="20"/>
+  </ParameterList>
+</ParameterList>

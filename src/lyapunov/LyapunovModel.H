@@ -1,0 +1,116 @@
+#include "RAILS/Epetra_MultiVectorWrapper.hpp"
+#include "RAILS/Epetra_SerialDenseMatrixWrapper.hpp"
+#include "RAILS/Epetra_OperatorWrapper.hpp"
+#include "RAILS/LyapunovSolver.hpp"
+#include "RAILS/SchurOperator.hpp"
+
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_XMLParameterListHelpers.hpp"
+
+#include "Epetra_Map.h"
+#include "Epetra_Import.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_SerialDenseMatrix.h"
+
+#include "AnasaziTypes.hpp"
+
+template<typename Model>
+class LyapunovModel: public Model
+{
+public:
+    using Model::Model;
+
+    void postProcess();
+};
+
+template<typename Model>
+void LyapunovModel<Model>::postProcess()
+{
+    Model::postProcess();
+
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    updateParametersFromXmlFile("lyapunov_params.xml", params.ptr());
+
+    Model::computeJacobian();
+    auto A = Model::getJacobian();
+
+    Model::computeForcing();
+    auto B = Model::getForcing();
+
+    auto M = Model::getMassMat('V');
+
+    Epetra_Map const &map = A->RowMap();
+    Teuchos::RCP<Epetra_MultiVector> nullspace = Teuchos::rcp(new Epetra_MultiVector(map, 2));
+
+    for (int i = 0; i < nullspace->MyLength(); i++)
+    {
+        int gid = map.GID(i);
+        if (gid % 6 == 3)
+        {
+            int m = gid / 6;
+            if ((m % Model::N_ + (m / Model::N_) % Model::M_) % 2 == 0)
+                (*nullspace)[0][i] = 1;
+            else
+                (*nullspace)[1][i] = 1;
+        }
+    }
+
+    Teuchos::RCP<RAILS::SchurOperator> Schur = Teuchos::rcp(
+        new RAILS::SchurOperator(A, M, nullspace));
+    Schur->Compute();
+
+    Epetra_Map const &map2 = Schur->OperatorRangeMap();
+    Epetra_Import import(map2, map);
+
+    int MaxNumEntriesPerRow = B->MaxNumEntries();
+    Teuchos::RCP<Epetra_CrsMatrix> B22 = Teuchos::rcp(
+        new Epetra_CrsMatrix(Copy, map2, B->ColMap(), MaxNumEntriesPerRow));
+    CHECK_ZERO(B22->Import(*B, import, Insert));
+    CHECK_ZERO(B22->FillComplete(B->DomainMap(), map2));
+
+    Teuchos::RCP<Epetra_Operator> Schur_operator = Schur;
+    RAILS::Epetra_OperatorWrapper Schur_wrapper = Schur_operator;
+    Teuchos::RCP<Epetra_Operator> B22_operator = B22;
+
+    RAILS::Solver<RAILS::Epetra_OperatorWrapper, RAILS::Epetra_MultiVectorWrapper,
+                  RAILS::Epetra_SerialDenseMatrixWrapper> solver(
+                      Schur_wrapper, B22_operator, B22_operator);
+
+    RAILS::Epetra_MultiVectorWrapper V;
+    RAILS::Epetra_SerialDenseMatrixWrapper T;
+
+    V = Teuchos::rcp(
+        new Epetra_MultiVector(map2, 1000));
+    T = Teuchos::rcp(
+        new Epetra_SerialDenseMatrix(1000, 1000));
+
+    solver.set_parameters(params->sublist("Lyapunov Solver"));
+
+    solver.solve(V, T);
+
+    Schur->SetSolution(*V, *T);
+    Schur_wrapper.set_parameters(*params);
+
+    RAILS::Epetra_MultiVectorWrapper eigenvectors;
+    RAILS::Epetra_SerialDenseMatrixWrapper eigenvalues(0,0);
+
+    Teuchos::ParameterList &eig_params = params->sublist("Eigenvalue Solver");
+    eig_params.set("Verbosity", Anasazi::Errors +
+                   // Anasazi::IterationDetails +
+                   Anasazi::Warnings +
+                   Anasazi::FinalSummary);
+
+    Schur_wrapper.eigs(eigenvectors, eigenvalues,
+                       eig_params.get("Number of Eigenvalues", 10));
+
+    double trace = Schur->Trace();
+
+    int num_eigs = eigenvalues.M();
+    for (int i = 0; i < num_eigs; i++)
+    {
+        std::cout << std::setw(20) << eigenvalues(i)
+                  << std::setw(20) << eigenvalues(i) / trace
+                  << std::endl;
+    }
+}
