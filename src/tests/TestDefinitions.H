@@ -145,7 +145,7 @@ void testEntries(ModelPtr model, CCS &ccs, VectorPtr x)
             if (diff > error) // some additional outputting
             {
                 std::cout << "(" << ico << "," << jco << ") ";
-                std::cout << "co: " << ccs.co[i] << " " << "Jij: " << Jij << std::endl;
+                std::cout << "nuJac: " << ccs.co[i] << " " << "anJac: " << Jij << std::endl;
                 int mdl,i,j,k,xx;
                         
                 model->gid2coord(ico,mdl,i,j,k,xx);

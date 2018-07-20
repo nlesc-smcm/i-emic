@@ -164,7 +164,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     EmiP_ = std::vector<double>(mLoc_ * nLoc_);
 
     // initialize mask
-    surfmask_ = std::make_shared<std::vector<int> >(mLoc_ * nLoc_);
+    surfmask_ = std::make_shared<std::vector<int> >(mGlob_ * nGlob_);
 
     // Obtain overlapping and non-overlapping maps
     assemblyMap_ = domain_->GetAssemblyMap(); // overlapping
@@ -762,7 +762,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
                 block->beg.push_back(el_ctr);
                 
                 sr = j*nGlob_ + i;            // global surface index
-                if ((*surfmask_)[sr] == 0)
+//                if ((*surfmask_)[sr] == 0)
                 {
                     switch (XX)
                     {
@@ -803,7 +803,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
             {
                 sr    = j*nGlob_ + i;            // global surface index
 
-                if ((*surfmask_)[sr] == 0)
+//                if ((*surfmask_)[sr] == 0)
                 {
                     ICval = (*globalIntCoeff_)[sr];  // integral coefficient
                     Mval  = (*(*MsiG)(0))[sr];        // mask value
@@ -817,7 +817,8 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
             }
         col = atmos->interface_row(0,0,P);
 
-        double totalM = Utils::dot(intCoeff_, Msi);        
+        double totalM = Utils::dot(intCoeff_, Msi);
+
         if (col >= 0)
         {
             dPFG  = totalM * pQSnd_ * eta_ * qdim_;
@@ -867,7 +868,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
 
                 block->beg.push_back(el_ctr);
 
-                if ((*surfmask_)[sr] == 0)
+//                if ((*surfmask_)[sr] == 0)
                 {
                     switch (XX)
                     {
@@ -909,7 +910,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
                 ICval = (*globalIntCoeff_)[sr];  // integral coefficient
                 Mval  = (*(*MsiG)(0))[sr];        // mask value
 
-                if ((*surfmask_)[sr] == 0)
+//                if ((*surfmask_)[sr] == 0)
                 {
                     dTFG  = Mval * ICval * pQSnd_ * zeta_ * comb_ * -1.0 / rhoo_ / Lf_;
                     block->co.push_back(dTFG);
@@ -1080,26 +1081,35 @@ void SeaIce::createGrid()
 void SeaIce::createIntCoeff()
 {
     // creating local integral coefficients
+    localIntCoeff_->PutScalar(0.0);
+    intCoeff_->PutScalar(0.0);
     int idx = 0;
+    int lsr,gsr;
     for (int j = 0; j != mLoc_; ++j)
         for (int i = 0; i != nLoc_; ++i)
-            (*localIntCoeff_)[idx++] = cos(y_[j]) * dx_ * dy_;
+        {
+            lsr = j*nLoc_ + i;
+            gsr = assemblySurfaceMap_->GID(lsr);
+            if ((*surfmask_)[gsr] == 0)
+                (*localIntCoeff_)[idx] = cos(y_[j]) * dx_ * dy_;
+            idx++;
+        }
 
     domain_->Assembly2StandardSurface(*localIntCoeff_, *intCoeff_);
 
-    // disable land points in global vector
-    int lid, sr;
-    for (int j = 0; j != mGlob_; ++j)
-        for (int i = 0; i != nGlob_; ++i)
-        {
-            sr  = j * nGlob_ + i;
-            lid = intCoeff_->Map().LID(sr);
-            if ((lid >= 0) && ((*surfmask_)[sr]))
-                (*intCoeff_)[lid] = 0.0;
-        }
+    // // disable land points in global vector
+    // int lid, sr;
+    // for (int j = 0; j != mGlob_; ++j)
+    //     for (int i = 0; i != nGlob_; ++i)
+    //     {
+    //         sr  = j * nGlob_ + i;
+    //         lid = intCoeff_->Map().LID(sr);
+    //         if ((lid >= 0) && ((*surfmask_)[sr]))
+    //             (*intCoeff_)[lid] = 0.0;
+    //     }
 
-    // distribute back to assembly map
-    domain_->Standard2AssemblySurface(*intCoeff_, *localIntCoeff_);
+    // // distribute back to assembly map
+    // domain_->Standard2AssemblySurface(*intCoeff_, *localIntCoeff_);
 
     // obtain total area
     intCoeff_->Norm1(&totalArea_);
