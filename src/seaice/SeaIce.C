@@ -203,6 +203,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     localAtmosP_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosA_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localIntCoeff_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    
+    localSurfmask_ = Teuchos::rcp(new Epetra_IntVector(*assemblySurfaceMap_));
 
     // Create local computational grid in x_, y_
     createGrid();
@@ -330,7 +332,10 @@ void SeaIce::computeRHS()
                 }
 
                 rr = find_row0(nLoc_, mLoc_, i, j, XX);
-                rhs[rr] = val;
+//                if ((*localSurfmask_)[sr] == 0)
+                    rhs[rr] = val;
+//                else
+//                    rhs[rr] = 0.0;
             }
 
             if (aux_ == 1)
@@ -518,20 +523,19 @@ void SeaIce::computeLocalJacobian()
 
     //---------------------------------------------------------------
     // Set land points to 1, RHS elements should be 0 at land points
-
     // int sr;
-    // for (int j = 1; j <= mLoc_; ++j)
-    //     for (int i = 1; i <= nLoc_; ++i)
+    // for (int j = 0; j < mLoc_; ++j)
+    //     for (int i = 0; i < nLoc_; ++i)
     //         for (int A = 1; A <= (dof_+aux_); ++A)
     //             for (int B = 1; B <= (dof_+aux_); ++B)
     //                 {
-    //                     sr = j*nGlob_ + i;      // global surface index
-    //                     if ((*surfmask_)[sr])
+    //                     sr = j*nLoc_ + i;       // local surface index
+    //                     if ((*localSurfmask_)[sr])
     //                     {
     //                         if (B==A)
-    //                             Al_->set(i,j,1,1,A,B,1.0);
+    //                             Al_->set(i+1,j+1,1,1,A,B,1.0);
     //                         else
-    //                             Al_->set(i,j,1,1,A,B,0.0);
+    //                             Al_->set(i+1,j+1,1,1,A,B,0.0);
     //                     }
     //                 }
 }
@@ -694,6 +698,15 @@ void SeaIce::setLandMask(Utils::MaskStruct const &mask)
         surfmask_ = mask.global_surface;
     }
 
+    int lsr, gsr;
+    for (int j = 0; j != mLoc_; ++j)
+        for (int i = 0; i != nLoc_; ++i)
+        {
+            lsr = j*nLoc_ + i;
+            gsr = assemblySurfaceMap_->GID(lsr);
+            (*localSurfmask_)[lsr] = (*surfmask_)[gsr];
+        }
+               
     // adjust integral coefficients
     createIntCoeff();
 }
@@ -906,8 +919,8 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
         for (int j = 0; j != mGlob_; ++j)
             for (int i = 0; i != nGlob_; ++i)
             {
-                sr    = j*nGlob_ + i;            // global surface index
-                ICval = (*globalIntCoeff_)[sr];  // integral coefficient
+                sr    = j*nGlob_ + i;             // global surface index
+                ICval = (*globalIntCoeff_)[sr];   // integral coefficient
                 Mval  = (*(*MsiG)(0))[sr];        // mask value
 
 //                if ((*surfmask_)[sr] == 0)
@@ -1084,32 +1097,18 @@ void SeaIce::createIntCoeff()
     localIntCoeff_->PutScalar(0.0);
     intCoeff_->PutScalar(0.0);
     int idx = 0;
-    int lsr,gsr;
+    int sr;
     for (int j = 0; j != mLoc_; ++j)
         for (int i = 0; i != nLoc_; ++i)
         {
-            lsr = j*nLoc_ + i;
-            gsr = assemblySurfaceMap_->GID(lsr);
-            if ((*surfmask_)[gsr] == 0)
+            sr = j*nLoc_ + i;
+            if ((*localSurfmask_)[sr] == 0)
                 (*localIntCoeff_)[idx] = cos(y_[j]) * dx_ * dy_;
             idx++;
         }
 
+    // distribute to non-overlapping vector
     domain_->Assembly2StandardSurface(*localIntCoeff_, *intCoeff_);
-
-    // // disable land points in global vector
-    // int lid, sr;
-    // for (int j = 0; j != mGlob_; ++j)
-    //     for (int i = 0; i != nGlob_; ++i)
-    //     {
-    //         sr  = j * nGlob_ + i;
-    //         lid = intCoeff_->Map().LID(sr);
-    //         if ((lid >= 0) && ((*surfmask_)[sr]))
-    //             (*intCoeff_)[lid] = 0.0;
-    //     }
-
-    // // distribute back to assembly map
-    // domain_->Standard2AssemblySurface(*intCoeff_, *localIntCoeff_);
 
     // obtain total area
     intCoeff_->Norm1(&totalArea_);

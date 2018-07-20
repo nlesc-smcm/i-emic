@@ -99,9 +99,6 @@ private:
     //! local grid
     std::vector<double> x_, y_;
 
-    //! global surface mask
-    std::shared_ptr<std::vector<int> > surfmask_;
-
     //! TRIOS domain object for parallelization strategy
     Teuchos::RCP<TRIOS::Domain> domain_;
 
@@ -149,11 +146,6 @@ private:
     //! non-overlapping albedo
     Teuchos::RCP<Epetra_Vector> albe_;
 
-    //! non-overlapping integral coefficients
-    Teuchos::RCP<Epetra_Vector> intCoeff_;
-
-    //! gathered global integral coefficients;
-    Teuchos::RCP<Epetra_Vector> globalIntCoeff_;
 
     //! overlapping localState
     Teuchos::RCP<Epetra_Vector> localState_;
@@ -186,7 +178,20 @@ private:
     Teuchos::RCP<Epetra_Vector> localAtmosA_;
 
     //! non-overlapping integral coefficients
+    Teuchos::RCP<Epetra_Vector> intCoeff_;
+
+    //! non-overlapping integral coefficients
     Teuchos::RCP<Epetra_Vector> localIntCoeff_;
+    
+    //! gathered global integral coefficients;
+    Teuchos::RCP<Epetra_Vector> globalIntCoeff_;
+    
+    //! global surface land  mask
+    std::shared_ptr<std::vector<int> > surfmask_;
+    
+    //! local surface land mask
+    Teuchos::RCP<Epetra_IntVector> localSurfmask_;
+    
     
     //! State component maps
     std::map<int, Teuchos::RCP<Epetra_Map> > Maps_;
