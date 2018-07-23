@@ -10,14 +10,13 @@ extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
 SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     :
     params_          (params),
-    comm_            (comm),
     nGlob_           (params->get("Global Grid-Size n", 16)),
     mGlob_           (params->get("Global Grid-Size m", 16)),
     periodic_        (params->get("Periodic", false)),
-
+    
     precInitialized_ (false),
     recomputePrec_   (false),
-
+    
     taus_         (0.01),    // threshold ice thickness
     epsilon_      (1.0e-2),  // Heavyside approximation steepness
 
@@ -83,6 +82,15 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     sunp_     = params->get(allParameters_[1], 1.0);
     maskf_    = params->get(allParameters_[2], 1.0);
 
+    // inherited input/output datamembers
+    inputFile_  = params->get("Input file",  "seaice_input.h5");
+    outputFile_ = params->get("Output file", "seaice_output.h5");
+    loadState_  = params->get("Load state", false);
+    saveState_  = params->get("Save state", true);
+
+    // set communicator 
+    comm_ = comm;
+    
     // Background sublimation and derivatives: calculate background
     // saturation specific humidity according to [Bolton,1980], T in
     // \deg C
@@ -140,6 +148,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // auxiliary integral correction
     aux_      = 1;
 
+    
     // Create domain object
     domain_ = Teuchos::rcp(new TRIOS::Domain(nGlob_, mGlob_, 1, dof_,
                                              xmin_, xmax_, ymin_, ymax_,
@@ -220,8 +229,9 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Initialize Jacobian
     jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
 
-    // Initialize state (superfluous now that we have continuation pars)
-    // initializeState();
+    // Import existing state
+    if (loadState_)
+        loadStateFromFile(inputFile_);
 
     // Create importers for communication with other models
     int XX;
@@ -684,6 +694,18 @@ void SeaIce::setPar(double value)
 }
 
 //-----------------------------------------------------------------------------
+int SeaIce::npar()
+{
+    return (int) allParameters_.size();
+}
+
+//-----------------------------------------------------------------------------
+std::string const SeaIce::int2par(int ind)
+{
+    return allParameters_[ind];
+}
+
+//-----------------------------------------------------------------------------
 void SeaIce::setLandMask(Utils::MaskStruct const &mask)
 {
     // create global surface mask
@@ -756,7 +778,8 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     // d / da_atm (F_Q)
     double daatmFQ;
     double tmp = 0.0;
-    int sr, col;
+    // int sr;
+    int col;
 
     for (int j = 0; j != mGlob_; ++j)
     {
@@ -774,7 +797,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
             {
                 block->beg.push_back(el_ctr);
                 
-                sr = j*nGlob_ + i;            // global surface index
+//                sr = j*nGlob_ + i;            // global surface index
 //                if ((*surfmask_)[sr] == 0)
                 {
                     switch (XX)
@@ -872,12 +895,12 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
     // d / dS (F_T)
     double dSFT =  comb_ * a0_;
 
-    int sr;
+//    int sr;
     for (int j = 0; j != mGlob_; ++j)
         for (int i = 0; i != nGlob_; ++i)
             for (int XX = 1; XX <= dof_; ++XX)
             {
-                sr = j*nGlob_ + i;            // global surface index
+//                sr = j*nGlob_ + i;            // global surface index
 
                 block->beg.push_back(el_ctr);
 

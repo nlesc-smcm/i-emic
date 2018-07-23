@@ -13,16 +13,11 @@
 Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     :
     params_          (params),
-    comm_            (comm),
     n_               (params->get("Global Grid-Size n", 16)),
     m_               (params->get("Global Grid-Size m", 16)),
     l_               (params->get("Global Grid-Size l", 1)),
     periodic_        (params->get("Periodic", false)),
     aux_             (params->get("Auxiliary unknowns", 1)),
-    inputFile_       (params->get("Input file", "atmos_input.h5")),
-    outputFile_      (params->get("Output file", "atmos_output.h5")),
-    loadState_       (params->get("Load state", false)),
-    saveState_       (params->get("Save state", true)),
     saveEveryStep_   (params->get("Save every step", false)),
     useIntCondQ_     (params->get("Use integral condition on q", true)),
     useFixedPrecip_  (params->get("Use idealized precipitation", false)),
@@ -32,6 +27,15 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     recompMassMat_   (true)
 {
     INFO("Atmosphere: constructor...");
+
+    // inherited input/output datamembers
+    inputFile_  = params->get("Input file", "atmos_input.h5");
+    outputFile_ = params->get("Output file", "atmos_output.h5");
+    loadState_  = params->get("Load state", false);
+    saveState_  = params->get("Save state", true);
+
+    // set comm
+    comm_ = comm;
 
     // Define degrees of freedom
     dof_ = ATMOS_NUN_;
@@ -1582,86 +1586,8 @@ void Atmosphere::insert_graph_entry(int* indices, int& pos,
 }
 
 //=============================================================================
-// This is pretty similar to the routine in Ocean, so we could factorize it in Utils.
-int Atmosphere::loadStateFromFile(std::string const &filename)
+void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename)
 {
-    INFO("Loading atmos state and parameters from " << filename);
-
-    // Check whether file exists
-    std::ifstream file(filename);
-    if (!file)
-    {
-        WARNING("Can't open " << filename
-                << ", continue with trivial state", __FILE__, __LINE__);
-
-        // initialize trivial ocean
-        state_->PutScalar(0.0);
-        return 1;
-    }
-    else file.close();
-
-    // Create HDF5 object
-    EpetraExt::HDF5 HDF5(*comm_);
-    Epetra_MultiVector *readState;
-
-    // Read state
-    HDF5.Open(filename);
-    HDF5.Read("State", readState);
-
-    if ( readState->GlobalLength() != domain_->GetSolveMap()->NumGlobalElements() )
-        WARNING("Loading state from differ #procs", __FILE__, __LINE__);
-
-    // Create importer
-    // target map: thcm domain SolveMap
-    // source map: state with linear map as read by HDF5.Read
-    Teuchos::RCP<Epetra_Import> lin2solve =
-        Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
-                                       readState->Map() ));
-
-    // Import state from HDF5 into state_ datamember
-    CHECK_ZERO(state_->Import(*((*readState)(0)), *lin2solve, Insert));
-
-    INFO("   atmos state: ||x|| = " << Utils::norm(state_));
-
-    // Interface between HDF5 and the atmosphere parameters,
-    // put all the <npar> parameters back in atmos.
-    std::string parName;
-    double parValue;
-    for (int par = 0; par < atmos_->npar(); ++par)
-    {
-        parName  = atmos_->int2par(par);
-
-        // Read continuation parameter and put it in THCM
-        try
-        {
-            HDF5.Read("Parameters", parName.c_str(), parValue);
-        }
-        catch (EpetraExt::Exception &e)
-        {
-            e.Print();
-            continue;
-        }
-
-        setPar(parName, parValue);
-        INFO("   " << parName << " = " << parValue);
-    }
-
-    INFO("Loading atmos state and parameters from " << filename << " done");
-    return 0;
-}
-
-//=============================================================================
-int Atmosphere::saveStateToFile(std::string const &filename)
-{
-    INFO("_________________________________________________________");
-    INFO("Writing atmos state and parameters to " << filename);
-
-    INFO("   atmos state: ||x|| = " << Utils::norm(state_));
-
-    // Write state, map and continuation parameter
-    EpetraExt::HDF5 HDF5(*comm_);
-    HDF5.Create(filename);
-    HDF5.Write("State", *state_);
 
     // Get and write evaporation and precipitation fields
     getE();
@@ -1674,20 +1600,6 @@ int Atmosphere::saveStateToFile(std::string const &filename)
     HDF5.Write("lst", *lst_);
     HDF5.Write("sst", *sst_);
 
-    // Interface between HDF5 and the atmos parameters,
-    // store all the <npar> atmos parameters in an HDF5 file.
-    std::string parName;
-    double parValue;
-    for (int par = 0; par < atmos_->npar(); ++par)
-    {
-        parName  = atmos_->int2par(par);
-        parValue = getPar(parName);
-        INFO("   " << parName << " = " << parValue);
-        HDF5.Write("Parameters", parName.c_str(), parValue);
-    }
-    
-    INFO("_________________________________________________________");
-    return 0;
 }
 
 //=============================================================================
@@ -1708,4 +1620,25 @@ void Atmosphere::copyFiles()
         std::ofstream dst(ss.str(), std::ios::binary);
         dst << src.rdbuf();
     }
+}
+
+
+//=============================================================================
+int Atmosphere::interface_row(int i, int j, int XX)
+{
+    if (XX >= ATMOS_PP_)
+    {
+        if (aux_ <= 0)
+        {
+            WARNING("Atmosphere: invalid row", __FILE__, __LINE__);
+            return -1;
+        }
+        else
+        {
+            // return rows beyond the regular n*m*l*dof
+            return dim_ - aux_ + (XX - ATMOS_PP_);
+        }                    
+    }
+    else
+        return FIND_ROW_ATMOS0(dof_, n_, m_, l_, i, j, l_-1, XX);
 }

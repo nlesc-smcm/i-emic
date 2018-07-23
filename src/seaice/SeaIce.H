@@ -116,9 +116,6 @@ private:
     //! (overlapping).
     Teuchos::RCP<Epetra_Map> assemblySurfaceMap_;
 
-    //! non-overlapping state
-    Teuchos::RCP<Epetra_Vector> state_;
-
     //! non-overlapping rhs
     Teuchos::RCP<Epetra_Vector> rhs_;
 
@@ -191,7 +188,6 @@ private:
     
     //! local surface land mask
     Teuchos::RCP<Epetra_IntVector> localSurfmask_;
-    
     
     //! State component maps
     std::map<int, Teuchos::RCP<Epetra_Map> > Maps_;
@@ -373,6 +369,12 @@ public:
     void    setPar(double value);
     void    setPar(std::string const &parName, double value);
 
+    //! get total number of continuation parameters
+    int npar();
+
+    //! convert index to parameter name
+    std::string const int2par(int ind);
+
     Utils::MaskStruct getLandMask()
         {
             WARNING("Not implemented", __FILE__, __LINE__);
@@ -457,6 +459,12 @@ private:
     
     //! 1-based local find_row function
     int find_row1(int n, int m, int i, int j, int XX);
+
+    // HDF5-based save and load functions components other than the
+    // state and parameters
+    void additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename){}
+    void additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename){}
+
 };
     
 #endif

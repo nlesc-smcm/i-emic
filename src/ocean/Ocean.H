@@ -69,10 +69,8 @@ public:
 
 protected:
 
-    //
     Teuchos::RCP<THCM> thcm_;
 
-    VectorPtr state_;
     VectorPtr rhs_;
     VectorPtr sst_;
     VectorPtr sss_;
@@ -83,7 +81,6 @@ protected:
 
     MatrixPtr jac_;
     VectorPtr diagB_;
-    Teuchos::RCP<Epetra_Comm> comm_;
 
     VectorPtr rowScaling_;
     VectorPtr colScaling_;
@@ -127,13 +124,7 @@ protected:
     // Label of current mask
     std::string currentMask_;
 
-    // HDF5 input/output files
-    std::string const inputFile_;
-    std::string const outputFile_;
-
     // Flags for loading/saving states from/to hfd5 file
-    bool loadState_;
-    bool saveState_;
     bool saveMask_;
     bool loadMask_;
     bool loadSalinityFlux_;
@@ -259,10 +250,20 @@ public:
     void setPar(std::string const &parName, double value);
     void setParName(std::string const &parName) { parName_ = parName; }
 
-    // Return continuation parameter value
+    //! Return default continuation parameter value
     double getPar();
+
+    //! Return default continuation parameter value
     double getPar(std::string const &parName);
+
+    //! Return current parameter name
     std::string const getParName() { return parName_; }
+
+    //! Return total number of continuation parameters
+    int npar() { return _NPAR_; }
+
+    //! Convert integer parameter index to parameter name
+    std::string const int2par(int ind);
 
     //! Get current landmask
     Utils::MaskStruct getLandMask()
@@ -282,7 +283,6 @@ public:
         {
             return (currentMask_ == label);
         }
-
 
     //! Set global and local (distributed) landmask arrays
     void setLandMask(Utils::MaskStruct const &mask)
@@ -397,9 +397,6 @@ public:
     VectorPtr getRowScaling();
     VectorPtr getColScaling();
 
-    int loadState() { return loadStateFromFile(inputFile_); }
-    int saveState() { return saveStateToFile(outputFile_); }
-
     void setParameters(Teuchos::RCP<Teuchos::ParameterList> pars);
 
     void copyFiles(std::string const &fname = "");
@@ -430,9 +427,10 @@ public:
     int analyzeJacobian2();
 
 private:
-    // HDF5-based save and load functions for the state and parameters
-    int loadStateFromFile(std::string const &name);
-    int saveStateToFile(std::string const &name);
+    // HDF5-based save and load functions components other than the
+    // state and parameters
+    void additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename);
+    void additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename);
 
     // Write the state of the ocean to traditional fortran out files fort.*
     // Use matlab plot-scripts for visualization

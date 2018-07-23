@@ -47,9 +47,6 @@ private:
     //! parameterlist
     ParameterList params_;
 
-    //! communicator object
-    Teuchos::RCP<Epetra_Comm> comm_;
-
     //! grid size
     int n_,m_,l_, dim_;
 
@@ -84,9 +81,6 @@ private:
 
     //! Surface assembly to standardmap importer
     Teuchos::RCP<Epetra_Import> as2std_surf_;
-
-    //! parallel atmosphere state (non-overlapping)
-    Teuchos::RCP<Epetra_Vector> state_;
 
     //! parallel atmosphere state (overlapping)
     Teuchos::RCP<Epetra_Vector> localState_;
@@ -151,14 +145,8 @@ private:
     //! State component importers
     std::map<int, Teuchos::RCP<Epetra_Import> > Imps_;
 
-    //! input file (HDF5)
-    std::string const inputFile_;
-
-    //! output file (HDF5)
-    std::string const outputFile_;
-
     //! input/output flags
-    bool loadState_, saveState_, saveEveryStep_;
+    bool saveEveryStep_;
 
     //! flag allowing to disable integral condition
     bool useIntCondQ_;
@@ -246,7 +234,7 @@ public:
     //! Receive ocean data
     void synchronize(std::shared_ptr<SeaIce> seaice);
 
-    //! Downcast to specific models
+    //! Meaningless: dummy implementation
     void synchronize(std::shared_ptr<Atmosphere> atmos) {}
 
     void setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst);
@@ -301,6 +289,12 @@ public:
     //! Obtain degrees of freedom
     int dof() { return dof_; }
 
+    //! Return number of continuation parameters
+    int  npar() { return atmos_->npar(); }
+
+    //! Return parameter name, supply index
+    std::string const int2par(int ind) { return atmos_->int2par(ind); }
+
     Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return Utils::getVector(mode, state_); }
     Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return Utils::getVector(mode, sol_); }
     Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')      { return Utils::getVector(mode, rhs_); }
@@ -352,32 +346,8 @@ public:
 
     //! Get row at the interface, XX is 1-based, i and j 0-based. The
     //! result is also 0-based.
-    int interface_row(int i, int j, int XX)
-        {
-            if (XX >= ATMOS_PP_)
-            {
-                if (aux_ <= 0)
-                {
-                    WARNING("Atmosphere: invalid row", __FILE__, __LINE__);
-                    return -1;
-                }
-                else
-                {
-                    // return rows beyond the regular n*m*l*dof
-                    return dim_ - aux_ + (XX - ATMOS_PP_);
-                }                    
-            }
-            else
-                return FIND_ROW_ATMOS0(dof_, n_, m_, l_, i, j, l_-1, XX);
-        }
-
-    // // FIXME not implemented yet should be done through Model interface
-    // int gid2coord(int const &gid, int &modelIdent,
-    //               int &i, int &j, int &k, int &x) { return -1; }
-
-    int loadState() { return loadStateFromFile(inputFile_); }
-    int saveState() { return saveStateToFile(outputFile_);  }
-
+    int interface_row(int i, int j, int XX);
+    
 private:
     
     //! Private member to compute P if it is not an unknown in the
@@ -399,11 +369,11 @@ private:
                             int i, int j, int k, int xx,
                             int N, int M, int L) const;
 
-    //! HDF5-based load function for the state and parameters
-    int loadStateFromFile(std::string const &name);
-    
-    //! HDF5-based save function for the state and parameters
-    int saveStateToFile(std::string const &name);
+    void additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename){}
+
+    //! HDF5-based save function for other components than the state
+    //! and parameters.
+    void additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename);
 
     //! Copy HDF5
     void copyFiles();

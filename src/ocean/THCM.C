@@ -2017,6 +2017,11 @@ void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
     {
         // compute salinity integral, put it in correction
         CHECK_ZERO(intcond_coeff->Dot(*vec, &intCorrection_));
+        
+        if (std::abs(intCorrection_) > 1e-8)
+        {
+            INFO("THCM integral correction: " << intCorrection_);
+        }
     }
 }
 

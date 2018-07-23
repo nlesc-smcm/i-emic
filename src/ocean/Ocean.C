@@ -55,17 +55,11 @@ extern "C" _SUBROUTINE_(set_seaice_parameters)(double*, double*, double*,
 // Constructor:
 Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     :
-    comm_                  (Comm),   // Setting the communication object
     solverInitialized_     (false),  // Solver needs initialization
     precInitialized_       (false),  // Preconditioner needs initialization
     recompPreconditioner_  (true),   // We need a preconditioner to start with
     recompMassMat_         (true),   // We need a mass matrix to start with
 
-    inputFile_             (oceanParamList->get("Input file",  "ocean_input.h5")),
-    outputFile_            (oceanParamList->get("Output file", "ocean_output.h5")),
-
-    loadState_             (oceanParamList->get("Load state", false)),
-    saveState_             (oceanParamList->get("Save state", true)),
     saveMask_              (oceanParamList->get("Save mask", true)),
     loadMask_              (oceanParamList->get("Load mask", true)),
     loadSalinityFlux_      (oceanParamList->get("Load salinity flux", false)),
@@ -87,13 +81,22 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
 {
     INFO("Ocean: constructor...");
 
-    Teuchos::ParameterList &thcmList =
-        oceanParamList->sublist("THCM");
+    // inherited input/output datamembers
+    inputFile_   = oceanParamList->get("Input file",  "ocean_input.h5");
+    outputFile_  = oceanParamList->get("Output file", "ocean_output.h5");
+    loadState_   = oceanParamList->get("Load state", false);
+    saveState_   = oceanParamList->get("Save state", true);
+
+    // set the communicator object
+    comm_ = Comm;
 
     // Create THCM object
     //  THCM is implemented as a Singleton, which allows only a single
     //  instance at a time. The Ocean class can access THCM with a call
     //  to THCM::Instance()
+    Teuchos::ParameterList &thcmList =
+        oceanParamList->sublist("THCM");
+
     thcm_ = rcp(new THCM(thcmList, comm_));
 
     // Throw a few errors if the parameters are odd
@@ -136,6 +139,12 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
     if (loadState_ || loadSalinityFlux_ || loadTemperatureFlux_)
         loadStateFromFile(inputFile_);
 
+    // make sure initial state satisfies integral condition
+    if (THCM::Instance().getSRES() == 0)
+    {
+        THCM::Instance().setIntCondCorrection(state_);
+    }
+    
     // Now that we have the state and parameters initialize
     // the Jacobian, solution and rhs
     initializeOcean();
@@ -1883,30 +1892,8 @@ Teuchos::RCP<Epetra_Vector> Ocean::getIntCondCoeff()
 }
 
 //=====================================================================
-int Ocean::saveStateToFile(std::string const &filename)
+void Ocean::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename)
 {
-    INFO("_________________________________________________________");
-    INFO("Writing ocean state and parameters to " << filename);
-
-    INFO("   ocean state: ||x|| = " << Utils::norm(state_));
-
-    // Write state, map and continuation parameter
-    EpetraExt::HDF5 HDF5(*comm_);
-    HDF5.Create(filename);
-    HDF5.Write("State", *state_);
-
-    // Interface between HDF5 and the THCM parameters,
-    // store all the (_NPAR_ = 30) THCM parameters in an HDF5 file.
-    std::string parName;
-    double parValue;
-    for (int par = 1; par <= _NPAR_; ++par)
-    {
-        parName  = THCM::Instance().int2par(par);
-        parValue = getPar(parName);
-        INFO("   " << parName << " = " << parValue);
-        HDF5.Write("Parameters", parName.c_str(), parValue);
-    }
-
     if (saveSalinityFlux_)
     {
         // Write emip to ocean output file
@@ -1938,109 +1925,12 @@ int Ocean::saveStateToFile(std::string const &filename)
 
         HDF5.Write("MaskGlobal", "Label", landmask_.label);
     }
-
-    INFO("_________________________________________________________");
-
-    return 0;
 }
 
 // =====================================================================
-int Ocean::loadStateFromFile(std::string const &filename)
+void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename)
 {
-    // Create HDF5 object
-    EpetraExt::HDF5 HDF5(*comm_);
-    Epetra_MultiVector *readState;
 
-    // Read state
-    HDF5.Open(filename);
-
-    if (loadState_)
-    {
-        INFO("Loading state from " << filename);
-
-        // To be sure that the state is properly initialized,
-        // we obtain the state vector from THCM.
-        state_ = THCM::Instance().getSolution();
-
-        // Check whether file exists
-        std::ifstream file(filename);
-        if (!file)
-        {
-            WARNING("Can't open " << filename
-                    << ", continue with trivial state", __FILE__, __LINE__);
-
-            // initialize trivial ocean
-            state_->PutScalar(0.0);
-            return 1;
-        }
-        else
-            file.close();
-
-        if (!HDF5.IsContained("State"))
-        {
-            ERROR("The group <State> is not contained in hdf5 " << filename,
-                  __FILE__, __LINE__);
-        }
-
-        // Read the state. To be able to restart with different
-        // numbers of procs we do not include the Map in the hdf5. The
-        // state as read here will have a linear map and we import it
-        // into the current domain decomposition.
-        HDF5.Read("State", readState);
-
-        // Create import strategies
-        // target map: thcm domain SolveMap
-        // source map: state with linear map as read by HDF5.Read
-        Teuchos::RCP<Epetra_Import> lin2solve =
-            Teuchos::rcp(new Epetra_Import(*(domain_->GetSolveMap()),
-                                           readState->Map() ));
-
-        // Import state from HDF5 into state_ datamember
-        state_->Import(*((*readState)(0)), *lin2solve, Insert);
-
-        INFO("   ocean state: ||x|| = " << Utils::norm(state_));
-
-        if (THCM::Instance().getSRES() == 0)
-        {
-            // THCM::Instance().adjustForIntCond(state_);
-            THCM::Instance().setIntCondCorrection(state_);
-        }
-
-        INFO("Loading state from " << filename << " done");
-
-        INFO("Loading parameters from " << filename);
-        // Interface between HDF5 and the THCM parameters,
-        // put all the (_NPAR_ = 30) THCM parameters back in THCM.
-        std::string parName;
-        double parValue;
-
-        if (!HDF5.IsContained("Parameters"))
-        {
-            ERROR("The group <Parameters> is not contained in hdf5 " << filename,
-                  __FILE__, __LINE__);
-        }
-
-        for (int par = 1; par <= _NPAR_; ++par)
-        {
-            parName  = THCM::Instance().int2par(par);
-
-            // Read continuation parameter and put it in THCM
-            try
-            {
-                HDF5.Read("Parameters", parName.c_str(), parValue);
-            }
-            catch (EpetraExt::Exception &e)
-            {
-                e.Print();
-                continue;
-            }
-
-            setPar(parName, parValue);
-            INFO("   " << parName << " = " << parValue);
-        }
-
-        INFO("Loading parameters from " << filename << " done");
-    }
     if (loadSalinityFlux_)
     {
         INFO("Loading salinity flux from " << filename);
@@ -2186,8 +2076,6 @@ int Ocean::loadStateFromFile(std::string const &filename)
             THCM::Instance().setLandMask(globmask);
         }
     }
-
-    return 0;
 }
 
 //====================================================================
@@ -2211,6 +2099,12 @@ double Ocean::getPar(std::string const &parName)
     }
     else  // If parameter not available we return 0
         return 0;
+}
+
+//===================================================================
+std::string const Ocean::int2par(int ind)
+{
+    return THCM::Instance().int2par(ind);
 }
 
 //====================================================================
