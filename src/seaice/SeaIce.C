@@ -70,6 +70,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 // exchange coefficient
     muoa_    (rhoa_ * Ch_ * cpa_ * uw_)
 {
+    INFO("SeaIce constructor");
     // Continuation parameters
     allParameters_ = { "Combined Forcing",
                        "Solar Forcing",
@@ -163,6 +164,12 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     yminLoc_ = domain_->YminLoc();
     ymaxLoc_ = domain_->YmaxLoc();
 
+    INFO("   local sea ice model: local xmin = " << xminLoc_);
+    INFO("                        local xmax = " << xmaxLoc_);
+    INFO("                        local ymin = " << yminLoc_);
+    INFO("                        local ymax = " << ymaxLoc_);
+
+
     // local grid dimensions
     nLoc_   =  domain_->LocalN();
     mLoc_   =  domain_->LocalM();
@@ -239,8 +246,11 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     {
         XX = SEAICE_HH_ + i;
         Maps_[XX] = Utils::CreateSubMap(*standardMap_, dof_, XX);
+        std::cout << *Maps_[XX] << std::endl;
         Imps_[XX] = Teuchos::rcp(new Epetra_Import(*Maps_[XX], *standardMap_));
+        std::cout << *Imps_[XX] << std::endl;
     }
+    INFO("SeaIce constructor done");    
 }
 
 //=============================================================================
