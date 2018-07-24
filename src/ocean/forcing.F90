@@ -528,7 +528,7 @@ SUBROUTINE qint(field,cor)
 
   ! This is an evil breach of concept, we call a C++ function from F90
   ! to compute the global integral:
-
+  cor = 0.0
   call thcm_forcing_integral(field, y(1:m), landm, cor)
 
 end SUBROUTINE qint

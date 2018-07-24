@@ -100,7 +100,7 @@ namespace Utils
     template<typename VectorPtr>
     double norm(VectorPtr const &vec)
     {
-        std::vector<double> norm(vec->NumVectors());
+        std::vector<double> norm(vec->NumVectors(), 0.0);
         CHECK_ZERO(vec->Norm2(&norm[0]));
         return norm[0];
     }

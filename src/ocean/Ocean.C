@@ -220,6 +220,10 @@ Ocean::~Ocean()
 // initialize Ocean with trivial state
 void Ocean::initializeOcean()
 {
+    // Initialize solution and rhs
+    sol_ = rcp(new Epetra_Vector(*domain_->GetStandardMap(), true));
+    rhs_ = rcp(new Epetra_Vector(*domain_->GetStandardMap(), true));
+
     // Obtain Jacobian from THCM
     THCM::Instance().evaluate(*state_, Teuchos::null, true);
     jac_ = THCM::Instance().getJacobian();
@@ -230,10 +234,6 @@ void Ocean::initializeOcean()
     // matrix is independent of the state and parameters so we only
     // compute it when asked for through recompMassMat_ flag.
     buildMassMat();
-
-    // Initialize solution and rhs
-    sol_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
-    rhs_ = rcp(new Epetra_Vector(jac_->OperatorRangeMap()));
 
     // Compute right hand side and print its norm
     computeRHS();
@@ -1251,8 +1251,6 @@ void Ocean::computeRHS()
     THCM::Instance().fixMixing(0);
     THCM::Instance().evaluate(*state_, rhs_, false);
     TIMER_STOP("Ocean: compute RHS...");
-
-    INFO(" ocean F = " << Utils::norm(rhs_));
 }
 
 //=====================================================================
@@ -1447,7 +1445,7 @@ void Ocean::synchronize(std::shared_ptr<Atmosphere> atmos)
                                    &atmosPars.dqso,
                                    &atmosPars.Eo0,
                                    &atmosPars.a0,
-                                   &atmosPars.da);
+                                   &atmosPars.da );
 
     TIMER_STOP("Ocean: set atmosphere...");
 }

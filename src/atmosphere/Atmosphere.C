@@ -1555,14 +1555,6 @@ void Atmosphere::createMatrixGraph()
 
     // Finalize matrixgraph
     CHECK_ZERO(matrixGraph_->FillComplete() );
-
-#ifdef DEBUGGING_NEW
-    std::ofstream file;
-    file.open("atmos_graph" + std::to_string(comm_->MyPID()));
-    matrixGraph_->PrintGraphData(file);
-    file.close();
-#endif
-
 }
 
 //=============================================================================

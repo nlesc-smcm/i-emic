@@ -2777,9 +2777,6 @@ extern "C" {
         CHECK_ZERO( comm->SumAll(&lsint,&sint,1) );
         
         *fsint = *fsint/sint;
-        
-        INFO("Flux correction equals " << *fsint);
-        INFO("        average over   " << sint);
     }
 
     Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()

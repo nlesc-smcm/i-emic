@@ -83,14 +83,15 @@ TEST(CoupledModel, Initialization)
 //------------------------------------------------------------------
 TEST(CoupledModel, RHS)
 {
-    atmos->computeRHS();
+    atmos->computeRHS(); 
     EXPECT_LT(Utils::norm(atmos->getRHS()), 1e-7);
-    seaice->computeRHS();
+    seaice->computeRHS(); 
     EXPECT_LT(Utils::norm(seaice->getRHS()), 1e-7);
-    ocean->computeRHS();
+    ocean->computeRHS(); 
     EXPECT_LT(Utils::norm(ocean->getRHS()), 1e-7);
     coupledModel->computeRHS();
     EXPECT_LT(Utils::norm(coupledModel->getRHS()), 1e-7);
+
 }
 
 //------------------------------------------------------------------

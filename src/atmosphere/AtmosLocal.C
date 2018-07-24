@@ -469,8 +469,6 @@ void AtmosLocal::setSeaIceMask(std::vector<double> const &Msi)
 //==================================================================
 void AtmosLocal::getCommPars(AtmosLocal::CommPars &parStruct)
 {
-    parStruct.t0o  = t0o_;
-    parStruct.t0i  = t0i_;
     parStruct.tdim = tdim_;
     parStruct.qdim = qdim_;
     parStruct.nuq  = nuq_;
@@ -478,6 +476,9 @@ void AtmosLocal::getCommPars(AtmosLocal::CommPars &parStruct)
     parStruct.dqso = dqso_;
     parStruct.dqsi = dqsi_;
     parStruct.dqdt = nuq_ * tdim_ / qdim_ * dqso_ ;
+    parStruct.Eo0  = Eo0_;
+    parStruct.t0o  = t0o_;
+    parStruct.t0i  = t0i_;
     parStruct.a0   = a0_;
     parStruct.da   = da_;
     parStruct.tauf = tauf_;
