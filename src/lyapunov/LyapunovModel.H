@@ -22,6 +22,7 @@ class LyapunovModel: public Model
 {
     double trace_;
     std::vector<double> eigenvalues_;
+    Teuchos::RCP<Epetra_MultiVector> V_;
 public:
     using Model::Model;
 
@@ -85,14 +86,23 @@ void LyapunovModel<Model>::postProcess()
     RAILS::Epetra_MultiVectorWrapper V;
     RAILS::Epetra_SerialDenseMatrixWrapper T;
 
-    V = Teuchos::rcp(
-        new Epetra_MultiVector(map2, 1000));
+    if (V_ != Teuchos::null)
+    {
+        V = V_;
+        params->sublist("Lyapunov Solver").set("Restart from solution", true);
+    }
+    else
+        V = Teuchos::rcp(
+            new Epetra_MultiVector(map2, 1000));
+
     T = Teuchos::rcp(
         new Epetra_SerialDenseMatrix(1000, 1000));
 
     solver.set_parameters(params->sublist("Lyapunov Solver"));
 
     solver.solve(V, T);
+
+    V_ = Teuchos::rcp(new Epetra_MultiVector(Copy, *V, 0, V.N()));
 
     Schur->SetSolution(*V, *T);
     Schur_wrapper.set_parameters(*params);
