@@ -376,16 +376,14 @@ void SeaIce::computeRHS()
         double fluxInt;
         intCoeff_->Dot(fluxDiff, &fluxInt);
 
-        // std::cout << std::setprecision(12) << " gamma = "
-        //           << fluxInt / totalArea_ << " ";
-        // std::cout << std::setprecision(5) << "  comb = "
-        //           << comb_ << std::endl;
-        
-        // use integral in RHS
+        // implement integral equation in RHS
         int Grow = find_row0(nGlob_, mGlob_, 0, 0, SEAICE_GG_);
-        Gval = state[Grow];
-
-        (*rhs_)[Grow] = pQSnd_ * fluxInt - Gval * totalArea_;
+        int lid  = standardMap_->LID(Grow);
+        if (lid >= 0)
+        {
+            Gval = state[lid];
+            (*rhs_)[lid] = pQSnd_ * fluxInt - Gval * totalArea_;
+        }
     }
     
     INFO(" seaic F = " << Utils::norm(rhs_));
@@ -800,7 +798,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
             tmp = (comb_ * sunp_ * sun0_ / 4. / muoa_) *
                 shortwaveS(y_[lid / nLoc_]) * albed_ * c0_;
 
-        comm_->SumAll(&tmp, &daatmFQ, 1);
+        comm_->SumAll( &tmp, &daatmFQ, 1);
 
         for (int i = 0; i != nGlob_; ++i)
             for (int XX = 1; XX <= dof_; ++XX)

@@ -13,6 +13,7 @@ set(TESTS_INCLUDE_DIRS
   )
 
 set(TEST_SOURCES
+  test_map.C
   test_domain.C
   test_vector.C
   test_jdqz.C

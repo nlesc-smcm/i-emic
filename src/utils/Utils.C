@@ -871,9 +871,8 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
     int dimGlb = map.NumGlobalElements(); // number of global entries in original map
 
     int numBlocks     = dim/dof;          // number of blocks
-    int numBlocksGlb  = dimGlb/dof;       // number of blocks
+    int numBlocksGlb  = dimGlb/dof;       // global number of blocks
     
-    int subdim = numBlocks*nvars;         // number of entries in new map (<=dim)
 
     if (numBlocks * dof < dim-1)
     {
@@ -881,6 +880,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
               " than one auxiliary equation in map... ",
               __FILE__, __LINE__);
     }
+    
 
     // Handle possible auxiliary variables
     bool auxVar[nvars];
@@ -902,8 +902,9 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
             auxVar[j] = false;
             auxRws[j] = -1;
         }
-    }           
-
+    }
+    
+    int subdim = numBlocks * nvars;   // number of local entries in new map (<=dim)
     int *MyGlobalElements = new int[subdim];
     
     // take the entries from the old map that correspond
