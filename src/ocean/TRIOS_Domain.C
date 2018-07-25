@@ -239,13 +239,11 @@ namespace TRIOS
 
         bool result = false;
 
-
         // find out where the point is
         Utils::ind2sub(nloc,mloc,lloc,nun_,row,i,j,k,xx);
 
         // ghost nodes at periodic boundary only if more than one proc in x-direction
         bool perio = periodic && xparallel;
-
 
         for (int ii = 0; ii < num_ghosts; ii++)
         {

@@ -246,9 +246,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     {
         XX = SEAICE_HH_ + i;
         Maps_[XX] = Utils::CreateSubMap(*standardMap_, dof_, XX);
-        std::cout << *Maps_[XX] << std::endl;
         Imps_[XX] = Teuchos::rcp(new Epetra_Import(*Maps_[XX], *standardMap_));
-        std::cout << *Imps_[XX] << std::endl;
     }
     INFO("SeaIce constructor done");    
 }
@@ -658,8 +656,6 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getLocalJacobian()
     return jac;
 }
 
-
-
 //=============================================================================
 void SeaIce::getCommPars(SeaIce::CommPars &parStruct)
 {
@@ -1032,7 +1028,19 @@ Teuchos::RCP<Epetra_Vector> SeaIce::interface(int XX)
 {
     Teuchos::RCP<Epetra_Vector> out = Teuchos::rcp(new Epetra_Vector(*Maps_[XX]));
     CHECK_ZERO(out->Import(*state_, *Imps_[XX], Insert));
-    return out;
+
+    assert(out->MyLength() >= 1);
+    
+    if (out->MyLength() == 1) // auxiliary unknown, convert to field
+    {
+        Teuchos::RCP<Epetra_Vector> converted =
+            Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+        
+        converted->PutScalar((*out)[0]);
+        return converted;
+    }
+    else
+        return out;
 }
 
 //=============================================================================
@@ -1059,7 +1067,7 @@ Teuchos::RCP<Epetra_Vector> SeaIce::interfaceG()
     if (aux_ == 1)
         return interface(SEAICE_GG_);
     else
-        return Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+        return Teuchos::null;
 }
 
 //=============================================================================
@@ -1250,13 +1258,6 @@ void SeaIce::createMatrixGraph()
     // Finalize matrixgraph
     CHECK_ZERO(matrixGraph_->FillComplete() );
     
-#ifdef DEBUGGING_NEW
-    std::ofstream file;
-    file.open("seaice_graph" + std::to_string(comm_->MyPID()));
-    matrixGraph_->PrintGraphData(file);
-    file.close();
-#endif
-
 }
 
 //=============================================================================

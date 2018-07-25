@@ -1136,7 +1136,7 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getE(char mode)
 Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
 {
     // P is a single, globally computed unknown
-    double Pvalue;
+    double Pvalue = 0.0;
     int numGlobalElements = P_->Map().NumGlobalElements();
     int numMyElements     = P_->Map().NumMyElements();
     assert((int) surfmask_->size() == numGlobalElements);
@@ -1180,6 +1180,8 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
         gid = P_->Map().GID(i);
         if ((*surfmask_)[gid] == 0)
             (*P_)[i] = Pvalue;
+        else
+            (*P_)[i] = 0.0;
     }
 
     return Utils::getVector(mode, P_);

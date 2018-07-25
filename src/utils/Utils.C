@@ -223,37 +223,37 @@ void Utils::overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPar
 
     for (ConstIterator i = originalPars->begin(); i != originalPars->end(); ++i)
     {
-         const Teuchos::ParameterEntry &entry_i = originalPars->entry(i);
-         const std::string &name_i = originalPars->name(i);
+        const Teuchos::ParameterEntry &entry_i = originalPars->entry(i);
+        const std::string &name_i = originalPars->name(i);
          
-         if (entry_i.isList()) // skipping the sublists first
-         {
-             Teuchos::RCP<Teuchos::ParameterList> sublist =
-                 Teuchos::rcp(&originalPars->sublist(name_i), false);
+        if (entry_i.isList()) // skipping the sublists first
+        {
+            Teuchos::RCP<Teuchos::ParameterList> sublist =
+                Teuchos::rcp(&originalPars->sublist(name_i), false);
              
-             std::stringstream ss;
-             ss << originalPars->name() << "::" << name_i;
-             sublist->setName(ss.str());
-             overwriteParameters(sublist, dominantPars);
-         }
-         else
-         {
-             if (dominantPars->isParameter(name_i))
-             {
-                 const Teuchos::ParameterEntry &entry_j =
-                     dominantPars->getEntry(name_i);
+            std::stringstream ss;
+            ss << originalPars->name() << "::" << name_i;
+            sublist->setName(ss.str());
+            overwriteParameters(sublist, dominantPars);
+        }
+        else
+        {
+            if (dominantPars->isParameter(name_i))
+            {
+                const Teuchos::ParameterEntry &entry_j =
+                    dominantPars->getEntry(name_i);
 
-                 if (entry_i != entry_j)
-                 {
+                if (entry_i != entry_j)
+                {
 
-                     INFO(" " << originalPars->name() << "::"
-                          << name_i << " = " << entry_i << " <-- "
-                          << dominantPars->name() << "::" << name_i
-                          << " = " << entry_j);
-                     originalPars->setEntry(name_i, entry_j);
-                 }
-             }
-         }
+                    INFO(" " << originalPars->name() << "::"
+                         << name_i << " = " << entry_i << " <-- "
+                         << dominantPars->name() << "::" << name_i
+                         << " = " << entry_j);
+                    originalPars->setEntry(name_i, entry_j);
+                }
+            }
+        }
     }
 }
 
@@ -383,9 +383,9 @@ void Utils::saveEigenvectors(std::vector<ComplexVector<Epetra_Vector> > const &e
         groupNameIm << "EV_Imag_" << ctr;
         
         HDF5.Write(groupNameRe.str().c_str(),
-                    vec.real );
+                   vec.real );
         HDF5.Write(groupNameIm.str().c_str(),
-                    vec.imag );
+                   vec.imag );
 
         groupNameRe.str("");
         groupNameRe.clear();
@@ -511,13 +511,21 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
         assert(rowMap->NumMyElements() == (int) crs.beg.size() - 1);
     }
     
-    int numMyElements     = rowMap->NumMyElements();
+    int numMyElements = rowMap->NumMyElements();
 
     int bRow, gRow, index, numEntries, col;
     int offset = (index0) ? 0 : 1;
     for (int lRow = 0; lRow < numMyElements; ++lRow)
     {
-        if ( !global && domain->IsGhost(lRow) )
+
+        // map from current map to global ID
+        gRow = rowMap->GID(lRow);
+
+        // map GID back to standardmap: if this gives -1 we have a
+        // ghost point
+        bRow = mat->RowMap().LID(gRow); 
+
+        if ( !global && (bRow == -1) )
         {
             continue;
         }
@@ -567,20 +575,29 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
             std::cout << "Error in Insert/ReplaceGlobalValues: "
                       << ierr << std::endl;
             std::cout << "Filled = " << mat->Filled() << std::endl;
+            std::cout << "Global = " << global << std::endl;
             std::cout << "  GRID = " << gRow << std::endl;
             std::cout << "  LRID = " << mat->LRID(gRow) << std::endl;
-
+            
             std::cout << "indices : ";
             for (int ii = 0; ii != numEntries; ++ii)
             {
                 std::cout << indices[ii] << " ";
             }
             std::cout << std::endl;
+
+            std::cout << "jco : ";
+            for (int jj = 0; jj != numEntries; ++jj)
+            {
+                std::cout << crs.jco[index + jj - offset] - offset << " ";
+            }
+            std::cout << std::endl;
+
+            std::cout << *rowMap << std::endl;
             
             ERROR("Error in Insert/ReplaceGlobalValues",
                   __FILE__, __LINE__);
         }
-
     }
 }
 
@@ -848,7 +865,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0
 //! extract a map with nun = nvars from a map with nun=6. 'var'
 //! is the array of variables to be extracted.
 Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
-                                                   int dof, int var)
+                                             int dof, int var)
 {
     return CreateSubMap(map,dof,&var,1);
 }
@@ -856,7 +873,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 //! extract a map with nun=2 from a map with nun=6. 'var'
 //! are the variables to be extracted, i.e. {UU,VV}, {TT,SS} etc.
 Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
-                                                   int dof, const int var[2])
+                                             int dof, const int var[2])
 {
     return CreateSubMap(map,dof,var,2);
 }
@@ -865,7 +882,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 //! extract a map with nun = nvars from a map with nun = 6. 'var'
 //! is the array of variables to be extracted.
 Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
-                                                   int dof, const int *var, int nvars)
+                                             int dof, const int *var, int nvars)
 {
     int dim    = map.NumMyElements();     // number of entries in original map
     int dimGlb = map.NumGlobalElements(); // number of global entries in original map
@@ -895,7 +912,6 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
             std::cout << " pid " << map.Comm().MyPID()
                       << " auxiliary variable detected: " << var[j]
                       << ", row " << auxRws[j] << std::endl;
-            
         }
         else
         {
@@ -913,22 +929,21 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
     
     int k = 0;
     for (int i  = 0; i < numBlocks; i++)
-    {
         for (int j = 0; j < nvars; j++)
         {
-            if (auxVar[j])
-            {
-                MyGlobalElements[k] = auxRws[j];
-            }
-            else
-            {
-                MyGlobalElements[k] = map.GID(i*dof+(var[j]-1));
-            }
-            k++;
+            if (!auxVar[j])
+                MyGlobalElements[k++] = map.GID(i*dof+(var[j]-1));
         }
+    
+    for (int j = 0; j < nvars; j++)
+    {
+        if (auxVar[j])
+            MyGlobalElements[k++] = auxRws[j];
     }
+    
     Teuchos::RCP<Epetra_Map> submap =
-        Teuchos::rcp(new Epetra_Map(-1, subdim, MyGlobalElements, 0, map.Comm()));
+        Teuchos::rcp(new Epetra_Map(-1, k, MyGlobalElements, 0, map.Comm()));
+    
     delete [] MyGlobalElements;
     return submap;
 }
@@ -938,7 +953,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 //! discarded (true) or not (false), this function creates a new map with the
 //! discarded entries removed.
 Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
-                                                   const bool* discard)
+                                             const bool* discard)
 {
     int numel = map.NumMyElements();
     int *MyGlobalElements = new int[numel]; // 'worst' case: no discarded nodes

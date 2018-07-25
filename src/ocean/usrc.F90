@@ -1198,7 +1198,7 @@ SUBROUTINE atmos_coef
   As   = sun0*(1 - c0)/(4*muoa)
   Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
   Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
-  nus  = 0.0 ! postpone until set_parameters is called
+  nus  = 0.0 ! postpone until set_atmos_parameters is called
   ! lvsc = rhodim*lv*r0dim/(udim*cp0*rhodim*hdim*dzne)
   lvsc = 0.0 ! ...
   DO j = 1,m
