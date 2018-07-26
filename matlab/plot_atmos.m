@@ -10,7 +10,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if nargin < 2 % defaults
         readEP  = true;
-        readLST = true;      
+        readLST = false;      
         
         opts.readEP  = readEP;
         opts.readLST = readLST;
@@ -92,6 +92,8 @@ function [state,pars,add] = plot_atmos(fname, opts)
     figure(9)
 
     img = Ta';
+    Tdiff = max(max(Ta))-min(min(Ta));
+    fprintf('max(T) - min(T) = %f\n', Tdiff);
     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
     c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
@@ -182,29 +184,29 @@ function [state,pars,add] = plot_atmos(fname, opts)
     xlabel('Longitude')
     ylabel('Latitude')
     exportfig('atmosA.eps',10,[14,10],invert)
-    keyboard
     
     if readEP
 
         figure(14) 
-        Pd  = eta*qdim*P*3600*24*365;
+        Pd  = eta*qdim*max(max(P))*3600*24*365;
+        fprintf('Precipitation P = %2.4e m/y\n', Pd);
 
-        img = P'
-        imagesc(RtD*x,RtD*(y),img); hold on
-        img(img == 0) = NaN;
-        c = contour(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
-                    'linewidth',.5);
-        hold off
-        set(gca,'ydir','normal')
-        cmap = my_colmap(caxis,0);
-        colormap(cmap)
-        colorbar
-
-        hold off              
-        
-        title('P (m/y)')
-        xlabel('Longitude')
-        ylabel('Latitude')
+% $$$         img = P'
+% $$$         imagesc(RtD*x,RtD*(y),img); hold on
+% $$$         img(img == 0) = NaN;
+% $$$         c = contour(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
+% $$$                     'linewidth',.5);
+% $$$         hold off
+% $$$         set(gca,'ydir','normal')
+% $$$         cmap = my_colmap(caxis,0);
+% $$$         colormap(cmap)
+% $$$         colorbar
+% $$$ 
+% $$$         hold off              
+% $$$         
+% $$$         title('P (m/y)')
+% $$$         xlabel('Longitude')
+% $$$         ylabel('Latitude')
         
         figure(15)
         

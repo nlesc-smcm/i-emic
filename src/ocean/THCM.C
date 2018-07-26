@@ -204,6 +204,16 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     ymin = paramList.get("Global Bound ymin", 10.0)  * PI_ / 180.0;
     ymax = paramList.get("Global Bound ymax", 74.0)  * PI_ / 180.0;
     periodic = paramList.get("Periodic"  , false);
+
+    // sanity check
+    double xdist = pow(cos(xmax)-cos(xmin), 2) + pow(sin(xmax)-sin(xmin), 2);
+    if ((xdist < 1e-2) && (periodic == false))
+    {
+        WARNING("Periodic bdc disabled while \n"
+                << " horizontal boundaries coincide. Distance: "
+                << xdist, __FILE__, __LINE__);
+    }
+    
     hdim     = paramList.get("Depth hdim", 4000.0);
     double qz      = paramList.get("Grid Stretching qz", 1.0);
     int    itopo   = paramList.get("Topography", 1);

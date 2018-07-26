@@ -1345,11 +1345,18 @@ void SeaIce::initializeState()
 
 //=============================================================================
 void SeaIce::preProcess()
-{}
+{
+    
+}
 
 //=============================================================================
 void SeaIce::postProcess()
-{}
+{
+    // save state -> hdf5
+    if (saveState_)
+        saveStateToFile(outputFile_); // Save to hdf5
+
+}
 
 //=============================================================================
 int SeaIce::find_row0(int n, int m, int i, int j, int XX)

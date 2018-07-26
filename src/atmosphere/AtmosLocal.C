@@ -112,7 +112,7 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     hdimq_           = params->get("humidity scale height",1800.);
     hdim_            = params->get("vertical length scale",4000.);
     cpa_             = params->get("heat capacity",1000.);
-    d0_              = params->get("constant eddy diffusivity",3.1e+06);
+    D0_              = params->get("temperature eddy diffusivity",3.1e+06);
     kappa_           = params->get("humidity eddy diffusivity",1e+06);
     arad_            = params->get("radiative flux param A",212.0);
     brad_            = params->get("radiative flux param B",1.5);
@@ -171,7 +171,7 @@ void AtmosLocal::setup()
     amua_ = (arad_ + brad_ * t0a_) / muoa_;
     bmua_ =  brad_ / muoa_;
     Ai_   =  rhoa_ * hdima_ * cpa_ * udim_ / (r0dim_ * muoa_);
-    Ad_   =  rhoa_ * hdima_ * cpa_ * d0_ / (muoa_ * r0dim_ * r0dim_);
+    Ad_   =  rhoa_ * hdima_ * cpa_ * D0_ / (muoa_ * r0dim_ * r0dim_);
     As_   =  sun0_ * (1 - c0_) / (4 * muoa_);
 
     // Filling more coefficients (humidity specific)

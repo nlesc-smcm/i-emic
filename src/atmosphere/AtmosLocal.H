@@ -161,7 +161,7 @@ private:
     double  hdimq_; //! humidity scale height \[H_q\]
     double   hdim_; //! vertical length scale \[H\]
     double    cpa_; //! heat capacity \[C_{pa}\]
-    double     d0_; //! constant eddy diffusivity \[D_0\]
+    double     D0_; //! constant eddy diffusivity \[D_0\]
     double  kappa_; //! humidity eddy diffusivity \[\kappa\]    
     double   arad_; //! radiative flux param A
     double   brad_; //! radiative flux param B
