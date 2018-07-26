@@ -129,6 +129,19 @@ Teuchos::RCP<Epetra_Vector> AMS<Model>::prolongate(Epetra_MultiVector const &x) 
     return out;
 }
 
+void write_seed(Epetra_Comm const &comm, unsigned int seed, std::string const &label)
+{
+    unsigned int *seeds = new unsigned int[comm.NumProc()];
+
+    int *seedptr = reinterpret_cast<int *>(&seed);
+    int *seedsptr = reinterpret_cast<int *>(seeds);
+
+    CHECK_ZERO(comm.GatherAll(seedptr, seedsptr, 1));
+    for (int i = 0; i < comm.NumProc(); i++)
+        INFO(label << ": " << seeds[i]);
+    delete[] seeds;
+}
+
 // =====================================================================
 // Class implementation
 
@@ -278,15 +291,21 @@ AMS(Model model, ParameterList pars,
     timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(
                                     time_step, dist_fun, adist_, bdist_, cdist_, dist_tol_));
 
-    static thread_local std::default_random_engine engine(get_seed());
+    static thread_local std::mt19937_64 engine(get_seed());
     timestepper_->set_random_engine(engine);
 }
 
 template<typename Model>
 auto AMS<Model>::get_time_step()
 {
+    std::random_device rd;
+    std::random_device::result_type seed = rd();
+    std::mt19937_64 engine(seed);
+
+    write_seed(*model_->Comm(), seed, "Time step seed");
+
     // Function to perform one stochastic time step
-    return [this](VectorPtr const &x, double dt) {
+    return [this, &engine](VectorPtr const &x, double dt) {
         TIMER_SCOPE("AMS: Time step");
         double sig = 1.0 / (dt * theta_);
 
@@ -294,8 +313,6 @@ auto AMS<Model>::get_time_step()
         // model_->saveState();
 
         // Compute noise for forcing which is independent per processor
-        static thread_local std::random_device rd;
-        static thread_local std::default_random_engine engine(rd());
         std::normal_distribution<double> distribution(0.0, 1.0);
         auto generator = std::bind(distribution, std::ref(engine));
 
@@ -356,8 +373,14 @@ auto AMS<Model>::get_time_step()
 template<typename Model>
 auto AMS<Model>::get_projected_time_step()
 {
+    std::random_device rd;
+    std::random_device::result_type seed = rd();
+    std::mt19937_64 engine(seed);
+
+    write_seed(*model_->Comm(), seed, "Time step seed");
+
     // Function to perform one stochastic time step
-    return [this](VectorPtr const &x, double dt) {
+    return [this, &engine](VectorPtr const &x, double dt) {
         TIMER_SCOPE("AMS: Projected time step");
         double sig = 1.0 / (dt * theta_);
 
@@ -366,8 +389,6 @@ auto AMS<Model>::get_projected_time_step()
 
         TIMER_START("AMS: Compute noise");
         // Compute noise for forcing which is independent per processor
-        static thread_local std::random_device rd;
-        static thread_local std::default_random_engine engine(rd());
         std::normal_distribution<double> distribution(0.0, 1.0);
         auto generator = std::bind(distribution, std::ref(engine));
 
@@ -483,6 +504,9 @@ unsigned int AMS<Model>::get_seed()
 
     int *seed_ptr = reinterpret_cast<int *>(&seed);
     CHECK_ZERO(model_->Comm()->Broadcast(seed_ptr, 1, 0));
+
+    write_seed(*model_->Comm(), seed, "Global seed");
+
     return seed;
 }
 

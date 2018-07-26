@@ -708,7 +708,7 @@ void TimeStepper<T>::gpa(int num_exp, int maxit, double beta, T const &x0,
         std::vector<GPAExperiment<T>> old_experiments = experiments;
 
         // Sample based on the weights
-        for (int i = 0; i < num_exp; i++)cd
+        for (int i = 0; i < num_exp; i++)
         {
             double val = randreal(0.0, sum);
             double  cumsum = 0.0;
@@ -776,8 +776,15 @@ int TimeStepper<T>::randint(int a, int b) const
     if (engine_initialized_)
         return randint_(a, b);
 
+    static bool first = true;
+    if (first)
+    {
+        first = false;
+        std::cout << "WARNING: Random engine not initialized." << std::endl;
+    }
+
     static thread_local std::random_device rd;
-    static thread_local std::default_random_engine engine(rd());
+    static thread_local std::mt19937_64 engine(rd());
     std::uniform_int_distribution<int> int_distribution(a, b);
     return int_distribution(engine);
 }
@@ -788,8 +795,15 @@ int TimeStepper<T>::randreal(double a, double b) const
     if (engine_initialized_)
         return randreal_(a, b);
 
+    static bool first = true;
+    if (first)
+    {
+        first = false;
+        std::cout << "WARNING: Random engine not initialized." << std::endl;
+    }
+
     static thread_local std::random_device rd;
-    static thread_local std::default_random_engine engine(rd());
+    static thread_local std::mt19937_64 engine(rd());
     std::uniform_real_distribution<double> real_distribution(a, b);
     return real_distribution(engine);
 }
