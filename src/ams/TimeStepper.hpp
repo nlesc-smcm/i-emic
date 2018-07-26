@@ -25,6 +25,14 @@ struct AMSExperiment {
 };
 
 template<class T>
+struct GPAExperiment {
+    T x;
+    double weight;
+    double probability;
+    bool converged;
+};
+
+template<class T>
 class TimeStepper
 {
     std::function<T(T const &, double)> time_step_;
@@ -38,6 +46,7 @@ class TimeStepper
     // RNG methods
     bool engine_initialized_;
     std::function<int(int, int)> randint_;
+    std::function<double(double, double)> randreal_;
 
 public:
     TimeStepper(std::function<T(T const &, double)> time_step);
@@ -68,16 +77,24 @@ public:
         double dt, double tmax,
         AMSExperiment<T> &experiment) const;
 
+    void transient_gpa(
+        double dt, double tmax,
+        GPAExperiment<T> &experiment) const;
+
     void ams(int num_exp, int num_init_exp,
              T const &x0, double dt, double tmax) const;
 
     void tams(int num_exp, int maxit, T const &x0, double dt, double tmax) const;
+
+    void gpa(int num_exp, int maxit, double beta, T const &x0,
+             double dt, double tstep, double tmax) const;
 
     template<class URNG>
     void set_random_engine(URNG &engine);
 
 protected:
     int randint(int a, int b) const;
+    int randreal(double a, double b) const;
 };
 
 template<class T>
@@ -245,10 +262,28 @@ void TimeStepper<T>::transient_tams(
 }
 
 template<class T>
+void TimeStepper<T>::transient_gpa(
+    double dt, double tmax,
+    GPAExperiment<T> &experiment) const
+{
+    T x(experiment.x);
+
+    for (double t = dt; t <= tmax; t += dt)
+    {
+        x = std::move(time_step_(x, dt));
+
+        double dist = dist_fun_(x);
+        if (dist > 1 - bdist_)
+            experiment.converged = true;
+    }
+
+    experiment.x = x;
+}
+
+template<class T>
 void TimeStepper<T>::ams(int num_exp, int num_init_exp,
                          T const &x0, double dt, double tmax) const
 {
-
     int its = 0;
     int converged = 0;
     std::vector<AMSExperiment<T>> experiments(num_init_exp);
@@ -319,7 +354,7 @@ void TimeStepper<T>::ams(int num_exp, int num_init_exp,
     shared(std::cout, std::cerr, its, converged,                        \
            experiments, unused_experiments, unconverged_experiments,    \
            reactive_experiments),                                       \
-    schedule(static)
+           schedule(static)
     for (int i = 0; i < maxit; i++)
     {
         AMSExperiment<T> *exp = NULL;
@@ -464,11 +499,9 @@ void TimeStepper<T>::ams(int num_exp, int num_init_exp,
     std::cout << "Transition probability T=" << tmax << ": " << tp << std::endl;
 }
 
-
 template<class T>
 void TimeStepper<T>::tams(int num_exp, int maxit, T const &x0, double dt, double tmax) const
 {
-
     int its = 0;
     int converged = 0;
     std::vector<AMSExperiment<T>> experiments(num_exp);
@@ -650,12 +683,89 @@ void TimeStepper<T>::tams(int num_exp, int maxit, T const &x0, double dt, double
 }
 
 template<class T>
+void TimeStepper<T>::gpa(int num_exp, int maxit, double beta, T const &x0,
+                         double dt, double tstep, double tmax) const
+{
+    std::vector<GPAExperiment<T>> experiments(num_exp);
+
+    auto W = [this, beta](T const &x){return exp(beta * dist_fun_(x));};
+
+    for (int i = 0; i < num_exp; i++)
+    {
+        experiments[i].x = x0;
+        experiments[i].weight = 1;
+        experiments[i].converged = false;
+    }
+
+    for (double t = tstep; t <= tmax; t += tstep)
+    {
+        // Compute the mean weight
+        double sum = 0;
+        for (int i = 0; i < num_exp; i++)
+            sum += experiments[i].weight;
+        double eta = 1.0 / (double)num_exp * sum;
+
+        std::vector<GPAExperiment<T>> old_experiments = experiments;
+
+        // Sample based on the weights
+        for (int i = 0; i < num_exp; i++)cd
+        {
+            double val = randreal(0.0, sum);
+            double  cumsum = 0.0;
+            for (int i = 0; i < num_exp; i++)
+            {
+                cumsum += old_experiments[i].weight;
+                if (cumsum >= val)
+                {
+                    experiments[i] = old_experiments[i];
+                    break;
+                }
+                if (i == num_exp-1)
+                {
+                    std::cerr << "Particle not found with sum " << sum
+                              << " and random value " << val << std::endl;
+                    exit(-1);
+                }
+            }
+        }
+
+        // Step until the next tstep and recompute weights
+        int converged = 0;
+        for (int i = 0; i < num_exp; i++)
+        {
+            transient_gpa(dt, tstep, experiments[i]);
+            experiments[i].weight = W(experiments[i].x);
+            experiments[i].probability *= eta / experiments[i].weight;
+
+            if (experiments[i].converged)
+                converged++;
+        }
+
+        std::cout << "GPA: " << converged << " / " << num_exp
+                  << " converged with t=" << t << std::endl;
+    }
+    std::cout << std::endl;
+
+    double tp = 0.0;
+    for (int i = 0; i < num_exp; i++)
+        if (experiments[i].converged)
+            tp += experiments[i].probability;
+    tp = tp / (double)num_exp;
+
+    std::cout << "Transition probability T=" << tmax << ": " << tp << std::endl;
+}
+
+template<class T>
 template<class URNG>
 void TimeStepper<T>::set_random_engine(URNG &engine)
 {
     randint_ = [&engine](int a, int b) {
         std::uniform_int_distribution<int> int_distribution(a, b);
         return int_distribution(engine);
+    };
+    randreal_ = [&engine](int a, int b) {
+        std::uniform_real_distribution<double> real_distribution(a, b);
+        return real_distribution(engine);
     };
     engine_initialized_ = true;
 }
@@ -670,6 +780,18 @@ int TimeStepper<T>::randint(int a, int b) const
     static thread_local std::default_random_engine engine(rd());
     std::uniform_int_distribution<int> int_distribution(a, b);
     return int_distribution(engine);
+}
+
+template<class T>
+int TimeStepper<T>::randreal(double a, double b) const
+{
+    if (engine_initialized_)
+        return randreal_(a, b);
+
+    static thread_local std::random_device rd;
+    static thread_local std::default_random_engine engine(rd());
+    std::uniform_real_distribution<double> real_distribution(a, b);
+    return real_distribution(engine);
 }
 
 #endif

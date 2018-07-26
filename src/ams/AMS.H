@@ -22,7 +22,9 @@ class AMS
 
     Model model_;
     double dt_;
+    double tstep_;
     double tmax_;
+    double beta_;
     double theta_;
 
     double adist_;
@@ -138,7 +140,9 @@ AMS(Model model, ParameterList pars,
     :
     model_(model),
     dt_(pars->get("time step", 0.01)),
+    tstep_(pars->get("GPA time step", 1.0)),
     tmax_(pars->get("maximum time", 1000.0)),
+    beta_(pars->get("beta", 1.0)),
     theta_(pars->get("theta", 1.0)),
     adist_(pars->get("A distance", 0.05)),
     bdist_(pars->get("B distance", adist_)),
@@ -464,6 +468,8 @@ void AMS<Model>::run()
         timestepper_->ams(num_exp_, num_init_exp_, sol1_, dt_, tmax_);
     else if (method_ == "TAMS")
         timestepper_->tams(num_exp_, maxit_, sol1_, dt_, tmax_);
+    else if (method_ == "GPA")
+        timestepper_->gpa(num_exp_, maxit_, beta_, sol1_, dt_, tstep_, tmax_);
     else
         std::cerr << "Method " << method_ << " does not exist." << std::endl;
 }
