@@ -693,14 +693,15 @@ void TimeStepper<T>::gpa(int num_exp, int maxit, double beta, T const &x0,
     for (int i = 0; i < num_exp; i++)
     {
         experiments[i].x = x0;
-        experiments[i].weight = 1;
+        experiments[i].weight = 1.0;
+        experiments[i].probability = 1.0;
         experiments[i].converged = false;
     }
 
     for (double t = tstep; t <= tmax; t += tstep)
     {
         // Compute the mean weight
-        double sum = 0;
+        double sum = 0.0;
         for (int i = 0; i < num_exp; i++)
             sum += experiments[i].weight;
         double eta = 1.0 / (double)num_exp * sum;
@@ -742,7 +743,7 @@ void TimeStepper<T>::gpa(int num_exp, int maxit, double beta, T const &x0,
         }
 
         std::cout << "GPA: " << converged << " / " << num_exp
-                  << " converged with t=" << t << std::endl;
+                  << " converged with t=" << t << " and eta=" << eta << std::endl;
     }
     std::cout << std::endl;
 
@@ -750,7 +751,7 @@ void TimeStepper<T>::gpa(int num_exp, int maxit, double beta, T const &x0,
     for (int i = 0; i < num_exp; i++)
         if (experiments[i].converged)
             tp += experiments[i].probability;
-    tp = tp / (double)num_exp;
+    tp /= (double)num_exp;
 
     std::cout << "Transition probability T=" << tmax << ": " << tp << std::endl;
 }
