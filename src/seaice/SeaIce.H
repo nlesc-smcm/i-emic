@@ -58,9 +58,6 @@ private:
     //! parameterlist
     ParameterList params_;
 
-    //! communicator object
-    Teuchos::RCP<Epetra_Comm> comm_;
-
     //! global grid size
     int nGlob_,mGlob_, dimGlob_;
 
