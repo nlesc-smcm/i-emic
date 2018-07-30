@@ -43,7 +43,7 @@ function [state,pars,add] = plot_seaice(fname, opts)
     
     [state,pars,add] = readhdf5(fname, si_nun, n, m, si_l, opts);
 
-    titles = {'H','Q','M','T'};
+    titles = {'H','Q_T^{sa}','M','T'};
 
     simask = squeeze(state(3, :, :, :));
     
@@ -56,7 +56,7 @@ function [state,pars,add] = plot_seaice(fname, opts)
         
         
         diff = max(max(field))-min(min(field));
-        fprintf('max(%s)-min(%s) = %f\n', titles{i}, titles{i}, diff);
+        fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), diff);
         imagesc(RtD*x, RtD*(y), field');
         set(gca, 'ydir', 'normal')
         title(titles{i});

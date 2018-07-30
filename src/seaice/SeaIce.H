@@ -394,6 +394,7 @@ public:
     void synchronize(std::shared_ptr<Ocean> ocean);
 
     Teuchos::RCP<Epetra_Vector> interface(int XX);
+    Teuchos::RCP<Epetra_Vector> interfaceH();
     Teuchos::RCP<Epetra_Vector> interfaceQ();
     Teuchos::RCP<Epetra_Vector> interfaceM();
     Teuchos::RCP<Epetra_Vector> interfaceT();
@@ -412,7 +413,7 @@ public:
     void preProcess();
     void postProcess();
 
-    std::string const writeData(bool describe) { return std::string(); }
+    std::string const writeData(bool describe);
 
 private:
     //! create x_ and y_

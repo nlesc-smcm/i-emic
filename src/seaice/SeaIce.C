@@ -1045,6 +1045,12 @@ Teuchos::RCP<Epetra_Vector> SeaIce::interface(int XX)
 }
 
 //=============================================================================
+Teuchos::RCP<Epetra_Vector> SeaIce::interfaceH()
+{
+    return interface(SEAICE_HH_);
+}
+
+//=============================================================================
 Teuchos::RCP<Epetra_Vector> SeaIce::interfaceQ()
 {
     return interface(SEAICE_QQ_);
@@ -1356,6 +1362,40 @@ void SeaIce::postProcess()
     if (saveState_)
         saveStateToFile(outputFile_); // Save to hdf5
 
+}
+
+//=============================================================================
+std::string const SeaIce::writeData(bool describe)
+{
+    std::ostringstream datastring;
+
+    if (describe)
+    {
+        datastring << std::setw(_FIELDWIDTH_)
+                   << "SI vol";
+
+        return datastring.str();
+    }
+    else
+    {    
+        datastring.precision(_PRECISION_);   
+
+        Teuchos::RCP<Epetra_Vector> M = interfaceM();
+        Teuchos::RCP<Epetra_Vector> H = interfaceH();
+
+        Teuchos::RCP<Epetra_Vector> restr =
+            Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+
+        for (int i = 0; i != M->MyLength(); ++i)
+            (*restr)[i] = (*M)[i]*(*H)[i];
+        
+        double SIV = Utils::dot(intCoeff_, restr);
+        
+        datastring << std::scientific << std::setw(_FIELDWIDTH_)
+                   << SIV;
+
+        return datastring.str();
+    }
 }
 
 //=============================================================================
