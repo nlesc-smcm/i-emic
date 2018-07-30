@@ -1836,7 +1836,7 @@ int THCM::par2int(std::string const &label)
     else if (label == "ALPC")                            return ALPC;
     else if (label == "Energy")                          return ENER;
     else if (label == "Salinity Perturbation")           return SPER;
-    else if (label == "FPER")                            return FPER;
+    else if (label == "Flux Perturbation")               return FPER;
     else if (label == "MKAP")                            return MKAP;
     else if (label == "SPL2")                            return SPL2;
     else if (label == "Exponent")                        return EXPO;
@@ -1896,7 +1896,7 @@ std::string const THCM::int2par(int index)
     else if (index==ENER)   label = "Energy";
     else if (index==MKAP)   label = "MKAP";
     else if (index==SPL2)   label = "SPL2";
-    else if (index==FPER)   label = "FPER";
+    else if (index==FPER)   label = "Flux Perturbation";
     else if (index==SPER)   label = "Salinity Perturbation";
     else if (index==EXPO)   label = "Exponent";
     else if (index==SEAS)   label = "Seasonal Forcing";
