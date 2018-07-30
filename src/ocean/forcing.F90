@@ -525,9 +525,9 @@ real FUNCTION salfun(yy)
   if (forcing_type.eq.2) then ! Northern hemisphere
      salfun = cos(pi*(yy-ymin)/(ymax-ymin))
   else if (forcing_type.eq.1) then
-     salfun = cos(pi*yy/ymax)/cos(yy) ! 2DMOC
+     salfun = (cos(pi*yy/ymax) + par(FPER)*yy/ymax) / cos(yy) ! 2DMOC
   else
-     salfun = cos(pi*yy/ymax)
+     salfun = cos(pi*yy/ymax) + par(FPER)*yy/ymax
   end if
 end FUNCTION salfun
 
