@@ -30,7 +30,7 @@
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-2"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
 
   <!-- Tolerance when converging on destination   -->
   <!--  for the secant process in detect()        -->
@@ -60,7 +60,7 @@
   <!-- *******************************************************  -->
 
   <!-- Finite difference with which dFdpar is calculated -->
-  <Parameter name="epsilon increment" type="double" value="1.0e-5"/>
+  <Parameter name="epsilon increment" type="double" value="1.0e-6"/>
 
   <!-- Normalization strategy                                -->
   <!--     O: Old (ds)                                       -->

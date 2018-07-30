@@ -79,7 +79,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     parName_  = params->get( "Continuation parameter",
                              allParameters_[0] );
 
-    comb_     = params->get(allParameters_[0], 0.0);
+    comb_     = params->get(allParameters_[0], 1.0);
     sunp_     = params->get(allParameters_[1], 1.0);
     maskf_    = params->get(allParameters_[2], 1.0);
 
@@ -169,7 +169,6 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     INFO("                        local ymin = " << yminLoc_);
     INFO("                        local ymax = " << ymaxLoc_);
 
-
     // local grid dimensions
     nLoc_   =  domain_->LocalN();
     mLoc_   =  domain_->LocalM();
@@ -239,6 +238,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Import existing state
     if (loadState_)
         loadStateFromFile(inputFile_);
+    else
+        initializeState();
 
     // Create importers for communication with other models
     int XX;
@@ -342,9 +343,7 @@ void SeaIce::computeRHS()
 
                 case SEAICE_TT_:   // T row (surface temperature)
 
-                    val = comb_* ( freezingT(sss[sr]) - t0i_ +
-                                   (Q0_*H0_ + H0_*Qvar_*Qval + Q0_*Hval) / Ic_ )
-                        - Tval ;
+                    val = Tsi - Tval;
 
                     break;
                 }
@@ -494,8 +493,8 @@ void SeaIce::computeLocalJacobian()
     Al_->set(range, M, M, MM_MM);
 
     // Tsi equation ------------------------------------
-    TT_HH = comb_ * Q0_ / Ic_;
-    TT_QQ = comb_ * H0_ * Qvar_ / Ic_;
+    TT_HH = Q0_ / Ic_;
+    TT_QQ = H0_ * Qvar_ / Ic_;
     TT_TT = -1.0;
 
     Al_->set(range, T, H, TT_HH);
@@ -681,7 +680,7 @@ double SeaIce::getPar()
 double SeaIce::getPar(std::string const &parName)
 {
     if (parName.compare(allParameters_[0]) == 0)
-        return comb_;
+        return 0.0;
     else if (parName.compare(allParameters_[1]) == 0)
         return sunp_;
     else if (parName.compare(allParameters_[2]) == 0)
@@ -744,7 +743,7 @@ void SeaIce::setPar(std::string const &parName, double value)
     parName_ = parName; // Overwrite our parameter name
 
     if (parName.compare(allParameters_[0]) == 0)
-        comb_ = value;
+        comb_ = 1.0;
     else if (parName.compare(allParameters_[1]) == 0)
         sunp_ = value;
     else if (parName.compare(allParameters_[2]) == 0)
@@ -1346,7 +1345,6 @@ void SeaIce::initializeState()
 //=============================================================================
 void SeaIce::preProcess()
 {
-    
 }
 
 //=============================================================================

@@ -77,7 +77,7 @@ function [X, J, F] = seaice()
     Ic   = 2.166;      % W m^{-1} K^{-1}, constant ice conductivity
 
     % combined parameter
-    zeta = ch * utau * rhoo * cpo;
+    zeta = ch * utau * rhoo * cpo
 
     ce  = 1.3e-03; % Dalton number
     uw  = 8.5;     % ms^{-1}, mean atmospheric surface wind speed
@@ -205,11 +205,10 @@ function [X, J, F] = seaice()
     J   = jac(X);
     Jn  = numjacob(@rhs, X);
 
-    vsm(J(ord,ord));
-    vsm(Jn(ord,ord));
-    vsm(Jn(ord,ord)-J(ord,ord));
+% $$$     vsm(J(ord,ord));
+% $$$     vsm(Jn(ord,ord));
+% $$$     vsm(Jn(ord,ord)-J(ord,ord));
 
-    return;
 
     FH = F(1:nun:dim);
 

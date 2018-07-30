@@ -74,7 +74,7 @@
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.01"/>
+      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
       <Parameter name="Temperature Forcing" type="double" value="0.0"/>
       <Parameter name="Latent Heat Forcing" type="double" value="0.0"/>
@@ -102,7 +102,7 @@
     <!-- Restoring Salt-Profile (SRES in THCM)        -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
-    <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
+    <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->

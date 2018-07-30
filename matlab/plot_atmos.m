@@ -49,7 +49,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     srf(:,:,3) = (1-greyness*(surfm'));
 
     atmos_nun = 3;
-    atmos_l = 1;
+    atmos_l   = 1;
     
     [state,pars,add] = readhdf5(fname, atmos_nun, n, m, atmos_l,opts);
     
@@ -58,8 +58,8 @@ function [state,pars,add] = plot_atmos(fname, opts)
         P = reshape(add.P,n,m);
 
     if readLST
-        LST = reshape(add.LST,n,m);
-        SST = reshape(add.SST,n,m);
+        LST = reshape(add.LST, n, m);
+        SST = reshape(add.SST, n, m);
     end
 
 

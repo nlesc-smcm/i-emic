@@ -8,9 +8,6 @@
   <Parameter name="Input file"  type="string" value="seaice_input.h5" />
   <Parameter name="Output file" type="string" value="seaice_output.h5" />
 
-
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-  
   <Parameter name="Global Bound xmin" type="double" value="286"/>
   <Parameter name="Global Bound xmax" type="double" value="350"/>
   <Parameter name="Global Bound ymin" type="double" value="10"/>
@@ -20,4 +17,10 @@
 
   <Parameter name="Periodic" type="bool" value="false"/>
 
-</ParameterList>
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+  
+  <Parameter name="Mask Forcing" type="double" value="1.0"/>
+  
+  <Parameter name="mask switch steepness" type="double" value="1.0e-2"/>
+  
+</ParameterList>                                                  
