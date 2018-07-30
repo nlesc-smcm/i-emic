@@ -44,11 +44,17 @@ function [state,pars,add] = plot_seaice(fname, opts)
     [state,pars,add] = readhdf5(fname, si_nun, n, m, si_l, opts);
 
     titles = {'H','Q','M','T'};
+
+    simask = squeeze(state(3, :, :, :));
     
     figure(17)
     for i = 1:si_nun
         subplot(2,2,i)
         field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
+        %field(logical(surfm)) = NaN;
+        %field(~logical(simask)) = NaN;
+        
+        
         diff = max(max(field))-min(min(field));
         fprintf('max(%s)-min(%s) = %f\n', titles{i}, titles{i}, diff);
         imagesc(RtD*x, RtD*(y), field');

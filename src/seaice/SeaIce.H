@@ -284,7 +284,7 @@ private:
     double Ch_;    //! Ch
     double cpa_;   //! heat capacity
 
-    //! exchange coefficient 
+    //! exchange coefficient
     double muoa_;
 
     //! Background sublimation and derivatives
@@ -304,6 +304,7 @@ private:
 
     double      comb_; //! combined forcing
     double      sunp_; //! solar forcing
+    double      latf_; //! latent heat forcing
     double     maskf_; //! mask forcing
 
 public:
@@ -440,12 +441,12 @@ private:
 
     //! ice surface temperature deviation (linearized)
     double iceSurfT(double Q, double H, double S)
-        { return comb_ * (freezingT(S) - t0i_) +
-                (comb_ * Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
+        { return freezingT(S) - t0i_ +
+                (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
 
     //! sea ice mask as a function thickness anomaly H 
     double maskFun(double H)
-        { return (comb_ * maskf_ / 2.) * (1. + tanh( H / epsilon_ )); }
+        { return (1. / 2.) * (1. + tanh( H / epsilon_ )); }
     
     //! sea ice mask function lazy derivative
     double dMdH(double H)

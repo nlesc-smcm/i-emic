@@ -10,7 +10,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if nargin < 2 % defaults
         readEP  = true;
-        readLST = false;      
+        readLST = true;      
         
         opts.readEP  = readEP;
         opts.readLST = readLST;
@@ -85,6 +85,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     Ta  = T0 + tdim * squeeze(state(1,:,:,:));
     qa  = q0 + qdim * squeeze(state(2,:,:,:));
+    qa(logical(surfm)) = NaN; % humidity above land points does not contribute 
     Aa  = a0 + adim * squeeze(state(3,:,:,:));
     Tz  = mean(Ta,1); % zonal mean
     qz  = mean(qa,1); % zonal mean
@@ -126,35 +127,10 @@ function [state,pars,add] = plot_atmos(fname, opts)
     ylabel('Latitude')
 
     figure(11)
-    img = (qa-repmat(qz,n,1))';
-
-    imagesc(RtD*x,RtD*(y),img); hold on
-
-    %img(img == 0) = NaN;
-    %c = contour(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
-    %            'linewidth',.5);
-    
-    set(gca,'ydir','normal')
-    
-    %contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
-    %image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    %c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
-
-    hold off
-    cmap = my_colmap(caxis);
-    colormap(cmap)
-    colorbar
-   
-    title('qa anomaly')
-    xlabel('Longitude')
-    ylabel('Latitude')
-    exportfig('atmosqanom.eps',10,[14,10],invert)
-    
-    figure(12)
     img = qa';
 
-    c = imagesc(RtD*x,RtD*(y),img); hold on
-    image(RtD*x,RtD*(y),srf,'AlphaData',.8);
+
+    image(RtD*x,RtD*(y),srf,'AlphaData',.2); hold on
     set(gca,'ydir','normal')
     hold on
     c = contour(RtD*x,RtD*(y),img,12,'Visible', 'on', ...
@@ -171,9 +147,9 @@ function [state,pars,add] = plot_atmos(fname, opts)
     ylabel('Latitude')
     exportfig('atmosq.eps',10,[14,10],invert)
     
-    figure(13)
+    figure(12)
     img = Aa';
-    imagesc(RtD*x,RtD*(y),img); hold on
+    imagesc(RtD*x,RtD*(y),img); 
     set(gca,'ydir','normal')
     
     %cmap = my_colmap(caxis);
@@ -187,28 +163,10 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if readEP
 
-        figure(14) 
         Pd  = eta*qdim*max(max(P))*3600*24*365;
         fprintf('Precipitation P = %2.4e m/y\n', Pd);
-
-% $$$         img = P'
-% $$$         imagesc(RtD*x,RtD*(y),img); hold on
-% $$$         img(img == 0) = NaN;
-% $$$         c = contour(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
-% $$$                     'linewidth',.5);
-% $$$         hold off
-% $$$         set(gca,'ydir','normal')
-% $$$         cmap = my_colmap(caxis,0);
-% $$$         colormap(cmap)
-% $$$         colorbar
-% $$$ 
-% $$$         hold off              
-% $$$         
-% $$$         title('P (m/y)')
-% $$$         xlabel('Longitude')
-% $$$         ylabel('Latitude')
         
-        figure(15)
+        figure(13)
         
         EmP = eta*qdim*(E-P)*3600*24*365;
         img = EmP';
@@ -234,7 +192,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
     
     if readLST
-        figure(16)
+        figure(14)
         imagesc(RtD*x,RtD*(y), SST' + LST' + T0); set(gca,'ydir', ...
                                                           'normal')
         colormap(cmap)                
