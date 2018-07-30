@@ -74,14 +74,16 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Continuation parameters
     allParameters_ = { "Combined Forcing",
                        "Solar Forcing",
+                       "Latent Heat Forcing",
                        "Mask Forcing" };
 
-    parName_  = params->get( "Continuation parameter",
+    parName_ = params->get( "Continuation parameter",
                              allParameters_[0] );
 
-    comb_     = params->get(allParameters_[0], 1.0);
-    sunp_     = params->get(allParameters_[1], 1.0);
-    maskf_    = params->get(allParameters_[2], 1.0);
+    comb_   = params->get(allParameters_[0], 0.0);
+    sunp_   = params->get(allParameters_[1], 1.0);
+    latf_   = params->get(allParameters_[2], 1.0);
+    maskf_  = params->get(allParameters_[3], 1.0);
 
     // inherited input/output datamembers
     inputFile_  = params->get("Input file",  "seaice_input.h5");
@@ -316,22 +318,21 @@ void SeaIce::computeRHS()
 
                 case SEAICE_HH_:   // H row (thickness)
 
-                    val = comb_ * ( freezingT(sss[sr]) - sst[sr]
-                                    - t0o_ - Q0_ / zeta_ )
-                        - Qvar_ / zeta_ * Qval -
+                    val = freezingT(sss[sr]) - sst[sr] - t0o_ -
+                        (Q0_ / zeta_ +  Qvar_ / zeta_ * Qval ) -
                         ( rhoo_ * Lf_ / zeta_) *
-                        ( comb_ * E0i_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
+                        ( E0i_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
 
                     break;
 
                 case SEAICE_QQ_:   // Q row (heat flux)
 
-                    val = comb_ / muoa_ * Q0_ + Qvar_ / muoa_ * Qval -
+                    val = 1.0 / muoa_ * Q0_ + Qvar_ / muoa_ * Qval -
                         (comb_ * sunp_ * sun0_ / 4. / muoa_) * shortwaveS(y_[j]) *
                         (1. - albe0_ - albed_*albe[sr]) * c0_ +
-                        (Tval + comb_*(t0i_ - tatm[sr] - t0a_ )) +
-                        (rhoo_ * Ls_ / muoa_) *
-                        (comb_*E0i_ + dEdT_ * Tval +  dEdq_ * qatm[sr]);
+                        (Tval + t0i_ - tatm[sr] - t0a_) +
+                        (comb_ * latf_ * rhoo_ * Ls_ / muoa_) *
+                        (E0i_ + dEdT_ * Tval +  dEdq_ * qatm[sr]);
 
                     break;
 
@@ -403,9 +404,9 @@ void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
             Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_TT_)];
 
             QSos_[sr] = (
-                zeta_ * comb_ * ( freezingT(sss[sr])   // QTos component
-                                  - (sst[sr]+t0o_))
-                - (Qvar_ * Qval + comb_ * Q0_)         // QTsa component
+                zeta_ * ( freezingT(sss[sr])    // QTos component
+                          - (sst[sr]+t0o_))
+                - (Qvar_ * Qval +  Q0_)         // QTsa component
                 ) / rhoo_ / Lf_;
             
             EmiP_[sr] = dEdT_ * Tval + dEdq_ * qatm[sr] // E component
@@ -465,7 +466,7 @@ void SeaIce::computeLocalJacobian()
 
     // Qtsa equation ---------------------------------
     QQ_QQ = Qvar_ / muoa_;
-    QQ_TT = 1.0 + rhoo_ * Ls_ / muoa_ * dEdT_;
+    QQ_TT = 1.0 + comb_ * latf_ * rhoo_ * Ls_ / muoa_ * dEdT_;
 
     Al_->set(range, Q, Q, QQ_QQ);
     Al_->set(range, Q, T, QQ_TT);
@@ -479,9 +480,6 @@ void SeaIce::computeLocalJacobian()
         {
             Hrow  = find_row0(nLoc_, mLoc_, i, j, H); // H row
 
-            // val  = -(comb_ * maskf_ / 2.0 / epsilon_ ) *
-            //     ( 1.0 - pow( tanh( state[ind] / epsilon_ ), 2) );
-            
             val = -dMdH(state[Hrow]);
 
             MM_HH.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
@@ -680,10 +678,12 @@ double SeaIce::getPar()
 double SeaIce::getPar(std::string const &parName)
 {
     if (parName.compare(allParameters_[0]) == 0)
-        return 0.0;
+        return comb_;
     else if (parName.compare(allParameters_[1]) == 0)
         return sunp_;
     else if (parName.compare(allParameters_[2]) == 0)
+        return latf_;
+    else if (parName.compare(allParameters_[3]) == 0)
         return maskf_;
     else // If parameter not available we return 0
         return 0;
@@ -743,10 +743,12 @@ void SeaIce::setPar(std::string const &parName, double value)
     parName_ = parName; // Overwrite our parameter name
 
     if (parName.compare(allParameters_[0]) == 0)
-        comb_ = 1.0;
+        comb_  = value;
     else if (parName.compare(allParameters_[1]) == 0)
-        sunp_ = value;
+        sunp_  = value;
     else if (parName.compare(allParameters_[2]) == 0)
+        latf_  = value;
+    else if (parName.compare(allParameters_[3]) == 0)
         maskf_ = value;
 }
 
@@ -773,10 +775,10 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     double dqatmFH = -(rhoo_ * Lf_ / zeta_) * dEdq_;
 
     // d / dt_atm (F_Q)
-    double dtatmFQ = -comb_;
+    double dtatmFQ = -1.0;
 
     // d / dq_atm (F_Q)
-    double dqatmFQ =  (rhoo_ * Ls_ / muoa_) * dEdq_;
+    double dqatmFQ =  (comb_ * latf_ * rhoo_ * Ls_ / muoa_) * dEdq_;
 
     // d / da_atm (F_Q)
     double daatmFQ;
@@ -890,13 +892,13 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
     // compute a few constant derivatives (see computeRHS)
 
     // d / dT (F_H)
-    double dTFH = -comb_;
+    double dTFH = -1.0;
 
     // d / dS (F_H)
-    double dSFH =  comb_ * (a0_ - ( rhoo_ * Lf_ / zeta_) * dEdT_ * a0_);
+    double dSFH =  a0_ - ( rhoo_ * Lf_ / zeta_) * dEdT_ * a0_;
 
     // d / dS (F_T)
-    double dSFT =  comb_ * a0_;
+    double dSFT =  a0_;
 
 //    int sr;
     for (int j = 0; j != mGlob_; ++j)
