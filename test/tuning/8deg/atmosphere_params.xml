@@ -62,7 +62,7 @@
   <Parameter name="temperature eddy diffusivity" type="double" value="2.3e6" />
  
   <!-- testing parameters  -->
-  <Parameter name="melt temperature threshold (deg C)" type="double" value="-5"/>
+  <Parameter name="melt temperature threshold (deg C)" type="double" value="0"/>
   <Parameter name="melt threshold width (deg C)" type="double" value="5"/>
   
   <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="-10"/>
