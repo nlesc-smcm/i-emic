@@ -11,7 +11,7 @@ SUBROUTINE forcing
   real sigma, etabi, gamma
   real QToa, QTos
   real QSoa, QSos
-  real cmb, pQSnd
+  real pQSnd
 
   real wfun, temfun, salfun
 
@@ -160,7 +160,6 @@ SUBROUTINE forcing
   end if
 
   nus   =  par(COMB) * par(SALT) * eta * qdim * QSnd
-  cmb   =  par(COMB)
   pQSnd =  par(COMB) * par(SALT) * QSnd
   do j=1,m
      do i=1,n
@@ -172,15 +171,15 @@ SUBROUTINE forcing
 
            ! Salinity flux from sea ice into the ocean (brine
            ! rejection or melt)
-           QSos =  pQSnd * ( & 
-                zeta * cmb * (a0 * s0 - t0)  & ! QTos component, background contribution
-                - Qvar * qsa(i,j) - cmb * Q0 & ! QTsa component, external contribution
-                ) / (rhodim * Lf)
+           QSos =  pQSnd *               & ! Continuation pars * nondim 
+                ( zeta * (a0 * s0 - t0)  & ! QTos component, background contribution
+                - Qvar * qsa(i,j) - Q0)  & ! QTsa component, external contribution
+                / (rhodim * Lf)
 
            ! Combine forcings through mask           
            Frc(find_row2(i,j,l,SS)) = (         &
                 QSoa + msi(i,j) * (QSos - QSoa) &
-                -gsi(i,j)) * (1-landm(i,j,l)) 
+                -gsi(i,j)) * (1-landm(i,j,l))
         else
            Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &
                 gamma * par(HMTP) * ( adapted_emip(i,j) - adapted_salcor ) + &

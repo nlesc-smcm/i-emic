@@ -154,7 +154,8 @@ extern "C" {
                                                    double *dfsdg);
     _MODULE_SUBROUTINE_(m_probe,  get_adapted_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_emip_pert)(double *emip);
-    _MODULE_SUBROUTINE_(m_probe,  get_salflux)(double *sol, double *salflux);
+    _MODULE_SUBROUTINE_(m_probe,  get_salflux)(double *sol, double *salflux,
+                                               double *scorr);
     _MODULE_SUBROUTINE_(m_probe,  get_temflux)(double *sol, double *temflux);
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_t)(double *atmosT);
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_q)(double *atmosQ);
@@ -1430,7 +1431,8 @@ Teuchos::RCP<Epetra_Vector> THCM::getSalinityFlux()
     double* solution;
     localSol->ExtractView(&solution);
 
-    F90NAME(m_probe, get_salflux )( solution, tmpSalFlux );
+    double scorr;
+    F90NAME(m_probe, get_salflux )( solution, tmpSalFlux, &scorr);
 
     Teuchos::RCP<Epetra_Vector> salflux =
         Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));

@@ -23,6 +23,6 @@
   <Parameter name="Latent Heat Forcing" type="double" value="0.0"/>
   <Parameter name="Mask Forcing" type="double" value="1.0"/>
   
-  <Parameter name="mask switch steepness" type="double" value="1.0e-1"/>
+  <Parameter name="mask switch steepness" type="double" value="1.0e-2"/>
   
 </ParameterList>                                                  

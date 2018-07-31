@@ -197,15 +197,16 @@ contains
   end subroutine get_emip_pert
 
   !!------------------------------------------------------------------
-  subroutine get_salflux(un, salflux)
+  subroutine get_salflux(un, salflux, correction)
     use, intrinsic :: iso_c_binding
-    use m_par
     use m_usr
     use m_atm
+    use m_ice
     implicit none
     real(c_double), dimension(m*n) :: salflux
+    real(c_double) :: correction
     integer :: i,j,pos
-    real gamma, dedt
+    real gamma, dedt, pQSnd, QSos, QSoa
 
     !     IMPORT/EXPORT
     real(c_double),dimension(ndim) ::    un
@@ -219,22 +220,40 @@ contains
     dedt  = (deltat / qdim) * dqso
 
     call usol(un,u,v,w,p,T,S)
+    salflux = 0.0
 
+    pQSnd =  par(COMB) * par(SALT) * QSnd
+    nus   =  par(COMB) * par(SALT) * eta * qdim * QSnd
+    
     pos = 1
     do j = 1,m
        do i = 1,n
-          if (landm(i,j,l).eq.OCEAN) then
-             if (coupled_S.eq.1) then
-                salflux(pos) = nus * dedt * T(i,j,l) / gamma -  &
-                     nus * ( qatm(i,j) + patm(i,j) ) / gamma
-             else
-                salflux(pos) = (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
-                     SRES * par(BIOT) * S(i,j,l) / gamma
-             endif
+          if (coupled_S.eq.1) then
+
+             QSos = pQSnd *                        &
+                  (zeta * (a0 * (s0+S(i,j,l)) - (t0+T(i,j,l))) & ! QTos component
+                  - ( Qvar * qsa(i,j) + q0 ) )           & ! QTsa component
+                  / ( rhodim * Lf )
+             
+             QSoa = nus * (                   &
+                  (deltat / qdim) * dqso * T(i,j,l) &
+                  - qatm(i,j) - patm(i,j))
+             
+             salflux(pos) = (                      &
+                  QSoa + msi(i,j) * (QSos - QSoa)  &
+                  ) * (1-landm(i,j,l)) / gamma
+             
+          else
+             salflux(pos) = (1-landm(i,j,l)) *  &
+                  (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
+                  SRES * par(BIOT) * S(i,j,l) / gamma
           endif
           pos = pos + 1
        end do
     end do
+
+    call qint(salflux, correction)
+    salflux = salflux - correction
 
   end subroutine get_salflux
 
@@ -326,8 +345,6 @@ contains
     real    QSos, QSoa
     real    cmb, pQSnd
 
-    real    sflux(n,m), check, area, integr
-
     call usol(un,u,v,w,p,T,S)
 
     dftdm = 0.0 ! temperature equation derivative w.r.t. sea ice mask
@@ -382,11 +399,7 @@ contains
                 QSoa = eta * qdim * ( &
                      (deltat / qdim) * dqso * To &
                      - qa - pa)
-                
-                ! total salinity flux
-                sflux(i,j) = (1-landm(i,j,l)) * ( &
-                     QSoa + msi(i,j) * (QSos - QSoa))
-                                
+                                                
                 dfsdm(pos) = pQSnd * (QSos - QSoa)
                 
                 dfsdg(pos) = -1.0;
@@ -397,24 +410,6 @@ contains
        enddo
     enddo
     
-    ! testing salinity flux and corrections
-    call qint(sflux, scorr)                
-                                           
-    ! integr = 0.0;
-    ! check  = 0.0;
-    ! area   = 0.0;
-    ! do j=1,m
-    !    do i=1,n
-    !       integr = integr + sflux(i,j) * cos(y(j)) * (1-landm(i,j,l))
-    !       check  = check  + (sflux(i,j) - gsi(i,j)) * cos(y(j)) * (1-landm(i,j,l))
-    !       area   = area   +  cos(y(j)) * (1-landm(i,j,l))
-    !    enddo
-    ! enddo
-    
-    ! scorr = 0.0
-
-    ! write(*,*) 'salflux check = ', integr, check, area, scorr, gsi(1,1)
-
   end subroutine get_derivatives
 
 end module m_probe
