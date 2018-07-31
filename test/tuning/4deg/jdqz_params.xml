@@ -1,0 +1,70 @@
+<!-- ********************************* -->
+<!-- Standard JDQZ parameters  -->
+<!--                                   -->
+<!-- ********************************* -->
+
+<ParameterList name="JDQZ parameters">
+
+
+  <!-- The shift / value near which the eigenvalues are sought -->
+  <!-- Supply the real and imaginary part. -->
+  <Parameter name="Shift (real part)" type="double" value="1.0"/>
+  <Parameter name="Shift (imaginary part)" type="double" value=" 0.0"/>
+  
+  <!-- eps -->
+  <!-- Tolerance of the eigensolutions, -->
+  <!-- $\| \beta \BA\Bx - \alpha \BB\Bx \| / | \alpha/\beta | < \epsilon$ -->
+  <Parameter name="Tolerance" type="double" value=" 1e-5"/>
+
+  <!-- kmax -->
+  <!-- Number of wanted eigensolutions, on output: number of converged eigenpairs -->
+  <Parameter name="Number of eigenvalues" type="int" value="4"/>
+
+  <!-- jmax -->
+  <!-- Maximum size of the search space -->
+  <Parameter name="Max size search space" type="int" value="80"/>
+
+  <!-- jmin -->
+  <!-- Maximum number of Jacobi-Davidson iterations -->
+  <Parameter name="Min size search space" type="int" value="30"/>
+
+  <!-- maxstep -->
+  <!-- Maximum number of Jacobi-Davidson iterations -->
+  <Parameter name="Max JD iterations" type="int" value="1000"/>
+
+  <!-- lock -->
+  <!-- Tracking parameter: -->
+  <!--  take it small to avoid missing eigensolutions (~1e-9) -->
+  <Parameter name="Tracking parameter" type="double" value="1e-7"/>
+
+  <!-- Selection criterion for Ritz values: -->
+  <!--   order =  0: nearest to target -->
+  <!--   order = -1: smallest real part -->
+  <!--   order =  1: largest real part -->
+  <!--   order = -2: smallest complex part -->
+  <!--   order =  2: largest complex part -->
+  <Parameter name="Criterion for Ritz values" type="int" value="0"/>
+
+  <!-- m -->
+  <!-- Searchspace gmres(m): -->
+  <Parameter name="GMRES search space" type="int" value="15"/>
+
+  <!-- maxnmv -->
+  <!-- Maximum number of matvecs in cgstab or gmres -->
+  <Parameter name="Max mat-vec mults" type="int" value="50"/>
+
+  <!-- testspace -->
+  <!-- Determines how to expand the testspace W: -->
+  <!--     Testspace 1: w = "Standard Petrov" * v            (Section 3.1.1) -->
+  <!--     Testspace 2: w = "Standard 'variable' Petrov" * v (Section 3.1.2) -->
+  <!--     Testspace 3: w = "Harmonic Petrov" * v            (Section 3.5.1) -->
+  <Parameter name="Testspace expansion" type="int" value="3"/>
+
+  <!-- wanted -->
+  <!-- Compute the converged eigenvectors -->
+  <Parameter name="Compute converged eigenvectors" type="bool" value="true"/>
+
+  <!-- output level -->
+  <Parameter name="Verbosity" type="int" value="5"/>
+
+</ParameterList>

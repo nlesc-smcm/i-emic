@@ -215,7 +215,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                 << xdist, __FILE__, __LINE__);
     }
     
-    hdim     = paramList.get("Depth hdim", 4000.0);
+    hdim           = paramList.get("Depth hdim", 4000.0);
     double qz      = paramList.get("Grid Stretching qz", 1.0);
     int    itopo   = paramList.get("Topography", 1);
     bool   flat    = paramList.get("Flat Bottom", false);
