@@ -133,6 +133,9 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     dEdT_  =  eta_ * qdim_ * tdim_ / qdim_ * dqsi_(t0i_);
     dEdq_  =  eta_ * qdim_ * -1;
 
+    //! Ocean nondimensionalization prefactor (set in synchronization)
+    pQSnd_ = 1.0;
+
     // background heat flux variation
     Qvar_  = zeta_;
 
@@ -150,7 +153,6 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // auxiliary integral correction
     aux_      = 1;
-
     
     // Create domain object
     domain_ = Teuchos::rcp(new TRIOS::Domain(nGlob_, mGlob_, 1, dof_,
@@ -319,10 +321,10 @@ void SeaIce::computeRHS()
                 case SEAICE_HH_:   // H row (thickness)
 
                     val = freezingT(sss[sr]) - sst[sr] - t0o_ -
-                        (Q0_ / zeta_ +  Qvar_ / zeta_ * Qval ) -
-                        ( rhoo_ * Lf_ / zeta_) *
+                        ( Q0_ / zeta_ +  Qvar_ / zeta_ * Qval ) -
+                        ( rhoo_ * Lf_ / zeta_ ) *
                         ( E0i_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
-
+                    
                     break;
 
                 case SEAICE_QQ_:   // Q row (heat flux)
@@ -530,7 +532,7 @@ void SeaIce::computeLocalJacobian()
 
         Al_->set(range, G, Q, GG_QQ);
         Al_->set(range, G, M, GG_MM);
-        Al_->set(range, G, T, GG_TT);        
+        Al_->set(range, G, T, GG_TT);
         Al_->set(range, G, G, GG_GG);
     }
 
@@ -953,12 +955,12 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
 
 //                if ((*surfmask_)[sr] == 0)
                 {
-                    dTFG  = Mval * ICval * pQSnd_ * zeta_ * comb_ * -1.0 / rhoo_ / Lf_;
+                    dTFG  = Mval * ICval * pQSnd_ * zeta_ * -1.0 / rhoo_ / Lf_;
                     block->co.push_back(dTFG);
                     block->jco.push_back( ocean->interface_row(i,j,T) );
                     el_ctr++;
 
-                    dSFG  = Mval * ICval * pQSnd_ * zeta_ * comb_ * a0_ / rhoo_ / Lf_;
+                    dSFG  = Mval * ICval * pQSnd_ * zeta_ * a0_ / rhoo_ / Lf_;
                     block->co.push_back(dSFG);
                     block->jco.push_back(ocean->interface_row(i,j,S));
                     el_ctr++;
@@ -1272,7 +1274,9 @@ void SeaIce::initializePrec()
 {
     Ifpack Factory;
     string precType = "Amesos"; // direct solve on subdomains with some overlap
-    int overlapLevel = params_->get("Ifpack overlap level", 0);
+    int overlapLevel = params_->get("Ifpack overlap level", 2);
+
+    INFO("SeaIce: preconditioner overlap level: " << overlapLevel);
 
     // Create preconditioner
     precPtr_ = Teuchos::rcp(Factory.Create(precType, jac_.get(), overlapLevel));
@@ -1311,6 +1315,8 @@ void SeaIce::applyPrecon(Epetra_MultiVector const &in,
     }
     if (recomputePrec_)
     {
+        INFO("SeaIce: recomputing prec");
+        precPtr_->Initialize();
         precPtr_->Compute();
         recomputePrec_ = false;
     }
@@ -1333,22 +1339,24 @@ void SeaIce::applyPrecon(Epetra_MultiVector const &in,
 void SeaIce::initializeState()
 {
     state_->PutScalar(0.0);
-    sol_->PutScalar(0.0);
 
     int maxit = 5;
     int it = 0;
     computeRHS();
+    computeJacobian();
     for (; it < maxit; ++it)
-    {
-        computeJacobian();
+    {         
         rhs_->Scale(-1.0);
+        sol_->PutScalar(0.0);
         solve(rhs_);
+
         state_->Update(1.0, *sol_, 1.0);
         computeRHS();
+        computeJacobian();
+
         INFO("SeaIce::initializeState() norm F = " << Utils::norm(rhs_));
     }
 }
-
 
 //=============================================================================
 void SeaIce::preProcess()
@@ -1412,7 +1420,7 @@ int SeaIce::find_row0(int n, int m, int i, int j, int XX)
             return -1;
         }
         else
-            return dimGlob_ + (XX - SEAICE_GG_);
+            return n * m * dof_ + (XX - SEAICE_GG_);
     }
     else // ordinary 0-based find_row
         return dof_ * ( j*n + i) + XX - 1;
@@ -1432,7 +1440,7 @@ int SeaIce::find_row1(int n, int m, int i, int j, int XX)
             return -1;
         }
         else
-            return dimGlob_ + (XX - SEAICE_GG_) + 1; 
+            return n * m * dof_ + (XX - SEAICE_GG_) + 1;
     }
     else // ordinary 1-based find_row
         return dof_ * ( (j-1)*n + (i-1)) + XX;

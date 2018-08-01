@@ -110,21 +110,21 @@ function [state,pars,add] = plot_atmos(fname, opts)
     ylabel('Latitude')
     exportfig('atmosTemp.eps',10,[14,10],invert)
 
-    figure(10)
-    img = (Ta-repmat(Tz,n,1))';
-    contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
-    image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,20,'Visible', ...
-                'on','linewidth', 1.5);
+% $$$     figure(10)
+% $$$     img = (Ta-repmat(Tz,n,1))';
+% $$$     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
+% $$$     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
+% $$$     c = contour(RtD*x,RtD*(y),img,20,'Visible', ...
+% $$$                 'on','linewidth', 1.5);
+% $$$ 
+% $$$     cmap = my_colmap(caxis);
+% $$$     colormap(cmap)
+% $$$     colorbar
 
-    cmap = my_colmap(caxis);
-    colormap(cmap)
-    colorbar
-
-    hold off
-    title('Ta anomaly')
-    xlabel('Longitude')
-    ylabel('Latitude')
+% $$$     hold off
+% $$$     title('Ta anomaly')
+% $$$     xlabel('Longitude')
+% $$$     ylabel('Latitude')
 
     figure(11)
     img = qa';

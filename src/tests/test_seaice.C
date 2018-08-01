@@ -44,9 +44,9 @@ TEST(SeaIce, computeRHS)
         8.892387368217e+01,
         3.082878510115e+02,
         3.644704505231e+02,
-        8.896160862096e+00,
-        1.713464472249e+02,
-        2.108470617124e+02
+        8.550576527947e+01,
+        3.006239580051e+02,
+        3.555374819255e+02
     };
     
     seaIce->setPar("Combined Forcing", 1.0);
@@ -57,7 +57,7 @@ TEST(SeaIce, computeRHS)
 
     state->PutScalar(1.0);     
     seaIce->computeRHS();
-
+    
     EXPECT_NEAR(Utils::norm(rhs), testResults[1], 1e-7);
                                               
     state->PutScalar(1.234);     
@@ -71,7 +71,7 @@ TEST(SeaIce, computeRHS)
 
     // we know a few norms for the idealized case
     EXPECT_NEAR(Utils::norm(rhs), testResults[3], 1e-7);
-
+    
     state->PutScalar(1.0);     
     seaIce->computeRHS();
 
@@ -82,7 +82,6 @@ TEST(SeaIce, computeRHS)
 
     EXPECT_NEAR(Utils::norm(rhs), testResults[5], 1e-7);
 }
-
 
 //------------------------------------------------------------------
 TEST(SeaIce, computeJacobian)
@@ -103,15 +102,15 @@ TEST(SeaIce, computeJacobian)
         4.947134256694e+01,
         4.650722460927e+01,
         2.410908510429e+02,
-        4.188233484290e+01,
-        3.973464072736e+01,
-        1.570922632102e+02,
-        4.188233484290e+01,
-        3.973464084493e+01,
-        1.558139248051e+02,
-        4.188233484290e+01,
-        3.973464087244e+01,
-        1.558139248051e+02
+        5.099999983333e+01,
+        9.650722444261e+01,
+        3.129935612515e+02,
+        4.947134256694e+01,
+        4.650722460927e+01,
+        2.407591527888e+02,
+        4.947134256694e+01,
+        4.650722460927e+01,
+        2.407591527888e+02
     };
     
     double normOne, normInf, normFrob;
@@ -200,8 +199,8 @@ TEST(SeaIce, numericalJacobian)
             NumericalJacobian<std::shared_ptr<SeaIce>,
                               Teuchos::RCP<Epetra_Vector> > numJac;
 
-            numJac.setTolerance(1e-14);
-            numJac.seth(1e-6);
+            numJac.setTolerance(1e-12);
+            numJac.seth(1e-5);
             numJac.compute(seaIce, seaIce->getState('V'));
             numJac.print("seaIceNumJac");
 
@@ -237,7 +236,6 @@ TEST(SeaIce, numericalJacobian)
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
 }
-
 
 //------------------------------------------------------------------
 TEST(SeaIce, Solve)
@@ -276,7 +274,6 @@ TEST(SeaIce, Solve)
         EXPECT_NEAR(rNorm, 0, 1e-4);
     }
 }
-
 
 //------------------------------------------------------------------
 TEST(SeaIce, Newton)

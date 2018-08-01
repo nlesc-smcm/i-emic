@@ -16,11 +16,12 @@ function [X, J, F] = seaice()
     global Ti
     global nus qdim tdim dqso dqsi eta
 
-    global combf solf maskf % continuation parameters
+    global combf solf maskf latf % continuation parameters
 
     combf = 1.0;
     solf  = 1.0;
     maskf = 1.0;
+    latf  = 1.0;
 
     % specify physical dimensions
     RtD  = 180 / pi;
@@ -139,8 +140,8 @@ function [X, J, F] = seaice()
     Qvar = zeta;
 
     % ice surface temperature (linearized)
-    Ti = @(comb, Q,H,S) comb * (Tf(S) - t0i) + (comb*Q0*H0 + H0*Qvar*Q ...
-                                           + Q0*H) / Ic;
+    Ti = @(Q,H,S) (Tf(S) - t0i) + (Q0*H0 + H0*Qvar*Q ...
+                                   + Q0*H) / Ic;
 
     % create integral coefficients
     IC = intcoeff();
@@ -164,12 +165,13 @@ function [X, J, F] = seaice()
             fprintf('X = %1.3f, par = %1.1f, ||F||two = %1.12e\n', ...
                     scale, combf, norm(F));
             fprintf(fid, '%1.12e\n', norm(F));
-            F(end-10:end)
+
         end
     end
 
     fprintf('\n');
     fprintf(fid, '\n');
+
 
     for par = [1.0, 0.1]
         combf = par;
@@ -190,6 +192,7 @@ function [X, J, F] = seaice()
         end
     end
     fprintf('\n');
+    return
 
     kmax = 10;
     ord = [];
@@ -330,7 +333,7 @@ function [J,Al] = jac(x)
     global Ic
     global taus epsilon
     global Ti
-    global combf nus solf maskf % continuation parameter
+    global combf nus solf maskf latf % continuation parameter
 
     [H, Qtsa, Msi, ~, R] = extractsol(x);
 
@@ -354,12 +357,12 @@ function [J,Al] = jac(x)
 
     % Qtsa equation
     Al(:,:,QQ,QQ) = Qvar / muoa;
-    Al(:,:,QQ,TT) = 1 + rhoo * Ls / muoa * dEdT;
+    Al(:,:,QQ,TT) = 1 + combf * latf * rhoo * Ls / muoa * dEdT;
 
     % Msi equation
     for j = 1:m
         for i = 1:n
-            Al(i,j,MM,HH) = -(combf * maskf / 2) * ( ...
+            Al(i,j,MM,HH) = -(1 / 2) * ( ...
                 tanh( (H(i,j) + 1e-6) / epsilon ) ...
                 - tanh( H(i,j) / epsilon ) ) / 1e-6;
         end
@@ -368,8 +371,8 @@ function [J,Al] = jac(x)
     Al(:,:,MM,MM) =  1;
 
     % Tsi equation
-    Al(:,:,TT,HH) = combf * Q0 / Ic;
-    Al(:,:,TT,QQ) = combf * H0 * Qvar / Ic;
+    Al(:,:,TT,HH) =  Q0 / Ic;
+    Al(:,:,TT,QQ) =  H0 * Qvar / Ic;
     Al(:,:,TT,TT) = -1;
 
     [co, ico, jco] = assemble(Al);
@@ -421,77 +424,9 @@ function [J,Al] = jac(x)
 
     end
 
-
-% $$$         [~,Qsos,~,Es] = fluxes(x);
-% $$$
-% $$$         for j = 1:m
-% $$$             for i = 1:n
-% $$$                 sr = (j-1)*n+i;
-% $$$
-% $$$                 % dFAM / dM
-% $$$                 row = find_row(i,j,AM);
-% $$$                 col = find_row(i,j,MM);
-% $$$                 ico = [ico; row];
-% $$$                 jco = [jco; col];
-% $$$                 co  = [co;  IC(sr)];
-% $$$
-% $$$                 % dFAX / dQ
-% $$$                 row = find_row(i,j,AX);
-% $$$                 col = find_row(i,j,QQ);
-% $$$                 val = IC(sr)* Msi(sr) * -Qvar/zeta;
-% $$$                 ico = [ico; row];
-% $$$                 jco = [jco; col];
-% $$$                 co  = [co;  val];
-% $$$
-% $$$                 % dFAX / dM
-% $$$                 row = find_row(i,j,AX);
-% $$$                 col = find_row(i,j,MM);
-% $$$                 ico = [ico; row];
-% $$$                 jco = [jco; col];
-% $$$                 val = IC(sr)*( Qsos(sr) - nus * Es(sr) )*rhoo*Lf/zeta;
-% $$$                 co  = [co;  val];
-% $$$
-% $$$                 % dFAX / dT
-% $$$                 row = find_row(i,j,AX);
-% $$$                 col = find_row(i,j,TT);
-% $$$                 val = IC(sr)* Msi(sr) * -dEdT*rhoo*Lf/zeta ;
-% $$$                 ico = [ico; row];
-% $$$                 jco = [jco; col];
-% $$$                 co  = [co;  val];
-% $$$
-% $$$             end
-% $$$         end
-% $$$
-% $$$         % dFAM / dAM
-% $$$         row = find_row(i,j,AM);
-% $$$         col = find_row(i,j,AM);
-% $$$
-% $$$         ico = [ico; row];
-% $$$         jco = [jco; col];
-% $$$         co  = [co;  -1];
-% $$$
-% $$$         % dFAX / dAM
-% $$$         row = find_row(i,j,AX);
-% $$$         col = find_row(i,j,AM);
-% $$$
-% $$$         ico = [ico; row];
-% $$$         jco = [jco; col];
-% $$$         val = -combf * E0i*rhoo*Lf/zeta;
-% $$$         co  = [co;  val];
-% $$$
-% $$$         % dFAX / dAX
-% $$$         row = find_row(i,j,AX);
-% $$$         col = find_row(i,j,AX);
-% $$$
-% $$$         ico = [ico; row];
-% $$$         jco = [jco; col];
-% $$$         val = -1.0;
-% $$$         co  = [co;  val];
-
     J = spconvert([ico,jco,co]);
 
 end
-
 
 function [F] = rhs(x)
 
@@ -508,7 +443,7 @@ function [F] = rhs(x)
     global Ic
     global taus epsilon nus eta q0
     global Ti
-    global combf solf maskf % continuation parameters
+    global combf solf maskf latf % continuation parameters
 
     [H, Qtsa, Msi, T, R] = extractsol(x);
 
@@ -522,36 +457,31 @@ function [F] = rhs(x)
             for XX = 1:nun
                 switch XX
                   case 1
+                    
+                    Tsi = Ti(Qtsa(i,j), H(i,j), sss(i,j) );
 
-                    Tsi = Ti(combf, Qtsa(i,j), H(i,j), sss(i,j) );
+                    val =  Tf(sss(i,j)) - sst(i,j) - t0o - Q0 / zeta  ...
+                           - Qvar / zeta * Qtsa(i,j) - ...
+                           ( rhoo * Lf / zeta ) * ...
+                           ( E0i + dEdT * Tsi + dEdq * ...
+                             qatm(i,j) );
 
-                    val = combf * ( Tf(sss(i,j)) - sst(i,j) - t0o - Q0 / zeta ) ...
-                          - Qvar / zeta * Qtsa(i,j) - ...
-                          ( rhoo * Lf / zeta ) * ...
-                          ( combf * E0i + dEdT * Tsi + dEdq * qatm(i,j));
-                    if combf == 0.1
-
-                        end
                   case 2
-
-                    val = combf/muoa*Q0 + Qvar/muoa * Qtsa(i,j) - ...
+                    val = 1/muoa*Q0 + Qvar/muoa * Qtsa(i,j) - ...
                           (combf * solf * sun0 / 4 / muoa) * S(y(j)) * (1-alpha) * c0 + ...
-                          (T(i,j) + combf * (t0i - tatm(i,j) - t0a) ) + ...
-                          (rhoo * Ls / muoa) * ...
-                          (combf * E0i + dEdT * T(i,j) + dEdq * ...
+                          (T(i,j) + t0i - tatm(i,j) - t0a ) + ...
+                          (combf * latf * rhoo * Ls / muoa) * ...
+                          (E0i + dEdT * T(i,j) + dEdq * ...
                            qatm(i,j));
 
                   case 3
-
                     val = Msi(i,j) - ...
-                          (combf * maskf / 2) * (1 + tanh( (H(i,j) / ...
+                          (1 / 2) * (1 + tanh( (H(i,j) / ...
                                                             epsilon )));
 
                   case 4
-
-                    val = combf * (Tf(sss(i,j)) - t0i + ...
-                                   (Q0*H0 + H0*Qvar*Qtsa(i,j) + Q0*H(i,j))/Ic) ...
-                          - T(i,j); %FIXME too much combf here
+                    val = Tsi - T(i,j);
+                    
                 end
 
                 row = find_row(i,j,XX);
@@ -565,9 +495,8 @@ function [F] = rhs(x)
         [~,Qsos,~,EmiP,FluxDiff] = fluxes(x);
 
         A = sum(IC);
-        IC'*FluxDiff(:)
-
-
+        IC'*FluxDiff(:);
+        
         for aa = 1:aux
             switch aa
               case G

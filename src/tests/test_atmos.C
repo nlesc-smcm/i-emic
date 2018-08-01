@@ -407,7 +407,7 @@ TEST(Atmosphere, numericalJacobian)
                               Teuchos::RCP<Epetra_Vector> > numJac;
 
             numJac.setTolerance(1e-12);
-            numJac.seth(1e-6);
+            numJac.seth(1e-5);
             numJac.compute(atmosPar, atmosPar->getState('V'));
             numJac.print("atmosNumJac");
 
@@ -442,17 +442,15 @@ TEST(Atmosphere, numericalJacobian)
         std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
-
 }
 
 
-/*
 //------------------------------------------------------------------
 TEST(Atmosphere, Newton)
 {
     Teuchos::RCP<Epetra_Vector> state = atmosPar->getState('V');
     state->PutScalar(0.0);
-    atmosPar->setPar(0.5);
+    atmosPar->setPar(0.4);
 
     Teuchos::RCP<Epetra_Vector> b = atmosPar->getRHS('V');
     Teuchos::RCP<Epetra_Vector> x = atmosPar->getSolution('V');
@@ -477,6 +475,7 @@ TEST(Atmosphere, Newton)
 
         atmosPar->applyMatrix(*x, *r);
         r->Update(1.0, *b, -1.0);
+        r->Scale(1./Utils::norm(b));
 
         EXPECT_NEAR(Utils::norm(r), 0, 1e-1);
 
@@ -488,7 +487,15 @@ TEST(Atmosphere, Newton)
             break;
     }
 
-    INFO("Newton converged in " << niter << " iterations.");
+    EXPECT_LT(niter,maxit);
+    if (niter < maxit)
+    {
+        INFO("Newton converged in " << niter << " iterations.");
+    }
+    else
+    {
+        WARNING("Newton did not converge", __FILE__, __LINE__);
+    }
 
     Teuchos::RCP<Epetra_CrsMatrix> jac = atmosPar->getJacobian();
     Teuchos::RCP<Epetra_Vector> B = atmosPar->getDiagB();
@@ -498,7 +505,7 @@ TEST(Atmosphere, Newton)
 
     EXPECT_NEAR(Utils::norm(b), 0, 1e-7);
 }
-*/
+
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)

@@ -343,7 +343,7 @@ contains
 
     real    QTos, QToa, To, Ta, Ab, So, qa, pa, Ms, qs
     real    QSos, QSoa
-    real    cmb, pQSnd
+    real    pQSnd
 
     call usol(un,u,v,w,p,T,S)
 
@@ -352,7 +352,6 @@ contains
     dfsdm = 0.0 ! salinity equation derivative w.r.t. sea ice mask
     dfsdg = 0.0 ! salinity equation derivative w.r.t. sea ice int corr
     pos = 1
-    cmb   = par(COMB)
     nus   = par(COMB) * par(SALT) * eta * qdim * QSnd
     pQSnd = par(COMB) * par(SALT) * QSnd
     do j = 1,m
@@ -392,8 +391,8 @@ contains
 
                 ! dfsdm part ------------------------------
                 QSos =   (  &
-                     zeta * cmb * (a0 * (s0+So) - (t0+To))     & ! QTos component
-                     - ( Qvar * qs + cmb * q0 ) )              & ! QTsa component
+                     zeta * (a0 * (s0+So) - (t0+To))     & ! QTos component
+                     - ( Qvar * qs + q0 ) )              & ! QTsa component
                      / ( rhodim * Lf )
                 
                 QSoa = eta * qdim * ( &

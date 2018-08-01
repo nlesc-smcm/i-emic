@@ -20,4 +20,6 @@
 
   <Parameter name="Periodic" type="bool" value="false"/>
 
+  <Parameter name="Ifpack overlap level" type="int" value="20"/>
+
 </ParameterList>

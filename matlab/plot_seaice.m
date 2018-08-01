@@ -47,17 +47,18 @@ function [state,pars,add] = plot_seaice(fname, opts)
 
     simask = squeeze(state(3, :, :, :));
     
-    figure(17)
     for i = 1:si_nun
-        subplot(2,2,i)
+        figure(14+i)
         field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
-        %field(logical(surfm)) = NaN;
-        %field(~logical(simask)) = NaN;
-        
+        field(logical(surfm)) = NaN;
         
         diff = max(max(field))-min(min(field));
-        fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), diff);
-        imagesc(RtD*x, RtD*(y), field');
+        fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), ...
+                diff);
+        imagesc(RtD*x, RtD*(y), field'); hold on
+        plot_mask(surfm,x, y); hold off
+
+
         set(gca, 'ydir', 'normal')
         title(titles{i});
         colorbar

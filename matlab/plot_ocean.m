@@ -449,10 +449,9 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         colorbar;
-        cmap = [my_colmap(caxis)];
+        cmap = [my_colmap(caxis,0)];
         colormap(cmap)
 
-        
     end
     
     if ( plot_temflux || plot_everything ) ...

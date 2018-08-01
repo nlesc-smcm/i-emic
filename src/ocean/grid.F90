@@ -51,6 +51,12 @@ SUBROUTINE grid
   ENDDO
   zw(0) = zmin
   dfzw(0) = dfdz(zmin,qz)
+
+  write(6,*) "THCM grid: layer (m)"
+  do k = l,1,-1
+     write(6,*) "    ", k, " ", dz*dfzT(k)*hdim
+  enddo
+     
 end SUBROUTINE grid
 !*************************************************
 REAL FUNCTION fz(z,qz)

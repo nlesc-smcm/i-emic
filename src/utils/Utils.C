@@ -511,26 +511,29 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
         assert(rowMap->NumMyElements() == (int) crs.beg.size() - 1);
     }
     
+    std::ofstream file;
+    file.open("rowmap" + std::to_string(rowMap->Comm().MyPID()));
+    rowMap->Print(file);
+    file.close();
+    
     int numMyElements = rowMap->NumMyElements();
 
-    int bRow, gRow, index, numEntries, col;
+    int tRow, bRow, gRow, index, numEntries, col;
     int offset = (index0) ? 0 : 1;
     for (int lRow = 0; lRow < numMyElements; ++lRow)
     {
-
-        // map from current map to global ID
+        // map using current map to global ID
         gRow = rowMap->GID(lRow);
 
-        // map GID back to standardmap: if this gives -1 we have a
+        // map GID back through standardmap: if this gives -1 we have a
         // ghost point
-        bRow = mat->RowMap().LID(gRow); 
+        tRow = mat->RowMap().LID(gRow); 
 
-        if ( !global && (bRow == -1) )
+        if ( !global && (tRow == -1) )
         {
             continue;
         }
         
-        gRow = rowMap->GID(lRow);
         bRow = (global) ? gRow : lRow;
         
         index      = crs.beg[bRow];
@@ -572,28 +575,34 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
 
         if (ierr != 0)
         {
-            std::cout << "Error in Insert/ReplaceGlobalValues: "
-                      << ierr << std::endl;
-            std::cout << "Filled = " << mat->Filled() << std::endl;
-            std::cout << "Global = " << global << std::endl;
-            std::cout << "  GRID = " << gRow << std::endl;
-            std::cout << "  LRID = " << mat->LRID(gRow) << std::endl;
-            
             std::cout << "indices : ";
             for (int ii = 0; ii != numEntries; ++ii)
             {
                 std::cout << indices[ii] << " ";
             }
             std::cout << std::endl;
+            std::cout << "values : ";
+            for (int ii = 0; ii != numEntries; ++ii)
+            {
+                std::cout << values[ii] << " ";
+            }
+            std::cout << std::endl;
+            
+            std::cout << "Error in Insert/ReplaceGlobalValues: "
+                      << ierr << std::endl;
+            
+            std::cout << "Filled = " << mat->Filled()   << std::endl;
+            std::cout << "Global = " << global          << std::endl;
+            std::cout << "  GRID = " << gRow            << std::endl;
+            std::cout << "  LRID = " << mat->LRID(gRow) << std::endl;
 
             std::cout << "jco : ";
             for (int jj = 0; jj != numEntries; ++jj)
             {
-                std::cout << crs.jco[index + jj - offset] - offset << " ";
+                col = crs.jco[index + jj - offset] - offset;
+                std::cout << col << " ";
             }
             std::cout << std::endl;
-
-            std::cout << *rowMap << std::endl;
             
             ERROR("Error in Insert/ReplaceGlobalValues",
                   __FILE__, __LINE__);

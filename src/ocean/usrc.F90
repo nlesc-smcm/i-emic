@@ -1214,7 +1214,6 @@ SUBROUTINE atmos_coef
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
 
-  write(*,*) "THCM: upper layer depth: ", hdim*dzne 
   ! write(*,*) 'Ocean-Atmosphere pars:     dzne=', dzne,' hdim=', hdim
   ! write(*,*) '                            nus=', nus, ' lvsc=', lvsc
   ! write(*,*) '                            Ooa=', Ooa, ' muoa=', muoa    
