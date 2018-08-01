@@ -110,7 +110,7 @@
          cs = cos(yv(j))
          do k=1,l
             if ((z(k)*hdim).lt.(-500)) then
-               PSIM_(j,k)=cs*VS_(j,k)*dz*dfzT(k)  + PSIM_(j,k-1)
+               PSIM_(j,k)=-cs*VS_(j,k)*dz*dfzT(k)  + PSIM_(j,k-1)
             endif
          end do
       end do
