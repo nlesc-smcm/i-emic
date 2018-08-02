@@ -148,14 +148,14 @@ contains
     use m_usr
 
     implicit none
-    real(c_double), intent(in) :: inserted_seaice_g
+    real(c_double), dimension(m*n), intent(in) :: inserted_seaice_g
     integer :: i,j,pos
 
     if (coupled_S.eq.1) then
        pos = 1
        do j = 1,m
           do i = 1,n
-             gsi(i,j) = inserted_seaice_g
+             gsi(i,j) = inserted_seaice_g(pos)
              pos = pos + 1
           end do
        end do

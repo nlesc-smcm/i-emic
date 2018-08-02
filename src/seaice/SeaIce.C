@@ -1366,12 +1366,8 @@ void SeaIce::initializeState()
         solve(b);
         DUMP_VECTOR("x", *sol_ );
 
-
-        
         state_->Update(1.0, *sol_, 1.0);
         DUMP_VECTOR("s", *state_ );
-        getchar();
-                
 
         computeRHS();
         computeJacobian();

@@ -318,6 +318,9 @@ public:
     int getCoupledT();
     int getCoupledS();
 
+    //! Get salinity flux correction
+    double getSCorr();
+
     //! Get the degrees of freedom
     int dof() { return _NUN_; }
 

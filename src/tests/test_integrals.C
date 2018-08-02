@@ -95,6 +95,7 @@ TEST(CoupledModel, RHS)
 }
 
 //------------------------------------------------------------------
+// FIXME: This should result in a state with sea ice
 TEST(CoupledModel, Continuation)
 {
     bool failed = false;
@@ -128,6 +129,16 @@ TEST(Atmos, Integrate_E_min_P)
     EXPECT_LT(std::abs(I), 1e-7);
 
     Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
+    // FIXME todo
+}
+
+//------------------------------------------------------------------
+TEST(CoupledModel, SeaIceCorrection)
+{
+    double oceanSCorr = ocean->getSCorr();
+    Teuchos::RCP<Epetra_Vector> siCorr = seaice->interfaceG();
+    std::cout << *siCorr << std::endl;
+    EXPECT_NEAR(oceanSCorr, (*siCorr)[0], 1e-7);
 }
 
 //------------------------------------------------------------------

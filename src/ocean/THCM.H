@@ -299,6 +299,9 @@ public:
     //! get the ite parameter (non-restoring temp condition)
     bool getITE() const {return ite;}
 
+    //! get the salinity flux correction
+    double getSCorr() const {return scorr_;}
+
     //! ite/its=0 T/S forcing from data (Levitus)
     int ite,its;
 
@@ -545,6 +548,9 @@ private:
     //! correction for the integral condition based on the salinity
     //! integral of the initial state
     double intCorrection_;
+
+    //! correction for the salinity flux
+    double scorr_;
 
     //! vector with coefficients for integral condition (if sres=0)
     Teuchos::RCP<Epetra_Vector> intcond_coeff;

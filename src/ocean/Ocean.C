@@ -881,6 +881,12 @@ int Ocean::getCoupledS()
     return THCM::Instance().getCoupledS();
 }
 
+//==================================================================
+double Ocean::getSCorr()
+{
+    return THCM::Instance().getSCorr();
+}
+
 //=====================================================================
 // Setup block preconditioner parameters
 // --> xml files should have a better home

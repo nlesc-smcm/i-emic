@@ -658,6 +658,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     rowintcon_     = -1;
     intCorrection_ = 0.0;
 
+    // Initialize salinity flux correction
+    scorr_ = 0.0;
+
     // Obtain integral condition coefficients
     
     int N = domain->GlobalN();
@@ -1431,8 +1434,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getSalinityFlux()
     double* solution;
     localSol->ExtractView(&solution);
 
-    double scorr;
-    F90NAME(m_probe, get_salflux )( solution, tmpSalFlux, &scorr);
+    F90NAME(m_probe, get_salflux )( solution, tmpSalFlux, &scorr_);
 
     Teuchos::RCP<Epetra_Vector> salflux =
         Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
