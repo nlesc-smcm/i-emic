@@ -491,10 +491,11 @@ void AMS<Model>::run()
         timestepper_->tams(num_exp_, maxit_, sol1_, dt_, tmax_);
     else if (method_ == "GPA")
         timestepper_->gpa(num_exp_, maxit_, beta_, sol1_, dt_, tstep_, tmax_);
+    else if (method_ == "Naive")
+        timestepper_->naive(num_exp_, sol1_, dt_, tmax_);
     else
         std::cerr << "Method " << method_ << " does not exist." << std::endl;
 }
-
 
 template<typename Model>
 unsigned int AMS<Model>::get_seed()

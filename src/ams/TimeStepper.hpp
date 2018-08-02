@@ -81,6 +81,9 @@ public:
         double dt, double tmax,
         GPAExperiment<T> &experiment) const;
 
+    void naive(int num_exp,
+               T const &x0, double dt, double tmax) const;
+
     void ams(int num_exp, int num_init_exp,
              T const &x0, double dt, double tmax) const;
 
@@ -278,6 +281,28 @@ void TimeStepper<T>::transient_gpa(
     }
 
     experiment.x = x;
+}
+
+template<class T>
+void TimeStepper<T>::naive(int num_exp,
+                           T const &x0, double dt, double tmax) const
+{
+    std::vector<GPAExperiment<T>> experiments(num_exp);
+
+    int converged = 0;
+    for (int i = 0; i < num_exp; i++)
+    {
+        experiments[i].x = x0;
+        experiments[i].converged = false;
+        transient_gpa(dt, tmax, experiments[i]);
+
+        if (experiments[i].converged)
+            converged++;
+    }
+
+    double tp = (double)converged / (double)num_exp;
+
+    std::cout << "Transition probability T=" << tp << ": " << tp << std::endl;
 }
 
 template<class T>
