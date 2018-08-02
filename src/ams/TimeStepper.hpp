@@ -49,6 +49,9 @@ class TimeStepper
     std::function<int(int, int)> randint_;
     std::function<double(double, double)> randreal_;
 
+    // Random engine. FIXME: Does not work with omp!!!
+    std::mt19937_64 *engine_;
+
 public:
     TimeStepper(std::function<T(T const &, double)> time_step);
     TimeStepper(std::function<T(T const &, double)> time_step,
@@ -61,6 +64,8 @@ public:
                 double bdist,
                 double cdist,
                 double dist_tol);
+
+    ~TimeStepper();
 
     T transient(T x, double dt, double tmax) const;
     double transient_max_distance(
@@ -93,8 +98,7 @@ public:
     void gpa(int num_exp, int maxit, double beta, T const &x0,
              double dt, double tstep, double tmax) const;
 
-    template<class URNG>
-    void set_random_engine(URNG &engine);
+    void set_random_engine(unsigned int seed);
 
 protected:
     int randint(int a, int b) const;
@@ -133,6 +137,13 @@ TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step,
     dist_tol_(dist_tol),
     engine_initialized_(false)
 {
+}
+
+template<class T>
+TimeStepper<T>::~TimeStepper()
+{
+    if (engine_initialized_)
+        delete engine_;
 }
 
 template<class T>
@@ -786,16 +797,22 @@ void TimeStepper<T>::gpa(int num_exp, int maxit, double beta, T const &x0,
 }
 
 template<class T>
-template<class URNG>
-void TimeStepper<T>::set_random_engine(URNG &engine)
+void TimeStepper<T>::set_random_engine(unsigned int seed)
 {
-    randint_ = [&engine](int a, int b) {
+    if (engine_initialized_)
+        delete engine_;
+
+    engine_ = new std::mt19937_64(seed);
+
+    randint_ = [this](int a, int b) {
         std::uniform_int_distribution<int> int_distribution(a, b);
-        return int_distribution(engine);
+        int val = int_distribution(*engine_);
+        return val;
     };
-    randreal_ = [&engine](int a, int b) {
+    randreal_ = [this](int a, int b) {
         std::uniform_real_distribution<double> real_distribution(a, b);
-        return real_distribution(engine);
+        double val = real_distribution(*engine_);
+        return val;
     };
     engine_initialized_ = true;
 }
