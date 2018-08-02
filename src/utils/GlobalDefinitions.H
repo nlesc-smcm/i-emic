@@ -132,7 +132,19 @@ extern std::stack<Timer> timerStack;
 #endif
 
 #ifndef DUMP_VECTOR
-#  define DUMP_VECTOR(fname,mat) EpetraExt::VectorToMatlabFile(fname, mat);
+#  define DUMP_VECTOR(fname,vec) {                                      \
+        Teuchos::RCP<Epetra_MultiVector> mVec = Utils::Gather(vec, 0);  \
+        if (mVec->Map().Comm().MyPID() == 0)                            \
+        {                                                               \
+            std::ofstream file;                                         \
+            file.open(fname);                                           \
+            for (int i = 0; i != mVec->MyLength(); ++i)                 \
+            {                                                           \
+                file << (*(*mVec)(0))[i] << "\n";                       \
+            }                                                           \
+        }                                                               \
+    }                                                                   \
+ 
 #endif
 
 #ifndef DUMPMATLAB

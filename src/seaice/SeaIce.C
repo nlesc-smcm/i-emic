@@ -1291,6 +1291,17 @@ void SeaIce::solve(Teuchos::RCP<Epetra_MultiVector> const &b)
     // when using the preconditioner as a solver make sure the overlap
     // is large enough (depending on number of cores obv).
     applyPrecon(*b, *sol_);
+
+    // compute residual
+    Teuchos::RCP<Epetra_Vector> tmp = getSolution('C');
+    applyMatrix(*sol_, *tmp);
+    tmp->Update(1.0, *b, -1.0);
+    tmp->Scale(1.0/Utils::norm(b));
+    double normRes = Utils::norm(tmp);
+
+    std::cout << *tmp << std::endl;
+    
+    INFO("SeaIce: solve ||b-Ax|| / ||b|| = " << normRes);
 }
 
 //=============================================================================
@@ -1344,17 +1355,45 @@ void SeaIce::initializeState()
     int it = 0;
     computeRHS();
     computeJacobian();
+    Teuchos::RCP<Epetra_Vector> b;
+    Teuchos::RCP<Epetra_Vector> t = getSolution('C');
     for (; it < maxit; ++it)
-    {         
-        rhs_->Scale(-1.0);
-        sol_->PutScalar(0.0);
-        solve(rhs_);
+    {
+        b = getRHS('C');
+        b->Scale(-1.0);
 
+        Teuchos::RCP<Epetra_MultiVector> bmu = Utils::Gather(*b, 0);       
+
+        DUMP_VECTOR("b", *b    );
+        DUMPMATLAB("A" , *jac_ );
+        
+        solve(b);
+        DUMP_VECTOR("x", *sol_ );
+        
+        std::cout << "||b|| " << Utils::norm(b) << std::endl;
+        std::cout << "||x|| " << Utils::norm(sol_) << std::endl;
+
+        double normInf = jac_->NormInf();
+        std::cout << "||A||inf " << normInf << std::endl;
+        double normOne = jac_->NormOne();
+        std::cout << "||A||one " << normOne << std::endl;
+        double normFro = jac_->NormFrobenius();
+        std::cout << "||A||frob " << normFro << std::endl;
+
+        applyMatrix(*sol_, *t);
+        std::cout << "||Ax||2 " << Utils::norm(t) << std::endl;
+        
+        getchar();
+        
         state_->Update(1.0, *sol_, 1.0);
+
         computeRHS();
         computeJacobian();
 
-        INFO("SeaIce::initializeState() norm F = " << Utils::norm(rhs_));
+        INFO( "SeaIce::initializeState() norm F = "
+              << Utils::norm( getRHS('V') ) );
+
+
     }
 }
 

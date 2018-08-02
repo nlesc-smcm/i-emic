@@ -29,6 +29,7 @@ TEST(SeaIce, Initialization)
         throw;
     }
     EXPECT_EQ(failed, false);
+    getchar();
 }
 
 //------------------------------------------------------------------
