@@ -29,6 +29,7 @@ struct GPAExperiment {
     T x;
     double weight;
     double probability;
+    double distance;
     bool converged;
 };
 
@@ -270,16 +271,18 @@ void TimeStepper<T>::transient_gpa(
     GPAExperiment<T> &experiment) const
 {
     T x(experiment.x);
+    double dist = -1;
 
     for (double t = dt; t <= tmax; t += dt)
     {
         x = std::move(time_step_(x, dt));
 
-        double dist = dist_fun_(x);
+        dist = dist_fun_(x);
         if (dist > 1 - bdist_)
             experiment.converged = true;
     }
 
+    experiment.distance = dist;
     experiment.x = x;
 }
 
@@ -713,13 +716,14 @@ void TimeStepper<T>::gpa(int num_exp, int maxit, double beta, T const &x0,
 {
     std::vector<GPAExperiment<T>> experiments(num_exp);
 
-    auto W = [this, beta](T const &x){return exp(beta * dist_fun_(x));};
+    auto W = [this, beta](double x){return exp(beta * x);};
 
     for (int i = 0; i < num_exp; i++)
     {
         experiments[i].x = x0;
         experiments[i].weight = 1.0;
         experiments[i].probability = 1.0;
+        experiments[i].distance = 0.0;
         experiments[i].converged = false;
     }
 
@@ -760,7 +764,7 @@ void TimeStepper<T>::gpa(int num_exp, int maxit, double beta, T const &x0,
         for (int i = 0; i < num_exp; i++)
         {
             transient_gpa(dt, tstep, experiments[i]);
-            experiments[i].weight = W(experiments[i].x);
+            experiments[i].weight = W(experiments[i].distance);
             experiments[i].probability *= eta / experiments[i].weight;
 
             if (experiments[i].converged)
