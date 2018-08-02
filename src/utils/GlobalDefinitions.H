@@ -140,7 +140,8 @@ extern std::stack<Timer> timerStack;
             file.open(fname);                                           \
             for (int i = 0; i != mVec->MyLength(); ++i)                 \
             {                                                           \
-                file << (*(*mVec)(0))[i] << "\n";                       \
+                file << std::setprecision(17) << std::scientific        \
+                     << (*(*mVec)(0))[i] << "\n";                       \
             }                                                           \
         }                                                               \
     }                                                                   \

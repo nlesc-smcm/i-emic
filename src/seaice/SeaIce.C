@@ -1299,8 +1299,6 @@ void SeaIce::solve(Teuchos::RCP<Epetra_MultiVector> const &b)
     tmp->Scale(1.0/Utils::norm(b));
     double normRes = Utils::norm(tmp);
 
-    std::cout << *tmp << std::endl;
-    
     INFO("SeaIce: solve ||b-Ax|| / ||b|| = " << normRes);
 }
 
@@ -1362,38 +1360,24 @@ void SeaIce::initializeState()
         b = getRHS('C');
         b->Scale(-1.0);
 
-        Teuchos::RCP<Epetra_MultiVector> bmu = Utils::Gather(*b, 0);       
-
         DUMP_VECTOR("b", *b    );
         DUMPMATLAB("A" , *jac_ );
         
         solve(b);
         DUMP_VECTOR("x", *sol_ );
-        
-        std::cout << "||b|| " << Utils::norm(b) << std::endl;
-        std::cout << "||x|| " << Utils::norm(sol_) << std::endl;
 
-        double normInf = jac_->NormInf();
-        std::cout << "||A||inf " << normInf << std::endl;
-        double normOne = jac_->NormOne();
-        std::cout << "||A||one " << normOne << std::endl;
-        double normFro = jac_->NormFrobenius();
-        std::cout << "||A||frob " << normFro << std::endl;
 
-        applyMatrix(*sol_, *t);
-        std::cout << "||Ax||2 " << Utils::norm(t) << std::endl;
-        
-        getchar();
         
         state_->Update(1.0, *sol_, 1.0);
+        DUMP_VECTOR("s", *state_ );
+        getchar();
+                
 
         computeRHS();
         computeJacobian();
 
         INFO( "SeaIce::initializeState() norm F = "
               << Utils::norm( getRHS('V') ) );
-
-
     }
 }
 
