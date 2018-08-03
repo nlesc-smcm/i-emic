@@ -31,8 +31,8 @@ function [X, J, F] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size (2deg)
-    n = 4;
-    m = 4;
+    n = 8;
+    m = 8;
 
     % create grid
     grid();
