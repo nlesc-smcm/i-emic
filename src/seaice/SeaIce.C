@@ -381,7 +381,7 @@ void SeaIce::computeRHS()
         int lid  = standardMap_->LID(Grow);
         if (lid >= 0)
         {
-            Gval = state[lid];
+            Gval = (*state_)[lid];
             (*rhs_)[lid] = pQSnd_ * fluxInt - Gval * totalArea_;
         }
     }
@@ -1349,31 +1349,22 @@ void SeaIce::initializeState()
 {
     state_->PutScalar(0.0);
 
-    int maxit = 5;
-    int it = 0;
     computeRHS();
     computeJacobian();
     Teuchos::RCP<Epetra_Vector> b;
-    Teuchos::RCP<Epetra_Vector> t = getSolution('C');
-    for (; it < maxit; ++it)
+    double nrm = 1.0;
+    while (nrm > 1e-8)
     {
         b = getRHS('C');
         b->Scale(-1.0);
-
-        DUMP_VECTOR("b", *b    );
-        DUMPMATLAB("A" , *jac_ );
-        
         solve(b);
-        DUMP_VECTOR("x", *sol_ );
-
         state_->Update(1.0, *sol_, 1.0);
-        DUMP_VECTOR("s", *state_ );
 
         computeRHS();
         computeJacobian();
 
-        INFO( "SeaIce::initializeState() norm F = "
-              << Utils::norm( getRHS('V') ) );
+        nrm = Utils::norm( getRHS('V') );
+        INFO( "SeaIce::initializeState() norm F = " << nrm );
     }
 }
 
