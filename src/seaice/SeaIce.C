@@ -82,8 +82,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     comb_   = params->get(allParameters_[0], 0.0);
     sunp_   = params->get(allParameters_[1], 1.0);
-    latf_   = params->get(allParameters_[2], 1.0);
-    maskf_  = params->get(allParameters_[3], 1.0);
+    latf_   = params->get(allParameters_[2], 0.0);
+    maskf_  = params->get(allParameters_[3], 1.0); // deprecated
 
     // inherited input/output datamembers
     inputFile_  = params->get("Input file",  "seaice_input.h5");

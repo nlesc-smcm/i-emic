@@ -137,7 +137,7 @@ TEST(CoupledModel, SeaIceCorrection)
 {
     double oceanSCorr = ocean->getSCorr();
     Teuchos::RCP<Epetra_Vector> siCorr = seaice->interfaceG();
-    std::cout << *siCorr << std::endl;
+    std::cout << oceanSCorr << " " << (*siCorr)[0] << std::endl;
     EXPECT_NEAR(oceanSCorr, (*siCorr)[0], 1e-7);
 }
 

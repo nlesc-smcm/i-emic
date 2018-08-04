@@ -305,7 +305,7 @@ private:
     double      comb_; //! combined forcing
     double      sunp_; //! solar forcing
     double      latf_; //! latent heat forcing
-    double     maskf_; //! mask forcing
+    double     maskf_; //! mask forcing (deprecated)
 
 public:
     //! Constructor based on communicator and parameterlist
