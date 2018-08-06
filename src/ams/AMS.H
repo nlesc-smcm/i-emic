@@ -489,6 +489,8 @@ void AMS<Model>::run()
         timestepper_->gpa(num_exp_, maxit_, beta_, sol1_, dt_, tstep_, tmax_);
     else if (method_ == "Naive")
         timestepper_->naive(num_exp_, sol1_, dt_, tmax_);
+    else if (method_ == "Brownian motion")
+        timestepper_->brownian_motion(num_exp_, dt_, tmax_);
     else
         std::cerr << "Method " << method_ << " does not exist." << std::endl;
 }
