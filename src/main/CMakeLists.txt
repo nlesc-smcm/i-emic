@@ -36,6 +36,7 @@ find_package(RAILS)
 if (RAILS_FOUND)
   list(APPEND MAIN_SOURCES run_lyapunov.C)
   list(APPEND MAIN_LIBRARIES ${RAILS_LIBRARIES})
+  list(APPEND MAIN_INCLUDE_DIRS ${RAILS_INCLUDE_DIRS})
 endif()
 
 foreach(main_source ${MAIN_SOURCES})

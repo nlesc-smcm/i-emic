@@ -1,10 +1,10 @@
 #include "GlobalDefinitions.H"
 
-#include "RAILS/Epetra_MultiVectorWrapper.hpp"
-#include "RAILS/Epetra_SerialDenseMatrixWrapper.hpp"
-#include "RAILS/Epetra_OperatorWrapper.hpp"
-#include "RAILS/LyapunovSolver.hpp"
-#include "RAILS/SchurOperator.hpp"
+#include "Epetra_MultiVectorWrapper.hpp"
+#include "Epetra_SerialDenseMatrixWrapper.hpp"
+#include "Epetra_OperatorWrapper.hpp"
+#include "LyapunovSolver.hpp"
+#include "SchurOperator.hpp"
 
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_XMLParameterListHelpers.hpp"
