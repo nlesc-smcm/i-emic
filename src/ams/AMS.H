@@ -57,6 +57,7 @@ public:
 
     auto get_time_step();
     auto get_projected_time_step();
+    auto get_brownian_time_step();
 
     void run();
 
@@ -240,6 +241,16 @@ AMS(Model model, ParameterList pars,
             double d2 =  projected_v_norm(d2v) / nrm;
             double dist = 0.5 - 0.5 * exp(-0.5 * pow(d1 / 0.25, 2.))
             + 0.5 * exp(-0.5 * pow(d2 / 0.25, 2.));
+            INFO("distance = " << dist);
+            return dist;
+        };
+    }
+    else if (method_ == "Brownian motion")
+    {
+        time_step = get_brownian_time_step();
+
+        dist_fun = [this](VectorPtr const &x) {
+            double dist = (*x)[0];
             INFO("distance = " << dist);
             return dist;
         };
@@ -473,6 +484,27 @@ auto AMS<Model>::get_projected_time_step()
 }
 
 template<typename Model>
+auto AMS<Model>::get_brownian_time_step()
+{
+    // Function to perform one stochastic time step
+    return [this](VectorPtr const &x, double dt) {
+
+        // Compute noise for forcing which is independent per processor
+        std::normal_distribution<double> distribution(0.0, 1.0);
+        auto generator = std::bind(distribution, std::ref(*engine_));
+
+        int m = x->MyLength();
+
+        VectorPtr xnew = Teuchos::rcp(new Vector(x->Map()));
+        std::generate(xnew->Values(), xnew->Values() + m, generator);
+        CHECK_ZERO(xnew->Scale(sqrt(dt_)));
+        CHECK_ZERO(xnew->Update(1.0, *x, 1.0));
+
+        return xnew;
+    };
+}
+
+template<typename Model>
 AMS<Model>::~AMS()
 {
     INFO("AMS destructor");
@@ -490,7 +522,11 @@ void AMS<Model>::run()
     else if (method_ == "Naive")
         timestepper_->naive(num_exp_, sol1_, dt_, tmax_);
     else if (method_ == "Brownian motion")
-        timestepper_->brownian_motion(num_exp_, dt_, tmax_);
+    {
+        Epetra_Map map(1, 0, *model_->Comm());
+        VectorPtr x0 = Teuchos::rcp(new Vector(map));
+        timestepper_->naive(num_exp_, x0, dt_, tmax_);
+    }
     else
         std::cerr << "Method " << method_ << " does not exist." << std::endl;
 }

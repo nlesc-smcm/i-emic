@@ -87,8 +87,6 @@ public:
         double dt, double tmax,
         GPAExperiment<T> &experiment) const;
 
-    void brownian_motion(int num_exp, double dt, double tmax) const;
-
     void naive(int num_exp,
                T const &x0, double dt, double tmax) const;
 
@@ -297,25 +295,6 @@ void TimeStepper<T>::transient_gpa(
 
     experiment.distance = dist;
     experiment.x = x;
-}
-
-template<class T>
-void TimeStepper<T>::brownian_motion(int num_exp, double dt, double tmax) const
-{
-    double x = 0;
-    for (int i = 0; i < num_exp; i++)
-    {
-        for (double t = dt; t <= tmax; t += dt)
-        {
-            std::vector<double> pert(1);
-            std::normal_distribution<double> distribution(0.0, sqrt(dt));
-            auto generator = std::bind(distribution, std::ref(*engine_));
-            std::generate(pert.begin(), pert.end(), generator);
-            
-            x = x + pert[0];
-            std::cout << "distance = " << x << std::endl;
-        }
-    }
 }
 
 template<class T>
