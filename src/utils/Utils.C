@@ -542,9 +542,6 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
         // if we encounter a dense row (probably an integral equation)
         if (numEntries > maxnnz)
         {
-            std::cout << "assembleCRS: encountered dense row "
-                      << gRow << std::endl;
-
             // adjust arrays
             indices = std::vector<int>(numEntries, 0);
             values  = std::vector<double>(numEntries, 0);

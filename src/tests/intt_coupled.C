@@ -144,7 +144,7 @@ TEST(CoupledModel, RHS)
     std::shared_ptr<Combined_MultiVec> F = coupledModel->getRHS('V');
     for (int i = 0; i != F->Size(); ++i)
     {
-        INFO(" submodel " << i << " ||F|| = " << Utils::norm((*F)(i)));
+        INFO(" submodel " << i << ": ||F|| = " << Utils::norm((*F)(i)));
     }
     
     EXPECT_LT(Utils::norm(F), 1e-7);
@@ -153,13 +153,13 @@ TEST(CoupledModel, RHS)
 //------------------------------------------------------------------
 TEST(CoupledModel, Newton)
 {
+    coupledModel->initializeState();
+
     // One step in a 'natural continuation'
     // initialize state in model
     std::shared_ptr<Combined_MultiVec> stateV =
         coupledModel->getState('V');
-
-    stateV->PutScalar(0.0);
-
+                                    
     std::shared_ptr<Combined_MultiVec> solV =
         coupledModel->getSolution('V');
 
@@ -190,14 +190,13 @@ TEST(CoupledModel, Newton)
 
         stateV->Update(1.0, *x, 1.0); // x = x + dx;
 
-        coupledModel->computeJacobian();
         coupledModel->computeRHS();
+        coupledModel->computeJacobian();
 
         coupledModel->applyMatrix(*x, *y);
         double normb = Utils::norm(b);
         y->Update(1.0, *b, -1.0);
-        y->Scale(1. / normb);
-        
+        y->Scale(1. / normb);        
 
         INFO("\n ||r|| / ||b|| = " << Utils::norm(y));
         INFO("        ||dx|| = " << Utils::norm(x) << " ");
@@ -342,7 +341,6 @@ TEST(CoupledModel, AtmosphereEPfields)
 //------------------------------------------------------------------
 TEST(CoupledModel, EPIntegral)
 {
-    
     Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPIntCoeff();
     
     Teuchos::RCP<Epetra_Vector> E = atmos->interfaceE();
@@ -363,7 +361,6 @@ TEST(CoupledModel, EPIntegral)
 
     // not sure how strict this test should be
     EXPECT_NEAR( (integralP - integralE) / integralP, 0.0, 1e-5);
-
 }
 
 //------------------------------------------------------------------
@@ -375,16 +372,14 @@ TEST(CoupledModel, Continuation)
     {
         // One step in an arclength continuation
         // initialize state in model
-        std::shared_ptr<Combined_MultiVec> stateV =
-            coupledModel->getState('V');
-        stateV->PutScalar(0.0);
-                               
+        coupledModel->setPar(0.0);
+        coupledModel->initializeState();
+        
         std::shared_ptr<Combined_MultiVec> solV =
             coupledModel->getSolution('V');
+        
         solV->PutScalar(0.0);
                              
-        // set initial parameter
-        coupledModel->setPar(0.0);
         
         // Create continuation
         Continuation<std::shared_ptr<CoupledModel>,

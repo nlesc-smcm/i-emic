@@ -97,6 +97,7 @@ public:
     virtual void buildPreconditioner() = 0;
 
     virtual void preProcess()  = 0;
+    
     virtual void postProcess() = 0;
 
     //! Plaintext data output 
@@ -119,6 +120,8 @@ public:
     //! Convert global id to coordinates i,j,k,xx and model identification mdl
     void gid2coord(int const &gid, int &mdl,
                    int &i, int &j, int &k, int &xx);
+
+    virtual void initializeState() { state_->PutScalar(0.0); }
 
 };
 

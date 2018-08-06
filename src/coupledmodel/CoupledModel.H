@@ -174,6 +174,9 @@ public:
     //! Get the continuation parameter
     double getPar();
 
+    //! initialize state in submodels
+    void initializeState();
+
     //! Pre-processing. A controlling scheme might allow some
     //! pre-processing, for instance at the start of a Newton process.
     void preProcess();

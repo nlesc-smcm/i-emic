@@ -18,7 +18,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     recomputePrec_   (false),
     
     taus_         (0.01),    // threshold ice thickness
-    epsilon_      (1.0e-2),  // Heavyside approximation steepness
+    epsilon_      (params->get("mask switch steepness", 1e-2)),  // Heavyside approximation steepness
 
     // background mean values
     t0o_   (params->get("background ocean temp t0o", 15)),
@@ -83,7 +83,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     comb_   = params->get(allParameters_[0], 0.0);
     sunp_   = params->get(allParameters_[1], 1.0);
     latf_   = params->get(allParameters_[2], 0.0);
-    maskf_  = params->get(allParameters_[3], 1.0); // deprecated
+    maskf_  = params->get(allParameters_[3], 1.0);
 
     // inherited input/output datamembers
     inputFile_  = params->get("Input file",  "seaice_input.h5");

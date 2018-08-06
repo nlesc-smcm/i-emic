@@ -185,8 +185,8 @@ void CoupledModel::synchronize()
     for (size_t i = 0; i != models_.size(); ++i)
         for (size_t j = 0; j != models_.size(); ++j)
         {
-            if (models_[i] != models_[j])
-                models_[i]->synchronize<>(models_[j]);
+            if ( models_[i] != models_[j] )
+                 models_[i]->synchronize<>(models_[j]);
         }
     
     TIMER_STOP("CoupledModel: synchronize...");
@@ -286,10 +286,8 @@ void CoupledModel::initializeFGMRES()
     belosParamList->set("Maximum Restarts", maxrestarts);
     belosParamList->set("Orthogonalization","DGKS");
     belosParamList->set("Output Frequency", output);
-    belosParamList->set("Verbosity", Belos::TimingDetails +
-                        Belos::Errors +
-                        Belos::Warnings +
-                        Belos::StatusTestDetails );
+    belosParamList->set("Verbosity",
+                        Belos::Errors + Belos::Warnings);
     belosParamList->set("Maximum Iterations", maxiters);
     belosParamList->set("Convergence Tolerance", gmresTol);
     belosParamList->set("Explicit Residual Test", testExpl);
@@ -626,6 +624,16 @@ void CoupledModel::setPar(double value)
 {
     for (auto &model: models_)
         model->setPar(parName_, value);
+}
+
+//------------------------------------------------------------------
+void CoupledModel::initializeState()
+{
+    for (auto &model: models_)
+    {
+        synchronize();
+        model->initializeState();
+    }
 }
 
 //------------------------------------------------------------------

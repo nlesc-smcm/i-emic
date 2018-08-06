@@ -96,12 +96,8 @@ TEST(Map, Usage)
     for (int i = 0; i != submap->NumMyElements(); ++i)
     {
         EXPECT_EQ(y[i], val);
-    }
-
-    std::cout << y << std::endl;
-    
+    }    
 }
-
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)

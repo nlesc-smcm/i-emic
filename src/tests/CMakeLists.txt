@@ -52,13 +52,13 @@ endif ()
 include_directories(${GTEST_INCLUDE_DIRS})
 
 
-
 foreach(test_source ${TEST_SOURCES})
   get_filename_component(test_name ${test_source} NAME_WE)
   add_executable(${test_name} ${test_source})
 
   string(REPLACE "_" ";" test_name_list ${test_name})
   list(GET test_name_list 1 test_base_name)
+  file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/test/${test_base_name})
   add_test(NAME ${test_name} COMMAND ${test_name} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/${test_base_name})
 
   target_compile_definitions(${test_name} PUBLIC ${COMP_IDENT})

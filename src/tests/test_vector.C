@@ -1,7 +1,6 @@
 #include "TestDefinitions.H"
 #include "TRIOS_Domain.H"
 
-
 //------------------------------------------------------------------
 namespace
 {

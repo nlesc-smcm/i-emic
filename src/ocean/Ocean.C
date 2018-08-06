@@ -981,10 +981,7 @@ void Ocean::initializeBelos()
     belosParamList_->set("Maximum Restarts", maxrestarts);
     belosParamList_->set("Orthogonalization","DGKS");
     belosParamList_->set("Output Frequency", output);
-    belosParamList_->set("Verbosity", Belos::TimingDetails +
-                         Belos::Errors +
-                         Belos::Warnings +
-                         Belos::StatusTestDetails );
+    belosParamList_->set("Verbosity", Belos::Errors + Belos::Warnings);
     belosParamList_->set("Maximum Iterations", maxiters);
     belosParamList_->set("Convergence Tolerance", gmresTol);
     belosParamList_->set("Explicit Residual Test", testExpl);

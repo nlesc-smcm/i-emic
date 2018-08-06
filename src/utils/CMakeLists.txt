@@ -7,6 +7,8 @@ set(UTILS_INCLUDE_DIRS
 
 add_library(utils SHARED Utils.C)
 
+target_link_libraries(utils PUBLIC ${library_dependencies})
+
 target_include_directories(utils PUBLIC ${UTILS_INCLUDE_DIRS})
 
 target_compile_definitions(utils PUBLIC ${COMP_IDENT})

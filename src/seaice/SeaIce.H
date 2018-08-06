@@ -305,7 +305,7 @@ private:
     double      comb_; //! combined forcing
     double      sunp_; //! solar forcing
     double      latf_; //! latent heat forcing
-    double     maskf_; //! mask forcing (deprecated)
+    double     maskf_; //! mask forcing 
 
 public:
     //! Constructor based on communicator and parameterlist
@@ -447,7 +447,7 @@ private:
 
     //! sea ice mask as a function thickness anomaly H 
     double maskFun(double H)
-        { return (1. / 2.) * (1. + tanh( H / epsilon_ )); }
+        { return (comb_ * maskf_ / 2.) * (1. + tanh( H / epsilon_ )); }
     
     //! sea ice mask function lazy derivative
     double dMdH(double H)
