@@ -174,7 +174,8 @@ AMS(Model model, ParameterList pars,
 {
     std::random_device rd;
     std::random_device::result_type seed = rd();
-    engine_ = Teuchos::rcp(new std::mt19937_64(seed));
+    std::seed_seq seeder{seed};
+    engine_ = Teuchos::rcp(new std::mt19937_64(seeder));
 
     write_seed(*model_->Comm(), seed, "Time step seed");
 

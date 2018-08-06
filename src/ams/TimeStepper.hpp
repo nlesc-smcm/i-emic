@@ -65,7 +65,7 @@ public:
                 double cdist,
                 double dist_tol);
 
-    ~TimeStepper();
+   virtual ~TimeStepper();
 
     T transient(T x, double dt, double tmax) const;
     double transient_max_distance(
@@ -802,7 +802,8 @@ void TimeStepper<T>::set_random_engine(unsigned int seed)
     if (engine_initialized_)
         delete engine_;
 
-    engine_ = new std::mt19937_64(seed);
+    std::seed_seq seeder{seed};
+    engine_ = new std::mt19937_64(seeder);
 
     randint_ = [this](int a, int b) {
         std::uniform_int_distribution<int> int_distribution(a, b);
@@ -831,7 +832,8 @@ int TimeStepper<T>::randint(int a, int b) const
     }
 
     static thread_local std::random_device rd;
-    static thread_local std::mt19937_64 engine(rd());
+    static thread_local std::seed_seq seeder{rd()};
+    static thread_local std::mt19937_64 engine(seeder);
     std::uniform_int_distribution<int> int_distribution(a, b);
     return int_distribution(engine);
 }
@@ -850,7 +852,8 @@ int TimeStepper<T>::randreal(double a, double b) const
     }
 
     static thread_local std::random_device rd;
-    static thread_local std::mt19937_64 engine(rd());
+    static thread_local std::seed_seq seeder{rd()};
+    static thread_local std::mt19937_64 engine(seeder);
     std::uniform_real_distribution<double> real_distribution(a, b);
     return real_distribution(engine);
 }
