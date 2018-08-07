@@ -16,6 +16,13 @@
 
 #include "gtest/gtest.h" // google test
 
+#include "GlobalDefinitions.H"
+
+Teuchos::RCP<std::ostream> outFile;      // output file
+Teuchos::RCP<std::ostream> cdataFile;    // cdata file
+ProfileType                profile;      // profile
+std::stack<Timer>          timerStack;   // timing stack
+
 namespace
 {
     Teuchos::RCP<Epetra_Comm>  comm;
