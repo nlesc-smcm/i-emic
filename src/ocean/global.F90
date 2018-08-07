@@ -600,7 +600,7 @@ contains
     if (ite==1) then
        do j=1,m
           do i=1,n
-             tatm(i,j) = temfun(x(i),y(j))
+             tatm(i,j) = temfun(y(j))
           end do
        end do
     end if
@@ -608,7 +608,7 @@ contains
     if (its==1) then
        do j=1,m
           do i=1,n
-             emip(i,j) = salfun(x(i),y(j))
+             emip(i,j) = salfun(y(j))
           end do
        end do
     end if
@@ -764,7 +764,7 @@ contains
              hf(i,j)  = par(BIOT)*&
                   ( tatm(i,j) - T(i,j,l)/(par(TEMP)*par(COMB)) )
              fwf(i,j) = par(BIOT)*&
-                  ( (1-its)*emip(i,j) + its*salfun(x(i),y(j))&
+                  ( (1-its)*emip(i,j) + its*salfun(y(j))&
                   - S(i,j,l)/(par(SALT)*par(COMB)) )
           endif
        enddo

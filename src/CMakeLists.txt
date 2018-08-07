@@ -24,14 +24,14 @@ message("-- CMAKE_Fortran_COMPILER_ID ${CMAKE_Fortran_COMPILER_ID}")
 if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU") #gfortran, gcc
   
   set (CMAKE_Fortran_FLAGS
-	"-g -u -O0 -Wall -ffixed-line-length-132 -fdefault-real-8 -ffree-line-length-none -DASCII_TOPO")
-  set (CMAKE_CXX_FLAGS "-g -std=c++1y -O0 -Wall -Wno-deprecated-declarations -DDEBUGGING_NEW")
+	"-g -u -O0 -Wall -ffixed-line-length-132 -fdefault-real-8 -fPIC -ffree-line-length-none -DASCII_TOPO")
+  set (CMAKE_CXX_FLAGS "-g -std=c++1y -O0 -Wall -fPIC -Wno-deprecated-declarations -DDEBUGGING_NEW")
   set (COMP_IDENT GNU)
   
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel") #ifort, icc
   
-  set (CMAKE_Fortran_FLAGS "-g -r8 -O3 -warn -DASCII_TOPO -DWITH_UNION -heap-arrays 1 -extend-source 132")
-  set (CMAKE_CXX_FLAGS "-std=c++14 -O3")
+  set (CMAKE_Fortran_FLAGS "-g -r8 -O3 -fPIC -warn -DASCII_TOPO -DWITH_UNION -heap-arrays 1 -extend-source 132")
+  set (CMAKE_CXX_FLAGS "-std=c++14 -O3 -fPIC")
   set (COMP_IDENT INTEL)
   
 endif ()
