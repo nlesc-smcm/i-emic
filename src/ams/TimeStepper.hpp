@@ -757,15 +757,15 @@ void TimeStepper<T>::gpa(int num_exp, int maxit, double beta, T const &x0,
         {
             double val = randreal(0.0, sum);
             double  cumsum = 0.0;
-            for (int i = 0; i < num_exp; i++)
+            for (int j = 0; j < num_exp; j++)
             {
-                cumsum += old_experiments[i].weight;
+                cumsum += old_experiments[j].weight;
                 if (cumsum >= val)
                 {
-                    experiments[i] = old_experiments[i];
+                    experiments[i] = old_experiments[j];
                     break;
                 }
-                if (i == num_exp-1)
+                if (j == num_exp-1)
                 {
                     std::cerr << "Particle not found with sum " << sum
                               << " and random value " << val << std::endl;
