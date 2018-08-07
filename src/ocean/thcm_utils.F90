@@ -160,9 +160,9 @@
   real, dimension(1:n+2,1:m+2,1:l+la+1), target :: w
   real, dimension(1:n+2,1:m+2,1:l+la+2), target :: p,T,S
 
-  write(*,*) "============"
-  write(*,*) u(8,8,8)
-  write(*,*) "============"
+  ! write(*,*) "============"
+  ! write(*,*) u(8,8,8)
+  ! write(*,*) "============"
   
   aliasU => u(1:n+1,1:m+1,1:l+la+2)
   aliasV => v(1:n+1,1:m+1,1:l+la+2)

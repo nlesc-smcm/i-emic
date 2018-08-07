@@ -1355,7 +1355,8 @@ void Atmosphere::applyPrecon(Epetra_MultiVector const &in,
     }
     if (recomputePrec_)
     {
-        precPtr_->Initialize();
+        INFO("Atmosphere: recomputing prec");
+        // precPtr_->Initialize();
         precPtr_->Compute();
         recomputePrec_ = false;
     }

@@ -321,6 +321,8 @@ void CoupledModel::solve(std::shared_ptr<Combined_MultiVec> rhs)
 //------------------------------------------------------------------
 void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 {
+    INFO("CoupledModel: FGMRES solve");
+
     if (!solverInitialized_)
         initializeFGMRES();
 
@@ -355,7 +357,7 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 
     double tol = belosSolver_->achievedTol();
 
-    INFO(" CoupledModel: FGMRES, iters = " << iters << ", ||r|| = " << tol);
+    INFO("CoupledModel: FGMRES, iters = " << iters << ", ||r|| = " << tol);
 
 }
 

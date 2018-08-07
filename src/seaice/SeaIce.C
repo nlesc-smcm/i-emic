@@ -259,6 +259,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 //=============================================================================
 void SeaIce::computeRHS()
 {
+    TIMER_START("SeaIce: compute RHS...");
     // zero rhs vector
     localRHS_->PutScalar(0.0);
 
@@ -387,6 +388,7 @@ void SeaIce::computeRHS()
     }
     
     INFO(" seaic F = " << Utils::norm(rhs_));
+    TIMER_STOP("SeaIce: compute RHS...");
 }
 
 //=============================================================================
@@ -558,6 +560,7 @@ void SeaIce::computeLocalJacobian()
 //=============================================================================
 void SeaIce::computeJacobian()
 {
+    TIMER_START("SeaIce: compute Jacobian...");
 
     // set all entries to zero
     CHECK_ZERO(jac_->PutScalar(0.0));
@@ -583,6 +586,7 @@ void SeaIce::computeJacobian()
 
     // With a new Jacobian we need to recompute the factorization
     recomputePrec_ = true;
+    TIMER_STOP("SeaIce: compute Jacobian...");
 }
 
 //=============================================================================
@@ -1318,6 +1322,7 @@ void SeaIce::applyPrecon(Epetra_MultiVector const &in,
                          Epetra_MultiVector &out)
 {
     TIMER_START("SeaIce: apply preconditioner...");
+    
     if (!precInitialized_)
     {
         initializePrec();
@@ -1325,7 +1330,7 @@ void SeaIce::applyPrecon(Epetra_MultiVector const &in,
     if (recomputePrec_)
     {
         INFO("SeaIce: recomputing prec");
-        precPtr_->Initialize();
+        // precPtr_->Initialize();
         precPtr_->Compute();
         recomputePrec_ = false;
     }

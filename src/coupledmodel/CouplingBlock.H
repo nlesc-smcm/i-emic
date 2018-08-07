@@ -121,9 +121,6 @@ public:
                     // if we encounter a dense row (probably an integral equation)
                     if (numentries > maxnnz)
                     {
-                        std::cout << "CouplingBlock: encountered dense row "
-                                  << gRow << std::endl;
-                        
                         indices = std::vector<int>(numentries, 0);
                         values  = std::vector<double>(numentries, 0);
                     }
