@@ -174,9 +174,9 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     INFO("                        local ymax = " << ymaxLoc_);
 
     // local grid dimensions
-    nLoc_   =  domain_->LocalN();
-    mLoc_   =  domain_->LocalM();
-    dimLoc_ =  mLoc_ * nLoc_ * dof_;
+    nLoc_   = domain_->LocalN();
+    mLoc_   = domain_->LocalM();
+    dimLoc_ = mLoc_ * nLoc_ * dof_;
 
     // Local flux containers
     QSos_ = std::vector<double>(mLoc_ * nLoc_);
