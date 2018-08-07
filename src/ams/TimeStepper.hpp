@@ -325,6 +325,10 @@ void TimeStepper<T>::ams(int num_exp, int num_init_exp,
 {
     int its = 0;
     int converged = 0;
+
+    if (num_init_exp < num_exp)
+        num_init_exp = num_exp;
+
     std::vector<AMSExperiment<T>> experiments(num_init_exp);
 
 #pragma omp parallel for default(none),                                 \

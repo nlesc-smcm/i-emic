@@ -64,7 +64,9 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
     std::string stateA = amsParams->get("State A", "");
     std::string stateB = amsParams->get("State B", "");
+    std::string stateD = amsParams->get("Unstable state", "");
     oceanParams->set("Input file", stateA);
+    oceanParams->set("Load state", true);
 
     RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
 
@@ -72,6 +74,12 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     Utils::load(sol1, stateA);
     RCP<Epetra_Vector> sol2 = ocean->getState('C');
     Utils::load(sol2, stateB);
+    RCP<Epetra_Vector> sol3 = Teuchos::null;
+    if (stateD != "")
+    {
+        sol3 = ocean->getState('C');
+        Utils::load(sol3, stateD);
+    }
 
     bool writeMatrices = amsParams->get("write matrices", false);
 
@@ -79,6 +87,8 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     {
         EpetraExt::MultiVectorToMatrixMarketFile("sol1.mtx", *sol1);
         EpetraExt::MultiVectorToMatrixMarketFile("sol2.mtx", *sol2);
+        if (sol3 != Teuchos::null)
+            EpetraExt::MultiVectorToMatrixMarketFile("sol3.mtx", *sol3);
 
         *ocean->getState('V') = *sol1;
         ocean->computeJacobian();
@@ -93,7 +103,7 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     }
 
     // Create ams
-    AMS<RCP<Ocean> > ams(ocean, amsParams, sol1, sol2);
+    AMS<RCP<Ocean> > ams(ocean, amsParams, sol1, sol2, sol3);
 
     ams.run();
 

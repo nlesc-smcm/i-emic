@@ -41,6 +41,7 @@ class AMS
 
     VectorPtr sol1_;
     VectorPtr sol2_;
+    VectorPtr sol3_;
 
     Teuchos::RCP<TimeStepper<VectorPtr> > timestepper_;
 
@@ -52,7 +53,8 @@ class AMS
 public:
     template<typename ParameterList>
     AMS(Model model, ParameterList pars,
-        VectorPtr sol1, VectorPtr sol2);
+        VectorPtr sol1, VectorPtr sol2,
+        VectorPtr sol3 = Teuchos::null);
     ~AMS();
 
     auto get_time_step();
@@ -152,7 +154,8 @@ template<typename Model>
 template<typename ParameterList>
 AMS<Model>::
 AMS(Model model, ParameterList pars,
-    VectorPtr sol1, VectorPtr sol2)
+    VectorPtr sol1, VectorPtr sol2,
+    VectorPtr sol3)
     :
     model_(model),
     dt_(pars->get("time step", 0.01)),
@@ -171,6 +174,7 @@ AMS(Model model, ParameterList pars,
     maxit_(pars->get("maximum iterations", num_exp_ * 10)),
     sol1_(sol1),
     sol2_(sol2),
+    sol3_(sol3),
     V_(Teuchos::null)
 {
     std::random_device rd;
@@ -232,15 +236,25 @@ AMS(Model model, ParameterList pars,
         CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
         double nrm = projected_v_norm(diff);
 
-        dist_fun = [nrm, projected_v_norm, this](VectorPtr const &x) {
+        double dist_factor = 0.5;
+        if (sol3_ != Teuchos::null)
+        {
+            auto diff = Teuchos::rcp(new Vector(*sol1_));
+            CHECK_ZERO(diff->Update(-1.0, *sol3_, 1.0));
+            double nrm2 = projected_v_norm(diff);
+            dist_factor = nrm2 / nrm;
+        }
+        INFO("distance factor = " << dist_factor);
+
+        dist_fun = [nrm, dist_factor, projected_v_norm, this](VectorPtr const &x) {
             VectorPtr d1v = Teuchos::rcp(new Vector(*x));
             CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
             double d1 =  projected_v_norm(d1v) / nrm;
             VectorPtr d2v = Teuchos::rcp(new Vector(*x));
             CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
             double d2 =  projected_v_norm(d2v) / nrm;
-            double dist = 0.5 - 0.5 * exp(-0.5 * pow(d1 / 0.25, 2.))
-            + 0.5 * exp(-0.5 * pow(d2 / 0.25, 2.));
+            double dist = dist_factor - dist_factor * exp(-0.5 * pow(d1 / 0.25, 2.))
+            + (1.0 - dist_factor) * exp(-0.5 * pow(d2 / 0.25, 2.));
             INFO("distance = " << dist);
             return dist;
         };
@@ -287,20 +301,26 @@ AMS(Model model, ParameterList pars,
             nrm[var] = var_norm(diff, var);
         }
 
-        auto dist_fun_var = [nrm, var_norm, this](VectorPtr const &x, int var) {
+        const int var = 1;
+        double dist_factor = 0.5;
+        if (sol3_ != Teuchos::null)
+        {
+            VectorPtr diff = Teuchos::rcp(new Vector(*sol1_));
+            CHECK_ZERO(diff->Update(-1.0, *sol3_, 1.0));
+            double nrm2 = var_norm(diff, var);
+            dist_factor = nrm2 / nrm[var];
+        }
+        INFO("distance factor = " << dist_factor);
+
+        dist_fun = [nrm, dist_factor, var_norm, var, this](VectorPtr const &x) {
             VectorPtr d1v = Teuchos::rcp(new Vector(*x));
             CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
             double d1 =  var_norm(d1v, var) / nrm[var];
             VectorPtr d2v = Teuchos::rcp(new Vector(*x));
             CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
             double d2 =  var_norm(d2v, var) / nrm[var];
-            double dist = 0.5 - 0.5 * exp(-0.5 * pow(d1 / 0.25, 2.))
-            + 0.5 * exp(-0.5 * pow(d2 / 0.25, 2.));
-            return dist;
-        };
-
-        dist_fun = [this, dist_fun_var](VectorPtr const &x) {
-            double dist = dist_fun_var(x, 1);
+            double dist = dist_factor - dist_factor * exp(-0.5 * pow(d1 / 0.25, 2.))
+            + (1.0 - dist_factor) * exp(-0.5 * pow(d2 / 0.25, 2.));
             INFO("distance = " << dist);
             return dist;
         };
