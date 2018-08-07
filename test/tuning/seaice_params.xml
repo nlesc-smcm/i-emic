@@ -1,0 +1,29 @@
+<!-- Parameters that are repeated in coupledmodel_params.xml will be
+     overwritten when using run_coupled. -->
+
+<ParameterList name="Sea ice parameters">
+
+  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Save state" type="bool" value="true"/>
+
+  <Parameter name="Input file"  type="string" value="seaice_input.h5" />
+  <Parameter name="Output file" type="string" value="seaice_output.h5" />
+
+  <Parameter name="Global Bound xmin" type="double" value="286"/>
+  <Parameter name="Global Bound xmax" type="double" value="350"/>
+  <Parameter name="Global Bound ymin" type="double" value="10"/>
+  <Parameter name="Global Bound ymax" type="double" value="74"/>
+  <Parameter name="Global Grid-Size n" type="int" value="6"/>
+  <Parameter name="Global Grid-Size m" type="int" value="6"/>
+
+  <Parameter name="Periodic" type="bool" value="false"/>
+
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+
+  <Parameter name="Combined Forcing" type="double" value="0.0"/>
+  <Parameter name="Latent Heat Forcing" type="double" value="0.0"/>
+  <Parameter name="Mask Forcing" type="double" value="1.0"/>
+  
+  <Parameter name="mask switch steepness" type="double" value="1.0e-2"/>
+  
+</ParameterList>                                                  
