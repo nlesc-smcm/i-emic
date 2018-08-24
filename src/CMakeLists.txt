@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 2.8)
 
 # Trying to find Trilinos
 if (DEFINED ENV{TRILINOS_DIR} AND NOT DEFINED Trilinos_DIR)
@@ -58,13 +58,14 @@ ExternalProject_Add(jdqzpp
 
   PREFIX ${CMAKE_SOURCE_DIR}/src/external/jdqzpp
 
-  CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF
+  CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DINSTALL_DIR=${CMAKE_SOURCE_DIR}/src/external/jdqzpp
   )
 
 ExternalProject_Get_Property(jdqzpp source_dir)
 set(JDQZPP_INCLUDE_DIR ${source_dir}/include)
 set(JDQZPP_LIBRARY_DIR ${source_dir}/lib)
 message("-- JDQZ++ source dir: " ${source_dir})
+message("-- JDQZ++ install prefix: " ${CMAKE_SOURCE_DIR}/src/external/jdqzpp)
 
 include_directories(${JDQZPP_INCLUDE_DIR})
 list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
