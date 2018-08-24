@@ -1,13 +1,7 @@
-cmake_minimum_required(VERSION 2.8.12.2)
+cmake_minimum_required(VERSION 3.3)
 project(i-emic)
 
-# SHARED_DIR should be available
-if (DEFINED ENV{SHARED_DIR})
-  set(DATA_DIR "'$ENV{SHARED_DIR}/i-emic/data/'")
-else()
-  message (FATAL_ERROR "SHARED_DIR environment variable should be available (absolute directory)")
-endif()
-
+set(DATA_DIR "'${CMAKE_CURRENT_SOURCE_DIR}/data/'")
 message("-- Data is stored in: " ${DATA_DIR})
 
 # MRILU_DIR should be available
@@ -21,6 +15,9 @@ endif ()
 message("-- Looking for MRILU in ${MRILU_DIR}")
 
 enable_testing()
+
+add_subdirectory(cmake)
+message("-- CMAKE module path: ${CMAKE_MODULE_PATH}")
 
 add_subdirectory(src)
 

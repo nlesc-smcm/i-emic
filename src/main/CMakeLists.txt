@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12.2)
+cmake_minimum_required(VERSION 3.3)
 
 add_executable(run_coupled run_coupled.C)
 add_executable(run_ocean run_ocean.C)

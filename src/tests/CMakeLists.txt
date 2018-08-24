@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12.2)
+cmake_minimum_required(VERSION 3.3)
   
 set(TESTS_INCLUDE_DIRS
   ../utils/
@@ -27,30 +27,37 @@ set(TEST_SOURCES
   test_integrals.C
   )
 
-# Google test
-if (NOT GTEST_FOUND)
-find_package(GTest)
-endif ()
+include(BuildExternalProject)
+BuildExternalProject(
+  GTest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG release-1.8.0)
 
-if (NOT GTEST_FOUND)
-  if (DEFINED ENV{GTEST_DIR})
-	message("-- GTest not automatically found, trying $ENV{GTEST_DIR}")
-	set(GTEST_ROOT "$ENV{GTEST_DIR}")
-  else ()
-	message("-- GTest not automatically found, GTEST_DIR not set, trying $ENV{SHARED_DIR}")
-	set(GTEST_ROOT "$ENV{SHARED_DIR}")
-  endif ()
+BuildExternalProject_find_package(GTest)
+
+# # Google test
+# if (NOT GTEST_FOUND)
+# find_package(GTest)
+# endif ()
+
+# if (NOT GTEST_FOUND)
+#   if (DEFINED ENV{GTEST_DIR})
+# 	message("-- GTest not automatically found, trying $ENV{GTEST_DIR}")
+# 	set(GTEST_ROOT "$ENV{GTEST_DIR}")
+#   else ()
+# 	message("-- GTest not automatically found, GTEST_DIR not set, trying $ENV{SHARED_DIR}")
+# 	set(GTEST_ROOT "$ENV{SHARED_DIR}")
+#   endif ()
   
-  unset(GTEST_INCLUDE_DIR CACHE) #FindGTEST quirk
-  find_package(GTest)
-endif ()
+#   unset(GTEST_INCLUDE_DIR CACHE) #FindGTEST quirk
+#   find_package(GTest)
+# endif ()
 
-if (NOT GTEST_FOUND)
-  message(FATAL_ERROR "GTest not found, tests will not compile")
-endif ()
+# if (NOT GTEST_FOUND)
+#   message(FATAL_ERROR "GTest not found, tests will not compile")
+# endif ()
 
-include_directories(${GTEST_INCLUDE_DIRS})
-
+include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
 
 foreach(test_source ${TEST_SOURCES})
   get_filename_component(test_name ${test_source} NAME_WE)
