@@ -58,7 +58,7 @@ ExternalProject_Add(jdqzpp
 
   PREFIX ${CMAKE_SOURCE_DIR}/src/external/jdqzpp
 
-  CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DINSTALL_DIR=${CMAKE_SOURCE_DIR}/src/external/jdqzpp
+  CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF
   )
 
 ExternalProject_Get_Property(jdqzpp source_dir)
