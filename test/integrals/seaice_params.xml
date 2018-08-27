@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!-- These parameters will overwrite the corresponding parameters in the  -->
 <!-- submodels ocean and atmosphere.                                      -->
 <ParameterList name="Sea ice parameters">
@@ -23,7 +22,7 @@
 
   <Parameter name="Periodic" type="bool" value="false"/>
 
-  <Parameter name="mask switch steepness" type="double" value="1e1"/>
+  <Parameter name="mask switch steepness" type="double" value="1e-2"/>
 
 
 </ParameterList>

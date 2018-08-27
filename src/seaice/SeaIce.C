@@ -387,7 +387,6 @@ void SeaIce::computeRHS()
         }
     }
     
-    INFO(" seaic F = " << Utils::norm(rhs_));
     TIMER_STOP("SeaIce: compute RHS...");
 }
 

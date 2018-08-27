@@ -375,8 +375,6 @@ void Atmosphere::computeRHS()
     }
 
     TIMER_STOP("Atmosphere: computeRHS...");
-
-    INFO(" atmos F = " << Utils::norm(rhs_));
 }
 
 //==================================================================

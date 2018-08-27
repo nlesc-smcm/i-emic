@@ -1,4 +1,3 @@
-
 #include "CoupledModel.H"
 
 #include <functional>

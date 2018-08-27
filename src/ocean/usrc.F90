@@ -735,7 +735,7 @@ SUBROUTINE lin
   ! S-equation
   ! ------------------------------------------------------------------
   ! dependence of SS on TT in evaporation term
-  ! FIXME: naming is bad
+  ! FIXME: naming is bad and confusing
   dedt  = nus * (deltat / qdim) * dqso
   pQSnd = par(COMB) * par(SALT) * QSnd
   

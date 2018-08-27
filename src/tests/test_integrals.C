@@ -83,15 +83,23 @@ TEST(CoupledModel, Initialization)
 //------------------------------------------------------------------
 TEST(CoupledModel, RHS)
 {
-    atmos->computeRHS(); 
-    EXPECT_LT(Utils::norm(atmos->getRHS()), 1e-7);
-    seaice->computeRHS(); 
-    EXPECT_LT(Utils::norm(seaice->getRHS()), 1e-7);
-    ocean->computeRHS(); 
-    EXPECT_LT(Utils::norm(ocean->getRHS()), 1e-7);
+    double nrm;
+    atmos->computeRHS();
+    nrm = Utils::norm(atmos->getRHS());
+    std::cout << "||F||atmos   = " << nrm << std::endl;
+    EXPECT_LT(nrm, 1e-7);
+    seaice->computeRHS();
+    nrm = Utils::norm(seaice->getRHS());
+    std::cout << "||F||seaice  = " << nrm << std::endl;
+    EXPECT_LT(nrm, 1e-7);
+    ocean->computeRHS();
+    nrm = Utils::norm(ocean->getRHS());
+    std::cout << "||F||ocean   = " << nrm << std::endl;
+    EXPECT_LT(nrm, 1e-7);
     coupledModel->computeRHS();
-    EXPECT_LT(Utils::norm(coupledModel->getRHS()), 1e-7);
-
+    nrm = Utils::norm(coupledModel->getRHS());
+    std::cout << "||F||coupled = " << nrm << std::endl;
+    EXPECT_LT(nrm, 1e-7);
 }
 
 //------------------------------------------------------------------
