@@ -47,25 +47,16 @@ list(APPEND library_directories ${MRILU_DIR}/lib/) # MRILU
 list(APPEND library_dependencies ${Trilinos_LIBRARIES})
 list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
 
-# Locate JDQZPP external project
-#  maintained as a git submodule but that is not used here (yet).
-include(ExternalProject)
-set_directory_properties(PROPERTIES EP_PREFIX ${CMAKE_SOURCE_DIR}/src/external)
-
-ExternalProject_Add(jdqzpp
-  GIT_REPOSITORY https://github.com/erik808/jdqzpp
-  GIT_TAG master
-
-  PREFIX ${CMAKE_SOURCE_DIR}/src/external/jdqzpp
+# Build JDQZPP external project
+include(BuildExternalProject)
+BuildExternalProject(
+  JDQZPP
+  GIT_REPOSITORY https://github.com/erik808/jdqzpp.git
 
   CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF
   )
 
-ExternalProject_Get_Property(jdqzpp source_dir)
-set(JDQZPP_INCLUDE_DIR ${source_dir}/include)
-set(JDQZPP_LIBRARY_DIR ${source_dir}/lib)
-message("-- JDQZ++ source dir: " ${source_dir})
-message("-- JDQZ++ install prefix: " ${CMAKE_SOURCE_DIR}/src/external/jdqzpp)
+BuildExternalProject_find_package(JDQZPP)
 
 include_directories(${JDQZPP_INCLUDE_DIR})
 list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
