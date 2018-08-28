@@ -106,16 +106,14 @@ contains
     implicit none
     real(c_double), dimension(m*n), intent(in) :: inserted_seaice_q
     integer :: i,j,pos
-
-    if (coupled_T.eq.1) then
-       pos = 1
-       do j = 1,m
-          do i = 1,n
-             qsa(i,j) = inserted_seaice_q(pos)
-             pos = pos + 1
-          end do
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          qsa(i,j) = inserted_seaice_q(pos)
+          pos = pos + 1
        end do
-    end if
+    end do
+
   end subroutine insert_seaice_q
 
   !!------------------------------------------------------------------
@@ -129,15 +127,14 @@ contains
     real(c_double), dimension(m*n), intent(in) :: inserted_seaice_m
     integer :: i,j,pos
 
-    if (coupled_T.eq.1) then
-       pos = 1
-       do j = 1,m
-          do i = 1,n
-             msi(i,j) = inserted_seaice_m(pos)
-             pos = pos + 1
-          end do
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          msi(i,j) = inserted_seaice_m(pos)
+          pos = pos + 1
        end do
-    end if
+    end do
+
   end subroutine insert_seaice_m
 
   !!------------------------------------------------------------------

@@ -251,9 +251,10 @@ contains
           pos = pos + 1
        end do
     end do
-
+    
     call qint(salflux, correction)
     salflux = salflux - correction
+    correction = correction * gamma
 
   end subroutine get_salflux
 

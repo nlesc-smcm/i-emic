@@ -407,7 +407,7 @@ void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
             Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_TT_)];
 
             QSos_[sr] = (
-                zeta_ * ( freezingT(sss[sr])    // QTos component
+                zeta_ * ( freezingT(sss[sr] )   // QTos component
                           - (sst[sr]+t0o_))
                 - (Qvar_ * Qval +  Q0_)         // QTsa component
                 ) / rhoo_ / Lf_;
@@ -415,7 +415,7 @@ void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
             EmiP_[sr] = dEdT_ * Tval + dEdq_ * qatm[sr] // E component
                 - eta_ * qdim_ * patm[sr];              // P component
             
-        }            
+        }
 }
 
 //=============================================================================

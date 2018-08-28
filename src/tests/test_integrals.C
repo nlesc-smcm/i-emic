@@ -103,7 +103,6 @@ TEST(CoupledModel, RHS)
 }
 
 //------------------------------------------------------------------
-// FIXME: This should result in a state with sea ice
 TEST(CoupledModel, Continuation)
 {
     bool failed = false;
@@ -126,7 +125,7 @@ TEST(CoupledModel, Continuation)
 }
 
 //------------------------------------------------------------------
-TEST(Atmos, Integrate_E_min_P)
+TEST(CoupledModel, Integrate_E_min_P)
 {
     Teuchos::RCP<Epetra_Vector> dA = atmos->getPIntCoeff('C');
     Teuchos::RCP<Epetra_Vector> E  = atmos->interfaceE();
@@ -137,7 +136,17 @@ TEST(Atmos, Integrate_E_min_P)
     EXPECT_LT(std::abs(I), 1e-7);
 
     Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
-    // FIXME todo
+
+    // restrict dA to sea ice
+    Teuchos::RCP<Epetra_Vector> dAr = Teuchos::rcp(new Epetra_Vector(*dA));
+    dAr->Multiply(1.0, *Msi, *dA, 0.0);
+
+    // total sublimation
+    E = atmos->interfaceE();
+    double S = Utils::dot(E, dAr);
+    std::cout << " total sublimation = " << S << std::endl;
+
+    // FIXME: Should this always be greater than 0?
 }
 
 //------------------------------------------------------------------
@@ -145,8 +154,13 @@ TEST(CoupledModel, SeaIceCorrection)
 {
     double oceanSCorr = ocean->getSCorr();
     Teuchos::RCP<Epetra_Vector> siCorr = seaice->interfaceG();
-    std::cout << oceanSCorr << " " << (*siCorr)[0] << std::endl;
-    EXPECT_NEAR(oceanSCorr, (*siCorr)[0], 1e-7);
+
+    std::cout << " Integral correction calculated by Ocean:  "
+              << std::setprecision(12) << oceanSCorr << std::endl;
+    std::cout << " Integral correction calculated by SeaIce: "
+              << std::setprecision(12) << (*siCorr)[0] << std::endl;
+    
+    EXPECT_NEAR(oceanSCorr, (*siCorr)[0], 1e-12);
 }
 
 //------------------------------------------------------------------
