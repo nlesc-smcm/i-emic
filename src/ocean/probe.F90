@@ -263,10 +263,12 @@ contains
     use, intrinsic :: iso_c_binding
     use m_par
     use m_usr
+    use m_atm
+    use m_ice
     implicit none
     real(c_double), dimension(m*n) :: temflux
     integer :: i,j,pos
-    real etabi
+    real etabi, dedt, dedq, QToa, QTos
 
     !     IMPORT/EXPORT
     real(c_double),dimension(ndim) ::    un
@@ -278,6 +280,9 @@ contains
 
     etabi = par(COMB)*par(TEMP)
 
+    dedt  = eta * qdim * (deltat / qdim) * dqso
+    dedq  = -eta * qdim
+    
     call usol(un,u,v,w,p,T,S)
 
     pos = 1
@@ -288,7 +293,23 @@ contains
                 temflux(pos) = (1 - TRES + TRES*par(BIOT)) * tatm(i,j) - &
                      TRES * par(BIOT) * T(i,j,l) / etabi
              else
-                ! not sure what this would be
+                ! Heat flux forcing from the atmosphere into the ocean.
+                ! External and background contributions
+                ! QToa = QSW − QSH − QLH
+                QToa = &
+                     par(COMB) * par(SUNP)                  & ! continuation pars
+                     *  suno(j) * (1-albe0-albed*albe(i,j)) & ! shortwave heat flux
+                     -  Ooa  * (T(i,j,l) - tatm(i,j))       & ! sensible heat fux
+                     -  lvsc * ( eo0 + dedt*T(i,j,l) +      & ! latent heat flux
+                     dedq * qatm(i,j) )                      
+
+                ! Heat flux forcing from sea ice into the ocean. External
+                ! and background contributions.
+                QTos = QTnd * zeta * (a0 * (s0 + S(i,j,l)) - (t0+T(i,j,l)))
+
+                temflux(pos) = (1-landm(i,j,l)) *    & !
+                     QToa + msi(i,j) * (QTos - QToa)
+                
              endif
           endif
           pos = pos + 1

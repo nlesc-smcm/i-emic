@@ -720,14 +720,13 @@ SUBROUTINE lin
           + Ooa  * tc                     & ! sensible heat flux
           + dedt * sc                     & ! latent heat flux
           + mc * (QTnd * zeta * tc  -     & ! correction for sea ice
-          Ooa * tc - dedt * sc)     
+          Ooa * tc - dedt * sc)
      
      Al(:,:,1:l,:,TT,SS) = -QTnd * zeta * a0 * mc  ! salinity dependence in
                                                    ! freezing temperature
-
   else
      
-     Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
+     Al(:,:,1:l,:,TT,TT) = -ph * (txx + tyy) - pv * tzz + TRES*bi*tc
      
   endif
 
@@ -1196,9 +1195,12 @@ SUBROUTINE atmos_coef
   Ai   = rhoa*hdima*cpa*udim/(r0dim*muoa)
   Ad   = rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
   As   = sun0*(1 - c0)/(4*muoa)
-  Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
-  Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
+  
+  Os   = sun0*c0/4*QTnd
+  Ooa  = muoa*QTnd
+
   nus  = 0.0 ! postpone until set_atmos_parameters is called
+
   ! lvsc = rhodim*lv*r0dim/(udim*cp0*rhodim*hdim*dzne)
   lvsc = 0.0 ! ...
   DO j = 1,m
