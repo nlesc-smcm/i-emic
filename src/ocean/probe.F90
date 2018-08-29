@@ -315,10 +315,11 @@ contains
              ! and background contributions.
              QTos = QTnd * zeta * (a0 * (s0 + S(i,j,l)) - (t0+T(i,j,l)))
 
-             swflux(pos) = QSW
-             shflux(pos) = QSH
-             lhflux(pos) = QLH
-             siflux(pos) = QTos
+             ! factor out the nondimensionalization 
+             swflux(pos) = QSW  / QTnd
+             shflux(pos) = QSH  / QTnd
+             lhflux(pos) = QLH  / QTnd
+             siflux(pos) = QTos / QTnd
              simask(pos) = msi(i,j)
 
              if (coupled_T.eq.0) then
@@ -327,7 +328,7 @@ contains
              else
                 
                 totflux(pos) = (1-landm(i,j,l)) *     & !
-                     QToa + msi(i,j) * (QTos - QToa)
+                     QToa / QTnd + msi(i,j) * (QTos - QToa) / QTnd
                 
              endif
           endif

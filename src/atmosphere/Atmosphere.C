@@ -1591,6 +1591,38 @@ void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &fil
     HDF5.Write("lst", *lst_);
     HDF5.Write("sst", *sst_);
 
+    // Write fluxes
+    std::vector<Teuchos::RCP<Epetra_Vector> > fluxes = getFluxes();
+
+    // Todo
+}
+
+//=============================================================================
+std::vector<Teuchos::RCP<Epetra_Vector> > Atmosphere::getFluxes()
+{
+    std::vector<Teuchos::RCP<Epetra_Vector> > fluxes;
+    std::vector<Epetra_Vector> localFluxes;
+
+    int numFluxes = 4;
+    for (int i = 0; i != numFluxes; ++i)
+    {
+        fluxes.push_back(Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_)));
+        localFluxes.push_back(Epetra_Vector(*assemblySurfaceMap_));
+    }
+
+    std::vector<double*> tmpPtrs(numFluxes);
+
+    for (int i = 0; i != numFluxes; ++i)
+    {
+        localFluxes[i].ExtractView(&tmpPtrs[i]);   
+    }
+    
+    atmos_->getFluxes(tmpPtrs[AtmosLocal::_QLW],
+                      tmpPtrs[AtmosLocal::_QSW],
+                      tmpPtrs[AtmosLocal::_QSH],
+                      tmpPtrs[AtmosLocal::_QLH]);
+    
+    
 }
 
 //=============================================================================

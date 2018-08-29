@@ -53,6 +53,8 @@ public:
         double albf;
     };
 
+    enum  FluxID { _QLW = 0, _QSW, _QSH, _QLH };
+
 private:
     //! Parameterlist
     Teuchos::RCP<Teuchos::ParameterList> params_;
@@ -370,9 +372,9 @@ public:
     //! The size of the vector should be n*m.
     void setSurfaceMask(std::shared_ptr<std::vector<int> > surfm);
 
-    //! Compute land temperature based on atmospheric temperature and
-    //! shortwave radiative flux. FIXME todo
-    // void landTemperature(double Ta, double )
+    //! compute several fluxes
+    void getFluxes(double *lwflux, double *swflux,
+                   double *shflux, double *lhflux);
 
 private:
 
@@ -423,6 +425,10 @@ private:
     double dTldTa()
         { return 1.0; }
     
+    //! derivative of atmos temperature equation w.r.t. albedo
+    double dTadA(int j)
+        { return -comb_ * sunp_ * suna_[j] * da_; }
+    
     //! Snow/ice albedo parametrization expecting albedo A,
     //! atmospheric temperature anomaly Ta, global precipitation
     //! anomaly P and latitude grid-box j
@@ -455,9 +461,6 @@ private:
     double daFdT(double A, double Ta, double P, int j)
         { return ( aF(A,Ta+df_,P,j) - aF(A,Ta,P,j) )/df_; }            
 
-    //! derivative of atmos temperature equation w.r.t. albedo
-    double dTadA(int j)
-        { return -comb_ * sunp_ * suna_[j] * da_; }
 
     //! Heavyside approximation
     double H(double x, double eps)

@@ -1907,7 +1907,8 @@ void Ocean::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename
 
     if (saveTemperatureFlux_)
     {
-        // Write emip to ocean output file
+        // Write heat fluxes to ocean output file. In the coupled case
+        // these are dimensional.
         INFO("Writing temperature flux to " << filename);
         HDF5.Write("TemperatureFlux",  *fluxes[THCM::_Temp]);
         HDF5.Write("ShortwaveFlux",    *fluxes[THCM::_QSW]);

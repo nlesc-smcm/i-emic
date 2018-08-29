@@ -39,6 +39,7 @@ public:
     using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
     using VectorPtr     = Teuchos::RCP<Epetra_Vector>;
     using CommPars      = AtmosLocal::CommPars;
+    
 
 private:
     //! serial atmosphere class, working on local subdomains
@@ -374,6 +375,9 @@ private:
     //! HDF5-based save function for other components than the state
     //! and parameters.
     void additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename);
+
+    //! Assemble fluxes from local model
+    std::vector<Teuchos::RCP<Epetra_Vector> > getFluxes();
 
     //! Copy HDF5
     void copyFiles();

@@ -794,12 +794,13 @@ void AtmosLocal::forcing()
             tr = find_row(i, j, l_, ATMOS_TT_) - 1; // temperature row
             hr = find_row(i, j, l_, ATMOS_QQ_) - 1; // humidity row
             ar = find_row(i, j, l_, ATMOS_AA_) - 1; // albedo row
+            
             if (aux_ == 1)
                 pr = find_row(i, j, l_, ATMOS_PP_) - 1; // precipitation row
             else
                 pr = -1;
 
-            sr = n_*(j-1) + (i-1);                  // plain surface row
+            sr = n_*(j-1) + (i-1); // plain surface row
 
             // get albedo at this grid point (state component)
             A  = (*state_)[ar];
@@ -885,6 +886,50 @@ void AtmosLocal::forcing()
     // adjust to allow for integral condition in the serial case
     if (!parallel_)
         frc_[rowIntCon_-1] = 0.0;
+}
+
+//-----------------------------------------------------------------------------
+void AtmosLocal::getFluxes(double *lwflux, double *swflux,
+                           double *shflux, double *lhflux)
+{
+    int pos = 0;
+    int sr,tr,ar,pr;
+    double Ta,A,P;
+    for (int j = 1; j <= m_; ++j)
+        for (int i = 1; i <= n_; ++i)
+        {
+            sr = n_*(j-1) + (i-1); // plain surface row
+            tr = find_row(i, j, l_, ATMOS_TT_) - 1; // temperature row
+            ar = find_row(i, j, l_, ATMOS_AA_) - 1; // albedo row
+
+            if (aux_ == 1)
+                pr = find_row(i, j, l_, ATMOS_PP_) - 1; // precipitation row
+            else
+            {
+                pr = -1;
+                WARNING("Latent heat due to precipitation not defined", __FILE__, __LINE__);
+            }
+
+            Ta = (*state_)[tr]; // atmos temp
+            A  = (*state_)[ar]; // albedo           
+            P  = (*state_)[pr]; // global precipitation
+                                
+            // long wave radiative flux
+            lwflux[pos] = muoa_ * (amua_ + bmua_ * Ta);
+
+            // short wave radiative flux
+            swflux[pos] = muoa_ * comb_ * sunp_ * suna_[j] * (1 - a0_ - da_ * A);
+
+            // sensible heat flux
+            shflux[pos] = muoa_ * ( (*sst_)[sr] - Ta + (*Msi_)[sr] * 
+                                   ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_));
+
+            // latent heat due to precipitation
+            if (pr >= 0)
+                lhflux[pos] = muoa_ * rhoo_ * lv_ * ( Po0_ + eta_ * qdim_ * P);
+                
+            pos++;
+        }
 }
 
 //-----------------------------------------------------------------------------
