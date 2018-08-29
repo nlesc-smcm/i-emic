@@ -530,15 +530,46 @@ AMS<Model>::~AMS()
     INFO("AMS destructor");
 }
 
+std::string mem2string(long long mem)
+  {
+  double value = mem;
+  std::string unit = "B";
+  if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "kB";}
+  if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "MB";}
+  if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "GB";}
+  if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "TB";}
+
+  std::ostringstream ss;
+  ss << std::fixed;
+  ss.precision(2);
+  ss << value << " " << unit;
+  return ss.str();
+  }
+
 template<typename Model>
 void AMS<Model>::run()
 {
     if (method_ == "AMS")
+    {
+        INFO("Using AMS with an estimated memory usage of: " <<
+             mem2string((long long)(1.0 / dist_tol_ * num_exp_
+                                    * sol1_->GlobalLength() * sizeof(double))));
         timestepper_->ams(num_exp_, num_init_exp_, sol1_, dt_, tmax_);
+    }
     else if (method_ == "TAMS")
+    {
+        INFO("Using TAMS with an estimated memory usage of: " <<
+             mem2string((long long)(tmax_ / dt_ * num_exp_ *
+                                    sol1_->GlobalLength() * sizeof(double))));
         timestepper_->tams(num_exp_, maxit_, sol1_, dt_, tmax_);
+    }
     else if (method_ == "GPA")
+    {
+        INFO("Using GPA with an estimated memory usage of: " <<
+             mem2string((long long)(num_exp_ *
+                                    sol1_->GlobalLength() * sizeof(double))));
         timestepper_->gpa(num_exp_, maxit_, beta_, sol1_, dt_, tstep_, tmax_);
+    }
     else if (method_ == "Naive")
         timestepper_->naive(num_exp_, sol1_, dt_, tmax_);
     else if (method_ == "Brownian motion")
