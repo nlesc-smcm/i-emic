@@ -176,7 +176,7 @@ TEST(Combined_MultiVec, Construction)
         std::vector<double> twoNorms_five_copy(5);
         view.Norm2(twoNorms_five_view);           // view
         three_vec_five.Norm2(twoNorms_five_copy); // copy
-        EXPECT_EQ(twoNorms_five_view.size(), view.NumVectors());
+        EXPECT_EQ((int) twoNorms_five_view.size(), view.NumVectors());
         for (int i = 0; i != view.NumVectors(); ++i)
         {
             EXPECT_EQ(twoNorms_five_view[i], twoNorms_ten[index[i]]);

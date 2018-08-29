@@ -160,7 +160,7 @@ TEST(CoupledModel, SeaIceCorrection)
     std::cout << " Integral correction calculated by SeaIce: "
               << std::setprecision(12) << (*siCorr)[0] << std::endl;
     
-    EXPECT_NEAR(oceanSCorr, (*siCorr)[0], 1e-12);
+    EXPECT_NEAR(oceanSCorr, (*siCorr)[0], 1e-10);
 }
 
 //------------------------------------------------------------------

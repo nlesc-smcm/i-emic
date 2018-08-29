@@ -88,7 +88,9 @@ class THCM :
 {
 
 public:
-
+    // indices to denote different flux fields
+    enum  FluxID { _Sal = 0, _Temp, _QSW, _QSH, _QLH, _QTOS, _MSI };
+    
     //! Struct to hold pointers to derivative fields
     struct Derivatives
     {
@@ -193,13 +195,10 @@ public:
 
     //! Obtain shortwave radiation influence field
     Teuchos::RCP<Epetra_Vector> getSunO();
+
+    //! Get a number of fluxes
+    std::vector<Teuchos::RCP<Epetra_Vector> > getFluxes();
     
-    //! Obtain non-overlapping emip
-    Teuchos::RCP<Epetra_Vector> getSalinityFlux();
-
-    //! Obtain non-overlapping emip
-    Teuchos::RCP<Epetra_Vector> getTemperatureFlux();
-
     Derivatives getDerivatives();
     
     //! Obtain local atmosphere temperature vector
@@ -429,12 +428,6 @@ private:
     //! used to import tatm field into THCM
     Teuchos::RCP<Epetra_Vector> localTatm;    
 
-    //! used to obtain salinity flux from THCM
-    Teuchos::RCP<Epetra_Vector> localSalFlux;    
-
-    //! used to obtain temperature flux from THCM
-    Teuchos::RCP<Epetra_Vector> localTemFlux;    
-    
     //! used to export computed RHS vector from THCM:
     Teuchos::RCP<Epetra_Vector> localRhs;
 

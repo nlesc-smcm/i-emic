@@ -259,28 +259,36 @@ contains
   end subroutine get_salflux
 
   !!------------------------------------------------------------------
-  subroutine get_temflux(un, temflux)
+  subroutine get_temflux(un, totflux, swflux, shflux, lhflux, siflux, simask)
     use, intrinsic :: iso_c_binding
     use m_par
     use m_usr
     use m_atm
     use m_ice
+    
     implicit none
-    real(c_double), dimension(m*n) :: temflux
+    
+    real(c_double), dimension(m*n) :: totflux
+    real(c_double), dimension(m*n) :: swflux
+    real(c_double), dimension(m*n) :: shflux
+    real(c_double), dimension(m*n) :: lhflux
+    real(c_double), dimension(m*n) :: siflux
+    real(c_double), dimension(m*n) :: simask
+    
     integer :: i,j,pos
-    real etabi, dedt, dedq, QToa, QTos
+    real etabi, dedt, dedq, QToa, QSW, QSH, QLH, QTos
 
     !     IMPORT/EXPORT
-    real(c_double),dimension(ndim) ::    un
+    real(c_double),dimension(ndim) :: un
 
     !     LOCAL
-    real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
-    real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-    real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
+    real  u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m    ,0:l+la+1)
+    real  w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
+    real  T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
 
-    etabi = par(COMB)*par(TEMP)
+    etabi =  par(COMB) * par(TEMP)
 
-    dedt  = eta * qdim * (deltat / qdim) * dqso
+    dedt  =  eta * qdim * (deltat / qdim) * dqso
     dedq  = -eta * qdim
     
     call usol(un,u,v,w,p,T,S)
@@ -289,25 +297,36 @@ contains
     do j = 1,m
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
+             ! Heat flux forcing from the atmosphere into the ocean.
+             ! External and background contributions
+             ! QToa = QSW − QSH − QLH
+
+             QSW = par(COMB) * par(SUNP) *             & ! shortwave heat flux
+                  suno(j) * (1-albe0-albed*albe(i,j))
+
+             QSH = Ooa  * (T(i,j,l) - tatm(i,j))         ! sensible heat flux
+
+             QLH = lvsc * ( eo0 + dedt*T(i,j,l) +      & ! latent heat flux
+                  dedq * qatm(i,j) )
+
+             QToa = QSW - QSH - QLH       ! total atmospheric heat flux
+
+             ! Heat flux forcing from sea ice into the ocean. External
+             ! and background contributions.
+             QTos = QTnd * zeta * (a0 * (s0 + S(i,j,l)) - (t0+T(i,j,l)))
+
+             swflux(pos) = QSW
+             shflux(pos) = QSH
+             lhflux(pos) = QLH
+             siflux(pos) = QTos
+             simask(pos) = msi(i,j)
+
              if (coupled_T.eq.0) then
-                temflux(pos) = (1 - TRES + TRES*par(BIOT)) * tatm(i,j) - &
+                totflux(pos) = (1 - TRES + TRES*par(BIOT)) * tatm(i,j) - &
                      TRES * par(BIOT) * T(i,j,l) / etabi
              else
-                ! Heat flux forcing from the atmosphere into the ocean.
-                ! External and background contributions
-                ! QToa = QSW − QSH − QLH
-                QToa = &
-                     par(COMB) * par(SUNP)                  & ! continuation pars
-                     *  suno(j) * (1-albe0-albed*albe(i,j)) & ! shortwave heat flux
-                     -  Ooa  * (T(i,j,l) - tatm(i,j))       & ! sensible heat fux
-                     -  lvsc * ( eo0 + dedt*T(i,j,l) +      & ! latent heat flux
-                     dedq * qatm(i,j) )                      
-
-                ! Heat flux forcing from sea ice into the ocean. External
-                ! and background contributions.
-                QTos = QTnd * zeta * (a0 * (s0 + S(i,j,l)) - (t0+T(i,j,l)))
-
-                temflux(pos) = (1-landm(i,j,l)) *    & !
+                
+                totflux(pos) = (1-landm(i,j,l)) *     & !
                      QToa + msi(i,j) * (QTos - QToa)
                 
              endif
@@ -317,6 +336,7 @@ contains
     end do
 
   end subroutine get_temflux
+
 
   !!--------------------------------------------------------------------
   ! Obtain shortwave radiation influence field

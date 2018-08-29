@@ -1895,20 +1895,26 @@ Teuchos::RCP<Epetra_Vector> Ocean::getIntCondCoeff()
 //=====================================================================
 void Ocean::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename)
 {
+    std::vector<Teuchos::RCP<Epetra_Vector> > fluxes =
+        THCM::Instance().getFluxes();
+
     if (saveSalinityFlux_)
     {
         // Write emip to ocean output file
         INFO("Writing salinity flux to " << filename);
-        Teuchos::RCP<Epetra_Vector> salflux = THCM::Instance().getSalinityFlux();
-        HDF5.Write("SalinityFlux", *salflux);
+        HDF5.Write("SalinityFlux", *fluxes[THCM::_Sal]);
     }
 
     if (saveTemperatureFlux_)
     {
         // Write emip to ocean output file
         INFO("Writing temperature flux to " << filename);
-        Teuchos::RCP<Epetra_Vector> temflux = THCM::Instance().getTemperatureFlux();
-        HDF5.Write("TemperatureFlux", *temflux);
+        HDF5.Write("TemperatureFlux",  *fluxes[THCM::_Temp]);
+        HDF5.Write("ShortwaveFlux",    *fluxes[THCM::_QSW]);
+        HDF5.Write("SensibleHeatFlux", *fluxes[THCM::_QSH]);
+        HDF5.Write("LatentHeatFlux",   *fluxes[THCM::_QLH]);
+        HDF5.Write("SeaIceHeatFlux",   *fluxes[THCM::_QTOS]);
+        HDF5.Write("SeaIceMask",       *fluxes[THCM::_MSI]);
     }
 
     if (saveMask_)
@@ -1931,7 +1937,6 @@ void Ocean::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename
 // =====================================================================
 void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename)
 {
-
     if (loadSalinityFlux_)
     {
         INFO("Loading salinity flux from " << filename);
@@ -1946,11 +1951,14 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
 
         HDF5.Read("SalinityFlux", readSalFlux);
 
-        // This should not be factorized as we cannot be sure what Map
-        // is going to come out of the HDF5.Read call.
+        // Import HDF5 data into THCM. This should not be
+        // factorized as we cannot be sure what Map is going to come
+        // out of the HDF5 Read call.
 
-        Teuchos::RCP<Epetra_Vector> salflux = THCM::Instance().getSalinityFlux();
-
+        // Create empty salflux vector
+        Teuchos::RCP<Epetra_Vector> salflux =
+            Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
+        
         Teuchos::RCP<Epetra_Import> lin2solve_surf =
             Teuchos::rcp(new Epetra_Import( salflux->Map(),
                                             readSalFlux->Map() ));
@@ -2013,7 +2021,9 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
         // This should not be factorized as we cannot be sure what Map
         // is going to come out of the HDF5.Read call.
 
-        Teuchos::RCP<Epetra_Vector> temflux = THCM::Instance().getTemperatureFlux();
+        // Create empty temflux vector
+        Teuchos::RCP<Epetra_Vector> temflux =
+            Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
 
         Teuchos::RCP<Epetra_Import> lin2solve_surf =
             Teuchos::rcp(new Epetra_Import( temflux->Map(),

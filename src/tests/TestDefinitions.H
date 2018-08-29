@@ -104,12 +104,13 @@ getGatheredVector(Teuchos::RCP<Epetra_Vector> vec)
 }
 
 //------------------------------------------------------------------
+// test the entries of numerical jacobian
 template<typename ModelPtr, typename VectorPtr, typename CCS>
 void testEntries(ModelPtr model, CCS &ccs, VectorPtr x)
 {
     x->PutScalar(0.0);
     int myLength = x->MyLength();
-    EXPECT_EQ(myLength, ccs.beg.size() - 1);
+    EXPECT_EQ(myLength, (int) (ccs.beg.size() - 1));
             
     typename VectorPtr::element_type e_i(*x);
     typename VectorPtr::element_type e_j(*x);

@@ -156,7 +156,12 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_probe,  get_emip_pert)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_salflux)(double *sol, double *salflux,
                                                double *scorr);
-    _MODULE_SUBROUTINE_(m_probe,  get_temflux)(double *sol, double *temflux);
+    
+    _MODULE_SUBROUTINE_(m_probe,  get_temflux)(double *sol, double *totflux,
+                                               double *swflux, double *shflux,
+                                               double *lhflux, double *siflux,
+                                               double *simask);
+    
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_t)(double *atmosT);
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_q)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_p)(double *atmosP);
@@ -633,8 +638,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localEmip       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localSurfTmp    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
     localTatm       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSalFlux    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localTemFlux    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -1426,43 +1429,45 @@ Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_Vector> THCM::getSalinityFlux()
+std::vector<Teuchos::RCP<Epetra_Vector> > THCM::getFluxes()
 {
-    double* tmpSalFlux;
-    localSalFlux->ExtractView(&tmpSalFlux);
+    // 0: total salinity flux
+    // 1: total temperature flux
+    // 2: shortwave QSW
+    // 3: sensible heat QSH
+    // 4: latent heat flux QLH
+    // 5: sea ice heat flux
+    // 6: sea ice mask (not a flux but convenient for distinguishing fluxes)
+    int numFluxes = 7;
 
-    double* solution;
-    localSol->ExtractView(&solution);
-
-    F90NAME(m_probe, get_salflux )( solution, tmpSalFlux, &scorr_);
-
-    Teuchos::RCP<Epetra_Vector> salflux =
-        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
-
-    // Export assembly map surface salflux 
-    CHECK_ZERO(salflux->Export(*localSalFlux, *as2std_surf, Zero));
-
-    return salflux;    
-}
-
-//=============================================================================
-Teuchos::RCP<Epetra_Vector> THCM::getTemperatureFlux()
-{
-    double* tmpTemFlux;
-    localTemFlux->ExtractView(&tmpTemFlux);
-
+    std::vector<Teuchos::RCP<Epetra_Vector> > fluxes;
+    std::vector<Epetra_Vector> localFluxes;
+    
+    for (int i = 0; i != numFluxes; ++i)
+    {
+        fluxes.push_back(Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap)));
+        localFluxes.push_back(Epetra_Vector(*AssemblySurfaceMap));
+    }
+    
+    std::vector<double*> tmpPtrs(numFluxes);
+    
+    for (int i = 0; i != numFluxes; ++i)
+        localFluxes[i].ExtractView(&tmpPtrs[i]);
+    
     double* solution;
     localSol->ExtractView(&solution);
     
-    F90NAME(m_probe, get_temflux )( solution, tmpTemFlux );
+    F90NAME(m_probe, get_salflux )( solution,      tmpPtrs[_Sal],  &scorr_);
+    F90NAME(m_probe, get_temflux )( solution,      tmpPtrs[_Temp], tmpPtrs[_QSW],
+                                    tmpPtrs[_QSH], tmpPtrs[_QLH],  tmpPtrs[_QTOS],
+                                    tmpPtrs[_MSI] );
 
-    Teuchos::RCP<Epetra_Vector> temflux =
-        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    for (int i = 0; i != numFluxes; ++i)
+    {
+        CHECK_ZERO(fluxes[i]->Export(localFluxes[i], *as2std_surf, Zero));
+    }
 
-    // Export assembly map surface temflux 
-    CHECK_ZERO(temflux->Export(*localTemFlux, *as2std_surf, Zero));
-    
-    return temflux; 
+    return fluxes;
 }
 
 //=============================================================================
