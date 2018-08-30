@@ -28,16 +28,10 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         readLST = false;
     end
 
-    if isfield(opts, 'salflux')
-        readSalFlux = opts.salflux;
+    if isfield(opts, 'readFluxes')
+        readFluxes = opts.readFluxes;
     else
-        readSalFlux = false;
-    end
-
-    if isfield(opts, 'temflux')
-        readTemFlux = opts.temflux;
-    else
-        readTemFlux = false;
+        readFluxes = false;
     end
 
     if isfield(opts, 'readParameters')
@@ -113,12 +107,21 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         additional.LST = h5read(file, '/lst/Values');
         additional.SST = h5read(file, '/sst/Values');
     end
-    
-    if readSalFlux
-        additional.SalFlux = h5read(file, '/SalinityFlux/Values');
-    end
 
-    if readTemFlux
-        additional.TemFlux = h5read(file, '/TemperatureFlux/Values');
-    end    
+    if readFluxes
+        info = h5info(file);
+
+        % check for groups containing the characters 'Flux'
+        % and add the contents to the struct
+        nGroups = numel(info.Groups);
+        for i = 1:nGroups
+            groupName = info.Groups(i).Name;
+            match = regexp(groupName, '.*Flux', 'match');
+            if numel(match) > 0
+                field  = match{1}(2:end);
+                values = h5read(file, ['/',field,'/Values']);
+                additional = setfield(additional, field, values);
+            end
+        end
+    end
 end

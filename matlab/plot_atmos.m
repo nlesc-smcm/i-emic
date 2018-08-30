@@ -27,8 +27,14 @@ function [state,pars,add] = plot_atmos(fname, opts)
         readLST = opts.readLST;
     else
         readLST = false;
-        opts.readLST = readLST;
     end
+
+    if isfield(opts, 'readFluxes')
+        readFluxes = opts.readFluxes;
+    else
+        readFluxes = false;
+    end
+        
 
     if isfield(opts, 'invert')
         invert = opts.invert;
@@ -56,6 +62,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     if readEP
         E = reshape(add.E,n,m);
         P = reshape(add.P,n,m);
+    end
 
     if readLST
         LST = reshape(add.LST, n, m);
@@ -71,7 +78,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     a0  = 0.3;
 
     
-    % scalings
+    % starlings
     tdim = 1;
     qdim = 1e-3;
     adim = 0.5;
@@ -193,15 +200,35 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if readLST
         figure(14)
-        imagesc(RtD*x,RtD*(y), SST' + LST' + T0); set(gca,'ydir', ...
-                                                          'normal')
+        imagesc(RtD*x,RtD*(y), SST' + LST' + T0);
+        set(gca,'ydir', 'normal');
+        cmap = my_colmap(caxis, 0);
         colormap(cmap)                
         colorbar
         title('Surface temperature')
         xlabel('Longitude')
         ylabel('Latitude')
-        
-        
     end
-    
+
+    if readFluxes
+        % find flux fields in struct
+        names = fieldnames(add);
+        for i = 1:numel(names);
+            match = regexp(names(i), '.*Flux', 'match');
+            if numel(match) > 0
+                name   = match{1}{1};
+                values = getfield(add, name);
+                values = reshape(values, n, m);
+                figure(14+i)
+                imagesc(RtD*x,RtD*(y), values');
+                set(gca, 'ydir', 'normal')
+                cmap = my_colmap(caxis,0);
+                colormap(cmap)
+                colorbar
+                xlabel('Longitude')
+                ylabel('Latitude')
+                title(name)
+            end
+        end
+    end
 end
