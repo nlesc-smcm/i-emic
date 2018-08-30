@@ -1593,8 +1593,10 @@ void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &fil
 
     // Write fluxes
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes = getFluxes();
-
-    // Todo
+    HDF5.Write("LongwaveFlux",     *fluxes[AtmosLocal::_QLW]);
+    HDF5.Write("ShortwaveFlux",    *fluxes[AtmosLocal::_QSW]);
+    HDF5.Write("SensibleHeatFlux", *fluxes[AtmosLocal::_QSH]);
+    HDF5.Write("LatentHeatFlux",   *fluxes[AtmosLocal::_QLH]);    
 }
 
 //=============================================================================
@@ -1622,7 +1624,12 @@ std::vector<Teuchos::RCP<Epetra_Vector> > Atmosphere::getFluxes()
                       tmpPtrs[AtmosLocal::_QSH],
                       tmpPtrs[AtmosLocal::_QLH]);
     
+    for (int i = 0; i != numFluxes; ++i)
+    {
+        CHECK_ZERO(fluxes[i]->Export(localFluxes[i], *as2std_surf_, Zero));
+    }
     
+    return fluxes;
 }
 
 //=============================================================================
