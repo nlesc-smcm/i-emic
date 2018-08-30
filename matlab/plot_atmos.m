@@ -213,13 +213,14 @@ function [state,pars,add] = plot_atmos(fname, opts)
     if readFluxes
         % find flux fields in struct
         names = fieldnames(add);
+        ctr = 0;
         for i = 1:numel(names);
             match = regexp(names(i), '.*Flux', 'match');
-            if numel(match) > 0
+            if numel(match{1}) > 0
                 name   = match{1}{1};
                 values = getfield(add, name);
                 values = reshape(values, n, m);
-                figure(14+i)
+                figure(15+ctr)
                 imagesc(RtD*x,RtD*(y), values');
                 set(gca, 'ydir', 'normal')
                 cmap = my_colmap(caxis,0);
@@ -228,6 +229,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
                 xlabel('Longitude')
                 ylabel('Latitude')
                 title(name)
+                ctr = ctr + 1;
             end
         end
     end

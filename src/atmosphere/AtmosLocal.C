@@ -895,6 +895,7 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
     int pos = 0;
     int sr,tr,ar,pr;
     double Ta,A,P;
+    bool on_land;
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
@@ -921,9 +922,13 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
             swflux[pos] = muoa_ * comb_ * sunp_ * suna_[j] * (1 - a0_ - da_ * A);
 
             // sensible heat flux
-            shflux[pos] = muoa_ * ( (*sst_)[sr] - Ta + (*Msi_)[sr] * 
-                                   ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_));
-
+            on_land = (*surfmask_)[sr];
+            if (on_land)
+                shflux[pos] = muoa_ * ((*lst_)[sr] - Ta);
+            else
+                shflux[pos] = muoa_ * ( (*sst_)[sr] - Ta + (*Msi_)[sr] * 
+                                        ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_));
+                        
             // latent heat due to precipitation
             if (pr >= 0)
                 lhflux[pos] = muoa_ * rhoo_ * lv_ * ( Po0_ + eta_ * qdim_ * P);
