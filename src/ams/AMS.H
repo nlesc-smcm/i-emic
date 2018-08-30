@@ -21,23 +21,11 @@ class AMS
     using DistFun    = typename std::function<double(VectorPtr const &)>;
 
     Model model_;
-    double dt_;
-    double tstep_;
-    double tmax_;
-    double beta_;
-    double theta_;
-
-    double adist_;
-    double bdist_;
-    double cdist_;
-    double dist_tol_;
-    double sigma_;
 
     std::string method_;
 
-    int num_exp_;
-    int num_init_exp_;
-    int maxit_;
+    double theta_;
+    double sigma_;
 
     VectorPtr sol1_;
     VectorPtr sol2_;
@@ -158,20 +146,9 @@ AMS(Model model, ParameterList pars,
     VectorPtr sol3)
     :
     model_(model),
-    dt_(pars->get("time step", 0.01)),
-    tstep_(pars->get("GPA time step", 1.0)),
-    tmax_(pars->get("maximum time", 1000.0)),
-    beta_(pars->get("beta", 1.0)),
-    theta_(pars->get("theta", 1.0)),
-    adist_(pars->get("A distance", 0.05)),
-    bdist_(pars->get("B distance", adist_)),
-    cdist_(pars->get("C distance", 2 * adist_)),
-    dist_tol_(pars->get("distance tolerance", 0.0005)),
-    sigma_(pars->get("sigma", 1.0)),
     method_(pars->get("method", "AMS")),
-    num_exp_(pars->get("number of experiments", 1000)),
-    num_init_exp_(pars->get("number of initial experiments", num_exp_)),
-    maxit_(pars->get("maximum iterations", num_exp_ * 10)),
+    theta_(pars->get("theta", 1.0)),
+    sigma_(pars->get("sigma", 1.0)),
     sol1_(sol1),
     sol2_(sol2),
     sol3_(sol3),
@@ -326,11 +303,10 @@ AMS(Model model, ParameterList pars,
         };
     }
 
-    INFO("Time step: " << dt_);
-
     timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(
-                                    time_step, dist_fun, adist_, bdist_, cdist_, dist_tol_));
+                                    time_step, dist_fun, sol1_->GlobalLength()));
 
+    timestepper_->set_parameters(*pars);
     timestepper_->set_random_engine(get_seed());
 }
 
@@ -360,7 +336,7 @@ auto AMS<Model>::get_time_step()
 
         VectorPtr G = model_->getState('C');
         CHECK_ZERO(B_->Apply(pert, *G));
-        CHECK_ZERO(G->Scale(sqrt(dt_) * sigma_));
+        CHECK_ZERO(G->Scale(sqrt(dt) * sigma_));
 
         // Deterministic theta stepper:
         // M * u_n + dt * theta * F(u_(n+1)) + (1-theta) * F(u_n) - M * u_(n+1) = 0
@@ -431,7 +407,7 @@ auto AMS<Model>::get_projected_time_step()
         Epetra_LocalMap Gmap(BV_->NumVectors(), 0, *model_->Comm());
         auto G = Teuchos::rcp(new Epetra_MultiVector(Gmap, 1));
         CHECK_ZERO(G->Multiply('T', 'N', 1.0, *BV_, pert, 0.0));
-        CHECK_ZERO(G->Scale(sqrt(dt_) * sigma_));
+        CHECK_ZERO(G->Scale(sqrt(dt) * sigma_));
         TIMER_STOP("AMS: Compute noise");
 
         // Deterministic theta stepper:
@@ -517,7 +493,7 @@ auto AMS<Model>::get_brownian_time_step()
 
         VectorPtr xnew = Teuchos::rcp(new Vector(x->Map()));
         std::generate(xnew->Values(), xnew->Values() + m, generator);
-        CHECK_ZERO(xnew->Scale(sqrt(dt_)));
+        CHECK_ZERO(xnew->Scale(sqrt(dt)));
         CHECK_ZERO(xnew->Update(1.0, *x, 1.0));
 
         return xnew;
@@ -530,53 +506,22 @@ AMS<Model>::~AMS()
     INFO("AMS destructor");
 }
 
-std::string mem2string(long long mem)
-  {
-  double value = mem;
-  std::string unit = "B";
-  if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "kB";}
-  if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "MB";}
-  if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "GB";}
-  if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "TB";}
-
-  std::ostringstream ss;
-  ss << std::fixed;
-  ss.precision(2);
-  ss << value << " " << unit;
-  return ss.str();
-  }
-
 template<typename Model>
 void AMS<Model>::run()
 {
     if (method_ == "AMS")
-    {
-        INFO("Using AMS with an estimated memory usage of: " <<
-             mem2string((long long)(1.0 / dist_tol_ * num_exp_
-                                    * sol1_->GlobalLength() * sizeof(double))));
-        timestepper_->ams(num_exp_, num_init_exp_, sol1_, dt_, tmax_);
-    }
+        timestepper_->ams(sol1_);
     else if (method_ == "TAMS")
-    {
-        INFO("Using TAMS with an estimated memory usage of: " <<
-             mem2string((long long)(tmax_ / dt_ * num_exp_ *
-                                    sol1_->GlobalLength() * sizeof(double))));
-        timestepper_->tams(num_exp_, maxit_, sol1_, dt_, tmax_);
-    }
+        timestepper_->tams(sol1_);
     else if (method_ == "GPA")
-    {
-        INFO("Using GPA with an estimated memory usage of: " <<
-             mem2string((long long)(num_exp_ *
-                                    sol1_->GlobalLength() * sizeof(double))));
-        timestepper_->gpa(num_exp_, maxit_, beta_, sol1_, dt_, tstep_, tmax_);
-    }
+        timestepper_->gpa(sol1_);
     else if (method_ == "Naive")
-        timestepper_->naive(num_exp_, sol1_, dt_, tmax_);
+        timestepper_->naive(sol1_);
     else if (method_ == "Brownian motion")
     {
         Epetra_Map map(1, 0, *model_->Comm());
         VectorPtr x0 = Teuchos::rcp(new Vector(map));
-        timestepper_->naive(num_exp_, x0, dt_, tmax_);
+        timestepper_->naive(x0);
     }
     else
         std::cerr << "Method " << method_ << " does not exist." << std::endl;
