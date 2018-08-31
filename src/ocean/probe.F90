@@ -197,13 +197,15 @@ contains
   end subroutine get_emip_pert
 
   !!------------------------------------------------------------------
-  subroutine get_salflux(un, salflux, correction)
+  subroutine get_salflux(un, salflux, correction, qsoaflux, qsosflux)
     use, intrinsic :: iso_c_binding
     use m_usr
     use m_atm
     use m_ice
     implicit none
     real(c_double), dimension(m*n) :: salflux
+    real(c_double), dimension(m*n) :: qsoaflux
+    real(c_double), dimension(m*n) :: qsosflux
     real(c_double) :: correction
     integer :: i,j,pos
     real gamma, dedt, pQSnd, QSos, QSoa
@@ -228,25 +230,31 @@ contains
     pos = 1
     do j = 1,m
        do i = 1,n
+
+          QSos = pQSnd *                        &
+               (zeta * (a0 * (s0+S(i,j,l)) - (t0+T(i,j,l))) & ! QTos component
+               - ( Qvar * qsa(i,j) + q0 ) )                 & ! QTsa component
+               / ( rhodim * Lf )
+
+          QSoa = nus * (                   &
+               (deltat / qdim) * dqso * T(i,j,l) &
+               - qatm(i,j) - patm(i,j))
+
+          qsoaflux(pos) = QSoa / QSnd * (1-msi(i,j))
+          qsosflux(pos) = QSos / QSnd * msi(i,j)
+          
           if (coupled_S.eq.1) then
 
-             QSos = pQSnd *                        &
-                  (zeta * (a0 * (s0+S(i,j,l)) - (t0+T(i,j,l))) & ! QTos component
-                  - ( Qvar * qsa(i,j) + q0 ) )           & ! QTsa component
-                  / ( rhodim * Lf )
-             
-             QSoa = nus * (                   &
-                  (deltat / qdim) * dqso * T(i,j,l) &
-                  - qatm(i,j) - patm(i,j))
-             
              salflux(pos) = (                      &
                   QSoa + msi(i,j) * (QSos - QSoa)  &
                   ) * (1-landm(i,j,l)) / gamma
-             
+
           else
+             
              salflux(pos) = (1-landm(i,j,l)) *  &
                   (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
                   SRES * par(BIOT) * S(i,j,l) / gamma
+             
           endif
           pos = pos + 1
        end do
@@ -254,6 +262,9 @@ contains
     
     call qint(salflux, correction)
     salflux = salflux - correction
+
+    ! The integral correction is stored, for which we take the
+    ! continuation parameters into account.
     correction = correction * gamma
 
   end subroutine get_salflux
@@ -315,11 +326,11 @@ contains
              ! and background contributions.
              QTos = QTnd * zeta * (a0 * (s0 + S(i,j,l)) - (t0+T(i,j,l)))
 
-             ! factor out the nondimensionalization 
-             swflux(pos) = QSW  / QTnd
-             shflux(pos) = QSH  / QTnd
-             lhflux(pos) = QLH  / QTnd
-             siflux(pos) = QTos / QTnd
+             ! factor out the nondimensionalization and apply seaice mask
+             swflux(pos) = QSW  / QTnd * (1-msi(i,j))
+             shflux(pos) = QSH  / QTnd * (1-msi(i,j))
+             lhflux(pos) = QLH  / QTnd * (1-msi(i,j))
+             siflux(pos) = QTos / QTnd * msi(i,j)
              simask(pos) = msi(i,j)
 
              if (coupled_T.eq.0) then

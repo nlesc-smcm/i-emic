@@ -88,8 +88,19 @@ class THCM :
 {
 
 public:
-    // indices to denote different flux fields
-    enum  FluxID { _Sal = 0, _Temp, _QSW, _QSH, _QLH, _QTOS, _MSI };
+    //! Indices to denote different flux fields
+    enum  FluxID
+    {
+        _Sal = 0,  // Total salinity flux
+        _QSOA,     // ocean-atmos salinity flux
+        _QSOS,     // ocean-seaice salinity flux
+        _Temp,     // Total temperature flux
+        _QSW,      // shortwave radiative flux
+        _QSH,      // sensible heat flux
+        _QLH,      // latent heat flux
+        _QTOS,     // ocean-seaice flux
+        _MSI       // seaice mask
+    };
     
     //! Struct to hold pointers to derivative fields
     struct Derivatives

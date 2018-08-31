@@ -76,18 +76,18 @@
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
-    <Parameter name="Coupled Temperature" type="int" value="1"/>
-    <Parameter name="Coupled Salinity"    type="int" value="1"/>
+    <Parameter name="Coupled Temperature" type="int" value="0"/>
+    <Parameter name="Coupled Salinity"    type="int" value="0"/>
     <!-- =============================================================== -->
 
     <!-- Starting Parameters                                          -->
     <!-- coupledmodel_params can overwrite these when running coupled -->
     <ParameterList name="Starting Parameters">
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-      <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+      <Parameter name="Solar Forcing"       type="double" value="0.0"/>
       <Parameter name="Salinity Forcing"    type="double" value="1e-3"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
-      <Parameter name="Temperature Forcing" type="double" value="0.0"/>
+      <Parameter name="Temperature Forcing" type="double" value="10.0"/>
       <Parameter name="Latent Heat Forcing" type="double" value="0.0"/>
 
       <Parameter name="Rayleigh-Number"     type="double" value="0.0"/>

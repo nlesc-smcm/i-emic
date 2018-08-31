@@ -303,7 +303,7 @@ void SeaIce::computeRHS()
         for (int i = 0; i != nLoc_; ++i)
         {
             sr = j*nLoc_ + i; // surface position for vectors with dof=1
-
+            
             Hval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_HH_)];
             Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
             Mval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_MM_)];
@@ -416,6 +416,61 @@ void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
                 - eta_ * qdim_ * patm[sr];              // P component
             
         }
+}
+
+//=============================================================================
+std::vector<Teuchos::RCP<Epetra_Vector> > SeaIce::getFluxes()
+{
+    std::vector<Teuchos::RCP<Epetra_Vector> > fluxes;
+    std::vector<Epetra_Vector> localFluxes;
+
+    int numFluxes = _QLH+1;
+    for (int i = 0; i != numFluxes; ++i)
+    {
+        fluxes.push_back(Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_)));
+        localFluxes.push_back(Epetra_Vector(*assemblySurfaceMap_));
+    }
+
+    std::vector<double*> ptrs(numFluxes);
+
+    for (int i = 0; i != numFluxes; ++i)
+        localFluxes[i].ExtractView(&ptrs[i]);
+
+    // we need these distributed vectors
+    double *state, *albe, *qatm, *tatm;
+    localState_->ExtractView(&state);
+    localAtmosA_->ExtractView(&albe);
+    localAtmosQ_->ExtractView(&qatm);
+    localAtmosT_->ExtractView(&tatm);
+    
+    int sr;
+    int pos = 0;
+    double Tval;
+    for (int j = 0; j != mLoc_; ++j)
+        for (int i = 0; i != nLoc_; ++i)
+        {
+            sr = j*nLoc_ + i;
+
+            Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_TT_)];
+
+            // shortwave radiative flux
+            ptrs[_QSW][pos] = (comb_ * sunp_ * sun0_ / 4.) * shortwaveS(y_[j]) *
+                (1. - albe0_ - albed_*albe[sr]) * c0_;
+
+            // sensible heat flux 
+            ptrs[_QSH][pos] = muoa_ * (Tval + t0i_ - tatm[sr] - t0a_);
+
+            // latent heat flux
+            ptrs[_QLH][pos] = (comb_ * latf_ * rhoo_ * Ls_) *
+                (E0i_ + dEdT_ * Tval + dEdq_ * qatm[sr]);
+            
+            pos++;
+        }
+
+    for (int i = 0; i != numFluxes; ++i)
+        domain_->Assembly2StandardSurface(localFluxes[i], *fluxes[i]);
+
+    return fluxes;
 }
 
 //=============================================================================
@@ -1460,3 +1515,16 @@ int SeaIce::find_row1(int n, int m, int i, int j, int XX)
         return dof_ * ( (j-1)*n + (i-1)) + XX;
 }
 
+//=============================================================================
+void SeaIce::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename)
+{
+        // Write fluxes
+    std::vector<Teuchos::RCP<Epetra_Vector> > fluxes = getFluxes();
+
+    INFO("Writing temperature fluxes to " << filename);
+    
+    HDF5.Write("ShortwaveFlux",    *fluxes[_QSW]);
+    HDF5.Write("SensibleHeatFlux", *fluxes[_QSH]);
+    HDF5.Write("LatentHeatFlux",   *fluxes[_QLH]);    
+
+}

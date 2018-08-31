@@ -1,4 +1,4 @@
-function [sol, add] = plot_ocean(solfile, maskfile, opts)
+function [sol, add] = plot_ocean(solfile, opts)
 %---------------------------------------------------------------------
 % PLOTTHCM - Mother script for plotting THCM output
 %  usage: plot_ocean(solfile, maskfile, opts)
@@ -12,18 +12,23 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     end
 
     if nargin < 2
-        maskfile = 'fort.44';
-        specify_mask = false;
-    else
-        specify_mask = true;
+        opts.everything = true;
     end
 
-    if nargin < 3
-        opts.everything = true;
+    if isfield(opts, 'maskfile')
+        maskfile = opts.maskfile;
+    else
+        maskfile = 'fort.44';
     end
     
     if isfield(opts, 'readEV')
         opts.everything = true;
+    end
+    
+    if isfield(opts, 'readFluxes')
+        readFluxes = opts.readFluxes;
+    else
+        readFluxes = false;
     end
     
     if isfield(opts, 'title_add')
@@ -471,6 +476,10 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         colormap(cmap)
 
         
+    end
+
+    if readFluxes
+        plot_fluxes(add, 9);
     end
 
 

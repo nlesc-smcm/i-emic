@@ -155,7 +155,8 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_probe,  get_adapted_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_emip_pert)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_salflux)(double *sol, double *salflux,
-                                               double *scorr);
+                                               double *scorr,
+                                               double *qsoaflux, double *qsosflux);
     
     _MODULE_SUBROUTINE_(m_probe,  get_temflux)(double *sol, double *totflux,
                                                double *swflux, double *shflux,
@@ -1431,14 +1432,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
 //=============================================================================
 std::vector<Teuchos::RCP<Epetra_Vector> > THCM::getFluxes()
 {
-    // 0: total salinity flux
-    // 1: total temperature flux
-    // 2: shortwave QSW
-    // 3: sensible heat QSH
-    // 4: latent heat flux QLH
-    // 5: sea ice heat flux
-    // 6: sea ice mask (not a flux but convenient for distinguishing fluxes)
-    int numFluxes = 7;
+    int numFluxes = _MSI+1;
 
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes;
     std::vector<Epetra_Vector> localFluxes;
@@ -1457,9 +1451,11 @@ std::vector<Teuchos::RCP<Epetra_Vector> > THCM::getFluxes()
     double* solution;
     localSol->ExtractView(&solution);
     
-    F90NAME(m_probe, get_salflux )( solution,      tmpPtrs[_Sal],  &scorr_);
-    F90NAME(m_probe, get_temflux )( solution,      tmpPtrs[_Temp], tmpPtrs[_QSW],
-                                    tmpPtrs[_QSH], tmpPtrs[_QLH],  tmpPtrs[_QTOS],
+    F90NAME(m_probe, get_salflux )( solution, tmpPtrs[_Sal],  &scorr_,
+                                    tmpPtrs[_QSOA], tmpPtrs[_QSOS] );
+    
+    F90NAME(m_probe, get_temflux )( solution, tmpPtrs[_Temp], tmpPtrs[_QSW],
+                                    tmpPtrs[_QSH], tmpPtrs[_QLH], tmpPtrs[_QTOS],
                                     tmpPtrs[_MSI] );
 
     for (int i = 0; i != numFluxes; ++i)

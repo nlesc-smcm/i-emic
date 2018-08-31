@@ -53,6 +53,13 @@ public:
         double Q0;
     };
 
+    enum FluxID
+    {
+        _QSW = 0, // Shortwave radiative heat flux
+        _QSH,     // Sensible heat flux
+        _QLH      // Latent heat flux
+    };
+
 
 private:
     //! parameterlist
@@ -320,6 +327,8 @@ public:
     //! compute QSos and EmiP fluxes locally
     void computeLocalFluxes(double *state, double *sss, double *sst,
                             double *qatm, double *patm);
+
+    std::vector<Teuchos::RCP<Epetra_Vector> > getFluxes(); 
     
     //! compute right hand side
     void computeRHS();
@@ -462,7 +471,8 @@ private:
     // HDF5-based save and load functions components other than the
     // state and parameters
     void additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename){}
-    void additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename){}
+    
+    void additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename);
 
 };
     

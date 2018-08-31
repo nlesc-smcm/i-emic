@@ -1605,7 +1605,7 @@ std::vector<Teuchos::RCP<Epetra_Vector> > Atmosphere::getFluxes()
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes;
     std::vector<Epetra_Vector> localFluxes;
 
-    int numFluxes = 4;
+    int numFluxes = AtmosLocal::_QLH+1;
     for (int i = 0; i != numFluxes; ++i)
     {
         fluxes.push_back(Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_)));

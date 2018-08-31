@@ -53,7 +53,14 @@ public:
         double albf;
     };
 
-    enum  FluxID { _QLW = 0, _QSW, _QSH, _QLH };
+    //! Identifiers for flux container
+    enum FluxID
+    {
+        _QLW = 0, // longwave radiative heat flux
+        _QSW,     // shortwave radiative heat flux,
+        _QSH,     // sensible heat flux,
+        _QLH      // latent heat flux
+    };
 
 private:
     //! Parameterlist

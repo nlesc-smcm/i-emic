@@ -1901,21 +1901,22 @@ void Ocean::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename
     if (saveSalinityFlux_)
     {
         // Write emip to ocean output file
-        INFO("Writing salinity flux to " << filename);
-        HDF5.Write("SalinityFlux", *fluxes[THCM::_Sal]);
+        INFO("Writing salinity fluxes to " << filename);
+        HDF5.Write("SalinityFlux",       *fluxes[ THCM::_Sal  ]);
+        HDF5.Write("OceanAtmosSalFlux",  *fluxes[ THCM::_QSOA ]);
+        HDF5.Write("OceanSeaIceSalFlux", *fluxes[ THCM::_QSOS ]);
     }
 
     if (saveTemperatureFlux_)
     {
         // Write heat fluxes to ocean output file. In the coupled case
         // these are dimensional.
-        INFO("Writing temperature flux to " << filename);
-        HDF5.Write("TemperatureFlux",  *fluxes[THCM::_Temp]);
-        HDF5.Write("ShortwaveFlux",    *fluxes[THCM::_QSW]);
-        HDF5.Write("SensibleHeatFlux", *fluxes[THCM::_QSH]);
-        HDF5.Write("LatentHeatFlux",   *fluxes[THCM::_QLH]);
-        HDF5.Write("SeaIceHeatFlux",   *fluxes[THCM::_QTOS]);
-        HDF5.Write("SeaIceMask",       *fluxes[THCM::_MSI]);
+        INFO("Writing temperature fluxes to " << filename);
+        HDF5.Write("TemperatureFlux",  *fluxes[ THCM::_Temp ]);
+        HDF5.Write("ShortwaveFlux",    *fluxes[ THCM::_QSW  ]);
+        HDF5.Write("SensibleHeatFlux", *fluxes[ THCM::_QSH  ]);
+        HDF5.Write("LatentHeatFlux",   *fluxes[ THCM::_QLH  ]);
+        HDF5.Write("SeaIceHeatFlux",   *fluxes[ THCM::_QTOS ]);
     }
 
     if (saveMask_)
