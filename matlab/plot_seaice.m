@@ -7,6 +7,13 @@ function [state,pars,add] = plot_seaice(fname, opts)
     if nargin < 1
         fname = 'seaice_output.h5';
     end
+    
+    if isfield(opts, 'readFluxes')
+        readFluxes = opts.readFluxes;
+    else
+        readFluxes = false;
+    end
+
 
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
     
@@ -63,4 +70,9 @@ function [state,pars,add] = plot_seaice(fname, opts)
         title(titles{i});
         colorbar
     end
+    
+    if readFluxes
+        plot_fluxes(add, 14+i+1);
+    end
+    
 end
