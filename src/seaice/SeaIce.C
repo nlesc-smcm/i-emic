@@ -421,6 +421,9 @@ void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
 //=============================================================================
 std::vector<Teuchos::RCP<Epetra_Vector> > SeaIce::getFluxes()
 {
+    // Temperature fluxes into the sea ice:
+    // QSW -QSH -QLH
+    
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes;
     std::vector<Epetra_Vector> localFluxes;
 
@@ -453,15 +456,15 @@ std::vector<Teuchos::RCP<Epetra_Vector> > SeaIce::getFluxes()
 
             Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_TT_)];
 
-            // shortwave radiative flux
+            // shortwave radiative flux contribution in the total heat flux
             ptrs[_QSW][pos] = (comb_ * sunp_ * sun0_ / 4.) * shortwaveS(y_[j]) *
                 (1. - albe0_ - albed_*albe[sr]) * c0_;
 
-            // sensible heat flux 
-            ptrs[_QSH][pos] = muoa_ * (Tval + t0i_ - tatm[sr] - t0a_);
+            // sensible heat flux contribution in the total heat flux
+            ptrs[_QSH][pos] = -muoa_ * (Tval + t0i_ - tatm[sr] - t0a_);
 
-            // latent heat flux
-            ptrs[_QLH][pos] = (comb_ * latf_ * rhoo_ * Ls_) *
+            // latent heat flux contribution in the total heat flux
+            ptrs[_QLH][pos] = -(comb_ * latf_ * rhoo_ * Ls_) *
                 (E0i_ + dEdT_ * Tval + dEdq_ * qatm[sr]);
             
             pos++;
@@ -592,6 +595,7 @@ void SeaIce::computeLocalJacobian()
         Al_->set(range, G, G, GG_GG);
     }
 
+    // FIXME: fails for some reason, do not understand why
     //---------------------------------------------------------------
     // Set land points to 1, RHS elements should be 0 at land points
     // int sr;

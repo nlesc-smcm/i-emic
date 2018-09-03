@@ -20,10 +20,17 @@
 
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
+  <!-- starting parameters -->
   <Parameter name="Combined Forcing" type="double" value="0.0"/>
+  <Parameter name="Solar Forcing" type="double" value="0.0"/>
   <Parameter name="Latent Heat Forcing" type="double" value="0.0"/>
-  <Parameter name="Mask Forcing" type="double" value="1.0"/>
+
+  <!-- model adjustments (testing only)  -->
+  <Parameter name="mask switch steepness" type="double" value="1.0e-4"/>
+  <Parameter name="freezing temperature sensitivity" type="double" value="-1" />
   
-  <Parameter name="mask switch steepness" type="double" value="1.0e-2"/>
-  
-</ParameterList>                                                  
+  <!-- Preconditioner parameters.                -->
+  <Parameter name="Ifpack overlap level" type="int" value="10" />
+
+
+</ParameterList>

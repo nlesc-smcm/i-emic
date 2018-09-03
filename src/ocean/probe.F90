@@ -309,7 +309,7 @@ contains
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
              ! Heat flux forcing from the atmosphere into the ocean.
-             ! External and background contributions
+             ! External and background contributions 
              ! QToa = QSW − QSH − QLH
 
              QSW = par(COMB) * par(SUNP) *             & ! shortwave heat flux
@@ -327,11 +327,11 @@ contains
              QTos = QTnd * zeta * (a0 * (s0 + S(i,j,l)) - (t0+T(i,j,l)))
 
              ! factor out the nondimensionalization and apply seaice mask
-             swflux(pos) = QSW  / QTnd * (1-msi(i,j))
-             shflux(pos) = QSH  / QTnd * (1-msi(i,j))
-             lhflux(pos) = QLH  / QTnd * (1-msi(i,j))
-             siflux(pos) = QTos / QTnd * msi(i,j)
-             simask(pos) = msi(i,j)
+             swflux(pos) =  QSW  / QTnd !* (1-msi(i,j))
+             shflux(pos) = -QSH  / QTnd !* (1-msi(i,j))
+             lhflux(pos) = -QLH  / QTnd !* (1-msi(i,j))
+             siflux(pos) =  QTos / QTnd !* msi(i,j)
+             simask(pos) =  msi(i,j)
 
              if (coupled_T.eq.0) then
                 totflux(pos) = (1 - TRES + TRES*par(BIOT)) * tatm(i,j) - &

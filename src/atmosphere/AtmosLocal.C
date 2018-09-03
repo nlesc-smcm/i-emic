@@ -892,6 +892,8 @@ void AtmosLocal::forcing()
 void AtmosLocal::getFluxes(double *lwflux, double *swflux,
                            double *shflux, double *lhflux)
 {
+    // Temperature fluxes into the atmosphere:
+    // -QLW + QSW + QSH + QLH
     int pos = 0;
     int sr,tr,ar,pr;
     double Ta,A,P;
@@ -916,7 +918,7 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
             P  = (*state_)[pr]; // global precipitation
                                 
             // long wave radiative flux
-            lwflux[pos] = muoa_ * (amua_ + bmua_ * Ta);
+            lwflux[pos] = -muoa_ * (amua_ + bmua_ * Ta);
 
             // short wave radiative flux
             swflux[pos] = muoa_ * comb_ * sunp_ * suna_[j] * (1 - a0_ - da_ * A);

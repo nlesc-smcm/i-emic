@@ -64,6 +64,6 @@
   <!-- F: 1 step forward block Gauss Seidel                   -->
   <!-- G: 2 step forward block Gauss Seidel                   -->                       
   <!-- D: diagonal, no coupling blocks                        -->
-  <Parameter name="Preconditioning" type="char" value="B"/>
+  <Parameter name="Preconditioning" type="char" value="F"/>
 
 </ParameterList>

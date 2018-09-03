@@ -37,8 +37,8 @@
   <Parameter name="destination tolerance" type="double" value="1.0e-4"/>
 
   <!-- Define the optimal range of Newton iterations -->
-  <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="3"/>
+  <Parameter name="minimum desired Newton iterations" type="int" value="4"/>
+  <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
   <Parameter name="maximum Newton iterations" type="int" value="8"/>
@@ -70,7 +70,7 @@
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->
   <!-- arclength parameterization.                                    -->
-  <Parameter name="state tangent scaling" type="double" value="1.0"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0e-4"/>
 
   <!-- reject solution from failed Newton iteration -->
   <Parameter name="reject failed iteration" type="bool" value="true"/>
@@ -97,6 +97,6 @@
   <Parameter name="initial tangent type" type="char" value="E"/>
 
   <!-- Bound on RHS in predicted state                       -->
-  <Parameter name="predictor bound" type="double" value="1.e5"/>
+  <Parameter name="predictor bound" type="double" value="1.e2"/>
 
 </ParameterList>
