@@ -13,7 +13,8 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::read(
     std::vector<AMSExperiment<Teuchos::RCP<Epetra_Vector> > >  &experiments) const
 {
     std::cout << "Reading state from " << name << std::endl;
-    if (experiments.size() == 0)
+    int experiments_size = experiments.size();
+    if (experiments_size == 0)
         return;
 
     EpetraExt::HDF5 HDF5(experiments[0].x0->Comm());
@@ -30,9 +31,9 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::read(
 
     int num_init_exp = -1;
     HDF5.Read("data", "num init exp", num_init_exp);
-    if (experiments.size() != num_exp && experiments.size() < num_init_exp)
+    if (experiments_size != num_exp && experiments_size < num_init_exp)
     {
-        std::cerr << "Error: Number of experiments is " << experiments.size()
+        std::cerr << "Error: Number of experiments is " << experiments_size
                   << " instead of " << num_exp << " or " << num_init_exp << std::endl;
         return;
     }
@@ -43,7 +44,7 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::read(
     Epetra_MultiVector *tmp;
     Epetra_BlockMap const &map = experiments[0].x0->Map();
 
-    for (int i = 0; i < experiments.size(); i++)
+    for (int i = 0; i < experiments_size; i++)
     {
         int size = -1;
         HDF5.Read("experiments/" + Teuchos::toString(i),
@@ -109,7 +110,7 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::write(
     EpetraExt::HDF5 HDF5(experiments[0].xlist[0]->Comm());
     HDF5.Create(name);
     HDF5.CreateGroup("experiments");
-    for (int i = 0; i < experiments.size(); i++)
+    for (int i = 0; i < (int)experiments.size(); i++)
     {
         HDF5.CreateGroup("experiments/" + Teuchos::toString(i));
         int size = experiments[i].dlist.size();
@@ -131,7 +132,7 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::write(
         if (size > 0)
         {
             HDF5.CreateGroup("experiments/" + Teuchos::toString(i) + "/xlist");
-            for (int j = 0; j < experiments[i].xlist.size(); j++)
+            for (int j = 0; j < (int)experiments[i].xlist.size(); j++)
                 HDF5.Write("experiments/" + Teuchos::toString(i) +
                            "/xlist/" + Teuchos::toString(j), *experiments[i].xlist[j]);
 

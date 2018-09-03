@@ -401,10 +401,10 @@ void TimeStepper<T>::ams(T const &x0) const
         }
 
         int same_distance_idx = -1;
-        while (++same_distance_idx < rnd_exp->dlist.size() &&
+        while (++same_distance_idx < (int)rnd_exp->dlist.size() &&
                rnd_exp->dlist[same_distance_idx] < exp->max_distance);
 
-        if (same_distance_idx == rnd_exp->dlist.size())
+        if (same_distance_idx == (int)rnd_exp->dlist.size())
         {
             std::cerr << "Distance larger than " << exp->max_distance
                       << " not found in experiment with max distance "
@@ -450,7 +450,7 @@ void TimeStepper<T>::ams(T const &x0) const
             for (auto exp: unused_experiments)
             {
                 int min_max_idx = -1;
-                while (++min_max_idx < exp->dlist.size() &&
+                while (++min_max_idx < (int)exp->dlist.size() &&
                        exp->dlist[min_max_idx] < min_max_distance);
 
                 if (min_max_idx > 0)
@@ -602,10 +602,10 @@ void TimeStepper<T>::tams(T const &x0) const
         }
 
         int same_distance_idx = -1;
-        while (++same_distance_idx < rnd_exp->dlist.size() &&
+        while (++same_distance_idx < (int)rnd_exp->dlist.size() &&
                rnd_exp->dlist[same_distance_idx] < exp->max_distance);
 
-        if (same_distance_idx == rnd_exp->dlist.size())
+        if (same_distance_idx == (int)rnd_exp->dlist.size())
         {
             std::cerr << "Distance larger than " << exp->max_distance
                       << " not found in experiment with max distance "
@@ -651,7 +651,7 @@ void TimeStepper<T>::tams(T const &x0) const
             for (auto exp: unused_experiments)
             {
                 int min_max_idx = -1;
-                while (++min_max_idx < exp->dlist.size() &&
+                while (++min_max_idx < (int)exp->dlist.size() &&
                        exp->dlist[min_max_idx] < min_max_distance);
 
                 if (min_max_idx > 0)
