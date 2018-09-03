@@ -3,9 +3,16 @@
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_Utils.hpp"
 
+#include "Epetra_Comm.h"
 #include "Epetra_Vector.h"
 #include "Epetra_Import.h"
 #include "EpetraExt_HDF5.h"
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/file.h>
 
 template<>
 void TimeStepper<Teuchos::RCP<Epetra_Vector> >::read(
@@ -17,7 +24,8 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::read(
     if (experiments_size == 0)
         return;
 
-    EpetraExt::HDF5 HDF5(experiments[0].x0->Comm());
+    Epetra_Comm const &comm = experiments[0].x0->Comm();
+    EpetraExt::HDF5 HDF5(comm);
     HDF5.Open(name);
 
     int num_exp = -1;
@@ -107,7 +115,16 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::write(
     if (experiments.size() == 0 || experiments[0].xlist.size() == 0)
         return;
 
-    EpetraExt::HDF5 HDF5(experiments[0].xlist[0]->Comm());
+    Epetra_Comm const &comm = experiments[0].x0->Comm();
+    int lock_file = -1;
+    if (comm.MyPID() == 0)
+    {
+        lock_file = open("lock", O_RDWR | O_CREAT, 0666);
+        flock(lock_file, LOCK_EX);
+    }
+    comm.Barrier();
+
+    EpetraExt::HDF5 HDF5(comm);
     HDF5.Create(name);
     HDF5.CreateGroup("experiments");
     for (int i = 0; i < (int)experiments.size(); i++)
@@ -149,4 +166,7 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::write(
     HDF5.Write("data", "its", its_);
     HDF5.Write("data", "num exp", num_exp_);
     HDF5.Write("data", "num init exp", num_init_exp_);
+
+    if (lock_file >= 0)
+        close(lock_file);
 }
