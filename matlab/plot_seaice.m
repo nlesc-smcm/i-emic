@@ -14,6 +14,11 @@ function [state,pars,add] = plot_seaice(fname, opts)
         readFluxes = false;
     end
 
+    if isfield(opts, 'fig_ctr')
+        fig_ctr = opts.fig_ctr;
+    else
+        fig_ctr = 21; % first figure handle number
+    end
 
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
     
@@ -55,7 +60,7 @@ function [state,pars,add] = plot_seaice(fname, opts)
     simask = squeeze(state(3, :, :, :));
     
     for i = 1:si_nun
-        figure(14+i)
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
         field(logical(surfm)) = NaN;
         
@@ -72,7 +77,7 @@ function [state,pars,add] = plot_seaice(fname, opts)
     end
     
     if readFluxes
-        plot_fluxes(add, 14+i+1);
+        plot_fluxes(add, fig_ctr, 'SeaIce: ');
     end
     
 end

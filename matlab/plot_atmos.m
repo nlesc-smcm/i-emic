@@ -34,13 +34,18 @@ function [state,pars,add] = plot_atmos(fname, opts)
     else
         readFluxes = false;
     end
-        
 
     if isfield(opts, 'invert')
         invert = opts.invert;
     else
         invert = false;
         opts.invert = invert;
+    end
+    
+    if isfield(opts, 'fig_ctr')
+        fig_ctr = opts.fig_ctr;
+    else
+        fig_ctr = 11; % first figure handle number
     end
 
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
@@ -57,7 +62,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     atmos_nun = 3;
     atmos_l   = 1;
     
-    [state,pars,add] = readhdf5(fname, atmos_nun, n, m, atmos_l,opts);
+    [state, pars, add] = readhdf5(fname, atmos_nun, n, m, atmos_l,opts);
     
     if readEP
         E = reshape(add.E,n,m);
@@ -69,14 +74,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
         SST = reshape(add.SST, n, m);
     end
 
-
     RtD = 180/pi;    
     
     % reference temperature
     T0  = 15.0;   
     q0  = 8e-3;
     a0  = 0.3;
-
     
     % starlings
     tdim = 1;
@@ -97,14 +100,16 @@ function [state,pars,add] = plot_atmos(fname, opts)
     Tz  = mean(Ta,1); % zonal mean
     qz  = mean(qa,1); % zonal mean
 
-    figure(9)
+    figure(fig_ctr); fig_ctr = fig_ctr+1;
 
     img = Ta';
     Tdiff = max(max(Ta))-min(min(Ta));
     fprintf('max(T) - min(T) = %f\n', Tdiff);
-    contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
-    image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-    c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
+    %contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
+    image(RtD*x,RtD*(y),srf,'AlphaData',1); hold on
+    imagesc(RtD*x,RtD*(y),img,'AlphaData',.9); hold on;
+    set(gca,'ydir','normal')
+    %c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
     colorbar
     cmap = my_colmap(caxis);
     colormap(cmap)
@@ -117,7 +122,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     ylabel('Latitude')
     exportfig('atmosTemp.eps',10,[14,10],invert)
 
-% $$$     figure(10)
+% $$$     figure(fig_ctr); fig_ctr = fig_ctr+1;
 % $$$     img = (Ta-repmat(Tz,n,1))';
 % $$$     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
 % $$$     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
@@ -133,9 +138,8 @@ function [state,pars,add] = plot_atmos(fname, opts)
 % $$$     xlabel('Longitude')
 % $$$     ylabel('Latitude')
 
-    figure(11)
+    figure(fig_ctr); fig_ctr = fig_ctr+1;
     img = qa';
-
 
     image(RtD*x,RtD*(y),srf,'AlphaData',.2); hold on
     set(gca,'ydir','normal')
@@ -154,7 +158,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     ylabel('Latitude')
     exportfig('atmosq.eps',10,[14,10],invert)
     
-    figure(12)
+    figure(fig_ctr); fig_ctr = fig_ctr+1;
     img = Aa';
     imagesc(RtD*x,RtD*(y),img); 
     set(gca,'ydir','normal')
@@ -173,8 +177,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         Pd  = eta*qdim*max(max(P))*3600*24*365;
         fprintf('Precipitation P = %2.4e m/y\n', Pd);
         
-        figure(13)
-        
+        figure(fig_ctr); fig_ctr = fig_ctr+1;        
         EmP = eta*qdim*(E-P)*3600*24*365;
         img = EmP';
 
@@ -188,8 +191,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         colormap(cmap)
         colorbar
 
-        hold off      
-        
+        hold off        
         
         title('E-P (m/y)')
         xlabel('Longitude')
@@ -199,7 +201,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
     
     if readLST
-        figure(14)
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         imagesc(RtD*x,RtD*(y), SST' + LST' + T0);
         set(gca,'ydir', 'normal');
         cmap = my_colmap(caxis, 0);
@@ -211,6 +213,6 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
 
     if readFluxes
-        plot_fluxes(add, 15); 
+        plot_fluxes(add, fig_ctr,'Atmos: '); 
     end
 end

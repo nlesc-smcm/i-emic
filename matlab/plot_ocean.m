@@ -97,12 +97,18 @@ function [sol, add] = plot_ocean(solfile, opts)
         export_to_file = false;
     end
 
-
     if isfield(opts, 'invert')
         invert = opts.invert
     else
         invert = false;
     end    
+    
+    if isfield(opts, 'fig_ctr')
+        fig_ctr = opts.fig_ctr;
+    else
+        fig_ctr = 1; % first figure handle number
+    end
+
     
     restrict_sol = false;
     rmask = [];
@@ -222,7 +228,7 @@ function [sol, add] = plot_ocean(solfile, opts)
 
 
     if plot_bstream || plot_everything
-        figure(1);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
 
         % - INTEGRATIONS - --------------------------------------------------
         % Barotropic streamfunction;
@@ -265,7 +271,7 @@ function [sol, add] = plot_ocean(solfile, opts)
     end
 
     if plot_mstream || plot_everything
-        figure(2);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         % PLOT OVERTURNING STREAMFUNCTION
 
         % Compute overturning streamfunction
@@ -309,7 +315,7 @@ function [sol, add] = plot_ocean(solfile, opts)
     end
 
     if plot_temperature || plot_everything
-        figure(3);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         % - CHECK SALINITY - ------------------------------------------------
         check = checksal(S,x,y,dfzt);
         vol   = sum(sum(1-surfm).*cos(y'))*dx*dy;
@@ -362,7 +368,7 @@ function [sol, add] = plot_ocean(solfile, opts)
 
 
         % -------------------------------------------------------
-        figure(4);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         Tsurf = T(:,:,l);
         minT = T0+min(min(Tsurf));
         maxT = T0+max(max(Tsurf));
@@ -392,7 +398,7 @@ function [sol, add] = plot_ocean(solfile, opts)
         end
     end
     if plot_salinity || plot_everything
-        figure(5);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
 
         contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
         %imagesc(Sp'+S0);
@@ -414,7 +420,7 @@ function [sol, add] = plot_ocean(solfile, opts)
     end
     if ( plot_sss || plot_everything )
         
-        figure(6); 
+        figure(fig_ctr); fig_ctr = fig_ctr+1; 
         Ssurf = S(:,:,l);
         Sz = mean(Ssurf,1);
         
@@ -444,7 +450,7 @@ function [sol, add] = plot_ocean(solfile, opts)
     if ( plot_salflux || plot_everything )  ...
             && ~isempty(add)
         
-        figure(7)
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         im = reshape(add.SalFlux,n,m);
         im(im==0) = NaN;
         imagesc(RtD*x, RtD*y, im');
@@ -462,7 +468,7 @@ function [sol, add] = plot_ocean(solfile, opts)
     if ( plot_temflux || plot_everything ) ...
             && ~isempty(add)
         
-        figure(8)
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         im = reshape(add.TemFlux,n,m);
         im(im==0) = NaN;
         imagesc(RtD*x, RtD*y, im');
@@ -479,7 +485,7 @@ function [sol, add] = plot_ocean(solfile, opts)
     end
 
     if readFluxes
-        plot_fluxes(add, 9);
+        plot_fluxes(add, fig_ctr, 'Ocean: ');
     end
 
 
