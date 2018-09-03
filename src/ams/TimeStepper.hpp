@@ -537,21 +537,32 @@ void TimeStepper<T>::tams(T const &x0) const
                                         vector_length_ * sizeof(double)))
               << std::endl;
 
-    int converged = 0;
     std::vector<AMSExperiment<T>> experiments(num_exp_);
     for (int i = 0; i < num_exp_; i++)
         experiments[i].x0 = x0;
+
+    its_ = 0;
+
+    if (read_ != "")
+        read(read_, experiments);
+
+    int converged = 0;
 
 #pragma omp parallel for default(none),                                 \
     firstprivate(num_exp_, dt_, tmax_),                                 \
     shared(std::cout, experiments, converged, x0), schedule(dynamic)
     for (int i = 0; i < num_exp_; i++)
     {
+        if (experiments[i].initialized)
+            continue;
+
         experiments[i].xlist.push_back(x0);
         experiments[i].dlist.push_back(0);
         experiments[i].tlist.push_back(0);
 
         transient_tams(dt_, tmax_, experiments[i]);
+
+        experiments[i].initialized = true;
 
         if (experiments[i].converged)
 #pragma omp atomic
@@ -561,10 +572,11 @@ void TimeStepper<T>::tams(T const &x0) const
                   << converged << " / " << num_exp_
                   << " converged with t="
                   << experiments[i].time << std::endl;
+
+        if (write_ != "" && (i+1) % write_steps_ == 0)
+            write(write_, experiments);
     }
     std::cout << std::endl;
-
-    its_ = 0;
     converged = 0;
 
     std::vector<AMSExperiment<T> *> unconverged_experiments;
@@ -703,9 +715,14 @@ void TimeStepper<T>::tams(T const &x0) const
                 }
                 std::cout << "Finished cleanup" << std::endl;
             }
+
+            if (write_ != "" && its_ % write_steps_ == 0)
+                write(write_, experiments);
         }
     }
     std::cout << std::endl;
+
+    write(write_, experiments);
 
     double W = num_exp_ * pow(1.0 - 1.0 / (double)num_exp_, its_);
     for (int i = 1; i < its_; i++)

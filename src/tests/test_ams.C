@@ -121,7 +121,7 @@ AMS<Teuchos::RCP<TestModel> > createDoubleWell(Teuchos::RCP<Teuchos::ParameterLi
 }
 
 //------------------------------------------------------------------
-TEST(AMS, Restart)
+TEST(AMS, AMSRestart)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
     params->set("theta", 0.0);
@@ -132,6 +132,7 @@ TEST(AMS, Restart)
     params->set("ams seed", 2);
 
     params->set("time step", 0.01);
+    params->set("maximum time", 2.0);
     params->set("A distance", 0.05);
     params->set("B distance", 0.05);
     params->set("C distance", 0.1);
@@ -164,6 +165,52 @@ TEST(AMS, Restart)
     EXPECT_EQ(output2.find("AMS: 100"), std::string::npos);
     EXPECT_NE(output2.find("AMS: 200"), std::string::npos);
     EXPECT_EQ(output2.find("AMS: 500"), std::string::npos);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, TAMSRestart)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("theta", 0.0);
+    params->set("sigma", 1.0);
+    params->set("dof", 1);
+    params->set("var", 0);
+    params->set("noise seed", 1);
+    params->set("ams seed", 2);
+    params->set("method", "TAMS");
+
+    params->set("time step", 0.01);
+    params->set("maximum time", 2.0);
+    params->set("B distance", 0.05);
+    params->set("number of experiments", 100);
+    params->set("maximum iterations", 100);
+    params->set("write file", "out_data.h5");
+
+    testing::internal::CaptureStdout();
+
+    auto ams = createDoubleWell(params);
+    ams.run();
+
+    std::string output = testing::internal::GetCapturedStdout();
+
+    EXPECT_NE(output.find("Initialization"), std::string::npos);
+    EXPECT_NE(output.find("TAMS: 100"), std::string::npos);
+    EXPECT_EQ(output.find("TAMS: 101"), std::string::npos);
+
+    params->set("read file", "out_data.h5");
+    params->set("maximum iterations", 10000);
+
+    testing::internal::CaptureStdout();
+
+    auto ams2 = createDoubleWell(params);
+    ams2.run();
+
+    std::string output2 = testing::internal::GetCapturedStdout();
+
+    EXPECT_EQ(output2.find("Initialization"), std::string::npos);
+    EXPECT_EQ(output2.find("TAMS: 100"), std::string::npos);
+    EXPECT_NE(output2.find("TAMS: 101"), std::string::npos);
+    EXPECT_EQ(output2.find("TAMS: 500"), std::string::npos);
 }
 
 //------------------------------------------------------------------
