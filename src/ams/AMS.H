@@ -27,6 +27,12 @@ class AMS
     double theta_;
     double sigma_;
 
+    int dof_;
+    int var_;
+
+    unsigned int noise_seed_;
+    unsigned int ams_seed_;
+
     VectorPtr sol1_;
     VectorPtr sol2_;
     VectorPtr sol3_;
@@ -55,7 +61,7 @@ protected:
     Teuchos::RCP<Epetra_Vector> restrict(Epetra_MultiVector const &x) const;
     Teuchos::RCP<Epetra_Vector> prolongate(Epetra_MultiVector const &x) const;
 
-    unsigned int get_seed();
+    unsigned int get_ams_seed();
 };
 
 template<typename Vector>
@@ -149,17 +155,25 @@ AMS(Model model, ParameterList pars,
     method_(pars->get("method", "AMS")),
     theta_(pars->get("theta", 1.0)),
     sigma_(pars->get("sigma", 1.0)),
+    dof_(pars->get("dof", 6)),
+    var_(pars->get("var", 1)),
+    noise_seed_(pars->get("noise seed", 0)),
+    ams_seed_(pars->get("ams seed", 0)),
     sol1_(sol1),
     sol2_(sol2),
     sol3_(sol3),
     V_(Teuchos::null)
 {
-    std::random_device rd;
-    std::random_device::result_type seed = rd();
+    std::random_device::result_type seed = noise_seed_;
+    if (seed == 0)
+    {
+        std::random_device rd;
+        seed = rd();
+    }
     std::seed_seq seeder{seed};
     engine_ = Teuchos::rcp(new std::mt19937_64(seeder));
 
-    write_seed(*model_->Comm(), seed, "Time step seed");
+    write_seed(*model_->Comm(), seed, "noise seed");
 
     model_->computeForcing();
     B_ = model_->getForcing();
@@ -192,7 +206,7 @@ AMS(Model model, ParameterList pars,
         auto vvec = Teuchos::rcp(new Vector(B_->RangeMap()));
         CHECK_ZERO(vvec->PutScalar(0.0));
         for (int i = 0; i < vvec->MyLength(); i++)
-            if (vvec->Map().GID(i) % 6 == 1)
+            if (vvec->Map().GID(i) % dof_ == var_)
                 (*vvec)[i] = 1.0;
 
         auto Vvvec = Teuchos::rcp(new Epetra_MultiVector(*V_));
@@ -250,13 +264,13 @@ AMS(Model model, ParameterList pars,
     {
         time_step = get_time_step();
 
-        auto var_norm = [](VectorPtr const &x, int var) {
+        auto var_norm = [this](VectorPtr const &x, int var) {
             double tmp = 0;
             int n = x->MyLength();
             auto &map = x->Map();
             Vector const &xref = *x;
             for (int i = 0; i < n; i++)
-                if (map.GID(i) % 6 == var)
+                if (map.GID(i) % dof_ == var)
                     tmp += xref[i] * xref[i];
             double out = 0;
             if (x->DistributedGlobal())
@@ -270,32 +284,31 @@ AMS(Model model, ParameterList pars,
             return sqrt(out);
         };
 
-        double nrm[6];
-        for (int var = 0; var < 6; var++)
+        std::vector<double> nrm(dof_);
+        for (int var = 0; var < dof_; var++)
         {
             VectorPtr diff = Teuchos::rcp(new Vector(*sol1_));
             CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
             nrm[var] = var_norm(diff, var);
         }
 
-        const int var = 1;
         double dist_factor = 0.5;
         if (sol3_ != Teuchos::null)
         {
             VectorPtr diff = Teuchos::rcp(new Vector(*sol1_));
             CHECK_ZERO(diff->Update(-1.0, *sol3_, 1.0));
-            double nrm2 = var_norm(diff, var);
-            dist_factor = nrm2 / nrm[var];
+            double nrm2 = var_norm(diff, var_);
+            dist_factor = nrm2 / nrm[var_];
         }
         INFO("distance factor = " << dist_factor);
 
-        dist_fun = [nrm, dist_factor, var_norm, var, this](VectorPtr const &x) {
+        dist_fun = [nrm, dist_factor, var_norm, this](VectorPtr const &x) {
             VectorPtr d1v = Teuchos::rcp(new Vector(*x));
             CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
-            double d1 =  var_norm(d1v, var) / nrm[var];
+            double d1 =  var_norm(d1v, var_) / nrm[var_];
             VectorPtr d2v = Teuchos::rcp(new Vector(*x));
             CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
-            double d2 =  var_norm(d2v, var) / nrm[var];
+            double d2 =  var_norm(d2v, var_) / nrm[var_];
             double dist = dist_factor - dist_factor * exp(-0.5 * pow(d1 / 0.25, 2.))
             + (1.0 - dist_factor) * exp(-0.5 * pow(d2 / 0.25, 2.));
             INFO("distance = " << dist);
@@ -307,7 +320,7 @@ AMS(Model model, ParameterList pars,
                                     time_step, dist_fun, sol1_->GlobalLength()));
 
     timestepper_->set_parameters(*pars);
-    timestepper_->set_random_engine(get_seed());
+    timestepper_->set_random_engine(get_ams_seed());
 }
 
 template<typename Model>
@@ -366,8 +379,15 @@ auto AMS<Model>::get_time_step()
         // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
         auto thetaJ = [this, sig](VectorPtr const &xnew, VectorPtr const &b) {
             TIMER_SCOPE("AMS: Jacobian solve");
-            *model_->getState('V') = *xnew;
             VectorPtr y = Teuchos::rcp(new Vector(*b));
+            if (theta_ == 0.0)
+            {
+                VectorPtr M = model_->getMassMat('V');
+                for (int i = 0; i < y->MyLength(); i++)
+                    (*y)[i] = -(*y)[i] / (*M)[i];
+                return y;
+            }
+            *model_->getState('V') = *xnew;
             CHECK_ZERO(y->Scale(sig));
             model_->setShift(-sig);
             model_->computeJacobian();
@@ -528,10 +548,14 @@ void AMS<Model>::run()
 }
 
 template<typename Model>
-unsigned int AMS<Model>::get_seed()
+unsigned int AMS<Model>::get_ams_seed()
 {
-    static thread_local std::random_device rd;
-    unsigned int seed = rd();
+    unsigned int seed = ams_seed_;
+    if (seed == 0)
+    {
+        static thread_local std::random_device rd;
+        seed = rd();
+    }
 
     int *seed_ptr = reinterpret_cast<int *>(&seed);
     CHECK_ZERO(model_->Comm()->Broadcast(seed_ptr, 1, 0));

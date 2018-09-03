@@ -4,21 +4,39 @@
 #include "TimeStepperDecl.hpp"
 
 #include <vector>
-#include <functional>
-#include <random>
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 
 template<class T>
 struct AMSExperiment {
+    T x0;
+
     std::vector<T> xlist;
     std::vector<double> dlist;
     std::vector<double> tlist;
+
     double max_distance;
     double time;
     double initial_time;
     double return_time;
+
+    bool initialized;
     bool converged;
+
+    AMSExperiment()
+        :
+        x0(),
+        xlist(),
+        dlist(),
+        tlist(),
+        max_distance(0.0),
+        time(0.0),
+        initial_time(0.0),
+        return_time(0.0),
+        initialized(false),
+        converged(false)
+        {}
 
     static bool sort(AMSExperiment<T> const *e1, AMSExperiment<T> const *e2)
         {
@@ -91,6 +109,9 @@ void TimeStepper<T>::set_parameters(ParameterList &params)
     num_exp_ = params.get("number of experiments", 1000);
     num_init_exp_ = params.get("number of initial experiments", num_exp_);
     maxit_ = params.get("maximum iterations", num_exp_ * 10);
+    read_ = params.get("read file", "");
+    write_ = params.get("write file", "");
+    write_steps_ = params.get("write steps", 10);
 
     if (num_init_exp_ < num_exp_)
         num_init_exp_ = num_exp_;
@@ -139,6 +160,7 @@ void TimeStepper<T>::transient_start(
             experiment.tlist.push_back(0);
             experiment.max_distance = dist;
             experiment.initial_time = t;
+            experiment.initialized = true;
             break;
         }
     }
@@ -276,17 +298,26 @@ void TimeStepper<T>::ams(T const &x0) const
                                         vector_length_ * sizeof(double)))
               << std::endl;
 
-    int its = 0;
+    std::vector<AMSExperiment<T>> experiments(num_init_exp_);
+    for (int i = 0; i < num_init_exp_; i++)
+        experiments[i].x0 = x0;
+
+    its_ = 0;
+
+    if (read_ != "")
+        read(read_, experiments);
+
     int converged = 0;
     double tmax = 100 * tmax_;
 
-    std::vector<AMSExperiment<T>> experiments(num_init_exp_);
-
 #pragma omp parallel for default(none),                                 \
     firstprivate(num_exp_, num_init_exp_, dt_, tmax),                   \
-    shared(std::cout, its, experiments, converged, x0), schedule(dynamic)
+    shared(std::cout, experiments, converged, x0), schedule(dynamic)
     for (int i = 0; i < num_init_exp_; i++)
     {
+        if (experiments[i].initialized)
+            continue;
+
         transient_start(x0, dt_, tmax, experiments[i]);
 
         if (experiments[i].xlist.size() == 0)
@@ -309,18 +340,19 @@ void TimeStepper<T>::ams(T const &x0) const
 #pragma omp atomic
             converged++;
 
-#pragma omp atomic
-        its++;
-
-        std::cout << "Initialization: " << its << " / " << num_init_exp_ << ", "
+        std::cout << "Initialization: " << i+1 << " / " << num_init_exp_ << ", "
                   << converged << " / " << num_init_exp_
                   << " converged with t="
                   << experiments[i].initial_time + experiments[i].time << std::endl;
+
+#pragma omp critical (experiments)
+        {
+            if (write_ != "" && (i+1) % write_steps_ == 0)
+                write(write_, experiments);
+        }
     }
     std::cout << std::endl;
 
-    int maxit = 10000000;
-    its = 0;
     converged = 0;
 
     std::vector<AMSExperiment<T> *> unconverged_experiments;
@@ -343,12 +375,12 @@ void TimeStepper<T>::ams(T const &x0) const
               unconverged_experiments.end(), AMSExperiment<T>::sort);
 
 #pragma omp parallel for default(none),                                 \
-    firstprivate(num_exp_, maxit, dt_, tmax),                           \
-    shared(std::cout, std::cerr, its, converged,                        \
+    firstprivate(num_exp_, maxit_, dt_, tmax),                           \
+    shared(std::cout, std::cerr, its_, converged,                       \
            experiments, unused_experiments, unconverged_experiments,    \
            reactive_experiments),                                       \
            schedule(static)
-    for (int i = 0; i < maxit; i++)
+    for (int i = 0; i < maxit_; i++)
     {
         AMSExperiment<T> *exp = NULL;
         int num_unused_exp = 0;
@@ -411,8 +443,8 @@ void TimeStepper<T>::ams(T const &x0) const
 #pragma omp critical (experiments)
         {
 #pragma omp flush (experiments, unconverged_experiments, unused_experiments, \
-                   its, converged)
-            its++;
+                   its_, converged)
+            its_++;
             if (exp->converged)
                 converged++;
             else
@@ -423,7 +455,7 @@ void TimeStepper<T>::ams(T const &x0) const
             std::sort(unconverged_experiments.begin(),
                       unconverged_experiments.end(), AMSExperiment<T>::sort);
 
-            std::cout << "AMS: " << its << " / " << maxit << ", "
+            std::cout << "AMS: " << its_ << " / " << maxit_ << ", "
                       << converged << " / " << num_exp_
                       << " converged with max distance "
                       << max_distance << " -> "
@@ -435,7 +467,7 @@ void TimeStepper<T>::ams(T const &x0) const
             for (auto exp: reactive_experiments)
                 min_max_distance = std::min(min_max_distance, exp->max_distance);
 
-            if (its % 10 == 0)
+            if (its_ % 10 == 0)
             {
                 std::cout << "Starting cleanup" << std::endl;
                 for (auto exp: unused_experiments)
@@ -459,9 +491,14 @@ void TimeStepper<T>::ams(T const &x0) const
                 }
                 std::cout << "Finished cleanup" << std::endl;
             }
+
+            if (write_ != "" && its_ % write_steps_ == 0)
+                write(write_, experiments);
         }
     }
     std::cout << std::endl;
+
+    write(write_, experiments);
 
     double total_tr = 0;
     double total_t1 = 0;
@@ -479,7 +516,8 @@ void TimeStepper<T>::ams(T const &x0) const
             num_t2++;
     }
 
-    double alpha = (double)converged / (double)num_exp_ * pow((1.0 - 1.0 / (double)num_exp_), its);
+    double alpha = (double)converged / (double)num_exp_ *
+        pow((1.0 - 1.0 / (double)num_exp_), its_);
 
     double meann = 1.0 / alpha - 1.0;
     double fpt = meann * (total_t1 / (double)num_t1 + total_t2 / (double)num_t2) +
@@ -499,13 +537,14 @@ void TimeStepper<T>::tams(T const &x0) const
                                         vector_length_ * sizeof(double)))
               << std::endl;
 
-        int its = 0;
     int converged = 0;
     std::vector<AMSExperiment<T>> experiments(num_exp_);
+    for (int i = 0; i < num_exp_; i++)
+        experiments[i].x0 = x0;
 
 #pragma omp parallel for default(none),                                 \
     firstprivate(num_exp_, dt_, tmax_),                                 \
-    shared(std::cout, its, experiments, converged, x0), schedule(dynamic)
+    shared(std::cout, experiments, converged, x0), schedule(dynamic)
     for (int i = 0; i < num_exp_; i++)
     {
         experiments[i].xlist.push_back(x0);
@@ -518,17 +557,14 @@ void TimeStepper<T>::tams(T const &x0) const
 #pragma omp atomic
             converged++;
 
-#pragma omp atomic
-        its++;
-
-        std::cout << "Initialization: " << its << " / " << num_exp_ << ", "
+        std::cout << "Initialization: " << i+1 << " / " << num_exp_ << ", "
                   << converged << " / " << num_exp_
                   << " converged with t="
                   << experiments[i].time << std::endl;
     }
     std::cout << std::endl;
 
-    its = 0;
+    its_ = 0;
     converged = 0;
 
     std::vector<AMSExperiment<T> *> unconverged_experiments;
@@ -552,7 +588,7 @@ void TimeStepper<T>::tams(T const &x0) const
 
 #pragma omp parallel for default(none),                                 \
     firstprivate(num_exp_, maxit_, dt_, tmax_),                         \
-    shared(std::cout, std::cerr, its, converged,                        \
+    shared(std::cout, std::cerr, its_, converged,                       \
            experiments, unused_experiments, unconverged_experiments,    \
            reactive_experiments),                                       \
     schedule(static)
@@ -619,8 +655,8 @@ void TimeStepper<T>::tams(T const &x0) const
 #pragma omp critical (experiments)
         {
 #pragma omp flush (experiments, unconverged_experiments, unused_experiments, \
-                   its, converged)
-            its++;
+                   its_, converged)
+            its_++;
             if (exp->converged)
                 converged++;
             else
@@ -631,7 +667,7 @@ void TimeStepper<T>::tams(T const &x0) const
             std::sort(unconverged_experiments.begin(),
                       unconverged_experiments.end(), AMSExperiment<T>::sort);
 
-            std::cout << "TAMS: " << its << " / " << maxit_ << ", "
+            std::cout << "TAMS: " << its_ << " / " << maxit_ << ", "
                       << converged << " / " << num_exp_
                       << " converged with max distance "
                       << max_distance << " -> "
@@ -643,7 +679,7 @@ void TimeStepper<T>::tams(T const &x0) const
             for (auto exp: reactive_experiments)
                 min_max_distance = std::min(min_max_distance, exp->max_distance);
 
-            if (its % 10 == 0)
+            if (its_ % 10 == 0)
             {
                 std::cout << "Starting cleanup" << std::endl;
                 for (auto exp: unused_experiments)
@@ -671,11 +707,11 @@ void TimeStepper<T>::tams(T const &x0) const
     }
     std::cout << std::endl;
 
-    double W = num_exp_ * pow(1.0 - 1.0 / (double)num_exp_, its);
-    for (int i = 1; i < its; i++)
+    double W = num_exp_ * pow(1.0 - 1.0 / (double)num_exp_, its_);
+    for (int i = 1; i < its_; i++)
         W += pow(1.0 - 1.0 / (double)num_exp_, i);
 
-    double tp = (double)converged * pow(1.0 - 1.0 / (double)num_exp_, its) / W;
+    double tp = (double)converged * pow(1.0 - 1.0 / (double)num_exp_, its_) / W;
     std::cout << "Transition probability T=" << tmax_ << ": " << tp << std::endl;
 }
 

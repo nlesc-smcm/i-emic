@@ -30,7 +30,13 @@ class TimeStepper
 
     int num_exp_;
     int num_init_exp_;
+
+    mutable int its_;
     int maxit_;
+
+    std::string read_;
+    std::string write_;
+    int write_steps_;
 
     // RNG methods
     bool engine_initialized_;
@@ -78,6 +84,14 @@ public:
     void tams(T const &x0) const;
 
     void gpa(T const &x0) const;
+
+    void read(
+        std::string const &name,
+        std::vector<AMSExperiment<T> > &experiments) const;
+
+    void write(
+        std::string const &name,
+        std::vector<AMSExperiment<T> > const &experiments) const;
 
     void set_random_engine(unsigned int seed);
 

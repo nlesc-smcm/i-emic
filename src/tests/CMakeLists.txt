@@ -9,6 +9,7 @@ set(TEST_INCLUDE_DIRS
   ../topo/
   ../lyapunov/
   ../thetastepper/
+  ../ams/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
@@ -30,6 +31,7 @@ set(TEST_SOURCES
   intt_coupled.C
   test_integrals.C
   test_matrix.C
+  test_ams.C
   )
 
 include(BuildExternalProject)
