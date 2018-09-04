@@ -213,6 +213,6 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
 
     if readFluxes
-        plot_fluxes(add, fig_ctr,'Atmos: '); 
+        plot_fluxes(add, fig_ctr,'Atmos: ', opts); 
     end
 end

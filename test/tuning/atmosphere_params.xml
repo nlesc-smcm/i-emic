@@ -65,12 +65,12 @@
  
   <!-- testing parameters  -->
   <Parameter name="melt temperature threshold (deg C)" type="double" value="-5"/>
-  <Parameter name="melt threshold width (deg C)" type="double" value="10"/>
+  <Parameter name="melt threshold width (deg C)" type="double" value="5"/>
   
-  <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="-10"/>
+  <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="-100"/>
   <Parameter name="accumulation threshold width (m/y)" type="double" value="5"/>
   
-  <Parameter name="rain/snow temperature threshold (deg C)" type="double" value="15"/>
+  <Parameter name="rain/snow temperature threshold (deg C)" type="double" value="150"/>
   <Parameter name="rain/snow threshold width (deg C)" type="double" value="5"/>  
 
 </ParameterList>
