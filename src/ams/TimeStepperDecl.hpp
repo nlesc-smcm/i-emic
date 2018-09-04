@@ -31,12 +31,15 @@ class TimeStepper
     int num_exp_;
     int num_init_exp_;
 
-    mutable int its_;
     int maxit_;
+    mutable int its_;
+    mutable int time_steps_;
 
     std::string read_;
     std::string write_;
+    bool write_final_;
     int write_steps_;
+    int write_time_steps_;
 
     // RNG methods
     bool engine_initialized_;
@@ -58,6 +61,7 @@ public:
     void set_parameters(ParameterList &params);
 
     T transient(T x, double dt, double tmax) const;
+
     double transient_max_distance(
         T x, double dt, double tmax, double max_distance) const;
 
@@ -98,6 +102,11 @@ public:
 protected:
     int randint(int a, int b) const;
     int randreal(double a, double b) const;
+
+    T time_step_helper(T const &x, double dt) const;
+
+    void write_helper(std::vector<AMSExperiment<T> > const &experiments,
+                      int its, int &time_steps_previous_write) const;
 };
 
 #endif

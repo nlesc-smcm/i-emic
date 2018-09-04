@@ -111,7 +111,9 @@ void TimeStepper<T>::set_parameters(ParameterList &params)
     maxit_ = params.get("maximum iterations", num_exp_ * 10);
     read_ = params.get("read file", "");
     write_ = params.get("write file", "");
-    write_steps_ = params.get("write steps", 10);
+    write_final_ = params.get("write final state", true);
+    write_steps_ = params.get("write steps", -1);
+    write_time_steps_ = params.get("write time steps", -1);
 
     if (num_init_exp_ < num_exp_)
         num_init_exp_ = num_exp_;
@@ -121,7 +123,7 @@ template<class T>
 T TimeStepper<T>::transient(T x, double dt, double tmax) const
 {
     for (double t = dt; t <= tmax; t += dt)
-        x = std::move(time_step_(x, dt));
+        x = std::move(time_step_helper(x, dt));
     return x;
 }
 
@@ -132,7 +134,7 @@ double TimeStepper<T>::transient_max_distance(
     const double lim = max_distance - bdist_;
     for (double t = dt; t <= tmax; t += dt)
     {
-        x = std::move(time_step_(x, dt));
+        x = std::move(time_step_helper(x, dt));
         if (dist_fun_(x) > lim)
             return t;
     }
@@ -150,7 +152,7 @@ void TimeStepper<T>::transient_start(
 
     for (double t = dt; t <= tmax; t += dt)
     {
-        x = std::move(time_step_(x, dt));
+        x = std::move(time_step_helper(x, dt));
 
         double dist = dist_fun_(x);
         if (dist > cdist_)
@@ -179,7 +181,7 @@ void TimeStepper<T>::transient_ams(
 
     for (; t <= tend; t += dt)
     {
-        x = std::move(time_step_(x, dt));
+        x = std::move(time_step_helper(x, dt));
 
         double dist = dist_fun_(x);
 
@@ -223,7 +225,7 @@ void TimeStepper<T>::transient_tams(
 
     for (; t <= tmax; t += dt)
     {
-        x = std::move(time_step_(x, dt));
+        x = std::move(time_step_helper(x, dt));
 
         double dist = dist_fun_(x);
         if (dist > 1 - bdist_)
@@ -258,7 +260,7 @@ void TimeStepper<T>::transient_gpa(
 
     for (double t = dt; t <= tmax; t += dt)
     {
-        x = std::move(time_step_(x, dt));
+        x = std::move(time_step_helper(x, dt));
 
         dist = dist_fun_(x);
         if (dist > 1 - bdist_)
@@ -303,12 +305,14 @@ void TimeStepper<T>::ams(T const &x0) const
         experiments[i].x0 = x0;
 
     its_ = 0;
+    time_steps_ = 0;
 
     if (read_ != "")
         read(read_, experiments);
 
     int converged = 0;
     double tmax = 100 * tmax_;
+    int time_steps_previous_write = 0;
 
     for (int i = 0; i < num_init_exp_; i++)
     {
@@ -341,8 +345,7 @@ void TimeStepper<T>::ams(T const &x0) const
                   << " converged with t="
                   << experiments[i].initial_time + experiments[i].time << std::endl;
 
-        if (write_ != "" && (i+1) % write_steps_ == 0)
-            write(write_, experiments);
+        write_helper(experiments, i+1, time_steps_previous_write);
     }
     std::cout << std::endl;
 
@@ -469,12 +472,12 @@ void TimeStepper<T>::ams(T const &x0) const
             std::cout << "Finished cleanup" << std::endl;
         }
 
-        if (write_ != "" && its_ % write_steps_ == 0)
-            write(write_, experiments);
+        write_helper(experiments, its_, time_steps_previous_write);
     }
     std::cout << std::endl;
 
-    write(write_, experiments);
+    if (write_final_)
+        write(write_, experiments);
 
     double total_tr = 0;
     double total_t1 = 0;
@@ -523,6 +526,7 @@ void TimeStepper<T>::tams(T const &x0) const
         read(read_, experiments);
 
     int converged = 0;
+    int time_steps_previous_write = 0;
 
     for (int i = 0; i < num_exp_; i++)
     {
@@ -545,8 +549,7 @@ void TimeStepper<T>::tams(T const &x0) const
                   << " converged with t="
                   << experiments[i].time << std::endl;
 
-        if (write_ != "" && (i+1) % write_steps_ == 0)
-            write(write_, experiments);
+        write_helper(experiments, i+1, time_steps_previous_write);
     }
     std::cout << std::endl;
     converged = 0;
@@ -670,12 +673,12 @@ void TimeStepper<T>::tams(T const &x0) const
             std::cout << "Finished cleanup" << std::endl;
         }
 
-        if (write_ != "" && its_ % write_steps_ == 0)
-            write(write_, experiments);
+        write_helper(experiments, its_, time_steps_previous_write);
     }
     std::cout << std::endl;
 
-    write(write_, experiments);
+    if (write_final_)
+        write(write_, experiments);
 
     double W = num_exp_ * pow(1.0 - 1.0 / (double)num_exp_, its_);
     for (int i = 1; i < its_; i++)
@@ -823,6 +826,35 @@ int TimeStepper<T>::randreal(double a, double b) const
     static thread_local std::mt19937_64 engine(seeder);
     std::uniform_real_distribution<double> real_distribution(a, b);
     return real_distribution(engine);
+}
+
+template<class T>
+T TimeStepper<T>::time_step_helper(T const &x, double dt) const
+{
+    time_steps_++;
+    return std::move(time_step_(x, dt));
+}
+
+template<class T>
+void TimeStepper<T>::write_helper(std::vector<AMSExperiment<T> > const &experiments,
+                                  int its, int &time_steps_previous_write) const
+{
+    if (write_ == "")
+        return;
+
+    if (write_steps_ > 0 && its % write_steps_ == 0)
+    {
+        time_steps_previous_write = time_steps_;
+        write(write_, experiments);
+        return;
+    }
+
+    if (write_time_steps_ > 0 && time_steps_ - time_steps_previous_write >= write_time_steps_)
+    {
+        time_steps_previous_write = time_steps_;
+        write(write_, experiments);
+        return;
+    }
 }
 
 #endif

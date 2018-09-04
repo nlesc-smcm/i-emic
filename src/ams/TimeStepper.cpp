@@ -19,6 +19,9 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::read(
     std::string const &name,
     std::vector<AMSExperiment<Teuchos::RCP<Epetra_Vector> > >  &experiments) const
 {
+    if (name == "")
+        return;
+
     std::cout << "Reading state from " << name << std::endl;
     int experiments_size = experiments.size();
     if (experiments_size == 0)
@@ -111,6 +114,9 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::write(
     std::string const &name,
     std::vector<AMSExperiment<Teuchos::RCP<Epetra_Vector> > > const &experiments) const
 {
+    if (name == "")
+        return;
+
     std::cout << "Writing current state to " << name << std::endl;
     if (experiments.size() == 0 || experiments[0].xlist.size() == 0)
         return;

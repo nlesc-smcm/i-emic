@@ -2,6 +2,8 @@
 
 #include "AMS.H"
 
+#include <stdio.h>
+
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
@@ -120,25 +122,35 @@ AMS<Teuchos::RCP<TestModel> > createDoubleWell(Teuchos::RCP<Teuchos::ParameterLi
     return ams;
 }
 
-//------------------------------------------------------------------
-TEST(AMS, AMSRestart)
+template<typename T>
+void set_parameter(Teuchos::RCP<Teuchos::ParameterList> &params,
+                   std::string const &name, T value)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
-    params->set("theta", 0.0);
-    params->set("sigma", 1.0);
-    params->set("dof", 1);
-    params->set("var", 0);
-    params->set("noise seed", 1);
-    params->set("ams seed", 2);
+    if (!params->isParameter(name))
+        params->set(name, value);
+}
 
-    params->set("time step", 0.01);
-    params->set("maximum time", 2.0);
-    params->set("A distance", 0.05);
-    params->set("B distance", 0.05);
-    params->set("C distance", 0.1);
-    params->set("number of experiments", 100);
-    params->set("maximum iterations", 100);
-    params->set("write file", "out_data.h5");
+void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
+{
+    set_parameter(params, "theta", 0.0);
+    set_parameter(params, "sigma", 1.0);
+    set_parameter(params, "dof", 1);
+    set_parameter(params, "var", 0);
+    set_parameter(params, "noise seed", 1);
+    set_parameter(params, "ams seed", 2);
+    set_parameter(params, "method", "TAMS");
+
+    set_parameter(params, "time step", 0.01);
+    set_parameter(params, "maximum time", 2.0);
+    set_parameter(params, "B distance", 0.05);
+    set_parameter(params, "number of experiments", 100);
+    set_parameter(params, "maximum iterations", 100);
+    set_parameter(params, "write file", "out_data.h5");
+
+    int maxit = params->get("maximum iterations", -1);
+    int write_time_steps = params->get("write time steps", -1);
+
+    remove("out_data.h5");
 
     testing::internal::CaptureStdout();
 
@@ -148,10 +160,19 @@ TEST(AMS, AMSRestart)
     std::string output = testing::internal::GetCapturedStdout();
 
     EXPECT_NE(output.find("Initialization"), std::string::npos);
-    EXPECT_NE(output.find("AMS: 100"), std::string::npos);
-    EXPECT_EQ(output.find("AMS: 101"), std::string::npos);
+    if (maxit == 100 && write_time_steps < 0)
+    {
+        EXPECT_NE(output.find("TAMS: 100"), std::string::npos);
+        EXPECT_EQ(output.find("TAMS: 101"), std::string::npos);
+    }
+
+    if (maxit == 100 && write_time_steps > 0)
+    {
+        EXPECT_NE(output.find("TAMS: 80"), std::string::npos);
+    }
 
     params->set("read file", "out_data.h5");
+    params->set("write file", "");
     params->set("maximum iterations", 10000);
 
     testing::internal::CaptureStdout();
@@ -162,55 +183,88 @@ TEST(AMS, AMSRestart)
     std::string output2 = testing::internal::GetCapturedStdout();
 
     EXPECT_EQ(output2.find("Initialization"), std::string::npos);
-    EXPECT_EQ(output2.find("AMS: 100"), std::string::npos);
-    EXPECT_NE(output2.find("AMS: 200"), std::string::npos);
-    EXPECT_EQ(output2.find("AMS: 500"), std::string::npos);
+    if (maxit == 100 && write_time_steps < 0)
+    {
+        EXPECT_EQ(output2.find("TAMS: 100"), std::string::npos);
+    }
+    else if (maxit < 100)
+    {
+        EXPECT_NE(output2.find("TAMS: 100"), std::string::npos);
+    }
+    EXPECT_NE(output2.find("TAMS: 101"), std::string::npos);
+    EXPECT_EQ(output2.find("TAMS: 500"), std::string::npos);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, AMSRestart)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("write final state", true);
+
+    restart_test(params);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, AMSRestart2)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("write steps", 50);
+    params->set("write final state", false);
+
+    restart_test(params);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, AMSRestart3)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("write time steps", 1000);
+    params->set("write final state", false);
+
+    restart_test(params);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, AMSRestart4)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("write steps", 50);
+    params->set("maximum iterations", 0);
+    params->set("write final state", false);
+
+    restart_test(params);
 }
 
 //------------------------------------------------------------------
 TEST(AMS, TAMSRestart)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
-    params->set("theta", 0.0);
-    params->set("sigma", 1.0);
-    params->set("dof", 1);
-    params->set("var", 0);
-    params->set("noise seed", 1);
-    params->set("ams seed", 2);
     params->set("method", "TAMS");
+    params->set("write final state", true);
 
-    params->set("time step", 0.01);
-    params->set("maximum time", 2.0);
-    params->set("B distance", 0.05);
-    params->set("number of experiments", 100);
-    params->set("maximum iterations", 100);
-    params->set("write file", "out_data.h5");
+    restart_test(params);
+}
 
-    testing::internal::CaptureStdout();
+//------------------------------------------------------------------
+TEST(AMS, TAMSRestart2)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "TAMS");
+    params->set("write steps", 50);
+    params->set("write final state", false);
 
-    auto ams = createDoubleWell(params);
-    ams.run();
+    restart_test(params);
+}
 
-    std::string output = testing::internal::GetCapturedStdout();
+//------------------------------------------------------------------
+TEST(AMS, TAMSRestart3)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "TAMS");
+    params->set("write time steps", 1000);
+    params->set("write final state", false);
 
-    EXPECT_NE(output.find("Initialization"), std::string::npos);
-    EXPECT_NE(output.find("TAMS: 100"), std::string::npos);
-    EXPECT_EQ(output.find("TAMS: 101"), std::string::npos);
-
-    params->set("read file", "out_data.h5");
-    params->set("maximum iterations", 10000);
-
-    testing::internal::CaptureStdout();
-
-    auto ams2 = createDoubleWell(params);
-    ams2.run();
-
-    std::string output2 = testing::internal::GetCapturedStdout();
-
-    EXPECT_EQ(output2.find("Initialization"), std::string::npos);
-    EXPECT_EQ(output2.find("TAMS: 100"), std::string::npos);
-    EXPECT_NE(output2.find("TAMS: 101"), std::string::npos);
-    EXPECT_EQ(output2.find("TAMS: 500"), std::string::npos);
+    restart_test(params);
 }
 
 //------------------------------------------------------------------
