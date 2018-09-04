@@ -233,11 +233,16 @@ void AtmosLocal::setup()
     // latent heat due to precipitation coeff
     lvscale_ = rhoo_ * lv_ / muoa_ ;
 
+    // Get ocean parameters
+    double tmp1, tmp2, tmp3, tmp4, tmp5;
+    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2, &tmp3, &tmp4, &tmp5);
+
     INFO("AtmosLocal computed parameters: ");
     INFO("       mu   = " << muoa_);
     INFO("   B / mu   = " << bmua_);
     INFO("       Ad   = " << Ad_);
     INFO("      Phv   = " << Phv_);
+    INFO("      Ooa   = " << Ooa_);
     INFO("      nuq   = " << nuq_);
     INFO("      eta   = " << eta_);
     INFO("     dqso   = " << dqso_);
@@ -321,10 +326,6 @@ void AtmosLocal::setup()
         xu_.push_back(xmin_ + i * dx_);
         xc_.push_back(xmin_ + (i - 0.5) * dx_);
     }
-
-    // Get ocean parameters
-    double tmp1, tmp2, tmp3, tmp4, tmp5;
-    FNAME(getdeps)(&Ooa_, &Os_, &tmp1, &tmp2, &tmp3, &tmp4, &tmp5);
 
     // Fill y and latitude-based arrays
     yv_.reserve(m_+1);

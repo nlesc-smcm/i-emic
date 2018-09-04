@@ -173,6 +173,16 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     INFO("                        local ymin = " << yminLoc_);
     INFO("                        local ymax = " << ymaxLoc_);
 
+    INFO("SeaIce computed parameters: ");
+    INFO("       zeta = " << zeta_);
+    INFO("        eta = " << eta_);
+    INFO("       muoa = " << muoa_);
+    INFO("        t0i = " << t0i_);
+    INFO("        E0i = " << E0i_);
+    INFO("        E0o = " << E0o_);
+    INFO("       dEdT = " << dEdT_);
+    INFO("       dEdq = " << dEdq_);
+
     // local grid dimensions
     nLoc_   = domain_->LocalN();
     mLoc_   = domain_->LocalM();
