@@ -37,9 +37,7 @@ class Atmosphere : public Model
 {
 public:    
     using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
-    using VectorPtr     = Teuchos::RCP<Epetra_Vector>;
     using CommPars      = AtmosLocal::CommPars;
-    
 
 private:
     //! serial atmosphere class, working on local subdomains

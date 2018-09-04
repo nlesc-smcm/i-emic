@@ -61,7 +61,7 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     // get parameters from xml
     double dt     = timeParams->get("initial time step size", 1.0e-03);
     double mindt  = timeParams->get("minimum step size", 1.0e-8);
-    double maxdt  =  timeParams->get("maximum step size", 1.0);
+    double maxdt  = timeParams->get("maximum step size", 1.0);
     double iscale = timeParams->get("increase step size", 2.0);
     double dscale = timeParams->get("decrease step size", 2.0);
 

@@ -4,8 +4,8 @@
 #include "Ocean.H"
 
 //======================================================================
-// class OceanTheta should have all the theta and time stuff and
-// inherit the rest
+// class OceanTheta has all the theta and time stuff and
+// inherits the rest
 //======================================================================
 
 class OceanTheta: public Ocean

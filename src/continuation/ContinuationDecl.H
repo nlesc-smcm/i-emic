@@ -242,7 +242,7 @@ public:
 
     //! constructor
     Continuation(Model model, ParameterList pars);
-
+    
     //! destructor
     ~Continuation();
 

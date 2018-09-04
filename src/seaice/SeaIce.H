@@ -39,7 +39,6 @@ class SeaIce : public Model
 
 public:
     using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
-    using VectorPtr     = Teuchos::RCP<Epetra_Vector>;
 
     //! Parameters we need to communicate (see datamembers for explanation).
     struct CommPars

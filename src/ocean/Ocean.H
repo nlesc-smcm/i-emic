@@ -63,10 +63,8 @@ class Ocean : public Model
 {
 public:
 
-    using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
     using PreconPtr = Teuchos::RCP<Ifpack_Preconditioner>;
     using LandMask  = Utils::MaskStruct;
- 
      
 protected:
 

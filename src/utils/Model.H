@@ -23,6 +23,7 @@ class Model
 public:
                      
     using VectorPtr = Teuchos::RCP<Epetra_Vector>;
+    using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
 
     //! non-overlapping state vector
     Teuchos::RCP<Epetra_Vector> state_;
@@ -46,7 +47,7 @@ public:
     virtual void applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
     virtual void applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
     
-    virtual Teuchos::RCP<Epetra_CrsMatrix> getJacobian() = 0;
+    virtual MatrixPtr getJacobian() = 0;
 
     virtual VectorPtr getState(char mode) = 0;
     virtual VectorPtr getSolution(char mode) = 0;
