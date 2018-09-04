@@ -134,7 +134,11 @@ extern "C" {
     //
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_t)(double *atmosT);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_q)(double *atmosQ);
+    _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_a)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_inserts, insert_atmosphere_p)(double *atmosP);
+    _MODULE_SUBROUTINE_(m_inserts, insert_seaice_q)(double *seaiceT);
+    _MODULE_SUBROUTINE_(m_inserts, insert_seaice_m)(double *seaiceM);
+    _MODULE_SUBROUTINE_(m_inserts, insert_seaice_g)(double *seaiceM);
     _MODULE_SUBROUTINE_(m_inserts, insert_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_inserts, insert_adapted_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_inserts, insert_emip_pert)(double *emip);
@@ -144,10 +148,21 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_integrals, salt_diffusion)(double *un, double *check);
     
     _MODULE_SUBROUTINE_(m_probe,  get_emip)(double *emip);
+    _MODULE_SUBROUTINE_(m_probe,  get_suno)(double *suno);
+    _MODULE_SUBROUTINE_(m_probe,  get_derivatives)(double *sol, double *dftdm,
+                                                   double *dfsdq, double *dfsdm,
+                                                   double *dfsdg);
     _MODULE_SUBROUTINE_(m_probe,  get_adapted_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_probe,  get_emip_pert)(double *emip);
-    _MODULE_SUBROUTINE_(m_probe,  get_salflux)(double *sol, double *salflux);
-    _MODULE_SUBROUTINE_(m_probe,  get_temflux)(double *sol, double *temflux);
+    _MODULE_SUBROUTINE_(m_probe,  get_salflux)(double *sol, double *salflux,
+                                               double *scorr,
+                                               double *qsoaflux, double *qsosflux);
+    
+    _MODULE_SUBROUTINE_(m_probe,  get_temflux)(double *sol, double *totflux,
+                                               double *swflux, double *shflux,
+                                               double *lhflux, double *siflux,
+                                               double *simask);
+    
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_t)(double *atmosT);
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_q)(double *atmosQ);
     _MODULE_SUBROUTINE_(m_probe,  get_atmosphere_p)(double *atmosP);
@@ -180,6 +195,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     //=================================================
     // TODO: implement atmosphere layer
+    // FIXME get rid of all la 
     la = 0;
     //=================================================
 
@@ -195,7 +211,17 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     ymin = paramList.get("Global Bound ymin", 10.0)  * PI_ / 180.0;
     ymax = paramList.get("Global Bound ymax", 74.0)  * PI_ / 180.0;
     periodic = paramList.get("Periodic"  , false);
-    hdim     = paramList.get("Depth hdim", 4000.0);
+
+    // sanity check
+    double xdist = pow(cos(xmax)-cos(xmin), 2) + pow(sin(xmax)-sin(xmin), 2);
+    if ((xdist < 1e-2) && (periodic == false))
+    {
+        WARNING("Periodic bdc disabled while \n"
+                << " horizontal boundaries coincide. Distance: "
+                << xdist, __FILE__, __LINE__);
+    }
+    
+    hdim           = paramList.get("Depth hdim", 4000.0);
     double qz      = paramList.get("Grid Stretching qz", 1.0);
     int    itopo   = paramList.get("Topography", 1);
     bool   flat    = paramList.get("Flat Bottom", false);
@@ -234,6 +260,14 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     fixPressurePoints_ = paramList.get("Fix Pressure Points", false);
 
     //------------------------------------------------------------------
+    if ((coupled_S == 1) && (sres == 1))
+    {
+        WARNING("Incompatible parameters: coupled_S = " << coupled_S
+                << " sres = "
+                << sres << " setting sres = 0", __FILE__, __LINE__);
+        sres = 0;
+    }
+    
     if (rd_spertm)
     {
         std::string spertm_file = paramList.get("Salinity Perturbation Mask",
@@ -246,6 +280,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
 
     //------------------------------------------------------------------
+    if (std::abs(intSign_) != 1)
+    {
+        ERROR("Invalid integral sign!", __FILE__, __LINE__);
+    }
+
     iza  = paramList.get("Wind Forcing Type",2);
     // Let THCM know the wind forcing file
     std::string windf_file = paramList.get("Wind Forcing Data",
@@ -614,16 +653,18 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localRhs        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
     localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
 
-    // Our copies of atmospheric entities
-    localAtmosT      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosQ      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosP      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localOceanE      = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localEmip        = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSurfTmp     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localTatm        = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSalFlux     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localTemFlux     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    // 2D overlapping interface fields
+    localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosA     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosP     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSeaiceQ    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSeaiceM    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSeaiceG    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localOceanE     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localEmip       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localSurfTmp    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localTatm       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -647,17 +688,55 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     rowintcon_     = -1;
     intCorrection_ = 0.0;
 
+    // Initialize salinity flux correction
+    scorr_ = 0.0;
+
     // Obtain integral condition coefficients
     
-    int N=domain->GlobalN();
-    int M=domain->GlobalM();
-    int L=domain->GlobalL();
+    int N = domain->GlobalN();
+    int M = domain->GlobalM();
+    int L = domain->GlobalL();
 
+    int Nic = paramList.get("Integral row coordinate i", N-1);
+    int Mic = paramList.get("Integral row coordinate j", M-1);
+    int midx;     // mask index
+    int mval = 1; // mask value
+    int tmp  = 0;
     if (sres == 0)
     {
+        if (comm->MyPID() == 0)
+        {
+            midx = FIND_ROW2(1, N+2, M+2, L+2, Nic + 1, Mic + 1, L, 1);
+            tmp = (*landm_glb)[midx];
+        }
+        comm->SumAll(&tmp, &mval, 1);
+        
+        if (mval != 0) // throw ERROR if integral row on land
+        {
+            if (comm->MyPID() == 0)
+            {
+                for (int j = M+1; j >= 0; --j)
+                {
+                    for (int i = 0; i != N+2; ++i)
+                    {
+                        midx = FIND_ROW2(1, N+2, M+2, L+2, i, j, L, 1);
+                        std::cout << (*landm_glb)[midx];
+                    }
+                    std::cout << std::endl;
+                }
+            }
+            
+            ERROR("Integral row coordinates ("
+                  << Nic << "," << Mic << ") give a land point! \n"
+                  << "  Please give better coordinates in xml.",
+                  __FILE__, __LINE__);
+        }        
+        
         // location of integral condition
-        rowintcon_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,SS);
+        rowintcon_ = FIND_ROW2(_NUN_,N,M,L,Nic,Mic,L-1,SS);
+
         INFO("THCM: integral condition for S is in global row " << rowintcon_);
+        
     }
 
     // Initialize integral coefficients
@@ -723,7 +802,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         rowPfix2 = -1;
     }
 
-    // build vectonr with integral coefficients
+    // build vector with integral coefficients
     this->evaluateB();
 
     scaling_type=paramList.get("Scaling","THCM");
@@ -1019,7 +1098,6 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 #endif
         }
 
-
     } // matrix
     return true;
 }
@@ -1061,7 +1139,6 @@ void THCM::evaluateB(void)
 // Get current global landmask including borders
 std::shared_ptr<std::vector<int> > THCM::getLandMask()
 {
-
     // length of landmask array
     int dim = (n+2)*(m+2)*(l+la+2);
 
@@ -1201,18 +1278,13 @@ void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask)
 //=============================================================================
 void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
 {
-
-    if (!(atmosT->Map().SameAs(*StandardSurfaceMap)))
-    {
-        // INFO("THCM::setAtmosphereT: atmosT map -> StandardSurfaceMap");
-        CHECK_ZERO(atmosT->ReplaceMap(*StandardSurfaceMap));
-    }
-
+    CHECK_MAP(atmosT, StandardSurfaceMap);
     // Standard2Assembly
     // Import atmosT into local atmosT
     CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf, Insert));
 
     double *locAtmosT;
+    
     localAtmosT->ExtractView(&locAtmosT);
     F90NAME(m_inserts, insert_atmosphere_t)( locAtmosT );
 }
@@ -1220,13 +1292,8 @@ void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
 //=============================================================================
 void THCM::setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ)
 {
+    CHECK_MAP(atmosQ, StandardSurfaceMap);
     
-    if (!(atmosQ->Map().SameAs(*StandardSurfaceMap)))
-    {
-        // INFO("THCM::setAtmosphereEP: atmosQ map -> StandardSurfaceMap");
-        CHECK_ZERO( atmosQ->ReplaceMap(*StandardSurfaceMap) );
-    }
-
     // Standard2Assembly
     // Import atmosQ into local atmosQ
     CHECK_ZERO( localAtmosQ->Import(*atmosQ, *as2std_surf, Insert) );
@@ -1237,16 +1304,24 @@ void THCM::setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ)
 }
 
 //=============================================================================
+void THCM::setAtmosphereA(Teuchos::RCP<Epetra_Vector> const &atmosA)
+{
+    CHECK_MAP(atmosA, StandardSurfaceMap);
+    
+    // Standard2Assembly
+    // Import atmosQ into local atmosQ
+    CHECK_ZERO( localAtmosA->Import(*atmosA, *as2std_surf, Insert) );
+
+    double *tmpAtmosA;
+    localAtmosA->ExtractView(&tmpAtmosA);
+    F90NAME(m_inserts, insert_atmosphere_a)( tmpAtmosA );
+}
+
+//=============================================================================
 void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 {
+    CHECK_MAP(atmosP, StandardSurfaceMap);
     
-    if (!(atmosP->Map().SameAs(*StandardSurfaceMap)))
-    {
-        // INFO("THCM::setAtmosphereEP: atmosP map -> StandardSurfaceMap");
-        CHECK_ZERO(atmosP->ReplaceMap(*StandardSurfaceMap));
-    }
-
-    // Standard2Assembly
     // Import atmosP into local atmosP
     CHECK_ZERO(localAtmosP->Import(*atmosP, *as2std_surf, Insert));
 
@@ -1257,6 +1332,37 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 }
 
 //=============================================================================
+void THCM::setSeaIceQ(Teuchos::RCP<Epetra_Vector> const &seaiceQ)
+{
+    CHECK_MAP(seaiceQ, StandardSurfaceMap);
+    CHECK_ZERO(localSeaiceQ->Import(*seaiceQ, *as2std_surf ,Insert));
+    double *Q;
+    localSeaiceQ->ExtractView(&Q);
+    F90NAME(m_inserts, insert_seaice_q)( Q );
+}
+
+//=============================================================================
+void THCM::setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM)
+{
+    CHECK_MAP(seaiceM, StandardSurfaceMap);
+    CHECK_ZERO(localSeaiceM->Import(*seaiceM, *as2std_surf ,Insert));
+    double *M;
+    localSeaiceM->ExtractView(&M);
+    F90NAME(m_inserts, insert_seaice_m)( M );
+}
+
+//=============================================================================
+void THCM::setSeaIceG(Teuchos::RCP<Epetra_Vector> const &seaiceG)
+{
+    CHECK_MAP(seaiceG, StandardSurfaceMap);
+    CHECK_ZERO(localSeaiceG->Import(*seaiceG, *as2std_surf ,Insert));
+    double *G;
+    localSeaiceG->ExtractView(&G);
+    F90NAME(m_inserts, insert_seaice_g)( G );
+}
+
+//=============================================================================
+//FIXME: superfluous?? ->setAtmosphereT()
 void THCM::setTatm(Teuchos::RCP<Epetra_Vector> const &tatm)
 {
     
@@ -1308,6 +1414,19 @@ void THCM::setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode)
 }
 
 //=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getSunO()
+{
+    double *suno;
+    Epetra_Vector localSunO(*AssemblySurfaceMap);
+    localSunO.ExtractView(&suno);
+    F90NAME(m_probe, get_suno) ( suno );    
+    Teuchos::RCP<Epetra_Vector> out =
+        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    CHECK_ZERO(out->Export(localSunO, *as2std_surf, Zero));
+    return out;
+}
+
+//=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
 {
     double* tmpEmip;
@@ -1337,43 +1456,73 @@ Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_Vector> THCM::getSalinityFlux()
+std::vector<Teuchos::RCP<Epetra_Vector> > THCM::getFluxes()
 {
-    double* tmpSalFlux;
-    localSalFlux->ExtractView(&tmpSalFlux);
+    int numFluxes = _MSI+1;
 
-    double* solution;
-    localSol->ExtractView(&solution);
-
-    F90NAME(m_probe, get_salflux )( solution, tmpSalFlux );
-
-    Teuchos::RCP<Epetra_Vector> salflux =
-        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
-
-    // Export assembly map surface salflux 
-    CHECK_ZERO(salflux->Export(*localSalFlux, *as2std_surf, Zero));
-
-    return salflux;    
-}
-
-//=============================================================================
-Teuchos::RCP<Epetra_Vector> THCM::getTemperatureFlux()
-{
-    double* tmpTemFlux;
-    localTemFlux->ExtractView(&tmpTemFlux);
-
+    std::vector<Teuchos::RCP<Epetra_Vector> > fluxes;
+    std::vector<Epetra_Vector> localFluxes;
+    
+    for (int i = 0; i != numFluxes; ++i)
+    {
+        fluxes.push_back(Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap)));
+        localFluxes.push_back(Epetra_Vector(*AssemblySurfaceMap));
+    }
+    
+    std::vector<double*> tmpPtrs(numFluxes);
+    
+    for (int i = 0; i != numFluxes; ++i)
+        localFluxes[i].ExtractView(&tmpPtrs[i]);
+    
     double* solution;
     localSol->ExtractView(&solution);
     
-    F90NAME(m_probe, get_temflux )( solution, tmpTemFlux );
+    F90NAME(m_probe, get_salflux )( solution, tmpPtrs[_Sal],  &scorr_,
+                                    tmpPtrs[_QSOA], tmpPtrs[_QSOS] );
+    
+    F90NAME(m_probe, get_temflux )( solution, tmpPtrs[_Temp], tmpPtrs[_QSW],
+                                    tmpPtrs[_QSH], tmpPtrs[_QLH], tmpPtrs[_QTOS],
+                                    tmpPtrs[_MSI] );
 
-    Teuchos::RCP<Epetra_Vector> temflux =
-        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    for (int i = 0; i != numFluxes; ++i)
+    {
+        CHECK_ZERO(fluxes[i]->Export(localFluxes[i], *as2std_surf, Zero));
+    }
 
-    // Export assembly map surface temflux 
-    CHECK_ZERO(temflux->Export(*localTemFlux, *as2std_surf, Zero));
+    return fluxes;
+}
 
-    return temflux;    
+//=============================================================================
+THCM::Derivatives THCM::getDerivatives()
+{
+    Derivatives d;
+
+    double *solution;
+    localSol->ExtractView(&solution);
+
+    Epetra_Vector local_dftdm(*AssemblySurfaceMap);
+    Epetra_Vector local_dfsdq(*AssemblySurfaceMap);
+    Epetra_Vector local_dfsdm(*AssemblySurfaceMap);
+    Epetra_Vector local_dfsdg(*AssemblySurfaceMap);
+
+    double *dftdm, *dfsdq, *dfsdm, *dfsdg;
+    local_dftdm.ExtractView(&dftdm);
+    local_dfsdq.ExtractView(&dfsdq);
+    local_dfsdm.ExtractView(&dfsdm);
+    local_dfsdg.ExtractView(&dfsdg);
+    F90NAME(m_probe, get_derivatives)( solution, dftdm, dfsdq, dfsdm, dfsdg);
+    
+    d.dFTdM = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    d.dFSdQ = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    d.dFSdM = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    d.dFSdG = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    
+    d.dFTdM->Export(local_dftdm, *as2std_surf, Zero);
+    d.dFSdQ->Export(local_dfsdq, *as2std_surf, Zero);
+    d.dFSdM->Export(local_dfsdm, *as2std_surf, Zero);
+    d.dFSdG->Export(local_dfsdg, *as2std_surf, Zero);
+
+    return d;
 }
 
 //=============================================================================
@@ -1909,6 +2058,11 @@ void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
     {
         // compute salinity integral, put it in correction
         CHECK_ZERO(intcond_coeff->Dot(*vec, &intCorrection_));
+        
+        if (std::abs(intCorrection_) > 1e-8)
+        {
+            INFO("THCM integral correction: " << intCorrection_);
+        }
     }
 }
 
@@ -2664,9 +2818,6 @@ extern "C" {
         CHECK_ZERO( comm->SumAll(&lsint,&sint,1) );
         
         *fsint = *fsint/sint;
-        
-        INFO("Flux correction equals " << *fsint);
-        INFO("        average over   " << sint);
     }
 
     Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()

@@ -229,7 +229,7 @@ contains
     implicit none
     integer i,j,k
     !     EXTERNAL
-    real  dfdz,fz
+    real  fz
 
     write(*,*) '============GRID==========='
     write(*,10) xmin*180/pi,xmax*180/pi,ymin*180/pi,ymax*180/pi
@@ -604,7 +604,7 @@ contains
     if (ite==1) then
        do j=1,m
           do i=1,n
-             tatm(i,j) = temfun(x(i),y(j))
+             tatm(i,j) = temfun(y(j))
           end do
        end do
     end if
@@ -612,7 +612,7 @@ contains
     if (its==1) then
        do j=1,m
           do i=1,n
-             emip(i,j) = salfun(x(i),y(j))
+             emip(i,j) = salfun(y(j))
           end do
        end do
     end if
@@ -693,7 +693,6 @@ contains
 
     integer(c_int), intent(in) :: month
     character(len=2) :: ibuf
-    character(len=1024) :: fname
     real, dimension(n,m,l) :: temp_bak, salt_bak
 
 
@@ -750,7 +749,7 @@ contains
     real, dimension(n,m,l+la) :: T,S
     real, dimension(n,m) :: hf,fwf
     integer :: i,j,k,row
-    real    :: temfuon, salfun
+    real    :: salfun
 
     do k = 1, (l+la)
        do j = 1, m
@@ -769,7 +768,7 @@ contains
              hf(i,j)  = par(BIOT)*&
                   ( tatm(i,j) - T(i,j,l)/(par(TEMP)*par(COMB)) )
              fwf(i,j) = par(BIOT)*&
-                  ( (1-its)*emip(i,j) + its*salfun(x(i),y(j))&
+                  ( (1-its)*emip(i,j) + its*salfun(y(j))&
                   - S(i,j,l)/(par(SALT)*par(COMB)) )
           endif
        enddo

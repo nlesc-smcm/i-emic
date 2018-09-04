@@ -8,9 +8,11 @@
  * Modified and extended by Erik, Utrecht University 2014/15/16/17    *
  * contact: t.e.mulder@uu.nl                                          *
  **********************************************************************/
+
 #include "Utils.H"
 #include "Combined_MultiVec.H"
 #include "ComplexVector.H"
+#include "TRIOS_Domain.H"
 #include "EpetraExt_MatrixMatrix.h"
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
@@ -65,6 +67,38 @@ double Utils::norm(std::vector<double> &vec)
     double dot;
     dot = ddot_(&dim, &vec[0], &incX, &vec[0], &incY);
     return sqrt(dot);
+}
+
+//! Obtain 2-norm of first vec in multivec, more convenient interface
+double Utils::norm(Epetra_MultiVector &vec)
+{
+    std::vector<double> norm(vec.NumVectors());
+    CHECK_ZERO(vec.Norm2(&norm[0]));
+    return norm[0];
+}
+
+//! Obtain 2-norm of first vec in multivec, more convenient interface
+double Utils::norm(Combined_MultiVec &vec)
+{
+    std::vector<double> norm(vec.NumVectors());
+    CHECK_ZERO(vec.Norm2(&norm[0]));
+    return norm[0];
+}
+
+//! Obtain first inf-norm of Epetra_MultiVector
+double Utils::normInf(Epetra_MultiVector &vec)
+{
+    std::vector<double> norm(vec.NumVectors());
+    CHECK_ZERO(vec.NormInf(&norm[0]));
+    return norm[0];
+}
+
+//! Obtain first inf-norm of Combined_MultiVec
+double Utils::normInf(Combined_MultiVec &vec)
+{
+    std::vector<double> norm(vec.NumVectors());
+    CHECK_ZERO(vec.NormInf(&norm[0]));
+    return norm[0];
 }
 
 //! Compute column sums. This is imitated from
@@ -189,37 +223,37 @@ void Utils::overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPar
 
     for (ConstIterator i = originalPars->begin(); i != originalPars->end(); ++i)
     {
-         const Teuchos::ParameterEntry &entry_i = originalPars->entry(i);
-         const std::string &name_i = originalPars->name(i);
+        const Teuchos::ParameterEntry &entry_i = originalPars->entry(i);
+        const std::string &name_i = originalPars->name(i);
          
-         if (entry_i.isList()) // skipping the sublists first
-         {
-             Teuchos::RCP<Teuchos::ParameterList> sublist =
-                 Teuchos::rcp(&originalPars->sublist(name_i), false);
+        if (entry_i.isList()) // skipping the sublists first
+        {
+            Teuchos::RCP<Teuchos::ParameterList> sublist =
+                Teuchos::rcp(&originalPars->sublist(name_i), false);
              
-             std::stringstream ss;
-             ss << originalPars->name() << "::" << name_i;
-             sublist->setName(ss.str());
-             overwriteParameters(sublist, dominantPars);
-         }
-         else
-         {
-             if (dominantPars->isParameter(name_i))
-             {
-                 const Teuchos::ParameterEntry &entry_j =
-                     dominantPars->getEntry(name_i);
+            std::stringstream ss;
+            ss << originalPars->name() << "::" << name_i;
+            sublist->setName(ss.str());
+            overwriteParameters(sublist, dominantPars);
+        }
+        else
+        {
+            if (dominantPars->isParameter(name_i))
+            {
+                const Teuchos::ParameterEntry &entry_j =
+                    dominantPars->getEntry(name_i);
 
-                 if (entry_i != entry_j)
-                 {
+                if (entry_i != entry_j)
+                {
 
-                     INFO(" " << originalPars->name() << "::"
-                          << name_i << " = " << entry_i << " <-- "
-                          << dominantPars->name() << "::" << name_i
-                          << " = " << entry_j);
-                     originalPars->setEntry(name_i, entry_j);
-                 }
-             }
-         }
+                    INFO(" " << originalPars->name() << "::"
+                         << name_i << " = " << entry_i << " <-- "
+                         << dominantPars->name() << "::" << name_i
+                         << " = " << entry_j);
+                    originalPars->setEntry(name_i, entry_j);
+                }
+            }
+        }
     }
 }
 
@@ -261,23 +295,23 @@ void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
 //============================================================================
 void Utils::save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename)
 {
-    std::ostringstream fname1, fname2;
-    fname1 << filename << ".first";
-    fname2 << filename << ".second";
-
-    save( vec->First(),  fname1.str() );
-    save( vec->Second(), fname2.str() );
+    for (int i = 0; i != vec->Size(); ++i)
+    {
+        std::stringstream fname;
+        fname << filename << "." << i;
+        save( (*vec)(i), fname.str());
+    }
 }
 
 //============================================================================
 void Utils::save(Combined_MultiVec const &vec, std::string const &filename)
 {
-    std::ostringstream fname1, fname2;
-    fname1 << filename << ".first";
-    fname2 << filename << ".second";
-
-    save( vec.First(),  fname1.str() );
-    save( vec.Second(), fname2.str() );
+    for (int i = 0; i != vec.Size(); ++i)
+    {
+        std::stringstream fname;
+        fname << filename << "." << i;
+        save( vec(i), fname.str());
+    }
 }
 
 //============================================================================
@@ -286,45 +320,45 @@ void Utils::saveEigenvectors(std::vector<ComplexVector<Combined_MultiVec> > cons
                              std::vector<std::complex<double> > const &alpha,
                              std::vector<std::complex<double> > const &beta,
                              std::string const &filename)
-{        
-    std::stringstream ss1, ss2, groupNameRe, groupNameIm;
-    ss1 << filename << ".first.h5";
-    ss2 << filename << ".second.h5";
-
-    // Two HDF5 objects for two destinations. We assume that the real
-    // and imaginary part have the same map.
-    EpetraExt::HDF5 HDF51(eigvs[0].real.First()->Map().Comm());
-    EpetraExt::HDF5 HDF52(eigvs[0].real.Second()->Map().Comm());
-
-    HDF51.Create(ss1.str().c_str());
-    HDF52.Create(ss2.str().c_str());
-    
-    size_t ctr = 0;
-    for (auto &vec: eigvs)
+{
+    // Iterate over number of combined multivectors. Each multivector
+    // gets its own HDF5 export process and corresponding file.
+    int size = eigvs[0].real.Size();    
+    for (int i = 0; i != size; ++i)
     {
-        groupNameRe << "EV_Real_" << ctr;
-        groupNameIm << "EV_Imag_" << ctr;
-        
-        HDF51.Write(groupNameRe.str().c_str(),
-                    *vec.real.First()  );
-        HDF51.Write(groupNameIm.str().c_str(),
-                    *vec.imag.First()  );
-        HDF52.Write(groupNameRe.str().c_str(),
-                    *vec.real.Second() );
-        HDF52.Write(groupNameIm.str().c_str(),
-                    *vec.imag.Second() );
+        std::stringstream ss, groupNameRe, groupNameIm;
+        ss << filename << "." << i << ".h5";
 
-        groupNameRe.str("");
-        groupNameRe.clear();
-        groupNameIm.str("");
-        groupNameIm.clear();
+        // Create HDF5 destination. We assume that the real and
+        // imaginary part have the same map.
+        EpetraExt::HDF5 HDF5(eigvs[0].real(i)->Map().Comm());
 
-        INFO("a / b = " << alpha[ctr] / beta[ctr]);
-        ctr++;
+        HDF5.Create(ss.str().c_str());
+
+        size_t ctr = 0;
+        for (auto &vec: eigvs)
+        {
+            groupNameRe << "EV_Real_" << ctr;
+            groupNameIm << "EV_Imag_" << ctr;
+
+            HDF5.Write( groupNameRe.str().c_str(),
+                        *vec.real(i) );
+            HDF5.Write( groupNameIm.str().c_str(),
+                        *vec.imag(i) );
+
+            // clear stringstreams
+            groupNameRe.str("");
+            groupNameRe.clear();
+            groupNameIm.str("");
+            groupNameIm.clear();
+
+            INFO("a / b = " << alpha[ctr] / beta[ctr]);
+            ctr++;
+        }
+
+        // save the eigenvalues to all hdf5 files.
+        saveEigenvalues(HDF5, alpha, beta, (int) eigvs.size());
     }
-
-    saveEigenvalues(HDF51, alpha, beta, (int) eigvs.size());
-    saveEigenvalues(HDF52, alpha, beta, (int) eigvs.size());
 }
 
 //============================================================================
@@ -349,9 +383,9 @@ void Utils::saveEigenvectors(std::vector<ComplexVector<Epetra_Vector> > const &e
         groupNameIm << "EV_Imag_" << ctr;
         
         HDF5.Write(groupNameRe.str().c_str(),
-                    vec.real );
+                   vec.real );
         HDF5.Write(groupNameIm.str().c_str(),
-                    vec.imag );
+                   vec.imag );
 
         groupNameRe.str("");
         groupNameRe.clear();
@@ -387,8 +421,6 @@ void Utils::saveEigenvalues(EpetraExt::HDF5 &HDF5,
         betaRe[i]  = beta[i].real();
         betaIm[i]  = beta[i].imag();
     }
-
-    
     
     HDF5.Write("EigenValues", "AlphaRe", H5T_NATIVE_DOUBLE, numEigs, &alphaRe[0]);
     HDF5.Write("EigenValues", "AlphaIm", H5T_NATIVE_DOUBLE, numEigs, &alphaIm[0]);
@@ -396,7 +428,184 @@ void Utils::saveEigenvalues(EpetraExt::HDF5 &HDF5,
     HDF5.Write("EigenValues", "BetaIm",  H5T_NATIVE_DOUBLE, numEigs, &betaIm[0]);
 }
 
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> Utils::getVector(char mode,
+                                             Teuchos::RCP<Epetra_Vector> vec)
+{
+    if (mode == 'C') // copy
+    {
+        Teuchos::RCP<Epetra_Vector> copy =
+            Teuchos::rcp(new Epetra_Vector(*vec));
+        return copy;
+    }
+    else if (mode == 'V') // view
+    {
+        return vec;
+    }
+    else
+    {
+        WARNING("Invalid mode", __FILE__, __LINE__);
+        return Teuchos::null;
+    }
+}
 
+//=============================================================================
+std::shared_ptr<std::vector<double> > Utils::getVector
+(char mode, std::shared_ptr<std::vector<double> > vec)
+{
+    if (mode == 'C')      // copy
+    {
+        std::shared_ptr<std::vector<double> > copy =
+            std::make_shared<std::vector<double> >(*vec);
+        return copy;
+    }
+    else if (mode == 'V') // view
+    {
+        return vec;
+    }
+    else
+    {
+        WARNING("invalid mode", __FILE__, __LINE__);
+        return std::shared_ptr<std::vector<double> >();
+    }
+}
+
+//=============================================================================
+void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
+                        CRSMat const &crs, int const maxnnz,
+                        Teuchos::RCP<TRIOS::Domain> domain)
+{
+    // we need domain information when the source crs is local
+    bool global = (domain == Teuchos::null) ? true : false;
+
+    // the beg array indicates whether the crs is 0 or 1-based
+    bool index0;
+    if (crs.beg[0] == 0)
+        index0 = true;
+    else if (crs.beg[0] == 1)
+        index0 = false;
+    else
+    {
+        WARNING("What CRS format is this? Continue with empty matrix.", __FILE__, __LINE__);
+        return;
+    }
+
+    // indices array
+    std::vector<int> indices(maxnnz, 0);
+    
+    // values array
+    std::vector<double> values(maxnnz, 0.0);
+
+    // define the rowmap we use
+    Teuchos::RCP<Epetra_Map> rowMap;
+
+    if (global)
+    {
+        rowMap = Teuchos::rcp(new Epetra_Map(mat->RowMap()));
+        assert(rowMap->NumGlobalElements() == (int) crs.beg.size() - 1);
+    }
+    else
+    {
+        // in the case of a local crs assembly gives the GID's
+        rowMap = domain->GetAssemblyMap();
+        assert(rowMap->NumMyElements() == (int) crs.beg.size() - 1);
+    }
+    
+    std::ofstream file;
+    file.open("rowmap" + std::to_string(rowMap->Comm().MyPID()));
+    rowMap->Print(file);
+    file.close();
+    
+    int numMyElements = rowMap->NumMyElements();
+
+    int tRow, bRow, gRow, index, numEntries, col;
+    int offset = (index0) ? 0 : 1;
+    for (int lRow = 0; lRow < numMyElements; ++lRow)
+    {
+        // map using current map to global ID
+        gRow = rowMap->GID(lRow);
+
+        // map GID back through standardmap: if this gives -1 we have a
+        // ghost point
+        tRow = mat->RowMap().LID(gRow); 
+
+        if ( !global && (tRow == -1) )
+        {
+            continue;
+        }
+        
+        bRow = (global) ? gRow : lRow;
+        
+        index      = crs.beg[bRow];
+        numEntries = crs.beg[bRow+1] - index;
+
+        // if we encounter a dense row (probably an integral equation)
+        if (numEntries > maxnnz)
+        {
+            // adjust arrays
+            indices = std::vector<int>(numEntries, 0);
+            values  = std::vector<double>(numEntries, 0);
+        }
+
+        for (int j = 0; j < numEntries; ++j)
+        {
+            // taking 0-1-basedness into account using offset
+            col = crs.jco[index + j - offset] - offset;
+            
+            indices[j] = (global) ? col : rowMap->GID(col);
+            values[j]  = crs.co[index + j - offset];
+        }
+        
+        int ierr;
+        if (mat->Filled())
+        {
+            ierr =
+                mat->ReplaceGlobalValues(gRow, numEntries,
+                                         &values[0], &indices[0]);
+        }
+        else
+        {
+            ierr =
+                mat->InsertGlobalValues(gRow, numEntries,
+                                        &values[0], &indices[0]);
+        }
+
+        if (ierr != 0)
+        {
+            std::cout << "indices : ";
+            for (int ii = 0; ii != numEntries; ++ii)
+            {
+                std::cout << indices[ii] << " ";
+            }
+            std::cout << std::endl;
+            std::cout << "values : ";
+            for (int ii = 0; ii != numEntries; ++ii)
+            {
+                std::cout << values[ii] << " ";
+            }
+            std::cout << std::endl;
+            
+            std::cout << "Error in Insert/ReplaceGlobalValues: "
+                      << ierr << std::endl;
+            
+            std::cout << "Filled = " << mat->Filled()   << std::endl;
+            std::cout << "Global = " << global          << std::endl;
+            std::cout << "  GRID = " << gRow            << std::endl;
+            std::cout << "  LRID = " << mat->LRID(gRow) << std::endl;
+
+            std::cout << "jco : ";
+            for (int jj = 0; jj != numEntries; ++jj)
+            {
+                col = crs.jco[index + jj - offset] - offset;
+                std::cout << col << " ";
+            }
+            std::cout << std::endl;
+            
+            ERROR("Error in Insert/ReplaceGlobalValues",
+                  __FILE__, __LINE__);
+        }
+    }
+}
 
 //=============================================================================
 int Utils::SplitBox(int nx, int ny, int nz,
@@ -662,7 +871,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateMap(int i0, int i1, int j0, int j1, int k0
 //! extract a map with nun = nvars from a map with nun=6. 'var'
 //! is the array of variables to be extracted.
 Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
-                                                   int dof, int var)
+                                             int dof, int var)
 {
     return CreateSubMap(map,dof,&var,1);
 }
@@ -670,7 +879,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 //! extract a map with nun=2 from a map with nun=6. 'var'
 //! are the variables to be extracted, i.e. {UU,VV}, {TT,SS} etc.
 Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
-                                                   int dof, const int var[2])
+                                             int dof, const int var[2])
 {
     return CreateSubMap(map,dof,var,2);
 }
@@ -679,30 +888,68 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 //! extract a map with nun = nvars from a map with nun = 6. 'var'
 //! is the array of variables to be extracted.
 Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
-                                                   int dof, const int *var, int nvars)
+                                             int dof, const int *var, int nvars)
 {
-    int dim    = map.NumMyElements(); // number of entries in original map
-    int numel  = dim/dof;             // number of blocks
-    int subdim = numel*nvars;         // number of entries in new map (<=dim)
-    if (numel * dof != dim)
-        ERROR("unexpected number of elements in map!",__FILE__,__LINE__);
+    int dim    = map.NumMyElements();     // number of entries in original map
+    int dimGlb = map.NumGlobalElements(); // number of global entries in original map
 
+    int numBlocks     = dim/dof;          // number of blocks
+    int numBlocksGlb  = dimGlb/dof;       // global number of blocks
+    
+
+    if (numBlocks * dof < dim-1)
+    {
+        ERROR("\nInvalid dimension detected, possibly more \n" <<
+              " than one auxiliary equation in map... ",
+              __FILE__, __LINE__);
+    }
+    
+
+    // Handle possible auxiliary variables
+    bool auxVar[nvars];
+    int  auxRws[nvars];
+    for (int j = 0; j < nvars; j++)
+    {
+        if (var[j] > dof)
+        {
+            auxVar[j] = true;
+            auxRws[j] = numBlocksGlb * dof + (var[j] - dof - 1);
+
+            std::cout << " pid " << map.Comm().MyPID()
+                      << " auxiliary variable detected: " << var[j]
+                      << ", row " << auxRws[j] << std::endl;
+        }
+        else
+        {
+            auxVar[j] = false;
+            auxRws[j] = -1;
+        }
+    }
+    
+    int subdim = numBlocks * nvars;   // number of local entries in new map (<=dim)
     int *MyGlobalElements = new int[subdim];
-
+    
     // take the entries from the old map that correspond
     // to those in 'vars' and put them in the input array
     // for the new map.
+    
     int k = 0;
-    for (int i  = 0; i < numel; i++)
-    {
+    for (int i  = 0; i < numBlocks; i++)
         for (int j = 0; j < nvars; j++)
         {
-            MyGlobalElements[k] = map.GID(i*dof+(var[j]-1));
-            k++;
+            if (!auxVar[j])
+                MyGlobalElements[k++] = map.GID(i*dof+(var[j]-1));
         }
+    
+    for (int j = 0; j < nvars; j++)
+    {
+        if (auxVar[j])
+            MyGlobalElements[k++] = auxRws[j];
     }
+    
     Teuchos::RCP<Epetra_Map> submap =
-        Teuchos::rcp(new Epetra_Map(-1, subdim, MyGlobalElements, 0, map.Comm()));
+        Teuchos::rcp(new Epetra_Map(-1, k, MyGlobalElements, 0, map.Comm()));
+    
     delete [] MyGlobalElements;
     return submap;
 }
@@ -712,7 +959,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 //! discarded (true) or not (false), this function creates a new map with the
 //! discarded entries removed.
 Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
-                                                   const bool* discard)
+                                             const bool* discard)
 {
     int numel = map.NumMyElements();
     int *MyGlobalElements = new int[numel]; // 'worst' case: no discarded nodes

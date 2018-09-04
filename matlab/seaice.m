@@ -1,18 +1,27 @@
-function [X] = seaice()
+function [X, J, F] = seaice()
 
-    global xmin xmax ymin ymax RtD n m nun x y dx dy
+    global xmin xmax ymin ymax RtD n m nun aux x y dx dy
+    global IC
     global t0o t0a t0i Q0 Qvar H0 M0
     global tvar s0 svar q0 qvar ta0 tavar
 
     % forcing from external models
-    global sst sss qatm tatm
+    global sst sss qatm patm tatm
 
     % model parameters and functions
-    global zeta Tf Lf rhoi rhoo E0 dEdT dEdq
+    global zeta a0 Tf Lf rhoi rhoo E0i E0o dEdT dEdq
     global sun0 S Ls alpha c0 muoa
     global Ic
     global taus epsilon
     global Ti
+    global nus qdim tdim dqso dqsi eta
+
+    global combf solf maskf latf % continuation parameters
+
+    combf = 1.0;
+    solf  = 1.0;
+    maskf = 1.0;
+    latf  = 1.0;
 
     % specify physical dimensions
     RtD  = 180 / pi;
@@ -22,28 +31,40 @@ function [X] = seaice()
     ymax =  80 / RtD;
 
     % specify grid size (2deg)
-    n = 180;
-    m = 90;
+    n = 8;
+    m = 8;
+
+    % create grid
+    grid();
 
     % number of unknowns
-    nun = 3;
+    aux = 1;
+    nun = 4;
     dim = nun*n*m;
+    len = dim + aux;
 
-    taus    = 0.01;    % m, threshold ice thickness
-    epsilon = 1e2;     % Heavyside approximation steepness
-    
+    taus    = 0.01;     % m, threshold ice thickness
+    epsilon = 1e-2;     % Heavyside approximation steepness
+
+    % sublimation constants, parameters for saturation humidity over ocean
+    % and ice
+    c1 = 3.8e-3;   % (kg / kg)
+    c2 = 21.87;    %
+    c3 = 265.5;    % (K)
+    c4 = 17.67;    % (K)
+    c5 = 243.5;    % (K)
+
     % general physical constants
-    t0o  =  7;
-    t0a  =  10;
-    t0i  = -15;
+    t0o  =  15;
+    t0a  =  15;
+    t0i  =  c3*c4*t0o / (c2*c5+(c2-c4)*t0o);
     tvar =  15;
     s0   =  35;
     svar =  1;
-    q0   =  1e-3;
-    qvar =  5e-4;
+    q0   =  8e-3;
+    qvar =  1e-3;
     H0   =  taus;
-    M0   =  0;
-    
+
     % ice formation constants
     ch   = 0.0058;     % empirical constant
 
@@ -57,23 +78,23 @@ function [X] = seaice()
     Ic   = 2.166;      % W m^{-1} K^{-1}, constant ice conductivity
 
     % combined parameter
-    zeta = ch * utau * rhoo * cpo;    
-
-    % sublimation constants, parameters for saturation humidity over ocean
-    % and ice
-    c1 = 3.8e-3;  % (kg / kg)
-    c2 = 21.87;   %
-    c3 = 265.5;   % (K)
+    zeta = ch * utau * rhoo * cpo
 
     ce  = 1.3e-03; % Dalton number
     uw  = 8.5;     % ms^{-1}, mean atmospheric surface wind speed
 
     eta = ( rhoa / rhoo ) * ce * uw;
 
+    % I-EMIC nondim components
+    qdim = qvar;
+    tdim = 1.0;
+    nus  = eta * qdim;
+
     % Calculate background saturation specific humidity according to
     % [Bolton,1980], T in \deg C
-    qsi  = @(t0i) c1 * exp(c2 * t0i / (t0i + c3));
-    
+    qsi = @(t0i) c1 * exp(c2 * t0i ./ (t0i + c3));
+    qso = @(t0o) c1 * exp(c4 * t0o ./ (t0o + c5));
+
     % Shortwave radiation constants and functions
     alpha = 0.3;      % albedo
     sun0  = 1360;     % solar constant
@@ -86,249 +107,512 @@ function [X] = seaice()
 
     % latitudinal dependence shortwave radiation
     S = @(y) (1 - .482 * (3 * (sin(y)).^2 - 1.) / 2.);
-        
+
     % freezing temperature (dominant term)
-    Tf = @(S) -0.0575 * (S + s0);
-    
+    a0 = -0.0575;
+    Tf = @(S) a0 * (S + s0);
+
     % Background sublimation and derivatives
-    E0   =  eta * ( qsi(t0i) - q0 );
-    dqsi = (c1 * c2 * c3) / (t0i + c3).^2 * ...
-           exp( (c2 * t0i) / (t0i + c3) );
-    dEdT =  eta *  dqsi;
-    dEdq =  eta * -1;
-    
+    E0i   =  eta * ( qsi(t0i) - q0 );
+
+    E0o   =  eta * ( qso(t0o) - q0 );
+
+    dqso  = (c1 * c4 * c5) / (t0o + c5).^2 * ...
+            exp( (c4 * t0i) / (t0o + c5) );
+
+    dqsi  = (c1 * c2 * c3) / (t0i + c3).^2 * ...
+            exp( (c2 * t0i) / (t0i + c3) );
+
+    dEdT  =  nus * tdim / qdim * dqsi;
+    dEdq  =  nus * -1;
+
     % Background heat flux and variation
-    Q0   = zeta*(Tf(0) - t0o) - rhoo * Lf * E0;
+% $$$     Q0 = zeta*(Tf(0) - t0o) - rhoo * Lf * E0i;
+% $$$
+% $$$     Q0 = sun0 / 4 * S(mean(y)) * (1-alpha) * c0 - muoa * 2 - rhoo * ...
+% $$$          Ls * E0i;
+% $$$
+% $$$     Q0 = sun0 / 4 * S(mean(y)) * (1-0.8) * c0 - muoa * 10 - rhoo * ...
+% $$$          Ls * E0i;
+
+    Q0 = -100;
+
     Qvar = zeta;
 
     % ice surface temperature (linearized)
-    Ti = @(Q,H,S) Tf(S) - t0i + (Q0*H0 + H0*Qvar*Q + Q0*H) / Ic;
-    
-    % create grid
-    grid();
+    Ti = @(Q,H,S) (Tf(S) - t0i) + (Q0*H0 + H0*Qvar*Q ...
+                                   + Q0*H) / Ic;
+
+    % create integral coefficients
+    IC = intcoeff();
+    A  = sum(IC);
+    fprintf(' total area = %2.12f\n', A);
 
     % initialize forcing and state
-    sst  = idealizedTemp(0, tvar) + randn(n,m);
+    sst  = idealizedTemp(0, tvar)-10;
     sss  = idealizedSalt(0, svar);
-    tatm = idealizedTemp(0, tvar);
+    tatm = idealizedTemp(0, tvar)-10;
     qatm = idealizedTemp(0, qvar);
+    patm = ones(n,m);
 
-    rng(1);
-    X = 1e8*randn(dim, 1);
-    %x = initialsol();
+    % creating test values
+    fid = fopen('testResults', 'w');
+    for par = [1.0, 0.1]
+        combf = par;
+        for scale = [0.0, 1.0, 1.234]
+            X = scale*ones(len,1);
+            F = rhs(X);
+            fprintf('X = %1.3f, par = %1.1f, ||F||two = %1.12e\n', ...
+                    scale, combf, norm(F));
+            fprintf(fid, '%1.12e\n', norm(F));
 
-    % Newton solve
-    F    = rhs(X);
+        end
+    end
+
+    fprintf('\n');
+    fprintf(fid, '\n');
+
+
+    for par = [1.0, 0.1]
+        combf = par;
+        for scale = [0.0,1.0,1.234]
+            X = scale*ones(len,1);
+            J = jac(X);
+
+            fprintf('X = %1.3f, par = %1.1f, ||J||inf = %1.12e\n', ...
+                    scale, combf, norm(J,Inf));
+            fprintf('X = %1.3f, par = %1.1f, ||J||one = %1.12e\n', ...
+                    scale, combf, norm(J,1));
+            fprintf('X = %1.3f, par = %1.1f, ||J||frb = %1.12e\n', ...
+                    scale, combf, norm(J,'fro'));
+
+            fprintf(fid, '%1.12e\n', norm(J,Inf));
+            fprintf(fid, '%1.12e\n', norm(J,1));
+            fprintf(fid, '%1.12e\n', norm(J,'fro'));
+        end
+    end
+    fprintf('\n');
+    return
+
     kmax = 10;
-
     ord = [];
     for i = 1:nun
         ord = [ord, i:nun:dim];
     end
-    
-    o22 = [];
-    for i = 2:nun
-        o22 = [o22, i:nun:dim];
+    if (aux > 0)
+        ord = [ord, ord(end)+1:len];
     end
-    
-    F  = rhs(X);
+
+    X = randn(len,1);
+    F = rhs(X);
+    J   = jac(X);
+    Jn  = numjacob(@rhs, X);
+
+% $$$     vsm(J(ord,ord));
+% $$$     vsm(Jn(ord,ord));
+% $$$     vsm(Jn(ord,ord)-J(ord,ord));
+
+
+    FH = F(1:nun:dim);
+
+    fprintf('   integral =  %e\n', IC'*FH );
+
+    for i = 1:aux
+        fprintf(' F(aux %d) = %e\n', i, F(dim+i))
+    end
+
     for i = 1:kmax
-        J  = jac(X);
+        J   = jac(X);
+        Jn  = numjacob(@rhs, X);
+
         dX = J \ -F;
         X  = X + dX;
+
         F  = rhs(X);
-        fprintf('%e %e %e\n', norm(dX), norm(F), condest(J));
+        fprintf('\n%2d| %e %e %e\n', i, norm(dX), norm(F), condest(J));
         if norm(dX) < 1e-12
             break;
         end
+
+        [H,Q,M,T] = extractsol(X);
+        FH = F(1:nun:dim);
+        fprintf('   integral =  %e\n', IC'*(M(:).*FH) );
+
+        for i = 1:aux
+            fprintf('   F(aux %d) = %e\n', i, F(dim+i))
+        end
+
     end
 
-    [H,Q,M] = extractsol(X);
-   
-    figure(1)
-    imagesc(RtD*x, RtD*y, (H'+H0).*M'); set(gca,'ydir','normal'); colorbar
-    title('H')
-    
+    [H,Q,M,T] = extractsol(X);
+    [~, QSos, ~, EmiP] = fluxes(X);
+
+% $$$     figure(1)
+% $$$     Himg = (H'+H0);
+% $$$     imagesc(RtD*x, RtD*y, Himg);
+% $$$     set(gca,'ydir','normal'); colorbar
+% $$$     title('H')
+
     figure(2)
-    imagesc(RtD*x, RtD*y, M'+M0); set(gca,'ydir','normal'); colorbar
+    imagesc(RtD*x, RtD*y, M');
+    set(gca,'ydir','normal'); colorbar
     title('M')
-    
-    figure(3)
-    SST = sst'+t0o;
-    imagesc(RtD*x, RtD*y, SST.*M'); set(gca,'ydir','normal'); colorbar
-    title('SST')        
-    
-    figure(4)
-    Tsi = Ti(Q,H,sss)'+t0i;
-    imagesc(RtD*x,RtD*y,Tsi.*M'); set(gca,'ydir','normal'); colorbar;
-    title('Ti')
-    
+
+% $$$     figure(3)
+% $$$     SST = sst'+t0o;
+% $$$     imagesc(RtD*x, RtD*y, SST); set(gca,'ydir','normal'); colorbar
+% $$$     title('SST')
+% $$$     colormap(my_colmap(caxis, t0o));
+
+% $$$     figure(4)
+% $$$     Tsi = Tf(sss') + (Q0*H0+H0*Qvar*Q'+Q0*H') / Ic;
+% $$$     imagesc(RtD*x,RtD*y,Tsi);
+% $$$     set(gca,'ydir','normal');
+% $$$     colorbar;
+% $$$     title('Ti_2')
+
     figure(5)
-    Qimg = Qvar*Q' + Q0;
-    imagesc(RtD*x,RtD*y,Qimg.*M'); set(gca,'ydir','normal'); colorbar;
-    title('Q')
-    
-    % [J,Al] = jac(X);
-    % Jn = numjacob(@rhs, X);
-    vsm(J(ord,ord))
-    % vsm(Jn(ord,ord))
-    % vsm(Jn(ord,ord)-J(ord,ord))
-    keyboard
+    Tsi = T' + t0i;
+    Tsi(M'<1e-2)=NaN;
+    imagesc(RtD*x, RtD*y, Tsi);
+    set(gca,'ydir','normal');
+    colorbar;
+    title('Ti')
+
+% $$$     figure(6)
+% $$$     Qimg = Qvar*Q' + Q0;
+% $$$     imagesc(RtD*x,RtD*y,Qimg); set(gca,'ydir','normal'); colorbar;
+% $$$     title('Q')
+% $$$
+% $$$     figure(7)
+% $$$     imagesc(RtD*x,RtD*y,QSos'); set(gca,'ydir','normal'); colorbar;
+% $$$     title('Q_S^{os}')
+% $$$
+% $$$     figure(8)
+% $$$     imagesc(RtD*x,RtD*y,EmiP'); set(gca,'ydir','normal'); colorbar;
+% $$$     title('E_S - P')
+
+
 end
 
 function [x] = initialsol()
 
-    global m n nun
+    global m n nun aux
     dim = m*n*nun;
     x = zeros(dim,1);
-    
-    H = 1e-4 * ones(n,m);
-    Q = 1e-4 * ones(n,m);
+
+    H = 1e-3 * randn(n,m);
+    Q = 1e-3 * randn(n,m);
+    T = 1e-3 * randn(n,m);
+
     M = zeros(n,m);
-    
+    M(end,:) = 1;
+
     x(1:nun:dim) = H(:);
     x(2:nun:dim) = Q(:);
     x(3:nun:dim) = M(:);
-    
+    x(4:nun:dim) = T(:);
+
+    R = ones(aux,1);
+
+    x = [x;R];
+
 end
 
 function [J,Al] = jac(x)
 
-    global m n nun y
+    global m n nun aux y
 
-    global sst sss qatm tatm
-    
+    global IC
+    global sst sss qatm tatm patm
+
     global t0o t0a t0i Q0 Qvar H0
 
-    global zeta Tf Lf rhoi rhoo E0 dEdT dEdq
+    global zeta Tf Lf rhoi rhoo E0i dEdT dEdq
     global sun0 S Ls alpha c0 muoa
     global Ic
     global taus epsilon
     global Ti
+    global combf nus solf maskf latf % continuation parameter
 
-    [H, Qtsa, Msi] = extractsol(x);
+    [H, Qtsa, Msi, ~, R] = extractsol(x);
 
     % define indices for unknowns
     HH = 1;
     QQ = 2;
     MM = 3;
+    TT = 4;
+    GG = 5;
 
     % initialize dependency grid
-    Al = zeros(n, m, nun, nun);
+    Al = zeros(n, m, nun, nun+aux);
 
     % define dependencies
 
     % dHdt equation
     Al(:,:,HH,HH) = -rhoo * Lf / zeta * dEdT * Q0 / Ic;
+
     Al(:,:,HH,QQ) = -Qvar / zeta - ...
         rhoo * Lf / zeta * dEdT * H0 * Qvar / Ic;
 
     % Qtsa equation
-    Al(:,:,QQ,HH) = Q0 / Ic + ...
-        rhoo * Ls / muoa * dEdT * Q0 / Ic;
+    Al(:,:,QQ,QQ) = Qvar / muoa;
+    Al(:,:,QQ,TT) = 1 + combf * latf * rhoo * Ls / muoa * dEdT;
 
-    Al(:,:,QQ,QQ) = Qvar / muoa + ...
-        H0 * Qvar / Ic + ...
-        rhoo * Ls / muoa * dEdT * H0 * Qvar / Ic;
-    
     % Msi equation
-    Al(:,:,MM,HH) = -(epsilon / 2) * ...
-        ( 1 - tanh(epsilon * (H)).^2);
+    for j = 1:m
+        for i = 1:n
+            Al(i,j,MM,HH) = -(1 / 2) * ( ...
+                tanh( (H(i,j) + 1e-6) / epsilon ) ...
+                - tanh( H(i,j) / epsilon ) ) / 1e-6;
+        end
+    end
+
     Al(:,:,MM,MM) =  1;
-    
-    [co, ico, jco] = assemble_fast(Al);
+
+    % Tsi equation
+    Al(:,:,TT,HH) =  Q0 / Ic;
+    Al(:,:,TT,QQ) =  H0 * Qvar / Ic;
+    Al(:,:,TT,TT) = -1;
+
+    [co, ico, jco] = assemble(Al);
+
+    % auxiliary integrals
+    if (aux > 0)
+
+        [~,Qsos,~,EmiP] = fluxes(x);
+        A  = sum(IC);
+
+        for j = 1:m
+            for i = 1:n
+                sr = (j-1)*n+i;
+
+                % dFGG / dQ
+                row = find_row(i,j,GG);
+                col = find_row(i,j,QQ);
+                ico = [ico; row];
+                jco = [jco; col];
+                val = -1.0 * IC(sr) * Msi(sr) * Qvar / rhoo / Lf;
+                co  = [co; val];
+
+                % dFGG / dM
+                row = find_row(i,j,GG);
+                col = find_row(i,j,MM);
+                ico = [ico; row];
+                jco = [jco; col];
+                val = IC(sr) * (Qsos(sr)-EmiP(sr));
+                co  = [co; val];
+
+                % dFGG / dT
+                row = find_row(i,j,GG);
+                col = find_row(i,j,TT);
+                ico = [ico; row];
+                jco = [jco; col];
+                val = -1.0 * IC(sr)* Msi(sr) * dEdT;
+                co  = [co; val];
+            end
+        end
+
+        %dFG / dG
+        row = find_row(i,j,GG);
+        col = find_row(i,j,GG);
+
+        ico = [ico; row];
+
+        jco = [jco; col];
+        co  = [co;  -A];
+
+    end
 
     J = spconvert([ico,jco,co]);
+
 end
 
 function [F] = rhs(x)
 
-    global m n nun y
+    global m n nun y aux
 
-    global sst sss qatm tatm
- 
+    global IC
+
+    global sst sss qatm tatm patm
+
     global t0o t0a t0i Q0 Qvar H0 M0
-     
-    global zeta Tf Lf rhoi rhoo E0 dEdT dEdq
+
+    global zeta Tf Lf rhoi rhoo E0i E0o dEdT dEdq
     global sun0 S Ls alpha c0 muoa
     global Ic
-    global taus epsilon
+    global taus epsilon nus eta q0
     global Ti
-   
+    global combf solf maskf latf % continuation parameters
 
-    [H, Qtsa, Msi] = extractsol(x);
+    [H, Qtsa, Msi, T, R] = extractsol(x);
 
-    F = zeros(size(x,1),1);
+    G = 1;
+
+    N = size(x,1);
+    F = zeros(N,1);
 
     for j = 1:m
         for i = 1:n
             for XX = 1:nun
-                row = find_row(i,j,XX);
                 switch XX
                   case 1
-                    Tsi = Ti(Qtsa(i,j), H(i,j), sst(i,j));
                     
-                    val = Tf(sss(i,j)) - sst(i,j) - t0o - ... 
-                          Q0/zeta - Qvar / zeta * Qtsa(i,j) - ...
-                          ( rhoo * Lf / zeta) * ...
-                          ( E0 + dEdT * Tsi + dEdq * qatm(i,j) );
+                    Tsi = Ti(Qtsa(i,j), H(i,j), sss(i,j) );
+
+                    val =  Tf(sss(i,j)) - sst(i,j) - t0o - Q0 / zeta  ...
+                           - Qvar / zeta * Qtsa(i,j) - ...
+                           ( rhoo * Lf / zeta ) * ...
+                           ( E0i + dEdT * Tsi + dEdq * ...
+                             qatm(i,j) );
+
                   case 2
-                    Tsi = Ti(Qtsa(i,j), H(i,j), sst(i,j));
-                    
-                    val = 1/muoa*(Q0 + Qvar * Qtsa(i,j)) - ...
-                          (sun0 / 4 / muoa) * S(y(j)) * (1-alpha) * c0 + ...
-                          (t0i + Tsi - tatm(i,j) - t0a) + ...
-                          (rhoo * Ls / muoa) * ...
-                          (E0 + dEdT * Tsi + dEdq * qatm(i,j));
-                    
+                    val = 1/muoa*Q0 + Qvar/muoa * Qtsa(i,j) - ...
+                          (combf * solf * sun0 / 4 / muoa) * S(y(j)) * (1-alpha) * c0 + ...
+                          (T(i,j) + t0i - tatm(i,j) - t0a ) + ...
+                          (combf * latf * rhoo * Ls / muoa) * ...
+                          (E0i + dEdT * T(i,j) + dEdq * ...
+                           qatm(i,j));
+
                   case 3
                     val = Msi(i,j) - ...
-                          (1/2) * (1 + tanh(epsilon * (H(i,j))));
+                          (1 / 2) * (1 + tanh( (H(i,j) / ...
+                                                            epsilon )));
+
+                  case 4
+                    val = Tsi - T(i,j);
+                    
                 end
 
+                row = find_row(i,j,XX);
                 F(row) = val;
             end
+        end
+    end
+
+    if (aux > 0)
+        [~, ~, ~, ~, R] = extractsol(x);
+        [~,Qsos,~,EmiP,FluxDiff] = fluxes(x);
+
+        A = sum(IC);
+        IC'*FluxDiff(:);
+        
+        for aa = 1:aux
+            switch aa
+              case G
+                value = IC' * (Msi(:) .* (Qsos(:) - EmiP(:))) ...
+                        - R(G) * A;
+            end
+            F(row + aa) = value;
+        end
+    end
+end
+
+% single dof
+function [QS, QSos, QSoa, EmiP, FluxDiff] = fluxes(x)
+
+    global n m nun aux
+    global sst sss qatm tatm patm
+    global t0o t0a t0i Q0 Qvar H0 M0
+    global zeta a0 Tf Lf rhoi rhoo E0i dEdT dEdq
+    global sun0 S Ls alpha c0 muoa
+    global Ic
+    global taus epsilon
+    global Ti
+    global combf solf maskf   % continuation parameters
+    global nus qdim tdim dqso dqsi eta
+
+    len = n*m;
+    QS  = zeros(n,m);
+
+    [H, Qtsa, Msi, T] = extractsol(x);
+
+    QSos     = zeros(n,m);
+    QSoa     = zeros(n,m);
+    EmiP     = zeros(n,m); % dimensional sublimation term
+    FluxDiff = zeros(n,m); % dimensional sublimation term
+
+    for j = 1:m
+        for i = 1:n
+
+            So = sss(i,j);
+            To = sst(i,j);
+            qs = Qtsa(i,j);
+            qa = qatm(i,j);
+            pa = patm(i,j);
+
+            QSos(i,j) =  (                            ...  %
+                zeta * combf * ( Tf(So) - (To+t0o) )  ...  % ! QTos component
+                - ( Qvar * qs + combf * Q0 )) / rhoo / Lf; % ! QTsa component
+
+            QSoa(i,j) = nus * ( ...
+                (tdim / qdim) * dqso * To ...
+                - qa - pa);
+
+            EmiP(i,j) = nus * (tdim / qdim * dqsi * T(i,j) - qa - pa);
+
+            % total salinity flux
+            QS(i,j) = QSoa(i,j) + Msi(i,j) * (rhoo*Lf/zeta*QSos(i,j) ...
+                                              - QSoa(i,j));
+
+            FluxDiff(i,j) = Msi(i,j) * (QSos(i,j) - EmiP(i,j));
         end
     end
 end
 
 
+% integral coefficients for single dof surface row
+function [IC] = intcoeff()
+    global n m nun aux
+    global dx dy x y
+    IC = zeros(n,m);
+    for j = 1:m
+        for i = 1:n
+            IC(i,j) = cos( y(j) ) * dx * dy;
+        end
+    end
+    IC = IC(:);
+end
+
+
 function [co, ico, jco, beg] = assemble(Al)
 
-    global m n nun
+    n    = size(Al,1);
+    m    = size(Al,2);
+    nunR = size(Al,3);
+    nunC = size(Al,4);
 
     % This is an assemble where we assume all dependencies are
     % located at the same grid point. Otherwise we would have a
     % higher dimensional Al.
 
-    co  = zeros(m*n*nun*nun,1); % values
-    ico = zeros(m*n*nun*nun,1); % column indices
-    jco = zeros(m*n*nun*nun,1); % column indices
-    beg = zeros(m*n*nun + 1,1); % row pointer
+    co  = zeros(m*n*nunR*nunC,1); % values
+    ico = zeros(m*n*nunR*nunC,1); % column indices
+    jco = zeros(m*n*nunR*nunC,1); % column indices
+    beg = zeros(m*n*nunR + 1, 1); % row pointer
 
     elm_ctr = 1; % element counter
     co_ctr  = 0;
     ico_ctr = 0;
     jco_ctr = 0;
     beg_ctr = 0;
-    
-    Al_dum = Al;
-    
+
     for j = 1:m
         for i = 1:n
-            for A = 1:nun
+            for A = 1:nunR
+
                 % obtain row
                 row = find_row(i,j,A);
 
                 % fill beg with element counter
                 beg_ctr = beg_ctr + 1;
                 beg(beg_ctr) = elm_ctr;
-                
-                for B = 1:nun
+
+                for B = 1:nunC
                     value = Al(i,j,A,B);
-                    
+
                     if (abs(value) > 0)
-                        
+
                         ico_ctr = ico_ctr + 1;
                         jco_ctr = jco_ctr + 1;
                         co_ctr  = co_ctr + 1;
@@ -348,7 +632,7 @@ function [co, ico, jco, beg] = assemble(Al)
             end
         end
     end
-    
+
     % Truncate arrays
     co  = co(1:co_ctr);
     ico = ico(1:ico_ctr);
@@ -363,7 +647,7 @@ function [co, ico, jco] = assemble_fast(Al)
     % This is an assemble where we assume all dependencies are
     % located at the same grid point. Otherwise we would have a
     % higher dimensional Al. The fast version does not compute beg.
-    
+
     val = zeros(m*n*nun*nun,1);
 
     ctr = 0;
@@ -377,16 +661,16 @@ function [co, ico, jco] = assemble_fast(Al)
             end
         end
     end
-    
+
     id  = logical(abs(val)>0);
     co  = val(id);
 
     ndim = m*n*nun;
-    
+
     ico = repmat((1:ndim),[nun,1]);
     ico = ico(:);
     ico = ico(id);
-    
+
     jco = (1:nun:ndim) + repmat((0:nun-1)',[nun,1]);
     jco = jco(:);
     jco = jco(id);
@@ -394,21 +678,41 @@ end
 
 function [row] = find_row(i,j,XX)
 
-    global n nun    
-    row = nun * ( (j-1) * n  + (i-1) ) + XX;
+    global n m nun aux
+
+    dim = n*m*nun;
+    len = dim + aux;
+
+    if (XX > nun)
+        row = dim + XX - nun;
+    else
+        row = nun * ( (j-1) * n  + (i-1) ) + XX;
+    end
 end
 
-function [H, Qtsa, Msi] = extractsol(x)
+function [H, Qtsa, Msi, Tsi, R] = extractsol(x)
 
-    global n m nun
+    global n m nun aux
 
     H    = zeros(n,m);
     Qtsa = zeros(n,m);
     Msi  = zeros(n,m);
+    Tsi  = zeros(n,m);
 
-    H(:)    = x(1:nun:end);
-    Qtsa(:) = x(2:nun:end);
-    Msi(:)  = x(3:nun:end);
+    dim = n*m*nun;
+    len = n*m*nun+aux;
+
+    H(:)    = x(1:nun:dim);
+    Qtsa(:) = x(2:nun:dim);
+    Msi(:)  = x(3:nun:dim);
+    Tsi(:)  = x(4:nun:dim);
+
+    if (aux > 0)
+        R = zeros(aux,1);
+        R = x(dim+1:len);
+    else
+        R = [];
+    end
 end
 
 function [] = grid()

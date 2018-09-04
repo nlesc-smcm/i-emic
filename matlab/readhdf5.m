@@ -10,16 +10,10 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         no_reshape = false;
     end
     
-    if isfield(opts, 'readE')
-        readE = opts.readE;
+    if isfield(opts, 'readEP')
+        readEP = opts.readEP;
     else
-        readE = false;
-    end
-
-    if isfield(opts, 'readP')
-        readP = opts.readP;
-    else
-        readP = false;
+        readEP = false;
     end
     
     if isfield(opts, 'readEV')
@@ -28,16 +22,16 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         readEV = false;
     end
 
-    if isfield(opts, 'salflux')
-        readSalFlux = opts.salflux;
+    if isfield(opts, 'readLST')
+        readLST = opts.readLST;
     else
-        readSalFlux = false;
+        readLST = false;
     end
 
-    if isfield(opts, 'temflux')
-        readTemFlux = opts.temflux;
+    if isfield(opts, 'readFluxes')
+        readFluxes = opts.readFluxes;
     else
-        readTemFlux = false;
+        readFluxes = false;
     end
 
     if isfield(opts, 'readParameters')
@@ -104,19 +98,30 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
        
     end
     
-    if readE
+    if readEP
         additional.E = h5read(file, '/E/Values');
-    end
-    
-    if readP
         additional.P = h5read(file, '/P/Values');
     end
     
-    if readSalFlux
-        additional.SalFlux = h5read(file, '/SalinityFlux/Values');
+    if readLST
+        additional.LST = h5read(file, '/lst/Values');
+        additional.SST = h5read(file, '/sst/Values');
     end
 
-    if readTemFlux
-        additional.TemFlux = h5read(file, '/TemperatureFlux/Values');
-    end    
+    if readFluxes
+        info = h5info(file);
+
+        % check for groups containing the characters 'Flux'
+        % and add the contents to the struct
+        nGroups = numel(info.Groups);
+        for i = 1:nGroups
+            groupName = info.Groups(i).Name;
+            match = regexp(groupName, '.*Flux', 'match');
+            if numel(match) > 0
+                field  = match{1}(2:end);
+                values = h5read(file, ['/',field,'/Values']);
+                additional = setfield(additional, field, values);
+            end
+        end
+    end
 end

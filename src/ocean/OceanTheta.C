@@ -86,7 +86,7 @@ void OceanTheta::restore()
 //=====================================================================
 void OceanTheta::computeRHS()
 {
-    // THCM::Instance().fixMixing(0);
+    // compute RHS
 	THCM::Instance().evaluate(*state_, rhs_, false);
 
     // Calculate mass matrix

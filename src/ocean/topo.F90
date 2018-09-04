@@ -147,7 +147,7 @@ SUBROUTINE readmask
   close(42)
 
   write(*,*) '===========TOPOGRAPHY==================================='
-  write(*,*) 'land mask is read in from file mkmask/'//trim(maskfile)
+  write(*,*) 'land mask is read in from file ',topdir//'mkmask/'//trim(maskfile)
   write(*,*) '===========TOPOGRAPHY==================================='
   !
   open(unit=500,file=topdir//'mkmask/'//trim(maskfile),status='old',err=123)

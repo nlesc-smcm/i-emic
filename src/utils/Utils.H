@@ -1,4 +1,4 @@
-/**********************************************************************
+/******************************x****************************************
  * Copyright by Jonas Thies, Univ. of Groningen 2006/7/8.             *
  * Permission to use, copy, modify, redistribute is granted           *
  * as long as this header remains intact.                             *
@@ -44,7 +44,12 @@
 class Combined_MultiVec;
 
 template<typename Vector>
+
 class ComplexVector;
+
+namespace TRIOS {
+    class Domain;
+}
 
 // Perhaps some lapack is nice
 extern "C" void dscal_(int* N, double *DA, double *X, int *INCX);
@@ -85,27 +90,39 @@ namespace Utils
         std::string label;
     };
 
-    //! Obtain 2-norm of vectorPtr, more convenient interface
-    template<typename VectorPtr>
-    double norm(VectorPtr const &vec)
-    {
-        double norm = 0;
-        CHECK_ZERO(vec->Norm2(&norm));
-        return norm;
-    }
-
-    //! Obtain inf-norm of vectorPtr, more convenient interface
-    template<typename VectorPtr>
-    double normInf(VectorPtr const &vec)
-    {
-        double norm = 0;
-        CHECK_ZERO(vec->NormInf(&norm));
-        return norm;
-    }
-
     //! Obtain 2-norm of std::vector<double>
     double norm(std::vector<double> &vec);
 
+    //! Obtain first 2-norm of Epetra_MultiVector
+    double norm(Epetra_MultiVector &vec);
+
+    //! Obtain first 2-norm of vectorPtr, more convenient interface
+    template<typename VectorPtr>
+    double norm(VectorPtr const &vec)
+    {
+        std::vector<double> norm(vec->NumVectors(), 0.0);
+        CHECK_ZERO(vec->Norm2(&norm[0]));
+        return norm[0];
+    }
+
+    //! Obtain first 2-norm of Combined_MultiVec
+    double norm(Combined_MultiVec &vec);
+
+    //! Obtain first inf-norm of Epetra_MultiVector
+    double normInf(Epetra_MultiVector &vec);
+
+    //! Obtain first inf-norm of Combined_MultiVec
+    double normInf(Combined_MultiVec &vec);
+
+    //! Obtain first inf-norm of vectorPtr, more convenient interface
+    template<typename VectorPtr>
+    double normInf(VectorPtr const &vec)
+    {
+        std::vector<double> norm(vec->NumVectors());
+        CHECK_ZERO(vec->NormInf(&norm[0]));
+        return norm[0];
+    }
+    
     //! Compute column sums of matrix mat and put them in vector sums
     void colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums);
 
@@ -196,6 +213,23 @@ namespace Utils
         saveEigenvectors(eigvs, alpha, beta, filename);
     }
 
+    //!------------------------------------------------------------------
+    //! getVector wrapper to select view or copy (for Teuchos::RCP's)
+    Teuchos::RCP<Epetra_Vector> getVector(char mode,
+                                          Teuchos::RCP<Epetra_Vector> vec);
+
+    //!------------------------------------------------------------------
+    //! getVector wrapper to select view or copy (for shared_ptr's)
+    std::shared_ptr<std::vector<double> > getVector
+    (char mode, std::shared_ptr<std::vector<double> > vec);
+
+    //!------------------------------------------------------------------
+    //! Assemble local or global crs struct into an Epetra_CrsMatrix.
+    //! This handles both 0 and 1-based CRS structs.
+    void assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
+                     CRSMat const &crs, int const maxnnz,
+                     Teuchos::RCP<TRIOS::Domain> domain = Teuchos::null);
+    
     //------------------------------------------------------------------
     // Original Utils from Jonas
     //------------------------------------------------------------------

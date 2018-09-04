@@ -109,7 +109,9 @@
      do j=1,m
          cs = cos(yv(j))
          do k=1,l
-            PSIM_(j,k)=cs*VS_(j,k)*dz*dfzT(k)  + PSIM_(j,k-1)
+            if ((z(k)*hdim).lt.(-500)) then
+               PSIM_(j,k)=cs*VS_(j,k)*dz*dfzT(k)  + PSIM_(j,k-1)
+            endif
          end do
       end do
      
@@ -158,9 +160,9 @@
   real, dimension(1:n+2,1:m+2,1:l+la+1), target :: w
   real, dimension(1:n+2,1:m+2,1:l+la+2), target :: p,T,S
 
-  write(*,*) "============"
-  write(*,*) u(8,8,8)
-  write(*,*) "============"
+  ! write(*,*) "============"
+  ! write(*,*) u(8,8,8)
+  ! write(*,*) "============"
   
   aliasU => u(1:n+1,1:m+1,1:l+la+2)
   aliasV => v(1:n+1,1:m+1,1:l+la+2)

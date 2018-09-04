@@ -288,11 +288,21 @@ createInitialTangent()
     //-----------------------------------------------------------------
 
     // 1) Compute dFdPar_, force computation of RHS
+    if (printImportantVectors_)
+    {
+        Utils::save(rhsView_, "F0");
+    }
+
     computeDFDPar('F');
 
-    if (printImportantVectors_) Utils::save(dFdPar_, "dFdpar");
+    if (printImportantVectors_)
+    {
+        Utils::save(dFdPar_, "dFdpar");
+        Utils::save(rhsView_, "F1");
+    }
 
-    if ( (initialTangent_ == 'E') || (initialTangent_ == 'S'))   // 2a) Solve J*dxdpar = -dFdPar_
+    // 2a) Solve J*dxdpar = -dFdPar_
+    if ( (initialTangent_ == 'E') || (initialTangent_ == 'S'))   
     {
         model_->preProcess();
         model_->computeJacobian();
@@ -1136,7 +1146,7 @@ testCopyView()
     INFO("Testing copy");
     INFO("Scaling copy1 with 3 ---------------");
     
-    copy1->Scale(3.0);
+    copy1->Random();
     
     INFO("copy1      norm: " << Utils::norm(copy1));
     INFO("copy2      norm: " << Utils::norm(copy2));

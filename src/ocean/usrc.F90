@@ -24,6 +24,8 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   real(c_double), dimension(a_n*a_m) :: a_taux,a_tauy
   real(c_double), dimension(a_n*a_m) :: a_tatm,a_emip,a_spert
 
+  ! LOCAL
+  real    :: dzne
   integer :: i,j,k,pos
 
   _INFO_('THCM: init... ')
@@ -49,7 +51,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
 
   call allocate_usr(a_n,a_m,a_l)
   call allocate_mat()
-  call allocate_atm(n,m,l)
+  call allocate_atm(m)
   call allocate_res(ndim)
   call allocate_mix()
 
@@ -95,13 +97,22 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
      end do
   end do
 
-  call grid         !
+  call grid         
+
+  ! When the grid is known we can set nondimensionalization
+  ! coefficients for the body forcing.
+  dzne = dz*dfzT(l)
+  QTnd = r0dim / (udim * cp0 * rhodim * hdim * dzne )
+  QSnd = s0 * r0dim / ( deltas * udim * hdim * dzne )
+
+!  write(*,*) 'THCM: nondim constants: QTnd = ', QTnd, &
+!       ' QSnd = ', QSnd
+  
   call stpnt        !
   call mixe         !
   call vmix_init    ! ATvS-Mix  USES LANDMASK
   call atmos_coef   !
   call forcing      ! USES LANDMASK
-
 
   _INFO_('THCM: init...  done')
 end subroutine init
@@ -162,7 +173,6 @@ SUBROUTINE setparcs(param,value)
   ENDIF
   !     ENDIF
 
-
 END SUBROUTINE setparcs
 
 !*****************************************************************************
@@ -183,19 +193,24 @@ SUBROUTINE getparcs(param,value)
 end subroutine getparcs
 
 !***********************************************************
-SUBROUTINE getdeps(o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim)
+SUBROUTINE getdeps(o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim, o_pqsnd)
   !     interface to get Ooa and other dependencies on external model
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_atm
   implicit none
-  real(c_double) o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim
+  real(c_double) o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim, o_pqsnd
+  real pQSnd
+
+  pQSnd = par(COMB) * par(SALT) * QSnd
+  
   o_Ooa   = Ooa
   o_Os    = Os
   o_nus   = nus
   o_eta   = eta
   o_lvsc  = lvsc
   o_qdim  = qdim
+  o_pqsnd = pQSnd
 end subroutine getdeps
 
 !**********************************************************
@@ -214,7 +229,7 @@ SUBROUTINE get_parameters(o_r0dim, o_udim, o_hdim)
 end subroutine get_parameters
 
 !**********************************************************
-SUBROUTINE set_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
+SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_albed)
   ! Interface to set a few model parameters relevant for E-P. These
   ! parameters affect the sensitivity nus, which should be updated
   ! here.
@@ -222,26 +237,52 @@ SUBROUTINE set_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0)
   use m_usr
   use m_atm
   implicit none
-  real(c_double) i_qdim, i_nuq, i_eta, i_dqso, i_eo0
+  real(c_double) i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_albed
   real dzne
 
-  qdim = i_qdim 
-  nuq  = i_nuq  
-  eta  = i_eta  
-  dqso = i_dqso
-  eo0  = i_eo0
+  qdim  = i_qdim 
+  nuq   = i_nuq  
+  eta   = i_eta  
+  dqso  = i_dqso
+  eo0   = i_eo0
+  albe0 = i_albe0
+  albed = i_albed
 
   dzne = dz*dfzT(l)
 
-  nus  = ( par(COMB) * par(SALT) * s0 * eta * qdim * r0dim ) &
-       / ( deltas * udim * hdim * dzne )
+  nus  = par(COMB) * par(SALT) * eta * qdim * QSnd
+
+  !   write(*,*) 'THCM: nondim constants: nus = ', nus
 
   ! --> FIXME Instead of using par(TEMP) we should have a dedicated latent heat
   ! continuation parameter.
-  lvsc =  par(COMB) * par(TEMP) * rhodim * lv * r0dim &
-       / (deltat * udim * cp0 * rhodim * hdim * dzne)
+  lvsc = par(COMB) * par(TEMP) * rhodim * lv * QTnd
+  
+end subroutine set_atmos_parameters
 
-end subroutine set_parameters
+!**********************************************************
+SUBROUTINE set_seaice_parameters(i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0)
+  use, intrinsic :: iso_c_binding
+  use m_usr 
+  use m_ice
+  implicit none
+  real(c_double) i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0
+
+  zeta = i_zeta ! combination of sea ice parameters 
+  a0   = i_a0   ! freezing temperature S sensitivity
+  Lf   = i_Lf   ! latent heat of fusion of ice
+  Qvar = i_qvar ! typical QTsa heat flux variation
+  Q0   = i_q0   ! background QTsa 
+
+  if (i_s0.ne.s0) then
+     _INFO_('WARNING conflicting reference salinity s0')
+  endif
+
+  if (i_rhoo.ne.rhodim) then
+     _INFO_('WARNING conflicting sea water density rhodim')
+  endif
+
+end subroutine set_seaice_parameters
 
 !***********************************************************
 SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
@@ -351,8 +392,7 @@ SUBROUTINE matrix(un, sig1, sig2)
   real(c_double),dimension(ndim) :: un
   real(c_double) :: sig1,sig2
   real time0, time1
-  integer i,j,k,k1,row,ii,jj,kk,find_row2
-  integer ix, iy, iz,ie
+  integer i,j,k,row,ii,find_row2
 
   !     clean old arrays:
   _DEBUG_("Zero out matrix arrays...")
@@ -449,7 +489,7 @@ SUBROUTINE rhs(un,B)
   real(c_double),dimension(ndim) ::    un,B
   real mix(ndim) ! ATvS-Mix
   real    Au(ndim), time0, time1
-  integer i,j,k,k1,row,find_row2, mode, iter
+  integer i,j,k,k1,row,find_row2, mode
 
   !call writeparameters
   mix  = 0.0
@@ -536,17 +576,21 @@ SUBROUTINE lin
   ! +---------------------------------------------------------------------+
   use m_usr
   use m_atm
+  use m_ice
   implicit none
   !     LOCAL
   real,target :: u(n,m,l,np),uy(n,m,l,np),ucsi(n,m,l,np),&
        &      uxx(n,m,l,np),uyy(n,m,l,np),uzz(n,m,l,np),&
        &      uxs(n,m,l,np),fu(n,m,l,np),px(n,m,l,np)
-  real ub(n,m,l,np),vb(n,m,l,np),sc(n,m,l,np),tcb(n,m,l,np)
+  real    ub(n,m,l,np),vb(n,m,l,np),sc(n,m,l,np),tcb(n,m,l,np)
   real    yc(n,m,la,np),yc2(n,m,la,np),yxx(n,m,la,np),yyy(n,m,la,np)
-  real    EH,EV,ph,pv,Ra,lambda, bi, ahcor, dedt
-  real    hv(n,m,l,np),yadv(n,m,la,np)
-  real    uxxc(n,m,l,np),uyyc(n,m,l,np),vxxc(n,m,l,np),vyyc(n,m,l,np)
-  real    xes,rintb,rwint !, rintt ! ATvS-Mix
+  real    EH,EV,ph,pv,Ra,lambda, bi, dedt
+  real    yadv(n,m,la,np)
+  real    xes
+
+  real    mc(n,m,l,np)
+  real    QSoa(n,m,l,np), QSos(n,m,l,np)
+  real    pQSnd
 
   ! original version:
   !      equivalence (u, v), (uy, vy), (ucsi, vcsi), (uxx, vxx, txx, uxc)
@@ -653,32 +697,62 @@ SUBROUTINE lin
   call tderiv(5,tzz)
   call tderiv(7,tcb)
 
+  call masksi(mc, msi); ! create sea ice mask atom
+
+  ! open(999, file='mc', form='unformatted', access='stream')
+  ! write(999) mc
+  ! close(999)
+  
   ! dependence of TT on TT through latent heat due to evaporation
   dedt =  lvsc * eta * qdim * (deltat / qdim) * dqso
   
   ! write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
 
   if (la > 0) then ! deprecated local atmosphere
+
      Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
+
   else if (coupled_T.eq.1) then ! coupled with external atmos
-     Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz  &
-          + Ooa * tc     & ! sensible heat flux
-          + dedt * sc      ! latent heat flux
+     ! FIXME is this too much mc*tc? TEM
+
+     Al(:,:,1:l,:,TT,TT) =                &
+          - ph * (txx + tyy) - pv * tzz   & ! diffusive transport
+          + Ooa  * tc                     & ! sensible heat flux
+          + dedt * sc                     & ! latent heat flux
+          + mc * (QTnd * zeta * tc  -     & ! correction for sea ice
+          Ooa * tc - dedt * sc)
+     
+     Al(:,:,1:l,:,TT,SS) = -QTnd * zeta * a0 * mc  ! salinity dependence in
+                                                   ! freezing temperature
   else
-     Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + TRES*bi*tc
+     
+     Al(:,:,1:l,:,TT,TT) = -ph * (txx + tyy) - pv * tzz + TRES*bi*tc
+     
   endif
 
   ! ------------------------------------------------------------------
   ! S-equation
   ! ------------------------------------------------------------------
   ! dependence of SS on TT in evaporation term
-  dedt = nus * (deltat / qdim) * dqso
+  ! FIXME: naming is bad and confusing
+  dedt  = nus * (deltat / qdim) * dqso
+  pQSnd = par(COMB) * par(SALT) * QSnd
   
-  if (coupled_S.eq.1) then ! coupled to atmosphere 
-     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz
+  ! FIXME: ugly
+  if (coupled_S.eq.1) then ! coupled to atmosphere
+     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz &
+          - mc * pQSnd * zeta * a0 / (rhodim * Lf)
      
      ! minus sign and nondim added (we take -Au in rhs computation)
-     Al(:,:,1:l,:,SS,TT) = - dedt * sc !  
+
+     QSoa = -dedt * sc            ! atmosphere to ocean salinity flux
+                                  ! internal component 
+
+     QSos =  pQSnd * zeta / (rhodim * Lf)    ! sea ice to ocean salinity flux
+                                             ! internal component
+     
+     ! combine contributions with mask
+     Al(:,:,1:l,:,SS,TT) =   QSoa + mc * (QSos - QSoa)
   else
      Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
   endif
@@ -723,11 +797,10 @@ SUBROUTINE nlin_rhs(un)
   real    rho(0:n+1,0:m+1,0:l+la+1)
   real,target ::    utx(n,m,l,np),vty(n,m,l,np),wtz(n,m,l,np)
   real    t2r(n,m,l,np),t3r(n,m,l,np)
-  real    cat1(n,m,l,np),cas1(n,m,l,np)
-  real    cat2(n,m,l,np),cas2(n,m,l,np)
+
   real    uux(n,m,l,np),uvy1(n,m,l,np),uwz(n,m,l,np),uvy2(n,m,l,np)
   real    uvx(n,m,l,np),vvy(n,m,l,np),vwz(n,m,l,np),ut2(n,m,l,np)
-  real    bolt(n,m,la,np)
+
   real    lambda,epsr,Ra,xes,pvc1,pvc2, pv
 
   real,dimension(:,:,:,:),pointer ::    usx,vsy,wsz
@@ -821,16 +894,11 @@ SUBROUTINE nlin_jac(un)
   real,target :: urTx(n,m,l,np),Utrx(n,m,l,np),&
        &        vrTy(n,m,l,np),Vtry(n,m,l,np)
   real,target :: wrTz(n,m,l,np),Wtrz(n,m,l,np)
-  real    cat1(n,m,l,np),cat2(n,m,l,np),&
-       &        cat3(n,m,l,np),cat4(n,m,l,np)
   real    t2r(n,m,l,np),t3r(n,m,l,np)
 
-  real    cas1(n,m,l,np),cas2(n,m,l,np),&
-       &        cas3(n,m,l,np),cas4(n,m,l,np)
-  real    bolt(n,m,la,np)
   real    lambda,epsr,Ra,xes,pvc1,pvc2,pv
-  real uux(n,m,l,np),uvy1(n,m,l,np),uwz(n,m,l,np),uvy2(n,m,l,np)
-  real uvx(n,m,l,np),vvry(n,m,l,np),vwz(n,m,l,np),wvrz(n,m,l,np)
+  real uvy1(n,m,l,np),uwz(n,m,l,np),uvy2(n,m,l,np)
+  real uvx(n,m,l,np),vwz(n,m,l,np)
   real Urux(n,m,l,np),Urvy1(n,m,l,np),Urwz(n,m,l,np),Urvy2(n,m,l,np)
   real uVrx(n,m,l,np),Vrvy(n,m,l,np),Vrwz(n,m,l,np),Urt2(n,m,l,np)
 
@@ -936,7 +1004,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
   real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
   real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
   !     LOCAL
-  integer i,j,k,row
+  integer i,j,k
   !     EXTERNAL
   integer find_row2
 
@@ -1015,7 +1083,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         s(i,j,0)   = s(i,j,1)
      enddo
   enddo
-18 format(i4,i4,4(g12.4))
+
   do i=1,n
      do j=1,m
         do k=1,l
@@ -1047,7 +1115,7 @@ SUBROUTINE solu(un,u,v,w,p,t,s)
   real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
   integer find_row2
   !     LOCAL
-  integer i,j,k,row
+  integer i,j,k
 
   do k = 1, l+la
      do j = 1, m
@@ -1069,8 +1137,6 @@ SUBROUTINE stpnt!(un)
   use m_usr
   use m_atm
   implicit none
-  integer i,j,k,row,find_row2
-  !     real    un(ndim)
 
   !*******************************************************
   !     PARAMETERS:
@@ -1120,7 +1186,7 @@ SUBROUTINE atmos_coef
   implicit none
   !     LOCAL
   real muoa,dzne
-  integer i,j
+  integer j
   dzne = dz*dfzT(l)
   muoa = rhoa*ch*cpa*uw
   amua = (arad+brad*t0)/muoa
@@ -1129,27 +1195,27 @@ SUBROUTINE atmos_coef
   Ai   = rhoa*hdima*cpa*udim/(r0dim*muoa)
   Ad   = rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
   As   = sun0*(1 - c0)/(4*muoa)
-  Os   = sun0*c0*r0dim/(4*udim*hdim*dzne*rhodim*cp0)
-  Ooa  = muoa*r0dim/(udim*cp0*rhodim*hdim*dzne)
-  nus  = 0.0 ! postpone until set_parameters is called
+  
+  Os   = sun0*c0/4*QTnd
+  Ooa  = muoa*QTnd
+
+  nus  = 0.0 ! postpone until set_atmos_parameters is called
+
   ! lvsc = rhodim*lv*r0dim/(udim*cp0*rhodim*hdim*dzne)
   lvsc = 0.0 ! ...
   DO j = 1,m
      !       albe(j) = 0.15 + 0.05 * cos (y(j))
-     albe(j) = 0.3
      dat(j)  = 0.9 + 1.5 * exp(-12*y(j)*y(j)/pi)
-     suno(j) = Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
-     suna(j) = As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
+     ! suno(j) = Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
+     ! suna(j) = As*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
+     suno(j) = Os*(1-.482*(3*sin(y(j))**2-1.)/2.)
+     suna(j) = As*(1-.482*(3*sin(y(j))**2-1.)/2.)
   ENDDO
 
   DO j = 0,m
      davt(j) = 0.9 + 1.5 * exp(-12*yv(j)*yv(j)/pi)
   ENDDO
 
-  open(8, file = rundir//'suno.txt')
-  write(8, *) suno
-  close(8)
-  
   ! write(*,*) 'Ocean-Atmosphere pars:     dzne=', dzne,' hdim=', hdim
   ! write(*,*) '                            nus=', nus, ' lvsc=', lvsc
   ! write(*,*) '                            Ooa=', Ooa, ' muoa=', muoa    

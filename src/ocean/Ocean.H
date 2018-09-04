@@ -34,8 +34,10 @@
 #include <BelosEpetraAdapter.hpp>
 #include <Ifpack_Preconditioner.h>
 
+#include "Model.H"
 #include "GlobalDefinitions.H"
-#include "AtmospherePar.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
 #include "THCMdefs.H"
 #include "OceanGrid.H"
 #include "Combined_MultiVec.H"
@@ -57,27 +59,29 @@ class Epetra_Operator;
 class Epetra_CrsMatrix;
 
 
-class Ocean
+class Ocean : public Model
 {
 public:
 
-    using VectorPtr = Teuchos::RCP<Epetra_Vector>;
     using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
     using PreconPtr = Teuchos::RCP<Ifpack_Preconditioner>;
     using LandMask  = Utils::MaskStruct;
-
+ 
+     
 protected:
 
-    //
     Teuchos::RCP<THCM> thcm_;
 
-    VectorPtr state_;
     VectorPtr rhs_;
     VectorPtr sst_;
+    VectorPtr sss_;
+    VectorPtr Qsi_;
+    VectorPtr Msi_;
+    VectorPtr Gsi_;
+    VectorPtr massMatrix_;
 
     MatrixPtr jac_;
     VectorPtr diagB_;
-    Teuchos::RCP<Epetra_Comm> comm_;
 
     VectorPtr rowScaling_;
     VectorPtr colScaling_;
@@ -121,13 +125,7 @@ protected:
     // Label of current mask
     std::string currentMask_;
 
-    // HDF5 input/output files
-    std::string const inputFile_;
-    std::string const outputFile_;
-
     // Flags for loading/saving states from/to hfd5 file
-    bool loadState_;
-    bool saveState_;
     bool saveMask_;
     bool loadMask_;
     bool loadSalinityFlux_;
@@ -154,7 +152,10 @@ protected:
 
     //! Landmask file
     std::string landmaskFile_;
-    
+
+    //! Select Jacobian analysis
+    bool analyzeJacobian_;
+
     //! Row map for pressure points P
     Teuchos::RCP<Epetra_Map> mapP_;
 
@@ -164,24 +165,25 @@ protected:
     //! Rows corresponding to singular pressure points
     VectorPtr singRows_;
 
+    //! Index maps for surface T,S values
+    Teuchos::RCP<Epetra_BlockMap> tIndexMap_, sIndexMap_;
 
-    //! Index map for surface T values
-    Teuchos::RCP<Epetra_BlockMap> tIndexMap_;
-
-    //! Surface temperature importer
-    Teuchos::RCP<Epetra_Import> surfaceTimporter_;
+    //! Surface temperature and salinity importers
+    Teuchos::RCP<Epetra_Import> surfaceTimporter_, surfaceSimporter_;
 
     //! Land mask
     Utils::MaskStruct landmask_;
 
 public:
-
     //! constructor
     Ocean(Teuchos::RCP<Epetra_Comm> Comm,
           Teuchos::RCP<Teuchos::ParameterList> oceanParamList);
 
     //! destructor
     ~Ocean();
+
+    std::string const name() { return "Ocean"; }
+    int const modelIdent() { return 0; }
 
     //! Solve may optionally accept an rhs of VectorPointer type
     void solve(Teuchos::RCP<Epetra_MultiVector> rhs = Teuchos::null);
@@ -230,7 +232,8 @@ public:
     void recomputePreconditioner() { recompPreconditioner_ = true; }
 
     //! Build preconditioner
-    void buildPreconditioner(bool forceInit = false);
+    void buildPreconditioner(bool forceInit);
+    void buildPreconditioner() { buildPreconditioner(false); }
 
     //! Build mass matrix
     void buildMassMat();
@@ -248,18 +251,33 @@ public:
     void setPar(std::string const &parName, double value);
     void setParName(std::string const &parName) { parName_ = parName; }
 
-    // Return continuation parameter value
+    //! Return default continuation parameter value
     double getPar();
+
+    //! Return default continuation parameter value
     double getPar(std::string const &parName);
+
+    //! Return current parameter name
     std::string const getParName() { return parName_; }
 
+    //! Return total number of continuation parameters
+    int npar() { return _NPAR_; }
+
+    //! Convert integer parameter index to parameter name
+    std::string const int2par(int ind);
+
     //! Get current landmask
-    LandMask getLandMask(bool adjustMask = false);
+    Utils::MaskStruct getLandMask()
+        {
+            return getLandMask(false);
+        }
+
+    Utils::MaskStruct getLandMask(bool adjustMask);
 
     //! Get global and local (distributed) landmask arrays.
     //! This routine also tests the obtained landmask and it will
     //! therefore also be set in THCM.
-    LandMask getLandMask(std::string const & fname, bool adjustMask = false);
+    Utils::MaskStruct getLandMask(std::string const & fname, bool adjustMask = false);
 
     //! Check the current mask
     bool isCurrentMask(std::string const &label)
@@ -268,14 +286,19 @@ public:
         }
 
     //! Set global and local (distributed) landmask arrays
-    void setLandMask(LandMask mask, bool global = false);
+    void setLandMask(Utils::MaskStruct const &mask)
+        {
+            setLandMask(mask, false);
+        }
+
+    void setLandMask(Utils::MaskStruct const &mask, bool global);
 
     //! Apply landmask
-    void applyLandMask(LandMask mask, double factor);
+    void applyLandMask(Utils::MaskStruct mask, double factor);
     void applyLandMask(VectorPtr x,
-                       LandMask mask, double factor);
+                       Utils::MaskStruct mask, double factor);
     void applyLandMask(VectorPtr x,
-                       LandMask maskA, LandMask maskB);
+                       Utils::MaskStruct maskA, Utils::MaskStruct maskB);
 
     //! Additional monitor for continuation
     bool monitor(){return false;}
@@ -296,6 +319,9 @@ public:
     int getCoupledT();
     int getCoupledS();
 
+    //! Get salinity flux correction
+    double getSCorr();
+
     //! Get the degrees of freedom
     int dof() { return _NUN_; }
 
@@ -307,13 +333,24 @@ public:
     //! Get salinity integral condition row
     int getRowIntCon();
 
-    // ---------------------------------------------------------------
-    // The following functions are required for the coupling with other
-    // models:
+    //! The following functions are required for the coupling with
+    //! other models. We use a pure abstract base class Model, from
+    //! which all other models are derived. CoupledModel knows only
+    //! the base class, hence in Model we downcast to specific derived
+    //! models. 
+
+    //! |      ---Model---        |
+    //! |     /     |     \       |
+    //! | Ocean Atmosphere SeaIce |
 
     //! Receive atmosphere data
-    //! This routine is called from a CoupledModel object
-    void synchronize(std::shared_ptr<AtmospherePar> atmos);
+    void synchronize(std::shared_ptr<Atmosphere> atmos);
+
+    //! Receive sea ice data
+    void synchronize(std::shared_ptr<SeaIce> seaice);
+
+    //! Meaningless: dummy implementation
+    void synchronize(std::shared_ptr<Ocean> ocean) {}
 
     //! Obtain atmos temp data for debugging
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
@@ -326,20 +363,35 @@ public:
 
     //! Obtain ocean E data for debugging
     Teuchos::RCP<Epetra_Vector> getLocalOceanE();
-    Teuchos::RCP<Epetra_Vector> getE();
 
-    //! Returns the atmos->ocean coupling block in the Jacobian
+    Teuchos::RCP<Epetra_Vector> getSunO();
+
+    //! Returns the ocean-atmos coupling block in the Jacobian
     //! matrix. I.e. the derivative of our RHS with respect to the
     //! atmosphere. The CouplingBlock class builds a parallel coupling
     //! block from the CRS struct. As the Oceans Jacobian is taken
     //! negative in THCM, this couplingblock should be negated
-    //! correspondingly. This means that we add values -Ooa, gamma*eta
-    //! and gamma, where one would expect opposite signs based on
-    //! forcing.F90.
-    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<AtmospherePar> atmos);
+    //! correspondingly. This means that we add values, i.e., -Ooa,
+    //! gamma*eta and gamma, where one would expect opposite signs
+    //! based on forcing.F90.
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos);
 
-    // Obtain interface (surface) temperature
+    //! Return the ocean-seaice coupling block
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice);
+
+    //! Dummy implementation but required by the base class.
+    std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean)
+        { return std::shared_ptr<Utils::CRSMat>(); }
+
+    // Obtain interface surface temperature
     Teuchos::RCP<Epetra_Vector> interfaceT();
+
+    // Obtain interface surface salinity
+    Teuchos::RCP<Epetra_Vector> interfaceS();
+
+    // Obtain evaporation as computed by ocean
+    Teuchos::RCP<Epetra_Vector> interfaceE();
+    
 
     // ---------------------------------------------------------------
     // Scale the matrix and rhs of the problem. These things are
@@ -348,9 +400,6 @@ public:
     void unscaleProblem(VectorPtr rhs = Teuchos::null);
     VectorPtr getRowScaling();
     VectorPtr getColScaling();
-
-    int loadState() { return loadStateFromFile(inputFile_); }
-    int saveState() { return saveStateToFile(outputFile_); }
 
     void setParameters(Teuchos::RCP<Teuchos::ParameterList> pars);
 
@@ -373,10 +422,10 @@ public:
 
     // This function finds the pressure rows that will give a singular
     // Schur complement. Based on these rows we will try to create a
-    // better landmask. 
+    // better landmask.
     int analyzeJacobian1();
 
-    // Here we integrate columns of the S Jacobian over the ocean
+    // Here we integrate columns of the salinity Jacobian over the ocean
     // volume. Nonzero integrals correspond to points in the mask we
     // do not want.
     int analyzeJacobian2();
@@ -384,11 +433,11 @@ public:
     // Project pressures modes from a state vector
     void pressureProjection(Teuchos::RCP<Epetra_Vector> vec);
         
-    // HDF5-based save and load functions for the state and parameters
-    int loadStateFromFile(std::string const &name);
-    int saveStateToFile(std::string const &name);
-
 private:
+    // HDF5-based save and load functions to load and save components
+    // other than the state and parameters.
+    void additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename);
+    void additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename);
 
     // Write the state of the ocean to traditional fortran out files fort.*
     // Use matlab plot-scripts for visualization
@@ -398,11 +447,9 @@ private:
     void initializeOcean();
     void initializePreconditioner();
     void initializeBelos();
-    
-    // Perform a Newton solve with a small perturbation in the parameter
-    Teuchos::RCP<Epetra_Vector> initialState(); 
 
-    VectorPtr getVector(char mode, VectorPtr vec);
+    // Perform a Newton solve with a small perturbation in the parameter
+    Teuchos::RCP<Epetra_Vector> initialState();
 
     void inspectVector(VectorPtr x);
 };

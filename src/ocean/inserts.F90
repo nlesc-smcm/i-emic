@@ -51,6 +51,28 @@ contains
        end do
     end if
   end subroutine insert_atmosphere_q
+
+  !!------------------------------------------------------------------
+  subroutine insert_atmosphere_a(inserted_atmos_a)
+    
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_atmos_a
+    integer :: i,j,pos
+
+    if (coupled_T.eq.1) then
+       pos = 1
+       do j = 1,m
+          do i = 1,n
+             albe(i,j) = inserted_atmos_a(pos)
+             pos = pos + 1
+          end do
+       end do
+    end if
+  end subroutine insert_atmosphere_a
   
   !!------------------------------------------------------------------
   subroutine insert_atmosphere_p(inserted_atmos_p)
@@ -67,7 +89,7 @@ contains
        pos = 1
        do j = 1,m
           do i = 1,n
-             pfield(i,j) = inserted_atmos_p(pos)
+             patm(i,j) = inserted_atmos_p(pos)
              pos = pos + 1
           end do
        end do
@@ -75,6 +97,70 @@ contains
   end subroutine insert_atmosphere_p
 
   !!------------------------------------------------------------------
+  subroutine insert_seaice_q(inserted_seaice_q)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_seaice_q
+    integer :: i,j,pos
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          qsa(i,j) = inserted_seaice_q(pos)
+          pos = pos + 1
+       end do
+    end do
+
+  end subroutine insert_seaice_q
+
+  !!------------------------------------------------------------------
+  subroutine insert_seaice_m(inserted_seaice_m)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_seaice_m
+    integer :: i,j,pos
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          msi(i,j) = inserted_seaice_m(pos)
+          pos = pos + 1
+       end do
+    end do
+
+  end subroutine insert_seaice_m
+
+  !!------------------------------------------------------------------
+  subroutine insert_seaice_g(inserted_seaice_g)
+
+    use, intrinsic :: iso_c_binding
+    use m_par  
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_seaice_g
+    integer :: i,j,pos
+
+    if (coupled_S.eq.1) then
+       pos = 1
+       do j = 1,m
+          do i = 1,n
+             gsi(i,j) = inserted_seaice_g(pos)
+             pos = pos + 1
+          end do
+       end do
+    end if
+  end subroutine insert_seaice_g
+
+  !!------------------------------------------------------------------
+  !!FIXME superfluous?
   subroutine insert_emip(inserted_emip)
 
     use, intrinsic :: iso_c_binding

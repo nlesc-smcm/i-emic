@@ -8,7 +8,8 @@ using Teuchos::rcp;
 namespace // local unnamed namespace (similar to static in C)
 {	
 	std::shared_ptr<Ocean>         ocean;
-	std::shared_ptr<AtmospherePar> atmos;
+	std::shared_ptr<Atmosphere>    atmos;
+    std::shared_ptr<SeaIce>        seaice;
 	std::shared_ptr<CoupledModel>  coupledModel;
     RCP<Epetra_Comm>               comm;  
 
@@ -21,31 +22,38 @@ public:
 	// constructor
 	IEMIC()
 		{
-			// Create parameters 
-			RCP<Teuchos::ParameterList> oceanParams =
-				rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-	
-			RCP<Teuchos::ParameterList> atmosphereParams =
-				rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("atmosphere_params.xml",
-										atmosphereParams.ptr());
-		
-			RCP<Teuchos::ParameterList> coupledmodelParams =
-				rcp(new Teuchos::ParameterList);
-			updateParametersFromXmlFile("coupledmodel_params.xml",
-										coupledmodelParams.ptr());
+            // Create parameter object for Ocean
+            RCP<Teuchos::ParameterList> oceanParams =
+                obtainParams("ocean_params.xml", "Ocean parameters");
+
+            // Create parameter object for Atmosphere
+            RCP<Teuchos::ParameterList> atmosphereParams =
+                obtainParams("atmosphere_params.xml", "Atmosphere parameters"); 
+
+            // Create parameter object for SeaIce
+            RCP<Teuchos::ParameterList> seaIceParams =
+                obtainParams("seaice_params.xml", "Sea ice parameters"); 
+
+            // Create parameter object for CoupledModel
+            RCP<Teuchos::ParameterList> coupledmodelParams =
+                obtainParams("coupledmodel_params.xml", "CoupledModel parameters"); 
 
             INFO('\n' << "Overwriting:");
             // The Continuation and CoupledModel parameterlists overwrite settings
             Utils::overwriteParameters(oceanParams,        coupledmodelParams);
             Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
+            Utils::overwriteParameters(seaIceParams,       coupledmodelParams);
             
             // Create models
- 			ocean = std::make_shared<Ocean>(comm, oceanParams);
-			atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+ 			ocean  = std::make_shared<Ocean>(comm, oceanParams);
+			atmos  = std::make_shared<Atmosphere>(comm, atmosphereParams);
+            seaice = std::make_shared<SeaIce>(comm, seaIceParams);
+
 			coupledModel =
-				std::make_shared<CoupledModel>(ocean, atmos, coupledmodelParams);
+				std::make_shared<CoupledModel>(ocean,
+                                               atmos,
+                                               seaice,
+                                               coupledmodelParams);
 		}
     
 	// destructor
@@ -97,11 +105,11 @@ TEST(JDQZ, AtmosphereEigenvalues)
         ComplexVector<Epetra_Vector> tmp(*x, *y);
 
         INFO("Building JDQZInterface...");
-        JDQZInterface<std::shared_ptr<AtmospherePar>,
+        JDQZInterface<std::shared_ptr<Atmosphere>,
                       ComplexVector<Epetra_Vector > >	matrix(atmos, z);
 	
         INFO("Building JDQZ...");
-        JDQZ<JDQZInterface<std::shared_ptr<AtmospherePar>,
+        JDQZ<JDQZInterface<std::shared_ptr<Atmosphere>,
                            ComplexVector<Epetra_Vector > > > jdqz(matrix, z);
 
         INFO("Setting parameters...");
@@ -245,7 +253,7 @@ int main(int argc, char **argv)
 	
 	// Get rid of possibly parallel objects:
 	ocean        = std::shared_ptr<Ocean>();
-	atmos        = std::shared_ptr<AtmospherePar>();
+	atmos        = std::shared_ptr<Atmosphere>();
 	coupledModel = std::shared_ptr<CoupledModel>();
 	
 	comm->Barrier();

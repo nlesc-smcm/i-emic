@@ -1,0 +1,25 @@
+<!--                                       -->
+<ParameterList name="Sea ice parameters">
+
+  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Save state" type="bool" value="true"/>
+
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+
+  <!-- Starting parameters -->
+  <Parameter name="Combined Forcing"    type="double" value="0.0"/>
+  <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+  <Parameter name="Latent Heat Forcing" type="double" value="1.0"/>
+  
+  <Parameter name="Global Bound xmin" type="double" value="286"/>
+  <Parameter name="Global Bound xmax" type="double" value="350"/>
+  <Parameter name="Global Bound ymin" type="double" value="10"/>
+  <Parameter name="Global Bound ymax" type="double" value="80"/>
+  <Parameter name="Global Grid-Size n" type="int" value="8"/>
+  <Parameter name="Global Grid-Size m" type="int" value="8"/>
+
+  <Parameter name="Periodic" type="bool" value="false"/>
+
+  <Parameter name="Ifpack overlap level" type="int" value="20"/>
+
+</ParameterList>

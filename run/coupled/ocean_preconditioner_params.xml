@@ -38,11 +38,11 @@
   <!-- This solver is used inside the 'Simple' preconditioner              -->
   <ParameterList name="Auv Solver">
     <!-- up to now only "AztecOO" or "None" (just apply precond once) -->
-    <Parameter name="Method" type="string" value="None"/>
+    <Parameter name="Method" type="string" value="AztecOO"/>
     <!-- maximum number of iterations permitted -->
-    <Parameter name="Max Num Iter" type="int" value="1"/>
+    <Parameter name="Max Num Iter" type="int" value="20"/>
     <!-- (relative) convergence tolerance      -->
-    <Parameter name="Tolerance" type="double" value="1.0e-3"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-2"/>
     <!-- options include "GMRES", "GMRESR", etc. -->
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <!-- type of scaling for conv. criterion ("r0","no scaling", "rhs",...) -->
@@ -52,7 +52,7 @@
     <!-- unless you reaaly want to use an Aztec preconditioner, choose "None"! -->
     <Parameter name="Precond" type="string" value="None"/>
     <!-- max size of Krylov space before restart -->
-    <Parameter name="KSpace" type="int" value="10"/>
+    <Parameter name="KSpace" type="int" value="20"/>
     <!-- type of orthogonalization (fairly irrelevant) -->
     <Parameter name="Orthog" type="string" value="Classic"/>
   </ParameterList><!-- } Auv Solver -->
@@ -304,7 +304,7 @@
       <!-- "Uncoupled-MIS": compromise, Uncoupled on fine levels and MIS on -->
       <!--                  coarser ones (default)                          -->
       <!-- "METIS": potentially better, but I haven't played around with it -->
-      <Parameter name="aggregation: type" type="string" value="METIS"/>
+      <Parameter name="aggregation: type" type="string" value="Uncoupled-MIS"/>
 
       <!-- haven't looked at the details of the algorithm -->
 
@@ -318,7 +318,7 @@
       <Parameter name="null space: type" type="string" value="default vectors"/>
 
       <Parameter name="eigen-analysis: type" type="string" value="Anorm"/>
-      <Parameter name="coarse: max size" type="int" value="1024"/>
+      <Parameter name="coarse: max size" type="int" value="512"/>
       <Parameter name="coarse: type" type="string" value="Amesos-KLU"/>
       <!-- this only refers to the way the levels are numbered and has no practical effect -->
       <Parameter name="increasing or decreasing" type="string" value="increasing"/>
@@ -419,7 +419,7 @@
   <!-- Solver parameters for the saddlepoint problem { -->
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="1"/>
+    <Parameter name="Max Num Iter" type="int" value="5"/>
     <Parameter name="Tolerance" type="double" value="1.0e-4"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
@@ -483,7 +483,7 @@
     <!-- Solver for Schur-complement inside Simple: { -->
     <ParameterList name="Chat Solver">
       <!-- can be "AztecOO" or "None" -->
-      <Parameter name="Method" type="string" value="AztecOO"/>
+      <Parameter name="Method" type="string" value="None"/>
       <Parameter name="Max Num Iter" type="int" value="500"/>
       <Parameter name="Tolerance" type="double" value="1.0e-6"/>
       <Parameter name="Solver" type="string" value="GMRESR"/>
@@ -506,7 +506,7 @@
     <!-- for comments see the "Auv Precond" list above {                    -->
     <ParameterList name="Chat Precond">
 
-      <Parameter name="Method" type="string" value="None"/>
+      <Parameter name="Method" type="string" value="Ifpack"/>
       <!-- Ifpack -->
 
       <Parameter name="Ifpack Method" type="string" value="Amesos stand-alone"/>
@@ -637,7 +637,7 @@
       <Parameter name="ML output" type="int" value="0"/>
       <Parameter name="aggregation: damping factor" type="double" value="1.333"/>
       <Parameter name="aggregation: threshold" type="double" value="1.0e-10"/> <!-- indifferent-->
-      <Parameter name="aggregation: type" type="string" value="METIS"/> <!-- METIS is preferred -->
+      <Parameter name="aggregation: type" type="string" value="Uncoupled-MIS"/> <!-- METIS is preferred -->
 
       <!-- The combination of the following parameters gave the bad scaling in ATS -->
       <!-- <parameter name="aggregation: local aggregates" type="int" value="64"/> --> <!-- pending -->

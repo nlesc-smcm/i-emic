@@ -1,9 +1,7 @@
-cmake_minimum_required(VERSION 2.8.12.2)
+cmake_minimum_required(VERSION 3.3)
 project(i-emic)
 
-if (NOT DEFINED DATA_DIR)
-  set(DATA_DIR "'${CMAKE_CURRENT_SOURCE_DIR}/data'")
-endif ()
+set(DATA_DIR "'${CMAKE_CURRENT_SOURCE_DIR}/data/'")
 message("-- Data is stored in: " ${DATA_DIR})
 
 # MRILU_DIR should be available
@@ -17,6 +15,9 @@ endif ()
 message("-- Looking for MRILU in ${MRILU_DIR}")
 
 enable_testing()
+
+add_subdirectory(cmake)
+message("-- CMAKE module path: ${CMAKE_MODULE_PATH}")
 
 add_subdirectory(src)
 

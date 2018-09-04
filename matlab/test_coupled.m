@@ -1,96 +1,113 @@
 clear all
 JnC = load_numjac('JnC');
 
-n = 6; m = 6; l = 4; dfo = 6; dfa = 2; aux = 1
+% vsm(JnC)
+
+[n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
+    readfort44('fort.44');
+
+dfo = 6; dfa = 3; auxa = 1; dfs = 4; auxs = 1
 
 surfb = find_row(dfo, n, m ,l, 1, 1, l, 1);
 surfe = find_row(dfo, n, m ,l, n, m, l, dfo);
 
-nocean = n*m*l*dfo;
-natmos = n*m*dfa;
+nocean  = n*m*l*dfo;
+natmos  = n*m*dfa;
+nseaice = n*m*dfs;
+
+ndim = nocean + natmos + auxa + nseaice + auxs;
+
+fr0 = @(dof,i,j,k,xx) k * n * m * dof + j * n * dof + i * dof + xx;
 
 atm_idx = [];
 oce_idx = [];
+sei_idx = [];
 
 for i = 1:dfo
     oce_idx = [oce_idx, (i:dfo:nocean)];
 end
 
+%oce_idx = sort(oce_idx);
+
 for i = 1:dfa
     atm_idx = [atm_idx, (nocean+i:dfa:nocean+natmos)];
 end
 
-for i = 1:aux
+
+for i = 1:auxa
     atm_idx = [atm_idx, atm_idx(end) + i];
 end
 
-JnC22 = JnC(atm_idx, atm_idx);
+%atm_idx = sort(atm_idx);
+
+for i = 1:dfs
+    sei_idx = [sei_idx, (nocean+natmos+auxa+i:dfs:nocean+natmos+auxa+nseaice)];
+end
+
+for i = 1:auxs
+    sei_idx = [sei_idx, sei_idx(end) + i];
+end
+%sei_idx = sort(sei_idx);
+
 JnC11 = JnC(oce_idx, oce_idx);
+JnC22 = JnC(atm_idx, atm_idx);
+JnC33 = JnC(sei_idx, sei_idx);
+
 JnC12 = JnC(oce_idx, atm_idx);
+JnC13 = JnC(oce_idx, sei_idx);
+
 JnC21 = JnC(atm_idx, oce_idx);
+JnC23 = JnC(atm_idx, sei_idx);
 
-C11 = load('C11'); C11 = spconvert(C11);
-C12 = load('C12'); C12 = spconvert(C12);
-C21 = load('C21'); C21 = spconvert(C21);
-C22 = load('C22'); C22 = spconvert(C22);
+JnC31 = JnC(sei_idx, oce_idx);
+JnC32 = JnC(sei_idx, atm_idx);
 
-numC12 = JnC(surfb:surfe, surfe+1:end);
-numC21 = JnC(surfe+1:end, surfb:surfe);
-numC11 = JnC(1:surfe, 1:surfe);
-numC22 = JnC(surfe+1:end, surfe+1:end);
+tot_idx = [oce_idx, atm_idx, sei_idx];
+JnC_ = JnC;
+JnC  = JnC(tot_idx, tot_idx);
 
-numC11 = numC11(oce_idx,oce_idx);
-C11    =    C11(oce_idx,oce_idx);
+% remove offsets of ranges
+oce_idx = oce_idx - 0;
+atm_idx = atm_idx - nocean;
+sei_idx = sei_idx - nocean - natmos - auxa;
 
-atm_idx = atm_idx - surfe;
-numC22 = numC22(atm_idx,atm_idx);
-C22    =    C22(atm_idx,atm_idx);
+C11 = load('J_Ocean');              C11 = spconvert(C11);
+C12 = load('C_Ocean-Atmosphere');   C12 = spconvert(C12);
+C12 = padding(C12, nocean, natmos + auxa);
+C13 = load('C_Ocean-SeaIce');       C13 = spconvert(C13);
+C13 = padding(C13, nocean, nseaice + auxs);
 
-figure(1)
-spy(C11)
-title('C11')
+C21 = load('C_Atmosphere-Ocean');   C21 = spconvert(C21);
+C21 = padding(C21, natmos + auxa, nocean);
+C22 = load('J_Atmosphere');         C22 = spconvert(C22);
+C23 = load('C_Atmosphere-SeaIce');  C23 = spconvert(C23);
+C23 = padding(C23, natmos + auxa, nseaice + auxs);
 
+C31 = load('C_SeaIce-Ocean');       C31 = spconvert(C31);
+C31 = padding(C31, nseaice + auxs, nocean);
+    
+C32 = load('C_SeaIce-Atmosphere');  C32 = spconvert(C32);
+C32 = padding(C32, nseaice + auxs, natmos + auxa);
 
-figure(2)
-spy(JnC11)
-title('num C11')
+C33 = load('J_SeaIce');             C33 = spconvert(C33);
 
-tol = 1e-3
+% block might be smaller
+tr12 = size(C12,1);
+tr32 = size(C32,2);
 
-diff11 = abs(C11 - numC11)./abs(C11) > tol;
-if sum(diff11(:)) > 0
-    figure(3) 
-    spy(diff11)
-    figure(4)
-    diff11 = abs(C11 - numC11)
-    imagesc(diff11); colorbar
-    axis square
-    title('C11 diff')
-end
+C_ = [C11, C12, C13; C21, C22, C23; C31, C32, C33];
 
-C12    = C12(surfb:end,:);
-numC12 = numC12(1:end-1,:);
-diff12 = abs(C12 - numC12)./abs(C12) > tol;
-if sum(diff12(:)) > 0
-    figure(4)
-    spy(diff12)
-    title('C12 diff')
-end
+C  = C_(tot_idx, tot_idx);
 
-C21    = C21(:,surfb:end);
-numC21 = numC21(:,1:end-1);
-diff21 = abs(C21 - numC21)./abs(C21) > tol;
-if sum(diff21(:)) > 0
-    figure(5)
-    spy(diff21)
-    title('C21 diff')    
-end
+C11 = C11(oce_idx, oce_idx);
+C12 = C12(oce_idx, atm_idx); 
+C13 = C13(oce_idx, sei_idx);
 
-diff22 = abs(C22 - numC22)./abs(C22) > tol;
-if sum(diff22(:)) > 0
-    figure(6)
-    spy(diff22)
-    title('C22 diff')    
-end
+C21 = C21(atm_idx, oce_idx);
+C22 = C22(atm_idx, atm_idx);
+C23 = C23(atm_idx, sei_idx);
 
+C31 = C31(sei_idx, oce_idx);
+C32 = C32(sei_idx, atm_idx);
+C33 = C33(sei_idx, sei_idx);
 

@@ -103,4 +103,63 @@ getGatheredVector(Teuchos::RCP<Epetra_Vector> vec)
     return gvec;
 }
 
+//------------------------------------------------------------------
+// test the entries of numerical jacobian
+template<typename ModelPtr, typename VectorPtr, typename CCS>
+void testEntries(ModelPtr model, CCS &ccs, VectorPtr x)
+{
+    x->PutScalar(0.0);
+    int myLength = x->MyLength();
+    EXPECT_EQ(myLength, (int) (ccs.beg.size() - 1));
+            
+    typename VectorPtr::element_type e_i(*x);
+    typename VectorPtr::element_type e_j(*x);
+    typename VectorPtr::element_type tmp(*x);
+            
+    // assuming we run on a single core
+    int    ico  = 0;
+    double Jij  = 0.0;
+
+    double error, diff;
+    for (int jco = 0; jco != myLength; ++jco)
+    {
+        e_j[jco] = 1;
+        tmp.PutScalar(0.0);
+
+        // tmp = jth column 
+        model->applyMatrix(e_j, tmp);
+        for (int i = ccs.beg[jco]; i != ccs.beg[jco+1]; ++i)
+        {
+            ico = ccs.ico[i];
+            e_i[ico] = 1;
+
+            // get Jij component
+            e_i.Dot(tmp, &Jij);
+            e_i[ico] = 0;
+
+            // difference between analytical and numerical value
+            diff  = std::abs(Jij - ccs.co[i]);                    
+                    
+            error = std::max(1e-2 * std::abs(Jij), 1e-10);
+            EXPECT_NEAR(diff, 0.0, error);
+                                                  
+            if (diff > error) // some additional outputting
+            {
+                std::cout << "(" << ico << "," << jco << ") ";
+                std::cout << "nuJac: " << ccs.co[i] << " " << "anJac: " << Jij << std::endl;
+                int mdl,i,j,k,xx;
+                        
+                model->gid2coord(ico,mdl,i,j,k,xx);
+                std::cout << "\nrow: mdl=" << mdl << " i=" << i << " j=" << j
+                          << " k=" << k << " xx=" << xx << std::endl;
+                        
+                model->gid2coord(jco,mdl,i,j,k,xx);
+                std::cout << "col: mdl=" << mdl << " i=" << i << " j=" << j
+                          << " k=" << k << " xx=" << xx << std::endl << std::endl;
+            }
+        }
+        e_j[jco] = 0; // reset value
+    }            
+}
+
 #endif

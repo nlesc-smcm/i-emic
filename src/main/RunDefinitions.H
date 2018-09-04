@@ -32,8 +32,9 @@
 #include <string>
 
 #include "CoupledModel.H"
-#include "AtmospherePar.H"
+#include "Atmosphere.H"
 #include "Ocean.H"
+#include "SeaIce.H"
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
 #include "Topo.H"
@@ -198,6 +199,10 @@ Teuchos::RCP<Teuchos::ParameterList> obtainParams(std::string const &str,
         WARNING(str << ", " << name <<
                 " not found, continuing with defaults at your own risk!",
                 __FILE__, __LINE__);
+    }
+    else if (str == "dummy")
+    {
+        INFO("Continuing with dummy " << name);
     }
     else
     {

@@ -481,8 +481,6 @@ contains
 
     integer(c_int), intent(in) :: id
 
-    integer :: blocksize, nonz
-
     !_DEBUG2_('enter m_mriluprec::compute, id=',id);
 
     if (.not. valid_id(id)) then

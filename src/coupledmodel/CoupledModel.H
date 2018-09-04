@@ -1,12 +1,14 @@
 #ifndef COUPLEDMODEL_H
 #define COUPLEDMODEL_H
 
+//! models
+#include "Model.H"
 #include "Ocean.H"
-#include "AtmospherePar.H"
-#include "Combined_MultiVec.H"
-#include "IDRSolver.H"
-#include "GMRESSolver.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
 
+//! vector and matrix helpers
+#include "Combined_MultiVec.H"
 #include "CouplingBlock.H"
 
 #include <vector>
@@ -22,20 +24,21 @@
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
 
+/*------------------------------------------------------------------
 //! This class assembles multiple sub-models into a CoupledModel.
-// Which models and couplings are used should be supplied in the
-// accompanying xml file (coupledmodel_params.xml).
+//! Which models and couplings are used should be supplied in the
+//! accompanying xml file (coupledmodel_params.xml).
 
 //! Most routines in CoupledModel simply call their corresponding
-// routines in the sub-models. For instance, a call to
-// computeJacobian() translates to a call to computeJacobian() in the
-// sub-models.
+//! routines in the sub-models. For instance, a call to
+//! computeJacobian() translates to a call to computeJacobian() in the
+//! sub-models.
 
 //! The frequency at which the states of the sub-models are
 //! synchronized depends on the solving scheme.
+------------------------------------------------------------------*/
 
 //! Forward declarations
-
 class Epetra_Comm;
 class Epetra_IntVector;
 class Epetra_Vector;
@@ -50,16 +53,13 @@ public:
     using LandMask   = Utils::MaskStruct;
 
 private:
-    //! Adjacency graph describing the couplings between the models
-    //! NOT IMPLEMENTED YET
-    //! Graph couplings_;
 
-    //! Trilinos-based parallel implicit ocean model (Trilinos-THCM)
-    std::shared_ptr<Ocean>  ocean_;
+    //! submodel identifiers
+    int OCEAN, ATMOS, SEAICE;
 
-    //! Parallel implicit atmosphere model
-    std::shared_ptr<AtmospherePar> atmos_;
-
+    //! vector containing pointers to the different submodels
+    std::vector<std::shared_ptr<Model> > models_;
+        
     //! Combined state vector
     std::shared_ptr<Combined_MultiVec> stateView_;
 
@@ -84,6 +84,15 @@ private:
     //!   'D': diagonal      (do not incorporate coupling blocks in prec)
     char precScheme_;
 
+    //! select whether we should use the ocean model in the coupling
+    bool useOcean_;
+
+    //! select whether we should use the atmosphere model in the coupling
+    bool useAtmos_;
+
+    //! select whether we should use the sea ice model in the coupling
+    bool useSeaIce_;
+
     //! keep track of syncs
     int syncCtr_;
 
@@ -93,14 +102,11 @@ private:
     //! Trilinos MPI-like communicator
     Teuchos::RCP<Epetra_Comm> comm_;
 
-    //! Coupling block atmos -> ocean
-    CouplingBlock<std::shared_ptr<Ocean>,
-                  std::shared_ptr<AtmospherePar> > C12_;
-
-    //! Coupling block ocean -> atmos
-    CouplingBlock<std::shared_ptr<AtmospherePar>,
-                  std::shared_ptr<Ocean> > C21_;
-
+    //! Coupling matrix containing off-diagonal CouplingBlocks
+    std::vector<std::vector<
+                    CouplingBlock<std::shared_ptr<Model>,
+                                  std::shared_ptr<Model> > > > C_;
+    
     Teuchos::RCP
     <Belos::LinearProblem
      <double, Combined_MultiVec, BelosOp<CoupledModel> > > problem_;
@@ -109,9 +115,13 @@ private:
     <Belos::BlockGmresSolMgr
      <double, Combined_MultiVec, BelosOp<CoupledModel> > > belosSolver_;
 
+    // gid->coord mapping 
+    std::vector<std::array<int, 5> > gid2coord_;
+
 public:
     CoupledModel(std::shared_ptr<Ocean> ocean,
-                 std::shared_ptr<AtmospherePar> atmos,
+                 std::shared_ptr<Atmosphere> atmos,
+                 std::shared_ptr<SeaIce> seaice,
                  Teuchos::RCP<Teuchos::ParameterList> params);
 
     ~CoupledModel() { INFO("CoupledModel destructor"); }
@@ -128,18 +138,18 @@ public:
     //! Initialize FGMRES (Belos) solver
     void initializeFGMRES();
 
-    //! Apply the Jacobian matrix: out=J*v
+    //! Apply the Jacobian matrix: out = J*v
     void applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &out);
 
     void applyMassMat(Combined_MultiVec const &v, Combined_MultiVec &out);
 
-    //! Apply the preconditioning: out=inv(P)*v
-    //! In the coupled case: 1.5 step in the block gauss seidel scheme
+    //! Apply the preconditioning: out = inv(P)*v
+    //! Example: two models, 1.5 step in the block gauss seidel scheme
     //!
     //!        z = inv(P)*x  <=>  P*z = x  -> iterate with
     //!
-    //!           [M1 C12] * [z1] = [     ] * [z1] + [x1]
-    //!           [    M2]   [z2]   [C21  ]   [z2]   [x2]
+    //!           [M1 C12] * [z1] = [      ] * [z1] + [x1]
+    //!           [    M2]   [z2]   [C21   ]   [z2]   [x2]
     //!
     //! z1^0 = 0 => z2^1 = inv(M2)*x2
     //!          => z1^1 = inv(M1)*(x1-C12*z2^1)
@@ -164,6 +174,9 @@ public:
     //! Get the continuation parameter
     double getPar();
 
+    //! initialize state in submodels
+    void initializeState();
+
     //! Pre-processing. A controlling scheme might allow some
     //! pre-processing, for instance at the start of a Newton process.
     void preProcess();
@@ -173,39 +186,21 @@ public:
     void postProcess();
 
     //! Gather important continuation data to use in summary file
-    std::string const writeData(bool describe = false)
-        {
-            std::ostringstream datastring;
-            if (describe)
-            {
-                datastring << std::setw(_FIELDWIDTH_/2)
-                           << "MV"
-                           << std::setw(_FIELDWIDTH_)
-                           << "Tol"
-                           << ocean_->writeData(describe) << " "
-                           << atmos_->writeData(describe) ;            
-            }
-            else
-            {
-                datastring.precision(_PRECISION_);
-                datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
-                           << belosSolver_->getNumIters();
-                datastring << std::scientific << std::setw(_FIELDWIDTH_)
-                           << belosSolver_->achievedTol();
-                
-                datastring << ocean_->writeData(describe) << " "
-                           << atmos_->writeData(describe) ;
-            }
-
-            return datastring.str();
-        }
-
+    std::string const writeData(bool describe = false);
+    
     //! Additional monitor for continuation, return true if
     //! destination reached
     bool monitor() { return false; }
 
     //! Dump blocks
     void dumpBlocks();
+    
+    //! Build GID -> coordinate mapping
+    void createGID2CoordMap();
+    
+    //! Get GID -> coordinate mapping
+    void gid2coord(int const &gid, int &modelIdent,
+                   int &i, int &j, int &k, int &xx);
 
 private:
 
@@ -257,6 +252,7 @@ public:
 };
 
 //-----------------------------------------------------------------------------
+// Specialize Belos::OperatorTraits using BelosOp
 namespace Belos
 {
     template <typename Model>

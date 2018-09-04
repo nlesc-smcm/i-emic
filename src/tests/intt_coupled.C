@@ -3,15 +3,13 @@
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
+    RCP<Epetra_Comm>               comm;
     std::shared_ptr<Ocean>         ocean;
-    std::shared_ptr<AtmospherePar> atmos;
+    std::shared_ptr<Atmosphere>    atmos;
+    std::shared_ptr<SeaIce>        seaice;
     std::shared_ptr<CoupledModel>  coupledModel;
-    RCP<Teuchos::ParameterList> oceanParams;
-    RCP<Teuchos::ParameterList> atmosphereParams;
-    RCP<Teuchos::ParameterList> coupledmodelParams;
-    RCP<Teuchos::ParameterList> continuationParams;
-    RCP<Teuchos::ParameterList> jdqzParams;
-    RCP<Epetra_Comm>            comm;
+    std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
+    enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT, EIGEN};
 }
 
 //------------------------------------------------------------------
@@ -20,40 +18,41 @@ TEST(ParameterLists, Initialization)
     bool failed = false;
     try
     {
-        // Create parameter object for Ocean
-        oceanParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-        oceanParams->setName("Ocean parameters");
+        std::vector<string> files = {"ocean_params.xml",
+                                     "atmosphere_params.xml",
+                                     "seaice_params.xml",
+                                     "coupledmodel_params.xml",
+                                     "continuation_params.xml",
+                                     "jdqz_params.xml"};
 
-        // Create parameter object for Atmosphere
-        atmosphereParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
-        atmosphereParams->setName("Atmosphere parameters");
+        std::vector<string> names = {"Ocean parameters",
+                                     "Atmosphere parameters",
+                                     "Sea ice parameters",
+                                     "CoupledModel parameters",
+                                     "Continuation parameters",
+                                     "JDQZ parameters"};
 
-        // Create parameter object for CoupledModel
-        coupledmodelParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("coupledmodel_params.xml", coupledmodelParams.ptr());
-        coupledmodelParams->setName("CoupledModel parameters");
-
-        // Create parameter object for Continuation
-        continuationParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
-        continuationParams->setName("Continuation parameters");
-
-        // Create parameter object for JDQZ
-        jdqzParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("jdqz_params.xml", jdqzParams.ptr());
-        jdqzParams->setName("JDQZ parameters");
-
+        for (int i = 0; i != (int) files.size(); ++i)
+        {
+            params.push_back(obtainParams(files[i], names[i]));
+        }
+        
         INFO('\n' << "Overwriting:");
-        // The Continuation and CoupledModel parameterlists overwrite settings
-        Utils::overwriteParameters(oceanParams,        coupledmodelParams);
-        Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
+        // Allow dominant parameterlists. Not that this trick ignores
+        // any hierarchy. The Continuation and CoupledModel
+        // parameterlists are allowed to overwrite settings.
+        Utils::overwriteParameters(params[OCEAN],  params[COUPLED]);
+        Utils::overwriteParameters(params[ATMOS],  params[COUPLED]);
+        Utils::overwriteParameters(params[SEAICE], params[COUPLED]);
 
-        Utils::overwriteParameters(oceanParams,        continuationParams);
-        Utils::overwriteParameters(atmosphereParams,   continuationParams);
-        Utils::overwriteParameters(coupledmodelParams, continuationParams);
+
+        Utils::overwriteParameters(params[OCEAN],  params[CONT]);
+        Utils::overwriteParameters(params[ATMOS],  params[CONT]);
+        Utils::overwriteParameters(params[SEAICE], params[CONT]);
+
+        Utils::overwriteParameters(params[COUPLED], params[CONT]);
         INFO('\n');
+
     }
     catch (...)
     {
@@ -70,7 +69,7 @@ TEST(Ocean, Initialization)
     try
     {
         // Create parallel Ocean
-        ocean = std::make_shared<Ocean>(comm, oceanParams);
+        ocean = std::make_shared<Ocean>(comm, params[OCEAN]);
     }
     catch (...)
     {
@@ -88,7 +87,25 @@ TEST(Atmosphere, Initialization)
     try
     {
         // Create atmosphere
-        atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+        atmos = std::make_shared<Atmosphere>(comm, params[ATMOS]);
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(SeaIce, Initialization)
+{
+    bool failed = false;
+    try
+    {
+        // Create atmosphere
+        seaice = std::make_shared<SeaIce>(comm, params[SEAICE]);
     }
     catch (...)
     {
@@ -106,7 +123,10 @@ TEST(CoupledModel, Initialization)
     try
     {
         // Create coupledmodel
-        coupledModel = std::make_shared<CoupledModel>(ocean,atmos,coupledmodelParams);
+        coupledModel = std::make_shared<CoupledModel>(ocean,
+                                                      atmos,
+                                                      seaice,
+                                                      params[COUPLED]);
     }
     catch (...)
     {
@@ -117,77 +137,151 @@ TEST(CoupledModel, Initialization)
     EXPECT_EQ(failed, false);
 }
 
+//------------------------------------------------------------------
+TEST(CoupledModel, RHS)
+{
+    coupledModel->computeRHS();
+    std::shared_ptr<Combined_MultiVec> F = coupledModel->getRHS('V');
+    for (int i = 0; i != F->Size(); ++i)
+    {
+        INFO(" submodel " << i << ": ||F|| = " << Utils::norm((*F)(i)));
+    }
+    
+    EXPECT_LT(Utils::norm(F), 1e-7);
+}
 
 //------------------------------------------------------------------
 TEST(CoupledModel, Newton)
 {
+    coupledModel->initializeState();
+
     // One step in a 'natural continuation'
     // initialize state in model
     std::shared_ptr<Combined_MultiVec> stateV =
         coupledModel->getState('V');
-
-    stateV->PutScalar(0.0);
-
+                                    
     std::shared_ptr<Combined_MultiVec> solV =
         coupledModel->getSolution('V');
 
     solV->PutScalar(0.0);
 
     // set parameter
-    coupledModel->setPar(0.005);
+    coupledModel->setPar(0.01);
 
     // try to converge
     int maxit = 10;
-    std::shared_ptr<Combined_MultiVec> b;
+    std::shared_ptr<Combined_MultiVec> F = coupledModel->getRHS('V');
+    std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('C');
     int niter = 0;
-    for (; niter != maxit; ++niter)
+    std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('V');
+    std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
+    coupledModel->computeJacobian();
+    coupledModel->computeRHS();
+            
+    for (; niter < maxit; ++niter)
     {
-        coupledModel->computeRHS();
-
         coupledModel->computeJacobian();
-
-        b = coupledModel->getRHS('C');
-
-        INFO(" ocean F  = " << Utils::norm(coupledModel->getRHS('V')->First()) );
-        INFO(" atmos F  = " << Utils::norm(coupledModel->getRHS('V')->Second()) );
-
+        coupledModel->computeRHS();
+        
+        b = coupledModel->getRHS('C');    
         CHECK_ZERO(b->Scale(-1.0));
 
-        double normb = Utils::norm(b);
-
-        coupledModel->solve(b);
-
-        std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');
-        std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
-
-        INFO(" ocean x  = " << Utils::norm(stateV->First()) );
-        INFO(" atmos x  = " << Utils::norm(stateV->Second()) );
-        INFO(" ocean dx = " << Utils::norm(x->First()) );
-        INFO(" atmos dx = " << Utils::norm(x->Second()) );
+        coupledModel->solve(b);  // J dx = - F
 
         stateV->Update(1.0, *x, 1.0); // x = x + dx;
 
+        coupledModel->computeRHS();
+        coupledModel->computeJacobian();
+
         coupledModel->applyMatrix(*x, *y);
-
+        double normb = Utils::norm(b);
         y->Update(1.0, *b, -1.0);
-        y->Scale(1./normb);
+        y->Scale(1. / normb);        
 
-        Utils::print(y, "residual");
-
-        INFO(" ocean ||r|| / ||b||  = " << Utils::norm(y->First()));
-        INFO(" atmos ||r|| / ||b||  = " << Utils::norm(y->Second()));
-        INFO(" total ||r|| / ||b||  = " << Utils::norm(y));
-
+        INFO("\n ||r|| / ||b|| = " << Utils::norm(y));
+        INFO("        ||dx|| = " << Utils::norm(x) << " ");
+        INFO("         ||F|| = " << Utils::norm(F) << "\n");
+        
+        for (int i = 0; i != b->Size(); ++i)
+        {
+            INFO(" submodel " << i << " ||F|| = " << Utils::norm((*b)(i)));
+            INFO("   " << " dx = " << Utils::norm((*x)(i)));
+            INFO("   " << " ||r|| / ||b|| = " << Utils::norm((*y)(i)));
+        }
         if (Utils::norm(coupledModel->getRHS('V')) < 1e-8)
             break;
     }
-
+    Utils::save(F, "F");
     EXPECT_LT(Utils::norm(coupledModel->getRHS('V')), 1e-8);
-    EXPECT_LT(niter, 10);
-    INFO("CoupledModel, Newton converged in " << niter << " iterations");
+    EXPECT_LT(niter, maxit);
 }
 
 //------------------------------------------------------------------
+TEST(CoupledModel, numericalJacobian)
+{
+    // only do this test for small problems in serial
+    int nmax = 2e3;
+
+    if ( (comm->NumProc() == 1) &&
+         (coupledModel->getState('V')->GlobalLength() < nmax) )
+    {
+        bool failed = false;
+        try
+        {
+            // get analytical jacobian blocks
+            coupledModel->computeJacobian();                
+            coupledModel->dumpBlocks();
+                                       
+            INFO("compute njC");       
+
+            NumericalJacobian<std::shared_ptr<CoupledModel>,
+                              std::shared_ptr<Combined_MultiVec> > njC;
+            
+            njC.setTolerance(1e-10);
+            njC.seth(1e-4);
+            njC.compute( coupledModel, coupledModel->getState('V') );
+
+            std::string fnameJnC("JnC");
+
+            INFO(" Printing Numerical Jacobian " << fnameJnC);
+            
+            njC.print(fnameJnC);
+            
+            // test individual elements 
+            NumericalJacobian<std::shared_ptr<CoupledModel>,
+                              std::shared_ptr<Combined_MultiVec> >::CCS ccs;
+            njC.fillCCS(ccs);
+
+            EXPECT_NE(ccs.beg.back(), 0);
+
+            std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
+
+            testEntries(coupledModel, ccs, x);
+                                          
+        }
+        catch (...)
+        {
+            failed = true;
+            throw;
+        }
+        EXPECT_EQ(failed, false);
+    }
+
+    if (comm->NumProc() != 1)
+    {
+        std::cout << ("****Numerical Jacobian test cannot run in parallel****\n") ;
+        INFO("****Numerical Jacobian test cannot run in parallel****");
+    }
+
+    if (coupledModel->getState('V')->GlobalLength() > nmax)
+    {
+        std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
+        INFO("****Numerical Jacobian test cannot run for this problem size****");
+    }
+}
+
+
+//-----------------------------------------------------------------
 // 1st integral condition test for atmosphere
 TEST(CoupledModel, AtmosphereIntegralCondition1)
 {
@@ -202,15 +296,15 @@ TEST(CoupledModel, AtmosphereIntegralCondition1)
     EXPECT_NEAR(result, 0.0, 1e-4);
 }
 
+
 //------------------------------------------------------------------
 TEST(CoupledModel, AtmosphereEPfields)
 {
     bool failed = false;
     try
     {
-        atmos->computeEP();
-        Teuchos::RCP<Epetra_Vector> E = atmos->getE();
-        Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+        Teuchos::RCP<Epetra_Vector> E = atmos->interfaceE();
+        Teuchos::RCP<Epetra_Vector> P = atmos->interfaceP();
 
         Utils::print(E, "file.txt");
         Utils::print(P, "file.txt");
@@ -247,11 +341,10 @@ TEST(CoupledModel, AtmosphereEPfields)
 //------------------------------------------------------------------
 TEST(CoupledModel, EPIntegral)
 {
-    
     Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPIntCoeff();
     
-    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
-    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    Teuchos::RCP<Epetra_Vector> E = atmos->interfaceE();
+    Teuchos::RCP<Epetra_Vector> P = atmos->interfaceP();
     
     double integralE = Utils::dot(intcoeff, E);
     EXPECT_GT(std::abs(integralE), 0.0);
@@ -268,9 +361,7 @@ TEST(CoupledModel, EPIntegral)
 
     // not sure how strict this test should be
     EXPECT_NEAR( (integralP - integralE) / integralP, 0.0, 1e-5);
-
 }
-
 
 //------------------------------------------------------------------
 // full continuation
@@ -281,30 +372,20 @@ TEST(CoupledModel, Continuation)
     {
         // One step in an arclength continuation
         // initialize state in model
-        std::shared_ptr<Combined_MultiVec> stateV =
-            coupledModel->getState('V');
-        
-        stateV->PutScalar(1.234);
+        coupledModel->setPar(0.0);
+        coupledModel->initializeState();
         
         std::shared_ptr<Combined_MultiVec> solV =
             coupledModel->getSolution('V');
         
         solV->PutScalar(0.0);
-        
-        // set initial parameter
-        coupledModel->setPar(0.0);
+                             
         
         // Create continuation
         Continuation<std::shared_ptr<CoupledModel>,
                      Teuchos::RCP<Teuchos::ParameterList> >
-            continuation(coupledModel, continuationParams);
+            continuation(coupledModel, params[CONT]);
 
-        // Test continuation
-        continuation.test();
-
-        stateV->PutScalar(0.0);
-        solV->PutScalar(0.0);
-         
         // Run continuation        
         continuation.run();
 
@@ -320,13 +401,14 @@ TEST(CoupledModel, Continuation)
     EXPECT_EQ(failed, false);
 }
 
+
 //------------------------------------------------------------------
 TEST(CoupledModel, EPIntegral2)
 {
     Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPIntCoeff();
     
-    Teuchos::RCP<Epetra_Vector> E = atmos->getE();
-    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    Teuchos::RCP<Epetra_Vector> E = atmos->interfaceE();
+    Teuchos::RCP<Epetra_Vector> P = atmos->interfaceP();
     
     double integralE = Utils::dot(intcoeff, E);
                               
@@ -367,7 +449,7 @@ TEST(CoupledModel, JDQZSolve)
         JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>, 
                            ComplexVector<Combined_MultiVec> > > jdqz(matrix, z);
 
-        jdqz.setParameters(*jdqzParams);
+        jdqz.setParameters(*params[EIGEN]);
         jdqz.printParameters();
 
         jdqz.solve();
@@ -399,57 +481,6 @@ TEST(CoupledModel, JDQZSolve)
     }
     EXPECT_EQ(failed, false);
 }
-
-//------------------------------------------------------------------
-TEST(CoupledModel, numericalJacobian)
-{
-    // only do this test for small problems in serial
-    int nmax = 2e3;
-
-    // get Jacobian blocks in the model
-    coupledModel->dumpBlocks();
-    
-    if ( (comm->NumProc() == 1) &&
-         (coupledModel->getState('V')->GlobalLength() < nmax) )
-    {
-        bool failed = false;
-        try
-        {
-            INFO("compute njC");
-
-            NumericalJacobian<std::shared_ptr<CoupledModel>,
-                              std::shared_ptr<Combined_MultiVec> > njC;
-
-            njC.setTolerance(1e-11);
-            njC.seth(1e-12);
-            njC.compute(coupledModel, coupledModel->getState('V'));
-
-            std::string fnameJnC("JnC");
-
-            INFO(" Printing Numerical Jacobian " << fnameJnC);
-
-            njC.print(fnameJnC);
-
-        }
-        catch (...)
-        {
-            failed = true;
-            throw;
-        }
-        EXPECT_EQ(failed, false);
-    }
-
-    if (comm->NumProc() != 1)
-    {
-        INFO("****Numerical Jacobian test cannot run in parallel****");
-    }
-
-    if (coupledModel->getState('V')->GlobalLength() > nmax)
-    {
-        INFO("****Numerical Jacobian test cannot run for this problem size****");
-    }
-}
-
 
 //------------------------------------------------------------------
 // 2nd integral condition test
@@ -515,7 +546,7 @@ int main(int argc, char **argv)
 
     // Get rid of possibly parallel objects for a clean ending.
     ocean        = std::shared_ptr<Ocean>();
-    atmos        = std::shared_ptr<AtmospherePar>();
+    atmos        = std::shared_ptr<Atmosphere>();
     coupledModel = std::shared_ptr<CoupledModel>();
 
     comm->Barrier();

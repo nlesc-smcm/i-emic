@@ -1,4 +1,4 @@
-function [sol, add] = plot_ocean(solfile, maskfile, opts)
+function [sol, add] = plot_ocean(solfile, opts)
 %---------------------------------------------------------------------
 % PLOTTHCM - Mother script for plotting THCM output
 %  usage: plot_ocean(solfile, maskfile, opts)
@@ -12,18 +12,23 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     end
 
     if nargin < 2
-        maskfile = 'fort.44';
-        specify_mask = false;
-    else
-        specify_mask = true;
+        opts.everything = true;
     end
 
-    if nargin < 3
-        opts.everything = true;
+    if isfield(opts, 'maskfile')
+        maskfile = opts.maskfile;
+    else
+        maskfile = 'fort.44';
     end
     
     if isfield(opts, 'readEV')
         opts.everything = true;
+    end
+    
+    if isfield(opts, 'readFluxes')
+        readFluxes = opts.readFluxes;
+    else
+        readFluxes = false;
     end
     
     if isfield(opts, 'title_add')
@@ -92,12 +97,18 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         export_to_file = false;
     end
 
-
     if isfield(opts, 'invert')
         invert = opts.invert
     else
         invert = false;
     end    
+    
+    if isfield(opts, 'fig_ctr')
+        fig_ctr = opts.fig_ctr;
+    else
+        fig_ctr = 1; % first figure handle number
+    end
+
     
     restrict_sol = false;
     rmask = [];
@@ -217,7 +228,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 
 
     if plot_bstream || plot_everything
-        figure(1);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
 
         % - INTEGRATIONS - --------------------------------------------------
         % Barotropic streamfunction;
@@ -227,13 +238,15 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         imgp = img; imgp(imgp<0)=NaN;
         imgn = img; imgn(imgn>-0)=NaN;
         
-        contourf(RtD*x,RtD*(y),imgp,15,'LineStyle','none'); hold on;
-        contourf(RtD*x,RtD*(y),imgn,15,'LineStyle','none'); hold on;
+        %contourf(RtD*x,RtD*(y),imgp,10,'LineStyle','none'); hold on;
+        %contourf(RtD*x,RtD*(y),imgn,10,'LineStyle','none'); hold on;
+         
+        imagesc(RtD*x,RtD*(y),img); hold on; set(gca,'ydir','normal');
 
         plot_mask(summask,x,y); hold on
 
-        contour(RtD*x,RtD*(y),imgp,15,'k'); hold on;
-        contour(RtD*x,RtD*(y),imgn,15,'k--'); hold off;
+        contour(RtD*x,RtD*(y),imgp,10,'k'); hold on;
+        contour(RtD*x,RtD*(y),imgn,10,'k--'); hold off;
 
         if fix_caxis
             caxis([opts.caxis_min,opts.caxis_max])
@@ -258,7 +271,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     end
 
     if plot_mstream || plot_everything
-        figure(2);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         % PLOT OVERTURNING STREAMFUNCTION
 
         % Compute overturning streamfunction
@@ -302,7 +315,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     end
 
     if plot_temperature || plot_everything
-        figure(3);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         % - CHECK SALINITY - ------------------------------------------------
         check = checksal(S,x,y,dfzt);
         vol   = sum(sum(1-surfm).*cos(y'))*dx*dy;
@@ -355,7 +368,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
 
 
         % -------------------------------------------------------
-        figure(4);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         Tsurf = T(:,:,l);
         minT = T0+min(min(Tsurf));
         maxT = T0+max(max(Tsurf));
@@ -385,7 +398,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         end
     end
     if plot_salinity || plot_everything
-        figure(5);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
 
         contourf(RtD*yv(1:end-1),z*hdim,Sl'+S0,15);
         %imagesc(Sp'+S0);
@@ -407,7 +420,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     end
     if ( plot_sss || plot_everything )
         
-        figure(6); 
+        figure(fig_ctr); fig_ctr = fig_ctr+1; 
         Ssurf = S(:,:,l);
         Sz = mean(Ssurf,1);
         
@@ -437,7 +450,7 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
     if ( plot_salflux || plot_everything )  ...
             && ~isempty(add)
         
-        figure(7)
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         im = reshape(add.SalFlux,n,m);
         im(im==0) = NaN;
         imagesc(RtD*x, RtD*y, im');
@@ -447,16 +460,15 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         xlabel('Longitude');
         ylabel('Latitude');
         colorbar;
-        cmap = [my_colmap(caxis)];
+        cmap = [my_colmap(caxis,0)];
         colormap(cmap)
 
-        
     end
     
     if ( plot_temflux || plot_everything ) ...
             && ~isempty(add)
         
-        figure(8)
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         im = reshape(add.TemFlux,n,m);
         im(im==0) = NaN;
         imagesc(RtD*x, RtD*y, im');
@@ -470,6 +482,10 @@ function [sol, add] = plot_ocean(solfile, maskfile, opts)
         colormap(cmap)
 
         
+    end
+
+    if readFluxes
+        plot_fluxes(add, fig_ctr, 'Ocean: ');
     end
 
 

@@ -62,14 +62,14 @@ extern std::stack<Timer> timerStack;
 // Set field width in data outputs (even)
 #ifndef _FIELDWIDTH_
 # define _FIELDWIDTH_ 14
-#endif 
+#endif
 
 #ifndef INFO
-#  define INFO(s) (*outFile) << s << std::endl; 
+#  define INFO(s) (*outFile) << s << std::endl;
 #endif
 
 #ifndef WRITECDATA
-#  define WRITECDATA(s) (*cdataFile) << s << std::endl; 
+#  define WRITECDATA(s) (*cdataFile) << s << std::endl;
 #endif
 
 #ifndef WRITETDATA
@@ -80,12 +80,13 @@ extern std::stack<Timer> timerStack;
 #ifndef ERROR
 #  define ERROR(x,y,z)                                                  \
 	{                                                                   \
-		(*outFile) << "**ERROR**: " << x << " "                         \
-				   << y << " " << z << std::endl;                       \
-                                                                        \
-        std::cerr << "**ERROR**: "<< x << std::endl;                    \
+        std::cerr << "\n**ERROR**: "<< x << std::endl;                    \
         std::cerr << "(in " << y << ", line "                           \
-                  << z << ")" << std::endl;                             \
+                  << z << ")\n" << std::endl;                             \
+                                                                        \
+        (*outFile) << "\n**ERROR**: "<< x << std::endl;                   \
+        (*outFile) << "(in " << y << ", line "                          \
+                   << z << ")\n" << std::endl;                            \
                                                                         \
         int initialized = 0;                                            \
         MPI_Initialized(&initialized);                                  \
@@ -96,19 +97,21 @@ extern std::stack<Timer> timerStack;
 #endif
 
 #ifndef WARNING
-#  define WARNING(x,y,z)							\
-	{												\
-		(*outFile) << "**WARNING**: " << x << " "	\
-				   << y << " " << z << std::endl;	\
-        std::cerr << "**WARNING**: " << x << " "    \
-                  << y << " " << z << std::endl;	\
-	}
+#  define WARNING(x,y,z)                                                \
+	{                                                                   \
+		std::cerr << "\n**WARNING**: " << x << " ";                       \
+        std::cerr << "(in " << y << ", line "                           \
+                  << z << ")\n" << std::endl;                             \
+		(*outFile) << "\n**WARNING**: " << x << " ";                      \
+        (*outFile) << "(in " << y << ", line "                          \
+                  << z << ")\n" << std::endl;                             \
+}
 #endif
 
 #ifndef DEBUG
 #  ifdef DEBUGGING_OLD
 #    define DEBUG(s) (*outFile) << s << std::endl;
-// # stringifies variable s: 
+// # stringifies variable s:
 #    define DEBVAR(s) (*outFile) << #s << ": " << s << std::endl;
 #  else
 #    define DEBUG(s)
@@ -120,7 +123,7 @@ extern std::stack<Timer> timerStack;
 #ifndef DEB
 #  ifdef DEBUGGING_NEW
 #    define DEB(s) (*outFile) << s << std::endl;
-// # stringifies variable s: 
+// # stringifies variable s:
 #    define DEBV(s) (*outFile) << #s << ": " << s << std::endl;
 #  else
 #    define DEB(s)
@@ -129,12 +132,25 @@ extern std::stack<Timer> timerStack;
 #endif
 
 // Don't trust these dumps!! I think calling print on such objects is safer.
-#ifndef DUMP 
+#ifndef DUMP
 #  define DUMP(fname,mat) EpetraExt::RowMatrixToMatrixMarketFile(fname, mat);
 #endif
 
 #ifndef DUMP_VECTOR
-#  define DUMP_VECTOR(fname,mat) EpetraExt::VectorToMatlabFile(fname, mat);
+#  define DUMP_VECTOR(fname,vec) {                                      \
+        Teuchos::RCP<Epetra_MultiVector> mVec = Utils::Gather(vec, 0);  \
+        if (mVec->Map().Comm().MyPID() == 0)                            \
+        {                                                               \
+            std::ofstream file;                                         \
+            file.open(fname);                                           \
+            for (int i = 0; i != mVec->MyLength(); ++i)                 \
+            {                                                           \
+                file << std::setprecision(17) << std::scientific        \
+                     << (*(*mVec)(0))[i] << "\n";                       \
+            }                                                           \
+        }                                                               \
+    }                                                                   \
+ 
 #endif
 
 #ifndef DUMPMATLAB
@@ -162,7 +178,7 @@ extern std::stack<Timer> timerStack;
 		if (profile.find(msg) == profile.end())   \
             profile[msg] = std::array<double, PROFILE_ENTRIES>(); \
 		timerStack.push(timer);										\
-	} 
+	}
 #endif
 
 #ifndef TIMER_STOP
@@ -216,7 +232,7 @@ public:
 		:
 		startTime_(0.0)
 		{}
-	
+
 	double wallTime()
 		{
 			int mpiInit;
@@ -226,10 +242,10 @@ public:
 			else
 				return (double) std::clock() / CLOCKS_PER_SEC;
 		}
-	
+
 	void ResetStartTime()
 		{ startTime_ = wallTime();}
-	
+
 	double ElapsedTime()
 		{ return (double) (wallTime() - startTime_); }
 };
@@ -244,7 +260,7 @@ public:
                           << #funcall, __FILE__, __LINE__);             \
         }                                                               \
     }                                                                   \
- 
+
 #define CHECK_TRUE(funcall) {bool berr = funcall;                       \
 		if (!berr) {ERROR("Trilinos call " << #funcall                  \
                           << " returned false", __FILE__, __LINE__);}}  \
@@ -254,10 +270,20 @@ public:
         if (ierr<0) { ERROR("Trilinos call " << #funcall                \
                             << " returned negative: "                   \
                             << ierr , __FILE__, __LINE__); }}           \
-        
+
+#endif
+
+// macro for checking and replacing maps
+#ifndef CHECK_MAP
+#define CHECK_MAP(vec, map) {                                           \
+        if (!(vec->Map().SameAs(*map)))                                 \
+        {                                                               \
+            CHECK_ZERO(vec->ReplaceMap(*map));                          \
+        }}
 #endif
 
 #ifndef MOD
+
 //! our own 'modulo' function, which behaves like mod in matlab.
 //! the C++ built-in '%' operator returns -1%n=-1 and is therefore
 //! not very useful for periodic boundaries...

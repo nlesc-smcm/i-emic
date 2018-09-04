@@ -32,19 +32,21 @@ function [nrm] = plot_failed_residual(fname, maskname, level)
     oceanRes = true;
     atmosRes = false;    
     
-    if (numel(fname) > 8)
-        if strcmp(fname(end-7:end), 'first.h5')
-            fprintf(' ocean residual\n');
-            oceanRes = true;
-            atmosRes = false;
-        elseif strcmp(fname(end-8:end), 'second.h5')
-            l   = 1;
-            nun = 2;
-            fprintf(' atmos residual\n');
-            oceanRes = false;
-            atmosRes = true;        
-        end
+    if strcmp(fname(end-3:end), '0.h5')
+        fprintf(' ocean residual\n');
+        oceanRes = true;
+        atmosRes = false;
+    elseif strcmp(fname(end-3:end), '1.h5')
+        l   = 1;
+        nun = 3;
+        fprintf(' atmos residual\n');
+        oceanRes = false;
+        atmosRes = true;
+    else
+        fprintf('do not understand filename\n');
+        return;
     end
+
 
     sol = zeros(nun,n,m,l+la);
     idx = 1;

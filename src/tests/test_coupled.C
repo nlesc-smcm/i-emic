@@ -6,14 +6,14 @@
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-    std::shared_ptr<Ocean>         ocean;
-    std::shared_ptr<AtmospherePar> atmos;
-    std::shared_ptr<CoupledModel>  coupledModel;
-    RCP<Teuchos::ParameterList>    oceanParams;
-    RCP<Teuchos::ParameterList>    atmosphereParams;
-    RCP<Teuchos::ParameterList>    coupledmodelParams;
-    RCP<Teuchos::ParameterList>    continuationParams;
     RCP<Epetra_Comm>               comm;
+    
+    std::shared_ptr<Ocean>         ocean;
+    std::shared_ptr<Atmosphere>    atmos;
+    std::shared_ptr<SeaIce>        seaice;
+    std::shared_ptr<CoupledModel>  coupledModel;
+    std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
+    enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT};
 }
 
 //------------------------------------------------------------------
@@ -22,34 +22,35 @@ TEST(ParameterLists, Initialization)
     bool failed = false;
     try
     {
-        // Create parameter object for Ocean
-        oceanParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-        oceanParams->setName("Ocean parameters");
+        std::vector<string> files = {"ocean_params.xml",
+                                     "atmosphere_params.xml",
+                                     "seaice_params.xml",
+                                     "coupledmodel_params.xml",
+                                     "continuation_params.xml"};
 
-        // Create parameter object for Atmosphere
-        atmosphereParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
-        atmosphereParams->setName("Atmosphere parameters");
+        std::vector<string> names = {"Ocean parameters",
+                                     "Atmosphere parameters",
+                                     "Sea ice parameters",
+                                     "CoupledModel parameters",
+                                     "Continuation parameters"};
 
-        // Create parameter object for CoupledModel
-        coupledmodelParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("coupledmodel_params.xml", coupledmodelParams.ptr());
-        coupledmodelParams->setName("CoupledModel parameters");
-
-        // Create parameter object for Continuation
-        continuationParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
-        continuationParams->setName("Continuation parameters");
+        for (int i = 0; i != (int) files.size(); ++i)
+            params.push_back(obtainParams(files[i], names[i]));
 
         INFO('\n' << "Overwriting:");
-        // The Continuation and CoupledModel parameterlists overwrite settings
-        Utils::overwriteParameters(oceanParams,        coupledmodelParams);
-        Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
 
-        Utils::overwriteParameters(oceanParams,        continuationParams);
-        Utils::overwriteParameters(atmosphereParams,   continuationParams);
-        Utils::overwriteParameters(coupledmodelParams, continuationParams);
+        // Allow dominant parameterlists. Note that this trick uses a
+        // 'flattened' hierarchy. The Continuation and CoupledModel
+        // parameterlists are allowed to overwrite settings.
+        Utils::overwriteParameters(params[OCEAN],  params[COUPLED]);
+        Utils::overwriteParameters(params[ATMOS],  params[COUPLED]);
+        Utils::overwriteParameters(params[SEAICE], params[COUPLED]);
+
+        Utils::overwriteParameters(params[OCEAN],  params[CONT]);
+        Utils::overwriteParameters(params[ATMOS],  params[CONT]);
+        Utils::overwriteParameters(params[SEAICE], params[CONT]);
+
+        Utils::overwriteParameters(params[COUPLED], params[CONT]);
         INFO('\n');
     }
     catch (...)
@@ -67,7 +68,7 @@ TEST(Ocean, Initialization)
     try
     {
         // Create parallel Ocean
-        ocean = std::make_shared<Ocean>(comm, oceanParams);
+        ocean = std::make_shared<Ocean>(comm, params[OCEAN]);
     }
     catch (...)
     {
@@ -85,7 +86,25 @@ TEST(Atmosphere, Initialization)
     try
     {
         // Create atmosphere
-        atmos = std::make_shared<AtmospherePar>(comm, atmosphereParams);
+        atmos = std::make_shared<Atmosphere>(comm, params[ATMOS]);
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(SeaIce, Initialization)
+{
+    bool failed = false;
+    try
+    {
+        // Create atmosphere
+        seaice = std::make_shared<SeaIce>(comm, params[SEAICE]);
     }
     catch (...)
     {
@@ -103,7 +122,10 @@ TEST(CoupledModel, Initialization)
     try
     {
         // Create coupledmodel
-        coupledModel = std::make_shared<CoupledModel>(ocean,atmos,coupledmodelParams);
+        coupledModel = std::make_shared<CoupledModel>(ocean,
+                                                      atmos,
+                                                      seaice,
+                                                      params[COUPLED]);
     }
     catch (...)
     {
@@ -122,35 +144,41 @@ TEST(CoupledModel, inspectState)
     {
         std::shared_ptr<Combined_MultiVec> state = coupledModel->getState('V');
         state->Random();
+        size_t stateSize = state->Size();
 
-        int firstL  = state->First()->GlobalLength();
-        int secondL = state->Second()->GlobalLength();
-        int stateL  = state->GlobalLength();
+        std::vector<int> lengthsGlobal(stateSize);
+        std::vector<int> lengthsLocal(stateSize);
+        int sumGlobal = 0, sumLocal = 0;
+        for (size_t i = 0; i != stateSize; ++i)
+        {
+            lengthsGlobal[i] = (*state)(i)->GlobalLength();
+            lengthsLocal[i] = (*state)(i)->MyLength();
+            sumGlobal += lengthsGlobal[i];
+            sumLocal  += lengthsLocal[i];
+        }
 
-        INFO(" global 1: " << firstL << " 2: " << secondL
-             << " 1+2: " << stateL);
+        EXPECT_EQ(sumGlobal, state->GlobalLength());
+        EXPECT_EQ(sumLocal,  state->MyLength());
 
-        EXPECT_EQ(firstL + secondL, stateL);
+        std::vector<double> norms(stateSize);
+        double sumNorms = 0.0;
+        for (size_t i = 0; i != stateSize; ++i)
+        {
+            norms[i] = Utils::norm((*state)(i));
+            sumNorms += pow(norms[i], 2);
+        }
+        
+        EXPECT_NEAR(Utils::norm(state), sqrt(sumNorms), 1e-7);
 
-        firstL  = state->First()->MyLength();
-        secondL = state->Second()->MyLength();
-        stateL  = state->MyLength();
+        std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
+        x->PutScalar(1.0);
+        
+        // Check whether the indexing works correctly
+        for (int i = 0; i != x->MyLength(); ++i)
+        {
+            EXPECT_EQ((*x)[i], 1);
+        }
 
-        INFO( " local 1: " << firstL << " 2: " << secondL
-             << " 1+2: " << stateL );
-        EXPECT_EQ(firstL + secondL, stateL);
-
-        double firstNrm = Utils::norm(state->First());
-        double secndNrm = Utils::norm(state->Second());
-        double stateNrm = Utils::norm(state);
-
-        EXPECT_NEAR(stateNrm, sqrt(pow(firstNrm,2) + pow(secndNrm,2)), 1e-7);
-
-        INFO( " norm 1: " << firstNrm << " 2: " << secndNrm
-              << " 1+2: " << stateNrm << std::endl );
-
-        Utils::print(state->First(),  "rand_state_first");
-        Utils::print(state->Second(), "rand_state_second");
     }
     catch (...)
     {
@@ -165,13 +193,16 @@ TEST(CoupledModel, MassMatrix)
 {
     Combined_MultiVec v   = *coupledModel->getState('C');
     Combined_MultiVec out = *coupledModel->getState('C');
+
     v.PutScalar(1.0);
     out.Random();
 
     coupledModel->applyMassMat(v, out);
+
+    EXPECT_GT(Utils::norm(out), 0.0);
     
-    Teuchos::RCP<Epetra_MultiVector> oceanB = out.First();
-    Teuchos::RCP<Epetra_MultiVector> atmosB = out.Second();
+    Teuchos::RCP<Epetra_MultiVector> oceanB = out(0);
+    Teuchos::RCP<Epetra_MultiVector> atmosB = out(1);
     
     int n = ocean->getNdim();
     int m = ocean->getMdim();
@@ -201,7 +232,7 @@ TEST(CoupledModel, MassMatrix)
     // auxiliary integral equations 
     if (atmosB->GlobalLength() > ATMOS_NUN_ * m * n)
     {
-        int aux = atmosphereParams->get("Auxiliary unknowns", 0);
+        int aux = params[ATMOS]->get("Auxiliary unknowns", 0);
         EXPECT_NE(aux, 0);
         for (int i = 1; i <= aux; ++i)
         {
@@ -223,19 +254,35 @@ TEST(CoupledModel, computeJacobian)
         // Set a small parameter
         coupledModel->setPar(0.1);
 
-        // randomize state       
+        // put values in state
         coupledModel->getState('V')->Random();
-        coupledModel->getState('V')->Scale(10);
+        coupledModel->getState('V')->Scale(1e-4);
+
+        // To check derivatives with sea ice mask components, we make
+        // sure that the sea ice mask has active and inactive parts:
+        Teuchos::RCP<Epetra_Vector> seaice_state = seaice->getState('V');
+        Teuchos::RCP<Epetra_Vector> seaice_mask  = seaice->interfaceM();
+        seaice_mask->PutScalar(0.0);
+        for (int i = 0; i < seaice_mask->MyLength()/4; ++i)
+            (*seaice_mask)[i] = 1.0;
+               
+        Epetra_Import importM(seaice_mask->Map(), seaice_state->Map());
+        seaice_state->Export(*seaice_mask, importM, Zero);
 
         coupledModel->computeJacobian();
-        Teuchos::RCP<Epetra_CrsMatrix> atmosJac = atmos->getJacobian();
-        Teuchos::RCP<Epetra_CrsMatrix> oceanJac = ocean->getJacobian();
+        Teuchos::RCP<Epetra_CrsMatrix> atmosJac  = atmos->getJacobian();
+        Teuchos::RCP<Epetra_CrsMatrix> oceanJac  = ocean->getJacobian();
+        Teuchos::RCP<Epetra_CrsMatrix> seaiceJac = seaice->getJacobian();
 
-        Utils::print(atmosJac, "atmosJac");
-        Utils::print(oceanJac, "oceanJac");
-
+        Utils::print(atmosJac,  "atmosJac");
+        Utils::print(oceanJac,  "oceanJac");
+        Utils::print(seaiceJac, "seaiceJac");
+                                               
         Utils::print(&atmosJac->ColMap(), "atmosJacColMap");
         Utils::print(&atmosJac->DomainMap(), "atmosJacDomainMap");
+
+        Utils::print(&seaiceJac->ColMap(), "seaiceJacColMap");
+        Utils::print(&seaiceJac->DomainMap(), "seaiceJacDomainMap");
 
         coupledModel->dumpBlocks();
     }
@@ -258,23 +305,33 @@ TEST(CoupledModel, numericalJacobian)
     {
         bool failed = false;
         try
-        {
+        {            
             INFO("compute njC");
 
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> > njC;
-
-            njC.setTolerance(1e-12);
-            njC.seth(1e-7);
+            
+            njC.setTolerance(1e-10);
+            njC.seth(1e-4);
             njC.compute(coupledModel, coupledModel->getState('V'));
 
             std::string fnameJnC("JnC");
 
             INFO(" Printing Numerical Jacobian " << fnameJnC);
-
+            
             njC.print(fnameJnC);
+            
+            // test individual elements 
+            NumericalJacobian<std::shared_ptr<CoupledModel>,
+                              std::shared_ptr<Combined_MultiVec> >::CCS ccs;
+            njC.fillCCS(ccs);
 
-            // --> todo test equality of element sums (see test_domain.C)
+            EXPECT_NE(ccs.beg.back(), 0);
+
+            std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
+
+            testEntries(coupledModel, ccs, x);
+                                          
         }
         catch (...)
         {
@@ -286,19 +343,23 @@ TEST(CoupledModel, numericalJacobian)
 
     if (comm->NumProc() != 1)
     {
+        std::cout << ("****Numerical Jacobian test cannot run in parallel****\n") ;
         INFO("****Numerical Jacobian test cannot run in parallel****");
     }
 
     if (coupledModel->getState('V')->GlobalLength() > nmax)
     {
+        std::cout << ("****Numerical Jacobian test cannot run for this problem size****\n");
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
+
 }
 
 //------------------------------------------------------------------
 // We need this information from THCM
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
-                                 double*, double*, double*);
+                                 double*, double*, double*,
+                                 double *);
 
 TEST(CoupledModel, applyMatrix)
 {
@@ -317,7 +378,8 @@ TEST(CoupledModel, applyMatrix)
 
         // set values
         coupledModel->getState('V')->Random();
-        coupledModel->setPar(0.1);
+        double parValue = 0.1;
+        coupledModel->setPar(parValue);
         
         std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
         std::shared_ptr<Combined_MultiVec> y = coupledModel->getState('C');
@@ -333,13 +395,13 @@ TEST(CoupledModel, applyMatrix)
         // Test the coupling blocks in the matrix separately
 
         CouplingBlock<std::shared_ptr<Ocean>,
-                      std::shared_ptr<AtmospherePar> > C12(ocean, atmos);
+                      std::shared_ptr<Atmosphere> > C12(ocean, atmos);
 
-        CouplingBlock<std::shared_ptr<AtmospherePar>,
+        CouplingBlock<std::shared_ptr<Atmosphere>,
                       std::shared_ptr<Ocean> > C21(atmos, ocean);
 
-        Teuchos::RCP<Epetra_MultiVector> oceanVec = x->First();
-        Teuchos::RCP<Epetra_MultiVector> atmosVec = x->Second();
+        Teuchos::RCP<Epetra_MultiVector> oceanVec = (*x)(0);
+        Teuchos::RCP<Epetra_MultiVector> atmosVec = (*x)(1);
 
         int n = ocean->getNdim();
         int m = ocean->getMdim();
@@ -349,6 +411,15 @@ TEST(CoupledModel, applyMatrix)
         // Test atmos -> ocean coupling
         int ii = n-2;
         int jj = m-2;
+
+        // Get shortwave radiative heat flux dependence
+        Teuchos::RCP<Epetra_MultiVector> suno =
+                Utils::AllGather(*ocean->getSunO());
+
+        double So = (*(*suno)(0))[jj*n + ii];
+
+        Atmosphere::CommPars atmosPars;
+        atmos->getCommPars(atmosPars);
             
         for (int v = 0; v != 3; ++v)
         {
@@ -358,10 +429,10 @@ TEST(CoupledModel, applyMatrix)
             C12.applyMatrix(*atmosVec, *oceanVec);
 
             // Get ocean parameters
-            double Ooa, Os, nus, eta, lvsc, qdim;
-            FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim);
+            double Ooa, Os, nus, eta, lvsc, qdim, pQSnd;
+            FNAME(getdeps)(&Ooa, &Os, &nus, &eta, &lvsc, &qdim, &pQSnd);
 
-            // Test first surface element (temperature)
+            // Test center surface element (temperature)
             int surfbT = FIND_ROW2(_NUN_, n, m, l, ii, jj, l-1, TT);
 
             INFO( " surface element TT " << surfbT );
@@ -382,7 +453,8 @@ TEST(CoupledModel, applyMatrix)
                 {
                     lid = oceanVec->Map().LID(surfbT);
                     surfval = (*oceanVec)[0][lid];
-                    EXPECT_NEAR(-(Ooa + lvsc * eta * qdim) * value[v], surfval , 1e-7);
+                    EXPECT_NEAR(-(Ooa + lvsc * eta * qdim - parValue * So * atmosPars.da ) * value[v],
+                                surfval , 1e-7);
                 }
 
                 // Test first surface element (salinity)
@@ -399,7 +471,7 @@ TEST(CoupledModel, applyMatrix)
         }
 
         // qdim, nuq, eta, dqso, dqdt, Eo0;
-        AtmospherePar::CommPars pars;
+        Atmosphere::CommPars pars;
         atmos->getCommPars(pars);
 
         // Test ocean -> atmos coupling
@@ -460,7 +532,7 @@ TEST(CoupledModel, applyMatrix)
 
                 // First check if we have auxiliary unknowns:
                 int aux;
-                aux = atmosphereParams->get("Auxiliary unknowns", 0);
+                aux = params[ATMOS]->get("Auxiliary unknowns", 0);
                 
                 if (atmosVec->GlobalLength() > ATMOS_NUN_ * m * n * l)
                 {
@@ -493,7 +565,7 @@ TEST(CoupledModel, applyMatrix)
                     
                     std::cout << " intval: " << intval << std::endl;
 
-                    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);
+                    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_NUN_);
                     std::cout << " last  : " << last << std::endl;
                                         
                     if (atmosVec->Map().MyGID(last + 1))
@@ -519,7 +591,6 @@ TEST(CoupledModel, applyMatrix)
 
     EXPECT_EQ(failed, false);
 }
-
 //------------------------------------------------------------------
 TEST(CoupledModel, Precipitation)
 {
@@ -535,8 +606,8 @@ TEST(CoupledModel, Precipitation)
     coupledModel->computeJacobian();
     coupledModel->applyMatrix(*stateV, *b);
 
-    Teuchos::RCP<Epetra_MultiVector> atmb = b->Second();
-    Teuchos::RCP<Epetra_Vector> P = atmos->getP();
+    Teuchos::RCP<Epetra_MultiVector> atmb = (*b)(1);
+    Teuchos::RCP<Epetra_Vector> P = atmos->interfaceP();
 
     int numMyElements = P->Map().NumMyElements();
     double Pval = 0.0;
@@ -556,7 +627,7 @@ TEST(CoupledModel, Precipitation)
     // assume single atmosphere layer
     int l = 1;
 
-    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_QQ_);
+    int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_NUN_);
     int lid; 
     double val;
     if (atmb->Map().MyGID(last+1))
@@ -567,10 +638,10 @@ TEST(CoupledModel, Precipitation)
 
     }
 
-        // EXPECT_EQ(
-    
-    
+    // FIXME TODO
+    // EXPECT_EQ(    
 }
+
 
 //------------------------------------------------------------------
 TEST(CoupledModel, View)
@@ -580,6 +651,7 @@ TEST(CoupledModel, View)
 
     std::shared_ptr<Combined_MultiVec> rhsV =
         coupledModel->getRHS('V');
+
 
     stateV->PutScalar(0.1);
     coupledModel->computeRHS();
@@ -594,6 +666,7 @@ TEST(CoupledModel, View)
     EXPECT_NE(norm1, norm2);
 }
 
+
 //------------------------------------------------------------------
 TEST(CoupledModel, Synchronization)
 {
@@ -604,8 +677,8 @@ TEST(CoupledModel, Synchronization)
 
     try
     {
-        stateV->First()->PutScalar(1.234);
-        stateV->Second()->PutScalar(2.345);
+        (*stateV)(0)->PutScalar(1.234);
+        (*stateV)(1)->PutScalar(2.345);
 
         // Set a small parameter
         coupledModel->setPar(0.01);
@@ -638,7 +711,7 @@ TEST(CoupledModel, Synchronization)
     else
         INFO(" oceanAtmosT (overl.) GID's not unique, which is fine in parallel.");
 
-    Teuchos::RCP<Epetra_Vector> atmosOceanT = atmos->getLocalOceanT();
+    Teuchos::RCP<Epetra_Vector> atmosOceanT = atmos->getLocalSST();
 
     Utils::print(atmosOceanT, "atmosOceanT" + std::to_string(comm->MyPID()));
 
@@ -658,6 +731,13 @@ TEST(CoupledModel, Synchronization)
     // Randomize combined state
     stateV->Random();
 
+    // Make sure that the sea ice mask is inactive
+    Teuchos::RCP<Epetra_Vector> seaice_state = seaice->getState('V');
+    Teuchos::RCP<Epetra_Vector> seaice_mask  = seaice->interfaceM();
+    seaice_mask->PutScalar(0.0);
+    Epetra_Import importM(seaice_mask->Map(), seaice_state->Map());
+    seaice_state->Export(*seaice_mask, importM, Zero);
+
     try
     {
         // At RHS computation the coupledModel synchronizes the states
@@ -673,12 +753,9 @@ TEST(CoupledModel, Synchronization)
     // Evaporation is calculated simultaneously in Ocean and in
     // Atmosphere during the RHS computation above. Here we check
     // whether they return the same nondimensional norm.
-    Teuchos::RCP<Epetra_Vector> atmosE = atmos->getE();
-    Teuchos::RCP<Epetra_Vector> oceanE = ocean->getE();
+    Teuchos::RCP<Epetra_Vector> atmosE = atmos->interfaceE();
+    Teuchos::RCP<Epetra_Vector> oceanE = ocean->interfaceE();
 
-    std::cout << *atmosE << std::endl;
-    std::cout << *oceanE << std::endl;
-    
     double nrmAtmosE = Utils::norm(atmosE);
     double nrmOceanE = Utils::norm(oceanE);
     EXPECT_NEAR(nrmAtmosE, nrmOceanE, 1e-7);
@@ -699,6 +776,41 @@ TEST(CoupledModel, Synchronization)
     EXPECT_GT(std::max(std::abs(maxValue), std::abs(minValue)), 0.0);
 
 }
+
+//------------------------------------------------------------------
+TEST(CoupledModel, Synchronization2)
+{
+    std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('V');
+    x->PutScalar(1e-4);
+    std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('C');
+    b->PutScalar(0.0);
+    coupledModel->applyMatrix(*x, *b);
+
+    int numModels = b->Size();
+    std::vector<double> norms(numModels);
+    for (int i = 0; i != numModels; ++i)
+        norms[i] = Utils::norm((*x)(i));
+
+    std::stringstream ss;
+    for (auto &v: norms)
+        ss << v << " ";
+    ss << std::endl;
+    
+    (*b)(b->Size()-1)->PutScalar(-1e-2);
+    coupledModel->solve(b);
+
+    x = coupledModel->getSolution('C');
+    for (int i = 0; i != numModels; ++i)
+        norms[i] = Utils::norm((*x)(i));
+        
+    for (auto &v: norms)
+        ss << v << " ";
+    ss << std::endl;
+
+
+    INFO(ss.str());
+}
+
 
 //------------------------------------------------------------------
 // Test hashing functions of Combined_MultiVec and Utils
@@ -722,6 +834,7 @@ TEST(CoupledModel, Hashing)
 
 }
 
+
 //------------------------------------------------------------------
 TEST(CoupledModel, Solve)
 {
@@ -741,6 +854,8 @@ TEST(CoupledModel, Solve)
     }
     EXPECT_EQ(failed, false);
 }
+
+
 
 //------------------------------------------------------------------
 // Here we are testing the implementation of the integral condition.
@@ -764,8 +879,8 @@ TEST(CoupledModel, IntegralCondition)
     coupledModel->computeJacobian();
     coupledModel->applyMatrix(*x, *b);
 
-    Teuchos::RCP<Epetra_MultiVector> oceanB = b->First();
-    Teuchos::RCP<Epetra_MultiVector> oceanF = F->First();
+    Teuchos::RCP<Epetra_MultiVector> oceanB = (*b)(0);
+    Teuchos::RCP<Epetra_MultiVector> oceanF = (*F)(0);
 
     int rowintcon = ocean->getRowIntCon();
     int lid = -1;
@@ -815,7 +930,8 @@ int main(int argc, char **argv)
 
     // Get rid of possibly parallel objects for a clean ending.
     ocean        = std::shared_ptr<Ocean>();
-    atmos        = std::shared_ptr<AtmospherePar>();
+    atmos        = std::shared_ptr<Atmosphere>();
+    seaice       = std::shared_ptr<SeaIce>();
     coupledModel = std::shared_ptr<CoupledModel>();
 
     comm->Barrier();

@@ -5,15 +5,19 @@ SUBROUTINE forcing
   !     Shape of wind-forcing and buoyancy forcing
   use m_usr
   use m_atm
+  use m_ice
   implicit none
 
-  real    sigma, etabi, gamma
+  real sigma, etabi, gamma
+  real QToa, QTos
+  real QSoa, QSos
+  real pQSnd
 
   real wfun, temfun, salfun
+
   real temcor, check, area
   real salcor, adapted_salcor, spertcor
-  integer i, j, k, row
-  real    qfun2(n,m), fsint
+  integer i, j, k
   integer find_row2
   real :: max_internal_forcing
 
@@ -31,8 +35,8 @@ SUBROUTINE forcing
   if (iza.eq.2) then        ! idealized wind forcing
      do j=1,m
         do i=1,n
-           taux(i,j) = wfun(xu(i),yv(j),1)
-           tauy(i,j) = wfun(xu(i),yv(j),2)
+           taux(i,j) = wfun(yv(j), 1)
+           tauy(i,j) = wfun(yv(j), 2)
         enddo
      enddo
   endif
@@ -48,15 +52,16 @@ SUBROUTINE forcing
   ! Determine atmospheric temperature forcing
   ! ------------------------------------------------------------------
 
-  etabi = par(COMB)*par(TEMP)*(1 - TRES + TRES*par(BIOT))
-
+  etabi =  par(COMB) * par(TEMP) * (1 - TRES + TRES*par(BIOT))
+  lvsc  =  par(COMB) * par(TEMP) * rhodim * lv * QTnd
+  
   ! idealized temperature forcing
   temcor = 0.0
   if ((ite.eq.1).and.(coupled_T.eq.0)) then
      
      do j=1,m
         do i=1,n
-           tatm(i,j) = temfun(x(i),y(j))
+           tatm(i,j) = temfun(y(j))
         enddo
      enddo
      
@@ -64,20 +69,28 @@ SUBROUTINE forcing
      
   endif
 
+
   do j=1,m
      do i=1,n
-        if (la > 0) then ! coupling to atmosphere
-           Frc(find_row2(i,j,l+1,TT)) = &
-                par(COMB) * par(SUNP) * (suna(j) - amua)
-           Frc(find_row2(i,j,l,TT)) = &
-                par(COMB) * par(SUNP) * suno(j) * (1 - landm(i,j,l))
-           
-        else if (coupled_T.eq.1) then ! coupled externally
-           Frc(find_row2(i,j,l,TT)) = &
-                ( par(COMB) * par(SUNP) * suno(j)  &
-                +  Ooa * tatm(i,j) &
-                +  lvsc * eta * qdim * qatm(i,j)   & ! latent heat 
-                -  lvsc * eo0 &                      ! latent heat
+        if (coupled_T.eq.1) then ! coupled externally
+
+           ! Heat flux forcing from the atmosphere into the ocean.
+           ! External and background contributions
+           ! QToa = QSW − QSH − QLH
+           QToa = &
+                par(COMB) * par(SUNP)                  & ! continuation pars
+                *  suno(j) * (1-albe0-albed*albe(i,j)) & ! shortwave heat flux
+                +  Ooa * tatm(i,j)                     & ! sensible heat fux
+                +  lvsc * eta * qdim * qatm(i,j)       & ! latent heat flux
+                -  lvsc * eo0                            ! latent heat flux
+
+           ! Heat flux forcing from sea ice into the ocean. External
+           ! and background contributions.
+           QTos = QTnd * zeta * (a0 * s0 - t0)
+
+           ! Combine forcings through mask
+           Frc(find_row2(i,j,l,TT)) = (          &
+                QToa + msi(i,j) * (QTos  - QToa) &  
                 ) * (1 - landm(i,j,l))
 
         else  ! ocean-only
@@ -93,7 +106,7 @@ SUBROUTINE forcing
   if (coupled_S.eq.1) then
      gamma = par(COMB) * par(SALT) 
   else 
-     gamma = par(COMB)*par(SALT)*(1 - SRES + SRES*par(BIOT))
+     gamma = par(COMB) * par(SALT) * (1 - SRES + SRES*par(BIOT))
   endif
 
   salcor = 0.0;
@@ -101,22 +114,22 @@ SUBROUTINE forcing
 
      do j=1,m
         do i=1,n
-           emip(i,j) = salfun(x(i),y(j)) * (1-landm(i,j,l))
+           emip(i,j) = salfun(y(j)) * (1-landm(i,j,l))
         enddo
      enddo
      
      if (SRES.eq.0.and.coupled_S.eq.0) call qint(emip,  salcor)
 
-     check = 0.0;
-     area  = 0.0;
-     do j=1,m
-        do i=1,n
-           check = check + (emip(i,j) - salcor) * cos(y(j)) * (1-landm(i,j,l))
-           area  = area  + cos(y(j)) * (1-landm(i,j,l))
-        enddo
-     enddo
+     ! check = 0.0;
+     ! area  = 0.0;
+     ! do j=1,m
+     !    do i=1,n
+     !       check = check + (emip(i,j) - salcor) * cos(y(j)) * (1-landm(i,j,l))
+     !       area  = area  + cos(y(j)) * (1-landm(i,j,l))
+     !    enddo
+     ! enddo
     
-     write(*,*) '  Salinity flux correction check = ', check, area, salcor
+     ! write(*,*) '  Salinity flux correction check = ', check, area, salcor
      
   endif
 
@@ -124,6 +137,17 @@ SUBROUTINE forcing
 
      call qint(adapted_emip, adapted_salcor)
      call qint(spert, spertcor)
+
+     ! check = 0.0;
+     ! area  = 0.0;
+     ! do j=1,m
+     !    do i=1,n
+     !       check = check + (spert(i,j) - spertcor) * cos(y(j)) * (1-landm(i,j,l))
+     !       area  = area  + cos(y(j)) * (1-landm(i,j,l))
+     !    enddo
+     ! enddo
+    
+     ! write(*,*) '  spert flux correction check = ', check, area, spertcor
 
      ! write(*,*) 'salcor=',salcor, ' adapted_salcor=', adapted_salcor, 'spertcor=', spertcor
      ! write(*,*) 'emip(10,10)', emip(10,10)
@@ -134,12 +158,28 @@ SUBROUTINE forcing
      adapted_salcor = 0.0
      spertcor = 0.0
   end if
-  
+
+  nus   =  par(COMB) * par(SALT) * eta * qdim * QSnd
+  pQSnd =  par(COMB) * par(SALT) * QSnd
   do j=1,m
      do i=1,n
         if (coupled_S.eq.1) then
-           ! nus*(E-P) without the T dependency, which is taken care of in usrc.F90
-           Frc(find_row2(i,j,l,SS)) =  nus * (-qatm(i,j)-pfield(i,j)) * (1-landm(i,j,l))
+           ! Salinity flux from the atmosphere into the ocean, E-P
+           ! forcing, external contributions. Internal contributions
+           ! are added to the matrix in usrc.F90.
+           QSoa = nus * (-qatm(i,j) - patm(i,j)) 
+
+           ! Salinity flux from sea ice into the ocean (brine
+           ! rejection or melt)
+           QSos =  pQSnd *               & ! Continuation pars * nondim 
+                ( zeta * (a0 * s0 - t0)  & ! QTos component, background contribution
+                - Qvar * qsa(i,j) - Q0)  & ! QTsa component, external contribution
+                / (rhodim * Lf)
+
+           ! Combine forcings through mask           
+           Frc(find_row2(i,j,l,SS)) = (         &
+                QSoa + msi(i,j) * (QSos - QSoa) &
+                -gsi(i,j)) * (1-landm(i,j,l))
         else
            Frc(find_row2(i,j,l,SS)) = gamma * (1 - par(HMTP)) * ( emip(i,j) - salcor ) + &
                 gamma * par(HMTP) * ( adapted_emip(i,j) - adapted_salcor ) + &
@@ -177,6 +217,35 @@ SUBROUTINE forcing
 
 end subroutine forcing
 
+!******************************************************************
+! Function to compute heat flux forcing from the atmosphere into the
+! ocean. External and background contributions.
+! real FUNCTION QToaFun(i_suno, i_tatm, i_qatm)
+!   use m_usr
+!   use m_atm
+!   implicit none
+!   real    i_suno, i_tatm, i_qatm
+
+!   QToaFun = &
+!        par(COMB) * par(SUNP) * i_suno   & ! shortwave heat flux
+!        +  Ooa * i_tatm                  & ! sensible heat fux
+!        +  lvsc * eta * qdim * i_qatm    & ! latent heat flux
+!        -  lvsc * eo0                      ! latent heat flux
+  
+! end FUNCTION QToaFun
+
+!******************************************************************
+! Heat flux forcing from sea ice into the ocean. Background
+! ! contributions.
+! real FUNCTION QTosFun()
+!   use m_usr
+!   use m_ice
+!   implicit none
+
+!   QTosFun = zeta * (a0 * s0 - t0)
+  
+! end FUNCTION QTosFun
+
 !****************************************************************************
 SUBROUTINE windfit
   USE m_itplbv
@@ -189,10 +258,10 @@ SUBROUTINE windfit
   ! parameter(nx=360,ny=180)
   integer ::lwrk,liwrk
   !     LOCAL
-  integer i,j,ifail,px,py,iwrk(n+nx)
-  real    wrk2(4*n+nx+4)
+  integer i,j,ifail
+
   real    xx(nx),yy(ny),ff1(nx*ny),ff2(nx*ny)
-  real    lambda(nx+4),mu(ny+4),cspl(nx*ny),wrk( (nx+6)*(ny+6) )
+
   real    dumx(n*m),dumy(n*m)
   real    xh(n),yh(m)
   real    xi(n*m), yi(n*m)
@@ -289,10 +358,10 @@ SUBROUTINE windfit_monthly(month)
   parameter(nx=144,ny=73)
   integer ::lwrk,liwrk
   !     LOCAL
-  integer i,j,k,ifail,px,py,iwrk(n+nx)
-  real    wrk2(4*n+nx+4)
+  integer i,j,k,ifail
+
   real    xx(nx),yy(ny),ff1(nx*ny),ff2(nx*ny)
-  real    lambda(nx+4),mu(ny+4),cspl(nx*ny),wrk( (nx+6)*(ny+6) )
+
   real    dumx(n*m),dumy(n*m)
   real    xh(n),yh(m)
   real    xi(n*m), yi(n*m)
@@ -306,10 +375,10 @@ SUBROUTINE windfit_monthly(month)
   dely=180.0/(ny-1)
 
   do i=1,nx
-     xx(i) = dble(i-1)*delx
+     xx(i) = (i-1)*delx
   enddo
   do j=1,ny
-     yy(j) = -90.0 + dble(j-1)*dely
+     yy(j) = -90.0 + (j-1)*dely
   enddo
   xx = xx*pi/180.
   yy = yy*pi/180.
@@ -414,12 +483,12 @@ SUBROUTINE read_spertm
 end subroutine read_spertm
 
 !****************************************************************************
-real FUNCTION wfun(xx,yy,v1)
+real FUNCTION wfun(yy,v1)
   use m_par
   use m_global ! we need the global value of ymin and ymax here!
   implicit none
   integer v1
-  real    xx,yy,asym
+  real    yy
   real :: tmax
   select case(v1)
   case(1)  ! x
@@ -433,11 +502,11 @@ real FUNCTION wfun(xx,yy,v1)
 end FUNCTION wfun
 
 !****************************************************************************
-real FUNCTION temfun(xx,yy)
+real FUNCTION temfun(yy)
   use m_par
   use m_global ! we need the global value of ymin and ymax here!
   implicit none
-  real xx,yy
+  real yy
   if (ymin.ge.0.0) then ! Northern hemisphere
      temfun = cos(pi*(yy-ymin)/(ymax-ymin))
   else
@@ -446,12 +515,11 @@ real FUNCTION temfun(xx,yy)
 end FUNCTION temfun
 
 !****************************************************************************
-real FUNCTION salfun(xx,yy)
+real FUNCTION salfun(yy)
   use m_par
   use m_global ! we need the global value of ymin and ymax here!
   implicit none
-  real    xx,yy
-  real    subtr
+  real    yy
   if (ymin.ge.0.0) then ! Northern hemisphere
      salfun = cos(pi*(yy-ymin)/(ymax-ymin))
      ! salfun=0.0
@@ -466,13 +534,12 @@ SUBROUTINE qint(field,cor)
   ! Compute correction for nonzero flux
   use m_usr
   implicit none
-  integer i, j
-  real  field(n,m), cor, sint
+  real  field(n,m), cor
   external thcm_forcing_integral
 
   ! This is an evil breach of concept, we call a C++ function from F90
   ! to compute the global integral:
-
+  cor = 0.0
   call thcm_forcing_integral(field, y(1:m), landm, cor)
 
 end SUBROUTINE qint
@@ -487,10 +554,10 @@ SUBROUTINE tempfit
   parameter(nx=144,ny=73)
   integer ::lwrk,liwrk
   !     LOCAL
-  integer i,j,ifail,px,py,iwrk(n+nx)
-  real    wrk2(4*n+nx+4)
+  integer i,j,ifail
+
   real    xx(nx),yy(ny),t1(nx*ny)
-  real    lambda(nx+4),mu(ny+4),cspl(nx*ny),wrk( (nx+6)*(ny+6) )
+
   real    dumx(n*m), tatmmax
   real    xi(n*m), yi(n*m)
   !
@@ -702,7 +769,6 @@ SUBROUTINE qint3(fl)
   use m_usr
   implicit none
   real fl(n,m,l), sint, svol, int
-  integer i,j,k
 
   call ssint(fl,1,l,sint,svol)
 

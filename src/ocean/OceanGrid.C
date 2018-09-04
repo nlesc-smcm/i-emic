@@ -50,7 +50,7 @@ OceanGrid::OceanGrid(Teuchos::RCP<TRIOS::Domain> dom)
     m = domain->LocalM();
     l = domain->LocalL();
 
-    la = 0; //TODO: atmosphere layer not properly implemented!
+    la = 0; // FIXME get rid of all la mentions
 
     dx = (domain->Xmax()-domain->Xmin())/(domain->GlobalN());
     dy = (domain->Ymax()-domain->Ymin())/(domain->GlobalN());
@@ -58,15 +58,15 @@ OceanGrid::OceanGrid(Teuchos::RCP<TRIOS::Domain> dom)
 
     importVector = Teuchos::rcp(new Epetra_Vector(*(domain->GetAssemblyMap())));
     // allocate memory and set pointers
-    U_=allocateGrid(0,n,0,m,0,l+la+1);
-    V_=allocateGrid(0,n,0,m,0,l+la+1);
-    W_=allocateGrid(0,n+1,0,m+1,0,l+la);
-    P_=allocateGrid(0,n+1,0,m+1,0,l+la+1);
-    T_=allocateGrid(0,n+1,0,m+1,0,l+la+1);
-    S_=allocateGrid(0,n+1,0,m+1,0,l+la+1);
-    Rho_=allocateGrid(0,n+1,0,m+1,0,l+la+1);
+    U_=allocateGrid(0,n,0,m,0,l+1);
+    V_=allocateGrid(0,n,0,m,0,l+1);
+    W_=allocateGrid(0,n+1,0,m+1,0,l);
+    P_=allocateGrid(0,n+1,0,m+1,0,l+1);
+    T_=allocateGrid(0,n+1,0,m+1,0,l+1);
+    S_=allocateGrid(0,n+1,0,m+1,0,l+1);
+    Rho_=allocateGrid(0,n+1,0,m+1,0,l+1);
 
-    LandMask_ = new MaskType[(m+2)*(n+2)*(l+la+2)];
+    LandMask_ = new MaskType[(m+2)*(n+2)*(l+2)];
 
     F90NAME(m_thcm_utils,get_landm)(LandMask_);
 
@@ -75,8 +75,8 @@ OceanGrid::OceanGrid(Teuchos::RCP<TRIOS::Domain> dom)
     PsiB_ = new double[(n+1)*(m+1)];
     for (int i=0; i<(m+1)*(n+1);i++) PsiB_[i]=0.0;
 
-    recompute_PsiM_ = true;
-    recompute_PsiB_ = true;
+    recompute_PsiM_   = true;
+    recompute_PsiB_   = true;
     recompute_MaxVel_ = true;
 
     // get a communicator with all processes in my 'row' of the

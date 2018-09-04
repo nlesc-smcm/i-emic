@@ -7,7 +7,11 @@ function [] = plot_mask(landmask,x,y)
   assert(size(landmask,1) == n, 'landmask not cropped')
   assert(size(landmask,2) == m, 'landmask not cropped')
 
-  mask = sum(landmask,3);
+  mask = landmask;
+  if (size(landmask,3) > 1)
+      mask = sum(landmask,3);
+  end
+  
   mask = mask / max(max(abs(mask)));
   mask = mask.^3;
   mask(mask<0) = 0;

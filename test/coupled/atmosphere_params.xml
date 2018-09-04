@@ -22,9 +22,11 @@
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- Starting parameters -->
-  <Parameter name="Combined Forcing" type="double" value="0.0"/>
-  <Parameter name="Solar Forcing"    type="double" value="1.0"/>
-  <Parameter name="Humidity Forcing" type="double" value="1.0"/>
+  <Parameter name="Combined Forcing"    type="double" value="0.0"/>
+  <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+  <Parameter name="Albedo Forcing"      type="double" value="1.0"/>
+  <Parameter name="Humidity Forcing"    type="double" value="1.0"/>
+  <Parameter name="Latent Heat Forcing" type="double" value="0.0"/>
 
   <!-- Periodic boundary conditions in x-direction                -->
   <Parameter name="Periodic" type="bool" value="false"             />
@@ -54,6 +56,16 @@
   <Parameter name="Global Grid-Size n" type="int" value="6"   />
   <Parameter name="Global Grid-Size m" type="int" value="6"   />
 
+  <!-- testing parameters  -->
+  <Parameter name="melt temperature threshold (deg C)" type="double" value="-10"/>
+  <Parameter name="melt threshold width (deg C)" type="double" value="0.01"/>
+  
+  <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="-1"/>
+  <Parameter name="accumulation threshold width (m/y)" type="double" value="0.01"/>
+  
+  <Parameter name="rain/snow temperature threshold (deg C)" type="double" value="100"/>
+  <Parameter name="rain/snow threshold width (deg C)" type="double" value=".01"/>  
+  
   <!-- Preconditioner parameters.                                                -->
   <!-- Overlap can be set to 0 or 1 in a parallel coupled scheme.                -->
   <!-- Preconditioning can be used as a pure linear solver as well, in that case -->

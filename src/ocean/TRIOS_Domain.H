@@ -104,6 +104,12 @@ namespace TRIOS {
 		//! in z direction 
 		inline int GlobalL() const {return l;}
 
+        //! return dof
+        inline int Dof() const {return dof_;}
+
+        //! return aux
+        inline int Aux() const {return aux_;}
+
 		//! get first global k index (z-direction) on the subdomain
 		//! (including ghost-nodes)
 		inline int FirstK(){return Loff;}
@@ -169,12 +175,20 @@ namespace TRIOS {
 		//! global indices for the output of THCM on the subdomain)
 		Teuchos::RCP<Epetra_Map> GetAssemblyMap(){return AssemblyMap;}
 
+        //! The assembly surface map is a depth-averaged,
+        //! single-unknown variant of the assembly map.
+        Teuchos::RCP<Epetra_Map> GetAssemblySurfaceMap(){return AssemblySurfaceMap;}
+
 		//! The standard map is created during the Decomp2D call. 
 		//! It does not contain ghost nodes and is therefore      
 		//! more suitable for the solve phase in Trilinos. The    
 		//! indexing scheme and decomposition are the same as in  
 		//! the assembly map.                                     
 		Teuchos::RCP<Epetra_Map> GetStandardMap(){return StandardMap;}
+
+        //! The standard surface map is a depth-averaged,
+        //! single-unknown variant of the standard map.
+        Teuchos::RCP<Epetra_Map> GetStandardSurfaceMap(){return StandardSurfaceMap;}
 
 		//! if you register a load-balancing object with this     
 		//! class, this map is made to optimize performance of    
@@ -211,6 +225,7 @@ namespace TRIOS {
 		//! ghost-node. 'nun' is specified to indicate the unknowns
 		//! per grid point
 		bool IsGhost(int li, int nun_) const;
+		bool IsGhost(int li) const { return IsGhost(li, dof_); };
       
 		//! if true, the domain is periodic in the x-direction.
 		bool IsPeriodic() const {return periodic;}
@@ -242,8 +257,16 @@ namespace TRIOS {
 
 		//@{ \name Data Transfer functions between the three map-types
 		int Assembly2Standard(const Epetra_Vector& source, Epetra_Vector& target) const;
-		int Assembly2Solve(const Epetra_Vector& source, Epetra_Vector& target) const;
+        
+        int Assembly2StandardSurface(const Epetra_Vector& source,
+                                     Epetra_Vector& target) const;
+
+        int Assembly2Solve(const Epetra_Vector& source, Epetra_Vector& target) const;
 		int Standard2Assembly(const Epetra_Vector& source, Epetra_Vector& target) const;
+
+        int Standard2AssemblySurface(const Epetra_Vector& source,
+                                     Epetra_Vector& target) const;
+        
 		int Standard2Solve(const Epetra_Vector& source, Epetra_Vector& target) const;
 		int Solve2Assembly(const Epetra_Vector& source, Epetra_Vector& target) const;
 		int Solve2Standard(const Epetra_Vector& source, Epetra_Vector& target) const;
@@ -261,15 +284,21 @@ namespace TRIOS {
 
 		//! see GetStandardMap() for a description
 		Teuchos::RCP<Epetra_Map> StandardMap;
-      
-		//! see GetSolveMap() for a description
+
+        //! see GetAssemblySurfaceMap() for a description
+		Teuchos::RCP<Epetra_Map> AssemblySurfaceMap;
+
+		//! see GetStandardSurfaceMap() for a description
+		Teuchos::RCP<Epetra_Map> StandardSurfaceMap;
+        
+		//! see GetSolveMap() for a description --> deprecated
 		Teuchos::RCP<Epetra_Map> SolveMap;
       
 		//! see GetColMap() for a description
 		Teuchos::RCP<Epetra_Map> ColMap;
       
 		//! objects to transform the three vector types into one another
-		Teuchos::RCP<Epetra_Import> as2std,std2sol;
+		Teuchos::RCP<Epetra_Import> as2std,std2sol,as2std_surf;
       
 		int n,m,l; //!dimension of global domain
 		int lloc,mloc,nloc; //! dimension of local subdomain (incl. ghost-nodes)
@@ -285,10 +314,9 @@ namespace TRIOS {
 		int pidL,pidM,pidN;
       
 		//! size of processor array
-		int npL,npM,npN;
+		int npL,npM,npN;      
       
-      
-		//! flag indicating if there are more than one subdomain in the x-direction
+		//! flag indicating if there is more than one subdomain in the x-direction
 		bool xparallel;
 
 		//! if true, the domain is periodic in the x-direction.
@@ -307,7 +335,10 @@ namespace TRIOS {
 		//! number of unknowns per grid cell
 		int dof_;
 
-		//! numbef of auxiliary unknowns
+		//! Number of auxiliary unknowns. Auxiliary unknowns do not
+        //! have grid coordinates and are appended at the end of the
+        //! ordinary map. Such rows can be used to compute
+        //! precipitation.
 		int aux_;
         
     protected:
@@ -320,7 +351,7 @@ namespace TRIOS {
 		Teuchos::RCP<Epetra_Map> CreateMap(int noff_, int moff_, int loff_,
 										   int nloc_, int mloc_, int lloc_,
                                            int nun_,  bool addAux = false) const;
-                              
+        
     };
 
 }// namespace TRIOS

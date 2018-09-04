@@ -1,10 +1,14 @@
-cmake_minimum_required(VERSION 2.8.12.2)
+cmake_minimum_required(VERSION 3.3)
 
 set(MAIN_INCLUDE_DIRS
   ../continuation/
   ../topo/
+  ../ocean/
+  ../atmosphere/
+  ../seaice/
   ../mrilucpp/
   ../utils/
+  ../dependencygrid/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 

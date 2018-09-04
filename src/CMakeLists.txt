@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12.2)
+cmake_minimum_required(VERSION 2.8)
 
 # Trying to find Trilinos
 if (DEFINED ENV{TRILINOS_DIR} AND NOT DEFINED Trilinos_DIR)
@@ -24,14 +24,14 @@ message("-- CMAKE_Fortran_COMPILER_ID ${CMAKE_Fortran_COMPILER_ID}")
 if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU") #gfortran, gcc
   
   set (CMAKE_Fortran_FLAGS
-	"-g -u -O0 -Wall -ffixed-line-length-132 -fdefault-real-8 -ffree-line-length-none -DASCII_TOPO")
-  set (CMAKE_CXX_FLAGS "-g -std=c++1y -O0 -Wall -Wno-deprecated-declarations -DDEBUGGING_NEW")
+	"-g -u -O0 -Wall -ffixed-line-length-132 -fdefault-real-8 -fPIC -ffree-line-length-none -DASCII_TOPO")
+  set (CMAKE_CXX_FLAGS "-g -std=c++1y -O0 -Wall -fPIC -Wno-deprecated-declarations -DDEBUGGING_NEW")
   set (COMP_IDENT GNU)
   
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel") #ifort, icc
   
-  set (CMAKE_Fortran_FLAGS "-g -r8 -O3 -warn -DASCII_TOPO -DWITH_UNION -heap-arrays 1 -extend-source 132")
-  set (CMAKE_CXX_FLAGS "-std=c++14 -O3")
+  set (CMAKE_Fortran_FLAGS "-g -r8 -O3 -fPIC -warn -DASCII_TOPO -DWITH_UNION -heap-arrays 1 -extend-source 132")
+  set (CMAKE_CXX_FLAGS "-std=c++14 -O3 -fPIC")
   set (COMP_IDENT INTEL)
   
 endif ()
@@ -47,26 +47,15 @@ list(APPEND library_directories ${MRILU_DIR}/lib/) # MRILU
 list(APPEND library_dependencies ${Trilinos_LIBRARIES})
 list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
 
-# Locate JDQZPP external project
-#  maintained as a git submodule but that is not used here (yet).
-include(ExternalProject)
-set_directory_properties(PROPERTIES EP_PREFIX ${CMAKE_SOURCE_DIR}/src/external)
-
-ExternalProject_Add(jdqzpp
-  GIT_REPOSITORY https://github.com/erik808/jdqzpp
-  GIT_TAG master
-
-  PREFIX ${CMAKE_SOURCE_DIR}/src/external/jdqzpp
-
+# Build JDQZPP external project
+include(BuildExternalProject)
+BuildExternalProject(
+  JDQZPP
+  GIT_REPOSITORY https://github.com/erik808/jdqzpp.git
   CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF
   )
 
-
-
-ExternalProject_Get_Property(jdqzpp source_dir)
-set(JDQZPP_INCLUDE_DIR ${source_dir}/include)
-set(JDQZPP_LIBRARY_DIR ${source_dir}/lib)
-message("-- JDQZ++ source dir: " ${source_dir})
+BuildExternalProject_find_package(JDQZPP)
 
 include_directories(${JDQZPP_INCLUDE_DIR})
 list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
@@ -96,24 +85,29 @@ set(EXTRA_LIBS
 list(APPEND library_dependencies ${EXTRA_LIBS})
 
 # ------------------------------------------------------------------
-# Internal I-EMIC shared libraries
+# Internal I-EMIC libraries
 set(I-EMIC_LIBS
   coupledmodel
   atmosphere
-  ocean
+  seaice
+  ocean 
   utils
-  supervector
+  dependencygrid
   jdqz_tools
   )
 
 # ------------------------------------------------------------------
 # Get targets and dependencies of the components
-add_subdirectory(ocean)	  
 add_subdirectory(mrilucpp)
+
+add_subdirectory(ocean)	  
 add_subdirectory(atmosphere)
+add_subdirectory(seaice)
 add_subdirectory(coupledmodel)
-add_subdirectory(supervector)
+
 add_subdirectory(utils)
+add_subdirectory(dependencygrid)
+
 add_subdirectory(main)
 add_subdirectory(tests)
 

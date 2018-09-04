@@ -88,6 +88,39 @@ class THCM :
 {
 
 public:
+    //! Indices to denote different flux fields
+    enum  FluxID
+    {
+        _Sal = 0,  // Total salinity flux
+        _QSOA,     // ocean-atmos salinity flux
+        _QSOS,     // ocean-seaice salinity flux
+        _Temp,     // Total temperature flux
+        _QSW,      // shortwave radiative flux
+        _QSH,      // sensible heat flux
+        _QLH,      // latent heat flux
+        _QTOS,     // ocean-seaice flux
+        _MSI       // seaice mask
+    };
+    
+    //! Struct to hold pointers to derivative fields
+    struct Derivatives
+    {
+        //! Derivative of the temperature equation with respect to a
+        //! sea ice mask.
+        Teuchos::RCP<Epetra_Vector> dFTdM;
+
+        //! Derivative of the salinity equation with respect to sea
+        //!ice heat flux.
+        Teuchos::RCP<Epetra_Vector> dFSdQ;
+
+        //! Derivative of the salinity equation with respect to a
+        //! sea ice mask.
+        Teuchos::RCP<Epetra_Vector> dFSdM;
+
+        //! Derivative of the salinity equation with respect to the
+        //! sea ice integral correction gamma. 
+        Teuchos::RCP<Epetra_Vector> dFSdG;
+    };
 
     //! Constructor
     THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
@@ -131,13 +164,11 @@ public:
     void evaluateB();
 
     //! ------------------- I-EMIC couplings --------------------
-    //!
-    //! Flags enabling the coupling with external atmosphere via the
-    //! I-EMIC, separated into a temperature and a salinity part.
+    //!Flags enabling the coupling with the I-EMIC, separated into a
+    //!heat and a salinity flux contribution.
     //!
     //! 0: standalone thcm
-    //! 1: accepting external atmosphere
-    //!
+    //! 1: accepting external forcing
     int coupled_T, coupled_S;
 
     int getCoupledT() { return coupled_T; }
@@ -148,9 +179,21 @@ public:
 
     //! Set atmosphere humidity field in the ocean model
     void setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ);
-    
+
+    //! Set atmosphere humidity field in the ocean model
+    void setAtmosphereA(Teuchos::RCP<Epetra_Vector> const &atmosA);
+
     //! Set atmosphere precipitation field in the ocean model
     void setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP);
+
+    //! Set sea ice mask 
+    void setSeaIceQ(Teuchos::RCP<Epetra_Vector> const &seaiceQ);
+
+    //! Set sea ice surface temperature
+    void setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM);
+
+    //! Set sea ice integral correction
+    void setSeaIceG(Teuchos::RCP<Epetra_Vector> const &seaiceG);
 
     //! Set emip in the ocean model
     void setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode = 'D');
@@ -160,12 +203,14 @@ public:
     
     //! Obtain non-overlapping emip
     Teuchos::RCP<Epetra_Vector> getEmip(char mode = 'D');
-    
-    //! Obtain non-overlapping emip
-    Teuchos::RCP<Epetra_Vector> getSalinityFlux();
 
-    //! Obtain non-overlapping emip
-    Teuchos::RCP<Epetra_Vector> getTemperatureFlux();
+    //! Obtain shortwave radiation influence field
+    Teuchos::RCP<Epetra_Vector> getSunO();
+
+    //! Get a number of fluxes
+    std::vector<Teuchos::RCP<Epetra_Vector> > getFluxes();
+    
+    Derivatives getDerivatives();
     
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
@@ -263,6 +308,9 @@ public:
 
     //! get the ite parameter (non-restoring temp condition)
     bool getITE() const {return ite;}
+
+    //! get the salinity flux correction
+    double getSCorr() const {return scorr_;}
 
     //! ite/its=0 T/S forcing from data (Levitus)
     int ite,its;
@@ -364,8 +412,20 @@ private:
     //! used to import atmosphere humidity field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosQ;
 
+    //! used to import albedo field into THCM
+    Teuchos::RCP<Epetra_Vector> localAtmosA;
+
     //! used to import atmosphere precipitation field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosP;
+
+    //! used to import sea ice heat flux into THCM
+    Teuchos::RCP<Epetra_Vector> localSeaiceQ;
+
+    //! used to import sea ice mask into THCM
+    Teuchos::RCP<Epetra_Vector> localSeaiceM;
+
+    //! used to import sea ice integral correction into THCM
+    Teuchos::RCP<Epetra_Vector> localSeaiceG;
 
     //! used to extract evaporation field from THCM
     Teuchos::RCP<Epetra_Vector> localOceanE;
@@ -379,12 +439,6 @@ private:
     //! used to import tatm field into THCM
     Teuchos::RCP<Epetra_Vector> localTatm;    
 
-    //! used to obtain salinity flux from THCM
-    Teuchos::RCP<Epetra_Vector> localSalFlux;    
-
-    //! used to obtain temperature flux from THCM
-    Teuchos::RCP<Epetra_Vector> localTemFlux;    
-    
     //! used to export computed RHS vector from THCM:
     Teuchos::RCP<Epetra_Vector> localRhs;
 
@@ -498,6 +552,9 @@ private:
     //! correction for the integral condition based on the salinity
     //! integral of the initial state
     double intCorrection_;
+
+    //! correction for the salinity flux
+    double scorr_;
 
     //! vector with coefficients for integral condition (if sres=0)
     Teuchos::RCP<Epetra_Vector> intcond_coeff;
