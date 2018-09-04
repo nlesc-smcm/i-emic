@@ -934,7 +934,7 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
                         
             // latent heat due to precipitation
             if (pr >= 0)
-                lhflux[pos] = muoa_ * rhoo_ * lv_ * ( Po0_ + eta_ * qdim_ * P);
+                lhflux[pos] = comb_ * latf_ * muoa_ * rhoo_ * lv_ * ( Po0_ + eta_ * qdim_ * P);
                 
             pos++;
         }

@@ -878,6 +878,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
                 
 //                sr = j*nGlob_ + i;            // global surface index
 //                if ((*surfmask_)[sr] == 0)
+                
                 {
                     switch (XX)
                     {
