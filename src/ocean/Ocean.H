@@ -103,10 +103,10 @@ protected:
     // grid representation of the state
     Teuchos::RCP<OceanGrid> grid_;
 
-    Teuchos::RCP<Teuchos::ParameterList> solverParams_;
+    ParameterList solverParams_;
 
     // Belos flexible GMRES members
-    Teuchos::RCP<Teuchos::ParameterList> belosParamList_;
+    ParameterList belosParamList_;
     Teuchos::RCP<Belos::LinearProblem
                  <double, Epetra_MultiVector, Epetra_Operator> > problem_;
     Teuchos::RCP<Belos::BlockGmresSolMgr
@@ -175,7 +175,7 @@ protected:
 public:
     //! constructor
     Ocean(Teuchos::RCP<Epetra_Comm> Comm,
-          Teuchos::RCP<Teuchos::ParameterList> oceanParamList);
+          ParameterList oceanParamList);
 
     //! destructor
     ~Ocean();
@@ -190,8 +190,14 @@ public:
     double explicitResNorm(VectorPtr rhs);
     void printResidual(VectorPtr rhs);
 
+    //! compute rhs (spatial discretization)
     void computeRHS();
+
+    //! compute derivative of rhs
     void computeJacobian();
+
+    //! compute mass matrix
+    void computeMassMat();
 
     //! All get...() functions that return a VectorPtr accept
     //! a character specifying the access the user has: Copy 'C' or View 'V'
@@ -199,7 +205,7 @@ public:
     VectorPtr getSolution(char mode = 'C');
     VectorPtr getState(char mode = 'C');
     VectorPtr getRHS(char mode = 'C');
-    VectorPtr getDiagB(char mode = 'C');
+    VectorPtr getMassMat(char mode = 'C');
 
     //! Binary diagonal for UVTS parts
     Teuchos::RCP<Epetra_Vector> getM(char mode = 'C');
@@ -232,9 +238,6 @@ public:
     //! Build preconditioner
     void buildPreconditioner(bool forceInit);
     void buildPreconditioner() { buildPreconditioner(false); }
-
-    //! Build mass matrix
-    void buildMassMat();
 
     //! Initialize solver
     void initializeSolver();
@@ -399,7 +402,7 @@ public:
     VectorPtr getRowScaling();
     VectorPtr getColScaling();
 
-    void setParameters(Teuchos::RCP<Teuchos::ParameterList> pars);
+    void setParameters(ParameterList pars);
 
     void copyFiles(std::string const &fname = "");
     void copyMask(std::string const &fname);

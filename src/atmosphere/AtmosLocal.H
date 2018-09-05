@@ -297,20 +297,23 @@ public:
     //! Compute the Jacobian matrix
     void computeJacobian();
 
-    //!  Compute mass matrix
+    //!  Compute mass matrix B, which is diagonal so this computes
+    //!  diagB_
     void computeMassMat();    
-
+    
     void computeEvaporation();
     void computePrecipitation();
 
     //! Return the Jacobian matrix in CRS format
     std::shared_ptr<Utils::CRSMat> getJacobian();
 
+    //! Return the diagonal mass matrix
+    std::shared_ptr<std::vector<double> > getMassMat     (char mode = 'C');
+
     //! Get routines
     std::shared_ptr<std::vector<double> > getSolution    (char mode = 'C');
     std::shared_ptr<std::vector<double> > getState       (char Mode = 'C');
     std::shared_ptr<std::vector<double> > getRHS         (char mode = 'C');
-    std::shared_ptr<std::vector<double> > getDiagB       (char mode = 'C');
     std::shared_ptr<std::vector<double> > getSST         (char Mode = 'C');
     std::shared_ptr<std::vector<double> > getPIntCoeff   (char mode = 'C');
 

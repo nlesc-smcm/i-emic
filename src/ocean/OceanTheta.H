@@ -34,7 +34,6 @@ protected:
 	Teuchos::RCP<Epetra_Vector> oldState_;
 	Teuchos::RCP<Epetra_Vector> stateDot_;
 	Teuchos::RCP<Epetra_Vector> oldRhs_;
-
 };
 
 #endif

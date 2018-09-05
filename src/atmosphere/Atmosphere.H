@@ -36,7 +36,7 @@ class SeaIce;
 class Atmosphere : public Model
 {
 public:    
-    using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
+
     using CommPars      = AtmosLocal::CommPars;
 
 private:
@@ -197,7 +197,6 @@ public:
     
     std::string const name() { return "Atmosphere"; }
     virtual int const modelIdent() { return 1; }
-
     
     //! Setup integral coefficients
     void setupIntCoeff();
@@ -218,7 +217,7 @@ public:
                      Epetra_MultiVector &out);
 
     //! build mass matrix
-    void buildMassMat();
+    void computeMassMat();
     
     //! initialize pr    
     void buildPreconditioner();
@@ -289,16 +288,19 @@ public:
     int dof() { return dof_; }
 
     //! Return number of continuation parameters
-    int  npar() { return atmos_->npar(); }
+    int npar() { return atmos_->npar(); }
 
     //! Return parameter name, supply index
     std::string const int2par(int ind) { return atmos_->int2par(ind); }
 
-    Teuchos::RCP<Epetra_Vector> getState(char mode = 'C') { return Utils::getVector(mode, state_); }
-    Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return Utils::getVector(mode, sol_); }
-    Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')      { return Utils::getVector(mode, rhs_); }
-
-    Teuchos::RCP<Epetra_Vector> getDiagB(char mode = 'C') { return Utils::getVector(mode, diagB_); }
+    Teuchos::RCP<Epetra_Vector> getState(char mode = 'C')
+        { return Utils::getVector(mode, state_); }
+    Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C')
+        { return Utils::getVector(mode, sol_); }
+    Teuchos::RCP<Epetra_Vector> getRHS(char mode = 'C')
+        { return Utils::getVector(mode, rhs_); }
+    Teuchos::RCP<Epetra_Vector> getMassMat(char mode = 'C')
+        { return Utils::getVector(mode, diagB_); }
 
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
 
@@ -346,6 +348,9 @@ public:
     //! Get row at the interface, XX is 1-based, i and j 0-based. The
     //! result is also 0-based.
     int interface_row(int i, int j, int XX);
+
+    //! Get row containing the humidity integral condition
+    int getRowIntCon() { return rowIntCon_; }    
     
 private:
     

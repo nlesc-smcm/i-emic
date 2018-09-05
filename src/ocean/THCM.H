@@ -326,10 +326,10 @@ public:
 
     Teuchos::RCP<Epetra_Vector> getIntCondCoeff();
 
-    //! set the THCM flag 'vmix_fix' to 0 or 1
-    //! note: vmix_fix doesn't have to be set if you have vmix_flag=1 in mix_imp.f
-    //! (recommended). If you REALLY want vmix_flag=2, call this function in the NOX
-    //! pre-solve function of class OceanModel.
+    //! Set the THCM flag 'vmix_fix' to 0 or 1. set the vmix_fix flag
+    //! (required for controlling mixing and convective adjustment
+    //! continuation/time-stepping). Note: vmix_fix doesn't have to be
+    //! set if you have vmix_flag=1 in mix_imp.f (recommended).
     void fixMixing(int value);
 
     //! \name get physical global domain bounds

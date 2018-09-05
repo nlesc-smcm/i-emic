@@ -4,6 +4,7 @@
 
 #include "RunDefinitions.H"
 #include "OceanTheta.H"
+#include "Theta.H"
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
@@ -14,7 +15,7 @@ using JDQZsolver = JDQZ<JDQZInterface<Teuchos::RCP<Ocean>,
 
 //------------------------------------------------------------------
 void runOceanModel(RCP<Epetra_Comm> Comm);
-void writeData(Teuchos::RCP<OceanTheta> model, bool describe,
+void writeData(Teuchos::RCP<Theta<Ocean> > model, bool describe,
                int step, double dt, double time, int niters);
 
 //------------------------------------------------------------------
@@ -51,7 +52,7 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     oceanParams->setName("Ocean parameters");
 
 	// Create parallelized OceanTheta object
-	RCP<OceanTheta> oceanTheta = Teuchos::rcp(new OceanTheta(Comm, oceanParams));
+	RCP<Theta<Ocean> > oceanTheta = Teuchos::rcp(new Theta<Ocean>(Comm, oceanParams));
 
     // Create parameter object for time stepping
 	RCP<Teuchos::ParameterList> timeParams = rcp(new Teuchos::ParameterList);
@@ -206,7 +207,7 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 }
 
 //-----------------------------------------------------------------------------
-void writeData(Teuchos::RCP<OceanTheta> model, bool describe,
+void writeData(Teuchos::RCP<Theta<Ocean> > model, bool describe,
                int step, double dt, double time, int niters)
 {
     // Write continuation data

@@ -37,7 +37,7 @@ TEST(Ocean, Continuation1)
         DUMPMATLAB("ocean_jac_init", *jac);
 
         // Also get the mass matrix
-        Teuchos::RCP<Epetra_Vector> diagB = ocean->getDiagB();
+        Teuchos::RCP<Epetra_Vector> diagB = ocean->getMassMat();
         EXPECT_NE(Utils::norm(diagB), 0.0);
         DUMP_VECTOR("ocean_B_init", *diagB);                        
 
@@ -101,7 +101,7 @@ TEST(Ocean, Continuation2)
         DUMPMATLAB("ocean_jac_cont", *jac);
 
         // Also get the mass matrix
-        Teuchos::RCP<Epetra_Vector> diagB = ocean->getDiagB();
+        Teuchos::RCP<Epetra_Vector> diagB = ocean->getMassMat();
         EXPECT_NE(Utils::norm(diagB), 0.0);
         DUMP_VECTOR("ocean_B_cont", *diagB);                        
                 

@@ -135,8 +135,8 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     a0_              = params->get("reference albedo", 0.3);
     da_              = params->get("albedo excursion", 0.5);
     
-    tauf_            = params->get("", 1.0); // FIXME todo
-    tauc_            = params->get("", 1.0); // FIXME todo
+    tauf_            = params->get("restoring timescale tauf", 1.0); 
+    tauc_            = params->get("restoring timescale tauc", 1.0); 
 
     Tm_              = params->get("melt temperature threshold (deg C)", 0.0);          
     Tr_              = params->get("rain/snow temperature threshold (deg C)", 0.0);     
@@ -675,16 +675,18 @@ void AtmosLocal::computeMassMat()
 
     // Only TT and QQ equations. Integral equations give a zero
     // diagonal element. This is taken care of on the parallel side.
-    int rowTT, rowQQ;
+    int rowTT, rowQQ, rowAA;
     for (int i = 1; i <= n_; ++i)
         for (int j = 1; j <= m_; ++j)
             for (int k = 1; k <= l_; ++k)
             {
                 rowTT = find_row(i, j, k, ATMOS_TT_)-1;
                 rowQQ = find_row(i, j, k, ATMOS_QQ_)-1;
+                rowAA = find_row(i, j, k, ATMOS_AA_)-1;
                 (*diagB_)[rowTT] = Ai_;
                 (*diagB_)[rowQQ] = 1.0;
-            }
+                (*diagB_)[rowAA] = 1.0; 
+           }
 
     TIMER_STOP("AtmosLocal: compute mass matrix...");
 }
@@ -1450,7 +1452,7 @@ std::shared_ptr<std::vector<double> > AtmosLocal::getRHS(char mode)
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<std::vector<double> > AtmosLocal::getDiagB(char mode)
+std::shared_ptr<std::vector<double> > AtmosLocal::getMassMat(char mode)
 {
     return Utils::getVector(mode, diagB_);
 }

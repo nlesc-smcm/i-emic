@@ -212,7 +212,7 @@ TEST(CoupledModel, MassMatrix)
     file << out;
     file.close();
 
-    int atmosLast = ATMOS_NUN_ * m * n - 1;
+    int atmosLast = atmos->getRowIntCon();
     int rowintcon = ocean->getRowIntCon();
 
     // ocean integral condition

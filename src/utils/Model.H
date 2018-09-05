@@ -22,8 +22,9 @@ class Model
     
 public:
                      
-    using VectorPtr = Teuchos::RCP<Epetra_Vector>;
-    using MatrixPtr = Teuchos::RCP<Epetra_CrsMatrix>;
+    using VectorPtr     = Teuchos::RCP<Epetra_Vector>;
+    using MatrixPtr     = Teuchos::RCP<Epetra_CrsMatrix>;
+    using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
 
     //! non-overlapping state vector
     Teuchos::RCP<Epetra_Vector> state_;
@@ -39,9 +40,15 @@ public:
     std::string outputFile_;
     
     virtual ~Model() {}
-    
+
+    //! compute rhs (spatial discretization)    
     virtual void computeRHS() = 0;
+
+    //! compute derivative of rhs    
     virtual void computeJacobian() = 0;
+
+    //! compute mass matrix    
+    virtual void computeMassMat() = 0;
     
     virtual void applyMatrix(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
     virtual void applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
@@ -77,9 +84,9 @@ public:
     std::shared_ptr<Utils::CRSMat> getBlock(T model);
 
     //! getBlock members to compute derivative w.r.t. any other model. 
-    virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean) = 0;
+    virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean)      = 0;
     virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos) = 0;
-    virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice) = 0;
+    virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice)    = 0;
 
     //! Our own synchronize to distribute synchronizations among submodels
     template <typename T>
@@ -88,9 +95,9 @@ public:
     //! Derived models need to implement synchronizations with any
     //! other model, including a dummy implementation of synchronize
     //! with itself.
-    virtual void synchronize(std::shared_ptr<Ocean> ocean) = 0;
+    virtual void synchronize(std::shared_ptr<Ocean> ocean)      = 0;
     virtual void synchronize(std::shared_ptr<Atmosphere> atmos) = 0;
-    virtual void synchronize(std::shared_ptr<SeaIce> seaice) = 0;
+    virtual void synchronize(std::shared_ptr<SeaIce> seaice)    = 0;
 
     //! degrees of freedom (excluding any auxiliary unknowns)
     virtual int dof() = 0;

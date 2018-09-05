@@ -16,6 +16,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     
     precInitialized_ (false),
     recomputePrec_   (false),
+    recompMassMat_   (true),
     
     taus_         (0.01),    // threshold ice thickness
     epsilon_      (params->get("mask switch steepness", 1e-2)),  // Heavyside approximation steepness
@@ -267,6 +268,51 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 }
 
 //=============================================================================
+void SeaIce::computeMassMat()
+{
+    if (recompMassMat_)
+    {
+
+        TIMER_START("SeaIce: compute MassMat...");
+        localDiagB_->PutScalar(0.0);
+
+        int row;
+        double val;
+        double massH = rhoi_ * Lf_ * eta_ / zeta_; // mass mat. value
+    
+        for (int j = 0; j != mLoc_; ++j)
+            for (int i = 0; i != nLoc_; ++i)
+                for (int XX = 1; XX <= dof_; ++XX)
+                {
+                    val = 0.0;
+                    switch (XX)
+                    {
+                    case SEAICE_HH_:   // H row (thickness)
+                        val = massH;
+                        break;
+                    
+                    case SEAICE_QQ_:   // Q row (heat flux)
+                        break;
+                    
+                    case SEAICE_MM_:   // M row (mask)
+                        break;
+                    
+                    case SEAICE_TT_:   // T row (surface temperature)
+                        break;
+                    }
+                    row = find_row0(nLoc_, mLoc_, i, j, XX);
+                    (*localDiagB_)[row] = val;
+                }
+    
+        domain_->Assembly2Standard(*localDiagB_, *diagB_);
+    
+        TIMER_STOP("SeaIce: compute MassMat...");
+    }
+    
+    recompMassMat_ = false;
+}
+
+//=============================================================================
 void SeaIce::computeRHS()
 {
     TIMER_START("SeaIce: compute RHS...");
@@ -288,7 +334,7 @@ void SeaIce::computeRHS()
     domain_->Standard2AssemblySurface(*albe_,  *localAtmosA_);
 
     localState_->ExtractView(&state);
-
+    
     localSST_->ExtractView(&sst);
     localSSS_->ExtractView(&sss);
 
@@ -364,7 +410,7 @@ void SeaIce::computeRHS()
 
                 rr = find_row0(nLoc_, mLoc_, i, j, XX);
 //                if ((*localSurfmask_)[sr] == 0)
-                    rhs[rr] = val;
+                rhs[rr] = val;
 //                else
 //                    rhs[rr] = 0.0;
             }
@@ -1415,6 +1461,21 @@ void SeaIce::applyPrecon(Epetra_MultiVector const &in,
     // INFO("SeaIce: preconditioner residual: " << rnorm);
 
     TIMER_STOP("SeaIce: apply preconditioner...");
+}
+
+//==================================================================
+void SeaIce::applyMassMat(Epetra_MultiVector const &v,
+                          Epetra_MultiVector &out)
+{
+    TIMER_START("SeaIce: apply mass matrix...");
+
+    // Compute mass matrix
+    computeMassMat();
+
+    // element-wise multiplication (out = 0.0*out + 1.0*B*v)
+    out.Multiply(1.0, *diagB_, v, 0.0);
+
+    TIMER_STOP("SeaIce: apply mass matrix...");
 }
 
 //=============================================================================

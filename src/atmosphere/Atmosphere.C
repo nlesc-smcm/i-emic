@@ -152,7 +152,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     }
     
     // Build diagonal mass matrix
-    buildMassMat();
+    computeMassMat();
     
     setupIntCoeff();
     
@@ -1195,7 +1195,7 @@ void Atmosphere::applyMatrix(Epetra_MultiVector const &in,
 }
 
 //====================================================================
-void Atmosphere::buildMassMat()
+void Atmosphere::computeMassMat()
 {
     if (recompMassMat_)
     {
@@ -1207,8 +1207,8 @@ void Atmosphere::buildMassMat()
         
         // obtain local diagonal
         std::shared_ptr<std::vector<double> > localDiagB =
-            atmos_->getDiagB('V');
-
+            atmos_->getMassMat('V');
+        
         if ((int) localDiagB->size() != numMyElements)
         {
             ERROR("Local diagB incorrect size", __FILE__, __LINE__);
@@ -1258,7 +1258,7 @@ void Atmosphere::applyMassMat(Epetra_MultiVector const &v,
     TIMER_START("Atmosphere: apply mass matrix...");
 
     // Compute mass matrix
-    buildMassMat();
+    computeMassMat();
 
     // element-wise multiplication (out = 0.0*out + 1.0*B*v)
     out.Multiply(1.0, *diagB_, v, 0.0);

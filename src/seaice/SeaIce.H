@@ -3,7 +3,8 @@
   
   SeaIce is a simple 2D thermodynamic sea ice model relying on the
   ocean and atmosphere states. For testing we allow standalone
-  capabilities. Setup is similar to the Atmosphere class.
+  capabilities. Setup is similar to the Atmosphere class, framework is
+  partly defined by Model.H.
   
 */
 //!---------------------------------------------------------------
@@ -38,7 +39,6 @@ class SeaIce : public Model
 {
 
 public:
-    using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
 
     //! Parameters we need to communicate (see datamembers for explanation).
     struct CommPars
@@ -58,7 +58,6 @@ public:
         _QSH,     // Sensible heat flux
         _QLH      // Latent heat flux
     };
-
 
 private:
     //! parameterlist
@@ -220,7 +219,10 @@ private:
 
     //! preconditioning computation flag
     bool recomputePrec_;
-    
+
+    //! mass matrix computation flag
+    bool recompMassMat_;
+
     double taus_;     //! threshold ice thickness
     double epsilon_;  //! approximation steepness
     
@@ -335,11 +337,14 @@ public:
     //! compute jacobian
     void computeJacobian();
 
+    //! compute diagonal mass matrix
+    void computeMassMat();
+
     void applyMatrix(Epetra_MultiVector const &in,
                      Epetra_MultiVector &out);
 
     void applyMassMat(Epetra_MultiVector const &in,
-                      Epetra_MultiVector &out) { out.PutScalar(0.0); } // tmp
+                      Epetra_MultiVector &out);
 
     void applyPrecon(Epetra_MultiVector const &in,
                      Epetra_MultiVector &out);
@@ -365,6 +370,8 @@ public:
         { return Utils::getVector(mode, sol_); }
     VectorPtr getRHS(char mode = 'C')
         { return Utils::getVector(mode, rhs_); }
+    VectorPtr getMassMat(char mode = 'C')
+        { return Utils::getVector(mode, diagB_); }
 
     void getCommPars(CommPars &parStruct);
 

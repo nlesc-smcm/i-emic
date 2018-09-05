@@ -188,7 +188,7 @@ TEST(Ocean, Continuation)
         Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
         DUMPMATLAB("ocean_jac", *mat);
         
-        Teuchos::RCP<Epetra_Vector> diagB = ocean->getDiagB();
+        Teuchos::RCP<Epetra_Vector> diagB = ocean->getMassMat();
         EXPECT_NE(Utils::norm(diagB), 0.0);
         DUMP_VECTOR("ocean_B", *diagB);                        
 
@@ -198,7 +198,7 @@ TEST(Ocean, Continuation)
         mat  = ocean->getJacobian();
         DUMPMATLAB("ocean_jac", *mat);
         
-        diagB = ocean->getDiagB();
+        diagB = ocean->getMassMat();
         EXPECT_NE(Utils::norm(diagB), 0.0);
         DUMP_VECTOR("ocean_B", *diagB);                        
         

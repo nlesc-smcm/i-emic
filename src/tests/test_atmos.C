@@ -498,7 +498,7 @@ TEST(Atmosphere, Newton)
     }
 
     Teuchos::RCP<Epetra_CrsMatrix> jac = atmosPar->getJacobian();
-    Teuchos::RCP<Epetra_Vector> B = atmosPar->getDiagB();
+    Teuchos::RCP<Epetra_Vector>      B = atmosPar->getMassMat();
 
     DUMPMATLAB("atmos_jac", *jac);
     DUMP_VECTOR("atmos_B", *B);

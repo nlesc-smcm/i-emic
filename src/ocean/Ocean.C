@@ -53,7 +53,7 @@ extern "C" _SUBROUTINE_(set_seaice_parameters)(double*, double*, double*,
 
 //=====================================================================
 // Constructor:
-Ocean::Ocean(RCP<Epetra_Comm> Comm, RCP<Teuchos::ParameterList> oceanParamList)
+Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     :
     solverInitialized_     (false),  // Solver needs initialization
     precInitialized_       (false),  // Preconditioner needs initialization
@@ -233,7 +233,7 @@ void Ocean::initializeOcean()
     // Obtain mass matrix B from THCM. Note that we assume the mass
     // matrix is independent of the state and parameters so we only
     // compute it when asked for through recompMassMat_ flag.
-    buildMassMat();
+    computeMassMat();
 
     // Compute right hand side and print its norm
     computeRHS();
@@ -1291,7 +1291,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::getRHS(char mode)
 }
 
 //====================================================================
-Teuchos::RCP<Epetra_Vector> Ocean::getDiagB(char mode)
+Teuchos::RCP<Epetra_Vector> Ocean::getMassMat(char mode)
 {
     diagB_ = THCM::Instance().DiagB();
     return Utils::getVector(mode, diagB_);
@@ -1392,7 +1392,7 @@ void Ocean::applyDiagInv(Epetra_MultiVector const &v, Epetra_MultiVector &out)
 }
 
 //====================================================================
-void Ocean::buildMassMat()
+void Ocean::computeMassMat()
 {
     if (recompMassMat_)
     {
@@ -1405,7 +1405,7 @@ void Ocean::buildMassMat()
 void Ocean::applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out)
 {
     // Compute mass matrix
-    buildMassMat();
+    computeMassMat();
 
     diagB_ = THCM::Instance().DiagB();
 
@@ -2196,7 +2196,7 @@ void Ocean::setPar(std::string const &parName, double value)
 }
 
 //====================================================================
-void Ocean::setParameters(Teuchos::RCP<Teuchos::ParameterList> pars)
+void Ocean::setParameters(ParameterList pars)
 {
     std::string parName;
     double parValue;

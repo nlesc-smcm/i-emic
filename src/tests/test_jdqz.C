@@ -76,9 +76,10 @@ TEST(JDQZ, CoupledContinuation)
 
         // Dump the matrices for checking with another code
         Teuchos::RCP<Epetra_CrsMatrix> oceanJac = ocean->getJacobian();
-        Teuchos::RCP<Epetra_Vector> oceanB = ocean->getDiagB();
         Teuchos::RCP<Epetra_CrsMatrix> atmosJac = atmos->getJacobian();
-        Teuchos::RCP<Epetra_Vector> atmosB = atmos->getDiagB();
+        
+        Teuchos::RCP<Epetra_Vector> oceanB = ocean->getMassMat();
+        Teuchos::RCP<Epetra_Vector> atmosB = atmos->getMassMat();
 
         DUMPMATLAB("ocean_jac", *oceanJac);
         DUMP_VECTOR("ocean_B", *oceanB);
