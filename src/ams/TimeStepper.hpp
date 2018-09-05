@@ -521,6 +521,7 @@ void TimeStepper<T>::tams(T const &x0) const
         experiments[i].x0 = x0;
 
     its_ = 0;
+    time_steps_ = 0;
 
     if (read_ != "")
         read(read_, experiments);
@@ -696,6 +697,8 @@ void TimeStepper<T>::gpa(T const &x0) const
               << std::endl;
 
     std::vector<GPAExperiment<T>> experiments(num_exp_);
+
+    time_steps_ = 0;
 
     auto W = [this](double x){return exp(beta_ * x);};
 
