@@ -200,10 +200,10 @@ TEST(CoupledModel, MassMatrix)
     coupledModel->applyMassMat(v, out);
 
     EXPECT_GT(Utils::norm(out), 0.0);
-    
+
     Teuchos::RCP<Epetra_MultiVector> oceanB = out(0);
     Teuchos::RCP<Epetra_MultiVector> atmosB = out(1);
-    
+
     int n = ocean->getNdim();
     int m = ocean->getMdim();
 
@@ -212,24 +212,25 @@ TEST(CoupledModel, MassMatrix)
     file << out;
     file.close();
 
-    int atmosLast = atmos->getRowIntCon();
-    int rowintcon = ocean->getRowIntCon();
+    int rowintconQ = atmos->getRowIntCon();
+    int rowintconS = ocean->getRowIntCon();
 
     // ocean integral condition
-    if (oceanB->Map().MyGID(rowintcon))
+    if (oceanB->Map().MyGID(rowintconS))
     {
-        int lid = oceanB->Map().LID(rowintcon);
-        EXPECT_EQ(0.0, (*oceanB)[0][lid]);  
+        int lid = oceanB->Map().LID(rowintconS);
+        EXPECT_EQ(0.0, (*oceanB)[0][lid]);
     }
 
     // atmos integral condition
-    if (atmosB->Map().MyGID(atmosLast))
+    if (atmosB->Map().MyGID(rowintconQ))
     {
-        int lid = atmosB->Map().LID(atmosLast);
-        EXPECT_EQ((*atmosB)[0][lid], 0.0);  
+        int lid = atmosB->Map().LID(rowintconQ);
+        EXPECT_EQ((*atmosB)[0][lid], 0.0);
     }
-    
-    // auxiliary integral equations 
+
+    // auxiliary integral equations
+    int atmosLast = ATMOS_NUN_ * m * n - 1;
     if (atmosB->GlobalLength() > ATMOS_NUN_ * m * n)
     {
         int aux = params[ATMOS]->get("Auxiliary unknowns", 0);
@@ -239,7 +240,7 @@ TEST(CoupledModel, MassMatrix)
             if (atmosB->Map().MyGID(atmosLast+i))
             {
                 int lid = atmosB->Map().LID(atmosLast+i);
-                EXPECT_EQ((*atmosB)[0][lid], 0.0);  
+                EXPECT_EQ((*atmosB)[0][lid], 0.0);
             }
         }
     }
