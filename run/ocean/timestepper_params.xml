@@ -8,7 +8,7 @@
   <Parameter name="initial time step size" type="double" value="1.0e-2"/>
   
   <Parameter name="end time (in y)"    type="double" value="100.0"/>
-  <Parameter name="theta"              type="double" value="0.7"/>
+  <Parameter name="theta"              type="double" value="1.0"/>
 
   <!-- set to -1 to run until end time -->
   <Parameter name="number of time steps"  type="int" value="-1"/>

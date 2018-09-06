@@ -92,7 +92,7 @@
 	
     <!-- Mixing parameter (vmix_GLB in THCM)                                 -->
 	<!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely -->
-    <Parameter name="Mixing" type="int" value="0"/>
+    <Parameter name="Mixing" type="int" value="1"/>
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>
     <!-- Taper (tap in usr.F90) -->
