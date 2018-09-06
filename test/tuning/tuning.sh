@@ -11,6 +11,12 @@
 
 # origin dir
 origdir=${PWD}
+executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//`main/run_coupled
+
+if [[ -s $executable ]]
+then
+    echo "executable does not exist: " $executable
+fi
 
 # cd to original dir
 cd ${PWD}
@@ -34,6 +40,7 @@ fname=summary_$date
 fnameprev=summary_prev_$date
 infofile=info_$date
 cdatafile=cdata_$date
+echo running $executable
 echo writing to $logdir/$fname
 procs=4
 
@@ -64,7 +71,7 @@ cp -v jdqz_params.xml                  $logdir/jdqz_params_$date
 cp -v continuation_params.xml          $logdir/continuation_params_$date
 
 # run
-srun -n $procs ${HOME}/Projects/i-emic/build/src/main/run_coupled > dump
+srun -n $procs $executable > dump
 
 # when finished the profile is appended to the summary
 cat profile_output >> $logdir/$fname
