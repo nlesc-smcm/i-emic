@@ -14,13 +14,13 @@
   <Parameter name="number of time steps"  type="int" value="-1"/>
   
   <Parameter name="HDF5 output frequency" type="int" value="0"/>
-  <Parameter name="Newton tolerance"      type="double" value="1e-3"/>
+  <Parameter name="Newton tolerance"      type="double" value="1e-4"/>
 
   <!-- Define the optimal interval for the amount of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="4"/>
   <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
 
  <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="6"/>
+  <Parameter name="maximum Newton iterations" type="int" value="10"/>
 
 </ParameterList>

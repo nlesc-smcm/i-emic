@@ -169,11 +169,13 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
             if ( (normdx < Ntol ) && (normF < Ntol) )
                 break;
-            // else if ( normdx > 1e2)
-            // {
-            //     k = Niters;
-            //     break;
-            // }
+            else if ( normdx > 1e2)
+            {
+                WARNING("Norm exploding! ||dx||inf = "
+                        << normdx << "\n", __FILE__, __LINE__);
+                k = Niters;
+                break;
+            }
         }
 
         if (k == Niters)
