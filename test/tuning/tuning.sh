@@ -11,7 +11,8 @@
 
 # origin dir
 origdir=${PWD}
-executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/run_coupled
+#executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/run_coupled
+executable=/home/emulder/Projects/i-emic/build/src/main/run_coupled
 
 if ! [[ -s $executable ]]
 then
