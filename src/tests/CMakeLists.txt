@@ -30,7 +30,7 @@ set(TEST_SOURCES
 include(BuildExternalProject)
 BuildExternalProject(
   GTest
-  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_REPOSITORY git://github.com/google/googletest.git
   GIT_TAG release-1.8.0)
 
 BuildExternalProject_find_package(GTest)

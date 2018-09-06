@@ -51,7 +51,7 @@ list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
 include(BuildExternalProject)
 BuildExternalProject(
   JDQZPP
-  GIT_REPOSITORY https://github.com/erik808/jdqzpp.git
+  GIT_REPOSITORY git://github.com/erik808/jdqzpp.git
   CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF
   )
 
