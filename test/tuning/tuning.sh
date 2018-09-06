@@ -11,11 +11,13 @@
 
 # origin dir
 origdir=${PWD}
-executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//`main/run_coupled
+executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/run_coupled
 
-if [[ -s $executable ]]
+if ! [[ -s $executable ]]
 then
     echo "executable does not exist: " $executable
+    echo "abort"
+    exit
 fi
 
 # cd to original dir
