@@ -51,8 +51,19 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
     oceanParams->setName("Ocean parameters");
 
+    double comb =
+        oceanParams->sublist("THCM").
+        sublist("Starting Parameters").get("Combined Forcing", 99.0);
+
+    if (std::abs(comb) < 1e-7)
+    {
+        WARNING("Nothing will happen without any forcing: par(comb) = "
+                << comb, __FILE__, __LINE__);
+    }
+
 	// Create parallelized OceanTheta object
-	RCP<Theta<Ocean> > oceanTheta = Teuchos::rcp(new Theta<Ocean>(Comm, oceanParams));
+    Teuchos::RCP<Theta<Ocean> > oceanTheta =
+        Teuchos::rcp(new Theta<Ocean>(Comm, oceanParams));
 
     // Create parameter object for time stepping
 	RCP<Teuchos::ParameterList> timeParams = rcp(new Teuchos::ParameterList);
@@ -78,12 +89,12 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
     // conversion from nondimensional time to years
     double years  = 2.01991; // r0dim / udim / 3600 / 24 / 365
-    double time   = 0.0;     // keep track of time
+    double time   = 0.0;     // keep track of (dimensional)time
     double normF  = 0.0;     // keep track of residual norm
     double normdx = 0.0;     // keep track of update infnorm
     int    step   = 0;       // keep track of time steps
 
-    Teuchos::RCP<Epetra_Vector> F    = oceanTheta->getRHS('V');
+    Teuchos::RCP<Epetra_Vector> F;
     Teuchos::RCP<Epetra_Vector> x    = oceanTheta->getState('V');
     Teuchos::RCP<Epetra_Vector> dx   = oceanTheta->getSolution('V');
     Teuchos::RCP<Epetra_Vector> xdot = oceanTheta->getState('C');
@@ -91,27 +102,21 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     dx->PutScalar(0.0);
     xdot->PutScalar(0.0);
     xold->PutScalar(0.0);
-    
+
     oceanTheta->initializeSolver();
     writeData(oceanTheta, true, 0, 0, 0, 0); // write data to tdata.txt
     oceanTheta->setTheta(theta);
 
     bool test_step = ( nsteps < 0 ) ? true : step < nsteps;
-    while ( ( time < tend ) ||
-            ( test_step ) )
+    while ( ( time < tend ) && ( test_step ) )
     {
         INFO("----------------------------------------------------------");
-        INFO("Timestepping:    t = " << time * years << " y");        
+        INFO("Timestepping:    t = " << time << " y");
 
-        oceanTheta->preProcess();        
+        oceanTheta->preProcess();
         oceanTheta->store();  // save current state to oldstate
 
-        // compute time discretization -G:
-        // -G(x) =  -1 * (B d/dt x + theta*F(x) + (theta-1) * F(x_old))
-        oceanTheta->setTimestep(dt);
-        oceanTheta->computeRHS();
-        normF = Utils::norm(F);
-        
+ 
         // Timestep adjustments
         // while (normF > 10)
         // {
@@ -122,68 +127,91 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         //     INFO("             ||F|| = " << normF);
         // }
 
-        INFO("              step = " << step);
-        INFO("              Newton solve, ||F|| = " << normF);
-
-        // // Secant prediction (not sure if needed)
+        // Secant prediction (not sure if needed)
         // x->Update(dt, *xdot, 1.0);
-        // *xold = *x;
-        
+        *xold = *x;
+
         // Newton solve
         int k = 0;
         for (; k != Niters; ++k)
-        { 
+        {
+            oceanTheta->setTimestep(dt);
+
+            // compute time discretization -F:
+            // -F(x) =  -1 * (B d/dt x / theta + F(x) + (theta-1) / theta * F(x_old))
+
+            oceanTheta->computeRHS();
+
             // create jacobian of time discretization
             oceanTheta->computeJacobian();
 
             // solve J(x) dx = -G(x)
+            F = oceanTheta->getRHS('V');
+            normF = Utils::norm(F);                   
+            F->Scale(-1.0);
             oceanTheta->solve(F);
 
             // correct for pressure modes (superfluous due to prec)
-            oceanTheta->pressureProjection(dx);
+            // oceanTheta->pressureProjection(dx);
 
             // update state
             x->Update(1.0, *dx, 1.0);
 
             // compute time discretization -G(x)
             oceanTheta->computeRHS();
-            
+
             normF  = Utils::norm(F);
             normdx = Utils::normInf(dx);
-            INFO("                            ||F||2   = " << normF);
+
+            INFO("               Newton iter           = " << k);
+            INFO("                           ||F||2    = " << normF);
             INFO("                           ||dx||inf = " << normdx);
-            if ( normdx < Ntol )
+
+            if ( (normdx < Ntol ) && (normF < Ntol) )
                 break;
-            else if ( normdx > 1e2)
-            {
-                k = Niters;
-                break;
-            }
+            // else if ( normdx > 1e2)
+            // {
+            //     k = Niters;
+            //     break;
+            // }
         }
-        
+
         if (k == Niters)
         {
             WARNING("Newton did not converge! ||F|| = "
                     << normF << "\nRestoring model",
                     __FILE__, __LINE__);
+            INFO("    adjusting time step.. old dt = " << dt);
             dt = std::max(dt / dscale, mindt);
+            INFO("    adjusting time step.. new dt = " << dt);
+
+            if (dt == mindt)
+            {
+                INFO("min timestep reached, exiting...");
+                return;
+            }
             oceanTheta->restore();
             continue;
         }
-        
-        oceanTheta->postProcess();
-        
+
         step++;
-        time += dt;
-        
+        time += dt * years;
+
+        INFO("           step = " << step);
+        INFO("           time = " << time);
+        INFO("           Newton solve, ||F||2    = " << normF);
+        INFO("           Newton solve  ||dx||inf = " << normdx);
+
+        oceanTheta->postProcess();
+
         std::stringstream outFile;
         outFile << "ocean_time_" << std::setprecision(8)
-                << time * years << ".h5";
-        
+                << time << ".h5";
+
         if ((output > 0) && ((step % output) == 0))
             oceanTheta->saveStateToFile(outFile.str());
 
-        writeData(oceanTheta, false, step, dt, time*years, k);
+        writeData(oceanTheta, false, step, dt, time, k);
 
         // Timestep adjustments
         if (k < minK)
@@ -195,13 +223,13 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
         // create tangent
         xdot->Update(1.0/dt, *x, -1.0/dt, *xold, 0.0);
-        //    INFO(" ||xdot|| = " << Utils::norm(xdot));
+        // INFO(" ||xdot|| = " << Utils::norm(xdot));
     }
-    
+
     // print the profile
     if (Comm->MyPID() == 0)
         printProfile(profile);
-    
+
 	//------------------------------------------------------------------
 	TIMER_STOP("Total time...");
 }
@@ -215,18 +243,18 @@ void writeData(Teuchos::RCP<Theta<Ocean> > model, bool describe,
 
     if (describe) // write description of entries
     {
-        cdatastring << std::setw(_FIELDWIDTH_) 
+        cdatastring << std::setw(_FIELDWIDTH_)
                     << "time"
                     << std::setw(_FIELDWIDTH_)
-                    << "step" 
-                    << std::setw(_FIELDWIDTH_) 
-                    << "dt" 
+                    << "step"
+                    << std::setw(_FIELDWIDTH_)
+                    << "dt"
                     << std::setw(_FIELDWIDTH_)
                     << "|x|"
-                    << std::setw(_FIELDWIDTH_) 
+                    << std::setw(_FIELDWIDTH_)
                     << "NR"
                     << model->writeData(describe);
-        
+
         WRITETDATA(cdatastring.str());
     }
     else
@@ -238,11 +266,11 @@ void writeData(Teuchos::RCP<Theta<Ocean> > model, bool describe,
         cdatastring << std::scientific
                     << std::setw(_FIELDWIDTH_) <<  time
                     << std::setw(_FIELDWIDTH_) <<  step
-                    << std::setw(_FIELDWIDTH_) <<  dt  
+                    << std::setw(_FIELDWIDTH_) <<  dt
                     << std::setw(_FIELDWIDTH_)
                     <<  Utils::norm(model->getState('V'))
                     << std::setw(_FIELDWIDTH_) <<  niters
-                    << model->writeData();    
+                    << model->writeData();
 
         WRITETDATA(cdatastring.str());
     }

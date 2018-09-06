@@ -110,7 +110,7 @@ public:
     //! Compute theta method RHS
     //!
     //! The final theta timestepping RHS is given by
-	//! (B dx/dt)/theta + F(x) + (theta-1)/theta * F(x_old)
+	//! -(B dx/dt)/theta + F(x) + (1-theta)/theta * F(x_old)
     
 	void computeRHS()
         {
@@ -136,15 +136,14 @@ public:
             Model::applyMassMat(*xDot_, *Bxdot_);
 
             // Combine terms
-            double f = (theta_ - 1)/theta_;
-            Model::rhs_->Update(f,    *oldRhs_, 1.0);
-            Model::rhs_->Update(1.0,  *Bxdot_, 1.0);
-            // Model::rhs_->Scale(-1.0); // why            
+            Model::rhs_->Update((1-theta_)/theta_, *oldRhs_, 1.0);
+            Model::rhs_->Update(-1.0,  *Bxdot_, 1.0);
+
         }
 
     //!-------------------------------------------------------
     //! compute derivative of theta method rhs:
-    //!  B / (theta * dt) + J.
+    //!  B / (theta*dt) + J.
     
 	void computeJacobian()
         {
@@ -166,7 +165,7 @@ public:
             double value;
             for (int i = 0; i != numMyElements; ++i)
             {
-                value = (*diagB)[i] / timestep_ / theta_;
+                value = -(*diagB)[i] / timestep_ / theta_;
                 Model::jac_->SumIntoGlobalValues(myGlobalElements[i], 1,
                                                  &value, myGlobalElements + i);
             }
