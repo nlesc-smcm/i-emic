@@ -440,7 +440,12 @@ void TimeStepper<T>::ams(T const &x0) const
                   << " converged with max distance "
                   << max_distance << " -> "
                   << exp->max_distance << " and t="
-                  << exp->initial_time + exp->time << std::endl;
+                  << exp->initial_time + exp->time
+                  << " for experiment "
+                  << std::find(reactive_experiments.begin(),
+                               reactive_experiments.end(),
+                               exp) - reactive_experiments.begin()
+                  << std::endl;
 
         // Cleanup
         double min_max_distance = 1.0;
@@ -642,7 +647,11 @@ void TimeStepper<T>::tams(T const &x0) const
                   << " converged with max distance "
                   << max_distance << " -> "
                   << exp->max_distance << " and t="
-                  << exp->time << std::endl;
+                  << exp->time << " for experiment "
+                  << std::find(reactive_experiments.begin(),
+                               reactive_experiments.end(),
+                               exp) - reactive_experiments.begin()
+                  << std::endl;
 
         // Cleanup
         double min_max_distance = 1.0;
