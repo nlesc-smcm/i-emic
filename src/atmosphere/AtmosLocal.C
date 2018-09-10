@@ -135,8 +135,10 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     a0_              = params->get("reference albedo", 0.3);
     da_              = params->get("albedo excursion", 0.5);
     
-    tauf_            = params->get("restoring timescale tauf", 1.0); 
-    tauc_            = params->get("restoring timescale tauc", 1.0); 
+    tauf_            = params->get("restoring timescale tauf (in days)", 1.0);
+    tauc_            = params->get("restoring timescale tauc (in days)", 1.0);
+    tauf_            = (tauf_ * 3600. * 24. * udim_) / r0dim_;
+    tauc_            = (tauc_ * 3600. * 24. * udim_) / r0dim_;
 
     Tm_              = params->get("melt temperature threshold (deg C)", 0.0);          
     Tr_              = params->get("rain/snow temperature threshold (deg C)", 0.0);     

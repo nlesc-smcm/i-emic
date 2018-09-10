@@ -57,15 +57,19 @@
   <!-- Preconditioner parameters.                                 -->
   <Parameter name="Ifpack overlap level" type="int" value="10" />
 
+  <!-- Albedo restoring timescales (default is 1 day) -->
+  <Parameter name="restoring timescale tauf (in days)" type="double" value="10"/>
+  <Parameter name="restoring timescale tauc (in days)" type="double" value="1"/>
+
   <!-- Outgoing longwave radiation parameters -->
   <Parameter name="radiative flux param A" type="double" value="216" />
   <Parameter name="radiative flux param B"  type="double" value="1.5" />
 
-  <Parameter name="temperature eddy diffusivity" type="double" value="2.3e6" />
+  <Parameter name="temperature eddy diffusivity" type="double" value="3.1e6" />
  
   <!-- testing parameters  -->
-  <Parameter name="melt temperature threshold (deg C)" type="double" value="-5"/>
-  <Parameter name="melt threshold width (deg C)" type="double" value="5"/>
+  <Parameter name="melt temperature threshold (deg C)" type="double" value="-10"/>
+  <Parameter name="melt threshold width (deg C)" type="double" value="10"/>
   
   <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="-100"/>
   <Parameter name="accumulation threshold width (m/y)" type="double" value="5"/>

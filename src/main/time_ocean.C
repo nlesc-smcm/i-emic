@@ -48,7 +48,7 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
     double comb =
         oceanParams->sublist("THCM").
-        sublist("Starting Parameters").get("Combined Forcing", 99.0);
+        sublist("Starting Parameters").get("Combined Forcing", 0.0);
 
     if (std::abs(comb) < 1e-7)
     {

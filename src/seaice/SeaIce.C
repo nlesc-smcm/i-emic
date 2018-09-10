@@ -5,6 +5,8 @@
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*, double *);
 
+extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
+    
 //=============================================================================
 // Constructor
 SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
@@ -45,6 +47,10 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // combined parameter
     zeta_  (ch_ * utau_ * rhoo_ * cpo_),
+
+    // ocean model parameters (reset during sync)
+    r0dim_ (6.37e+06), // earth radius (m)
+    udim_  (0.1e+00),  // typical ocean velocity (m/s)
 
     // sublimation and evaporation constants, parameters for
     // saturation humidity over ice
@@ -275,10 +281,10 @@ void SeaIce::computeMassMat()
 
         TIMER_START("SeaIce: compute MassMat...");
         localDiagB_->PutScalar(0.0);
-
+        
         int row;
         double val;
-        double massH = rhoi_ * Lf_ * eta_ / zeta_; // mass mat. value
+        double massH = rhoi_ * Lf_ * udim_ / zeta_ / r0dim_; // mass mat. value
     
         for (int j = 0; j != mLoc_; ++j)
             for (int i = 0; i != nLoc_; ++i)
@@ -1112,6 +1118,7 @@ void SeaIce::synchronize(std::shared_ptr<Ocean> ocean)
     // Get ocean parameters
     double tmp1, tmp2, tmp3, tmp4, tmp5, tmp6 ;
     FNAME(getdeps)(&tmp1, &tmp2, &tmp3, &tmp4, &tmp5, &tmp6, &pQSnd_);
+    FNAME(get_parameters)(&r0dim_, &udim_, &tmp1);
 
 }
 

@@ -59,7 +59,7 @@ public:
         _QLH      // Latent heat flux
     };
 
-private:
+protected:
     //! parameterlist
     ParameterList params_;
 
@@ -251,6 +251,10 @@ private:
 
     //! combined parameter
     double zeta_;
+
+    //! ocean model
+    double r0dim_;
+    double udim_;
     
     //! background heat flux variation
     double Qvar_;
@@ -322,7 +326,7 @@ public:
     //! destructor
     ~SeaIce() {};
 
-    std::string const name() { return "SeaIce"; }
+    std::string const name() { return "seaice"; }
     virtual int const modelIdent() { return 2; }
 
     //! compute QSos and EmiP fluxes locally

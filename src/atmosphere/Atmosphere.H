@@ -39,7 +39,7 @@ public:
 
     using CommPars      = AtmosLocal::CommPars;
 
-private:
+protected:
     //! serial atmosphere class, working on local subdomains
     std::shared_ptr<AtmosLocal> atmos_;
 
@@ -195,7 +195,7 @@ public:
 
     ~Atmosphere() {INFO("Atmosphere destructor");}
     
-    std::string const name() { return "Atmosphere"; }
+    std::string const name() { return "atmos"; }
     virtual int const modelIdent() { return 1; }
     
     //! Setup integral coefficients
