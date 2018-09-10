@@ -222,6 +222,7 @@ AMS(Model model, ParameterList pars,
 
         sol1_ = restrict(*sol1_);
         sol2_ = restrict(*sol2_);
+        sol3_ = restrict(*sol3_);
 
         auto diff = Teuchos::rcp(new Vector(*sol1_));
         CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
