@@ -69,7 +69,7 @@
  
   <!-- testing parameters  -->
   <Parameter name="melt temperature threshold (deg C)" type="double" value="-10"/>
-  <Parameter name="melt threshold width (deg C)" type="double" value="10"/>
+  <Parameter name="melt threshold width (deg C)" type="double" value="5"/>
   
   <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="-100"/>
   <Parameter name="accumulation threshold width (m/y)" type="double" value="5"/>
