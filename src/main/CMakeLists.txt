@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 
 set(MAIN_INCLUDE_DIRS
   ../continuation/
+  ../thetastepper/
   ../topo/
   ../ocean/
   ../atmosphere/

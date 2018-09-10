@@ -173,10 +173,10 @@ extern std::stack<Timer> timerStack;
 #ifndef TIMER_START
 #  define TIMER_START(msg)											\
 	{																\
-		Timer timer;												\
-		timer.ResetStartTime();										\
-		if (profile.find(msg) == profile.end())   \
-            profile[msg] = std::array<double, PROFILE_ENTRIES>(); \
+		Timer timer(msg);                                           \
+		timer.ResetStartTime();                                     \
+		if (profile.find(msg) == profile.end())                     \
+            profile[msg] = std::array<double, PROFILE_ENTRIES>();   \
 		timerStack.push(timer);										\
 	}
 #endif
@@ -185,10 +185,20 @@ extern std::stack<Timer> timerStack;
 #  define TIMER_STOP(msg)										\
 	{															\
 		double time = timerStack.top().ElapsedTime();			\
+        bool sane = true;                                       \
+        if (!(msg == timerStack.top().label()))                 \
+        {                                                       \
+            WARNING("msg and label not equal!" <<               \
+                    " msg = " << msg <<                         \
+                    " label = " << timerStack.top().label(),    \
+                    __FILE__, __LINE__);                        \
+            sane = false;                                       \
+        }                                                       \
+        assert(sane);                                           \
 		timerStack.pop();										\
-        profile[msg][0] += time;                               \
-        profile[msg][1] += 1;                                  \
-        profile[msg][2] = profile[msg][0] / profile[msg][1]; \
+        profile[msg][0] += time;                                \
+        profile[msg][1] += 1;                                   \
+        profile[msg][2] = profile[msg][0] / profile[msg][1];    \
 	}
 #endif
 
@@ -199,7 +209,7 @@ extern std::stack<Timer> timerStack;
 	{															\
 		std::string msg(charmsg);								\
 		msg.insert(0, "_NOTIME_");								\
-        profile[msg] = (profile.count(msg)) ?         \
+        profile[msg] = (profile.count(msg)) ?                   \
 			profile[msg] :										\
 			std::array<double, PROFILE_ENTRIES>();				\
         profile[msg][0] += iters;                              \
@@ -227,10 +237,13 @@ extern std::stack<Timer> timerStack;
 class Timer
 {
 	double startTime_;
+    std::string label_;
+    
 public:
-	Timer()
+	Timer(std::string const &label)
 		:
-		startTime_(0.0)
+		startTime_(0.0),
+        label_(label)
 		{}
 
 	double wallTime()
@@ -248,6 +261,8 @@ public:
 
 	double ElapsedTime()
 		{ return (double) (wallTime() - startTime_); }
+
+    std::string label() { return label_;}
 };
 
 //=========================================================================

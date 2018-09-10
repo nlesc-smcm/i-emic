@@ -5,7 +5,7 @@
   <Parameter name="increase step size" type="double" value="2.0"/>
   <Parameter name="decrease step size" type="double" value="2.0"/>
 
-  <Parameter name="initial time step size" type="double" value="1.0e-2"/>
+  <Parameter name="initial time step size" type="double" value="1.0e-3"/>
   
   <Parameter name="end time (in y)"    type="double" value="100.0"/>
   <Parameter name="theta"              type="double" value="1.0"/>

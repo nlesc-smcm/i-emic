@@ -658,6 +658,17 @@ void CoupledModel::postProcess()
 }
 
 //------------------------------------------------------------------
+void CoupledModel::saveStateToFile(std::string const &filename)
+{
+    for (auto &model: models_)
+    {
+        std::stringstream outFile;
+        outFile << model->name() << "_" << filename;
+        model->saveStateToFile(outFile.str());
+    }
+}
+
+//------------------------------------------------------------------
 //! Gather important continuation data to use in summary file
 std::string const CoupledModel::writeData(bool describe)
         {

@@ -185,6 +185,9 @@ public:
     //! for instance when a Newton process has converged.
     void postProcess();
 
+    //! Save state to file and everything else
+    void saveStateToFile(std::string const &filename);
+
     //! Gather important continuation data to use in summary file
     std::string const writeData(bool describe = false);
     
