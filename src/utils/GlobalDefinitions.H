@@ -182,23 +182,23 @@ extern std::stack<Timer> timerStack;
 #endif
 
 #ifndef TIMER_STOP
-#  define TIMER_STOP(msg)										\
-	{															\
-		double time = timerStack.top().ElapsedTime();			\
-        bool sane = true;                                       \
-        if (!(msg == timerStack.top().label()))                 \
-        {                                                       \
-            WARNING("msg and label not equal!" <<               \
-                    " msg = " << msg <<                         \
-                    " label = " << timerStack.top().label(),    \
-                    __FILE__, __LINE__);                        \
-            sane = false;                                       \
-        }                                                       \
-        assert(sane);                                           \
-		timerStack.pop();										\
-        profile[msg][0] += time;                                \
-        profile[msg][1] += 1;                                   \
-        profile[msg][2] = profile[msg][0] / profile[msg][1];    \
+#  define TIMER_STOP(msg)                                               \
+	{                                                                   \
+		double time = timerStack.top().ElapsedTime();                   \
+        bool sane = true;                                               \
+        if (!(msg == timerStack.top().label()))                         \
+        {                                                               \
+            WARNING("msg and label not equal!\n" <<                     \
+                    "   msg = " << msg << "\n"                          \
+                    " label = " << timerStack.top().label() << "\n",    \
+                    __FILE__, __LINE__);                                \
+            sane = false;                                               \
+        }                                                               \
+        assert(sane);                                                   \
+		timerStack.pop();                                               \
+        profile[msg][0] += time;                                        \
+        profile[msg][1] += 1;                                           \
+        profile[msg][2] = profile[msg][0] / profile[msg][1];            \
 	}
 #endif
 

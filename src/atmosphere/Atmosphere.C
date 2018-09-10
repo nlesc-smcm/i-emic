@@ -256,7 +256,7 @@ void Atmosphere::distributeState()
 //==================================================================
 void Atmosphere::computeRHS()
 {
-    TIMER_START("AtmosepherePar: computeRHS...");
+    TIMER_START("Atmosphere: computeRHS...");
 
     //------------------------------------------------------------------
     // Put parallel state in serial atmosphere.
