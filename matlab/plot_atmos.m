@@ -35,6 +35,24 @@ function [state,pars,add] = plot_atmos(fname, opts)
         readFluxes = false;
     end
 
+    if isfield(opts, 'Ta')
+        plot_ta = opts.Ta;
+    else
+        plot_ta = false;
+    end
+
+    if isfield(opts, 'humidity')
+        plot_humidity = opts.humidity;
+    else
+        plot_humidity = false;
+    end
+
+    if isfield(opts, 'albedo')
+        plot_albedo = opts.albedo;
+    else
+        plot_albedo = false;
+    end
+
     if isfield(opts, 'invert')
         invert = opts.invert;
     else
@@ -46,6 +64,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
         fig_ctr = opts.fig_ctr;
     else
         fig_ctr = 11; % first figure handle number
+    end
+
+    if isfield(opts, 'fname_add')
+        export_to_file = true;
+    else
+        export_to_file = false;
     end
 
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
@@ -100,77 +124,76 @@ function [state,pars,add] = plot_atmos(fname, opts)
     Tz  = mean(Ta,1); % zonal mean
     qz  = mean(qa,1); % zonal mean
 
-    figure(fig_ctr); fig_ctr = fig_ctr+1;
+    if plot_ta
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
 
-    img = Ta';
-    Tdiff = max(max(Ta))-min(min(Ta));
-    fprintf('max(T) - min(T) = %f\n', Tdiff);
-    %contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
-    image(RtD*x,RtD*(y),srf,'AlphaData',1); hold on
-    imagesc(RtD*x,RtD*(y),img,'AlphaData',.9); hold on;
-    set(gca,'ydir','normal')
-    %c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
-    colorbar
-    cmap = my_colmap(caxis);
-    colormap(cmap)
-    colorbar
+        img = Ta';
+        Tdiff = max(max(Ta))-min(min(Ta));
+        fprintf('max(T) - min(T) = %f\n', Tdiff);
+        %contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
+        image(RtD*x,RtD*(y),srf,'AlphaData',1); hold on
+        contour(RtD*x,RtD*(y),img,15,'linewidth',2); hold on;
+        set(gca,'ydir','normal')
+        %c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
+        colorbar
+        cmap = my_colmap(caxis);
+        colormap(cmap)
+        colorbar
 
-    hold off
+        hold off
+        
+        title('Atmospheric temperature')
+        xlabel('Longitude')
+        ylabel('Latitude')
+        
+        if export_to_file
+            exportfig('atmosTemp.eps',10,[14,10],invert)
+        end
+    end
+
+    if plot_humidity
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
+        img = qa';
+
+        image(RtD*x,RtD*(y),srf,'AlphaData',.2); hold on
+        set(gca,'ydir','normal')
+        hold on
+        c = contour(RtD*x,RtD*(y),img,12,'Visible', 'on', ...
+                    'linewidth',1.5);
+        hold off
+        
+        colorbar
+        cmap = my_colmap(caxis);
+        colormap(cmap)
+
+        drawnow
+        title('Humidity (kg / kg)')
+        xlabel('Longitude')
+        ylabel('Latitude')
+        
+        if export_to_file
+            exportfig('atmosq.eps',10,[14,10],invert)
+        end
+    end
     
-    title('Atmospheric temperature')
-    xlabel('Longitude')
-    ylabel('Latitude')
-    exportfig('atmosTemp.eps',10,[14,10],invert)
+    if plot_albedo
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
+        img = Aa';
+        imagesc(RtD*x,RtD*(y),img); 
+        set(gca,'ydir','normal')
+        
+        %cmap = my_colmap(caxis);
+        colormap(gray)
+        colorbar
 
-% $$$     figure(fig_ctr); fig_ctr = fig_ctr+1;
-% $$$     img = (Ta-repmat(Tz,n,1))';
-% $$$     contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
-% $$$     image(RtD*x,RtD*(y),srf,'AlphaData',.2);
-% $$$     c = contour(RtD*x,RtD*(y),img,20,'Visible', ...
-% $$$                 'on','linewidth', 1.5);
-% $$$ 
-% $$$     cmap = my_colmap(caxis);
-% $$$     colormap(cmap)
-% $$$     colorbar
-
-% $$$     hold off
-% $$$     title('Ta anomaly')
-% $$$     xlabel('Longitude')
-% $$$     ylabel('Latitude')
-
-    figure(fig_ctr); fig_ctr = fig_ctr+1;
-    img = qa';
-
-    image(RtD*x,RtD*(y),srf,'AlphaData',.2); hold on
-    set(gca,'ydir','normal')
-    hold on
-    c = contour(RtD*x,RtD*(y),img,12,'Visible', 'on', ...
-                 'linewidth',1.5);
-    hold off
-    
-    colorbar
-    cmap = my_colmap(caxis);
-    colormap(cmap)
-
-    drawnow
-    title('Humidity (kg / kg)')
-    xlabel('Longitude')
-    ylabel('Latitude')
-    exportfig('atmosq.eps',10,[14,10],invert)
-    
-    figure(fig_ctr); fig_ctr = fig_ctr+1;
-    img = Aa';
-    imagesc(RtD*x,RtD*(y),img); 
-    set(gca,'ydir','normal')
-    
-    %cmap = my_colmap(caxis);
-    colormap(gray)
-    colorbar
-
-    title('Albedo')
-    xlabel('Longitude')
-    ylabel('Latitude')
-    exportfig('atmosA.eps',10,[14,10],invert)
+        title('Albedo')
+        xlabel('Longitude')
+        ylabel('Latitude')
+        
+        if export_to_file
+            exportfig('atmosA.eps',10,[14,10],invert)
+        end
+    end
     
     if readEP
 
@@ -197,7 +220,9 @@ function [state,pars,add] = plot_atmos(fname, opts)
         xlabel('Longitude')
         ylabel('Latitude')
         
-        exportfig('atmosEmP.eps',10,[14,10],invert)
+        if export_to_file
+            exportfig('atmosEmP.eps',10,[14,10],invert)
+        end
     end
     
     if readLST
