@@ -1532,7 +1532,9 @@ std::string const SeaIce::writeData(bool describe)
     if (describe)
     {
         datastring << std::setw(_FIELDWIDTH_)
-                   << "SI vol";
+                   << "SIvol";
+        datastring << std::setw(_FIELDWIDTH_)
+                   << "SIarea";
 
         return datastring.str();
     }
@@ -1549,10 +1551,13 @@ std::string const SeaIce::writeData(bool describe)
         for (int i = 0; i != M->MyLength(); ++i)
             (*restr)[i] = (*M)[i]*(*H)[i];
         
-        double SIV = Utils::dot(intCoeff_, restr);
+        double SIV  = Utils::dot(intCoeff_, restr);
+        double Mtot = Utils::dot(intCoeff_, M);
         
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
                    << SIV;
+        datastring << std::scientific << std::setw(_FIELDWIDTH_)
+                   << Mtot / totalArea_;
 
         return datastring.str();
     }
