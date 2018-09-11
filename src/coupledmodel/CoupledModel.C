@@ -658,6 +658,17 @@ void CoupledModel::postProcess()
 }
 
 //------------------------------------------------------------------
+void CoupledModel::saveStateToFile(std::string const &filename)
+{
+    for (auto &model: models_)
+    {
+        std::stringstream outFile;
+        outFile << model->name() << "_" << filename;
+        model->saveStateToFile(outFile.str());
+    }
+}
+
+//------------------------------------------------------------------
 //! Gather important continuation data to use in summary file
 std::string const CoupledModel::writeData(bool describe)
         {
@@ -706,4 +717,32 @@ void CoupledModel::dumpBlocks()
             }
         }
     }
+}
+
+//------------------------------------------------------------------
+void CoupledModel::setTheta(double theta)
+{
+    for (auto &model: models_)
+        model->setTheta(theta);
+}
+
+//------------------------------------------------------------------
+void CoupledModel::store()
+{
+    for (auto &model: models_)
+        model->store();
+}
+
+//------------------------------------------------------------------
+void CoupledModel::restore()
+{
+    for (auto &model: models_)
+        model->restore();
+}
+
+//------------------------------------------------------------------
+void CoupledModel::setTimestep(double dt)
+{
+    for (auto &model: models_)
+        model->setTimestep(dt);
 }

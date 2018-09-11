@@ -131,6 +131,12 @@ public:
 
     virtual void initializeState() { state_->PutScalar(0.0); }
 
+    //! time dependent stuff
+    virtual void setTheta(double theta){}
+    virtual void store(){}
+    virtual void restore(){}
+    virtual void setTimestep(double dt){}
+
 };
 
 // Implementations

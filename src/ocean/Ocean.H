@@ -180,7 +180,7 @@ public:
     //! destructor
     ~Ocean();
 
-    std::string const name() { return "Ocean"; }
+    std::string const name() { return "ocean"; }
     int const modelIdent() { return 0; }
 
     //! Solve may optionally accept an rhs of VectorPointer type

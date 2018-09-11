@@ -78,9 +78,9 @@
 	
     <!-- Starting Parameters -->
     <ParameterList name="Starting Parameters">
-      <Parameter name="Combined Forcing"    type="double" value="0.0"/>
+      <Parameter name="Combined Forcing"    type="double" value="1.0"/>
       <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="1.0"/>
+      <Parameter name="Salinity Forcing"    type="double" value="0.1"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
 	  <Parameter name="Temperature Forcing" type="double" value="10.0"/>
 	  <Parameter name="SPL1"                type="double" value="2.0e3"/>
@@ -109,14 +109,14 @@
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->
-    <Parameter name="Levitus T" type="int" value="0"/>
+    <Parameter name="Levitus T" type="int" value="1"/>
 
     <!-- If ite = 0, this specifies the temperature forcing data file -->
     <Parameter name="Temperature Forcing Data" type="string" value="levitus/new/t00an1"/>
 
     <!-- Levitus Salt (its in THCM)     -->
     <!-- 0: data, 1: idealized          -->
-    <Parameter name="Levitus S" type="int" value="0"/>
+    <Parameter name="Levitus S" type="int" value="1"/>
 
     <!-- If its = 0, this specifies the salinity forcing data file -->
     <Parameter name="Salinity Forcing Data" type="string" value="levitus/new/s00an1"/>
@@ -125,7 +125,7 @@
     <!-- 0: data,                         -->
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
-    <Parameter name="Wind Forcing Type" type="int" value="0"/>
+    <Parameter name="Wind Forcing Type" type="int" value="2"/>
     
     <!-- If iza = 0, this specifies the wind forcing data file -->
     <Parameter name="Wind Forcing Data" type="string" value="wind/trtau.dat"/>

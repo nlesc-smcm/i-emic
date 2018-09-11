@@ -132,9 +132,16 @@ RCP<Epetra_Comm>  initializeEnvironment(int argc, char **argv)
 //-----------------------------------------------------------------------------
 void printProfile(ProfileType profile)
 {
-    if (timerStack.empty() == false)
-        WARNING("Unequal amount of TIMER_START and TIMER_STOP uses",
+    bool sane = true;
+    while (timerStack.empty() == false)
+    {
+        WARNING("Unequal amount of TIMER_START and TIMER_STOP uses" <<
+                " label = " << timerStack.top().label(), 
                 __FILE__, __LINE__);
+        timerStack.pop();        
+        sane = false;
+    }
+    assert(sane);    
 
     std::ostringstream profilefile("profile_output");   // setting up a filename
     std::ofstream file(profilefile.str().c_str());      // setup output file

@@ -1,22 +1,23 @@
 <ParameterList name="Time stepper parameters">
 
-  <Parameter name="minimum step size"  type="double" value="1.0e-8"/>
-  <Parameter name="maximum step size"  type="double" value="0.5"/>
-  <Parameter name="increase step size" type="double" value="1.5"/>
-  <Parameter name="decrease step size" type="double" value="1.5"/>
+  <Parameter name="minimum step size"  type="double" value="1.0e-6"/>
+  <Parameter name="maximum step size"  type="double" value="1.0"/>
+  <Parameter name="increase step size" type="double" value="2.0"/>
+  <Parameter name="decrease step size" type="double" value="2.0"/>
 
-  <Parameter name="initial time step size" type="double" value="0.01"/>
+  <Parameter name="initial time step size" type="double" value="1.0e-3"/>
   
-  <Parameter name="end time (in y)"       type="double" value="10.0"/>
-  <Parameter name="theta"                 type="double" value="0.75"/>
+  <Parameter name="end time (in y)"    type="double" value="100.0"/>
+  <Parameter name="theta"              type="double" value="1.0"/>
 
   <!-- set to -1 to run until end time -->
   <Parameter name="number of time steps"  type="int" value="-1"/>
+  
   <Parameter name="HDF5 output frequency" type="int" value="0"/>
-  <Parameter name="Newton tolerance"      type="double" value="1e-5"/>
+  <Parameter name="Newton tolerance"      type="double" value="1e-4"/>
 
   <!-- Define the optimal interval for the amount of Newton iterations -->
-  <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
+  <Parameter name="minimum desired Newton iterations" type="int" value="4"/>
   <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
 
  <!-- Upper bound for the Newton iterations, beyond this we restart -->

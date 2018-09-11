@@ -185,6 +185,9 @@ public:
     //! for instance when a Newton process has converged.
     void postProcess();
 
+    //! Save state to file and everything else
+    void saveStateToFile(std::string const &filename);
+
     //! Gather important continuation data to use in summary file
     std::string const writeData(bool describe = false);
     
@@ -201,6 +204,13 @@ public:
     //! Get GID -> coordinate mapping
     void gid2coord(int const &gid, int &modelIdent,
                    int &i, int &j, int &k, int &xx);
+
+    //! time dependent stuff, only effective when the submodels are of
+    //! Theta<Model> type
+    void setTheta(double theta);
+    void store();
+    void restore();
+    void setTimestep(double dt);
 
 private:
 

@@ -40,7 +40,7 @@
     <!-- up to now only "AztecOO" or "None" (just apply precond once) -->
     <Parameter name="Method" type="string" value="AztecOO"/>
     <!-- maximum number of iterations permitted -->
-    <Parameter name="Max Num Iter" type="int" value="3"/>
+    <Parameter name="Max Num Iter" type="int" value="1"/>
     <!-- (relative) convergence tolerance      -->
     <Parameter name="Tolerance" type="double" value="1.0e-3"/>
     <!-- options include "GMRES", "GMRESR", etc. -->
@@ -419,8 +419,8 @@
   <!-- Solver parameters for the saddlepoint problem { -->
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="3"/>
-    <Parameter name="Tolerance" type="double" value="1.0e-4"/>
+    <Parameter name="Max Num Iter" type="int" value="2"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-2"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
     <Parameter name="Output" type="int" value="1"/>
@@ -556,8 +556,8 @@
   <!-- Parameters for the Krylov solver for ATS { -->
   <ParameterList name="ATS Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="10"/> <!-- candidate -->
-    <Parameter name="Tolerance" type="double" value="1.0e-3"/>
+    <Parameter name="Max Num Iter" type="int" value="1"/> <!-- candidate -->
+    <Parameter name="Tolerance" type="double" value="1.0e-2"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
     <Parameter name="Output" type="int" value="1"/>

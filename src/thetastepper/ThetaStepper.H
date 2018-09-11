@@ -4,119 +4,192 @@
 
 //==================================================================
 #include "ThetaStepperDecl.H"
-#include "Newton.H"
 #include "GlobalDefinitions.H"
 
 //==================================================================
-template<typename Model, typename VectorPtr>
-ThetaStepper<Model, VectorPtr>::ThetaStepper(Model model)
+template<typename ThetaModel, typename ParameterList>
+ThetaStepper<ThetaModel, ParameterList>::
+ThetaStepper(ThetaModel model, ParameterList params)
 	:
-	theta_(1.0),
-	time_(0.0),
-	timestep_(1.0e-3),
-	minTimestep_(1.0e-8),
-	maxTimestep_(1.0),
-	startTime_(0.0),
-	endTime_(500.0),
-	timestepScale1_(1.20),
-	timestepScale2_(2.00),
-	timestepScale3_(1.05),
-	inYears_(2.02),
-	inDays_(2.02 * 365),
-	minAllowedIterations_(4),
-	maxAllowedIterations_(5)	
+    model_    (model), 
+    theta_    (params->get("theta", 1.0)),
+    time_     (0.0),
+    dt_       (params->get("initial time step size", 1.0e-03)),
+    mindt_    (params->get("minimum step size", 1.0e-8)),
+    maxdt_    (params->get("maximum step size", 1.0)),
+    iscale_   (params->get("increase step size", 2.0)),
+    dscale_   (params->get("decrease step size", 2.0)),
+    inDays_   (params->get("timescale in days", 737.2685)), 
+    inYears_  (inDays_ / 365.), 
+    tend_     (params->get("end time (in y)", 10.0)),  
+    step_     (0),
+    nsteps_   (params->get("number of time steps", 10)),
+    output_   (params->get("HDF5 output frequency", 1)),
+    minK_     (params->get("minimum desired Newton iterations", 3)), 
+    maxK_     (params->get("maximum desired Newton iterations", 3)), 
+    Ntol_     (params->get("Newton tolerance", 1e-6)), 
+    Niters_   (params->get("maximum Newton iterations", 8)),
+    initWD_   (true)
 {
-	model_ = model;
-	state_ = model_->GetState('V');
+    F_    = model_->getRHS('V');
+    x_    = model_->getState('V');
+    dx_   = model_->getSolution('V');
+
+    dx_->PutScalar(0.0);
+
+    // set theta in ThetaModel
+    model_->setTheta(theta_);
 }
 
 //==================================================================
-template<typename Model, typename VectorPtr>
-void ThetaStepper<Model, VectorPtr>::Run()
+template<typename ThetaModel, typename ParameterList>
+void ThetaStepper<ThetaModel, ParameterList>::run()
 {
-	Newton<Model, VectorPtr> newtonSolver(model_);
-	int  iters;
-	bool convergence;
+    
+    bool test_step = ( nsteps_ < 0 ) ? true : step_ < nsteps_;
+    while ( ( time_ < tend_ ) && ( test_step ) )
+    {
+        INFO("----------------------------------------------------------");
+        INFO("Timestepping:    t = " << time_ << " y");
 
-	Info();
-	
-	while (time_ < endTime_)
-	{
-		model_->DumpState();
-		model_->Store();
-		model_->SetTheta(theta_);
-		model_->SetTimestep(timestep_);
+        model_->preProcess();
 
-		INFO("  time     = " << time_ * inYears_ << " Years");
-		INFO("  timestep = " << timestep_ * inDays_ << " Days");
-		
-		newtonSolver.Run();
-		convergence = newtonSolver.Converged();
-		
-		if (!convergence)
-		{
-			INFO("No convergence in Newton solve");
-			INFO("   Restoring the model and decreasing the timestep");
-			model_->Restore();
-			AdjustTimestep(iters, convergence); 
-			continue;
-		}
-		
-		time_ += timestep_;
-		
-		iters = newtonSolver.Iterations();
+        // save current state
+        model_->store();
 
-		AdjustTimestep(iters, convergence); 
+        k_ = 0;
+        for (; k_ != Niters_; ++k_)
+        {
+            model_->setTimestep(dt_);
 
-		// AdjustTheta(iters); // not implemented yet
-	}
+            // compute time discretization F:
+            // F(x) =  -(B d/dt x)/theta + F(x) + (theta-1)/theta * F(x_old)
+            model_->computeRHS();
+
+            // create jacobian of time discretization
+            model_->computeJacobian();
+
+            // solve for dx
+            F_->Scale(-1.0);
+            model_->solve(F_);
+            normdx_ = Utils::normInf(dx_);
+
+            // update state
+            x_->Update(1.0, *dx_, 1.0);
+
+            // compute new rhs
+            model_->computeRHS();
+            normF_ = Utils::norm(F_);
+
+            INFO("  Newton solver ------------------------------------");
+            INFO("                            iter     = " << k_);
+            INFO("                           ||F||2    = " << normF_);
+            INFO("                           ||dx||inf = " << normdx_);
+            INFO("\n");
+
+            if ( (normdx_ < Ntol_ ) && (normF_ < Ntol_) )
+                break;
+            else if ( normdx_ > 1e2)
+            {
+                WARNING("Norm exploding! ||dx||inf = "
+                        << normdx_ << "\n", __FILE__, __LINE__);
+                k_ = Niters_;
+                break;
+            }
+        }
+
+        if (k_ == Niters_)
+        {
+            WARNING("Newton did not converge! ||F|| = "
+                    << normF_ << "\nRestoring model",
+                    __FILE__, __LINE__);
+
+            INFO("    adjusting time step.. old dt = " << dt_);
+            dt_ = std::max(dt_ / dscale_, mindt_);
+            INFO("    adjusting time step.. new dt = " << dt_);
+
+            if (dt_ == mindt_)
+            {
+                INFO("  minimum timestep reached, exiting...");
+                return;
+            }
+            model_->restore();
+            continue;
+        }
+
+        step_++;
+        time_ += dt_ * inYears_;
+
+        INFO("  Newton converged, next time step -----------------");
+        INFO("                step = " << step_);
+        INFO("                time = " << time_);
+        INFO("           ||F||2    = " << normF_);
+        INFO("           ||dx||inf = " << normdx_);
+        INFO("\n");
+
+        model_->postProcess();
+
+        // additional save
+        if ((output_ > 0) && ((step_ % output_) == 0))
+        {
+            std::stringstream outFile;
+            outFile << "transient_" << std::setprecision(8)
+                    << time_ << ".h5";
+
+            model_->saveStateToFile(outFile.str());
+        }
+
+        writeData();
+
+        // Timestep adjustments
+        if (k_ < minK_)
+            dt_ = std::min(dt_ * iscale_, maxdt_);
+        else if (k_ > maxK_)
+            dt_ = std::max(dt_ / dscale_, mindt_);
+
+        test_step = ( nsteps_ < 0 ) ? true : step_ < nsteps_;
+    }
 }
 
 //==================================================================
-template<typename Model, typename VectorPtr>
-void ThetaStepper<Model, VectorPtr>::AdjustTimestep(int iters,
-												 bool convergence)
+template<typename ThetaModel, typename ParameterList>
+void ThetaStepper<ThetaModel, ParameterList>::
+writeData()
 {
-	if (iters < minAllowedIterations_ and convergence)
- 	{
-		DEBUG("  AdjustTimestep: increasing with a factor "
-			  << timestepScale1_);
-		timestep_ = MIN(timestep_ * timestepScale1_, maxTimestep_);
-	}
-	else if (iters > maxAllowedIterations_ and convergence)
-	{
-		DEBUG("  AdjustTimestep: decreasing with a factor "
-			  << timestepScale1_);
-		timestep_ = MAX(timestep_ / timestepScale1_, minTimestep_);
-	}
-	else if (!convergence)
-	{
-		DEBUG("  AdjustTimestep: RESET ");
-		DEBUG("  AdjustTimestep: decreasing with a factor "
-			  << timestepScale2_);
-		timestep_ = MAX(timestep_ / timestepScale2_, minTimestep_);		
-	}	
-}
+    // Data string
+    std::ostringstream tdatastring;
+    
+    if (initWD_) // write description of entries
+    {
+        tdatastring << std::setw(_FIELDWIDTH_)
+                    << "time"
+                    << std::setw(_FIELDWIDTH_/2.)
+                    << "step"
+                    << std::setw(_FIELDWIDTH_)
+                    << "dt"
+                    << std::setw(_FIELDWIDTH_)
+                    << "|x|"
+                    << std::setw(_FIELDWIDTH_/2.)
+                    << "NR"
+                    << model_->writeData(true);
 
-//==================================================================
-template<typename Model, typename VectorPtr>
-void ThetaStepper<Model, VectorPtr>::Info()
-{
-	INFO("--------------------------------------------------------");
-	INFO("Timestepping run with... ");
-	INFO("                  theta: " << theta_);
-	INFO("               timestep: " << timestep_);
-	INFO("    timestep boundaries: "
-		 << "[" << minTimestep_ << ", " << maxTimestep_ << "]");
-	INFO("        time boundaries: " 
-		 << "[" << startTime_ << ", " << endTime_ << "]");
-	INFO("      newton boundaries: " 
-		 << "[" << minAllowedIterations_
-		 << ", " << maxAllowedIterations_ << "]");
-	INFO("      timestep scalings... "
-		 << "increase/decrease: " << timestepScale1_
-		 << " big decrease: " << timestepScale2_);
-	INFO("--------------------------------------------------------");
+        WRITETDATA(tdatastring.str());
+        initWD_ = false;
+    }
+    tdatastring.str("");
+    tdatastring.clear();
+    tdatastring.precision(_PRECISION_);
+
+    tdatastring << std::scientific
+                << std::setw(_FIELDWIDTH_) <<  time_
+                << std::setw(_FIELDWIDTH_/2) <<  step_
+                << std::setw(_FIELDWIDTH_) <<  dt_
+                << std::setw(_FIELDWIDTH_)
+                << Utils::norm(model_->getState('V'))
+                << std::setw(_FIELDWIDTH_/2) <<  k_
+                << model_->writeData();
+
+    WRITETDATA(tdatastring.str());
 }
 
 #endif

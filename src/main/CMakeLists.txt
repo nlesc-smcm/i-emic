@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 
 set(MAIN_INCLUDE_DIRS
   ../continuation/
+  ../thetastepper/
   ../topo/
   ../ocean/
   ../atmosphere/
@@ -13,9 +14,10 @@ set(MAIN_INCLUDE_DIRS
   )
 
 set(MAIN_SOURCES
-  run_coupled.C
   run_ocean.C
-  time_ocean.C
+  run_coupled.C
+  time_ocean.C 
+  time_coupled.C
   run_topo.C
   )
 

@@ -3,13 +3,12 @@
 //=======================================================================
 
 #include "RunDefinitions.H"
+#include "ThetaStepper.H"
+#include "Theta.H"
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;
-
-using JDQZsolver = JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>, 
-                                      ComplexVector<Combined_MultiVec> > >;
 
 void runCoupledModel(RCP<Epetra_Comm> Comm);
 
@@ -48,16 +47,18 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
                                  "seaice_params.xml",
                                  "coupledmodel_params.xml",
                                  "continuation_params.xml",
-                                 "jdqz_params.xml"};
+                                 "jdqz_params.xml",
+                                 "timestepper_params.xml"};
 
     std::vector<string> names = {"Ocean parameters",
                                  "Atmosphere parameters",
                                  "Sea ice parameters",
                                  "CoupledModel parameters",
                                  "Continuation parameters",
-                                 "JDQZ parameters"};
+                                 "JDQZ parameters",
+                                 "timestepper_params.xml"};
     
-    enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT, EIGEN };
+    enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT, EIGEN, TIME};
 
     std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
 
@@ -77,51 +78,51 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     Utils::overwriteParameters(params[SEAICE], params[CONT]);
 
     Utils::overwriteParameters(params[COUPLED], params[CONT]);
+
+    // check params[OCEAN]
+    double comb =
+        params[OCEAN]->sublist("THCM").
+        sublist("Starting Parameters").get("Combined Forcing", 0.0);
     
-    // Create parallelized Ocean object
-    std::shared_ptr<Ocean> ocean = std::make_shared<Ocean>(Comm, params[OCEAN]);
+    if (std::abs(comb) < 1e-7)
+    {
+        WARNING("Nothing will happen without any forcing: par(comb) = "
+                << comb, __FILE__, __LINE__);
+    }
+    
+    // Create parallelized Theta<Ocean> object
+    std::shared_ptr<Theta<Ocean> > ocean =
+        std::make_shared<Theta<Ocean> >(Comm, params[OCEAN]);
 
-    // Create parallelized Atmosphere object
-    std::shared_ptr<Atmosphere> atmos =
-        std::make_shared<Atmosphere>(Comm, params[ATMOS]);
+    // Create parallelized Theta<Atmosphere> object
+    std::shared_ptr<Theta<Atmosphere> > atmos =
+        std::make_shared<Theta<Atmosphere> >(Comm, params[ATMOS]);
 
-    // Create parallelized Atmosphere object
-    std::shared_ptr<SeaIce> seaice =
-        std::make_shared<SeaIce>(Comm, params[SEAICE]);
+    // Create parallelized Theta<Atmosphere> object
+    std::shared_ptr<Theta<SeaIce> > seaice =
+        std::make_shared<Theta<SeaIce> >(Comm, params[SEAICE]);
 
     // Create CoupledModel
     std::shared_ptr<CoupledModel> coupledModel =
         std::make_shared<CoupledModel>(ocean, atmos, seaice, params[COUPLED]);
 
-    // Create JDQZ generalized eigenvalue solver
-    Combined_MultiVec t = *coupledModel->getSolution('C');
-    t.PutScalar(0.0);
-    ComplexVector<Combined_MultiVec> z(t);
-    
-    JDQZInterface<std::shared_ptr<CoupledModel>,
-                  ComplexVector<Combined_MultiVec> > matrix(coupledModel, z);
-    
-    std::shared_ptr<JDQZsolver> jdqz = std::make_shared<JDQZsolver>(matrix, z);
-    jdqz->setParameters(*params[EIGEN]);
-    
-    // Create Continuation
-    Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
-        continuation(coupledModel, params[CONT]);
+    // Create ThetaStepper
+    ThetaStepper<std::shared_ptr<CoupledModel>, Teuchos::RCP<Teuchos::ParameterList> >
+        stepper(coupledModel, params[TIME]);
 
-    // Couple JDQZ to continuation
-    continuation.setEigenSolver(jdqz);
 
     TIMER_STOP("Total initialization");
 
-    // Run continuation
-    continuation.run();
-    
+    // run timestepper
+    stepper.run();
+
     TIMER_STOP("Total time...");
     
     // print the profile
     if (Comm->MyPID() == 0)
     {
         printProfile(profile);
-        jdqz->printProfile("jdqz_profile");
     }    
+    
+
 }

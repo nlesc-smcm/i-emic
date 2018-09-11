@@ -27,6 +27,8 @@
 
   <!-- model adjustments (testing only)  -->
   <Parameter name="mask switch steepness" type="double" value="1.0e-2"/>
+
+  <!-- set this to -1 to disable seaice formation -->
   <!-- <Parameter name="freezing temperature sensitivity" type="double" value="-1" /> -->
   
   <!-- Preconditioner parameters.                -->
