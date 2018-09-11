@@ -17,12 +17,9 @@ title4=$(head $1 -n 1 | awk '{print $'$5'}')
 
 while true;
 do
-    horizontal=$((`tput cols` ))
-    vertical=$((`tput lines` -5))
+    horizontal=$((`tput cols`))
+    vertical=$((`tput lines`))
 
-#    clear;
-    echo " "
-    echo "  " ${PWD}
     gnuplot -e \
             "set terminal dumb $horizontal $vertical; \
              set autoscale;\
@@ -39,6 +36,8 @@ do
              plot '$1' using 1:$4 notitle with lines linetype 0;\
              set xlabel '$xlabel'; \
              set label 1 '$title4' ;\
+             set label 2 '${PWD}' at  screen 0.5,0.95 right;\
              plot '$1' using 1:$5 notitle with lines linetype 0;"
+    
     sleep 4;
 done
