@@ -86,14 +86,12 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     // Run continuation
 	continuation.run();
     
+	TIMER_STOP("Total time...");
+
     // print the profile
     if (Comm->MyPID() == 0)
     {
         printProfile(profile);
         jdqz->printProfile("jdqz_profile");
     }
-
-	//------------------------------------------------------------------
-	TIMER_STOP("Total time...");		
 }
-
