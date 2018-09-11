@@ -18,21 +18,27 @@ title4=$(head $1 -n 1 | awk '{print $'$5'}')
 while true;
 do
     horizontal=$((`tput cols` ))
-    vertical=$((`tput lines` ))
+    vertical=$((`tput lines` -5))
 
-    clear;
+#    clear;
+    echo " "
+    echo "  " ${PWD}
     gnuplot -e \
             "set terminal dumb $horizontal $vertical; \
              set autoscale;\
              set multiplot layout 2,2 columnsfirst margins 0.1,0.9,0.1,0.9 spacing 0.1;\
              set xlabel '$xlabel'; \
              set tics scale 0.1;\
-             plot '$1' using 1:$2 title '$title1' with lines linetype 0;\
+             set label 1 '$title1' at graph 0.5,1.05 center;\
+             plot '$1' using 1:$2 notitle with lines linetype 0;\
              set xlabel '$xlabel'; \
-             plot '$1' using 1:$3 title '$title2' with lines linetype 0;\
+             set label 1 '$title2' ;\
+             plot '$1' using 1:$3 notitle with lines linetype 0;\
              set xlabel '$xlabel'; \
-             plot '$1' using 1:$4 title '$title3' with lines linetype 0;\
+             set label 1 '$title3' ;\
+             plot '$1' using 1:$4 notitle with lines linetype 0;\
              set xlabel '$xlabel'; \
-             plot '$1' using 1:$5 title '$title4' with lines linetype 0;"
-    sleep 2;
+             set label 1 '$title4' ;\
+             plot '$1' using 1:$5 notitle with lines linetype 0;"
+    sleep 4;
 done
