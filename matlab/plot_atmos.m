@@ -105,7 +105,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     q0  = 8e-3;
     a0  = 0.3;
     
-    % starlings
+    % 
     tdim = 1;
     qdim = 1e-3;
     adim = 0.5;
