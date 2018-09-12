@@ -25,8 +25,9 @@ function [state,pars,add] = plot_atmos(fname, opts)
         opts.readEP = readEP;
     end
 
-    if isfield(opts, 'readLST')
-        readLST = opts.readLST;
+    if isfield(opts, 'lst') % land surface temperature
+        readLST = opts.lst;
+        opts.readLST = readLST;
     else
         readLST = false;
     end
@@ -69,7 +70,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
 
     if isfield(opts, 'exportfig')
-        export_to_file = true;
+        export_to_file = opts.exportfig;
     else
         export_to_file = false;
     end
@@ -97,7 +98,6 @@ function [state,pars,add] = plot_atmos(fname, opts)
 
     if readLST
         LST = reshape(add.LST, n, m);
-        SST = reshape(add.SST, n, m);
     end
 
     RtD = 180/pi;    
@@ -105,12 +105,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
     % reference temperature
     T0  = 15.0;   
     q0  = 8e-3;
-    a0  = 0.3;
+    a0  = 0.0;
     
     % 
     tdim = 1;
     qdim = 1e-3;
-    adim = 0.5;
+    adim = 1;
 
     % constants
     rhoa = 1.25;
@@ -130,13 +130,22 @@ function [state,pars,add] = plot_atmos(fname, opts)
         figure(fig_ctr); fig_ctr = fig_ctr+1;
 
         img = Ta';
+        img2 = img;
+        img2(logical(surfm')) = NaN;
         Tdiff = max(max(Ta))-min(min(Ta));
         fprintf('max(T) - min(T) = %f\n', Tdiff);
-        %contourf(RtD*x,RtD*(y),img,20,'Visible','off'); hold on;
-        image(RtD*x,RtD*(y),srf,'AlphaData',1); hold on
-        contour(RtD*x,RtD*(y),img,15,'linewidth',2); hold on;
+        imagesc(RtD*x,RtD*(y),img); hold on
+        %contourf(RtD*x,RtD*(y),img,10,'linestyle','none','Fill','on'); hold on;
+        plot_mask(surfm,x,y); hold on   
+        
+       
+
+        %contour(RtD*x,RtD*(y),img,20,'linecolor','k',...
+        %        'linewidth',1.2,'linestyle','-'); hold on;
+        contour(RtD*x,RtD*(y),img,10,'linecolor',[.2,.2,.2],... 
+                'linewidth',1.0,'linestyle','-'); hold on;
+                
         set(gca,'ydir','normal')
-        %c = contour(RtD*x,RtD*(y),img,20,'Visible', 'on','linewidth',1.5);
         colorbar
         cmap = my_colmap(caxis);
         colormap(cmap)
@@ -227,12 +236,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
         end
     end
     
-    if readLST
+    if readLST || plot_default
         figure(fig_ctr); fig_ctr = fig_ctr+1;
-        imagesc(RtD*x,RtD*(y), SST' + LST' + T0);
+        imagesc(RtD*x,RtD*(y), LST' + T0);
         set(gca,'ydir', 'normal');
-        cmap = my_colmap(caxis, 0);
-        colormap(cmap)                
+        cmap = my_colmap(caxis);
+        colormap(cmap)
         colorbar
         title('Surface temperature')
         xlabel('Longitude')
@@ -240,6 +249,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
 
     if readFluxes
-        plot_fluxes(add, fig_ctr,'Atmos: ', opts); 
+        out = plot_fluxes(add, fig_ctr,'Atmos: ', opts); 
     end
+    
 end

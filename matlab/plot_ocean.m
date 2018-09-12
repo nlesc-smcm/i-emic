@@ -92,21 +92,21 @@ function [sol, add] = plot_ocean(solfile, opts)
     end
 
     if isfield(opts, 'fname_add') 
-        export_to_file = true;
-        fname_add = opts.fname_add;
+        export_to_file = opts.exportfig;
+        fname_add      = opts.fname_add;
     else
         export_to_file = false;
         fname_add = '';
     end
     
     if isfield(opts, 'exportfig')
-        export_to_file = true;
+        export_to_file = opts.exportfig;
     else
         export_to_file = false;
     end        
 
     if isfield(opts, 'invert')
-        invert = opts.invert
+        invert = opts.invert;
     else
         invert = false;
     end    

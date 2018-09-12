@@ -21,15 +21,16 @@
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- starting parameters -->
-  <Parameter name="Combined Forcing"     type="double" value="1.0"/>
-  <Parameter name="Solar Forcing"        type="double" value="1.0"/>
-  <Parameter name="Latent Heat Forcing"  type="double" value="0.0"/>
+  <Parameter name="Combined Forcing"      type="double" value="1.0"/>
+  <Parameter name="Solar Forcing"         type="double" value="1.0"/>
+  <Parameter name="Latent Heat Forcing"   type="double" value="0.0"/>
+  <Parameter name="Sensible Heat Forcing" type="double" value="1.0"/>
 
   <!-- model adjustments (testing only)  -->
   <Parameter name="mask switch steepness" type="double" value="1.0e-2"/>
 
   <!-- set this to -1 to disable seaice formation -->
-  <!-- <Parameter name="freezing temperature sensitivity" type="double" value="-1" /> -->
+  <Parameter name="freezing temperature sensitivity" type="double" value="-1" />
   
   <!-- Preconditioner parameters.                -->
   <Parameter name="Ifpack overlap level" type="int" value="10" />

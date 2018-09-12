@@ -304,7 +304,7 @@
       <!-- "Uncoupled-MIS": compromise, Uncoupled on fine levels and MIS on -->
       <!--                  coarser ones (default)                          -->
       <!-- "METIS": potentially better, but I haven't played around with it -->
-      <Parameter name="aggregation: type" type="string" value="METIS"/>
+      <Parameter name="aggregation: type" type="string" value="Uncoupled-MIS"/>
 
       <!-- haven't looked at the details of the algorithm -->
 
@@ -637,7 +637,7 @@
       <Parameter name="ML output" type="int" value="0"/>
       <Parameter name="aggregation: damping factor" type="double" value="1.333"/>
       <Parameter name="aggregation: threshold" type="double" value="1.0e-10"/> <!-- indifferent-->
-      <Parameter name="aggregation: type" type="string" value="METIS"/> <!-- METIS is preferred -->
+      <Parameter name="aggregation: type" type="string" value="Uncoupled-MIS"/> <!-- METIS is preferred -->
 
       <!-- The combination of the following parameters gave the bad scaling in ATS -->
       <!-- <parameter name="aggregation: local aggregates" type="int" value="64"/> --> <!-- pending -->

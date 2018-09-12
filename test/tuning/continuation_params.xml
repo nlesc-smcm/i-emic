@@ -70,7 +70,7 @@
   <!-- Additional factor to scale zeta.                               -->
   <!-- Reduces or increases the influence of the state tangent in the -->
   <!-- arclength parameterization.                                    -->
-  <Parameter name="state tangent scaling" type="double" value="1.0e-4"/>
+  <Parameter name="state tangent scaling" type="double" value="1.0"/>
 
   <!-- reject solution from failed Newton iteration -->
   <Parameter name="reject failed iteration" type="bool" value="true"/>

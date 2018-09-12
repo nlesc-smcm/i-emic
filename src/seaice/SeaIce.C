@@ -82,15 +82,17 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     allParameters_ = { "Combined Forcing",
                        "Solar Forcing",
                        "Latent Heat Forcing",
-                       "Mask Forcing" };
+                       "Mask Forcing",
+                       "Sensible Heat Forcing" };
 
     parName_ = params->get( "Continuation parameter",
                              allParameters_[0] );
 
-    comb_   = params->get(allParameters_[0], 0.0);
-    sunp_   = params->get(allParameters_[1], 1.0);
-    latf_   = params->get(allParameters_[2], 0.0);
-    maskf_  = params->get(allParameters_[3], 1.0);
+    comb_  = params->get(allParameters_[0], 0.0); // Combined Forcing
+    sunp_  = params->get(allParameters_[1], 1.0); // Solar Forcing
+    latf_  = params->get(allParameters_[2], 0.0); // Latent Heat Forcing
+    maskf_ = params->get(allParameters_[3], 1.0); // Mask Forcing
+    shf_   = params->get(allParameters_[4], 1.0); // Sensible Heat Forcing
 
     // inherited input/output datamembers
     inputFile_  = params->get("Input file",  "seaice_input.h5");
@@ -147,16 +149,16 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     Qvar_  = zeta_;
 
     // background heat flux
-    // Q0_    = zeta_ * (freezingT(0) - t0o_) - rhoo_ * Lf_ * E0_;
-    Q0_ = -100.0;
+    Q0_    = zeta_ * (freezingT(0) - t0o_) - rhoo_ * Lf_ * E0i_;
+    // Q0_ = 0.0;
 
     xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
     xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;
-    ymin_ = params->get("Global Bound ymin", 10.0)  * PI_ / 180.0;
-    ymax_ = params->get("Global Bound ymax", 80.0)  * PI_ / 180.0;
+    ymin_ = params->get("Global Bound ymin", 10.0 ) * PI_ / 180.0;
+    ymax_ = params->get("Global Bound ymax", 80.0 ) * PI_ / 180.0;
 
-    dof_      = SEAICE_NUN_;
-    dimGlob_  = mGlob_ * nGlob_ * dof_;
+    dof_     = SEAICE_NUN_;
+    dimGlob_ = mGlob_ * nGlob_ * dof_;
 
     // auxiliary integral correction
     aux_      = 1;
@@ -182,6 +184,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     INFO("SeaIce computed parameters: ");
     INFO("       zeta = " << zeta_);
+    INFO("       Qvar = " << Qvar_);
+    INFO("         Q0 = " << Q0_);
     INFO("        eta = " << eta_);
     INFO("       muoa = " << muoa_);
     INFO("        t0i = " << t0i_);
@@ -386,25 +390,24 @@ void SeaIce::computeRHS()
                     val = freezingT(sss[sr]) - sst[sr] - t0o_ -
                         ( Q0_ / zeta_ +  Qvar_ / zeta_ * Qval ) -
                         ( rhoo_ * Lf_ / zeta_ ) *
-                        ( E0i_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
+                        ( comb_ * latf_ * E0i_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
                     
                     break;
 
                 case SEAICE_QQ_:   // Q row (heat flux)
 
                     val = 1.0 / muoa_ * Q0_ + Qvar_ / muoa_ * Qval -
-                        (comb_ * sunp_ * sun0_ / 4. / muoa_) * shortwaveS(y_[j]) *
-                        (1. - albe0_ - albed_*albe[sr]) * c0_ +
-                        (Tval + t0i_ - tatm[sr] - t0a_) +
-                        (comb_ * latf_ * rhoo_ * Ls_ / muoa_) *
-                        (E0i_ + dEdT_ * Tval +  dEdq_ * qatm[sr]);
+                        (sun0_ / 4. / muoa_) * shortwaveS(y_[j]) *
+                        (comb_*sunp_*(1. - albe0_) - albed_*albe[sr]) * c0_ +
+                        (Tval - tatm[sr] + comb_ * shf_ * (t0i_ - t0a_)) +
+                        ( rhoo_ * Ls_ / muoa_) *
+                        (comb_ * latf_ * E0i_ + dEdT_ * Tval +  dEdq_ * qatm[sr]);
 
                     break;
 
                 case SEAICE_MM_:   // M row (mask)
 
                     val = Mval - maskFun(Hval);
-                    
                     break;
 
                 case SEAICE_TT_:   // T row (surface temperature)
@@ -519,15 +522,15 @@ std::vector<Teuchos::RCP<Epetra_Vector> > SeaIce::getFluxes()
             Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_TT_)];
 
             // shortwave radiative flux contribution in the total heat flux
-            ptrs[_QSW][pos] = (comb_ * sunp_ * sun0_ / 4.) * shortwaveS(y_[j]) *
-                (1. - albe0_ - albed_*albe[sr]) * c0_;
+            ptrs[_QSW][pos] = (sun0_ / 4.) * shortwaveS(y_[j]) *
+                (comb_ * sunp_ *(1. - albe0_) - albed_*albe[sr]) * c0_;
 
             // sensible heat flux contribution in the total heat flux
             ptrs[_QSH][pos] = -muoa_ * (Tval + t0i_ - tatm[sr] - t0a_);
 
             // latent heat flux contribution in the total heat flux
-            ptrs[_QLH][pos] = -(comb_ * latf_ * rhoo_ * Ls_) *
-                (E0i_ + dEdT_ * Tval + dEdq_ * qatm[sr]);
+            ptrs[_QLH][pos] = -(rhoo_ * Ls_) *
+                (comb_ * latf_ * E0i_ + dEdT_ * Tval + dEdq_ * qatm[sr]);
             
             pos++;
         }
@@ -589,7 +592,7 @@ void SeaIce::computeLocalJacobian()
 
     // Qtsa equation ---------------------------------
     QQ_QQ = Qvar_ / muoa_;
-    QQ_TT = 1.0 + comb_ * latf_ * rhoo_ * Ls_ / muoa_ * dEdT_;
+    QQ_TT = 1.0 + rhoo_ * Ls_ / muoa_ * dEdT_;
 
     Al_->set(range, Q, Q, QQ_QQ);
     Al_->set(range, Q, T, QQ_TT);
@@ -811,6 +814,8 @@ double SeaIce::getPar(std::string const &parName)
         return latf_;
     else if (parName.compare(allParameters_[3]) == 0)
         return maskf_;
+    else if (parName.compare(allParameters_[4]) == 0)
+        return shf_;
     else // If parameter not available we return 0
         return 0;
 }
@@ -876,6 +881,8 @@ void SeaIce::setPar(std::string const &parName, double value)
         latf_  = value;
     else if (parName.compare(allParameters_[3]) == 0)
         maskf_ = value;
+    else if (parName.compare(allParameters_[4]) == 0)
+        shf_ = value;
 }
 
 //=============================================================================
@@ -904,7 +911,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     double dtatmFQ = -1.0;
 
     // d / dq_atm (F_Q)
-    double dqatmFQ =  (comb_ * latf_ * rhoo_ * Ls_ / muoa_) * dEdq_;
+    double dqatmFQ =  (rhoo_ * Ls_ / muoa_) * dEdq_;
 
     // d / da_atm (F_Q)
     double daatmFQ;
@@ -918,7 +925,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
         int lid = standardSurfaceMap_->LID(gid);
 
         if (lid >= 0)
-            tmp = (comb_ * sunp_ * sun0_ / 4. / muoa_) *
+            tmp = (sun0_ / 4. / muoa_) *
                 shortwaveS(y_[lid / nLoc_]) * albed_ * c0_;
 
         comm_->SumAll( &tmp, &daatmFQ, 1);

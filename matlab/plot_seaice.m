@@ -33,10 +33,12 @@ function [state,pars,add] = plot_seaice(fname, opts)
 
     H0   = 0.01;
     Hvar = 1;
-    Q0   = -100;
-    Qvar = 498.8928;
+    %Q0   = -100;
+    %Qvar = 498.8928;
+    Q0   = 0.0;
+    Qvar = 1.0;
 
-    M0   = 0;
+    M0   = 0.0;
     Mvar = 1.0;
     
     t0o  = 15;
@@ -57,12 +59,13 @@ function [state,pars,add] = plot_seaice(fname, opts)
 
     titles = {'H','Q_T^{sa}','M','T'};
 
-    simask = squeeze(state(3, :, :, :));
+    simask = squeeze(state(3, :, :, :)) > 0.9;
     
     for i = 1:si_nun
         figure(fig_ctr); fig_ctr = fig_ctr+1;
         field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
         field(logical(surfm)) = NaN;
+        %field(~logical(simask)) = NaN;
         
         diff = max(max(field))-min(min(field));
         fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), ...

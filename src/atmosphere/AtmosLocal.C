@@ -137,6 +137,8 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     
     tauf_            = params->get("restoring timescale tauf (in days)", 1.0);
     tauc_            = params->get("restoring timescale tauc (in days)", 1.0);
+
+    // restoring timescales in model time
     tauf_            = (tauf_ * 3600. * 24. * udim_) / r0dim_;
     tauc_            = (tauc_ * 3600. * 24. * udim_) / r0dim_;
 

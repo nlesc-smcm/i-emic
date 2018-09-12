@@ -15,7 +15,7 @@ function [out] = plot_fluxes(struct, fig_ctr, titlepre, opts)
     end
     
     if isfield(opts, 'exportfig')
-        export_to_file = true;
+        export_to_file = opts.exportfig;
     else
         export_to_file = false;
     end                
@@ -39,7 +39,7 @@ function [out] = plot_fluxes(struct, fig_ctr, titlepre, opts)
             out = setfield(out, name, values);
             fprintf('%s\n', name)
             figure(fig_ctr); fig_ctr = fig_ctr + 1;
-            imagesc(RtD*x,RtD*(y), values');
+            imagesc(RtD*x,RtD*(y), values'); hold on
             set(gca, 'ydir', 'normal')
             cmap = my_colmap(caxis,0);
             colormap(cmap)

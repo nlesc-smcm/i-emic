@@ -1,4 +1,4 @@
-function [] = plot_mask(landmask,x,y)
+function [] = plot_mask(landmask,x,y,varargin)
 
   RtD   = 180/pi; % Radians to degrees
   n     = numel(x);
@@ -50,11 +50,11 @@ function [] = plot_mask(landmask,x,y)
 
   CLEdge = CLEdge(1:5*col_ctr,:,:);
 
-  patch(X,Y,CL,'FaceVertexCData', CLEdge, 'EdgeColor', 'flat');
+  patch(X,Y,CL,'FaceVertexCData', CLEdge, 'EdgeColor', 'flat',varargin{:});
 
   %patch(X,Y,CL,'EdgeColor','none');
 
-  xlim([min(x),max(x)]);
-  ylim([min(y),max(y)]);
+  %xlim([min(x),max(x)]);
+  %ylim([min(y),max(y)]);
 
 end
