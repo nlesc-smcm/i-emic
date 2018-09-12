@@ -162,11 +162,11 @@ writeData()
     if (initWD_) // write description of entries
     {
         tdatastring << std::setw(_FIELDWIDTH_)
-                    << "time"
+                    << "time_(y)"
                     << std::setw(_FIELDWIDTH_/2.)
                     << "step"
                     << std::setw(_FIELDWIDTH_)
-                    << "dt"
+                    << "dt_(y)"
                     << std::setw(_FIELDWIDTH_)
                     << "|x|"
                     << std::setw(_FIELDWIDTH_/2.)
@@ -183,7 +183,7 @@ writeData()
     tdatastring << std::scientific
                 << std::setw(_FIELDWIDTH_) <<  time_
                 << std::setw(_FIELDWIDTH_/2) <<  step_
-                << std::setw(_FIELDWIDTH_) <<  dt_
+                << std::setw(_FIELDWIDTH_) <<  dt_ * inYears_
                 << std::setw(_FIELDWIDTH_)
                 << Utils::norm(model_->getState('V'))
                 << std::setw(_FIELDWIDTH_/2) <<  k_

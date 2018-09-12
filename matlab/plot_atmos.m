@@ -2,7 +2,9 @@ function [state,pars,add] = plot_atmos(fname, opts)
 
     if nargin < 2
         opts = [];
-    end
+        plot_default = true;
+    else
+        plot_default = false;
     
     if nargin < 1
         fname = 'atmos_output.h5';
@@ -66,7 +68,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         fig_ctr = 11; % first figure handle number
     end
 
-    if isfield(opts, 'fname_add')
+    if isfield(opts, 'exportfig')
         export_to_file = true;
     else
         export_to_file = false;
@@ -87,7 +89,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     atmos_l   = 1;
     
     [state, pars, add] = readhdf5(fname, atmos_nun, n, m, atmos_l,opts);
-    
+
     if readEP
         E = reshape(add.E,n,m);
         P = reshape(add.P,n,m);
@@ -124,7 +126,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     Tz  = mean(Ta,1); % zonal mean
     qz  = mean(qa,1); % zonal mean
 
-    if plot_ta
+    if plot_ta || plot_default
         figure(fig_ctr); fig_ctr = fig_ctr+1;
 
         img = Ta';
@@ -151,7 +153,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         end
     end
 
-    if plot_humidity
+    if plot_humidity || plot_default
         figure(fig_ctr); fig_ctr = fig_ctr+1;
         img = qa';
 
@@ -176,7 +178,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         end
     end
     
-    if plot_albedo
+    if plot_albedo || plot_default
         figure(fig_ctr); fig_ctr = fig_ctr+1;
         img = Aa';
         imagesc(RtD*x,RtD*(y),img); 

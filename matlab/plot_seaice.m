@@ -77,7 +77,7 @@ function [state,pars,add] = plot_seaice(fname, opts)
     end
     
     if readFluxes
-        plot_fluxes(add, fig_ctr, 'SeaIce: ');
+        plot_fluxes(add, fig_ctr, 'SeaIce: ', opts);
     end
     
 end

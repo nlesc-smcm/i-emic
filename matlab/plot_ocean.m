@@ -91,11 +91,19 @@ function [sol, add] = plot_ocean(solfile, opts)
         plot_temflux = false;
     end
 
-    if isfield(opts, 'fname_add')
+    if isfield(opts, 'fname_add') 
+        export_to_file = true;
+        fname_add = opts.fname_add;
+    else
+        export_to_file = false;
+        fname_add = '';
+    end
+    
+    if isfield(opts, 'exportfig')
         export_to_file = true;
     else
         export_to_file = false;
-    end
+    end        
 
     if isfield(opts, 'invert')
         invert = opts.invert
@@ -265,7 +273,7 @@ function [sol, add] = plot_ocean(solfile, opts)
         ylabel('Latitude');
 
         if export_to_file
-            exportfig(['bstream',opts.fname_add,'.eps'],10,[19,11],invert)
+            exportfig(['bstream',fname_add,'.eps'],10,[19,11],invert)
         end
 
     end
@@ -310,7 +318,7 @@ function [sol, add] = plot_ocean(solfile, opts)
         colorbar
 
         if export_to_file
-            exportfig(['mstream',opts.fname_add,'.eps'],10,[19,10],invert)
+            exportfig(['mstream',fname_add,'.eps'],10,[19,10],invert)
         end
     end
 

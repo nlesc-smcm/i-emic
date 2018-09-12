@@ -12,7 +12,13 @@ function [out] = plot_fluxes(struct, fig_ctr, titlepre, opts)
         invert = opts.invert;
     else
         invert = false;
-    end      
+    end
+    
+    if isfield(opts, 'exportfig')
+        export_to_file = true;
+    else
+        export_to_file = false;
+    end                
     
     % find flux fields in struct
     RtD = 180/pi;
@@ -41,7 +47,9 @@ function [out] = plot_fluxes(struct, fig_ctr, titlepre, opts)
             xlabel('Longitude')
             ylabel('Latitude')
             title([titlepre, ' ', name])
-            exportfig([name,'.eps'],10,[14,10],invert);
+            if export_to_file
+                exportfig([name,'.eps'],10,[14,10],invert);
+            end
         end
     end
 end
