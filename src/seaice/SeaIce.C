@@ -149,8 +149,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     Qvar_  = zeta_;
 
     // background heat flux
-    Q0_    = zeta_ * (freezingT(0) - t0o_) - rhoo_ * Lf_ * E0i_;
-    // Q0_ = 0.0;
+    // Q0_    = zeta_ * (freezingT(0) - t0o_) - rhoo_ * Lf_ * E0i_;
+    Q0_ = -100.0;
 
     xmin_ = params->get("Global Bound xmin", 286.0) * PI_ / 180.0;
     xmax_ = params->get("Global Bound xmax", 350.0) * PI_ / 180.0;

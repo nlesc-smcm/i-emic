@@ -928,7 +928,7 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
             lwflux[pos] = -muoa_ * (amua_ + bmua_ * Ta);
 
             // short wave radiative flux
-            swflux[pos] = muoa_ * comb_ * sunp_ * suna_[j] * (1 - a0_ - da_ * A);
+            swflux[pos] = muoa_*suna_[j]*(comb_*sunp_*(1 - a0_) - da_*A);
 
             // sensible heat flux
             on_land = (*surfmask_)[sr];

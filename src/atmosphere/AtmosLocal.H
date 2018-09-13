@@ -425,11 +425,11 @@ private:
     //! temperature and the latitude grid-box, expecting albedo A, Ta
     //! anomaly and grid point j.
     double Tl(double A, double Ta, int j)
-        { return Ta + comb_ * sunp_ * suno_[j] * (1 - a0_ - da_*A) / Ooa_; }
+        { return Ta + suno_[j] * (comb_ * sunp_ *(1 - a0_) - da_*A) / Ooa_; }
     
     //! derivative of land temperature w.r.t. albedo
     double dTldA(int j)
-        { return -comb_ * sunp_ * suno_[j] * da_ / Ooa_; }
+        { return -suno_[j] * da_ / Ooa_; }
 
     //! derivative of land temperature w.r.t. atmospheric temperature
     double dTldTa()
@@ -437,7 +437,7 @@ private:
     
     //! derivative of atmos temperature equation w.r.t. albedo
     double dTadA(int j)
-        { return -comb_ * sunp_ * suna_[j] * da_; }
+        { return -suna_[j] * da_; }
     
     //! Snow/ice albedo parametrization expecting albedo A,
     //! atmospheric temperature anomaly Ta, global precipitation

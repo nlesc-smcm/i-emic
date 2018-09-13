@@ -1,7 +1,7 @@
 function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
     
     if nargin < 6
-        opts.tmp = 0
+        opts.tmp = 0;
     end
     
     if nargin < 2

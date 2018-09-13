@@ -1347,6 +1347,7 @@ void THCM::setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM)
     CHECK_MAP(seaiceM, StandardSurfaceMap);
     CHECK_ZERO(localSeaiceM->Import(*seaiceM, *as2std_surf ,Insert));
     double *M;
+    // localSeaiceM->PutScalar(0.0); // hack: disable coupling with mask
     localSeaiceM->ExtractView(&M);
     F90NAME(m_inserts, insert_seaice_m)( M );
 }
