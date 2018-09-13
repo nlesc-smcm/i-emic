@@ -139,8 +139,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Check whether background values cancel
     assert(std::abs(E0o_-E0i_) < 1e-12);
 
-    dEdT_  =  eta_ * qdim_ * tdim_ / qdim_ * dqsi_(t0i_);
-    dEdq_  =  eta_ * qdim_ * -1;
+    dEdT_  =  0.0; // eta_ * qdim_ * tdim_ / qdim_ * dqsi_(t0i_);
+    dEdq_  =  0.0; // eta_ * qdim_ * -1;
 
     //! Ocean nondimensionalization prefactor (set in synchronization)
     pQSnd_ = 1.0;
@@ -391,18 +391,16 @@ void SeaIce::computeRHS()
                         ( Q0_ / zeta_ +  Qvar_ / zeta_ * Qval ) -
                         ( rhoo_ * Lf_ / zeta_ ) *
                         ( comb_ * latf_ * E0i_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
-                    
                     break;
 
                 case SEAICE_QQ_:   // Q row (heat flux)
 
                     val = 1.0 / muoa_ * Q0_ + Qvar_ / muoa_ * Qval -
-                        (sun0_ / 4. / muoa_) * shortwaveS(y_[j]) *
-                        (comb_*sunp_*(1. - albe0_) - albed_*albe[sr]) * c0_ +
-                        (Tval - tatm[sr] + comb_ * shf_ * (t0i_ - t0a_)) +
-                        ( rhoo_ * Ls_ / muoa_) *
-                        (comb_ * latf_ * E0i_ + dEdT_ * Tval +  dEdq_ * qatm[sr]);
-
+                        ( sun0_ / 4. / muoa_) * shortwaveS(y_[j]) *
+                        ( comb_*sunp_*(1. - albe0_) - albed_*albe[sr] ) * c0_ +
+                        ( Tval - tatm[sr] + comb_ * shf_ * (t0i_ - t0a_) ) +
+                        ( rhoo_ * Ls_ / muoa_ ) *
+                        ( comb_ * latf_ * E0i_ + dEdT_ * Tval +  dEdq_ * qatm[sr] );
                     break;
 
                 case SEAICE_MM_:   // M row (mask)
@@ -413,7 +411,6 @@ void SeaIce::computeRHS()
                 case SEAICE_TT_:   // T row (surface temperature)
 
                     val = Tsi - Tval;
-
                     break;
                 }
 
@@ -526,7 +523,7 @@ std::vector<Teuchos::RCP<Epetra_Vector> > SeaIce::getFluxes()
                 (comb_ * sunp_ *(1. - albe0_) - albed_*albe[sr]) * c0_;
 
             // sensible heat flux contribution in the total heat flux
-            ptrs[_QSH][pos] = -muoa_ * (Tval + t0i_ - tatm[sr] - t0a_);
+            ptrs[_QSH][pos] = -muoa_ * (Tval - tatm[sr] + t0i_ - t0a_);
 
             // latent heat flux contribution in the total heat flux
             ptrs[_QLH][pos] = -(rhoo_ * Ls_) *

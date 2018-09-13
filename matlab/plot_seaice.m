@@ -1,4 +1,4 @@
-function [state,pars,add] = plot_seaice(fname, opts)
+function [state,pars,add,fluxes] = plot_seaice(fname, opts)
 
     if nargin < 2
         opts = [];
@@ -33,10 +33,10 @@ function [state,pars,add] = plot_seaice(fname, opts)
 
     H0   = 0.01;
     Hvar = 1;
-    %Q0   = -100;
-    %Qvar = 498.8928;
-    Q0   = 0.0;
-    Qvar = 1.0;
+    Q0   = -100;
+    Qvar = 498.8928;
+    %Q0   = 0.0;
+    % Qvar = 1.0;
 
     M0   = 0.0;
     Mvar = 1.0;
@@ -79,8 +79,9 @@ function [state,pars,add] = plot_seaice(fname, opts)
         colorbar
     end
     
+    fluxes = [];
     if readFluxes
-        plot_fluxes(add, fig_ctr, 'SeaIce: ', opts);
+        fluxes = plot_fluxes(add, fig_ctr, 'SeaIce: ', opts);
     end
     
 end

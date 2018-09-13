@@ -1,4 +1,4 @@
-function [sol, add] = plot_ocean(solfile, opts)
+function [sol, add, fluxes] = plot_ocean(solfile, opts)
 %---------------------------------------------------------------------
 % PLOTTHCM - Mother script for plotting THCM output
 %  usage: plot_ocean(solfile, maskfile, opts)
@@ -492,8 +492,9 @@ function [sol, add] = plot_ocean(solfile, opts)
         
     end
 
+    fluxes = [];
     if readFluxes
-        plot_fluxes(add, fig_ctr, 'Ocean: ');
+        fluxes = plot_fluxes(add, fig_ctr, 'Ocean: ');
     end
 
 
