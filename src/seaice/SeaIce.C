@@ -139,8 +139,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Check whether background values cancel
     assert(std::abs(E0o_-E0i_) < 1e-12);
 
-    dEdT_  =  0.0; // eta_ * qdim_ * tdim_ / qdim_ * dqsi_(t0i_);
-    dEdq_  =  0.0; // eta_ * qdim_ * -1;
+    dEdT_  =  eta_ * qdim_ * tdim_ / qdim_ * dqsi_(t0i_);
+    dEdq_  =  eta_ * qdim_ * -1;
 
     //! Ocean nondimensionalization prefactor (set in synchronization)
     pQSnd_ = 1.0;
@@ -390,17 +390,17 @@ void SeaIce::computeRHS()
                     val = freezingT(sss[sr]) - sst[sr] - t0o_ -
                         ( Q0_ / zeta_ +  Qvar_ / zeta_ * Qval ) -
                         ( rhoo_ * Lf_ / zeta_ ) *
-                        ( comb_ * latf_ * E0i_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
+                        ( E0i_ + dEdT_ * Tsi + dEdq_ * qatm[sr] );
                     break;
 
                 case SEAICE_QQ_:   // Q row (heat flux)
 
                     val = 1.0 / muoa_ * Q0_ + Qvar_ / muoa_ * Qval -
-                        ( sun0_ / 4. / muoa_) * shortwaveS(y_[j]) *
-                        ( comb_*sunp_*(1. - albe0_) - albed_*albe[sr] ) * c0_ +
-                        ( Tval - tatm[sr] + comb_ * shf_ * (t0i_ - t0a_) ) +
-                        ( rhoo_ * Ls_ / muoa_ ) *
-                        ( comb_ * latf_ * E0i_ + dEdT_ * Tval +  dEdq_ * qatm[sr] );
+                        ( comb_*sunp_*sun0_ / 4. / muoa_) * shortwaveS(y_[j]) *
+                        ( (1. - albe0_) - albed_*albe[sr] ) * c0_ +
+                        ( Tval - tatm[sr] +  (t0i_ - t0a_) ) +
+                        ( comb_ * latf_ * rhoo_ * Ls_ / muoa_ ) *
+                        (  E0i_ + dEdT_ * Tval +  dEdq_ * qatm[sr] );
                     break;
 
                 case SEAICE_MM_:   // M row (mask)
@@ -519,15 +519,15 @@ std::vector<Teuchos::RCP<Epetra_Vector> > SeaIce::getFluxes()
             Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_TT_)];
 
             // shortwave radiative flux contribution in the total heat flux
-            ptrs[_QSW][pos] = (sun0_ / 4.) * shortwaveS(y_[j]) *
-                (comb_ * sunp_ *(1. - albe0_) - albed_*albe[sr]) * c0_;
+            ptrs[_QSW][pos] = (comb_*sunp_*sun0_ / 4.) * shortwaveS(y_[j]) *
+                ((1. - albe0_) - albed_*albe[sr]) * c0_;
 
             // sensible heat flux contribution in the total heat flux
             ptrs[_QSH][pos] = -muoa_ * (Tval - tatm[sr] + t0i_ - t0a_);
 
             // latent heat flux contribution in the total heat flux
-            ptrs[_QLH][pos] = -(rhoo_ * Ls_) *
-                (comb_ * latf_ * E0i_ + dEdT_ * Tval + dEdq_ * qatm[sr]);
+            ptrs[_QLH][pos] = -(comb_ * latf_ * rhoo_ * Ls_) *
+                (E0i_ + dEdT_ * Tval + dEdq_ * qatm[sr]);
             
             pos++;
         }
@@ -589,7 +589,7 @@ void SeaIce::computeLocalJacobian()
 
     // Qtsa equation ---------------------------------
     QQ_QQ = Qvar_ / muoa_;
-    QQ_TT = 1.0 + rhoo_ * Ls_ / muoa_ * dEdT_;
+    QQ_TT = 1.0 + comb_ * latf_ * rhoo_ * Ls_ / muoa_ * dEdT_;
 
     Al_->set(range, Q, Q, QQ_QQ);
     Al_->set(range, Q, T, QQ_TT);
@@ -908,7 +908,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     double dtatmFQ = -1.0;
 
     // d / dq_atm (F_Q)
-    double dqatmFQ =  (rhoo_ * Ls_ / muoa_) * dEdq_;
+    double dqatmFQ =  (comb_ * latf_ * rhoo_ * Ls_ / muoa_) * dEdq_;
 
     // d / da_atm (F_Q)
     double daatmFQ;
@@ -922,7 +922,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
         int lid = standardSurfaceMap_->LID(gid);
 
         if (lid >= 0)
-            tmp = (sun0_ / 4. / muoa_) *
+            tmp = (comb_ * sunp_ * sun0_ / 4. / muoa_) *
                 shortwaveS(y_[lid / nLoc_]) * albed_ * c0_;
 
         comm_->SumAll( &tmp, &daatmFQ, 1);

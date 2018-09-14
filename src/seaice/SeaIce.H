@@ -460,15 +460,15 @@ private:
     double freezingT(double S)
         { return a0_ * (S + s0_); }
 
-    // //! ice surface temperature deviation (linear)
-    // double iceSurfT(double Q, double H, double S)
-    //     { return freezingT(S) - t0i_ + 
-    //             (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
-
-    //! ice surface temperature deviation (nonlinear)
+    //! ice surface temperature deviation (linear)
     double iceSurfT(double Q, double H, double S)
         { return freezingT(S) - t0i_ + 
-                (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H + Q*H) / Ic_; }
+                (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
+
+    // //! ice surface temperature deviation (nonlinear)
+    // double iceSurfT(double Q, double H, double S)
+    //     { return freezingT(S) - t0i_ + 
+    //             (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H + Q*H) / Ic_; }
 
 
     //! sea ice mask as a function thickness anomaly H 
