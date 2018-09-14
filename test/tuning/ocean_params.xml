@@ -53,11 +53,11 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="4"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="48"/>
+    <Parameter name="Global Grid-Size n" type="int" value="96"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="19"/>
+    <Parameter name="Global Grid-Size m" type="int" value="38"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="4"/>
+    <Parameter name="Global Grid-Size l" type="int" value="2"/>
 
     <!-- Supply 0-based surface coordinates for the integral condition
          row, default is n-1, m-1. Make sure that the coordinate is
@@ -71,7 +71,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_global_48x19x4"/>
+    <Parameter name="Land Mask" type="string" value="mask_global_96x48x2"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->

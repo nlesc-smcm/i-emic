@@ -39,9 +39,9 @@
   <Parameter name="Global Bound ymax" type="double" value="85.5"/>
   
   <!-- global number of grid points in x-direction -->
-  <Parameter name="Global Grid-Size n" type="int" value="48"/>
+  <Parameter name="Global Grid-Size n" type="int" value="96"/>
   <!-- global number of grid points in y-direction -->
-  <Parameter name="Global Grid-Size m" type="int" value="19"/>
+  <Parameter name="Global Grid-Size m" type="int" value="38"/>
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="true"/>
