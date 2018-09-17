@@ -317,7 +317,7 @@ contains
 
              QSH = Ooa  * (T(i,j,l) - tatm(i,j))         ! sensible heat flux
 
-             QLH = par(COMB) * par(TEMP) * lvsc *      & ! latent heat flux
+             QLH = lvsc *                              & ! latent heat flux
                   ( eo0 + dedt*T(i,j,l) + dedq * qatm(i,j) )
 
              QToa = QSW - QSH - QLH       ! total atmospheric heat flux

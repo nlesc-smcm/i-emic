@@ -257,6 +257,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     bool rd_spertm     = paramList.get("Read Salinity Perturbation Mask",false);
     coupled_T          = paramList.get("Coupled Temperature", 0);
     coupled_S          = paramList.get("Coupled Salinity", 0);
+    coupled_M          = paramList.get("Coupled Sea Ice Mask", 1);
     fixPressurePoints_ = paramList.get("Fix Pressure Points", false);
 
     //------------------------------------------------------------------
@@ -1347,7 +1348,10 @@ void THCM::setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM)
     CHECK_MAP(seaiceM, StandardSurfaceMap);
     CHECK_ZERO(localSeaiceM->Import(*seaiceM, *as2std_surf ,Insert));
     double *M;
-    // localSeaiceM->PutScalar(0.0); // hack: disable coupling with mask
+    
+    if (!coupled_M)
+        localSeaiceM->PutScalar(0.0); // disable coupling with mask
+    
     localSeaiceM->ExtractView(&M);
     F90NAME(m_inserts, insert_seaice_m)( M );
 }

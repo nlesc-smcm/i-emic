@@ -53,7 +53,6 @@ SUBROUTINE forcing
   ! ------------------------------------------------------------------
 
   etabi =  par(COMB) * par(TEMP) * (1 - TRES + TRES*par(BIOT))
-  lvsc  =  par(COMB) * par(TEMP) * rhodim * lv * QTnd
   
   ! idealized temperature forcing
   temcor = 0.0

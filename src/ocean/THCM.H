@@ -169,7 +169,7 @@ public:
     //!
     //! 0: standalone thcm
     //! 1: accepting external forcing
-    int coupled_T, coupled_S;
+    int coupled_T, coupled_S, coupled_M;
 
     int getCoupledT() { return coupled_T; }
     int getCoupledS() { return coupled_S; }
