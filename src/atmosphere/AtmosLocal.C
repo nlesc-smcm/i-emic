@@ -182,8 +182,8 @@ void AtmosLocal::setup()
     eta_ =  (rhoa_ / rhoo_) * ce_ * uw_;
 
     // nuq will be our continuation parameter for the humidity related
-    // physics and is set in setpar.
-    nuq_ =  0.0;
+    // physics and is adjusted in setpar.
+    nuq_ = comb_* humf_ * (eta_ / hdimq_ ) * (rhoo_ / rhoa_) * (r0dim_ / udim_);
 
     Phv_ =  kappa_ / (udim_ * r0dim_);
 
@@ -231,8 +231,11 @@ void AtmosLocal::setup()
     dqsi_  = (c1 * c2 * c3) / pow(t0i_ + c3, 2);
     dqsi_ *= exp( (c2 * t0i_) / (t0i_ + c3) );
 
-    // (check) order 1 state deviation response in E
-    double Edev = eta_ * qdim_ * ( tdim_ / qdim_ * dqso_  - 1.0 ) ;
+    // large temperature response in E
+    double EdevT = eta_ * qdim_ * ( tdim_ / qdim_ * dqso_ * -17 );
+
+    // large humidity response in E    
+    double Edevq = eta_ * qdim_ * ( -5.0 );    
 
     // latent heat due to precipitation coeff
     lvscale_ = rhoo_ * lv_ / muoa_ ;
@@ -253,10 +256,10 @@ void AtmosLocal::setup()
     INFO("   A*DpDq   = " << -eta_ * nuq_);
     INFO("    DqDt0   = " << nuq_ * tdim_ / qdim_ * dqso_);
     INFO("  lvscale   = " << lvscale_);
-    INFO("      Eo0   = " << Eo0_ << " m/s");
     INFO("      Po0   = " << Po0_ << " m/s = " << Po0_ * 3600 * 24 * 365 << " m/y");
-    INFO("      Edev  = " << Edev);
-    INFO("  Eo0+Edev  = " << Eo0_ + Edev);
+    INFO("      Eo0   = " << Eo0_ << " m/s");
+    INFO("    EdevT   = " << EdevT);
+    INFO("    Edevq   = " << Edevq);
 
     INFO(std::endl << "AtmosLocal all xml parameters: ");
     INFO(*params_);
@@ -866,6 +869,7 @@ void AtmosLocal::forcing()
                 Eo = dqso_ * (*sst_)[sr];
                 Ei = dqsi_ * (*sit_)[sr];
                 value = nuq_ * ( tdim_ / qdim_ ) * ( Eo + (*Msi_)[sr]*( Ei - Eo) );
+                
             }
 
             frc_[hr] = value;

@@ -26,7 +26,7 @@
   <!-- Starting parameters -->
   <Parameter name="Combined Forcing"    type="double" value="0.0"/>
   <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-  <Parameter name="Humidity Forcing"    type="double" value="0.0"/>
+  <Parameter name="Humidity Forcing"    type="double" value="1.0"/>
   <Parameter name="Latent Heat Forcing" type="double" value="0.0"/>
   <Parameter name="Albedo Forcing"      type="double" value="1.0"/>
 

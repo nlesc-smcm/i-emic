@@ -705,6 +705,7 @@ SUBROUTINE lin
   
   ! dependence of TT on TT through latent heat due to evaporation
   dedt =  lvsc * eta * qdim * (deltat / qdim) * dqso
+  ! dedt = 0.0 !hack
   
   ! write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
 

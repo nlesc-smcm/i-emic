@@ -300,6 +300,7 @@ contains
     etabi =  par(COMB) * par(TEMP)
 
     dedt  =  eta * qdim * (deltat / qdim) * dqso
+    ! dedt  = 0.0 !hack
     dedq  = -eta * qdim
     
     call usol(un,u,v,w,p,T,S)
