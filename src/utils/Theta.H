@@ -166,8 +166,8 @@ public:
             for (int i = 0; i != numMyElements; ++i)
             {
                 value = -(*diagB)[i] / timestep_ / theta_;
-                Model::jac_->SumIntoGlobalValues(myGlobalElements[i], 1,
-                                                 &value, myGlobalElements + i);
+                CHECK_ZERO(Model::jac_->SumIntoGlobalValues(myGlobalElements[i], 1,
+                                                            &value, myGlobalElements + i));
             }
             Model::jac_->FillComplete();
         }

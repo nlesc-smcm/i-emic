@@ -413,7 +413,8 @@ public:
     void synchronize(std::shared_ptr<Atmosphere> atmos);
     void synchronize(std::shared_ptr<Ocean> ocean);
 
-    Teuchos::RCP<Epetra_Vector> interface(int XX);
+    Teuchos::RCP<Epetra_Vector> interface(Teuchos::RCP<Epetra_Vector> vec, int XX);
+    
     Teuchos::RCP<Epetra_Vector> interfaceH();
     Teuchos::RCP<Epetra_Vector> interfaceQ();
     Teuchos::RCP<Epetra_Vector> interfaceM();

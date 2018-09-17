@@ -104,13 +104,17 @@ void ThetaStepper<ThetaModel, ParameterList>::run()
                     << normF_ << "\nRestoring model",
                     __FILE__, __LINE__);
 
+            Utils::save(F_, "failed_rhs"); // Print failed residual
+            
             INFO("    adjusting time step.. old dt = " << dt_);
             dt_ = std::max(dt_ / dscale_, mindt_);
             INFO("    adjusting time step.. new dt = " << dt_);
 
             if (dt_ == mindt_)
             {
-                INFO("  minimum timestep reached, exiting...");
+                INFO("\n ================================ \n  " <<
+                     " minimum timestep reached, exiting... " <<
+                     "\n ================================ \n");
                 return;
             }
             model_->restore();

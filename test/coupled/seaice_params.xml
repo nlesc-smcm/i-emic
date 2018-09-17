@@ -8,10 +8,12 @@
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- Starting parameters -->
-  <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-  <Parameter name="Solar Forcing"       type="double" value="1.0"/>
-  <Parameter name="Latent Heat Forcing" type="double" value="0.0"/>
-  
+  <!-- starting parameters -->
+  <Parameter name="Combined Forcing"      type="double" value="1.0"/>
+  <Parameter name="Solar Forcing"         type="double" value="1.0"/>
+  <Parameter name="Latent Heat Forcing"   type="double" value="1.0"/>
+  <Parameter name="Sensible Heat Forcing" type="double" value="1.0"/>
+
   <Parameter name="Global Bound xmin" type="double" value="286"/>
   <Parameter name="Global Bound xmax" type="double" value="350"/>
   <Parameter name="Global Bound ymin" type="double" value="10"/>

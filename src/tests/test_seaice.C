@@ -31,6 +31,7 @@ TEST(SeaIce, Initialization)
     EXPECT_EQ(failed, false);
 }
 
+/*
 //------------------------------------------------------------------
 // compute rhs under idealized conditions
 TEST(SeaIce, computeRHS)
@@ -163,6 +164,7 @@ TEST(SeaIce, computeJacobian)
     // EXPECT_NEAR(normFrob, testResults[11], 1e-7);
 
 }
+*/
 
 //------------------------------------------------------------------
 TEST(SeaIce, numericalJacobian)
@@ -200,7 +202,7 @@ TEST(SeaIce, numericalJacobian)
                               Teuchos::RCP<Epetra_Vector> > numJac;
 
             numJac.setTolerance(1e-12);
-            numJac.seth(1e-5);
+            numJac.seth(1e-6);
             numJac.compute(seaIce, seaIce->getState('V'));
             numJac.print("seaIceNumJac");
 
@@ -282,9 +284,8 @@ TEST(SeaIce, Newton)
     Teuchos::RCP<Epetra_Vector> b, x, r;
 
     state->Random();
-    state->Scale(100);
     seaIce->computeRHS();
-    for (int i = 0; i != 5; ++i)
+    for (int i = 0; i != 15; ++i)
     {
         seaIce->computeJacobian();
         b = seaIce->getRHS('C');
@@ -293,7 +294,19 @@ TEST(SeaIce, Newton)
         x = seaIce->getSolution('V');
         state->Update(1.0, *x, 1.0);
         seaIce->computeRHS();
-        std::cout << "||dx|| = " << Utils::norm(x) << std::endl;
+        std::cout.precision(3);
+        
+        std::cout << "i = " << std::setw(2) << i
+                  << ", ||dx||=" << std::setw(8) << std::scientific << Utils::norm(x)
+                  << ", ||H|| =" << std::setw(8) << std::scientific << Utils::norm(seaIce->interface(x, SEAICE_HH_))
+                  << ", ||Q|| =" << std::setw(8) << std::scientific << Utils::norm(seaIce->interface(x, SEAICE_QQ_))
+                  << ", ||M|| =" << std::setw(8) << std::scientific << Utils::norm(seaIce->interface(x, SEAICE_MM_))
+                  << ", ||T|| =" << std::setw(8) << std::scientific << Utils::norm(seaIce->interface(x, SEAICE_TT_))
+                  << ", ||G|| =" << std::setw(8) << std::scientific << Utils::norm(seaIce->interface(x, SEAICE_GG_))
+                  << std::endl;
+            
+        if (Utils::norm(x) < 1e-8)
+            break;
     }
     EXPECT_LT(Utils::norm(x), 1e-8);
 }
