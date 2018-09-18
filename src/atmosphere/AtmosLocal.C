@@ -281,10 +281,10 @@ void AtmosLocal::setup()
     diagB_ = std::make_shared<std::vector<double> >(dim_, 0.0);
 
     // Initialize fields for evaporation and precipitation at surface
-    E_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+    E_   = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
     // Precipitation
-    P_  = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+    P_   = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
     // Initialize land surface temperature
     lst_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
@@ -788,7 +788,7 @@ double AtmosLocal::matvec(int row)
 }
 
 //-----------------------------------------------------------------------------
-// FIXME: we are messing up the philosophy here by adding local state
+// Note that we are slightly messing up the philosophy here by adding local state
 // dependencies to the forcing.
 void AtmosLocal::forcing()
 {
@@ -871,7 +871,6 @@ void AtmosLocal::forcing()
                 Eo = dqso_ * (*sst_)[sr];
                 Ei = dqsi_ * (*sit_)[sr];
                 value = nuq_ * ( tdim_ / qdim_ ) * ( Eo + (*Msi_)[sr]*( Ei - Eo) );
-                
             }
 
             frc_[hr] = value;
@@ -945,7 +944,7 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
                                         ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_));
                         
             // latent heat due to precipitation
-            if (pr >= 0)
+            if ((pr >= 0) && (!on_land))
             {
                 lhflux[pos] = comb_ * latf_ * rhoo_ * lv_ * ( Po0_ + eta_ * qdim_ * P);
             }
@@ -1003,8 +1002,11 @@ void AtmosLocal::computePrecipitation()
         {
             sr = j*n_+i;
 
+            // reset vector element
+            (*P_)[sr] = 0.0;
+            
             if ((*surfmask_)[sr])
-                continue; // do nothing
+                continue; // leave it
 
             (*P_)[sr] = integral;
         }

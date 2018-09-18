@@ -1579,19 +1579,30 @@ void Atmosphere::insert_graph_entry(int* indices, int& pos,
 //=============================================================================
 void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename)
 {
+    Atmosphere::CommPars pars;
+    getCommPars(pars);
 
-    // Get and write evaporation and precipitation fields
-    getE();
-    HDF5.Write("E", *E_);
-    getP();
-    HDF5.Write("P", *P_);
+    // Get and write dimensional evaporation and precipitation fields
+    Teuchos::RCP<Epetra_Vector> E = getE();
+    Teuchos::RCP<Epetra_Vector> P = getP();
+
+    Epetra_Vector ones(E->Map());
+    for (int i = 0; i != E->MyLength(); ++i)
+        if (std::abs((*E)[i]) > 1e-7)
+            ones[i] = 1.0;
+    
+    E->Update(pars.Eo0, ones, pars.qdim * pars.eta);
+    P->Update(pars.Eo0, ones, pars.qdim * pars.eta);
+    
+    HDF5.Write("E", *E);
+    HDF5.Write("P", *P);
 
     // Write surface temperatures
     getLandTemperature();
     HDF5.Write("lst", *lst_);
     HDF5.Write("sst", *sst_);
 
-    // Write fluxes
+    // Write dimensional fluxes
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes = getFluxes();
     HDF5.Write("LongwaveFlux",     *fluxes[AtmosLocal::_QLW]);
     HDF5.Write("ShortwaveFlux",    *fluxes[AtmosLocal::_QSW]);

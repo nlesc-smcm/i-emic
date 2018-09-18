@@ -67,7 +67,7 @@
 
   <!-- <Parameter name="Dalton number" type="double" value="0.0" /> -->
   
-  <Parameter name="temperature eddy diffusivity" type="double" value="3.1e6" />
+  <Parameter name="temperature eddy diffusivity" type="double" value="2.5e6" />
 
   <Parameter name="reference albedo" type="double" value="0.3" />
   <Parameter name="albedo excursion" type="double" value="0.5" />

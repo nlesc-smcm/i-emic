@@ -242,19 +242,21 @@ contains
 
           qsoaflux(pos) = QSoa / QSnd * (1-msi(i,j))
           qsosflux(pos) = QSos / QSnd * msi(i,j)
-          
-          if (coupled_S.eq.1) then
 
-             salflux(pos) = (                      &
-                  QSoa + msi(i,j) * (QSos - QSoa)  &
-                  ) * (1-landm(i,j,l)) / gamma
+          if (gamma.ne.0) then
+             if (coupled_S.eq.1) then
 
-          else
-             
-             salflux(pos) = (1-landm(i,j,l)) *  &
-                  (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
-                  SRES * par(BIOT) * S(i,j,l) / gamma
-             
+                salflux(pos) = (                      &
+                     QSoa + msi(i,j) * (QSos - QSoa)  &
+                     ) * (1-landm(i,j,l)) / gamma
+
+             else
+
+                salflux(pos) = (1-landm(i,j,l)) *  &
+                     (1 - SRES + SRES*par(BIOT)) * emip(i,j) - &
+                     SRES * par(BIOT) * S(i,j,l) / gamma
+
+             endif
           endif
           pos = pos + 1
        end do
@@ -328,10 +330,10 @@ contains
              QTos = QTnd * zeta * (a0 * (s0 + S(i,j,l)) - (t0+T(i,j,l)))
 
              ! factor out the nondimensionalization and apply seaice mask
-             swflux(pos) =  QSW  / QTnd !* (1-msi(i,j))
-             shflux(pos) = -QSH  / QTnd !* (1-msi(i,j))
-             lhflux(pos) = -QLH  / QTnd !* (1-msi(i,j))
-             siflux(pos) =  QTos / QTnd !* msi(i,j)
+             swflux(pos) =  QSW  / QTnd * (1-msi(i,j))
+             shflux(pos) = -QSH  / QTnd * (1-msi(i,j))
+             lhflux(pos) = -QLH  / QTnd * (1-msi(i,j))
+             siflux(pos) =  QTos / QTnd * msi(i,j)
              simask(pos) =  msi(i,j)
 
              if (coupled_T.eq.0) then

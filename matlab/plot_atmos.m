@@ -5,6 +5,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         plot_default = true;
     else
         plot_default = false;
+    end
     
     if nargin < 1
         fname = 'atmos_output.h5';
@@ -16,14 +17,15 @@ function [state,pars,add] = plot_atmos(fname, opts)
         
         opts.readEP  = readEP;
         opts.readLST = readLST;
+        opts.lst     = readLST;
     end
     
-    if isfield(opts, 'readEP')
-        readEP = opts.readEP;
+    if isfield(opts, 'EmP') 
+        plotEmP = opts.EmP;
     else
-        readEP = false;
-        opts.readEP = readEP;
+        plotEmP = false;
     end
+    opts.readEP = plotEmP;
 
     if isfield(opts, 'lst') % land surface temperature
         readLST = opts.lst;
@@ -91,7 +93,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     [state, pars, add] = readhdf5(fname, atmos_nun, n, m, atmos_l,opts);
 
-    if readEP
+    if plotEmP
         E = reshape(add.E,n,m);
         P = reshape(add.P,n,m);
     end
@@ -118,6 +120,9 @@ function [state,pars,add] = plot_atmos(fname, opts)
     ce   = 1.3e-03;
     uw   = 8.5;
     eta  =  (rhoa / rhoo) * ce * uw;
+    fprintf(' eta = %e\n', eta);
+    fprintf('  q0 = %e (kg / kg)\n', q0);        
+    fprintf('qdim = %e (kg / kg)\n', qdim);
     
     Ta  = T0 + tdim * squeeze(state(1,:,:,:));
     qa  = q0 + qdim * squeeze(state(2,:,:,:));
@@ -206,18 +211,41 @@ function [state,pars,add] = plot_atmos(fname, opts)
         end
     end
     
-    if readEP
+    if plotEmP
 
-        Pd  = eta*qdim*max(max(P))*3600*24*365;
-        fprintf('Precipitation P = %2.4e m/y\n', Pd);
+        fprintf('Precipitation P(end) = %2.4e m/y\n', P(end)*3600*24*365);
         
         figure(fig_ctr); fig_ctr = fig_ctr+1;        
-        EmP = eta*qdim*(E-P)*3600*24*365;
-        img = EmP';
 
-        imagesc(RtD*x,RtD*(y),img); hold on
+        Emy = E*3600*24*365;
+        img = Emy';
         img(img == 0) = NaN;
-        c = contour(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
+                
+        %imagesc(RtD*x,RtD*(y),img); hold on
+        c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
+                    'linewidth',.5);
+        hold off;
+        set(gca,'ydir','normal')
+        cmap = my_colmap(caxis);
+        colormap(cmap)
+        colorbar
+        
+        title('E (m/y)')
+        xlabel('Longitude')
+        ylabel('Latitude')
+
+        if export_to_file
+            exportfig('atmosE.eps',10,[14,10],invert)
+        end
+
+        EmPmy = (E-P)*3600*24*365;
+        img   = EmPmy';
+        img(img == 0) = NaN;
+        
+        figure(fig_ctr); fig_ctr = fig_ctr+1;        
+        %        imagesc(RtD*x,RtD*(y),img); hold on
+
+        c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
                     'linewidth',.5);
         hold off
         set(gca,'ydir','normal')
@@ -225,8 +253,6 @@ function [state,pars,add] = plot_atmos(fname, opts)
         colormap(cmap)
         colorbar
 
-        hold off        
-        
         title('E-P (m/y)')
         xlabel('Longitude')
         ylabel('Latitude')

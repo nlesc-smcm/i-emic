@@ -23,7 +23,7 @@ fi
 # cd to original dir
 cd ${PWD}
 
-if [ $# -eq 1 ]
+if [ $# -ge 1 ]
 then
     # create destination dir
     mkdir -pv ${PWD}/$1
@@ -44,7 +44,7 @@ infofile=info_$date
 cdatafile=cdata_$date
 echo running $executable
 echo writing to $logdir/$fname
-procs=4
+procs=2
 
 logdir=sbatch_log
 mkdir -p $logdir
@@ -72,8 +72,13 @@ cp -v atmosphere_params.xml            $logdir/atmosphere_params_$date
 cp -v jdqz_params.xml                  $logdir/jdqz_params_$date
 cp -v continuation_params.xml          $logdir/continuation_params_$date
 
-# run
-srun -n $procs $executable > dump
+# run, second dummy argument triggers different call
+if [ $# -ne 2 ]
+then
+    srun -n $procs $executable > dump
+else
+    mpirun -np $procs $executable > dump
+fi
 
 # when finished the profile is appended to the summary
 cat profile_output >> $logdir/$fname
