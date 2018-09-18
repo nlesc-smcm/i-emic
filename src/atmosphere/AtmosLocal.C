@@ -256,10 +256,12 @@ void AtmosLocal::setup()
     INFO("   A*DpDq   = " << -eta_ * nuq_);
     INFO("    DqDt0   = " << nuq_ * tdim_ / qdim_ * dqso_);
     INFO("  lvscale   = " << lvscale_);
-    INFO("      Po0   = " << Po0_ << " m/s = " << Po0_ * 3600 * 24 * 365 << " m/y");
     INFO("      Eo0   = " << Eo0_ << " m/s");
     INFO("    EdevT   = " << EdevT);
     INFO("    Edevq   = " << Edevq);
+    INFO("      Po0   = " << Po0_ << " m/s = "
+         << Po0_ * 3600 * 24 * 365 << " m/y (background precipitation)" );
+    INFO("     QLH0   = " << Po0_ * rhoo_ * lv_ << " Wm^{-2} (background latent heat flux)");    
 
     INFO(std::endl << "AtmosLocal all xml parameters: ");
     INFO(*params_);
@@ -944,8 +946,10 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
                         
             // latent heat due to precipitation
             if (pr >= 0)
-                lhflux[pos] = comb_ * latf_ * muoa_ * rhoo_ * lv_ * ( Po0_ + eta_ * qdim_ * P);
-                
+            {
+                lhflux[pos] = comb_ * latf_ * rhoo_ * lv_ * ( Po0_ + eta_ * qdim_ * P);
+            }
+            
             pos++;
         }
 }

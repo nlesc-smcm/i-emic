@@ -17,10 +17,10 @@
   <Parameter name="Newton tolerance"      type="double" value="1e-2"/>
 
   <!-- Define the optimal interval for the amount of Newton iterations -->
-  <Parameter name="minimum desired Newton iterations" type="int" value="4"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
+  <Parameter name="minimum desired Newton iterations" type="int" value="5"/>
+  <Parameter name="maximum desired Newton iterations" type="int" value="6"/>
 
  <!-- Upper bound for the Newton iterations, beyond this we restart -->
-  <Parameter name="maximum Newton iterations" type="int" value="10"/>
+  <Parameter name="maximum Newton iterations" type="int" value="8"/>
 
 </ParameterList>
