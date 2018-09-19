@@ -135,20 +135,18 @@ function [state,pars,add] = plot_atmos(fname, opts)
         figure(fig_ctr); fig_ctr = fig_ctr+1;
 
         img = Ta';
-        img2 = img;
-        img2(logical(surfm')) = NaN;
         Tdiff = max(max(Ta))-min(min(Ta));
         fprintf('max(T) - min(T) = %f\n', Tdiff);
-        imagesc(RtD*x,RtD*(y),img); hold on
-        %contourf(RtD*x,RtD*(y),img,10,'linestyle','none','Fill','on'); hold on;
-        plot_mask(surfm,x,y); hold on   
         
-       
-
+        %imagesc(RtD*x,RtD*(y),img); hold on
+        %contourf(RtD*x,RtD*(y),img,10,'linestyle','none','Fill','on'); hold on;
+        %plot_mask(surfm,x,y); hold on
         %contour(RtD*x,RtD*(y),img,20,'linecolor','k',...
         %        'linewidth',1.2,'linestyle','-'); hold on;
-        contour(RtD*x,RtD*(y),img,10,'linecolor',[.2,.2,.2],... 
-                'linewidth',1.0,'linestyle','-'); hold on;
+        
+        contourf(RtD*x,RtD*(y),img,15,... 
+                 'linewidth',1.0,'linestyle','-'); hold on;
+        contour(RtD*x,RtD*(y),surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
                 
         set(gca,'ydir','normal')
         colorbar
@@ -168,15 +166,17 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
 
     if plot_humidity || plot_default
+
         figure(fig_ctr); fig_ctr = fig_ctr+1;
         img = qa';
 
-        image(RtD*x,RtD*(y),srf,'AlphaData',.2); hold on
-        set(gca,'ydir','normal')
-        hold on
-        c = contour(RtD*x,RtD*(y),img,12,'Visible', 'on', ...
-                    'linewidth',1.5);
+        imagesc(RtD*x,RtD*(y),img); hold on                
+        c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on', ...
+                    'linewidth',1.0,'linecolor','k'); hold on
+        plot_mask(surfm,x,y); hold on
+
         hold off
+        set(gca,'ydir','normal')
         
         colorbar
         cmap = my_colmap(caxis);
