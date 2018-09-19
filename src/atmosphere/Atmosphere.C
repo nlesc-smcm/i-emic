@@ -107,6 +107,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     Msi_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     E_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     P_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    Pdist_      = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -155,7 +156,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     computeMassMat();
     
     setupIntCoeff();
-    
+
     INFO("Atmosphere: constructor done");
 }
 
@@ -230,6 +231,10 @@ void Atmosphere::setupIntCoeff()
 
     INFO("Atmosphere: total E,P area = " << totalArea_);
     INFO("Atmosphere:    local dA[0] = " << (*pIntCoeff_)[0]);
+
+    // Set precipitation distribution
+    setPdist();    
+
 }
 
 //==================================================================
@@ -1171,18 +1176,48 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
         ERROR("Invalid aux", __FILE__, __LINE__);
     }
 
-    // fill P_
+    
+    // Fill P field. This can be homogoneous or applied with any
+    // function f satisfying int f(theta) dA = A
     int gid;
     for (int i = 0; i != numMyElements; ++i)
     {
         gid = P_->Map().GID(i);
         if ((*surfmask_)[gid] == 0)
-            (*P_)[i] = Pvalue;
+            (*P_)[i] = (*Pdist_)[i]*Pvalue;
         else
             (*P_)[i] = 0.0;
     }
 
     return Utils::getVector(mode, P_);
+}
+
+//==================================================================
+void Atmosphere::setPdist()
+{
+    INFO("Atmosphere::setPdist... ");
+    Teuchos::RCP<Epetra_Vector> localPdist =
+        Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+
+    // let local model fill Pdist with some function
+    domain_->Standard2AssemblySurface(*Pdist_, *localPdist);
+    double *tmpPdist;
+    localPdist->ExtractView(&tmpPdist);
+    atmos_->fillPdist(tmpPdist);
+
+    // correct global vector with integral
+    domain_->Assembly2StandardSurface(*localPdist, *Pdist_);
+    double corr = 1 - Utils::dot(pIntCoeff_, Pdist_) / totalArea_;
+    Epetra_Vector ones(*standardSurfaceMap_);
+    ones.PutScalar(1.0);
+    CHECK_ZERO(Pdist_->Update(corr, ones, 1.0));
+
+    // return the corrected Pdist in the local model
+    domain_->Standard2AssemblySurface(*Pdist_, *localPdist);
+    localPdist->ExtractView(&tmpPdist);
+    atmos_->setPdist(tmpPdist);
+    
+    INFO("Atmosphere::setPdist... done");
 }
 
 //==================================================================

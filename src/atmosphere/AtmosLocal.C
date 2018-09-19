@@ -286,6 +286,9 @@ void AtmosLocal::setup()
     // Precipitation
     P_   = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
+    // Precipitation distribution function
+    Pdist_ = std::vector<double>(m_ * n_, 1.0);
+
     // Initialize land surface temperature
     lst_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
 
@@ -476,7 +479,44 @@ void AtmosLocal::setSeaIceMask(std::vector<double> const &Msi)
     *Msi_ = Msi;
 }
 
-//==================================================================
+//-----------------------------------------------------------------------------
+void AtmosLocal::fillPdist(double *Pdist)
+{
+    int sr, pos = 0;
+    bool on_land;
+    for (int j = 1; j <= m_; ++j)
+        for (int i = 1; i <= n_; ++i)
+        {
+            sr = n_*(j-1) + (i-1); // surface row
+            on_land = (*surfmask_)[sr];
+            if (!on_land)
+            {
+                //Pdist[pos] = (1 - .5 * pow(sin(yc_[j]), 2));
+                Pdist[pos] = 1.0;
+            }
+            pos++;
+        }
+}
+
+//-----------------------------------------------------------------------------
+void AtmosLocal::setPdist(double *Pdist)
+{
+    int sr, pos = 0;
+    bool on_land;
+    for (int j = 1; j <= m_; ++j)
+        for (int i = 1; i <= n_; ++i)
+        {
+            sr = n_*(j-1) + (i-1); // surface row
+            on_land = (*surfmask_)[sr];
+            if (on_land)
+                Pdist_[pos] = 0.0;
+            else
+                Pdist_[pos] = Pdist[pos];
+            pos++;
+        }
+}
+
+//-----------------------------------------------------------------------------
 void AtmosLocal::getCommPars(AtmosLocal::CommPars &parStruct)
 {
     parStruct.tdim = tdim_;
@@ -552,6 +592,7 @@ void AtmosLocal::computeJacobian()
 
     if (aux_ == 1) // latent heat due to precipitation
     {
+        Atom TT_PP(n_, m_, l_, np_);
 
         // Central P dependency can be implemented in this way. Note
         // that we can add P dependencies in non-P rows, but it is not
@@ -561,8 +602,17 @@ void AtmosLocal::computeJacobian()
         // some trouble. The final P-row is implemented from the
         // parallel side. (Similar to the integral condition.)
 
-        tc.scale(comb_ * latf_ * lvscale_ * eta_ * qdim_);
-        Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_PP_, tc);
+        int sr;
+        double value;
+        for (int j = 1; j <= m_; ++j)
+            for (int i = 1; i <= n_; ++i)
+            {
+                sr = n_*(j-1) + (i-1); // surface row
+                value = comb_ * latf_ * lvscale_ *
+                    eta_ * qdim_ * Pdist_[sr];
+                TT_PP.set(i,j,l_, 5, value);
+            }
+        Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_PP_, TT_PP);
     }
 
     // Temperature equation: albedo dependence TT_AA
@@ -590,6 +640,7 @@ void AtmosLocal::computeJacobian()
     Atom qc (n_, m_, l_, np_);
     Atom qxx(n_, m_, l_, np_);
     Atom qyy(n_, m_, l_, np_);
+    Atom QQ_PP(n_, m_, l_, np_);        
 
     discretize(1, qc );  // Evaporation component (over land no evaporation)
     discretize(5, qxx);  // longitudinal diffusion
@@ -603,9 +654,18 @@ void AtmosLocal::computeJacobian()
     Al_->set( {1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
     if (aux_ == 1)
     {
-        // Al(:,:,:,:,QQ, PP) = - nuq * P, for this we can reuse qc:
-        qc.scale(-nuq_);
-        Al_->set( {1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
+        // Al(:,:,:,:,QQ, PP) = - nuq * p(theta) * P, :
+        int sr;
+        double value;
+        for (int j = 1; j <= m_; ++j)
+            for (int i = 1; i <= n_; ++i)
+            {
+                sr = n_*(j-1) + (i-1); // surface row
+                value = -nuq_ * Pdist_[sr];
+                QQ_PP.set(i,j,l_, 5, value);
+            }
+        
+        Al_->set( {1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, QQ_PP);
     }
 
     //------------------------------------------------------------------
@@ -637,7 +697,7 @@ void AtmosLocal::computeJacobian()
             if (on_land)
             {
                 dAdA = (comb_*albf_*daFdA(A, Ta, P, j) - 1) / tauf_;
-                dAdP = (comb_*albf_*daFdP(A, Ta, P, j)) / tauf_;
+                dAdP = Pdist_[sr] * (comb_*albf_*daFdP(A, Ta, P, j)) / tauf_;
                 dAdT = (comb_*albf_*daFdT(A, Ta, P, j)) / tauf_;
             }
             else
@@ -856,7 +916,7 @@ void AtmosLocal::forcing()
                 value = Ts + comb_ * sunp_ * (QSW - amua_);
 
                 // latent heat due to precipitation (background contribution)
-                value += comb_ * latf_ * lvscale_ * Po0_;
+                value += comb_ * latf_ * lvscale_ * Pdist_[sr] * Po0_;
             }
 
             frc_[tr] = value;
@@ -946,7 +1006,8 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
             // latent heat due to precipitation
             if ((pr >= 0) && (!on_land))
             {
-                lhflux[pos] = comb_ * latf_ * rhoo_ * lv_ * ( Po0_ + eta_ * qdim_ * P);
+                lhflux[pos] = comb_ * latf_ * rhoo_ * lv_ *
+                    Pdist_[sr] * ( Po0_ + eta_ * qdim_ * P);
             }
             
             pos++;

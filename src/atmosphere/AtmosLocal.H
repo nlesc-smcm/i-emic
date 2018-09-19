@@ -250,6 +250,9 @@ private:
     //!  Os*(1-.482*(3*sin(y(j))**2-1.)/2.)*(1-albe(j))
     std::vector<double> suno_;
 
+    //! Precipitation distribution function
+    std::vector<double> Pdist_;
+
     //! -------------------------------------------------------
     //! Continuation
     //! -------------------------------------------------------
@@ -347,6 +350,12 @@ public:
 
     //! Accept sea ice mask
     void setSeaIceMask(std::vector<double> const &Msi);
+
+    //! Fill precipitation distribution function
+    void fillPdist(double *Pdist);
+
+    //! Set precipitation distribution function
+    void setPdist(double *Pdist);        
 
     //! Return problem dimension (mainly for testing)
     int  dim() { return dim_; } 

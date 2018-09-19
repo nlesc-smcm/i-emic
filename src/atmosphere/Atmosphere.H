@@ -135,6 +135,9 @@ protected:
     //! parallel precipitation field (non-overlapping)
     Teuchos::RCP<Epetra_Vector> P_;
 
+    //! parallel precipitation distribution (non-overlapping)
+    Teuchos::RCP<Epetra_Vector> Pdist_;
+
     //! parallel precipitation field (overlapping)
     Teuchos::RCP<Epetra_Vector> localP_;
 
@@ -353,7 +356,10 @@ public:
     int getRowIntCon() { return rowIntCon_; }    
     
 private:
-    
+
+    //! set precipitation distribution
+    void setPdist();
+        
     //! Private member to compute P if it is not an unknown in the
     //! model.
     Teuchos::RCP<Epetra_Vector> getP(char mode = 'C');
