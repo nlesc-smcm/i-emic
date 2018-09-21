@@ -353,7 +353,10 @@ public:
     int interface_row(int i, int j, int XX);
 
     //! Get row containing the humidity integral condition
-    int getRowIntCon() { return rowIntCon_; }    
+    int getRowIntCon() { return rowIntCon_; }
+
+    //! Get spatial precipitation distribution
+    Teuchos::RCP<Epetra_Vector> getPdist() { return Pdist_; }
     
 private:
 

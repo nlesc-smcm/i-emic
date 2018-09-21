@@ -21,7 +21,8 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     recompMassMat_   (true),
     
     taus_         (0.01),    // threshold ice thickness
-    epsilon_      (params->get("mask switch steepness", 1e-2)),  // Heavyside approximation steepness
+    // Heavyside approximation steepness
+    epsilon_      (params->get("mask switch steepness", 1e-1)),  
 
     // background mean values
     t0o_   (params->get("background ocean temp t0o", 15)),
@@ -74,7 +75,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     Ch_      (params->get("Ch", 1.22e-3)),
     cpa_     (params->get("heat capacity", 1000)),
 
-// exchange coefficient
+    // exchange coefficient
     muoa_    (rhoa_ * Ch_ * cpa_ * uw_)
 {
     INFO("SeaIce constructor");
@@ -466,15 +467,18 @@ void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
             
             Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
             Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_TT_)];
-
+            
+            // Compute salinity flux from sea ice into the ocean
             QSos_[sr] = (
                 zeta_ * ( freezingT(sss[sr] )   // QTos component
                           - (sst[sr]+t0o_))
                 - (Qvar_ * Qval +  Q0_)         // QTsa component
                 ) / rhoo_ / Lf_;
-            
-            EmiP_[sr] = dEdT_ * Tval + dEdq_ * qatm[sr] // E component
-                - eta_ * qdim_ * patm[sr];              // P component
+
+            // Compute E minus P over seaice, assuming P from
+            // atmosphere is dimensional
+            EmiP_[sr] = E0i_ + dEdT_ * Tval + dEdq_ * qatm[sr] // E component
+                - patm[sr];                                    // P component
             
         }
 }
@@ -900,6 +904,9 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     Teuchos::RCP<Epetra_Vector> Msi = interfaceM();
     Teuchos::RCP<Epetra_MultiVector> MsiG = Utils::AllGather(*Msi);
 
+    // obtain precipitation distribution
+    Teuchos::RCP<Epetra_Vector> Pdist = atmos->getPdist();
+
     // compute a few constant derivatives (see computeRHS)
     // d / dq_atm (F_H)
     double dqatmFH = -(rhoo_ * latf_ * Lf_ / zeta_) * dEdq_;
@@ -989,13 +996,22 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
 
                 }
             }
+
+        
         col = atmos->interface_row(0,0,P);
 
-        double totalM = Utils::dot(intCoeff_, Msi);
+        // The derivative of the integral correction equation w.r.t.
+        // precipitation is the integral of the mask times Pdist
+        // product.
+
+        // element-wise multiplication (Mf = 0.0*Mf + 1.0*Msi*f)
+        Teuchos::RCP<Epetra_Vector> Mf = Teuchos::rcp(new Epetra_Vector(*Msi));
+        Mf->Multiply(1.0, *Msi, *Pdist, 0.0);
+        double totalMf = Utils::dot(intCoeff_, Mf);
 
         if (col >= 0)
         {
-            dPFG  = totalM * pQSnd_ * eta_ * qdim_;
+            dPFG  = totalMf * pQSnd_ * eta_ * qdim_;
             block->co.push_back(dPFG);
             block->jco.push_back(col);
             el_ctr++;

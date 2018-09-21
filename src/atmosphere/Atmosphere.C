@@ -1114,7 +1114,7 @@ void Atmosphere::computeJacobian()
 //==================================================================
 Teuchos::RCP<Epetra_Vector> Atmosphere::getE(char mode)
 {
-    // compute E in local AtmosLocal
+    // compute dimensional E in local AtmosLocal
     atmos_->computeEvaporation();
 
     // obtain view of E from serial AtmosLocal
@@ -1125,7 +1125,8 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getE(char mode)
     localE_->ExtractView( &tmpE );
 
     int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
-        
+
+    // fill localE_ with dimensional evaporation
     for (int i = 0; i != numMySurfaceElements; ++i)
         tmpE[i] = (*localE)[i];
         
@@ -1144,16 +1145,25 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
     int numMyElements     = P_->Map().NumMyElements();
     assert((int) surfmask_->size() == numGlobalElements);
 
+    Atmosphere::CommPars pars;
+    getCommPars(pars);        
+
     // Without auxiliary unknowns we have to do the integral manually
     if (aux_ <= 0)
     {
         if (useFixedPrecip_)
             Pvalue = 1.0e-6;
-        else // compute integral, we assume E_ is up to date
+        else
+        {
+            // Compute integral: we assume E_ is up to date and fully
+            // dimensional
             Pvalue = Utils::dot(pIntCoeff_, E_) / totalArea_;
+
+            // nondimensionalize Pvalue
+            Pvalue = (Pvalue - pars.Eo0)/(pars.eta*pars.qdim);
+        }
     }
-    else if (aux_ == 1) // when aux = 1, P is in the state and we can
-                        // simply fill a field
+    else if (aux_ == 1) // when aux = 1, P is an anomaly (state component)
     {
         // get last ordinary index
         int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
@@ -1176,7 +1186,6 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
         ERROR("Invalid aux", __FILE__, __LINE__);
     }
 
-    
     // Fill P field. This can be homogoneous or applied with any
     // function f satisfying int f(theta) dA = A
     int gid;
@@ -1184,11 +1193,12 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
     {
         gid = P_->Map().GID(i);
         if ((*surfmask_)[gid] == 0)
-            (*P_)[i] = (*Pdist_)[i]*Pvalue;
+            (*P_)[i] = (*Pdist_)[i] *
+                (pars.Eo0 + pars.eta * pars.qdim * Pvalue);
         else
             (*P_)[i] = 0.0;
     }
-
+    
     return Utils::getVector(mode, P_);
 }
 

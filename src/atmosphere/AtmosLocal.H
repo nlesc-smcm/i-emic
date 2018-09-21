@@ -432,7 +432,7 @@ private:
 
     //! Land temperature is a function of albedo, atmospheric
     //! temperature and the latitude grid-box, expecting albedo A, Ta
-    //! anomaly and grid point j.
+    //! anomaly and 1-based grid point j (latitude).
     double Tl(double A, double Ta, int j)
         { return Ta + comb_ * sunp_ * suno_[j] * ((1 - a0_) - da_*A) / Ooa_; }
     
@@ -449,37 +449,21 @@ private:
         { return -comb_ * sunp_ * suna_[j] * da_; }
     
     //! Snow/ice albedo parametrization expecting albedo A,
-    //! atmospheric temperature anomaly Ta, global precipitation
-    //! anomaly P and latitude grid-box j
-    double aF(double A, double Ta, double P, int j)
-        {
-            return
-                H(Tm_ - Tl(A,Ta,j), epm_) *
-                H(Tr_ - Tl(A,Ta,j), epr_) *
-                H(P - Pa_, epa_);
-
-            // return 5*Ta + 4*A + 3*P;
-            
-            // return H(Tm_ - Tl(A,Ta,j), epm_) *
-            //     H(Tr_ - Tl(A,Ta,j), epr_) *
-            //     H(P - Pa_, epa_);
-
-            // return H(Tm_ - Tl(A,Ta,j), epm_) *
-            //     H(Tr_ - Tl(A,Ta,j), epr_) * H(P - Pa_, epa_);
-        }
+    //! atmospheric temperature anomaly Ta, global average
+    //! precipitation anomaly P and 1-based grid-points i,j
+    double aF(double A, double Ta, double P, int i, int j);
 
     //! aF derivative w.r.t. T, lazy: finite difference
-    double daFdA(double A, double Ta, double P, int j)
-        { return ( aF(A+df_,Ta,P,j) - aF(A,Ta,P,j) )/df_; }            
+    double daFdA(double A, double Ta, double P, int i, int j)
+        { return ( aF(A+df_,Ta,P,i,j) - aF(A,Ta,P,i,j) )/df_; }            
 
     //! aF derivative w.r.t. P, lazy: finite difference
-    double daFdP(double A, double Ta, double P, int j)
-        { return ( aF(A,Ta,P+df_,j) - aF(A,Ta,P,j) )/df_; }            
+    double daFdP(double A, double Ta, double P, int i, int j)
+        { return ( aF(A,Ta,P+df_,i,j) - aF(A,Ta,P,i,j) )/df_; }            
 
     //! aF derivative w.r.t. Ta, lazy: finite difference
-    double daFdT(double A, double Ta, double P, int j)
-        { return ( aF(A,Ta+df_,P,j) - aF(A,Ta,P,j) )/df_; }            
-
+    double daFdT(double A, double Ta, double P, int i, int j)
+        { return ( aF(A,Ta+df_,P,i,j) - aF(A,Ta,P,i,j) )/df_; }            
 
     //! Heavyside approximation
     double H(double x, double eps)

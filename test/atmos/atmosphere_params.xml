@@ -47,7 +47,7 @@
   <!-- testing parameters  -->
   <Parameter name="melt temperature threshold (deg C)" type="double" value="14"/>
   <Parameter name="rain/snow temperature threshold (deg C)" type="double" value="15"/>
-  <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="0.1"/>
+  <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="0.2"/>
 
   <!-- Preconditioner parameters.                                         -->
   <!-- When using the parallel solve routine, the overlap level should be -->

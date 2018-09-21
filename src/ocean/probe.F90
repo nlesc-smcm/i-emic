@@ -114,9 +114,9 @@ contains
        do j = 1,m
           do i = 1,n
              if (landm(i,j,l).eq.0) then
-                ocean_evap(pos) = ((deltat / qdim) * &
+                ocean_evap(pos) = eo0 + eta * qdim * (((deltat / qdim) * &
                      dqso * un(find_row2(i,j,l,TT)) - &
-                     qatm(i,j))
+                     qatm(i,j)))
                 ctr = ctr + 1
              endif
              pos = pos + 1
@@ -225,7 +225,7 @@ contains
     salflux = 0.0
 
     pQSnd =  par(COMB) * par(SALT) * QSnd
-    nus   =  par(COMB) * par(SALT) * eta * qdim * QSnd
+    nus   =  par(COMB) * par(SALT) *  QSnd
     
     pos = 1
     do j = 1,m
@@ -236,9 +236,11 @@ contains
                - ( Qvar * qsa(i,j) + q0 ) )                 & ! QTsa component
                / ( rhodim * Lf )
 
-          QSoa = nus * (                   &
-               (deltat / qdim) * dqso * T(i,j,l) &
-               - qatm(i,j) - patm(i,j))
+          ! patm is dimensional, thus we include the background
+          ! contributions in this flux as they may not cancel.
+          QSoa = pQSnd * ( eo0 + eta * qdim * (     &
+               (deltat / qdim) * dqso * T(i,j,l)    &
+               - qatm(i,j)) - patm(i,j) )
 
           qsoaflux(pos) = QSoa / QSnd * (1-msi(i,j))
           qsosflux(pos) = QSos / QSnd * msi(i,j)
