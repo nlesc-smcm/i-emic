@@ -124,7 +124,7 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     t0a_             = params->get("background temperature atmosphere",15.0); //(C)
     t0o_             = params->get("background temperature ocean",15.0);      //(C)
     tdim_            = params->get("temperature scale", 1.0); // ( not used)
-    q0_              = params->get("atmos reference humidity",8e-3); // (kg/kg)
+    q0_              = params->get("atmos reference humidity",10e-3); // (kg/kg)
     qdim_            = params->get("atmos humidity scale", 1e-3);  // (kg/kg)
     lv_              = params->get("latent heat of vaporization", 2.5e06); // (J/kg)
 
@@ -484,6 +484,7 @@ void AtmosLocal::fillPdist(double *Pdist)
 {
     int sr, pos = 0;
     bool on_land;
+    double y;
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
@@ -491,8 +492,12 @@ void AtmosLocal::fillPdist(double *Pdist)
             on_land = (*surfmask_)[sr];
             if (!on_land)
             {
-                Pdist[pos] = (1 - .5 * pow(sin(yc_[j]), 2));
-                // Pdist[pos] = 1.0;
+                y = yc_[j];
+                Pdist[pos] = 2*exp(-pow(6*y,2))+pow(sin(2.0*y),2);
+            }
+            else
+            {
+                Pdist[pos] = 0.0;
             }
             pos++;
         }

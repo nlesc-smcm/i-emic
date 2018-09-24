@@ -1186,8 +1186,8 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
         ERROR("Invalid aux", __FILE__, __LINE__);
     }
 
-    // Fill P field. This can be homogoneous or applied with any
-    // function f satisfying int f(theta) dA = A
+    // Fill dimensional P field. This can be homogoneous or applied
+    // with any function f satisfying int f(theta) dA = A
     int gid;
     for (int i = 0; i != numMyElements; ++i)
     {
@@ -1198,7 +1198,6 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
         else
             (*P_)[i] = 0.0;
     }
-    
     return Utils::getVector(mode, P_);
 }
 
@@ -1209,6 +1208,7 @@ void Atmosphere::setPdist()
     Teuchos::RCP<Epetra_Vector> localPdist =
         Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
+    Pdist_->PutScalar(0.0);
     // let local model fill Pdist with some function
     domain_->Standard2AssemblySurface(*Pdist_, *localPdist);
     double *tmpPdist;
@@ -1218,15 +1218,20 @@ void Atmosphere::setPdist()
     // correct global vector with integral
     domain_->Assembly2StandardSurface(*localPdist, *Pdist_);
     double corr = 1 - Utils::dot(pIntCoeff_, Pdist_) / totalArea_;
+
+    // create vector of ones at non-land points
     Epetra_Vector ones(*standardSurfaceMap_);
-    ones.PutScalar(1.0);
+    for (int i = 0; i != ones.Map().NumMyElements(); ++i)
+        if (std::abs((*pIntCoeff_)[i]) > 1e-7)
+            ones[i] = 1.0;
+    
     CHECK_ZERO(Pdist_->Update(corr, ones, 1.0));
 
     // return the corrected Pdist in the local model
     domain_->Standard2AssemblySurface(*Pdist_, *localPdist);
     localPdist->ExtractView(&tmpPdist);
     atmos_->setPdist(tmpPdist);
-    
+
     INFO("Atmosphere::setPdist... done");
 }
 
@@ -1630,14 +1635,6 @@ void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &fil
     // Get and write dimensional evaporation and precipitation fields
     Teuchos::RCP<Epetra_Vector> E = getE();
     Teuchos::RCP<Epetra_Vector> P = getP();
-
-    Epetra_Vector ones(E->Map());
-    for (int i = 0; i != E->MyLength(); ++i)
-        if (std::abs((*E)[i]) > 1e-7)
-            ones[i] = 1.0;
-    
-    E->Update(pars.Eo0, ones, pars.qdim * pars.eta);
-    P->Update(pars.Eo0, ones, pars.qdim * pars.eta);
     
     HDF5.Write("E", *E);
     HDF5.Write("P", *P);

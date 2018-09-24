@@ -106,7 +106,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     % reference temperature
     T0  = 15.0;   
-    q0  = 8e-3;
+    q0  = 10e-3;
     a0  = 0.0;
     
     % 
@@ -119,8 +119,6 @@ function [state,pars,add] = plot_atmos(fname, opts)
     rhoo = 1024;
     ce   = 1.3e-03;
     uw   = 8.5;
-    eta  =  (rhoa / rhoo) * ce * uw;
-    fprintf(' eta = %e\n', eta);
     fprintf('  q0 = %e (kg / kg)\n', q0);        
     fprintf('qdim = %e (kg / kg)\n', qdim);
     
@@ -213,18 +211,35 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if plotEmP
 
-        fprintf('Precipitation P(end) = %2.4e m/y\n', P(end)*3600*24*365);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;        
+
+        Pmy = P*3600*24*365;
+        img = Pmy';
+        img(img == 0) = NaN;
+
+        %contour(RtD*x,RtD*(y),surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
+        c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
+                     'linewidth',.5); 
+                
+        set(gca,'ydir','normal')
+        cmap = my_colmap(caxis);
+        colormap(cmap)
+        colorbar
         
+        title('P (m/y)')
+        xlabel('Longitude')
+        ylabel('Latitude')
+
         figure(fig_ctr); fig_ctr = fig_ctr+1;        
 
         Emy = E*3600*24*365;
         img = Emy';
         img(img == 0) = NaN;
                 
-        %imagesc(RtD*x,RtD*(y),img); hold on
+        %contour(RtD*x,RtD*(y),surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
         c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
-                    'linewidth',.5);
-        hold off;
+                     'linewidth',.5);
+                
         set(gca,'ydir','normal')
         cmap = my_colmap(caxis);
         colormap(cmap)
