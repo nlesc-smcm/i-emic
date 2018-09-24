@@ -1,21 +1,21 @@
 #!/bin/bash
 
 # #SBATCH --time=96:00:00
-#SBATCH --time=1:00:00
-#SBATCH --ntasks=24
+#SBATCH --time=12:00:00
+# #SBATCH --ntasks=24
 #SBATCH --nodes=1
 
 # #SBATCH -p fat
-# #SBATCH -p normal
-#SBATCH -p short
+#SBATCH -p normal
+# #SBATCH -p short
 
 # origin dir
 origdir=${PWD}
 
 # This assumes the root dir is called i-emic, otherwise just point to
 # the full path here, e.g., <rootdir>/build/src/main/time_coupled
-executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/time_coupled
-#executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/run_coupled
+#executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/time_coupled
+executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/run_coupled
 
 if ! [[ -s $executable ]]
 then
@@ -48,7 +48,7 @@ infofile=info_$date
 cdatafile=cdata_$date
 echo running $executable
 echo writing to $logdir/$fname
-procs=2
+procs=4
 
 logdir=sbatch_log
 mkdir -p $logdir

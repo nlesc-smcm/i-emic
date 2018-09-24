@@ -47,7 +47,7 @@
   <Parameter name="Periodic" type="bool" value="true"/>
 
   <!-- Starting parameters that are common in the models -->
-  <Parameter name="Combined Forcing"    type="double" value="1.0"/>
+  <Parameter name="Combined Forcing"    type="double" value="0.0"/>
   <Parameter name="Solar Forcing"       type="double" value="1.0"/>
 
   <!-- D: decoupled                                                     -->
