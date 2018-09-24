@@ -124,7 +124,7 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     t0a_             = params->get("background temperature atmosphere",15.0); //(C)
     t0o_             = params->get("background temperature ocean",15.0);      //(C)
     tdim_            = params->get("temperature scale", 1.0); // ( not used)
-    q0_              = params->get("atmos reference humidity",10e-3); // (kg/kg)
+    q0_              = params->get("atmos reference humidity",8e-3); // (kg/kg)
     qdim_            = params->get("atmos humidity scale", 1e-3);  // (kg/kg)
     lv_              = params->get("latent heat of vaporization", 2.5e06); // (J/kg)
 
@@ -252,9 +252,14 @@ void AtmosLocal::setup()
     INFO("      Ooa   = " << Ooa_);
     INFO("      nuq   = " << nuq_);
     INFO("      eta   = " << eta_);
+    INFO("      qso   = " << qso_);
+    INFO("      qsi   = " << qsi_);
     INFO("     dqso   = " << dqso_);
+    INFO("     dqsi   = " << dqsi_);
+    INFO("     qdim   = " << qdim_);
     INFO("   A*DpDq   = " << -eta_ * nuq_);
     INFO("    DqDt0   = " << nuq_ * tdim_ / qdim_ * dqso_);
+    INFO("    DqDti   = " << nuq_ * tdim_ / qdim_ * dqsi_);        
     INFO("  lvscale   = " << lvscale_);
     INFO("      Eo0   = " << Eo0_ << " m/s");
     INFO("    EdevT   = " << EdevT);
