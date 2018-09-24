@@ -102,11 +102,11 @@ function [state,pars,add] = plot_atmos(fname, opts)
         LST = reshape(add.LST, n, m);
     end
 
-    RtD = 180/pi;    
+    RtD = 180/pi;
     
     % reference temperature
-    T0  = 15.0;   
-    q0  = 10e-3;
+    T0  = 15.0;
+    q0  = 8e-3;
     a0  = 0.0;
     
     % 
