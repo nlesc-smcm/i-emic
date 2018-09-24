@@ -405,9 +405,9 @@ TEST(Atmosphere, numericalJacobian)
             INFO("compute njC");
             NumericalJacobian<std::shared_ptr<Atmosphere>,
                               Teuchos::RCP<Epetra_Vector> > numJac;
-
+            
             numJac.setTolerance(1e-12);
-            numJac.seth(1e-5);
+            numJac.seth(1e-6);
             numJac.compute(atmosPar, atmosPar->getState('V'));
             numJac.print("atmosNumJac");
 

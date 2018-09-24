@@ -107,6 +107,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     Msi_        = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     E_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
     P_          = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    Pdist_      = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     localState_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localRHS_   = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -155,7 +156,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     computeMassMat();
     
     setupIntCoeff();
-    
+
     INFO("Atmosphere: constructor done");
 }
 
@@ -230,6 +231,10 @@ void Atmosphere::setupIntCoeff()
 
     INFO("Atmosphere: total E,P area = " << totalArea_);
     INFO("Atmosphere:    local dA[0] = " << (*pIntCoeff_)[0]);
+
+    // Set precipitation distribution
+    setPdist();    
+
 }
 
 //==================================================================
@@ -1109,7 +1114,7 @@ void Atmosphere::computeJacobian()
 //==================================================================
 Teuchos::RCP<Epetra_Vector> Atmosphere::getE(char mode)
 {
-    // compute E in local AtmosLocal
+    // compute dimensional E in local AtmosLocal
     atmos_->computeEvaporation();
 
     // obtain view of E from serial AtmosLocal
@@ -1120,7 +1125,8 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getE(char mode)
     localE_->ExtractView( &tmpE );
 
     int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
-        
+
+    // fill localE_ with dimensional evaporation
     for (int i = 0; i != numMySurfaceElements; ++i)
         tmpE[i] = (*localE)[i];
         
@@ -1139,16 +1145,25 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
     int numMyElements     = P_->Map().NumMyElements();
     assert((int) surfmask_->size() == numGlobalElements);
 
+    Atmosphere::CommPars pars;
+    getCommPars(pars);        
+
     // Without auxiliary unknowns we have to do the integral manually
     if (aux_ <= 0)
     {
         if (useFixedPrecip_)
             Pvalue = 1.0e-6;
-        else // compute integral, we assume E_ is up to date
+        else
+        {
+            // Compute integral: we assume E_ is up to date and fully
+            // dimensional
             Pvalue = Utils::dot(pIntCoeff_, E_) / totalArea_;
+
+            // nondimensionalize Pvalue
+            Pvalue = (Pvalue - pars.Eo0)/(pars.eta*pars.qdim);
+        }
     }
-    else if (aux_ == 1) // when aux = 1, P is in the state and we can
-                        // simply fill a field
+    else if (aux_ == 1) // when aux = 1, P is an anomaly (state component)
     {
         // get last ordinary index
         int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
@@ -1171,18 +1186,53 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
         ERROR("Invalid aux", __FILE__, __LINE__);
     }
 
-    // fill P_
+    // Fill dimensional P field. This can be homogoneous or applied
+    // with any function f satisfying int f(theta) dA = A
     int gid;
     for (int i = 0; i != numMyElements; ++i)
     {
         gid = P_->Map().GID(i);
         if ((*surfmask_)[gid] == 0)
-            (*P_)[i] = Pvalue;
+            (*P_)[i] = (*Pdist_)[i] *
+                (pars.Eo0 + pars.eta * pars.qdim * Pvalue);
         else
             (*P_)[i] = 0.0;
     }
-
     return Utils::getVector(mode, P_);
+}
+
+//==================================================================
+void Atmosphere::setPdist()
+{
+    INFO("Atmosphere::setPdist... ");
+    Teuchos::RCP<Epetra_Vector> localPdist =
+        Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+
+    Pdist_->PutScalar(0.0);
+    // let local model fill Pdist with some function
+    domain_->Standard2AssemblySurface(*Pdist_, *localPdist);
+    double *tmpPdist;
+    localPdist->ExtractView(&tmpPdist);
+    atmos_->fillPdist(tmpPdist);
+
+    // correct global vector with integral
+    domain_->Assembly2StandardSurface(*localPdist, *Pdist_);
+    double corr = 1 - Utils::dot(pIntCoeff_, Pdist_) / totalArea_;
+
+    // create vector of ones at non-land points
+    Epetra_Vector ones(*standardSurfaceMap_);
+    for (int i = 0; i != ones.Map().NumMyElements(); ++i)
+        if (std::abs((*pIntCoeff_)[i]) > 1e-7)
+            ones[i] = 1.0;
+    
+    CHECK_ZERO(Pdist_->Update(corr, ones, 1.0));
+
+    // return the corrected Pdist in the local model
+    domain_->Standard2AssemblySurface(*Pdist_, *localPdist);
+    localPdist->ExtractView(&tmpPdist);
+    atmos_->setPdist(tmpPdist);
+
+    INFO("Atmosphere::setPdist... done");
 }
 
 //==================================================================
@@ -1585,14 +1635,6 @@ void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &fil
     // Get and write dimensional evaporation and precipitation fields
     Teuchos::RCP<Epetra_Vector> E = getE();
     Teuchos::RCP<Epetra_Vector> P = getP();
-
-    Epetra_Vector ones(E->Map());
-    for (int i = 0; i != E->MyLength(); ++i)
-        if (std::abs((*E)[i]) > 1e-7)
-            ones[i] = 1.0;
-    
-    E->Update(pars.Eo0, ones, pars.qdim * pars.eta);
-    P->Update(pars.Eo0, ones, pars.qdim * pars.eta);
     
     HDF5.Write("E", *E);
     HDF5.Write("P", *P);

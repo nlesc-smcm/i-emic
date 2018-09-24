@@ -1549,6 +1549,10 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
     // an allgather
     Teuchos::RCP<Epetra_MultiVector> Msi  = Utils::AllGather(*Msi_);
 
+    // FIXME: factorize as this is (probably) constant
+    Teuchos::RCP<Epetra_MultiVector> Pdist =
+        Utils::AllGather(*atmos->getPdist());
+
     // Obtain shortwave radiative heat (global) field --> FIXME
     // factorize as this is constant
     Teuchos::RCP<Epetra_MultiVector> suno =
@@ -1568,6 +1572,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
 
     double comb = getPar("Combined Forcing");
     double sunp = getPar("Solar Forcing");
+    double Pd;
     
     for (int k = 0; k != L_; ++k)
         for (int j = 0; j != M_; ++j)
@@ -1578,7 +1583,12 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
 
                 // sea ice mask value
                 M  = (*(*Msi)(0))[sr];
+
+                // shortwave distribution
                 S  = (*(*suno)(0))[sr];
+
+                // precipitation distribution
+                Pd = (*(*Pdist)(0))[sr];
                 
                 for (int xx = UU; xx <= SS; ++xx)
                 {
@@ -1622,11 +1632,14 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
 
-                            // precipitation dependency
+                            // Precipitation dependency. The
+                            // derivative is taken with respect to the
+                            // P anomaly, not to the full dimensional
+                            // P with spatial distribution
                             col = atmos->interface_row(i,j,P);
                             if (col >= 0)
                             {
-                                dPFS = -nus * (1.0 - M);
+                                dPFS = -nus * Pd * (1.0 - M);
                                 block->co.push_back(-dPFS);
                                 block->jco.push_back(col);
                                 el_ctr++;

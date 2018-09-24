@@ -124,7 +124,7 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     t0a_             = params->get("background temperature atmosphere",15.0); //(C)
     t0o_             = params->get("background temperature ocean",15.0);      //(C)
     tdim_            = params->get("temperature scale", 1.0); // ( not used)
-    q0_              = params->get("atmos reference humidity",8e-3); // (kg/kg)
+    q0_              = params->get("atmos reference humidity",10e-3); // (kg/kg)
     qdim_            = params->get("atmos humidity scale", 1e-3);  // (kg/kg)
     lv_              = params->get("latent heat of vaporization", 2.5e06); // (J/kg)
 
@@ -143,10 +143,10 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     tauc_            = (tauc_ * 3600. * 24. * udim_) / r0dim_;
 
     Tm_              = params->get("melt temperature threshold (deg C)", 0.0);          
-    Tr_              = params->get("rain/snow temperature threshold (deg C)", 0.0);     
-    Pa_              = params->get("accumulation precipitation threshold (m/y)", 0.0);  
-    epm_             = params->get("melt threshold width (deg C)", 1.0);  
-    epr_             = params->get("rain/snow threshold width (deg C)", 0.1); 
+    Tr_              = params->get("rain/snow temperature threshold (deg C)", 1.0);     
+    Pa_              = params->get("accumulation precipitation threshold (m/y)", 0.2);  
+    epm_             = params->get("melt threshold width (deg C)", 5.0);  
+    epr_             = params->get("rain/snow threshold width (deg C)", 1.0); 
     epa_             = params->get("accumulation threshold width (m/y)", 0.1); 
 
 // continuation ----------------------------------------------------------------
@@ -215,10 +215,10 @@ void AtmosLocal::setup()
     Po0_ = Eo0_;
 
     // Convert threshold precipitation to threshold P deviation
-    Pa_  = Pa_ / 3600. / 24. / 365.;    // convert to m/s
-    Pa_  = (Pa_ - Po0_) / eta_ / qdim_; // convert to deviation
-    epa_ = epa_ / 3600. / 24. / 365.;   // convert threshold width to m/s
-    epa_ = epa_ / eta_ / qdim_;         // convert to deviation
+    // Pa_  = Pa_ / 3600. / 24. / 365.;    // convert to m/s (deprecated)
+    // Pa_  = (Pa_ - Po0_) / eta_ / qdim_; // convert to deviation (deprecated)
+    // epa_ = epa_ / 3600. / 24. / 365.;   // convert threshold width to m/s
+    // epa_ = epa_ / eta_ / qdim_;         // convert to deviation (deprecated)
     
     // Convert threshold temperatures to T deviations
     Tr_ = Tr_ - t0o_;
@@ -285,6 +285,9 @@ void AtmosLocal::setup()
 
     // Precipitation
     P_   = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
+
+    // Precipitation distribution function
+    Pdist_ = std::vector<double>(m_ * n_, 1.0);
 
     // Initialize land surface temperature
     lst_ = std::make_shared<std::vector<double> >(m_ * n_, 0.0);
@@ -476,7 +479,49 @@ void AtmosLocal::setSeaIceMask(std::vector<double> const &Msi)
     *Msi_ = Msi;
 }
 
-//==================================================================
+//-----------------------------------------------------------------------------
+void AtmosLocal::fillPdist(double *Pdist)
+{
+    int sr, pos = 0;
+    bool on_land;
+    double y;
+    for (int j = 1; j <= m_; ++j)
+        for (int i = 1; i <= n_; ++i)
+        {
+            sr = n_*(j-1) + (i-1); // surface row
+            on_land = (*surfmask_)[sr];
+            if (!on_land)
+            {
+                y = yc_[j];
+                Pdist[pos] = 2*exp(-pow(6*y,2))+pow(sin(2.0*y),2);
+            }
+            else
+            {
+                Pdist[pos] = 0.0;
+            }
+            pos++;
+        }
+}
+
+//-----------------------------------------------------------------------------
+void AtmosLocal::setPdist(double *Pdist)
+{
+    int sr, pos = 0;
+    bool on_land;
+    for (int j = 1; j <= m_; ++j)
+        for (int i = 1; i <= n_; ++i)
+        {
+            sr = n_*(j-1) + (i-1); // surface row
+            on_land = (*surfmask_)[sr];
+            if (on_land)
+                Pdist_[pos] = 0.0;
+            else
+                Pdist_[pos] = Pdist[pos];
+            pos++;
+        }
+}
+
+//-----------------------------------------------------------------------------
 void AtmosLocal::getCommPars(AtmosLocal::CommPars &parStruct)
 {
     parStruct.tdim = tdim_;
@@ -552,6 +597,7 @@ void AtmosLocal::computeJacobian()
 
     if (aux_ == 1) // latent heat due to precipitation
     {
+        Atom TT_PP(n_, m_, l_, np_);
 
         // Central P dependency can be implemented in this way. Note
         // that we can add P dependencies in non-P rows, but it is not
@@ -560,9 +606,18 @@ void AtmosLocal::computeJacobian()
         // e.g., ATMOS_PP_. The nested loop in assemble would give
         // some trouble. The final P-row is implemented from the
         // parallel side. (Similar to the integral condition.)
-
-        tc.scale(comb_ * latf_ * lvscale_ * eta_ * qdim_);
-        Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_PP_, tc);
+        
+        int sr;
+        double value;
+        for (int j = 1; j <= m_; ++j)
+            for (int i = 1; i <= n_; ++i)
+            {
+                sr = n_*(j-1) + (i-1); // surface row
+                value = comb_ * latf_ * lvscale_ *
+                    eta_ * qdim_ * Pdist_[sr];
+                TT_PP.set(i,j,l_, 5, value);
+            }
+        Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_PP_, TT_PP);
     }
 
     // Temperature equation: albedo dependence TT_AA
@@ -590,6 +645,7 @@ void AtmosLocal::computeJacobian()
     Atom qc (n_, m_, l_, np_);
     Atom qxx(n_, m_, l_, np_);
     Atom qyy(n_, m_, l_, np_);
+    Atom QQ_PP(n_, m_, l_, np_);        
 
     discretize(1, qc );  // Evaporation component (over land no evaporation)
     discretize(5, qxx);  // longitudinal diffusion
@@ -603,9 +659,18 @@ void AtmosLocal::computeJacobian()
     Al_->set( {1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_QQ_, qxx);
     if (aux_ == 1)
     {
-        // Al(:,:,:,:,QQ, PP) = - nuq * P, for this we can reuse qc:
-        qc.scale(-nuq_);
-        Al_->set( {1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, qc);
+        // Al(:,:,:,:,QQ, PP) = - nuq * p(theta) * P, :
+        int sr;
+        double value;
+        for (int j = 1; j <= m_; ++j)
+            for (int i = 1; i <= n_; ++i)
+            {
+                sr = n_*(j-1) + (i-1); // surface row
+                value = -nuq_ * Pdist_[sr];
+                QQ_PP.set(i,j,l_, 5, value);
+            }
+        
+        Al_->set( {1,n_,1,m_,1,l_,1,np_}, ATMOS_QQ_, ATMOS_PP_, QQ_PP);
     }
 
     //------------------------------------------------------------------
@@ -636,9 +701,9 @@ void AtmosLocal::computeJacobian()
 
             if (on_land)
             {
-                dAdA = (comb_*albf_*daFdA(A, Ta, P, j) - 1) / tauf_;
-                dAdP = (comb_*albf_*daFdP(A, Ta, P, j)) / tauf_;
-                dAdT = (comb_*albf_*daFdT(A, Ta, P, j)) / tauf_;
+                dAdA = (comb_*albf_*daFdA(A, Ta, P, i, j) - 1) / tauf_;
+                dAdP = (comb_*albf_*daFdP(A, Ta, P, i, j)) / tauf_;
+                dAdT = (comb_*albf_*daFdT(A, Ta, P, i, j)) / tauf_;
             }
             else
             {
@@ -856,7 +921,7 @@ void AtmosLocal::forcing()
                 value = Ts + comb_ * sunp_ * (QSW - amua_);
 
                 // latent heat due to precipitation (background contribution)
-                value += comb_ * latf_ * lvscale_ * Po0_;
+                value += comb_ * latf_ * lvscale_ * Pdist_[sr] * Po0_;
             }
 
             frc_[tr] = value;
@@ -882,10 +947,15 @@ void AtmosLocal::forcing()
 
             if (on_land)
             {
+                // The albedo parametrization accepts the global
+                // precipitation anomaly (state component), but uses
+                // the full dimensional and spatially distributed
+                // value internally. Derivatives w.r.t. state can be
+                // computed using finite differences, see e.g. daFdP()
                 if (pr >= 0)
-                    P  = (*state_)[pr]; // global precipitation
+                    P  = (*state_)[pr]; 
 
-                value = ( comb_ * albf_ * aF(A,Ta,P,j) - A ) / tauf_;
+                value = ( comb_ * albf_ * aF(A,Ta,P,i,j) - A ) / tauf_;
             }
             else
             {
@@ -946,7 +1016,8 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
             // latent heat due to precipitation
             if ((pr >= 0) && (!on_land))
             {
-                lhflux[pos] = comb_ * latf_ * rhoo_ * lv_ * ( Po0_ + eta_ * qdim_ * P);
+                lhflux[pos] = comb_ * latf_ * rhoo_ * lv_ *
+                    Pdist_[sr] * ( Po0_ + eta_ * qdim_ * P);
             }
             
             pos++;
@@ -954,7 +1025,7 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
 }
 
 //-----------------------------------------------------------------------------
-// Here we calculate nondimensionalized evaporation
+// Here we calculate the fully dimensional evaporation
 void AtmosLocal::computeEvaporation()
 {
     int hr, sr, ctr;
@@ -967,25 +1038,26 @@ void AtmosLocal::computeEvaporation()
 
             // reset vector element
             (*E_)[sr] = 0.0;
-
+            
             if ((*surfmask_)[(j-1)*n_+(i-1)])
                 continue; // do nothing
 
-            // Compute nondimensional E based on surface temperature
-            // that van vary between sst and sit.
+            // Compute E based on surface temperature (sst or sit).
             Eocean  = (tdim_ / qdim_) * dqso_ * (*sst_)[sr];
             Eseaice = (tdim_ / qdim_) * dqsi_ * (*sit_)[sr];
             (*E_)[sr] = Eocean * (1 - (*Msi_)[sr]) + Eseaice * (*Msi_)[sr] -
                 (*state_)[hr];
+
+            // Create dimensional value
+            (*E_)[sr] = Eo0_ + eta_ * qdim_ * (*E_)[sr];
 
             ctr++;
         }
 }
 
 //-----------------------------------------------------------------------------
-// With a nondimensional E, this computes the integral that gives a
-// nondimensional P. Only for serial use. In a parallel setting,
-// precipitation is a global integral governed by AtmospherePar.
+// Only for serial use. In a parallel setting, precipitation is a
+// global integral governed by AtmospherePar.
 void AtmosLocal::computePrecipitation()
 {
     if (parallel_)
@@ -994,6 +1066,9 @@ void AtmosLocal::computePrecipitation()
         return; // do nothing
     }
 
+    // Assuming E_ is dimensional, this returns a constant dimensional
+    // P_. P_ may be spatially distributed with a function f (Pdist)
+    // that satisfies int f dA = int 1 dA
     double integral = Utils::dot(*pIntCoeff_, *E_) / totalArea_;
 
     int sr; // surface row
@@ -1008,8 +1083,31 @@ void AtmosLocal::computePrecipitation()
             if ((*surfmask_)[sr])
                 continue; // leave it
 
-            (*P_)[sr] = integral;
+            (*P_)[sr] = Pdist_[sr] * integral;
         }
+}
+
+//-----------------------------------------------------------------------------
+double AtmosLocal::aF(double A, double Ta, double P, int i, int j)
+{
+    // Create dimensional P (m/y) including spatial
+    // distribution
+    double dimP = 3600. * 24. * 365. * Pdist_[n_*(j-1)+(i-1)] *
+        (Po0_ + eta_ * qdim_ * P);
+            
+    return
+        H(Tm_ - Tl(A,Ta,j), epm_) *
+        H(Tr_ - Tl(A,Ta,j), epr_) *
+        H(dimP - Pa_, epa_);
+            
+    // return 5*Ta + 4*A + 3*P;
+            
+    // return H(Tm_ - Tl(A,Ta,j), epm_) *
+    //     H(Tr_ - Tl(A,Ta,j), epr_) *
+    //     H(P - Pa_, epa_);
+
+    // return H(Tm_ - Tl(A,Ta,j), epm_) *
+    //     H(Tr_ - Tl(A,Ta,j), epr_) * H(P - Pa_, epa_);
 }
 
 //-----------------------------------------------------------------------------

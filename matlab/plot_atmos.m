@@ -106,7 +106,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     % reference temperature
     T0  = 15.0;   
-    q0  = 8e-3;
+    q0  = 10e-3;
     a0  = 0.0;
     
     % 
@@ -119,8 +119,6 @@ function [state,pars,add] = plot_atmos(fname, opts)
     rhoo = 1024;
     ce   = 1.3e-03;
     uw   = 8.5;
-    eta  =  (rhoa / rhoo) * ce * uw;
-    fprintf(' eta = %e\n', eta);
     fprintf('  q0 = %e (kg / kg)\n', q0);        
     fprintf('qdim = %e (kg / kg)\n', qdim);
     
@@ -135,20 +133,18 @@ function [state,pars,add] = plot_atmos(fname, opts)
         figure(fig_ctr); fig_ctr = fig_ctr+1;
 
         img = Ta';
-        img2 = img;
-        img2(logical(surfm')) = NaN;
         Tdiff = max(max(Ta))-min(min(Ta));
         fprintf('max(T) - min(T) = %f\n', Tdiff);
-        imagesc(RtD*x,RtD*(y),img); hold on
-        %contourf(RtD*x,RtD*(y),img,10,'linestyle','none','Fill','on'); hold on;
-        plot_mask(surfm,x,y); hold on   
         
-       
-
+        %imagesc(RtD*x,RtD*(y),img); hold on
+        %contourf(RtD*x,RtD*(y),img,10,'linestyle','none','Fill','on'); hold on;
+        %plot_mask(surfm,x,y); hold on
         %contour(RtD*x,RtD*(y),img,20,'linecolor','k',...
         %        'linewidth',1.2,'linestyle','-'); hold on;
-        contour(RtD*x,RtD*(y),img,10,'linecolor',[.2,.2,.2],... 
-                'linewidth',1.0,'linestyle','-'); hold on;
+        
+        contourf(RtD*x,RtD*(y),img,15,... 
+                 'linewidth',1.0,'linestyle','-'); hold on;
+        contour(RtD*x,RtD*(y),surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
                 
         set(gca,'ydir','normal')
         colorbar
@@ -168,15 +164,17 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
 
     if plot_humidity || plot_default
+
         figure(fig_ctr); fig_ctr = fig_ctr+1;
         img = qa';
 
-        image(RtD*x,RtD*(y),srf,'AlphaData',.2); hold on
-        set(gca,'ydir','normal')
-        hold on
-        c = contour(RtD*x,RtD*(y),img,12,'Visible', 'on', ...
-                    'linewidth',1.5);
+        imagesc(RtD*x,RtD*(y),img); hold on                
+        c = contour(RtD*x,RtD*(y),img,15,'Visible', 'on', ...
+                    'linewidth',1.0,'linecolor','k'); hold on
+        plot_mask(surfm,x,y); hold on
+
         hold off
+        set(gca,'ydir','normal')
         
         colorbar
         cmap = my_colmap(caxis);
@@ -213,18 +211,35 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if plotEmP
 
-        fprintf('Precipitation P(end) = %2.4e m/y\n', P(end)*3600*24*365);
+        figure(fig_ctr); fig_ctr = fig_ctr+1;        
+
+        Pmy = P*3600*24*365;
+        img = Pmy';
+        img(img == 0) = NaN;
+
+        %contour(RtD*x,RtD*(y),surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
+        c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
+                     'linewidth',.5); 
+                
+        set(gca,'ydir','normal')
+        cmap = my_colmap(caxis);
+        colormap(cmap)
+        colorbar
         
+        title('P (m/y)')
+        xlabel('Longitude')
+        ylabel('Latitude')
+
         figure(fig_ctr); fig_ctr = fig_ctr+1;        
 
         Emy = E*3600*24*365;
         img = Emy';
         img(img == 0) = NaN;
                 
-        %imagesc(RtD*x,RtD*(y),img); hold on
+        %contour(RtD*x,RtD*(y),surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
         c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
-                    'linewidth',.5);
-        hold off;
+                     'linewidth',.5);
+                
         set(gca,'ydir','normal')
         cmap = my_colmap(caxis);
         colormap(cmap)

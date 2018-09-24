@@ -135,6 +135,9 @@ protected:
     //! parallel precipitation field (non-overlapping)
     Teuchos::RCP<Epetra_Vector> P_;
 
+    //! parallel precipitation distribution (non-overlapping)
+    Teuchos::RCP<Epetra_Vector> Pdist_;
+
     //! parallel precipitation field (overlapping)
     Teuchos::RCP<Epetra_Vector> localP_;
 
@@ -350,10 +353,16 @@ public:
     int interface_row(int i, int j, int XX);
 
     //! Get row containing the humidity integral condition
-    int getRowIntCon() { return rowIntCon_; }    
+    int getRowIntCon() { return rowIntCon_; }
+
+    //! Get spatial precipitation distribution
+    Teuchos::RCP<Epetra_Vector> getPdist() { return Pdist_; }
     
 private:
-    
+
+    //! set precipitation distribution
+    void setPdist();
+        
     //! Private member to compute P if it is not an unknown in the
     //! model.
     Teuchos::RCP<Epetra_Vector> getP(char mode = 'C');

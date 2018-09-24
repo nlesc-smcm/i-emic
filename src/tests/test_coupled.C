@@ -753,7 +753,7 @@ TEST(CoupledModel, Synchronization)
 
     // Evaporation is calculated simultaneously in Ocean and in
     // Atmosphere during the RHS computation above. Here we check
-    // whether they return the same nondimensional norm.
+    // whether they return the same fully dimensional norm.
     Teuchos::RCP<Epetra_Vector> atmosE = atmos->interfaceE();
     Teuchos::RCP<Epetra_Vector> oceanE = ocean->interfaceE();
 

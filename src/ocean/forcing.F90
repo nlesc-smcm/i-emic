@@ -15,7 +15,8 @@ SUBROUTINE forcing
 
   real wfun, temfun, salfun
 
-  real temcor, check, area
+  real temcor
+  ! real check, area
   real salcor, adapted_salcor, spertcor
   integer i, j, k
   integer find_row2
@@ -158,15 +159,15 @@ SUBROUTINE forcing
      spertcor = 0.0
   end if
 
-  nus   =  par(COMB) * par(SALT) * eta * qdim * QSnd
   pQSnd =  par(COMB) * par(SALT) * QSnd
   do j=1,m
      do i=1,n
         if (coupled_S.eq.1) then
            ! Salinity flux from the atmosphere into the ocean, E-P
            ! forcing, external contributions. Internal contributions
-           ! are added to the matrix in usrc.F90.
-           QSoa = nus * (-qatm(i,j) - patm(i,j)) 
+           ! are added to the matrix in usrc.F90. Here we assume patm
+           ! is fully dimensional (m/s)
+           QSoa = pQSnd * (eo0 - eta*qdim*qatm(i,j) - patm(i,j)) 
 
            ! Salinity flux from sea ice into the ocean (brine
            ! rejection or melt)
