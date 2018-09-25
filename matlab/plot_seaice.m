@@ -59,13 +59,13 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
 
     titles = {'H','Q_T^{sa}','M','T'};
 
-    simask = squeeze(state(3, :, :, :)) > 0.9;
+    simask = squeeze(state(3, :, :, :)) > 0.1;
     
     for i = 1:si_nun
         figure(fig_ctr); fig_ctr = fig_ctr+1;
         field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
         field(logical(surfm)) = NaN;
-        %field(~logical(simask)) = NaN;
+        field(~logical(simask)) = NaN;
         
         diff = max(max(field))-min(min(field));
         fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), ...
@@ -78,7 +78,8 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
         title(titles{i});
         colorbar
     end
-    
+
+    opts.mask = logical(surfm) | ~logical(simask);
     fluxes = [];
     if readFluxes
         fluxes = plot_fluxes(add, fig_ctr, 'SeaIce: ', opts);

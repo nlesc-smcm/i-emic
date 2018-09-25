@@ -471,7 +471,6 @@ private:
     //     { return freezingT(S) - t0i_ + 
     //             (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H + Q*H) / Ic_; }
 
-
     //! sea ice mask as a function thickness anomaly H 
     double maskFun(double H)
         { return (1. / 2.) * (1. + tanh( H / epsilon_ )); }
