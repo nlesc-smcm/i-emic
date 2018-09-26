@@ -207,9 +207,8 @@ void AtmosLocal::setup()
     Eo0_ = eta_ * ( qso_ - q0_ );
     Ei0_ = eta_ * ( qsi_ - q0_ );
 
-    // We will assume the background values are equal so they cancel
-    // later on.
-    assert(std::abs(Eo0_-Ei0_) < 1e-12);
+    // Correction factor for sublimation
+    Cs_ = (Ei0_ - Eo0_) / eta_ / qdim_;
 
     // Backgr. precipitation is taken equal to backgr. evaporation over ocean
     Po0_ = Eo0_;
@@ -532,6 +531,8 @@ void AtmosLocal::getCommPars(AtmosLocal::CommPars &parStruct)
     parStruct.dqsi = dqsi_;
     parStruct.dqdt = nuq_ * tdim_ / qdim_ * dqso_ ;
     parStruct.Eo0  = Eo0_;
+    parStruct.Ei0  = Ei0_;
+    parStruct.Cs   = Cs_;
     parStruct.t0o  = t0o_;
     parStruct.t0i  = t0i_;
     parStruct.a0   = a0_;
@@ -549,7 +550,7 @@ void AtmosLocal::integralCoeff(std::vector<double> &val,
     // Clear arrays
     val.clear();
     ind.clear();
-
+    
     // Assuming that nun > 1 implies we want the integral coefficients
     // at the QQ points
     int XX = (nun == 1) ? ATMOS_TT_ : ATMOS_QQ_;
@@ -933,9 +934,9 @@ void AtmosLocal::forcing()
             else
             {
                 // Evaporation/sublimation forcing
-                Eo = dqso_ * (*sst_)[sr];
-                Ei = dqsi_ * (*sit_)[sr];
-                value = nuq_ * ( tdim_ / qdim_ ) * ( Eo + (*Msi_)[sr]*( Ei - Eo) );
+                Eo = ( tdim_ / qdim_ ) * dqso_ * (*sst_)[sr];
+                Ei = ( tdim_ / qdim_ ) * dqsi_ * (*sit_)[sr];
+                value = nuq_ *  (Eo + (*Msi_)[sr]*(Ei - Eo + Cs_) );
             }
 
             frc_[hr] = value;
@@ -1010,8 +1011,8 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
             if (on_land)
                 shflux[pos] = muoa_ * ((*lst_)[sr] - Ta);
             else
-                shflux[pos] = muoa_ * ( (*sst_)[sr] - Ta + (*Msi_)[sr] * 
-                                        ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_));
+                shflux[pos] = muoa_ * ((*sst_)[sr] - Ta + (*Msi_)[sr] * 
+                                       ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_));
                         
             // latent heat due to precipitation
             if ((pr >= 0) && (!on_land))
@@ -1030,6 +1031,7 @@ void AtmosLocal::computeEvaporation()
 {
     int hr, sr, ctr;
     double Eocean, Eseaice;
+    double M,q;
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {
@@ -1042,11 +1044,17 @@ void AtmosLocal::computeEvaporation()
             if ((*surfmask_)[(j-1)*n_+(i-1)])
                 continue; // do nothing
 
-            // Compute E based on surface temperature (sst or sit).
-            Eocean  = (tdim_ / qdim_) * dqso_ * (*sst_)[sr];
-            Eseaice = (tdim_ / qdim_) * dqsi_ * (*sit_)[sr];
-            (*E_)[sr] = Eocean * (1 - (*Msi_)[sr]) + Eseaice * (*Msi_)[sr] -
-                (*state_)[hr];
+            // Mask value
+            M = (*Msi_)[sr];
+
+            // Humidity value
+            q = (*state_)[hr];
+            
+            // Compute evaporation/sublimation based on surface
+            // temperature (sst or sit).
+            Eo = (tdim_ / qdim_) * dqso_ * (*sst_)[sr];
+            Ei = (tdim_ / qdim_) * dqsi_ * (*sit_)[sr];
+            (*E_)[sr] = Eo - q + M * (Ei - Eo + Cs_);
 
             // Create dimensional value
             (*E_)[sr] = Eo0_ + eta_ * qdim_ * (*E_)[sr];

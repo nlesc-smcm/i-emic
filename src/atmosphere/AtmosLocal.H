@@ -43,6 +43,7 @@ public:
         double dqsi;
         double dqdt;
         double Eo0;
+        double Ei0;
         double t0o;
         double t0i;
         double a0;
@@ -216,6 +217,7 @@ private:
     double qsi_;    //! ice   sat. humidity [Bolton, 1980]
     double Eo0_;    //! background evaporation over ocean
     double Ei0_;    //! background evaporation over sea ice
+    double Cs_;     //! sublimation correction factor
     double Po0_;    //! background precipitation
     double dqso_;   //! derivative sat. humidity w.r.t. T, at t0o (ocean).
     double dqsi_;   //! derivative sat. humidity w.r.t. T, at t0i (ice).
