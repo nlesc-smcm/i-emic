@@ -44,6 +44,7 @@ public:
         double dqdt;
         double Eo0;
         double Ei0;
+        double Cs;
         double t0o;
         double t0i;
         double a0;
