@@ -153,10 +153,10 @@ TEST(CoupledModel, RHS)
 //------------------------------------------------------------------
 TEST(CoupledModel, Newton)
 {
+    // Initialize the model state
     coupledModel->initializeState();
 
     // One step in a 'natural continuation'
-    // initialize state in model
     std::shared_ptr<Combined_MultiVec> stateV =
         coupledModel->getState('V');
                                     
@@ -238,7 +238,7 @@ TEST(CoupledModel, numericalJacobian)
                               std::shared_ptr<Combined_MultiVec> > njC;
             
             njC.setTolerance(1e-10);
-            njC.seth(1e-4);
+            njC.seth(1e-6);
             njC.compute( coupledModel, coupledModel->getState('V') );
 
             std::string fnameJnC("JnC");
@@ -290,10 +290,11 @@ TEST(CoupledModel, AtmosphereIntegralCondition1)
 
     double result = Utils::dot(intCoeff, atmosX);
 
+    EXPECT_GT(Utils::norm(atmosX), 1e-7);
     INFO("  atmosphere state norm: " << Utils::norm(atmosX));
     INFO("  atmosphere integral condition on q: " << result);
     
-    EXPECT_NEAR(result, 0.0, 1e-4);
+    EXPECT_NEAR(result, 0.0, 1e-7);
 }
 
 
@@ -360,7 +361,7 @@ TEST(CoupledModel, EPIntegral)
     std::cout << "totalArea = " << totalArea << std::endl;
 
     // not sure how strict this test should be
-    EXPECT_NEAR( (integralP - integralE) / integralP, 0.0, 1e-5);
+    EXPECT_NEAR( (integralP - integralE) / integralP, 0.0, 1e-7);
 }
 
 //------------------------------------------------------------------
@@ -378,8 +379,7 @@ TEST(CoupledModel, Continuation)
         std::shared_ptr<Combined_MultiVec> solV =
             coupledModel->getSolution('V');
         
-        solV->PutScalar(0.0);
-                             
+        solV->PutScalar(0.0);                             
         
         // Create continuation
         Continuation<std::shared_ptr<CoupledModel>,
@@ -387,7 +387,8 @@ TEST(CoupledModel, Continuation)
             continuation(coupledModel, params[CONT]);
 
         // Run continuation        
-        continuation.run();
+        int status = continuation.run();
+        EXPECT_EQ(status, 0);
 
         // Dump blocks
         coupledModel->dumpBlocks();

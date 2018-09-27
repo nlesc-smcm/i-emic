@@ -49,7 +49,7 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
     c4 = 17.67;
     c5 = 243.5;
 
-    T0   = c3*c4*t0o / (c2*c5+(c2-c4)*t0o);
+    T0   = -5;
     Tvar = 1;
 
     scales = [Hvar, Qvar, Mvar, Tvar];

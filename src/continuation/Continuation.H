@@ -154,7 +154,7 @@ initialize()
 
 //======================================================================
 template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+int Continuation<Model, ParameterList>::
 run()
 {
     INFO("Continuation::run initialize...");
@@ -187,10 +187,18 @@ run()
         userDetect(); // Use additional targets provided by model class
         adjustStep(); // step size adjustment
     }
-    info();
-    finalize();
     TIMER_STOP("Continuation: run");
+
+    if (abortFlag_)
+    {
+        WARNING("Continuation aborted!",__FILE__, __LINE__);                    
+        return 1;
+    }
+    
+    finalize();
+
     INFO("---------Finished continuation run--------------");
+    return 0;
 }
 
 //======================================================================
@@ -1202,10 +1210,11 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 finalize()
 {
+    info();
+    modelInfo();
+    
     if (stabilityScheme_ == 'E')
         eigenSolver();
-    
-    modelInfo();
 }
 
 //======================================================================

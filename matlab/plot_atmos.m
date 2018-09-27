@@ -27,7 +27,8 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
     opts.readEP = plotEmP;
 
-    if isfield(opts, 'lst') % land surface temperature
+    % land surface temperature
+    if isfield(opts, 'lst') 
         readLST = opts.lst;
         opts.readLST = readLST;
     else
@@ -71,6 +72,14 @@ function [state,pars,add] = plot_atmos(fname, opts)
         fig_ctr = 11; % first figure handle number
     end
 
+    if isfield(opts, 'qsat')
+        plot_qsat = opts.qsat;
+        readLST   = opts.qsat;
+        opts.readLST = readLST;
+    else
+        plot_qsat = false;
+    end
+
     if isfield(opts, 'exportfig')
         export_to_file = opts.exportfig;
     else
@@ -100,6 +109,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
 
     if readLST
         LST = reshape(add.LST, n, m);
+        SST = reshape(add.SST, n, m);
     end
 
     RtD = 180/pi;    
@@ -121,6 +131,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
     uw   = 8.5;
     fprintf('  q0 = %e (kg / kg)\n', q0);        
     fprintf('qdim = %e (kg / kg)\n', qdim);
+
+    c1 = 3.8e-3;
+    c2 = 21.87;
+    c3 = 265.5;
+    c4 = 17.67;
+    c5 = 243.5;
     
     Ta  = T0 + tdim * squeeze(state(1,:,:,:));
     qa  = q0 + qdim * squeeze(state(2,:,:,:));
@@ -179,7 +195,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         colorbar
         cmap = my_colmap(caxis);
         colormap(cmap)
-
+        
         drawnow
         title('Humidity (kg / kg)')
         xlabel('Longitude')
@@ -258,11 +274,11 @@ function [state,pars,add] = plot_atmos(fname, opts)
         img(img == 0) = NaN;
         
         figure(fig_ctr); fig_ctr = fig_ctr+1;        
-        %        imagesc(RtD*x,RtD*(y),img); hold on
+        %imagesc(RtD*x,RtD*(y),img); 
 
-        c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
-                    'linewidth',.5);
-        hold off
+         c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
+                            'linewidth',.5);
+        % hold off
         set(gca,'ydir','normal')
         cmap = my_colmap(caxis,0);
         colormap(cmap)
@@ -288,7 +304,35 @@ function [state,pars,add] = plot_atmos(fname, opts)
         xlabel('Longitude')
         ylabel('Latitude')
     end
-
+    
+    if plot_qsat
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
+        sst = SST' + T0;
+        qso = @(T) c1 * exp(c4 * T ./ (T + c5));
+        dqso = (qso(T0+1e-6)-qso(T0))/1e-6
+        QSO  = qso(T0) + dqso * SST';
+        %QSO  = qso(sst);
+        
+        contourf(RtD*x,RtD*(y),QSO,15); hold off
+        title('q_{sat}', 'interpreter', 'TeX');
+        xlabel('Longitude');
+        ylabel('Latitude');
+        cmap = [my_colmap(caxis)];
+        colormap(cmap)
+        colorbar        
+    end
+    
+    if plot_qsat && plot_humidity
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
+        contourf(RtD*x,RtD*(y),QSO-qa',15); hold off
+        title('q_{sat} - q', 'interpreter', 'TeX');
+        xlabel('Longitude');
+        ylabel('Latitude');
+        cmap = [my_colmap(caxis)];
+        colormap(cmap)
+        colorbar        
+    end
+    
     if readFluxes
         out = plot_fluxes(add, fig_ctr,'Atmos: ', opts); 
     end

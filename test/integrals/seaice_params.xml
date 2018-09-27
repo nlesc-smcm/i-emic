@@ -24,5 +24,4 @@
 
   <Parameter name="mask switch steepness" type="double" value="1e-2"/>
 
-
 </ParameterList>
