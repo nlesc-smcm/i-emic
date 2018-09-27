@@ -385,7 +385,7 @@ void Atmosphere::computeRHS()
         //
         (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt + MCsInt;
     }
-
+    
     TIMER_STOP("Atmosphere: computeRHS...");
 }
 
@@ -1646,9 +1646,12 @@ void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &fil
     // Get and write dimensional evaporation and precipitation fields
     Teuchos::RCP<Epetra_Vector> E = getE();
     Teuchos::RCP<Epetra_Vector> P = getP();
-    
+
     HDF5.Write("E", *E);
     HDF5.Write("P", *P);
+
+    // E->Update(-1.0, *P, 1.0); // E-P
+    // std::cout << " int E - P dA = " << Utils::dot(pIntCoeff_, E) << std::endl;
 
     // Write surface temperatures
     getLandTemperature();

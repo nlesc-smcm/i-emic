@@ -162,6 +162,12 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     T0    = 15;                  %[deg C]  Reference temperature
     S0    = 35;                  %[psu]    Reference salinity
     RtD   = 180/pi;              %[-]      Radians to degrees
+    
+    c1 = 3.8e-3;
+    c2 = 21.87;
+    c3 = 265.5;
+    c4 = 17.67;
+    c5 = 243.5;
 
     % - READ MASK - -----------------------------------------------------
 
@@ -405,6 +411,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
             exportfig('sst.eps',10,[50,25],invert)
         end
     end
+    
     if plot_salinity || plot_everything
         figure(fig_ctr); fig_ctr = fig_ctr+1;
 
