@@ -369,7 +369,7 @@ void Atmosphere::computeRHS()
     double qInt = intcond * 1.0 / totalArea_;
 
     // Sublimation correction integrated over the sea ice surface int(M*Cs)
-    double MCsInt = Utils::dot(pIntCoeff, Msi) * Cs_ / totalArea_;
+    double MCsInt = Utils::dot(pIntCoeff_, Msi_) * pars.Cs / totalArea_;
 
     // The integrals and P are on the same processor
     int last = FIND_ROW_ATMOS0( ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_NUN_ );
@@ -639,7 +639,8 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
     double Ti;  // sit value
     double Eo;  // evaporation value
     double Ei;  // sublimation value
-    double Cs;  // sublimation correction
+    
+    double Cs = pars.Cs;  // sublimation correction
 
     // FIXME: We use an allgather to get the full sea ice mask, sst
     // and sit. In the future we could let this block be partly
@@ -648,6 +649,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
     Teuchos::RCP<Epetra_MultiVector> Msi = Utils::AllGather(*Msi_);
     Teuchos::RCP<Epetra_MultiVector> sst = Utils::AllGather(*sst_);
     Teuchos::RCP<Epetra_MultiVector> sit = Utils::AllGather(*sit_);
+
     
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
@@ -657,14 +659,14 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
             M  = (*(*Msi)(0))[sr];
             To = (*(*sst)(0))[sr];
             Ti = (*(*sit)(0))[sr];
+
+            Eo = pars.tdim / pars.qdim * pars.dqso * To;
+            Ei = pars.tdim / pars.qdim * pars.dqsi * Ti;
             
             dMFT = Ti + pars.t0i - To - pars.t0o;
             dTFT = M;                
-            Eo = pars.dqso * To;
-            Ei = pars.dqsi * Ti;
-            Cs = pars.Cs;
 
-            dMFQ = pars.nuq  * pars.tdim / pars.qdim * (Ei - Eo + Cs);
+            dMFQ = pars.nuq  * (Ei - Eo + Cs);
             dTFQ = pars.nuq  * pars.tdim / pars.qdim * pars.dqsi * M;
             dMFA = pars.comb * pars.albf / pars.tauc;
 

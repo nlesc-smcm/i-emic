@@ -123,6 +123,7 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     uw_              = params->get("mean atmospheric surface wind speed",8.5);
     t0a_             = params->get("background temperature atmosphere",15.0); //(C)
     t0o_             = params->get("background temperature ocean",15.0);      //(C)
+    t0i_             = params->get("background temperature seaice",-15.0);      //(C)
     tdim_            = params->get("temperature scale", 1.0); // ( not used)
     q0_              = params->get("atmos reference humidity",10e-3); // (kg/kg)
     qdim_            = params->get("atmos humidity scale", 1e-3);  // (kg/kg)
@@ -194,10 +195,6 @@ void AtmosLocal::setup()
     double c4 = 17.67;  // 
     double c5 = 243.5;  // (K)
 
-    // background ice temperature is chosen such that background
-    // evaporation and sublimation cancel.
-    t0i_ = c3*c4*t0o_ / (c2*c5+(c2-c4)*t0o_);
-
     // Calculate background saturation specific humidity according to
     // [Bolton,1980], T in \deg C
     qso_   = c1 * exp( c4 * t0o_ / (t0o_ + c5) );
@@ -207,7 +204,7 @@ void AtmosLocal::setup()
     Eo0_ = eta_ * ( qso_ - q0_ );
     Ei0_ = eta_ * ( qsi_ - q0_ );
 
-    // Correction factor for sublimation
+    // Background correction factor for sublimation
     Cs_ = (Ei0_ - Eo0_) / eta_ / qdim_;
 
     // Backgr. precipitation is taken equal to backgr. evaporation over ocean
@@ -256,6 +253,8 @@ void AtmosLocal::setup()
     INFO("    DqDt0   = " << nuq_ * tdim_ / qdim_ * dqso_);
     INFO("  lvscale   = " << lvscale_);
     INFO("      Eo0   = " << Eo0_ << " m/s");
+    INFO("      Ei0   = " << Ei0_ << " m/s");
+    INFO("       Cs   = " << Cs_);
     INFO("    EdevT   = " << EdevT);
     INFO("    Edevq   = " << Edevq);
     INFO("      Po0   = " << Po0_ << " m/s = "
@@ -1030,8 +1029,8 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
 void AtmosLocal::computeEvaporation()
 {
     int hr, sr, ctr;
-    double Eocean, Eseaice;
-    double M,q;
+    double Eo, Ei, M, q;
+
     for (int j = 1; j <= m_; ++j)
         for (int i = 1; i <= n_; ++i)
         {

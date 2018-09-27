@@ -26,6 +26,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // background mean values
     t0o_   (params->get("background ocean temp t0o", 15)),
+    t0i_   (params->get("background seaice temp t0i", -15)),
     t0a_   (params->get("background atmos temp t0a", 15)),
     s0_    (params->get("ocean background salinity s0", 35)),
     q0_    (params->get("atmos reference humidity",10e-3)),
@@ -129,16 +130,9 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
             exp( (c4_ * t0o) / (t0o + c5_) );
         };
 
-    // Background sea ice surface temperature is chosen such that
-    // background evaporation and sublimation cancel:
-    t0i_  =  c3_*c4_*t0o_ / (c2_*c5_+(c2_-c4_)*t0o_);
-
     // Background sublimation and derivatives
     E0i_   =  eta_ * ( qsi_(t0i_) - q0_ );
     E0o_   =  eta_ * ( qso_(t0o_) - q0_ );
-
-    // Check whether background values cancel
-    assert(std::abs(E0o_-E0i_) < 1e-12);
 
     dEdT_  =  eta_ * qdim_ * tdim_ / qdim_ * dqsi_(t0i_);
     dEdq_  =  eta_ * qdim_ * -1;
