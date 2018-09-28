@@ -25,11 +25,11 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     epsilon_      (params->get("mask switch steepness", 1e-1)),  
 
     // background mean values
-    t0o_   (params->get("background ocean temp t0o", 15)),
-    t0i_   (params->get("background seaice temp t0i",-5)),
-    t0a_   (params->get("background atmos temp t0a", 15)),
-    s0_    (params->get("ocean background salinity s0", 35)),
-    q0_    (params->get("atmos reference humidity",8e-3)),
+    t0o_   (params->get("background temperature ocean", 15.0)),
+    t0i_   (params->get("background temperature seaice",-5.0)),
+    t0a_   (params->get("background temperature atmosphere", 15.0)),
+    s0_    (params->get("ocean background salinity s0", 35.0)),
+    q0_    (params->get("atmos reference humidity",2e-3)),
     qdim_  (params->get("atmos humidity scale", 1e-3)),
     tdim_  (params->get("temperature scale", 1.0)),
     H0_    (params->get("seaice background thickness H0", taus_)),
@@ -192,6 +192,10 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     INFO("        E0o = " << E0o_);
     INFO("       dEdT = " << dEdT_);
     INFO("       dEdq = " << dEdq_);
+
+    INFO(std::endl << "SeaIce all xml parameters: ");
+    INFO(*params_);
+    INFO(std::endl);
 
     // local grid dimensions
     nLoc_   = domain_->LocalN();
