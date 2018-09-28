@@ -247,7 +247,7 @@ public:
     ~Continuation();
 
     //! run continuation
-    void run();
+    int run();
 
     //! test
     void test();

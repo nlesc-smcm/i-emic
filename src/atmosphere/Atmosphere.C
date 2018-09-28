@@ -332,13 +332,17 @@ void Atmosphere::computeRHS()
 
     //------------------------------------------------------------------
     // Specify precipitation integral in RHS if aux > 0
+    // 
+    // Precipitation is given by the integral of the evaporation
+    // anomaly E = sigma - q + Msi*Cs, scaled with total area A
     //------------------------------------------------------------------
+
+    // Obtain parameters
     Atmosphere::CommPars pars;
     getCommPars(pars);
 
     // Here we integrate sigma = dqso * sst + Msi*(dqsi*sit-dqso*sst)
     // using the increments in pIntCoeff.
-
     assert(sst_->Map().SameAs(sit_->Map()));
 
     Teuchos::RCP<Epetra_Vector> tmp =
@@ -352,16 +356,20 @@ void Atmosphere::computeRHS()
 
     // Pointwise product and update:
     // sigma = dqso * sst + Msi*(dqsi*sit-dqso*sst)
-    sigma->Multiply(1.0, *Msi_, *tmp, pars.dqso); 
+    sigma->Multiply(1.0, *Msi_, *tmp, pars.dqso);
 
     // sigma is integrated and adjusted with (1/A)*(tdim/qdim)
     double sstInt = Utils::dot(pIntCoeff_, sigma) *
         (1.0 / totalArea_) * ( pars.tdim / pars.qdim ) ;
 
-    // This is the same as the integral condition above so this can
-    // probably be simplified. We can substitute it with 0 but for now
-    // we leave it and test that later.
+    // The humidity integral is the same as computed in the integral
+    // condition above, so this can probably be simplified. We can
+    // substitute it with 0 but for now we leave it and test that
+    // later.
     double qInt = intcond * 1.0 / totalArea_;
+
+    // Sublimation correction integrated over the sea ice surface int(M*Cs)
+    double MCsInt = Utils::dot(pIntCoeff_, Msi_) * pars.Cs / totalArea_;
 
     // The integrals and P are on the same processor
     int last = FIND_ROW_ATMOS0( ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_NUN_ );
@@ -371,14 +379,13 @@ void Atmosphere::computeRHS()
     {
         lid = rhs_->Map().LID(last + 1);
 
-        // F = - P - \sum_i (1 / A) * (q_i * dA_i) +
-        //           \sum_i (1 / A) * (tdim / qdim) * sigma * dA_i
+        // F = - P - \sum_i (1 / A) * (q_i * dA_i) 
+        //         + \sum_i (1 / A) * (tdim / qdim) * sigma * dA_i
+        //         + \sum_i (1 / A) * M * Cs dA_i
         //
-        // sigma = dqso*To + Msi*(dqsi*Ti-dqso*To)
-        //
-        (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt;
+        (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt + MCsInt;
     }
-
+    
     TIMER_STOP("Atmosphere: computeRHS...");
 }
 
@@ -632,6 +639,8 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
     double Ti;  // sit value
     double Eo;  // evaporation value
     double Ei;  // sublimation value
+    
+    double Cs = pars.Cs;  // sublimation correction
 
     // FIXME: We use an allgather to get the full sea ice mask, sst
     // and sit. In the future we could let this block be partly
@@ -640,6 +649,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
     Teuchos::RCP<Epetra_MultiVector> Msi = Utils::AllGather(*Msi_);
     Teuchos::RCP<Epetra_MultiVector> sst = Utils::AllGather(*sst_);
     Teuchos::RCP<Epetra_MultiVector> sit = Utils::AllGather(*sit_);
+
     
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
@@ -649,14 +659,14 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
             M  = (*(*Msi)(0))[sr];
             To = (*(*sst)(0))[sr];
             Ti = (*(*sit)(0))[sr];
+
+            Eo = pars.tdim / pars.qdim * pars.dqso * To;
+            Ei = pars.tdim / pars.qdim * pars.dqsi * Ti;
             
             dMFT = Ti + pars.t0i - To - pars.t0o;
-            dTFT = M;
-                
-            Eo = pars.dqso * To;
-            Ei = pars.dqsi * Ti;
+            dTFT = M;                
 
-            dMFQ = pars.nuq  * pars.tdim / pars.qdim * (Ei - Eo);
+            dMFQ = pars.nuq  * (Ei - Eo + Cs);
             dTFQ = pars.nuq  * pars.tdim / pars.qdim * pars.dqsi * M;
             dMFA = pars.comb * pars.albf / pars.tauc;
 
@@ -728,16 +738,17 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
 
                     dA   = (*intcondGlob_)[0][qid];
                     
-                    dMFP = (1.0 / totalArea_)
-                        * ( pars.tdim / pars.qdim ) *
-                        (pars.dqsi * Ti - pars.dqso * To) * dA;
+                    dMFP = (dA / totalArea_)
+                        * ( (pars.tdim / pars.qdim) *
+                            (pars.dqsi * Ti - pars.dqso * To)
+                            + Cs );
                     
                     block->co.push_back(dMFP);
                     block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
                     el_ctr++;
 
-                    dTFP = (1.0 / totalArea_)
-                        * ( pars.tdim / pars.qdim ) * pars.dqsi * M * dA;
+                    dTFP = (dA / totalArea_)
+                        * ( pars.tdim / pars.qdim ) * pars.dqsi * M;
                     
                     block->co.push_back(dTFP);
                     block->jco.push_back(seaice->interface_row(i,j,seaiceTT));
@@ -1635,9 +1646,12 @@ void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &fil
     // Get and write dimensional evaporation and precipitation fields
     Teuchos::RCP<Epetra_Vector> E = getE();
     Teuchos::RCP<Epetra_Vector> P = getP();
-    
+
     HDF5.Write("E", *E);
     HDF5.Write("P", *P);
+
+    // E->Update(-1.0, *P, 1.0); // E-P
+    // std::cout << " int E - P dA = " << Utils::dot(pIntCoeff_, E) << std::endl;
 
     // Write surface temperatures
     getLandTemperature();
