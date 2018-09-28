@@ -28,6 +28,10 @@
 
   <!-- model adjustments (testing only)  -->
   <!-- <Parameter name="Dalton number" type="double" value="0.0" /> -->
+
+  <Parameter name="background temperature seaice" type="double" value="-15.0" />
+  <Parameter name="atmos reference humidity" type="double" value="8e-3" />
+  <Parameter name="atmos humidity scale" type="double" value="1e-3" />
   
   <Parameter name="mask switch steepness" type="double" value="1.0e-1"/>
 

@@ -1657,6 +1657,8 @@ void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &fil
     getLandTemperature();
     HDF5.Write("lst", *lst_);
     HDF5.Write("sst", *sst_);
+    HDF5.Write("sit", *sit_);
+    HDF5.Write("Msi", *Msi_);
 
     // Write dimensional fluxes
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes = getFluxes();

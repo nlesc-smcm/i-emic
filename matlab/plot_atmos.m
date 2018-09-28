@@ -35,6 +35,14 @@ function [state,pars,add] = plot_atmos(fname, opts)
         readLST = false;
     end
 
+    % sea ice surface temperature
+    if isfield(opts, 'sit') 
+        readSIT = opts.sit;
+        opts.readSIT = readSIT;
+    else
+        readSIT = false;
+    end
+
     if isfield(opts, 'readFluxes')
         readFluxes = opts.readFluxes;
     else
@@ -112,14 +120,23 @@ function [state,pars,add] = plot_atmos(fname, opts)
         SST = reshape(add.SST, n, m);
     end
 
+    if readSIT
+        SIT = reshape(add.SIT, n, m);
+        MSI = reshape(add.MSI, n, m);
+    else
+        SIT = 0;
+        MSI = 0;
+    end
+
     RtD = 180/pi;
     
-    % reference temperature
-    T0  = 15.0;
-    q0  = 8e-3;
-    a0  = 0.0;
+    % reference values
+    T0o  = 15.0;
+    T0i  = -5;
+    q0   = 8e-3;
+    a0   = 0.0;
     
-    % 
+    % typical deviations
     tdim = 1;
     qdim = 1e-3;
     adim = 1;
@@ -129,8 +146,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
     rhoo = 1024;
     ce   = 1.3e-03;
     uw   = 8.5;
+    eta  = (rhoa / rhoo) * ce * uw;
+    year = 3600*24*365;
+    
     fprintf('  q0 = %e (kg / kg)\n', q0);        
     fprintf('qdim = %e (kg / kg)\n', qdim);
+    fprintf(' eta = %e \n', eta);
 
     c1 = 3.8e-3;
     c2 = 21.87;
@@ -138,8 +159,9 @@ function [state,pars,add] = plot_atmos(fname, opts)
     c4 = 17.67;
     c5 = 243.5;
     
-    Ta  = T0 + tdim * squeeze(state(1,:,:,:));
+    Ta  = T0o + tdim * squeeze(state(1,:,:,:));
     qa  = q0 + qdim * squeeze(state(2,:,:,:));
+    %qa  =  qdim * squeeze(state(2,:,:,:));
     qa(logical(surfm)) = NaN; % humidity above land points does not contribute 
     Aa  = a0 + adim * squeeze(state(3,:,:,:));
     Tz  = mean(Ta,1); % zonal mean
@@ -197,7 +219,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         colormap(cmap)
         
         drawnow
-        title('Humidity (kg / kg)')
+        title('Humidity anomaly (kg / kg)')
         xlabel('Longitude')
         ylabel('Latitude')
         
@@ -295,7 +317,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if readLST || plot_default
         figure(fig_ctr); fig_ctr = fig_ctr+1;
-        imagesc(RtD*x,RtD*(y), LST' + T0);
+        imagesc(RtD*x,RtD*(y), LST' + T0o);
         set(gca,'ydir', 'normal');
         cmap = my_colmap(caxis);
         colormap(cmap)
@@ -307,30 +329,51 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if plot_qsat
         figure(fig_ctr); fig_ctr = fig_ctr+1;
-        sst = SST' + T0;
-        qso = @(T) c1 * exp(c4 * T ./ (T + c5));
-        dqso = (qso(T0+1e-6)-qso(T0))/1e-6
-        QSO  = qso(T0) + dqso * SST';
-        %QSO  = qso(sst);
+        sst  = SST' + T0o;
+        qso  = @(T) c1 * exp(c4 * T ./ (T + c5));
+        qsi  = @(T) c1 * exp(c2 * T ./ (T + c3));
         
-        contourf(RtD*x,RtD*(y),QSO,15); hold off
-        title('q_{sat}', 'interpreter', 'TeX');
+        dqso     = (qso(T0o+1e-6)-qso(T0o))/1e-6;
+        dqso     = 5e-4;
+        dqsi     = (qsi(T0i+1e-6)-qsi(T0i))/1e-6;
+        qso_lin  = qso(T0o) + dqso * SST';
+        qsi_lin  = qsi(T0i) + dqsi * SIT';
+
+        fprintf(' background qsat over ocean   = %2.1f g/kg\n', qso(T0o)*1e3);
+        fprintf(' background qsat over sea ice = %2.1f g/kg\n\n', qsi(T0i)*1e3);
+        fprintf(' d/dT qsat over ocean   = %1.3e\n', dqso);
+        fprintf(' d/dT qsat over sea ice = %1.3e\n\n', dqsi);
+        
+        qs = qso_lin .* ( 1-MSI') + MSI' .* qsi_lin;
+       
+        % full nonlinear qso
+        %qso_nonlin  = qso(sst);
+        
+        contourf(RtD*x,RtD*(y),qs,12); hold off
+        title('q_{sat} (kg/kg)', 'interpreter', 'TeX');
         xlabel('Longitude');
         ylabel('Latitude');
         cmap = [my_colmap(caxis)];
         colormap(cmap)
-        colorbar        
+        colorbar
     end
     
     if plot_qsat && plot_humidity
         figure(fig_ctr); fig_ctr = fig_ctr+1;
-        contourf(RtD*x,RtD*(y),QSO-qa',15); hold off
+        contourf(RtD*x,RtD*(y),eta*(qs-qa')*year,12); hold off
         title('q_{sat} - q', 'interpreter', 'TeX');
         xlabel('Longitude');
         ylabel('Latitude');
         cmap = [my_colmap(caxis)];
         colormap(cmap)
-        colorbar        
+        colorbar
+
+        fprintf(' background evaporation Eo0 = %e m/s = %2.1f m/y\n', ...
+                eta * ( qso(T0o) - q0), ...
+                eta * ( qso(T0o) - q0)*year);
+        fprintf(' background sublimation Eoi = %e m/s = %2.1f m/y\n', ...
+                eta * ( qsi(T0i) - q0),...
+                eta * ( qsi(T0i) - q0)*year);
     end
     
     if readFluxes

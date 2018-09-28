@@ -28,6 +28,12 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         readLST = false;
     end
 
+    if isfield(opts, 'readSIT')
+        readSIT = opts.readSIT;
+    else
+        readSIT = false;
+    end
+
     if isfield(opts, 'readFluxes')
         readFluxes = opts.readFluxes;
     else
@@ -106,6 +112,11 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
     if readLST
         additional.LST = h5read(file, '/lst/Values');
         additional.SST = h5read(file, '/sst/Values');
+    end
+    
+    if readSIT
+        additional.SIT = h5read(file, '/sit/Values');
+        additional.MSI = h5read(file, '/Msi/Values');
     end
 
     if readFluxes
