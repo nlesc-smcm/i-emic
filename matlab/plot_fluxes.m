@@ -18,7 +18,14 @@ function [out] = plot_fluxes(struct, fig_ctr, titlepre, opts)
         export_to_file = opts.exportfig;
     else
         export_to_file = false;
-    end                
+    end
+
+    if isfield(opts, 'mask')
+        usemask = true;
+        mask = opts.mask;
+    else
+        usemask = false;
+    end        
     
     % find flux fields in struct
     RtD = 180/pi;
@@ -36,10 +43,16 @@ function [out] = plot_fluxes(struct, fig_ctr, titlepre, opts)
                 continue;
             end
             values = reshape(values, n, m);
+
+            if usemask
+                values(logical(mask)) = NaN;
+            end
+            
             out = setfield(out, name, values);
             fprintf('%s\n', name)
             figure(fig_ctr); fig_ctr = fig_ctr + 1;
-            imagesc(RtD*x,RtD*(y), values'); hold on
+            imagesc(RtD*x,RtD*(y), values'); 
+            % contourf(RtD*x,RtD*(y), values'); hold on
             set(gca, 'ydir', 'normal')
             cmap = my_colmap(caxis,0);
             colormap(cmap)
