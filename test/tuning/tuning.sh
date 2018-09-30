@@ -14,8 +14,8 @@ origdir=${PWD}
 
 # This assumes the root dir is called i-emic, otherwise just point to
 # the full path here, e.g., <rootdir>/build/src/main/time_coupled
-executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/time_coupled
-#executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/run_coupled
+# executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/time_coupled
+executable=`echo $origdir | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/run_coupled
 
 if ! [[ -s $executable ]]
 then
