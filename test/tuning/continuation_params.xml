@@ -20,7 +20,7 @@
   <!-- Several destinations are allowed, in that case specify      -->
   <!-- destination 1, destination 2, etc. as well                  -->
   
-  <Parameter name="destination 0" type="double" value="1.0"/>
+  <Parameter name="destination 0" type="double" value="0.5"/>
 
   <!-- Let the model class define an additional stopping criterion -->
   <Parameter name="enable custom monitor" type="bool" value="false"/>
@@ -38,7 +38,7 @@
 
   <!-- Define the optimal range of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="4"/>
+  <Parameter name="maximum desired Newton iterations" type="int" value="3"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
   <Parameter name="maximum Newton iterations" type="int" value="8"/>
