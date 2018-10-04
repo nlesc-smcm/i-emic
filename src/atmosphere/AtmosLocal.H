@@ -261,9 +261,11 @@ private:
 
     double      comb_; //! combined forcing
     double      sunp_; //! solar forcing
+    double      lonf_; //! longwave forcing
     double      humf_; //! humidity forcing
     double      latf_; //! latent heat forcing
     double      albf_; //! albedo forcing
+    double      tdif_; //! T eddy diffusivity 
 
 public:
     //! Constructor for use with parallel atmosphere
