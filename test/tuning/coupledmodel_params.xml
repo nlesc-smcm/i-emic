@@ -45,7 +45,6 @@
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="true"/>
-
   <!--  -->
   <Parameter name="background temperature seaice" type="double" value="-5.0" />
   <Parameter name="atmos reference humidity" type="double" value="8e-3" />
