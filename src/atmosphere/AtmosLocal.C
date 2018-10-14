@@ -153,19 +153,24 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
 // continuation ----------------------------------------------------------------
     allParameters_   = { "Combined Forcing",
                          "Solar Forcing",
+                         "Longwave Forcing",
                          "Humidity Forcing",
                          "Latent Heat Forcing",
-                         "Albedo Forcing"};
+                         "Albedo Forcing",
+                         "T Eddy Diffusivity"};
 
     parName_         = params->get( "Continuation parameter",
                                     allParameters_[0] );
     
 // starting values
-    comb_            = params->get(allParameters_[0], 0.0);
-    sunp_            = params->get(allParameters_[1], 1.0);
-    humf_            = params->get(allParameters_[2], 1.0);
-    latf_            = params->get(allParameters_[3], 1.0);
-    albf_            = params->get(allParameters_[4], 1.0);
+    int ctr = 0;
+    comb_            = params->get(allParameters_[ctr++], 0.0);
+    sunp_            = params->get(allParameters_[ctr++], 1.0);
+    lonf_            = params->get(allParameters_[ctr++], 1.0);
+    humf_            = params->get(allParameters_[ctr++], 1.0);
+    latf_            = params->get(allParameters_[ctr++], 1.0);
+    albf_            = params->get(allParameters_[ctr++], 1.0);
+    tdif_            = params->get(allParameters_[ctr++], 1.0);
 }
 
 //==================================================================
@@ -601,7 +606,7 @@ void AtmosLocal::computeJacobian()
 
     // Combine atoms:
     // Al(:,:,:,:,TT,TT) = Ad * (txx + tyy) - tc - bmua*tc2
-    txx.update(Ad_, Ad_, tyy, -1.0, tc, -bmua_, tc2);
+    txx.update(tdif_*Ad_, tdif_*Ad_, tyy, -1.0, tc, -bmua_, tc2);
 
     // Set temperature atom in dependency grid
     Al_->set({1,n_,1,m_,1,l_,1,np_}, ATMOS_TT_, ATMOS_TT_, txx);
@@ -914,7 +919,7 @@ void AtmosLocal::forcing()
                 value = comb_ * sunp_ * suno_[j] * (1 - a0_) / Ooa_ ;
 
                 // set forcing
-                value += comb_ * sunp_ * (QSW - amua_);
+                value += comb_ * (sunp_*QSW - lonf_*amua_);
 
                 // set land temperature
                 (*lst_)[sr] = Tl(A, Ta, j);
@@ -929,7 +934,7 @@ void AtmosLocal::forcing()
                 Ts = (*sst_)[sr] +
                     (*Msi_)[sr] * ((*sit_)[sr] - ((*sst_)[sr]) + t0i_ - t0o_);
 
-                value = Ts + comb_ * sunp_ * (QSW - amua_);
+                value = Ts + comb_ * (sunp_*QSW - lonf_*amua_);
 
                 // latent heat due to precipitation (background contribution)
                 value += comb_ * latf_ * lvscale_ * Pdist_[sr] * Po0_;
@@ -1011,7 +1016,7 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
             P  = (*state_)[pr]; // global precipitation
                                 
             // long wave radiative flux
-            lwflux[pos] = -muoa_ * (amua_ + bmua_ * Ta);
+            lwflux[pos] = -muoa_ * (comb_*lonf_*amua_ + bmua_*Ta);
 
             // short wave radiative flux
             swflux[pos] = comb_*sunp_*muoa_*suna_[j]*((1 - a0_) - da_*A);
@@ -1646,16 +1651,21 @@ void AtmosLocal::setPar(std::string const &parName, double value)
 {
     parName_ = parName; // Overwrite our parameter name
 
-    if (parName.compare(allParameters_[0]) == 0)
+    int ctr = 0;
+    if (parName.compare(allParameters_[ctr++]) == 0)
         comb_ = value;
-    else if (parName.compare(allParameters_[1]) == 0)
+    else if (parName.compare(allParameters_[ctr++]) == 0)
         sunp_ = value;
-    else if (parName.compare(allParameters_[2]) == 0)
+    else if (parName.compare(allParameters_[ctr++]) == 0)
+        lonf_ = value;
+    else if (parName.compare(allParameters_[ctr++]) == 0)
         humf_ = value;
-    else if (parName.compare(allParameters_[3]) == 0)
+    else if (parName.compare(allParameters_[ctr++]) == 0)
         latf_ = value;
-    else if (parName.compare(allParameters_[4]) == 0)
+    else if (parName.compare(allParameters_[ctr++]) == 0)
         albf_ = value;
+    else if (parName.compare(allParameters_[ctr++]) == 0)
+        tdif_ = value;
 
     // The effects of comb_ and humf_ are combined in nuq_, so here we
     // update nuq_.
@@ -1676,16 +1686,21 @@ double AtmosLocal::getPar()
 // Get parameter value
 double AtmosLocal::getPar(std::string const &parName)
 {
-    if (parName.compare(allParameters_[0]) == 0)
+    int ctr = 0;
+    if (parName.compare(allParameters_[ctr++]) == 0)
         return comb_;
-    else if (parName.compare(allParameters_[1]) == 0)
+    else if (parName.compare(allParameters_[ctr++]) == 0)
         return sunp_;
-    else if (parName.compare(allParameters_[2]) == 0)
+    else if (parName.compare(allParameters_[ctr++]) == 0)
+        return lonf_;
+    else if (parName.compare(allParameters_[ctr++]) == 0)
         return humf_;
-    else if (parName.compare(allParameters_[3]) == 0)
+    else if (parName.compare(allParameters_[ctr++]) == 0)
         return latf_;
-    else if (parName.compare(allParameters_[4]) == 0)
+    else if (parName.compare(allParameters_[ctr++]) == 0)
         return albf_;
+    else if (parName.compare(allParameters_[ctr++]) == 0)
+        return tdif_;
     else // If parameter not available we return 0
         return 0;
 }

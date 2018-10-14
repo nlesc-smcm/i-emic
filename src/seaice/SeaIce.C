@@ -20,7 +20,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     recomputePrec_   (false),
     recompMassMat_   (true),
     
-    taus_         (0.01),    // threshold ice thickness
+    taus_         (params->get("threshold ice thickness", 0.01)),
     // Heavyside approximation steepness
     epsilon_      (params->get("mask switch steepness", 1e-1)),  
 
@@ -32,7 +32,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     q0_    (params->get("atmos reference humidity",2e-3)),
     qdim_  (params->get("atmos humidity scale", 1e-3)),
     tdim_  (params->get("temperature scale", 1.0)),
-    H0_    (params->get("seaice background thickness H0", taus_)),
+    H0_    (taus_), // seaice background thickness
     M0_    (params->get("seaice background mask M0", 0)),
 
     // ice formation constants
@@ -1574,7 +1574,7 @@ std::string const SeaIce::writeData(bool describe)
             Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
         for (int i = 0; i != M->MyLength(); ++i)
-            (*restr)[i] = (*M)[i]*(*H)[i];
+            (*restr)[i] = (*M)[i]*((*H)[i]+H0_);
         
         double SIV  = Utils::dot(intCoeff_, restr);
         double Mtot = Utils::dot(intCoeff_, M);

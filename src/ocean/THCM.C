@@ -1836,10 +1836,7 @@ int THCM::par2int(std::string const &label)
     else if (label == "Seasonal Forcing (Salinity)")     return SEASS;
     else if (label == "Seasonal Forcing (Wind)")         return SEASW;
     else if (label == "Mass")                            return MASS;
-    else
-    {
-        INFO("TCHM: Invalid continuation parameter label: '" << label << "'");
-    }
+
     return -1;
 }
 
