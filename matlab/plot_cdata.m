@@ -1,6 +1,6 @@
 function [titles, cdata] = plot_cdata(fname, opts)
     plot_fancy=false;
-    npfiles=0
+    npfiles=0;
     lsty = 'k.-';
     
     if nargin > 1
