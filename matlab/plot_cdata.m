@@ -1,5 +1,6 @@
 function [titles, cdata] = plot_cdata(fname, opts)
-    plot_fancy=false;
+    plot_fancy = false;
+    holdfig = false;
     npfiles=0;
     lsty = 'k.-';
     
@@ -16,6 +17,10 @@ function [titles, cdata] = plot_cdata(fname, opts)
         if isfield(opts,'prepend') && isfield(opts,'prefiles')
             npfiles  = opts.prepend;
             prefiles = opts.prefiles;
+        end
+        
+        if isfield(opts,'hold')
+            holdfig = opts.hold;
         end
     end        
             
@@ -52,6 +57,9 @@ function [titles, cdata] = plot_cdata(fname, opts)
     
     for i = 2:size(cdata,2)
         figure(i)
+        if holdfig
+            hold on;
+        end
 
         if strcmp(titles{i}, 'max(Psi)')
             maxPsi = i;
@@ -71,16 +79,29 @@ function [titles, cdata] = plot_cdata(fname, opts)
         if plot_fancy
             hold on
             s = scatter(cdata(:,1),cdata(:,i), 20, clrs, 'o','filled'); hold off
-            uistack(s,'down');
+            uistack(s,'bottom');
         end
         title(titles{i})
         grid on;
+        
+        if holdfig
+            hold off;
+        end
     end
     
     if ((maxPsi > 0) && (minPsi > 0))
         figure(i+1);
+
+        if holdfig
+            hold on;
+        end
+
         plot(cdata(:,1),cdata(:,maxPsi)+cdata(:,minPsi),lsty);
         title('max(Psi)+min(Psi)');
+        
+        if holdfig
+            hold off;
+        end
     end       
 
 end
