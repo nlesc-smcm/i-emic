@@ -1,11 +1,14 @@
 #!/bin/bash
 
 procs=2          # specify number of processors to use
-time=48:00:00    # time (HH:MM:SS) for slurm batch job
+time=24:00:00    # time (HH:MM:SS) for slurm batch job
 #time=01:00:00   
 nodes=1          # number of nodes
 type=normal      # node type
 #type=short      
+
+# append this submit to submit log
+echo "tuning.sh " $@ >> tuning.log
 
 # Specify executable.
 # This assumes the root dir is called i-emic, otherwise just point to

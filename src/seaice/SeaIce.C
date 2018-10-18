@@ -1578,6 +1578,9 @@ std::string const SeaIce::writeData(bool describe)
         
         double SIV  = Utils::dot(intCoeff_, restr);
         double Mtot = Utils::dot(intCoeff_, M);
+
+        SIV  =  (std::abs(SIV)  < 1e-13) ? 0.0 : SIV;
+        Mtot =  (std::abs(Mtot) < 1e-13) ? 0.0 : Mtot;
         
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
                    << SIV;
