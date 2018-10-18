@@ -219,7 +219,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         colormap(cmap)
         
         drawnow
-        title('Humidity anomaly (kg / kg)')
+        title('Humidity (kg / kg)')
         xlabel('Longitude')
         ylabel('Latitude')
         
@@ -256,7 +256,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         img(img == 0) = NaN;
 
         %contour(RtD*x,RtD*(y),surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
-        c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
+        c = contourf(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
                      'linewidth',.5); 
                 
         set(gca,'ydir','normal')
