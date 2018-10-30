@@ -223,7 +223,9 @@ step()
         return 1; // Consider this step failed
     }
 
+    TIMER_START("Continuation: Newton");
     status = newtonCorrector(); // Apply Newton corrector
+    TIMER_STOP("Continuation: Newton");
     
     if (status)   // Failure
     {
@@ -231,12 +233,15 @@ step()
         return 1; // Consider this step failed
     }
 
+
     if (printImportantVectors_)
-    {
+      {
+	TIMER_START("Continuation: step -> IO");
         // Save the residual and last solution from linear solve to binaries
-        Utils::save(rhsView_, "residual");
-        Utils::save(model_->getSolution('V'), "solution");
-    }
+	Utils::save(rhsView_, "residual");
+	Utils::save(model_->getSolution('V'), "solution");
+	TIMER_STOP("Continuation: step -> IO");
+      }
 
     // Put the parameter and norm of the state in the history
     parHist_.push_back(par_);
@@ -253,7 +258,9 @@ step()
         eigenSolver();
 
     // Let the model do some administrative work at the end of a succesful step
+    TIMER_START("Continuation: step -> postprocess");
     model_->postProcess();
+    TIMER_STOP("Continuation: step -> postprocess");    
 
     // Write continuation data to file
     bool describe = (step_ == 1) ? true : false;
