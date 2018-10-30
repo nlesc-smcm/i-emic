@@ -1,4 +1,4 @@
-function [files] = plot_failed(base_name, level)
+function [files] = plot_failed(base_name, level, fig_ctr)
     [out, list] = system(['ls ', base_name, '*']);
 
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
@@ -6,10 +6,12 @@ function [files] = plot_failed(base_name, level)
 
     RtD   = 180/pi;              %[-]     Radians to degrees
 
-    fig_ctr = 1;
-
     if nargin < 2
         level = l;
+    end
+
+    if nargin < 3
+        fig_ctr = 1;
     end
 
     % Collect files

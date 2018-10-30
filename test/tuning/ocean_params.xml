@@ -57,7 +57,7 @@
     <!-- global number of grid points in y-direction -->
     <Parameter name="Global Grid-Size m" type="int" value="38"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="2"/>
+    <Parameter name="Global Grid-Size l" type="int" value="12"/>
 
     <!-- Supply 0-based surface coordinates for the integral condition
          row, default is n-1, m-1. Make sure that the coordinate is
@@ -71,7 +71,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_global_96x38x2"/>
+    <Parameter name="Land Mask" type="string" value="mask_global_96x38x12"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -89,7 +89,7 @@
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
       <Parameter name="Temperature Forcing" type="double" value="1.0"/>
 
-      <Parameter name="Rayleigh-Number"     type="double" value="0.0"/>
+      <!-- <Parameter name="Rayleigh-Number"     type="double" value="0.0"/> -->
       <Parameter name="SPL1"                type="double" value="2.0e3"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>
 

@@ -5,7 +5,7 @@
 <ParameterList name="Continuation parameters">
 
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size"  type="double"  value="-1.0e-3"/>
+  <Parameter name="initial step size"  type="double"  value="1.0e-2"/>
   <Parameter name="minimum step size"  type="double"  value="1.0e-12"/>
   <Parameter name="maximum step size"  type="double"  value="1.0e3"/>
 
@@ -13,14 +13,14 @@
   <Parameter name="give up at minimum step size" type="bool" value="true"/>
 
   <!-- Define the scalings when increasing or decreasing the step size -->
-  <Parameter name="increase step size" type="double"  value="1.2"/>
-  <Parameter name="decrease step size" type="double"  value="1.5"/>
+  <Parameter name="increase step size" type="double"  value="1.1"/>
+  <Parameter name="decrease step size" type="double"  value="1.2"/>
 
   <!-- Define the destination value for the continuation parameter -->
   <!-- Several destinations are allowed, in that case specify      -->
   <!-- destination 1, destination 2, etc. as well                  -->
   
-  <Parameter name="destination 0" type="double" value="1.05"/>
+  <Parameter name="destination 0" type="double" value="1.0"/>
 
   <!-- Let the model class define an additional stopping criterion -->
   <Parameter name="enable custom monitor" type="bool" value="false"/>
@@ -30,11 +30,11 @@
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-4"/>
 
   <!-- Tolerance when converging on destination   -->
   <!--  for the secant process in detect()        -->
-  <Parameter name="destination tolerance" type="double" value="1.0e-4"/>
+  <Parameter name="destination tolerance" type="double" value="1.0e-7"/>
 
   <!-- Define the optimal range of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="3"/>

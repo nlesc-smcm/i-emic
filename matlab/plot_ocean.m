@@ -20,11 +20,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     else
         maskfile = 'fort.44';
     end
-    
-    if isfield(opts, 'readEV')
-        opts.everything = true;
-    end
-    
+        
     if isfield(opts, 'readFluxes')
         readFluxes = opts.readFluxes;
     else

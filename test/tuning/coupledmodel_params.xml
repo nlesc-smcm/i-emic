@@ -25,7 +25,7 @@
   <!--           "Salinity Forcing"  -->
   <!--           "Wind Forcing"      -->
   <!--           "Humidity Forcing"  -->
-  <Parameter name="Continuation parameter" type="string" value="Solar Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- We determine the horizontal extent and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
@@ -65,8 +65,8 @@
   <!-- B: 1 step backward block Gauss Seidel                  -->
   <!-- C: 2 step backward block Gauss Seidel                  -->
   <!-- F: 1 step forward block Gauss Seidel                   -->
-  <!-- G: 2 step forward block Gauss Seidel                   -->                       
+  <!-- G: 2 step forward block Gauss Seidel                   -->   
   <!-- D: diagonal, no coupling blocks                        -->
-  <Parameter name="Preconditioning" type="char" value="F"/>
+  <Parameter name="Preconditioning" type="char" value="B"/>
 
 </ParameterList>

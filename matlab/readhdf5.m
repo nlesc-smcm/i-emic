@@ -55,7 +55,9 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
     
     if readEV % read eigenvector and values
         kmax = h5read(file, '/MetaData/NumEigs');
-
+        fprintf(' reading eigenvector, %d eigenvectors available\n', ...
+                kmax);
+        
         if isfield(opts, 'evindex')
             evindex = opts.evindex;            
         else

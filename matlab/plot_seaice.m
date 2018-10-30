@@ -14,6 +14,12 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
         readFluxes = false;
     end
 
+    if isfield(opts, 'readEV')
+        readEV = opts.readEV;
+    else
+        readEV = false;
+    end
+
     if isfield(opts, 'fig_ctr')
         fig_ctr = opts.fig_ctr;
     else
@@ -66,13 +72,18 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
         figure(fig_ctr); fig_ctr = fig_ctr+1;
         field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
         field(logical(surfm)) = NaN;
-        field(~logical(simask)) = NaN;
+
+        if ~readEV
+            field(~logical(simask)) = NaN;
+        end
         
         diff = max(max(field))-min(min(field));
         fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), ...
                 diff);
         imagesc(RtD*x, RtD*(y), field'); hold on
+        ca = caxis;
         plot_mask(surfm,x, y); hold off
+        caxis(ca);
 
 
         set(gca, 'ydir', 'normal')
