@@ -34,7 +34,7 @@
   <Parameter name="atmos humidity scale" type="double" value="1e-3" />
   
   <Parameter name="threshold ice thickness" type="double" value="0.3"/>
-  <Parameter name="mask switch steepness" type="double" value="0.5"/>
+  <Parameter name="mask switch steepness" type="double" value="1.0"/>
 
   <!-- set a0: freezing temperature is roughty a0 * S0, S0 is usually 35 psu -->
   <!-- <Parameter name="freezing temperature sensitivity" type="double" value="-1" /> -->

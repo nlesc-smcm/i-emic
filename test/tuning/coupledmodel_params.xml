@@ -32,16 +32,16 @@
 
   <Parameter name="Global Bound xmin" type="double" value="0"/>
   <!-- eastern domain bound -->
-  <Parameter name="Global Bound xmax" type="double" value="359.99"/>
+  <Parameter name="Global Bound xmax" type="double" value="360"/>
   <!-- southern domain bound -->
-  <Parameter name="Global Bound ymin" type="double" value="-85.5"/>
+  <Parameter name="Global Bound ymin" type="double" value="-81"/>
   <!-- northern domain bound -->
-  <Parameter name="Global Bound ymax" type="double" value="85.5"/>
+  <Parameter name="Global Bound ymax" type="double" value="81"/>
   
   <!-- global number of grid points in x-direction -->
-  <Parameter name="Global Grid-Size n" type="int" value="96"/>
+  <Parameter name="Global Grid-Size n" type="int" value="120"/>
   <!-- global number of grid points in y-direction -->
-  <Parameter name="Global Grid-Size m" type="int" value="38"/>
+  <Parameter name="Global Grid-Size m" type="int" value="54"/>
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="true"/>

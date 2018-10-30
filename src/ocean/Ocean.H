@@ -112,6 +112,9 @@ protected:
     Teuchos::RCP<Belos::BlockGmresSolMgr
                  <double, Epetra_MultiVector, Epetra_Operator> > belosSolver_;
 
+    double effort_;
+    int effortCtr_;
+
     Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 
     // Domain object

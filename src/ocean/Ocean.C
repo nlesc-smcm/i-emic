@@ -801,13 +801,18 @@ void Ocean::preProcess()
 //====================================================================
 void Ocean::postProcess()
 {
+  TIMER_START("Ocean: saveStateToFile");
     if (saveState_)
-        saveStateToFile(outputFile_); // Save to hdf5
+      saveStateToFile(outputFile_); // Save to hdf5
+    TIMER_STOP("Ocean: saveStateToFile");
 
-    printFiles(); // Print in standard fortran format
+    
+    TIMER_START("Ocean: printFiles")
+      printFiles(); // Print in standard fortran format
+    TIMER_STOP("Ocean: printFiles")
 
     if (saveEveryStep_)
-        copyFiles();  // Copy fortran and hdf5 files
+      copyFiles();  // Copy fortran and hdf5 files
 
     // Column integral can be used to check discretization: should be
     // zero, excluding integral condition and its dependencies.
@@ -825,8 +830,6 @@ std::string const Ocean::writeData(bool describe)
         {
             datastring << std::setw(_FIELDWIDTH_/2)
                        << "MV";
-            datastring << std::setw(_FIELDWIDTH_)
-                       << "Tol";
         }
 
         datastring << std::setw(_FIELDWIDTH_)
@@ -854,10 +857,9 @@ std::string const Ocean::writeData(bool describe)
 
         if (solverInitialized_)
         {
-            datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
-                       << belosSolver_->getNumIters();
-            datastring << std::scientific << std::setw(_FIELDWIDTH_)
-                       << belosSolver_->achievedTol();
+            datastring << std::setw(_FIELDWIDTH_/2)
+                       << std::round(effort_);
+            effortCtr_ = 0;
         }
         
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
@@ -998,6 +1000,10 @@ void Ocean::initializeBelos()
             <double, Epetra_MultiVector, Epetra_Operator>
             (problem_, belosParamList_));
 
+    // initialize effort counter
+    effortCtr_ = 0;
+    effort_ = 0.0;
+
 }
 
 //=====================================================================
@@ -1099,13 +1105,26 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
         tol   = belosSolver_->achievedTol();
         INFO("Ocean: FGMRES, i = " << iters << ", ||r|| = " << tol);
 
+        // keep track of effort
+        if (effortCtr_ == 0)
+            effort_ = 0;
+
+        effortCtr_++;
+        effort_ = (effort_ * (effortCtr_ - 1) + iters ) / effortCtr_;
+
         Teuchos::RCP<Epetra_Vector> b =
             Teuchos::rcp(new Epetra_Vector(*(*rhs)(0)));
+	double normb = Utils::norm(b);
         double nrm = explicitResNorm(b);
-        INFO("           ||b||         = " << Utils::norm(b));
+        INFO("           ||b||         = " << normb);
         INFO("           ||x||         = " << Utils::norm(sol_));
-        INFO("        ||b-Ax|| / ||b|| = " << nrm / Utils::norm(b));
-
+        INFO("        ||b-Ax|| / ||b|| = " << nrm / normb);
+	
+	if (std::abs( (nrm / normb) / tol) > 10)
+	  {
+	    ERROR("Actual residual norm too large", __FILE__, __LINE__);
+	  }
+	
         TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 
         // if (tol > recompTol_) // stagnation, maybe a new precon helps
@@ -1911,6 +1930,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::getIntCondCoeff()
 //=====================================================================
 void Ocean::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename)
 {
+  TIMER_START("Ocean: additionalExports");
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes =
         THCM::Instance().getFluxes();
 
@@ -1950,6 +1970,7 @@ void Ocean::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename
 
         HDF5.Write("MaskGlobal", "Label", landmask_.label);
     }
+    TIMER_STOP("Ocean: additionalExports");
 }
 
 // =====================================================================
