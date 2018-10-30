@@ -43,11 +43,9 @@ function [titles, cdata] = plot_cdata(fname, opts)
     if plot_fancy
         for i = 1:size(cdata,2)
             if strcmp(titles{i}, coldata)
-                cmax = max(cdata(:,i));
-                cmn  = mean(cdata(:,i));
-                cmap = jet(cmax);
-                %cmap = my_colmap([0,cmax], -1, cmax);
-                clrs = cmap(cdata(:,i),:);
+                dmax = max(abs(cdata(:,i)));
+                cmap = jet(129);
+                clrs = cmap(ceil(128*abs(cdata(:,i))/dmax),:);
                 break;            
             end
         end
