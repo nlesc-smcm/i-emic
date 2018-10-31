@@ -76,8 +76,9 @@ function [titles, cdata] = plot_cdata(fname, opts)
         end
         if plot_fancy
             hold on
-            s = scatter(cdata(:,1),cdata(:,i), 20, clrs, 'o','filled'); hold off
+            s = scatter(cdata(:,1),cdata(:,i), 20, clrs, 'o','filled'); 
             uistack(s,'bottom');
+            plot(cdata(end,1),cdata(end,i),'r*');hold off;
         end
         title(titles{i})
         grid on;
