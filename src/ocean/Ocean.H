@@ -134,9 +134,6 @@ protected:
     bool loadTemperatureFlux_;
     bool saveTemperatureFlux_;
 
-    //! Enable saving every state in multiple formats
-    bool saveEveryStep_;
-
     //! Use legacy fortran output fort.3
     bool useFort3_;
 
@@ -407,7 +404,6 @@ public:
 
     void setParameters(ParameterList pars);
 
-    void copyFiles(std::string const &fname = "");
     void copyMask(std::string const &fname);
 
     void dumpBlocks()

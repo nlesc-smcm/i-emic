@@ -14,9 +14,7 @@
   <Parameter name="Input file"  type="string" value="ocean_input.h5" />
   <Parameter name="Output file" type="string" value="ocean_output.h5" />
 
-  <!-- To keep track of each converged state, enable this.    -->
-  <!-- Only useful when you enable <Save state>               -->
-  <Parameter name="Save every step" type="bool" value="false" />
+  <Parameter name="Save frequency" type="int" value="3" />
 
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->

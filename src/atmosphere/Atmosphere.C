@@ -18,7 +18,6 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     l_               (params->get("Global Grid-Size l", 1)),
     periodic_        (params->get("Periodic", false)),
     aux_             (params->get("Auxiliary unknowns", 1)),
-    saveEveryStep_   (params->get("Save every step", false)),
     useIntCondQ_     (params->get("Use integral condition on q", true)),
     useFixedPrecip_  (params->get("Use idealized precipitation", false)),
     
@@ -33,6 +32,10 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     outputFile_ = params->get("Output file", "atmos_output.h5");
     loadState_  = params->get("Load state", false);
     saveState_  = params->get("Save state", true);
+    saveEvery_  = params->get("Save frequency", 0);
+
+    // initialize postprocessing counter
+    ppCtr_ = 0;
 
     // set comm
     comm_ = comm;
@@ -1362,12 +1365,20 @@ void Atmosphere::preProcess()
 //==================================================================
 void Atmosphere::postProcess()
 {
+    // increase postprocessing counter
+    ppCtr_++;
+
     // save state -> hdf5
     if (saveState_)
         saveStateToFile(outputFile_); // Save to hdf5
 
-    if (saveState_ && saveEveryStep_)
-        copyFiles();
+    if ((saveEvery_ > 0) && (ppCtr_ % saveEvery_) == 0)
+    {
+        std::stringstream append;
+        append << "." << ppCtr_;
+        copyState(append.str());
+    }
+
 }
 
 //==================================================================
@@ -1700,27 +1711,6 @@ std::vector<Teuchos::RCP<Epetra_Vector> > Atmosphere::getFluxes()
     
     return fluxes;
 }
-
-//=============================================================================
-// Similar to the routine in Ocean, so we could factorize this in Utils.
-void Atmosphere::copyFiles()
-{
-    if (comm_->MyPID() == 0)
-    {
-        //Create filename
-        std::stringstream ss;
-        ss << "atmos_state_par" << std::setprecision(4) << std::setfill('_')
-           << std::setw(2) << atmos_->par2int(atmos_->getParName()) << "_"
-           << std::setw(6) << atmos_->getPar() << ".h5";
-
-        //Copy hdf5
-        INFO("copying " << outputFile_ << " to " << ss.str());
-        std::ifstream src(outputFile_.c_str(), std::ios::binary);
-        std::ofstream dst(ss.str(), std::ios::binary);
-        dst << src.rdbuf();
-    }
-}
-
 
 //=============================================================================
 int Atmosphere::interface_row(int i, int j, int XX)

@@ -20,22 +20,21 @@ Continuation<Model, ParameterList>::
 Continuation(Model model, ParameterList pars)
     :
     model_(model),
-    dsInit_                (pars->get("initial step size", 0.01)),
-    dsMin_                 (pars->get("minimum step size", 1.0e-5)),
-    dsMax_                 (pars->get("maximum step size", 1.0e-1)),
+    dsInit_                (pars->get("initial step size", 1.0e-2)),
+    dsMin_                 (pars->get("minimum step size", 1.0e-8)),
+    dsMax_                 (pars->get("maximum step size", 1.0e3)),
     scale1_                (pars->get("increase step size", 1.25)),
-    scale2_                (pars->get("decrease step size", 1.25)),
-    epsilon_               (pars->get("epsilon increment", 1.0e-4)),
+    scale2_                (pars->get("decrease step size", 2.0)),
+    epsilon_               (pars->get("epsilon increment", 1.0e-5)),
     backTracking_          (pars->get("enable backtracking", false)),
-    numBackTrackingSteps_  (pars->get("backtracking steps", 10)),
-    backTrackIncrease_     (pars->get("backtracking increase", 10.0)),
+    numBackTrackingSteps_  (pars->get("backtracking steps", 0)),
+    backTrackIncrease_     (pars->get("backtracking increase", 0.0)),
     maxSteps_              (pars->get("maximum number of steps", -1)),
-    maxNewtonIterations_   (pars->get("maximum Newton iterations", 15)),
+    maxNewtonIterations_   (pars->get("maximum Newton iterations", 7)),
     minNewtonIterations_   (pars->get("minimum Newton iterations", 1)),
-    minAllowedIterations_  (pars->get("minimum desired Newton iterations", 4)),
-    maxAllowedIterations_  (pars->get("maximum desired Newton iterations", 5)),
+    optNewtonIterations_   (pars->get("optimal Newton iterations", 4)),
     newtonTolerance_       (pars->get("Newton tolerance", 1.0e-4)),
-    destinationTolerance_  (pars->get("destination tolerance", 1.0e-4)),
+    destinationTolerance_  (pars->get("destination tolerance", 1.0e-7)),
     userDetect_            (pars->get("enable custom monitor", false)),
     tanScaling_            (pars->get("state tangent scaling", 1.0e0)),
     normalizeStrategy_     (pars->get("normalize strategy", 'N')),
@@ -43,7 +42,7 @@ Continuation(Model model, ParameterList pars)
     stabilityScheme_       (pars->get("compute stability", 'N')),
 
     rejectFailedNewton_    (pars->get("reject failed iteration", true)),
-    giveUpAtdsMin_         (pars->get("give up at minimum step size", false)),
+    giveUpAtdsMin_         (pars->get("give up at minimum step size", true)),
     cycleTolerance_        (pars->get("enable tolerance cycling", false)),
     usePracticalTol_       (pars->get("enable practical tolerance", false)),
     newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
@@ -51,7 +50,7 @@ Continuation(Model model, ParameterList pars)
     residualTest_          (pars->get("corrector residual test", 'D')),
     initialTangent_        (pars->get("initial tangent type", 'E')),
     printImportantVectors_ (pars->get("print important vectors", false)),
-    predictorBound_        (pars->get("predictor bound", 1e5)),
+    predictorBound_        (pars->get("predictor bound", 1e3)),
     signMonitor_           (0),
     eigenSolverSet_        (false)
 {
@@ -939,35 +938,25 @@ adjustStep()
         fixStepSize_ = false;
         return;   // Do nothing
     }
+    INFO("      old ds: " << ds_);
+    
+    // step size control, see [Seydel p 188.]
+    double factor = (double) optNewtonIterations_ / newtonIter_;
 
-    if (newtonIter_ < minAllowedIterations_)
-    {
-        INFO("\n      adjusting ds... ");
-        if (std::abs(ds_) == std::abs(dsMax_))
-        {
-            INFO("      ceiling found: " << ds_);
-        }
-        else
-        {
-            INFO("      old ds: " << ds_);
-            ds_ = SGN(ds_) * std::min(std::abs(ds_) * scale1_, std::abs(dsMax_));
-            INFO("      new ds: " << ds_);
-        }
-    }
-    else if (newtonIter_ > maxAllowedIterations_)
-    {
-        INFO("      adjusting ds... ");
-        if (std::abs(ds_) == std::abs(dsMin_))
-        {
-            INFO("      floor found: " << ds_);
-        }
-        else
-        {
-            INFO("      old ds: " << ds_);
-            ds_ = SGN(ds_) * std::max(std::abs(ds_) / scale2_, std::abs(dsMin_));
-            INFO("      new ds: " << ds_);
-        }
-    }
+    // set some bounds for this factor
+    factor = (factor < 0.5) ? 0.5 : factor;
+    factor = (factor > 2.0) ? 2.0 : factor;
+
+    INFO("     control: " << factor);
+
+    // adjust step size
+    ds_ *= factor;
+
+    // set some bounds for the step size
+    ds_ = (std::abs(ds_) > std::abs(dsMax_)) ? SGN(ds_) * std::abs(dsMax_) : ds_;
+    ds_ = (std::abs(ds_) < std::abs(dsMin_)) ? SGN(ds_) * std::abs(dsMin_) : ds_;
+    
+    INFO("      new ds: " << ds_);
 }
 
 //======================================================================
@@ -1024,7 +1013,8 @@ reset()
     // fix step size for next step
     fixStepSize_ = true; 
     
-    if (( std::abs(ds_) <= std::abs(dsMin_) ) && (( resetCounter_ >= 100 ) || giveUpAtdsMin_))
+    if (( std::abs(ds_) <= std::abs(dsMin_) ) &&
+        (( resetCounter_ >= 100 ) || giveUpAtdsMin_))
     {
         abortFlag_ = true;
         WARNING("Reached dsMin, continuation failed", __FILE__, __LINE__);

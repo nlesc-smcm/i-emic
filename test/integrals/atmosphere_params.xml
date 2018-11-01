@@ -11,8 +11,8 @@
   <Parameter name="Save E and P fields" type="bool" value="true" />
   
   <!-- To keep track of each converged state, enable this. -->
-  <Parameter name="Save every step" type="bool" value="false" />
-
+  <Parameter name="Save frequency" type="int" value="1" />
+  
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->
   <!-- specified in CoupledModel                                      -->

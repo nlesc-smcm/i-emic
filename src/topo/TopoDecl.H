@@ -109,6 +109,9 @@ private:
 	//!  in general k_ = floor(delta_)
 	int k_;
 
+    //! postprocessing counter
+    int ppCtr_;
+
 	//! Homotopy factors
 	double facA_, facB_;
 
@@ -134,7 +137,7 @@ private:
 	double stopTol_;
 
 	//! If every converged state deserves to be stored, enable this
-	bool saveEveryStep_;
+	int saveEvery_;
 
 	//! Solver parameterlist
 	ParameterList solverParams_, belosParamList_;

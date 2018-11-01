@@ -177,23 +177,14 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     end
 
 
-    % - Deduce grid stretching
+    % Deduce grid stretching
     [qz,dfzt,dfzw] = gridstretch(zw);
 
-    % - READ SOLUTION
-    if strcmp(solfile(end-1:end),'h5')       % (.h5 version)
-        [sol, pars, add] = readhdf5(solfile, nun, n, m, l, opts);
-    else % (fort.3 version)
-        [~,~,~,~,~,~,~,sol,~,~] = readfort3(la, solfile);
-        add = [];
-    end
+    %  Read state, parameters and additional things
+    [sol, pars, add] = readhdf5(solfile, nun, n, m, l, opts);
 
     if interp_mode
-        if strcmp(solfile2(end-1:end),'h5')       % (.h5 version)
-            [sol2] = readhdf5(solfile2, nun, n, m, l, opts);
-        else % (fort.3 version)
-            [~,~,~,~,~,~,~,sol2,~,~] = readfort3(la, solfile2);
-        end
+        [sol2] = readhdf5(solfile2, nun, n, m, l, opts);
         sol = (1-k)*sol+k*sol2;
     end
     

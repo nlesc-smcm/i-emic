@@ -67,7 +67,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     loadTemperatureFlux_   (oceanParamList->get("Load temperature flux", false)),
     saveTemperatureFlux_   (oceanParamList->get("Save temperature flux", true)),
 
-    saveEveryStep_         (oceanParamList->get("Save every step", false)),
     useFort3_              (oceanParamList->get("Use legacy fortran output", false)),
     saveColumnIntegral_    (oceanParamList->get("Save column integral", false)),
     maxMaskFixes_          (oceanParamList->get("Max mask fixes", 5)),
@@ -86,6 +85,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     outputFile_  = oceanParamList->get("Output file", "ocean_output.h5");
     loadState_   = oceanParamList->get("Load state", false);
     saveState_   = oceanParamList->get("Save state", true);
+    saveEvery_   = oceanParamList->get("Save frequency", 0);
+
+    // initialize postprocessing counter
+    ppCtr_ = 0;
 
     // set the communicator object
     comm_ = Comm;
@@ -801,18 +804,24 @@ void Ocean::preProcess()
 //====================================================================
 void Ocean::postProcess()
 {
-  TIMER_START("Ocean: saveStateToFile");
+    // increase postprocessing counter
+    ppCtr_++;
+    
+    TIMER_START("Ocean: saveStateToFile");
     if (saveState_)
-      saveStateToFile(outputFile_); // Save to hdf5
+        saveStateToFile(outputFile_); // Save to hdf5
     TIMER_STOP("Ocean: saveStateToFile");
 
-    
-    TIMER_START("Ocean: printFiles")
-      printFiles(); // Print in standard fortran format
-    TIMER_STOP("Ocean: printFiles")
+    if ((saveEvery_ > 0) && (ppCtr_ % saveEvery_) == 0)
+    {
+        std::stringstream append;
+        append << "." << ppCtr_;
+        copyState(append.str());
+    }
 
-    if (saveEveryStep_)
-      copyFiles();  // Copy fortran and hdf5 files
+    TIMER_START("Ocean: printFiles");
+    printFiles(); // Print in standard fortran format
+    TIMER_STOP("Ocean: printFiles");
 
     // Column integral can be used to check discretization: should be
     // zero, excluding integral condition and its dependencies.
@@ -1114,16 +1123,18 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
 
         Teuchos::RCP<Epetra_Vector> b =
             Teuchos::rcp(new Epetra_Vector(*(*rhs)(0)));
-	double normb = Utils::norm(b);
+        double normb = Utils::norm(b);
         double nrm = explicitResNorm(b);
         INFO("           ||b||         = " << normb);
         INFO("           ||x||         = " << Utils::norm(sol_));
         INFO("        ||b-Ax|| / ||b|| = " << nrm / normb);
 	
-	if (std::abs( (nrm / normb) / tol) > 10)
-	  {
-	    ERROR("Actual residual norm too large", __FILE__, __LINE__);
-	  }
+        if ((tol > 0) && (normb > 0) && ( (nrm / normb / tol) > 10))
+        {
+            ERROR("Actual residual norm too large: "
+                  << (nrm / normb) << " > " << tol
+                  , __FILE__, __LINE__);
+        }
 	
         TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 
@@ -1819,32 +1830,6 @@ void Ocean::printFiles()
     delete [] rhsArray;
 }
 
-//=====================================================================
-void Ocean::copyFiles(std::string const &filename)
-{
-    if ( (comm_->MyPID() == 0) && saveState_)
-    {
-        std::stringstream ss;
-        if (filename.length() == 0)
-        {
-            ss << "ocean_state_par" << std::setprecision(4) << std::setfill('_')
-               << std::setw(2) << THCM::Instance().par2int(parName_) << "_"
-               << std::setw(6) << getPar(parName_);
-
-        }
-        else
-        {
-            ss << filename;
-        }
-
-        ss << ".h5";
-        INFO("copying " << outputFile_ << " to " << ss.str());
-        std::ifstream src2(outputFile_.c_str(), std::ios::binary);
-        std::ofstream dst2(ss.str(), std::ios::binary);
-        dst2 << src2.rdbuf();
-    }
-}
-
 //==================================================================
 void Ocean::copyMask(std::string const &filename)
 {
@@ -1930,7 +1915,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::getIntCondCoeff()
 //=====================================================================
 void Ocean::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename)
 {
-  TIMER_START("Ocean: additionalExports");
+    TIMER_START("Ocean: additionalExports");
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes =
         THCM::Instance().getFluxes();
 

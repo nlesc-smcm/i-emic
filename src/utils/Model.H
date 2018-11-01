@@ -35,6 +35,12 @@ public:
     //! input/output flags
     bool loadState_, saveState_;
 
+    //! save/copy frequency
+    int saveEvery_;
+
+    //! postprocessing counter
+    int ppCtr_;
+
     //! HDF5 input/output filenames
     std::string inputFile_;
     std::string outputFile_;
@@ -120,6 +126,9 @@ public:
 
     //! HDF5-based save function for the state and parameters
     int saveStateToFile(std::string const &filename);
+
+    //! Copy outputFile_ to <prepend>outputFile_
+    int copyState(std::string const &prepend);
 
     //! Additional, model-specific writes for the HDF5 object 
     virtual void additionalExports(EpetraExt::HDF5 &HDF5,
@@ -246,6 +255,9 @@ inline int Model::loadStateFromFile(std::string const &filename)
 inline int Model::saveStateToFile(std::string const &filename)
 {
     INFO("_________________________________________________________");
+    INFO("Create backup of " << outputFile_);
+    copyState(".bak");
+
     INFO("Writing state and parameters to " << filename);
 
     INFO("   state: ||x|| = " << Utils::norm(state_));
@@ -268,8 +280,32 @@ inline int Model::saveStateToFile(std::string const &filename)
     }
 
     additionalExports(HDF5, filename);
+    comm_->Barrier();
     
     INFO("_________________________________________________________");
+    return 0;
+}
+
+//=============================================================================
+inline int Model::copyState(std::string const &append)
+{
+    if (comm_->MyPID() == 0)
+    {
+        if (saveState_)
+        {
+            std::stringstream ss;
+            ss << outputFile_ << append;
+            INFO("copying " << outputFile_ << " to " << ss.str());
+            std::ifstream src(outputFile_.c_str(), std::ios::binary);
+            std::ofstream dst(ss.str(), std::ios::binary);
+            dst << src.rdbuf();
+        }
+        else
+        {
+            WARNING("No use in copying a state when saveState = false",
+                    __FILE__, __LINE__);
+        }
+    }    
     return 0;
 }
 

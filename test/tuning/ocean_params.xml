@@ -37,25 +37,25 @@
     <!-- western domain bound -->
     <Parameter name="Global Bound xmin" type="double" value="0"/>
     <!-- eastern domain bound -->
-    <Parameter name="Global Bound xmax" type="double" value="360"/>
+    <Parameter name="Global Bound xmax" type="double" value="359.99"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="-81"/>
+    <Parameter name="Global Bound ymin" type="double" value="-85.5"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="81"/>
+    <Parameter name="Global Bound ymax" type="double" value="85.5"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="1"/>
 
     <!-- Depth  -->
-    <Parameter name="Depth hdim" type="double" value="4000"/>
+    <Parameter name="Depth hdim" type="double" value="5000"/>
 
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="4"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="120"/>
+    <Parameter name="Global Grid-Size n" type="int" value="96"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="54"/>
+    <Parameter name="Global Grid-Size m" type="int" value="38"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="2"/>
 
@@ -71,7 +71,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_global_120x54x2"/>
+    <Parameter name="Land Mask" type="string" value="mask_global_96x38x2"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->

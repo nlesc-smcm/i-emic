@@ -78,12 +78,20 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         betaRe  = h5read(file, '/EigenValues/BetaRe' );
         betaIm  = h5read(file, '/EigenValues/BetaIm' );
 
-        additional.alpha = alphaRe + alphaIm*1i
-        additional.beta  = betaRe + betaIm*1i
+        additional.alpha = alphaRe + alphaIm*1i;
+        additional.beta  = betaRe + betaIm*1i;
 
         egs = (alphaRe + alphaIm*1i) ./ (betaRe + betaIm*1i);
-        fprintf('eigenvalues: \n')
-        fprintf(' %+e %+ei \n', real(egs), imag(egs));
+        fprintf('\neigenvalues: \n')
+        for i = 1:kmax
+            if (i == evindex+1)
+                fprintf(' -> ');
+            else
+                fprintf('    ');
+            end
+            fprintf(' %+e %+ei \n', real(egs(i)), imag(egs(i)));
+        end
+        fprintf('\n');
         
     else % read normal state
         sol = h5read(file, '/State/Values');

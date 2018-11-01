@@ -101,6 +101,10 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     outputFile_ = params->get("Output file", "seaice_output.h5");
     loadState_  = params->get("Load state", false);
     saveState_  = params->get("Save state", true);
+    saveEvery_  = params->get("Save frequency", 0);
+
+    // initialize postprocessing counter
+    ppCtr_ = 0;
 
     // set communicator 
     comm_ = comm;
@@ -1543,9 +1547,20 @@ void SeaIce::preProcess()
 //=============================================================================
 void SeaIce::postProcess()
 {
+    // increase postprocessing counter
+    ppCtr_++;
+    
     // save state -> hdf5
     if (saveState_)
         saveStateToFile(outputFile_); // Save to hdf5
+
+    if ((saveEvery_ > 0) && (ppCtr_ % saveEvery_) == 0)
+    {
+        std::stringstream append;
+        append << "." << ppCtr_;
+        copyState(append.str());
+    }
+        
 
 }
 

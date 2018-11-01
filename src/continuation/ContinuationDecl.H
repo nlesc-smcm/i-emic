@@ -145,10 +145,8 @@ class Continuation
     int maxNewtonIterations_;     
     //! set the min for the Newton iterations
     int minNewtonIterations_;     
-    //! if less then we increase the step-size
-    int minAllowedIterations_;    
-    //! if more then we decrease the step-size
-    int maxAllowedIterations_;    
+    //! if less/more then we increase/decrease the step-size
+    int optNewtonIterations_;         
     //! set the tolerance in the Newton corrector
     double newtonTolerance_;      
     //! set the tolerance for the final convergence
