@@ -32,7 +32,7 @@ Continuation(Model model, ParameterList pars)
     maxSteps_              (pars->get("maximum number of steps", -1)),
     maxNewtonIterations_   (pars->get("maximum Newton iterations", 7)),
     minNewtonIterations_   (pars->get("minimum Newton iterations", 1)),
-    optNewtonIterations_   (pars->get("optimal Newton iterations", 4)),
+    optNewtonIterations_   (pars->get("optimal Newton iterations", 3.5)),
     newtonTolerance_       (pars->get("Newton tolerance", 1.0e-4)),
     destinationTolerance_  (pars->get("destination tolerance", 1.0e-7)),
     userDetect_            (pars->get("enable custom monitor", false)),
@@ -941,7 +941,7 @@ adjustStep()
     INFO("      old ds: " << ds_);
     
     // step size control, see [Seydel p 188.]
-    double factor = (double) optNewtonIterations_ / newtonIter_;
+    double factor = optNewtonIterations_ / (double) newtonIter_;
 
     // set some bounds for this factor
     factor = (factor < 0.5) ? 0.5 : factor;

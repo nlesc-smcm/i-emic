@@ -146,7 +146,7 @@ class Continuation
     //! set the min for the Newton iterations
     int minNewtonIterations_;     
     //! if less/more then we increase/decrease the step-size
-    int optNewtonIterations_;         
+    double optNewtonIterations_;         
     //! set the tolerance in the Newton corrector
     double newtonTolerance_;      
     //! set the tolerance for the final convergence

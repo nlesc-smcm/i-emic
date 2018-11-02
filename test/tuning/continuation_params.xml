@@ -32,8 +32,9 @@
   <!--  for the secant process in detect()        -->
   <Parameter name="destination tolerance" type="double" value="1.0e-7"/>
 
-  <!-- Define the optimal number Newton iterations -->
-  <Parameter name="optimal Newton iterations" type="int" value="3"/>
+  <!-- Define the optimal number Newton iterations, does not have to
+       be an integer! -->
+  <Parameter name="optimal Newton iterations" type="double" value="3.3"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
   <Parameter name="maximum Newton iterations" type="int" value="5"/>
