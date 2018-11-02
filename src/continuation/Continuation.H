@@ -1239,15 +1239,15 @@ writeData(bool describe)
 
     if (describe) // write description of entries
     {
-        cdatastring << std::setw(_FIELDWIDTH_)
-                    << "# par" 
-                    << std::setw(_FIELDWIDTH_) 
+        cdatastring << "#" << std::setw(_FIELDWIDTH_-1)
+                    << "par" 
+                    << std::setw(_FIELDWIDTH_ * 3/4) 
                     << "ds"
-                    << std::setw(_FIELDWIDTH_) 
+                    << std::setw(_FIELDWIDTH_ * 3/4) 
                     << "||x||"
-                    << std::setw(_FIELDWIDTH_) 
+                    << std::setw(_FIELDWIDTH_ * 3/4) 
                     << "||F||"
-                    << std::setw(_FIELDWIDTH_/2) 
+                    << std::setw(_FIELDWIDTH_/3) 
                     << "NR"
                     << model_->writeData(describe);
 
@@ -1256,14 +1256,18 @@ writeData(bool describe)
 
     cdatastring.str("");
     cdatastring.clear();
-    cdatastring.precision(_PRECISION_);
 
     cdatastring << std::scientific
-                << std::setw(_FIELDWIDTH_) <<  par_
-                << std::setw(_FIELDWIDTH_) <<  ds_
-                << std::setw(_FIELDWIDTH_) <<  Utils::norm(stateView_)
-                << std::setw(_FIELDWIDTH_) <<  Utils::norm(rhsView_)
-                << std::setw(_FIELDWIDTH_/2) <<  newtonIter_
+                << std::setw(_FIELDWIDTH_) << std::setprecision(_PRECISION_)
+                <<  par_
+                << std::setw(_FIELDWIDTH_ * 3/4) << std::setprecision(_PRECISION_ / 2)
+                <<  ds_
+                << std::setw(_FIELDWIDTH_ * 3/4) << std::setprecision(_PRECISION_ / 2)
+                << Utils::norm(stateView_)
+                << std::setw(_FIELDWIDTH_ * 3/4) << std::setprecision(_PRECISION_ / 2)
+                <<  Utils::norm(rhsView_)
+                << std::setw(_FIELDWIDTH_ / 3) << std::setprecision(_PRECISION_ / 2)
+                <<  newtonIter_
 
                 << model_->writeData();    
 

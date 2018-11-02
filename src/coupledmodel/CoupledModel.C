@@ -675,9 +675,9 @@ std::string const CoupledModel::writeData(bool describe)
             std::ostringstream datastring;
             if (describe)
             {
-                datastring << std::setw(_FIELDWIDTH_/2)
+                datastring << std::setw(_FIELDWIDTH_/ 3)
                            << "MV"
-                           << std::setw(_FIELDWIDTH_)
+                           << std::setw(_FIELDWIDTH_ *3/4)
                            << "Tol";
                 for (auto &model: models_)
                     datastring << model->writeData(describe) << " ";   
@@ -685,9 +685,9 @@ std::string const CoupledModel::writeData(bool describe)
             else
             {
                 datastring.precision(_PRECISION_);
-                datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
+                datastring << std::scientific << std::setw(_FIELDWIDTH_/3)
                            << belosSolver_->getNumIters();
-                datastring << std::scientific << std::setw(_FIELDWIDTH_)
+                datastring << std::scientific << std::setw(_FIELDWIDTH_ *3/4) << std::setprecision(_PRECISION_/2)
                            << belosSolver_->achievedTol();
                 
                 for (auto &model: models_)

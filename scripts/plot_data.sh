@@ -8,11 +8,11 @@ then
     exit
 fi
 
-xlabel=$(head $1 -n 1 | awk '{print $1}')
-title1=$(head $1 -n 1 | awk '{print $'$2'}')
-title2=$(head $1 -n 1 | awk '{print $'$3'}')
-title3=$(head $1 -n 1 | awk '{print $'$4'}')
-title4=$(head $1 -n 1 | awk '{print $'$5'}')
+xlabel=$(head $1 -n 1 | sed 's/\#//' | awk '{print $1}')
+title1=$(head $1 -n 1 | sed 's/\#//' | awk '{print $'$2'}')
+title2=$(head $1 -n 1 | sed 's/\#//' | awk '{print $'$3'}')
+title3=$(head $1 -n 1 | sed 's/\#//' | awk '{print $'$4'}')
+title4=$(head $1 -n 1 | sed 's/\#//' | awk '{print $'$5'}')
 
 
 while true;

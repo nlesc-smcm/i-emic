@@ -837,7 +837,7 @@ std::string const Ocean::writeData(bool describe)
     {
         if (solverInitialized_)
         {
-            datastring << std::setw(_FIELDWIDTH_/2)
+            datastring << std::setw(_FIELDWIDTH_/3)
                        << "MV";
         }
 
@@ -866,7 +866,7 @@ std::string const Ocean::writeData(bool describe)
 
         if (solverInitialized_)
         {
-            datastring << std::setw(_FIELDWIDTH_/2)
+            datastring << std::setw(_FIELDWIDTH_/3)
                        << std::round(effort_);
             effortCtr_ = 0;
         }

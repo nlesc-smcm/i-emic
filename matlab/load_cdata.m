@@ -13,7 +13,14 @@ function [titles, cdata] = load_cdata(fname)
 
     titles = cell(ncol,1);
 
-    for i = 1:ncol
+    i = 1;
+    while i <= ncol
         titles{i} = fscanf(fid,'%s',1);
-    end    
+
+        % ignore initial pound
+        if strcmp(titles{i},'#')
+            i = i - 1
+        end
+        i = i + 1;                
+    end
 end
