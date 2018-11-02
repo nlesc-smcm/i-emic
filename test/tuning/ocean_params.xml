@@ -16,9 +16,7 @@
   <Parameter name="Input file"  type="string" value="ocean_input.h5" />
   <Parameter name="Output file" type="string" value="ocean_output.h5" />
 
-  <!-- To keep track of each converged state, enable this.    -->
-  <!-- Only useful when you enable <Save state>               -->
-  <Parameter name="Save every step" type="bool" value="false" />
+  <Parameter name="Save frequency" type="int" value="10" />
 
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->
@@ -37,11 +35,11 @@
     <!-- western domain bound -->
     <Parameter name="Global Bound xmin" type="double" value="0"/>
     <!-- eastern domain bound -->
-    <Parameter name="Global Bound xmax" type="double" value="359.99"/>
+    <Parameter name="Global Bound xmax" type="double" value="360"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="-85.5"/>
+    <Parameter name="Global Bound ymin" type="double" value="-81"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="85.5"/>
+    <Parameter name="Global Bound ymax" type="double" value="81"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="1"/>
 
@@ -51,13 +49,13 @@
     <!-- grid stretching in z-direction (defaults to 1.0)          -->
     <!-- I think the preconditioner does not handle this correctly,-->
     <!-- but in some cases it may work                             -->
-    <Parameter name="Grid Stretching qz" type="double" value="4"/>
+    <Parameter name="Grid Stretching qz" type="double" value="1.8"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="96"/>
+    <Parameter name="Global Grid-Size n" type="int" value="120"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="38"/>
+    <Parameter name="Global Grid-Size m" type="int" value="54"/>
     <!-- global number of grid points in z-direction -->
-    <Parameter name="Global Grid-Size l" type="int" value="2"/>
+    <Parameter name="Global Grid-Size l" type="int" value="12"/>
 
     <!-- Supply 0-based surface coordinates for the integral condition
          row, default is n-1, m-1. Make sure that the coordinate is
@@ -71,7 +69,7 @@
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
-    <Parameter name="Land Mask" type="string" value="mask_global_96x38x2"/>
+    <Parameter name="Land Mask" type="string" value="mask_global_120x54x12"/>
 
     <!-- ==================== Coupling ================================= -->
     <!-- Flag enabling the coupling with an atmosphere                   -->
@@ -86,7 +84,7 @@
       <Parameter name="Combined Forcing"    type="double" value="0.0"/>
       <Parameter name="Solar Forcing"       type="double" value="1.0"/>
       <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
-      <Parameter name="Wind Forcing"        type="double" value="1.0"/>
+      <Parameter name="Wind Forcing"        type="double" value="0.0"/>
       <Parameter name="Temperature Forcing" type="double" value="1.0"/>
 
       <Parameter name="Rayleigh-Number"     type="double" value="0.0"/>

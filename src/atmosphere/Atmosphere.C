@@ -1389,11 +1389,15 @@ std::string const Atmosphere::writeData(bool describe)
     if (describe)
     {
         datastring << std::setw(_FIELDWIDTH_)
-                   << "norm(T)" 
+                   << "max(Ta)" 
                    << std::setw(_FIELDWIDTH_) 
-                   << "norm(Q)"
+                   << "min(Ta)" 
+                   << std::setw(_FIELDWIDTH_) 
+                   << "max(Qa)" 
+                   << std::setw(_FIELDWIDTH_) 
+                   << "min(Qa)"
                    << std::setw(_FIELDWIDTH_)
-                   << "norm(A)";
+                   << "||A||";
 
         return datastring.str();
     }
@@ -1401,14 +1405,22 @@ std::string const Atmosphere::writeData(bool describe)
     {    
         datastring.precision(_PRECISION_);   
     
+        double maxT, minT;
+        interfaceT()->MinValue(&minT);
+        interfaceT()->MaxValue(&maxT);
 
-        double normT = Utils::norm(interfaceT());
-        double normQ = Utils::norm(interfaceQ());
+        double maxQ, minQ;
+        interfaceQ()->MinValue(&minQ);
+        interfaceQ()->MaxValue(&maxQ);
+
         double normA = Utils::norm(interfaceA());
     
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
-                   << normT << std::setw(_FIELDWIDTH_) << normQ
-                   << std::setw(_FIELDWIDTH_) << normA;;
+                   << maxT << std::setw(_FIELDWIDTH_)
+                   << minT << std::setw(_FIELDWIDTH_)
+                   << maxQ << std::setw(_FIELDWIDTH_)
+                   << minQ << std::setw(_FIELDWIDTH_)
+                   << normA ;
 
         return datastring.str();
     }

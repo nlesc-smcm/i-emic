@@ -12,8 +12,8 @@
   <!-- Save evaporation and precipitation fields -->
   <Parameter name="Save E and P fields" type="bool" value="true" />
 
-  <!-- To keep track of each converged state, enable this. -->
-  <Parameter name="Save every step" type="bool" value="false" />
+  <!-- To keep track of every <> converged state. -->
+  <Parameter name="Save frequency" type="int" value="10" />
 
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->

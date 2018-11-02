@@ -5,22 +5,18 @@
 <ParameterList name="Continuation parameters">
 
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size"  type="double"  value="1.0e-2"/>
+  <Parameter name="initial step size"  type="double"  value="-1.0e-2"/>
   <Parameter name="minimum step size"  type="double"  value="1.0e-12"/>
   <Parameter name="maximum step size"  type="double"  value="1.0e3"/>
 
   <!-- Give up at minimum step size -->
   <Parameter name="give up at minimum step size" type="bool" value="true"/>
 
-  <!-- Define the scalings when increasing or decreasing the step size -->
-  <Parameter name="increase step size" type="double"  value="1.2"/>
-  <Parameter name="decrease step size" type="double"  value="1.3"/>
-
   <!-- Define the destination value for the continuation parameter -->
   <!-- Several destinations are allowed, in that case specify      -->
   <!-- destination 1, destination 2, etc. as well                  -->
   
-  <Parameter name="destination 0" type="double" value="0.90"/>
+  <Parameter name="destination 0" type="double" value="0.9"/>
 
   <!-- Let the model class define an additional stopping criterion -->
   <Parameter name="enable custom monitor" type="bool" value="false"/>
@@ -36,9 +32,8 @@
   <!--  for the secant process in detect()        -->
   <Parameter name="destination tolerance" type="double" value="1.0e-7"/>
 
-  <!-- Define the optimal range of Newton iterations -->
-  <Parameter name="minimum desired Newton iterations" type="int" value="3"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="3"/>
+  <!-- Define the optimal number Newton iterations -->
+  <Parameter name="optimal Newton iterations" type="int" value="3"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
   <Parameter name="maximum Newton iterations" type="int" value="5"/>
@@ -48,7 +43,7 @@
   <Parameter name="backtracking steps" type="int" value="0"/>
 
   <!-- (Debugging) Print all vectors that could be important in some way -->
-  <Parameter name="print important vectors" type="bool" value="true" />
+  <Parameter name="print important vectors" type="bool" value="false" />
 
   <!-- compute stability: 'N' never,                    -->
   <!--                    'E' at the end of a run,      -->

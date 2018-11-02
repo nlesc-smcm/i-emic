@@ -1240,7 +1240,7 @@ writeData(bool describe)
     if (describe) // write description of entries
     {
         cdatastring << std::setw(_FIELDWIDTH_)
-                    << "par" 
+                    << "# par" 
                     << std::setw(_FIELDWIDTH_) 
                     << "ds"
                     << std::setw(_FIELDWIDTH_) 

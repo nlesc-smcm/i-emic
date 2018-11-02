@@ -511,10 +511,12 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
         assert(rowMap->NumMyElements() == (int) crs.beg.size() - 1);
     }
     
-    std::ofstream file;
-    file.open("rowmap" + std::to_string(rowMap->Comm().MyPID()));
-    rowMap->Print(file);
-    file.close();
+#ifdef DEBUGGING_NEW
+    // std::ofstream file;
+    // file.open("rowmap" + std::to_string(rowMap->Comm().MyPID()));
+    // rowMap->Print(file);
+    // file.close();
+#endif 
     
     int numMyElements = rowMap->NumMyElements();
 

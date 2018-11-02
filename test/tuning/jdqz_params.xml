@@ -22,11 +22,11 @@
 
   <!-- jmax -->
   <!-- Maximum size of the search space -->
-  <Parameter name="Max size search space" type="int" value="80"/>
+  <Parameter name="Max size search space" type="int" value="120"/>
 
   <!-- jmin -->
   <!-- Maximum number of Jacobi-Davidson iterations -->
-  <Parameter name="Min size search space" type="int" value="30"/>
+  <Parameter name="Min size search space" type="int" value="50"/>
 
   <!-- maxstep -->
   <!-- Maximum number of Jacobi-Davidson iterations -->

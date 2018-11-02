@@ -39,8 +39,5 @@ do
              set label 2 '${PWD}' at  screen 0.5,0.95 right;\
              plot [$6:$7] '$1' using 1:$5 notitle with lines linetype 0;"
 
-    head -n 1 $1 
-    tail -n 1 $1
-
-    sleep 4;
+    sleep 5;
 done

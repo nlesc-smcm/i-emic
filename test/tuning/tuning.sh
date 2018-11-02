@@ -1,11 +1,11 @@
 #!/bin/bash
 
-procs=8           # specify number of processors to use
-time=96:00:00     # time (HH:MM:SS) for slurm batch job
-#time=01:00:00   
+procs=24          # specify number of processors to use
+#time=96:00:00    # time (HH:MM:SS) for slurm batch job
+time=01:00:00   
 nodes=1           # number of nodes
-type=normal       # node type
-#type=short      
+#type=normal      # node type
+type=short      
 
 # append this submit to submit log
 echo "tuning.sh " $procs $time $@ >> tuning.log
