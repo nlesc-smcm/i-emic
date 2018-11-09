@@ -355,7 +355,7 @@ createInitialTangent()
 
     model_->applyMatrix(*rhsView_, *tmp);
 
-    INFO(std::setprecision(14) << std::showpos);
+    INFO(std::setprecision(14));
     INFO("                   ||rhs|| = " << Utils::norm(rhsView_));
     INFO("                   ||J*F|| = " << Utils::norm(tmp));
 
