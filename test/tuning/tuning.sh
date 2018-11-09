@@ -1,14 +1,17 @@
 #!/bin/bash
 
-procs=24          # specify number of processors to use
-#time=96:00:00    # time (HH:MM:SS) for slurm batch job
-time=01:00:00   
+# obtain timecode
+date=`date +%m%d%y-%H%M`
+
+procs=2           # specify number of processors to use
+#time=96:00:00     # time (HH:MM:SS) for slurm batch job
+time=01:00:00
 nodes=1           # number of nodes
-#type=normal      # node type
+#type=normal       # node type
 type=short      
 
 # append this submit to submit log
-echo "tuning.sh " $procs $time $@ >> tuning.log
+echo "tuning.sh " $procs $time $@ $date>> tuning.log
 
 # Specify executable.
 # This assumes the root dir is called i-emic, otherwise just point to
@@ -43,7 +46,6 @@ then
 fi
 
 # create filenames
-date=`date +%m%d%y-%H%M`
 fname=summary_$date
 fnameprev=summary_prev_$date
 infofile=info_$date
