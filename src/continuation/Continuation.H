@@ -355,7 +355,7 @@ createInitialTangent()
 
     model_->applyMatrix(*rhsView_, *tmp);
 
-    INFO(std::setprecision(12) << std::scientific << std::showpos);
+    INFO(std::setprecision(14) << std::showpos);
     INFO("                   ||rhs|| = " << Utils::norm(rhsView_));
     INFO("                   ||J*F|| = " << Utils::norm(tmp));
 
@@ -366,7 +366,7 @@ createInitialTangent()
     INFO("              ||stateDot|| = " << Utils::norm(stateDot_));
     INFO("                  parDot   = " << parDot_);
     INFO("                      ds   = " << ds_);
-    INFO(std::defaultfloat);
+    INFO(std::setprecision(8));
 
     if (printImportantVectors_)
     {
