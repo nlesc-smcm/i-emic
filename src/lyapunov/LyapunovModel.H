@@ -5,6 +5,7 @@
 #include "Epetra_OperatorWrapper.hpp"
 #include "LyapunovSolver.hpp"
 #include "SchurOperator.hpp"
+#include "Timer.hpp"
 
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_XMLParameterListHelpers.hpp"
@@ -101,6 +102,9 @@ void LyapunovModel<Model>::postProcess()
     solver.set_parameters(params->sublist("Lyapunov Solver"));
 
     solver.solve(V, T);
+
+    if (!A->Comm().MyPID())
+        RAILS_SAVE_PROFILES("");
 
     V_ = Teuchos::rcp(new Epetra_MultiVector(Copy, *V, 0, V.N()));
 
