@@ -349,19 +349,28 @@ createInitialTangent()
     // Test the matrix and rhs
 
     VectorPtr tmp = model_->getSolution('C');
+    VectorPtr one = model_->getSolution('C');
     tmp->Scale(0.0);
+    one->PutScalar(1.0);
+
     model_->applyMatrix(*rhsView_, *tmp);
 
-
+    INFO(std::setprecision(12) << std::scientific << std::showpos);
     INFO("                   ||rhs|| = " << Utils::norm(rhsView_));
     INFO("                   ||J*F|| = " << Utils::norm(tmp));
+
+    model_->applyMatrix(*one, *tmp);
+    INFO("                   ||J*1|| = " << Utils::norm(tmp));
+
     INFO("                 ||state|| = " << Utils::norm(stateView_));
     INFO("              ||stateDot|| = " << Utils::norm(stateDot_));
     INFO("                  parDot   = " << parDot_);
     INFO("                      ds   = " << ds_);
+    INFO(std::defaultfloat);
 
     if (printImportantVectors_)
     {
+        Utils::save(tmp, "actionJ");
         Utils::save(model_->getSolution('V'), "stateDot");
     }
     INFO("Continuation: create initial tangent... done");

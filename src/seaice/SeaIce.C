@@ -926,19 +926,21 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     // d / da_atm (F_Q)
     double daatmFQ;
 
-    double tmp = 0.0;
     // int sr;
     int col;
 
     for (int j = 0; j != mGlob_; ++j)
     {
         int gid = j * nGlob_;
-        int lid = standardSurfaceMap_->LID(gid);
+        int lid_assmb = assemblySurfaceMap_->LID(gid);
+        int lid_stdrd = standardSurfaceMap_->LID(gid);
+        
+        double tmp = 0.0;
 
-        if (lid >= 0)
+        if (lid_stdrd >= 0)
             tmp = (comb_ * sunp_ * sun0_ / 4. ) *
-                shortwaveS(y_[lid / nLoc_]) * albed_ * c0_;
-
+                shortwaveS(y_[lid_assmb / nLoc_]) * albed_ * c0_;
+            
         comm_->SumAll( &tmp, &daatmFQ, 1);
         daatmFQ = daatmFQ / muoa_;
 
@@ -1002,7 +1004,6 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
 
                 }
             }
-
         
         col = atmos->interface_row(0,0,P);
 

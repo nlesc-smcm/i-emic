@@ -1,4 +1,4 @@
-function [out] = my_colmap(colrange, mn, sze)
+function [out] = my_colmap(colrange, mn, sze, bcol, ecol)
 
 % colrange : color range (caxis)
 % mn       : data mean
@@ -11,7 +11,15 @@ function [out] = my_colmap(colrange, mn, sze)
     if nargin < 2
         mn = mean(colrange);
     end
-
+    
+    if nargin < 4
+        bcol = [0    0.4470    0.7410];
+    end
+    
+    if nargin < 5
+        ecol = [0.8500    0.3250    0.0980];
+    end
+    
     cmax = max(colrange);
     cmin = min(colrange);
     clen = abs(cmax - cmin);
@@ -27,8 +35,7 @@ function [out] = my_colmap(colrange, mn, sze)
     else
         N2 = round(abs(cmax-mn)/clen * sze);
     end
-    
-    par = [0    0.4470    0.7410;  0.8500    0.3250    0.0980];
+    par  = [bcol; ecol];
     neg  = par(1,:);
     pos  = par(2,:);
     mid  = [1,1,1];

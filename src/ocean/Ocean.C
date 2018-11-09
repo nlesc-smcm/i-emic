@@ -1155,10 +1155,10 @@ double Ocean::explicitResNorm(VectorPtr rhs)
 {
     RCP<Epetra_Vector> Ax =
         rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
-    jac_->Apply(*sol_, *Ax);
-    Ax->Update(1.0, *rhs, -1.0);
+    jac_->Apply(*sol_, *Ax);        // A*x
+    Ax->Update(1.0, *rhs, -1.0);    // b - A*x
     double nrm;
-    Ax->Norm2(&nrm);
+    Ax->Norm2(&nrm);                // nrm = ||b-A*x||
     Utils::save(Ax, "lsresidual");
     return nrm;
 }

@@ -301,6 +301,10 @@ void CoupledModel::initializeFGMRES()
 
     solverInitialized_ = true;
 
+    // initialize effort counter
+    effortCtr_ = 0;
+    effort_    = 0.0;
+
     INFO("CoupledModel: initialize FGMRES done");
 }
 
@@ -356,8 +360,27 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 
     double tol = belosSolver_->achievedTol();
 
-    INFO("CoupledModel: FGMRES, iters = " << iters << ", ||r|| = " << tol);
+    double normb = Utils::norm(rhs);
+    double nrm = explicitResNorm(rhs);
+    INFO("           ||b||         = " << normb);
+    INFO("           ||x||         = " << Utils::norm(solView_));
+    INFO("        ||b-Ax|| / ||b|| = " << nrm / normb);
 
+    if ((tol > 0) && (normb > 0) && ( (nrm / normb / tol) > 10))
+    {
+        ERROR("Actual residual norm too large: "
+              << (nrm / normb) << " > " << tol
+              , __FILE__, __LINE__);
+    }
+    
+    // keep track of effort
+    if (effortCtr_ == 0)
+        effort_ = 0;
+    
+    effortCtr_++;
+    effort_ = (effort_ * (effortCtr_ - 1) + iters ) / effortCtr_;
+
+    INFO("CoupledModel: FGMRES, iters = " << iters << ", ||r|| = " << tol);
 }
 
 //------------------------------------------------------------------
@@ -522,21 +545,18 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
 }
 
 //------------------------------------------------------------------
-double CoupledModel::computeResidual(std::shared_ptr<Combined_MultiVec> rhs)
+double CoupledModel::explicitResNorm(std::shared_ptr<Combined_MultiVec> rhs)
 {
 
     Combined_MultiVec b = *getSolution('C');
     b.PutScalar(0.0);
 
-    applyMatrix(*solView_, b);
-
-    double rhsNorm = Utils::norm(rhs);
-
-    b.Update(1, *rhs, -1);   // b-Jx
-    b.Scale(1.0 / rhsNorm);  
-    double relResidual = Utils::norm(&b); // ||b-Jx||/||b||
-
-    return relResidual;
+    applyMatrix(*solView_, b);          // A*x
+    b.Update(1, *rhs, -1);              // b-A*x
+    double resnorm = Utils::norm(&b);   // ||b-A*x||
+    
+    Utils::save(b, "lsresidual");
+    return resnorm;
 }
 
 //------------------------------------------------------------------
@@ -676,19 +696,16 @@ std::string const CoupledModel::writeData(bool describe)
             if (describe)
             {
                 datastring << std::setw(_FIELDWIDTH_/ 3)
-                           << "MV"
-                           << std::setw(_FIELDWIDTH_ *3/4)
-                           << "Tol";
+                           << "MV";
                 for (auto &model: models_)
                     datastring << model->writeData(describe) << " ";   
             }
             else
             {
                 datastring.precision(_PRECISION_);
-                datastring << std::scientific << std::setw(_FIELDWIDTH_/3)
-                           << belosSolver_->getNumIters();
-                datastring << std::scientific << std::setw(_FIELDWIDTH_ *3/4) << std::setprecision(_PRECISION_/2)
-                           << belosSolver_->achievedTol();
+                datastring << std::setw(_FIELDWIDTH_/3)
+                           << std::round(effort_);
+                effortCtr_ = 0;
                 
                 for (auto &model: models_)
                     datastring << model->writeData(describe) << " ";   

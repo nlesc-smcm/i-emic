@@ -13,6 +13,14 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
     else
         readFluxes = false;
     end
+    
+    if isfield(opts, 'sifield')
+        sifield  = opts.sifield;
+        plot_all = false;
+    else
+        sifield = '';
+        plot_all = true;
+    end        
 
     if isfield(opts, 'readEV')
         readEV = opts.readEV;
@@ -25,6 +33,25 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
     else
         fig_ctr = 21; % first figure handle number
     end
+    
+    if isfield(opts,'exporteps')
+        exporteps = opts.exporteps;
+    else
+        exporteps = false;
+    end
+
+    if isfield(opts,'invert')
+        invert = opts.invert;
+    else
+        invert = false;
+    end
+    
+    if isfield(opts,'input_caxis')
+        set_caxis = true;
+    else
+        set_caxis = false;
+    end
+
 
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
     
@@ -69,26 +96,47 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
     simask = squeeze(state(3, :, :, :)) > 0.1;
     
     for i = 1:si_nun
-        figure(fig_ctr); fig_ctr = fig_ctr+1;
-        field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
-        field(logical(surfm)) = NaN;
-
-        if ~readEV
-            field(~logical(simask)) = NaN;
-        end
         
-        diff = max(max(field))-min(min(field));
-        fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), ...
-                diff);
-        imagesc(RtD*x, RtD*(y), field'); hold on
-        ca = caxis;
-        plot_mask(surfm,x, y); hold off
-        caxis(ca);
+        if plot_all || strcmp(titles{i}, sifield)
+            
+            figure(fig_ctr); fig_ctr = fig_ctr+1;
+            field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
+            field(logical(surfm)) = NaN;
+
+            if ~readEV
+                field(~logical(simask)) = NaN;
+            end
+            
+            diff = max(max(field))-min(min(field));
+            fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), ...
+                    diff);
+            imagesc(RtD*x, RtD*(y), field'); hold on
+
+            if set_caxis
+                caxis(opts.input_caxis)
+            end
+            
+            ca = caxis;
+            plot_mask(surfm,x, y); 
+                        
+            hold off
+            caxis(ca);
 
 
-        set(gca, 'ydir', 'normal')
-        title(titles{i});
-        colorbar
+            set(gca, 'ydir', 'normal')
+            title(titles{i});
+            colorbar
+            
+            colormap([[.5,.5,.5] ; my_colmap(caxis, 0.3,128,[0,.45,.75],[.8,.8,.8])])
+            if ~exporteps && invert
+                invertcolors()
+            end
+            
+            if exporteps
+                exportfig(['seaice',titles{i},'.eps'],10,[19,11], ...
+                          invert)
+            end
+        end
     end
 
     opts.mask = logical(surfm) | ~logical(simask);

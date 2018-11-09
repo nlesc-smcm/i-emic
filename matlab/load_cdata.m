@@ -19,7 +19,7 @@ function [titles, cdata] = load_cdata(fname)
 
         % ignore initial pound
         if strcmp(titles{i},'#')
-            i = i - 1
+            i = i - 1;
         end
         i = i + 1;                
     end

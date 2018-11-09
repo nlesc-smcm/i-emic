@@ -10,9 +10,18 @@ function [] = invertcolors()
     set(gca,'minorgridalpha',1);
 
     set(gcf,'color','k');
-    set(legend,'color','k');
-    set(legend,'edgecolor',[.5,.5,.5]);
-    set(legend,'textcolor','w');        
+    
+    leg = get(gca,'legend');
+    if numel(leg) > 0
+        set(legend,'color','k');
+        set(legend,'edgecolor',[.5,.5,.5]);
+        set(legend,'textcolor','w');        
+    end
+    
+    clb = get(gca,'colorbar');
+    if numel(clb) > 0
+        set(colorbar,'color','w');        
+    end       
 
     title = get(gca,'title');
     title.Color=[1,1,1];
