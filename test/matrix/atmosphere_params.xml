@@ -57,8 +57,8 @@
   <Parameter name="Global Grid-Size m" type="int" value="6"   />
 
   <!-- testing parameters  -->
-  <Parameter name="melt temperature threshold (deg C)" type="double" value="-10"/>
-  <Parameter name="melt threshold width (deg C)" type="double" value="0.01"/>
+  <Parameter name="melt temperature threshold (deg C)" type="double" value="15"/>
+  <Parameter name="melt threshold width (deg C)" type="double" value="5"/>
   
   <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="-1"/>
   <Parameter name="accumulation threshold width (m/y)" type="double" value="0.01"/>

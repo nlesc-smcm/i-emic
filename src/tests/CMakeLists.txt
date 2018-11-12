@@ -65,8 +65,8 @@ add_test(NAME partest_matrix_1 COMMAND mpirun -np 1 ${PROJECT_SOURCE_DIR}/build/
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
 add_test(NAME partest_matrix_2 COMMAND mpirun -np 2 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_3 COMMAND mpirun -np 3 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
 add_test(NAME partest_matrix_4 COMMAND mpirun -np 4 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
+add_test(NAME partest_matrix_8 COMMAND mpirun -np 8 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
 

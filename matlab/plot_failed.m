@@ -1,8 +1,8 @@
 function [files] = plot_failed(base_names, level, fig_ctr)
-    
+
     comparefiles = false;
     if ~iscell(base_names)
-        base_names   = {basenames};
+        base_names   = {base_names};
     end
     
     if iscell(base_names) && numel(base_names) == 2
@@ -31,14 +31,17 @@ function [files] = plot_failed(base_names, level, fig_ctr)
 
     % Collect files
     spaces1 = strfind(list1, ' ');
-    spaces2 = strfind(list2, ' ');
     nfiles1 = numel(spaces1) / 2 + 1;
-    nfiles2 = numel(spaces2) / 2 + 1;
-    
-    if nfiles1 ~= nfiles2
-        fprintf('unequal amount of files in comparison\n')
-        return;
-    end       
+
+    if comparefiles
+        spaces2 = strfind(list2, ' ');
+        nfiles2 = numel(spaces2) / 2 + 1;
+        
+        if nfiles1 ~= nfiles2
+            fprintf('unequal amount of files in comparison\n')
+            return;
+        end       
+    end
     
     files1  = cell(3,1);
     files2  = cell(3,1);

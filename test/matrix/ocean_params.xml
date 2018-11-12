@@ -54,16 +54,7 @@
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="4"/>
 
-    <!-- topography:                                -->
-    <!-- 0: from data                               -->
-    <!-- 1: no land                                 -->
-    <!-- others not tested, but this is 'itopo' in  -->
-    <!-- THCM language                              -->
-    <Parameter name="Topography" type="int" value="0"/>
-    <!-- remove bottom profile? (flat in THCM)      -->
     <Parameter name="Flat Bottom" type="bool" value="0"/>
-    <!-- read mask from a file in mkmask The filename is hard-coded in   -->
-    <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
     <Parameter name="Land Mask" type="string" value="test6x6x4"/>
@@ -72,7 +63,7 @@
     <!-- Flag enabling the coupling with an atmosphere                   -->
     <!--   0: standalone thcm, 1: accepting external atmosphere          -->
     <Parameter name="Coupled Temperature" type="int" value="1"/>
-    <Parameter name="Coupled Salinity" type="int" value="1"/>
+    <Parameter name="Coupled Salinity" type="int" value="0"/>
     <!-- =============================================================== -->
 
     <!-- Starting Parameters                                          -->
@@ -83,7 +74,7 @@
       <Parameter name="Salinity Forcing"    type="double" value="0.1"/>
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
       <Parameter name="Temperature Forcing" type="double" value="1.0"/>
-      <!-- <Parameter name="Rayleigh-Number"     type="double" value="0.0"/> -->
+      <Parameter name="Rayleigh-Number"     type="double" value="0.0"/>
       <Parameter name="SPL1"                type="double" value="1.25"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>
     </ParameterList>

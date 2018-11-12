@@ -126,6 +126,9 @@ TEST(CoupledModel, Initialization)
                                                       atmos,
                                                       seaice,
                                                       params[COUPLED]);
+
+        coupledModel->initializeState();
+        coupledModel->postProcess();
     }
     catch (...)
     {
@@ -142,7 +145,11 @@ TEST(CoupledModel, Initialization)
 TEST(CoupledModel, Matrix)
 {
     std::shared_ptr<Combined_MultiVec> s = coupledModel->getState('V');
-    s->PutScalar(0.01);
+    // s->SetSeed(22);
+    // s->Random();
+    // s->Scale(0.01);
+    INFO("   ||s|| = " << Utils::norm(s));
+    coupledModel->setPar(0.01);
     coupledModel->computeJacobian();
     
     std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');
@@ -156,6 +163,7 @@ TEST(CoupledModel, Matrix)
     double normx = Utils::norm(x);
     
     INFO(" # cores = " << comm->NumProc());
+    INFO("   ||x|| = " << normx);
 
     std::stringstream fname_save;
     fname_save << "MV_procs" << comm->NumProc() << "_";
@@ -167,11 +175,16 @@ TEST(CoupledModel, Matrix)
         if (p >= comm->NumProc())
             break;
         
-        std::stringstream fname_load;
-        fname_load << "MV_procs" << p << "_";
+        std::stringstream fname_load, diff;
+        fname_load << "MV_procs" << p << "_";       
 
         Utils::load(y, fname_load.str());
+        INFO("   ||y|| = " << Utils::norm(y));
         EXPECT_NEAR(Utils::norm(y), normx, 1e-8);
+
+        y->Update(-1.0,*x,1.0);
+        diff << "diff_" << comm->NumProc() << "-" << p;
+        Utils::save(y, diff.str());
     }        
 }
 
