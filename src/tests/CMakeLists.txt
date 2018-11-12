@@ -25,6 +25,7 @@ set(TEST_SOURCES
   test_coupled.C
   intt_coupled.C
   test_integrals.C
+  test_matrix.C
   )
 
 include(BuildExternalProject)
@@ -57,3 +58,15 @@ foreach(test_source ${TEST_SOURCES})
   target_link_libraries(${test_name} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 
 endforeach()
+
+# additional parallel tests
+get_filename_component(test_name test_matrix.C NAME_WE)
+add_test(NAME partest_matrix_1 COMMAND mpirun -np 1 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
+add_test(NAME partest_matrix_2 COMMAND mpirun -np 2 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
+add_test(NAME partest_matrix_3 COMMAND mpirun -np 3 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
+add_test(NAME partest_matrix_4 COMMAND mpirun -np 4 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
+

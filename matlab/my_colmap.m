@@ -12,6 +12,10 @@ function [out] = my_colmap(colrange, mn, sze, bcol, ecol)
         mn = mean(colrange);
     end
     
+    if nargin < 1
+        colrange = caxis;
+    end
+    
     if nargin < 4
         bcol = [0    0.4470    0.7410];
     end

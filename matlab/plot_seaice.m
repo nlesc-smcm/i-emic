@@ -93,13 +93,15 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
 
     titles = {'H','Q_T^{sa}','M','T'};
 
-    simask = squeeze(state(3, :, :, :)) > 0.1;
+    simask = squeeze(state(3, :, :, :)) > 0.01;
     
     for i = 1:si_nun
         
         if plot_all || strcmp(titles{i}, sifield)
             
             figure(fig_ctr); fig_ctr = fig_ctr+1;
+            set(gca,'color',[.5,.5,.5]);
+            
             field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
             field(logical(surfm)) = NaN;
 
@@ -108,26 +110,48 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
             end
             
             diff = max(max(field))-min(min(field));
-            fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), ...
-                    diff);
-            imagesc(RtD*x, RtD*(y), field'); hold on
+            fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), diff);
+            %            imagesc(RtD*x, RtD*(y), field','AlphaData',~isnan(field')); ...
+            %   hold on
+            imagesc(RtD*x, RtD*(y), field'); ...
+                hold on
+            
+            cnan = [100 100 100]/256;
+            cbeg = [240 240 240]/256;
+            cmid = [150 180 200]/256;
+            cend = [180	220	240]/256;
+            cmap  = [cnan; ...
+                    linspace(cbeg(1),cmid(1),128)',...
+                    linspace(cbeg(2),cmid(2),128)',...
+                    linspace(cbeg(3),cmid(3),128)';...
+                    linspace(cmid(1),cend(1),128)',...
+                    linspace(cmid(2),cend(2),128)',...
+                    linspace(cmid(3),cend(3),128)'];
+            
+            colormap(cmap);
+            
+            amin=min(caxis);
+            amax=max(caxis);
+            n = size(cmap,1);
 
+            dmap=2*(amax-amin)/n;
+            caxis([amin-dmap,amax]);
+            
+            %colormap(my_colmap(caxis,mean(caxis),128,[0,0.4470,0.7410],[0.7,0.7,0.7]))
             if set_caxis
                 caxis(opts.input_caxis)
             end
             
             ca = caxis;
             plot_mask(surfm,x, y); 
-                        
+            
             hold off
             caxis(ca);
-
-
+            
             set(gca, 'ydir', 'normal')
             title(titles{i});
             colorbar
             
-            colormap([[.5,.5,.5] ; my_colmap(caxis, 0.3,128,[0,.45,.75],[.8,.8,.8])])
             if ~exporteps && invert
                 invertcolors()
             end

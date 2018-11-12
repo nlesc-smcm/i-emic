@@ -293,6 +293,57 @@ void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
 }
 
 //============================================================================
+void Utils::load(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename)
+{
+    std::ostringstream fname;
+    fname << filename << ".h5";
+
+    // Check whether file exists
+    std::ifstream file(fname.str());
+    if (!file)
+    {
+        WARNING("Can't open " << fname.str()
+                << ", continue with trivial " << vec->Label(),
+                __FILE__, __LINE__);
+
+        // create trivial vector
+        vec->PutScalar(0.0);
+        return;
+    }
+    else file.close();
+    
+    INFO("Loading from " << fname.str() << " into " << vec->Label());
+    
+    EpetraExt::HDF5 HDF5(vec->Map().Comm());
+    HDF5.Open(fname.str());
+    Epetra_MultiVector *readState;
+    
+    // Check contents
+    if (!HDF5.IsContained("State"))
+    {
+        ERROR("The group <State> is not contained in hdf5 " << filename,
+              __FILE__, __LINE__);
+    }
+    
+    HDF5.Read("State", readState);
+
+    if ( readState->GlobalLength() != vec->Map().NumGlobalElements() )
+    {
+        ERROR("Incompatible number of elements", __FILE__, __LINE__);
+    }
+
+    // Create importer
+    // target map: vector map
+    // source map: state with linear map as read by HDF5.Read
+    Teuchos::RCP<Epetra_Import> lin2solve =
+        Teuchos::rcp(new Epetra_Import(vec->Map(),
+                                       readState->Map()));
+    
+    // Import state from HDF5 into state_ datamember
+    CHECK_ZERO(vec->Import(*((*readState)(0)), *lin2solve, Insert));
+}
+
+//============================================================================
 void Utils::save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename)
 {
     for (int i = 0; i != vec->Size(); ++i)
@@ -300,6 +351,17 @@ void Utils::save(std::shared_ptr<Combined_MultiVec> vec, std::string const &file
         std::stringstream fname;
         fname << filename << "." << i;
         save( (*vec)(i), fname.str());
+    }
+}
+
+//============================================================================
+void Utils::load(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename)
+{
+    for (int i = 0; i != vec->Size(); ++i)
+    {
+        std::stringstream fname;
+        fname << filename << "." << i;
+        load( (*vec)(i), fname.str());
     }
 }
 

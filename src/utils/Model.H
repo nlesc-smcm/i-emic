@@ -198,10 +198,12 @@ inline int Model::loadStateFromFile(std::string const &filename)
         HDF5.Read("State", readState);
 
         if ( readState->GlobalLength() != getDomain()->GetSolveMap()->NumGlobalElements() )
+        {
             WARNING("Loading state from differ #procs", __FILE__, __LINE__);
+        }
 
         // Create importer
-        // target map: thcm domain SolveMap
+        // target map: domain StandardMap
         // source map: state with linear map as read by HDF5.Read
         Teuchos::RCP<Epetra_Import> lin2solve =
             Teuchos::rcp(new Epetra_Import(*(getDomain()->GetSolveMap()),
