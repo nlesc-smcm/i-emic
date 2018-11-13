@@ -90,7 +90,8 @@ void LyapunovModel<Model>::postProcess()
     if (V_ != Teuchos::null)
     {
         V = V_;
-        params->sublist("Lyapunov Solver").set("Restart from solution", true);
+        if (!params->sublist("Lyapunov Solver").isParameter("Restart from solution"))
+            params->sublist("Lyapunov Solver").set("Restart from solution", true);
     }
     else
         V = Teuchos::rcp(
