@@ -16,8 +16,6 @@
   <Parameter name="Input file"  type="string" value="ocean_input.h5" />
   <Parameter name="Output file" type="string" value="ocean_output.h5" />
 
-  <Parameter name="Save frequency" type="int" value="100" />
-
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->
   <!-- specified in CoupledModel                                      -->
@@ -37,9 +35,9 @@
     <!-- eastern domain bound -->
     <Parameter name="Global Bound xmax" type="double" value="360"/>
     <!-- southern domain bound -->
-    <Parameter name="Global Bound ymin" type="double" value="-81"/>
+    <Parameter name="Global Bound ymin" type="double" value="-85.5"/>
     <!-- northern domain bound -->
-    <Parameter name="Global Bound ymax" type="double" value="81"/>
+    <Parameter name="Global Bound ymax" type="double" value="85.5"/>
     <!-- periodic boundary conditions in x-direction -->
     <Parameter name="Periodic" type="bool" value="1"/>
 
@@ -51,9 +49,9 @@
     <!-- but in some cases it may work                             -->
     <Parameter name="Grid Stretching qz" type="double" value="4.0"/>
     <!-- global number of grid points in x-direction -->
-    <Parameter name="Global Grid-Size n" type="int" value="96"/>
+    <Parameter name="Global Grid-Size n" type="int" value="32"/>
     <!-- global number of grid points in y-direction -->
-    <Parameter name="Global Grid-Size m" type="int" value="38"/>
+    <Parameter name="Global Grid-Size m" type="int" value="64"/>
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="2"/>
 
@@ -64,10 +62,10 @@
     <!-- <Parameter name="Integral row coordinate j" type="int" value="16"/> -->
     
     <!-- remove bottom profile? (flat in THCM)      -->
-    <Parameter name="Flat Bottom" type="bool" value="1"/>
+    <Parameter name="Flat Bottom" type="bool" value="0"/>
     <!-- read mask from a file in mkmask The filename is hard-coded in   -->
     <!-- topo.F90.                                                       -->
-    <Parameter name="Read Land Mask" type="bool" value="1"/>
+    <Parameter name="Read Land Mask" type="bool" value="0"/>
     <!-- name of land mask file (assumed to be in topdir/data/mkmask/)   -->
     <Parameter name="Land Mask" type="string" value="mask_global_96x38x2"/>
 

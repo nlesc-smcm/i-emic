@@ -795,13 +795,12 @@ newtonCorrector()
 
     if (res > practicalTol_)
     {
-        WARNING("Continuation: Newton failed after " << newtonIter_ << " steps",
-                __FILE__, __LINE__);
+        INFO("Continuation: Newton failed after " << newtonIter_ << " steps");
         if (rejectFailedNewton_)
             return 1;
         else
         {
-            WARNING("Continuation: Proceeding with unconverged result",__FILE__, __LINE__);
+            INFO("Continuation: Proceeding with unconverged result");
         }
     }
     else

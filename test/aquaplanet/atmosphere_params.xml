@@ -11,7 +11,6 @@
 
   <!-- Save evaporation and precipitation fields -->
   <Parameter name="Save E and P fields" type="bool" value="true" />
-  <Parameter name="Save frequency" type="int" value="100" />
 
   <!-- Continuation parameter name                                    -->
   <!-- In a coupled situation this will be overruled by the parameter -->

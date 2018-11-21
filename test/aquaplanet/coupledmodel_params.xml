@@ -17,8 +17,6 @@
   <!-- The sub-models maintain names for the input files.        -->
   <Parameter name="Load state" type="bool" value="true"/>
 
-  <Parameter name="Save frequency" type="int" value="0" />
-
   <Parameter name="Problem Description" type="string" value="Coupled run"/>
 
   <!-- Continuation parameter        -->
@@ -27,7 +25,7 @@
   <!--           "Salinity Forcing"  -->
   <!--           "Wind Forcing"      -->
   <!--           "Humidity Forcing"  -->
-  <Parameter name="Continuation parameter" type="string" value="Solar Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- We determine the horizontal extent and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
@@ -41,9 +39,9 @@
   <Parameter name="Global Bound ymax" type="double" value="85.5"/>
   
   <!-- global number of grid points in x-direction -->
-  <Parameter name="Global Grid-Size n" type="int" value="96"/>
+  <Parameter name="Global Grid-Size n" type="int" value="4"/>
   <!-- global number of grid points in y-direction -->
-  <Parameter name="Global Grid-Size m" type="int" value="38"/>
+  <Parameter name="Global Grid-Size m" type="int" value="64"/>
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="true"/>
@@ -52,8 +50,8 @@
   <Parameter name="atmos reference humidity" type="double" value="8e-3" />
 
   <!-- Starting parameters that are common in the models -->
-  <Parameter name="Combined Forcing"    type="double" value="1.0"/>
-  <Parameter name="Solar Forcing"       type="double" value="0.965"/>
+  <Parameter name="Combined Forcing"    type="double" value="0.0"/>
+  <Parameter name="Solar Forcing"       type="double" value="1.0"/>
 
   <!-- D: decoupled                                                     -->
   <!--    (ignoring coupling blocks, synchronization after convergence) -->
