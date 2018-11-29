@@ -1,5 +1,19 @@
 #!/bin/bash
 
+if [ $# -ne 4 ]
+then
+    echo "usage: setparameters.sh <restart> <cpar> <dest> <initstep>"
+    echo "       restart:   true/false"
+    echo "       cpar:      \"Combined Forcing\"/\"Solar Forcing\"/etc"
+    echo "       dest:      destination value, 1.0 for spinups"
+    echo "       initstep:  initial step size, i.e., 1e-2"
+
+else
+	iname=$1
+	oname=$2
+fi
+
+
 # start from existing state
 restart=$1
 

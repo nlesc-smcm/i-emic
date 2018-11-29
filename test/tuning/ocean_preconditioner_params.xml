@@ -1,4 +1,3 @@
-
 <ParameterList name="Block Preconditioner">              
   <!-- Preconditioner scheme: currently allowed are                    -->
   <!-- "ILU": involves the very expensive Schur-complement that        -->
@@ -54,7 +53,7 @@
   <ParameterList name="Auv Precond">
     
     <!-- supported values are "None", "Ifpack", "ML", "ParaSails" -->
-    <Parameter name="Method" type="string" value="Ifpack"/>
+    <Parameter name="Method" type="string" value="ML"/>
     
     <Parameter name="verbosity" type="int" value="1"/>
     
@@ -64,7 +63,7 @@
     <!-- "Amesos/ILUT/... stand-alone" and some others              -->
     <!-- (see file Ifpack.cpp)                                      -->
     <!-- Only relevant if you chose "Ifpack" above.                 -->
-    <Parameter name="Ifpack Method" type="string" value="ILU"/>
+    <Parameter name="Ifpack Method" type="string" value="MRILU"/>
     
     <!-- if you chose Amesos above, select the direct solver here:  -->
     <!-- "Amesos_Klu" is always available                           -->
@@ -413,7 +412,7 @@
   <!-- Solver parameters for the saddlepoint problem { -->
   <ParameterList name="Saddlepoint Solver">
     <Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="3"/>
+    <Parameter name="Max Num Iter" type="int" value="1"/>
     <Parameter name="Tolerance" type="double" value="1.0e-2"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
@@ -550,15 +549,15 @@
   <!-- Parameters for the Krylov solver for ATS { -->
   <ParameterList name="ATS Solver">
 	<Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="20"/>
-    <Parameter name="Tolerance" type="double" value="1.0e-3"/>
+    <Parameter name="Max Num Iter" type="int" value="500"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-7"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
     <Parameter name="Output" type="int" value="1"/>
     <Parameter name="Scaling" type="string" value="None"/> <!--indifferent -->
     <!-- don't touch this one, it's irrelevant -->
     <Parameter name="Precond" type="string" value="None"/>
-    <Parameter name="KSpace" type="int" value="20"/>
+    <Parameter name="KSpace" type="int" value="500"/>
     <Parameter name="Orthog" type="string" value="Classic"/>
   </ParameterList><!-- } ATS Solver -->
   
@@ -683,7 +682,7 @@
 	  </ParameterList><!--}-->
 
       <Parameter name="smoother: ifpack overlap" type="int" value="0"/>
-      <Parameter name="smoother: ifpack type" type="string" value="ILU"/>
+      <Parameter name="smoother: ifpack type" type="string" value="MRILU"/>
       <!--Parameter name="smoother: ifpack type" type="string" 
 		  value="block relaxation (Amesos)"/-->
       

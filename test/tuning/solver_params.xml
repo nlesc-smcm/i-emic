@@ -1,16 +1,11 @@
-<!-- ********************************* -->
-<!-- Standard linear solver parameters -->
-<!--                                   -->
-<!-- ********************************* -->
-
+<!-- LINEAR SOLVER PARAMETERS -->
 <ParameterList name="solver">
-
   <!-- ..................................................................-->
-  <!-- FGMRES (Belos) parameters                                         -->
+  <!-- FGMRES (Belos) parameters                                         -->  
   <!-- ..................................................................-->
-  <Parameter name="FGMRES tolerance" type="double" value="1e-3"/>
-  <Parameter name="FGMRES iterations" type="int" value="200"/>
+  <Parameter name="FGMRES tolerance" type="double" value="1e-2"/>
+  <Parameter name="FGMRES iterations" type="int" value="1000"/>
   <Parameter name="FGMRES restarts" type="int" value="0"/>
-  <Parameter name="FGMRES output" type="int" value="100"/> <!-- Output Frequency -->
+  <Parameter name="FGMRES output" type="int" value="100"/>
 
 </ParameterList>

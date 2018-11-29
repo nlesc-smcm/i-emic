@@ -17,7 +17,7 @@
   <!-- The sub-models maintain names for the input files.        -->
   <Parameter name="Load state" type="bool" value="true"/>
 
-  <Parameter name="Save frequency" type="int" value="0" />
+  <Parameter name="Save frequency" type="int" value="100" />
 
   <Parameter name="Problem Description" type="string" value="Coupled run"/>
 
@@ -27,14 +27,14 @@
   <!--           "Salinity Forcing"  -->
   <!--           "Wind Forcing"      -->
   <!--           "Humidity Forcing"  -->
-  <Parameter name="Continuation parameter" type="string" value="Solar Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Wind Forcing"/>
 
   <!-- We determine the horizontal extent and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
 
   <Parameter name="Global Bound xmin" type="double" value="0"/>
   <!-- eastern domain bound -->
-  <Parameter name="Global Bound xmax" type="double" value="360"/>
+  <Parameter name="Global Bound xmax" type="double" value="359.99"/>
   <!-- southern domain bound -->
   <Parameter name="Global Bound ymin" type="double" value="-85.5"/>
   <!-- northern domain bound -->
@@ -53,7 +53,7 @@
 
   <!-- Starting parameters that are common in the models -->
   <Parameter name="Combined Forcing"    type="double" value="1.0"/>
-  <Parameter name="Solar Forcing"       type="double" value="0.965"/>
+  <Parameter name="Solar Forcing"       type="double" value="0.9"/>
 
   <!-- D: decoupled                                                     -->
   <!--    (ignoring coupling blocks, synchronization after convergence) -->
@@ -67,7 +67,7 @@
   <!-- B: 1 step backward block Gauss Seidel                  -->
   <!-- C: 2 step backward block Gauss Seidel                  -->
   <!-- F: 1 step forward block Gauss Seidel                   -->
-  <!-- G: 2 step forward block Gauss Seidel                   -->   
+  <!-- G: 2 step forward block Gauss Seidel                   -->                       
   <!-- D: diagonal, no coupling blocks                        -->
   <Parameter name="Preconditioning" type="char" value="B"/>
 

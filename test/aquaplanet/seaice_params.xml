@@ -14,7 +14,7 @@
   <Parameter name="Global Bound ymin" type="double" value="10"/>
   <Parameter name="Global Bound ymax" type="double" value="74"/>
   <Parameter name="Global Grid-Size n" type="int" value="6"/>
-  <Parameter name="Global Grid-Size m" type="int" value="64"/>
+  <Parameter name="Global Grid-Size m" type="int" value=""/>
 
   <Parameter name="Periodic" type="bool" value="false"/>
 
@@ -33,7 +33,7 @@
   <Parameter name="atmos humidity scale" type="double" value="1e-3" />
   
   <Parameter name="threshold ice thickness" type="double" value="0.1"/>
-  <Parameter name="mask switch steepness" type="double" value="0.05"/>
+  <Parameter name="mask switch steepness" type="double" value="0.4"/>
 
   <!-- set a0: freezing temperature is roughty a0 * S0, S0 is usually 35 psu -->
   <!-- <Parameter name="freezing temperature sensitivity" type="double" value="-1" /> -->
