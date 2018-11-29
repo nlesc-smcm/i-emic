@@ -1,4 +1,4 @@
-function [titles, cdata] = plot_cdata(fname, opts)
+function [titles, cdata,h] = plot_cdata(fname, opts)
     if nargin < 2 
         opts = [];
     end
@@ -11,9 +11,9 @@ function [titles, cdata] = plot_cdata(fname, opts)
     end
     
     if isfield(opts,'lsty')
-        lsty = opts.lsty;
+        lsty = opts.lsty;        
     else
-        lsty='k.-';
+        lsty={'k.-'};
     end
 
     if isfield(opts,'prepend') && isfield(opts,'prefiles')
@@ -70,7 +70,7 @@ function [titles, cdata] = plot_cdata(fname, opts)
     if isfield(opts,'point')
         point = opts.point;
     else
-        point = -1;
+        point = Inf;
     end
 
     if isfield(opts,'xzmpoint') && isfield(opts,'yzmpoint')
@@ -126,27 +126,30 @@ function [titles, cdata] = plot_cdata(fname, opts)
             if strcmp(titles{i}, '||F||') || strcmp(titles{i}, 'ds') || ...
                     strcmp(titles{i}, 'Tol')
                 cdata(:,i) = abs(cdata(:,i));
-                semilogy(partrans(cdata(:,1)),cdata(:,i),lsty);
+                h = semilogy(partrans(cdata(:,1)),cdata(:,i),lsty{:});
                 xlabel(parname);
             else
-                plot(partrans(cdata(:,1)),cdata(:,i),lsty);
+                h = plot(partrans(cdata(:,1)),cdata(:,i),lsty{:});
                 xlabel(parname);
             end
             if plot_fancy
                 hold on
-                s = scatter(partrans(cdata(:,1)),cdata(:,i), 10, clrs, 'o','filled'); 
+                s = scatter(partrans(cdata(:,1)),cdata(:,i), 2, clrs, 'o','filled'); 
                 uistack(s,'bottom');
                 hold off;
             end
-            
-            if point < 0
-                point = size(cdata,1);
+
+            if point > 0
+                if point > size(cdata,1)
+                    point = size(cdata,1);
+                end
+                xpoint = partrans(cdata(point,1));
+                ypoint = cdata(point,i);
+                hold on
+                e  = plot(xpoint,ypoint,'o','markerfacecolor','w'); 
+                hold off;
             end
-            xpoint = partrans(cdata(point,1));
-            ypoint = cdata(point,i);
-            hold on
-            e = plot(xpoint,ypoint,'r*'); 
-            hold off;
+            
             if (xzmpoint >  0) && (yzmpoint >  0)
                 xlim([xpoint-xzmpoint,xpoint+xzmpoint])
                 ylim([ypoint-yzmpoint,ypoint+yzmpoint])
@@ -177,7 +180,7 @@ function [titles, cdata] = plot_cdata(fname, opts)
     %            hold on;
     %        end
     %
-    %        plot(partrans(cdata(:,1)),cdata(:,maxPsi)+cdata(:,minPsi),lsty);
+    %        polt(partrans(cdata(:,1)),cdata(:,maxPsi)+cdata(:,minPsi),lsty{:});
     %        title('max(Psi)+min(Psi)');
     %        
     %        if holdfig

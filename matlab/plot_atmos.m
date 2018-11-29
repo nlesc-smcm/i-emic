@@ -230,7 +230,9 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if plot_albedo || plot_default
         figure(fig_ctr); fig_ctr = fig_ctr+1;
-        img = Aa';
+        Aback = 0.3;
+        Adev = 0.4;
+        img = Aback + Adev*Aa';
         imagesc(RtD*x,RtD*(y),img); 
         set(gca,'ydir','normal')
         
@@ -243,7 +245,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         ylabel('Latitude')
         
         if export_to_file
-            exportfig('atmosA.eps',10,[14,10],invert)
+            exportfig('atmosA.eps',10,[19,11],invert)
         end
     end
     

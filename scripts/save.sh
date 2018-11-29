@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [ $# -ne 2 ]
+if [ $# -lt 2 ]
 then
-    echo "usage: ./save runid label"
+    echo "usage: ./save runid label description"
     echo "          "
     exit
 fi
@@ -10,7 +10,12 @@ fi
 runid=$1
 label=$2
 
-read -p "Please describe label '$label': " -e label_description
+if [ $# -ne 3 ]
+then
+    read -p "Please describe label '$label': " -e label_description
+else
+    label_description=$3
+fi
 
 echo ""
 echo "Storing model states with label" $label "in directory" $runid
@@ -57,12 +62,17 @@ do
     cat    $infofile >> $logdir/$newinfofile
 done
 
-## Copy cdata file ----------------------------------------------------
+## Copy cdata/tdata file ----------------------------------------------------
 
 cdatafile=cdata.txt
 newcdatafile=${cdatafile/.txt/_lbl$label.txt}
 echo   $cdatafile '->' $logdir/$newcdatafile
 cat    $cdatafile > $logdir/$newcdatafile
+
+tdatafile=tdata.txt
+newtdatafile=${tdatafile/.txt/_lbl$label.txt}
+echo   $tdatafile '->' $logdir/$newtdatafile
+cat    $tdatafile > $logdir/$newtdatafile
 
 echo ""
 echo "Building log" $logdir

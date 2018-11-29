@@ -93,7 +93,7 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
 
     titles = {'H','Q_T^{sa}','M','T'};
 
-    simask = squeeze(state(3, :, :, :)) > 0.01;
+    simask = squeeze(state(3, :, :, :)) > 0.2;
     
     for i = 1:si_nun
         
@@ -150,6 +150,8 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
             
             set(gca, 'ydir', 'normal')
             title(titles{i});
+            xlabel('Longitude')
+            ylabel('Latitude')
             colorbar
             
             if ~exporteps && invert
