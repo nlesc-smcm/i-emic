@@ -14,7 +14,7 @@
   <Parameter name="Global Bound ymin" type="double" value="10"/>
   <Parameter name="Global Bound ymax" type="double" value="74"/>
   <Parameter name="Global Grid-Size n" type="int" value="6"/>
-  <Parameter name="Global Grid-Size m" type="int" value=""/>
+  <Parameter name="Global Grid-Size m" type="int" value="32"/>
 
   <Parameter name="Periodic" type="bool" value="false"/>
 

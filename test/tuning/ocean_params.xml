@@ -11,7 +11,7 @@
   <!-- an old state (true) or with a zero solution (false).                  -->
   <!-- In a coupled situation this will be partly overruled by the parameters-->
   <!-- specified in coupledmodel_params.xml                                  -->
-  <Parameter name="Load state" type="bool" value="true"/>
+  <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean_input.h5" />
   <Parameter name="Output file" type="string" value="ocean_output.h5" />
@@ -26,7 +26,7 @@
   <!--           "Solar Forcing"    -->
   <!--           "Salinity Forcing" -->
   <!--           "Wind Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Solar Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -64,7 +64,7 @@
     <!-- <Parameter name="Integral row coordinate j" type="int" value="16"/> -->
     
     <!-- remove bottom profile? (flat in THCM)      -->
-    <Parameter name="Flat Bottom" type="bool" value="0"/>
+    <Parameter name="Flat Bottom" type="bool" value="1"/>
     <!-- read mask from a file in mkmask The filename is hard-coded in   -->
     <!-- topo.F90.                                                       -->
     <Parameter name="Read Land Mask" type="bool" value="1"/>
@@ -87,16 +87,16 @@
       <Parameter name="Wind Forcing"        type="double" value="1.0"/>
       <Parameter name="Temperature Forcing" type="double" value="1.0"/>
 
-      <Parameter name="SPL1"                type="double" value="2.0e3"/>
+      <!-- <Parameter name="Rayleigh-Number"     type="double" value="0.0"/> -->
+      <Parameter name="Horizontal Ekman-Number" type="double" value="0.0027037"/>
+
+      <Parameter name="SPL1"                type="double" value="1.0"/>
       <Parameter name="SPL2"                type="double" value="0.01"/>
 
     </ParameterList>
 
     <!-- Mixing parameter (vmix_GLB in THCM)                                   -->
-    <!-- Depending on the choice here, SPL1 and SPL2 should be chosen wisely:  -->
-    <!-- Mixing = 1  => SPL1 = 2.0e3, SPL2 = 0.01                               -->
-    <!-- Mixing = 2  => SPL1 = 1.25,  SPL2 = 0.01                               -->
-    <Parameter name="Mixing" type="int" value="0"/>
+    <Parameter name="Mixing" type="int" value="1"/>
 
     <!-- Fred's convective adjustment (rho_mixing in THCM) -->
     <Parameter name="Rho Mixing" type="bool" value="0"/>

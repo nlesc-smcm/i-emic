@@ -146,6 +146,8 @@ public:
     virtual void restore(){}
     virtual void setTimestep(double dt){}
 
+    virtual void pressureProjection(VectorPtr vec){}
+
 };
 
 // Implementations

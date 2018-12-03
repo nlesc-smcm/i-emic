@@ -1131,7 +1131,7 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
 	
         if ((tol > 0) && (normb > 0) && ( (nrm / normb / tol) > 10))
         {
-            ERROR("Actual residual norm too large: "
+	  WARNING("Actual residual norm too large: "
                   << (nrm / normb) << " > " << tol
                   , __FILE__, __LINE__);
         }
@@ -2165,7 +2165,8 @@ void Ocean::pressureProjection(Teuchos::RCP<Epetra_Vector> vec)
 
     double dp1 = Utils::dot(vec, s1);
     double dp2 = Utils::dot(vec, s2);
-    
+
+    INFO("Ocean: pressure checkerboard correction...");
     // v = v - (v, s1) s1 - (v, s2) s2
     vec->Update(-dp1, *s1, -dp2, *s2, 1.0);
 }

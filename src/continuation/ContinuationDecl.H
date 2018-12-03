@@ -93,6 +93,8 @@ class Continuation
     double dsMin_;  
     //! maximum continuation step-size (absolute)
     double dsMax_;  
+    //! step size at beginning of secant process
+    double dsStart_; 
 
     //! parameter destinations
     std::vector<double> destinations_; 
@@ -114,8 +116,8 @@ class Continuation
     bool abortFlag_;            
     //! disable adjustStep()
     bool fixStepSize_;          
-    //! status flag when destination reached
-    bool destinationReached_;   
+    //! status flag when final destination reached
+    bool reachedLastDest_;
     //! status flag giving detect() power over ds
     bool secant_;               
 
