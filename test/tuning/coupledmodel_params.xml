@@ -27,7 +27,7 @@
   <!--           "Salinity Forcing"  -->
   <!--           "Wind Forcing"      -->
   <!--           "Humidity Forcing"  -->
-  <Parameter name="Continuation parameter" type="string" value="Wind Forcing"/>
+  <Parameter name="Continuation parameter" type="string" value="Solar Forcing"/>
 
   <!-- We determine the horizontal extent and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
@@ -53,7 +53,7 @@
 
   <!-- Starting parameters that are common in the models -->
   <Parameter name="Combined Forcing"    type="double" value="1.0"/>
-  <Parameter name="Solar Forcing"       type="double" value="0.9"/>
+  <Parameter name="Solar Forcing"       type="double" value="0.94"/>
 
   <!-- D: decoupled                                                     -->
   <!--    (ignoring coupling blocks, synchronization after convergence) -->

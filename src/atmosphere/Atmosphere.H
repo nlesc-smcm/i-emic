@@ -235,6 +235,9 @@ public:
     //! Meaningless: dummy implementation
     void synchronize(std::shared_ptr<Atmosphere> atmos) {}
 
+    //! Meaningless: dummy implementation
+    void pressureProjection(Teuchos::RCP<Epetra_Vector>) {}
+
     void setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst);
     
     void setSeaIceTemperature(Teuchos::RCP<Epetra_Vector> sst);

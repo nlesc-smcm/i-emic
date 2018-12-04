@@ -413,6 +413,8 @@ public:
     void synchronize(std::shared_ptr<Atmosphere> atmos);
     void synchronize(std::shared_ptr<Ocean> ocean);
 
+    void pressureProjection(Teuchos::RCP<Epetra_Vector> vec) {}
+
     Teuchos::RCP<Epetra_Vector> interface(Teuchos::RCP<Epetra_Vector> vec, int XX);
     
     Teuchos::RCP<Epetra_Vector> interfaceH();

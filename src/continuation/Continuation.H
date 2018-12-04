@@ -55,8 +55,9 @@ Continuation(Model model, ParameterList pars)
     eigenSolverSet_        (false)
 {
     // Set the step size
-    ds_ = dsInit_;
-
+    ds_      = dsInit_;
+    dsStart_ = dsInit_;
+    
     // Get the parameter destinations
     // We allow for convergence with destination tolerance at multiple destinations
     double dest;
@@ -76,6 +77,7 @@ Continuation(Model model, ParameterList pars)
         ERROR("No destinations given in continuation xml!",
               __FILE__, __LINE__);
 
+    INFO("Continuation: number of destinations = " << destinations_.size());
     INFO(std::endl << "Continuation parameter list: "
          << std::endl << *pars << std::endl);
 
@@ -143,7 +145,7 @@ initialize()
     // initializations for main loop
     step_               = 0;
     resetCounter_       = 0;
-    destinationReached_ = false;
+    reachedLastDest_    = false;
     abortFlag_          = false;
     fixStepSize_        = false;
 
@@ -169,7 +171,7 @@ run()
 
     int status = 0;    
 
-    while (!destinationReached_ && (step_ != maxSteps_) && !abortFlag_)
+    while (!reachedLastDest_ && (step_ != maxSteps_) && !abortFlag_)
     {
         ++step_;          // Increment step counter
         info();           // Print continuation summary
@@ -232,15 +234,14 @@ step()
         return 1; // Consider this step failed
     }
 
-
     if (printImportantVectors_)
-      {
-	TIMER_START("Continuation: step -> IO");
+    {
+        TIMER_START("Continuation: step -> IO");
         // Save the residual and last solution from linear solve to binaries
-	Utils::save(rhsView_, "residual");
-	Utils::save(model_->getSolution('V'), "solution");
-	TIMER_STOP("Continuation: step -> IO");
-      }
+        Utils::save(rhsView_, "residual");
+        Utils::save(model_->getSolution('V'), "solution");
+        TIMER_STOP("Continuation: step -> IO");
+    }
 
     // Put the parameter and norm of the state in the history
     parHist_.push_back(par_);
@@ -414,7 +415,6 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 createTangent(char mode)
 {
-    INFO("Continuation: create tangent " << mode);
     if (mode == 'S') // Secant
     {
         // ------------------------------------------------------------
@@ -481,13 +481,8 @@ createTangent(char mode)
         WARNING(" invalid mode!",__FILE__, __LINE__);
     }
 
-    INFO("                ||state0|| = " << Utils::norm(storage_.state0));
-    INFO("                 ||state|| = " << Utils::norm(stateView_));
-    INFO("              ||stateDot|| = " << Utils::norm(stateDot_));
-    INFO("                  parDot   = " << parDot_);
-    INFO("                      ds0  = " << storage_.ds0);
-    INFO("                      ds   = " << ds_);
-    INFO("Continuation: create tangent " << mode << " done");
+    INFO("Continuation::createTangent(), ||xDot|| = " << Utils::norm(stateDot_)
+         << " parDot = " << parDot_);
 }
 
 //======================================================================
@@ -869,50 +864,64 @@ detect(char mode)
         if (signMonitor_ == 0) // initialization
             signMonitor_ = SGN(f1);
 
-        if (signMonitor_ != SGN(f1) && !secant_) // secant convergence
+        if (signMonitor_ != SGN(f1) && !secant_) // enable secant iteration
         {
             INFO("Continuation::detect():  sign switch in f1 detected");
-            secant_     = true;
-            activeDest_ = dest;
+            secant_     = true;  // set flag to start secant process
+            activeDest_ = dest;  // set active destination
+            dsStart_    = ds_;   // save step size at beginning of secant
         }
 
-        if (std::abs(f1) < 10 * destinationTolerance_ && !secant_)
-        {
-            INFO("Continuation::detect():  f1 near destination");
-            secant_     = true;
-            activeDest_ = dest;
-        }
+        // disabled this 'proximity enabling', can be a bit annoying sometimes
+        
+        // if (std::abs(f1) < 10 * destinationTolerance_ && !secant_)
+        // {
+        //     INFO("Continuation::detect():  f1 near destination");
+        //     secant_     = true;
+        //     activeDest_ = dest;
+        // }
 
         busy = (secant_ && (std::abs(activeDest_ - dest) < 1e-7));
 
         if (busy)
         {
-            INFO("  secant: f1 = " << f1 << " f0 = " << f0);
-            INFO("      old ds = " << ds_);
+            INFO("    secant: f1 = " << f1 << " f0 = " << f0);
+            INFO("        old ds = " << ds_);
             ds_ = -f1 * ds_ / (f1 - f0);   // secant method
-            INFO("      new ds = " << ds_);
+            INFO("        new ds = " << ds_ << std::endl);
             createTangent('S');
         }
 
         signMonitor_ = SGN(f1);
 
+        // destination reached
         if (busy && std::abs(f1) < destinationTolerance_)
         {
+            INFO("Continuation::detect(): destination " << activeDest_ << " reached. \n");
+            
+            // stability scheme = E => eigenvalues computed at every converged destination
+            if (stabilityScheme_ == 'E')
+                eigenSolver();
+
             if (idx == destinations_.size())
-                destinationReached_ = true;
+                reachedLastDest_  = true;
             else
             {
                 // Get the algorithm ready to proceed with the continuation
-                secant_      = false;
-                signMonitor_ = 0;
-                ds_          = dsInit_;
+                secant_      = false; // disable secant method
+                signMonitor_ = 0;     // initialize sign monitor
+                ds_          = dsStart_; // reset step size to before secant
+
+                // do not adjust step size for the next step
+                fixStepSize_ = true;
+                
+                // remove current destination
                 destinations_.erase(destinations_.begin() + idx - 1);
             }
         }
 
         if (busy)
         {
-            INFO("  |par - dest| = " << std::abs(f1));
             break;
         }
     }
@@ -929,7 +938,7 @@ userDetect()
         if (reached)
         {
             INFO("Continuation::userDetect() stopping criterion met");
-            destinationReached_ = true;
+            reachedLastDest_  = true;
         }
     }
 }
@@ -946,7 +955,7 @@ adjustStep()
         fixStepSize_ = false;
         return;   // Do nothing
     }
-    INFO("      old ds: " << ds_);
+    INFO("Continuation::adjustStep(), old ds: " << ds_);
     
     // step size control, see [Seydel p 188.]
     double factor = optNewtonIterations_ / (double) newtonIter_;
@@ -955,8 +964,7 @@ adjustStep()
     factor = (factor < 0.5) ? 0.5 : factor;
     factor = (factor > 2.0) ? 2.0 : factor;
 
-    INFO("     control: " << factor);
-
+    INFO("                           control: " << factor);
     // adjust step size
     ds_ *= factor;
 
@@ -964,7 +972,8 @@ adjustStep()
     ds_ = (std::abs(ds_) > std::abs(dsMax_)) ? SGN(ds_) * std::abs(dsMax_) : ds_;
     ds_ = (std::abs(ds_) < std::abs(dsMin_)) ? SGN(ds_) * std::abs(dsMin_) : ds_;
     
-    INFO("      new ds: " << ds_);
+    INFO("                            new ds: " << ds_);
+
 }
 
 //======================================================================
@@ -1180,7 +1189,7 @@ info()
     INFO(std::setprecision(8));
     INFO("-----------------------------------------");
     INFO("Continuation summary:  " << std::asctime(std::localtime(&result)));
-    INFO(" destination reached:  " << destinationReached_);
+    INFO(" destination reached:  " << reachedLastDest_ );
     INFO("             aborted:  " << abortFlag_);
     INFO("           step size:  " << ds_);
     INFO("     parameter value:  " << par_);
@@ -1217,9 +1226,6 @@ finalize()
 {
     info();
     modelInfo();
-    
-    if (stabilityScheme_ == 'E')
-        eigenSolver();
 }
 
 //======================================================================

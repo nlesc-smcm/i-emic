@@ -353,6 +353,13 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
         INFO("CoupledModel: exception caught: " << e.what());
     }
 
+    // project checkerboard modes from solution
+    // if (useOcean_)
+    // {
+    //     Teuchos::RCP<Epetra_Vector> solView = models_[OCEAN]->getSolution('V');
+    //     models_[OCEAN]->pressureProjection(solView);
+    // }
+
     int iters  = belosSolver_->getNumIters();
     bool loa   = belosSolver_->isLOADetected();
     if (loa)
