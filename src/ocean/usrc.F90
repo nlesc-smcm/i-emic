@@ -1146,7 +1146,7 @@ SUBROUTINE stpnt!(un)
   ! otherwise tmax comes from wfun...
 
   par(AL_T)   =  0.1/(2*omegadim*rhodim*hdim*udim*dz*dfzT(l))
-  par(RAYL)   =  alphaT*gdim*hdim/(2*omegadim*udim*r0dim)   ! Ra
+  par(RAYL)   =  alphaT*gdim*hdim/(2*omegadim*udim*r0dim)   ! Ra ~ 0.422
   par(EK_V)   =  av/(2*omegadim*hdim*hdim)                  ! E_V
   par(EK_H)   =  ah/(2*omegadim*r0dim*r0dim)                ! E_H
 

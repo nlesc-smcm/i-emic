@@ -41,9 +41,9 @@ then
 fi
 
 mdim=(8 16 32)
-proc=(2 4 8)
+proc=(1 4 8)
 
-for i in  0 1 2 3
+for i in 0
 do
     # set number of latitude boxes
 
@@ -73,7 +73,8 @@ do
 
     # Run spinup
     run ${proc[$i]} $executable
-
+    bash save.sh spinup 0 "no description"
+    
     for model in ocean atmos seaice
     do
         cp -v ${model}_output.h5 ${model}_input.h5
@@ -83,6 +84,7 @@ do
 
     # Run solar forcing continuation
     run ${proc[$i]} $executable
+    bash save.sh solarcont 0 "no description"
     
     cd $origdir
 done

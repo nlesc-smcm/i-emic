@@ -81,8 +81,7 @@ Call structure DSM and FDJS
          vmix_fix  = 0
       else
          vmix_flag = -1
-      endif
-
+      endif 
 
       vmix_time=0.0
       call cpu_time(time0)

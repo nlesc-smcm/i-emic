@@ -45,7 +45,7 @@
 
   <!-- global number of grid points in x,y and z-directions       -->
   <Parameter name="Global Grid-Size n" type="int" value="16"       />
-  <Parameter name="Global Grid-Size m" type="int" value=""/>
+  <Parameter name="Global Grid-Size m" type="int" value="8"/>
   <Parameter name="Global Grid-Size l" type="int" value="1"        />
 
   <!-- Auxiliary unknowns                                         -->
@@ -60,7 +60,7 @@
 
   <!-- Outgoing longwave radiation parameters -->
   <Parameter name="radiative flux param A" type="double" value="216" />
-  <Parameter name="radiative flux param B"  type="double" value="1.5" />
+  <Parameter name="radiative flux param B"  type="double" value="0.015" />
 
   <!-- <Parameter name="Dalton number" type="double" value="0.0" /> -->
 
