@@ -97,9 +97,8 @@ class Continuation
     double dsStart_; 
 
     //! parameter destinations
-    std::vector<double> destinations_; 
-    //! the active destination in detect()
-    double activeDest_; 
+    std::vector<double> destinations_; // list we adjust
+    std::vector<double> destinationsBackup_; // list to restore to
 
     //! zeta is an additional scaling for the state tangent
     double zeta_;
@@ -201,10 +200,11 @@ class Continuation
     double predictorBound_;
 
     //! used for detecting sign switch
-    int parDotSign_;              
+    int parDotSign_;
+    
     //! track the sign of monitor in detect()
-    int signMonitor_;             
-
+    std::vector<int> signMonitor_;
+    
     //! ||F(x_old)||
     double normRHS_;              
     //! ||F(x_new)||

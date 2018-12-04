@@ -51,13 +51,12 @@ Continuation(Model model, ParameterList pars)
     initialTangent_        (pars->get("initial tangent type", 'E')),
     printImportantVectors_ (pars->get("print important vectors", false)),
     predictorBound_        (pars->get("predictor bound", 1e3)),
-    signMonitor_           (0),
     eigenSolverSet_        (false)
 {
     // Set the step size
     ds_      = dsInit_;
     dsStart_ = dsInit_;
-    
+
     // Get the parameter destinations
     // We allow for convergence with destination tolerance at multiple destinations
     double dest;
@@ -77,9 +76,14 @@ Continuation(Model model, ParameterList pars)
         ERROR("No destinations given in continuation xml!",
               __FILE__, __LINE__);
 
+    destinationsBackup_ = destinations_;
+
     INFO("Continuation: number of destinations = " << destinations_.size());
+    
+    
     INFO(std::endl << "Continuation parameter list: "
-         << std::endl << *pars << std::endl);
+         << std::endl << *pars << std::endl);   
+
 
 }
 
@@ -123,9 +127,9 @@ initialize()
     storage_.state0 = model_->getState('C');
 
     // initializations for detect()
-    signMonitor_ = 0;
-    secant_      = false;
-    activeDest_  = -999; // hopefully this is never an actual dest^^
+    destinations_ = destinationsBackup_;
+    signMonitor_  = std::vector<int>(destinations_.size(), 0);
+    secant_       = false;
 
     // scaling
     if (normalizeStrategy_ == 'O')
@@ -851,79 +855,58 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 detect(char mode)
 {
-    size_t idx = 0;
-    bool busy = false;
-    for (auto &dest: destinations_)
+    double dest = destinations_[0];
+
+    par_ = model_->getPar(); // just to be on the safe side
+    double f0 = storage_.par0 - dest;
+    double f1 =          par_ - dest;
+
+    if (signMonitor_[0] == 0) // only at initialization
+        signMonitor_[0] = SGN(f1);
+
+    if (signMonitor_[0] != SGN(f1) && !secant_) // enable secant iteration
     {
-        idx++; // destination counter
+        INFO("Continuation::detect(): sign switch in f1 detected");
+        INFO("        activated dest: " << dest);
+        secant_     =  true;   // set flag to start secant process
+        dsStart_    =  ds_;    // save step size at beginning of secant
+    }
+    else
+        signMonitor_[0] = SGN(f1);            
 
-        par_ = model_->getPar(); // just to be on the safe side
-        double f0 = storage_.par0 - dest;
-        double f1 =          par_ - dest;
+    if (secant_)
+    {
+        INFO("    secant: f1 = " << f1 << " f0 = " << f0);
+        INFO("        old ds = " << ds_);
+        ds_ = -f1 * ds_ / (f1 - f0);   // secant method
+        INFO("        new ds = " << ds_ << std::endl);
+        createTangent('S');
+    }
 
-        if (signMonitor_ == 0) // initialization
-            signMonitor_ = SGN(f1);
-
-        if (signMonitor_ != SGN(f1) && !secant_) // enable secant iteration
-        {
-            INFO("Continuation::detect():  sign switch in f1 detected");
-            secant_     = true;  // set flag to start secant process
-            activeDest_ = dest;  // set active destination
-            dsStart_    = ds_;   // save step size at beginning of secant
-        }
-
-        // disabled this 'proximity enabling', can be a bit annoying sometimes
-        
-        // if (std::abs(f1) < 10 * destinationTolerance_ && !secant_)
-        // {
-        //     INFO("Continuation::detect():  f1 near destination");
-        //     secant_     = true;
-        //     activeDest_ = dest;
-        // }
-
-        busy = (secant_ && (std::abs(activeDest_ - dest) < 1e-7));
-
-        if (busy)
-        {
-            INFO("    secant: f1 = " << f1 << " f0 = " << f0);
-            INFO("        old ds = " << ds_);
-            ds_ = -f1 * ds_ / (f1 - f0);   // secant method
-            INFO("        new ds = " << ds_ << std::endl);
-            createTangent('S');
-        }
-
-        signMonitor_ = SGN(f1);
-
-        // destination reached
-        if (busy && std::abs(f1) < destinationTolerance_)
-        {
-            INFO("Continuation::detect(): destination " << activeDest_ << " reached. \n");
+    // destination reached
+    if (secant_ && std::abs(f1) < destinationTolerance_)
+    {
+        INFO("Continuation::detect(): destination " << dest << " reached. \n");
             
-            // stability scheme = E => eigenvalues computed at every converged destination
-            if (stabilityScheme_ == 'E')
-                eigenSolver();
+        // stability scheme = E => eigenvalues computed at every converged destination
+        if (stabilityScheme_ == 'E')
+            eigenSolver();
 
-            if (idx == destinations_.size())
-                reachedLastDest_  = true;
-            else
-            {
-                // Get the algorithm ready to proceed with the continuation
-                secant_      = false; // disable secant method
-                signMonitor_ = 0;     // initialize sign monitor
-                ds_          = dsStart_; // reset step size to before secant
+        // Get the algorithm ready to proceed with the continuation
+        secant_ = false;     // disable secant method
+        ds_     = dsStart_;  // reset step size to before secant
 
-                // do not adjust step size for the next step
-                fixStepSize_ = true;
+        // do not adjust step size for the next step
+        fixStepSize_ = true;
                 
-                // remove current destination
-                destinations_.erase(destinations_.begin() + idx - 1);
-            }
-        }
+        // remove reached destination and corresponding sign monitor
+        destinations_.erase(destinations_.begin());
+        signMonitor_.erase(signMonitor_.begin());
 
-        if (busy)
-        {
-            break;
-        }
+        if (destinations_.empty())
+            reachedLastDest_  = true;
+        else // initialize next sign monitor
+            signMonitor_[0] = SGN(par_ - destinations_[0]);
     }
 }
 
