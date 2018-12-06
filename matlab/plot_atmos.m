@@ -94,6 +94,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
         export_to_file = false;
     end
 
+    if isfield(opts, 'readEV')
+        plot_EV = opts.readEV;
+    else
+        plot_EV = false;
+    end
+
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
     surfm      = landm(2:n+1,2:m+1,l+1);    % Only interior surface points
     landm_int  = landm(2:n+1,2:m+1,2:l+1);
@@ -158,12 +164,19 @@ function [state,pars,add] = plot_atmos(fname, opts)
     c3 = 265.5;
     c4 = 17.67;
     c5 = 243.5;
+
+    Ta = squeeze(state(1,:,:,:));
+    qa = squeeze(state(2,:,:,:));
+    Aa = squeeze(state(3,:,:,:));
+
+    % create dimensional fields
+    if ~plot_EV
+        Ta  = T0o + tdim * Ta;
+        qa  = q0  + qdim * qa;
+        Aa  = a0  + adim * Aa;
+    end
     
-    Ta  = T0o + tdim * squeeze(state(1,:,:,:));
-    qa  = q0 + qdim * squeeze(state(2,:,:,:));
-    %qa  =  qdim * squeeze(state(2,:,:,:));
     qa(logical(surfm)) = NaN; % humidity above land points does not contribute 
-    Aa  = a0 + adim * squeeze(state(3,:,:,:));
     Tz  = mean(Ta,1); % zonal mean
     qz  = mean(qa,1); % zonal mean
 
@@ -182,14 +195,14 @@ function [state,pars,add] = plot_atmos(fname, opts)
         
         contourf(RtD*x,RtD*(y),img,15,... 
                  'linewidth',1.0,'linestyle','-'); hold on;
-        contour(RtD*x,RtD*(y),surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
-                
-        set(gca,'ydir','normal')
+
         colorbar
         cmap = my_colmap(caxis);
         colormap(cmap)
-        colorbar
 
+        contour(RtD*x,RtD*(y),1e-7*surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
+        
+        set(gca,'ydir','normal')
         hold off
         
         title('Atmospheric temperature')

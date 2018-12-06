@@ -1,4 +1,4 @@
-invert = true;
+invert = false;
 
 cfiles = { './0/log_label_decoupled/cdata_lbldecoupled.txt', ...
            './0/log_label_quasicoupled/cdata_lblquasicoupled.txt', ...
@@ -14,18 +14,18 @@ tfiles = { './0/log_label_time_decoupled/tdata_lbltime_decoupled.txt', ...
          };
            
 lnames = { 'Decoupled', ...
-                'Quasi-coupled', ...
-                'Coupled', ...
-                'Coupled', ...
-                'Coupled', ...
-                'Coupled' };
+                'Weakly coupled', ...
+                'Fully coupled', ...
+                'Fully coupled', ...
+                'Fully coupled', ...
+                'Fully coupled' };
 
-lnamesprec = { 'Decoupled', ...
-                'Quasi-coupled', ...
-                'Coupled: prec D', ...
-                'Coupled: prec B', ...
-                'Coupled: prec F', ...
-                'Coupled: prec G' };
+lnamesprec = {  'J: decoupled, M: block diagonal', ...
+                'J: weakly coupled, M: block diagonal', ...
+                'J: fully coupled, M: block diagonal', ...
+                'J: fully coupled, M: backward block GS', ...
+                'J: fully coupled, M: forward block GS', ...
+                'J: fully coupled, M: forward block GS' };
            
 % load continuation data 
 N = numel(cfiles);
@@ -74,107 +74,112 @@ end
 % Plot transients ||x||
 % ---------------------------
 figure(101)
-for i = 1:NN
-    plot(tdata{i}(:,1), tdata{i}(:,xfig),'.-', 'linewidth',1.3)
+range = 2:NN;
+for i = range
+    plot(tdata{i}(:,1), tdata{i}(:,xfig),'.-', 'linewidth',0.9)
     hold on;        
 end
 hold off
 grid on
-legend(lnames{1:NN})
+legend(lnames{range})
 xlabel('t (y)')
-ylabel('||x||')
+ylabel('||x||_2')
 ylim([0,20])
-exportfig('transientx.eps', 12, [14,10], invert)
-system(['cp -v transientx.eps /home/erik/Projects/doc/i-emic/', ...
-        'presentations/.']);
+exportfig('transientx.eps', 11, [14,10], invert)
+system(['cp -v transientx.eps /home/erik/Projects/doc/thesis/', ...
+        'figsNum/.']);
 
 % ---------------------------
 % Plot transients dt
 % ---------------------------
 figure(102)
-for i = 1:NN
-    semilogy(tdata{i}(:,1), tdata{i}(:,dtfig),'.-', 'linewidth',1.3)
+range = 2:NN;
+for i = range
+    semilogy(tdata{i}(:,1), tdata{i}(:,dtfig),'.-', 'linewidth',0.9)
     hold on;        
 end
 hold off
 grid on
-legend(lnames{1:NN},'location','southeast')
+legend(lnames{range},'location','northeast')
 xlabel('t (y)')
 ylabel('\Delta t (y)')
-exportfig('transientdt.eps', 12, [14,10], invert)
-system(['cp -v transientdt.eps /home/erik/Projects/doc/i-emic/', ...
-        'presentations/.']);
+ylim([1e-1 5e3])
+exportfig('transientdt.eps', 11, [14,10], invert)
+system(['cp -v transientdt.eps /home/erik/Projects/doc/thesis/', ...
+        'figsNum/.']);
 
 % ---------------------------
 % Plot transients NR
 % ---------------------------
 figure(103)
-for i = 1:NN
-    semilogy(tdata{i}(:,1), tdata{i}(:,NRfig),'.-', 'linewidth',1.3)
+range = 2:NN;
+for i = range
+    semilogy(tdata{i}(:,1), tdata{i}(:,NRfig),'.-', 'linewidth',0.9)
     hold on;        
 end
 hold off
 grid on
-legend(lnames{1:NN},'location','northeast')
+legend(lnames{range},'location','northeast')
 xlabel('t (y)')
 ylabel('Newton iterations')
-exportfig('transientNR.eps', 12, [14,10], invert)
-system(['cp -v transientNR.eps /home/erik/Projects/doc/i-emic/', ...
-        'presentations/.']);
+exportfig('transientNR.eps', 11, [14,10], invert)
+system(['cp -v transientNR.eps /home/erik/Projects/doc/thesis/', ...
+        'figsNum/.']);
 
 % ---------------------------
 % Plot newton iterations NR
 % ---------------------------
 figure(NRfig)
-NRrange = 1:3;
+NRrange = 2:3;
 for i = NRrange
-    plot(cdata{i}(:,1), cdata{i}(:,NRfig),'.-', 'linewidth',1.3)
+    plot(cdata{i}(:,1), cdata{i}(:,NRfig),'.-', 'linewidth',0.9)
     hold on;
 end
 hold off
 grid on
 legend(lnames{NRrange})
-xlabel('Continuation parameter')
+xlabel('Combined forcing')
 ylabel('Newton iterations')
-exportfig('NRcomparison.eps', 12, [14,10], invert)
-system(['cp -v NRcomparison.eps /home/erik/Projects/doc/i-emic/', ...
-        'presentations/.']);
+exportfig('NRcomparison.eps', 11, [14,10], invert)
+system(['cp -v NRcomparison.eps /home/erik/Projects/doc/thesis/', ...
+        'figsNum/.']);
 
 % ---------------------------
 % Plot residual
 % ---------------------------
 figure(Ffig)
-Frange = 1:3;
+Frange = 2:3;
 for i = Frange
-    semilogy(cdata{i}(:,1), cdata{i}(:,Ffig),'.-', 'linewidth',1.3)
+    semilogy(cdata{i}(:,1), cdata{i}(:,Ffig),'.-', 'linewidth',0.9)
     hold on;
 end
 hold off
 grid on
-legend(lnames{Frange},'location','southeast')
-xlabel('Continuation parameter')
+legend(lnames{Frange},'location','northeast')
+xlabel('Combined forcing')
 ylabel('||F||_2')
-exportfig('Fcomparison.eps', 12, [14,10], invert)
-system(['cp -v Fcomparison.eps /home/erik/Projects/doc/i-emic/', ...
-        'presentations/.']);
+exportfig('Fcomparison.eps', 11, [14,10], invert)
+system(['cp -v Fcomparison.eps /home/erik/Projects/doc/thesis/', ...
+        'figsNum/.']);
 
 % --------------------------------
 % Plot matrix vector products
 % --------------------------------
 figure(MVfig)
-MVrange = 1:N;
+MVrange = 2:N-1;
 for i = MVrange
-    plot(cdata{i}(:,1), cdata{i}(:,MVfig),'.-', 'linewidth',1.3)
+    plot(cdata{i}(:,1), cdata{i}(:,MVfig),'.-', 'linewidth',0.9)
     hold on;
 end
 hold off
 grid on
 legend(lnamesprec{MVrange},'location','northwest')
-xlabel('Continuation parameter')
+xlabel('Combined forcing')
 ylabel('FGMRES iterations')
-exportfig('MVcomparison.eps', 12, [14,10], invert)
-system(['cp -v MVcomparison.eps /home/erik/Projects/doc/i-emic/', ...
-        'presentations/.']);
+ylim([0,30]);
+exportfig('MVcomparison.eps', 11, [14,10], invert)
+system(['cp -v MVcomparison.eps /home/erik/Projects/doc/thesis/', ...
+        'figsNum/.']);
 
 return
 
