@@ -93,7 +93,7 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
 
     titles = {'H','Q_T^{sa}','M','T'};
 
-    simask = squeeze(state(3, :, :, :)) > 0.2;
+    simask = squeeze(state(1, :, :, :)) > 0.01;
     
     for i = 1:si_nun
         
