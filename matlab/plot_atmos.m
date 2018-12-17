@@ -197,8 +197,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
                  'linewidth',1.0,'linestyle','-'); hold on;
 
         colorbar
-        cmap = my_colmap(caxis);
+        caxis([min(img(:)),max(img(:))]);
+        cmap = my_colmap(caxis);        
+
         colormap(cmap)
+        min(img(:))
+        max(img(:))
 
         contour(RtD*x,RtD*(y),1e-7*surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
         

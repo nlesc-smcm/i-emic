@@ -1,7 +1,7 @@
 clear all
 JnC = load_numjac('JnC');
 
-% vsm(JnC)
+%vsm(JnC)
 
 [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
     readfort44('fort.44');
@@ -23,30 +23,53 @@ atm_idx = [];
 oce_idx = [];
 sei_idx = [];
 
+% normal ordering
 for i = 1:dfo
     oce_idx = [oce_idx, (i:dfo:nocean)];
 end
 
+% special ordering
+uv_idx = [(1:dfo:nocean); (2:dfo:nocean)];
+uv_idx = uv_idx(:);
+w_idx  = (3:dfo:nocean)';
+p_idx  = (4:dfo:nocean)';
+TS_idx = [(5:dfo:nocean); (6:dfo:nocean)];
+TS_idx = TS_idx(:);
+
+oce_idx = [uv_idx ; w_idx ; p_idx ; TS_idx]';
+
 %oce_idx = sort(oce_idx);
 
+% normal ordering
 for i = 1:dfa
     atm_idx = [atm_idx, (nocean+i:dfa:nocean+natmos)];
 end
 
+% special ordering
+Tq_idx  = [(nocean+1:dfa:nocean+natmos); (nocean+2:dfa:nocean+natmos)];
+Tq_idx  = Tq_idx(:);
+al_idx  = (nocean+3:dfa:nocean+natmos)';
+atm_idx = [Tq_idx ; al_idx ;]'; 
 
-for i = 1:auxa
-    atm_idx = [atm_idx, atm_idx(end) + i];
-end
+atm_idx = [atm_idx, nocean+natmos+auxa];
 
 %atm_idx = sort(atm_idx);
 
+% normal ordering
 for i = 1:dfs
     sei_idx = [sei_idx, (nocean+natmos+auxa+i:dfs:nocean+natmos+auxa+nseaice)];
 end
 
-for i = 1:auxs
-    sei_idx = [sei_idx, sei_idx(end) + i];
-end
+% special ordering
+HQT_idx = [(nocean+natmos+auxa+1:dfs:nocean+natmos+auxa+nseaice);
+           (nocean+natmos+auxa+2:dfs:nocean+natmos+auxa+nseaice);
+           (nocean+natmos+auxa+4:dfs:nocean+natmos+auxa+nseaice)];
+HQT_idx = HQT_idx(:);
+Msi_idx = (nocean+natmos+auxa+3:dfs:nocean+natmos+auxa+nseaice)';
+sei_idx = [HQT_idx ; Msi_idx]';
+
+sei_idx = [sei_idx, nocean+natmos+auxa+nseaice+auxs];
+
 %sei_idx = sort(sei_idx);
 
 JnC11 = JnC(oce_idx, oce_idx);
@@ -66,6 +89,27 @@ tot_idx = [oce_idx, atm_idx, sei_idx];
 JnC_ = JnC;
 JnC  = JnC(tot_idx, tot_idx);
 
+% plot numerical jacobian
+gridcol=[.3,.6,.8];
+spy(JnC, 'k', 5); hold on;
+xuv = numel(uv_idx) + .5;
+xw  = numel(w_idx)  + xuv;
+xp  = numel(p_idx)  + xw;
+xTS = numel(TS_idx) + xp;
+xTq = numel(Tq_idx) + xTS;
+xal = numel(al_idx) + xTq;
+xP  = xTq + 1;
+xHQT= numel(HQT_idx) + xP;
+xMsi= numel(Msi_idx) + xHQT;
+xgamma = xMsi + 1;
+for xcoord = [xuv, xw, xp, xTS, xTq, xal, xP, xHQT, xMsi, xgamma]
+    plot([xcoord,xcoord],ylim,'color',gridcol);
+    plot(xlim, [xcoord,xcoord],'color',gridcol);
+end
+xlabel('');
+ylabel('');
+xticks('');
+yticks('');
 % remove offsets of ranges
 oce_idx = oce_idx - 0;
 atm_idx = atm_idx - nocean;

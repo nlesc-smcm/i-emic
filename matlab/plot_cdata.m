@@ -173,19 +173,19 @@ function [titles, cdata,h] = plot_cdata(fname, opts)
         end
     end
     
-    %    if ((maxPsi > 0) && (minPsi > 0))    
-    %        figure(i+1);
-    %
-    %        if holdfig
-    %            hold on;
-    %        end
-    %
-    %        polt(partrans(cdata(:,1)),cdata(:,maxPsi)+cdata(:,minPsi),lsty{:});
-    %        title('max(Psi)+min(Psi)');
-    %        
-    %        if holdfig
-    %            hold off;
-    %        end
-    %    end       
-
+    if ((maxPsi > 0) && (minPsi > 0))    
+        figure(i+1);
+        
+        if holdfig
+            hold on;
+        end
+        
+        plot(partrans(cdata(:,1)),cdata(:,maxPsi)+cdata(:,minPsi),lsty{:});
+        title('max(Psi)+min(Psi)');
+        
+        if holdfig
+            hold off;
+        end
+    end       
+    
 end

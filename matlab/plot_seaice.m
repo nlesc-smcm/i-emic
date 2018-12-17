@@ -102,24 +102,28 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
             figure(fig_ctr); fig_ctr = fig_ctr+1;
             set(gca,'color',[.5,.5,.5]);
             
-            field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
-            field(logical(surfm)) = NaN;
-
             if ~readEV
+                field = backgr(i) + scales(i)*squeeze(state(i, :, :, :));
+                field(logical(surfm)) = NaN;
                 field(~logical(simask)) = NaN;
+            else
+                field = squeeze(state(i, :, :, :));
             end
             
             diff = max(max(field))-min(min(field));
             fprintf('max(%s)-min(%s) = %f\n', titles{i}(1), titles{i}(1), diff);
             %            imagesc(RtD*x, RtD*(y), field','AlphaData',~isnan(field')); ...
             %   hold on
-            imagesc(RtD*x, RtD*(y), field'); ...
-                hold on
+            imagesc(RtD*x, RtD*(y), field'); 
+            hold on
+            if readEV
+                contour(RtD*x, RtD*(y), field', [0,0.01], 'k');
+            end
             
-            cnan = [100 100 100]/256;
-            cbeg = [240 240 240]/256;
-            cmid = [150 180 200]/256;
-            cend = [180	220	240]/256;
+            cnan = [256 256 256]/256;
+            cbeg = [100	200	256]/256;
+            cmid = [80	160	256]/256;
+            cend = [236	236	236]/256;
             cmap  = [cnan; ...
                     linspace(cbeg(1),cmid(1),128)',...
                     linspace(cbeg(2),cmid(2),128)',...
