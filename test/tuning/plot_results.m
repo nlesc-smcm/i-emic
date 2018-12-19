@@ -9,7 +9,8 @@ T2L2circ    = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Lar
 T1L1circ98p = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.98+/36h/cdata.txt';
 T1L1circ98n = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.98-/5d/cdata.txt';
 
-T1L1circ97468n = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468-/1h4/cdata.txt';
+T1L1circ97468n = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468-/1h/cdata.txt';
+T1L1circ97468p = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468+/1h/cdata.txt';
 
 T1L1circ975n = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.975-/5d/cdata.txt';
 T1L1circ975p = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.975+/5d/cdata.txt';
@@ -72,6 +73,10 @@ plot_cdata(T1L1circ98n, opts);
 opts.lsty={lsty_circ,'color',col(2,:), 'linewidth',lw_circ};
 opts.hold=true;
 plot_cdata(T1L1circ97468n, opts);
+
+opts.lsty={lsty_circ,'color',col(2,:), 'linewidth',lw_circ};
+opts.hold=true;
+plot_cdata(T1L1circ97468p, opts);
 
 opts.lsty={lsty_circ,'color',col(2,:), 'linewidth',lw_circ};
 opts.hold=true;
@@ -149,7 +154,6 @@ hold off
 legend([no_circ, circ], 'ocean circulation disabled (a)',['ocean ' ...
                     'circulation enabled (b)'], 'location', 'southeast')
 
-
 xlim([0.9,1.21]) 
 exportfig(['bifdiag4deg12l.eps'], fontsize, [18,26], opts.invert);
 !cp -v bifdiag4deg12l.eps /home/erik/Projects/doc/thesis/figsI-EMIC/.
@@ -197,6 +201,10 @@ P2ATcirc    = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Lar
 L1OCcirc    = '/home/erik/Projects/i-emic/test/tuning/transient/4deg12layers/sol0.9747/flatbot/12h/ocean_output.h5';
 L1ATcirc    = '/home/erik/Projects/i-emic/test/tuning/transient/4deg12layers/sol0.9747/flatbot/12h/atmos_output.h5';
 L1SIcirc    = '/home/erik/Projects/i-emic/test/tuning/transient/4deg12layers/sol0.9747/flatbot/12h/seaice_output.h5';
+
+% $$$ L1OCcirc = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468-/1h/ocean_output.h5';
+% $$$ L1ATcirc = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468-/1h/atmos_output.h5';
+% $$$ L1SIcirc = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468-/1h/seaice_output.h5';
 
 L1OCno_circ = '/home/erik/Projects/i-emic/test/tuning/transient/4deg12layers/sol0.976373/no_ocean/12h/ocean_output.h5';
 L1ATno_circ = '/home/erik/Projects/i-emic/test/tuning/transient/4deg12layers/sol0.976373/no_ocean/12h/atmos_output.h5';
