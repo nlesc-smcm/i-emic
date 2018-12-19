@@ -294,8 +294,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
 
         % Compute overturning streamfunction
         PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
-        PSIG = [zeros(m+1,1) PSIG];
-        
+        PSIG = [zeros(m+1,1) PSIG];        
         
         PSIGp = PSIG; PSIGp(PSIGp<0)  = NaN;
         PSIGn = PSIG; PSIGn(PSIGn>0)  = NaN;

@@ -257,7 +257,6 @@ for i = 1:numel(pointsOC)
     title('');
     exportfig(MOCFiles{i}, fontsize, [20,10])
     system(['cp -v ', MOCFiles{i}, ' /home/erik/Projects/doc/thesis/figsI-EMIC/.']);
-
     opts.restrict_sol=true;
     opts.rmask_file=rstrFile;
     plot_ocean(pointsOC{i}, opts);
