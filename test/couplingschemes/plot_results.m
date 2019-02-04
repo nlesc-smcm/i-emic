@@ -44,6 +44,8 @@ for i = 2:M
         NRfig = i;
     elseif strcmp(c_titles{i}, 'MV')
         MVfig = i;
+    elseif strcmp(c_titles{i}, '||x||')
+        Xfig = i;
     elseif strcmp(c_titles{i}, '||F||')
         Ffig = i;
     end    
@@ -85,7 +87,7 @@ legend(lnames{range})
 xlabel('t (y)')
 ylabel('||x||_2')
 ylim([0,20])
-exportfig('transientx.eps', 11, [14,10], invert)
+exportfig('transientx.eps', 11,[14,10], invert)
 system(['cp -v transientx.eps /home/erik/Projects/doc/thesis/', ...
         'figsNum/.']);
 
@@ -104,7 +106,7 @@ legend(lnames{range},'location','northeast')
 xlabel('t (y)')
 ylabel('\Delta t (y)')
 ylim([1e-1 5e3])
-exportfig('transientdt.eps', 11, [14,10], invert)
+exportfig('transientdt.eps', 11,[14,10], invert)
 system(['cp -v transientdt.eps /home/erik/Projects/doc/thesis/', ...
         'figsNum/.']);
 
@@ -122,7 +124,7 @@ grid on
 legend(lnames{range},'location','northeast')
 xlabel('t (y)')
 ylabel('Newton iterations')
-exportfig('transientNR.eps', 11, [14,10], invert)
+exportfig('transientNR.eps', 11,[14,10], invert)
 system(['cp -v transientNR.eps /home/erik/Projects/doc/thesis/', ...
         'figsNum/.']);
 
@@ -140,8 +142,27 @@ grid on
 legend(lnames{NRrange})
 xlabel('Combined forcing')
 ylabel('Newton iterations')
-exportfig('NRcomparison.eps', 11, [14,10], invert)
+exportfig('NRcomparison.eps', 11,[14,10], invert)
 system(['cp -v NRcomparison.eps /home/erik/Projects/doc/thesis/', ...
+        'figsNum/.']);
+
+% ---------------------------
+% Plot x norm
+% ---------------------------
+figure(Xfig)
+xrange = 2:3;
+for i = xrange
+    p = plot(cdata{i}(:,1), cdata{i}(:,Xfig),'.-', 'linewidth',0.9)
+    hold on;
+end
+hold off
+grid on
+legend(lnames{xrange},'location','northwest')
+uistack(p,'down',1)
+xlabel('Combined forcing')
+ylabel('||x||_2')
+exportfig('xcomparison.eps', 11,[14,10], invert)
+system(['cp -v xcomparison.eps /home/erik/Projects/doc/thesis/', ...
         'figsNum/.']);
 
 % ---------------------------
@@ -158,7 +179,7 @@ grid on
 legend(lnames{Frange},'location','northeast')
 xlabel('Combined forcing')
 ylabel('||F||_2')
-exportfig('Fcomparison.eps', 11, [14,10], invert)
+exportfig('Fcomparison.eps', 11,[14,10], invert)
 system(['cp -v Fcomparison.eps /home/erik/Projects/doc/thesis/', ...
         'figsNum/.']);
 
@@ -177,7 +198,7 @@ legend(lnamesprec{MVrange},'location','northwest')
 xlabel('Combined forcing')
 ylabel('FGMRES iterations')
 ylim([0,30]);
-exportfig('MVcomparison.eps', 11, [14,10], invert)
+exportfig('MVcomparison.eps', 11,[14,10], invert)
 system(['cp -v MVcomparison.eps /home/erik/Projects/doc/thesis/', ...
         'figsNum/.']);
 

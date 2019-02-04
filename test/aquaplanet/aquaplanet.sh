@@ -9,9 +9,6 @@ origdir=${PWD}
 # set executable
 executable=`echo ${PWD} | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/run_coupled
 
-# set number of procs
-procs=2
-
 function run
 {
     if [ -x "$(command -v sbatch)" ]
@@ -80,7 +77,7 @@ do
         cp -v ${model}_output.h5 ${model}_input.h5
     done
 
-    bash setparameters.sh true "Solar Forcing" 0.0 -1e-2
+    bash setparameters.sh true "Solar Forcing" 0.9 -1e-2
 
     # Run solar forcing continuation
     run ${proc[$i]} $executable

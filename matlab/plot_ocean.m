@@ -221,7 +221,11 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         % restrict solution
         sol = shiftdim(sol, 3);
         sol(:,:,rmask) = 0;
-        sol = shiftdim(sol, 1);        
+        sol = shiftdim(sol, 1);
+        
+        % zonal integration
+        zmask = ~rmask;
+        zmask = logical(~sum(zmask,1))
 
     end
     
@@ -294,10 +298,14 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
 
         % Compute overturning streamfunction
         PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
-        PSIG = [zeros(m+1,1) PSIG];        
+        PSIG = [zeros(m+1,1) PSIG];
         
-        PSIGp = PSIG; PSIGp(PSIGp<0)  = NaN;
-        PSIGn = PSIG; PSIGn(PSIGn>0)  = NaN;
+        if restrict_sol
+            PSIG(logical([0,zmask]),:) = NaN;
+        end
+        
+        PSIGp = PSIG; PSIGp(PSIGp<0) = NaN;
+        PSIGn = PSIG; PSIGn(PSIGn>0) = NaN;
 
         % layers below 1km
         blwkm = find(zw*hdim < -1000);

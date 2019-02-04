@@ -59,8 +59,8 @@
   <Parameter name="restoring timescale tauc (in days)" type="double" value="1"/>
 
   <!-- Outgoing longwave radiation parameters -->
-  <Parameter name="radiative flux param A" type="double" value="216" />
-  <Parameter name="radiative flux param B"  type="double" value="0.015" />
+  <!-- <Parameter name="radiative flux param A" type="double" value="216" /> -->
+  <!-- <Parameter name="radiative flux param B"  type="double" value="0.015" /> -->
 
   <!-- <Parameter name="Dalton number" type="double" value="0.0" /> -->
 

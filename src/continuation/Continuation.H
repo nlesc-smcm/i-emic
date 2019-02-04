@@ -1209,6 +1209,10 @@ finalize()
 {
     info();
     modelInfo();
+
+    if (printImportantVectors_)
+        model_->dumpBlocks();
+
 }
 
 //======================================================================

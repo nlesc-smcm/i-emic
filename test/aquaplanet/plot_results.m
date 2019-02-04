@@ -18,7 +18,7 @@ for i = 1:4
             opts.hold=true;
         end
 
-        opts.invert=true;
+        opts.invert=false;
         opts.plot_entry=15;
         opts.point=-1;
         opts.lsty=styles{ctr};    
@@ -27,10 +27,10 @@ for i = 1:4
     end
     xlim([0.5,1.6]);
     title('');
-    ylabel('Sea ice fraction');
-    xlabel('Solar forcing');
+    ylabel('A^{si} / A');
+    xlabel('Solar forcing \lambda_\Sigma');
 
-    legend('4x8', '4x16', '4x32','location','southeast');
+    legend('m=8', 'm=16', 'm=32','location','southeast');
 
     h(1).Visible='off';
     h(2).Visible='off';
@@ -40,9 +40,9 @@ for i = 1:4
         h(i).Visible='on';
         fname = ['aquaplanbif',num2str(i),'.eps'];
 
-        exportfig(fname, 10, [18,13], opts.invert);
+        exportfig(fname, 13, [18,13], opts.invert);
 
-        dname = ['/home/erik/Projects/doc/i-emic/presentations/', basename];
+        dname = ['/home/erik/Projects/doc/thesis/figsI-EMIC/', basename];
         system(['mkdir -pv ', dname]);
         system(['cp -v ', fname, ' ', dname, '/.']);
     end

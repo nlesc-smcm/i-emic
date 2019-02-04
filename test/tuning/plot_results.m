@@ -9,8 +9,9 @@ T2L2circ    = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Lar
 T1L1circ98p = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.98+/36h/cdata.txt';
 T1L1circ98n = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.98-/5d/cdata.txt';
 
-T1L1circ97468n = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468-/1h/cdata.txt';
-T1L1circ97468p = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468+/1h/cdata.txt';
+T1L1circ97468n  = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468-/5d/cdata.txt';
+T1L1circ97468n2 = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468-/5d/5d/cdata.txt';
+T1L1circ97468p  = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.97468+/5d/cdata.txt';
 
 T1L1circ975n = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.975-/5d/cdata.txt';
 T1L1circ975p = '/home/erik/Projects/i-emic/test/tuning/solarcont/full_4deg/EK_Large/0.975+/5d/cdata.txt';
@@ -76,6 +77,10 @@ plot_cdata(T1L1circ97468n, opts);
 
 opts.lsty={lsty_circ,'color',col(2,:), 'linewidth',lw_circ};
 opts.hold=true;
+plot_cdata(T1L1circ97468n2, opts);
+
+opts.lsty={lsty_circ,'color',col(2,:), 'linewidth',lw_circ};
+opts.hold=true;
 plot_cdata(T1L1circ97468p, opts);
 
 opts.lsty={lsty_circ,'color',col(2,:), 'linewidth',lw_circ};
@@ -132,7 +137,7 @@ L1ya = data(folds(1,1), SIindex)
 L1hndla = plot(L1xa, L1ya,'o','color','k','markerfacecolor','w');
 text(L1xa, L1ya, 'L^a_1 ', 'horizontalalignment','right','fontsize',fontsize);
 
-[folds, data] = detectFolds(T1L1circ975n);
+[folds, data] = detectFolds(T1L1circ97468n);
 idx = find(folds(:,2) == min(folds(:,2)));
 L1xb = folds(idx,2);
 L1yb = data(folds(idx,1), SIindex);
@@ -277,7 +282,7 @@ for i = 1:numel(pointsAT)
     plot_atmos(pointsAT{i}, opts);
     title('')
     exportfig(TaFiles{i}, fontsize, [20,10])
-    system(['cp -v ', TaFiles{i}, ' /home/erik/Projects/doc/thesis/figsI-EMIC/.']);    
+    system(['cp -v ', TaFiles{i}, ' /home/erik/Projects/doc/thesis/figsI-EMIC/.']);
 end
 
 
@@ -286,7 +291,7 @@ L1ATno_circ = '/home/erik/Projects/i-emic/test/tuning/solarcont/noO_4deg/EK_Larg
 L1SIno_circ = '/home/erik/Projects/i-emic/test/tuning/solarcont/noO_4deg/EK_Large/0.97637-/ev/1h/ev_step_4.2.h5';
 opts.readEV = true;
 opts.Ta = true;
-opts.evindex=0;
+opts.evindex = 0;
 plot_atmos(L1ATno_circ,opts);
 title('')
 exportfig('L1aTa_ev0.eps',fontsize,[20,10])
