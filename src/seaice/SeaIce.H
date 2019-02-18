@@ -31,6 +31,8 @@
 // exp, pow, sin
 #include <math.h>
 
+#include <functional>
+
 // forward decl
 class Ocean;
 class Atmosphere;

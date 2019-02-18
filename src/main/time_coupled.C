@@ -42,21 +42,21 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 
     // First we create a bunch of parameterlists based on a bunch of
     // xml files.
-    std::vector<string> files = {"ocean_params.xml",
-                                 "atmosphere_params.xml",
-                                 "seaice_params.xml",
-                                 "coupledmodel_params.xml",
-                                 "continuation_params.xml",
-                                 "jdqz_params.xml",
-                                 "timestepper_params.xml"};
+    std::vector<std::string> files = {"ocean_params.xml",
+                                      "atmosphere_params.xml",
+                                      "seaice_params.xml",
+                                      "coupledmodel_params.xml",
+                                      "continuation_params.xml",
+                                      "jdqz_params.xml",
+                                      "timestepper_params.xml"};
 
-    std::vector<string> names = {"Ocean parameters",
-                                 "Atmosphere parameters",
-                                 "Sea ice parameters",
-                                 "CoupledModel parameters",
-                                 "Continuation parameters",
-                                 "JDQZ parameters",
-                                 "timestepper_params.xml"};
+    std::vector<std::string> names = {"Ocean parameters",
+                                      "Atmosphere parameters",
+                                      "Sea ice parameters",
+                                      "CoupledModel parameters",
+                                      "Continuation parameters",
+                                      "JDQZ parameters",
+                                      "timestepper_params.xml"};
     
     enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT, EIGEN, TIME};
 
@@ -117,12 +117,8 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     stepper.run();
 
     TIMER_STOP("Total time...");
-    
+
     // print the profile
     if (Comm->MyPID() == 0)
-    {
-        printProfile(profile);
-    }    
-    
-
+        printProfile();
 }

@@ -16,34 +16,34 @@ void runOceanModel(RCP<Epetra_Comm> Comm);
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {
-	// Initialize the environment:
-	//  - MPI
-	//  - output files
-	//  - returns Trilinos' communicator Epetra_Comm
-	RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
+    // Initialize the environment:
+    //  - MPI
+    //  - output files
+    //  - returns Trilinos' communicator Epetra_Comm
+    RCP<Epetra_Comm> Comm = initializeEnvironment(argc, argv);
 
-	// run the ocean model
-	runOceanModel(Comm);
+    // run the ocean model
+    runOceanModel(Comm);
 
     //--------------------------------------------------------
-	// Finalize MPI
-	//--------------------------------------------------------
-	MPI_Finalize();
+    // Finalize MPI
+    //--------------------------------------------------------
+    MPI_Finalize();
 }
 
 //------------------------------------------------------------------
 void runOceanModel(RCP<Epetra_Comm> Comm)
 {
-	TIMER_START("Total time...");
+    TIMER_START("Total time...");
 
-	//------------------------------------------------------------------
-	// Check if outFile is specified
-	if (outFile == Teuchos::null)
-		throw std::runtime_error("ERROR: Specify output streams");
+    //------------------------------------------------------------------
+    // Check if outFile is specified
+    if (outFile == Teuchos::null)
+        throw std::runtime_error("ERROR: Specify output streams");
 
-	// Create parameter object for Ocean
-	RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+    // Create parameter object for Ocean
+    RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
+    updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
     oceanParams->setName("Ocean parameters");
 
     double comb =
@@ -56,13 +56,13 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
                 << comb, __FILE__, __LINE__);
     }
 
-	// Create parallelized Theta<Ocean> object
+    // Create parallelized Theta<Ocean> object
     Teuchos::RCP<Theta<Ocean> > oceanTheta =
         Teuchos::rcp(new Theta<Ocean>(Comm, oceanParams));
 
     // Create parameter object for time stepping
-	RCP<Teuchos::ParameterList> timeParams = rcp(new Teuchos::ParameterList);
-	updateParametersFromXmlFile("timestepper_params.xml", timeParams.ptr());
+    RCP<Teuchos::ParameterList> timeParams = rcp(new Teuchos::ParameterList);
+    updateParametersFromXmlFile("timestepper_params.xml", timeParams.ptr());
     timeParams->setName("time stepper parameters");
 
     // Create ThetaStepper
@@ -72,11 +72,11 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
     // Run ThetaStepper
     stepper.run();
-    
-	TIMER_STOP("Total time...");
-    
+
+    TIMER_STOP("Total time...");
+
     // print the profile
     if (Comm->MyPID() == 0)
-        printProfile(profile);
+        printProfile();
 }
 

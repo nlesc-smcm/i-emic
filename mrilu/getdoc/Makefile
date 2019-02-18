@@ -167,7 +167,7 @@ clean_doc: default_clean_doc
 doc: $(addsuffix .txt, $(modules) ) 
 #
 #
-$(MRILU_BIN)/showdoc: showdoc
+$(MRILU_BIN)/showdoc:
 	$(RM) $@
 	echo NUMBASE=$(NUMBASE) > showdoc
 	cat showdoc_template.sh >> showdoc

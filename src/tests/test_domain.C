@@ -191,7 +191,9 @@ TEST(Domain, AuxInit)
 
     int last = FIND_ROW2(dof, n, m, l, n-1, m-1, l-1, dof);
     if (comm->MyPID() == (comm->NumProc() - 1))
+    {
         EXPECT_EQ( vec->Map().LID(last + aux) , numMyStandardElements -1 );
+    }
 
     for (int i = 1; i <= aux; ++i)
         (*vec)[numMyStandardElements - aux - 1  + i] = 10000 + i - 1;
@@ -201,7 +203,9 @@ TEST(Domain, AuxInit)
         (*localvec)[i] = 1000 + localvec->Map().GID(i);
 
     if (comm->MyPID() == (comm->NumProc() - 1))
+    {
         EXPECT_EQ( vec->Map().GID(numMyStandardElements-1), n*m*l*dof + aux - 1 );
+    }
 
     ////////////////////////////////////////////
     // Create surface maps
@@ -290,7 +294,9 @@ TEST(Domain, Importers)
     EXPECT_EQ(failed, false);
 
     if (comm->MyPID() == (comm->NumProc() - 1))
+    {
         EXPECT_EQ( (*vec)[vec_last], 10000 + aux - 1 );
+    }
 
     EXPECT_EQ(vec->GlobalLength(), standardMap->NumGlobalElements());
     EXPECT_EQ(vec->GlobalLength(), domain->GetSolveMap()->NumGlobalElements());

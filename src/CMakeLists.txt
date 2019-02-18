@@ -72,7 +72,6 @@ set(EXTRA_LIBS
   misc
   iosrc
   gfortran
-  hdf5
   )
 
 #if (Trilinos_TPL_LIBRARIES MATCHES "libhdf5")

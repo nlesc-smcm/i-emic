@@ -16,8 +16,6 @@ cmake \
    -D CMAKE_BUILD_TYPE:STRING=RELEASE \
    -D BUILD_SHARED_LIBS=ON \
    -D CMAKE_CXX_FLAGS:STRING="-g -O3" \
-   -D Ifpack_CXX_FLAGS:STRING="-DHAVE_IFPACK_MRILU" \
-   -D Ifpack_CXX_FLAGS:STRING="-I/home/erik/Projects/i-emic/src/mrilucpp" \
    -D Trilinos_ENABLE_DEBUG=OFF \
 \
    -D Trilinos_ENABLE_Export_Makefiles:BOOL=ON \

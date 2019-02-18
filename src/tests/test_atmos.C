@@ -285,7 +285,9 @@ TEST(Atmosphere, MassMatrix)
     {
         EXPECT_EQ(out[i], Ai); // TT
         if (std::abs(out[i+1])>0) // QQ
+        {
             EXPECT_EQ(out[i+1], 1.0);
+        }
     }
 
     // check integral equations in test_coupled

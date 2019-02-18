@@ -197,7 +197,7 @@ class IdentityOperator : public Ifpack_Preconditioner
   double ApplyInverseFlops() const {return 0;}
 
   //! Prints basic information on iostream. This function is used by operator<<.
-  ostream& Print(std::ostream& os) const {os << "(Identity Operator)"; return os;}
+  std::ostream& Print(std::ostream& os) const {os << "(Identity Operator)"; return os;}
 
   //@}
 

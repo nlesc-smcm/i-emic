@@ -35,6 +35,8 @@
 #  include "Epetra_SerialComm.h"
 #endif
 
+#include <fstream>
+#include <memory>
 #include <algorithm> // for sorting indices
 #include <vector>
 #include <math.h>
