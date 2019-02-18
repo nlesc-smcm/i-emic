@@ -204,7 +204,6 @@ class Continuation
     
     //! track the sign of monitor in detect()
     std::vector<int> signMonitor_;
-    
     //! ||F(x_old)||
     double normRHS_;              
     //! ||F(x_new)||
