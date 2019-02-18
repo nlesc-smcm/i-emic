@@ -36,19 +36,12 @@ Depending on architecture: ifort, gfortran, mpicc, mpicpc, mpic++, etc...
   * Install MRILU
       *  Create an include file `mrilu/makefile.inc`, for examples see `mrilu/makefile_inc_examples`
       *  May depend on `libx11-dev` and `x11proto-core-dev`
-   
-  * Patch Trilinos to enable `Ifpack_MRILU`, see `notes/trilinos_ifpackmrilu_patch`
-	* For Trilinos versions 11.12 and 11.14 you can just copy `{version}/Ifpack.*` to `packages/ifpack/src` 	
-	
+
   * Install Trilinos with support for metis and parmetis:
 	* Create build directory `{trilinos_base_dir}/build`
 	* Create cmake script `build/{something}.cmake`, for examples see `notes/trilinos_cmake_examples`
 
 		* Adjust `METIS_LIBRARY_DIRS`, `TPL_METIS_INCLUDE_DIRS`, `ParMETIS_LIBRARY_DIRS` and `TPL_ParMETIS_INCLUDE_DIRS`.
-  
-		* Pass an extra flag to ifpack: `-D Ifpack_CXX_FLAGS:STRING="-DHAVE_IFPACK_MRILU" \`
-		
-		* Let `src/mrilucpp/Ifpack_MRILU.h` be available when compiling Trilinos, for instance add `-D Ifpack_CXX_FLAGS:STRING="-DHAVE_IFPACK_MRILU" \`
 
 	* Make cmake script executable and run it, install Trilinos 
 	  * Possible failures: no lapack, blas or hdf5 libs. `hdf5-openmpi` might install in `/usr/include/hdf5/openmpi`, so you could extend `CPATH` and `LD_LIBRARY_PATH` appropriately: e.g.: `export CPATH=$CPATH:/usr/include/hdf5/openmpi` `export LIBRARY_PATH=$LIBRARY_PATH:/usr/lib/x86_64-linux-gnu/hdf5/openmpi`

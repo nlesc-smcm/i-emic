@@ -23,7 +23,6 @@
 #include <array>
 #include <string>
 #include <stack>
-#include <ctime>  // std::clock()
 
 // These outstreams need to be defined in the main routine.
 extern Teuchos::RCP<std::ostream> outFile;
@@ -31,7 +30,7 @@ extern Teuchos::RCP<std::ostream> cdataFile;
 extern Teuchos::RCP<std::ostream> tdataFile;
 
 //------------------------------------------------------------------
-// Setup profile:
+// Profile definition:
 
 // Number of entries in profile
 #ifndef PROFILE_ENTRIES
@@ -39,15 +38,6 @@ extern Teuchos::RCP<std::ostream> tdataFile;
 #endif
 
 typedef std::map<std::string, std::array<double, PROFILE_ENTRIES> > ProfileType;
-
-// This profile container needs to be defined in the main routine.
-extern ProfileType profile;
-
-// Forward declaration of Timer class
-class Timer;
-
-// We define a global stack for Timer objects, so that we can nest timings
-extern std::stack<Timer> timerStack;
 
 //=========================================================================
 #ifndef M_PI
@@ -78,34 +68,34 @@ extern std::stack<Timer> timerStack;
 
 // ! Error reporting
 #ifndef ERROR
-#  define ERROR(x,y,z)                                                  \
-	{                                                                   \
-        std::cerr << "\n**ERROR**: "<< x << std::endl;                    \
-        std::cerr << "(in " << y << ", line "                           \
-                  << z << ")\n" << std::endl;                             \
-                                                                        \
-        (*outFile) << "\n**ERROR**: "<< x << std::endl;                   \
-        (*outFile) << "(in " << y << ", line "                          \
-                   << z << ")\n" << std::endl;                            \
-                                                                        \
-        int initialized = 0;                                            \
-        MPI_Initialized(&initialized);                                  \
-        if (initialized)                                                \
-            MPI_Abort(MPI_COMM_WORLD, -1);                              \
-        std::exit(-1);                                                  \
+#  define ERROR(x,y,z)                                  \
+    {                                                   \
+    std::cerr << "\n**ERROR**: "<< x << std::endl;      \
+    std::cerr << "(in " << y << ", line "               \
+    << z << ")\n" << std::endl;                         \
+                                                        \
+    (*outFile) << "\n**ERROR**: "<< x << std::endl;     \
+    (*outFile) << "(in " << y << ", line "              \
+    << z << ")\n" << std::endl;                         \
+                                                        \
+    int initialized = 0;                                \
+    MPI_Initialized(&initialized);                      \
+    if (initialized)                                    \
+        MPI_Abort(MPI_COMM_WORLD, -1);                  \
+    std::exit(-1);                                      \
     }
 #endif
 
 #ifndef WARNING
-#  define WARNING(x,y,z)                                                \
-	{                                                                   \
-		std::cerr << "\n**WARNING**: " << x << " ";                       \
-        std::cerr << "(in " << y << ", line "                           \
-                  << z << ")\n" << std::endl;                             \
-		(*outFile) << "\n**WARNING**: " << x << " ";                      \
-        (*outFile) << "(in " << y << ", line "                          \
-                  << z << ")\n" << std::endl;                             \
-}
+#  define WARNING(x,y,z)                                \
+    {                                                   \
+        std::cerr << "\n**WARNING**: " << x << " ";     \
+        std::cerr << "(in " << y << ", line "           \
+                  << z << ")\n" << std::endl;           \
+        (*outFile) << "\n**WARNING**: " << x << " ";    \
+        (*outFile) << "(in " << y << ", line "          \
+                   << z << ")\n" << std::endl;          \
+    }
 #endif
 
 #ifndef DEBUG
@@ -169,101 +159,48 @@ extern std::stack<Timer> timerStack;
 #  define SGN(x) (x < 0 ? -1 : 1)
 #endif
 
+//------------------------------------------------------------------
+// Timer class, compatible with macros here in GlobalDefinitions.H
+class Timer
+{
+    double startTime_;
+    std::string label_;
+public:
+    Timer(std::string const &label);
+    double wallTime();
+    void ResetStartTime();
+    double ElapsedTime();
+    std::string label();
+};
+
+void printProfile();
+
+extern "C" {
+void timer_start_(char const *msg);
+void timer_stop_(char const *msg);
+
+void track_iterations_(char const *charmsg, int iters);
+void track_residual_(char const *charmsg, double residual);
+}
+
 // Timer macro using a global stack, allows for nesting
 #ifndef TIMER_START
-#  define TIMER_START(msg)											\
-	{																\
-		Timer timer(msg);                                           \
-		timer.ResetStartTime();                                     \
-		if (profile.find(msg) == profile.end())                     \
-            profile[msg] = std::array<double, PROFILE_ENTRIES>();   \
-		timerStack.push(timer);										\
-	}
+#  define TIMER_START(msg) timer_start_(msg);
 #endif
 
 #ifndef TIMER_STOP
-#  define TIMER_STOP(msg)                                               \
-	{                                                                   \
-		double time = timerStack.top().ElapsedTime();                   \
-        bool sane = true;                                               \
-        if (!(msg == timerStack.top().label()))                         \
-        {                                                               \
-            WARNING("msg and label not equal!\n" <<                     \
-                    "   msg = " << msg << "\n"                          \
-                    " label = " << timerStack.top().label() << "\n",    \
-                    __FILE__, __LINE__);                                \
-            sane = false;                                               \
-        }                                                               \
-        assert(sane);                                                   \
-		timerStack.pop();                                               \
-        profile[msg][0] += time;                                        \
-        profile[msg][1] += 1;                                           \
-        profile[msg][2] = profile[msg][0] / profile[msg][1];            \
-	}
+#  define TIMER_STOP(msg) timer_stop_(msg);
 #endif
 
 // We can also keep track of different things, to distinguish these
 // from timings we prepend NOTIME to the message
 #ifndef TRACK_ITERATIONS
-# define TRACK_ITERATIONS(charmsg, iters)						\
-	{															\
-		std::string msg(charmsg);								\
-		msg.insert(0, "_NOTIME_");								\
-        profile[msg] = (profile.count(msg)) ?                   \
-			profile[msg] :										\
-			std::array<double, PROFILE_ENTRIES>();				\
-        profile[msg][0] += iters;                              \
-        profile[msg][1] += 1;                                  \
-        profile[msg][2] = profile[msg][0] / profile[msg][1]; \
-	}
+# define TRACK_ITERATIONS(msg, iters) track_iterations_(msg, iters);
 #endif
 
 #ifndef TRACK_RESIDUAL
-# define TRACK_RESIDUAL(charmsg, residual)						\
-	{															\
-		std::string msg(charmsg);								\
-		msg.insert(0, "_NOTIME_");								\
-        profile[msg] = (profile.count(msg)) ?         \
-			profile[msg] :										\
-			std::array<double, PROFILE_ENTRIES>();				\
-        profile[msg][0] += residual;                           \
-        profile[msg][1] += 1;                                  \
-        profile[msg][2] = profile[msg][0] / profile[msg][1]; \
-	}
+# define TRACK_RESIDUAL(msg, residual) track_residual_(msg, residual);
 #endif
-
-//------------------------------------------------------------------
-// Timer class, compatible with macros here in GlobalDefinitions.H
-class Timer
-{
-	double startTime_;
-    std::string label_;
-    
-public:
-	Timer(std::string const &label)
-		:
-		startTime_(0.0),
-        label_(label)
-		{}
-
-	double wallTime()
-		{
-			int mpiInit;
-			MPI_Initialized(&mpiInit);
-			if (mpiInit)
-				return MPI_Wtime();
-			else
-				return (double) std::clock() / CLOCKS_PER_SEC;
-		}
-
-	void ResetStartTime()
-		{ startTime_ = wallTime();}
-
-	double ElapsedTime()
-		{ return (double) (wallTime() - startTime_); }
-
-    std::string label() { return label_;}
-};
 
 //=========================================================================
 
@@ -277,7 +214,7 @@ public:
     }                                                                   \
 
 #define CHECK_TRUE(funcall) {bool berr = funcall;                       \
-		if (!berr) {ERROR("Trilinos call " << #funcall                  \
+        if (!berr) {ERROR("Trilinos call " << #funcall                  \
                           << " returned false", __FILE__, __LINE__);}}  \
 
 

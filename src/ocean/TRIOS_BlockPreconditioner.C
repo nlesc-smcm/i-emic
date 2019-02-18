@@ -835,7 +835,7 @@ namespace TRIOS {
 
         begM[0]=0;
 
-        int kglob;
+        int kglob = -1;
         double sf; //scaling factor
 
         // build all Teuchos::null-vectors of Gw. Note that Gw does not
@@ -1465,8 +1465,8 @@ namespace TRIOS {
     double BlockPreconditioner::NormInf() const
     {
         // Not implemented: Throw an error!
-        cout << "ERROR: BlockPreconditioner::NormInf() - "
-             << "method is NOT implemented!!  " << endl;
+        std::cout << "ERROR: BlockPreconditioner::NormInf() - "
+                  << "method is NOT implemented!!  " << std::endl;
         throw "Error: method not implemented";
     }
 
@@ -2149,7 +2149,7 @@ namespace TRIOS {
             {
                 INFO("build Mzp2...");
             }
-            Mzp2 = build_singular_matrix(Teuchos::rcp(tmpGw, false));
+            Mzp2 = build_singular_matrix(Teuchos::rcp(tmpGw));
             //TODO: should we or should we not delete this?
             // delete tmpGw;
         }
@@ -2273,7 +2273,7 @@ namespace TRIOS {
         CHECK_ZERO(Trans.CreateTranspose(true, tmpGw, SubMatrixRowMap[_Gw].get()));
 
         INFO("build Mzp2...");
-        Mzp2 = build_singular_matrix(Teuchos::rcp(tmpGw, false));
+        Mzp2 = build_singular_matrix(Teuchos::rcp(tmpGw));
         Teuchos::RCP<Epetra_CrsMatrix> T2 =
             Teuchos::rcp(new Epetra_CrsMatrix(Copy, (*Mzp2).RowMap(),
                                               (*SubMatrix[_Duv]).ColMap(),

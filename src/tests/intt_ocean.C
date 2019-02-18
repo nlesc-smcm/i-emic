@@ -135,9 +135,7 @@ int main(int argc, char **argv)
               << " " << out << std::endl;
 
     if (comm->MyPID() == 0)
-    {
-        printProfile(profile);
-    }
+        printProfile();
 
     MPI_Finalize();
     return out;

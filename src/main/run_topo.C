@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 	
 	// print the profile
 	if (comm->MyPID() == 0)
-		printProfile(profile);
+		printProfile();
 	
 	comm->Barrier();
 	MPI_Finalize();

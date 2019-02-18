@@ -1422,7 +1422,7 @@ void SeaIce::createMatrixGraph()
 void SeaIce::initializePrec()
 {
     Ifpack Factory;
-    string precType = "Amesos"; // direct solve on subdomains with some overlap
+    std::string precType = "Amesos"; // direct solve on subdomains with some overlap
     int overlapLevel = params_->get("Ifpack overlap level", 2);
 
     INFO("SeaIce: preconditioner overlap level: " << overlapLevel);

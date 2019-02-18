@@ -71,16 +71,22 @@ TEST(Ocean, MassMat)
         if ((lid >= 0) && ((*mask.global_borderless)[i] == 0))
         {
             if (std::abs(out[lid])>0) // UU
+            {
                 EXPECT_EQ(out[lid], -rosb);
-        
+            }
+
             if (std::abs(out[lid+1])>0) // VV
+            {
                 EXPECT_EQ(out[lid+1], -rosb);
-        
+            }
+
             EXPECT_EQ(out[lid+2], 0.0);  // WW
             EXPECT_EQ(out[lid+3], 0.0);  // PP
             EXPECT_EQ(out[lid+4], -1.0); // TT
             if (std::abs(out[lid+5])>0)  // SS
+            {
                 EXPECT_EQ(out[lid+5], -1.0);
+            }
         }
     }
 
@@ -322,9 +328,7 @@ int main(int argc, char **argv)
               << " " << out << std::endl;
 
     if (comm->MyPID() == 0)
-    {
-        printProfile(profile);
-    }
+        printProfile();
 
     MPI_Finalize();
     return out;

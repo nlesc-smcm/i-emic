@@ -778,6 +778,7 @@ namespace Belos
             }
 
         static int  GetVecLength     (const Combined_MultiVec& mv ) { return mv.GlobalLength(); }
+        static int  GetGlobalLength  (const Combined_MultiVec& mv ) { return mv.GlobalLength(); }
         static int  GetNumberVecs    (const Combined_MultiVec& mv ) { return mv.NumVectors(); }
         static bool HasConstantStride(const Combined_MultiVec& mv ) { return mv.ConstantStride(); }
 

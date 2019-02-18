@@ -305,7 +305,7 @@ namespace TRIOS {
         fixSingularA11    = params.get("Fix singular A11", false);
 
         Teuchos::ParameterList& SpaIList = params.sublist("Approximate Inverse");
-        string spai_scheme=SpaIList.get("Method","Block Diagonal");
+        std::string spai_scheme=SpaIList.get("Method","Block Diagonal");
         label_ = "Simple Preconditioner ("+scheme+", "+spai_scheme+")";
 
         // verify the scheme is valid
@@ -441,7 +441,7 @@ namespace TRIOS {
         if (ChatSolver.get()!=NULL)
         {
             CHECK_ZERO(ChatSolver->SetUserMatrix(Chat.get()));
-            string cHat_prec = ChatPrecList.get("Method","None");
+            std::string cHat_prec = ChatPrecList.get("Method","None");
             if (cHat_prec!="None")
             {
                 CHECK_ZERO(ChatSolver->SetPrecOperator(ChatPrecond.get()));

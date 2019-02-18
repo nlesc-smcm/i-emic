@@ -69,9 +69,9 @@ Ifpack_MRILU::Ifpack_MRILU(Teuchos::RCP<Epetra_CrsMatrix> A, Teuchos::RCP<Epetra
 	comm(comm_),
 	is_initialized(false),is_computed(false)
 {  
-	string s1="MRILU(";
-	string s2(A->Label());
-	string s3=")";
+    std::string s1="MRILU(";
+    std::string s2(A->Label());
+    std::string s3=")";
 	label = s1+s2+s3;
 	DEBUG("Ifpack_MRILU constructor called");
 	default_params();
@@ -81,9 +81,9 @@ Ifpack_MRILU::Ifpack_MRILU(Epetra_RowMatrix* A) :
 	mrilu_id(0),
 	is_initialized(false),is_computed(false)
 {  
-	string s1="MRILU(";
-	string s2(A->Label());
-	string s3=")";
+    std::string s1="MRILU(";
+    std::string s2(A->Label());
+    std::string s3=")";
 	label = s1+s2+s3;
 	Matrix_ = Teuchos::rcp(A,false);
 	comm=Teuchos::rcp(&(A->Comm()),false);
@@ -468,7 +468,7 @@ double Ifpack_MRILU::ApplyInverseFlops() const
 }
 
 //! Prints basic information on iostream. This function is used by operator<<.
-ostream& Ifpack_MRILU::Print(std::ostream& os) const
+std::ostream& Ifpack_MRILU::Print(std::ostream& os) const
 {
     // TODO: print something interesting for the user to read and enjoy
     os << this->Label();

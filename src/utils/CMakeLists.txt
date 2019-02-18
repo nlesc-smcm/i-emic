@@ -5,7 +5,7 @@ set(UTILS_INCLUDE_DIRS
   ../ocean/
   )
 
-add_library(utils SHARED Utils.C)
+add_library(utils SHARED Utils.C GlobalDefinitions.C)
 
 target_link_libraries(utils PUBLIC ${library_dependencies})
 
