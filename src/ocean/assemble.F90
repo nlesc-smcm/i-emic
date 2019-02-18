@@ -4,7 +4,6 @@ SUBROUTINE assemble
   use m_mat
   use m_usr
   implicit none
-  call preprocessA_old !--> is this always necessary?
   call fillcolA
   call intcond
 
@@ -55,84 +54,6 @@ SUBROUTINE fillcolB
   end if
 
 end SUBROUTINE fillcolB
-
-!****************************************************************************
-SUBROUTINE preprocessA
-  USE m_mat
-  use m_usr
-  implicit none
-  integer i,j,k,ii,jj,kk
-
-  active = .false.
-
-  i = int(n/2)
-  j = int(m/2)
-  k = int(l/2)
-
-  if (landm(i,j,k) == OCEAN) then
-     do ii = 1,nun
-        do jj = 1,nun
-           do kk = 1,np
-              !                  if (abs(an(i,j,k,kk,ii,jj)) > 1.0E-14) then
-              if (an(i,j,k,kk,ii,jj) /= 0D0) then
-                 active(kk,ii,jj) = .true.
-              end if
-           end do
-        end do
-        active(5,ii,ii) = .true.
-     end do
-  else
-     call preprocessA_old
-  end if
-end SUBROUTINE preprocessA
-
-!****************************************************************************
-SUBROUTINE preprocessA_old
-  USE m_mat
-  use m_usr
-  implicit none
-  integer i,j,k,ii,jj,kk,count
-
-  active = .false.
-  count = 0
-  do ii = 1,nun
-     do jj = 1,nun
-        do kk = 1,np
-           loop: do i = 1,n
-              do j = 1,m
-                 do k = 1,l+la
-                    ! --> 1.0E-10 small enough?
-                    if (abs(an(i,j,k,kk,ii,jj)) > 1.0E-10) then
-                       active(kk,ii,jj) = .true.
-                       cycle loop
-                    end if
-                 end do
-              end do
-           end do loop
-           !         if (active(kk,ii,jj)) then
-           !            count = count +1
-           !         end if
-        end do
-     end do
-  end do
-  !      write(f99,*) "total nnz in A:", nnz
-  !      write(f99,*) "with ", count, " active connections out of ", nun*nun*np
-#ifdef DEBUGGING
-  ! this can be useXul for determining the maximal matrix graph
-  open(42,file='active.txt')
-  do ii=1,nun
-     do jj=1,nun
-        do kk=1,np
-           if (active(kk,ii,jj)) then
-              write(42,*) ii,jj,kk
-           end if
-        end do
-     end do
-  end do
-  close(42)
-#endif
-end SUBROUTINE preprocessA_old
-
 
 !****************************************************************************
 SUBROUTINE fillcolA
@@ -201,8 +122,9 @@ SUBROUTINE fillcolA
                  v   = nun*np*(row-1)
                  begA(row) = v + 1   ! assuming every row will have nun*np entries
                  do jj = 1, nun
-                    if (active(kk,ii,jj)) then
-                       w = v + (jj-1)*np ! ? grouped ordering?                       
+                    ! --> 1.0E-10 small enough?
+                    if (abs(an(i,j,k,kk,ii,jj)) > 1.0E-10) then
+                       w = v + (jj-1)*np ! ? grouped ordering?
                        coA(w+kk)  = an(i,j,k,kk,ii,jj)
                        jcoA(w+kk) = find_row2(i2,j2,k2,jj)
                     end if
