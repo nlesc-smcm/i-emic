@@ -965,13 +965,17 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         TIMER_START("Ocean: compute jacobian: fortran part");
 
         // If we test the mask we need non-restoring conditions in the matrix
-        int tmp_sres = (maskTest) ? 0 : sres;
-        FNAME(setsres)(&tmp_sres);
-        
+        if (maskTest)
+        {
+            int tmp_sres = 0;
+            FNAME(setsres)(&tmp_sres);
+        }
+
         FNAME(matrix)(solution,&sigmaUVTS,&sigmaWP);
 
         // Restore from the testing config
-        FNAME(setsres)(&sres);
+        if (maskTest)
+            FNAME(setsres)(&sres);
         
         TIMER_STOP("Ocean: compute jacobian: fortran part");
 

@@ -113,6 +113,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   call vmix_init    ! ATvS-Mix  USES LANDMASK
   call atmos_coef   !
   call forcing      ! USES LANDMASK
+  call lin
 
   _INFO_('THCM: init...  done')
 end subroutine init
@@ -172,6 +173,9 @@ SUBROUTINE setparcs(param,value)
      WRITE(f99,*) 'error in transfer parameter to fortran'
   ENDIF
   !     ENDIF
+
+  call forcing
+  call lin
 
 END SUBROUTINE setparcs
 
@@ -257,6 +261,9 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_
   ! --> FIXME Instead of using par(TEMP) we should have a dedicated latent heat
   ! continuation parameter.
   lvsc = par(COMB) * par(TEMP) * rhodim * lv * QTnd
+
+  call forcing
+  call lin
   
 end subroutine set_atmos_parameters
 
@@ -281,6 +288,9 @@ SUBROUTINE set_seaice_parameters(i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0)
   if (i_rhoo.ne.rhodim) then
      _INFO_('WARNING conflicting sea water density rhodim')
   endif
+
+  call forcing
+  call lin
 
 end subroutine set_seaice_parameters
 
@@ -346,6 +356,7 @@ SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
      !  A few initializations need to be repeated
      call vmix_init    ! ATvS-Mix  USES LANDMASK
      call forcing      ! USES LANDMASK
+     call lin
   endif
 
 !  _INFO_('THCM: usrc.F90 set_landmask...  done')
@@ -373,7 +384,10 @@ SUBROUTINE setsres(tmp_sres)
   integer(c_int) :: tmp_sres
 
   sres = tmp_sres
-  
+
+  call forcing
+  call lin
+
 end SUBROUTINE setsres
 
 !*****************************************************************************
@@ -394,19 +408,10 @@ SUBROUTINE matrix(un, sig1, sig2)
   real time0, time1
   integer i,j,k,row,ii,find_row2
 
-  !     clean old arrays:
-  _DEBUG_("Zero out matrix arrays...")
-  coB  = 0
-  Al = 0
-  begA(1:ndim+1) = 0
-  coA(1:maxnnz)  = 0.D0
-  jcoA(1:maxnnz) = 0
+  An = Al
 
   _DEBUG_("Build diagonal matrix B...")
   call fillcolB
-  _DEBUG_("Build linear part of Jacobian...")
-  call lin
-  An = Al
 #ifndef THCM_LINEAR
   _DEBUG_("Build nonlinear part of Jacobian...")
   call nlin_jac(un)
@@ -493,18 +498,13 @@ SUBROUTINE rhs(un,B)
   integer i,j,k,k1,row,find_row2, mode
 
   !call writeparameters
-  mix  = 0.0
-  Al   = 0
-  begA = 0
-  coA  = 0
-  jcoA = 0
-  call lin              !
+  mix = 0.0
   An = Al
   ! write(*,*) 'T(n,m,l)', un(find_row2(n,m,l,TT))
 #ifndef THCM_LINEAR
   call nlin_rhs(un)
 #endif
-  call forcing          !
+  ! call forcing          !
   call boundaries       !
   call assemble
   call matAvec(un,Au)   !
