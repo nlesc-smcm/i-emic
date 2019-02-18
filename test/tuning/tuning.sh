@@ -5,10 +5,11 @@ date=`date +%m%d%y-%H%M`
 
 procs=16            # specify number of processors to use
 #time=5-00:00:00    # time (HH:MM:SS) for slurm batch job
-time=12:00:00
+time=3-00:00:00
 #time=1:00:00
 nodes=1           # number of nodes
-type=normal       # node type
+#type=normal       # node type
+type=fat
 #type=short      
 
 # append this submit to submit log
@@ -18,8 +19,8 @@ echo "tuning.sh " $procs $time $@ $date>> tuning.log
 # This assumes the root dir is called i-emic, otherwise just point to
 # the full path here, e.g., <rootdir>/build/src/main/time_coupled
 
-#executable=`echo ${PWD} | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/time_coupled
-executable=`echo ${PWD} | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/run_coupled
+executable=`echo ${PWD} | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/time_coupled
+#executable=`echo ${PWD} | sed 's/i-emic\/.*/i-emic\/build\/src\//'`main/run_coupled
 
 if ! [[ -s $executable ]]
 then
@@ -43,7 +44,13 @@ then
     cp -v submit.sh $1
 
     # move to destination dir
+    echo " cd to destination dir"    
     cd ${PWD}/$1
+    echo " pwd = " ${PWD}
+    
+else
+    echo " no destination directory given, exiting"
+    exit
 fi
 
 # create filenames

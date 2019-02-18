@@ -12,8 +12,6 @@
   <!-- Save evaporation and precipitation fields -->
   <Parameter name="Save E and P fields" type="bool" value="true" />
 
-  <Parameter name="Save frequency" type="int" value="100" />
-
   <!-- To keep track of each converged state, enable this. -->
   <Parameter name="Save every step" type="bool" value="false" />
 
@@ -57,7 +55,7 @@
   <Parameter name="Auxiliary unknowns" type="int" value="1"        />
 
   <!-- Preconditioner parameters.                                 -->
-  <Parameter name="Ifpack overlap level" type="int" value="10" />
+  <Parameter name="Ifpack overlap level" type="int" value="50" />
 
   <!-- Albedo restoring timescales (default is 1 day) -->
   <Parameter name="restoring timescale tauf (in days)" type="double" value="10"/>
