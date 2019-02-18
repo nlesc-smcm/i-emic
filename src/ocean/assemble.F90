@@ -291,47 +291,6 @@ SUBROUTINE shift(i,j,k,i2,j2,k2,np)
 end SUBROUTINE shift
 
 !****************************************************************************
-SUBROUTINE intcond_old
-  !     Impose integral condition
-  USE m_mat
-  use m_usr
-  implicit none
-  !      include 'mat.com'
-  integer find_row2
-  integer i, j, k, v, L1
-  !     Replace p equation at part. point with
-  !     a 'normalization' condition for p
-  !     L1 = nun*((L/2-1)*N*M+ N*(M/2-1) + N/2-1) + PP
-  L1 = find_row2(n,m,l,PP)
-  do v = begA(L1),begA(L1+1)-1
-     coA(v)= 0.0
-     if (jcoA(v).eq.L1) then
-        coA(v) = 1.0
-     endif
-  enddo
-  Frc(L1) = 0.0
-  !     Replace S equation at ndim with an 'integral' condition for s
-  do v = begA(ndim),begA(ndim+1)-1
-     coA(v) = 0.0
-  enddo
-
-  v = begA(ndim)
-  do k = 1, l
-     do j = 1, m
-        do i = 1, n
-           if ( landm(i,j,k) == OCEAN ) then
-              jcoA(v)= find_row2(i,j,k,SS)
-              coA(v) = cos(y(j)) * dfzT(k)
-              v = v+1
-           endif
-        enddo
-     enddo
-  enddo
-  begA(ndim+1) = v
-  Frc(ndim) =  0.0
-
-end SUBROUTINE intcond_old
-!****************************************************************************
 SUBROUTINE intcond
   !     Impose integral condition
   USE m_mat
