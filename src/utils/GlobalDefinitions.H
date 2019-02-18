@@ -164,6 +164,7 @@ typedef std::map<std::string, std::array<double, PROFILE_ENTRIES> > ProfileType;
 class Timer
 {
     double startTime_;
+    std::string label_;
 public:
     Timer(std::string const &label);
     double wallTime();

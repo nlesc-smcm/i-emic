@@ -43,19 +43,19 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 
     // First we create a bunch of parameterlists based on a bunch of
     // xml files.
-    std::vector<string> files = {"ocean_params.xml",
-                                 "atmosphere_params.xml",
-                                 "seaice_params.xml",
-                                 "coupledmodel_params.xml",
-                                 "continuation_params.xml",
-                                 "jdqz_params.xml"};
+    std::vector<std::string> files = {"ocean_params.xml",
+                                      "atmosphere_params.xml",
+                                      "seaice_params.xml",
+                                      "coupledmodel_params.xml",
+                                      "continuation_params.xml",
+                                      "jdqz_params.xml"};
 
-    std::vector<string> names = {"Ocean parameters",
-                                 "Atmosphere parameters",
-                                 "Sea ice parameters",
-                                 "CoupledModel parameters",
-                                 "Continuation parameters",
-                                 "JDQZ parameters"};
+    std::vector<std::string> names = {"Ocean parameters",
+                                      "Atmosphere parameters",
+                                      "Sea ice parameters",
+                                      "CoupledModel parameters",
+                                      "Continuation parameters",
+                                      "JDQZ parameters"};
     
     enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT, EIGEN };
 
