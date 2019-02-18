@@ -1,7 +1,7 @@
 rm -rf CMakeCache.txt CMakeFiles
 
 cmake \
-   -D CMAKE_INSTALL_PREFIX:PATH=/home/erik/trilinos/11.12/dynamic \
+   -D CMAKE_INSTALL_PREFIX:PATH=/home/erik/trilinos/12.12/dynamic \
    -D TPL_ENABLE_MPI:BOOL=ON \
    -D TPL_ENABLE_METIS:BOOL=ON \
    -D METIS_LIBRARY_DIRS:PATH=/usr/local/lib \

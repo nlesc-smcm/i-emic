@@ -22,13 +22,13 @@ TEST(ParameterLists, Initialization)
     bool failed = false;
     try
     {
-        std::vector<string> files = {"ocean_params.xml",
+        std::vector<std::string> files = {"ocean_params.xml",
                                      "atmosphere_params.xml",
                                      "seaice_params.xml",
                                      "coupledmodel_params.xml",
                                      "continuation_params.xml"};
 
-        std::vector<string> names = {"Ocean parameters",
+        std::vector<std::string> names = {"Ocean parameters",
                                      "Atmosphere parameters",
                                      "Sea ice parameters",
                                      "CoupledModel parameters",
