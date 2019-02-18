@@ -9,6 +9,7 @@ cmake \
    -D TPL_ENABLE_ParMETIS:BOOL=ON \
    -D ParMETIS_LIBRARY_DIRS:PATH=/usr/local/lib \
    -D TPL_ParMETIS_INCLUDE_DIRS:PATH=/usr/local/include \
+   -D TPL_ENABLE_HDF5:BOOL=ON \
 \
    -D Trilinos_VERBOSE_CONFIGURE:BOOL=OFF \
    -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
@@ -21,7 +22,6 @@ cmake \
    -D Trilinos_ENABLE_Export_Makefiles:BOOL=ON \
    -D Trilinos_ENABLE_EXAMPLES:BOOL=OFF \
    -D Trilinos_ENABLE_TESTS:BOOL=OFF \
-   -D EpetraExt_USING_HDF5:BOOL=ON \
    -D Belos_ENABLE_Experimental:BOOL=OFF \
 \
    -D Trilinos_ENABLE_Teuchos:BOOL=ON \
@@ -32,5 +32,6 @@ cmake \
    -D Trilinos_ENABLE_Anasazi:BOOL=ON \
    -D Trilinos_ENABLE_Belos:BOOL=ON \
    -D Trilinos_ENABLE_ML:BOOL=ON \
+   -D Trilinos_ENABLE_OpenMP:BOOL=OFF \
 \
 ../
