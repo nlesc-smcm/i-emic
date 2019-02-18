@@ -4,14 +4,16 @@
 
   <!-- Specify whether the ocean model should initialize with -->
   <!-- an old state (true) or with a zero solution (false).       -->
-  <Parameter name="Load state" type="bool" value="false" />
+  <Parameter name="Load state" type="bool" value="false"/>
 
   <Parameter name="Input file"  type="string" value="atmos_input.h5" />
   <Parameter name="Output file" type="string" value="atmos_output.h5" />
 
   <!-- Save evaporation and precipitation fields -->
   <Parameter name="Save E and P fields" type="bool" value="true" />
-  
+
+  <Parameter name="Save frequency" type="int" value="100" />
+
   <!-- To keep track of each converged state, enable this. -->
   <Parameter name="Save every step" type="bool" value="false" />
 
@@ -52,8 +54,8 @@
   <Parameter name="Global Grid-Size l" type="int" value="1"        />
 
   <!-- Auxiliary unknowns                                         -->
-  <Parameter name="Auxiliary unknowns" type="int" value="1"        />  
-  
+  <Parameter name="Auxiliary unknowns" type="int" value="1"        />
+
   <!-- Preconditioner parameters.                                 -->
   <Parameter name="Ifpack overlap level" type="int" value="10" />
 
@@ -66,20 +68,25 @@
   <Parameter name="radiative flux param B"  type="double" value="1.5" />
 
   <!-- <Parameter name="Dalton number" type="double" value="0.0" /> -->
-  
-  <Parameter name="temperature eddy diffusivity" type="double" value="2.0e6" />
+
+  <Parameter name="background temperature seaice" type="double" value="-5.0" />
+  <Parameter name="atmos reference humidity" type="double" value="8e-3" />
+  <Parameter name="atmos humidity scale" type="double" value="1e-3" />
+
+  <Parameter name="temperature eddy diffusivity" type="double" value="3.4e6" />
+  <Parameter name="humidity eddy diffusivity" type="double" value="3.1e6" />
 
   <Parameter name="reference albedo" type="double" value="0.3" />
-  <Parameter name="albedo excursion" type="double" value="0.4" />
- 
+  <Parameter name="albedo excursion" type="double" value="0.4"/>
+
   <!-- testing parameters  -->
-  <Parameter name="melt temperature threshold (deg C)" type="double" value="-5"/>
+  <Parameter name="melt temperature threshold (deg C)" type="double" value="0"/>
   <Parameter name="melt threshold width (deg C)" type="double" value="5"/>
-  
+
   <Parameter name="accumulation precipitation threshold (m/y)" type="double" value="-100"/>
   <Parameter name="accumulation threshold width (m/y)" type="double" value="5"/>
-  
+
   <Parameter name="rain/snow temperature threshold (deg C)" type="double" value="150"/>
-  <Parameter name="rain/snow threshold width (deg C)" type="double" value="5"/>  
+  <Parameter name="rain/snow threshold width (deg C)" type="double" value="5"/>
 
 </ParameterList>

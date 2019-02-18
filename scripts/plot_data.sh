@@ -8,11 +8,11 @@ then
     exit
 fi
 
-xlabel=$(head $1 -n 1 | awk '{print $1}')
-title1=$(head $1 -n 1 | awk '{print $'$2'}')
-title2=$(head $1 -n 1 | awk '{print $'$3'}')
-title3=$(head $1 -n 1 | awk '{print $'$4'}')
-title4=$(head $1 -n 1 | awk '{print $'$5'}')
+xlabel=$(head $1 -n 1 | sed 's/\#//' | awk '{print $1}')
+title1=$(head $1 -n 1 | sed 's/\#//' | awk '{print $'$2'}')
+title2=$(head $1 -n 1 | sed 's/\#//' | awk '{print $'$3'}')
+title3=$(head $1 -n 1 | sed 's/\#//' | awk '{print $'$4'}')
+title4=$(head $1 -n 1 | sed 's/\#//' | awk '{print $'$5'}')
 
 
 while true;
@@ -39,8 +39,5 @@ do
              set label 2 '${PWD}' at  screen 0.5,0.95 right;\
              plot [$6:$7] '$1' using 1:$5 notitle with lines linetype 0;"
 
-    head -n 1 $1 
-    tail -n 1 $1
-
-    sleep 4;
+    sleep 5;
 done

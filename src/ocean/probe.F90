@@ -450,13 +450,13 @@ contains
 
                 ! dfsdm part ------------------------------
                 QSos =   (  &
-                     zeta * (a0 * (s0+So) - (t0+To))     & ! QTos component
+                     zeta * (a0 * (s0+So) - (t0+To) )    & ! QTos component
                      - ( Qvar * qs + q0 ) )              & ! QTsa component
                      / ( rhodim * Lf )
                 
-                QSoa = eta * qdim * ( &
+                QSoa = eo0 + eta * qdim * ( &
                      (deltat / qdim) * dqso * To &
-                     - qa - pa)
+                     - qa) - pa 
                                                 
                 dfsdm(pos) = pQSnd * (QSos - QSoa)
                 

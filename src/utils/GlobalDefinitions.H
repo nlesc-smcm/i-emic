@@ -46,12 +46,12 @@ typedef std::map<std::string, std::array<double, PROFILE_ENTRIES> > ProfileType;
 
 // Precision in scientific output (even)
 #ifndef _PRECISION_
-# define _PRECISION_ 6
+# define _PRECISION_ 8
 #endif
 
 // Set field width in data outputs (even)
 #ifndef _FIELDWIDTH_
-# define _FIELDWIDTH_ 14
+# define _FIELDWIDTH_ 16
 #endif
 
 #ifndef INFO

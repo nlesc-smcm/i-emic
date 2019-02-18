@@ -20,22 +20,21 @@ Continuation<Model, ParameterList>::
 Continuation(Model model, ParameterList pars)
     :
     model_(model),
-    dsInit_                (pars->get("initial step size", 0.01)),
-    dsMin_                 (pars->get("minimum step size", 1.0e-5)),
-    dsMax_                 (pars->get("maximum step size", 1.0e-1)),
+    dsInit_                (pars->get("initial step size", 1.0e-2)),
+    dsMin_                 (pars->get("minimum step size", 1.0e-8)),
+    dsMax_                 (pars->get("maximum step size", 1.0e3)),
     scale1_                (pars->get("increase step size", 1.25)),
-    scale2_                (pars->get("decrease step size", 1.25)),
-    epsilon_               (pars->get("epsilon increment", 1.0e-4)),
+    scale2_                (pars->get("decrease step size", 2.0)),
+    epsilon_               (pars->get("epsilon increment", 1.0e-5)),
     backTracking_          (pars->get("enable backtracking", false)),
-    numBackTrackingSteps_  (pars->get("backtracking steps", 10)),
-    backTrackIncrease_     (pars->get("backtracking increase", 10.0)),
+    numBackTrackingSteps_  (pars->get("backtracking steps", 0)),
+    backTrackIncrease_     (pars->get("backtracking increase", 0.0)),
     maxSteps_              (pars->get("maximum number of steps", -1)),
-    maxNewtonIterations_   (pars->get("maximum Newton iterations", 15)),
+    maxNewtonIterations_   (pars->get("maximum Newton iterations", 7)),
     minNewtonIterations_   (pars->get("minimum Newton iterations", 1)),
-    minAllowedIterations_  (pars->get("minimum desired Newton iterations", 4)),
-    maxAllowedIterations_  (pars->get("maximum desired Newton iterations", 5)),
+    optNewtonIterations_   (pars->get("optimal Newton iterations", 3.5)),
     newtonTolerance_       (pars->get("Newton tolerance", 1.0e-4)),
-    destinationTolerance_  (pars->get("destination tolerance", 1.0e-4)),
+    destinationTolerance_  (pars->get("destination tolerance", 1.0e-7)),
     userDetect_            (pars->get("enable custom monitor", false)),
     tanScaling_            (pars->get("state tangent scaling", 1.0e0)),
     normalizeStrategy_     (pars->get("normalize strategy", 'N')),
@@ -43,7 +42,7 @@ Continuation(Model model, ParameterList pars)
     stabilityScheme_       (pars->get("compute stability", 'N')),
 
     rejectFailedNewton_    (pars->get("reject failed iteration", true)),
-    giveUpAtdsMin_         (pars->get("give up at minimum step size", false)),
+    giveUpAtdsMin_         (pars->get("give up at minimum step size", true)),
     cycleTolerance_        (pars->get("enable tolerance cycling", false)),
     usePracticalTol_       (pars->get("enable practical tolerance", false)),
     newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
@@ -51,12 +50,12 @@ Continuation(Model model, ParameterList pars)
     residualTest_          (pars->get("corrector residual test", 'D')),
     initialTangent_        (pars->get("initial tangent type", 'E')),
     printImportantVectors_ (pars->get("print important vectors", false)),
-    predictorBound_        (pars->get("predictor bound", 1e5)),
-    signMonitor_           (0),
+    predictorBound_        (pars->get("predictor bound", 1e3)),
     eigenSolverSet_        (false)
 {
     // Set the step size
-    ds_ = dsInit_;
+    ds_      = dsInit_;
+    dsStart_ = dsInit_;
 
     // Get the parameter destinations
     // We allow for convergence with destination tolerance at multiple destinations
@@ -77,8 +76,14 @@ Continuation(Model model, ParameterList pars)
         ERROR("No destinations given in continuation xml!",
               __FILE__, __LINE__);
 
+    destinationsBackup_ = destinations_;
+
+    INFO("Continuation: number of destinations = " << destinations_.size());
+    
+    
     INFO(std::endl << "Continuation parameter list: "
-         << std::endl << *pars << std::endl);
+         << std::endl << *pars << std::endl);   
+
 
 }
 
@@ -122,9 +127,9 @@ initialize()
     storage_.state0 = model_->getState('C');
 
     // initializations for detect()
-    signMonitor_ = 0;
-    secant_      = false;
-    activeDest_  = -999; // hopefully this is never an actual dest^^
+    destinations_ = destinationsBackup_;
+    signMonitor_  = std::vector<int>(destinations_.size(), 0);
+    secant_       = false;
 
     // scaling
     if (normalizeStrategy_ == 'O')
@@ -144,7 +149,7 @@ initialize()
     // initializations for main loop
     step_               = 0;
     resetCounter_       = 0;
-    destinationReached_ = false;
+    reachedLastDest_    = false;
     abortFlag_          = false;
     fixStepSize_        = false;
 
@@ -154,7 +159,7 @@ initialize()
 
 //======================================================================
 template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+int Continuation<Model, ParameterList>::
 run()
 {
     INFO("Continuation::run initialize...");
@@ -170,7 +175,7 @@ run()
 
     int status = 0;    
 
-    while (!destinationReached_ && (step_ != maxSteps_) && !abortFlag_)
+    while (!reachedLastDest_ && (step_ != maxSteps_) && !abortFlag_)
     {
         ++step_;          // Increment step counter
         info();           // Print continuation summary
@@ -187,10 +192,18 @@ run()
         userDetect(); // Use additional targets provided by model class
         adjustStep(); // step size adjustment
     }
-    info();
-    finalize();
     TIMER_STOP("Continuation: run");
+
+    if (abortFlag_)
+    {
+        WARNING("Continuation aborted!",__FILE__, __LINE__);                    
+        return 1;
+    }
+    
+    finalize();
+
     INFO("---------Finished continuation run--------------");
+    return 0;
 }
 
 //======================================================================
@@ -215,7 +228,9 @@ step()
         return 1; // Consider this step failed
     }
 
+    TIMER_START("Continuation: Newton");
     status = newtonCorrector(); // Apply Newton corrector
+    TIMER_STOP("Continuation: Newton");
     
     if (status)   // Failure
     {
@@ -225,9 +240,11 @@ step()
 
     if (printImportantVectors_)
     {
+        TIMER_START("Continuation: step -> IO");
         // Save the residual and last solution from linear solve to binaries
         Utils::save(rhsView_, "residual");
         Utils::save(model_->getSolution('V'), "solution");
+        TIMER_STOP("Continuation: step -> IO");
     }
 
     // Put the parameter and norm of the state in the history
@@ -245,7 +262,9 @@ step()
         eigenSolver();
 
     // Let the model do some administrative work at the end of a succesful step
+    TIMER_START("Continuation: step -> postprocess");
     model_->postProcess();
+    TIMER_STOP("Continuation: step -> postprocess");    
 
     // Write continuation data to file
     bool describe = (step_ == 1) ? true : false;
@@ -335,19 +354,28 @@ createInitialTangent()
     // Test the matrix and rhs
 
     VectorPtr tmp = model_->getSolution('C');
+    VectorPtr one = model_->getSolution('C');
     tmp->Scale(0.0);
+    one->PutScalar(1.0);
+
     model_->applyMatrix(*rhsView_, *tmp);
 
-
+    INFO(std::setprecision(14));
     INFO("                   ||rhs|| = " << Utils::norm(rhsView_));
     INFO("                   ||J*F|| = " << Utils::norm(tmp));
+
+    model_->applyMatrix(*one, *tmp);
+    INFO("                   ||J*1|| = " << Utils::norm(tmp));
+
     INFO("                 ||state|| = " << Utils::norm(stateView_));
     INFO("              ||stateDot|| = " << Utils::norm(stateDot_));
     INFO("                  parDot   = " << parDot_);
     INFO("                      ds   = " << ds_);
+    INFO(std::setprecision(8));
 
     if (printImportantVectors_)
     {
+        Utils::save(tmp, "actionJ");
         Utils::save(model_->getSolution('V'), "stateDot");
     }
     INFO("Continuation: create initial tangent... done");
@@ -391,7 +419,6 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 createTangent(char mode)
 {
-    INFO("Continuation: create tangent " << mode);
     if (mode == 'S') // Secant
     {
         // ------------------------------------------------------------
@@ -458,13 +485,8 @@ createTangent(char mode)
         WARNING(" invalid mode!",__FILE__, __LINE__);
     }
 
-    INFO("                ||state0|| = " << Utils::norm(storage_.state0));
-    INFO("                 ||state|| = " << Utils::norm(stateView_));
-    INFO("              ||stateDot|| = " << Utils::norm(stateDot_));
-    INFO("                  parDot   = " << parDot_);
-    INFO("                      ds0  = " << storage_.ds0);
-    INFO("                      ds   = " << ds_);
-    INFO("Continuation: create tangent " << mode << " done");
+    INFO("Continuation::createTangent(), ||xDot|| = " << Utils::norm(stateDot_)
+         << " parDot = " << parDot_);
 }
 
 //======================================================================
@@ -772,13 +794,12 @@ newtonCorrector()
 
     if (res > practicalTol_)
     {
-        WARNING("Continuation: Newton failed after " << newtonIter_ << " steps",
-                __FILE__, __LINE__);
+        INFO("Continuation: Newton failed after " << newtonIter_ << " steps");
         if (rejectFailedNewton_)
             return 1;
         else
         {
-            WARNING("Continuation: Proceeding with unconverged result",__FILE__, __LINE__);
+            INFO("Continuation: Proceeding with unconverged result");
         }
     }
     else
@@ -834,65 +855,58 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 detect(char mode)
 {
-    size_t idx = 0;
-    bool busy = false;
-    for (auto &dest: destinations_)
+    double dest = destinations_[0];
+
+    par_ = model_->getPar(); // just to be on the safe side
+    double f0 = storage_.par0 - dest;
+    double f1 =          par_ - dest;
+
+    if (signMonitor_[0] == 0) // only at initialization
+        signMonitor_[0] = SGN(f1);
+
+    if (signMonitor_[0] != SGN(f1) && !secant_) // enable secant iteration
     {
-        idx++; // destination counter
+        INFO("Continuation::detect(): sign switch in f1 detected");
+        INFO("        activated dest: " << dest);
+        secant_     =  true;   // set flag to start secant process
+        dsStart_    =  ds_;    // save step size at beginning of secant
+    }
+    else
+        signMonitor_[0] = SGN(f1);            
 
-        par_ = model_->getPar(); // just to be on the safe side
-        double f0 = storage_.par0 - dest;
-        double f1 =          par_ - dest;
+    if (secant_)
+    {
+        INFO("    secant: f1 = " << f1 << " f0 = " << f0);
+        INFO("        old ds = " << ds_);
+        ds_ = -f1 * ds_ / (f1 - f0);   // secant method
+        INFO("        new ds = " << ds_ << std::endl);
+        createTangent('S');
+    }
 
-        if (signMonitor_ == 0) // initialization
-            signMonitor_ = SGN(f1);
+    // destination reached
+    if (secant_ && std::abs(f1) < destinationTolerance_)
+    {
+        INFO("Continuation::detect(): destination " << dest << " reached. \n");
+            
+        // stability scheme = E => eigenvalues computed at every converged destination
+        if (stabilityScheme_ == 'E')
+            eigenSolver();
 
-        if (signMonitor_ != SGN(f1) && !secant_) // secant convergence
-        {
-            INFO("Continuation::detect():  sign switch in f1 detected");
-            secant_     = true;
-            activeDest_ = dest;
-        }
+        // Get the algorithm ready to proceed with the continuation
+        secant_ = false;     // disable secant method
+        ds_     = dsStart_;  // reset step size to before secant
 
-        if (std::abs(f1) < 10 * destinationTolerance_ && !secant_)
-        {
-            INFO("Continuation::detect():  f1 near destination");
-            secant_     = true;
-            activeDest_ = dest;
-        }
+        // do not adjust step size for the next step
+        fixStepSize_ = true;
+                
+        // remove reached destination and corresponding sign monitor
+        destinations_.erase(destinations_.begin());
+        signMonitor_.erase(signMonitor_.begin());
 
-        busy = (secant_ && (std::abs(activeDest_ - dest) < 1e-7));
-
-        if (busy)
-        {
-            INFO("  secant: f1 = " << f1 << " f0 = " << f0);
-            INFO("      old ds = " << ds_);
-            ds_ = -f1 * ds_ / (f1 - f0);   // secant method
-            INFO("      new ds = " << ds_);
-            createTangent('S');
-        }
-
-        signMonitor_ = SGN(f1);
-
-        if (busy && std::abs(f1) < destinationTolerance_)
-        {
-            if (idx == destinations_.size())
-                destinationReached_ = true;
-            else
-            {
-                // Get the algorithm ready to proceed with the continuation
-                secant_      = false;
-                signMonitor_ = 0;
-                ds_          = dsInit_;
-                destinations_.erase(destinations_.begin() + idx - 1);
-            }
-        }
-
-        if (busy)
-        {
-            INFO("  |par - dest| = " << std::abs(f1));
-            break;
-        }
+        if (destinations_.empty())
+            reachedLastDest_  = true;
+        else // initialize next sign monitor
+            signMonitor_[0] = SGN(par_ - destinations_[0]);
     }
 }
 
@@ -907,7 +921,7 @@ userDetect()
         if (reached)
         {
             INFO("Continuation::userDetect() stopping criterion met");
-            destinationReached_ = true;
+            reachedLastDest_  = true;
         }
     }
 }
@@ -924,35 +938,25 @@ adjustStep()
         fixStepSize_ = false;
         return;   // Do nothing
     }
+    INFO("Continuation::adjustStep(), old ds: " << ds_);
+    
+    // step size control, see [Seydel p 188.]
+    double factor = optNewtonIterations_ / (double) newtonIter_;
 
-    if (newtonIter_ < minAllowedIterations_)
-    {
-        INFO("\n      adjusting ds... ");
-        if (std::abs(ds_) == std::abs(dsMax_))
-        {
-            INFO("      ceiling found: " << ds_);
-        }
-        else
-        {
-            INFO("      old ds: " << ds_);
-            ds_ = SGN(ds_) * std::min(std::abs(ds_) * scale1_, std::abs(dsMax_));
-            INFO("      new ds: " << ds_);
-        }
-    }
-    else if (newtonIter_ > maxAllowedIterations_)
-    {
-        INFO("      adjusting ds... ");
-        if (std::abs(ds_) == std::abs(dsMin_))
-        {
-            INFO("      floor found: " << ds_);
-        }
-        else
-        {
-            INFO("      old ds: " << ds_);
-            ds_ = SGN(ds_) * std::max(std::abs(ds_) / scale2_, std::abs(dsMin_));
-            INFO("      new ds: " << ds_);
-        }
-    }
+    // set some bounds for this factor
+    factor = (factor < 0.5) ? 0.5 : factor;
+    factor = (factor > 2.0) ? 2.0 : factor;
+
+    INFO("                           control: " << factor);
+    // adjust step size
+    ds_ *= factor;
+
+    // set some bounds for the step size
+    ds_ = (std::abs(ds_) > std::abs(dsMax_)) ? SGN(ds_) * std::abs(dsMax_) : ds_;
+    ds_ = (std::abs(ds_) < std::abs(dsMin_)) ? SGN(ds_) * std::abs(dsMin_) : ds_;
+    
+    INFO("                            new ds: " << ds_);
+
 }
 
 //======================================================================
@@ -1009,7 +1013,8 @@ reset()
     // fix step size for next step
     fixStepSize_ = true; 
     
-    if (( std::abs(ds_) <= std::abs(dsMin_) ) && (( resetCounter_ >= 100 ) || giveUpAtdsMin_))
+    if (( std::abs(ds_) <= std::abs(dsMin_) ) &&
+        (( resetCounter_ >= 100 ) || giveUpAtdsMin_))
     {
         abortFlag_ = true;
         WARNING("Reached dsMin, continuation failed", __FILE__, __LINE__);
@@ -1167,7 +1172,7 @@ info()
     INFO(std::setprecision(8));
     INFO("-----------------------------------------");
     INFO("Continuation summary:  " << std::asctime(std::localtime(&result)));
-    INFO(" destination reached:  " << destinationReached_);
+    INFO(" destination reached:  " << reachedLastDest_ );
     INFO("             aborted:  " << abortFlag_);
     INFO("           step size:  " << ds_);
     INFO("     parameter value:  " << par_);
@@ -1202,10 +1207,12 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 finalize()
 {
-    if (stabilityScheme_ == 'E')
-        eigenSolver();
-    
+    info();
     modelInfo();
+
+    if (printImportantVectors_)
+        model_->dumpBlocks();
+
 }
 
 //======================================================================
@@ -1233,15 +1240,15 @@ writeData(bool describe)
 
     if (describe) // write description of entries
     {
-        cdatastring << std::setw(_FIELDWIDTH_)
+        cdatastring << "#" << std::setw(_FIELDWIDTH_-1)
                     << "par" 
-                    << std::setw(_FIELDWIDTH_) 
+                    << std::setw(_FIELDWIDTH_ * 3/4) 
                     << "ds"
-                    << std::setw(_FIELDWIDTH_) 
+                    << std::setw(_FIELDWIDTH_ * 3/4) 
                     << "||x||"
-                    << std::setw(_FIELDWIDTH_) 
+                    << std::setw(_FIELDWIDTH_ * 3/4) 
                     << "||F||"
-                    << std::setw(_FIELDWIDTH_/2) 
+                    << std::setw(_FIELDWIDTH_/3) 
                     << "NR"
                     << model_->writeData(describe);
 
@@ -1250,14 +1257,18 @@ writeData(bool describe)
 
     cdatastring.str("");
     cdatastring.clear();
-    cdatastring.precision(_PRECISION_);
 
     cdatastring << std::scientific
-                << std::setw(_FIELDWIDTH_) <<  par_
-                << std::setw(_FIELDWIDTH_) <<  ds_
-                << std::setw(_FIELDWIDTH_) <<  Utils::norm(stateView_)
-                << std::setw(_FIELDWIDTH_) <<  Utils::norm(rhsView_)
-                << std::setw(_FIELDWIDTH_/2) <<  newtonIter_
+                << std::setw(_FIELDWIDTH_) << std::setprecision(_PRECISION_)
+                <<  par_
+                << std::setw(_FIELDWIDTH_ * 3/4) << std::setprecision(_PRECISION_ / 2)
+                <<  ds_
+                << std::setw(_FIELDWIDTH_ * 3/4) << std::setprecision(_PRECISION_ / 2)
+                << Utils::norm(stateView_)
+                << std::setw(_FIELDWIDTH_ * 3/4) << std::setprecision(_PRECISION_ / 2)
+                <<  Utils::norm(rhsView_)
+                << std::setw(_FIELDWIDTH_ / 3) << std::setprecision(_PRECISION_ / 2)
+                <<  newtonIter_
 
                 << model_->writeData();    
 

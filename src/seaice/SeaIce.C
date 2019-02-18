@@ -20,18 +20,19 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     recomputePrec_   (false),
     recompMassMat_   (true),
     
-    taus_         (0.01),    // threshold ice thickness
+    taus_         (params->get("threshold ice thickness", 0.01)),
     // Heavyside approximation steepness
     epsilon_      (params->get("mask switch steepness", 1e-1)),  
 
     // background mean values
-    t0o_   (params->get("background ocean temp t0o", 15)),
-    t0a_   (params->get("background atmos temp t0a", 15)),
-    s0_    (params->get("ocean background salinity s0", 35)),
-    q0_    (params->get("atmos reference humidity",8e-3)),
+    t0o_   (params->get("background temperature ocean", 15.0)),
+    t0i_   (params->get("background temperature seaice",-5.0)),
+    t0a_   (params->get("background temperature atmosphere", 15.0)),
+    s0_    (params->get("ocean background salinity s0", 35.0)),
+    q0_    (params->get("atmos reference humidity",2e-3)),
     qdim_  (params->get("atmos humidity scale", 1e-3)),
     tdim_  (params->get("temperature scale", 1.0)),
-    H0_    (params->get("seaice background thickness H0", taus_)),
+    H0_    (taus_), // seaice background thickness
     M0_    (params->get("seaice background mask M0", 0)),
 
     // ice formation constants
@@ -100,6 +101,10 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     outputFile_ = params->get("Output file", "seaice_output.h5");
     loadState_  = params->get("Load state", false);
     saveState_  = params->get("Save state", true);
+    saveEvery_  = params->get("Save frequency", 0);
+
+    // initialize postprocessing counter
+    ppCtr_ = 0;
 
     // set communicator 
     comm_ = comm;
@@ -131,14 +136,11 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // Background sea ice surface temperature is chosen such that
     // background evaporation and sublimation cancel:
-    t0i_  =  c3_*c4_*t0o_ / (c2_*c5_+(c2_-c4_)*t0o_);
+    // t0i_  =  c3_*c4_*t0o_ / (c2_*c5_+(c2_-c4_)*t0o_);
 
     // Background sublimation and derivatives
     E0i_   =  eta_ * ( qsi_(t0i_) - q0_ );
     E0o_   =  eta_ * ( qso_(t0o_) - q0_ );
-
-    // Check whether background values cancel
-    assert(std::abs(E0o_-E0i_) < 1e-12);
 
     dEdT_  =  eta_ * qdim_ * tdim_ / qdim_ * dqsi_(t0i_);
     dEdq_  =  eta_ * qdim_ * -1;
@@ -194,6 +196,10 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     INFO("        E0o = " << E0o_);
     INFO("       dEdT = " << dEdT_);
     INFO("       dEdq = " << dEdq_);
+
+    INFO(std::endl << "SeaIce all xml parameters: ");
+    INFO(*params_);
+    INFO(std::endl);
 
     // local grid dimensions
     nLoc_   = domain_->LocalN();
@@ -920,19 +926,20 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
     // d / da_atm (F_Q)
     double daatmFQ;
 
-    double tmp = 0.0;
     // int sr;
     int col;
 
     for (int j = 0; j != mGlob_; ++j)
     {
         int gid = j * nGlob_;
-        int lid = standardSurfaceMap_->LID(gid);
+        int lid_assmb = assemblySurfaceMap_->LID(gid);
+        int lid_stdrd = standardSurfaceMap_->LID(gid);
+        
+        double tmp = 0.0;
 
-        if (lid >= 0)
+        if (lid_stdrd >= 0)
             tmp = (comb_ * sunp_ * sun0_ / 4. ) *
-                shortwaveS(y_[lid / nLoc_]) * albed_ * c0_;
-
+                shortwaveS(y_[lid_assmb / nLoc_]) * albed_ * c0_;
         comm_->SumAll( &tmp, &daatmFQ, 1);
         daatmFQ = daatmFQ / muoa_;
 
@@ -996,7 +1003,6 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
 
                 }
             }
-
         
         col = atmos->interface_row(0,0,P);
 
@@ -1541,9 +1547,20 @@ void SeaIce::preProcess()
 //=============================================================================
 void SeaIce::postProcess()
 {
+    // increase postprocessing counter
+    ppCtr_++;
+    
     // save state -> hdf5
     if (saveState_)
         saveStateToFile(outputFile_); // Save to hdf5
+
+    if ((saveEvery_ > 0) && (ppCtr_ % saveEvery_) == 0)
+    {
+        std::stringstream append;
+        append << "." << ppCtr_;
+        copyState(append.str());
+    }
+        
 
 }
 
@@ -1572,10 +1589,13 @@ std::string const SeaIce::writeData(bool describe)
             Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
         for (int i = 0; i != M->MyLength(); ++i)
-            (*restr)[i] = (*M)[i]*(*H)[i];
+            (*restr)[i] = (*M)[i]*((*H)[i]+H0_);
         
         double SIV  = Utils::dot(intCoeff_, restr);
         double Mtot = Utils::dot(intCoeff_, M);
+
+        SIV  =  (std::abs(SIV)  < 1e-13) ? 0.0 : SIV;
+        Mtot =  (std::abs(Mtot) < 1e-13) ? 0.0 : Mtot;
         
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
                    << SIV;

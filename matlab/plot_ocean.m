@@ -20,23 +20,31 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     else
         maskfile = 'fort.44';
     end
-    
-    if isfield(opts, 'readEV')
-        opts.everything = true;
-    end
-    
+        
     if isfield(opts, 'readFluxes')
         readFluxes = opts.readFluxes;
     else
         readFluxes = false;
     end
-    
+
+    if isfield(opts, 'readEV')
+        readEV = opts.readEV;
+    else
+        readEV = false;
+    end
+
     if isfield(opts, 'title_add')
         plot_title = true;
     else
         plot_title = false;
     end
-    
+
+    if isfield(opts, 'only_contour')
+        only_contour = opts.only_contour;
+    else
+        only_contour = false;
+    end
+
     if isfield(opts, 'everything')
         plot_everything = opts.everything;
     else
@@ -162,6 +170,17 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     T0    = 15;                  %[deg C]  Reference temperature
     S0    = 35;                  %[psu]    Reference salinity
     RtD   = 180/pi;              %[-]      Radians to degrees
+    
+    if readEV
+        T0 = 0;                  %[deg C]  Reference temperature
+        S0 = 0;                  %[psu]    Reference salinity
+    end       
+    
+    c1 = 3.8e-3;
+    c2 = 21.87;
+    c3 = 265.5;
+    c4 = 17.67;
+    c5 = 243.5;
 
     % - READ MASK - -----------------------------------------------------
 
@@ -175,23 +194,14 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     end
 
 
-    % - Deduce grid stretching
+    % Deduce grid stretching
     [qz,dfzt,dfzw] = gridstretch(zw);
 
-    % - READ SOLUTION
-    if strcmp(solfile(end-1:end),'h5')       % (.h5 version)
-        [sol, pars, add] = readhdf5(solfile, nun, n, m, l, opts);
-    else % (fort.3 version)
-        [~,~,~,~,~,~,~,sol,~,~] = readfort3(la, solfile);
-        add = [];
-    end
+    %  Read state, parameters and additional things
+    [sol, pars, add] = readhdf5(solfile, nun, n, m, l, opts);
 
     if interp_mode
-        if strcmp(solfile2(end-1:end),'h5')       % (.h5 version)
-            [sol2] = readhdf5(solfile2, nun, n, m, l, opts);
-        else % (fort.3 version)
-            [~,~,~,~,~,~,~,sol2,~,~] = readfort3(la, solfile2);
-        end
+        [sol2] = readhdf5(solfile2, nun, n, m, l, opts);
         sol = (1-k)*sol+k*sol2;
     end
     
@@ -211,7 +221,11 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         % restrict solution
         sol = shiftdim(sol, 3);
         sol(:,:,rmask) = 0;
-        sol = shiftdim(sol, 1);        
+        sol = shiftdim(sol, 1);
+        
+        % zonal integration
+        zmask = ~rmask;
+        zmask = logical(~sum(zmask,1))
 
     end
     
@@ -266,7 +280,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         colormap(my_colmap(caxis, 0))
 
         if plot_title
-            title(['Barotropic Streamfunction (Sv) ', opts.title_add]);
+            title(['Barotropic Streamfunction (Sv) ', opts.only_contour]);
         end
 
         xlabel('Longitude')
@@ -286,9 +300,12 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
         PSIG = [zeros(m+1,1) PSIG];
         
+        if restrict_sol
+            PSIG(logical([0,zmask]),:) = NaN;
+        end
         
-        PSIGp = PSIG; PSIGp(PSIGp<0)  = NaN;
-        PSIGn = PSIG; PSIGn(PSIGn>0)  = NaN;
+        PSIGp = PSIG; PSIGp(PSIGp<0) = NaN;
+        PSIGn = PSIG; PSIGn(PSIGn>0) = NaN;
 
         % layers below 1km
         blwkm = find(zw*hdim < -1000);
@@ -374,37 +391,47 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     
     if plot_sst || plot_everything
 
-
         % -------------------------------------------------------
         figure(fig_ctr); fig_ctr = fig_ctr+1;
         Tsurf = T(:,:,l);
-        minT = T0+min(min(Tsurf));
-        maxT = T0+max(max(Tsurf));
+        minT  = T0+min(min(Tsurf));
+        maxT  = T0+max(max(Tsurf));
 
         img  = T0 + Tsurf';
-        imagesc(RtD*x,RtD*(y),img); hold on
+        if ~only_contour
+            imagesc(RtD*x,RtD*(y),img); hold on
+        end
         
         Tsurf(Tsurf == 0) = NaN;
         img  = T0 + Tsurf';
-        contour(RtD*x,RtD*(y),img,20,'k-','Visible', 'on'); 
-        hold off;
-
-        set(gca,'color',[0.65,0.65,0.65]);
+        if ~readEV || only_contour
+            [C,h] = contour(RtD*x,RtD*(y),img,15,'k-');
+        end
+        
+        if only_contour
+            h.LevelList=round(h.LevelList,1);
+            v = h.LevelList;
+            clabel(C,h,v(1:2:end));        
+        end
+        
         set(gca,'ydir','normal')
         title('SST', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
-        cmap = [my_colmap(caxis)];
-        colormap(cmap)
-        colorbar
+        crange = [min(img(:)),max(img(:))];
+        cmap = [my_colmap(crange)];
 
-        % crange = max(abs(min(caxis)),abs(max(caxis)))-T0;
-        % caxis(T0+[-crange, crange]);
+        if ~only_contour
+            hold off
+            colormap(cmap)
+            colorbar
+        end
 
         if export_to_file
             exportfig('sst.eps',10,[50,25],invert)
         end
     end
+    
     if plot_salinity || plot_everything
         figure(fig_ctr); fig_ctr = fig_ctr+1;
 

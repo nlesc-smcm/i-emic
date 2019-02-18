@@ -67,7 +67,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     loadTemperatureFlux_   (oceanParamList->get("Load temperature flux", false)),
     saveTemperatureFlux_   (oceanParamList->get("Save temperature flux", true)),
 
-    saveEveryStep_         (oceanParamList->get("Save every step", false)),
     useFort3_              (oceanParamList->get("Use legacy fortran output", false)),
     saveColumnIntegral_    (oceanParamList->get("Save column integral", false)),
     maxMaskFixes_          (oceanParamList->get("Max mask fixes", 5)),
@@ -86,6 +85,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     outputFile_  = oceanParamList->get("Output file", "ocean_output.h5");
     loadState_   = oceanParamList->get("Load state", false);
     saveState_   = oceanParamList->get("Save state", true);
+    saveEvery_   = oceanParamList->get("Save frequency", 0);
+
+    // initialize postprocessing counter
+    ppCtr_ = 0;
 
     // set the communicator object
     comm_ = Comm;
@@ -801,13 +804,24 @@ void Ocean::preProcess()
 //====================================================================
 void Ocean::postProcess()
 {
+    // increase postprocessing counter
+    ppCtr_++;
+    
+    TIMER_START("Ocean: saveStateToFile");
     if (saveState_)
         saveStateToFile(outputFile_); // Save to hdf5
+    TIMER_STOP("Ocean: saveStateToFile");
 
+    if ((saveEvery_ > 0) && (ppCtr_ % saveEvery_) == 0)
+    {
+        std::stringstream append;
+        append << "." << ppCtr_;
+        copyState(append.str());
+    }
+
+    TIMER_START("Ocean: printFiles");
     printFiles(); // Print in standard fortran format
-
-    if (saveEveryStep_)
-        copyFiles();  // Copy fortran and hdf5 files
+    TIMER_STOP("Ocean: printFiles");
 
     // Column integral can be used to check discretization: should be
     // zero, excluding integral condition and its dependencies.
@@ -823,10 +837,8 @@ std::string const Ocean::writeData(bool describe)
     {
         if (solverInitialized_)
         {
-            datastring << std::setw(_FIELDWIDTH_/2)
+            datastring << std::setw(_FIELDWIDTH_/3)
                        << "MV";
-            datastring << std::setw(_FIELDWIDTH_)
-                       << "Tol";
         }
 
         datastring << std::setw(_FIELDWIDTH_)
@@ -854,10 +866,9 @@ std::string const Ocean::writeData(bool describe)
 
         if (solverInitialized_)
         {
-            datastring << std::scientific << std::setw(_FIELDWIDTH_/2)
-                       << belosSolver_->getNumIters();
-            datastring << std::scientific << std::setw(_FIELDWIDTH_)
-                       << belosSolver_->achievedTol();
+            datastring << std::setw(_FIELDWIDTH_/3)
+                       << std::round(effort_);
+            effortCtr_ = 0;
         }
         
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
@@ -998,6 +1009,10 @@ void Ocean::initializeBelos()
             <double, Epetra_MultiVector, Epetra_Operator>
             (problem_, belosParamList_));
 
+    // initialize effort counter
+    effortCtr_ = 0;
+    effort_ = 0.0;
+
 }
 
 //=====================================================================
@@ -1099,13 +1114,28 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
         tol   = belosSolver_->achievedTol();
         INFO("Ocean: FGMRES, i = " << iters << ", ||r|| = " << tol);
 
+        // keep track of effort
+        if (effortCtr_ == 0)
+            effort_ = 0;
+
+        effortCtr_++;
+        effort_ = (effort_ * (effortCtr_ - 1) + iters ) / effortCtr_;
+
         Teuchos::RCP<Epetra_Vector> b =
             Teuchos::rcp(new Epetra_Vector(*(*rhs)(0)));
+        double normb = Utils::norm(b);
         double nrm = explicitResNorm(b);
-        INFO("           ||b||         = " << Utils::norm(b));
+        INFO("           ||b||         = " << normb);
         INFO("           ||x||         = " << Utils::norm(sol_));
-        INFO("        ||b-Ax|| / ||b|| = " << nrm / Utils::norm(b));
-
+        INFO("        ||b-Ax|| / ||b|| = " << nrm / normb);
+	
+        if ((tol > 0) && (normb > 0) && ( (nrm / normb / tol) > 10))
+        {
+	  WARNING("Actual residual norm too large: "
+                  << (nrm / normb) << " > " << tol
+                  , __FILE__, __LINE__);
+        }
+	
         TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 
         // if (tol > recompTol_) // stagnation, maybe a new precon helps
@@ -1125,10 +1155,10 @@ double Ocean::explicitResNorm(VectorPtr rhs)
 {
     RCP<Epetra_Vector> Ax =
         rcp(new Epetra_Vector(*(domain_->GetSolveMap())));
-    jac_->Apply(*sol_, *Ax);
-    Ax->Update(1.0, *rhs, -1.0);
+    jac_->Apply(*sol_, *Ax);        // A*x
+    Ax->Update(1.0, *rhs, -1.0);    // b - A*x
     double nrm;
-    Ax->Norm2(&nrm);
+    Ax->Norm2(&nrm);                // nrm = ||b-A*x||
     Utils::save(Ax, "lsresidual");
     return nrm;
 }
@@ -1800,32 +1830,6 @@ void Ocean::printFiles()
     delete [] rhsArray;
 }
 
-//=====================================================================
-void Ocean::copyFiles(std::string const &filename)
-{
-    if ( (comm_->MyPID() == 0) && saveState_)
-    {
-        std::stringstream ss;
-        if (filename.length() == 0)
-        {
-            ss << "ocean_state_par" << std::setprecision(4) << std::setfill('_')
-               << std::setw(2) << THCM::Instance().par2int(parName_) << "_"
-               << std::setw(6) << getPar(parName_);
-
-        }
-        else
-        {
-            ss << filename;
-        }
-
-        ss << ".h5";
-        INFO("copying " << outputFile_ << " to " << ss.str());
-        std::ifstream src2(outputFile_.c_str(), std::ios::binary);
-        std::ofstream dst2(ss.str(), std::ios::binary);
-        dst2 << src2.rdbuf();
-    }
-}
-
 //==================================================================
 void Ocean::copyMask(std::string const &filename)
 {
@@ -1911,6 +1915,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::getIntCondCoeff()
 //=====================================================================
 void Ocean::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename)
 {
+    TIMER_START("Ocean: additionalExports");
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes =
         THCM::Instance().getFluxes();
 
@@ -1950,6 +1955,7 @@ void Ocean::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename
 
         HDF5.Write("MaskGlobal", "Label", landmask_.label);
     }
+    TIMER_STOP("Ocean: additionalExports");
 }
 
 // =====================================================================
@@ -2159,7 +2165,8 @@ void Ocean::pressureProjection(Teuchos::RCP<Epetra_Vector> vec)
 
     double dp1 = Utils::dot(vec, s1);
     double dp2 = Utils::dot(vec, s2);
-    
+
+    INFO("Ocean: pressure checkerboard correction...");
     // v = v - (v, s1) s1 - (v, s2) s2
     vec->Update(-dp1, *s1, -dp2, *s2, 1.0);
 }

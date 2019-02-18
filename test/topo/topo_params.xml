@@ -17,10 +17,8 @@
   <!-- Starting mask -->
   <Parameter name="Starting mask" type="int" value="0" />
 
-  <Parameter name="Save every step" type="bool" value="false" />
-
-  <!-- M : no preconditioning   -->
-  <Parameter name="Preconditioning type" type="char" value="M" />
+  <!-- Save every <choice> steps, values < 1 disable these saves -->
+  <Parameter name="Save frequency" type="int" value="2" />
 
   <!-- Only when using custom monitor -->
   <Parameter name="Stopping tolerance homotopy" type="double" value="0.1"/>

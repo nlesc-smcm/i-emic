@@ -1,0 +1,72 @@
+<!-- ********************************* -->
+<!-- Standard coupled model parameters -->
+<!--                                   -->
+<!-- ********************************* -->
+
+<!-- These parameters will overwrite the corresponding parameters in the  -->
+<!-- submodels ocean and atmosphere.                                      -->
+<ParameterList name="CoupledModel parameters">
+
+  <!-- Select the models in use -->
+  <Parameter name="Use ocean"      type="bool" value="true"/>
+  <Parameter name="Use atmosphere" type="bool" value="true"/>
+  <Parameter name="Use sea ice"    type="bool" value="true"/>
+
+  <!-- Specify whether the coupled model should initialize with  -->
+  <!-- old states (true) or with a trivial solution (false).     -->
+  <!-- The sub-models maintain names for the input files.        -->
+  <Parameter name="Load state" type="bool" value="true"/>
+
+  <Parameter name="Problem Description" type="string" value="Coupled run"/>
+
+  <!-- Continuation parameter        -->
+  <!-- Options:  "Combined Forcing"  -->
+  <!--           "Solar Forcing"     -->
+  <!--           "Salinity Forcing"  -->
+  <!--           "Wind Forcing"      -->
+  <!--           "Humidity Forcing"  -->
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+
+  <!-- We determine the horizontal extent and grid size at the coupled level. -->
+  <!-- Depth and other dimensions are specific for each submodel.             -->
+
+  <Parameter name="Global Bound xmin" type="double" value="0"/>
+  <!-- eastern domain bound -->
+  <Parameter name="Global Bound xmax" type="double" value="360"/>
+  <!-- southern domain bound -->
+  <Parameter name="Global Bound ymin" type="double" value="-85.5"/>
+  <!-- northern domain bound -->
+  <Parameter name="Global Bound ymax" type="double" value="85.5"/>
+  
+  <!-- global number of grid points in x-direction -->
+  <Parameter name="Global Grid-Size n" type="int" value="4"/>
+  <!-- global number of grid points in y-direction -->
+  <Parameter name="Global Grid-Size m" type="int" value="8"/>
+
+  <!-- periodic boundary conditions in x-direction -->
+  <Parameter name="Periodic" type="bool" value="true"/>
+  <!--  -->
+  <Parameter name="background temperature seaice" type="double" value="-5.0" />
+  <Parameter name="atmos reference humidity" type="double" value="8e-3" />
+
+  <!-- Starting parameters that are common in the models -->
+  <Parameter name="Combined Forcing"    type="double" value="0.0"/>
+  <Parameter name="Solar Forcing"       type="double" value="1.0"/>
+
+  <!-- D: decoupled                                                     -->
+  <!--    (ignoring coupling blocks, synchronization after convergence) -->
+  <!-- Q: quasi-coupled                                                 -->
+  <!--    (ignoring coupling blocks, synchronization at every NR step)  -->
+  <!-- C: fully coupled                                                 -->
+  <!--    (including coupling blocks, synchronization at every NR step) -->
+  <Parameter name="Solving scheme" type="char" value="C"/>
+
+  <!-- Preconditioning                                        -->
+  <!-- B: 1 step backward block Gauss Seidel                  -->
+  <!-- C: 2 step backward block Gauss Seidel                  -->
+  <!-- F: 1 step forward block Gauss Seidel                   -->
+  <!-- G: 2 step forward block Gauss Seidel                   -->   
+  <!-- D: diagonal, no coupling blocks                        -->
+  <Parameter name="Preconditioning" type="char" value="B"/>
+
+</ParameterList>

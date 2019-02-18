@@ -114,7 +114,8 @@ TEST(CoupledModel, Continuation)
             continuation(coupledModel, params[CONT]);
 
         // Run continuation        
-        continuation.run();
+        int status = continuation.run();
+        EXPECT_EQ(status, 0);
     }
     catch (...)
     {

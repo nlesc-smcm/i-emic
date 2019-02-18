@@ -30,7 +30,7 @@ Topo(Model model, ParameterList pars)
     deltaInit_           (pars->get("Delta", 0.0)),
     startMask_           (pars->get("Starting mask", 0)),
     stopTol_             (pars->get("Stopping tolerance homotopy", 5.0)),
-    saveEveryStep_       (pars->get("Save every step", false)),
+    saveEvery_           (pars->get("Save frequency", 0)),
     solverInitialized_   (false),
     usePredictor_        (pars->get("Use predictor", true)),
     useCorrector_        (pars->get("Use corrector", true)),
@@ -128,6 +128,9 @@ void Topo<Model, ParameterList>::initialize()
     // Zero out land points
     model_->applyLandMask(vecM_, landMasks_[b_[k_]], 0.0);
 
+    // Reset postprocessing counter
+    ppCtr_ = 0;
+
     INFO("Topo: initialize... done");
 }
 
@@ -217,7 +220,7 @@ void Topo<Model, ParameterList>::setMaskIndex(int index)
         ERROR("Wrong mask index", __FILE__, __LINE__);
 
     INFO("Topo: setting mask idx: " << index);
-    k_ = index;
+    k_     = index;
 }
 
 //==================================================================
@@ -721,20 +724,25 @@ void Topo<Model, ParameterList>::postProcess()
 {
     if (!disablePostprocess_)
     {
+        ppCtr_++;
+        
         // For plotting we use the landmask nearest to delta, so we round.
         int r = static_cast<int>(std::round(delta_));
         model_->setLandMask(landMasks_[k_+r], true);
+
+        // ordinary postprocessing
         model_->postProcess();
 
-        if (saveEveryStep_)
+        std::stringstream append;
+        if (delta_ == 1.0)
         {
-            std::stringstream fname1, fname2;
-            fname1 << "state_topo_" << std::setprecision(12)
-                   << k_ + delta_;
-            model_->copyFiles(fname1.str());
-            fname2 << "mask_" << std::setprecision(4)
-                   << k_ + r;
-            model_->copyMask(fname2.str());
+            append << "." << k_ << ".converged";
+            model_->copyState(append.str());            
+        }
+        else if ((saveEvery_ > 0) && (ppCtr_ % saveEvery_) == 0)
+        {
+            append << "." << k_ << "." << ppCtr_;
+            model_->copyState(append.str());
         }
     }
     else

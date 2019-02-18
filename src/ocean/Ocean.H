@@ -112,6 +112,9 @@ protected:
     Teuchos::RCP<Belos::BlockGmresSolMgr
                  <double, Epetra_MultiVector, Epetra_Operator> > belosSolver_;
 
+    double effort_;
+    int effortCtr_;
+
     Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 
     // Domain object
@@ -130,9 +133,6 @@ protected:
     bool saveSalinityFlux_;
     bool loadTemperatureFlux_;
     bool saveTemperatureFlux_;
-
-    //! Enable saving every state in multiple formats
-    bool saveEveryStep_;
 
     //! Use legacy fortran output fort.3
     bool useFort3_;
@@ -404,7 +404,6 @@ public:
 
     void setParameters(ParameterList pars);
 
-    void copyFiles(std::string const &fname = "");
     void copyMask(std::string const &fname);
 
     void dumpBlocks()

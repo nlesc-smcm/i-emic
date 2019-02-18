@@ -166,7 +166,7 @@ writeData()
     if (initWD_) // write description of entries
     {
         tdatastring << std::setw(_FIELDWIDTH_)
-                    << "time_(y)"
+                    << "# time_(y)"
                     << std::setw(_FIELDWIDTH_/2.)
                     << "step"
                     << std::setw(_FIELDWIDTH_)

@@ -115,6 +115,9 @@ private:
     <Belos::BlockGmresSolMgr
      <double, Combined_MultiVec, BelosOp<CoupledModel> > > belosSolver_;
 
+    double effort_;
+    int effortCtr_;
+
     // gid->coord mapping 
     std::vector<std::array<int, 5> > gid2coord_;
 
@@ -217,22 +220,11 @@ private:
     //! Solve the system using FGMRES
     void FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs);
 
-    //! For internal use: both modes for the underlying getSolution
-    //! methods can be called here.
-    std::shared_ptr<Combined_MultiVec> getSolution(char mode1, char mode2);
-
-    //! Compute the residual ||b-Jx||
-    double computeResidual(std::shared_ptr<Combined_MultiVec> rhs);
-
-    //! coupled   mode 'C'
-    //! decoupled mode 'D'
-    double computeResidual(Combined_MultiVec const &rhs,
-                           Combined_MultiVec const &x,
-                           char mode = 'C');
+    //! Compute the residual ||b-A*x||
+    double explicitResNorm(std::shared_ptr<Combined_MultiVec> rhs);
 
     //! Synchronize the states between the models that are needed to communicate
     void synchronize();
-
 };
 
 //=============================================================================

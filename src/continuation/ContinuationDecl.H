@@ -93,11 +93,12 @@ class Continuation
     double dsMin_;  
     //! maximum continuation step-size (absolute)
     double dsMax_;  
+    //! step size at beginning of secant process
+    double dsStart_; 
 
     //! parameter destinations
-    std::vector<double> destinations_; 
-    //! the active destination in detect()
-    double activeDest_; 
+    std::vector<double> destinations_; // list we adjust
+    std::vector<double> destinationsBackup_; // list to restore to
 
     //! zeta is an additional scaling for the state tangent
     double zeta_;
@@ -114,8 +115,8 @@ class Continuation
     bool abortFlag_;            
     //! disable adjustStep()
     bool fixStepSize_;          
-    //! status flag when destination reached
-    bool destinationReached_;   
+    //! status flag when final destination reached
+    bool reachedLastDest_;
     //! status flag giving detect() power over ds
     bool secant_;               
 
@@ -145,10 +146,8 @@ class Continuation
     int maxNewtonIterations_;     
     //! set the min for the Newton iterations
     int minNewtonIterations_;     
-    //! if less then we increase the step-size
-    int minAllowedIterations_;    
-    //! if more then we decrease the step-size
-    int maxAllowedIterations_;    
+    //! if less/more then we increase/decrease the step-size
+    double optNewtonIterations_;         
     //! set the tolerance in the Newton corrector
     double newtonTolerance_;      
     //! set the tolerance for the final convergence
@@ -201,10 +200,10 @@ class Continuation
     double predictorBound_;
 
     //! used for detecting sign switch
-    int parDotSign_;              
+    int parDotSign_;
+    
     //! track the sign of monitor in detect()
-    int signMonitor_;             
-
+    std::vector<int> signMonitor_;
     //! ||F(x_old)||
     double normRHS_;              
     //! ||F(x_new)||
@@ -247,7 +246,7 @@ public:
     ~Continuation();
 
     //! run continuation
-    void run();
+    int run();
 
     //! test
     void test();

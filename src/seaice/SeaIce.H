@@ -230,8 +230,8 @@ protected:
     
     //! background mean values
     double t0o_;  //! background ocean temp 
-    double t0a_;  //! background atmos temp t0a
     double t0i_;  //! background seaice temp t0i
+    double t0a_;  //! background atmos temp t0a
     double s0_;   //! ocean background salinity s0
     double q0_;   //! atmos background humidity q0
     double qdim_; //! atmos humidity scale
@@ -414,6 +414,8 @@ public:
     void synchronize(std::shared_ptr<SeaIce> seaice) {}
     void synchronize(std::shared_ptr<Atmosphere> atmos);
     void synchronize(std::shared_ptr<Ocean> ocean);
+
+    void pressureProjection(Teuchos::RCP<Epetra_Vector> vec) {}
 
     Teuchos::RCP<Epetra_Vector> interface(Teuchos::RCP<Epetra_Vector> vec, int XX);
     

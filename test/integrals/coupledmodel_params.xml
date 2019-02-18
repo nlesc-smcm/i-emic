@@ -17,10 +17,7 @@
   <!-- The sub-models maintain names for the input files.        -->
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="true"/>
-
-  <!-- To keep track of each converged state, enable this.    -->
-  <!-- Only useful when you enable <Save state>               -->
-  <Parameter name="Store everything" type="bool" value="false" />
+  <Parameter name="Save frequency" type="int" value="3" />
 
   <!-- Continuation parameter -->
   <!-- Options:  "Combined Forcing" -->

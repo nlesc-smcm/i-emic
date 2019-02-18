@@ -147,10 +147,7 @@ protected:
     //! State component importers
     std::map<int, Teuchos::RCP<Epetra_Import> > Imps_;
 
-    //! input/output flags
-    bool saveEveryStep_;
-
-    //! flag allowing to disable integral condition
+    //! flag to disable integral condition
     bool useIntCondQ_;
     
     //! row in rhs and matrix for integral condition q
@@ -237,6 +234,9 @@ public:
 
     //! Meaningless: dummy implementation
     void synchronize(std::shared_ptr<Atmosphere> atmos) {}
+
+    //! Meaningless: dummy implementation
+    void pressureProjection(Teuchos::RCP<Epetra_Vector>) {}
 
     void setOceanTemperature(Teuchos::RCP<Epetra_Vector> sst);
     
@@ -390,9 +390,6 @@ private:
 
     //! Assemble fluxes from local model
     std::vector<Teuchos::RCP<Epetra_Vector> > getFluxes();
-
-    //! Copy HDF5
-    void copyFiles();
 
     //! Distribute parallel state in serial model
     void distributeState();

@@ -27,11 +27,20 @@ function [state,pars,add] = plot_atmos(fname, opts)
     end
     opts.readEP = plotEmP;
 
-    if isfield(opts, 'lst') % land surface temperature
+    % land surface temperature
+    if isfield(opts, 'lst') 
         readLST = opts.lst;
         opts.readLST = readLST;
     else
         readLST = false;
+    end
+
+    % sea ice surface temperature
+    if isfield(opts, 'sit') 
+        readSIT = opts.sit;
+        opts.readSIT = readSIT;
+    else
+        readSIT = false;
     end
 
     if isfield(opts, 'readFluxes')
@@ -71,10 +80,24 @@ function [state,pars,add] = plot_atmos(fname, opts)
         fig_ctr = 11; % first figure handle number
     end
 
+    if isfield(opts, 'qsat')
+        plot_qsat = opts.qsat;
+        readLST   = opts.qsat;
+        opts.readLST = readLST;
+    else
+        plot_qsat = false;
+    end
+
     if isfield(opts, 'exportfig')
         export_to_file = opts.exportfig;
     else
         export_to_file = false;
+    end
+
+    if isfield(opts, 'readEV')
+        plot_EV = opts.readEV;
+    else
+        plot_EV = false;
     end
 
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
@@ -100,16 +123,26 @@ function [state,pars,add] = plot_atmos(fname, opts)
 
     if readLST
         LST = reshape(add.LST, n, m);
+        SST = reshape(add.SST, n, m);
+    end
+
+    if readSIT
+        SIT = reshape(add.SIT, n, m);
+        MSI = reshape(add.MSI, n, m);
+    else
+        SIT = 0;
+        MSI = 0;
     end
 
     RtD = 180/pi;
     
-    % reference temperature
-    T0  = 15.0;
-    q0  = 8e-3;
-    a0  = 0.0;
+    % reference values
+    T0o  = 15.0;
+    T0i  = -5;
+    q0   = 8e-3;
+    a0   = 0.0;
     
-    % 
+    % typical deviations
     tdim = 1;
     qdim = 1e-3;
     adim = 1;
@@ -119,13 +152,31 @@ function [state,pars,add] = plot_atmos(fname, opts)
     rhoo = 1024;
     ce   = 1.3e-03;
     uw   = 8.5;
+    eta  = (rhoa / rhoo) * ce * uw;
+    year = 3600*24*365;
+    
     fprintf('  q0 = %e (kg / kg)\n', q0);        
     fprintf('qdim = %e (kg / kg)\n', qdim);
+    fprintf(' eta = %e \n', eta);
+
+    c1 = 3.8e-3;
+    c2 = 21.87;
+    c3 = 265.5;
+    c4 = 17.67;
+    c5 = 243.5;
+
+    Ta = squeeze(state(1,:,:,:));
+    qa = squeeze(state(2,:,:,:));
+    Aa = squeeze(state(3,:,:,:));
+
+    % create dimensional fields
+    if ~plot_EV
+        Ta  = T0o + tdim * Ta;
+        qa  = q0  + qdim * qa;
+        Aa  = a0  + adim * Aa;
+    end
     
-    Ta  = T0 + tdim * squeeze(state(1,:,:,:));
-    qa  = q0 + qdim * squeeze(state(2,:,:,:));
     qa(logical(surfm)) = NaN; % humidity above land points does not contribute 
-    Aa  = a0 + adim * squeeze(state(3,:,:,:));
     Tz  = mean(Ta,1); % zonal mean
     qz  = mean(qa,1); % zonal mean
 
@@ -144,14 +195,18 @@ function [state,pars,add] = plot_atmos(fname, opts)
         
         contourf(RtD*x,RtD*(y),img,15,... 
                  'linewidth',1.0,'linestyle','-'); hold on;
-        contour(RtD*x,RtD*(y),surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
-                
-        set(gca,'ydir','normal')
-        colorbar
-        cmap = my_colmap(caxis);
-        colormap(cmap)
-        colorbar
 
+        colorbar
+        caxis([min(img(:)),max(img(:))]);
+        cmap = my_colmap(caxis);        
+
+        colormap(cmap)
+        min(img(:))
+        max(img(:))
+
+        contour(RtD*x,RtD*(y),1e-7*surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
+        
+        set(gca,'ydir','normal')
         hold off
         
         title('Atmospheric temperature')
@@ -179,7 +234,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         colorbar
         cmap = my_colmap(caxis);
         colormap(cmap)
-
+        
         drawnow
         title('Humidity (kg / kg)')
         xlabel('Longitude')
@@ -192,7 +247,9 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if plot_albedo || plot_default
         figure(fig_ctr); fig_ctr = fig_ctr+1;
-        img = Aa';
+        Aback = 0.3;
+        Adev = 0.4;
+        img = Aback + Adev*Aa';
         imagesc(RtD*x,RtD*(y),img); 
         set(gca,'ydir','normal')
         
@@ -205,7 +262,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         ylabel('Latitude')
         
         if export_to_file
-            exportfig('atmosA.eps',10,[14,10],invert)
+            exportfig('atmosA.eps',10,[19,11],invert)
         end
     end
     
@@ -218,7 +275,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         img(img == 0) = NaN;
 
         %contour(RtD*x,RtD*(y),surfm',1,'linecolor','k','linewidth',2.0,'linestyle','-'); hold on;
-        c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
+        c = contourf(RtD*x,RtD*(y),img,20,'k','Visible', 'on', ...
                      'linewidth',.5); 
                 
         set(gca,'ydir','normal')
@@ -258,11 +315,11 @@ function [state,pars,add] = plot_atmos(fname, opts)
         img(img == 0) = NaN;
         
         figure(fig_ctr); fig_ctr = fig_ctr+1;        
-        %        imagesc(RtD*x,RtD*(y),img); hold on
+        %imagesc(RtD*x,RtD*(y),img); 
 
-        c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
-                    'linewidth',.5);
-        hold off
+         c = contourf(RtD*x,RtD*(y),img,12,'k','Visible', 'on', ...
+                            'linewidth',.5);
+        % hold off
         set(gca,'ydir','normal')
         cmap = my_colmap(caxis,0);
         colormap(cmap)
@@ -279,7 +336,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
     
     if readLST || plot_default
         figure(fig_ctr); fig_ctr = fig_ctr+1;
-        imagesc(RtD*x,RtD*(y), LST' + T0);
+        imagesc(RtD*x,RtD*(y), LST' + T0o);
         set(gca,'ydir', 'normal');
         cmap = my_colmap(caxis);
         colormap(cmap)
@@ -288,7 +345,56 @@ function [state,pars,add] = plot_atmos(fname, opts)
         xlabel('Longitude')
         ylabel('Latitude')
     end
+    
+    if plot_qsat
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
+        sst  = SST' + T0o;
+        qso  = @(T) c1 * exp(c4 * T ./ (T + c5));
+        qsi  = @(T) c1 * exp(c2 * T ./ (T + c3));
+        
+        dqso     = (qso(T0o+1e-6)-qso(T0o))/1e-6;
+        dqso     = 5e-4;
+        dqsi     = (qsi(T0i+1e-6)-qsi(T0i))/1e-6;
+        qso_lin  = qso(T0o) + dqso * SST';
+        qsi_lin  = qsi(T0i) + dqsi * SIT';
 
+        fprintf(' background qsat over ocean   = %2.1f g/kg\n', qso(T0o)*1e3);
+        fprintf(' background qsat over sea ice = %2.1f g/kg\n\n', qsi(T0i)*1e3);
+        fprintf(' d/dT qsat over ocean   = %1.3e\n', dqso);
+        fprintf(' d/dT qsat over sea ice = %1.3e\n\n', dqsi);
+        
+        qs = qso_lin .* ( 1-MSI') + MSI' .* qsi_lin;
+       
+        % full nonlinear qso
+        %qso_nonlin  = qso(sst);
+        
+        contourf(RtD*x,RtD*(y),qs,12); hold off
+        title('q_{sat} (kg/kg)', 'interpreter', 'TeX');
+        xlabel('Longitude');
+        ylabel('Latitude');
+        cmap = [my_colmap(caxis)];
+        colormap(cmap)
+        colorbar
+    end
+    
+    if plot_qsat && plot_humidity
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
+        contourf(RtD*x,RtD*(y),eta*(qs-qa')*year,12); hold off
+        title('q_{sat} - q', 'interpreter', 'TeX');
+        xlabel('Longitude');
+        ylabel('Latitude');
+        cmap = [my_colmap(caxis)];
+        colormap(cmap)
+        colorbar
+
+        fprintf(' background evaporation Eo0 = %e m/s = %2.1f m/y\n', ...
+                eta * ( qso(T0o) - q0), ...
+                eta * ( qso(T0o) - q0)*year);
+        fprintf(' background sublimation Eoi = %e m/s = %2.1f m/y\n', ...
+                eta * ( qsi(T0i) - q0),...
+                eta * ( qsi(T0i) - q0)*year);
+    end
+    
     if readFluxes
         out = plot_fluxes(add, fig_ctr,'Atmos: ', opts); 
     end

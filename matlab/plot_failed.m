@@ -1,26 +1,58 @@
-function [files] = plot_failed(base_name, level)
-    [out, list] = system(['ls ', base_name, '*']);
+function [files] = plot_failed(base_names, level, fig_ctr)
+
+    comparefiles = false;
+    if ~iscell(base_names)
+        base_names   = {base_names};
+    end
+    
+    if iscell(base_names) && numel(base_names) == 2
+        comparefiles = true;
+    end
+    
+    if comparefiles
+        [out, list1] = system(['ls ', base_names{1}, '*']);
+        [out, list2] = system(['ls ', base_names{2}, '*']);
+    else
+        [out, list1] = system(['ls ', base_names{1}, '*']);
+    end
 
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
         readfort44('fort.44');
 
-    RtD   = 180/pi;              %[-]     Radians to degrees
-
-    fig_ctr = 1;
+    RtD   = 180/pi;   %[-] Radians to degrees
 
     if nargin < 2
         level = l;
     end
 
-    % Collect files
-    spaces = strfind(list, ' ');
-    nfiles = numel(spaces) / 2 + 1;
-    files  = cell(3,1);
-    sinds  = [1,spaces(2:2:end)+1];
-    einds  = [spaces(1:2:end)-1,numel(list)-1];
+    if nargin < 3
+        fig_ctr = 1;
+    end
 
-    for i = 1:nfiles
-        files{i} = list(sinds(i):einds(i));
+    % Collect files
+    spaces1 = strfind(list1, ' ');
+    nfiles1 = numel(spaces1) / 2 + 1;
+
+    if comparefiles
+        spaces2 = strfind(list2, ' ');
+        nfiles2 = numel(spaces2) / 2 + 1;
+        
+        if nfiles1 ~= nfiles2
+            fprintf('unequal amount of files in comparison\n')
+            return;
+        end       
+    end
+    
+    files1  = cell(3,1);
+    files2  = cell(3,1);
+    sinds   = [1,spaces1(2:2:end)+1];
+    einds   = [spaces1(1:2:end)-1,numel(list1)-1];
+
+    for i = 1:nfiles1
+        files1{i} = list1(sinds(i):einds(i));
+        if comparefiles
+            files2{i} = list2(sinds(i):einds(i));            
+        end            
     end
 
     % assuming standard ordering
@@ -31,8 +63,12 @@ function [files] = plot_failed(base_name, level)
     Xnrm = [];
     
     fprintf('\n');
-    for i = 1:nfiles
-        X    = readhdf5(files{i});
+    for i = 1:nfiles1
+        X    = readhdf5(files1{i});
+        if comparefiles
+            X = X - readhdf5(files2{i});
+        end
+        
         XTOT = [XTOT;X];
         fprintf('-------------------------\n');      
         if i == 2

@@ -5,6 +5,9 @@
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="true"/>
 
+  <!-- To keep track of each converged state, enable this. -->
+  <Parameter name="Save frequency" type="int" value="1" />
+
   <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- Starting parameters -->
@@ -23,6 +26,5 @@
   <Parameter name="Periodic" type="bool" value="false"/>
 
   <Parameter name="mask switch steepness" type="double" value="1e-2"/>
-
 
 </ParameterList>

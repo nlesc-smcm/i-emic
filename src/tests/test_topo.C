@@ -206,9 +206,6 @@ TEST(Topo, TopoContinuation)
             
             continuation.run();
 			
-            topo->setPar(1.0);
-            INFO("    topo cont postprocess ");
-            topo->postProcess();
         }
         INFO(" Running topo cont... done");            
                     

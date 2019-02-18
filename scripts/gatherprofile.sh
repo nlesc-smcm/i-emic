@@ -5,8 +5,8 @@
 # Specify in and output files
 if [ $# -ne 2 ]
 then
-	iname=profile_16x16
-	oname=gatheredprofile
+    echo "usage: gatherprofile.sh <iname> <oname>"
+    exit
 else
 	iname=$1
 	oname=$2

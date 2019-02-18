@@ -28,6 +28,12 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         readLST = false;
     end
 
+    if isfield(opts, 'readSIT')
+        readSIT = opts.readSIT;
+    else
+        readSIT = false;
+    end
+
     if isfield(opts, 'readFluxes')
         readFluxes = opts.readFluxes;
     else
@@ -49,7 +55,9 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
     
     if readEV % read eigenvector and values
         kmax = h5read(file, '/MetaData/NumEigs');
-
+        fprintf(' reading eigenvector, %d eigenvectors available\n', ...
+                kmax);
+        
         if isfield(opts, 'evindex')
             evindex = opts.evindex;            
         else
@@ -72,6 +80,18 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
 
         additional.alpha = alphaRe + alphaIm*1i;
         additional.beta  = betaRe + betaIm*1i;
+
+        egs = (alphaRe + alphaIm*1i) ./ (betaRe + betaIm*1i);
+        fprintf('\neigenvalues: \n')
+        for i = 1:kmax
+            if (i == evindex+1)
+                fprintf(' -> ');
+            else
+                fprintf('    ');
+            end
+            fprintf(' %+e %+ei \n', real(egs(i)), imag(egs(i)));
+        end
+        fprintf('\n');
         
     else % read normal state
         sol = h5read(file, '/State/Values');
@@ -106,6 +126,11 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
     if readLST
         additional.LST = h5read(file, '/lst/Values');
         additional.SST = h5read(file, '/sst/Values');
+    end
+    
+    if readSIT
+        additional.SIT = h5read(file, '/sit/Values');
+        additional.MSI = h5read(file, '/Msi/Values');
     end
 
     if readFluxes
