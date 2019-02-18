@@ -565,7 +565,6 @@ void AtmosLocal::integralCoeff(std::vector<double> &val,
     // Clear arrays
     val.clear();
     ind.clear();
-    
     // Assuming that nun > 1 implies we want the integral coefficients
     // at the QQ points
     int XX = (nun == 1) ? ATMOS_TT_ : ATMOS_QQ_;

@@ -940,7 +940,6 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
         if (lid_stdrd >= 0)
             tmp = (comb_ * sunp_ * sun0_ / 4. ) *
                 shortwaveS(y_[lid_assmb / nLoc_]) * albed_ * c0_;
-            
         comm_->SumAll( &tmp, &daatmFQ, 1);
         daatmFQ = daatmFQ / muoa_;
 

@@ -388,7 +388,6 @@ void Atmosphere::computeRHS()
         //
         (*rhs_)[lid] = -(*state_)[lid] - qInt + sstInt + MCsInt;
     }
-    
     TIMER_STOP("Atmosphere: computeRHS...");
 }
 
