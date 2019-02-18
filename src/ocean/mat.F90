@@ -5,27 +5,27 @@ MODULE m_mat
   use, intrinsic :: iso_c_binding
 
   ! defines the location of the matrix
-  ! replaces old common block file "mat.com" 
+  ! replaces old common block file "mat.com"
 
   ! originally in usr.com:
-  real,    dimension(:,:,:,:,:,:), ALLOCATABLE :: Al
+  real,    dimension(:,:,:,:,:,:), ALLOCATABLE :: Al, An
 
   ! originally in mat.com: now allocated in C++ via the
   ! subroutines get_array_sizes and set_pointers
   real(c_double), dimension(:), POINTER :: coA
-  integer(c_int), dimension(:), POINTER :: jcoA 
+  integer(c_int), dimension(:), POINTER :: jcoA
   integer(c_int), dimension(:), POINTER :: begA
 
   integer :: maxnnz !! allocated memory for jacobian matrix entries
 
-  real(c_double), dimension(:), POINTER :: coB        
+  real(c_double), dimension(:), POINTER :: coB
 
   logical, dimension(:,:,:), ALLOCATABLE :: active
   ! used to keep track on active couplings
 
 contains
 
-  !! allocates the Al array and 'active'. The
+  !! allocates the Al and An arrays and 'active'. The
   !! CRS matrix A and B are allocated by C++ via 'allocate_crs' (below)
   subroutine allocate_mat
 
@@ -33,6 +33,7 @@ contains
     implicit none
 
     allocate(Al(n,m,l+la,np,nun,nun))
+    allocate(An(n,m,l+la,np,nun,nun))
     allocate(active(np,nun,nun))
 
   end subroutine allocate_mat
@@ -43,6 +44,7 @@ contains
     implicit none
 
     deallocate(Al)
+    deallocate(An)
     deallocate(active)
 
   end subroutine deallocate_mat

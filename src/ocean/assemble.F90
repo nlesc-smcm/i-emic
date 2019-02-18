@@ -73,8 +73,8 @@ SUBROUTINE preprocessA
      do ii = 1,nun
         do jj = 1,nun
            do kk = 1,np
-              !                  if (abs(al(i,j,k,kk,ii,jj)) > 1.0E-14) then
-              if (al(i,j,k,kk,ii,jj) /= 0D0) then
+              !                  if (abs(an(i,j,k,kk,ii,jj)) > 1.0E-14) then
+              if (an(i,j,k,kk,ii,jj) /= 0D0) then
                  active(kk,ii,jj) = .true.
               end if
            end do
@@ -102,7 +102,7 @@ SUBROUTINE preprocessA_old
               do j = 1,m
                  do k = 1,l+la
                     ! --> 1.0E-10 small enough?
-                    if (abs(al(i,j,k,kk,ii,jj)) > 1.0E-10) then
+                    if (abs(an(i,j,k,kk,ii,jj)) > 1.0E-10) then
                        active(kk,ii,jj) = .true.
                        cycle loop
                     end if
@@ -203,7 +203,7 @@ SUBROUTINE fillcolA
                  do jj = 1, nun
                     if (active(kk,ii,jj)) then
                        w = v + (jj-1)*np ! ? grouped ordering?                       
-                       coA(w+kk)  = al(i,j,k,kk,ii,jj)
+                       coA(w+kk)  = an(i,j,k,kk,ii,jj)
                        jcoA(w+kk) = find_row2(i2,j2,k2,jj)
                     end if
                  end do

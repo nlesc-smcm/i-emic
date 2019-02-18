@@ -404,8 +404,9 @@ SUBROUTINE matrix(un, sig1, sig2)
 
   _DEBUG_("Build diagonal matrix B...")
   call fillcolB
-   _DEBUG_("Build linear part of Jacobian...")
-   call lin
+  _DEBUG_("Build linear part of Jacobian...")
+  call lin
+  An = Al
 #ifndef THCM_LINEAR
   _DEBUG_("Build nonlinear part of Jacobian...")
   call nlin_jac(un)
@@ -413,15 +414,15 @@ SUBROUTINE matrix(un, sig1, sig2)
   !{ removing tons of things for eigen-analysis test...
 #if 0
   !Euv
-  Al(:,:,:,:,UU:VV,WW) = 0.0
+  An(:,:,:,:,UU:VV,WW) = 0.0
   !BTS
-  Al(:,:,:,:,WW,TT:SS) = 0.0
+  An(:,:,:,:,WW,TT:SS) = 0.0
   !Buv, Bw
-  !Al(:,:,:,:,TT:SS,UU::WW) = 0.0
+  !An(:,:,:,:,TT:SS,UU::WW) = 0.0
   !Gw
-  !Al(:,:,:,:,WW,PP) = 0.0
+  !An(:,:,:,:,WW,PP) = 0.0
   !Dw
-  !Al(:,:,:,:,PP,WW) = 0.0
+  !An(:,:,:,:,PP,WW) = 0.0
 #endif
   !}
 
@@ -452,15 +453,15 @@ SUBROUTINE matrix(un, sig1, sig2)
         do i = 1, n
            do ii = 1,nun
               row = find_row2(i,j,k,ii)
-              Al(i,j,k,5,ii,ii) = Al(i,j,k,5,ii,ii) - sig1*coB(row)
+              An(i,j,k,5,ii,ii) = An(i,j,k,5,ii,ii) - sig1*coB(row)
            end do
 
            ! note that B is 0 in W/P points, but we add something there, too
            ! to make sure the diagonal gets included in the matrix (sig2~mach.eps)
            row = find_row2(i,j,k,WW)
-           Al(i,j,k,5,WW,WW) = Al(i,j,k,5,WW,WW) - sig2
+           An(i,j,k,5,WW,WW) = An(i,j,k,5,WW,WW) - sig2
            row = find_row2(i,j,k,PP)
-           Al(i,j,k,5,PP,PP) = Al(i,j,k,5,PP,PP) - sig2
+           An(i,j,k,5,PP,PP) = An(i,j,k,5,PP,PP) - sig2
         enddo
      enddo
   enddo
@@ -468,8 +469,8 @@ SUBROUTINE matrix(un, sig1, sig2)
   call boundaries
 
   call assemble
-  !write(*,*) "In fortran's matrix() maxval TT =", maxval(Al(:,:,:,:,TT,:))
-  !write(*,*) "In fortran's matrix() maxval SS =", maxval(Al(:,:,:,:,SS,:))
+  !write(*,*) "In fortran's matrix() maxval TT =", maxval(An(:,:,:,:,TT,:))
+  !write(*,*) "In fortran's matrix() maxval SS =", maxval(An(:,:,:,:,SS,:))
 
   ! call writematrhs(0.0)
 
@@ -498,6 +499,7 @@ SUBROUTINE rhs(un,B)
   coA  = 0
   jcoA = 0
   call lin              !
+  An = Al
   ! write(*,*) 'T(n,m,l)', un(find_row2(n,m,l,TT))
 #ifndef THCM_LINEAR
   call nlin_rhs(un)
@@ -829,7 +831,7 @@ SUBROUTINE nlin_rhs(un)
   call unlin(3,uvy1,u,v,w)
   call unlin(5,uwz,u,v,w)
   call unlin(7,uvy2,u,v,w)
-  Al(:,:,1:l,:,UU,UU) = Al(:,:,1:l,:,UU,UU) + epsr * (uux + uvy1 + uwz + uvy2)
+  An(:,:,1:l,:,UU,UU) = An(:,:,1:l,:,UU,UU) + epsr * (uux + uvy1 + uwz + uvy2)
 #endif
 
   ! ------------------------------------------------------------------
@@ -840,8 +842,8 @@ SUBROUTINE nlin_rhs(un)
   call vnlin(3,vvy,u,v,w)
   call vnlin(5,vwz,u,v,w)
   call vnlin(7,ut2,u,v,w)
-  Al(:,:,1:l,:,VV,UU) = Al(:,:,1:l,:,VV,UU) + epsr *ut2
-  Al(:,:,1:l,:,VV,VV) = Al(:,:,1:l,:,VV,VV) + epsr*(uvx + vvy + vwz)
+  An(:,:,1:l,:,VV,UU) = An(:,:,1:l,:,VV,UU) + epsr *ut2
+  An(:,:,1:l,:,VV,VV) = An(:,:,1:l,:,VV,VV) + epsr*(uvx + vvy + vwz)
 #endif
 
   ! ------------------------------------------------------------------
@@ -849,7 +851,7 @@ SUBROUTINE nlin_rhs(un)
   ! ------------------------------------------------------------------
   call wnlin(2,t2r,t)
   call wnlin(4,t3r,t)
-  Al(:,:,1:l,:,WW,TT) = Al(:,:,1:l,:,WW,TT) - Ra*xes*alpt2*t2r &
+  An(:,:,1:l,:,WW,TT) = An(:,:,1:l,:,WW,TT) - Ra*xes*alpt2*t2r &
                                             + Ra*xes*alpt3*t3r
 
   ! ------------------------------------------------------------------
@@ -859,7 +861,7 @@ SUBROUTINE nlin_rhs(un)
   call tnlin(3,utx,u,v,w,t,rho)
   call tnlin(5,vty,u,v,w,t,rho)
   call tnlin(7,wtz,u,v,w,t,rho)
-  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT)+ utx+vty+wtz        ! ATvS-Mix
+  An(:,:,1:l,:,TT,TT) = An(:,:,1:l,:,TT,TT)+ utx+vty+wtz        ! ATvS-Mix
 #endif
 
   ! ------------------------------------------------------------------
@@ -869,7 +871,7 @@ SUBROUTINE nlin_rhs(un)
   call tnlin(3,usx,u,v,w,s,rho)
   call tnlin(5,vsy,u,v,w,s,rho)
   call tnlin(7,wsz,u,v,w,s,rho)
-  Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS)+ usx+vsy+wsz        ! ATvS-Mix
+  An(:,:,1:l,:,SS,SS) = An(:,:,1:l,:,SS,SS)+ usx+vsy+wsz        ! ATvS-Mix
 #endif
 
 end SUBROUTINE nlin_rhs
@@ -933,9 +935,9 @@ SUBROUTINE nlin_jac(un)
   call unlin(6,Urwz,u,v,w)
   call unlin(7,uvy2,u,v,w)
   call unlin(8,Urvy2,u,v,w)
-  Al(:,:,1:l,:,UU,UU)  =  Al(:,:,1:l,:,UU,UU) + epsr * (Urux + uvy1 + uwz + uvy2)
-  Al(:,:,1:l,:,UU,VV)  =  Al(:,:,1:l,:,UU,VV) + epsr * (Urvy1 + Urvy2)
-  Al(:,:,1:l,:,UU,WW)  =  Al(:,:,1:l,:,UU,WW) + epsr *  Urwz
+  An(:,:,1:l,:,UU,UU)  =  An(:,:,1:l,:,UU,UU) + epsr * (Urux + uvy1 + uwz + uvy2)
+  An(:,:,1:l,:,UU,VV)  =  An(:,:,1:l,:,UU,VV) + epsr * (Urvy1 + Urvy2)
+  An(:,:,1:l,:,UU,WW)  =  An(:,:,1:l,:,UU,WW) + epsr *  Urwz
 #endif
 
   ! ------------------------------------------------------------------
@@ -948,9 +950,9 @@ SUBROUTINE nlin_jac(un)
   call vnlin(5,vwz,u,v,w)
   call vnlin(6,Vrwz,u,v,w)
   call vnlin(8,Urt2,u,v,w)
-  Al(:,:,1:l,:,VV,UU) =   Al(:,:,1:l,:,VV,UU) + epsr * (Urt2 + uVrx)
-  Al(:,:,1:l,:,VV,VV) =   Al(:,:,1:l,:,VV,VV) + epsr * (uvx + Vrvy + vwz)
-  Al(:,:,1:l,:,VV,WW) =   Al(:,:,1:l,:,VV,WW) + epsr * Vrwz
+  An(:,:,1:l,:,VV,UU) =   An(:,:,1:l,:,VV,UU) + epsr * (Urt2 + uVrx)
+  An(:,:,1:l,:,VV,VV) =   An(:,:,1:l,:,VV,VV) + epsr * (uvx + Vrvy + vwz)
+  An(:,:,1:l,:,VV,WW) =   An(:,:,1:l,:,VV,WW) + epsr * Vrwz
 #endif
 
   ! ------------------------------------------------------------------
@@ -958,7 +960,7 @@ SUBROUTINE nlin_jac(un)
   ! ------------------------------------------------------------------
   call wnlin(1,t2r,t)
   call wnlin(3,t3r,t)
-  Al(:,:,1:l,:,WW,TT) = Al(:,:,1:l,:,WW,TT) - Ra*xes*alpt2*t2r &
+  An(:,:,1:l,:,WW,TT) = An(:,:,1:l,:,WW,TT) - Ra*xes*alpt2*t2r &
                                             + Ra*xes*alpt3*t3r
 
   ! ------------------------------------------------------------------
@@ -971,10 +973,10 @@ SUBROUTINE nlin_jac(un)
   call tnlin(5,Vtry,u,v,w,t,rho)
   call tnlin(6,wrTz,u,v,w,t,rho)
   call tnlin(7,Wtrz,u,v,w,t,rho)
-  Al(:,:,1:l,:,TT,UU) = Al(:,:,1:l,:,TT,UU) + urTx
-  Al(:,:,1:l,:,TT,VV) = Al(:,:,1:l,:,TT,VV) + vrTy
-  Al(:,:,1:l,:,TT,WW) = Al(:,:,1:l,:,TT,WW) + wrTz
-  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT) + Utrx + Vtry + Wtrz        ! ATvS-Mix
+  An(:,:,1:l,:,TT,UU) = An(:,:,1:l,:,TT,UU) + urTx
+  An(:,:,1:l,:,TT,VV) = An(:,:,1:l,:,TT,VV) + vrTy
+  An(:,:,1:l,:,TT,WW) = An(:,:,1:l,:,TT,WW) + wrTz
+  An(:,:,1:l,:,TT,TT) = An(:,:,1:l,:,TT,TT) + Utrx + Vtry + Wtrz        ! ATvS-Mix
 #endif
 
   ! ------------------------------------------------------------------
@@ -987,10 +989,10 @@ SUBROUTINE nlin_jac(un)
   call tnlin(5,Vsry,u,v,w,s,rho)
   call tnlin(6,wrSz,u,v,w,s,rho)
   call tnlin(7,Wsrz,u,v,w,s,rho)
-  Al(:,:,1:l,:,SS,UU) = Al(:,:,1:l,:,SS,UU) + urSx
-  Al(:,:,1:l,:,SS,VV) = Al(:,:,1:l,:,SS,VV) + vrSy
-  Al(:,:,1:l,:,SS,WW) = Al(:,:,1:l,:,SS,WW) + wrSz
-  Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS) + Usrx + Vsry + Wsrz
+  An(:,:,1:l,:,SS,UU) = An(:,:,1:l,:,SS,UU) + urSx
+  An(:,:,1:l,:,SS,VV) = An(:,:,1:l,:,SS,VV) + vrSy
+  An(:,:,1:l,:,SS,WW) = An(:,:,1:l,:,SS,WW) + wrSz
+  An(:,:,1:l,:,SS,SS) = An(:,:,1:l,:,SS,SS) + Usrx + Vsry + Wsrz
 #endif
 
 end SUBROUTINE nlin_jac
