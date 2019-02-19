@@ -162,11 +162,6 @@ module m_usr
   !real, parameter :: bottem   = 0.0
   !real, parameter :: botsal   = 0.0
 
-
-  !--obsolete (at least this seems to be the case) --
-  real, dimension(:,:,:),allocatable :: fricum,fricvm
-  real, dimension(:,:,:),allocatable :: pv_adj
-
   !________________________________________________________________
 
 
@@ -193,7 +188,6 @@ contains
 
     allocate(landm(0:n+1,0:m+1,0:l+la+1))
     landm=OCEAN;! in case no topology is read in
-    allocate(fricum(0:n,0:m,l),fricvm(0:n,0:m,l))
 
     allocate(Frc(ndim), taux(n,m), tauy(n,m), tx(n,m), ty(n,m))
     allocate(ft(n,m), fs(n,m), tatm(n,m), emip(n,m), spert(n,m))
@@ -216,7 +210,6 @@ contains
     internal_salt  = 0.0
     adapted_emip   = 0.0
 
-    allocate(pv_adj(n,m,0:l))
   end subroutine allocate_usr
 
   subroutine deallocate_usr()
@@ -229,7 +222,6 @@ contains
          dfzT,dfzW)
 
     deallocate(landm)
-    deallocate(fricum,fricvm)
 
     deallocate(Frc, taux, tauy, tx, ty)
     deallocate(ft, fs, tatm, emip, spert)
@@ -237,7 +229,6 @@ contains
     deallocate(msi, gsi, qsa)
     deallocate(ftlev, fslev)
     deallocate(internal_temp, internal_salt)
-    deallocate(pv_adj)
   end subroutine deallocate_usr
 
   !! can be called from C++ to get the grid arrays:
