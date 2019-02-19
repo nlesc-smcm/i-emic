@@ -35,7 +35,8 @@ matrix:
 
 install:
   - cd mrilu
-  - mkdir build; make && make install
+  - mkdir build; cp makefile_inc_examples/makefile_inc_travis makefile.inc
+  - make && make install
   - cd ..
   - mkdir build; cd build
   - cmake -DMRILU_DIR=${TRAVIS_BUILD_DIR}/mrilu/build ..
