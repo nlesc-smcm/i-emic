@@ -28,12 +28,14 @@ matrix:
          - PATH="$PATH:$TRAVIS_BUILD_DIR/mrilu/build/bin"
          - LIBRARY_PATH="$LIBRARY_PATH:$TRAVIS_BUILD_DIR/mrilu/build/lib"
          - LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$TRAVIS_BUILD_DIR/mrilu/build/lib"
+         - IEMIC_BUILD_DIR="${TRAVIS_BUILD_DIR}/build"
       cache:
          directories:
             - ${TRAVIS_BUILD_DIR}/mrilu/build
-            - ${TRAVIS_BUILD_DIR}/build
+            - ${IEMIC_BUILD_DIR}
 
 install:
+  - if [ -f ${IEMIC_BUILD_DIR}/restore_timestamps.sh ]; then sh ${IEMIC_BUILD_DIR}/restore_timestamps.sh; fi
   - cd mrilu
   - mkdir build; cp makefile_inc_examples/makefile_inc_travis makefile.inc
   - make && make install
@@ -44,3 +46,7 @@ install:
 
 script:
   - make test
+
+before_cache:
+  - cd ${TRAVIS_BUILD_DIR}
+  - sh scripts/store_timestamps.sh
