@@ -165,8 +165,6 @@ module m_usr
 
   !--obsolete (at least this seems to be the case) --
   real, dimension(:,:,:),allocatable :: fricum,fricvm
-  real, dimension(:), allocatable    :: kapv,kaph
-  real, dimension(:,:,:),allocatable :: emix
   real, dimension(:,:,:),allocatable :: pv_adj
 
   !________________________________________________________________
@@ -192,8 +190,7 @@ contains
 
     allocate(x(n),y(0:m+1),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l),&
          dfzT(l),dfzW(0:l))
-    
-    allocate(kapv(0:l),kaph(l),emix(n,m,0:l))
+
     allocate(landm(0:n+1,0:m+1,0:l+la+1))
     landm=OCEAN;! in case no topology is read in
     allocate(fricum(0:n,0:m,l),fricvm(0:n,0:m,l))
@@ -231,7 +228,6 @@ contains
     deallocate(x,y,z,xu,yv,zw,ze,zwe,&
          dfzT,dfzW)
 
-    deallocate(kapv,kaph,emix)
     deallocate(landm)
     deallocate(fricum,fricvm)
 

@@ -109,7 +109,6 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
 !       ' QSnd = ', QSnd
 
   call stpnt        !
-  call mixe         !
   call vmix_init    ! ATvS-Mix  USES LANDMASK
   call atmos_coef   !
   call forcing      ! USES LANDMASK
@@ -138,25 +137,6 @@ subroutine finalize
   close(f99)
 
 end subroutine finalize
-
-!****************************************************************************
-SUBROUTINE mixe
-  use m_usr
-  implicit none
-  integer i,j,k
-  do i=1,n
-     do j=1,m
-        emix(i,j,0) = 0.0
-        do k=1,l-1
-           emix(i,j,k)= - sin(pi*(x(i)-xmin)/(xmax-xmin))*   &
-                (cos((pi/2)*(y(j)-ymin)/(ymax-ymin)) + 0.2)         &
-                *zw(k)
-        enddo
-        emix(i,j,l) = 0.0
-     enddo
-  enddo
-  !
-end SUBROUTINE mixe
 
 !*****************************************************************************
 SUBROUTINE setparcs(param,value)
