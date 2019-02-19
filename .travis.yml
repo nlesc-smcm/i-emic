@@ -1,0 +1,45 @@
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - git
+            - build-essential
+            - gfortran
+            - libopenmpi-dev
+            - openmpi-bin
+            - cmake-data
+            - cmake
+            - trilinos-all-dev
+            - libx11-dev
+            - x11proto-core-dev
+            - libopenblas-dev
+            - libhdf5-openmpi-dev
+            # Manual Trilinos dependencies, which are bugged in 16.04
+            - libmumps-dev
+            - binutils-dev
+            - libiberty-dev
+            - libtbb-dev
+            - libsuperlu-dev
+            - libptscotch-dev
+      env:
+         - PATH="$PATH:$TRAVIS_BUILD_DIR/mrilu/build/bin"
+         - LIBRARY_PATH="$LIBRARY_PATH:$TRAVIS_BUILD_DIR/mrilu/build/lib"
+         - LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$TRAVIS_BUILD_DIR/mrilu/build/lib"
+      cache:
+         directories:
+            - ${TRAVIS_BUILD_DIR}/mrilu/build
+            - ${TRAVIS_BUILD_DIR}/build
+
+install:
+  - cd mrilu
+  - mkdir build; make && make install
+  - cd ..
+  - mkdir build; cd build
+  - cmake -DMRILU_DIR=${TRAVIS_BUILD_DIR}/mrilu/build ..
+  - make
+
+script:
+  - make test

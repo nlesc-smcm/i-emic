@@ -1,6 +1,7 @@
 ARCH=
-NUMBASE=/home/erik/mrilu
-SOURCEDIR=${SHARED_DIR}/i-emic/
+ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+NUMBASE=${ROOT_DIR}/build
+SOURCEDIR=${ROOT_DIR}/..
 OSNAME=
 MAKE=make
 ARFLAGS=-crsv
