@@ -4,20 +4,18 @@ project(i-emic)
 set(DATA_DIR "'${CMAKE_CURRENT_SOURCE_DIR}/data/'")
 message("-- Data is stored in: " ${DATA_DIR})
 
-# MRILU_DIR should be available
-if (NOT DEFINED MRILU_DIR)
-  if (NOT DEFINED ENV{MRILU_DIR})
-	message(FATAL_ERROR "Define MRILU_DIR environment variable such that we can find <MRILU_DIR>/mod/, <MRILU_DIR>/lib/ etc. ")
-  else ()
-	SET(MRILU_DIR $ENV{MRILU_DIR})
-  endif ()
-endif ()
-message("-- Looking for MRILU in ${MRILU_DIR}")
-
 enable_testing()
 
 add_subdirectory(cmake)
 message("-- CMAKE module path: ${CMAKE_MODULE_PATH}")
+
+if (NOT DEFINED MRILU_DIR)
+  if (NOT DEFINED ENV{MRILU_DIR})
+    add_subdirectory(mrilu)
+  else ()
+    SET(MRILU_DIR $ENV{MRILU_DIR})
+  endif ()
+endif ()
 
 add_subdirectory(src)
 

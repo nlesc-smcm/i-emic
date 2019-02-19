@@ -26,10 +26,6 @@ Depending on architecture: ifort, gfortran, mpicc, mpicpc, mpic++, etc...
 
   * Install parmetis (requires openmpi)
 
-  * Install MRILU
-    *  Create an include file `mrilu/makefile.inc`, for examples see `mrilu/makefile_inc_examples`
-    *  May depend on `libx11-dev` and `x11proto-core-dev`
-
   * Install Trilinos with support for metis and parmetis:
     * Create build directory `{trilinos_base_dir}/build`
     * Create cmake script `build/{something}.cmake`, for examples see `notes/trilinos_cmake_examples`
