@@ -1,0 +1,44 @@
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - git
+            - build-essential
+            - gfortran
+            - libopenmpi-dev
+            - openmpi-bin
+            - cmake-data
+            - cmake
+            - trilinos-all-dev
+            - libx11-dev
+            - x11proto-core-dev
+            - libopenblas-dev
+            - libhdf5-openmpi-dev
+            # Manual Trilinos dependencies, which are bugged in 16.04
+            - libmumps-dev
+            - binutils-dev
+            - libiberty-dev
+            - libtbb-dev
+            - libsuperlu-dev
+            - libptscotch-dev
+      env:
+         - IEMIC_BUILD_DIR="${TRAVIS_BUILD_DIR}/build"
+      cache:
+         directories:
+            - ${IEMIC_BUILD_DIR}
+
+install:
+  - if [ -f ${IEMIC_BUILD_DIR}/restore_timestamps.sh ]; then sh ${IEMIC_BUILD_DIR}/restore_timestamps.sh; fi
+  - mkdir build; cd build
+  - cmake ..
+  - make
+
+script:
+  - make test
+
+before_cache:
+  - cd ${TRAVIS_BUILD_DIR}
+  - sh scripts/store_timestamps.sh

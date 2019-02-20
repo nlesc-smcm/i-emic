@@ -15,4 +15,8 @@ target_compile_definitions(ifpack_mrilu PUBLIC HAVE_IFPACK_MRILU)
 target_include_directories(ifpack_mrilu PUBLIC ${MRILUCPP_INCLUDE_DIRS})
 target_include_directories(mrilucpp PUBLIC ${MRILUCPP_INCLUDE_DIRS})
 
+if (TARGET mrilu)
+  add_dependencies(mrilucpp mrilu)
+endif ()
+
 install(TARGETS mrilucpp ifpack_mrilu DESTINATION lib)
