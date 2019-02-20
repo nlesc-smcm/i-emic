@@ -39,6 +39,16 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         plot_title = false;
     end
 
+    if isfield(opts, 'legacy_mode')
+        legacy_mode = opts.legacy_mode;
+    else
+        legacy_mode = false;
+    end
+    
+    if strcmp(solfile(end-3:end),'rt.3')
+        legacy_mode = true;
+    end        
+
     if isfield(opts, 'only_contour')
         only_contour = opts.only_contour;
     else
@@ -198,7 +208,13 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     [qz,dfzt,dfzw] = gridstretch(zw);
 
     %  Read state, parameters and additional things
-    [sol, pars, add] = readhdf5(solfile, nun, n, m, l, opts);
+    if legacy_mode
+        [lab icp par xl xlp det sig sol solup soleig] = ...
+            readfort3(la, solfile);
+        add = {};
+    else       
+        [sol, pars, add] = readhdf5(solfile, nun, n, m, l, opts);
+    end   
 
     if interp_mode
         [sol2] = readhdf5(solfile2, nun, n, m, l, opts);

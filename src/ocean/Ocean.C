@@ -1814,11 +1814,12 @@ void Ocean::printFiles()
 
     if (comm_->MyPID() == 0)
     {
-        INFO( "Writing to fort." << filename
-              << " at label " << label);
 
         if (useFort3_)
         {
+            INFO( "Writing to fort." << filename
+                  << " at label " << label);
+
             (*solution)(0)->ExtractCopy(solutionArray);
             (*rhs)(0)->ExtractCopy(rhsArray);
         }
