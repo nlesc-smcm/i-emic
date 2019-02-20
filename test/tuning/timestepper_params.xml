@@ -7,14 +7,14 @@
 
   <Parameter name="initial time step size" type="double" value="1.0e-3"/>
   
-  <Parameter name="end time (in y)"    type="double" value="10000.0"/>
+  <Parameter name="end time (in y)"    type="double" value="100000.0"/>
   <Parameter name="theta"              type="double" value="1.0"/>
 
   <!-- set to -1 to run until end time -->
   <Parameter name="number of time steps"  type="int" value="-1"/>
   
   <Parameter name="HDF5 output frequency" type="int" value="0"/>
-  <Parameter name="Newton tolerance"      type="double" value="1e-2"/>
+  <Parameter name="Newton tolerance"      type="double" value="1e-4"/>
 
   <!-- Define the optimal interval for the amount of Newton iterations -->
   <Parameter name="minimum desired Newton iterations" type="int" value="5"/>
