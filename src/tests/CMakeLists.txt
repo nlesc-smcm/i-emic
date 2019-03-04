@@ -20,6 +20,7 @@ set(TEST_SOURCES
   test_topo.C
   test_ocean.C
   intt_ocean.C
+  reft_ocean.C
   test_atmos.C
   test_seaice.C
   test_coupled.C

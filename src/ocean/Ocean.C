@@ -241,10 +241,10 @@ void Ocean::initializeOcean()
     // Compute right hand side and print its norm
     computeRHS();
 
-    // Export some diagnostics
     INFO("Ocean: initialization: ||F|| = " << Utils::norm(rhs_));
-    Utils::save(state_, "initialstate");
-    Utils::save(rhs_,   "initialrhs");
+    // Export some diagnostics
+    // Utils::save(state_, "initialstate");
+    // Utils::save(rhs_,   "initialrhs");
 
     // // Perturb model
     // *sol_ = *state_;
@@ -1159,7 +1159,7 @@ double Ocean::explicitResNorm(VectorPtr rhs)
     Ax->Update(1.0, *rhs, -1.0);    // b - A*x
     double nrm;
     Ax->Norm2(&nrm);                // nrm = ||b-A*x||
-    Utils::save(Ax, "lsresidual");
+    // Utils::save(Ax, "lsresidual");
     return nrm;
 }
 

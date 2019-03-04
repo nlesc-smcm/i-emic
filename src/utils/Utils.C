@@ -17,10 +17,8 @@
 #include <functional> // for std::hash
 #include <cstdlib>    // for rand();
 
-
 using ConstIterator = Teuchos::ParameterList::ConstIterator;
 //========================================================================================
-
 
 //! simple ddot wrapper
 double Utils::dot(std::vector<double> &vec1, std::vector<double> &vec2)

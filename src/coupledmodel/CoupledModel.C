@@ -562,7 +562,7 @@ double CoupledModel::explicitResNorm(std::shared_ptr<Combined_MultiVec> rhs)
     b.Update(1, *rhs, -1);              // b-A*x
     double resnorm = Utils::norm(&b);   // ||b-A*x||
     
-    Utils::save(b, "lsresidual");
+    // Utils::save(b, "lsresidual");
     return resnorm;
 }
 
