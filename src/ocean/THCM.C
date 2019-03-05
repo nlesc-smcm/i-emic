@@ -52,7 +52,7 @@ extern "C" {
     _SUBROUTINE_(writeparams)();
     _SUBROUTINE_(rhs)(double*,double*);
     _SUBROUTINE_(setsres)(int *);
-    _SUBROUTINE_(matrix)(double*,double*,double*);
+    _SUBROUTINE_(matrix)(double*);
 
     // input:   n,m,l,nmlglob
     //          xmin,xmax,ymin,ymax,
@@ -955,7 +955,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         tmpJac->PutScalar(0.0); // set all matrix entries to zero
         localDiagB->PutScalar(0.0);
 
-        if (sigmaUVTS||(sigmaWP>1.0e-14)) {
+        if (sigmaUVTS || sigmaWP) {
             ERROR("We do not allow THCM to shift the matrix anymore!",
                   __FILE__,__LINE__);
         }
@@ -965,14 +965,18 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         TIMER_START("Ocean: compute jacobian: fortran part");
 
         // If we test the mask we need non-restoring conditions in the matrix
-        int tmp_sres = (maskTest) ? 0 : sres;
-        FNAME(setsres)(&tmp_sres);
-        
-        FNAME(matrix)(solution,&sigmaUVTS,&sigmaWP);
+        if (maskTest)
+        {
+            int tmp_sres = 0;
+            FNAME(setsres)(&tmp_sres);
+        }
+
+        FNAME(matrix)(solution);
 
         // Restore from the testing config
-        FNAME(setsres)(&sres);
-        
+        if (maskTest)
+            FNAME(setsres)(&sres);
+
         TIMER_STOP("Ocean: compute jacobian: fortran part");
 
         const int maxlen = _NUN_*_NP_+1;    //nun*np+1 is max nonzeros per row

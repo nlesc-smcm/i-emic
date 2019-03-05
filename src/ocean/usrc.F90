@@ -97,7 +97,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
      end do
   end do
 
-  call grid         
+  call grid
 
   ! When the grid is known we can set nondimensionalization
   ! coefficients for the body forcing.
@@ -107,12 +107,12 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
 
 !  write(*,*) 'THCM: nondim constants: QTnd = ', QTnd, &
 !       ' QSnd = ', QSnd
-  
+
   call stpnt        !
-  call mixe         !
   call vmix_init    ! ATvS-Mix  USES LANDMASK
   call atmos_coef   !
   call forcing      ! USES LANDMASK
+  call lin
 
   _INFO_('THCM: init...  done')
 end subroutine init
@@ -138,25 +138,6 @@ subroutine finalize
 
 end subroutine finalize
 
-!****************************************************************************
-SUBROUTINE mixe
-  use m_usr
-  implicit none
-  integer i,j,k
-  do i=1,n
-     do j=1,m
-        emix(i,j,0) = 0.0
-        do k=1,l-1
-           emix(i,j,k)= - sin(pi*(x(i)-xmin)/(xmax-xmin))*   &
-                (cos((pi/2)*(y(j)-ymin)/(ymax-ymin)) + 0.2)         &
-                *zw(k)
-        enddo
-        emix(i,j,l) = 0.0
-     enddo
-  enddo
-  !
-end SUBROUTINE mixe
-
 !*****************************************************************************
 SUBROUTINE setparcs(param,value)
   !     interface for Trilinos to set the thirty continuation variables
@@ -172,6 +153,9 @@ SUBROUTINE setparcs(param,value)
      WRITE(f99,*) 'error in transfer parameter to fortran'
   ENDIF
   !     ENDIF
+
+  call forcing
+  call lin
 
 END SUBROUTINE setparcs
 
@@ -203,7 +187,7 @@ SUBROUTINE getdeps(o_Ooa, o_Os, o_nus, o_eta, o_lvsc, o_qdim, o_pqsnd)
   real pQSnd
 
   pQSnd = par(COMB) * par(SALT) * QSnd
-  
+
   o_Ooa   = Ooa
   o_Os    = Os
   o_nus   = nus
@@ -240,9 +224,9 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_
   real(c_double) i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_albed
   real dzne
 
-  qdim  = i_qdim 
-  nuq   = i_nuq  
-  eta   = i_eta  
+  qdim  = i_qdim
+  nuq   = i_nuq
+  eta   = i_eta
   dqso  = i_dqso
   eo0   = i_eo0
   albe0 = i_albe0
@@ -257,22 +241,25 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_
   ! --> FIXME Instead of using par(TEMP) we should have a dedicated latent heat
   ! continuation parameter.
   lvsc = par(COMB) * par(TEMP) * rhodim * lv * QTnd
-  
+
+  call forcing
+  call lin
+
 end subroutine set_atmos_parameters
 
 !**********************************************************
 SUBROUTINE set_seaice_parameters(i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0)
   use, intrinsic :: iso_c_binding
-  use m_usr 
+  use m_usr
   use m_ice
   implicit none
   real(c_double) i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0
 
-  zeta = i_zeta ! combination of sea ice parameters 
+  zeta = i_zeta ! combination of sea ice parameters
   a0   = i_a0   ! freezing temperature S sensitivity
   Lf   = i_Lf   ! latent heat of fusion of ice
   Qvar = i_qvar ! typical QTsa heat flux variation
-  Q0   = i_q0   ! background QTsa 
+  Q0   = i_q0   ! background QTsa
 
   if (i_s0.ne.s0) then
      _INFO_('WARNING conflicting reference salinity s0')
@@ -281,6 +268,9 @@ SUBROUTINE set_seaice_parameters(i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0)
   if (i_rhoo.ne.rhodim) then
      _INFO_('WARNING conflicting sea water density rhodim')
   endif
+
+  call forcing
+  call lin
 
 end subroutine set_seaice_parameters
 
@@ -346,6 +336,7 @@ SUBROUTINE set_landmask(a_landm, a_periodic, a_reinit)
      !  A few initializations need to be repeated
      call vmix_init    ! ATvS-Mix  USES LANDMASK
      call forcing      ! USES LANDMASK
+     call lin
   endif
 
 !  _INFO_('THCM: usrc.F90 set_landmask...  done')
@@ -373,11 +364,14 @@ SUBROUTINE setsres(tmp_sres)
   integer(c_int) :: tmp_sres
 
   sres = tmp_sres
-  
+
+  call forcing
+  call lin
+
 end SUBROUTINE setsres
 
 !*****************************************************************************
-SUBROUTINE matrix(un, sig1, sig2)
+SUBROUTINE matrix(un)
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_mix
@@ -390,22 +384,12 @@ SUBROUTINE matrix(un, sig1, sig2)
   !     sig2: w/p
   implicit none
   real(c_double),dimension(ndim) :: un
-  real(c_double) :: sig1,sig2
   real time0, time1
-  integer i,j,k,row,ii,find_row2
 
-  !     clean old arrays:
-  _DEBUG_("Zero out matrix arrays...")
-  coB  = 0
-  Al = 0
-  begA(1:ndim+1) = 0
-  coA(1:maxnnz)  = 0.D0
-  jcoA(1:maxnnz) = 0
+  An = Al
 
   _DEBUG_("Build diagonal matrix B...")
   call fillcolB
-   _DEBUG_("Build linear part of Jacobian...")
-   call lin
 #ifndef THCM_LINEAR
   _DEBUG_("Build nonlinear part of Jacobian...")
   call nlin_jac(un)
@@ -413,21 +397,22 @@ SUBROUTINE matrix(un, sig1, sig2)
   !{ removing tons of things for eigen-analysis test...
 #if 0
   !Euv
-  Al(:,:,:,:,UU:VV,WW) = 0.0
+  An(UU:VV,WW,:,:,:) = 0.0
   !BTS
-  Al(:,:,:,:,WW,TT:SS) = 0.0
+  An(WW,TT:SS,:,:,:) = 0.0
   !Buv, Bw
-  !Al(:,:,:,:,TT:SS,UU::WW) = 0.0
+  !An(TT:SS,UU::WW,:,:,:) = 0.0
   !Gw
-  !Al(:,:,:,:,WW,PP) = 0.0
+  !An(:,WW,PP,:,:,:) = 0.0
   !Dw
-  !Al(:,:,:,:,PP,WW) = 0.0
+  !An(:,PP,WW,:,:,:) = 0.0
 #endif
   !}
 
 
   ! ATvS-Mix ---------------------------------------------------------------------
   if (vmix_flag.ge.1) then
+     call TIMER_START('mixing jac' // char(0))
      call cpu_time(time0)
      if (vmix_out.gt.0) write(99,'(a26)')"MIX| matrix...    "
      if (vmix_out.gt.0) write(99,'(a16,i10)') 'MIX|     fix:   ', vmix_fix
@@ -444,32 +429,15 @@ SUBROUTINE matrix(un, sig1, sig2)
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
      if (vmix_out.gt.0) write (99,'(a26, f10.3)') 'MIX|        ...matrix done', time1-time0
+     call TIMER_STOP('mixing jac' // char(0))
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
-  do k = 1, l+la
-     do j = 1, m
-        do i = 1, n
-           do ii = 1,nun
-              row = find_row2(i,j,k,ii)
-              Al(i,j,k,5,ii,ii) = Al(i,j,k,5,ii,ii) - sig1*coB(row)
-           end do
-
-           ! note that B is 0 in W/P points, but we add something there, too
-           ! to make sure the diagonal gets included in the matrix (sig2~mach.eps)
-           row = find_row2(i,j,k,WW)
-           Al(i,j,k,5,WW,WW) = Al(i,j,k,5,WW,WW) - sig2
-           row = find_row2(i,j,k,PP)
-           Al(i,j,k,5,PP,PP) = Al(i,j,k,5,PP,PP) - sig2
-        enddo
-     enddo
-  enddo
-  
   call boundaries
 
   call assemble
-  !write(*,*) "In fortran's matrix() maxval TT =", maxval(Al(:,:,:,:,TT,:))
-  !write(*,*) "In fortran's matrix() maxval SS =", maxval(Al(:,:,:,:,SS,:))
+  !write(*,*) "In fortran's matrix() maxval TT =", maxval(An(:,TT,:,:,:,:))
+  !write(*,*) "In fortran's matrix() maxval SS =", maxval(An(:,SS,:,:,:,:))
 
   ! call writematrhs(0.0)
 
@@ -487,27 +455,26 @@ SUBROUTINE rhs(un,B)
 
   implicit none
   real(c_double),dimension(ndim) ::    un,B
-  real mix(ndim) ! ATvS-Mix
+  real    mix(ndim) ! ATvS-Mix
   real    Au(ndim), time0, time1
   integer i,j,k,k1,row,find_row2, mode
 
   !call writeparameters
-  mix  = 0.0
-  Al   = 0
-  begA = 0
-  coA  = 0
-  jcoA = 0
-  call lin              !
+  mix = 0.0
+  An = Al
   ! write(*,*) 'T(n,m,l)', un(find_row2(n,m,l,TT))
 #ifndef THCM_LINEAR
   call nlin_rhs(un)
 #endif
-  call forcing          !
+  ! call forcing          !
   call boundaries       !
   call assemble
+  call TIMER_START('matAvec' // char(0))
   call matAvec(un,Au)   !
+  call TIMER_STOP('matAvec' // char(0))
   ! ATvS-Mix ---------------------------------------------------------------------
   if (vmix_flag.ge.1) then
+     call TIMER_START('mixing rhs' // char(0))
      mode=vmix_fix
      call cpu_time(time0)
      if (vmix_out.gt.0) write(99,'(a26)')'MIX| rhs...               '
@@ -524,14 +491,17 @@ SUBROUTINE rhs(un,B)
      call cpu_time(time1)
      vmix_time=vmix_time+time1-time0
      if (vmix_out.gt.0) write (99,'(a26,f10.3)') 'MIX|    ...rhs done',time1-time0
+     call TIMER_STOP('mixing rhs' // char(0))
   endif
   ! --------------------------------------------------------------------- ATvS-Mix
 
   _DEBUG2_("p0 = ", p0) ! Residue Continuation
 
+  call TIMER_START('addition rhs' // char(0))
   B = -Au - mix + Frc - p0*(1- par(RESC))*ures
-
+  call TIMER_STOP('addition rhs' // char(0))
 #if 1
+  call TIMER_START('landmask rhs' // char(0))
   if(ires == 0) then
      DO i = 1, n
         DO j = 1, m
@@ -544,6 +514,7 @@ SUBROUTINE rhs(un,B)
         ENDDO
      ENDDO
   endif
+  call TIMER_STOP('landmask rhs' // char(0))
 #endif
 
   ! open(15,file='Frc.co')
@@ -579,17 +550,17 @@ SUBROUTINE lin
   use m_ice
   implicit none
   !     LOCAL
-  real,target :: u(n,m,l,np),uy(n,m,l,np),ucsi(n,m,l,np),&
-       &      uxx(n,m,l,np),uyy(n,m,l,np),uzz(n,m,l,np),&
-       &      uxs(n,m,l,np),fu(n,m,l,np),px(n,m,l,np)
-  real    ub(n,m,l,np),vb(n,m,l,np),sc(n,m,l,np),tcb(n,m,l,np)
-  real    yc(n,m,la,np),yc2(n,m,la,np),yxx(n,m,la,np),yyy(n,m,la,np)
+  real,target :: u(np,n,m,l),uy(np,n,m,l),ucsi(np,n,m,l),&
+       &         uxx(np,n,m,l),uyy(np,n,m,l),uzz(np,n,m,l),&
+       &         uxs(np,n,m,l),fu(np,n,m,l),px(np,n,m,l)
+  real    ub(np,n,m,l),vb(np,n,m,l),sc(np,n,m,l),tcb(np,n,m,l)
+  real    yc(np,n,m,la),yc2(np,n,m,la),yxx(np,n,m,la),yyy(np,n,m,la)
   real    EH,EV,ph,pv,Ra,lambda, bi, dedt
-  real    yadv(n,m,la,np)
+  real    yadv(np,n,m,la)
   real    xes
 
-  real    mc(n,m,l,np)
-  real    QSoa(n,m,l,np), QSos(n,m,l,np)
+  real    mc(np,n,m,l)
+  real    QSoa(np,n,m,l), QSos(np,n,m,l)
   real    pQSnd
 
   ! original version:
@@ -637,45 +608,45 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! u-equation
   ! ------------------------------------------------------------------
-  call uderiv(1,ub)     
+  call uderiv(1,ub)
   call uderiv(2,uxx)
   call uderiv(3,uyy)
   call uderiv(4,uzz)
   call uderiv(5,ucsi)
   call uderiv(6,vxs)
-  call uderiv(7,u)      
+  call uderiv(7,u)
   call coriolis(1,fv)
   call gradp(1,px)
-  Al(:,:,1:l,:,UU,UU) = -EH * (uxx+uyy+ucsi) -EV * uzz ! + rintt*u ! ATvS-Mix
-  Al(:,:,1:l,:,UU,VV) = -fv - EH*vxs
-  ! Al(:,:,1:l,:,UU,VV) = - EH*vxs ! for 2DMOC case
-  Al(:,:,1:l,:,UU,PP) =  px
+  Al(:,UU,UU,:,:,1:l) = -EH * (uxx+uyy+ucsi) -EV * uzz ! + rintt*u ! ATvS-Mix
+  Al(:,UU,VV,:,:,1:l) = -fv - EH*vxs
+  ! Al(:,UU,VV,:,:,1:l) = - EH*vxs ! for 2DMOC case
+  Al(:,UU,PP,:,:,1:l) =  px
 
   ! ------------------------------------------------------------------
   ! v-equation
   ! ------------------------------------------------------------------
-  call vderiv(1,vb )    
+  call vderiv(1,vb )
   call vderiv(2,vxx)
   call vderiv(3,vyy)
   call vderiv(4,vzz)
   call vderiv(5,vcsi)
   call vderiv(6,uxs)
-  call vderiv(7,v)      
+  call vderiv(7,v)
   call coriolis(2,fu)
   call gradp(2,py)
-  Al(:,:,1:l,:,VV,UU) =  fu - EH*uxs
-  ! Al(:,:,1:l,:,VV,UU) =  - EH*uxs ! for 2dMOC case
-  Al(:,:,1:l,:,VV,VV) = -EH*(vxx + vyy + vcsi) - EV*vzz !+ rintt*v ! ATvS-Mix
-  Al(:,:,1:l,:,VV,PP) =  py
+  Al(:,VV,UU,:,:,1:l) =  fu - EH*uxs
+  ! Al(:,VV,UU,:,:,1:l) =  - EH*uxs ! for 2dMOC case
+  Al(:,VV,VV,:,:,1:l) = -EH*(vxx + vyy + vcsi) - EV*vzz !+ rintt*v ! ATvS-Mix
+  Al(:,VV,PP,:,:,1:l) =  py
 
   ! ------------------------------------------------------------------
   ! w-equation
   ! ------------------------------------------------------------------
   call gradp(3,pz)
   call tderiv(6,tbc)
-  Al(:,:,1:l,:,WW,PP) =  pz
-  Al(:,:,1:l,:,WW,TT) = -Ra *(1. + xes*alpt1) * tbc/2.
-  Al(:,:,1:l,:,WW,SS) =  lambda * Ra * tbc/2.
+  Al(:,WW,PP,:,:,1:l) =  pz
+  Al(:,WW,TT,:,:,1:l) = -Ra *(1. + xes*alpt1) * tbc/2.
+  Al(:,WW,SS,:,:,1:l) =  lambda * Ra * tbc/2.
 
   ! ------------------------------------------------------------------
   ! p-equation
@@ -683,9 +654,9 @@ SUBROUTINE lin
   call pderiv(1,uxc)
   call pderiv(2,vyc)
   call pderiv(3,wzc)
-  Al(:,:,1:l,:,PP,UU) = uxc
-  Al(:,:,1:l,:,PP,VV) = vyc
-  Al(:,:,1:l,:,PP,WW) = wzc
+  Al(:,PP,UU,:,:,1:l) = uxc
+  Al(:,PP,VV,:,:,1:l) = vyc
+  Al(:,PP,WW,:,:,1:l) = wzc
 
   ! ------------------------------------------------------------------
   ! T-equation
@@ -702,33 +673,30 @@ SUBROUTINE lin
   ! open(999, file='mc', form='unformatted', access='stream')
   ! write(999) mc
   ! close(999)
-  
+
   ! dependence of TT on TT through latent heat due to evaporation
   dedt =  lvsc * eta * qdim * (deltat / qdim) * dqso
   ! dedt = 0.0 !hack
-  
+
   ! write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
 
   if (la > 0) then ! deprecated local atmosphere
-
-     Al(:,:,1:l,:,TT,TT) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
+     Al(:,TT,TT,:,:,1:l) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
 
   else if (coupled_T.eq.1) then ! coupled with external atmos
      ! FIXME is this too much mc*tc? TEM
 
-     Al(:,:,1:l,:,TT,TT) =                &
+     Al(:,TT,TT,:,:,1:l) =                &
           - ph * (txx + tyy) - pv * tzz   & ! diffusive transport
           + Ooa  * tc                     & ! sensible heat flux
           + dedt * sc                     & ! latent heat flux
           + mc * (QTnd * zeta * tc  -     & ! correction for sea ice
           Ooa * tc - dedt * sc)
-     
-     Al(:,:,1:l,:,TT,SS) = -QTnd * zeta * a0 * mc  ! salinity dependence in
+
+     Al(:,TT,SS,:,:,1:l) = -QTnd * zeta * a0 * mc  ! salinity dependence in
                                                    ! freezing temperature
   else
-     
-     Al(:,:,1:l,:,TT,TT) = -ph * (txx + tyy) - pv * tzz + TRES*bi*tc
-     
+     Al(:,TT,TT,:,:,1:l) = -ph * (txx + tyy) - pv * tzz + TRES*bi*tc
   endif
 
   ! ------------------------------------------------------------------
@@ -738,26 +706,26 @@ SUBROUTINE lin
   ! FIXME: naming is bad and confusing
   dedt  = nus * (deltat / qdim) * dqso
   pQSnd = par(COMB) * par(SALT) * QSnd
-  
+
   ! FIXME: ugly
   if (coupled_S.eq.1) then ! coupled to atmosphere
-     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz &
+     Al(:,SS,SS,:,:,1:l) = - ph * (txx + tyy) - pv * tzz &
           - mc * pQSnd * zeta * a0 / (rhodim * Lf)
-     
+
      ! minus sign and nondim added (we take -Au in rhs computation)
 
      QSoa = -dedt * sc            ! atmosphere to ocean salinity flux
-                                  ! internal component 
+                                  ! internal component
 
      QSos =  pQSnd * zeta / (rhodim * Lf)    ! sea ice to ocean salinity flux
                                              ! internal component
-     
+
      ! combine contributions with mask
-     Al(:,:,1:l,:,SS,TT) =   QSoa + mc * (QSos - QSoa)
+     Al(:,SS,TT,:,:,1:l) =   QSoa + mc * (QSos - QSoa)
   else
-     Al(:,:,1:l,:,SS,SS) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
+     Al(:,SS,SS,:,:,1:l) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
   endif
-  
+
   ! ------------------------------------------------------------------
   ! atmosphere layer
   ! ------------------------------------------------------------------
@@ -767,12 +735,12 @@ SUBROUTINE lin
      call yderiv(2,yxx)
      call yderiv(3,yyy)
      call yderiv(5,yadv)
-     Al(:,:,l+1:l+la,5,UU,UU)  =  1.
-     Al(:,:,l+1:l+la,5,VV,VV)  =  1.
-     Al(:,:,l+1:l+la,5,WW,WW)  =  1.
-     Al(:,:,l+1:l+la,5,PP,PP)  =  1.
-     Al(:,:,l+1:l+la,5,SS,SS)  =  1.
-     Al(:,:,l+1:l+la,:,TT,TT)  = - Ad * (yxx + yyy) - yc + &
+     Al(5,UU,UU,:,:,l+1:l+la)  =  1.
+     Al(5,VV,VV,:,:,l+1:l+la)  =  1.
+     Al(5,WW,WW,:,:,l+1:l+la)  =  1.
+     Al(5,PP,PP,:,:,l+1:l+la)  =  1.
+     Al(5,SS,SS,:,:,l+1:l+la)  =  1.
+     Al(:,TT,TT,:,:,l+1:l+la)  = - Ad * (yxx + yyy) - yc + &
                                    Aa * yadv + bmua*yc2
   endif
 
@@ -796,16 +764,17 @@ SUBROUTINE nlin_rhs(un)
   real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
   real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
   real    rho(0:n+1,0:m+1,0:l+la+1)
-  real,target ::    utx(n,m,l,np),vty(n,m,l,np),wtz(n,m,l,np)
-  real    t2r(n,m,l,np),t3r(n,m,l,np)
+  real,target ::    utx(np,n,m,l),vty(np,n,m,l),wtz(np,n,m,l)
+  real    t2r(np,n,m,l),t3r(np,n,m,l)
 
-  real    uux(n,m,l,np),uvy1(n,m,l,np),uwz(n,m,l,np),uvy2(n,m,l,np)
-  real    uvx(n,m,l,np),vvy(n,m,l,np),vwz(n,m,l,np),ut2(n,m,l,np)
+  real    uux(np,n,m,l),uvy1(np,n,m,l),uwz(np,n,m,l),uvy2(np,n,m,l)
+  real    uvx(np,n,m,l),vvy(np,n,m,l),vwz(np,n,m,l),ut2(np,n,m,l)
 
   real    lambda,epsr,Ra,xes,pvc1,pvc2, pv
 
   real,dimension(:,:,:,:),pointer ::    usx,vsy,wsz
 
+  call TIMER_START('nlin_rhs' // char(0))
   usx=>utx
   vsy=>vty
   wsz=>wtz
@@ -829,7 +798,7 @@ SUBROUTINE nlin_rhs(un)
   call unlin(3,uvy1,u,v,w)
   call unlin(5,uwz,u,v,w)
   call unlin(7,uvy2,u,v,w)
-  Al(:,:,1:l,:,UU,UU) = Al(:,:,1:l,:,UU,UU) + epsr * (uux + uvy1 + uwz + uvy2)
+  An(:,UU,UU,:,:,1:l) = An(:,UU,UU,:,:,1:l) + epsr * (uux + uvy1 + uwz + uvy2)
 #endif
 
   ! ------------------------------------------------------------------
@@ -840,8 +809,8 @@ SUBROUTINE nlin_rhs(un)
   call vnlin(3,vvy,u,v,w)
   call vnlin(5,vwz,u,v,w)
   call vnlin(7,ut2,u,v,w)
-  Al(:,:,1:l,:,VV,UU) = Al(:,:,1:l,:,VV,UU) + epsr *ut2
-  Al(:,:,1:l,:,VV,VV) = Al(:,:,1:l,:,VV,VV) + epsr*(uvx + vvy + vwz)
+  An(:,VV,UU,:,:,1:l) = An(:,VV,UU,:,:,1:l) + epsr *ut2
+  An(:,VV,VV,:,:,1:l) = An(:,VV,VV,:,:,1:l) + epsr*(uvx + vvy + vwz)
 #endif
 
   ! ------------------------------------------------------------------
@@ -849,7 +818,7 @@ SUBROUTINE nlin_rhs(un)
   ! ------------------------------------------------------------------
   call wnlin(2,t2r,t)
   call wnlin(4,t3r,t)
-  Al(:,:,1:l,:,WW,TT) = Al(:,:,1:l,:,WW,TT) - Ra*xes*alpt2*t2r &
+  An(:,WW,TT,:,:,1:l) = An(:,WW,TT,:,:,1:l) - Ra*xes*alpt2*t2r &
                                             + Ra*xes*alpt3*t3r
 
   ! ------------------------------------------------------------------
@@ -859,7 +828,7 @@ SUBROUTINE nlin_rhs(un)
   call tnlin(3,utx,u,v,w,t,rho)
   call tnlin(5,vty,u,v,w,t,rho)
   call tnlin(7,wtz,u,v,w,t,rho)
-  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT)+ utx+vty+wtz        ! ATvS-Mix
+  An(:,TT,TT,:,:,1:l) = An(:,TT,TT,:,:,1:l)+ utx+vty+wtz        ! ATvS-Mix
 #endif
 
   ! ------------------------------------------------------------------
@@ -869,8 +838,10 @@ SUBROUTINE nlin_rhs(un)
   call tnlin(3,usx,u,v,w,s,rho)
   call tnlin(5,vsy,u,v,w,s,rho)
   call tnlin(7,wsz,u,v,w,s,rho)
-  Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS)+ usx+vsy+wsz        ! ATvS-Mix
+  An(:,SS,SS,:,:,1:l) = An(:,SS,SS,:,:,1:l)+ usx+vsy+wsz        ! ATvS-Mix
 #endif
+
+  call TIMER_STOP('nlin_rhs' // char(0))
 
 end SUBROUTINE nlin_rhs
 
@@ -892,18 +863,21 @@ SUBROUTINE nlin_jac(un)
   real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
   real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
   real    rho(0:n+1,0:m+1,0:l+la+1)
-  real,target :: urTx(n,m,l,np),Utrx(n,m,l,np),&
-       &        vrTy(n,m,l,np),Vtry(n,m,l,np)
-  real,target :: wrTz(n,m,l,np),Wtrz(n,m,l,np)
-  real    t2r(n,m,l,np),t3r(n,m,l,np)
+  real,target :: urTx(np,n,m,l),Utrx(np,n,m,l),&
+       &        vrTy(np,n,m,l),Vtry(np,n,m,l)
+  real,target :: wrTz(np,n,m,l),Wtrz(np,n,m,l)
+  real    t2r(np,n,m,l),t3r(np,n,m,l)
 
   real    lambda,epsr,Ra,xes,pvc1,pvc2,pv
-  real uvy1(n,m,l,np),uwz(n,m,l,np),uvy2(n,m,l,np)
-  real uvx(n,m,l,np),vwz(n,m,l,np)
-  real Urux(n,m,l,np),Urvy1(n,m,l,np),Urwz(n,m,l,np),Urvy2(n,m,l,np)
-  real uVrx(n,m,l,np),Vrvy(n,m,l,np),Vrwz(n,m,l,np),Urt2(n,m,l,np)
+  real uvy1(np,n,m,l),uwz(np,n,m,l),uvy2(np,n,m,l)
+  real uvx(np,n,m,l),vwz(np,n,m,l)
+  real Urux(np,n,m,l),Urvy1(np,n,m,l),Urwz(np,n,m,l),Urvy2(np,n,m,l)
+  real uVrx(np,n,m,l),Vrvy(np,n,m,l),Vrwz(np,n,m,l),Urt2(np,n,m,l)
 
   real,dimension(:,:,:,:),pointer :: urSx,Usrx,vrSy,Vsry,wrSz,Wsrz
+
+  call TIMER_START('nlin_jac' // char(0))
+
   urSx=>urTx
   vrSy=>vrTy
   wrSz=>wrTz
@@ -933,9 +907,9 @@ SUBROUTINE nlin_jac(un)
   call unlin(6,Urwz,u,v,w)
   call unlin(7,uvy2,u,v,w)
   call unlin(8,Urvy2,u,v,w)
-  Al(:,:,1:l,:,UU,UU)  =  Al(:,:,1:l,:,UU,UU) + epsr * (Urux + uvy1 + uwz + uvy2)
-  Al(:,:,1:l,:,UU,VV)  =  Al(:,:,1:l,:,UU,VV) + epsr * (Urvy1 + Urvy2)
-  Al(:,:,1:l,:,UU,WW)  =  Al(:,:,1:l,:,UU,WW) + epsr *  Urwz
+  An(:,UU,UU,:,:,1:l)  =  An(:,UU,UU,:,:,1:l) + epsr * (Urux + uvy1 + uwz + uvy2)
+  An(:,UU,VV,:,:,1:l)  =  An(:,UU,VV,:,:,1:l) + epsr * (Urvy1 + Urvy2)
+  An(:,UU,WW,:,:,1:l)  =  An(:,UU,WW,:,:,1:l) + epsr *  Urwz
 #endif
 
   ! ------------------------------------------------------------------
@@ -948,9 +922,9 @@ SUBROUTINE nlin_jac(un)
   call vnlin(5,vwz,u,v,w)
   call vnlin(6,Vrwz,u,v,w)
   call vnlin(8,Urt2,u,v,w)
-  Al(:,:,1:l,:,VV,UU) =   Al(:,:,1:l,:,VV,UU) + epsr * (Urt2 + uVrx)
-  Al(:,:,1:l,:,VV,VV) =   Al(:,:,1:l,:,VV,VV) + epsr * (uvx + Vrvy + vwz)
-  Al(:,:,1:l,:,VV,WW) =   Al(:,:,1:l,:,VV,WW) + epsr * Vrwz
+  An(:,VV,UU,:,:,1:l) =   An(:,VV,UU,:,:,1:l) + epsr * (Urt2 + uVrx)
+  An(:,VV,VV,:,:,1:l) =   An(:,VV,VV,:,:,1:l) + epsr * (uvx + Vrvy + vwz)
+  An(:,VV,WW,:,:,1:l) =   An(:,VV,WW,:,:,1:l) + epsr * Vrwz
 #endif
 
   ! ------------------------------------------------------------------
@@ -958,7 +932,7 @@ SUBROUTINE nlin_jac(un)
   ! ------------------------------------------------------------------
   call wnlin(1,t2r,t)
   call wnlin(3,t3r,t)
-  Al(:,:,1:l,:,WW,TT) = Al(:,:,1:l,:,WW,TT) - Ra*xes*alpt2*t2r &
+  An(:,WW,TT,:,:,1:l) = An(:,WW,TT,:,:,1:l) - Ra*xes*alpt2*t2r &
                                             + Ra*xes*alpt3*t3r
 
   ! ------------------------------------------------------------------
@@ -971,10 +945,10 @@ SUBROUTINE nlin_jac(un)
   call tnlin(5,Vtry,u,v,w,t,rho)
   call tnlin(6,wrTz,u,v,w,t,rho)
   call tnlin(7,Wtrz,u,v,w,t,rho)
-  Al(:,:,1:l,:,TT,UU) = Al(:,:,1:l,:,TT,UU) + urTx
-  Al(:,:,1:l,:,TT,VV) = Al(:,:,1:l,:,TT,VV) + vrTy
-  Al(:,:,1:l,:,TT,WW) = Al(:,:,1:l,:,TT,WW) + wrTz
-  Al(:,:,1:l,:,TT,TT) = Al(:,:,1:l,:,TT,TT) + Utrx + Vtry + Wtrz        ! ATvS-Mix
+  An(:,TT,UU,:,:,1:l) = An(:,TT,UU,:,:,1:l) + urTx
+  An(:,TT,VV,:,:,1:l) = An(:,TT,VV,:,:,1:l) + vrTy
+  An(:,TT,WW,:,:,1:l) = An(:,TT,WW,:,:,1:l) + wrTz
+  An(:,TT,TT,:,:,1:l) = An(:,TT,TT,:,:,1:l) + Utrx + Vtry + Wtrz        ! ATvS-Mix
 #endif
 
   ! ------------------------------------------------------------------
@@ -987,11 +961,13 @@ SUBROUTINE nlin_jac(un)
   call tnlin(5,Vsry,u,v,w,s,rho)
   call tnlin(6,wrSz,u,v,w,s,rho)
   call tnlin(7,Wsrz,u,v,w,s,rho)
-  Al(:,:,1:l,:,SS,UU) = Al(:,:,1:l,:,SS,UU) + urSx
-  Al(:,:,1:l,:,SS,VV) = Al(:,:,1:l,:,SS,VV) + vrSy
-  Al(:,:,1:l,:,SS,WW) = Al(:,:,1:l,:,SS,WW) + wrSz
-  Al(:,:,1:l,:,SS,SS) = Al(:,:,1:l,:,SS,SS) + Usrx + Vsry + Wsrz
+  An(:,SS,UU,:,:,1:l) = An(:,SS,UU,:,:,1:l) + urSx
+  An(:,SS,VV,:,:,1:l) = An(:,SS,VV,:,:,1:l) + vrSy
+  An(:,SS,WW,:,:,1:l) = An(:,SS,WW,:,:,1:l) + wrSz
+  An(:,SS,SS,:,:,1:l) = An(:,SS,SS,:,:,1:l) + Usrx + Vsry + Wsrz
 #endif
+
+  call TIMER_STOP('nlin_jac' // char(0))
 
 end SUBROUTINE nlin_jac
 !****************************************************************************
@@ -1196,7 +1172,7 @@ SUBROUTINE atmos_coef
   Ai   = rhoa*hdima*cpa*udim/(r0dim*muoa)
   Ad   = rhoa*hdima*cpa*d0/(muoa*r0dim*r0dim)
   As   = sun0*(1 - c0)/(4*muoa)
-  
+
   Os   = sun0*c0/4*QTnd
   Ooa  = muoa*QTnd
 
@@ -1219,7 +1195,7 @@ SUBROUTINE atmos_coef
 
   ! write(*,*) 'Ocean-Atmosphere pars:     dzne=', dzne,' hdim=', hdim
   ! write(*,*) '                            nus=', nus, ' lvsc=', lvsc
-  ! write(*,*) '                            Ooa=', Ooa, ' muoa=', muoa    
+  ! write(*,*) '                            Ooa=', Ooa, ' muoa=', muoa
 
 END SUBROUTINE atmos_coef
 
