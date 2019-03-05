@@ -137,7 +137,7 @@ TEST(Ocean, ComputeJacobian)
 TEST(Ocean, NumericalJacobian)
 {
     // only do this test for small problems in serial
-    int nmax = 1.6e3;
+    int nmax = 2.0e3;
 
     if ( (comm->NumProc() == 1) &&
          (ocean->getState('V')->GlobalLength() < nmax) )
@@ -168,7 +168,7 @@ TEST(Ocean, NumericalJacobian)
     else
     {
         std::cout << "Problem size: " << ocean->getState('V')->GlobalLength()
-                  << " number of procs: " << comm->NumProc() << std::endl;
+                  << ", number of procs: " << comm->NumProc() << std::endl;
         
         WARNING("We are not going to do this for this setup...",
                 __FILE__, __LINE__);
