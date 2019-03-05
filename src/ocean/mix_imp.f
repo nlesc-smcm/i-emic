@@ -807,7 +807,7 @@ Call structure DSM and FDJS
             if (jy-iy.eq. -1) s  = s + 1
             if (jy-iy.eq.  0) s  = s + 2
             if (jy-iy.eq.  1) s  = s + 3
-            al(ix,iy,iz,s,ie,je) = al(ix,iy,iz,s,ie,je) + fjac(j)
+            an(s,ie,je,ix,iy,iz) = an(s,ie,je,ix,iy,iz) + fjac(j)
          enddo
       enddo
 
