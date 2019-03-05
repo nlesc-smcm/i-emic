@@ -167,6 +167,9 @@ TEST(Ocean, NumericalJacobian)
     }
     else
     {
+        std::cout << "Problem size: " << ocean->getState('V')->GlobalLength()
+                  << " number of procs: " << comm->NumProc() << std::endl;
+        
         WARNING("We are not going to do this for this setup...",
                 __FILE__, __LINE__);
     }
