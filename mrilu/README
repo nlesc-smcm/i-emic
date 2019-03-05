@@ -1,3 +1,6 @@
+### This is deprecated, everything now builds through the cmake build
+    of the I-EMIC, see CMakeLists.txt ####
+
 Installation notes on MRILU and how to get started.    
 December 8, 2009
 

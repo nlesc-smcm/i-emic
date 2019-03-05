@@ -137,7 +137,7 @@ TEST(Ocean, ComputeJacobian)
 TEST(Ocean, NumericalJacobian)
 {
     // only do this test for small problems in serial
-    int nmax = 1e3;
+    int nmax = 1.6e3;
 
     if ( (comm->NumProc() == 1) &&
          (ocean->getState('V')->GlobalLength() < nmax) )
