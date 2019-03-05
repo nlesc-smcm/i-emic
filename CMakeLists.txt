@@ -25,3 +25,8 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 
 message("-- Install prefix = ${CMAKE_INSTALL_PREFIX}")
+
+set(CTEST_OPTIONS --force-new-ctest-process --verbose CACHE STRING "ctest options")
+
+# Adding custom test target "check" because it is the only way to show the full output of test errors on console
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} ${CTEST_OPTIONS})

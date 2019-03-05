@@ -37,7 +37,7 @@ install:
   - make
 
 script:
-  - make test
+  - make check
 
 before_cache:
   - cd ${TRAVIS_BUILD_DIR}

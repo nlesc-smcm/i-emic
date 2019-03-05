@@ -73,7 +73,7 @@ TEST(Ocean, CheckReference)
         double normxid, normyid;
         xid.Norm2(&normxid);
         yid.Norm2(&normyid);
-
+        
         EXPECT_NEAR(normxid, normyid, 1e-3);
     }
 }
