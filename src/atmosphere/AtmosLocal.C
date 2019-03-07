@@ -1437,8 +1437,8 @@ void AtmosLocal::boundaries()
                     south  = j-1;
 
                     // western boundary
-                    if (west == 0)
-                    {
+                    if (west == 0 && !periodic_)
+                    {                        
                         Al_->set(i,j,k,5,XX,XX,
                                  Al_->get(i,j,k,5,XX,XX) +
                                  Al_->get(i,j,k,2,XX,XX));
@@ -1446,7 +1446,7 @@ void AtmosLocal::boundaries()
                     }
 
                     // eastern boundary
-                    if (east == n_+1)
+                    if (east == n_+1 && !periodic_)
                     {
                         Al_->set(i,j,k,5,XX,XX,
                                  Al_->get(i,j,k,5,XX,XX) +
@@ -1564,6 +1564,14 @@ void AtmosLocal::shift(int i, int j, int k,
         //   | 19 22 25 |     |-1  0  1 |
         //   +----------+     +---------+
         i2 = i + (loc - 19) / 3 - 1;
+    }
+
+    if (periodic_)
+    {
+        if (i2 == n_+1)
+            i2 = 1;
+        if (i2 == 0)
+            i2 = n_;
     }
 }
 
