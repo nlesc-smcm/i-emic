@@ -161,7 +161,7 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
 
     parName_         = params->get( "Continuation parameter",
                                     allParameters_[0] );
-    
+
 // starting values
     int ctr = 0;
     comb_            = params->get(allParameters_[ctr++], 0.0);
