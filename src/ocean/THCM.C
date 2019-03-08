@@ -1185,7 +1185,9 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 
     int i0 = 0, i1 = -1, j0 = 0, j1 = -1,k0 = 0,k1 = -1;
     if (Comm->MyPID() == 0)
+    {
         i1 = I1; j1 = J1; k1=K1;
+    }
 
     Teuchos::RCP<Epetra_Map> landmap_glb =
         Utils::CreateMap(i0,i1,j0,j1,k0,k1,I0,I1,J0,J1,K0,K1,*Comm);
@@ -1987,9 +1989,12 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
     int k1 = domain->LastRealK()+1;
 
     // add global boundary cells
-    if (i0 == 1) i0-- ; if (i1 == n)    i1++;
-    if (j0 == 1) j0-- ; if (j1 == m)    j1++;
-    if (k0 == 1) k0-- ; if (k1 == l+la) k1++;
+    if (i0 == 1) i0-- ;
+    if (i1 == n) i1++;
+    if (j0 == 1) j0-- ;
+    if (j1 == m) j1++;
+    if (k0 == 1) k0-- ;
+    if (k1 == l+la) k1++;
 
     int I0 = 0; int I1 = n+1;
     int J0 = 0; int J1 = m+1;
