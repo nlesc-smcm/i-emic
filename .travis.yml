@@ -26,19 +26,13 @@ matrix:
             - libptscotch-dev
       env:
          - IEMIC_BUILD_DIR="${TRAVIS_BUILD_DIR}/build"
-      cache:
-         directories:
-            - ${IEMIC_BUILD_DIR}
+      cache: ccache
 
 install:
-  - if [ -f ${IEMIC_BUILD_DIR}/restore_timestamps.sh ]; then sh ${IEMIC_BUILD_DIR}/restore_timestamps.sh; fi
-  - mkdir build; cd build
+  - mkdir build
+  - cd build
   - cmake ..
   - make
 
 script:
   - make check
-
-before_cache:
-  - cd ${TRAVIS_BUILD_DIR}
-  - sh scripts/store_timestamps.sh
