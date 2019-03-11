@@ -122,13 +122,26 @@ private:
     std::vector<std::array<int, 5> > gid2coord_;
 
 public:
+    //! constructor
     CoupledModel(std::shared_ptr<Ocean> ocean,
                  std::shared_ptr<Atmosphere> atmos,
                  std::shared_ptr<SeaIce> seaice,
                  Teuchos::RCP<Teuchos::ParameterList> params);
 
+    //! constructor
+    CoupledModel(std::shared_ptr<Ocean> ocean,
+                 std::shared_ptr<Atmosphere> atmos,
+                 Teuchos::RCP<Teuchos::ParameterList> params);
+
     ~CoupledModel() { INFO("CoupledModel destructor"); }
 
+
+    //! Set xml parameters
+    void setParameters(Teuchos::RCP<Teuchos::ParameterList> params);
+
+    //! CoupledModel setup
+    void setup();
+    
     //! Compute Jacobian matrix
     void computeJacobian();
 

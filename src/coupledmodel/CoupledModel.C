@@ -10,36 +10,20 @@
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
 //==================================================================
-// constructor
+// constructor 
 CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                            std::shared_ptr<Atmosphere> atmos,
                            std::shared_ptr<SeaIce> seaice,
                            Teuchos::RCP<Teuchos::ParameterList> params)
     :
-    OCEAN  (-1),
-    ATMOS  (-1),
-    SEAICE (-1),
-    parName_          (params->get("Continuation parameter",
-                                   "Combined Forcing")),
-    
-    solvingScheme_    (params->get("Solving scheme", 'C')),
-    
-    precScheme_       (params->get("Preconditioning", 'F')),
-
-    useOcean_         (params->get("Use ocean",      true)),
-    useAtmos_         (params->get("Use atmosphere", true)),
-    useSeaIce_        (params->get("Use sea ice",    false)),
-    
-    syncCtr_          (0),
-    solverInitialized_(false)
+    OCEAN              (-1),
+    ATMOS              (-1),
+    SEAICE             (-1),
+    syncCtr_           (0),
+    solverInitialized_ (false)
 {
-    
-    // Check xml sanity
-    if (!useOcean_ && !useAtmos_ && !useSeaIce_)
-    {
-        ERROR("At least one model should be active",
-              __FILE__, __LINE__);
-    }
+    // set xml parameters
+    setParameters(params);
     
     // set models and identifiers
     int ident = 0;
@@ -60,6 +44,70 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
     {
         models_.push_back(seaice);
         SEAICE = ident++;
+    }
+
+    // common setup
+    setup();
+}
+
+//------------------------------------------------------------------
+// constructor 
+CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
+                           std::shared_ptr<Atmosphere> atmos,
+                           Teuchos::RCP<Teuchos::ParameterList> params)
+    :
+    OCEAN              (-1),
+    ATMOS              (-1),
+    SEAICE             (-1),
+    syncCtr_           (0),
+    solverInitialized_ (false)
+{
+    // set xml parameters
+    setParameters(params);
+
+    // in this setup seaice is not included
+    useSeaIce_ = false;
+    
+    // set models and identifiers
+    int ident = 0;
+
+    if (useOcean_)
+    {
+        models_.push_back(ocean);
+        OCEAN = ident++;
+    }
+
+    if (useAtmos_)
+    {
+        models_.push_back(atmos);
+        ATMOS = ident++;
+    }
+
+    // common setup
+    setup();
+}
+
+//------------------------------------------------------------------
+void CoupledModel::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
+{
+    parName_       = params->get("Continuation parameter","Combined Forcing");
+    solvingScheme_ = params->get("Solving scheme",'C');
+    precScheme_    = params->get("Preconditioning",'F');
+    useOcean_      = params->get("Use ocean",true);
+    useAtmos_      = params->get("Use atmosphere",true);
+    useSeaIce_     = params->get("Use sea ice",false);        
+}
+
+//------------------------------------------------------------------
+void CoupledModel::setup()
+{
+    // Sanity check
+    if ( (OCEAN < 0) &&
+         (ATMOS < 0) &&
+         (SEAICE < 0) )
+    {
+        ERROR("At least one model should be active",
+              __FILE__, __LINE__);
     }
 
     // default construction
@@ -110,14 +158,8 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
             }
         }
     
-    // Output parameters
-    INFO("\nCoupledModel parameters:");
-    INFO(*params);
-    INFO("\n");
-
     // Synchronize state
     synchronize();
-    
 }
 
 //------------------------------------------------------------------

@@ -1,15 +1,15 @@
 //!------------------------------------------------------------------------
 /*
-  AtmosLocal is the serial component of the atmosphere model in the
-  I-EMIC. It is based on the energy balance model in the old THCM
-  code. The atmosphere is extended with a vapor anomaly model and
-  latent heat fluxes. This implementation is meant to run within a
-  parallel domain decomposition.
+  AtmosLocal is the local component of the atmosphere model in the
+  I-EMIC. Parallelization is taken care of in the Atmosphere class.
+  The equations implemented in AtmosLocal are based on the energy
+  balance model in the old THCM code. This class implements equatiosn
+  for diffusive transport of heat and humidity, an integral equation
+  for precipitation and an albedo model. 
 
   Although this is a 2D model we maintain some notation of the 3D
   ocean model.
 
-  Author: Erik -> t.e.mulder@uu.nl
 */
 //!------------------------------------------------------------------------
 

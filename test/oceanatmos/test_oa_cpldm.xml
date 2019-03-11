@@ -10,7 +10,7 @@
   <!-- Select the models in use -->
   <Parameter name="Use ocean"      type="bool" value="true"/>
   <Parameter name="Use atmosphere" type="bool" value="true"/>
-  <Parameter name="Use sea ice"    type="bool" value="true"/>
+  <Parameter name="Use sea ice"    type="bool" value="false"/>
   
   <!-- Specify whether the coupled model should initialize with  -->
   <!-- old states (true) or with a trivial solution (false).     -->
@@ -34,20 +34,20 @@
   <!-- Depth and other dimensions are specific for each submodel.             -->
 
   <!-- western domain bound -->
-  <Parameter name="Global Bound xmin" type="double" value="286"/>
+  <Parameter name="Global Bound xmin" type="double" value="-180"/>
   <!-- eastern domain bound -->
-  <Parameter name="Global Bound xmax" type="double" value="350"/>
+  <Parameter name="Global Bound xmax" type="double" value="180"/>
   <!-- southern domain bound -->
-  <Parameter name="Global Bound ymin" type="double" value="30"/>
+  <Parameter name="Global Bound ymin" type="double" value="-30"/>
   <!-- northern domain bound -->
-  <Parameter name="Global Bound ymax" type="double" value="88"/>
+  <Parameter name="Global Bound ymax" type="double" value="60"/>
   <!-- global number of grid points in x-direction -->
-  <Parameter name="Global Grid-Size n" type="int" value="6"/>
+  <Parameter name="Global Grid-Size n" type="int" value="8"/>
   <!-- global number of grid points in y-direction -->
-  <Parameter name="Global Grid-Size m" type="int" value="6"/>
+  <Parameter name="Global Grid-Size m" type="int" value="12"/>
 
   <!-- periodic boundary conditions in x-direction -->
-  <Parameter name="Periodic" type="bool" value="false"/>
+  <Parameter name="Periodic" type="bool" value="true"/>
   
   <!-- Starting parameters -->
   <Parameter name="Combined Forcing"    type="double" value="0.0"/>

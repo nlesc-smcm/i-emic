@@ -36,7 +36,7 @@ TEST(ParameterLists, Initialization)
         {
             params.push_back(obtainParams(files[i], names[i]));
         }
-        
+
         INFO('\n' << "Overwriting:");
         // Allow dominant parameterlists. Not that this trick ignores
         // any hierarchy. The Continuation and CoupledModel
@@ -146,7 +146,7 @@ TEST(CoupledModel, RHS)
     {
         INFO(" submodel " << i << ": ||F|| = " << Utils::norm((*F)(i)));
     }
-    
+
     EXPECT_LT(Utils::norm(F), 1e-7);
 }
 
@@ -159,7 +159,7 @@ TEST(CoupledModel, Newton)
     // One step in a 'natural continuation'
     std::shared_ptr<Combined_MultiVec> stateV =
         coupledModel->getState('V');
-                                    
+
     std::shared_ptr<Combined_MultiVec> solV =
         coupledModel->getSolution('V');
 
@@ -177,13 +177,13 @@ TEST(CoupledModel, Newton)
     std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
     coupledModel->computeJacobian();
     coupledModel->computeRHS();
-            
+
     for (; niter < maxit; ++niter)
     {
         coupledModel->computeJacobian();
         coupledModel->computeRHS();
-        
-        b = coupledModel->getRHS('C');    
+
+        b = coupledModel->getRHS('C');
         CHECK_ZERO(b->Scale(-1.0));
 
         coupledModel->solve(b);  // J dx = - F
@@ -196,12 +196,12 @@ TEST(CoupledModel, Newton)
         coupledModel->applyMatrix(*x, *y);
         double normb = Utils::norm(b);
         y->Update(1.0, *b, -1.0);
-        y->Scale(1. / normb);        
+        y->Scale(1. / normb);
 
         INFO("\n ||r|| / ||b|| = " << Utils::norm(y));
         INFO("        ||dx|| = " << Utils::norm(x) << " ");
         INFO("         ||F|| = " << Utils::norm(F) << "\n");
-        
+
         for (int i = 0; i != b->Size(); ++i)
         {
             INFO(" submodel " << i << " ||F|| = " << Utils::norm((*b)(i)));
@@ -229,14 +229,14 @@ TEST(CoupledModel, numericalJacobian)
         try
         {
             // get analytical jacobian blocks
-            coupledModel->computeJacobian();                
+            coupledModel->computeJacobian();
             coupledModel->dumpBlocks();
-                                       
-            INFO("compute njC");       
+
+            INFO("compute njC");
 
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> > njC;
-            
+
             njC.setTolerance(1e-10);
             njC.seth(1e-6);
             njC.compute( coupledModel, coupledModel->getState('V') );
@@ -244,10 +244,10 @@ TEST(CoupledModel, numericalJacobian)
             std::string fnameJnC("JnC");
 
             INFO(" Printing Numerical Jacobian " << fnameJnC);
-            
+
             njC.print(fnameJnC);
-            
-            // test individual elements 
+
+            // test individual elements
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> >::CCS ccs;
             njC.fillCCS(ccs);
@@ -257,7 +257,7 @@ TEST(CoupledModel, numericalJacobian)
             std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
 
             testEntries(coupledModel, ccs, x);
-                                          
+
         }
         catch (...)
         {
@@ -293,7 +293,7 @@ TEST(CoupledModel, AtmosphereIntegralCondition1)
     EXPECT_GT(Utils::norm(atmosX), 1e-7);
     INFO("  atmosphere state norm: " << Utils::norm(atmosX));
     INFO("  atmosphere integral condition on q: " << result);
-    
+
     EXPECT_NEAR(result, 0.0, 1e-7);
 }
 
@@ -311,7 +311,7 @@ TEST(CoupledModel, AtmosphereEPfields)
         Utils::print(P, "file.txt");
 
         double tol = 1e-12;
-    
+
         int nnzE = Utils::nnz(E, tol);
         int nnzP = Utils::nnz(P, tol);
         EXPECT_EQ(nnzE, nnzP);
@@ -336,20 +336,20 @@ TEST(CoupledModel, AtmosphereEPfields)
         throw;
     }
 
-    EXPECT_EQ(failed, false);    
+    EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------
 TEST(CoupledModel, EPIntegral)
 {
     Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPIntCoeff();
-    
+
     Teuchos::RCP<Epetra_Vector> E = atmos->interfaceE();
     Teuchos::RCP<Epetra_Vector> P = atmos->interfaceP();
-    
+
     double integralE = Utils::dot(intcoeff, E);
     EXPECT_GT(std::abs(integralE), 0.0);
-                              
+
     double integralP = Utils::dot(intcoeff, P);
     EXPECT_GT(std::abs(integralP), 0.0);
 
@@ -375,18 +375,18 @@ TEST(CoupledModel, Continuation)
         // initialize state in model
         coupledModel->setPar(0.0);
         coupledModel->initializeState();
-        
+
         std::shared_ptr<Combined_MultiVec> solV =
             coupledModel->getSolution('V');
-        
-        solV->PutScalar(0.0);                             
-        
+
+        solV->PutScalar(0.0);
+
         // Create continuation
         Continuation<std::shared_ptr<CoupledModel>,
                      Teuchos::RCP<Teuchos::ParameterList> >
             continuation(coupledModel, params[CONT]);
 
-        // Run continuation        
+        // Run continuation
         int status = continuation.run();
         EXPECT_EQ(status, 0);
 
@@ -407,19 +407,19 @@ TEST(CoupledModel, Continuation)
 TEST(CoupledModel, EPIntegral2)
 {
     Teuchos::RCP<Epetra_Vector> intcoeff = atmos->getPIntCoeff();
-    
+
     Teuchos::RCP<Epetra_Vector> E = atmos->interfaceE();
     Teuchos::RCP<Epetra_Vector> P = atmos->interfaceP();
-    
+
     double integralE = Utils::dot(intcoeff, E);
-                              
+
     double integralP = Utils::dot(intcoeff, P);
     EXPECT_NEAR(integralE, integralP, 1e-8);
 
-    // Compute integral of E-P    
-    E->Update(-1.0, *P, 1.0);         
+    // Compute integral of E-P
+    E->Update(-1.0, *P, 1.0);
     double integralEP = Utils::dot(intcoeff, E);
-    
+
     EXPECT_NEAR(std::abs(integralEP), 0.0, 1e-8);
 
     INFO(" int P   " << integralP);
@@ -447,7 +447,7 @@ TEST(CoupledModel, JDQZSolve)
         JDQZInterface<std::shared_ptr<CoupledModel>,
                       ComplexVector<Combined_MultiVec> > matrix(coupledModel, z);
 
-        JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>, 
+        JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>,
                            ComplexVector<Combined_MultiVec> > > jdqz(matrix, z);
 
         jdqz.setParameters(*params[EIGEN]);
@@ -506,7 +506,7 @@ TEST(CoupledModel, SmallPerturbation)
     std::shared_ptr<Combined_MultiVec> x  = coupledModel->getState('V');
     std::shared_ptr<Combined_MultiVec> xp = coupledModel->getState('C');
     xp->Scale(0.01);                // perturbation
-    double nrmxp = Utils::norm(xp); 
+    double nrmxp = Utils::norm(xp);
     x->Update(1.0, *xp, 1.0);       // perturb state
     coupledModel->computeRHS();
 
@@ -541,19 +541,20 @@ int main(int argc, char **argv)
     ::testing::InitGoogleTest(&argc, argv);
 
     // -------------------------------------------------------
-    // TESTINGv
+    // TESTING
     int out = RUN_ALL_TESTS();
     // -------------------------------------------------------
 
     // Get rid of possibly parallel objects for a clean ending.
     ocean        = std::shared_ptr<Ocean>();
     atmos        = std::shared_ptr<Atmosphere>();
+    seaice       = std::shared_ptr<SeaIce>();
     coupledModel = std::shared_ptr<CoupledModel>();
 
     comm->Barrier();
     std::cout << "TEST exit code proc #" << comm->MyPID()
               << " " << out << std::endl;
-    
+
     MPI_Finalize();
     return out;
 }

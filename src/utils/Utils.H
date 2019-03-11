@@ -124,7 +124,12 @@ namespace Utils
         CHECK_ZERO(vec->NormInf(&norm[0]));
         return norm[0];
     }
-    
+
+    //! Return the norm for a specific field specified by <unknown>
+    //! (1-6 for an ocean vector)
+    double normOfField(Teuchos::RCP<Epetra_MultiVector> vec,
+                       Teuchos::RCP<TRIOS::Domain> domain, int unknown);
+
     //! Compute column sums of matrix mat and put them in vector sums
     void colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums);
 

@@ -38,7 +38,7 @@ double Utils::sum(std::vector<double> &vec)
     double result = 0.0;
     for (auto &e: vec)
         result += e;
-    return result;        
+    return result;
 }
 
 //! count number of nonzeros using a threshold
@@ -99,6 +99,28 @@ double Utils::normInf(Combined_MultiVec &vec)
     return norm[0];
 }
 
+//! Return the norm for a specific field using domain decomposition
+//! given by <domain>. Field is specified by <unknown> (1-6 for an
+//! ocean vector)
+double Utils::normOfField(Teuchos::RCP<Epetra_MultiVector> vec,
+                          Teuchos::RCP<TRIOS::Domain> domain, int unknown)
+{
+    Teuchos::RCP<Epetra_Map> rowMap  = domain->GetSolveMap();
+
+    Teuchos::RCP<Epetra_Map> mapid   =
+        Utils::CreateSubMap(*rowMap, domain->Dof(), unknown);
+
+    Teuchos::RCP<Epetra_Import> importid =
+        Teuchos::rcp(new Epetra_Import(*rowMap, *mapid));
+
+    Epetra_Vector xid(*mapid);
+    CHECK_ZERO(xid.Export(*vec, *importid, Zero));
+    double norm;
+    xid.Norm2(&norm);
+    return norm;
+}
+
+
 //! Compute column sums. This is imitated from
 //! Epetra_CrsMatrix::NormOne()
 void Utils::colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums)
@@ -117,7 +139,7 @@ void Utils::colSums(Epetra_CrsMatrix const &mat, Epetra_Vector &sums)
     Epetra_MultiVector *tmp = 0;
     int NumCols = mat.NumMyCols();
 
-    
+
     if (mat.Importer() != 0) // non-trivial importer
     {
         tmp     = new Epetra_Vector(mat.ColMap()); // import vector
@@ -223,12 +245,12 @@ void Utils::overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPar
     {
         const Teuchos::ParameterEntry &entry_i = originalPars->entry(i);
         const std::string &name_i = originalPars->name(i);
-         
+
         if (entry_i.isList()) // skipping the sublists first
         {
             Teuchos::RCP<Teuchos::ParameterList> sublist =
                 Teuchos::rcp(&originalPars->sublist(name_i), false);
-             
+
             std::stringstream ss;
             ss << originalPars->name() << "::" << name_i;
             sublist->setName(ss.str());
@@ -272,7 +294,7 @@ size_t Utils::hash(Teuchos::RCP<Epetra_MultiVector> vec)
         for (int i = 0; i < numMyElements; ++i)
             seed ^= double_hash((*(*vec)(0))[i]) + (seed << 6) + (seed >> 2);
     }
-    
+
     return seed;
 }
 
@@ -287,7 +309,7 @@ void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
     HDF5.Create(fname.str());
 
     // plot scripts will expect an entry called "State"
-    HDF5.Write("State", *vec); 
+    HDF5.Write("State", *vec);
 }
 
 //============================================================================
@@ -309,20 +331,20 @@ void Utils::load(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
         return;
     }
     else file.close();
-    
+
     INFO("Loading from " << fname.str() << " into " << vec->Label());
-    
+
     EpetraExt::HDF5 HDF5(vec->Map().Comm());
     HDF5.Open(fname.str());
     Epetra_MultiVector *readState;
-    
+
     // Check contents
     if (!HDF5.IsContained("State"))
     {
         ERROR("The group <State> is not contained in hdf5 " << filename,
               __FILE__, __LINE__);
     }
-    
+
     HDF5.Read("State", readState);
 
     if ( readState->GlobalLength() != vec->Map().NumGlobalElements() )
@@ -336,7 +358,7 @@ void Utils::load(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
     Teuchos::RCP<Epetra_Import> lin2solve =
         Teuchos::rcp(new Epetra_Import(vec->Map(),
                                        readState->Map()));
-    
+
     // Import state from HDF5 into state_ datamember
     CHECK_ZERO(vec->Import(*((*readState)(0)), *lin2solve, Insert));
 }
@@ -383,7 +405,7 @@ void Utils::saveEigenvectors(std::vector<ComplexVector<Combined_MultiVec> > cons
 {
     // Iterate over number of combined multivectors. Each multivector
     // gets its own HDF5 export process and corresponding file.
-    int size = eigvs[0].real.Size();    
+    int size = eigvs[0].real.Size();
     for (int i = 0; i != size; ++i)
     {
         std::stringstream ss, groupNameRe, groupNameIm;
@@ -427,7 +449,7 @@ void Utils::saveEigenvectors(std::vector<ComplexVector<Epetra_Vector> > const &e
                              std::vector<std::complex<double> > const &alpha,
                              std::vector<std::complex<double> > const &beta,
                              std::string const &filename)
-{        
+{
     std::stringstream ss, groupNameRe, groupNameIm;
     ss << filename << ".h5";
 
@@ -435,13 +457,13 @@ void Utils::saveEigenvectors(std::vector<ComplexVector<Epetra_Vector> > const &e
     EpetraExt::HDF5 HDF5(eigvs[0].real.Map().Comm());
 
     HDF5.Create(ss.str().c_str());
-    
+
     size_t ctr = 0;
     for (auto &vec: eigvs)
     {
         groupNameRe << "EV_Real_" << ctr;
         groupNameIm << "EV_Imag_" << ctr;
-        
+
         HDF5.Write(groupNameRe.str().c_str(),
                    vec.real );
         HDF5.Write(groupNameIm.str().c_str(),
@@ -481,7 +503,7 @@ void Utils::saveEigenvalues(EpetraExt::HDF5 &HDF5,
         betaRe[i]  = beta[i].real();
         betaIm[i]  = beta[i].imag();
     }
-    
+
     HDF5.Write("EigenValues", "AlphaRe", H5T_NATIVE_DOUBLE, numEigs, &alphaRe[0]);
     HDF5.Write("EigenValues", "AlphaIm", H5T_NATIVE_DOUBLE, numEigs, &alphaIm[0]);
     HDF5.Write("EigenValues", "BetaRe",  H5T_NATIVE_DOUBLE, numEigs, &betaRe[0]);
@@ -552,7 +574,7 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
 
     // indices array
     std::vector<int> indices(maxnnz, 0);
-    
+
     // values array
     std::vector<double> values(maxnnz, 0.0);
 
@@ -570,14 +592,14 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
         rowMap = domain->GetAssemblyMap();
         assert(rowMap->NumMyElements() == (int) crs.beg.size() - 1);
     }
-    
+
 #ifdef DEBUGGING_NEW
     // std::ofstream file;
     // file.open("rowmap" + std::to_string(rowMap->Comm().MyPID()));
     // rowMap->Print(file);
     // file.close();
-#endif 
-    
+#endif
+
     int numMyElements = rowMap->NumMyElements();
 
     int tRow, bRow, gRow, index, numEntries, col;
@@ -589,15 +611,15 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
 
         // map GID back through standardmap: if this gives -1 we have a
         // ghost point
-        tRow = mat->RowMap().LID(gRow); 
+        tRow = mat->RowMap().LID(gRow);
 
         if ( !global && (tRow == -1) )
         {
             continue;
         }
-        
+
         bRow = (global) ? gRow : lRow;
-        
+
         index      = crs.beg[bRow];
         numEntries = crs.beg[bRow+1] - index;
 
@@ -613,11 +635,11 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
         {
             // taking 0-1-basedness into account using offset
             col = crs.jco[index + j - offset] - offset;
-            
+
             indices[j] = (global) ? col : rowMap->GID(col);
             values[j]  = crs.co[index + j - offset];
         }
-        
+
         int ierr;
         if (mat->Filled())
         {
@@ -646,10 +668,10 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
                 std::cout << values[ii] << " ";
             }
             std::cout << std::endl;
-            
+
             std::cout << "Error in Insert/ReplaceGlobalValues: "
                       << ierr << std::endl;
-            
+
             std::cout << "Filled = " << mat->Filled()   << std::endl;
             std::cout << "Global = " << global          << std::endl;
             std::cout << "  GRID = " << gRow            << std::endl;
@@ -662,7 +684,7 @@ void Utils::assembleCRS(Teuchos::RCP<Epetra_CrsMatrix> mat,
                 std::cout << col << " ";
             }
             std::cout << std::endl;
-            
+
             ERROR("Error in Insert/ReplaceGlobalValues",
                   __FILE__, __LINE__);
         }
@@ -957,7 +979,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
 
     int numBlocks     = dim/dof;          // number of blocks
     int numBlocksGlb  = dimGlb/dof;       // global number of blocks
-    
+
 
     if (numBlocks * dof < dim-1)
     {
@@ -965,7 +987,7 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
               " than one auxiliary equation in map... ",
               __FILE__, __LINE__);
     }
-    
+
 
     // Handle possible auxiliary variables
     bool auxVar[nvars];
@@ -987,14 +1009,14 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
             auxRws[j] = -1;
         }
     }
-    
+
     int subdim = numBlocks * nvars;   // number of local entries in new map (<=dim)
     int *MyGlobalElements = new int[subdim];
-    
+
     // take the entries from the old map that correspond
     // to those in 'vars' and put them in the input array
     // for the new map.
-    
+
     int k = 0;
     for (int i  = 0; i < numBlocks; i++)
         for (int j = 0; j < nvars; j++)
@@ -1002,16 +1024,16 @@ Teuchos::RCP<Epetra_Map> Utils::CreateSubMap(const Epetra_Map& map,
             if (!auxVar[j])
                 MyGlobalElements[k++] = map.GID(i*dof+(var[j]-1));
         }
-    
+
     for (int j = 0; j < nvars; j++)
     {
         if (auxVar[j])
             MyGlobalElements[k++] = auxRws[j];
     }
-    
+
     Teuchos::RCP<Epetra_Map> submap =
         Teuchos::rcp(new Epetra_Map(-1, k, MyGlobalElements, 0, map.Comm()));
-    
+
     delete [] MyGlobalElements;
     return submap;
 }
@@ -1145,7 +1167,7 @@ Teuchos::RCP<Epetra_MultiVector> Utils::Gather(const Epetra_MultiVector& vec, in
     Teuchos::RCP<Epetra_MultiVector> gvec =
         Teuchos::rcp(new Epetra_MultiVector(*map,vec.NumVectors()));
     Teuchos::RCP<Epetra_Import> import =
-        Teuchos::rcp(new Epetra_Import(*map,map_dist) );    
+        Teuchos::rcp(new Epetra_Import(*map,map_dist) );
 
     CHECK_ZERO(gvec->Import(vec,*import,Insert));
     gvec->SetLabel(vec.Label());
@@ -1156,7 +1178,7 @@ Teuchos::RCP<Epetra_MultiVector> Utils::Gather(const Epetra_MultiVector& vec, in
 // create "Gather" map from "Solve" map
 Teuchos::RCP<Epetra_BlockMap> Utils::Gather(const Epetra_BlockMap& map, int root)
 {
-        
+
     int ElementSize = map.ElementSize();
 #ifdef TESTING
     if (ElementSize != 1)
@@ -1173,7 +1195,7 @@ Teuchos::RCP<Epetra_BlockMap> Utils::Gather(const Epetra_BlockMap& map, int root
     int *MyGlobalElements   = new int[NumMyElements];
     int *AllGlobalElements  = NULL;
 
-        
+
     for (int i = 0; i < NumMyElements; i++)
     {
         MyGlobalElements[i] = map.GID(i);
@@ -1214,7 +1236,7 @@ Teuchos::RCP<Epetra_BlockMap> Utils::Gather(const Epetra_BlockMap& map, int root
         for (int i = 0; i < NumMyElements; i++)
             AllGlobalElements[i] = MyGlobalElements[i];
     }
-        
+
     if (Comm.MyPID()!=root)
     {
         NumMyElements=0;
@@ -1234,13 +1256,13 @@ Teuchos::RCP<Epetra_BlockMap> Utils::Gather(const Epetra_BlockMap& map, int root
         Teuchos::rcp(new Epetra_BlockMap(NumGlobalElements, NumMyElements, AllGlobalElements,
                                          ElementSize, map.IndexBase(), Comm) );
 
-        
+
     if (Comm.MyPID() == root)
     {
         delete [] AllGlobalElements;
     }
     delete [] MyGlobalElements;
-        
+
     return gmap;
 }
 //========================================================================================
