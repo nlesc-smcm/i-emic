@@ -263,7 +263,6 @@ inline int Model::saveStateToFile(std::string const &filename)
     copyState(".bak");
 
     INFO("Writing state and parameters to " << filename);
-
     INFO("   state: ||x|| = " << Utils::norm(state_));
 
     // Write state, map and continuation parameter
@@ -283,6 +282,13 @@ inline int Model::saveStateToFile(std::string const &filename)
         HDF5.Write("Parameters", parName.c_str(), parValue);
     }
 
+    // Write grid information available in domain object
+    HDF5.Write("Grid", "n",   getDomain()->GlobalN());
+    HDF5.Write("Grid", "m",   getDomain()->GlobalM());
+    HDF5.Write("Grid", "l",   getDomain()->GlobalL());
+    HDF5.Write("Grid", "nun", getDomain()->Dof());
+    HDF5.Write("Grid", "aux", getDomain()->Aux());
+    
     additionalExports(HDF5, filename);
     comm_->Barrier();
     

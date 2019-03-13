@@ -175,15 +175,15 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
 
     % - DEFINE CONSTANTS - ----------------------------------------------
 
-    udim  = 0.1;                 %[m/s]    Velocity scale
-    r0dim = 6.4e6;               %[m]      Radius of Earth
-    T0    = 15;                  %[deg C]  Reference temperature
-    S0    = 35;                  %[psu]    Reference salinity
-    RtD   = 180/pi;              %[-]      Radians to degrees
+    udim  = 0.1;       %[m/s]    Velocity scale
+    r0dim = 6.4e6;     %[m]      Radius of Earth
+    T0    = 15;        %[deg C]  Reference temperature
+    S0    = 35;        %[psu]    Reference salinity
+    RtD   = 180/pi;    %[-]      Radians to degrees
     
     if readEV
-        T0 = 0;                  %[deg C]  Reference temperature
-        S0 = 0;                  %[psu]    Reference salinity
+        T0 = 0;        %[deg C]  Reference temperature
+        S0 = 0;        %[psu]    Reference salinity
     end       
     
     c1 = 3.8e-3;
