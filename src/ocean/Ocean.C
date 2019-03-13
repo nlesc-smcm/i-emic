@@ -147,7 +147,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     {
         THCM::Instance().setIntCondCorrection(state_);
     }
-    
+
     // Now that we have the state and parameters initialize
     // the Jacobian, solution and rhs
     initializeOcean();
@@ -188,7 +188,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
 
     // Create Qsi vector
     Qsi_  = Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
-    
+
     // Create Msi vector
     Msi_  = Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
 
@@ -274,9 +274,9 @@ int Ocean::analyzeJacobian1()
 {
     if (!analyzeJacobian_)
         return 0;
-    
+
     INFO("\n  <><>  Analyze Jacobian P rows...");
-    
+
     // Make preparations for extracting pressure rows
     int dim = mapP_->NumMyElements();
 
@@ -344,7 +344,7 @@ int Ocean::analyzeJacobian2()
 {
     if (!analyzeJacobian_)
         return 0;
-    
+
     INFO("\n  <><>  Analyze Jacobian S column integrals...\n");
     // Another approach to analyze the Jacobian is through the volume
     // integrals of its columns. This only makes sense when the volume
@@ -365,7 +365,7 @@ int Ocean::analyzeJacobian2()
 
     // // exaggerate a little
     // testvec->Scale(1e2);
-    
+
     // Compute test Jacobian and mass matrix
     THCM::Instance().evaluate(*testvec, Teuchos::null, true, true);
 
@@ -382,8 +382,8 @@ int Ocean::analyzeJacobian2()
     *jac = *tmpJac;
 
     Teuchos::RCP<Epetra_Vector> diagB = THCM::Instance().DiagB();
-    *diagB = *tmpB;                 
-    
+    *diagB = *tmpB;
+
     // Compute column integrals for the salinity block
     Teuchos::RCP<Epetra_Vector> colInts = getColumnIntegral(mat, false);
 
@@ -407,18 +407,18 @@ int Ocean::analyzeJacobian2()
         {
             (*singRows_)[i] = 2;
             badSintsfound++;
-            std::cout << "  <><>  nonzero column integral, " 
+            std::cout << "  <><>  nonzero column integral, "
                       << "  GID = " << ints.Map().GID(i)
                       << " value = " << std::abs(ints[i]) << std::endl;
         }
-    
+
     int sumFoundS = 0;
     comm_->SumAll(&badSintsfound, &sumFoundS, 1);
 
     INFO("\n  <><>  nonzero column integrals found: " << sumFoundS << '\n');
 
     //  DUMP_VECTOR("intcond_coeff", ints);
-    
+
     return sumFoundS;
 }
 
@@ -522,7 +522,7 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
 
                 // If we find singular pressure rows we adjust the current landmask
                 mask.local = THCM::Instance().getLandMask("current", singRows_);
-        
+
                 //  Putting a fixed version of the landmask back in THCM
                 THCM::Instance().setLandMask(mask.local);
 
@@ -537,7 +537,7 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
 
             if ( (badSints + badProws) == 0 )
                 break;
-            
+
             for (int j = 0; j != maxMaskFixes_; ++j)
             {
                 badSints = analyzeJacobian2();
@@ -546,7 +546,7 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
 
                 // If we find singular pressure rows we adjust the current landmask
                 mask.local = THCM::Instance().getLandMask("current", singRows_);
-        
+
                 //  Putting a fixed version of the landmask back in THCM
                 THCM::Instance().setLandMask(mask.local);
 
@@ -558,7 +558,7 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
                 // increase this counter
                 badProws++;
             }
-            
+
             if ( (badSints + badProws) == 0 )
                 break;
         }
@@ -567,7 +567,7 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
         // analyzeJacobian2() is done.
         solverInitialized_ = false;
     }
-    
+
     // Get the current global landmask from THCM.
     mask.global = THCM::Instance().getLandMask();
 
@@ -806,7 +806,7 @@ void Ocean::postProcess()
 {
     // increase postprocessing counter
     ppCtr_++;
-    
+
     TIMER_START("Ocean: saveStateToFile");
     if (saveState_)
         saveStateToFile(outputFile_); // Save to hdf5
@@ -870,7 +870,7 @@ std::string const Ocean::writeData(bool describe)
                        << std::round(effort_);
             effortCtr_ = 0;
         }
-        
+
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
                    << psiMax
                    << std::setw(_FIELDWIDTH_)
@@ -1025,7 +1025,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::initialState()
     // Save state
     Teuchos::RCP<Epetra_Vector> tmp =
         Teuchos::rcp(new Epetra_Vector(*state_));
-        
+
     // Do a few Newton steps to get a physical state
     double par = getPar();
     setPar(1e-8); // perturb parameter
@@ -1065,16 +1065,16 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
 
     // Use trivial initial solution
     sol_->PutScalar(0.0);
-    
-    // Set right hand side    
+
+    // Set right hand side
     Teuchos::RCP<Epetra_MultiVector> b;
     if (rhs == Teuchos::null)
         b = rhs_;
     else
         b = rhs;
-    
+
     bool set = problem_->setProblem(sol_, b);
-    
+
     TEUCHOS_TEST_FOR_EXCEPTION(!set, std::runtime_error,
                                "*** Belos::LinearProblem failed to setup");
 
@@ -1102,7 +1102,7 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
     {
         ERROR("Ocean: exception caught: " << e.what(), __FILE__, __LINE__);
     }
-        
+
     INFO("Ocean: solve... done");
     TIMER_STOP("Ocean: solve...");
     // ---------------------------------------------------------------------
@@ -1128,14 +1128,14 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
         INFO("           ||b||         = " << normb);
         INFO("           ||x||         = " << Utils::norm(sol_));
         INFO("        ||b-Ax|| / ||b|| = " << nrm / normb);
-	
+
         if ((tol > 0) && (normb > 0) && ( (nrm / normb / tol) > 10))
         {
 	  WARNING("Actual residual norm too large: "
                   << (nrm / normb) << " > " << tol
                   , __FILE__, __LINE__);
         }
-	
+
         TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 
         // if (tol > recompTol_) // stagnation, maybe a new precon helps
@@ -1393,7 +1393,7 @@ void Ocean::applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out)
     // check matrix residual
     // Teuchos::RCP<Epetra_MultiVector> r =
     //     Teuchos::rcp(new Epetra_MultiVector(v));;
-    
+
     // applyMatrix(out, *r);
     // r->Update(1.0, v, -1.0);
     // double rnorm = Utils::norm(r);
@@ -1490,7 +1490,7 @@ void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
     TIMER_START("Ocean: set seaice...");
     Qsi_ = seaice->interfaceQ();
     THCM::Instance().setSeaIceQ(Qsi_);
-    
+
     Msi_ = seaice->interfaceM();
     THCM::Instance().setSeaIceM(Msi_);
 
@@ -1574,7 +1574,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
     int P = ATMOS_PP_; // (1-based) atmos global precipitation: auxiliary
 
     int rowIntCon = THCM::Instance().getRowIntCon();
-    
+
     // FIXME if this block would be computed locally we would not need
     // an allgather
     Teuchos::RCP<Epetra_MultiVector> Msi  = Utils::AllGather(*Msi_);
@@ -1587,7 +1587,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
     // factorize as this is constant
     Teuchos::RCP<Epetra_MultiVector> suno =
         Utils::AllGather(*THCM::Instance().getSunO());
-    
+
     // fill CRS struct
     int el_ctr = 0;
     int col;
@@ -1603,7 +1603,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
     double comb = getPar("Combined Forcing");
     double sunp = getPar("Solar Forcing");
     double Pd;
-    
+
     for (int k = 0; k != L_; ++k)
         for (int j = 0; j != M_; ++j)
             for (int i = 0; i != N_; ++i)
@@ -1619,7 +1619,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
 
                 // precipitation distribution
                 Pd = (*(*Pdist)(0))[sr];
-                
+
                 for (int xx = UU; xx <= SS; ++xx)
                 {
                     block->beg.push_back(el_ctr);
@@ -1633,14 +1633,14 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
                             // tatm dependency
                             dTFT = Ooa * (1.0 - M);
                             // negating as the Jacobian is taken negative
-                            block->co.push_back( -dTFT );                            
+                            block->co.push_back( -dTFT );
                             block->jco.push_back(atmos->interface_row(i,j,T) );
                             el_ctr++;
 
                             // albe dependency
                             dAFT = -comb * sunp * S * albed * (1.0 - M);
                             // negating as the Jacobian is taken negative
-                            block->co.push_back( -dAFT );                            
+                            block->co.push_back( -dAFT );
                             block->jco.push_back(atmos->interface_row(i,j,A) );
                             el_ctr++;
 
@@ -1651,7 +1651,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
                             block->jco.push_back(atmos->interface_row(i,j,Q) );
                             el_ctr++;
                         }
-                        
+
                         // surface S row, exclude integral condition row
                         else if ((xx == SS) && getCoupledS() &&
                                  FIND_ROW2(_NUN_, N_, M_, L_, i, j, k, xx) != rowIntCon)
@@ -1681,7 +1681,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<Atmosphere> atmos
 
     // final entry in beg ( == nnz)
     block->beg.push_back(el_ctr);
-    
+
     assert( (int) block->co.size() == block->beg.back());
 
     return block;
@@ -1701,7 +1701,7 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
     Teuchos::RCP<Epetra_MultiVector> dFSdQ = Utils::AllGather(*d.dFSdQ);
     Teuchos::RCP<Epetra_MultiVector> dFSdM = Utils::AllGather(*d.dFSdM);
     Teuchos::RCP<Epetra_MultiVector> dFSdG = Utils::AllGather(*d.dFSdG);
-    
+
     int el_ctr = 0;
     int sr; // surface row
 
@@ -1757,10 +1757,10 @@ std::shared_ptr<Utils::CRSMat> Ocean::getBlock(std::shared_ptr<SeaIce> seaice)
                     }
                 }
             }
-    
+
     block->beg.push_back(el_ctr);
     assert( (int) block->co.size() == block->beg.back());
-    
+
     return block;
 }
 
@@ -1885,7 +1885,7 @@ Ocean::getColumnIntegral(Teuchos::RCP<Epetra_CrsMatrix> mat,
         if (lidIntCon >= 0)
             (*icCoef)[lidIntCon] = 0;
     }
-        
+
     tmp_mat->LeftScale(*icCoef);
 
     // Change integral coefficients into column selectors
@@ -1983,7 +1983,7 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
         // Create empty salflux vector
         Teuchos::RCP<Epetra_Vector> salflux =
             Teuchos::rcp(new Epetra_Vector(*domain_->GetStandardSurfaceMap()));
-        
+
         Teuchos::RCP<Epetra_Import> lin2solve_surf =
             Teuchos::rcp(new Epetra_Import( salflux->Map(),
                                             readSalFlux->Map() ));
@@ -2120,7 +2120,7 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
 void Ocean::pressureProjection(Teuchos::RCP<Epetra_Vector> vec)
 {
     assert(vec->Map().SameAs(state_->Map()));
-    
+
     int grow = 0, lrow = 0, id3;
     double sum1 = 0.0, sum2 = 0.0;
     double gsum1 = 0.0, gsum2 = 0.0;
@@ -2129,7 +2129,7 @@ void Ocean::pressureProjection(Teuchos::RCP<Epetra_Vector> vec)
     Teuchos::RCP<Epetra_Vector> s2 = Teuchos::rcp(new Epetra_Vector(*vec));
     s1->PutScalar(0.0);
     s2->PutScalar(0.0);
-    
+
     for (int k = 0; k != L_; ++k)
         for (int j = 0; j != M_; ++j)
             for (int i = 0; i != N_; ++i)
@@ -2157,7 +2157,7 @@ void Ocean::pressureProjection(Teuchos::RCP<Epetra_Vector> vec)
                     }
                 }
             }
-    
+
     comm_->SumAll(&sum1, &gsum1, 1);
     comm_->SumAll(&sum2, &gsum2, 1);
 

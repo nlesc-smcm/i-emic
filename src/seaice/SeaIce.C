@@ -6,7 +6,7 @@ extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*, double *);
 
 extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
-    
+
 //=============================================================================
 // Constructor
 SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
@@ -15,14 +15,15 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     nGlob_           (params->get("Global Grid-Size n", 16)),
     mGlob_           (params->get("Global Grid-Size m", 16)),
     periodic_        (params->get("Periodic", false)),
-    
+
     precInitialized_ (false),
     recomputePrec_   (false),
     recompMassMat_   (true),
-    
+
     taus_         (params->get("threshold ice thickness", 0.01)),
+
     // Heavyside approximation steepness
-    epsilon_      (params->get("mask switch steepness", 1e-1)),  
+    epsilon_      (params->get("mask switch steepness", 1e-1)),
 
     // background mean values
     t0o_   (params->get("background temperature ocean", 15.0)),
@@ -65,10 +66,10 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     ce_    (params->get("Dalton number", 1.3e-03)),
     uw_    (params->get("mean atmospheric surface wind speed, ms^{-1}", 8.5)),
 
-// typical vertical velocity
+    // typical vertical velocity
     eta_   (( rhoa_ / rhoo_ ) * ce_ * uw_),
 
-// Shortwave radiation constants and functions
+    // Shortwave radiation constants and functions
     albe0_   (params->get("reference albedo", 0.3)),
     albed_   (params->get("albedo excursion", 0.5)),
     sun0_    (params->get("solar constant", 1360)),
@@ -106,9 +107,9 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // initialize postprocessing counter
     ppCtr_ = 0;
 
-    // set communicator 
+    // set communicator
     comm_ = comm;
-    
+
     // Background sublimation and derivatives: calculate background
     // saturation specific humidity according to [Bolton,1980], T in
     // \deg C
@@ -165,11 +166,11 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // auxiliary integral correction
     aux_      = 1;
-    
+
     // Create domain object
     domain_ = Teuchos::rcp(new TRIOS::Domain(nGlob_, mGlob_, 1, dof_,
                                              xmin_, xmax_, ymin_, ymax_,
-                                             periodic_, 1.0, comm_, aux_));
+                                             periodic_, 1.0, 1.0, comm_, aux_));
 
     // Compute 2D decomposition
     domain_->Decomp2D();
@@ -250,7 +251,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     localAtmosP_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosA_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localIntCoeff_ = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    
+
     localSurfmask_ = Teuchos::rcp(new Epetra_IntVector(*assemblySurfaceMap_));
 
     // Create local computational grid in x_, y_
@@ -281,7 +282,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
         Maps_[XX] = Utils::CreateSubMap(*standardMap_, dof_, XX);
         Imps_[XX] = Teuchos::rcp(new Epetra_Import(*Maps_[XX], *standardMap_));
     }
-    INFO("SeaIce constructor done");    
+    INFO("SeaIce constructor done");
 }
 
 //=============================================================================
@@ -292,11 +293,11 @@ void SeaIce::computeMassMat()
 
         TIMER_START("SeaIce: compute MassMat...");
         localDiagB_->PutScalar(0.0);
-        
+
         int row;
         double val;
         double massH = rhoi_ * Lf_ * udim_ / zeta_ / r0dim_; // mass mat. value
-    
+
         for (int j = 0; j != mLoc_; ++j)
             for (int i = 0; i != nLoc_; ++i)
                 for (int XX = 1; XX <= dof_; ++XX)
@@ -307,25 +308,25 @@ void SeaIce::computeMassMat()
                     case SEAICE_HH_:   // H row (thickness)
                         val = massH;
                         break;
-                    
+
                     case SEAICE_QQ_:   // Q row (heat flux)
                         break;
-                    
+
                     case SEAICE_MM_:   // M row (mask)
                         break;
-                    
+
                     case SEAICE_TT_:   // T row (surface temperature)
                         break;
                     }
                     row = find_row0(nLoc_, mLoc_, i, j, XX);
                     (*localDiagB_)[row] = val;
                 }
-    
+
         domain_->Assembly2Standard(*localDiagB_, *diagB_);
-    
+
         TIMER_STOP("SeaIce: compute MassMat...");
     }
-    
+
     recompMassMat_ = false;
 }
 
@@ -351,7 +352,7 @@ void SeaIce::computeRHS()
     domain_->Standard2AssemblySurface(*albe_,  *localAtmosA_);
 
     localState_->ExtractView(&state);
-    
+
     localSST_->ExtractView(&sst);
     localSSS_->ExtractView(&sss);
 
@@ -362,7 +363,7 @@ void SeaIce::computeRHS()
 
     if (aux_ == 1)
         computeLocalFluxes(state, sss, sst, qatm, patm);
-            
+
     // Create assembly and standard vectors to hold flux
     /// difference for integral correction
     Epetra_Vector fluxDiff(*standardSurfaceMap_);
@@ -377,7 +378,7 @@ void SeaIce::computeRHS()
         for (int i = 0; i != nLoc_; ++i)
         {
             sr = j*nLoc_ + i; // surface position for vectors with dof=1
-            
+
             Hval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_HH_)];
             Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
             Mval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_MM_)];
@@ -398,12 +399,12 @@ void SeaIce::computeRHS()
                     break;
 
                 case SEAICE_QQ_:   // Q row (heat flux)
-                    // shortwave radiative flux 
+                    // shortwave radiative flux
                     QSW = ( comb_*sunp_*sun0_ / 4. ) * shortwaveS(y_[j]) *
                         ( (1. - albe0_) - albed_*albe[sr] ) * c0_;
 
                     val = 1.0 / muoa_ * Q0_ + Qvar_ / muoa_ * Qval -
-                        ( QSW / muoa_ ) + 
+                        ( QSW / muoa_ ) +
                         ( Tval - tatm[sr] +  (t0i_ - t0a_) ) +
                         ( comb_ * latf_ * rhoo_ * Ls_ / muoa_ ) *
                         (  E0i_ + dEdT_ * Tval +  dEdq_ * qatm[sr] );
@@ -429,11 +430,11 @@ void SeaIce::computeRHS()
 
             if (aux_ == 1)
             {
-                // Flux difference over sea ice                
+                // Flux difference over sea ice
                 flxd[sr] = Mval * (QSos_[sr] - EmiP_[sr]);
             }
         }
-    
+
     domain_->Assembly2Standard(*localRHS_, *rhs_);
 
     if (aux_ == 1)
@@ -454,7 +455,7 @@ void SeaIce::computeRHS()
             (*rhs_)[lid] = pQSnd_ * fluxInt - Gval * totalArea_;
         }
     }
-    
+
     TIMER_STOP("SeaIce: compute RHS...");
 }
 
@@ -470,10 +471,10 @@ void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
         for (int i = 0; i != nLoc_; ++i)
         {
             sr   = j*nLoc_ + i;
-            
+
             Qval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_QQ_)];
             Tval = state[find_row0(nLoc_, mLoc_, i, j, SEAICE_TT_)];
-            
+
             // Compute salinity flux from sea ice into the ocean
             QSos_[sr] = (
                 zeta_ * ( freezingT(sss[sr] )   // QTos component
@@ -485,7 +486,7 @@ void SeaIce::computeLocalFluxes(double *state, double *sss, double *sst,
             // atmosphere is dimensional
             EmiP_[sr] = E0i_ + dEdT_ * Tval + dEdq_ * qatm[sr] // E component
                 - patm[sr];                                    // P component
-            
+
         }
 }
 
@@ -494,7 +495,7 @@ std::vector<Teuchos::RCP<Epetra_Vector> > SeaIce::getFluxes()
 {
     // Temperature fluxes into the sea ice:
     // QSW -QSH -QLH
-    
+
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes;
     std::vector<Epetra_Vector> localFluxes;
 
@@ -516,7 +517,7 @@ std::vector<Teuchos::RCP<Epetra_Vector> > SeaIce::getFluxes()
     localAtmosA_->ExtractView(&albe);
     localAtmosQ_->ExtractView(&qatm);
     localAtmosT_->ExtractView(&tatm);
-    
+
     int sr;
     int pos = 0;
     double Tval;
@@ -537,7 +538,7 @@ std::vector<Teuchos::RCP<Epetra_Vector> > SeaIce::getFluxes()
             // latent heat flux contribution in the total heat flux
             ptrs[_QLH][pos] = -(comb_ * latf_ * rhoo_ * Ls_) *
                 (E0i_ + dEdT_ * Tval + dEdq_ * qatm[sr]);
-            
+
             pos++;
         }
 
@@ -561,7 +562,7 @@ void SeaIce::computeLocalJacobian()
 
     // obtain local state
     domain_->Standard2Assembly(*state_, *localState_);
-    
+
     domain_->Standard2AssemblySurface(*sst_,   *localSST_);
     domain_->Standard2AssemblySurface(*sss_,   *localSSS_);
     domain_->Standard2AssemblySurface(*qatm_,  *localAtmosQ_);
@@ -573,7 +574,7 @@ void SeaIce::computeLocalJacobian()
     localSSS_->ExtractView(&sss);
     localAtmosQ_->ExtractView(&qatm);
     localAtmosP_->ExtractView(&patm);
-    
+
     if (aux_ == 1)
         computeLocalFluxes(state, sss, sst, qatm, patm);
 
@@ -583,17 +584,17 @@ void SeaIce::computeLocalJacobian()
     // initialize dependencies
     double HH_QQ, HH_TT, QQ_QQ, QQ_TT, MM_MM;
     double TT_HH, TT_QQ, TT_TT, GG_GG;
-    
+
 
     Atom MM_HH(nLoc_, mLoc_, 1, 1);
-    Atom GG_QQ(nLoc_, mLoc_, 1, 1);        
+    Atom GG_QQ(nLoc_, mLoc_, 1, 1);
     Atom GG_MM(nLoc_, mLoc_, 1, 1);
     Atom GG_TT(nLoc_, mLoc_, 1, 1);
 
     // dHdt equation ----------------------------------
     HH_QQ = -Qvar_ / zeta_;
     HH_TT = -( rhoo_ *  latf_ * Lf_ / zeta_ ) * dEdT_;
-        
+
     Al_->set(range, H, Q, HH_QQ);
     Al_->set(range, H, T, HH_TT);
 
@@ -648,7 +649,7 @@ void SeaIce::computeLocalJacobian()
                 // GG_QQ
                 val  = -1.0 * ICval * Mval * Qvar_ / rhoo_ / Lf_;
                 GG_QQ.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
-            
+
                 // GG_MM
                 val  = ICval * (QSos_[sr] - EmiP_[sr]);
                 GG_MM.set(i+1, j+1, 1, 1, val);
@@ -657,7 +658,7 @@ void SeaIce::computeLocalJacobian()
                 val  = -1.0 * ICval * Mval * dEdT_;
                 GG_TT.set(i+1, j+1, 1, 1, val); // Atoms are 1-based
             }
-    
+
         // diagonal dependence
         GG_GG = -totalArea_;
 
@@ -766,7 +767,7 @@ void SeaIce::assemble()
                     if (std::abs(value) > 0)
                     {
                         co_.push_back(value);
-                        
+
                         // obtain column
                         col = find_row1(nLoc_, mLoc_,  i, j, B);
                         jco_.push_back(col);
@@ -774,7 +775,7 @@ void SeaIce::assemble()
                     }
                 }
     }
-    
+
     // final element of beg
     beg_.push_back(elm_ctr);
 }
@@ -869,7 +870,7 @@ void SeaIce::setLandMask(Utils::MaskStruct const &mask)
             gsr = assemblySurfaceMap_->GID(lsr);
             (*localSurfmask_)[lsr] = (*surfmask_)[gsr];
         }
-               
+
     // adjust integral coefficients
     createIntCoeff();
 }
@@ -934,7 +935,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
         int gid = j * nGlob_;
         int lid_assmb = assemblySurfaceMap_->LID(gid);
         int lid_stdrd = standardSurfaceMap_->LID(gid);
-        
+
         double tmp = 0.0;
 
         if (lid_stdrd >= 0)
@@ -947,10 +948,10 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
             for (int XX = 1; XX <= dof_; ++XX)
             {
                 block->beg.push_back(el_ctr);
-                
+
 //                sr = j*nGlob_ + i;          // global surface index
 //                if ((*surfmask_)[sr] == 0)
-                
+
                 {
                     switch (XX)
                     {
@@ -1003,7 +1004,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Atmosphere> atmo
 
                 }
             }
-        
+
         col = atmos->interface_row(0,0,P);
 
         // The derivative of the integral correction equation w.r.t.
@@ -1097,7 +1098,7 @@ std::shared_ptr<Utils::CRSMat> SeaIce::getBlock(std::shared_ptr<Ocean> ocean)
         int sr;
         double dTFG; // d / dTo (F_G)
         double dSFG; // d / dSo (F_G)
-        double ICval, Mval; 
+        double ICval, Mval;
         block->beg.push_back(el_ctr);
         for (int j = 0; j != mGlob_; ++j)
             for (int i = 0; i != nGlob_; ++i)
@@ -1187,12 +1188,12 @@ Teuchos::RCP<Epetra_Vector> SeaIce::interface(Teuchos::RCP<Epetra_Vector> vec, i
     CHECK_ZERO(out->Import(*vec, *Imps_[XX], Insert));
 
     assert(out->MyLength() >= 1);
-    
+
     if (out->MyLength() == 1) // auxiliary unknown, convert to field
     {
         Teuchos::RCP<Epetra_Vector> converted =
             Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
-        
+
         converted->PutScalar((*out)[0]);
         return converted;
     }
@@ -1393,7 +1394,7 @@ void SeaIce::createMatrixGraph()
 
     // global auxiliary row
     int auxRow = (aux_ == 1) ? last + aux_ : -1;
-    
+
     // add entries for auxiliary condition
     if ( ( aux_ == 1) && standardMap_->MyGID(auxRow) )
     {
@@ -1421,7 +1422,7 @@ void SeaIce::createMatrixGraph()
 
     // Finalize matrixgraph
     CHECK_ZERO(matrixGraph_->FillComplete() );
-    
+
 }
 
 //=============================================================================
@@ -1473,7 +1474,7 @@ void SeaIce::applyPrecon(Epetra_MultiVector const &in,
                          Epetra_MultiVector &out)
 {
     TIMER_START("SeaIce: apply preconditioner...");
-    
+
     if (!precInitialized_)
     {
         initializePrec();
@@ -1549,7 +1550,7 @@ void SeaIce::postProcess()
 {
     // increase postprocessing counter
     ppCtr_++;
-    
+
     // save state -> hdf5
     if (saveState_)
         saveStateToFile(outputFile_); // Save to hdf5
@@ -1560,7 +1561,7 @@ void SeaIce::postProcess()
         append << "." << ppCtr_;
         copyState(append.str());
     }
-        
+
 
 }
 
@@ -1579,8 +1580,8 @@ std::string const SeaIce::writeData(bool describe)
         return datastring.str();
     }
     else
-    {    
-        datastring.precision(_PRECISION_);   
+    {
+        datastring.precision(_PRECISION_);
 
         Teuchos::RCP<Epetra_Vector> M = interfaceM();
         Teuchos::RCP<Epetra_Vector> H = interfaceH();
@@ -1590,13 +1591,13 @@ std::string const SeaIce::writeData(bool describe)
 
         for (int i = 0; i != M->MyLength(); ++i)
             (*restr)[i] = (*M)[i]*((*H)[i]+H0_);
-        
+
         double SIV  = Utils::dot(intCoeff_, restr);
         double Mtot = Utils::dot(intCoeff_, M);
 
         SIV  =  (std::abs(SIV)  < 1e-13) ? 0.0 : SIV;
         Mtot =  (std::abs(Mtot) < 1e-13) ? 0.0 : Mtot;
-        
+
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
                    << SIV;
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
@@ -1653,9 +1654,9 @@ void SeaIce::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filenam
     std::vector<Teuchos::RCP<Epetra_Vector> > fluxes = getFluxes();
 
     INFO("Writing temperature fluxes to " << filename);
-    
+
     HDF5.Write("ShortwaveFlux",    *fluxes[_QSW]);
     HDF5.Write("SensibleHeatFlux", *fluxes[_QSH]);
-    HDF5.Write("LatentHeatFlux",   *fluxes[_QLH]);    
+    HDF5.Write("LatentHeatFlux",   *fluxes[_QLH]);
 
 }

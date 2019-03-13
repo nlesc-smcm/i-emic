@@ -36,9 +36,9 @@ SUBROUTINE grid
   ENDDO
   y(0)   = y(1) - dy;
   y(m+1) = y(m) + dy;
- 
+
   yv(0) = ymin
-  
+
   DO k=1,l
      ze(k)  = (real(k)-0.5)*dz + zmin
      zwe(k) = (real(k)    )*dz + zmin
@@ -56,7 +56,7 @@ SUBROUTINE grid
   do k = l,1,-1
      write(6,*) "    ", k, " ", dz*dfzT(k)*hdim
   enddo
-     
+
 end SUBROUTINE grid
 !*************************************************
 REAL FUNCTION fz(z,qz)
@@ -69,7 +69,7 @@ REAL FUNCTION fz(z,qz)
   tth = tanh (qz)
   IF (qz.gt.1.0) THEN
      fz = -1 + th/tth
-     ! for testing 
+     ! for testing
   ELSE
      !      fz = z
      fz = z + (1.-qz) * z * (1-z)

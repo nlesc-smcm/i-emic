@@ -34,27 +34,37 @@ namespace TRIOS
     */
     Domain::Domain(int N, int M, int L, int dof,
                    double Xmin, double Xmax, double Ymin, double Ymax,
-                   bool Periodic, double Hdim, Teuchos::RCP<Epetra_Comm> Comm,
+                   bool Periodic, double Hdim, double qz, Teuchos::RCP<Epetra_Comm> Comm,
                    int aux)
         :
         comm(Comm),
         n(N), m(M), l(L),
+        hdim(Hdim),
         xmin(Xmin), xmax(Xmax), ymin(Ymin), ymax(Ymax),
-        zmin(-Hdim),
+        zmin(-1),
         zmax(0),
         periodic(Periodic),
+        qz_(qz),
         dof_(dof),
         aux_(aux)
     {
-        //TODO: check if we want zmin=-Hdim or -1 (as in THCM)
         int dim = m * n * l * dof_ + aux_;
         int *MyGlobalElements = new int[dim];
 
         for (int i = 0; i < dim; i++)
             MyGlobalElements[i] = i;
-        
+
         ColMap = Teuchos::rcp(new Epetra_Map(dim, dim, MyGlobalElements, 0, *comm));
         delete [] MyGlobalElements;
+
+        // create vertical grid stretching function
+        fz_ = [&] (double z)
+            {
+                if (qz_ > 1.0)
+                    return -1.0 + tanh(qz_ * (z + 1.0)) / tanh(qz_);
+                else
+                    return z;
+            };
     }
 
     // Destructor
@@ -165,16 +175,16 @@ namespace TRIOS
         // if there is only one subdomain in the
         // x-direction, periodicity is left to THCM
         Teuchos::RCP<Epetra_Comm> xcomm = this->GetProcRow(0);
-        xparallel = (xcomm->NumProc()>1); 
+        xparallel = (xcomm->NumProc()>1);
 
         if (pidM > 0)
-        { mloc+=num_ghosts; Moff-=num_ghosts;}
+        { mloc+=numGhosts; Moff-=numGhosts;}
         if (pidM < npM-1)
-        { mloc+=num_ghosts;}
+        { mloc+=numGhosts;}
         if ((pidN > 0) || (periodic && xparallel))
-        { nloc+=num_ghosts; Noff-=num_ghosts;}
+        { nloc+=numGhosts; Noff-=numGhosts;}
         if ((pidN < npN-1) || (periodic && xparallel))
-        { nloc+=num_ghosts;}
+        { nloc+=numGhosts;}
 
         // in the case of periodic boundary conditions the offsets may now be
         // negative or the local domain may exceed the global one. when
@@ -211,7 +221,7 @@ namespace TRIOS
         as2std_surf =
             Teuchos::rcp(new Epetra_Import(*AssemblySurfaceMap,
                                            *StandardSurfaceMap));
-        
+
         std2sol = Teuchos::null;
 
         // determine the physical bounds of the subdomain
@@ -220,15 +230,65 @@ namespace TRIOS
         // grid constants as computed in 'grid.f':
         double dx = (xmax-xmin)/n;
         double dy = (ymax-ymin)/m;
-        double dz = (zmax-zmin)/l;
 
-        xmin_loc = xmin + Noff*dx;
-        xmax_loc = xmin + (Noff+nloc)*dx;
-        ymin_loc = ymin + Moff*dy;
-        ymax_loc = ymin + (Moff+mloc)*dy;
-        zmin_loc = zmin + Loff*dz;
-        zmax_loc = zmin + (Loff+lloc)*dz;
+        xminLoc = xmin + Noff*dx;
+        xmaxLoc = xmin + (Noff+nloc)*dx;
+        yminLoc = ymin + Moff*dy;
+        ymaxLoc = ymin + (Moff+mloc)*dy;
 
+        gridLoc_ = Teuchos::rcp(new std::vector<std::vector<double> >(6));
+        gridGlb_ = Teuchos::rcp(new std::vector<std::vector<double> >(6));
+
+        // Create local grid (including ghost nodes)
+        CreateGrid(*gridLoc_, {xminLoc, xmaxLoc, yminLoc, ymaxLoc, zmin, zmax},
+                   {nloc, mloc, lloc});
+
+        // Create global grid
+        CreateGrid(*gridGlb_, {xmin, xmax, ymin, ymax, zmin, zmax}, {n, m, l});
+    }
+
+    // Create global and local grid values
+    // bounds: xmin, xmax, ymin, ymax, zmin, zmax
+    // sizes: N, M, L
+    void Domain::CreateGrid(std::vector<std::vector<double> > &grid,
+                            double const (&bounds)[6],
+                            int const (&sizes)[3])
+    {
+        enum bndInds {xmin, xmax, ymin, ymax, zmin, zmax};
+        enum szsInds {N, M, L};
+        enum grdInds {x, y, z, xu, yv, zw};
+
+        double dx = (bounds[xmax]-bounds[xmin])/sizes[N];
+        double dy = (bounds[ymax]-bounds[ymin])/sizes[M];
+        double dz = (bounds[zmax]-bounds[zmin])/sizes[L];
+
+        grid[x] = std::vector<double>(sizes[N]);
+        grid[y] = std::vector<double>(sizes[M]);
+        grid[z] = std::vector<double>(sizes[L]);
+
+        grid[xu] = std::vector<double>(sizes[N]+1);
+        grid[yv] = std::vector<double>(sizes[M]+1);
+        grid[zw] = std::vector<double>(sizes[L]+1);
+
+        grid[xu][0] = bounds[xmin];
+        grid[yv][0] = bounds[ymin];
+        grid[zw][0] = bounds[zmin];
+
+        for (int i = 0; i != nloc; ++i)
+        {
+            grid[x][i]    = bounds[xmin] + (i + 0.5) * dx;
+            grid[xu][i+1] = bounds[xmin] + (i + 1.0) * dx;
+        }
+        for (int j = 0; j != mloc; ++j)
+        {
+            grid[y][j]    = bounds[ymin] + (j + 0.5) * dy;
+            grid[yv][j+1] = bounds[ymin] + (j + 1.0) * dy;
+        }
+        for (int k = 0; k != lloc; ++k)
+        {
+            grid[z][k]    = fz_(bounds[zmin] + (k + 0.5) * dz);
+            grid[zw][k+1] = fz_(bounds[zmin] + (k + 1.0) * dz);
+        }
     }
 
     // find out wether a particular local index is on a ghost node
@@ -245,7 +305,7 @@ namespace TRIOS
         // ghost nodes at periodic boundary only if more than one proc in x-direction
         bool perio = periodic && xparallel;
 
-        for (int ii = 0; ii < num_ghosts; ii++)
+        for (int ii = 0; ii < numGhosts; ii++)
         {
             result = result||(i==ii && ((pidN>0)||perio));
             result = result||(i==nloc-1-ii && ((pidN<npN-1)||perio));
@@ -276,10 +336,10 @@ namespace TRIOS
     //=============================================================================
     Teuchos::RCP<Epetra_Map> Domain::CreateStandardMap(int nun_, bool depth_av) const
     {
-        // Add auxiliary unknowns at final processor, 
+        // Add auxiliary unknowns at final processor,
         int root    = comm->NumProc() - 1;
         bool addAux = (comm->MyPID() == root) ? true : false;
-        
+
         Teuchos::RCP<Epetra_Map> M = Teuchos::null;
         if (depth_av)
         {
@@ -298,7 +358,7 @@ namespace TRIOS
     {
         // Add auxiliary unknowns at every processor
         bool addAux = true;
-        
+
         Teuchos::RCP<Epetra_Map> M = Teuchos::null;
         if (depth_av) // create a map with a single vertical layer: 'depth-averaged'
         {
@@ -318,14 +378,14 @@ namespace TRIOS
                                                int nun_,  bool addAux) const
     {
         // If a map is requested for all unknowns, we append the auxiliary unknowns as well.
-        // Otherwise, we create the original map. 
+        // Otherwise, we create the original map.
         int NumMyElements;
         if (addAux)
             NumMyElements = mloc_ * nloc_ * lloc_ * nun_ + aux_;
         else
             NumMyElements = mloc_ * nloc_ * lloc_ * nun_;
-       
-            
+
+
         int NumGlobalElements = -1; // Let Epetra figure it out herself
 
         // Make lists of all global elements that belong to my subdomain
@@ -361,7 +421,7 @@ namespace TRIOS
                 p++;
             }
         }
-        
+
         // A little integrity check
         assert(p == NumMyElements);
 

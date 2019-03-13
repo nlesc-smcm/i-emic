@@ -11,7 +11,7 @@
   <Parameter name="Use ocean"      type="bool" value="true"/>
   <Parameter name="Use atmosphere" type="bool" value="true"/>
   <Parameter name="Use sea ice"    type="bool" value="false"/>
-  
+
   <!-- Specify whether the coupled model should initialize with  -->
   <!-- old states (true) or with a trivial solution (false).     -->
   <!-- The sub-models maintain names for the input files.        -->
@@ -48,7 +48,7 @@
 
   <!-- periodic boundary conditions in x-direction -->
   <Parameter name="Periodic" type="bool" value="true"/>
-  
+
   <!-- Starting parameters -->
   <Parameter name="Combined Forcing"    type="double" value="0.0"/>
   <Parameter name="Solar Forcing"       type="double" value="1.0"/>
@@ -58,5 +58,5 @@
   <Parameter name="Solving scheme" type="char" value="C"/>
 
   <Parameter name="Preconditioning" type="char" value="F"/>
-    
+
 </ParameterList>

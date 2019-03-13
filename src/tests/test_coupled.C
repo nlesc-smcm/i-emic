@@ -7,7 +7,7 @@
 namespace // local unnamed namespace (similar to static in C)
 {
     RCP<Epetra_Comm>               comm;
-    
+
     std::shared_ptr<Ocean>         ocean;
     std::shared_ptr<Atmosphere>    atmos;
     std::shared_ptr<SeaIce>        seaice;
@@ -167,12 +167,12 @@ TEST(CoupledModel, inspectState)
             norms[i] = Utils::norm((*state)(i));
             sumNorms += pow(norms[i], 2);
         }
-        
+
         EXPECT_NEAR(Utils::norm(state), sqrt(sumNorms), 1e-7);
 
         std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
         x->PutScalar(1.0);
-        
+
         // Check whether the indexing works correctly
         for (int i = 0; i != x->MyLength(); ++i)
         {
@@ -266,7 +266,7 @@ TEST(CoupledModel, computeJacobian)
         seaice_mask->PutScalar(0.0);
         for (int i = 0; i < seaice_mask->MyLength()/4; ++i)
             (*seaice_mask)[i] = 1.0;
-               
+
         Epetra_Import importM(seaice_mask->Map(), seaice_state->Map());
         seaice_state->Export(*seaice_mask, importM, Zero);
 
@@ -278,7 +278,7 @@ TEST(CoupledModel, computeJacobian)
         Utils::print(atmosJac,  "atmosJac");
         Utils::print(oceanJac,  "oceanJac");
         Utils::print(seaiceJac, "seaiceJac");
-                                               
+
         Utils::print(&atmosJac->ColMap(), "atmosJacColMap");
         Utils::print(&atmosJac->DomainMap(), "atmosJacDomainMap");
 
@@ -306,12 +306,12 @@ TEST(CoupledModel, numericalJacobian)
     {
         bool failed = false;
         try
-        {            
+        {
             INFO("compute njC");
 
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> > njC;
-            
+
             njC.setTolerance(1e-9);
             njC.seth(1e-4);
             njC.compute(coupledModel, coupledModel->getState('V'));
@@ -319,10 +319,10 @@ TEST(CoupledModel, numericalJacobian)
             std::string fnameJnC("JnC");
 
             INFO(" Printing Numerical Jacobian " << fnameJnC);
-            
+
             njC.print(fnameJnC);
-            
-            // test individual elements 
+
+            // test individual elements
             NumericalJacobian<std::shared_ptr<CoupledModel>,
                               std::shared_ptr<Combined_MultiVec> >::CCS ccs;
             njC.fillCCS(ccs);
@@ -332,7 +332,7 @@ TEST(CoupledModel, numericalJacobian)
             std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
 
             testEntries(coupledModel, ccs, x);
-                                          
+
         }
         catch (...)
         {
@@ -381,7 +381,7 @@ TEST(CoupledModel, applyMatrix)
         coupledModel->getState('V')->Random();
         double parValue = 0.1;
         coupledModel->setPar(parValue);
-        
+
         std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
         std::shared_ptr<Combined_MultiVec> y = coupledModel->getState('C');
 
@@ -421,7 +421,7 @@ TEST(CoupledModel, applyMatrix)
 
         Atmosphere::CommPars atmosPars;
         atmos->getCommPars(atmosPars);
-            
+
         for (int v = 0; v != 3; ++v)
         {
             atmosVec->PutScalar(value[v]);
@@ -437,17 +437,17 @@ TEST(CoupledModel, applyMatrix)
             int surfbT = FIND_ROW2(_NUN_, n, m, l, ii, jj, l-1, TT);
 
             INFO( " surface element TT " << surfbT );
-            
+
             // If this point is on land the test does not make any sense
             bool onLand = ((*mask.global_surface)[jj*n+ii] > 0) ? true : false;
-            
+
             if (onLand)
             {
                 ERROR(" ** applyMatrix is testing a land point, not useful... **",
                       __FILE__, __LINE__);
             }
             else
-            {            
+            {
                 int lid;
                 double surfval;
                 if (oceanVec->Map().MyGID(surfbT) && !onLand)
@@ -534,7 +534,7 @@ TEST(CoupledModel, applyMatrix)
                 // First check if we have auxiliary unknowns:
                 int aux;
                 aux = params[ATMOS]->get("Auxiliary unknowns", 0);
-                
+
                 if (atmosVec->GlobalLength() > ATMOS_NUN_ * m * n * l)
                 {
                     EXPECT_GT(aux, 0);
@@ -560,15 +560,15 @@ TEST(CoupledModel, applyMatrix)
 
                     double sstInt = Utils::dot(precipintco, ones);
                     std::cout << " sstInt: " << sstInt << std::endl;
-                                        
+
                     double intval = sstInt * (1.0 / totalArea) *
                         (pars.tdim / pars.qdim) * pars.dqso;
-                    
+
                     std::cout << " intval: " << intval << std::endl;
 
                     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_NUN_);
                     std::cout << " last  : " << last << std::endl;
-                                        
+
                     if (atmosVec->Map().MyGID(last + 1))
                     {
                         lid = atmosVec->Map().LID(last + 1);
@@ -576,7 +576,7 @@ TEST(CoupledModel, applyMatrix)
                         std::cout << "  surfval        : " << surfval << std::endl;
                         std::cout << "  value[v]       : " << value[v] << std::endl;
                         std::cout << "  intval*value[v]: " << intval*value[v] << std::endl;
-                                            
+
                         EXPECT_NEAR( intval * value[v], surfval, 1e-7);
                     }
                     std::cout << std::endl;
@@ -600,7 +600,7 @@ TEST(CoupledModel, Precipitation)
 
     stateV->Random();
 
-    // copy construct 
+    // copy construct
     std::shared_ptr<Combined_MultiVec> b =
         std::make_shared<Combined_MultiVec>(*stateV);
 
@@ -620,7 +620,7 @@ TEST(CoupledModel, Precipitation)
             break;
         }
     }
-    
+
     std::cout << "Pval = " << Pval << std::endl;
 
     int n = ocean->getNdim();
@@ -629,7 +629,7 @@ TEST(CoupledModel, Precipitation)
     int l = 1;
 
     int last = FIND_ROW_ATMOS0(ATMOS_NUN_, n, m, l, n-1 , m-1, l-1, ATMOS_NUN_);
-    int lid; 
+    int lid;
     double val;
     if (atmb->Map().MyGID(last+1))
     {
@@ -640,7 +640,7 @@ TEST(CoupledModel, Precipitation)
     }
 
     // FIXME TODO
-    // EXPECT_EQ(    
+    // EXPECT_EQ(
 }
 
 
@@ -796,14 +796,14 @@ TEST(CoupledModel, Synchronization2)
     for (auto &v: norms)
         ss << v << " ";
     ss << std::endl;
-    
+
     (*b)(b->Size()-1)->PutScalar(-1e-2);
     coupledModel->solve(b);
 
     x = coupledModel->getSolution('C');
     for (int i = 0; i != numModels; ++i)
         norms[i] = Utils::norm((*x)(i));
-        
+
     for (auto &v: norms)
         ss << v << " ";
     ss << std::endl;
@@ -867,7 +867,7 @@ TEST(CoupledModel, IntegralCondition)
 {
     // Randomize coupledModel state
     coupledModel->getState('V')->Random();
-    
+
     std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
     std::shared_ptr<Combined_MultiVec> b = coupledModel->getState('C');
 
@@ -885,12 +885,12 @@ TEST(CoupledModel, IntegralCondition)
 
     int rowintcon = ocean->getRowIntCon();
     int lid = -1;
-    
+
     double valueFloc = 0.0;
     double valueBloc = 0.0;
     double valueF    = 0.0;
     double valueB    = 0.0;
-    
+
     if (oceanF->Map().MyGID(rowintcon))
     {
         lid = oceanF->Map().LID(rowintcon);
@@ -902,7 +902,7 @@ TEST(CoupledModel, IntegralCondition)
         lid = oceanB->Map().LID(rowintcon);
         valueBloc = (*oceanB)[0][lid];
     }
-    
+
     comm->SumAll(&valueFloc, &valueF, 1);
     comm->SumAll(&valueBloc, &valueB, 1);
 
@@ -910,7 +910,7 @@ TEST(CoupledModel, IntegralCondition)
     INFO("     RHS[oceanLast] = " << valueF);
     INFO("   (J*x)[oceanLast] = " << valueB);
     INFO(" *-*                              *-* \n");
-    
+
     EXPECT_NEAR(valueF, valueB, 1e-12);
 }
 

@@ -5,7 +5,7 @@
   The equations implemented in AtmosLocal are based on the energy
   balance model in the old THCM code. This class implements equatiosn
   for diffusive transport of heat and humidity, an integral equation
-  for precipitation and an albedo model. 
+  for precipitation and an albedo model.
 
   Although this is a 2D model we maintain some notation of the 3D
   ocean model.
@@ -83,7 +83,7 @@ private:
     //!   +----------++-------++----------+
     int np_;  //! #neighbouring points
     int nun_; //! #unknowns
-    int aux_; //! number of auxiliary unknowns    
+    int aux_; //! number of auxiliary unknowns
 
     std::shared_ptr<DependencyGrid> Al_;
 
@@ -107,7 +107,7 @@ private:
 
     //! Surface mask
     std::shared_ptr<std::vector<int> > surfmask_;
-    
+
     //! Forcing vector
     std::vector<double> frc_;
 
@@ -123,7 +123,7 @@ private:
     std::shared_ptr<std::vector<double> > sol_;
 
     //! Mass matrix diagonal
-    std::shared_ptr<std::vector<double> > diagB_;    
+    std::shared_ptr<std::vector<double> > diagB_;
 
     //! Land surface temperature
     std::shared_ptr<std::vector<double> > lst_;
@@ -173,7 +173,7 @@ private:
     double   hdim_; //! vertical length scale \[H\]
     double    cpa_; //! heat capacity \[C_{pa}\]
     double     D0_; //! constant eddy diffusivity \[D_0\]
-    double  kappa_; //! humidity eddy diffusivity \[\kappa\]    
+    double  kappa_; //! humidity eddy diffusivity \[\kappa\]
     double   arad_; //! radiative flux param A
     double   brad_; //! radiative flux param B
     double   sun0_; //! solar constant \[\Sigma_0\]
@@ -196,7 +196,7 @@ private:
     //! Albedo parameters
     double     a0_; //! FIXME todo: reference albedo
     double     da_; //! FIXME todo: albedo excursion
-    
+
     double   tauf_; //! FIXME todo
     double   tauc_; //! FIXME todo
 
@@ -268,7 +268,7 @@ private:
     double      humf_; //! humidity forcing
     double      latf_; //! latent heat forcing
     double      albf_; //! albedo forcing
-    double      tdif_; //! T eddy diffusivity 
+    double      tdif_; //! T eddy diffusivity
 
 public:
     //! Constructor for use with parallel atmosphere
@@ -281,7 +281,7 @@ public:
 
     //! Parameter input routine
     void setParameters(Teuchos::RCP<Teuchos::ParameterList> params);
-        
+
     //! General setup things for both constructors
     void setup();
 
@@ -307,8 +307,8 @@ public:
 
     //!  Compute mass matrix B, which is diagonal so this computes
     //!  diagB_
-    void computeMassMat();    
-    
+    void computeMassMat();
+
     void computeEvaporation();
     void computePrecipitation();
 
@@ -360,10 +360,10 @@ public:
     void fillPdist(double *Pdist);
 
     //! Set precipitation distribution function
-    void setPdist(double *Pdist);        
+    void setPdist(double *Pdist);
 
     //! Return problem dimension (mainly for testing)
-    int  dim() { return dim_; } 
+    int  dim() { return dim_; }
 
     //! Return number of continuation parameters
     int  npar() { return (int) allParameters_.size(); }
@@ -381,10 +381,10 @@ public:
     //! Zero atmosphere state and sst
     void zeroOcean();
     void zeroState();
-    
+
     //! Obtain parameters
     void getCommPars(CommPars &parStruct);
-    
+
     //! Get the dA_{ij} coefficients for surface integrals with q. We
     //! ignore land points by default. Also for the q integral.
     void integralCoeff(std::vector<double> &val,
@@ -440,7 +440,7 @@ private:
     //! anomaly and 1-based grid point j (latitude).
     double Tl(double A, double Ta, int j)
         { return Ta + comb_ * sunp_ * suno_[j] * ((1 - a0_) - da_*A) / Ooa_; }
-    
+
     //! derivative of land temperature w.r.t. albedo
     double dTldA(int j)
         { return -comb_ * sunp_ * suno_[j] * da_ / Ooa_; }
@@ -448,11 +448,11 @@ private:
     //! derivative of land temperature w.r.t. atmospheric temperature
     double dTldTa()
         { return 1.0; }
-    
+
     //! derivative of atmos temperature equation w.r.t. albedo
     double dTadA(int j)
         { return -comb_ * sunp_ * suna_[j] * da_; }
-    
+
     //! Snow/ice albedo parametrization expecting albedo A,
     //! atmospheric temperature anomaly Ta, global average
     //! precipitation anomaly P and 1-based grid-points i,j
@@ -460,22 +460,22 @@ private:
 
     //! aF derivative w.r.t. T, lazy: finite difference
     double daFdA(double A, double Ta, double P, int i, int j)
-        { return ( aF(A+df_,Ta,P,i,j) - aF(A,Ta,P,i,j) )/df_; }            
+        { return ( aF(A+df_,Ta,P,i,j) - aF(A,Ta,P,i,j) )/df_; }
 
     //! aF derivative w.r.t. P, lazy: finite difference
     double daFdP(double A, double Ta, double P, int i, int j)
-        { return ( aF(A,Ta,P+df_,i,j) - aF(A,Ta,P,i,j) )/df_; }            
+        { return ( aF(A,Ta,P+df_,i,j) - aF(A,Ta,P,i,j) )/df_; }
 
     //! aF derivative w.r.t. Ta, lazy: finite difference
     double daFdT(double A, double Ta, double P, int i, int j)
-        { return ( aF(A,Ta+df_,P,i,j) - aF(A,Ta,P,i,j) )/df_; }            
+        { return ( aF(A,Ta+df_,P,i,j) - aF(A,Ta,P,i,j) )/df_; }
 
     //! Heavyside approximation
     double H(double x, double eps)
         { return (1./2.) *  (1.0 + tanh(x / eps)); }
 
 public:
-    
+
     //! Find row in vector or matrix corresponding to unknown
     //! XX at grid point (i,j,k).
     //! Input and output are expected to be 1-based.
@@ -494,7 +494,7 @@ public:
     //! |            (1,1,2) |      ( 6*n*m+1, ...  ,6*n*m+6) |
     //! +-----------------------------------------------------+
     int find_row(int i, int j, int k, int XX);
-    
+
 
     //! Write everything to output files.
     void writeAll();

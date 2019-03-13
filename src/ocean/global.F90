@@ -137,7 +137,7 @@ contains
     !===========================================================
 
     ! if (n/=a_n .or. m/=a_m .or. l/=a_l) then
-    
+
     n = a_n
     m = a_m
     l = a_l
@@ -146,7 +146,7 @@ contains
     call deallocate_global
 
     write(*,*) 'allocating fortran arrays'
-    allocate(u(ndim), up(ndim), w(ndim,nf))       
+    allocate(u(ndim), up(ndim), w(ndim,nf))
     allocate(landm(0:n+1,0:m+1,0:l+la+1))
     allocate(taux(n,m),tauy(n,m))
     allocate(tatm(n,m),emip(n,m),spert(n,m))
@@ -156,7 +156,7 @@ contains
     landm = 0
 
     allocate(x(n),y(m),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l))
-    
+
     call g_grid
     ! end if ! new dimensions?
 
@@ -175,22 +175,22 @@ contains
     if (allocated(x)) deallocate(x)
     if (allocated(y)) deallocate(y)
     if (allocated(z)) deallocate(z)
-    
+
     if (allocated(xu)) deallocate(xu)
     if (allocated(yv)) deallocate(yv)
     if (allocated(zw)) deallocate(zw)
     if (allocated(ze)) deallocate(ze)
     if (allocated(zwe)) deallocate(zwe)
-    
+
     if (allocated(taux)) deallocate(taux)
     if (allocated(tauy)) deallocate(tauy)
-    
+
     if (allocated(landm)) deallocate(landm)
 
     if (allocated(tatm))  deallocate(tatm)
     if (allocated(emip))  deallocate(emip)
     if (allocated(spert)) deallocate(spert)
-    
+
     if (allocated(internal_temp)) deallocate(internal_temp)
     if (allocated(internal_salt)) deallocate(internal_salt)
 
@@ -410,7 +410,7 @@ contains
 
 
     write(*,*) iza
-    
+
     if(iza.ne.2) then
        call windfit        ! read data with subroutine from forcing.F90
        if(iza.eq.1) then   ! average zonally
@@ -475,7 +475,7 @@ contains
           pos = pos+1
        end do
     end do
-    
+
   end subroutine get_temforcing
 
   subroutine get_internal_temforcing(ctemp)
@@ -511,9 +511,9 @@ contains
     real(c_double), dimension(n*m) :: cemip
     integer :: i,j,pos
 
-    if ((its.eq.0).and.(coupled_S.eq.0)) then       
+    if ((its.eq.0).and.(coupled_S.eq.0)) then
        ! read (virtual) salt flux and store it in emip
-       if (SRES.eq.0) then 
+       if (SRES.eq.0) then
           _INFO_("Expecting salinity flux to be provided by Ocean hdf5 interface...")
        else                ! read sss
           call levitus_sal

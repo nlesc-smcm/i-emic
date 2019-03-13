@@ -1,11 +1,11 @@
 //!---------------------------------------------------------------
 /*
-  
+
   SeaIce is a simple 2D thermodynamic sea ice model relying on the
   ocean and atmosphere states. For testing we allow standalone
   capabilities. Setup is similar to the Atmosphere class, framework is
   partly defined by Model.H.
-  
+
 */
 //!---------------------------------------------------------------
 
@@ -81,7 +81,7 @@ protected:
     //! info on periodicity is needed to get the correct domain
     //! decomposition
     bool periodic_;
-    
+
     //! degrees of freedom
     int dof_;
 
@@ -128,7 +128,7 @@ protected:
 
     //! non-overlapping solution vector
     Teuchos::RCP<Epetra_Vector> sol_;
-    
+
     //! non-overlapping sst
     Teuchos::RCP<Epetra_Vector> sst_;
 
@@ -159,7 +159,7 @@ protected:
 
     //! overlapping localSol
     Teuchos::RCP<Epetra_Vector> localSol_;
-    
+
     //! overlapping localSST
     Teuchos::RCP<Epetra_Vector> localSST_;
 
@@ -183,19 +183,19 @@ protected:
 
     //! non-overlapping integral coefficients
     Teuchos::RCP<Epetra_Vector> localIntCoeff_;
-    
+
     //! gathered global integral coefficients;
     Teuchos::RCP<Epetra_Vector> globalIntCoeff_;
-    
+
     //! global surface land  mask
     std::shared_ptr<std::vector<int> > surfmask_;
-    
+
     //! local surface land mask
     Teuchos::RCP<Epetra_IntVector> localSurfmask_;
-    
+
     //! State component maps
     std::map<int, Teuchos::RCP<Epetra_Map> > Maps_;
-    
+
     //! State component importers
     std::map<int, Teuchos::RCP<Epetra_Import> > Imps_;
 
@@ -204,7 +204,7 @@ protected:
 
     //! matrix graph, necessary to build Jacobian matrix
     Teuchos::RCP<Epetra_CrsGraph> matrixGraph_;
-    
+
     //! Jacobian matrix
     Teuchos::RCP<Epetra_CrsMatrix> jac_;
 
@@ -227,9 +227,9 @@ protected:
 
     double taus_;     //! threshold ice thickness
     double epsilon_;  //! approximation steepness
-    
+
     //! background mean values
-    double t0o_;  //! background ocean temp 
+    double t0o_;  //! background ocean temp
     double t0i_;  //! background seaice temp t0i
     double t0a_;  //! background atmos temp t0a
     double s0_;   //! ocean background salinity s0
@@ -257,7 +257,7 @@ protected:
     //! ocean model
     double r0dim_;
     double udim_;
-    
+
     //! background heat flux variation
     double Qvar_;
 
@@ -283,7 +283,7 @@ protected:
 
     //! function to compute background sublimation derivative over water
     std::function<double(double)> dqso_;
-    
+
     double ce_; //! Dalton number
     double uw_; //! mean atmospheric surface wind speed, ms^{-1}
 
@@ -319,7 +319,7 @@ protected:
     double      comb_; //! combined forcing
     double      sunp_; //! solar forcing
     double      latf_; //! latent heat forcing
-    double     maskf_; //! mask forcing 
+    double     maskf_; //! mask forcing
     double       shf_; //! sensible heat forcing
 
 public:
@@ -336,8 +336,8 @@ public:
     void computeLocalFluxes(double *state, double *sss, double *sst,
                             double *qatm, double *patm);
 
-    std::vector<Teuchos::RCP<Epetra_Vector> > getFluxes(); 
-    
+    std::vector<Teuchos::RCP<Epetra_Vector> > getFluxes();
+
     //! compute right hand side
     void computeRHS();
 
@@ -359,15 +359,15 @@ public:
     void initializePrec();
 
     void initializeState();
-    
-    void solve(Teuchos::RCP<Epetra_MultiVector> const &b);    
-    
+
+    void solve(Teuchos::RCP<Epetra_MultiVector> const &b);
+
     //! set idealized forcing (idealized external model states)
     void idealizedForcing();
 
     //! get pointer to jacobian matrix
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian() { return jac_; }
-    
+
     //! get pointer to CRS struct local Jacobian
     std::shared_ptr<Utils::CRSMat> getLocalJacobian();
 
@@ -400,17 +400,17 @@ public:
             WARNING("Not implemented", __FILE__, __LINE__);
             return Utils::MaskStruct();
         }
-    
+
     void setLandMask(Utils::MaskStruct const &mask);
 
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
-    
+
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice)
         { return std::make_shared<Utils::CRSMat>(); }
-            
+
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos);
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean);
-        
+
     void synchronize(std::shared_ptr<SeaIce> seaice) {}
     void synchronize(std::shared_ptr<Atmosphere> atmos);
     void synchronize(std::shared_ptr<Ocean> ocean);
@@ -418,7 +418,7 @@ public:
     void pressureProjection(Teuchos::RCP<Epetra_Vector> vec) {}
 
     Teuchos::RCP<Epetra_Vector> interface(Teuchos::RCP<Epetra_Vector> vec, int XX);
-    
+
     Teuchos::RCP<Epetra_Vector> interfaceH();
     Teuchos::RCP<Epetra_Vector> interfaceQ();
     Teuchos::RCP<Epetra_Vector> interfaceM();
@@ -452,10 +452,10 @@ private:
 
     //! create local jacobian
     void computeLocalJacobian();
-    
+
     //! Assemble dependency grid into CRS matrix
     void assemble();
-    
+
     //! latitudinal dependence shortwave radiation
     //! --> similar to atmos impl: can be factorized
     double shortwaveS(double y)
@@ -467,35 +467,34 @@ private:
 
     //! ice surface temperature deviation (linear)
     double iceSurfT(double Q, double H, double S)
-        { return freezingT(S) - t0i_ + 
+        { return freezingT(S) - t0i_ +
                 (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H) / Ic_; }
 
     // //! ice surface temperature deviation (nonlinear)
     // double iceSurfT(double Q, double H, double S)
-    //     { return freezingT(S) - t0i_ + 
+    //     { return freezingT(S) - t0i_ +
     //             (Q0_*H0_ + H0_*Qvar_*Q + Q0_*H + Q*H) / Ic_; }
 
-    //! sea ice mask as a function thickness anomaly H 
+    //! sea ice mask as a function thickness anomaly H
     double maskFun(double H)
         { return (1. / 2.) * (1. + tanh( H / epsilon_ )); }
-    
+
     //! sea ice mask function lazy derivative
     double dMdH(double H)
-        { return ( maskFun(H+df_) - maskFun(H) )/df_; }                
+        { return ( maskFun(H+df_) - maskFun(H) )/df_; }
 
     //! 0-based local find_row function
     int find_row0(int n, int m, int i, int j, int XX);
-    
+
     //! 1-based local find_row function
     int find_row1(int n, int m, int i, int j, int XX);
 
     // HDF5-based save and load functions components other than the
     // state and parameters
     void additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename){}
-    
+
     void additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filename);
 
 };
-    
-#endif
 
+#endif

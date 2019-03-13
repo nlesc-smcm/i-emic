@@ -40,7 +40,7 @@ public:
         {
             return d_data[indexMap(static_cast<std::size_t>(args) ...)];
         }
-    
+
     template <typename ... Args>
     T const &operator()(Args ... args) const
         {

@@ -2,20 +2,20 @@
 !* FILE FORMAT VERSION 0 **********************************************
 !**********************************************************************
 
-! NOTE: the subroutines in this file have been decoupled from the rest of THCM 	
-!       (only modules m_par and m_global are used, and m_global is NOT used by anyone 
-!       else).									
-!       Some data in m_global is simply set to zero because LOCA 			
+! NOTE: the subroutines in this file have been decoupled from the rest of THCM
+!       (only modules m_par and m_global are used, and m_global is NOT used by anyone
+!       else).
+!       Some data in m_global is simply set to zero because LOCA
 !       takes care of the continuation now. Any data you want to read/write must
-!       be passed in as subroutine argument because the I/O may be for the 	
-!       global problem whereas the computations are performed on a subdomain.	
+!       be passed in as subroutine argument because the I/O may be for the
+!       global problem whereas the computations are performed on a subdomain.
 
 
-!     output function. uloca is expected to be the global solution	
-!     vector, sorted in 'interleaved' (loca) format. n/m/l		
-!     specify the grid size and may be different from m,n,l used	
-!     for the computations.						
-!     Be careful to call this only by the root process, otherwise       
+!     output function. uloca is expected to be the global solution
+!     vector, sorted in 'interleaved' (loca) format. n/m/l
+!     specify the grid size and may be different from m,n,l used
+!     for the computations.
+!     Be careful to call this only by the root process, otherwise
 !     files may get severly messed up or data may be lost.
       subroutine write_data(uloca,ofile,lab)
 
@@ -60,7 +60,7 @@
       lab = lab + 1
 
       open(ofile,file=rundir//'fort.3')
-      
+
       write(*,*) n,m,l,la
 
       icp = mod(icp,1000)
@@ -85,7 +85,7 @@
             enddo
          enddo
       enddo
-      
+
       close(ofile)
 
  999  format(e18.10e3,9(1X,e16.8e3))
@@ -140,7 +140,7 @@
       integer, intent(in) :: gfile
       integer i, j
 
-      
+
       write(gfile,"('Version   0',5i4)") n, m, l, nun, SLIP
       write(gfile,999) xmin, xmax, ymin, ymax, hdim
       write(gfile,999) ( x(i), i = 1, n)
@@ -212,7 +212,7 @@
       implicit none
       integer, intent(in)  :: ifile, lab
       integer, intent(out) :: icpo
-      character*7   ve 
+      character*7   ve
       integer i, j, k, XX, row, j2
       integer vn, irs, npa, nff, nn, mm, ll, nunn, ndi, nskip
 
@@ -266,14 +266,14 @@
 
 !**********************************************************************
 
-      subroutine skip(ifile,nskip)      
+      subroutine skip(ifile,nskip)
       implicit none
       integer, intent(in) :: ifile, nskip
       integer  i
 
       do i = 1, nskip
          read(ifile,'(x)', end = 100)
-      enddo 
+      enddo
       return
 
  100  stop 'in skip: unexpected end of file, check the label'
@@ -292,7 +292,7 @@
       logical  eof4
 
       rewind 4
- 100  CONTINUE   
+ 100  CONTINUE
 !         read(4,*,end=200) lab,icpo,nf1,ndim1,nskip,n11,m11,l11,nun11
          read(4,*,end=200) lab,icpo,nf1,ndim1,nskip
          IF (lab.EQ.irs) THEN
@@ -356,7 +356,7 @@
       eof4=.false.
       DO i=1,nskip
          read(4,999,end=100)
-      ENDDO 
+      ENDDO
  999  format(1x)
       return
  100  CONTINUE
@@ -436,7 +436,7 @@
       do j = 1, m1
          read(fno,*) (dat(i,j),i=1,n1)
       enddo
-      end 
+      end
 
 
 !! this subroutine can be called from C++ to extract the global grid data from m_global
@@ -458,7 +458,7 @@
         write(*,*) 'subroutine get_grid_data was called with mismatched array dimensions!'
         write(*,*) '(inout.F, not returning grid data correctly!)'
         return;
-      endif 
+      endif
 
       do i=1,n
         xx(i) = x(i)
@@ -471,4 +471,3 @@
       enddo
 
       end subroutine get_grid_data
-

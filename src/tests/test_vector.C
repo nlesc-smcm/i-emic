@@ -17,13 +17,13 @@ TEST(Combined_MultiVec, Setup)
     {
         // create an arbitrary domain
         domain1 = Teuchos::rcp(new TRIOS::Domain(6, 6, 6, 3, 0, 1, 0,
-                                                 1, false, 1.0, comm));
+                                                 1, false, 1.0, 1.0, comm));
 
         domain1->Decomp2D();
         domain2 = Teuchos::rcp(new TRIOS::Domain(8, 4, 4, 2, 0, 1, 0,
-                                                 1, false, 1.0, comm));    
+                                                 1, false, 1.0, 1.0, comm));
         domain2->Decomp2D();
-        
+
         map1 = domain1->GetStandardMap();
         map2 = domain1->GetStandardSurfaceMap();
         map3 = domain2->GetStandardMap();
@@ -35,7 +35,7 @@ TEST(Combined_MultiVec, Setup)
     }
 
     EXPECT_EQ(failed, false);
-    
+
 }
 
 //------------------------------------------------------------------
@@ -68,15 +68,15 @@ TEST(Combined_MultiVec, Construction)
                                            // number of Epetra_Vectors
         EXPECT_DEATH(Combined_MultiVec(vec1, vec4), ".*Assertion.*failed.*");
         EXPECT_DEATH(Combined_MultiVec(vec1, vec3, vec4), ".*Assertion.*failed.*");
-        
+
         // Constructors using multivectors
         two_vec   = Combined_MultiVec(vec1, vec2);
         three_vec = Combined_MultiVec(vec1, vec2, vec3);
-        
+
         double norm1 = Utils::norm(vec1);
         double norm2 = Utils::norm(vec2);
         double norm3 = Utils::norm(vec3);
-        
+
         double norm_two_vec   = Utils::norm(two_vec);
         double norm_three_vec = Utils::norm(three_vec);
 
@@ -86,7 +86,7 @@ TEST(Combined_MultiVec, Construction)
 
         EXPECT_EQ(norm_two_vec,
                   sqrt(pow(norm1,2)+pow(norm2,2)));
-        
+
         EXPECT_EQ(norm_three_vec,
                   sqrt(pow(norm1,2)+pow(norm2,2)+pow(norm3,2)));
 
@@ -118,13 +118,13 @@ TEST(Combined_MultiVec, Construction)
         // Randomize contents
         three_vec_ten.SetSeed(99);
         three_vec_ten.Random();
-        double originalNorm = Utils::norm(three_vec_ten);        
+        double originalNorm = Utils::norm(three_vec_ten);
 
         // Check norms
         std::vector<double> twoNorms_ten(10);
         std::vector<double> infNorms_ten(10);
         std::vector<double> oneNorms_ten(10);
-        
+
         three_vec_ten.Norm2(  twoNorms_ten);
         three_vec_ten.NormInf(infNorms_ten);
         three_vec_ten.Norm1(  oneNorms_ten);
@@ -146,14 +146,14 @@ TEST(Combined_MultiVec, Construction)
         three_vec_five.NormInf(infNorms_five);
         EXPECT_EQ(infNorms_five[3], infNorms_ten[5]);
 
-        // Check all norms of three_vec_ten        
+        // Check all norms of three_vec_ten
         double twoNorm, infNorm, oneNorm, tmp;
         for (int v = 0; v != 10; ++v)
         {
             twoNorm = 0.0;
             infNorm = 0.0;
             oneNorm = 0.0;
-            
+
             for (int i = 0; i != three_vec_ten.Size(); ++i)
             {
                 (*three_vec_ten(i))(v)->Norm2(&tmp);
@@ -163,12 +163,12 @@ TEST(Combined_MultiVec, Construction)
                 (*three_vec_ten(i))(v)->Norm1(&tmp);
                 oneNorm += tmp;
             }
-            
+
             EXPECT_EQ(oneNorms_ten[v], oneNorm);
             EXPECT_EQ(infNorms_ten[v], infNorm);
             EXPECT_EQ(twoNorms_ten[v], sqrt(twoNorm));
         }
-        
+
         // Check whether dataAccess = View does give a view of a
         // subset of vectors.
         Combined_MultiVec view(View, three_vec_ten, index);
@@ -197,7 +197,7 @@ TEST(Combined_MultiVec, Construction)
         // Set seed again contents
         three_vec_ten.SetSeed(99);
         three_vec_ten.Random();
-        EXPECT_EQ(Utils::norm(three_vec_ten), originalNorm);        
+        EXPECT_EQ(Utils::norm(three_vec_ten), originalNorm);
     }
     catch (...)
     {
@@ -232,5 +232,3 @@ int main(int argc, char **argv)
     MPI_Finalize();
     return out;
 }
-
-   

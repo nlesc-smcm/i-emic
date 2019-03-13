@@ -59,7 +59,7 @@ private:
 
     //! vector containing pointers to the different submodels
     std::vector<std::shared_ptr<Model> > models_;
-        
+
     //! Combined state vector
     std::shared_ptr<Combined_MultiVec> stateView_;
 
@@ -106,7 +106,7 @@ private:
     std::vector<std::vector<
                     CouplingBlock<std::shared_ptr<Model>,
                                   std::shared_ptr<Model> > > > C_;
-    
+
     Teuchos::RCP
     <Belos::LinearProblem
      <double, Combined_MultiVec, BelosOp<CoupledModel> > > problem_;
@@ -118,7 +118,7 @@ private:
     double effort_;
     int effortCtr_;
 
-    // gid->coord mapping 
+    // gid->coord mapping
     std::vector<std::array<int, 5> > gid2coord_;
 
 public:
@@ -141,7 +141,7 @@ public:
 
     //! CoupledModel setup
     void setup();
-    
+
     //! Compute Jacobian matrix
     void computeJacobian();
 
@@ -206,17 +206,17 @@ public:
 
     //! Gather important continuation data to use in summary file
     std::string const writeData(bool describe = false);
-    
+
     //! Additional monitor for continuation, return true if
     //! destination reached
     bool monitor() { return false; }
 
     //! Dump blocks
     void dumpBlocks();
-    
+
     //! Build GID -> coordinate mapping
     void createGID2CoordMap();
-    
+
     //! Get GID -> coordinate mapping
     void gid2coord(int const &gid, int &modelIdent,
                    int &i, int &j, int &k, int &xx);
@@ -289,7 +289,7 @@ namespace Belos
                     Op.ApplyMatrix(x, y);
                 }
             }
-        
+
         static bool
         HasApplyTranspose (const BelosOp<Model> &Op) { return false; }
     };

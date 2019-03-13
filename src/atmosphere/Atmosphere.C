@@ -20,7 +20,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     aux_             (params->get("Auxiliary unknowns", 1)),
     useIntCondQ_     (params->get("Use integral condition on q", true)),
     useFixedPrecip_  (params->get("Use idealized precipitation", false)),
-    
+
     precInitialized_ (false),
     recomputePrec_   (false),
     recompMassMat_   (true)
@@ -65,7 +65,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     // Create domain object
     domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, l_, dof_,
                                              xmin_, xmax_, ymin_, ymax_,
-                                             periodic_, 1.0, comm_, aux_));
+                                             periodic_, 1.0, 1.0, comm_, aux_));
 
     // Compute 2D decomposition
     domain_->Decomp2D();
@@ -80,12 +80,12 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     int nloc = domain_->LocalN();
     int mloc = domain_->LocalM();
     int lloc = domain_->LocalL();
-    
+
     INFO("   Local atmosphere model: xmin = " << xminloc);
     INFO("                           xmax = " << xmaxloc);
     INFO("                           ymin = " << yminloc);
     INFO("                           ymax = " << ymaxloc);
-    
+
     // Obtain overlapping and non-overlapping maps
     assemblyMap_ = domain_->GetAssemblyMap(); // overlapping
     standardMap_ = domain_->GetStandardMap(); // non-overlapping
@@ -125,9 +125,9 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // create graph
     createMatrixGraph();
-    
+
     jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph_));
-    
+
     // Periodicity is handled by AtmosLocal if there is a single
     // core in the x-direction.
     Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
@@ -154,10 +154,10 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
         Maps_[XX] = Utils::CreateSubMap(*standardMap_, dof_, XX);
         Imps_[XX] = Teuchos::rcp(new Epetra_Import(*Maps_[XX], *standardMap_));
     }
-    
+
     // Build diagonal mass matrix
     computeMassMat();
-    
+
     setupIntCoeff();
 
     INFO("Atmosphere: constructor done");
@@ -211,7 +211,7 @@ void Atmosphere::setupIntCoeff()
     //------------------------------------------------------------------
 
     pIntCoeff_ = Teuchos::rcp( new Epetra_Vector(*standardSurfaceMap_) );
-    
+
     Teuchos::RCP<Epetra_Vector> pIntCoeffLocal =
         Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
@@ -236,7 +236,7 @@ void Atmosphere::setupIntCoeff()
     INFO("Atmosphere:    local dA[0] = " << (*pIntCoeff_)[0]);
 
     // Set precipitation distribution
-    setPdist();    
+    setPdist();
 
 }
 
@@ -271,23 +271,23 @@ void Atmosphere::computeRHS()
     distributeState();
 
     if (aux_ <= 0)    // Compute E and P, put our precipitation field
-                      // in serial AtmosLocal        
-    {                         
+                      // in serial AtmosLocal
+    {
         // compute and obtain evaporation field
         getE();
 
         // compute and obtain precipitation field
         getP();
 
-        // return precipitation field to local atmosphere        
+        // return precipitation field to local atmosphere
         CHECK_ZERO(localP_->Import(*P_, *as2std_surf_, Insert));
 
         int numMySurfaceElements = assemblySurfaceMap_->NumMyElements();
         std::shared_ptr<std::vector<double> > localP =
             std::make_shared<std::vector<double> >(numMySurfaceElements, 0.0);
-    
+
         localP_->ExtractCopy(&(*localP)[0], numMySurfaceElements);
-        
+
         atmos_->setPrecipitation(localP);
     }
 
@@ -335,7 +335,7 @@ void Atmosphere::computeRHS()
 
     //------------------------------------------------------------------
     // Specify precipitation integral in RHS if aux > 0
-    // 
+    //
     // Precipitation is given by the integral of the evaporation
     // anomaly E = sigma - q + Msi*Cs, scaled with total area A
     //------------------------------------------------------------------
@@ -377,12 +377,12 @@ void Atmosphere::computeRHS()
     // The integrals and P are on the same processor
     int last = FIND_ROW_ATMOS0( ATMOS_NUN_, n_, m_, l_, n_-1, m_-1, l_-1, ATMOS_NUN_ );
     int lid  = -1;
-    
+
     if ( rhs_->Map().MyGID(rowIntCon_) && (aux_ == 1) )
     {
         lid = rhs_->Map().LID(last + 1);
 
-        // F = - P - \sum_i (1 / A) * (q_i * dA_i) 
+        // F = - P - \sum_i (1 / A) * (q_i * dA_i)
         //         + \sum_i (1 / A) * (tdim / qdim) * sigma * dA_i
         //         + \sum_i (1 / A) * M * Cs dA_i
         //
@@ -503,7 +503,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
     TIMER_START("Atmosphere::getBlock(ocean)...");
     // Jacobian of the atmosphere with respect to the ocean model, see
     // the forcing in AtmosLocal.C.
-    
+
     // check surfmask
     assert( (int) surfmask_->size() == m_*n_ );
 
@@ -516,14 +516,14 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
     // Obtain atmosphere commpars
     AtmosLocal::CommPars pars;
     getCommPars(pars);
-    
+
     // FIXME this now depends on the sea ice mask: we enther the realm
     // of non-constant coupling coefficients. For now we use an
     // allgather to get the full sea ice mask, in the future we could
     // let this block be partly computed by the local model and
     // assemble here. Need to figure that out.
     Teuchos::RCP<Epetra_MultiVector> Msi = Utils::AllGather(*Msi_);
-    
+
     int sr; // surface row
 
     double dTFT;  // d / dT_ocean (F_T)
@@ -544,20 +544,20 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
             dTFT = 1.0 - M;
 
             dTFQ = pars.nuq * pars.tdim / pars.qdim * pars.dqso * (1.0 - M);
-            
+
             on_ocean = ((*surfmask_)[sr] == 0);
             for (int xx = ATMOS_TT_; xx <= dof_; ++xx)
             {
                 no_intrw = (rowIntCon_ != FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
                                                           i, j, l_-1, xx));
-                
+
                 block->beg.push_back(el_ctr);
-                
+
                 if ( on_ocean && no_intrw ) // ocean points and skip integral cond
                 {
                     switch (xx)
                     {
-                        
+
                     case ATMOS_TT_:
                         block->co.push_back(dTFT);
                         block->jco.push_back(ocean->interface_row(i,j,oceanTT));
@@ -577,7 +577,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
     // add dependencies of precipitation row
     int qid;
     double dTFP; // d / dTo (F_P)
-    
+
     if (aux_ == 1)
     {
         block->beg.push_back(el_ctr);
@@ -586,17 +586,17 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
             {
                 sr = j*n_+i;                  // set surface row
                 M  = (*(*Msi)(0))[sr];        // sea ice mask
-                
+
                 if ( (*surfmask_)[sr] == 0)   // non-land
                 {
                     qid = FIND_ROW_ATMOS0( ATMOS_NUN_, n_, m_, l_,
                                            i, j, l_-1, ATMOS_QQ_ );
-                    
+
                     dTFP = ( *intcondGlob_ )[0][qid] * ( 1.0 / totalArea_ )
                         * ( pars.tdim / pars.qdim ) * pars.dqso * ( 1.0 - M );
-                    
+
                     block->co.push_back( dTFP );
-                    
+
                     block->jco.push_back( ocean->interface_row(i,j,oceanTT) );
                     el_ctr++;
                 }
@@ -606,7 +606,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<Ocean> ocean
     block->beg.push_back(el_ctr);
 
     assert( (int) block->co.size() == block->beg.back());
-    
+
     TIMER_STOP("Atmosphere::getBlock(ocean)...");
     return block;
 }
@@ -617,12 +617,12 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
     TIMER_START("Atmosphere::getBlock(seaice)...");
     // Jacobian of the atmosphere with respect to the sea ice model,
     // see AtmosLocal::forcing()
-    
+
     // initialize empty CRS matrix
     std::shared_ptr<Utils::CRSMat> block = std::make_shared<Utils::CRSMat>();
 
     int el_ctr = 0;
-    
+
     int seaiceMM = SEAICE_MM_; // (1-based) mask unknown in the sea ice model
     int seaiceTT = SEAICE_TT_; // (1-based) temperature unknown in the sea ice model
 
@@ -641,7 +641,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
     double Ti;  // sit value
     double Eo;  // evaporation value
     double Ei;  // sublimation value
-    
+
     double Cs = pars.Cs;  // sublimation correction
 
     // FIXME: We use an allgather to get the full sea ice mask, sst
@@ -652,7 +652,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
     Teuchos::RCP<Epetra_MultiVector> sst = Utils::AllGather(*sst_);
     Teuchos::RCP<Epetra_MultiVector> sit = Utils::AllGather(*sit_);
 
-    
+
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
         {
@@ -664,9 +664,9 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
 
             Eo = pars.tdim / pars.qdim * pars.dqso * To;
             Ei = pars.tdim / pars.qdim * pars.dqsi * Ti;
-            
+
             dMFT = Ti + pars.t0i - To - pars.t0o;
-            dTFT = M;                
+            dTFT = M;
 
             dMFQ = pars.nuq  * (Ei - Eo + Cs);
             dTFQ = pars.nuq  * pars.tdim / pars.qdim * pars.dqsi * M;
@@ -677,7 +677,7 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
                 block->beg.push_back(el_ctr);
 
                 // skip land and integral condition
-                if ( (*surfmask_)[sr] == 0 &&   
+                if ( (*surfmask_)[sr] == 0 &&
                      (rowIntCon_ != FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
                                                     i, j, l_-1, xx)))
                 {
@@ -702,15 +702,15 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
                         block->co.push_back(dTFQ);
                         block->jco.push_back(seaice->interface_row(i,j,seaiceTT));
                         el_ctr++;
-                        break;                        
+                        break;
 
                     case ATMOS_AA_:
                         block->co.push_back(dMFA);
                         block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
                         el_ctr++;
-                        break;                        
+                        break;
                     }
-                }                    
+                }
             }
         }
 
@@ -727,31 +727,31 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
             for (int i = 0; i != n_; ++i)
             {
                 sr = j*n_+i; // set surface row
-                
+
                 M  = (*(*Msi)(0))[sr];
                 To = (*(*sst)(0))[sr];
                 Ti = (*(*sit)(0))[sr];
-                
-                
+
+
                 if ( (*surfmask_)[sr] == 0)   // non-land
                 {
                     qid = FIND_ROW_ATMOS0(ATMOS_NUN_, n_, m_, l_,
                                           i, j, l_-1, ATMOS_QQ_);
 
                     dA   = (*intcondGlob_)[0][qid];
-                    
+
                     dMFP = (dA / totalArea_)
                         * ( (pars.tdim / pars.qdim) *
                             (pars.dqsi * Ti - pars.dqso * To)
                             + Cs );
-                    
+
                     block->co.push_back(dMFP);
                     block->jco.push_back(seaice->interface_row(i,j,seaiceMM));
                     el_ctr++;
 
                     dTFP = (dA / totalArea_)
                         * ( pars.tdim / pars.qdim ) * pars.dqsi * M;
-                    
+
                     block->co.push_back(dTFP);
                     block->jco.push_back(seaice->interface_row(i,j,seaiceTT));
                     el_ctr++;
@@ -761,9 +761,9 @@ std::shared_ptr<Utils::CRSMat> Atmosphere::getBlock(std::shared_ptr<SeaIce> seai
 
     block->beg.push_back(el_ctr);
     assert( (int) block->co.size() == block->beg.back());
-        
+
     TIMER_STOP("Atmosphere::getBlock(seaice)...");
-    return block;   
+    return block;
 }
 
 //==================================================================
@@ -785,7 +785,7 @@ void Atmosphere::synchronize(std::shared_ptr<SeaIce> seaice)
     // Get sea ice mask
     Teuchos::RCP<Epetra_Vector> Msi = seaice->interfaceM();
     setSeaIceMask(Msi);
-    
+
     // Get sea ice temperature
     Teuchos::RCP<Epetra_Vector> sit = seaice->interfaceT();
     setSeaIceTemperature(sit);
@@ -819,7 +819,7 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getLandTemperature()
     localLST_->ExtractView(&local);
     int numMyElements = localLST_->Map().NumMyElements();
     std::shared_ptr<std::vector<double> > lst = atmos_->getLandTemperature();
-    
+
     assert((int) lst->size() == numMyElements);
     for (int i = 0; i != numMyElements; ++i)
         local[i] = (*lst)[i];
@@ -861,7 +861,7 @@ void Atmosphere::setSeaIceMask(Teuchos::RCP<Epetra_Vector> mask)
     Msi_ = mask;
     CHECK_ZERO(localMSI_->Import(*Msi_, *as2std_surf_, Insert));
     int numMyElements = assemblySurfaceMap_->NumMyElements();
-    
+
     std::vector<double> localMSI(numMyElements, 0.0);
     localMSI_->ExtractCopy( &localMSI[0], numMyElements);
 
@@ -933,7 +933,7 @@ void Atmosphere::computeJacobian()
     int numMyElements = assemblyMap_->NumMyElements() - aux_;
 
     assert(numMyElements == (int) localJac->beg.size() - 1);
-    
+
     // loop over local elements
     int index, numentries;
     for (int i = 0; i < numMyElements; ++i)
@@ -964,8 +964,8 @@ void Atmosphere::computeJacobian()
                           << ", ierr = " << ierr
                           << ", GRID = " << grow
                           << "  LRID = " << lrid << std::endl;
-                    
-                std::cout << " graph inds in LRID:   " 
+
+                std::cout << " graph inds in LRID:   "
                           << jac_->Graph().NumMyIndices(lrid) << std::endl;
 
                 for (int ii = 0; ii < numentries; ++ii)
@@ -1053,7 +1053,7 @@ void Atmosphere::computeJacobian()
     {
         gid         = last + aa;
         icinds[pos] = gid;
-        icvals[pos] = 0.0; 
+        icvals[pos] = 0.0;
 
         // final dependency P -> P
         if (aa == 1)
@@ -1091,7 +1091,7 @@ void Atmosphere::computeJacobian()
         {
             if (useIntCondQ_)
                 icerr = jac_->InsertGlobalValues(rowIntCon_, len, icvals, icinds);
-            
+
             if (aux_ > 0)
                 iperr = jac_->InsertGlobalValues(last + 1, len, ipvals, ipinds);
         }
@@ -1132,7 +1132,7 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getE(char mode)
 
     // obtain view of E from serial AtmosLocal
     std::shared_ptr<std::vector<double> > localE = atmos_->interfaceE('V');
-        
+
     // assign obtained E values to distributed vector (overlapping)
     double *tmpE;
     localE_->ExtractView( &tmpE );
@@ -1142,7 +1142,7 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getE(char mode)
     // fill localE_ with dimensional evaporation
     for (int i = 0; i != numMySurfaceElements; ++i)
         tmpE[i] = (*localE)[i];
-        
+
     // export overlapping into non-overlapping E values
     CHECK_ZERO(E_->Export(*localE_, *as2std_surf_, Zero));
 
@@ -1159,7 +1159,7 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
     assert((int) surfmask_->size() == numGlobalElements);
 
     Atmosphere::CommPars pars;
-    getCommPars(pars);        
+    getCommPars(pars);
 
     // Without auxiliary unknowns we have to do the integral manually
     if (aux_ <= 0)
@@ -1237,7 +1237,7 @@ void Atmosphere::setPdist()
     for (int i = 0; i != ones.Map().NumMyElements(); ++i)
         if (std::abs((*pIntCoeff_)[i]) > 1e-7)
             ones[i] = 1.0;
-    
+
     CHECK_ZERO(Pdist_->Update(corr, ones, 1.0));
 
     // return the corrected Pdist in the local model
@@ -1267,20 +1267,20 @@ void Atmosphere::computeMassMat()
         atmos_->computeMassMat();
 
         int numMyElements = localDiagB_->Map().NumMyElements();
-        
+
         // obtain local diagonal
         std::shared_ptr<std::vector<double> > localDiagB =
             atmos_->getMassMat('V');
-        
+
         if ((int) localDiagB->size() != numMyElements)
         {
             ERROR("Local diagB incorrect size", __FILE__, __LINE__);
         }
-        
-        // obtain view of assembly diagB 
+
+        // obtain view of assembly diagB
         double *tmpview;
         localDiagB_->ExtractView(&tmpview);
-        
+
         // fill view
         for (int i = 0; i != numMyElements; ++i)
         {
@@ -1294,7 +1294,7 @@ void Atmosphere::computeMassMat()
         {
             (*diagB_)[diagB_->Map().LID(rowIntCon_)] = 0.0;
         }
-        
+
         // Set zero for integral equation for PP
         if (aux_ == 1)
         {
@@ -1310,7 +1310,7 @@ void Atmosphere::computeMassMat()
         }
         INFO("Atmosphere: build mass matrix... done");
     }
-    
+
     recompMassMat_ = false; // Disable subsequent recomputes
 }
 
@@ -1328,7 +1328,7 @@ void Atmosphere::applyMassMat(Epetra_MultiVector const &v,
 
     TIMER_STOP("Atmosphere: apply mass matrix...");
 }
- 
+
 //==================================================================
 void Atmosphere::buildPreconditioner()
 {
@@ -1388,12 +1388,12 @@ std::string const Atmosphere::writeData(bool describe)
     if (describe)
     {
         datastring << std::setw(_FIELDWIDTH_)
-                   << "max(Ta)" 
-                   << std::setw(_FIELDWIDTH_) 
-                   << "min(Ta)" 
-                   << std::setw(_FIELDWIDTH_) 
-                   << "max(Qa)" 
-                   << std::setw(_FIELDWIDTH_) 
+                   << "max(Ta)"
+                   << std::setw(_FIELDWIDTH_)
+                   << "min(Ta)"
+                   << std::setw(_FIELDWIDTH_)
+                   << "max(Qa)"
+                   << std::setw(_FIELDWIDTH_)
                    << "min(Qa)"
                    << std::setw(_FIELDWIDTH_)
                    << "||A||";
@@ -1401,9 +1401,9 @@ std::string const Atmosphere::writeData(bool describe)
         return datastring.str();
     }
     else
-    {    
-        datastring.precision(_PRECISION_);   
-    
+    {
+        datastring.precision(_PRECISION_);
+
         double maxT, minT;
         interfaceT()->MinValue(&minT);
         interfaceT()->MaxValue(&maxT);
@@ -1413,7 +1413,7 @@ std::string const Atmosphere::writeData(bool describe)
         interfaceQ()->MaxValue(&maxQ);
 
         double normA = Utils::norm(interfaceA());
-    
+
         datastring << std::scientific << std::setw(_FIELDWIDTH_)
                    << maxT << std::setw(_FIELDWIDTH_)
                    << minT << std::setw(_FIELDWIDTH_)
@@ -1446,7 +1446,7 @@ void Atmosphere::applyPrecon(Epetra_MultiVector const &in,
     // check matrix residual
     // Teuchos::RCP<Epetra_MultiVector> r =
     //     Teuchos::rcp(new Epetra_MultiVector(in));;
-    
+
     // applyMatrix(out, *r);
     // r->Update(1.0, in, -1.0);
     // double rnorm = Utils::norm(r);
@@ -1532,7 +1532,7 @@ void Atmosphere::createMatrixGraph()
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
                                gid0 + ATMOS_TT_, pos, indices));
-                
+
                 // Q-equation
                 pos = 0;
 
@@ -1572,7 +1572,7 @@ void Atmosphere::createMatrixGraph()
                 // ATMOS_AA_-ATMOS_PP_
                 for (int aa = 1; aa <= aux_; ++aa)
                     indices[pos++] = last + aa;
-                
+
                 // Insert dependencies in matrixGraph
                 CHECK_ZERO(matrixGraph_->InsertGlobalIndices(
                                gid0 + ATMOS_AA_, pos, indices));
@@ -1606,7 +1606,7 @@ void Atmosphere::createMatrixGraph()
         assert(len == pos);
         CHECK_NONNEG(matrixGraph_->InsertGlobalIndices(rowIntCon_, len, icinds));
     }
-    
+
     // Dependencies of the auxiliary unknown, on the same proc as integral condition
     if ( standardMap_->MyGID(rowIntCon_) )
     {
@@ -1687,7 +1687,7 @@ void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &fil
     HDF5.Write("LongwaveFlux",     *fluxes[AtmosLocal::_QLW]);
     HDF5.Write("ShortwaveFlux",    *fluxes[AtmosLocal::_QSW]);
     HDF5.Write("SensibleHeatFlux", *fluxes[AtmosLocal::_QSH]);
-    HDF5.Write("LatentHeatFlux",   *fluxes[AtmosLocal::_QLH]);    
+    HDF5.Write("LatentHeatFlux",   *fluxes[AtmosLocal::_QLH]);
 }
 
 //=============================================================================
@@ -1707,19 +1707,19 @@ std::vector<Teuchos::RCP<Epetra_Vector> > Atmosphere::getFluxes()
 
     for (int i = 0; i != numFluxes; ++i)
     {
-        localFluxes[i].ExtractView(&tmpPtrs[i]);   
+        localFluxes[i].ExtractView(&tmpPtrs[i]);
     }
-    
+
     atmos_->getFluxes(tmpPtrs[AtmosLocal::_QLW],
                       tmpPtrs[AtmosLocal::_QSW],
                       tmpPtrs[AtmosLocal::_QSH],
                       tmpPtrs[AtmosLocal::_QLH]);
-    
+
     for (int i = 0; i != numFluxes; ++i)
     {
         CHECK_ZERO(fluxes[i]->Export(localFluxes[i], *as2std_surf_, Zero));
     }
-    
+
     return fluxes;
 }
 
@@ -1737,7 +1737,7 @@ int Atmosphere::interface_row(int i, int j, int XX)
         {
             // return rows beyond the regular n*m*l*dof
             return dim_ - aux_ + (XX - ATMOS_PP_);
-        }                    
+        }
     }
     else
         return FIND_ROW_ATMOS0(dof_, n_, m_, l_, i, j, l_-1, XX);

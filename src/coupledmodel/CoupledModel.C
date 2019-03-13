@@ -10,7 +10,7 @@
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
 //==================================================================
-// constructor 
+// constructor
 CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                            std::shared_ptr<Atmosphere> atmos,
                            std::shared_ptr<SeaIce> seaice,
@@ -24,7 +24,7 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 {
     // set xml parameters
     setParameters(params);
-    
+
     // set models and identifiers
     int ident = 0;
 
@@ -51,7 +51,7 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 }
 
 //------------------------------------------------------------------
-// constructor 
+// constructor
 CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
                            std::shared_ptr<Atmosphere> atmos,
                            Teuchos::RCP<Teuchos::ParameterList> params)
@@ -67,7 +67,7 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 
     // in this setup seaice is not included
     useSeaIce_ = false;
-    
+
     // set models and identifiers
     int ident = 0;
 
@@ -95,7 +95,7 @@ void CoupledModel::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     precScheme_    = params->get("Preconditioning",'F');
     useOcean_      = params->get("Use ocean",true);
     useAtmos_      = params->get("Use atmosphere",true);
-    useSeaIce_     = params->get("Use sea ice",false);        
+    useSeaIce_     = params->get("Use sea ice",false);
 }
 
 //------------------------------------------------------------------
@@ -121,7 +121,7 @@ void CoupledModel::setup()
         stateView_->AppendVector(model->getState('V'));
         solView_->AppendVector(model->getSolution('V'));
         rhsView_->AppendVector(model->getRHS('V'));
-        
+
         // notify the models of the current continuation parameter
         model->setParName(parName_);
     }
@@ -144,10 +144,10 @@ void CoupledModel::setup()
     // Initialize CouplingBlock matrix
     using Block = CouplingBlock<std::shared_ptr<Model>,
                                 std::shared_ptr<Model> >;
-    
+
     C_ = std::vector<std::vector<Block> >(models_.size(),
                                           std::vector<Block>(models_.size()));
-    
+
     for (size_t i = 0; i != models_.size(); ++i)
         for (size_t j = 0; j != models_.size(); ++j)
         {
@@ -157,7 +157,7 @@ void CoupledModel::setup()
                 INFO("Created CouplingBlock: " << C_[i][j].name());
             }
         }
-    
+
     // Synchronize state
     synchronize();
 }
@@ -168,7 +168,7 @@ void CoupledModel::createGID2CoordMap()
     int N, M, L, dof, aux, modelIdent = 0;
 
     gid2coord_.clear();
-        
+
     for (auto &model: models_)
     {
         N = model->getDomain()->GlobalN();
@@ -180,7 +180,7 @@ void CoupledModel::createGID2CoordMap()
         // Auxiliary unknowns do not have a grid coordinate and are
         // appended at the end of an ordinary map.
         aux = model->getDomain()->Aux();
-        
+
         for (int k = 0; k != L; ++k)
             for (int j = 0; j != M; ++j)
                 for (int i = 0; i != N; ++i)
@@ -194,7 +194,7 @@ void CoupledModel::createGID2CoordMap()
             for (int a = 0; a < aux; ++a)
                 gid2coord_.push_back({modelIdent, 0, 0, 0, dof + a});
         }
-        
+
         modelIdent++;
     }
 
@@ -220,7 +220,7 @@ void CoupledModel::synchronize()
 {
 
     TIMER_START("CoupledModel: synchronize...");
-    
+
     syncCtr_++; // Keep track of synchronizations
 
     for (size_t i = 0; i != models_.size(); ++i)
@@ -229,7 +229,7 @@ void CoupledModel::synchronize()
             if ( models_[i] != models_[j] )
                  models_[i]->synchronize<>(models_[j]);
         }
-    
+
     TIMER_STOP("CoupledModel: synchronize...");
 }
 
@@ -421,11 +421,11 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
               << (nrm / normb) << " > " << tol
               , __FILE__, __LINE__);
     }
-    
+
     // keep track of effort
     if (effortCtr_ == 0)
         effort_ = 0;
-    
+
     effortCtr_++;
     effort_ = (effort_ * (effortCtr_ - 1) + iters ) / effortCtr_;
 
@@ -449,7 +449,7 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &ou
     {
         // Obtain temporary vector
         Combined_MultiVec z(v);
-        
+
         // Apply off-diagonal coupling blocks
         for (size_t j = 0; j != models_.size(); ++j)
         {
@@ -464,8 +464,8 @@ void CoupledModel::applyMatrix(Combined_MultiVec const &v, Combined_MultiVec &ou
             }
 
             // update with complete z
-            out.Update(1.0, z, 1.0);                                    
-        }            
+            out.Update(1.0, z, 1.0);
+        }
     }
     TIMER_STOP("CoupledModel: apply matrix...");
 }
@@ -481,8 +481,8 @@ void CoupledModel::applyMassMat(Combined_MultiVec const &v, Combined_MultiVec &o
     // Apply mass matrix
     for (size_t i = 0; i != models_.size(); ++i)
         models_[i]->applyMassMat(*v(i), *out(i));
-    
-    TIMER_STOP("CoupledModel: apply mass matrix...");    
+
+    TIMER_STOP("CoupledModel: apply mass matrix...");
 }
 
 //------------------------------------------------------------------
@@ -510,7 +510,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         */
 
         Combined_MultiVec tmp(x);  // create temporary array
-        tmp.PutScalar(0.0);        
+        tmp.PutScalar(0.0);
         Combined_MultiVec b(x);    // create b
 
         //--> this should be a parameter in xml and we should get rid
@@ -520,7 +520,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         double sign;
         for (int iters = 0; iters != maxPrecIters; ++iters)
             for (int k = (int) models_.size()-1; k >= 0; --k)
-            {                
+            {
                 *b(k) = *x(k); // reinitialize b(k) with x(k)
                 for (int i = 0; i < (int) models_.size(); ++i) // create summation
                 {
@@ -530,7 +530,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
                         sign = -1.0;
                     else
                         continue;
-                    
+
                     tmp(k)->PutScalar(0.0);                // zero result
                     C_[k][i].applyMatrix(*z(i), *tmp(k));  // MV
                     b(k)->Update(sign, *tmp(k), 1.0);      // add MV to b
@@ -538,9 +538,9 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
                 if ( (precScheme_ == 'C') &&
                      (iters == maxPrecIters-1) &&
                      (k == OCEAN) ) break; // skip final solve (ocean)
-                
+
                 models_[k]->applyPrecon(*b(k), *z(k));     // solve M
-            }            
+            }
     }
     else if ( (precScheme_ == 'F' || precScheme_ == 'G') && solvingScheme_ == 'C')
     {
@@ -552,7 +552,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
         //!              =: b_k
         //!--------------------------------------------------
         */
-         
+
         Combined_MultiVec tmp(x);          // create temporary array
         tmp.PutScalar(0.0);
         Combined_MultiVec b(x);            // initialize b_k with x_k
@@ -575,8 +575,8 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
                     else if ( (i > k) && (iters > 0 ) ) // assuming z is initialised 0
                         sign =  1.0;
                     else
-                        continue; 
-                
+                        continue;
+
                     tmp(k)->PutScalar(0.0);                 // just to be sure
                     C_[k][i].applyMatrix(*z(i), *tmp(k));   // MV
                     b(k)->Update(sign, *tmp(k), 1.0);       // add MV to b_k
@@ -603,7 +603,7 @@ double CoupledModel::explicitResNorm(std::shared_ptr<Combined_MultiVec> rhs)
     applyMatrix(*solView_, b);          // A*x
     b.Update(1, *rhs, -1);              // b-A*x
     double resnorm = Utils::norm(&b);   // ||b-A*x||
-    
+
     // Utils::save(b, "lsresidual");
     return resnorm;
 }
@@ -621,7 +621,7 @@ std::shared_ptr<Combined_MultiVec> CoupledModel::getSolution(char mode)
 
         for (auto &model: models_)
             out->AppendVector(model->getSolution('C'));
-            
+
         return out;
     }
     else
@@ -643,7 +643,7 @@ std::shared_ptr<Combined_MultiVec> CoupledModel::getState(char mode)
 
         for (auto &model: models_)
             out->AppendVector(model->getState('C'));
-            
+
         return out;
     }
     else
@@ -665,7 +665,7 @@ std::shared_ptr<Combined_MultiVec> CoupledModel::getRHS(char mode)
 
         for (auto &model: models_)
             out->AppendVector(model->getRHS('C'));
-            
+
         return out;
     }
     else
@@ -685,7 +685,7 @@ double CoupledModel::getPar()
         par = model->getPar(parName_);
         out = (std::abs(par) > 0.0) ? par : out;
     }
-    
+
     return out;
 }
 
@@ -720,7 +720,7 @@ void CoupledModel::postProcess()
     // moment to synchronize
     if (solvingScheme_ == 'D')
         synchronize();
-    
+
     // Let the models do their own post-processing
     for (auto &model: models_)
         model->postProcess();
@@ -747,7 +747,7 @@ std::string const CoupledModel::writeData(bool describe)
                 datastring << std::setw(_FIELDWIDTH_/ 3)
                            << "MV";
                 for (auto &model: models_)
-                    datastring << model->writeData(describe) << " ";   
+                    datastring << model->writeData(describe) << " ";
             }
             else
             {
@@ -755,9 +755,9 @@ std::string const CoupledModel::writeData(bool describe)
                 datastring << std::setw(_FIELDWIDTH_/3)
                            << std::round(effort_);
                 effortCtr_ = 0;
-                
+
                 for (auto &model: models_)
-                    datastring << model->writeData(describe) << " ";   
+                    datastring << model->writeData(describe) << " ";
             }
 
             return datastring.str();

@@ -65,7 +65,7 @@ public:
 
     using PreconPtr = Teuchos::RCP<Ifpack_Preconditioner>;
     using LandMask  = Utils::MaskStruct;
-     
+
 protected:
 
     Teuchos::RCP<THCM> thcm_;
@@ -338,7 +338,7 @@ public:
     //! other models. We use a pure abstract base class Model, from
     //! which all other models are derived. CoupledModel knows only
     //! the base class, hence in Model we downcast to specific derived
-    //! models. 
+    //! models.
 
     //! |      ---Model---        |
     //! |     /     |     \       |
@@ -392,7 +392,7 @@ public:
 
     // Obtain evaporation as computed by ocean
     Teuchos::RCP<Epetra_Vector> interfaceE();
-    
+
 
     // ---------------------------------------------------------------
     // Scale the matrix and rhs of the problem. These things are
@@ -432,7 +432,7 @@ public:
 
     // Project pressures modes from a state vector
     void pressureProjection(Teuchos::RCP<Epetra_Vector> vec);
-        
+
 private:
     // HDF5-based save and load functions to load and save components
     // other than the state and parameters.

@@ -7,15 +7,15 @@
 namespace // local unnamed namespace (similar to static in C)
 {
     RCP<TRIOS::Domain> domain;
-    
+
     RCP<Epetra_Map> standardMap;
     RCP<Epetra_Map> assemblyMap;
     RCP<Epetra_Map> stdSurfMap;
     RCP<Epetra_Map> asmSurfMap;
-    
+
     RCP<Epetra_Import> as2std;
     RCP<Epetra_Import> as2std_surf;
-    
+
     RCP<Epetra_Vector> vec;
     RCP<Epetra_Vector> localvec;
 
@@ -23,8 +23,8 @@ namespace // local unnamed namespace (similar to static in C)
 
     std::shared_ptr<Atmosphere> atmos;
 
-    RCP<Teuchos::ParameterList> atmosphereParams;    
-    
+    RCP<Teuchos::ParameterList> atmosphereParams;
+
     int n, m, l, dof, aux, periodic;
     double xmin,xmax,ymin,ymax;
 
@@ -61,7 +61,7 @@ TEST(Atmosphere, Initialization)
         failed = true;
         throw;
     }
-    
+
     EXPECT_EQ(failed, false);
 }
 
@@ -97,7 +97,7 @@ TEST(Domain, SimpleInit)
     {
         domain = Teuchos::rcp(new TRIOS::Domain(n, m, l, dof,
                                                 xmin, xmax, ymin, ymax,
-                                                periodic, 1.0, comm, aux));
+                                                periodic, 1.0, 1.0, comm, aux));
     }
     catch (...)
     {
@@ -119,7 +119,7 @@ TEST(Domain, SimpleInit)
 
     standardMap = domain->GetStandardMap();
     assemblyMap = domain->GetAssemblyMap();
-    
+
     EXPECT_EQ(standardMap->UniqueGIDs(), true);
 
     if (comm->NumProc() > 1)
@@ -141,29 +141,29 @@ TEST(Domain, AuxInit)
         std::cout << " aux not set, test has no use" << std::endl;
         return;
     }
-        
+
     bool failed = false;
 
     try
     {
         domain = Teuchos::rcp(new TRIOS::Domain(n, m, l, dof,
                                                 xmin, xmax, ymin, ymax,
-                                                periodic, 1.0, comm, aux));
+                                                periodic, 1.0, 1.0, comm, aux));
     }
     catch (...)
     {
         failed = true;
         throw;
     }
-    
+
     EXPECT_EQ(failed, false);
 
     Teuchos::RCP<Epetra_Map> colmap = domain->GetColMap();
 
     int dim = n * m * l * dof + aux;
-        
+
     EXPECT_EQ(colmap->NumGlobalElements(), dim);
-    
+
     ////////////////////////////////////////////
     // Create maps
     ////////////////////////////////////////////
@@ -172,7 +172,7 @@ TEST(Domain, AuxInit)
 
     standardMap = domain->GetStandardMap();
     assemblyMap = domain->GetAssemblyMap();
-    
+
     EXPECT_EQ(standardMap->UniqueGIDs(), true);
 
     if (comm->NumProc() > 1)
@@ -182,10 +182,10 @@ TEST(Domain, AuxInit)
 
     vec      = Teuchos::rcp(new Epetra_Vector(*standardMap));
     localvec = Teuchos::rcp(new Epetra_Vector(*assemblyMap));
-    
+
     int numMyStandardElements = standardMap->NumMyElements();
     int numMyAssemblyElements = assemblyMap->NumMyElements();
-    
+
     for (int i = 0; i != numMyStandardElements; ++i)
         (*vec)[i] = 100 + (*vec).Map().GID(i);
 
@@ -197,8 +197,8 @@ TEST(Domain, AuxInit)
 
     for (int i = 1; i <= aux; ++i)
         (*vec)[numMyStandardElements - aux - 1  + i] = 10000 + i - 1;
-    
-    
+
+
     for (int i = 0; i != numMyAssemblyElements; ++i)
         (*localvec)[i] = 1000 + localvec->Map().GID(i);
 
@@ -210,7 +210,7 @@ TEST(Domain, AuxInit)
     ////////////////////////////////////////////
     // Create surface maps
     ////////////////////////////////////////////
-    
+
     stdSurfMap = domain->CreateStandardMap(1, true);
     asmSurfMap = domain->CreateAssemblyMap(1, true);
 
@@ -224,7 +224,7 @@ TEST(Domain, AuxInit)
     }
     else
     {
-        EXPECT_EQ( numMyAssemblyElements, numMyStandardElements ); 
+        EXPECT_EQ( numMyAssemblyElements, numMyStandardElements );
         EXPECT_EQ( numMyAsmSurfElements,  numMyStdSurfElements  );
     }
 
@@ -265,7 +265,7 @@ TEST(Domain, Importers)
     int last        = FIND_ROW2(dof, n, m, l, n-1, m-1, l-1, dof) + aux;
     int locvec_last = localvec->Map().LID(last);
     int vec_last    = vec->Map().LID(last);
-    
+
     EXPECT_EQ( (*localvec)[locvec_last], 10000 + aux - 1 );
 
     int numMyStandardElements = standardMap->NumMyElements();
@@ -274,13 +274,13 @@ TEST(Domain, Importers)
     // Refill...
     for (int i = 0; i != numMyStandardElements; ++i)
         (*vec)[i] = 100 + (*vec).Map().GID(i);
-    
+
     for (int i = 0; i != numMyAssemblyElements; ++i)
         (*localvec)[i] = 1000 + localvec->Map().GID(i);
-    
+
     for (int i = 1; i <= aux; ++i)
         (*localvec)[locvec_last - aux + i] = 10000 + i - 1;
-    
+
     try
     {
         // Export overlapping localvec into non-overlapping vec
@@ -300,7 +300,7 @@ TEST(Domain, Importers)
 
     EXPECT_EQ(vec->GlobalLength(), standardMap->NumGlobalElements());
     EXPECT_EQ(vec->GlobalLength(), domain->GetSolveMap()->NumGlobalElements());
-    
+
 }
 
 //------------------------------------------------------------------
@@ -322,8 +322,8 @@ TEST(Domain, Gather)
 
     Teuchos::RCP<Epetra_MultiVector> gint =
         Utils::Gather(*intCondCoeff, comm->NumProc() - 1);
-    
-    EXPECT_EQ( gint->GlobalLength(), last + 1 );    
+
+    EXPECT_EQ( gint->GlobalLength(), last + 1 );
 }
 
 
@@ -359,19 +359,19 @@ TEST(Domain, MatVec)
 
     Teuchos::RCP<Epetra_Vector> x = Teuchos::rcp(new Epetra_Vector(*standardMap) );
     Teuchos::RCP<Epetra_Vector> b = Teuchos::rcp(new Epetra_Vector(*standardMap) );
-    
+
     x->PutScalar(1.0);
 
     double norm1 = Utils::norm(x);
-    
+
     mat->Apply(*x, *b);
 
     atmos->solve(b);
-    
+
     Teuchos::RCP<Epetra_Vector> x2 = atmos->getSolution('C');
-    
+
     double norm2 = Utils::norm(x2);
-    
+
     // There may be a difference due to domain overlap in the Ifpack
     // preconditioner that is used as a solver. So these norms should
     // be sort of similar.
@@ -392,7 +392,7 @@ TEST(Domain, Values)
     domain->Solve2Assembly(*b, *localb);
 
     comm->Barrier();
-    
+
     double P = 0.0;
     int last = n * m * l * dof + aux - 1;
     int lid  = 0;
@@ -407,7 +407,7 @@ TEST(Domain, Values)
     int numMyLocalElements = assemblyMap->NumMyElements();
 
     // The final element should be P
-    EXPECT_EQ(Pall, (*localb)[numMyLocalElements-1]);    
+    EXPECT_EQ(Pall, (*localb)[numMyLocalElements-1]);
 }
 
 //------------------------------------------------------------------
@@ -417,23 +417,23 @@ TEST(Domain, AtmosRHS)
     atmos->getState('V')->PutScalar(0.0);
 
     EXPECT_EQ(atmos->getState('V')->GlobalLength(), n * m * l * dof + aux);
-    
+
     atmos->getSolution('V')->PutScalar(0.0);
 
-    double defaultP = 123.456;    
-    
+    double defaultP = 123.456;
+
     atmos->idealized(defaultP);
     atmos->computeRHS();
     Teuchos::RCP<Epetra_Vector> rhs = atmos->getRHS('C');
 
     EXPECT_EQ( rhs->Map().SameAs(*standardMap), 1);
-    
+
     double Prhs = 0.0;
-    
+
     int last = n * m * l * dof + aux - 1;
     int lid = -1;
-    
-                   
+
+
     if ( comm->MyPID() == (comm->NumProc() - 1) )
     {
         lid = standardMap->LID(last);
@@ -443,7 +443,7 @@ TEST(Domain, AtmosRHS)
     double PrhsAll;
     comm->SumAll(&Prhs, &PrhsAll, 1);
 
-    // Here we expect that 
+    // Here we expect that
     // \sum_i (1 / A) * (tdim / qdim) * dqso * T * dA_i =
     // \sum_i (1 / A) * (q_i * dA_i)
     EXPECT_EQ(PrhsAll, -defaultP);
@@ -454,15 +454,15 @@ TEST(Domain, numericalJacobian)
 {
     // only do this test for small problems in serial
     int nmax = 2e3;
-    
+
     if ( (comm->NumProc() == 1) &&
          (atmos->getState('V')->GlobalLength() < nmax) )
     {
-        bool failed = false;    
+        bool failed = false;
         try
         {
             INFO("compute njC");
-            
+
             NumericalJacobian<std::shared_ptr<Atmosphere>,
                               Teuchos::RCP<Epetra_Vector> > njC;
 
@@ -471,9 +471,9 @@ TEST(Domain, numericalJacobian)
             njC.compute(atmos, atmos->getState('V'));
 
             std::string fnameJnC("JnC");
-            
+
             INFO(" Printing Numerical Jacobian " << fnameJnC);
-            
+
             njC.print(fnameJnC);
 
             double njCsum = njC.sumValues();
@@ -482,20 +482,20 @@ TEST(Domain, numericalJacobian)
             Epetra_Vector ones(*standardMap);
             Epetra_Vector resl(*standardMap);
             ones.PutScalar(1.0);
-            
+
             mat->Apply(ones, resl);
-            
+
             int numMyElements = standardMap->NumMyElements();
             double sum = 0;
             double sumAll = 0;
             for (int i = 0; i != numMyElements; ++i)
                 sum += resl[i];
 
-            
+
             comm->SumAll(&sum, &sumAll, 1);
             INFO("mat elements sum: " << sumAll);
             INFO("njc elements sum: " << njCsum);
-            
+
             EXPECT_NEAR(sumAll, njCsum, 1e-4);
 
         }
@@ -506,12 +506,12 @@ TEST(Domain, numericalJacobian)
         }
         EXPECT_EQ(failed, false);
     }
-    
+
     if (comm->NumProc() != 1)
     {
         INFO("****Numerical Jacobian test cannot run in parallel****");
     }
-    
+
     if (atmos->getState('V')->GlobalLength() > nmax)
     {
         INFO("****Numerical Jacobian test cannot run for this problem size****");
@@ -536,7 +536,7 @@ int main(int argc, char **argv)
     comm->Barrier();
     std::cout << "TEST exit code proc #" << comm->MyPID()
               << " " << out << std::endl;
-    
+
     MPI_Finalize();
     return out;
 }

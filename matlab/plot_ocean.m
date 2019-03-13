@@ -20,7 +20,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     else
         maskfile = 'fort.44';
     end
-        
+
     if isfield(opts, 'readFluxes')
         readFluxes = opts.readFluxes;
     else
@@ -44,10 +44,10 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     else
         legacy_mode = false;
     end
-    
+
     if strcmp(solfile(end-3:end),'rt.3')
         legacy_mode = true;
-    end        
+    end
 
     if isfield(opts, 'only_contour')
         only_contour = opts.only_contour;
@@ -60,13 +60,13 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     else
         plot_everything = false;
     end
-    
+
     if isfield(opts, 'bstream')
         plot_bstream = opts.bstream;
     else
         plot_bstream = false;
     end
-    
+
     if isfield(opts, 'mstream')
         plot_mstream = opts.mstream;
     else
@@ -78,7 +78,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     else
         plot_temperature = false;
     end
-    
+
     if isfield(opts, 'salinity')
         plot_salinity = opts.salinity;
     else
@@ -109,48 +109,48 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         plot_temflux = false;
     end
 
-    if isfield(opts, 'fname_add') 
+    if isfield(opts, 'fname_add')
         export_to_file = opts.exportfig;
         fname_add      = opts.fname_add;
     else
         export_to_file = false;
         fname_add = '';
     end
-    
+
     if isfield(opts, 'exportfig')
         export_to_file = opts.exportfig;
     else
         export_to_file = false;
-    end        
+    end
 
     if isfield(opts, 'invert')
         invert = opts.invert;
     else
         invert = false;
-    end    
-    
+    end
+
     if isfield(opts, 'fig_ctr')
         fig_ctr = opts.fig_ctr;
     else
         fig_ctr = 1; % first figure handle number
     end
 
-    
+
     restrict_sol = false;
     rmask = [];
-    
+
     if isfield(opts, 'restrict_sol') && ...
             isfield(opts, 'rmask_file')
-        
+
         restrict_sol = opts.restrict_sol;
         rmask_file = opts.rmask_file;
         fprintf('Solution is restricted to mask %s\n', rmask_file);
     elseif isfield(opts, 'restrict_sol') && ...
             ~isfield(opts, 'rmask_file')
-        
+
         fprintf(['WARNING: An rmask_file should be supplied when ' ...
                  'restrict_sol=true.\n']);
-    end            
+    end
 
     % interpolation mode
     if isfield(opts, 'solfile2') && isfield(opts, 'maskfile2') ...
@@ -180,12 +180,12 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     T0    = 15;        %[deg C]  Reference temperature
     S0    = 35;        %[psu]    Reference salinity
     RtD   = 180/pi;    %[-]      Radians to degrees
-    
+
     if readEV
         T0 = 0;        %[deg C]  Reference temperature
         S0 = 0;        %[psu]    Reference salinity
-    end       
-    
+    end
+
     c1 = 3.8e-3;
     c2 = 21.87;
     c3 = 265.5;
@@ -203,7 +203,6 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         landm = (1-k)*landm + k*landm2;
     end
 
-
     % Deduce grid stretching
     [qz,dfzt,dfzw] = gridstretch(zw);
 
@@ -212,17 +211,17 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         [lab icp par xl xlp det sig sol solup soleig] = ...
             readfort3(la, solfile);
         add = {};
-    else       
+    else
         [sol, pars, add] = readhdf5(solfile, nun, n, m, l, opts);
-    end   
+    end
 
     if interp_mode
         [sol2] = readhdf5(solfile2, nun, n, m, l, opts);
         sol = (1-k)*sol+k*sol2;
     end
-    
+
     if restrict_sol
-        
+
         % load mask to restrict solution, assuming THCM input
         % ordering
         fprintf('load mask to restrict solution: %s\n', rmask_file);
@@ -231,20 +230,20 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         landm = shiftdim(landm,2);
         landm(2:l+1, bmask) = 1;
         landm = shiftdim(landm,1);
-        
+
         % cut borders
         rmask = bmask(2:end-1,2:end-1);
         % restrict solution
         sol = shiftdim(sol, 3);
         sol(:,:,rmask) = 0;
         sol = shiftdim(sol, 1);
-        
+
         % zonal integration
         zmask = ~rmask;
         zmask = logical(~sum(zmask,1))
 
     end
-    
+
     surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
     landm_int  = landm(2:n+1,2:m+1,2:l+1);
     dx         = (xu(n+1)-xu(1))/n;
@@ -254,7 +253,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     % - Create surface landmask image
     summask = sum(landm_int,3);
     summask = summask / max(max(abs(summask)));
-    summask = summask.^3;        
+    summask = summask.^3;
 
     % - EXTRACT SOLUTION COMPONENTS - -----------------------------------
     [u,v,w,p,T,S] = extractsol(sol);
@@ -275,10 +274,10 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         img  = PSIB(2:end,:)';
         imgp = img; imgp(imgp<0)=NaN;
         imgn = img; imgn(imgn>-0)=NaN;
-        
+
         %contourf(RtD*x,RtD*(y),imgp,10,'LineStyle','none'); hold on;
         %contourf(RtD*x,RtD*(y),imgn,10,'LineStyle','none'); hold on;
-         
+
         imagesc(RtD*x,RtD*(y),img); hold on; set(gca,'ydir','normal');
 
         plot_mask(summask,x,y); hold on
@@ -290,7 +289,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
             caxis([opts.caxis_min,opts.caxis_max])
         else
             %caxis([cmin, cmax]);
-        end                              
+        end
 
         colorbar
         colormap(my_colmap(caxis, 0))
@@ -315,17 +314,17 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         % Compute overturning streamfunction
         PSIG = mstream(v*udim,[x;xmax]*cos(yv(2:m+1))'*r0dim,zw*hdim);
         PSIG = [zeros(m+1,1) PSIG];
-        
+
         if restrict_sol
             PSIG(logical([0,zmask]),:) = NaN;
         end
-        
+
         PSIGp = PSIG; PSIGp(PSIGp<0) = NaN;
         PSIGn = PSIG; PSIGn(PSIGn>0) = NaN;
 
         % layers below 1km
         blwkm = find(zw*hdim < -1000);
-        
+
         cmin = min(min(PSIG(:,blwkm)));
         cmax = max(max(PSIG(:,blwkm)));
 
@@ -398,13 +397,13 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         colormap(my_colmap(caxis))
         %crange = max(abs(caxis))-T0;
         %caxis([T0-crange, T0+crange]);
-        
+
         if export_to_file
             exportfig('isothermals.eps',10,[20,7],invert)
         end
-        
+
     end
-    
+
     if plot_sst || plot_everything
 
         % -------------------------------------------------------
@@ -417,19 +416,19 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         if ~only_contour
             imagesc(RtD*x,RtD*(y),img); hold on
         end
-        
+
         Tsurf(Tsurf == 0) = NaN;
         img  = T0 + Tsurf';
         if ~readEV || only_contour
             [C,h] = contour(RtD*x,RtD*(y),img,15,'k-');
         end
-        
+
         if only_contour
             h.LevelList=round(h.LevelList,1);
             v = h.LevelList;
-            clabel(C,h,v(1:2:end));        
+            clabel(C,h,v(1:2:end));
         end
-        
+
         set(gca,'ydir','normal')
         title('SST', 'interpreter', 'none');
         xlabel('Longitude');
@@ -447,7 +446,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
             exportfig('sst.eps',10,[50,25],invert)
         end
     end
-    
+
     if plot_salinity || plot_everything
         figure(fig_ctr); fig_ctr = fig_ctr+1;
 
@@ -459,7 +458,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         title('Isohalines')
         xlabel('Latitude')
         ylabel('z (m)')
-        
+
         colormap(my_colmap(caxis))
         %crange = max(abs(min(caxis)),abs(max(caxis)))-S0;
         %caxis(S0+[-crange, crange])
@@ -470,19 +469,19 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         end
     end
     if ( plot_sss || plot_everything )
-        
-        figure(fig_ctr); fig_ctr = fig_ctr+1; 
+
+        figure(fig_ctr); fig_ctr = fig_ctr+1;
         Ssurf = S(:,:,l);
         Sz = mean(Ssurf,1);
-        
+
         minS  = S0+min(min(Ssurf));
         maxS  = S0+max(max(Ssurf));
-        
+
         img  = S0 + Ssurf';
         imagesc(RtD*x, RtD*y, img); hold on
-        
+
         Ssurf(Ssurf == 0) = NaN;
-        img  = S0 + Ssurf';                
+        img  = S0 + Ssurf';
         contour(RtD*x, RtD*y, img, 20,'k-', 'Visible', 'on'); hold off
 
         %set(gca,'color',[0.65,0.65,0.65]);
@@ -492,21 +491,21 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         title('SSS', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
-        
+
         cmap = [my_colmap(caxis)];
         colormap(cmap)
-        
+
     end
-    
+
     if ( plot_salflux || plot_everything )  ...
             && ~isempty(add)
-        
+
         figure(fig_ctr); fig_ctr = fig_ctr+1;
         im = reshape(add.SalFlux,n,m);
         im(im==0) = NaN;
         imagesc(RtD*x, RtD*y, im');
 
-        set(gca, 'ydir', 'normal'); 
+        set(gca, 'ydir', 'normal');
         title('Salinity flux', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
@@ -515,16 +514,16 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         colormap(cmap)
 
     end
-    
+
     if ( plot_temflux || plot_everything ) ...
             && ~isempty(add)
-        
+
         figure(fig_ctr); fig_ctr = fig_ctr+1;
         im = reshape(add.TemFlux,n,m);
         im(im==0) = NaN;
         imagesc(RtD*x, RtD*y, im');
 
-        set(gca, 'ydir', 'normal'); 
+        set(gca, 'ydir', 'normal');
         title('Temperature flux', 'interpreter', 'none');
         xlabel('Longitude');
         ylabel('Latitude');
@@ -532,7 +531,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         cmap = [my_colmap(caxis)];
         colormap(cmap)
 
-        
+
     end
 
     fluxes = [];

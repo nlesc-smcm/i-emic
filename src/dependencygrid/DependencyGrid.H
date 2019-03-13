@@ -4,7 +4,7 @@
     A multidimensional array describing the dependencies among the unknowns:
     grid(i,j,k,21,U,V) = c   <=>   (...) * d/dt U|(i,j,k) = ... + c * V|(i-1,j+1,k+1)
     grid(i,j,k,13,U,V) = d   <=>   (...) * d/dt U|(i,j,k) = ... + d * V|(i,j-1,k-1)
-    
+
 */
 //-----------------------------------------------------------------------------
 
@@ -32,7 +32,7 @@ public:
     void   set(int const (&range)[8], int A, int B, Atom &atom);
     void   set(int const (&range)[8], int A, int B, double value);
     void   set(int i, int j, int k, int loc, int const (&range)[4], double value);
-    
+
     void   add(double scalar, Atom &atom);
     void   zero();
 

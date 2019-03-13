@@ -150,7 +150,7 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     epr_             = params->get("rain/snow threshold width (deg C)", 1.0);
     epa_             = params->get("accumulation threshold width (m/y)", 0.1);
 
-// continuation ----------------------------------------------------------------
+    // continuation ----------------------------------------------------------------
     allParameters_   = { "Combined Forcing",
                          "Solar Forcing",
                          "Longwave Forcing",
@@ -162,7 +162,7 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
     parName_         = params->get( "Continuation parameter",
                                     allParameters_[0] );
 
-// starting values
+    // starting values
     int ctr = 0;
     comb_            = params->get(allParameters_[ctr++], 0.0);
     sunp_            = params->get(allParameters_[ctr++], 1.0);

@@ -101,7 +101,7 @@ public:
         _QTOS,     // ocean-seaice flux
         _MSI       // seaice mask
     };
-    
+
     //! Struct to hold pointers to derivative fields
     struct Derivatives
     {
@@ -118,7 +118,7 @@ public:
         Teuchos::RCP<Epetra_Vector> dFSdM;
 
         //! Derivative of the salinity equation with respect to the
-        //! sea ice integral correction gamma. 
+        //! sea ice integral correction gamma.
         Teuchos::RCP<Epetra_Vector> dFSdG;
     };
 
@@ -186,7 +186,7 @@ public:
     //! Set atmosphere precipitation field in the ocean model
     void setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP);
 
-    //! Set sea ice mask 
+    //! Set sea ice mask
     void setSeaIceQ(Teuchos::RCP<Epetra_Vector> const &seaiceQ);
 
     //! Set sea ice surface temperature
@@ -200,7 +200,7 @@ public:
 
     //! Set tatm in the ocean model
     void setTatm(Teuchos::RCP<Epetra_Vector> const &emip);
-    
+
     //! Obtain non-overlapping emip
     Teuchos::RCP<Epetra_Vector> getEmip(char mode = 'D');
 
@@ -209,9 +209,9 @@ public:
 
     //! Get a number of fluxes
     std::vector<Teuchos::RCP<Epetra_Vector> > getFluxes();
-    
+
     Derivatives getDerivatives();
-    
+
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
 
@@ -220,7 +220,7 @@ public:
 
     //! Obtain atmosphere humidity vector
     Teuchos::RCP<Epetra_Vector> getAtmosQ();
-    
+
     //! Obtain local atmosphere precipitation vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosP();
 
@@ -372,7 +372,7 @@ public:
     void integralChecks(Teuchos::RCP<Epetra_Vector> state,
                         double &salt_advection,
                         double &salt_diffusion);
-    
+
 private:
 
     //! object for domain-decomposition:
@@ -431,13 +431,13 @@ private:
     Teuchos::RCP<Epetra_Vector> localOceanE;
 
     //! used to import emip field into THCM
-    Teuchos::RCP<Epetra_Vector> localEmip;    
+    Teuchos::RCP<Epetra_Vector> localEmip;
 
     //! a surface overlapping vector without meaning
-    Teuchos::RCP<Epetra_Vector> localSurfTmp;    
-    
+    Teuchos::RCP<Epetra_Vector> localSurfTmp;
+
     //! used to import tatm field into THCM
-    Teuchos::RCP<Epetra_Vector> localTatm;    
+    Teuchos::RCP<Epetra_Vector> localTatm;
 
     //! used to export computed RHS vector from THCM:
     Teuchos::RCP<Epetra_Vector> localRhs;
@@ -539,7 +539,7 @@ private:
     //! While sres = 0 (flux forcing in the local model), do not
     //! create integral condition.
     bool localSres_;
-    
+
     //! tres=0: non-restoring temperature forcing => integral condition in A and f
     int tres;
 
@@ -570,13 +570,13 @@ private:
 
     //! distribute land array after global initialization
     Teuchos::RCP<Epetra_IntVector> distributeLandMask(Teuchos::RCP<Epetra_IntVector> landm_glob);
-    
+
     //! implement integral condition for S in Jacobian and B-matrix
     void intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B);
 
     //! flag to switch Dirichlet values P=0 on/off
     bool fixPressurePoints_;
-    
+
     //! implement Dirichlet values P=0 in cells rowPfix1/2 (if >=0)
     void fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B);
 

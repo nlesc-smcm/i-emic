@@ -19,9 +19,9 @@ class SeaIce;
 
 class Model
 {
-    
+
 public:
-                     
+
     using VectorPtr     = Teuchos::RCP<Epetra_Vector>;
     using MatrixPtr     = Teuchos::RCP<Epetra_CrsMatrix>;
     using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
@@ -44,22 +44,22 @@ public:
     //! HDF5 input/output filenames
     std::string inputFile_;
     std::string outputFile_;
-    
+
     virtual ~Model() {}
 
-    //! compute rhs (spatial discretization)    
+    //! compute rhs (spatial discretization)
     virtual void computeRHS() = 0;
 
-    //! compute derivative of rhs    
+    //! compute derivative of rhs
     virtual void computeJacobian() = 0;
 
-    //! compute mass matrix    
+    //! compute mass matrix
     virtual void computeMassMat() = 0;
-    
+
     virtual void applyMatrix(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
     virtual void applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
     virtual void applyPrecon(Epetra_MultiVector const &v, Epetra_MultiVector &out) = 0;
-    
+
     virtual MatrixPtr getJacobian() = 0;
 
     virtual VectorPtr getState(char mode) = 0;
@@ -78,18 +78,18 @@ public:
     virtual std::string const int2par(int ind) = 0;
 
     virtual Utils::MaskStruct getLandMask() = 0;
-    virtual void setLandMask(Utils::MaskStruct const &mask) = 0;    
+    virtual void setLandMask(Utils::MaskStruct const &mask) = 0;
 
     virtual std::string const name() = 0;
     virtual int const modelIdent() = 0;
-    
+
     virtual Teuchos::RCP<TRIOS::Domain> getDomain() = 0;
 
     //! Model's own getBlock to distribute calls among submodels
     template <typename T>
     std::shared_ptr<Utils::CRSMat> getBlock(T model);
 
-    //! getBlock members to compute derivative w.r.t. any other model. 
+    //! getBlock members to compute derivative w.r.t. any other model.
     virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Ocean> ocean)      = 0;
     virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos) = 0;
     virtual std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice)    = 0;
@@ -107,20 +107,20 @@ public:
 
     //! degrees of freedom (excluding any auxiliary unknowns)
     virtual int dof() = 0;
-    
+
     virtual void buildPreconditioner() = 0;
 
     virtual void preProcess()  = 0;
-    
+
     virtual void postProcess() = 0;
 
-    //! Plaintext data output 
+    //! Plaintext data output
     virtual std::string const writeData(bool describe) = 0;
 
     //! HDF5-based load function for the state and parameters
     int loadStateFromFile(std::string const &filename);
 
-    //! Additional, model-specific queries for the HDF5 object 
+    //! Additional, model-specific queries for the HDF5 object
     virtual void additionalImports(EpetraExt::HDF5 &HDF5,
                                    std::string const &filename) = 0;
 
@@ -130,7 +130,7 @@ public:
     //! Copy outputFile_ to <prepend>outputFile_
     int copyState(std::string const &prepend);
 
-    //! Additional, model-specific writes for the HDF5 object 
+    //! Additional, model-specific writes for the HDF5 object
     virtual void additionalExports(EpetraExt::HDF5 &HDF5,
                                    std::string const &filename) = 0;
 
@@ -213,7 +213,7 @@ inline int Model::loadStateFromFile(std::string const &filename)
 
         // Import state from HDF5 into state_ datamember
         CHECK_ZERO(state_->Import(*((*readState)(0)), *lin2solve, Insert));
-    
+
 
         INFO(" state: ||x|| = " << Utils::norm(state_));
 
@@ -251,7 +251,7 @@ inline int Model::loadStateFromFile(std::string const &filename)
 
     additionalImports(HDF5, filename);
 
-    INFO("_________________________________________________________");    
+    INFO("_________________________________________________________");
     return 0;
 }
 
@@ -288,10 +288,28 @@ inline int Model::saveStateToFile(std::string const &filename)
     HDF5.Write("Grid", "l",   getDomain()->GlobalL());
     HDF5.Write("Grid", "nun", getDomain()->Dof());
     HDF5.Write("Grid", "aux", getDomain()->Aux());
-    
+
+    HDF5.Write("Grid", "xmin", getDomain()->Xmin());
+    HDF5.Write("Grid", "xmax", getDomain()->Xmax());
+    HDF5.Write("Grid", "ymin", getDomain()->Ymin());
+    HDF5.Write("Grid", "ymax", getDomain()->Ymax());
+    HDF5.Write("Grid", "hdim", getDomain()->Hdim());
+
+
+    // Write grid arrays
+    std::string gridArrays[6] = {"x", "y", "z",
+                                 "xu", "yv", "zw"};
+
+    for (int i = 0; i != 6; ++i)
+    {
+        std::vector<double> array = (*getDomain()->GetGlobalGrid())[i];
+        HDF5.Write("Grid", gridArrays[i], H5T_NATIVE_DOUBLE,
+                   array.size(), &array[0]);
+    }
+
     additionalExports(HDF5, filename);
     comm_->Barrier();
-    
+
     INFO("_________________________________________________________");
     return 0;
 }
@@ -315,7 +333,7 @@ inline int Model::copyState(std::string const &append)
             WARNING("No use in copying a state when saveState = false",
                     __FILE__, __LINE__);
         }
-    }    
+    }
     return 0;
 }
 
@@ -324,7 +342,7 @@ inline void Model::gid2coord(int const &gid, int &mdl,
                    int &i, int &j, int &k, int &xx)
 {
             mdl = modelIdent();
-            
+
             int N   = getDomain()->GlobalN();
             int M   = getDomain()->GlobalM();
             int L   = getDomain()->GlobalL();
@@ -337,10 +355,10 @@ inline void Model::gid2coord(int const &gid, int &mdl,
                 xx = dof + aux;
                 i  = 0;
                 j  = 0;
-                k  = 0;                         
+                k  = 0;
             }
             else
-            {            
+            {
                 int tmp = gid;
 
                 xx  = tmp % dof;
@@ -380,7 +398,7 @@ void Model::synchronize(T model)
     auto ocean  = std::dynamic_pointer_cast<Ocean>(model);
     auto atmos  = std::dynamic_pointer_cast<Atmosphere>(model);
     auto seaice = std::dynamic_pointer_cast<SeaIce>(model);
-    
+
     if (ocean)
         return this->synchronize(ocean);
     else if (atmos)

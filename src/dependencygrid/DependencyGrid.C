@@ -1,5 +1,5 @@
 #include "DependencyGrid.H"
-#include <cassert>           
+#include <cassert>
 //=============================================================================
 // / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / //
 //                                                                           //
@@ -65,7 +65,7 @@ void DependencyGrid::set(int i, int j, int k, int loc,
         for (int B = range[2]; B != range[3]+1; ++B)
         {
             grid_(i-1, j-1, k-1, loc-1, A-1, B-1) = value;
-        }    
+        }
 }
 
 //-----------------------------------------------------------------------------
@@ -204,8 +204,8 @@ void Atom::multiply(int dim, std::vector<double> &vec, double scalarThis)
     else if(dim ==2)
         assert(len == m_+1);
     else if(dim ==3)
-        assert(len == l_+1);    
-        
+        assert(len == l_+1);
+
     int idx = 0;
     for (int i = 1; i != n_+1; ++i)
         for (int j = 1; j != m_+1; ++j)
@@ -214,7 +214,7 @@ void Atom::multiply(int dim, std::vector<double> &vec, double scalarThis)
                 {
                     idx = (dim == 1) ? i :
                         ( (dim == 2) ? j : k );
-                    
+
                     // converting to 0-based
                     atom_(i-1, j-1, k-1, loc-1) = scalarThis *
                         vec[idx] * atom_(i-1, j-1, k-1, loc-1);
