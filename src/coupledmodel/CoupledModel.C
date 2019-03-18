@@ -417,7 +417,7 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
 
     if ((tol > 0) && (normb > 0) && ( (nrm / normb / tol) > 10))
     {
-        WARNING("Actual residual norm too large: "
+        WARNING("Actual residual norm ten times larger: "
               << (nrm / normb) << " > " << tol
               , __FILE__, __LINE__);
     }

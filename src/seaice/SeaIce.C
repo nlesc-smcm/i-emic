@@ -102,6 +102,7 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     outputFile_ = params->get("Output file", "seaice_output.h5");
     loadState_  = params->get("Load state", false);
     saveState_  = params->get("Save state", true);
+    saveMask_   = params->get("Save mask", true);
     saveEvery_  = params->get("Save frequency", 0);
 
     // initialize postprocessing counter
@@ -890,7 +891,11 @@ void SeaIce::setPar(std::string const &parName, double value)
     else if (parName.compare(allParameters_[3]) == 0)
         maskf_ = value;
     else if (parName.compare(allParameters_[4]) == 0)
-        shf_ = value;
+        shf_   = value;
+    else
+    {
+        ERROR("Bad parName...", __FILE__, __LINE__);
+    }
 }
 
 //=============================================================================
@@ -1659,4 +1664,9 @@ void SeaIce::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &filenam
     HDF5.Write("SensibleHeatFlux", *fluxes[_QSH]);
     HDF5.Write("LatentHeatFlux",   *fluxes[_QLH]);
 
+    if (saveMask_)
+    {
+        HDF5.Write("MaskGlobal", "Surface", H5T_NATIVE_INT,
+                   surfmask_->size(), &(*surfmask_)[0]);
+    }
 }
