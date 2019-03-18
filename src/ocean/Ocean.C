@@ -935,19 +935,12 @@ void Ocean::initializeSolver()
     solverParams_ = rcp(new Teuchos::ParameterList);
     updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
 
-    // Get the requested solver type
-    solverType_ = solverParams_->get("Ocean solver type", 'F');
-    recompTol_  = solverParams_->get("Tolerance recompute preconditioner", 0.999);
-
     // Initialize the preconditioner
     if (!precInitialized_)
         initializePreconditioner();
 
-    // Initialize the requested solver
-    if (solverType_ == 'F')
-        initializeBelos();
-    else
-        ERROR("No solver specified", __FILE__, __LINE__);
+    // Initialize the solver
+    initializeBelos();
 
     solverInitialized_ = true;
 
@@ -1084,20 +1077,13 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
     TIMER_START("Ocean: solve...");
     INFO("Ocean: solve...");
     INFO(" |x| = " << Utils::norm(sol_));
-    INFO(" |b| = " << Utils::norm(b));
+    INFO(" |b| = " << Utils::norm(rhs));
 
     int    iters;
     double tol;
     try
     {
-        try
-        {
-            belosSolver_->solve();      // Solve
-        }
-        catch (std::exception const &e)
-        {
-            ERROR("Ocean: exception caught: " << e.what(), __FILE__, __LINE__);
-        }
+        belosSolver_->solve();      // Solve
     }
     catch (std::exception const &e)
     {
@@ -1106,49 +1092,38 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
 
     INFO("Ocean: solve... done");
     TIMER_STOP("Ocean: solve...");
+
     // ---------------------------------------------------------------------
+    // Inspect solve and update effort
+    iters = belosSolver_->getNumIters();
+    tol   = belosSolver_->achievedTol();
+    INFO("Ocean: FGMRES, i = " << iters << ", ||r|| = " << tol);
 
-    // Do some post-processing
-    if (solverType_ == 'F')
+    // keep track of effort
+    if (effortCtr_ == 0)
+        effort_ = 0;
+
+    effortCtr_++;
+    effort_ = (effort_ * (effortCtr_ - 1) + iters ) / effortCtr_;
+
+    Teuchos::RCP<Epetra_Vector> bvec =
+        Teuchos::rcp(new Epetra_Vector(*(*rhs)(0)));
+
+    double normb = Utils::norm(bvec);
+    double nrm   = explicitResNorm(bvec);
+
+    INFO("           ||b||         = " << normb);
+    INFO("           ||x||         = " << Utils::norm(sol_));
+    INFO("        ||b-Ax|| / ||b|| = " << nrm / normb);
+
+    if ((tol > 0) && (normb > 0) && ( (nrm / normb / tol) > 10))
     {
-        iters = belosSolver_->getNumIters();
-        tol   = belosSolver_->achievedTol();
-        INFO("Ocean: FGMRES, i = " << iters << ", ||r|| = " << tol);
-
-        // keep track of effort
-        if (effortCtr_ == 0)
-            effort_ = 0;
-
-        effortCtr_++;
-        effort_ = (effort_ * (effortCtr_ - 1) + iters ) / effortCtr_;
-
-        Teuchos::RCP<Epetra_Vector> b =
-            Teuchos::rcp(new Epetra_Vector(*(*rhs)(0)));
-        double normb = Utils::norm(b);
-        double nrm = explicitResNorm(b);
-        INFO("           ||b||         = " << normb);
-        INFO("           ||x||         = " << Utils::norm(sol_));
-        INFO("        ||b-Ax|| / ||b|| = " << nrm / normb);
-
-        if ((tol > 0) && (normb > 0) && ( (nrm / normb / tol) > 10))
-        {
-	  WARNING("Actual residual norm too large: "
-                  << (nrm / normb) << " > " << tol
-                  , __FILE__, __LINE__);
-        }
-
-        TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
-
-        // if (tol > recompTol_) // stagnation, maybe a new precon helps
-        // {
-        //     INFO("Ocean: FGMRES, stagnation: " << recompTol_);
-        //     recompPreconditioner_ = true;
-        // }
+        WARNING("Actual residual norm at least ten times larger: "
+                << (nrm / normb) << " > " << tol
+                , __FILE__, __LINE__);
     }
-    else
-    {
-        ERROR("No solve specified", __FILE__, __LINE__);
-    }
+
+    TRACK_ITERATIONS("Ocean: FGMRES iterations...", iters);
 }
 
 //=====================================================================
