@@ -21,6 +21,8 @@
 //=====================================================================
 #include "Ocean.H"
 #include "THCM.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
 #include "THCMdefs.H"
 #include "TRIOS_Domain.H"
 #include "TRIOS_BlockPreconditioner.H"

@@ -36,8 +36,6 @@
 
 #include "Model.H"
 #include "GlobalDefinitions.H"
-#include "Atmosphere.H"
-#include "SeaIce.H"
 #include "THCMdefs.H"
 #include "OceanGrid.H"
 #include "Combined_MultiVec.H"
@@ -46,6 +44,8 @@
 #include <string>
 
 // forward declarations
+class Atmosphere;
+class SeaIce;
 class THCM;
 
 namespace TRIOS
@@ -293,7 +293,7 @@ public:
                        Utils::MaskStruct maskA, Utils::MaskStruct maskB);
 
     //! Additional monitor for continuation
-    bool monitor(){return false;}
+    bool monitor(){ return false; }
 
     //! Pre and post-convergence processing
     void preProcess();
@@ -326,10 +326,9 @@ public:
     int getRowIntCon();
 
     //! The following functions are required for the coupling with
-    //! other models. We use a pure abstract base class Model, from
-    //! which all other models are derived. CoupledModel knows only
-    //! the base class, hence in Model we downcast to specific derived
-    //! models.
+    //! other models. We use an abstract base class Model, from which
+    //! all other models are derived. CoupledModel knows only the base
+    //! class, hence in Model we downcast to specific derived models.
 
     //! |      ---Model---        |
     //! |     /     |     \       |

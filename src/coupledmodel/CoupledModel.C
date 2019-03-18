@@ -1,4 +1,7 @@
 #include "CoupledModel.H"
+#include "Ocean.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
 
 #include <functional>
 
@@ -11,9 +14,9 @@
 
 //==================================================================
 // constructor
-CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
-                           std::shared_ptr<Atmosphere> atmos,
-                           std::shared_ptr<SeaIce> seaice,
+CoupledModel::CoupledModel(std::shared_ptr<Model> ocean,
+                           std::shared_ptr<Model> atmos,
+                           std::shared_ptr<Model> seaice,
                            Teuchos::RCP<Teuchos::ParameterList> params)
     :
     OCEAN              (-1),
@@ -52,8 +55,8 @@ CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
 
 //------------------------------------------------------------------
 // constructor
-CoupledModel::CoupledModel(std::shared_ptr<Ocean> ocean,
-                           std::shared_ptr<Atmosphere> atmos,
+CoupledModel::CoupledModel(std::shared_ptr<Model> ocean,
+                           std::shared_ptr<Model> atmos,
                            Teuchos::RCP<Teuchos::ParameterList> params)
     :
     OCEAN              (-1),

@@ -3,9 +3,6 @@
 
 //! models
 #include "Model.H"
-#include "Ocean.H"
-#include "Atmosphere.H"
-#include "SeaIce.H"
 
 //! vector and matrix helpers
 #include "Combined_MultiVec.H"
@@ -123,14 +120,14 @@ private:
 
 public:
     //! constructor
-    CoupledModel(std::shared_ptr<Ocean> ocean,
-                 std::shared_ptr<Atmosphere> atmos,
-                 std::shared_ptr<SeaIce> seaice,
+    CoupledModel(std::shared_ptr<Model> ocean,
+                 std::shared_ptr<Model> atmos,
+                 std::shared_ptr<Model> seaice,
                  Teuchos::RCP<Teuchos::ParameterList> params);
 
     //! constructor
-    CoupledModel(std::shared_ptr<Ocean> ocean,
-                 std::shared_ptr<Atmosphere> atmos,
+    CoupledModel(std::shared_ptr<Model> ocean,
+                 std::shared_ptr<Model> atmos,
                  Teuchos::RCP<Teuchos::ParameterList> params);
 
     ~CoupledModel() { INFO("CoupledModel destructor"); }
