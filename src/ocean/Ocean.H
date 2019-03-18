@@ -125,8 +125,8 @@ protected:
     bool loadTemperatureFlux_;
     bool saveTemperatureFlux_;
 
-    //! Use legacy fortran output fort.3
-    bool useFort3_;
+    //! Use legacy fortran output fort.3 and fort.44
+    bool useFort3_, useFort44_;
 
     //! Integrals of the columns of the Jacobian may indicate errors
     //! in the discretization.
@@ -432,7 +432,7 @@ private:
 
     // Write the state of the ocean to traditional fortran out files fort.*
     // Use matlab plot-scripts for visualization
-    void printFiles();
+    void printLegacyFiles();
 
     // Initializer members
     void initializeOcean();

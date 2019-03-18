@@ -65,7 +65,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     loadTemperatureFlux_   (oceanParamList->get("Load temperature flux", false)),
     saveTemperatureFlux_   (oceanParamList->get("Save temperature flux", true)),
 
-    useFort3_              (oceanParamList->get("Use legacy fortran output", false)),
+    useFort3_              (oceanParamList->get("Use legacy fort.3 output", false)),
+    useFort44_             (oceanParamList->get("Use legacy fort.44 output", true)),
     saveColumnIntegral_    (oceanParamList->get("Save column integral", false)),
     maxMaskFixes_          (oceanParamList->get("Max mask fixes", 5)),
 
@@ -797,8 +798,8 @@ void Ocean::preProcess()
     INFO("                      enabling computation of preconditioner.");
     INFO("                      enabling computation of mass matrix.");
 
-    // Output datafiles (hdf5, fort.44)
-    printFiles(); // not sure if this is not too much...
+    // Output legacy datafiles
+    printLegacyFiles();
 
 }
 
@@ -820,9 +821,7 @@ void Ocean::postProcess()
         copyState(append.str());
     }
 
-    TIMER_START("Ocean: printFiles");
-    printFiles(); // Print in standard fortran format
-    TIMER_STOP("Ocean: printFiles");
+    printLegacyFiles(); // Print in standard fortran format
 
     // Column integral can be used to check discretization: should be
     // zero, excluding integral condition and its dependencies.
@@ -1763,11 +1762,17 @@ Teuchos::RCP<Epetra_Vector> Ocean::interfaceS()
 }
 
 //=====================================================================
-void Ocean::printFiles()
+void Ocean::printLegacyFiles()
 {
     // This writes to fort.44. If requested we can also output the
     // legacy fort.3 here. Default behaviour: exit write function
     // after creating fort.44.
+
+    if (!useFort44_)
+        return;
+
+    TIMER_START("Ocean: printLegacyFiles");
+
     int filename = 0;
     int label    = 0;
     int length   = 1;
@@ -1805,6 +1810,8 @@ void Ocean::printFiles()
 
     delete [] solutionArray;
     delete [] rhsArray;
+
+    TIMER_STOP("Ocean: printLegacyFiles");
 }
 
 //==================================================================
