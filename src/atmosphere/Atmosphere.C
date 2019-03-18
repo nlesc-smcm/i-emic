@@ -32,6 +32,7 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     outputFile_ = params->get("Output file", "atmos_output.h5");
     loadState_  = params->get("Load state", false);
     saveState_  = params->get("Save state", true);
+    saveMask_   = params->get("Save mask", true);
     saveEvery_  = params->get("Save frequency", 0);
 
     // initialize postprocessing counter
@@ -1688,6 +1689,12 @@ void Atmosphere::additionalExports(EpetraExt::HDF5 &HDF5, std::string const &fil
     HDF5.Write("ShortwaveFlux",    *fluxes[AtmosLocal::_QSW]);
     HDF5.Write("SensibleHeatFlux", *fluxes[AtmosLocal::_QSH]);
     HDF5.Write("LatentHeatFlux",   *fluxes[AtmosLocal::_QLH]);
+
+    if (saveMask_)
+    {
+        HDF5.Write("MaskGlobal", "Surface", H5T_NATIVE_INT,
+                   surfmask_->size(), &(*surfmask_)[0]);
+    }
 }
 
 //=============================================================================

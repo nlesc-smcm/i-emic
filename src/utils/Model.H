@@ -33,7 +33,7 @@ public:
     Teuchos::RCP<Epetra_Comm> comm_;
 
     //! input/output flags
-    bool loadState_, saveState_;
+    bool loadState_, saveState_, loadMask_, saveMask_;
 
     //! save/copy frequency
     int saveEvery_;

@@ -60,8 +60,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     recompPreconditioner_  (true),   // We need a preconditioner to start with
     recompMassMat_         (true),   // We need a mass matrix to start with
 
-    saveMask_              (oceanParamList->get("Save mask", true)),
-    loadMask_              (oceanParamList->get("Load mask", true)),
     loadSalinityFlux_      (oceanParamList->get("Load salinity flux", false)),
     saveSalinityFlux_      (oceanParamList->get("Save salinity flux", true)),
     loadTemperatureFlux_   (oceanParamList->get("Load temperature flux", false)),
@@ -83,6 +81,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     // inherited input/output datamembers
     inputFile_   = oceanParamList->get("Input file",  "ocean_input.h5");
     outputFile_  = oceanParamList->get("Output file", "ocean_output.h5");
+    saveMask_    = oceanParamList->get("Save mask", true);
+    loadMask_    = oceanParamList->get("Load mask", true);
+
     loadState_   = oceanParamList->get("Load state", false);
     saveState_   = oceanParamList->get("Save state", true);
     saveEvery_   = oceanParamList->get("Save frequency", 0);

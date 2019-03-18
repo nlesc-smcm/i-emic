@@ -127,8 +127,6 @@ protected:
     std::string currentMask_;
 
     // Flags for loading/saving states from/to hfd5 file
-    bool saveMask_;
-    bool loadMask_;
     bool loadSalinityFlux_;
     bool saveSalinityFlux_;
     bool loadTemperatureFlux_;
