@@ -36,15 +36,12 @@ Continuation(Model model, ParameterList pars)
     newtonTolerance_       (pars->get("Newton tolerance", 1.0e-4)),
     destinationTolerance_  (pars->get("destination tolerance", 1.0e-7)),
     userDetect_            (pars->get("enable custom monitor", false)),
+    detectMode_            (pars->get("detection of special points", 'D')),
     tanScaling_            (pars->get("state tangent scaling", 1.0e0)),
     normalizeStrategy_     (pars->get("normalize strategy", 'N')),
-    
     stabilityScheme_       (pars->get("compute stability", 'N')),
-
     rejectFailedNewton_    (pars->get("reject failed iteration", true)),
     giveUpAtdsMin_         (pars->get("give up at minimum step size", true)),
-    cycleTolerance_        (pars->get("enable tolerance cycling", false)),
-    usePracticalTol_       (pars->get("enable practical tolerance", false)),
     newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
     tangentType_           (pars->get("tangent type", 'S')),
     residualTest_          (pars->get("corrector residual test", 'D')),
@@ -80,11 +77,8 @@ Continuation(Model model, ParameterList pars)
 
     INFO("Continuation: number of destinations = " << destinations_.size());
     
-    
     INFO(std::endl << "Continuation parameter list: "
          << std::endl << *pars << std::endl);   
-
-
 }
 
 //======================================================================
@@ -122,8 +116,12 @@ initialize()
     modelInfo();
 
     // initialize Storage struct
-    storage_.ds0    = ds_;
-    storage_.par0   = par_;
+    storage_.ds0     = ds_;
+    storage_.ds00    = ds_;
+    storage_.par0    = par_;
+    storage_.par00   = par_;
+    storage_.parDot0 = 0.0;
+    
     storage_.state0 = model_->getState('C');
 
     // initializations for detect()
@@ -170,7 +168,7 @@ run()
 
     createInitialTangent(); // Create the first tangent
 
-    detect();     // Detect special points
+    detect(detectMode_);    // Detect special points
     userDetect(); // Use additional targets provided by model class
 
     int status = 0;    
@@ -184,11 +182,11 @@ run()
         
         if (status) // If step failed we reset and continue
         {
-            reset();                       // Reset the model
-            continue;                      // Skip the rest
+            reset();      // Reset the model
+            continue;     // Skip the rest
         }
 
-        detect();     // Detect special points
+        detect(detectMode_);  // Detect special points
         userDetect(); // Use additional targets provided by model class
         adjustStep(); // step size adjustment
     }
@@ -214,8 +212,6 @@ step()
     TIMER_START("Continuation: step");
     // Let the model do some administrative work at the beginning of a step
     model_->preProcess();
-
-    computeTolerance();         // Calculate practical tolerance
 
     int status = 0;
     status = eulerPredictor();  // Apply Euler predictor
@@ -274,24 +270,6 @@ step()
     return 0; // Exiting normally
 }
 
-//======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
-computeTolerance()
-{
-    // Scale the requested tolerance with sqrt(n)
-    if (usePracticalTol_)
-        practicalTol_ = newtonTolerance_ * sqrt(stateView_->GlobalLength());
-    else
-        practicalTol_ = newtonTolerance_;
-
-    // If requested we cycle between several multiples of practicalTol_
-    if (cycleTolerance_)
-    {
-        int multiples[5] = {1,5,10,10,5};
-        practicalTol_ *= multiples[step_ % 5];
-    }
-}
 
 //======================================================================
 template<typename Model, typename ParameterList>
@@ -352,7 +330,6 @@ createInitialTangent()
     normalize();
 
     // Test the matrix and rhs
-
     VectorPtr tmp = model_->getSolution('C');
     VectorPtr one = model_->getSolution('C');
     tmp->Scale(0.0);
@@ -395,6 +372,7 @@ computeDFDPar(char mode)
 
     INFO("    creating dFdPar...");
     INFO("       |                       F(x,l) = " << Utils::norm(rhsView_));
+
     // Get a copy of this RHS, store it in our rhsCopy_ member
     rhsCopy_ = model_->getRHS('C');
 
@@ -761,12 +739,12 @@ newtonCorrector()
         
         if (residualTest_ == 'R')
         {
-            INFO("                           ||R||_2 : " << res << " <? " << practicalTol_);
+            INFO("                           ||R||_2 : " << res << " <? " << newtonTolerance_);
         }
         else if (residualTest_ == 'D')
         {
             INFO("                           ||R||_2 : " << normRHStest_);                   
-            INFO("                     ||dx,dl||_inf : " << res << " <? " << practicalTol_);
+            INFO("                     ||dx,dl||_inf : " << res << " <? " << newtonTolerance_);
         }
         
         INFO("                     old res / res : " << res0 / res);
@@ -781,7 +759,7 @@ newtonCorrector()
         if (printImportantVectors_)
             Utils::save(stateDir, "dx");
 
-        if (res < practicalTol_ && newtonIter_ >= minNewtonIterations_)
+        if (res < newtonTolerance_ && newtonIter_ >= minNewtonIterations_)
             break;
     }
 
@@ -792,7 +770,7 @@ newtonCorrector()
     // Do some administrative work
     TRACK_ITERATIONS("Continuation: Newton iterations...", newtonIter_);
 
-    if (res > practicalTol_)
+    if (res > newtonTolerance_)
     {
         INFO("Continuation: Newton failed after " << newtonIter_ << " steps");
         if (rejectFailedNewton_)
@@ -858,8 +836,19 @@ detect(char mode)
     double dest = destinations_[0];
 
     par_ = model_->getPar(); // just to be on the safe side
-    double f0 = storage_.par0 - dest;
-    double f1 =          par_ - dest;
+
+    double f0, f1;
+    if (mode == 'D')
+    {
+        f0 = storage_.par0 - dest;
+        f1 =          par_ - dest;
+    }
+    else if (mode == 'P')
+    {
+        f0 = storage_.parDot0;
+        f1 = parDot_;
+        std::cout << "f0: " << f0 << " " << "f1: " << f1 << std::endl;
+    }
 
     if (signMonitor_[0] == 0) // only at initialization
         signMonitor_[0] = SGN(f1);
@@ -868,6 +857,7 @@ detect(char mode)
     {
         INFO("Continuation::detect(): sign switch in f1 detected");
         INFO("        activated dest: " << dest);
+        std::cout << "Continuation::detect(): sign switch in f1 detected" << std::endl;
         secant_     =  true;   // set flag to start secant process
         dsStart_    =  ds_;    // save step size at beginning of secant
     }
@@ -1045,6 +1035,9 @@ store()
     storage_.par0      = model_->getPar();
     storage_.ds00      = storage_.ds0;
     storage_.ds0       = ds_;
+
+    // We keep the previous parameter tangent
+    storage_.parDot0   = parDot_;
 }
 
 //======================================================================
@@ -1088,7 +1081,6 @@ eigenSolver()
         if (eigenSolverSet_)
         {
             jdqz_->solve();
-
 
             // save eigenvectors
             std::stringstream ss;

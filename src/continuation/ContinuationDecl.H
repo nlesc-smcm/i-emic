@@ -154,6 +154,10 @@ class Continuation
     double destinationTolerance_; 
     //! let model class determine a simple monitor
     bool userDetect_;             
+    //! specify type of special point detection:
+    //!      'D' converge at destination 0,1,... (default)
+    //!      'P' converge at turning point
+    char detectMode_;             
     //! scaling of the state tangent
     double tanScaling_;           
     //! normalization strategy 'O' old or 'N' new
@@ -166,12 +170,6 @@ class Continuation
     bool rejectFailedNewton_;     
     //! give up at minimum step size
     bool giveUpAtdsMin_;          
-    //! actual tolerance used for the problem
-    double practicalTol_;         
-    //! if true we cycle between multiples of tol
-    bool cycleTolerance_;         
-    //! if true we scale the tolerance
-    bool usePracticalTol_;        
 
     //! If the parameter dependence in the rhs is constant we can reuse statedot
     //! in the Newton corrector, partially disregarding updates in the Jacobian.
@@ -227,7 +225,9 @@ class Continuation
         //! prev ds
         double ds0;           
         //! prev prev ds
-        double ds00;          
+        double ds00;
+        //! prev pardot
+        double parDot0;
     };
 
     Storage storage_;
@@ -269,7 +269,6 @@ private:
     //! Modes:  'S' Secant
     //!         'E' Euler
     void createTangent(char mode);
-    void computeTolerance();
 
     //! Normalize the tangent with an additional scaling
     //! for the state component.
@@ -289,7 +288,7 @@ private:
 
     //! Detect special points.
     //! Modes: 'D' : converge on destination
-    //!        'P' : converge on first sign switch in parDot (not impl yet)
+    //!        'P' : converge on first sign switch in parDot
     void detect(char mode = 'D');
 
     //! let model::monitor define stopping criterion

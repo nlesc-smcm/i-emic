@@ -17,6 +17,9 @@
   <!-- destination 1, destination 2, etc. as well                  -->  
   <Parameter name="destination 0" type="double" value="1.0"/>
 
+  <!-- Converge at destination 'D' or converge at turning point 'P' -->
+  <Parameter name="detection of special points" type="char" value="D"/>
+
   <!-- Let the model class define an additional stopping criterion -->
   <Parameter name="enable custom monitor" type="bool" value="false"/>
 
@@ -29,7 +32,7 @@
 
   <!-- Tolerance when converging on destination   -->
   <!--  for the secant process in detect()        -->
-  <Parameter name="destination tolerance" type="double" value="1.0e-7"/>
+  <Parameter name="destination tolerance" type="double" value="1.0e-4"/>
 
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
   <Parameter name="maximum Newton iterations" type="int" value="5"/>
