@@ -1,27 +1,4 @@
-#include <Epetra_config.h>
-
-#  ifdef HAVE_MPI
-// Epetra's wrapper for MPI_Comm.  This header file only exists if
-// Epetra was built with MPI enabled.
-#    include <mpi.h>
-#    include <Epetra_MpiComm.h>
-#  else
-#    include <Epetra_SerialComm.h>
-#  endif // HAVE_MPI
-
-#include <Epetra_Map.h>
-#include <Epetra_Import.h>
-#include <Epetra_Vector.h>
-#include <Teuchos_RCP.hpp>
-
-#include "gtest/gtest.h" // google test
-
-#include "GlobalDefinitions.H"
-
-Teuchos::RCP<std::ostream> outFile;      // output file
-Teuchos::RCP<std::ostream> cdataFile;    // cdata file
-ProfileType                profile;      // profile
-std::stack<Timer>          timerStack;   // timing stack
+#include "TestDefinitions.H"
 
 namespace
 {

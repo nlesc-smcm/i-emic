@@ -1,13 +1,12 @@
-#!/bin/bash                                                                                               
+#!/bin/bash
+
 rm -rf CMakeCache.txt
 rm -rf CMakeFiles
 
-module load cmake
-module load mkl
 MKL_LIBS="mkl_intel_lp64;mkl_intel_thread;mkl_core;pthread;iomp5"
 
 cmake \
-  -D CMAKE_INSTALL_PREFIX:PATH=${HOME}/trilinos/11.14 \
+  -D CMAKE_INSTALL_PREFIX:PATH=${HOME}/trilinos/12.12 \
   -D CMAKE_BUILD_TYPE=Release \
   -D BUILD_SHARED_LIBS:BOOL=ON \
 \

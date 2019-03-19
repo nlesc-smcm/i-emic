@@ -1,6 +1,8 @@
 rm -rf CMakeCache.txt CMakeFiles
 
 cmake \
--DMRILU_DIR=/home/emulder/mrilu/ifort/  \
--DTrilinos_DIR=/${HOME}/trilinos/11.14  \
+-D CMAKE_C_COMPILER:STRING="mpiicc" \
+-D CMAKE_CXX_COMPILER:STRING="mpiicpc" \
+-D CMAKE_Fortran_COMPILER:STRING="mpiifort" \
+-D Trilinos_DIR=/${HOME}/trilinos/12.12  \
 ../

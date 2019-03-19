@@ -4,11 +4,12 @@ cmake_minimum_required(VERSION 2.8)
 if (DEFINED ENV{TRILINOS_DIR} AND NOT DEFINED Trilinos_DIR)
   set (Trilinos_DIR $ENV{TRILINOS_DIR}/lib/cmake/Trilinos)
 endif ()
-message ("-- Trilinos directory: " ${Trilinos_DIR})
 
 # ------------------------------------------------------------------
 # Trilinos
 find_package(Trilinos)
+
+message ("-- Trilinos directory: " ${Trilinos_DIR})
 
 if (NOT Trilinos_FOUND)
   message(FATAL_ERROR " Trilinos root directory should be in PATH or TRILINOS_DIR.")
@@ -19,7 +20,9 @@ set(CMAKE_Fortran_COMPILER ${Trilinos_Fortran_COMPILER})
 
 enable_language(Fortran)
 
-message("-- CMAKE_Fortran_COMPILER_ID ${CMAKE_Fortran_COMPILER_ID}")
+message("-- CMAKE_CXX_COMPILER:        ${CMAKE_CXX_COMPILER}")
+message("-- CMAKE_CXX_COMPILER_ID:     ${CMAKE_CXX_COMPILER_ID}")
+message("-- CMAKE_Fortran_COMPILER:    ${CMAKE_Fortran_COMPILER}")
 
 if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU") #gfortran, gcc
   
