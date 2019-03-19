@@ -76,9 +76,9 @@ Continuation(Model model, ParameterList pars)
     destinationsBackup_ = destinations_;
 
     INFO("Continuation: number of destinations = " << destinations_.size());
-    
+
     INFO(std::endl << "Continuation parameter list: "
-         << std::endl << *pars << std::endl);   
+         << std::endl << *pars << std::endl);
 }
 
 //======================================================================
@@ -107,7 +107,7 @@ initialize()
     solView_     = model_->getSolution('V');
     par_         = model_->getPar();
     startingPar_ = model_->getPar();
-    
+
     // Save the residual
     if (printImportantVectors_)
         Utils::save(rhsView_, "residual");
@@ -121,7 +121,7 @@ initialize()
     storage_.par0    = par_;
     storage_.par00   = par_;
     storage_.parDot0 = 0.0;
-    
+
     storage_.state0 = model_->getState('C');
 
     // initializations for detect()
@@ -163,15 +163,12 @@ run()
     INFO("Continuation::run initialize...");
     initialize();    // core initializations
     INFO("Continuation::run initialize... done");
-    
+
     TIMER_START("Continuation: run");
 
     createInitialTangent(); // Create the first tangent
 
-    detect(detectMode_);    // Detect special points
-    userDetect(); // Use additional targets provided by model class
-
-    int status = 0;    
+    int status = 0;
 
     while (!reachedLastDest_ && (step_ != maxSteps_) && !abortFlag_)
     {
@@ -179,14 +176,14 @@ run()
         info();           // Print continuation summary
         store();          // Store the current state and parameter
         status = step();  // Perform a continuation step
-        
+
         if (status) // If step failed we reset and continue
         {
             reset();      // Reset the model
             continue;     // Skip the rest
         }
 
-        detect(detectMode_);  // Detect special points
+        detect();     // Detect special points
         userDetect(); // Use additional targets provided by model class
         adjustStep(); // step size adjustment
     }
@@ -194,10 +191,10 @@ run()
 
     if (abortFlag_)
     {
-        WARNING("Continuation aborted!",__FILE__, __LINE__);                    
+        WARNING("Continuation aborted!",__FILE__, __LINE__);
         return 1;
     }
-    
+
     finalize();
 
     INFO("---------Finished continuation run--------------");
@@ -227,7 +224,7 @@ step()
     TIMER_START("Continuation: Newton");
     status = newtonCorrector(); // Apply Newton corrector
     TIMER_STOP("Continuation: Newton");
-    
+
     if (status)   // Failure
     {
         TIMER_STOP("Continuation: step");
@@ -260,7 +257,7 @@ step()
     // Let the model do some administrative work at the end of a succesful step
     TIMER_START("Continuation: step -> postprocess");
     model_->postProcess();
-    TIMER_STOP("Continuation: step -> postprocess");    
+    TIMER_STOP("Continuation: step -> postprocess");
 
     // Write continuation data to file
     bool describe = (step_ == 1) ? true : false;
@@ -299,7 +296,7 @@ createInitialTangent()
     }
 
     // 2a) Solve J*dxdpar = -dFdPar_
-    if ( (initialTangent_ == 'E') || (initialTangent_ == 'S'))   
+    if ( (initialTangent_ == 'E') || (initialTangent_ == 'S'))
     {
         model_->preProcess();
         model_->computeJacobian();
@@ -417,11 +414,11 @@ createTangent(char mode)
 
         // Compute stateDot = (state1 - state0)/ds0
         stateDot_->Update(-1.0 / ds0, *storage_.state0, 1.0 / ds0);
-        
+
         // Compute parDot = (par1 - par0)/ds
         par_    = model_->getPar();      // update our par_
         parDot_ = (par_ - par0) / ds0;
-        
+
     }
     else if (mode == 'E')  // Euler
     {
@@ -514,7 +511,7 @@ normalize()
     {
         WARNING(" undefined normalization strategy!",__FILE__, __LINE__);
     }
-    
+
 }
 
 //======================================================================
@@ -651,7 +648,7 @@ newtonCorrector()
             else
                 parDir = (rbp - zeta_ * Utils::dot(stateDot_, z))
                     / (parDot_ - zeta_ * Utils::dot(stateDot_, y));
-            
+
         }
         else if (normalizeStrategy_ == 'N')
         {
@@ -676,12 +673,12 @@ newtonCorrector()
 
         //  let that be the new direction
         stateDir = z;
-        
+
         // Update the state and the parameter in the model
         stateView_->Update(1.0, *stateDir, 1.0);
         par_ = par_ + parDir;  // update our parameter
         model_->setPar(par_);  // set it in the model
-        
+
         ++newtonIter_;
         ++sumNewtonIter_;
 
@@ -716,7 +713,7 @@ newtonCorrector()
         }
 
         // residual tests and printing --------------------------------------------
-        
+
         // obtain the residual
         if (residualTest_ == 'R')
         {
@@ -724,7 +721,7 @@ newtonCorrector()
         }
         else if (residualTest_ == 'D')
         {
-            normDX = Utils::normInf(stateDir);                              
+            normDX = Utils::normInf(stateDir);
             res = std::max(std::abs(parDir), normDX);
         }
         else
@@ -736,17 +733,17 @@ newtonCorrector()
         INFO("----------------------------------------------------------");
         INFO("           Newton corrector    iter: " << newtonIter_ );
         INFO("                       old ||R||_2 : " << normRHS_);
-        
+
         if (residualTest_ == 'R')
         {
             INFO("                           ||R||_2 : " << res << " <? " << newtonTolerance_);
         }
         else if (residualTest_ == 'D')
         {
-            INFO("                           ||R||_2 : " << normRHStest_);                   
+            INFO("                           ||R||_2 : " << normRHStest_);
             INFO("                     ||dx,dl||_inf : " << res << " <? " << newtonTolerance_);
         }
-        
+
         INFO("                     old res / res : " << res0 / res);
         INFO("                          ||dx||_2 : " << Utils::norm(stateDir));
         INFO("                           ||x||_2 : " << Utils::norm(stateView_));
@@ -830,24 +827,28 @@ runBackTracking(VectorPtr stateDir, double parDir)
 
 //======================================================================
 template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
-detect(char mode)
+void Continuation<Model, ParameterList>::detect()
 {
     double dest = destinations_[0];
 
     par_ = model_->getPar(); // just to be on the safe side
 
     double f0, f1;
-    if (mode == 'D')
+    if (detectMode_ == 'D')
     {
         f0 = storage_.par0 - dest;
         f1 =          par_ - dest;
     }
-    else if (mode == 'P')
+    else if (detectMode_ == 'P')
     {
         f0 = storage_.parDot0;
         f1 = parDot_;
-        std::cout << "f0: " << f0 << " " << "f1: " << f1 << std::endl;
+    }
+
+    if (f1 == f0)
+    {
+        WARNING("This should not happen: f1 = " << f1 << " == "
+                << f0 << " = f0" , __FILE__, __LINE__);
     }
 
     if (signMonitor_[0] == 0) // only at initialization
@@ -857,12 +858,11 @@ detect(char mode)
     {
         INFO("Continuation::detect(): sign switch in f1 detected");
         INFO("        activated dest: " << dest);
-        std::cout << "Continuation::detect(): sign switch in f1 detected" << std::endl;
         secant_     =  true;   // set flag to start secant process
         dsStart_    =  ds_;    // save step size at beginning of secant
     }
     else
-        signMonitor_[0] = SGN(f1);            
+        signMonitor_[0] = SGN(f1);
 
     if (secant_)
     {
@@ -877,7 +877,7 @@ detect(char mode)
     if (secant_ && std::abs(f1) < destinationTolerance_)
     {
         INFO("Continuation::detect(): destination " << dest << " reached. \n");
-            
+
         // stability scheme = E => eigenvalues computed at every converged destination
         if (stabilityScheme_ == 'E')
             eigenSolver();
@@ -888,7 +888,7 @@ detect(char mode)
 
         // do not adjust step size for the next step
         fixStepSize_ = true;
-                
+
         // remove reached destination and corresponding sign monitor
         destinations_.erase(destinations_.begin());
         signMonitor_.erase(signMonitor_.begin());
@@ -923,13 +923,13 @@ adjustStep()
 {
     // adjustStep is disabled during a secant process
     // or when requested with fixStepSize_
-    if (secant_ || fixStepSize_)  
+    if (secant_ || fixStepSize_)
     {
         fixStepSize_ = false;
         return;   // Do nothing
     }
     INFO("Continuation::adjustStep(), old ds: " << ds_);
-    
+
     // step size control, see [Seydel p 188.]
     double factor = optNewtonIterations_ / (double) newtonIter_;
 
@@ -944,7 +944,7 @@ adjustStep()
     // set some bounds for the step size
     ds_ = (std::abs(ds_) > std::abs(dsMax_)) ? SGN(ds_) * std::abs(dsMax_) : ds_;
     ds_ = (std::abs(ds_) < std::abs(dsMin_)) ? SGN(ds_) * std::abs(dsMin_) : ds_;
-    
+
     INFO("                            new ds: " << ds_);
 
 }
@@ -980,7 +980,7 @@ reset()
         Utils::save(model_->getSolution('V'), "failed_sol"); // Print failed solution
         model_->dumpBlocks();
     }
-    
+
     INFO("***********************************************");
     INFO("Continuation: reset... ");
     INFO("|                step: " << --step_); // decrease number of steps
@@ -1001,8 +1001,8 @@ reset()
     resetCounter_++;
 
     // fix step size for next step
-    fixStepSize_ = true; 
-    
+    fixStepSize_ = true;
+
     if (( std::abs(ds_) <= std::abs(dsMin_) ) &&
         (( resetCounter_ >= 100 ) || giveUpAtdsMin_))
     {
@@ -1068,7 +1068,7 @@ setEigenSolver(std::shared_ptr<JDQZsolver> jdqz)
     jdqz_ = jdqz;
     INFO("Continuation: set eigenvalue solver");
     eigenSolverSet_ = true;
-    jdqz_->printParameters();    
+    jdqz_->printParameters();
 }
 
 //=====================================================================
@@ -1085,8 +1085,8 @@ eigenSolver()
             // save eigenvectors
             std::stringstream ss;
             ss << "ev_step_" << step_;
-            
-            Utils::saveEigenvectors(jdqz_, ss.str());        
+
+            Utils::saveEigenvectors(jdqz_, ss.str());
         }
         else
         {
@@ -1115,12 +1115,12 @@ testCopyView()
 {
     INFO("******************************************************");
     INFO("Continuation: Test Copy / View behaviour of the model.");
-    
+
     VectorPtr view1 = model_->getState('V');
     VectorPtr copy1 = model_->getState('C');
     VectorPtr view2 = model_->getState('V');
     VectorPtr copy2 = model_->getState('C');
-    
+
     INFO("view1      norm: " << Utils::norm(view1));
     INFO("view2      norm: " << Utils::norm(view2));
     INFO("copy1      norm: " << Utils::norm(copy1));
@@ -1130,26 +1130,26 @@ testCopyView()
     INFO("Scaling view1 with 2 ---------------");
 
     view1->Scale(2.0);
-    
+
     INFO("view1      norm: " << Utils::norm(view1));
     INFO("view2      norm: " << Utils::norm(view2));
 
     assert(Utils::norm(view1) == Utils::norm(view2));
 
     INFO("Restore view: scale with 1/2");
-    
+
     view1->Scale(0.5);
-    
+
     INFO("Testing copy");
     INFO("Scaling copy1 with 3 ---------------");
-    
+
     copy1->Random();
-    
+
     INFO("copy1      norm: " << Utils::norm(copy1));
     INFO("copy2      norm: " << Utils::norm(copy2));
 
     assert(Utils::norm(copy1) != Utils::norm(copy2));
-    
+
     INFO("******************************************************");
 }
 
@@ -1189,7 +1189,7 @@ info()
     {
         INFO("    avg newton iters:  " << (double) sumNewtonIter_ / (step_ + resetCounter_));
     }
-    
+
     INFO("              resets:  " << resetCounter_);
     INFO("-----------------------------------------\n");
 }
@@ -1233,14 +1233,14 @@ writeData(bool describe)
     if (describe) // write description of entries
     {
         cdatastring << "#" << std::setw(_FIELDWIDTH_-1)
-                    << "par" 
-                    << std::setw(_FIELDWIDTH_ * 3/4) 
+                    << "par"
+                    << std::setw(_FIELDWIDTH_ * 3/4)
                     << "ds"
-                    << std::setw(_FIELDWIDTH_ * 3/4) 
+                    << std::setw(_FIELDWIDTH_ * 3/4)
                     << "||x||"
-                    << std::setw(_FIELDWIDTH_ * 3/4) 
+                    << std::setw(_FIELDWIDTH_ * 3/4)
                     << "||F||"
-                    << std::setw(_FIELDWIDTH_/3) 
+                    << std::setw(_FIELDWIDTH_/3)
                     << "NR"
                     << model_->writeData(describe);
 
@@ -1262,7 +1262,7 @@ writeData(bool describe)
                 << std::setw(_FIELDWIDTH_ / 3) << std::setprecision(_PRECISION_ / 2)
                 <<  newtonIter_
 
-                << model_->writeData();    
+                << model_->writeData();
 
     WRITECDATA(cdatastring.str());
 }

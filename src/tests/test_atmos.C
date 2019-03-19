@@ -208,6 +208,45 @@ TEST(Atmosphere, SurfaceTemperature)
     }
     EXPECT_EQ(failed, false);
 }
+//------------------------------------------------------------------
+TEST(Atmosphere, Pdist)
+{
+    atmosLoc->computeRHS();
+    atmosLoc->computePrecipitation();
+    atmosPar->computeRHS();
+
+    // get serial and parallel integral coefficients
+    std::shared_ptr<std::vector<double> > serPco = atmosLoc->getPIntCoeff();
+    Teuchos::RCP<Epetra_Vector> parPco = atmosPar->getPIntCoeff();
+    Teuchos::RCP<Epetra_Vector> ones =
+        Teuchos::rcp(new Epetra_Vector(*parPco));
+    ones->PutScalar(1.0);
+    double totalArea = Utils::dot(parPco, ones);
+
+    std::vector<double> locPdist = *atmosLoc->getPIntCoeff();
+    atmosLoc->fillPdist(&locPdist[0]);
+    double locPdistInt = Utils::dot(locPdist, *serPco);
+
+    Teuchos::RCP<Epetra_Vector> parPdist = atmosPar->getPdist();
+    double parPdistInt = Utils::dot(parPco, parPdist);
+    std::cout << parPdistInt << " " << totalArea << std::endl;
+
+    double parPdistNorm = Utils::norm(parPdist);
+    double locPdistNorm = Utils::norm(locPdist);
+    std::cout << parPdistNorm << std::endl;
+    std::cout << locPdistNorm << std::endl;
+
+    for (auto &e: locPdist)
+    {
+        if (std::abs(e) > 0.0)
+        {
+            e = e + 1 - locPdistInt / totalArea;
+        }
+    }
+    
+    double locPdistNorm2 = Utils::norm(locPdist);
+    EXPECT_NEAR(parPdistNorm, locPdistNorm2, 1e-7);
+}
 
 //------------------------------------------------------------------
 TEST(Atmosphere, EPfields)
@@ -230,8 +269,8 @@ TEST(Atmosphere, EPfields)
     EXPECT_NEAR(serArea, parArea,1e-7);
 
     std::cout << " area = " << std::setprecision(12) << serArea << " (serial model) "
-              << parArea << " (parallel model) " << std::endl;       
-
+              << parArea << " (parallel model) " << std::endl;
+    
     // compute dot products / integrals
     double serInt, parInt;
     serInt = Utils::dot(*serPco, *serE) / serArea;
@@ -242,13 +281,21 @@ TEST(Atmosphere, EPfields)
 
     atmosLoc->computePrecipitation();
 
-    Teuchos::RCP<Epetra_Vector> parP = atmosPar->interfaceP();
     std::shared_ptr<std::vector<double> > serP = atmosLoc->interfaceP();
+    Teuchos::RCP<Epetra_Vector> parP = atmosPar->interfaceP();
 
     double serNrm, parNrm;
     serNrm = Utils::norm(*serP);
     parNrm = Utils::norm(parP);
-    EXPECT_NEAR(serNrm, parNrm, 1e-7);
+    std::cout << " serial P: " << serNrm << " parallel P: " << parNrm << std::endl;
+
+    for (auto &e: *serP)
+        std::cout << e << " \n";
+    std::cout << std::endl;
+
+    std::cout << *parP << std::endl;
+    
+    EXPECT_NEAR(serNrm, parNrm, 1e-10);
     EXPECT_GT(serNrm, 0.0);
 }
 

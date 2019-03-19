@@ -287,9 +287,7 @@ private:
     int  runBackTracking(VectorPtr stateDir, double parDir);
 
     //! Detect special points.
-    //! Modes: 'D' : converge on destination
-    //!        'P' : converge on first sign switch in parDot
-    void detect(char mode = 'D');
+    void detect();
 
     //! let model::monitor define stopping criterion
     void userDetect();

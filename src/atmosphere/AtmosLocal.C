@@ -1094,6 +1094,15 @@ void AtmosLocal::computePrecipitation()
     // that satisfies int f dA = int 1 dA
     double integral = Utils::dot(*pIntCoeff_, *E_) / totalArea_;
 
+    // fill Pdist array
+    fillPdist(&Pdist_[0]);
+    double intPdist = Utils::dot(*pIntCoeff_, Pdist_) / totalArea_;
+    for (auto &e: Pdist_)
+        if (std::abs(e) > 0.0)
+        {
+            e = e + 1 - intPdist;
+        }
+    
     int sr; // surface row
     for (int j = 0; j != m_; ++j)
         for (int i = 0; i != n_; ++i)
