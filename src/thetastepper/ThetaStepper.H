@@ -43,9 +43,8 @@ ThetaStepper(ThetaModel model, ParameterList params)
 
 //==================================================================
 template<typename ThetaModel, typename ParameterList>
-void ThetaStepper<ThetaModel, ParameterList>::run()
+int ThetaStepper<ThetaModel, ParameterList>::run()
 {
-    
     bool test_step = ( nsteps_ < 0 ) ? true : step_ < nsteps_;
     while ( ( time_ < tend_ ) && ( test_step ) )
     {
@@ -112,10 +111,11 @@ void ThetaStepper<ThetaModel, ParameterList>::run()
 
             if (dt_ == mindt_)
             {
-                INFO("\n ================================ \n  " <<
-                     " minimum timestep reached, exiting... " <<
-                     "\n ================================ \n");
-                return;
+                WARNING("\n ================================ \n  " <<
+                        " minimum timestep reached, exiting... " <<
+                        "\n ================================ \n",
+                        __FILE__, __LINE__);
+                return 1;
             }
             model_->restore();
             continue;
@@ -153,6 +153,7 @@ void ThetaStepper<ThetaModel, ParameterList>::run()
 
         test_step = ( nsteps_ < 0 ) ? true : step_ < nsteps_;
     }
+    return 0;
 }
 
 //==================================================================

@@ -84,7 +84,8 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     continuation.setEigenSolver(jdqz);
 
     // Run continuation
-	continuation.run();
+	int status = continuation.run();
+    assert(status == 0);
     
 	TIMER_STOP("Total time...");
 

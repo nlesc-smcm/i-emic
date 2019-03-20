@@ -6,12 +6,12 @@ using Teuchos::rcp;
 
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
-{	
+{
 	std::shared_ptr<Ocean>         ocean;
 	std::shared_ptr<Atmosphere>    atmos;
     std::shared_ptr<SeaIce>        seaice;
 	std::shared_ptr<CoupledModel>  coupledModel;
-    RCP<Epetra_Comm>               comm;  
+    RCP<Epetra_Comm>               comm;
 
 }
 
@@ -28,22 +28,22 @@ public:
 
             // Create parameter object for Atmosphere
             RCP<Teuchos::ParameterList> atmosphereParams =
-                obtainParams("atmosphere_params.xml", "Atmosphere parameters"); 
+                obtainParams("atmosphere_params.xml", "Atmosphere parameters");
 
             // Create parameter object for SeaIce
             RCP<Teuchos::ParameterList> seaIceParams =
-                obtainParams("seaice_params.xml", "Sea ice parameters"); 
+                obtainParams("seaice_params.xml", "Sea ice parameters");
 
             // Create parameter object for CoupledModel
             RCP<Teuchos::ParameterList> coupledmodelParams =
-                obtainParams("coupledmodel_params.xml", "CoupledModel parameters"); 
+                obtainParams("coupledmodel_params.xml", "CoupledModel parameters");
 
             INFO('\n' << "Overwriting:");
             // The Continuation and CoupledModel parameterlists overwrite settings
             Utils::overwriteParameters(oceanParams,        coupledmodelParams);
             Utils::overwriteParameters(atmosphereParams,   coupledmodelParams);
             Utils::overwriteParameters(seaIceParams,       coupledmodelParams);
-            
+
             // Create models
  			ocean  = std::make_shared<Ocean>(comm, oceanParams);
 			atmos  = std::make_shared<Atmosphere>(comm, atmosphereParams);
@@ -55,7 +55,7 @@ public:
                                                seaice,
                                                coupledmodelParams);
 		}
-    
+
 	// destructor
 	~IEMIC()
 		{}
@@ -67,17 +67,18 @@ TEST(JDQZ, CoupledContinuation)
         // Create Continuation
         RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
-	
+
         Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
             continuation(coupledModel, continuationParams);
 
         // We perform a continuation with the coupled model
-        continuation.run();
+        int status = continuation.run();
+        EXPECT_EQ(status, 0);
 
         // Dump the matrices for checking with another code
         Teuchos::RCP<Epetra_CrsMatrix> oceanJac = ocean->getJacobian();
         Teuchos::RCP<Epetra_CrsMatrix> atmosJac = atmos->getJacobian();
-        
+
         Teuchos::RCP<Epetra_Vector> oceanB = ocean->getMassMat();
         Teuchos::RCP<Epetra_Vector> atmosB = atmos->getMassMat();
 
@@ -108,13 +109,13 @@ TEST(JDQZ, AtmosphereEigenvalues)
         INFO("Building JDQZInterface...");
         JDQZInterface<std::shared_ptr<Atmosphere>,
                       ComplexVector<Epetra_Vector > >	matrix(atmos, z);
-	
+
         INFO("Building JDQZ...");
         JDQZ<JDQZInterface<std::shared_ptr<Atmosphere>,
                            ComplexVector<Epetra_Vector > > > jdqz(matrix, z);
 
         INFO("Setting parameters...");
-        std::map<std::string, double> list;	
+        std::map<std::string, double> list;
         list["Shift (real part)"]         = 0.0;
         list["Number of eigenvalues"]     = 5;
         list["Max size search space"]     = 35;
@@ -124,9 +125,9 @@ TEST(JDQZ, AtmosphereEigenvalues)
         list["Criterion for Ritz values"] = 0;
         list["Linear solver"]             = 1;
         list["GMRES search space"]        = 20;
-        list["Verbosity"]                 = 5;		
+        list["Verbosity"]                 = 5;
         MyParameterList params(list);
-	
+
         jdqz.setParameters(params);
         jdqz.printParameters();
 
@@ -183,13 +184,13 @@ TEST(JDQZ, OceanEigenvalues)
         INFO("Building JDQZInterface...");
         JDQZInterface<std::shared_ptr<Ocean>,
                       ComplexVector<Epetra_Vector > >	matrix(ocean, z);
-	
+
         INFO("Building JDQZ...");
         JDQZ<JDQZInterface<std::shared_ptr<Ocean>,
                            ComplexVector<Epetra_Vector > > > jdqz(matrix, z);
 
         INFO("Setting parameters...");
-        std::map<std::string, double> list;	
+        std::map<std::string, double> list;
         list["Shift (real part)"]         = 0.0;
         list["Number of eigenvalues"]     = 5;
         list["Max size search space"]     = 35;
@@ -199,9 +200,9 @@ TEST(JDQZ, OceanEigenvalues)
         list["Criterion for Ritz values"] = 0;
         list["Linear solver"]             = 1;
         list["GMRES search space"]        = 20;
-        list["Verbosity"]                 = 5;		
+        list["Verbosity"]                 = 5;
         MyParameterList params(list);
-	
+
         jdqz.setParameters(params);
         jdqz.printParameters();
 
@@ -248,19 +249,19 @@ int main(int argc, char **argv)
 	::testing::InitGoogleTest(&argc, argv);
 	::testing::AddGlobalTestEnvironment(new IEMIC);
 	// -------------------------------------------------------
-	// TESTING 
+	// TESTING
 	int out = RUN_ALL_TESTS();
 	// -------------------------------------------------------
-	
+
 	// Get rid of possibly parallel objects:
 	ocean        = std::shared_ptr<Ocean>();
 	atmos        = std::shared_ptr<Atmosphere>();
 	coupledModel = std::shared_ptr<CoupledModel>();
-	
+
 	comm->Barrier();
 	std::cout << "TEST exit code proc #" << comm->MyPID()
 			  << " " << out << std::endl;
-	
+
 	MPI_Finalize();
 	return out;
 }

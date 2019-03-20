@@ -114,7 +114,8 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     TIMER_STOP("Total initialization");
 
     // Run continuation
-    continuation.run();
+    int status = continuation.run();
+    assert(status == 0);
     
     TIMER_STOP("Total time...");
     

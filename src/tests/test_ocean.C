@@ -202,7 +202,8 @@ TEST(Ocean, Continuation)
         DUMP_VECTOR("ocean_B", *diagB);                        
 
         // Run continuation
-        continuation.run();
+        int status = continuation.run();
+        EXPECT_EQ(status, 0);
 
         mat  = ocean->getJacobian();
         DUMPMATLAB("ocean_jac", *mat);

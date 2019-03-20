@@ -4,8 +4,8 @@
 namespace // local unnamed namespace (similar to static in C)
 {
     RCP<Teuchos::ParameterList> oceanParams;
-    RCP<Ocean> ocean;  
-    RCP<Epetra_Comm>  comm; 
+    RCP<Ocean> ocean;
+    RCP<Epetra_Comm>  comm;
 }
 
 //------------------------------------------------------------------
@@ -24,7 +24,7 @@ TEST(Ocean, Initialization)
         failed = true;
         throw;
     }
-    
+
     EXPECT_EQ(failed, false);
 }
 
@@ -42,7 +42,8 @@ TEST(Ocean, Continuation)
         continuation(ocean, continuationParams);
 
     // Run continuation
-    continuation.run();    
+    int status = continuation.run();
+    EXPECT_EQ(status, 0);
 }
 
 //------------------------------------------------------------------
@@ -69,11 +70,11 @@ TEST(Ocean, CheckReference)
         CHECK_ZERO(xid.Export(*x, *importid, Zero));
         Epetra_Vector yid(*mapid);
         CHECK_ZERO(yid.Export(*y, *importid, Zero));
-        
+
         double normxid, normyid;
         xid.Norm2(&normxid);
         yid.Norm2(&normyid);
-        
+
         EXPECT_NEAR(normxid, normyid, 1e-3);
     }
 }

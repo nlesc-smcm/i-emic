@@ -2,10 +2,10 @@
 
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
-{	
+{
 	RCP<Ocean>  ocean;
 	RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > > topo;
-    RCP<Epetra_Comm>  comm;       
+    RCP<Epetra_Comm>  comm;
 }
 
 //------------------------------------------------------------------
@@ -26,18 +26,18 @@ TEST(Ocean, Initialization)
 	bool failed = false;
 	try
 	{
-		// Create parallel Ocean 
+		// Create parallel Ocean
 		RCP<Teuchos::ParameterList> oceanParams =
 			rcp(new Teuchos::ParameterList);
 		updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-		ocean = Teuchos::rcp(new Ocean(comm, oceanParams));	
+		ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
 	}
 	catch (...)
 	{
 		failed = true;
         throw;
 	}
-	
+
 	EXPECT_EQ(failed, false);
 }
 
@@ -88,7 +88,7 @@ TEST(Topo, Copy)
 	nrmC = Utils::norm(solCopy);
 	nrmV = Utils::norm(solView);
 	EXPECT_NEAR(nrmC, nrmV, tol);
-	
+
 	solCopy->PutScalar(3.14);
 	nrmC = Utils::norm(solCopy);
 	nrmV = Utils::norm(solView);
@@ -106,14 +106,14 @@ TEST(Topo, View)
 	nrmC = Utils::norm(solCopy);
 	nrmV = Utils::norm(solView);
 	EXPECT_NEAR(nrmC, nrmV, tol);
-	
+
 	solView->PutScalar(3.14);
-	
+
 	nrmC = Utils::norm(solCopy);
 	nrmV = Utils::norm(solView);
 
 	solView->PutScalar(0.0);
-	
+
 	EXPECT_NE(nrmC, nrmV);
 }
 
@@ -146,7 +146,7 @@ TEST(Topo, SpinupContinuation)
         ocean->setPar(0.0);
         ocean->getState('V')->PutScalar(0.0);
         topo->getSolution('V')->PutScalar(0.0); // superfluous
-        
+
 		// Create parameter object for continuation
 		RCP<Teuchos::ParameterList> continuationParams =
 			rcp(new Teuchos::ParameterList);
@@ -156,10 +156,11 @@ TEST(Topo, SpinupContinuation)
 		// Create spinup continuation
         Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
             continuation(ocean, continuationParams);
-        
+
 		// Run continuation
         INFO("--**-- Topo test: running spinup...");
-		continuation.run();
+		int status = continuation.run();
+        EXPECT_EQ(status, 0);
         INFO("--**-- Topo test: running spinup... done");
 	}
 	catch (...)
@@ -167,7 +168,7 @@ TEST(Topo, SpinupContinuation)
 		failed = true;
         throw;
 	}
-	
+
 	EXPECT_EQ(failed, false);
 }
 
@@ -185,38 +186,39 @@ TEST(Topo, TopoContinuation)
 			rcp(new Teuchos::ParameterList);
 		updateParametersFromXmlFile("topo_continuation_params.xml",
 									continuationParams.ptr());
-        
+
 		// Create topo continuation
 		Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >,
 					 RCP<Teuchos::ParameterList> >
 			continuation(topo, continuationParams);
-        
+
         // Run topo continuation
         int nMasks    = topo->nMasks();
         int startMask = topo->startMaskIdx();
 
         INFO(" Running topo cont...");// Run continuation
-        
+
         for (int maskIdx = startMask; maskIdx != nMasks-1; maskIdx++)
         {
-            topo->setMaskIndex(maskIdx);		
-            topo->initialize();		
+            topo->setMaskIndex(maskIdx);
+            topo->initialize();
 
             topo->predictor();
-            
-            continuation.run();
-			
+
+            int status = continuation.run();
+            EXPECT_EQ(status, 0);
+
         }
-        INFO(" Running topo cont... done");            
-                    
-        
+        INFO(" Running topo cont... done");
+
+
 	}
 	catch (...)
 	{
 		failed = true;
         throw;
 	}
-	
+
 	EXPECT_EQ(failed, false);
 }
 
@@ -232,18 +234,18 @@ int main(int argc, char **argv)
 	::testing::AddGlobalTestEnvironment(new IEMIC);
 
 	// -------------------------------------------------------
-	// TESTING 
+	// TESTING
 	int out = RUN_ALL_TESTS();
 	// -------------------------------------------------------
 
 	// Get rid of possibly parallel objects for a clean ending.
 	ocean = Teuchos::null;
 	topo  = Teuchos::null;
-	
+
 	comm->Barrier();
 	std::cout << "TEST exit code proc #" << comm->MyPID()
 			  << " " << out << std::endl;
-	
+
 	MPI_Finalize();
 	return out;
 }

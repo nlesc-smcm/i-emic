@@ -71,7 +71,8 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         stepper(oceanTheta, timeParams);
 
     // Run ThetaStepper
-    stepper.run();
+    int status = stepper.run();
+    assert(status == 0);
 
     TIMER_STOP("Total time...");
 

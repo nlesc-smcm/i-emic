@@ -75,7 +75,7 @@ class ThetaStepper
 
 public:
 	ThetaStepper(ThetaModel model, ParameterList params);
-	void run();
+	int run();
     
 private:    
 	void writeData();

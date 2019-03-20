@@ -62,8 +62,9 @@ int main(int argc, char **argv)
 		TIMER_STOP ("  TOPO:  Predictor");
 
 		TIMER_START("  TOPO:  Homotopy Continuation");
-		continuation.run();
+		int status = continuation.run();
 		TIMER_STOP ("  TOPO:  Homotopy Continuation");
+        assert(status == 0);
 			
 		topo->setPar(1.0);
 
