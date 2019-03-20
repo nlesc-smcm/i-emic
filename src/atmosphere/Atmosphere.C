@@ -452,7 +452,8 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::interface(int XX)
     {
         if ( aux_ <= 0 )
         {
-            WARNING("Invalid XX", __FILE__, __LINE__);
+            WARNING("Auxiliary P disabled: "
+                    << "P is 'diagnosed'", __FILE__, __LINE__);
         }
 
         getP();
