@@ -775,49 +775,57 @@ TEST(CoupledModel, Synchronization)
     oceanAtmosP->MaxValue(&maxValue);
     oceanAtmosP->MinValue(&minValue);
     EXPECT_GT(std::max(std::abs(maxValue), std::abs(minValue)), 0.0);
-
 }
 
 //------------------------------------------------------------------
 TEST(CoupledModel, Synchronization2)
 {
-    std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('V');
-    x->PutScalar(1e-4);
-    std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('C');
-    b->PutScalar(0.0);
-    coupledModel->applyMatrix(*x, *b);
+    // reset model
+    coupledModel->getState('V')->PutScalar(0.0);
+    coupledModel->getSolution('V')->PutScalar(0.0);
+    coupledModel->setPar(0.0);
 
+    // perturb model
+    coupledModel->setPar(0.01);
+    coupledModel->computeRHS();
+    coupledModel->computeJacobian();
+
+    // solve with perturbed matrix and rhs
+    std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('C');
+    coupledModel->solve(b);
+    std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('V');
+
+    // compute norms of solution
     int numModels = b->Size();
     std::vector<double> norms(numModels);
     for (int i = 0; i != numModels; ++i)
+    {
         norms[i] = Utils::norm((*x)(i));
+        std::cout << norms[i] << " ";
+    }
+    std::cout << std::endl;
 
-    std::stringstream ss;
-    for (auto &v: norms)
-        ss << v << " ";
-    ss << std::endl;
-
-    (*b)(b->Size()-1)->PutScalar(-1e-2);
+    // perturb last vector in combined_multivec
+    (*b)(b->Size()-1)->Scale(1.1);
     coupledModel->solve(b);
 
-    x = coupledModel->getSolution('C');
+    // check whether the solve synchronizes ok
+    double norm;
     for (int i = 0; i != numModels; ++i)
-        norms[i] = Utils::norm((*x)(i));
-
-    for (auto &v: norms)
-        ss << v << " ";
-    ss << std::endl;
-
-
-    INFO(ss.str());
+    {
+        norm = Utils::norm((*x)(i));
+        std::cout << norm << " ";
+        EXPECT_NE(norms[i], norm);
+    }
+    std::cout << std::endl;
 }
-
 
 //------------------------------------------------------------------
 // Test hashing functions of Combined_MultiVec and Utils
 TEST(CoupledModel, Hashing)
 {
     std::shared_ptr<Combined_MultiVec> x  = coupledModel->getState('C');
+    x->Random();
     std::size_t hash1 = x->hash(); INFO(" hash1 = " << hash1);
     std::size_t hash2 = x->hash(); INFO(" hash2 = " << hash2);
     EXPECT_EQ(hash1, hash2);
@@ -832,9 +840,7 @@ TEST(CoupledModel, Hashing)
     std::size_t hash4 = x->hash(); INFO(" hash4 = " << hash4);
 
     EXPECT_NE(hash3, hash4);
-
 }
-
 
 //------------------------------------------------------------------
 TEST(CoupledModel, Solve)
@@ -842,12 +848,23 @@ TEST(CoupledModel, Solve)
     bool failed = false;
     try
     {
-        std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
-        std::shared_ptr<Combined_MultiVec> b = coupledModel->getState('C');
-        x->PutScalar(1.0);
-        coupledModel->applyMatrix(*x, *b);
-        coupledModel->solve(b);
+        // perturb model
+        double par = coupledModel->getPar();
+        coupledModel->setPar(par + 0.01);
+        coupledModel->computeRHS();
+        coupledModel->computeJacobian();
+
+        std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');
+        std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('C');
+        std::shared_ptr<Combined_MultiVec> c = coupledModel->getRHS('C');
+
+         coupledModel->solve(b);
         std::shared_ptr<Combined_MultiVec> sol = coupledModel->getSolution('C');
+
+        EXPECT_EQ(b->hash(), c->hash());
+        coupledModel->applyMatrix(*sol, *c);
+        EXPECT_NE(b->hash(), c->hash());
+        EXPECT_NEAR(Utils::norm(b), Utils::norm(c), 1e-3);
     }
     catch (...)
     {
@@ -855,8 +872,6 @@ TEST(CoupledModel, Solve)
     }
     EXPECT_EQ(failed, false);
 }
-
-
 
 //------------------------------------------------------------------
 // Here we are testing the implementation of the integral condition.

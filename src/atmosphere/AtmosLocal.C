@@ -1099,9 +1099,7 @@ void AtmosLocal::computePrecipitation()
     double intPdist = Utils::dot(*pIntCoeff_, Pdist_) / totalArea_;
     for (auto &e: Pdist_)
         if (std::abs(e) > 0.0)
-        {
-            e = e + 1 - intPdist;
-        }
+            e += 1 - intPdist;
     
     int sr; // surface row
     for (int j = 0; j != m_; ++j)
