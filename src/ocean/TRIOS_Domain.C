@@ -274,17 +274,17 @@ namespace TRIOS
         grid[yv][0] = bounds[ymin];
         grid[zw][0] = bounds[zmin];
 
-        for (int i = 0; i != nloc; ++i)
+        for (int i = 0; i != sizes[N]; ++i)
         {
             grid[x][i]    = bounds[xmin] + (i + 0.5) * dx;
             grid[xu][i+1] = bounds[xmin] + (i + 1.0) * dx;
         }
-        for (int j = 0; j != mloc; ++j)
+        for (int j = 0; j != sizes[M]; ++j)
         {
             grid[y][j]    = bounds[ymin] + (j + 0.5) * dy;
             grid[yv][j+1] = bounds[ymin] + (j + 1.0) * dy;
         }
-        for (int k = 0; k != lloc; ++k)
+        for (int k = 0; k != sizes[L]; ++k)
         {
             grid[z][k]    = fz_(bounds[zmin] + (k + 0.5) * dz);
             grid[zw][k+1] = fz_(bounds[zmin] + (k + 1.0) * dz);
