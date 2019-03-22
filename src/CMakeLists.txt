@@ -50,18 +50,11 @@ list(APPEND library_directories ${MRILU_DIR}/lib/) # MRILU
 list(APPEND library_dependencies ${Trilinos_LIBRARIES})
 list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
 
-# Build JDQZPP external project
-include(BuildExternalProject)
-BuildExternalProject(
-  JDQZPP
-  GIT_REPOSITORY git://github.com/erik808/jdqzpp.git
-  CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF
-  )
-
-BuildExternalProject_find_package(JDQZPP)
-
-include_directories(${JDQZPP_INCLUDE_DIR})
-list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
+find_package(JDQZPP REQUIRED)
+if (JDQZPP_FOUND)
+  include_directories(${JDQZPP_INCLUDE_DIR})
+  list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
+endif ()
 
 link_directories(${library_directories})
 
