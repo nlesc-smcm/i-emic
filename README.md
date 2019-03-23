@@ -13,7 +13,7 @@
 | parmetis       | (`wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz`)          |
 | mrilu          | (available in this repository)                                                             |
 | Trilinos       | <https://trilinos.org/download/>  (this project is tested to work with 11.12/11.14/12.12)  |
-| jdqzpp         | (external project, fetched and installed by cmake)                                         |
+| jdqzpp         | <https://github.com/erik808/jdqzpp>                                                        |
 | gtest          | (external project, fetched and installed by cmake)                                         |
 
 ### Compilers
@@ -33,6 +33,8 @@ Depending on architecture: ifort, gfortran, mpicc, mpicpc, mpic++, etc...
 
     * Make cmake script executable and run it, install Trilinos
       * Possible failures: no lapack, blas or hdf5 libs. `hdf5-openmpi` might install in `/usr/include/hdf5/openmpi`, so you could extend `CPATH` and `LD_LIBRARY_PATH` appropriately: e.g.: `export CPATH=$CPATH:/usr/include/hdf5/openmpi` `export LIBRARY_PATH=$LIBRARY_PATH:/usr/lib/x86_64-linux-gnu/hdf5/openmpi`
+
+  * Install JDQZPP
 
   * Install I-EMIC
     * Create build directory
