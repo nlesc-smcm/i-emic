@@ -11,17 +11,20 @@ if [ $# -lt 1 ]
 then
     echo "usage: ./continue <dir>"
     echo "       ./continue <dir> <restart>"
+    echo "       ./continue <dir> <restart> <type> <time>"
     echo "        "
     exit
 fi
 
 function run
 {
+   
     if [ -x "$(command -v sbatch)" ]
     then
 	echo "detected slurm, submitting job"
-	echo " normal, 5 days, 1 node"
-        bash create_submit.sh normal 5-00:00:00 1
+	echo " type: " $3 " time: " $4 
+
+        bash create_submit.sh $3 $4 1
         sbatch submit.sh $1 $2 > jobid
 	sed -i "s/.*job //" jobid
 	jobid=$(cat jobid)
@@ -40,11 +43,25 @@ function run
 
 pwd=${PWD}
 
-if [ $# -eq 2 ]
+if [ $# -ge 2 ]
 then
     rdir=$2
 else
     rdir=restart
+fi
+
+if [ $# -ge 3 ]
+then
+    type=$3
+else
+    type=normal
+fi
+
+if [ $# -ge 4 ]
+then
+    time=$4
+else
+    time=5-00:00:00
 fi
 
 echo "restart dir is " $dir/$rdir
@@ -86,4 +103,4 @@ sed -i "s/initial step size.*value.*/initial step size\"  type=\"double\"  value
 sed -i "s/Load state.*value.*/Load state\" type=\"bool\" value=\"true\"\/>/" coupledmodel_params.xml
 
 # submit problem (see run() )
-run $numprocs $executable
+run $numprocs $executable $type $time

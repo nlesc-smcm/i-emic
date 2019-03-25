@@ -22,5 +22,3 @@ echo running \$executable
 echo \"#Procs:\" \$procs
 
 srun -n \$procs \$executable > dump " >> submit.sh
-    
-
