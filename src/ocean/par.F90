@@ -5,29 +5,7 @@
 !! being defined here.
 module m_par
   ! user parameters (previously located in usr.com)...........................
-  !! You will most likely have to change these directories manually:
-#ifdef UTRECHT
-  character(len=*), parameter ::  topdir  = '/home/erik/Projects/i-emic/data/'
-  character(len=*), parameter ::  rundir = ''
-#elif defined(GRONINGEN)
-  character(len=*), parameter ::  topdir = '/home/p267904/Projects/EMIC/data/'
-  character(len=*), parameter ::  rundir = ''
-#elif defined(VLIEGTUIG)
-  character(len=*), parameter ::  topdir = '/home/erikm/Projects/i-emic/data/'
-  character(len=*), parameter ::  rundir = ''
-#elif defined(CARTESIUS)
-  character(len=*), parameter ::  topdir = '/home/emulder/Projects/i-emic/data/'
-  character(len=*), parameter ::  rundir = ''
-#elif defined(LAPTOP)
-  character(len=*), parameter ::  topdir = '/home/erik/Projects/i-emic/data/'
-  character(len=*), parameter ::  rundir = ''
-#elif defined(LOCAL)
-  character(len=*), parameter ::  topdir = '/var/tmp/i-emic/data/'
-  character(len=*), parameter ::  rundir = ''
-#elif defined(DESKTOP)
-  character(len=*), parameter ::  topdir = '/home/erik/Projects/i-emic/data/'
-  character(len=*), parameter ::  rundir = ''
-#elif defined(DATA_DIR)
+#ifdef DATA_DIR
   character(len=*), parameter ::  topdir = DATA_DIR
   character(len=*), parameter ::  rundir = ''
 #else

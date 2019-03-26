@@ -781,4 +781,35 @@ contains
 
   end subroutine compute_flux
 
+  !------------------------------------------------------------------
+  ! read_file: wrapping open calls containing topdir   
+  
+  subroutine read_file(unit, file)
+    implicit none
+    integer, intent(in)          :: unit
+    character(len=*), intent(in) :: file
+    integer                      :: status
+    character(128)               :: msg
+    
+    open(unit=unit, file=file, status='old', iostat=status, iomsg=msg)
+    
+    if (status.ne.0) then
+       write(*,*) '  looking for ', file, ' in ', topdir
+       open(unit=unit, file=topdir//file, status='old', err=123, &
+            iostat=status, iomsg=msg)
+    else
+       write(*,*) '  found ', file, ' in rundir'
+    endif
+    
+    return
+    
+123 write(*,*) 'WARNING: failed to read:'
+    write(*,*) '                ', file
+    write(*,*) '         not available in rundir or'
+    write(*,*) '                ', topdir
+    write(*,*) '    msg: ', msg
+    write(*,*) ' iostat: ', status
+
+  end subroutine read_file
+
 end module m_global
