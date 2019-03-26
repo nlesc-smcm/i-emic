@@ -7,7 +7,7 @@
 #include <vector>
 #include "ComplexVector.H"
 #include "JDQZInterface.H"
-#include "jdqz.H"
+#include "jdqz.hpp"
 
 //! Pseudo-arclength continuation class using an
 //! Euler predictor and a Newton corrector.

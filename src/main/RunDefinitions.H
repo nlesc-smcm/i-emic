@@ -41,7 +41,7 @@
 
 #include "ComplexVector.H"
 #include "JDQZInterface.H"
-#include "jdqz.H"
+#include "jdqz.hpp"
 
 //-----------------------------------------------------------------------------
 
