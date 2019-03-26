@@ -42,7 +42,7 @@
 #include "MyParameterList.H"
 #include "NumericalJacobian.H"
 
-#include "jdqz.H"
+#include "jdqz.hpp"
 
 #include "gtest/gtest.h" // google test
 
