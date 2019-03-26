@@ -4,7 +4,7 @@ enable_language(Fortran)
 
 if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
   set(CMAKE_Fortran_FLAGS
-    "-g -u -O3 -fPIC -ffree-line-length-none")
+    "-g -O3 -fPIC -ffree-line-length-none")
   set(MODFLAG "-J")
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
   set(CMAKE_Fortran_FLAGS
@@ -20,7 +20,7 @@ NUMBASE=${CMAKE_CURRENT_BINARY_DIR}/build
 SOURCEDIR=${CMAKE_CURRENT_BINARY_DIR}
 OSNAME=
 MAKE=make
-ARFLAGS=-crsvU
+ARFLAGS=-crsv
 LD=${CMAKE_Fortran_COMPILER}
 LDFLAGS=
 CC=${CMAKE_C_COMPILER}
