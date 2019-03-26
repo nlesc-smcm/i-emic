@@ -2635,6 +2635,13 @@ void THCM::insert_graph_entry(int* indices, int& pos,
 }
 
 //=============================================================================
+double THCM::getSCorr()
+{
+    getFluxes();
+    return scorr_;
+}
+
+//=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getIntCondCoeff()
 {
     intcond_coeff->PutScalar(0.0);

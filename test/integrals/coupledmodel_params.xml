@@ -16,8 +16,8 @@
   <!-- old states (true) or with a trivial solution (false).     -->
   <!-- The sub-models maintain names for the input files.        -->
   <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Save state" type="bool" value="true"/>
-  <Parameter name="Save frequency" type="int" value="3" />
+  <Parameter name="Save state" type="bool" value="false"/>
+  <Parameter name="Save frequency" type="int" value="0" />
 
   <!-- Continuation parameter -->
   <!-- Options:  "Combined Forcing" -->

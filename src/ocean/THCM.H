@@ -310,7 +310,7 @@ public:
     bool getITE() const {return ite;}
 
     //! get the salinity flux correction
-    double getSCorr() const {return scorr_;}
+    double getSCorr();
 
     //! ite/its=0 T/S forcing from data (Levitus)
     int ite,its;

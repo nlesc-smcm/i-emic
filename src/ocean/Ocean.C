@@ -802,7 +802,6 @@ void Ocean::preProcess()
 
     // Output legacy datafiles
     printLegacyFiles();
-
 }
 
 //====================================================================

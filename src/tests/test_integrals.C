@@ -190,5 +190,10 @@ int main(int argc, char **argv)
               << " " << out << std::endl;
 
     MPI_Finalize();
+
+    // print profile
+    if (comm->MyPID() == 0)
+        printProfile();
+
     return out;
 }
