@@ -279,10 +279,9 @@ SUBROUTINE windfit
 
   write(*,*) '===========WindForcing============================================'
   write(*,*) 'Wind forcing is read in from file '//trim(windfile)
-  call read_file(10, trim(windfile))
   write(*,*) '===========WindForcing============================================'
-  
-  ! open(10,file=topdir//trim(windfile),action='read')
+
+  open(10,file=topdir//trim(windfile),action='read')
   ! open(10,file=topdir//'wind/trtau.dat',action='read')
   ! open(10,file=topdir//'cesm/wind_38Ma.txt',action='read')
   read(10,*)

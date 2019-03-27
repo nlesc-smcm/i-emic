@@ -782,35 +782,46 @@ contains
   end subroutine compute_flux
 
   !------------------------------------------------------------------
-  ! read_file: wrapping open calls containing topdir
-  !      files are first sought in the rundir and then in topdir
+  ! locate_file: finding files in rundir and topdir, return full path
   
-  subroutine read_file(unit, file)
+  function locate_file(file) result(full)
     implicit none
-    integer, intent(in)          :: unit
-    character(len=*), intent(in) :: file
-    integer                      :: status
-    character(128)               :: msg
+    character(len=*)          :: file
+    character(:), allocatable :: full
+    integer                   :: status
+    character(len=256)        :: msg
     
-    open(unit=unit, file=file, status='old', iostat=status, iomsg=msg)
+    open(unit=11, file=file, status='old', iostat=status, iomsg=msg)
+    close(11)
     
     if (status.ne.0) then
-       write(*,*) '  looking for ', file, ' in ', topdir
-       open(unit=unit, file=topdir//file, status='old', err=123, &
+       open(unit=11, file=topdir//file, status='old', err=123, &
             iostat=status, iomsg=msg)
+       close(11)
+       write(*,*) '  found ', file, ' in ', topdir
+       full = topdir//file
     else
        write(*,*) '  found ', file, ' in rundir'
+       full = file
     endif
     
     return
     
-123 write(*,*) 'WARNING: failed to read:'
-    write(*,*) '                ', file
-    write(*,*) '         not available in rundir or'
-    write(*,*) '                ', topdir
-    write(*,*) '    msg: ', msg
+123 write(*,*) 'WARNING: failed to read: ', file
+    write(*,*) ' topdir: ', trim(topdir)
+    write(*,*) '    msg: ', trim(msg)
     write(*,*) ' iostat: ', status
 
-  end subroutine read_file
+  end function locate_file
+
+  !-----------------------------------------------------------------------------
+  ! let the cpp code throw an error for us
+  subroutine throw_error(msg)
+    implicit none
+    character(len=*), intent(in) :: msg
+    external thcm_throw_error
+
+    call thcm_throw_error(msg)
+  end subroutine throw_error
 
 end module m_global

@@ -4,9 +4,6 @@
 ! Trilinos-THCM is run in parallel
 !***************************************************************
 SUBROUTINE topofit
-#ifndef HAVE_NAG
-  USE m_itplbv
-#endif
   use m_global
   implicit none
 
@@ -23,103 +20,13 @@ SUBROUTINE topofit
 
   integer    i,j,io,sfend,sfstart
 
-  integer ido,ierr
-
   _DEBUG_('entering topofit...')
-
+  
   lwrk=4*n+nd+4
   liwrk=n+nd
 
-  ido = 1
+
   depth = 0
-
-  ! disabling this whole thing...
-#ifdef TOPO10
-
-  IF (ido == 1) THEN ! debugging, file topo10.binnew cannot be read
-
-#ifdef ASCII_TOPO
-     open(unit=10,file=topdir//'topo/topo10.asc',&
-          form='formatted',status='old',action='read', iostat=ierr)
-#else
-     open(unit=10,file=topdir//'topo/topo10.binnew',&
-          form='unformatted',status='old',action='read', iostat=ierr)
-#endif
-     if (ierr.ne.0) then
-        write(*,*) 'error opening file: \"'//topdir//'topo/topo10.binnew'//'\"'
-        stop 'File I/O error in fortran routine topofit'
-     end if
-#ifndef ASCII_TOPO
-     read(10) d10
-#else
-
-     do j=1,md
-        do i=1,nd
-           read(10,'(1I6)') d10(i,j)
-        end do
-     end do
-
-#endif
-     close(10)
-     if (xmax .gt. 2*pi) then
-        DO j=1,md
-           DO i=1,nd/2
-              rd(md+1-j,i) = real(d10(i+nd/2,j))
-           ENDDO
-           DO i=nd/2+1,nd
-              rd(md+1-j,i) = real(d10(i-nd/2,j))
-           ENDDO
-        ENDDO
-     else
-        DO j=1,md
-           DO i=1,nd
-              rd(md+1-j,i) = real(d10(i,j))
-           ENDDO
-        ENDDO
-     endif
-
-     dxd = 2.0*pi/nd
-     dyd = pi/md
-     if (xmax .gt. 2*pi) then
-        DO i=1,nd/2
-           xd(i) = (real(i)-0.5+nd/2)*dxd
-        ENDDO
-        DO i=nd/2+1,nd
-           xd(i) = (real(i)-0.5-nd/2)*dxd + 2*pi
-        ENDDO
-     else
-        DO i=1,nd
-           xd(i) = (real(i)-0.5)*dxd
-        ENDDO
-     endif
-     DO j=1,md
-        yd(j) = (real(j)-0.5)*dyd - 0.5*pi
-     ENDDO
-
-     ifail = 0
-     ! ACN alternative interpolation if nag-library is not available
-#ifndef HAVE_NAG
-     do i = 1,n
-        do j = 1,m
-           xi(m*(i-1)+j) = x(i)
-           yi(m*(i-1)+j) = y(j)
-        enddo
-     enddo
-     call itplbv(f99,md,nd,yd,xd,rd,n*m,yi,xi,dumd)
-#else
-     ! ACN original interpolation
-     call e01daf(nd,md,xd,yd,rd,px,py,lambda,mu,cspl,wrk,ifail)
-     call e02dff(n,m,px,py,x,y,lambda,mu,cspl,dumd,wrk2,lwrk,&
-          &            iwrk,liwrk,ifail)
-#endif
-     DO i=1,n
-        DO j=1,m
-           depth(i,j) = dumd(m*(i-1)+j)
-        ENDDO
-     ENDDO
-  ENDIF
-
-#endif
 
   IF (rd_mask) THEN
      _DEBUG_('call readmask...')
@@ -148,9 +55,12 @@ SUBROUTINE readmask
 
   write(*,*) '===========TOPOGRAPHY==================================='
   write(*,*) 'land mask is read in from file: mkmask/'//trim(maskfile)
-  call read_file(500, 'mkmask/'//trim(maskfile))
+
+  open(unit=500, file=locate_file('mkmask/'//trim(maskfile)), &
+       status='old', err=123)
+
   write(*,*) '===========TOPOGRAPHY==================================='
-  
+
   landm = LAND
   
   do k = 0, l+la+1
@@ -226,8 +136,10 @@ SUBROUTINE readmask
 
 123 write(*,*) 'WARNING: failed to read land mask from file specified in mask_name.txt'
   write(*,*) '         Either the name was not specified by the C++ caller, or the  '
-  write(*,*) '         file (mkmask/'//maskfile//') does not exist. Continuing with '
-  write(*,*) '         no land.                                                     '
+  write(*,*) '         file (mkmask/',trim(maskfile),') does not exist.'
+  write(*,*) '         Continuing with no land.'
+  
+  call throw_error('failed to read land mask')
 
 END SUBROUTINE readmask
 !*****************************************************************

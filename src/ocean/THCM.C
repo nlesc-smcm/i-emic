@@ -2797,11 +2797,7 @@ void THCM::SetupMonthlyForcing()
 extern "C" {
 
 // this is a cheat for the fortran routine fsint from forcing.F90
-#ifdef HUYGENS
-    void thcm_forcing_integral(double* qfun2, double* y, int* landm, double* fsint)
-#else
-        void thcm_forcing_integral_(double* qfun2, double* y, int* landm, double* fsint)
-#endif
+    void thcm_forcing_integral_(double* qfun2, double* y, int* landm, double* fsint)
     {
         Teuchos::RCP<Epetra_Comm> comm = THCM::Instance().GetComm();
         Teuchos::RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
@@ -2836,45 +2832,53 @@ extern "C" {
         *fsint = *fsint/sint;
     }
 
-    Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()
+    //------------------------------------------------------------------
+    // helper function to let the fortran code participate in error handling
+    void thcm_throw_error_(char *msg)
     {
-        if (nullSpace==Teuchos::null)
-        {
-            nullSpace = Teuchos::rcp(new Epetra_MultiVector
-                                     (*StandardMap,2,true) );
-
-            // the svp's are fairly easy to construct, they are
-            // so-called 'checkerboard' modes' in the x-y planes.
-            // we first construct them for the standard rectan-
-            // gular subdomains and then export them to the load-
-            // balanced 'solve' map TODO: typically the two are the
-            // same (unless load balancing is active), so we currently
-            // don't actually do the export. Load balancing is likely
-            // to be discarded in the near future anyway.
-
-            // loop over all non-ghost subdomain cells:
-            int pos=PP-1;
-            for (int k=domain->FirstRealK();k<=domain->LastRealK();k++)
-                for (int j=domain->FirstRealJ();j<=domain->LastRealJ();j++)
-                    for (int i=domain->FirstRealI();i<=domain->LastRealI();i++)
-                    {
-                        if ((i+j)%2)
-                        {
-                            (*(*nullSpace)(0))[pos] = 1;
-                        }
-                        else
-                        {
-                            (*(*nullSpace)(1))[pos] = 1;
-                        }
-                        pos+=_NUN_;
-                    }
-
-            double nrm1,nrm2;
-            CHECK_ZERO((*nullSpace)(0)->Norm2(&nrm1));
-            CHECK_ZERO((*nullSpace)(1)->Norm2(&nrm2));
-            CHECK_ZERO((*nullSpace)(0)->Scale(1.0/nrm1));
-            CHECK_ZERO((*nullSpace)(1)->Scale(1.0/nrm2));
-        }
-        return nullSpace;
+        ERROR(msg, "the fortran code", "somewhere");
     }
 }
+
+Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()
+{
+    if (nullSpace==Teuchos::null)
+    {
+        nullSpace = Teuchos::rcp(new Epetra_MultiVector
+                                 (*StandardMap,2,true) );
+
+        // the svp's are fairly easy to construct, they are
+        // so-called 'checkerboard' modes' in the x-y planes.
+        // we first construct them for the standard rectan-
+        // gular subdomains and then export them to the load-
+        // balanced 'solve' map TODO: typically the two are the
+        // same (unless load balancing is active), so we currently
+        // don't actually do the export. Load balancing is likely
+        // to be discarded in the near future anyway.
+
+        // loop over all non-ghost subdomain cells:
+        int pos=PP-1;
+        for (int k=domain->FirstRealK();k<=domain->LastRealK();k++)
+            for (int j=domain->FirstRealJ();j<=domain->LastRealJ();j++)
+                for (int i=domain->FirstRealI();i<=domain->LastRealI();i++)
+                {
+                    if ((i+j)%2)
+                    {
+                        (*(*nullSpace)(0))[pos] = 1;
+                    }
+                    else
+                    {
+                        (*(*nullSpace)(1))[pos] = 1;
+                    }
+                    pos+=_NUN_;
+                }
+
+        double nrm1,nrm2;
+        CHECK_ZERO((*nullSpace)(0)->Norm2(&nrm1));
+        CHECK_ZERO((*nullSpace)(1)->Norm2(&nrm2));
+        CHECK_ZERO((*nullSpace)(0)->Scale(1.0/nrm1));
+        CHECK_ZERO((*nullSpace)(1)->Scale(1.0/nrm2));
+    }
+    return nullSpace;
+}
+

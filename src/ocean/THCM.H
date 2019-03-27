@@ -603,10 +603,4 @@ private:
 
 };
 
-// this is called from forcing.F90 to compute some global integral if SRES=0
-/*
-  extern "C" {
-  void thcm_forcing_integral(double* qfun2, int* landm, double* fsint);
-  };
-*/
 #endif
