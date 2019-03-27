@@ -279,11 +279,13 @@ SUBROUTINE windfit
 
   write(*,*) '===========WindForcing============================================'
   write(*,*) 'Wind forcing is read in from file '//trim(windfile)
+
+  open(10, file=locate_file(trim(windfile)), action='read')
+  ! open(10,file=locate_file('wind/trtau.dat'),action='read')
+  ! open(10,file=locate_file('cesm/wind_38Ma.txt'),action='read')
+
   write(*,*) '===========WindForcing============================================'
 
-  open(10,file=topdir//trim(windfile),action='read')
-  ! open(10,file=topdir//'wind/trtau.dat',action='read')
-  ! open(10,file=topdir//'cesm/wind_38Ma.txt',action='read')
   read(10,*)
   do i=1,nx
      read(10,*) xx(i)
@@ -383,8 +385,8 @@ SUBROUTINE windfit_monthly(month)
   xx = xx*pi/180.
   yy = yy*pi/180.
 
-  open(10,file=topdir//'wind/trenberth/motaux.txt',action='read')
-  open(11,file=topdir//'wind/trenberth/motauy.txt',action='read')
+  open(10,file=locate_file('wind/trenberth/motaux.txt'),action='read')
+  open(11,file=locate_file('wind/trenberth/motauy.txt'),action='read')
   ! note: we should probably skip over the unwanted months instead
   ! of reading everything every time
   do k=1,month
@@ -459,7 +461,7 @@ SUBROUTINE read_spertm
   write(*,*) '===========SalinityPert============================================'
 
 
-  open(unit=50,file=topdir//'mkmask/'//trim(spertmaskfile),status='old',err=995)
+  open(unit=50,file=locate_file('mkmask/'//trim(spertmaskfile)),status='old',err=995)
   do j = m+1, 0, -1
      read(50,'(362i1)') (dum(i,j),i=0,n+1)
   enddo
@@ -544,137 +546,6 @@ SUBROUTINE qint(field,cor)
 
 end SUBROUTINE qint
 
-!**********************************************************************
-SUBROUTINE tempfit
-  USE m_itplbv
-  use m_usr
-  implicit none
-  !     CONSTANT
-  integer nx,ny
-  parameter(nx=144,ny=73)
-  integer ::lwrk,liwrk
-  !     LOCAL
-  integer i,j,ifail
-
-  real    xx(nx),yy(ny),t1(nx*ny)
-
-  real    dumx(n*m), tatmmax
-  real    xi(n*m), yi(n*m)
-  !
-  lwrk=4*n+nx+4
-  liwrk=n+nx
-  open(10,file=topdir//'heat/nceptatm.dat')
-  read(10,*)
-  DO i=1,nx
-     read(10,*) xx(i)
-  ENDDO
-  DO j=1,ny
-     read(10,*) yy(j)
-  ENDDO
-  xx = xx*pi/180.
-  yy = yy*pi/180.
-  DO i=1,nx
-     DO j=1,ny
-        read(10,*) t1(ny*(i-1)+j)
-     ENDDO
-  ENDDO
-  close(10)
-  !
-  ifail = 0
-#ifndef HAVE_NAG
-  ! ACN alternative interpolation if nag-library is not available:
-  do i = 1,n
-     do j = 1,m
-        xi(m*(i-1)+j) = x(i)
-        yi(m*(i-1)+j) = y(j)
-     enddo
-  enddo
-  call itplbv(f99,ny,nx,yy,xx,t1,n*m,yi,xi,dumx)
-#else
-  ! ACN original interpolation:
-  call e01daf(nx,ny,xx,yy,t1,px,py,lambda,mu,cspl,wrk,ifail)
-  call e02dff(n,m,px,py,x,y,lambda,mu,cspl,dumx,wrk2,lwrk,&
-       &            iwrk,liwrk,ifail)
-
-#endif
-  DO i=1,n
-     DO j=1,m
-        tatm(i,j) = dumx(m*(i-1) + j)
-     ENDDO
-  ENDDO
-
-  write(90,999) n,m
-  write(90,998) xmin,xmax,ymin,ymax
-  DO i=1,n
-     DO j=1,m
-        write(90,998) tatm(i,j)
-     ENDDO
-  ENDDO
-
-  tatm = tatm - 273.15
-  tatmmax = maxval(tatm)
-  tatm = tatm / tatmmax
-  !
-  write(f99,*) 'fit of temperature field done, tatmmax  = ', tatmmax
-
-999 format(2i4)
-998 format(5e16.8,i5,e14.6)
-
-END SUBROUTINE tempfit
-
-!**********************************************************************
-SUBROUTINE fwfluxfit
-  use m_usr
-  implicit none
-  integer, parameter :: nx = 180
-  integer, parameter :: ny =  90
-  integer, parameter :: nt =  12
-  real*4 dat(nx, ny, 0:nt)
-  real xx(0:nx), yy(0:ny)
-  integer i, j, it, ii, jj
-  real xi, yj, emipmax
-
-  open(1,file=topdir//'salt/decdata.r4',form='unformatted',&
-       status='unknown',access='direct',RECL=NX*NY)
-  do IT=1,NT
-     read(1,REC=IT)((dat(i,j,IT),i=1,nx),j=1,ny)
-     dat(:,:,0) = dat(:,:,0) + dat(:,:,IT)
-  enddo
-  dat(:,:,0) = dat(:,:,0)/nt
-  close(1)
-
-  do i = 0, nx
-     xx(i) = 2 * i - 1
-  enddo
-  do j = 0, ny
-     yy(j) = 2 * j - 91
-  enddo
-
-  where(dat==-999.0) dat = 0. ! what else ?
-  do j = 1, m
-     do i = 1, n
-        xi = 180.*x(i)/pi
-        if(xi <= xx(0)) xi = xi + 360.
-        if(xi > xx(nx)) xi = xi - 360.
-        ii = floor((xi+1)/2.)
-        xi = (xi - 2 * ii + 1)/2.
-        yj = 180.*y(j)/pi
-        jj = floor((yj+91)/2.)
-        yj = (yj - 2 * jj + 91)/2.
-
-        emip(i,j) = (1-xi)*(1-yj)*dat(ii  ,jj  ,0)&
-             + (  xi)*(1-yj)*dat(ii+1,jj  ,0)&
-             + (1-xi)*(  yj)*dat(ii  ,jj+1,0)&
-             + (  xi)*(  yj)*dat(ii+1,jj+1,0)
-     enddo
-  enddo
-
-  emipmax = maxval(emip)
-  emip = emip / emipmax
-  !
-  write(f99,*) 'fit of fresh water flux done, emipmax  = ', emipmax
-
-end SUBROUTINE fwfluxfit
 
 !*****************************************************************
 SUBROUTINE diagnose_restoring_sflux(un,filename)
