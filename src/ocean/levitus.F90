@@ -6,14 +6,14 @@
       implicit none
       integer k,klev,kk
       character(len=*),intent(in) :: filename
-      character(len=*),intent(in):: type  
+      character(len=*),intent(in):: type
       real, dimension(n,m,l),intent(out) :: array
-      
+
       real, dimension(n,m) :: layer
       real dep
       logical :: is_monthly
       integer :: nlayers
-      
+
       if (is_monthly) then
         nlayers=nlev_monthly
       else
@@ -30,13 +30,13 @@
           call levitus_interpol(filename,&
      &                            layer,-5.,50.,k,klev)
          if (type.eq.'TEMP') then
-            layer = layer - t0 
+            layer = layer - t0
          else if (type.eq.'SALT') then
             layer=layer-s0
          else
-      write(*,*) 'error unknown type please write TEMP or SALT'   
+      write(*,*) 'error unknown type please write TEMP or SALT'
         end if
-             
+
           array(:,:,k) = layer
           !write(f99,999) k,dep,klev,depth(klev),tatmmax
         enddo
@@ -61,13 +61,12 @@
 
       open(unit=42,file='sstf_name.txt', status='old')
       read(unit=42,fmt='(A100)',iostat=status,end=303) sstfile
-      
+
 303   continue
       close(42)
-      
+
       write(*,*) '===========SSTforcing============================================'
       write(*,*) 'SST forcing is read in from file '//trim(sstfile)
-      write(*,*) '===========SSTforcing============================================'
 
 
       call levitus_interpol(locate_file(trim(sstfile)), tatm, &
@@ -80,20 +79,21 @@
       ! call levitus_interpol(locate_file('levitus/new/avtemp'),tatm,&
                                                     !-5.,50.,l,1)
 
+      write(*,*) '===========SSTforcing============================================'
 
       open(34,FILE=rundir//'fort.34')
       call write_forcing('temp',tatm,34)
       close(34)
 ! for some reason, this statement doesn't work on Huygens:
-!      tatm = tatm - t0 
+!      tatm = tatm - t0
       tatm(1:n,1:m) = tatm(1:n,1:m) - t0
       tatmmax = maxval(tatm)
       write(f99,*) 'fit of levitus temp field done, tatmmax =',tatmmax+t0
 
       end
       !**********************************************************************
- 
- 
+
+
 !**********************************************************************
       subroutine levitus_sal
         use m_global
@@ -104,13 +104,12 @@
        !choose the followings
       open(unit=42,file='sssf_name.txt', status='old')
       read(unit=42,fmt='(A100)',iostat=status,end=304) sssfile
-      
+
 304   continue
       close(42)
-      
+
       write(*,*) '===========SSSforcing============================================'
       write(*,*) 'SSS forcing is read in from file '//trim(sssfile)
-      write(*,*) '===========SSSforcing============================================'
 
       call levitus_interpol(locate_file(trim(sssfile)), emip,&
                                                    20.,40.,l,1)
@@ -123,25 +122,25 @@
       ! call levitus_interpol(locate_file('levitus/new/avsalt'),emip,&
                                                           !30.,40.,l,1)
 
+      write(*,*) '===========SSSforcing============================================'
+
       open(33,FILE=rundir//'fort.33')
       call write_forcing('salt',emip,33)
       close(33)
-      emip(1:n,1:m) = emip(1:n,1:m) - s0 
+      emip(1:n,1:m) = emip(1:n,1:m) - s0
       emipmax = maxval(emip)
       write(*,*) 'fit of levitus salt field done, emipmax =',emipmax+s0
 
       end
-      
-      
-  
-                                                                                                                                        
+
+
 !**********************************************************************
       subroutine levitus_interpol(filename,forc,lolimit,uplimit,k,klev)
 !
-! This interpolation routine uses all Levitus points that fall within 
+! This interpolation routine uses all Levitus points that fall within
 ! the model gridbox under consideration, rather than using only the
 ! closests data points.
-! 
+!
       use m_global
       implicit none
 ! IMPORT/EXPORT
@@ -158,11 +157,11 @@
       integer, parameter :: ny  = 180
       real,    parameter :: missing = -99.9999
       real     dat(0:nx, ny)
-  
-  
-      open(1,file=filename,form='formatted')
+
+
+      open(1,file=filename,form='formatted',err=123)
       do kl=1,klev
-        read(1,'(10f8.4)') ((dat(i,j),i=1,nx),j=1,ny)
+        read(1,'(10f8.4)',err=123) ((dat(i,j),i=1,nx),j=1,ny)
       enddo
       close(1)
 !      write(*,*) filename(38:)
@@ -195,7 +194,7 @@
             xihigh = 180.*(x(i)+0.5*dx)/pi
             iilow  = ceiling(xilow)
             iihigh = floor(xihigh)
-            if (iilow .lt.0)  iilow = 0 
+            if (iilow .lt.0)  iilow = 0
             if (iihigh.gt.nx) iihigh = nx
 !
             yjlow  = 180.*(y(j)-0.5*dy)/pi
@@ -213,15 +212,15 @@
                jjlow  = jjlow - 1
                iihigh = iihigh + 1
                jjhigh = jjhigh + 1
-               if (iilow .lt.0)  iilow  = 0 
-               if (jjlow .lt.1)  jjlow  = 1 
+               if (iilow .lt.0)  iilow  = 0
+               if (jjlow .lt.1)  jjlow  = 1
                if (iihigh.gt.nx) iihigh = nx
                if (jjhigh.gt.ny) jjhigh = ny
                if (nmis.ge.10) stop 'definite levitus miss'
                goto 100
             endif
             forc(i,j) = for/weight
-            
+
 !$$$            write(f99,999) i,j,x(i)*180./pi,y(j)*180./pi,xilow,xihigh,
 !$$$     >               yjlow,yjhigh,for, weight
           endif
@@ -231,9 +230,12 @@
 ! An additional smoothing can be done
 !
 !     call smooth(forc,k)
+      return
+      
+123   call throw_error('failure')
 
       end
-!******************************************************************      
+!******************************************************************
       SUBROUTINE interpol(iilow,iihigh,jjlow,jjhigh,dat,for,weight)
       use m_global
       implicit none
@@ -258,15 +260,15 @@
         enddo
       enddo
 
-      end           
-!******************************************************************      
+      end
+!******************************************************************
       SUBROUTINE smooth(forc,k)
       use m_global
       implicit none
-      
+
       integer i,j,k,iip,iim,jjp,jjm,weight
       real forc(n,m),forc1(n,m)
- 
+
       forc1 = forc
       do j = 1, m
       do i = 1, n
@@ -281,19 +283,19 @@
           if (jjm.lt.1) jjm = 1
           weight     = 1
           if (landm(iip,j,k).eq.OCEAN) then
-             forc1(i,j) = forc1(i,j) + forc(iip,j) 
+             forc1(i,j) = forc1(i,j) + forc(iip,j)
              weight     = weight + 1
           endif
           if (landm(iim,j,k).eq.OCEAN) then
-             forc1(i,j) = forc1(i,j) + forc(iim,j) 
+             forc1(i,j) = forc1(i,j) + forc(iim,j)
              weight     = weight + 1
           endif
           if (landm(i,jjp,k).eq.OCEAN) then
-             forc1(i,j) = forc1(i,j) + forc(i,jjp) 
+             forc1(i,j) = forc1(i,j) + forc(i,jjp)
              weight     = weight + 1
           endif
           if (landm(i,jjm,k).eq.OCEAN) then
-             forc1(i,j) = forc1(i,j) + forc(i,jjm) 
+             forc1(i,j) = forc1(i,j) + forc(i,jjm)
              weight     = weight + 1
           endif
           forc1(i,j) = forc1(i,j)/weight
