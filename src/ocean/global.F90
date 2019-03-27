@@ -409,7 +409,7 @@ contains
     integer :: i,j,pos
 
 
-    write(*,*) iza
+    write(*,*) ' THCM: iza = ', iza
 
     if(iza.ne.2) then
        call windfit        ! read data with subroutine from forcing.F90
@@ -782,7 +782,8 @@ contains
   end subroutine compute_flux
 
   !------------------------------------------------------------------
-  ! read_file: wrapping open calls containing topdir   
+  ! read_file: wrapping open calls containing topdir
+  !      files are first sought in the rundir and then in topdir
   
   subroutine read_file(unit, file)
     implicit none
