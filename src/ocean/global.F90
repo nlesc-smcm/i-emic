@@ -487,9 +487,9 @@ contains
 
     !choose the followings
 
-    write(f99,*) 'reading internal temperature forcing from "'//topdir//'levitus/new/t00an1'//'"'
-    call levitus_internal(topdir//'levitus/new/t00an1',internal_temp,.false.,'TEMP')
-    !call levitus_internal(topdir//'levitus/new/avtemp',internal_temp,.false.,'TEMP')
+    write(f99,*) 'reading internal temperature forcing from "'//locate_file('levitus/new/t00an1')//'"'
+    call levitus_internal(locate_file('levitus/new/t00an1'),internal_temp,.false.,'TEMP')
+    !call levitus_internal(locate_file('levitus/new/avtemp'),internal_temp,.false.,'TEMP')
 
     pos = 1
     do k=1,l
@@ -541,9 +541,9 @@ contains
     integer :: i,j,k,pos
 
     !choose the followings
-    write(f99,*) 'reading internal salt forcing from "'//topdir//'levitus/new/s00an1'//'"'
-    call levitus_internal(topdir//'levitus/new/s00an1',internal_salt,.false.,'SALT')
-    !call levitus_internal(topdir//'levitus/new/avsalt',internal_salt,.false.,'SALT')
+    write(f99,*) 'reading internal salt forcing from "'//locate_file('levitus/new/s00an1')//'"'
+    call levitus_internal(locate_file('levitus/new/s00an1'),internal_salt,.false.,'SALT')
+    !call levitus_internal(locate_file('levitus/new/avsalt'),internal_salt,.false.,'SALT')
     !chose the followings
 
     pos = 1
@@ -630,7 +630,7 @@ contains
     write(ibuf,'(1I2.2)') month
 
     if ((ite.eq.0).and.(coupled_T.eq.0)) then
-       fname = topdir//'levitus/monthly/t'//ibuf//'an1'
+       fname = locate_file('levitus/monthly/t'//ibuf//'an1')
        write(f99,*) 'read levitus SST from file"'//trim(fname)//'"'
        call levitus_interpol(trim(fname),tatm,-5.,50.,l,1)
     else if (ite.eq.1) then
@@ -640,7 +640,7 @@ contains
     end if
 
     if ((its.eq.0).and.(coupled_S.eq.0)) then
-       fname = topdir//'levitus/monthly/s'//ibuf//'an1'
+       fname = locate_file('levitus/monthly/s'//ibuf//'an1')
        write(f99,*) 'read levitus S from file"'//trim(fname)//'"'
        call levitus_interpol(trim(fname),emip,30.,40.,l,1)
     else
@@ -706,10 +706,10 @@ contains
     salt_bak(:,:,:) = internal_salt
 
     write(ibuf,'(1I2.2)') month
-    write(f99,*) 'reading internal seasonal temperature forcing from "'//topdir//'levitus/monthly/t'//ibuf//'an1'//'"'
-    call levitus_internal(topdir//'levitus/monthly/t'//ibuf//'an1',internal_temp,.true.,'TEMP')
-    write(f99,*) 'reading internal seasonal salinity forcing from "'//topdir//'levitus/monthly/s'//ibuf//'an1'//'"'
-    call levitus_internal(topdir//'levitus/monthly/s'//ibuf//'an1',internal_salt,.true.,'SALT')
+    write(f99,*) 'reading internal seasonal temperature forcing from "'//locate_file('levitus/monthly/t'//ibuf//'an1')//'"'
+    call levitus_internal(locate_file('levitus/monthly/t'//ibuf//'an1'),internal_temp,.true.,'TEMP')
+    write(f99,*) 'reading internal seasonal salinity forcing from "'//locate_file('levitus/monthly/s'//ibuf//'an1')//'"'
+    call levitus_internal(locate_file('levitus/monthly/s'//ibuf//'an1'),internal_salt,.true.,'SALT')
 
     ! note: the monthly mean data sets only contain temperature and salt up to a depth of
     ! 1500m. For any layers deeper than that we use the annual mean value instead.
@@ -807,13 +807,14 @@ contains
     
     return
     
-123 write(*,*) 'WARNING: failed to read: ', file
+123 write(*,*) 'WARNING: failed to open: ', file
     write(*,*) ' topdir: ', trim(topdir)
     write(*,*) '    msg: ', trim(msg)
     write(*,*) ' iostat: ', status
-
+    call throw_error('failed to open file')
+    
   end function locate_file
-
+  
   !-----------------------------------------------------------------------------
   ! let the cpp code throw an error for us
   subroutine throw_error(msg)
