@@ -791,13 +791,13 @@ contains
     integer                   :: status
     character(len=256)        :: msg
     
-    open(unit=11, file=file, status='old', iostat=status, iomsg=msg)
-    close(11)
+    open(unit=3511, file=file, status='old', iostat=status, iomsg=msg)
+    close(3511)
     
     if (status.ne.0) then
-       open(unit=11, file=topdir//file, status='old', err=123, &
+       open(unit=3511, file=topdir//file, status='old', err=123, &
             iostat=status, iomsg=msg)
-       close(11)
+       close(3511)
        write(*,*) '  found ', file, ' in ', topdir
        full = topdir//file
     else
