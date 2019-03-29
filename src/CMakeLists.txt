@@ -44,6 +44,7 @@ list(APPEND library_directories ${MRILU_DIR}/lib/) # MRILU
 
 list(APPEND library_dependencies ${Trilinos_LIBRARIES})
 list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
+list(REMOVE_DUPLICATES library_dependencies)
 
 find_package(JDQZPP REQUIRED)
 if (JDQZPP_FOUND)
