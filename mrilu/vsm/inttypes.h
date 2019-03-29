@@ -1,4 +1,4 @@
-#if !defined(INTTYPES_H)
+#ifndef INTTYPES_H
 #define INTTYPES_H
 
 /*                              inttypes.h
@@ -19,45 +19,13 @@
  * 2000-07-17  ,  Doeke de Vries
  */
 
-#include <limits.h>
+#include <stdint.h>
 
-#if SHRT_MAX == 32767
-   typedef  short           int16;
-   typedef  unsigned short  uint16;
-   #define  INT16_MAX       SHRT_MAX     /* 32767  */
-   #define  UINT16_MAX      USHRT_MAX    /* 65535U */
-#elif INT_MAX == 32767
-   typedef  int             int16;
-   typedef  unsigned int    uint16;
-   #define  INT16_MAX       INT_MAX      /*  32767  */
-   #define  UINT16_MAX      UINT_MAX     /*  65535U */
-#endif
-
-#if INT_MAX == 2147483647
-   typedef  int             int32;
-   typedef  unsigned int    uint32;
-   #define  INT32_MAX       INT_MAX      /* 2147483647  */
-   #define  UINT32_MAX      UINT_MAX     /* 4294967295U */
-#elif LONG_MAX == 2147483647L
-   typedef  long            int32;
-   typedef  unsigned long   uint32;
-   #define  INT32_MAX       LONG_MAX     /* 2147483647L  */
-   #define  UINT32_MAX      ULONG_MAX    /* 4294967295UL */
-#endif
-
-#if LONG_MAX > 2147483647L
-   #if INT_MAX == 9223372036854775807L
-      typedef  int            int64;
-      typedef  unsigned int   uint64;
-      #define  INT64_MAX      INT_MAX     /*  9223372036854775807  */
-      #define  UINT64_MAX     UINT_MAX    /* 18446744073709551615U */
-   #elif LONG_MAX == 9223372036854775807L
-      typedef  long           int64;
-      typedef  unsigned long  uint64;
-      #define  INT64_MAX      LONG_MAX    /*  9223372036854775807L  */
-      #define  UINT64_MAX     ULONG_MAX   /* 18446744073709551615UL */
-   #endif
-#endif
-
+typedef  int16_t int16;
+typedef  uint16_t uint16;
+typedef  int32_t int32;
+typedef  uint32_t uint32;
+typedef  int64_t  int64;
+typedef  uint64_t uint64;
 
 #endif /* INTTYPES_H */
