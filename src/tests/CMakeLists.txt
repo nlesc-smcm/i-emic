@@ -54,6 +54,7 @@ foreach(test_source ${TEST_SOURCES})
 
   target_link_libraries(${test_name} PUBLIC ${I-EMIC_LIBS})
   target_link_libraries(${test_name} PUBLIC ${library_dependencies})
+  target_link_libraries(${test_name} PUBLIC ${MPI_CXX_LIBRARIES})
   target_link_libraries(${test_name} PUBLIC ${GTEST_BOTH_LIBRARIES})
 
   # Pthread

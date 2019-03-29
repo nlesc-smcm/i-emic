@@ -7,16 +7,11 @@ endif ()
 
 # ------------------------------------------------------------------
 # Trilinos
-find_package(Trilinos)
-
+find_package(Trilinos REQUIRED)
 message ("-- Trilinos directory: " ${Trilinos_DIR})
 
-if (NOT Trilinos_FOUND)
-  message(FATAL_ERROR " Trilinos root directory should be in PATH or TRILINOS_DIR.")
-endif ()
-
-set(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER})
-set(CMAKE_Fortran_COMPILER ${Trilinos_Fortran_COMPILER})
+find_package(MPI REQUIRED)
+include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
 enable_language(Fortran)
 

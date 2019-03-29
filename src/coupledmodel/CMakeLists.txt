@@ -15,4 +15,6 @@ target_compile_definitions(coupledmodel PUBLIC ${COMP_IDENT})
 
 target_include_directories(coupledmodel PUBLIC ${COUPLEDMODEL_INCLUDE_DIRS})
 
+target_link_libraries(coupledmodel PRIVATE ${MPI_CXX_LIBRARIES})
+
 install(TARGETS coupledmodel DESTINATION lib)
