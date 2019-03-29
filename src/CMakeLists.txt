@@ -27,7 +27,7 @@ message("-- CMAKE_Fortran_COMPILER:    ${CMAKE_Fortran_COMPILER}")
 if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU") #gfortran, gcc
   
   set (CMAKE_Fortran_FLAGS
-	"-g -u -O0 -Wall -ffixed-line-length-132 -fdefault-real-8 -fPIC -ffree-line-length-none")
+	"-g -O0 -Wall -ffixed-line-length-132 -fdefault-real-8 -fPIC -ffree-line-length-none")
   set (CMAKE_CXX_FLAGS "-g -std=c++1y -O0 -Wall -fPIC -Wno-deprecated-declarations -DDEBUGGING_NEW")
   set (COMP_IDENT GNU)
   
