@@ -42,6 +42,10 @@ $(MRILU_OBJ):
 $(MRILU_DOC):
 	mkdir $(MRILU_DOC)
 	-chmod go+rx $(MRILU_DOC)
+
+# Disable parallel make
+.NOTPARALLEL:
+
 #
 # Default goal: compile all modules
 #

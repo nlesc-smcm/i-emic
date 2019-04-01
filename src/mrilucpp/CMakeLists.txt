@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
-  
+
 set(MRILUCPP_INCLUDE_DIRS
   ../utils/
   ${MRILU_DIR}/mod
@@ -14,6 +14,8 @@ target_compile_definitions(ifpack_mrilu PUBLIC HAVE_IFPACK_MRILU)
 
 target_include_directories(ifpack_mrilu PUBLIC ${MRILUCPP_INCLUDE_DIRS})
 target_include_directories(mrilucpp PUBLIC ${MRILUCPP_INCLUDE_DIRS})
+
+target_link_libraries(ifpack_mrilu PRIVATE ${MPI_CXX_LIBRARIES})
 
 if (TARGET mrilu)
   add_dependencies(mrilucpp mrilu)

@@ -7,16 +7,11 @@ endif ()
 
 # ------------------------------------------------------------------
 # Trilinos
-find_package(Trilinos)
-
+find_package(Trilinos REQUIRED)
 message ("-- Trilinos directory: " ${Trilinos_DIR})
 
-if (NOT Trilinos_FOUND)
-  message(FATAL_ERROR " Trilinos root directory should be in PATH or TRILINOS_DIR.")
-endif ()
-
-set(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER})
-set(CMAKE_Fortran_COMPILER ${Trilinos_Fortran_COMPILER})
+find_package(MPI REQUIRED)
+include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
 enable_language(Fortran)
 
@@ -49,6 +44,7 @@ list(APPEND library_directories ${MRILU_DIR}/lib/) # MRILU
 
 list(APPEND library_dependencies ${Trilinos_LIBRARIES})
 list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
+list(REMOVE_DUPLICATES library_dependencies)
 
 find_package(JDQZPP REQUIRED)
 if (JDQZPP_FOUND)
