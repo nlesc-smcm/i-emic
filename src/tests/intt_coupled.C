@@ -34,7 +34,7 @@ TEST(ParameterLists, Initialization)
 
         for (int i = 0; i != (int) files.size(); ++i)
         {
-            params.push_back(obtainParams(files[i], names[i]));
+            params.push_back(Utils::obtainParams(files[i], names[i]));
         }
 
         INFO('\n' << "Overwriting:");

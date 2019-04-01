@@ -2,13 +2,30 @@
 // Main continuation of the coupled model
 //=======================================================================
 
-#include "RunDefinitions.H"
+#include <Teuchos_RCP.hpp>
+
+#include <string>
+#include <vector>
+#include <memory>
+
+#include "GlobalDefinitions.H"
+
+#include "ComplexVector.H"
+#include "JDQZInterface.H"
+#include "jdqz.hpp"
+
+#include "Continuation.H"
+#include "Ocean.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
+#include "CoupledModel.H"
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;
 
-using JDQZsolver = JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>, 
+//------------------------------------------------------------------
+using JDQZsolver = JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>,
                                       ComplexVector<Combined_MultiVec> > >;
 
 void runCoupledModel(RCP<Epetra_Comm> Comm);
@@ -56,13 +73,13 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
                                       "CoupledModel parameters",
                                       "Continuation parameters",
                                       "JDQZ parameters"};
-    
+
     enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT, EIGEN };
 
     std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
 
     for (int i = 0; i != (int) files.size(); ++i)
-        params.push_back(obtainParams(files[i], names[i]));
+        params.push_back(Utils::obtainParams(files[i], names[i]));
 
     INFO('\n' << "Overwriting:");
     // Allow dominant parameterlists. Not that this trick uses a
@@ -77,7 +94,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     Utils::overwriteParameters(params[SEAICE], params[CONT]);
 
     Utils::overwriteParameters(params[COUPLED], params[CONT]);
-    
+
     // Create parallelized Ocean object
     std::shared_ptr<Ocean> ocean = std::make_shared<Ocean>(Comm, params[OCEAN]);
 
@@ -97,13 +114,13 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     Combined_MultiVec t = *coupledModel->getSolution('C');
     t.PutScalar(0.0);
     ComplexVector<Combined_MultiVec> z(t);
-    
+
     JDQZInterface<std::shared_ptr<CoupledModel>,
                   ComplexVector<Combined_MultiVec> > matrix(coupledModel, z);
-    
+
     std::shared_ptr<JDQZsolver> jdqz = std::make_shared<JDQZsolver>(matrix, z);
     jdqz->setParameters(*params[EIGEN]);
-    
+
     // Create Continuation
     Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
         continuation(coupledModel, params[CONT]);
@@ -116,13 +133,13 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     // Run continuation
     int status = continuation.run();
     assert(status == 0);
-    
+
     TIMER_STOP("Total time...");
-    
+
     // print the profile
     if (Comm->MyPID() == 0)
     {
         printProfile();
         jdqz->printProfile("jdqz_profile");
-    }    
+    }
 }

@@ -24,19 +24,19 @@ public:
 		{
             // Create parameter object for Ocean
             RCP<Teuchos::ParameterList> oceanParams =
-                obtainParams("ocean_params.xml", "Ocean parameters");
+                Utils::obtainParams("ocean_params.xml", "Ocean parameters");
 
             // Create parameter object for Atmosphere
             RCP<Teuchos::ParameterList> atmosphereParams =
-                obtainParams("atmosphere_params.xml", "Atmosphere parameters");
+                Utils::obtainParams("atmosphere_params.xml", "Atmosphere parameters");
 
             // Create parameter object for SeaIce
             RCP<Teuchos::ParameterList> seaIceParams =
-                obtainParams("seaice_params.xml", "Sea ice parameters");
+                Utils::obtainParams("seaice_params.xml", "Sea ice parameters");
 
             // Create parameter object for CoupledModel
             RCP<Teuchos::ParameterList> coupledmodelParams =
-                obtainParams("coupledmodel_params.xml", "CoupledModel parameters");
+                Utils::obtainParams("coupledmodel_params.xml", "CoupledModel parameters");
 
             INFO('\n' << "Overwriting:");
             // The Continuation and CoupledModel parameterlists overwrite settings

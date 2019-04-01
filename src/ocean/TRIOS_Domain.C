@@ -6,7 +6,9 @@
  **********************************************************************/
 
 #include "TRIOS_Domain.H"
+
 #include <fstream>
+#include <vector>
 
 #include "Epetra_Map.h"
 #include "Epetra_CrsMatrix.h"

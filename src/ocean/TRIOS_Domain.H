@@ -17,6 +17,7 @@
 #include "Teuchos_RCP.hpp"
 
 #include <functional>
+#include <vector>
 
 class Epetra_Map;
 class Epetra_Vector;

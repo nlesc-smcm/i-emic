@@ -29,6 +29,10 @@ extern Teuchos::RCP<std::ostream> outFile;
 extern Teuchos::RCP<std::ostream> cdataFile;
 extern Teuchos::RCP<std::ostream> tdataFile;
 
+class Epetra_Comm;
+
+Teuchos::RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv);
+
 //------------------------------------------------------------------
 // Profile definition:
 
