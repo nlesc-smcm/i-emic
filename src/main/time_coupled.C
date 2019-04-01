@@ -2,9 +2,29 @@
 // Main continuation of the coupled model
 //=======================================================================
 
-#include "RunDefinitions.H"
+#include <Teuchos_RCP.hpp>
+
+#include <string>
+#include <vector>
+#include <memory>
+
+#include "GlobalDefinitions.H"
+
+#include "ComplexVector.H"
+#include "JDQZInterface.H"
+#include "jdqz.hpp"
+
+#include "Continuation.H"
+#include "Ocean.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
+#include "CoupledModel.H"
 #include "ThetaStepper.H"
 #include "Theta.H"
+
+//------------------------------------------------------------------
+using Teuchos::RCP;
+using Teuchos::rcp;
 
 //------------------------------------------------------------------
 void runCoupledModel(RCP<Epetra_Comm> Comm);

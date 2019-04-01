@@ -62,7 +62,7 @@ public:
                 !oldRhs_->Map().SameAs(Model::rhs_->Map()))
             {
                 oldRhs_ =
-                    rcp(new Epetra_Vector(Model::rhs_->Map()));
+                    Teuchos::rcp(new Epetra_Vector(Model::rhs_->Map()));
             }
 	
             *oldRhs_   = *Model::rhs_;

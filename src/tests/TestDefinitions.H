@@ -34,13 +34,18 @@
 #include <time.h> // for seeding
 #include <sstream>
 
-#include "../main/RunDefinitions.H"
-
 #include "THCMdefs.H"
 #include "ComplexVector.H"
 #include "JDQZInterface.H"
 #include "MyParameterList.H"
 #include "NumericalJacobian.H"
+
+#include "Continuation.H"
+#include "Ocean.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
+#include "Topo.H"
+#include "CoupledModel.H"
 
 #include "jdqz.hpp"
 

@@ -2,9 +2,21 @@
 // Thetastepper with the ocean model
 //=======================================================================
 
-#include "RunDefinitions.H"
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_XMLParameterListHelpers.hpp>
+
+#include <memory>
+
+#include "GlobalDefinitions.H"
+
+#include "Continuation.H"
+#include "Ocean.H"
 #include "ThetaStepper.H"
-#include "Theta.H"       
+#include "Theta.H"
+
+//------------------------------------------------------------------
+using Teuchos::RCP;
+using Teuchos::rcp;
 
 //------------------------------------------------------------------
 void runOceanModel(RCP<Epetra_Comm> Comm);
