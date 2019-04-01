@@ -5,10 +5,6 @@
 #include "RunDefinitions.H"
 
 //------------------------------------------------------------------
-using Teuchos::RCP;
-using Teuchos::rcp;
-
-//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:

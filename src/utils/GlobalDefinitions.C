@@ -3,6 +3,97 @@
 #include <ctime>  // std::clock()
 #include <fstream>
 
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_FancyOStream.hpp>
+
+#include <Epetra_config.h>
+
+#  ifdef HAVE_MPI
+// Epetra's wrapper for MPI_Comm. This header file only exists if
+// Epetra was built with MPI enabled.
+#    include <mpi.h>
+#    include <Epetra_MpiComm.h>
+#  else
+#    include <Epetra_SerialComm.h>
+#  endif // HAVE_MPI
+
+Teuchos::RCP<std::ostream> outFile;      // output file
+Teuchos::RCP<std::ostream> cdataFile;    // cdata file
+Teuchos::RCP<std::ostream> tdataFile;    // tdata file
+
+//-----------------------------------------------------------------------------
+void  outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
+{
+    // Setup output files "fname_#.txt" for P==0 && P==1, other processes
+    // will get a blackholestream.
+
+    if (Comm->MyPID() < 10)
+    {
+        std::ostringstream infofile;   // setting up a filename
+
+        infofile  << "info_" << Comm->MyPID() << ".txt";
+
+        std::cout << "info for CPU" << Comm->MyPID() << " is written to "
+                  << infofile.str().c_str() << std::endl;
+
+        outFile =
+            Teuchos::rcp(new std::ofstream(infofile.str().c_str()));
+    }
+    else
+        outFile = Teuchos::rcp(new Teuchos::oblackholestream());
+
+    // Write continuation data on proc 0
+    if (Comm->MyPID() == 0)
+    {
+        std::ostringstream cdatafile;  // setting up a filename
+
+        cdatafile << "cdata.txt";
+
+        std::cout << "continuation data is written to " <<  cdatafile.str().c_str()
+                  << " by CPU " << Comm->MyPID() << std::endl;
+
+        cdataFile =
+            Teuchos::rcp(new std::ofstream(cdatafile.str().c_str()));
+    }
+    else
+        cdataFile = Teuchos::rcp(new Teuchos::oblackholestream());
+
+    // Write timestepping data on proc 0
+    if (Comm->MyPID() == 0)
+    {
+        std::ostringstream tdatafile;  // setting up a filename
+
+        tdatafile << "tdata.txt";
+
+        std::cout << "continuation data is written to " << tdatafile.str().c_str()
+                  << " by CPU " << Comm->MyPID() << std::endl;
+
+        tdataFile =
+            Teuchos::rcp(new std::ofstream(tdatafile.str().c_str()));
+    }
+    else
+        tdataFile = Teuchos::rcp(new Teuchos::oblackholestream());
+}
+
+//-----------------------------------------------------------------------------
+Teuchos::RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
+{
+    // Setup MPI communicator
+
+#ifdef HAVE_MPI
+    MPI_Init(&argc, &argv);
+    Teuchos::RCP<Epetra_MpiComm> Comm =
+        Teuchos::rcp(new Epetra_MpiComm(MPI_COMM_WORLD) );
+#else
+    Teuchos::RCP<Epetra_SerialComm> Comm =
+        Teuchos::rcp(new Epetra_SerialComm() );
+#endif
+
+    // Specify output files
+    outputFiles(Comm);
+    return Comm;
+}
+
 //------------------------------------------------------------------
 // Setup profile:
 

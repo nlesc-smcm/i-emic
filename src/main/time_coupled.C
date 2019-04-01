@@ -7,9 +7,6 @@
 #include "Theta.H"
 
 //------------------------------------------------------------------
-using Teuchos::RCP;
-using Teuchos::rcp;
-
 void runCoupledModel(RCP<Epetra_Comm> Comm);
 
 //------------------------------------------------------------------

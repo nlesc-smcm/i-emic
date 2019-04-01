@@ -5,9 +5,6 @@
 #include "RunDefinitions.H"
 
 //------------------------------------------------------------------
-using Teuchos::RCP;
-using Teuchos::rcp;
-
 using JDQZsolver = JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>, 
                                       ComplexVector<Combined_MultiVec> > >;
 
