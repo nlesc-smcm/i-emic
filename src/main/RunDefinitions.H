@@ -38,6 +38,7 @@
 #include "Continuation.H"
 #include "GlobalDefinitions.H"
 #include "Topo.H"
+#include "Utils.H"
 
 #include "ComplexVector.H"
 #include "JDQZInterface.H"
@@ -47,30 +48,5 @@
 
 using Teuchos::RCP;
 using Teuchos::rcp;
-
-//-----------------------------------------------------------------------------
-Teuchos::RCP<Teuchos::ParameterList> obtainParams(std::string const &str,
-                                                  std::string const &name)
-{
-    RCP<Teuchos::ParameterList> pars = rcp(new Teuchos::ParameterList);
-    
-    std::ifstream file(str);
-    if (!file)
-    {
-        WARNING(str << ", " << name <<
-                " not found, continuing with defaults at your own risk!",
-                __FILE__, __LINE__);
-    }
-    else if (str == "dummy")
-    {
-        INFO("Continuing with dummy " << name);
-    }
-    else
-    {
-        updateParametersFromXmlFile(str.c_str(), pars.ptr());
-    }    
-    pars->setName(name.c_str());
-    return pars;
-}
 
 #endif

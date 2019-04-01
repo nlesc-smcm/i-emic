@@ -59,7 +59,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
 
     for (int i = 0; i != (int) files.size(); ++i)
-        params.push_back(obtainParams(files[i], names[i]));
+        params.push_back(Utils::obtainParams(files[i], names[i]));
 
     INFO('\n' << "Overwriting:");
     // Allow dominant parameterlists. Not that this trick uses a

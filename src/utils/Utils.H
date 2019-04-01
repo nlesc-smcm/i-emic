@@ -181,6 +181,10 @@ namespace Utils
     void overwriteParameters(Teuchos::RCP<Teuchos::ParameterList> originalPars,
                              Teuchos::RCP<Teuchos::ParameterList> dominantPars);
 
+    //! Update a parameterlist from a file
+    Teuchos::RCP<Teuchos::ParameterList> obtainParams(std::string const &str,
+                                                      std::string const &name);
+
     //! Hashing an Epetra_MultiVector
     size_t hash(Teuchos::RCP<Epetra_MultiVector> vec);
 
