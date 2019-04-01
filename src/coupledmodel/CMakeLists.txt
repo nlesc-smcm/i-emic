@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
 
-find_package(HDF5 REQUIRED)
-
 set(COUPLEDMODEL_INCLUDE_DIRS
   ../ocean/
   ../atmosphere/
@@ -17,6 +15,18 @@ target_compile_definitions(coupledmodel PUBLIC ${COMP_IDENT})
 
 target_include_directories(coupledmodel PUBLIC ${COUPLEDMODEL_INCLUDE_DIRS})
 
-target_link_libraries(coupledmodel PRIVATE ${HDF5_LIBRARIES} ${MPI_CXX_LIBRARIES})
+target_link_libraries(coupledmodel PRIVATE
+    ${MPI_CXX_LIBRARIES}
+    ${Belos_LIBRARIES}
+    ${Belos_TPL_LIBRARIES}
+    ${Epetra_LIBRARIES}
+    ${Epetra_TPL_LIBRARIES}
+    ${ML_LIBRARIES}
+    ${ML_TPL_LIBRARIES}
+    atmosphere
+    ocean
+    seaice
+    ifpack_mrilu
+)
 
 install(TARGETS coupledmodel DESTINATION lib)
