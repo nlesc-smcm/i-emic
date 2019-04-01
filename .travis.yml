@@ -1,33 +1,103 @@
 language: cpp
 
-dist: xenial
-addons:
-  apt:
-    packages:
-      - git
-      - build-essential
-      - gfortran
-      - libopenmpi-dev
-      - openmpi-bin
-      - cmake-data
-      - cmake
-      - trilinos-all-dev
-      - libx11-dev
-      - x11proto-core-dev
-      - libopenblas-dev
-      - libhdf5-openmpi-dev
-      # Manual Trilinos dependencies, which are bugged in 16.04
-      - libmumps-dev
-      - binutils-dev
-      - libiberty-dev
-      - libtbb-dev
-      - libsuperlu-dev
-      - libptscotch-dev
-
-env:
-  - PATH=$PATH:$TRAVIS_BUILD_DIR/local/bin LIBRARY_PATH=$LIBRARY_PATH:$TRAVIS_BUILD_DIR/local/lib LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TRAVIS_BUILD_DIR/local/lib
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - git
+            - build-essential
+            - libopenmpi-dev
+            - openmpi-bin
+            - cmake-data
+            - cmake
+            - trilinos-all-dev
+            - libx11-dev
+            - x11proto-core-dev
+            - libopenblas-dev
+            - libhdf5-openmpi-dev
+            # Manual Trilinos dependencies, which are bugged in 16.04
+            - libmumps-dev
+            - binutils-dev
+            - libiberty-dev
+            - libtbb-dev
+            - libsuperlu-dev
+            - libptscotch-dev
+            # Compilers
+            - g++-5
+            - gfortran-5
+      env:
+         - MATRIX_EVAL="OMPI_CC=gcc-5 && OMPI_CXX=g++-5 && OMPI_FC=gfortran-5 CC=gcc-5 && CXX=g++-5 && FC=gfortran-5"
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - git
+            - build-essential
+            - libopenmpi-dev
+            - openmpi-bin
+            - cmake-data
+            - cmake
+            - trilinos-all-dev
+            - libx11-dev
+            - x11proto-core-dev
+            - libopenblas-dev
+            - libhdf5-openmpi-dev
+            # Manual Trilinos dependencies, which are bugged in 16.04
+            - libmumps-dev
+            - binutils-dev
+            - libiberty-dev
+            - libtbb-dev
+            - libsuperlu-dev
+            - libptscotch-dev
+            # Compilers
+            - g++-8
+            - gfortran-8
+      env:
+         - MATRIX_EVAL="OMPI_CC=gcc-8 && OMPI_CXX=g++-8 && OMPI_FC=gfortran-8 CC=gcc-8 && CXX=g++-8 && FC=gfortran-8"
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - git
+            - build-essential
+            - libopenmpi-dev
+            - openmpi-bin
+            - cmake-data
+            - cmake
+            - trilinos-all-dev
+            - libx11-dev
+            - x11proto-core-dev
+            - libopenblas-dev
+            - libhdf5-openmpi-dev
+            # Manual Trilinos dependencies, which are bugged in 16.04
+            - libmumps-dev
+            - binutils-dev
+            - libiberty-dev
+            - libtbb-dev
+            - libsuperlu-dev
+            - libptscotch-dev
+            # Compilers
+            - clang
+            - gfortran
+      env:
+         - MATRIX_EVAL="OMPI_CC=clang && OMPI_CXX=clang++ && OMPI_FC=gfortran CC=clang && CXX=clang++ && FC=gfortran"
 
 cache: ccache
+
+before_install:
+  - eval "${MATRIX_EVAL}"
+  - export PATH=$PATH:$TRAVIS_BUILD_DIR/local/bin
+  - export LIBRARY_PATH=$LIBRARY_PATH:$TRAVIS_BUILD_DIR/local/lib
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TRAVIS_BUILD_DIR/local/lib
 
 install:
   - git clone https://github.com/erik808/jdqzpp.git
