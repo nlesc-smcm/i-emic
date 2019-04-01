@@ -18,6 +18,11 @@ elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
   set(MODFLAG "-module ")
 endif ()
 
+# XCode compilers require explicit sysroot to find C include headers
+if (APPLE AND NOT CMAKE_C_COMPILER MATCHES "^/usr/bin/")
+    set (SYSROOT_FLAG "-isysroot ${CMAKE_OSX_SYSROOT}")
+endif ()
+
 set(MRILU_DIR ${CMAKE_CURRENT_BINARY_DIR}/build PARENT_SCOPE)
 
 set(MAKEFILE_INC_CONTENT "
@@ -30,7 +35,7 @@ ARFLAGS=-crsv
 LD=${CMAKE_Fortran_COMPILER}
 LDFLAGS=
 CC=${CMAKE_C_COMPILER}
-CFLAGS=-ansi
+CFLAGS=-ansi ${SYSROOT_FLAG}
 CPPFLAGS=-I${X11_INCLUDE_DIR}
 CXX=${CMAKE_CXX_COMPILER}
 MPI_CC=
