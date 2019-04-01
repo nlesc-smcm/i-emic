@@ -5,8 +5,6 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
-#include <memory>
-
 #include "GlobalDefinitions.H"
 
 #include "Continuation.H"
