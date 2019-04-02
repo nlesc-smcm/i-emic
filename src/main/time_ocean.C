@@ -7,7 +7,6 @@
 
 #include "GlobalDefinitions.H"
 
-#include "Continuation.H"
 #include "Ocean.H"
 #include "ThetaStepper.H"
 #include "Theta.H"

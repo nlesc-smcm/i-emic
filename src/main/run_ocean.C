@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "GlobalDefinitions.H"
+#include "Utils.H"
 
 #include "ComplexVector.H"
 #include "JDQZInterface.H"

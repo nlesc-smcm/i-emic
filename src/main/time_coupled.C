@@ -9,12 +9,8 @@
 #include <memory>
 
 #include "GlobalDefinitions.H"
+#include "Utils.H"
 
-#include "ComplexVector.H"
-#include "JDQZInterface.H"
-#include "jdqz.hpp"
-
-#include "Continuation.H"
 #include "Ocean.H"
 #include "Atmosphere.H"
 #include "SeaIce.H"
