@@ -844,6 +844,9 @@ void Continuation<Model, ParameterList>::detect()
         f0 = storage_.parDot0;
         f1 = parDot_;
     }
+    else
+        ERROR("Invalid detectMode " << detectMode_,
+              __FILE__, __LINE__);
 
     if (f1 == f0)
     {

@@ -1044,7 +1044,7 @@ void AtmosLocal::getFluxes(double *lwflux, double *swflux,
 // Here we calculate the fully dimensional evaporation
 void AtmosLocal::computeEvaporation()
 {
-    int hr, sr, ctr;
+    int hr, sr, ctr = 0;
     double Eo, Ei, M, q;
 
     for (int j = 1; j <= m_; ++j)
@@ -1295,7 +1295,6 @@ void AtmosLocal::assemble()
                                     // put matrix values in column major fashion
                                     // in the array
                                     //  > go from 1 to 0-based
-                                    rowb = rowb;
                                     colb = col;
                                     idx  = rowb + (colb - 1) * ldimA_ - 1;
                                     bandedA_[idx] = value;
