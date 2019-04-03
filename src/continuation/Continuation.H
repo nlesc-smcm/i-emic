@@ -47,7 +47,7 @@ Continuation(Model model, ParameterList pars)
     residualTest_          (pars->get("corrector residual test", 'D')),
     initialTangent_        (pars->get("initial tangent type", 'E')),
     printImportantVectors_ (pars->get("print important vectors", false)),
-    postProcess_           (pars->get("post processing", 'C')),
+    postProcess_           (pars->get("post processing", "at every point")),
     predictorBound_        (pars->get("predictor bound", 1e3)),
     eigenSolverSet_        (false)
 {
@@ -81,11 +81,11 @@ Continuation(Model model, ParameterList pars)
     INFO(std::endl << "Continuation parameter list: "
          << std::endl << *pars << std::endl);
 
-    if (postProcess_ != 'C')
+    if (postProcess_ != "at every point")
     {
-        WARNING("Alternative post processing. \n" <<
+        WARNING("Alternative post processing: " << postProcess_ << '\n' <<
                 " This may affect synchronization", __FILE__, __LINE__);
-    }    
+    }
 }
 
 //======================================================================
@@ -262,7 +262,7 @@ step()
         eigenSolver();
 
     // Let the model do some administrative work at the end of a succesful step
-    if (postProcess_ == 'C')
+    if (postProcess_ == "at every point")
     {
         TIMER_START("Continuation: step -> postprocess");
         model_->postProcess();
@@ -1218,7 +1218,7 @@ finalize()
     if (printImportantVectors_)
         model_->dumpBlocks();
 
-    if (postProcess_ == 'F')
+    if (postProcess_ == "at final point")
     {
         TIMER_START("Continuation: step -> postprocess");
         model_->postProcess();

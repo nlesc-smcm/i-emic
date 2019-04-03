@@ -36,12 +36,7 @@
   <!-- Set the number of backtracking steps -->
   <Parameter name="backtracking steps" type="int" value="0"/>
 
-  <!--
-      post processing:
-      at every converged point: 'C'
-      at final converged point: 'F'
-  -->
-  <Parameter name="post processing" type="char" value="F"/>
+  <Parameter name="post processing" type="string" value="at final point"/>
 
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental, avoid them... -->

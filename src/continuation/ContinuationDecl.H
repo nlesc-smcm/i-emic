@@ -194,9 +194,9 @@ class Continuation
     bool printImportantVectors_;
 
     //! post processing:
-    //!  at every converged point: 'C'
-    //!  at final converged point: 'F'
-    char postProcess_;    
+    //!  "at every point"
+    //!  "at final point"
+    std::string postProcess_;
 
     //! Specify a bound on the RHS computed from the predicted state
     //! If it exceeds the bound we choose a smaller step size-ds
