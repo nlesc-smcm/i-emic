@@ -31,6 +31,13 @@
   <!-- Print failed residuals etc. -->
   <Parameter name="print important vectors" type="bool" value="false"/>
   
+  <!--
+      post processing:
+      at every converged point: 'C'
+      at final converged point: 'F'
+  -->
+  <Parameter name="post processing" type="char" value="F"/>
+
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental, avoid them... -->
   <!--                                                          -->

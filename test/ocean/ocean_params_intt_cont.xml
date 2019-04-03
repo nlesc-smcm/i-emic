@@ -6,6 +6,7 @@
 <ParameterList name="Ocean">
 
   <Parameter name="Load state"            type="bool" value="true"/>
+  <Parameter name="Save state"            type="bool" value="false"/>
   <Parameter name="Load salinity flux"    type="bool" value="true"/>
   <Parameter name="Load temperature flux" type="bool" value="false"/>
 

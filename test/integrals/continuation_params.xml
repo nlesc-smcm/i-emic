@@ -20,7 +20,7 @@
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-4"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
   
   <!-- Tolerance when converging on destination         -->
   <!--  for secant process in detect()                  -->
@@ -36,7 +36,7 @@
   <Parameter name="backtracking steps" type="int" value="0"/>
 
   <!-- (Debugging) Print all vectors that could be important in some way -->
-  <Parameter name="print important vectors" type="bool" value="true" />
+  <Parameter name="print important vectors" type="bool" value="false" />
 
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental, avoid them... -->
