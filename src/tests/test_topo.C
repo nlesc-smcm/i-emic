@@ -9,18 +9,6 @@ namespace // local unnamed namespace (similar to static in C)
 }
 
 //------------------------------------------------------------------
-class IEMIC : public testing::Environment
-{
-public:
-	// constructor
-	IEMIC()
-		{}
-
-	// destructor
-	~IEMIC()
-		{}
-};
-
 TEST(Ocean, Initialization)
 {
 	bool failed = false;
@@ -231,7 +219,6 @@ int main(int argc, char **argv)
 		throw std::runtime_error("ERROR: Specify output streams");
 
 	::testing::InitGoogleTest(&argc, argv);
-	::testing::AddGlobalTestEnvironment(new IEMIC);
 
 	// -------------------------------------------------------
 	// TESTING
