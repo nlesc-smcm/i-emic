@@ -46,6 +46,7 @@
   <Parameter name="backtracking steps" type="int" value="5"/>
   <Parameter name="backtracking increase" type="double" value="100"/>
 
+  <Parameter name="post processing" type="string" value="at final point"/>
 
   <!-- compute stability: 'N' never,                    -->
   <!--                    'E' at the end of a run,      -->

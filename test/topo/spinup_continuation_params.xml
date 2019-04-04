@@ -36,6 +36,8 @@
   <!-- Set the number of backtracking steps -->
   <Parameter name="backtracking steps" type="int" value="0"/>
 
+  <Parameter name="post processing" type="string" value="at final point"/>
+
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental, avoid them... -->
   <!--                                                          -->

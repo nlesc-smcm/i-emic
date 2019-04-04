@@ -45,9 +45,9 @@
   <!-- This solver is used inside the 'Simple' preconditioner              -->
   <ParameterList name="Auv Solver">
     <!-- up to now only "AztecOO" or "None" (just apply precond once) -->
-    <Parameter name="Method" type="string" value="AztecOO"/>
+    <Parameter name="Method" type="string" value="None"/>
     <!-- maximum number of iterations permitted -->
-    <Parameter name="Max Num Iter" type="int" value="3"/>
+    <Parameter name="Max Num Iter" type="int" value="1"/>
     <!-- (relative) convergence tolerance      -->
     <Parameter name="Tolerance" type="double" value="1.0e-8"/>
     <!-- options include "GMRES", "GMRESR", etc. -->
@@ -88,7 +88,7 @@
     <Parameter name="amesos: solver type" type="string" value="Amesos_Klu"/>
     
     <!-- used by Ifpack Additive Schwarz preconditioners: -->
-    <Parameter name="Ifpack Overlap Level" type="int" value="2"/>
+    <Parameter name="Ifpack Overlap Level" type="int" value="0"/>
     
     <!-- Set parameters for the Method chosen above -->
     
@@ -558,13 +558,13 @@
   </ParameterList><!-- } Saddlepoint Preconditioner -->
 
   <!-- solve for variables rho/mu instead of T/S -->
-  <Parameter name="ATS: rho/mu Transform" type="bool" value="1"/>
+  <Parameter name="ATS: rho/mu Transform" type="bool" value="0"/>
 
   <!-- Parameters for the Krylov solver for ATS { -->
   <ParameterList name="ATS Solver">
 	<Parameter name="Method" type="string" value="AztecOO"/>
-    <Parameter name="Max Num Iter" type="int" value="20"/>
-    <Parameter name="Tolerance" type="double" value="1.0e-8"/>
+    <Parameter name="Max Num Iter" type="int" value="1"/>
+    <Parameter name="Tolerance" type="double" value="1.0e-1"/>
     <Parameter name="Solver" type="string" value="GMRESR"/>
     <Parameter name="Conv" type="string" value="r0"/>
     <Parameter name="Output" type="int" value="1"/>
