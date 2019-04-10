@@ -77,7 +77,8 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
     // Run ThetaStepper
     int status = stepper.run();
-    assert(status == 0);
+    if (status == 0)
+        ERROR("Timestepper failed", __FILE__, __LINE__);
 
     TIMER_STOP("Total time...");
 

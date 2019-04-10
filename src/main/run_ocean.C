@@ -99,7 +99,8 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
     // Run continuation
     int status = continuation.run();
-    assert(status == 0);
+    if (status == 0)
+        ERROR("Continuation failed", __FILE__, __LINE__);
 
     TIMER_STOP("Total time...");
 

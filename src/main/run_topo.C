@@ -71,15 +71,15 @@ int main(int argc, char **argv)
         TIMER_START("  TOPO:  Homotopy Continuation");
         int status = continuation.run();
         TIMER_STOP ("  TOPO:  Homotopy Continuation");
-        assert(status == 0);
-
+        if (status == 0)
+            ERROR("Continuation failed", __FILE__, __LINE__);
+        
         topo->setPar(1.0);
-
+        
         if (argc == 1)
             topo->postProcess();
         else
             std::cout << " arguments given, no usage yet" << std::endl;
-
     }
 
     ocean = Teuchos::null;
