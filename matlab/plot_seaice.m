@@ -7,7 +7,13 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
     if nargin < 1
         fname = 'seaice_output.h5';
     end
-    
+
+    if isfield(opts, 'maskfile')
+        maskfile = opts.maskfile;
+    else
+        maskfile = 'fort.44';
+    end
+
     if isfield(opts, 'readFluxes')
         readFluxes = opts.readFluxes;
     else
@@ -53,7 +59,7 @@ function [state,pars,add,fluxes] = plot_seaice(fname, opts)
     end
 
 
-    [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
+    [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44(maskfile);
     
     surfm      = landm(2:n+1,2:m+1,l+1);    % Only interior surface points
     landm_int  = landm(2:n+1,2:m+1,2:l+1);

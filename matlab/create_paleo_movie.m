@@ -8,6 +8,7 @@ createAvi = false;
 % add interpolated frames
 addInterp = false;
 
+dest_dir = '/home/erik/Projects/doc/i-emic/presentations/topocont_snap/.'
 Ntopos = 14;
 for i = 1:Ntopos
     labels = [labels, [num2str(70-5*i) 'Ma']];
@@ -44,10 +45,14 @@ for i = 1:Ntopos
     opts.caxis_min = -40;
     opts.caxis_max = 40;
     opts.invert = true;
+    opts.maskfile=dnames{i}
+    opts.exportfig=true;
+    opts.only_contour=false;
 
     fprintf('\n   %d %d --- \n', counter, i)
 
-    plot_ocean(fnames{i}, dnames{i}, opts)
+    plot_ocean(fnames{i}, opts);
+    system(['cp -v ', 'bstream', opts.fname_add, '.eps ', dest_dir]);
     
     if createAvi
         frame = getframe(gcf);
@@ -81,6 +86,7 @@ for i = 1:Ntopos
         end
     end
 end
+
 if createAvi
     close(writerObj);
 end

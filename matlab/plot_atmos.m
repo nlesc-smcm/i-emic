@@ -19,6 +19,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
         opts.readLST = readLST;
         opts.lst     = readLST;
     end
+
+    if isfield(opts,'input_caxis')
+        set_caxis = true;
+    else
+        set_caxis = false;
+    end
     
     if isfield(opts, 'EmP') 
         plotEmP = opts.EmP;
@@ -87,6 +93,12 @@ function [state,pars,add] = plot_atmos(fname, opts)
     else
         plot_qsat = false;
     end
+    
+    if isfield(opts, 'maskfile')
+        maskfile = opts.maskfile;
+    else
+        maskfile = 'fort.44';
+    end
 
     if isfield(opts, 'exportfig')
         export_to_file = opts.exportfig;
@@ -100,7 +112,7 @@ function [state,pars,add] = plot_atmos(fname, opts)
         plot_EV = false;
     end
 
-    [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44('fort.44');
+    [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = readfort44(maskfile);
     surfm      = landm(2:n+1,2:m+1,l+1);    % Only interior surface points
     landm_int  = landm(2:n+1,2:m+1,2:l+1);
     summask = sum(landm_int,3);
@@ -256,6 +268,9 @@ function [state,pars,add] = plot_atmos(fname, opts)
         %cmap = my_colmap(caxis);
         colormap(gray)
         colorbar
+        if set_caxis
+            caxis(opts.input_caxis)
+        end
 
         title('Albedo')
         xlabel('Longitude')

@@ -295,7 +295,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         colormap(my_colmap(caxis, 0))
 
         if plot_title
-            title(['Barotropic Streamfunction (Sv) ', opts.only_contour]);
+            title(['Barotropic Streamfunction (Sv) ', opts.title_add]);
         end
 
         xlabel('Longitude')
@@ -337,7 +337,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
             title(['MOC (Sv) ',opts.title_add])
         end
 
-        xlabel('latitude')
+        xlabel('Latitude')
         ylabel('depth (m)')
 
         if fix_caxis
@@ -394,6 +394,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         title('Temperature')
         xlabel('Latitude')
         ylabel('z (m)')
+
         colormap(my_colmap(caxis))
         %crange = max(abs(caxis))-T0;
         %caxis([T0-crange, T0+crange]);
@@ -440,6 +441,10 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
             hold off
             colormap(cmap)
             colorbar
+        end
+        
+        if fix_caxis
+            caxis([opts.caxis_min,opts.caxis_max])
         end
 
         if export_to_file

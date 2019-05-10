@@ -1,4 +1,4 @@
-function [titles, cdata,h] = plot_cdata(fname, opts)
+function [titles, cdata,h,e] = plot_cdata(fname, opts)
     if nargin < 2 
         opts = [];
     end
@@ -27,6 +27,12 @@ function [titles, cdata,h] = plot_cdata(fname, opts)
         holdfig = opts.hold;
     else
         holdfig = false;
+    end
+    
+    if isfield(opts,'reduce_size')
+        reduce_size = opts.reduce_size;
+    else
+        reduce_size = false;
     end
 
     if isfield(opts,'exportnum')
@@ -108,9 +114,48 @@ function [titles, cdata,h] = plot_cdata(fname, opts)
         end
     end    
     
+    if plot_entry ~= 0 
+        assert(plot_entry >= 2)
+        assert(plot_entry <= size(cdata,2))
+    end
+    
     for i = 2:size(cdata,2)
 
         if plot_all || i == plot_entry
+
+            if reduce_size
+                
+                dx = cdata(2:end,1)-cdata(1:end-1,1);
+                
+                sgn   = sign(dx);
+                folds = sgn(2:end) ~= sgn(1:end-1);
+                
+                dy  = cdata(2:end,i)-cdata(1:end-1,i);
+                dd  = sqrt(dx.^2+dy.^2);
+                th  = max(dd)/0.8;
+                row = 1;
+                
+                si = sign(dy(1)/dx(1));
+                
+                while row < size(cdata,1)-1
+                    dx  = cdata(row+1,1)-cdata(row,1);
+                    dy  = cdata(row+1,i)-cdata(row,i);
+                    dd  = sqrt(dx.^2+dy.^2);
+
+                    if (dd < th) && (~folds(row))
+                        cdata(row+1,:) = [];
+                        folds(row,:) = [];
+                    else
+                        row = row + 1;
+                    end
+
+                end
+                
+                % if rows > mx
+                %     cdata = cdata(1:floor(rows/mx):rows,:);
+                % end
+                                 
+            end
             
             figure(i)
             if holdfig
@@ -146,7 +191,7 @@ function [titles, cdata,h] = plot_cdata(fname, opts)
                 xpoint = partrans(cdata(point,1));
                 ypoint = cdata(point,i);
                 hold on
-                e  = plot(xpoint,ypoint,'o','markerfacecolor','w'); 
+                e  = plot(xpoint,ypoint,'o','markerfacecolor',[1,.2,.2],'color',[1,1,1],'markersize',8); 
                 hold off;
             end
             
@@ -187,5 +232,4 @@ function [titles, cdata,h] = plot_cdata(fname, opts)
             hold off;
         end
     end       
-    
 end
