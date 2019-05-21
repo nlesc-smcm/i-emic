@@ -53,13 +53,19 @@ foreach(test_source ${TEST_SOURCES})
   target_include_directories(${test_name} PUBLIC ${TESTS_INCLUDE_DIRS})
 
   target_link_libraries(${test_name} PUBLIC ${I-EMIC_LIBS})
-  target_link_libraries(${test_name} PUBLIC ${library_dependencies})
+  target_link_libraries(${test_name} PUBLIC
+      ${Belos_LIBRARIES}
+      ${Belos_TPL_LIBRARIES}
+      ${Epetra_LIBRARIES}
+      ${Epetra_TPL_LIBRARIES}
+      ${ML_LIBRARIES}
+      ${ML_TPL_LIBRARIES}
+  )
   target_link_libraries(${test_name} PUBLIC ${MPI_CXX_LIBRARIES})
   target_link_libraries(${test_name} PUBLIC ${GTEST_BOTH_LIBRARIES})
 
   # Pthread
   target_link_libraries(${test_name} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
-
 endforeach()
 
 # additional parallel tests
