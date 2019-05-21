@@ -92,9 +92,11 @@
     <Parameter name="Taper" type="int" value="1"/>
     <!-- Disable the Coriolis force -->
     <Parameter name="Coriolis Force" type="int" value="0"/>
-    <!-- Forcing Type                                                      -->
-    <!-- 0: cos(pi*theta/theta_N) as both temperature and salinity forcing -->
-    <!-- 1: cos(pi*theta/theta_N) / cos(theta) as salinity forcing         -->
+    <!-- Forcing Type                                                    -->
+    <!-- 0: cos(pi*yy/ymax) as both temperature and salinity forcing     -->
+    <!-- 1: cos(pi*yy/ymax) / cos(yy) as salinity forcing                -->
+    <!-- 2: cos(pi*(yy-ymin)/(ymax-ymin)) as temperature and salinity    -->
+    <!--    forcing (Northern Hemisphere)                                -->
     <Parameter name="Forcing Type" type="int" value="1"/>
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
