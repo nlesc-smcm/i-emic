@@ -222,7 +222,7 @@ SUBROUTINE stochastic_forcing
   use m_mat
   implicit none
 
-  integer i, j, k, row, prev_row, v
+  integer i, j, row, prev_row, v
   integer find_row2
   real oldpar
 
