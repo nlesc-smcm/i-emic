@@ -387,6 +387,8 @@ void Utils::load(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
 
     // Import state from HDF5 into state_ datamember
     CHECK_ZERO(vec->Import(*((*readState)(0)), *lin2solve, Insert));
+
+    delete readState;
 }
 
 //============================================================================
