@@ -1974,7 +1974,6 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
         // Instruct THCM to set/insert this as the emip in the local model
         THCM::Instance().setEmip(salflux);
 
-
         if (HDF5.IsContained("AdaptedSalinityFlux"))
         {
             INFO(" detected AdaptedSalinityFlux in " << filename);
@@ -1987,6 +1986,8 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
                 Teuchos::rcp(new Epetra_Vector( salflux->Map() ) );
 
             adaptedSalFlux->Import( *((*readAdaptedSalFlux)(0)), *lin2solve_surf, Insert);
+
+            delete readAdaptedSalFlux;
 
             // Let THCM insert the adapted salinity flux
             THCM::Instance().setEmip(adaptedSalFlux, 'A');
@@ -2005,9 +2006,13 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
 
             salFluxPert->Import( *((*readSalFluxPert)(0)), *lin2solve_surf, Insert);
 
+            delete readSalFluxPert;
+
             // Let THCM insert the salinity flux perturbation mask
             THCM::Instance().setEmip(salFluxPert, 'P');
         }
+
+        delete readSalFlux;
 
         INFO("Loading salinity flux from " << filename << " done");
     }
@@ -2040,6 +2045,7 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
         // Instruct THCM to set/insert this as tatm in the local model
         THCM::Instance().setTatm(temflux);
 
+        delete readTemFlux;
 
         INFO("Loading temperature flux from " << filename << " done");
     }
@@ -2073,6 +2079,8 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
                                                 readMask->Map() ));
 
             tmpMask->Import(*readMask, *lin2dstr, Insert);
+
+            delete readMask;
 
             // Put the new mask in THCM
             THCM::Instance().setLandMask(tmpMask, true);

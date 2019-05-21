@@ -212,6 +212,7 @@ inline int Model::loadStateFromFile(std::string const &filename)
         // Import state from HDF5 into state_ datamember
         CHECK_ZERO(state_->Import(*((*readState)(0)), *lin2solve, Insert));
 
+        delete readState;
 
         INFO(" state: ||x|| = " << Utils::norm(state_));
 
