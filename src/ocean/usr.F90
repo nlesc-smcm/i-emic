@@ -72,6 +72,9 @@ module m_usr
   integer :: coriolis_on = 1      ! Enables Coriolis force, which is disabled
                                   ! in the 2DMOC setup.
 
+  integer :: forcing_type = 0     ! Forcing type: 0: default, 1: 2DMOC,
+                                  ! 2: Northern hemisphere
+
   !--obsolete---
   !integer :: ifw        = 1       ! freshwater forcing 0: data, 1: idealized
                                    ! (USE its NOW)

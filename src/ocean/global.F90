@@ -27,7 +27,8 @@ module m_global
        itopo, flat, rd_mask,                 &
        coupled_T, coupled_S,                 &
        TRES, SRES, iza, ite, its, rd_spertm, &
-       coriolis_on, rowintcon, f99, t0, s0
+       coriolis_on, forcing_type,            &
+       rowintcon, f99, t0, s0
 
   use m_atm, only : Ooa, suno
 
@@ -71,7 +72,8 @@ contains
        a_ih,a_vmix_GLB,a_tap,a_rho_mixing,&
        a_periodic,a_itopo,a_flat,a_rd_mask,&
        a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm,&
-       a_coupled_T, a_coupled_S, a_coriolis_on)
+       a_coupled_T, a_coupled_S, a_coriolis_on,&
+       a_forcing_type)
 
     use, intrinsic :: iso_c_binding
     implicit none
@@ -83,6 +85,7 @@ contains
     integer(c_int) :: a_periodic,a_itopo,a_flat,a_rd_mask
     integer(c_int) :: a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm
     integer(c_int) :: a_coupled_T, a_coupled_S, a_coriolis_on
+    integer(c_int) :: a_forcing_type
 
     xmin  = a_xmin
     xmax  = a_xmax
@@ -131,6 +134,7 @@ contains
        rd_spertm = .false.
     end if
     coriolis_on = a_coriolis_on
+    forcing_type = a_forcing_type
 
     !========= I-EMIC coupling  ================================
     coupled_T = a_coupled_T

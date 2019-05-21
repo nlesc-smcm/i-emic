@@ -92,6 +92,10 @@
     <Parameter name="Taper" type="int" value="1"/>
     <!-- Disable the Coriolis force -->
     <Parameter name="Coriolis Force" type="int" value="0"/>
+    <!-- Forcing Type                                                      -->
+    <!-- 0: cos(pi*theta/theta_N) as both temperature and salinity forcing -->
+    <!-- 1: cos(pi*theta/theta_N) / cos(theta) as salinity forcing         -->
+    <Parameter name="Forcing Type" type="int" value="1"/>
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
@@ -111,7 +115,7 @@
     <!-- 0: data,                         -->
     <!-- 1: zonally averaged              -->
     <!-- 2: idealized                     -->
-    <Parameter name="Wind Forcing" type="int" value="2"/>
+    <Parameter name="Wind Forcing Type" type="int" value="2"/>
     <!-- Type of scaling applied to the linear systems.                            -->
     <!-- We currently support "None" and "THCM"                                    -->
     <!-- "None" is not really recomended.                                          -->
