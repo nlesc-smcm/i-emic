@@ -75,14 +75,14 @@ extern "C" {
     //          ih,vmix_GLB,tap,rho_mixing,
     //          periodic,itopo,flat,rd_mask,
     //          TRES,SRES,iza,ite,its,rd_spertm
-    //          coupled_T, coupled_S
+    //          coupled_T, coupled_S, coriolis_on
     _MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
                                              double*,double*,double*,double*,double*,double*,
                                              double*,double*,
                                              int*,int*,int*,int*,
                                              int*,int*,int*,int*,
                                              int*,int*,int*,int*,int*,int*,
-                                             int*,int*);
+                                             int*,int*,int*);
 
     _MODULE_SUBROUTINE_(m_global,finalize)(void);
     _MODULE_SUBROUTINE_(m_global,get_landm)(int*);
@@ -259,6 +259,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     coupled_S          = paramList.get("Coupled Salinity", 0);
     coupled_M          = paramList.get("Coupled Sea Ice Mask", 1);
     fixPressurePoints_ = paramList.get("Fix Pressure Points", false);
+    int coriolis_on    = paramList.get("Coriolis Force", 1);
 
     //------------------------------------------------------------------
     if ((coupled_S == 1) && (sres == 1))
@@ -380,7 +381,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &ih, &vmix_GLB, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres, &sres, &iza, &ite, &its, &ird_spertm,
-                                  &coupled_T, &coupled_S);
+                                  &coupled_T, &coupled_S, &coriolis_on);
 
     INFO("THCM init: m_global::initialize... done");
 

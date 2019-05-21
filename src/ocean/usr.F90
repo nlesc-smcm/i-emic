@@ -69,6 +69,9 @@ module m_usr
 
   logical :: rd_spertm  = .false. ! read salinity perturbation mask
 
+  integer :: coriolis_on = 1      ! Enables Coriolis force, which is disabled
+                                  ! in the 2DMOC setup.
+
   !--obsolete---
   !integer :: ifw        = 1       ! freshwater forcing 0: data, 1: idealized
                                    ! (USE its NOW)

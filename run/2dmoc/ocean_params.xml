@@ -65,18 +65,22 @@
 
     <!-- Starting Parameters -->
     <ParameterList name="Starting Parameters">
-      <Parameter name="Combined Forcing"    type="double" value="0.0"/>
-      <Parameter name="Solar Forcing"       type="double" value="0.0"/>
-      <Parameter name="Salinity Forcing"    type="double" value="0.0"/>
-      <Parameter name="Wind Forcing"        type="double" value="0.0"/>
-      <Parameter name="Temperature Forcing" type="double" value="10.0"/>
-      <Parameter name="SPL1"                type="double" value="2e3"/>
-      <Parameter name="SPL2"                type="double" value="0.01"/>
+      <Parameter name="Combined Forcing"        type="double" value="0.0"/>
+      <Parameter name="Solar Forcing"           type="double" value="0.0"/>
+      <Parameter name="Salinity Forcing"        type="double" value="0.0"/>
+      <Parameter name="Wind Forcing"            type="double" value="0.0"/>
+      <Parameter name="Temperature Forcing"     type="double" value="10.0"/>
+      <Parameter name="SPL1"                    type="double" value="2e3"/>
+      <Parameter name="SPL2"                    type="double" value="0.01"/>
 
       <!-- Special 2dmoc adaptations -->
-      <Parameter name="P_VC"                type="double" value="0.0"/>
-      <Parameter name="Rossby-Number"       type="double" value="0.0"/>
-      <Parameter name="CMPR"                type="double" value="0.0"/>
+      <Parameter name="P_VC"                    type="double" value="0.0"/>
+      <Parameter name="Rossby-Number"           type="double" value="0.0"/>
+      <Parameter name="CMPR"                    type="double" value="0.0"/>
+      <!-- With AH = 2.2e12 -->
+      <Parameter name="Horizontal Ekman-Number" type="double" value="371.764"/>
+      <!-- Scaled with the Ekman number -->
+      <Parameter name="Rayleigh-Number"         type="double" value="15.6869"/>
     </ParameterList>
 
     <!-- Mixing parameter (vmix_GLB in THCM)                                 -->
@@ -86,6 +90,8 @@
     <Parameter name="Rho Mixing" type="bool" value="0"/>
     <!-- Taper (tap in usr.F90) -->
     <Parameter name="Taper" type="int" value="1"/>
+    <!-- Disable the Coriolis force -->
+    <Parameter name="Coriolis Force" type="int" value="0"/>
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->

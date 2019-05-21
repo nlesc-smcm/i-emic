@@ -321,7 +321,7 @@ SUBROUTINE coriolis(type,atom)
   real      corv(0:m)
   !
   atom = 0.0
-  corv = sin(yv)
+  corv = sin(yv) * coriolis_on
   if (type.EQ.1) then
      do i=1,n
         do j=1,m-1
