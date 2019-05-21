@@ -5,12 +5,10 @@
   <!-- an old state (true) or with a zero solution (false).                  -->
   <!-- In a coupled situation this will be partly overruled by the parameter -->
   <!-- specified in CoupledModel                                             -->
-  <Parameter name="Load state" type="bool" value="false"/>
+  <Parameter name="Load state" type="bool" value="true"/>
   <Parameter name="Save state" type="bool" value="true"/>
   <Parameter name="Input file"  type="string" value="ocean_input.h5" />
   <Parameter name="Output file" type="string" value="ocean_output.h5" />
-
-  <Parameter name="Use legacy fortran output" type="bool" value="true" />
 
   <!-- To keep track of each converged state, enable this. -->
   <Parameter name="Store everything" type="bool" value="false" />
@@ -96,7 +94,6 @@
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
     <Parameter name="Restoring Salinity Profile" type="int" value="0"/>
-    <Parameter name="Salinity Integral Sign" type="int" value="-1"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->

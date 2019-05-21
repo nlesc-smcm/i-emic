@@ -13,21 +13,21 @@
   <Parameter name="continuation parameter" type="string" value="Combined Forcing"/>
 
   <!-- Define the initial, minimum and maximum continuation step size -->
-  <Parameter name="initial step size" type="double" value="1.0e-3"/>
+  <Parameter name="initial step size" type="double" value="1.0e-2"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>
-  <Parameter name="maximum step size" type="double" value="1.0"/>
-  <Parameter name="increase step size" type="double" value="2.0"/>
+  <Parameter name="maximum step size" type="double" value="1"/>
+  <Parameter name="increase step size" type="double" value="1.1"/>
   <Parameter name="decrease step size" type="double" value="2.0"/>
 
   <!-- Define the destination value for the continuation parameter -->
-  <Parameter name="destination 0" type="double" value="1"/>
+  <Parameter name="destination 0" type="double" value="0.135"/>
 
   <!-- Define the number of continuation steps              -->
   <!--   set to -1 to run indefinitely                      -->
   <Parameter name="maximum number of steps" type="int" value="-1"/>
 
   <!-- Tolerance in Newton process -->
-  <Parameter name="Newton tolerance" type="double" value="1.0e-3"/>
+  <Parameter name="Newton tolerance" type="double" value="1.0e-4"/>
 
   <!-- Tolerance when converging on destination         -->
   <!--  for both Newton and secant process in detect()  -->
@@ -42,10 +42,6 @@
 
   <!-- Set the number of backtracking steps -->
   <Parameter name="backtracking steps" type="int" value="5"/>
-
-  <!-- (Debugging) Print all vectors that could be important in some way -->
-  <Parameter name="print important vectors" type="bool" value="true" />
-
 
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental, avoid them... -->
