@@ -76,6 +76,12 @@
     <Parameter name="Rho Mixing" type="bool" value="0"/>
     <!-- Taper (tap in usr.F90) -->
     <Parameter name="Taper" type="int" value="1"/>
+    <!-- Forcing Type                                                    -->
+    <!-- 0: cos(pi*yy/ymax) as both temperature and salinity forcing     -->
+    <!-- 1: cos(pi*yy/ymax) / cos(yy) as salinity forcing                -->
+    <!-- 2: cos(pi*(yy-ymin)/(ymax-ymin)) as temperature and salinity    -->
+    <!--    forcing (Northern Hemisphere)                                -->
+    <Parameter name="Forcing Type" type="int" value="2"/>
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->
