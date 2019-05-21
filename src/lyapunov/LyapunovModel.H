@@ -45,6 +45,8 @@ void LyapunovModel<Model>::postProcess()
     Model::computeForcing();
     auto B = Model::getForcing();
 
+    CHECK_ZERO(B->Scale(params->get("sigma", 1.0)));
+
     auto M = Model::getMassMat('V');
 
     Epetra_Map const &map = A->RowMap();
