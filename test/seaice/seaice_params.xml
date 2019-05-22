@@ -4,8 +4,6 @@
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="true"/>
 
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-
   <!-- Starting parameters -->
   <Parameter name="Combined Forcing"      type="double" value="1.0"/>
   <Parameter name="Solar Forcing"         type="double" value="1.0"/>

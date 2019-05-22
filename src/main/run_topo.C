@@ -73,7 +73,7 @@ int main(int argc, char **argv)
         TIMER_STOP ("  TOPO:  Homotopy Continuation");
         assert(status == 0);
 
-        topo->setPar(1.0);
+        topo->setPar("Delta", 1.0);
 
         if (argc == 1)
             topo->postProcess();

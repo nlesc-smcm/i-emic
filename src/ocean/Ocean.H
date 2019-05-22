@@ -135,10 +135,6 @@ protected:
     //! Maximum number of mask fixing cycles
     int maxMaskFixes_;
 
-    //! Continuation parameter name.
-    //! For a list of possible names see THCM::par2int()
-    std::string parName_;
-
     //! Landmask file
     std::string landmaskFile_;
 
@@ -237,20 +233,11 @@ public:
     PreconPtr getPreconPtr() { return precPtr_; }
 
     //! The parameter set members wrap the corresponding
-    //! Fortran functions. We keep an internal parameter name which
-    //! can be overwritten here.
-    void setPar(double value);
+    //! Fortran functions.
     void setPar(std::string const &parName, double value);
-    void setParName(std::string const &parName) { parName_ = parName; }
 
-    //! Return default continuation parameter value
-    double getPar();
-
-    //! Return default continuation parameter value
+    //! Return parameter value
     double getPar(std::string const &parName);
-
-    //! Return current parameter name
-    std::string const getParName() { return parName_; }
 
     //! Return total number of continuation parameters
     int npar() { return _NPAR_; }

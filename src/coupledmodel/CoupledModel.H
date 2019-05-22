@@ -66,10 +66,6 @@ private:
     //! Combined rhs vectir
     std::shared_ptr<Combined_MultiVec> rhsView_;
 
-    //! Determines the continuation parameter
-    //! For a list see THCM::par2int()
-    std::string parName_;
-
     //! Solving scheme
     //!   'D': decoupled     (decoupled, syncs at post-processing)
     //!   'Q': quasi-coupled (no coupling blocks, syncs at every NR step)
@@ -181,11 +177,11 @@ public:
     //! Get an RCP to the rhs vector
     std::shared_ptr<Combined_MultiVec> getRHS(char mode = 'C');
 
-    //! Set the continuation parameter
-    void setPar(double value);
+    //! Set a continuation parameter
+    void setPar(std::string const &parName, double value);
 
-    //! Get the continuation parameter
-    double getPar();
+    //! Get a continuation parameter
+    double getPar(std::string const &parName);
 
     //! initialize state in submodels
     void initializeState();
