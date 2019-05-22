@@ -294,6 +294,9 @@ public:
     int getMdim() { return M_;}
     int getLdim() { return L_;}
 
+    //! Get the minimum and maximum of the Meridional streamfunction
+    int getPsiM(double &psiMin, double &psiMax);
+
     //! Get coupling information
     int getCoupledT();
     int getCoupledS();
