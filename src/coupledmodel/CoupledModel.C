@@ -93,7 +93,6 @@ CoupledModel::CoupledModel(std::shared_ptr<Model> ocean,
 //------------------------------------------------------------------
 void CoupledModel::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
 {
-    parName_       = params->get("Continuation parameter","Combined Forcing");
     solvingScheme_ = params->get("Solving scheme",'C');
     precScheme_    = params->get("Preconditioning",'F');
     useOcean_      = params->get("Use ocean",true);
@@ -124,9 +123,6 @@ void CoupledModel::setup()
         stateView_->AppendVector(model->getState('V'));
         solView_->AppendVector(model->getSolution('V'));
         rhsView_->AppendVector(model->getRHS('V'));
-
-        // notify the models of the current continuation parameter
-        model->setParName(parName_);
     }
 
     // Create the GID2Coord mapping where we use the model ordering
@@ -679,13 +675,13 @@ std::shared_ptr<Combined_MultiVec> CoupledModel::getRHS(char mode)
 }
 
 //------------------------------------------------------------------
-double CoupledModel::getPar()
+double CoupledModel::getPar(std::string const &parName)
 {
     // Parameter values are equal to the continuation parameter or 0.
     double par, out = 0.0;
     for (auto &model: models_)
     {
-        par = model->getPar(parName_);
+        par = model->getPar(parName);
         out = (std::abs(par) > 0.0) ? par : out;
     }
 
@@ -693,10 +689,10 @@ double CoupledModel::getPar()
 }
 
 //------------------------------------------------------------------
-void CoupledModel::setPar(double value)
+void CoupledModel::setPar(std::string const &parName, double value)
 {
     for (auto &model: models_)
-        model->setPar(parName_, value);
+        model->setPar(parName, value);
 }
 
 //------------------------------------------------------------------

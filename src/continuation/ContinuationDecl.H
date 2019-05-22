@@ -57,44 +57,46 @@ class Continuation
     Model model_;
 
     //! copy of the state in the model
-    VectorPtr stateCopy_; 
+    VectorPtr stateCopy_;
     //! view of the state
-    VectorPtr stateView_; 
+    VectorPtr stateView_;
     //! copy of the rhs in the model
-    VectorPtr rhsCopy_;   
+    VectorPtr rhsCopy_;
     //! view of the rhs in the model
-    VectorPtr rhsView_;   
+    VectorPtr rhsView_;
     //! view of the solution in the model
-    VectorPtr solView_;   
+    VectorPtr solView_;
 
     //! derivative of the state w.r.t. arclength par.
-    VectorPtr stateDot_;  
+    VectorPtr stateDot_;
 
     //! derivative of the rhs w.r.t. continuation par.
-    VectorPtr dFdPar_;    
+    VectorPtr dFdPar_;
 
-    //! continuation parameter
-    double par_;          
+    //! continuation parameter name
+    std::string parName_;
+    //! continuation parameter value
+    double par_;
     //! starting value continuation parameter
-    double startingPar_;  
+    double startingPar_;
     //! derivative of cont. parameter w.r.t. arclength par.
-    double parDot_;       
+    double parDot_;
 
     //! parameter history
-    std::vector<double> parHist_;        
+    std::vector<double> parHist_;
     //! state history
-    std::vector<double> stateNormHist_;  
+    std::vector<double> stateNormHist_;
 
     //! continuation step-size
-    double ds_;     
+    double ds_;
     //! initial continuation step-size
-    double dsInit_; 
+    double dsInit_;
     //! minimum continuation step-size
-    double dsMin_;  
+    double dsMin_;
     //! maximum continuation step-size (absolute)
-    double dsMax_;  
+    double dsMax_;
     //! step size at beginning of secant process
-    double dsStart_; 
+    double dsStart_;
 
     //! parameter destinations
     std::vector<double> destinations_; // list we adjust
@@ -104,72 +106,72 @@ class Continuation
     double zeta_;
 
     //! conservative scaling for adaptive step
-    double scale1_; 
+    double scale1_;
     //! drastic scaling for adaptive step reset
-    double scale2_; 
+    double scale2_;
 
     //! variation used for finite difference
-    double epsilon_; 
+    double epsilon_;
 
     //! status flag when aborting
-    bool abortFlag_;            
+    bool abortFlag_;
     //! disable adjustStep()
-    bool fixStepSize_;          
+    bool fixStepSize_;
     //! status flag when final destination reached
     bool reachedLastDest_;
     //! status flag giving detect() power over ds
-    bool secant_;               
+    bool secant_;
 
     //! perform backtracking when Newton fails
-    bool backTracking_;         
+    bool backTracking_;
     //! backtracking counter
-    int  backTrack_;            
+    int  backTrack_;
     //! number of backtracking steps
-    int  numBackTrackingSteps_; 
+    int  numBackTrackingSteps_;
 
     //! allowed increase in backtracking
-    double backTrackIncrease_;  
+    double backTrackIncrease_;
 
     //! continuation step counter
-    int step_;                 
+    int step_;
     //! maximum number of continuation steps:
-    int maxSteps_;             
+    int maxSteps_;
 
     //! reset counter
-    int resetCounter_;         
+    int resetCounter_;
 
     //! newton iteration counter
-    int newtonIter_;              
+    int newtonIter_;
     //! newton iteration counter
-    int sumNewtonIter_;           
+    int sumNewtonIter_;
     //! set the max for the Newton iterations
-    int maxNewtonIterations_;     
+    int maxNewtonIterations_;
     //! set the min for the Newton iterations
-    int minNewtonIterations_;     
+    int minNewtonIterations_;
     //! if less/more then we increase/decrease the step-size
-    double optNewtonIterations_;         
+    double optNewtonIterations_;
     //! set the tolerance in the Newton corrector
-    double newtonTolerance_;      
+    double newtonTolerance_;
     //! set the tolerance for the final convergence
-    double destinationTolerance_; 
+    double destinationTolerance_;
     //! let model class determine a simple monitor
-    bool userDetect_;             
+    bool userDetect_;
     //! specify type of special point detection:
     //!      'D' converge at destination 0,1,... (default)
     //!      'P' converge at turning point
-    char detectMode_;             
+    char detectMode_;
     //! scaling of the state tangent
-    double tanScaling_;           
+    double tanScaling_;
     //! normalization strategy 'O' old or 'N' new
-    char normalizeStrategy_;      
+    char normalizeStrategy_;
     //! compute stability: 'N' never,
     //!                    'E' at the end of a run,
     //!                    'P' at every converged point (during post-processing).
-    char stabilityScheme_;      
+    char stabilityScheme_;
     //! set to false if you feel lucky
-    bool rejectFailedNewton_;     
+    bool rejectFailedNewton_;
     //! give up at minimum step size
-    bool giveUpAtdsMin_;          
+    bool giveUpAtdsMin_;
 
     //! If the parameter dependence in the rhs is constant we can reuse statedot
     //! in the Newton corrector, partially disregarding updates in the Jacobian.
@@ -180,9 +182,9 @@ class Continuation
     //! E: Euler
     //! S: Secant
     char tangentType_;
-    
+
     //! Specify the residual test for convergence in the Newton process
-    //! R: ||R||_2,            2-norm of R (augmented F) 
+    //! R: ||R||_2,            2-norm of R (augmented F)
     //! D: ||(dx,dpar)||_inf,  inf-norm of the update (dx,dpar)
     char residualTest_;
 
@@ -204,11 +206,11 @@ class Continuation
 
     //! used for detecting sign switch
     int parDotSign_;
-    
+
     //! track the sign of monitor in detect()
     std::vector<int> signMonitor_;
     //! ||F(x_old)||
-    double normRHS_;              
+    double normRHS_;
     //! ||F(x_new)||
     double normRHStest_;
 
@@ -218,17 +220,17 @@ class Continuation
     struct Storage
     {
         //! prev state
-        VectorPtr state0;     
+        VectorPtr state0;
         //! prev prev state
-        VectorPtr state00;    
+        VectorPtr state00;
         //! prev d/ds state
-        VectorPtr stateDot0;  
+        VectorPtr stateDot0;
         //! prev par
-        double par0;          
+        double par0;
         //! prev prev par
-        double par00;         
+        double par00;
         //! prev ds
-        double ds0;           
+        double ds0;
         //! prev prev ds
         double ds00;
         //! prev pardot
@@ -246,7 +248,7 @@ public:
 
     //! constructor
     Continuation(Model model, ParameterList pars);
-    
+
     //! destructor
     ~Continuation();
 
@@ -257,7 +259,7 @@ public:
     void test();
 
     //! set pointer to an eigenvalue solver
-    void setEigenSolver(std::shared_ptr<JDQZsolver> jdqz);        
+    void setEigenSolver(std::shared_ptr<JDQZsolver> jdqz);
 
 private:
 
@@ -285,10 +287,10 @@ private:
     //! Modes: 'F' : force compute RHS
     //!        'A' : do not force compute RHS
     void computeDFDPar(char mode = 'A');
-    
+
     int  eulerPredictor();
     int  newtonCorrector();
-    
+
     int  runBackTracking(VectorPtr stateDir, double parDir);
 
     //! Detect special points.
@@ -296,7 +298,7 @@ private:
 
     //! let model::monitor define stopping criterion
     void userDetect();
-    
+
     void adjustStep();
     void reset();
     void info();

@@ -260,7 +260,6 @@ private:
     //! Continuation
     //! -------------------------------------------------------
     std::vector<std::string> allParameters_;
-    std::string parName_;
 
     double      comb_; //! combined forcing
     double      sunp_; //! solar forcing
@@ -337,12 +336,8 @@ public:
                      std::vector<double>  &out);
 
     //! Getters and setter for the continuation parameters
-    void    setPar(double value);
     void    setPar(std::string const &parName, double value);
-    void    setParName(std::string const &parName) {parName_ = parName; }
-    double  getPar();
     double  getPar(std::string const &parName);
-    std::string const getParName() { return parName_; }
 
     //! Accept ocean temperature vector
     void setOceanTemperature(std::vector<double> const &sst);

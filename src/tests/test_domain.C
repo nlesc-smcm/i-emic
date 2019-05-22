@@ -335,7 +335,7 @@ TEST(Domain, MatVec)
     try
     {
         atmos->getState('V')->PutScalar(0.01);
-        atmos->setPar(0.1);
+        atmos->setPar("Combined Forcing", 0.1);
         atmos->computeJacobian();
         mat = atmos->getJacobian();
     }

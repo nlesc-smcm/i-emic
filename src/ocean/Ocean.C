@@ -72,9 +72,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     saveColumnIntegral_    (oceanParamList->get("Save column integral", false)),
     maxMaskFixes_          (oceanParamList->get("Max mask fixes", 5)),
 
-    parName_               (oceanParamList->get("Continuation parameter",
-                                                "Combined Forcing")),
-
     landmaskFile_          (oceanParamList->sublist("THCM").get("Land Mask", "none")),
 
     analyzeJacobian_       (oceanParamList->get("Analyze Jacobian", true))
@@ -1021,8 +1018,8 @@ Teuchos::RCP<Epetra_Vector> Ocean::initialState()
         Teuchos::rcp(new Epetra_Vector(*state_));
 
     // Do a few Newton steps to get a physical state
-    double par = getPar();
-    setPar(1e-8); // perturb parameter
+    double par = getPar("Combined Forcing");
+    setPar("Combined Forcing", 1e-8); // perturb parameter
     // start from trivial solution
     state_->PutScalar(0.0);
     computeRHS();
@@ -1039,7 +1036,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::initialState()
     *result = *state_;
 
     // Restore parameter, sol and state
-    setPar(par);
+    setPar("Combined Forcing", par);
     *state_ = *tmp;
     sol_->PutScalar(0.0);
 
@@ -2157,14 +2154,6 @@ void Ocean::pressureProjection(Teuchos::RCP<Epetra_Vector> vec)
 }
 
 //====================================================================
-// Adjust locally defined continuation parameter
-// This happens when Ocean is managed directly by Continuation
-double Ocean::getPar()
-{
-    return getPar(parName_);
-}
-
-//====================================================================
 double Ocean::getPar(std::string const &parName)
 {
     // We only allow parameters that are available in THCM
@@ -2183,12 +2172,6 @@ double Ocean::getPar(std::string const &parName)
 std::string const Ocean::int2par(int ind)
 {
     return THCM::Instance().int2par(ind);
-}
-
-//====================================================================
-void Ocean::setPar(double value)
-{
-    setPar(parName_, value);
 }
 
 //====================================================================

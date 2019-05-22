@@ -20,6 +20,7 @@ Continuation<Model, ParameterList>::
 Continuation(Model model, ParameterList pars)
     :
     model_(model),
+    parName_               (pars->get("continuation parameter", "Combined Forcing")),
     dsInit_                (pars->get("initial step size", 1.0e-2)),
     dsMin_                 (pars->get("minimum step size", 1.0e-8)),
     dsMax_                 (pars->get("maximum step size", 1.0e3)),
@@ -112,8 +113,8 @@ initialize()
     stateView_   = model_->getState('V');
     rhsView_     = model_->getRHS('V');
     solView_     = model_->getSolution('V');
-    par_         = model_->getPar();
-    startingPar_ = model_->getPar();
+    par_         = model_->getPar(parName_);
+    startingPar_ = model_->getPar(parName_);
 
     // Save the residual
     if (printImportantVectors_)
@@ -384,12 +385,12 @@ computeDFDPar(char mode)
     rhsCopy_ = model_->getRHS('C');
 
     // Calculate new RHS
-    model_->setPar(par_ + epsilon_);  // increment parameter --> par + eps
+    model_->setPar(parName_, par_ + epsilon_);  // increment parameter --> par + eps
     model_->computeRHS();             // compute new RHS     --> F(par+eps)
     INFO("       |                            l = " << par_);
     INFO("       |                          eps = " << epsilon_);
     INFO("       |                  F(x, l+eps) = " << Utils::norm(rhsView_));
-    model_->setPar(par_);             // restore parameter   --> par
+    model_->setPar(parName_, par_);             // restore parameter   --> par
 
     // Get a copy of the new RHS F(par+eps), put it in dFdPar_
     dFdPar_ = model_->getRHS('C');
@@ -426,7 +427,7 @@ createTangent(char mode)
         stateDot_->Update(-1.0 / ds0, *storage_.state0, 1.0 / ds0);
 
         // Compute parDot = (par1 - par0)/ds
-        par_    = model_->getPar();      // update our par_
+        par_    = model_->getPar(parName_);      // update our par_
         parDot_ = (par_ - par0) / ds0;
 
     }
@@ -548,7 +549,7 @@ eulerPredictor()
     INFO("   |      norm predicted state: " << Utils::norm(stateView_));
 
     // Make sure the model has the same par
-    model_->setPar(par_);
+    model_->setPar(parName_, par_);
 
     // Test whether our prediction is acceptable
     model_->computeRHS();
@@ -687,7 +688,7 @@ newtonCorrector()
         // Update the state and the parameter in the model
         stateView_->Update(1.0, *stateDir, 1.0);
         par_ = par_ + parDir;  // update our parameter
-        model_->setPar(par_);  // set it in the model
+        model_->setPar(parName_, par_);  // set it in the model
 
         ++newtonIter_;
         ++sumNewtonIter_;
@@ -812,7 +813,7 @@ runBackTracking(VectorPtr stateDir, double parDir)
         // Apply reduction to the model state and its parameter
         stateView_->Update(reduction, *stateDir, 1.0); // update the state
         par_ = par_ + reduction * parDir;              // update our parameter
-        model_->setPar(par_);                          // set it in the model
+        model_->setPar(parName_, par_);                          // set it in the model
 
         // Compute new RHS and obtain its norm
         model_->computeRHS();
@@ -841,7 +842,7 @@ void Continuation<Model, ParameterList>::detect()
 {
     double dest = destinations_[0];
 
-    par_ = model_->getPar(); // just to be on the safe side
+    par_ = model_->getPar(parName_); // just to be on the safe side
 
     double f0, f1;
     if (detectMode_ == 'D')
@@ -1045,7 +1046,7 @@ store()
 
     // We keep two previous parameters and steps
     storage_.par00     = storage_.par0;
-    storage_.par0      = model_->getPar();
+    storage_.par0      = model_->getPar(parName_);
     storage_.ds00      = storage_.ds0;
     storage_.ds0       = ds_;
 
@@ -1061,7 +1062,7 @@ restore()
     // Replace state in model with old state
     stateView_->Update(1.0, *storage_.state0, 0.0);
 
-    model_->setPar(storage_.par0);
+    model_->setPar(parName_, storage_.par0);
 
     par_      = storage_.par0;
     ds_       = storage_.ds0;
@@ -1237,7 +1238,7 @@ modelInfo()
     INFO("     norm state :  " << Utils::norm(stateView_));
     INFO("     norm rhs   :  " << Utils::norm(rhsView_));
     INFO("     norm sol   :  " << Utils::norm(solView_));
-    INFO("    parameter   :  " << model_->getPar());
+    INFO("    parameter   :  " << model_->getPar(parName_));
     INFO("-----------------------------------------");
 }
 

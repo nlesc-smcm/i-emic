@@ -169,7 +169,7 @@ TEST(SeaIce, computeJacobian)
 //------------------------------------------------------------------
 TEST(SeaIce, numericalJacobian)
 {
-    seaIce->setPar(0.85);
+    seaIce->setPar("Combined Forcing", 0.85);
         
     Teuchos::RCP<Epetra_Vector> x = seaIce->getState('V');
 

@@ -253,7 +253,7 @@ TEST(CoupledModel, computeJacobian)
     try
     {
         // Set a small parameter
-        coupledModel->setPar(0.1);
+        coupledModel->setPar("Combined Forcing", 0.1);
 
         // put values in state
         coupledModel->getState('V')->Random();
@@ -370,7 +370,7 @@ TEST(CoupledModel, applyMatrix)
     {
         // reset model
         coupledModel->getState('V')->PutScalar(0.0);
-        coupledModel->setPar(0.0);
+        coupledModel->setPar("Combined Forcing", 0.0);
         coupledModel->computeRHS(); // synchronize
 
         // get mask
@@ -380,7 +380,7 @@ TEST(CoupledModel, applyMatrix)
         // set values
         coupledModel->getState('V')->Random();
         double parValue = 0.1;
-        coupledModel->setPar(parValue);
+        coupledModel->setPar("Combined Forcing", parValue);
 
         std::shared_ptr<Combined_MultiVec> x = coupledModel->getState('C');
         std::shared_ptr<Combined_MultiVec> y = coupledModel->getState('C');
@@ -682,7 +682,7 @@ TEST(CoupledModel, Synchronization)
         (*stateV)(1)->PutScalar(2.345);
 
         // Set a small parameter
-        coupledModel->setPar(0.01);
+        coupledModel->setPar("Combined Forcing", 0.01);
 
         // At RHS computation the coupledModel synchronizes the states
         coupledModel->computeRHS();
@@ -783,10 +783,10 @@ TEST(CoupledModel, Synchronization2)
     // reset model
     coupledModel->getState('V')->PutScalar(0.0);
     coupledModel->getSolution('V')->PutScalar(0.0);
-    coupledModel->setPar(0.0);
+    coupledModel->setPar("Combined Forcing", 0.0);
 
     // perturb model
-    coupledModel->setPar(0.01);
+    coupledModel->setPar("Combined Forcing", 0.01);
     coupledModel->computeRHS();
     coupledModel->computeJacobian();
 
@@ -849,8 +849,8 @@ TEST(CoupledModel, Solve)
     try
     {
         // perturb model
-        double par = coupledModel->getPar();
-        coupledModel->setPar(par + 0.01);
+        double par = coupledModel->getPar("Combined Forcing");
+        coupledModel->setPar("Combined Forcing", par + 0.01);
         coupledModel->computeRHS();
         coupledModel->computeJacobian();
 

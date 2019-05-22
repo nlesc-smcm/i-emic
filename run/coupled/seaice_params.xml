@@ -4,8 +4,6 @@
 
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="true"/>
-
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
   
   <Parameter name="Global Bound xmin" type="double" value="286"/>
   <Parameter name="Global Bound xmax" type="double" value="350"/>
