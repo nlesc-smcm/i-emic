@@ -851,16 +851,8 @@ std::string const Ocean::writeData(bool describe)
         datastring.precision(_PRECISION_);
 
         // compute streamfunctions and output data
-        grid_->ImportData(*state_);
-        double psiMax = grid_->psimMax();
-        double psiMin = grid_->psimMin();
-
-        double r0dim, udim, hdim;
-        FNAME(get_parameters)(&r0dim, &udim, &hdim);
-
-        const double transc = r0dim * hdim * udim;
-        psiMax = psiMax * transc * 1e-6; // conversion to Sv
-        psiMin = psiMin * transc * 1e-6; //
+        double psiMin, psiMax;
+        getPsiM(psiMin, psiMax);
 
         if (solverInitialized_)
         {
@@ -876,6 +868,22 @@ std::string const Ocean::writeData(bool describe)
 
         return datastring.str();
     }
+}
+
+int Ocean::getPsiM(double &psiMin, double &psiMax)
+{
+    grid_->ImportData(*state_);
+    psiMax = grid_->psimMax();
+    psiMin = grid_->psimMin();
+
+    double r0dim, udim, hdim;
+    FNAME(get_parameters)(&r0dim, &udim, &hdim);
+
+    const double transc = r0dim * hdim * udim;
+    psiMax *= transc * 1e-6; // conversion to Sv
+    psiMin *= transc * 1e-6; //
+
+    return 0;
 }
 
 //==================================================================
