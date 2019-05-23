@@ -26,16 +26,24 @@ class LyapunovModel: public Model
     Teuchos::RCP<Epetra_MultiVector> V_;
 public:
     using Model::Model;
+    LyapunovModel(Model const &model);
 
     void postProcess();
     std::string const writeData(bool describe = false);
+
+    int computeCovarianceMatrix();
 };
 
-template<typename Model>
-void LyapunovModel<Model>::postProcess()
-{
-    Model::postProcess();
 
+template<typename Model>
+LyapunovModel<Model>::LyapunovModel(Model const &model)
+    :
+    Model(model)
+{}
+
+template<typename Model>
+int LyapunovModel<Model>::computeCovarianceMatrix()
+{
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
     updateParametersFromXmlFile("lyapunov_params.xml", params.ptr());
 
@@ -131,12 +139,22 @@ void LyapunovModel<Model>::postProcess()
     int num_eigs = eigenvalues.M();
     eigenvalues_.clear();
     for (int i = 0; i < num_eigs; i++)
-    {
         eigenvalues_.push_back(eigenvalues(i));
-        std::cout << std::setw(20) << eigenvalues(i)
-                  << std::setw(20) << eigenvalues(i) / trace_
+
+    return 0;
+}
+
+template<typename Model>
+void LyapunovModel<Model>::postProcess()
+{
+    Model::postProcess();
+
+    computeCovarianceMatrix();
+
+    for (double eig: eigenvalues_)
+        std::cout << std::setw(20) << eig
+                  << std::setw(20) << eig / trace_
                   << std::endl;
-    }
 }
 
 template<typename Model>
