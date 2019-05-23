@@ -1269,6 +1269,16 @@ void Ocean::computeRHS()
 }
 
 //=====================================================================
+void Ocean::computeForcing()
+{
+    // evaluate rhs in THCM with the current state
+    TIMER_START("Ocean: compute Frc...");
+    THCM::Instance().computeForcing();
+    frc_ = THCM::Instance().getForcing();
+    TIMER_STOP("Ocean: compute Frc...");
+}
+
+//=====================================================================
 void Ocean::computeJacobian()
 {
     TIMER_START("Ocean: compute Jacobian...");

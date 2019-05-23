@@ -21,6 +21,11 @@ MODULE m_mat
 
   real(c_double), dimension(:), POINTER :: coB
 
+  ! Used for the stochastic forcing
+  real(c_double), dimension(:), POINTER :: coF
+  integer(c_int), dimension(:), POINTER :: jcoF
+  integer(c_int), dimension(:), POINTER :: begF
+
 contains
 
   !! allocates the Al and An arrays. The
@@ -65,7 +70,7 @@ contains
 
   !! set pointers in fortran to arrays in C++
   !! so the caller will have access to the data
-  subroutine set_pointers(nrows,nnz,begC,jcoC,coC,coBC)
+  subroutine set_pointers(nrows,nnz,begC,jcoC,coC,coBC,begFC,jcoFC,coFC)
 
     implicit none
 
@@ -73,7 +78,12 @@ contains
     integer(c_int), dimension(nrows+1),target :: begC
     integer(c_int), dimension(nnz),target :: jcoC
     real(c_double), dimension(nnz),target :: coC
+
     real(c_double), dimension(nrows),target :: coBC
+
+    integer(c_int), dimension(nrows+1),target :: begFC
+    integer(c_int), dimension(nnz),target :: jcoFC
+    real(c_double), dimension(nnz),target :: coFC
 
     _DEBUG_("module m_mat: set CRS pointers to external memory...")
     _DEBUG2_("nrows: ",nrows)
@@ -82,7 +92,12 @@ contains
     begA=>begC(1:nrows+1)
     jcoA=>jcoC(1:nnz)
     coA=>coC(1:nnz)
+
     coB=>coBC(1:nrows)
+
+    begF=>begFC(1:nrows+1)
+    jcoF=>jcoFC(1:nrows)
+    coF=>coFC(1:nrows)
 
   end subroutine set_pointers
 

@@ -1,4 +1,3 @@
-
 /**********************************************************************
  * Copyright by Jonas Thies, Univ. of Groningen 2006/7/8.             *
  * Permission to use, copy, modify, redistribute is granted           *
@@ -15,6 +14,7 @@
 #include <sstream>
 #include <memory>
 #include <vector>
+#include <algorithm>
 
 #include "Teuchos_StandardCatchMacros.hpp"
 
@@ -53,6 +53,7 @@ extern "C" {
     _SUBROUTINE_(rhs)(double*,double*);
     _SUBROUTINE_(setsres)(int *);
     _SUBROUTINE_(matrix)(double*);
+    _SUBROUTINE_(stochastic_forcing)();
 
     // input:   n,m,l,nmlglob
     //          xmin,xmax,ymin,ymax,
@@ -113,8 +114,10 @@ extern "C" {
 
     // CRS matrix allocation (module m_mat)
     _MODULE_SUBROUTINE_(m_mat,get_array_sizes)(int* nrows, int* nnz);
-    _MODULE_SUBROUTINE_(m_mat,set_pointers)(int* nrows, int* nnz, int* beg,
-                                            int* jco,double* co,double* coB);
+    _MODULE_SUBROUTINE_(m_mat,set_pointers)(int* nrows, int* nnz,
+                                            int* begA,int* jcoA,double* coA,
+                                            double* coB,
+                                            int* begF,int* jcoF,double* coF);
 
     // compute scaling factors for S-integral condition. Values is an n*m*l array
     _MODULE_SUBROUTINE_(m_thcm_utils,intcond_scaling)(double* values,int* indices,int* len);
@@ -681,12 +684,17 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     begA = new int[nrows+1];
     coA  = new double[nnz];
     jcoA = new int[nnz];
+
     coB  = new double[nrows];
+
+    begF = new int[nrows+1];
+    coF  = new double[nrows];
+    jcoF = new int[nrows];
 
     // give THCM the opportunity to set its pointers to
     // the new memory block
     DEBVAR("call set_pointers...");
-    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA,jcoA,coA,coB);
+    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA,jcoA,coA,coB,begF,jcoF,coF);
 
     // Initialize integral condition row, correction and coefficients
     rowintcon_     = -1;
@@ -780,6 +788,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     Jac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *MatrixGraph));
     Jac->SetLabel("Jacobian");
 
+    localFrc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *StandardMap, 1));
+    localFrc->SetLabel("Local Forcing");
+    Frc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *SolveMap, 1));
+    Frc->SetLabel("Forcing");
+
     // we do not allow these to be modified, use the OceanModel interface
     // (computeShiftedMatrix, setXdot)
     // for implementing Time integration or eigenvalue things.
@@ -841,7 +854,12 @@ THCM::~THCM()
     delete [] jcoA;
     delete [] coA;
     delete [] begA;
+
     delete [] coB;
+
+    delete [] jcoF;
+    delete [] coF;
+    delete [] begF;
     // the rest is handled by Teuchos::rcp's
 }
 
@@ -855,6 +873,119 @@ Teuchos::RCP<Epetra_Vector> THCM::getSolution()
 Teuchos::RCP<Epetra_CrsMatrix> THCM::getJacobian()
 {
     return Jac;
+}
+
+//=============================================================================
+// Compute and get the forcing
+bool THCM::computeForcing()
+{
+    if (localFrc->Filled())
+        localFrc->PutScalar(0.0); // set all matrix entries to zero
+
+    const int maxlen = 1; // only 1 element per row
+    int indices[maxlen];
+    double values[maxlen];
+
+    int index, numentries;
+
+    int NumMyElements = AssemblyMap->NumMyElements();
+    int imax = NumMyElements;
+    std::vector<int> MyElements;
+
+    FNAME(stochastic_forcing)();
+
+    for (int i = 0; i < imax; i++)
+    {
+#ifndef NO_INTCOND
+        if (sres == 0 && AssemblyMap->GID(i) == rowintcon_)
+            continue;
+#endif
+        if (domain->IsGhost(i, _NUN_))
+            continue;
+
+        index = begF[i]; // note that these arrays use 1-based indexing
+        numentries = begF[i+1] - index;
+        for (int j = 0; j <  numentries ; j++)
+        {
+            indices[j] = AssemblyMap->GID(jcoF[index-1+j] - 1);
+            values[j]  = coF[index - 1 + j];
+            MyElements.push_back(indices[j]);
+        }
+
+        if (localFrc->Filled())
+        {
+            int ierr = localFrc->ReplaceGlobalValues(AssemblyMap->GID(i), numentries,
+                                                     values, indices);
+
+            // ierr == 3 probably means not all row entries are replaced,
+            // does not matter because we zeroed them.
+            if (((ierr!=0) && (ierr!=3)))
+            {
+                std::cout << "\n ERROR " << ierr;
+                std::cout << "\n myPID " << Comm->MyPID();
+                std::cout <<"\n while inserting/replacing values in local Jacobian"
+                          << std::endl;
+
+                INFO(" ERROR while inserting/replacing values in local Jacobian");
+
+                int GRID = AssemblyMap->GID(i);
+                std::cout << " GRID: " << GRID << std::endl;
+                std::cout << " max GRID: " << AssemblyMap->GID(imax-1) << std::endl;
+                std::cout << " number of entries: " << numentries << std::endl;
+
+                std::cout << " entries: ";
+                for (int j = 0; j < numentries; j++)
+                    std::cout << "(" << indices[j] << " " << values[j] << ") ";
+                std::cout << std::endl;
+
+                std::cout << " NumMyElements:        " << NumMyElements << std::endl;
+                std::cout << " i:                    " << i << std::endl;
+                std::cout << " imax:                 " << imax << std::endl;
+                std::cout << " maxlen:               " << maxlen << std::endl;
+
+                std::cout << " row:                  " << GRID << std::endl;
+                int LRID = localFrc->LRID(GRID);
+                std::cout << " LRID:                 " << LRID << std::endl;
+                std::cout << " graph inds in LRID:   "
+                          << localFrc->Graph().NumMyIndices(LRID) << std::endl;
+
+                int ierr2 = localFrc->ExtractGlobalRowCopy(
+                    AssemblyMap->GID(i), maxlen, numentries, values, indices);
+
+                std::cout << "\noriginal row: " << std::endl;
+                std::cout << "number of entries: " << numentries << std::endl;
+                std::cout << "entries: ";
+
+                for (int j=0; j < numentries; j++)
+                    std::cout << "(" << indices[j] << " " << values[j] << ") ";
+                std::cout << std::endl;
+
+                CHECK_ZERO(ierr2);
+            }
+        }
+        else
+        {
+            CHECK_ZERO(localFrc->InsertGlobalValues(AssemblyMap->GID(i), numentries,
+                                                    values, indices));
+        }
+    } //i-loop over rows
+
+    auto last = std::unique(MyElements.begin(), MyElements.end());
+    Epetra_Map colMap(-1, (int)std::distance(MyElements.begin(), last),
+                      &MyElements[0], 0, *Comm);
+    CHECK_ZERO(localFrc->FillComplete(colMap, *StandardMap));
+
+    // redistribute according to SolveMap (may be load-balanced)
+    // standard and solve maps are equal
+    domain->Standard2Solve(*localFrc, *Frc);     // no effect
+    CHECK_ZERO(Frc->FillComplete(colMap, *SolveMap));
+
+    return true;
+}
+
+Teuchos::RCP<Epetra_CrsMatrix> THCM::getForcing()
+{
+    return Frc;
 }
 
 //=============================================================================
@@ -918,15 +1049,14 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 #ifndef NO_INTCOND
         if ((sres == 0) && !maskTest)
         {
-            int intcondrow = rowintcon_;
             double intcond;
             //TODO: check which is better:
             CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
             //std::cout << " dot product: "<<intcond << std::endl;
             //intcond = 0.0;
-            if (tmp_rhs->Map().MyGID(intcondrow))
+            if (tmp_rhs->Map().MyGID(rowintcon_))
             {
-                (*tmp_rhs)[tmp_rhs->Map().LID(intcondrow)] =
+                (*tmp_rhs)[tmp_rhs->Map().LID(rowintcon_)] =
                     intSign_ * (intcond - intCorrection_);
             }
         }
@@ -1133,10 +1263,10 @@ void THCM::evaluateB(void)
 #ifndef NO_INTCOND
     if (sres == 0)
     {
-        int intcondrow = (domain->GlobalN())*(domain->GlobalM())*(domain->GlobalL());
-        if (localDiagB->Map().MyGID(intcondrow))
+        int rowintcon_ = (domain->GlobalN())*(domain->GlobalM())*(domain->GlobalL());
+        if (localDiagB->Map().MyGID(rowintcon_))
         {
-            (*localDiagB)[localDiagB->Map().LID(intcondrow)]=0.0;
+            (*localDiagB)[localDiagB->Map().LID(rowintcon_)]=0.0;
         }
     }
 #endif
@@ -2223,20 +2353,18 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
     int M=domain->GlobalM();
     int L=domain->GlobalL();
 
-    int intcondrow = rowintcon_;
-
     int root = Comm->NumProc()-1;
 
     Teuchos::RCP<Epetra_MultiVector> intcond_glob =
         Utils::Gather(*intcond_coeff, root);
 
-    if (A.MyGRID(intcondrow))
+    if (A.MyGRID(rowintcon_))
     {
         if (Comm->MyPID()!=root)
         {
             ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
         }
-        int lid = B.Map().LID(intcondrow);
+        int lid = B.Map().LID(rowintcon_);
         B[lid]  = 0.0;   // no more time-dependence for this S-point
         int len = N*M*L;
 
@@ -2257,17 +2385,17 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 
         /*
           len=1;
-          indices[0]=intcondrow;
+          indices[0]=rowintcon_;
           values[0]=1.0;
         */
         int ierr;
         if (A.Filled())
         {
-            ierr = A.ReplaceGlobalValues(intcondrow,len,values,indices);
+            ierr = A.ReplaceGlobalValues(rowintcon_,len,values,indices);
         }
         else
         {
-            ierr = A.InsertGlobalValues(intcondrow,len,values,indices);
+            ierr = A.InsertGlobalValues(rowintcon_,len,values,indices);
         }
         if (ierr != 0)
         {
@@ -2284,7 +2412,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
             std::cout << "\n myPID " << Comm->MyPID();
 
             std::cout << " while inserting/replacing values in local Jacobian" << std::endl;
-            std::cout << "  GRID: " << intcondrow << std::endl;
+            std::cout << "  GRID: " << rowintcon_ << std::endl;
             ERROR("Error during insertion/replacing of values in local Jacobian",
                   __FILE__, __LINE__);
         }

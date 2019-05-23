@@ -1,5 +1,9 @@
 #include "TestDefinitions.H"
 
+#ifdef HAVE_RAILS
+#include "LyapunovModel.H"
+#endif
+
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
@@ -128,6 +132,68 @@ TEST(Ocean, Continuation)
         ocean->getPsiM(psiMin2, psiMax2);
         EXPECT_NEAR(psiMin1, -psiMax2, 1e-4);
         EXPECT_NEAR(psiMax1, -psiMin2, 1e-4);
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(Ocean, Lyapunov)
+{
+    bool failed = false;
+    try
+    {
+#ifdef HAVE_RAILS
+        std::vector<double> ev, ev2;
+
+        // Create the Ocean object wrapped in a Lyapunov model
+        RCP<LyapunovModel<Ocean> > lyap = Teuchos::rcp(
+            new LyapunovModel<Ocean>(*ocean));
+
+        lyap->computeCovarianceMatrix();
+        ev = lyap->getEigenvalues();
+        EXPECT_NEAR(ev[0], 10.08, 1e-2);
+        EXPECT_NEAR(ev[1], 1.76, 1e-2);
+
+        // Create continuation params
+        RCP<Teuchos::ParameterList> continuationParams =
+            rcp(new Teuchos::ParameterList);
+        updateParametersFromXmlFile("continuation_params.xml",
+                                    continuationParams.ptr());
+
+        continuationParams->set("continuation parameter", "Salinity Forcing");
+        continuationParams->set("destination 0", 0.041);
+        continuationParams->set("initial step size", 0.1);
+
+        // Create continuation
+        Continuation<RCP<LyapunovModel<Ocean> >, RCP<Teuchos::ParameterList> >
+            continuation(lyap, continuationParams);
+
+        // Run continuation
+        int status = continuation.run();
+        assert(status == 0);
+
+        // Check the new eigenvalues
+        ev = lyap->getEigenvalues();
+        EXPECT_NEAR(ev[0], 21.81, 1e-2);
+        EXPECT_NEAR(ev[1], 4.09, 1e-2);
+
+        // Check that this was already computed during the continuation
+        lyap->computeCovarianceMatrix();
+        ev2 = lyap->getEigenvalues();
+        EXPECT_NEAR(ev[0], ev2[0], 1e-2);
+        EXPECT_NEAR(ev[1], ev2[1], 1e-2);
+#else
+#ifdef GTEST_SKIP
+        GTEST_SKIP();
+#else
+        WARNING("RAILS not found", __FILE__, __LINE__);
+#endif
+#endif
     }
     catch (...)
     {

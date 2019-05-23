@@ -217,6 +217,53 @@ SUBROUTINE forcing
 
 end subroutine forcing
 
+SUBROUTINE stochastic_forcing
+  use m_usr
+  use m_mat
+  implicit none
+
+  integer i, j, row, prev_row, v
+  integer find_row2
+  real oldpar
+
+  oldpar = par(SPER)
+  par(SPER) = 0.0
+  call forcing
+
+  v = 1
+  prev_row = 0
+  begF = 0
+  do j=1,m
+     do i=1,n
+        if (coupled_S.NE.1) then
+           row = find_row2(i,j,l,SS)
+           if (prev_row.GT.row) then
+              write(*,*) 'Forcing ordered in the wrong way'
+              STOP
+           endif
+           jcoF(v) = j
+           coF(v) = Frc(row)
+           v = v + 1
+           begF(row+1) = v
+           prev_row = row
+        end if
+     enddo
+  enddo
+
+  v = 1
+  do i=1,ndim+1
+     if (begF(i).EQ.0) then
+        begF(i) = v
+     else
+        v = begF(i)
+     endif
+  enddo
+
+  par(SPER) = oldpar
+  call forcing
+
+end subroutine stochastic_forcing
+
 !******************************************************************
 ! Function to compute heat flux forcing from the atmosphere into the
 ! ocean. External and background contributions.
