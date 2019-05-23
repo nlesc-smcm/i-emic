@@ -313,9 +313,6 @@ protected:
     //! Continuation parameters
     std::vector<std::string> allParameters_;
 
-    //! Current continuation parameter name
-    std::string parName_;
-
     double      comb_; //! combined forcing
     double      sunp_; //! solar forcing
     double      latf_; //! latent heat forcing
@@ -382,11 +379,7 @@ public:
 
     void getCommPars(CommPars &parStruct);
 
-    void setParName(std::string const &parName) {}
-
-    double  getPar();
     double  getPar(std::string const &parName);
-    void    setPar(double value);
     void    setPar(std::string const &parName, double value);
 
     //! get total number of continuation parameters

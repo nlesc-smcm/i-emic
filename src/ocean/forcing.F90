@@ -509,7 +509,7 @@ real FUNCTION temfun(yy)
   use m_global ! we need the global value of ymin and ymax here!
   implicit none
   real yy
-  if (ymin.ge.0.0) then ! Northern hemisphere
+  if (forcing_type.eq.2) then ! Northern hemisphere
      temfun = cos(pi*(yy-ymin)/(ymax-ymin))
   else
      temfun = cos(pi*yy/ymax) + par(CMPR)*sin(pi*yy/ymax)
@@ -522,12 +522,12 @@ real FUNCTION salfun(yy)
   use m_global ! we need the global value of ymin and ymax here!
   implicit none
   real    yy
-  if (ymin.ge.0.0) then ! Northern hemisphere
+  if (forcing_type.eq.2) then ! Northern hemisphere
      salfun = cos(pi*(yy-ymin)/(ymax-ymin))
-     ! salfun=0.0
+  else if (forcing_type.eq.1) then
+     salfun = (cos(pi*yy/ymax) + par(FPER)*yy/ymax) / cos(yy) ! 2DMOC
   else
-     ! salfun = cos(pi*yy/ymax)/cos(yy) ! 2DMOC
-     salfun = cos(pi*yy/ymax)
+     salfun = cos(pi*yy/ymax) + par(FPER)*yy/ymax
   end if
 end FUNCTION salfun
 

@@ -12,18 +12,6 @@
   <!-- Under restoring conditions (SRES or TRES set to 1) this would not make -->
   <!-- any sense so a warning is given and the flag is set to false .         -->
   <Parameter name="Load salinity flux" type="bool" value="false"/>
-
-  <!-- Continuation parameter name                                    -->
-  <!-- In a coupled situation this will be overruled by the parameter -->
-  <!-- specified in CoupledModel                                      -->
-  <!--                                                                -->
-  <!-- Options:  "Combined Forcing" -->
-  <!--           "Solar Forcing"    -->
-  <!--           "Salinity Forcing" -->
-  <!--           "Wind Forcing"     -->
-  <!-- <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/> -->
-  <!-- <Parameter name="Continuation parameter" type="string" value="CMPR"/> -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -97,6 +85,12 @@
     <Parameter name="Rho Mixing" type="bool" value="0"/>
     <!-- Taper (tap in usr.F90) -->
     <Parameter name="Taper" type="int" value="1"/>
+    <!-- Forcing Type                                                    -->
+    <!-- 0: cos(pi*yy/ymax) as both temperature and salinity forcing     -->
+    <!-- 1: cos(pi*yy/ymax) / cos(yy) as salinity forcing                -->
+    <!-- 2: cos(pi*(yy-ymin)/(ymax-ymin)) as temperature and salinity    -->
+    <!--    forcing (Northern Hemisphere)                                -->
+    <Parameter name="Forcing Type" type="int" value="2"/>
     <!-- Restoring Temperature-Profile (TRES in THCM) -->
     <!-- 0: non-restoring                             -->
     <!-- 1: restoring                                 -->

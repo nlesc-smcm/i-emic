@@ -111,7 +111,7 @@ TEST(Topo, RHS)
     bool failed = false;
     try
     {
-        topo->setPar(0.3);
+        topo->setPar("Delta", 0.3);
         topo->computeRHS();
         topo->computeJacobian();
         topo->preProcess();
@@ -131,7 +131,7 @@ TEST(Topo, SpinupContinuation)
 	try
 	{
         // not sure if needed
-        ocean->setPar(0.0);
+        ocean->setPar("Combined Forcing", 0.0);
         ocean->getState('V')->PutScalar(0.0);
         topo->getSolution('V')->PutScalar(0.0); // superfluous
 
@@ -167,7 +167,7 @@ TEST(Topo, TopoContinuation)
 	try
 	{
         // not sure if needed
-        topo->setPar(0.0);
+        topo->setPar("Delta", 0.0);
 
 		// Create parameter object for continuation
 		RCP<Teuchos::ParameterList> continuationParams =

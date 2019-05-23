@@ -72,9 +72,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     saveColumnIntegral_    (oceanParamList->get("Save column integral", false)),
     maxMaskFixes_          (oceanParamList->get("Max mask fixes", 5)),
 
-    parName_               (oceanParamList->get("Continuation parameter",
-                                                "Combined Forcing")),
-
     landmaskFile_          (oceanParamList->sublist("THCM").get("Land Mask", "none")),
 
     analyzeJacobian_       (oceanParamList->get("Analyze Jacobian", true))
@@ -854,16 +851,8 @@ std::string const Ocean::writeData(bool describe)
         datastring.precision(_PRECISION_);
 
         // compute streamfunctions and output data
-        grid_->ImportData(*state_);
-        double psiMax = grid_->psimMax();
-        double psiMin = grid_->psimMin();
-
-        double r0dim, udim, hdim;
-        FNAME(get_parameters)(&r0dim, &udim, &hdim);
-
-        const double transc = r0dim * hdim * udim;
-        psiMax = psiMax * transc * 1e-6; // conversion to Sv
-        psiMin = psiMin * transc * 1e-6; //
+        double psiMin, psiMax;
+        getPsiM(psiMin, psiMax);
 
         if (solverInitialized_)
         {
@@ -879,6 +868,22 @@ std::string const Ocean::writeData(bool describe)
 
         return datastring.str();
     }
+}
+
+int Ocean::getPsiM(double &psiMin, double &psiMax)
+{
+    grid_->ImportData(*state_);
+    psiMax = grid_->psimMax();
+    psiMin = grid_->psimMin();
+
+    double r0dim, udim, hdim;
+    FNAME(get_parameters)(&r0dim, &udim, &hdim);
+
+    const double transc = r0dim * hdim * udim;
+    psiMax *= transc * 1e-6; // conversion to Sv
+    psiMin *= transc * 1e-6; //
+
+    return 0;
 }
 
 //==================================================================
@@ -1021,8 +1026,8 @@ Teuchos::RCP<Epetra_Vector> Ocean::initialState()
         Teuchos::rcp(new Epetra_Vector(*state_));
 
     // Do a few Newton steps to get a physical state
-    double par = getPar();
-    setPar(1e-8); // perturb parameter
+    double par = getPar("Combined Forcing");
+    setPar("Combined Forcing", 1e-8); // perturb parameter
     // start from trivial solution
     state_->PutScalar(0.0);
     computeRHS();
@@ -1039,7 +1044,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::initialState()
     *result = *state_;
 
     // Restore parameter, sol and state
-    setPar(par);
+    setPar("Combined Forcing", par);
     *state_ = *tmp;
     sol_->PutScalar(0.0);
 
@@ -1977,7 +1982,6 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
         // Instruct THCM to set/insert this as the emip in the local model
         THCM::Instance().setEmip(salflux);
 
-
         if (HDF5.IsContained("AdaptedSalinityFlux"))
         {
             INFO(" detected AdaptedSalinityFlux in " << filename);
@@ -1990,6 +1994,8 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
                 Teuchos::rcp(new Epetra_Vector( salflux->Map() ) );
 
             adaptedSalFlux->Import( *((*readAdaptedSalFlux)(0)), *lin2solve_surf, Insert);
+
+            delete readAdaptedSalFlux;
 
             // Let THCM insert the adapted salinity flux
             THCM::Instance().setEmip(adaptedSalFlux, 'A');
@@ -2008,9 +2014,13 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
 
             salFluxPert->Import( *((*readSalFluxPert)(0)), *lin2solve_surf, Insert);
 
+            delete readSalFluxPert;
+
             // Let THCM insert the salinity flux perturbation mask
             THCM::Instance().setEmip(salFluxPert, 'P');
         }
+
+        delete readSalFlux;
 
         INFO("Loading salinity flux from " << filename << " done");
     }
@@ -2043,6 +2053,7 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
         // Instruct THCM to set/insert this as tatm in the local model
         THCM::Instance().setTatm(temflux);
 
+        delete readTemFlux;
 
         INFO("Loading temperature flux from " << filename << " done");
     }
@@ -2076,6 +2087,8 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
                                                 readMask->Map() ));
 
             tmpMask->Import(*readMask, *lin2dstr, Insert);
+
+            delete readMask;
 
             // Put the new mask in THCM
             THCM::Instance().setLandMask(tmpMask, true);
@@ -2157,14 +2170,6 @@ void Ocean::pressureProjection(Teuchos::RCP<Epetra_Vector> vec)
 }
 
 //====================================================================
-// Adjust locally defined continuation parameter
-// This happens when Ocean is managed directly by Continuation
-double Ocean::getPar()
-{
-    return getPar(parName_);
-}
-
-//====================================================================
 double Ocean::getPar(std::string const &parName)
 {
     // We only allow parameters that are available in THCM
@@ -2183,12 +2188,6 @@ double Ocean::getPar(std::string const &parName)
 std::string const Ocean::int2par(int ind)
 {
     return THCM::Instance().int2par(ind);
-}
-
-//====================================================================
-void Ocean::setPar(double value)
-{
-    setPar(parName_, value);
 }
 
 //====================================================================

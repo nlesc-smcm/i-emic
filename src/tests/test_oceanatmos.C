@@ -87,7 +87,7 @@ TEST(CoupledModel, Continuation_1)
     bool failed = false;
     try
     {
-        coupledModel->setPar(0.0);
+        coupledModel->setPar("Combined Forcing", 0.0);
         coupledModel->initializeState();
 
         // Create continuation
@@ -144,7 +144,7 @@ TEST(CoupledModel, Continuation_2)
     bool failed = false;
     try
     {
-        coupledModel->setPar(0.0);
+        coupledModel->setPar("Combined Forcing", 0.0);
         coupledModel->initializeState();
 
         // Create continuation

@@ -67,8 +67,6 @@ public:
     virtual VectorPtr getRHS(char mode) = 0;
 
     virtual double getPar(std::string const &parName) = 0;
-
-    virtual void setParName(std::string const &parName) = 0;
     virtual void setPar(std::string const &parName, double value) = 0;
 
     //! Return total number of continuation parameters in model
@@ -214,6 +212,7 @@ inline int Model::loadStateFromFile(std::string const &filename)
         // Import state from HDF5 into state_ datamember
         CHECK_ZERO(state_->Import(*((*readState)(0)), *lin2solve, Insert));
 
+        delete readState;
 
         INFO(" state: ||x|| = " << Utils::norm(state_));
 

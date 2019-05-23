@@ -149,7 +149,7 @@ TEST(CoupledModel, Matrix)
     // s->Random();
     // s->Scale(0.01);
     INFO("   ||s|| = " << Utils::norm(s));
-    coupledModel->setPar(0.01);
+    coupledModel->setPar("Combined Forcing", 0.01);
     coupledModel->computeJacobian();
     
     std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');

@@ -75,14 +75,16 @@ extern "C" {
     //          ih,vmix_GLB,tap,rho_mixing,
     //          periodic,itopo,flat,rd_mask,
     //          TRES,SRES,iza,ite,its,rd_spertm
-    //          coupled_T, coupled_S
+    //          coupled_T, coupled_S, coriolis_on,
+    //          forcing_type
     _MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
                                              double*,double*,double*,double*,double*,double*,
                                              double*,double*,
                                              int*,int*,int*,int*,
                                              int*,int*,int*,int*,
                                              int*,int*,int*,int*,int*,int*,
-                                             int*,int*);
+                                             int*,int*,int*,
+                                             int*);
 
     _MODULE_SUBROUTINE_(m_global,finalize)(void);
     _MODULE_SUBROUTINE_(m_global,get_landm)(int*);
@@ -259,6 +261,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     coupled_S          = paramList.get("Coupled Salinity", 0);
     coupled_M          = paramList.get("Coupled Sea Ice Mask", 1);
     fixPressurePoints_ = paramList.get("Fix Pressure Points", false);
+    int coriolis_on    = paramList.get("Coriolis Force", 1);
+    int forcing_type   = paramList.get("Forcing Type", 0);
 
     //------------------------------------------------------------------
     if ((coupled_S == 1) && (sres == 1))
@@ -380,7 +384,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &ih, &vmix_GLB, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres, &sres, &iza, &ite, &its, &ird_spertm,
-                                  &coupled_T, &coupled_S);
+                                  &coupled_T, &coupled_S, &coriolis_on,
+                                  &forcing_type);
 
     INFO("THCM init: m_global::initialize... done");
 
@@ -1831,7 +1836,7 @@ int THCM::par2int(std::string const &label)
     else if (label == "ALPC")                            return ALPC;
     else if (label == "Energy")                          return ENER;
     else if (label == "Salinity Perturbation")           return SPER;
-    else if (label == "FPER")                            return FPER;
+    else if (label == "Flux Perturbation")               return FPER;
     else if (label == "MKAP")                            return MKAP;
     else if (label == "SPL2")                            return SPL2;
     else if (label == "Exponent")                        return EXPO;
@@ -1891,7 +1896,7 @@ std::string const THCM::int2par(int index)
     else if (index==ENER)   label = "Energy";
     else if (index==MKAP)   label = "MKAP";
     else if (index==SPL2)   label = "SPL2";
-    else if (index==FPER)   label = "FPER";
+    else if (index==FPER)   label = "Flux Perturbation";
     else if (index==SPER)   label = "Salinity Perturbation";
     else if (index==EXPO)   label = "Exponent";
     else if (index==SEAS)   label = "Seasonal Forcing";

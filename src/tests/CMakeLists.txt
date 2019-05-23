@@ -21,6 +21,7 @@ set(TEST_SOURCES
   test_ocean.C
   intt_ocean.C
   reft_ocean.C
+  intt_2dmoc.C
   test_atmos.C
   test_oceanatmos.C
   test_seaice.C

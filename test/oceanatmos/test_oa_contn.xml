@@ -11,7 +11,7 @@
   <!--           "Salinity Forcing"                                           -->
   <!--           "Wind Forcing"                                               -->
   <!--           "Humidity Forcing"                                           -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+  <Parameter name="continuation parameter" type="string" value="Combined Forcing"/>
   
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size" type="double" value="1.0e-3"/>
