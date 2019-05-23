@@ -42,10 +42,6 @@ list(APPEND library_directories ${Trilinos_TPL_LIBRARY_DIRS})
 
 list(APPEND library_directories ${MRILU_DIR}/lib/) # MRILU
 
-list(APPEND library_dependencies ${Trilinos_LIBRARIES})
-list(APPEND library_dependencies ${Trilinos_TPL_LIBRARIES})
-list(REMOVE_DUPLICATES library_dependencies)
-
 find_package(JDQZPP REQUIRED)
 if (JDQZPP_FOUND)
   include_directories(${JDQZPP_INCLUDE_DIR})
@@ -55,33 +51,12 @@ endif ()
 link_directories(${library_directories})
 
 # ------------------------------------------------------------------
-# Additional libraries
-set(EXTRA_LIBS
-  ifpack_mrilu
-  mrilucpp
-  precon
-  mtstor
-  misc
-  iosrc
-  gfortran
-  )
-
-#if (Trilinos_TPL_LIBRARIES MATCHES "libhdf5")
-#  message("-- Trilinos determines hdf5 location.")
-#else ()
-#  message("-- We add hdf5 lib dependency manually.")
-#  list(APPEND EXTRA_LIBS "hdf5")
-#endif ()
-
-list(APPEND library_dependencies ${EXTRA_LIBS})
-
-# ------------------------------------------------------------------
 # Internal I-EMIC libraries
 set(I-EMIC_LIBS
   coupledmodel
   atmosphere
   seaice
-  ocean 
+  ocean
   utils
   dependencygrid
   jdqz_tools
@@ -91,7 +66,7 @@ set(I-EMIC_LIBS
 # Get targets and dependencies of the components
 add_subdirectory(mrilucpp)
 
-add_subdirectory(ocean)	  
+add_subdirectory(ocean)
 add_subdirectory(atmosphere)
 add_subdirectory(seaice)
 add_subdirectory(coupledmodel)
