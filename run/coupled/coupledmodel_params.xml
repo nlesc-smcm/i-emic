@@ -18,14 +18,6 @@
   <!-- Only useful when you enable <Save state>               -->
   <Parameter name="Store everything" type="bool" value="false" />
 
-  <!-- Continuation parameter -->
-  <!-- Options:  "Combined Forcing" -->
-  <!--           "Solar Forcing"    -->
-  <!--           "Salinity Forcing" -->
-  <!--           "Wind Forcing"     -->
-  <!--           "Humidity Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-
   <!-- We determine the horizontal extend and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
 

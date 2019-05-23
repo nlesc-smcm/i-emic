@@ -10,14 +10,6 @@
   <!-- Only useful when you enable <Save state>               -->
   <Parameter name="Store everything" type="bool" value="false" />
 
-  <!-- Continuation parameter -->
-  <!-- Options:  "Combined Forcing" -->
-  <!--           "Solar Forcing"    -->
-  <!--           "Salinity Forcing" -->
-  <!--           "Wind Forcing"     -->
-  <!--           "Humidity Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-
     <!-- western domain bound -->
   <Parameter name="Global Bound xmin" type="double" value="286"/>
   <!-- eastern domain bound -->

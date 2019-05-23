@@ -71,11 +71,11 @@ int main(int argc, char **argv)
         TIMER_START("  TOPO:  Homotopy Continuation");
         int status = continuation.run();
         TIMER_STOP ("  TOPO:  Homotopy Continuation");
-        if (status == 0)
-            ERROR("Continuation failed", __FILE__, __LINE__);
-        
-        topo->setPar(1.0);
-        
+
+        assert(status == 0);
+
+        topo->setPar("Delta", 1.0);
+
         if (argc == 1)
             topo->postProcess();
         else

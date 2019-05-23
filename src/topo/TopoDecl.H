@@ -186,11 +186,11 @@ public:
 	void initialize();
 
 	//! get continuation parameter
-	double getPar();
+	double getPar(std::string const &parName);
 	
 	//! set continuation parameter
 	//!  this also sets k_, facA_ and facB_
-	void setPar(double par);
+	void setPar(std::string const &parName, double par);
 
 	//! set the mask index
 	void setMaskIndex(int index);

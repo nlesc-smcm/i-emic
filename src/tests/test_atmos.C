@@ -54,8 +54,8 @@ TEST(Atmosphere, Initialization)
     }
     EXPECT_EQ(failed, false);
 
-    atmosPar->setPar(0.0);
-    atmosLoc->setPar(0.0);
+    atmosPar->setPar("Combined Forcing", 0.0);
+    atmosLoc->setPar("Combined Forcing", 0.0);
 
     atmosPar->computeRHS();
     atmosLoc->computeRHS();
@@ -434,7 +434,7 @@ TEST(Atmosphere, numericalJacobian)
 {
     atmosPar->getState('V')->Random();
     atmosPar->getState('V')->Scale(2.0);
-    atmosPar->setPar(0.1);
+    atmosPar->setPar("Combined Forcing", 0.1);
 
     atmosPar->computeRHS();
     atmosPar->computeJacobian();
@@ -499,7 +499,7 @@ TEST(Atmosphere, Newton)
 {
     Teuchos::RCP<Epetra_Vector> state = atmosPar->getState('V');
     state->PutScalar(0.0);
-    atmosPar->setPar(0.4);
+    atmosPar->setPar("Combined Forcing", 0.4);
 
     Teuchos::RCP<Epetra_Vector> b = atmosPar->getRHS('V');
     Teuchos::RCP<Epetra_Vector> x = atmosPar->getSolution('V');

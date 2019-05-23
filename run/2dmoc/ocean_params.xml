@@ -15,20 +15,6 @@
   <!-- To keep track of each converged state, enable this. -->
   <Parameter name="Store everything" type="bool" value="false" />
 
-  <!-- Continuation parameter name                                    -->
-  <!-- In a coupled situation this will be overruled by the parameter -->
-  <!-- specified in CoupledModel                                      -->
-  <!--                                                                -->
-  <!-- Options:  "Combined Forcing"          -->
-  <!--           "Solar Forcing"             -->
-  <!--           "Salinity Forcing"          -->
-  <!--           "Temperature Forcing"       -->
-  <!--           "Wind Forcing"              -->
-  <!--           "CMPR"  (symmetry breaking) -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-  <!-- <Parameter name="Continuation parameter" type="string" value="Salinity Forcing"/>  -->
-  <!-- <Parameter name="Continuation parameter" type="string" value="CMPR"/> -->    
-
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->

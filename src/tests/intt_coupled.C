@@ -166,7 +166,7 @@ TEST(CoupledModel, Newton)
     solV->PutScalar(0.0);
 
     // set parameter
-    coupledModel->setPar(0.01);
+    coupledModel->setPar("Combined Forcing", 0.01);
 
     // try to converge
     int maxit = 10;
@@ -373,7 +373,7 @@ TEST(CoupledModel, Continuation)
     {
         // One step in an arclength continuation
         // initialize state in model
-        coupledModel->setPar(0.0);
+        coupledModel->setPar("Combined Forcing", 0.0);
         coupledModel->initializeState();
 
         std::shared_ptr<Combined_MultiVec> solV =

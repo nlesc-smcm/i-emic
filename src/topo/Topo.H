@@ -58,7 +58,7 @@ Topo(Model model, ParameterList pars)
 
     // Set the parameters and coefficients
     delta_ = deltaInit_;
-    setPar(delta_);
+    setPar("Delta", delta_);
 
     model_->computeRHS();
     nrm1 = Utils::norm(model_->getRHS('V'));
@@ -116,7 +116,7 @@ void Topo<Model, ParameterList>::initialize()
     matB_  = rcp(new Matrix(*model_->getJacobian()));
 
     delta_ = deltaInit_;
-    setPar(delta_);
+    setPar("Delta", delta_);
 
     // Set landmask (B) in the model
     model_->setLandMask(landMasks_[b_[k_]]);
@@ -207,8 +207,10 @@ void Topo<Model, ParameterList>::loadMasks()
 
 //==================================================================
 template<typename Model, typename ParameterList>
-double Topo<Model, ParameterList>::getPar()
+double Topo<Model, ParameterList>::getPar(std::string const &parName)
 {
+    if (parName != "Delta")
+        return 0;
     return delta_;
 }
 
@@ -225,9 +227,9 @@ void Topo<Model, ParameterList>::setMaskIndex(int index)
 
 //==================================================================
 template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::setPar(double par)
+void Topo<Model, ParameterList>::setPar(std::string const &parName, double par)
 {
-    if (par < 0 || par > nMasks_)
+    if (parName != "Delta" || par < 0 || par > nMasks_)
     {
         std::stringstream err;
         err << "Topo: invalid parameter, par = " << par;

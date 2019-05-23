@@ -251,26 +251,14 @@ public:
     
     Utils::MaskStruct getLandMask() {return Utils::MaskStruct();}
 
-    //! set continuation parameter
-    void setPar(double value) {atmos_->setPar(value); }
-
     //! set parameter
     void setPar(std::string const &parName, double value) {atmos_->setPar(parName, value); }
-
-    //! Set continuation parameter name
-    void setParName(std::string const &parName) { atmos_->setParName(parName); }
-
-    //! Get continuation parameter
-    double getPar() { return atmos_->getPar(); }
 
     //! Get continuation parameter
     double getPar(std::string const &parName) { return atmos_->getPar(parName); }
 
     //! Get parameters that we want to communicate
     void getCommPars(CommPars &parStruct);
-    
-    //! Get continuation parameter name
-    std::string const getParName() { return atmos_->getParName(); }
 
     void preProcess();
     void postProcess();
