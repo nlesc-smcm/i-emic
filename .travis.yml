@@ -27,6 +27,8 @@ matrix:
             - libtbb-dev
             - libsuperlu-dev
             - libptscotch-dev
+            # RAILS
+            - libslicot-dev
             # Compilers
             - g++-5
             - gfortran-5
@@ -57,6 +59,8 @@ matrix:
             - libtbb-dev
             - libsuperlu-dev
             - libptscotch-dev
+            # RAILS
+            - libslicot-dev
             # Compilers
             - g++-8
             - gfortran-8
@@ -85,6 +89,8 @@ matrix:
             - libtbb-dev
             - libsuperlu-dev
             - libptscotch-dev
+            # RAILS
+            - libslicot-dev
             # Compilers
             - clang
             - gfortran
@@ -100,6 +106,7 @@ before_install:
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TRAVIS_BUILD_DIR/local/lib
 
 install:
+  # Install JDQZPP
   - git clone https://github.com/erik808/jdqzpp.git
   - cd jdqzpp
   - mkdir build
@@ -108,6 +115,16 @@ install:
   - make
   - make install
   - cd ../..
+  # Install RAILS
+  - git clone https://github.com/Sbte/RAILS.git
+  - cd RAILS
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_INSTALL_PREFIX=$TRAVIS_BUILD_DIR/local ..
+  - make
+  - make install
+  - cd ../..
+  # Build I-EMIC
   - mkdir build
   - cd build
   - cmake ..
