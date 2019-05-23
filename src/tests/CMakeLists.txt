@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
   
-set(TESTS_INCLUDE_DIRS
+set(TEST_INCLUDE_DIRS
   ../utils/
   ../ocean/
   ../atmosphere/
@@ -9,6 +9,7 @@ set(TESTS_INCLUDE_DIRS
   ../dependencygrid/
   ../continuation/
   ../topo/
+  ../lyapunov/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
@@ -41,6 +42,25 @@ BuildExternalProject_find_package(GTest)
 
 include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
 
+set(TEST_LIBRARIES
+  ${MPI_CXX_LIBRARIES}
+  ${I-EMIC_LIBS}
+  ${Belos_LIBRARIES}
+  ${Belos_TPL_LIBRARIES}
+  ${Epetra_LIBRARIES}
+  ${Epetra_TPL_LIBRARIES}
+  ${ML_LIBRARIES}
+  ${ML_TPL_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT})
+
+find_package(RAILS)
+if (RAILS_FOUND)
+  list(APPEND TEST_LIBRARIES ${RAILS_LIBRARIES})
+  list(APPEND TEST_INCLUDE_DIRS ${RAILS_INCLUDE_DIRS})
+  add_definitions(-DHAVE_RAILS)
+endif()
+
 foreach(test_source ${TEST_SOURCES})
   get_filename_component(test_name ${test_source} NAME_WE)
   add_executable(${test_name} ${test_source})
@@ -51,22 +71,8 @@ foreach(test_source ${TEST_SOURCES})
   add_test(NAME ${test_name} COMMAND ${test_name} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/${test_base_name})
 
   target_compile_definitions(${test_name} PUBLIC ${COMP_IDENT})
-  target_include_directories(${test_name} PUBLIC ${TESTS_INCLUDE_DIRS})
-
-  target_link_libraries(${test_name} PUBLIC ${I-EMIC_LIBS})
-  target_link_libraries(${test_name} PUBLIC
-      ${Belos_LIBRARIES}
-      ${Belos_TPL_LIBRARIES}
-      ${Epetra_LIBRARIES}
-      ${Epetra_TPL_LIBRARIES}
-      ${ML_LIBRARIES}
-      ${ML_TPL_LIBRARIES}
-  )
-  target_link_libraries(${test_name} PUBLIC ${MPI_CXX_LIBRARIES})
-  target_link_libraries(${test_name} PUBLIC ${GTEST_BOTH_LIBRARIES})
-
-  # Pthread
-  target_link_libraries(${test_name} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+  target_include_directories(${test_name} PUBLIC ${TEST_INCLUDE_DIRS})
+  target_link_libraries(${test_name} PUBLIC ${TEST_LIBRARIES})
 endforeach()
 
 # additional parallel tests
