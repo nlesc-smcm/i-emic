@@ -10,8 +10,6 @@
   <Parameter name="Load salinity flux"    type="bool" value="true"/>
   <Parameter name="Load temperature flux" type="bool" value="false"/>
 
-  <Parameter name="Continuation parameter" type="string" value="Temperature Forcing"/>
-
   <Parameter name="Compute column integral" type="bool" value="true"/>      
   
   <!-- Parameters that affect THCM { -->

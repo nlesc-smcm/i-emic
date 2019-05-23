@@ -10,14 +10,6 @@
   <!-- To keep track of each converged state, enable this. -->
   <Parameter name="Store everything" type="bool" value="false" />
 
-  <!-- Continuation parameter name                                    -->
-  <!-- In a coupled situation this will be overruled by the parameter -->
-  <!-- specified in CoupledModel                                      -->
-  <!--                                                                -->
-  <!-- Options:  "Combined Forcing" -->
-  <!--           "Solar Forcing"    -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-
   <!-- Starting parameters -->
   <Parameter name="Combined Forcing" type="double" value="1.0"/>
   <Parameter name="Solar Forcing"    type="double" value="1.0"/>

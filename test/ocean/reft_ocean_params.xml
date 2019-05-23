@@ -7,7 +7,6 @@
 
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Use legacy fortran output" type="bool" value="false"/>
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">

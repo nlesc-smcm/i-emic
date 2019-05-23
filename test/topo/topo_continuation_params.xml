@@ -5,6 +5,8 @@
 
 <ParameterList name="Continuation parameters">
 
+  <Parameter name="continuation parameter" type="string" value="Delta"/>
+
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size" type="double" value="1.0e-1"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>

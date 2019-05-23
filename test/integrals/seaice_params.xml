@@ -8,8 +8,6 @@
   <!-- To keep track of each converged state, enable this. -->
   <Parameter name="Save frequency" type="int" value="1" />
 
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-
   <!-- Starting parameters -->
   <Parameter name="Combined Forcing"    type="double" value="0.0"/>
   <Parameter name="Solar Forcing"       type="double" value="1.0"/>

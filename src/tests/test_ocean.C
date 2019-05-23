@@ -121,7 +121,7 @@ TEST(Ocean, ComputeJacobian)
         bool failed = false;
         try
         {
-            ocean->setPar(0.1);
+            ocean->setPar("Combined Forcing", 0.1);
             ocean->getState('V')->PutScalar(1.234);
             ocean->computeJacobian();
         }
@@ -181,7 +181,7 @@ TEST(Ocean, Continuation)
     bool failed = false;
     try
     {
-        ocean->setPar(0.0);
+        ocean->setPar("Combined Forcing", 0.0);
         ocean->getState('V')->PutScalar(0.0);
         
         // Create continuation params

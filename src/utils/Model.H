@@ -67,8 +67,6 @@ public:
     virtual VectorPtr getRHS(char mode) = 0;
 
     virtual double getPar(std::string const &parName) = 0;
-
-    virtual void setParName(std::string const &parName) = 0;
     virtual void setPar(std::string const &parName, double value) = 0;
 
     //! Return total number of continuation parameters in model

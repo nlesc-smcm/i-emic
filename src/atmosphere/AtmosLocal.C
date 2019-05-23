@@ -159,9 +159,6 @@ void AtmosLocal::setParameters(Teuchos::RCP<Teuchos::ParameterList> params)
                          "Albedo Forcing",
                          "T Eddy Diffusivity"};
 
-    parName_         = params->get( "Continuation parameter",
-                                    allParameters_[0] );
-
     // starting values
     int ctr = 0;
     comb_            = params->get(allParameters_[ctr++], 0.0);
@@ -1653,18 +1650,9 @@ void AtmosLocal::applyMatrix(std::vector<double>  const &v,
 }
 
 // ---------------------------------------------------------------------------
-// Adjust locally defined parameter
-void AtmosLocal::setPar(double value)
-{
-    setPar(parName_, value);
-}
-
-// ---------------------------------------------------------------------------
 // Adjust specific parameter
 void AtmosLocal::setPar(std::string const &parName, double value)
 {
-    parName_ = parName; // Overwrite our parameter name
-
     int ctr = 0;
     if (parName.compare(allParameters_[ctr++]) == 0)
         comb_ = value;
@@ -1686,14 +1674,6 @@ void AtmosLocal::setPar(std::string const &parName, double value)
     nuq_ = comb_* humf_ * (eta_ / hdimq_ ) * (rhoo_ / rhoa_) * (r0dim_ / udim_);
 
     // If parameter not available we take no action
-}
-
-// ---------------------------------------------------------------------------
-// Adjust locally defined parameter
-// This happens when AtmosLocal is managed directly by Continuation
-double AtmosLocal::getPar()
-{
-    return getPar(parName_);
 }
 
 // ---------------------------------------------------------------------------

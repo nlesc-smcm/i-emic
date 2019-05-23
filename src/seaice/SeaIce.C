@@ -88,9 +88,6 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
                        "Mask Forcing",
                        "Sensible Heat Forcing" };
 
-    parName_ = params->get( "Continuation parameter",
-                             allParameters_[0] );
-
     comb_  = params->get(allParameters_[0], 0.0); // Combined Forcing
     sunp_  = params->get(allParameters_[1], 1.0); // Solar Forcing
     latf_  = params->get(allParameters_[2], 0.0); // Latent Heat Forcing
@@ -801,14 +798,6 @@ void SeaIce::getCommPars(SeaIce::CommPars &parStruct)
     parStruct.rhoo = rhoo_;
     parStruct.Qvar = Qvar_;
     parStruct.Q0   = Q0_;
-
-}
-
-// ---------------------------------------------------------------------------
-// Adjust locally defined parameter
-double SeaIce::getPar()
-{
-    return getPar(parName_);
 }
 
 // ---------------------------------------------------------------------------
@@ -827,13 +816,6 @@ double SeaIce::getPar(std::string const &parName)
         return shf_;
     else // If parameter not available we return 0
         return 0;
-}
-
-// ---------------------------------------------------------------------------
-// Set continuation parameter
-void SeaIce::setPar(double value)
-{
-    setPar(parName_, value);
 }
 
 //-----------------------------------------------------------------------------
@@ -880,8 +862,6 @@ void SeaIce::setLandMask(Utils::MaskStruct const &mask)
 // Set specific continuation parameter
 void SeaIce::setPar(std::string const &parName, double value)
 {
-    parName_ = parName; // Overwrite our parameter name
-
     if (parName.compare(allParameters_[0]) == 0)
         comb_  = value;
     else if (parName.compare(allParameters_[1]) == 0)
