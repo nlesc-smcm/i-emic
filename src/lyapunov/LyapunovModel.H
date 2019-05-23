@@ -32,6 +32,8 @@ public:
     std::string const writeData(bool describe = false);
 
     int computeCovarianceMatrix();
+
+    std::vector<double> getEigenvalues();
 };
 
 
@@ -142,6 +144,12 @@ int LyapunovModel<Model>::computeCovarianceMatrix()
         eigenvalues_.push_back(eigenvalues(i));
 
     return 0;
+}
+
+template<typename Model>
+std::vector<double> LyapunovModel<Model>::getEigenvalues()
+{
+    return eigenvalues_;
 }
 
 template<typename Model>
