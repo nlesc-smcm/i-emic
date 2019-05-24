@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
-
 # Trying to find Trilinos
 if (DEFINED ENV{TRILINOS_DIR} AND NOT DEFINED Trilinos_DIR)
   set (Trilinos_DIR $ENV{TRILINOS_DIR}/lib/cmake/Trilinos)

@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.3)
-
 set(MRILUCPP_INCLUDE_DIRS
   ../utils/
   ${MRILU_DIR}/mod
