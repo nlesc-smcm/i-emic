@@ -140,11 +140,12 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     set_parameter(params, "ams seed", 2);
     set_parameter(params, "method", "TAMS");
 
+    const int default_maxit = 10;
     set_parameter(params, "time step", 0.01);
     set_parameter(params, "maximum time", 2.0);
     set_parameter(params, "B distance", 0.05);
-    set_parameter(params, "number of experiments", 100);
-    set_parameter(params, "maximum iterations", 100);
+    set_parameter(params, "number of experiments", 20);
+    set_parameter(params, "maximum iterations", default_maxit);
     set_parameter(params, "write file", "out_data.h5");
 
     int maxit = params->get("maximum iterations", -1);
@@ -160,15 +161,18 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     std::string output = testing::internal::GetCapturedStdout();
 
     EXPECT_NE(output.find("Initialization"), std::string::npos);
-    if (maxit == 100 && write_time_steps < 0)
+    if (maxit == default_maxit && write_time_steps < 0)
     {
-        EXPECT_NE(output.find("TAMS: 100"), std::string::npos);
-        EXPECT_EQ(output.find("TAMS: 101"), std::string::npos);
+        EXPECT_NE(output.find("TAMS: " + std::to_string(default_maxit)),
+                  std::string::npos);
+        EXPECT_EQ(output.find("TAMS: " + std::to_string(default_maxit + 1)),
+                  std::string::npos);
     }
 
-    if (maxit == 100 && write_time_steps > 0)
+    if (maxit == default_maxit && write_time_steps > 0)
     {
-        EXPECT_NE(output.find("TAMS: 80"), std::string::npos);
+        EXPECT_NE(output.find("TAMS: " + std::to_string(default_maxit / 2)),
+                  std::string::npos);
     }
 
     params->set("read file", "out_data.h5");
@@ -183,16 +187,20 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     std::string output2 = testing::internal::GetCapturedStdout();
 
     EXPECT_EQ(output2.find("Initialization"), std::string::npos);
-    if (maxit == 100 && write_time_steps < 0)
+    if (maxit == default_maxit && write_time_steps < 0)
     {
-        EXPECT_EQ(output2.find("TAMS: 100"), std::string::npos);
+        EXPECT_EQ(output2.find("TAMS: " + std::to_string(default_maxit)),
+                  std::string::npos);
     }
-    else if (maxit < 100)
+    else if (maxit < default_maxit)
     {
-        EXPECT_NE(output2.find("TAMS: 100"), std::string::npos);
+        EXPECT_NE(output2.find("TAMS: " + std::to_string(default_maxit)),
+                  std::string::npos);
     }
-    EXPECT_NE(output2.find("TAMS: 101"), std::string::npos);
-    EXPECT_EQ(output2.find("TAMS: 500"), std::string::npos);
+    EXPECT_NE(output2.find("TAMS: " + std::to_string(default_maxit + 1)),
+              std::string::npos);;
+    EXPECT_EQ(output2.find("TAMS: " + std::to_string(default_maxit * 5)),
+              std::string::npos);
 }
 
 //------------------------------------------------------------------
@@ -208,7 +216,7 @@ TEST(AMS, AMSRestart)
 TEST(AMS, AMSRestart2)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
-    params->set("write steps", 50);
+    params->set("write steps", 10);
     params->set("write final state", false);
 
     restart_test(params);
@@ -228,7 +236,7 @@ TEST(AMS, AMSRestart3)
 TEST(AMS, AMSRestart4)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
-    params->set("write steps", 50);
+    params->set("write steps", 10);
     params->set("maximum iterations", 0);
     params->set("write final state", false);
 
@@ -250,7 +258,7 @@ TEST(AMS, TAMSRestart2)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
     params->set("method", "TAMS");
-    params->set("write steps", 50);
+    params->set("write steps", 10);
     params->set("write final state", false);
 
     restart_test(params);
