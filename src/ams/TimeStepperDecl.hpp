@@ -41,6 +41,8 @@ class TimeStepper
     int write_steps_;
     int write_time_steps_;
 
+    mutable double probability_;
+
     // RNG methods
     bool engine_initialized_;
     std::function<int(int, int)> randint_;
@@ -98,6 +100,8 @@ public:
         std::vector<AMSExperiment<T> > const &experiments) const;
 
     void set_random_engine(unsigned int seed);
+
+    double get_probability();
 
 protected:
     int randint(int a, int b) const;

@@ -57,6 +57,8 @@ public:
 
     void run();
 
+    double get_probability();
+
 protected:
     Teuchos::RCP<Epetra_Vector> restrict(Epetra_MultiVector const &x) const;
     Teuchos::RCP<Epetra_Vector> prolongate(Epetra_MultiVector const &x) const;
@@ -546,6 +548,12 @@ void AMS<Model>::run()
     }
     else
         std::cerr << "Method " << method_ << " does not exist." << std::endl;
+}
+
+template<typename Model>
+double AMS<Model>::get_probability()
+{
+    return timestepper_->get_probability();
 }
 
 template<typename Model>

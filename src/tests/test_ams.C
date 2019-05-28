@@ -201,6 +201,7 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
               std::string::npos);;
     EXPECT_EQ(output2.find("TAMS: " + std::to_string(default_maxit * 5)),
               std::string::npos);
+    EXPECT_NEAR(ams2.get_probability(), 0.12, 1e-2);
 }
 
 //------------------------------------------------------------------

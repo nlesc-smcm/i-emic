@@ -287,9 +287,9 @@ void TimeStepper<T>::naive(T const &x0) const
             converged++;
     }
 
-    double tp = (double)converged / (double)num_exp_;
+    probability_ = (double)converged / (double)num_exp_;
 
-    std::cout << "Transition probability T=" << tp << ": " << tp << std::endl;
+    std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
 }
 
 template<class T>
@@ -509,8 +509,8 @@ void TimeStepper<T>::ams(T const &x0) const
     std::cout << "Alpha: " << alpha << std::endl;
     std::cout << "Mean first passage time: " << fpt << std::endl;
 
-    double tp = 1.0 -  exp(-1.0 / fpt * tmax_);
-    std::cout << "Transition probability T=" << tmax_ << ": " << tp << std::endl;
+    probability_ = 1.0 -  exp(-1.0 / fpt * tmax_);
+    std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
 }
 
 template<class T>
@@ -694,8 +694,8 @@ void TimeStepper<T>::tams(T const &x0) const
     for (int i = 1; i < its_; i++)
         W += pow(1.0 - 1.0 / (double)num_exp_, i);
 
-    double tp = (double)converged * pow(1.0 - 1.0 / (double)num_exp_, its_) / W;
-    std::cout << "Transition probability T=" << tmax_ << ": " << tp << std::endl;
+    probability_ = (double)converged * pow(1.0 - 1.0 / (double)num_exp_, its_) / W;
+    std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
 }
 
 template<class T>
@@ -769,13 +769,13 @@ void TimeStepper<T>::gpa(T const &x0) const
     }
     std::cout << std::endl;
 
-    double tp = 0.0;
+    probability_ = 0.0;
     for (int i = 0; i < num_exp_; i++)
         if (experiments[i].converged)
-            tp += experiments[i].probability;
-    tp /= (double)num_exp_;
+            probability_ += experiments[i].probability;
+    probability_ /= (double)num_exp_;
 
-    std::cout << "Transition probability T=" << tmax_ << ": " << tp << std::endl;
+    std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
 }
 
 template<class T>
@@ -867,6 +867,12 @@ void TimeStepper<T>::write_helper(std::vector<AMSExperiment<T> > const &experime
         write(write_, experiments);
         return;
     }
+}
+
+template<class T>
+double TimeStepper<T>::get_probability()
+{
+    return probability_;
 }
 
 #endif
