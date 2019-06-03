@@ -8,6 +8,7 @@ set(TEST_INCLUDE_DIRS
   ../continuation/
   ../topo/
   ../lyapunov/
+  ../thetastepper/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
@@ -18,6 +19,7 @@ set(TEST_SOURCES
   test_jdqz.C
   test_topo.C
   test_ocean.C
+  trns_ocean.C
   intt_ocean.C
   reft_ocean.C
   intt_2dmoc.C

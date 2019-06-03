@@ -59,6 +59,8 @@ class ThetaStepper
 	int minK_;
     //! maximum desired Newton iterations
 	int maxK_;
+    //! Sum of Newton steps
+    int sumK_;
     //! Newton tolerance
     double Ntol_;
     //! maximum Newton iterations
@@ -76,6 +78,7 @@ class ThetaStepper
 public:
 	ThetaStepper(ThetaModel model, ParameterList params);
 	int run();
+    int getSumK() { return sumK_; }
     
 private:    
 	void writeData();
