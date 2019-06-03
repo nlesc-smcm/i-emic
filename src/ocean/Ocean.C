@@ -2216,7 +2216,7 @@ double Ocean::getPar(std::string const &parName)
 //===================================================================
 std::string const Ocean::int2par(int ind)
 {
-    return THCM::Instance().int2par(ind);
+    return THCM::Instance().int2par(ind+1);
 }
 
 //====================================================================
