@@ -46,6 +46,12 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         readPars = false;
     end
 
+    if isfield(opts, 'stateName')
+        stateName = opts.stateName;
+    else
+        stateName = false;
+    end
+
     % initialize additional fields if requested
     additional = [];
     
@@ -93,6 +99,8 @@ function [sol, pars, additional] = readhdf5(file, nun, n, m, l, opts)
         end
         fprintf('\n');
         
+    elseif stateName
+        sol = h5read(file, stateName);
     else % read normal state
         sol = h5read(file, '/State/Values');
     end

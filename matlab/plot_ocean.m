@@ -45,7 +45,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         legacy_mode = false;
     end
 
-    if strcmp(solfile(end-3:end),'rt.3')
+    if ischar(solfile) && strcmp(solfile(end-3:end),'rt.3')
         legacy_mode = true;
     end
 
@@ -211,8 +211,11 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         [lab icp par xl xlp det sig sol solup soleig] = ...
             readfort3(la, solfile);
         add = {};
-    else
+    elseif ischar(solfile)
         [sol, pars, add] = readhdf5(solfile, nun, n, m, l, opts);
+    else
+        sol = solfile;
+        add = {};
     end
 
     if interp_mode
