@@ -41,6 +41,7 @@ class TimeStepper
     int write_steps_;
     int write_time_steps_;
 
+    mutable double mfpt_;
     mutable double probability_;
 
     // RNG methods
@@ -102,6 +103,7 @@ public:
     void set_random_engine(unsigned int seed);
 
     double get_probability();
+    double get_mfpt();
 
 protected:
     int randint(int a, int b) const;

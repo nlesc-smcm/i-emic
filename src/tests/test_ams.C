@@ -130,7 +130,7 @@ void set_parameter(Teuchos::RCP<Teuchos::ParameterList> &params,
         params->set(name, value);
 }
 
-void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
+void set_default_parameters(Teuchos::RCP<Teuchos::ParameterList> &params)
 {
     set_parameter(params, "theta", 0.0);
     set_parameter(params, "sigma", 1.0);
@@ -138,14 +138,19 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     set_parameter(params, "var", 0);
     set_parameter(params, "noise seed", 1);
     set_parameter(params, "ams seed", 2);
-    set_parameter(params, "method", "TAMS");
 
-    const int default_maxit = 10;
     set_parameter(params, "time step", 0.01);
     set_parameter(params, "maximum time", 2.0);
     set_parameter(params, "B distance", 0.05);
     set_parameter(params, "number of experiments", 20);
-    set_parameter(params, "maximum iterations", default_maxit);
+    set_parameter(params, "maximum iterations", 10);
+}
+
+void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
+{
+    const int default_maxit = 10;
+    set_default_parameters(params);
+
     set_parameter(params, "write file", "out_data.h5");
 
     int maxit = params->get("maximum iterations", -1);
@@ -160,18 +165,20 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
 
     std::string output = testing::internal::GetCapturedStdout();
 
+    std::cout << output;
+
     EXPECT_NE(output.find("Initialization"), std::string::npos);
     if (maxit == default_maxit && write_time_steps < 0)
     {
-        EXPECT_NE(output.find("TAMS: " + std::to_string(default_maxit)),
+        EXPECT_NE(output.find("AMS: " + std::to_string(default_maxit)),
                   std::string::npos);
-        EXPECT_EQ(output.find("TAMS: " + std::to_string(default_maxit + 1)),
+        EXPECT_EQ(output.find("AMS: " + std::to_string(default_maxit + 1)),
                   std::string::npos);
     }
 
     if (maxit == default_maxit && write_time_steps > 0)
     {
-        EXPECT_NE(output.find("TAMS: " + std::to_string(default_maxit / 2)),
+        EXPECT_NE(output.find("AMS: " + std::to_string(default_maxit / 2)),
                   std::string::npos);
     }
 
@@ -186,28 +193,38 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
 
     std::string output2 = testing::internal::GetCapturedStdout();
 
+    std::cout << output2;
+
     EXPECT_EQ(output2.find("Initialization"), std::string::npos);
     if (maxit == default_maxit && write_time_steps < 0)
     {
-        EXPECT_EQ(output2.find("TAMS: " + std::to_string(default_maxit)),
+        EXPECT_EQ(output2.find("AMS: " + std::to_string(default_maxit)),
                   std::string::npos);
     }
     else if (maxit < default_maxit)
     {
-        EXPECT_NE(output2.find("TAMS: " + std::to_string(default_maxit)),
+        EXPECT_NE(output2.find("AMS: " + std::to_string(default_maxit)),
                   std::string::npos);
     }
-    EXPECT_NE(output2.find("TAMS: " + std::to_string(default_maxit + 1)),
-              std::string::npos);;
-    EXPECT_EQ(output2.find("TAMS: " + std::to_string(default_maxit * 5)),
+    EXPECT_NE(output2.find("AMS: " + std::to_string(default_maxit + 1)),
               std::string::npos);
-    EXPECT_NEAR(ams2.get_probability(), 0.12, 1e-2);
+    EXPECT_EQ(output2.find("AMS: " + std::to_string(default_maxit * 8)),
+              std::string::npos);
+
+    if (ams2.get_mfpt() > 0)
+    {
+        EXPECT_GT(ams2.get_mfpt(), 7);
+        EXPECT_LT(ams2.get_mfpt(), 40);
+    }
+    else
+        EXPECT_NEAR(ams2.get_probability(), 0.157, 1e-1);
 }
 
 //------------------------------------------------------------------
 TEST(AMS, AMSRestart)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "AMS");
     params->set("write final state", true);
 
     restart_test(params);
@@ -217,6 +234,7 @@ TEST(AMS, AMSRestart)
 TEST(AMS, AMSRestart2)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "AMS");
     params->set("write steps", 10);
     params->set("write final state", false);
 
@@ -227,7 +245,8 @@ TEST(AMS, AMSRestart2)
 TEST(AMS, AMSRestart3)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
-    params->set("write time steps", 1000);
+    params->set("method", "AMS");
+    params->set("write time steps", 500);
     params->set("write final state", false);
 
     restart_test(params);
@@ -237,11 +256,27 @@ TEST(AMS, AMSRestart3)
 TEST(AMS, AMSRestart4)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "AMS");
     params->set("write steps", 10);
     params->set("maximum iterations", 0);
     params->set("write final state", false);
 
     restart_test(params);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, AMSConvergence)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "AMS");
+    params->set("maximum iterations", 1000);
+    params->set("number of experiments", 200);
+    set_default_parameters(params);
+
+    auto ams = createDoubleWell(params);
+    ams.run();
+
+    EXPECT_NEAR(ams.get_mfpt(), 7, 1);
 }
 
 //------------------------------------------------------------------
@@ -274,6 +309,48 @@ TEST(AMS, TAMSRestart3)
     params->set("write final state", false);
 
     restart_test(params);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, TAMSRestart4)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "TAMS");
+    params->set("write steps", 10);
+    params->set("maximum iterations", 0);
+    params->set("write final state", false);
+
+    restart_test(params);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, TAMSConvergence)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "TAMS");
+    params->set("maximum iterations", 10000);
+    params->set("number of experiments", 200);
+    set_default_parameters(params);
+
+    auto tams = createDoubleWell(params);
+    tams.run();
+
+    EXPECT_NEAR(tams.get_probability(), 0.157, 1e-2);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, MCConvergence)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "Naive");
+    params->set("maximum iterations", 10000);
+    params->set("number of experiments", 200);
+    set_default_parameters(params);
+
+    auto mc = createDoubleWell(params);
+    mc.run();
+
+    EXPECT_NEAR(mc.get_probability(), 0.157, 1e-2);
 }
 
 //------------------------------------------------------------------

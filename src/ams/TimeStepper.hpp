@@ -73,6 +73,8 @@ template<class T>
 TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step)
     :
     time_step_(time_step),
+    mfpt_(-1),
+    probability_(-1),
     engine_initialized_(false)
 {}
 
@@ -84,6 +86,8 @@ TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step,
     time_step_(time_step),
     dist_fun_(dist_fun),
     vector_length_(vector_length),
+    mfpt_(-1),
+    probability_(-1),
     engine_initialized_(false)
 {}
 
@@ -504,12 +508,12 @@ void TimeStepper<T>::ams(T const &x0) const
         pow((1.0 - 1.0 / (double)num_exp_), its_);
 
     double meann = 1.0 / alpha - 1.0;
-    double fpt = meann * (total_t1 / (double)num_t1 + total_t2 / (double)num_t2) +
+    mfpt_ = meann * (total_t1 / (double)num_t1 + total_t2 / (double)num_t2) +
         total_t1 / (double)num_t1 + total_tr / (double)converged;
     std::cout << "Alpha: " << alpha << std::endl;
-    std::cout << "Mean first passage time: " << fpt << std::endl;
+    std::cout << "Mean first passage time: " << mfpt_ << std::endl;
 
-    probability_ = 1.0 -  exp(-1.0 / fpt * tmax_);
+    probability_ = 1.0 -  exp(-1.0 / mfpt_ * tmax_);
     std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
 }
 
@@ -873,6 +877,12 @@ template<class T>
 double TimeStepper<T>::get_probability()
 {
     return probability_;
+}
+
+template<class T>
+double TimeStepper<T>::get_mfpt()
+{
+    return mfpt_;
 }
 
 #endif

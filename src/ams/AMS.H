@@ -58,6 +58,7 @@ public:
     void run();
 
     double get_probability();
+    double get_mfpt();
 
 protected:
     Teuchos::RCP<Epetra_Vector> restrict(Epetra_MultiVector const &x) const;
@@ -306,6 +307,20 @@ AMS(Model model, ParameterList pars,
         INFO("distance factor = " << dist_factor);
 
         dist_fun = [nrm, dist_factor, var_norm, this](VectorPtr const &x) {
+            // // debug
+            // for (int var = 0; var < dof_; var++)
+            // {
+            //     VectorPtr d1v = Teuchos::rcp(new Vector(*x));
+            //     CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
+            //     double d1 =  var_norm(d1v, var) / nrm[var];
+            //     VectorPtr d2v = Teuchos::rcp(new Vector(*x));
+            //     CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
+            //     double d2 =  var_norm(d2v, var) / nrm[var];
+            //     double dist = dist_factor - dist_factor * exp(-0.5 * pow(d1 / 0.25, 2.))
+            //     + (1.0 - dist_factor) * exp(-0.5 * pow(d2 / 0.25, 2.));
+            //     INFO("distance " << var << " = " << dist << ", " << d1  << ", " << d2);
+            // }
+            // // end debug
             VectorPtr d1v = Teuchos::rcp(new Vector(*x));
             CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
             double d1 =  var_norm(d1v, var_) / nrm[var_];
@@ -554,6 +569,12 @@ template<typename Model>
 double AMS<Model>::get_probability()
 {
     return timestepper_->get_probability();
+}
+
+template<typename Model>
+double AMS<Model>::get_mfpt()
+{
+    return timestepper_->get_mfpt();
 }
 
 template<typename Model>
