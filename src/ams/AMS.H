@@ -4,7 +4,7 @@
 //======================================================================
 #include "GlobalDefinitions.H"
 #include "Utils.H"
-#include "TimeStepper.hpp"
+#include "Transient.hpp"
 
 #include "Epetra_MultiVector.h"
 #include "Epetra_SerialDenseMatrix.h"
@@ -37,7 +37,7 @@ class AMS
     VectorPtr sol2_;
     VectorPtr sol3_;
 
-    Teuchos::RCP<TimeStepper<VectorPtr> > timestepper_;
+    Teuchos::RCP<Transient<VectorPtr> > timestepper_;
 
     Teuchos::RCP<Epetra_CrsMatrix> B_;
     Teuchos::RCP<Epetra_MultiVector> V_;
@@ -334,7 +334,7 @@ AMS(Model model, ParameterList pars,
         };
     }
 
-    timestepper_ = Teuchos::rcp(new TimeStepper<VectorPtr>(
+    timestepper_ = Teuchos::rcp(new Transient<VectorPtr>(
                                     time_step, dist_fun, sol1_->GlobalLength()));
 
     timestepper_->set_parameters(*pars);

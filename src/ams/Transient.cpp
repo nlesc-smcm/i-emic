@@ -1,4 +1,4 @@
-#include "TimeStepper.hpp"
+#include "Transient.hpp"
 
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_Utils.hpp"
@@ -15,7 +15,7 @@
 #include <sys/file.h>
 
 template<>
-void TimeStepper<Teuchos::RCP<Epetra_Vector> >::read(
+void Transient<Teuchos::RCP<Epetra_Vector> >::read(
     std::string const &name,
     std::vector<AMSExperiment<Teuchos::RCP<Epetra_Vector> > >  &experiments) const
 {
@@ -110,7 +110,7 @@ void TimeStepper<Teuchos::RCP<Epetra_Vector> >::read(
 }
 
 template<>
-void TimeStepper<Teuchos::RCP<Epetra_Vector> >::write(
+void Transient<Teuchos::RCP<Epetra_Vector> >::write(
     std::string const &name,
     std::vector<AMSExperiment<Teuchos::RCP<Epetra_Vector> > > const &experiments) const
 {

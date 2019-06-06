@@ -1,5 +1,5 @@
-#ifndef TIMESTEPPERDECL_HPP
-#define TIMESTEPPERDECL_HPP
+#ifndef TRANSIENTDECL_HPP
+#define TRANSIENTDECL_HPP
 
 #include <random>
 #include <functional>
@@ -11,7 +11,7 @@ template<class T>
 class GPAExperiment;
 
 template<class T>
-class TimeStepper
+class Transient
 {
     std::function<T(T const &, double)> time_step_;
     std::function<double(T const &)> dist_fun_;
@@ -54,12 +54,12 @@ class TimeStepper
     std::mt19937_64 *engine_;
 
 public:
-    TimeStepper(std::function<T(T const &, double)> time_step);
-    TimeStepper(std::function<T(T const &, double)> time_step,
+    Transient(std::function<T(T const &, double)> time_step);
+    Transient(std::function<T(T const &, double)> time_step,
                 std::function<double(T const &)> dist_fun,
                 int vector_length);
 
-   virtual ~TimeStepper();
+   virtual ~Transient();
 
     template<class ParameterList>
     void set_parameters(ParameterList &params);

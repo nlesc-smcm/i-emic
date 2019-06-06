@@ -1,7 +1,7 @@
-#ifndef TIMESTEPPER_HPP
-#define TIMESTEPPER_HPP
+#ifndef TRANSIENT_HPP
+#define TRANSIENT_HPP
 
-#include "TimeStepperDecl.hpp"
+#include "TransientDecl.hpp"
 
 #include <vector>
 #include <algorithm>
@@ -70,7 +70,7 @@ std::string mem2string(long long mem)
 }
 
 template<class T>
-TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step)
+Transient<T>::Transient(std::function<T(T const &, double)> time_step)
     :
     time_step_(time_step),
     mfpt_(-1),
@@ -79,7 +79,7 @@ TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step)
 {}
 
 template<class T>
-TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step,
+Transient<T>::Transient(std::function<T(T const &, double)> time_step,
                             std::function<double(T const &)> dist_fun,
                             int vector_length)
     :
@@ -92,7 +92,7 @@ TimeStepper<T>::TimeStepper(std::function<T(T const &, double)> time_step,
 {}
 
 template<class T>
-TimeStepper<T>::~TimeStepper()
+Transient<T>::~Transient()
 {
     if (engine_initialized_)
         delete engine_;
@@ -100,7 +100,7 @@ TimeStepper<T>::~TimeStepper()
 
 template<class T>
 template<class ParameterList>
-void TimeStepper<T>::set_parameters(ParameterList &params)
+void Transient<T>::set_parameters(ParameterList &params)
 {
     dt_ = params.get("time step", 0.01);
     tstep_ = params.get("GPA time step", 1.0);
@@ -124,7 +124,7 @@ void TimeStepper<T>::set_parameters(ParameterList &params)
 }
 
 template<class T>
-T TimeStepper<T>::transient(T x, double dt, double tmax) const
+T Transient<T>::transient(T x, double dt, double tmax) const
 {
     for (double t = dt; t <= tmax; t += dt)
         x = std::move(time_step_helper(x, dt));
@@ -132,7 +132,7 @@ T TimeStepper<T>::transient(T x, double dt, double tmax) const
 }
 
 template<class T>
-double TimeStepper<T>::transient_max_distance(
+double Transient<T>::transient_max_distance(
     T x, double dt, double tmax, double max_distance) const
 {
     const double lim = max_distance - bdist_;
@@ -146,7 +146,7 @@ double TimeStepper<T>::transient_max_distance(
 }
 
 template<class T>
-void TimeStepper<T>::transient_start(
+void Transient<T>::transient_start(
     T const &x0, double dt, double tmax,
     AMSExperiment<T> &experiment) const
 {
@@ -173,7 +173,7 @@ void TimeStepper<T>::transient_start(
 }
 
 template<class T>
-void TimeStepper<T>::transient_ams(
+void Transient<T>::transient_ams(
     double dt, double tmax,
     AMSExperiment<T> &experiment) const
 {
@@ -218,7 +218,7 @@ void TimeStepper<T>::transient_ams(
 }
 
 template<class T>
-void TimeStepper<T>::transient_tams(
+void Transient<T>::transient_tams(
     double dt, double tmax,
     AMSExperiment<T> &experiment) const
 {
@@ -255,7 +255,7 @@ void TimeStepper<T>::transient_tams(
 }
 
 template<class T>
-void TimeStepper<T>::transient_gpa(
+void Transient<T>::transient_gpa(
     double dt, double tmax,
     GPAExperiment<T> &experiment) const
 {
@@ -276,7 +276,7 @@ void TimeStepper<T>::transient_gpa(
 }
 
 template<class T>
-void TimeStepper<T>::naive(T const &x0) const
+void Transient<T>::naive(T const &x0) const
 {
     std::vector<GPAExperiment<T>> experiments(num_exp_);
 
@@ -298,7 +298,7 @@ void TimeStepper<T>::naive(T const &x0) const
 
 
 template<class T>
-double TimeStepper<T>::ams_elimination(
+double Transient<T>::ams_elimination(
     std::string const &method,
     std::vector<AMSExperiment<T>> &experiments,
     double dt, double tmax) const
@@ -469,7 +469,7 @@ double TimeStepper<T>::ams_elimination(
 }
 
 template<class T>
-void TimeStepper<T>::ams(T const &x0) const
+void Transient<T>::ams(T const &x0) const
 {
     std::cout << "Using AMS with an estimated memory usage of: "
               << mem2string((long long)(1.0 / dist_tol_ * num_exp_ *
@@ -559,7 +559,7 @@ void TimeStepper<T>::ams(T const &x0) const
 }
 
 template<class T>
-void TimeStepper<T>::tams(T const &x0) const
+void Transient<T>::tams(T const &x0) const
 {
     std::cout << "Using TAMS with an estimated memory usage of: "
               << mem2string((long long)(tmax_ / dt_ * num_exp_ *
@@ -610,7 +610,7 @@ void TimeStepper<T>::tams(T const &x0) const
 }
 
 template<class T>
-void TimeStepper<T>::gpa(T const &x0) const
+void Transient<T>::gpa(T const &x0) const
 {
     std::cout << "Using GPA with an estimated memory usage of: "
               << mem2string((long long)(num_exp_ * vector_length_ * sizeof(double)))
@@ -690,7 +690,7 @@ void TimeStepper<T>::gpa(T const &x0) const
 }
 
 template<class T>
-void TimeStepper<T>::set_random_engine(unsigned int seed)
+void Transient<T>::set_random_engine(unsigned int seed)
 {
     if (engine_initialized_)
         delete engine_;
@@ -712,7 +712,7 @@ void TimeStepper<T>::set_random_engine(unsigned int seed)
 }
 
 template<class T>
-int TimeStepper<T>::randint(int a, int b) const
+int Transient<T>::randint(int a, int b) const
 {
     if (engine_initialized_)
         return randint_(a, b);
@@ -732,7 +732,7 @@ int TimeStepper<T>::randint(int a, int b) const
 }
 
 template<class T>
-int TimeStepper<T>::randreal(double a, double b) const
+int Transient<T>::randreal(double a, double b) const
 {
     if (engine_initialized_)
         return randreal_(a, b);
@@ -752,14 +752,14 @@ int TimeStepper<T>::randreal(double a, double b) const
 }
 
 template<class T>
-T TimeStepper<T>::time_step_helper(T const &x, double dt) const
+T Transient<T>::time_step_helper(T const &x, double dt) const
 {
     time_steps_++;
     return std::move(time_step_(x, dt));
 }
 
 template<class T>
-void TimeStepper<T>::write_helper(std::vector<AMSExperiment<T> > const &experiments,
+void Transient<T>::write_helper(std::vector<AMSExperiment<T> > const &experiments,
                                   int its) const
 {
     if (write_ == "")
@@ -781,13 +781,13 @@ void TimeStepper<T>::write_helper(std::vector<AMSExperiment<T> > const &experime
 }
 
 template<class T>
-double TimeStepper<T>::get_probability()
+double Transient<T>::get_probability()
 {
     return probability_;
 }
 
 template<class T>
-double TimeStepper<T>::get_mfpt()
+double Transient<T>::get_mfpt()
 {
     return mfpt_;
 }

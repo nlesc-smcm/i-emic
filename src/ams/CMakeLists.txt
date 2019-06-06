@@ -1,3 +1,3 @@
-add_library(ams SHARED TimeStepper.cpp)
+add_library(ams SHARED Transient.cpp)
 
 install(TARGETS ams DESTINATION lib)
