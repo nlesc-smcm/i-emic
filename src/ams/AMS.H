@@ -505,20 +505,30 @@ auto AMS<Model>::get_projected_time_step()
         // We write this as
         // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
         TIMER_START("AMS: Compute VAV");
-        model_->setShift(-sig);
-        model_->computeJacobian();
-        model_->applyMatrix(*V_, *tmp);
-        auto VAV = dot(*V_, *tmp);
-        auto VAVmat = Teuchos::rcp(new Epetra_SerialDenseMatrix(
-                                       Copy, VAV->Values(), VAV->Stride(),
-                                       VAV->MyLength(), VAV->NumVectors()));
+        Teuchos::RCP<Epetra_SerialDenseMatrix> VAVmat;
+        if (theta_ == 0)
+        {
+            VAVmat = Teuchos::rcp(new Epetra_SerialDenseMatrix(
+                                      Copy, VMV->Values(), VMV->Stride(),
+                                      VMV->MyLength(), VMV->NumVectors()));
+        }
+        else
+        {
+            model_->setShift(-sig);
+            model_->computeJacobian();
+            model_->applyMatrix(*V_, *tmp);
+            auto VAV = dot(*V_, *tmp);
+            VAVmat = Teuchos::rcp(new Epetra_SerialDenseMatrix(
+                                      Copy, VAV->Values(), VAV->Stride(),
+                                      VAV->MyLength(), VAV->NumVectors()));
+        }
         auto VAVsolver = Teuchos::rcp(new Epetra_SerialDenseSolver());
         CHECK_ZERO(VAVsolver->SetMatrix(*VAVmat));
         CHECK_ZERO(VAVsolver->Factor());
         TIMER_STOP("AMS: Compute VAV");
 
         auto thetaJ = [this, sig, &VAVsolver](VectorPtr const &xnew,
-                                              VectorPtr const &b) {
+                                                    VectorPtr const &b) {
             TIMER_SCOPE("AMS: Projected jacobian solve");
             auto y = Teuchos::rcp(new Epetra_SerialDenseMatrix(
                                       Copy, b->Values(), b->Stride(),
@@ -526,7 +536,16 @@ auto AMS<Model>::get_projected_time_step()
             auto z = Teuchos::rcp(new Epetra_SerialDenseMatrix(
                                       Copy, b->Values(), b->Stride(),
                                       b->MyLength(), b->NumVectors()));
-            CHECK_ZERO(z->Scale(sig));
+
+            if (theta_ != 0.0)
+            {
+                CHECK_ZERO(z->Scale(sig));
+            }
+            else
+            {
+                CHECK_ZERO(z->Scale(-1.0));
+            }
+
             CHECK_ZERO(VAVsolver->SetVectors(*y, *z));
             CHECK_NONNEG(VAVsolver->Solve());
             return Teuchos::rcp(new Vector(

@@ -7,7 +7,8 @@
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-Teuchos::RCP<Epetra_Comm>  comm; 
+Teuchos::RCP<Epetra_Comm> comm;
+Teuchos::RCP<Epetra_Map> map;
 }
 
 class TestModel
@@ -100,7 +101,6 @@ public:
 
 AMS<Teuchos::RCP<TestModel> > createDoubleWell(Teuchos::RCP<Teuchos::ParameterList> params)
 {
-    Teuchos::RCP<Epetra_Map> map = Teuchos::rcp(new Epetra_Map(2, 0, *comm));
     Teuchos::RCP<TestModel> model = Teuchos::rcp(new TestModel(map));
 
     std::vector<double> values(2);
@@ -280,6 +280,29 @@ TEST(AMS, AMSConvergence)
 }
 
 //------------------------------------------------------------------
+TEST(AMS, ProjectedAMSConvergence)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "AMS");
+    params->set("maximum iterations", 10000);
+    params->set("number of experiments", 200);
+    set_default_parameters(params);
+
+    std::vector<double> values(2);
+    values[0] = 1;
+    values[1] = 0;
+
+    Teuchos::RCP<Epetra_Vector> V = Teuchos::rcp(new Epetra_Vector(Copy, *map, &values[0]));
+
+    auto ams = createDoubleWell(params);
+    ams.set_space(V);
+    ams.initialize(params);
+    ams.run();
+
+    EXPECT_NEAR(ams.get_mfpt(), 6.3, 1);
+}
+
+//------------------------------------------------------------------
 TEST(AMS, TAMSRestart)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
@@ -339,6 +362,29 @@ TEST(AMS, TAMSConvergence)
 }
 
 //------------------------------------------------------------------
+TEST(AMS, ProjectedTAMSConvergence)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "TAMS");
+    params->set("maximum iterations", 10000);
+    params->set("number of experiments", 200);
+    set_default_parameters(params);
+
+    std::vector<double> values(2);
+    values[0] = 1;
+    values[1] = 0;
+
+    Teuchos::RCP<Epetra_Vector> V = Teuchos::rcp(new Epetra_Vector(Copy, *map, &values[0]));
+
+    auto tams = createDoubleWell(params);
+    tams.set_space(V);
+    tams.initialize(params);
+    tams.run();
+
+    EXPECT_NEAR(tams.get_probability(), 0.215, 1e-2);
+}
+
+//------------------------------------------------------------------
 TEST(AMS, MCConvergence)
 {
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
@@ -358,6 +404,8 @@ int main(int argc, char **argv)
 {
     // Initialize the environment:
     comm = initializeEnvironment(argc, argv);
+    map = Teuchos::rcp(new Epetra_Map(2, 0, *comm));
+
     if (outFile == Teuchos::null)
         throw std::runtime_error("ERROR: Specify output streams");
 
