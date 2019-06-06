@@ -51,6 +51,10 @@ public:
         VectorPtr sol3 = Teuchos::null);
     ~AMS();
 
+    template<typename ParameterList>
+    void initialize(ParameterList pars);
+    void set_space(Teuchos::RCP<Epetra_MultiVector> const &V);
+
     auto get_time_step();
     auto get_projected_time_step();
     auto get_brownian_time_step();
@@ -167,6 +171,13 @@ AMS(Model model, ParameterList pars,
     sol3_(sol3),
     V_(Teuchos::null)
 {
+    initialize(pars);
+}
+
+template<typename Model>
+template<typename ParameterList>
+void AMS<Model>::initialize(ParameterList pars)
+{
     std::random_device::result_type seed = noise_seed_;
     if (seed == 0)
     {
@@ -182,8 +193,6 @@ AMS(Model model, ParameterList pars,
     B_ = model_->getForcing();
 
     std::string space = pars->get("space", "");
-    TimeStep time_step;
-    DistFun dist_fun;
     if (space != "")
     {
         // Use a map that is constructed with the most basic
@@ -200,7 +209,13 @@ AMS(Model model, ParameterList pars,
         CHECK_ZERO(V_->Import(*Vptr, import, Insert));
 
         delete Vptr;
+    }
 
+    TimeStep time_step;
+    DistFun dist_fun;
+
+    if (V_ != Teuchos::null)
+    {
         BV_ = Teuchos::rcp(new Epetra_MultiVector(B_->DomainMap(), V_->NumVectors()));
         CHECK_ZERO(B_->Multiply('T', *V_, *BV_));
 
@@ -339,6 +354,12 @@ AMS(Model model, ParameterList pars,
 
     timestepper_->set_parameters(*pars);
     timestepper_->set_random_engine(get_ams_seed());
+}
+
+template<typename Model>
+void AMS<Model>::set_space(Teuchos::RCP<Epetra_MultiVector> const &V)
+{
+    V_ = V;
 }
 
 template<typename Model>
