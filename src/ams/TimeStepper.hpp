@@ -296,64 +296,14 @@ void TimeStepper<T>::naive(T const &x0) const
     std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
 }
 
+
 template<class T>
-void TimeStepper<T>::ams(T const &x0) const
+double TimeStepper<T>::ams_elimination(
+    std::string const &method,
+    std::vector<AMSExperiment<T>> &experiments,
+    double dt, double tmax) const
 {
-    std::cout << "Using AMS with an estimated memory usage of: "
-              << mem2string((long long)(1.0 / dist_tol_ * num_exp_ *
-                                        vector_length_ * sizeof(double)))
-              << std::endl;
-
-    std::vector<AMSExperiment<T>> experiments(num_init_exp_);
-    for (int i = 0; i < num_init_exp_; i++)
-        experiments[i].x0 = x0;
-
-    its_ = 0;
-    time_steps_ = 0;
-
-    if (read_ != "")
-        read(read_, experiments);
-
     int converged = 0;
-    double tmax = 100 * tmax_;
-    int time_steps_previous_write = 0;
-
-    for (int i = 0; i < num_init_exp_; i++)
-    {
-        if (experiments[i].initialized)
-            continue;
-
-        transient_start(x0, dt_, tmax, experiments[i]);
-
-        if (experiments[i].xlist.size() == 0)
-        {
-            std::cerr << "Initialization failed" << std::endl;
-            exit(-1);
-        }
-
-        transient_ams(dt_, tmax, experiments[i]);
-
-        // Erase data that we do not need for later experiments
-        if (i >= num_exp_)
-        {
-            experiments[i].xlist = std::vector<T>();
-            experiments[i].dlist = std::vector<double>();
-            experiments[i].tlist = std::vector<double>();
-        }
-
-        if (experiments[i].converged)
-            converged++;
-
-        std::cout << "Initialization: " << i+1 << " / " << num_init_exp_ << ", "
-                  << converged << " / " << num_init_exp_
-                  << " converged with t="
-                  << experiments[i].initial_time + experiments[i].time << std::endl;
-
-        write_helper(experiments, i+1, time_steps_previous_write);
-    }
-    std::cout << std::endl;
-
-    converged = 0;
 
     std::vector<int> ell;
     std::vector<AMSExperiment<T> *> reactive_experiments;
@@ -440,14 +390,22 @@ void TimeStepper<T>::ams(T const &x0) const
             exp->tlist = std::vector<double>(
                 rnd_exp->tlist.begin(), rnd_exp->tlist.begin() + same_distance_idx + 1);
 
-            transient_ams(dt_, tmax, *exp);
+            if (method == "AMS")
+                transient_ams(dt, tmax, *exp);
+            else if (method == "TAMS")
+                transient_tams(dt, tmax, *exp);
+            else
+            {
+                std::cerr << "Method " << method << " does not exist." << std::endl;
+                exit(-1);
+            }
 
             if (exp->converged)
                 converged++;
             else
                 unconverged_experiments.push_back(exp);
 
-            std::cout << "AMS: " << its_ << " / " << maxit_ << ", "
+            std::cout << method << ": " << its_ << " / " << maxit_ << ", "
                       << converged << " / " << num_exp_
                       << " converged with max distance "
                       << max_distance << " -> "
@@ -496,20 +454,91 @@ void TimeStepper<T>::ams(T const &x0) const
             std::cout << "Finished cleanup" << std::endl;
         }
 
-        write_helper(experiments, its_, time_steps_previous_write);
+        write_helper(experiments, its_);
     }
     std::cout << std::endl;
 
     if (write_final_)
         write(write_, experiments);
 
+    double alpha = (double)converged / (double)num_exp_;
+    for (int l: ell)
+        alpha *= 1.0 - (double)l / (double)num_exp_;
+
+    return alpha;
+}
+
+template<class T>
+void TimeStepper<T>::ams(T const &x0) const
+{
+    std::cout << "Using AMS with an estimated memory usage of: "
+              << mem2string((long long)(1.0 / dist_tol_ * num_exp_ *
+                                        vector_length_ * sizeof(double)))
+              << std::endl;
+
+    std::vector<AMSExperiment<T>> experiments(num_init_exp_);
+    for (int i = 0; i < num_init_exp_; i++)
+        experiments[i].x0 = x0;
+
+    its_ = 0;
+    time_steps_ = 0;
+
+    if (read_ != "")
+        read(read_, experiments);
+
+    int converged = 0;
+    double tmax = 100 * tmax_;
+    time_steps_previous_write_ = 0;
+
+    for (int i = 0; i < num_init_exp_; i++)
+    {
+        if (experiments[i].initialized)
+            continue;
+
+        transient_start(x0, dt_, tmax, experiments[i]);
+
+        if (experiments[i].xlist.size() == 0)
+        {
+            std::cerr << "Initialization failed" << std::endl;
+            exit(-1);
+        }
+
+        transient_ams(dt_, tmax, experiments[i]);
+
+        // Erase data that we do not need for later experiments
+        if (i >= num_exp_)
+        {
+            experiments[i].xlist = std::vector<T>();
+            experiments[i].dlist = std::vector<double>();
+            experiments[i].tlist = std::vector<double>();
+        }
+
+        if (experiments[i].converged)
+            converged++;
+
+        std::cout << "Initialization: " << i+1 << " / " << num_init_exp_ << ", "
+                  << converged << " / " << num_init_exp_
+                  << " converged with t="
+                  << experiments[i].initial_time + experiments[i].time << std::endl;
+
+        write_helper(experiments, i+1);
+    }
+    std::cout << std::endl;
+
+    double alpha = ams_elimination("AMS", experiments, dt_, tmax);
+
     double total_tr = 0;
     double total_t1 = 0;
     double total_t2 = 0;
     int num_t1 = num_init_exp_;
     int num_t2 = 0;
-    for (auto exp: reactive_experiments)
-        total_tr += exp->time;
+    converged = 0;
+    for (int i = 0; i < num_exp_; i++)
+    {
+        auto &exp = experiments[i];
+        total_tr += exp.time;
+        converged += exp.converged;
+    }
 
     for (auto &exp: experiments)
     {
@@ -518,10 +547,6 @@ void TimeStepper<T>::ams(T const &x0) const
         if (exp.return_time > dt_ / 2.0)
             num_t2++;
     }
-
-    double alpha = (double)converged / (double)num_exp_;
-    for (int l: ell)
-        alpha *= 1.0 - (double)l / (double)num_exp_;
 
     double meann = 1.0 / alpha - 1.0;
     mfpt_ = meann * (total_t1 / (double)num_t1 + total_t2 / (double)num_t2) +
@@ -552,7 +577,7 @@ void TimeStepper<T>::tams(T const &x0) const
         read(read_, experiments);
 
     int converged = 0;
-    int time_steps_previous_write = 0;
+    time_steps_previous_write_ = 0;
 
     for (int i = 0; i < num_exp_; i++)
     {
@@ -575,162 +600,12 @@ void TimeStepper<T>::tams(T const &x0) const
                   << " converged with t="
                   << experiments[i].time << std::endl;
 
-        write_helper(experiments, i+1, time_steps_previous_write);
-    }
-    std::cout << std::endl;
-    converged = 0;
-
-    std::vector<int> ell;
-    std::vector<AMSExperiment<T> *> reactive_experiments;
-    std::vector<AMSExperiment<T> *> unconverged_experiments;
-    std::vector<AMSExperiment<T> *> unused_experiments;
-    std::vector<AMSExperiment<T> *> minimal_experiments;
-
-    for (int i = 0; i < num_exp_; i++)
-        reactive_experiments.push_back(&experiments[i]);
-
-    for (auto exp: reactive_experiments)
-    {
-        if (!exp->converged)
-            unconverged_experiments.push_back(exp);
-        else
-            converged++;
-        unused_experiments.push_back(exp);
-    }
-
-    std::sort(unconverged_experiments.begin(),
-              unconverged_experiments.end(), AMSExperiment<T>::sort);
-
-    for (int i = 0; i < maxit_; i++)
-    {
-        minimal_experiments.clear();
-        if (unconverged_experiments.size() > 0 && unused_experiments.size() > 0)
-        {
-            AMSExperiment<T> *minimal_exp = unconverged_experiments.back();
-            AMSExperiment<T> *exp = unconverged_experiments.back();
-            while (unconverged_experiments.size() > 0 &&
-                   exp->max_distance == minimal_exp->max_distance)
-            {
-                minimal_experiments.push_back(exp);
-                unconverged_experiments.pop_back();
-                unused_experiments.erase(
-                    std::find(unused_experiments.begin(),
-                              unused_experiments.end(), exp));
-                if (unconverged_experiments.size() > 0)
-                    exp = unconverged_experiments.back();
-            }
-        }
-
-        if (minimal_experiments.size() == 0 || unused_experiments.size() == 0)
-            continue;
-
-        ell.push_back(minimal_experiments.size());
-        if (ell.back() == 1)
-            std::cout << "Eliminating 1 trajectory." << std::endl;
-        else
-            std::cout << "Eliminating " << ell.back() << " trajectories." << std::endl;
-
-        its_++;
-
-        for (auto &exp: minimal_experiments)
-        {
-            double max_distance = exp->max_distance;
-
-            int rnd_idx = randint(0, unused_experiments.size()-1);
-            while (unused_experiments[rnd_idx]->max_distance <= exp->max_distance)
-                rnd_idx = randint(0, unused_experiments.size()-1);
-
-            AMSExperiment<T> *rnd_exp = unused_experiments[rnd_idx];
-            if (rnd_exp->dlist.size() == 0)
-            {
-                std::cerr << "Experiment " << rnd_idx << " has size 0." << std::endl;
-                exit(-1);
-            }
-
-            int same_distance_idx = -1;
-            while (++same_distance_idx < (int)rnd_exp->dlist.size() &&
-                   rnd_exp->dlist[same_distance_idx] < exp->max_distance);
-
-            if (same_distance_idx == (int)rnd_exp->dlist.size())
-            {
-                std::cerr << "Distance larger than " << exp->max_distance
-                          << " not found in experiment with max distance "
-                          << rnd_exp->max_distance << "." << std::endl;
-                exit(-1);
-            }
-
-            exp->xlist = std::vector<T>(
-                rnd_exp->xlist.begin(), rnd_exp->xlist.begin() + same_distance_idx + 1);
-            exp->dlist = std::vector<double>(
-                rnd_exp->dlist.begin(), rnd_exp->dlist.begin() + same_distance_idx + 1);
-            exp->tlist = std::vector<double>(
-                rnd_exp->tlist.begin(), rnd_exp->tlist.begin() + same_distance_idx + 1);
-
-            transient_tams(dt_, tmax_, *exp);
-
-            if (exp->converged)
-                converged++;
-            else
-                unconverged_experiments.push_back(exp);
-
-            std::cout << "TAMS: " << its_ << " / " << maxit_ << ", "
-                      << converged << " / " << num_exp_
-                      << " converged with max distance "
-                      << max_distance << " -> "
-                      << exp->max_distance << " and t="
-                      << exp->time << " for experiment "
-                      << std::find(reactive_experiments.begin(),
-                                   reactive_experiments.end(),
-                                   exp) - reactive_experiments.begin()
-                      << std::endl;
-        }
-
-        for (auto &exp: minimal_experiments)
-            unused_experiments.push_back(exp);
-
-        std::sort(unconverged_experiments.begin(),
-                  unconverged_experiments.end(), AMSExperiment<T>::sort);
-
-        // Cleanup
-        double min_max_distance = 1.0;
-        for (auto exp: reactive_experiments)
-            min_max_distance = std::min(min_max_distance, exp->max_distance);
-
-        if (its_ % 10 == 0)
-        {
-            std::cout << "Starting cleanup" << std::endl;
-            for (auto exp: unused_experiments)
-            {
-                int min_max_idx = -1;
-                while (++min_max_idx < (int)exp->dlist.size() &&
-                       exp->dlist[min_max_idx] < min_max_distance);
-
-                if (min_max_idx > 0)
-                {
-                    exp->xlist = std::vector<T>(
-                        exp->xlist.begin() + min_max_idx,
-                        exp->xlist.end());
-                    exp->dlist = std::vector<double>(
-                        exp->dlist.begin() + min_max_idx,
-                        exp->dlist.end());
-                    exp->tlist = std::vector<double>(
-                        exp->tlist.begin() + min_max_idx,
-                        exp->tlist.end());
-                }
-            }
-            std::cout << "Finished cleanup" << std::endl;
-        }
-
-        write_helper(experiments, its_, time_steps_previous_write);
+        write_helper(experiments, i+1);
     }
     std::cout << std::endl;
 
-    if (write_final_)
-        write(write_, experiments);
+    probability_ = ams_elimination("TAMS", experiments, dt_, tmax_);
 
-    probability_ = (double)converged / (double)num_exp_;
-    for (int l: ell)
-        probability_ *= 1.0 - (double)l / (double)num_exp_;
     std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
 }
 
@@ -885,21 +760,21 @@ T TimeStepper<T>::time_step_helper(T const &x, double dt) const
 
 template<class T>
 void TimeStepper<T>::write_helper(std::vector<AMSExperiment<T> > const &experiments,
-                                  int its, int &time_steps_previous_write) const
+                                  int its) const
 {
     if (write_ == "")
         return;
 
     if (write_steps_ > 0 && its % write_steps_ == 0)
     {
-        time_steps_previous_write = time_steps_;
+        time_steps_previous_write_ = time_steps_;
         write(write_, experiments);
         return;
     }
 
-    if (write_time_steps_ > 0 && time_steps_ - time_steps_previous_write >= write_time_steps_)
+    if (write_time_steps_ > 0 && time_steps_ - time_steps_previous_write_ >= write_time_steps_)
     {
-        time_steps_previous_write = time_steps_;
+        time_steps_previous_write_ = time_steps_;
         write(write_, experiments);
         return;
     }

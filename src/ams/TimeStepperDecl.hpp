@@ -34,6 +34,7 @@ class TimeStepper
     int maxit_;
     mutable int its_;
     mutable int time_steps_;
+    mutable int time_steps_previous_write_;
 
     std::string read_;
     std::string write_;
@@ -84,6 +85,11 @@ public:
         double dt, double tmax,
         GPAExperiment<T> &experiment) const;
 
+    double ams_elimination(
+        std::string const &method,
+        std::vector<AMSExperiment<T>> &experiments,
+        double dt, double tmax) const;
+
     void naive(T const &x0) const;
 
     void ams(T const &x0) const;
@@ -112,7 +118,7 @@ protected:
     T time_step_helper(T const &x, double dt) const;
 
     void write_helper(std::vector<AMSExperiment<T> > const &experiments,
-                      int its, int &time_steps_previous_write) const;
+                      int its) const;
 };
 
 #endif
