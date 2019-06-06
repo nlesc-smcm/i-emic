@@ -190,7 +190,7 @@ AMS(Model model, ParameterList pars,
         // constructor for loading V since
         // MatrixMarketFileToMultiVector does not allow for anything
         // else...
-        Epetra_Map map(B_->NumGlobalRows(), 0, *model_->Comm());
+        Epetra_Map map(B_->NumGlobalRows(), 0, B_->Comm());
         Epetra_MultiVector* Vptr;
         CHECK_ZERO(EpetraExt::MatrixMarketFileToMultiVector(
                        space.c_str(), map, Vptr));
@@ -557,7 +557,7 @@ void AMS<Model>::run()
         timestepper_->naive(sol1_);
     else if (method_ == "Brownian motion")
     {
-        Epetra_Map map(1, 0, *model_->Comm());
+        Epetra_Map map(1, 0, sol1_->Map().Comm());
         VectorPtr x0 = Teuchos::rcp(new Vector(map));
         timestepper_->naive(x0);
     }
@@ -588,9 +588,9 @@ unsigned int AMS<Model>::get_ams_seed()
     }
 
     int *seed_ptr = reinterpret_cast<int *>(&seed);
-    CHECK_ZERO(model_->Comm()->Broadcast(seed_ptr, 1, 0));
+    CHECK_ZERO(sol1_->Map().Comm().Broadcast(seed_ptr, 1, 0));
 
-    write_seed(*model_->Comm(), seed, "Global seed");
+    write_seed(sol1_->Map().Comm(), seed, "Global seed");
 
     return seed;
 }
