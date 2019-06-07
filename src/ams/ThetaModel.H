@@ -16,7 +16,7 @@ class ThetaModel : public Model
 public:
     using VectorPtr = typename Model::VectorPtr;
 
-private:
+protected:
     //! theta method parameter
     double theta_;
 
@@ -71,6 +71,11 @@ public:
             *oldRhs_ = *Model::rhs_;
         }
 
+    void setState(VectorPtr state)
+        {
+            *Model::state_ = state;
+        }
+
     //!-------------------------------------------------------
     void setTheta(double theta)
         {
@@ -104,16 +109,16 @@ public:
             Model::computeMassMat();
 
             // Compute M * u_n - M * u_(n+1)
-            xDot_->Update(-1.0, *Model::state_, 1.0,
-                          *oldState_, 0.0);
+            CHECK_ZERO(xDot_->Update(-1.0, *Model::state_, 1.0,
+                                     *oldState_, 0.0));
             Model::applyMassMat(*xDot_, *Bxdot_);
 
             // Compute dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n)
-            Model::rhs_->Update(timestep_ * (1-theta_), *oldRhs_, timestep_ * theta_);
+            CHECK_ZERO(Model::rhs_->Update(
+                           timestep_ * (1-theta_), *oldRhs_, timestep_ * theta_));
 
             // Combine the terms
-            Model::rhs_->Update(1.0,  *Bxdot_, 1.0);
-
+            CHECK_ZERO(Model::rhs_->Update(1.0,  *Bxdot_, 1.0));
         }
 
     //!-------------------------------------------------------
@@ -145,7 +150,7 @@ public:
                 CHECK_ZERO(Model::jac_->SumIntoGlobalValues(myGlobalElements[i], 1,
                                                             &value, myGlobalElements + i));
             }
-            Model::jac_->FillComplete();
+            CHECK_ZERO(Model::jac_->FillComplete());
         }
 
     //!-------------------------------------------------------

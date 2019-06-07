@@ -7,10 +7,9 @@
 
 #include "Transient.hpp"
 #include "ThetaModel.H"
+#include "ProjectedThetaModel.H"
 
 #include "Epetra_MultiVector.h"
-#include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_SerialDenseSolver.h"
 #include "EpetraExt_CrsMatrixIn.h"
 #include "EpetraExt_MultiVectorIn.h"
 
@@ -24,6 +23,7 @@ class AMS
 
     Model model_;
     Teuchos::RCP<ThetaModel<typename Model::element_type> > thetaModel_;
+    Teuchos::RCP<ProjectedThetaModel<typename Model::element_type> > projectedThetaModel_;
 
     std::string method_;
 
@@ -68,8 +68,6 @@ public:
     double get_mfpt();
 
 protected:
-    Teuchos::RCP<Epetra_Vector> restrict(Epetra_MultiVector const &x) const;
-    Teuchos::RCP<Epetra_Vector> prolongate(Epetra_MultiVector const &x) const;
 
     unsigned int get_ams_seed();
 };
@@ -97,45 +95,6 @@ Teuchos::RCP<Vector> newton(
     }
     std::cerr << "Newton unconverged with norm " << nrm << std::endl;
     return x;
-}
-
-// =====================================================================
-// Helper methods
-
-Teuchos::RCP<Epetra_MultiVector> dot(
-    Epetra_MultiVector const &x, Epetra_MultiVector const &y)
-{
-    TIMER_SCOPE("AMS: dot");
-    int m = x.NumVectors();
-    int n = y.NumVectors();
-
-    Epetra_LocalMap map(m, 0, x.Comm());
-    Teuchos::RCP<Epetra_MultiVector> out = Teuchos::rcp(new Epetra_MultiVector(map, n));
-
-    CHECK_ZERO(out->Multiply('T', 'N', 1.0, x, y, 0.0));
-    return out;
-}
-
-template<typename Model>
-Teuchos::RCP<Epetra_Vector> AMS<Model>::restrict(Epetra_MultiVector const &x) const
-{
-    TIMER_SCOPE("AMS: restrict");
-    int m = V_->NumVectors();
-
-    Epetra_LocalMap map(m, 0, x.Comm());
-    Teuchos::RCP<Epetra_Vector> out = Teuchos::rcp(new Epetra_Vector(map));
-
-    CHECK_ZERO(out->Multiply('T', 'N', 1.0, *V_, x, 0.0));
-    return out;
-}
-
-template<typename Model>
-Teuchos::RCP<Epetra_Vector> AMS<Model>::prolongate(Epetra_MultiVector const &x) const
-{
-    TIMER_SCOPE("AMS: prolongate");
-    VectorPtr out = Teuchos::rcp(new Vector(V_->Map()));
-    CHECK_ZERO(out->Multiply('N', 'N', 1.0, *V_, x, 0.0));
-    return out;
 }
 
 void write_seed(Epetra_Comm const &comm, unsigned int seed, std::string const &label)
@@ -224,6 +183,10 @@ void AMS<Model>::initialize(ParameterList pars)
 
         time_step = get_projected_time_step();
 
+        projectedThetaModel_ = Teuchos::rcp(
+            new ProjectedThetaModel<typename Model::element_type>(*model_, V_));
+        projectedThetaModel_->setTheta(theta_);
+
         auto vvec = Teuchos::rcp(new Vector(B_->RangeMap()));
         CHECK_ZERO(vvec->PutScalar(0.0));
         for (int i = 0; i < vvec->MyLength(); i++)
@@ -241,9 +204,9 @@ void AMS<Model>::initialize(ParameterList pars)
             return sqrt((*dot(*x, *tmp))[0][0]);
         };
 
-        sol1_ = restrict(*sol1_);
-        sol2_ = restrict(*sol2_);
-        sol3_ = restrict(*sol3_);
+        sol1_ = projectedThetaModel_->restrict(*sol1_);
+        sol2_ = projectedThetaModel_->restrict(*sol2_);
+        sol3_ = projectedThetaModel_->restrict(*sol3_);
 
         auto diff = Teuchos::rcp(new Vector(*sol1_));
         CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
@@ -428,10 +391,6 @@ auto AMS<Model>::get_projected_time_step()
     // Function to perform one stochastic time step
     return [this](VectorPtr const &x, double dt) {
         TIMER_SCOPE("AMS: Projected time step");
-        double sig = 1.0 / (dt * theta_);
-
-        *model_->getState('V') = *prolongate(*x);
-        // model_->saveState();
 
         TIMER_START("AMS: Compute noise");
         // Compute noise for forcing which is independent per processor
@@ -453,34 +412,17 @@ auto AMS<Model>::get_projected_time_step()
         CHECK_ZERO(G->Scale(sqrt(dt) * sigma_));
         TIMER_STOP("AMS: Compute noise");
 
+        projectedThetaModel_->setState(x);
+        projectedThetaModel_->initStep(dt);
+
         // Deterministic theta stepper:
-        // M * u_n + dt * theta * F(u_(n+1)) + (1-theta) * F(u_n) - M * u_(n+1) = 0
+        // M * u_n + dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n) - M * u_(n+1) = 0
         // Noise is added in an explicit manner
-        model_->computeRHS();
-        auto Fx = restrict(*model_->getRHS('V'));
-        // INFO("||F|| = " << Utils::norm(Fx));
-
-        auto tmp = Teuchos::rcp(new Epetra_MultiVector(*V_));
-
-        TIMER_START("AMS: Compute VMV");
-        auto M = model_->getMassMat('V');
-        CHECK_ZERO(tmp->Multiply(1.0, *M, *V_, 0.0));
-        auto VMV = dot(*V_, *tmp);
-        TIMER_STOP("AMS: Compute VMV");
-
-        auto thetaF = [this, &G, &Fx, &VMV, &x, dt](VectorPtr const &xnew) {
-            TIMER_SCOPE("AMS: Projected F");
-            *model_->getState('V') = *prolongate(*xnew);
-
-            auto ret = Teuchos::rcp(new Vector(*x));
-            CHECK_ZERO(ret->Update(-1.0, *xnew, 1.0));
-            auto tmp = Teuchos::rcp(new Vector(*ret));
-            CHECK_ZERO(ret->Multiply('N', 'N', 1.0, *VMV, *tmp, 0.0));
-
-            model_->computeRHS();
-            auto Fxnew = restrict(*model_->getRHS('V'));
-            CHECK_ZERO(ret->Update(dt * theta_, *Fxnew, 1.0));
-            CHECK_ZERO(ret->Update(dt * (1.0 - theta_), *Fx, 1.0));
+        auto thetaF = [this, G](VectorPtr const &xnew) {
+            TIMER_SCOPE("AMS: F");
+            projectedThetaModel_->setState(xnew);
+            projectedThetaModel_->computeRHS();
+            VectorPtr ret = projectedThetaModel_->getRHS('C');
             CHECK_ZERO(ret->Update(1.0, *G, 1.0));
             return ret;
         };
@@ -488,53 +430,12 @@ auto AMS<Model>::get_projected_time_step()
         // J2 = theta * dt * J - M, so J2*x = b
         // We write this as
         // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
-        TIMER_START("AMS: Compute VAV");
-        Teuchos::RCP<Epetra_SerialDenseMatrix> VAVmat;
-        if (theta_ == 0)
-        {
-            VAVmat = Teuchos::rcp(new Epetra_SerialDenseMatrix(
-                                      Copy, VMV->Values(), VMV->Stride(),
-                                      VMV->MyLength(), VMV->NumVectors()));
-        }
-        else
-        {
-            model_->setShift(-sig);
-            model_->computeJacobian();
-            model_->applyMatrix(*V_, *tmp);
-            auto VAV = dot(*V_, *tmp);
-            VAVmat = Teuchos::rcp(new Epetra_SerialDenseMatrix(
-                                      Copy, VAV->Values(), VAV->Stride(),
-                                      VAV->MyLength(), VAV->NumVectors()));
-        }
-        auto VAVsolver = Teuchos::rcp(new Epetra_SerialDenseSolver());
-        CHECK_ZERO(VAVsolver->SetMatrix(*VAVmat));
-        CHECK_ZERO(VAVsolver->Factor());
-        TIMER_STOP("AMS: Compute VAV");
-
-        auto thetaJ = [this, sig, &VAVsolver](VectorPtr const &xnew,
-                                                    VectorPtr const &b) {
-            TIMER_SCOPE("AMS: Projected jacobian solve");
-            auto y = Teuchos::rcp(new Epetra_SerialDenseMatrix(
-                                      Copy, b->Values(), b->Stride(),
-                                      b->MyLength(), b->NumVectors()));
-            auto z = Teuchos::rcp(new Epetra_SerialDenseMatrix(
-                                      Copy, b->Values(), b->Stride(),
-                                      b->MyLength(), b->NumVectors()));
-
-            if (theta_ != 0.0)
-            {
-                CHECK_ZERO(z->Scale(sig));
-            }
-            else
-            {
-                CHECK_ZERO(z->Scale(-1.0));
-            }
-
-            CHECK_ZERO(VAVsolver->SetVectors(*y, *z));
-            CHECK_NONNEG(VAVsolver->Solve());
-            return Teuchos::rcp(new Vector(
-                                    Copy, Epetra_LocalMap(y->M(), 0, *model_->Comm()),
-                                    y->A()));
+        auto thetaJ = [this](VectorPtr const &xnew, VectorPtr const &b) {
+            TIMER_SCOPE("AMS: Jacobian solve");
+            projectedThetaModel_->setState(xnew);
+            projectedThetaModel_->computeJacobian();
+            projectedThetaModel_->solve(b);
+            return projectedThetaModel_->getSolution('V');
         };
 
         return newton<Vector>(thetaF, thetaJ, x, 1e-8);

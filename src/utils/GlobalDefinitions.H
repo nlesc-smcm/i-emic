@@ -17,6 +17,8 @@
 #include <EpetraExt_VectorOut.h>
 #include <mpi.h>
 
+#include "Teuchos_StandardCatchMacros.hpp"
+
 #include <iostream>
 #include <cmath>
 #include <map>
@@ -223,9 +225,18 @@ void track_residual_(char const *charmsg, double residual);
 // macros for checking Epetra calls
 #ifndef CHECK_ZERO
 #define CHECK_ZERO(funcall) {                                           \
-        int ierr = funcall;                                             \
-        if (ierr) { ERROR("Trilinos Error " << ierr << " returned from call " \
-                          << #funcall, __FILE__, __LINE__);             \
+        int ierr = 0;                                                   \
+        bool status = true;                                             \
+        try {                                                           \
+            ierr = funcall;                                             \
+        } TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, status);   \
+        if (!status) {                                                  \
+            ERROR("Caught an exception in call " << #funcall,           \
+                  __FILE__, __LINE__);                                  \
+        }                                                               \
+        if (ierr) {                                                     \
+            ERROR("Trilinos Error " << ierr << " returned from call "   \
+                  << #funcall, __FILE__, __LINE__);                     \
         }                                                               \
     }                                                                   \
 

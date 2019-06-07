@@ -58,8 +58,8 @@ public:
             frc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *map_, 2));
             double val = 1.0;
             for (int idx = 0; idx < 2; idx++)
-                frc_->InsertGlobalValues(idx, 1, &val, &idx);
-            frc_->FillComplete();
+                CHECK_ZERO(frc_->InsertGlobalValues(idx, 1, &val, &idx));
+            CHECK_ZERO(frc_->FillComplete());
         }
 
     void computeMassMat() {}
