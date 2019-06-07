@@ -50,9 +50,11 @@ public:
             ThetaModel<Model>::Bxdot_ = restrict(*Model::getState('V'));
         }
 
-    ProjectedThetaModel(Model const &model, Teuchos::RCP<Epetra_MultiVector> const &V)
+    template<typename ParameterList>
+    ProjectedThetaModel(Model const &model, ParameterList params,
+                        Teuchos::RCP<Epetra_MultiVector> const &V)
         :
-        ThetaModel<Model>(model),
+        ThetaModel<Model>(model, params),
         V_(V)
         {
             // Initialize a few datamembers

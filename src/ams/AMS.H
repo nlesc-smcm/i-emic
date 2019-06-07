@@ -27,7 +27,6 @@ class AMS
 
     std::string method_;
 
-    double theta_;
     double sigma_;
 
     int dof_;
@@ -122,7 +121,6 @@ AMS(Model model, ParameterList pars,
     :
     model_(model),
     method_(pars->get("method", "AMS")),
-    theta_(pars->get("theta", 1.0)),
     sigma_(pars->get("sigma", 1.0)),
     dof_(pars->get("dof", 6)),
     var_(pars->get("var", 1)),
@@ -184,8 +182,7 @@ void AMS<Model>::initialize(ParameterList pars)
         time_step = get_projected_time_step();
 
         projectedThetaModel_ = Teuchos::rcp(
-            new ProjectedThetaModel<typename Model::element_type>(*model_, V_));
-        projectedThetaModel_->setTheta(theta_);
+            new ProjectedThetaModel<typename Model::element_type>(*model_, pars, V_));
 
         auto vvec = Teuchos::rcp(new Vector(B_->RangeMap()));
         CHECK_ZERO(vvec->PutScalar(0.0));
@@ -313,8 +310,7 @@ void AMS<Model>::initialize(ParameterList pars)
             INFO("distance = " << dist);
             return dist;
         };
-        thetaModel_ = Teuchos::rcp(new ThetaModel<typename Model::element_type>(*model_));
-        thetaModel_->setTheta(theta_);
+        thetaModel_ = Teuchos::rcp(new ThetaModel<typename Model::element_type>(*model_, pars));
     }
 
     timestepper_ = Teuchos::rcp(new Transient<VectorPtr>(

@@ -35,8 +35,8 @@ public:
     ThetaModel(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
         :
         Model(comm, params),
-        theta_     (1.0),
-        timestep_  (1.0e-3)
+        theta_(params->get("theta", 1.0)),
+        timestep_(1.0e-3)
         {
             // Initialize a few datamembers
             oldState_ = Model::getState('C');
@@ -45,11 +45,12 @@ public:
             oldRhs_   = Model::getRHS('C');
         }
 
-    ThetaModel(Model const &model)
+    template<typename ParameterList>
+    ThetaModel(Model const &model, ParameterList params)
         :
         Model(model),
-        theta_     (1.0),
-        timestep_  (1.0e-3)
+        theta_(params->get("theta", 1.0)),
+        timestep_(1.0e-3)
         {
             // Initialize a few datamembers
             oldState_ = Model::getState('C');
@@ -74,18 +75,6 @@ public:
     void setState(VectorPtr state)
         {
             *Model::state_ = state;
-        }
-
-    //!-------------------------------------------------------
-    void setTheta(double theta)
-        {
-            // Check theta
-            if (theta < 0 || theta > 1)
-            {
-                ERROR("Incorrect theta:" << theta,
-                      __FILE__, __LINE__);
-            }
-            theta_ = theta;
         }
 
     //!-------------------------------------------------------
