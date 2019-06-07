@@ -13,12 +13,15 @@ Teuchos::RCP<Epetra_Map> map;
 
 class TestModel
 {
+protected:
     Teuchos::RCP<Epetra_Map> map_;
     Teuchos::RCP<Epetra_Vector> rhs_;
+    Teuchos::RCP<Epetra_Vector> sol_;
     Teuchos::RCP<Epetra_Vector> state_;
     Teuchos::RCP<Epetra_Vector> diagB_;
 
     Teuchos::RCP<Epetra_CrsMatrix> frc_;
+    Teuchos::RCP<Epetra_CrsMatrix> jac_;
 public:
     using Vector = Epetra_Vector;
     using VectorPtr = Teuchos::RCP<Vector>;
@@ -28,6 +31,7 @@ public:
         map_(map)
         {
             rhs_ = Teuchos::rcp(new Epetra_Vector(*map_));
+            sol_ = Teuchos::rcp(new Epetra_Vector(*map_));
             state_ = Teuchos::rcp(new Epetra_Vector(*map_));
 
             std::vector<double> values(2, 1);
@@ -57,6 +61,8 @@ public:
                 frc_->InsertGlobalValues(idx, 1, &val, &idx);
             frc_->FillComplete();
         }
+
+    void computeMassMat() {}
 
     Teuchos::RCP<Epetra_CrsMatrix> getForcing() {return frc_;}
 
@@ -93,10 +99,20 @@ public:
             return getVector(mode, diagB_);
         }
 
-    Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C') { return Teuchos::null; }
+    Teuchos::RCP<Epetra_Vector> getSolution(char mode = 'C')
+        {
+            return getVector(mode, sol_);
+        }
+
+    void solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null)
+        {
+            sol_ = rhs;
+        }
+
     void setShift(double shift) {}
     void applyMatrix(Epetra_MultiVector const &v, Epetra_MultiVector &out) {}
-    void solve(Teuchos::RCP<Epetra_MultiVector> rhs = Teuchos::null) {}
+    void applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out) { out = v; }
+    void preProcess() {}
 };
 
 AMS<Teuchos::RCP<TestModel> > createDoubleWell(Teuchos::RCP<Teuchos::ParameterList> params)

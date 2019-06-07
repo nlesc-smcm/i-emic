@@ -4,7 +4,9 @@
 //======================================================================
 #include "GlobalDefinitions.H"
 #include "Utils.H"
+
 #include "Transient.hpp"
+#include "ThetaModel.H"
 
 #include "Epetra_MultiVector.h"
 #include "Epetra_SerialDenseMatrix.h"
@@ -21,6 +23,7 @@ class AMS
     using DistFun    = typename std::function<double(VectorPtr const &)>;
 
     Model model_;
+    Teuchos::RCP<ThetaModel<typename Model::element_type> > thetaModel_;
 
     std::string method_;
 
@@ -347,6 +350,8 @@ void AMS<Model>::initialize(ParameterList pars)
             INFO("distance = " << dist);
             return dist;
         };
+        thetaModel_ = Teuchos::rcp(new ThetaModel<typename Model::element_type>(*model_));
+        thetaModel_->setTheta(theta_);
     }
 
     timestepper_ = Teuchos::rcp(new Transient<VectorPtr>(
@@ -368,10 +373,6 @@ auto AMS<Model>::get_time_step()
     // Function to perform one stochastic time step
     return [this](VectorPtr const &x, double dt) {
         TIMER_SCOPE("AMS: Time step");
-        double sig = 1.0 / (dt * theta_);
-
-        *model_->getState('V') = *x;
-        // model_->saveState();
 
         // Compute noise for forcing which is independent per processor
         std::normal_distribution<double> distribution(0.0, 1.0);
@@ -386,29 +387,22 @@ auto AMS<Model>::get_time_step()
         Epetra_Vector pert(B_->ColMap());
         std::generate(pert.Values(), pert.Values() + m, generator);
 
-        VectorPtr G = model_->getState('C');
+        VectorPtr G = thetaModel_->getState('C');
         CHECK_ZERO(B_->Apply(pert, *G));
         CHECK_ZERO(G->Scale(sqrt(dt) * sigma_));
 
+        *thetaModel_->getState('V') = *x;
+        thetaModel_->initStep(dt);
+
         // Deterministic theta stepper:
-        // M * u_n + dt * theta * F(u_(n+1)) + (1-theta) * F(u_n) - M * u_(n+1) = 0
+        // M * u_n + dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n) - M * u_(n+1) = 0
         // Noise is added in an explicit manner
-        model_->computeRHS();
-        VectorPtr Fx = model_->getRHS('C');
-        // INFO("||F|| = " << Utils::norm(Fx));
-        auto thetaF = [this, G, Fx, x, dt](VectorPtr const &xnew) {
+        auto thetaF = [this, G](VectorPtr const &xnew) {
             TIMER_SCOPE("AMS: F");
-            *model_->getState('V') = *xnew;
 
-            VectorPtr M = model_->getMassMat('V');
-            VectorPtr ret = Teuchos::rcp(new Vector(*x));
-            CHECK_ZERO(ret->Update(-1.0, *xnew, 1.0));
-            CHECK_ZERO(ret->Multiply(1.0, *ret, *M, 0.0));
-
-            model_->computeRHS();
-            VectorPtr Fxnew = model_->getRHS('V');
-            CHECK_ZERO(ret->Update(dt * theta_, *Fxnew, 1.0));
-            CHECK_ZERO(ret->Update(dt * (1.0 - theta_), *Fx, 1.0));
+            *thetaModel_->getState('V') = *xnew;
+            thetaModel_->computeRHS();
+            VectorPtr ret = thetaModel_->getRHS('C');
             CHECK_ZERO(ret->Update(1.0, *G, 1.0));
             return ret;
         };
@@ -416,22 +410,12 @@ auto AMS<Model>::get_time_step()
         // J2 = theta * dt * J - M, so J2*x = b
         // We write this as
         // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
-        auto thetaJ = [this, sig](VectorPtr const &xnew, VectorPtr const &b) {
+        auto thetaJ = [this](VectorPtr const &xnew, VectorPtr const &b) {
             TIMER_SCOPE("AMS: Jacobian solve");
-            VectorPtr y = Teuchos::rcp(new Vector(*b));
-            if (theta_ == 0.0)
-            {
-                VectorPtr M = model_->getMassMat('V');
-                for (int i = 0; i < y->MyLength(); i++)
-                    (*y)[i] = -(*y)[i] / (*M)[i];
-                return y;
-            }
-            *model_->getState('V') = *xnew;
-            CHECK_ZERO(y->Scale(sig));
-            model_->setShift(-sig);
-            model_->computeJacobian();
-            model_->solve(y);
-            return model_->getSolution('V');
+            *thetaModel_->getState('V') = *xnew;
+            thetaModel_->computeJacobian();
+            thetaModel_->solve(b);
+            return thetaModel_->getSolution('V');
         };
 
         return newton<Vector>(thetaF, thetaJ, x, 1e-8);
