@@ -22,12 +22,9 @@ class AMS
     using DistFun    = typename std::function<double(VectorPtr const &)>;
 
     Model model_;
-    Teuchos::RCP<StochasticThetaModel<typename Model::element_type> > thetaModel_;
-    Teuchos::RCP<StochasticProjectedThetaModel<typename Model::element_type> > projectedThetaModel_;
+    Teuchos::RCP<ThetaModel<typename Model::element_type> > thetaModel_;
 
     std::string method_;
-
-    double sigma_;
 
     int dof_;
     int var_;
@@ -56,7 +53,6 @@ public:
     void set_space(Teuchos::RCP<Epetra_MultiVector> const &V);
 
     auto get_time_step();
-    auto get_projected_time_step();
     auto get_brownian_time_step();
 
     void run();
@@ -119,7 +115,6 @@ AMS(Model model, ParameterList pars,
     :
     model_(model),
     method_(pars->get("method", "AMS")),
-    sigma_(pars->get("sigma", 1.0)),
     dof_(pars->get("dof", 6)),
     var_(pars->get("var", 1)),
     noise_seed_(pars->get("noise seed", 0)),
@@ -172,11 +167,12 @@ void AMS<Model>::initialize(ParameterList pars)
 
     if (V_ != Teuchos::null)
     {
-        time_step = get_projected_time_step();
+        time_step = get_time_step();
 
-        projectedThetaModel_ = Teuchos::rcp(
-            new StochasticProjectedThetaModel<typename Model::element_type>(
-                *model_, pars, V_));
+        Teuchos::RCP<StochasticProjectedThetaModel<typename Model::element_type> >
+            projectedThetaModel = Teuchos::rcp(
+                new StochasticProjectedThetaModel<typename Model::element_type>(
+                    *model_, pars, V_));
 
         auto vvec = Teuchos::rcp(new Vector(V_->Map()));
         CHECK_ZERO(vvec->PutScalar(0.0));
@@ -195,9 +191,9 @@ void AMS<Model>::initialize(ParameterList pars)
             return sqrt((*dot(*x, *tmp))[0][0]);
         };
 
-        sol1_ = projectedThetaModel_->restrict(*sol1_);
-        sol2_ = projectedThetaModel_->restrict(*sol2_);
-        sol3_ = projectedThetaModel_->restrict(*sol3_);
+        sol1_ = projectedThetaModel->restrict(*sol1_);
+        sol2_ = projectedThetaModel->restrict(*sol2_);
+        sol3_ = projectedThetaModel->restrict(*sol3_);
 
         auto diff = Teuchos::rcp(new Vector(*sol1_));
         CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
@@ -225,6 +221,8 @@ void AMS<Model>::initialize(ParameterList pars)
             INFO("distance = " << dist);
             return dist;
         };
+
+        thetaModel_ = projectedThetaModel;
     }
     else if (method_ == "Brownian motion")
     {
@@ -328,7 +326,7 @@ auto AMS<Model>::get_time_step()
     return [this](VectorPtr const &x, double dt) {
         TIMER_SCOPE("AMS: Time step");
 
-        *thetaModel_->getState('V') = *x;
+        thetaModel_->setState(x);
         thetaModel_->initStep(dt);
 
         // Deterministic theta stepper:
@@ -337,7 +335,7 @@ auto AMS<Model>::get_time_step()
         auto thetaF = [this](VectorPtr const &xnew) {
             TIMER_SCOPE("AMS: F");
 
-            *thetaModel_->getState('V') = *xnew;
+            thetaModel_->setState(xnew);
             thetaModel_->computeRHS();
             return thetaModel_->getRHS('V');
         };
@@ -347,45 +345,10 @@ auto AMS<Model>::get_time_step()
         // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
         auto thetaJ = [this](VectorPtr const &xnew, VectorPtr const &b) {
             TIMER_SCOPE("AMS: Jacobian solve");
-            *thetaModel_->getState('V') = *xnew;
+            thetaModel_->setState(xnew);
             thetaModel_->computeJacobian();
             thetaModel_->solve(b);
             return thetaModel_->getSolution('V');
-        };
-
-        return newton<Vector>(thetaF, thetaJ, x, 1e-8);
-    };
-}
-
-template<typename Model>
-auto AMS<Model>::get_projected_time_step()
-{
-    // Function to perform one stochastic time step
-    return [this](VectorPtr const &x, double dt) {
-        TIMER_SCOPE("AMS: Projected time step");
-
-        projectedThetaModel_->setState(x);
-        projectedThetaModel_->initStep(dt);
-
-        // Deterministic theta stepper:
-        // M * u_n + dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n) - M * u_(n+1) = 0
-        // Noise is added in an explicit manner
-        auto thetaF = [this](VectorPtr const &xnew) {
-            TIMER_SCOPE("AMS: F");
-            projectedThetaModel_->setState(xnew);
-            projectedThetaModel_->computeRHS();
-            return projectedThetaModel_->getRHS('V');
-        };
-
-        // J2 = theta * dt * J - M, so J2*x = b
-        // We write this as
-        // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
-        auto thetaJ = [this](VectorPtr const &xnew, VectorPtr const &b) {
-            TIMER_SCOPE("AMS: Jacobian solve");
-            projectedThetaModel_->setState(xnew);
-            projectedThetaModel_->computeJacobian();
-            projectedThetaModel_->solve(b);
-            return projectedThetaModel_->getSolution('V');
         };
 
         return newton<Vector>(thetaF, thetaJ, x, 1e-8);

@@ -59,8 +59,10 @@ public:
             oldRhs_   = Model::getRHS('C');
         }
 
+    virtual ~ThetaModel() {}
+
     //!-------------------------------------------------------
-    void initStep(double timestep)
+    virtual void initStep(double timestep)
         {
             timestep_ = timestep;
 
@@ -72,9 +74,9 @@ public:
             *oldRhs_ = *Model::rhs_;
         }
 
-    void setState(VectorPtr state)
+    virtual void setState(VectorPtr state)
         {
-            *Model::state_ = state;
+            Model::state_ = state;
         }
 
     //!-------------------------------------------------------
@@ -82,7 +84,7 @@ public:
     //!
     //! The final theta timestepping RHS is given by
     //! M * u_n + dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n) - M * u_(n+1) = 0
-    void computeRHS()
+    virtual void computeRHS()
         {
             // Check theta
             if (theta_ < 0 || theta_ > 1)
@@ -113,7 +115,7 @@ public:
     //!-------------------------------------------------------
     //! compute derivative of theta method rhs:
     //! J2 = J - 1/(theta*dt) * M
-    void computeJacobian()
+    virtual void computeJacobian()
         {
             // Compute the ordinary Jacobian using the current state
             Model::computeJacobian();
@@ -144,7 +146,7 @@ public:
 
     //!-------------------------------------------------------
     //! J2 * x = 1/(theta*dt) * b
-    void solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null)
+    virtual void solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null)
         {
             Teuchos::RCP<Epetra_Vector> b;
             if (rhs == Teuchos::null)

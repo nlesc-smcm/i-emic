@@ -64,8 +64,10 @@ public:
             ThetaModel<Model>::Bxdot_ = restrict(*Model::getState('V'));
         }
 
+    virtual ~ProjectedThetaModel() {}
+
     //!-------------------------------------------------------
-    void initStep(double timestep)
+    virtual void initStep(double timestep)
         {
             ThetaModel<Model>::timestep_ = timestep;
 
@@ -109,7 +111,7 @@ public:
             TIMER_STOP("ProjectedThetaModel: Compute VAV");
         }
 
-    void setState(VectorPtr state)
+    virtual void setState(VectorPtr state)
         {
             Model::state_ = prolongate(*state);
             smallState_ = state;
@@ -120,7 +122,7 @@ public:
     //!
     //! The final theta timestepping RHS is given by
     //! M * u_n + dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n) - M * u_(n+1) = 0
-    void computeRHS()
+    virtual void computeRHS()
         {
             // Check theta
             if (ThetaModel<Model>::theta_ < 0 || ThetaModel<Model>::theta_ > 1)
@@ -153,12 +155,12 @@ public:
         }
 
     //!-------------------------------------------------------
-    void computeJacobian()
+    virtual void computeJacobian()
         {}
 
     //!-------------------------------------------------------
     //! J2 * x = 1/(theta*dt) * b
-    void solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null)
+    virtual void solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null)
         {
             TIMER_SCOPE("ProjectedThetaModel: Projected jacobian solve");
             auto y = Teuchos::rcp(new Epetra_SerialDenseMatrix(
