@@ -2,13 +2,15 @@
 #define STOCHASTICPROJECTEDTHETAMODEL_H
 
 #include "ProjectedThetaModel.H"
+#include "StochasticBase.H"
 
 #include <Teuchos_RCP.hpp>
 
 #include "Epetra_MultiVector.h"
 
 template<typename Model>
-class StochasticProjectedThetaModel : public ProjectedThetaModel<Model>
+class StochasticProjectedThetaModel : public ProjectedThetaModel<Model>,
+                                      public StochasticBase
 {
 public:
     using VectorPtr = typename Model::VectorPtr;
@@ -26,10 +28,6 @@ protected:
     //! Noise at the current timestep
     Teuchos::RCP<Epetra_MultiVector> G_;
 
-    //! RNG
-    unsigned int noise_seed_;
-    Teuchos::RCP<std::mt19937_64> engine_;
-
 public:
     //-------------------------------------------------------
     //! constructor
@@ -38,18 +36,9 @@ public:
                                   Teuchos::RCP<Epetra_MultiVector> const &V)
         :
         ProjectedThetaModel<Model>(comm, params, V),
-        sigma_(params->get("sigma", 1.0)),
-        noise_seed_(params->get("noise seed", 0))
+        StochasticBase(*comm, params),
+        sigma_(params->get("sigma", 1.0))
         {
-            std::random_device::result_type seed = noise_seed_;
-            if (seed == 0)
-            {
-                std::random_device rd;
-                seed = rd();
-            }
-            std::seed_seq seeder{seed};
-            engine_ = Teuchos::rcp(new std::mt19937_64(seeder));
-
             Model::computeForcing();
             B_ = Model::getForcing();
 
@@ -66,18 +55,9 @@ public:
                                   Teuchos::RCP<Epetra_MultiVector> const &V)
         :
         ProjectedThetaModel<Model>(model, params, V),
-        sigma_(params->get("sigma", 1.0)),
-        noise_seed_(params->get("noise seed", 0))
+        StochasticBase(*model.Comm(), params),
+        sigma_(params->get("sigma", 1.0))
         {
-            std::random_device::result_type seed = noise_seed_;
-            if (seed == 0)
-            {
-                std::random_device rd;
-                seed = rd();
-            }
-            std::seed_seq seeder{seed};
-            engine_ = Teuchos::rcp(new std::mt19937_64(seeder));
-
             Model::computeForcing();
             B_ = Model::getForcing();
 

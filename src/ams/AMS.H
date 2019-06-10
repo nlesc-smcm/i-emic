@@ -29,7 +29,6 @@ class AMS
     int dof_;
     int var_;
 
-    unsigned int noise_seed_;
     unsigned int ams_seed_;
 
     VectorPtr sol1_;
@@ -40,7 +39,6 @@ class AMS
 
     Teuchos::RCP<Epetra_MultiVector> V_;
 
-    Teuchos::RCP<std::mt19937_64> engine_;
 public:
     template<typename ParameterList>
     AMS(Model model, ParameterList pars,
@@ -53,7 +51,6 @@ public:
     void set_space(Teuchos::RCP<Epetra_MultiVector> const &V);
 
     auto get_time_step();
-    auto get_brownian_time_step();
 
     void run();
 
@@ -117,7 +114,6 @@ AMS(Model model, ParameterList pars,
     method_(pars->get("method", "AMS")),
     dof_(pars->get("dof", 6)),
     var_(pars->get("var", 1)),
-    noise_seed_(pars->get("noise seed", 0)),
     ams_seed_(pars->get("ams seed", 0)),
     sol1_(sol1),
     sol2_(sol2),
@@ -131,17 +127,6 @@ template<typename Model>
 template<typename ParameterList>
 void AMS<Model>::initialize(ParameterList pars)
 {
-    std::random_device::result_type seed = noise_seed_;
-    if (seed == 0)
-    {
-        std::random_device rd;
-        seed = rd();
-    }
-    std::seed_seq seeder{seed};
-    engine_ = Teuchos::rcp(new std::mt19937_64(seeder));
-
-    write_seed(*model_->Comm(), seed, "noise seed");
-
     std::string space = pars->get("space", "");
     if (space != "")
     {
@@ -223,16 +208,6 @@ void AMS<Model>::initialize(ParameterList pars)
         };
 
         thetaModel_ = projectedThetaModel;
-    }
-    else if (method_ == "Brownian motion")
-    {
-        time_step = get_brownian_time_step();
-
-        dist_fun = [this](VectorPtr const &x) {
-            double dist = (*x)[0];
-            INFO("distance = " << dist);
-            return dist;
-        };
     }
     else
     {
@@ -356,27 +331,6 @@ auto AMS<Model>::get_time_step()
 }
 
 template<typename Model>
-auto AMS<Model>::get_brownian_time_step()
-{
-    // Function to perform one stochastic time step
-    return [this](VectorPtr const &x, double dt) {
-
-        // Compute noise for forcing which is independent per processor
-        std::normal_distribution<double> distribution(0.0, 1.0);
-        auto generator = std::bind(distribution, std::ref(*engine_));
-
-        int m = x->MyLength();
-
-        VectorPtr xnew = Teuchos::rcp(new Vector(x->Map()));
-        std::generate(xnew->Values(), xnew->Values() + m, generator);
-        CHECK_ZERO(xnew->Scale(sqrt(dt)));
-        CHECK_ZERO(xnew->Update(1.0, *x, 1.0));
-
-        return xnew;
-    };
-}
-
-template<typename Model>
 AMS<Model>::~AMS()
 {
     INFO("AMS destructor");
@@ -393,12 +347,6 @@ void AMS<Model>::run()
         timestepper_->gpa(sol1_);
     else if (method_ == "Naive")
         timestepper_->naive(sol1_);
-    else if (method_ == "Brownian motion")
-    {
-        Epetra_Map map(1, 0, sol1_->Map().Comm());
-        VectorPtr x0 = Teuchos::rcp(new Vector(map));
-        timestepper_->naive(x0);
-    }
     else
         std::cerr << "Method " << method_ << " does not exist." << std::endl;
 }

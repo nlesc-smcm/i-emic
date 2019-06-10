@@ -38,7 +38,7 @@ public:
             diagB_ = Teuchos::rcp(new Epetra_Vector(Copy, *map_, &values[0]));
         }
 
-    Teuchos::RCP<Epetra_Comm> Comm()
+    Teuchos::RCP<Epetra_Comm> Comm() const
         {
             return comm;
         }

@@ -2,13 +2,15 @@
 #define STOCHASTICTHETAMODEL_H
 
 #include "ThetaModel.H"
+#include "StochasticBase.H"
 
 #include <Teuchos_RCP.hpp>
 
 #include "Epetra_CrsMatrix.h"
 
 template<typename Model>
-class StochasticThetaModel : public ThetaModel<Model>
+class StochasticThetaModel : public ThetaModel<Model>,
+                             public StochasticBase
 {
 public:
     using VectorPtr = typename Model::VectorPtr;
@@ -23,10 +25,6 @@ protected:
     //! Noise at the current timestep
     VectorPtr G_;
 
-    //! RNG
-    unsigned int noise_seed_;
-    Teuchos::RCP<std::mt19937_64> engine_;
-
 public:
     //-------------------------------------------------------
     //! constructor
@@ -34,18 +32,9 @@ public:
     StochasticThetaModel(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
         :
         ThetaModel<Model>(comm, params),
-        sigma_(params->get("sigma", 1.0)),
-        noise_seed_(params->get("noise seed", 0))
+        StochasticBase(*comm, params),
+        sigma_(params->get("sigma", 1.0))
         {
-            std::random_device::result_type seed = noise_seed_;
-            if (seed == 0)
-            {
-                std::random_device rd;
-                seed = rd();
-            }
-            std::seed_seq seeder{seed};
-            engine_ = Teuchos::rcp(new std::mt19937_64(seeder));
-
             Model::computeForcing();
             B_ = Model::getForcing();
         }
@@ -54,18 +43,9 @@ public:
     StochasticThetaModel(Model const &model, ParameterList params)
         :
         ThetaModel<Model>(model, params),
-        sigma_(params->get("sigma", 1.0)),
-        noise_seed_(params->get("noise seed", 0))
+        StochasticBase(*model.Comm(), params),
+        sigma_(params->get("sigma", 1.0))
         {
-            std::random_device::result_type seed = noise_seed_;
-            if (seed == 0)
-            {
-                std::random_device rd;
-                seed = rd();
-            }
-            std::seed_seq seeder{seed};
-            engine_ = Teuchos::rcp(new std::mt19937_64(seeder));
-
             Model::computeForcing();
             B_ = Model::getForcing();
         }
