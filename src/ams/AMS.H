@@ -6,7 +6,7 @@
 #include "Utils.H"
 
 #include "Transient.hpp"
-#include "ThetaModel.H"
+#include "StochasticThetaModel.H"
 #include "ProjectedThetaModel.H"
 
 #include "Epetra_MultiVector.h"
@@ -22,7 +22,7 @@ class AMS
     using DistFun    = typename std::function<double(VectorPtr const &)>;
 
     Model model_;
-    Teuchos::RCP<ThetaModel<typename Model::element_type> > thetaModel_;
+    Teuchos::RCP<StochasticThetaModel<typename Model::element_type> > thetaModel_;
     Teuchos::RCP<ProjectedThetaModel<typename Model::element_type> > projectedThetaModel_;
 
     std::string method_;
@@ -310,7 +310,7 @@ void AMS<Model>::initialize(ParameterList pars)
             INFO("distance = " << dist);
             return dist;
         };
-        thetaModel_ = Teuchos::rcp(new ThetaModel<typename Model::element_type>(*model_, pars));
+        thetaModel_ = Teuchos::rcp(new StochasticThetaModel<typename Model::element_type>(*model_, pars));
     }
 
     timestepper_ = Teuchos::rcp(new Transient<VectorPtr>(
@@ -333,37 +333,18 @@ auto AMS<Model>::get_time_step()
     return [this](VectorPtr const &x, double dt) {
         TIMER_SCOPE("AMS: Time step");
 
-        // Compute noise for forcing which is independent per processor
-        std::normal_distribution<double> distribution(0.0, 1.0);
-        auto generator = std::bind(distribution, std::ref(*engine_));
-
-        int m = B_->NumMyCols();
-        if (!B_->ColMap().UniqueGIDs())
-        {
-            ERROR("The values of B are distributed", __FILE__, __LINE__);
-        }
-
-        Epetra_Vector pert(B_->ColMap());
-        std::generate(pert.Values(), pert.Values() + m, generator);
-
-        VectorPtr G = thetaModel_->getState('C');
-        CHECK_ZERO(B_->Apply(pert, *G));
-        CHECK_ZERO(G->Scale(sqrt(dt) * sigma_));
-
         *thetaModel_->getState('V') = *x;
         thetaModel_->initStep(dt);
 
         // Deterministic theta stepper:
         // M * u_n + dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n) - M * u_(n+1) = 0
         // Noise is added in an explicit manner
-        auto thetaF = [this, G](VectorPtr const &xnew) {
+        auto thetaF = [this](VectorPtr const &xnew) {
             TIMER_SCOPE("AMS: F");
 
             *thetaModel_->getState('V') = *xnew;
             thetaModel_->computeRHS();
-            VectorPtr ret = thetaModel_->getRHS('C');
-            CHECK_ZERO(ret->Update(1.0, *G, 1.0));
-            return ret;
+            return thetaModel_->getRHS('V');
         };
 
         // J2 = theta * dt * J - M, so J2*x = b
