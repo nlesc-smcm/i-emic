@@ -7,7 +7,7 @@
 
 #include "Transient.hpp"
 #include "StochasticThetaModel.H"
-#include "ProjectedThetaModel.H"
+#include "StochasticProjectedThetaModel.H"
 
 #include "Epetra_MultiVector.h"
 #include "EpetraExt_CrsMatrixIn.h"
@@ -23,7 +23,7 @@ class AMS
 
     Model model_;
     Teuchos::RCP<StochasticThetaModel<typename Model::element_type> > thetaModel_;
-    Teuchos::RCP<ProjectedThetaModel<typename Model::element_type> > projectedThetaModel_;
+    Teuchos::RCP<StochasticProjectedThetaModel<typename Model::element_type> > projectedThetaModel_;
 
     std::string method_;
 
@@ -41,9 +41,7 @@ class AMS
 
     Teuchos::RCP<Transient<VectorPtr> > timestepper_;
 
-    Teuchos::RCP<Epetra_CrsMatrix> B_;
     Teuchos::RCP<Epetra_MultiVector> V_;
-    Teuchos::RCP<Epetra_MultiVector> BV_;
 
     Teuchos::RCP<std::mt19937_64> engine_;
 public:
@@ -149,9 +147,6 @@ void AMS<Model>::initialize(ParameterList pars)
 
     write_seed(*model_->Comm(), seed, "noise seed");
 
-    model_->computeForcing();
-    B_ = model_->getForcing();
-
     std::string space = pars->get("space", "");
     if (space != "")
     {
@@ -159,13 +154,14 @@ void AMS<Model>::initialize(ParameterList pars)
         // constructor for loading V since
         // MatrixMarketFileToMultiVector does not allow for anything
         // else...
-        Epetra_Map map(B_->NumGlobalRows(), 0, B_->Comm());
+        Epetra_BlockMap const &solveMap = model_->getState('V')->Map();
+        Epetra_Map map(solveMap.NumGlobalElements(), 0, *model_->Comm());
         Epetra_MultiVector* Vptr;
         CHECK_ZERO(EpetraExt::MatrixMarketFileToMultiVector(
                        space.c_str(), map, Vptr));
 
-        Epetra_Import import(B_->RangeMap(), map);
-        V_ = Teuchos::rcp(new Epetra_MultiVector(B_->RangeMap(), Vptr->NumVectors()));
+        Epetra_Import import(solveMap, map);
+        V_ = Teuchos::rcp(new Epetra_MultiVector(solveMap, Vptr->NumVectors()));
         CHECK_ZERO(V_->Import(*Vptr, import, Insert));
 
         delete Vptr;
@@ -176,15 +172,13 @@ void AMS<Model>::initialize(ParameterList pars)
 
     if (V_ != Teuchos::null)
     {
-        BV_ = Teuchos::rcp(new Epetra_MultiVector(B_->DomainMap(), V_->NumVectors()));
-        CHECK_ZERO(B_->Multiply('T', *V_, *BV_));
-
         time_step = get_projected_time_step();
 
         projectedThetaModel_ = Teuchos::rcp(
-            new ProjectedThetaModel<typename Model::element_type>(*model_, pars, V_));
+            new StochasticProjectedThetaModel<typename Model::element_type>(
+                *model_, pars, V_));
 
-        auto vvec = Teuchos::rcp(new Vector(B_->RangeMap()));
+        auto vvec = Teuchos::rcp(new Vector(V_->Map()));
         CHECK_ZERO(vvec->PutScalar(0.0));
         for (int i = 0; i < vvec->MyLength(); i++)
             if (vvec->Map().GID(i) % dof_ == var_)
@@ -310,7 +304,8 @@ void AMS<Model>::initialize(ParameterList pars)
             INFO("distance = " << dist);
             return dist;
         };
-        thetaModel_ = Teuchos::rcp(new StochasticThetaModel<typename Model::element_type>(*model_, pars));
+        thetaModel_ = Teuchos::rcp(new StochasticThetaModel<typename Model::element_type>(
+                                       *model_, pars));
     }
 
     timestepper_ = Teuchos::rcp(new Transient<VectorPtr>(
@@ -369,39 +364,17 @@ auto AMS<Model>::get_projected_time_step()
     return [this](VectorPtr const &x, double dt) {
         TIMER_SCOPE("AMS: Projected time step");
 
-        TIMER_START("AMS: Compute noise");
-        // Compute noise for forcing which is independent per processor
-        std::normal_distribution<double> distribution(0.0, 1.0);
-        auto generator = std::bind(distribution, std::ref(*engine_));
-
-        int m = BV_->MyLength();
-        if (!BV_->Map().UniqueGIDs())
-        {
-            ERROR("The values of B are distributed", __FILE__, __LINE__);
-        }
-
-        Epetra_Vector pert(BV_->Map());
-        std::generate(pert.Values(), pert.Values() + m, generator);
-
-        Epetra_LocalMap Gmap(BV_->NumVectors(), 0, *model_->Comm());
-        auto G = Teuchos::rcp(new Epetra_MultiVector(Gmap, 1));
-        CHECK_ZERO(G->Multiply('T', 'N', 1.0, *BV_, pert, 0.0));
-        CHECK_ZERO(G->Scale(sqrt(dt) * sigma_));
-        TIMER_STOP("AMS: Compute noise");
-
         projectedThetaModel_->setState(x);
         projectedThetaModel_->initStep(dt);
 
         // Deterministic theta stepper:
         // M * u_n + dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n) - M * u_(n+1) = 0
         // Noise is added in an explicit manner
-        auto thetaF = [this, G](VectorPtr const &xnew) {
+        auto thetaF = [this](VectorPtr const &xnew) {
             TIMER_SCOPE("AMS: F");
             projectedThetaModel_->setState(xnew);
             projectedThetaModel_->computeRHS();
-            VectorPtr ret = projectedThetaModel_->getRHS('C');
-            CHECK_ZERO(ret->Update(1.0, *G, 1.0));
-            return ret;
+            return projectedThetaModel_->getRHS('V');
         };
 
         // J2 = theta * dt * J - M, so J2*x = b
