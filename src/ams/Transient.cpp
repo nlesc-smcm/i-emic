@@ -15,9 +15,9 @@
 #include <sys/file.h>
 
 template<>
-void Transient<Teuchos::RCP<Epetra_Vector> >::read(
+void Transient<Teuchos::RCP<const Epetra_Vector> >::read(
     std::string const &name,
-    std::vector<AMSExperiment<Teuchos::RCP<Epetra_Vector> > >  &experiments) const
+    std::vector<AMSExperiment<Teuchos::RCP<const Epetra_Vector> > >  &experiments) const
 {
     if (name == "")
         return;
@@ -95,8 +95,9 @@ void Transient<Teuchos::RCP<Epetra_Vector> >::read(
             {
                 HDF5.Read("experiments/" + Teuchos::toString(i) +
                           "/xlist/" + Teuchos::toString(j), tmp);
-                experiments[i].xlist[j] = Teuchos::rcp(new Epetra_Vector(map));
-                experiments[i].xlist[j]->Import(*tmp, *import, Insert);
+                Teuchos::RCP<Epetra_Vector> x = Teuchos::rcp(new Epetra_Vector(map));
+                x->Import(*tmp, *import, Insert);
+                experiments[i].xlist[j] = x;
                 delete tmp;
             }
 
@@ -110,9 +111,9 @@ void Transient<Teuchos::RCP<Epetra_Vector> >::read(
 }
 
 template<>
-void Transient<Teuchos::RCP<Epetra_Vector> >::write(
+void Transient<Teuchos::RCP<const Epetra_Vector> >::write(
     std::string const &name,
-    std::vector<AMSExperiment<Teuchos::RCP<Epetra_Vector> > > const &experiments) const
+    std::vector<AMSExperiment<Teuchos::RCP<const Epetra_Vector> > > const &experiments) const
 {
     if (name == "")
         return;

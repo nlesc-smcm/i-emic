@@ -18,6 +18,8 @@ class Transient
 
     std::string method_;
 
+    T* x0_;
+
     int vector_length_;
 
     double dt_;
@@ -58,10 +60,16 @@ class Transient
 public:
     Transient(std::function<T(T const &, double)> time_step);
     Transient(std::function<T(T const &, double)> time_step,
-                std::function<double(T const &)> dist_fun,
-                int vector_length);
+              T const &x0);
+    Transient(std::function<T(T const &, double)> time_step,
+              std::function<double(T const &)> dist_fun,
+              int vector_length);
+    Transient(std::function<T(T const &, double)> time_step,
+              std::function<double(T const &)> dist_fun,
+              T const &x0,
+              int vector_length);
 
-   virtual ~Transient();
+    virtual ~Transient();
 
     template<class ParameterList>
     void set_parameters(ParameterList &params);
@@ -100,6 +108,7 @@ public:
 
     void gpa(T const &x0) const;
 
+    void run() const;
     void run(T const &x0) const;
 
     void read(

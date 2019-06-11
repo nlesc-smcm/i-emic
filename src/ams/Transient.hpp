@@ -74,6 +74,7 @@ Transient<T>::Transient(std::function<T(T const &, double)> time_step)
     :
     time_step_(time_step),
     method_("Transient"),
+    x0_(nullptr),
     mfpt_(-1),
     probability_(-1),
     engine_initialized_(false)
@@ -81,12 +82,41 @@ Transient<T>::Transient(std::function<T(T const &, double)> time_step)
 
 template<class T>
 Transient<T>::Transient(std::function<T(T const &, double)> time_step,
-                            std::function<double(T const &)> dist_fun,
-                            int vector_length)
+                        T const &x0)
+    :
+    time_step_(time_step),
+    method_("Transient"),
+    x0_(new T(x0)),
+    mfpt_(-1),
+    probability_(-1),
+    engine_initialized_(false)
+{}
+
+template<class T>
+Transient<T>::Transient(std::function<T(T const &, double)> time_step,
+                        std::function<double(T const &)> dist_fun,
+                        int vector_length)
     :
     time_step_(time_step),
     dist_fun_(dist_fun),
     method_("TAMS"),
+    x0_(nullptr),
+    vector_length_(vector_length),
+    mfpt_(-1),
+    probability_(-1),
+    engine_initialized_(false)
+{}
+
+template<class T>
+Transient<T>::Transient(std::function<T(T const &, double)> time_step,
+                        std::function<double(T const &)> dist_fun,
+                        T const &x0,
+                        int vector_length)
+    :
+    time_step_(time_step),
+    dist_fun_(dist_fun),
+    method_("TAMS"),
+    x0_(new T(x0)),
     vector_length_(vector_length),
     mfpt_(-1),
     probability_(-1),
@@ -98,6 +128,9 @@ Transient<T>::~Transient()
 {
     if (engine_initialized_)
         delete engine_;
+
+    if (x0_)
+        delete x0_;
 }
 
 template<class T>
@@ -763,7 +796,7 @@ T Transient<T>::time_step_helper(T const &x, double dt) const
 
 template<class T>
 void Transient<T>::write_helper(std::vector<AMSExperiment<T> > const &experiments,
-                                  int its) const
+                                int its) const
 {
     if (write_ == "")
         return;
@@ -781,6 +814,23 @@ void Transient<T>::write_helper(std::vector<AMSExperiment<T> > const &experiment
         write(write_, experiments);
         return;
     }
+}
+
+template<typename T>
+void Transient<T>::run() const
+{
+    if (method_ == "AMS")
+        ams(*x0_);
+    else if (method_ == "TAMS")
+        tams(*x0_);
+    else if (method_ == "GPA")
+        gpa(*x0_);
+    else if (method_ == "Naive")
+        naive(*x0_);
+    else if (method_ == "Transient")
+        transient(*x0_, dt_, tmax_);
+    else
+        std::cerr << "Method " << method_ << " does not exist." << std::endl;
 }
 
 template<typename T>

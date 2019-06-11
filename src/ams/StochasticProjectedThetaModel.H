@@ -12,9 +12,6 @@ template<typename Model>
 class StochasticProjectedThetaModel : public ProjectedThetaModel<Model>,
                                       public StochasticBase
 {
-public:
-    using VectorPtr = typename Model::VectorPtr;
-
 protected:
     //! Noise parameter
     double sigma_;
@@ -33,7 +30,7 @@ public:
     //! constructor
     template<typename ParameterList>
     StochasticProjectedThetaModel(Teuchos::RCP<Epetra_Comm> comm, ParameterList params,
-                                  Teuchos::RCP<Epetra_MultiVector> const &V)
+                                  Teuchos::RCP<const Epetra_MultiVector> const &V)
         :
         ProjectedThetaModel<Model>(comm, params, V),
         StochasticBase(*comm, params),
@@ -52,7 +49,7 @@ public:
 
     template<typename ParameterList>
     StochasticProjectedThetaModel(Model const &model, ParameterList params,
-                                  Teuchos::RCP<Epetra_MultiVector> const &V)
+                                  Teuchos::RCP<const Epetra_MultiVector> const &V)
         :
         ProjectedThetaModel<Model>(model, params, V),
         StochasticBase(*model.Comm(), params),
@@ -92,7 +89,7 @@ public:
             CHECK_ZERO(G_->Scale(sqrt(ThetaModel<Model>::timestep_) * sigma_));
         }
 
-    void setState(VectorPtr state)
+    void setState(Teuchos::RCP<const Epetra_Vector>  state)
         {
             ProjectedThetaModel<Model>::setState(state);
         }
@@ -113,7 +110,7 @@ public:
 
     //!-------------------------------------------------------
     //! J2 * x = 1/(theta*dt) * b
-    void solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null)
+    void solve(Teuchos::RCP<const Epetra_Vector> rhs = Teuchos::null)
         {
             ProjectedThetaModel<Model>::solve(rhs);
         }

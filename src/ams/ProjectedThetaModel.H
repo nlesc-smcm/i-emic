@@ -21,14 +21,11 @@ Teuchos::RCP<Epetra_MultiVector> dot(
 template<typename Model>
 class ProjectedThetaModel : public ThetaModel<Model>
 {
-public:
-    using VectorPtr = typename Model::VectorPtr;
-
 protected:
-    VectorPtr smallState_;
-    VectorPtr largeRhs_;
+    Teuchos::RCP<Epetra_Vector> smallState_;
+    Teuchos::RCP<Epetra_Vector> largeRhs_;
 
-    Teuchos::RCP<Epetra_MultiVector> V_;
+    Teuchos::RCP<const Epetra_MultiVector> V_;
     Teuchos::RCP<Epetra_MultiVector> VMV_;
     Teuchos::RCP<Epetra_SerialDenseMatrix> VAVmat_;
     Teuchos::RCP<Epetra_SerialDenseSolver> VAVsolver_;
@@ -38,7 +35,7 @@ public:
     //! constructor
     template<typename ParameterList>
     ProjectedThetaModel(Teuchos::RCP<Epetra_Comm> comm, ParameterList params,
-                        Teuchos::RCP<Epetra_MultiVector> const &V)
+                        Teuchos::RCP<const Epetra_MultiVector> const &V)
         :
         ThetaModel<Model>(comm, params),
         V_(V)
@@ -52,7 +49,7 @@ public:
 
     template<typename ParameterList>
     ProjectedThetaModel(Model const &model, ParameterList params,
-                        Teuchos::RCP<Epetra_MultiVector> const &V)
+                        Teuchos::RCP<const Epetra_MultiVector> const &V)
         :
         ThetaModel<Model>(model, params),
         V_(V)
@@ -111,10 +108,10 @@ public:
             TIMER_STOP("ProjectedThetaModel: Compute VAV");
         }
 
-    virtual void setState(VectorPtr state)
+    virtual void setState(Teuchos::RCP<const Epetra_Vector> state)
         {
             Model::state_ = prolongate(*state);
-            smallState_ = state;
+            *smallState_ = *state;
         }
 
     //!-------------------------------------------------------
@@ -160,7 +157,7 @@ public:
 
     //!-------------------------------------------------------
     //! J2 * x = 1/(theta*dt) * b
-    virtual void solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null)
+    virtual void solve(Teuchos::RCP<const Epetra_Vector> rhs = Teuchos::null)
         {
             TIMER_SCOPE("ProjectedThetaModel: Projected jacobian solve");
             auto y = Teuchos::rcp(new Epetra_SerialDenseMatrix(
@@ -209,7 +206,7 @@ public:
     Teuchos::RCP<Epetra_Vector> prolongate(Epetra_MultiVector const &x) const
         {
             TIMER_SCOPE("ProjectedThetaModel: prolongate");
-            VectorPtr out = Teuchos::rcp(new Epetra_Vector(V_->Map()));
+            Teuchos::RCP<Epetra_Vector> out = Teuchos::rcp(new Epetra_Vector(V_->Map()));
             CHECK_ZERO(out->Multiply('N', 'N', 1.0, *V_, x, 0.0));
             return out;
         }

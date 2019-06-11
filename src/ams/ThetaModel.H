@@ -15,9 +15,6 @@
 template<typename Model>
 class ThetaModel : public Model
 {
-public:
-    using VectorPtr = typename Model::VectorPtr;
-
 protected:
     //! theta method parameter
     double theta_;
@@ -25,10 +22,10 @@ protected:
     //! time step size
     double timestep_;
 
-    VectorPtr oldState_;
-    VectorPtr xDot_;
-    VectorPtr Bxdot_;
-    VectorPtr oldRhs_;
+    Teuchos::RCP<Epetra_Vector> oldState_;
+    Teuchos::RCP<Epetra_Vector> xDot_;
+    Teuchos::RCP<Epetra_Vector> Bxdot_;
+    Teuchos::RCP<Epetra_Vector> oldRhs_;
 
 public:
     //-------------------------------------------------------
@@ -76,9 +73,9 @@ public:
             *oldRhs_ = *Model::rhs_;
         }
 
-    virtual void setState(VectorPtr state)
+    virtual void setState(Teuchos::RCP<const Epetra_Vector> state)
         {
-            Model::state_ = state;
+            *Model::state_ = *state;
         }
 
     //!-------------------------------------------------------
@@ -126,7 +123,7 @@ public:
                 return;
 
             Model::computeMassMat();
-            VectorPtr diagB = Model::getMassMat();
+            Teuchos::RCP<const Epetra_Vector> diagB = Model::getMassMat();
 
             // Get the number of local elements in the matrix
             int numMyElements = Model::jac_->Map().NumMyElements();
@@ -148,7 +145,7 @@ public:
 
     //!-------------------------------------------------------
     //! J2 * x = 1/(theta*dt) * b
-    virtual void solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null)
+    virtual void solve(Teuchos::RCP<const Epetra_Vector> rhs = Teuchos::null)
         {
             Teuchos::RCP<Epetra_Vector> b;
             if (rhs == Teuchos::null)
@@ -158,7 +155,7 @@ public:
 
             if (theta_ == 0.0)
             {
-                VectorPtr M = Model::getMassMat('V');
+                Teuchos::RCP<const Epetra_Vector> M = Model::getMassMat('V');
                 for (int i = 0; i < b->MyLength(); i++)
                     (*Model::sol_)[i] = -(*b)[i] / (*M)[i];
                 return;

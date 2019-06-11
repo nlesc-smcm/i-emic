@@ -12,9 +12,6 @@ template<typename Model>
 class StochasticThetaModel : public ThetaModel<Model>,
                              public StochasticBase
 {
-public:
-    using VectorPtr = typename Model::VectorPtr;
-
 protected:
     //! Noise parameter
     double sigma_;
@@ -23,7 +20,7 @@ protected:
     Teuchos::RCP<Epetra_CrsMatrix> B_;
 
     //! Noise at the current timestep
-    VectorPtr G_;
+    Teuchos::RCP<Epetra_Vector> G_;
 
 public:
     //-------------------------------------------------------

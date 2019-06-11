@@ -9,7 +9,7 @@
 #include "Utils.H"
 
 #include "Ocean.H"
-#include "AMS.H"
+#include "TransientFactory.H"
 
 #include "EpetraExt_RowMatrixOut.h"
 #include "EpetraExt_MultiVectorOut.h"
@@ -103,9 +103,9 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     }
 
     // Create ams
-    AMS<RCP<Ocean> > ams(ocean, amsParams, sol1, sol2, sol3);
+    auto ams = TransientFactory(ocean, amsParams, sol1, sol2, sol3);
 
-    ams.run();
+    ams->run();
 
     TIMER_STOP("Total time...");
 

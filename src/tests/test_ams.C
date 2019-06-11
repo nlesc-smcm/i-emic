@@ -1,4 +1,4 @@
-#include "AMS.H"
+#include "TransientFactory.H"
 
 #include "TestDefinitions.H"
 
@@ -115,7 +115,10 @@ public:
     void preProcess() {}
 };
 
-AMS<Teuchos::RCP<TestModel> > createDoubleWell(Teuchos::RCP<Teuchos::ParameterList> params)
+Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > >
+createDoubleWell(
+    Teuchos::RCP<Teuchos::ParameterList> params,
+    Teuchos::RCP<Epetra_MultiVector> V = Teuchos::null)
 {
     Teuchos::RCP<TestModel> model = Teuchos::rcp(new TestModel(map));
 
@@ -133,9 +136,10 @@ AMS<Teuchos::RCP<TestModel> > createDoubleWell(Teuchos::RCP<Teuchos::ParameterLi
     values[1] = 0;
     Teuchos::RCP<Epetra_Vector> sol3 = Teuchos::rcp(new Epetra_Vector(Copy, *map, &values[0]));
 
-    AMS<Teuchos::RCP<TestModel> > ams(model, params, sol1, sol2, sol3);
-
-    return ams;
+    if (V != Teuchos::null)
+        return TransientFactory(model, params, sol1, sol2, sol3, V);
+    else
+        return TransientFactory(model, params, sol1, sol2, sol3);
 }
 
 template<typename T>
@@ -177,7 +181,7 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     testing::internal::CaptureStdout();
 
     auto ams = createDoubleWell(params);
-    ams.run();
+    ams->run();
 
     std::string output = testing::internal::GetCapturedStdout();
 
@@ -205,7 +209,7 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     testing::internal::CaptureStdout();
 
     auto ams2 = createDoubleWell(params);
-    ams2.run();
+    ams2->run();
 
     std::string output2 = testing::internal::GetCapturedStdout();
 
@@ -227,13 +231,13 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     EXPECT_EQ(output2.find("AMS: " + std::to_string(default_maxit * 8)),
               std::string::npos);
 
-    if (ams2.get_mfpt() > 0)
+    if (ams2->get_mfpt() > 0)
     {
-        EXPECT_GT(ams2.get_mfpt(), 7);
-        EXPECT_LT(ams2.get_mfpt(), 40);
+        EXPECT_GT(ams2->get_mfpt(), 7);
+        EXPECT_LT(ams2->get_mfpt(), 40);
     }
     else
-        EXPECT_NEAR(ams2.get_probability(), 0.157, 1e-1);
+        EXPECT_NEAR(ams2->get_probability(), 0.157, 1e-1);
 }
 
 //------------------------------------------------------------------
@@ -290,9 +294,9 @@ TEST(AMS, AMSConvergence)
     set_default_parameters(params);
 
     auto ams = createDoubleWell(params);
-    ams.run();
+    ams->run();
 
-    EXPECT_NEAR(ams.get_mfpt(), 7, 1);
+    EXPECT_NEAR(ams->get_mfpt(), 7, 1);
 }
 
 //------------------------------------------------------------------
@@ -310,12 +314,10 @@ TEST(AMS, ProjectedAMSConvergence)
 
     Teuchos::RCP<Epetra_Vector> V = Teuchos::rcp(new Epetra_Vector(Copy, *map, &values[0]));
 
-    auto ams = createDoubleWell(params);
-    ams.set_space(V);
-    ams.initialize(params);
-    ams.run();
+    auto ams = createDoubleWell(params, V);
+    ams->run();
 
-    EXPECT_NEAR(ams.get_mfpt(), 6.3, 1);
+    EXPECT_NEAR(ams->get_mfpt(), 6.3, 1);
 }
 
 //------------------------------------------------------------------
@@ -372,9 +374,9 @@ TEST(AMS, TAMSConvergence)
     set_default_parameters(params);
 
     auto tams = createDoubleWell(params);
-    tams.run();
+    tams->run();
 
-    EXPECT_NEAR(tams.get_probability(), 0.157, 1e-2);
+    EXPECT_NEAR(tams->get_probability(), 0.157, 1e-2);
 }
 
 //------------------------------------------------------------------
@@ -392,12 +394,10 @@ TEST(AMS, ProjectedTAMSConvergence)
 
     Teuchos::RCP<Epetra_Vector> V = Teuchos::rcp(new Epetra_Vector(Copy, *map, &values[0]));
 
-    auto tams = createDoubleWell(params);
-    tams.set_space(V);
-    tams.initialize(params);
-    tams.run();
+    auto tams = createDoubleWell(params, V);
+    tams->run();
 
-    EXPECT_NEAR(tams.get_probability(), 0.215, 1e-2);
+    EXPECT_NEAR(tams->get_probability(), 0.215, 1e-2);
 }
 
 //------------------------------------------------------------------
@@ -410,9 +410,9 @@ TEST(AMS, MCConvergence)
     set_default_parameters(params);
 
     auto mc = createDoubleWell(params);
-    mc.run();
+    mc->run();
 
-    EXPECT_NEAR(mc.get_probability(), 0.157, 1e-2);
+    EXPECT_NEAR(mc->get_probability(), 0.157, 1e-2);
 }
 
 //------------------------------------------------------------------

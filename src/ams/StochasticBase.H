@@ -34,7 +34,7 @@ public:
 
     virtual ~StochasticBase() {}
 
-    void write_seed(Epetra_Comm const &comm, unsigned int seed, std::string const &label)
+    static void write_seed(Epetra_Comm const &comm, unsigned int seed, std::string const &label)
         {
             unsigned int *seeds = new unsigned int[comm.NumProc()];
 
