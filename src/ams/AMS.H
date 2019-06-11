@@ -8,6 +8,7 @@
 #include "Transient.hpp"
 #include "StochasticThetaModel.H"
 #include "StochasticProjectedThetaModel.H"
+#include "ScoreFunctions.H"
 
 #include "Epetra_MultiVector.h"
 #include "EpetraExt_CrsMatrixIn.h"
@@ -159,53 +160,15 @@ void AMS<Model>::initialize(ParameterList pars)
                 new StochasticProjectedThetaModel<typename Model::element_type>(
                     *model_, pars, V_));
 
-        auto vvec = Teuchos::rcp(new Vector(V_->Map()));
-        CHECK_ZERO(vvec->PutScalar(0.0));
-        for (int i = 0; i < vvec->MyLength(); i++)
-            if (vvec->Map().GID(i) % dof_ == var_)
-                (*vvec)[i] = 1.0;
-
-        auto Vvvec = Teuchos::rcp(new Epetra_MultiVector(*V_));
-        CHECK_ZERO(Vvvec->Multiply(1.0, *vvec, *V_, 0.0));
-
-        auto VvvV = dot(*Vvvec, *Vvvec);
-
-        auto projected_v_norm = [VvvV](VectorPtr const &x) {
-            auto tmp = Teuchos::rcp(new Vector(*x));
-            CHECK_ZERO(tmp->Multiply('N', 'N', 1.0, *VvvV, *x, 0.0));
-            return sqrt((*dot(*x, *tmp))[0][0]);
-        };
-
         sol1_ = projectedThetaModel->restrict(*sol1_);
         sol2_ = projectedThetaModel->restrict(*sol2_);
         sol3_ = projectedThetaModel->restrict(*sol3_);
 
-        auto diff = Teuchos::rcp(new Vector(*sol1_));
-        CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
-        double nrm = projected_v_norm(diff);
-
-        double dist_factor = 0.5;
-        if (sol3_ != Teuchos::null)
-        {
-            auto diff = Teuchos::rcp(new Vector(*sol1_));
-            CHECK_ZERO(diff->Update(-1.0, *sol3_, 1.0));
-            double nrm2 = projected_v_norm(diff);
-            dist_factor = nrm2 / nrm;
-        }
-        INFO("distance factor = " << dist_factor);
-
-        dist_fun = [nrm, dist_factor, projected_v_norm, this](VectorPtr const &x) {
-            VectorPtr d1v = Teuchos::rcp(new Vector(*x));
-            CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
-            double d1 =  projected_v_norm(d1v) / nrm;
-            VectorPtr d2v = Teuchos::rcp(new Vector(*x));
-            CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
-            double d2 =  projected_v_norm(d2v) / nrm;
-            double dist = dist_factor - dist_factor * exp(-0.5 * pow(d1 / 0.25, 2.))
-            + (1.0 - dist_factor) * exp(-0.5 * pow(d2 / 0.25, 2.));
-            INFO("distance = " << dist);
-            return dist;
-        };
+        // if (std::is_same<Model, Ocean>::value)
+        if (dof_ == 6)
+            dist_fun = get_projected_ocean_score_function(sol1_, sol2_, sol3_, V_);
+        else
+            dist_fun = get_projected_default_score_function(sol1_, sol2_, sol3_, V_);
 
         thetaModel_ = projectedThetaModel;
     }
@@ -213,70 +176,12 @@ void AMS<Model>::initialize(ParameterList pars)
     {
         time_step = get_time_step();
 
-        auto var_norm = [this](VectorPtr const &x, int var) {
-            double tmp = 0;
-            int n = x->MyLength();
-            auto &map = x->Map();
-            Vector const &xref = *x;
-            for (int i = 0; i < n; i++)
-                if (map.GID(i) % dof_ == var)
-                    tmp += xref[i] * xref[i];
-            double out = 0;
-            if (x->DistributedGlobal())
-            {
-                CHECK_ZERO(x->Comm().SumAll(&tmp, &out, 1));
-            }
-            else
-            {
-                out = tmp;
-            }
-            return sqrt(out);
-        };
+        // if (std::is_same<Model, Ocean>::value)
+        if (dof_ == 6)
+            dist_fun = get_ocean_score_function(sol1_, sol2_, sol3_);
+        else
+            dist_fun = get_default_score_function(sol1_, sol2_, sol3_);
 
-        std::vector<double> nrm(dof_);
-        for (int var = 0; var < dof_; var++)
-        {
-            VectorPtr diff = Teuchos::rcp(new Vector(*sol1_));
-            CHECK_ZERO(diff->Update(-1.0, *sol2_, 1.0));
-            nrm[var] = var_norm(diff, var);
-        }
-
-        double dist_factor = 0.5;
-        if (sol3_ != Teuchos::null)
-        {
-            VectorPtr diff = Teuchos::rcp(new Vector(*sol1_));
-            CHECK_ZERO(diff->Update(-1.0, *sol3_, 1.0));
-            double nrm2 = var_norm(diff, var_);
-            dist_factor = nrm2 / nrm[var_];
-        }
-        INFO("distance factor = " << dist_factor);
-
-        dist_fun = [nrm, dist_factor, var_norm, this](VectorPtr const &x) {
-            // // debug
-            // for (int var = 0; var < dof_; var++)
-            // {
-            //     VectorPtr d1v = Teuchos::rcp(new Vector(*x));
-            //     CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
-            //     double d1 =  var_norm(d1v, var) / nrm[var];
-            //     VectorPtr d2v = Teuchos::rcp(new Vector(*x));
-            //     CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
-            //     double d2 =  var_norm(d2v, var) / nrm[var];
-            //     double dist = dist_factor - dist_factor * exp(-0.5 * pow(d1 / 0.25, 2.))
-            //     + (1.0 - dist_factor) * exp(-0.5 * pow(d2 / 0.25, 2.));
-            //     INFO("distance " << var << " = " << dist << ", " << d1  << ", " << d2);
-            // }
-            // // end debug
-            VectorPtr d1v = Teuchos::rcp(new Vector(*x));
-            CHECK_ZERO(d1v->Update(-1.0, *sol1_, 1.0));
-            double d1 =  var_norm(d1v, var_) / nrm[var_];
-            VectorPtr d2v = Teuchos::rcp(new Vector(*x));
-            CHECK_ZERO(d2v->Update(-1.0, *sol2_, 1.0));
-            double d2 =  var_norm(d2v, var_) / nrm[var_];
-            double dist = dist_factor - dist_factor * exp(-0.5 * pow(d1 / 0.25, 2.))
-            + (1.0 - dist_factor) * exp(-0.5 * pow(d2 / 0.25, 2.));
-            INFO("distance = " << dist);
-            return dist;
-        };
         thetaModel_ = Teuchos::rcp(new StochasticThetaModel<typename Model::element_type>(
                                        *model_, pars));
     }

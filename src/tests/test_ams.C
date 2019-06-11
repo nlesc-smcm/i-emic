@@ -1,6 +1,6 @@
-#include "TestDefinitions.H"
-
 #include "AMS.H"
+
+#include "TestDefinitions.H"
 
 #include <stdio.h>
 
