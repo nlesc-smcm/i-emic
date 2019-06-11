@@ -16,6 +16,8 @@ class Transient
     std::function<T(T const &, double)> time_step_;
     std::function<double(T const &)> dist_fun_;
 
+    std::string method_;
+
     int vector_length_;
 
     double dt_;
@@ -97,6 +99,8 @@ public:
     void tams(T const &x0) const;
 
     void gpa(T const &x0) const;
+
+    void run(T const &x0) const;
 
     void read(
         std::string const &name,

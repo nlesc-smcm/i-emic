@@ -73,6 +73,7 @@ template<class T>
 Transient<T>::Transient(std::function<T(T const &, double)> time_step)
     :
     time_step_(time_step),
+    method_("Transient"),
     mfpt_(-1),
     probability_(-1),
     engine_initialized_(false)
@@ -85,6 +86,7 @@ Transient<T>::Transient(std::function<T(T const &, double)> time_step,
     :
     time_step_(time_step),
     dist_fun_(dist_fun),
+    method_("TAMS"),
     vector_length_(vector_length),
     mfpt_(-1),
     probability_(-1),
@@ -102,6 +104,7 @@ template<class T>
 template<class ParameterList>
 void Transient<T>::set_parameters(ParameterList &params)
 {
+    method_ = params.get("method", method_);
     dt_ = params.get("time step", 0.01);
     tstep_ = params.get("GPA time step", 1.0);
     tmax_ = params.get("maximum time", 1000.0);
@@ -778,6 +781,23 @@ void Transient<T>::write_helper(std::vector<AMSExperiment<T> > const &experiment
         write(write_, experiments);
         return;
     }
+}
+
+template<typename T>
+void Transient<T>::run(T const &x0) const
+{
+    if (method_ == "AMS")
+        ams(x0);
+    else if (method_ == "TAMS")
+        tams(x0);
+    else if (method_ == "GPA")
+        gpa(x0);
+    else if (method_ == "Naive")
+        naive(x0);
+    else if (method_ == "Transient")
+        transient(x0, dt_, tmax_);
+    else
+        std::cerr << "Method " << method_ << " does not exist." << std::endl;
 }
 
 template<class T>

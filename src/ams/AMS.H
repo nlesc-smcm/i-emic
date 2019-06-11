@@ -25,8 +25,6 @@ class AMS
     Model model_;
     Teuchos::RCP<ThetaModel<typename Model::element_type> > thetaModel_;
 
-    std::string method_;
-
     int dof_;
     int var_;
 
@@ -112,7 +110,6 @@ AMS(Model model, ParameterList pars,
     VectorPtr sol3)
     :
     model_(model),
-    method_(pars->get("method", "AMS")),
     dof_(pars->get("dof", 6)),
     var_(pars->get("var", 1)),
     ams_seed_(pars->get("ams seed", 0)),
@@ -244,16 +241,7 @@ AMS<Model>::~AMS()
 template<typename Model>
 void AMS<Model>::run()
 {
-    if (method_ == "AMS")
-        timestepper_->ams(sol1_);
-    else if (method_ == "TAMS")
-        timestepper_->tams(sol1_);
-    else if (method_ == "GPA")
-        timestepper_->gpa(sol1_);
-    else if (method_ == "Naive")
-        timestepper_->naive(sol1_);
-    else
-        std::cerr << "Method " << method_ << " does not exist." << std::endl;
+    timestepper_->run(sol1_);
 }
 
 template<typename Model>
