@@ -9,7 +9,7 @@ set(TEST_INCLUDE_DIRS
   ../topo/
   ../lyapunov/
   ../thetastepper/
-  ../ams/
+  ../transient/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 

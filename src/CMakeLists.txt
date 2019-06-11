@@ -55,7 +55,7 @@ set(I-EMIC_LIBS
   atmosphere
   seaice
   ocean
-  ams
+  transient
   utils
   dependencygrid
   jdqz_tools
@@ -69,7 +69,7 @@ add_subdirectory(ocean)
 add_subdirectory(atmosphere)
 add_subdirectory(seaice)
 add_subdirectory(coupledmodel)
-add_subdirectory(ams)
+add_subdirectory(transient)
 
 add_subdirectory(utils)
 add_subdirectory(dependencygrid)
