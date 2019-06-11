@@ -26,7 +26,8 @@ ThetaStepper(ThetaModel model, ParameterList params)
     nsteps_   (params->get("number of time steps", 10)),
     output_   (params->get("HDF5 output frequency", 1)),
     minK_     (params->get("minimum desired Newton iterations", 3)), 
-    maxK_     (params->get("maximum desired Newton iterations", 3)), 
+    maxK_     (params->get("maximum desired Newton iterations", 3)),
+    sumK_     (0),
     Ntol_     (params->get("Newton tolerance", 1e-6)), 
     Niters_   (params->get("maximum Newton iterations", 8)),
     initWD_   (true)
@@ -152,6 +153,8 @@ int ThetaStepper<ThetaModel, ParameterList>::run()
             dt_ = std::max(dt_ / dscale_, mindt_);
 
         test_step = ( nsteps_ < 0 ) ? true : step_ < nsteps_;
+
+        sumK_ += k_;
     }
     return 0;
 }
