@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 
+#include "Trilinos_version.h"
+
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
@@ -239,6 +241,8 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
         EXPECT_NEAR(ams2->get_probability(), 0.157, 1e-1);
 }
 
+#if TRILINOS_MAJOR_VERSION > 13
+
 //------------------------------------------------------------------
 TEST(AMS, AMSRestart)
 {
@@ -283,6 +287,8 @@ TEST(AMS, AMSRestart4)
     restart_test(params);
 }
 
+#endif //TRILINOS_MAJOR_VERSION
+
 //------------------------------------------------------------------
 TEST(AMS, AMSConvergence)
 {
@@ -318,6 +324,8 @@ TEST(AMS, ProjectedAMSConvergence)
 
     EXPECT_NEAR(ams->get_mfpt(), 6.3, 1);
 }
+
+#if TRILINOS_MAJOR_VERSION > 13
 
 //------------------------------------------------------------------
 TEST(AMS, TAMSRestart)
@@ -362,6 +370,8 @@ TEST(AMS, TAMSRestart4)
 
     restart_test(params);
 }
+
+#endif //TRILINOS_MAJOR_VERSION
 
 //------------------------------------------------------------------
 TEST(AMS, TAMSConvergence)
