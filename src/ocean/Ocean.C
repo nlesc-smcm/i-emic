@@ -20,6 +20,7 @@
 
 //=====================================================================
 #include "Ocean.H"
+#include "OceanGrid.H"
 #include "THCM.H"
 #include "Atmosphere.H"
 #include "SeaIce.H"
@@ -903,6 +904,13 @@ double Ocean::getSCorr()
 {
     return THCM::Instance().getSCorr();
 }
+
+//==================================================================
+int Ocean::dof() { return _NUN_; }
+
+//==================================================================
+int Ocean::interface_row(int i, int j, int XX)
+{ return FIND_ROW2(_NUN_, N_, M_, L_, i, j, L_-1, XX); }
 
 //=====================================================================
 // Setup block preconditioner parameters
@@ -2193,6 +2201,9 @@ double Ocean::getPar(std::string const &parName)
     else  // If parameter not available we return 0
         return 0;
 }
+
+//====================================================================
+int Ocean::npar() { return _NPAR_; }
 
 //===================================================================
 std::string const Ocean::int2par(int ind)

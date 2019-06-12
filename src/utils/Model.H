@@ -1,6 +1,8 @@
 #ifndef MODEL_H
 #define MODEL_H
 
+#include <fstream>
+#include "GlobalDefinitions.H"
 #include "Utils.H"
 #include "TRIOS_Domain.H"
 
