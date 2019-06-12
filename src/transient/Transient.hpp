@@ -850,6 +850,22 @@ void Transient<T>::run(T const &x0) const
         std::cerr << "Method " << method_ << " does not exist." << std::endl;
 }
 
+template<typename T>
+void read(
+    std::string const &name,
+    std::vector<AMSExperiment<T> > &experiments) const
+{
+    WARNING("Reading transient data not implemented", __FILE__, __LINE__);
+}
+
+template<typename T>
+void write(
+    std::string const &name,
+    std::vector<AMSExperimet<T> > const &experiments) const
+{
+    WARNING("Writing transient data not implemented", __FILE__, __LINE__);
+}
+
 template<class T>
 double Transient<T>::get_probability()
 {
