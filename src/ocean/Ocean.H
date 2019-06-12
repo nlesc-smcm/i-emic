@@ -160,10 +160,6 @@ protected:
     //! Land mask
     Utils::MaskStruct landmask_;
 
-    //! Shift applied as A+sM
-    bool shifted_;
-    double shift_;
-
 public:
     //! constructor
     Ocean(Teuchos::RCP<Epetra_Comm> Comm,
@@ -233,9 +229,6 @@ public:
     //! Build preconditioner
     void buildPreconditioner(bool forceInit);
     void buildPreconditioner() { buildPreconditioner(false); }
-
-    //! Set shift A+sM
-    void setShift(double shift);
 
     //! Initialize solver
     void initializeSolver();

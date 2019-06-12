@@ -109,7 +109,6 @@ public:
             sol_ = rhs;
         }
 
-    void setShift(double shift) {}
     void applyMatrix(Epetra_MultiVector const &v, Epetra_MultiVector &out) {}
     void applyMassMat(Epetra_MultiVector const &v, Epetra_MultiVector &out) { out = v; }
     void preProcess() {}
