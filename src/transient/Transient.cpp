@@ -23,7 +23,7 @@
 template<>
 void Transient<Teuchos::RCP<const Epetra_Vector> >::read(
     std::string const &name,
-    std::vector<AMSExperiment<Teuchos::RCP<const Epetra_Vector> > >  &experiments) const
+    std::vector<AMSExperiment<Teuchos::RCP<const Epetra_Vector> > > &experiments) const
 {
     if (name == "")
         return;

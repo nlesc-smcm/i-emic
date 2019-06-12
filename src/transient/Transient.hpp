@@ -3,6 +3,8 @@
 
 #include "TransientDecl.hpp"
 
+#include "GlobalDefinitions.H"
+
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -329,7 +331,7 @@ void Transient<T>::naive(T const &x0) const
 
     probability_ = (double)converged / (double)num_exp_;
 
-    std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
+    INFO("Transition probability T=" << tmax_ << ": " << probability_);
 }
 
 
@@ -387,9 +389,13 @@ double Transient<T>::ams_elimination(
 
         ell.push_back(minimal_experiments.size());
         if (ell.back() == 1)
-            std::cout << "Eliminating 1 trajectory." << std::endl;
+        {
+            INFO("Eliminating 1 trajectory.");
+        }
         else
-            std::cout << "Eliminating " << ell.back() << " trajectories." << std::endl;
+        {
+            INFO("Eliminating " << ell.back() << " trajectories.");
+        }
 
         its_++;
 
@@ -403,8 +409,7 @@ double Transient<T>::ams_elimination(
             AMSExperiment<T> *rnd_exp = unused_experiments[rnd_idx];
             if (rnd_exp->dlist.size() == 0)
             {
-                std::cerr << "Experiment " << rnd_idx << " has size 0." << std::endl;
-                exit(-1);
+                ERROR("Experiment " << rnd_idx << " has size 0.", __FILE__, __LINE__);
             }
 
             int same_distance_idx = -1;
@@ -413,10 +418,9 @@ double Transient<T>::ams_elimination(
 
             if (same_distance_idx == (int)rnd_exp->dlist.size())
             {
-                std::cerr << "Distance larger than " << exp->max_distance
-                          << " not found in experiment with max distance "
-                          << rnd_exp->max_distance << "." << std::endl;
-                exit(-1);
+                ERROR("Distance larger than " << exp->max_distance
+                      << " not found in experiment with max distance "
+                      << rnd_exp->max_distance << ".", __FILE__, __LINE__);
             }
 
             exp->xlist = std::vector<T>(
@@ -432,8 +436,7 @@ double Transient<T>::ams_elimination(
                 transient_tams(dt, tmax, *exp);
             else
             {
-                std::cerr << "Method " << method << " does not exist." << std::endl;
-                exit(-1);
+                ERROR("Method " << method << " does not exist.", __FILE__, __LINE__);
             }
 
             if (exp->converged)
@@ -441,17 +444,16 @@ double Transient<T>::ams_elimination(
             else
                 unconverged_experiments.push_back(exp);
 
-            std::cout << method << ": " << its_ << " / " << maxit_ << ", "
-                      << converged << " / " << num_exp_
-                      << " converged with max distance "
-                      << max_distance << " -> "
-                      << exp->max_distance << " and t="
-                      << exp->initial_time + exp->time
-                      << " for experiment "
-                      << std::find(reactive_experiments.begin(),
-                                   reactive_experiments.end(),
-                                   exp) - reactive_experiments.begin()
-                      << std::endl;
+            INFO(method << ": " << its_ << " / " << maxit_ << ", "
+                 << converged << " / " << num_exp_
+                 << " converged with max distance "
+                 << max_distance << " -> "
+                 << exp->max_distance << " and t="
+                 << exp->initial_time + exp->time
+                 << " for experiment "
+                 << std::find(reactive_experiments.begin(),
+                              reactive_experiments.end(),
+                              exp) - reactive_experiments.begin());
         }
 
         for (auto &exp: minimal_experiments)
@@ -467,7 +469,7 @@ double Transient<T>::ams_elimination(
 
         if (its_ % 10 == 0)
         {
-            std::cout << "Starting cleanup" << std::endl;
+            INFO("Starting cleanup");
             for (auto exp: unused_experiments)
             {
                 int min_max_idx = -1;
@@ -487,12 +489,12 @@ double Transient<T>::ams_elimination(
                         exp->tlist.end());
                 }
             }
-            std::cout << "Finished cleanup" << std::endl;
+            INFO("Finished cleanup");
         }
 
         write_helper(experiments, its_);
     }
-    std::cout << std::endl;
+    INFO("");
 
     if (write_final_)
         write(write_, experiments);
@@ -507,10 +509,9 @@ double Transient<T>::ams_elimination(
 template<class T>
 void Transient<T>::ams(T const &x0) const
 {
-    std::cout << "Using AMS with an estimated memory usage of: "
-              << mem2string((long long)(1.0 / dist_tol_ * num_exp_ *
-                                        vector_length_ * sizeof(double)))
-              << std::endl;
+    INFO("Using AMS with an estimated memory usage of: "
+         << mem2string((long long)(1.0 / dist_tol_ * num_exp_ *
+                                   vector_length_ * sizeof(double))));
 
     std::vector<AMSExperiment<T>> experiments(num_init_exp_);
     for (int i = 0; i < num_init_exp_; i++)
@@ -535,8 +536,7 @@ void Transient<T>::ams(T const &x0) const
 
         if (experiments[i].xlist.size() == 0)
         {
-            std::cerr << "Initialization failed" << std::endl;
-            exit(-1);
+            ERROR("Initialization failed", __FILE__, __LINE__);
         }
 
         transient_ams(dt_, tmax, experiments[i]);
@@ -552,14 +552,14 @@ void Transient<T>::ams(T const &x0) const
         if (experiments[i].converged)
             converged++;
 
-        std::cout << "Initialization: " << i+1 << " / " << num_init_exp_ << ", "
-                  << converged << " / " << num_init_exp_
-                  << " converged with t="
-                  << experiments[i].initial_time + experiments[i].time << std::endl;
+        INFO("Initialization: " << i+1 << " / " << num_init_exp_ << ", "
+             << converged << " / " << num_init_exp_
+             << " converged with t="
+             << experiments[i].initial_time + experiments[i].time);
 
         write_helper(experiments, i+1);
     }
-    std::cout << std::endl;
+    INFO("");
 
     double alpha = ams_elimination("AMS", experiments, dt_, tmax);
 
@@ -587,20 +587,19 @@ void Transient<T>::ams(T const &x0) const
     double meann = 1.0 / alpha - 1.0;
     mfpt_ = meann * (total_t1 / (double)num_t1 + total_t2 / (double)num_t2) +
         total_t1 / (double)num_t1 + total_tr / (double)converged;
-    std::cout << "Alpha: " << alpha << std::endl;
-    std::cout << "Mean first passage time: " << mfpt_ << std::endl;
+    INFO("Alpha: " << alpha);
+    INFO("Mean first passage time: " << mfpt_);
 
     probability_ = 1.0 -  exp(-1.0 / mfpt_ * tmax_);
-    std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
+    INFO("Transition probability T=" << tmax_ << ": " << probability_);
 }
 
 template<class T>
 void Transient<T>::tams(T const &x0) const
 {
-    std::cout << "Using TAMS with an estimated memory usage of: "
-              << mem2string((long long)(tmax_ / dt_ * num_exp_ *
-                                        vector_length_ * sizeof(double)))
-              << std::endl;
+    INFO("Using TAMS with an estimated memory usage of: "
+         << mem2string((long long)(tmax_ / dt_ * num_exp_ *
+                                   vector_length_ * sizeof(double))));
 
     std::vector<AMSExperiment<T>> experiments(num_exp_);
     for (int i = 0; i < num_exp_; i++)
@@ -631,26 +630,25 @@ void Transient<T>::tams(T const &x0) const
         if (experiments[i].converged)
             converged++;
 
-        std::cout << "Initialization: " << i+1 << " / " << num_exp_ << ", "
-                  << converged << " / " << num_exp_
-                  << " converged with t="
-                  << experiments[i].time << std::endl;
+        INFO("Initialization: " << i+1 << " / " << num_exp_ << ", "
+             << converged << " / " << num_exp_
+             << " converged with t="
+             << experiments[i].time);
 
         write_helper(experiments, i+1);
     }
-    std::cout << std::endl;
+    INFO("");
 
     probability_ = ams_elimination("TAMS", experiments, dt_, tmax_);
 
-    std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
+    INFO("Transition probability T=" << tmax_ << ": " << probability_);
 }
 
 template<class T>
 void Transient<T>::gpa(T const &x0) const
 {
-    std::cout << "Using GPA with an estimated memory usage of: "
-              << mem2string((long long)(num_exp_ * vector_length_ * sizeof(double)))
-              << std::endl;
+    INFO("Using GPA with an estimated memory usage of: "
+         << mem2string((long long)(num_exp_ * vector_length_ * sizeof(double))));
 
     std::vector<GPAExperiment<T>> experiments(num_exp_);
 
@@ -692,9 +690,8 @@ void Transient<T>::gpa(T const &x0) const
                 }
                 if (j == num_exp_-1)
                 {
-                    std::cerr << "Particle not found with sum " << sum
-                              << " and random value " << val << std::endl;
-                    exit(-1);
+                    ERROR("Particle not found with sum " << sum
+                          << " and random value " << val, __FILE__, __LINE__);
                 }
             }
         }
@@ -711,10 +708,10 @@ void Transient<T>::gpa(T const &x0) const
                 converged++;
         }
 
-        std::cout << "GPA: " << converged << " / " << num_exp_
-                  << " converged with t=" << t << " and eta=" << eta << std::endl;
+        INFO("GPA: " << converged << " / " << num_exp_
+             << " converged with t=" << t << " and eta=" << eta);
     }
-    std::cout << std::endl;
+    INFO("");
 
     probability_ = 0.0;
     for (int i = 0; i < num_exp_; i++)
@@ -722,7 +719,7 @@ void Transient<T>::gpa(T const &x0) const
             probability_ += experiments[i].probability;
     probability_ /= (double)num_exp_;
 
-    std::cout << "Transition probability T=" << tmax_ << ": " << probability_ << std::endl;
+    INFO("Transition probability T=" << tmax_ << ": " << probability_);
 }
 
 template<class T>
@@ -757,7 +754,7 @@ int Transient<T>::randint(int a, int b) const
     if (first)
     {
         first = false;
-        std::cout << "WARNING: Random engine not initialized." << std::endl;
+        WARNING("Random engine not initialized.", __FILE__, __LINE__);
     }
 
     static thread_local std::random_device rd;
@@ -777,7 +774,7 @@ int Transient<T>::randreal(double a, double b) const
     if (first)
     {
         first = false;
-        std::cout << "WARNING: Random engine not initialized." << std::endl;
+        WARNING("Random engine not initialized.", __FILE__, __LINE__);
     }
 
     static thread_local std::random_device rd;
@@ -830,7 +827,9 @@ void Transient<T>::run() const
     else if (method_ == "Transient")
         transient(*x0_, dt_, tmax_);
     else
-        std::cerr << "Method " << method_ << " does not exist." << std::endl;
+    {
+        ERROR("Method " << method_ << " does not exist.", __FILE__, __LINE__);
+    }
 }
 
 template<typename T>
@@ -847,23 +846,25 @@ void Transient<T>::run(T const &x0) const
     else if (method_ == "Transient")
         transient(x0, dt_, tmax_);
     else
-        std::cerr << "Method " << method_ << " does not exist." << std::endl;
+    {
+        ERROR("Method " << method_ << " does not exist.", __FILE__, __LINE__);
+    }
 }
 
 template<typename T>
-void read(
+void Transient<T>::read(
     std::string const &name,
     std::vector<AMSExperiment<T> > &experiments) const
 {
-    WARNING("Reading transient data not implemented", __FILE__, __LINE__);
+    WARNING("Reading transient data not implemented.", __FILE__, __LINE__);
 }
 
 template<typename T>
-void write(
+void Transient<T>::write(
     std::string const &name,
-    std::vector<AMSExperimet<T> > const &experiments) const
+    std::vector<AMSExperiment<T> > const &experiments) const
 {
-    WARNING("Writing transient data not implemented", __FILE__, __LINE__);
+    WARNING("Writing transient data not implemented.", __FILE__, __LINE__);
 }
 
 template<class T>
