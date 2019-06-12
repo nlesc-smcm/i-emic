@@ -1,3 +1,4 @@
+#include "my_f2c.H"
 #include "SeaIce.H"
 #include "Ocean.H"
 #include "Atmosphere.H"
