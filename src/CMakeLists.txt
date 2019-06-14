@@ -65,6 +65,7 @@ set(I-EMIC_LIBS
 # Get targets and dependencies of the components
 add_subdirectory(mrilucpp)
 
+add_subdirectory(trios)
 add_subdirectory(ocean)
 add_subdirectory(atmosphere)
 add_subdirectory(seaice)

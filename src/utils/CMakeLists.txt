@@ -10,9 +10,9 @@ target_link_libraries(utils PRIVATE
     ${EpetraExt_TPL_LIBRARIES}
 )
 
-target_link_libraries(utils PUBLIC globaldefs)
+target_link_libraries(utils PUBLIC globaldefs trios)
 
 target_compile_definitions(utils PUBLIC ${COMP_IDENT})
-target_include_directories(utils PRIVATE ../ocean/)
+target_include_directories(utils PUBLIC .)
 
 install(TARGETS utils DESTINATION lib)
