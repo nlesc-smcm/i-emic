@@ -26,6 +26,7 @@ target_link_libraries(coupledmodel PRIVATE
     seaice
     ifpack_mrilu
     trios
+    utils
 )
 
 install(TARGETS coupledmodel DESTINATION lib)

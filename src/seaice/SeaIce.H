@@ -26,7 +26,6 @@
 #include "GlobalDefinitions.H"
 #include "SeaIceDefinitions.H"
 #include "Utils.H"
-#include "DependencyGrid.H"
 
 // exp, pow, sin
 #include <math.h>
@@ -36,6 +35,7 @@
 // forward decl
 class Ocean;
 class Atmosphere;
+class DependencyGrid;
 
 class SeaIce : public Model
 {
