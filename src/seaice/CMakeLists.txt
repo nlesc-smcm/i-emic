@@ -13,6 +13,7 @@ target_compile_definitions(seaice PUBLIC ${COMP_IDENT})
 target_link_libraries(seaice ocean)
 target_link_libraries(seaice atmosphere)
 target_link_libraries(seaice dependencygrid)
+target_link_libraries(seaice utils)
 
 target_include_directories(seaice PUBLIC ${SEAICE_INCLUDE_DIRS})
 
