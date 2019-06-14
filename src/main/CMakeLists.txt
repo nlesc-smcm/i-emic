@@ -2,12 +2,6 @@ set(MAIN_INCLUDE_DIRS
   ../continuation/
   ../thetastepper/
   ../topo/
-  ../ocean/
-  ../atmosphere/
-  ../seaice/
-  ../mrilucpp/
-  ../utils/
-  ../dependencygrid/
   ../lyapunov/
   ../ams/
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -24,13 +18,14 @@ set(MAIN_SOURCES
 
 set(MAIN_LIBRARIES
   ${MPI_CXX_LIBRARIES}
-  ${I-EMIC_LIBS}
+  coupledmodel
+  utils
+  jdqz_tools
   ${Belos_LIBRARIES}
   ${Belos_TPL_LIBRARIES}
   ${Epetra_LIBRARIES}
   ${Epetra_TPL_LIBRARIES}
-  ${ML_LIBRARIES}
-  ${ML_TPL_LIBRARIES})
+)
 
 find_package(RAILS)
 if (RAILS_FOUND)

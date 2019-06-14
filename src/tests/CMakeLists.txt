@@ -1,10 +1,4 @@
 set(TEST_INCLUDE_DIRS
-  ../utils/
-  ../ocean/
-  ../atmosphere/
-  ../seaice/
-  ../coupledmodel/
-  ../dependencygrid/
   ../continuation/
   ../topo/
   ../lyapunov/
@@ -46,13 +40,17 @@ include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
 
 set(TEST_LIBRARIES
   ${MPI_CXX_LIBRARIES}
-  ${I-EMIC_LIBS}
+  coupledmodel
+  utils
+  jdqz_tools
   ${Belos_LIBRARIES}
   ${Belos_TPL_LIBRARIES}
   ${Epetra_LIBRARIES}
   ${Epetra_TPL_LIBRARIES}
-  ${ML_LIBRARIES}
-  ${ML_TPL_LIBRARIES}
+  ${EpetraExt_LIBRARIES}
+  ${EpetraExt_TPL_LIBRARIES}
+  ${Teuchos_LIBRARIES}
+  ${Teuchos_TPL_LIBRARIES}
   ${GTEST_BOTH_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT})
 
