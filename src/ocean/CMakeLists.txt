@@ -10,22 +10,9 @@ set(CPP_SOURCES Ocean.C THCM.C OceanGrid.C OceanTheta.C
   TRIOS_SolverFactory.C TRIOS_Static.C)
 
 add_library(ocean STATIC ${FORTRAN_SOURCES} ${CPP_SOURCES})
+target_include_directories(ocean PUBLIC .)
 
-set(OCEAN_INCLUDE_DIRS
-  ../mrilucpp/
-  ../utils/
-  ../atmosphere/
-  ../seaice/
-  ../dependencygrid/
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  )
-
-target_include_directories(ocean PUBLIC ${OCEAN_INCLUDE_DIRS})
-target_include_directories(ocean PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-target_link_libraries(ocean atmosphere)
-target_link_libraries(ocean seaice)
-target_link_libraries(ocean utils)
+target_link_libraries(ocean PRIVATE atmosphere ifpack_mrilu seaice utils)
 
 target_compile_definitions(ocean PUBLIC DATA_DIR=${DATA_DIR} ${COMP_IDENT})
 
