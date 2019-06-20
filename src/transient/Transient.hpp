@@ -879,6 +879,10 @@ double Transient<T>::get_mfpt()
     return mfpt_;
 }
 
+#include "Trilinos_version.h"
+
+#if TRILINOS_MAJOR_MINOR_VERSION > 121300
+
 namespace Teuchos { template<class T> class RCP; }
 class Epetra_Vector;
 
@@ -891,5 +895,7 @@ template<>
 void Transient<Teuchos::RCP<const Epetra_Vector> >::write(
     std::string const &name,
     std::vector<AMSExperiment<Teuchos::RCP<const Epetra_Vector> > > const &experiments) const;
+
+#endif //TRILINOS_MAJOR_MINOR_VERSION
 
 #endif
