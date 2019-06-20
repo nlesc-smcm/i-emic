@@ -17,8 +17,8 @@
 #include "Trilinos_version.h"
 
 // This read/write mechanism need Trilinos pull request #3381, which
-// is present in Trilinos 14
-#if TRILINOS_MAJOR_VERSION > 13
+// is present in Trilinos 12.14
+#if TRILINOS_MAJOR_MINOR_VERSION > 121300
 
 template<>
 void Transient<Teuchos::RCP<const Epetra_Vector> >::read(
@@ -184,4 +184,4 @@ void Transient<Teuchos::RCP<const Epetra_Vector> >::write(
         close(lock_file);
 }
 
-#endif
+#endif //TRILINOS_MAJOR_MINOR_VERSION
