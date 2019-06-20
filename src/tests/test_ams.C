@@ -11,6 +11,7 @@ namespace // local unnamed namespace (similar to static in C)
 {
 Teuchos::RCP<Epetra_Comm> comm;
 Teuchos::RCP<Epetra_Map> map;
+Teuchos::RCP<std::ostringstream> out_stream;
 }
 
 class TestModel
@@ -179,14 +180,16 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
 
     remove("out_data.h5");
 
-    testing::internal::CaptureStdout();
+    // testing::internal::CaptureStdout();
+    out_stream->str("");
 
     auto ams = createDoubleWell(params);
     ams->run();
 
-    std::string output = testing::internal::GetCapturedStdout();
+    // std::string output = testing::internal::GetCapturedStdout();
+    std::string output = out_stream->str();
 
-    std::cout << output;
+    // std::cout << output;
 
     EXPECT_NE(output.find("Initialization"), std::string::npos);
     if (maxit == default_maxit && write_time_steps < 0)
@@ -207,14 +210,14 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     params->set("write file", "");
     params->set("maximum iterations", 10000);
 
-    testing::internal::CaptureStdout();
+    out_stream->str("");
 
     auto ams2 = createDoubleWell(params);
     ams2->run();
 
-    std::string output2 = testing::internal::GetCapturedStdout();
+    std::string output2 = out_stream->str();
 
-    std::cout << output2;
+    // std::cout << output2;
 
     EXPECT_EQ(output2.find("Initialization"), std::string::npos);
     if (maxit == default_maxit && write_time_steps < 0)
@@ -428,7 +431,8 @@ TEST(AMS, MCConvergence)
 int main(int argc, char **argv)
 {
     // Initialize the environment:
-    comm = initializeEnvironment(argc, argv);
+    out_stream = Teuchos::rcp(new std::ostringstream);
+    comm = initializeEnvironment(argc, argv, out_stream);
     map = Teuchos::rcp(new Epetra_Map(2, 0, *comm));
 
     if (outFile == Teuchos::null)

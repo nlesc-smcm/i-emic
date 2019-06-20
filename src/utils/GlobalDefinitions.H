@@ -33,7 +33,11 @@ extern Teuchos::RCP<std::ostream> tdataFile;
 
 class Epetra_Comm;
 
-Teuchos::RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv);
+Teuchos::RCP<Epetra_Comm> initializeEnvironment(
+    int argc, char **argv,
+    Teuchos::RCP<std::ostream> info = Teuchos::null,
+    Teuchos::RCP<std::ostream> cdata = Teuchos::null,
+    Teuchos::RCP<std::ostream> tdata = Teuchos::null);
 
 //------------------------------------------------------------------
 // Profile definition:

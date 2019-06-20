@@ -22,12 +22,17 @@ Teuchos::RCP<std::ostream> cdataFile;    // cdata file
 Teuchos::RCP<std::ostream> tdataFile;    // tdata file
 
 //-----------------------------------------------------------------------------
-void  outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
+void outputFiles(Teuchos::RCP<Epetra_Comm> Comm,
+                 Teuchos::RCP<std::ostream> info,
+                 Teuchos::RCP<std::ostream> cdata,
+                 Teuchos::RCP<std::ostream> tdata)
 {
     // Setup output files "fname_#.txt" for P==0 && P==1, other processes
     // will get a blackholestream.
 
-    if (Comm->MyPID() < 10)
+    if (info != Teuchos::null)
+        outFile = info;
+    else if (Comm->MyPID() < 10)
     {
         std::ostringstream infofile;   // setting up a filename
 
@@ -43,7 +48,9 @@ void  outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
         outFile = Teuchos::rcp(new Teuchos::oblackholestream());
 
     // Write continuation data on proc 0
-    if (Comm->MyPID() == 0)
+    if (cdata != Teuchos::null)
+        cdataFile = cdata;
+    else if (Comm->MyPID() == 0)
     {
         std::ostringstream cdatafile;  // setting up a filename
 
@@ -59,7 +66,9 @@ void  outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
         cdataFile = Teuchos::rcp(new Teuchos::oblackholestream());
 
     // Write timestepping data on proc 0
-    if (Comm->MyPID() == 0)
+    if (tdata != Teuchos::null)
+        tdataFile = tdata;
+    else if (Comm->MyPID() == 0)
     {
         std::ostringstream tdatafile;  // setting up a filename
 
@@ -76,7 +85,11 @@ void  outputFiles(Teuchos::RCP<Epetra_Comm> Comm)
 }
 
 //-----------------------------------------------------------------------------
-Teuchos::RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
+Teuchos::RCP<Epetra_Comm> initializeEnvironment(
+    int argc, char **argv,
+    Teuchos::RCP<std::ostream> info,
+    Teuchos::RCP<std::ostream> cdata,
+    Teuchos::RCP<std::ostream> tdata)
 {
     // Setup MPI communicator
 
@@ -90,7 +103,7 @@ Teuchos::RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv)
 #endif
 
     // Specify output files
-    outputFiles(Comm);
+    outputFiles(Comm, info, cdata, tdata);
     return Comm;
 }
 
