@@ -61,6 +61,7 @@ class Transient
     std::mt19937_64 *engine_;
 
 public:
+    Transient();
     Transient(std::function<T(T const &, double)> time_step);
     Transient(std::function<T(T const &, double)> time_step,
               T const &x0);

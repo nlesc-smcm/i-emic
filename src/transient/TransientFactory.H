@@ -5,6 +5,7 @@
 #include "GlobalDefinitions.H"
 #include "Utils.H"
 
+#include "Newton.H"
 #include "Transient.hpp"
 #include "StochasticThetaModel.H"
 #include "StochasticProjectedThetaModel.H"
@@ -14,65 +15,17 @@
 #include "EpetraExt_CrsMatrixIn.h"
 #include "EpetraExt_MultiVectorIn.h"
 
-template<typename Vector>
-Teuchos::RCP<Vector> newton(
-    std::function<Teuchos::RCP<const Vector>(Teuchos::RCP<const Vector> const &)> F,
-    std::function<Teuchos::RCP<const Vector>(Teuchos::RCP<const Vector> const &,
-                                             Teuchos::RCP<const Vector> const &)> Jsol,
-    Teuchos::RCP<const Vector> const &x0,
-    double tol)
+template<typename Model, typename ParameterList>
+auto get_time_step(Model const &model, ParameterList pars)
 {
-    TIMER_SCOPE("AMS: Newton");
-    double nrm = -1;
-    Teuchos::RCP<Vector> x = Teuchos::rcp(new Vector(*x0));
-    Teuchos::RCP<const Vector> Fx = F(x);
-    for (int i = 0; i < 20; i++)
-    {
-        Teuchos::RCP<const Vector> dx = Jsol(x, Fx);
-        CHECK_ZERO(x->Update(-1.0, *dx, 1.0));
-        Fx = F(x);
-        nrm = Utils::norm(Fx);
-        if (nrm < tol)
-            return x;
-    }
-    std::cerr << "Newton unconverged with norm " << nrm << std::endl;
-    return x;
-}
-
-template<typename Model>
-auto get_time_step(Model const &model)
-{
+    Teuchos::RCP<Newton<Model> > newton = Teuchos::rcp(new Newton<Model>(model, pars));
     // Function to perform one stochastic time step
-    return [model](Teuchos::RCP<const Epetra_Vector> const &x, double dt) {
+    return [newton, model](Teuchos::RCP<const Epetra_Vector> const &x, double dt) {
         TIMER_SCOPE("AMS: Time step");
 
         model->setState(x);
         model->initStep(dt);
-
-        // Deterministic theta stepper:
-        // M * u_n + dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n) - M * u_(n+1) = 0
-        // Noise is added in an explicit manner
-        auto thetaF = [model](Teuchos::RCP<const Epetra_Vector> const &xnew) {
-            TIMER_SCOPE("AMS: F");
-
-            model->setState(xnew);
-            model->computeRHS();
-            return model->getRHS('V');
-        };
-
-        // J2 = theta * dt * J - M, so J2*x = b
-        // We write this as
-        // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
-        auto thetaJ = [model](Teuchos::RCP<const Epetra_Vector> const &xnew,
-                              Teuchos::RCP<const Epetra_Vector> const &b) {
-            TIMER_SCOPE("AMS: Jacobian solve");
-            model->setState(xnew);
-            model->computeJacobian();
-            model->solve(b);
-            return model->getSolution('V');
-        };
-
-        return newton<Epetra_Vector>(thetaF, thetaJ, x, 1e-8);
+        return newton->run(x);
     };
 }
 
@@ -82,7 +35,7 @@ Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
 {
     auto theta_model = Teuchos::rcp(new ThetaModel<typename Model::element_type>(
                                         *model, pars));
-    auto time_step = get_time_step(theta_model);
+    auto time_step = get_time_step(theta_model, pars);
     auto timestepper = Teuchos::rcp(
         new Transient<Teuchos::RCP<const Epetra_Vector> >(time_step));
 
@@ -97,7 +50,7 @@ Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
 {
     auto theta_model = Teuchos::rcp(new ThetaModel<typename Model::element_type>(
                                         *model, pars));
-    auto time_step = get_time_step(theta_model);
+    auto time_step = get_time_step(theta_model, pars);
     auto timestepper = Teuchos::rcp(
         new Transient<Teuchos::RCP<const Epetra_Vector> >(time_step, x0));
 
@@ -147,7 +100,7 @@ Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
                                        *model, pars));
     }
 
-    auto time_step = get_time_step(theta_model);
+    auto time_step = get_time_step(theta_model, pars);
     auto timestepper = Teuchos::rcp(
         new Transient<Teuchos::RCP<const Epetra_Vector> >(
             time_step, score_fun, sol1, sol1->GlobalLength()));

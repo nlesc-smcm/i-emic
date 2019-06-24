@@ -72,6 +72,16 @@ std::string mem2string(long long mem)
 }
 
 template<class T>
+Transient<T>::Transient()
+    :
+    method_("Transient"),
+    x0_(nullptr),
+    mfpt_(-1),
+    probability_(-1),
+    engine_initialized_(false)
+{}
+
+template<class T>
 Transient<T>::Transient(std::function<T(T const &, double)> time_step)
     :
     time_step_(time_step),
