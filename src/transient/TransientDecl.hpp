@@ -27,6 +27,9 @@ class Transient
     double tmax_;
     double beta_;
 
+    double in_days_;
+    double in_years_;
+
     double adist_;
     double bdist_;
     double cdist_;

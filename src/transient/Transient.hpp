@@ -142,6 +142,9 @@ void Transient<T>::set_parameters(ParameterList &params)
     method_ = params.get("method", method_);
     dt_ = params.get("time step", 0.01);
     tmax_ = params.get("maximum time", 1000.0);
+    in_days_ = params.get("timescale in days", 737.2685);
+    in_years_ = params.get("timescale in years", in_days_ / 365.);
+    tmax_ = params.get("maximum time (in y)", tmax_ * in_years_) / in_years_;
 
     // GPA parameters
     tstep_ = params.get("GPA time step", 1.0);
