@@ -1,5 +1,5 @@
-#ifndef AMS_H
-#define AMS_H
+#ifndef TRANSIENTFACTORY_H
+#define TRANSIENTFACTORY_H
 
 //======================================================================
 #include "GlobalDefinitions.H"
@@ -21,7 +21,7 @@ auto get_time_step(Model const &model, ParameterList pars)
     Teuchos::RCP<Newton<Model> > newton = Teuchos::rcp(new Newton<Model>(model, pars));
     // Function to perform one stochastic time step
     return [newton, model](Teuchos::RCP<const Epetra_Vector> const &x, double dt) {
-        TIMER_SCOPE("AMS: Time step");
+        TIMER_SCOPE("TransientFactory: Time step");
 
         model->setState(x);
         model->initStep(dt);
