@@ -141,24 +141,33 @@ void Transient<T>::set_parameters(ParameterList &params)
 {
     method_ = params.get("method", method_);
     dt_ = params.get("time step", 0.01);
-    tstep_ = params.get("GPA time step", 1.0);
     tmax_ = params.get("maximum time", 1000.0);
+
+    // GPA parameters
+    tstep_ = params.get("GPA time step", 1.0);
     beta_ = params.get("beta", 1.0);
-    adist_ = params.get("A distance", 0.05);
-    bdist_ = params.get("B distance", adist_);
-    cdist_ = params.get("C distance", 2 * adist_);
+
+    // (T)AMS + GPA parameters
+    bdist_ = params.get("B distance", 0.05);
     dist_tol_ = params.get("distance tolerance", 0.0005);
     num_exp_ = params.get("number of experiments", 1000);
+
+    // AMS parameters
+    adist_ = params.get("A distance", 0.05);
+    cdist_ = params.get("C distance", 2 * adist_);
     num_init_exp_ = params.get("number of initial experiments", num_exp_);
+    if (num_init_exp_ < num_exp_)
+        num_init_exp_ = num_exp_;
+
+    // (T)AMS parameters
     maxit_ = params.get("maximum iterations", num_exp_ * 10);
+
+    // Writing parameters
     read_ = params.get("read file", "");
     write_ = params.get("write file", "");
     write_final_ = params.get("write final state", true);
     write_steps_ = params.get("write steps", -1);
     write_time_steps_ = params.get("write time steps", -1);
-
-    if (num_init_exp_ < num_exp_)
-        num_init_exp_ = num_exp_;
 }
 
 template<class T>
