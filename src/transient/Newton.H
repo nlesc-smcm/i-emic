@@ -31,6 +31,12 @@ public:
 
     Teuchos::RCP<const Epetra_Vector> run(
         Teuchos::RCP<const Epetra_Vector> const &x0);
+
+    bool converged() const;
+    double normF() const;
+    double normdx() const;
+    int steps() const;
+    Teuchos::RCP<const Epetra_Vector> Fx() const;
 };
 
 template<typename Model>
@@ -77,9 +83,17 @@ Teuchos::RCP<const Epetra_Vector> Newton<Model>::run(
     {
         Teuchos::RCP<const Epetra_Vector> dx = Jsol_(x, Fx_);
         normdx_ = Utils::normInf(dx);
+
         CHECK_ZERO(x->Update(-1.0, *dx, 1.0));
         Fx_ = F_(x);
         normF_ = Utils::norm(Fx_);
+
+        INFO("  Newton solver ------------------------------------");
+        INFO("                            iter     = " << newton_steps_);
+        INFO("                           ||F||2    = " << normF_);
+        INFO("                           ||dx||inf = " << normdx_);
+        INFO("\n");
+
         if (normdx_ < tol_ && normF_ < tol_)
         {
             converged_ = true;
@@ -96,6 +110,36 @@ Teuchos::RCP<const Epetra_Vector> Newton<Model>::run(
             << "steps with ||F|| = "
             << normF_ << "\n", __FILE__, __LINE__);
     return x;
+}
+
+template<typename Model>
+bool Newton<Model>::converged() const
+{
+    return converged_;
+}
+
+template<typename Model>
+double Newton<Model>::normF() const
+{
+    return normF_;
+}
+
+template<typename Model>
+double Newton<Model>::normdx() const
+{
+    return normdx_;
+}
+
+template<typename Model>
+int Newton<Model>::steps() const
+{
+    return newton_steps_;
+}
+
+template<typename Model>
+Teuchos::RCP<const Epetra_Vector> Newton<Model>::Fx() const
+{
+    return Fx_;
 }
 
 #endif

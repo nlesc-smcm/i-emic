@@ -75,7 +75,8 @@ public:
 
     virtual void setState(Teuchos::RCP<const Epetra_Vector> state)
         {
-            *Model::state_ = *state;
+            if (Model::state_.get() != state.get())
+                *Model::state_ = *state;
         }
 
     //!-------------------------------------------------------

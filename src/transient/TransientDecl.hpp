@@ -112,8 +112,8 @@ public:
 
     void gpa(T const &x0) const;
 
-    void run() const;
-    void run(T const &x0) const;
+    virtual void run() const;
+    virtual void run(T const &x0) const;
 
     void read(
         std::string const &name,

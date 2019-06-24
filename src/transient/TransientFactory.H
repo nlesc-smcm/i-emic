@@ -7,6 +7,7 @@
 
 #include "Newton.H"
 #include "Transient.hpp"
+#include "AdaptiveTransient.H"
 #include "StochasticThetaModel.H"
 #include "StochasticProjectedThetaModel.H"
 #include "ScoreFunctions.H"
@@ -35,9 +36,8 @@ Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
 {
     auto theta_model = Teuchos::rcp(new ThetaModel<typename Model::element_type>(
                                         *model, pars));
-    auto time_step = get_time_step(theta_model, pars);
     auto timestepper = Teuchos::rcp(
-        new Transient<Teuchos::RCP<const Epetra_Vector> >(time_step));
+        new AdaptiveTransient<Model>(theta_model, pars));
 
     timestepper->set_parameters(*pars);
     return timestepper;
@@ -50,9 +50,8 @@ Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
 {
     auto theta_model = Teuchos::rcp(new ThetaModel<typename Model::element_type>(
                                         *model, pars));
-    auto time_step = get_time_step(theta_model, pars);
     auto timestepper = Teuchos::rcp(
-        new Transient<Teuchos::RCP<const Epetra_Vector> >(time_step, x0));
+        new AdaptiveTransient<Model>(theta_model, pars, x0));
 
     timestepper->set_parameters(*pars);
     return timestepper;
