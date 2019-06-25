@@ -1243,7 +1243,6 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 // just reconstruct the diagonal matrix B from THCM
 void THCM::evaluateB(void)
 {
-
     int NumMyElements = AssemblyMap->NumMyElements();
 
     DEBUG("Construct matrix B...");
@@ -1260,10 +1259,21 @@ void THCM::evaluateB(void)
         } // not a ghost?
     } // i-loop over rows
 
+    if (fixPressurePoints_)
+    {
+        for (int i=1;i<=2;i++) {
+            int row = (i==1)? rowPfix1: rowPfix2;
+            if (localDiagB->Map().MyGID(row))
+            {
+                int lid = localDiagB->Map().LID(row);
+                (*localDiagB)[lid] = 0.0; // no more time-dependence for this P-point
+            }
+        }
+    }
+
 #ifndef NO_INTCOND
     if (sres == 0)
     {
-        int rowintcon_ = (domain->GlobalN())*(domain->GlobalM())*(domain->GlobalL());
         if (localDiagB->Map().MyGID(rowintcon_))
         {
             (*localDiagB)[localDiagB->Map().LID(rowintcon_)]=0.0;
