@@ -1,0 +1,9 @@
+<ParameterList name="AMS">
+  <Parameter name="number of experiments" type="int" value="100"/>
+  <Parameter name="number of initial experiments" type="int" value="100"/>
+  <Parameter name="time step" type="double" value="1"/>
+  <Parameter name="sigma" type="double" value="100"/>
+  <Parameter name="maximum time" type="double" value="50000"/>
+  <Parameter name="State A" type="string" value="salinity/ocean_128.h5"/>
+  <Parameter name="State B" type="string" value="salinity/ocean_128b.h5"/>
+</ParameterList>

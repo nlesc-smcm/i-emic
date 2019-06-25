@@ -9,6 +9,7 @@ set(TEST_INCLUDE_DIRS
   ../topo/
   ../lyapunov/
   ../thetastepper/
+  ../transient/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
@@ -30,6 +31,7 @@ set(TEST_SOURCES
   intt_coupled.C
   test_integrals.C
   test_matrix.C
+  test_ams.C
   )
 
 include(BuildExternalProject)
@@ -77,12 +79,12 @@ endforeach()
 
 # additional parallel tests
 get_filename_component(test_name test_matrix.C NAME_WE)
-add_test(NAME partest_matrix_1 COMMAND mpirun -np 1 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
+add_test(NAME partest_matrix_1 COMMAND mpirun -np 1 ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_2 COMMAND mpirun -np 2 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
+add_test(NAME partest_matrix_2 COMMAND mpirun -np 2 ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_4 COMMAND mpirun -np 4 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
+add_test(NAME partest_matrix_4 COMMAND mpirun -np 4 ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_8 COMMAND mpirun -np 8 ${PROJECT_SOURCE_DIR}/build/src/tests/${test_name}
+add_test(NAME partest_matrix_8 COMMAND mpirun -np 8 ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
 

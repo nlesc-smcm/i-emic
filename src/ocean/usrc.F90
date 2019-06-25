@@ -533,7 +533,7 @@ SUBROUTINE lin
   !     Produce local element matrices for linear operators
   ! +---------------------------------------------------------------------+
   ! |   Al is a list of dependencies between the unknowns, see m_mat      |
-  ! |      Al(i,j,k,loc,A,B) = c                                          |
+  ! |      Al(loc,A,B,i,j,k) = c                                          |
   ! |       where loc is one of the locations below:                      |
   ! |     +----------++-------++----------+                               |
   ! |     | 12 15 18 || 3 6 9 || 21 24 27 |                               |
@@ -542,7 +542,7 @@ SUBROUTINE lin
   ! |     |  below   || center||  above   |                               |
   ! |     +----------++-------++----------+                               |
   ! |                                                                     |
-  ! |     For instance, Al(i,j,k,14,A,B) = c is                           |
+  ! |     For instance, Al(14,A,B,i,j,k) = c is                           |
   ! |     d/dt A|(i,j,k) = c*B|(i,j,k-1) + ...                            |
   ! +---------------------------------------------------------------------+
   use m_usr

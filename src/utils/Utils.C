@@ -342,7 +342,13 @@ void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
 void Utils::load(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename)
 {
     std::ostringstream fname;
-    fname << filename << ".h5";
+    fname << filename;
+
+    // Add extension if necessary
+    std::string ext = ".h5";
+    if (filename.length() < 3 ||
+        !std::equal(ext.rbegin(), ext.rend(), filename.rbegin()))
+        fname << ext;
 
     // Check whether file exists
     std::ifstream file(fname.str());

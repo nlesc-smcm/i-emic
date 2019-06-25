@@ -1052,7 +1052,7 @@ Teuchos::RCP<Epetra_Vector> Ocean::initialState()
 }
 
 //=====================================================================
-void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
+void Ocean::solve(Teuchos::RCP<const Epetra_MultiVector> rhs)
 {
     // Check whether solver is initialized, if not perform the
     // initialization here
@@ -1066,7 +1066,7 @@ void Ocean::solve(Teuchos::RCP<Epetra_MultiVector> rhs)
     sol_->PutScalar(0.0);
 
     // Set right hand side
-    Teuchos::RCP<Epetra_MultiVector> b;
+    Teuchos::RCP<const Epetra_MultiVector> b;
     if (rhs == Teuchos::null)
         b = rhs_;
     else
@@ -2197,7 +2197,7 @@ double Ocean::getPar(std::string const &parName)
 //===================================================================
 std::string const Ocean::int2par(int ind)
 {
-    return THCM::Instance().int2par(ind);
+    return THCM::Instance().int2par(ind+1);
 }
 
 //====================================================================

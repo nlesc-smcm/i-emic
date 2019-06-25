@@ -17,6 +17,8 @@
 #include <EpetraExt_VectorOut.h>
 #include <mpi.h>
 
+#include "Teuchos_StandardCatchMacros.hpp"
+
 #include <iostream>
 #include <cmath>
 #include <map>
@@ -31,7 +33,11 @@ extern Teuchos::RCP<std::ostream> tdataFile;
 
 class Epetra_Comm;
 
-Teuchos::RCP<Epetra_Comm> initializeEnvironment(int argc, char **argv);
+Teuchos::RCP<Epetra_Comm> initializeEnvironment(
+    int argc, char **argv,
+    Teuchos::RCP<std::ostream> info = Teuchos::null,
+    Teuchos::RCP<std::ostream> cdata = Teuchos::null,
+    Teuchos::RCP<std::ostream> tdata = Teuchos::null);
 
 //------------------------------------------------------------------
 // Profile definition:
@@ -177,6 +183,14 @@ public:
     std::string label();
 };
 
+class ScopeTimer
+{
+    std::string label_;
+public:
+    ScopeTimer(std::string const &label);
+    ~ScopeTimer();
+};
+
 void printProfile();
 
 extern "C" {
@@ -196,6 +210,10 @@ void track_residual_(char const *charmsg, double residual);
 #  define TIMER_STOP(msg) timer_stop_(msg);
 #endif
 
+#ifndef TIMER_SCOPE
+#  define TIMER_SCOPE(msg) ScopeTimer Trying_to_start_multiple_timers_in_the_same_scope(msg);
+#endif
+
 // We can also keep track of different things, to distinguish these
 // from timings we prepend NOTIME to the message
 #ifndef TRACK_ITERATIONS
@@ -211,9 +229,18 @@ void track_residual_(char const *charmsg, double residual);
 // macros for checking Epetra calls
 #ifndef CHECK_ZERO
 #define CHECK_ZERO(funcall) {                                           \
-        int ierr = funcall;                                             \
-        if (ierr) { ERROR("Trilinos Error " << ierr << " returned from call " \
-                          << #funcall, __FILE__, __LINE__);             \
+        int ierr = 0;                                                   \
+        bool status = true;                                             \
+        try {                                                           \
+            ierr = funcall;                                             \
+        } TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, status);   \
+        if (!status) {                                                  \
+            ERROR("Caught an exception in call " << #funcall,           \
+                  __FILE__, __LINE__);                                  \
+        }                                                               \
+        if (ierr) {                                                     \
+            ERROR("Trilinos Error " << ierr << " returned from call "   \
+                  << #funcall, __FILE__, __LINE__);                     \
         }                                                               \
     }                                                                   \
 

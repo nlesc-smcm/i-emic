@@ -170,9 +170,10 @@ public:
 
     std::string const name() { return "ocean"; }
     int const modelIdent() { return 0; }
+    Teuchos::RCP<Epetra_Comm> Comm() const { return comm_; }
 
     //! Solve may optionally accept an rhs of VectorPointer type
-    void solve(Teuchos::RCP<Epetra_MultiVector> rhs = Teuchos::null);
+    void solve(Teuchos::RCP<const Epetra_MultiVector> rhs = Teuchos::null);
 
     //! Calculate explicit residual norm
     double explicitResNorm(VectorPtr rhs);

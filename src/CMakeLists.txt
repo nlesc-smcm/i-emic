@@ -20,8 +20,8 @@ message("-- CMAKE_Fortran_COMPILER:    ${CMAKE_Fortran_COMPILER}")
 if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU") #gfortran, gcc
   
   set (CMAKE_Fortran_FLAGS
-	"-g -O0 -Wall -ffixed-line-length-132 -fdefault-real-8 -fPIC -ffree-line-length-none")
-  set (CMAKE_CXX_FLAGS "-g -std=c++1y -O0 -Wall -fPIC -Wno-deprecated-declarations -DDEBUGGING_NEW")
+	"-g -O3 -Wall -ffixed-line-length-132 -fdefault-real-8 -fPIC -ffree-line-length-none")
+  set (CMAKE_CXX_FLAGS "-g -std=c++1y -O3 -Wall -fPIC -Wno-deprecated-declarations -DDEBUGGING_NEW")
   set (COMP_IDENT GNU)
   
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel") #ifort, icc
@@ -55,6 +55,7 @@ set(I-EMIC_LIBS
   atmosphere
   seaice
   ocean
+  transient
   utils
   dependencygrid
   jdqz_tools
@@ -68,6 +69,7 @@ add_subdirectory(ocean)
 add_subdirectory(atmosphere)
 add_subdirectory(seaice)
 add_subdirectory(coupledmodel)
+add_subdirectory(transient)
 
 add_subdirectory(utils)
 add_subdirectory(dependencygrid)
