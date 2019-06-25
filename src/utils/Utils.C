@@ -326,7 +326,7 @@ size_t Utils::hash(Teuchos::RCP<Epetra_MultiVector> vec)
 
 
 //============================================================================
-void Utils::save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename)
+void Utils::save(Teuchos::RCP<const Epetra_MultiVector> vec, std::string const &filename)
 {
     INFO("Saving " << vec->Label() << " to " << filename);
     std::ostringstream fname;
@@ -398,7 +398,7 @@ void Utils::load(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filena
 }
 
 //============================================================================
-void Utils::save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename)
+void Utils::save(std::shared_ptr<const Combined_MultiVec> vec, std::string const &filename)
 {
     for (int i = 0; i != vec->Size(); ++i)
     {

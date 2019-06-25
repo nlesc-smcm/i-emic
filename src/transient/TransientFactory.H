@@ -16,6 +16,9 @@
 #include "EpetraExt_CrsMatrixIn.h"
 #include "EpetraExt_MultiVectorIn.h"
 
+// Can all be used as
+// Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > >
+
 template<typename Model, typename ParameterList>
 auto get_time_step(Model const &model, ParameterList pars)
 {
@@ -31,34 +34,34 @@ auto get_time_step(Model const &model, ParameterList pars)
 }
 
 template<typename Model, typename ParameterList>
-Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
+auto TransientFactory(
     Model model, ParameterList pars)
 {
     auto theta_model = Teuchos::rcp(new ThetaModel<typename Model::element_type>(
                                         *model, pars));
     auto timestepper = Teuchos::rcp(
-        new AdaptiveTransient<Model>(theta_model, pars));
+        new AdaptiveTransient<decltype(theta_model)>(theta_model, pars));
 
     timestepper->set_parameters(*pars);
     return timestepper;
 }
 
 template<typename Model, typename ParameterList>
-Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
+auto TransientFactory(
     Model model, ParameterList pars,
     Teuchos::RCP<const Epetra_Vector> x0)
 {
     auto theta_model = Teuchos::rcp(new ThetaModel<typename Model::element_type>(
                                         *model, pars));
     auto timestepper = Teuchos::rcp(
-        new AdaptiveTransient<Model>(theta_model, pars, x0));
+        new AdaptiveTransient<decltype(theta_model)>(theta_model, pars, x0));
 
     timestepper->set_parameters(*pars);
     return timestepper;
 }
 
 template<typename Model, typename ParameterList>
-Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
+auto TransientFactory(
     Model model, ParameterList pars,
     Teuchos::RCP<const Epetra_Vector> sol1,
     Teuchos::RCP<const Epetra_Vector> sol2,
@@ -122,7 +125,7 @@ Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
 }
 
 template<typename Model, typename ParameterList>
-Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
+auto TransientFactory(
     Model model, ParameterList pars,
     Teuchos::RCP<const Epetra_Vector> sol1,
     Teuchos::RCP<const Epetra_Vector> sol2,

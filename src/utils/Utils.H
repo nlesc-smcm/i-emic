@@ -189,11 +189,11 @@ namespace Utils
     size_t hash(Teuchos::RCP<Epetra_MultiVector> vec);
 
     //! Save/load
-    void save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename);
+    void save(Teuchos::RCP<const Epetra_MultiVector> vec, std::string const &filename);
     void load(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename);
 
     //! Save/load a combined multivector to several hdf5 binaries
-    void save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename);
+    void save(std::shared_ptr<const Combined_MultiVec> vec, std::string const &filename);
     void load(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename);
     
     void save(Combined_MultiVec const &vec, std::string const &filename);

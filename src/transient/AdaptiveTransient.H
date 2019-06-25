@@ -9,7 +9,7 @@
 #include "Epetra_Vector.h"
 
 template<typename Model>
-class AdaptiveTransient: public Transient<const Epetra_Vector>
+class AdaptiveTransient: public Transient<Teuchos::RCP<const Epetra_Vector> >
 {
     Model model_;
 
@@ -43,7 +43,7 @@ public:
                       Teuchos::RCP<const Epetra_Vector> const &x0);
 
     int run();
-    int get_total_steps() { return total_newton_steps_; }
+    int total_newton_steps() { return total_newton_steps_; }
 
 private:
     void writeData();
@@ -69,7 +69,7 @@ AdaptiveTransient(Model model, ParameterList params)
     total_newton_steps_(0),
     init_wd_(true)
 {
-    Transient::set_parameters(*params);
+    set_parameters(*params);
 }
 
 template<typename Model>
@@ -80,14 +80,20 @@ AdaptiveTransient(Model model, ParameterList params,
     :
     AdaptiveTransient(model, params)
 {
-    x0_ = new Epetra_Vector(*x0);
+    x0_ = new Teuchos::RCP<const Epetra_Vector>(x0);
 }
 
 //==================================================================
 template<typename Model>
 int AdaptiveTransient<Model>::run()
 {
-    Teuchos::RCP<Epetra_Vector> x = model_->getState('V');
+    Teuchos::RCP<const Epetra_Vector> x = model_->getState('C');
+    INFO("||x|| = " << Utils::norm(x));
+    if (x0_) x = *x0_;
+
+    time_steps_ = 0;
+    time_ = 0;
+
     bool test_step = ( nsteps_ < 0 ) ? true : time_steps_ < nsteps_;
     while ( ( time_ < tmax_ ) && ( test_step ) )
     {
@@ -97,7 +103,7 @@ int AdaptiveTransient<Model>::run()
         model_->setState(x);
         model_->initStep(dt_);
 
-        Teuchos::RCP<Epetra_Vector> y = newton_->run(x);
+        Teuchos::RCP<const Epetra_Vector> y = newton_->run(x);
 
         if (!newton_->converged())
         {
@@ -107,7 +113,7 @@ int AdaptiveTransient<Model>::run()
 
             Utils::save(newton_->Fx(), "failed_rhs"); // Print failed residual
 
-            if (dt_ == min_time_step_)
+            if (dt_ == min_time_step_ || !adaptive_)
             {
                 ERROR("\n ================================ \n  " <<
                       " minimum timestep reached, exiting... " <<
@@ -148,9 +154,9 @@ int AdaptiveTransient<Model>::run()
         writeData();
 
         // Timestep adjustments
-        if (newton_->steps() < min_wanted_newton_steps_)
+        if (adaptive_ && newton_->steps() < min_wanted_newton_steps_)
             dt_ = std::min(dt_ * time_step_increase_, max_time_step_);
-        else if (newton_->steps() > max_wanted_newton_steps_)
+        else if (adaptive_ && newton_->steps() > max_wanted_newton_steps_)
             dt_ = std::max(dt_ / time_step_decrease_, min_time_step_);
 
         test_step = ( nsteps_ < 0 ) ? true : time_steps_ < nsteps_;

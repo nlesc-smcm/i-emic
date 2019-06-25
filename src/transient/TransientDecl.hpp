@@ -13,6 +13,7 @@ struct GPAExperiment;
 template<class T>
 class Transient
 {
+protected:
     std::function<T(T const &, double)> time_step_;
     std::function<double(T const &)> dist_fun_;
 
@@ -112,8 +113,8 @@ public:
 
     void gpa(T const &x0) const;
 
-    virtual void run() const;
-    virtual void run(T const &x0) const;
+    virtual int run() const;
+    virtual int run(T const &x0) const;
 
     void read(
         std::string const &name,

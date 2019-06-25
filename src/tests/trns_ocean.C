@@ -1,9 +1,8 @@
 #include "TestDefinitions.H"
-#include "ThetaStepper.H"
-#include "Theta.H"
+#include "TransientFactory.H"
 
 //------------------------------------------------------------------
-namespace 
+namespace
 {
     RCP<Epetra_Comm>               comm;
     std::shared_ptr<Ocean>         ocean;
@@ -26,7 +25,6 @@ TEST(ParameterLists, Initialization)
 
         for (int i = 0; i != (int) files.size(); ++i)
             params.push_back(Utils::obtainParams(files[i], names[i]));
-        
     }
     catch (...)
     {
@@ -43,25 +41,22 @@ TEST(ThetaStepper, Run)
     try
     {
         // Create Theta<Ocean> object
-        Teuchos::RCP<Theta<Ocean> > oceanTheta =
-            Teuchos::rcp(new Theta<Ocean>(comm, params[OCEAN]));
-        
+        Teuchos::RCP<Ocean> ocean =
+            Teuchos::rcp(new Ocean(comm, params[OCEAN]));
+
         // Create ThetaStepper
-        ThetaStepper<Teuchos::RCP<Theta<Ocean> >,
-                     Teuchos::RCP<Teuchos::ParameterList> >
-            stepper(oceanTheta, params[TIME]);
+        auto stepper = TransientFactory(ocean, params[TIME]);
 
         // Run ThetaStepper
-        int status = stepper.run();
-        int sumK   = stepper.getSumK();
+        int status = stepper->run();
+        int sumK   = stepper->total_newton_steps();
         EXPECT_EQ(status, 0);
-        
-        double normState = Utils::norm(oceanTheta->getState('V'));
+
+        double normState = Utils::norm(ocean->getState('V'));
 
         // Checking some values with original behavior
-        EXPECT_NEAR(normState, 22.3251803, 1e-4);
-        EXPECT_EQ(sumK, 32);
-
+        EXPECT_NEAR(normState, 37.03750142, 1e-4);
+        EXPECT_EQ(sumK, 30);
     }
     catch (...)
     {
@@ -89,7 +84,7 @@ int main(int argc, char **argv)
 
     // Get rid of possibly parallel objects for a clean ending.
     ocean = std::shared_ptr<Ocean>();
- 
+
     comm->Barrier();
     std::cout << "TEST exit code proc #" << comm->MyPID()
               << " " << out << std::endl;

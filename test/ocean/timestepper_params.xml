@@ -1,14 +1,16 @@
 <ParameterList name="Time stepper parameters">
 
-  <Parameter name="minimum step size"  type="double" value="1.0e-6"/>
-  <Parameter name="maximum step size"  type="double" value="1.0"/>
-  <Parameter name="increase step size" type="double" value="2.0"/>
-  <Parameter name="decrease step size" type="double" value="2.0"/>
+  <Parameter name="adaptive time steps"  type="bool" value="true"/>
 
-  <Parameter name="initial time step size" type="double" value="1.0e-3"/>
+  <Parameter name="minimum time step"  type="double" value="1.0e-6"/>
+  <Parameter name="maximum time step"  type="double" value="1.0"/>
+  <Parameter name="time step increase" type="double" value="2.0"/>
+  <Parameter name="time step decrease" type="double" value="2.0"/>
+
+  <Parameter name="time step" type="double" value="1.0e-3"/>
   
-  <Parameter name="end time (in y)"    type="double" value="10.0"/>
-  <Parameter name="theta"              type="double" value="0.75"/>
+  <Parameter name="maximum time (in y)" type="double" value="10.0"/>
+  <Parameter name="theta"               type="double" value="0.75"/>
 
   <!-- set to -1 to run until end time -->
   <Parameter name="number of time steps"  type="int" value="10"/>

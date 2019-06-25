@@ -152,8 +152,10 @@ void Transient<T>::set_parameters(ParameterList &params)
     method_ = params.get("method", method_);
     dt_ = params.get("time step", 0.01);
     tmax_ = params.get("maximum time", 1000.0);
+
     in_days_ = params.get("timescale in days", 737.2685);
     in_years_ = params.get("timescale in years", in_days_ / 365.);
+    dt_ = params.get("time step (in y)", dt_ * in_years_) / in_years_;
     tmax_ = params.get("maximum time (in y)", tmax_ * in_years_) / in_years_;
 
     // GPA parameters
@@ -836,26 +838,13 @@ void Transient<T>::write_helper(std::vector<AMSExperiment<T> > const &experiment
 }
 
 template<typename T>
-void Transient<T>::run() const
+int Transient<T>::run() const
 {
-    if (method_ == "AMS")
-        ams(*x0_);
-    else if (method_ == "TAMS")
-        tams(*x0_);
-    else if (method_ == "GPA")
-        gpa(*x0_);
-    else if (method_ == "Naive")
-        naive(*x0_);
-    else if (method_ == "Transient")
-        transient(*x0_, dt_, tmax_);
-    else
-    {
-        ERROR("Method " << method_ << " does not exist.", __FILE__, __LINE__);
-    }
+    return run(*x0_);
 }
 
 template<typename T>
-void Transient<T>::run(T const &x0) const
+int Transient<T>::run(T const &x0) const
 {
     if (method_ == "AMS")
         ams(x0);
@@ -870,7 +859,9 @@ void Transient<T>::run(T const &x0) const
     else
     {
         ERROR("Method " << method_ << " does not exist.", __FILE__, __LINE__);
+        return -1;
     }
+    return 0;
 }
 
 template<typename T>
