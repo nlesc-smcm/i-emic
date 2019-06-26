@@ -77,6 +77,8 @@ foreach(test_source ${TEST_SOURCES})
   target_link_libraries(${test_name} PUBLIC ${TEST_LIBRARIES})
 endforeach()
 
+target_link_libraries(test_ams PRIVATE transient)
+
 # additional parallel tests
 get_filename_component(test_name test_matrix.C NAME_WE)
 add_test(NAME partest_matrix_1 COMMAND mpirun -np 1 ${CMAKE_CURRENT_BINARY_DIR}/${test_name}

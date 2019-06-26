@@ -46,3 +46,5 @@ foreach(main_source ${MAIN_SOURCES})
   target_include_directories(${name} PUBLIC ${MAIN_INCLUDE_DIRS})
   install(TARGETS ${name} DESTINATION bin)
 endforeach()
+
+target_link_libraries(run_ams PRIVATE transient)

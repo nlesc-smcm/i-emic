@@ -5,10 +5,10 @@
 #include <functional>
 
 template<class T>
-class AMSExperiment;
+struct AMSExperiment;
 
 template<class T>
-class GPAExperiment;
+struct GPAExperiment;
 
 template<class T>
 class Transient
