@@ -1,5 +1,4 @@
 set(TEST_INCLUDE_DIRS
-  ../continuation/
   ../topo/
   ../lyapunov/
   ../transient/
@@ -39,6 +38,7 @@ include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
 
 set(TEST_LIBRARIES
   ${MPI_CXX_LIBRARIES}
+  continuation
   coupledmodel
   transient
   utils

@@ -58,6 +58,7 @@ add_subdirectory(atmosphere)
 add_subdirectory(seaice)
 add_subdirectory(coupledmodel)
 add_subdirectory(transient)
+add_subdirectory(continuation)
 
 add_subdirectory(globaldefs)
 add_subdirectory(utils)

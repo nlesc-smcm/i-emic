@@ -18,6 +18,7 @@ set(MAIN_SOURCES
 set(MAIN_LIBRARIES
   ${MPI_CXX_LIBRARIES}
   coupledmodel
+  continuation
   transient
   utils
   jdqz_tools

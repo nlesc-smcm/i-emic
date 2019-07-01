@@ -11,4 +11,5 @@ target_link_libraries(globaldefs PRIVATE
 target_compile_definitions(globaldefs PUBLIC ${COMP_IDENT})
 target_include_directories(globaldefs PUBLIC .)
 
+install(FILES GlobalDefinitions.H DESTINATION include)
 install(TARGETS globaldefs DESTINATION lib)

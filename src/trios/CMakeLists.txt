@@ -10,4 +10,4 @@ target_link_libraries(trios PRIVATE globaldefs ifpack_mrilu)
 target_include_directories(trios PUBLIC .)
 target_compile_definitions(trios PUBLIC ${COMP_IDENT})
 
-install(TARGETS trios DESTINATION lib)
+install(FILES TRIOS_Domain.H DESTINATION include)
