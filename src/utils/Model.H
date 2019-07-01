@@ -23,9 +23,10 @@ class Model
 
 public:
 
-    using VectorPtr     = Teuchos::RCP<Epetra_Vector>;
-    using MatrixPtr     = Teuchos::RCP<Epetra_CrsMatrix>;
-    using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
+    using VectorPtr      = Teuchos::RCP<Epetra_Vector>;
+    using ConstVectorPtr = Teuchos::RCP<const Epetra_Vector>;
+    using MatrixPtr      = Teuchos::RCP<Epetra_CrsMatrix>;
+    using ParameterList  = Teuchos::RCP<Teuchos::ParameterList>;
 
     //! non-overlapping state vector
     Teuchos::RCP<Epetra_Vector> state_;

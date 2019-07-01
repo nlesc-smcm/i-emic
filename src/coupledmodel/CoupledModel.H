@@ -46,10 +46,11 @@ class BelosOp;
 class CoupledModel
 {
 public:
-    using VectorPtr  = std::shared_ptr<Combined_MultiVec>;
-    using LandMask   = Utils::MaskStruct;
+    using VectorPtr      = std::shared_ptr<Combined_MultiVec>;
+    using ConstVectorPtr = std::shared_ptr<const Combined_MultiVec>;
+    using LandMask       = Utils::MaskStruct;
 
-private:
+protected:
 
     //! submodel identifiers
     int OCEAN, ATMOS, SEAICE;
