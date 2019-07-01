@@ -350,7 +350,7 @@ void CoupledModel::initializeFGMRES()
 }
 
 //------------------------------------------------------------------
-void CoupledModel::solve(std::shared_ptr<Combined_MultiVec> rhs)
+void CoupledModel::solve(std::shared_ptr<const Combined_MultiVec> rhs)
 {
     // Start solve
     TIMER_START("CoupledModel: solve...");
@@ -363,7 +363,7 @@ void CoupledModel::solve(std::shared_ptr<Combined_MultiVec> rhs)
 }
 
 //------------------------------------------------------------------
-void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
+void CoupledModel::FGMRESSolve(std::shared_ptr<const Combined_MultiVec> rhs)
 {
     INFO("CoupledModel: FGMRES solve");
 
@@ -376,7 +376,7 @@ void CoupledModel::FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs)
     Teuchos::RCP<Combined_MultiVec> solV =
         Teuchos::rcp(&(*solView_), false);
 
-    Teuchos::RCP<Combined_MultiVec> rhsV =
+    Teuchos::RCP<const Combined_MultiVec> rhsV =
         Teuchos::rcp(&(*rhs), false);
 
     solV->PutScalar(0.0);
@@ -593,7 +593,7 @@ void CoupledModel::applyPrecon(Combined_MultiVec const &x, Combined_MultiVec &z)
 }
 
 //------------------------------------------------------------------
-double CoupledModel::explicitResNorm(std::shared_ptr<Combined_MultiVec> rhs)
+double CoupledModel::explicitResNorm(std::shared_ptr<const Combined_MultiVec> rhs)
 {
 
     Combined_MultiVec b = *getSolution('C');
