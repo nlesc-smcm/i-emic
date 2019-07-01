@@ -5,27 +5,12 @@ set(FORTRAN_SOURCES assemble.F90 atm.F90 ice.F90 monthly.F90
   scaling.F90 mix_imp.f mix_sup.F90 spf.F90 topo.F90
   usrc.F90 inserts.F90 probe.F90 integrals.F90)
 
-set(CPP_SOURCES Ocean.C THCM.C OceanGrid.C OceanTheta.C
-  TRIOS_Domain.C TRIOS_BlockPreconditioner.C TRIOS_Saddlepoint.C
-  TRIOS_SolverFactory.C TRIOS_Static.C)
+set(CPP_SOURCES Ocean.C THCM.C OceanGrid.C OceanTheta.C)
 
 add_library(ocean STATIC ${FORTRAN_SOURCES} ${CPP_SOURCES})
+target_include_directories(ocean PUBLIC .)
 
-set(OCEAN_INCLUDE_DIRS
-  ../mrilucpp/
-  ../utils/
-  ../atmosphere/
-  ../seaice/
-  ../dependencygrid/
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  )
-
-target_include_directories(ocean PUBLIC ${OCEAN_INCLUDE_DIRS})
-target_include_directories(ocean PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-target_link_libraries(ocean atmosphere)
-target_link_libraries(ocean seaice)
-target_link_libraries(ocean utils)
+target_link_libraries(ocean PRIVATE atmosphere ifpack_mrilu seaice utils)
 
 target_compile_definitions(ocean PUBLIC DATA_DIR=${DATA_DIR} ${COMP_IDENT})
 

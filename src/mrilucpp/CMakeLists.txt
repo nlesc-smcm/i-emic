@@ -22,7 +22,7 @@ target_link_libraries(ifpack_mrilu PRIVATE
     ${Epetra_LIBRARIES}
     ${Epetra_TPL_LIBRARIES}
     mrilucpp
-    utils
+    globaldefs
 )
 if (TARGET mrilu)
   add_dependencies(mrilucpp mrilu)

@@ -49,28 +49,17 @@ endif ()
 link_directories(${library_directories})
 
 # ------------------------------------------------------------------
-# Internal I-EMIC libraries
-set(I-EMIC_LIBS
-  coupledmodel
-  atmosphere
-  seaice
-  ocean
-  transient
-  utils
-  dependencygrid
-  jdqz_tools
-  )
-
-# ------------------------------------------------------------------
 # Get targets and dependencies of the components
 add_subdirectory(mrilucpp)
 
+add_subdirectory(trios)
 add_subdirectory(ocean)
 add_subdirectory(atmosphere)
 add_subdirectory(seaice)
 add_subdirectory(coupledmodel)
 add_subdirectory(transient)
 
+add_subdirectory(globaldefs)
 add_subdirectory(utils)
 add_subdirectory(dependencygrid)
 

@@ -1,15 +1,8 @@
 set(TEST_INCLUDE_DIRS
-  ../utils/
-  ../ocean/
-  ../atmosphere/
-  ../seaice/
-  ../coupledmodel/
-  ../dependencygrid/
   ../continuation/
   ../topo/
   ../lyapunov/
   ../thetastepper/
-  ../transient/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
@@ -46,13 +39,17 @@ include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
 
 set(TEST_LIBRARIES
   ${MPI_CXX_LIBRARIES}
-  ${I-EMIC_LIBS}
+  coupledmodel
+  utils
+  jdqz_tools
   ${Belos_LIBRARIES}
   ${Belos_TPL_LIBRARIES}
   ${Epetra_LIBRARIES}
   ${Epetra_TPL_LIBRARIES}
-  ${ML_LIBRARIES}
-  ${ML_TPL_LIBRARIES}
+  ${EpetraExt_LIBRARIES}
+  ${EpetraExt_TPL_LIBRARIES}
+  ${Teuchos_LIBRARIES}
+  ${Teuchos_TPL_LIBRARIES}
   ${GTEST_BOTH_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT})
 
@@ -77,14 +74,20 @@ foreach(test_source ${TEST_SOURCES})
   target_link_libraries(${test_name} PUBLIC ${TEST_LIBRARIES})
 endforeach()
 
+target_link_libraries(test_ams PRIVATE transient)
+
+if(APPLE)
+    set(MPI_OVERSUBSCRIBE "--oversubscribe")
+endif()
+
 # additional parallel tests
 get_filename_component(test_name test_matrix.C NAME_WE)
-add_test(NAME partest_matrix_1 COMMAND mpirun -np 1 ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_1 COMMAND mpirun -np 1 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_2 COMMAND mpirun -np 2 ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_2 COMMAND mpirun -np 2 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_4 COMMAND mpirun -np 4 ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_4 COMMAND mpirun -np 4 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_8 COMMAND mpirun -np 8 ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_8 COMMAND mpirun -np 8 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
 

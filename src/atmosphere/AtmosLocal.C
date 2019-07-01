@@ -1,5 +1,6 @@
 #include "AtmosLocal.H"
 #include "AtmosphereDefinitions.H"
+#include "DependencyGrid.H"
 
 #include <math.h>
 #include <iostream>
@@ -9,8 +10,7 @@
 #include <algorithm> // std::fill in assemble
 
 #include "GlobalDefinitions.H"
-#include "THCMdefs.H"
-#include "Utils.H"
+#include "my_f2c.H"
 
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*, double *);

@@ -1,20 +1,18 @@
-set(UTILS_INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ../ocean/
-  )
-
-add_library(utils SHARED Utils.C GlobalDefinitions.C)
+add_library(utils SHARED Utils.C)
 
 target_link_libraries(utils PRIVATE
     ${MPI_CXX_LIBRARIES}
+    ${Teuchos_LIBRARIES}
+    ${Teuchos_TPL_LIBRARIES}
     ${Epetra_LIBRARIES}
     ${Epetra_TPL_LIBRARIES}
     ${EpetraExt_LIBRARIES}
     ${EpetraExt_TPL_LIBRARIES}
 )
 
-target_include_directories(utils PUBLIC ${UTILS_INCLUDE_DIRS})
+target_link_libraries(utils PUBLIC globaldefs trios)
 
 target_compile_definitions(utils PUBLIC ${COMP_IDENT})
+target_include_directories(utils PUBLIC .)
 
 install(TARGETS utils DESTINATION lib)

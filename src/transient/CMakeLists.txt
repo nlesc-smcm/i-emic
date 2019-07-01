@@ -3,12 +3,16 @@ set(SOURCES
   ScoreFunctions.C)
 
 add_library(transient SHARED ${SOURCES})
-
-set(TRANSIENT_INCLUDE_DIRS
-  ../utils/
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  )
-
-target_include_directories(transient PUBLIC ${TRANSIENT_INCLUDE_DIRS})
+target_include_directories(transient PUBLIC .)
+target_link_libraries(transient PRIVATE
+    ${MPI_CXX_LIBRARIES}
+    ${Epetra_LIBRARIES}
+    ${Epetra_TPL_LIBRARIES}
+    ${EpetraExt_LIBRARIES}
+    ${EpetraExt_TPL_LIBRARIES}
+    ${Teuchos_LIBRARIES}
+    ${Teuchos_TPL_LIBRARIES}
+    utils
+)
 
 install(TARGETS transient DESTINATION lib)

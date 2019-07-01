@@ -22,11 +22,13 @@
 #include <map>
 
 #include "Utils.H"
-#include "DependencyGrid.H"
 
 #include "AtmosphereDefinitions.H"
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
+
+class Atom;
+class DependencyGrid;
 
 class AtmosLocal
 {

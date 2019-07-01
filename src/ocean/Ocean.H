@@ -35,16 +35,12 @@
 #include <Ifpack_Preconditioner.h>
 
 #include "Model.H"
-#include "GlobalDefinitions.H"
-#include "THCMdefs.H"
-#include "OceanGrid.H"
-#include "Combined_MultiVec.H"
-#include "Utils.H"
 
 #include <string>
 
 // forward declarations
 class Atmosphere;
+class OceanGrid;
 class SeaIce;
 class THCM;
 
@@ -244,7 +240,7 @@ public:
     double getPar(std::string const &parName);
 
     //! Return total number of continuation parameters
-    int npar() { return _NPAR_; }
+    int npar();
 
     //! Convert integer parameter index to parameter name
     std::string const int2par(int ind);
@@ -309,12 +305,11 @@ public:
     double getSCorr();
 
     //! Get the degrees of freedom
-    int dof() { return _NUN_; }
+    int dof();
 
     //! Get row at the interface, XX is 1-based, i and j are 0-based.
     //! The interface is at surface points.
-    int interface_row(int i, int j, int XX)
-        { return FIND_ROW2(_NUN_, N_, M_, L_, i, j, L_-1, XX); }
+    int interface_row(int i, int j, int XX);
 
     //! Get salinity integral condition row
     int getRowIntCon();

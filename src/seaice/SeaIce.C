@@ -1,6 +1,8 @@
+#include "my_f2c.H"
 #include "SeaIce.H"
 #include "Ocean.H"
 #include "Atmosphere.H"
+#include "DependencyGrid.H"
 
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*, double *);
