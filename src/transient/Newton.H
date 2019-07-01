@@ -3,18 +3,21 @@
 
 #include <functional>
 
-#include "Epetra_Vector.h"
-
 template<typename Model>
 class Newton
 {
+public:
+    using VectorPtr = typename Model::element_type::VectorPtr;
+    using ConstVectorPtr = typename Model::element_type::ConstVectorPtr;
+
+private:
     Model model_;
 
-    std::function<Teuchos::RCP<const Epetra_Vector>(
-        Teuchos::RCP<const Epetra_Vector> const &)> F_;
-    std::function<Teuchos::RCP<const Epetra_Vector>(
-        Teuchos::RCP<const Epetra_Vector> const &,
-        Teuchos::RCP<const Epetra_Vector> const &)> Jsol_;
+    std::function<ConstVectorPtr(
+        ConstVectorPtr const &)> F_;
+    std::function<ConstVectorPtr(
+        ConstVectorPtr const &,
+        ConstVectorPtr const &)> Jsol_;
 
     double tol_;
     int max_newton_steps_;
@@ -24,19 +27,19 @@ class Newton
     double normdx_;
     double normF_;
 
-    Teuchos::RCP<const Epetra_Vector> Fx_;
+    ConstVectorPtr Fx_;
 public:
     template<typename ParameterList>
     Newton(Model model, ParameterList params);
 
-    Teuchos::RCP<const Epetra_Vector> run(
-        Teuchos::RCP<const Epetra_Vector> const &x0);
+    ConstVectorPtr run(
+        ConstVectorPtr const &x0);
 
     bool converged() const;
     double normF() const;
     double normdx() const;
     int steps() const;
-    Teuchos::RCP<const Epetra_Vector> Fx() const;
+    ConstVectorPtr Fx() const;
 };
 
 template<typename Model>
@@ -50,7 +53,7 @@ Newton<Model>::Newton(Model model, ParameterList params)
     // Deterministic theta stepper:
     // M * u_n + dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n) - M * u_(n+1) = 0
     // Noise is added in an explicit manner
-    F_ = [this](Teuchos::RCP<const Epetra_Vector> const &xnew) {
+    F_ = [this](ConstVectorPtr const &xnew) {
         TIMER_SCOPE("Newton: F");
         model_->setState(xnew);
         model_->computeRHS();
@@ -60,8 +63,8 @@ Newton<Model>::Newton(Model model, ParameterList params)
     // J2 = theta * dt * J - M, so J2*x = b
     // We write this as
     // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
-    Jsol_ = [this](Teuchos::RCP<const Epetra_Vector> const &xnew,
-                    Teuchos::RCP<const Epetra_Vector> const &b) {
+    Jsol_ = [this](ConstVectorPtr const &xnew,
+                    ConstVectorPtr const &b) {
         TIMER_SCOPE("Newton: Jacobian solve");
         model_->setState(xnew);
         model_->computeJacobian();
@@ -71,17 +74,20 @@ Newton<Model>::Newton(Model model, ParameterList params)
 }
 
 template<typename Model>
-Teuchos::RCP<const Epetra_Vector> Newton<Model>::run(
-   Teuchos::RCP<const Epetra_Vector> const &x0)
+typename Newton<Model>::ConstVectorPtr Newton<Model>::run(
+   ConstVectorPtr const &x0)
 {
     TIMER_SCOPE("Newton: Newton");
-    normF_ = -1;
-    Teuchos::RCP<Epetra_Vector> x = Teuchos::rcp(new Epetra_Vector(*x0));
+
+    VectorPtr x = Utils::clone(x0);
+
     Fx_ = F_(x);
+    normF_ = -1;
     converged_ = false;
+
     for (newton_steps_ = 0; newton_steps_ < max_newton_steps_; newton_steps_++)
     {
-        Teuchos::RCP<const Epetra_Vector> dx = Jsol_(x, Fx_);
+        ConstVectorPtr dx = Jsol_(x, Fx_);
         normdx_ = Utils::normInf(dx);
 
         CHECK_ZERO(x->Update(-1.0, *dx, 1.0));
@@ -137,7 +143,7 @@ int Newton<Model>::steps() const
 }
 
 template<typename Model>
-Teuchos::RCP<const Epetra_Vector> Newton<Model>::Fx() const
+typename Newton<Model>::ConstVectorPtr Newton<Model>::Fx() const
 {
     return Fx_;
 }
