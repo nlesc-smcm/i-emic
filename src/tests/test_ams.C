@@ -16,6 +16,8 @@ Teuchos::RCP<std::ostringstream> out_stream;
 
 class TestModel
 {
+public:
+    using ConstVectorPtr = Teuchos::RCP<const Epetra_Vector>;
 protected:
     Teuchos::RCP<Epetra_Map> map_;
     Teuchos::RCP<Epetra_Vector> rhs_;
@@ -107,9 +109,14 @@ public:
             return getVector(mode, sol_);
         }
 
-    void solve(Teuchos::RCP<Epetra_Vector> rhs = Teuchos::null)
+    Teuchos::RCP<Epetra_CrsMatrix> getJacobian()
         {
-            sol_ = rhs;
+            return jac_;
+        }
+
+    void solve(Teuchos::RCP<const Epetra_Vector> rhs = Teuchos::null)
+        {
+            *sol_ = *rhs;
         }
 
     void applyMatrix(Epetra_MultiVector const &v, Epetra_MultiVector &out) {}
