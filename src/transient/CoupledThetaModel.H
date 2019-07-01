@@ -21,7 +21,8 @@ public:
     //------------------------------------------------------------------
     void initStep(double dt)
         {
-            for (size_t i = 0; i != models_.size(); ++i)
+            int num = models_.size();
+            for (int i = 0; i != num; ++i)
             {
                 auto &model = models_[i];
                 if (i == OCEAN)
@@ -36,7 +37,8 @@ public:
     //------------------------------------------------------------------
     void setState(std::shared_ptr<const Combined_MultiVec> state)
         {
-            for (size_t i = 0; i != models_.size(); ++i)
+            int num = models_.size();
+            for (int i = 0; i != num; ++i)
             {
                 auto &model = models_[i];
                 if (i == OCEAN)
