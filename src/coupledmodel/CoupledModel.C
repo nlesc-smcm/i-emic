@@ -762,7 +762,6 @@ std::string const CoupledModel::writeData(bool describe)
             return datastring.str();
         }
 
-
 //------------------------------------------------------------------
 void CoupledModel::dumpBlocks()
 {
@@ -782,32 +781,4 @@ void CoupledModel::dumpBlocks()
             }
         }
     }
-}
-
-//------------------------------------------------------------------
-void CoupledModel::setTheta(double theta)
-{
-    for (auto &model: models_)
-        model->setTheta(theta);
-}
-
-//------------------------------------------------------------------
-void CoupledModel::store()
-{
-    for (auto &model: models_)
-        model->store();
-}
-
-//------------------------------------------------------------------
-void CoupledModel::restore()
-{
-    for (auto &model: models_)
-        model->restore();
-}
-
-//------------------------------------------------------------------
-void CoupledModel::setTimestep(double dt)
-{
-    for (auto &model: models_)
-        model->setTimestep(dt);
 }

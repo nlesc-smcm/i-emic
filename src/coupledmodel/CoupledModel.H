@@ -215,13 +215,6 @@ public:
     void gid2coord(int const &gid, int &modelIdent,
                    int &i, int &j, int &k, int &xx);
 
-    //! time dependent stuff, only effective when the submodels are of
-    //! Theta<Model> type
-    void setTheta(double theta);
-    void store();
-    void restore();
-    void setTimestep(double dt);
-
 private:
 
     //! Solve the system using FGMRES
