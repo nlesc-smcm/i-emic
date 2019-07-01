@@ -1,5 +1,29 @@
 language: cpp
 
+addons:
+  apt:
+    packages: &linux_deps
+      - git
+      - build-essential
+      - libopenmpi-dev
+      - openmpi-bin
+      - cmake-data
+      - cmake
+      - trilinos-all-dev
+      - libx11-dev
+      - x11proto-core-dev
+      - libopenblas-dev
+      - libhdf5-openmpi-dev
+      # Manual Trilinos dependencies, which are bugged in 16.04
+      - libmumps-dev
+      - binutils-dev
+      - libiberty-dev
+      - libtbb-dev
+      - libsuperlu-dev
+      - libptscotch-dev
+      # RAILS
+      - libslicot-dev
+
 matrix:
   include:
     - os: linux
@@ -9,31 +33,13 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - git
-            - build-essential
-            - libopenmpi-dev
-            - openmpi-bin
-            - cmake-data
-            - cmake
-            - trilinos-all-dev
-            - libx11-dev
-            - x11proto-core-dev
-            - libopenblas-dev
-            - libhdf5-openmpi-dev
-            # Manual Trilinos dependencies, which are bugged in 16.04
-            - libmumps-dev
-            - binutils-dev
-            - libiberty-dev
-            - libtbb-dev
-            - libsuperlu-dev
-            - libptscotch-dev
-            # RAILS
-            - libslicot-dev
+            - *linux_deps
             # Compilers
             - g++-5
             - gfortran-5
       env:
-         - MATRIX_EVAL="OMPI_CC=gcc-5 && OMPI_CXX=g++-5 && OMPI_FC=gfortran-5 CC=gcc-5 && CXX=g++-5 && FC=gfortran-5"
+         - OMPI_CC=gcc-5 OMPI_CXX=g++-5 OMPI_FC=gfortran-5 CC=gcc-5 CXX=g++-5 FC=gfortran-5
+
     - os: linux
       dist: xenial
       addons:
@@ -41,69 +47,55 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - git
-            - build-essential
-            - libopenmpi-dev
-            - openmpi-bin
-            - cmake-data
-            - cmake
-            - trilinos-all-dev
-            - libx11-dev
-            - x11proto-core-dev
-            - libopenblas-dev
-            - libhdf5-openmpi-dev
-            # Manual Trilinos dependencies, which are bugged in 16.04
-            - libmumps-dev
-            - binutils-dev
-            - libiberty-dev
-            - libtbb-dev
-            - libsuperlu-dev
-            - libptscotch-dev
-            # RAILS
-            - libslicot-dev
+            - *linux_deps
             # Compilers
             - g++-8
             - gfortran-8
       env:
-         - MATRIX_EVAL="OMPI_CC=gcc-8 && OMPI_CXX=g++-8 && OMPI_FC=gfortran-8 CC=gcc-8 && CXX=g++-8 && FC=gfortran-8"
+         - OMPI_CC=gcc-8 OMPI_CXX=g++-8 OMPI_FC=gfortran-8 CC=gcc-8 CXX=g++-8 FC=gfortran-8
+
     - os: linux
       dist: xenial
       addons:
         apt:
           packages:
-            - git
-            - build-essential
-            - libopenmpi-dev
-            - openmpi-bin
-            - cmake-data
-            - cmake
-            - trilinos-all-dev
-            - libx11-dev
-            - x11proto-core-dev
-            - libopenblas-dev
-            - libhdf5-openmpi-dev
-            # Manual Trilinos dependencies, which are bugged in 16.04
-            - libmumps-dev
-            - binutils-dev
-            - libiberty-dev
-            - libtbb-dev
-            - libsuperlu-dev
-            - libptscotch-dev
-            # RAILS
-            - libslicot-dev
+            - *linux_deps
             # Compilers
             - clang
             - gfortran
       env:
-         - MATRIX_EVAL="OMPI_CC=clang && OMPI_CXX=clang++ && OMPI_FC=gfortran CC=clang && CXX=clang++ && FC=gfortran"
+         - OMPI_CC=clang OMPI_CXX=clang++ OMPI_FC=gfortran CC=clang CXX=clang++ FC=gfortran
 
-cache: ccache
+    - os: osx
+      osx_image: xcode10.2
+      addons:
+        homebrew:
+          taps: nlesc/nlesc
+          packages:
+            - ccache
+          update: true
+      env:
+         - CMAKE_PREFIX_PATH=/usr/local/opt/trilinos/
+      before_cache:
+         - brew cleanup
+      before_install:
+         - brew uninstall netcdf hdf5 gdal postgis
+         - brew install nlesc/nlesc/trilinos
+
+cache:
+  ccache: true
+  directories:
+    - $HOME/Library/Caches/Homebrew
 
 before_install:
-  - eval "${MATRIX_EVAL}"
-  - export PATH=$PATH:$TRAVIS_BUILD_DIR/local/bin
-  - export LIBRARY_PATH=$LIBRARY_PATH:$TRAVIS_BUILD_DIR/local/lib
-  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TRAVIS_BUILD_DIR/local/lib
+  # Install RAILS
+  - git clone https://github.com/Sbte/RAILS.git
+  - cd RAILS
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_INSTALL_PREFIX=$TRAVIS_BUILD_DIR/local ..
+  - make install
+  - cd ../..
 
 install:
   # Install JDQZPP
@@ -112,22 +104,12 @@ install:
   - mkdir build
   - cd build
   - cmake -DCMAKE_INSTALL_PREFIX=$TRAVIS_BUILD_DIR/local ..
-  - make
-  - make install
-  - cd ../..
-  # Install RAILS
-  - git clone https://github.com/Sbte/RAILS.git
-  - cd RAILS
-  - mkdir build
-  - cd build
-  - cmake -DCMAKE_INSTALL_PREFIX=$TRAVIS_BUILD_DIR/local ..
-  - make
   - make install
   - cd ../..
   # Build I-EMIC
   - mkdir build
   - cd build
-  - cmake ..
+  - cmake -DCMAKE_INSTALL_PREFIX=$TRAVIS_BUILD_DIR/local ..
   - make
 
 script:
