@@ -1,6 +1,5 @@
 set(MAIN_INCLUDE_DIRS
   ../continuation/
-  ../thetastepper/
   ../topo/
   ../lyapunov/
   ../transient/
