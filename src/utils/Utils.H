@@ -92,6 +92,14 @@ namespace Utils
         std::string label;
     };
 
+    //! Clone an Epetra_Vector
+    Teuchos::RCP<Epetra_Vector> clone(
+        Teuchos::RCP<const Epetra_Vector> const &vec);
+
+    //! Clone a Combined_MultiVec
+    std::shared_ptr<Combined_MultiVec> clone(
+        std::shared_ptr<const Combined_MultiVec> const &vec);
+
     //! Obtain 2-norm of std::vector<double>
     double norm(std::vector<double> &vec);
 

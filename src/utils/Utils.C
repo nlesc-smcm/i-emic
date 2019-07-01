@@ -57,6 +57,32 @@ int Utils::nnz(Teuchos::RCP<Epetra_Vector> vec, double t)
     return numIntsGlob;
 }
 
+//! Clone an Epetra_Vector
+Teuchos::RCP<Epetra_Vector> Utils::clone(
+    Teuchos::RCP<const Epetra_Vector> const &vec)
+{
+    return Teuchos::rcp(new Epetra_Vector(*vec));
+}
+
+//! Clone a Combined_MultiVec
+std::shared_ptr<Combined_MultiVec> Utils::clone(
+    std::shared_ptr<const Combined_MultiVec> const &vec)
+{
+    std::vector<Teuchos::RCP<Epetra_Vector>> vecs;
+    for (int i = 0; i < vec->Size(); i++)
+        vecs.push_back(
+            Teuchos::rcp(
+                new Epetra_Vector(
+                    *Teuchos::rcp_dynamic_cast<const Epetra_Vector>((*vec)(i)))));
+
+    if (vec->Size() == 2)
+        return std::make_shared<Combined_MultiVec>(vecs[0], vecs[1]);
+    else if (vec->Size() == 3)
+        return std::make_shared<Combined_MultiVec>(vecs[0], vecs[1], vecs[2]);
+
+    return std::make_shared<Combined_MultiVec>(*vec);
+}
+
 //! Obtain 2-norm of std::vector<double> using ddot
 double Utils::norm(std::vector<double> &vec)
 {
