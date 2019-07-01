@@ -8,8 +8,7 @@
 #include "GlobalDefinitions.H"
 
 #include "Ocean.H"
-#include "ThetaStepper.H"
-#include "Theta.H"
+#include "TransientFactory.H"
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
@@ -61,22 +60,20 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
                 << comb, __FILE__, __LINE__);
     }
 
-    // Create parallelized Theta<Ocean> object
-    Teuchos::RCP<Theta<Ocean> > oceanTheta =
-        Teuchos::rcp(new Theta<Ocean>(Comm, oceanParams));
+    // Create Ocean object
+    Teuchos::RCP<Ocean> ocean =
+        Teuchos::rcp(new Ocean(Comm, oceanParams));
 
     // Create parameter object for time stepping
     RCP<Teuchos::ParameterList> timeParams = rcp(new Teuchos::ParameterList);
     updateParametersFromXmlFile("timestepper_params.xml", timeParams.ptr());
     timeParams->setName("time stepper parameters");
 
-    // Create ThetaStepper
-    ThetaStepper<Teuchos::RCP<Theta<Ocean> >,
-                 Teuchos::RCP<Teuchos::ParameterList> >
-        stepper(oceanTheta, timeParams);
+    // Create time stepper
+    auto stepper = TransientFactory(ocean, timeParams);
 
-    // Run ThetaStepper
-    int status = stepper.run();
+    // Run time stepper
+    int status = stepper->run();
     if (status == 0)
         ERROR("Timestepper failed", __FILE__, __LINE__);
 

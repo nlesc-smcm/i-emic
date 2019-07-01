@@ -3,7 +3,7 @@ set(MAIN_INCLUDE_DIRS
   ../thetastepper/
   ../topo/
   ../lyapunov/
-  ../ams/
+  ../transient/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
@@ -19,6 +19,7 @@ set(MAIN_SOURCES
 set(MAIN_LIBRARIES
   ${MPI_CXX_LIBRARIES}
   coupledmodel
+  transient
   utils
   jdqz_tools
   ${Belos_LIBRARIES}
@@ -41,5 +42,3 @@ foreach(main_source ${MAIN_SOURCES})
   target_include_directories(${name} PUBLIC ${MAIN_INCLUDE_DIRS})
   install(TARGETS ${name} DESTINATION bin)
 endforeach()
-
-target_link_libraries(run_ams PRIVATE transient)
