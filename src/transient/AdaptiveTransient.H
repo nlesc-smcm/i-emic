@@ -6,11 +6,11 @@
 #include "Newton.H"
 #include "Transient.hpp"
 
-#include "Epetra_Vector.h"
-
 template<typename Model>
-class AdaptiveTransient: public Transient<Teuchos::RCP<const Epetra_Vector> >
+class AdaptiveTransient: public Transient<typename Model::element_type::ConstVectorPtr>
 {
+    using ConstVectorPtr = typename Model::element_type::ConstVectorPtr;
+
     Model model_;
 
     Teuchos::RCP<Newton<Model> > newton_;
@@ -40,7 +40,7 @@ public:
     AdaptiveTransient(Model model, ParameterList params);
     template<typename ParameterList>
     AdaptiveTransient(Model model, ParameterList params,
-                      Teuchos::RCP<const Epetra_Vector> const &x0);
+                      ConstVectorPtr const &x0);
 
     int run();
     int total_newton_steps() { return total_newton_steps_; }
@@ -54,7 +54,7 @@ template<typename ParameterList>
 AdaptiveTransient<Model>::
 AdaptiveTransient(Model model, ParameterList params)
     :
-    Transient(),
+    Transient<ConstVectorPtr>(),
     model_(model),
     newton_(Teuchos::rcp(new Newton<Model>(model, params))),
     adaptive_(params->get("adaptive time steps", false)),
@@ -69,41 +69,45 @@ AdaptiveTransient(Model model, ParameterList params)
     total_newton_steps_(0),
     init_wd_(true)
 {
-    set_parameters(*params);
+    Transient<ConstVectorPtr>::set_parameters(*params);
 }
 
 template<typename Model>
 template<typename ParameterList>
 AdaptiveTransient<Model>::
 AdaptiveTransient(Model model, ParameterList params,
-                  Teuchos::RCP<const Epetra_Vector> const &x0)
+                  ConstVectorPtr const &x0)
     :
     AdaptiveTransient(model, params)
 {
-    x0_ = new Teuchos::RCP<const Epetra_Vector>(x0);
+    Transient<ConstVectorPtr>::x0_ = new ConstVectorPtr(x0);
 }
 
 //==================================================================
 template<typename Model>
 int AdaptiveTransient<Model>::run()
 {
-    Teuchos::RCP<const Epetra_Vector> x = model_->getState('C');
+    ConstVectorPtr x = model_->getState('C');
     INFO("||x|| = " << Utils::norm(x));
-    if (x0_) x = *x0_;
+    if (Transient<ConstVectorPtr>::x0_)
+        x = *Transient<ConstVectorPtr>::x0_;
 
-    time_steps_ = 0;
+    Transient<ConstVectorPtr>::time_steps_ = 0;
     time_ = 0;
 
-    bool test_step = ( nsteps_ < 0 ) ? true : time_steps_ < nsteps_;
-    while ( ( time_ < tmax_ ) && ( test_step ) )
+    bool test_step = ( nsteps_ < 0 ) ? true : Transient<ConstVectorPtr>::time_steps_ < nsteps_;
+    while ( ( time_ < Transient<ConstVectorPtr>::tmax_ )
+            && ( test_step ) )
     {
         INFO("----------------------------------------------------------");
-        INFO("Timestepping:    t = " << time_ * in_years_ << " y");
+        INFO("Timestepping:    t = "
+             << time_ * Transient<ConstVectorPtr>::in_years_
+             << " y");
 
         model_->setState(x);
-        model_->initStep(dt_);
+        model_->initStep(Transient<ConstVectorPtr>::dt_);
 
-        Teuchos::RCP<const Epetra_Vector> y = newton_->run(x);
+        ConstVectorPtr y = newton_->run(x);
 
         if (!newton_->converged())
         {
@@ -113,7 +117,7 @@ int AdaptiveTransient<Model>::run()
 
             Utils::save(newton_->Fx(), "failed_rhs"); // Print failed residual
 
-            if (dt_ == min_time_step_ || !adaptive_)
+            if (Transient<ConstVectorPtr>::dt_ == min_time_step_ || !adaptive_)
             {
                 ERROR("\n ================================ \n  " <<
                       " minimum timestep reached, exiting... " <<
@@ -122,18 +126,18 @@ int AdaptiveTransient<Model>::run()
                 return 1;
             }
 
-            INFO("    adjusting time step.. old dt = " << dt_);
-            dt_ = std::max(dt_ / time_step_decrease_, min_time_step_);
-            INFO("    adjusting time step.. new dt = " << dt_);
+            INFO("    adjusting time step.. old dt = " << Transient<ConstVectorPtr>::dt_);
+            Transient<ConstVectorPtr>::dt_ = std::max(Transient<ConstVectorPtr>::dt_ / time_step_decrease_, min_time_step_);
+            INFO("    adjusting time step.. new dt = " << Transient<ConstVectorPtr>::dt_);
             continue;
         }
 
-        time_steps_++;
-        time_ += dt_;
+        Transient<ConstVectorPtr>::time_steps_++;
+        time_ += Transient<ConstVectorPtr>::dt_;
         x = y;
 
         INFO("  Newton converged, next time step -----------------");
-        INFO("                step = " << time_steps_);
+        INFO("                step = " << Transient<ConstVectorPtr>::time_steps_);
         INFO("                time = " << time_);
         INFO("           ||F||2    = " << newton_->normF());
         INFO("           ||dx||inf = " << newton_->normdx());
@@ -142,7 +146,7 @@ int AdaptiveTransient<Model>::run()
         model_->postProcess();
 
         // additional save
-        if ((output_ > 0) && ((time_steps_ % output_) == 0))
+        if ((output_ > 0) && ((Transient<ConstVectorPtr>::time_steps_ % output_) == 0))
         {
             std::stringstream outFile;
             outFile << "transient_" << std::setprecision(8)
@@ -155,11 +159,11 @@ int AdaptiveTransient<Model>::run()
 
         // Timestep adjustments
         if (adaptive_ && newton_->steps() < min_wanted_newton_steps_)
-            dt_ = std::min(dt_ * time_step_increase_, max_time_step_);
+            Transient<ConstVectorPtr>::dt_ = std::min(Transient<ConstVectorPtr>::dt_ * time_step_increase_, max_time_step_);
         else if (adaptive_ && newton_->steps() > max_wanted_newton_steps_)
-            dt_ = std::max(dt_ / time_step_decrease_, min_time_step_);
+            Transient<ConstVectorPtr>::dt_ = std::max(Transient<ConstVectorPtr>::dt_ / time_step_decrease_, min_time_step_);
 
-        test_step = ( nsteps_ < 0 ) ? true : time_steps_ < nsteps_;
+        test_step = ( nsteps_ < 0 ) ? true : Transient<ConstVectorPtr>::time_steps_ < nsteps_;
 
         total_newton_steps_ += newton_->steps();
     }
@@ -180,7 +184,7 @@ void AdaptiveTransient<Model>::writeData()
                     << std::setw(_FIELDWIDTH_/2.)
                     << "step"
                     << std::setw(_FIELDWIDTH_)
-                    << "dt_(y)"
+                    << "Transient<ConstVectorPtr>::dt_(y)"
                     << std::setw(_FIELDWIDTH_)
                     << "|x|"
                     << std::setw(_FIELDWIDTH_/2.)
@@ -195,9 +199,12 @@ void AdaptiveTransient<Model>::writeData()
     tdatastring.precision(_PRECISION_);
 
     tdatastring << std::scientific
-                << std::setw(_FIELDWIDTH_) <<  time_ * in_years_
-                << std::setw(_FIELDWIDTH_/2) <<  time_steps_
-                << std::setw(_FIELDWIDTH_) <<  dt_ * in_years_
+                << std::setw(_FIELDWIDTH_)
+                << time_ * Transient<ConstVectorPtr>::in_years_
+                << std::setw(_FIELDWIDTH_/2)
+                << Transient<ConstVectorPtr>::time_steps_
+                << std::setw(_FIELDWIDTH_)
+                << Transient<ConstVectorPtr>::dt_ * Transient<ConstVectorPtr>::in_years_
                 << std::setw(_FIELDWIDTH_)
                 << Utils::norm(model_->getState('V'))
                 << std::setw(_FIELDWIDTH_/2) <<  newton_->steps()
