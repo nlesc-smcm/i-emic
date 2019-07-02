@@ -79,6 +79,10 @@ typename Newton<Model>::ConstVectorPtr Newton<Model>::run(
 {
     TIMER_SCOPE("Newton: Newton");
 
+    // Clone of the initial vector, which we only use here. This is
+    // so the vector we return can not be changed when updating
+    // the model. This is required in (T)AMS, because we store
+    // every state.
     VectorPtr x = Utils::clone(x0);
 
     Fx_ = F_(x);
