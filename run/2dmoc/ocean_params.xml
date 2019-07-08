@@ -42,6 +42,9 @@
     <!-- global number of grid points in z-direction -->
     <Parameter name="Global Grid-Size l" type="int" value="16"/>
 
+    <Parameter name="Read Salinity Perturbation Mask" type="bool" value="true"/>
+    <Parameter name="Salinity Perturbation Mask" type="string" value="pertmask.txt"/>
+
     <!-- topography:                                -->
     <!-- 0: from data                               -->
     <!-- 1: no land                                 -->
