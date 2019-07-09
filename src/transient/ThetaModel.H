@@ -1,12 +1,6 @@
 #ifndef THETAMODEL_H
 #define THETAMODEL_H
 
-#include <Teuchos_RCP.hpp>
-#include <Teuchos_ParameterList.hpp>
-
-#include <Epetra_Vector.h>
-#include "Epetra_LocalMap.h"
-
 #include "GlobalDefinitions.H"
 
 //! Here we inherit a templated model and adjust the rhs and jac
@@ -15,6 +9,10 @@
 template<typename Model>
 class ThetaModel : public Model
 {
+public:
+    using VectorPtr      = typename Model::VectorPtr;
+    using ConstVectorPtr = typename Model::ConstVectorPtr;
+
 protected:
     //! theta method parameter
     double theta_;
@@ -22,18 +20,20 @@ protected:
     //! time step size
     double timestep_;
 
-    Teuchos::RCP<Epetra_Vector> oldState_;
-    Teuchos::RCP<Epetra_Vector> xDot_;
-    Teuchos::RCP<Epetra_Vector> Bxdot_;
-    Teuchos::RCP<Epetra_Vector> oldRhs_;
+    VectorPtr oldState_;
+    VectorPtr xDot_;
+    VectorPtr Bxdot_;
+    VectorPtr oldRhs_;
 
 public:
     //-------------------------------------------------------
     //! constructor
     template<typename ParameterList>
-    ThetaModel(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
+    ThetaModel(Teuchos::RCP<Epetra_Comm> comm,
+               ParameterList model_params,
+               ParameterList params)
         :
-        Model(comm, params),
+        Model(comm, model_params),
         theta_(params->get("theta", 1.0)),
         timestep_(1.0e-3)
         {
@@ -65,17 +65,18 @@ public:
         {
             timestep_ = timestep;
 
-            *oldState_ = *Model::state_;
+            *oldState_ = *Model::getState('V');
 
             Model::preProcess();
 
             Model::computeRHS();
-            *oldRhs_ = *Model::rhs_;
+            *oldRhs_ = *Model::getRHS('V');
         }
 
-    virtual void setState(Teuchos::RCP<const Epetra_Vector> state)
+    virtual void setState(ConstVectorPtr state)
         {
-            *Model::state_ = *state;
+            if (Model::getState('V') != state)
+                *Model::getState('V') = *state;
         }
 
     //!-------------------------------------------------------
@@ -99,16 +100,16 @@ public:
             Model::computeMassMat();
 
             // Compute M * u_n - M * u_(n+1)
-            CHECK_ZERO(xDot_->Update(-1.0, *Model::state_, 1.0,
+            CHECK_ZERO(xDot_->Update(-1.0, *Model::getState('V'), 1.0,
                                      *oldState_, 0.0));
             Model::applyMassMat(*xDot_, *Bxdot_);
 
             // Compute dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n)
-            CHECK_ZERO(Model::rhs_->Update(
+            CHECK_ZERO(Model::getRHS('V')->Update(
                            timestep_ * (1-theta_), *oldRhs_, timestep_ * theta_));
 
             // Combine the terms
-            CHECK_ZERO(Model::rhs_->Update(1.0,  *Bxdot_, 1.0));
+            CHECK_ZERO(Model::getRHS('V')->Update(1.0,  *Bxdot_, 1.0));
         }
 
     //!-------------------------------------------------------
@@ -123,13 +124,13 @@ public:
                 return;
 
             Model::computeMassMat();
-            Teuchos::RCP<const Epetra_Vector> diagB = Model::getMassMat();
+            ConstVectorPtr diagB = Model::getMassMat('V');
 
             // Get the number of local elements in the matrix
-            int numMyElements = Model::jac_->Map().NumMyElements();
+            int numMyElements = Model::getJacobian()->Map().NumMyElements();
 
             // Get a list of the global element IDs owned by the calling proc
-            int *myGlobalElements = Model::jac_->Map().MyGlobalElements();
+            int *myGlobalElements = Model::getJacobian()->Map().MyGlobalElements();
 
             // Add to the Jacobian the values B[i] on the diagonal.
             // The result is B / (theta * dt) + J.
@@ -137,34 +138,30 @@ public:
             for (int i = 0; i != numMyElements; ++i)
             {
                 value = -(*diagB)[i] / timestep_ / theta_;
-                CHECK_ZERO(Model::jac_->SumIntoGlobalValues(myGlobalElements[i], 1,
-                                                            &value, myGlobalElements + i));
+                CHECK_ZERO(Model::getJacobian()->SumIntoGlobalValues(
+                               myGlobalElements[i], 1,
+                               &value, myGlobalElements + i));
             }
-            CHECK_ZERO(Model::jac_->FillComplete());
+            CHECK_ZERO(Model::getJacobian()->FillComplete());
         }
 
     //!-------------------------------------------------------
     //! J2 * x = 1/(theta*dt) * b
-    virtual void solve(Teuchos::RCP<const Epetra_Vector> rhs = Teuchos::null)
+    virtual void solve(ConstVectorPtr rhs)
         {
-            Teuchos::RCP<Epetra_Vector> b;
-            if (rhs == Teuchos::null)
-                b = Teuchos::rcp(new Epetra_Vector(*Model::rhs_));
-            else
-                b = Teuchos::rcp(new Epetra_Vector(*rhs));
+            VectorPtr b = Model::getRHS('C');
 
             if (theta_ == 0.0)
             {
-                Teuchos::RCP<const Epetra_Vector> M = Model::getMassMat('V');
+                ConstVectorPtr M = Model::getMassMat('V');
                 for (int i = 0; i < b->MyLength(); i++)
-                    (*Model::sol_)[i] = -(*b)[i] / (*M)[i];
+                    (*Model::getSolution('V'))[i] = -(*b)[i] / (*M)[i];
                 return;
             }
 
             CHECK_ZERO(b->Scale(1.0 / timestep_ / theta_));
             Model::solve(b);
         }
-
 };
 
 #endif

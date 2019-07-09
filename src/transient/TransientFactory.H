@@ -1,11 +1,13 @@
-#ifndef AMS_H
-#define AMS_H
+#ifndef TRANSIENTFACTORY_H
+#define TRANSIENTFACTORY_H
 
 //======================================================================
 #include "GlobalDefinitions.H"
 #include "Utils.H"
 
+#include "Newton.H"
 #include "Transient.hpp"
+#include "AdaptiveTransient.H"
 #include "StochasticThetaModel.H"
 #include "StochasticProjectedThetaModel.H"
 #include "ScoreFunctions.H"
@@ -14,99 +16,93 @@
 #include "EpetraExt_CrsMatrixIn.h"
 #include "EpetraExt_MultiVectorIn.h"
 
-template<typename Vector>
-Teuchos::RCP<Vector> newton(
-    std::function<Teuchos::RCP<const Vector>(Teuchos::RCP<const Vector> const &)> F,
-    std::function<Teuchos::RCP<const Vector>(Teuchos::RCP<const Vector> const &,
-                                             Teuchos::RCP<const Vector> const &)> Jsol,
-    Teuchos::RCP<const Vector> const &x0,
-    double tol)
-{
-    TIMER_SCOPE("AMS: Newton");
-    double nrm = -1;
-    Teuchos::RCP<Vector> x = Teuchos::rcp(new Vector(*x0));
-    Teuchos::RCP<const Vector> Fx = F(x);
-    for (int i = 0; i < 20; i++)
-    {
-        Teuchos::RCP<const Vector> dx = Jsol(x, Fx);
-        CHECK_ZERO(x->Update(-1.0, *dx, 1.0));
-        Fx = F(x);
-        nrm = Utils::norm(Fx);
-        if (nrm < tol)
-            return x;
-    }
-    std::cerr << "Newton unconverged with norm " << nrm << std::endl;
-    return x;
-}
+//! This file implements factory functions that construct a Transient.
+//! This is mainly to obfuscate the complicated dependency hierarchy that
+//! is described here.
+//!
+//! Model is a model such as Ocean.
+//!
+//! ThetaModel is a wrapper which overrides the RHS and Jacobian such
+//! that they are the RHS and Jacobian of the Theta iteration.
+//!
+//! ((Stochastic)?(Projected)?)ThetaModel are the same as the previous
+//! but then their stochastic and projected (time stepping) variants.
+//!
+//! Transient is a class that implements all time steppers and rare
+//! event methods, which expects a time step. Note that a ThetaModel
+//! itself does not implement a time step.
+//!
+//! Newton implements the Newton method which can be used in an implicit
+//! time step.
+//!
+//! get_time_step uses Newton and a ThetaModel to apply one time step.
+//! This can then be passed to Transient to implement a timestepper.
+//!
+//! AdaptiveTransient is a specialization of Transient which also allows
+//! for adaptive time steps based on the convergence of Newton. This is
+//! useful when computing a bifurcation diagram using time stepping.
+//!
+//! Using this terminology, we have a ThetaModel<Model> which is passed
+//! to get_time_step, where it is combined with Newton to construct a
+//! time step. This time step is then passed to Transient to make an
+//! actual transient or rare event method.
 
-template<typename Model>
-auto get_time_step(Model const &model)
+// Most methods in this file can be used as
+// Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > >
+
+//! Obtain a time step from a time step model, for instance a ThetaModel.
+//! This should only be used internally in the TransientFactory methods.
+template<typename Model, typename ParameterList>
+auto get_time_step(Model const &model, ParameterList pars)
 {
+    Teuchos::RCP<Newton<Model> > newton = Teuchos::rcp(new Newton<Model>(model, pars));
     // Function to perform one stochastic time step
-    return [model](Teuchos::RCP<const Epetra_Vector> const &x, double dt) {
-        TIMER_SCOPE("AMS: Time step");
+    return [newton, model](Teuchos::RCP<const Epetra_Vector> const &x, double dt) {
+        TIMER_SCOPE("TransientFactory: Time step");
 
         model->setState(x);
         model->initStep(dt);
-
-        // Deterministic theta stepper:
-        // M * u_n + dt * theta * F(u_(n+1)) + dt * (1-theta) * F(u_n) - M * u_(n+1) = 0
-        // Noise is added in an explicit manner
-        auto thetaF = [model](Teuchos::RCP<const Epetra_Vector> const &xnew) {
-            TIMER_SCOPE("AMS: F");
-
-            model->setState(xnew);
-            model->computeRHS();
-            return model->getRHS('V');
-        };
-
-        // J2 = theta * dt * J - M, so J2*x = b
-        // We write this as
-        // J2 = J - 1/(theta*dt) * M, J2 * x = 1/(theta*dt) * b
-        auto thetaJ = [model](Teuchos::RCP<const Epetra_Vector> const &xnew,
-                              Teuchos::RCP<const Epetra_Vector> const &b) {
-            TIMER_SCOPE("AMS: Jacobian solve");
-            model->setState(xnew);
-            model->computeJacobian();
-            model->solve(b);
-            return model->getSolution('V');
-        };
-
-        return newton<Epetra_Vector>(thetaF, thetaJ, x, 1e-8);
+        return newton->run(x);
     };
 }
 
+//! Factory function for a standard time stepper, which starts from the current
+//! state of the model.
 template<typename Model, typename ParameterList>
-Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
+auto TransientFactory(
     Model model, ParameterList pars)
 {
     auto theta_model = Teuchos::rcp(new ThetaModel<typename Model::element_type>(
                                         *model, pars));
-    auto time_step = get_time_step(theta_model);
     auto timestepper = Teuchos::rcp(
-        new Transient<Teuchos::RCP<const Epetra_Vector> >(time_step));
+        new AdaptiveTransient<decltype(theta_model)>(theta_model, pars));
 
     timestepper->set_parameters(*pars);
     return timestepper;
 }
 
+//! Factory function for a standard time stepper, which starts from the initial
+//! guess x0.
 template<typename Model, typename ParameterList>
-Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
+auto TransientFactory(
     Model model, ParameterList pars,
     Teuchos::RCP<const Epetra_Vector> x0)
 {
     auto theta_model = Teuchos::rcp(new ThetaModel<typename Model::element_type>(
                                         *model, pars));
-    auto time_step = get_time_step(theta_model);
     auto timestepper = Teuchos::rcp(
-        new Transient<Teuchos::RCP<const Epetra_Vector> >(time_step, x0));
+        new AdaptiveTransient<decltype(theta_model)>(theta_model, pars, x0));
 
     timestepper->set_parameters(*pars);
     return timestepper;
 }
 
+//! Factory function for a rare event method, which computes transitions between
+//! sol1 and sol2, with a possibly Teuchos::null unstable steady state sol3 in
+//! between. V is the space which can be used for a projected time step. This
+//! should be Teuchos::null in case not projected time step is desired.
 template<typename Model, typename ParameterList>
-Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
+auto TransientFactory(
     Model model, ParameterList pars,
     Teuchos::RCP<const Epetra_Vector> sol1,
     Teuchos::RCP<const Epetra_Vector> sol2,
@@ -147,7 +143,7 @@ Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
                                        *model, pars));
     }
 
-    auto time_step = get_time_step(theta_model);
+    auto time_step = get_time_step(theta_model, pars);
     auto timestepper = Teuchos::rcp(
         new Transient<Teuchos::RCP<const Epetra_Vector> >(
             time_step, score_fun, sol1, sol1->GlobalLength()));
@@ -169,8 +165,10 @@ Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
     return timestepper;
 }
 
+//! Wrapper for the previous factory function where the space V is loaded
+//! from an mtx file if the "space" parameter is not empty.
 template<typename Model, typename ParameterList>
-Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > > TransientFactory(
+auto TransientFactory(
     Model model, ParameterList pars,
     Teuchos::RCP<const Epetra_Vector> sol1,
     Teuchos::RCP<const Epetra_Vector> sol2,

@@ -574,7 +574,7 @@ newtonCorrector()
     VectorPtr stateDir;      // direction for the state
     VectorPtr y;             // solution of solve with dFdPar
     VectorPtr z;             // solution of solve with F
-    double    parDir;        // direction for the parameter
+    double    parDir = 0;    // direction for the parameter
 
     double res0   = 100.0;
     double res    = 100.0;
@@ -611,7 +611,7 @@ newtonCorrector()
         double parDiff = par_ - storage_.par0;
 
         // Create normalization constraint
-        double rbp;
+        double rbp = 0;
         if (normalizeStrategy_ == 'O')
         {
             // rbp = ds - d/ds state^T * (state1 - state0) * zeta

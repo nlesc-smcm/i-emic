@@ -5,7 +5,7 @@ set(FORTRAN_SOURCES assemble.F90 atm.F90 ice.F90 monthly.F90
   scaling.F90 mix_imp.f mix_sup.F90 spf.F90 topo.F90
   usrc.F90 inserts.F90 probe.F90 integrals.F90)
 
-set(CPP_SOURCES Ocean.C THCM.C OceanGrid.C OceanTheta.C)
+set(CPP_SOURCES Ocean.C THCM.C OceanGrid.C)
 
 add_library(ocean STATIC ${FORTRAN_SOURCES} ${CPP_SOURCES})
 target_include_directories(ocean PUBLIC .)

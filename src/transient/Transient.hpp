@@ -72,6 +72,16 @@ std::string mem2string(long long mem)
 }
 
 template<class T>
+Transient<T>::Transient()
+    :
+    method_("Transient"),
+    x0_(nullptr),
+    mfpt_(-1),
+    probability_(-1),
+    engine_initialized_(false)
+{}
+
+template<class T>
 Transient<T>::Transient(std::function<T(T const &, double)> time_step)
     :
     time_step_(time_step),
@@ -141,24 +151,38 @@ void Transient<T>::set_parameters(ParameterList &params)
 {
     method_ = params.get("method", method_);
     dt_ = params.get("time step", 0.01);
-    tstep_ = params.get("GPA time step", 1.0);
     tmax_ = params.get("maximum time", 1000.0);
+
+    in_days_ = params.get("timescale in days", 737.2685);
+    in_years_ = params.get("timescale in years", in_days_ / 365.);
+    dt_ = params.get("time step (in y)", dt_ * in_years_) / in_years_;
+    tmax_ = params.get("maximum time (in y)", tmax_ * in_years_) / in_years_;
+
+    // GPA parameters
+    tstep_ = params.get("GPA time step", 1.0);
     beta_ = params.get("beta", 1.0);
-    adist_ = params.get("A distance", 0.05);
-    bdist_ = params.get("B distance", adist_);
-    cdist_ = params.get("C distance", 2 * adist_);
+
+    // (T)AMS + GPA parameters
+    bdist_ = params.get("B distance", 0.05);
     dist_tol_ = params.get("distance tolerance", 0.0005);
     num_exp_ = params.get("number of experiments", 1000);
+
+    // AMS parameters
+    adist_ = params.get("A distance", 0.05);
+    cdist_ = params.get("C distance", 2 * adist_);
     num_init_exp_ = params.get("number of initial experiments", num_exp_);
+    if (num_init_exp_ < num_exp_)
+        num_init_exp_ = num_exp_;
+
+    // (T)AMS parameters
     maxit_ = params.get("maximum iterations", num_exp_ * 10);
+
+    // Writing parameters
     read_ = params.get("read file", "");
     write_ = params.get("write file", "");
     write_final_ = params.get("write final state", true);
     write_steps_ = params.get("write steps", -1);
     write_time_steps_ = params.get("write time steps", -1);
-
-    if (num_init_exp_ < num_exp_)
-        num_init_exp_ = num_exp_;
 }
 
 template<class T>
@@ -814,26 +838,13 @@ void Transient<T>::write_helper(std::vector<AMSExperiment<T> > const &experiment
 }
 
 template<typename T>
-void Transient<T>::run() const
+int Transient<T>::run() const
 {
-    if (method_ == "AMS")
-        ams(*x0_);
-    else if (method_ == "TAMS")
-        tams(*x0_);
-    else if (method_ == "GPA")
-        gpa(*x0_);
-    else if (method_ == "Naive")
-        naive(*x0_);
-    else if (method_ == "Transient")
-        transient(*x0_, dt_, tmax_);
-    else
-    {
-        ERROR("Method " << method_ << " does not exist.", __FILE__, __LINE__);
-    }
+    return run(*x0_);
 }
 
 template<typename T>
-void Transient<T>::run(T const &x0) const
+int Transient<T>::run(T const &x0) const
 {
     if (method_ == "AMS")
         ams(x0);
@@ -848,7 +859,9 @@ void Transient<T>::run(T const &x0) const
     else
     {
         ERROR("Method " << method_ << " does not exist.", __FILE__, __LINE__);
+        return -1;
     }
+    return 0;
 }
 
 template<typename T>

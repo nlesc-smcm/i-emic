@@ -2,7 +2,7 @@ set(TEST_INCLUDE_DIRS
   ../continuation/
   ../topo/
   ../lyapunov/
-  ../thetastepper/
+  ../transient/
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
@@ -40,6 +40,7 @@ include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
 set(TEST_LIBRARIES
   ${MPI_CXX_LIBRARIES}
   coupledmodel
+  transient
   utils
   jdqz_tools
   ${Belos_LIBRARIES}
@@ -73,8 +74,6 @@ foreach(test_source ${TEST_SOURCES})
   target_include_directories(${test_name} PUBLIC ${TEST_INCLUDE_DIRS})
   target_link_libraries(${test_name} PUBLIC ${TEST_LIBRARIES})
 endforeach()
-
-target_link_libraries(test_ams PRIVATE transient)
 
 if(APPLE)
     set(MPI_OVERSUBSCRIBE "--oversubscribe")

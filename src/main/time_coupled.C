@@ -15,8 +15,8 @@
 #include "Atmosphere.H"
 #include "SeaIce.H"
 #include "CoupledModel.H"
-#include "ThetaStepper.H"
-#include "Theta.H"
+#include "CoupledThetaModel.H"
+#include "TransientFactory.H"
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
@@ -103,31 +103,34 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
                 << comb, __FILE__, __LINE__);
     }
     
-    // Create parallelized Theta<Ocean> object
-    std::shared_ptr<Theta<Ocean> > ocean =
-        std::make_shared<Theta<Ocean> >(Comm, params[OCEAN]);
+    // Create parallelized ThetaModel<Ocean> object
+    std::shared_ptr<ThetaModel<Ocean> > ocean =
+        std::make_shared<ThetaModel<Ocean> >(Comm, params[OCEAN], params[TIME]);
 
-    // Create parallelized Theta<Atmosphere> object
-    std::shared_ptr<Theta<Atmosphere> > atmos =
-        std::make_shared<Theta<Atmosphere> >(Comm, params[ATMOS]);
+    // Create parallelized ThetaModel<Atmosphere> object
+    std::shared_ptr<ThetaModel<Atmosphere> > atmos =
+        std::make_shared<ThetaModel<Atmosphere> >(Comm, params[ATMOS], params[TIME]);
 
-    // Create parallelized Theta<Atmosphere> object
-    std::shared_ptr<Theta<SeaIce> > seaice =
-        std::make_shared<Theta<SeaIce> >(Comm, params[SEAICE]);
+    // Create parallelized ThetaModel<Atmosphere> object
+    std::shared_ptr<ThetaModel<SeaIce> > seaice =
+        std::make_shared<ThetaModel<SeaIce> >(Comm, params[SEAICE], params[TIME]);
 
     // Create CoupledModel
     std::shared_ptr<CoupledModel> coupledModel =
         std::make_shared<CoupledModel>(ocean, atmos, seaice, params[COUPLED]);
 
-    // Create ThetaStepper
-    ThetaStepper<std::shared_ptr<CoupledModel>, Teuchos::RCP<Teuchos::ParameterList> >
-        stepper(coupledModel, params[TIME]);
+    // Create CoupledThetaModel
+    std::shared_ptr<CoupledThetaModel> coupledThetaModel =
+        std::make_shared<CoupledThetaModel>(*coupledModel, params[TIME]);
 
+    // Create time stepper
+    auto stepper = Teuchos::rcp(
+        new AdaptiveTransient<decltype(coupledThetaModel)>(coupledThetaModel, params[TIME]));
 
     TIMER_STOP("Total initialization");
 
     // run timestepper
-    int status = stepper.run();
+    int status = stepper->run();
     if (status == 0)
         ERROR("Timestepper failed", __FILE__, __LINE__);
 

@@ -92,6 +92,14 @@ namespace Utils
         std::string label;
     };
 
+    //! Clone an Epetra_Vector
+    Teuchos::RCP<Epetra_Vector> clone(
+        Teuchos::RCP<const Epetra_Vector> const &vec);
+
+    //! Clone a Combined_MultiVec
+    std::shared_ptr<Combined_MultiVec> clone(
+        std::shared_ptr<const Combined_MultiVec> const &vec);
+
     //! Obtain 2-norm of std::vector<double>
     double norm(std::vector<double> &vec);
 
@@ -189,11 +197,11 @@ namespace Utils
     size_t hash(Teuchos::RCP<Epetra_MultiVector> vec);
 
     //! Save/load
-    void save(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename);
+    void save(Teuchos::RCP<const Epetra_MultiVector> vec, std::string const &filename);
     void load(Teuchos::RCP<Epetra_MultiVector> vec, std::string const &filename);
 
     //! Save/load a combined multivector to several hdf5 binaries
-    void save(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename);
+    void save(std::shared_ptr<const Combined_MultiVec> vec, std::string const &filename);
     void load(std::shared_ptr<Combined_MultiVec> vec, std::string const &filename);
     
     void save(Combined_MultiVec const &vec, std::string const &filename);

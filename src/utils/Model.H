@@ -23,9 +23,10 @@ class Model
 
 public:
 
-    using VectorPtr     = Teuchos::RCP<Epetra_Vector>;
-    using MatrixPtr     = Teuchos::RCP<Epetra_CrsMatrix>;
-    using ParameterList = Teuchos::RCP<Teuchos::ParameterList>;
+    using VectorPtr      = Teuchos::RCP<Epetra_Vector>;
+    using ConstVectorPtr = Teuchos::RCP<const Epetra_Vector>;
+    using MatrixPtr      = Teuchos::RCP<Epetra_CrsMatrix>;
+    using ParameterList  = Teuchos::RCP<Teuchos::ParameterList>;
 
     //! non-overlapping state vector
     Teuchos::RCP<Epetra_Vector> state_;
@@ -138,12 +139,6 @@ public:
                    int &i, int &j, int &k, int &xx);
 
     virtual void initializeState() { state_->PutScalar(0.0); }
-
-    //! time dependent stuff
-    virtual void setTheta(double theta){}
-    virtual void store(){}
-    virtual void restore(){}
-    virtual void setTimestep(double dt){}
 
     virtual void pressureProjection(VectorPtr vec){}
 

@@ -26,9 +26,11 @@ public:
     //-------------------------------------------------------
     //! constructor
     template<typename ParameterList>
-    StochasticThetaModel(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
+    StochasticThetaModel(Teuchos::RCP<Epetra_Comm> comm,
+                         ParameterList model_params,
+                         ParameterList params)
         :
-        ThetaModel<Model>(comm, params),
+        ThetaModel<Model>(comm, model_params, params),
         StochasticBase(*comm, params),
         sigma_(params->get("sigma", 1.0))
         {

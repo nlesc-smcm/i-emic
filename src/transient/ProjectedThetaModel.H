@@ -6,7 +6,8 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
 
-#include <Epetra_Vector.h>
+#include "Epetra_LocalMap.h"
+#include "Epetra_Vector.h"
 #include "Epetra_SerialDenseMatrix.h"
 #include "Epetra_SerialDenseSolver.h"
 
@@ -34,10 +35,12 @@ public:
     //-------------------------------------------------------
     //! constructor
     template<typename ParameterList>
-    ProjectedThetaModel(Teuchos::RCP<Epetra_Comm> comm, ParameterList params,
+    ProjectedThetaModel(Teuchos::RCP<Epetra_Comm> comm,
+                        ParameterList model_params,
+                        ParameterList params,
                         Teuchos::RCP<const Epetra_MultiVector> const &V)
         :
-        ThetaModel<Model>(comm, params),
+        ThetaModel<Model>(comm, model_params, params),
         V_(V)
         {
             // Initialize a few datamembers
@@ -157,7 +160,7 @@ public:
 
     //!-------------------------------------------------------
     //! J2 * x = 1/(theta*dt) * b
-    virtual void solve(Teuchos::RCP<const Epetra_Vector> rhs = Teuchos::null)
+    virtual void solve(Teuchos::RCP<const Epetra_Vector> rhs)
         {
             TIMER_SCOPE("ProjectedThetaModel: Projected jacobian solve");
             auto y = Teuchos::rcp(new Epetra_SerialDenseMatrix(

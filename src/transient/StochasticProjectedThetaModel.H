@@ -29,10 +29,12 @@ public:
     //-------------------------------------------------------
     //! constructor
     template<typename ParameterList>
-    StochasticProjectedThetaModel(Teuchos::RCP<Epetra_Comm> comm, ParameterList params,
+    StochasticProjectedThetaModel(Teuchos::RCP<Epetra_Comm> comm,
+                                  ParameterList model_params,
+                                  ParameterList params,
                                   Teuchos::RCP<const Epetra_MultiVector> const &V)
         :
-        ProjectedThetaModel<Model>(comm, params, V),
+        ProjectedThetaModel<Model>(comm, model_params, params, V),
         StochasticBase(*comm, params),
         sigma_(params->get("sigma", 1.0))
         {
@@ -89,7 +91,7 @@ public:
             CHECK_ZERO(G_->Scale(sqrt(ThetaModel<Model>::timestep_) * sigma_));
         }
 
-    void setState(Teuchos::RCP<const Epetra_Vector>  state)
+    void setState(Teuchos::RCP<const Epetra_Vector> state)
         {
             ProjectedThetaModel<Model>::setState(state);
         }
@@ -110,7 +112,7 @@ public:
 
     //!-------------------------------------------------------
     //! J2 * x = 1/(theta*dt) * b
-    void solve(Teuchos::RCP<const Epetra_Vector> rhs = Teuchos::null)
+    void solve(Teuchos::RCP<const Epetra_Vector> rhs)
         {
             ProjectedThetaModel<Model>::solve(rhs);
         }

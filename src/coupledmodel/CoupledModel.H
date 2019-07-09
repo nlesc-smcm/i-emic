@@ -46,10 +46,11 @@ class BelosOp;
 class CoupledModel
 {
 public:
-    using VectorPtr  = std::shared_ptr<Combined_MultiVec>;
-    using LandMask   = Utils::MaskStruct;
+    using VectorPtr      = std::shared_ptr<Combined_MultiVec>;
+    using ConstVectorPtr = std::shared_ptr<const Combined_MultiVec>;
+    using LandMask       = Utils::MaskStruct;
 
-private:
+protected:
 
     //! submodel identifiers
     int OCEAN, ATMOS, SEAICE;
@@ -142,7 +143,7 @@ public:
     void computeRHS();
 
     //! Solve Jx=b
-    void solve(std::shared_ptr<Combined_MultiVec> rhs);
+    void solve(std::shared_ptr<const Combined_MultiVec> rhs);
 
     //! Initialize FGMRES (Belos) solver
     void initializeFGMRES();
@@ -214,20 +215,13 @@ public:
     void gid2coord(int const &gid, int &modelIdent,
                    int &i, int &j, int &k, int &xx);
 
-    //! time dependent stuff, only effective when the submodels are of
-    //! Theta<Model> type
-    void setTheta(double theta);
-    void store();
-    void restore();
-    void setTimestep(double dt);
-
 private:
 
     //! Solve the system using FGMRES
-    void FGMRESSolve(std::shared_ptr<Combined_MultiVec> rhs);
+    void FGMRESSolve(std::shared_ptr<const Combined_MultiVec> rhs);
 
     //! Compute the residual ||b-A*x||
-    double explicitResNorm(std::shared_ptr<Combined_MultiVec> rhs);
+    double explicitResNorm(std::shared_ptr<const Combined_MultiVec> rhs);
 
     //! Synchronize the states between the models that are needed to communicate
     void synchronize();
