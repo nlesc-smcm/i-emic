@@ -19,6 +19,8 @@
 // Can all be used as
 // Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > >
 
+//! Obtain a time step from a time step model, for instance a ThetaModel.
+//! This should only be used internally in the TransientFactory methods.
 template<typename Model, typename ParameterList>
 auto get_time_step(Model const &model, ParameterList pars)
 {
@@ -33,6 +35,8 @@ auto get_time_step(Model const &model, ParameterList pars)
     };
 }
 
+//! Factory function for a standard time stepper, which starts from the current
+//! state of the model.
 template<typename Model, typename ParameterList>
 auto TransientFactory(
     Model model, ParameterList pars)
@@ -46,6 +50,8 @@ auto TransientFactory(
     return timestepper;
 }
 
+//! Factory function for a standard time stepper, which starts from the initial
+//! guess x0.
 template<typename Model, typename ParameterList>
 auto TransientFactory(
     Model model, ParameterList pars,
@@ -60,6 +66,10 @@ auto TransientFactory(
     return timestepper;
 }
 
+//! Factory function for a rare event method, which computes transitions between
+//! sol1 and sol2, with a possibly Teuchos::null unstable steady state sol3 in
+//! between. V is the space which can be used for a projected time step. This
+//! should be Teuchos::null in case not projected time step is desired.
 template<typename Model, typename ParameterList>
 auto TransientFactory(
     Model model, ParameterList pars,
@@ -124,6 +134,8 @@ auto TransientFactory(
     return timestepper;
 }
 
+//! Wrapper for the previous factory function where the space V is loaded
+//! from an mtx file if the "space" parameter is not empty.
 template<typename Model, typename ParameterList>
 auto TransientFactory(
     Model model, ParameterList pars,
