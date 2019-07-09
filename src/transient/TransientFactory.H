@@ -16,7 +16,38 @@
 #include "EpetraExt_CrsMatrixIn.h"
 #include "EpetraExt_MultiVectorIn.h"
 
-// Can all be used as
+//! This file implements factory functions that construct a Transient.
+//! This is mainly to obfuscate the complicated dependency hierarchy that
+//! is described here.
+//!
+//! Model is a model such as Ocean.
+//!
+//! ThetaModel is a wrapper which overrides the RHS and Jacobian such
+//! that they are the RHS and Jacobian of the Theta iteration.
+//!
+//! ((Stochastic)?(Projected)?)ThetaModel are the same as the previous
+//! but then their stochastic and projected (time stepping) variants.
+//!
+//! Transient is a class that implements all time steppers and rare
+//! event methods, which expects a time step. Note that a ThetaModel
+//! itself does not implement a time step.
+//!
+//! Newton implements the Newton method which can be used in an implicit
+//! time step.
+//!
+//! get_time_step uses Newton and a ThetaModel to apply one time step.
+//! This can then be passed to Transient to implement a timestepper.
+//!
+//! AdaptiveTransient is a specialization of Transient which also allows
+//! for adaptive time steps based on the convergence of Newton. This is
+//! useful when computing a bifurcation diagram using time stepping.
+//!
+//! Using this terminology, we have a ThetaModel<Model> which is passed
+//! to get_time_step, where it is combined with Newton to construct a
+//! time step. This time step is then passed to Transient to make an
+//! actual transient or rare event method.
+
+// Most methods in this file can be used as
 // Teuchos::RCP<Transient<Teuchos::RCP<const Epetra_Vector> > >
 
 //! Obtain a time step from a time step model, for instance a ThetaModel.
