@@ -258,7 +258,7 @@ public:
     double getPar(std::string const &parName) { return atmos_->getPar(parName); }
 
     //! Get parameters that we want to communicate
-    void getCommPars(CommPars &parStruct);
+    void getCommPars(CommPars &parStruct) const;
 
     void preProcess();
     void postProcess();
@@ -350,13 +350,19 @@ private:
 
     //! set precipitation distribution
     void setPdist();
-        
+
     //! Private member to compute P if it is not an unknown in the
     //! model.
-    Teuchos::RCP<Epetra_Vector> getP(char mode = 'C');
+    Teuchos::RCP<Epetra_Vector> getP(Teuchos::RCP<Epetra_Vector> P = Teuchos::null) const;
+
+    //! Private member to compute P_.
+    void setP();
 
     //! Private member to compute E
     Teuchos::RCP<Epetra_Vector> getE(char mode = 'C');
+
+    //! Private member to compute E_.
+    void setE();
 
     //! create dependency graph for the Jacobian matrix
     //! function borrowed from THCM,

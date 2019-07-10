@@ -534,7 +534,7 @@ void AtmosLocal::setPdist(double *Pdist)
 }
 
 //-----------------------------------------------------------------------------
-void AtmosLocal::getCommPars(AtmosLocal::CommPars &parStruct)
+void AtmosLocal::getCommPars(AtmosLocal::CommPars &parStruct) const
 {
     parStruct.tdim = tdim_;
     parStruct.qdim = qdim_;
