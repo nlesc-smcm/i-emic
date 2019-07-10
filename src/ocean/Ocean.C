@@ -829,7 +829,7 @@ void Ocean::postProcess()
 }
 
 //=====================================================================
-std::string const Ocean::writeData(bool describe)
+std::string Ocean::writeData(bool describe) const
 {
     std::ostringstream datastring;
     if (describe)
@@ -871,7 +871,7 @@ std::string const Ocean::writeData(bool describe)
     }
 }
 
-int Ocean::getPsiM(double &psiMin, double &psiMax)
+int Ocean::getPsiM(double &psiMin, double &psiMax) const
 {
     grid_->ImportData(*state_);
     psiMax = grid_->psimMax();
@@ -2206,7 +2206,7 @@ double Ocean::getPar(std::string const &parName)
 int Ocean::npar() { return _NPAR_; }
 
 //===================================================================
-std::string const Ocean::int2par(int ind)
+std::string Ocean::int2par(int ind) const
 {
     return THCM::Instance().int2par(ind+1);
 }

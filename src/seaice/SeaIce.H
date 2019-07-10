@@ -326,8 +326,8 @@ public:
     //! destructor
     ~SeaIce() {};
 
-    std::string const name() { return "seaice"; }
-    virtual int const modelIdent() { return 2; }
+    std::string name() const { return "seaice"; }
+    virtual int modelIdent() const { return 2; }
 
     //! compute QSos and EmiP fluxes locally
     void computeLocalFluxes(double *state, double *sss, double *sst,
@@ -386,7 +386,7 @@ public:
     int npar();
 
     //! convert index to parameter name
-    std::string const int2par(int ind);
+    std::string int2par(int ind) const;
 
     Utils::MaskStruct getLandMask()
         {
@@ -410,13 +410,13 @@ public:
 
     void pressureProjection(Teuchos::RCP<Epetra_Vector> vec) {}
 
-    Teuchos::RCP<Epetra_Vector> interface(Teuchos::RCP<Epetra_Vector> vec, int XX);
+    Teuchos::RCP<Epetra_Vector> interface(Teuchos::RCP<Epetra_Vector> vec, int XX) const;
 
-    Teuchos::RCP<Epetra_Vector> interfaceH();
-    Teuchos::RCP<Epetra_Vector> interfaceQ();
-    Teuchos::RCP<Epetra_Vector> interfaceM();
-    Teuchos::RCP<Epetra_Vector> interfaceT();
-    Teuchos::RCP<Epetra_Vector> interfaceG();
+    Teuchos::RCP<Epetra_Vector> interfaceH() const;
+    Teuchos::RCP<Epetra_Vector> interfaceQ() const;
+    Teuchos::RCP<Epetra_Vector> interfaceM() const;
+    Teuchos::RCP<Epetra_Vector> interfaceT() const;
+    Teuchos::RCP<Epetra_Vector> interfaceG() const;
 
     // global interface row
     int interface_row(int i, int j, int XX)
@@ -431,7 +431,7 @@ public:
     void preProcess();
     void postProcess();
 
-    std::string const writeData(bool describe);
+    std::string writeData(bool describe) const;
 
 private:
     //! create x_ and y_

@@ -91,7 +91,7 @@ protected:
     VectorPtr sol_;
 
     // grid representation of the state
-    Teuchos::RCP<OceanGrid> grid_;
+    mutable Teuchos::RCP<OceanGrid> grid_;
 
     ParameterList solverParams_;
 
@@ -103,7 +103,7 @@ protected:
                  <double, Epetra_MultiVector, Epetra_Operator> > belosSolver_;
 
     double effort_;
-    int effortCtr_;
+    mutable int effortCtr_;
 
     Teuchos::RCP<Ifpack_Preconditioner> precPtr_;
 
@@ -164,8 +164,8 @@ public:
     //! destructor
     ~Ocean();
 
-    std::string const name() { return "ocean"; }
-    int const modelIdent() { return 0; }
+    std::string name() const { return "ocean"; }
+    int modelIdent() const { return 0; }
     Teuchos::RCP<Epetra_Comm> Comm() const { return comm_; }
 
     //! Solve may optionally accept an rhs of VectorPointer type
@@ -243,7 +243,7 @@ public:
     int npar();
 
     //! Convert integer parameter index to parameter name
-    std::string const int2par(int ind);
+    std::string int2par(int ind) const;
 
     //! Get current landmask
     Utils::MaskStruct getLandMask()
@@ -287,7 +287,7 @@ public:
     void postProcess();
 
     //! Gather important data to use in continuation summary
-    std::string const writeData(bool describe = false);
+    std::string writeData(bool describe = false) const;
 
     //! Get functions for the grid dimensions
     int getNdim() { return N_;}
@@ -295,7 +295,7 @@ public:
     int getLdim() { return L_;}
 
     //! Get the minimum and maximum of the Meridional streamfunction
-    int getPsiM(double &psiMin, double &psiMax);
+    int getPsiM(double &psiMin, double &psiMax) const;
 
     //! Get coupling information
     int getCoupledT();

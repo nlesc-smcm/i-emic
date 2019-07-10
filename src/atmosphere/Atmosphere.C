@@ -446,7 +446,7 @@ void Atmosphere::idealized(double precip)
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::interface(int XX)
+Teuchos::RCP<Epetra_Vector> Atmosphere::interface(int XX) const
 {
     if ( XX >= ATMOS_PP_ )
     {
@@ -461,33 +461,33 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::interface(int XX)
     else
     {
         Teuchos::RCP<Epetra_Vector> out =
-            Teuchos::rcp(new Epetra_Vector(*Maps_[XX]));
+            Teuchos::rcp(new Epetra_Vector(*Maps_.at(XX)));
 
-        CHECK_ZERO(out->Import(*state_, *Imps_[XX], Insert));
+        CHECK_ZERO(out->Import(*state_, *Imps_.at(XX), Insert));
         return out;
     }
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceT()
+Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceT() const
 {
     return interface(ATMOS_TT_);
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceQ()
+Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceQ() const
 {
     return interface(ATMOS_QQ_);
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceA()
+Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceA() const
 {
     return interface(ATMOS_AA_);
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceP()
+Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceP() const
 {
     return interface(ATMOS_PP_);
 }
@@ -1397,7 +1397,7 @@ void Atmosphere::postProcess()
 }
 
 //==================================================================
-std::string const Atmosphere::writeData(bool describe)
+std::string Atmosphere::writeData(bool describe) const
 {
     std::ostringstream datastring;
 

@@ -75,13 +75,13 @@ public:
     virtual int npar() = 0;
 
     //! Convert integer parameter index to parameter name
-    virtual std::string const int2par(int ind) = 0;
+    virtual std::string int2par(int ind) const = 0;
 
     virtual Utils::MaskStruct getLandMask() = 0;
     virtual void setLandMask(Utils::MaskStruct const &mask) = 0;
 
-    virtual std::string const name() = 0;
-    virtual int const modelIdent() = 0;
+    virtual std::string name() const = 0;
+    virtual int modelIdent() const = 0;
 
     virtual Teuchos::RCP<TRIOS::Domain> getDomain() = 0;
 
@@ -115,7 +115,7 @@ public:
     virtual void postProcess() = 0;
 
     //! Plaintext data output
-    virtual std::string const writeData(bool describe) = 0;
+    virtual std::string writeData(bool describe) const = 0;
 
     //! HDF5-based load function for the state and parameters
     int loadStateFromFile(std::string const &filename);
