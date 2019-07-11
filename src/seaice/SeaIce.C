@@ -827,7 +827,7 @@ int SeaIce::npar()
 }
 
 //-----------------------------------------------------------------------------
-std::string const SeaIce::int2par(int ind)
+std::string SeaIce::int2par(int ind) const
 {
     return allParameters_[ind];
 }
@@ -1169,10 +1169,10 @@ void SeaIce::synchronize(std::shared_ptr<Atmosphere> atmos)
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_Vector> SeaIce::interface(Teuchos::RCP<Epetra_Vector> vec, int XX)
+Teuchos::RCP<Epetra_Vector> SeaIce::interface(Teuchos::RCP<Epetra_Vector> vec, int XX) const
 {
-    Teuchos::RCP<Epetra_Vector> out = Teuchos::rcp(new Epetra_Vector(*Maps_[XX]));
-    CHECK_ZERO(out->Import(*vec, *Imps_[XX], Insert));
+    Teuchos::RCP<Epetra_Vector> out = Teuchos::rcp(new Epetra_Vector(*Maps_.at(XX)));
+    CHECK_ZERO(out->Import(*vec, *Imps_.at(XX), Insert));
 
     assert(out->MyLength() >= 1);
 
@@ -1189,31 +1189,31 @@ Teuchos::RCP<Epetra_Vector> SeaIce::interface(Teuchos::RCP<Epetra_Vector> vec, i
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_Vector> SeaIce::interfaceH()
+Teuchos::RCP<Epetra_Vector> SeaIce::interfaceH() const
 {
     return interface(state_, SEAICE_HH_);
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_Vector> SeaIce::interfaceQ()
+Teuchos::RCP<Epetra_Vector> SeaIce::interfaceQ() const
 {
     return interface(state_, SEAICE_QQ_);
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_Vector> SeaIce::interfaceM()
+Teuchos::RCP<Epetra_Vector> SeaIce::interfaceM() const
 {
     return interface(state_, SEAICE_MM_);
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_Vector> SeaIce::interfaceT()
+Teuchos::RCP<Epetra_Vector> SeaIce::interfaceT() const
 {
     return interface(state_, SEAICE_TT_);
 }
 
 //=============================================================================
-Teuchos::RCP<Epetra_Vector> SeaIce::interfaceG()
+Teuchos::RCP<Epetra_Vector> SeaIce::interfaceG() const
 {
     if (aux_ == 1)
         return interface(state_, SEAICE_GG_);
@@ -1551,7 +1551,7 @@ void SeaIce::postProcess()
 }
 
 //=============================================================================
-std::string const SeaIce::writeData(bool describe)
+std::string SeaIce::writeData(bool describe) const
 {
     std::ostringstream datastring;
 

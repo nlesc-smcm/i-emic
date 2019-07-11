@@ -380,7 +380,7 @@ public:
     void zeroState();
 
     //! Obtain parameters
-    void getCommPars(CommPars &parStruct);
+    void getCommPars(CommPars &parStruct) const;
 
     //! Get the dA_{ij} coefficients for surface integrals with q. We
     //! ignore land points by default. Also for the q integral.

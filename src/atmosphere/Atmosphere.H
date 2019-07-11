@@ -195,8 +195,8 @@ public:
 
     ~Atmosphere() {INFO("Atmosphere destructor");}
     
-    std::string const name() { return "atmos"; }
-    virtual int const modelIdent() { return 1; }
+    std::string name() const { return "atmos"; }
+    virtual int modelIdent() const { return 1; }
     
     //! Setup integral coefficients
     void setupIntCoeff();
@@ -258,13 +258,13 @@ public:
     double getPar(std::string const &parName) { return atmos_->getPar(parName); }
 
     //! Get parameters that we want to communicate
-    void getCommPars(CommPars &parStruct);
+    void getCommPars(CommPars &parStruct) const;
 
     void preProcess();
     void postProcess();
 
     //! Gather important continuation data to use in summary
-    std::string const writeData(bool describe = false); 
+    std::string writeData(bool describe = false) const; 
 
     void printState(std::string const &fname);
 
@@ -282,7 +282,7 @@ public:
     int npar() { return atmos_->npar(); }
 
     //! Return parameter name, supply index
-    std::string const int2par(int ind) { return atmos_->int2par(ind); }
+    std::string int2par(int ind) const { return atmos_->int2par(ind); }
 
     Teuchos::RCP<Epetra_Vector> getState(char mode = 'C')
         { return Utils::getVector(mode, state_); }
@@ -299,19 +299,19 @@ public:
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
 
     //! Factorized interface routine
-    Teuchos::RCP<Epetra_Vector> interface(int XX);
+    Teuchos::RCP<Epetra_Vector> interface(int XX) const;
     
     //! Get temperature at interface 
-    Teuchos::RCP<Epetra_Vector> interfaceT();
+    Teuchos::RCP<Epetra_Vector> interfaceT() const;
 
     //! Get humidity at interface 
-    Teuchos::RCP<Epetra_Vector> interfaceQ();
+    Teuchos::RCP<Epetra_Vector> interfaceQ() const;
 
     //! Get albedo at interface 
-    Teuchos::RCP<Epetra_Vector> interfaceA();
+    Teuchos::RCP<Epetra_Vector> interfaceA() const;
 
     //! Get precipitation at interface 
-    Teuchos::RCP<Epetra_Vector> interfaceP();
+    Teuchos::RCP<Epetra_Vector> interfaceP() const;
 
     //! Compute evaporation at interface
     Teuchos::RCP<Epetra_Vector> interfaceE();
@@ -350,13 +350,19 @@ private:
 
     //! set precipitation distribution
     void setPdist();
-        
+
     //! Private member to compute P if it is not an unknown in the
     //! model.
-    Teuchos::RCP<Epetra_Vector> getP(char mode = 'C');
+    Teuchos::RCP<Epetra_Vector> getP(Teuchos::RCP<Epetra_Vector> P = Teuchos::null) const;
+
+    //! Private member to compute P_.
+    void setP();
 
     //! Private member to compute E
     Teuchos::RCP<Epetra_Vector> getE(char mode = 'C');
+
+    //! Private member to compute E_.
+    void setE();
 
     //! create dependency graph for the Jacobian matrix
     //! function borrowed from THCM,

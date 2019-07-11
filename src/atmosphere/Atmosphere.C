@@ -275,10 +275,10 @@ void Atmosphere::computeRHS()
                       // in serial AtmosLocal
     {
         // compute and obtain evaporation field
-        getE();
+        setE();
 
         // compute and obtain precipitation field
-        getP();
+        setP();
 
         // return precipitation field to local atmosphere
         CHECK_ZERO(localP_->Import(*P_, *as2std_surf_, Insert));
@@ -446,7 +446,7 @@ void Atmosphere::idealized(double precip)
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::interface(int XX)
+Teuchos::RCP<Epetra_Vector> Atmosphere::interface(int XX) const
 {
     if ( XX >= ATMOS_PP_ )
     {
@@ -456,39 +456,38 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::interface(int XX)
                     << "P is 'diagnosed'", __FILE__, __LINE__);
         }
 
-        getP();
-        return Utils::getVector('C', P_);
+        return getP();
     }
     else
     {
         Teuchos::RCP<Epetra_Vector> out =
-            Teuchos::rcp(new Epetra_Vector(*Maps_[XX]));
+            Teuchos::rcp(new Epetra_Vector(*Maps_.at(XX)));
 
-        CHECK_ZERO(out->Import(*state_, *Imps_[XX], Insert));
+        CHECK_ZERO(out->Import(*state_, *Imps_.at(XX), Insert));
         return out;
     }
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceT()
+Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceT() const
 {
     return interface(ATMOS_TT_);
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceQ()
+Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceQ() const
 {
     return interface(ATMOS_QQ_);
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceA()
+Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceA() const
 {
     return interface(ATMOS_AA_);
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceP()
+Teuchos::RCP<Epetra_Vector> Atmosphere::interfaceP() const
 {
     return interface(ATMOS_PP_);
 }
@@ -1152,12 +1151,21 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getE(char mode)
 }
 
 //==================================================================
-Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
+void Atmosphere::setE()
 {
+    getE('V');
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> Atmosphere::getP(Teuchos::RCP<Epetra_Vector> P) const
+{
+    if (P == Teuchos::null)
+        P = Utils::getVector('C', P_);
+
     // P is a single, globally computed unknown
     double Pvalue = 0.0;
-    int numGlobalElements = P_->Map().NumGlobalElements();
-    int numMyElements     = P_->Map().NumMyElements();
+    int numGlobalElements = P->Map().NumGlobalElements();
+    int numMyElements     = P->Map().NumMyElements();
     assert((int) surfmask_->size() == numGlobalElements);
 
     Atmosphere::CommPars pars;
@@ -1206,14 +1214,20 @@ Teuchos::RCP<Epetra_Vector> Atmosphere::getP(char mode)
     int gid;
     for (int i = 0; i != numMyElements; ++i)
     {
-        gid = P_->Map().GID(i);
+        gid = P->Map().GID(i);
         if ((*surfmask_)[gid] == 0)
-            (*P_)[i] = (*Pdist_)[i] *
+            (*P)[i] = (*Pdist_)[i] *
                 (pars.Eo0 + pars.eta * pars.qdim * Pvalue);
         else
-            (*P_)[i] = 0.0;
+            (*P)[i] = 0.0;
     }
-    return Utils::getVector(mode, P_);
+    return P;
+}
+
+//==================================================================
+void Atmosphere::setP()
+{
+    getP(P_);
 }
 
 //==================================================================
@@ -1351,7 +1365,7 @@ void Atmosphere::buildPreconditioner()
 }
 
 //==================================================================
-void Atmosphere::getCommPars(Atmosphere::CommPars &parStruct)
+void Atmosphere::getCommPars(Atmosphere::CommPars &parStruct) const
 {
     atmos_->getCommPars(parStruct);
 }
@@ -1383,7 +1397,7 @@ void Atmosphere::postProcess()
 }
 
 //==================================================================
-std::string const Atmosphere::writeData(bool describe)
+std::string Atmosphere::writeData(bool describe) const
 {
     std::ostringstream datastring;
 
