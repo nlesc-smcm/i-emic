@@ -366,10 +366,10 @@ public:
     int  npar() { return (int) allParameters_.size(); }
 
     //! Return parameter name, supply index
-    std::string const int2par(int ind);
+    std::string int2par(int ind) const;
 
     //! Return parameter index, supply name
-    int const par2int(std::string const &name);
+    int par2int(std::string const &name) const;
 
     //! Put default fields in atmosphere and ocean, accepts a value
     //! for the homogeneous precipitation.

@@ -1700,13 +1700,13 @@ double AtmosLocal::getPar(std::string const &parName)
 }
 
 //-----------------------------------------------------------------------------
-std::string const AtmosLocal::int2par(int ind)
+std::string AtmosLocal::int2par(int ind) const
 {
     return allParameters_[ind];
 }
 
 //-----------------------------------------------------------------------------
-int const AtmosLocal::par2int(std::string const &label)
+int AtmosLocal::par2int(std::string const &label) const
 {
     for (size_t i = 0; i < allParameters_.size(); ++i)
     {
