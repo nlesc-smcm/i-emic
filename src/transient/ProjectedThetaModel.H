@@ -215,19 +215,4 @@ public:
         }
 
 };
-
-Teuchos::RCP<Epetra_MultiVector> dot(
-    Epetra_MultiVector const &x, Epetra_MultiVector const &y)
-{
-    TIMER_SCOPE("ProjectedThetaModel: dot");
-    int m = x.NumVectors();
-    int n = y.NumVectors();
-
-    Epetra_LocalMap map(m, 0, x.Comm());
-    Teuchos::RCP<Epetra_MultiVector> out = Teuchos::rcp(new Epetra_MultiVector(map, n));
-
-    CHECK_ZERO(out->Multiply('T', 'N', 1.0, x, y, 0.0));
-    return out;
-}
-
 #endif
