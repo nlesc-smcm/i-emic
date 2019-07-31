@@ -16,16 +16,14 @@ set(MAIN_SOURCES
   )
 
 set(MAIN_LIBRARIES
+  iemic
   ${MPI_CXX_LIBRARIES}
-  coupledmodel
-  continuation
-  transient
-  utils
-  jdqz_tools
   ${Belos_LIBRARIES}
   ${Belos_TPL_LIBRARIES}
   ${Epetra_LIBRARIES}
   ${Epetra_TPL_LIBRARIES}
+  ${EpetraExt_LIBRARIES}
+  ${EpetraExt_TPL_LIBRARIES}
 )
 
 find_package(RAILS)

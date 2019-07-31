@@ -1,4 +1,8 @@
-cmake_minimum_required(VERSION 3.3)
+if (APPLE)
+    cmake_minimum_required(VERSION 3.13)
+else ()
+    cmake_minimum_required(VERSION 3.3)
+endif ()
 project(i-emic)
 
 set(DATA_DIR "'${CMAKE_CURRENT_SOURCE_DIR}/data/'")
