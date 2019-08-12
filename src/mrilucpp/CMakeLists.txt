@@ -27,3 +27,5 @@ target_link_libraries(ifpack_mrilu PRIVATE
 if (TARGET mrilu)
   add_dependencies(mrilucpp mrilu)
 endif ()
+
+install(TARGETS mrilucpp ifpack_mrilu DESTINATION lib)
