@@ -2,7 +2,7 @@ set(SOURCES
   Transient.cpp
   ScoreFunctions.C)
 
-add_library(transient SHARED ${SOURCES})
+add_library(transient STATIC ${SOURCES})
 target_include_directories(transient PUBLIC .)
 target_link_libraries(transient PRIVATE
     ${MPI_CXX_LIBRARIES}
@@ -14,5 +14,3 @@ target_link_libraries(transient PRIVATE
     ${Teuchos_TPL_LIBRARIES}
     utils
 )
-
-install(TARGETS transient DESTINATION lib)

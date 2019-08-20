@@ -48,6 +48,57 @@ endif ()
 
 link_directories(${library_directories})
 
+set(include_flags "")
+foreach(dir IN LISTS Trilinos_INCLUDE_DIRS Trilinos_TPL_INCLUDE_DIRS)
+    string(CONCAT include_flags "${include_flags}" " -I${dir}")
+endforeach(dir)
+
+set(link_flags "")
+foreach(dir IN LISTS Trilinos_LIBRARY_DIRS Trilinos_TPL_LIBRARY_DIRS)
+    string(CONCAT link_flags "${link_flags}" " -L${dir}")
+endforeach()
+foreach(lib IN LISTS Teuchos_LIBRARIES Teuchos_TPL_LIBRARIES Epetra_LIBRARIES
+        Epetra_TPL_LIBRARIES EpetraExt_LIBRARIES EpetraExt_TPL_LIBRARIES MPI_CXX_LIBRARIES)
+    if ("${lib}" MATCHES "^/")
+        string(CONCAT link_flags "${link_flags}" " ${lib}")
+    else ()
+        string(CONCAT link_flags "${link_flags}" " -l${lib}")
+    endif ()
+endforeach()
+
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/Config.mk "CXXFLAGS+=${include_flags}")
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Config.mk "\nLDFLAGS+=${link_flags}")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Config.mk DESTINATION include)
+unset(include_flags)
+
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/null.cpp "")
+add_library(iemic SHARED ${CMAKE_CURRENT_BINARY_DIR}/null.cpp)
+target_link_libraries(iemic PRIVATE
+    ${MPI_CXX_LIBRARIES}
+    ${Belos_LIBRARIES}
+    ${Belos_TPL_LIBRARIES}
+    ${Epetra_LIBRARIES}
+    ${Epetra_TPL_LIBRARIES}
+    ${ML_LIBRARIES}
+    ${ML_TPL_LIBRARIES}
+    trios
+    ocean
+)
+set(IEMIC_INTERFACE
+    coupledmodel
+    globaldefs
+    jdqz_tools
+    transient
+    utils
+)
+target_link_libraries(iemic PUBLIC continuation ${IEMIC_INTERFACE})
+if (APPLE)
+    list(TRANSFORM IEMIC_INTERFACE PREPEND "LINKER:-reexport_library,$<TARGET_FILE:")
+    list(TRANSFORM IEMIC_INTERFACE APPEND ">")
+    target_link_options(iemic PUBLIC ${IEMIC_INTERFACE})
+endif ()
+install(TARGETS iemic DESTINATION lib)
+
 # ------------------------------------------------------------------
 # Get targets and dependencies of the components
 add_subdirectory(mrilucpp)
@@ -58,6 +109,7 @@ add_subdirectory(atmosphere)
 add_subdirectory(seaice)
 add_subdirectory(coupledmodel)
 add_subdirectory(transient)
+add_subdirectory(continuation)
 
 add_subdirectory(globaldefs)
 add_subdirectory(utils)

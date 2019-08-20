@@ -1,5 +1,4 @@
 set(TEST_INCLUDE_DIRS
-  ../continuation/
   ../topo/
   ../lyapunov/
   ../transient/
@@ -38,21 +37,17 @@ BuildExternalProject_find_package(GTest)
 include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
 
 set(TEST_LIBRARIES
+  iemic
   ${MPI_CXX_LIBRARIES}
-  coupledmodel
-  transient
-  utils
-  jdqz_tools
   ${Belos_LIBRARIES}
   ${Belos_TPL_LIBRARIES}
   ${Epetra_LIBRARIES}
   ${Epetra_TPL_LIBRARIES}
   ${EpetraExt_LIBRARIES}
   ${EpetraExt_TPL_LIBRARIES}
-  ${Teuchos_LIBRARIES}
-  ${Teuchos_TPL_LIBRARIES}
   ${GTEST_BOTH_LIBRARIES}
-  ${CMAKE_THREAD_LIBS_INIT})
+  ${CMAKE_THREAD_LIBS_INIT}
+)
 
 find_package(RAILS)
 if (RAILS_FOUND)

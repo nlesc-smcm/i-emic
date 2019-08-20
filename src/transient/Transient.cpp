@@ -16,6 +16,22 @@
 
 #include "Trilinos_version.h"
 
+std::string mem2string(long long mem)
+{
+    double value = mem;
+    std::string unit = "B";
+    if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "kB";}
+    if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "MB";}
+    if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "GB";}
+    if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "TB";}
+
+    std::ostringstream ss;
+    ss << std::fixed;
+    ss.precision(2);
+    ss << value << " " << unit;
+    return ss.str();
+}
+
 // This read/write mechanism need Trilinos pull request #3381, which
 // is present in Trilinos 12.14
 #if TRILINOS_MAJOR_MINOR_VERSION > 121300
@@ -183,5 +199,4 @@ void Transient<Teuchos::RCP<const Epetra_Vector> >::write(
     if (lock_file >= 0)
         close(lock_file);
 }
-
 #endif //TRILINOS_MAJOR_MINOR_VERSION

@@ -55,21 +55,7 @@ struct GPAExperiment {
     bool converged;
 };
 
-std::string mem2string(long long mem)
-{
-    double value = mem;
-    std::string unit = "B";
-    if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "kB";}
-    if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "MB";}
-    if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "GB";}
-    if (std::abs(value) > 1.0e3) {value *= 1.0e-3; unit = "TB";}
-
-    std::ostringstream ss;
-    ss << std::fixed;
-    ss.precision(2);
-    ss << value << " " << unit;
-    return ss.str();
-}
+std::string mem2string(long long mem);
 
 template<class T>
 Transient<T>::Transient()

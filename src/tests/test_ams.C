@@ -165,7 +165,7 @@ void set_default_parameters(Teuchos::RCP<Teuchos::ParameterList> &params)
     set_parameter(params, "sigma", 1.0);
     set_parameter(params, "dof", 1);
     set_parameter(params, "var", 0);
-    set_parameter(params, "noise seed", 1);
+    set_parameter(params, "noise seed", 5);
     set_parameter(params, "ams seed", 2);
 
     set_parameter(params, "time step", 0.01);
@@ -181,6 +181,7 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     set_default_parameters(params);
 
     set_parameter(params, "write file", "out_data.h5");
+    params->set("noise seed", 42);
 
     int maxit = params->get("maximum iterations", -1);
     int write_time_steps = params->get("write time steps", -1);
