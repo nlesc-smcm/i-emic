@@ -356,7 +356,7 @@ public:
     //! based on forcing.F90.
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<Atmosphere> atmos);
 
-    //! Return the ocean-seaice coupling block
+    //! Return the ocean-seaice coupling block (see previous comment).
     std::shared_ptr<Utils::CRSMat> getBlock(std::shared_ptr<SeaIce> seaice);
 
     //! Dummy implementation but required by the base class.

@@ -16,7 +16,6 @@ module m_par
   !! previously par.com......................................................
   !  number of unknowns
   integer, parameter :: nun  =  6
-  integer, parameter :: la   =  0
 
   integer :: nid
 
@@ -80,6 +79,5 @@ module m_par
   integer, parameter :: LAND  = 1
   integer, parameter :: WATER = 2
   integer, parameter :: PERIO = 3
-  integer, parameter :: ATMOS = 4
 
 end module m_par

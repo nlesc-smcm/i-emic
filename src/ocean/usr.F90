@@ -187,12 +187,12 @@ contains
     m=dim_m
     n=dim_n
     l=dim_l
-    ndim = m*n*(l+la)*nun
+    ndim = m*n*l*nun
 
     allocate(x(n),y(0:m+1),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l),&
          dfzT(l),dfzW(0:l))
 
-    allocate(landm(0:n+1,0:m+1,0:l+la+1))
+    allocate(landm(0:n+1,0:m+1,0:l+1))
     landm=OCEAN;! in case no topology is read in
 
     allocate(Frc(ndim), taux(n,m), tauy(n,m), tx(n,m), ty(n,m))

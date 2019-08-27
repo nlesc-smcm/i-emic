@@ -22,9 +22,9 @@ contains
     real(c_double), dimension(ndim),   intent(in) :: un
     real(c_double), dimension(n*m*l), intent(out) :: check
     integer  i,j,k,pos
-    real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
-    real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-    real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
+    real    u(0:n  ,0:m,0:l+1),   v(0:n,0:m  ,0:l+1)
+    real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
+    real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
 
     call usol(un,u,v,w,p,t,s)
 
@@ -59,9 +59,9 @@ contains
     real(c_double), dimension(ndim),   intent(in) :: un
     real(c_double), dimension(n*m*l), intent(out) :: check
     integer  i,j,k,pos
-    real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
-    real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-    real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
+    real    u(0:n  ,0:m,0:l+1),   v(0:n,0:m  ,0:l+1)
+    real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
+    real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
     real    h1, h2, cay, c1, c2
 
     call usol(un,u,v,w,p,t,s)

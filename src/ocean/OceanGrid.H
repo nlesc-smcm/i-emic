@@ -16,7 +16,6 @@
 
 #include "Teuchos_Array.hpp"
 
-//typedef enum{OCEAN=0,LAND=1,WATER=2,PERIO=3,ATMOS=4} MaskType;
 typedef int MaskType;
 
 //! Grid representation of model vectors

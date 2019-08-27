@@ -28,7 +28,7 @@
       integer, intent(inout) :: lab
       integer  i, j, k, XX, row, nskip
 
-      real, dimension(n*m*(l+la)*nun)     :: uloca
+      real, dimension(n*m*l*nun)  :: uloca
 
       if (ndim==0) then
         write(*,*) "WARNING: in write_data: you probably forgot to allocate_global!"
@@ -61,7 +61,7 @@
 
       open(ofile,file=rundir//'fort.3')
 
-      write(*,*) n,m,l,la
+      write(*,*) n,m,l,0
 
       icp = mod(icp,1000)
 
@@ -75,7 +75,7 @@
          write(ofile,999) sig(j,1),sig(j,2)
       enddo
       ! write solution in "old" ordering
-      do k = 1, (l+la)
+      do k = 1, l
          do j = 1, m
             do i = 1, n
                do XX = 1,nun
@@ -115,7 +115,7 @@
          write(ofile,999) sig(j,1),sig(j,2)
       enddo
       ! write solution in "old" ordering
-      do k = 1, (l+la)
+      do k = 1, l
          do j = 1, m
             do i = 1, n
                do XX = 1,nun
@@ -189,7 +189,7 @@
       integer i, j, k
 
       write(gfile,"('Version   2')")
-      write(gfile,"(6i4)") n, m, l, la, nun, SLIP
+      write(gfile,"(6i4)") n, m, l, 0, nun, SLIP
       write(gfile,999) xmin, xmax, ymin, ymax, hdim
       write(gfile,999) ( x(i), i = 1, n)
       write(gfile,999) ( y(i), i = 1, m)
@@ -197,7 +197,7 @@
       write(gfile,999) (xu(i), i = 0, n)
       write(gfile,999) (yv(i), i = 0, m)
       write(gfile,999) (zw(i), i = 0, l)
-      do k = 0, l+la+1
+      do k = 0, l+1
       do j = 0, m+1
          write(gfile,'(100(i1,x))') (landm(i,j,k), i = 0, n+1)
       enddo
@@ -239,7 +239,7 @@
                   read(ifile,999) sig(j,1),sig(j,2)
                enddo
                ! read data in "old" ordering
-               do k = 1, (l+la)
+               do k = 1, l
                   do j = 1, m
                      do i = 1, n
                         do XX = 1, nun
@@ -313,7 +313,7 @@
 !            read(4,999,end=200) dum1,dum2
 !          ENDDO
            ! read data in "old" ordering
-           do k = 1, (l+la)
+           do k = 1, l
               do j = 1, m
                  do i = 1, n
                     do XX = 1, nun
@@ -454,7 +454,7 @@
 
       integer i
 
-      if (nn .ne. n .or. mm .ne. m .or. ll .ne. (l+la)) then
+      if (nn .ne. n .or. mm .ne. m .or. ll .ne. l) then
         write(*,*) 'subroutine get_grid_data was called with mismatched array dimensions!'
         write(*,*) '(inout.F, not returning grid data correctly!)'
         return;
@@ -466,7 +466,7 @@
       do i=1,m
         yy(i) = y(i)
       enddo
-      do i=1,l+la
+      do i=1,l
         zz(i) = z(i)
       enddo
 

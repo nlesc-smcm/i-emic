@@ -35,8 +35,8 @@ contains
     use m_usr
     implicit none
 
-    allocate(Al(np,nun,nun,n,m,l+la))
-    allocate(An(np,nun,nun,n,m,l+la))
+    allocate(Al(np,nun,nun,n,m,l))
+    allocate(An(np,nun,nun,n,m,l))
     allocate(Alocal(np,nun,nun))
 
   end subroutine allocate_mat

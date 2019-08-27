@@ -63,7 +63,7 @@ SUBROUTINE readmask
 
   landm = LAND
   
-  do k = 0, l+la+1
+  do k = 0, l+1
      read(500,*)
      do j = m+1, 0, -1
         read(500,'(362i1)',iostat=status) (landm(i,j,k),i=0,n+1)
@@ -167,7 +167,6 @@ SUBROUTINE depth3land(depth)
         enddo
      enddo
   enddo
-  landm(1:n,1:m,l+1:l+la) = ATMOS
 
   SELECT CASE(itopo)
   CASE(0) ! topography from data
@@ -327,18 +326,15 @@ SUBROUTINE depth3land(depth)
         landm(n+1,:,:) = PERIO
         landm(  0,:,:) = PERIO
      end where
-     where( landm(1,:,l+1) == ATMOS .and. landm(n,:,l+1) == ATMOS )
-        landm(n+1,:,l+1) = PERIO
-        landm(  0,:,l+1) = PERIO
-     end where
   endif
+  
   write(*,*) '===========TOPOGRAPHY=================='
   write(*,10) itopo
   write(*,*) 'land mask is written to unit 77'
   write(*,*) '===========TOPOGRAPHY=================='
 
   open(77,FILE=rundir//'fort.77')
-  do k = 0, l+la+1
+  do k = 0, l+1
      write(77,*) "-------------------------------------"
      do j = m+1, 0, -1
         write(77,'(362i1)') landm(:,j,k)
@@ -372,7 +368,7 @@ subroutine fillbays
   implicit none
 
   integer it, i, j, k, ns, ew
-  integer nedit,oldland(0:n+1,0:m+1,0:l+la+1)
+  integer nedit,oldland(0:n+1,0:m+1,0:l+1)
 
   do it = 1, 15
      oldland = landm
@@ -417,7 +413,7 @@ subroutine fillbays_old
   implicit none
 
   integer it, i, j, k, ns, ew, ne, se
-  integer nedit,oldland(0:n+1,0:m+1,0:l+la+1)
+  integer nedit,oldland(0:n+1,0:m+1,0:l+1)
 
   do it = 1, 40
      oldland = landm

@@ -180,7 +180,6 @@ extern "C" {
 
 }//extern
 
-
 //=============================================================================
 // constructor
 THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
@@ -197,12 +196,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     n = paramList.get("Global Grid-Size n", 16);
     m = paramList.get("Global Grid-Size m", 16);
     l = paramList.get("Global Grid-Size l", 16);
-
-    //=================================================
-    // TODO: implement atmosphere layer
-    // FIXME get rid of all la
-    la = 0;
-    //=================================================
 
     std::stringstream ss;
     ss << "THCM (" << probdesc <<", "
@@ -400,7 +393,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     int I0 = 0; int I1 = n+1;
     int J0 = 0; int J1 = m+1;
-    int K0 = 0; int K1 = l+la+1;
+    int K0 = 0; int K1 = l+1;
 
     int i0=0, i1=-1, j0=0, j1=-1,k0=0,k1=-1;
     // global (gathered) map, all inds are on root proc, the ranges are
@@ -1288,7 +1281,7 @@ void THCM::evaluateB(void)
 std::shared_ptr<std::vector<int> > THCM::getLandMask()
 {
     // length of landmask array
-    int dim = (n+2)*(m+2)*(l+la+2);
+    int dim = (n+2)*(m+2)*(l+2);
 
     // Create landmask array
     std::shared_ptr<std::vector<int> > landm =
@@ -1324,7 +1317,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
     // All indices are on root process
     int I0 = 0; int I1 = n+1;
     int J0 = 0; int J1 = m+1;
-    int K0 = 0; int K1 = l+la+1;
+    int K0 = 0; int K1 = l+1;
 
     int i0 = 0, i1 = -1, j0 = 0, j1 = -1,k0 = 0,k1 = -1;
     if (Comm->MyPID() == 0)
@@ -2137,11 +2130,11 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
     if (j0 == 1) j0-- ;
     if (j1 == m) j1++;
     if (k0 == 1) k0-- ;
-    if (k1 == l+la) k1++;
+    if (k1 == l) k1++;
 
     int I0 = 0; int I1 = n+1;
     int J0 = 0; int J1 = m+1;
-    int K0 = 0; int K1 = l+la+1;
+    int K0 = 0; int K1 = l+1;
 
     DEBUG("create landmap without overlap...");
     Teuchos::RCP<Epetra_Map> landmap_loc0 = Utils::CreateMap(i0,i1,j0,j1,k0,k1,

@@ -241,7 +241,6 @@ SUBROUTINE tderiv(type,atom)
   SELECT CASE(type)
   CASE(1) ! surface central points
      atom(5,:,:,L) = 1.0
-     if(la > 0) atom(23,:,:,L) = -1.0 ! atmosphere
   CASE(2) ! surface central points
      atom(5,:,:,L) = 1.0
   CASE(3)
@@ -418,9 +417,9 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   ! IMPORT/EXPORT
   integer type
   real    atom(np,n,m,l)
-  real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
-  real    w(0:n+1,0:m+1,0:l+la)
-  real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
+  real    u(0:n  ,0:m,0:l+1),   v(0:n,0:m  ,0:l+1)
+  real    w(0:n+1,0:m+1,0:l)
+  real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
   ! LOCAL
   integer i,j,k,k0,k1
   real    costdxi(0:m+1),tdzi
@@ -529,7 +528,7 @@ SUBROUTINE wnlin(type,atom,t)
   !     IMPORT/EXPORT
   integer type
   real    atom(np,n,m,l)
-  real    t(0:n+1,0:m+1,0:l+la+1)
+  real    t(0:n+1,0:m+1,0:l+1)
   ! LOCAL
   integer i,j,k
   !
@@ -595,8 +594,8 @@ SUBROUTINE unlin(type,atom,u,v,w)
   ! IMPORT/EXPORT
   integer type
   real    atom(np,n,m,l)
-  real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
-  real    w(0:n+1,0:m+1,0:l+la  )
+  real    u(0:n  ,0:m,0:l+1),   v(0:n,0:m  ,0:l+1)
+  real    w(0:n+1,0:m+1,0:l  )
 
   integer i,j,k
   real    costdxi(0:m),tanr(0:m),tdzi(1:l)
@@ -718,8 +717,8 @@ SUBROUTINE vnlin(type,atom,u,v,w)
   ! IMPORT/EXPORT
   integer type
   real    atom(np,n,m,l)
-  real    u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m  ,0:l+la+1)
-  real    w(0:n+1,0:m+1,0:l+la  )
+  real    u(0:n  ,0:m,0:l+1),   v(0:n,0:m  ,0:l+1)
+  real    w(0:n+1,0:m+1,0:l  )
 
   integer i,j,k
   real    costdxi(0:m),tanr(0:m),tdzi(1:l)
@@ -825,66 +824,6 @@ SUBROUTINE vnlin(type,atom,u,v,w)
   END SELECT
   !
 end SUBROUTINE vnlin
-!*********************************************************
-! extra for atmosphere model
-!*********************************************************
-SUBROUTINE yderiv(type,atom)
-  use m_usr
-  use m_atm
-  implicit none
-  !     1:  t
-  !     4:  txx /cos^2 y
-  !     5:  tyy
-  !     6:  tzz
-  !     IMPORT/EXPORT
-  integer type,i,j
-  real    atom(np,n,m,la)
-  real    cosdx2i(0:m+1),dy2i
-
-  !
-  atom = 0.0
-  SELECT CASE(type)
-  CASE(1)
-     DO j = 1,m
-        DO i = 1,n
-           !         if(landm(i,j,l)/=LAND) then
-           atom(5,i,j,:)  = -1.0
-           atom(14,i,j,:) =  1.0
-           !         endif
-        ENDDO
-     ENDDO
-  CASE(2)
-     cosdx2i = (1.0/(cos(y)*dx))**2
-     DO j = 1,m
-        DO i = 1,n
-           atom(2,i,j,:) =      dat(j) * cosdx2i(j)
-           atom(5,i,j,:) = -2 * dat(j) * cosdx2i(j)
-           atom(8,i,j,:) =      dat(j) * cosdx2i(j)
-        ENDDO
-     ENDDO
-  CASE(3)
-     dy2i = (1.0/dy)**2
-     DO j = 1,m
-        DO i = 1,n
-           atom(4,i,j,:) = dy2i*davt(j-1) * cos(yv(j-1)) / cos(y(j))
-           atom(6,i,j,:) = dy2i*davt(j)   * cos(yv(j))   / cos(y(j))
-           atom(5,i,j,:) = -(atom(4,i,j,:) + atom(6,i,j,:))
-        ENDDO
-     ENDDO
-  CASE(4)
-     atom(5,:,:,:) = 1.0
-  CASE(5)
-     cosdx2i = 1.0/(2*cos(y)*dx)
-     DO j = 1,m
-        DO i = 1,n
-           atom(2,i,j,:) = - upa(j)*cosdx2i(j)
-           atom(8,i,j,:) =   upa(j)*cosdx2i(j)
-        ENDDO
-     ENDDO
-     !
-  END SELECT
-  !
-END SUBROUTINE yderiv
 !***********************************************
 real FUNCTION amh(y,ih)
   implicit none

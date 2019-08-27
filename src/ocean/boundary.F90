@@ -29,7 +29,7 @@ subroutine boundaries
   ! Iterate over the flow domain
   do i = 1, n
      do j = 1, m
-        do k = 1, l+la
+        do k = 1, l
 
            ! Give all the neighbours appropriate names.
            ! The landmask contains additional dummy cells on all borders.
@@ -134,7 +134,7 @@ subroutine boundaries
               endif
               if (top == LAND) then ! 23
                  ! cannot occur in real flow domain, LAND above OCEAN is illegal
-                 if (k.lt.(l+la)) then
+                 if (k.lt.(l)) then
                     write(f99,*) "NB error in boundary.f: LAND above OCEAN"
                     write(f99,*) i,j,k, landm(i  ,j  ,k),landm(i  ,j  ,k+1)
                  endif
@@ -177,58 +177,30 @@ subroutine boundaries
                  An( 5,WW,WW,i,j,k) = 1.0
 
               endif
-              if (top == ATMOS) then ! deprecated in i-emic
-                 An( 1,: ,UU,i,j,k) = An(1,: ,UU,i,j,k) + An(19,: ,UU,i,j,k) ! ACdN
-                 An( 1,: ,VV,i,j,k) = An(1,: ,VV,i,j,k) + An(19,: ,VV,i,j,k) ! ACdN
-                 An(19,: ,UU,i,j,k) = 0.0
-                 An(19,: ,VV,i,j,k) = 0.0
-                 An( 2,: ,UU,i,j,k) = An(2,: ,UU,i,j,k) + An(20,: ,UU,i,j,k) ! ACdN
-                 An( 2,: ,VV,i,j,k) = An(2,: ,VV,i,j,k) + An(20,: ,VV,i,j,k) ! ACdN
-                 An(20,: ,UU,i,j,k) = 0.0 !ACdN
-                 An(20,: ,VV,i,j,k) = 0.0 !ACdN
-                 An( 4,: ,UU,i,j,k) = An(4,: ,UU,i,j,k) + An(22,: ,UU,i,j,k) ! ACdN
-                 An( 4,: ,VV,i,j,k) = An(4,: ,VV,i,j,k) + An(22,: ,VV,i,j,k) ! ACdN
-                 An(22,: ,UU,i,j,k) = 0.0 !ACdN
-                 An(22,: ,VV,i,j,k) = 0.0 !ACdN
-                 An( 5,: ,UU,i,j,k) = An(5,: ,UU,i,j,k) + An(23,: ,UU,i,j,k) ! ACdN
-                 An( 5,: ,VV,i,j,k) = An(5,: ,VV,i,j,k) + An(23,: ,VV,i,j,k) ! ACdN
-                 An( 5,SS,SS,i,j,k) = An(5,SS,SS,i,j,k) + An(23,SS,SS,i,j,k)
-                 An(23,SS,SS,i,j,k) = 0.0
-
-                 Frc(find_row2(i,j,k,WW)) = 0.0
-                 An( :,WW,: ,i,j,k) = 0.0
-                 ! preconditioner breakdown if we do this:
-                 ! An( 5, :,WW,i,j,k) = 0.0 ! 1.0e-10 !MdT
-                 ! An( 6, :,WW,i,j,k) = 0.0 ! 1.0e-10 !MdT
-                 ! An( 8, :,WW,i,j,k) = 0.0 ! 1.0e-10 !MdT
-                 ! An( 9, :,WW,i,j,k) = 0.0 ! 1.0e-10 !MdT
-                 An( 5,WW,WW,i,j,k) = 1.0
-
-              endif
               !     if (southwt == LAND) then   ! 19
-              if ((southwt == LAND).OR.(southwt ==ATMOS)) then  ! 19
+              if (southwt == LAND) then  ! 19
                  An(19,: ,:,i,j,k)  = 0.0
               endif
               !     if (westt == LAND) then     ! 20
-              if ((westt == LAND).OR.(westt == ATMOS)) then     ! 20
+              if (westt == LAND) then     ! 20
                  An(20,: ,: ,i,j,k) = 0.0
               endif
-              if ((nwestt == LAND).OR.(nwestt == ATMOS)) then   ! 21
+              if (nwestt == LAND) then   ! 21
                  An(21,:,:,i,j,k)    = 0.0
               endif
-              if ((southt == LAND).OR.(southt == ATMOS)) then   ! 22
+              if (southt == LAND) then   ! 22
                  An(22,: ,:,i,j,k)   = 0.0
               endif
-              if ((northt == LAND).OR.(northt == ATMOS)) then   ! 24
+              if (northt == LAND) then   ! 24
                  An(24,: ,:,i,j,k)  = 0.0
               endif
-              if ((southet == LAND).OR.(southet == ATMOS)) then ! 25
+              if (southet == LAND) then ! 25
                  An(25,: ,:,i,j,k)  = 0.0
               endif
-              if ((eastt == LAND).OR.(eastt == ATMOS)) then     ! 26
+              if (eastt  == LAND) then     ! 26
                  An(26,: ,:,i,j,k)  = 0.0
               endif
-              if ((neastt == LAND).OR.(neastt == ATMOS)) then   ! 27
+              if (neastt == LAND) then   ! 27
                  An(27,: ,:,i,j,k)  = 0.0
               endif
               if (southw == LAND) then  ! 1
@@ -405,28 +377,8 @@ subroutine boundaries
                     endif
                  endif
               endif
-              !------- CENTER = ATMOSPHERE ------------------------------------------
-           else if (center == ATMOS) then
-              write(*,*) 'center is atmos'
-              if (west == LAND) then
-                 An(5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(2,TT,TT,i,j,k)
-                 An(2,TT,TT,i,j,k) = 0.0
-              endif
-              if (east == LAND) then
-                 An(5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(8,TT,TT,i,j,k)
-                 An(8,TT,TT,i,j,k) = 0.0
-              endif
-              if (north == LAND) then
-                 An(5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(6,TT,TT,i,j,k)
-                 An(6,TT,TT,i,j,k) = 0.0
-              endif
-              if (south == LAND) then
-                 An(5,TT,TT,i,j,k) = An(5,TT,TT,i,j,k) + An(4,TT,TT,i,j,k)
-                 An(4,TT,TT,i,j,k) = 0.0
-              endif
-              !------- CENTER = not OCEAN or ATMOSPHERE -----------------------------
-              ! so this is probably on LAND
-           else
+              
+           else ! CENTER is not OCEAN so this should be on LAND
               An(:,:,:,i,j,k) = 0.0
               do ii = 1, nun
                  Frc(find_row2(i,j,k,ii)) = 0.0
