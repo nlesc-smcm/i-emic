@@ -1,14 +1,10 @@
 rm -rf CMakeCache.txt CMakeFiles
 
 cmake \
-   -D CMAKE_INSTALL_PREFIX:PATH=/home/erik/trilinos/12.12/dynamic \
+   -D CMAKE_INSTALL_PREFIX:PATH=/home/erik/local \
    -D TPL_ENABLE_MPI:BOOL=ON \
    -D TPL_ENABLE_METIS:BOOL=ON \
-   -D METIS_LIBRARY_DIRS:PATH=/usr/local/lib \
-   -D TPL_METIS_INCLUDE_DIRS:PATH=/usr/local/include \
    -D TPL_ENABLE_ParMETIS:BOOL=ON \
-   -D ParMETIS_LIBRARY_DIRS:PATH=/usr/local/lib \
-   -D TPL_ParMETIS_INCLUDE_DIRS:PATH=/usr/local/include \
    -D TPL_ENABLE_HDF5:BOOL=ON \
 \
    -D Trilinos_VERBOSE_CONFIGURE:BOOL=OFF \
