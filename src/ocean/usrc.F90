@@ -213,7 +213,7 @@ SUBROUTINE get_parameters(o_r0dim, o_udim, o_hdim)
 end subroutine get_parameters
 
 !**********************************************************
-SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_albed)
+SUBROUTINE set_atmos_parameters(pars)
   ! Interface to set a few model parameters relevant for E-P. These
   ! parameters affect the sensitivity nus, which should be updated
   ! here.
@@ -221,16 +221,38 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_
   use m_usr
   use m_atm
   implicit none
-  real(c_double) i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_albed
-  real dzne
 
-  qdim  = i_qdim
-  nuq   = i_nuq
-  eta   = i_eta
-  dqso  = i_dqso
-  eo0   = i_eo0
-  albe0 = i_albe0
-  albed = i_albed
+  type, bind(C) :: atmos_pars
+     real(c_double) :: tdim
+     real(c_double) :: qdim
+     real(c_double) :: nuq
+     real(c_double) :: eta
+     real(c_double) :: dqso
+     real(c_double) :: dqsi
+     real(c_double) :: dqdt
+     real(c_double) :: Eo0
+     real(c_double) :: Ei0
+     real(c_double) :: Cs
+     real(c_double) :: t0o
+     real(c_double) :: t0i
+     real(c_double) :: a0
+     real(c_double) :: da
+     real(c_double) :: tauf
+     real(c_double) :: tauc
+     real(c_double) :: comb
+     real(c_double) :: albf
+  end type atmos_pars
+  
+  type(atmos_pars) :: pars
+  real :: dzne
+
+  qdim  = pars%qdim
+  nuq   = pars%nuq
+  eta   = pars%eta
+  dqso  = pars%dqso
+  eo0   = pars%Eo0
+  albe0 = pars%a0
+  albed = pars%da
 
   dzne = dz*dfzT(l)
 
@@ -248,24 +270,37 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_
 end subroutine set_atmos_parameters
 
 !**********************************************************
-SUBROUTINE set_seaice_parameters(i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0)
+SUBROUTINE set_seaice_parameters(pars)
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_ice
   implicit none
-  real(c_double) i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0
 
-  zeta = i_zeta ! combination of sea ice parameters
-  a0   = i_a0   ! freezing temperature S sensitivity
-  Lf   = i_Lf   ! latent heat of fusion of ice
-  Qvar = i_qvar ! typical QTsa heat flux variation
-  Q0   = i_q0   ! background QTsa
+  ! This should be equal to the CommPars struct in SeaIce.H
+  ! declarations.
+  type, bind(C) :: seaice_pars
+     real(c_double) :: zeta
+     real(c_double) :: a0
+     real(c_double) :: Lf
+     real(c_double) :: s0
+     real(c_double) :: rhoo
+     real(c_double) :: qvar
+     real(c_double) :: q0
+  end type seaice_pars
 
-  if (i_s0.ne.s0) then
+  type(seaice_pars) :: pars
+       
+  zeta = pars%zeta ! combination of sea ice parameters
+  a0   = pars%a0   ! freezing temperature S sensitivity
+  Lf   = pars%Lf   ! latent heat of fusion of ice
+  Qvar = pars%qvar ! typical QTsa heat flux variation
+  q0   = pars%q0   ! background QTsa
+
+  if (pars%s0.ne.s0) then
      _INFO_('WARNING conflicting reference salinity s0')
   endif
 
-  if (i_rhoo.ne.rhodim) then
+  if (pars%rhoo.ne.rhodim) then
      _INFO_('WARNING conflicting sea water density rhodim')
   endif
 

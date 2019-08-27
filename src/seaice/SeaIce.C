@@ -372,7 +372,7 @@ void SeaIce::computeRHS()
 
     // row indices for rhs and data
     int rr, sr;
-    double Hval, Qval, Mval, Tval, Gval, val;
+    double Hval, Qval, Mval, Tval, Gval, val = 0.0;
     double QSW, Tsi;
     for (int j = 0; j != mLoc_; ++j)
         for (int i = 0; i != nLoc_; ++i)
