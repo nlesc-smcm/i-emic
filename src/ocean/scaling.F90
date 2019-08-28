@@ -39,7 +39,7 @@ integer :: ix, iy, iz, jx, jy, jz
       db = 0.
       nl = 0
 
-!     find the average diagonal block excluding land and atmos.
+!     find the average diagonal block excluding land.
 
 ! we ignore the top layer of grid cells. If you use TRES=1,SRES=0,
 ! the top layer leads to different scaling for T and S, which in  
@@ -84,26 +84,19 @@ end subroutine average_block
       _DEBUG2_("cs: ",cs)
       do i = 1, ndim
         call findex(i,ix,iy,iz,ii)
+
         if (landm(ix,iy,iz) == OCEAN) then
-#ifdef DEBUGGING
-!        write(*,*) "set row scaling index ",i,"(",ix,iy,iz,ii,") to ",rs(ii)
-#endif        
+           
           row_scaling(i) = rs(ii)
           col_scaling(i) = cs(ii)
-        else if (landm(ix,iy,iz) == ATMOS) then
-#ifdef DEBUGGING
-!        write(*,*) "set row scaling index ",i,"(",ix,iy,iz,ii,") to ",rsa(ii)
-#endif        
-          row_scaling(i) = rsa(ii)
-          col_scaling(i) = csa(ii)
-        else ! land cell or something weird
+
+       else ! land cell or something weird
           row_scaling(i) = 1.0
           col_scaling(i) = 1.0
         end if
       end do
 
       end subroutine compute
-
 
 
 !#ifdef HAVE_MRILU

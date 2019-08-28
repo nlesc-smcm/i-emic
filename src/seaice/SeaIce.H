@@ -42,7 +42,9 @@ class SeaIce : public Model
 
 public:
 
-    //! Parameters we need to communicate (see datamembers for explanation).
+    //! Parameters we need to communicate (see datamembers for
+    //! explanation). The same struct is defined in the ocean fortran
+    //! code (usrc.F90) to accomodate communication.
     struct CommPars
     {
         double zeta;

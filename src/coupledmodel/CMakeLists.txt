@@ -7,6 +7,7 @@ target_include_directories(coupledmodel PUBLIC .)
 target_link_libraries(coupledmodel PUBLIC
     atmosphere
     ocean
+    trios
     seaice
 )
 

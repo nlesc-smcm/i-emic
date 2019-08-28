@@ -245,7 +245,7 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
 
     if (ams2->get_mfpt() > 0)
     {
-        EXPECT_GT(ams2->get_mfpt(), 7);
+        EXPECT_GT(ams2->get_mfpt(), 5);
         EXPECT_LT(ams2->get_mfpt(), 40);
     }
     else

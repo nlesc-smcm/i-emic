@@ -20,7 +20,7 @@ module m_global
 
   ! these things are shared between global and subdomain.
   use m_usr, only :                          &
-       zmin, zmax, la,                       &
+       zmin, zmax,                           &
        hdim, qz,                             &
        alphaT, alphaS,                       &
        ih, vmix_GLB, tap, rho_mixing,        &
@@ -152,7 +152,7 @@ contains
 
     write(*,*) 'allocating fortran arrays'
     allocate(u(ndim), up(ndim), w(ndim,nf))
-    allocate(landm(0:n+1,0:m+1,0:l+la+1))
+    allocate(landm(0:n+1,0:m+1,0:l+1))
     allocate(taux(n,m),tauy(n,m))
     allocate(tatm(n,m),emip(n,m),spert(n,m))
     allocate(internal_temp(n,m,l),internal_salt(n,m,l))
@@ -275,7 +275,7 @@ contains
   end subroutine g_grid
 
   !! this is supposed to be called once by the root
-  !! proc with a standard 0:n+1,0:m+1,0:l+la+1 1D C
+  !! proc with a standard 0:n+1,0:m+1,0:l+1 1D C
   !! array which is then distributed to all the subdomains
   !! and re-inserted into the subdomains when calling usrc:init
   subroutine get_landm(cland)
@@ -283,7 +283,7 @@ contains
     use, intrinsic :: iso_c_binding
     implicit none
 
-    integer(c_int), dimension((n+2)*(m+2)*(l+la+2)) :: cland
+    integer(c_int), dimension((n+2)*(m+2)*(l+2)) :: cland
 
     integer :: i,j,k,pos
 
@@ -292,7 +292,7 @@ contains
     call topofit
 
     pos = 1
-    do k=0,l+la+1
+    do k=0,l+1
        do j=0,m+1
           do i=0,n+1
              cland(pos) = landm(i,j,k)
@@ -310,13 +310,13 @@ contains
     use, intrinsic :: iso_c_binding
     implicit none
 
-    integer(c_int), dimension((n+2)*(m+2)*(l+la+2)) :: cland
+    integer(c_int), dimension((n+2)*(m+2)*(l+2)) :: cland
 
     integer :: i,j,k,pos
 
     _INFO_('THCM: global.F90 get_current_landm...')
     pos = 1
-    do k=0,l+la+1
+    do k=0,l+1
        do j=0,m+1
           do i=0,n+1
              cland(pos) = landm(i,j,k)
@@ -333,7 +333,7 @@ contains
     use, intrinsic :: iso_c_binding
     implicit none
 
-    integer(c_int), dimension((n+2)*(m+2)*(l+la+2)) :: cland
+    integer(c_int), dimension((n+2)*(m+2)*(l+2)) :: cland
     integer :: i,j,k,pos
 
 
@@ -342,7 +342,7 @@ contains
     landm = 0;
 
     pos = 1
-    do k=0,l+la+1
+    do k=0,l+1
        do j=0,m+1
           do i=0,n+1
              landm(i,j,k) = cland(pos)
@@ -467,9 +467,9 @@ contains
        else
           _INFO2_("Invalid option assigned to ite: ", ite)
        end if
-    else ! accepting external atmosphere within I-EMIC
-       _INFO_(" Accepting atmospheric temperature, we are now part of the I-EMIC")
-       _INFO_(" For now we put tatm = 0")
+    else ! accepting  models within I-EMIC
+       _INFO_(" Ocean: accepting external temperature, we are now part of the I-EMIC")
+       _INFO_("   For now we put tatm = 0")
        tatm(1:n,1:m) = 0.0
     end if
 
@@ -751,12 +751,12 @@ contains
     implicit none
 
     real, dimension(n*m*l*nun), intent(in) :: sol
-    real, dimension(n,m,l+la) :: T,S
+    real, dimension(n,m,l) :: T,S
     real, dimension(n,m) :: hf,fwf
     integer :: i,j,k,row
     real    :: salfun
 
-    do k = 1, (l+la)
+    do k = 1, l
        do j = 1, m
           do i = 1, n
              row = find_row2(i,j,k,TT)

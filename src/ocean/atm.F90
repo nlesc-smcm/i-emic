@@ -1,3 +1,4 @@
+! Atmosphere parameters and arrays
 
 module m_atm
 

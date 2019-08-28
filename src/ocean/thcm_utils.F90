@@ -46,7 +46,7 @@
 !     
 
       nr = ncols   ! real dimension of the problem
-      nl = nr/(l+la) ! dimension of one layer     
+      nl = nr/l    ! dimension of one layer     
       begM(nl+1) = nr+1
       DO i = 1,nl
          begM(i) = (i-1)*l + 1
@@ -127,7 +127,7 @@
    implicit none
      
    real, dimension((m+1)*(n+1)) :: us
-   real, dimension((m+1)*(n+1)*(l+la+2)) :: u
+   real, dimension((m+1)*(n+1)*(l+2)) :: u
    integer :: i,j,k
    real :: dum
      
@@ -156,31 +156,31 @@
   use m_usr
   implicit none
 
-  real, dimension(1:n+1,1:m+1,1:l+la+2), target :: u,v
-  real, dimension(1:n+2,1:m+2,1:l+la+1), target :: w
-  real, dimension(1:n+2,1:m+2,1:l+la+2), target :: p,T,S
+  real, dimension(1:n+1,1:m+1,1:l+2), target :: u,v
+  real, dimension(1:n+2,1:m+2,1:l+1), target :: w
+  real, dimension(1:n+2,1:m+2,1:l+2), target :: p,T,S
 
   ! write(*,*) "============"
   ! write(*,*) u(8,8,8)
   ! write(*,*) "============"
   
-  aliasU => u(1:n+1,1:m+1,1:l+la+2)
-  aliasV => v(1:n+1,1:m+1,1:l+la+2)
-  aliasW => w(1:n+2,1:m+2,1:l+la+1)
-  aliasP => p(1:n+2,1:m+2,1:l+la+2)
-  aliasT => T(1:n+2,1:m+2,1:l+la+2)
-  aliasS => S(1:n+2,1:m+2,1:l+la+2)
+  aliasU => u(1:n+1,1:m+1,1:l+2)
+  aliasV => v(1:n+1,1:m+1,1:l+2)
+  aliasW => w(1:n+2,1:m+2,1:l+1)
+  aliasP => p(1:n+2,1:m+2,1:l+2)
+  aliasT => T(1:n+2,1:m+2,1:l+2)
+  aliasS => S(1:n+2,1:m+2,1:l+2)
 
-!  real, dimension(0:n,0:m,0:l+la+1), target :: u,v
-!  real, dimension(0:n+1,0:m+1,0:l+la), target :: w
-!  real, dimension(0:n+1,0:m+1,0:l+la+1), target :: p,T,S
+!  real, dimension(0:n,0:m,0:l+1), target :: u,v
+!  real, dimension(0:n+1,0:m+1,0:l), target :: w
+!  real, dimension(0:n+1,0:m+1,0:l+1), target :: p,T,S
 
-!  aliasU => u(0:n,0:m,0:l+la+1)
-!  aliasV => v(0:n,0:m,0:l+la+1)
-!  aliasW => w(0:n+1,0:m+1,0:l+la)
-!  aliasP => p(0:n+1,0:m+1,0:l+la+1)
-!  aliasT => T(0:n+1,0:m+1,0:l+la+1)
-!  aliasS => S(0:n+1,0:m+1,0:l+la+1)
+!  aliasU => u(0:n,0:m,0:l+1)
+!  aliasV => v(0:n,0:m,0:l+1)
+!  aliasW => w(0:n+1,0:m+1,0:l)
+!  aliasP => p(0:n+1,0:m+1,0:l+1)
+!  aliasT => T(0:n+1,0:m+1,0:l+1)
+!  aliasS => S(0:n+1,0:m+1,0:l+1)
 
 END SUBROUTINE aliasGrid
 
@@ -194,9 +194,9 @@ END SUBROUTINE aliasGrid
 
                   
       real, dimension(ndim) :: un
-      real, dimension((n+1)*(m+1)*(l+la+2)), target :: u,v
-      real, dimension((n+2)*(m+2)*(l+la+1)), target :: w
-      real, dimension((n+2)*(m+2)*(l+la+2)), target :: p,T,S
+      real, dimension((n+1)*(m+1)*(l+2)), target :: u,v
+      real, dimension((n+2)*(m+2)*(l+1)), target :: w
+      real, dimension((n+2)*(m+2)*(l+2)), target :: p,T,S
 
 !      real, dimension(:) :: un,u,v,w,p,T,S
       
@@ -213,7 +213,7 @@ END SUBROUTINE aliasGrid
 #ifdef DEBUGGING      
       pos = 1
       write(*,*) 'U/V-ARRAY:'
-      do k=1,l+la+2
+      do k=1,l+2
         do j=1,m+1
           do i=1,n+1
             write(*,*) aliasU(i,j,k),U(pos)
@@ -225,7 +225,7 @@ END SUBROUTINE aliasGrid
       end do
       write(*,*) 'W-ARRAY:'
       pos=1
-      do k=0,l+la
+      do k=0,l
         do j=0,m+1
           do i=0,n+1
             write(*,*) aliasW(i,j,k),W(pos)
@@ -235,7 +235,7 @@ END SUBROUTINE aliasGrid
       end do
       write(*,*) 'P/T/S-ARRAY:'
       pos=1
-      do k=0,l+la+1
+      do k=0,l+1
         do j=0,m+1
           do i=0,n+1
             write(*,*) aliasP(i,j,k),P(pos)
@@ -255,17 +255,17 @@ END SUBROUTINE aliasGrid
 
   ! extract a copy of the landm array.
   ! returns landm with full index range,
-  ! (0:n+1,0:m+1,0:l+la+1)
+  ! (0:n+1,0:m+1,0:l+1)
   subroutine get_landm(cland)
 
   implicit none
 
-  integer, dimension((n+2)*(m+2)*(l+la+2)) :: cland
+  integer, dimension((n+2)*(m+2)*(l+2)) :: cland
 
   integer :: i,j,k,pos
 
   pos = 1
-  do k=0,l+la+1
+  do k=0,l+1
     do j=0,m+1
       do i=0,n+1
         cland(pos) = landm(i,j,k)
@@ -333,7 +333,7 @@ real, dimension(n,m) :: array
 real :: fac_ntrphys,fac_consmix,fac_convadj
 integer :: i,j
 
-! count land as 0, ocean as 1 (atmos currently not considered (TODO)
+! count land as 0, ocean as 1 
 do j=1,m
   do i=1,n
     array(i,j) = count(mask=(landm(i,j,:)==OCEAN))

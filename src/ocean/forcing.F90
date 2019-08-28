@@ -264,35 +264,6 @@ SUBROUTINE stochastic_forcing
 
 end subroutine stochastic_forcing
 
-!******************************************************************
-! Function to compute heat flux forcing from the atmosphere into the
-! ocean. External and background contributions.
-! real FUNCTION QToaFun(i_suno, i_tatm, i_qatm)
-!   use m_usr
-!   use m_atm
-!   implicit none
-!   real    i_suno, i_tatm, i_qatm
-
-!   QToaFun = &
-!        par(COMB) * par(SUNP) * i_suno   & ! shortwave heat flux
-!        +  Ooa * i_tatm                  & ! sensible heat fux
-!        +  lvsc * eta * qdim * i_qatm    & ! latent heat flux
-!        -  lvsc * eo0                      ! latent heat flux
-  
-! end FUNCTION QToaFun
-
-!******************************************************************
-! Heat flux forcing from sea ice into the ocean. Background
-! ! contributions.
-! real FUNCTION QTosFun()
-!   use m_usr
-!   use m_ice
-!   implicit none
-
-!   QTosFun = zeta * (a0 * s0 - t0)
-  
-! end FUNCTION QTosFun
-
 !****************************************************************************
 SUBROUTINE windfit
   USE m_itplbv
@@ -599,9 +570,9 @@ SUBROUTINE diagnose_restoring_sflux(un,filename)
   use m_usr
   implicit none
   real, intent(in)   :: un(ndim)
-  real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
-  real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-  real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
+  real    u(0:n  ,0:m,0:l+1), v(0:n,0:m  ,0:l+1)
+  real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
+  real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
   integer i, j, k
   character*(*) filename
   real    sflux(n,m,l)
@@ -641,9 +612,9 @@ SUBROUTINE diagnose_restoring_tflux(un,filename)
   use m_usr
   implicit none
   real, intent(in)   :: un(ndim)
-  real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
-  real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-  real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
+  real    u(0:n  ,0:m,0:l+1), v(0:n,0:m  ,0:l+1)
+  real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
+  real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
   integer i, j, k
   character*(*) filename
   real    tflux(n,m,l)

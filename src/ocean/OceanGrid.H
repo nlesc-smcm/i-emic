@@ -16,7 +16,6 @@
 
 #include "Teuchos_Array.hpp"
 
-//typedef enum{OCEAN=0,LAND=1,WATER=2,PERIO=3,ATMOS=4} MaskType;
 typedef int MaskType;
 
 //! Grid representation of model vectors
@@ -39,9 +38,9 @@ typedef int MaskType;
 
   the index ranges for the fields are:
 
-  u,v:   i=0:n,   j=0:m,   k=0:l+la+1
-  w:     i=0:n+1, j=0:m+1, k=0:l+la
-  p,T,S: i=0:n+1, j=0:m+1, k=0:l+la+1
+  u,v:   i=0:n,   j=0:m,   k=0:l+1
+  w:     i=0:n+1, j=0:m+1, k=0:l
+  p,T,S: i=0:n+1, j=0:m+1, k=0:l+1
 */
 class OceanGrid
 {
@@ -57,7 +56,7 @@ public:
     void ImportData(const Epetra_Vector& input);
 
     //! import a land mask. Should be an overlapping object
-    //! already, i.e. (0:n+1,0:m+1,0:l+la+1)
+    //! already, i.e. (0:n+1,0:m+1,0:l+1)
     void ImportLandMask(const Epetra_IntVector& mask);
 
     //! put data from grid in a vector.
@@ -194,7 +193,7 @@ public:
             return Rho_[index_WPTS(i,j,k)];
         }
 
-    //! access land mask (range is 0:m+1,0:n+1,0:l+la+1)
+    //! access land mask (range is 0:m+1,0:n+1,0:l+1)
     MaskType landm(int i,int j,int k)
         {
 #ifdef TESTING
@@ -203,7 +202,7 @@ public:
             return LandMask_[index_WPTS(i,j,k)];
         }
 
-    //! access land mask (range is 0:m+1,0:n+1,0:l+la+1)
+    //! access land mask (range is 0:m+1,0:n+1,0:l+1)
     MaskType landm(int i,int j,int k) const
         {
 #ifdef TESTING
@@ -355,7 +354,6 @@ protected:
 
     //! local array sizes, note that this includes ghost cells
     int n, m, l;
-    int la;
 
     // after a new import: which quatities are there, which have to be recomputed?
     bool recompute_PsiM_, recompute_PsiB_, recompute_MaxVel_;
@@ -365,30 +363,30 @@ private:
 
     inline void bounds_check_UV(int i,int j,int k) const
         {
-            if ((i<0)||(j<0)||(k<0)||(i>n)||(j>m)||(k>l+la+1))
+            if ((i<0)||(j<0)||(k<0)||(i>n)||(j>m)||(k>l+1))
             {
                 INFO("index out of bounds, u/v array, index: ("<<i<<", "<<j<<", "<<k<<")");
-                INFO("                         array bounds: (0:"<<n<<", 0:"<<m<<", 0:"<<l+la+1<<")");
+                INFO("                         array bounds: (0:"<<n<<", 0:"<<m<<", 0:"<<l+1<<")");
                 ERROR("Index out of bounds!",__FILE__,__LINE__);
             }
         }
 
     inline void bounds_check_W(int i,int j,int k) const
         {
-            if ((i<0)||(j<0)||(k<0)||(i>n+1)||(j>m+1)||(k>l+la))
+            if ((i<0)||(j<0)||(k<0)||(i>n+1)||(j>m+1)||(k>l))
             {
                 INFO("index out of bounds, w array, index: ("<<i<<", "<<j<<", "<<k<<")");
-                INFO("                       array bounds: (0:"<<n+1<<", 0:"<<m+1<<", 0:"<<l+la<<")");
+                INFO("                       array bounds: (0:"<<n+1<<", 0:"<<m+1<<", 0:"<<l<<")");
                 ERROR("Index out of bounds!",__FILE__,__LINE__);
             }
         }
 
     inline void bounds_check_PTS(int i,int j,int k) const
         {
-            if ((i<0)||(j<0)||(k<0)||(i>n+1)||(j>m+1)||(k>l+la+1))
+            if ((i<0)||(j<0)||(k<0)||(i>n+1)||(j>m+1)||(k>l+1))
             {
                 INFO("index out of bounds, p/T/S array, index: ("<<i<<", "<<j<<", "<<k<<")");
-                INFO("                       array bounds: (0:"<<n+1<<", 0:"<<m+1<<", 0:"<<l+la+1<<")");
+                INFO("                       array bounds: (0:"<<n+1<<", 0:"<<m+1<<", 0:"<<l+1<<")");
                 ERROR("Index out of bounds!",__FILE__,__LINE__);
             }
         }

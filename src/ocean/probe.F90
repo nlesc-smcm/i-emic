@@ -214,9 +214,9 @@ contains
     real(c_double),dimension(ndim) ::    un
 
     !     LOCAL
-    real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
-    real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-    real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
+    real    u(0:n, 0:m,0:l+1), v(0:n,0:m, 0:l+1)
+    real    w(0:n+1,0:m+1,0:l), p(0:n+1,0:m+1,0:l+1)
+    real    T(0:n+1,0:m+1,0:l+1), S(0:n+1,0:m+1,0:l+1)
 
     gamma = par(COMB) * par(SALT) 
     dedt  = (deltat / qdim) * dqso
@@ -297,9 +297,9 @@ contains
     real(c_double),dimension(ndim) :: un
 
     !     LOCAL
-    real  u(0:n  ,0:m,0:l+la+1),   v(0:n,0:m    ,0:l+la+1)
-    real  w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-    real  T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
+    real  u(0:n  ,0:m,0:l+1),   v(0:n,0:m    ,0:l+1)
+    real  w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
+    real  T(0:n+1,0:m+1,0:l+1), S(0:n+1,0:m+1,0:l+1)
 
     etabi =  par(COMB) * par(TEMP)
 
@@ -396,9 +396,9 @@ contains
     real(c_double),dimension(ndim) :: un
 
     !     LOCAL
-    real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
-    real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-    real    T(0:n+1,0:m+1,0:l+la+1), S(0:n+1,0:m+1,0:l+la+1)
+    real    u(0:n  ,0:m,0:l+1), v(0:n,0:m  ,0:l+1)
+    real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
+    real    T(0:n+1,0:m+1,0:l+1), S(0:n+1,0:m+1,0:l+1)
 
     real    QTos, QToa, To, Ta, Ab, So, qa, pa, Ms, qs
     real    QSos, QSoa

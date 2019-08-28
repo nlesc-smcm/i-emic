@@ -45,12 +45,8 @@ extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*,
                                  double*);
 extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
-extern "C" _SUBROUTINE_(set_atmos_parameters)(double*, double*, double*,
-                                              double*, double*,
-                                              double*, double*);
-extern "C" _SUBROUTINE_(set_seaice_parameters)(double*, double*, double*,
-                                               double*, double*, double*,
-                                               double*);
+extern "C" _SUBROUTINE_(set_atmos_parameters)(Atmosphere::CommPars*);
+extern "C" _SUBROUTINE_(set_seaice_parameters)(SeaIce::CommPars*);
 
 // extern "C" double FNAME(qtoafun)(double*, double*, double*);
 
@@ -1469,16 +1465,7 @@ void Ocean::synchronize(std::shared_ptr<Atmosphere> atmos)
     // here.
     Atmosphere::CommPars atmosPars;
     atmos->getCommPars(atmosPars);
-
-    //FIXME --> it should also be possible to pass the entire struct to
-    // --> fortran, need to figure that out...
-    FNAME( set_atmos_parameters )( &atmosPars.qdim,
-                                   &atmosPars.nuq,
-                                   &atmosPars.eta,
-                                   &atmosPars.dqso,
-                                   &atmosPars.Eo0,
-                                   &atmosPars.a0,
-                                   &atmosPars.da );
+    FNAME( set_atmos_parameters )( &atmosPars );
 
     TIMER_STOP("Ocean: set atmosphere...");
 }
@@ -1498,16 +1485,8 @@ void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
 
     SeaIce::CommPars seaicePars;
     seaice->getCommPars(seaicePars);
-
-    //FIXME --> it should also be possible to pass the entire struct to
-    // --> fortran, need to figure that out...
-    FNAME( set_seaice_parameters )( &seaicePars.zeta,
-                                    &seaicePars.a0,
-                                    &seaicePars.Lf,
-                                    &seaicePars.s0,
-                                    &seaicePars.rhoo,
-                                    &seaicePars.Qvar,
-                                    &seaicePars.Q0 );
+        
+    FNAME( set_seaice_parameters )( &seaicePars );
 
     TIMER_STOP("Ocean: set seaice...");
 }

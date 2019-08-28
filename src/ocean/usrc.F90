@@ -60,7 +60,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   ! not know about global periodicity (which would
   ! mess up the matrix partitioning).
   pos = 1
-  do k = 0, l+la+1
+  do k = 0, l+1
      do j = 0, m+1
         do i = 0, n+1
            landm(i,j,k) = a_landm(pos)
@@ -83,7 +83,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   landm(:,0,:)      = LAND
   landm(:,m+1,:)    = LAND
   landm(:,:,0)      = LAND
-  landm(:,:,l+la+1) = LAND
+  landm(:,:,l+1)    = LAND
 
   pos = 1
   do j=1,m
@@ -213,7 +213,7 @@ SUBROUTINE get_parameters(o_r0dim, o_udim, o_hdim)
 end subroutine get_parameters
 
 !**********************************************************
-SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_albed)
+SUBROUTINE set_atmos_parameters(pars)
   ! Interface to set a few model parameters relevant for E-P. These
   ! parameters affect the sensitivity nus, which should be updated
   ! here.
@@ -221,16 +221,40 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_
   use m_usr
   use m_atm
   implicit none
-  real(c_double) i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_albed
-  real dzne
 
-  qdim  = i_qdim
-  nuq   = i_nuq
-  eta   = i_eta
-  dqso  = i_dqso
-  eo0   = i_eo0
-  albe0 = i_albe0
-  albed = i_albed
+  ! This should be equal to the CommPars struct in AtmosLocal.H
+  ! declarations.
+  type, bind(C) :: atmos_pars
+     real(c_double) :: tdim
+     real(c_double) :: qdim
+     real(c_double) :: nuq
+     real(c_double) :: eta
+     real(c_double) :: dqso
+     real(c_double) :: dqsi
+     real(c_double) :: dqdt
+     real(c_double) :: Eo0
+     real(c_double) :: Ei0
+     real(c_double) :: Cs
+     real(c_double) :: t0o
+     real(c_double) :: t0i
+     real(c_double) :: a0
+     real(c_double) :: da
+     real(c_double) :: tauf
+     real(c_double) :: tauc
+     real(c_double) :: comb
+     real(c_double) :: albf
+  end type atmos_pars
+  
+  type(atmos_pars) :: pars
+  real :: dzne
+
+  qdim  = pars%qdim
+  nuq   = pars%nuq
+  eta   = pars%eta
+  dqso  = pars%dqso
+  eo0   = pars%Eo0
+  albe0 = pars%a0
+  albed = pars%da
 
   dzne = dz*dfzT(l)
 
@@ -248,24 +272,37 @@ SUBROUTINE set_atmos_parameters(i_qdim, i_nuq, i_eta, i_dqso, i_eo0, i_albe0, i_
 end subroutine set_atmos_parameters
 
 !**********************************************************
-SUBROUTINE set_seaice_parameters(i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0)
+SUBROUTINE set_seaice_parameters(pars)
   use, intrinsic :: iso_c_binding
   use m_usr
   use m_ice
   implicit none
-  real(c_double) i_zeta, i_a0, i_Lf, i_s0, i_rhoo, i_qvar, i_q0
 
-  zeta = i_zeta ! combination of sea ice parameters
-  a0   = i_a0   ! freezing temperature S sensitivity
-  Lf   = i_Lf   ! latent heat of fusion of ice
-  Qvar = i_qvar ! typical QTsa heat flux variation
-  Q0   = i_q0   ! background QTsa
+  ! This should be equal to the CommPars struct in SeaIce.H
+  ! declarations.
+  type, bind(C) :: seaice_pars
+     real(c_double) :: zeta
+     real(c_double) :: a0
+     real(c_double) :: Lf
+     real(c_double) :: s0
+     real(c_double) :: rhoo
+     real(c_double) :: qvar
+     real(c_double) :: q0
+  end type seaice_pars
 
-  if (i_s0.ne.s0) then
+  type(seaice_pars) :: pars
+       
+  zeta = pars%zeta ! combination of sea ice parameters
+  a0   = pars%a0   ! freezing temperature S sensitivity
+  Lf   = pars%Lf   ! latent heat of fusion of ice
+  Qvar = pars%qvar ! typical QTsa heat flux variation
+  q0   = pars%q0   ! background QTsa
+
+  if (pars%s0.ne.s0) then
      _INFO_('WARNING conflicting reference salinity s0')
   endif
 
-  if (i_rhoo.ne.rhodim) then
+  if (pars%rhoo.ne.rhodim) then
      _INFO_('WARNING conflicting sea water density rhodim')
   endif
 
@@ -554,9 +591,7 @@ SUBROUTINE lin
        &         uxx(np,n,m,l),uyy(np,n,m,l),uzz(np,n,m,l),&
        &         uxs(np,n,m,l),fu(np,n,m,l),px(np,n,m,l)
   real    ub(np,n,m,l),vb(np,n,m,l),sc(np,n,m,l),tcb(np,n,m,l)
-  real    yc(np,n,m,la),yc2(np,n,m,la),yxx(np,n,m,la),yyy(np,n,m,la)
   real    EH,EV,ph,pv,Ra,lambda, bi, dedt
-  real    yadv(np,n,m,la)
   real    xes
 
   real    mc(np,n,m,l)
@@ -670,20 +705,10 @@ SUBROUTINE lin
 
   call masksi(mc, msi); ! create sea ice mask atom
 
-  ! open(999, file='mc', form='unformatted', access='stream')
-  ! write(999) mc
-  ! close(999)
-
   ! dependence of TT on TT through latent heat due to evaporation
   dedt =  lvsc * eta * qdim * (deltat / qdim) * dqso
-  ! dedt = 0.0 !hack
-
-  ! write(*,*) 'dedt=', dedt, ' eta=', eta, ' dqso=',dqso
-
-  if (la > 0) then ! deprecated local atmosphere
-     Al(:,TT,TT,:,:,1:l) = - ph * (txx + tyy) - pv * tzz + Ooa*tc
-
-  else if (coupled_T.eq.1) then ! coupled with external atmos
+  
+  if (coupled_T.eq.1) then ! coupled with external atmos
      ! FIXME is this too much mc*tc? TEM
 
      Al(:,TT,TT,:,:,1:l) =                &
@@ -726,23 +751,6 @@ SUBROUTINE lin
      Al(:,SS,SS,:,:,1:l) = - ph * (txx + tyy) - pv * tzz + SRES*bi*sc
   endif
 
-  ! ------------------------------------------------------------------
-  ! atmosphere layer
-  ! ------------------------------------------------------------------
-  if (la > 0) then
-     call yderiv(1,yc )
-     call yderiv(4,yc2 )
-     call yderiv(2,yxx)
-     call yderiv(3,yyy)
-     call yderiv(5,yadv)
-     Al(5,UU,UU,:,:,l+1:l+la)  =  1.
-     Al(5,VV,VV,:,:,l+1:l+la)  =  1.
-     Al(5,WW,WW,:,:,l+1:l+la)  =  1.
-     Al(5,PP,PP,:,:,l+1:l+la)  =  1.
-     Al(5,SS,SS,:,:,l+1:l+la)  =  1.
-     Al(:,TT,TT,:,:,l+1:l+la)  = - Ad * (yxx + yyy) - yc + &
-                                   Aa * yadv + bmua*yc2
-  endif
 
 end SUBROUTINE lin
 
@@ -760,10 +768,10 @@ SUBROUTINE nlin_rhs(un)
   real(c_double),dimension(ndim) ::    un
 
   !     LOCAL
-  real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
-  real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-  real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
-  real    rho(0:n+1,0:m+1,0:l+la+1)
+  real    u(0:n  ,0:m,0:l+1), v(0:n,0:m  ,0:l+1)
+  real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
+  real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
+  real    rho(0:n+1,0:m+1,0:l+1)
   real,target ::    utx(np,n,m,l),vty(np,n,m,l),wtz(np,n,m,l)
   real    t2r(np,n,m,l),t3r(np,n,m,l)
 
@@ -859,10 +867,10 @@ SUBROUTINE nlin_jac(un)
   real(c_double), dimension(ndim) ::   un
 
   !     LOCAL
-  real    u(0:n  ,0:m,0:l+la+1), v(0:n, 0:m  ,0:l+la+1)
-  real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-  real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
-  real    rho(0:n+1,0:m+1,0:l+la+1)
+  real    u(0:n  ,0:m,0:l+1), v(0:n, 0:m  ,0:l+1)
+  real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
+  real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
+  real    rho(0:n+1,0:m+1,0:l+1)
   real,target :: urTx(np,n,m,l),Utrx(np,n,m,l),&
        &        vrTy(np,n,m,l),Vtry(np,n,m,l)
   real,target :: wrTz(np,n,m,l),Wtrz(np,n,m,l)
@@ -977,9 +985,9 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
   implicit none
   !     IMPORT/EXPORT
   real    un(ndim)
-  real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
-  real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-  real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
+  real    u(0:n  ,0:m,0:l+1), v(0:n,0:m  ,0:l+1)
+  real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
+  real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
   !     LOCAL
   integer i,j,k
   !     EXTERNAL
@@ -991,7 +999,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
   p = 0.0
   t = 0.0
   s = 0.0
-  do k = 1, l+la
+  do k = 1, l
      do j = 1, m
         do i = 1, n
            u(i,j,k) = un(find_row2(i,j,k,UU))
@@ -1003,7 +1011,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         enddo
      enddo
   enddo
-  do k = 1, l+la
+  do k = 1, l
      do j = 1, m
         if (periodic) then
            u(0,j,k)  = u(N,j,k)
@@ -1030,7 +1038,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         endif
      enddo
   enddo
-  do k = 1, l+la
+  do k = 1, l
      do i = 1, n
         u(i,0,k)  = 0.0
         u(i,M,k)  = 0.0
@@ -1054,7 +1062,7 @@ SUBROUTINE usol(un,u,v,w,p,t,s)
         w(i,j,0)   = 0.0
         p(i,j,l+1) = 0.0
         p(i,j,0)   = 0.0
-        IF (la == 0) t(i,j,l+1) = t(i,j,l)
+        t(i,j,l+1) = t(i,j,l)
         t(i,j,0)   = t(i,j,1)
         s(i,j,l+1) = s(i,j,l)
         s(i,j,0)   = s(i,j,1)
@@ -1087,14 +1095,14 @@ SUBROUTINE solu(un,u,v,w,p,t,s)
   implicit none
   !     IMPORT/EXPORT
   real    un(ndim)
-  real    u(0:n  ,0:m,0:l+la+1), v(0:n,0:m  ,0:l+la+1)
-  real    w(0:n+1,0:m+1,0:l+la  ), p(0:n+1,0:m+1,0:l+la+1)
-  real    t(0:n+1,0:m+1,0:l+la+1), s(0:n+1,0:m+1,0:l+la+1)
+  real    u(0:n  ,0:m,0:l+1), v(0:n,0:m  ,0:l+1)
+  real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
+  real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
   integer find_row2
   !     LOCAL
   integer i,j,k
 
-  do k = 1, l+la
+  do k = 1, l
      do j = 1, m
         do i = 1, n
            un(find_row2(i,j,k,UU)) = u(i,j,k)

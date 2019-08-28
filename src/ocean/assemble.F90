@@ -26,8 +26,7 @@ SUBROUTINE fillcolB
 
   call TIMER_START('fillcolB' // char(0))
 
-  !     Put B in coB,  B is a diagonal matrix.
-  !     PRINT *,'parROSB = ',par(ROSB)
+  ! Put B in coB,  B is a diagonal matrix.
   coB = 0.0
   do k = 1, l
      do j = 1, m
@@ -44,13 +43,7 @@ SUBROUTINE fillcolB
         enddo
      enddo
   enddo
-  if(la == 1) then
-     do j = 1, m
-        do i = 1, n
-           coB(find_row2(i,j,l+la,TT)) = -Ai
-        enddo
-     enddo
-  endif
+  
   if (rowintcon>0) then
      ! if(SRES == 0) coB(rowintcon + SS) = 0.0 !zero in B for integral condition
      if(SRES == 0) coB(rowintcon) = 0.0 !zero in B for integral condition
@@ -89,7 +82,7 @@ SUBROUTINE fillcolA
   ! +-----------------------------------------------------------------------------+
   ! | Obtaining the matrix:                                                       |
   ! | 1) The top iteration travels through the grid points:                       |
-  ! |     vertically       k = 1, l+la                                            |
+  ! |     vertically       k = 1, l                                               |
   ! |     meridionally     j = 1, m                                               |
   ! |     zonally          i = 1, n                                               |
   ! |                                                                             |
@@ -111,7 +104,7 @@ SUBROUTINE fillcolA
   begA = 0
   v = 1
   row = 1
-  do k = 1, l+la
+  do k = 1, l
      do j = 1, m
         do i = 1, n
            Alocal = An(:,:,:,i,j,k)

@@ -522,7 +522,7 @@ private:
     //!@}
 
     //! global grid dimensions
-    int n,m,l,la;
+    int n,m,l;
 
     //! physical domain bounds (global long./lat./depth)
     double xmin,xmax,ymin,ymax,hdim;
