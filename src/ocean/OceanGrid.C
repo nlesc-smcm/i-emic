@@ -50,8 +50,6 @@ OceanGrid::OceanGrid(Teuchos::RCP<TRIOS::Domain> dom)
     m = domain->LocalM();
     l = domain->LocalL();
 
-    la = 0; // FIXME get rid of all la mentions
-
     dx = (domain->Xmax()-domain->Xmin())/(domain->GlobalN());
     dy = (domain->Ymax()-domain->Ymin())/(domain->GlobalN());
     dz = (domain->Zmax()-domain->Zmin())/(domain->GlobalN());
@@ -206,7 +204,7 @@ void OceanGrid::ImportData(const Epetra_Vector& input)
     DEBUG("(b) extract pointer...");
     CHECK_ZERO(importVector->ExtractView(&data));
 
-    // puts the data into the locations (1:n,1:m,1:l+la) and
+    // puts the data into the locations (1:n,1:m,1:l) and
     // adds some dummy-data and boundary conditions in the boundary cells
     DEBUG("(c) call Fortran routine...");
     F90NAME(m_thcm_utils,usol1d)(data,U_,V_,W_,P_,T_,S_);
@@ -233,7 +231,7 @@ void OceanGrid::ExportData(Epetra_Vector& output)
 {
     double *data;
     CHECK_ZERO(importVector->ExtractView(&data));
-    // puts the data from the locations (1:n,1:m,1:l+la)
+    // puts the data from the locations (1:n,1:m,1:l)
     // into the assembly vector
     //TODO: this should not be used, first make a C-compatible '1D' version!
     ERROR("Not Implemented!",__FILE__,__LINE__);
@@ -532,7 +530,6 @@ std::ostream& OceanGrid::print(std::ostream& os) const
     os << "n = "<<n<<std::endl;
     os << "m = "<<m<<std::endl;
     os << "l = "<<l<<std::endl;
-    os << "la= "<<la<<std::endl;
     os << std::endl;
     os << *xc_<<std::endl;
     os << *yc_<<std::endl;
@@ -540,8 +537,8 @@ std::ostream& OceanGrid::print(std::ostream& os) const
     os << *xu_<<std::endl;
     os << *yv_<<std::endl;
     os << *zw_<<std::endl;
-    os << "LandMask(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
-    for (int k=0;k<=l+la+1;k++)
+    os << "LandMask(0:n+1,0:m+1,0:l+1): "<<std::endl;
+    for (int k=0;k<=l+1;k++)
     {
         os << "k="<<k<<std::endl;
         for (int j=m+1; j>=0; j--)
@@ -554,8 +551,8 @@ std::ostream& OceanGrid::print(std::ostream& os) const
         }
         os << std::endl;
     }
-    os << "U(0:n,0:m,0:l+la+1): "<<std::endl;
-    for (int k=0;k<=l+la+1;k++)
+    os << "U(0:n,0:m,0:l+1): "<<std::endl;
+    for (int k=0;k<=l+1;k++)
     {
         os << "k="<<k<<std::endl;
         for (int j=m; j>=0; j--)
@@ -568,8 +565,8 @@ std::ostream& OceanGrid::print(std::ostream& os) const
         }
         os << std::endl;
     }
-    os << "\nV(0:n,0:m,0:l+la+1): "<<std::endl;
-    for (int k=0;k<=l+la+1;k++)
+    os << "\nV(0:n,0:m,0:l+1): "<<std::endl;
+    for (int k=0;k<=l+1;k++)
     {
         os << "k="<<k<<std::endl;
         for (int j=m; j>=0; j--)
@@ -582,8 +579,8 @@ std::ostream& OceanGrid::print(std::ostream& os) const
         }
         os << std::endl;
     }
-    os << "\nW(0:n,0:m,0:l+la): "<<std::endl;
-    for (int k=0;k<=l+la;k++)
+    os << "\nW(0:n,0:m,0:l): "<<std::endl;
+    for (int k=0;k<=l;k++)
     {
         os << "k="<<k<<std::endl;
         for (int j=m; j>=0; j--)
@@ -596,8 +593,8 @@ std::ostream& OceanGrid::print(std::ostream& os) const
         }
         os << std::endl;
     }
-    os << "\np(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
-    for (int k=0;k<=l+la+1;k++)
+    os << "\np(0:n+1,0:m+1,0:l+1): "<<std::endl;
+    for (int k=0;k<=l+1;k++)
     {
         os << "k="<<k<<std::endl;
         for (int j=m+1; j>=0; j--)
@@ -610,8 +607,8 @@ std::ostream& OceanGrid::print(std::ostream& os) const
         }
         os << std::endl;
     }
-    os << "\nT(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
-    for (int k=0;k<=l+la+1;k++)
+    os << "\nT(0:n+1,0:m+1,0:l+1): "<<std::endl;
+    for (int k=0;k<=l+1;k++)
     {
         os << "k="<<k<<std::endl;
         for (int j=m+1; j>=0; j--)
@@ -624,8 +621,8 @@ std::ostream& OceanGrid::print(std::ostream& os) const
         }
         os << std::endl;
     }
-    os << "\nS(0:n+1,0:m+1,0:l+la+1): "<<std::endl;
-    for (int k=0;k<=l+la+1;k++)
+    os << "\nS(0:n+1,0:m+1,0:l+1): "<<std::endl;
+    for (int k=0;k<=l+1;k++)
     {
         os << "k="<<k<<std::endl;
         for (int j=m+1; j>=0; j--)

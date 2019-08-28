@@ -58,7 +58,7 @@ subroutine findex(row,i,j,k,XX)
 
   integer t, r, XX, row, i, j, k, nn
 
-  !     nn = n*m*(l+la)
+  !     nn = n*m*(l)
   !     if (row.LE.2*nn) then
   !        XX = 2 - mod(row,2) ! UU or VV
   !        r = (row + 2 - XX)/2

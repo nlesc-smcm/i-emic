@@ -267,18 +267,18 @@ Call structure DSM and FDJS
 !     *     Import/export
       real un(ndim), mix(ndim)
 !     *     Local
-      real u(0:n  ,0:m  ,0:l+la+1)
-      real v(0:n  ,0:m  ,0:l+la+1)
-      real w(0:n+1,0:m+1,0:l+la  )
-      real p(0:n+1,0:m+1,0:l+la+1)
-      real t(0:n+1,0:m+1,0:l+la+1)
-      real s(0:n+1,0:m+1,0:l+la+1)
-      real dtdxe(0:n,0:m+1,0:l+la+1),dsdxe(0:n,0:m+1,0:l+la+1)
-      real dtdyn(0:n+1,0:m,0:l+la+1),dsdyn(0:n+1,0:m,0:l+la+1)
-      real dtdzt(0:n+1,0:m+1,0:l+la),dsdzt(0:n+1,0:m+1,0:l+la)
-      real rho(0:n+1,0:m+1,0:l+la+1)
-      real drhods(0:n+1,0:m+1,0:l+la+1),drhodt(0:n+1,0:m+1,0:l+la+1)
-      real drhodzt(0:n+1,0:m+1,0:l+la)
+      real u(0:n  ,0:m  ,0:l+1)
+      real v(0:n  ,0:m  ,0:l+1)
+      real w(0:n+1,0:m+1,0:l  )
+      real p(0:n+1,0:m+1,0:l+1)
+      real t(0:n+1,0:m+1,0:l+1)
+      real s(0:n+1,0:m+1,0:l+1)
+      real dtdxe(0:n,0:m+1,0:l+1),dsdxe(0:n,0:m+1,0:l+1)
+      real dtdyn(0:n+1,0:m,0:l+1),dsdyn(0:n+1,0:m,0:l+1)
+      real dtdzt(0:n+1,0:m+1,0:l),dsdzt(0:n+1,0:m+1,0:l)
+      real rho(0:n+1,0:m+1,0:l+1)
+      real drhods(0:n+1,0:m+1,0:l+1),drhodt(0:n+1,0:m+1,0:l+1)
+      real drhodzt(0:n+1,0:m+1,0:l)
       real Ftxe(0:n,1:m,1:l), Fsxe(0:n,1:m,1:l)
       real Ftyn(1:n,0:m,1:l), Fsyn(1:n,0:m,1:l)
       real Ftzt(1:n,1:m,0:l), Fszt(1:n,1:m,0:l)
@@ -571,12 +571,12 @@ Call structure DSM and FDJS
       implicit none
 !include 'usr.com'
 
-      real    C(0:n+1,0:m+1,0:l+la+1)
-      real dCdx(0:n  ,0:m+1,0:l+la+1)
+      real    C(0:n+1,0:m+1,0:l+1)
+      real dCdx(0:n  ,0:m+1,0:l+1)
       real isoc
       integer i,j,k
 
-      do k=0,l+la+1
+      do k=0,l+1
          do j=0,m+1  !--> y might not be defined at 0 and m+1
             do i=0,n
                dCdx(i,j,k) = isoc(i+1,j,k) * isoc(i,j,k) * 
@@ -597,12 +597,12 @@ Call structure DSM and FDJS
       implicit none
 !include 'usr.com'
 
-      real    C(0:n+1,0:m+1,0:l+la+1)
-      real dCdy(0:n+1,0:m  ,0:l+la+1)
+      real    C(0:n+1,0:m+1,0:l+1)
+      real dCdy(0:n+1,0:m  ,0:l+1)
       real isoc
       integer i,j,k
 
-      do k=0,l+la+1
+      do k=0,l+1
          do j=0,m
             do i=0,n+1
                dCdy(i,j,k) = isoc(i,j+1,k) * isoc(i,j,k) * 
@@ -624,12 +624,12 @@ Call structure DSM and FDJS
       implicit none
 !include 'usr.com'
 
-      real    C(0:n+1,0:m+1,0:l+la+1)
-      real dCdz(0:n+1,0:m+1,0:l+la  )
+      real    C(0:n+1,0:m+1,0:l+1)
+      real dCdz(0:n+1,0:m+1,0:l  )
       real isoc
       integer i,j,k
 
-      do k=0,l+la
+      do k=0,l
          do j=0,m+1
             do i=0,n+1
                dCdz(i,j,k) = isoc(i,j,k+1) * isoc(i,j,k) * 
@@ -651,15 +651,15 @@ Call structure DSM and FDJS
       implicit none
 !include 'usr.com'
 
-      real      t(0:n+1,0:m+1,0:l+la+1),     s(0:n+1,0:m+1,0:l+la+1)
-      real drhodt(0:n+1,0:m+1,0:l+la+1),drhods(0:n+1,0:m+1,0:l+la+1)
+      real      t(0:n+1,0:m+1,0:l+1),     s(0:n+1,0:m+1,0:l+1)
+      real drhodt(0:n+1,0:m+1,0:l+1),drhods(0:n+1,0:m+1,0:l+1)
       real xes, lambda
       integer i,j,k
 
 !     *     Define ratio of expansion coefficients
       lambda = par(LAMB)
 
-      do k=0,l+la+1
+      do k=0,l+1
          do j=0,m+1
             do i=0,n+1
                drhodt(i,j,k) = -1.0 - xes * 
