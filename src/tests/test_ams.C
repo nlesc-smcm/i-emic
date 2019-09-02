@@ -191,6 +191,7 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     // testing::internal::CaptureStdout();
     out_stream->str("");
 
+    // Test that the method can start
     auto ams = createDoubleWell(params);
     ams->run();
 
@@ -200,23 +201,18 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     // std::cout << output;
 
     EXPECT_NE(output.find("Initialization"), std::string::npos);
-    if (maxit == default_maxit && write_time_steps < 0)
+    if (maxit > 0)
     {
-        EXPECT_NE(output.find("AMS: " + std::to_string(default_maxit)),
-                  std::string::npos);
-        EXPECT_EQ(output.find("AMS: " + std::to_string(default_maxit + 1)),
+        EXPECT_NE(output.find("AMS: " + std::to_string(maxit)),
                   std::string::npos);
     }
+    EXPECT_EQ(output.find("AMS: " + std::to_string(maxit + 1)),
+              std::string::npos);
 
-    if (maxit == default_maxit && write_time_steps > 0)
-    {
-        EXPECT_NE(output.find("AMS: " + std::to_string(default_maxit / 2)),
-                  std::string::npos);
-    }
-
+    // Test that the file is read and maximum iterations are used correctly
     params->set("read file", "out_data.h5");
     params->set("write file", "");
-    params->set("maximum iterations", 10000);
+    params->set("maximum iterations", default_maxit);
 
     out_stream->str("");
 
@@ -225,12 +221,28 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
 
     std::string output2 = out_stream->str();
 
+    EXPECT_EQ(output2.find("Initialization"), std::string::npos);
+    EXPECT_EQ(output2.find("AMS: " + std::to_string(default_maxit + 1)),
+              std::string::npos);
+
+    // Test that the file is read and the method actually converges
+    params->set("read file", "out_data.h5");
+    params->set("write file", "");
+    params->set("maximum iterations", 10000);
+
+    out_stream->str("");
+
+    ams2 = createDoubleWell(params);
+    ams2->run();
+
+    output2 = out_stream->str();
+
     // std::cout << output2;
 
     EXPECT_EQ(output2.find("Initialization"), std::string::npos);
-    if (maxit == default_maxit && write_time_steps < 0)
+    if (write_time_steps < 0)
     {
-        EXPECT_EQ(output2.find("AMS: " + std::to_string(default_maxit)),
+        EXPECT_EQ(output2.find("AMS: " + std::to_string(maxit)),
                   std::string::npos);
     }
     else if (maxit < default_maxit)

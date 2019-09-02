@@ -374,7 +374,7 @@ double Transient<T>::ams_elimination(
     std::sort(unconverged_experiments.begin(),
               unconverged_experiments.end(), AMSExperiment<T>::sort);
 
-    for (int i = 0; i < maxit_; i++)
+    for (int i = its_; i < maxit_; i++)
     {
         minimal_experiments.clear();
         if (unconverged_experiments.size() > 0 && unused_experiments.size() > 0)
