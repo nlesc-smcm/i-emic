@@ -260,7 +260,7 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
     if (ams2->get_mfpt() > 0)
     {
         EXPECT_GT(ams2->get_mfpt(), 6);
-        EXPECT_LT(ams2->get_mfpt(), 10);
+        EXPECT_LT(ams2->get_mfpt(), 20);
     }
     else
         EXPECT_NEAR(ams2->get_probability(), 0.157, 5e-1);
@@ -318,7 +318,7 @@ TEST(AMS, AMSRestart5)
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
     params->set("method", "AMS");
     params->set("write final state", true);
-    params->set("maximum iterations", 40);
+    params->set("maximum iterations", 30);
 
     restart_test(params);
 }
@@ -413,7 +413,7 @@ TEST(AMS, TAMSRestart5)
     Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
     params->set("method", "TAMS");
     params->set("write final state", true);
-    params->set("maximum iterations", 40);
+    params->set("maximum iterations", 30);
 
     restart_test(params);
 }
