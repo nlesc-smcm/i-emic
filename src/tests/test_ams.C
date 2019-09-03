@@ -221,6 +221,8 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
 
     std::string output2 = out_stream->str();
 
+    // std::cout << output2;
+
     EXPECT_EQ(output2.find("Initialization"), std::string::npos);
     EXPECT_EQ(output2.find("AMS: " + std::to_string(default_maxit + 1)),
               std::string::npos);
@@ -250,18 +252,18 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
         EXPECT_NE(output2.find("AMS: " + std::to_string(default_maxit)),
                   std::string::npos);
     }
-    EXPECT_NE(output2.find("AMS: " + std::to_string(default_maxit + 1)),
+    EXPECT_NE(output2.find("AMS: " + std::to_string(maxit + 1)),
               std::string::npos);
     EXPECT_EQ(output2.find("AMS: " + std::to_string(default_maxit * 8)),
               std::string::npos);
 
     if (ams2->get_mfpt() > 0)
     {
-        EXPECT_GT(ams2->get_mfpt(), 5);
-        EXPECT_LT(ams2->get_mfpt(), 40);
+        EXPECT_GT(ams2->get_mfpt(), 6);
+        EXPECT_LT(ams2->get_mfpt(), 10);
     }
     else
-        EXPECT_NEAR(ams2->get_probability(), 0.157, 1e-1);
+        EXPECT_NEAR(ams2->get_probability(), 0.157, 5e-1);
 }
 
 #if TRILINOS_MAJOR_MINOR_VERSION > 121300
@@ -306,6 +308,17 @@ TEST(AMS, AMSRestart4)
     params->set("write steps", 10);
     params->set("maximum iterations", 0);
     params->set("write final state", false);
+
+    restart_test(params);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, AMSRestart5)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "AMS");
+    params->set("write final state", true);
+    params->set("maximum iterations", 40);
 
     restart_test(params);
 }
@@ -390,6 +403,17 @@ TEST(AMS, TAMSRestart4)
     params->set("write steps", 10);
     params->set("maximum iterations", 0);
     params->set("write final state", false);
+
+    restart_test(params);
+}
+
+//------------------------------------------------------------------
+TEST(AMS, TAMSRestart5)
+{
+    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    params->set("method", "TAMS");
+    params->set("write final state", true);
+    params->set("maximum iterations", 40);
 
     restart_test(params);
 }

@@ -44,6 +44,8 @@ protected:
     mutable int time_steps_;
     mutable int time_steps_previous_write_;
 
+    mutable std::vector<int> ell_;
+
     std::string read_;
     std::string write_;
     bool write_final_;

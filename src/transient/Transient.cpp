@@ -73,6 +73,14 @@ void Transient<Teuchos::RCP<const Epetra_Vector> >::read(
 
     HDF5.Read("data", "its", its_);
 
+    int ell_size = -1;
+    HDF5.Read("data", "ell size", ell_size);
+    if (ell_size > 0)
+    {
+       ell_.resize(ell_size);
+       HDF5.Read("data", "ell", H5T_NATIVE_INT, ell_size, &ell_[0]);
+    }
+
     Teuchos::RCP<Epetra_Import> import = Teuchos::null;
     Epetra_MultiVector *tmp;
     Epetra_BlockMap const &map = experiments[0].x0->Map();
@@ -195,6 +203,11 @@ void Transient<Teuchos::RCP<const Epetra_Vector> >::write(
     HDF5.Write("data", "its", its_);
     HDF5.Write("data", "num exp", num_exp_);
     HDF5.Write("data", "num init exp", num_init_exp_);
+
+    int ell_size = ell_.size();
+    HDF5.Write("data", "ell size", ell_size);
+    if (ell_size > 0)
+        HDF5.Write("data", "ell", H5T_NATIVE_INT, ell_.size(), &ell_[0]);
 
     if (lock_file >= 0)
         close(lock_file);

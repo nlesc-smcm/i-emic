@@ -353,7 +353,6 @@ double Transient<T>::ams_elimination(
 {
     int converged = 0;
 
-    std::vector<int> ell;
     std::vector<AMSExperiment<T> *> reactive_experiments;
     std::vector<AMSExperiment<T> *> unconverged_experiments;
     std::vector<AMSExperiment<T> *> unused_experiments;
@@ -397,14 +396,14 @@ double Transient<T>::ams_elimination(
         if (minimal_experiments.size() == 0 || unused_experiments.size() == 0)
             continue;
 
-        ell.push_back(minimal_experiments.size());
-        if (ell.back() == 1)
+        ell_.push_back(minimal_experiments.size());
+        if (ell_.back() == 1)
         {
             INFO("Eliminating 1 trajectory.");
         }
         else
         {
-            INFO("Eliminating " << ell.back() << " trajectories.");
+            INFO("Eliminating " << ell_.back() << " trajectories.");
         }
 
         its_++;
@@ -510,7 +509,7 @@ double Transient<T>::ams_elimination(
         write(write_, experiments);
 
     double alpha = (double)converged / (double)num_exp_;
-    for (int l: ell)
+    for (int l: ell_)
         alpha *= 1.0 - (double)l / (double)num_exp_;
 
     return alpha;
@@ -529,6 +528,7 @@ void Transient<T>::ams(T const &x0) const
 
     its_ = 0;
     time_steps_ = 0;
+    ell_.clear();
 
     if (read_ != "")
         read(read_, experiments);
@@ -617,6 +617,7 @@ void Transient<T>::tams(T const &x0) const
 
     its_ = 0;
     time_steps_ = 0;
+    ell_.clear();
 
     if (read_ != "")
         read(read_, experiments);
