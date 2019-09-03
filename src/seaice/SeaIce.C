@@ -419,6 +419,9 @@ void SeaIce::computeRHS()
 
                     val = Tsi - Tval;
                     break;
+                default:
+                    ERROR("SeaIce: Invalid unknown " << XX, __FILE__, __LINE__);
+                    return;
                 }
 
                 rr = find_row0(nLoc_, mLoc_, i, j, XX);

@@ -131,7 +131,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 
     // run timestepper
     int status = stepper->run();
-    if (status == 0)
+    if (status != 0)
         ERROR("Timestepper failed", __FILE__, __LINE__);
 
     TIMER_STOP("Total time...");
