@@ -5,6 +5,7 @@ else ()
 endif ()
 project(i-emic)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(DATA_DIR "'${CMAKE_CURRENT_SOURCE_DIR}/data/'")
 message("-- Data is stored in: " ${DATA_DIR})
 
