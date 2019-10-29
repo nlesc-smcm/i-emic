@@ -95,7 +95,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     //  THCM is implemented as a Singleton, which allows only a single
     //  instance at a time. The Ocean class can access THCM with a call
     //  to THCM::Instance()
-    Teuchos::ParameterList &thcmList =
+    const Teuchos::ParameterList &thcmList =
         oceanParamList->sublist("THCM");
 
     thcm_ = rcp(new THCM(thcmList, comm_));
@@ -128,7 +128,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     grid_   = rcp(new OceanGrid(domain_));
 
     // Read starting parameters from xml
-    Teuchos::ParameterList& startList =
+    const Teuchos::ParameterList& startList =
         thcmList.sublist("Starting Parameters");
     THCM::Instance().ReadParameters(startList);
 

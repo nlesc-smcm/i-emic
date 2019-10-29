@@ -182,7 +182,7 @@ extern "C" {
 
 //=============================================================================
 // constructor
-THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
+THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     Singleton<THCM>(Teuchos::rcp(this, false)),
     Comm(comm),
     nullSpace(Teuchos::null),
@@ -1891,7 +1891,7 @@ void THCM::printTiming(std::ostream& os)
 }
 
 //=============================================================================
-void THCM::ReadParameters(Teuchos::ParameterList& plist)
+void THCM::ReadParameters(const Teuchos::ParameterList& plist)
 {
     double val;
     std::string label;
@@ -1899,9 +1899,8 @@ void THCM::ReadParameters(Teuchos::ParameterList& plist)
         for (int i=0; i<= _NPAR_ + _NPAR_TRILI; i++)
         {
             label = int2par(i);
-            if (plist.isParameter(label))
-            {
-                val = plist.get(label,defaultParameter(label));
+            if (plist.isParameter(label)) {
+                val = plist.get<double>(label);
                 this->setParameter(label,val);
             }
         }

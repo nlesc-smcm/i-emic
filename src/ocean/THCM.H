@@ -123,7 +123,7 @@ public:
     };
 
     //! Constructor
-    THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
+    THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
 
     //! Destructor
 
@@ -364,7 +364,7 @@ public:
     std::string const int2par(int ind);
 
     //! read THCM parameters from a ParameterList
-    void ReadParameters(Teuchos::ParameterList& plist);
+    void ReadParameters(const Teuchos::ParameterList& plist);
 
     //! Under non-restoring conditions: get an integral from vec and
     //! use that to correct the integral condition
