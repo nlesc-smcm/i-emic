@@ -381,8 +381,6 @@ public:
     VectorPtr getRowScaling();
     VectorPtr getColScaling();
 
-    void setParameters(ParameterList pars);
-
     void copyMask(std::string const &fname);
 
     void dumpBlocks()
