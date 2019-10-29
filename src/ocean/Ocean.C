@@ -987,7 +987,7 @@ void Ocean::initializeBelos()
     int maxiters          = NumGlobalElements/blocksize - 1;
 
     // Create Belos parameterlist
-    belosParamList_ = rcp(new Teuchos::ParameterList());
+    RCP<Teuchos::ParameterList> belosParamList_ = rcp(new Teuchos::ParameterList());
     belosParamList_->set("Block Size", blocksize);
     belosParamList_->set("Flexible Gmres", true);
     belosParamList_->set("Adaptive Block Size", true);
