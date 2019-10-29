@@ -63,6 +63,7 @@ public:
     using LandMask  = Utils::MaskStruct;
 
 protected:
+    Teuchos::ParameterList params;
 
     Teuchos::RCP<THCM> thcm_;
 
@@ -157,8 +158,9 @@ protected:
 
 public:
     //! constructor
+    Ocean(Teuchos::RCP<Epetra_Comm> Comm);
     Ocean(Teuchos::RCP<Epetra_Comm> Comm, Model::ParameterList oceanParamList);
-    Ocean(Teuchos::RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList);
+    Ocean(Teuchos::RCP<Epetra_Comm> Comm, const Teuchos::ParameterList& oceanParamList);
 
     //! destructor
     ~Ocean();
@@ -166,6 +168,11 @@ public:
     std::string name() const { return "ocean"; }
     int modelIdent() const { return 0; }
     Teuchos::RCP<Epetra_Comm> Comm() const { return comm_; }
+
+    const Teuchos::ParameterList& getParameters();
+    void setParameters(const Teuchos::ParameterList&);
+
+    static const Teuchos::ParameterList& defaultParameters();
 
     //! Solve may optionally accept an rhs of VectorPointer type
     void solve(Teuchos::RCP<const Epetra_MultiVector> rhs = Teuchos::null);
@@ -428,5 +435,7 @@ private:
     Teuchos::RCP<Epetra_Vector> initialState();
 
     void inspectVector(VectorPtr x);
+
+    static const Teuchos::ParameterList defaultParams;
 };
 #endif

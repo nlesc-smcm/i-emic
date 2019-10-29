@@ -52,42 +52,24 @@ extern "C" _SUBROUTINE_(set_seaice_parameters)(SeaIce::CommPars*);
 
 //=====================================================================
 // Constructor:
-Ocean::Ocean(RCP<Epetra_Comm> Comm, Model::ParameterList paramListPtr)
-    : Ocean(Comm, *paramListPtr)
+Ocean::Ocean(RCP<Epetra_Comm> Comm)
+    : Ocean(Comm, defaultParameters())
 {}
 
-Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
+Ocean::Ocean(RCP<Epetra_Comm> Comm, Model::ParameterList paramListPtr)
+    : Ocean(Comm, paramListPtr == Teuchos::null ? defaultParameters() : *paramListPtr)
+{}
+
+Ocean::Ocean(RCP<Epetra_Comm> Comm, const Teuchos::ParameterList& oceanParamList)
     :
+    params(defaultParameters()),
     solverInitialized_     (false),  // Solver needs initialization
     precInitialized_       (false),  // Preconditioner needs initialization
     recompPreconditioner_  (true),   // We need a preconditioner to start with
-    recompMassMat_         (true),   // We need a mass matrix to start with
-
-    loadSalinityFlux_      (oceanParamList.get("Load salinity flux", false)),
-    saveSalinityFlux_      (oceanParamList.get("Save salinity flux", true)),
-    loadTemperatureFlux_   (oceanParamList.get("Load temperature flux", false)),
-    saveTemperatureFlux_   (oceanParamList.get("Save temperature flux", true)),
-
-    useFort3_              (oceanParamList.get("Use legacy fort.3 output", false)),
-    useFort44_             (oceanParamList.get("Use legacy fort.44 output", true)),
-    saveColumnIntegral_    (oceanParamList.get("Save column integral", false)),
-    maxMaskFixes_          (oceanParamList.get("Max mask fixes", 5)),
-
-    landmaskFile_          (oceanParamList.sublist("THCM").get("Land Mask", "none")),
-
-    analyzeJacobian_       (oceanParamList.get("Analyze Jacobian", true))
+    recompMassMat_         (true)    // We need a mass matrix to start with
 {
     INFO("Ocean: constructor...");
-
-    // inherited input/output datamembers
-    inputFile_   = oceanParamList.get("Input file",  "ocean_input.h5");
-    outputFile_  = oceanParamList.get("Output file", "ocean_output.h5");
-    saveMask_    = oceanParamList.get("Save mask", true);
-    loadMask_    = oceanParamList.get("Load mask", true);
-
-    loadState_   = oceanParamList.get("Load state", false);
-    saveState_   = oceanParamList.get("Save state", true);
-    saveEvery_   = oceanParamList.get("Save frequency", 0);
+    setParameters(oceanParamList);
 
     // initialize postprocessing counter
     ppCtr_ = 0;
@@ -2202,3 +2184,73 @@ void Ocean::setPar(std::string const &parName, double value)
     if (parIdent > 0 && parIdent <= _NPAR_)
         FNAME(setparcs)(&parIdent, &value);
 }
+
+//====================================================================
+static Teuchos::ParameterList
+createDefaultParameterList()
+{
+    Teuchos::ParameterList result;
+    result.set("Load salinity flux", false);
+    result.set("Save salinity flux", true);
+    result.set("Load temperature flux", false);
+    result.set("Save temperature flux", true);
+
+    result.set("Use legacy fort.3 output", false);
+    result.set("Use legacy fort.44 output", true);
+    result.set("Save column integral", false);
+    result.set("Max mask fixes", 5);
+
+    result.sublist("THCM").set("Land Mask", "none");
+
+    result.set("Analyze Jacobian", true);
+
+    result.set("Input file",  "ocean_input.h5");
+    result.set("Output file", "ocean_output.h5");
+    result.set("Save mask", true);
+    result.set("Load mask", true);
+
+    result.set("Load state", false);
+    result.set("Save state", true);
+    result.set("Save frequency", 0);
+    result.set("Store everything", false);
+
+    return result;
+}
+
+const Teuchos::ParameterList&
+Ocean::defaultParameters()
+{ return Ocean::defaultParams; }
+
+const Teuchos::ParameterList&  Ocean::getParameters()
+{ return params; }
+
+void Ocean::setParameters(const Teuchos::ParameterList& newParams)
+{
+    params.setParameters(newParams);
+
+    loadSalinityFlux_    = params.get<bool>("Load salinity flux");
+    saveSalinityFlux_    = params.get<bool>("Save salinity flux");
+    loadTemperatureFlux_ = params.get<bool>("Load temperature flux");
+    saveTemperatureFlux_ = params.get<bool>("Save temperature flux");
+
+    useFort3_            = params.get<bool>("Use legacy fort.3 output");
+    useFort44_           = params.get<bool>("Use legacy fort.44 output");
+    saveColumnIntegral_  = params.get<bool>("Save column integral");
+    maxMaskFixes_        = params.get<int>("Max mask fixes");
+
+    landmaskFile_        = params.sublist("THCM").get<std::string>("Land Mask");
+    analyzeJacobian_     = params.get<bool>("Analyze Jacobian");
+
+    // inherited input/output datamembers
+    inputFile_   = params.get<std::string>("Input file");
+    outputFile_  = params.get<std::string>("Output file");
+    saveMask_    = params.get<bool>("Save mask");
+    loadMask_    = params.get<bool>("Load mask");
+
+    loadState_   = params.get<bool>("Load state");
+    saveState_   = params.get<bool>("Save state");
+    saveEvery_   = params.get<int>("Save frequency");
+}
+
+const Teuchos::ParameterList
+Ocean::defaultParams = createDefaultParameterList();
