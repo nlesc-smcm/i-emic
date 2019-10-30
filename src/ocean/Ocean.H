@@ -170,9 +170,9 @@ public:
     Teuchos::RCP<Epetra_Comm> Comm() const { return comm_; }
 
     const Teuchos::ParameterList& getParameters();
-    void setParameters(const Teuchos::ParameterList&);
+    void setParameters(Teuchos::ParameterList);
 
-    static const Teuchos::ParameterList& defaultParameters();
+    static Teuchos::ParameterList getDefaultParameters();
 
     //! Solve may optionally accept an rhs of VectorPointer type
     void solve(Teuchos::RCP<const Epetra_MultiVector> rhs = Teuchos::null);
@@ -436,6 +436,6 @@ private:
 
     void inspectVector(VectorPtr x);
 
-    static const Teuchos::ParameterList defaultParams;
+    static Teuchos::ParameterList& setDefaultParameters(Teuchos::ParameterList&);
 };
 #endif
