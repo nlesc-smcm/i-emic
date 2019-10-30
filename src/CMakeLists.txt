@@ -32,8 +32,8 @@ elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel") #ifort, icc
   
 endif ()
 
-include_directories(${Trilinos_INCLUDE_DIRS})
-include_directories(${Trilinos_TPL_INCLUDE_DIRS})
+include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS})
+include_directories(SYSTEM ${Trilinos_TPL_INCLUDE_DIRS})
 
 set(library_directories ${Trilinos_LIBRARY_DIRS})
 list(APPEND library_directories ${Trilinos_TPL_LIBRARY_DIRS})
