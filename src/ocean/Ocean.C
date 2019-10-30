@@ -62,7 +62,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Model::ParameterList paramListPtr)
 
 Ocean::Ocean(RCP<Epetra_Comm> Comm, const Teuchos::ParameterList& oceanParamList)
     :
-    params(defaultParameters()),
+    params_(defaultParameters()),
     solverInitialized_     (false),  // Solver needs initialization
     precInitialized_       (false),  // Preconditioner needs initialization
     recompPreconditioner_  (true),   // We need a preconditioner to start with
@@ -2222,34 +2222,34 @@ Ocean::defaultParameters()
 { return Ocean::defaultParams; }
 
 const Teuchos::ParameterList&  Ocean::getParameters()
-{ return params; }
+{ return params_; }
 
 void Ocean::setParameters(const Teuchos::ParameterList& newParams)
 {
-    params.setParameters(newParams);
+    params_.setParameters(newParams);
 
-    loadSalinityFlux_    = params.get<bool>("Load salinity flux");
-    saveSalinityFlux_    = params.get<bool>("Save salinity flux");
-    loadTemperatureFlux_ = params.get<bool>("Load temperature flux");
-    saveTemperatureFlux_ = params.get<bool>("Save temperature flux");
+    loadSalinityFlux_    = params_.get<bool>("Load salinity flux");
+    saveSalinityFlux_    = params_.get<bool>("Save salinity flux");
+    loadTemperatureFlux_ = params_.get<bool>("Load temperature flux");
+    saveTemperatureFlux_ = params_.get<bool>("Save temperature flux");
 
-    useFort3_            = params.get<bool>("Use legacy fort.3 output");
-    useFort44_           = params.get<bool>("Use legacy fort.44 output");
-    saveColumnIntegral_  = params.get<bool>("Save column integral");
-    maxMaskFixes_        = params.get<int>("Max mask fixes");
+    useFort3_            = params_.get<bool>("Use legacy fort.3 output");
+    useFort44_           = params_.get<bool>("Use legacy fort.44 output");
+    saveColumnIntegral_  = params_.get<bool>("Save column integral");
+    maxMaskFixes_        = params_.get<int>("Max mask fixes");
 
-    landmaskFile_        = params.sublist("THCM").get<std::string>("Land Mask");
-    analyzeJacobian_     = params.get<bool>("Analyze Jacobian");
+    landmaskFile_        = params_.sublist("THCM").get<std::string>("Land Mask");
+    analyzeJacobian_     = params_.get<bool>("Analyze Jacobian");
 
     // inherited input/output datamembers
-    inputFile_   = params.get<std::string>("Input file");
-    outputFile_  = params.get<std::string>("Output file");
-    saveMask_    = params.get<bool>("Save mask");
-    loadMask_    = params.get<bool>("Load mask");
+    inputFile_   = params_.get<std::string>("Input file");
+    outputFile_  = params_.get<std::string>("Output file");
+    saveMask_    = params_.get<bool>("Save mask");
+    loadMask_    = params_.get<bool>("Load mask");
 
-    loadState_   = params.get<bool>("Load state");
-    saveState_   = params.get<bool>("Save state");
-    saveEvery_   = params.get<int>("Save frequency");
+    loadState_   = params_.get<bool>("Load state");
+    saveState_   = params_.get<bool>("Save state");
+    saveEvery_   = params_.get<int>("Save frequency");
 }
 
 const Teuchos::ParameterList

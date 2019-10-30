@@ -63,7 +63,7 @@ public:
     using LandMask  = Utils::MaskStruct;
 
 protected:
-    Teuchos::ParameterList params;
+    Teuchos::ParameterList params_;
 
     Teuchos::RCP<THCM> thcm_;
 
