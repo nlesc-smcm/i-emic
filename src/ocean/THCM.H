@@ -122,6 +122,12 @@ public:
         Teuchos::RCP<Epetra_Vector> dFSdG;
     };
 
+    const Teuchos::ParameterList& getParameters();
+    void setParameters(Teuchos::ParameterList);
+
+    static Teuchos::ParameterList getDefaultInitParameters();
+    static Teuchos::ParameterList getDefaultParameters();
+
     //! Constructor
     THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
 
@@ -355,13 +361,13 @@ public:
     //@}
 
     //! obtain a default parameter for a few specific labels
-    double defaultParameter(std::string const &label);
+    static double defaultParameter(std::string const &label);
 
     //! convert parameter name to integer (i.e. "Combined Forcing" => 19)
     int par2int(std::string const &label);
 
     // convert parameter index to std::string (i.e. 19 => "Combined Forcing")
-    std::string const int2par(int ind);
+    static std::string const int2par(int ind);
 
     //! read THCM parameters from a ParameterList
     void ReadParameters(const Teuchos::ParameterList& plist);
@@ -619,6 +625,10 @@ private:
     //! provide a different SolveMap after the call.
     void SetupLoadBalancing();
 
+    void setPreParameters();
+    void setPostParameters();
+    static Teuchos::ParameterList& setDefaultInitParameters(Teuchos::ParameterList&);
+    static Teuchos::ParameterList& setDefaultParameters(Teuchos::ParameterList&);
 };
 
 #endif
