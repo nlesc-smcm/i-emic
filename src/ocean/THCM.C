@@ -3094,15 +3094,9 @@ void THCM::setPreParameters()
 
 void THCM::setPostParameters()
 {
-    double val;
-    std::string label;
-    for (int i=0; i<= _NPAR_ + _NPAR_TRILI; i++)
-    {
-        label = int2par(i);
-        if (paramList.sublist("Starting Parameters").isParameter(label)) {
-            val = paramList.sublist("Starting Parameters").get<double>(label);
-            this->setParameter(label,val);
-        }
+    double *val = nullptr; //Only used to determine return type of getValue
+    for (const auto& param : paramList.sublist("Starting Parameters")) {
+        this->setParameter(param.first, param.second.getValue(val));
     }
 }
 

@@ -132,9 +132,6 @@ protected:
     //! Maximum number of mask fixing cycles
     int maxMaskFixes_;
 
-    //! Landmask file
-    std::string landmaskFile_;
-
     //! Select Jacobian analysis
     bool analyzeJacobian_;
 
@@ -170,8 +167,10 @@ public:
     Teuchos::RCP<Epetra_Comm> Comm() const { return comm_; }
 
     const Teuchos::ParameterList& getParameters();
+    void setInitParameters(Teuchos::ParameterList);
     void setParameters(Teuchos::ParameterList);
 
+    static Teuchos::ParameterList getDefaultInitParameters();
     static Teuchos::ParameterList getDefaultParameters();
 
     //! Solve may optionally accept an rhs of VectorPointer type
@@ -436,6 +435,8 @@ private:
 
     void inspectVector(VectorPtr x);
 
+    void setOceanParameters();
+    static Teuchos::ParameterList& setDefaultInitParameters(Teuchos::ParameterList&);
     static Teuchos::ParameterList& setDefaultParameters(Teuchos::ParameterList&);
 };
 #endif

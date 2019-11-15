@@ -68,7 +68,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, const Teuchos::ParameterList& oceanParamList
     recompMassMat_         (true)    // We need a mass matrix to start with
 {
     INFO("Ocean: constructor...");
-    setParameters(oceanParamList);
+    setInitParameters(oceanParamList);
 
     // initialize postprocessing counter
     ppCtr_ = 0;
@@ -2180,8 +2180,9 @@ void Ocean::setPar(std::string const &parName, double value)
 }
 
 //====================================================================
-Teuchos::ParameterList&
-Ocean::setDefaultParameters(Teuchos::ParameterList& params)
+
+static Teuchos::ParameterList&
+setParams(Teuchos::ParameterList& params)
 {
     params.get("Load salinity flux", false);
     params.get("Save salinity flux", true);
@@ -2192,8 +2193,6 @@ Ocean::setDefaultParameters(Teuchos::ParameterList& params)
     params.get("Use legacy fort.44 output", true);
     params.get("Save column integral", false);
     params.get("Max mask fixes", 5);
-
-    params.sublist("THCM").get("Land Mask", "none");
 
     params.get("Analyze Jacobian", true);
 
@@ -2210,6 +2209,32 @@ Ocean::setDefaultParameters(Teuchos::ParameterList& params)
     return params;
 }
 
+Teuchos::ParameterList&
+Ocean::setDefaultInitParameters(Teuchos::ParameterList& params)
+{
+    setParams(params);
+    params.sublist("THCM") =  THCM::getDefaultInitParameters();
+
+    return params;
+}
+
+Teuchos::ParameterList&
+Ocean::setDefaultParameters(Teuchos::ParameterList& params)
+{
+    setParams(params);
+    params.sublist("THCM") =  THCM::getDefaultParameters();
+
+    return params;
+}
+
+Teuchos::ParameterList
+Ocean::getDefaultInitParameters()
+{
+    Teuchos::ParameterList result;
+    Ocean::setDefaultInitParameters(result);
+    return result;
+}
+
 Teuchos::ParameterList
 Ocean::getDefaultParameters()
 {
@@ -2221,12 +2246,8 @@ Ocean::getDefaultParameters()
 const Teuchos::ParameterList&  Ocean::getParameters()
 { return params_; }
 
-void Ocean::setParameters(Teuchos::ParameterList newParams)
+void Ocean::setOceanParameters()
 {
-    setDefaultParameters(newParams);
-    //FIXME: Validate here when THCM, etc. are done
-    params_.setParameters(newParams);
-
     loadSalinityFlux_    = params_.get<bool>("Load salinity flux");
     saveSalinityFlux_    = params_.get<bool>("Save salinity flux");
     loadTemperatureFlux_ = params_.get<bool>("Load temperature flux");
@@ -2237,7 +2258,6 @@ void Ocean::setParameters(Teuchos::ParameterList newParams)
     saveColumnIntegral_  = params_.get<bool>("Save column integral");
     maxMaskFixes_        = params_.get<int>("Max mask fixes");
 
-    landmaskFile_        = params_.sublist("THCM").get<std::string>("Land Mask");
     analyzeJacobian_     = params_.get<bool>("Analyze Jacobian");
 
     // inherited input/output datamembers
@@ -2249,4 +2269,18 @@ void Ocean::setParameters(Teuchos::ParameterList newParams)
     loadState_   = params_.get<bool>("Load state");
     saveState_   = params_.get<bool>("Save state");
     saveEvery_   = params_.get<int>("Save frequency");
+}
+
+void Ocean::setInitParameters(Teuchos::ParameterList newParams)
+{
+    setDefaultInitParameters(newParams);
+    params_ = newParams;
+    setOceanParameters();
+}
+
+void Ocean::setParameters(Teuchos::ParameterList newParams)
+{
+    setDefaultParameters(newParams);
+    params_ = newParams;
+    setOceanParameters();
 }
