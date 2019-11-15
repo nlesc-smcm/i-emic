@@ -194,24 +194,13 @@ THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm)
     //FIXME: Validate here when THCM, etc. are done
     setPreParameters();
 
-    std::string probdesc = paramList.get("Problem Description","Unnamed");
-
-    n = paramList.get("Global Grid-Size n", 16);
-    m = paramList.get("Global Grid-Size m", 16);
-    l = paramList.get("Global Grid-Size l", 16);
+    std::string probdesc = paramList.get<std::string>("Problem Description");
 
     std::stringstream ss;
     ss << "THCM (" << probdesc <<", "
        << n << "x" << m << "x" << l <<")";
     INFO(ss.str());
     this->SetLabel(ss.str().c_str());
-
-    // default: north atlantic
-    xmin = paramList.get("Global Bound xmin", 286.0) * PI_ / 180.0;
-    xmax = paramList.get("Global Bound xmax", 350.0) * PI_ / 180.0;
-    ymin = paramList.get("Global Bound ymin", 10.0)  * PI_ / 180.0;
-    ymax = paramList.get("Global Bound ymax", 74.0)  * PI_ / 180.0;
-    periodic = paramList.get("Periodic"  , false);
 
     // sanity check
     double xdist = pow(cos(xmax)-cos(xmin), 2) + pow(sin(xmax)-sin(xmin), 2);
@@ -222,19 +211,16 @@ THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm)
                 << xdist, __FILE__, __LINE__);
     }
 
-    hdim           = paramList.get("Depth hdim", 4000.0);
-    double qz      = paramList.get("Grid Stretching qz", 1.0);
-    int    itopo   = paramList.get("Topography", 1);
-    bool   flat    = paramList.get("Flat Bottom", false);
-    bool   rd_mask = paramList.get("Read Land Mask", false); //== false in experiment0
-
-    comp_sal_int = paramList.get("Compute salinity integral", true);
+    double qz      = paramList.get<double>("Grid Stretching qz");
+    int    itopo   = paramList.get<int>("Topography");
+    bool   flat    = paramList.get<bool>("Flat Bottom");
+    bool   rd_mask = paramList.get<bool>("Read Land Mask"); //== false in experiment0
 
     if (rd_mask)
     {
         // we put the name of the desired mask in a file so it can be
         // obtained from there by the fortran code:
-        std::string mask_file = paramList.get("Land Mask","no_mask_specified");
+        std::string mask_file = paramList.get<std::string>("Land Mask");
         if (Comm->MyPID() == 0)
         {
             std::ofstream mfs("mask_name.txt", std::ios::trunc);
@@ -242,26 +228,8 @@ THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm)
         }
     }
 
-    ih                 = paramList.get("Inhomogeneous Mixing",0);
-    vmix_GLB           = paramList.get("Mixing",1);
-    rho_mixing         = paramList.get("Rho Mixing",true);
-    tap                = paramList.get("Taper",1);
-    alphaT             = paramList.get("Linear EOS: alpha T", 1.0e-4);
-    alphaS             = paramList.get("Linear EOS: alpha S", 7.6e-4);
-    tres               = paramList.get("Restoring Temperature Profile",1);
-    sres               = paramList.get("Restoring Salinity Profile",1);
-    localSres_         = paramList.get("Local SRES Only", false);
-    intSign_           = paramList.get("Salinity Integral Sign", -1);
-    ite                = paramList.get("Levitus T", 1);
-    its                = paramList.get("Levitus S", 1);
-    internal_forcing   = paramList.get("Levitus Internal T/S",false);
-    bool rd_spertm     = paramList.get("Read Salinity Perturbation Mask",false);
-    coupled_T          = paramList.get("Coupled Temperature", 0);
-    coupled_S          = paramList.get("Coupled Salinity", 0);
-    coupled_M          = paramList.get("Coupled Sea Ice Mask", 1);
-    fixPressurePoints_ = paramList.get("Fix Pressure Points", false);
-    int coriolis_on    = paramList.get("Coriolis Force", 1);
-    int forcing_type   = paramList.get("Forcing Type", 0);
+    int coriolis_on  = paramList.get<int>("Coriolis Force");
+    int forcing_type = paramList.get<int>("Forcing Type");
 
     //------------------------------------------------------------------
     if ((coupled_S == 1) && (sres == 1))
@@ -272,10 +240,10 @@ THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm)
         sres = 0;
     }
 
+    bool rd_spertm = paramList.get<bool>("Read Salinity Perturbation Mask");
     if (rd_spertm)
     {
-        std::string spertm_file = paramList.get("Salinity Perturbation Mask",
-                                                "no_mask_specified");
+        std::string spertm_file = paramList.get<std::string>("Salinity Perturbation Mask");
         if (Comm->MyPID()==0)
         {
             std::ofstream mfs("spertm_name.txt",std::ios::trunc);
@@ -289,27 +257,17 @@ THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm)
         ERROR("Invalid integral sign!", __FILE__, __LINE__);
     }
 
-    iza  = paramList.get("Wind Forcing Type",2);
-    // Let THCM know the wind forcing file
-    std::string windf_file = paramList.get("Wind Forcing Data",
-                                           "wind/trtau.dat");
-
-    // Let THCM know the sst forcing file
-    std::string sst_file = paramList.get("Temperature Forcing Data",
-                                         "levitus/new/t00an1");
-
-    // Let THCM know the sss forcing file
-    std::string sss_file = paramList.get("Salinity Forcing Data",
-                                         "levitus/new/s00an1");
-
     if (Comm->MyPID() == 0)
     {
         std::ofstream windfile("windf_name.txt", std::ios::trunc);
         std::ofstream sstfile("sstf_name.txt",   std::ios::trunc);
         std::ofstream sssfile("sssf_name.txt",   std::ios::trunc);
-        windfile << windf_file;
-        sstfile  << sst_file;
-        sssfile  << sss_file;
+        // Let THCM know the wind forcing file
+        windfile << paramList.get<std::string>("Wind Forcing Data");
+        // Let THCM know the sst forcing file
+        sstfile  << paramList.get<std::string>("Temperature Forcing Data");
+        // Let THCM know the sss forcing file
+        sssfile  << paramList.get<std::string>("Salinity Forcing Data");
     }
     //-----------------------------------------------------------------
 
@@ -638,7 +596,7 @@ THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm)
         F90NAME(m_usr,set_internal_forcing)(temp,salt);
     }
 
-    bool time_dep_forcing = paramList.get("Time Dependent Forcing",false);
+    bool time_dep_forcing = paramList.get<bool>("Time Dependent Forcing");
     if (time_dep_forcing)
     {
         // read and distribute Levitus data
@@ -705,6 +663,7 @@ THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm)
     int M = domain->GlobalM();
     int L = domain->GlobalL();
 
+    //FIXME: Problem!
     int Nic = paramList.get("Integral row coordinate i", N-1);
     int Mic = paramList.get("Integral row coordinate j", M-1);
     int midx;     // mask index
@@ -818,7 +777,7 @@ THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm)
     // build vector with integral coefficients
     this->evaluateB();
 
-    scaling_type=paramList.get("Scaling","THCM");
+    scaling_type=paramList.get<std::string>("Scaling");
 
     if (scaling_type=="THCM")
     {
@@ -2041,7 +2000,7 @@ bool THCM::setParameter(std::string label, double value)
     else if (param==0) // 0 is non-dimensional time
     {
         // set monthly forcing data
-        bool time_dep_forcing = paramList.get("Time Dependent Forcing",false);
+        bool time_dep_forcing = paramList.get<bool>("Time Dependent Forcing");
         if ((value>=0.0) && time_dep_forcing)
         {
             double gamma=1.0,gammaT=1.0,gammaS=1.0,gammaW=1.0;//default values
@@ -3004,27 +2963,26 @@ Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()
 Teuchos::ParameterList&
 THCM::setDefaultInitParameters(Teuchos::ParameterList& params)
 {
-    /*
-    params.get("Rho Mixing",true);
     params.get("Problem Description","Unnamed");
+
     params.get("Grid Stretching qz", 1.0);
     params.get("Topography", 1);
     params.get("Flat Bottom", false);
+
     params.get("Read Land Mask", false); //== false in experiment0
     params.get("Land Mask","no_mask_specified");
 
-    params.get("Read Salinity Perturbation Mask",false);
-    params.get("Salinity Perturbation Mask", "no_mask_specified");
-
     params.get("Coriolis Force", 1);
     params.get("Forcing Type", 0);
+
+    params.get("Read Salinity Perturbation Mask",false);
+    params.get("Salinity Perturbation Mask", "no_mask_specified");
 
     params.get("Wind Forcing Data", "wind/trtau.dat");
     params.get("Temperature Forcing Data", "levitus/new/t00an1");
     params.get("Salinity Forcing Data", "levitus/new/s00an1");
 
     params.get("Time Dependent Forcing", false);
-    */
 
     return THCM::setDefaultParameters(params);
 }
@@ -3032,7 +2990,6 @@ THCM::setDefaultInitParameters(Teuchos::ParameterList& params)
 Teuchos::ParameterList&
 THCM::setDefaultParameters(Teuchos::ParameterList& params)
 {
-    /*
     params.get("Global Grid-Size n", 16);
     params.get("Global Grid-Size m", 16);
     params.get("Global Grid-Size l", 16);
@@ -3042,11 +2999,14 @@ THCM::setDefaultParameters(Teuchos::ParameterList& params)
     params.get("Global Bound xmax", 350.0);
     params.get("Global Bound ymin", 10.0);
     params.get("Global Bound ymax", 74.0);
-
     params.get("Periodic", false);
+
     params.get("Depth hdim", 4000.0);
+    params.get("Compute salinity integral", true);
+
     params.get("Inhomogeneous Mixing",0);
     params.get("Mixing",1);
+    params.get("Rho Mixing",true);
     params.get("Taper",1);
     params.get("Linear EOS: alpha T", 1.0e-4);
     params.get("Linear EOS: alpha S", 7.6e-4);
@@ -3057,7 +3017,6 @@ THCM::setDefaultParameters(Teuchos::ParameterList& params)
     params.get("Levitus T", 1);
     params.get("Levitus S", 1);
     params.get("Levitus Internal T/S",false);
-    params.get("Compute salinity integral", true);
     params.get("Coupled Temperature", 0);
     params.get("Coupled Salinity", 0);
     params.get("Coupled Sea Ice Mask", 1);
@@ -3065,6 +3024,7 @@ THCM::setDefaultParameters(Teuchos::ParameterList& params)
     params.get("Wind Forcing Type",2);
     params.get("Scaling","THCM");
 
+    /*
     Teuchos::ParameterList& startParams = params.sublist("Starting Parameters");
     for (int i=0; i<= _NPAR_ + _NPAR_TRILI; i++)
     {
@@ -3097,7 +3057,6 @@ const Teuchos::ParameterList&  THCM::getParameters()
 
 void THCM::setPreParameters()
 {
-    /*
     n = paramList.get<int>("Global Grid-Size n");
     m = paramList.get<int>("Global Grid-Size m");
     l = paramList.get<int>("Global Grid-Size l");
@@ -3107,11 +3066,13 @@ void THCM::setPreParameters()
     xmax = paramList.get<double>("Global Bound xmax") * PI_ / 180.0;
     ymin = paramList.get<double>("Global Bound ymin") * PI_ / 180.0;
     ymax = paramList.get<double>("Global Bound ymax") * PI_ / 180.0;
-
     periodic           = paramList.get<bool>("Periodic");
+
     hdim               = paramList.get<double>("Depth hdim");
+    comp_sal_int       = paramList.get<bool>("Compute salinity integral");
     ih                 = paramList.get<int>("Inhomogeneous Mixing");
     vmix_GLB           = paramList.get<int>("Mixing");
+    rho_mixing         = paramList.get<bool>("Rho Mixing");
     tap                = paramList.get<int>("Taper");
     alphaT             = paramList.get<double>("Linear EOS: alpha T");
     alphaS             = paramList.get<double>("Linear EOS: alpha S");
@@ -3122,15 +3083,13 @@ void THCM::setPreParameters()
     ite                = paramList.get<int>("Levitus T");
     its                = paramList.get<int>("Levitus S");
     internal_forcing   = paramList.get<bool>("Levitus Internal T/S");
-    comp_sal_int       = paramList.get<bool>("Compute salinity integral");
     coupled_T          = paramList.get<int>("Coupled Temperature");
     coupled_S          = paramList.get<int>("Coupled Salinity");
     coupled_M          = paramList.get<int>("Coupled Sea Ice Mask");
     fixPressurePoints_ = paramList.get<bool>("Fix Pressure Points");
     iza                = paramList.get<int>("Wind Forcing Type");
 
-    scaling_type       = paramList.get<std::string>("Scaling","THCM");
-    */
+    scaling_type       = paramList.get<std::string>("Scaling");
 }
 
 void THCM::setPostParameters()
