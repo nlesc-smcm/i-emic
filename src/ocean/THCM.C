@@ -663,9 +663,8 @@ THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm)
     int M = domain->GlobalM();
     int L = domain->GlobalL();
 
-    //FIXME: Problem!
-    int Nic = paramList.get("Integral row coordinate i", N-1);
-    int Mic = paramList.get("Integral row coordinate j", M-1);
+    int Nic = paramList.get<int>("Integral row coordinate i");
+    int Mic = paramList.get<int>("Integral row coordinate j");
     int midx;     // mask index
     int mval = 1; // mask value
     int tmp  = 0;
@@ -2984,7 +2983,15 @@ THCM::setDefaultInitParameters(Teuchos::ParameterList& params)
 
     params.get("Time Dependent Forcing", false);
 
-    return THCM::setDefaultParameters(params);
+    THCM::setDefaultParameters(params);
+
+    int N = params.get<int>("Global Grid-Size n");
+    int M = params.get<int>("Global Grid-Size m");
+
+    params.get("Integral row coordinate i", N-1);
+    params.get("Integral row coordinate j", M-1);
+
+    return params;
 }
 
 Teuchos::ParameterList&
