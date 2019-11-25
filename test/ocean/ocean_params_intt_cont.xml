@@ -10,8 +10,6 @@
   <Parameter name="Load salinity flux"    type="bool" value="true"/>
   <Parameter name="Load temperature flux" type="bool" value="false"/>
 
-  <Parameter name="Compute column integral" type="bool" value="true"/>      
-  
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->
@@ -94,9 +92,6 @@
          positive or a negative sign. Negative is the default. -->
     <Parameter name="Salinity Integral Sign" type="int" value="+1"/>
     
-    <!-- Freshwater Forcing (ifw in THCM) -->
-    <!-- 0: data, 1: idealized            -->
-    <Parameter name="Freshwater Forcing" type="int" value="1"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->
