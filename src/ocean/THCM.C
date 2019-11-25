@@ -1855,13 +1855,34 @@ void THCM::printTiming(std::ostream& os)
 //=============================================================================
 double THCM::defaultParameter(std::string const &label)
 {
-    if (!label.compare("Combined Forcing"))    return 0.0;
-    if (!label.compare("Solar Forcing"))       return 0.0;
-    if (!label.compare("Salinity Forcing"))    return 1.0;
-    if (!label.compare("Wind Forcing"))        return 1.0;
-    if (!label.compare("Temperature Forcing")) return 10.0;
-    if (!label.compare("SPL1"))                return 2.0e3;
-    if (!label.compare("SPL2"))                return 0.01;
+    //FIXME: Discuss how to better handle default value for AL_T being
+    //initalised in Fortran code.
+    if (label == "AL_T")                           return std::numeric_limits<double>::quiet_NaN();
+    if (label == "Rayleigh-Number")                return 0x1.59ab28f36fe65p-5; //0.0421959
+    if (label == "Vertical Ekman-Number")          return 0x1.cc276ea10aecep-22; //4.28552e-07
+    if (label == "Horizontal Ekman-Number")        return 0x1.62625cf2ea517p-15; // 4.22459e-05
+    if (label == "Rossby-Number")                  return 0x1.c37c4a6287b49p-14; //0.000107643
+    if (label == "SPL1")                           return 0x1.f4p+10; //2000
+    if (label == "Solar Forcing")                  return 0x0p+0; //0
+    if (label == "Horizontal Peclet-Number")       return 0x1.9b876f5262dd1p-10; //0.00156986
+    if (label == "Vertical Peclet-Number")         return 0x1.a176ddaceee0fp-12; //0.000398125
+    if (label == "P_VC")                           return 0x1.3e8p+3; //9.95312
+    if (label == "LAMB")                           return 0x1.e666666666666p+2; //7.6
+    if (label == "Salinity Forcing")               return 0x1p+0; //1
+    if (label == "Wind Forcing")                   return 0x1p+0; //1
+    if (label == "Temperature Forcing")            return 0x1.4p+3; //10
+    if (label == "Nonlinear Factor")               return 0x1.3a9161f9add3cp+3; //9.83025
+    if (label == "Combined Forcing")               return 0x0p+0; //0
+    if (label == "Energy")                         return 0x1.9p+6; //100
+    if (label == "ALPC")                           return 0x1p+0; // 1
+    if (label == "SPL2")                           return 0x1.47ae147ae147bp-7; //0.01
+    if (label == "Exponent")                       return 0x1.47ae147ae147bp-7; //0.01
+    if (label == "Seasonal Forcing")               return 0x1.47ae147ae147bp-7; //0.01
+    if (label == "Seasonal Forcing (Wind)")        return 0x1.47ae147ae147bp-7; //0.01
+    if (label == "Seasonal Forcing (Temperature)") return 0x1.47ae147ae147bp-7; //0.01
+    if (label == "Seasonal Forcing (Salinity)")    return 0x1.47ae147ae147bp-7; //0.01
+    if (label == "Mass")                           return 0x1.47ae147ae147bp-7; //0.01
+
     return 0.0;
 }
 
@@ -3031,14 +3052,12 @@ THCM::setDefaultParameters(Teuchos::ParameterList& params)
     params.get("Wind Forcing Type",2);
     params.get("Scaling","THCM");
 
-    /*
     Teuchos::ParameterList& startParams = params.sublist("Starting Parameters");
     for (int i=0; i<= _NPAR_ + _NPAR_TRILI; i++)
     {
         std::string label = int2par(i);
         startParams.get(label, defaultParameter(label));
     }
-    */
 
     return params;
 }
@@ -3103,7 +3122,9 @@ void THCM::setPostParameters()
 {
     double *val = nullptr; //Only used to determine return type of getValue
     for (const auto& param : paramList.sublist("Starting Parameters")) {
-        this->setParameter(param.first, param.second.getValue(val));
+        if (!std::isnan(param.second.getValue(val))) {
+            this->setParameter(param.first, param.second.getValue(val));
+        }
     }
 }
 
