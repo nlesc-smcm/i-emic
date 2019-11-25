@@ -191,7 +191,7 @@ THCM::THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm)
     DEBUG("### enter THCM::THCM ###");
 
     setDefaultInitParameters(paramList);
-    //FIXME: Validate here when THCM, etc. are done
+    paramList.validateParameters(getDefaultInitParameters());
     setPreParameters();
 
     std::string probdesc = paramList.get<std::string>("Problem Description");
@@ -3131,7 +3131,7 @@ void THCM::setPostParameters()
 void THCM::setParameters(Teuchos::ParameterList newParams)
 {
     setDefaultParameters(newParams);
-    //FIXME: Validate here when THCM, etc. are done
+    newParams.validateParameters(getDefaultParameters());
     paramList.setParameters(newParams);
 
     setPreParameters();

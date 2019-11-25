@@ -2243,7 +2243,7 @@ Ocean::getDefaultParameters()
     return result;
 }
 
-const Teuchos::ParameterList&  Ocean::getParameters()
+const Teuchos::ParameterList& Ocean::getParameters()
 { return params_; }
 
 void Ocean::setOceanParameters()
@@ -2274,12 +2274,14 @@ void Ocean::setOceanParameters()
 void Ocean::setInitParameters(Teuchos::ParameterList newParams)
 {
     setDefaultInitParameters(newParams);
+    newParams.validateParameters(getDefaultInitParameters());
     params_ = newParams;
     setOceanParameters();
 }
 
 void Ocean::setParameters(Teuchos::ParameterList newParams)
 {
+    newParams.validateParameters(getDefaultParameters());
     params_.setParameters(newParams);
     setOceanParameters();
 }
