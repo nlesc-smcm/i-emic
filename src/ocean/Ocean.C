@@ -2280,7 +2280,6 @@ void Ocean::setInitParameters(Teuchos::ParameterList newParams)
 
 void Ocean::setParameters(Teuchos::ParameterList newParams)
 {
-    setDefaultParameters(newParams);
-    params_ = newParams;
+    params_.setParameters(newParams);
     setOceanParameters();
 }
