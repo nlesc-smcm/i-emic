@@ -3120,10 +3120,15 @@ void THCM::setPreParameters()
 
 void THCM::setPostParameters()
 {
-    double *val = nullptr; //Only used to determine return type of getValue
+    double value; //Only used to determine return type of getValue
     for (const auto& param : paramList.sublist("Starting Parameters")) {
-        if (!std::isnan(param.second.getValue(val))) {
-            this->setParameter(param.first, param.second.getValue(val));
+        if (!std::isnan(param.second.getValue(&value))) {
+            this->setParameter(param.first, param.second.getValue(&value));
+        } else {
+            int p = par2int(param.first);
+            FNAME(getparcs)(&p,&value);
+            paramList.sublist("Starting Parameters").remove(param.first);
+            paramList.sublist("Starting Parameters").get(param.first, value);
         }
     }
 }
