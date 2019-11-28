@@ -86,6 +86,11 @@
     <!-- Levitus Salt (its in THCM) -->
     <!-- 0: data, 1: idealized             -->
     <Parameter name="Levitus S" type="int" value="1"/>
+    <!-- Wind Forcing (iza in THCM)       -->
+    <!-- 0: data,                         -->
+    <!-- 1: zonally averaged              -->
+    <!-- 2: idealized                     -->
+    <Parameter name="Wind Forcing Type" type="int" value="2"/>
     <!-- Type of scaling applied to the linear systems.         -->
     <!-- We currently support "None" and "THCM"                 -->
     <!-- "None" is not really recomended.                       -->
