@@ -94,8 +94,6 @@ protected:
     // grid representation of the state
     mutable Teuchos::RCP<OceanGrid> grid_;
 
-    ParameterList solverParams_;
-
     // Belos flexible GMRES members
     Teuchos::RCP<Belos::LinearProblem
                  <double, Epetra_MultiVector, Epetra_Operator> > problem_;

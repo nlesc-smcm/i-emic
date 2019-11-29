@@ -921,9 +921,6 @@ void Ocean::initializeSolver()
 {
     INFO("Ocean: initialize solver...");
 
-    solverParams_ = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
-
     // Initialize the preconditioner
     if (!precInitialized_)
         initializePreconditioner();
@@ -955,12 +952,14 @@ void Ocean::initializeBelos()
 
     problem_->setRightPrec(belosPrec);
 
+    const Teuchos::ParameterList &belosParams = params_.sublist("Belos Solver");
+
     // A few FGMRES parameters are made available in solver_params.xml:
-    int gmresIters  = solverParams_->get("FGMRES iterations", 500);
-    double gmresTol = solverParams_->get("FGMRES tolerance", 1e-8);
-    int maxrestarts = solverParams_->get("FGMRES restarts", 0);
-    int output      = solverParams_->get("FGMRES output", 100);
-    bool testExpl   = solverParams_->get("FGMRES explicit residual test", false);
+    int gmresIters  = belosParams.get<int>("FGMRES iterations");
+    double gmresTol = belosParams.get<double>("FGMRES tolerance");
+    int maxrestarts = belosParams.get<int>("FGMRES restarts");
+    int output      = belosParams.get<int>("FGMRES output");
+    bool testExpl   = belosParams.get<bool>("FGMRES explicit residual test");
 
     int NumGlobalElements = state_->GlobalLength();
     int blocksize         = 1; // number of vectors in rhs
@@ -2206,6 +2205,13 @@ setParams(Teuchos::ParameterList& params)
     params.get("Save frequency", 0);
     params.get("Store everything", false);
 
+    Teuchos::ParameterList& solverParams = params.sublist("Belos Solver");
+    solverParams.get("FGMRES iterations", 500);
+    solverParams.get("FGMRES tolerance", 1e-8);
+    solverParams.get("FGMRES restarts", 0);
+    solverParams.get("FGMRES output", 100);
+    solverParams.get("FGMRES explicit residual test", false);
+
     return params;
 }
 
@@ -2213,7 +2219,7 @@ Teuchos::ParameterList&
 Ocean::setDefaultInitParameters(Teuchos::ParameterList& params)
 {
     setParams(params);
-    params.sublist("THCM") =  THCM::getDefaultInitParameters();
+    params.sublist("THCM") = THCM::getDefaultInitParameters();
 
     return params;
 }
@@ -2222,7 +2228,7 @@ Teuchos::ParameterList&
 Ocean::setDefaultParameters(Teuchos::ParameterList& params)
 {
     setParams(params);
-    params.sublist("THCM") =  THCM::getDefaultParameters();
+    params.sublist("THCM") = THCM::getDefaultParameters();
 
     return params;
 }
