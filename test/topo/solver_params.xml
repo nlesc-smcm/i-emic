@@ -12,13 +12,4 @@
   <Parameter name="FGMRES iterations" type="int" value="100"/>
   <Parameter name="FGMRES restarts" type="int" value="0"/>
   <Parameter name="FGMRES output" type="int" value="1000"/> <!-- Output Frequency -->
-
-  <!-- ..................................................................-->
-  <!-- FGMRES (Belos) parameters for topo homotopy continuation          -->  
-  <!-- ..................................................................-->
-  <Parameter name="Topo FGMRES tolerance" type="double" value="1e-2"/>
-  <Parameter name="Topo FGMRES iterations" type="int" value="100"/>
-  <Parameter name="Topo FGMRES restarts" type="int" value="0"/>
-  <Parameter name="Topo FGMRES output" type="int" value="1000"/>
-
 </ParameterList>
