@@ -25,6 +25,9 @@ TEST(ParameterLists, Initialization)
 
         for (int i = 0; i != (int) files.size(); ++i)
             params.push_back(Utils::obtainParams(files[i], names[i]));
+
+        params[OCEAN]->sublist("Belos Solver") =
+            *Utils::obtainParams("solver_params.xml", "Solver parameters");
     }
     catch (...)
     {

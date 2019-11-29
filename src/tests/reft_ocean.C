@@ -15,8 +15,9 @@ TEST(Ocean, Initialization)
     try
     {
         // Create parallel Ocean
-        oceanParams = rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("reft_ocean_params.xml", oceanParams.ptr());
+        oceanParams = Utils::obtainParams("reft_ocean_params.xml", "Ocean parameters");
+        oceanParams->sublist("Belos Solver") =
+            *Utils::obtainParams("solver_params.xml", "Solver parameters");
         ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
     }
     catch (...)

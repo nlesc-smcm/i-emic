@@ -15,8 +15,9 @@ TEST(Ocean, Continuation1)
     {
         // Create parallel Ocean
         RCP<Teuchos::ParameterList> oceanParams =
-            rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("ocean_params_intt_init.xml", oceanParams.ptr());
+            Utils::obtainParams("ocean_params_intt_init.xml", "Ocean parameters");
+        oceanParams->sublist("Belos Solver") =
+            *Utils::obtainParams("solver_params.xml", "Solver parameters");
         ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
 
         // Create continuation params
@@ -78,9 +79,10 @@ TEST(Ocean, Continuation2)
     try
     {
         // Create parallel Ocean
-        RCP<Teuchos::ParameterList> oceanParams =
-            rcp(new Teuchos::ParameterList);
-        updateParametersFromXmlFile("ocean_params_intt_cont.xml", oceanParams.ptr());
+       RCP<Teuchos::ParameterList> oceanParams =
+            Utils::obtainParams("ocean_params_intt_cont.xml", "Ocean parameters");
+        oceanParams->sublist("Belos Solver") =
+            *Utils::obtainParams("solver_params.xml", "Solver parameters");
         ocean = Teuchos::null;
         ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
 

@@ -96,7 +96,6 @@ protected:
     ParameterList solverParams_;
 
     // Belos flexible GMRES members
-    ParameterList belosParamList_;
     Teuchos::RCP<Belos::LinearProblem
                  <double, Epetra_MultiVector, Epetra_Operator> > problem_;
     Teuchos::RCP<Belos::BlockGmresSolMgr

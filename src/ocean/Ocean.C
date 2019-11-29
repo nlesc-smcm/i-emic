@@ -59,6 +59,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     recompPreconditioner_  (true),   // We need a preconditioner to start with
     recompMassMat_         (true),   // We need a mass matrix to start with
 
+    solverParams_          (new Teuchos::ParameterList(oceanParamList->sublist("Belos Solver"))),
+
     loadSalinityFlux_      (oceanParamList->get("Load salinity flux", false)),
     saveSalinityFlux_      (oceanParamList->get("Save salinity flux", true)),
     loadTemperatureFlux_   (oceanParamList->get("Load temperature flux", false)),
@@ -941,9 +943,6 @@ void Ocean::initializeSolver()
 {
     INFO("Ocean: initialize solver...");
 
-    solverParams_ = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
-
     // Initialize the preconditioner
     if (!precInitialized_)
         initializePreconditioner();
@@ -976,41 +975,41 @@ void Ocean::initializeBelos()
     problem_->setRightPrec(belosPrec);
 
     // A few FGMRES parameters are made available in solver_params.xml:
-    int gmresIters  = solverParams_->get("FGMRES iterations", 500);
-    double gmresTol = solverParams_->get("FGMRES tolerance", 1e-8);
-    int maxrestarts = solverParams_->get("FGMRES restarts", 0);
-    int output      = solverParams_->get("FGMRES output", 100);
-    bool testExpl   = solverParams_->get("FGMRES explicit residual test", false);
+    int gmresIters  = solverParams_->get<int>("FGMRES iterations", 500);
+    double gmresTol = solverParams_->get<double>("FGMRES tolerance", 1e-8);
+    int maxrestarts = solverParams_->get<int>("FGMRES restarts", 0);
+    int output      = solverParams_->get<int>("FGMRES output", 100);
+    bool testExpl   = solverParams_->get<bool>("FGMRES explicit residual test", false);
 
     int NumGlobalElements = state_->GlobalLength();
     int blocksize         = 1; // number of vectors in rhs
     int maxiters          = NumGlobalElements/blocksize - 1;
 
     // Create Belos parameterlist
-    belosParamList_ = rcp(new Teuchos::ParameterList());
-    belosParamList_->set("Block Size", blocksize);
-    belosParamList_->set("Flexible Gmres", true);
-    belosParamList_->set("Adaptive Block Size", true);
-    belosParamList_->set("Num Blocks", gmresIters);
-    belosParamList_->set("Maximum Restarts", maxrestarts);
-    belosParamList_->set("Orthogonalization","DGKS");
-    belosParamList_->set("Output Frequency", output);
-    belosParamList_->set("Verbosity", Belos::Errors + Belos::Warnings);
-    belosParamList_->set("Maximum Iterations", maxiters);
-    belosParamList_->set("Convergence Tolerance", gmresTol);
-    belosParamList_->set("Explicit Residual Test", testExpl);
-    belosParamList_->set("Implicit Residual Scaling",
+    RCP<Teuchos::ParameterList> belosParamList = rcp(new Teuchos::ParameterList());
+    belosParamList->set("Block Size", blocksize);
+    belosParamList->set("Flexible Gmres", true);
+    belosParamList->set("Adaptive Block Size", true);
+    belosParamList->set("Num Blocks", gmresIters);
+    belosParamList->set("Maximum Restarts", maxrestarts);
+    belosParamList->set("Orthogonalization","DGKS");
+    belosParamList->set("Output Frequency", output);
+    belosParamList->set("Verbosity", Belos::Errors + Belos::Warnings);
+    belosParamList->set("Maximum Iterations", maxiters);
+    belosParamList->set("Convergence Tolerance", gmresTol);
+    belosParamList->set("Explicit Residual Test", testExpl);
+    belosParamList->set("Implicit Residual Scaling",
                          "Norm of Preconditioned Initial Residual");
 
-    // belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
-    // belosParamList_->set("Implicit Residual Scaling", "Norm of Initial Residual");
-    // belosParamList_->set("Explicit Residual Scaling", "Norm of RHS");
+    // belosParamList->set("Implicit Residual Scaling", "Norm of RHS");
+    // belosParamList->set("Implicit Residual Scaling", "Norm of Initial Residual");
+    // belosParamList->set("Explicit Residual Scaling", "Norm of RHS");
 
     // Belos block FGMRES setup
     belosSolver_ =
         rcp(new Belos::BlockGmresSolMgr
             <double, Epetra_MultiVector, Epetra_Operator>
-            (problem_, belosParamList_));
+            (problem_, belosParamList));
 
     // initialize effort counter
     effortCtr_ = 0;
