@@ -20,6 +20,8 @@
 Depending on architecture: ifort, gfortran, mpicc, mpicpc, mpic++, etc...
 
 ## Installation:
+
+### Manually
   * Install cmake, lapack, blas, openmpi and hdf5-openmpi as described above.
 
   * Install metis
@@ -41,6 +43,36 @@ Depending on architecture: ifort, gfortran, mpicc, mpicpc, mpic++, etc...
     * Create cmake script, see for examples `notes/i-emic_cmake_examples`
     * Run cmake script
     * make install -j<#procs>
+
+### Using EasyBuild
+  * Make sure no PATHs are set in your `.bashrc`.
+
+  * Clone the EasyBuild repository located at <https://github.com/nlesc-smcm/easybuild>
+
+  * Install the Trilinos module. For Cartesius, a job script is provided.
+
+  * In your `.bashrc`, load the newly installed modules and set the appropriate PATHs and compilers, e.g.
+  ```
+  module load 2019 CMake Trilinos/12.14.1-intel-2019a-Python-3.7.2
+
+  export PATH=${HOME}/local/bin:${PATH}
+  export LIBRARY_PATH=${HOME}/local/lib:${HOME}/local/lib64:${LIBRARY_PATH}
+  export LD_LIBRARY_PATH=${HOME}/local/lib64:${HOME}/local/lib:${LD_LIBRARY_PATH}:$EBROOTIMKL/mkl/lib/intel64
+
+  export CC=mpiicc
+  export CXX=mpiicpc
+  export FC=mpiifort
+  ```
+
+  * Install JDQZPP
+
+  * Compile I-EMIC, e.g.
+  ```
+  mkdir build
+  cd build
+  cmake ~/i-emic
+  make -j<#procs>
+  ```
 
 # General remarks
 - See the test code for examples ^^
