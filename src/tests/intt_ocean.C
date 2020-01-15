@@ -27,8 +27,7 @@ TEST(Ocean, Continuation1)
                                     continuationParams.ptr());
 
         // Create contination
-        Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-            continuation(ocean, continuationParams);
+        Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
         // Run continuation
         int status = continuation.run();
@@ -93,8 +92,7 @@ TEST(Ocean, Continuation2)
                                     continuationParams.ptr());
 
         // Create contination
-        Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-            continuation(ocean, continuationParams);
+        Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
         // Run continuation
         int status = continuation.run();

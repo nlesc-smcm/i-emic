@@ -77,8 +77,7 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     RCP<Ocean> ocean = Teuchos::rcp(new Ocean(Comm, oceanParams));
 
     // Create continuation
-    Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-        continuation(ocean, continuationParams);
+    Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
     // Create JDQZ generalized eigenvalue solver:
     // 1) Create a vector with complex arithmetic based on an Epetra_Vector

@@ -112,8 +112,7 @@ TEST(CoupledModel, Continuation)
     try
     {
         // Create continuation
-        Continuation<std::shared_ptr<CoupledModel>,
-                     Teuchos::RCP<Teuchos::ParameterList> >
+        Continuation<std::shared_ptr<CoupledModel>>
             continuation(coupledModel, params[CONT]);
 
         // Run continuation        

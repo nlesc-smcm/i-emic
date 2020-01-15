@@ -123,8 +123,7 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     jdqz->setParameters(*params[EIGEN]);
 
     // Create Continuation
-    Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
-        continuation(coupledModel, params[CONT]);
+    Continuation<std::shared_ptr<CoupledModel>> continuation(coupledModel, params[CONT]);
 
     // Couple JDQZ to continuation
     continuation.setEigenSolver(jdqz);

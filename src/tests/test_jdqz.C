@@ -71,7 +71,7 @@ TEST(JDQZ, CoupledContinuation)
         RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
 
-        Continuation<std::shared_ptr<CoupledModel>, RCP<Teuchos::ParameterList> >
+        Continuation<std::shared_ptr<CoupledModel>>
             continuation(coupledModel, continuationParams);
 
         // We perform a continuation with the coupled model

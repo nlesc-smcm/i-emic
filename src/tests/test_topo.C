@@ -146,8 +146,7 @@ TEST(Topo, SpinupContinuation)
 									continuationParams.ptr());
 
 		// Create spinup continuation
-        Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-            continuation(ocean, continuationParams);
+        Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
 		// Run continuation
         INFO("--**-- Topo test: running spinup...");
@@ -180,8 +179,7 @@ TEST(Topo, TopoContinuation)
 									continuationParams.ptr());
 
 		// Create topo continuation
-		Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >,
-					 RCP<Teuchos::ParameterList> >
+		Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >>
 			continuation(topo, continuationParams);
 
         // Run topo continuation
