@@ -32,10 +32,6 @@
   <!--  for both Newton and secant process in detect()  -->
   <Parameter name="destination tolerance" type="double" value="1.0e-6"/>
   
-  <!-- Define the optimal interval for the amount of Newton iterations -->
-  <Parameter name="minimum desired Newton iterations" type="int" value="4"/>
-  <Parameter name="maximum desired Newton iterations" type="int" value="5"/>
-  
   <!-- Upper bound for the Newton iterations, beyond this we restart -->
   <Parameter name="maximum Newton iterations" type="int" value="7"/>
 
@@ -55,15 +51,6 @@
 
   <!-- reject solution from failed Newton iteration -->
   <Parameter name="reject failed iteration" type="bool" value="true"/>
-
-  <!-- cycle between multiples of the tolerance -->
-  <Parameter name="enable tolerance cycling" type="bool" value="false"/>
-
-  <!-- use alternative definition for the Newton tolerance-->
-  <Parameter name="enable practical tolerance" type="bool" value="false"/>
-
-  <!-- experimental rhs scaling -->
-  <Parameter name="enable rhs scaling" type="bool" value="false"/>
 
   <!-- This is only possible when dFdpar is approximately constant -->
   <!-- for example during a continuation in Solar Forcing          -->
