@@ -53,6 +53,7 @@ class Continuation
     using JDQZsolver = JDQZ<JDQZInterface<Model,
                                           ComplexVector<Vector> > >;
     Model model_;
+    Teuchos::ParameterList paramList_;
 
     //! copy of the state in the model
     VectorPtr stateCopy_;
@@ -261,6 +262,12 @@ public:
     //! set pointer to an eigenvalue solver
     void setEigenSolver(std::shared_ptr<JDQZsolver> jdqz);
 
+    const Teuchos::ParameterList& getParameters();
+    void setParameters(Teuchos::ParameterList&);
+
+    static Teuchos::ParameterList getDefaultInitParameters();
+    static Teuchos::ParameterList getDefaultParameters();
+
 private:
 
     int  step();
@@ -310,7 +317,6 @@ private:
 
     //! write essential continuation data to datafile
     void writeData(bool describe = false);
-
 };
 
 #endif
