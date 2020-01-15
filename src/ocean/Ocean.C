@@ -68,7 +68,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, const Teuchos::ParameterList& oceanParamList
     recompMassMat_         (true)    // We need a mass matrix to start with
 {
     INFO("Ocean: constructor...");
-    setInitParameters(oceanParamList);
+    setParameters(oceanParamList);
 
     // initialize postprocessing counter
     ppCtr_ = 0;
@@ -2180,64 +2180,11 @@ void Ocean::setPar(std::string const &parName, double value)
 
 //====================================================================
 
-static Teuchos::ParameterList&
-setParams(Teuchos::ParameterList& params)
-{
-    params.get("Load salinity flux", false);
-    params.get("Save salinity flux", true);
-    params.get("Load temperature flux", false);
-    params.get("Save temperature flux", true);
-
-    params.get("Use legacy fort.3 output", false);
-    params.get("Use legacy fort.44 output", true);
-    params.get("Save column integral", false);
-    params.get("Max mask fixes", 5);
-
-    params.get("Analyze Jacobian", true);
-
-    params.get("Input file",  "ocean_input.h5");
-    params.get("Output file", "ocean_output.h5");
-    params.get("Save mask", true);
-    params.get("Load mask", true);
-
-    params.get("Load state", false);
-    params.get("Save state", true);
-    params.get("Save frequency", 0);
-    params.get("Store everything", false);
-
-    Teuchos::ParameterList& solverParams = params.sublist("Belos Solver");
-    solverParams.get("FGMRES iterations", 500);
-    solverParams.get("FGMRES tolerance", 1e-8);
-    solverParams.get("FGMRES restarts", 0);
-    solverParams.get("FGMRES output", 100);
-    solverParams.get("FGMRES explicit residual test", false);
-
-    return params;
-}
-
-Teuchos::ParameterList&
-Ocean::setDefaultInitParameters(Teuchos::ParameterList& params)
-{
-    setParams(params);
-    params.sublist("THCM") = THCM::getDefaultInitParameters();
-
-    return params;
-}
-
-Teuchos::ParameterList&
-Ocean::setDefaultParameters(Teuchos::ParameterList& params)
-{
-    setParams(params);
-    params.sublist("THCM") = THCM::getDefaultParameters();
-
-    return params;
-}
-
 Teuchos::ParameterList
 Ocean::getDefaultInitParameters()
 {
-    Teuchos::ParameterList result;
-    Ocean::setDefaultInitParameters(result);
+    Teuchos::ParameterList result = getDefaultParameters();
+    result.sublist("THCM") = THCM::getDefaultInitParameters();
     return result;
 }
 
@@ -2245,15 +2192,48 @@ Teuchos::ParameterList
 Ocean::getDefaultParameters()
 {
     Teuchos::ParameterList result;
-    Ocean::setDefaultParameters(result);
+    result.get("Load salinity flux", false);
+    result.get("Save salinity flux", true);
+    result.get("Load temperature flux", false);
+    result.get("Save temperature flux", true);
+
+    result.get("Use legacy fort.3 output", false);
+    result.get("Use legacy fort.44 output", true);
+    result.get("Save column integral", false);
+    result.get("Max mask fixes", 5);
+
+    result.get("Analyze Jacobian", true);
+
+    result.get("Input file",  "ocean_input.h5");
+    result.get("Output file", "ocean_output.h5");
+    result.get("Save mask", true);
+    result.get("Load mask", true);
+
+    result.get("Load state", false);
+    result.get("Save state", true);
+    result.get("Save frequency", 0);
+    result.get("Store everything", false);
+
+    Teuchos::ParameterList& solverParams = result.sublist("Belos Solver");
+    solverParams.get("FGMRES iterations", 500);
+    solverParams.get("FGMRES tolerance", 1e-8);
+    solverParams.get("FGMRES restarts", 0);
+    solverParams.get("FGMRES output", 100);
+    solverParams.get("FGMRES explicit residual test", false);
+
+    result.sublist("THCM") = THCM::getDefaultParameters();
+
     return result;
 }
 
 const Teuchos::ParameterList& Ocean::getParameters()
 { return params_; }
 
-void Ocean::setOceanParameters()
+void Ocean::setParameters(Teuchos::ParameterList newParams)
 {
+    params_.setParameters(newParams);
+    params_.validateParametersAndSetDefaults(getDefaultInitParameters());
+
     loadSalinityFlux_    = params_.get<bool>("Load salinity flux");
     saveSalinityFlux_    = params_.get<bool>("Save salinity flux");
     loadTemperatureFlux_ = params_.get<bool>("Load temperature flux");
@@ -2275,19 +2255,4 @@ void Ocean::setOceanParameters()
     loadState_   = params_.get<bool>("Load state");
     saveState_   = params_.get<bool>("Save state");
     saveEvery_   = params_.get<int>("Save frequency");
-}
-
-void Ocean::setInitParameters(Teuchos::ParameterList newParams)
-{
-    setDefaultInitParameters(newParams);
-    newParams.validateParameters(getDefaultInitParameters());
-    params_ = newParams;
-    setOceanParameters();
-}
-
-void Ocean::setParameters(Teuchos::ParameterList newParams)
-{
-    newParams.validateParameters(getDefaultParameters());
-    params_.setParameters(newParams);
-    setOceanParameters();
 }

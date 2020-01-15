@@ -165,7 +165,6 @@ public:
     Teuchos::RCP<Epetra_Comm> Comm() const { return comm_; }
 
     const Teuchos::ParameterList& getParameters();
-    void setInitParameters(Teuchos::ParameterList);
     void setParameters(Teuchos::ParameterList);
 
     static Teuchos::ParameterList getDefaultInitParameters();
@@ -432,9 +431,5 @@ private:
     Teuchos::RCP<Epetra_Vector> initialState();
 
     void inspectVector(VectorPtr x);
-
-    void setOceanParameters();
-    static Teuchos::ParameterList& setDefaultInitParameters(Teuchos::ParameterList&);
-    static Teuchos::ParameterList& setDefaultParameters(Teuchos::ParameterList&);
 };
 #endif

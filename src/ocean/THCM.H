@@ -627,8 +627,6 @@ private:
 
     void setPreParameters();
     void setPostParameters();
-    static Teuchos::ParameterList& setDefaultInitParameters(Teuchos::ParameterList&);
-    static Teuchos::ParameterList& setDefaultParameters(Teuchos::ParameterList&);
 };
 
 #endif
