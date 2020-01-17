@@ -966,30 +966,30 @@ void Ocean::initializeBelos()
     int maxiters          = NumGlobalElements/blocksize - 1;
 
     // Create Belos parameterlist
-    RCP<Teuchos::ParameterList> belosParamList_ = rcp(new Teuchos::ParameterList());
-    belosParamList_->set("Block Size", blocksize);
-    belosParamList_->set("Flexible Gmres", true);
-    belosParamList_->set("Adaptive Block Size", true);
-    belosParamList_->set("Num Blocks", gmresIters);
-    belosParamList_->set("Maximum Restarts", maxrestarts);
-    belosParamList_->set("Orthogonalization","DGKS");
-    belosParamList_->set("Output Frequency", output);
-    belosParamList_->set("Verbosity", Belos::Errors + Belos::Warnings);
-    belosParamList_->set("Maximum Iterations", maxiters);
-    belosParamList_->set("Convergence Tolerance", gmresTol);
-    belosParamList_->set("Explicit Residual Test", testExpl);
-    belosParamList_->set("Implicit Residual Scaling",
+    RCP<Teuchos::ParameterList> belosParamList = rcp(new Teuchos::ParameterList());
+    belosParamList->set("Block Size", blocksize);
+    belosParamList->set("Flexible Gmres", true);
+    belosParamList->set("Adaptive Block Size", true);
+    belosParamList->set("Num Blocks", gmresIters);
+    belosParamList->set("Maximum Restarts", maxrestarts);
+    belosParamList->set("Orthogonalization","DGKS");
+    belosParamList->set("Output Frequency", output);
+    belosParamList->set("Verbosity", Belos::Errors + Belos::Warnings);
+    belosParamList->set("Maximum Iterations", maxiters);
+    belosParamList->set("Convergence Tolerance", gmresTol);
+    belosParamList->set("Explicit Residual Test", testExpl);
+    belosParamList->set("Implicit Residual Scaling",
                          "Norm of Preconditioned Initial Residual");
 
-    // belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
-    // belosParamList_->set("Implicit Residual Scaling", "Norm of Initial Residual");
-    // belosParamList_->set("Explicit Residual Scaling", "Norm of RHS");
+    // belosParamList->set("Implicit Residual Scaling", "Norm of RHS");
+    // belosParamList->set("Implicit Residual Scaling", "Norm of Initial Residual");
+    // belosParamList->set("Explicit Residual Scaling", "Norm of RHS");
 
     // Belos block FGMRES setup
     belosSolver_ =
         rcp(new Belos::BlockGmresSolMgr
             <double, Epetra_MultiVector, Epetra_Operator>
-            (problem_, belosParamList_));
+            (problem_, belosParamList));
 
     // initialize effort counter
     effortCtr_ = 0;
