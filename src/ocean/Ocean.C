@@ -65,7 +65,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanPa
     recompMassMat_         (true)    // We need a mass matrix to start with
 {
     INFO("Ocean: constructor...");
-    setParameters();
+    Teuchos::ParameterList empty;
+    setParameters(empty);
 
     // initialize postprocessing counter
     ppCtr_ = 0;
@@ -2225,7 +2226,7 @@ Ocean::getDefaultParameters()
 const Teuchos::ParameterList& Ocean::getParameters()
 { return *params_; }
 
-void Ocean::setParameters(Teuchos::ParameterList&& newParams)
+void Ocean::setParameters(Teuchos::ParameterList& newParams)
 {
     params_->setParameters(newParams);
     params_->validateParametersAndSetDefaults(getDefaultInitParameters());
@@ -2251,4 +2252,6 @@ void Ocean::setParameters(Teuchos::ParameterList&& newParams)
     loadState_   = params_->get<bool>("Load state");
     saveState_   = params_->get<bool>("Save state");
     saveEvery_   = params_->get<int>("Save frequency");
+
+    newParams = *params_;
 }

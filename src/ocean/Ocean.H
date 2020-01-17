@@ -165,7 +165,7 @@ public:
     Teuchos::RCP<Epetra_Comm> Comm() const { return comm_; }
 
     const Teuchos::ParameterList& getParameters();
-    void setParameters(Teuchos::ParameterList&& oceanParamList = Teuchos::ParameterList());
+    void setParameters(Teuchos::ParameterList& oceanParamList);
 
     static Teuchos::ParameterList getDefaultInitParameters();
     static Teuchos::ParameterList getDefaultParameters();
