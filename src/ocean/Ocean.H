@@ -63,7 +63,7 @@ public:
     using LandMask  = Utils::MaskStruct;
 
 protected:
-    Teuchos::ParameterList params_;
+    Teuchos::RCP<Teuchos::ParameterList> params_;
 
     Teuchos::RCP<THCM> thcm_;
 
@@ -165,7 +165,7 @@ public:
     Teuchos::RCP<Epetra_Comm> Comm() const { return comm_; }
 
     const Teuchos::ParameterList& getParameters();
-    void setParameters(Teuchos::ParameterList oceanParamList);
+    void setParameters(Teuchos::ParameterList&& oceanParamList = Teuchos::ParameterList());
 
     static Teuchos::ParameterList getDefaultInitParameters();
     static Teuchos::ParameterList getDefaultParameters();

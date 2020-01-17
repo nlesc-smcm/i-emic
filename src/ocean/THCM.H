@@ -123,13 +123,13 @@ public:
     };
 
     const Teuchos::ParameterList& getParameters();
-    void setParameters(Teuchos::ParameterList);
+    void setParameters(const Teuchos::ParameterList&&);
 
     static Teuchos::ParameterList getDefaultInitParameters();
     static Teuchos::ParameterList getDefaultParameters();
 
     //! Constructor
-    THCM(const Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
+    THCM(Teuchos::RCP<Teuchos::ParameterList> params, Teuchos::RCP<Epetra_Comm> comm);
 
     //! Destructor
 
@@ -499,7 +499,7 @@ private:
     Teuchos::RCP<Epetra_MultiVector> nullSpace;
 
     //! global shared parameter list
-    Teuchos::ParameterList paramList;
+    Teuchos::RCP<Teuchos::ParameterList> paramList;
 
     //! timer status list
     Teuchos::ParameterList timerList;
