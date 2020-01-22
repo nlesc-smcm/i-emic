@@ -3121,11 +3121,16 @@ void THCM::setPostParameters()
     }
 }
 
-void THCM::setParameters(const Teuchos::ParameterList&& newParams)
+void THCM::setParameters(Teuchos::ParameterList& newParams)
 {
-    paramList->setParameters(newParams);
-    paramList->validateParametersAndSetDefaults(getDefaultInitParameters());
+    Teuchos::ParameterList tmpParams(*paramList);    
+    tmpParams.setParameters(newParams);    
+    tmpParams.validateParametersAndSetDefaults(getDefaultInitParameters());
+
+    paramList->setParameters(tmpParams);
 
     setPreParameters();
     setPostParameters();
+
+    newParams=*paramList;
 }

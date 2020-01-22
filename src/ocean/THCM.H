@@ -123,7 +123,7 @@ public:
     };
 
     const Teuchos::ParameterList& getParameters();
-    void setParameters(const Teuchos::ParameterList&&);
+    void setParameters(Teuchos::ParameterList&);
 
     static Teuchos::ParameterList getDefaultInitParameters();
     static Teuchos::ParameterList getDefaultParameters();

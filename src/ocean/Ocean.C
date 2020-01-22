@@ -65,8 +65,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanPa
     recompMassMat_         (true)    // We need a mass matrix to start with
 {
     INFO("Ocean: constructor...");
-    Teuchos::ParameterList empty;
-    setParameters(empty);
 
     // initialize postprocessing counter
     ppCtr_ = 0;
@@ -81,6 +79,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanPa
     auto thcmList = Teuchos::sublist(oceanParamList, "THCM", true);
 
     thcm_ = rcp(new THCM(thcmList, comm_));
+
+    Teuchos::ParameterList empty;
+    setParameters(empty);  // note: setParameters needs tcm_ to exist
 
     // Throw a few errors if the parameters are odd
     if ((thcm_->getSRES() || thcm_->getITS()) && loadSalinityFlux_)
@@ -2228,8 +2229,12 @@ const Teuchos::ParameterList& Ocean::getParameters()
 
 void Ocean::setParameters(Teuchos::ParameterList& newParams)
 {
-    params_->setParameters(newParams);
-    params_->validateParametersAndSetDefaults(getDefaultInitParameters());
+    Teuchos::ParameterList tmpParams(*params_);    
+    tmpParams.setParameters(newParams);    
+    thcm_->setParameters(tmpParams.sublist("THCM"));
+    tmpParams.validateParametersAndSetDefaults(getDefaultInitParameters());
+
+    params_->setParameters(tmpParams);
 
     loadSalinityFlux_    = params_->get<bool>("Load salinity flux");
     saveSalinityFlux_    = params_->get<bool>("Save salinity flux");
