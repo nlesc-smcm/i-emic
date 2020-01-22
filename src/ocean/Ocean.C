@@ -81,7 +81,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanPa
     thcm_ = rcp(new THCM(thcmList, comm_));
 
     Teuchos::ParameterList empty;
-    setParameters(empty);  // note: setParameters needs tcm_ to exist
+    setParameters(empty);  // note: setParameters needs thcm_ to exist
 
     // Throw a few errors if the parameters are odd
     if ((thcm_->getSRES() || thcm_->getITS()) && loadSalinityFlux_)
@@ -2230,8 +2230,8 @@ const Teuchos::ParameterList& Ocean::getParameters()
 void Ocean::setParameters(Teuchos::ParameterList& newParams)
 {
     Teuchos::ParameterList tmpParams(*params_);    
-    tmpParams.setParameters(newParams);    
-    thcm_->setParameters(tmpParams.sublist("THCM"));
+    tmpParams.setParameters(newParams);
+    thcm_->setParameters(newParams.sublist("THCM"));
     tmpParams.validateParametersAndSetDefaults(getDefaultInitParameters());
 
     params_->setParameters(tmpParams);

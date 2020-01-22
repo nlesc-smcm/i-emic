@@ -3130,6 +3130,16 @@ void THCM::setParameters(Teuchos::ParameterList& newParams)
     paramList->setParameters(tmpParams);
 
     setPreParameters();
+
+    //------------------------------------------------------------------
+    if ((coupled_S == 1) && (sres == 1))
+    {
+        WARNING("Incompatible parameters: coupled_S = " << coupled_S
+                << " sres = "
+                << sres << " setting sres = 0", __FILE__, __LINE__);
+        sres = 0;
+    }
+    
     setPostParameters();
 
     newParams=*paramList;
