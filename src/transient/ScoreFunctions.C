@@ -160,7 +160,7 @@ get_ocean_score_function(
     }
     INFO("distance factor = " << dist_factor);
 
-    return [nrm, dist_factor, var_norm, vvar, dof, sol1, sol2](
+    return [nrm, dist_factor, var_norm, vvar, sol1, sol2](
         Teuchos::RCP<const Epetra_Vector> const &x) {
         // // debug
         // for (int var = 0; var < dof; var++)

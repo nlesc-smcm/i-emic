@@ -29,7 +29,7 @@ public:
     LyapunovModel(Model const &model);
 
     void postProcess();
-    std::string const writeData(bool describe = false);
+    std::string writeData(bool describe = false) const;
 
     int computeCovarianceMatrix();
 
@@ -166,7 +166,7 @@ void LyapunovModel<Model>::postProcess()
 }
 
 template<typename Model>
-std::string const LyapunovModel<Model>::writeData(bool describe)
+std::string LyapunovModel<Model>::writeData(bool describe) const
 {
     std::ostringstream datastring;
     datastring << Model::writeData(describe);

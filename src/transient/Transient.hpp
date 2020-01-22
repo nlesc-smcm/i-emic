@@ -825,13 +825,13 @@ void Transient<T>::write_helper(std::vector<AMSExperiment<T> > const &experiment
 }
 
 template<typename T>
-int Transient<T>::run() const
+int Transient<T>::run()
 {
     return run(*x0_);
 }
 
 template<typename T>
-int Transient<T>::run(T const &x0) const
+int Transient<T>::run(T const &x0)
 {
     if (method_ == "AMS")
         ams(x0);
