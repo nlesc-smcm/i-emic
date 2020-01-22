@@ -12,16 +12,6 @@
   <!-- Under restoring conditions (SRES or TRES set to 1) this would not make -->
   <!-- any sense so a warning is given and the flag is set to false .         -->
   <Parameter name="Load salinity flux" type="bool" value="false"/>
-
-  <!-- Continuation parameter name                                    -->
-  <!-- In a coupled situation this will be overruled by the parameter -->
-  <!-- specified in CoupledModel                                      -->
-  <!--                                                                -->
-  <!-- Options:  "Combined Forcing" -->
-  <!--           "Solar Forcing"    -->
-  <!--           "Salinity Forcing" -->
-  <!--           "Wind Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Horizontal Ekman-Number"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">

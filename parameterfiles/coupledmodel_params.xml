@@ -10,13 +10,6 @@
   <!-- old states (true) or with a trivial solution (false).     -->
   <!-- The sub-models maintain names for the input files.        -->
   <Parameter name="Use existing state" type="bool" value="false"/>
-
-  <!-- Continuation parameter -->
-  <!-- Options:  "Combined Forcing" -->
-  <!--           "Solar Forcing"    -->
-  <!--           "Salinity Forcing" -->
-  <!--           "Wind Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
   
   <!-- Select the solving and synchronization mode.                                    -->
   <!-- Synchronization depends on the solving method.                                  -->
