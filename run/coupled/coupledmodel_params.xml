@@ -17,16 +17,6 @@
   <!-- The sub-models maintain names for the input files.        -->
   <Parameter name="Load state" type="bool" value="false"/>
 
-  <Parameter name="Problem Description" type="string" value="Coupled run"/>
-
-  <!-- Continuation parameter        -->
-  <!-- Options:  "Combined Forcing"  -->
-  <!--           "Solar Forcing"     -->
-  <!--           "Salinity Forcing"  -->
-  <!--           "Wind Forcing"      -->
-  <!--           "Humidity Forcing"  -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-
   <!-- We determine the horizontal extent and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
 

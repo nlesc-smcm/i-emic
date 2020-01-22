@@ -18,8 +18,6 @@
 
   <Parameter name="Periodic" type="bool" value="false"/>
 
-  <Parameter name="Continuation parameter" type="string" value="Solar Forcing"/>
-
   <!-- starting parameters -->
   <Parameter name="Combined Forcing"      type="double" value="1.0"/>
   <Parameter name="Solar Forcing"         type="double" value="1.0"/>

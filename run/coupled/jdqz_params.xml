@@ -4,8 +4,6 @@
 <!-- ********************************* -->
 
 <ParameterList name="JDQZ parameters">
-
-
   <!-- The shift / value near which the eigenvalues are sought -->
   <!-- Supply the real and imaginary part. -->
   <Parameter name="Shift (real part)" type="double" value="1.0"/>

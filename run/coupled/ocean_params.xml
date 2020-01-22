@@ -20,16 +20,6 @@
   <!-- Only useful when you enable <Save state>               -->
   <Parameter name="Save every step" type="bool" value="false" />
 
-  <!-- Continuation parameter name                                    -->
-  <!-- In a coupled situation this will be overruled by the parameter -->
-  <!-- specified in CoupledModel                                      -->
-  <!--                                                                -->
-  <!-- Options:  "Combined Forcing" -->
-  <!--           "Solar Forcing"    -->
-  <!--           "Salinity Forcing" -->
-  <!--           "Wind Forcing"     -->
-  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
-
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->

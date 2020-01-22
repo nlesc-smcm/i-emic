@@ -4,6 +4,14 @@
 
 <ParameterList name="Continuation parameters">
 
+  <!-- Continuation parameter name                                    -->
+  <!--                                                                -->
+  <!-- Options:  "Combined Forcing" -->
+  <!--           "Solar Forcing"    -->
+  <!--           "Salinity Forcing" -->
+  <!--           "Wind Forcing"     -->
+  <Parameter name="Continuation parameter" type="string" value="Combined Forcing"/>
+
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size"  type="double"  value="1e-2"/>
   <Parameter name="minimum step size"  type="double"  value="1.0e-12"/>
@@ -23,12 +31,12 @@
   <Parameter name="Newton tolerance" type="double" value="1.0e-4"/>
 
   <!-- Tolerance when converging on destination   -->
-  <!--  for the secant process in detect()        -->
+  <!-- for the secant process in detect()         -->
   <Parameter name="destination tolerance" type="double" value="1.0e-7"/>
 
-  <!-- compute stability: 'N' never,                    -->
-  <!--                    'E' at the end of a run,      -->
-  <!--                    'P' at every converged point. -->
+  <!-- eigenvalue analysis: 'N' never,                    -->
+  <!--                      'E' at the end of a run,      -->
+  <!--                      'P' at every converged point. -->
   <Parameter name="compute stability" type="char" value="N" />
 
 </ParameterList>
