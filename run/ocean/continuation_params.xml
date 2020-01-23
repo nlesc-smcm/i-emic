@@ -34,10 +34,10 @@
   <!-- Print failed residuals etc. -->
   <Parameter name="print important vectors" type="bool" value="false"/>
 
-  <!-- compute stability: 'N' never,                    -->
-  <!--                    'E' at the end of a run,      -->
-  <!--                    'P' at every converged point. -->
-  <Parameter name="compute stability" type="char" value="N" />
+  <!-- eigenvalue analysis: 'N' never,                    -->
+  <!--                      'E' at the end of a run,      -->
+  <!--                      'P' at every converged point. -->
+  <Parameter name="eigenvalue analysis" type="char" value="N" />
 
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental                -->
