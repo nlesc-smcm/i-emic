@@ -186,9 +186,11 @@ THCM::THCM(Teuchos::RCP<Teuchos::ParameterList> params, Teuchos::RCP<Epetra_Comm
     Singleton<THCM>(Teuchos::rcp(this, false)),
     Comm(comm),
     nullSpace(Teuchos::null),
-    paramList(params)
+    paramList(Teuchos::rcp(new Teuchos::ParameterList))
 {
     DEBUG("### enter THCM::THCM ###");
+
+    *paramList=*params;
 
     paramList->validateParametersAndSetDefaults(getDefaultInitParameters());
     setPreParameters();
@@ -799,6 +801,8 @@ THCM::THCM(Teuchos::RCP<Teuchos::ParameterList> params, Teuchos::RCP<Epetra_Comm
     }
 
     setPostParameters();
+
+    *params=*paramList;
 }
 
 //=============================================================================

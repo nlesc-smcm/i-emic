@@ -58,7 +58,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 
 Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanParamList)
     :
-    params_                (oceanParamList),
+    params_                (Teuchos::rcp(new Teuchos::ParameterList)),
     solverInitialized_     (false),  // Solver needs initialization
     precInitialized_       (false),  // Preconditioner needs initialization
     recompPreconditioner_  (true),   // We need a preconditioner to start with
@@ -80,8 +80,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanPa
 
     thcm_ = rcp(new THCM(thcmList, comm_));
 
-    Teuchos::ParameterList empty;
-    setParameters(empty);  // note: setParameters needs thcm_ to exist
+    setParameters(*oceanParamList);  // note: setParameters needs thcm_ to exist
 
     // Throw a few errors if the parameters are odd
     if ((thcm_->getSRES() || thcm_->getITS()) && loadSalinityFlux_)
@@ -2225,7 +2224,10 @@ Ocean::getDefaultParameters()
 }
 
 const Teuchos::ParameterList& Ocean::getParameters()
-{ return *params_; }
+{ 
+  params_->sublist("THCM")=thcm_->getParameters();
+  return *params_; 
+}
 
 void Ocean::setParameters(Teuchos::ParameterList& newParams)
 {
