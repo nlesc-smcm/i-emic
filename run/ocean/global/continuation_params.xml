@@ -4,6 +4,12 @@
 
 <ParameterList name="Continuation parameters">
   
+  <!-- Continuation parameter name                                    -->
+  <!-- In a coupled situation this will be overruled by the parameter -->
+  <!-- specified in CoupledModel                                      -->
+  <!--                                                                -->
+  <Parameter name="Continuation parameter" type="string" value="Horizontal Ekman-Number"/>
+
   <!-- Define the initial, minimum and maximum continuation step size -->
   <Parameter name="initial step size" type="double" value="-1.0e-3"/>
   <Parameter name="minimum step size" type="double" value="1.0e-8"/>
@@ -46,10 +52,10 @@
   <!-- Print failed residuals etc. -->
   <Parameter name="print important vectors" type="bool" value="true"/>
 
-  <!-- compute stability: 'N' never,                    -->
-  <!--                    'E' at the end of a run,      -->
-  <!--                    'P' at every converged point. -->
-  <Parameter name="compute stability" type="char" value="E" />
+  <!-- eigenvalue analysis: 'N' never,                    -->
+  <!--                      'E' at the end of a run,      -->
+  <!--                      'P' at every converged point. -->
+  <Parameter name="eigenvalue analysis" type="char" value="E" />
 
   <!-- *******************************************************  -->
   <!-- The following parameters are experimental                -->

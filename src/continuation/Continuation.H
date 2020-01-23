@@ -40,7 +40,7 @@ Continuation(Model model, ParameterList pars)
     detectMode_            (pars->get("detection of special points", 'D')),
     tanScaling_            (pars->get("state tangent scaling", 1.0e0)),
     normalizeStrategy_     (pars->get("normalize strategy", 'N')),
-    stabilityScheme_       (pars->get("compute stability", 'N')),
+    eigenvalueAnalysis_    (pars->get("eigenvalue analysis", 'N')),
     rejectFailedNewton_    (pars->get("reject failed iteration", true)),
     giveUpAtdsMin_         (pars->get("give up at minimum step size", true)),
     newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
@@ -259,7 +259,7 @@ step()
     createTangent(tangentType_);
 
     // stability scheme = P => eigenvalues computed at every converged step
-    if (stabilityScheme_ == 'P')
+    if (eigenvalueAnalysis_ == 'P')
         eigenSolver();
 
     // Let the model do some administrative work at the end of a succesful step
@@ -892,8 +892,8 @@ void Continuation<Model, ParameterList>::detect()
     {
         INFO("Continuation::detect(): destination " << dest << " reached. \n");
 
-        // stability scheme = E => eigenvalues computed at every converged destination
-        if (stabilityScheme_ == 'E')
+        // eigenvalue analysis = E => eigenvalues computed at every converged destination
+        if (eigenvalueAnalysis_ == 'E')
             eigenSolver();
 
         // Get the algorithm ready to proceed with the continuation
@@ -1090,7 +1090,7 @@ template<typename Model, typename ParameterList>
 void Continuation<Model, ParameterList>::
 eigenSolver()
 {
-    if (stabilityScheme_ != 'N')
+    if (eigenvalueAnalysis_ != 'N')
     {
         if (eigenSolverSet_)
         {
