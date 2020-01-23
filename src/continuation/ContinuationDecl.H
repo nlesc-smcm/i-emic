@@ -164,10 +164,10 @@ class Continuation
     double tanScaling_;
     //! normalization strategy 'O' old or 'N' new
     char normalizeStrategy_;
-    //! compute stability: 'N' never,
-    //!                    'E' at the end of a run,
-    //!                    'P' at every converged point (during post-processing).
-    char stabilityScheme_;
+    //! eigenvalue analysis: 'N' never,
+    //!                      'E' at the end of a run,
+    //!                      'P' at every converged point (during post-processing).
+    char eigenvalueAnalysis_;
     //! set to false if you feel lucky
     bool rejectFailedNewton_;
     //! give up at minimum step size
