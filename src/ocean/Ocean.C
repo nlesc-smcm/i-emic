@@ -179,7 +179,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanPa
     surfaceSimporter_ =
         Teuchos::rcp(new Epetra_Import(*sIndexMap_, state_->Map()));
 
-    INFO(oceanParamList);
+    INFO(*oceanParamList);
     INFO("\n");
     INFO("Ocean couplings: coupled_T = " << getCoupledT() );
     INFO("                 coupled_S = " << getCoupledS() );

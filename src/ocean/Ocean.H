@@ -155,7 +155,6 @@ public:
     //! constructor
     Ocean(Teuchos::RCP<Epetra_Comm> Comm);
     Ocean(Teuchos::RCP<Epetra_Comm> Comm, Model::ParameterList oceanParamList);
-    Ocean(Teuchos::RCP<Epetra_Comm> Comm, const Teuchos::ParameterList& oceanParamList);
 
     //! destructor
     ~Ocean();
