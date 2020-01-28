@@ -130,6 +130,7 @@ public:
 
     //! Constructor
     THCM(Teuchos::RCP<Teuchos::ParameterList> params, Teuchos::RCP<Epetra_Comm> comm);
+    THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
 
     //! Destructor
 

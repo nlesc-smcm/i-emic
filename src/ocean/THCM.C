@@ -182,7 +182,13 @@ extern "C" {
 
 //=============================================================================
 // constructor
-THCM::THCM(Teuchos::RCP<Teuchos::ParameterList> params, Teuchos::RCP<Epetra_Comm> comm) :
+THCM::THCM(Teuchos::RCP<Teuchos::ParameterList> params, Teuchos::RCP<Epetra_Comm> comm)
+    : THCM(*params, comm)
+{}
+
+//=============================================================================
+// constructor
+THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     Singleton<THCM>(Teuchos::rcp(this, false)),
     Comm(comm),
     nullSpace(Teuchos::null),
@@ -190,7 +196,7 @@ THCM::THCM(Teuchos::RCP<Teuchos::ParameterList> params, Teuchos::RCP<Epetra_Comm
 {
     DEBUG("### enter THCM::THCM ###");
 
-    *paramList=*params;
+    *paramList=params;
 
     paramList->validateParametersAndSetDefaults(getDefaultInitParameters());
     setPreParameters();
@@ -802,7 +808,7 @@ THCM::THCM(Teuchos::RCP<Teuchos::ParameterList> params, Teuchos::RCP<Epetra_Comm
 
     setPostParameters();
 
-    *params=*paramList;
+    params=*paramList;
 }
 
 //=============================================================================
@@ -3127,8 +3133,8 @@ void THCM::setPostParameters()
 
 void THCM::setParameters(Teuchos::ParameterList& newParams)
 {
-    Teuchos::ParameterList tmpParams(*paramList);    
-    tmpParams.setParameters(newParams);    
+    Teuchos::ParameterList tmpParams(*paramList);
+    tmpParams.setParameters(newParams);
     tmpParams.validateParametersAndSetDefaults(getDefaultInitParameters());
 
     paramList->setParameters(tmpParams);

@@ -57,6 +57,10 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm)
 {}
 
 Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanParamList)
+    : Ocean(Comm, *oceanParamList)
+{}
+
+Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
     :
     params_                (Teuchos::rcp(new Teuchos::ParameterList)),
     solverInitialized_     (false),  // Solver needs initialization
@@ -76,11 +80,9 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanPa
     //  THCM is implemented as a Singleton, which allows only a single
     //  instance at a time. The Ocean class can access THCM with a call
     //  to THCM::Instance()
-    auto thcmList = Teuchos::sublist(oceanParamList, "THCM", true);
+    thcm_ = rcp(new THCM(oceanParamList.sublist("THCM"), comm_));
 
-    thcm_ = rcp(new THCM(thcmList, comm_));
-
-    setParameters(*oceanParamList);  // note: setParameters needs thcm_ to exist
+    setParameters(oceanParamList);  // note: setParameters needs thcm_ to exist
 
     // Throw a few errors if the parameters are odd
     if ((thcm_->getSRES() || thcm_->getITS()) && loadSalinityFlux_)
@@ -179,7 +181,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanPa
     surfaceSimporter_ =
         Teuchos::rcp(new Epetra_Import(*sIndexMap_, state_->Map()));
 
-    INFO(*oceanParamList);
+    INFO(oceanParamList);
     INFO("\n");
     INFO("Ocean couplings: coupled_T = " << getCoupledT() );
     INFO("                 coupled_S = " << getCoupledS() );
@@ -2224,14 +2226,14 @@ Ocean::getDefaultParameters()
 }
 
 const Teuchos::ParameterList& Ocean::getParameters()
-{ 
+{
   params_->sublist("THCM")=thcm_->getParameters();
-  return *params_; 
+  return *params_;
 }
 
 void Ocean::setParameters(Teuchos::ParameterList& newParams)
 {
-    Teuchos::ParameterList tmpParams(*params_);    
+    Teuchos::ParameterList tmpParams(*params_);
     tmpParams.setParameters(newParams);
     thcm_->setParameters(newParams.sublist("THCM"));
     tmpParams.validateParametersAndSetDefaults(getDefaultInitParameters());
