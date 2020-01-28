@@ -62,7 +62,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanPa
 
 Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
     :
-    params_                (Teuchos::rcp(new Teuchos::ParameterList)),
+    params_                (Teuchos::rcp(new Teuchos::ParameterList("Ocean Configuration"))),
     solverInitialized_     (false),  // Solver needs initialization
     precInitialized_       (false),  // Preconditioner needs initialization
     recompPreconditioner_  (true),   // We need a preconditioner to start with
@@ -965,7 +965,7 @@ void Ocean::initializeBelos()
     int maxiters          = NumGlobalElements/blocksize - 1;
 
     // Create Belos parameterlist
-    RCP<Teuchos::ParameterList> belosParamList = rcp(new Teuchos::ParameterList());
+    RCP<Teuchos::ParameterList> belosParamList = rcp(new Teuchos::ParameterList("Belos List"));
     belosParamList->set("Block Size", blocksize);
     belosParamList->set("Flexible Gmres", true);
     belosParamList->set("Adaptive Block Size", true);
@@ -2183,6 +2183,7 @@ Teuchos::ParameterList
 Ocean::getDefaultInitParameters()
 {
     Teuchos::ParameterList result = getDefaultParameters();
+    result.setName("Default Init Ocean List");
     result.sublist("THCM") = THCM::getDefaultInitParameters();
     return result;
 }
@@ -2190,7 +2191,7 @@ Ocean::getDefaultInitParameters()
 Teuchos::ParameterList
 Ocean::getDefaultParameters()
 {
-    Teuchos::ParameterList result;
+    Teuchos::ParameterList result("Default Ocean List");
     result.get("Load salinity flux", false);
     result.get("Save salinity flux", true);
     result.get("Load temperature flux", false);
@@ -2234,6 +2235,7 @@ const Teuchos::ParameterList& Ocean::getParameters()
 void Ocean::setParameters(Teuchos::ParameterList& newParams)
 {
     Teuchos::ParameterList tmpParams(*params_);
+    tmpParams.setName("Temp parameter list");
     tmpParams.setParameters(newParams);
     thcm_->setParameters(newParams.sublist("THCM"));
     tmpParams.validateParametersAndSetDefaults(getDefaultInitParameters());
