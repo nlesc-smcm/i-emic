@@ -81,8 +81,31 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
     //  instance at a time. The Ocean class can access THCM with a call
     //  to THCM::Instance()
     thcm_ = rcp(new THCM(oceanParamList.sublist("THCM"), comm_));
+    oceanParamList.validateParametersAndSetDefaults(getDefaultInitParameters());
+    params_->setParameters(oceanParamList);
 
-    setParameters(oceanParamList);  // note: setParameters needs thcm_ to exist
+    // Initialize class member from param list
+    loadSalinityFlux_    = params_->get<bool>("Load salinity flux");
+    saveSalinityFlux_    = params_->get<bool>("Save salinity flux");
+    loadTemperatureFlux_ = params_->get<bool>("Load temperature flux");
+    saveTemperatureFlux_ = params_->get<bool>("Save temperature flux");
+
+    useFort3_            = params_->get<bool>("Use legacy fort.3 output");
+    useFort44_           = params_->get<bool>("Use legacy fort.44 output");
+    saveColumnIntegral_  = params_->get<bool>("Save column integral");
+    maxMaskFixes_        = params_->get<int>("Max mask fixes");
+
+    analyzeJacobian_     = params_->get<bool>("Analyze Jacobian");
+
+    // inherited input/output datamembers
+    inputFile_   = params_->get<std::string>("Input file");
+    outputFile_  = params_->get<std::string>("Output file");
+    saveMask_    = params_->get<bool>("Save mask");
+    loadMask_    = params_->get<bool>("Load mask");
+
+    loadState_   = params_->get<bool>("Load state");
+    saveState_   = params_->get<bool>("Save state");
+    saveEvery_   = params_->get<int>("Save frequency");
 
     // Throw a few errors if the parameters are odd
     if ((thcm_->getSRES() || thcm_->getITS()) && loadSalinityFlux_)
@@ -2184,14 +2207,7 @@ Ocean::getDefaultInitParameters()
 {
     Teuchos::ParameterList result = getDefaultParameters();
     result.setName("Default Init Ocean List");
-    result.sublist("THCM") = THCM::getDefaultInitParameters();
-    return result;
-}
 
-Teuchos::ParameterList
-Ocean::getDefaultParameters()
-{
-    Teuchos::ParameterList result("Default Ocean List");
     result.get("Load salinity flux", false);
     result.get("Save salinity flux", true);
     result.get("Load temperature flux", false);
@@ -2221,6 +2237,15 @@ Ocean::getDefaultParameters()
     solverParams.get("FGMRES output", 100);
     solverParams.get("FGMRES explicit residual test", false);
 
+    result.sublist("THCM") = THCM::getDefaultInitParameters();
+
+    return result;
+}
+
+Teuchos::ParameterList
+Ocean::getDefaultParameters()
+{
+    Teuchos::ParameterList result("Default Ocean List");
     result.sublist("THCM") = THCM::getDefaultParameters();
 
     return result;
@@ -2228,41 +2253,13 @@ Ocean::getDefaultParameters()
 
 const Teuchos::ParameterList& Ocean::getParameters()
 {
-  params_->sublist("THCM")=thcm_->getParameters();
+  params_->sublist("THCM") = thcm_->getParameters();
   return *params_;
 }
 
 void Ocean::setParameters(Teuchos::ParameterList& newParams)
 {
-    Teuchos::ParameterList tmpParams(*params_);
-    tmpParams.setName("Temp parameter list");
-    tmpParams.setParameters(newParams);
+    newParams.validateParameters(getDefaultParameters());
     thcm_->setParameters(newParams.sublist("THCM"));
-    tmpParams.validateParametersAndSetDefaults(getDefaultInitParameters());
-
-    params_->setParameters(tmpParams);
-
-    loadSalinityFlux_    = params_->get<bool>("Load salinity flux");
-    saveSalinityFlux_    = params_->get<bool>("Save salinity flux");
-    loadTemperatureFlux_ = params_->get<bool>("Load temperature flux");
-    saveTemperatureFlux_ = params_->get<bool>("Save temperature flux");
-
-    useFort3_            = params_->get<bool>("Use legacy fort.3 output");
-    useFort44_           = params_->get<bool>("Use legacy fort.44 output");
-    saveColumnIntegral_  = params_->get<bool>("Save column integral");
-    maxMaskFixes_        = params_->get<int>("Max mask fixes");
-
-    analyzeJacobian_     = params_->get<bool>("Analyze Jacobian");
-
-    // inherited input/output datamembers
-    inputFile_   = params_->get<std::string>("Input file");
-    outputFile_  = params_->get<std::string>("Output file");
-    saveMask_    = params_->get<bool>("Save mask");
-    loadMask_    = params_->get<bool>("Load mask");
-
-    loadState_   = params_->get<bool>("Load state");
-    saveState_   = params_->get<bool>("Save state");
-    saveEvery_   = params_->get<int>("Save frequency");
-
-    newParams = *params_;
+    params_->setParameters(newParams);
 }
