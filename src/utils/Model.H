@@ -28,6 +28,9 @@ public:
     using MatrixPtr      = Teuchos::RCP<Epetra_CrsMatrix>;
     using ParameterList  = Teuchos::RCP<Teuchos::ParameterList>;
 
+    Model(Teuchos::RCP<Epetra_Comm> Comm) : comm_(Comm)
+    {}
+
     //! non-overlapping state vector
     Teuchos::RCP<Epetra_Vector> state_;
 

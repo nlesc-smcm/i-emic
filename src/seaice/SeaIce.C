@@ -13,6 +13,7 @@ extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
 // Constructor
 SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     :
+    Model            (comm),
     params_          (params),
     nGlob_           (params->get("Global Grid-Size n", 16)),
     mGlob_           (params->get("Global Grid-Size m", 16)),
@@ -106,9 +107,6 @@ SeaIce::SeaIce(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // initialize postprocessing counter
     ppCtr_ = 0;
-
-    // set communicator
-    comm_ = comm;
 
     // Background sublimation and derivatives: calculate background
     // saturation specific humidity according to [Bolton,1980], T in

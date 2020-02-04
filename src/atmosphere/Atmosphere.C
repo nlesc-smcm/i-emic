@@ -12,6 +12,7 @@
 // Constructor
 Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
     :
+    Model            (comm),
     params_          (params),
     n_               (params->get("Global Grid-Size n", 16)),
     m_               (params->get("Global Grid-Size m", 16)),
@@ -37,9 +38,6 @@ Atmosphere::Atmosphere(Teuchos::RCP<Epetra_Comm> comm, ParameterList params)
 
     // initialize postprocessing counter
     ppCtr_ = 0;
-
-    // set comm
-    comm_ = comm;
 
     // Define degrees of freedom
     dof_ = ATMOS_NUN_;

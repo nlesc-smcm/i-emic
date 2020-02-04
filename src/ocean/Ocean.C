@@ -62,6 +62,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanPa
 
 Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
     :
+    Model                  (Comm),
     solverInitialized_     (false),  // Solver needs initialization
     precInitialized_       (false),  // Preconditioner needs initialization
     recompPreconditioner_  (true),   // We need a preconditioner to start with
@@ -95,9 +96,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
 
     // initialize postprocessing counter
     ppCtr_ = 0;
-
-    // set the communicator object
-    comm_ = Comm;
 
     // Create THCM object
     //  THCM is implemented as a Singleton, which allows only a single
