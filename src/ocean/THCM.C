@@ -1906,21 +1906,6 @@ void THCM::ReadParameters(const Teuchos::ParameterList& plist)
         ERROR("Exception while reading parameter starting values!",__FILE__,__LINE__);
     }
 }
-
-//=============================================================================
-double THCM::defaultParameter(std::string const &label)
-{
-    if (!label.compare("Combined Forcing"))    return 0.0;
-    if (!label.compare("Solar Forcing"))       return 0.0;
-    if (!label.compare("Salinity Forcing"))    return 1.0;
-    if (!label.compare("Wind Forcing"))        return 1.0;
-    if (!label.compare("Temperature Forcing")) return 10.0;
-    if (!label.compare("SPL1"))                return 2.0e3;
-    if (!label.compare("SPL2"))                return 0.01;
-    return std::numeric_limits<double>::quiet_NaN();
-}
-
-//=============================================================================
 // convert parameter name to integer
 int THCM::par2int(std::string const &label)
 {

@@ -354,9 +354,6 @@ public:
     inline double rhoMixing() const {return rho_mixing;}
     //@}
 
-    //! obtain a default parameter for a few specific labels
-    static double defaultParameter(std::string const &label);
-
     //! convert parameter name to integer (i.e. "Combined Forcing" => 19)
     int par2int(std::string const &label);
 
