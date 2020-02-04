@@ -67,20 +67,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
     recompPreconditioner_  (true),   // We need a preconditioner to start with
     recompMassMat_         (true),   // We need a mass matrix to start with
 
-    solverParams_          (new Teuchos::ParameterList(oceanParamList.sublist("Belos Solver"))),
-
-    loadSalinityFlux_      (oceanParamList.get("Load salinity flux", false)),
-    saveSalinityFlux_      (oceanParamList.get("Save salinity flux", true)),
-    loadTemperatureFlux_   (oceanParamList.get("Load temperature flux", false)),
-    saveTemperatureFlux_   (oceanParamList.get("Save temperature flux", true)),
-
-    useFort3_              (oceanParamList.get("Use legacy fort.3 output", false)),
-    useFort44_             (oceanParamList.get("Use legacy fort.44 output", true)),
-    saveColumnIntegral_    (oceanParamList.get("Save column integral", false)),
-    maxMaskFixes_          (oceanParamList.get("Max mask fixes", 5)),
-
-
-    analyzeJacobian_       (oceanParamList.get("Analyze Jacobian", true))
+    solverParams_          (new Teuchos::ParameterList(oceanParamList.sublist("Belos Solver")))
 {
     INFO("Ocean: constructor...");
 
@@ -93,6 +80,18 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
     loadState_   = oceanParamList.get("Load state", false);
     saveState_   = oceanParamList.get("Save state", true);
     saveEvery_   = oceanParamList.get("Save frequency", 0);
+
+    loadSalinityFlux_    = oceanParamList.get("Load salinity flux", false);
+    saveSalinityFlux_    = oceanParamList.get("Save salinity flux", true);
+    loadTemperatureFlux_ = oceanParamList.get("Load temperature flux", false);
+    saveTemperatureFlux_ = oceanParamList.get("Save temperature flux", true);
+
+    useFort3_            = oceanParamList.get("Use legacy fort.3 output", false);
+    useFort44_           = oceanParamList.get("Use legacy fort.44 output", true);
+    saveColumnIntegral_  = oceanParamList.get("Save column integral", false);
+    maxMaskFixes_        = oceanParamList.get("Max mask fixes", 5);
+
+    analyzeJacobian_     = oceanParamList.get("Analyze Jacobian", true);
 
     // initialize postprocessing counter
     ppCtr_ = 0;
