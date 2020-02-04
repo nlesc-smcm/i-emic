@@ -6,10 +6,6 @@
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="false"/>
 
-  <!-- To keep track of each converged state, enable this.    -->
-  <!-- Only useful when you enable <Save state>               -->
-  <Parameter name="Store everything" type="bool" value="false" />
-
     <!-- western domain bound -->
   <Parameter name="Global Bound xmin" type="double" value="286"/>
   <!-- eastern domain bound -->

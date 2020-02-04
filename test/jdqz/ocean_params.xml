@@ -9,9 +9,6 @@
   <Parameter name="Save state" type="bool" value="false"/>
   <Parameter name="Input file"  type="string" value="ocean.h5" />
   <Parameter name="Output file" type="string" value="ocean.h5" />
-
-  <!-- To keep track of each converged state, enable this. -->
-  <Parameter name="Store everything" type="bool" value="false" />
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
