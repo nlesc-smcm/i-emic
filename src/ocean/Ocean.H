@@ -131,9 +131,6 @@ protected:
     //! Maximum number of mask fixing cycles
     int maxMaskFixes_;
 
-    //! Landmask file
-    std::string landmaskFile_;
-
     //! Select Jacobian analysis
     bool analyzeJacobian_;
 
@@ -157,8 +154,9 @@ protected:
 
 public:
     //! constructor
-    Ocean(Teuchos::RCP<Epetra_Comm> Comm,
-          ParameterList oceanParamList);
+    Ocean(Teuchos::RCP<Epetra_Comm> Comm);
+    Ocean(Teuchos::RCP<Epetra_Comm> Comm, Model::ParameterList oceanParamList);
+    Ocean(Teuchos::RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList);
 
     //! destructor
     ~Ocean();
