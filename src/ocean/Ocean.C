@@ -52,39 +52,47 @@ extern "C" _SUBROUTINE_(set_seaice_parameters)(SeaIce::CommPars*);
 
 //=====================================================================
 // Constructor:
-Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
+Ocean::Ocean(RCP<Epetra_Comm> Comm)
+    : Ocean(Comm, Teuchos::rcp(new Teuchos::ParameterList()))
+{}
+
+Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanParamList)
+    : Ocean(Comm, *oceanParamList)
+{}
+
+Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
     :
     solverInitialized_     (false),  // Solver needs initialization
     precInitialized_       (false),  // Preconditioner needs initialization
     recompPreconditioner_  (true),   // We need a preconditioner to start with
     recompMassMat_         (true),   // We need a mass matrix to start with
 
-    solverParams_          (new Teuchos::ParameterList(oceanParamList->sublist("Belos Solver"))),
+    solverParams_          (new Teuchos::ParameterList(oceanParamList.sublist("Belos Solver"))),
 
-    loadSalinityFlux_      (oceanParamList->get("Load salinity flux", false)),
-    saveSalinityFlux_      (oceanParamList->get("Save salinity flux", true)),
-    loadTemperatureFlux_   (oceanParamList->get("Load temperature flux", false)),
-    saveTemperatureFlux_   (oceanParamList->get("Save temperature flux", true)),
+    loadSalinityFlux_      (oceanParamList.get("Load salinity flux", false)),
+    saveSalinityFlux_      (oceanParamList.get("Save salinity flux", true)),
+    loadTemperatureFlux_   (oceanParamList.get("Load temperature flux", false)),
+    saveTemperatureFlux_   (oceanParamList.get("Save temperature flux", true)),
 
-    useFort3_              (oceanParamList->get("Use legacy fort.3 output", false)),
-    useFort44_             (oceanParamList->get("Use legacy fort.44 output", true)),
-    saveColumnIntegral_    (oceanParamList->get("Save column integral", false)),
-    maxMaskFixes_          (oceanParamList->get("Max mask fixes", 5)),
+    useFort3_              (oceanParamList.get("Use legacy fort.3 output", false)),
+    useFort44_             (oceanParamList.get("Use legacy fort.44 output", true)),
+    saveColumnIntegral_    (oceanParamList.get("Save column integral", false)),
+    maxMaskFixes_          (oceanParamList.get("Max mask fixes", 5)),
 
 
-    analyzeJacobian_       (oceanParamList->get("Analyze Jacobian", true))
+    analyzeJacobian_       (oceanParamList.get("Analyze Jacobian", true))
 {
     INFO("Ocean: constructor...");
 
     // inherited input/output datamembers
-    inputFile_   = oceanParamList->get("Input file",  "ocean_input.h5");
-    outputFile_  = oceanParamList->get("Output file", "ocean_output.h5");
-    saveMask_    = oceanParamList->get("Save mask", true);
-    loadMask_    = oceanParamList->get("Load mask", true);
+    inputFile_   = oceanParamList.get("Input file",  "ocean_input.h5");
+    outputFile_  = oceanParamList.get("Output file", "ocean_output.h5");
+    saveMask_    = oceanParamList.get("Save mask", true);
+    loadMask_    = oceanParamList.get("Load mask", true);
 
-    loadState_   = oceanParamList->get("Load state", false);
-    saveState_   = oceanParamList->get("Save state", true);
-    saveEvery_   = oceanParamList->get("Save frequency", 0);
+    loadState_   = oceanParamList.get("Load state", false);
+    saveState_   = oceanParamList.get("Save state", true);
+    saveEvery_   = oceanParamList.get("Save frequency", 0);
 
     // initialize postprocessing counter
     ppCtr_ = 0;
@@ -97,7 +105,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     //  instance at a time. The Ocean class can access THCM with a call
     //  to THCM::Instance()
     Teuchos::ParameterList &thcmList =
-        oceanParamList->sublist("THCM");
+        oceanParamList.sublist("THCM");
 
     thcm_ = rcp(new THCM(thcmList, comm_));
 
@@ -203,7 +211,7 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     surfaceSimporter_ =
         Teuchos::rcp(new Epetra_Import(*sIndexMap_, state_->Map()));
 
-    INFO(*oceanParamList);
+    INFO(oceanParamList);
     INFO("\n");
     INFO("Ocean couplings: coupled_T = " << getCoupledT() );
     INFO("                 coupled_S = " << getCoupledS() );
@@ -985,7 +993,7 @@ void Ocean::initializeBelos()
     int maxiters          = NumGlobalElements/blocksize - 1;
 
     // Create Belos parameterlist
-    RCP<Teuchos::ParameterList> belosParamList = rcp(new Teuchos::ParameterList());
+    RCP<Teuchos::ParameterList> belosParamList = rcp(new Teuchos::ParameterList("Belos List"));
     belosParamList->set("Block Size", blocksize);
     belosParamList->set("Flexible Gmres", true);
     belosParamList->set("Adaptive Block Size", true);
