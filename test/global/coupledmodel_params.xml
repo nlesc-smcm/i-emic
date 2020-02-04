@@ -18,10 +18,6 @@
   <Parameter name="Load state" type="bool" value="false"/>
   <Parameter name="Save state" type="bool" value="true"/>
 
-  <!-- To keep track of each converged state, enable this.    -->
-  <!-- Only useful when you enable <Save state>               -->
-  <Parameter name="Store everything" type="bool" value="false" />
-
   <!-- We determine the horizontal extend and grid size at the coupled level. -->
   <!-- Depth and other dimensions are specific for each submodel.             -->
 
