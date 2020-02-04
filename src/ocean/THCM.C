@@ -1891,7 +1891,7 @@ void THCM::printTiming(std::ostream& os)
 }
 
 //=============================================================================
-void THCM::ReadParameters(Teuchos::ParameterList& plist)
+void THCM::ReadParameters(const Teuchos::ParameterList& plist)
 {
     double val;
     std::string label;
@@ -1899,9 +1899,8 @@ void THCM::ReadParameters(Teuchos::ParameterList& plist)
         for (int i=0; i<= _NPAR_ + _NPAR_TRILI; i++)
         {
             label = int2par(i);
-            if (plist.isParameter(label))
-            {
-                val = plist.get(label,defaultParameter(label));
+            if (plist.isParameter(label)) {
+                val = plist.get<double>(label);
                 this->setParameter(label,val);
             }
         }
@@ -1922,7 +1921,7 @@ double THCM::defaultParameter(std::string const &label)
     if (!label.compare("Temperature Forcing")) return 10.0;
     if (!label.compare("SPL1"))                return 2.0e3;
     if (!label.compare("SPL2"))                return 0.01;
-    return 0.0;
+    return std::numeric_limits<double>::quiet_NaN();
 }
 
 //=============================================================================

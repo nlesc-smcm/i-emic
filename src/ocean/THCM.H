@@ -355,16 +355,16 @@ public:
     //@}
 
     //! obtain a default parameter for a few specific labels
-    double defaultParameter(std::string const &label);
+    static double defaultParameter(std::string const &label);
 
     //! convert parameter name to integer (i.e. "Combined Forcing" => 19)
     int par2int(std::string const &label);
 
     // convert parameter index to std::string (i.e. 19 => "Combined Forcing")
-    std::string const int2par(int ind);
+    static std::string const int2par(int ind);
 
     //! read THCM parameters from a ParameterList
-    void ReadParameters(Teuchos::ParameterList& plist);
+    void ReadParameters(const Teuchos::ParameterList& plist);
 
     //! Under non-restoring conditions: get an integral from vec and
     //! use that to correct the integral condition
