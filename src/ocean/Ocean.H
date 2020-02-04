@@ -131,9 +131,6 @@ protected:
     //! Maximum number of mask fixing cycles
     int maxMaskFixes_;
 
-    //! Landmask file
-    std::string landmaskFile_;
-
     //! Select Jacobian analysis
     bool analyzeJacobian_;
 

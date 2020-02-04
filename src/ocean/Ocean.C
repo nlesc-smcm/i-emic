@@ -71,7 +71,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     saveColumnIntegral_    (oceanParamList->get("Save column integral", false)),
     maxMaskFixes_          (oceanParamList->get("Max mask fixes", 5)),
 
-    landmaskFile_          (oceanParamList->sublist("THCM").get("Land Mask", "none")),
 
     analyzeJacobian_       (oceanParamList->get("Analyze Jacobian", true))
 {
