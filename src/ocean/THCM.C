@@ -1906,6 +1906,8 @@ void THCM::ReadParameters(const Teuchos::ParameterList& plist)
         ERROR("Exception while reading parameter starting values!",__FILE__,__LINE__);
     }
 }
+
+//=============================================================================
 // convert parameter name to integer
 int THCM::par2int(std::string const &label)
 {
@@ -2997,4 +2999,3 @@ Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()
     }
     return nullSpace;
 }
-
