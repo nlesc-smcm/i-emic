@@ -6,7 +6,6 @@
 <ParameterList name="Ocean">
 
   <Parameter name="Load state" type="bool" value="false"/>
-  <Parameter name="Use legacy fortran output" type="bool" value="false"/>
   
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
@@ -92,9 +91,6 @@
     <!-- 1: restoring                                 -->
     <Parameter name="Restoring Salinity Profile" type="int" value="1"/>
     
-    <!-- Freshwater Forcing (ifw in THCM) -->
-    <!-- 0: data, 1: idealized            -->
-    <Parameter name="Freshwater Forcing" type="int" value="1"/>
     <!-- Temperature forcing                                 -->
     <!-- Levitus Temperature (ite in THCM)                   -->
     <!-- 0: data, 1: idealized                               -->
