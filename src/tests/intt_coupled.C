@@ -37,6 +37,9 @@ TEST(ParameterLists, Initialization)
             params.push_back(Utils::obtainParams(files[i], names[i]));
         }
 
+        params[OCEAN]->sublist("Belos Solver") =
+            *Utils::obtainParams("solver_params.xml", "Solver parameters");
+
         INFO('\n' << "Overwriting:");
         // Allow dominant parameterlists. Not that this trick ignores
         // any hierarchy. The Continuation and CoupledModel

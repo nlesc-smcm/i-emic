@@ -139,9 +139,6 @@ private:
 	//! If every converged state deserves to be stored, enable this
 	int saveEvery_;
 
-	//! Solver parameterlist
-	ParameterList solverParams_, belosParamList_;
-
 	Teuchos::RCP
 	<Belos::LinearProblem
 	 <double, Epetra_MultiVector, Combined_Operator<Model> > > problem_;	

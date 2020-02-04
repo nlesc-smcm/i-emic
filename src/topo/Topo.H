@@ -518,8 +518,6 @@ void Topo<Model, ParameterList>::initializeSolver()
         return;
 
     INFO("Topo: initialize solver...");
-    solverParams_ = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
 
     // Belos LinearProblem setup
     Teuchos::RCP<Combined_Operator<Model> > combMatPtr =
@@ -537,39 +535,40 @@ void Topo<Model, ParameterList>::initializeSolver()
 
     problem_->setRightPrec(combPrecPtr);
 
+    Teuchos::ParameterList& solverParams = pars_->sublist("Belos solver");
     // A few FGMRES parameters are made available in solver_params.xml:
-    int gmresIters  = solverParams_->get("Topo FGMRES iterations", 400);
-    double gmresTol = solverParams_->get("Topo FGMRES tolerance", 1e-2);
-    int maxrestarts = solverParams_->get("Topo FGMRES restarts", 2);
-    int output      = solverParams_->get("Topo FGMRES output", 20);
+    int gmresIters  = solverParams.get("FGMRES iterations", 400);
+    double gmresTol = solverParams.get("FGMRES tolerance", 1e-2);
+    int maxrestarts = solverParams.get("FGMRES restarts", 2);
+    int output      = solverParams.get("FGMRES output", 20);
 
     int NumGlobalElements = stateView_->GlobalLength();
     int blocksize         = 1; // number of vectors in rhs
     int maxiters          = NumGlobalElements / blocksize - 1;
 
     // Create Belos parameterlist
-    belosParamList_ = rcp(new Teuchos::ParameterList());
-    belosParamList_->set("Block Size", blocksize);
-    belosParamList_->set("Flexible Gmres", true);
-    belosParamList_->set("Adaptive Block Size", true);
-    belosParamList_->set("Num Blocks", gmresIters);
-    belosParamList_->set("Maximum Restarts", maxrestarts);
-    belosParamList_->set("Orthogonalization","DGKS");
-    belosParamList_->set("Output Frequency", output);
-    belosParamList_->set("Verbosity", Belos::TimingDetails +
+    RCP<Teuchos::ParameterList> belosParamList = rcp(new Teuchos::ParameterList());
+    belosParamList->set("Block Size", blocksize);
+    belosParamList->set("Flexible Gmres", true);
+    belosParamList->set("Adaptive Block Size", true);
+    belosParamList->set("Num Blocks", gmresIters);
+    belosParamList->set("Maximum Restarts", maxrestarts);
+    belosParamList->set("Orthogonalization","DGKS");
+    belosParamList->set("Output Frequency", output);
+    belosParamList->set("Verbosity", Belos::TimingDetails +
                          Belos::Errors +
                          Belos::Warnings +
                          Belos::StatusTestDetails );
-    belosParamList_->set("Maximum Iterations", maxiters);
-    belosParamList_->set("Convergence Tolerance", gmresTol);
-    belosParamList_->set("Explicit Residual Test", false);
-    belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
+    belosParamList->set("Maximum Iterations", maxiters);
+    belosParamList->set("Convergence Tolerance", gmresTol);
+    belosParamList->set("Explicit Residual Test", false);
+    belosParamList->set("Implicit Residual Scaling", "Norm of RHS");
 
     // Belos block FGMRES setup
     belosSolver_ =
         rcp(new Belos::BlockGmresSolMgr
             <double, Epetra_MultiVector, Combined_Operator<Model> >
-            (problem_, belosParamList_));
+            (problem_, belosParamList));
 
     solverInitialized_ = true;
     INFO("Topo: initialize solver... done");
