@@ -122,6 +122,12 @@ public:
         Teuchos::RCP<Epetra_Vector> dFSdG;
     };
 
+    const Teuchos::ParameterList& getParameters();
+    void setParameters(Teuchos::ParameterList&);
+
+    static Teuchos::ParameterList getDefaultInitParameters();
+    static Teuchos::ParameterList getDefaultParameters();
+
     //! Constructor
     THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
 
@@ -615,7 +621,6 @@ private:
     //! This alters the behaviour of the TRIOS::Domain class, which will
     //! provide a different SolveMap after the call.
     void SetupLoadBalancing();
-
 };
 
 #endif

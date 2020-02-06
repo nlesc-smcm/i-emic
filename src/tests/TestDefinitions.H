@@ -177,7 +177,7 @@ checkParameters
 , std::function<::testing::AssertionResult(const std::string&, const Teuchos::ParameterEntry&)> fun
 );
 
-// Checks that every parameter in checkList corresponds has a matching entry in
+// Checks that every parameter in checkList corresponds to a matching entry in
 // overrideList. Entries missing from overrideList are compared against the
 // defaultList (and checks that these entries in checkList are defaulted).
 //

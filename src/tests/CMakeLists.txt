@@ -16,6 +16,10 @@ set(TEST_SOURCES
   intt_ocean.C
   reft_ocean.C
   test_parameterlist.C
+  test_parameterlist_oceandefault.C
+  test_parameterlist_ocean.C
+  test_parameterlist_thcmdefault.C
+  test_parameterlist_thcm.C
   intt_2dmoc.C
   test_atmos.C
   test_oceanatmos.C
