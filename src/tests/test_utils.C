@@ -158,10 +158,10 @@ checkParameters
 }
 
 ::testing::AssertionResult
-checkParameterList
+checkParameterListAgainstDefaultAndOverrides
 ( const Teuchos::ParameterList& checkList
 , const Teuchos::ParameterList& defaultList
-, const Teuchos::ParameterList& validList
+, const Teuchos::ParameterList& overrideList
 )
 {
     auto result = ::testing::AssertionSuccess();
@@ -177,21 +177,21 @@ checkParameterList
         parameters.erase(key);
 
         if (value.isList()) {
-            result &= checkSubList(validList, key);
+            result &= checkSubList(overrideList, key);
             result &= checkSubList(defaultList, key, true);
 
             Teuchos::ParameterList sublist;
-            if (validList.isSublist(key)) {
-                sublist = validList.sublist(key);
+            if (overrideList.isSublist(key)) {
+                sublist = overrideList.sublist(key);
             }
 
-            result &= checkParameterList(checkList.sublist(key), defaultList.sublist(key), sublist);
+            result &= checkParameterListAgainstDefaultAndOverrides(checkList.sublist(key), defaultList.sublist(key), sublist);
         } else {
             std::string name = checkList.name() + "->" + key;
 
             Teuchos::ParameterEntry validVal;
-            if (validList.isParameter(key)) {
-                validVal = validList.getEntry(key);
+            if (overrideList.isParameter(key)) {
+                validVal = overrideList.getEntry(key);
             } else {
                 validVal = defaultList.getEntry(key);
                 if (!value.isDefault()) {

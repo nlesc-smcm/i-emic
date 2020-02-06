@@ -128,22 +128,32 @@ void testEntries(ModelPtr model, CCS &ccs, VectorPtr x)
 
 //------------------------------------------------------------------
 // Functions for checking Teuchos::ParameterList's
+
+
+// Combines two Google Test AssertionResults together by combining the messages
+// of failures into a single message reporting all errors.
 ::testing::AssertionResult&
 operator&=
 (::testing::AssertionResult& old, const ::testing::AssertionResult& val);
 
+// Checks a parameter is marked as defaulted
 ::testing::AssertionResult
 checkDefaultParameterEntry
 (const std::string& paramName, const Teuchos::ParameterEntry& param);
 
+// Checks a parameter is marked as used
 ::testing::AssertionResult
 checkUsedParameterEntry
 (const std::string& paramName, const Teuchos::ParameterEntry& param);
 
+// Checks a parameter is NOT marked as used
 ::testing::AssertionResult
 checkUnusedParameterEntry
 (const std::string& paramName, const Teuchos::ParameterEntry& param);
 
+// Compares whether two parameters are equal. Double are treated specially so
+// that NaN values compare equally (to match our use in parameter lists). The
+// paramName argument is used in error messages when reporting mismatches.
 ::testing::AssertionResult
 compareParameterEntries
 ( const std::string& paramName
@@ -151,20 +161,32 @@ compareParameterEntries
 , const Teuchos::ParameterEntry& validParam
 );
 
+// Ensures that the given key is either a list OR missing. If mustExist is true
+// missing lists are reported as an error.
 ::testing::AssertionResult
 checkSubList
 (const Teuchos::ParameterList& list, const std::string& key, bool mustExist = false);
 
+// Applies an AssertionFunction to every parameter in the ParameterList and
+// report the results of combining all these assertions. Intended to be used
+// with checkDefaultParameterEntry, checkUsedParameterEntry, and
+// checkUnusedParameterEntry
 ::testing::AssertionResult
 checkParameters
 ( const Teuchos::ParameterList& list
 , std::function<::testing::AssertionResult(const std::string&, const Teuchos::ParameterEntry&)> fun
 );
 
+// Checks that every parameter in checkList corresponds has a matching entry in
+// overrideList. Entries missing from overrideList are compared against the
+// defaultList (and checks that these entries in checkList are defaulted).
+//
+// Entries that exist in defaultList and are missing from checkList are
+// reported as missing.
 ::testing::AssertionResult
-checkParameterList
+checkParameterListAgainstDefaultAndOverrides
 ( const Teuchos::ParameterList& checkList
 , const Teuchos::ParameterList& defaultList
-, const Teuchos::ParameterList& validList = Teuchos::ParameterList()
+, const Teuchos::ParameterList& overrideList = Teuchos::ParameterList()
 );
 #endif

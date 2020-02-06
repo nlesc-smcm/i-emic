@@ -1,6 +1,7 @@
 #include "TestDefinitions.H"
 
 //------------------------------------------------------------------
+// Check that parameters that are explicitly set are reported as unused
 TEST(ParameterList, UnusedParameters)
 {
     Teuchos::ParameterList list("Test List");
@@ -11,6 +12,8 @@ TEST(ParameterList, UnusedParameters)
 }
 
 //------------------------------------------------------------------
+// Check that parameters that are explicitly set in sublists are reported as
+// unused
 TEST(ParameterList, UnusedSublistParameters)
 {
     Teuchos::ParameterList list("Test List");
@@ -21,6 +24,7 @@ TEST(ParameterList, UnusedSublistParameters)
 }
 
 //------------------------------------------------------------------
+// Check that parameters set via get defaulting are marked as defaulted
 TEST(ParameterList, DefaultParameters)
 {
     Teuchos::ParameterList list("Test List");
@@ -30,6 +34,7 @@ TEST(ParameterList, DefaultParameters)
 }
 
 //------------------------------------------------------------------
+// Check that set parameters are NOT marked as defaulted
 TEST(ParameterList, NotDefaultParameters)
 {
     Teuchos::ParameterList list("Test List");
@@ -39,6 +44,7 @@ TEST(ParameterList, NotDefaultParameters)
 }
 
 //------------------------------------------------------------------
+// Check that sublist parameters set via get defaulting are marked as defaulted
 TEST(ParameterList, DefaultSublistParameters)
 {
     Teuchos::ParameterList list("Test List");
@@ -48,6 +54,7 @@ TEST(ParameterList, DefaultSublistParameters)
 }
 
 //------------------------------------------------------------------
+// Check that set sublist parameters set are NOT marked as defaulted
 TEST(ParameterList, NotDefaultSublistParameters)
 {
     Teuchos::ParameterList list("Test List");
@@ -57,26 +64,36 @@ TEST(ParameterList, NotDefaultSublistParameters)
 }
 
 //------------------------------------------------------------------
+// Check that a default list matches itself
 TEST(ParameterList, DefaultEqualsSelf)
 {
     Teuchos::ParameterList list("Test List");
 
     list.get("Test", true);
     list.sublist("Sublist").get("Test", true);
-    EXPECT_TRUE(checkParameterList(list, list));
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2) checks that
+    // every element in list1 matches the elements in list2 and is marked as
+    // defaulted
+    EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(list, list));
 }
 
 //------------------------------------------------------------------
+// Check that a default list with sublists matches itself
 TEST(ParameterList, DefaultEqualsSelf2)
 {
     Teuchos::ParameterList list("Test List");
 
     list.get("Test", true);
     list.sublist("Sublist").get("Test", true);
-    EXPECT_TRUE(checkParameterList(list, list, list));
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2, list3) checks
+    // that every element in list1 matches the elements in list3. If list3 is
+    // missing an element it is matched with list2 and must be marked as
+    // defaulted
+    EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(list, list, list));
 }
 
 //------------------------------------------------------------------
+// Check that the copy of a list matches the original default list
 TEST(ParameterList, CopiesMatch)
 {
     Teuchos::ParameterList defaultList("Default List");
@@ -87,11 +104,14 @@ TEST(ParameterList, CopiesMatch)
     Teuchos::ParameterList list("Test List");
     list.setParameters(defaultList);
 
-    EXPECT_TRUE(checkParameterList(list, defaultList));
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2) checks that
+    // every element in list1 matches the elements in list2 and is marked as
+    // defaulted
+    EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(list, defaultList));
 }
 
-
 //------------------------------------------------------------------
+// Check that removing a parameter reports an error
 TEST(ParameterList, NoMissingParameters)
 {
     Teuchos::ParameterList defaultList("Default List");
@@ -103,10 +123,14 @@ TEST(ParameterList, NoMissingParameters)
     list.setParameters(defaultList);
     list.remove("Test");
 
-    EXPECT_FALSE(checkParameterList(list, defaultList));
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2) checks that
+    // every element in list1 matches the elements in list2 and is marked as
+    // defaulted
+    EXPECT_FALSE(checkParameterListAgainstDefaultAndOverrides(list, defaultList));
 }
 
 //------------------------------------------------------------------
+// Check that removing a sublist reports an error
 TEST(ParameterList, NoMissingSublist)
 {
     Teuchos::ParameterList defaultList("Default List");
@@ -118,10 +142,14 @@ TEST(ParameterList, NoMissingSublist)
     list.setParameters(defaultList);
     list.remove("Sublist");
 
-    EXPECT_FALSE(checkParameterList(list, defaultList));
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2) checks that
+    // every element in list1 matches the elements in list2 and is marked as
+    // defaulted
+    EXPECT_FALSE(checkParameterListAgainstDefaultAndOverrides(list, defaultList));
 }
 
 //------------------------------------------------------------------
+// Check that parameters in the override list must be present
 TEST(ParameterList, MissingOverriddenParameter)
 {
     Teuchos::ParameterList defaultList("Default List");
@@ -135,10 +163,15 @@ TEST(ParameterList, MissingOverriddenParameter)
     Teuchos::ParameterList list("Test List");
     list.setParameters(defaultList);
 
-    EXPECT_FALSE(checkParameterList(list, defaultList, overrideList));
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2, list3) checks
+    // that every element in list1 matches the elements in list3. If list3 is
+    // missing an element it is matched with list2 and must be marked as
+    // defaulted
+    EXPECT_FALSE(checkParameterListAgainstDefaultAndOverrides(list, defaultList, overrideList));
 }
 
 //------------------------------------------------------------------
+// Check that parameters in sublists in the override list must be present
 TEST(ParameterList, MissingOverriddenSublist)
 {
     Teuchos::ParameterList defaultList("Default List");
@@ -152,10 +185,16 @@ TEST(ParameterList, MissingOverriddenSublist)
     Teuchos::ParameterList list("Test List");
     list.setParameters(defaultList);
 
-    EXPECT_FALSE(checkParameterList(list, defaultList, overrideList));
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2, list3) checks
+    // that every element in list1 matches the elements in list3. If list3 is
+    // missing an element it is matched with list2 and must be marked as
+    // defaulted
+    EXPECT_FALSE(checkParameterListAgainstDefaultAndOverrides(list, defaultList, overrideList));
 }
 
 //------------------------------------------------------------------
+// Check that a combination of overriden parameters and defaulted parameters
+// validates
 TEST(ParameterList, MatchOverriddenParameter)
 {
     Teuchos::ParameterList defaultList("Default List");
@@ -170,10 +209,16 @@ TEST(ParameterList, MatchOverriddenParameter)
     list.setParameters(defaultList);
     list.set("Test", false);
 
-    EXPECT_TRUE(checkParameterList(list, defaultList, overrideList));
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2, list3) checks
+    // that every element in list1 matches the elements in list3. If list3 is
+    // missing an element it is matched with list2 and must be marked as
+    // defaulted
+    EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(list, defaultList, overrideList));
 }
 
 //------------------------------------------------------------------
+// Check that a combination of overriden parameters in sublist and defaulted
+// parameters validates
 TEST(ParameterList, MatchOverriddenSublist)
 {
     Teuchos::ParameterList defaultList("Default List");
@@ -188,8 +233,13 @@ TEST(ParameterList, MatchOverriddenSublist)
     list.setParameters(defaultList);
     list.sublist("Sublist").set("Test", false);
 
-    EXPECT_TRUE(checkParameterList(list, defaultList, overrideList));
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2, list3) checks
+    // that every element in list1 matches the elements in list3. If list3 is
+    // missing an element it is matched with list2 and must be marked as
+    // defaulted
+    EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(list, defaultList, overrideList));
 }
+
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {
