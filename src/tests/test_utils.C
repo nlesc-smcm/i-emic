@@ -48,3 +48,169 @@ getGatheredVector(Teuchos::RCP<Epetra_Vector> vec)
 
     return gvec;
 }
+
+//------------------------------------------------------------------
+// Functions for checking Teuchos::ParameterList's
+::testing::AssertionResult&
+operator&=
+(::testing::AssertionResult& old, const ::testing::AssertionResult& val)
+{
+    if (old == ::testing::AssertionSuccess()) {
+        old = val;
+    } else if (val != ::testing::AssertionSuccess()) {
+        old = ::testing::AssertionFailure() << old.message() << val.message();
+    }
+    return old;
+}
+
+::testing::AssertionResult
+checkDefaultParameterEntry
+(const std::string& paramName, const Teuchos::ParameterEntry& param)
+{
+    if (!param.isDefault()) {
+        return ::testing::AssertionFailure() << std::endl
+            << paramName << " expected defaulted parameter" << std::endl;
+    }
+
+    return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult
+checkUsedParameterEntry
+(const std::string& paramName, const Teuchos::ParameterEntry& param)
+{
+    if (!param.isUsed()) {
+        return ::testing::AssertionFailure() << std::endl
+            << paramName << " expected used parameter" << std::endl;
+    }
+
+    return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult
+checkUnusedParameterEntry
+(const std::string& paramName, const Teuchos::ParameterEntry& param)
+{
+    if (param.isUsed()) {
+        return ::testing::AssertionFailure() << std::endl
+            << paramName << " expected unused parameter" << std::endl;
+    }
+
+    return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult
+compareParameterEntries
+( const std::string& paramName
+, const Teuchos::ParameterEntry& param
+, const Teuchos::ParameterEntry& validParam
+)
+{
+    if (param.isType<double>() && validParam.isType<double>()) {
+        if (std::isnan(param.getValue<double>(nullptr)) && std::isnan(validParam.getValue<double>(nullptr))) {
+            return ::testing::AssertionSuccess() << "NaNs treated as equal";
+        }
+    }
+
+    if (param == validParam) {
+        return ::testing::AssertionSuccess();
+    } else {
+        return ::testing::AssertionFailure() << std::endl
+            << paramName << ":" << std::endl
+            << "    Found:    " << param << std::endl
+            << "    Expected: " << validParam << std::endl;
+    }
+}
+
+::testing::AssertionResult
+checkSubList
+(const Teuchos::ParameterList& list, const std::string& key, bool mustExist)
+{
+    if (mustExist && !list.isParameter(key)) {
+        return ::testing::AssertionFailure() << key << " sublist is missing and must exist.";
+    } else if (list.isParameter(key) && !list.isSublist(key)) {
+        return ::testing::AssertionFailure() << key << " is a parameter, but not a sublist";
+    }
+
+    return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult
+checkParameters
+( const Teuchos::ParameterList& list
+, std::function<::testing::AssertionResult(const std::string&, const Teuchos::ParameterEntry&)> fun
+)
+{
+    auto result = ::testing::AssertionSuccess();
+
+    for (const auto& pair : list) {
+        const std::string& key = pair.first;
+        const Teuchos::ParameterEntry& value = pair.second;
+
+        if (value.isList()) {
+            result &= checkParameters(list.sublist(key), fun);
+        } else {
+            result &= fun(list.name() + "->" + key, value);
+        }
+    }
+
+    return result;
+}
+
+::testing::AssertionResult
+checkParameterList
+( const Teuchos::ParameterList& checkList
+, const Teuchos::ParameterList& defaultList
+, const Teuchos::ParameterList& validList
+)
+{
+    auto result = ::testing::AssertionSuccess();
+    std::set<std::string> parameters;
+    for (const auto& pair : defaultList) {
+        parameters.insert(pair.first);
+    }
+
+    for (const auto& pair : checkList) {
+        const std::string& key = pair.first;
+        const Teuchos::ParameterEntry& value = pair.second;
+
+        parameters.erase(key);
+
+        if (value.isList()) {
+            result &= checkSubList(validList, key);
+            result &= checkSubList(defaultList, key, true);
+
+            Teuchos::ParameterList sublist;
+            if (validList.isSublist(key)) {
+                sublist = validList.sublist(key);
+            }
+
+            result &= checkParameterList(checkList.sublist(key), defaultList.sublist(key), sublist);
+        } else {
+            std::string name = checkList.name() + "->" + key;
+
+            Teuchos::ParameterEntry validVal;
+            if (validList.isParameter(key)) {
+                validVal = validList.getEntry(key);
+            } else {
+                validVal = defaultList.getEntry(key);
+                if (!value.isDefault()) {
+                    result &= ::testing::AssertionFailure() << "expected " << name << " to be defaulted";
+                }
+            }
+
+            result &= compareParameterEntries(name, value, validVal);
+        }
+    }
+
+    if (parameters.size() != 0) {
+        auto error = ::testing::AssertionFailure() << std::endl;
+        for (auto& param : parameters) {
+            error << "Missing parameter: " << checkList.name() + "->" + param;
+        }
+
+        result &= error;
+    }
+
+    return result;
+}

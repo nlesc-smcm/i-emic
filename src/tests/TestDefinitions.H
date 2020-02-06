@@ -125,4 +125,46 @@ void testEntries(ModelPtr model, CCS &ccs, VectorPtr x)
         e_j[jco] = 0; // reset value
     }            
 }
+
+//------------------------------------------------------------------
+// Functions for checking Teuchos::ParameterList's
+::testing::AssertionResult&
+operator&=
+(::testing::AssertionResult& old, const ::testing::AssertionResult& val);
+
+::testing::AssertionResult
+checkDefaultParameterEntry
+(const std::string& paramName, const Teuchos::ParameterEntry& param);
+
+::testing::AssertionResult
+checkUsedParameterEntry
+(const std::string& paramName, const Teuchos::ParameterEntry& param);
+
+::testing::AssertionResult
+checkUnusedParameterEntry
+(const std::string& paramName, const Teuchos::ParameterEntry& param);
+
+::testing::AssertionResult
+compareParameterEntries
+( const std::string& paramName
+, const Teuchos::ParameterEntry& param
+, const Teuchos::ParameterEntry& validParam
+);
+
+::testing::AssertionResult
+checkSubList
+(const Teuchos::ParameterList& list, const std::string& key, bool mustExist = false);
+
+::testing::AssertionResult
+checkParameters
+( const Teuchos::ParameterList& list
+, std::function<::testing::AssertionResult(const std::string&, const Teuchos::ParameterEntry&)> fun
+);
+
+::testing::AssertionResult
+checkParameterList
+( const Teuchos::ParameterList& checkList
+, const Teuchos::ParameterList& defaultList
+, const Teuchos::ParameterList& validList = Teuchos::ParameterList()
+);
 #endif

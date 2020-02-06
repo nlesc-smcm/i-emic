@@ -15,6 +15,7 @@ set(TEST_SOURCES
   trns_ocean.C
   intt_ocean.C
   reft_ocean.C
+  test_parameterlist.C
   intt_2dmoc.C
   test_atmos.C
   test_oceanatmos.C
