@@ -3,10 +3,9 @@
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-
     RCP<Teuchos::ParameterList> oceanParams;
-    RCP<Ocean> ocean;  
-    RCP<Epetra_Comm>  comm; 
+    RCP<Ocean> ocean;
+    RCP<Epetra_Comm> comm;
 }
 
 //------------------------------------------------------------------
@@ -26,7 +25,7 @@ TEST(Ocean, Initialization)
         failed = true;
         throw;
     }
-    
+
     EXPECT_EQ(failed, false);
 }
 
@@ -131,7 +130,7 @@ TEST(Ocean, ComputeJacobian)
             failed = true;
         }
         EXPECT_EQ(failed, false);
-    } 
+    }
 }
 
 //------------------------------------------------------------------
@@ -154,11 +153,10 @@ TEST(Ocean, NumericalJacobian)
             njmat.compute(ocean, ocean->getState('V'));
 
             std::string fname("ocean_numjac");
-            
+
             INFO(" Printing numerical Jacbian " << fname);
 
             njmat.print(fname);
-            
         }
         catch (...)
         {
@@ -170,7 +168,7 @@ TEST(Ocean, NumericalJacobian)
     {
         std::cout << "Problem size: " << ocean->getState('V')->GlobalLength()
                   << ", number of procs: " << comm->NumProc() << std::endl;
-        
+
         WARNING("We are not going to do this for this setup...",
                 __FILE__, __LINE__);
     }
@@ -184,7 +182,7 @@ TEST(Ocean, Continuation)
     {
         ocean->setPar("Combined Forcing", 0.0);
         ocean->getState('V')->PutScalar(0.0);
-        
+
         // Create continuation params
         RCP<Teuchos::ParameterList> continuationParams =
             rcp(new Teuchos::ParameterList);
@@ -197,10 +195,10 @@ TEST(Ocean, Continuation)
 
         Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
         DUMPMATLAB("ocean_jac", *mat);
-        
+
         Teuchos::RCP<Epetra_Vector> diagB = ocean->getMassMat();
         EXPECT_NE(Utils::norm(diagB), 0.0);
-        DUMP_VECTOR("ocean_B", *diagB);                        
+        DUMP_VECTOR("ocean_B", *diagB);
 
         // Run continuation
         int status = continuation.run();
@@ -208,14 +206,14 @@ TEST(Ocean, Continuation)
 
         mat  = ocean->getJacobian();
         DUMPMATLAB("ocean_jac", *mat);
-        
+
         diagB = ocean->getMassMat();
         EXPECT_NE(Utils::norm(diagB), 0.0);
-        DUMP_VECTOR("ocean_B", *diagB);                        
-        
+        DUMP_VECTOR("ocean_B", *diagB);
+
         RCP<Epetra_Vector> intcond_coeff = ocean->getIntCondCoeff();
-        DUMP_VECTOR("intcond_coeff", *intcond_coeff);                        
-                
+        DUMP_VECTOR("intcond_coeff", *intcond_coeff);
+
     }
     catch (...)
     {
@@ -232,9 +230,9 @@ TEST(Ocean, Integrals)
     double salt_diffusion = 0.0;
 
     RCP<Epetra_Vector> un = ocean->getState('C');
-        
+
     ocean->integralChecks(un, salt_advection, salt_diffusion);
-    
+
     EXPECT_NEAR(salt_advection, 0.0, 1e-10);
 
     // This is not such a great test as it does not check the actual
@@ -245,11 +243,11 @@ TEST(Ocean, Integrals)
     Teuchos::RCP<Epetra_Vector> x      = ocean->getSolution('V');
     Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
 
-    
+
     Teuchos::RCP<Epetra_Vector> e   = Teuchos::rcp(new Epetra_Vector(x->Map()));
     Teuchos::RCP<Epetra_Vector> tmp = Teuchos::rcp(new Epetra_Vector(x->Map()));
     Teuchos::RCP<Epetra_Vector> col = Teuchos::rcp(new Epetra_Vector(x->Map()));
-    
+
     Teuchos::RCP<TRIOS::Domain> domain = ocean->getDomain();
     int N = domain->GlobalN();
     int M = domain->GlobalM();
@@ -258,7 +256,7 @@ TEST(Ocean, Integrals)
     int rowS, lid;
 
     int rowIntCon = ocean->getRowIntCon();
-    
+
     int lidIntCon = e->Map().LID(rowIntCon);
     if (lidIntCon >= 0)
         (*icCoef)[lidIntCon] = 0;
@@ -271,7 +269,7 @@ TEST(Ocean, Integrals)
             for (int i = 0; i != N; ++i)
             {
                 rowS = FIND_ROW2(_NUN_,N,M,L,i,j,k,SS);
-                                
+
                 lid  = e->Map().LID(rowS);
 
                 if (lid >= 0)
@@ -284,13 +282,13 @@ TEST(Ocean, Integrals)
                 if (lid >= 0)
                 {
                     (*e)[lid]   = 0;
-                    (*tmp)[lid] = dot;            
-                }                
+                    (*tmp)[lid] = dot;
+                }
 
                 if (k < L-2) // here we test everything except the top rows
                     integrals.push_back(dot);
             }
-        
+
     for (auto &el: integrals)
     {
         EXPECT_NEAR(el, 0.0, 1e-7);
@@ -307,7 +305,27 @@ TEST(Ocean, Integrals)
 
     badRows = ocean->analyzeJacobian1();
     std::cout << " bad S ints: " << badRows << std::endl;
-       
+}
+
+//------------------------------------------------------------------
+TEST(Ocean, CreateASecondOcean)
+{
+    // First destroy the old Ocean since there can only be one
+    // instance of THCM.
+    ocean = Teuchos::null;
+
+    bool failed = false;
+    try
+    {
+        ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+
+    EXPECT_EQ(failed, false);
 }
 
 //------------------------------------------------------------------
