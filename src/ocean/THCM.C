@@ -830,6 +830,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         col_scaling->PutScalar(1.0);
     }
 
+    for (auto& pair : paramList.sublist("Starting Parameters")) {
+        double val = pair.second.getValue(&val);
+        if (!std::isnan(val)) setParameter(pair.first, val);
+    }
+
     params = paramList;
 }
 

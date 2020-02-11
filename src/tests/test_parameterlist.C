@@ -313,9 +313,21 @@ TEST(THCMParameterList, Initialization)
         // Parameters currently reported by Ocean
         const Teuchos::ParameterList& currentParams = thcm->getParameters();
 
+        // Check that every parameter is used
+        //
+        // This MUST be before checkParameterListAgainstDefaultAndOverrides
+        // because it marks everything as used...
+        EXPECT_TRUE(checkParameters(thcmParams, checkUsedParameterEntry));
+
         // Check that every entry in oceanParams corresponds to the value in
         // startParams, missing entries are compared against defaultParams
         EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(thcmParams, defaultParams, startParams));
+
+        // Check that every parameter is used
+        //
+        // This MUST be before checkParameterListAgainstDefaultAndOverrides
+        // because it marks everything as used...
+        EXPECT_TRUE(checkParameters(currentParams, checkUsedParameterEntry));
 
         // Check that every entry reported by Ocean corresponds to the value in
         // startParams, missing entries are compared against defaultParams
