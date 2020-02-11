@@ -63,6 +63,7 @@ public:
     using LandMask  = Utils::MaskStruct;
 
 protected:
+    Teuchos::ParameterList params_;
 
     Teuchos::RCP<THCM> thcm_;
 
@@ -92,8 +93,6 @@ protected:
 
     // grid representation of the state
     mutable Teuchos::RCP<OceanGrid> grid_;
-
-    ParameterList solverParams_;
 
     // Belos flexible GMRES members
     Teuchos::RCP<Belos::LinearProblem
@@ -164,6 +163,12 @@ public:
     std::string name() const { return "ocean"; }
     int modelIdent() const { return 0; }
     Teuchos::RCP<Epetra_Comm> Comm() const { return comm_; }
+
+    const Teuchos::ParameterList& getParameters();
+    void setParameters(Teuchos::ParameterList& oceanParamList);
+
+    static Teuchos::ParameterList getDefaultInitParameters();
+    static Teuchos::ParameterList getDefaultParameters();
 
     //! Solve may optionally accept an rhs of VectorPointer type
     void solve(Teuchos::RCP<const Epetra_MultiVector> rhs = Teuchos::null);

@@ -91,7 +91,7 @@ TEST(Ocean, MassMat)
     }
 
     // check integral condition
-    int sres = oceanParams->get("Restoring Salinity Profile", 1);
+    int sres = oceanParams->sublist("THCM").get("Restoring Salinity Profile", 1);
 
     if (sres == 0)
     {

@@ -1895,27 +1895,6 @@ void THCM::printTiming(std::ostream& os)
 }
 
 //=============================================================================
-void THCM::ReadParameters(const Teuchos::ParameterList& plist)
-{
-    double val;
-    std::string label;
-    try {
-        for (int i=0; i<= _NPAR_ + _NPAR_TRILI; i++)
-        {
-            label = int2par(i);
-            if (plist.isParameter(label)) {
-                val = plist.get<double>(label);
-                if (!std::isnan(val)) this->setParameter(label,val);
-            }
-        }
-    }
-    catch(...)
-    {
-        ERROR("Exception while reading parameter starting values!",__FILE__,__LINE__);
-    }
-}
-
-//=============================================================================
 // convert parameter name to integer
 int THCM::par2int(std::string const &label)
 {
