@@ -15,6 +15,7 @@ set(TEST_SOURCES
   trns_ocean.C
   intt_ocean.C
   reft_ocean.C
+  test_parameterlist.C
   intt_2dmoc.C
   test_atmos.C
   test_oceanatmos.C
@@ -57,7 +58,7 @@ endif()
 
 foreach(test_source ${TEST_SOURCES})
   get_filename_component(test_name ${test_source} NAME_WE)
-  add_executable(${test_name} ${test_source})
+  add_executable(${test_name} ${test_source} test_utils.C)
 
   string(REPLACE "_" ";" test_name_list ${test_name})
   list(GET test_name_list 1 test_base_name)

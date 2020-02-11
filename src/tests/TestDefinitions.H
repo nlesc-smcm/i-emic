@@ -60,53 +60,12 @@ using Teuchos::rcp;
 using std::shared_ptr;
 
 //------------------------------------------------------------------
-double norm(Teuchos::RCP<Epetra_Vector> vec)
-{
-    double nrm;
-    vec->Norm2(&nrm);
-    return nrm;
-}
+double norm(Teuchos::RCP<Epetra_Vector> vec);
 
-//------------------------------------------------------------------
-double norm(std::shared_ptr<std::vector<double> > vec)
-{
-    int dim = (int) vec->size();
-    int incX = 1;
-    int incY = 1;
-    double dot;
-    dot = ddot_(&dim, &(*vec)[0], &incX, &(*vec)[0], &incY);
-    return sqrt(dot);
-}
+double norm(std::shared_ptr<std::vector<double> > vec);
 
-//------------------------------------------------------------------
 std::shared_ptr<std::vector<double> >
-getGatheredVector(Teuchos::RCP<Epetra_Vector> vec)
-{
-    // get size
-    int dim = (int) vec->GlobalLength();
-
-    // Create gather scheme: map and importer
-    Teuchos::RCP<Epetra_BlockMap> gmap =
-        Utils::AllGather(vec->Map());
-    Teuchos::RCP<Epetra_Import> imp =
-        Teuchos::rcp(new Epetra_Import(*gmap, vec->Map()));
-
-    // Create vector to hold the gathered state
-    Teuchos::RCP<Epetra_Vector> gathered =
-        Teuchos::rcp(new Epetra_Vector(*gmap));
-
-    // Gather the state into <gathered>
-    gathered->Import(*vec, *imp, Insert);
-
-    // Create full state for serial atmosphere
-    std::shared_ptr< std::vector<double> > gvec =
-        std::make_shared<std::vector<double> >(dim, 0.0);
-
-    // Extract gvec from gathered
-    gathered->ExtractCopy(&(*gvec)[0], dim);
-
-    return gvec;
-}
+getGatheredVector(Teuchos::RCP<Epetra_Vector> vec);
 
 //------------------------------------------------------------------
 // test the entries of numerical jacobian
@@ -167,4 +126,67 @@ void testEntries(ModelPtr model, CCS &ccs, VectorPtr x)
     }            
 }
 
+//------------------------------------------------------------------
+// Functions for checking Teuchos::ParameterList's
+
+
+// Combines two Google Test AssertionResults together by combining the messages
+// of failures into a single message reporting all errors.
+::testing::AssertionResult&
+operator&=
+(::testing::AssertionResult& old, const ::testing::AssertionResult& val);
+
+// Checks a parameter is marked as defaulted
+::testing::AssertionResult
+checkDefaultParameterEntry
+(const std::string& paramName, const Teuchos::ParameterEntry& param);
+
+// Checks a parameter is marked as used
+::testing::AssertionResult
+checkUsedParameterEntry
+(const std::string& paramName, const Teuchos::ParameterEntry& param);
+
+// Checks a parameter is NOT marked as used
+::testing::AssertionResult
+checkUnusedParameterEntry
+(const std::string& paramName, const Teuchos::ParameterEntry& param);
+
+// Compares whether two parameters are equal. Double are treated specially so
+// that NaN values compare equally (to match our use in parameter lists). The
+// paramName argument is used in error messages when reporting mismatches.
+::testing::AssertionResult
+compareParameterEntries
+( const std::string& paramName
+, const Teuchos::ParameterEntry& param
+, const Teuchos::ParameterEntry& validParam
+);
+
+// Ensures that the given key is either a list OR missing. If mustExist is true
+// missing lists are reported as an error.
+::testing::AssertionResult
+checkSubList
+(const Teuchos::ParameterList& list, const std::string& key, bool mustExist = false);
+
+// Applies an AssertionFunction to every parameter in the ParameterList and
+// report the results of combining all these assertions. Intended to be used
+// with checkDefaultParameterEntry, checkUsedParameterEntry, and
+// checkUnusedParameterEntry
+::testing::AssertionResult
+checkParameters
+( const Teuchos::ParameterList& list
+, std::function<::testing::AssertionResult(const std::string&, const Teuchos::ParameterEntry&)> fun
+);
+
+// Checks that every parameter in checkList corresponds has a matching entry in
+// overrideList. Entries missing from overrideList are compared against the
+// defaultList (and checks that these entries in checkList are defaulted).
+//
+// Entries that exist in defaultList and are missing from checkList are
+// reported as missing.
+::testing::AssertionResult
+checkParameterListAgainstDefaultAndOverrides
+( const Teuchos::ParameterList& checkList
+, const Teuchos::ParameterList& defaultList
+, const Teuchos::ParameterList& overrideList = Teuchos::ParameterList()
+);
 #endif
