@@ -366,9 +366,6 @@ public:
     // convert parameter index to std::string (i.e. 19 => "Combined Forcing")
     static std::string const int2par(int ind);
 
-    //! read THCM parameters from a ParameterList
-    void ReadParameters(const Teuchos::ParameterList& plist);
-
     //! Under non-restoring conditions: get an integral from vec and
     //! use that to correct the integral condition
     void setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec);

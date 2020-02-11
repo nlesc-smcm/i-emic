@@ -133,11 +133,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
     // grid representation of te state
     grid_   = rcp(new OceanGrid(domain_));
 
-    // Read starting parameters from xml
-    Teuchos::ParameterList& startList =
-        params_.sublist("THCM").sublist("Starting Parameters");
-    THCM::Instance().ReadParameters(startList);
-
     // If specified we load a pre-existing state and parameters (x,l)
     // thereby overwriting the starting parameters
     // This will be able to load salinity and temperature fluxes as well.
