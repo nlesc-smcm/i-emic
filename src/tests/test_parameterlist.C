@@ -343,6 +343,101 @@ TEST(THCMParameterList, Initialization)
 }
 
 //------------------------------------------------------------------
+TEST(OceanParameterList, DefaultInitialization)
+{
+    RCP<Ocean> ocean;
+
+    bool failed = false;
+    try
+    {
+        // Copy of the default parameters
+        const Teuchos::ParameterList defaultParams = Ocean::getDefaultInitParameters();
+
+        // Empty parameter configuration
+        Teuchos::ParameterList oceanParams("Test List");
+
+        ::testing::internal::CaptureStdout();
+        ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
+        ::testing::internal::GetCapturedStdout();
+
+        // Copy of the configuration reported by Ocean
+        const Teuchos::ParameterList& currentParams = ocean->getParameters();
+
+        // Don't check parameters are used, as default configuration has some
+        // unused variables (the mask files)
+
+        // Check that every parameter in oceanParams matches defaultParams, and
+        // check that they're all reported as defaulted
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(oceanParams, defaultParams));
+        EXPECT_TRUE(checkParameters(oceanParams, checkDefaultParameterEntry));
+
+        // Check that every parameter reported by Ocean matches defaultParams,
+        // and check that they're all reported as defaulted
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(currentParams, defaultParams));
+        EXPECT_TRUE(checkParameters(currentParams, checkDefaultParameterEntry));
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(OceanParameterList, Initialization)
+{
+    RCP<Ocean> ocean;
+
+    bool failed = false;
+    try
+    {
+        // Copy of the input parameters to validate against
+        const Teuchos::ParameterList startParams(*Utils::obtainParams("ocean_params.xml", "Ocean parameters"));
+
+        // Copy of the default parameters
+        const Teuchos::ParameterList defaultParams(Ocean::getDefaultInitParameters());
+        // The input parameters to validate with
+        Teuchos::ParameterList oceanParams(*Utils::obtainParams("ocean_params.xml", "Ocean parameters"));
+
+        ::testing::internal::CaptureStdout();
+        ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
+        ::testing::internal::GetCapturedStdout();
+
+        // Parameters currently reported by Ocean
+        const Teuchos::ParameterList& currentParams = ocean->getParameters();
+
+        // Check that every parameter is used
+        //
+        // This MUST be before checkParameterListAgainstDefaultAndOverrides
+        // because it marks everything as used...
+        EXPECT_TRUE(checkParameters(oceanParams, checkUsedParameterEntry));
+
+        // Check that every entry in oceanParams corresponds to the value in
+        // startParams, missing entries are compared against defaultParams
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(oceanParams, defaultParams, startParams));
+
+        // Check that every parameter is used
+        //
+        // This MUST be before checkParameterListAgainstDefaultAndOverrides
+        // because it marks everything as used...
+        EXPECT_TRUE(checkParameters(currentParams, checkUsedParameterEntry));
+
+        // Check that every entry reported by Ocean corresponds to the value in
+        // startParams, missing entries are compared against defaultParams
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(currentParams, defaultParams, startParams));
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:
