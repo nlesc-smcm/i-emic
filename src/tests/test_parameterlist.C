@@ -1,4 +1,10 @@
 #include "TestDefinitions.H"
+#include "THCM.H"
+
+namespace // local unnamed namespace (similar to static in C)
+{
+    RCP<Epetra_Comm>  comm;
+}
 
 //------------------------------------------------------------------
 // Check that parameters that are explicitly set are reported as unused
@@ -241,8 +247,97 @@ TEST(ParameterList, MatchOverriddenSublist)
 }
 
 //------------------------------------------------------------------
+TEST(THCMParameterList, DefaultInitialization)
+{
+    RCP<THCM> thcm;
+
+    bool failed = false;
+    try
+    {
+        // Copy of the default parameters
+        const Teuchos::ParameterList defaultParams = THCM::getDefaultInitParameters();
+
+        // Empty parameter configuration
+        Teuchos::ParameterList thcmParams("Test List");
+
+        ::testing::internal::CaptureStdout();
+        thcm = Teuchos::rcp(new THCM(thcmParams, comm));
+        ::testing::internal::GetCapturedStdout();
+
+        // Copy of the configuration reported by Ocean
+        const Teuchos::ParameterList& currentParams = thcm->getParameters();
+
+        // Don't check parameters are used, as default configuration has some
+        // unused variables (the mask files)
+
+        // Check that every parameter in oceanParams matches defaultParams, and
+        // check that they're all reported as defaulted
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(thcmParams, defaultParams));
+        EXPECT_TRUE(checkParameters(thcmParams, checkDefaultParameterEntry));
+
+        // Check that every parameter reported by Ocean matches defaultParams,
+        // and check that they're all reported as defaulted
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(currentParams, defaultParams));
+        EXPECT_TRUE(checkParameters(currentParams, checkDefaultParameterEntry));
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(THCMParameterList, Initialization)
+{
+    RCP<THCM> thcm;
+
+    thcm = Teuchos::null;
+    bool failed = false;
+    try
+    {
+        // Copy of the input parameters to validate against
+        const Teuchos::ParameterList startParams(Utils::obtainParams("ocean_params.xml", "THCM parameters")->sublist("THCM"));
+
+        // Copy of the default parameters
+        const Teuchos::ParameterList defaultParams(THCM::getDefaultInitParameters());
+        // The input parameters to validate with
+        Teuchos::ParameterList thcmParams(Utils::obtainParams("ocean_params.xml", "THCM parameters")->sublist("THCM"));
+
+        ::testing::internal::CaptureStdout();
+        thcm = Teuchos::rcp(new THCM(thcmParams, comm));
+        ::testing::internal::GetCapturedStdout();
+
+        // Parameters currently reported by Ocean
+        const Teuchos::ParameterList& currentParams = thcm->getParameters();
+
+        // Check that every entry in oceanParams corresponds to the value in
+        // startParams, missing entries are compared against defaultParams
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(thcmParams, defaultParams, startParams));
+
+        // Check that every entry reported by Ocean corresponds to the value in
+        // startParams, missing entries are compared against defaultParams
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(currentParams, defaultParams, startParams));
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
+    // Initialize the environment:
+    comm = initializeEnvironment(argc, argv);
+    if (outFile == Teuchos::null)
+        throw std::runtime_error("ERROR: Specify output streams");
+
     ::testing::InitGoogleTest(&argc, argv);
 
     // -------------------------------------------------------
@@ -250,5 +345,13 @@ int main(int argc, char **argv)
     int out = RUN_ALL_TESTS();
     // -------------------------------------------------------
 
+    comm->Barrier();
+    std::cout << "TEST exit code proc #" << comm->MyPID()
+              << " " << out << std::endl;
+
+    if (comm->MyPID() == 0)
+        printProfile();
+
+    MPI_Finalize();
     return out;
 }
