@@ -499,7 +499,7 @@ private:
     bool periodic_;
 
     //! compute salinity integral
-    bool comp_sal_int;
+    bool compSalInt_;
 
     //! inhomogeneous mixing?
     int ih;

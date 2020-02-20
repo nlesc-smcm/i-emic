@@ -225,7 +225,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     double qz    = paramList_.get<double>("Grid Stretching qz");
     int  itopo   = paramList_.get<int>("Topography");
     bool flat    = paramList_.get<bool>("Flat Bottom");
-    comp_sal_int = paramList_.get<bool>("Compute salinity integral");
+    compSalInt_  = paramList_.get<bool>("Compute salinity integral");
 
     bool rd_mask = paramList_.get<bool>("Read Land Mask"); //== false in experiment0
     if (rd_mask)
@@ -991,7 +991,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                     bool computeJac,
                     bool maskTest)
 {
-    if (comp_sal_int)
+    if (compSalInt_)
     {
         double intcond;
         CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
