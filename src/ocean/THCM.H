@@ -385,7 +385,7 @@ private:
     Teuchos::RCP<Epetra_Import> as2std_vol_;
 
     //! non-overlapping map for Trilinos objects:
-    Teuchos::RCP<Epetra_Map> StandardMap;
+    Teuchos::RCP<Epetra_Map> standardMap_;
     Teuchos::RCP<Epetra_Map> StandardSurfaceMap;
     Teuchos::RCP<Epetra_Map> StandardVolumeMap;
 

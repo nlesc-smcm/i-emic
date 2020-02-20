@@ -320,7 +320,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // get a map object representing the subdomain (without ghost-nodes/overlap).
     // this is an intermediate representation between the assembly and the solve
     // phases.
-    StandardMap = domain_->GetStandardMap();
+    standardMap_ = domain_->GetStandardMap();
 
     // initialize THCM (allocate memory etc.)
     // for a subdomain including ghost-nodes:
@@ -642,7 +642,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // Create internal vectors
     initialSolution = Teuchos::rcp(new Epetra_Vector(*SolveMap));
     diagB           = Teuchos::rcp(new Epetra_Vector(*SolveMap));
-    localDiagB      = Teuchos::rcp(new Epetra_Vector(*StandardMap));
+    localDiagB      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     localRhs        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
@@ -759,10 +759,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localMatrixGraph = this->CreateMaximalGraph();
     testMatrixGraph  = this->CreateMaximalGraph(false);
 
-    if (SolveMap!=StandardMap)
+    if (SolveMap!=standardMap_)
     {
         MatrixGraph = Teuchos::rcp(new Epetra_CrsGraph(Copy,*SolveMap,20));
-        Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*StandardMap,*SolveMap));
+        Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*standardMap_,*SolveMap));
         DEBUG("Migrate graph to solve map...");
         CHECK_ZERO(MatrixGraph->Export(*localMatrixGraph,*import,Insert));
         CHECK_ZERO(MatrixGraph->FillComplete());
@@ -780,7 +780,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     Jac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *MatrixGraph));
     Jac->SetLabel("Jacobian");
 
-    localFrc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *StandardMap, 1));
+    localFrc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *standardMap_, 1));
     localFrc->SetLabel("Local Forcing");
     Frc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *SolveMap, 1));
     Frc->SetLabel("Forcing");
@@ -971,7 +971,7 @@ bool THCM::computeForcing()
     auto last = std::unique(MyElements.begin(), MyElements.end());
     Epetra_Map colMap(-1, (int)std::distance(MyElements.begin(), last),
                       &MyElements[0], 0, *Comm);
-    CHECK_ZERO(localFrc->FillComplete(colMap, *StandardMap));
+    CHECK_ZERO(localFrc->FillComplete(colMap, *standardMap_));
 
     // redistribute according to SolveMap (may be load-balanced)
     // standard and solve maps are equal
@@ -1172,7 +1172,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                     std::cout << " rowintcon:            " << rowintcon_ << std::endl;
                     std::cout << " assembly rowintcon:   " << assemblyMap_->LID(rowintcon_)
                               << std::endl;
-                    std::cout << " standard rowintcon:   " << StandardMap->LID(rowintcon_)
+                    std::cout << " standard rowintcon:   " << standardMap_->LID(rowintcon_)
                               << std::endl;
                     int LRID = tmpJac->LRID(GRID);
                     std::cout << " LRID:                 " << LRID << std::endl;
@@ -1194,7 +1194,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 }
 
                 // reconstruct the diagonal matrix B
-                int lid = StandardMap->LID(assemblyMap_->GID(i));
+                int lid = standardMap_->LID(assemblyMap_->GID(i));
                 double mass_param = 1.0;
                 this->getParameter("Mass", mass_param);
                 (*localDiagB)[lid] = coB[i] * mass_param;
@@ -1252,7 +1252,7 @@ void THCM::evaluateB(void)
         if (!domain_->IsGhost(i, _NUN_))
         {
             // reconstruct the diagonal matrix B
-            int lid = StandardMap->LID(assemblyMap_->GID(i));
+            int lid = standardMap_->LID(assemblyMap_->GID(i));
             (*localDiagB)[lid] = coB[i];
         } // not a ghost?
     } // i-loop over rows
@@ -2245,7 +2245,7 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
                           double &salt_advection,
                           double &salt_diffusion)
 {
-    if (!(state->Map().SameAs(*StandardMap)))
+    if (!(state->Map().SameAs(*standardMap_)))
     {
         ERROR("Map of input vector not same as standard map ",__FILE__,__LINE__);
     }
@@ -2446,7 +2446,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
     int n=domain_->LocalN();
     int m=domain_->LocalM();
     int l=domain_->LocalL();
-    int ndim = StandardMap->NumMyElements();
+    int ndim = standardMap_->NumMyElements();
     int *numEntriesPerRow = new int[ndim];
     //int *landm = new int[n*m*l];
     //F90NAME(m_thcm_utils,get_landm)(landm);
@@ -2457,9 +2457,9 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
             {
                 int lidU = FIND_ROW2(_NUN_,n,m,l,i-1,j-1,k-1,UU);
                 int gidU = assemblyMap_->GID(lidU);
-                if (StandardMap->MyGID(gidU)) // otherwise: ghost cell, not in Jacobian
+                if (standardMap_->MyGID(gidU)) // otherwise: ghost cell, not in Jacobian
                 {
-                    int lid0 = StandardMap->LID(gidU)-1;
+                    int lid0 = standardMap_->LID(gidU)-1;
                     numEntriesPerRow[lid0+UU] = 24;
                     numEntriesPerRow[lid0+VV] = 22;
                     numEntriesPerRow[lid0+WW] = 7;
@@ -2470,7 +2470,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
             }
 
     Teuchos::RCP<Epetra_CrsGraph> graph
-        = Teuchos::rcp(new Epetra_CrsGraph(Copy,*StandardMap,numEntriesPerRow,false));
+        = Teuchos::rcp(new Epetra_CrsGraph(Copy,*standardMap_,numEntriesPerRow,false));
 
     DEBVAR(rowintcon_);
     DEBVAR(sres_);
@@ -2535,7 +2535,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
 #define DEBUG_GRAPH_ROW(var)                                            \
                 std::cout << "graph row "<<i<<" "<<j<<" "<<k<<" "<<var;     \
                 std::cout << " (gid "<<(gid0+var)<<"):"<<std::endl;         \
-                std::cout << "predicted length: "<<numEntriesPerRow[StandardMap->LID(gid0+var)]; \
+                std::cout << "predicted length: "<<numEntriesPerRow[standardMap_->LID(gid0+var)]; \
                 std::cout <<", actual length: "<<pos<<std::endl;        \
                 for (int pp=0;pp<pos;pp++) std::cout << (indices)[pp]<<" ";     \
                 std::cout << std::endl;
@@ -2696,7 +2696,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
     if ((sres_ == 0) && useSRES)
     {
         int grid = rowintcon_;
-        if (StandardMap->MyGID(grid))
+        if (standardMap_->MyGID(grid))
         {
             int len = N*M*L;
             int *inds = new int[len];
@@ -3048,7 +3048,7 @@ Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()
     if (nullSpace==Teuchos::null)
     {
         nullSpace = Teuchos::rcp(new Epetra_MultiVector
-                                 (*StandardMap,2,true) );
+                                 (*standardMap_,2,true) );
 
         // the svp's are fairly easy to construct, they are
         // so-called 'checkerboard' modes' in the x-y planes.
