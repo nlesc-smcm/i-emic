@@ -276,7 +276,7 @@ public:
     Teuchos::RCP<Epetra_Vector> getRowScaling() {return rowScaling_;}
 
     //! get column scaling vector
-    Teuchos::RCP<Epetra_Vector> getColScaling() {return col_scaling;}
+    Teuchos::RCP<Epetra_Vector> getColScaling() {return colScaling_;}
 
     //! start a timer for a given part of the program
     void startTiming(std::string id);
@@ -455,7 +455,7 @@ private:
     std::string scalingType_;
 
     //! vectors storing the THCM scaling
-    Teuchos::RCP<Epetra_Vector> rowScaling_, col_scaling,localRowScaling_,local_col_scaling;
+    Teuchos::RCP<Epetra_Vector> rowScaling_, colScaling_,localRowScaling_,local_col_scaling;
 
     //! vectors storing the THCM scaling (4D case)
     Teuchos::RCP<EpetraExt::BlockVector> xyzt_row_scaling, xyzt_col_scaling;
