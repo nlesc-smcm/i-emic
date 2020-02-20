@@ -493,7 +493,7 @@ private:
     //!@}
 
     //! global grid dimensions
-    int n,m,l;
+    int n_,m,l;
 
     //! periodic domain in x-direction?
     bool periodic;

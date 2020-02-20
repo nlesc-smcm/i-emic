@@ -195,13 +195,13 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     std::string probdesc = paramList_.get<std::string>("Problem Description");
 
-    n = paramList_.get<int>("Global Grid-Size n");
+    n_ = paramList_.get<int>("Global Grid-Size n");
     m = paramList_.get<int>("Global Grid-Size m");
     l = paramList_.get<int>("Global Grid-Size l");
 
     std::stringstream ss;
     ss << "THCM (" << probdesc <<", "
-       << n << "x" << m << "x" << l <<")";
+       << n_ << "x" << m << "x" << l <<")";
     INFO(ss.str());
     this->SetLabel(ss.str().c_str());
 
@@ -307,7 +307,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int dof = _NUN_; // number of unknowns, defined in THCMdefs.H
 
     // construct an object to decompose the domain:
-    domain_ = Teuchos::rcp(new TRIOS::Domain(n, m, l, dof, xmin, xmax, ymin, ymax,
+    domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m, l, dof, xmin, xmax, ymin, ymax,
                                             periodic, hdim, qz, comm_));
 
     // perform a 2D decomposition of domain into rectangular boxes
@@ -344,7 +344,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     if (comm_->MyPID() == 0) // this one is responsible for I/O
     {
-        nglob_ = n;
+        nglob_ = n_;
         mglob_ = m;
         lglob_ = l;
     }
@@ -384,7 +384,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // read topography data and convert it to a global land mask
     DEBUG("Initialize land mask...");
 
-    int I0 = 0; int I1 = n+1;
+    int I0 = 0; int I1 = n_+1;
     int J0 = 0; int J1 = m+1;
     int K0 = 0; int K1 = l+1;
 
@@ -439,7 +439,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     int perio = (periodic && xComm->NumProc() == 1);
 
-    int nmlglob = n*m*l;
+    int nmlglob = n_*m*l;
 
     //--------------------------------------------------------------------------
     // read wind, temperature and salinity forcing and distribute it among
@@ -1284,7 +1284,7 @@ void THCM::evaluateB(void)
 std::shared_ptr<std::vector<int> > THCM::getLandMask()
 {
     // length of landmask array
-    int dim = (n+2)*(m+2)*(l+2);
+    int dim = (n_+2)*(m+2)*(l+2);
 
     // Create landmask array
     std::shared_ptr<std::vector<int> > landm =
@@ -1318,7 +1318,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 
     // Create gathered map for land mask
     // All indices are on root process
-    int I0 = 0; int I1 = n+1;
+    int I0 = 0; int I1 = n_+1;
     int J0 = 0; int J1 = m+1;
     int K0 = 0; int K1 = l+1;
 
@@ -1371,7 +1371,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
                 {
                     for (i = I0+1; i < I1; ++i)
                     {
-                        idx = k*(m+2)*(n+2) + j*(n+2) + i;
+                        idx = k*(m+2)*(n_+2) + j*(n_+2) + i;
 
                         // magic number 2 indicates too little
                         // contributions in the corresponding matrix
@@ -1802,10 +1802,10 @@ void THCM::RecomputeScaling(void)
 //=============================================================================
 void THCM::normalizePressure(Epetra_Vector& soln) const
 {
-    int i = n/2-1;
+    int i = n_/2-1;
     int j = 6*m/8-1;
     int k = l-1;
-    int ref_gid = FIND_ROW2(_NUN_,n,m,l,i,j,k,PP);
+    int ref_gid = FIND_ROW2(_NUN_,n_,m,l,i,j,k,PP);
     int ref_lid, ref_host;
     double ref_value;
     soln.Map().RemoteIDList(1, &ref_gid, &ref_host, &ref_lid);
@@ -2077,13 +2077,13 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 
     // add global boundary cells
     if (i0 == 1) i0-- ;
-    if (i1 == n) i1++;
+    if (i1 == n_) i1++;
     if (j0 == 1) j0-- ;
     if (j1 == m) j1++;
     if (k0 == 1) k0-- ;
     if (k1 == l) k1++;
 
-    int I0 = 0; int I1 = n+1;
+    int I0 = 0; int I1 = n_+1;
     int J0 = 0; int J1 = m+1;
     int K0 = 0; int K1 = l+1;
 
@@ -2099,7 +2099,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
     k0 = domain_->FirstK()+1;
     k1 = domain_->LastK()+1;
 
-    //add the boundary cells i=0,n+1 etc (this is independent of overlap)
+    //add the boundary cells i=0,n_+1 etc (this is independent of overlap)
     i0--; i1++; j0--; j1++; k0--; k1++;
 
     DEBUG("create landmap with overlap...");
@@ -2202,9 +2202,9 @@ void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
         int row, lid;
         for (int k = 0; k != l; ++k)
             for (int j = 0; j != m; ++j)
-                for (int i = 0; i != n; ++i)
+                for (int i = 0; i != n_; ++i)
                 {
-                    row = FIND_ROW2(_NUN_, n, m, l, i, j, k, SS);
+                    row = FIND_ROW2(_NUN_, n_, m, l, i, j, k, SS);
                     lid = vec->Map().LID(row);
                     if (lid >= 0)
                         (*vec)[lid] -= correction;
