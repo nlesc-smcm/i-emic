@@ -496,7 +496,7 @@ private:
     int n_,m_,l_;
 
     //! periodic domain in x-direction?
-    bool periodic;
+    bool periodic_;
 
     //! compute salinity integral
     bool comp_sal_int;

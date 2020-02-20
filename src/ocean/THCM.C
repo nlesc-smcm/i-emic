@@ -210,11 +210,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     double xmax = paramList_.get<double>("Global Bound xmax") * PI_ / 180.0;
     double ymin = paramList_.get<double>("Global Bound ymin") * PI_ / 180.0;
     double ymax = paramList_.get<double>("Global Bound ymax") * PI_ / 180.0;
-    periodic    = paramList_.get<bool>("Periodic");
+    periodic_   = paramList_.get<bool>("Periodic");
 
     // sanity check
     double xdist = pow(cos(xmax)-cos(xmin), 2) + pow(sin(xmax)-sin(xmin), 2);
-    if ((xdist < 1e-2) && (periodic == false))
+    if (xdist < 1e-2 && !periodic_)
     {
         WARNING("Periodic bdc disabled while \n"
                 << " horizontal boundaries coincide. Distance: "
@@ -308,7 +308,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // construct an object to decompose the domain:
     domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, l_, dof, xmin, xmax, ymin, ymax,
-                                            periodic, hdim, qz, comm_));
+                                            periodic_, hdim, qz, comm_));
 
     // perform a 2D decomposition of domain into rectangular boxes
     domain_->Decomp2D();
@@ -357,7 +357,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // for portability reasons we rather pass integers to fortran than bools
     // (this was an issue on Huygens)
     int irho_mixing = (rho_mixing) ? 1 : 0;
-    int iperiodic   = (periodic  ) ? 1 : 0;
+    int iperiodic   = (periodic_ ) ? 1 : 0;
     int iflat       = (flat      ) ? 1 : 0;
     int ird_mask    = (rd_mask   ) ? 1 : 0;
     int ird_spertm  = (rd_spertm ) ? 1 : 0;
@@ -437,7 +437,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // periodic problem on a single CPU in the x-direction:
     Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
 
-    int perio = (periodic && xComm->NumProc() == 1);
+    int perio = (periodic_ && xComm->NumProc() == 1);
 
     int nmlglob = n_*m_*l_;
 
@@ -1404,7 +1404,7 @@ void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask, bool init)
     // boundary conditions to .false. _unless_ we are running a
     // periodic problem on a single CPU in the x-direction:
     Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
-    int perio   = (periodic && xComm->NumProc() == 1);
+    int perio   = (periodic_ && xComm->NumProc() == 1);
 
     int *landm;
     CHECK_ZERO(landmask->ExtractView(&landm));
