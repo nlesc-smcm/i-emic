@@ -425,7 +425,7 @@ private:
     Teuchos::RCP<Epetra_Vector> localOceanE_;
 
     //! used to import emip field into THCM
-    Teuchos::RCP<Epetra_Vector> localEmip;
+    Teuchos::RCP<Epetra_Vector> localEmip_;
 
     //! a surface overlapping vector without meaning
     Teuchos::RCP<Epetra_Vector> localSurfTmp;

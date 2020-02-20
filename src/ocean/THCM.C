@@ -655,7 +655,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localSeaiceM_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceG_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localOceanE_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localEmip       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localEmip_      = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSurfTmp    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localTatm       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
@@ -1602,7 +1602,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
         Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     // Export assembly map surface emip
-    CHECK_ZERO(emip->Export(*localEmip, *as2std_surf_, Zero));
+    CHECK_ZERO(emip->Export(*localEmip_, *as2std_surf_, Zero));
 
     return emip;
 }
