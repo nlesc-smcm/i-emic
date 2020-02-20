@@ -416,7 +416,7 @@ private:
     Teuchos::RCP<Epetra_Vector> localSeaiceQ_;
 
     //! used to import sea ice mask into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceM;
+    Teuchos::RCP<Epetra_Vector> localSeaiceM_;
 
     //! used to import sea ice integral correction into THCM
     Teuchos::RCP<Epetra_Vector> localSeaiceG;
