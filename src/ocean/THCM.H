@@ -178,10 +178,10 @@ public:
     //!
     //! 0: standalone thcm
     //! 1: accepting external forcing
-    int coupledT_, coupled_S, coupled_M;
+    int coupledT_, coupledS_, coupled_M;
 
     int getCoupledT() { return coupledT_; }
-    int getCoupledS() { return coupled_S; }
+    int getCoupledS() { return coupledS_; }
 
     //! Set atmosphere temperature in the ocean model
     void setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT);

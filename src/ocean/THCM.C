@@ -76,7 +76,7 @@ extern "C" {
     //          ih,vmix_GLB,tap,rho_mixing,
     //          periodic,itopo,flat,rd_mask,
     //          TRES,SRES,iza,ite_,its_,rd_spertm
-    //          coupledT_, coupled_S, coriolis_on,
+    //          coupledT_, coupledS_, coriolis_on,
     //          forcing_type
     _MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
                                              double*,double*,double*,double*,double*,double*,
@@ -254,16 +254,16 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     its_               = paramList_.get<int>("Levitus S");
     internal_forcing_  = paramList_.get<bool>("Levitus Internal T/S");
     coupledT_         = paramList_.get<int>("Coupled Temperature");
-    coupled_S          = paramList_.get<int>("Coupled Salinity");
+    coupledS_         = paramList_.get<int>("Coupled Salinity");
     coupled_M          = paramList_.get<int>("Coupled Sea Ice Mask");
     fixPressurePoints_ = paramList_.get<bool>("Fix Pressure Points");
     int coriolis_on    = paramList_.get<int>("Coriolis Force");
     int forcing_type   = paramList_.get<int>("Forcing Type");
 
     //------------------------------------------------------------------
-    if ((coupled_S == 1) && (sres_ == 1))
+    if ((coupledS_ == 1) && (sres_ == 1))
     {
-        WARNING("Incompatible parameters: coupled_S = " << coupled_S
+        WARNING("Incompatible parameters: coupledS_ = " << coupledS_
                 << " SRES = "
                 << sres_ << " setting SRES = 0", __FILE__, __LINE__);
         sres_ = 0;
@@ -373,7 +373,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &ih, &vmixGLB_, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
-                                  &coupledT_, &coupled_S, &coriolis_on,
+                                  &coupledT_, &coupledS_, &coriolis_on,
                                   &forcing_type);
 
     INFO("THCM init: m_global::initialize... done");
