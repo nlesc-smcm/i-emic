@@ -115,7 +115,7 @@ extern "C" {
     // CRS matrix allocation (module m_mat)
     _MODULE_SUBROUTINE_(m_mat,get_array_sizes)(int* nrows, int* nnz);
     _MODULE_SUBROUTINE_(m_mat,set_pointers)(int* nrows, int* nnz,
-                                            int* begA,int* jcoA,double* coA,
+                                            int* begA_,int* jcoA,double* coA,
                                             double* coB,
                                             int* begF,int* jcoF,double* coF);
 
@@ -667,7 +667,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     INFO("Allocating Fortran CSR arrays, nrows=" << nrows << ", nnz=" << nnz);
 
     // allocate the memory
-    begA = new int[nrows+1];
+    begA_ = new int[nrows+1];
     coA  = new double[nnz];
     jcoA = new int[nnz];
 
@@ -680,7 +680,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // give THCM the opportunity to set its pointers to
     // the new memory block
     DEBVAR("call set_pointers...");
-    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA,jcoA,coA,coB,begF,jcoF,coF);
+    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA_,jcoA,coA,coB,begF,jcoF,coF);
 
     // Initialize integral condition row, correction and coefficients
     rowintcon_     = -1;
@@ -849,7 +849,7 @@ THCM::~THCM()
 
     delete [] jcoA;
     delete [] coA;
-    delete [] begA;
+    delete [] begA_;
 
     delete [] coB;
 
@@ -1121,8 +1121,8 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             if (!domain_->IsGhost(i, _NUN_) &&
                 ( ( assemblyMap_->GID(i) != rowintcon_ ) || maskTest ) )
             {
-                index = begA[i]; // note that these arrays use 1-based indexing
-                numentries = begA[i+1] - index;
+                index = begA_[i]; // note that these arrays use 1-based indexing
+                numentries = begA_[i+1] - index;
                 for (int j = 0; j <  numentries ; j++)
                 {
                     indices[j] = assemblyMap_->GID(jcoA[index-1+j] - 1);

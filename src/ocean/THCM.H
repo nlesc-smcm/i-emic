@@ -477,7 +477,7 @@ private:
     */
     //!@{
     //! row pointer
-    int* begA;
+    int* begA_;
     //! column indices
     int* jcoA;
     //! values
