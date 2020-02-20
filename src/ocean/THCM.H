@@ -527,7 +527,7 @@ private:
     double totalVolume_;
 
     //! pressure points where equation is replaced by P=0 (-1 means none)
-    int rowPfix1_, rowPfix2;
+    int rowPfix1_, rowPfix2_;
 
     //! asks THCM to recompute scaling vectors
     void RecomputeScaling(void);

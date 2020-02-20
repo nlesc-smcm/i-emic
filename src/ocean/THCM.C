@@ -794,12 +794,12 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     if (fixPressurePoints_)
     {
         rowPfix1_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
-        rowPfix2 = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
+        rowPfix2_ = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
     }
     else
     {
         rowPfix1_ = -1;
-        rowPfix2 = -1;
+        rowPfix2_ = -1;
     }
 
     // build vector with integral coefficients
@@ -1057,11 +1057,11 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 (*tmp_rhs)[tmp_rhs->Map().LID(rowPfix1_)]=0.0;
             }
         }
-        if (rowPfix2>=0)
+        if (rowPfix2_>=0)
         {
-            if (tmp_rhs->Map().MyGID(rowPfix2))
+            if (tmp_rhs->Map().MyGID(rowPfix2_))
             {
-                (*tmp_rhs)[tmp_rhs->Map().LID(rowPfix2)]=0.0;
+                (*tmp_rhs)[tmp_rhs->Map().LID(rowPfix2_)]=0.0;
             }
         }
     }
@@ -1246,7 +1246,7 @@ void THCM::evaluateB(void)
     if (fixPressurePoints_)
     {
         for (int i=1;i<=2;i++) {
-            int row = (i==1)? rowPfix1_: rowPfix2;
+            int row = (i==1)? rowPfix1_: rowPfix2_;
             if (localDiagB_->Map().MyGID(row))
             {
                 int lid = localDiagB_->Map().LID(row);
@@ -2372,7 +2372,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
 {
     for (int i=1;i<=2;i++) {
-        int row = (i==1)? rowPfix1_: rowPfix2;
+        int row = (i==1)? rowPfix1_: rowPfix2_;
         if (A.MyGRID(row))
         {
             int lidB = B.Map().LID(row);
