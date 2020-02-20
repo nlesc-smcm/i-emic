@@ -521,7 +521,7 @@ private:
     double scorr_;
 
     //! vector with coefficients for integral condition (if sres_=0)
-    Teuchos::RCP<Epetra_Vector> intcond_coeff;
+    Teuchos::RCP<Epetra_Vector> intcondCoeff_;
 
     //! sum of integration coefficients (total volume)
     double totalVolume_;

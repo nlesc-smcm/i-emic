@@ -744,7 +744,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
 
     // Initialize integral coefficients
-    intcond_coeff = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+    intcondCoeff_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
 
     // Obtain integral coefficients
     getIntCondCoeff();
@@ -987,7 +987,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
     if (compSalInt_)
     {
         double intcond;
-        CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
+        CHECK_ZERO(intcondCoeff_->Dot(soln,&intcond));
         intcond -= intCorrection_; // apply correction
 
         // INFO("Salinity integral condition: " << intcond);
@@ -1040,7 +1040,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         {
             double intcond;
             //TODO: check which is better:
-            CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
+            CHECK_ZERO(intcondCoeff_->Dot(soln,&intcond));
             //std::cout << " dot product: "<<intcond << std::endl;
             //intcond = 0.0;
             if (tmp_rhs->Map().MyGID(rowintcon_))
@@ -2143,7 +2143,7 @@ void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
     else
     {
         // compute salinity integral, put it in correction
-        CHECK_ZERO(intcond_coeff->Dot(*vec, &intCorrection_));
+        CHECK_ZERO(intcondCoeff_->Dot(*vec, &intCorrection_));
 
         if (std::abs(intCorrection_) > 1e-8)
         {
@@ -2169,7 +2169,7 @@ void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
     {
         // compute salinity integral
         double integral;
-        CHECK_ZERO(intcond_coeff->Dot(*vec, &integral));
+        CHECK_ZERO(intcondCoeff_->Dot(*vec, &integral));
 
         if (std::abs(integral) > 1e-8)
         {
@@ -2198,7 +2198,7 @@ void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
                         (*vec)[lid] -= correction;
                 }
 #ifdef DEBUGGING_NEW
-        CHECK_ZERO(intcond_coeff->Dot(*vec, &integral));
+        CHECK_ZERO(intcondCoeff_->Dot(*vec, &integral));
         assert(std::abs(integral) < 1e-8);
         INFO("   integral     = " << integral);
         INFO("         V      = " << totalVolume_);
@@ -2298,7 +2298,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
     int root = comm_->NumProc()-1;
 
     Teuchos::RCP<Epetra_MultiVector> intcond_glob =
-        Utils::Gather(*intcond_coeff, root);
+        Utils::Gather(*intcondCoeff_, root);
 
     if (A.MyGRID(rowintcon_))
     {
@@ -2719,7 +2719,7 @@ double THCM::getSCorr()
 //=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getIntCondCoeff()
 {
-    intcond_coeff->PutScalar(0.0);
+    intcondCoeff_->PutScalar(0.0);
     Teuchos::RCP<Epetra_Vector> intcond_tmp =
         Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
@@ -2738,13 +2738,13 @@ Teuchos::RCP<Epetra_Vector> THCM::getIntCondCoeff()
     delete [] values;
     delete [] indices;
 
-    domain_->Assembly2Solve(*intcond_tmp,*intcond_coeff);
+    domain_->Assembly2Solve(*intcond_tmp,*intcondCoeff_);
 
-    intcond_coeff->Norm1(&totalVolume_);
+    intcondCoeff_->Norm1(&totalVolume_);
 
     INFO("  total volume: " << totalVolume_);
 
-    return intcond_coeff;
+    return intcondCoeff_;
 }
 
 //=============================================================================
