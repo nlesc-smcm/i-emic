@@ -247,7 +247,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     alphaT             = paramList.get<double>("Linear EOS: alpha T");
     alphaS             = paramList.get<double>("Linear EOS: alpha S");
     tres               = paramList.get<int>("Restoring Temperature Profile");
-    sres               = paramList.get<int>("Restoring Salinity Profile");
+    sres_              = paramList.get<int>("Restoring Salinity Profile");
     localSres_         = paramList.get<bool>("Local SRES Only");
     intSign_           = paramList.get<int>("Salinity Integral Sign");
     ite_               = paramList.get<int>("Levitus T");
@@ -261,12 +261,12 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int forcing_type   = paramList.get<int>("Forcing Type");
 
     //------------------------------------------------------------------
-    if ((coupled_S == 1) && (sres == 1))
+    if ((coupled_S == 1) && (sres_ == 1))
     {
         WARNING("Incompatible parameters: coupled_S = " << coupled_S
-                << " sres = "
-                << sres << " setting sres = 0", __FILE__, __LINE__);
-        sres = 0;
+                << " SRES = "
+                << sres_ << " setting SRES = 0", __FILE__, __LINE__);
+        sres_ = 0;
     }
 
     bool rd_spertm = paramList.get<bool>("Read Salinity Perturbation Mask");
@@ -371,14 +371,14 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &alphaT, &alphaS,
                                   &ih, &vmix_GLB, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
-                                  &tres, &sres, &iza, &ite_, &its_, &ird_spertm,
+                                  &tres, &sres_, &iza, &ite_, &its_, &ird_spertm,
                                   &coupled_T, &coupled_S, &coriolis_on,
                                   &forcing_type);
 
     INFO("THCM init: m_global::initialize... done");
 
     if (localSres_) // from here on we ignore the integral condition
-        sres = 1;
+        sres_ = 1;
 
     // read topography data and convert it to a global land mask
     DEBUG("Initialize land mask...");
@@ -705,7 +705,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int midx;     // mask index
     int mval = 1; // mask value
     int tmp  = 0;
-    if (sres == 0)
+    if (sres_ == 0)
     {
         if (comm->MyPID() == 0)
         {
@@ -894,7 +894,7 @@ bool THCM::computeForcing()
     for (int i = 0; i < imax; i++)
     {
 #ifndef NO_INTCOND
-        if (sres == 0 && AssemblyMap->GID(i) == rowintcon_)
+        if (sres_ == 0 && AssemblyMap->GID(i) == rowintcon_)
             continue;
 #endif
         if (domain_->IsGhost(i, _NUN_))
@@ -1044,7 +1044,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         CHECK_ZERO(tmp_rhs->Scale(-1.0));
 
 #ifndef NO_INTCOND
-        if ((sres == 0) && !maskTest)
+        if ((sres_ == 0) && !maskTest)
         {
             double intcond;
             //TODO: check which is better:
@@ -1105,7 +1105,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         // Restore from the testing config
         if (maskTest)
-            FNAME(setsres)(&sres);
+            FNAME(setsres)(&sres_);
 
         TIMER_STOP("Ocean: compute jacobian: fortran part");
 
@@ -1201,7 +1201,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         } //i-loop over rows
 
 #ifndef NO_INTCOND
-        if ((sres == 0) && !maskTest)
+        if ((sres_ == 0) && !maskTest)
         {
             this->intcond_S(*tmpJac,*localDiagB);
         }
@@ -1269,7 +1269,7 @@ void THCM::evaluateB(void)
     }
 
 #ifndef NO_INTCOND
-    if (sres == 0)
+    if (sres_ == 0)
     {
         if (localDiagB->Map().MyGID(rowintcon_))
         {
@@ -2164,7 +2164,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 //=============================================================================
 void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
 {
-    if (sres != 0)
+    if (sres_ != 0)
     {
         WARNING("This should not be called when SRES!=0",
                 __FILE__, __LINE__);
@@ -2189,7 +2189,7 @@ void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
 // condition.
 void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
 {
-    if (sres != 0)
+    if (sres_ != 0)
     {
         WARNING("This should not be called when SRES!=0",
                 __FILE__, __LINE__);
@@ -2472,7 +2472,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
         = Teuchos::rcp(new Epetra_CrsGraph(Copy,*StandardMap,numEntriesPerRow,false));
 
     DEBVAR(rowintcon_);
-    DEBVAR(sres);
+    DEBVAR(sres_);
 
     int indices[24];
     int N = domain_->GlobalN();
@@ -2682,7 +2682,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
                 insert_graph_entry(indices,pos,i,j,k-1,TT,N,M,L);
                 insert_graph_entry(indices,pos,i,j,k+1,TT,N,M,L);
 #ifndef NO_INTCOND
-                if ( (sres == 0) &&
+                if ( (sres_ == 0) &&
                      ( (gid0+SS) == rowintcon_ ) &&
                      useSRES)
                     continue;
@@ -2692,7 +2692,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
             }
 
 #ifndef NO_INTCOND
-    if ((sres == 0) && useSRES)
+    if ((sres_ == 0) && useSRES)
     {
         int grid = rowintcon_;
         if (StandardMap->MyGID(grid))

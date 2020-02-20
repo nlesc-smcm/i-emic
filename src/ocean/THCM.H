@@ -310,7 +310,7 @@ public:
     Teuchos::RCP<Epetra_Comm> GetComm(){return Comm;}
 
     //! get the SRES parameter (non-restoring salt condition)
-    bool getSRES() const {return sres;}
+    bool getSRES() const {return sres_;}
 
     //! get the TRES parameter (non-restoring temp condition)
     bool getTRES() const {return tres;}
@@ -333,7 +333,7 @@ public:
     //! wind forcing method (0: data (trenberth), 1: zonally averaged, 2: idealized)
     int iza;
 
-    //! get the global index of the row with the integral condition (if sres==0)
+    //! get the global index of the row with the integral condition (if sres_==0)
     int getRowIntCon() const {return rowintcon_;}
 
     Teuchos::RCP<Epetra_Vector> getIntCondCoeff();
@@ -551,10 +551,10 @@ private:
     //! factors sigma for the Jacobian A+sigma*B
     double sigmaUVTS,sigmaWP;
 
-    //! sres=0: non-restoring salt forcing => integral condition in A and f
-    int sres;
+    //! sres_=0: non-restoring salt forcing => integral condition in A and f
+    int sres_;
 
-    //! While sres = 0 (flux forcing in the local model), do not
+    //! While sres_ = 0 (flux forcing in the local model), do not
     //! create integral condition.
     bool localSres_;
 
@@ -574,7 +574,7 @@ private:
     //! correction for the salinity flux
     double scorr_;
 
-    //! vector with coefficients for integral condition (if sres=0)
+    //! vector with coefficients for integral condition (if sres_=0)
     Teuchos::RCP<Epetra_Vector> intcond_coeff;
 
     //! sum of integration coefficients (total volume)
