@@ -487,7 +487,7 @@ private:
     //! row pointer
     int* begF_;
     //! column indices
-    int* jcoF;
+    int* jcoF_;
     //! values
     double* coF;
     //!@}
