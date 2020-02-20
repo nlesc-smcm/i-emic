@@ -319,13 +319,13 @@ public:
     bool getITS() const {return its;}
 
     //! get the ite parameter (non-restoring temp condition)
-    bool getITE() const {return ite;}
+    bool getITE() const {return ite_;}
 
     //! get the salinity flux correction
     double getSCorr();
 
-    //! ite/its=0 T/S forcing from data (Levitus)
-    int ite,its;
+    //! ite_/its=0 T/S forcing from data (Levitus)
+    int ite_,its;
 
     //! use internal temperature and salinity forcing
     bool internal_forcing;
