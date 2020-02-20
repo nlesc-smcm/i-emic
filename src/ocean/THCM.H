@@ -377,7 +377,7 @@ private:
     //!@{
     //! overlapping map for 'THCM objects':
     Teuchos::RCP<Epetra_Map> assemblyMap_;
-    Teuchos::RCP<Epetra_Map> AssemblySurfaceMap;
+    Teuchos::RCP<Epetra_Map> assemblySurfaceMap_;
     Teuchos::RCP<Epetra_Map> AssemblyVolumeMap;
 
     //! Surface assembly to standardmap importer
