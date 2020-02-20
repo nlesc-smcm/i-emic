@@ -419,7 +419,7 @@ private:
     Teuchos::RCP<Epetra_Vector> localSeaiceM_;
 
     //! used to import sea ice integral correction into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceG;
+    Teuchos::RCP<Epetra_Vector> localSeaiceG_;
 
     //! used to extract evaporation field from THCM
     Teuchos::RCP<Epetra_Vector> localOceanE;
