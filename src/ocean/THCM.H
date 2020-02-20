@@ -457,9 +457,6 @@ private:
     //! vectors storing the THCM scaling
     Teuchos::RCP<Epetra_Vector> rowScaling_, colScaling_,localRowScaling_,localColScaling_;
 
-    //! vectors storing the THCM scaling (4D case)
-    Teuchos::RCP<EpetraExt::BlockVector> xyzt_row_scaling, xyzt_col_scaling;
-
     //! additional row scaling for T and S (for scaling type THCM/TS)
     Teuchos::RCP<Epetra_Vector> row_scaling_TS;
 
