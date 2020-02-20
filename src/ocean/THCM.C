@@ -1797,23 +1797,6 @@ void THCM::RecomputeScaling(void)
 
     delete [] rowscal;
     delete [] colscal;
-
-    // (2) diagonal row scaling for T and S (obsolete!)
-    if (row_scaling_TS!=Teuchos::null)
-    {
-        CHECK_ZERO(jac_->ExtractDiagonalCopy(*row_scaling_TS));
-        for (int i=0;i<row_scaling_TS->MyLength();i+=_NUN_)
-        {
-            for (int j=i;j<i+4;j++)
-            {
-                (*row_scaling_TS)[j] = 1.0; //u,v,w,p
-            }
-            for (int j=i+4;j<i+6;j++)
-            {
-                (*row_scaling_TS)[j] = 1.0/(*row_scaling_TS)[j]; //T,S
-            }
-        }
-    }// additional T/S scaling (obsolete)
 }
 
 //=============================================================================
