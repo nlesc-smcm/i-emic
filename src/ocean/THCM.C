@@ -650,7 +650,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localAtmosT_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosQ_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosA_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localAtmosP     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosP_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceQ    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceM    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceG    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -1471,10 +1471,10 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
     CHECK_MAP(atmosP, standardSurfaceMap_);
 
     // Import atmosP into local atmosP
-    CHECK_ZERO(localAtmosP->Import(*atmosP, *as2std_surf_, Insert));
+    CHECK_ZERO(localAtmosP_->Import(*atmosP, *as2std_surf_, Insert));
 
     double *tmpAtmosP;
-    localAtmosP->ExtractView(&tmpAtmosP);
+    localAtmosP_->ExtractView(&tmpAtmosP);
 
     F90NAME(m_inserts, insert_atmosphere_p)( tmpAtmosP );
 }
@@ -1690,7 +1690,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosT()
 Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosQ()
 {
     double *tmpAtmosQ;
-    localAtmosP->ExtractView(&tmpAtmosQ);
+    localAtmosP_->ExtractView(&tmpAtmosQ);
     F90NAME(m_probe, get_atmosphere_q )( tmpAtmosQ );
     return localAtmosQ_;
 }
@@ -1710,9 +1710,9 @@ Teuchos::RCP<Epetra_Vector> THCM::getAtmosQ()
 Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosP()
 {
     double *tmpAtmosP;
-    localAtmosP->ExtractView(&tmpAtmosP);
+    localAtmosP_->ExtractView(&tmpAtmosP);
     F90NAME(m_probe, get_atmosphere_p )( tmpAtmosP );
-    return localAtmosP;
+    return localAtmosP_;
 }
 
 //============================================================================
