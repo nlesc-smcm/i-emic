@@ -391,7 +391,7 @@ private:
 
     //! non-overlapping load-balanced map for Trilinos objects
     //! (may contain non-rectangular subdomains)
-    Teuchos::RCP<Epetra_Map> SolveMap;
+    Teuchos::RCP<Epetra_Map> solveMap_;
     //!@}
 
     //! used only to define vector format (i.e. map), I think
@@ -601,7 +601,7 @@ private:
     //! setup load-balancing (optionally reads weights or creates them
     //! using thcm_utils, which only looks at land mask at this stage)
     //! This alters the behaviour of the TRIOS::Domain class, which will
-    //! provide a different SolveMap after the call.
+    //! provide a different solveMap_ after the call.
     void SetupLoadBalancing();
 };
 

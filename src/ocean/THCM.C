@@ -637,11 +637,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // get a map object for constructing vectors without overlap
     // (load-balanced, used for solve phase)
-    SolveMap = domain_->GetSolveMap();
+    solveMap_ = domain_->GetSolveMap();
 
     // Create internal vectors
-    initialSolution = Teuchos::rcp(new Epetra_Vector(*SolveMap));
-    diagB           = Teuchos::rcp(new Epetra_Vector(*SolveMap));
+    initialSolution = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+    diagB           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     localDiagB      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     localRhs        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -744,7 +744,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
 
     // Initialize integral coefficients
-    intcond_coeff = Teuchos::rcp(new Epetra_Vector(*SolveMap));
+    intcond_coeff = Teuchos::rcp(new Epetra_Vector(*solveMap_));
 
     // Obtain integral coefficients
     getIntCondCoeff();
@@ -759,10 +759,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localMatrixGraph = this->CreateMaximalGraph();
     testMatrixGraph  = this->CreateMaximalGraph(false);
 
-    if (SolveMap!=standardMap_)
+    if (solveMap_!=standardMap_)
     {
-        MatrixGraph = Teuchos::rcp(new Epetra_CrsGraph(Copy,*SolveMap,20));
-        Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*standardMap_,*SolveMap));
+        MatrixGraph = Teuchos::rcp(new Epetra_CrsGraph(Copy,*solveMap_,20));
+        Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*standardMap_,*solveMap_));
         DEBUG("Migrate graph to solve map...");
         CHECK_ZERO(MatrixGraph->Export(*localMatrixGraph,*import,Insert));
         CHECK_ZERO(MatrixGraph->FillComplete());
@@ -782,7 +782,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     localFrc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *standardMap_, 1));
     localFrc->SetLabel("Local Forcing");
-    Frc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *SolveMap, 1));
+    Frc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *solveMap_, 1));
     Frc->SetLabel("Forcing");
 
     // we do not allow these to be modified, use the OceanModel interface
@@ -820,9 +820,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     {
         // construct the scaling object. The scaling is computed by THCM (m_scaling)
         // and passed on to Trilinos:
-        row_scaling = Teuchos::rcp(new Epetra_Vector(*SolveMap));
+        row_scaling = Teuchos::rcp(new Epetra_Vector(*solveMap_));
         row_scaling->SetLabel("Row Scaling");
-        col_scaling = Teuchos::rcp(new Epetra_Vector(*SolveMap));
+        col_scaling = Teuchos::rcp(new Epetra_Vector(*solveMap_));
         col_scaling->SetLabel("Col Scaling");
         local_row_scaling = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
         local_col_scaling = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
@@ -973,10 +973,10 @@ bool THCM::computeForcing()
                       &MyElements[0], 0, *Comm);
     CHECK_ZERO(localFrc->FillComplete(colMap, *standardMap_));
 
-    // redistribute according to SolveMap (may be load-balanced)
+    // redistribute according to solveMap_ (may be load-balanced)
     // standard and solve maps are equal
     domain_->Standard2Solve(*localFrc, *Frc);     // no effect
-    CHECK_ZERO(Frc->FillComplete(colMap, *SolveMap));
+    CHECK_ZERO(Frc->FillComplete(colMap, *solveMap_));
 
     return true;
 }
@@ -1003,7 +1003,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
     }
 
-    if (!(soln.Map().SameAs(*SolveMap)))
+    if (!(soln.Map().SameAs(*solveMap_)))
     {
         ERROR("Map of solution vector not same as solve-map ",__FILE__,__LINE__);
     }
@@ -1213,7 +1213,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         CHECK_ZERO(tmpJac->FillComplete());
 
-        // redistribute according to SolveMap (may be load-balanced)
+        // redistribute according to solveMap_ (may be load-balanced)
         // standard and solve maps are equal
         domain_->Standard2Solve(*localDiagB, *diagB); // no effect
         domain_->Standard2Solve(*tmpJac, *Jac);     // no effect
