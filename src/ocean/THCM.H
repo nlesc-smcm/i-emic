@@ -437,7 +437,7 @@ private:
     Teuchos::RCP<Epetra_Vector> localRhs_;
 
     //! the diagonal matrix B stored as a vector
-    Teuchos::RCP<Epetra_Vector> localDiagB, diagB;
+    Teuchos::RCP<Epetra_Vector> localDiagB_, diagB;
 
     //! Jacobian in globally assembled and load-balanced
     Teuchos::RCP<Epetra_CrsMatrix> Jac;

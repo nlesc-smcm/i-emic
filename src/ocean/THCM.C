@@ -642,7 +642,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // Create internal vectors
     initialSolution_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     diagB           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
-    localDiagB      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+    localDiagB_     = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     localRhs_       = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_       = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
@@ -1084,7 +1084,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             tmpJac = localJac;
 
         tmpJac->PutScalar(0.0); // set all matrix entries to zero
-        localDiagB->PutScalar(0.0);
+        localDiagB_->PutScalar(0.0);
 
         if (sigmaUVTS || sigmaWP) {
             ERROR("We do not allow THCM to shift the matrix anymore!",
@@ -1197,25 +1197,25 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 int lid = standardMap_->LID(assemblyMap_->GID(i));
                 double mass_param = 1.0;
                 this->getParameter("Mass", mass_param);
-                (*localDiagB)[lid] = coB[i] * mass_param;
+                (*localDiagB_)[lid] = coB[i] * mass_param;
             } //not a ghost?
         } //i-loop over rows
 
 #ifndef NO_INTCOND
         if ((sres_ == 0) && !maskTest)
         {
-            this->intcond_S(*tmpJac,*localDiagB);
+            this->intcond_S(*tmpJac,*localDiagB_);
         }
 #endif
 
         if (fixPressurePoints_)
-            this->fixPressurePoints(*tmpJac,*localDiagB);
+            this->fixPressurePoints(*tmpJac,*localDiagB_);
 
         CHECK_ZERO(tmpJac->FillComplete());
 
         // redistribute according to solveMap_ (may be load-balanced)
         // standard and solve maps are equal
-        domain_->Standard2Solve(*localDiagB, *diagB); // no effect
+        domain_->Standard2Solve(*localDiagB_, *diagB); // no effect
         domain_->Standard2Solve(*tmpJac, *Jac);     // no effect
         CHECK_ZERO(Jac->FillComplete());
 
@@ -1245,7 +1245,7 @@ void THCM::evaluateB(void)
 
     DEBUG("Construct matrix B...");
 
-    localDiagB->PutScalar(0.0);
+    localDiagB_->PutScalar(0.0);
     FNAME(fillcolb)();
     for (int i = 0; i < NumMyElements; i++)
     {
@@ -1253,7 +1253,7 @@ void THCM::evaluateB(void)
         {
             // reconstruct the diagonal matrix B
             int lid = standardMap_->LID(assemblyMap_->GID(i));
-            (*localDiagB)[lid] = coB[i];
+            (*localDiagB_)[lid] = coB[i];
         } // not a ghost?
     } // i-loop over rows
 
@@ -1261,10 +1261,10 @@ void THCM::evaluateB(void)
     {
         for (int i=1;i<=2;i++) {
             int row = (i==1)? rowPfix1: rowPfix2;
-            if (localDiagB->Map().MyGID(row))
+            if (localDiagB_->Map().MyGID(row))
             {
-                int lid = localDiagB->Map().LID(row);
-                (*localDiagB)[lid] = 0.0; // no more time-dependence for this P-point
+                int lid = localDiagB_->Map().LID(row);
+                (*localDiagB_)[lid] = 0.0; // no more time-dependence for this P-point
             }
         }
     }
@@ -1272,13 +1272,13 @@ void THCM::evaluateB(void)
 #ifndef NO_INTCOND
     if (sres_ == 0)
     {
-        if (localDiagB->Map().MyGID(rowintcon_))
+        if (localDiagB_->Map().MyGID(rowintcon_))
         {
-            (*localDiagB)[localDiagB->Map().LID(rowintcon_)]=0.0;
+            (*localDiagB_)[localDiagB_->Map().LID(rowintcon_)]=0.0;
         }
     }
 #endif
-    domain_->Standard2Solve(*localDiagB,*diagB);
+    domain_->Standard2Solve(*localDiagB_,*diagB);
 }
 
 //==================================================================
