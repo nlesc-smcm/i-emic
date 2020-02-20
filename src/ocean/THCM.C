@@ -818,14 +818,14 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     {
         // construct the scaling object. The scaling is computed by THCM (m_scaling)
         // and passed on to Trilinos:
-        row_scaling = Teuchos::rcp(new Epetra_Vector(*solveMap_));
-        row_scaling->SetLabel("Row Scaling");
+        rowScaling_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+        rowScaling_->SetLabel("Row Scaling");
         col_scaling = Teuchos::rcp(new Epetra_Vector(*solveMap_));
         col_scaling->SetLabel("Col Scaling");
         local_row_scaling = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
         local_col_scaling = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
 
-        row_scaling->PutScalar(1.0);
+        rowScaling_->PutScalar(1.0);
         col_scaling->PutScalar(1.0);
     }
 
@@ -1223,8 +1223,8 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             this->RecomputeScaling();
 
 #if 0
-            std::ofstream ofs1("row_scaling.txt");
-            ofs1 << *row_scaling;
+            std::ofstream ofs1("rowScaling_.txt");
+            ofs1 << *rowScaling_;
             ofs1.close();
             std::ofstream ofs2("col_scaling.txt");
             ofs2 << *col_scaling;
@@ -1779,17 +1779,17 @@ void THCM::RecomputeScaling(void)
     }
 
     // kick out the ghost nodes:
-    domain_->Assembly2Solve(*local_row_scaling,*row_scaling);
+    domain_->Assembly2Solve(*local_row_scaling,*rowScaling_);
     domain_->Assembly2Solve(*local_col_scaling,*col_scaling);
 
     // make sure T and S are scaled the same way in each cell
     // we need this because of our special block scaling for the
     // ATS matrix in the preconditioner.
-    for (int i = TT-1; i < row_scaling->MyLength(); i += _NUN_)
+    for (int i = TT-1; i < rowScaling_->MyLength(); i += _NUN_)
     {
-        double mean = 0.5*((*row_scaling)[i]+(*row_scaling)[i+1]);
-        (*row_scaling)[i] = mean;
-        (*row_scaling)[i+1] = mean;
+        double mean = 0.5*((*rowScaling_)[i]+(*rowScaling_)[i+1]);
+        (*rowScaling_)[i] = mean;
+        (*rowScaling_)[i+1] = mean;
         mean = 0.5*((*col_scaling)[i]+(*col_scaling)[i+1]);
         (*col_scaling)[i] = mean;
         (*col_scaling)[i+1] = mean;

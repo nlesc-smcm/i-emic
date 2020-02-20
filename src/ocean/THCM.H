@@ -273,7 +273,7 @@ public:
     Teuchos::RCP<const Epetra_MultiVector> getNullSpace();
 
     //! get row scaling vector
-    Teuchos::RCP<Epetra_Vector> getRowScaling() {return row_scaling;}
+    Teuchos::RCP<Epetra_Vector> getRowScaling() {return rowScaling_;}
 
     //! get column scaling vector
     Teuchos::RCP<Epetra_Vector> getColScaling() {return col_scaling;}
@@ -455,7 +455,7 @@ private:
     std::string scalingType_;
 
     //! vectors storing the THCM scaling
-    Teuchos::RCP<Epetra_Vector> row_scaling, col_scaling,local_row_scaling,local_col_scaling;
+    Teuchos::RCP<Epetra_Vector> rowScaling_, col_scaling,local_row_scaling,local_col_scaling;
 
     //! vectors storing the THCM scaling (4D case)
     Teuchos::RCP<EpetraExt::BlockVector> xyzt_row_scaling, xyzt_col_scaling;
