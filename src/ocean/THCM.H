@@ -341,11 +341,6 @@ public:
     //! set if you have vmix_flag=1 in mix_imp.f (recommended).
     void fixMixing(int value);
 
-    //! \name these are used by the block preconditioner:
-    //!@
-    inline double rhoMixing() const {return rho_mixing;}
-    //@}
-
     //! convert parameter name to integer (i.e. "Combined Forcing" => 19)
     int par2int(std::string const &label);
 
@@ -501,9 +496,6 @@ private:
 
     //! mixing?
     int vmixGLB_;
-
-    //! use fred's formulation of conv. adjustment
-    bool rho_mixing;
 
     //! factors sigma for the Jacobian A+sigma*B
     double sigmaUVTS,sigmaWP;
