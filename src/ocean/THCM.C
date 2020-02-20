@@ -255,7 +255,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     internal_forcing_  = paramList_.get<bool>("Levitus Internal T/S");
     coupledT_         = paramList_.get<int>("Coupled Temperature");
     coupledS_         = paramList_.get<int>("Coupled Salinity");
-    coupled_M          = paramList_.get<int>("Coupled Sea Ice Mask");
+    coupledM_         = paramList_.get<int>("Coupled Sea Ice Mask");
     fixPressurePoints_ = paramList_.get<bool>("Fix Pressure Points");
     int coriolis_on    = paramList_.get<int>("Coriolis Force");
     int forcing_type   = paramList_.get<int>("Forcing Type");
@@ -1482,7 +1482,7 @@ void THCM::setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM)
     CHECK_ZERO(localSeaiceM_->Import(*seaiceM, *as2std_surf_ ,Insert));
     double *M;
 
-    if (!coupled_M)
+    if (!coupledM_)
         localSeaiceM_->PutScalar(0.0); // disable coupling with mask
 
     localSeaiceM_->ExtractView(&M);
