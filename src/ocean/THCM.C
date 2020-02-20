@@ -656,7 +656,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localSeaiceG_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localOceanE_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localEmip_      = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localSurfTmp    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSurfTmp_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localTatm       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
     // allocate mem for the CSR matrix in THCM.
@@ -1546,10 +1546,10 @@ void THCM::setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode)
 
     // Standard2Assembly
     // Import atmosP into local atmosP
-    CHECK_ZERO(localSurfTmp->Import(*emip, *as2std_surf_, Insert));
+    CHECK_ZERO(localSurfTmp_->Import(*emip, *as2std_surf_, Insert));
 
     double *tmpEmip;
-    localSurfTmp->ExtractView(&tmpEmip);
+    localSurfTmp_->ExtractView(&tmpEmip);
 
     if (mode == 'A')
     {
@@ -1582,7 +1582,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getSunO()
 Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
 {
     double* tmpEmip;
-    localSurfTmp->ExtractView(&tmpEmip);
+    localSurfTmp_->ExtractView(&tmpEmip);
 
     if (mode == 'A')
     {
