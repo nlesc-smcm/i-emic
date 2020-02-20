@@ -387,7 +387,7 @@ private:
     //! non-overlapping map for Trilinos objects:
     Teuchos::RCP<Epetra_Map> standardMap_;
     Teuchos::RCP<Epetra_Map> standardSurfaceMap_;
-    Teuchos::RCP<Epetra_Map> StandardVolumeMap;
+    Teuchos::RCP<Epetra_Map> standardVolumeMap_;
 
     //! non-overlapping load-balanced map for Trilinos objects
     //! (may contain non-rectangular subdomains)

@@ -455,12 +455,12 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         Teuchos::rcp(new Epetra_Import(*assemblySurfaceMap_, *standardSurfaceMap_));
 
     // Single-unknown volume maps
-    StandardVolumeMap = domain_->CreateStandardMap(1,false);
+    standardVolumeMap_ = domain_->CreateStandardMap(1,false);
     assemblyVolumeMap_ = domain_->CreateAssemblyMap(1,false);
 
     // Volume assembly/standard import strategy
     as2std_vol_ =
-        Teuchos::rcp(new Epetra_Import(*assemblyVolumeMap_, *StandardVolumeMap));
+        Teuchos::rcp(new Epetra_Import(*assemblyVolumeMap_, *standardVolumeMap_));
 
 
     Teuchos::RCP<Epetra_Map> lev_map_loc    = wind_map_loc;
@@ -2252,7 +2252,7 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
 
     // Create vectors for integral coefficients
     Teuchos::RCP<Epetra_Vector> globalCoeff =
-        Teuchos::rcp(new Epetra_Vector(*StandardVolumeMap));
+        Teuchos::rcp(new Epetra_Vector(*standardVolumeMap_));
     Teuchos::RCP<Epetra_Vector> localCoeff =
         Teuchos::rcp(new Epetra_Vector(*assemblyVolumeMap_));
 
