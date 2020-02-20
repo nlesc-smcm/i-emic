@@ -197,11 +197,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     n_ = paramList_.get<int>("Global Grid-Size n");
     m_ = paramList_.get<int>("Global Grid-Size m");
-    l = paramList_.get<int>("Global Grid-Size l");
+    l_ = paramList_.get<int>("Global Grid-Size l");
 
     std::stringstream ss;
     ss << "THCM (" << probdesc <<", "
-       << n_ << "x" << m_ << "x" << l <<")";
+       << n_ << "x" << m_ << "x" << l_ <<")";
     INFO(ss.str());
     this->SetLabel(ss.str().c_str());
 
@@ -307,7 +307,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int dof = _NUN_; // number of unknowns, defined in THCMdefs.H
 
     // construct an object to decompose the domain:
-    domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, l, dof, xmin, xmax, ymin, ymax,
+    domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, l_, dof, xmin, xmax, ymin, ymax,
                                             periodic, hdim, qz, comm_));
 
     // perform a 2D decomposition of domain into rectangular boxes
@@ -346,7 +346,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     {
         nglob_ = n_;
         mglob_ = m_;
-        lglob_ = l;
+        lglob_ = l_;
     }
 
     // fortran routine that puts global info in module m_global
@@ -386,7 +386,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     int I0 = 0; int I1 = n_+1;
     int J0 = 0; int J1 = m_+1;
-    int K0 = 0; int K1 = l+1;
+    int K0 = 0; int K1 = l_+1;
 
     int i0=0, i1=-1, j0=0, j1=-1,k0=0,k1=-1;
     // global (gathered) map, all inds are on root proc, the ranges are
@@ -439,7 +439,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     int perio = (periodic && xComm->NumProc() == 1);
 
-    int nmlglob = n_*m_*l;
+    int nmlglob = n_*m_*l_;
 
     //--------------------------------------------------------------------------
     // read wind, temperature and salinity forcing and distribute it among
@@ -1284,7 +1284,7 @@ void THCM::evaluateB(void)
 std::shared_ptr<std::vector<int> > THCM::getLandMask()
 {
     // length of landmask array
-    int dim = (n_+2)*(m_+2)*(l+2);
+    int dim = (n_+2)*(m_+2)*(l_+2);
 
     // Create landmask array
     std::shared_ptr<std::vector<int> > landm =
@@ -1320,7 +1320,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
     // All indices are on root process
     int I0 = 0; int I1 = n_+1;
     int J0 = 0; int J1 = m_+1;
-    int K0 = 0; int K1 = l+1;
+    int K0 = 0; int K1 = l_+1;
 
     int i0 = 0, i1 = -1, j0 = 0, j1 = -1,k0 = 0,k1 = -1;
     if (comm_->MyPID() == 0)
@@ -1804,8 +1804,8 @@ void THCM::normalizePressure(Epetra_Vector& soln) const
 {
     int i = n_/2-1;
     int j = 6*m_/8-1;
-    int k = l-1;
-    int ref_gid = FIND_ROW2(_NUN_,n_,m_,l,i,j,k,PP);
+    int k = l_-1;
+    int ref_gid = FIND_ROW2(_NUN_,n_,m_,l_,i,j,k,PP);
     int ref_lid, ref_host;
     double ref_value;
     soln.Map().RemoteIDList(1, &ref_gid, &ref_host, &ref_lid);
@@ -2081,11 +2081,11 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
     if (j0 == 1) j0-- ;
     if (j1 == m_) j1++;
     if (k0 == 1) k0-- ;
-    if (k1 == l) k1++;
+    if (k1 == l_) k1++;
 
     int I0 = 0; int I1 = n_+1;
     int J0 = 0; int J1 = m_+1;
-    int K0 = 0; int K1 = l+1;
+    int K0 = 0; int K1 = l_+1;
 
     DEBUG("create landmap without overlap...");
     Teuchos::RCP<Epetra_Map> landmap_loc0 = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
@@ -2200,11 +2200,11 @@ void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
         // add correction to salinity values
         double correction = integral / totalVolume_;
         int row, lid;
-        for (int k = 0; k != l; ++k)
+        for (int k = 0; k != l_; ++k)
             for (int j = 0; j != m_; ++j)
                 for (int i = 0; i != n_; ++i)
                 {
-                    row = FIND_ROW2(_NUN_, n_, m_, l, i, j, k, SS);
+                    row = FIND_ROW2(_NUN_, n_, m_, l_, i, j, k, SS);
                     lid = vec->Map().LID(row);
                     if (lid >= 0)
                         (*vec)[lid] -= correction;
