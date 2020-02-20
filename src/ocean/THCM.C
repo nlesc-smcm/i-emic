@@ -649,7 +649,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // 2D overlapping interface fields
     localAtmosT_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosQ_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localAtmosA     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosA_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosP     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceQ    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceM    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -1458,10 +1458,10 @@ void THCM::setAtmosphereA(Teuchos::RCP<Epetra_Vector> const &atmosA)
 
     // Standard2Assembly
     // Import atmosQ into local atmosQ
-    CHECK_ZERO( localAtmosA->Import(*atmosA, *as2std_surf_, Insert) );
+    CHECK_ZERO( localAtmosA_->Import(*atmosA, *as2std_surf_, Insert) );
 
     double *tmpAtmosA;
-    localAtmosA->ExtractView(&tmpAtmosA);
+    localAtmosA_->ExtractView(&tmpAtmosA);
     F90NAME(m_inserts, insert_atmosphere_a)( tmpAtmosA );
 }
 
