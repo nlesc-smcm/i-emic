@@ -823,7 +823,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         colScaling_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
         colScaling_->SetLabel("Col Scaling");
         localRowScaling_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
-        local_col_scaling = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
+        localColScaling_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
 
         rowScaling_->PutScalar(1.0);
         colScaling_->PutScalar(1.0);
@@ -1775,12 +1775,12 @@ void THCM::RecomputeScaling(void)
     for (int i=0;i<len;i++)
     {
         (*localRowScaling_)[i] = 1.0/rowscal[i];
-        (*local_col_scaling)[i] = 1.0/colscal[i];
+        (*localColScaling_)[i] = 1.0/colscal[i];
     }
 
     // kick out the ghost nodes:
     domain_->Assembly2Solve(*localRowScaling_,*rowScaling_);
-    domain_->Assembly2Solve(*local_col_scaling,*colScaling_);
+    domain_->Assembly2Solve(*localColScaling_,*colScaling_);
 
     // make sure T and S are scaled the same way in each cell
     // we need this because of our special block scaling for the
