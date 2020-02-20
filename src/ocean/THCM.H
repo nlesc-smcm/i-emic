@@ -422,7 +422,7 @@ private:
     Teuchos::RCP<Epetra_Vector> localSeaiceG_;
 
     //! used to extract evaporation field from THCM
-    Teuchos::RCP<Epetra_Vector> localOceanE;
+    Teuchos::RCP<Epetra_Vector> localOceanE_;
 
     //! used to import emip field into THCM
     Teuchos::RCP<Epetra_Vector> localEmip;

@@ -654,7 +654,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localSeaiceQ_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceM_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceG_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localOceanE     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localOceanE_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localEmip       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSurfTmp    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localTatm       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -1719,7 +1719,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosP()
 Teuchos::RCP<Epetra_Vector> THCM::getLocalOceanE()
 {
     double *tmpOceanE;
-    localOceanE->ExtractView(&tmpOceanE);
+    localOceanE_->ExtractView(&tmpOceanE);
 
     // localsol should contain something meaningful
     double* solution;
@@ -1727,7 +1727,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getLocalOceanE()
 
     F90NAME( m_probe, compute_evap )( tmpOceanE, solution );
 
-    return localOceanE;
+    return localOceanE_;
 }
 
 //============================================================================
