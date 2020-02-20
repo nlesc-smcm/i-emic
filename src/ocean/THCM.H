@@ -343,7 +343,6 @@ public:
 
     //! \name these are used by the block preconditioner:
     //!@
-    inline double AlphaS()    const {return alphaS;}
     inline double rhoMixing() const {return rho_mixing;}
     //@}
 
@@ -502,9 +501,6 @@ private:
 
     //! mixing?
     int vmixGLB_;
-
-    //! parameters for linear equation of state
-    double alphaS;
 
     //! taper
     int tap;
