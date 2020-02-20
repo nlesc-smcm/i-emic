@@ -275,15 +275,6 @@ public:
     //! get column scaling vector
     Teuchos::RCP<Epetra_Vector> getColScaling() {return colScaling_;}
 
-    //! start a timer for a given part of the program
-    void startTiming(std::string id);
-
-    //! stop timer for a given part of the program
-    void stopTiming(std::string id,bool print=false);
-
-    //! print timer status for all timed program parts
-    void printTiming(std::ostream&);
-
     //! Set a bifurcation parameter in the application physics
     bool setParameter(std::string label, double value);
 
@@ -447,9 +438,6 @@ private:
 
     //! global shared parameter list
     Teuchos::ParameterList paramList_;
-
-    //! timer status list
-    Teuchos::ParameterList timerList_;
 
     //! \name the matrix in THCM (CSR-format)
     /*! Memory for the Jacobian on the subdomain is allocated by the

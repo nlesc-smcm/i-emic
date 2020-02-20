@@ -1788,57 +1788,6 @@ void THCM::RecomputeScaling(void)
 }
 
 //=============================================================================
-// Timing functionality
-void THCM::startTiming(std::string fname)
-{
-    Teuchos::RCP<Epetra_Time> T=Teuchos::rcp(new Epetra_Time(*comm_));
-    timerList_.sublist("timers").set(fname,T);
-}
-
-
-//=============================================================================
-void THCM::stopTiming(std::string fname,bool print)
-{
-    Teuchos::RCP<Epetra_Time> T = Teuchos::null;
-    T=timerList_.sublist("timers").get(fname,T);
-    double elapsed=0;
-    if (T!=Teuchos::null)
-    {
-        elapsed=T->ElapsedTime();
-    }
-    int ncalls=timerList_.sublist("number of calls").get(fname,0);
-    double total_time=timerList_.sublist("total time").get(fname,0.0);
-    timerList_.sublist("number of calls").set(fname,ncalls+1);
-    timerList_.sublist("total time").set(fname,total_time+elapsed);
-    if (print)
-    {
-        (std::cout) << "### timing: "<<fname<<" "<<elapsed<<std::endl;
-    }
-}
-
-//=============================================================================
-void THCM::printTiming(std::ostream& os)
-{
-    os << "================= TIMING RESULTS ====================="<<std::endl;
-    os << "     Description                              ";
-    os << " # Calls \t Cumulative Time \t Time/call\n";
-    os << "======================================================"<<std::endl;
-
-    Teuchos::ParameterList& ncallsList=timerList_.sublist("number of calls");
-    Teuchos::ParameterList& elapsedList=timerList_.sublist("total time");
-    for (Teuchos::ParameterList::ConstIterator i=ncallsList.begin();i!=ncallsList.end();i++)
-    {
-        const std::string& fname = i->first;
-        int ncalls = ncallsList.get(fname,0);
-        double elapsed = elapsedList.get(fname,0.0);
-        os << fname << "\t" <<ncalls<<"\t"<<elapsed<<"\t"
-           << ((ncalls>0)? elapsed/(double)ncalls : 0.0) <<std::endl;
-    }
-    os << "====================================================="<<std::endl;
-    DEBUG(timerList_);
-}
-
-//=============================================================================
 // convert parameter name to integer
 int THCM::par2int(std::string const &label)
 {
