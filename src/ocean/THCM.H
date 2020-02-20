@@ -451,9 +451,6 @@ private:
     //! Forcing based on standard subdomains
     Teuchos::RCP<Epetra_CrsMatrix> localFrc_;
 
-    //! global communicator for 4D things
-    Teuchos::RCP<EpetraExt::MultiComm> xyzt_comm;
-
     //! type of scaling to be done
     std::string scaling_type;
 
