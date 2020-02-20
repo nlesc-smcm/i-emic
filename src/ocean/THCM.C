@@ -115,7 +115,7 @@ extern "C" {
     // CRS matrix allocation (module m_mat)
     _MODULE_SUBROUTINE_(m_mat,get_array_sizes)(int* nrows, int* nnz);
     _MODULE_SUBROUTINE_(m_mat,set_pointers)(int* nrows, int* nnz,
-                                            int* begA_,int* jcoA_,double* coA,
+                                            int* begA_,int* jcoA_,double* coA_,
                                             double* coB,
                                             int* begF,int* jcoF,double* coF);
 
@@ -668,7 +668,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // allocate the memory
     begA_ = new int[nrows+1];
-    coA  = new double[nnz];
+    coA_ = new double[nnz];
     jcoA_ = new int[nnz];
 
     coB  = new double[nrows];
@@ -680,7 +680,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // give THCM the opportunity to set its pointers to
     // the new memory block
     DEBVAR("call set_pointers...");
-    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA_,jcoA_,coA,coB,begF,jcoF,coF);
+    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA_,jcoA_,coA_,coB,begF,jcoF,coF);
 
     // Initialize integral condition row, correction and coefficients
     rowintcon_     = -1;
@@ -848,7 +848,7 @@ THCM::~THCM()
     }
 
     delete [] jcoA_;
-    delete [] coA;
+    delete [] coA_;
     delete [] begA_;
 
     delete [] coB;
@@ -1126,7 +1126,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 for (int j = 0; j <  numentries ; j++)
                 {
                     indices[j] = assemblyMap_->GID(jcoA_[index-1+j] - 1);
-                    values[j]  = coA[index - 1 + j];
+                    values[j]  = coA_[index - 1 + j];
                 }
 
                 int ierr = tmpJac->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
