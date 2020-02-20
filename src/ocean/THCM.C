@@ -184,7 +184,7 @@ extern "C" {
 // constructor
 THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     Singleton<THCM>(Teuchos::rcp(this, false)),
-    Comm(comm),
+    comm_(comm),
     nullSpace(Teuchos::null),
     paramList("THCM Parameter List")
 {
@@ -233,7 +233,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         // we put the name of the desired mask in a file so it can be
         // obtained from there by the fortran code:
         std::string mask_file = paramList.get<std::string>("Land Mask");
-        if (Comm->MyPID() == 0)
+        if (comm_->MyPID() == 0)
         {
             std::ofstream mfs("mask_name.txt", std::ios::trunc);
             mfs << mask_file;
@@ -273,7 +273,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     if (rd_spertm)
     {
         std::string spertm_file = paramList.get<std::string>("Salinity Perturbation Mask");
-        if (Comm->MyPID()==0)
+        if (comm_->MyPID()==0)
         {
             std::ofstream mfs("spertm_name.txt",std::ios::trunc);
             mfs << spertm_file;
@@ -289,7 +289,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // wind forcing method (0: data (trenberth), 1: zonally averaged, 2: idealized)
     int iza = paramList.get<int>("Wind Forcing Type");
 
-    if (Comm->MyPID() == 0)
+    if (comm_->MyPID() == 0)
     {
         std::ofstream windfile("windf_name.txt", std::ios::trunc);
         std::ofstream sstfile("sstf_name.txt",   std::ios::trunc);
@@ -308,7 +308,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // construct an object to decompose the domain:
     domain_ = Teuchos::rcp(new TRIOS::Domain(n, m, l, dof, xmin, xmax, ymin, ymax,
-                                            periodic, hdim, qz, Comm));
+                                            periodic, hdim, qz, comm_));
 
     // perform a 2D decomposition of domain into rectangular boxes
     domain_->Decomp2D();
@@ -342,7 +342,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int mglob_ = 0;
     int lglob_ = 0;
 
-    if (Comm->MyPID() == 0) // this one is responsible for I/O
+    if (comm_->MyPID() == 0) // this one is responsible for I/O
     {
         nglob_ = n;
         mglob_ = m;
@@ -842,7 +842,7 @@ THCM::~THCM()
 {
     INFO("THCM destructor");
     FNAME(finalize)();
-    if (Comm->MyPID()==0)
+    if (comm_->MyPID()==0)
     {
         F90NAME(m_global,finalize)();
     }
@@ -918,7 +918,7 @@ bool THCM::computeForcing()
             if (((ierr!=0) && (ierr!=3)))
             {
                 std::cout << "\n ERROR " << ierr;
-                std::cout << "\n myPID " << Comm->MyPID();
+                std::cout << "\n myPID " << comm_->MyPID();
                 std::cout <<"\n while inserting/replacing values in local Jacobian"
                           << std::endl;
 
@@ -968,7 +968,7 @@ bool THCM::computeForcing()
 
     auto last = std::unique(MyElements.begin(), MyElements.end());
     Epetra_Map colMap(-1, (int)std::distance(MyElements.begin(), last),
-                      &MyElements[0], 0, *Comm);
+                      &MyElements[0], 0, *comm_);
     CHECK_ZERO(localFrc_->FillComplete(colMap, *standardMap_));
 
     // redistribute according to solveMap_ (may be load-balanced)
@@ -1137,13 +1137,13 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 if (((ierr!=0) && (ierr!=3)))
                 {
                     std::stringstream ss;
-                    ss << "graph_pid" << Comm->MyPID();
+                    ss << "graph_pid" << comm_->MyPID();
                     std::ofstream file(ss.str());
                     file << tmpJac->Graph();
 
                     std::cout << "\n ERROR " << ierr;
                     std::cout << ((ierr == 2) ? ": value excluded" : "") << std::endl;
-                    std::cout << "\n myPID " << Comm->MyPID();
+                    std::cout << "\n myPID " << comm_->MyPID();
                     std::cout <<"\n while inserting/replacing values in local Jacobian"
                               << std::endl;
 
@@ -1291,12 +1291,12 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
         std::make_shared<std::vector<int> >(dim, 0);
 
     // Let THCM fill the landmask array on proc = 0
-    if (Comm->MyPID() == 0)
+    if (comm_->MyPID() == 0)
         F90NAME(m_global, get_current_landm)(&(*landm)[0]);
 
     // Get the MpiComm from Epetra
     Epetra_MpiComm const MpiComm =
-        dynamic_cast<Epetra_MpiComm const &>(*Comm);
+        dynamic_cast<Epetra_MpiComm const &>(*comm_);
 
     // Broadcast the landmask
     MPI_Bcast(&(*landm)[0], dim, MPI_INTEGER, 0, MpiComm.GetMpiComm());
@@ -1309,7 +1309,7 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
                                                  Teuchos::RCP<Epetra_Vector> fix)
 {
-    if (Comm->MyPID() == 0)
+    if (comm_->MyPID() == 0)
     {
         // Write mask name to file, fortran code will read it from there
         std::ofstream ofs("mask_name.txt", std::ios::trunc);
@@ -1323,13 +1323,13 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
     int K0 = 0; int K1 = l+1;
 
     int i0 = 0, i1 = -1, j0 = 0, j1 = -1,k0 = 0,k1 = -1;
-    if (Comm->MyPID() == 0)
+    if (comm_->MyPID() == 0)
     {
         i1 = I1; j1 = J1; k1=K1;
     }
 
     Teuchos::RCP<Epetra_Map> landmap_glb =
-        Utils::CreateMap(i0,i1,j0,j1,k0,k1,I0,I1,J0,J1,K0,K1,*Comm);
+        Utils::CreateMap(i0,i1,j0,j1,k0,k1,I0,I1,J0,J1,K0,K1,*comm_);
 
     // Create sequential landmask array on proc 0
     Teuchos::RCP<Epetra_IntVector> landm_glb =
@@ -1337,7 +1337,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 
     // Get global landmask from fortran
     int *landm;
-    if (Comm->MyPID()==0)
+    if (comm_->MyPID()==0)
     {
         CHECK_ZERO(landm_glb->ExtractView(&landm));
 
@@ -1361,7 +1361,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
         (*fix0)(0)->ExtractCopy(&fix1[0]);
 
         int i,j,k;
-        if (Comm->MyPID() == 0 && len > 0)
+        if (comm_->MyPID() == 0 && len > 0)
         {
             int pos = 0;
             int idx = 0;
@@ -1417,7 +1417,7 @@ void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask, bool init)
 // Set global landmask in THCM
 void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask)
 {
-    if (Comm->MyPID() == 0)
+    if (comm_->MyPID() == 0)
         F90NAME(m_global, set_landm)(&(*landmask)[0]);
 }
 
@@ -1760,11 +1760,11 @@ void THCM::RecomputeScaling(void)
     // compute local average diagonal block
     F90NAME(m_scaling,average_block)(ldb);
 
-    Comm->SumAll(ldb,gdb,_NUN_*_NUN_);
+    comm_->SumAll(ldb,gdb,_NUN_*_NUN_);
 
     for (int i=0;i<_NUN_*_NUN_;i++)
     {
-        gdb[i]/=Comm->NumProc();
+        gdb[i]/=comm_->NumProc();
     }
     // compute row- and column scaling
     F90NAME(m_scaling,compute)(gdb,rowscal,colscal);
@@ -1829,7 +1829,7 @@ void THCM::normalizePressure(Epetra_Vector& soln) const
 // Timing functionality
 void THCM::startTiming(std::string fname)
 {
-    Teuchos::RCP<Epetra_Time> T=Teuchos::rcp(new Epetra_Time(*Comm));
+    Teuchos::RCP<Epetra_Time> T=Teuchos::rcp(new Epetra_Time(*comm_));
     timerList.sublist("timers").set(fname,T);
 }
 
@@ -2089,7 +2089,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 
     DEBUG("create landmap without overlap...");
     Teuchos::RCP<Epetra_Map> landmap_loc0 = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
-                                                             I0,I1,J0,J1,K0,K1,*Comm);
+                                                             I0,I1,J0,J1,K0,K1,*comm_);
 
     // create an overlapping distributed map
     i0 = domain_->FirstI()+1; // 'grid-style' indexing is 1-based
@@ -2104,7 +2104,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 
     DEBUG("create landmap with overlap...");
     Teuchos::RCP<Epetra_Map> landmap_loc = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
-                                                            I0,I1,J0,J1,K0,K1,*Comm);
+                                                            I0,I1,J0,J1,K0,K1,*comm_);
 
     DEBUG("Create local vectors...");
 
@@ -2265,9 +2265,9 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
         localInt += (*globalCoeff)[i];
 
     // Sum over subdomains, obtain resulting integral
-    Comm->SumAll(&localInt, &salt_advection, 1);
+    comm_->SumAll(&localInt, &salt_advection, 1);
 
-    std::cout << "Salt advection integral, PID = " << Comm->MyPID() << " lSum = " << localInt
+    std::cout << "Salt advection integral, PID = " << comm_->MyPID() << " lSum = " << localInt
               << " gSum = " << salt_advection << std::endl;
 
     // Reset local coefficients and integral
@@ -2283,7 +2283,7 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
 
     // std::ofstream file;
     // std::stringstream ss;
-    // ss << "globalCoeff" << Comm->MyPID();
+    // ss << "globalCoeff" << comm_->MyPID();
     // file.open(ss.str());
     // globalCoeff->Print(file);
     // file.close();
@@ -2293,9 +2293,9 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
         localInt += (*globalCoeff)[i];
 
     // Sum over subdomains
-    Comm->SumAll(&localInt, &salt_diffusion, 1);
+    comm_->SumAll(&localInt, &salt_diffusion, 1);
 
-    std::cout << "Salt diffusion integral, PID = " << Comm->MyPID() << " lSum = " << localInt
+    std::cout << "Salt diffusion integral, PID = " << comm_->MyPID() << " lSum = " << localInt
               << " gSum = " << salt_diffusion << std::endl;
 }
 
@@ -2307,14 +2307,14 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
     int M=domain_->GlobalM();
     int L=domain_->GlobalL();
 
-    int root = Comm->NumProc()-1;
+    int root = comm_->NumProc()-1;
 
     Teuchos::RCP<Epetra_MultiVector> intcond_glob =
         Utils::Gather(*intcond_coeff, root);
 
     if (A.MyGRID(rowintcon_))
     {
-        if (Comm->MyPID()!=root)
+        if (comm_->MyPID()!=root)
         {
             ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
         }
@@ -2354,7 +2354,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
         if (ierr != 0)
         {
             std::stringstream ss;
-            ss << "graph_pid" << Comm->MyPID();
+            ss << "graph_pid" << comm_->MyPID();
             std::ofstream file(ss.str());
             file << A.Graph();
 
@@ -2363,7 +2363,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 
             std::cout << "\n ERROR " << ierr;
             std::cout << ((ierr == 2) ? ": value excluded" : "") << std::endl;
-            std::cout << "\n myPID " << Comm->MyPID();
+            std::cout << "\n myPID " << comm_->MyPID();
 
             std::cout << " while inserting/replacing values in local Jacobian" << std::endl;
             std::cout << "  GRID: " << rowintcon_ << std::endl;
@@ -2374,7 +2374,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
         delete []  values;
         delete []  indices;
     }
-    else if (Comm->MyPID()==root)
+    else if (comm_->MyPID()==root)
     {
         ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
     }
@@ -2837,7 +2837,7 @@ void THCM::SetupMonthlyForcing()
 
     for (int month=1;month<=12;month++)
     {
-        if (Comm->MyPID()==0)
+        if (comm_->MyPID()==0)
         {
             F90NAME(m_global,get_monthly_forcing)(tatm_g,emip_g,taux_g,tauy_g,&month);
             if (internal_forcing_)

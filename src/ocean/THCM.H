@@ -307,7 +307,7 @@ public:
     Teuchos::RCP<Epetra_Vector> DiagB(){return diagB_;}
 
     //! return the communicator object
-    Teuchos::RCP<Epetra_Comm> GetComm(){return Comm;}
+    Teuchos::RCP<Epetra_Comm> GetComm(){return comm_;}
 
     //! get the SRES parameter (non-restoring salt condition)
     bool getSRES() const {return sres_;}
@@ -458,7 +458,7 @@ private:
     Teuchos::RCP<Epetra_Vector> rowScaling_, colScaling_,localRowScaling_,localColScaling_;
 
     //! (MPI) communicator
-    Teuchos::RCP<Epetra_Comm> Comm;
+    Teuchos::RCP<Epetra_Comm> comm_;
 
     //! nullspace (p-vectors)
     Teuchos::RCP<Epetra_MultiVector> nullSpace;
