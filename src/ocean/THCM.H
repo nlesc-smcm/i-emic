@@ -461,7 +461,7 @@ private:
     Teuchos::RCP<Epetra_Comm> comm_;
 
     //! nullspace (p-vectors)
-    Teuchos::RCP<Epetra_MultiVector> nullSpace;
+    Teuchos::RCP<Epetra_MultiVector> nullSpace_;
 
     //! global shared parameter list
     Teuchos::ParameterList paramList;

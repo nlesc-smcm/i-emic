@@ -185,7 +185,7 @@ extern "C" {
 THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     Singleton<THCM>(Teuchos::rcp(this, false)),
     comm_(comm),
-    nullSpace(Teuchos::null),
+    nullSpace_(Teuchos::null),
     paramList("THCM Parameter List")
 {
     DEBUG("### enter THCM::THCM ###");
@@ -3026,9 +3026,9 @@ void THCM::setParameters(Teuchos::ParameterList& newParams)
 
 Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()
 {
-    if (nullSpace==Teuchos::null)
+    if (nullSpace_==Teuchos::null)
     {
-        nullSpace = Teuchos::rcp(new Epetra_MultiVector
+        nullSpace_ = Teuchos::rcp(new Epetra_MultiVector
                                  (*standardMap_,2,true) );
 
         // the svp's are fairly easy to construct, they are
@@ -3048,20 +3048,20 @@ Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()
                 {
                     if ((i+j)%2)
                     {
-                        (*(*nullSpace)(0))[pos] = 1;
+                        (*(*nullSpace_)(0))[pos] = 1;
                     }
                     else
                     {
-                        (*(*nullSpace)(1))[pos] = 1;
+                        (*(*nullSpace_)(1))[pos] = 1;
                     }
                     pos+=_NUN_;
                 }
 
         double nrm1,nrm2;
-        CHECK_ZERO((*nullSpace)(0)->Norm2(&nrm1));
-        CHECK_ZERO((*nullSpace)(1)->Norm2(&nrm2));
-        CHECK_ZERO((*nullSpace)(0)->Scale(1.0/nrm1));
-        CHECK_ZERO((*nullSpace)(1)->Scale(1.0/nrm2));
+        CHECK_ZERO((*nullSpace_)(0)->Norm2(&nrm1));
+        CHECK_ZERO((*nullSpace_)(1)->Norm2(&nrm2));
+        CHECK_ZERO((*nullSpace_)(0)->Scale(1.0/nrm1));
+        CHECK_ZERO((*nullSpace_)(1)->Scale(1.0/nrm2));
     }
-    return nullSpace;
+    return nullSpace_;
 }
