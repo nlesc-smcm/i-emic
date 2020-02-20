@@ -446,7 +446,7 @@ private:
     Teuchos::RCP<Epetra_CrsMatrix> localJac_, testJac_;
 
     //! Forcing in globally assembled and load-balanced
-    Teuchos::RCP<Epetra_CrsMatrix> Frc;
+    Teuchos::RCP<Epetra_CrsMatrix> frc_;
 
     //! Forcing based on standard subdomains
     Teuchos::RCP<Epetra_CrsMatrix> localFrc;

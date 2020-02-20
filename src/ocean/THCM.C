@@ -782,8 +782,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     localFrc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *standardMap_, 1));
     localFrc->SetLabel("Local Forcing");
-    Frc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *solveMap_, 1));
-    Frc->SetLabel("Forcing");
+    frc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *solveMap_, 1));
+    frc_->SetLabel("Forcing");
 
     // we do not allow these to be modified, use the OceanModel interface
     // (computeShiftedMatrix, setXdot)
@@ -975,15 +975,15 @@ bool THCM::computeForcing()
 
     // redistribute according to solveMap_ (may be load-balanced)
     // standard and solve maps are equal
-    domain_->Standard2Solve(*localFrc, *Frc);     // no effect
-    CHECK_ZERO(Frc->FillComplete(colMap, *solveMap_));
+    domain_->Standard2Solve(*localFrc, *frc_);     // no effect
+    CHECK_ZERO(frc_->FillComplete(colMap, *solveMap_));
 
     return true;
 }
 
 Teuchos::RCP<Epetra_CrsMatrix> THCM::getForcing()
 {
-    return Frc;
+    return frc_;
 }
 
 //=============================================================================
