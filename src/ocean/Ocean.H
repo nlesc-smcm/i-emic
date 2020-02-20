@@ -63,6 +63,7 @@ public:
     using LandMask  = Utils::MaskStruct;
 
 protected:
+    Teuchos::ParameterList params_;
 
     Teuchos::RCP<THCM> thcm_;
 
@@ -93,10 +94,7 @@ protected:
     // grid representation of the state
     mutable Teuchos::RCP<OceanGrid> grid_;
 
-    ParameterList solverParams_;
-
     // Belos flexible GMRES members
-    ParameterList belosParamList_;
     Teuchos::RCP<Belos::LinearProblem
                  <double, Epetra_MultiVector, Epetra_Operator> > problem_;
     Teuchos::RCP<Belos::BlockGmresSolMgr
@@ -132,9 +130,6 @@ protected:
     //! Maximum number of mask fixing cycles
     int maxMaskFixes_;
 
-    //! Landmask file
-    std::string landmaskFile_;
-
     //! Select Jacobian analysis
     bool analyzeJacobian_;
 
@@ -158,8 +153,9 @@ protected:
 
 public:
     //! constructor
-    Ocean(Teuchos::RCP<Epetra_Comm> Comm,
-          ParameterList oceanParamList);
+    Ocean(Teuchos::RCP<Epetra_Comm> Comm);
+    Ocean(Teuchos::RCP<Epetra_Comm> Comm, Model::ParameterList oceanParamList);
+    Ocean(Teuchos::RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList);
 
     //! destructor
     ~Ocean();
@@ -167,6 +163,12 @@ public:
     std::string name() const { return "ocean"; }
     int modelIdent() const { return 0; }
     Teuchos::RCP<Epetra_Comm> Comm() const { return comm_; }
+
+    const Teuchos::ParameterList& getParameters();
+    void setParameters(Teuchos::ParameterList& oceanParamList);
+
+    static Teuchos::ParameterList getDefaultInitParameters();
+    static Teuchos::ParameterList getDefaultParameters();
 
     //! Solve may optionally accept an rhs of VectorPointer type
     void solve(Teuchos::RCP<const Epetra_MultiVector> rhs = Teuchos::null);
@@ -380,8 +382,6 @@ public:
     void unscaleProblem(VectorPtr rhs = Teuchos::null);
     VectorPtr getRowScaling();
     VectorPtr getColScaling();
-
-    void setParameters(ParameterList pars);
 
     void copyMask(std::string const &fname);
 

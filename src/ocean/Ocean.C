@@ -52,53 +52,59 @@ extern "C" _SUBROUTINE_(set_seaice_parameters)(SeaIce::CommPars*);
 
 //=====================================================================
 // Constructor:
-Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
+Ocean::Ocean(RCP<Epetra_Comm> Comm)
+    : Ocean(Comm, Teuchos::rcp(new Teuchos::ParameterList()))
+{}
+
+Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::RCP<Teuchos::ParameterList> oceanParamList)
+    : Ocean(Comm, *oceanParamList)
+{}
+
+Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
     :
+    params_                ("Ocean Configuration"),
+    // Create THCM object
+    //  THCM is implemented as a Singleton, which allows only a single
+    //  instance at a time. The Ocean class can access THCM with a call
+    //  to THCM::Instance()
+    thcm_                  (new THCM(oceanParamList.sublist("THCM"), Comm)),
     solverInitialized_     (false),  // Solver needs initialization
     precInitialized_       (false),  // Preconditioner needs initialization
     recompPreconditioner_  (true),   // We need a preconditioner to start with
-    recompMassMat_         (true),   // We need a mass matrix to start with
-
-    loadSalinityFlux_      (oceanParamList->get("Load salinity flux", false)),
-    saveSalinityFlux_      (oceanParamList->get("Save salinity flux", true)),
-    loadTemperatureFlux_   (oceanParamList->get("Load temperature flux", false)),
-    saveTemperatureFlux_   (oceanParamList->get("Save temperature flux", true)),
-
-    useFort3_              (oceanParamList->get("Use legacy fort.3 output", false)),
-    useFort44_             (oceanParamList->get("Use legacy fort.44 output", true)),
-    saveColumnIntegral_    (oceanParamList->get("Save column integral", false)),
-    maxMaskFixes_          (oceanParamList->get("Max mask fixes", 5)),
-
-    landmaskFile_          (oceanParamList->sublist("THCM").get("Land Mask", "none")),
-
-    analyzeJacobian_       (oceanParamList->get("Analyze Jacobian", true))
+    recompMassMat_         (true)    // We need a mass matrix to start with
 {
     INFO("Ocean: constructor...");
 
-    // inherited input/output datamembers
-    inputFile_   = oceanParamList->get("Input file",  "ocean_input.h5");
-    outputFile_  = oceanParamList->get("Output file", "ocean_output.h5");
-    saveMask_    = oceanParamList->get("Save mask", true);
-    loadMask_    = oceanParamList->get("Load mask", true);
+    oceanParamList.validateParametersAndSetDefaults(getDefaultInitParameters());
+    params_.setParameters(oceanParamList);
 
-    loadState_   = oceanParamList->get("Load state", false);
-    saveState_   = oceanParamList->get("Save state", true);
-    saveEvery_   = oceanParamList->get("Save frequency", 0);
+    // inherited input/output datamembers
+    inputFile_   = params_.get<std::string>("Input file");
+    outputFile_  = params_.get<std::string>("Output file");
+    saveMask_    = params_.get<bool>("Save mask");
+    loadMask_    = params_.get<bool>("Load mask");
+
+    loadState_   = params_.get<bool>("Load state");
+    saveState_   = params_.get<bool>("Save state");
+    saveEvery_   = params_.get<int>("Save frequency");
+
+    loadSalinityFlux_    = params_.get<bool>("Load salinity flux");
+    saveSalinityFlux_    = params_.get<bool>("Save salinity flux");
+    loadTemperatureFlux_ = params_.get<bool>("Load temperature flux");
+    saveTemperatureFlux_ = params_.get<bool>("Save temperature flux");
+
+    useFort3_            = params_.get<bool>("Use legacy fort.3 output");
+    useFort44_           = params_.get<bool>("Use legacy fort.44 output");
+    saveColumnIntegral_  = params_.get<bool>("Save column integral");
+    maxMaskFixes_        = params_.get<int>("Max mask fixes");
+
+    analyzeJacobian_     = params_.get<bool>("Analyze Jacobian");
 
     // initialize postprocessing counter
     ppCtr_ = 0;
 
     // set the communicator object
     comm_ = Comm;
-
-    // Create THCM object
-    //  THCM is implemented as a Singleton, which allows only a single
-    //  instance at a time. The Ocean class can access THCM with a call
-    //  to THCM::Instance()
-    Teuchos::ParameterList &thcmList =
-        oceanParamList->sublist("THCM");
-
-    thcm_ = rcp(new THCM(thcmList, comm_));
 
     // Throw a few errors if the parameters are odd
     if ((thcm_->getSRES() || thcm_->getITS()) && loadSalinityFlux_)
@@ -126,11 +132,6 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
 
     // grid representation of te state
     grid_   = rcp(new OceanGrid(domain_));
-
-    // Read starting parameters from xml
-    Teuchos::ParameterList& startList =
-        thcmList.sublist("Starting Parameters");
-    THCM::Instance().ReadParameters(startList);
 
     // If specified we load a pre-existing state and parameters (x,l)
     // thereby overwriting the starting parameters
@@ -202,7 +203,8 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, ParameterList oceanParamList)
     surfaceSimporter_ =
         Teuchos::rcp(new Epetra_Import(*sIndexMap_, state_->Map()));
 
-    INFO(*oceanParamList);
+    oceanParamList = params_;
+    INFO(oceanParamList);
     INFO("\n");
     INFO("Ocean couplings: coupled_T = " << getCoupledT() );
     INFO("                 coupled_S = " << getCoupledS() );
@@ -941,9 +943,6 @@ void Ocean::initializeSolver()
 {
     INFO("Ocean: initialize solver...");
 
-    solverParams_ = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("solver_params.xml", solverParams_.ptr());
-
     // Initialize the preconditioner
     if (!precInitialized_)
         initializePreconditioner();
@@ -975,42 +974,44 @@ void Ocean::initializeBelos()
 
     problem_->setRightPrec(belosPrec);
 
+    Teuchos::ParameterList &belosParams = params_.sublist("Belos Solver");
+
     // A few FGMRES parameters are made available in solver_params.xml:
-    int gmresIters  = solverParams_->get("FGMRES iterations", 500);
-    double gmresTol = solverParams_->get("FGMRES tolerance", 1e-8);
-    int maxrestarts = solverParams_->get("FGMRES restarts", 0);
-    int output      = solverParams_->get("FGMRES output", 100);
-    bool testExpl   = solverParams_->get("FGMRES explicit residual test", false);
+    int gmresIters  = belosParams.get<int>("FGMRES iterations");
+    double gmresTol = belosParams.get<double>("FGMRES tolerance");
+    int maxrestarts = belosParams.get<int>("FGMRES restarts");
+    int output      = belosParams.get<int>("FGMRES output");
+    bool testExpl   = belosParams.get<bool>("FGMRES explicit residual test");
 
     int NumGlobalElements = state_->GlobalLength();
     int blocksize         = 1; // number of vectors in rhs
     int maxiters          = NumGlobalElements/blocksize - 1;
 
     // Create Belos parameterlist
-    belosParamList_ = rcp(new Teuchos::ParameterList());
-    belosParamList_->set("Block Size", blocksize);
-    belosParamList_->set("Flexible Gmres", true);
-    belosParamList_->set("Adaptive Block Size", true);
-    belosParamList_->set("Num Blocks", gmresIters);
-    belosParamList_->set("Maximum Restarts", maxrestarts);
-    belosParamList_->set("Orthogonalization","DGKS");
-    belosParamList_->set("Output Frequency", output);
-    belosParamList_->set("Verbosity", Belos::Errors + Belos::Warnings);
-    belosParamList_->set("Maximum Iterations", maxiters);
-    belosParamList_->set("Convergence Tolerance", gmresTol);
-    belosParamList_->set("Explicit Residual Test", testExpl);
-    belosParamList_->set("Implicit Residual Scaling",
+    RCP<Teuchos::ParameterList> belosParamList = rcp(new Teuchos::ParameterList("Belos List"));
+    belosParamList->set("Block Size", blocksize);
+    belosParamList->set("Flexible Gmres", true);
+    belosParamList->set("Adaptive Block Size", true);
+    belosParamList->set("Num Blocks", gmresIters);
+    belosParamList->set("Maximum Restarts", maxrestarts);
+    belosParamList->set("Orthogonalization","DGKS");
+    belosParamList->set("Output Frequency", output);
+    belosParamList->set("Verbosity", Belos::Errors + Belos::Warnings);
+    belosParamList->set("Maximum Iterations", maxiters);
+    belosParamList->set("Convergence Tolerance", gmresTol);
+    belosParamList->set("Explicit Residual Test", testExpl);
+    belosParamList->set("Implicit Residual Scaling",
                          "Norm of Preconditioned Initial Residual");
 
-    // belosParamList_->set("Implicit Residual Scaling", "Norm of RHS");
-    // belosParamList_->set("Implicit Residual Scaling", "Norm of Initial Residual");
-    // belosParamList_->set("Explicit Residual Scaling", "Norm of RHS");
+    // belosParamList->set("Implicit Residual Scaling", "Norm of RHS");
+    // belosParamList->set("Implicit Residual Scaling", "Norm of Initial Residual");
+    // belosParamList->set("Explicit Residual Scaling", "Norm of RHS");
 
     // Belos block FGMRES setup
     belosSolver_ =
         rcp(new Belos::BlockGmresSolMgr
             <double, Epetra_MultiVector, Epetra_Operator>
-            (problem_, belosParamList_));
+            (problem_, belosParamList));
 
     // initialize effort counter
     effortCtr_ = 0;
@@ -2200,27 +2201,64 @@ void Ocean::setPar(std::string const &parName, double value)
 }
 
 //====================================================================
-void Ocean::setParameters(ParameterList pars)
+
+Teuchos::ParameterList
+Ocean::getDefaultInitParameters()
 {
-    std::string parName;
-    double parValue;
-    // This is similar to reading from HDF5
-    for (int par = 1; par <= _NPAR_; ++par)
-    {
-        parName  = THCM::Instance().int2par(par);
-        parValue = getPar(parName);
+    Teuchos::ParameterList result = getDefaultParameters();
+    result.setName("Default Init Ocean List");
 
-        // Overwrite continuation parameter and put it in THCM
-        try
-        {
-            parValue = pars->get(parName, parValue);
-        }
-        catch (EpetraExt::Exception &e)
-        {
-            e.Print();
-            continue;
-        }
+    result.get("Input file",  "ocean_input.h5");
+    result.get("Output file", "ocean_output.h5");
+    result.get("Save mask", true);
+    result.get("Load mask", true);
 
-        setPar(parName, parValue);
-    }
+    result.get("Load state", false);
+    result.get("Save state", true);
+    result.get("Save frequency", 0);
+
+    result.get("Load salinity flux", false);
+    result.get("Save salinity flux", true);
+    result.get("Load temperature flux", false);
+    result.get("Save temperature flux", true);
+
+    result.get("Use legacy fort.3 output", false);
+    result.get("Use legacy fort.44 output", true);
+    result.get("Save column integral", false);
+    result.get("Max mask fixes", 5);
+
+    result.get("Analyze Jacobian", true);
+
+    Teuchos::ParameterList& solverParams = result.sublist("Belos Solver");
+    solverParams.get("FGMRES iterations", 500);
+    solverParams.get("FGMRES tolerance", 1e-8);
+    solverParams.get("FGMRES restarts", 0);
+    solverParams.get("FGMRES output", 100);
+    solverParams.get("FGMRES explicit residual test", false);
+
+    result.sublist("THCM") = THCM::getDefaultInitParameters();
+
+    return result;
+}
+
+Teuchos::ParameterList
+Ocean::getDefaultParameters()
+{
+    Teuchos::ParameterList result("Default Ocean List");
+    result.sublist("THCM") = THCM::getDefaultParameters();
+
+    return result;
+}
+
+const Teuchos::ParameterList& Ocean::getParameters()
+{
+  params_.sublist("THCM") = thcm_->getParameters();
+  return params_;
+}
+
+void Ocean::setParameters(Teuchos::ParameterList& newParams)
+{
+    newParams.validateParameters(getDefaultParameters());
+    thcm_->setParameters(newParams.sublist("THCM"));
+    params_.setParameters(newParams);
 }

@@ -26,6 +26,9 @@ public:
             RCP<Teuchos::ParameterList> oceanParams =
                 Utils::obtainParams("ocean_params.xml", "Ocean parameters");
 
+            oceanParams->sublist("Belos Solver") =
+                *Utils::obtainParams("solver_params.xml", "Solver parameters");
+
             // Create parameter object for Atmosphere
             RCP<Teuchos::ParameterList> atmosphereParams =
                 Utils::obtainParams("atmosphere_params.xml", "Atmosphere parameters");

@@ -26,7 +26,6 @@ set(MAIN_LIBRARIES
   ${EpetraExt_TPL_LIBRARIES}
 )
 
-find_package(RAILS)
 if (RAILS_FOUND)
   list(APPEND MAIN_SOURCES run_lyapunov.C)
   list(APPEND MAIN_LIBRARIES ${RAILS_LIBRARIES})

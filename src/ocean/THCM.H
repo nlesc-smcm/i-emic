@@ -122,6 +122,12 @@ public:
         Teuchos::RCP<Epetra_Vector> dFSdG;
     };
 
+    const Teuchos::ParameterList& getParameters();
+    void setParameters(Teuchos::ParameterList&);
+
+    static Teuchos::ParameterList getDefaultInitParameters();
+    static Teuchos::ParameterList getDefaultParameters();
+
     //! Constructor
     THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm);
 
@@ -354,17 +360,11 @@ public:
     inline double rhoMixing() const {return rho_mixing;}
     //@}
 
-    //! obtain a default parameter for a few specific labels
-    double defaultParameter(std::string const &label);
-
     //! convert parameter name to integer (i.e. "Combined Forcing" => 19)
     int par2int(std::string const &label);
 
     // convert parameter index to std::string (i.e. 19 => "Combined Forcing")
-    std::string const int2par(int ind);
-
-    //! read THCM parameters from a ParameterList
-    void ReadParameters(Teuchos::ParameterList& plist);
+    static std::string const int2par(int ind);
 
     //! Under non-restoring conditions: get an integral from vec and
     //! use that to correct the integral condition
@@ -618,7 +618,6 @@ private:
     //! This alters the behaviour of the TRIOS::Domain class, which will
     //! provide a different SolveMap after the call.
     void SetupLoadBalancing();
-
 };
 
 #endif

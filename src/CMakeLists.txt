@@ -45,6 +45,7 @@ if (JDQZPP_FOUND)
   include_directories(${JDQZPP_INCLUDE_DIR})
   list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
 endif ()
+find_package(RAILS QUIET)
 
 link_directories(${library_directories})
 

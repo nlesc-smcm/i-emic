@@ -16,8 +16,9 @@ TEST(Ocean, Initialization)
 	{
 		// Create parallel Ocean
 		RCP<Teuchos::ParameterList> oceanParams =
-			rcp(new Teuchos::ParameterList);
-		updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+			Utils::obtainParams("ocean_params.xml", "Ocean parameters");
+		oceanParams->sublist("Belos Solver") =
+			*Utils::obtainParams("solver_params.xml", "Solver parameters");
 		ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
 	}
 	catch (...)
@@ -36,8 +37,11 @@ TEST(Topo, Initialization)
 	try
 	{
 		// Create topography class
-		RCP<Teuchos::ParameterList> topoParams = rcp(new Teuchos::ParameterList);
-		updateParametersFromXmlFile("topo_params.xml", topoParams.ptr());
+		RCP<Teuchos::ParameterList> topoParams =
+                    Utils::obtainParams("topo_params.xml", "Topo parameters");
+
+                topoParams->sublist("Belos solver") =
+                    *Utils::obtainParams("solver_params.xml", "Solver parameters");
 		topo = rcp(new Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >
 				   (ocean, topoParams));
 	}

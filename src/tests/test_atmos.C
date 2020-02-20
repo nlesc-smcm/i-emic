@@ -413,8 +413,11 @@ TEST(Atmosphere, Reinitialization)
 // this should definitely be factorized
 TEST(Atmosphere, SetMasks)
 {
-    Teuchos::RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+    Teuchos::RCP<Teuchos::ParameterList> oceanParams =
+        Utils::obtainParams("ocean_params.xml", "Ocean parameters");
+
+    oceanParams->sublist("Belos Solver") =
+        *Utils::obtainParams("solver_params.xml", "Solver parameters");
     Ocean ocean(comm, oceanParams);
 
     Utils::MaskStruct mask = ocean.getLandMask("mask_natl8");
