@@ -244,7 +244,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     vmixGLB_           = paramList_.get<int>("Mixing");
     rho_mixing         = paramList_.get<bool>("Rho Mixing");
     tap                = paramList_.get<int>("Taper");
-    alphaT             = paramList_.get<double>("Linear EOS: alpha T");
+    double alphaT      = paramList_.get<double>("Linear EOS: alpha T");
     alphaS             = paramList_.get<double>("Linear EOS: alpha S");
     tres_              = paramList_.get<int>("Restoring Temperature Profile");
     sres_              = paramList_.get<int>("Restoring Salinity Profile");
