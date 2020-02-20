@@ -780,8 +780,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *MatrixGraph));
     jac_->SetLabel("Jacobian");
 
-    localFrc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *standardMap_, 1));
-    localFrc->SetLabel("Local Forcing");
+    localFrc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *standardMap_, 1));
+    localFrc_->SetLabel("Local Forcing");
     frc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *solveMap_, 1));
     frc_->SetLabel("Forcing");
 
@@ -877,8 +877,8 @@ Teuchos::RCP<Epetra_CrsMatrix> THCM::getJacobian()
 // Compute and get the forcing
 bool THCM::computeForcing()
 {
-    if (localFrc->Filled())
-        localFrc->PutScalar(0.0); // set all matrix entries to zero
+    if (localFrc_->Filled())
+        localFrc_->PutScalar(0.0); // set all matrix entries to zero
 
     const int maxlen = 1; // only 1 element per row
     int indices[maxlen];
@@ -910,9 +910,9 @@ bool THCM::computeForcing()
             MyElements.push_back(indices[j]);
         }
 
-        if (localFrc->Filled())
+        if (localFrc_->Filled())
         {
-            int ierr = localFrc->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
+            int ierr = localFrc_->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
                                                      values, indices);
 
             // ierr == 3 probably means not all row entries are replaced,
@@ -942,12 +942,12 @@ bool THCM::computeForcing()
                 std::cout << " maxlen:               " << maxlen << std::endl;
 
                 std::cout << " row:                  " << GRID << std::endl;
-                int LRID = localFrc->LRID(GRID);
+                int LRID = localFrc_->LRID(GRID);
                 std::cout << " LRID:                 " << LRID << std::endl;
                 std::cout << " graph inds in LRID:   "
-                          << localFrc->Graph().NumMyIndices(LRID) << std::endl;
+                          << localFrc_->Graph().NumMyIndices(LRID) << std::endl;
 
-                int ierr2 = localFrc->ExtractGlobalRowCopy(
+                int ierr2 = localFrc_->ExtractGlobalRowCopy(
                     assemblyMap_->GID(i), maxlen, numentries, values, indices);
 
                 std::cout << "\noriginal row: " << std::endl;
@@ -963,7 +963,7 @@ bool THCM::computeForcing()
         }
         else
         {
-            CHECK_ZERO(localFrc->InsertGlobalValues(assemblyMap_->GID(i), numentries,
+            CHECK_ZERO(localFrc_->InsertGlobalValues(assemblyMap_->GID(i), numentries,
                                                     values, indices));
         }
     } //i-loop over rows
@@ -971,11 +971,11 @@ bool THCM::computeForcing()
     auto last = std::unique(MyElements.begin(), MyElements.end());
     Epetra_Map colMap(-1, (int)std::distance(MyElements.begin(), last),
                       &MyElements[0], 0, *Comm);
-    CHECK_ZERO(localFrc->FillComplete(colMap, *standardMap_));
+    CHECK_ZERO(localFrc_->FillComplete(colMap, *standardMap_));
 
     // redistribute according to solveMap_ (may be load-balanced)
     // standard and solve maps are equal
-    domain_->Standard2Solve(*localFrc, *frc_);     // no effect
+    domain_->Standard2Solve(*localFrc_, *frc_);     // no effect
     CHECK_ZERO(frc_->FillComplete(colMap, *solveMap_));
 
     return true;

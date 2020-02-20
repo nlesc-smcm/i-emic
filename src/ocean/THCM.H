@@ -449,7 +449,7 @@ private:
     Teuchos::RCP<Epetra_CrsMatrix> frc_;
 
     //! Forcing based on standard subdomains
-    Teuchos::RCP<Epetra_CrsMatrix> localFrc;
+    Teuchos::RCP<Epetra_CrsMatrix> localFrc_;
 
     //! static graph which defines the maximal pattern of non-zero entries.
     //! the matrix jac_ is based on this graph, so depending on forcing and
