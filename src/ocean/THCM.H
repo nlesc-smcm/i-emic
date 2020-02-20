@@ -313,7 +313,7 @@ public:
     bool getSRES() const {return sres_;}
 
     //! get the TRES parameter (non-restoring temp condition)
-    bool getTRES() const {return tres;}
+    bool getTRES() const {return tres_;}
 
     //! get the its parameter (non-restoring salt condition)
     bool getITS() const {return its_;}
@@ -558,8 +558,8 @@ private:
     //! create integral condition.
     bool localSres_;
 
-    //! tres=0: non-restoring temperature forcing => integral condition in A and f
-    int tres;
+    //! tres_=0: non-restoring temperature forcing => integral condition in A and f
+    int tres_;
 
     //! integral condition can have a negative or a positive sign
     int intSign_;

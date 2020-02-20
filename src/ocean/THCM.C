@@ -246,7 +246,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     tap                = paramList.get<int>("Taper");
     alphaT             = paramList.get<double>("Linear EOS: alpha T");
     alphaS             = paramList.get<double>("Linear EOS: alpha S");
-    tres               = paramList.get<int>("Restoring Temperature Profile");
+    tres_              = paramList.get<int>("Restoring Temperature Profile");
     sres_              = paramList.get<int>("Restoring Salinity Profile");
     localSres_         = paramList.get<bool>("Local SRES Only");
     intSign_           = paramList.get<int>("Salinity Integral Sign");
@@ -371,7 +371,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &alphaT, &alphaS,
                                   &ih, &vmix_GLB, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
-                                  &tres, &sres_, &iza, &ite_, &its_, &ird_spertm,
+                                  &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
                                   &coupled_T, &coupled_S, &coriolis_on,
                                   &forcing_type);
 
