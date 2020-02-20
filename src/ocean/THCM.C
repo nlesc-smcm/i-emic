@@ -812,9 +812,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // build vector with integral coefficients
     this->evaluateB();
 
-    scaling_type = paramList.get<std::string>("Scaling");
+    scalingType_ = paramList.get<std::string>("Scaling");
 
-    if (scaling_type == "THCM")
+    if (scalingType_ == "THCM")
     {
         // construct the scaling object. The scaling is computed by THCM (m_scaling)
         // and passed on to Trilinos:
@@ -1217,7 +1217,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         domain_->Standard2Solve(*tmpJac, *jac_);     // no effect
         CHECK_ZERO(jac_->FillComplete());
 
-        if (scaling_type == "THCM")
+        if (scalingType_ == "THCM")
         {
             DEBUG(" THCM:  RecomputeScaling()");
             this->RecomputeScaling();

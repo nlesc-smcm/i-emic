@@ -452,7 +452,7 @@ private:
     Teuchos::RCP<Epetra_CrsMatrix> localFrc_;
 
     //! type of scaling to be done
-    std::string scaling_type;
+    std::string scalingType_;
 
     //! vectors storing the THCM scaling
     Teuchos::RCP<Epetra_Vector> row_scaling, col_scaling,local_row_scaling,local_col_scaling;
