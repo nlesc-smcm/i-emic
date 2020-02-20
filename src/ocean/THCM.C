@@ -252,7 +252,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     intSign_           = paramList.get<int>("Salinity Integral Sign");
     ite_               = paramList.get<int>("Levitus T");
     its_               = paramList.get<int>("Levitus S");
-    internal_forcing   = paramList.get<bool>("Levitus Internal T/S");
+    internal_forcing_  = paramList.get<bool>("Levitus Internal T/S");
     coupled_T          = paramList.get<int>("Coupled Temperature");
     coupled_S          = paramList.get<int>("Coupled Salinity");
     coupled_M          = paramList.get<int>("Coupled Sea Ice Mask");
@@ -563,7 +563,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     {
         F90NAME(m_global, get_temforcing)(tatm_g);
         F90NAME(m_global, get_salforcing)(emip_g);
-        if (internal_forcing)
+        if (internal_forcing_)
         {
             F90NAME(m_global,get_internal_temforcing)(temp_g);
             F90NAME(m_global,get_internal_salforcing)(salt_g);
@@ -622,7 +622,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     INFO("   initialize THCM subdomain done");
 
-    if (internal_forcing)
+    if (internal_forcing_)
     {
         F90NAME(m_usr,set_internal_forcing)(temp,salt);
     }
@@ -2040,7 +2040,7 @@ bool THCM::setParameter(std::string label, double value)
             INFO("Set THCM time to "<<value);
             INFO("Seasonal forcing parameters (W,T,S): "<<gammaW<<", "<<gammaT<<", "<<gammaS);
             F90NAME(m_monthly,update_forcing)(&value,&gammaW,&gammaT,&gammaS);
-            if (internal_forcing)
+            if (internal_forcing_)
             {
                 F90NAME(m_monthly,update_internal_forcing)(&value,&gammaT,&gammaS);
             }
@@ -2051,7 +2051,7 @@ bool THCM::setParameter(std::string label, double value)
             double gammaT=0.0,gammaS=0.0,gammaW=0.0,val=0.0;
             INFO("Set THCM forcing to constant");
             F90NAME(m_monthly,update_forcing)(&val,&gammaW,&gammaT,&gammaS);
-            if (internal_forcing)
+            if (internal_forcing_)
             {
                 F90NAME(m_monthly,update_internal_forcing)(&val,&gammaT,&gammaS);
             }
@@ -2858,7 +2858,7 @@ void THCM::SetupMonthlyForcing()
         if (Comm->MyPID()==0)
         {
             F90NAME(m_global,get_monthly_forcing)(tatm_g,emip_g,taux_g,tauy_g,&month);
-            if (internal_forcing)
+            if (internal_forcing_)
             {
                 F90NAME(m_global,get_monthly_internal_forcing)(temp_g,salt_g,&month);
             }
@@ -2891,7 +2891,7 @@ void THCM::SetupMonthlyForcing()
         INFO("Salinity-forcing range: [" << emipmin << ".." << emipmax << "]");
 
         F90NAME(m_monthly,set_forcing)(ctatm,cemip,ctaux,ctauy,&month);
-        if (internal_forcing)
+        if (internal_forcing_)
         {
             F90NAME(m_monthly,set_internal_forcing)(ctemp,csalt,&month);
         }

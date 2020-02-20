@@ -328,7 +328,7 @@ public:
     int ite_,its_;
 
     //! use internal temperature and salinity forcing
-    bool internal_forcing;
+    bool internal_forcing_;
 
     //! wind forcing method (0: data (trenberth), 1: zonally averaged, 2: idealized)
     int iza;
