@@ -206,11 +206,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     this->SetLabel(ss.str().c_str());
 
     // default: north atlantic
-    xmin     = paramList.get<double>("Global Bound xmin") * PI_ / 180.0;
-    xmax     = paramList.get<double>("Global Bound xmax") * PI_ / 180.0;
-    ymin     = paramList.get<double>("Global Bound ymin") * PI_ / 180.0;
-    ymax     = paramList.get<double>("Global Bound ymax") * PI_ / 180.0;
-    periodic = paramList.get<bool>("Periodic");
+    double xmin = paramList.get<double>("Global Bound xmin") * PI_ / 180.0;
+    double xmax = paramList.get<double>("Global Bound xmax") * PI_ / 180.0;
+    double ymin = paramList.get<double>("Global Bound ymin") * PI_ / 180.0;
+    double ymax = paramList.get<double>("Global Bound ymax") * PI_ / 180.0;
+    periodic    = paramList.get<bool>("Periodic");
 
     // sanity check
     double xdist = pow(cos(xmax)-cos(xmin), 2) + pow(sin(xmax)-sin(xmin), 2);
@@ -221,7 +221,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                 << xdist, __FILE__, __LINE__);
     }
 
-    hdim         = paramList.get<double>("Depth hdim");
+    double hdim  = paramList.get<double>("Depth hdim");
     double qz    = paramList.get<double>("Grid Stretching qz");
     int  itopo   = paramList.get<int>("Topography");
     bool flat    = paramList.get<bool>("Flat Bottom");

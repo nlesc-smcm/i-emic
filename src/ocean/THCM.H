@@ -341,15 +341,6 @@ public:
     //! set if you have vmix_flag=1 in mix_imp.f (recommended).
     void fixMixing(int value);
 
-    //! \name get physical global domain bounds
-    //@{
-    inline double xMin() const {return xmin;}
-    inline double xMax() const {return xmax;}
-    inline double yMin() const {return ymin;}
-    inline double yMax() const {return ymax;}
-    inline double hDim() const {return hdim;}
-    //@}
-
     //! \name these are used by the block preconditioner:
     //!@
     inline double AlphaT()    const {return alphaT;}
@@ -520,9 +511,6 @@ private:
 
     //! global grid dimensions
     int n,m,l;
-
-    //! physical domain bounds (global long./lat./depth)
-    double xmin,xmax,ymin,ymax,hdim;
 
     //! periodic domain in x-direction?
     bool periodic;
