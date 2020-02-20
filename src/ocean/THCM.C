@@ -451,7 +451,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     assemblySurfaceMap_ = domain_->CreateAssemblyMap(1,true);
 
     // Surface assembly/standard import strategy
-    as2std_surf =
+    as2std_surf_ =
         Teuchos::rcp(new Epetra_Import(*assemblySurfaceMap_, *StandardSurfaceMap));
 
     // Single-unknown volume maps
@@ -1429,7 +1429,7 @@ void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
     CHECK_MAP(atmosT, StandardSurfaceMap);
     // Standard2Assembly
     // Import atmosT into local atmosT
-    CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf, Insert));
+    CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf_, Insert));
 
     double *locAtmosT;
 
@@ -1444,7 +1444,7 @@ void THCM::setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ)
 
     // Standard2Assembly
     // Import atmosQ into local atmosQ
-    CHECK_ZERO( localAtmosQ->Import(*atmosQ, *as2std_surf, Insert) );
+    CHECK_ZERO( localAtmosQ->Import(*atmosQ, *as2std_surf_, Insert) );
 
     double *tmpAtmosQ;
     localAtmosQ->ExtractView(&tmpAtmosQ);
@@ -1458,7 +1458,7 @@ void THCM::setAtmosphereA(Teuchos::RCP<Epetra_Vector> const &atmosA)
 
     // Standard2Assembly
     // Import atmosQ into local atmosQ
-    CHECK_ZERO( localAtmosA->Import(*atmosA, *as2std_surf, Insert) );
+    CHECK_ZERO( localAtmosA->Import(*atmosA, *as2std_surf_, Insert) );
 
     double *tmpAtmosA;
     localAtmosA->ExtractView(&tmpAtmosA);
@@ -1471,7 +1471,7 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
     CHECK_MAP(atmosP, StandardSurfaceMap);
 
     // Import atmosP into local atmosP
-    CHECK_ZERO(localAtmosP->Import(*atmosP, *as2std_surf, Insert));
+    CHECK_ZERO(localAtmosP->Import(*atmosP, *as2std_surf_, Insert));
 
     double *tmpAtmosP;
     localAtmosP->ExtractView(&tmpAtmosP);
@@ -1483,7 +1483,7 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 void THCM::setSeaIceQ(Teuchos::RCP<Epetra_Vector> const &seaiceQ)
 {
     CHECK_MAP(seaiceQ, StandardSurfaceMap);
-    CHECK_ZERO(localSeaiceQ->Import(*seaiceQ, *as2std_surf ,Insert));
+    CHECK_ZERO(localSeaiceQ->Import(*seaiceQ, *as2std_surf_ ,Insert));
     double *Q;
     localSeaiceQ->ExtractView(&Q);
     F90NAME(m_inserts, insert_seaice_q)( Q );
@@ -1493,7 +1493,7 @@ void THCM::setSeaIceQ(Teuchos::RCP<Epetra_Vector> const &seaiceQ)
 void THCM::setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM)
 {
     CHECK_MAP(seaiceM, StandardSurfaceMap);
-    CHECK_ZERO(localSeaiceM->Import(*seaiceM, *as2std_surf ,Insert));
+    CHECK_ZERO(localSeaiceM->Import(*seaiceM, *as2std_surf_ ,Insert));
     double *M;
 
     if (!coupled_M)
@@ -1507,7 +1507,7 @@ void THCM::setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM)
 void THCM::setSeaIceG(Teuchos::RCP<Epetra_Vector> const &seaiceG)
 {
     CHECK_MAP(seaiceG, StandardSurfaceMap);
-    CHECK_ZERO(localSeaiceG->Import(*seaiceG, *as2std_surf ,Insert));
+    CHECK_ZERO(localSeaiceG->Import(*seaiceG, *as2std_surf_ ,Insert));
     double *G;
     localSeaiceG->ExtractView(&G);
     F90NAME(m_inserts, insert_seaice_g)( G );
@@ -1526,7 +1526,7 @@ void THCM::setTatm(Teuchos::RCP<Epetra_Vector> const &tatm)
 
     // Standard2Assembly
     // Import atmosP into local atmosP
-    CHECK_ZERO(localTatm->Import(*tatm, *as2std_surf, Insert));
+    CHECK_ZERO(localTatm->Import(*tatm, *as2std_surf_, Insert));
 
     double *tmpTatm;
     localTatm->ExtractView(&tmpTatm);
@@ -1546,7 +1546,7 @@ void THCM::setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode)
 
     // Standard2Assembly
     // Import atmosP into local atmosP
-    CHECK_ZERO(localSurfTmp->Import(*emip, *as2std_surf, Insert));
+    CHECK_ZERO(localSurfTmp->Import(*emip, *as2std_surf_, Insert));
 
     double *tmpEmip;
     localSurfTmp->ExtractView(&tmpEmip);
@@ -1574,7 +1574,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getSunO()
     F90NAME(m_probe, get_suno) ( suno );
     Teuchos::RCP<Epetra_Vector> out =
         Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
-    CHECK_ZERO(out->Export(localSunO, *as2std_surf, Zero));
+    CHECK_ZERO(out->Export(localSunO, *as2std_surf_, Zero));
     return out;
 }
 
@@ -1602,7 +1602,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
         Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
 
     // Export assembly map surface emip
-    CHECK_ZERO(emip->Export(*localEmip, *as2std_surf, Zero));
+    CHECK_ZERO(emip->Export(*localEmip, *as2std_surf_, Zero));
 
     return emip;
 }
@@ -1638,7 +1638,7 @@ std::vector<Teuchos::RCP<Epetra_Vector> > THCM::getFluxes()
 
     for (int i = 0; i != numFluxes; ++i)
     {
-        CHECK_ZERO(fluxes[i]->Export(localFluxes[i], *as2std_surf, Zero));
+        CHECK_ZERO(fluxes[i]->Export(localFluxes[i], *as2std_surf_, Zero));
     }
 
     return fluxes;
@@ -1669,10 +1669,10 @@ THCM::Derivatives THCM::getDerivatives()
     d.dFSdM = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
     d.dFSdG = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
 
-    d.dFTdM->Export(local_dftdm, *as2std_surf, Zero);
-    d.dFSdQ->Export(local_dfsdq, *as2std_surf, Zero);
-    d.dFSdM->Export(local_dfsdm, *as2std_surf, Zero);
-    d.dFSdG->Export(local_dfsdg, *as2std_surf, Zero);
+    d.dFTdM->Export(local_dftdm, *as2std_surf_, Zero);
+    d.dFSdQ->Export(local_dfsdq, *as2std_surf_, Zero);
+    d.dFSdM->Export(local_dfsdm, *as2std_surf_, Zero);
+    d.dFSdG->Export(local_dfsdg, *as2std_surf_, Zero);
 
     return d;
 }
@@ -1702,7 +1702,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getAtmosQ()
         Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
 
     // Export assembly map surface evaporation to standard surface map
-    CHECK_ZERO(atmosQ->Export(*getLocalAtmosQ(), *as2std_surf, Zero));
+    CHECK_ZERO(atmosQ->Export(*getLocalAtmosQ(), *as2std_surf_, Zero));
     return atmosQ;
 }
 
@@ -1737,7 +1737,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getOceanE()
         Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
 
     // Export assembly map surface evaporation to standard surface map
-    CHECK_ZERO(oceanE->Export(*getLocalOceanE(), *as2std_surf, Zero));
+    CHECK_ZERO(oceanE->Export(*getLocalOceanE(), *as2std_surf_, Zero));
     return oceanE;
 }
 

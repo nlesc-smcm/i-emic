@@ -381,7 +381,7 @@ private:
     Teuchos::RCP<Epetra_Map> assemblyVolumeMap_;
 
     //! Surface assembly to standardmap importer
-    Teuchos::RCP<Epetra_Import> as2std_surf;
+    Teuchos::RCP<Epetra_Import> as2std_surf_;
     Teuchos::RCP<Epetra_Import> as2std_vol;
 
     //! non-overlapping map for Trilinos objects:
