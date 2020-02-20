@@ -822,7 +822,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         rowScaling_->SetLabel("Row Scaling");
         col_scaling = Teuchos::rcp(new Epetra_Vector(*solveMap_));
         col_scaling->SetLabel("Col Scaling");
-        local_row_scaling = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
+        localRowScaling_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
         local_col_scaling = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
 
         rowScaling_->PutScalar(1.0);
@@ -1753,7 +1753,7 @@ void THCM::RecomputeScaling(void)
     double ldb[_NUN_*_NUN_];
     double gdb[_NUN_*_NUN_];
 
-    int len = local_row_scaling->MyLength();
+    int len = localRowScaling_->MyLength();
     double *rowscal = new double[len];
     double *colscal = new double[len];
 
@@ -1774,12 +1774,12 @@ void THCM::RecomputeScaling(void)
     // defined as the inverse of those in THCM
     for (int i=0;i<len;i++)
     {
-        (*local_row_scaling)[i] = 1.0/rowscal[i];
+        (*localRowScaling_)[i] = 1.0/rowscal[i];
         (*local_col_scaling)[i] = 1.0/colscal[i];
     }
 
     // kick out the ghost nodes:
-    domain_->Assembly2Solve(*local_row_scaling,*rowScaling_);
+    domain_->Assembly2Solve(*localRowScaling_,*rowScaling_);
     domain_->Assembly2Solve(*local_col_scaling,*col_scaling);
 
     // make sure T and S are scaled the same way in each cell
