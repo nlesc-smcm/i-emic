@@ -502,9 +502,6 @@ private:
     //! mixing?
     int vmixGLB_;
 
-    //! taper
-    int tap;
-
     //! use fred's formulation of conv. adjustment
     bool rho_mixing;
 

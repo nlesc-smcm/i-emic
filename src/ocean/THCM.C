@@ -243,7 +243,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int ih             = paramList_.get<int>("Inhomogeneous Mixing");
     vmixGLB_           = paramList_.get<int>("Mixing");
     rho_mixing         = paramList_.get<bool>("Rho Mixing");
-    tap                = paramList_.get<int>("Taper");
+    int tap            = paramList_.get<int>("Taper");
     double alphaT      = paramList_.get<double>("Linear EOS: alpha T");
     double alphaS      = paramList_.get<double>("Linear EOS: alpha S");
     tres_              = paramList_.get<int>("Restoring Temperature Profile");
