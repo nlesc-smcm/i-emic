@@ -547,12 +547,6 @@ private:
     //! note that wind is read in by each process and interpolated, but
     //! for some reason that doesn't work for T and S
     void SetupMonthlyForcing();
-
-    //! setup load-balancing (optionally reads weights or creates them
-    //! using thcm_utils, which only looks at land mask at this stage)
-    //! This alters the behaviour of the TRIOS::Domain class, which will
-    //! provide a different solveMap_ after the call.
-    void SetupLoadBalancing();
 };
 
 #endif
