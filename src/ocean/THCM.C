@@ -76,7 +76,7 @@ extern "C" {
     //          ih,vmix_GLB,tap,rho_mixing,
     //          periodic,itopo,flat,rd_mask,
     //          TRES,SRES,iza,ite_,its_,rd_spertm
-    //          coupled_T, coupled_S, coriolis_on,
+    //          coupledT_, coupled_S, coriolis_on,
     //          forcing_type
     _MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
                                              double*,double*,double*,double*,double*,double*,
@@ -253,7 +253,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     ite_               = paramList_.get<int>("Levitus T");
     its_               = paramList_.get<int>("Levitus S");
     internal_forcing_  = paramList_.get<bool>("Levitus Internal T/S");
-    coupled_T          = paramList_.get<int>("Coupled Temperature");
+    coupledT_         = paramList_.get<int>("Coupled Temperature");
     coupled_S          = paramList_.get<int>("Coupled Salinity");
     coupled_M          = paramList_.get<int>("Coupled Sea Ice Mask");
     fixPressurePoints_ = paramList_.get<bool>("Fix Pressure Points");
@@ -373,7 +373,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &ih, &vmixGLB_, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
-                                  &coupled_T, &coupled_S, &coriolis_on,
+                                  &coupledT_, &coupled_S, &coriolis_on,
                                   &forcing_type);
 
     INFO("THCM init: m_global::initialize... done");

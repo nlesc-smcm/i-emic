@@ -178,9 +178,9 @@ public:
     //!
     //! 0: standalone thcm
     //! 1: accepting external forcing
-    int coupled_T, coupled_S, coupled_M;
+    int coupledT_, coupled_S, coupled_M;
 
-    int getCoupledT() { return coupled_T; }
+    int getCoupledT() { return coupledT_; }
     int getCoupledS() { return coupled_S; }
 
     //! Set atmosphere temperature in the ocean model
