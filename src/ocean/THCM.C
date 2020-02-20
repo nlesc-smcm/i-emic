@@ -783,13 +783,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     frc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *solveMap_, 1));
     frc_->SetLabel("Forcing");
 
-    // we do not allow these to be modified, use the OceanModel interface
-    // (computeShiftedMatrix, setXdot)
-    // for implementing Time integration or eigenvalue things.
-    sigmaUVTS=0.0;
-//  sigmaWP=1.0e-14;
-    sigmaWP=0.0;
-
 // we can select two points where the continuity equation will be replaced by
 // P(i,j,k) = 0. This is experimental, we hope to fix the divergence problem in the 4D case
 //  like this
@@ -1083,11 +1076,6 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         tmpJac->PutScalar(0.0); // set all matrix entries to zero
         localDiagB_->PutScalar(0.0);
-
-        if (sigmaUVTS || sigmaWP) {
-            ERROR("We do not allow THCM to shift the matrix anymore!",
-                  __FILE__,__LINE__);
-        }
 
         //Call the fortran routine, providing the solution vector,
         //and get back the three vectors of the sparse Jacobian (CSR form)

@@ -497,9 +497,6 @@ private:
     //! mixing?
     int vmixGLB_;
 
-    //! factors sigma for the Jacobian A+sigma*B
-    double sigmaUVTS,sigmaWP;
-
     //! sres_=0: non-restoring salt forcing => integral condition in A and f
     int sres_;
 
