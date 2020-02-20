@@ -148,7 +148,7 @@ public:
 
       If computeJac=true the Jacobian is computed and can be obtained
       by calling getJacobian(). The Jacobian in THCM is A-sigma*B, but
-      we keep sigma set to 0. Use diagB to access the B matrix.
+      we keep sigma set to 0. Use diagB_ to access the B matrix.
 
       If maskTest is true we compute the Jacobian just for testing the
       landmask. This means that we temporarily switch off restoring
@@ -163,7 +163,7 @@ public:
 
     /*! the matrix B is used by THCM to 'switch off' some equations.
       It is diagonal and the diagonal entries can be accessed by the
-      function diagB(). We use the opposite sign as compared to THCM.
+      function diagB_(). We use the opposite sign as compared to THCM.
       The entries of B are (see assemble.f::fillcolB and
       usrc.F90::matrix): Ro for u,v 0 for w,p 1 for T,S
     */
@@ -304,7 +304,7 @@ public:
     Teuchos::RCP<TRIOS::Domain> GetDomain() {return domain_;}
 
     //! get the diagonal matrix B
-    Teuchos::RCP<Epetra_Vector> DiagB(){return diagB;}
+    Teuchos::RCP<Epetra_Vector> DiagB(){return diagB_;}
 
     //! return the communicator object
     Teuchos::RCP<Epetra_Comm> GetComm(){return Comm;}
@@ -437,7 +437,7 @@ private:
     Teuchos::RCP<Epetra_Vector> localRhs_;
 
     //! the diagonal matrix B stored as a vector
-    Teuchos::RCP<Epetra_Vector> localDiagB_, diagB;
+    Teuchos::RCP<Epetra_Vector> localDiagB_, diagB_;
 
     //! Jacobian in globally assembled and load-balanced
     Teuchos::RCP<Epetra_CrsMatrix> Jac;

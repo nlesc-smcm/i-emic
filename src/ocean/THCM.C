@@ -641,7 +641,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // Create internal vectors
     initialSolution_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
-    diagB           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+    diagB_          = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     localDiagB_     = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     localRhs_       = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_       = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -1215,7 +1215,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         // redistribute according to solveMap_ (may be load-balanced)
         // standard and solve maps are equal
-        domain_->Standard2Solve(*localDiagB_, *diagB); // no effect
+        domain_->Standard2Solve(*localDiagB_, *diagB_); // no effect
         domain_->Standard2Solve(*tmpJac, *Jac);     // no effect
         CHECK_ZERO(Jac->FillComplete());
 
@@ -1278,7 +1278,7 @@ void THCM::evaluateB(void)
         }
     }
 #endif
-    domain_->Standard2Solve(*localDiagB_,*diagB);
+    domain_->Standard2Solve(*localDiagB_,*diagB_);
 }
 
 //==================================================================
