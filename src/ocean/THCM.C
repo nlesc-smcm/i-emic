@@ -459,7 +459,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     assemblyVolumeMap_ = domain_->CreateAssemblyMap(1,false);
 
     // Volume assembly/standard import strategy
-    as2std_vol =
+    as2std_vol_ =
         Teuchos::rcp(new Epetra_Import(*assemblyVolumeMap_, *StandardVolumeMap));
 
 
@@ -2276,7 +2276,7 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
     F90NAME( m_integrals, salt_advection )( localStateView, localCoeffView );
 
     // Export local coefficients into global entries
-    CHECK_ZERO(globalCoeff->Export(*localCoeff, *as2std_vol, Zero));
+    CHECK_ZERO(globalCoeff->Export(*localCoeff, *as2std_vol_, Zero));
 
     // Compute integral on global non-overlapping domain
     double localInt = 0.0;
@@ -2298,7 +2298,7 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
     F90NAME( m_integrals, salt_diffusion )( localStateView, localCoeffView );
 
     // Export local coefficients into global non overlapping entries
-    CHECK_ZERO(globalCoeff->Export(*localCoeff, *as2std_vol, Zero));
+    CHECK_ZERO(globalCoeff->Export(*localCoeff, *as2std_vol_, Zero));
 
     // std::ofstream file;
     // std::stringstream ss;
