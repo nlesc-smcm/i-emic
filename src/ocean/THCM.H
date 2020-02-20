@@ -467,7 +467,7 @@ private:
     Teuchos::ParameterList paramList_;
 
     //! timer status list
-    Teuchos::ParameterList timerList;
+    Teuchos::ParameterList timerList_;
 
     //! \name the matrix in THCM (CSR-format)
     /*! Memory for the Jacobian on the subdomain is allocated by the

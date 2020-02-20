@@ -1830,7 +1830,7 @@ void THCM::normalizePressure(Epetra_Vector& soln) const
 void THCM::startTiming(std::string fname)
 {
     Teuchos::RCP<Epetra_Time> T=Teuchos::rcp(new Epetra_Time(*comm_));
-    timerList.sublist("timers").set(fname,T);
+    timerList_.sublist("timers").set(fname,T);
 }
 
 
@@ -1838,16 +1838,16 @@ void THCM::startTiming(std::string fname)
 void THCM::stopTiming(std::string fname,bool print)
 {
     Teuchos::RCP<Epetra_Time> T = Teuchos::null;
-    T=timerList.sublist("timers").get(fname,T);
+    T=timerList_.sublist("timers").get(fname,T);
     double elapsed=0;
     if (T!=Teuchos::null)
     {
         elapsed=T->ElapsedTime();
     }
-    int ncalls=timerList.sublist("number of calls").get(fname,0);
-    double total_time=timerList.sublist("total time").get(fname,0.0);
-    timerList.sublist("number of calls").set(fname,ncalls+1);
-    timerList.sublist("total time").set(fname,total_time+elapsed);
+    int ncalls=timerList_.sublist("number of calls").get(fname,0);
+    double total_time=timerList_.sublist("total time").get(fname,0.0);
+    timerList_.sublist("number of calls").set(fname,ncalls+1);
+    timerList_.sublist("total time").set(fname,total_time+elapsed);
     if (print)
     {
         (std::cout) << "### timing: "<<fname<<" "<<elapsed<<std::endl;
@@ -1862,8 +1862,8 @@ void THCM::printTiming(std::ostream& os)
     os << " # Calls \t Cumulative Time \t Time/call\n";
     os << "======================================================"<<std::endl;
 
-    Teuchos::ParameterList& ncallsList=timerList.sublist("number of calls");
-    Teuchos::ParameterList& elapsedList=timerList.sublist("total time");
+    Teuchos::ParameterList& ncallsList=timerList_.sublist("number of calls");
+    Teuchos::ParameterList& elapsedList=timerList_.sublist("total time");
     for (Teuchos::ParameterList::ConstIterator i=ncallsList.begin();i!=ncallsList.end();i++)
     {
         const std::string& fname = i->first;
@@ -1873,7 +1873,7 @@ void THCM::printTiming(std::ostream& os)
            << ((ncalls>0)? elapsed/(double)ncalls : 0.0) <<std::endl;
     }
     os << "====================================================="<<std::endl;
-    DEBUG(timerList);
+    DEBUG(timerList_);
 }
 
 //=============================================================================
