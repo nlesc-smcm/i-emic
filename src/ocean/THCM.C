@@ -240,7 +240,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         }
     }
 
-    ih                 = paramList_.get<int>("Inhomogeneous Mixing");
+    int ih             = paramList_.get<int>("Inhomogeneous Mixing");
     vmix_GLB           = paramList_.get<int>("Mixing");
     rho_mixing         = paramList_.get<bool>("Rho Mixing");
     tap                = paramList_.get<int>("Taper");

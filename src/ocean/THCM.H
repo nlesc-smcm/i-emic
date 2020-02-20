@@ -501,9 +501,6 @@ private:
     //! compute salinity integral
     bool compSalInt_;
 
-    //! inhomogeneous mixing?
-    int ih;
-
     //! mixing?
     int vmix_GLB;
 
