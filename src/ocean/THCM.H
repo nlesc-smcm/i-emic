@@ -239,9 +239,6 @@ public:
     //! Obtain ocean evaporation vector
     Teuchos::RCP<Epetra_Vector> getOceanE();
 
-    //! Test
-    void setAtmosphereTest();
-
     //! Return a shared pointer to the ocean's gathered landmask
     //! for use in the atmosphere
     std::shared_ptr<std::vector<int> > getLandMask();
