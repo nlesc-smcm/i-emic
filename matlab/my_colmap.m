@@ -4,17 +4,17 @@ function [out] = my_colmap(colrange, mn, sze, bcol, ecol)
 % mn       : data mean
 % sze      : number of colors
 
-    if nargin < 3
-        sze = 1e4;
+    if nargin < 1
+        colrange = caxis;
     end
 
     if nargin < 2
         mn = mean(colrange);
     end
-    
-    if nargin < 1
-        colrange = caxis;
-    end
+
+    if nargin < 3
+        sze = 1e4;
+    end    
     
     if nargin < 4
         bcol = [0    0.4470    0.7410];
