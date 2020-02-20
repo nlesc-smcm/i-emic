@@ -793,12 +793,12 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     if (fixPressurePoints_)
     {
-        rowPfix1 = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
+        rowPfix1_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
         rowPfix2 = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
     }
     else
     {
-        rowPfix1 = -1;
+        rowPfix1_ = -1;
         rowPfix2 = -1;
     }
 
@@ -1050,11 +1050,11 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             }
         }
 #endif
-        if (rowPfix1>=0)
+        if (rowPfix1_>=0)
         {
-            if (tmp_rhs->Map().MyGID(rowPfix1))
+            if (tmp_rhs->Map().MyGID(rowPfix1_))
             {
-                (*tmp_rhs)[tmp_rhs->Map().LID(rowPfix1)]=0.0;
+                (*tmp_rhs)[tmp_rhs->Map().LID(rowPfix1_)]=0.0;
             }
         }
         if (rowPfix2>=0)
@@ -1246,7 +1246,7 @@ void THCM::evaluateB(void)
     if (fixPressurePoints_)
     {
         for (int i=1;i<=2;i++) {
-            int row = (i==1)? rowPfix1: rowPfix2;
+            int row = (i==1)? rowPfix1_: rowPfix2;
             if (localDiagB_->Map().MyGID(row))
             {
                 int lid = localDiagB_->Map().LID(row);
@@ -2372,7 +2372,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
 {
     for (int i=1;i<=2;i++) {
-        int row = (i==1)? rowPfix1: rowPfix2;
+        int row = (i==1)? rowPfix1_: rowPfix2;
         if (A.MyGRID(row))
         {
             int lidB = B.Map().LID(row);

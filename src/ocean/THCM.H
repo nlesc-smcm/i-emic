@@ -527,7 +527,7 @@ private:
     double totalVolume_;
 
     //! pressure points where equation is replaced by P=0 (-1 means none)
-    int rowPfix1, rowPfix2;
+    int rowPfix1_, rowPfix2;
 
     //! asks THCM to recompute scaling vectors
     void RecomputeScaling(void);
@@ -541,7 +541,7 @@ private:
     //! flag to switch Dirichlet values P=0 on/off
     bool fixPressurePoints_;
 
-    //! implement Dirichlet values P=0 in cells rowPfix1/2 (if >=0)
+    //! implement Dirichlet values P=0 in cells rowPfix1_/2 (if >=0)
     void fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B);
 
     //! this subroutine defines the maximal matrix graph (pattern of nonzeros in the jacobian
