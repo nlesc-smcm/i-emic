@@ -398,7 +398,7 @@ private:
     Teuchos::RCP<Epetra_Vector> initialSolution_;
 
     //! used to import current approximation to THCM:
-    Teuchos::RCP<Epetra_Vector> localSol;
+    Teuchos::RCP<Epetra_Vector> localSol_;
 
     //! used to import atmosphere temperature into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosT;

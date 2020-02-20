@@ -644,7 +644,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     diagB           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     localDiagB      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     localRhs        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
-    localSol        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localSol_       = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // 2D overlapping interface fields
     localAtmosT     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -1011,7 +1011,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
     // convert to standard distribution and
     // import values from ghost-nodes on neighbouring subdomains:
-    domain_->Solve2Assembly(soln,*localSol);
+    domain_->Solve2Assembly(soln,*localSol_);
 
 
     int NumMyElements = assemblyMap_->NumMyElements();
@@ -1023,7 +1023,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
     // We use 'Copy' mode, which is clean but possibly slow.
     // Probably 'View' would be allowable as well.
     double* solution;
-    localSol->ExtractView(&solution);
+    localSol_->ExtractView(&solution);
     if(tmp_rhs!=Teuchos::null)
     {
         // INFO("Compute RHS...");
@@ -1627,7 +1627,7 @@ std::vector<Teuchos::RCP<Epetra_Vector> > THCM::getFluxes()
         localFluxes[i].ExtractView(&tmpPtrs[i]);
 
     double* solution;
-    localSol->ExtractView(&solution);
+    localSol_->ExtractView(&solution);
 
     F90NAME(m_probe, get_salflux )( solution, tmpPtrs[_Sal],  &scorr_,
                                     tmpPtrs[_QSOA], tmpPtrs[_QSOS] );
@@ -1650,7 +1650,7 @@ THCM::Derivatives THCM::getDerivatives()
     Derivatives d;
 
     double *solution;
-    localSol->ExtractView(&solution);
+    localSol_->ExtractView(&solution);
 
     Epetra_Vector local_dftdm(*assemblySurfaceMap_);
     Epetra_Vector local_dfsdq(*assemblySurfaceMap_);
@@ -1723,7 +1723,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getLocalOceanE()
 
     // localsol should contain something meaningful
     double* solution;
-    localSol->ExtractView(&solution);
+    localSol_->ExtractView(&solution);
 
     F90NAME( m_probe, compute_evap )( tmpOceanE, solution );
 
