@@ -2153,62 +2153,6 @@ void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
 }
 
 //=============================================================================
-// Adjusting the integral condition using setIntCondCorrection above
-// is preferred. Under non-restoring conditions: add a constant
-// correction to the salinity values in order to satisfy the integral
-// condition.
-void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
-{
-    if (sres_ != 0)
-    {
-        WARNING("This should not be called when SRES!=0",
-                __FILE__, __LINE__);
-        return;
-    }
-    else
-    {
-        // compute salinity integral
-        double integral;
-        CHECK_ZERO(intcondCoeff_->Dot(*vec, &integral));
-
-        if (std::abs(integral) > 1e-8)
-        {
-            INFO("Adjusting for nonzero salinity integral: " << integral);
-
-#ifdef DEBUGGING_NEW
-            Utils::save(vec, "vec_to_adjust");
-#endif
-
-        }
-        else
-        {
-            return;
-        }
-
-        // add correction to salinity values
-        double correction = integral / totalVolume_;
-        int row, lid;
-        for (int k = 0; k != l_; ++k)
-            for (int j = 0; j != m_; ++j)
-                for (int i = 0; i != n_; ++i)
-                {
-                    row = FIND_ROW2(_NUN_, n_, m_, l_, i, j, k, SS);
-                    lid = vec->Map().LID(row);
-                    if (lid >= 0)
-                        (*vec)[lid] -= correction;
-                }
-#ifdef DEBUGGING_NEW
-        CHECK_ZERO(intcondCoeff_->Dot(*vec, &integral));
-        assert(std::abs(integral) < 1e-8);
-        INFO("   integral     = " << integral);
-        INFO("         V      = " << totalVolume_);
-        INFO("   S correction = " << correction);
-#endif
-    }
-}
-
-
-//=============================================================================
 //! Let THCM perform integral checks
 void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
                           double &salt_advection,

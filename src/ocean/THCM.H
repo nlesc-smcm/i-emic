@@ -348,10 +348,6 @@ public:
     //! use that to correct the integral condition
     void setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec);
 
-    //! Under non-restoring conditions: add a constant to the salinity
-    //! values in vec, to satisfy the integral condition.
-    void adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec);
-
     //! Let THCM perform integral checks
     void integralChecks(Teuchos::RCP<Epetra_Vector> state,
                         double &salt_advection,
