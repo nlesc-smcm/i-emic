@@ -479,7 +479,7 @@ private:
     //! row pointer
     int* begA_;
     //! column indices
-    int* jcoA;
+    int* jcoA_;
     //! values
     double* coA;
     //! values of the diagonal matrix B
