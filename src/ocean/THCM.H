@@ -443,7 +443,7 @@ private:
     Teuchos::RCP<Epetra_CrsMatrix> jac_;
 
     //! Jacobian based on standard subdomains
-    Teuchos::RCP<Epetra_CrsMatrix> localJac_, testJac;
+    Teuchos::RCP<Epetra_CrsMatrix> localJac_, testJac_;
 
     //! Forcing in globally assembled and load-balanced
     Teuchos::RCP<Epetra_CrsMatrix> Frc;

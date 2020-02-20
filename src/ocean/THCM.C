@@ -774,8 +774,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localJac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *localMatrixGraph));
     localJac_->SetLabel("Local Jacobian");
 
-    testJac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *testMatrixGraph));
-    testJac->SetLabel("Testing Jacobian");
+    testJac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *testMatrixGraph));
+    testJac_->SetLabel("Testing Jacobian");
 
     jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *MatrixGraph));
     jac_->SetLabel("Jacobian");
@@ -1079,7 +1079,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         // INFO("Compute Jacobian...");
         Teuchos::RCP<Epetra_CrsMatrix> tmpJac;
         if (maskTest) // Use Jacobian based on testing graph
-            tmpJac = testJac;
+            tmpJac = testJac_;
         else // Use Jacobian based on standard graph
             tmpJac = localJac_;
 
