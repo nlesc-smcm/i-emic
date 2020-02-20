@@ -464,7 +464,7 @@ private:
     Teuchos::RCP<Epetra_MultiVector> nullSpace_;
 
     //! global shared parameter list
-    Teuchos::ParameterList paramList;
+    Teuchos::ParameterList paramList_;
 
     //! timer status list
     Teuchos::ParameterList timerList;
