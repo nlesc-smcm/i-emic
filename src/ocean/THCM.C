@@ -315,7 +315,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // get a map object representing the subdomain (with ghost-nodes/overlap).
     // This map defines the nodes local to the THCM subdomain
-    AssemblyMap = domain_->GetAssemblyMap();
+    assemblyMap_ = domain_->GetAssemblyMap();
 
     // get a map object representing the subdomain (without ghost-nodes/overlap).
     // this is an intermediate representation between the assembly and the solve
@@ -643,8 +643,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     initialSolution = Teuchos::rcp(new Epetra_Vector(*SolveMap));
     diagB           = Teuchos::rcp(new Epetra_Vector(*SolveMap));
     localDiagB      = Teuchos::rcp(new Epetra_Vector(*StandardMap));
-    localRhs        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
-    localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+    localRhs        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localSol        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // 2D overlapping interface fields
     localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
@@ -824,8 +824,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         row_scaling->SetLabel("Row Scaling");
         col_scaling = Teuchos::rcp(new Epetra_Vector(*SolveMap));
         col_scaling->SetLabel("Col Scaling");
-        local_row_scaling = Teuchos::rcp(new Epetra_Vector(*AssemblyMap) );
-        local_col_scaling = Teuchos::rcp(new Epetra_Vector(*AssemblyMap) );
+        local_row_scaling = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
+        local_col_scaling = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
 
         row_scaling->PutScalar(1.0);
         col_scaling->PutScalar(1.0);
@@ -886,7 +886,7 @@ bool THCM::computeForcing()
 
     int index, numentries;
 
-    int NumMyElements = AssemblyMap->NumMyElements();
+    int NumMyElements = assemblyMap_->NumMyElements();
     int imax = NumMyElements;
     std::vector<int> MyElements;
 
@@ -895,7 +895,7 @@ bool THCM::computeForcing()
     for (int i = 0; i < imax; i++)
     {
 #ifndef NO_INTCOND
-        if (sres_ == 0 && AssemblyMap->GID(i) == rowintcon_)
+        if (sres_ == 0 && assemblyMap_->GID(i) == rowintcon_)
             continue;
 #endif
         if (domain_->IsGhost(i, _NUN_))
@@ -905,14 +905,14 @@ bool THCM::computeForcing()
         numentries = begF[i+1] - index;
         for (int j = 0; j <  numentries ; j++)
         {
-            indices[j] = AssemblyMap->GID(jcoF[index-1+j] - 1);
+            indices[j] = assemblyMap_->GID(jcoF[index-1+j] - 1);
             values[j]  = coF[index - 1 + j];
             MyElements.push_back(indices[j]);
         }
 
         if (localFrc->Filled())
         {
-            int ierr = localFrc->ReplaceGlobalValues(AssemblyMap->GID(i), numentries,
+            int ierr = localFrc->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
                                                      values, indices);
 
             // ierr == 3 probably means not all row entries are replaced,
@@ -926,9 +926,9 @@ bool THCM::computeForcing()
 
                 INFO(" ERROR while inserting/replacing values in local Jacobian");
 
-                int GRID = AssemblyMap->GID(i);
+                int GRID = assemblyMap_->GID(i);
                 std::cout << " GRID: " << GRID << std::endl;
-                std::cout << " max GRID: " << AssemblyMap->GID(imax-1) << std::endl;
+                std::cout << " max GRID: " << assemblyMap_->GID(imax-1) << std::endl;
                 std::cout << " number of entries: " << numentries << std::endl;
 
                 std::cout << " entries: ";
@@ -948,7 +948,7 @@ bool THCM::computeForcing()
                           << localFrc->Graph().NumMyIndices(LRID) << std::endl;
 
                 int ierr2 = localFrc->ExtractGlobalRowCopy(
-                    AssemblyMap->GID(i), maxlen, numentries, values, indices);
+                    assemblyMap_->GID(i), maxlen, numentries, values, indices);
 
                 std::cout << "\noriginal row: " << std::endl;
                 std::cout << "number of entries: " << numentries << std::endl;
@@ -963,7 +963,7 @@ bool THCM::computeForcing()
         }
         else
         {
-            CHECK_ZERO(localFrc->InsertGlobalValues(AssemblyMap->GID(i), numentries,
+            CHECK_ZERO(localFrc->InsertGlobalValues(assemblyMap_->GID(i), numentries,
                                                     values, indices));
         }
     } //i-loop over rows
@@ -1014,7 +1014,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
     domain_->Solve2Assembly(soln,*localSol);
 
 
-    int NumMyElements = AssemblyMap->NumMyElements();
+    int NumMyElements = assemblyMap_->NumMyElements();
 
 //  DEBUG("=== evaluate: input vector");
 //  DEBUG( (domain_->Gather(*soln,0)) )
@@ -1121,17 +1121,17 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         for (int i = 0; i < imax; i++)
         {
             if (!domain_->IsGhost(i, _NUN_) &&
-                ( ( AssemblyMap->GID(i) != rowintcon_ ) || maskTest ) )
+                ( ( assemblyMap_->GID(i) != rowintcon_ ) || maskTest ) )
             {
                 index = begA[i]; // note that these arrays use 1-based indexing
                 numentries = begA[i+1] - index;
                 for (int j = 0; j <  numentries ; j++)
                 {
-                    indices[j] = AssemblyMap->GID(jcoA[index-1+j] - 1);
+                    indices[j] = assemblyMap_->GID(jcoA[index-1+j] - 1);
                     values[j]  = coA[index - 1 + j];
                 }
 
-                int ierr = tmpJac->ReplaceGlobalValues(AssemblyMap->GID(i), numentries,
+                int ierr = tmpJac->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
                                                          values, indices);
 
                 // ierr == 3 probably means not all row entries are replaced,
@@ -1151,9 +1151,9 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
                     INFO(" ERROR while inserting/replacing values in local Jacobian");
 
-                    int GRID = AssemblyMap->GID(i);
+                    int GRID = assemblyMap_->GID(i);
                     std::cout << " GRID: " << GRID << std::endl;
-                    std::cout << " max GRID: " << AssemblyMap->GID(imax-1) << std::endl;
+                    std::cout << " max GRID: " << assemblyMap_->GID(imax-1) << std::endl;
                     std::cout << " number of entries: " << numentries << std::endl;
 
                     std::cout << " entries: ";
@@ -1170,7 +1170,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                     std::cout << " have rowintcon:       " << tmpJac->MyGRID(rowintcon_)
                               << std::endl;
                     std::cout << " rowintcon:            " << rowintcon_ << std::endl;
-                    std::cout << " assembly rowintcon:   " << AssemblyMap->LID(rowintcon_)
+                    std::cout << " assembly rowintcon:   " << assemblyMap_->LID(rowintcon_)
                               << std::endl;
                     std::cout << " standard rowintcon:   " << StandardMap->LID(rowintcon_)
                               << std::endl;
@@ -1180,7 +1180,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                               << tmpJac->Graph().NumMyIndices(LRID) << std::endl;
 
                     int ierr2 = tmpJac->ExtractGlobalRowCopy
-                        (AssemblyMap->GID(i), maxlen, numentries, values, indices);
+                        (assemblyMap_->GID(i), maxlen, numentries, values, indices);
 
                     std::cout << "\noriginal row: " << std::endl;
                     std::cout << "number of entries: " << numentries << std::endl;
@@ -1194,7 +1194,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 }
 
                 // reconstruct the diagonal matrix B
-                int lid = StandardMap->LID(AssemblyMap->GID(i));
+                int lid = StandardMap->LID(assemblyMap_->GID(i));
                 double mass_param = 1.0;
                 this->getParameter("Mass", mass_param);
                 (*localDiagB)[lid] = coB[i] * mass_param;
@@ -1241,7 +1241,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 // just reconstruct the diagonal matrix B from THCM
 void THCM::evaluateB(void)
 {
-    int NumMyElements = AssemblyMap->NumMyElements();
+    int NumMyElements = assemblyMap_->NumMyElements();
 
     DEBUG("Construct matrix B...");
 
@@ -1252,7 +1252,7 @@ void THCM::evaluateB(void)
         if (!domain_->IsGhost(i, _NUN_))
         {
             // reconstruct the diagonal matrix B
-            int lid = StandardMap->LID(AssemblyMap->GID(i));
+            int lid = StandardMap->LID(assemblyMap_->GID(i));
             (*localDiagB)[lid] = coB[i];
         } // not a ghost?
     } // i-loop over rows
@@ -2262,7 +2262,7 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
 
     // Create local state
     Teuchos::RCP<Epetra_Vector> localState =
-        Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+        Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // Import into local state
     domain_->Solve2Assembly(*state, *localState);
@@ -2456,7 +2456,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
             for (int i=1;i<=n;i++)
             {
                 int lidU = FIND_ROW2(_NUN_,n,m,l,i-1,j-1,k-1,UU);
-                int gidU = AssemblyMap->GID(lidU);
+                int gidU = assemblyMap_->GID(lidU);
                 if (StandardMap->MyGID(gidU)) // otherwise: ghost cell, not in Jacobian
                 {
                     int lid0 = StandardMap->LID(gidU)-1;
@@ -2752,7 +2752,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getIntCondCoeff()
 {
     intcond_coeff->PutScalar(0.0);
     Teuchos::RCP<Epetra_Vector> intcond_tmp =
-        Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+        Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     int nml = (domain_->LocalN())*(domain_->LocalM())*(domain_->LocalL());
 

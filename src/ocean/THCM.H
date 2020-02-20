@@ -376,7 +376,7 @@ private:
     //! (obtained from the domain-object)
     //!@{
     //! overlapping map for 'THCM objects':
-    Teuchos::RCP<Epetra_Map> AssemblyMap;
+    Teuchos::RCP<Epetra_Map> assemblyMap_;
     Teuchos::RCP<Epetra_Map> AssemblySurfaceMap;
     Teuchos::RCP<Epetra_Map> AssemblyVolumeMap;
 
