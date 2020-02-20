@@ -284,10 +284,6 @@ public:
     //! print timer status for all timed program parts
     void printTiming(std::ostream&);
 
-    //! set the pressure in one specific point to zero by subtracting
-    //! that point's value from all pressure points.
-    void normalizePressure(Epetra_Vector& soln) const;
-
     //! Set a bifurcation parameter in the application physics
     bool setParameter(std::string label, double value);
 

@@ -1788,32 +1788,6 @@ void THCM::RecomputeScaling(void)
 }
 
 //=============================================================================
-void THCM::normalizePressure(Epetra_Vector& soln) const
-{
-    int i = n_/2-1;
-    int j = 6*m_/8-1;
-    int k = l_-1;
-    int ref_gid = FIND_ROW2(_NUN_,n_,m_,l_,i,j,k,PP);
-    int ref_lid, ref_host;
-    double ref_value;
-    soln.Map().RemoteIDList(1, &ref_gid, &ref_host, &ref_lid);
-
-    DEBUG("+++ NORMALIZE P +++\n");
-    DEBVAR(ref_gid);
-    DEBVAR(ref_lid);
-    DEBVAR(ref_host);
-    DEBUG("+++++++++++++++++++\n");
-
-    if (ref_lid>=0) ref_value = soln[ref_lid];
-    soln.Comm().Broadcast (&ref_value, 1, ref_host);
-
-    //subtract reference value from all 'P' points except land cells
-    // TODO: 1) we do not handle land cells correctly here, yet!
-    //       2) the whole thing seems to go wrong...
-    //  for (int i=PP;i<=soln.MyLength();i+=_NUN_) soln[i-1] -= ref_value;
-}
-
-//=============================================================================
 // Timing functionality
 void THCM::startTiming(std::string fname)
 {
