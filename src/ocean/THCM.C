@@ -116,7 +116,7 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_mat,get_array_sizes)(int* nrows, int* nnz);
     _MODULE_SUBROUTINE_(m_mat,set_pointers)(int* nrows, int* nnz,
                                             int* begA_,int* jcoA_,double* coA_,
-                                            double* coB,
+                                            double* coB_,
                                             int* begF,int* jcoF,double* coF);
 
     // compute scaling factors for S-integral condition. Values is an n*m*l array
@@ -671,7 +671,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     coA_ = new double[nnz];
     jcoA_ = new int[nnz];
 
-    coB  = new double[nrows];
+    coB_ = new double[nrows];
 
     begF = new int[nrows+1];
     coF  = new double[nrows];
@@ -680,7 +680,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // give THCM the opportunity to set its pointers to
     // the new memory block
     DEBVAR("call set_pointers...");
-    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA_,jcoA_,coA_,coB,begF,jcoF,coF);
+    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA_,jcoA_,coA_,coB_,begF,jcoF,coF);
 
     // Initialize integral condition row, correction and coefficients
     rowintcon_     = -1;
@@ -851,7 +851,7 @@ THCM::~THCM()
     delete [] coA_;
     delete [] begA_;
 
-    delete [] coB;
+    delete [] coB_;
 
     delete [] jcoF;
     delete [] coF;
@@ -1195,7 +1195,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 int lid = standardMap_->LID(assemblyMap_->GID(i));
                 double mass_param = 1.0;
                 this->getParameter("Mass", mass_param);
-                (*localDiagB_)[lid] = coB[i] * mass_param;
+                (*localDiagB_)[lid] = coB_[i] * mass_param;
             } //not a ghost?
         } //i-loop over rows
 
@@ -1251,7 +1251,7 @@ void THCM::evaluateB(void)
         {
             // reconstruct the diagonal matrix B
             int lid = standardMap_->LID(assemblyMap_->GID(i));
-            (*localDiagB_)[lid] = coB[i];
+            (*localDiagB_)[lid] = coB_[i];
         } // not a ghost?
     } // i-loop over rows
 

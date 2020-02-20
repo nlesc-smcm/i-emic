@@ -483,7 +483,7 @@ private:
     //! values
     double* coA_;
     //! values of the diagonal matrix B
-    double* coB;
+    double* coB_;
     //! row pointer
     int* begF;
     //! column indices
