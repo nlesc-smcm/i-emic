@@ -440,7 +440,7 @@ private:
     Teuchos::RCP<Epetra_Vector> localDiagB_, diagB_;
 
     //! Jacobian in globally assembled and load-balanced
-    Teuchos::RCP<Epetra_CrsMatrix> Jac;
+    Teuchos::RCP<Epetra_CrsMatrix> jac_;
 
     //! Jacobian based on standard subdomains
     Teuchos::RCP<Epetra_CrsMatrix> localJac, testJac;
@@ -452,7 +452,7 @@ private:
     Teuchos::RCP<Epetra_CrsMatrix> localFrc;
 
     //! static graph which defines the maximal pattern of non-zero entries.
-    //! the matrix Jac is based on this graph, so depending on forcing and
+    //! the matrix jac_ is based on this graph, so depending on forcing and
     //! convective adjustment, it may contain some zeros
     Teuchos::RCP<Epetra_CrsGraph> MatrixGraph;
 
@@ -490,7 +490,7 @@ private:
     /*! Memory for the Jacobian on the subdomain is allocated by the
       C++ code. In THCM, pointers are set to these locations so that
       the Fortran code fills these arrays directly. Afterwards the
-      matrix is copied to the 'Jac' member, ignoring 'ghost' rows.
+      matrix is copied to the 'jac_' member, ignoring 'ghost' rows.
     */
     //!@{
     //! row pointer

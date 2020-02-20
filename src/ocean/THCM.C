@@ -777,8 +777,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     testJac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *testMatrixGraph));
     testJac->SetLabel("Testing Jacobian");
 
-    Jac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *MatrixGraph));
-    Jac->SetLabel("Jacobian");
+    jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *MatrixGraph));
+    jac_->SetLabel("Jacobian");
 
     localFrc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *standardMap_, 1));
     localFrc->SetLabel("Local Forcing");
@@ -870,7 +870,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getSolution()
 //=============================================================================
 Teuchos::RCP<Epetra_CrsMatrix> THCM::getJacobian()
 {
-    return Jac;
+    return jac_;
 }
 
 //=============================================================================
@@ -1216,8 +1216,8 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         // redistribute according to solveMap_ (may be load-balanced)
         // standard and solve maps are equal
         domain_->Standard2Solve(*localDiagB_, *diagB_); // no effect
-        domain_->Standard2Solve(*tmpJac, *Jac);     // no effect
-        CHECK_ZERO(Jac->FillComplete());
+        domain_->Standard2Solve(*tmpJac, *jac_);     // no effect
+        CHECK_ZERO(jac_->FillComplete());
 
         if (scaling_type == "THCM")
         {
@@ -1803,7 +1803,7 @@ void THCM::RecomputeScaling(void)
     // (2) diagonal row scaling for T and S (obsolete!)
     if (row_scaling_TS!=Teuchos::null)
     {
-        CHECK_ZERO(Jac->ExtractDiagonalCopy(*row_scaling_TS));
+        CHECK_ZERO(jac_->ExtractDiagonalCopy(*row_scaling_TS));
         for (int i=0;i<row_scaling_TS->MyLength();i+=_NUN_)
         {
             for (int j=i;j<i+4;j++)
