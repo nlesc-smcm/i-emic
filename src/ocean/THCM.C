@@ -75,7 +75,7 @@ extern "C" {
     //          alphaT,alphaS,
     //          ih,vmix_GLB,tap,rho_mixing,
     //          periodic,itopo,flat,rd_mask,
-    //          TRES,SRES,iza,ite_,its,rd_spertm
+    //          TRES,SRES,iza,ite_,its_,rd_spertm
     //          coupled_T, coupled_S, coriolis_on,
     //          forcing_type
     _MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
@@ -251,7 +251,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localSres_         = paramList.get<bool>("Local SRES Only");
     intSign_           = paramList.get<int>("Salinity Integral Sign");
     ite_               = paramList.get<int>("Levitus T");
-    its                = paramList.get<int>("Levitus S");
+    its_               = paramList.get<int>("Levitus S");
     internal_forcing   = paramList.get<bool>("Levitus Internal T/S");
     coupled_T          = paramList.get<int>("Coupled Temperature");
     coupled_S          = paramList.get<int>("Coupled Salinity");
@@ -371,7 +371,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &alphaT, &alphaS,
                                   &ih, &vmix_GLB, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
-                                  &tres, &sres, &iza, &ite_, &its, &ird_spertm,
+                                  &tres, &sres, &iza, &ite_, &its_, &ird_spertm,
                                   &coupled_T, &coupled_S, &coriolis_on,
                                   &forcing_type);
 
