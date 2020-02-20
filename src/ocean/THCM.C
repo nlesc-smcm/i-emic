@@ -241,7 +241,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
 
     int ih             = paramList_.get<int>("Inhomogeneous Mixing");
-    vmix_GLB           = paramList_.get<int>("Mixing");
+    vmixGLB_           = paramList_.get<int>("Mixing");
     rho_mixing         = paramList_.get<bool>("Rho Mixing");
     tap                = paramList_.get<int>("Taper");
     alphaT             = paramList_.get<double>("Linear EOS: alpha T");
@@ -363,14 +363,14 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int ird_spertm  = (rd_spertm ) ? 1 : 0;
 
     INFO("THCM init: m_global::initialize...");
-    INFO("    Mixing: vmix_GLB = " << vmix_GLB);
+    INFO("    Mixing: vmix_GLB = " << vmixGLB_);
 
     // In fortran object code this corresponds to the function
     //  __m_global_MOD_initialize
     F90NAME(m_global, initialize)(&nglob_, &mglob_, &lglob_,
                                   &xmin, &xmax, &ymin, &ymax, &hdim, &qz,
                                   &alphaT, &alphaS,
-                                  &ih, &vmix_GLB, &tap, &irho_mixing,
+                                  &ih, &vmixGLB_, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
                                   &coupled_T, &coupled_S, &coriolis_on,
@@ -2763,7 +2763,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getIntCondCoeff()
 // set vmix_fix
 void THCM::fixMixing(int value)
 {
-    if (vmix_GLB == 2)
+    if (vmixGLB_ == 2)
     {
         INFO(" ** fixing vmix_fix: " << value << " **");
         F90NAME(m_mix, set_vmix_fix)(&value);

@@ -502,7 +502,7 @@ private:
     bool compSalInt_;
 
     //! mixing?
-    int vmix_GLB;
+    int vmixGLB_;
 
     //! parameters for linear equation of state
     double alphaT, alphaS;
