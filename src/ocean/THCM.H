@@ -451,14 +451,6 @@ private:
     //! Forcing based on standard subdomains
     Teuchos::RCP<Epetra_CrsMatrix> localFrc_;
 
-    //! static graph which defines the maximal pattern of non-zero entries.
-    //! the matrix jac_ is based on this graph, so depending on forcing and
-    //! convective adjustment, it may contain some zeros
-    Teuchos::RCP<Epetra_CrsGraph> MatrixGraph;
-
-    //! same crs graph based on standard map
-    Teuchos::RCP<Epetra_CrsGraph> localMatrixGraph, testMatrixGraph;
-
     //! global communicator for 4D things
     Teuchos::RCP<EpetraExt::MultiComm> xyzt_comm;
 

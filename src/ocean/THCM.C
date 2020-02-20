@@ -756,28 +756,26 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // require building a whole new matrix. As we can't predict
     // where convective adjustment will happen, we assume it hap-
     // pens everywhere.
-    localMatrixGraph = this->CreateMaximalGraph();
-    testMatrixGraph  = this->CreateMaximalGraph(false);
+    Teuchos::RCP<Epetra_CrsGraph> localMatrixGraph = CreateMaximalGraph();
+    Teuchos::RCP<Epetra_CrsGraph> testMatrixGraph  = CreateMaximalGraph(false);
+    Teuchos::RCP<Epetra_CrsGraph> matrixGraph      = localMatrixGraph;
 
     if (solveMap_!=standardMap_)
     {
-        MatrixGraph = Teuchos::rcp(new Epetra_CrsGraph(Copy,*solveMap_,20));
+        matrixGraph = Teuchos::rcp(new Epetra_CrsGraph(Copy,*solveMap_,20));
         Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*standardMap_,*solveMap_));
         DEBUG("Migrate graph to solve map...");
-        CHECK_ZERO(MatrixGraph->Export(*localMatrixGraph,*import,Insert));
-        CHECK_ZERO(MatrixGraph->FillComplete());
+        CHECK_ZERO(matrixGraph->Export(*localMatrixGraph,*import,Insert));
+        CHECK_ZERO(matrixGraph->FillComplete());
     }
-    else
-    {
-        MatrixGraph = localMatrixGraph;
-    }
+
     localJac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *localMatrixGraph));
     localJac_->SetLabel("Local Jacobian");
 
     testJac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *testMatrixGraph));
     testJac_->SetLabel("Testing Jacobian");
 
-    jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *MatrixGraph));
+    jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph));
     jac_->SetLabel("Jacobian");
 
     localFrc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *standardMap_, 1));
