@@ -330,9 +330,6 @@ public:
     //! use internal temperature and salinity forcing
     bool internal_forcing_;
 
-    //! wind forcing method (0: data (trenberth), 1: zonally averaged, 2: idealized)
-    int iza;
-
     //! get the global index of the row with the integral condition (if sres_==0)
     int getRowIntCon() const {return rowintcon_;}
 

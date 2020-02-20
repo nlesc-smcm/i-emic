@@ -286,7 +286,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         ERROR("Invalid integral sign!", __FILE__, __LINE__);
     }
 
-    iza = paramList.get<int>("Wind Forcing Type");
+    // wind forcing method (0: data (trenberth), 1: zonally averaged, 2: idealized)
+    int iza = paramList.get<int>("Wind Forcing Type");
 
     if (Comm->MyPID() == 0)
     {
