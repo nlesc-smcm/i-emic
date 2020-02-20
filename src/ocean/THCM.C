@@ -253,9 +253,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     ite_               = paramList_.get<int>("Levitus T");
     its_               = paramList_.get<int>("Levitus S");
     internal_forcing_  = paramList_.get<bool>("Levitus Internal T/S");
-    coupledT_         = paramList_.get<int>("Coupled Temperature");
-    coupledS_         = paramList_.get<int>("Coupled Salinity");
-    coupledM_         = paramList_.get<int>("Coupled Sea Ice Mask");
+    coupledT_          = paramList_.get<int>("Coupled Temperature");
+    coupledS_          = paramList_.get<int>("Coupled Salinity");
+    coupledM_          = paramList_.get<int>("Coupled Sea Ice Mask");
     fixPressurePoints_ = paramList_.get<bool>("Fix Pressure Points");
     int coriolis_on    = paramList_.get<int>("Coriolis Force");
     int forcing_type   = paramList_.get<int>("Forcing Type");
@@ -641,23 +641,23 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // Create internal vectors
     initialSolution_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
-    diagB_          = Teuchos::rcp(new Epetra_Vector(*solveMap_));
-    localDiagB_     = Teuchos::rcp(new Epetra_Vector(*standardMap_));
-    localRhs_       = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
-    localSol_       = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    diagB_           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+    localDiagB_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+    localRhs_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localSol_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // 2D overlapping interface fields
-    localAtmosT_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localAtmosQ_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localAtmosA_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localAtmosP_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localSeaiceQ_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localSeaiceM_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localSeaiceG_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localOceanE_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localEmip_      = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localSurfTmp_   = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localTatm_      = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosT_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosQ_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosA_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSeaiceQ_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSeaiceM_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSeaiceG_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localOceanE_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localEmip_       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSurfTmp_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localTatm_       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -668,13 +668,13 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // allocate the memory
     begA_ = new int[nrows+1];
-    coA_ = new double[nnz];
+    coA_  = new double[nnz];
     jcoA_ = new int[nnz];
 
-    coB_ = new double[nrows];
+    coB_  = new double[nrows];
 
     begF_ = new int[nrows+1];
-    coF_ = new double[nrows];
+    coF_  = new double[nrows];
     jcoF_ = new int[nrows];
 
     // give THCM the opportunity to set its pointers to
