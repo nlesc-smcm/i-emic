@@ -643,7 +643,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     initialSolution_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     diagB           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     localDiagB      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
-    localRhs        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localRhs_       = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_       = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // 2D overlapping interface fields
@@ -1029,7 +1029,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         // INFO("Compute RHS...");
         // build rhs simultaneously on each process
         double* RHS;
-        CHECK_ZERO(localRhs->ExtractView(&RHS));
+        CHECK_ZERO(localRhs_->ExtractView(&RHS));
         TIMER_START("Ocean: compute rhs: fortran part");
         // compute right-hand-side on whole subdomain (by THCM)
         FNAME(rhs)(solution, RHS);
@@ -1037,7 +1037,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         // export overlapping rhs to unique-id global rhs vector,
         // and load-balance for solve phase:
-        domain_->Assembly2Solve(*localRhs,*tmp_rhs);
+        domain_->Assembly2Solve(*localRhs_,*tmp_rhs);
 
         // Negating the RHS... Instead of scaling the RHS, scaling the
         // Jacobian corresponds better to how the equations would be

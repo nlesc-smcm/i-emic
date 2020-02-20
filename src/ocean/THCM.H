@@ -434,7 +434,7 @@ private:
     Teuchos::RCP<Epetra_Vector> localTatm_;
 
     //! used to export computed RHS vector from THCM:
-    Teuchos::RCP<Epetra_Vector> localRhs;
+    Teuchos::RCP<Epetra_Vector> localRhs_;
 
     //! the diagonal matrix B stored as a vector
     Teuchos::RCP<Epetra_Vector> localDiagB, diagB;
