@@ -301,7 +301,7 @@ public:
     bool writeParams();
 
     //! returns the domain decomposition object
-    Teuchos::RCP<TRIOS::Domain> GetDomain() {return domain;}
+    Teuchos::RCP<TRIOS::Domain> GetDomain() {return domain_;}
 
     //! get the diagonal matrix B
     Teuchos::RCP<Epetra_Vector> DiagB(){return diagB;}
@@ -382,7 +382,7 @@ public:
 private:
 
     //! object for domain-decomposition:
-    Teuchos::RCP<TRIOS::Domain> domain;
+    Teuchos::RCP<TRIOS::Domain> domain_;
 
     //!\name maps and import/exprt objects for distributed data structures
     //! (obtained from the domain-object)
