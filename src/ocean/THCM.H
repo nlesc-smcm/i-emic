@@ -401,7 +401,7 @@ private:
     Teuchos::RCP<Epetra_Vector> localSol_;
 
     //! used to import atmosphere temperature into THCM
-    Teuchos::RCP<Epetra_Vector> localAtmosT;
+    Teuchos::RCP<Epetra_Vector> localAtmosT_;
 
     //! used to import atmosphere humidity field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosQ;

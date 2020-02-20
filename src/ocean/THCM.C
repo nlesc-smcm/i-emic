@@ -647,7 +647,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localSol_       = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // 2D overlapping interface fields
-    localAtmosT     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosT_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosA     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosP     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -1429,11 +1429,11 @@ void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
     CHECK_MAP(atmosT, standardSurfaceMap_);
     // Standard2Assembly
     // Import atmosT into local atmosT
-    CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf_, Insert));
+    CHECK_ZERO(localAtmosT_->Import(*atmosT, *as2std_surf_, Insert));
 
     double *locAtmosT;
 
-    localAtmosT->ExtractView(&locAtmosT);
+    localAtmosT_->ExtractView(&locAtmosT);
     F90NAME(m_inserts, insert_atmosphere_t)( locAtmosT );
 }
 
@@ -1681,9 +1681,9 @@ THCM::Derivatives THCM::getDerivatives()
 Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosT()
 {
     double *tmpAtmosT;
-    localAtmosT->ExtractView(&tmpAtmosT);
+    localAtmosT_->ExtractView(&tmpAtmosT);
     F90NAME(m_probe, get_atmosphere_t )( tmpAtmosT );
-    return localAtmosT;
+    return localAtmosT_;
 }
 
 //=============================================================================
