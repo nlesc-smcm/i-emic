@@ -489,7 +489,7 @@ private:
     //! column indices
     int* jcoF_;
     //! values
-    double* coF;
+    double* coF_;
     //!@}
 
     //! global grid dimensions

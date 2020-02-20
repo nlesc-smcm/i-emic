@@ -117,7 +117,7 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_mat,set_pointers)(int* nrows, int* nnz,
                                             int* begA_,int* jcoA_,double* coA_,
                                             double* coB_,
-                                            int* begF_,int* jcoF_,double* coF);
+                                            int* begF_,int* jcoF_,double* coF_);
 
     // compute scaling factors for S-integral condition. Values is an n*m*l array
     _MODULE_SUBROUTINE_(m_thcm_utils,intcond_scaling)(double* values,int* indices,int* len);
@@ -674,13 +674,13 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     coB_ = new double[nrows];
 
     begF_ = new int[nrows+1];
-    coF  = new double[nrows];
+    coF_ = new double[nrows];
     jcoF_ = new int[nrows];
 
     // give THCM the opportunity to set its pointers to
     // the new memory block
     DEBVAR("call set_pointers...");
-    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA_,jcoA_,coA_,coB_,begF_,jcoF_,coF);
+    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA_,jcoA_,coA_,coB_,begF_,jcoF_,coF_);
 
     // Initialize integral condition row, correction and coefficients
     rowintcon_     = -1;
@@ -854,7 +854,7 @@ THCM::~THCM()
     delete [] coB_;
 
     delete [] jcoF_;
-    delete [] coF;
+    delete [] coF_;
     delete [] begF_;
     // the rest is handled by Teuchos::rcp's
 }
@@ -904,7 +904,7 @@ bool THCM::computeForcing()
         for (int j = 0; j <  numentries ; j++)
         {
             indices[j] = assemblyMap_->GID(jcoF_[index-1+j] - 1);
-            values[j]  = coF[index - 1 + j];
+            values[j]  = coF_[index - 1 + j];
             MyElements.push_back(indices[j]);
         }
 
