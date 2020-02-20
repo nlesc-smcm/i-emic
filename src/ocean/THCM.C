@@ -640,7 +640,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     solveMap_ = domain_->GetSolveMap();
 
     // Create internal vectors
-    initialSolution = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+    initialSolution_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     diagB           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     localDiagB      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     localRhs        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -864,7 +864,7 @@ THCM::~THCM()
 //=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getSolution()
 {
-    return initialSolution;
+    return initialSolution_;
 }
 
 //=============================================================================

@@ -395,7 +395,7 @@ private:
     //!@}
 
     //! used only to define vector format (i.e. map), I think
-    Teuchos::RCP<Epetra_Vector> initialSolution;
+    Teuchos::RCP<Epetra_Vector> initialSolution_;
 
     //! used to import current approximation to THCM:
     Teuchos::RCP<Epetra_Vector> localSol;
