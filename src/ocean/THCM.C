@@ -75,8 +75,8 @@ extern "C" {
     //          alphaT,alphaS,
     //          ih,vmix_GLB,tap,rho_mixing,
     //          periodic,itopo,flat,rd_mask,
-    //          TRES,SRES,iza,ite,its,rd_spertm
-    //          coupled_T, coupled_S, coriolis_on,
+    //          TRES,SRES,iza,ite_,its_,rd_spertm
+    //          coupledT_, coupledS_, coriolis_on,
     //          forcing_type
     _MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
                                              double*,double*,double*,double*,double*,double*,
@@ -115,9 +115,9 @@ extern "C" {
     // CRS matrix allocation (module m_mat)
     _MODULE_SUBROUTINE_(m_mat,get_array_sizes)(int* nrows, int* nnz);
     _MODULE_SUBROUTINE_(m_mat,set_pointers)(int* nrows, int* nnz,
-                                            int* begA,int* jcoA,double* coA,
-                                            double* coB,
-                                            int* begF,int* jcoF,double* coF);
+                                            int* begA_,int* jcoA_,double* coA_,
+                                            double* coB_,
+                                            int* begF_,int* jcoF_,double* coF_);
 
     // compute scaling factors for S-integral condition. Values is an n*m*l array
     _MODULE_SUBROUTINE_(m_thcm_utils,intcond_scaling)(double* values,int* indices,int* len);
@@ -184,96 +184,96 @@ extern "C" {
 // constructor
 THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     Singleton<THCM>(Teuchos::rcp(this, false)),
-    Comm(comm),
-    nullSpace(Teuchos::null),
-    paramList("THCM Parameter List")
+    comm_(comm),
+    nullSpace_(Teuchos::null),
+    paramList_("THCM Parameter List")
 {
     DEBUG("### enter THCM::THCM ###");
 
     params.validateParametersAndSetDefaults(getDefaultInitParameters());
-    paramList.setParameters(params);
+    paramList_.setParameters(params);
 
-    std::string probdesc = paramList.get<std::string>("Problem Description");
+    std::string probdesc = paramList_.get<std::string>("Problem Description");
 
-    n = paramList.get<int>("Global Grid-Size n");
-    m = paramList.get<int>("Global Grid-Size m");
-    l = paramList.get<int>("Global Grid-Size l");
+    n_ = paramList_.get<int>("Global Grid-Size n");
+    m_ = paramList_.get<int>("Global Grid-Size m");
+    l_ = paramList_.get<int>("Global Grid-Size l");
 
     std::stringstream ss;
     ss << "THCM (" << probdesc <<", "
-       << n << "x" << m << "x" << l <<")";
+       << n_ << "x" << m_ << "x" << l_ <<")";
     INFO(ss.str());
     this->SetLabel(ss.str().c_str());
 
     // default: north atlantic
-    xmin     = paramList.get<double>("Global Bound xmin") * PI_ / 180.0;
-    xmax     = paramList.get<double>("Global Bound xmax") * PI_ / 180.0;
-    ymin     = paramList.get<double>("Global Bound ymin") * PI_ / 180.0;
-    ymax     = paramList.get<double>("Global Bound ymax") * PI_ / 180.0;
-    periodic = paramList.get<bool>("Periodic");
+    double xmin = paramList_.get<double>("Global Bound xmin") * PI_ / 180.0;
+    double xmax = paramList_.get<double>("Global Bound xmax") * PI_ / 180.0;
+    double ymin = paramList_.get<double>("Global Bound ymin") * PI_ / 180.0;
+    double ymax = paramList_.get<double>("Global Bound ymax") * PI_ / 180.0;
+    periodic_   = paramList_.get<bool>("Periodic");
 
     // sanity check
     double xdist = pow(cos(xmax)-cos(xmin), 2) + pow(sin(xmax)-sin(xmin), 2);
-    if ((xdist < 1e-2) && (periodic == false))
+    if (xdist < 1e-2 && !periodic_)
     {
         WARNING("Periodic bdc disabled while \n"
                 << " horizontal boundaries coincide. Distance: "
                 << xdist, __FILE__, __LINE__);
     }
 
-    hdim         = paramList.get<double>("Depth hdim");
-    double qz    = paramList.get<double>("Grid Stretching qz");
-    int  itopo   = paramList.get<int>("Topography");
-    bool flat    = paramList.get<bool>("Flat Bottom");
-    comp_sal_int = paramList.get<bool>("Compute salinity integral");
+    double hdim  = paramList_.get<double>("Depth hdim");
+    double qz    = paramList_.get<double>("Grid Stretching qz");
+    int  itopo   = paramList_.get<int>("Topography");
+    bool flat    = paramList_.get<bool>("Flat Bottom");
+    compSalInt_  = paramList_.get<bool>("Compute salinity integral");
 
-    bool rd_mask = paramList.get<bool>("Read Land Mask"); //== false in experiment0
+    bool rd_mask = paramList_.get<bool>("Read Land Mask"); //== false in experiment0
     if (rd_mask)
     {
         // we put the name of the desired mask in a file so it can be
         // obtained from there by the fortran code:
-        std::string mask_file = paramList.get<std::string>("Land Mask");
-        if (Comm->MyPID() == 0)
+        std::string mask_file = paramList_.get<std::string>("Land Mask");
+        if (comm_->MyPID() == 0)
         {
             std::ofstream mfs("mask_name.txt", std::ios::trunc);
             mfs << mask_file;
         }
     }
 
-    ih                 = paramList.get<int>("Inhomogeneous Mixing");
-    vmix_GLB           = paramList.get<int>("Mixing");
-    rho_mixing         = paramList.get<bool>("Rho Mixing");
-    tap                = paramList.get<int>("Taper");
-    alphaT             = paramList.get<double>("Linear EOS: alpha T");
-    alphaS             = paramList.get<double>("Linear EOS: alpha S");
-    tres               = paramList.get<int>("Restoring Temperature Profile");
-    sres               = paramList.get<int>("Restoring Salinity Profile");
-    localSres_         = paramList.get<bool>("Local SRES Only");
-    intSign_           = paramList.get<int>("Salinity Integral Sign");
-    ite                = paramList.get<int>("Levitus T");
-    its                = paramList.get<int>("Levitus S");
-    internal_forcing   = paramList.get<bool>("Levitus Internal T/S");
-    coupled_T          = paramList.get<int>("Coupled Temperature");
-    coupled_S          = paramList.get<int>("Coupled Salinity");
-    coupled_M          = paramList.get<int>("Coupled Sea Ice Mask");
-    fixPressurePoints_ = paramList.get<bool>("Fix Pressure Points");
-    int coriolis_on    = paramList.get<int>("Coriolis Force");
-    int forcing_type   = paramList.get<int>("Forcing Type");
+    int ih             = paramList_.get<int>("Inhomogeneous Mixing");
+    vmixGLB_           = paramList_.get<int>("Mixing");
+    bool rho_mixing    = paramList_.get<bool>("Rho Mixing");
+    int tap            = paramList_.get<int>("Taper");
+    double alphaT      = paramList_.get<double>("Linear EOS: alpha T");
+    double alphaS      = paramList_.get<double>("Linear EOS: alpha S");
+    tres_              = paramList_.get<int>("Restoring Temperature Profile");
+    sres_              = paramList_.get<int>("Restoring Salinity Profile");
+    localSres_         = paramList_.get<bool>("Local SRES Only");
+    intSign_           = paramList_.get<int>("Salinity Integral Sign");
+    ite_               = paramList_.get<int>("Levitus T");
+    its_               = paramList_.get<int>("Levitus S");
+    internal_forcing_  = paramList_.get<bool>("Levitus Internal T/S");
+    coupledT_          = paramList_.get<int>("Coupled Temperature");
+    coupledS_          = paramList_.get<int>("Coupled Salinity");
+    coupledM_          = paramList_.get<int>("Coupled Sea Ice Mask");
+    fixPressurePoints_ = paramList_.get<bool>("Fix Pressure Points");
+    int coriolis_on    = paramList_.get<int>("Coriolis Force");
+    int forcing_type   = paramList_.get<int>("Forcing Type");
 
     //------------------------------------------------------------------
-    if ((coupled_S == 1) && (sres == 1))
+    if ((coupledS_ == 1) && (sres_ == 1))
     {
-        WARNING("Incompatible parameters: coupled_S = " << coupled_S
-                << " sres = "
-                << sres << " setting sres = 0", __FILE__, __LINE__);
-        sres = 0;
+        WARNING("Incompatible parameters: coupledS_ = " << coupledS_
+                << " SRES = "
+                << sres_ << " setting SRES = 0", __FILE__, __LINE__);
+        sres_ = 0;
     }
 
-    bool rd_spertm = paramList.get<bool>("Read Salinity Perturbation Mask");
+    bool rd_spertm = paramList_.get<bool>("Read Salinity Perturbation Mask");
     if (rd_spertm)
     {
-        std::string spertm_file = paramList.get<std::string>("Salinity Perturbation Mask");
-        if (Comm->MyPID()==0)
+        std::string spertm_file = paramList_.get<std::string>("Salinity Perturbation Mask");
+        if (comm_->MyPID()==0)
         {
             std::ofstream mfs("spertm_name.txt",std::ios::trunc);
             mfs << spertm_file;
@@ -286,19 +286,20 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         ERROR("Invalid integral sign!", __FILE__, __LINE__);
     }
 
-    iza = paramList.get<int>("Wind Forcing Type");
+    // wind forcing method (0: data (trenberth), 1: zonally averaged, 2: idealized)
+    int iza = paramList_.get<int>("Wind Forcing Type");
 
-    if (Comm->MyPID() == 0)
+    if (comm_->MyPID() == 0)
     {
         std::ofstream windfile("windf_name.txt", std::ios::trunc);
         std::ofstream sstfile("sstf_name.txt",   std::ios::trunc);
         std::ofstream sssfile("sssf_name.txt",   std::ios::trunc);
         // Let THCM know the wind forcing file
-        windfile << paramList.get<std::string>("Wind Forcing Data");
+        windfile << paramList_.get<std::string>("Wind Forcing Data");
         // Let THCM know the sst forcing file
-        sstfile  << paramList.get<std::string>("Temperature Forcing Data");
+        sstfile  << paramList_.get<std::string>("Temperature Forcing Data");
         // Let THCM know the sss forcing file
-        sssfile  << paramList.get<std::string>("Salinity Forcing Data");
+        sssfile  << paramList_.get<std::string>("Salinity Forcing Data");
     }
     //-----------------------------------------------------------------
 
@@ -306,34 +307,34 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int dof = _NUN_; // number of unknowns, defined in THCMdefs.H
 
     // construct an object to decompose the domain:
-    domain = Teuchos::rcp(new TRIOS::Domain(n, m, l, dof, xmin, xmax, ymin, ymax,
-                                            periodic, hdim, qz, Comm));
+    domain_ = Teuchos::rcp(new TRIOS::Domain(n_, m_, l_, dof, xmin, xmax, ymin, ymax,
+                                            periodic_, hdim, qz, comm_));
 
     // perform a 2D decomposition of domain into rectangular boxes
-    domain->Decomp2D();
+    domain_->Decomp2D();
 
     // get a map object representing the subdomain (with ghost-nodes/overlap).
     // This map defines the nodes local to the THCM subdomain
-    AssemblyMap = domain->GetAssemblyMap();
+    assemblyMap_ = domain_->GetAssemblyMap();
 
     // get a map object representing the subdomain (without ghost-nodes/overlap).
     // this is an intermediate representation between the assembly and the solve
     // phases.
-    StandardMap = domain->GetStandardMap();
+    standardMap_ = domain_->GetStandardMap();
 
     // initialize THCM (allocate memory etc.)
     // for a subdomain including ghost-nodes:
 
     // the domain object knows the geometry of the subdomain:
-    double xminloc = domain->XminLoc();
-    double xmaxloc = domain->XmaxLoc();
-    double yminloc = domain->YminLoc();
-    double ymaxloc = domain->YmaxLoc();
+    double xminloc = domain_->XminLoc();
+    double xmaxloc = domain_->XmaxLoc();
+    double yminloc = domain_->YminLoc();
+    double ymaxloc = domain_->YmaxLoc();
 
     // and the number of grid points contained in it:
-    int nloc = domain->LocalN();
-    int mloc = domain->LocalM();
-    int lloc = domain->LocalL();
+    int nloc = domain_->LocalN();
+    int mloc = domain_->LocalM();
+    int lloc = domain_->LocalL();
 
     // global settings for THCM
     // memory for I/O is allocated only on the root process (pid 0)
@@ -341,11 +342,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int mglob_ = 0;
     int lglob_ = 0;
 
-    if (Comm->MyPID() == 0) // this one is responsible for I/O
+    if (comm_->MyPID() == 0) // this one is responsible for I/O
     {
-        nglob_ = n;
-        mglob_ = m;
-        lglob_ = l;
+        nglob_ = n_;
+        mglob_ = m_;
+        lglob_ = l_;
     }
 
     // fortran routine that puts global info in module m_global
@@ -356,36 +357,36 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // for portability reasons we rather pass integers to fortran than bools
     // (this was an issue on Huygens)
     int irho_mixing = (rho_mixing) ? 1 : 0;
-    int iperiodic   = (periodic  ) ? 1 : 0;
+    int iperiodic   = (periodic_ ) ? 1 : 0;
     int iflat       = (flat      ) ? 1 : 0;
     int ird_mask    = (rd_mask   ) ? 1 : 0;
     int ird_spertm  = (rd_spertm ) ? 1 : 0;
 
     INFO("THCM init: m_global::initialize...");
-    INFO("    Mixing: vmix_GLB = " << vmix_GLB);
+    INFO("    Mixing: vmix_GLB = " << vmixGLB_);
 
     // In fortran object code this corresponds to the function
     //  __m_global_MOD_initialize
     F90NAME(m_global, initialize)(&nglob_, &mglob_, &lglob_,
                                   &xmin, &xmax, &ymin, &ymax, &hdim, &qz,
                                   &alphaT, &alphaS,
-                                  &ih, &vmix_GLB, &tap, &irho_mixing,
+                                  &ih, &vmixGLB_, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
-                                  &tres, &sres, &iza, &ite, &its, &ird_spertm,
-                                  &coupled_T, &coupled_S, &coriolis_on,
+                                  &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
+                                  &coupledT_, &coupledS_, &coriolis_on,
                                   &forcing_type);
 
     INFO("THCM init: m_global::initialize... done");
 
     if (localSres_) // from here on we ignore the integral condition
-        sres = 1;
+        sres_ = 1;
 
     // read topography data and convert it to a global land mask
     DEBUG("Initialize land mask...");
 
-    int I0 = 0; int I1 = n+1;
-    int J0 = 0; int J1 = m+1;
-    int K0 = 0; int K1 = l+1;
+    int I0 = 0; int I1 = n_+1;
+    int J0 = 0; int J1 = m_+1;
+    int K0 = 0; int K1 = l_+1;
 
     int i0=0, i1=-1, j0=0, j1=-1,k0=0,k1=-1;
     // global (gathered) map, all inds are on root proc, the ranges are
@@ -434,36 +435,36 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // in the main part of THCM (except m_global) we set periodic
     // boundary conditions to .false. _unless_ we are running a
     // periodic problem on a single CPU in the x-direction:
-    Teuchos::RCP<Epetra_Comm> xComm = domain->GetProcRow(0);
+    Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
 
-    int perio = (periodic && xComm->NumProc() == 1);
+    int perio = (periodic_ && xComm->NumProc() == 1);
 
-    int nmlglob = n*m*l;
+    int nmlglob = n_*m_*l_;
 
     //--------------------------------------------------------------------------
     // read wind, temperature and salinity forcing and distribute it among
     // processors
-    Teuchos::RCP<Epetra_Map> wind_map_loc   = domain->CreateAssemblyMap(1,true);
+    Teuchos::RCP<Epetra_Map> wind_map_loc   = domain_->CreateAssemblyMap(1,true);
 
     // Single-unknown surface maps
-    StandardSurfaceMap = domain->CreateStandardMap(1,true);
-    AssemblySurfaceMap = domain->CreateAssemblyMap(1,true);
+    standardSurfaceMap_ = domain_->CreateStandardMap(1,true);
+    assemblySurfaceMap_ = domain_->CreateAssemblyMap(1,true);
 
     // Surface assembly/standard import strategy
-    as2std_surf =
-        Teuchos::rcp(new Epetra_Import(*AssemblySurfaceMap, *StandardSurfaceMap));
+    as2std_surf_ =
+        Teuchos::rcp(new Epetra_Import(*assemblySurfaceMap_, *standardSurfaceMap_));
 
     // Single-unknown volume maps
-    StandardVolumeMap = domain->CreateStandardMap(1,false);
-    AssemblyVolumeMap = domain->CreateAssemblyMap(1,false);
+    standardVolumeMap_ = domain_->CreateStandardMap(1,false);
+    assemblyVolumeMap_ = domain_->CreateAssemblyMap(1,false);
 
     // Volume assembly/standard import strategy
-    as2std_vol =
-        Teuchos::rcp(new Epetra_Import(*AssemblyVolumeMap, *StandardVolumeMap));
+    as2std_vol_ =
+        Teuchos::rcp(new Epetra_Import(*assemblyVolumeMap_, *standardVolumeMap_));
 
 
     Teuchos::RCP<Epetra_Map> lev_map_loc    = wind_map_loc;
-    Teuchos::RCP<Epetra_Map> intlev_map_loc = domain->CreateAssemblyMap(1,false);
+    Teuchos::RCP<Epetra_Map> intlev_map_loc = domain_->CreateAssemblyMap(1,false);
     Teuchos::RCP<Epetra_Vector> taux_loc    = Teuchos::rcp(new Epetra_Vector(*wind_map_loc));
     Teuchos::RCP<Epetra_Vector> tauy_loc    = Teuchos::rcp(new Epetra_Vector(*wind_map_loc));
     Teuchos::RCP<Epetra_Vector> tatm_loc    = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
@@ -490,7 +491,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     DEBUG("Initialize Wind field...");
 
-    Teuchos::RCP<Epetra_Map> wind_map_dist = domain->CreateStandardMap(1,true);
+    Teuchos::RCP<Epetra_Map> wind_map_dist = domain_->CreateStandardMap(1,true);
     Teuchos::RCP<Epetra_Map> wind_map_root = Utils::Gather(*wind_map_dist,0);
 
     Teuchos::RCP<Epetra_Vector> taux_glob =
@@ -534,11 +535,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     DEBUG("Initialize Temperature and Salinity forcing...");
 
-    Teuchos::RCP<Epetra_Map> lev_map_dist  = domain->CreateStandardMap(1,true);
+    Teuchos::RCP<Epetra_Map> lev_map_dist  = domain_->CreateStandardMap(1,true);
 
     Teuchos::RCP<Epetra_Map> lev_map_root  = Utils::Gather(*lev_map_dist,0);
 
-    Teuchos::RCP<Epetra_Map> intlev_map_dist  = domain->CreateStandardMap(1,false);
+    Teuchos::RCP<Epetra_Map> intlev_map_dist  = domain_->CreateStandardMap(1,false);
     Teuchos::RCP<Epetra_Map> intlev_map_root  = Utils::Gather(*intlev_map_dist,0);
 
     Teuchos::RCP<Epetra_Vector> tatm_glob     =
@@ -563,7 +564,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     {
         F90NAME(m_global, get_temforcing)(tatm_g);
         F90NAME(m_global, get_salforcing)(emip_g);
-        if (internal_forcing)
+        if (internal_forcing_)
         {
             F90NAME(m_global,get_internal_temforcing)(temp_g);
             F90NAME(m_global,get_internal_salforcing)(salt_g);
@@ -622,12 +623,12 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     INFO("   initialize THCM subdomain done");
 
-    if (internal_forcing)
+    if (internal_forcing_)
     {
         F90NAME(m_usr,set_internal_forcing)(temp,salt);
     }
 
-    bool time_dep_forcing = paramList.get<bool>("Time Dependent Forcing");
+    bool time_dep_forcing = paramList_.get<bool>("Time Dependent Forcing");
     if (time_dep_forcing)
     {
         // read and distribute Levitus data
@@ -636,27 +637,27 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // get a map object for constructing vectors without overlap
     // (load-balanced, used for solve phase)
-    SolveMap = domain->GetSolveMap();
+    solveMap_ = domain_->GetSolveMap();
 
     // Create internal vectors
-    initialSolution = Teuchos::rcp(new Epetra_Vector(*SolveMap));
-    diagB           = Teuchos::rcp(new Epetra_Vector(*SolveMap));
-    localDiagB      = Teuchos::rcp(new Epetra_Vector(*StandardMap));
-    localRhs        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
-    localSol        = Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+    initialSolution_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+    diagB_           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+    localDiagB_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
+    localRhs_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localSol_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // 2D overlapping interface fields
-    localAtmosT     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosQ     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosA     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localAtmosP     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSeaiceQ    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSeaiceM    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSeaiceG    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localOceanE     = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localEmip       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localSurfTmp    = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
-    localTatm       = Teuchos::rcp(new Epetra_Vector(*AssemblySurfaceMap));
+    localAtmosT_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosQ_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosA_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localAtmosP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSeaiceQ_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSeaiceM_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSeaiceG_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localOceanE_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localEmip_       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localSurfTmp_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
+    localTatm_       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -666,20 +667,20 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     INFO("Allocating Fortran CSR arrays, nrows=" << nrows << ", nnz=" << nnz);
 
     // allocate the memory
-    begA = new int[nrows+1];
-    coA  = new double[nnz];
-    jcoA = new int[nnz];
+    begA_ = new int[nrows+1];
+    coA_  = new double[nnz];
+    jcoA_ = new int[nnz];
 
-    coB  = new double[nrows];
+    coB_  = new double[nrows];
 
-    begF = new int[nrows+1];
-    coF  = new double[nrows];
-    jcoF = new int[nrows];
+    begF_ = new int[nrows+1];
+    coF_  = new double[nrows];
+    jcoF_ = new int[nrows];
 
     // give THCM the opportunity to set its pointers to
     // the new memory block
     DEBVAR("call set_pointers...");
-    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA,jcoA,coA,coB,begF,jcoF,coF);
+    F90NAME(m_mat,set_pointers)(&nrows,&nnz,begA_,jcoA_,coA_,coB_,begF_,jcoF_,coF_);
 
     // Initialize integral condition row, correction and coefficients
     rowintcon_     = -1;
@@ -690,22 +691,22 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 
     // Obtain integral condition coefficients
 
-    int N = domain->GlobalN();
-    int M = domain->GlobalM();
-    int L = domain->GlobalL();
+    int N = domain_->GlobalN();
+    int M = domain_->GlobalM();
+    int L = domain_->GlobalL();
 
-    int Nic = paramList.get<int>("Integral row coordinate i");
+    int Nic = paramList_.get<int>("Integral row coordinate i");
     if (Nic == -1) {
         Nic = N-1;
     }
-    int Mic = paramList.get<int>("Integral row coordinate j");
+    int Mic = paramList_.get<int>("Integral row coordinate j");
     if (Mic == -1) {
         Mic = M-1;
     }
     int midx;     // mask index
     int mval = 1; // mask value
     int tmp  = 0;
-    if (sres == 0)
+    if (sres_ == 0)
     {
         if (comm->MyPID() == 0)
         {
@@ -743,7 +744,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
 
     // Initialize integral coefficients
-    intcond_coeff = Teuchos::rcp(new Epetra_Vector(*SolveMap));
+    intcondCoeff_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
 
     // Obtain integral coefficients
     getIntCondCoeff();
@@ -755,87 +756,78 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // require building a whole new matrix. As we can't predict
     // where convective adjustment will happen, we assume it hap-
     // pens everywhere.
-    localMatrixGraph = this->CreateMaximalGraph();
-    testMatrixGraph  = this->CreateMaximalGraph(false);
+    Teuchos::RCP<Epetra_CrsGraph> localMatrixGraph = CreateMaximalGraph();
+    Teuchos::RCP<Epetra_CrsGraph> testMatrixGraph  = CreateMaximalGraph(false);
+    Teuchos::RCP<Epetra_CrsGraph> matrixGraph      = localMatrixGraph;
 
-    if (SolveMap!=StandardMap)
+    if (solveMap_!=standardMap_)
     {
-        MatrixGraph = Teuchos::rcp(new Epetra_CrsGraph(Copy,*SolveMap,20));
-        Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*StandardMap,*SolveMap));
+        matrixGraph = Teuchos::rcp(new Epetra_CrsGraph(Copy,*solveMap_,20));
+        Teuchos::RCP<Epetra_Import> import = Teuchos::rcp(new Epetra_Import(*standardMap_,*solveMap_));
         DEBUG("Migrate graph to solve map...");
-        CHECK_ZERO(MatrixGraph->Export(*localMatrixGraph,*import,Insert));
-        CHECK_ZERO(MatrixGraph->FillComplete());
+        CHECK_ZERO(matrixGraph->Export(*localMatrixGraph,*import,Insert));
+        CHECK_ZERO(matrixGraph->FillComplete());
     }
-    else
-    {
-        MatrixGraph = localMatrixGraph;
-    }
-    localJac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *localMatrixGraph));
-    localJac->SetLabel("Local Jacobian");
 
-    testJac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *testMatrixGraph));
-    testJac->SetLabel("Testing Jacobian");
+    localJac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *localMatrixGraph));
+    localJac_->SetLabel("Local Jacobian");
 
-    Jac = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *MatrixGraph));
-    Jac->SetLabel("Jacobian");
+    testJac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *testMatrixGraph));
+    testJac_->SetLabel("Testing Jacobian");
 
-    localFrc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *StandardMap, 1));
-    localFrc->SetLabel("Local Forcing");
-    Frc = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *SolveMap, 1));
-    Frc->SetLabel("Forcing");
+    jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph));
+    jac_->SetLabel("Jacobian");
 
-    // we do not allow these to be modified, use the OceanModel interface
-    // (computeShiftedMatrix, setXdot)
-    // for implementing Time integration or eigenvalue things.
-    sigmaUVTS=0.0;
-//  sigmaWP=1.0e-14;
-    sigmaWP=0.0;
+    localFrc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *standardMap_, 1));
+    localFrc_->SetLabel("Local Forcing");
+    frc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *solveMap_, 1));
+    frc_->SetLabel("Forcing");
 
 // we can select two points where the continuity equation will be replaced by
 // P(i,j,k) = 0. This is experimental, we hope to fix the divergence problem in the 4D case
 //  like this
-//      int N = domain->GlobalN();
-//      int M = domain->GlobalM();
-//      int L = domain->GlobalL();
+//      int N = domain_->GlobalN();
+//      int M = domain_->GlobalM();
+//      int L = domain_->GlobalL();
 //
 
     if (fixPressurePoints_)
     {
-        rowPfix1 = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
-        rowPfix2 = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
+        rowPfix1_ = FIND_ROW2(_NUN_,N,M,L,N-1,M-1,L-1,PP);
+        rowPfix2_ = FIND_ROW2(_NUN_,N,M,L,N-2,M-1,L-1,PP);
     }
     else
     {
-        rowPfix1 = -1;
-        rowPfix2 = -1;
+        rowPfix1_ = -1;
+        rowPfix2_ = -1;
     }
 
     // build vector with integral coefficients
     this->evaluateB();
 
-    scaling_type = paramList.get<std::string>("Scaling");
+    scalingType_ = paramList_.get<std::string>("Scaling");
 
-    if (scaling_type == "THCM")
+    if (scalingType_ == "THCM")
     {
         // construct the scaling object. The scaling is computed by THCM (m_scaling)
         // and passed on to Trilinos:
-        row_scaling = Teuchos::rcp(new Epetra_Vector(*SolveMap));
-        row_scaling->SetLabel("Row Scaling");
-        col_scaling = Teuchos::rcp(new Epetra_Vector(*SolveMap));
-        col_scaling->SetLabel("Col Scaling");
-        local_row_scaling = Teuchos::rcp(new Epetra_Vector(*AssemblyMap) );
-        local_col_scaling = Teuchos::rcp(new Epetra_Vector(*AssemblyMap) );
+        rowScaling_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+        rowScaling_->SetLabel("Row Scaling");
+        colScaling_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+        colScaling_->SetLabel("Col Scaling");
+        localRowScaling_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
+        localColScaling_ = Teuchos::rcp(new Epetra_Vector(*assemblyMap_) );
 
-        row_scaling->PutScalar(1.0);
-        col_scaling->PutScalar(1.0);
+        rowScaling_->PutScalar(1.0);
+        colScaling_->PutScalar(1.0);
     }
 
-    for (auto& pair : paramList.sublist("Starting Parameters")) {
+    for (auto& pair : paramList_.sublist("Starting Parameters")) {
         double val = pair.second.getValue(&val);
         if (!std::isnan(val)) setParameter(pair.first, val);
     }
 
-    params = paramList;
+    params = paramList_;
 }
 
 //=============================================================================
@@ -843,41 +835,41 @@ THCM::~THCM()
 {
     INFO("THCM destructor");
     FNAME(finalize)();
-    if (Comm->MyPID()==0)
+    if (comm_->MyPID()==0)
     {
         F90NAME(m_global,finalize)();
     }
 
-    delete [] jcoA;
-    delete [] coA;
-    delete [] begA;
+    delete [] jcoA_;
+    delete [] coA_;
+    delete [] begA_;
 
-    delete [] coB;
+    delete [] coB_;
 
-    delete [] jcoF;
-    delete [] coF;
-    delete [] begF;
+    delete [] jcoF_;
+    delete [] coF_;
+    delete [] begF_;
     // the rest is handled by Teuchos::rcp's
 }
 
 //=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getSolution()
 {
-    return initialSolution;
+    return initialSolution_;
 }
 
 //=============================================================================
 Teuchos::RCP<Epetra_CrsMatrix> THCM::getJacobian()
 {
-    return Jac;
+    return jac_;
 }
 
 //=============================================================================
 // Compute and get the forcing
 bool THCM::computeForcing()
 {
-    if (localFrc->Filled())
-        localFrc->PutScalar(0.0); // set all matrix entries to zero
+    if (localFrc_->Filled())
+        localFrc_->PutScalar(0.0); // set all matrix entries to zero
 
     const int maxlen = 1; // only 1 element per row
     int indices[maxlen];
@@ -885,7 +877,7 @@ bool THCM::computeForcing()
 
     int index, numentries;
 
-    int NumMyElements = AssemblyMap->NumMyElements();
+    int NumMyElements = assemblyMap_->NumMyElements();
     int imax = NumMyElements;
     std::vector<int> MyElements;
 
@@ -894,24 +886,24 @@ bool THCM::computeForcing()
     for (int i = 0; i < imax; i++)
     {
 #ifndef NO_INTCOND
-        if (sres == 0 && AssemblyMap->GID(i) == rowintcon_)
+        if (sres_ == 0 && assemblyMap_->GID(i) == rowintcon_)
             continue;
 #endif
-        if (domain->IsGhost(i, _NUN_))
+        if (domain_->IsGhost(i, _NUN_))
             continue;
 
-        index = begF[i]; // note that these arrays use 1-based indexing
-        numentries = begF[i+1] - index;
+        index = begF_[i]; // note that these arrays use 1-based indexing
+        numentries = begF_[i+1] - index;
         for (int j = 0; j <  numentries ; j++)
         {
-            indices[j] = AssemblyMap->GID(jcoF[index-1+j] - 1);
-            values[j]  = coF[index - 1 + j];
+            indices[j] = assemblyMap_->GID(jcoF_[index-1+j] - 1);
+            values[j]  = coF_[index - 1 + j];
             MyElements.push_back(indices[j]);
         }
 
-        if (localFrc->Filled())
+        if (localFrc_->Filled())
         {
-            int ierr = localFrc->ReplaceGlobalValues(AssemblyMap->GID(i), numentries,
+            int ierr = localFrc_->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
                                                      values, indices);
 
             // ierr == 3 probably means not all row entries are replaced,
@@ -919,15 +911,15 @@ bool THCM::computeForcing()
             if (((ierr!=0) && (ierr!=3)))
             {
                 std::cout << "\n ERROR " << ierr;
-                std::cout << "\n myPID " << Comm->MyPID();
+                std::cout << "\n myPID " << comm_->MyPID();
                 std::cout <<"\n while inserting/replacing values in local Jacobian"
                           << std::endl;
 
                 INFO(" ERROR while inserting/replacing values in local Jacobian");
 
-                int GRID = AssemblyMap->GID(i);
+                int GRID = assemblyMap_->GID(i);
                 std::cout << " GRID: " << GRID << std::endl;
-                std::cout << " max GRID: " << AssemblyMap->GID(imax-1) << std::endl;
+                std::cout << " max GRID: " << assemblyMap_->GID(imax-1) << std::endl;
                 std::cout << " number of entries: " << numentries << std::endl;
 
                 std::cout << " entries: ";
@@ -941,13 +933,13 @@ bool THCM::computeForcing()
                 std::cout << " maxlen:               " << maxlen << std::endl;
 
                 std::cout << " row:                  " << GRID << std::endl;
-                int LRID = localFrc->LRID(GRID);
+                int LRID = localFrc_->LRID(GRID);
                 std::cout << " LRID:                 " << LRID << std::endl;
                 std::cout << " graph inds in LRID:   "
-                          << localFrc->Graph().NumMyIndices(LRID) << std::endl;
+                          << localFrc_->Graph().NumMyIndices(LRID) << std::endl;
 
-                int ierr2 = localFrc->ExtractGlobalRowCopy(
-                    AssemblyMap->GID(i), maxlen, numentries, values, indices);
+                int ierr2 = localFrc_->ExtractGlobalRowCopy(
+                    assemblyMap_->GID(i), maxlen, numentries, values, indices);
 
                 std::cout << "\noriginal row: " << std::endl;
                 std::cout << "number of entries: " << numentries << std::endl;
@@ -962,27 +954,27 @@ bool THCM::computeForcing()
         }
         else
         {
-            CHECK_ZERO(localFrc->InsertGlobalValues(AssemblyMap->GID(i), numentries,
+            CHECK_ZERO(localFrc_->InsertGlobalValues(assemblyMap_->GID(i), numentries,
                                                     values, indices));
         }
     } //i-loop over rows
 
     auto last = std::unique(MyElements.begin(), MyElements.end());
     Epetra_Map colMap(-1, (int)std::distance(MyElements.begin(), last),
-                      &MyElements[0], 0, *Comm);
-    CHECK_ZERO(localFrc->FillComplete(colMap, *StandardMap));
+                      &MyElements[0], 0, *comm_);
+    CHECK_ZERO(localFrc_->FillComplete(colMap, *standardMap_));
 
-    // redistribute according to SolveMap (may be load-balanced)
+    // redistribute according to solveMap_ (may be load-balanced)
     // standard and solve maps are equal
-    domain->Standard2Solve(*localFrc, *Frc);     // no effect
-    CHECK_ZERO(Frc->FillComplete(colMap, *SolveMap));
+    domain_->Standard2Solve(*localFrc_, *frc_);     // no effect
+    CHECK_ZERO(frc_->FillComplete(colMap, *solveMap_));
 
     return true;
 }
 
 Teuchos::RCP<Epetra_CrsMatrix> THCM::getForcing()
 {
-    return Frc;
+    return frc_;
 }
 
 //=============================================================================
@@ -992,17 +984,17 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                     bool computeJac,
                     bool maskTest)
 {
-    if (comp_sal_int)
+    if (compSalInt_)
     {
         double intcond;
-        CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
+        CHECK_ZERO(intcondCoeff_->Dot(soln,&intcond));
         intcond -= intCorrection_; // apply correction
 
         // INFO("Salinity integral condition: " << intcond);
 
     }
 
-    if (!(soln.Map().SameAs(*SolveMap)))
+    if (!(soln.Map().SameAs(*solveMap_)))
     {
         ERROR("Map of solution vector not same as solve-map ",__FILE__,__LINE__);
     }
@@ -1010,25 +1002,25 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
     // convert to standard distribution and
     // import values from ghost-nodes on neighbouring subdomains:
-    domain->Solve2Assembly(soln,*localSol);
+    domain_->Solve2Assembly(soln,*localSol_);
 
 
-    int NumMyElements = AssemblyMap->NumMyElements();
+    int NumMyElements = assemblyMap_->NumMyElements();
 
 //  DEBUG("=== evaluate: input vector");
-//  DEBUG( (domain->Gather(*soln,0)) )
+//  DEBUG( (domain_->Gather(*soln,0)) )
 
     // extract an array to pass on to THCM:
     // We use 'Copy' mode, which is clean but possibly slow.
     // Probably 'View' would be allowable as well.
     double* solution;
-    localSol->ExtractView(&solution);
+    localSol_->ExtractView(&solution);
     if(tmp_rhs!=Teuchos::null)
     {
         // INFO("Compute RHS...");
         // build rhs simultaneously on each process
         double* RHS;
-        CHECK_ZERO(localRhs->ExtractView(&RHS));
+        CHECK_ZERO(localRhs_->ExtractView(&RHS));
         TIMER_START("Ocean: compute rhs: fortran part");
         // compute right-hand-side on whole subdomain (by THCM)
         FNAME(rhs)(solution, RHS);
@@ -1036,7 +1028,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         // export overlapping rhs to unique-id global rhs vector,
         // and load-balance for solve phase:
-        domain->Assembly2Solve(*localRhs,*tmp_rhs);
+        domain_->Assembly2Solve(*localRhs_,*tmp_rhs);
 
         // Negating the RHS... Instead of scaling the RHS, scaling the
         // Jacobian corresponds better to how the equations would be
@@ -1044,11 +1036,11 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         CHECK_ZERO(tmp_rhs->Scale(-1.0));
 
 #ifndef NO_INTCOND
-        if ((sres == 0) && !maskTest)
+        if ((sres_ == 0) && !maskTest)
         {
             double intcond;
             //TODO: check which is better:
-            CHECK_ZERO(intcond_coeff->Dot(soln,&intcond));
+            CHECK_ZERO(intcondCoeff_->Dot(soln,&intcond));
             //std::cout << " dot product: "<<intcond << std::endl;
             //intcond = 0.0;
             if (tmp_rhs->Map().MyGID(rowintcon_))
@@ -1058,18 +1050,18 @@ bool THCM::evaluate(const Epetra_Vector& soln,
             }
         }
 #endif
-        if (rowPfix1>=0)
+        if (rowPfix1_>=0)
         {
-            if (tmp_rhs->Map().MyGID(rowPfix1))
+            if (tmp_rhs->Map().MyGID(rowPfix1_))
             {
-                (*tmp_rhs)[tmp_rhs->Map().LID(rowPfix1)]=0.0;
+                (*tmp_rhs)[tmp_rhs->Map().LID(rowPfix1_)]=0.0;
             }
         }
-        if (rowPfix2>=0)
+        if (rowPfix2_>=0)
         {
-            if (tmp_rhs->Map().MyGID(rowPfix2))
+            if (tmp_rhs->Map().MyGID(rowPfix2_))
             {
-                (*tmp_rhs)[tmp_rhs->Map().LID(rowPfix2)]=0.0;
+                (*tmp_rhs)[tmp_rhs->Map().LID(rowPfix2_)]=0.0;
             }
         }
     }
@@ -1078,17 +1070,12 @@ bool THCM::evaluate(const Epetra_Vector& soln,
         // INFO("Compute Jacobian...");
         Teuchos::RCP<Epetra_CrsMatrix> tmpJac;
         if (maskTest) // Use Jacobian based on testing graph
-            tmpJac = testJac;
+            tmpJac = testJac_;
         else // Use Jacobian based on standard graph
-            tmpJac = localJac;
+            tmpJac = localJac_;
 
         tmpJac->PutScalar(0.0); // set all matrix entries to zero
-        localDiagB->PutScalar(0.0);
-
-        if (sigmaUVTS || sigmaWP) {
-            ERROR("We do not allow THCM to shift the matrix anymore!",
-                  __FILE__,__LINE__);
-        }
+        localDiagB_->PutScalar(0.0);
 
         //Call the fortran routine, providing the solution vector,
         //and get back the three vectors of the sparse Jacobian (CSR form)
@@ -1105,7 +1092,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         // Restore from the testing config
         if (maskTest)
-            FNAME(setsres)(&sres);
+            FNAME(setsres)(&sres_);
 
         TIMER_STOP("Ocean: compute jacobian: fortran part");
 
@@ -1119,18 +1106,18 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         for (int i = 0; i < imax; i++)
         {
-            if (!domain->IsGhost(i, _NUN_) &&
-                ( ( AssemblyMap->GID(i) != rowintcon_ ) || maskTest ) )
+            if (!domain_->IsGhost(i, _NUN_) &&
+                ( ( assemblyMap_->GID(i) != rowintcon_ ) || maskTest ) )
             {
-                index = begA[i]; // note that these arrays use 1-based indexing
-                numentries = begA[i+1] - index;
+                index = begA_[i]; // note that these arrays use 1-based indexing
+                numentries = begA_[i+1] - index;
                 for (int j = 0; j <  numentries ; j++)
                 {
-                    indices[j] = AssemblyMap->GID(jcoA[index-1+j] - 1);
-                    values[j]  = coA[index - 1 + j];
+                    indices[j] = assemblyMap_->GID(jcoA_[index-1+j] - 1);
+                    values[j]  = coA_[index - 1 + j];
                 }
 
-                int ierr = tmpJac->ReplaceGlobalValues(AssemblyMap->GID(i), numentries,
+                int ierr = tmpJac->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
                                                          values, indices);
 
                 // ierr == 3 probably means not all row entries are replaced,
@@ -1138,21 +1125,21 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 if (((ierr!=0) && (ierr!=3)))
                 {
                     std::stringstream ss;
-                    ss << "graph_pid" << Comm->MyPID();
+                    ss << "graph_pid" << comm_->MyPID();
                     std::ofstream file(ss.str());
                     file << tmpJac->Graph();
 
                     std::cout << "\n ERROR " << ierr;
                     std::cout << ((ierr == 2) ? ": value excluded" : "") << std::endl;
-                    std::cout << "\n myPID " << Comm->MyPID();
+                    std::cout << "\n myPID " << comm_->MyPID();
                     std::cout <<"\n while inserting/replacing values in local Jacobian"
                               << std::endl;
 
                     INFO(" ERROR while inserting/replacing values in local Jacobian");
 
-                    int GRID = AssemblyMap->GID(i);
+                    int GRID = assemblyMap_->GID(i);
                     std::cout << " GRID: " << GRID << std::endl;
-                    std::cout << " max GRID: " << AssemblyMap->GID(imax-1) << std::endl;
+                    std::cout << " max GRID: " << assemblyMap_->GID(imax-1) << std::endl;
                     std::cout << " number of entries: " << numentries << std::endl;
 
                     std::cout << " entries: ";
@@ -1169,9 +1156,9 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                     std::cout << " have rowintcon:       " << tmpJac->MyGRID(rowintcon_)
                               << std::endl;
                     std::cout << " rowintcon:            " << rowintcon_ << std::endl;
-                    std::cout << " assembly rowintcon:   " << AssemblyMap->LID(rowintcon_)
+                    std::cout << " assembly rowintcon:   " << assemblyMap_->LID(rowintcon_)
                               << std::endl;
-                    std::cout << " standard rowintcon:   " << StandardMap->LID(rowintcon_)
+                    std::cout << " standard rowintcon:   " << standardMap_->LID(rowintcon_)
                               << std::endl;
                     int LRID = tmpJac->LRID(GRID);
                     std::cout << " LRID:                 " << LRID << std::endl;
@@ -1179,7 +1166,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                               << tmpJac->Graph().NumMyIndices(LRID) << std::endl;
 
                     int ierr2 = tmpJac->ExtractGlobalRowCopy
-                        (AssemblyMap->GID(i), maxlen, numentries, values, indices);
+                        (assemblyMap_->GID(i), maxlen, numentries, values, indices);
 
                     std::cout << "\noriginal row: " << std::endl;
                     std::cout << "number of entries: " << numentries << std::endl;
@@ -1193,42 +1180,42 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 }
 
                 // reconstruct the diagonal matrix B
-                int lid = StandardMap->LID(AssemblyMap->GID(i));
+                int lid = standardMap_->LID(assemblyMap_->GID(i));
                 double mass_param = 1.0;
                 this->getParameter("Mass", mass_param);
-                (*localDiagB)[lid] = coB[i] * mass_param;
+                (*localDiagB_)[lid] = coB_[i] * mass_param;
             } //not a ghost?
         } //i-loop over rows
 
 #ifndef NO_INTCOND
-        if ((sres == 0) && !maskTest)
+        if ((sres_ == 0) && !maskTest)
         {
-            this->intcond_S(*tmpJac,*localDiagB);
+            this->intcond_S(*tmpJac,*localDiagB_);
         }
 #endif
 
         if (fixPressurePoints_)
-            this->fixPressurePoints(*tmpJac,*localDiagB);
+            this->fixPressurePoints(*tmpJac,*localDiagB_);
 
         CHECK_ZERO(tmpJac->FillComplete());
 
-        // redistribute according to SolveMap (may be load-balanced)
+        // redistribute according to solveMap_ (may be load-balanced)
         // standard and solve maps are equal
-        domain->Standard2Solve(*localDiagB, *diagB); // no effect
-        domain->Standard2Solve(*tmpJac, *Jac);     // no effect
-        CHECK_ZERO(Jac->FillComplete());
+        domain_->Standard2Solve(*localDiagB_, *diagB_); // no effect
+        domain_->Standard2Solve(*tmpJac, *jac_);     // no effect
+        CHECK_ZERO(jac_->FillComplete());
 
-        if (scaling_type == "THCM")
+        if (scalingType_ == "THCM")
         {
             DEBUG(" THCM:  RecomputeScaling()");
             this->RecomputeScaling();
 
 #if 0
-            std::ofstream ofs1("row_scaling.txt");
-            ofs1 << *row_scaling;
+            std::ofstream ofs1("rowScaling_.txt");
+            ofs1 << *rowScaling_;
             ofs1.close();
-            std::ofstream ofs2("col_scaling.txt");
-            ofs2 << *col_scaling;
+            std::ofstream ofs2("colScaling_.txt");
+            ofs2 << *colScaling_;
             ofs2.close();
 #endif
         }
@@ -1240,44 +1227,44 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 // just reconstruct the diagonal matrix B from THCM
 void THCM::evaluateB(void)
 {
-    int NumMyElements = AssemblyMap->NumMyElements();
+    int NumMyElements = assemblyMap_->NumMyElements();
 
     DEBUG("Construct matrix B...");
 
-    localDiagB->PutScalar(0.0);
+    localDiagB_->PutScalar(0.0);
     FNAME(fillcolb)();
     for (int i = 0; i < NumMyElements; i++)
     {
-        if (!domain->IsGhost(i, _NUN_))
+        if (!domain_->IsGhost(i, _NUN_))
         {
             // reconstruct the diagonal matrix B
-            int lid = StandardMap->LID(AssemblyMap->GID(i));
-            (*localDiagB)[lid] = coB[i];
+            int lid = standardMap_->LID(assemblyMap_->GID(i));
+            (*localDiagB_)[lid] = coB_[i];
         } // not a ghost?
     } // i-loop over rows
 
     if (fixPressurePoints_)
     {
         for (int i=1;i<=2;i++) {
-            int row = (i==1)? rowPfix1: rowPfix2;
-            if (localDiagB->Map().MyGID(row))
+            int row = (i==1)? rowPfix1_: rowPfix2_;
+            if (localDiagB_->Map().MyGID(row))
             {
-                int lid = localDiagB->Map().LID(row);
-                (*localDiagB)[lid] = 0.0; // no more time-dependence for this P-point
+                int lid = localDiagB_->Map().LID(row);
+                (*localDiagB_)[lid] = 0.0; // no more time-dependence for this P-point
             }
         }
     }
 
 #ifndef NO_INTCOND
-    if (sres == 0)
+    if (sres_ == 0)
     {
-        if (localDiagB->Map().MyGID(rowintcon_))
+        if (localDiagB_->Map().MyGID(rowintcon_))
         {
-            (*localDiagB)[localDiagB->Map().LID(rowintcon_)]=0.0;
+            (*localDiagB_)[localDiagB_->Map().LID(rowintcon_)]=0.0;
         }
     }
 #endif
-    domain->Standard2Solve(*localDiagB,*diagB);
+    domain_->Standard2Solve(*localDiagB_,*diagB_);
 }
 
 //==================================================================
@@ -1285,19 +1272,19 @@ void THCM::evaluateB(void)
 std::shared_ptr<std::vector<int> > THCM::getLandMask()
 {
     // length of landmask array
-    int dim = (n+2)*(m+2)*(l+2);
+    int dim = (n_+2)*(m_+2)*(l_+2);
 
     // Create landmask array
     std::shared_ptr<std::vector<int> > landm =
         std::make_shared<std::vector<int> >(dim, 0);
 
     // Let THCM fill the landmask array on proc = 0
-    if (Comm->MyPID() == 0)
+    if (comm_->MyPID() == 0)
         F90NAME(m_global, get_current_landm)(&(*landm)[0]);
 
     // Get the MpiComm from Epetra
     Epetra_MpiComm const MpiComm =
-        dynamic_cast<Epetra_MpiComm const &>(*Comm);
+        dynamic_cast<Epetra_MpiComm const &>(*comm_);
 
     // Broadcast the landmask
     MPI_Bcast(&(*landm)[0], dim, MPI_INTEGER, 0, MpiComm.GetMpiComm());
@@ -1310,7 +1297,7 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
                                                  Teuchos::RCP<Epetra_Vector> fix)
 {
-    if (Comm->MyPID() == 0)
+    if (comm_->MyPID() == 0)
     {
         // Write mask name to file, fortran code will read it from there
         std::ofstream ofs("mask_name.txt", std::ios::trunc);
@@ -1319,18 +1306,18 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 
     // Create gathered map for land mask
     // All indices are on root process
-    int I0 = 0; int I1 = n+1;
-    int J0 = 0; int J1 = m+1;
-    int K0 = 0; int K1 = l+1;
+    int I0 = 0; int I1 = n_+1;
+    int J0 = 0; int J1 = m_+1;
+    int K0 = 0; int K1 = l_+1;
 
     int i0 = 0, i1 = -1, j0 = 0, j1 = -1,k0 = 0,k1 = -1;
-    if (Comm->MyPID() == 0)
+    if (comm_->MyPID() == 0)
     {
         i1 = I1; j1 = J1; k1=K1;
     }
 
     Teuchos::RCP<Epetra_Map> landmap_glb =
-        Utils::CreateMap(i0,i1,j0,j1,k0,k1,I0,I1,J0,J1,K0,K1,*Comm);
+        Utils::CreateMap(i0,i1,j0,j1,k0,k1,I0,I1,J0,J1,K0,K1,*comm_);
 
     // Create sequential landmask array on proc 0
     Teuchos::RCP<Epetra_IntVector> landm_glb =
@@ -1338,7 +1325,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
 
     // Get global landmask from fortran
     int *landm;
-    if (Comm->MyPID()==0)
+    if (comm_->MyPID()==0)
     {
         CHECK_ZERO(landm_glb->ExtractView(&landm));
 
@@ -1362,7 +1349,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
         (*fix0)(0)->ExtractCopy(&fix1[0]);
 
         int i,j,k;
-        if (Comm->MyPID() == 0 && len > 0)
+        if (comm_->MyPID() == 0 && len > 0)
         {
             int pos = 0;
             int idx = 0;
@@ -1372,7 +1359,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
                 {
                     for (i = I0+1; i < I1; ++i)
                     {
-                        idx = k*(m+2)*(n+2) + j*(n+2) + i;
+                        idx = k*(m_+2)*(n_+2) + j*(n_+2) + i;
 
                         // magic number 2 indicates too little
                         // contributions in the corresponding matrix
@@ -1404,8 +1391,8 @@ void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask, bool init)
     // in the main part of THCM (except m_global) we set periodic
     // boundary conditions to .false. _unless_ we are running a
     // periodic problem on a single CPU in the x-direction:
-    Teuchos::RCP<Epetra_Comm> xComm = domain->GetProcRow(0);
-    int perio   = (periodic && xComm->NumProc() == 1);
+    Teuchos::RCP<Epetra_Comm> xComm = domain_->GetProcRow(0);
+    int perio   = (periodic_ && xComm->NumProc() == 1);
 
     int *landm;
     CHECK_ZERO(landmask->ExtractView(&landm));
@@ -1418,62 +1405,62 @@ void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask, bool init)
 // Set global landmask in THCM
 void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask)
 {
-    if (Comm->MyPID() == 0)
+    if (comm_->MyPID() == 0)
         F90NAME(m_global, set_landm)(&(*landmask)[0]);
 }
 
 //=============================================================================
 void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
 {
-    CHECK_MAP(atmosT, StandardSurfaceMap);
+    CHECK_MAP(atmosT, standardSurfaceMap_);
     // Standard2Assembly
     // Import atmosT into local atmosT
-    CHECK_ZERO(localAtmosT->Import(*atmosT, *as2std_surf, Insert));
+    CHECK_ZERO(localAtmosT_->Import(*atmosT, *as2std_surf_, Insert));
 
     double *locAtmosT;
 
-    localAtmosT->ExtractView(&locAtmosT);
+    localAtmosT_->ExtractView(&locAtmosT);
     F90NAME(m_inserts, insert_atmosphere_t)( locAtmosT );
 }
 
 //=============================================================================
 void THCM::setAtmosphereQ(Teuchos::RCP<Epetra_Vector> const &atmosQ)
 {
-    CHECK_MAP(atmosQ, StandardSurfaceMap);
+    CHECK_MAP(atmosQ, standardSurfaceMap_);
 
     // Standard2Assembly
     // Import atmosQ into local atmosQ
-    CHECK_ZERO( localAtmosQ->Import(*atmosQ, *as2std_surf, Insert) );
+    CHECK_ZERO( localAtmosQ_->Import(*atmosQ, *as2std_surf_, Insert) );
 
     double *tmpAtmosQ;
-    localAtmosQ->ExtractView(&tmpAtmosQ);
+    localAtmosQ_->ExtractView(&tmpAtmosQ);
     F90NAME(m_inserts, insert_atmosphere_q)( tmpAtmosQ );
 }
 
 //=============================================================================
 void THCM::setAtmosphereA(Teuchos::RCP<Epetra_Vector> const &atmosA)
 {
-    CHECK_MAP(atmosA, StandardSurfaceMap);
+    CHECK_MAP(atmosA, standardSurfaceMap_);
 
     // Standard2Assembly
     // Import atmosQ into local atmosQ
-    CHECK_ZERO( localAtmosA->Import(*atmosA, *as2std_surf, Insert) );
+    CHECK_ZERO( localAtmosA_->Import(*atmosA, *as2std_surf_, Insert) );
 
     double *tmpAtmosA;
-    localAtmosA->ExtractView(&tmpAtmosA);
+    localAtmosA_->ExtractView(&tmpAtmosA);
     F90NAME(m_inserts, insert_atmosphere_a)( tmpAtmosA );
 }
 
 //=============================================================================
 void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 {
-    CHECK_MAP(atmosP, StandardSurfaceMap);
+    CHECK_MAP(atmosP, standardSurfaceMap_);
 
     // Import atmosP into local atmosP
-    CHECK_ZERO(localAtmosP->Import(*atmosP, *as2std_surf, Insert));
+    CHECK_ZERO(localAtmosP_->Import(*atmosP, *as2std_surf_, Insert));
 
     double *tmpAtmosP;
-    localAtmosP->ExtractView(&tmpAtmosP);
+    localAtmosP_->ExtractView(&tmpAtmosP);
 
     F90NAME(m_inserts, insert_atmosphere_p)( tmpAtmosP );
 }
@@ -1481,34 +1468,34 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 //=============================================================================
 void THCM::setSeaIceQ(Teuchos::RCP<Epetra_Vector> const &seaiceQ)
 {
-    CHECK_MAP(seaiceQ, StandardSurfaceMap);
-    CHECK_ZERO(localSeaiceQ->Import(*seaiceQ, *as2std_surf ,Insert));
+    CHECK_MAP(seaiceQ, standardSurfaceMap_);
+    CHECK_ZERO(localSeaiceQ_->Import(*seaiceQ, *as2std_surf_ ,Insert));
     double *Q;
-    localSeaiceQ->ExtractView(&Q);
+    localSeaiceQ_->ExtractView(&Q);
     F90NAME(m_inserts, insert_seaice_q)( Q );
 }
 
 //=============================================================================
 void THCM::setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM)
 {
-    CHECK_MAP(seaiceM, StandardSurfaceMap);
-    CHECK_ZERO(localSeaiceM->Import(*seaiceM, *as2std_surf ,Insert));
+    CHECK_MAP(seaiceM, standardSurfaceMap_);
+    CHECK_ZERO(localSeaiceM_->Import(*seaiceM, *as2std_surf_ ,Insert));
     double *M;
 
-    if (!coupled_M)
-        localSeaiceM->PutScalar(0.0); // disable coupling with mask
+    if (!coupledM_)
+        localSeaiceM_->PutScalar(0.0); // disable coupling with mask
 
-    localSeaiceM->ExtractView(&M);
+    localSeaiceM_->ExtractView(&M);
     F90NAME(m_inserts, insert_seaice_m)( M );
 }
 
 //=============================================================================
 void THCM::setSeaIceG(Teuchos::RCP<Epetra_Vector> const &seaiceG)
 {
-    CHECK_MAP(seaiceG, StandardSurfaceMap);
-    CHECK_ZERO(localSeaiceG->Import(*seaiceG, *as2std_surf ,Insert));
+    CHECK_MAP(seaiceG, standardSurfaceMap_);
+    CHECK_ZERO(localSeaiceG_->Import(*seaiceG, *as2std_surf_ ,Insert));
     double *G;
-    localSeaiceG->ExtractView(&G);
+    localSeaiceG_->ExtractView(&G);
     F90NAME(m_inserts, insert_seaice_g)( G );
 }
 
@@ -1517,18 +1504,18 @@ void THCM::setSeaIceG(Teuchos::RCP<Epetra_Vector> const &seaiceG)
 void THCM::setTatm(Teuchos::RCP<Epetra_Vector> const &tatm)
 {
 
-    if (!(tatm->Map().SameAs(*StandardSurfaceMap)))
+    if (!(tatm->Map().SameAs(*standardSurfaceMap_)))
     {
-        // INFO("THCM::setAtmosphereEP: atmosP map -> StandardSurfaceMap");
-        CHECK_ZERO(tatm->ReplaceMap(*StandardSurfaceMap));
+        // INFO("THCM::setAtmosphereEP: atmosP map -> standardSurfaceMap_");
+        CHECK_ZERO(tatm->ReplaceMap(*standardSurfaceMap_));
     }
 
     // Standard2Assembly
     // Import atmosP into local atmosP
-    CHECK_ZERO(localTatm->Import(*tatm, *as2std_surf, Insert));
+    CHECK_ZERO(localTatm_->Import(*tatm, *as2std_surf_, Insert));
 
     double *tmpTatm;
-    localTatm->ExtractView(&tmpTatm);
+    localTatm_->ExtractView(&tmpTatm);
 
     F90NAME(m_inserts, insert_tatm)( tmpTatm );
 }
@@ -1537,18 +1524,18 @@ void THCM::setTatm(Teuchos::RCP<Epetra_Vector> const &tatm)
 void THCM::setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode)
 {
 
-    if (!(emip->Map().SameAs(*StandardSurfaceMap)))
+    if (!(emip->Map().SameAs(*standardSurfaceMap_)))
     {
-        INFO("THCM::setEmip: emip map -> StandardSurfaceMap");
-        CHECK_ZERO(emip->ReplaceMap(*StandardSurfaceMap));
+        INFO("THCM::setEmip: emip map -> standardSurfaceMap_");
+        CHECK_ZERO(emip->ReplaceMap(*standardSurfaceMap_));
     }
 
     // Standard2Assembly
     // Import atmosP into local atmosP
-    CHECK_ZERO(localSurfTmp->Import(*emip, *as2std_surf, Insert));
+    CHECK_ZERO(localSurfTmp_->Import(*emip, *as2std_surf_, Insert));
 
     double *tmpEmip;
-    localSurfTmp->ExtractView(&tmpEmip);
+    localSurfTmp_->ExtractView(&tmpEmip);
 
     if (mode == 'A')
     {
@@ -1568,12 +1555,12 @@ void THCM::setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode)
 Teuchos::RCP<Epetra_Vector> THCM::getSunO()
 {
     double *suno;
-    Epetra_Vector localSunO(*AssemblySurfaceMap);
+    Epetra_Vector localSunO(*assemblySurfaceMap_);
     localSunO.ExtractView(&suno);
     F90NAME(m_probe, get_suno) ( suno );
     Teuchos::RCP<Epetra_Vector> out =
-        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
-    CHECK_ZERO(out->Export(localSunO, *as2std_surf, Zero));
+        Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    CHECK_ZERO(out->Export(localSunO, *as2std_surf_, Zero));
     return out;
 }
 
@@ -1581,7 +1568,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getSunO()
 Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
 {
     double* tmpEmip;
-    localSurfTmp->ExtractView(&tmpEmip);
+    localSurfTmp_->ExtractView(&tmpEmip);
 
     if (mode == 'A')
     {
@@ -1598,10 +1585,10 @@ Teuchos::RCP<Epetra_Vector> THCM::getEmip(char mode)
 
 
     Teuchos::RCP<Epetra_Vector> emip =
-        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+        Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     // Export assembly map surface emip
-    CHECK_ZERO(emip->Export(*localEmip, *as2std_surf, Zero));
+    CHECK_ZERO(emip->Export(*localEmip_, *as2std_surf_, Zero));
 
     return emip;
 }
@@ -1616,8 +1603,8 @@ std::vector<Teuchos::RCP<Epetra_Vector> > THCM::getFluxes()
 
     for (int i = 0; i != numFluxes; ++i)
     {
-        fluxes.push_back(Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap)));
-        localFluxes.push_back(Epetra_Vector(*AssemblySurfaceMap));
+        fluxes.push_back(Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_)));
+        localFluxes.push_back(Epetra_Vector(*assemblySurfaceMap_));
     }
 
     std::vector<double*> tmpPtrs(numFluxes);
@@ -1626,7 +1613,7 @@ std::vector<Teuchos::RCP<Epetra_Vector> > THCM::getFluxes()
         localFluxes[i].ExtractView(&tmpPtrs[i]);
 
     double* solution;
-    localSol->ExtractView(&solution);
+    localSol_->ExtractView(&solution);
 
     F90NAME(m_probe, get_salflux )( solution, tmpPtrs[_Sal],  &scorr_,
                                     tmpPtrs[_QSOA], tmpPtrs[_QSOS] );
@@ -1637,7 +1624,7 @@ std::vector<Teuchos::RCP<Epetra_Vector> > THCM::getFluxes()
 
     for (int i = 0; i != numFluxes; ++i)
     {
-        CHECK_ZERO(fluxes[i]->Export(localFluxes[i], *as2std_surf, Zero));
+        CHECK_ZERO(fluxes[i]->Export(localFluxes[i], *as2std_surf_, Zero));
     }
 
     return fluxes;
@@ -1649,12 +1636,12 @@ THCM::Derivatives THCM::getDerivatives()
     Derivatives d;
 
     double *solution;
-    localSol->ExtractView(&solution);
+    localSol_->ExtractView(&solution);
 
-    Epetra_Vector local_dftdm(*AssemblySurfaceMap);
-    Epetra_Vector local_dfsdq(*AssemblySurfaceMap);
-    Epetra_Vector local_dfsdm(*AssemblySurfaceMap);
-    Epetra_Vector local_dfsdg(*AssemblySurfaceMap);
+    Epetra_Vector local_dftdm(*assemblySurfaceMap_);
+    Epetra_Vector local_dfsdq(*assemblySurfaceMap_);
+    Epetra_Vector local_dfsdm(*assemblySurfaceMap_);
+    Epetra_Vector local_dfsdg(*assemblySurfaceMap_);
 
     double *dftdm, *dfsdq, *dfsdm, *dfsdg;
     local_dftdm.ExtractView(&dftdm);
@@ -1663,15 +1650,15 @@ THCM::Derivatives THCM::getDerivatives()
     local_dfsdg.ExtractView(&dfsdg);
     F90NAME(m_probe, get_derivatives)( solution, dftdm, dfsdq, dfsdm, dfsdg);
 
-    d.dFTdM = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
-    d.dFSdQ = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
-    d.dFSdM = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
-    d.dFSdG = Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+    d.dFTdM = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    d.dFSdQ = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    d.dFSdM = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+    d.dFSdG = Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
-    d.dFTdM->Export(local_dftdm, *as2std_surf, Zero);
-    d.dFSdQ->Export(local_dfsdq, *as2std_surf, Zero);
-    d.dFSdM->Export(local_dfsdm, *as2std_surf, Zero);
-    d.dFSdG->Export(local_dfsdg, *as2std_surf, Zero);
+    d.dFTdM->Export(local_dftdm, *as2std_surf_, Zero);
+    d.dFSdQ->Export(local_dfsdq, *as2std_surf_, Zero);
+    d.dFSdM->Export(local_dfsdm, *as2std_surf_, Zero);
+    d.dFSdG->Export(local_dfsdg, *as2std_surf_, Zero);
 
     return d;
 }
@@ -1680,28 +1667,28 @@ THCM::Derivatives THCM::getDerivatives()
 Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosT()
 {
     double *tmpAtmosT;
-    localAtmosT->ExtractView(&tmpAtmosT);
+    localAtmosT_->ExtractView(&tmpAtmosT);
     F90NAME(m_probe, get_atmosphere_t )( tmpAtmosT );
-    return localAtmosT;
+    return localAtmosT_;
 }
 
 //=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosQ()
 {
     double *tmpAtmosQ;
-    localAtmosP->ExtractView(&tmpAtmosQ);
+    localAtmosP_->ExtractView(&tmpAtmosQ);
     F90NAME(m_probe, get_atmosphere_q )( tmpAtmosQ );
-    return localAtmosQ;
+    return localAtmosQ_;
 }
 
 //=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getAtmosQ()
 {
     Teuchos::RCP<Epetra_Vector> atmosQ =
-        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+        Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     // Export assembly map surface evaporation to standard surface map
-    CHECK_ZERO(atmosQ->Export(*getLocalAtmosQ(), *as2std_surf, Zero));
+    CHECK_ZERO(atmosQ->Export(*getLocalAtmosQ(), *as2std_surf_, Zero));
     return atmosQ;
 }
 
@@ -1709,34 +1696,34 @@ Teuchos::RCP<Epetra_Vector> THCM::getAtmosQ()
 Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosP()
 {
     double *tmpAtmosP;
-    localAtmosP->ExtractView(&tmpAtmosP);
+    localAtmosP_->ExtractView(&tmpAtmosP);
     F90NAME(m_probe, get_atmosphere_p )( tmpAtmosP );
-    return localAtmosP;
+    return localAtmosP_;
 }
 
 //============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getLocalOceanE()
 {
     double *tmpOceanE;
-    localOceanE->ExtractView(&tmpOceanE);
+    localOceanE_->ExtractView(&tmpOceanE);
 
     // localsol should contain something meaningful
     double* solution;
-    localSol->ExtractView(&solution);
+    localSol_->ExtractView(&solution);
 
     F90NAME( m_probe, compute_evap )( tmpOceanE, solution );
 
-    return localOceanE;
+    return localOceanE_;
 }
 
 //============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getOceanE()
 {
     Teuchos::RCP<Epetra_Vector> oceanE =
-        Teuchos::rcp(new Epetra_Vector(*StandardSurfaceMap));
+        Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
 
     // Export assembly map surface evaporation to standard surface map
-    CHECK_ZERO(oceanE->Export(*getLocalOceanE(), *as2std_surf, Zero));
+    CHECK_ZERO(oceanE->Export(*getLocalOceanE(), *as2std_surf_, Zero));
     return oceanE;
 }
 
@@ -1754,18 +1741,18 @@ void THCM::RecomputeScaling(void)
     double ldb[_NUN_*_NUN_];
     double gdb[_NUN_*_NUN_];
 
-    int len = local_row_scaling->MyLength();
+    int len = localRowScaling_->MyLength();
     double *rowscal = new double[len];
     double *colscal = new double[len];
 
     // compute local average diagonal block
     F90NAME(m_scaling,average_block)(ldb);
 
-    Comm->SumAll(ldb,gdb,_NUN_*_NUN_);
+    comm_->SumAll(ldb,gdb,_NUN_*_NUN_);
 
     for (int i=0;i<_NUN_*_NUN_;i++)
     {
-        gdb[i]/=Comm->NumProc();
+        gdb[i]/=comm_->NumProc();
     }
     // compute row- and column scaling
     F90NAME(m_scaling,compute)(gdb,rowscal,colscal);
@@ -1775,55 +1762,38 @@ void THCM::RecomputeScaling(void)
     // defined as the inverse of those in THCM
     for (int i=0;i<len;i++)
     {
-        (*local_row_scaling)[i] = 1.0/rowscal[i];
-        (*local_col_scaling)[i] = 1.0/colscal[i];
+        (*localRowScaling_)[i] = 1.0/rowscal[i];
+        (*localColScaling_)[i] = 1.0/colscal[i];
     }
 
     // kick out the ghost nodes:
-    domain->Assembly2Solve(*local_row_scaling,*row_scaling);
-    domain->Assembly2Solve(*local_col_scaling,*col_scaling);
+    domain_->Assembly2Solve(*localRowScaling_,*rowScaling_);
+    domain_->Assembly2Solve(*localColScaling_,*colScaling_);
 
     // make sure T and S are scaled the same way in each cell
     // we need this because of our special block scaling for the
     // ATS matrix in the preconditioner.
-    for (int i = TT-1; i < row_scaling->MyLength(); i += _NUN_)
+    for (int i = TT-1; i < rowScaling_->MyLength(); i += _NUN_)
     {
-        double mean = 0.5*((*row_scaling)[i]+(*row_scaling)[i+1]);
-        (*row_scaling)[i] = mean;
-        (*row_scaling)[i+1] = mean;
-        mean = 0.5*((*col_scaling)[i]+(*col_scaling)[i+1]);
-        (*col_scaling)[i] = mean;
-        (*col_scaling)[i+1] = mean;
+        double mean = 0.5*((*rowScaling_)[i]+(*rowScaling_)[i+1]);
+        (*rowScaling_)[i] = mean;
+        (*rowScaling_)[i+1] = mean;
+        mean = 0.5*((*colScaling_)[i]+(*colScaling_)[i+1]);
+        (*colScaling_)[i] = mean;
+        (*colScaling_)[i+1] = mean;
     }
 
     delete [] rowscal;
     delete [] colscal;
-
-    // (2) diagonal row scaling for T and S (obsolete!)
-    if (row_scaling_TS!=Teuchos::null)
-    {
-        CHECK_ZERO(Jac->ExtractDiagonalCopy(*row_scaling_TS));
-        for (int i=0;i<row_scaling_TS->MyLength();i+=_NUN_)
-        {
-            for (int j=i;j<i+4;j++)
-            {
-                (*row_scaling_TS)[j] = 1.0; //u,v,w,p
-            }
-            for (int j=i+4;j<i+6;j++)
-            {
-                (*row_scaling_TS)[j] = 1.0/(*row_scaling_TS)[j]; //T,S
-            }
-        }
-    }// additional T/S scaling (obsolete)
 }
 
 //=============================================================================
 void THCM::normalizePressure(Epetra_Vector& soln) const
 {
-    int i = n/2-1;
-    int j = 6*m/8-1;
-    int k = l-1;
-    int ref_gid = FIND_ROW2(_NUN_,n,m,l,i,j,k,PP);
+    int i = n_/2-1;
+    int j = 6*m_/8-1;
+    int k = l_-1;
+    int ref_gid = FIND_ROW2(_NUN_,n_,m_,l_,i,j,k,PP);
     int ref_lid, ref_host;
     double ref_value;
     soln.Map().RemoteIDList(1, &ref_gid, &ref_host, &ref_lid);
@@ -1847,8 +1817,8 @@ void THCM::normalizePressure(Epetra_Vector& soln) const
 // Timing functionality
 void THCM::startTiming(std::string fname)
 {
-    Teuchos::RCP<Epetra_Time> T=Teuchos::rcp(new Epetra_Time(*Comm));
-    timerList.sublist("timers").set(fname,T);
+    Teuchos::RCP<Epetra_Time> T=Teuchos::rcp(new Epetra_Time(*comm_));
+    timerList_.sublist("timers").set(fname,T);
 }
 
 
@@ -1856,16 +1826,16 @@ void THCM::startTiming(std::string fname)
 void THCM::stopTiming(std::string fname,bool print)
 {
     Teuchos::RCP<Epetra_Time> T = Teuchos::null;
-    T=timerList.sublist("timers").get(fname,T);
+    T=timerList_.sublist("timers").get(fname,T);
     double elapsed=0;
     if (T!=Teuchos::null)
     {
         elapsed=T->ElapsedTime();
     }
-    int ncalls=timerList.sublist("number of calls").get(fname,0);
-    double total_time=timerList.sublist("total time").get(fname,0.0);
-    timerList.sublist("number of calls").set(fname,ncalls+1);
-    timerList.sublist("total time").set(fname,total_time+elapsed);
+    int ncalls=timerList_.sublist("number of calls").get(fname,0);
+    double total_time=timerList_.sublist("total time").get(fname,0.0);
+    timerList_.sublist("number of calls").set(fname,ncalls+1);
+    timerList_.sublist("total time").set(fname,total_time+elapsed);
     if (print)
     {
         (std::cout) << "### timing: "<<fname<<" "<<elapsed<<std::endl;
@@ -1880,8 +1850,8 @@ void THCM::printTiming(std::ostream& os)
     os << " # Calls \t Cumulative Time \t Time/call\n";
     os << "======================================================"<<std::endl;
 
-    Teuchos::ParameterList& ncallsList=timerList.sublist("number of calls");
-    Teuchos::ParameterList& elapsedList=timerList.sublist("total time");
+    Teuchos::ParameterList& ncallsList=timerList_.sublist("number of calls");
+    Teuchos::ParameterList& elapsedList=timerList_.sublist("total time");
     for (Teuchos::ParameterList::ConstIterator i=ncallsList.begin();i!=ncallsList.end();i++)
     {
         const std::string& fname = i->first;
@@ -1891,7 +1861,7 @@ void THCM::printTiming(std::ostream& os)
            << ((ncalls>0)? elapsed/(double)ncalls : 0.0) <<std::endl;
     }
     os << "====================================================="<<std::endl;
-    DEBUG(timerList);
+    DEBUG(timerList_);
 }
 
 //=============================================================================
@@ -2028,7 +1998,7 @@ bool THCM::setParameter(std::string label, double value)
     else if (param==0) // 0 is non-dimensional time
     {
         // set monthly forcing data
-        bool time_dep_forcing = paramList.get<bool>("Time Dependent Forcing");
+        bool time_dep_forcing = paramList_.get<bool>("Time Dependent Forcing");
         if ((value>=0.0) && time_dep_forcing)
         {
             double gamma=1.0,gammaT=1.0,gammaS=1.0,gammaW=1.0;//default values
@@ -2040,7 +2010,7 @@ bool THCM::setParameter(std::string label, double value)
             INFO("Set THCM time to "<<value);
             INFO("Seasonal forcing parameters (W,T,S): "<<gammaW<<", "<<gammaT<<", "<<gammaS);
             F90NAME(m_monthly,update_forcing)(&value,&gammaW,&gammaT,&gammaS);
-            if (internal_forcing)
+            if (internal_forcing_)
             {
                 F90NAME(m_monthly,update_internal_forcing)(&value,&gammaT,&gammaS);
             }
@@ -2051,7 +2021,7 @@ bool THCM::setParameter(std::string label, double value)
             double gammaT=0.0,gammaS=0.0,gammaW=0.0,val=0.0;
             INFO("Set THCM forcing to constant");
             F90NAME(m_monthly,update_forcing)(&val,&gammaW,&gammaT,&gammaS);
-            if (internal_forcing)
+            if (internal_forcing_)
             {
                 F90NAME(m_monthly,update_internal_forcing)(&val,&gammaT,&gammaS);
             }
@@ -2086,43 +2056,43 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
     DEBUG("Create local (land-)maps...");
 
     // create a non-overlapping distributed map
-    int i0 = domain->FirstRealI()+1; // 'grid-style' indexing is 1-based
-    int i1 = domain->LastRealI()+1;
-    int j0 = domain->FirstRealJ()+1;
-    int j1 = domain->LastRealJ()+1;
-    int k0 = domain->FirstRealK()+1;
-    int k1 = domain->LastRealK()+1;
+    int i0 = domain_->FirstRealI()+1; // 'grid-style' indexing is 1-based
+    int i1 = domain_->LastRealI()+1;
+    int j0 = domain_->FirstRealJ()+1;
+    int j1 = domain_->LastRealJ()+1;
+    int k0 = domain_->FirstRealK()+1;
+    int k1 = domain_->LastRealK()+1;
 
     // add global boundary cells
     if (i0 == 1) i0-- ;
-    if (i1 == n) i1++;
+    if (i1 == n_) i1++;
     if (j0 == 1) j0-- ;
-    if (j1 == m) j1++;
+    if (j1 == m_) j1++;
     if (k0 == 1) k0-- ;
-    if (k1 == l) k1++;
+    if (k1 == l_) k1++;
 
-    int I0 = 0; int I1 = n+1;
-    int J0 = 0; int J1 = m+1;
-    int K0 = 0; int K1 = l+1;
+    int I0 = 0; int I1 = n_+1;
+    int J0 = 0; int J1 = m_+1;
+    int K0 = 0; int K1 = l_+1;
 
     DEBUG("create landmap without overlap...");
     Teuchos::RCP<Epetra_Map> landmap_loc0 = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
-                                                             I0,I1,J0,J1,K0,K1,*Comm);
+                                                             I0,I1,J0,J1,K0,K1,*comm_);
 
     // create an overlapping distributed map
-    i0 = domain->FirstI()+1; // 'grid-style' indexing is 1-based
-    i1 = domain->LastI()+1;
-    j0 = domain->FirstJ()+1;
-    j1 = domain->LastJ()+1;
-    k0 = domain->FirstK()+1;
-    k1 = domain->LastK()+1;
+    i0 = domain_->FirstI()+1; // 'grid-style' indexing is 1-based
+    i1 = domain_->LastI()+1;
+    j0 = domain_->FirstJ()+1;
+    j1 = domain_->LastJ()+1;
+    k0 = domain_->FirstK()+1;
+    k1 = domain_->LastK()+1;
 
-    //add the boundary cells i=0,n+1 etc (this is independent of overlap)
+    //add the boundary cells i=0,n_+1 etc (this is independent of overlap)
     i0--; i1++; j0--; j1++; k0--; k1++;
 
     DEBUG("create landmap with overlap...");
     Teuchos::RCP<Epetra_Map> landmap_loc = Utils::CreateMap(i0,i1,j0,j1,k0,k1,
-                                                            I0,I1,J0,J1,K0,K1,*Comm);
+                                                            I0,I1,J0,J1,K0,K1,*comm_);
 
     DEBUG("Create local vectors...");
 
@@ -2164,7 +2134,7 @@ Teuchos::RCP<Epetra_IntVector> THCM::distributeLandMask(Teuchos::RCP<Epetra_IntV
 //=============================================================================
 void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
 {
-    if (sres != 0)
+    if (sres_ != 0)
     {
         WARNING("This should not be called when SRES!=0",
                 __FILE__, __LINE__);
@@ -2173,7 +2143,7 @@ void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
     else
     {
         // compute salinity integral, put it in correction
-        CHECK_ZERO(intcond_coeff->Dot(*vec, &intCorrection_));
+        CHECK_ZERO(intcondCoeff_->Dot(*vec, &intCorrection_));
 
         if (std::abs(intCorrection_) > 1e-8)
         {
@@ -2189,7 +2159,7 @@ void THCM::setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec)
 // condition.
 void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
 {
-    if (sres != 0)
+    if (sres_ != 0)
     {
         WARNING("This should not be called when SRES!=0",
                 __FILE__, __LINE__);
@@ -2199,7 +2169,7 @@ void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
     {
         // compute salinity integral
         double integral;
-        CHECK_ZERO(intcond_coeff->Dot(*vec, &integral));
+        CHECK_ZERO(intcondCoeff_->Dot(*vec, &integral));
 
         if (std::abs(integral) > 1e-8)
         {
@@ -2218,17 +2188,17 @@ void THCM::adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec)
         // add correction to salinity values
         double correction = integral / totalVolume_;
         int row, lid;
-        for (int k = 0; k != l; ++k)
-            for (int j = 0; j != m; ++j)
-                for (int i = 0; i != n; ++i)
+        for (int k = 0; k != l_; ++k)
+            for (int j = 0; j != m_; ++j)
+                for (int i = 0; i != n_; ++i)
                 {
-                    row = FIND_ROW2(_NUN_, n, m, l, i, j, k, SS);
+                    row = FIND_ROW2(_NUN_, n_, m_, l_, i, j, k, SS);
                     lid = vec->Map().LID(row);
                     if (lid >= 0)
                         (*vec)[lid] -= correction;
                 }
 #ifdef DEBUGGING_NEW
-        CHECK_ZERO(intcond_coeff->Dot(*vec, &integral));
+        CHECK_ZERO(intcondCoeff_->Dot(*vec, &integral));
         assert(std::abs(integral) < 1e-8);
         INFO("   integral     = " << integral);
         INFO("         V      = " << totalVolume_);
@@ -2244,16 +2214,16 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
                           double &salt_advection,
                           double &salt_diffusion)
 {
-    if (!(state->Map().SameAs(*StandardMap)))
+    if (!(state->Map().SameAs(*standardMap_)))
     {
         ERROR("Map of input vector not same as standard map ",__FILE__,__LINE__);
     }
 
     // Create vectors for integral coefficients
     Teuchos::RCP<Epetra_Vector> globalCoeff =
-        Teuchos::rcp(new Epetra_Vector(*StandardVolumeMap));
+        Teuchos::rcp(new Epetra_Vector(*standardVolumeMap_));
     Teuchos::RCP<Epetra_Vector> localCoeff =
-        Teuchos::rcp(new Epetra_Vector(*AssemblyVolumeMap));
+        Teuchos::rcp(new Epetra_Vector(*assemblyVolumeMap_));
 
     // Create pointer to view of local coefficients
     double *localCoeffView;
@@ -2261,10 +2231,10 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
 
     // Create local state
     Teuchos::RCP<Epetra_Vector> localState =
-        Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+        Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // Import into local state
-    domain->Solve2Assembly(*state, *localState);
+    domain_->Solve2Assembly(*state, *localState);
 
     // Create pointer to view of local state entries
     double *localStateView;
@@ -2275,7 +2245,7 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
     F90NAME( m_integrals, salt_advection )( localStateView, localCoeffView );
 
     // Export local coefficients into global entries
-    CHECK_ZERO(globalCoeff->Export(*localCoeff, *as2std_vol, Zero));
+    CHECK_ZERO(globalCoeff->Export(*localCoeff, *as2std_vol_, Zero));
 
     // Compute integral on global non-overlapping domain
     double localInt = 0.0;
@@ -2283,9 +2253,9 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
         localInt += (*globalCoeff)[i];
 
     // Sum over subdomains, obtain resulting integral
-    Comm->SumAll(&localInt, &salt_advection, 1);
+    comm_->SumAll(&localInt, &salt_advection, 1);
 
-    std::cout << "Salt advection integral, PID = " << Comm->MyPID() << " lSum = " << localInt
+    std::cout << "Salt advection integral, PID = " << comm_->MyPID() << " lSum = " << localInt
               << " gSum = " << salt_advection << std::endl;
 
     // Reset local coefficients and integral
@@ -2297,11 +2267,11 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
     F90NAME( m_integrals, salt_diffusion )( localStateView, localCoeffView );
 
     // Export local coefficients into global non overlapping entries
-    CHECK_ZERO(globalCoeff->Export(*localCoeff, *as2std_vol, Zero));
+    CHECK_ZERO(globalCoeff->Export(*localCoeff, *as2std_vol_, Zero));
 
     // std::ofstream file;
     // std::stringstream ss;
-    // ss << "globalCoeff" << Comm->MyPID();
+    // ss << "globalCoeff" << comm_->MyPID();
     // file.open(ss.str());
     // globalCoeff->Print(file);
     // file.close();
@@ -2311,9 +2281,9 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
         localInt += (*globalCoeff)[i];
 
     // Sum over subdomains
-    Comm->SumAll(&localInt, &salt_diffusion, 1);
+    comm_->SumAll(&localInt, &salt_diffusion, 1);
 
-    std::cout << "Salt diffusion integral, PID = " << Comm->MyPID() << " lSum = " << localInt
+    std::cout << "Salt diffusion integral, PID = " << comm_->MyPID() << " lSum = " << localInt
               << " gSum = " << salt_diffusion << std::endl;
 }
 
@@ -2321,18 +2291,18 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
 // implement integral condition for S in Jacobian and B-matrix
 void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 {
-    int N=domain->GlobalN();
-    int M=domain->GlobalM();
-    int L=domain->GlobalL();
+    int N=domain_->GlobalN();
+    int M=domain_->GlobalM();
+    int L=domain_->GlobalL();
 
-    int root = Comm->NumProc()-1;
+    int root = comm_->NumProc()-1;
 
     Teuchos::RCP<Epetra_MultiVector> intcond_glob =
-        Utils::Gather(*intcond_coeff, root);
+        Utils::Gather(*intcondCoeff_, root);
 
     if (A.MyGRID(rowintcon_))
     {
-        if (Comm->MyPID()!=root)
+        if (comm_->MyPID()!=root)
         {
             ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
         }
@@ -2372,7 +2342,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
         if (ierr != 0)
         {
             std::stringstream ss;
-            ss << "graph_pid" << Comm->MyPID();
+            ss << "graph_pid" << comm_->MyPID();
             std::ofstream file(ss.str());
             file << A.Graph();
 
@@ -2381,7 +2351,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 
             std::cout << "\n ERROR " << ierr;
             std::cout << ((ierr == 2) ? ": value excluded" : "") << std::endl;
-            std::cout << "\n myPID " << Comm->MyPID();
+            std::cout << "\n myPID " << comm_->MyPID();
 
             std::cout << " while inserting/replacing values in local Jacobian" << std::endl;
             std::cout << "  GRID: " << rowintcon_ << std::endl;
@@ -2392,7 +2362,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
         delete []  values;
         delete []  indices;
     }
-    else if (Comm->MyPID()==root)
+    else if (comm_->MyPID()==root)
     {
         ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
     }
@@ -2402,7 +2372,7 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
 void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
 {
     for (int i=1;i<=2;i++) {
-        int row = (i==1)? rowPfix1: rowPfix2;
+        int row = (i==1)? rowPfix1_: rowPfix2_;
         if (A.MyGRID(row))
         {
             int lidB = B.Map().LID(row);
@@ -2442,10 +2412,10 @@ void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
 Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
 {
     DEBUG("Constructing maximal matrix graph...");
-    int n=domain->LocalN();
-    int m=domain->LocalM();
-    int l=domain->LocalL();
-    int ndim = StandardMap->NumMyElements();
+    int n=domain_->LocalN();
+    int m=domain_->LocalM();
+    int l=domain_->LocalL();
+    int ndim = standardMap_->NumMyElements();
     int *numEntriesPerRow = new int[ndim];
     //int *landm = new int[n*m*l];
     //F90NAME(m_thcm_utils,get_landm)(landm);
@@ -2455,10 +2425,10 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
             for (int i=1;i<=n;i++)
             {
                 int lidU = FIND_ROW2(_NUN_,n,m,l,i-1,j-1,k-1,UU);
-                int gidU = AssemblyMap->GID(lidU);
-                if (StandardMap->MyGID(gidU)) // otherwise: ghost cell, not in Jacobian
+                int gidU = assemblyMap_->GID(lidU);
+                if (standardMap_->MyGID(gidU)) // otherwise: ghost cell, not in Jacobian
                 {
-                    int lid0 = StandardMap->LID(gidU)-1;
+                    int lid0 = standardMap_->LID(gidU)-1;
                     numEntriesPerRow[lid0+UU] = 24;
                     numEntriesPerRow[lid0+VV] = 22;
                     numEntriesPerRow[lid0+WW] = 7;
@@ -2469,22 +2439,22 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
             }
 
     Teuchos::RCP<Epetra_CrsGraph> graph
-        = Teuchos::rcp(new Epetra_CrsGraph(Copy,*StandardMap,numEntriesPerRow,false));
+        = Teuchos::rcp(new Epetra_CrsGraph(Copy,*standardMap_,numEntriesPerRow,false));
 
     DEBVAR(rowintcon_);
-    DEBVAR(sres);
+    DEBVAR(sres_);
 
     int indices[24];
-    int N = domain->GlobalN();
-    int M = domain->GlobalM();
-    int L = domain->GlobalL();
+    int N = domain_->GlobalN();
+    int M = domain_->GlobalM();
+    int L = domain_->GlobalL();
 
-    int I0 = domain->FirstRealI();
-    int J0 = domain->FirstRealJ();
-    int K0 = domain->FirstRealK();
-    int I1 = domain->LastRealI();
-    int J1 = domain->LastRealJ();
-    int K1 = domain->LastRealK();
+    int I0 = domain_->FirstRealI();
+    int J0 = domain_->FirstRealJ();
+    int K0 = domain_->FirstRealK();
+    int I1 = domain_->LastRealI();
+    int J1 = domain_->LastRealJ();
+    int K1 = domain_->LastRealK();
     int pos; // counts nonzero's per row and keeps track of position
     for (int k=K0; k<=K1; k++)
         for (int j=J0; j<=J1; j++)
@@ -2534,7 +2504,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
 #define DEBUG_GRAPH_ROW(var)                                            \
                 std::cout << "graph row "<<i<<" "<<j<<" "<<k<<" "<<var;     \
                 std::cout << " (gid "<<(gid0+var)<<"):"<<std::endl;         \
-                std::cout << "predicted length: "<<numEntriesPerRow[StandardMap->LID(gid0+var)]; \
+                std::cout << "predicted length: "<<numEntriesPerRow[standardMap_->LID(gid0+var)]; \
                 std::cout <<", actual length: "<<pos<<std::endl;        \
                 for (int pp=0;pp<pos;pp++) std::cout << (indices)[pp]<<" ";     \
                 std::cout << std::endl;
@@ -2682,7 +2652,7 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
                 insert_graph_entry(indices,pos,i,j,k-1,TT,N,M,L);
                 insert_graph_entry(indices,pos,i,j,k+1,TT,N,M,L);
 #ifndef NO_INTCOND
-                if ( (sres == 0) &&
+                if ( (sres_ == 0) &&
                      ( (gid0+SS) == rowintcon_ ) &&
                      useSRES)
                     continue;
@@ -2692,10 +2662,10 @@ Teuchos::RCP<Epetra_CrsGraph> THCM::CreateMaximalGraph(bool useSRES)
             }
 
 #ifndef NO_INTCOND
-    if ((sres == 0) && useSRES)
+    if ((sres_ == 0) && useSRES)
     {
         int grid = rowintcon_;
-        if (StandardMap->MyGID(grid))
+        if (standardMap_->MyGID(grid))
         {
             int len = N*M*L;
             int *inds = new int[len];
@@ -2728,7 +2698,7 @@ void THCM::insert_graph_entry(int* indices, int& pos,
 {
     int ii=i; // if x-boundary is periodic i may be out of bounds.
     // ii will be adjusted in that case:
-    if (domain->IsPeriodic())
+    if (domain_->IsPeriodic())
     {
         ii = MOD((double)i,(double)N);
     }
@@ -2749,11 +2719,11 @@ double THCM::getSCorr()
 //=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getIntCondCoeff()
 {
-    intcond_coeff->PutScalar(0.0);
+    intcondCoeff_->PutScalar(0.0);
     Teuchos::RCP<Epetra_Vector> intcond_tmp =
-        Teuchos::rcp(new Epetra_Vector(*AssemblyMap));
+        Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
-    int nml = (domain->LocalN())*(domain->LocalM())*(domain->LocalL());
+    int nml = (domain_->LocalN())*(domain_->LocalM())*(domain_->LocalL());
 
     double *values = new double[nml];
     int *indices   = new int[nml];
@@ -2768,20 +2738,20 @@ Teuchos::RCP<Epetra_Vector> THCM::getIntCondCoeff()
     delete [] values;
     delete [] indices;
 
-    domain->Assembly2Solve(*intcond_tmp,*intcond_coeff);
+    domain_->Assembly2Solve(*intcond_tmp,*intcondCoeff_);
 
-    intcond_coeff->Norm1(&totalVolume_);
+    intcondCoeff_->Norm1(&totalVolume_);
 
     INFO("  total volume: " << totalVolume_);
 
-    return intcond_coeff;
+    return intcondCoeff_;
 }
 
 //=============================================================================
 // set vmix_fix
 void THCM::fixMixing(int value)
 {
-    if (vmix_GLB == 2)
+    if (vmixGLB_ == 2)
     {
         INFO(" ** fixing vmix_fix: " << value << " **");
         F90NAME(m_mix, set_vmix_fix)(&value);
@@ -2794,11 +2764,11 @@ void THCM::SetupMonthlyForcing()
     DEBUG("Initialize monthly Levitus...");
 
     // maps for 2D fields (surface forcing)
-    Teuchos::RCP<Epetra_Map> lev_map_dist = domain->CreateStandardMap(1,true);
+    Teuchos::RCP<Epetra_Map> lev_map_dist = domain_->CreateStandardMap(1,true);
     Teuchos::RCP<Epetra_Map> lev_map_root = Utils::Gather(*lev_map_dist,0);
 
     // maps for 3D fields (internal forcing)
-    Teuchos::RCP<Epetra_Map> intlev_map_dist = domain->CreateStandardMap(1,false);
+    Teuchos::RCP<Epetra_Map> intlev_map_dist = domain_->CreateStandardMap(1,false);
     Teuchos::RCP<Epetra_Map> intlev_map_root = Utils::Gather(*intlev_map_dist,0);
 
     // create sequential and parallel vectors to hold the data
@@ -2827,8 +2797,8 @@ void THCM::SetupMonthlyForcing()
     CHECK_ZERO((*tauy_glob)(0)->ExtractView(&tauy_g));
 
     // now create distributed maps
-    Teuchos::RCP<Epetra_Map> lev_map_loc    = domain->CreateAssemblyMap(1,true);
-    Teuchos::RCP<Epetra_Map> intlev_map_loc = domain->CreateAssemblyMap(1,false);
+    Teuchos::RCP<Epetra_Map> lev_map_loc    = domain_->CreateAssemblyMap(1,true);
+    Teuchos::RCP<Epetra_Map> intlev_map_loc = domain_->CreateAssemblyMap(1,false);
 
     // and distributed vectors
     Teuchos::RCP<Epetra_Vector> tatm_loc = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
@@ -2855,10 +2825,10 @@ void THCM::SetupMonthlyForcing()
 
     for (int month=1;month<=12;month++)
     {
-        if (Comm->MyPID()==0)
+        if (comm_->MyPID()==0)
         {
             F90NAME(m_global,get_monthly_forcing)(tatm_g,emip_g,taux_g,tauy_g,&month);
-            if (internal_forcing)
+            if (internal_forcing_)
             {
                 F90NAME(m_global,get_monthly_internal_forcing)(temp_g,salt_g,&month);
             }
@@ -2891,7 +2861,7 @@ void THCM::SetupMonthlyForcing()
         INFO("Salinity-forcing range: [" << emipmin << ".." << emipmax << "]");
 
         F90NAME(m_monthly,set_forcing)(ctatm,cemip,ctaux,ctauy,&month);
-        if (internal_forcing)
+        if (internal_forcing_)
         {
             F90NAME(m_monthly,set_internal_forcing)(ctemp,csalt,&month);
         }
@@ -2905,19 +2875,19 @@ extern "C" {
     void thcm_forcing_integral_(double* qfun2, double* y, int* landm, double* fsint)
     {
         Teuchos::RCP<Epetra_Comm> comm = THCM::Instance().GetComm();
-        Teuchos::RCP<TRIOS::Domain> domain = THCM::Instance().GetDomain();
+        Teuchos::RCP<TRIOS::Domain> domain_ = THCM::Instance().GetDomain();
 
-        int n = domain->LocalN();
-        int m = domain->LocalM();
-        int l = domain->LocalL();
+        int n = domain_->LocalN();
+        int m = domain_->LocalM();
+        int l = domain_->LocalL();
 
         double lsint = 0.0, lfsint=0.0, sint;
 
-        int i0 = domain->FirstRealI()-domain->FirstI();
-        int j0 = domain->FirstRealJ()-domain->FirstJ();
+        int i0 = domain_->FirstRealI()-domain_->FirstI();
+        int j0 = domain_->FirstRealJ()-domain_->FirstJ();
 
-        int i1 = domain->LastRealI()-domain->FirstI();
-        int j1 = domain->LastRealJ()-domain->FirstJ();
+        int i1 = domain_->LastRealI()-domain_->FirstI();
+        int j1 = domain_->LastRealJ()-domain_->FirstJ();
 
         for (int j=j0; j<=j1; j++)
         {
@@ -3029,14 +2999,14 @@ THCM::getDefaultParameters()
 }
 
 const Teuchos::ParameterList& THCM::getParameters()
-{ return paramList; }
+{ return paramList_; }
 
 void THCM::setParameters(Teuchos::ParameterList& newParams)
 {
     newParams.validateParameters(getDefaultParameters());
-    paramList.setParameters(newParams);
+    paramList_.setParameters(newParams);
 
-    for (auto& pair : paramList.sublist("Starting Parameters")) {
+    for (auto& pair : paramList_.sublist("Starting Parameters")) {
         double val = pair.second.getValue(&val);
         if (!std::isnan(val)) setParameter(pair.first, val);
     }
@@ -3044,10 +3014,10 @@ void THCM::setParameters(Teuchos::ParameterList& newParams)
 
 Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()
 {
-    if (nullSpace==Teuchos::null)
+    if (nullSpace_==Teuchos::null)
     {
-        nullSpace = Teuchos::rcp(new Epetra_MultiVector
-                                 (*StandardMap,2,true) );
+        nullSpace_ = Teuchos::rcp(new Epetra_MultiVector
+                                 (*standardMap_,2,true) );
 
         // the svp's are fairly easy to construct, they are
         // so-called 'checkerboard' modes' in the x-y planes.
@@ -3060,26 +3030,26 @@ Teuchos::RCP<const Epetra_MultiVector> THCM::getNullSpace()
 
         // loop over all non-ghost subdomain cells:
         int pos=PP-1;
-        for (int k=domain->FirstRealK();k<=domain->LastRealK();k++)
-            for (int j=domain->FirstRealJ();j<=domain->LastRealJ();j++)
-                for (int i=domain->FirstRealI();i<=domain->LastRealI();i++)
+        for (int k=domain_->FirstRealK();k<=domain_->LastRealK();k++)
+            for (int j=domain_->FirstRealJ();j<=domain_->LastRealJ();j++)
+                for (int i=domain_->FirstRealI();i<=domain_->LastRealI();i++)
                 {
                     if ((i+j)%2)
                     {
-                        (*(*nullSpace)(0))[pos] = 1;
+                        (*(*nullSpace_)(0))[pos] = 1;
                     }
                     else
                     {
-                        (*(*nullSpace)(1))[pos] = 1;
+                        (*(*nullSpace_)(1))[pos] = 1;
                     }
                     pos+=_NUN_;
                 }
 
         double nrm1,nrm2;
-        CHECK_ZERO((*nullSpace)(0)->Norm2(&nrm1));
-        CHECK_ZERO((*nullSpace)(1)->Norm2(&nrm2));
-        CHECK_ZERO((*nullSpace)(0)->Scale(1.0/nrm1));
-        CHECK_ZERO((*nullSpace)(1)->Scale(1.0/nrm2));
+        CHECK_ZERO((*nullSpace_)(0)->Norm2(&nrm1));
+        CHECK_ZERO((*nullSpace_)(1)->Norm2(&nrm2));
+        CHECK_ZERO((*nullSpace_)(0)->Scale(1.0/nrm1));
+        CHECK_ZERO((*nullSpace_)(1)->Scale(1.0/nrm2));
     }
-    return nullSpace;
+    return nullSpace_;
 }

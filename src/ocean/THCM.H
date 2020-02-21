@@ -148,7 +148,7 @@ public:
 
       If computeJac=true the Jacobian is computed and can be obtained
       by calling getJacobian(). The Jacobian in THCM is A-sigma*B, but
-      we keep sigma set to 0. Use diagB to access the B matrix.
+      we keep sigma set to 0. Use DiagB() to access the B matrix.
 
       If maskTest is true we compute the Jacobian just for testing the
       landmask. This means that we temporarily switch off restoring
@@ -163,7 +163,7 @@ public:
 
     /*! the matrix B is used by THCM to 'switch off' some equations.
       It is diagonal and the diagonal entries can be accessed by the
-      function diagB(). We use the opposite sign as compared to THCM.
+      function DiagB(). We use the opposite sign as compared to THCM.
       The entries of B are (see assemble.f::fillcolB and
       usrc.F90::matrix): Ro for u,v 0 for w,p 1 for T,S
     */
@@ -178,10 +178,10 @@ public:
     //!
     //! 0: standalone thcm
     //! 1: accepting external forcing
-    int coupled_T, coupled_S, coupled_M;
+    int coupledT_, coupledS_, coupledM_;
 
-    int getCoupledT() { return coupled_T; }
-    int getCoupledS() { return coupled_S; }
+    int getCoupledT() { return coupledT_; }
+    int getCoupledS() { return coupledS_; }
 
     //! Set atmosphere temperature in the ocean model
     void setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT);
@@ -273,10 +273,10 @@ public:
     Teuchos::RCP<const Epetra_MultiVector> getNullSpace();
 
     //! get row scaling vector
-    Teuchos::RCP<Epetra_Vector> getRowScaling() {return row_scaling;}
+    Teuchos::RCP<Epetra_Vector> getRowScaling() {return rowScaling_;}
 
     //! get column scaling vector
-    Teuchos::RCP<Epetra_Vector> getColScaling() {return col_scaling;}
+    Teuchos::RCP<Epetra_Vector> getColScaling() {return colScaling_;}
 
     //! start a timer for a given part of the program
     void startTiming(std::string id);
@@ -301,39 +301,36 @@ public:
     bool writeParams();
 
     //! returns the domain decomposition object
-    Teuchos::RCP<TRIOS::Domain> GetDomain() {return domain;}
+    Teuchos::RCP<TRIOS::Domain> GetDomain() {return domain_;}
 
     //! get the diagonal matrix B
-    Teuchos::RCP<Epetra_Vector> DiagB(){return diagB;}
+    Teuchos::RCP<Epetra_Vector> DiagB(){return diagB_;}
 
     //! return the communicator object
-    Teuchos::RCP<Epetra_Comm> GetComm(){return Comm;}
+    Teuchos::RCP<Epetra_Comm> GetComm(){return comm_;}
 
     //! get the SRES parameter (non-restoring salt condition)
-    bool getSRES() const {return sres;}
+    bool getSRES() const {return sres_;}
 
     //! get the TRES parameter (non-restoring temp condition)
-    bool getTRES() const {return tres;}
+    bool getTRES() const {return tres_;}
 
     //! get the its parameter (non-restoring salt condition)
-    bool getITS() const {return its;}
+    bool getITS() const {return its_;}
 
     //! get the ite parameter (non-restoring temp condition)
-    bool getITE() const {return ite;}
+    bool getITE() const {return ite_;}
 
     //! get the salinity flux correction
     double getSCorr();
 
-    //! ite/its=0 T/S forcing from data (Levitus)
-    int ite,its;
+    //! ite_/its_=0 T/S forcing from data (Levitus)
+    int ite_,its_;
 
     //! use internal temperature and salinity forcing
-    bool internal_forcing;
+    bool internal_forcing_;
 
-    //! wind forcing method (0: data (trenberth), 1: zonally averaged, 2: idealized)
-    int iza;
-
-    //! get the global index of the row with the integral condition (if sres==0)
+    //! get the global index of the row with the integral condition (if sres_==0)
     int getRowIntCon() const {return rowintcon_;}
 
     Teuchos::RCP<Epetra_Vector> getIntCondCoeff();
@@ -343,22 +340,6 @@ public:
     //! continuation/time-stepping). Note: vmix_fix doesn't have to be
     //! set if you have vmix_flag=1 in mix_imp.f (recommended).
     void fixMixing(int value);
-
-    //! \name get physical global domain bounds
-    //@{
-    inline double xMin() const {return xmin;}
-    inline double xMax() const {return xmax;}
-    inline double yMin() const {return ymin;}
-    inline double yMax() const {return ymax;}
-    inline double hDim() const {return hdim;}
-    //@}
-
-    //! \name these are used by the block preconditioner:
-    //!@
-    inline double AlphaT()    const {return alphaT;}
-    inline double AlphaS()    const {return alphaS;}
-    inline double rhoMixing() const {return rho_mixing;}
-    //@}
 
     //! convert parameter name to integer (i.e. "Combined Forcing" => 19)
     int par2int(std::string const &label);
@@ -382,184 +363,149 @@ public:
 private:
 
     //! object for domain-decomposition:
-    Teuchos::RCP<TRIOS::Domain> domain;
+    Teuchos::RCP<TRIOS::Domain> domain_;
 
     //!\name maps and import/exprt objects for distributed data structures
     //! (obtained from the domain-object)
     //!@{
     //! overlapping map for 'THCM objects':
-    Teuchos::RCP<Epetra_Map> AssemblyMap;
-    Teuchos::RCP<Epetra_Map> AssemblySurfaceMap;
-    Teuchos::RCP<Epetra_Map> AssemblyVolumeMap;
+    Teuchos::RCP<Epetra_Map> assemblyMap_;
+    Teuchos::RCP<Epetra_Map> assemblySurfaceMap_;
+    Teuchos::RCP<Epetra_Map> assemblyVolumeMap_;
 
     //! Surface assembly to standardmap importer
-    Teuchos::RCP<Epetra_Import> as2std_surf;
-    Teuchos::RCP<Epetra_Import> as2std_vol;
+    Teuchos::RCP<Epetra_Import> as2std_surf_;
+    Teuchos::RCP<Epetra_Import> as2std_vol_;
 
     //! non-overlapping map for Trilinos objects:
-    Teuchos::RCP<Epetra_Map> StandardMap;
-    Teuchos::RCP<Epetra_Map> StandardSurfaceMap;
-    Teuchos::RCP<Epetra_Map> StandardVolumeMap;
+    Teuchos::RCP<Epetra_Map> standardMap_;
+    Teuchos::RCP<Epetra_Map> standardSurfaceMap_;
+    Teuchos::RCP<Epetra_Map> standardVolumeMap_;
 
     //! non-overlapping load-balanced map for Trilinos objects
     //! (may contain non-rectangular subdomains)
-    Teuchos::RCP<Epetra_Map> SolveMap;
+    Teuchos::RCP<Epetra_Map> solveMap_;
     //!@}
 
     //! used only to define vector format (i.e. map), I think
-    Teuchos::RCP<Epetra_Vector> initialSolution;
+    Teuchos::RCP<Epetra_Vector> initialSolution_;
 
     //! used to import current approximation to THCM:
-    Teuchos::RCP<Epetra_Vector> localSol;
+    Teuchos::RCP<Epetra_Vector> localSol_;
 
     //! used to import atmosphere temperature into THCM
-    Teuchos::RCP<Epetra_Vector> localAtmosT;
+    Teuchos::RCP<Epetra_Vector> localAtmosT_;
 
     //! used to import atmosphere humidity field into THCM
-    Teuchos::RCP<Epetra_Vector> localAtmosQ;
+    Teuchos::RCP<Epetra_Vector> localAtmosQ_;
 
     //! used to import albedo field into THCM
-    Teuchos::RCP<Epetra_Vector> localAtmosA;
+    Teuchos::RCP<Epetra_Vector> localAtmosA_;
 
     //! used to import atmosphere precipitation field into THCM
-    Teuchos::RCP<Epetra_Vector> localAtmosP;
+    Teuchos::RCP<Epetra_Vector> localAtmosP_;
 
     //! used to import sea ice heat flux into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceQ;
+    Teuchos::RCP<Epetra_Vector> localSeaiceQ_;
 
     //! used to import sea ice mask into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceM;
+    Teuchos::RCP<Epetra_Vector> localSeaiceM_;
 
     //! used to import sea ice integral correction into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceG;
+    Teuchos::RCP<Epetra_Vector> localSeaiceG_;
 
     //! used to extract evaporation field from THCM
-    Teuchos::RCP<Epetra_Vector> localOceanE;
+    Teuchos::RCP<Epetra_Vector> localOceanE_;
 
     //! used to import emip field into THCM
-    Teuchos::RCP<Epetra_Vector> localEmip;
+    Teuchos::RCP<Epetra_Vector> localEmip_;
 
     //! a surface overlapping vector without meaning
-    Teuchos::RCP<Epetra_Vector> localSurfTmp;
+    Teuchos::RCP<Epetra_Vector> localSurfTmp_;
 
     //! used to import tatm field into THCM
-    Teuchos::RCP<Epetra_Vector> localTatm;
+    Teuchos::RCP<Epetra_Vector> localTatm_;
 
     //! used to export computed RHS vector from THCM:
-    Teuchos::RCP<Epetra_Vector> localRhs;
+    Teuchos::RCP<Epetra_Vector> localRhs_;
 
     //! the diagonal matrix B stored as a vector
-    Teuchos::RCP<Epetra_Vector> localDiagB, diagB;
+    Teuchos::RCP<Epetra_Vector> localDiagB_, diagB_;
 
     //! Jacobian in globally assembled and load-balanced
-    Teuchos::RCP<Epetra_CrsMatrix> Jac;
+    Teuchos::RCP<Epetra_CrsMatrix> jac_;
 
     //! Jacobian based on standard subdomains
-    Teuchos::RCP<Epetra_CrsMatrix> localJac, testJac;
+    Teuchos::RCP<Epetra_CrsMatrix> localJac_, testJac_;
 
     //! Forcing in globally assembled and load-balanced
-    Teuchos::RCP<Epetra_CrsMatrix> Frc;
+    Teuchos::RCP<Epetra_CrsMatrix> frc_;
 
     //! Forcing based on standard subdomains
-    Teuchos::RCP<Epetra_CrsMatrix> localFrc;
-
-    //! static graph which defines the maximal pattern of non-zero entries.
-    //! the matrix Jac is based on this graph, so depending on forcing and
-    //! convective adjustment, it may contain some zeros
-    Teuchos::RCP<Epetra_CrsGraph> MatrixGraph;
-
-    //! same crs graph based on standard map
-    Teuchos::RCP<Epetra_CrsGraph> localMatrixGraph, testMatrixGraph;
-
-    //! global communicator for 4D things
-    Teuchos::RCP<EpetraExt::MultiComm> xyzt_comm;
+    Teuchos::RCP<Epetra_CrsMatrix> localFrc_;
 
     //! type of scaling to be done
-    std::string scaling_type;
+    std::string scalingType_;
 
     //! vectors storing the THCM scaling
-    Teuchos::RCP<Epetra_Vector> row_scaling, col_scaling,local_row_scaling,local_col_scaling;
-
-    //! vectors storing the THCM scaling (4D case)
-    Teuchos::RCP<EpetraExt::BlockVector> xyzt_row_scaling, xyzt_col_scaling;
-
-    //! additional row scaling for T and S (for scaling type THCM/TS)
-    Teuchos::RCP<Epetra_Vector> row_scaling_TS;
+    Teuchos::RCP<Epetra_Vector> rowScaling_, colScaling_,localRowScaling_,localColScaling_;
 
     //! (MPI) communicator
-    Teuchos::RCP<Epetra_Comm> Comm;
+    Teuchos::RCP<Epetra_Comm> comm_;
 
     //! nullspace (p-vectors)
-    Teuchos::RCP<Epetra_MultiVector> nullSpace;
+    Teuchos::RCP<Epetra_MultiVector> nullSpace_;
 
     //! global shared parameter list
-    Teuchos::ParameterList paramList;
+    Teuchos::ParameterList paramList_;
 
     //! timer status list
-    Teuchos::ParameterList timerList;
+    Teuchos::ParameterList timerList_;
 
     //! \name the matrix in THCM (CSR-format)
     /*! Memory for the Jacobian on the subdomain is allocated by the
       C++ code. In THCM, pointers are set to these locations so that
       the Fortran code fills these arrays directly. Afterwards the
-      matrix is copied to the 'Jac' member, ignoring 'ghost' rows.
+      matrix is copied to the 'jac_' member, ignoring 'ghost' rows.
     */
     //!@{
     //! row pointer
-    int* begA;
+    int* begA_;
     //! column indices
-    int* jcoA;
+    int* jcoA_;
     //! values
-    double* coA;
+    double* coA_;
     //! values of the diagonal matrix B
-    double* coB;
+    double* coB_;
     //! row pointer
-    int* begF;
+    int* begF_;
     //! column indices
-    int* jcoF;
+    int* jcoF_;
     //! values
-    double* coF;
+    double* coF_;
     //!@}
 
     //! global grid dimensions
-    int n,m,l;
-
-    //! physical domain bounds (global long./lat./depth)
-    double xmin,xmax,ymin,ymax,hdim;
+    int n_,m_,l_;
 
     //! periodic domain in x-direction?
-    bool periodic;
+    bool periodic_;
 
     //! compute salinity integral
-    bool comp_sal_int;
-
-    //! inhomogeneous mixing?
-    int ih;
+    bool compSalInt_;
 
     //! mixing?
-    int vmix_GLB;
+    int vmixGLB_;
 
-    //! parameters for linear equation of state
-    double alphaT, alphaS;
+    //! sres_=0: non-restoring salt forcing => integral condition in A and f
+    int sres_;
 
-    //! taper
-    int tap;
-
-    //! use fred's formulation of conv. adjustment
-    bool rho_mixing;
-
-    //! factors sigma for the Jacobian A+sigma*B
-    double sigmaUVTS,sigmaWP;
-
-    //! sres=0: non-restoring salt forcing => integral condition in A and f
-    int sres;
-
-    //! While sres = 0 (flux forcing in the local model), do not
+    //! While sres_ = 0 (flux forcing in the local model), do not
     //! create integral condition.
     bool localSres_;
 
-    //! tres=0: non-restoring temperature forcing => integral condition in A and f
-    int tres;
+    //! tres_=0: non-restoring temperature forcing => integral condition in A and f
+    int tres_;
 
     //! integral condition can have a negative or a positive sign
     int intSign_;
@@ -574,14 +520,14 @@ private:
     //! correction for the salinity flux
     double scorr_;
 
-    //! vector with coefficients for integral condition (if sres=0)
-    Teuchos::RCP<Epetra_Vector> intcond_coeff;
+    //! vector with coefficients for integral condition (if sres_=0)
+    Teuchos::RCP<Epetra_Vector> intcondCoeff_;
 
     //! sum of integration coefficients (total volume)
     double totalVolume_;
 
     //! pressure points where equation is replaced by P=0 (-1 means none)
-    int rowPfix1, rowPfix2;
+    int rowPfix1_, rowPfix2_;
 
     //! asks THCM to recompute scaling vectors
     void RecomputeScaling(void);
@@ -595,7 +541,7 @@ private:
     //! flag to switch Dirichlet values P=0 on/off
     bool fixPressurePoints_;
 
-    //! implement Dirichlet values P=0 in cells rowPfix1/2 (if >=0)
+    //! implement Dirichlet values P=0 in cells rowPfix1_/2 (if >=0)
     void fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B);
 
     //! this subroutine defines the maximal matrix graph (pattern of nonzeros in the jacobian
@@ -616,7 +562,7 @@ private:
     //! setup load-balancing (optionally reads weights or creates them
     //! using thcm_utils, which only looks at land mask at this stage)
     //! This alters the behaviour of the TRIOS::Domain class, which will
-    //! provide a different SolveMap after the call.
+    //! provide a different solveMap_ after the call.
     void SetupLoadBalancing();
 };
 
