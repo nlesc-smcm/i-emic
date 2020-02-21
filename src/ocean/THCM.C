@@ -47,50 +47,39 @@
 extern "C" {
 
     // usrc.F90
-    _SUBROUTINE_(setparcs)(int*,double*);
-    _SUBROUTINE_(getparcs)(int*,double*);
+    _SUBROUTINE_(setparcs)(int* param, double* value);
+    _SUBROUTINE_(getparcs)(int* param, double* value);
     _SUBROUTINE_(writeparams)();
-    _SUBROUTINE_(rhs)(double*,double*);
-    _SUBROUTINE_(setsres)(int *);
-    _SUBROUTINE_(matrix)(double*);
+    _SUBROUTINE_(rhs)(double* un, double* b);
+    _SUBROUTINE_(setsres)(int* sres);
+    _SUBROUTINE_(matrix)(double* un);
     _SUBROUTINE_(stochastic_forcing)();
 
-    // input:   n,m,l,nmlglob
-    //          xmin,xmax,ymin,ymax,
-    //          alphaT,alphaS,
-    //          periodic,landm,
-    //          taux,tauy,tatm,emip,spert
-    _SUBROUTINE_(init)(int*,int*,int*,int*,
-                       double*,double*,double*,double*,
-                       double*,double*,
-                       int*,int*,
-                       double*,double*,double*,double*,double*);
+    _SUBROUTINE_(init)(int* n, int* m, int* l, int* nmlglob,
+                       double* xmin, double* xmax, double* ymin, double* ymax,
+                       double* alphaT, double* alphaS,
+                       int* periodic, int* landm,
+                       double* taux, double* tauy, double* tatm, double* emip, double* spert);
 
-    // input:   landm
-    _SUBROUTINE_(set_landmask)(int *, int *, int *);
+    _SUBROUTINE_(set_landmask)(int* landm, int* periodic, int* reinit);
 
     _SUBROUTINE_(finalize)(void);
 
     // global.F90
-    // input:   N,M,L,
-    //          Xmin,Xmax,Ymin,Ymax,hdim,qz,
-    //          ih,vmix_GLB,tap,rho_mixing,
-    //          periodic,itopo,flat,rd_mask,
-    //          TRES,SRES,iza,ite_,its_,rd_spertm
-    //          coupledT_, coupledS_, coriolis_on,
-    //          forcing_type
-    _MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
-                                             double*,double*,double*,double*,double*,double*,
-                                             int*,int*,int*,int*,
-                                             int*,int*,int*,int*,
-                                             int*,int*,int*,int*,int*,int*,
-                                             int*,int*,int*,
-                                             int*);
+    _MODULE_SUBROUTINE_(m_global,initialize)(int* N, int* M, int* L,
+                                             double* Xmin, double* Xmax,
+                                             double* Ymin, double* Ymax,
+                                             double* hdim, double* qz,
+                                             int* ih,int* vmix_GLB, int* tap, int* rho_mixing,
+                                             int* periodic, int* itopo, int* flat, int* rd_mask,
+                                             int* TRES, int* SRES, int* iza, int* ite ,int* its, int* rd_spertm,
+                                             int* coupled_T, int* coupled_S, int* coriolis_on,
+                                             int* forcing_type);
 
     _MODULE_SUBROUTINE_(m_global,finalize)(void);
-    _MODULE_SUBROUTINE_(m_global,get_landm)(int*);
-    _MODULE_SUBROUTINE_(m_global,get_current_landm)(int*);
-    _MODULE_SUBROUTINE_(m_global,set_landm)(int*);
+    _MODULE_SUBROUTINE_(m_global,get_landm)(int* landm);
+    _MODULE_SUBROUTINE_(m_global,get_current_landm)(int* landm);
+    _MODULE_SUBROUTINE_(m_global,set_landm)(int* landm);
     _MODULE_SUBROUTINE_(m_global,get_monthly_forcing)(double* tatm, double* emip,
                                                       double* taux, double* tauy, int* month);
     _MODULE_SUBROUTINE_(m_global,get_monthly_internal_forcing)(double* temp, double* salt,
