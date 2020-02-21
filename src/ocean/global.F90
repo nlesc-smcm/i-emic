@@ -22,7 +22,7 @@ module m_global
   use m_usr, only :                          &
        zmin, zmax,                           &
        hdim, qz,                             &
-       ih, vmix_GLB, tap, rho_mixing,        &
+       vmix_GLB, tap, rho_mixing,            &
        itopo, flat, rd_mask,                 &
        coupled_T, coupled_S,                 &
        TRES, SRES, iza, ite, its, rd_spertm, &
@@ -67,7 +67,7 @@ contains
   !! subdomains will only use xmin,xmax,ymin and ymax)
   subroutine initialize(a_n,a_m,a_l,&
        a_xmin,a_xmax,a_ymin,a_ymax,a_hdim,a_qz,&
-       a_ih,a_vmix_GLB,a_tap,a_rho_mixing,&
+       a_vmix_GLB,a_tap,a_rho_mixing,&
        a_periodic,a_itopo,a_flat,a_rd_mask,&
        a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm,&
        a_coupled_T, a_coupled_S, a_coriolis_on,&
@@ -78,7 +78,7 @@ contains
 
     integer(c_int) :: a_n,a_m,a_l
     real(c_double) :: a_xmin,a_xmax,a_ymin,a_ymax,a_hdim,a_qz
-    integer(c_int) :: a_ih,a_vmix_GLB,a_tap,a_rho_mixing
+    integer(c_int) :: a_vmix_GLB,a_tap,a_rho_mixing
     integer(c_int) :: a_periodic,a_itopo,a_flat,a_rd_mask
     integer(c_int) :: a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm
     integer(c_int) :: a_coupled_T, a_coupled_S, a_coriolis_on
@@ -91,7 +91,6 @@ contains
     hdim  = a_hdim
     qz    = a_qz
 
-    ih       = a_ih
     vmix_GLB = a_vmix_GLB
     tap      = a_tap
     if (a_rho_mixing.ne.0) then
