@@ -239,9 +239,6 @@ public:
     //! Obtain ocean evaporation vector
     Teuchos::RCP<Epetra_Vector> getOceanE();
 
-    //! Test
-    void setAtmosphereTest();
-
     //! Return a shared pointer to the ocean's gathered landmask
     //! for use in the atmosphere
     std::shared_ptr<std::vector<int> > getLandMask();
@@ -277,19 +274,6 @@ public:
 
     //! get column scaling vector
     Teuchos::RCP<Epetra_Vector> getColScaling() {return colScaling_;}
-
-    //! start a timer for a given part of the program
-    void startTiming(std::string id);
-
-    //! stop timer for a given part of the program
-    void stopTiming(std::string id,bool print=false);
-
-    //! print timer status for all timed program parts
-    void printTiming(std::ostream&);
-
-    //! set the pressure in one specific point to zero by subtracting
-    //! that point's value from all pressure points.
-    void normalizePressure(Epetra_Vector& soln) const;
 
     //! Set a bifurcation parameter in the application physics
     bool setParameter(std::string label, double value);
@@ -350,10 +334,6 @@ public:
     //! Under non-restoring conditions: get an integral from vec and
     //! use that to correct the integral condition
     void setIntCondCorrection(Teuchos::RCP<Epetra_Vector> vec);
-
-    //! Under non-restoring conditions: add a constant to the salinity
-    //! values in vec, to satisfy the integral condition.
-    void adjustForIntCond(Teuchos::RCP<Epetra_Vector> vec);
 
     //! Let THCM perform integral checks
     void integralChecks(Teuchos::RCP<Epetra_Vector> state,
@@ -459,9 +439,6 @@ private:
     //! global shared parameter list
     Teuchos::ParameterList paramList_;
 
-    //! timer status list
-    Teuchos::ParameterList timerList_;
-
     //! \name the matrix in THCM (CSR-format)
     /*! Memory for the Jacobian on the subdomain is allocated by the
       C++ code. In THCM, pointers are set to these locations so that
@@ -558,12 +535,6 @@ private:
     //! note that wind is read in by each process and interpolated, but
     //! for some reason that doesn't work for T and S
     void SetupMonthlyForcing();
-
-    //! setup load-balancing (optionally reads weights or creates them
-    //! using thcm_utils, which only looks at land mask at this stage)
-    //! This alters the behaviour of the TRIOS::Domain class, which will
-    //! provide a different solveMap_ after the call.
-    void SetupLoadBalancing();
 };
 
 #endif
