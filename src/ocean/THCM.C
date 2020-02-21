@@ -59,6 +59,7 @@ extern "C" {
                        double* xmin, double* xmax, double* ymin, double* ymax,
                        double* alphaT, double* alphaS,
                        int* ih, int* vmix, int* tap, int* rho_mixing,
+                       int* coriolis_on,
                        int* periodic, int* landm,
                        double* taux, double* tauy, double* tatm, double* emip, double* spert);
 
@@ -73,7 +74,7 @@ extern "C" {
                                              double* hdim, double* qz,
                                              int* periodic, int* itopo, int* flat, int* rd_mask,
                                              int* TRES, int* SRES, int* iza, int* ite ,int* its, int* rd_spertm,
-                                             int* coupled_T, int* coupled_S, int* coriolis_on,
+                                             int* coupled_T, int* coupled_S,
                                              int* forcing_type);
 
     _MODULE_SUBROUTINE_(m_global,finalize)(void);
@@ -360,7 +361,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &xmin, &xmax, &ymin, &ymax, &hdim, &qz,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
-                                  &coupledT_, &coupledS_, &coriolis_on,
+                                  &coupledT_, &coupledS_,
                                   &forcing_type);
 
     INFO("THCM init: m_global::initialize... done");
@@ -607,6 +608,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                 &xminloc, &xmaxloc, &yminloc, &ymaxloc,
                 &alphaT,&alphaS,
                 &ih, &vmix_, &tap, &irho_mixing,
+                &coriolis_on,
                 &perio, landm,
                 taux, tauy, tatm, emip, spert);
 
