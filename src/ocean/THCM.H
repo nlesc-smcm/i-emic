@@ -472,7 +472,7 @@ private:
     bool compSalInt_;
 
     //! mixing?
-    int vmixGLB_;
+    int vmix_;
 
     //! sres_=0: non-restoring salt forcing => integral condition in A and f
     int sres_;

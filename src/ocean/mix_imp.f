@@ -64,17 +64,17 @@ Call structure DSM and FDJS
 
       real time0, time1
 
-      if (vmix_GLB.eq.0) then
+      if (vmix.eq.0) then
          vmix_flag = 0
          vmix_diff = 1
          vmix_out  = 1
          vmix_fix  = 1
-      else if (vmix_GLB.eq.1) then
+      else if (vmix.eq.1) then
          vmix_flag = 1
          vmix_diff = 1
          vmix_out  = 1
          vmix_fix  = 1
-      else if (vmix_GLB.eq.2) then
+      else if (vmix.eq.2) then
          vmix_flag = 2
          vmix_diff = 1
          vmix_out  = 1
@@ -117,7 +117,7 @@ Call structure DSM and FDJS
 !include 'usr.com'
 !include 'mix.com'
 
-      if (vmix_GLB.eq.0) then
+      if (vmix.eq.0) then
          par(MIXP)   =  0.0
          par(P_VC)   =  0.0
          par(ALPC)   =  1.0

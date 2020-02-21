@@ -45,7 +45,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   alphaS  = a_alphaS
 
   ih      = a_ih
-  vmix_GLB= a_vmix
+  vmix    = a_vmix
 
   !initialize atmos coefficients
   qdim = 0.01
