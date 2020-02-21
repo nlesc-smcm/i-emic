@@ -6,7 +6,7 @@
 SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
      a_xmin,a_xmax,a_ymin,a_ymax,&
      a_alphaT,a_alphaS,&
-     a_ih,&
+     a_ih,a_vmix,&
      a_periodic,a_landm,&
      a_taux,a_tauy,a_tatm,a_emip,a_spert)
 
@@ -22,7 +22,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   integer(c_int) :: a_n,a_m,a_l,a_nmlglob
   real(c_double) :: a_xmin,a_xmax,a_ymin,a_ymax
   real(c_double) :: a_alphaT, a_alphaS
-  integer(c_int) :: a_ih
+  integer(c_int) :: a_ih, a_vmix
   integer(c_int) :: a_periodic
   integer(c_int), dimension((a_n+2)*(a_m+2)*(a_l+2)) :: a_landm
   real(c_double), dimension(a_n*a_m) :: a_taux,a_tauy
@@ -45,6 +45,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   alphaS  = a_alphaS
 
   ih      = a_ih
+  vmix_GLB= a_vmix
 
   !initialize atmos coefficients
   qdim = 0.01

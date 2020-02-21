@@ -58,7 +58,7 @@ extern "C" {
     _SUBROUTINE_(init)(int* n, int* m, int* l, int* nmlglob,
                        double* xmin, double* xmax, double* ymin, double* ymax,
                        double* alphaT, double* alphaS,
-                       int* ih,
+                       int* ih, int* vmix,
                        int* periodic, int* landm,
                        double* taux, double* tauy, double* tatm, double* emip, double* spert);
 
@@ -71,7 +71,7 @@ extern "C" {
                                              double* Xmin, double* Xmax,
                                              double* Ymin, double* Ymax,
                                              double* hdim, double* qz,
-                                             int* vmix_GLB, int* tap, int* rho_mixing,
+                                             int* tap, int* rho_mixing,
                                              int* periodic, int* itopo, int* flat, int* rd_mask,
                                              int* TRES, int* SRES, int* iza, int* ite ,int* its, int* rd_spertm,
                                              int* coupled_T, int* coupled_S, int* coriolis_on,
@@ -359,7 +359,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     //  __m_global_MOD_initialize
     F90NAME(m_global, initialize)(&nglob_, &mglob_, &lglob_,
                                   &xmin, &xmax, &ymin, &ymax, &hdim, &qz,
-                                  &vmixGLB_, &tap, &irho_mixing,
+                                  &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
                                   &coupledT_, &coupledS_, &coriolis_on,
@@ -608,7 +608,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     FNAME(init)(&nloc, &mloc, &lloc, &nmlglob,
                 &xminloc, &xmaxloc, &yminloc, &ymaxloc,
                 &alphaT,&alphaS,
-                &ih,
+                &ih, &vmixGLB_,
                 &perio, landm,
                 taux, tauy, tatm, emip, spert);
 
