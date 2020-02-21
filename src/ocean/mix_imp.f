@@ -708,7 +708,7 @@ Call structure DSM and FDJS
       elseif (tap == 2) then
          tpr = 0.5 * (1.0 - tanh( (absslp-delta)/sd  ) )
 !     *     De Niet et al
-      elseif (tap ==3) then
+      elseif (tap == 3) then
          if     ( (absslp.lt.delta-sd).and.(drdz.lt.0.0) ) then
             tpr = 1.0
          elseif ( (absslp.ge.delta-sd).and.(absslp.lt.delta)
