@@ -28,8 +28,6 @@ module m_global
        forcing_type,                         &
        rowintcon, f99, t0, s0
 
-  use m_atm, only : Ooa, suno
-
   implicit none
 
   integer, parameter :: nf   =  4
