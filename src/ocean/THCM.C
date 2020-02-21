@@ -57,12 +57,12 @@ extern "C" {
 
     // input:   n,m,l,nmlglob
     //          xmin,xmax,ymin,ymax,
-    //          alphaT,
+    //          alphaT,alphaS,
     //          periodic,landm,
     //          taux,tauy,tatm,emip,spert
     _SUBROUTINE_(init)(int*,int*,int*,int*,
                        double*,double*,double*,double*,
-                       double*,
+                       double*,double*,
                        int*,int*,
                        double*,double*,double*,double*,double*);
 
@@ -74,7 +74,6 @@ extern "C" {
     // global.F90
     // input:   N,M,L,
     //          Xmin,Xmax,Ymin,Ymax,hdim,qz,
-    //          alphaS,
     //          ih,vmix_GLB,tap,rho_mixing,
     //          periodic,itopo,flat,rd_mask,
     //          TRES,SRES,iza,ite_,its_,rd_spertm
@@ -82,7 +81,6 @@ extern "C" {
     //          forcing_type
     _MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
                                              double*,double*,double*,double*,double*,double*,
-                                             double*,
                                              int*,int*,int*,int*,
                                              int*,int*,int*,int*,
                                              int*,int*,int*,int*,int*,int*,
@@ -371,7 +369,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     //  __m_global_MOD_initialize
     F90NAME(m_global, initialize)(&nglob_, &mglob_, &lglob_,
                                   &xmin, &xmax, &ymin, &ymax, &hdim, &qz,
-                                  &alphaS,
                                   &ih, &vmixGLB_, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
@@ -620,7 +617,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     DEBUG("call init..."); // in usrc.F90
     FNAME(init)(&nloc, &mloc, &lloc, &nmlglob,
                 &xminloc, &xmaxloc, &yminloc, &ymaxloc,
-                &alphaT,
+                &alphaT,&alphaS,
                 &perio, landm,
                 taux, tauy, tatm, emip, spert);
 
