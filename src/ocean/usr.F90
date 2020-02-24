@@ -54,7 +54,7 @@ module m_usr
   !     These are set in initialize in global.F90
 
   integer :: ih         = 0       ! inhomogeneous (equatorial) mixing
-  integer :: vmix_GLB   = 1       ! mixing flag
+  integer :: vmix       = 1       ! mixing flag
   integer :: tap        = 1       ! neutral physics taper, 1: Gerdes
   ! et al., 2: Danabasoglu & McWilliams,
   ! 3: De Niet et al.

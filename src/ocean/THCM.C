@@ -47,50 +47,40 @@
 extern "C" {
 
     // usrc.F90
-    _SUBROUTINE_(setparcs)(int*,double*);
-    _SUBROUTINE_(getparcs)(int*,double*);
+    _SUBROUTINE_(setparcs)(int* param, double* value);
+    _SUBROUTINE_(getparcs)(int* param, double* value);
     _SUBROUTINE_(writeparams)();
-    _SUBROUTINE_(rhs)(double*,double*);
-    _SUBROUTINE_(setsres)(int *);
-    _SUBROUTINE_(matrix)(double*);
+    _SUBROUTINE_(rhs)(double* un, double* b);
+    _SUBROUTINE_(setsres)(int* sres);
+    _SUBROUTINE_(matrix)(double* un);
     _SUBROUTINE_(stochastic_forcing)();
 
-    // input:   n,m,l,nmlglob
-    //          xmin,xmax,ymin,ymax,
-    //          periodic,landm,
-    //          taux,tauy,tatm,emip,spert
-    _SUBROUTINE_(init)(int*,int*,int*,int*,
-                       double*,double*,double*,double*,
-                       int*,int*,
-                       double*,double*,double*,double*,double*);
+    _SUBROUTINE_(init)(int* n, int* m, int* l, int* nmlglob,
+                       double* xmin, double* xmax, double* ymin, double* ymax,
+                       double* alphaT, double* alphaS,
+                       int* ih, int* vmix, int* tap, int* rho_mixing,
+                       int* coriolis_on,
+                       int* periodic, int* landm,
+                       double* taux, double* tauy, double* tatm, double* emip, double* spert);
 
-    // input:   landm
-    _SUBROUTINE_(set_landmask)(int *, int *, int *);
+    _SUBROUTINE_(set_landmask)(int* landm, int* periodic, int* reinit);
 
     _SUBROUTINE_(finalize)(void);
 
     // global.F90
-    // input:   N,M,L,
-    //          Xmin,Xmax,Ymin,Ymax,hdim,qz,
-    //          alphaT,alphaS,
-    //          ih,vmix_GLB,tap,rho_mixing,
-    //          periodic,itopo,flat,rd_mask,
-    //          TRES,SRES,iza,ite_,its_,rd_spertm
-    //          coupledT_, coupledS_, coriolis_on,
-    //          forcing_type
-    _MODULE_SUBROUTINE_(m_global,initialize)(int*,int*,int*,
-                                             double*,double*,double*,double*,double*,double*,
-                                             double*,double*,
-                                             int*,int*,int*,int*,
-                                             int*,int*,int*,int*,
-                                             int*,int*,int*,int*,int*,int*,
-                                             int*,int*,int*,
-                                             int*);
+    _MODULE_SUBROUTINE_(m_global,initialize)(int* N, int* M, int* L,
+                                             double* Xmin, double* Xmax,
+                                             double* Ymin, double* Ymax,
+                                             double* hdim, double* qz,
+                                             int* periodic, int* itopo, int* flat, int* rd_mask,
+                                             int* TRES, int* SRES, int* iza, int* ite ,int* its, int* rd_spertm,
+                                             int* coupled_T, int* coupled_S,
+                                             int* forcing_type);
 
     _MODULE_SUBROUTINE_(m_global,finalize)(void);
-    _MODULE_SUBROUTINE_(m_global,get_landm)(int*);
-    _MODULE_SUBROUTINE_(m_global,get_current_landm)(int*);
-    _MODULE_SUBROUTINE_(m_global,set_landm)(int*);
+    _MODULE_SUBROUTINE_(m_global,get_landm)(int* landm);
+    _MODULE_SUBROUTINE_(m_global,get_current_landm)(int* landm);
+    _MODULE_SUBROUTINE_(m_global,set_landm)(int* landm);
     _MODULE_SUBROUTINE_(m_global,get_monthly_forcing)(double* tatm, double* emip,
                                                       double* taux, double* tauy, int* month);
     _MODULE_SUBROUTINE_(m_global,get_monthly_internal_forcing)(double* temp, double* salt,
@@ -241,7 +231,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
 
     int ih             = paramList_.get<int>("Inhomogeneous Mixing");
-    vmixGLB_           = paramList_.get<int>("Mixing");
+    vmix_              = paramList_.get<int>("Mixing");
     bool rho_mixing    = paramList_.get<bool>("Rho Mixing");
     int tap            = paramList_.get<int>("Taper");
     double alphaT      = paramList_.get<double>("Linear EOS: alpha T");
@@ -363,17 +353,15 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int ird_spertm  = (rd_spertm ) ? 1 : 0;
 
     INFO("THCM init: m_global::initialize...");
-    INFO("    Mixing: vmix_GLB = " << vmixGLB_);
+    INFO("    Mixing: vmix = " << vmix_);
 
     // In fortran object code this corresponds to the function
     //  __m_global_MOD_initialize
     F90NAME(m_global, initialize)(&nglob_, &mglob_, &lglob_,
                                   &xmin, &xmax, &ymin, &ymax, &hdim, &qz,
-                                  &alphaT, &alphaS,
-                                  &ih, &vmixGLB_, &tap, &irho_mixing,
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
-                                  &coupledT_, &coupledS_, &coriolis_on,
+                                  &coupledT_, &coupledS_,
                                   &forcing_type);
 
     INFO("THCM init: m_global::initialize... done");
@@ -618,6 +606,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     DEBUG("call init..."); // in usrc.F90
     FNAME(init)(&nloc, &mloc, &lloc, &nmlglob,
                 &xminloc, &xmaxloc, &yminloc, &ymaxloc,
+                &alphaT,&alphaS,
+                &ih, &vmix_, &tap, &irho_mixing,
+                &coriolis_on,
                 &perio, landm,
                 taux, tauy, tatm, emip, spert);
 
@@ -2618,7 +2609,7 @@ Teuchos::RCP<Epetra_Vector> THCM::getIntCondCoeff()
 // set vmix_fix
 void THCM::fixMixing(int value)
 {
-    if (vmixGLB_ == 2)
+    if (vmix_ == 2)
     {
         INFO(" ** fixing vmix_fix: " << value << " **");
         F90NAME(m_mix, set_vmix_fix)(&value);
