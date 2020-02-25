@@ -555,10 +555,7 @@ void Topo<Model, ParameterList>::initializeSolver()
     belosParamList->set("Maximum Restarts", maxrestarts);
     belosParamList->set("Orthogonalization","DGKS");
     belosParamList->set("Output Frequency", output);
-    belosParamList->set("Verbosity", Belos::TimingDetails +
-                         Belos::Errors +
-                         Belos::Warnings +
-                         Belos::StatusTestDetails );
+    belosParamList->set("Verbosity", Belos::Errors + Belos::Warnings);
     belosParamList->set("Maximum Iterations", maxiters);
     belosParamList->set("Convergence Tolerance", gmresTol);
     belosParamList->set("Explicit Residual Test", false);
