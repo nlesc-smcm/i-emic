@@ -20,10 +20,6 @@
   <!-- any sense so a warning is given and the flag is set to false .         -->
   <Parameter name="Load salinity flux" type="bool" value="false"/>
 
-  <!-- To keep track of each converged state, enable this.    -->
-  <!-- Only useful when you enable <Save state>               -->
-  <Parameter name="Save every step" type="bool" value="false" />
-
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->

@@ -10,9 +10,6 @@
   <!-- Save evaporation and precipitation fields -->
   <Parameter name="Save E and P fields" type="bool" value="true" />
   
-  <!-- To keep track of each converged state, enable this. -->
-  <Parameter name="Save every step" type="bool" value="false" />
-
   <!-- Starting parameters -->
   <Parameter name="Combined Forcing" type="double" value="0.0"/>
   <Parameter name="Solar Forcing"    type="double" value="1.0"/>
