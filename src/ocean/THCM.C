@@ -75,9 +75,11 @@ extern "C" {
                                              int* periodic, int* itopo, int* flat, int* rd_mask,
                                              int* TRES, int* SRES, int* iza, int* ite ,int* its, int* rd_spertm,
                                              int* coupled_T, int* coupled_S,
-                                             int* forcing_type);
+                                             int* forcing_type,
+                                             const char *maskfile);
 
     _MODULE_SUBROUTINE_(m_global,finalize)(void);
+    _MODULE_SUBROUTINE_(m_global,set_maskfile)(const char *maskfile);
     _MODULE_SUBROUTINE_(m_global,get_landm)(int* landm);
     _MODULE_SUBROUTINE_(m_global,get_current_landm)(int* landm);
     _MODULE_SUBROUTINE_(m_global,set_landm)(int* landm);
@@ -217,18 +219,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     bool flat    = paramList_.get<bool>("Flat Bottom");
     compSalInt_  = paramList_.get<bool>("Compute salinity integral");
 
-    bool rd_mask = paramList_.get<bool>("Read Land Mask"); //== false in experiment0
-    if (rd_mask)
-    {
-        // we put the name of the desired mask in a file so it can be
-        // obtained from there by the fortran code:
-        std::string mask_file = paramList_.get<std::string>("Land Mask");
-        if (comm_->MyPID() == 0)
-        {
-            std::ofstream mfs("mask_name.txt", std::ios::trunc);
-            mfs << mask_file;
-        }
-    }
+    bool rd_mask          = paramList_.get<bool>("Read Land Mask"); //== false in experiment0
+    std::string mask_file = paramList_.get<std::string>("Land Mask");
 
     int ih             = paramList_.get<int>("Inhomogeneous Mixing");
     vmix_              = paramList_.get<int>("Mixing");
@@ -362,7 +354,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &iperiodic, &itopo, &iflat, &ird_mask,
                                   &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
                                   &coupledT_, &coupledS_,
-                                  &forcing_type);
+                                  &forcing_type,
+                                  mask_file.c_str());
 
     INFO("THCM init: m_global::initialize... done");
 
@@ -1288,13 +1281,6 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
                                                  Teuchos::RCP<Epetra_Vector> fix)
 {
-    if (comm_->MyPID() == 0)
-    {
-        // Write mask name to file, fortran code will read it from there
-        std::ofstream ofs("mask_name.txt", std::ios::trunc);
-        ofs << maskName;
-    }
-
     // Create gathered map for land mask
     // All indices are on root process
     int I0 = 0; int I1 = n_+1;
@@ -1318,6 +1304,8 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
     int *landm;
     if (comm_->MyPID()==0)
     {
+        F90NAME(m_global,set_maskfile)(maskName.c_str());
+
         CHECK_ZERO(landm_glb->ExtractView(&landm));
 
         // Let THCM fill the global landm array and put it into our C pointer location

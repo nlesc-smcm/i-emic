@@ -67,7 +67,8 @@ contains
        a_periodic,a_itopo,a_flat,a_rd_mask,&
        a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm,&
        a_coupled_T, a_coupled_S,&
-       a_forcing_type)
+       a_forcing_type,&
+       a_maskfile)
 
     use, intrinsic :: iso_c_binding
     implicit none
@@ -78,6 +79,8 @@ contains
     integer(c_int) :: a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm
     integer(c_int) :: a_coupled_T, a_coupled_S
     integer(c_int) :: a_forcing_type
+
+    character(c_char), dimension(*) :: a_maskfile
 
     xmin  = a_xmin
     xmax  = a_xmax
@@ -114,6 +117,10 @@ contains
        rd_spertm = .false.
     end if
     forcing_type = a_forcing_type
+
+    !===================== file names  =========================
+    call set_filename(a_maskfile, maskfile)
+    !===========================================================
 
     !========= I-EMIC coupling  ================================
     coupled_T = a_coupled_T
@@ -189,6 +196,39 @@ contains
     call deallocate_global
 
   end subroutine finalize
+
+  subroutine set_filename(in_file, out_file)
+
+    use, intrinsic :: iso_c_binding
+    implicit none
+
+    character(c_char), dimension(*) :: in_file
+    character(*) out_file
+
+    integer i, len, maxlen
+
+    len = 1
+    do while (in_file(len).ne.c_null_char)
+       out_file(len:len) = in_file(len)
+       len = len + 1
+    end do
+    maxlen = LEN_TRIM(out_file)
+    do i=len,maxlen
+       out_file(i:i) = ' '
+    end do
+
+  end subroutine set_filename
+
+  subroutine set_maskfile(a_maskfile)
+
+    use, intrinsic :: iso_c_binding
+    implicit none
+
+    character(c_char), dimension(*) :: a_maskfile
+
+    call set_filename(a_maskfile, maskfile)
+
+  end subroutine set_maskfile
 
   !! this is a copy of the corresponding function in matetc.f
   !! using the redefined dimensinos m,n,l from this module.
