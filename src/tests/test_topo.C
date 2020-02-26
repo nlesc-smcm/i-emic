@@ -167,6 +167,10 @@ TEST(Topo, SpinupContinuation)
 TEST(Topo, TopoContinuation)
 {
 	bool failed = false;
+
+    // ocean norm spinup topography
+    double normOceanState = Utils::norm(ocean->getState('V'));
+    
 	try
 	{
         // not sure if needed
@@ -188,6 +192,8 @@ TEST(Topo, TopoContinuation)
 
         INFO(" Running topo cont...");// Run continuation
 
+        // We do a couple of homotopy continuations and expect to end
+        // up with the original landmask.
         for (int maskIdx = startMask; maskIdx != nMasks-1; maskIdx++)
         {
             topo->setMaskIndex(maskIdx);
@@ -200,8 +206,7 @@ TEST(Topo, TopoContinuation)
 
         }
         INFO(" Running topo cont... done");
-
-
+        
 	}
 	catch (...)
 	{
@@ -210,6 +215,9 @@ TEST(Topo, TopoContinuation)
 	}
 
 	EXPECT_EQ(failed, false);
+
+    // Simple check, states should at least differ
+    EXPECT_GT(std::abs(Utils::norm(ocean->getState('V')) - normOceanState), 1e-7);
 }
 
 //------------------------------------------------------------------
