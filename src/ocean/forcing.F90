@@ -466,18 +466,10 @@ SUBROUTINE read_spertm
   implicit none
   integer dum(0:n+1,0:m+1)
   integer i, j
-  integer status
-
-  open(unit=42,file='spertm_name.txt',status='old',err=995)
-  read(unit=42,fmt='(A100)',iostat=status,end=10) spertmaskfile
-
-10 continue
-  close(42)
 
   write(*,*) '===========SalinityPert============================================'
   write(*,*) 'Salinity pert. mask is read in from file mkmask/'//trim(spertmaskfile)
   write(*,*) '===========SalinityPert============================================'
-
 
   open(unit=50,file=locate_file('mkmask/'//trim(spertmaskfile)),status='old',err=995)
   do j = m+1, 0, -1
@@ -496,9 +488,7 @@ SUBROUTINE read_spertm
   return
 
 995 write(*,*) 'WARNING: failed to read salinity perturbation mask from file'
-  write(*,*) '         specified in spertm_name.txt. Either the name was not'
-  write(*,*) '         specified by the C++ caller, or the file'
-  write(*,*) '         (mkmask/'//trim(spertmaskfile)//') does not exist.'
+  write(*,*) '         mkmask/', trim(spertmaskfile), '.'
 
 end subroutine read_spertm
 

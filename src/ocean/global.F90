@@ -68,7 +68,7 @@ contains
        a_TRES,a_SRES,a_iza,a_ite,a_its,a_rd_spertm,&
        a_coupled_T, a_coupled_S,&
        a_forcing_type,&
-       a_maskfile)
+       a_maskfile, a_spertmaskfile)
 
     use, intrinsic :: iso_c_binding
     implicit none
@@ -80,7 +80,7 @@ contains
     integer(c_int) :: a_coupled_T, a_coupled_S
     integer(c_int) :: a_forcing_type
 
-    character(c_char), dimension(*) :: a_maskfile
+    character(c_char), dimension(*) :: a_maskfile, a_spertmaskfile
 
     xmin  = a_xmin
     xmax  = a_xmax
@@ -120,6 +120,7 @@ contains
 
     !===================== file names  =========================
     call set_filename(a_maskfile, maskfile)
+    call set_filename(a_spertmaskfile, spertmaskfile)
     !===========================================================
 
     !========= I-EMIC coupling  ================================

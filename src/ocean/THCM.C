@@ -76,7 +76,7 @@ extern "C" {
                                              int* TRES, int* SRES, int* iza, int* ite ,int* its, int* rd_spertm,
                                              int* coupled_T, int* coupled_S,
                                              int* forcing_type,
-                                             const char *maskfile);
+                                             const char *maskfile, const char *spertmaskfile);
 
     _MODULE_SUBROUTINE_(m_global,finalize)(void);
     _MODULE_SUBROUTINE_(m_global,set_maskfile)(const char *maskfile);
@@ -251,16 +251,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         sres_ = 0;
     }
 
-    bool rd_spertm = paramList_.get<bool>("Read Salinity Perturbation Mask");
-    if (rd_spertm)
-    {
-        std::string spertm_file = paramList_.get<std::string>("Salinity Perturbation Mask");
-        if (comm_->MyPID()==0)
-        {
-            std::ofstream mfs("spertm_name.txt",std::ios::trunc);
-            mfs << spertm_file;
-        }
-    }
+    bool rd_spertm          = paramList_.get<bool>("Read Salinity Perturbation Mask");
+    std::string spertm_file = paramList_.get<std::string>("Salinity Perturbation Mask");
 
     //------------------------------------------------------------------
     if (std::abs(intSign_) != 1)
@@ -355,7 +347,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
                                   &coupledT_, &coupledS_,
                                   &forcing_type,
-                                  mask_file.c_str());
+                                  mask_file.c_str(), spertm_file.c_str());
 
     INFO("THCM init: m_global::initialize... done");
 
