@@ -53,17 +53,10 @@
         use m_global
         implicit none
         real tatmmax
-        integer status
 
         !      write(*,*) "ENTER LEVITUS_SST"
 
         !choose the followings
-
-      open(unit=42,file='sstf_name.txt', status='old')
-      read(unit=42,fmt='(A100)',iostat=status,end=303) sstfile
-
-303   continue
-      close(42)
 
       write(*,*) '===========SSTforcing============================================'
       write(*,*) 'SST forcing is read in from file '//trim(sstfile)

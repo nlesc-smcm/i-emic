@@ -69,7 +69,7 @@ contains
        a_coupled_T, a_coupled_S,&
        a_forcing_type,&
        a_maskfile, a_spertmaskfile,&
-       a_windfile)
+       a_windfile, a_sstfile)
 
     use, intrinsic :: iso_c_binding
     implicit none
@@ -82,7 +82,7 @@ contains
     integer(c_int) :: a_forcing_type
 
     character(c_char), dimension(*) :: a_maskfile, a_spertmaskfile
-    character(c_char), dimension(*) :: a_windfile
+    character(c_char), dimension(*) :: a_windfile, a_sstfile
 
     xmin  = a_xmin
     xmax  = a_xmax
@@ -124,6 +124,7 @@ contains
     call set_filename(a_maskfile, maskfile)
     call set_filename(a_spertmaskfile, spertmaskfile)
     call set_filename(a_windfile, windfile)
+    call set_filename(a_sstfile, sstfile)
     !===========================================================
 
     !========= I-EMIC coupling  ================================
