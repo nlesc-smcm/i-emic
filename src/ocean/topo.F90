@@ -43,15 +43,6 @@ SUBROUTINE readmask
   implicit none
   integer i,j,k
   integer nw,nnw,nsw,ns,ne,nne,nse,nn,nsum,status
-  
-  ! if all worked out fine, the C++ program should have placed
-  ! the name of the desired mask in this file (to avoid having
-  ! to pass a char-array to fortran)
-  open(UNIT=42,file='mask_name.txt',status='old',err=123)
-  read(unit=42,fmt='(A999)',iostat=status,end=10) maskfile
-
-10 continue
-  close(42)
 
   write(*,*) '===========TOPOGRAPHY==================================='
   write(*,*) 'land mask is read in from file: mkmask/'//trim(maskfile)
@@ -134,9 +125,8 @@ SUBROUTINE readmask
 
   return
 
-123 write(*,*) 'WARNING: failed to read land mask from file specified in mask_name.txt'
-  write(*,*) '         Either the name was not specified by the C++ caller, or the  '
-  write(*,*) '         file (mkmask/',trim(maskfile),') does not exist.'
+123 write(*,*) 'WARNING: failed to read land mask from file'
+  write(*,*) '         mkmask/', trim(maskfile), '.'
   write(*,*) '         Continuing with no land.'
   
   call throw_error('failed to read land mask')
