@@ -77,7 +77,7 @@ extern "C" {
                                              int* coupled_T, int* coupled_S,
                                              int* forcing_type,
                                              const char *maskfile, const char *spertmaskfile,
-                                             const char *windfile, const char *sstfile);
+                                             const char *windfile, const char *sstfile, const char *sssfile);
 
     _MODULE_SUBROUTINE_(m_global,finalize)(void);
     _MODULE_SUBROUTINE_(m_global,set_maskfile)(const char *maskfile);
@@ -265,16 +265,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int iza                = paramList_.get<int>("Wind Forcing Type");
     std::string windf_file = paramList_.get<std::string>("Wind Forcing Data");
     std::string temf_file  = paramList_.get<std::string>("Temperature Forcing Data");
+    std::string salf_file  = paramList_.get<std::string>("Salinity Forcing Data");
 
-    if (comm_->MyPID() == 0)
-    {
-        std::ofstream sssfile("sssf_name.txt",   std::ios::trunc);
-        // Let THCM know the sss forcing file
-        sssfile  << paramList_.get<std::string>("Salinity Forcing Data");
-    }
-    //-----------------------------------------------------------------
-
-
+    //------------------------------------------------------------------
     int dof = _NUN_; // number of unknowns, defined in THCMdefs.H
 
     // construct an object to decompose the domain:
@@ -345,7 +338,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &coupledT_, &coupledS_,
                                   &forcing_type,
                                   mask_file.c_str(), spertm_file.c_str(),
-                                  windf_file.c_str(), temf_file.c_str());
+                                  windf_file.c_str(), temf_file.c_str(), salf_file.c_str());
 
     INFO("THCM init: m_global::initialize... done");
 
