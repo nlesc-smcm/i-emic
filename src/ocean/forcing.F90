@@ -284,16 +284,9 @@ SUBROUTINE windfit
   real    xh(n),yh(m)
   real    xi(n*m), yi(n*m)
   real :: tmax
-  integer status
-  
+
   lwrk=4*n+nx+4
   liwrk=n+nx
-
-  open(unit=42,file='windf_name.txt', status='old')
-  read(unit=42,fmt='(A100)',iostat=status,end=808) windfile
-
-808 continue
-  close(42)
 
   write(*,*) '===========WindForcing============================================'
   write(*,*) 'Wind forcing is read in from file '//trim(windfile)

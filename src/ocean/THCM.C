@@ -76,7 +76,8 @@ extern "C" {
                                              int* TRES, int* SRES, int* iza, int* ite ,int* its, int* rd_spertm,
                                              int* coupled_T, int* coupled_S,
                                              int* forcing_type,
-                                             const char *maskfile, const char *spertmaskfile);
+                                             const char *maskfile, const char *spertmaskfile,
+                                             const char *windfile);
 
     _MODULE_SUBROUTINE_(m_global,finalize)(void);
     _MODULE_SUBROUTINE_(m_global,set_maskfile)(const char *maskfile);
@@ -261,15 +262,13 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
 
     // wind forcing method (0: data (trenberth), 1: zonally averaged, 2: idealized)
-    int iza = paramList_.get<int>("Wind Forcing Type");
+    int iza                = paramList_.get<int>("Wind Forcing Type");
+    std::string windf_file = paramList_.get<std::string>("Wind Forcing Data");
 
     if (comm_->MyPID() == 0)
     {
-        std::ofstream windfile("windf_name.txt", std::ios::trunc);
         std::ofstream sstfile("sstf_name.txt",   std::ios::trunc);
         std::ofstream sssfile("sssf_name.txt",   std::ios::trunc);
-        // Let THCM know the wind forcing file
-        windfile << paramList_.get<std::string>("Wind Forcing Data");
         // Let THCM know the sst forcing file
         sstfile  << paramList_.get<std::string>("Temperature Forcing Data");
         // Let THCM know the sss forcing file
@@ -347,7 +346,8 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   &tres_, &sres_, &iza, &ite_, &its_, &ird_spertm,
                                   &coupledT_, &coupledS_,
                                   &forcing_type,
-                                  mask_file.c_str(), spertm_file.c_str());
+                                  mask_file.c_str(), spertm_file.c_str(),
+                                  windf_file.c_str());
 
     INFO("THCM init: m_global::initialize... done");
 
