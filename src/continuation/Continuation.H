@@ -17,39 +17,51 @@
 //Constructor
 template<typename Model>
 Continuation<Model>::
+Continuation(Model model)
+    : Continuation<Model>(model, Teuchos::rcp(new Teuchos::ParameterList()))
+{}
+
+template<typename Model>
+Continuation<Model>::
 Continuation(Model model, Teuchos::RCP<Teuchos::ParameterList> pars)
+    : Continuation<Model>(model, *pars)
+{}
+
+template<typename Model>
+Continuation<Model>::
+Continuation(Model model, Teuchos::ParameterList& pars)
     :
     model_(model),
-    parName_               (pars->get("continuation parameter", "Combined Forcing")),
-    dsInit_                (pars->get("initial step size", 1.0e-2)),
-    dsMin_                 (pars->get("minimum step size", 1.0e-8)),
-    dsMax_                 (pars->get("maximum step size", 1.0e3)),
-    scale1_                (pars->get("increase step size", 1.25)),
-    scale2_                (pars->get("decrease step size", 2.0)),
-    epsilon_               (pars->get("epsilon increment", 1.0e-5)),
-    backTracking_          (pars->get("enable backtracking", false)),
-    numBackTrackingSteps_  (pars->get("backtracking steps", 0)),
-    backTrackIncrease_     (pars->get("backtracking increase", 0.0)),
-    maxSteps_              (pars->get("maximum number of steps", -1)),
-    maxNewtonIterations_   (pars->get("maximum Newton iterations", 7)),
-    minNewtonIterations_   (pars->get("minimum Newton iterations", 1)),
-    optNewtonIterations_   (pars->get("optimal Newton iterations", 3.5)),
-    newtonTolerance_       (pars->get("Newton tolerance", 1.0e-4)),
-    destinationTolerance_  (pars->get("destination tolerance", 1.0e-7)),
-    userDetect_            (pars->get("enable custom monitor", false)),
-    detectMode_            (pars->get("detection of special points", 'D')),
-    tanScaling_            (pars->get("state tangent scaling", 1.0e0)),
-    normalizeStrategy_     (pars->get("normalize strategy", 'N')),
-    eigenvalueAnalysis_    (pars->get("eigenvalue analysis", 'N')),
-    rejectFailedNewton_    (pars->get("reject failed iteration", true)),
-    giveUpAtdsMin_         (pars->get("give up at minimum step size", true)),
-    newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
-    tangentType_           (pars->get("tangent type", 'S')),
-    residualTest_          (pars->get("corrector residual test", 'D')),
-    initialTangent_        (pars->get("initial tangent type", 'E')),
-    printImportantVectors_ (pars->get("print important vectors", false)),
-    postProcess_           (pars->get("post processing", "at every point")),
-    predictorBound_        (pars->get("predictor bound", 1e3)),
+    parName_               (pars.get("continuation parameter", "Combined Forcing")),
+    dsInit_                (pars.get("initial step size", 1.0e-2)),
+    dsMin_                 (pars.get("minimum step size", 1.0e-8)),
+    dsMax_                 (pars.get("maximum step size", 1.0e3)),
+    scale1_                (pars.get("increase step size", 1.25)),
+    scale2_                (pars.get("decrease step size", 2.0)),
+    epsilon_               (pars.get("epsilon increment", 1.0e-5)),
+    backTracking_          (pars.get("enable backtracking", false)),
+    numBackTrackingSteps_  (pars.get("backtracking steps", 0)),
+    backTrackIncrease_     (pars.get("backtracking increase", 0.0)),
+    maxSteps_              (pars.get("maximum number of steps", -1)),
+    maxNewtonIterations_   (pars.get("maximum Newton iterations", 7)),
+    minNewtonIterations_   (pars.get("minimum Newton iterations", 1)),
+    optNewtonIterations_   (pars.get("optimal Newton iterations", 3.5)),
+    newtonTolerance_       (pars.get("Newton tolerance", 1.0e-4)),
+    destinationTolerance_  (pars.get("destination tolerance", 1.0e-7)),
+    userDetect_            (pars.get("enable custom monitor", false)),
+    detectMode_            (pars.get("detection of special points", 'D')),
+    tanScaling_            (pars.get("state tangent scaling", 1.0e0)),
+    normalizeStrategy_     (pars.get("normalize strategy", 'N')),
+    eigenvalueAnalysis_    (pars.get("eigenvalue analysis", 'N')),
+    rejectFailedNewton_    (pars.get("reject failed iteration", true)),
+    giveUpAtdsMin_         (pars.get("give up at minimum step size", true)),
+    newtChordHybr_         (pars.get("enable Newton Chord hybrid solve", false)),
+    tangentType_           (pars.get("tangent type", 'S')),
+    residualTest_          (pars.get("corrector residual test", 'D')),
+    initialTangent_        (pars.get("initial tangent type", 'E')),
+    printImportantVectors_ (pars.get("print important vectors", false)),
+    postProcess_           (pars.get("post processing", "at every point")),
+    predictorBound_        (pars.get("predictor bound", 1e3)),
     eigenSolverSet_        (false)
 {
     // Set the step size
@@ -63,7 +75,7 @@ Continuation(Model model, Teuchos::RCP<Teuchos::ParameterList> pars)
     for (int i = 0; i != 999; ++i)
     {
         destID << "destination " << i;
-        dest = pars->get(destID.str().c_str(), -999.0);
+        dest = pars.get(destID.str().c_str(), -999.0);
         if (std::abs(dest + 999.) < 1e-7)
             break;
 
@@ -80,7 +92,7 @@ Continuation(Model model, Teuchos::RCP<Teuchos::ParameterList> pars)
     INFO("Continuation: number of destinations = " << destinations_.size());
 
     INFO(std::endl << "Continuation parameter list: "
-         << std::endl << *pars << std::endl);
+         << std::endl << pars << std::endl);
 
     if (postProcess_ != "at every point")
     {

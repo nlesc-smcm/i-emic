@@ -245,8 +245,9 @@ public:
     Continuation(){};
 
     //! constructor
+    Continuation(Model model);
     Continuation(Model model, Teuchos::RCP<Teuchos::ParameterList> pars);
-    Continuation(Model model, Teuchos::ParameterList pars);
+    Continuation(Model model, Teuchos::ParameterList& pars);
 
     //! destructor
     ~Continuation();
