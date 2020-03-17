@@ -51,8 +51,7 @@ int main(int argc, char **argv)
             (ocean, topoParams));
 
     // Create continuation
-    Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >,
-                 RCP<Teuchos::ParameterList> >
+    Continuation<RCP<Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> > >>
         continuation(topo, continuationParams);
 
     // Run

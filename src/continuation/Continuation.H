@@ -15,43 +15,59 @@
 
 //======================================================================
 //Constructor
-template<typename Model, typename ParameterList>
-Continuation<Model, ParameterList>::
-Continuation(Model model, ParameterList pars)
-    :
-    model_(model),
-    parName_               (pars->get("continuation parameter", "Combined Forcing")),
-    dsInit_                (pars->get("initial step size", 1.0e-2)),
-    dsMin_                 (pars->get("minimum step size", 1.0e-8)),
-    dsMax_                 (pars->get("maximum step size", 1.0e3)),
-    scale1_                (pars->get("increase step size", 1.25)),
-    scale2_                (pars->get("decrease step size", 2.0)),
-    epsilon_               (pars->get("epsilon increment", 1.0e-5)),
-    backTracking_          (pars->get("enable backtracking", false)),
-    numBackTrackingSteps_  (pars->get("backtracking steps", 0)),
-    backTrackIncrease_     (pars->get("backtracking increase", 0.0)),
-    maxSteps_              (pars->get("maximum number of steps", -1)),
-    maxNewtonIterations_   (pars->get("maximum Newton iterations", 7)),
-    minNewtonIterations_   (pars->get("minimum Newton iterations", 1)),
-    optNewtonIterations_   (pars->get("optimal Newton iterations", 3.5)),
-    newtonTolerance_       (pars->get("Newton tolerance", 1.0e-4)),
-    destinationTolerance_  (pars->get("destination tolerance", 1.0e-7)),
-    userDetect_            (pars->get("enable custom monitor", false)),
-    detectMode_            (pars->get("detection of special points", 'D')),
-    tanScaling_            (pars->get("state tangent scaling", 1.0e0)),
-    normalizeStrategy_     (pars->get("normalize strategy", 'N')),
-    eigenvalueAnalysis_    (pars->get("eigenvalue analysis", 'N')),
-    rejectFailedNewton_    (pars->get("reject failed iteration", true)),
-    giveUpAtdsMin_         (pars->get("give up at minimum step size", true)),
-    newtChordHybr_         (pars->get("enable Newton Chord hybrid solve", false)),
-    tangentType_           (pars->get("tangent type", 'S')),
-    residualTest_          (pars->get("corrector residual test", 'D')),
-    initialTangent_        (pars->get("initial tangent type", 'E')),
-    printImportantVectors_ (pars->get("print important vectors", false)),
-    postProcess_           (pars->get("post processing", "at every point")),
-    predictorBound_        (pars->get("predictor bound", 1e3)),
-    eigenSolverSet_        (false)
+template<typename Model>
+Continuation<Model>::
+Continuation(Model model)
+    : Continuation<Model>(model, Teuchos::rcp(new Teuchos::ParameterList()))
+{}
+
+template<typename Model>
+Continuation<Model>::
+Continuation(Model model, Teuchos::RCP<Teuchos::ParameterList> pars)
+    : Continuation<Model>(model, *pars)
+{}
+
+template<typename Model>
+Continuation<Model>::
+Continuation(Model model, Teuchos::ParameterList& pars)
+    : model_(model)
+    , paramList_("Continuation Configuration")
+    , eigenSolverSet_(false)
 {
+    pars.validateParametersAndSetDefaults(getDefaultInitParameters());
+    paramList_.setParameters(pars);
+
+    parName_               = paramList_.get<std::string>("continuation parameter");
+    dsInit_                = paramList_.get<double>("initial step size");
+    dsMin_                 = paramList_.get<double>("minimum step size");
+    dsMax_                 = paramList_.get<double>("maximum step size");
+    scale1_                = paramList_.get<double>("increase step size");
+    scale2_                = paramList_.get<double>("decrease step size");
+    epsilon_               = paramList_.get<double>("epsilon increment");
+    backTracking_          = paramList_.get<bool>("enable backtracking");
+    numBackTrackingSteps_  = paramList_.get<int>("backtracking steps");
+    backTrackIncrease_     = paramList_.get<double>("backtracking increase");
+    maxSteps_              = paramList_.get<int>("maximum number of steps");
+    maxNewtonIterations_   = paramList_.get<int>("maximum Newton iterations");
+    minNewtonIterations_   = paramList_.get<int>("minimum Newton iterations");
+    optNewtonIterations_   = paramList_.get<double>("optimal Newton iterations");
+    newtonTolerance_       = paramList_.get<double>("Newton tolerance");
+    destinationTolerance_  = paramList_.get<double>("destination tolerance");
+    userDetect_            = paramList_.get<bool>("enable custom monitor");
+    detectMode_            = paramList_.get<char>("detection of special points");
+    tanScaling_            = paramList_.get<double>("state tangent scaling");
+    normalizeStrategy_     = paramList_.get<char>("normalize strategy");
+    eigenvalueAnalysis_    = paramList_.get<char>("eigenvalue analysis");
+    rejectFailedNewton_    = paramList_.get<bool>("reject failed iteration");
+    giveUpAtdsMin_         = paramList_.get<bool>("give up at minimum step size");
+    newtChordHybr_         = paramList_.get<bool>("enable Newton Chord hybrid solve");
+    tangentType_           = paramList_.get<char>("tangent type");
+    residualTest_          = paramList_.get<char>("corrector residual test");
+    initialTangent_        = paramList_.get<char>("initial tangent type");
+    printImportantVectors_ = paramList_.get<bool>("print important vectors");
+    postProcess_           = paramList_.get<std::string>("post processing");
+    predictorBound_        = paramList_.get<double>("predictor bound");
+
     // Set the step size
     ds_      = dsInit_;
     dsStart_ = dsInit_;
@@ -63,7 +79,7 @@ Continuation(Model model, ParameterList pars)
     for (int i = 0; i != 999; ++i)
     {
         destID << "destination " << i;
-        dest = pars->get(destID.str().c_str(), -999.0);
+        dest = paramList_.get<double>(destID.str().c_str());
         if (std::abs(dest + 999.) < 1e-7)
             break;
 
@@ -79,8 +95,9 @@ Continuation(Model model, ParameterList pars)
 
     INFO("Continuation: number of destinations = " << destinations_.size());
 
+    pars = paramList_;
     INFO(std::endl << "Continuation parameter list: "
-         << std::endl << *pars << std::endl);
+         << std::endl << pars << std::endl);
 
     if (postProcess_ != "at every point")
     {
@@ -91,16 +108,16 @@ Continuation(Model model, ParameterList pars)
 
 //======================================================================
 //Destructor
-template<typename Model, typename ParameterList>
-Continuation<Model, ParameterList>::
+template<typename Model>
+Continuation<Model>::
 ~Continuation()
 {
     INFO("Continuation destructor");
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 initialize()
 {
     // (Re)Initialize step size
@@ -164,8 +181,8 @@ initialize()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-int Continuation<Model, ParameterList>::
+template<typename Model>
+int Continuation<Model>::
 run()
 {
     INFO("Continuation::run initialize...");
@@ -210,8 +227,8 @@ run()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-int Continuation<Model, ParameterList>::
+template<typename Model>
+int Continuation<Model>::
 step()
 {
     TIMER_START("Continuation: step");
@@ -280,8 +297,8 @@ step()
 
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 createInitialTangent()
 {
     INFO("Continuation: create initial tangent...");
@@ -367,8 +384,8 @@ createInitialTangent()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 computeDFDPar(char mode)
 {
     // Let the model compute an RHS F(par) with its current state
@@ -401,8 +418,8 @@ computeDFDPar(char mode)
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 createTangent(char mode)
 {
     if (mode == 'S') // Secant
@@ -476,8 +493,8 @@ createTangent(char mode)
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 normalize()
 {
     if (normalizeStrategy_ == 'O')
@@ -526,8 +543,8 @@ normalize()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-int Continuation<Model, ParameterList>::
+template<typename Model>
+int Continuation<Model>::
 eulerPredictor()
 {
     INFO("Continuation: predictor");
@@ -565,8 +582,8 @@ eulerPredictor()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-int Continuation<Model, ParameterList>::
+template<typename Model>
+int Continuation<Model>::
 newtonCorrector()
 {
     INFO("Continuation: Newton corrector...");
@@ -796,8 +813,8 @@ newtonCorrector()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-int Continuation<Model, ParameterList>::
+template<typename Model>
+int Continuation<Model>::
 runBackTracking(VectorPtr stateDir, double parDir)
 {
     // Initialize reduction with -1/2
@@ -837,8 +854,8 @@ runBackTracking(VectorPtr stateDir, double parDir)
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::detect()
+template<typename Model>
+void Continuation<Model>::detect()
 {
     double dest = destinations_[0];
 
@@ -915,8 +932,8 @@ void Continuation<Model, ParameterList>::detect()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 userDetect()
 {
     if (userDetect_)
@@ -931,8 +948,8 @@ userDetect()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 adjustStep()
 {
     // adjustStep is disabled during a secant process
@@ -964,8 +981,8 @@ adjustStep()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 analyzeHist()
 {
     if (parHist_.size() > 5)
@@ -984,8 +1001,8 @@ analyzeHist()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 reset()
 {
     if (printImportantVectors_)
@@ -1032,8 +1049,8 @@ reset()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 store()
 {
     // We keep two previous states, state0 and state00
@@ -1055,8 +1072,8 @@ store()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 restore()
 {
     // Replace state in model with old state
@@ -1075,8 +1092,8 @@ restore()
 }
 
 //=====================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 setEigenSolver(std::shared_ptr<JDQZsolver> jdqz)
 {
     jdqz_ = jdqz;
@@ -1086,8 +1103,8 @@ setEigenSolver(std::shared_ptr<JDQZsolver> jdqz)
 }
 
 //=====================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 eigenSolver()
 {
     if (eigenvalueAnalysis_ != 'N')
@@ -1113,9 +1130,23 @@ eigenSolver()
     }
 }
 
+//=====================================================================
+template<typename Model>
+const Teuchos::ParameterList&
+Continuation<Model>::
+getParameters()
+{ return paramList_; }
+
+template<typename Model>
+void Continuation<Model>::
+setParameters(Teuchos::ParameterList& newParams)
+{
+    newParams.validateParameters(getDefaultParameters());
+}
+
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 test()
 {
     model_->computeRHS();
@@ -1123,8 +1154,8 @@ test()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 testCopyView()
 {
     INFO("******************************************************");
@@ -1168,8 +1199,8 @@ testCopyView()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 info()
 {
     // get time of day
@@ -1209,8 +1240,8 @@ info()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 finalize()
 {
     info();
@@ -1228,8 +1259,8 @@ finalize()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 modelInfo()
 {
     INFO(std::setprecision(10));
@@ -1243,8 +1274,8 @@ modelInfo()
 }
 
 //======================================================================
-template<typename Model, typename ParameterList>
-void Continuation<Model, ParameterList>::
+template<typename Model>
+void Continuation<Model>::
 writeData(bool describe)
 {
     // Write continuation data
@@ -1287,4 +1318,63 @@ writeData(bool describe)
     WRITECDATA(cdatastring.str());
 }
 
+template<typename Model>
+Teuchos::ParameterList
+Continuation<Model>::
+getDefaultInitParameters()
+{
+    Teuchos::ParameterList result = getDefaultParameters();
+    result.setName("Default Init Continuation List");
+
+    result.get("continuation parameter", "Combined Forcing");
+    result.get("initial step size", 1.0e-2);
+    result.get("minimum step size", 1.0e-8);
+    result.get("maximum step size", 1.0e3);
+    result.get("increase step size", 1.25);
+    result.get("decrease step size", 2.0);
+    result.get("epsilon increment", 1.0e-5);
+    result.get("enable backtracking", false);
+    result.get("backtracking steps", 0);
+    result.get("backtracking increase", 0.0);
+    result.get("maximum number of steps", -1);
+    result.get("maximum Newton iterations", 7);
+    result.get("minimum Newton iterations", 1);
+    result.get("optimal Newton iterations", 3.5);
+    result.get("Newton tolerance", 1.0e-4);
+    result.get("destination tolerance", 1.0e-7);
+    result.get("enable custom monitor", false);
+    result.get("detection of special points", 'D');
+    result.get("state tangent scaling", 1.0e0);
+    result.get("normalize strategy", 'N');
+    result.get("eigenvalue analysis", 'N');
+    result.get("reject failed iteration", true);
+    result.get("give up at minimum step size", true);
+    result.get("enable Newton Chord hybrid solve", false);
+    result.get("tangent type", 'S');
+    result.get("corrector residual test", 'D');
+    result.get("initial tangent type", 'E');
+    result.get("print important vectors", false);
+    result.get("post processing", "at every point");
+    result.get("predictor bound", 1e3);
+
+    std::stringstream destID;
+    for (int i = 0; i != 999; ++i)
+    {
+        destID << "destination " << i;
+        result.set(destID.str().c_str(), -999.0);
+        destID.str("");
+        destID.clear();
+    }
+
+    return result;
+}
+
+template<typename Model>
+Teuchos::ParameterList
+Continuation<Model>::
+getDefaultParameters()
+{
+    Teuchos::ParameterList result("Default Continuation List");
+    return result;
+}
 #endif

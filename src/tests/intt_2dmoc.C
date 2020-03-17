@@ -32,8 +32,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-                continuation(ocean, continuationParams);
+            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the forcing
             int status = continuation.run();
@@ -46,8 +45,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-                continuation(ocean, continuationParams);
+            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the asymmetry parameter
             int status = continuation.run();
@@ -60,8 +58,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-                continuation(ocean, continuationParams);
+            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the salinity forcing
             int status = continuation.run();
@@ -74,8 +71,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-                continuation(ocean, continuationParams);
+            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the asymmetry parameter to get back to the symmetric state
             int status = continuation.run();
@@ -88,8 +84,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-                continuation(ocean, continuationParams);
+            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the salinity forcing to state 1
             int status = continuation.run();
@@ -107,8 +102,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-                continuation(ocean, continuationParams);
+            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the salinity forcing
             int status = continuation.run();
@@ -121,8 +115,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>, RCP<Teuchos::ParameterList> >
-                continuation(ocean, continuationParams);
+            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the salinity forcing to state 2
             int status = continuation.run();
@@ -171,8 +164,7 @@ TEST(Ocean, Lyapunov)
         continuationParams->set("initial step size", 0.1);
 
         // Create continuation
-        Continuation<RCP<LyapunovModel<Ocean> >, RCP<Teuchos::ParameterList> >
-            continuation(lyap, continuationParams);
+        Continuation<RCP<LyapunovModel<Ocean>>> continuation(lyap, continuationParams);
 
         // Run continuation
         int status = continuation.run();

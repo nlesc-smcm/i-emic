@@ -94,8 +94,7 @@ TEST(CoupledModel, Continuation_1)
         coupledModel->initializeState();
 
         // Create continuation
-        Continuation<std::shared_ptr<CoupledModel>,
-                     Teuchos::RCP<Teuchos::ParameterList> >
+        Continuation<std::shared_ptr<CoupledModel>>
             continuation(coupledModel, params[CONT]);
 
         // Run continuation
@@ -151,8 +150,7 @@ TEST(CoupledModel, Continuation_2)
         coupledModel->initializeState();
 
         // Create continuation
-        Continuation<std::shared_ptr<CoupledModel>,
-                     Teuchos::RCP<Teuchos::ParameterList> >
+        Continuation<std::shared_ptr<CoupledModel>>
             continuation(coupledModel, params[CONT]);
 
         // Run continuation

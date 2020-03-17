@@ -44,10 +44,8 @@
 //!  double  Dot()            dot
 //!  ...
 //!
-//! The templated type ParameterList should be a pointer
-//! to a parameter storing object having a .get() method.
 
-template<typename Model, typename ParameterList>
+template<typename Model>
 class Continuation
 {
     using VectorPtr  = typename Model::element_type::VectorPtr;
@@ -55,6 +53,7 @@ class Continuation
     using JDQZsolver = JDQZ<JDQZInterface<Model,
                                           ComplexVector<Vector> > >;
     Model model_;
+    Teuchos::ParameterList paramList_;
 
     //! copy of the state in the model
     VectorPtr stateCopy_;
@@ -247,7 +246,9 @@ public:
     Continuation(){};
 
     //! constructor
-    Continuation(Model model, ParameterList pars);
+    Continuation(Model model);
+    Continuation(Model model, Teuchos::RCP<Teuchos::ParameterList> pars);
+    Continuation(Model model, Teuchos::ParameterList& pars);
 
     //! destructor
     ~Continuation();
@@ -260,6 +261,12 @@ public:
 
     //! set pointer to an eigenvalue solver
     void setEigenSolver(std::shared_ptr<JDQZsolver> jdqz);
+
+    const Teuchos::ParameterList& getParameters();
+    void setParameters(Teuchos::ParameterList&);
+
+    static Teuchos::ParameterList getDefaultInitParameters();
+    static Teuchos::ParameterList getDefaultParameters();
 
 private:
 
@@ -310,7 +317,6 @@ private:
 
     //! write essential continuation data to datafile
     void writeData(bool describe = false);
-
 };
 
 #endif

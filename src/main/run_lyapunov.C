@@ -78,8 +78,7 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         new LyapunovModel<Ocean>(Comm, oceanParams));
 
     // Create continuation
-    Continuation<RCP<LyapunovModel<Ocean> >, RCP<Teuchos::ParameterList> >
-        continuation(ocean, continuationParams);
+    Continuation<RCP<LyapunovModel<Ocean>>> continuation(ocean, continuationParams);
 
     // Create JDQZ generalized eigenvalue solver:
     // 1) Create a vector with complex arithmetic based on an Epetra_Vector

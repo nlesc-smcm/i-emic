@@ -385,8 +385,7 @@ TEST(CoupledModel, Continuation)
         solV->PutScalar(0.0);
 
         // Create continuation
-        Continuation<std::shared_ptr<CoupledModel>,
-                     Teuchos::RCP<Teuchos::ParameterList> >
+        Continuation<std::shared_ptr<CoupledModel>>
             continuation(coupledModel, params[CONT]);
 
         // Run continuation

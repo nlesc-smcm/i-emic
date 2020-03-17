@@ -438,6 +438,59 @@ TEST(OceanParameterList, Initialization)
 }
 
 //------------------------------------------------------------------
+TEST(ContinuationParameterList, Initialization)
+{
+    ::testing::internal::CaptureStdout();
+    RCP<Ocean> ocean = Teuchos::rcp(new Ocean(comm));
+    ::testing::internal::GetCapturedStdout();
+    RCP<Continuation<RCP<Ocean>>> continuation;
+
+    bool failed = false;
+    try
+    {
+        // Copy of the input parameters to validate against
+        Teuchos::ParameterList startParams;
+
+        std::stringstream destID;
+        for (int i = 0; i != 999; ++i)
+        {
+            destID << "destination " << i;
+            startParams.set(destID.str(), 1.0);
+            destID.str("");
+            destID.clear();
+        }
+
+        // Copy of the default parameters
+        const Teuchos::ParameterList defaultParams = Continuation<RCP<Ocean>>::getDefaultInitParameters();
+
+        // Empty parameter configuration
+        Teuchos::ParameterList continuationParams = startParams;
+
+        ::testing::internal::CaptureStdout();
+        continuation = Teuchos::rcp(new Continuation<RCP<Ocean>>(ocean, continuationParams));
+        ::testing::internal::GetCapturedStdout();
+
+        // Copy of the configuration reported by Continuation
+        const Teuchos::ParameterList& currentParams = continuation->getParameters();
+
+        // Check that every entry in oceanParams corresponds to the value in
+        // startParams, missing entries are compared against defaultParams
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(continuationParams, defaultParams, startParams));
+
+        // Check that every entry reported by Ocean corresponds to the value in
+        // startParams, missing entries are compared against defaultParams
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(currentParams, defaultParams, startParams));
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:
