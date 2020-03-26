@@ -611,7 +611,7 @@ SUBROUTINE lin
   real,target :: u(np,n,m,l),uy(np,n,m,l),ucsi(np,n,m,l),&
        &         uxx(np,n,m,l),uyy(np,n,m,l),uzz(np,n,m,l),&
        &         uxs(np,n,m,l),fu(np,n,m,l),px(np,n,m,l)
-  real    ub(np,n,m,l),sc(np,n,m,l),tcb(np,n,m,l)
+  real    sc(np,n,m,l),tcb(np,n,m,l)
   real    EH,EV,ph,pv,Ra,lambda, bi, dedt
   real    xes
 
@@ -663,7 +663,7 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! u-equation
   ! ------------------------------------------------------------------
-  call uderiv(1,ub)
+  ! call uderiv(1,u)
   call uderiv(2,uxx)
   call uderiv(3,uyy)
   call uderiv(4,uzz)
