@@ -168,9 +168,12 @@ TEST(Topo, TopoContinuation)
 {
 	bool failed = false;
 
-    // ocean norm spinup topography
-    double normOceanState = Utils::norm(ocean->getState('V'));
+    // create state diff vector
+    Ocean::VectorPtr stateDiff = ocean->getState('C');
     
+    // ocean norm spinup topography
+    double normOceanState = Utils::norm(stateDiff);
+    getchar();
 	try
 	{
         // not sure if needed
@@ -203,7 +206,7 @@ TEST(Topo, TopoContinuation)
 
             int status = continuation.run();
             EXPECT_EQ(status, 0);
-
+            
         }
         INFO(" Running topo cont... done");
         
@@ -218,6 +221,9 @@ TEST(Topo, TopoContinuation)
 
     // Simple check, states should at least differ
     EXPECT_GT(std::abs(Utils::norm(ocean->getState('V')) - normOceanState), 1e-7);
+
+    stateDiff->Update(-1.0, *ocean->getState('V'), 1.0);
+    Utils::save(stateDiff, "stateDiff");
 }
 
 //------------------------------------------------------------------

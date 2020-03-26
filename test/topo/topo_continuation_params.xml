@@ -58,7 +58,7 @@
   <!-- We can get rid of about half the solves in a continuation step, -->
   <!-- but this is only valid when dFdpar is approximately constant    -->
   <!-- for example during a continuation in Solar Forcing              -->
-  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="true"/>
+  <Parameter name="enable Newton Chord hybrid solve" type="bool" value="false"/>
 
   <!-- During the backtracking phase we allow a norm that is larger     -->
   <!-- than the original by this factor.                                -->

@@ -18,7 +18,6 @@
   <Parameter name="Mask file 4" type="string"
 	         value="test8x8x4/test1"/>
 
-
   <!-- Starting mask -->
   <Parameter name="Starting mask" type="int" value="0" />
 
