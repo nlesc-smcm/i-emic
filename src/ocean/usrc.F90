@@ -788,7 +788,6 @@ SUBROUTINE nlin_rhs(un)
   real    u(0:n  ,0:m,0:l+1), v(0:n,0:m  ,0:l+1)
   real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
   real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
-  real    rho(0:n+1,0:m+1,0:l+1)
   real,target ::    utx(np,n,m,l),vty(np,n,m,l),wtz(np,n,m,l)
   real    t2r(np,n,m,l),t3r(np,n,m,l)
 
@@ -812,8 +811,8 @@ SUBROUTINE nlin_rhs(un)
   pv     = par(PE_V)
   pvc2   = pv*(1.0 - par(ALPC))*par(ENER)
   call usol(un,u,v,w,p,t,s)
-  rho    = lambda*s - t *( 1 + xes*alpt1) - &
-           xes*t*t*alpt2+xes*t*t*t*alpt3
+  ! rho    = lambda*s - t *( 1 + xes*alpt1) - &
+  !          xes*t*t*alpt2+xes*t*t*t*alpt3
 
   ! ------------------------------------------------------------------
   ! u-equation
@@ -887,7 +886,6 @@ SUBROUTINE nlin_jac(un)
   real    u(0:n  ,0:m,0:l+1), v(0:n, 0:m  ,0:l+1)
   real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
   real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
-  real    rho(0:n+1,0:m+1,0:l+1)
   real,target :: urTx(np,n,m,l),Utrx(np,n,m,l),&
        &        vrTy(np,n,m,l),Vtry(np,n,m,l)
   real,target :: wrTz(np,n,m,l),Wtrz(np,n,m,l)
@@ -918,8 +916,8 @@ SUBROUTINE nlin_jac(un)
   pv     = par(PE_V)
   pvc2   = pv*(1.0 - par(ALPC))*par(ENER)
   call usol(un,u,v,w,p,t,s)
-  rho    = lambda*s - t *( 1 + xes*alpt1) - &
-       &            xes*t*t*alpt2+xes*t*t*t*alpt3
+  ! rho    = lambda*s - t *( 1 + xes*alpt1) - &
+  !          xes*t*t*alpt2+xes*t*t*t*alpt3
 
   ! ------------------------------------------------------------------
   ! u-equation
