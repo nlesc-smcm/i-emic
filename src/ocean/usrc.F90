@@ -794,7 +794,7 @@ SUBROUTINE nlin_rhs(un)
   real    uux(np,n,m,l),uvy1(np,n,m,l),uwz(np,n,m,l),uvy2(np,n,m,l)
   real    uvx(np,n,m,l),vvy(np,n,m,l),vwz(np,n,m,l),ut2(np,n,m,l)
 
-  real    lambda,epsr,Ra,xes,pvc1,pvc2, pv
+  real    lambda,epsr,Ra,xes
 
   real,dimension(:,:,:,:),pointer ::    usx,vsy,wsz
 
@@ -807,9 +807,9 @@ SUBROUTINE nlin_rhs(un)
   epsr   = par(ROSB)
   Ra     = par(RAYL)
   xes    = par(NLES)
-  pvc1   = par(P_VC)
-  pv     = par(PE_V)
-  pvc2   = pv*(1.0 - par(ALPC))*par(ENER)
+  ! pvc1   = par(P_VC)
+  ! pv     = par(PE_V)
+  ! pvc2   = pv*(1.0 - par(ALPC))*par(ENER)
   call usol(un,u,v,w,p,t,s)
   ! rho    = lambda*s - t *( 1 + xes*alpt1) - &
   !          xes*t*t*alpt2+xes*t*t*t*alpt3
@@ -891,7 +891,7 @@ SUBROUTINE nlin_jac(un)
   real,target :: wrTz(np,n,m,l),Wtrz(np,n,m,l)
   real    t2r(np,n,m,l),t3r(np,n,m,l)
 
-  real    lambda,epsr,Ra,xes,pvc1,pvc2,pv
+  real    lambda,epsr,Ra,xes
   real uvy1(np,n,m,l),uwz(np,n,m,l),uvy2(np,n,m,l)
   real uvx(np,n,m,l),vwz(np,n,m,l)
   real Urux(np,n,m,l),Urvy1(np,n,m,l),Urwz(np,n,m,l),Urvy2(np,n,m,l)
@@ -912,9 +912,9 @@ SUBROUTINE nlin_jac(un)
   epsr   = par(ROSB)
   Ra     = par(RAYL)
   xes    = par(NLES)
-  pvc1   = par(P_VC)
-  pv     = par(PE_V)
-  pvc2   = pv*(1.0 - par(ALPC))*par(ENER)
+  ! pvc1   = par(P_VC)
+  ! pv     = par(PE_V)
+  ! pvc2   = pv*(1.0 - par(ALPC))*par(ENER)
   call usol(un,u,v,w,p,t,s)
   ! rho    = lambda*s - t *( 1 + xes*alpt1) - &
   !          xes*t*t*alpt2+xes*t*t*t*alpt3
