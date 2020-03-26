@@ -608,7 +608,7 @@ SUBROUTINE lin
   use m_ice
   implicit none
   !     LOCAL
-  real,target :: u(np,n,m,l),uy(np,n,m,l),ucsi(np,n,m,l),&
+  real,target :: uy(np,n,m,l),ucsi(np,n,m,l),&
        &         uxx(np,n,m,l),uyy(np,n,m,l),uzz(np,n,m,l),&
        &         uxs(np,n,m,l),fu(np,n,m,l),px(np,n,m,l)
   real    sc(np,n,m,l),tcb(np,n,m,l)
@@ -669,7 +669,6 @@ SUBROUTINE lin
   call uderiv(4,uzz)
   call uderiv(5,ucsi)
   call uderiv(6,vxs)
-  call uderiv(7,u)
   call coriolis(1,fv)
   call gradp(1,px)
   Al(:,UU,UU,:,:,1:l) = -EH * (uxx+uyy+ucsi) -EV * uzz ! + rintt*u ! ATvS-Mix
