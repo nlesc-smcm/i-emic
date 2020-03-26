@@ -608,10 +608,10 @@ SUBROUTINE lin
   use m_ice
   implicit none
   !     LOCAL
-  real,target :: u(np,n,m,l),uy(np,n,m,l),ucsi(np,n,m,l),&
+  real,target :: ucsi(np,n,m,l),&
        &         uxx(np,n,m,l),uyy(np,n,m,l),uzz(np,n,m,l),&
        &         uxs(np,n,m,l),fu(np,n,m,l),px(np,n,m,l)
-  real    ub(np,n,m,l),vb(np,n,m,l),sc(np,n,m,l),tcb(np,n,m,l)
+  real    sc(np,n,m,l),tcb(np,n,m,l)
   real    EH,EV,ph,pv,Ra,lambda, bi, dedt
   real    xes
 
@@ -626,11 +626,9 @@ SUBROUTINE lin
   !      equivalence (fu, fv, tc), (px, py, pz)
 
   ! we use pointers instead:
-  real,dimension(:,:,:,:),pointer :: v,vy,vcsi,vxx,txx,uxc,&
+  real,dimension(:,:,:,:),pointer :: vcsi,vxx,txx,uxc,&
        &     vyy,tyy,vyc,vzz,tzz,wzc,vxs,tbc,tyc,fv,tc,py,pz
 
-  v=>u
-  vy=>uy
   vcsi=>ucsi
   vxx=>uxx
   txx=>uxx
@@ -664,13 +662,12 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! u-equation
   ! ------------------------------------------------------------------
-  call uderiv(1,ub)
+  ! call uderiv(1,u)
   call uderiv(2,uxx)
   call uderiv(3,uyy)
   call uderiv(4,uzz)
   call uderiv(5,ucsi)
   call uderiv(6,vxs)
-  call uderiv(7,u)
   call coriolis(1,fv)
   call gradp(1,px)
   Al(:,UU,UU,:,:,1:l) = -EH * (uxx+uyy+ucsi) -EV * uzz ! + rintt*u ! ATvS-Mix
@@ -681,13 +678,12 @@ SUBROUTINE lin
   ! ------------------------------------------------------------------
   ! v-equation
   ! ------------------------------------------------------------------
-  call vderiv(1,vb )
+  ! call vderiv(1,v)
   call vderiv(2,vxx)
   call vderiv(3,vyy)
   call vderiv(4,vzz)
   call vderiv(5,vcsi)
   call vderiv(6,uxs)
-  call vderiv(7,v)
   call coriolis(2,fu)
   call gradp(2,py)
   Al(:,VV,UU,:,:,1:l) =  fu - EH*uxs
@@ -792,14 +788,13 @@ SUBROUTINE nlin_rhs(un)
   real    u(0:n  ,0:m,0:l+1), v(0:n,0:m  ,0:l+1)
   real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
   real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
-  real    rho(0:n+1,0:m+1,0:l+1)
   real,target ::    utx(np,n,m,l),vty(np,n,m,l),wtz(np,n,m,l)
   real    t2r(np,n,m,l),t3r(np,n,m,l)
 
   real    uux(np,n,m,l),uvy1(np,n,m,l),uwz(np,n,m,l),uvy2(np,n,m,l)
   real    uvx(np,n,m,l),vvy(np,n,m,l),vwz(np,n,m,l),ut2(np,n,m,l)
 
-  real    lambda,epsr,Ra,xes,pvc1,pvc2, pv
+  real    lambda,epsr,Ra,xes
 
   real,dimension(:,:,:,:),pointer ::    usx,vsy,wsz
 
@@ -812,12 +807,12 @@ SUBROUTINE nlin_rhs(un)
   epsr   = par(ROSB)
   Ra     = par(RAYL)
   xes    = par(NLES)
-  pvc1   = par(P_VC)
-  pv     = par(PE_V)
-  pvc2   = pv*(1.0 - par(ALPC))*par(ENER)
+  ! pvc1   = par(P_VC)
+  ! pv     = par(PE_V)
+  ! pvc2   = pv*(1.0 - par(ALPC))*par(ENER)
   call usol(un,u,v,w,p,t,s)
-  rho    = lambda*s - t *( 1 + xes*alpt1) - &
-           xes*t*t*alpt2+xes*t*t*t*alpt3
+  ! rho    = lambda*s - t *( 1 + xes*alpt1) - &
+  !          xes*t*t*alpt2+xes*t*t*t*alpt3
 
   ! ------------------------------------------------------------------
   ! u-equation
@@ -854,9 +849,9 @@ SUBROUTINE nlin_rhs(un)
   ! T-equation
   ! ------------------------------------------------------------------
 #ifndef NO_TSNLIN
-  call tnlin(3,utx,u,v,w,t,rho)
-  call tnlin(5,vty,u,v,w,t,rho)
-  call tnlin(7,wtz,u,v,w,t,rho)
+  call tnlin(3,utx,u,v,w,t)
+  call tnlin(5,vty,u,v,w,t)
+  call tnlin(7,wtz,u,v,w,t)
   An(:,TT,TT,:,:,1:l) = An(:,TT,TT,:,:,1:l)+ utx+vty+wtz        ! ATvS-Mix
 #endif
 
@@ -864,9 +859,9 @@ SUBROUTINE nlin_rhs(un)
   ! S-equation
   ! ------------------------------------------------------------------
 #ifndef NO_TSNLIN
-  call tnlin(3,usx,u,v,w,s,rho)
-  call tnlin(5,vsy,u,v,w,s,rho)
-  call tnlin(7,wsz,u,v,w,s,rho)
+  call tnlin(3,usx,u,v,w,s)
+  call tnlin(5,vsy,u,v,w,s)
+  call tnlin(7,wsz,u,v,w,s)
   An(:,SS,SS,:,:,1:l) = An(:,SS,SS,:,:,1:l)+ usx+vsy+wsz        ! ATvS-Mix
 #endif
 
@@ -891,13 +886,12 @@ SUBROUTINE nlin_jac(un)
   real    u(0:n  ,0:m,0:l+1), v(0:n, 0:m  ,0:l+1)
   real    w(0:n+1,0:m+1,0:l  ), p(0:n+1,0:m+1,0:l+1)
   real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
-  real    rho(0:n+1,0:m+1,0:l+1)
   real,target :: urTx(np,n,m,l),Utrx(np,n,m,l),&
        &        vrTy(np,n,m,l),Vtry(np,n,m,l)
   real,target :: wrTz(np,n,m,l),Wtrz(np,n,m,l)
   real    t2r(np,n,m,l),t3r(np,n,m,l)
 
-  real    lambda,epsr,Ra,xes,pvc1,pvc2,pv
+  real    lambda,epsr,Ra,xes
   real uvy1(np,n,m,l),uwz(np,n,m,l),uvy2(np,n,m,l)
   real uvx(np,n,m,l),vwz(np,n,m,l)
   real Urux(np,n,m,l),Urvy1(np,n,m,l),Urwz(np,n,m,l),Urvy2(np,n,m,l)
@@ -918,12 +912,12 @@ SUBROUTINE nlin_jac(un)
   epsr   = par(ROSB)
   Ra     = par(RAYL)
   xes    = par(NLES)
-  pvc1   = par(P_VC)
-  pv     = par(PE_V)
-  pvc2   = pv*(1.0 - par(ALPC))*par(ENER)
+  ! pvc1   = par(P_VC)
+  ! pv     = par(PE_V)
+  ! pvc2   = pv*(1.0 - par(ALPC))*par(ENER)
   call usol(un,u,v,w,p,t,s)
-  rho    = lambda*s - t *( 1 + xes*alpt1) - &
-       &            xes*t*t*alpt2+xes*t*t*t*alpt3
+  ! rho    = lambda*s - t *( 1 + xes*alpt1) - &
+  !          xes*t*t*alpt2+xes*t*t*t*alpt3
 
   ! ------------------------------------------------------------------
   ! u-equation
@@ -968,12 +962,12 @@ SUBROUTINE nlin_jac(un)
   ! T-equation
   ! ------------------------------------------------------------------
 #ifndef NO_TSNLIN
-  call tnlin(2,urTx,u,v,w,t,rho)
-  call tnlin(3,Utrx,u,v,w,t,rho)
-  call tnlin(4,vrTy,u,v,w,t,rho)
-  call tnlin(5,Vtry,u,v,w,t,rho)
-  call tnlin(6,wrTz,u,v,w,t,rho)
-  call tnlin(7,Wtrz,u,v,w,t,rho)
+  call tnlin(2,urTx,u,v,w,t)
+  call tnlin(3,Utrx,u,v,w,t)
+  call tnlin(4,vrTy,u,v,w,t)
+  call tnlin(5,Vtry,u,v,w,t)
+  call tnlin(6,wrTz,u,v,w,t)
+  call tnlin(7,Wtrz,u,v,w,t)
   An(:,TT,UU,:,:,1:l) = An(:,TT,UU,:,:,1:l) + urTx
   An(:,TT,VV,:,:,1:l) = An(:,TT,VV,:,:,1:l) + vrTy
   An(:,TT,WW,:,:,1:l) = An(:,TT,WW,:,:,1:l) + wrTz
@@ -984,12 +978,12 @@ SUBROUTINE nlin_jac(un)
   ! S-equation
   ! ------------------------------------------------------------------
 #ifndef NO_TSNLIN
-  call tnlin(2,urSx,u,v,w,s,rho)
-  call tnlin(3,Usrx,u,v,w,s,rho)
-  call tnlin(4,vrSy,u,v,w,s,rho)
-  call tnlin(5,Vsry,u,v,w,s,rho)
-  call tnlin(6,wrSz,u,v,w,s,rho)
-  call tnlin(7,Wsrz,u,v,w,s,rho)
+  call tnlin(2,urSx,u,v,w,s)
+  call tnlin(3,Usrx,u,v,w,s)
+  call tnlin(4,vrSy,u,v,w,s)
+  call tnlin(5,Vsry,u,v,w,s)
+  call tnlin(6,wrSz,u,v,w,s)
+  call tnlin(7,Wsrz,u,v,w,s)
   An(:,SS,UU,:,:,1:l) = An(:,SS,UU,:,:,1:l) + urSx
   An(:,SS,VV,:,:,1:l) = An(:,SS,VV,:,:,1:l) + vrSy
   An(:,SS,WW,:,:,1:l) = An(:,SS,WW,:,:,1:l) + wrSz

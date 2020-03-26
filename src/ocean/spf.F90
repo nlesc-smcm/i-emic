@@ -27,15 +27,7 @@ SUBROUTINE uderiv(type,atom)
   atom = 0.0
   SELECT CASE(type)
   CASE(1)
-     IF (itopo.eq.3) then
-        DO i = 18,20
-           DO j=1,3
-              atom(5,i,j,:) = 1.0
-           enddo
-        enddo
-     ELSE
-        atom(5,:,:,:) = 1.0
-     ENDIF
+     atom(5,:,:,:) = 1.0
   CASE(2)
      ! u_xx
      cosdx2i = (1.0/(cos(yv)*dx))**2
@@ -77,16 +69,6 @@ SUBROUTINE uderiv(type,atom)
         atom(2,:,j,:)=(bmhy(yv(j),ih)-(amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j))/(dx*cosd2(j))
         atom(8,:,j,:)=-(bmhy(yv(j),ih)-(amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j))/(dx*cosd2(j))
      ENDDO
-  CASE(7)
-     IF (itopo.eq.3) then
-        DO i = 18,20
-           DO j=14,16
-              atom(5,i,j,:) = 1.0
-           enddo
-        enddo
-     ELSE
-        atom(5,:,:,:) = 1.0
-     ENDIF
   END SELECT
 
 end SUBROUTINE uderiv
@@ -108,15 +90,7 @@ SUBROUTINE vderiv(type,atom)
   atom = 0.0
   SELECT CASE(type)
   CASE(1)
-     IF (itopo.eq.3) then
-        DO i = 18,20
-           DO j=1,3
-              atom(5,i,j,:) = 1.0
-           enddo
-        enddo
-     ELSE
-        atom(5,:,:,:) = 1.0
-     ENDIF
+     atom(5,:,:,:) = 1.0
   CASE(2)
      ! vxx
      cosdx2i = (1.0/(cos(yv)*dx))**2
@@ -157,16 +131,6 @@ SUBROUTINE vderiv(type,atom)
         atom(2,:,j,:)=-((amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j)-bmhy(yv(j),ih))/(dx*cosd2(j))
         atom(8,:,j,:)= ((amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j)-bmhy(yv(j),ih))/(dx*cosd2(j))
      ENDDO
-  CASE(7)
-     IF (itopo.eq.3) then
-        DO i = 18,20
-           DO j=14,16
-              atom(5,i,j,:) = 1.0
-           enddo
-        enddo
-     ELSE
-        atom(5,:,:,:) = 1.0
-     ENDIF
   END SELECT
 
 END SUBROUTINE vderiv
@@ -395,7 +359,7 @@ SUBROUTINE masksi(atom, mask)
 end SUBROUTINE masksi
 
 !*******************************************************
-SUBROUTINE tnlin(type,atom,u,v,w,t,s)
+SUBROUTINE tnlin(type,atom,u,v,w,t)
   use m_usr
   implicit none
   !     nonlinear terms for the t-equation
@@ -419,7 +383,7 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   real    atom(np,n,m,l)
   real    u(0:n  ,0:m,0:l+1),   v(0:n,0:m  ,0:l+1)
   real    w(0:n+1,0:m+1,0:l)
-  real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
+  real    t(0:n+1,0:m+1,0:l+1)
   ! LOCAL
   integer i,j,k,k0,k1
   real    costdxi(0:m+1),tdzi
