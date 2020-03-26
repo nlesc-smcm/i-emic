@@ -850,9 +850,9 @@ SUBROUTINE nlin_rhs(un)
   ! T-equation
   ! ------------------------------------------------------------------
 #ifndef NO_TSNLIN
-  call tnlin(3,utx,u,v,w,t,rho)
-  call tnlin(5,vty,u,v,w,t,rho)
-  call tnlin(7,wtz,u,v,w,t,rho)
+  call tnlin(3,utx,u,v,w,t)
+  call tnlin(5,vty,u,v,w,t)
+  call tnlin(7,wtz,u,v,w,t)
   An(:,TT,TT,:,:,1:l) = An(:,TT,TT,:,:,1:l)+ utx+vty+wtz        ! ATvS-Mix
 #endif
 
@@ -860,9 +860,9 @@ SUBROUTINE nlin_rhs(un)
   ! S-equation
   ! ------------------------------------------------------------------
 #ifndef NO_TSNLIN
-  call tnlin(3,usx,u,v,w,s,rho)
-  call tnlin(5,vsy,u,v,w,s,rho)
-  call tnlin(7,wsz,u,v,w,s,rho)
+  call tnlin(3,usx,u,v,w,s)
+  call tnlin(5,vsy,u,v,w,s)
+  call tnlin(7,wsz,u,v,w,s)
   An(:,SS,SS,:,:,1:l) = An(:,SS,SS,:,:,1:l)+ usx+vsy+wsz        ! ATvS-Mix
 #endif
 
@@ -964,12 +964,12 @@ SUBROUTINE nlin_jac(un)
   ! T-equation
   ! ------------------------------------------------------------------
 #ifndef NO_TSNLIN
-  call tnlin(2,urTx,u,v,w,t,rho)
-  call tnlin(3,Utrx,u,v,w,t,rho)
-  call tnlin(4,vrTy,u,v,w,t,rho)
-  call tnlin(5,Vtry,u,v,w,t,rho)
-  call tnlin(6,wrTz,u,v,w,t,rho)
-  call tnlin(7,Wtrz,u,v,w,t,rho)
+  call tnlin(2,urTx,u,v,w,t)
+  call tnlin(3,Utrx,u,v,w,t)
+  call tnlin(4,vrTy,u,v,w,t)
+  call tnlin(5,Vtry,u,v,w,t)
+  call tnlin(6,wrTz,u,v,w,t)
+  call tnlin(7,Wtrz,u,v,w,t)
   An(:,TT,UU,:,:,1:l) = An(:,TT,UU,:,:,1:l) + urTx
   An(:,TT,VV,:,:,1:l) = An(:,TT,VV,:,:,1:l) + vrTy
   An(:,TT,WW,:,:,1:l) = An(:,TT,WW,:,:,1:l) + wrTz
@@ -980,12 +980,12 @@ SUBROUTINE nlin_jac(un)
   ! S-equation
   ! ------------------------------------------------------------------
 #ifndef NO_TSNLIN
-  call tnlin(2,urSx,u,v,w,s,rho)
-  call tnlin(3,Usrx,u,v,w,s,rho)
-  call tnlin(4,vrSy,u,v,w,s,rho)
-  call tnlin(5,Vsry,u,v,w,s,rho)
-  call tnlin(6,wrSz,u,v,w,s,rho)
-  call tnlin(7,Wsrz,u,v,w,s,rho)
+  call tnlin(2,urSx,u,v,w,s)
+  call tnlin(3,Usrx,u,v,w,s)
+  call tnlin(4,vrSy,u,v,w,s)
+  call tnlin(5,Vsry,u,v,w,s)
+  call tnlin(6,wrSz,u,v,w,s)
+  call tnlin(7,Wsrz,u,v,w,s)
   An(:,SS,UU,:,:,1:l) = An(:,SS,UU,:,:,1:l) + urSx
   An(:,SS,VV,:,:,1:l) = An(:,SS,VV,:,:,1:l) + vrSy
   An(:,SS,WW,:,:,1:l) = An(:,SS,WW,:,:,1:l) + wrSz

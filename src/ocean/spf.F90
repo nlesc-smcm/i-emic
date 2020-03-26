@@ -359,7 +359,7 @@ SUBROUTINE masksi(atom, mask)
 end SUBROUTINE masksi
 
 !*******************************************************
-SUBROUTINE tnlin(type,atom,u,v,w,t,s)
+SUBROUTINE tnlin(type,atom,u,v,w,t)
   use m_usr
   implicit none
   !     nonlinear terms for the t-equation
@@ -383,7 +383,7 @@ SUBROUTINE tnlin(type,atom,u,v,w,t,s)
   real    atom(np,n,m,l)
   real    u(0:n  ,0:m,0:l+1),   v(0:n,0:m  ,0:l+1)
   real    w(0:n+1,0:m+1,0:l)
-  real    t(0:n+1,0:m+1,0:l+1), s(0:n+1,0:m+1,0:l+1)
+  real    t(0:n+1,0:m+1,0:l+1)
   ! LOCAL
   integer i,j,k,k0,k1
   real    costdxi(0:m+1),tdzi
