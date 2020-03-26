@@ -626,10 +626,9 @@ SUBROUTINE lin
   !      equivalence (fu, fv, tc), (px, py, pz)
 
   ! we use pointers instead:
-  real,dimension(:,:,:,:),pointer :: v,vy,vcsi,vxx,txx,uxc,&
+  real,dimension(:,:,:,:),pointer :: vy,vcsi,vxx,txx,uxc,&
        &     vyy,tyy,vyc,vzz,tzz,wzc,vxs,tbc,tyc,fv,tc,py,pz
 
-  v=>u
   vy=>uy
   vcsi=>ucsi
   vxx=>uxx
@@ -687,7 +686,6 @@ SUBROUTINE lin
   call vderiv(4,vzz)
   call vderiv(5,vcsi)
   call vderiv(6,uxs)
-  call vderiv(7,v)
   call coriolis(2,fu)
   call gradp(2,py)
   Al(:,VV,UU,:,:,1:l) =  fu - EH*uxs
