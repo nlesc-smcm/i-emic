@@ -248,8 +248,13 @@ public:
     Teuchos::RCP<Epetra_Vector> getLandTemperature();
 
     void setLandMask(Utils::MaskStruct const &mask);
-    
-    Utils::MaskStruct getLandMask() {return Utils::MaskStruct();}
+
+    // Atmosphere does not have this functionality, return empty landmask
+    Utils::MaskStruct getLandMask()
+        {
+            WARNING("Not implemented", __FILE__, __LINE__);
+            return Utils::MaskStruct();
+        }
 
     //! set parameter
     void setPar(std::string const &parName, double value) {atmos_->setPar(parName, value); }

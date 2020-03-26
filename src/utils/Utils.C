@@ -221,6 +221,12 @@ void Utils::print(std::vector<double> const &vec, std::string const &fname)
         file << el << std::endl;
 }
 
+//! Print surface mask to INFO and file
+void Utils::printSurfaceMask(Utils::MaskStruct const &mask)
+{
+    printSurfaceMask(mask.global_surface, mask.label, mask.n);
+}
+
 //! Print surface mask to INFO and file fname
 void Utils::printSurfaceMask(std::shared_ptr<std::vector<int> > mask,
                              std::string const &fname,

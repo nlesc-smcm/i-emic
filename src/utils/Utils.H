@@ -90,6 +90,9 @@ namespace Utils
 
         //! mask name
         std::string label;
+
+        //! dimension in x, y, z-direction
+        int n, m, l;
     };
 
     //! Clone an Epetra_Vector
@@ -161,6 +164,9 @@ namespace Utils
     //! Print std vector
     void print(std::vector<double> const &vec, std::string const &fname);
 
+    //! Print surface mask to INFO and file fname
+    void printSurfaceMask(MaskStruct const &mask);
+    
     //! Print surface mask to INFO and file fname
     void printSurfaceMask(std::shared_ptr<std::vector<int> > mask,
                           std::string const &fname,
