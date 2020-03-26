@@ -233,9 +233,9 @@ void Utils::printSurfaceMask(std::shared_ptr<std::vector<int> > mask,
                              int nDim)
 {
     INFO("\nPrinting surface mask to " << fname);
+    
     std::ostringstream string;
     std::ofstream smask;
-    smask.open(fname);
 
     std::vector<std::string> stringvec;
     int ctr  = 0;
@@ -245,7 +245,6 @@ void Utils::printSurfaceMask(std::shared_ptr<std::vector<int> > mask,
     {
         ctr++;
         string << el;
-        smask  << el << '\n'; // write to file
         if (ctr % nDim == 0)
         {
             stringvec.push_back(string.str());
@@ -257,13 +256,15 @@ void Utils::printSurfaceMask(std::shared_ptr<std::vector<int> > mask,
         else
             ctr1++;
     }
-    smask.close();
-
-    // Reverse print to output file
-    for (auto i = stringvec.rbegin(); i != stringvec.rend(); ++i)
-        INFO(i->c_str());
-
     INFO("   surface mask zeros: " << ctr0 << ", ones: " << ctr1 << '\n');
+    // Reverse write to info and output file
+    smask.open(fname);
+    for (auto i = stringvec.rbegin(); i != stringvec.rend(); ++i)
+    {
+        INFO(i->c_str());
+        smask << i->c_str() << '\n';
+    }
+    smask.close();
 }
 
 //! We do a recursion for originalPars, not for dominantPars
