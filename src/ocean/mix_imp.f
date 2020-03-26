@@ -315,7 +315,7 @@ Call structure DSM and FDJS
 !     *     Calculate density and relevant derivatives.
       rho    = lambda*s -  t - xes *
      &     ( alpt1*t +     alpt2*t*t -    alpt3*t*t*t )
-      call drhodC(t,s,drhodt,drhods)
+      call drhodC(t,drhodt,drhods)
       call dCdzt(rho,drhodzt)
 
 !     *     Calculate fluxes on east, north and top faces ==============================
@@ -640,7 +640,7 @@ Call structure DSM and FDJS
 
       end subroutine dCdzt
 !     * --------------------------------------------------------------------------------
-      subroutine drhodC(t,s,drhodt,drhods)
+      subroutine drhodC(t,drhodt,drhods)
 
 !     *     Calculates expansion coefficients for temperature and salinity.
 !     *     Derivative lives on center of T-cell.
@@ -651,13 +651,14 @@ Call structure DSM and FDJS
       implicit none
 !include 'usr.com'
 
-      real      t(0:n+1,0:m+1,0:l+1),     s(0:n+1,0:m+1,0:l+1)
+      real      t(0:n+1,0:m+1,0:l+1)
       real drhodt(0:n+1,0:m+1,0:l+1),drhods(0:n+1,0:m+1,0:l+1)
       real xes, lambda
       integer i,j,k
 
 !     *     Define ratio of expansion coefficients
       lambda = par(LAMB)
+      xes    = par(NLES)
 
       do k=0,l+1
          do j=0,m+1
