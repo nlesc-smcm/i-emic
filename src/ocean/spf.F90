@@ -69,16 +69,6 @@ SUBROUTINE uderiv(type,atom)
         atom(2,:,j,:)=(bmhy(yv(j),ih)-(amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j))/(dx*cosd2(j))
         atom(8,:,j,:)=-(bmhy(yv(j),ih)-(amh(yv(j),ih)+bmh(yv(j),ih))*tand2(j))/(dx*cosd2(j))
      ENDDO
-  CASE(7)
-     IF (itopo.eq.3) then
-        DO i = 18,20
-           DO j=14,16
-              atom(5,i,j,:) = 1.0
-           enddo
-        enddo
-     ELSE
-        atom(5,:,:,:) = 1.0
-     ENDIF
   END SELECT
 
 end SUBROUTINE uderiv
