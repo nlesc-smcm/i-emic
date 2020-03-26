@@ -608,7 +608,7 @@ SUBROUTINE lin
   use m_ice
   implicit none
   !     LOCAL
-  real,target :: uy(np,n,m,l),ucsi(np,n,m,l),&
+  real,target :: ucsi(np,n,m,l),&
        &         uxx(np,n,m,l),uyy(np,n,m,l),uzz(np,n,m,l),&
        &         uxs(np,n,m,l),fu(np,n,m,l),px(np,n,m,l)
   real    sc(np,n,m,l),tcb(np,n,m,l)
@@ -626,10 +626,9 @@ SUBROUTINE lin
   !      equivalence (fu, fv, tc), (px, py, pz)
 
   ! we use pointers instead:
-  real,dimension(:,:,:,:),pointer :: vy,vcsi,vxx,txx,uxc,&
+  real,dimension(:,:,:,:),pointer :: vcsi,vxx,txx,uxc,&
        &     vyy,tyy,vyc,vzz,tzz,wzc,vxs,tbc,tyc,fv,tc,py,pz
 
-  vy=>uy
   vcsi=>ucsi
   vxx=>uxx
   txx=>uxx
