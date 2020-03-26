@@ -90,15 +90,7 @@ SUBROUTINE vderiv(type,atom)
   atom = 0.0
   SELECT CASE(type)
   CASE(1)
-     IF (itopo.eq.3) then
-        DO i = 18,20
-           DO j=1,3
-              atom(5,i,j,:) = 1.0
-           enddo
-        enddo
-     ELSE
-        atom(5,:,:,:) = 1.0
-     ENDIF
+     atom(5,:,:,:) = 1.0
   CASE(2)
      ! vxx
      cosdx2i = (1.0/(cos(yv)*dx))**2
