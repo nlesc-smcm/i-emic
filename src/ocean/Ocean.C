@@ -612,9 +612,6 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
     mask.m = M_;
     mask.l = L_;
 
-    // Print surface mask
-    Utils::printSurfaceMask(mask.global_surface, "surfmask", N_);
-
     // Return the struct
     return mask;
 }
