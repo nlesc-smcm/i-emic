@@ -148,8 +148,8 @@ void Topo<Model, ParameterList>::predictor()
         INFO("  nrm before applyLandmask: " << Utils::norm(rhsView_));
 
         INFO("  k = " << k_ << " a[k] = " << a_[k_] << " b[k] = " << b_[k_]);
-        INFO("  using differences between " <<
-             landMasks_[b_[k_]].label << " and " << landMasks_[a_[k_]].label);
+        INFO("  using differences between b[k]: " <<
+             landMasks_[b_[k_]].label << " and a[k]: " << landMasks_[a_[k_]].label);
 
         model_->applyLandMask(stateView_, landMasks_[a_[k_]], landMasks_[b_[k_]]);
 
@@ -198,7 +198,7 @@ void Topo<Model, ParameterList>::loadMasks()
 
     for (int i = 0; i != nMasks_; ++i)
     {
-        INFO("   loading " << landMaskFileNames_[i]);
+        INFO("\n   loading " << landMaskFileNames_[i]);
         landMasks_[i] = model_->getLandMask(landMaskFileNames_[i]);
     }
 
@@ -222,7 +222,7 @@ void Topo<Model, ParameterList>::setMaskIndex(int index)
         ERROR("Wrong mask index", __FILE__, __LINE__);
 
     INFO("Topo: setting mask idx: " << index);
-    k_     = index;
+    k_ = index;
 }
 
 //==================================================================

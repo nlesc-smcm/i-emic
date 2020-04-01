@@ -5,18 +5,18 @@
 <ParameterList name="Topo parameters">
 
   <!--  -->
-  <Parameter name="Number of mask files" type="int" value="5"/>
+  <Parameter name="Number of mask files" type="int" value="2"/>
 
   <Parameter name="Mask file 0" type="string"
 	         value="test8x8x4/test1"/>
   <Parameter name="Mask file 1" type="string"
 	         value="test8x8x4/test2"/>
-  <Parameter name="Mask file 2" type="string"
-	         value="test8x8x4/test3"/>
-  <Parameter name="Mask file 3" type="string"
-	         value="test8x8x4/test2"/>
-  <Parameter name="Mask file 4" type="string"
-	         value="test8x8x4/test1"/>
+  <!-- <Parameter name="Mask file 2" type="string" -->
+  <!--            value="test8x8x4/test3"/> -->
+  <!-- <Parameter name="Mask file 3" type="string" -->
+  <!--            value="test8x8x4/test2"/> -->
+  <!-- <Parameter name="Mask file 4" type="string" -->
+  <!--            value="test8x8x4/test1"/> -->
 
   <!-- Starting mask -->
   <Parameter name="Starting mask" type="int" value="0" />

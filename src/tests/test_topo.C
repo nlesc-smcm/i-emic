@@ -170,10 +170,11 @@ TEST(Topo, TopoContinuation)
 
     // create state diff vector
     Ocean::VectorPtr stateDiff = ocean->getState('C');
-    
+    Utils::MaskStruct mask = ocean->getLandMask();
+    Utils::printSurfaceMask(mask.global_surface, "mask_before", mask.n);
+
     // ocean norm spinup topography
     double normOceanState = Utils::norm(stateDiff);
-    getchar();
 	try
 	{
         // not sure if needed
@@ -193,23 +194,35 @@ TEST(Topo, TopoContinuation)
         int nMasks    = topo->nMasks();
         int startMask = topo->startMaskIdx();
 
+        std::cout << " nMasks = " << nMasks
+                  << " startMask = " << startMask << std::endl;
+
         INFO(" Running topo cont...");// Run continuation
 
         // We do a couple of homotopy continuations and expect to end
-        // up with the original landmask.
+        // up with the original landmask. So we do mask 0->1->2->1->0.
         for (int maskIdx = startMask; maskIdx != nMasks-1; maskIdx++)
         {
+            std::cout << maskIdx << ": " ;
+            std::cout << Utils::norm(ocean->getState('V')) << " ";
+
             topo->setMaskIndex(maskIdx);
             topo->initialize();
-
             topo->predictor();
 
             int status = continuation.run();
             EXPECT_EQ(status, 0);
+
+            std::cout << Utils::norm(ocean->getState('V')) << std::endl;
+            // Halfway through we can check whether something is happening
+            if (maskIdx == 2)
+            {
+                double diff = Utils::norm(ocean->getState('V')) - normOceanState;
+                EXPECT_GT(std::abs(diff), 1e-7);
+            }
             
         }
-        INFO(" Running topo cont... done");
-        
+        INFO(" Running topo cont... done");        
 	}
 	catch (...)
 	{
@@ -219,11 +232,15 @@ TEST(Topo, TopoContinuation)
 
 	EXPECT_EQ(failed, false);
 
-    // Simple check, states should at least differ
-    EXPECT_GT(std::abs(Utils::norm(ocean->getState('V')) - normOceanState), 1e-7);
+    // At the end we're back at the initial mask and there should be no difference
+    double diff = Utils::norm(ocean->getState('V')) - normOceanState;
+    EXPECT_LT(std::abs(diff), 1e-7);
 
     stateDiff->Update(-1.0, *ocean->getState('V'), 1.0);
     Utils::save(stateDiff, "stateDiff");
+
+    mask = ocean->getLandMask();
+    Utils::printSurfaceMask(mask.global_surface, "mask_after", mask.n);
 }
 
 //------------------------------------------------------------------

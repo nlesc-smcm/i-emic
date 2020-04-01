@@ -265,6 +265,7 @@ void Utils::printSurfaceMask(std::shared_ptr<std::vector<int> > mask,
         smask << i->c_str() << '\n';
     }
     smask.close();
+    INFO("");
 }
 
 //! We do a recursion for originalPars, not for dominantPars
