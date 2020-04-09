@@ -47,8 +47,14 @@ Continuation(Model model, Teuchos::ParameterList& pars)
     std::shared_ptr<JDQZsolver> jdqz = std::make_shared<JDQZsolver>(interface, z);
     setEigenSolver(jdqz);
 
+    // Create a JDQZ sublist so the parameter list validation does not fail.
+    // This seems like a Trilinos bug.
+    pars.sublist("JDQZ");
+
     pars.validateParametersAndSetDefaults(getDefaultInitParameters());
     paramList_.setParameters(pars);
+
+    jdqz->setParameters(paramList_.sublist("JDQZ"));
 
     parName_               = paramList_.get<std::string>("continuation parameter");
     dsInit_                = paramList_.get<double>("initial step size");
@@ -1338,6 +1344,8 @@ getDefaultInitParameters()
 {
     Teuchos::ParameterList result = getDefaultParameters();
     result.setName("Default Init Continuation List");
+
+    JDQZsolver::getDefaultParameters(result.sublist("JDQZ"));
 
     result.get("continuation parameter", "Combined Forcing");
     result.get("initial step size", 1.0e-2);
