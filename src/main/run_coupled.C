@@ -11,10 +11,6 @@
 #include "GlobalDefinitions.H"
 #include "Utils.H"
 
-#include "ComplexVector.H"
-#include "JDQZInterface.H"
-#include "jdqz.hpp"
-
 #include "Continuation.H"
 #include "Ocean.H"
 #include "Atmosphere.H"
@@ -26,8 +22,6 @@ using Teuchos::RCP;
 using Teuchos::rcp;
 
 //------------------------------------------------------------------
-using JDQZsolver = JDQZ<JDQZInterface<std::shared_ptr<CoupledModel>,
-                                      ComplexVector<Combined_MultiVec> > >;
 
 void runCoupledModel(RCP<Epetra_Comm> Comm);
 
@@ -96,6 +90,8 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 
     Utils::overwriteParameters(params[COUPLED], params[CONT]);
 
+    params[CONT]->sublist("JDQZ") = *params[EIGEN];
+
     // Create parallelized Ocean object
     std::shared_ptr<Ocean> ocean = std::make_shared<Ocean>(Comm, params[OCEAN]);
 
@@ -111,22 +107,8 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
     std::shared_ptr<CoupledModel> coupledModel =
         std::make_shared<CoupledModel>(ocean, atmos, seaice, params[COUPLED]);
 
-    // Create JDQZ generalized eigenvalue solver
-    Combined_MultiVec t = *coupledModel->getSolution('C');
-    t.PutScalar(0.0);
-    ComplexVector<Combined_MultiVec> z(t);
-
-    JDQZInterface<std::shared_ptr<CoupledModel>,
-                  ComplexVector<Combined_MultiVec> > matrix(coupledModel, z);
-
-    std::shared_ptr<JDQZsolver> jdqz = std::make_shared<JDQZsolver>(matrix, z);
-    jdqz->setParameters(*params[EIGEN]);
-
     // Create Continuation
     Continuation<std::shared_ptr<CoupledModel>> continuation(coupledModel, params[CONT]);
-
-    // Couple JDQZ to continuation
-    continuation.setEigenSolver(jdqz);
 
     TIMER_STOP("Total initialization");
 
@@ -139,8 +121,5 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 
     // print the profile
     if (Comm->MyPID() == 0)
-    {
         printProfile();
-        jdqz->printProfile("jdqz_profile");
-    }
 }
