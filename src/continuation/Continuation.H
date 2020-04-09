@@ -34,6 +34,19 @@ Continuation(Model model, Teuchos::ParameterList& pars)
     , paramList_("Continuation Configuration")
     , eigenSolverSet_(false)
 {
+    // Create JDQZ generalized eigenvalue solver:
+    // 1) Create a vector with complex arithmetic based on an Epetra_Vector
+    Vector t = *model->getSolution('C');
+    t.PutScalar(0.0);
+    ComplexVector<Vector> z(t);
+
+    // 2) Create JDQZ (mass) matrix and preconditioning interface
+    JDQZInterface<Model, ComplexVector<Vector> > interface(model, z);
+
+    // 3) Create JDQZ solver
+    std::shared_ptr<JDQZsolver> jdqz = std::make_shared<JDQZsolver>(interface, z);
+    setEigenSolver(jdqz);
+
     pars.validateParametersAndSetDefaults(getDefaultInitParameters());
     paramList_.setParameters(pars);
 
