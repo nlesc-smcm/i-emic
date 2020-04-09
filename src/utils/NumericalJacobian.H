@@ -2,6 +2,8 @@
 #define NUMERICALJACOBIAN_H
 
 #include "GlobalDefinitions.H"
+#include "Utils.H"
+
 #include <vector>
 
 template<typename ModelPtr, typename VectorPtr>

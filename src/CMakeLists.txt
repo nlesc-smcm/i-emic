@@ -40,12 +40,14 @@ list(APPEND library_directories ${Trilinos_TPL_LIBRARY_DIRS})
 
 list(APPEND library_directories ${MRILU_DIR}/lib/) # MRILU
 
-find_package(JDQZPP REQUIRED)
+find_package(JDQZPP)
 if (JDQZPP_FOUND)
   include_directories(${JDQZPP_INCLUDE_DIR})
   list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
+  add_definitions(-DHAVE_JDQZPP)
 endif ()
-find_package(RAILS QUIET)
+
+find_package(RAILS)
 
 link_directories(${library_directories})
 

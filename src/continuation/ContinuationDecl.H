@@ -5,9 +5,16 @@
 #define CONTINUATIONDECL_H
 
 #include <vector>
+
 #include "ComplexVector.H"
 #include "JDQZInterface.H"
+
+#ifdef HAVE_JDQZPP
 #include "jdqz.hpp"
+#else
+template<typename Matrix>
+class JDQZ;
+#endif
 
 //! Pseudo-arclength continuation class using an
 //! Euler predictor and a Newton corrector.
