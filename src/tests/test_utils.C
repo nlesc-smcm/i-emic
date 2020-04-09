@@ -170,6 +170,9 @@ checkParameterListAgainstDefaultAndOverrides
         parameters.insert(pair.first);
     }
 
+    Teuchos::ParameterList defaultedList;
+    defaultedList.validateParametersAndSetDefaults(defaultList);
+
     for (const auto& pair : checkList) {
         const std::string& key = pair.first;
         const Teuchos::ParameterEntry& value = pair.second;
@@ -178,14 +181,14 @@ checkParameterListAgainstDefaultAndOverrides
 
         if (value.isList()) {
             result &= checkSubList(overrideList, key);
-            result &= checkSubList(defaultList, key, true);
+            result &= checkSubList(defaultedList, key, true);
 
             Teuchos::ParameterList sublist;
             if (overrideList.isSublist(key)) {
                 sublist = overrideList.sublist(key);
             }
 
-            result &= checkParameterListAgainstDefaultAndOverrides(checkList.sublist(key), defaultList.sublist(key), sublist);
+            result &= checkParameterListAgainstDefaultAndOverrides(checkList.sublist(key), defaultedList.sublist(key), sublist);
         } else {
             std::string name = checkList.name() + "->" + key;
 
@@ -193,9 +196,9 @@ checkParameterListAgainstDefaultAndOverrides
             if (overrideList.isParameter(key)) {
                 validVal = overrideList.getEntry(key);
             } else {
-                validVal = defaultList.getEntry(key);
+                validVal = defaultedList.getEntry(key);
                 if (!value.isDefault()) {
-                    result &= ::testing::AssertionFailure() << "expected " << name << " to be defaulted";
+                    result &= ::testing::AssertionFailure() << "expected " << name << " to be defaulted\n";
                 }
             }
 
@@ -206,7 +209,7 @@ checkParameterListAgainstDefaultAndOverrides
     if (parameters.size() != 0) {
         auto error = ::testing::AssertionFailure() << std::endl;
         for (auto& param : parameters) {
-            error << "Missing parameter: " << checkList.name() + "->" + param;
+            error << "Missing parameter: " << checkList.name() + "->" + param + "\n";
         }
 
         result &= error;
