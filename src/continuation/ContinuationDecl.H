@@ -213,8 +213,6 @@ class Continuation
     //! ||F(x_new)||
     double normRHStest_;
 
-    bool eigenSolverSet_;
-
     //! See Store() and Restore() for its use
     struct Storage
     {
@@ -258,9 +256,6 @@ public:
 
     //! test
     void test();
-
-    //! set pointer to an eigenvalue solver
-    void setEigenSolver(std::shared_ptr<JDQZsolver> jdqz);
 
     const Teuchos::ParameterList& getParameters();
     void setParameters(Teuchos::ParameterList&);

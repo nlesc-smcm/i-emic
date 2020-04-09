@@ -32,7 +32,6 @@ Continuation<Model>::
 Continuation(Model model, Teuchos::ParameterList& pars)
     : model_(model)
     , paramList_("Continuation Configuration")
-    , eigenSolverSet_(false)
 {
     // Create JDQZ generalized eigenvalue solver:
     // 1) Create a vector with complex arithmetic based on an Epetra_Vector
@@ -44,8 +43,7 @@ Continuation(Model model, Teuchos::ParameterList& pars)
     JDQZInterface<Model, ComplexVector<Vector> > interface(model, z);
 
     // 3) Create JDQZ solver
-    std::shared_ptr<JDQZsolver> jdqz = std::make_shared<JDQZsolver>(interface, z);
-    setEigenSolver(jdqz);
+    jdqz_ = std::make_shared<JDQZsolver>(interface, z);
 
     // Create a JDQZ sublist so the parameter list validation does not fail.
     // This seems like a Trilinos bug.
@@ -54,7 +52,7 @@ Continuation(Model model, Teuchos::ParameterList& pars)
     pars.validateParametersAndSetDefaults(getDefaultInitParameters());
     paramList_.setParameters(pars);
 
-    jdqz->setParameters(paramList_.sublist("JDQZ"));
+    jdqz_->setParameters(paramList_.sublist("JDQZ"));
 
     parName_               = paramList_.get<std::string>("continuation parameter");
     dsInit_                = paramList_.get<double>("initial step size");
@@ -1113,35 +1111,17 @@ restore()
 //=====================================================================
 template<typename Model>
 void Continuation<Model>::
-setEigenSolver(std::shared_ptr<JDQZsolver> jdqz)
-{
-    jdqz_ = jdqz;
-    INFO("Continuation: set eigenvalue solver");
-    eigenSolverSet_ = true;
-    jdqz_->printParameters();
-}
-
-//=====================================================================
-template<typename Model>
-void Continuation<Model>::
 eigenSolver()
 {
     if (eigenvalueAnalysis_ != 'N')
     {
-        if (eigenSolverSet_)
-        {
-            jdqz_->solve();
+        jdqz_->solve();
 
-            // save eigenvectors
-            std::stringstream ss;
-            ss << "ev_step_" << step_;
+        // save eigenvectors
+        std::stringstream ss;
+        ss << "ev_step_" << step_;
 
-            Utils::saveEigenvectors(jdqz_, ss.str());
-        }
-        else
-        {
-            WARNING("Eigen solver not set!", __FILE__, __LINE__);
-        }
+        Utils::saveEigenvectors(jdqz_, ss.str());
     }
     else
     {
