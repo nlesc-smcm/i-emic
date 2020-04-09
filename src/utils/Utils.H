@@ -193,6 +193,11 @@ namespace Utils
     Teuchos::RCP<Teuchos::ParameterList> obtainParams(std::string const &str,
                                                       std::string const &name);
 
+    //! Update a sublist from a file
+    void obtainParams(Teuchos::RCP<Teuchos::ParameterList> pars,
+                      std::string const &str,
+                      std::string const &name);
+
     //! Hashing an Epetra_MultiVector
     size_t hash(Teuchos::RCP<Epetra_MultiVector> vec);
 
