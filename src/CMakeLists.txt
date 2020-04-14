@@ -40,15 +40,6 @@ list(APPEND library_directories ${Trilinos_TPL_LIBRARY_DIRS})
 
 list(APPEND library_directories ${MRILU_DIR}/lib/) # MRILU
 
-find_package(JDQZPP)
-if (JDQZPP_FOUND)
-  include_directories(${JDQZPP_INCLUDE_DIR})
-  list(APPEND library_directories ${JDQZPP_LIBRARY_DIR})
-  add_definitions(-DHAVE_JDQZPP)
-endif ()
-
-find_package(RAILS)
-
 link_directories(${library_directories})
 
 set(include_flags "")
@@ -90,10 +81,20 @@ target_link_libraries(iemic PRIVATE
 set(IEMIC_INTERFACE
     coupledmodel
     globaldefs
-    jdqz_tools
     transient
     utils
 )
+
+find_package(JDQZPP)
+if (JDQZPP_FOUND)
+  include_directories(${JDQZPP_INCLUDE_DIRS})
+  list(APPEND library_directories ${JDQZPP_LIBRARY_DIRS})
+  list(APPEND IEMIC_INTERFACE ${JDQZPP_LIBRARIES})
+  add_definitions(-DHAVE_JDQZPP)
+endif ()
+
+find_package(RAILS)
+
 target_link_libraries(iemic PUBLIC continuation ${IEMIC_INTERFACE})
 if (APPLE)
     list(TRANSFORM IEMIC_INTERFACE PREPEND "LINKER:-reexport_library,$<TARGET_FILE:")
