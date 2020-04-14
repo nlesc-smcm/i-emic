@@ -110,25 +110,6 @@ TEST(Topo, View)
 }
 
 //------------------------------------------------------------------
-TEST(Topo, RHS)
-{
-    bool failed = false;
-    try
-    {
-        topo->setPar("Delta", 0.3);
-        topo->computeRHS();
-        topo->computeJacobian();
-        topo->preProcess();
-    }
-    catch (...)
-    {
-        failed = true;
-        throw;
-    }
-    EXPECT_EQ(failed, false);
-}
-
-//------------------------------------------------------------------
 TEST(Topo, SpinupContinuation)
 {
 	bool failed = false;
@@ -153,6 +134,9 @@ TEST(Topo, SpinupContinuation)
 		int status = continuation.run();
         EXPECT_EQ(status, 0);
         INFO("--**-- Topo test: running spinup... done");
+
+        Utils::MaskStruct mask = ocean->getLandMask();
+        Utils::printSurfaceMask(mask.global_surface, "mask_before", mask.n);
 	}
 	catch (...)
 	{
@@ -164,17 +148,36 @@ TEST(Topo, SpinupContinuation)
 }
 
 //------------------------------------------------------------------
+TEST(Topo, RHS)
+{
+    bool failed = false;
+    try
+    {
+        topo->setPar("Delta", 0.3);
+        topo->computeRHS();
+        topo->computeJacobian();
+        topo->preProcess();
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
 TEST(Topo, TopoContinuation)
 {
 	bool failed = false;
 
     // create state diff vector
     Ocean::VectorPtr stateDiff = ocean->getState('C');
-    Utils::MaskStruct mask = ocean->getLandMask();
-    Utils::printSurfaceMask(mask.global_surface, "mask_before", mask.n);
 
     // ocean norm spinup topography
-    double normOceanState = Utils::norm(stateDiff);
+    double startNorm = Utils::norm(stateDiff);
+    int nMasks;
+    std::vector<double> norms;
 	try
 	{
         // not sure if needed
@@ -191,21 +194,18 @@ TEST(Topo, TopoContinuation)
 			continuation(topo, continuationParams);
 
         // Run topo continuation
-        int nMasks    = topo->nMasks();
+        nMasks    = topo->nMasks();
         int startMask = topo->startMaskIdx();
-
-        std::cout << " nMasks = " << nMasks
-                  << " startMask = " << startMask << std::endl;
-
+        
         INFO(" Running topo cont...");// Run continuation
-
+        
         // We do a couple of homotopy continuations and expect to end
-        // up with the original landmask. So we do mask 0->1->2->1->0.
+        // up with the original landmask. We do mask 0..4,
+        // where 0,4 and 1,3 are equal (see topo_params.xml).
+        norms = std::vector<double>(nMasks);
+        norms[0] = startNorm;
         for (int maskIdx = startMask; maskIdx != nMasks-1; maskIdx++)
         {
-            std::cout << maskIdx << ": " ;
-            std::cout << Utils::norm(ocean->getState('V')) << " ";
-
             topo->setMaskIndex(maskIdx);
             topo->initialize();
             topo->predictor();
@@ -213,14 +213,7 @@ TEST(Topo, TopoContinuation)
             int status = continuation.run();
             EXPECT_EQ(status, 0);
 
-            std::cout << Utils::norm(ocean->getState('V')) << std::endl;
-            // Halfway through we can check whether something is happening
-            if (maskIdx == 2)
-            {
-                double diff = Utils::norm(ocean->getState('V')) - normOceanState;
-                EXPECT_GT(std::abs(diff), 1e-7);
-            }
-            
+            norms[maskIdx+1] = Utils::norm(ocean->getState('V'));
         }
         INFO(" Running topo cont... done");        
 	}
@@ -232,15 +225,15 @@ TEST(Topo, TopoContinuation)
 
 	EXPECT_EQ(failed, false);
 
-    // At the end we're back at the initial mask and there should be no difference
-    double diff = Utils::norm(ocean->getState('V')) - normOceanState;
-    EXPECT_LT(std::abs(diff), 1e-7);
+    for (int k = 0; k < std::floor(nMasks / 2); ++k)
+    {
+        // test equal topos
+        EXPECT_LT(std::abs(norms[k]-norms[nMasks-k-1]), 1e-7);
 
-    stateDiff->Update(-1.0, *ocean->getState('V'), 1.0);
-    Utils::save(stateDiff, "stateDiff");
-
-    mask = ocean->getLandMask();
-    Utils::printSurfaceMask(mask.global_surface, "mask_after", mask.n);
+        // test different (subsequent) topos
+        EXPECT_GT(std::abs(norms[k+1]-norms[k]), 1e-7);
+        EXPECT_GT(std::abs(norms[nMasks-k-1]-norms[nMasks-k-2]), 1e-7);
+    }
 }
 
 //------------------------------------------------------------------
