@@ -90,7 +90,9 @@ void runCoupledModel(RCP<Epetra_Comm> Comm)
 
     Utils::overwriteParameters(params[COUPLED], params[CONT]);
 
+#ifdef HAVE_JDQZPP
     params[CONT]->sublist("JDQZ") = *params[EIGEN];
+#endif
 
     // Create parallelized Ocean object
     std::shared_ptr<Ocean> ocean = std::make_shared<Ocean>(Comm, params[OCEAN]);

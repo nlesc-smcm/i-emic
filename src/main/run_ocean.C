@@ -56,8 +56,10 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     RCP<Teuchos::ParameterList> continuationParams =
         Utils::obtainParams("continuation_params.xml", "Continuation");
 
+#ifdef HAVE_JDQZPP
     // Add the JDQZ parameters
     Utils::obtainParams(continuationParams, "jdqz_params.xml", "JDQZ");
+#endif
 
     // Let the continuation parameters dominate over ocean parameters
     Utils::overwriteParameters(oceanParams, continuationParams);
