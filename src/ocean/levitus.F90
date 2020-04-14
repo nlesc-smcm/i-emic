@@ -1,6 +1,6 @@
 !**********************************************************************
 
-      subroutine levitus_internal(filename,array,is_monthly,type)
+      subroutine levitus_internal(filename,array,type)
       use m_global
       use m_lev
       implicit none
@@ -11,40 +11,33 @@
 
       real, dimension(n,m) :: layer
       real dep
-      logical :: is_monthly
       integer :: nlayers
 
-      if (is_monthly) then
-        nlayers=nlev_monthly
-      else
-        nlayers=nlev
-      end if
+      nlayers=nlev
 
-        write(f99,*) 'levitus temperature interpolation:'
-        write(f99,*) 'model: level  depth   levitus: level depth   max'
-        do k=l,1,-1
-          dep = -z(k)*hdim
-          do kk=1,nlayers
-             if (depth(kk).le.dep) klev = kk
-          enddo
-          call levitus_interpol(filename,&
-     &                            layer,-5.,50.,k,klev)
+      write(f99,*) 'levitus temperature interpolation:'
+      write(f99,*) 'model: level  depth   levitus: level depth   max'
+      do k=l,1,-1
+         dep = -z(k)*hdim
+         do kk=1,nlayers
+            if (depth(kk).le.dep) klev = kk
+         enddo
+         call levitus_interpol(filename,&
+              &                            layer,-5.,50.,k,klev)
          if (type.eq.'TEMP') then
             layer = layer - t0
          else if (type.eq.'SALT') then
             layer=layer-s0
          else
-      write(*,*) 'error unknown type please write TEMP or SALT'
-        end if
+            write(*,*) 'error unknown type please write TEMP or SALT'
+         end if
 
-          array(:,:,k) = layer
-          !write(f99,999) k,dep,klev,depth(klev),tatmmax
-        enddo
-!
-        !write(f99,*) 'write levitus temperature field to: ',filename
-        !call write_internal_forcing(filename,ftlev,34)
-!
-!
+         array(:,:,k) = layer
+         !write(f99,999) k,dep,klev,depth(klev),tatmmax
+      enddo
+      !
+      !write(f99,*) 'write levitus temperature field to: ',filename
+      !call write_internal_forcing(filename,ftlev,34)
 
       end subroutine levitus_internal
 

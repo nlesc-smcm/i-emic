@@ -518,8 +518,8 @@ contains
     !choose the followings
 
     write(f99,*) 'reading internal temperature forcing from "'//locate_file('levitus/new/t00an1')//'"'
-    call levitus_internal(locate_file('levitus/new/t00an1'),internal_temp,.false.,'TEMP')
-    !call levitus_internal(locate_file('levitus/new/avtemp'),internal_temp,.false.,'TEMP')
+    call levitus_internal(locate_file('levitus/new/t00an1'),internal_temp,'TEMP')
+    !call levitus_internal(locate_file('levitus/new/avtemp'),internal_temp,'TEMP')
 
     pos = 1
     do k=1,l
@@ -572,8 +572,8 @@ contains
 
     !choose the followings
     write(f99,*) 'reading internal salt forcing from "'//locate_file('levitus/new/s00an1')//'"'
-    call levitus_internal(locate_file('levitus/new/s00an1'),internal_salt,.false.,'SALT')
-    !call levitus_internal(locate_file('levitus/new/avsalt'),internal_salt,.false.,'SALT')
+    call levitus_internal(locate_file('levitus/new/s00an1'),internal_salt,'SALT')
+    !call levitus_internal(locate_file('levitus/new/avsalt'),internal_salt,'SALT')
     !chose the followings
 
     pos = 1
