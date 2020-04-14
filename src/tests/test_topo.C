@@ -38,10 +38,10 @@ TEST(Topo, Initialization)
 	{
 		// Create topography class
 		RCP<Teuchos::ParameterList> topoParams =
-                    Utils::obtainParams("topo_params.xml", "Topo parameters");
+            Utils::obtainParams("topo_params.xml", "Topo parameters");
 
-                topoParams->sublist("Belos solver") =
-                    *Utils::obtainParams("solver_params.xml", "Solver parameters");
+        topoParams->sublist("Belos solver") =
+            *Utils::obtainParams("solver_params.xml", "Solver parameters");
 		topo = rcp(new Topo<RCP<Ocean>, RCP<Teuchos::ParameterList> >
 				   (ocean, topoParams));
 	}
@@ -171,11 +171,7 @@ TEST(Topo, TopoContinuation)
 {
 	bool failed = false;
 
-    // create state diff vector
-    Ocean::VectorPtr stateDiff = ocean->getState('C');
-
     // ocean norm spinup topography
-    double startNorm = Utils::norm(stateDiff);
     int nMasks;
     std::vector<double> norms;
 	try
@@ -203,11 +199,11 @@ TEST(Topo, TopoContinuation)
         // up with the original landmask. We do mask 0..4,
         // where 0,4 and 1,3 are equal (see topo_params.xml).
         norms = std::vector<double>(nMasks);
-        norms[0] = startNorm;
+        norms[0] = Utils::norm(ocean->getState('V'));
         for (int maskIdx = startMask; maskIdx != nMasks-1; maskIdx++)
         {
             topo->setMaskIndex(maskIdx);
-            topo->initialize();
+            topo->reinitialize();
             topo->predictor();
 
             int status = continuation.run();

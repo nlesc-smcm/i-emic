@@ -112,11 +112,11 @@ Topo<Model, ParameterList>::
 }
 
 //==================================================================
-// initialize
+// reinitialize
 template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::initialize()
+void Topo<Model, ParameterList>::reinitialize()
 {
-    INFO("Topo: initialize...");
+    INFO("Topo: reinitialize...");
     matA_  = rcp(new Matrix(*model_->getJacobian()));
     matB_  = rcp(new Matrix(*model_->getJacobian()));
 
@@ -136,7 +136,7 @@ void Topo<Model, ParameterList>::initialize()
     // Reset postprocessing counter
     ppCtr_ = 0;
 
-    INFO("Topo: initialize... done");
+    INFO("Topo: reinitialize... done");
 }
 
 //==================================================================
