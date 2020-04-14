@@ -35,8 +35,6 @@
 #include <sstream>
 
 #include "THCMdefs.H"
-#include "ComplexVector.H"
-#include "JDQZInterface.H"
 #include "MyParameterList.H"
 #include "NumericalJacobian.H"
 
@@ -46,8 +44,6 @@
 #include "SeaIce.H"
 #include "Topo.H"
 #include "CoupledModel.H"
-
-#include "jdqz.hpp"
 
 #include "gtest/gtest.h" // google test
 

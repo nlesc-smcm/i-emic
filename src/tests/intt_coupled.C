@@ -1,5 +1,12 @@
 #include "TestDefinitions.H"
 #include <limits>
+
+#ifdef HAVE_JDQZPP
+#include "ComplexVector.H"
+#include "JDQZInterface.H"
+#include "jdqz.hpp"
+#endif
+
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
@@ -429,6 +436,8 @@ TEST(CoupledModel, EPIntegral2)
     INFO(" int E-P " << integralEP);
 }
 
+#ifdef HAVE_JDQZPP
+
 //------------------------------------------------------------------
 TEST(CoupledModel, JDQZSolve)
 {
@@ -484,6 +493,8 @@ TEST(CoupledModel, JDQZSolve)
     }
     EXPECT_EQ(failed, false);
 }
+
+#endif
 
 //------------------------------------------------------------------
 // 2nd integral condition test

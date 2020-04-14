@@ -10,20 +10,12 @@
 #include "GlobalDefinitions.H"
 #include "Utils.H"
 
-#include "ComplexVector.H"
-#include "JDQZInterface.H"
-#include "jdqz.hpp"
-
 #include "Continuation.H"
 #include "Ocean.H"
 
 //------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;
-
-//------------------------------------------------------------------
-using JDQZsolver = JDQZ<JDQZInterface<Teuchos::RCP<Ocean>,
-                                      ComplexVector<Epetra_Vector> > >;
 
 //------------------------------------------------------------------
 void runOceanModel(RCP<Epetra_Comm> Comm);
@@ -57,18 +49,15 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         throw std::runtime_error("ERROR: Specify output streams");
 
     // Create parameter object for Ocean
-    RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-    oceanParams->setName("Ocean parameters");
+    RCP<Teuchos::ParameterList> oceanParams =
+        Utils::obtainParams("ocean_params.xml", "Ocean");
 
     // Create parameter object for continuation
-    RCP<Teuchos::ParameterList> continuationParams = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("continuation_params.xml", continuationParams.ptr());
-    continuationParams->setName("Continuation parameters");
+    RCP<Teuchos::ParameterList> continuationParams =
+        Utils::obtainParams("continuation_params.xml", "Continuation");
 
-    // Create parameter object for JDQZ
-    RCP<Teuchos::ParameterList> jdqzParams =
-        Utils::obtainParams("jdqz_params.xml", "JDQZ parameters");
+    // Add the JDQZ parameters
+    Utils::obtainParams(continuationParams, "jdqz_params.xml", "JDQZ");
 
     // Let the continuation parameters dominate over ocean parameters
     Utils::overwriteParameters(oceanParams, continuationParams);
@@ -79,23 +68,6 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     // Create continuation
     Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
 
-    // Create JDQZ generalized eigenvalue solver:
-    // 1) Create a vector with complex arithmetic based on an Epetra_Vector
-    Epetra_Vector t = *ocean->getSolution('C');
-    t.PutScalar(0.0);
-    ComplexVector<Epetra_Vector> z(t);
-
-    // 2) Create JDQZ (mass) matrix and preconditioning interface
-    JDQZInterface<Teuchos::RCP<Ocean>,
-                  ComplexVector<Epetra_Vector> > matrix(ocean, z);
-
-    // 3) Create JDQZ solver
-    std::shared_ptr<JDQZsolver> jdqz = std::make_shared<JDQZsolver>(matrix, z);
-    jdqz->setParameters(*jdqzParams);
-
-    // Couple JDQZ to continuation
-    continuation.setEigenSolver(jdqz);
-
     // Run continuation
     int status = continuation.run();
     if (status != 0)
@@ -105,8 +77,5 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
 
     // print the profile
     if (Comm->MyPID() == 0)
-    {
         printProfile();
-        jdqz->printProfile("jdqz_profile");
-    }
 }

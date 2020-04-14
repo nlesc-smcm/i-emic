@@ -9,7 +9,6 @@ set(TEST_SOURCES
   test_map.C
   test_domain.C
   test_vector.C
-  test_jdqz.C
   test_topo.C
   test_ocean.C
   trns_ocean.C
@@ -54,6 +53,12 @@ if (RAILS_FOUND)
   list(APPEND TEST_LIBRARIES ${RAILS_LIBRARIES})
   list(APPEND TEST_INCLUDE_DIRS ${RAILS_INCLUDE_DIRS})
   add_definitions(-DHAVE_RAILS)
+endif()
+
+if (JDQZPP_found)
+  list(APPEND TEST_SOURCES
+    test_jdqz.C
+    )
 endif()
 
 foreach(test_source ${TEST_SOURCES})

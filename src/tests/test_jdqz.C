@@ -1,5 +1,9 @@
 #include "TestDefinitions.H"
 
+#include "ComplexVector.H"
+#include "JDQZInterface.H"
+#include "jdqz.hpp"
+
 //------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;

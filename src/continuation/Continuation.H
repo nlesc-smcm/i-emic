@@ -32,10 +32,31 @@ Continuation<Model>::
 Continuation(Model model, Teuchos::ParameterList& pars)
     : model_(model)
     , paramList_("Continuation Configuration")
-    , eigenSolverSet_(false)
 {
+#ifdef HAVE_JDQZPP
+    // Create JDQZ generalized eigenvalue solver:
+    // 1) Create a vector with complex arithmetic based on an Epetra_Vector
+    Vector t = *model->getSolution('C');
+    t.PutScalar(0.0);
+    ComplexVector<Vector> z(t);
+
+    // 2) Create JDQZ (mass) matrix and preconditioning interface
+    JDQZInterface<Model, ComplexVector<Vector> > interface(model, z);
+
+    // 3) Create JDQZ solver
+    jdqz_ = std::make_shared<JDQZsolver>(interface, z);
+
+    // Create a JDQZ sublist so the parameter list validation does not fail.
+    // This seems like a Trilinos bug.
+    pars.sublist("JDQZ");
+#endif
+
     pars.validateParametersAndSetDefaults(getDefaultInitParameters());
     paramList_.setParameters(pars);
+
+#ifdef HAVE_JDQZPP
+    jdqz_->setParameters(paramList_.sublist("JDQZ"));
+#endif
 
     parName_               = paramList_.get<std::string>("continuation parameter");
     dsInit_                = paramList_.get<double>("initial step size");
@@ -1094,35 +1115,21 @@ restore()
 //=====================================================================
 template<typename Model>
 void Continuation<Model>::
-setEigenSolver(std::shared_ptr<JDQZsolver> jdqz)
-{
-    jdqz_ = jdqz;
-    INFO("Continuation: set eigenvalue solver");
-    eigenSolverSet_ = true;
-    jdqz_->printParameters();
-}
-
-//=====================================================================
-template<typename Model>
-void Continuation<Model>::
 eigenSolver()
 {
     if (eigenvalueAnalysis_ != 'N')
     {
-        if (eigenSolverSet_)
-        {
-            jdqz_->solve();
+#ifdef HAVE_JDQZPP
+        jdqz_->solve();
 
-            // save eigenvectors
-            std::stringstream ss;
-            ss << "ev_step_" << step_;
+        // save eigenvectors
+        std::stringstream ss;
+        ss << "ev_step_" << step_;
 
-            Utils::saveEigenvectors(jdqz_, ss.str());
-        }
-        else
-        {
-            WARNING("Eigen solver not set!", __FILE__, __LINE__);
-        }
+        Utils::saveEigenvectors(jdqz_, ss.str());
+#else
+        WARNING("JDQZPP has not been installed!", __FILE__, __LINE__);
+#endif
     }
     else
     {
@@ -1325,6 +1332,10 @@ getDefaultInitParameters()
 {
     Teuchos::ParameterList result = getDefaultParameters();
     result.setName("Default Init Continuation List");
+
+#ifdef HAVE_JDQZPP
+    JDQZsolver::getDefaultParameters(result.sublist("JDQZ"));
+#endif
 
     result.get("continuation parameter", "Combined Forcing");
     result.get("initial step size", 1.0e-2);
