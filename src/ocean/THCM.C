@@ -2653,8 +2653,6 @@ THCM::getDefaultInitParameters()
     result.get("Temperature Forcing Data", "levitus/new/t00an1");
     result.get("Salinity Forcing Data", "levitus/new/s00an1");
 
-    result.get("Time Dependent Forcing", false);
-
     result.get("Integral row coordinate i", -1);
     result.get("Integral row coordinate j", -1);
 
