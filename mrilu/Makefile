@@ -146,56 +146,46 @@ include $(SOURCEDIR)/mrilu/scripts/rules.mk
 #                        Rules implementing Actions:
 #                        ===========================
 #
+ifdef LIB_X11
+directories=getdoc mtstor misc iosrclib convprogs precon testMRILU vsm
+else
+directories=getdoc mtstor misc iosrclib convprogs precon testMRILU
+endif
 #
 # Default goal:
 #
 .PHONY: clean
 #
-clean: 
-	cd getdoc;     $(MAKE) clean
-	cd vsm;        $(MAKE) clean
-	cd mtstor;     $(MAKE) clean
-	cd misc;       $(MAKE) clean
-	cd iosrclib;   $(MAKE) clean
-	cd convprogs;  $(MAKE) clean
-	cd precon;     $(MAKE) clean
-	cd testMRILU;  $(MAKE) clean
+clean:
+	for dir in $(directories); \
+	do \
+	    cd $$dir; $(MAKE) clean; cd ..; \
+	done
 #
 #
 #
 .PHONY: install
 #
-install: 
-	cd getdoc;     $(MAKE) install
-	cd vsm;        $(MAKE) install
-	cd mtstor;     $(MAKE) install
-	cd misc;       $(MAKE) install
-	cd iosrclib;   $(MAKE) install
-	cd convprogs;  $(MAKE) install
-	cd precon;     $(MAKE) install
-	cd testMRILU;  $(MAKE) install
-
+install:
+	@echo Building $(directories)
+	for dir in $(directories); \
+	do \
+	    cd $$dir; $(MAKE) install; cd ..; \
+	done
 #
 #
 .PHONY: uninstall
 #
 uninstall:
-	cd misc;       $(MAKE) uninstall
-	cd mtstor;     $(MAKE) uninstall
-	cd iosrclib;   $(MAKE) uninstall
-	cd convprogs;  $(MAKE) uninstall
-	cd precon;     $(MAKE) uninstall
-	cd testMRILU;  $(MAKE) uninstall
-
+	for dir in $(directories); \
+	do \
+	    cd $$dir; $(MAKE) uninstall; cd ..; \
+	done
 #
 #
 .PHONY: test
 #
 test:
 	cd testMRILU;	./testall $(MRILU_BIN)
-	
+
 # End of Makefile
-
-
-
-
