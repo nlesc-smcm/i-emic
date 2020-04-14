@@ -530,11 +530,6 @@ private:
     void insert_graph_entry(int* indices, int& pos,
                             int i, int j, int k, int var,
                             int N, int M, int L) const;
-
-    //! read monthly levitus fields, distribute, pass back to local THCM
-    //! note that wind is read in by each process and interpolated, but
-    //! for some reason that doesn't work for T and S
-    void SetupMonthlyForcing();
 };
 
 #endif

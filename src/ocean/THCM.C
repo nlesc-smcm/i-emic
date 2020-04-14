@@ -595,13 +595,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         F90NAME(m_usr,set_internal_forcing)(temp,salt);
     }
 
-    bool time_dep_forcing = paramList_.get<bool>("Time Dependent Forcing");
-    if (time_dep_forcing)
-    {
-        // read and distribute Levitus data
-        this->SetupMonthlyForcing();
-    }
-
     // get a map object for constructing vectors without overlap
     // (load-balanced, used for solve phase)
     solveMap_ = domain_->GetSolveMap();
@@ -2552,116 +2545,6 @@ void THCM::fixMixing(int value)
     {
         INFO(" ** fixing vmix_fix: " << value << " **");
         F90NAME(m_mix, set_vmix_fix)(&value);
-    }
-}
-
-//=============================================================================
-void THCM::SetupMonthlyForcing()
-{
-    DEBUG("Initialize monthly Levitus...");
-
-    // maps for 2D fields (surface forcing)
-    Teuchos::RCP<Epetra_Map> lev_map_dist = domain_->CreateStandardMap(1,true);
-    Teuchos::RCP<Epetra_Map> lev_map_root = Utils::Gather(*lev_map_dist,0);
-
-    // maps for 3D fields (internal forcing)
-    Teuchos::RCP<Epetra_Map> intlev_map_dist = domain_->CreateStandardMap(1,false);
-    Teuchos::RCP<Epetra_Map> intlev_map_root = Utils::Gather(*intlev_map_dist,0);
-
-    // create sequential and parallel vectors to hold the data
-    Teuchos::RCP<Epetra_MultiVector> temp_glob =
-        Teuchos::rcp(new Epetra_Vector(*intlev_map_root));
-    Teuchos::RCP<Epetra_MultiVector> salt_glob =
-        Teuchos::rcp(new Epetra_Vector(*intlev_map_root));
-
-    Teuchos::RCP<Epetra_MultiVector> tatm_glob =
-        Teuchos::rcp(new Epetra_Vector(*lev_map_root));
-    Teuchos::RCP<Epetra_MultiVector> emip_glob =
-        Teuchos::rcp(new Epetra_Vector(*lev_map_root));
-
-    Teuchos::RCP<Epetra_MultiVector> taux_glob =
-        Teuchos::rcp(new Epetra_Vector(*lev_map_root));
-    Teuchos::RCP<Epetra_MultiVector> tauy_glob =
-        Teuchos::rcp(new Epetra_Vector(*lev_map_root));
-
-    // get raw pointers to the data:
-    double *tatm_g, *emip_g, *taux_g, *tauy_g, *temp_g, *salt_g;
-    CHECK_ZERO((*tatm_glob)(0)->ExtractView(&tatm_g));
-    CHECK_ZERO((*emip_glob)(0)->ExtractView(&emip_g));
-    CHECK_ZERO((*temp_glob)(0)->ExtractView(&temp_g));
-    CHECK_ZERO((*salt_glob)(0)->ExtractView(&salt_g));
-    CHECK_ZERO((*taux_glob)(0)->ExtractView(&taux_g));
-    CHECK_ZERO((*tauy_glob)(0)->ExtractView(&tauy_g));
-
-    // now create distributed maps
-    Teuchos::RCP<Epetra_Map> lev_map_loc    = domain_->CreateAssemblyMap(1,true);
-    Teuchos::RCP<Epetra_Map> intlev_map_loc = domain_->CreateAssemblyMap(1,false);
-
-    // and distributed vectors
-    Teuchos::RCP<Epetra_Vector> tatm_loc = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
-    Teuchos::RCP<Epetra_Vector> emip_loc = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
-    Teuchos::RCP<Epetra_Vector> temp_loc = Teuchos::rcp(new Epetra_Vector(*intlev_map_loc));
-    Teuchos::RCP<Epetra_Vector> salt_loc = Teuchos::rcp(new Epetra_Vector(*intlev_map_loc));
-    Teuchos::RCP<Epetra_Vector> taux_loc = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
-    Teuchos::RCP<Epetra_Vector> tauy_loc = Teuchos::rcp(new Epetra_Vector(*lev_map_loc));
-
-    // extract pointers to the distributed data
-    double* ctatm,*cemip,*ctaux,*ctauy,*ctemp,*csalt;
-    CHECK_ZERO(tatm_loc->ExtractView(&ctatm));
-    CHECK_ZERO(emip_loc->ExtractView(&cemip));
-    CHECK_ZERO(temp_loc->ExtractView(&ctemp));
-    CHECK_ZERO(salt_loc->ExtractView(&csalt));
-    CHECK_ZERO(taux_loc->ExtractView(&ctaux));
-    CHECK_ZERO(tauy_loc->ExtractView(&ctauy));
-
-    // to import overlap
-    Teuchos::RCP<Epetra_Import> loc2dist =
-        Teuchos::rcp(new Epetra_Import(*lev_map_loc,*lev_map_dist));
-    Teuchos::RCP<Epetra_Import> int_loc2dist =
-        Teuchos::rcp(new Epetra_Import(*intlev_map_loc,*intlev_map_dist));
-
-    for (int month=1;month<=12;month++)
-    {
-        if (comm_->MyPID()==0)
-        {
-            F90NAME(m_global,get_monthly_forcing)(tatm_g,emip_g,taux_g,tauy_g,&month);
-            if (internal_forcing_)
-            {
-                F90NAME(m_global,get_monthly_internal_forcing)(temp_g,salt_g,&month);
-            }
-        }
-
-        // distribute levitus and wind fields
-        Teuchos::RCP<Epetra_MultiVector> tatm_dist = Utils::Scatter(*tatm_glob,*lev_map_dist);
-        Teuchos::RCP<Epetra_MultiVector> emip_dist = Utils::Scatter(*emip_glob,*lev_map_dist);
-        Teuchos::RCP<Epetra_MultiVector> temp_dist = Utils::Scatter(*temp_glob,*intlev_map_dist);
-        Teuchos::RCP<Epetra_MultiVector> salt_dist = Utils::Scatter(*salt_glob,*intlev_map_dist);
-        Teuchos::RCP<Epetra_MultiVector> taux_dist = Utils::Scatter(*taux_glob,*lev_map_dist);
-        Teuchos::RCP<Epetra_MultiVector> tauy_dist = Utils::Scatter(*tauy_glob,*lev_map_dist);
-
-        CHECK_ZERO(tatm_loc->Import(*tatm_dist,*loc2dist,Insert));
-        CHECK_ZERO(emip_loc->Import(*emip_dist,*loc2dist,Insert));
-        CHECK_ZERO(temp_loc->Import(*temp_dist,*int_loc2dist,Insert));
-        CHECK_ZERO(salt_loc->Import(*salt_dist,*int_loc2dist,Insert));
-        CHECK_ZERO(taux_loc->Import(*taux_dist,*loc2dist,Insert));
-        CHECK_ZERO(tauy_loc->Import(*tauy_dist,*loc2dist,Insert));
-
-        double tatmmax, emipmax;
-        double tatmmin, emipmin;
-        CHECK_ZERO(tatm_dist->MaxValue(&tatmmax));
-        CHECK_ZERO(emip_dist->MaxValue(&emipmax));
-        CHECK_ZERO(tatm_dist->MinValue(&tatmmin));
-        CHECK_ZERO(emip_dist->MinValue(&emipmin));
-
-        INFO("Month: " << month);
-        INFO("Temperature-forcing range: [" << tatmmin << ".." << tatmmax << "]");
-        INFO("Salinity-forcing range: [" << emipmin << ".." << emipmax << "]");
-
-        F90NAME(m_monthly,set_forcing)(ctatm,cemip,ctaux,ctauy,&month);
-        if (internal_forcing_)
-        {
-            F90NAME(m_monthly,set_internal_forcing)(ctemp,csalt,&month);
-        }
     }
 }
 
