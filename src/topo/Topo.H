@@ -56,6 +56,11 @@ Topo(Model model, ParameterList pars)
         b_[k+1] = b_[k] + 1;
     }
 
+    // Initializations
+    matA_  = rcp(new Matrix(*model_->getJacobian()));
+    matB_  = rcp(new Matrix(*model_->getJacobian()));
+    vecM_  = model_->getM('C');
+
     // Set the parameters and coefficients
     delta_ = deltaInit_;
     setPar("Delta", delta_);
@@ -84,16 +89,16 @@ Topo(Model model, ParameterList pars)
 
     // Check whether ocean has been setup with the same a_[k_]-th mask
     if (std::abs(nrm1 - nrm2) > 1e-10)
-        ERROR("Norms should not differ much! Choose correct initial landmask!"
+        ERROR("Norms should not differ much! Choose correct initial landmask (probably corresponding to the one ocean_params.xml)."
               , __FILE__, __LINE__);
 
     // A boolean array to indicate whether we have initialized the
     //  associated preconditioner
     initPrecs_ = std::vector<bool>(nMasks_, false);
 
-    // More initializations that we might want to repeat
-    initialize();
-
+    // Postprocessing counter
+    ppCtr_ = 0;
+    
     INFO("Topo constructor... done");
 }
 
@@ -198,7 +203,7 @@ void Topo<Model, ParameterList>::loadMasks()
 
     for (int i = 0; i != nMasks_; ++i)
     {
-        INFO("\n   loading " << landMaskFileNames_[i]);
+        INFO("  loading " << landMaskFileNames_[i]);
         landMasks_[i] = model_->getLandMask(landMaskFileNames_[i]);
     }
 
@@ -240,18 +245,12 @@ void Topo<Model, ParameterList>::setPar(std::string const &parName, double par)
     delta_ = par;
 
     // calculate coefficients
-    // facA_ = 1 - delta_;
-    // facB_ = delta_;
-
-    // set coefficients
-
     facA_  = pow(cos(M_PI * delta_ / 2), 2);
     facB_  = pow(sin(M_PI * delta_ / 2), 2);
 
     // correct for small values
     facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
     facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
-
 }
 
 //==================================================================
