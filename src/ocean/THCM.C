@@ -84,10 +84,6 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_global,get_landm)(int* landm);
     _MODULE_SUBROUTINE_(m_global,get_current_landm)(int* landm);
     _MODULE_SUBROUTINE_(m_global,set_landm)(int* landm);
-    _MODULE_SUBROUTINE_(m_global,get_monthly_forcing)(double* tatm, double* emip,
-                                                      double* taux, double* tauy, int* month);
-    _MODULE_SUBROUTINE_(m_global,get_monthly_internal_forcing)(double* temp, double* salt,
-                                                               int* month);
     _MODULE_SUBROUTINE_(m_global,get_windfield)(double* taux, double* tauy);
     _MODULE_SUBROUTINE_(m_global,get_temforcing)(double* tatm);
     _MODULE_SUBROUTINE_(m_global,get_salforcing)(double* emip);
@@ -95,9 +91,6 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_global,get_internal_salforcing)(double* salt);
     _MODULE_SUBROUTINE_(m_global,get_spert)(double* spert);
 
-    _MODULE_SUBROUTINE_(m_monthly,set_forcing)(double*tatm, double* emip, double* taux,
-                                               double* tauy, int* month);
-    _MODULE_SUBROUTINE_(m_monthly,set_internal_forcing)(double*temp, double* salt, int* month);
     _MODULE_SUBROUTINE_(m_usr,set_internal_forcing)(double*temp, double* salt);
     _MODULE_SUBROUTINE_(m_thcm_utils,get_landm)(int*);
     _MODULE_SUBROUTINE_(m_scaling,average_block)(double *db);
@@ -120,12 +113,6 @@ extern "C" {
 
     // sets the vmix_fix flag
     _MODULE_SUBROUTINE_(m_mix,set_vmix_fix)(int* vmix_fix);
-
-    // for time-dependent forcing (gamma* is a continuation parameter for wind, T and S):
-    _MODULE_SUBROUTINE_(m_monthly,update_forcing)(double* t,
-                                                  double* gammaw,double* gammat, double* gammas);
-    _MODULE_SUBROUTINE_(m_monthly,update_internal_forcing)(double* t,
-                                                           double* gammat, double* gammas);
 
     //---------------------- I-EMIC couplings--------------------------------------
     // Extensions created for communication within the I-EMIC
