@@ -1,6 +1,6 @@
 file(COPY . DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/mrilu)
 
-find_package(X11 REQUIRED)
+find_package(X11)
 get_filename_component(X11_LIB_DIR "${X11_X11_LIB}" DIRECTORY)
 
 message ("-- X11 include: " ${X11_INCLUDE_DIR})
