@@ -1872,45 +1872,13 @@ std::string const THCM::int2par(int index)
 bool THCM::setParameter(std::string label, double value)
 {
     int param = par2int(label);
-    if (param>0 && param<=_NPAR_) // time (0) and exp/seas (31/32) are not passed to THCM
+    if (param > 0 && param <= _NPAR_) // time (0) and exp/seas (31/32) are not passed to THCM
     {
         FNAME(setparcs)(&param,&value);
     }
-    else if (param<0)
+    else
     {
         ERROR("Invalid Parameter",__FILE__,__LINE__);
-    }
-    else if (param==0) // 0 is non-dimensional time
-    {
-        // set monthly forcing data
-        bool time_dep_forcing = paramList_.get<bool>("Time Dependent Forcing");
-        if ((value>=0.0) && time_dep_forcing)
-        {
-            double gamma=1.0,gammaT=1.0,gammaS=1.0,gammaW=1.0;//default values
-            this->getParameter("Seasonal Forcing",gamma);
-            this->getParameter("Seasonal Forcing (Wind)",gammaW);
-            this->getParameter("Seasonal Forcing (Temperature)",gammaT);
-            this->getParameter("Seasonal Forcing (Salinity)",gammaS);
-            gammaT*=gamma; gammaS*=gamma; gammaW*=gamma;
-            INFO("Set THCM time to "<<value);
-            INFO("Seasonal forcing parameters (W,T,S): "<<gammaW<<", "<<gammaT<<", "<<gammaS);
-            F90NAME(m_monthly,update_forcing)(&value,&gammaW,&gammaT,&gammaS);
-            if (internal_forcing_)
-            {
-                F90NAME(m_monthly,update_internal_forcing)(&value,&gammaT,&gammaS);
-            }
-
-        }
-        else if (value<0.0) //! reset to constant forcing (used in 4D FFT solver)
-        {
-            double gammaT=0.0,gammaS=0.0,gammaW=0.0,val=0.0;
-            INFO("Set THCM forcing to constant");
-            F90NAME(m_monthly,update_forcing)(&val,&gammaW,&gammaT,&gammaS);
-            if (internal_forcing_)
-            {
-                F90NAME(m_monthly,update_internal_forcing)(&val,&gammaT,&gammaS);
-            }
-        }
     }
     return true;
 }
