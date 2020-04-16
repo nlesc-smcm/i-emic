@@ -56,6 +56,11 @@ Topo(Model model, ParameterList pars)
         b_[k+1] = b_[k] + 1;
     }
 
+    // Initializations
+    matA_  = rcp(new Matrix(*model_->getJacobian()));
+    matB_  = rcp(new Matrix(*model_->getJacobian()));
+    vecM_  = model_->getM('C');
+
     // Set the parameters and coefficients
     delta_ = deltaInit_;
     setPar("Delta", delta_);
@@ -84,16 +89,16 @@ Topo(Model model, ParameterList pars)
 
     // Check whether ocean has been setup with the same a_[k_]-th mask
     if (std::abs(nrm1 - nrm2) > 1e-10)
-        ERROR("Norms should not differ much! Choose correct initial landmask!"
+        ERROR("Norms should not differ much! Choose correct initial landmask (probably corresponding to the one ocean_params.xml)."
               , __FILE__, __LINE__);
 
     // A boolean array to indicate whether we have initialized the
     //  associated preconditioner
     initPrecs_ = std::vector<bool>(nMasks_, false);
 
-    // More initializations that we might want to repeat
-    initialize();
-
+    // Postprocessing counter
+    ppCtr_ = 0;
+    
     INFO("Topo constructor... done");
 }
 
@@ -107,11 +112,11 @@ Topo<Model, ParameterList>::
 }
 
 //==================================================================
-// initialize
+// reinitialize
 template<typename Model, typename ParameterList>
-void Topo<Model, ParameterList>::initialize()
+void Topo<Model, ParameterList>::reinitialize()
 {
-    INFO("Topo: initialize...");
+    INFO("Topo: reinitialize...");
     matA_  = rcp(new Matrix(*model_->getJacobian()));
     matB_  = rcp(new Matrix(*model_->getJacobian()));
 
@@ -131,7 +136,7 @@ void Topo<Model, ParameterList>::initialize()
     // Reset postprocessing counter
     ppCtr_ = 0;
 
-    INFO("Topo: initialize... done");
+    INFO("Topo: reinitialize... done");
 }
 
 //==================================================================
@@ -148,8 +153,8 @@ void Topo<Model, ParameterList>::predictor()
         INFO("  nrm before applyLandmask: " << Utils::norm(rhsView_));
 
         INFO("  k = " << k_ << " a[k] = " << a_[k_] << " b[k] = " << b_[k_]);
-        INFO("  using differences between " <<
-             landMasks_[b_[k_]].label << " and " << landMasks_[a_[k_]].label);
+        INFO("  using differences between b[k]: " <<
+             landMasks_[b_[k_]].label << " and a[k]: " << landMasks_[a_[k_]].label);
 
         model_->applyLandMask(stateView_, landMasks_[a_[k_]], landMasks_[b_[k_]]);
 
@@ -198,7 +203,7 @@ void Topo<Model, ParameterList>::loadMasks()
 
     for (int i = 0; i != nMasks_; ++i)
     {
-        INFO("   loading " << landMaskFileNames_[i]);
+        INFO("  loading " << landMaskFileNames_[i]);
         landMasks_[i] = model_->getLandMask(landMaskFileNames_[i]);
     }
 
@@ -222,7 +227,7 @@ void Topo<Model, ParameterList>::setMaskIndex(int index)
         ERROR("Wrong mask index", __FILE__, __LINE__);
 
     INFO("Topo: setting mask idx: " << index);
-    k_     = index;
+    k_ = index;
 }
 
 //==================================================================
@@ -240,18 +245,12 @@ void Topo<Model, ParameterList>::setPar(std::string const &parName, double par)
     delta_ = par;
 
     // calculate coefficients
-    // facA_ = 1 - delta_;
-    // facB_ = delta_;
-
-    // set coefficients
-
     facA_  = pow(cos(M_PI * delta_ / 2), 2);
     facB_  = pow(sin(M_PI * delta_ / 2), 2);
 
     // correct for small values
     facA_ = (std::abs(facA_) < 1e-16) ? 0 : facA_;
     facB_ = (std::abs(facB_) < 1e-16) ? 0 : facB_;
-
 }
 
 //==================================================================

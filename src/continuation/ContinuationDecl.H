@@ -105,8 +105,11 @@ class Continuation
     double dsStart_;
 
     //! parameter destinations
-    std::vector<double> destinations_; // list we adjust
+    std::vector<double> destinations_;       // list we adjust
     std::vector<double> destinationsBackup_; // list to restore to
+
+    //! maximum allowed number of destinations
+    static const int maxNumDest_ = 10;
 
     //! zeta is an additional scaling for the state tangent
     double zeta_;

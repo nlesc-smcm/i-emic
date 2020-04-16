@@ -33,6 +33,7 @@ Continuation(Model model, Teuchos::ParameterList& pars)
     : model_(model)
     , paramList_("Continuation Configuration")
 {
+
 #ifdef HAVE_JDQZPP
     // Create JDQZ generalized eigenvalue solver:
     // 1) Create a vector with complex arithmetic based on an Epetra_Vector
@@ -97,11 +98,11 @@ Continuation(Model model, Teuchos::ParameterList& pars)
     // We allow for convergence with destination tolerance at multiple destinations
     double dest;
     std::stringstream destID;
-    for (int i = 0; i != 999; ++i)
+    for (int i = 0; i != maxNumDest_; ++i)
     {
         destID << "destination " << i;
         dest = paramList_.get<double>(destID.str().c_str());
-        if (std::abs(dest + 999.) < 1e-7)
+        if (dest == -999.)
             break;
 
         destinations_.push_back(dest);
@@ -1369,7 +1370,7 @@ getDefaultInitParameters()
     result.get("predictor bound", 1e3);
 
     std::stringstream destID;
-    for (int i = 0; i != 999; ++i)
+    for (int i = 0; i != maxNumDest_; ++i)
     {
         destID << "destination " << i;
         result.set(destID.str().c_str(), -999.0);

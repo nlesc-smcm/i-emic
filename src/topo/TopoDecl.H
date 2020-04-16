@@ -179,8 +179,10 @@ public:
 	//! destructor
 	~Topo();
 
-	//! initializations that we might want to repeat
-	void initialize();
+	//! Initializations: sets landmask B in the model and obtains M.
+    //! This should be done right before a topo continuation and needs
+    //! to be repeated with every new mask that is introduced.
+	void reinitialize();
 
 	//! get continuation parameter
 	double getPar(std::string const &parName);

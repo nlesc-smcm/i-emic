@@ -193,7 +193,6 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     c5 = 243.5;
 
     % - READ MASK - -----------------------------------------------------
-
     [n m l la nun xmin xmax ymin ymax hdim x y z xu yv zw landm] = ...
         readfort44(maskfile);
 
@@ -224,7 +223,6 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     end
 
     if restrict_sol
-
         % load mask to restrict solution, assuming THCM input
         % ordering
         fprintf('load mask to restrict solution: %s\n', rmask_file);
@@ -244,7 +242,6 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
         % zonal integration
         zmask = ~rmask;
         zmask = logical(~sum(zmask,1))
-
     end
 
     surfm      = landm(2:n+1,2:m+1,l+1);  %Only interior surface points
@@ -263,9 +260,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
 
     % --- Create colormaps
 
-
     % - PLOT BAROTROPIC STREAM FUNCTION
-
 
     if plot_bstream || plot_everything
         figure(fig_ctr); fig_ctr = fig_ctr+1;
@@ -445,7 +440,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
             colormap(cmap)
             colorbar
         end
-        
+
         if fix_caxis
             caxis([opts.caxis_min,opts.caxis_max])
         end
@@ -546,6 +541,4 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
     if readFluxes
         fluxes = plot_fluxes(add, fig_ctr, 'Ocean: ');
     end
-
-
 end

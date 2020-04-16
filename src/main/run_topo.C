@@ -61,7 +61,7 @@ int main(int argc, char **argv)
     for (int maskIdx = startMask; maskIdx != nMasks-1; maskIdx++)
     {
         topo->setMaskIndex(maskIdx);
-        topo->initialize();
+        topo->reinitialize();
 
         TIMER_START("  TOPO:  Predictor");
         topo->predictor();

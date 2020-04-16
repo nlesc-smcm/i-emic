@@ -885,11 +885,6 @@ void Atmosphere::setLandMask(Utils::MaskStruct const &mask)
         surfmask_ = mask.global_surface;
     }
 
-#ifdef DEBUGGING_NEW
-    INFO("Mask available in atmosphere:");
-    Utils::printSurfaceMask(surfmask_, "surfmask", n_);
-#endif
-
     // create rcp
     int numMyElements = mask.local->MyLength();
 

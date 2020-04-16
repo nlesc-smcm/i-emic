@@ -607,8 +607,10 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
     // Set label
     mask.label = fname;
 
-    // Print surface mask
-    Utils::printSurfaceMask(mask.global_surface, "surfmask", N_);
+    // Set global dimensions
+    mask.n = N_;
+    mask.m = M_;
+    mask.l = L_;
 
     // Return the struct
     return mask;

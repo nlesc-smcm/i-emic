@@ -452,7 +452,7 @@ TEST(ContinuationParameterList, Initialization)
         Teuchos::ParameterList startParams;
 
         std::stringstream destID;
-        for (int i = 0; i != 999; ++i)
+        for (int i = 0; i != 10; ++i)
         {
             destID << "destination " << i;
             startParams.set(destID.str(), 1.0);
@@ -473,11 +473,11 @@ TEST(ContinuationParameterList, Initialization)
         // Copy of the configuration reported by Continuation
         const Teuchos::ParameterList& currentParams = continuation->getParameters();
 
-        // Check that every entry in oceanParams corresponds to the value in
+        // Check that every entry in continuationParams corresponds to the value in
         // startParams, missing entries are compared against defaultParams
         EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(continuationParams, defaultParams, startParams));
 
-        // Check that every entry reported by Ocean corresponds to the value in
+        // Check that every entry reported by Continuation corresponds to the value in
         // startParams, missing entries are compared against defaultParams
         EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(currentParams, defaultParams, startParams));
     }
