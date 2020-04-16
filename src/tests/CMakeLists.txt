@@ -81,12 +81,12 @@ endif()
 
 # additional parallel tests
 get_filename_component(test_name test_matrix.C NAME_WE)
-add_test(NAME partest_matrix_1 COMMAND mpirun -np 1 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_1 COMMAND mpirun -np 1 --oversubscribe ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_2 COMMAND mpirun -np 2 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_2 COMMAND mpirun -np 2 --oversubscribe ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_4 COMMAND mpirun -np 4 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_4 COMMAND mpirun -np 4 --oversubscribe ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_8 COMMAND mpirun -np 8 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_8 COMMAND mpirun -np 8 --oversubscribe ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
 
