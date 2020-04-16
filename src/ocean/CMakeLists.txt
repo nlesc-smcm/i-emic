@@ -1,4 +1,4 @@
-set(FORTRAN_SOURCES assemble.F90 atm.F90 ice.F90 monthly.F90
+set(FORTRAN_SOURCES assemble.F90 atm.F90 ice.F90
   boundary.F90 forcing.F90 grid.F90 inout.F90 itplbv.F90
   levitus.F90 mat.F90 matetc.F90 lev.F90 mix.F90
   res.F90 usr.F90 par.F90  global.F90 thcm_utils.F90
