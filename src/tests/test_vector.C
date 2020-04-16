@@ -1,5 +1,8 @@
 #include "TestDefinitions.H"
+
+#include "Combined_MultiVec.H"
 #include "TRIOS_Domain.H"
+#include "Utils.H"
 
 //------------------------------------------------------------------
 namespace

@@ -1,12 +1,17 @@
 #include "TestDefinitions.H"
-#include "NumericalJacobian.H"
 
-#include <limits>
+#include "NumericalJacobian.H"
+#include "Ocean.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
+#include "CoupledModel.H"
+
+#include "THCMdefs.H"
 
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-    RCP<Epetra_Comm>               comm;
+    Teuchos::RCP<Epetra_Comm>      comm;
 
     std::shared_ptr<Ocean>         ocean;
     std::shared_ptr<Atmosphere>    atmos;
@@ -418,7 +423,7 @@ TEST(CoupledModel, applyMatrix)
 
         // Get shortwave radiative heat flux dependence
         Teuchos::RCP<Epetra_MultiVector> suno =
-                Utils::AllGather(*ocean->getSunO());
+            Utils::AllGather(*ocean->getSunO());
 
         double So = (*(*suno)(0))[jj*n + ii];
 
@@ -861,7 +866,7 @@ TEST(CoupledModel, Solve)
         std::shared_ptr<Combined_MultiVec> b = coupledModel->getRHS('C');
         std::shared_ptr<Combined_MultiVec> c = coupledModel->getRHS('C');
 
-         coupledModel->solve(b);
+        coupledModel->solve(b);
         std::shared_ptr<Combined_MultiVec> sol = coupledModel->getSolution('C');
 
         EXPECT_EQ(b->hash(), c->hash());

@@ -1,11 +1,15 @@
 #include "TestDefinitions.H"
 
-#include <limits>
+#include "Ocean.H"
+#include "Atmosphere.H"
+#include "CoupledModel.H"
+#include "Combined_MultiVec.H"
+#include "Continuation.H"
 
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-    RCP<Epetra_Comm>               comm;
+    Teuchos::RCP<Epetra_Comm>      comm;
     std::shared_ptr<Ocean>         ocean;
     std::shared_ptr<Atmosphere>    atmos;
     std::shared_ptr<CoupledModel>  coupledModel;
@@ -66,7 +70,7 @@ TEST(CoupledModel, Initialization_1)
     {
         // Specify landmask
         params[OCEAN]->sublist("THCM").set("Land Mask", "test6x12x4_1");
-        // Create parallel Ocean        
+        // Create parallel Ocean
         ocean = std::make_shared<Ocean>(comm, params[OCEAN]);
         // Create atmosphere
         atmos = std::make_shared<Atmosphere>(comm, params[ATMOS]);
@@ -100,7 +104,7 @@ TEST(CoupledModel, Continuation_1)
         // Run continuation
         int status = continuation.run();
         EXPECT_EQ(status, 0);
-        
+
         state1 = coupledModel->getState('C');
     }
     catch (...)
@@ -158,7 +162,7 @@ TEST(CoupledModel, Continuation_2)
         EXPECT_EQ(status, 0);
 
         state2 = coupledModel->getState('C');
-                                      
+
     }
     catch (...)
     {

@@ -1,10 +1,12 @@
 #include "TestDefinitions.H"
+
+#include "Ocean.H"
 #include "TransientFactory.H"
 
 //------------------------------------------------------------------
 namespace
 {
-    RCP<Epetra_Comm>               comm;
+    Teuchos::RCP<Epetra_Comm>               comm;
     std::shared_ptr<Ocean>         ocean;
     std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
 

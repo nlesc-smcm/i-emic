@@ -1,13 +1,18 @@
 #include "TestDefinitions.H"
 
+#include <Teuchos_XMLParameterListHelpers.hpp>
+
+#include "NumericalJacobian.H"
+#include "SeaIce.H"
+
 // Testing standalone seaice
 
 //------------------------------------------------------------------
 namespace
 {
-    std::shared_ptr<SeaIce>     seaIce;
-    RCP<Epetra_Comm>            comm;
-    RCP<Teuchos::ParameterList> seaIceParams;
+    std::shared_ptr<SeaIce>              seaIce;
+    Teuchos::RCP<Epetra_Comm>            comm;
+    Teuchos::RCP<Teuchos::ParameterList> seaIceParams;
 }
 
 //------------------------------------------------------------------
@@ -170,14 +175,14 @@ TEST(SeaIce, computeJacobian)
 TEST(SeaIce, numericalJacobian)
 {
     seaIce->setPar("Combined Forcing", 0.85);
-        
+
     Teuchos::RCP<Epetra_Vector> x = seaIce->getState('V');
 
     x->SetSeed(1.0);
     x->Random();
-    
+
     // int myEl = x->Map().NumMyElements();
-    // x->PutScalar(0.0);    
+    // x->PutScalar(0.0);
     // // gradually changing thickness deviation
     // for (int i = SEAICE_HH_-1; i < myEl; i += SEAICE_NUN_)
     //     (*x)[i] = -.5 + ( (double) i / (myEl-1) );
@@ -245,18 +250,18 @@ TEST(SeaIce, Solve)
     Teuchos::RCP<Epetra_Vector> state = seaIce->getState('V');
     Teuchos::RCP<Epetra_Vector> b, x, r;
     double rNorm, bNorm, xNorm;
-    
+
     for (int i = 0; i != 5; ++i)
     {
         state->Random();
-        
+
         seaIce->computeJacobian();
         seaIce->computeRHS();
 
         b = seaIce->getRHS('C');
 
         seaIce->solve(b);
-        
+
         x = seaIce->getSolution('C');
         r = seaIce->getSolution('C');
 
@@ -272,7 +277,7 @@ TEST(SeaIce, Solve)
         std::cout << " || b - Ax || = " << rNorm << std::endl;
         std::cout << "        ||b|| = " << bNorm << std::endl;
         std::cout << "        ||x|| = " << xNorm << std::endl;
-    
+
         EXPECT_NEAR(rNorm, 0, 1e-4);
     }
 }
@@ -295,7 +300,7 @@ TEST(SeaIce, Newton)
         state->Update(1.0, *x, 1.0);
         seaIce->computeRHS();
         std::cout.precision(3);
-        
+
         std::cout << "i = " << std::setw(2) << i
                   << ", ||dx||=" << std::setw(8) << std::scientific << Utils::norm(x)
                   << ", ||H|| =" << std::setw(8) << std::scientific << Utils::norm(seaIce->interface(x, SEAICE_HH_))
@@ -304,7 +309,7 @@ TEST(SeaIce, Newton)
                   << ", ||T|| =" << std::setw(8) << std::scientific << Utils::norm(seaIce->interface(x, SEAICE_TT_))
                   << ", ||G|| =" << std::setw(8) << std::scientific << Utils::norm(seaIce->interface(x, SEAICE_GG_))
                   << std::endl;
-            
+
         if (Utils::norm(x) < 1e-8)
             break;
     }

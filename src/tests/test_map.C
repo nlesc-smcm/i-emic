@@ -1,12 +1,17 @@
 #include "TestDefinitions.H"
 
+#include "Epetra_MpiComm.h"
+#include "Epetra_Map.h"
+#include "Epetra_Vector.h"
+#include "Epetra_Import.h"
+
 namespace
 {
     Teuchos::RCP<Epetra_Comm>  comm;
     Teuchos::RCP<Epetra_Map>    map;
     Teuchos::RCP<Epetra_Map> submap;
     Teuchos::RCP<Epetra_Import> imp;
-    
+
     int N;
 }
 
@@ -18,7 +23,7 @@ TEST(Map, Construction)
     {
         // domain size
         N = 100;
-        
+
         // Simple domain decomposition
         int pid  = comm->MyPID();
         int size = comm->NumProc();
@@ -49,8 +54,8 @@ TEST(Map, Construction)
         submap = Teuchos::rcp(new Epetra_Map(-1, k, myGlobalElements, 0, *comm));
 
         // create importer
-        imp = Teuchos::rcp(new Epetra_Import(*submap, *map));        
-    
+        imp = Teuchos::rcp(new Epetra_Import(*submap, *map));
+
         delete [] myGlobalElements;
     }
     catch (...)
@@ -65,7 +70,7 @@ TEST(Map, Usage)
 {
     // create and randomize vector
     Epetra_Vector x(*map);
-    Epetra_Vector y(*submap);    
+    Epetra_Vector y(*submap);
     x.Random();
 
     // set last element
@@ -80,7 +85,7 @@ TEST(Map, Usage)
     for (int i = 0; i != submap->NumMyElements(); ++i)
     {
         EXPECT_EQ(y[i], val);
-    }    
+    }
 }
 
 //------------------------------------------------------------------
@@ -102,7 +107,7 @@ int main(int argc, char **argv)
     // -------------------------------------------------------
 
     comm->Barrier();
-    
+
     std::cout << "TEST exit code proc #" << comm->MyPID()
               << " " << out << std::endl;
 

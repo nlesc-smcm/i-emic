@@ -6,6 +6,7 @@
 
 #include "TopoDecl.H"
 #include "GlobalDefinitions.H"
+#include "Utils.H"
 
 #include <vector>
 #include <sstream>
@@ -13,10 +14,6 @@
 
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
-
-//=====================================================================
-using Teuchos::RCP;
-using Teuchos::rcp;
 
 //==================================================================
 // constructor
@@ -57,9 +54,9 @@ Topo(Model model, ParameterList pars)
     }
 
     // Initializations
-    matA_  = rcp(new Matrix(*model_->getJacobian()));
-    matB_  = rcp(new Matrix(*model_->getJacobian()));
-    vecM_  = model_->getM('C');
+    matA_ = Teuchos::rcp(new Matrix(*model_->getJacobian()));
+    matB_ = Teuchos::rcp(new Matrix(*model_->getJacobian()));
+    vecM_ = model_->getM('C');
 
     // Set the parameters and coefficients
     delta_ = deltaInit_;
@@ -117,8 +114,8 @@ template<typename Model, typename ParameterList>
 void Topo<Model, ParameterList>::reinitialize()
 {
     INFO("Topo: reinitialize...");
-    matA_  = rcp(new Matrix(*model_->getJacobian()));
-    matB_  = rcp(new Matrix(*model_->getJacobian()));
+    matA_ = Teuchos::rcp(new Matrix(*model_->getJacobian()));
+    matB_ = Teuchos::rcp(new Matrix(*model_->getJacobian()));
 
     delta_ = deltaInit_;
     setPar("Delta", delta_);
@@ -523,9 +520,9 @@ void Topo<Model, ParameterList>::initializeSolver()
         Teuchos::rcp(&combMat_, false);
 
     problem_ =
-        rcp(new Belos::LinearProblem
-            <double, Epetra_MultiVector, Combined_Operator<Model> >
-            (combMatPtr, solView_, rhs_));
+        Teuchos::rcp(new Belos::LinearProblem
+                     <double, Epetra_MultiVector, Combined_Operator<Model> >
+                     (combMatPtr, solView_, rhs_));
 
     buildPreconditioner();
 
@@ -546,7 +543,8 @@ void Topo<Model, ParameterList>::initializeSolver()
     int maxiters          = NumGlobalElements / blocksize - 1;
 
     // Create Belos parameterlist
-    RCP<Teuchos::ParameterList> belosParamList = rcp(new Teuchos::ParameterList());
+    Teuchos::RCP<Teuchos::ParameterList> belosParamList = Teuchos::rcp(
+        new Teuchos::ParameterList());
     belosParamList->set("Block Size", blocksize);
     belosParamList->set("Flexible Gmres", true);
     belosParamList->set("Adaptive Block Size", true);
@@ -562,9 +560,9 @@ void Topo<Model, ParameterList>::initializeSolver()
 
     // Belos block FGMRES setup
     belosSolver_ =
-        rcp(new Belos::BlockGmresSolMgr
-            <double, Epetra_MultiVector, Combined_Operator<Model> >
-            (problem_, belosParamList));
+        Teuchos::rcp(new Belos::BlockGmresSolMgr
+                     <double, Epetra_MultiVector, Combined_Operator<Model> >
+                     (problem_, belosParamList));
 
     solverInitialized_ = true;
     INFO("Topo: initialize solver... done");

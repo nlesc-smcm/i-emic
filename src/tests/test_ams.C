@@ -71,11 +71,11 @@ public:
 
     Teuchos::RCP<Epetra_CrsMatrix> getForcing() {return frc_;}
 
-    Teuchos::RCP<Epetra_Vector> getVector(char mode, RCP<Epetra_Vector> vec)
+    Teuchos::RCP<Epetra_Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec)
         {
             if (mode == 'C') // copy
             {
-                RCP<Epetra_Vector> copy = rcp(new Epetra_Vector(*vec));
+                Teuchos::RCP<Epetra_Vector> copy = Teuchos::rcp(new Epetra_Vector(*vec));
                 return copy;
             }
             else if (mode == 'V') // view
@@ -271,7 +271,7 @@ void restart_test(Teuchos::RCP<Teuchos::ParameterList> params)
 //------------------------------------------------------------------
 TEST(AMS, AMSRestart)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "AMS");
     params->set("write final state", true);
 
@@ -281,7 +281,7 @@ TEST(AMS, AMSRestart)
 //------------------------------------------------------------------
 TEST(AMS, AMSRestart2)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "AMS");
     params->set("write steps", 10);
     params->set("write final state", false);
@@ -292,7 +292,7 @@ TEST(AMS, AMSRestart2)
 //------------------------------------------------------------------
 TEST(AMS, AMSRestart3)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "AMS");
     params->set("write time steps", 500);
     params->set("write final state", false);
@@ -303,7 +303,7 @@ TEST(AMS, AMSRestart3)
 //------------------------------------------------------------------
 TEST(AMS, AMSRestart4)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "AMS");
     params->set("write steps", 10);
     params->set("maximum iterations", 0);
@@ -315,7 +315,7 @@ TEST(AMS, AMSRestart4)
 //------------------------------------------------------------------
 TEST(AMS, AMSRestart5)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "AMS");
     params->set("write final state", true);
     params->set("maximum iterations", 30);
@@ -328,7 +328,7 @@ TEST(AMS, AMSRestart5)
 //------------------------------------------------------------------
 TEST(AMS, AMSConvergence)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "AMS");
     params->set("maximum iterations", 1000);
     params->set("number of experiments", 200);
@@ -343,7 +343,7 @@ TEST(AMS, AMSConvergence)
 //------------------------------------------------------------------
 TEST(AMS, ProjectedAMSConvergence)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "AMS");
     params->set("maximum iterations", 10000);
     params->set("number of experiments", 200);
@@ -366,7 +366,7 @@ TEST(AMS, ProjectedAMSConvergence)
 //------------------------------------------------------------------
 TEST(AMS, TAMSRestart)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "TAMS");
     params->set("write final state", true);
 
@@ -376,7 +376,7 @@ TEST(AMS, TAMSRestart)
 //------------------------------------------------------------------
 TEST(AMS, TAMSRestart2)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "TAMS");
     params->set("write steps", 10);
     params->set("write final state", false);
@@ -387,7 +387,7 @@ TEST(AMS, TAMSRestart2)
 //------------------------------------------------------------------
 TEST(AMS, TAMSRestart3)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "TAMS");
     params->set("write time steps", 1000);
     params->set("write final state", false);
@@ -398,7 +398,7 @@ TEST(AMS, TAMSRestart3)
 //------------------------------------------------------------------
 TEST(AMS, TAMSRestart4)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "TAMS");
     params->set("write steps", 10);
     params->set("maximum iterations", 0);
@@ -410,7 +410,7 @@ TEST(AMS, TAMSRestart4)
 //------------------------------------------------------------------
 TEST(AMS, TAMSRestart5)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "TAMS");
     params->set("write final state", true);
     params->set("maximum iterations", 30);
@@ -423,7 +423,7 @@ TEST(AMS, TAMSRestart5)
 //------------------------------------------------------------------
 TEST(AMS, TAMSConvergence)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "TAMS");
     params->set("maximum iterations", 10000);
     params->set("number of experiments", 200);
@@ -438,7 +438,7 @@ TEST(AMS, TAMSConvergence)
 //------------------------------------------------------------------
 TEST(AMS, ProjectedTAMSConvergence)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "TAMS");
     params->set("maximum iterations", 10000);
     params->set("number of experiments", 200);
@@ -459,7 +459,7 @@ TEST(AMS, ProjectedTAMSConvergence)
 //------------------------------------------------------------------
 TEST(AMS, MCConvergence)
 {
-    Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList);
+    Teuchos::RCP<Teuchos::ParameterList> params = Teuchos::rcp(new Teuchos::ParameterList);
     params->set("method", "Naive");
     params->set("maximum iterations", 10000);
     params->set("number of experiments", 200);

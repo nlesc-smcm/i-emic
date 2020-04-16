@@ -1,10 +1,15 @@
 #include "TestDefinitions.H"
 
+#include <Teuchos_XMLParameterListHelpers.hpp>
+
+#include "Ocean.H"
+#include "Continuation.H"
+
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-    RCP<Epetra_Comm> comm;
-    RCP<Ocean> ocean;
+    Teuchos::RCP<Epetra_Comm> comm;
+    Teuchos::RCP<Ocean> ocean;
 }
 
 //------------------------------------------------------------------
@@ -14,20 +19,20 @@ TEST(Ocean, Continuation1)
     try
     {
         // Create parallel Ocean
-        RCP<Teuchos::ParameterList> oceanParams =
+        Teuchos::RCP<Teuchos::ParameterList> oceanParams =
             Utils::obtainParams("ocean_params_intt_init.xml", "Ocean parameters");
         oceanParams->sublist("Belos Solver") =
             *Utils::obtainParams("solver_params.xml", "Solver parameters");
         ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
 
         // Create continuation params
-        RCP<Teuchos::ParameterList> continuationParams =
-            rcp(new Teuchos::ParameterList);
+        Teuchos::RCP<Teuchos::ParameterList> continuationParams =
+            Teuchos::rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("continuation_params_intt_init.xml",
                                     continuationParams.ptr());
 
         // Create contination
-        Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+        Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
         // Run continuation
         int status = continuation.run();
@@ -78,7 +83,7 @@ TEST(Ocean, Continuation2)
     try
     {
         // Create parallel Ocean
-       RCP<Teuchos::ParameterList> oceanParams =
+        Teuchos::RCP<Teuchos::ParameterList> oceanParams =
             Utils::obtainParams("ocean_params_intt_cont.xml", "Ocean parameters");
         oceanParams->sublist("Belos Solver") =
             *Utils::obtainParams("solver_params.xml", "Solver parameters");
@@ -86,13 +91,13 @@ TEST(Ocean, Continuation2)
         ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
 
         // Create continuation params
-        RCP<Teuchos::ParameterList> continuationParams =
-            rcp(new Teuchos::ParameterList);
+        Teuchos::RCP<Teuchos::ParameterList> continuationParams =
+            Teuchos::rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("continuation_params_intt_cont.xml",
                                     continuationParams.ptr());
 
         // Create contination
-        Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+        Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
         // Run continuation
         int status = continuation.run();

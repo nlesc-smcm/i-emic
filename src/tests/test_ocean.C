@@ -1,11 +1,18 @@
 #include "TestDefinitions.H"
 
+#include <Teuchos_XMLParameterListHelpers.hpp>
+
+#include "NumericalJacobian.H"
+#include "THCMdefs.H"
+#include "Ocean.H"
+#include "Continuation.H"
+
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-    RCP<Teuchos::ParameterList> oceanParams;
-    RCP<Ocean> ocean;
-    RCP<Epetra_Comm> comm;
+    Teuchos::RCP<Teuchos::ParameterList> oceanParams;
+    Teuchos::RCP<Ocean> ocean;
+    Teuchos::RCP<Epetra_Comm> comm;
 }
 
 //------------------------------------------------------------------
@@ -184,13 +191,13 @@ TEST(Ocean, Continuation)
         ocean->getState('V')->PutScalar(0.0);
 
         // Create continuation params
-        RCP<Teuchos::ParameterList> continuationParams =
-            rcp(new Teuchos::ParameterList);
+        Teuchos::RCP<Teuchos::ParameterList> continuationParams =
+            Teuchos::rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("continuation_params.xml",
                                     continuationParams.ptr());
 
         // Create contination
-        Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+        Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
         Teuchos::RCP<Epetra_CrsMatrix> mat = ocean->getJacobian();
         DUMPMATLAB("ocean_jac", *mat);
@@ -210,7 +217,7 @@ TEST(Ocean, Continuation)
         EXPECT_NE(Utils::norm(diagB), 0.0);
         DUMP_VECTOR("ocean_B", *diagB);
 
-        RCP<Epetra_Vector> intcond_coeff = ocean->getIntCondCoeff();
+        Teuchos::RCP<Epetra_Vector> intcond_coeff = ocean->getIntCondCoeff();
         DUMP_VECTOR("intcond_coeff", *intcond_coeff);
 
     }
@@ -228,7 +235,7 @@ TEST(Ocean, Integrals)
     double salt_advection = 0.0;
     double salt_diffusion = 0.0;
 
-    RCP<Epetra_Vector> un = ocean->getState('C');
+    Teuchos::RCP<Epetra_Vector> un = ocean->getState('C');
 
     ocean->integralChecks(un, salt_advection, salt_diffusion);
 
