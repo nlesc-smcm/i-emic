@@ -7,6 +7,8 @@
 #include "Ocean.H"
 #include "Continuation.H"
 
+#include "TRIOS_Domain.H"
+
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {

@@ -6,6 +6,8 @@
 #include "Atmosphere.H"
 #include "THCMdefs.H"
 
+#include "Epetra_Import.h"
+
 #include <limits>
 
 //------------------------------------------------------------------

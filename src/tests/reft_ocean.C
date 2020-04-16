@@ -5,6 +5,10 @@
 #include "Continuation.H"
 #include "Ocean.H"
 
+#include "TRIOS_Domain.H"
+
+#include "Epetra_Import.h"
+
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {

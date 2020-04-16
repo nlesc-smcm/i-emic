@@ -1,6 +1,7 @@
 #include "TestDefinitions.H"
 
 #include "Epetra_Vector.h"
+#include "Epetra_Import.h"
 
 #include "Utils.H"
 

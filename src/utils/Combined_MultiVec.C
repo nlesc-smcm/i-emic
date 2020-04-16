@@ -10,6 +10,7 @@
 #include "BelosEpetraAdapter.hpp"
 
 #include "Epetra_BlockMap.h"
+#include "Epetra_Vector.h"
 #include "Epetra_MultiVector.h"
 
 #include "Utils.H"

@@ -6,6 +6,8 @@
 #include "Atmosphere.H"
 #include "Ocean.H"
 
+#include "Epetra_Import.h"
+
 // Testing the serial and parallel atmosphere
 
 //------------------------------------------------------------------

@@ -11,6 +11,8 @@
 #include "Ocean.H"
 #include "Topo.H"
 
+#include "Epetra_Comm.h"
+
 //------------------------------------------------------------------
 using Teuchos::RCP;
 using Teuchos::rcp;

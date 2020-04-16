@@ -7,6 +7,7 @@
 #include <Teuchos_RCP.hpp>
 
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_Vector.h"
 
 template<typename Model>
 class StochasticThetaModel : public ThetaModel<Model>,

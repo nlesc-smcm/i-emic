@@ -3,6 +3,8 @@
 #include "Ocean.H"
 #include "SeaIce.H"
 
+#include "Epetra_Import.h"
+
 // Import/export
 #include <EpetraExt_Exception.h>
 #include <EpetraExt_HDF5.h>

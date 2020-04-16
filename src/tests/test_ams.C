@@ -6,6 +6,10 @@
 
 #include "Trilinos_version.h"
 
+#include "Epetra_Map.h"
+#include "Epetra_Vector.h"
+#include "Epetra_CrsMatrix.h"
+
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {

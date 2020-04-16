@@ -4,6 +4,9 @@
 #include "TRIOS_Domain.H"
 #include "Utils.H"
 
+#include "Epetra_MultiVector.h"
+#include "Epetra_Vector.h"
+
 //------------------------------------------------------------------
 namespace
 {

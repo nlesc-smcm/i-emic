@@ -1,8 +1,13 @@
-#include "my_f2c.H"
 #include "SeaIce.H"
+
+#include "my_f2c.H"
 #include "Ocean.H"
 #include "Atmosphere.H"
 #include "DependencyGrid.H"
+
+#include "EpetraExt_HDF5.h"
+
+#include "Epetra_Import.h"
 
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*, double *);

@@ -16,38 +16,32 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include "GlobalDefinitions.H"
+
 #include <Teuchos_RCP.hpp>
-#include <Teuchos_ArrayView.hpp>
 #include <Teuchos_ParameterList.hpp>
 
-#include <Epetra_Map.h>
-#include <Epetra_CrsMatrix.h>
-#include <Epetra_Vector.h>
-#include <Epetra_IntVector.h>
-#include <Epetra_Import.h>
-#include <EpetraExt_Exception.h>
-#include <EpetraExt_HDF5.h>
-
-#ifdef HAVE_MPI
-#  include <mpi.h>
-#  include "Epetra_MpiComm.h"
-#else
-#  include "Epetra_SerialComm.h"
-#endif
-
 #include <fstream>
-#include <memory>
-#include <algorithm> // for sorting indices
 #include <vector>
-#include <math.h>
-
-#include "GlobalDefinitions.H"
+#include <memory>
 
 class Combined_MultiVec;
 
 template<typename Vector>
 
 class ComplexVector;
+
+class Epetra_Comm;
+class Epetra_Map;
+class Epetra_BlockMap;
+class Epetra_Vector;
+class Epetra_IntVector;
+class Epetra_MultiVector;
+class Epetra_CrsMatrix;
+
+namespace EpetraExt {
+    class HDF5;
+}
 
 namespace TRIOS {
     class Domain;
