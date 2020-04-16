@@ -8,17 +8,12 @@
 #ifndef TRIOS_DOMAIN_H
 #define TRIOS_DOMAIN_H
 
-#ifdef HAVE_MPI
-#include "Epetra_MpiComm.h"
-#else
-#include "Epetra_SerialComm.h"
-#endif
-
 #include "Teuchos_RCP.hpp"
 
 #include <functional>
 #include <vector>
 
+class Epetra_Comm;
 class Epetra_Map;
 class Epetra_Vector;
 class Epetra_CrsMatrix;
