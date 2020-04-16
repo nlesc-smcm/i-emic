@@ -11,15 +11,19 @@
 #include "Epetra_CrsMatrix.h"
 #include "Epetra_Import.h"
 #include "Epetra_Comm.h"
+
 #include "AztecOO.h"
+
 #include "EpetraExt_MatrixMatrix.h"
-#include "Teuchos_ParameterList.hpp"
+#include "EpetraExt_VectorOut.h"
+
 #include "Utils.H"
 
 #include "TRIOS_Macros.H"
 #include "TRIOS_Saddlepoint.H"
 #include "TRIOS_SolverFactory.H"
 
+#include "Teuchos_ParameterList.hpp"
 #include "Teuchos_FancyOStream.hpp"
 
 #ifdef HAVE_MPI
