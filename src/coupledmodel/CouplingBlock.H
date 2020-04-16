@@ -10,7 +10,10 @@
 #include <Epetra_Vector.h>
 #include <Epetra_MultiVector.h>
 #include <Epetra_Import.h>
+#include <Epetra_CrsMatrix.h>
 #include <Teuchos_RCP.hpp>
+
+#include "TRIOS_Domain.H"
 
 template<typename ModelRow, typename ModelCol>
 class CouplingBlock

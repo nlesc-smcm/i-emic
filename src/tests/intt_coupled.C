@@ -1,5 +1,11 @@
 #include "TestDefinitions.H"
-#include <limits>
+
+#include "NumericalJacobian.H"
+#include "Ocean.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
+#include "CoupledModel.H"
+#include "Continuation.H"
 
 #ifdef HAVE_JDQZPP
 #include "ComplexVector.H"
@@ -10,7 +16,7 @@
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-    RCP<Epetra_Comm>               comm;
+    Teuchos::RCP<Epetra_Comm>               comm;
     std::shared_ptr<Ocean>         ocean;
     std::shared_ptr<Atmosphere>    atmos;
     std::shared_ptr<SeaIce>        seaice;

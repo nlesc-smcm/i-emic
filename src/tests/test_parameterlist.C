@@ -1,9 +1,12 @@
 #include "TestDefinitions.H"
+
+#include "Continuation.H"
+#include "Ocean.H"
 #include "THCM.H"
 
 namespace // local unnamed namespace (similar to static in C)
 {
-    RCP<Epetra_Comm>  comm;
+    Teuchos::RCP<Epetra_Comm>  comm;
 }
 
 //------------------------------------------------------------------
@@ -249,7 +252,7 @@ TEST(ParameterList, MatchOverriddenSublist)
 //------------------------------------------------------------------
 TEST(THCMParameterList, DefaultInitialization)
 {
-    RCP<THCM> thcm;
+    Teuchos::RCP<THCM> thcm;
 
     bool failed = false;
     try
@@ -292,7 +295,7 @@ TEST(THCMParameterList, DefaultInitialization)
 //------------------------------------------------------------------
 TEST(THCMParameterList, Initialization)
 {
-    RCP<THCM> thcm;
+    Teuchos::RCP<THCM> thcm;
 
     thcm = Teuchos::null;
     bool failed = false;
@@ -345,7 +348,7 @@ TEST(THCMParameterList, Initialization)
 //------------------------------------------------------------------
 TEST(OceanParameterList, DefaultInitialization)
 {
-    RCP<Ocean> ocean;
+    Teuchos::RCP<Ocean> ocean;
 
     bool failed = false;
     try
@@ -388,7 +391,7 @@ TEST(OceanParameterList, DefaultInitialization)
 //------------------------------------------------------------------
 TEST(OceanParameterList, Initialization)
 {
-    RCP<Ocean> ocean;
+    Teuchos::RCP<Ocean> ocean;
 
     bool failed = false;
     try
@@ -441,9 +444,9 @@ TEST(OceanParameterList, Initialization)
 TEST(ContinuationParameterList, Initialization)
 {
     ::testing::internal::CaptureStdout();
-    RCP<Ocean> ocean = Teuchos::rcp(new Ocean(comm));
+    Teuchos::RCP<Ocean> ocean = Teuchos::rcp(new Ocean(comm));
     ::testing::internal::GetCapturedStdout();
-    RCP<Continuation<RCP<Ocean>>> continuation;
+    Teuchos::RCP<Continuation<Teuchos::RCP<Ocean>>> continuation;
 
     bool failed = false;
     try
@@ -461,13 +464,13 @@ TEST(ContinuationParameterList, Initialization)
         }
 
         // Copy of the default parameters
-        const Teuchos::ParameterList defaultParams = Continuation<RCP<Ocean>>::getDefaultInitParameters();
+        const Teuchos::ParameterList defaultParams = Continuation<Teuchos::RCP<Ocean>>::getDefaultInitParameters();
 
         // Empty parameter configuration
         Teuchos::ParameterList continuationParams = startParams;
 
         ::testing::internal::CaptureStdout();
-        continuation = Teuchos::rcp(new Continuation<RCP<Ocean>>(ocean, continuationParams));
+        continuation = Teuchos::rcp(new Continuation<Teuchos::RCP<Ocean>>(ocean, continuationParams));
         ::testing::internal::GetCapturedStdout();
 
         // Copy of the configuration reported by Continuation

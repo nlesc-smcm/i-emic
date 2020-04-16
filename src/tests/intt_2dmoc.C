@@ -1,5 +1,11 @@
 #include "TestDefinitions.H"
 
+#include <Teuchos_XMLParameterListHelpers.hpp>
+
+#include "Continuation.H"
+#include "Ocean.H"
+#include "Utils.H"
+
 #ifdef HAVE_RAILS
 #include "LyapunovModel.H"
 #endif
@@ -7,8 +13,8 @@
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-    RCP<Epetra_Comm> comm;
-    RCP<Ocean> ocean;
+    Teuchos::RCP<Epetra_Comm> comm;
+    Teuchos::RCP<Ocean> ocean;
 }
 
 //------------------------------------------------------------------
@@ -18,21 +24,21 @@ TEST(Ocean, Continuation)
     try
     {
         // Create parallel Ocean
-        RCP<Teuchos::ParameterList> oceanParams =
+        Teuchos::RCP<Teuchos::ParameterList> oceanParams =
             Utils::obtainParams("ocean_params.xml", "Ocean parameters");
         oceanParams->sublist("Belos Solver") =
             *Utils::obtainParams("solver_params.xml", "Solver parameters");
         ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
 
         // Create continuation params
-        RCP<Teuchos::ParameterList> continuationParams =
-            rcp(new Teuchos::ParameterList);
+        Teuchos::RCP<Teuchos::ParameterList> continuationParams =
+            Teuchos::rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("continuation_params.xml",
                                     continuationParams.ptr());
 
         {
             // Create contination
-            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+            Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the forcing
             int status = continuation.run();
@@ -45,7 +51,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+            Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the asymmetry parameter
             int status = continuation.run();
@@ -58,7 +64,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+            Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the salinity forcing
             int status = continuation.run();
@@ -71,7 +77,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+            Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the asymmetry parameter to get back to the symmetric state
             int status = continuation.run();
@@ -84,7 +90,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+            Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the salinity forcing to state 1
             int status = continuation.run();
@@ -102,7 +108,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+            Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the salinity forcing
             int status = continuation.run();
@@ -115,7 +121,7 @@ TEST(Ocean, Continuation)
 
         {
             // Create contination
-            Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+            Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
             // Run continuation in the salinity forcing to state 2
             int status = continuation.run();
@@ -145,7 +151,7 @@ TEST(Ocean, Lyapunov)
         std::vector<double> ev, ev2;
 
         // Create the Ocean object wrapped in a Lyapunov model
-        RCP<LyapunovModel<Ocean> > lyap = Teuchos::rcp(
+        Teuchos::RCP<LyapunovModel<Ocean> > lyap = Teuchos::rcp(
             new LyapunovModel<Ocean>(*ocean));
 
         lyap->computeCovarianceMatrix();
@@ -154,8 +160,8 @@ TEST(Ocean, Lyapunov)
         EXPECT_NEAR(ev[1], 1.76, 1e-2);
 
         // Create continuation params
-        RCP<Teuchos::ParameterList> continuationParams =
-            rcp(new Teuchos::ParameterList);
+        Teuchos::RCP<Teuchos::ParameterList> continuationParams =
+            Teuchos::rcp(new Teuchos::ParameterList);
         updateParametersFromXmlFile("continuation_params.xml",
                                     continuationParams.ptr());
 
@@ -164,7 +170,7 @@ TEST(Ocean, Lyapunov)
         continuationParams->set("initial step size", 0.1);
 
         // Create continuation
-        Continuation<RCP<LyapunovModel<Ocean>>> continuation(lyap, continuationParams);
+        Continuation<Teuchos::RCP<LyapunovModel<Ocean>>> continuation(lyap, continuationParams);
 
         // Run continuation
         int status = continuation.run();

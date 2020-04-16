@@ -1,4 +1,4 @@
-add_library(utils SHARED Utils.C)
+add_library(utils SHARED Utils.C Combined_MultiVec.C Model.C)
 
 target_link_libraries(utils PRIVATE
     ${MPI_CXX_LIBRARIES}

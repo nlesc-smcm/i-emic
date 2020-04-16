@@ -1,5 +1,13 @@
 #include "TestDefinitions.H"
+
+#include "Combined_MultiVec.H"
 #include "TRIOS_Domain.H"
+#include "Utils.H"
+
+#include "Epetra_Comm.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Vector.h"
 
 //------------------------------------------------------------------
 namespace

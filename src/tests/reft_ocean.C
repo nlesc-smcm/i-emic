@@ -1,11 +1,20 @@
 #include "TestDefinitions.H"
 
+#include <Teuchos_XMLParameterListHelpers.hpp>
+
+#include "Continuation.H"
+#include "Ocean.H"
+
+#include "TRIOS_Domain.H"
+
+#include "Epetra_Import.h"
+
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-    RCP<Teuchos::ParameterList> oceanParams;
-    RCP<Ocean> ocean;
-    RCP<Epetra_Comm>  comm;
+    Teuchos::RCP<Teuchos::ParameterList> oceanParams;
+    Teuchos::RCP<Ocean> ocean;
+    Teuchos::RCP<Epetra_Comm> comm;
 }
 
 //------------------------------------------------------------------
@@ -33,13 +42,13 @@ TEST(Ocean, Initialization)
 TEST(Ocean, Continuation)
 {
     // Create continuation params
-    RCP<Teuchos::ParameterList> continuationParams =
+    Teuchos::RCP<Teuchos::ParameterList> continuationParams =
         rcp(new Teuchos::ParameterList);
     updateParametersFromXmlFile("reft_continuation_params.xml",
                                 continuationParams.ptr());
 
     // Create contination
-    Continuation<RCP<Ocean>> continuation(ocean, continuationParams);
+    Continuation<Teuchos::RCP<Ocean>> continuation(ocean, continuationParams);
 
     // Run continuation
     int status = continuation.run();

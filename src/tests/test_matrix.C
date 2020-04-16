@@ -1,13 +1,21 @@
 #include "TestDefinitions.H"
-#include "NumericalJacobian.H"
 
-#include <limits>
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_ParameterList.hpp>
+
+#include "GlobalDefinitions.H"
+#include "Utils.H"
+
+#include "Ocean.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
+#include "CoupledModel.H"
 
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-    RCP<Epetra_Comm>               comm;
-    
+    Teuchos::RCP<Epetra_Comm>      comm;
+
     std::shared_ptr<Ocean>         ocean;
     std::shared_ptr<Atmosphere>    atmos;
     std::shared_ptr<SeaIce>        seaice;
@@ -23,16 +31,16 @@ TEST(ParameterLists, Initialization)
     try
     {
         std::vector<std::string> files = {"ocean_params.xml",
-                                     "atmosphere_params.xml",
-                                     "seaice_params.xml",
-                                     "coupledmodel_params.xml",
-                                     "continuation_params.xml"};
+                                          "atmosphere_params.xml",
+                                          "seaice_params.xml",
+                                          "coupledmodel_params.xml",
+                                          "continuation_params.xml"};
 
         std::vector<std::string> names = {"Ocean parameters",
-                                     "Atmosphere parameters",
-                                     "Sea ice parameters",
-                                     "CoupledModel parameters",
-                                     "Continuation parameters"};
+                                          "Atmosphere parameters",
+                                          "Sea ice parameters",
+                                          "CoupledModel parameters",
+                                          "Continuation parameters"};
 
         for (int i = 0; i != (int) files.size(); ++i)
             params.push_back(Utils::obtainParams(files[i], names[i]));
@@ -154,17 +162,17 @@ TEST(CoupledModel, Matrix)
     INFO("   ||s|| = " << Utils::norm(s));
     coupledModel->setPar("Combined Forcing", 0.01);
     coupledModel->computeJacobian();
-    
+
     std::shared_ptr<Combined_MultiVec> x = coupledModel->getSolution('C');
     std::shared_ptr<Combined_MultiVec> y = coupledModel->getSolution('C');
     std::shared_ptr<Combined_MultiVec> o = coupledModel->getSolution('C');
     x->PutScalar(0.0);
     o->PutScalar(1.0);
-    
+
     coupledModel->applyMatrix(*o, *x);
 
     double normx = Utils::norm(x);
-    
+
     INFO(" # cores = " << comm->NumProc());
     INFO("   ||x|| = " << normx);
 
@@ -177,9 +185,9 @@ TEST(CoupledModel, Matrix)
     {
         if (p >= comm->NumProc())
             break;
-        
+
         std::stringstream fname_load, diff;
-        fname_load << "MV_procs" << p << "_";       
+        fname_load << "MV_procs" << p << "_";
 
         Utils::load(y, fname_load.str());
         INFO("   ||y|| = " << Utils::norm(y));
@@ -188,7 +196,7 @@ TEST(CoupledModel, Matrix)
         y->Update(-1.0,*x,1.0);
         diff << "diff_" << comm->NumProc() << "-" << p;
         Utils::save(y, diff.str());
-    }        
+    }
 }
 
 //------------------------------------------------------------------

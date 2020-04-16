@@ -1,5 +1,10 @@
 #include "TestDefinitions.H"
 
+#include "Epetra_Vector.h"
+#include "Epetra_Import.h"
+
+#include "Utils.H"
+
 //------------------------------------------------------------------
 double norm(Teuchos::RCP<Epetra_Vector> vec)
 {
@@ -52,8 +57,8 @@ getGatheredVector(Teuchos::RCP<Epetra_Vector> vec)
 //------------------------------------------------------------------
 // Functions for checking Teuchos::ParameterList's
 ::testing::AssertionResult&
-operator&=
-(::testing::AssertionResult& old, const ::testing::AssertionResult& val)
+operator&=(
+    ::testing::AssertionResult& old, const ::testing::AssertionResult& val)
 {
     if (old == ::testing::AssertionSuccess()) {
         old = val;
@@ -64,47 +69,46 @@ operator&=
 }
 
 ::testing::AssertionResult
-checkDefaultParameterEntry
-(const std::string& paramName, const Teuchos::ParameterEntry& param)
+checkDefaultParameterEntry(
+    const std::string& paramName, const Teuchos::ParameterEntry& param)
 {
     if (!param.isDefault()) {
-        return ::testing::AssertionFailure() << std::endl
-            << paramName << " expected defaulted parameter" << std::endl;
+        return ::testing::AssertionFailure()
+            << std::endl << paramName << " expected defaulted parameter" << std::endl;
     }
 
     return ::testing::AssertionSuccess();
 }
 
 ::testing::AssertionResult
-checkUsedParameterEntry
-(const std::string& paramName, const Teuchos::ParameterEntry& param)
+checkUsedParameterEntry(
+    const std::string& paramName, const Teuchos::ParameterEntry& param)
 {
     if (!param.isUsed()) {
-        return ::testing::AssertionFailure() << std::endl
-            << paramName << " expected used parameter" << std::endl;
+        return ::testing::AssertionFailure()
+            << std::endl << paramName << " expected used parameter" << std::endl;
     }
 
     return ::testing::AssertionSuccess();
 }
 
 ::testing::AssertionResult
-checkUnusedParameterEntry
-(const std::string& paramName, const Teuchos::ParameterEntry& param)
+checkUnusedParameterEntry(
+    const std::string& paramName, const Teuchos::ParameterEntry& param)
 {
     if (param.isUsed()) {
-        return ::testing::AssertionFailure() << std::endl
-            << paramName << " expected unused parameter" << std::endl;
+        return ::testing::AssertionFailure()
+            << std::endl << paramName << " expected unused parameter" << std::endl;
     }
 
     return ::testing::AssertionSuccess();
 }
 
 ::testing::AssertionResult
-compareParameterEntries
-( const std::string& paramName
-, const Teuchos::ParameterEntry& param
-, const Teuchos::ParameterEntry& validParam
-)
+compareParameterEntries(
+    const std::string& paramName, const Teuchos::ParameterEntry& param,
+    const Teuchos::ParameterEntry& validParam
+    )
 {
     if (param.isType<double>() && validParam.isType<double>()) {
         if (std::isnan(param.getValue<double>(nullptr)) && std::isnan(validParam.getValue<double>(nullptr))) {
@@ -115,16 +119,16 @@ compareParameterEntries
     if (param == validParam) {
         return ::testing::AssertionSuccess();
     } else {
-        return ::testing::AssertionFailure() << std::endl
-            << paramName << ":" << std::endl
+        return ::testing::AssertionFailure()
+            << std::endl << paramName << ":" << std::endl
             << "    Found:    " << param << std::endl
             << "    Expected: " << validParam << std::endl;
     }
 }
 
 ::testing::AssertionResult
-checkSubList
-(const Teuchos::ParameterList& list, const std::string& key, bool mustExist)
+checkSubList(
+    const Teuchos::ParameterList& list, const std::string& key, bool mustExist)
 {
     if (mustExist && !list.isParameter(key)) {
         return ::testing::AssertionFailure() << key << " sublist is missing and must exist.";
@@ -136,10 +140,9 @@ checkSubList
 }
 
 ::testing::AssertionResult
-checkParameters
-( const Teuchos::ParameterList& list
-, std::function<::testing::AssertionResult(const std::string&, const Teuchos::ParameterEntry&)> fun
-)
+checkParameters(
+    const Teuchos::ParameterList& list,
+    std::function<::testing::AssertionResult(const std::string&, const Teuchos::ParameterEntry&)> fun)
 {
     auto result = ::testing::AssertionSuccess();
 
@@ -158,11 +161,10 @@ checkParameters
 }
 
 ::testing::AssertionResult
-checkParameterListAgainstDefaultAndOverrides
-( const Teuchos::ParameterList& checkList
-, const Teuchos::ParameterList& defaultList
-, const Teuchos::ParameterList& overrideList
-)
+checkParameterListAgainstDefaultAndOverrides(
+    const Teuchos::ParameterList& checkList, const Teuchos::ParameterList& defaultList,
+    const Teuchos::ParameterList& overrideList
+    )
 {
     auto result = ::testing::AssertionSuccess();
     std::set<std::string> parameters;

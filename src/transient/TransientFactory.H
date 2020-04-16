@@ -12,6 +12,7 @@
 #include "StochasticProjectedThetaModel.H"
 #include "ScoreFunctions.H"
 
+#include "Epetra_Import.h"
 #include "Epetra_MultiVector.h"
 #include "EpetraExt_CrsMatrixIn.h"
 #include "EpetraExt_MultiVectorIn.h"

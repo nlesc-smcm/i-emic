@@ -1,34 +1,41 @@
 #include "TestDefinitions.H"
+
+#include <Teuchos_XMLParameterListHelpers.hpp>
+
 #include "NumericalJacobian.H"
+#include "Atmosphere.H"
+#include "THCMdefs.H"
+
+#include "Epetra_Import.h"
 
 #include <limits>
 
 //------------------------------------------------------------------
 namespace // local unnamed namespace (similar to static in C)
 {
-    RCP<TRIOS::Domain> domain;
+Teuchos::RCP<TRIOS::Domain> domain;
 
-    RCP<Epetra_Map> standardMap;
-    RCP<Epetra_Map> assemblyMap;
-    RCP<Epetra_Map> stdSurfMap;
-    RCP<Epetra_Map> asmSurfMap;
+Teuchos::RCP<Epetra_Map> standardMap;
+Teuchos::RCP<Epetra_Map> assemblyMap;
+Teuchos::RCP<Epetra_Map> stdSurfMap;
+Teuchos::RCP<Epetra_Map> asmSurfMap;
 
-    RCP<Epetra_Import> as2std;
-    RCP<Epetra_Import> as2std_surf;
+Teuchos::RCP<Epetra_Import> as2std;
+Teuchos::RCP<Epetra_Import> as2std_surf;
 
-    RCP<Epetra_Vector> vec;
-    RCP<Epetra_Vector> localvec;
+Teuchos::RCP<Epetra_Vector> vec;
+Teuchos::RCP<Epetra_Vector> localvec;
 
-    RCP<Epetra_CrsMatrix> mat;
+Teuchos::RCP<Epetra_CrsMatrix> mat;
 
     std::shared_ptr<Atmosphere> atmos;
 
-    RCP<Teuchos::ParameterList> atmosphereParams;
+Teuchos::RCP<Teuchos::ParameterList> atmosphereParams;
 
     int n, m, l, dof, aux, periodic;
     double xmin,xmax,ymin,ymax;
 
-    RCP<Epetra_Comm> comm;
+Teuchos::RCP<Epetra_Comm> comm;
 }
 
 //------------------------------------------------------------------
@@ -37,7 +44,7 @@ TEST(Atmosphere, Initialization)
     bool failed = false;
 
     // Create atmosphere parameters
-    atmosphereParams = rcp(new Teuchos::ParameterList);
+    atmosphereParams = Teuchos::rcp(new Teuchos::ParameterList);
 
     updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
 

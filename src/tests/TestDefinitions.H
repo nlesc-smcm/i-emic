@@ -5,55 +5,19 @@
 // General definitions for tests
 //=============================================================================
 
-#include <Epetra_config.h>
-
-#  ifdef HAVE_MPI
-// Epetra's wrapper for MPI_Comm.  This header file only exists if
-// Epetra was built with MPI enabled.
-#    include <mpi.h>
-#    include <Epetra_MpiComm.h>
-#  else
-#    include <Epetra_SerialComm.h>
-#  endif // HAVE_MPI
-
-#include <EpetraExt_HDF5.h>
-
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ParameterList.hpp>
-#include <Teuchos_XMLParameterListHelpers.hpp>
-#include <Teuchos_FancyOStream.hpp>
 
-#include <ios>
-#include <iomanip>
-#include <memory>
+#include "gtest/gtest.h"
+
+#include <functional>
 #include <vector>
-#include <array>
-#include <stack>
-#include <string>
-#include <math.h> // sqrt
-#include <time.h> // for seeding
-#include <sstream>
+#include <memory>
 
-#include "THCMdefs.H"
-#include "MyParameterList.H"
-#include "NumericalJacobian.H"
-
-#include "Continuation.H"
-#include "Ocean.H"
-#include "Atmosphere.H"
-#include "SeaIce.H"
-#include "Topo.H"
-#include "CoupledModel.H"
-
-#include "gtest/gtest.h" // google test
+class Epetra_Vector;
 
 // We need this to compute norms
 extern "C" double ddot_(int *N, double *X, int *INCX, double *Y, int *INCY);
-
-//------------------------------------------------------------------
-using Teuchos::RCP;
-using Teuchos::rcp;
-using std::shared_ptr;
 
 //------------------------------------------------------------------
 double norm(Teuchos::RCP<Epetra_Vector> vec);

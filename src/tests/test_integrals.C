@@ -1,5 +1,11 @@
 #include "TestDefinitions.H"
+
 #include "NumericalJacobian.H"
+#include "Ocean.H"
+#include "Atmosphere.H"
+#include "SeaIce.H"
+#include "CoupledModel.H"
+#include "Continuation.H"
 
 namespace
 {
@@ -10,7 +16,6 @@ namespace
     std::shared_ptr<CoupledModel> coupledModel;
     std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
     enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT};
-
 }
 
 //------------------------------------------------------------------

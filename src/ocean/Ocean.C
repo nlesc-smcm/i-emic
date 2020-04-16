@@ -5,6 +5,7 @@
 #include <Epetra_Operator.h>
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_Time.h>
+#include <Epetra_Import.h>
 
 #include <EpetraExt_HDF5.h>
 #include <EpetraExt_Exception.h>
@@ -1837,6 +1838,11 @@ void Ocean::copyMask(std::string const &filename)
         else
             WARNING("Saving mask not enabled in Ocean.", __FILE__, __LINE__);
     }
+}
+
+void Ocean::dumpBlocks()
+{
+    DUMPMATLAB("ocean_jac", *jac_);
 }
 
 //==================================================================

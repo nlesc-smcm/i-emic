@@ -385,10 +385,7 @@ public:
 
     void copyMask(std::string const &fname);
 
-    void dumpBlocks()
-        {
-            DUMPMATLAB("ocean_jac", *jac_);
-        }
+    void dumpBlocks();
 
     void integralChecks(Teuchos::RCP<Epetra_Vector> state,
                         double &salt_advection,

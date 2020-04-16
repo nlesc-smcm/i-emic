@@ -14,7 +14,6 @@
 
 #include <Teuchos_RCP.hpp>
 #include <EpetraExt_RowMatrixOut.h>
-#include <EpetraExt_VectorOut.h>
 #include <mpi.h>
 
 #include "Teuchos_StandardCatchMacros.hpp"

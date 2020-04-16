@@ -1,15 +1,23 @@
 #include "TestDefinitions.H"
 
+#include <Teuchos_XMLParameterListHelpers.hpp>
+
+#include "NumericalJacobian.H"
+#include "Atmosphere.H"
+#include "Ocean.H"
+
+#include "Epetra_Import.h"
+
 // Testing the serial and parallel atmosphere
 
 //------------------------------------------------------------------
 namespace
 {
-    std::shared_ptr<AtmosLocal>    atmosLoc;
-    std::shared_ptr<Atmosphere>    atmosPar;
-    RCP<Epetra_Comm>               comm;
-    RCP<Teuchos::ParameterList>    atmosphereParams;
-    Utils::MaskStruct              mask;
+    std::shared_ptr<AtmosLocal>          atmosLoc;
+    std::shared_ptr<Atmosphere>          atmosPar;
+    Teuchos::RCP<Epetra_Comm>            comm;
+    Teuchos::RCP<Teuchos::ParameterList> atmosphereParams;
+    Utils::MaskStruct                    mask;
 }
 
 //------------------------------------------------------------------
@@ -17,7 +25,7 @@ TEST(Atmosphere, Initialization)
 {
     bool failed = false;
     // Create atmosphere parameters
-    atmosphereParams = rcp(new Teuchos::ParameterList);
+    atmosphereParams = Teuchos::rcp(new Teuchos::ParameterList);
     updateParametersFromXmlFile("atmosphere_params.xml", atmosphereParams.ptr());
 
     try
