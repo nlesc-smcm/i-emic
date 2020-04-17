@@ -76,7 +76,7 @@ foreach(test_source ${TEST_SOURCES})
 endforeach()
 
 execute_process(COMMAND ${MPIEXEC} --oversubscribe echo RESULT_VARIABLE status OUTPUT_QUIET)
-if(APPLE OR (NOT status))
+if(NOT status)
     set(MPI_OVERSUBSCRIBE "--oversubscribe")
 endif()
 
