@@ -23,6 +23,31 @@ void runOceanModel(RCP<Epetra_Comm> Comm);
 //------------------------------------------------------------------
 int main(int argc, char **argv)
 {
+    Teuchos::CommandLineProcessor clp(false);
+    clp.setDocString("This program performs an ocean-only run of I-EMIC\n");
+
+    bool describe_parameters = false;
+    clp.setOption("describe-parameters", "disable-describe-parameters", &describe_parameters,
+                  "Describe all possible parameter values");
+
+    Teuchos::CommandLineProcessor::EParseCommandLineReturn ret = clp.parse(argc, argv);
+
+    if (ret == Teuchos::CommandLineProcessor::PARSE_HELP_PRINTED)
+        return 0;
+    if (ret != Teuchos::CommandLineProcessor::PARSE_SUCCESSFUL)
+        return -1;
+
+    if (describe_parameters)
+    {
+        Teuchos::ParameterList::PrintOptions opts;
+        opts.showDoc(true);
+        Teuchos::ParameterList params;
+        params.sublist("Ocean") = Ocean::getDefaultInitParameters();
+        params.sublist("Continuation") = Continuation<RCP<Ocean>>::getDefaultInitParameters();
+        params.print(std::cout, opts);
+        return 0;
+    }
+
     // Initialize the environment:
     //  - MPI
     //  - output files
