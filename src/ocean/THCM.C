@@ -16,6 +16,7 @@
 #include <vector>
 #include <algorithm>
 
+#include "Teuchos_StandardParameterEntryValidators.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
 
 #include "Epetra_Comm.h"
@@ -2590,18 +2591,28 @@ THCM::getDefaultInitParameters()
     Teuchos::ParameterList result = getDefaultParameters();
     result.setName("THCM Default Init Parameters");
 
-    result.get("Problem Description","Unnamed");
+    result.set("Problem Description", "Unnamed",
+               "A descriptive name to identify the settings");
 
-    result.get("Global Grid-Size n", 16);
-    result.get("Global Grid-Size m", 16);
-    result.get("Global Grid-Size l", 16);
+    result.set("Global Grid-Size n", 16,
+               "Global number of grid point in the x-direction (west-east).");
+    result.set("Global Grid-Size m", 16,
+               "Global number of grid point in the y-direction (south-north).");
+    result.set("Global Grid-Size l", 16,
+               "Global number of grid point in the z-direction (depth).");
+
+    Teuchos::RCP<Teuchos::EnhancedNumberValidator<double> > longitude_validator(
+        new Teuchos::EnhancedNumberValidator<double>(-360.0, 360.0));
+
+    Teuchos::RCP<Teuchos::EnhancedNumberValidator<double> > latitude_validator(
+        new Teuchos::EnhancedNumberValidator<double>(-90.0, 90.0));
 
     // default: north atlantic
-    result.get("Global Bound xmin", 286.0);
-    result.get("Global Bound xmax", 350.0);
-    result.get("Global Bound ymin", 10.0);
-    result.get("Global Bound ymax", 74.0);
-    result.get("Periodic", false);
+    result.set("Global Bound xmin", 286.0, "Western domain bound", longitude_validator);
+    result.set("Global Bound xmax", 350.0, "Eastern domain bound", longitude_validator);
+    result.set("Global Bound ymin", 10.0, "Southern domain bound", latitude_validator);
+    result.set("Global Bound ymax", 74.0, "Northern domain bound", latitude_validator);
+    result.set("Periodic", false, "Periodic boundary conditions in the x-direction");
 
     result.get("Depth hdim", 4000.0);
     result.get("Grid Stretching qz", 1.0);
