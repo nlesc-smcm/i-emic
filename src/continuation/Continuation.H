@@ -9,6 +9,8 @@
 #include "GlobalDefinitions.H"
 #include "Utils.H"
 
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+
 #include <math.h> // pow(), sqrt()
 #include <ctime>
 #include <iomanip>
@@ -1366,7 +1368,15 @@ getDefaultInitParameters()
     result.get("corrector residual test", 'D');
     result.get("initial tangent type", 'E');
     result.get("print important vectors", false);
-    result.get("post processing", "at every point");
+
+    Teuchos::RCP<Teuchos::StringToIntegralParameterEntryValidator<int>> post_processing_validator(
+        new Teuchos::StringToIntegralParameterEntryValidator<int>(
+            Teuchos::tuple<std::string> ("at every point", "at final point"), "post processing"));
+
+    result.set("post processing", "at every point",
+               "When to call post processing as implemented by the Model",
+               post_processing_validator);
+
     result.get("predictor bound", 1e3);
 
     std::stringstream destID;
