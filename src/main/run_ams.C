@@ -50,14 +50,14 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         throw std::runtime_error("ERROR: Specify output streams");
 
     // Create parameter object for Ocean
-    RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-    oceanParams->setName("Ocean parameters");
+    RCP<Teuchos::ParameterList> oceanParams =
+        Utils::obtainParams("ocean_params.xml", "Ocean");
+
+    Utils::obtainParams(oceanParams, "solver_params.xml", "Belos Solver");
 
     // Create parameter object for ams
-    RCP<Teuchos::ParameterList> amsParams = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("ams_params.xml", amsParams.ptr());
-    amsParams->setName("AMS parameters");
+    RCP<Teuchos::ParameterList> amsParams =
+        Utils::obtainParams("ams_params.xml", "AMS parameters");
 
     // Let the ams parameters dominate over ocean parameters
     Utils::overwriteParameters(oceanParams, amsParams);

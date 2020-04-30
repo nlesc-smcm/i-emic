@@ -30,13 +30,16 @@ int main(int argc, char **argv)
         throw std::runtime_error("ERROR: Specify output streams");
 
     // Create parameters parallel Ocean
-    RCP<Teuchos::ParameterList> oceanParams =
-        rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
+    Teuchos::RCP<Teuchos::ParameterList> oceanParams =
+        Utils::obtainParams("ocean_params.xml", "Ocean");
+
+    Utils::obtainParams(oceanParams, "solver_params.xml", "Belos solver");
 
     // Create parameters for topography continuation class
-    RCP<Teuchos::ParameterList> topoParams = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("topo_params.xml", topoParams.ptr());
+    Teuchos::RCP<Teuchos::ParameterList> topoParams =
+        Utils::obtainParams("topo_params.xml", "Topo");
+
+    Utils::obtainParams(topoParams, "solver_params.xml", "Belos solver");
 
     // Create parameter object for continuation
     RCP<Teuchos::ParameterList> continuationParams =

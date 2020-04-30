@@ -52,6 +52,8 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
     RCP<Teuchos::ParameterList> oceanParams =
         Utils::obtainParams("ocean_params.xml", "Ocean");
 
+    Utils::obtainParams(oceanParams, "solver_params.xml", "Belos Solver");
+
     // Create parameter object for continuation
     RCP<Teuchos::ParameterList> continuationParams =
         Utils::obtainParams("continuation_params.xml", "Continuation");

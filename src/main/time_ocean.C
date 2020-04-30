@@ -46,9 +46,10 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         throw std::runtime_error("ERROR: Specify output streams");
 
     // Create parameter object for Ocean
-    RCP<Teuchos::ParameterList> oceanParams = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("ocean_params.xml", oceanParams.ptr());
-    oceanParams->setName("Ocean parameters");
+    RCP<Teuchos::ParameterList> oceanParams =
+        Utils::obtainParams("ocean_params.xml", "Ocean");
+
+    Utils::obtainParams(oceanParams, "solver_params.xml", "Belos Solver");
 
     double comb =
         oceanParams->sublist("THCM").
@@ -65,9 +66,8 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         Teuchos::rcp(new Ocean(Comm, oceanParams));
 
     // Create parameter object for time stepping
-    RCP<Teuchos::ParameterList> timeParams = rcp(new Teuchos::ParameterList);
-    updateParametersFromXmlFile("timestepper_params.xml", timeParams.ptr());
-    timeParams->setName("time stepper parameters");
+    RCP<Teuchos::ParameterList> timeParams =
+        Utils::obtainParams("timestepper_params.xml", "time stepper parameters");
 
     // Create time stepper
     auto stepper = TransientFactory(ocean, timeParams);
