@@ -776,6 +776,12 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
 
     params = paramList_;
+
+    for (auto& pair : params.sublist("Starting Parameters")) {
+        double val;
+        getParameter(pair.first, val);
+        paramList_.sublist("Starting Parameters").set(pair.first, val);
+    }
 }
 
 //=============================================================================
