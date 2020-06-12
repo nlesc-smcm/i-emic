@@ -249,6 +249,38 @@ TEST(ParameterList, MatchOverriddenSublist)
     EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(list, defaultList, overrideList));
 }
 
+TEST(ParameterList, CheckNanChangeFailure)
+{
+    Teuchos::ParameterList defaultList("Default List");
+
+    defaultList.get("Test", std::numeric_limits<double>::quiet_NaN());
+
+    Teuchos::ParameterList list("Test List");
+    list.set("Test", 15.0);
+
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2, list3) checks
+    // that every element in list1 matches the elements in list3. If list3 is
+    // missing an element it is matched with list2 and must be marked as
+    // defaulted
+    EXPECT_FALSE(checkParameterListAgainstDefaultAndOverrides(list, defaultList));
+}
+
+TEST(ParameterList, CheckNanChangeSuccess)
+{
+    Teuchos::ParameterList defaultList("Default List");
+
+    defaultList.get("Test", std::numeric_limits<double>::quiet_NaN());
+
+    Teuchos::ParameterList list("Test List");
+    list.set("Test", 15.0);
+
+    // checkParameterListAgainstDefaultAndOverrides(list1, list2, list3) checks
+    // that every element in list1 matches the elements in list3. If list3 is
+    // missing an element it is matched with list2 and must be marked as
+    // defaulted
+    EXPECT_TRUE(checkParameterListAgainstDefaultAndOverridesAllowNanChanges(list, defaultList));
+}
+
 //------------------------------------------------------------------
 TEST(THCMParameterList, DefaultInitialization)
 {
