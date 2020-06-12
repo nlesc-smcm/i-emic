@@ -1130,7 +1130,6 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 // reconstruct the diagonal matrix B
                 int lid = standardMap_->LID(assemblyMap_->GID(i));
                 double mass_param = 1.0;
-                this->getParameter("Mass", mass_param);
                 (*localDiagB_)[lid] = coB_[i] * mass_param;
             } //not a ghost?
         } //i-loop over rows
@@ -2655,7 +2654,8 @@ THCM::getDefaultParameters()
     Teuchos::ParameterList result("THCM Default Parameters");
 
     Teuchos::ParameterList& startParams = result.sublist("Starting Parameters");
-    for (int i=0; i<= _NPAR_ + _NPAR_TRILI; i++)
+    // Start from 1 since 0 (Time) isn't settable
+    for (int i=1; i<= _NPAR_; i++)
     {
         std::string label = int2par(i);
         startParams.get(label, std::numeric_limits<double>::quiet_NaN());
