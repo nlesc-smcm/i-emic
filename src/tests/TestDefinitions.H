@@ -149,4 +149,12 @@ checkParameterListAgainstDefaultAndOverrides
 , const Teuchos::ParameterList& defaultList
 , const Teuchos::ParameterList& overrideList = Teuchos::ParameterList()
 );
+
+// Like above, but allows values whose defaults are NaN to change.
+::testing::AssertionResult
+checkParameterListAgainstDefaultAndOverridesAllowNanChanges
+( const Teuchos::ParameterList& checkList
+, const Teuchos::ParameterList& defaultList
+, const Teuchos::ParameterList& overrideList = Teuchos::ParameterList()
+);
 #endif

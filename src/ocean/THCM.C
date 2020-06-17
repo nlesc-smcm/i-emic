@@ -770,9 +770,18 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         colScaling_->PutScalar(1.0);
     }
 
-    for (auto& pair : paramList_.sublist("Starting Parameters")) {
+    Teuchos::ParameterList tmpList = paramList_.sublist("Starting Parameters");
+
+    for (auto& pair : tmpList) {
+        std::string key = pair.first;
         double val = pair.second.getValue(&val);
-        if (!std::isnan(val)) setParameter(pair.first, val);
+        if (!std::isnan(val)) setParameter(key, val);
+        else {
+            getParameter(key, val);
+            paramList_.sublist("Starting Parameters").remove(key);
+        }
+
+        paramList_.sublist("Starting Parameters").get(key, val);
     }
 
     params = paramList_;
@@ -1130,7 +1139,6 @@ bool THCM::evaluate(const Epetra_Vector& soln,
                 // reconstruct the diagonal matrix B
                 int lid = standardMap_->LID(assemblyMap_->GID(i));
                 double mass_param = 1.0;
-                this->getParameter("Mass", mass_param);
                 (*localDiagB_)[lid] = coB_[i] * mass_param;
             } //not a ghost?
         } //i-loop over rows
@@ -1743,8 +1751,7 @@ int THCM::par2int(std::string const &label)
     int TEMP   = 17; int BIOT   = 18; int COMB   = 19; int ARCL   = 20;
     int NLES   = 21; int IFRICB = 22; int CONT   = 23; int ENER   = 24;
     int ALPC   = 25; int CMPR   = 26; int FPER   = 27; int SPER   = 28;
-    int MKAP   = 29; int SPL2   = 30; int EXPO   = 31; int SEAS   = 32;
-    int SEASW  = 33; int SEAST  = 34; int SEASS  = 35; int MASS   = 36;
+    int MKAP   = 29; int SPL2   = 30;
 
     if      (label == "Time")                            return TIME;
     else if (label == "AL_T")                            return AL_T;
@@ -1777,12 +1784,6 @@ int THCM::par2int(std::string const &label)
     else if (label == "Flux Perturbation")               return FPER;
     else if (label == "MKAP")                            return MKAP;
     else if (label == "SPL2")                            return SPL2;
-    else if (label == "Exponent")                        return EXPO;
-    else if (label == "Seasonal Forcing")                return SEAS;// combination of T,S and Wind
-    else if (label == "Seasonal Forcing (Temperature)")  return SEAST;
-    else if (label == "Seasonal Forcing (Salinity)")     return SEASS;
-    else if (label == "Seasonal Forcing (Wind)")         return SEASW;
-    else if (label == "Mass")                            return MASS;
 
     return -1;
 }
@@ -1802,8 +1803,7 @@ std::string const THCM::int2par(int index)
     int TEMP   = 17; int BIOT   = 18; int COMB   = 19; int ARCL   = 20;
     int NLES   = 21; int IFRICB = 22; int CONT   = 23; int ENER   = 24;
     int ALPC   = 25; int CMPR   = 26; int FPER   = 27; int SPER   = 28;
-    int MKAP   = 29; int SPL2   = 30; int EXPO   = 31; int SEAS   = 32;
-    int SEASW  = 33; int SEAST  = 34; int SEASS  = 35; int MASS   = 36;
+    int MKAP   = 29; int SPL2   = 30;
 
     if      (index==TIME)   label = "Time";
     else if (index==AL_T)   label = "AL_T";
@@ -1836,12 +1836,6 @@ std::string const THCM::int2par(int index)
     else if (index==SPL2)   label = "SPL2";
     else if (index==FPER)   label = "Flux Perturbation";
     else if (index==SPER)   label = "Salinity Perturbation";
-    else if (index==EXPO)   label = "Exponent";
-    else if (index==SEAS)   label = "Seasonal Forcing";
-    else if (index==SEASW)  label = "Seasonal Forcing (Wind)";
-    else if (index==SEAST)  label = "Seasonal Forcing (Temperature)";
-    else if (index==SEASS)  label = "Seasonal Forcing (Salinity)";
-    else if (index==MASS)   label = "Mass";
     else
     {
         ERROR("Parameter index is invalid!",__FILE__,__LINE__);
@@ -2655,7 +2649,8 @@ THCM::getDefaultParameters()
     Teuchos::ParameterList result("THCM Default Parameters");
 
     Teuchos::ParameterList& startParams = result.sublist("Starting Parameters");
-    for (int i=0; i<= _NPAR_ + _NPAR_TRILI; i++)
+    // Start from 1 since 0 (Time) isn't settable
+    for (int i=1; i<= _NPAR_; i++)
     {
         std::string label = int2par(i);
         startParams.get(label, std::numeric_limits<double>::quiet_NaN());

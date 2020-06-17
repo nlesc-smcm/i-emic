@@ -104,16 +104,19 @@ checkUnusedParameterEntry(
     return ::testing::AssertionSuccess();
 }
 
+bool isNaN(const Teuchos::ParameterEntry& param)
+{ return param.isType<double>() && std::isnan(param.getValue<double>(nullptr)); }
+
 ::testing::AssertionResult
 compareParameterEntries(
     const std::string& paramName, const Teuchos::ParameterEntry& param,
-    const Teuchos::ParameterEntry& validParam
+    const Teuchos::ParameterEntry& validParam, bool allowNanChanges = false
     )
 {
-    if (param.isType<double>() && validParam.isType<double>()) {
-        if (std::isnan(param.getValue<double>(nullptr)) && std::isnan(validParam.getValue<double>(nullptr))) {
-            return ::testing::AssertionSuccess() << "NaNs treated as equal";
-        }
+    if (isNaN(validParam) && isNaN(param)) {
+        return ::testing::AssertionSuccess() << "NaNs treated as equal";
+    } else if (isNaN(validParam) && param.isType<double>() && allowNanChanges) {
+        return ::testing::AssertionSuccess() << "NaNs allowed to change";
     }
 
     if (param == validParam) {
@@ -160,10 +163,13 @@ checkParameters(
     return result;
 }
 
+namespace {
 ::testing::AssertionResult
-checkParameterListAgainstDefaultAndOverrides(
-    const Teuchos::ParameterList& checkList, const Teuchos::ParameterList& defaultList,
-    const Teuchos::ParameterList& overrideList
+generalCheckParameterListAgainstDefaultAndOverrides(
+    const Teuchos::ParameterList& checkList,
+    const Teuchos::ParameterList& defaultList,
+    const Teuchos::ParameterList& overrideList,
+    bool allowNanChanges
     )
 {
     auto result = ::testing::AssertionSuccess();
@@ -190,7 +196,12 @@ checkParameterListAgainstDefaultAndOverrides(
                 sublist = overrideList.sublist(key);
             }
 
-            result &= checkParameterListAgainstDefaultAndOverrides(checkList.sublist(key), defaultedList.sublist(key), sublist);
+            result &= generalCheckParameterListAgainstDefaultAndOverrides(
+                    checkList.sublist(key),
+                    defaultedList.sublist(key),
+                    sublist,
+                    allowNanChanges
+                    );
         } else {
             std::string name = checkList.name() + "->" + key;
 
@@ -204,7 +215,7 @@ checkParameterListAgainstDefaultAndOverrides(
                 }
             }
 
-            result &= compareParameterEntries(name, value, validVal);
+            result &= compareParameterEntries(name, value, validVal, allowNanChanges);
         }
     }
 
@@ -218,4 +229,23 @@ checkParameterListAgainstDefaultAndOverrides(
     }
 
     return result;
+}
+}
+
+::testing::AssertionResult
+checkParameterListAgainstDefaultAndOverrides(
+    const Teuchos::ParameterList& checkList,
+    const Teuchos::ParameterList& defaultList,
+    const Teuchos::ParameterList& overrideList
+    )
+{ return generalCheckParameterListAgainstDefaultAndOverrides(checkList, defaultList, overrideList, false);
+}
+
+::testing::AssertionResult
+checkParameterListAgainstDefaultAndOverridesAllowNanChanges(
+    const Teuchos::ParameterList& checkList,
+    const Teuchos::ParameterList& defaultList,
+    const Teuchos::ParameterList& overrideList
+    )
+{ return generalCheckParameterListAgainstDefaultAndOverrides(checkList, defaultList, overrideList, true);
 }

@@ -24,9 +24,6 @@
 // number of parameters currently used in THCM (excluding our own params 
 // "Time" and "Exponent", which shouldn't be passed to THCM directly).   
 #define _NPAR_ 30
-// we added time (0, doesn't count) and some more parameters.
-// these are not passed on to THCM, though.
-#define _NPAR_TRILI 6
 // number of unknowns
 #define _NUN_ 6
 // number of grid neighbours
