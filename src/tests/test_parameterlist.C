@@ -307,7 +307,7 @@ TEST(THCMParameterList, DefaultInitialization)
 
         // Check that every parameter in oceanParams matches defaultParams, and
         // check that they're all reported as defaulted
-        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(thcmParams, defaultParams));
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverridesAllowNanChanges(thcmParams, defaultParams));
         EXPECT_TRUE(checkParameters(thcmParams, checkDefaultParameterEntry));
 
         // Check that every parameter reported by Ocean matches defaultParams
@@ -354,7 +354,7 @@ TEST(THCMParameterList, Initialization)
 
         // Check that every entry in oceanParams corresponds to the value in
         // startParams, missing entries are compared against defaultParams
-        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(thcmParams, defaultParams, startParams));
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverridesAllowNanChanges(thcmParams, defaultParams, startParams));
 
         // Check that every entry reported by Ocean corresponds to the value in
         // startParams, missing entries are compared against defaultParams
@@ -395,7 +395,7 @@ TEST(OceanParameterList, DefaultInitialization)
 
         // Check that every parameter in oceanParams matches defaultParams, and
         // check that they're all reported as defaulted
-        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(oceanParams, defaultParams));
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverridesAllowNanChanges(oceanParams, defaultParams));
         EXPECT_TRUE(checkParameters(oceanParams, checkDefaultParameterEntry));
 
         // Check that every parameter reported by Ocean matches defaultParams
@@ -441,7 +441,7 @@ TEST(OceanParameterList, Initialization)
 
         // Check that every entry in oceanParams corresponds to the value in
         // startParams, missing entries are compared against defaultParams
-        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverrides(oceanParams, defaultParams, startParams));
+        EXPECT_TRUE(checkParameterListAgainstDefaultAndOverridesAllowNanChanges(oceanParams, defaultParams, startParams));
 
         // Check that every entry reported by Ocean corresponds to the value in
         // startParams, missing entries are compared against defaultParams
