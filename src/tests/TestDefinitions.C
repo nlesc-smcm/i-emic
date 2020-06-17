@@ -210,7 +210,7 @@ generalCheckParameterListAgainstDefaultAndOverrides(
                 validVal = overrideList.getEntry(key);
             } else {
                 validVal = defaultedList.getEntry(key);
-                if (!value.isDefault() && !(isNaN(validVal) && allowNanChanges)) {
+                if (!value.isDefault()) {
                     result &= ::testing::AssertionFailure() << "expected " << name << " to be defaulted\n";
                 }
             }

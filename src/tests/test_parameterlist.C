@@ -272,7 +272,7 @@ TEST(ParameterList, CheckNanChangeSuccess)
     defaultList.get("Test", std::numeric_limits<double>::quiet_NaN());
 
     Teuchos::ParameterList list("Test List");
-    list.set("Test", 15.0);
+    list.get("Test", 15.0);
 
     // checkParameterListAgainstDefaultAndOverrides(list1, list2, list3) checks
     // that every element in list1 matches the elements in list3. If list3 is
