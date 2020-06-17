@@ -770,15 +770,18 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         colScaling_->PutScalar(1.0);
     }
 
-    for (auto& pair : paramList_.sublist("Starting Parameters")) {
+    Teuchos::ParameterList tmpList = paramList_.sublist("Starting Parameters");
+
+    for (auto& pair : tmpList) {
         std::string key = pair.first;
         double val = pair.second.getValue(&val);
         if (!std::isnan(val)) setParameter(key, val);
         else {
             getParameter(key, val);
             paramList_.sublist("Starting Parameters").remove(key);
-            paramList_.sublist("Starting Parameters").get(key, val);
         }
+
+        paramList_.sublist("Starting Parameters").get(key, val);
     }
 
     params = paramList_;
