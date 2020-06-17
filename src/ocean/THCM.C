@@ -771,17 +771,17 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     }
 
     for (auto& pair : paramList_.sublist("Starting Parameters")) {
+        std::string key = pair.first;
         double val = pair.second.getValue(&val);
-        if (!std::isnan(val)) setParameter(pair.first, val);
+        if (!std::isnan(val)) setParameter(key, val);
+        else {
+            getParameter(key, val);
+            paramList_.sublist("Starting Parameters").remove(key);
+            paramList_.sublist("Starting Parameters").get(key, val);
+        }
     }
 
     params = paramList_;
-
-    for (auto& pair : params.sublist("Starting Parameters")) {
-        double val;
-        getParameter(pair.first, val);
-        paramList_.sublist("Starting Parameters").set(pair.first, val);
-    }
 }
 
 //=============================================================================
