@@ -51,8 +51,8 @@ OceanGrid::OceanGrid(Teuchos::RCP<TRIOS::Domain> dom)
     l = domain->LocalL();
 
     dx = (domain->Xmax()-domain->Xmin())/(domain->GlobalN());
-    dy = (domain->Ymax()-domain->Ymin())/(domain->GlobalN());
-    dz = (domain->Zmax()-domain->Zmin())/(domain->GlobalN());
+    dy = (domain->Ymax()-domain->Ymin())/(domain->GlobalM());
+    dz = (domain->Zmax()-domain->Zmin())/(domain->GlobalL());
 
     importVector = Teuchos::rcp(new Epetra_Vector(*(domain->GetAssemblyMap())));
     // allocate memory and set pointers
