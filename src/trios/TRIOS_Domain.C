@@ -67,6 +67,16 @@ namespace TRIOS
                 else
                     return z;
             };
+
+        dfdz_ = [&](double z)
+            {
+                double ch = cosh(qz_ * (z+1));
+                if (qz_ > 1.0)
+                    return qz_ / (tanh(qz_) * ch * ch);
+                else
+                    return 1.0 + (1.0 - qz_) * (1.0 - (2.0 * z));
+            };
+
     }
 
     // Destructor
@@ -507,6 +517,78 @@ namespace TRIOS
         delete [] row_ranks;
         return new_comm;
 #endif //}
+    }
+
+    double Domain::getXpos(double x) const
+    {
+        if (x < 0 || x >= n) {
+            ERROR("Index out of bounds!",__FILE__,__LINE__);
+        }
+
+        double dx = (xmax-xmin)/n;
+        return x*dx + xmin;
+    }
+
+    double Domain::getYpos(double y) const
+    {
+        if (y < 0 || y >= m) {
+            ERROR("Index out of bounds!",__FILE__,__LINE__);
+        }
+
+        double dy = (ymax-ymin)/m;
+        return y*dy + ymin;
+    }
+
+    double Domain::getZpos(double z) const
+    {
+        if (z < 0 || z >= l) {
+            ERROR("Index out of bounds!",__FILE__,__LINE__);
+        }
+
+        double dz, ze, dfzT;
+
+        dz = (zmax-zmin)/l;
+        ze = z*dz + zmin;
+        dfzT = dfdz_(ze);
+
+        return dz * dfzT * hdim;
+    }
+
+    double Domain::getXposEdge(int x) const
+    { return getXpos(x); }
+
+    double Domain::getYposEdge(int y) const
+    { return getYpos(y); }
+
+    double Domain::getZposEdge(int z) const
+    { return getZpos(z); }
+
+    double Domain::getXposCenter(int x) const
+    {
+        if (x == 0) {
+            ERROR("Center not defined at index 0!",__FILE__,__LINE__);
+        }
+
+        return getXpos(x - 0.5);
+    }
+
+    double Domain::getYposCenter(int y) const
+    {
+        double dy = (ymax-ymin)/m;
+
+        if (y == 0) return getYposCenter(1) - dy;
+        else if (y == m+1) return getYposCenter(m) + dy;
+
+        return getYpos(y - 0.5);
+    }
+
+    double Domain::getZposCenter(int z) const
+    {
+        if (z == 0) {
+            ERROR("Center not defined at index 0!",__FILE__,__LINE__);
+        }
+
+        return getZpos(z - 0.5);
     }
 
 /////////////////////////////////////////////////////////////////////////////////

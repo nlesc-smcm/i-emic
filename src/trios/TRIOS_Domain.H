@@ -231,6 +231,16 @@ namespace TRIOS {
         double Zmax() const {return zmax;}
         //@}
 
+        //@{ get physical position of grid index
+        double getXposEdge(int x) const;
+        double getYposEdge(int y) const;
+        double getZposEdge(int z) const;
+
+        double getXposCenter(int x) const;
+        double getYposCenter(int y) const;
+        double getZposCenter(int z) const;
+        //@}
+
         //! returns true if the given local index 'li' is on a
         //! ghost-node. 'nun' is specified to indicate the unknowns
         //! per grid point
@@ -285,6 +295,11 @@ namespace TRIOS {
         int Standard2Solve(const Epetra_CrsMatrix& source, Epetra_CrsMatrix& target) const;
 
     protected:
+        //@{ get physical position of grid position
+        double getXpos(double x) const;
+        double getYpos(double y) const;
+        double getZpos(double z) const;
+        //@}
 
         //! communicator object
         Teuchos::RCP<Epetra_Comm> comm;
@@ -347,6 +362,8 @@ namespace TRIOS {
 
         //! vertical grid stretching function
         std::function<double(double)> fz_;
+
+        std::function<double(double)> dfdz_;
 
         //! number of unknowns per grid cell
         int dof_;
