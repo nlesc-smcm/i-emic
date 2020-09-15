@@ -22,6 +22,8 @@ namespace // local unnamed namespace (similar to static in C)
     std::shared_ptr<CoupledModel>  coupledModel;
     std::vector<Teuchos::RCP<Teuchos::ParameterList> > params;
     enum Ident { OCEAN, ATMOS, SEAICE, COUPLED, CONT};
+
+    std::string num_procs = "";
 }
 
 //------------------------------------------------------------------
@@ -45,6 +47,7 @@ TEST(ParameterLists, Initialization)
         for (int i = 0; i != (int) files.size(); ++i)
             params.push_back(Utils::obtainParams(files[i], names[i]));
 
+        params[OCEAN]->sublist("THCM").set<std::string>("Problem Description", "Test-" + num_procs);
         params[OCEAN]->sublist("Belos Solver") =
             *Utils::obtainParams("solver_params.xml", "Solver parameters");
 
@@ -206,6 +209,9 @@ int main(int argc, char **argv)
     comm = initializeEnvironment(argc, argv);
     if (outFile == Teuchos::null)
         throw std::runtime_error("ERROR: Specify output streams");
+
+    num_procs = std::to_string(comm->NumProc());
+    num_procs += ":" + std::to_string(comm->MyPID());
 
     ::testing::InitGoogleTest(&argc, argv);
 
