@@ -70,7 +70,7 @@ extern "C" {
                        int* ih, int* vmix, int* tap, int* rho_mixing,
                        int* coriolis_on,
                        int* periodic, int* landm,
-                       double* taux, double* tauy, double* tatm, double* emip, double* spert);
+                       double* taux, double* tauy, double* tatm, double* emip, double* spert, const char* probdesc);
 
     _SUBROUTINE_(set_landmask)(int* landm, int* periodic, int* reinit);
 
@@ -592,7 +592,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                 &ih, &vmix_, &tap, &irho_mixing,
                 &coriolis_on,
                 &perio, landm,
-                taux, tauy, tatm, emip, spert);
+                taux, tauy, tatm, emip, spert, probdesc.c_str());
 
     INFO("   initialize THCM subdomain done");
 

@@ -9,7 +9,8 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
      a_ih,a_vmix,a_tap,a_rho_mixing,&
      a_coriolis_on,&
      a_periodic,a_landm,&
-     a_taux,a_tauy,a_tatm,a_emip,a_spert)
+     a_taux,a_tauy,a_tatm,a_emip,a_spert,&
+     a_probdesc)
 
   use, intrinsic :: iso_c_binding
   use m_usr
@@ -17,6 +18,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   use m_mix
   use m_atm
   use m_mat
+  use m_dumparray
 
   implicit none
 
@@ -29,6 +31,7 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   integer(c_int), dimension((a_n+2)*(a_m+2)*(a_l+2)) :: a_landm
   real(c_double), dimension(a_n*a_m) :: a_taux,a_tauy
   real(c_double), dimension(a_n*a_m) :: a_tatm,a_emip,a_spert
+  character(kind=c_char), intent(in) :: a_probdesc(*)
 
   ! LOCAL
   real    :: dzne
@@ -119,6 +122,16 @@ SUBROUTINE init(a_n,a_m,a_l,a_nmlglob,&
   end do
 
   call grid
+  call dumparray(x, a_probdesc, "x")
+  call dumparray(xu, a_probdesc, "xu")
+  call dumparray(y, a_probdesc, "y")
+  call dumparray(yv, a_probdesc, "yv")
+  call dumparray(z, a_probdesc, "z")
+  call dumparray(ze, a_probdesc, "ze")
+  call dumparray(zw, a_probdesc, "zw")
+  call dumparray(zwe, a_probdesc, "zwe")
+  call dumparray(dfzT, a_probdesc, "dfzT")
+  call dumparray(dfzW, a_probdesc, "dfzW")
 
   ! When the grid is known we can set nondimensionalization
   ! coefficients for the body forcing.

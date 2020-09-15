@@ -1,6 +1,9 @@
 !*************************************************
 SUBROUTINE grid
-  use m_usr
+  ! only read
+  use m_usr, only: f99, xmin, xmax, ymin, ymax, zmin, zmax, n, m, l, hdim, pi, qz
+  ! read/write
+  use m_usr, only: dx, dy, dz, x, xu, y, yv, z, ze, zw, zwe, dfzT, dfzW
   implicit none
   integer i,j,k
   !     EXTERNAL
