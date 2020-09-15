@@ -10,7 +10,7 @@
   <!-- Parameters that affect THCM { -->
   <ParameterList name="THCM">
     <!-- a descriptive name to identify the settings -->
-    <Parameter name="Problem Description" type="string" value="Test"/>
+    <Parameter name="Problem Description" type="string" value="Test-reft"/>
     <!-- western domain bound -->
     <Parameter name="Global Bound xmin" type="double" value="300"/>
     <!-- eastern domain bound -->
