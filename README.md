@@ -1,3 +1,15 @@
+# I-EMIC: an Implicit Earth system Model of Intermediate Complexity.
+The I-EMIC is a parallel Earth system model that allows the use of large-scale dynamical systems techniques. The term  'implicit' refers to this model's main design feature: all model equations and constraints are solved simultaneously. A Jacobian matrix and preconditioning techniques are available for efficient Newton iterations that are involved in implicit time stepping and continuation strategies.
+
+The I-EMIC contains a number of fully implicit submodels coupled through a modular framework. At the center of the coupled model is the implicit primitive equation ocean model THCM [1]. THCM is extended with models of modest complexity that describe varying aspects of the climate, including atmospheric heat and moisture transport, the formation of sea ice and the adjustment of albedo over snow and ice.
+
+For a description of the model equations, see [2].
+
+[1] Dijkstra, H. A., Oksuzoglu, H., Wubs, F. W., and Botta, E. F. F. (2001). A fully implicit model of the three-dimensional thermohaline ocean circulation. Journal of Computational Physics, 173(2):685–715.
+
+[2] Mulder, T. E. Design and bifurcation analysis of implicit Earth System Models. Dissertation (June, 2019),
+Utrecht University, https://dspace.library.uu.nl/handle/1874/381139
+
 # Build instructions
 
 ## Dependencies:
