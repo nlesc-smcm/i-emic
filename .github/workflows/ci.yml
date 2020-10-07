@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    
+    strategy:
+      matrix:
+        include:
+          - cc: gcc
+            cxx: g++
+            fc: gfortran
+          - cc: clang
+            cxx: clang++
+            fc: gfortran
+    
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+      FC: ${{ matrix.fc }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install gfortran libopenblas-dev libhdf5-openmpi-dev libptscotch-dev trilinos-all-dev libslicot-dev
+      
+      - name: Checkout RAILS
+        uses: actions/checkout@v2
+        with:
+          repository: Sbte/RAILS
+          path: RAILS
+
+      - name: Install RAILS
+        run: |
+          cd RAILS
+          mkdir build
+          cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$HOME/local ..
+          make -j
+          make install
+      
+      - name: Checkout JDQZPP
+        uses: actions/checkout@v2
+        with:
+          repository: erik808/jdqzpp
+          path: JDQZPP
+
+      - name: Install JDQZPP
+        run: |
+          cd JDQZPP
+          mkdir build
+          cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$HOME/local ..
+          make -j
+          make install
+          
+      - name: Build I-EMIC
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$HOME/local ..
+          make -j
+      
+      - name: Test I-EMIC
+        run: |
+          cd build
+          make check
