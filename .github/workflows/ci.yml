@@ -8,30 +8,49 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    
     strategy:
       matrix:
         include:
-          - cc: gcc
-            cxx: g++
-            fc: gfortran
-          - cc: clang
-            cxx: clang++
-            fc: gfortran
-    
-    env:
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
-      FC: ${{ matrix.fc }}
+          - os: 'ubuntu-20.04'
+            env:
+              CC: gcc
+              CXX: g++
+              FC: gfortran
+          - os: 'ubuntu-20.04'
+            env:
+              CC: clang
+              CXX: clang++
+              FC: gfortran
+          - os: 'macos-latest'
+            env:
+              CMAKE_PREFIX_PATH: /usr/local/opt/trilinos/
+              CC: gcc
+              CXX: g++
+              FC: gfortran
+          - os: 'macos-latest'
+            env:
+              CMAKE_PREFIX_PATH: /usr/local/opt/trilinos/
+              CC: clang
+              CXX: clang++
+              FC: gfortran
+
+    runs-on: ${{ matrix.os }}
+    env: ${{ matrix.env }}
 
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install dependencies
+      - name: Install dependencies (Linux)
         run: |
           sudo apt-get install gfortran libopenblas-dev libhdf5-openmpi-dev libptscotch-dev trilinos-all-dev libslicot-dev
-      
+        if: matrix.os == 'ubuntu-20.04'
+
+      - name: Install dependencies (MacOS)
+        run: |
+          brew tap nlesc/nlesc
+          brew install nlesc/nlesc/trilinos nlesc/nlesc/slicot
+        if: matrix.os == 'macos-latest'
+
       - name: Checkout RAILS
         uses: actions/checkout@v2
         with:
