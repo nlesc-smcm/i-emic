@@ -1277,13 +1277,13 @@ void Ocean::computeRHS()
 }
 
 //=====================================================================
-void Ocean::computeForcing()
+void Ocean::computeStochasticForcing()
 {
     // evaluate rhs in THCM with the current state
-    TIMER_START("Ocean: compute Frc...");
-    THCM::Instance().computeForcing();
-    frc_ = THCM::Instance().getForcing();
-    TIMER_STOP("Ocean: compute Frc...");
+    TIMER_START("Ocean: compute stochastic Frc...");
+    THCM::Instance().computeStochasticForcing();
+    stochasticFrc_ = THCM::Instance().getStochasticForcing();
+    TIMER_STOP("Ocean: compute stochastic Frc...");
 }
 
 //=====================================================================

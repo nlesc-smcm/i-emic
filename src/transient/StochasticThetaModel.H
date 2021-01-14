@@ -35,8 +35,8 @@ public:
         StochasticBase(*comm, params),
         sigma_(params->get("sigma", 1.0))
         {
-            Model::computeForcing();
-            B_ = Model::getForcing();
+            Model::computeStochasticForcing();
+            B_ = Model::getStochasticForcing();
         }
 
     template<typename ParameterList>
@@ -46,8 +46,8 @@ public:
         StochasticBase(*model.Comm(), params),
         sigma_(params->get("sigma", 1.0))
         {
-            Model::computeForcing();
-            B_ = Model::getForcing();
+            Model::computeStochasticForcing();
+            B_ = Model::getStochasticForcing();
         }
 
     void initStep(double timestep)

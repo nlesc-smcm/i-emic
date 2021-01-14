@@ -52,8 +52,8 @@ int LyapunovModel<Model>::computeCovarianceMatrix()
     Model::computeJacobian();
     auto A = Model::getJacobian();
 
-    Model::computeForcing();
-    auto B = Model::getForcing();
+    Model::computeStochasticForcing();
+    auto B = Model::getStochasticForcing();
 
     CHECK_ZERO(B->Scale(params->get("sigma", 1.0)));
 

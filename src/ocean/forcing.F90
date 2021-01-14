@@ -217,7 +217,7 @@ SUBROUTINE forcing
 
 end subroutine forcing
 
-SUBROUTINE stochastic_forcing
+SUBROUTINE get_stochastic_forcing
   use m_usr
   use m_mat
   implicit none
@@ -262,7 +262,7 @@ SUBROUTINE stochastic_forcing
   par(SPER) = oldpar
   call forcing
 
-end subroutine stochastic_forcing
+end subroutine get_stochastic_forcing
 
 !****************************************************************************
 SUBROUTINE windfit

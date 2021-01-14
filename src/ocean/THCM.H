@@ -170,7 +170,7 @@ public:
     void evaluateB();
 
     //! Compute the forcing matrix used for the stochasic forcing
-    bool computeForcing();
+    bool computeStochasticForcing();
 
     //! ------------------- I-EMIC couplings --------------------
     //!Flags enabling the coupling with the I-EMIC, separated into a
@@ -263,8 +263,8 @@ public:
     //! returns the Jacobian matrix (Global/Solve form)
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
 
-    //! returns the Forcing matrix (Global/Solve form)
-    Teuchos::RCP<Epetra_CrsMatrix> getForcing();
+    //! returns the Stochastic Forcing matrix (Global/Solve form)
+    Teuchos::RCP<Epetra_CrsMatrix> getStochasticForcing();
 
     //! get null space
     Teuchos::RCP<const Epetra_MultiVector> getNullSpace();
@@ -419,10 +419,10 @@ private:
     Teuchos::RCP<Epetra_CrsMatrix> localJac_, testJac_;
 
     //! Forcing in globally assembled and load-balanced
-    Teuchos::RCP<Epetra_CrsMatrix> frc_;
+    Teuchos::RCP<Epetra_CrsMatrix> stochasticFrc_;
 
     //! Forcing based on standard subdomains
-    Teuchos::RCP<Epetra_CrsMatrix> localFrc_;
+    Teuchos::RCP<Epetra_CrsMatrix> localStochasticFrc_;
 
     //! type of scaling to be done
     std::string scalingType_;
