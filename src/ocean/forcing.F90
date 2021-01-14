@@ -217,6 +217,21 @@ SUBROUTINE forcing
 
 end subroutine forcing
 
+SUBROUTINE get_forcing(out)
+  use, intrinsic :: iso_c_binding
+  use m_usr
+  use m_mat
+  implicit none
+
+  real(c_double), dimension(ndim) :: out
+  integer row
+
+  do row=1,ndim
+     out(row) = Frc(row)
+  enddo
+
+end subroutine get_forcing
+
 SUBROUTINE get_stochastic_forcing
   use m_usr
   use m_mat

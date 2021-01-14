@@ -78,6 +78,7 @@ protected:
     MatrixPtr jac_;
     MatrixPtr stochasticFrc_;
     VectorPtr diagB_;
+    VectorPtr frc_;
 
     VectorPtr rowScaling_;
     VectorPtr colScaling_;
@@ -194,6 +195,7 @@ public:
     VectorPtr getState(char mode = 'C');
     VectorPtr getRHS(char mode = 'C');
     VectorPtr getMassMat(char mode = 'C');
+    VectorPtr getForcing(char mode = 'C');
 
     //! Binary diagonal for UVTS parts
     Teuchos::RCP<Epetra_Vector> getM(char mode = 'C');

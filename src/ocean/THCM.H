@@ -260,6 +260,9 @@ public:
     //! Returns initial guess (Global/Solve form)
     Teuchos::RCP<Epetra_Vector> getSolution();
 
+    //! Returns the forcing (Global/Solve form)
+    Teuchos::RCP<Epetra_Vector> getForcing();
+
     //! returns the Jacobian matrix (Global/Solve form)
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
 
@@ -372,6 +375,12 @@ private:
 
     //! used to import current approximation to THCM:
     Teuchos::RCP<Epetra_Vector> localSol_;
+
+    //! current forcing as used in THCM to compute the RHS
+    Teuchos::RCP<Epetra_Vector> frc_;
+
+    //! used to import the current forcing
+    Teuchos::RCP<Epetra_Vector> localFrc_;
 
     //! used to import atmosphere temperature into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosT_;

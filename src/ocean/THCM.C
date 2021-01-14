@@ -55,6 +55,7 @@ extern "C" {
     _SUBROUTINE_(rhs)(double* un, double* b);
     _SUBROUTINE_(setsres)(int* sres);
     _SUBROUTINE_(matrix)(double* un);
+    _SUBROUTINE_(get_forcing)(double* frc);
     _SUBROUTINE_(get_stochastic_forcing)();
 
     _SUBROUTINE_(init)(int* n, int* m, int* l, int* nmlglob,
@@ -591,9 +592,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // Create internal vectors
     initialSolution_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     diagB_           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+    frc_             = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     localDiagB_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     localRhs_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localFrc_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // 2D overlapping interface fields
     localAtmosT_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -933,6 +936,17 @@ bool THCM::computeStochasticForcing()
 Teuchos::RCP<Epetra_CrsMatrix> THCM::getStochasticForcing()
 {
     return stochasticFrc_;
+}
+
+Teuchos::RCP<Epetra_Vector> THCM::getForcing()
+{
+    double* frc;
+    localFrc_->ExtractView(&frc);
+    FNAME(get_forcing)(frc);
+
+    domain_->Assembly2Solve(*localFrc_, *frc_);
+
+    return frc_;
 }
 
 //=============================================================================
