@@ -46,6 +46,7 @@ extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*,
                                  double*);
 extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
+extern "C" _SUBROUTINE_(get_nondimensionalization_parameters)(double*);
 extern "C" _SUBROUTINE_(set_atmos_parameters)(Atmosphere::CommPars*);
 extern "C" _SUBROUTINE_(set_seaice_parameters)(SeaIce::CommPars*);
 
