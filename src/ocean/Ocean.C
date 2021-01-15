@@ -40,7 +40,6 @@ using Teuchos::rcp;
 //=====================================================================
 // Get access to a few THCM functions
 extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
-extern "C" _SUBROUTINE_(getparcs)(int*, double*);
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*,
                                  double*);
@@ -2186,15 +2185,9 @@ void Ocean::pressureProjection(Teuchos::RCP<Epetra_Vector> vec)
 double Ocean::getPar(std::string const &parName)
 {
     // We only allow parameters that are available in THCM
-    int parIdent = THCM::Instance().par2int(parName);
-    if (parIdent > 0 && parIdent <= _NPAR_)
-    {
-        double thcmPar;
-        FNAME(getparcs)(&parIdent, &thcmPar);
-        return thcmPar;
-    }
-    else  // If parameter not available we return 0
-        return 0;
+    double value = 0.0;
+    THCM::Instance().getParameter(parName, value);
+    return value;
 }
 
 //====================================================================
