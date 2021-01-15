@@ -41,7 +41,6 @@ using Teuchos::rcp;
 // Get access to a few THCM functions
 extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
 extern "C" _SUBROUTINE_(getparcs)(int*, double*);
-extern "C" _SUBROUTINE_(setparcs)(int*,double*);
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*,
                                  double*);
@@ -2211,9 +2210,7 @@ std::string Ocean::int2par(int ind) const
 void Ocean::setPar(std::string const &parName, double value)
 {
     // We only allow parameters that are available in THCM
-    int parIdent = THCM::Instance().par2int(parName);
-    if (parIdent > 0 && parIdent <= _NPAR_)
-        FNAME(setparcs)(&parIdent, &value);
+    THCM::Instance().setParameter(parName, value);
 }
 
 //====================================================================
