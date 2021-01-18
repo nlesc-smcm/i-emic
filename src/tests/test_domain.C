@@ -1,6 +1,7 @@
 #include "TestDefinitions.H"
 
 #include <Teuchos_XMLParameterListHelpers.hpp>
+#include <EpetraExt_HDF5.h>
 
 #include "NumericalJacobian.H"
 #include "Atmosphere.H"
@@ -36,6 +37,49 @@ Teuchos::RCP<Teuchos::ParameterList> atmosphereParams;
     double xmin,xmax,ymin,ymax;
 
 Teuchos::RCP<Epetra_Comm> comm;
+
+::testing::AssertionResult
+validateDomain(int qz)
+{
+   ::testing::AssertionResult result = ::testing::AssertionSuccess();
+
+    xmin = 286 * PI_ / 180;
+    xmax = 350 * PI_ / 180;
+    ymin =  10 * PI_ / 180;
+    ymax =  74 * PI_ / 180;
+
+    n        = 16;
+    m        = 16;
+    l        = 8;
+    periodic = false;
+    double hdim = 4000.0;
+
+    domain = Teuchos::rcp(new TRIOS::Domain(n, m, l, _NUN_,
+                                            xmin, xmax, ymin, ymax,
+                                            periodic, hdim, qz, comm));
+
+    const TRIOS::Grid& grid = domain->GetGlobalGrid();
+
+    EpetraExt::HDF5 HDF5(*comm);
+    HDF5.Open("domain_values.hdf5");
+
+    std::string groupName = "qz" + std::to_string(qz);
+    HDF5.CreateGroup(groupName);
+
+    HDF5.Write(groupName, "x", H5T_NATIVE_DOUBLE, grid.x_.size(), grid.x_.get());
+    HDF5.Write(groupName, "xu", H5T_NATIVE_DOUBLE, grid.xu_.size(), grid.xu_.get());
+    HDF5.Write(groupName, "y", H5T_NATIVE_DOUBLE, grid.y_.size(), grid.y_.get());
+    HDF5.Write(groupName, "yv", H5T_NATIVE_DOUBLE, grid.yv_.size(), grid.yv_.get());
+    HDF5.Write(groupName, "z", H5T_NATIVE_DOUBLE, grid.z_.size(), grid.z_.get());
+    HDF5.Write(groupName, "zw", H5T_NATIVE_DOUBLE, grid.zw_.size(), grid.zw_.get());
+
+    HDF5.Flush();
+    HDF5.Close();
+
+    domain = Teuchos::null;
+
+    return result;
+}
 }
 
 //------------------------------------------------------------------
@@ -71,7 +115,6 @@ TEST(Atmosphere, Initialization)
 
     EXPECT_EQ(failed, false);
 }
-
 
 //------------------------------------------------------------------
 TEST(Domain, SimpleInit)
@@ -526,6 +569,41 @@ TEST(Domain, numericalJacobian)
 }
 
 //------------------------------------------------------------------
+TEST(Domain, GridValidationNoStretch)
+{
+    bool failed = false;
+
+    try
+    {
+        EXPECT_TRUE(validateDomain(1));
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(Domain, GridValidationStretch)
+{
+    bool failed = false;
+
+    try
+    {
+        EXPECT_TRUE(validateDomain(2));
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
+}
+
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:
@@ -535,6 +613,10 @@ int main(int argc, char **argv)
 
     ::testing::InitGoogleTest(&argc, argv);
 
+    EpetraExt::HDF5 HDF5(*comm);
+    HDF5.Create("domain_values.hdf5");
+    HDF5.Flush();
+    HDF5.Close();
     // -------------------------------------------------------
     // TESTING
     int out = RUN_ALL_TESTS();
