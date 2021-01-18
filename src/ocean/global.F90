@@ -47,7 +47,7 @@ module m_global
   ! here are some things we cannot use from m_usr as they may (and are
   ! likely to) differ between the computational and global domains
   real :: xmin, xmax, ymin, ymax
-  real, dimension(:),allocatable :: x,y,z,xu,yv,zw
+  real, dimension(:), allocatable, target :: x,y,z,xu,yv,zw
   real :: dx, dy, dz
   integer, dimension(:,:,:),allocatable :: landm
   real, dimension(:,:), allocatable :: taux, tauy, tatm, emip, spert
@@ -295,6 +295,66 @@ contains
     !      dfzw(0) = dfdz(zmin,qz)
 
   end subroutine g_grid
+
+  subroutine get_x(asize,ptr) bind(C,name="get_global_x")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(out) :: asize
+    type(c_ptr), intent(out) :: ptr
+
+    asize = size(x)
+    ptr = c_loc(x(1))
+  end subroutine get_x
+
+  subroutine get_xu(asize,ptr) bind(C,name="get_global_xu")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(out) :: asize
+    type(c_ptr), intent(out) :: ptr
+
+    asize = size(xu)
+    ptr = c_loc(xu(0))
+  end subroutine get_xu
+
+  subroutine get_y(asize,ptr) bind(C,name="get_global_y")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(out) :: asize
+    type(c_ptr), intent(out) :: ptr
+
+    asize = size(y)
+    ptr = c_loc(y(1))
+  end subroutine get_y
+
+  subroutine get_yv(asize,ptr) bind(C,name="get_global_yv")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(out) :: asize
+    type(c_ptr), intent(out) :: ptr
+
+    asize = size(yv)
+    ptr = c_loc(yv(0))
+  end subroutine get_yv
+
+  subroutine get_z(asize,ptr) bind(C,name="get_global_z")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(out) :: asize
+    type(c_ptr), intent(out) :: ptr
+
+    asize = size(z)
+    ptr = c_loc(z(1))
+  end subroutine get_z
+
+  subroutine get_zw(asize,ptr) bind(C,name="get_global_zw")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(out) :: asize
+    type(c_ptr), intent(out) :: ptr
+
+    asize = size(zw)
+    ptr = c_loc(zw(0))
+  end subroutine get_zw
 
   !! this is supposed to be called once by the root
   !! proc with a standard 0:n+1,0:m+1,0:l+1 1D C
