@@ -53,6 +53,7 @@ validateDomain(int qz)
     l        = 8;
     periodic = false;
     double hdim = 4000.0;
+    std::vector<double> ref_values;
 
     domain = Teuchos::rcp(new TRIOS::Domain(n, m, l, _NUN_,
                                             xmin, xmax, ymin, ymax,
@@ -64,16 +65,67 @@ validateDomain(int qz)
     HDF5.Open("domain_values.hdf5");
 
     std::string groupName = "qz" + std::to_string(qz);
-    HDF5.CreateGroup(groupName);
 
-    HDF5.Write(groupName, "x", H5T_NATIVE_DOUBLE, grid.x_.size(), grid.x_.get());
-    HDF5.Write(groupName, "xu", H5T_NATIVE_DOUBLE, grid.xu_.size(), grid.xu_.get());
-    HDF5.Write(groupName, "y", H5T_NATIVE_DOUBLE, grid.y_.size(), grid.y_.get());
-    HDF5.Write(groupName, "yv", H5T_NATIVE_DOUBLE, grid.yv_.size(), grid.yv_.get());
-    HDF5.Write(groupName, "z", H5T_NATIVE_DOUBLE, grid.z_.size(), grid.z_.get());
-    HDF5.Write(groupName, "zw", H5T_NATIVE_DOUBLE, grid.zw_.size(), grid.zw_.get());
+    ref_values.resize(grid.x_.size());
+    HDF5.Read(groupName, "x", H5T_NATIVE_DOUBLE, grid.x_.size(), ref_values.data());
+    for (int i = 0; i < grid.x_.size(); i++) {
+        if (abs(ref_values[i] - grid.x_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "x.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.x_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
 
-    HDF5.Flush();
+    ref_values.resize(grid.y_.size());
+    HDF5.Read(groupName, "y", H5T_NATIVE_DOUBLE, grid.y_.size(), ref_values.data());
+    for (int i = 0; i < grid.y_.size(); i++) {
+        if (abs(ref_values[i] - grid.y_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "y.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.y_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
+    ref_values.resize(grid.z_.size());
+    HDF5.Read(groupName, "z", H5T_NATIVE_DOUBLE, grid.z_.size(), ref_values.data());
+    for (int i = 0; i < grid.z_.size(); i++) {
+        if (abs(ref_values[i] - grid.z_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "z.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.z_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
+    ref_values.resize(grid.xu_.size());
+    HDF5.Read(groupName, "xu", H5T_NATIVE_DOUBLE, grid.xu_.size(), ref_values.data());
+    for (int i = 0; i < grid.xu_.size(); i++) {
+        if (abs(ref_values[i] - grid.xu_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "xu.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.xu_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
+    ref_values.resize(grid.yv_.size());
+    HDF5.Read(groupName, "yv", H5T_NATIVE_DOUBLE, grid.yv_.size(), ref_values.data());
+    for (int i = 0; i < grid.yv_.size(); i++) {
+        if (abs(ref_values[i] - grid.yv_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "yv.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.yv_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
+    ref_values.resize(grid.zw_.size());
+    HDF5.Read(groupName, "zw", H5T_NATIVE_DOUBLE, grid.zw_.size(), ref_values.data());
+    for (int i = 0; i < grid.zw_.size(); i++) {
+        if (abs(ref_values[i] - grid.zw_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "zw.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.zw_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
     HDF5.Close();
 
     domain = Teuchos::null;
@@ -613,10 +665,6 @@ int main(int argc, char **argv)
 
     ::testing::InitGoogleTest(&argc, argv);
 
-    EpetraExt::HDF5 HDF5(*comm);
-    HDF5.Create("domain_values.hdf5");
-    HDF5.Flush();
-    HDF5.Close();
     // -------------------------------------------------------
     // TESTING
     int out = RUN_ALL_TESTS();
