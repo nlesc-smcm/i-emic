@@ -22,6 +22,7 @@ class Epetra_CrsMatrix;
 class Epetra_Import;
 
 namespace TRIOS {
+    //! (sub)domain geometry
     struct Grid
     {
         int n_, m_, l_;
@@ -122,15 +123,15 @@ namespace TRIOS {
 
         //! return number of grid points in the entire domain
         //! in east-west direction
-        inline int GlobalN() const {return n;}
+        inline int GlobalN() const {return gridGlb_.n_;}
 
         //! return number of grid points in the entire domain
         //! in north-south direction
-        inline int GlobalM() const {return m;}
+        inline int GlobalM() const {return gridGlb_.m_;}
 
         //! return number of grid points in the entire domain
         //! in z direction
-        inline int GlobalL() const {return l;}
+        inline int GlobalL() const {return gridGlb_.l_;}
 
         //! return dof
         inline int Dof() const {return dof_;}
@@ -237,21 +238,22 @@ namespace TRIOS {
         //! Obtain global grid
         const Grid& GetGlobalGrid() {return gridGlb_;}
 
+        double Hdim() const {return gridGlb_.hdim_;}
+
         //@{ get physical bound of the subdomain
-        double XminLoc() const {return xminLoc;}
-        double XmaxLoc() const {return xmaxLoc;}
-        double YminLoc() const {return yminLoc;}
-        double YmaxLoc() const {return ymaxLoc;}
-        double Hdim() const {return hdim;}
+        double XminLoc() const {return gridLoc_.xmin_;}
+        double XmaxLoc() const {return gridLoc_.xmax_;}
+        double YminLoc() const {return gridLoc_.ymin_;}
+        double YmaxLoc() const {return gridLoc_.ymax_;}
         //@}
 
         //@{ get physical bound of the global domain
-        double Xmin() const {return xmin;}
-        double Xmax() const {return xmax;}
-        double Ymin() const {return ymin;}
-        double Ymax() const {return ymax;}
-        double Zmin() const {return zmin;}
-        double Zmax() const {return zmax;}
+        double Xmin() const {return gridGlb_.xmin_;}
+        double Xmax() const {return gridGlb_.xmax_;}
+        double Ymin() const {return gridGlb_.ymin_;}
+        double Ymax() const {return gridGlb_.ymax_;}
+        double Zmin() const {return gridGlb_.zmin_;}
+        double Zmax() const {return gridGlb_.zmax_;}
         //@}
 
         //! returns true if the given local index 'li' is on a
@@ -340,9 +342,6 @@ namespace TRIOS {
         int Loff,Moff,Noff; //! offsets where the subdomain starts (with ghost nodes)
         int Loff0,Moff0,Noff0; //! offsets where the subdomain starts (without ghost nodes)
 
-        double xminLoc,xmaxLoc,yminLoc,ymaxLoc,zminLoc,zmaxLoc,hdim; //! subdomain geometry
-        double xmin,xmax,ymin,ymax,zmin,zmax; //! global domain geometry
-
         //! position in processor array
         int pidL,pidM,pidN;
 
@@ -364,9 +363,6 @@ namespace TRIOS {
           there is a neighbour is increased by this amount
         */
         static const int numGhosts = 2;
-
-        //! vertical grid stretching
-        double qz_;
 
         //! number of unknowns per grid cell
         int dof_;

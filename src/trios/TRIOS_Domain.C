@@ -174,12 +174,7 @@ namespace TRIOS
         :
         comm(Comm),
         n(N), m(M), l(L),
-        hdim(Hdim),
-        xmin(Xmin), xmax(Xmax), ymin(Ymin), ymax(Ymax),
-        zmin(-1),
-        zmax(0),
         periodic(Periodic),
-        qz_(qz),
         dof_(dof),
         aux_(aux),
         gridGlb_(qz, N, M, L, Xmin, Xmax, Ymin, Ymax, Hdim)
@@ -351,79 +346,8 @@ namespace TRIOS
 
         std2sol = Teuchos::null;
 
-        // determine the physical bounds of the subdomain
-        // (must be passed to THCM)
-
-        // grid constants as computed in 'grid.f':
-        double dx = (xmax-xmin)/n;
-        double dy = (ymax-ymin)/m;
-
-        xminLoc = xmin + Noff*dx;
-        xmaxLoc = xmin + (Noff+nloc)*dx;
-        yminLoc = ymin + Moff*dy;
-        ymaxLoc = ymin + (Moff+mloc)*dy;
-
         // Create local grid (including ghost nodes)
-        gridLoc_ = Grid(qz_, nloc, mloc, lloc, xminLoc, xmaxLoc, yminLoc, ymaxLoc, hdim);
-
-        bool incorrect = false;
-        Grid check = gridGlb_.SubGrid(Noff, Moff, nloc, mloc, lloc);
-
-        if (gridLoc_.x_.size() != check.x_.size()) ERROR("x size mismatch!",__FILE__,__LINE__);
-        for (int i = 0; i < check.x_.size(); i++) {
-            if (gridLoc_.x_[i] != check.x_[i]) {
-                std::cout << "x[" << i << "]: " << gridLoc_.x_[i] << "\t"
-                          << check.x_[i] << std::endl;
-                incorrect = true;
-            }
-        }
-
-        if (gridLoc_.y_.size() != check.y_.size()) ERROR("y size mismatch!",__FILE__,__LINE__);
-        for (int i = 0; i < check.y_.size(); i++) {
-            if (gridLoc_.y_[i] != check.y_[i]) {
-                std::cout << "y[" << i << "]: " << gridLoc_.y_[i] << "\t"
-                          << check.y_[i] << std::endl;
-                incorrect = true;
-            }
-        }
-
-        if (gridLoc_.z_.size() != check.z_.size()) ERROR("z size mismatch!",__FILE__,__LINE__);
-        for (int i = 0; i < check.z_.size(); i++) {
-            if (gridLoc_.z_[i] != check.z_[i]) {
-                std::cout << "z[" << i << "]: " << gridLoc_.z_[i] << "\t"
-                          << check.z_[i] << std::endl;
-                incorrect = true;
-            }
-        }
-
-        if (gridLoc_.xu_.size() != check.xu_.size()) ERROR("xu size mismatch!",__FILE__,__LINE__);
-        for (int i = 0; i < check.xu_.size(); i++) {
-            if (gridLoc_.xu_[i] != check.xu_[i]) {
-                std::cout << "xu[" << i << "]: " << gridLoc_.xu_[i] << "\t"
-                          << check.xu_[i] << std::endl;
-                incorrect = true;
-            }
-        }
-
-        if (gridLoc_.yv_.size() != check.yv_.size()) ERROR("yv size mismatch!",__FILE__,__LINE__);
-        for (int i = 0; i < check.yv_.size(); i++) {
-            if (gridLoc_.yv_[i] != check.yv_[i]) {
-                std::cout << "yv[" << i << "]: " << gridLoc_.yv_[i] << "\t"
-                          << check.yv_[i] << std::endl;
-                incorrect = true;
-            }
-        }
-
-        if (gridLoc_.zw_.size() != check.zw_.size()) ERROR("zw size mismatch!",__FILE__,__LINE__);
-        for (int i = 0; i < check.zw_.size(); i++) {
-            if (gridLoc_.zw_[i] != check.zw_[i]) {
-                std::cout << "zw[" << i << "]: " << gridLoc_.zw_[i] << "\t"
-                          << check.zw_[i] << std::endl;
-                incorrect = true;
-            }
-        }
-
-        if (incorrect) ERROR("Wrong results!",__FILE__,__LINE__);
+        gridLoc_ = gridGlb_.SubGrid(Noff, Moff, nloc, mloc, lloc);
     }
 
     // find out wether a particular local index is on a ghost node
