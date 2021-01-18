@@ -47,7 +47,7 @@ module m_global
   ! here are some things we cannot use from m_usr as they may (and are
   ! likely to) differ between the computational and global domains
   real :: xmin, xmax, ymin, ymax
-  real, dimension(:),allocatable :: x,y,z,xu,yv,zw,ze,zwe
+  real, dimension(:),allocatable :: x,y,z,xu,yv,zw
   real :: dx, dy, dz
   integer, dimension(:,:,:),allocatable :: landm
   real, dimension(:,:), allocatable :: taux, tauy, tatm, emip, spert
@@ -152,7 +152,7 @@ contains
     internal_temp=0.0
     landm = 0
 
-    allocate(x(n),y(m),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l))
+    allocate(x(n),y(m),z(l),xu(0:n),yv(0:m),zw(0:l))
 
     call g_grid
     ! end if ! new dimensions?
@@ -176,8 +176,6 @@ contains
     if (allocated(xu)) deallocate(xu)
     if (allocated(yv)) deallocate(yv)
     if (allocated(zw)) deallocate(zw)
-    if (allocated(ze)) deallocate(ze)
-    if (allocated(zwe)) deallocate(zwe)
 
     if (allocated(taux)) deallocate(taux)
     if (allocated(tauy)) deallocate(tauy)
@@ -279,22 +277,21 @@ contains
     ENDDO
 
     xu(0) = xmin
+    yv(0) = ymin
+    zw(0) = zmin
+
     DO j=1,m
        y(j) = (real(j)-0.5)*dy + ymin
        yv(j)= (real(j)    )*dy + ymin
     ENDDO
-    yv(0) = ymin
     DO k=1,l
-       ze(k)  = (real(k)-0.5)*dz + zmin
-       zwe(k) = (real(k)    )*dz + zmin
-       z(k)   = fz(ze(k) ,qz)
-       zw(k)  = fz(zwe(k),qz)
+       z(k)   = fz((real(k)-0.5)*dz + zmin, qz)
+       zw(k)  = fz((real(k)    )*dz + zmin, qz)
        ! compute derivatives of mapping at T- points
        !        dfzT(k) = dfdz(ze(k),qz)
        ! compute derivatives of mapping at w- points
        !        dfzW(k) = dfdz(zwe(k),qz)
     ENDDO
-    zw(0) = zmin
     !      dfzw(0) = dfdz(zmin,qz)
 
   end subroutine g_grid
