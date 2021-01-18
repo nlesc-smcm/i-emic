@@ -158,15 +158,13 @@ int Model::saveStateToFile(std::string const &filename)
 
 
     // Write grid arrays
-    std::string gridArrays[6] = {"x", "y", "z",
-                                 "xu", "yv", "zw"};
-
-    for (int i = 0; i != 6; ++i)
-    {
-        std::vector<double> array = (*getDomain()->GetGlobalGrid())[i];
-        HDF5.Write("Grid", gridArrays[i], H5T_NATIVE_DOUBLE,
-                   array.size(), &array[0]);
-    }
+    const TRIOS::Grid& grid = getDomain()->GetGlobalGrid();
+    HDF5.Write("Grid", "x", H5T_NATIVE_DOUBLE, grid.x_.size(), grid.x_.get());
+    HDF5.Write("Grid", "y", H5T_NATIVE_DOUBLE, grid.y_.size(), grid.y_.get());
+    HDF5.Write("Grid", "z", H5T_NATIVE_DOUBLE, grid.z_.size(), grid.z_.get());
+    HDF5.Write("Grid", "xu", H5T_NATIVE_DOUBLE, grid.xu_.size(), grid.xu_.get());
+    HDF5.Write("Grid", "yv", H5T_NATIVE_DOUBLE, grid.yv_.size(), grid.yv_.get());
+    HDF5.Write("Grid", "zw", H5T_NATIVE_DOUBLE, grid.zw_.size(), grid.zw_.get());
 
     additionalExports(HDF5, filename);
     comm_->Barrier();
