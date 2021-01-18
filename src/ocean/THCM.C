@@ -48,13 +48,6 @@
 //============================================================================
 extern "C" {
 
-    void get_global_x(int*, double**);
-    void get_global_xu(int*, double**);
-    void get_global_y(int*, double**);
-    void get_global_yv(int*, double**);
-    void get_global_z(int*, double**);
-    void get_global_zw(int*, double**);
-
     void set_global_x(int*, double*);
     void set_global_xu(int*, double*);
     void set_global_y(int*, double*);
@@ -353,99 +346,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
         set_global_yv(&size, grid.yv_.get());
         size = grid.zw_.size();
         set_global_zw(&size, grid.zw_.get());
-    }
-
-    if (comm_->MyPID() == 0) { // this one is responsible for I/O
-        const TRIOS::Grid& grid = domain_->GetGlobalGrid();
-        int size;
-        double *array;
-        bool incorrect = false;
-
-        get_global_x(&size, &array);
-        if (size != domain_->GetGlobalGrid().x_.size()) {
-            std::cout << "x size mismatch! Found: " << size << "\texpected: "
-                      << grid.x_.size() << std::endl;
-            incorrect = true;
-        }
-        for (int i = 0; i < size; i++) {
-            double v = grid.x_[i];
-            std::cout << "x[" << i << "]: " << array[i] << "\t" << v << std::endl;
-            if (array[i] != v) {
-                incorrect = true;
-            }
-        }
-
-        get_global_xu(&size, &array);
-        if (size != grid.xu_.size()) {
-            std::cout << "xu size mismatch! Found: " << size << "\texpected: "
-                      << grid.xu_.size() << std::endl;
-            incorrect = true;
-        }
-        for (int i = 0; i < size; i++) {
-            double v = grid.xu_[i];
-            std::cout << "xu[" << i << "]: " << array[i] << "\t" << v << std::endl;
-            if (array[i] != v) {
-                incorrect = true;
-            }
-        }
-
-        get_global_y(&size, &array);
-        if (size != grid.y_.size()) {
-            std::cout << "y size mismatch! Found: " << size << "\texpected: "
-                      << grid.y_.size() << std::endl;
-            incorrect = true;
-        }
-        for (int i = 0; i < size; i++) {
-            double v = grid.y_[i];
-            std::cout << "y[" << i << "]: " << array[i] << "\t" << v << std::endl;
-            if (array[i] != v) {
-                incorrect = true;
-            }
-        }
-
-        get_global_yv(&size, &array);
-        if (size != grid.yv_.size()) {
-            std::cout << "yv size mismatch! Found: " << size << "\texpected: "
-                      << grid.yv_.size() << std::endl;
-            incorrect = true;
-        }
-        for (int i = 0; i < size; i++) {
-            double v = grid.yv_[i];
-            std::cout << "yv[" << i << "]: " << array[i] << "\t" << v << std::endl;
-            if (array[i] != v) {
-                incorrect = true;
-            }
-        }
-
-        get_global_z(&size, &array);
-        if (size != grid.z_.size()) {
-            std::cout << "z size mismatch! Found: " << size << "\texpected: "
-                      << grid.z_.size() << std::endl;
-            incorrect = true;
-        }
-        for (int i = 0; i < size; i++) {
-            double v = grid.z_[i];
-            std::cout << "z[" << i << "]: " << array[i] << "\t" << v << std::endl;
-            if (array[i] != v) {
-                incorrect = true;
-            }
-        }
-
-        get_global_zw(&size, &array);
-        if (size != grid.zw_.size()) {
-            std::cout << "zw size mismatch! Found: " << size << "\texpected: "
-                      << grid.zw_.size() << std::endl;
-            incorrect = true;
-        }
-        for (int i = 0; i < size; i++) {
-            double v = grid.zw_[i];
-            std::cout << "zw[" << i << "]: " << array[i] << "\t" << v << std::endl;
-            if (array[i] != v) {
-                incorrect = true;
-            }
-        }
-
-        if (incorrect) ERROR("Wrong results!",__FILE__,__LINE__);
     }
 
     if (localSres_) // from here on we ignore the integral condition
