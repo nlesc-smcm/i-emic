@@ -1,6 +1,7 @@
 #include "TestDefinitions.H"
 
 #include <Teuchos_XMLParameterListHelpers.hpp>
+#include <EpetraExt_HDF5.h>
 
 #include "NumericalJacobian.H"
 #include "Atmosphere.H"
@@ -36,6 +37,101 @@ Teuchos::RCP<Teuchos::ParameterList> atmosphereParams;
     double xmin,xmax,ymin,ymax;
 
 Teuchos::RCP<Epetra_Comm> comm;
+
+::testing::AssertionResult
+validateDomain(int qz)
+{
+   ::testing::AssertionResult result = ::testing::AssertionSuccess();
+
+    xmin = 286 * PI_ / 180;
+    xmax = 350 * PI_ / 180;
+    ymin =  10 * PI_ / 180;
+    ymax =  74 * PI_ / 180;
+
+    n        = 16;
+    m        = 16;
+    l        = 8;
+    periodic = false;
+    double hdim = 4000.0;
+    std::vector<double> ref_values;
+
+    domain = Teuchos::rcp(new TRIOS::Domain(n, m, l, _NUN_,
+                                            xmin, xmax, ymin, ymax,
+                                            periodic, hdim, qz, comm));
+
+    const TRIOS::Grid& grid = domain->GetGlobalGrid();
+
+    EpetraExt::HDF5 HDF5(*comm);
+    HDF5.Open("domain_values.hdf5");
+
+    std::string groupName = "qz" + std::to_string(qz);
+
+    ref_values.resize(grid.x_.size());
+    HDF5.Read(groupName, "x", H5T_NATIVE_DOUBLE, grid.x_.size(), ref_values.data());
+    for (int i = 0; i < grid.x_.size(); i++) {
+        if (abs(ref_values[i] - grid.x_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "x.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.x_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
+    ref_values.resize(grid.y_.size());
+    HDF5.Read(groupName, "y", H5T_NATIVE_DOUBLE, grid.y_.size(), ref_values.data());
+    for (int i = 0; i < grid.y_.size(); i++) {
+        if (abs(ref_values[i] - grid.y_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "y.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.y_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
+    ref_values.resize(grid.z_.size());
+    HDF5.Read(groupName, "z", H5T_NATIVE_DOUBLE, grid.z_.size(), ref_values.data());
+    for (int i = 0; i < grid.z_.size(); i++) {
+        if (abs(ref_values[i] - grid.z_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "z.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.z_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
+    ref_values.resize(grid.xu_.size());
+    HDF5.Read(groupName, "xu", H5T_NATIVE_DOUBLE, grid.xu_.size(), ref_values.data());
+    for (int i = 0; i < grid.xu_.size(); i++) {
+        if (abs(ref_values[i] - grid.xu_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "xu.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.xu_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
+    ref_values.resize(grid.yv_.size());
+    HDF5.Read(groupName, "yv", H5T_NATIVE_DOUBLE, grid.yv_.size(), ref_values.data());
+    for (int i = 0; i < grid.yv_.size(); i++) {
+        if (abs(ref_values[i] - grid.yv_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "yv.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.yv_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
+    ref_values.resize(grid.zw_.size());
+    HDF5.Read(groupName, "zw", H5T_NATIVE_DOUBLE, grid.zw_.size(), ref_values.data());
+    for (int i = 0; i < grid.zw_.size(); i++) {
+        if (abs(ref_values[i] - grid.zw_[i]) > 1e-15) {
+            result &= ::testing::AssertionFailure() << std::endl
+                << "zw.qz" << std::to_string(qz) << "[" << i << "]: Found "
+                << grid.zw_[i] << " expected " << ref_values[i] << std::endl;
+        }
+    }
+
+    HDF5.Close();
+
+    domain = Teuchos::null;
+
+    return result;
+}
 }
 
 //------------------------------------------------------------------
@@ -71,7 +167,6 @@ TEST(Atmosphere, Initialization)
 
     EXPECT_EQ(failed, false);
 }
-
 
 //------------------------------------------------------------------
 TEST(Domain, SimpleInit)
@@ -524,6 +619,41 @@ TEST(Domain, numericalJacobian)
         INFO("****Numerical Jacobian test cannot run for this problem size****");
     }
 }
+
+//------------------------------------------------------------------
+TEST(Domain, GridValidationNoStretch)
+{
+    bool failed = false;
+
+    try
+    {
+        EXPECT_TRUE(validateDomain(1));
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
+}
+
+//------------------------------------------------------------------
+TEST(Domain, GridValidationStretch)
+{
+    bool failed = false;
+
+    try
+    {
+        EXPECT_TRUE(validateDomain(2));
+    }
+    catch (...)
+    {
+        failed = true;
+        throw;
+    }
+    EXPECT_EQ(failed, false);
+}
+
 
 //------------------------------------------------------------------
 int main(int argc, char **argv)

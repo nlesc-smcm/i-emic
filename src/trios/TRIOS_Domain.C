@@ -28,6 +28,139 @@
 
 namespace TRIOS
 {
+    Grid::Grid() : Grid(0.0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    {}
+
+    Grid::Grid(double qz, int N, int M, int L, double xmin, double xmax,
+               double ymin, double ymax, double hdim)
+        : n_(N), m_(M), l_(L)
+        , xmin_(xmin), xmax_(xmax)
+        , ymin_(ymin), ymax_(ymax)
+        , zmin_(-1.0), zmax_(0), hdim_(hdim)
+        , x_(N), y_(M), z_(L), xu_(N+1), yv_(M+1), zw_(L+1)
+        , qz_(qz)
+        , depth_(L+1, 0.0), cumulativeDepth_(L, 0.0)
+    {
+        double dx = (xmax_ - xmin_) / n_;
+        double dy = (ymax_ - ymin_) / m_;
+        double dz = (zmax_ - zmin_) / l_;
+
+        xu_[0] = xmin_;
+        yv_[0] = ymin_;
+        zw_[0] = zmin_;
+
+        for (int i = 0; i != n_; ++i)
+        {
+            x_[i]    = xmin_ + (i + 0.5) * dx;
+            xu_[i+1] = xmin_ + (i + 1.0) * dx;
+        }
+
+        for (int j = 0; j != m_; ++j)
+        {
+            y_[j]    = ymin_ + (j + 0.5) * dy;
+            yv_[j+1] = ymin_ + (j + 1.0) * dy;
+        }
+
+        for (int k = 0; k != l_; ++k)
+        {
+            z_[k]    = fz(zmin_ + (k + 0.5) * dz);
+            zw_[k+1] = fz(zmin_ + (k + 1.0) * dz);
+            depth_[k] = dfdz(zmin_ + (k + 0.5) * dz);
+
+            for (int i = 0; i <= k; i++)
+            {
+                cumulativeDepth_[i] += depth_[k];
+            }
+        }
+    }
+
+    Grid Grid::SubGrid(int Noff, int Moff, int nloc, int mloc, int lloc) const
+    {
+        double dx = (xmax_ - xmin_) / n_;
+        double dy = (ymax_ - ymin_) / m_;
+
+        double xminLoc = xmin_ + Noff*dx;
+        double xmaxLoc = xmin_ + (Noff+nloc)*dx;
+        double yminLoc = ymin_ + Moff*dy;
+        double ymaxLoc = ymin_ + (Moff+mloc)*dy;
+
+        return Grid(qz_, nloc, mloc, lloc, xminLoc, xmaxLoc, yminLoc, ymaxLoc, hdim_);
+    }
+
+    double Grid::getXposEdge(int x) const
+    {
+        if (x < 0 || x > n_) {
+            ERROR("X index out of bounds!",__FILE__,__LINE__);
+        }
+
+        return xu_[x];
+    }
+
+    double Grid::getXposCenter(int x) const
+    {
+        if (x < 0 || x >= n_) {
+            ERROR("X index out of bounds!",__FILE__,__LINE__);
+        }
+
+        return x_[x];
+    }
+
+    double Grid::getYposEdge(int y) const
+    {
+        if (y < 0 || y > m_) {
+            ERROR("Y index out of bounds!",__FILE__,__LINE__);
+        }
+
+        return yv_[y];
+    }
+
+    double Grid::getYposCenter(int y) const
+    {
+        if (y < 0 || y >= m_) {
+            ERROR("Y index out of bounds!",__FILE__,__LINE__);
+        }
+
+        return y_[y];
+    }
+
+    double Grid::getZposEdge(int z) const
+    {
+        if (z < 0 || z >= l_) {
+            ERROR("Z index out of bounds!",__FILE__,__LINE__);
+        }
+
+        double dz = (zmax_ - zmin_) / l_;
+        return -hdim_ * dz * cumulativeDepth_[z];
+    }
+
+    double Grid::getZposCenter(int z) const
+    {
+        if (z < 0 || z >= l_) {
+            ERROR("Z index out of bounds!",__FILE__,__LINE__);
+        }
+
+        double dz = (zmax_ - zmin_) / l_;
+        double result = cumulativeDepth_[z+1] + 0.5 * depth_[z];
+        return -hdim_ * dz * result;
+    }
+
+    double Grid::fz(double z)
+    {
+        if (qz_ > 1.0)
+            return -1.0 + tanh(qz_ * (z + 1.0)) / tanh(qz_);
+        else
+            return z;
+    }
+
+    double Grid::dfdz(double z)
+    {
+        double ch = cosh(qz_ * (z+1));
+        if (qz_ > 1.0)
+            return qz_ / (tanh(qz_) * ch * ch);
+        else
+            return 1.0 + (1.0 - qz_) * (1.0 - (2.0 * z));
+    };
+
     /* Constructor
        input: dimensions of the global box:
        - N: east-west
@@ -41,14 +174,10 @@ namespace TRIOS
         :
         comm(Comm),
         n(N), m(M), l(L),
-        hdim(Hdim),
-        xmin(Xmin), xmax(Xmax), ymin(Ymin), ymax(Ymax),
-        zmin(-1),
-        zmax(0),
         periodic(Periodic),
-        qz_(qz),
         dof_(dof),
-        aux_(aux)
+        aux_(aux),
+        gridGlb_(qz, N, M, L, Xmin, Xmax, Ymin, Ymax, Hdim)
     {
         int dim = m * n * l * dof_ + aux_;
         int *MyGlobalElements = new int[dim];
@@ -58,15 +187,6 @@ namespace TRIOS
 
         ColMap = Teuchos::rcp(new Epetra_Map(dim, dim, MyGlobalElements, 0, *comm));
         delete [] MyGlobalElements;
-
-        // create vertical grid stretching function
-        fz_ = [&] (double z)
-            {
-                if (qz_ > 1.0)
-                    return -1.0 + tanh(qz_ * (z + 1.0)) / tanh(qz_);
-                else
-                    return z;
-            };
     }
 
     // Destructor
@@ -226,71 +346,8 @@ namespace TRIOS
 
         std2sol = Teuchos::null;
 
-        // determine the physical bounds of the subdomain
-        // (must be passed to THCM)
-
-        // grid constants as computed in 'grid.f':
-        double dx = (xmax-xmin)/n;
-        double dy = (ymax-ymin)/m;
-
-        xminLoc = xmin + Noff*dx;
-        xmaxLoc = xmin + (Noff+nloc)*dx;
-        yminLoc = ymin + Moff*dy;
-        ymaxLoc = ymin + (Moff+mloc)*dy;
-
-        gridLoc_ = Teuchos::rcp(new std::vector<std::vector<double> >(6));
-        gridGlb_ = Teuchos::rcp(new std::vector<std::vector<double> >(6));
-
         // Create local grid (including ghost nodes)
-        CreateGrid(*gridLoc_, {xminLoc, xmaxLoc, yminLoc, ymaxLoc, zmin, zmax},
-                   {nloc, mloc, lloc});
-
-        // Create global grid
-        CreateGrid(*gridGlb_, {xmin, xmax, ymin, ymax, zmin, zmax}, {n, m, l});
-    }
-
-    // Create global and local grid values
-    // bounds: xmin, xmax, ymin, ymax, zmin, zmax
-    // sizes: N, M, L
-    void Domain::CreateGrid(std::vector<std::vector<double> > &grid,
-                            double const (&bounds)[6],
-                            int const (&sizes)[3])
-    {
-        enum bndInds {xmin, xmax, ymin, ymax, zmin, zmax};
-        enum szsInds {N, M, L};
-        enum grdInds {x, y, z, xu, yv, zw};
-
-        double dx = (bounds[xmax]-bounds[xmin])/sizes[N];
-        double dy = (bounds[ymax]-bounds[ymin])/sizes[M];
-        double dz = (bounds[zmax]-bounds[zmin])/sizes[L];
-
-        grid[x] = std::vector<double>(sizes[N]);
-        grid[y] = std::vector<double>(sizes[M]);
-        grid[z] = std::vector<double>(sizes[L]);
-
-        grid[xu] = std::vector<double>(sizes[N]+1);
-        grid[yv] = std::vector<double>(sizes[M]+1);
-        grid[zw] = std::vector<double>(sizes[L]+1);
-
-        grid[xu][0] = bounds[xmin];
-        grid[yv][0] = bounds[ymin];
-        grid[zw][0] = bounds[zmin];
-
-        for (int i = 0; i != sizes[N]; ++i)
-        {
-            grid[x][i]    = bounds[xmin] + (i + 0.5) * dx;
-            grid[xu][i+1] = bounds[xmin] + (i + 1.0) * dx;
-        }
-        for (int j = 0; j != sizes[M]; ++j)
-        {
-            grid[y][j]    = bounds[ymin] + (j + 0.5) * dy;
-            grid[yv][j+1] = bounds[ymin] + (j + 1.0) * dy;
-        }
-        for (int k = 0; k != sizes[L]; ++k)
-        {
-            grid[z][k]    = fz_(bounds[zmin] + (k + 0.5) * dz);
-            grid[zw][k+1] = fz_(bounds[zmin] + (k + 1.0) * dz);
-        }
+        gridLoc_ = gridGlb_.SubGrid(Noff, Moff, nloc, mloc, lloc);
     }
 
     // find out wether a particular local index is on a ghost node

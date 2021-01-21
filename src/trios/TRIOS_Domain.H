@@ -8,7 +8,9 @@
 #ifndef TRIOS_DOMAIN_H
 #define TRIOS_DOMAIN_H
 
-#include "Teuchos_RCP.hpp"
+#include <Teuchos_ArrayRCPDecl.hpp>
+#include <Teuchos_RCP.hpp>
+
 
 #include <functional>
 #include <vector>
@@ -20,6 +22,37 @@ class Epetra_CrsMatrix;
 class Epetra_Import;
 
 namespace TRIOS {
+    //! (sub)domain geometry
+    struct Grid
+    {
+        int n_, m_, l_;
+        double xmin_, xmax_, ymin_, ymax_, zmin_, zmax_, hdim_;
+
+        Teuchos::ArrayRCP<double> x_, y_, z_, xu_, yv_, zw_;
+
+        Grid();
+        Grid(double qz, int N, int M, int L, double xmin, double xmax,
+             double ymin, double ymax, double hdim);
+
+        Grid SubGrid(int Noff, int Moff, int nloc, int mloc, int lloc) const;
+
+        double getXposEdge(int x) const;
+        double getXposCenter(int x) const;
+        double getYposEdge(int y) const;
+        double getYposCenter(int y) const;
+        double getZposEdge(int z) const;
+        double getZposCenter(int z) const;
+
+      private:
+        // vertical grid stretching function
+        double fz(double);
+        double dfdz(double);
+
+        //! vertical grid stretching
+        double qz_;
+
+        Teuchos::ArrayRCP<double> depth_, cumulativeDepth_;
+    };
 
     //! domain decomposition class
 
@@ -35,9 +68,6 @@ namespace TRIOS {
     {
 
     public:
-
-        using Grid = std::vector<std::vector<double> >;
-
         //! Constructor
         /*!
           input: dimensions of the global box:
@@ -79,12 +109,6 @@ namespace TRIOS {
         */
         void Decomp2D();
 
-        //! Create grid with center values x,y,z and edge values xu yv zw. The resulting ordering of
-        //! the arrays in the grid is the grid is {x, y, z, xu, yv, zw}.
-        void CreateGrid(Grid &grid,
-                        double const (&bounds)[6],
-                        int const (&sizes)[3]);
-
         //! return number of grid cells in the subdomain
         //! in east-west direction (including ghost-nodes)
         inline int LocalN() const {return nloc;}
@@ -99,15 +123,15 @@ namespace TRIOS {
 
         //! return number of grid points in the entire domain
         //! in east-west direction
-        inline int GlobalN() const {return n;}
+        inline int GlobalN() const {return gridGlb_.n_;}
 
         //! return number of grid points in the entire domain
         //! in north-south direction
-        inline int GlobalM() const {return m;}
+        inline int GlobalM() const {return gridGlb_.m_;}
 
         //! return number of grid points in the entire domain
         //! in z direction
-        inline int GlobalL() const {return l;}
+        inline int GlobalL() const {return gridGlb_.l_;}
 
         //! return dof
         inline int Dof() const {return dof_;}
@@ -208,27 +232,28 @@ namespace TRIOS {
         //! 'Allgather/Scatter' operations.
         Teuchos::RCP<Epetra_Map> GetColMap(){return ColMap;}
 
-        //! Obtain local grid, see CreateGrid()
-        Teuchos::RCP<Grid> GetLocalGrid() {return gridLoc_;}
+        //! Obtain local grid
+        Grid GetLocalGrid() {return gridLoc_;}
 
-        //! Obtain global grid, see CreateGrid()
-        Teuchos::RCP<Grid> GetGlobalGrid() {return gridGlb_;}
+        //! Obtain global grid
+        const Grid& GetGlobalGrid() {return gridGlb_;}
+
+        double Hdim() const {return gridGlb_.hdim_;}
 
         //@{ get physical bound of the subdomain
-        double XminLoc() const {return xminLoc;}
-        double XmaxLoc() const {return xmaxLoc;}
-        double YminLoc() const {return yminLoc;}
-        double YmaxLoc() const {return ymaxLoc;}
-        double Hdim() const {return hdim;}
+        double XminLoc() const {return gridLoc_.xmin_;}
+        double XmaxLoc() const {return gridLoc_.xmax_;}
+        double YminLoc() const {return gridLoc_.ymin_;}
+        double YmaxLoc() const {return gridLoc_.ymax_;}
         //@}
 
         //@{ get physical bound of the global domain
-        double Xmin() const {return xmin;}
-        double Xmax() const {return xmax;}
-        double Ymin() const {return ymin;}
-        double Ymax() const {return ymax;}
-        double Zmin() const {return zmin;}
-        double Zmax() const {return zmax;}
+        double Xmin() const {return gridGlb_.xmin_;}
+        double Xmax() const {return gridGlb_.xmax_;}
+        double Ymin() const {return gridGlb_.ymin_;}
+        double Ymax() const {return gridGlb_.ymax_;}
+        double Zmin() const {return gridGlb_.zmin_;}
+        double Zmax() const {return gridGlb_.zmax_;}
         //@}
 
         //! returns true if the given local index 'li' is on a
@@ -317,9 +342,6 @@ namespace TRIOS {
         int Loff,Moff,Noff; //! offsets where the subdomain starts (with ghost nodes)
         int Loff0,Moff0,Noff0; //! offsets where the subdomain starts (without ghost nodes)
 
-        double xminLoc,xmaxLoc,yminLoc,ymaxLoc,zminLoc,zmaxLoc,hdim; //! subdomain geometry
-        double xmin,xmax,ymin,ymax,zmin,zmax; //! global domain geometry
-
         //! position in processor array
         int pidL,pidM,pidN;
 
@@ -342,12 +364,6 @@ namespace TRIOS {
         */
         static const int numGhosts = 2;
 
-        //! vertical grid stretching
-        double qz_;
-
-        //! vertical grid stretching function
-        std::function<double(double)> fz_;
-
         //! number of unknowns per grid cell
         int dof_;
 
@@ -358,7 +374,8 @@ namespace TRIOS {
         int aux_;
 
         //! Full grid representations
-        Teuchos::RCP<Grid> gridLoc_, gridGlb_;
+        Grid gridLoc_;
+        const Grid gridGlb_;
 
     protected:
 

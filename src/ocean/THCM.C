@@ -48,6 +48,13 @@
 //============================================================================
 extern "C" {
 
+    void set_global_x(int*, double*);
+    void set_global_xu(int*, double*);
+    void set_global_y(int*, double*);
+    void set_global_yv(int*, double*);
+    void set_global_z(int*, double*);
+    void set_global_zw(int*, double*);
+
     // usrc.F90
     _SUBROUTINE_(setparcs)(int* param, double* value);
     _SUBROUTINE_(getparcs)(int* param, double* value);
@@ -290,17 +297,9 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     int lloc = domain_->LocalL();
 
     // global settings for THCM
-    // memory for I/O is allocated only on the root process (pid 0)
-    int nglob_ = 0;
-    int mglob_ = 0;
-    int lglob_ = 0;
-
-    if (comm_->MyPID() == 0) // this one is responsible for I/O
-    {
-        nglob_ = n_;
-        mglob_ = m_;
-        lglob_ = l_;
-    }
+    int nglob_ = n_;
+    int mglob_ = m_;
+    int lglob_ = l_;
 
     // fortran routine that puts global info in module m_global
     // and allocates some arrays there if dimensions are non-zero
@@ -330,6 +329,24 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
                                   windf_file.c_str(), temf_file.c_str(), salf_file.c_str());
 
     INFO("THCM init: m_global::initialize... done");
+
+    {
+        int size;
+        const TRIOS::Grid& grid = domain_->GetGlobalGrid();
+
+        size = grid.x_.size();
+        set_global_x(&size, grid.x_.get());
+        size = grid.y_.size();
+        set_global_y(&size, grid.y_.get());
+        size = grid.z_.size();
+        set_global_z(&size, grid.z_.get());
+        size = grid.xu_.size();
+        set_global_xu(&size, grid.xu_.get());
+        size = grid.yv_.size();
+        set_global_yv(&size, grid.yv_.get());
+        size = grid.zw_.size();
+        set_global_zw(&size, grid.zw_.get());
+    }
 
     if (localSres_) // from here on we ignore the integral condition
         sres_ = 1;

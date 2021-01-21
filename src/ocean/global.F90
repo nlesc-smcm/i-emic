@@ -47,7 +47,7 @@ module m_global
   ! here are some things we cannot use from m_usr as they may (and are
   ! likely to) differ between the computational and global domains
   real :: xmin, xmax, ymin, ymax
-  real, dimension(:),allocatable :: x,y,z,xu,yv,zw,ze,zwe
+  real, dimension(:), pointer :: x,y,z,xu,yv,zw
   real :: dx, dy, dz
   integer, dimension(:,:,:),allocatable :: landm
   real, dimension(:,:), allocatable :: taux, tauy, tatm, emip, spert
@@ -88,6 +88,9 @@ contains
     xmax  = a_xmax
     ymin  = a_ymin
     ymax  = a_ymax
+    dx = (xmax-xmin)/N
+    dy = (ymax-ymin)/M
+    dz = (zmax-zmin)/L
     hdim  = a_hdim
     qz    = a_qz
 
@@ -151,12 +154,6 @@ contains
     internal_salt=0.0
     internal_temp=0.0
     landm = 0
-
-    allocate(x(n),y(m),z(l),xu(0:n),yv(0:m),zw(0:l),ze(l),zwe(l))
-
-    call g_grid
-    ! end if ! new dimensions?
-
   end subroutine initialize
 
   subroutine deallocate_global
@@ -168,16 +165,6 @@ contains
     if (allocated(u)) deallocate(u)
     if (allocated(up)) deallocate(up)
     if (allocated(w)) deallocate(w)
-
-    if (allocated(x)) deallocate(x)
-    if (allocated(y)) deallocate(y)
-    if (allocated(z)) deallocate(z)
-
-    if (allocated(xu)) deallocate(xu)
-    if (allocated(yv)) deallocate(yv)
-    if (allocated(zw)) deallocate(zw)
-    if (allocated(ze)) deallocate(ze)
-    if (allocated(zwe)) deallocate(zwe)
 
     if (allocated(taux)) deallocate(taux)
     if (allocated(tauy)) deallocate(tauy)
@@ -251,53 +238,59 @@ contains
 
   end function find_row2
 
-  !! this is a part of the subroutine grid from grid.f. We need it to
-  !! initialize the vectors x,y,z...
-  !! It should be kept consistent with that subroutine
-  SUBROUTINE g_grid
-    use m_par
+  subroutine set_x(asize,ptr) bind(C,name="set_global_x")
+    use, intrinsic :: iso_c_binding
     implicit none
-    integer i,j,k
-    !     EXTERNAL
-    real  fz
+    integer(c_int), intent(in) :: asize
+    real(c_double), dimension(asize), intent(in), target :: ptr
 
-    write(*,*) '============GRID==========='
-    write(*,10) xmin*180/pi,xmax*180/pi,ymin*180/pi,ymax*180/pi
-10  format(1x,'configuration:[',f6.1,1x,f6.1,'] x [',f6.1,1x,f6.1,']')
-    write(*,20) n,m,l
-20  format(1x,'resolution:',i8,'x',i8,'x',i8)
-    write(*,30) qz
-30  format(1x,'stretching parameter',g12.4)
-    write(*,*) '============GRID==========='
+    x(1:asize)=>ptr
+  end subroutine set_x
 
-    dx = (xmax-xmin)/N
-    dy = (ymax-ymin)/M
-    dz = (zmax-zmin)/L
-    DO i=1,n
-       x(i) = (real(i)-0.5)*dx + xmin
-       xu(i)= (real(i)    )*dx + xmin
-    ENDDO
+  subroutine set_y(asize,ptr) bind(C,name="set_global_y")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(in) :: asize
+    real(c_double), dimension(asize), intent(in), target :: ptr
 
-    xu(0) = xmin
-    DO j=1,m
-       y(j) = (real(j)-0.5)*dy + ymin
-       yv(j)= (real(j)    )*dy + ymin
-    ENDDO
-    yv(0) = ymin
-    DO k=1,l
-       ze(k)  = (real(k)-0.5)*dz + zmin
-       zwe(k) = (real(k)    )*dz + zmin
-       z(k)   = fz(ze(k) ,qz)
-       zw(k)  = fz(zwe(k),qz)
-       ! compute derivatives of mapping at T- points
-       !        dfzT(k) = dfdz(ze(k),qz)
-       ! compute derivatives of mapping at w- points
-       !        dfzW(k) = dfdz(zwe(k),qz)
-    ENDDO
-    zw(0) = zmin
-    !      dfzw(0) = dfdz(zmin,qz)
+    y(1:asize)=>ptr
+  end subroutine set_y
 
-  end subroutine g_grid
+  subroutine set_z(asize,ptr) bind(C,name="set_global_z")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(in) :: asize
+    real(c_double), dimension(asize), intent(in), target :: ptr
+
+    z(1:asize)=>ptr
+  end subroutine set_z
+
+  subroutine set_xu(asize,ptr) bind(C,name="set_global_xu")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(in) :: asize
+    real(c_double), dimension(asize), intent(in), target :: ptr
+
+    xu(0:asize-1)=>ptr
+  end subroutine set_xu
+
+  subroutine set_yv(asize,ptr) bind(C,name="set_global_yv")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(in) :: asize
+    real(c_double), dimension(asize), intent(in), target :: ptr
+
+    yv(0:asize-1)=>ptr
+  end subroutine set_yv
+
+  subroutine set_zw(asize,ptr) bind(C,name="set_global_zw")
+    use, intrinsic :: iso_c_binding
+    implicit none
+    integer(c_int), intent(in) :: asize
+    real(c_double), dimension(asize), intent(in), target :: ptr
+
+    zw(0:asize-1)=>ptr
+  end subroutine set_zw
 
   !! this is supposed to be called once by the root
   !! proc with a standard 0:n+1,0:m+1,0:l+1 1D C
