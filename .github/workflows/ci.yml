@@ -26,13 +26,13 @@ jobs:
               CMAKE_PREFIX_PATH: /usr/local/opt/trilinos/
               CC: gcc
               CXX: g++
-              FC: gfortran
+              FC: gfortran-10
           - os: 'macos-latest'
             env:
               CMAKE_PREFIX_PATH: /usr/local/opt/trilinos/
               CC: clang
               CXX: clang++
-              FC: gfortran
+              FC: gfortran-10
 
     runs-on: ${{ matrix.os }}
     env: ${{ matrix.env }}
