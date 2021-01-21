@@ -21,13 +21,13 @@ if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU") #gfortran, gcc
   
   set (CMAKE_Fortran_FLAGS
 	"-g -O3 -Wall -ffixed-line-length-132 -fdefault-real-8 -fPIC -ffree-line-length-none")
-  set (CMAKE_CXX_FLAGS "-g -std=c++1y -O3 -Wall -fPIC -Wno-deprecated-declarations -DDEBUGGING_NEW")
+  set (CMAKE_CXX_FLAGS "-g -O3 -Wall -fPIC -Wno-deprecated-declarations -DDEBUGGING_NEW")
   set (COMP_IDENT GNU)
   
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel") #ifort, icc
   
   set (CMAKE_Fortran_FLAGS "-g -r8 -O3 -fPIC -warn -DASCII_TOPO -DWITH_UNION -heap-arrays 1 -extend-source 132")
-  set (CMAKE_CXX_FLAGS "-std=c++14 -O3 -fPIC")
+  set (CMAKE_CXX_FLAGS "-O3 -fPIC")
   set (COMP_IDENT INTEL)
   
 endif ()
