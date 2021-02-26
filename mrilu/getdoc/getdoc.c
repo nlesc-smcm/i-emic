@@ -134,7 +134,7 @@ void init (
 /* output files (define the global variables  inpf  and  outpf).            */
 /* Define the lookahead character in  lach  as the first character of the   */
 /* file  inpf.                                                              */
-{ char fnm[MAX_STRLEN+1];
+{ char *fnm;
   int  len;
 
   if ( argc > 3 )
@@ -148,7 +148,7 @@ void init (
     len = strlen (argv[1]);
     if ( len + (3 - 1) > MAX_STRLEN )
       fatalerror ("Too many characters in file name %s", argv[1]);
-    strcpy (fnm, argv[1]);
+    fnm = argv[1];
     if (   ( len < 3  ||  fnm[len-2] != '.'  ||  tolower(fnm[len-1]) != 'f' )
 	   && ( len < 5  ||  fnm[len-4] != '.'  ||  tolower(fnm[len-3]) != 'f' ||  fnm[len-2] != '9'||  fnm[len-1] != '0'  ) )
       fatalerror ("No extension .f, .F, .f90 or .F90 in file name %s", fnm);
@@ -157,14 +157,22 @@ void init (
       fatalerror ("Input file %s: %s", fnm, strerror (errno));
 
     if ( argc == 2 ) {
-      fnm[len-1] = '\0';
-      strcat (fnm, "txt");
+      int maxLen = len + 4;
+      char *tmpName = NULL;
+
+      tmpName = malloc(maxLen);
+      if (tmpName == NULL) {
+        fatalerror ("Failed to allocate memory in init");
+      }
+
+      strncpy(tmpName, fnm, len);
+      strncat(tmpName, "txt", maxLen - 1);
+
+      outpf = fopen (tmpName, "w");
+      free(tmpName);
     } else {
-      if ( strlen (argv[2]) > MAX_STRLEN )
-        fatalerror ("Too many characters in file name %s", argv[2]);
-      strcpy (fnm, argv[2]);
+      outpf = fopen (argv[2], "w");
     }
-    outpf = fopen (fnm, "w");
     if ( outpf == NULL )
       fatalerror ("Output file %s: %s", fnm, strerror (errno));
   }
