@@ -71,14 +71,14 @@ void fatalerror (
 )
 /* Write  "<fmt, ...>!"  to stderr.   Terminate the program. */
 {
-  char    errstr[MAX_STRLEN];
   va_list args;
 
+  fprintf(stderr, "\n");
   va_start(args, fmt);
-  vsprintf(errstr, fmt, args);
+  vfprintf(stderr, fmt, args);
   va_end(args);
+  fprintf(stderr, "!\n");
 
-  printmsg(errstr);
   abort();  /* Can be caught by a handler in order to cleanup */
 } 
 
