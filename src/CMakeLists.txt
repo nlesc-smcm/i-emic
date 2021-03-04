@@ -1,6 +1,9 @@
 # Trying to find Trilinos
 if (DEFINED ENV{TRILINOS_DIR} AND NOT DEFINED Trilinos_DIR)
   set (Trilinos_DIR $ENV{TRILINOS_DIR}/lib/cmake/Trilinos)
+elseif (APPLE AND NOT DEFINED ENV{TRILINOS_DIR} AND NOT DEFINED Trilinos_DIR)
+  # By default look in the homebrew install directory
+  set (Trilinos_DIR /usr/local/opt/trilinos/lib/cmake/Trilinos/)
 endif ()
 
 # ------------------------------------------------------------------
