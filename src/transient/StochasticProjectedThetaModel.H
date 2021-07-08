@@ -38,8 +38,8 @@ public:
         StochasticBase(*comm, params),
         sigma_(params->get("sigma", 1.0))
         {
-            Model::computeForcing();
-            B_ = Model::getForcing();
+            Model::computeStochasticForcing();
+            B_ = Model::getStochasticForcing();
 
             BV_ = Teuchos::rcp(
                 new Epetra_MultiVector(
@@ -57,8 +57,8 @@ public:
         StochasticBase(*model.Comm(), params),
         sigma_(params->get("sigma", 1.0))
         {
-            Model::computeForcing();
-            B_ = Model::getForcing();
+            Model::computeStochasticForcing();
+            B_ = Model::getStochasticForcing();
 
             BV_ = Teuchos::rcp(
                 new Epetra_MultiVector(

@@ -62,7 +62,7 @@ public:
 
     void computeJacobian() {}
 
-    void computeForcing()
+    void computeStochasticForcing()
         {
             frc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *map_, 2));
             double val = 1.0;
@@ -73,7 +73,7 @@ public:
 
     void computeMassMat() {}
 
-    Teuchos::RCP<Epetra_CrsMatrix> getForcing() {return frc_;}
+    Teuchos::RCP<Epetra_CrsMatrix> getStochasticForcing() {return frc_;}
 
     Teuchos::RCP<Epetra_Vector> getVector(char mode, Teuchos::RCP<Epetra_Vector> vec)
         {

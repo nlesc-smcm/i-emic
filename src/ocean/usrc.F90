@@ -234,6 +234,23 @@ SUBROUTINE get_parameters(o_r0dim, o_udim, o_hdim)
 end subroutine get_parameters
 
 !**********************************************************
+SUBROUTINE get_nondimensionalization_parameters(out)
+  !     interface to get the nondimensionalization parameters for each
+  !     equation
+  use, intrinsic :: iso_c_binding
+  use m_usr
+  implicit none
+
+  real(c_double) out(np)
+  integer i
+
+  do i=1,np
+     out(i) = 0
+  enddo
+
+end subroutine get_nondimensionalization_parameters
+
+!**********************************************************
 SUBROUTINE set_atmos_parameters(pars)
   ! Interface to set a few model parameters relevant for E-P. These
   ! parameters affect the sensitivity nus, which should be updated

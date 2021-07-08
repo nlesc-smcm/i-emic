@@ -76,8 +76,9 @@ protected:
     VectorPtr massMatrix_;
 
     MatrixPtr jac_;
-    MatrixPtr frc_;
+    MatrixPtr stochasticFrc_;
     VectorPtr diagB_;
+    VectorPtr frc_;
 
     VectorPtr rowScaling_;
     VectorPtr colScaling_;
@@ -182,7 +183,7 @@ public:
 
     //! compute derivative of rhs
     void computeJacobian();
-    void computeForcing();
+    void computeStochasticForcing();
 
     //! compute mass matrix
     void computeMassMat();
@@ -194,13 +195,14 @@ public:
     VectorPtr getState(char mode = 'C');
     VectorPtr getRHS(char mode = 'C');
     VectorPtr getMassMat(char mode = 'C');
+    VectorPtr getForcing(char mode = 'C');
 
     //! Binary diagonal for UVTS parts
     Teuchos::RCP<Epetra_Vector> getM(char mode = 'C');
 
     //! Return pointer to Jacobian
     MatrixPtr getJacobian() {return jac_;}
-    MatrixPtr getForcing() {return frc_;}
+    MatrixPtr getStochasticForcing() {return stochasticFrc_;}
 
     //! Return pointer to domain object
     Teuchos::RCP<TRIOS::Domain> getDomain() { return domain_; }
