@@ -50,6 +50,13 @@ TEST(Ocean, RHSNorm)
 }
 
 //------------------------------------------------------------------
+TEST(Ocean, ForcingNorm)
+{
+    double fNorm = Utils::norm(ocean->getForcing('V'));
+    EXPECT_LT(fNorm, 1e-6);
+}
+
+//------------------------------------------------------------------
 // Check mass matrix contents
 TEST(Ocean, MassMat)
 {

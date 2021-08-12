@@ -40,12 +40,11 @@ using Teuchos::rcp;
 //=====================================================================
 // Get access to a few THCM functions
 extern "C" _SUBROUTINE_(write_data)(double*, int*, int*);
-extern "C" _SUBROUTINE_(getparcs)(int*, double*);
-extern "C" _SUBROUTINE_(setparcs)(int*,double*);
 extern "C" _SUBROUTINE_(getdeps)(double*, double*, double*,
                                  double*, double*, double*,
                                  double*);
 extern "C" _SUBROUTINE_(get_parameters)(double*, double*, double*);
+extern "C" _SUBROUTINE_(get_nondimensionalization_parameters)(double*);
 extern "C" _SUBROUTINE_(set_atmos_parameters)(Atmosphere::CommPars*);
 extern "C" _SUBROUTINE_(set_seaice_parameters)(SeaIce::CommPars*);
 
@@ -1277,13 +1276,13 @@ void Ocean::computeRHS()
 }
 
 //=====================================================================
-void Ocean::computeForcing()
+void Ocean::computeStochasticForcing()
 {
     // evaluate rhs in THCM with the current state
-    TIMER_START("Ocean: compute Frc...");
-    THCM::Instance().computeForcing();
-    frc_ = THCM::Instance().getForcing();
-    TIMER_STOP("Ocean: compute Frc...");
+    TIMER_START("Ocean: compute stochastic Frc...");
+    THCM::Instance().computeStochasticForcing();
+    stochasticFrc_ = THCM::Instance().getStochasticForcing();
+    TIMER_STOP("Ocean: compute stochastic Frc...");
 }
 
 //=====================================================================
@@ -1324,6 +1323,13 @@ Teuchos::RCP<Epetra_Vector> Ocean::getMassMat(char mode)
 {
     diagB_ = THCM::Instance().DiagB();
     return Utils::getVector(mode, diagB_);
+}
+
+//====================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getForcing(char mode)
+{
+    frc_ = THCM::Instance().getForcing();
+    return Utils::getVector(mode, frc_);
 }
 
 //====================================================================
@@ -2179,15 +2185,9 @@ void Ocean::pressureProjection(Teuchos::RCP<Epetra_Vector> vec)
 double Ocean::getPar(std::string const &parName)
 {
     // We only allow parameters that are available in THCM
-    int parIdent = THCM::Instance().par2int(parName);
-    if (parIdent > 0 && parIdent <= _NPAR_)
-    {
-        double thcmPar;
-        FNAME(getparcs)(&parIdent, &thcmPar);
-        return thcmPar;
-    }
-    else  // If parameter not available we return 0
-        return 0;
+    double value = 0.0;
+    THCM::Instance().getParameter(parName, value);
+    return value;
 }
 
 //====================================================================
@@ -2203,9 +2203,7 @@ std::string Ocean::int2par(int ind) const
 void Ocean::setPar(std::string const &parName, double value)
 {
     // We only allow parameters that are available in THCM
-    int parIdent = THCM::Instance().par2int(parName);
-    if (parIdent > 0 && parIdent <= _NPAR_)
-        FNAME(setparcs)(&parIdent, &value);
+    THCM::Instance().setParameter(parName, value);
 }
 
 //====================================================================

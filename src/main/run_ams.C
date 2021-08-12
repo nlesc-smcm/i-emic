@@ -98,8 +98,8 @@ void runOceanModel(RCP<Epetra_Comm> Comm)
         EpetraExt::RowMatrixToMatrixMarketFile("A2.mtx", *ocean->getJacobian());
         EpetraExt::MultiVectorToMatrixMarketFile("M.mtx", *ocean->getMassMat());
 
-        ocean->computeForcing();
-        EpetraExt::RowMatrixToMatrixMarketFile("F.mtx", *ocean->getForcing());
+        ocean->computeStochasticForcing();
+        EpetraExt::RowMatrixToMatrixMarketFile("F.mtx", *ocean->getStochasticForcing());
     }
 
     // Create ams

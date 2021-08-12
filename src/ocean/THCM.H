@@ -170,7 +170,7 @@ public:
     void evaluateB();
 
     //! Compute the forcing matrix used for the stochasic forcing
-    bool computeForcing();
+    bool computeStochasticForcing();
 
     //! ------------------- I-EMIC couplings --------------------
     //!Flags enabling the coupling with the I-EMIC, separated into a
@@ -260,11 +260,14 @@ public:
     //! Returns initial guess (Global/Solve form)
     Teuchos::RCP<Epetra_Vector> getSolution();
 
+    //! Returns the forcing (Global/Solve form)
+    Teuchos::RCP<Epetra_Vector> getForcing();
+
     //! returns the Jacobian matrix (Global/Solve form)
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
 
-    //! returns the Forcing matrix (Global/Solve form)
-    Teuchos::RCP<Epetra_CrsMatrix> getForcing();
+    //! returns the Stochastic Forcing matrix (Global/Solve form)
+    Teuchos::RCP<Epetra_CrsMatrix> getStochasticForcing();
 
     //! get null space
     Teuchos::RCP<const Epetra_MultiVector> getNullSpace();
@@ -373,6 +376,12 @@ private:
     //! used to import current approximation to THCM:
     Teuchos::RCP<Epetra_Vector> localSol_;
 
+    //! current forcing as used in THCM to compute the RHS
+    Teuchos::RCP<Epetra_Vector> frc_;
+
+    //! used to import the current forcing
+    Teuchos::RCP<Epetra_Vector> localFrc_;
+
     //! used to import atmosphere temperature into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosT_;
 
@@ -419,10 +428,10 @@ private:
     Teuchos::RCP<Epetra_CrsMatrix> localJac_, testJac_;
 
     //! Forcing in globally assembled and load-balanced
-    Teuchos::RCP<Epetra_CrsMatrix> frc_;
+    Teuchos::RCP<Epetra_CrsMatrix> stochasticFrc_;
 
     //! Forcing based on standard subdomains
-    Teuchos::RCP<Epetra_CrsMatrix> localFrc_;
+    Teuchos::RCP<Epetra_CrsMatrix> localStochasticFrc_;
 
     //! type of scaling to be done
     std::string scalingType_;

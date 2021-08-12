@@ -62,7 +62,8 @@ extern "C" {
     _SUBROUTINE_(rhs)(double* un, double* b);
     _SUBROUTINE_(setsres)(int* sres);
     _SUBROUTINE_(matrix)(double* un);
-    _SUBROUTINE_(stochastic_forcing)();
+    _SUBROUTINE_(get_forcing)(double* frc);
+    _SUBROUTINE_(get_stochastic_forcing)();
 
     _SUBROUTINE_(init)(int* n, int* m, int* l, int* nmlglob,
                        double* xmin, double* xmax, double* ymin, double* ymax,
@@ -608,9 +609,11 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // Create internal vectors
     initialSolution_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     diagB_           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+    frc_             = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     localDiagB_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     localRhs_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
+    localFrc_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
 
     // 2D overlapping interface fields
     localAtmosT_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -744,10 +747,10 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     jac_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *matrixGraph));
     jac_->SetLabel("Jacobian");
 
-    localFrc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *standardMap_, 1));
-    localFrc_->SetLabel("Local Forcing");
-    frc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *solveMap_, 1));
-    frc_->SetLabel("Forcing");
+    localStochasticFrc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *standardMap_, 1));
+    localStochasticFrc_->SetLabel("Local Stochastic Forcing");
+    stochasticFrc_ = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *solveMap_, 1));
+    stochasticFrc_->SetLabel("Forcing");
 
 // we can select two points where the continuity equation will be replaced by
 // P(i,j,k) = 0. This is experimental, we hope to fix the divergence problem in the 4D case
@@ -841,10 +844,10 @@ Teuchos::RCP<Epetra_CrsMatrix> THCM::getJacobian()
 
 //=============================================================================
 // Compute and get the forcing
-bool THCM::computeForcing()
+bool THCM::computeStochasticForcing()
 {
-    if (localFrc_->Filled())
-        localFrc_->PutScalar(0.0); // set all matrix entries to zero
+    if (localStochasticFrc_->Filled())
+        localStochasticFrc_->PutScalar(0.0); // set all matrix entries to zero
 
     const int maxlen = 1; // only 1 element per row
     int indices[maxlen];
@@ -856,7 +859,7 @@ bool THCM::computeForcing()
     int imax = NumMyElements;
     std::vector<int> MyElements;
 
-    FNAME(stochastic_forcing)();
+    FNAME(get_stochastic_forcing)();
 
     for (int i = 0; i < imax; i++)
     {
@@ -876,9 +879,9 @@ bool THCM::computeForcing()
             MyElements.push_back(indices[j]);
         }
 
-        if (localFrc_->Filled())
+        if (localStochasticFrc_->Filled())
         {
-            int ierr = localFrc_->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
+            int ierr = localStochasticFrc_->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
                                                      values, indices);
 
             // ierr == 3 probably means not all row entries are replaced,
@@ -908,12 +911,12 @@ bool THCM::computeForcing()
                 std::cout << " maxlen:               " << maxlen << std::endl;
 
                 std::cout << " row:                  " << GRID << std::endl;
-                int LRID = localFrc_->LRID(GRID);
+                int LRID = localStochasticFrc_->LRID(GRID);
                 std::cout << " LRID:                 " << LRID << std::endl;
                 std::cout << " graph inds in LRID:   "
-                          << localFrc_->Graph().NumMyIndices(LRID) << std::endl;
+                          << localStochasticFrc_->Graph().NumMyIndices(LRID) << std::endl;
 
-                int ierr2 = localFrc_->ExtractGlobalRowCopy(
+                int ierr2 = localStochasticFrc_->ExtractGlobalRowCopy(
                     assemblyMap_->GID(i), maxlen, numentries, values, indices);
 
                 std::cout << "\noriginal row: " << std::endl;
@@ -929,7 +932,7 @@ bool THCM::computeForcing()
         }
         else
         {
-            CHECK_ZERO(localFrc_->InsertGlobalValues(assemblyMap_->GID(i), numentries,
+            CHECK_ZERO(localStochasticFrc_->InsertGlobalValues(assemblyMap_->GID(i), numentries,
                                                     values, indices));
         }
     } //i-loop over rows
@@ -937,18 +940,29 @@ bool THCM::computeForcing()
     auto last = std::unique(MyElements.begin(), MyElements.end());
     Epetra_Map colMap(-1, (int)std::distance(MyElements.begin(), last),
                       &MyElements[0], 0, *comm_);
-    CHECK_ZERO(localFrc_->FillComplete(colMap, *standardMap_));
+    CHECK_ZERO(localStochasticFrc_->FillComplete(colMap, *standardMap_));
 
     // redistribute according to solveMap_ (may be load-balanced)
     // standard and solve maps are equal
-    domain_->Standard2Solve(*localFrc_, *frc_);     // no effect
-    CHECK_ZERO(frc_->FillComplete(colMap, *solveMap_));
+    domain_->Standard2Solve(*localStochasticFrc_, *stochasticFrc_);     // no effect
+    CHECK_ZERO(stochasticFrc_->FillComplete(colMap, *solveMap_));
 
     return true;
 }
 
-Teuchos::RCP<Epetra_CrsMatrix> THCM::getForcing()
+Teuchos::RCP<Epetra_CrsMatrix> THCM::getStochasticForcing()
 {
+    return stochasticFrc_;
+}
+
+Teuchos::RCP<Epetra_Vector> THCM::getForcing()
+{
+    double* frc;
+    localFrc_->ExtractView(&frc);
+    FNAME(get_forcing)(frc);
+
+    domain_->Assembly2Solve(*localFrc_, *frc_);
+
     return frc_;
 }
 
