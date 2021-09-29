@@ -339,6 +339,12 @@ public:
     //! Obtain atmos temp data for debugging
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
 
+    //! Obtain atmos temp data
+    Teuchos::RCP<Epetra_Vector> getAtmosT();
+
+    //! Set atmos temp data
+    void setAtmosT(Teuchos::RCP<Epetra_Vector> const &atmosT);
+
     //! Obtain atmos humidity for debugging
     Teuchos::RCP<Epetra_Vector> getLocalAtmosQ();
 

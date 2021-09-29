@@ -1508,6 +1508,18 @@ Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosT()
 }
 
 //==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getAtmosT()
+{
+    return THCM::Instance().getAtmosT();
+}
+
+//==================================================================
+void Ocean::setAtmosT( Teuchos::RCP<Epetra_Vector> const &atmosT)
+{
+    THCM::Instance().setAtmosphereT( atmosT);
+}
+
+//==================================================================
 Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosQ()
 {
     return THCM::Instance().getLocalAtmosQ();

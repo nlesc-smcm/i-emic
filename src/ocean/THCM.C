@@ -1656,6 +1656,17 @@ Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosT()
 }
 
 //=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getAtmosT()
+{
+    Teuchos::RCP<Epetra_Vector> atmosT =
+        Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+
+    // Export assembly map surface evaporation to standard surface map
+    CHECK_ZERO(atmosT->Export(*getLocalAtmosT(), *as2std_surf_, Zero));
+    return atmosT;
+}
+
+//=============================================================================
 Teuchos::RCP<Epetra_Vector> THCM::getLocalAtmosQ()
 {
     double *tmpAtmosQ;

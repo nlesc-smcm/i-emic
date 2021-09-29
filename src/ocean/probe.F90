@@ -21,17 +21,13 @@ contains
 
     ! Coupling with T (sensible heat flux) would need the atmospheric
     ! temperature tatm.
-    if (coupled_T.eq.1) then
-       pos = 1
-       do j = 1,m
-          do i = 1,n
-             atmos_temp(pos) = tatm(i,j)
-             pos = pos + 1
-          end do
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          atmos_temp(pos) = tatm(i,j)
+          pos = pos + 1
        end do
-    else
-       _INFO_("**WARNING** No coupling, not obtaining any data")
-    end if
+    end do
   end subroutine get_atmosphere_t
 
   !!------------------------------------------------------------------

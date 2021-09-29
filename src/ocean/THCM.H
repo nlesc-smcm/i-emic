@@ -224,6 +224,9 @@ public:
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
 
+    //! Obtain atmosphere temperature vector
+    Teuchos::RCP<Epetra_Vector> getAtmosT();
+
     //! Obtain local atmosphere humidity vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosQ();
 
