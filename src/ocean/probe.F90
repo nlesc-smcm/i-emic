@@ -12,7 +12,7 @@ contains
   subroutine get_atmosphere_t(atmos_temp)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -34,7 +34,7 @@ contains
   subroutine get_atmosphere_q(atmos_q)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -60,7 +60,7 @@ contains
   subroutine get_atmosphere_p(atmos_p)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -85,7 +85,7 @@ contains
   subroutine compute_evap(ocean_evap, un)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
     use m_atm
 
@@ -136,7 +136,7 @@ contains
   subroutine get_emip(cemip)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -156,7 +156,7 @@ contains
   subroutine get_adapted_emip(cemip)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -176,7 +176,7 @@ contains
   subroutine get_emip_pert(cspert)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -214,7 +214,7 @@ contains
     real    w(0:n+1,0:m+1,0:l), p(0:n+1,0:m+1,0:l+1)
     real    T(0:n+1,0:m+1,0:l+1), S(0:n+1,0:m+1,0:l+1)
 
-    gamma = par(COMB) * par(SALT) 
+    gamma = par(COMB) * par(SALT)
     dedt  = (deltat / qdim) * dqso
 
     call usol(un,u,v,w,p,T,S)
@@ -222,7 +222,7 @@ contains
 
     pQSnd =  par(COMB) * par(SALT) * QSnd
     nus   =  par(COMB) * par(SALT) *  QSnd
-    
+
     pos = 1
     do j = 1,m
        do i = 1,n
@@ -259,7 +259,7 @@ contains
           pos = pos + 1
        end do
     end do
-    
+
     call qint(salflux, correction)
     salflux = salflux - correction
 
@@ -276,16 +276,16 @@ contains
     use m_usr
     use m_atm
     use m_ice
-    
+
     implicit none
-    
+
     real(c_double), dimension(m*n) :: totflux
     real(c_double), dimension(m*n) :: swflux
     real(c_double), dimension(m*n) :: shflux
     real(c_double), dimension(m*n) :: lhflux
     real(c_double), dimension(m*n) :: siflux
     real(c_double), dimension(m*n) :: simask
-    
+
     integer :: i,j,pos
     real etabi, dedt, dedq, QToa, QSW, QSH, QLH, QTos
 
@@ -302,7 +302,7 @@ contains
     dedt  =  eta * qdim * (deltat / qdim) * dqso
     ! dedt  = 0.0 !hack
     dedq  = -eta * qdim
-    
+
     call usol(un,u,v,w,p,T,S)
 
     pos = 1
@@ -310,7 +310,7 @@ contains
        do i = 1,n
           if (landm(i,j,l).eq.OCEAN) then
              ! Heat flux forcing from the atmosphere into the ocean.
-             ! External and background contributions 
+             ! External and background contributions
              ! QToa = QSW − QSH − QLH
 
              QSW = par(COMB) * par(SUNP) *             & ! shortwave heat flux
@@ -338,10 +338,10 @@ contains
                 totflux(pos) = (1 - TRES + TRES*par(BIOT)) * tatm(i,j) - &
                      TRES * par(BIOT) * T(i,j,l) / etabi
              else
-                
+
                 totflux(pos) = (1-landm(i,j,l)) *     & !
                      QToa / QTnd + msi(i,j) * (QTos - QToa) / QTnd
-                
+
              endif
           endif
           pos = pos + 1
@@ -432,7 +432,7 @@ contains
                      * suno(j) * (1-albe0-albed*Ab)     & ! shortwave heat flux
                      - Ooa * (To - Ta)                  & ! sensible heat flux
                      - lvsc * eta * qdim *              & ! latent heat flux
-                     (deltat / qdim * dqso * To - qa)   & 
+                     (deltat / qdim * dqso * To - qa)   &
                      - lvsc * eo0
 
                 dftdm(pos) = QTos - QToa
@@ -449,13 +449,13 @@ contains
                      zeta * (a0 * (s0+So) - (t0+To) )    & ! QTos component
                      - ( Qvar * qs + q0 ) )              & ! QTsa component
                      / ( rhodim * Lf )
-                
+
                 QSoa = eo0 + eta * qdim * ( &
                      (deltat / qdim) * dqso * To &
-                     - qa) - pa 
-                                                
+                     - qa) - pa
+
                 dfsdm(pos) = pQSnd * (QSos - QSoa)
-                
+
                 dfsdg(pos) = -1.0;
 
              endif
@@ -463,7 +463,48 @@ contains
           pos = pos + 1
        enddo
     enddo
-    
+
   end subroutine get_derivatives
+
+  !!------------------------------------------------------------------
+  subroutine get_taux(ctaux)
+
+    use, intrinsic :: iso_c_binding
+    use m_par
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n) :: ctaux
+    integer :: i,j,pos
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          ctaux(pos) = taux(i,j)
+          pos = pos + 1
+       end do
+    end do
+  end subroutine get_taux
+
+  !!------------------------------------------------------------------
+  subroutine get_tauy(ctauy)
+
+    use, intrinsic :: iso_c_binding
+    use m_par
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n) :: ctauy
+    integer :: i,j,pos
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          ctauy(pos) = tauy(i,j)
+          pos = pos + 1
+       end do
+    end do
+  end subroutine get_tauy
+
 
 end module m_probe

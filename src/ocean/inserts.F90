@@ -12,7 +12,7 @@ contains
   subroutine insert_atmosphere_t(inserted_atmos_t)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -31,9 +31,9 @@ contains
 
   !!------------------------------------------------------------------
   subroutine insert_atmosphere_q(inserted_atmos_q)
-    
+
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -53,9 +53,9 @@ contains
 
   !!------------------------------------------------------------------
   subroutine insert_atmosphere_a(inserted_atmos_a)
-    
+
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -72,12 +72,12 @@ contains
        end do
     end if
   end subroutine insert_atmosphere_a
-  
+
   !!------------------------------------------------------------------
   subroutine insert_atmosphere_p(inserted_atmos_p)
-    
+
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -99,7 +99,7 @@ contains
   subroutine insert_seaice_q(inserted_seaice_q)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -119,7 +119,7 @@ contains
   subroutine insert_seaice_m(inserted_seaice_m)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -140,7 +140,7 @@ contains
   subroutine insert_seaice_g(inserted_seaice_g)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -163,7 +163,7 @@ contains
   subroutine insert_emip(inserted_emip)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -184,7 +184,7 @@ contains
   subroutine insert_adapted_emip(inserted_aEmip)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -205,7 +205,7 @@ contains
   subroutine insert_emip_pert(inserted_pEmip)
 
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
 
     implicit none
@@ -223,25 +223,47 @@ contains
   end subroutine insert_emip_pert
 
   !!------------------------------------------------------------------
-  subroutine insert_tatm(inserted_tatm)
-    
+  subroutine insert_taux(inserted_taux)
+
     use, intrinsic :: iso_c_binding
-    use m_par  
+    use m_par
     use m_usr
-    
+
     implicit none
-    real(c_double), dimension(m*n), intent(in) :: inserted_tatm
+    real(c_double), dimension(m*n), intent(in) :: inserted_taux
     integer :: i,j,pos
 
     pos = 1
     do j = 1,m
        do i = 1,n
-          tatm(i,j) = inserted_tatm(pos)
+          taux(i,j) = inserted_taux(pos)
           pos = pos + 1
        end do
     end do
 
-  end subroutine insert_tatm
+  end subroutine insert_taux
+
+  !!------------------------------------------------------------------
+  subroutine insert_tauy(inserted_tauy)
+
+    use, intrinsic :: iso_c_binding
+    use m_par
+    use m_usr
+
+    implicit none
+    real(c_double), dimension(m*n), intent(in) :: inserted_tauy
+    integer :: i,j,pos
+
+    pos = 1
+    do j = 1,m
+       do i = 1,n
+          tauy(i,j) = inserted_tauy(pos)
+          pos = pos + 1
+       end do
+    end do
+
+  end subroutine insert_tauy
+
 
 
 end module m_inserts

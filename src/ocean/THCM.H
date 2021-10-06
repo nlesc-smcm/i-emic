@@ -183,6 +183,12 @@ public:
     int getCoupledT() { return coupledT_; }
     int getCoupledS() { return coupledS_; }
 
+    //! Set wind stress taux
+    void setTaux(Teuchos::RCP<Epetra_Vector> const &taux);
+
+    //! Set wind stress tauy
+    void setTauy(Teuchos::RCP<Epetra_Vector> const &tauy);
+
     //! Set atmosphere temperature in the ocean model
     void setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT);
 
@@ -220,6 +226,12 @@ public:
     std::vector<Teuchos::RCP<Epetra_Vector> > getFluxes();
 
     Derivatives getDerivatives();
+
+    //! Obtain atmosphere taux
+    Teuchos::RCP<Epetra_Vector> getTaux();
+
+    //! Obtain atmosphere tauy
+    Teuchos::RCP<Epetra_Vector> getTauy();
 
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();

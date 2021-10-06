@@ -137,7 +137,9 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_inserts, insert_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_inserts, insert_adapted_emip)(double *emip);
     _MODULE_SUBROUTINE_(m_inserts, insert_emip_pert)(double *emip);
-    _MODULE_SUBROUTINE_(m_inserts, insert_tatm)(double *emip);
+
+    _MODULE_SUBROUTINE_(m_inserts, insert_taux)(double *taux);
+    _MODULE_SUBROUTINE_(m_inserts, insert_tauy)(double *tauy);
 
     _MODULE_SUBROUTINE_(m_integrals, salt_advection)(double *un, double *check);
     _MODULE_SUBROUTINE_(m_integrals, salt_diffusion)(double *un, double *check);
@@ -164,6 +166,9 @@ extern "C" {
     _MODULE_SUBROUTINE_(m_probe,  compute_evap)(double *oceanE, double *x);
 
     _MODULE_SUBROUTINE_(m_global, get_land_temp)(double *land);
+
+    _MODULE_SUBROUTINE_(m_probe,  get_taux)(double *taux);
+    _MODULE_SUBROUTINE_(m_probe,  get_tauy)(double *tauy);
     //-----------------------------------------------------------------------------
 
     _SUBROUTINE_(write_levitus)(const char*);
@@ -1387,6 +1392,32 @@ void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask)
 }
 
 //=============================================================================
+void THCM::setTaux(Teuchos::RCP<Epetra_Vector> const &taux)
+{
+    CHECK_MAP(taux, standardSurfaceMap_);
+    // Standard2Assembly
+    // Import atmosT into local tmp
+    CHECK_ZERO(localSurfTmp_->Import(*taux, *as2std_surf_, Insert));
+
+    double *tmp;
+    localSurfTmp_->ExtractView(&tmp);
+    F90NAME(m_inserts, insert_taux)( tmp );
+}
+
+//=============================================================================
+void THCM::setTauy(Teuchos::RCP<Epetra_Vector> const &tauy)
+{
+    CHECK_MAP(tauy, standardSurfaceMap_);
+    // Standard2Assembly
+    // Import atmosT into local tmp
+    CHECK_ZERO(localSurfTmp_->Import(*tauy, *as2std_surf_, Insert));
+
+    double *tmp;
+    localSurfTmp_->ExtractView(&tmp);
+    F90NAME(m_inserts, insert_tauy)( tmp );
+}
+
+//=============================================================================
 void THCM::setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT)
 {
     CHECK_MAP(atmosT, standardSurfaceMap_);
@@ -1494,7 +1525,7 @@ void THCM::setTatm(Teuchos::RCP<Epetra_Vector> const &tatm)
     double *tmpTatm;
     localSurfTmp_->ExtractView(&tmpTatm);
 
-    F90NAME(m_inserts, insert_tatm)( tmpTatm );
+    F90NAME(m_inserts, insert_atmosphere_t)( tmpTatm );
 }
 
 //=============================================================================
@@ -1638,6 +1669,36 @@ THCM::Derivatives THCM::getDerivatives()
     d.dFSdG->Export(local_dfsdg, *as2std_surf_, Zero);
 
     return d;
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getTaux()
+{
+    double *tmp;
+    localSurfTmp_->ExtractView(&tmp);
+    F90NAME(m_probe, get_taux )( tmp );
+
+    Teuchos::RCP<Epetra_Vector> taux =
+        Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+
+    // Export assembly map surface evaporation to standard surface map
+    CHECK_ZERO(taux->Export(*localSurfTmp_, *as2std_surf_, Zero));
+    return taux;
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Vector> THCM::getTauy()
+{
+    double *tmp;
+    localSurfTmp_->ExtractView(&tmp);
+    F90NAME(m_probe, get_tauy )( tmp );
+
+    Teuchos::RCP<Epetra_Vector> tauy =
+        Teuchos::rcp(new Epetra_Vector(*standardSurfaceMap_));
+
+    // Export assembly map surface evaporation to standard surface map
+    CHECK_ZERO(tauy->Export(*localSurfTmp_, *as2std_surf_, Zero));
+    return tauy;
 }
 
 //=============================================================================
