@@ -75,19 +75,25 @@ foreach(test_source ${TEST_SOURCES})
   target_link_libraries(${test_name} PUBLIC ${TEST_LIBRARIES})
 endforeach()
 
-execute_process(COMMAND ${MPIEXEC} --oversubscribe echo RESULT_VARIABLE status OUTPUT_QUIET)
+set(MPI_EXECUTABLE ${MPIEXEC})
+execute_process(COMMAND mpiexec echo RESULT_VARIABLE status OUTPUT_QUIET)
+if(NOT status)
+    set(MPI_EXECUTABLE mpiexec)
+endif()
+
+execute_process(COMMAND ${MPI_EXECUTABLE} --oversubscribe echo RESULT_VARIABLE status OUTPUT_QUIET)
 if(NOT status)
     set(MPI_OVERSUBSCRIBE "--oversubscribe")
 endif()
 
 # additional parallel tests
 get_filename_component(test_name test_matrix.C NAME_WE)
-add_test(NAME partest_matrix_1 COMMAND ${MPIEXEC} -np 1 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_1 COMMAND ${MPI_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_2 COMMAND ${MPIEXEC} -np 2 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_2 COMMAND ${MPI_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_4 COMMAND ${MPIEXEC} -np 4 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_4 COMMAND ${MPI_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
-add_test(NAME partest_matrix_8 COMMAND ${MPIEXEC} -np 8 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
+add_test(NAME partest_matrix_8 COMMAND ${MPI_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 8 ${MPI_OVERSUBSCRIBE} ${CMAKE_CURRENT_BINARY_DIR}/${test_name}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/matrix)
 
