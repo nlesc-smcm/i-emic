@@ -60,7 +60,7 @@ jobs:
           cd RAILS
           mkdir build
           cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$HOME/local ..
+          cmake ..
           make -j
           make install
       
@@ -75,7 +75,7 @@ jobs:
           cd JDQZPP
           mkdir build
           cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$HOME/local ..
+          cmake ..
           make -j
           make install
           
@@ -83,7 +83,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$HOME/local ..
+          cmake ..
           make -j
       
       - name: Test I-EMIC
