@@ -181,7 +181,7 @@ public:
 #ifdef TESTING
             bounds_check_PTS(i,j,k);
 #endif
-            return S_[index_WPTS(i,j,k)];
+            return Rho_[index_WPTS(i,j,k)];
         }
 
     //! access density-data (const)
