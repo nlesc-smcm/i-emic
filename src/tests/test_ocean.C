@@ -344,6 +344,42 @@ TEST(Ocean, CreateASecondOcean)
 }
 
 //------------------------------------------------------------------
+TEST(Ocean, WindForcing)
+{
+    ocean = Teuchos::null;
+
+    oceanParams->sublist("THCM").set("Wind Forcing Type", 3);
+    ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
+
+    // set taux, tauy, emip tatm
+    Teuchos::RCP<Epetra_Vector> in = ocean->getTaux();
+    Epetra_Vector taux__ = *in;
+    in->Random();
+    Epetra_Vector taux = *in;
+    ocean->setTaux(in);
+    in->Random();
+    Epetra_Vector tauy = *in;
+    ocean->setTauy(in);
+
+    ocean->setPar("Combined Forcing", 0.2);
+
+    ocean->getState('V')->PutScalar(1.234);
+    ocean->computeJacobian();
+
+    // check taux, tauy emip tatm equl to input
+    Epetra_Vector taux_ = *ocean->getTaux();
+    Epetra_Vector tauy_ = *ocean->getTauy();
+
+    EXPECT_GE(Utils::norm(&taux_), 1e-2);
+    taux_.Update(-1.0, taux, 1.0);
+    EXPECT_NEAR(Utils::norm(&taux_), 0.0, 1e-7);
+
+    EXPECT_GE(Utils::norm(&tauy_), 1e-2);
+    tauy_.Update(-1.0, tauy, 1.0);
+    EXPECT_NEAR(Utils::norm(&tauy_), 0.0, 1e-7);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:
