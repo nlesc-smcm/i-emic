@@ -380,6 +380,42 @@ TEST(Ocean, WindForcing)
 }
 
 //------------------------------------------------------------------
+TEST(Ocean, SaltTempForcing)
+{
+    ocean = Teuchos::null;
+
+    oceanParams->sublist("THCM").set("Levitus T", 2);
+    oceanParams->sublist("THCM").set("Levitus S", 2);
+    ocean = Teuchos::rcp(new Ocean(comm, oceanParams));
+
+    //  emip tatm
+    Teuchos::RCP<Epetra_Vector> in = ocean->getEmip();
+    in->Random();
+    Epetra_Vector emip = *in;
+    ocean->setEmip(in);
+    emip=*ocean->getEmip(); // getEmip is zero on the landmask
+    in->Random();
+    Epetra_Vector tatm = *in;
+    ocean->setAtmosT(in);
+
+    ocean->setPar("Combined Forcing", 0.05);
+    ocean->getState('V')->PutScalar(1.234);
+    ocean->computeJacobian();
+
+    // check emip and tatm equal to input
+    Epetra_Vector emip_ = *ocean->getEmip();
+    Epetra_Vector tatm_ = *ocean->getAtmosT();
+
+    EXPECT_GE(Utils::norm(&tatm_), 1e-2);
+    tatm_.Update(-1.0, tatm, 1.0);
+    EXPECT_NEAR(Utils::norm(&tatm_), 0.0, 1e-7);
+
+    EXPECT_GE(Utils::norm(&emip_), 1e-2);
+    emip_.Update(-1.0, emip, 1.0);
+    EXPECT_NEAR(Utils::norm(&emip_), 0.0, 1e-7);
+}
+
+//------------------------------------------------------------------
 int main(int argc, char **argv)
 {
     // Initialize the environment:
