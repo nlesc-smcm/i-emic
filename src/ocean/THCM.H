@@ -394,9 +394,6 @@ private:
     //! used to import atmosphere precipitation field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosP_;
 
-    //! used to import sea ice integral correction into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceG_;
-
     //! used to extract evaporation field from THCM
     Teuchos::RCP<Epetra_Vector> localOceanE_;
 
