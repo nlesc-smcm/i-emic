@@ -619,7 +619,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localAtmosT_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosQ_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localSeaiceM_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceG_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localOceanE_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localEmip_       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -1460,13 +1459,13 @@ void THCM::setSeaIceQ(Teuchos::RCP<Epetra_Vector> const &seaiceQ)
 void THCM::setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM)
 {
     CHECK_MAP(seaiceM, standardSurfaceMap_);
-    CHECK_ZERO(localSeaiceM_->Import(*seaiceM, *as2std_surf_ ,Insert));
+    CHECK_ZERO(localSurfTmp_->Import(*seaiceM, *as2std_surf_ ,Insert));
     double *M;
 
     if (!coupledM_)
-        localSeaiceM_->PutScalar(0.0); // disable coupling with mask
+        localSurfTmp_->PutScalar(0.0); // disable coupling with mask
 
-    localSeaiceM_->ExtractView(&M);
+    localSurfTmp_->ExtractView(&M);
     F90NAME(m_inserts, insert_seaice_m)( M );
 }
 

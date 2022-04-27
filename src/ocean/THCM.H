@@ -195,10 +195,10 @@ public:
     //! Set atmosphere precipitation field in the ocean model
     void setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP);
 
-    //! Set sea ice mask
+    //! Set sea ice heat flux
     void setSeaIceQ(Teuchos::RCP<Epetra_Vector> const &seaiceQ);
 
-    //! Set sea ice surface temperature
+    //! Set sea ice mask
     void setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM);
 
     //! Set sea ice integral correction
@@ -393,9 +393,6 @@ private:
 
     //! used to import atmosphere precipitation field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosP_;
-
-    //! used to import sea ice mask into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceM_;
 
     //! used to import sea ice integral correction into THCM
     Teuchos::RCP<Epetra_Vector> localSeaiceG_;
