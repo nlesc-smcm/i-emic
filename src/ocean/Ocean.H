@@ -336,8 +336,32 @@ public:
     //! Meaningless: dummy implementation
     void synchronize(std::shared_ptr<Ocean> ocean) {}
 
+    //! Obtain wind stress taux
+    Teuchos::RCP<Epetra_Vector> getTaux();
+
+    //! Obtain wind stress tauy
+    Teuchos::RCP<Epetra_Vector> getTauy();
+
+    //! Set wind stress taux
+    void setTaux(Teuchos::RCP<Epetra_Vector> const &taux);
+
+    //! Set wind stress tauy
+    void setTauy(Teuchos::RCP<Epetra_Vector> const &tauy);
+
     //! Obtain atmos temp data for debugging
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
+
+    //! Obtain atmos temp data
+    Teuchos::RCP<Epetra_Vector> getAtmosT();
+
+    //! Set atmos temp data
+    void setAtmosT(Teuchos::RCP<Epetra_Vector> const &atmosT);
+
+    //! Obtain surface salinity forcing emip
+    Teuchos::RCP<Epetra_Vector> getEmip(char mode = 'D');
+
+    //! Set surface salinity forcing emip
+    void setEmip(Teuchos::RCP<Epetra_Vector> const &emip, char mode = 'D');
 
     //! Obtain atmos humidity for debugging
     Teuchos::RCP<Epetra_Vector> getLocalAtmosQ();

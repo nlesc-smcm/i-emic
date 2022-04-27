@@ -183,6 +183,12 @@ public:
     int getCoupledT() { return coupledT_; }
     int getCoupledS() { return coupledS_; }
 
+    //! Set wind stress taux
+    void setTaux(Teuchos::RCP<Epetra_Vector> const &taux);
+
+    //! Set wind stress tauy
+    void setTauy(Teuchos::RCP<Epetra_Vector> const &tauy);
+
     //! Set atmosphere temperature in the ocean model
     void setAtmosphereT(Teuchos::RCP<Epetra_Vector> const &atmosT);
 
@@ -195,10 +201,10 @@ public:
     //! Set atmosphere precipitation field in the ocean model
     void setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP);
 
-    //! Set sea ice mask
+    //! Set sea ice heat flux
     void setSeaIceQ(Teuchos::RCP<Epetra_Vector> const &seaiceQ);
 
-    //! Set sea ice surface temperature
+    //! Set sea ice mask
     void setSeaIceM(Teuchos::RCP<Epetra_Vector> const &seaiceM);
 
     //! Set sea ice integral correction
@@ -221,8 +227,17 @@ public:
 
     Derivatives getDerivatives();
 
+    //! Obtain atmosphere taux
+    Teuchos::RCP<Epetra_Vector> getTaux();
+
+    //! Obtain atmosphere tauy
+    Teuchos::RCP<Epetra_Vector> getTauy();
+
     //! Obtain local atmosphere temperature vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosT();
+
+    //! Obtain atmosphere temperature vector
+    Teuchos::RCP<Epetra_Vector> getAtmosT();
 
     //! Obtain local atmosphere humidity vector
     Teuchos::RCP<Epetra_Vector> getLocalAtmosQ();
@@ -388,32 +403,14 @@ private:
     //! used to import atmosphere humidity field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosQ_;
 
-    //! used to import albedo field into THCM
-    Teuchos::RCP<Epetra_Vector> localAtmosA_;
-
     //! used to import atmosphere precipitation field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosP_;
-
-    //! used to import sea ice heat flux into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceQ_;
-
-    //! used to import sea ice mask into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceM_;
-
-    //! used to import sea ice integral correction into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceG_;
 
     //! used to extract evaporation field from THCM
     Teuchos::RCP<Epetra_Vector> localOceanE_;
 
-    //! used to import emip field into THCM
-    Teuchos::RCP<Epetra_Vector> localEmip_;
-
     //! a surface overlapping vector without meaning
     Teuchos::RCP<Epetra_Vector> localSurfTmp_;
-
-    //! used to import tatm field into THCM
-    Teuchos::RCP<Epetra_Vector> localTatm_;
 
     //! used to export computed RHS vector from THCM:
     Teuchos::RCP<Epetra_Vector> localRhs_;

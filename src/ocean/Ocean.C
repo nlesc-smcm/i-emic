@@ -1502,9 +1502,57 @@ void Ocean::synchronize(std::shared_ptr<SeaIce> seaice)
 }
 
 //==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getTaux()
+{
+    return THCM::Instance().getTaux();
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getTauy()
+{
+    return THCM::Instance().getTauy();
+}
+
+//==================================================================
 Teuchos::RCP<Epetra_Vector> Ocean::getLocalAtmosT()
 {
     return THCM::Instance().getLocalAtmosT();
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getAtmosT()
+{
+    return THCM::Instance().getAtmosT();
+}
+
+//==================================================================
+void Ocean::setTaux( Teuchos::RCP<Epetra_Vector> const &taux)
+{
+    THCM::Instance().setTaux( taux);
+}
+
+//==================================================================
+void Ocean::setTauy( Teuchos::RCP<Epetra_Vector> const &tauy)
+{
+    THCM::Instance().setTauy( tauy);
+}
+
+//==================================================================
+void Ocean::setAtmosT( Teuchos::RCP<Epetra_Vector> const &atmosT)
+{
+    THCM::Instance().setAtmosphereT( atmosT);
+}
+
+//==================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getEmip(char mode)
+{
+    return THCM::Instance().getEmip(mode);
+}
+
+//==================================================================
+void Ocean::setEmip( Teuchos::RCP<Epetra_Vector> const &emip, char mode)
+{
+    THCM::Instance().setEmip( emip, mode);
 }
 
 //==================================================================

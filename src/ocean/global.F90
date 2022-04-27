@@ -434,7 +434,7 @@ contains
 
     write(*,*) ' THCM: iza = ', iza
 
-    if(iza.ne.2) then
+    if(iza.LT.2) then
        call windfit        ! read data with subroutine from forcing.F90
        if(iza.eq.1) then   ! average zonally
           do j=1,m
@@ -480,6 +480,10 @@ contains
           end if
        else if (ite.eq.1) then  ! idealized forcing, set in forcing.F90
           _INFO_("Using idealized temperature forcing, see forcing.F90")
+          _INFO_(" For now we put tatm = 0")
+          tatm(1:n,1:m) = 0.0
+       else if (ite.eq.2) then  ! set externally
+          _INFO_("Using external temperature forcing")
           _INFO_(" For now we put tatm = 0")
           tatm(1:n,1:m) = 0.0
        else
