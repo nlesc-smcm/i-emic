@@ -391,9 +391,6 @@ private:
     //! used to import atmosphere humidity field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosQ_;
 
-    //! used to import albedo field into THCM
-    Teuchos::RCP<Epetra_Vector> localAtmosA_;
-
     //! used to import atmosphere precipitation field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosP_;
 
