@@ -621,7 +621,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localAtmosP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localOceanE_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSurfTmp_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localTatm_       = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
 
     // allocate mem for the CSR matrix in THCM.
     // first ask how big it should be:
@@ -1490,10 +1489,10 @@ void THCM::setTatm(Teuchos::RCP<Epetra_Vector> const &tatm)
 
     // Standard2Assembly
     // Import atmosP into local atmosP
-    CHECK_ZERO(localTatm_->Import(*tatm, *as2std_surf_, Insert));
+    CHECK_ZERO(localSurfTmp_->Import(*tatm, *as2std_surf_, Insert));
 
     double *tmpTatm;
-    localTatm_->ExtractView(&tmpTatm);
+    localSurfTmp_->ExtractView(&tmpTatm);
 
     F90NAME(m_inserts, insert_tatm)( tmpTatm );
 }

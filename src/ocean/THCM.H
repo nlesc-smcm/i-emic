@@ -400,9 +400,6 @@ private:
     //! a surface overlapping vector without meaning
     Teuchos::RCP<Epetra_Vector> localSurfTmp_;
 
-    //! used to import tatm field into THCM
-    Teuchos::RCP<Epetra_Vector> localTatm_;
-
     //! used to export computed RHS vector from THCM:
     Teuchos::RCP<Epetra_Vector> localRhs_;
 
