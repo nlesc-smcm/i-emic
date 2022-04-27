@@ -619,7 +619,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     localAtmosT_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosQ_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localAtmosP_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
-    localSeaiceQ_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceM_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localSeaiceG_    = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
     localOceanE_     = Teuchos::rcp(new Epetra_Vector(*assemblySurfaceMap_));
@@ -1451,9 +1450,9 @@ void THCM::setAtmosphereP(Teuchos::RCP<Epetra_Vector> const &atmosP)
 void THCM::setSeaIceQ(Teuchos::RCP<Epetra_Vector> const &seaiceQ)
 {
     CHECK_MAP(seaiceQ, standardSurfaceMap_);
-    CHECK_ZERO(localSeaiceQ_->Import(*seaiceQ, *as2std_surf_ ,Insert));
+    CHECK_ZERO(localSurfTmp_->Import(*seaiceQ, *as2std_surf_ ,Insert));
     double *Q;
-    localSeaiceQ_->ExtractView(&Q);
+    localSurfTmp_->ExtractView(&Q);
     F90NAME(m_inserts, insert_seaice_q)( Q );
 }
 

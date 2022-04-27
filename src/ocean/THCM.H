@@ -394,9 +394,6 @@ private:
     //! used to import atmosphere precipitation field into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosP_;
 
-    //! used to import sea ice heat flux into THCM
-    Teuchos::RCP<Epetra_Vector> localSeaiceQ_;
-
     //! used to import sea ice mask into THCM
     Teuchos::RCP<Epetra_Vector> localSeaiceM_;
 
