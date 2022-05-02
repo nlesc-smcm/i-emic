@@ -523,13 +523,13 @@ private:
                              bool applyIntCond);
 
     //! implement integral condition for S in Jacobian and B-matrix
-    void intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B);
+    void intcond_S(Teuchos::RCP<Epetra_CrsMatrix> A, Teuchos::RCP<Epetra_Vector> B);
 
     //! flag to switch Dirichlet values P=0 on/off
     bool fixPressurePoints_;
 
     //! implement Dirichlet values P=0 in cells rowPfix1_/2 (if >=0)
-    void fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B);
+    void fixPressurePoints(Teuchos::RCP<Epetra_CrsMatrix> A, Teuchos::RCP<Epetra_Vector> B);
 
     //! this subroutine defines the maximal matrix graph (pattern of nonzeros in the jacobian
     //! if convective adjustment occurs in all cells).

@@ -855,10 +855,10 @@ void THCM::assembleLocalMatrix(Teuchos::RCP<Epetra_CrsMatrix> localJac, Teuchos:
 
     for (int i = 0; i < NumMyElements; i++)
     {
-        if (!domain_->IsGhost(i, _NUN_) &&
-            ( ( assemblyMap_->GID(i) != rowintcon_ ) && applyIntCond ) )
+        if (!domain_->IsGhost(i, _NUN_))
         {
-            if (localJac != Teuchos::null)
+            if (localJac != Teuchos::null &&
+                (assemblyMap_->GID(i) != rowintcon_ || !applyIntCond))
             {
                 index = begA_[i]; // note that these arrays use 1-based indexing
                 numentries = begA_[i+1] - index;
@@ -942,13 +942,14 @@ void THCM::assembleLocalMatrix(Teuchos::RCP<Epetra_CrsMatrix> localJac, Teuchos:
 
 #ifndef NO_INTCOND
     if ((sres_ == 0) && applyIntCond)
-        intcond_S(*localJac, *localDiagB);
+        intcond_S(localJac, localDiagB);
 #endif
 
     if (fixPressurePoints_)
-        fixPressurePoints(*localJac, *localDiagB);
+        fixPressurePoints(localJac, localDiagB);
 
-    CHECK_ZERO(localJac->FillComplete());
+    if (localJac != Teuchos::null)
+        CHECK_ZERO(localJac->FillComplete());
 }
 
 //=============================================================================
@@ -1221,44 +1222,12 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 // just reconstruct the diagonal matrix B from THCM
 void THCM::evaluateB(void)
 {
-    int NumMyElements = assemblyMap_->NumMyElements();
-
     DEBUG("Construct matrix B...");
 
     localDiagB_->PutScalar(0.0);
     FNAME(fillcolb)();
-    for (int i = 0; i < NumMyElements; i++)
-    {
-        if (!domain_->IsGhost(i, _NUN_))
-        {
-            // reconstruct the diagonal matrix B
-            int lid = standardMap_->LID(assemblyMap_->GID(i));
-            (*localDiagB_)[lid] = coB_[i];
-        } // not a ghost?
-    } // i-loop over rows
-
-    if (fixPressurePoints_)
-    {
-        for (int i=1;i<=2;i++) {
-            int row = (i==1)? rowPfix1_: rowPfix2_;
-            if (localDiagB_->Map().MyGID(row))
-            {
-                int lid = localDiagB_->Map().LID(row);
-                (*localDiagB_)[lid] = 0.0; // no more time-dependence for this P-point
-            }
-        }
-    }
-
-#ifndef NO_INTCOND
-    if (sres_ == 0)
-    {
-        if (localDiagB_->Map().MyGID(rowintcon_))
-        {
-            (*localDiagB_)[localDiagB_->Map().LID(rowintcon_)]=0.0;
-        }
-    }
-#endif
-    domain_->Standard2Solve(*localDiagB_,*diagB_);
+    assembleLocalMatrix(Teuchos::null, localDiagB_, true);
+    domain_->Standard2Solve(*localDiagB_, *diagB_);
 }
 
 //==================================================================
@@ -2166,27 +2135,45 @@ void THCM::integralChecks(Teuchos::RCP<Epetra_Vector> state,
 
 //=============================================================================
 // implement integral condition for S in Jacobian and B-matrix
-void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
+void THCM::intcond_S(Teuchos::RCP<Epetra_CrsMatrix> A, Teuchos::RCP<Epetra_Vector> B)
 {
-    int N=domain_->GlobalN();
-    int M=domain_->GlobalM();
-    int L=domain_->GlobalL();
-
     int root = comm_->NumProc()-1;
 
-    Teuchos::RCP<Epetra_MultiVector> intcond_glob =
-        Utils::Gather(*intcondCoeff_, root);
-
-    if (A.MyGRID(rowintcon_))
+    if (B != Teuchos::null && B->Map().MyGID(rowintcon_))
     {
-        if (comm_->MyPID()!=root)
+        if (comm_->MyPID() != root)
         {
             ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
         }
-        int lid = B.Map().LID(rowintcon_);
-        B[lid]  = 0.0;   // no more time-dependence for this S-point
-        int len = N*M*L;
 
+        int lid = B->Map().LID(rowintcon_);
+        (*B)[lid] = 0.0;   // no more time-dependence for this S-point
+    }
+
+    if (A != Teuchos::null)
+    {
+        Teuchos::RCP<Epetra_MultiVector> intcond_glob =
+            Utils::Gather(*intcondCoeff_, root);
+
+        if (!A->MyGRID(rowintcon_))
+        {
+            if (comm_->MyPID() == root)
+            {
+                ERROR("S-integral condition should be on last processor!", __FILE__, __LINE__);
+            }
+            return;
+        }
+
+        if (comm_->MyPID() != root)
+        {
+            ERROR("S-integral condition should be on last processor!", __FILE__, __LINE__);
+        }
+
+        int N = domain_->GlobalN();
+        int M = domain_->GlobalM();
+        int L = domain_->GlobalL();
+
+        int len = N*M*L;
         double *values = new double[len];
         int *indices   = new int[len];
 
@@ -2208,23 +2195,23 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
           values[0]=1.0;
         */
         int ierr;
-        if (A.Filled())
+        if (A->Filled())
         {
-            ierr = A.ReplaceGlobalValues(rowintcon_,len,values,indices);
+            ierr = A->ReplaceGlobalValues(rowintcon_, len, values, indices);
         }
         else
         {
-            ierr = A.InsertGlobalValues(rowintcon_,len,values,indices);
+            ierr = A->InsertGlobalValues(rowintcon_, len, values, indices);
         }
         if (ierr != 0)
         {
             std::stringstream ss;
             ss << "graph_pid" << comm_->MyPID();
             std::ofstream file(ss.str());
-            file << A.Graph();
+            file << A->Graph();
 
             std::cout << "Insertion ERROR! " << ierr << ", filled = "
-                      << A.Filled() << std::endl;
+                      << A->Filled() << std::endl;
 
             std::cout << "\n ERROR " << ierr;
             std::cout << ((ierr == 2) ? ": value excluded" : "") << std::endl;
@@ -2239,29 +2226,30 @@ void THCM::intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B)
         delete []  values;
         delete []  indices;
     }
-    else if (comm_->MyPID()==root)
-    {
-        ERROR("S-integral condition should be on last processor!",__FILE__,__LINE__);
-    }
 }
 
 //=============================================================================
-void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
+void THCM::fixPressurePoints(Teuchos::RCP<Epetra_CrsMatrix> A, Teuchos::RCP<Epetra_Vector> B)
 {
     for (int i=1;i<=2;i++) {
         int row = (i==1)? rowPfix1_: rowPfix2_;
-        if (A.MyGRID(row))
-        {
-            int lidB = B.Map().LID(row);
-            int lidA = A.RowMap().LID(row);
-            B[lidB] = 0.0; // no more time-dependence for this P-point
 
-            int numEntries = A.NumMyEntries(lidA);
+        if (B != Teuchos::null && B->Map().MyGID(row))
+        {
+            int lid = B->Map().LID(row);
+            (*B)[lid] = 0.0; // no more time-dependence for this P-point
+        }
+
+        if (A != Teuchos::null && A->MyGRID(row))
+        {
+            int lid = A->RowMap().LID(row);
+
+            int numEntries = A->NumMyEntries(lid);
             double *vals   = new double[numEntries];
             int *inds      = new int[numEntries];
 
             // Extract current row and zero out except diagonal
-            CHECK_NONNEG(A.ExtractGlobalRowCopy(row, numEntries, numEntries, vals, inds));
+            CHECK_NONNEG(A->ExtractGlobalRowCopy(row, numEntries, numEntries, vals, inds));
             for (int i = 0; i != numEntries; ++i)
             {
                 if (inds[i] == row)
@@ -2270,13 +2258,13 @@ void THCM::fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B)
                     vals[i] = 0.0;
             }
 
-            if (A.Filled())
+            if (A->Filled())
             {
-                CHECK_NONNEG(A.ReplaceGlobalValues(row,numEntries,vals,inds));
+                CHECK_NONNEG(A->ReplaceGlobalValues(row,numEntries,vals,inds));
             }
             else
             {
-                CHECK_NONNEG(A.InsertGlobalValues(row,numEntries,vals,inds));
+                CHECK_NONNEG(A->InsertGlobalValues(row,numEntries,vals,inds));
             }
 
             delete [] vals;
