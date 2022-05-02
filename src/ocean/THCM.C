@@ -842,6 +842,116 @@ Teuchos::RCP<Epetra_CrsMatrix> THCM::getJacobian()
 }
 
 //=============================================================================
+void THCM::assembleLocalMatrix(Teuchos::RCP<Epetra_CrsMatrix> localJac, Teuchos::RCP<Epetra_Vector> localDiagB,
+                               bool applyIntCond)
+{
+    const int maxlen = _NUN_*_NP_+1;    //nun*np+1 is max nonzeros per row
+    int indices[maxlen];
+    double values[maxlen];
+
+    int index, numentries;
+
+    int NumMyElements = assemblyMap_->NumMyElements();;
+
+    for (int i = 0; i < NumMyElements; i++)
+    {
+        if (!domain_->IsGhost(i, _NUN_) &&
+            ( ( assemblyMap_->GID(i) != rowintcon_ ) && applyIntCond ) )
+        {
+            if (localJac != Teuchos::null)
+            {
+                index = begA_[i]; // note that these arrays use 1-based indexing
+                numentries = begA_[i+1] - index;
+                for (int j = 0; j <  numentries ; j++)
+                {
+                    indices[j] = assemblyMap_->GID(jcoA_[index-1+j] - 1);
+                    values[j]  = coA_[index - 1 + j];
+                }
+
+                int ierr = localJac->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
+                                                         values, indices);
+
+                // ierr == 3 probably means not all row entries are replaced,
+                // does not matter because we zeroed them.
+                if (((ierr!=0) && (ierr!=3)))
+                {
+                    std::stringstream ss;
+                    ss << "graph_pid" << comm_->MyPID();
+                    std::ofstream file(ss.str());
+                    file << localJac->Graph();
+
+                    std::cout << "\n ERROR " << ierr;
+                    std::cout << ((ierr == 2) ? ": value excluded" : "") << std::endl;
+                    std::cout << "\n myPID " << comm_->MyPID();
+                    std::cout <<"\n while inserting/replacing values in local Jacobian"
+                              << std::endl;
+
+                    INFO(" ERROR while inserting/replacing values in local Jacobian");
+
+                    int GRID = assemblyMap_->GID(i);
+                    std::cout << " GRID: " << GRID << std::endl;
+                    std::cout << " max GRID: " << assemblyMap_->GID(NumMyElements-1) << std::endl;
+                    std::cout << " number of entries: " << numentries << std::endl;
+
+                    std::cout << " entries: ";
+                    for (int j = 0; j < numentries; j++)
+                        std::cout << "(" << indices[j] << " " << values[j] << ") ";
+                    std::cout << std::endl;
+
+                    std::cout << " NumMyElements:        " << NumMyElements << std::endl;
+                    std::cout << " i:                    " << i << std::endl;
+                    std::cout << " maxlen:               " << maxlen << std::endl;
+
+                    std::cout << " row:                  " << GRID << std::endl;
+                    std::cout << " have rowintcon:       " << localJac->MyGRID(rowintcon_)
+                              << std::endl;
+                    std::cout << " rowintcon:            " << rowintcon_ << std::endl;
+                    std::cout << " assembly rowintcon:   " << assemblyMap_->LID(rowintcon_)
+                              << std::endl;
+                    std::cout << " standard rowintcon:   " << standardMap_->LID(rowintcon_)
+                              << std::endl;
+                    int LRID = localJac->LRID(GRID);
+                    std::cout << " LRID:                 " << LRID << std::endl;
+                    std::cout << " graph inds in LRID:   "
+                              << localJac->Graph().NumMyIndices(LRID) << std::endl;
+
+                    int ierr2 = localJac->ExtractGlobalRowCopy
+                        (assemblyMap_->GID(i), maxlen, numentries, values, indices);
+
+                    std::cout << "\noriginal row: " << std::endl;
+                    std::cout << "number of entries: " << numentries << std::endl;
+                    std::cout << "entries: ";
+
+                    for (int j=0; j < numentries; j++)
+                        std::cout << "(" << indices[j] << " " << values[j] << ") ";
+                    std::cout << std::endl;
+
+                    CHECK_ZERO(ierr2);
+                }
+            }
+
+            if (localDiagB != Teuchos::null)
+            {
+                // reconstruct the diagonal matrix B
+                int lid = standardMap_->LID(assemblyMap_->GID(i));
+                double mass_param = 1.0;
+                (*localDiagB)[lid] = coB_[i] * mass_param;
+            }
+        } //not a ghost?
+    } //i-loop over rows
+
+#ifndef NO_INTCOND
+    if ((sres_ == 0) && applyIntCond)
+        intcond_S(*localJac, *localDiagB);
+#endif
+
+    if (fixPressurePoints_)
+        fixPressurePoints(*localJac, *localDiagB);
+
+    CHECK_ZERO(localJac->FillComplete());
+}
+
+//=============================================================================
 // Compute and get the forcing
 bool THCM::computeStochasticForcing()
 {
@@ -992,9 +1102,6 @@ bool THCM::evaluate(const Epetra_Vector& soln,
     // import values from ghost-nodes on neighbouring subdomains:
     domain_->Solve2Assembly(soln,*localSol_);
 
-
-    int NumMyElements = assemblyMap_->NumMyElements();
-
 //  DEBUG("=== evaluate: input vector");
 //  DEBUG( (domain_->Gather(*soln,0)) )
 
@@ -1084,107 +1191,7 @@ bool THCM::evaluate(const Epetra_Vector& soln,
 
         TIMER_STOP("Ocean: compute jacobian: fortran part");
 
-        const int maxlen = _NUN_*_NP_+1;    //nun*np+1 is max nonzeros per row
-        int indices[maxlen];
-        double values[maxlen];
-
-        int index, numentries;
-
-        int imax = NumMyElements;
-
-        for (int i = 0; i < imax; i++)
-        {
-            if (!domain_->IsGhost(i, _NUN_) &&
-                ( ( assemblyMap_->GID(i) != rowintcon_ ) || maskTest ) )
-            {
-                index = begA_[i]; // note that these arrays use 1-based indexing
-                numentries = begA_[i+1] - index;
-                for (int j = 0; j <  numentries ; j++)
-                {
-                    indices[j] = assemblyMap_->GID(jcoA_[index-1+j] - 1);
-                    values[j]  = coA_[index - 1 + j];
-                }
-
-                int ierr = tmpJac->ReplaceGlobalValues(assemblyMap_->GID(i), numentries,
-                                                         values, indices);
-
-                // ierr == 3 probably means not all row entries are replaced,
-                // does not matter because we zeroed them.
-                if (((ierr!=0) && (ierr!=3)))
-                {
-                    std::stringstream ss;
-                    ss << "graph_pid" << comm_->MyPID();
-                    std::ofstream file(ss.str());
-                    file << tmpJac->Graph();
-
-                    std::cout << "\n ERROR " << ierr;
-                    std::cout << ((ierr == 2) ? ": value excluded" : "") << std::endl;
-                    std::cout << "\n myPID " << comm_->MyPID();
-                    std::cout <<"\n while inserting/replacing values in local Jacobian"
-                              << std::endl;
-
-                    INFO(" ERROR while inserting/replacing values in local Jacobian");
-
-                    int GRID = assemblyMap_->GID(i);
-                    std::cout << " GRID: " << GRID << std::endl;
-                    std::cout << " max GRID: " << assemblyMap_->GID(imax-1) << std::endl;
-                    std::cout << " number of entries: " << numentries << std::endl;
-
-                    std::cout << " entries: ";
-                    for (int j = 0; j < numentries; j++)
-                        std::cout << "(" << indices[j] << " " << values[j] << ") ";
-                    std::cout << std::endl;
-
-                    std::cout << " NumMyElements:        " << NumMyElements << std::endl;
-                    std::cout << " i:                    " << i << std::endl;
-                    std::cout << " imax:                 " << imax << std::endl;
-                    std::cout << " maxlen:               " << maxlen << std::endl;
-
-                    std::cout << " row:                  " << GRID << std::endl;
-                    std::cout << " have rowintcon:       " << tmpJac->MyGRID(rowintcon_)
-                              << std::endl;
-                    std::cout << " rowintcon:            " << rowintcon_ << std::endl;
-                    std::cout << " assembly rowintcon:   " << assemblyMap_->LID(rowintcon_)
-                              << std::endl;
-                    std::cout << " standard rowintcon:   " << standardMap_->LID(rowintcon_)
-                              << std::endl;
-                    int LRID = tmpJac->LRID(GRID);
-                    std::cout << " LRID:                 " << LRID << std::endl;
-                    std::cout << " graph inds in LRID:   "
-                              << tmpJac->Graph().NumMyIndices(LRID) << std::endl;
-
-                    int ierr2 = tmpJac->ExtractGlobalRowCopy
-                        (assemblyMap_->GID(i), maxlen, numentries, values, indices);
-
-                    std::cout << "\noriginal row: " << std::endl;
-                    std::cout << "number of entries: " << numentries << std::endl;
-                    std::cout << "entries: ";
-
-                    for (int j=0; j < numentries; j++)
-                        std::cout << "(" << indices[j] << " " << values[j] << ") ";
-                    std::cout << std::endl;
-
-                    CHECK_ZERO(ierr2);
-                }
-
-                // reconstruct the diagonal matrix B
-                int lid = standardMap_->LID(assemblyMap_->GID(i));
-                double mass_param = 1.0;
-                (*localDiagB_)[lid] = coB_[i] * mass_param;
-            } //not a ghost?
-        } //i-loop over rows
-
-#ifndef NO_INTCOND
-        if ((sres_ == 0) && !maskTest)
-        {
-            this->intcond_S(*tmpJac,*localDiagB_);
-        }
-#endif
-
-        if (fixPressurePoints_)
-            this->fixPressurePoints(*tmpJac,*localDiagB_);
-
-        CHECK_ZERO(tmpJac->FillComplete());
+        assembleLocalMatrix(tmpJac, localDiagB_, !maskTest);
 
         // redistribute according to solveMap_ (may be load-balanced)
         // standard and solve maps are equal

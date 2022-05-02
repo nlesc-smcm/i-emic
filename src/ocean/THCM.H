@@ -518,6 +518,10 @@ private:
     //! distribute land array after global initialization
     Teuchos::RCP<Epetra_IntVector> distributeLandMask(Teuchos::RCP<Epetra_IntVector> landm_glob);
 
+    //! Compute the local Jacobian and mass matrices that are used to assemble the global ones
+    void assembleLocalMatrix(Teuchos::RCP<Epetra_CrsMatrix> localJac, Teuchos::RCP<Epetra_Vector> localDiagB,
+                             bool applyIntCond);
+
     //! implement integral condition for S in Jacobian and B-matrix
     void intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B);
 
