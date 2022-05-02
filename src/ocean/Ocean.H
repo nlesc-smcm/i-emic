@@ -196,6 +196,7 @@ public:
     VectorPtr getRHS(char mode = 'C');
     VectorPtr getMassMat(char mode = 'C');
     VectorPtr getForcing(char mode = 'C');
+    VectorPtr getGradP(char mode = 'C');
 
     //! Binary diagonal for UVTS parts
     Teuchos::RCP<Epetra_Vector> getM(char mode = 'C');

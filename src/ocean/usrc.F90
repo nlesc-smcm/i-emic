@@ -601,6 +601,37 @@ SUBROUTINE rhs(un,B)
   _DEBUG2_("maxval rhs= ", maxval(abs(B)))
 
 end SUBROUTINE rhs
+
+!*****************************************************************************
+SUBROUTINE get_gradp(un, gradp)
+  use, intrinsic :: iso_c_binding
+  use m_usr
+  use m_mix
+  use m_atm
+  USE m_mat
+  USE m_res
+  !     construct the grad P part of the state
+  implicit none
+  real(c_double),dimension(ndim) :: un,gradp
+
+  An = Al
+
+  An(:,:,UU,:,:,:) = 0.0
+  An(:,:,VV,:,:,:) = 0.0
+  An(:,:,WW,:,:,:) = 0.0
+  An(:,:,TT,:,:,:) = 0.0
+  An(:,:,SS,:,:,:) = 0.0
+  An(:,PP,:,:,:,:) = 0.0
+  An(:,TT,:,:,:,:) = 0.0
+  An(:,SS,:,:,:,:) = 0.0
+
+  call boundaries
+
+  call assemble
+
+  call matAvec(un,gradp)
+
+end SUBROUTINE get_gradp
 !****************************************************************************
 SUBROUTINE lin
   USE m_mat

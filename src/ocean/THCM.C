@@ -64,6 +64,7 @@ extern "C" {
     _SUBROUTINE_(matrix)(double* un);
     _SUBROUTINE_(get_forcing)(double* frc);
     _SUBROUTINE_(get_stochastic_forcing)();
+    _SUBROUTINE_(get_gradp)(double* un, double* gradp);
 
     _SUBROUTINE_(init)(int* n, int* m, int* l, int* nmlglob,
                        double* xmin, double* xmax, double* ymin, double* ymax,
@@ -615,6 +616,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     initialSolution_ = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     diagB_           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     frc_             = Teuchos::rcp(new Epetra_Vector(*solveMap_));
+    gradP_           = Teuchos::rcp(new Epetra_Vector(*solveMap_));
     localDiagB_      = Teuchos::rcp(new Epetra_Vector(*standardMap_));
     localRhs_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
     localSol_        = Teuchos::rcp(new Epetra_Vector(*assemblyMap_));
@@ -1074,6 +1076,32 @@ Teuchos::RCP<Epetra_Vector> THCM::getForcing()
     domain_->Assembly2Solve(*localFrc_, *frc_);
 
     return frc_;
+}
+
+void THCM::computeGradP(const Epetra_Vector& soln)
+{
+    // convert to standard distribution and
+    // import values from ghost-nodes on neighbouring subdomains:
+    double *solution;
+    domain_->Solve2Assembly(soln, *localSol_);
+    CHECK_ZERO(localSol_->ExtractView(&solution));
+
+    // build grad P simultaneously on each process
+    double *gradP;
+    CHECK_ZERO(localRhs_->ExtractView(&gradP));
+
+    TIMER_START("Ocean: compute grad P: fortran part");
+    FNAME(get_gradp)(solution, gradP);
+    TIMER_STOP("Ocean: compute grad P: fortran part");
+
+    // redistribute according to solveMap_ (may be load-balanced)
+    // standard and solve maps are equal
+    domain_->Assembly2Solve(*localRhs_, *gradP_);
+}
+
+Teuchos::RCP<Epetra_Vector> THCM::getGradP()
+{
+    return gradP_;
 }
 
 //=============================================================================

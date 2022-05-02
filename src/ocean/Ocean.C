@@ -1333,6 +1333,13 @@ Teuchos::RCP<Epetra_Vector> Ocean::getForcing(char mode)
 }
 
 //====================================================================
+Teuchos::RCP<Epetra_Vector> Ocean::getGradP(char mode)
+{
+    THCM::Instance().computeGradP(*state_);
+    return Utils::getVector(mode, THCM::Instance().getGradP());
+}
+
+//====================================================================
 // Obtain M, binary diagonal matrix to select transient parts. -->
 // this does not include a zero for an integral condition in the case
 // of non-restoring salinity forcing.

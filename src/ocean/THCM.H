@@ -172,6 +172,9 @@ public:
     //! Compute the forcing matrix used for the stochasic forcing
     bool computeStochasticForcing();
 
+    //! Compute the gradient of P
+    void computeGradP(const Epetra_Vector& solnVector);
+
     //! ------------------- I-EMIC couplings --------------------
     //!Flags enabling the coupling with the I-EMIC, separated into a
     //!heat and a salinity flux contribution.
@@ -277,6 +280,9 @@ public:
 
     //! Returns the forcing (Global/Solve form)
     Teuchos::RCP<Epetra_Vector> getForcing();
+
+    //! Returns the gradient of P
+    Teuchos::RCP<Epetra_Vector> getGradP();
 
     //! returns the Jacobian matrix (Global/Solve form)
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
@@ -396,6 +402,9 @@ private:
 
     //! used to import the current forcing
     Teuchos::RCP<Epetra_Vector> localFrc_;
+
+    //! Gradient of P
+    Teuchos::RCP<Epetra_Vector> gradP_;
 
     //! used to import atmosphere temperature into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosT_;

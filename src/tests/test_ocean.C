@@ -323,6 +323,22 @@ TEST(Ocean, Integrals)
 }
 
 //------------------------------------------------------------------
+TEST(Ocean, GradP)
+{
+    Teuchos::RCP<Epetra_Vector> x = ocean->getSolution('V');
+    x->Random();
+
+    EXPECT_GE(Utils::norm(x), 1e-2);
+
+    Teuchos::RCP<Epetra_Vector> gradP = ocean->getGradP('V');
+    EXPECT_GE(Utils::norm(gradP), 1e-2);
+
+    for (int i = 0; i < gradP->MyLength(); i++)
+        if (i %  6 > 2)
+            EXPECT_NEAR(std::abs((*gradP)[i]), 0.0, 1e-12);
+}
+
+//------------------------------------------------------------------
 TEST(Ocean, CreateASecondOcean)
 {
     // First destroy the old Ocean since there can only be one
