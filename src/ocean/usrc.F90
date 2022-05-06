@@ -625,8 +625,6 @@ SUBROUTINE get_gradp(un, gradp)
   An(:,TT,:,:,:,:) = 0.0
   An(:,SS,:,:,:,:) = 0.0
 
-  call boundaries
-
   call assemble
 
   call matAvec(un,gradp)
