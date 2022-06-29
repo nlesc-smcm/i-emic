@@ -90,7 +90,7 @@ set(IEMIC_INTERFACE
 
 find_package(JDQZPP)
 if (JDQZPP_FOUND)
-  include_directories(${JDQZPP_INCLUDE_DIRS})
+  include_directories(SYSTEM ${JDQZPP_INCLUDE_DIRS})
   list(APPEND library_directories ${JDQZPP_LIBRARY_DIRS})
   list(APPEND IEMIC_INTERFACE ${JDQZPP_LIBRARIES})
   add_definitions(-DHAVE_JDQZPP)
