@@ -2312,7 +2312,7 @@ const Teuchos::ParameterList& Ocean::getParameters()
 
 void Ocean::setParameters(Teuchos::ParameterList& newParams)
 {
-    newParams.validateParameters(getDefaultParameters());
+    newParams.validateParameters(getDefaultInitParameters());
     thcm_->setParameters(newParams.sublist("THCM"));
     params_.setParameters(newParams);
 }
