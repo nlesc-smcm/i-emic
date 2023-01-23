@@ -1,0 +1,39 @@
+* First run with ~run_ocean~:
+  Run ~run_ocean~ with the default xml settings in this directory (run/ocean):
+  ~../../build/src/main/run_ocean~ (single core)
+
+** Check run status:
+   Best way is to look at ~cdata.txt~
+   More detailed run output is in ~info_0.txt~
+
+** Run results
+   Runtime on a single core is around 2m30 on my computer. 
+   This is (approximately) what you should get in info_0.txt:
+
+#+BEGIN_SRC shell
+-----------------------------------------
+Model view: 
+     norm state :  542.3414237
+     norm rhs   :  0.1590434284
+     norm sol   :  0.01717931036
+    parameter   :  1.000006854
+-----------------------------------------
+#+END_SRC
+
+** Saving the result 
+   Use the available script ~save.sh~ and create a directory structure
+   to save your work in. For instance ~./save.sh test_run 0~. Then
+   describe the experiment when prompted.
+
+** Visualize results
+   - Open matlab in the current directory.
+   - Make sure the matlab scripts directory is added to the matlab path.
+   - An empty call to ~plot_ocean()~ should give 6 figures, showing
+     streamfunctions and other things.
+   - 
+
+* Second run
+  Load the run that we saved previously:
+  ~./load.sh test_run 0~
+  Now an input file ~ocean_input.h5~ is available.
+  
