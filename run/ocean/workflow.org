@@ -7,12 +7,12 @@
    More detailed run output is in ~info_0.txt~
 
 ** Run results
-   Runtime on a single core is around 2m30 on my computer. 
+   Runtime on a single core is around 2m30 on my computer.
    This is (approximately) what you should get in info_0.txt:
 
 #+BEGIN_SRC shell
 -----------------------------------------
-Model view: 
+Model view:
      norm state :  542.3414237
      norm rhs   :  0.1590434284
      norm sol   :  0.01717931036
@@ -20,20 +20,57 @@ Model view:
 -----------------------------------------
 #+END_SRC
 
-** Saving the result 
+** Saving the result
    Use the available script ~save.sh~ and create a directory structure
    to save your work in. For instance ~./save.sh test_run 0~. Then
    describe the experiment when prompted.
 
-** Visualize results
+** Basic Visualization of the results
    - Open matlab in the current directory.
    - Make sure the matlab scripts directory is added to the matlab path.
    - An empty call to ~plot_ocean()~ should give 6 figures, showing
      streamfunctions and other things.
-   - 
 
-* Second run
+*** Visualize the diagnosed salinity flux and other available fluxes
+#+BEGIN_SRC matlab
+opts.readFluxes=true
+plot_ocean('ocean_output.h5', opts);
+#+END_SRC
+
+* Second run: a continuation with flux forcing starting at the previous equilibrium
   Load the run that we saved previously:
   ~./load.sh test_run 0~
   Now an input file ~ocean_input.h5~ is available.
-  
+
+  To restart from this input and use the diagnosed salinity flux as
+  forcing, change the following in the xmls.
+
+  In ~ocean_params.xml~:
+#+BEGIN_SRC nxml
+<Parameter name="Load state" type="bool" value="true"/>
+<Parameter name="Load salinity flux" type="bool" value="true"/>
+<Parameter name="Combined Forcing"    type="double" value="1.0"/>
+<Parameter name="Restoring Salinity Profile" type="int" value="0"/>
+<Parameter name="Levitus S" type="int" value="0"/>
+#+END_SRC
+
+  In ~continuation_params.xml~
+#+BEGIN_SRC nxml
+<Parameter name="continuation parameter" type="string" value="Salinity Forcing"/>
+<Parameter name="destination 0" type="double" value="0.2"/>
+#+END_SRC nxml
+
+** Run results
+#+BEGIN_SRC shell
+-----------------------------------------
+Model view: 
+     norm state :  537.1967589
+     norm rhs   :  0.0009001565501
+     norm sol   :  0.01815325666
+    parameter   :  0.2000417883
+-----------------------------------------
+#+END_SRC
+
+** Saving the result
+   Again save your results. For instance ~./save.sh test_run 1~ and
+   describe the experiment when prompted.
