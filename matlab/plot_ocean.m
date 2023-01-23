@@ -504,7 +504,7 @@ function [sol, add, fluxes] = plot_ocean(solfile, opts)
             && ~isempty(add)
 
         figure(fig_ctr); fig_ctr = fig_ctr+1;
-        im = reshape(add.SalFlux,n,m);
+        im = reshape(add.SalinityFlux,n,m);
         im(im==0) = NaN;
         imagesc(RtD*x, RtD*y, im');
 
