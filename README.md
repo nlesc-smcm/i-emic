@@ -86,5 +86,8 @@ Depending on architecture: ifort, gfortran, mpicc, mpicpc, mpic++, etc...
   make -j<#procs>
   ```
 
+# Tutorials
+- [run_ocean tutorial](run/ocean/workflow.org): Located in `run/ocean`, it describes a basic spinup continuation with `run_ocean` and gives an example of a continuation with diagnosed flux forcing.
+
 # General remarks
 - See the test code for examples ^^
