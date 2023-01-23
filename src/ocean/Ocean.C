@@ -109,13 +109,13 @@ Ocean::Ocean(RCP<Epetra_Comm> Comm, Teuchos::ParameterList& oceanParamList)
     // Throw a few errors if the parameters are odd
     if ((thcm_->getSRES() || thcm_->getITS()) && loadSalinityFlux_)
     {
-        ERROR(" (SRES = 1 || ite = 1 ) => loadSalinityFlux_ = false",
+        ERROR(" (SRES = 1 || its = 1 ) => loadSalinityFlux_ = false",
               __FILE__, __LINE__);
     }
 
     if ((thcm_->getTRES() || thcm_->getITE()) && loadTemperatureFlux_)
     {
-        ERROR(" (TRES = 1 || its = 1) => loadTemperatureFlux_ = false",
+        ERROR(" (TRES = 1 || ite = 1) => loadTemperatureFlux_ = false",
               __FILE__, __LINE__);
     }
 
