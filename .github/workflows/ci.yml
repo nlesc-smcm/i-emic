@@ -25,12 +25,12 @@ jobs:
             env:
               CC: gcc
               CXX: g++
-              FC: gfortran-10
+              FC: gfortran-11
           - os: 'macos-latest'
             env:
               CC: clang
               CXX: clang++
-              FC: gfortran-10
+              FC: gfortran-11
 
     runs-on: ${{ matrix.os }}
     env: ${{ matrix.env }}
