@@ -21,16 +21,16 @@ jobs:
               CC: clang
               CXX: clang++
               FC: gfortran
-          - os: 'macos-latest'
+          - os: 'macos-11'
             env:
               CC: gcc
               CXX: g++
-              FC: gfortran-11
-          - os: 'macos-latest'
+              FC: gfortran-10
+          - os: 'macos-11'
             env:
               CC: clang
               CXX: clang++
-              FC: gfortran-11
+              FC: gfortran-10
 
     runs-on: ${{ matrix.os }}
     env: ${{ matrix.env }}
