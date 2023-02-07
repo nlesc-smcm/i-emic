@@ -21,12 +21,12 @@ jobs:
               CC: clang
               CXX: clang++
               FC: gfortran
-          - os: 'macos-11'
+          - os: 'macos-10'
             env:
               CC: gcc
               CXX: g++
               FC: gfortran-10
-          - os: 'macos-11'
+          - os: 'macos-10'
             env:
               CC: clang
               CXX: clang++
