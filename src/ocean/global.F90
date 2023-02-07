@@ -88,9 +88,16 @@ contains
     xmax  = a_xmax
     ymin  = a_ymin
     ymax  = a_ymax
-    dx = (xmax-xmin)/N
-    dy = (ymax-ymin)/M
-    dz = (zmax-zmin)/L
+
+    n = a_n
+    m = a_m
+    l = a_l
+    ndim = n*m*l*nun
+
+    dx = (xmax-xmin)/n
+    dy = (ymax-ymin)/m
+    dz = (zmax-zmin)/l
+
     hdim  = a_hdim
     qz    = a_qz
 
@@ -138,10 +145,6 @@ contains
 
     ! if (n/=a_n .or. m/=a_m .or. l/=a_l) then
 
-    n = a_n
-    m = a_m
-    l = a_l
-    ndim = n*m*l*nun
 
     call deallocate_global
 
@@ -649,17 +652,17 @@ contains
 
   !------------------------------------------------------------------
   ! locate_file: finding files in rundir and topdir, return full path
-  
+
   function locate_file(file) result(full)
     implicit none
     character(len=*)          :: file
     character(:), allocatable :: full
     integer                   :: status
     character(len=256)        :: msg
-    
+
     open(unit=3511, file=file, status='old', iostat=status, iomsg=msg)
     close(3511)
-    
+
     if (status.ne.0) then
        open(unit=3511, file=topdir//file, status='old', err=123, &
             iostat=status, iomsg=msg)
@@ -670,17 +673,17 @@ contains
        write(*,*) '  found ', file, ' in rundir'
        full = file
     endif
-    
+
     return
-    
+
 123 write(*,*) 'WARNING: failed to open: ', file
     write(*,*) ' topdir: ', trim(topdir)
     write(*,*) '    msg: ', trim(msg)
     write(*,*) ' iostat: ', status
     call throw_error('failed to open file')
-    
+
   end function locate_file
-  
+
   !-----------------------------------------------------------------------------
   ! let the cpp code throw an error for us
   subroutine throw_error(msg)
