@@ -143,9 +143,6 @@ contains
     coupled_S = a_coupled_S
     !===========================================================
 
-    ! if (n/=a_n .or. m/=a_m .or. l/=a_l) then
-
-
     call deallocate_global
 
     write(*,*) 'allocating fortran arrays'
