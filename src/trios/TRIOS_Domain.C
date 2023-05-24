@@ -93,7 +93,7 @@ namespace TRIOS
             ERROR("X index out of bounds!",__FILE__,__LINE__);
         }
 
-        return xu_[x];
+        return xu_[x+1];
     }
 
     double Grid::getXposCenter(int x) const
@@ -111,7 +111,7 @@ namespace TRIOS
             ERROR("Y index out of bounds!",__FILE__,__LINE__);
         }
 
-        return yv_[y];
+        return yv_[y+1];
     }
 
     double Grid::getYposCenter(int y) const
