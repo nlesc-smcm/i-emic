@@ -3,10 +3,10 @@
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
 #include "NumericalJacobian.H"
-#include "THCMdefs.H"
 #include "Ocean.H"
 #include "Continuation.H"
 
+#include "THCMdefs.H"
 #include "TRIOS_Domain.H"
 
 //------------------------------------------------------------------
