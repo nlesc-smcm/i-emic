@@ -271,6 +271,9 @@ public:
     //! Set global landmask in THCM
     void setLandMask(std::shared_ptr<std::vector<int> > landmask);
 
+    //! Create a map used for distributing the landmask
+    Teuchos::RCP<Epetra_Map> createGatherMap();
+
     //! ------------------------------------------------------------------
     //! Returns initial guess (Global/Solve form)
     Teuchos::RCP<Epetra_Vector> getSolution();
