@@ -2130,28 +2130,25 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
         }
         else
         {
+            Utils::MaskStruct mask;
             //__________________________________________________
             // We begin with the local (distributed) landmask
             Epetra_IntVector *readMask;
 
             // Obtain current mask to get distributed map with current
             // domain decomposition.
-            Teuchos::RCP<Epetra_IntVector> tmpMask =
-                THCM::Instance().getLandMask("current");
+            mask.local = THCM::Instance().getLandMask("current");
 
             // Read mask in hdf5 with distributed map
             HDF5.Read("MaskLocal", readMask);
 
             Teuchos::RCP<Epetra_Import> lin2dstr =
-                Teuchos::rcp(new Epetra_Import( tmpMask->Map(),
+                Teuchos::rcp(new Epetra_Import( mask.local->Map(),
                                                 readMask->Map() ));
 
-            tmpMask->Import(*readMask, *lin2dstr, Insert);
+            mask.local->Import(*readMask, *lin2dstr, Insert);
 
             delete readMask;
-
-            // Put the new mask in THCM
-            THCM::Instance().setLandMask(tmpMask, true);
 
             //__________________________________________________
             // Get global mask
@@ -2159,14 +2156,14 @@ void Ocean::additionalImports(EpetraExt::HDF5 &HDF5, std::string const &filename
             INFO("Loading global mask from " << filename);
             HDF5.Read("MaskGlobal", "GlobalSize", globMaskSize);
 
-            std::shared_ptr<std::vector<int> > globmask =
+            mask.global =
                 std::make_shared<std::vector<int> >(globMaskSize, 0);
 
             HDF5.Read("MaskGlobal", "Global", H5T_NATIVE_INT,
-                      globMaskSize, &(*globmask)[0]);
+                      globMaskSize, &(*mask.global)[0]);
 
             // Put the new global mask in THCM
-            THCM::Instance().setLandMask(globmask);
+            setLandMask(mask, true);
         }
     }
 }
