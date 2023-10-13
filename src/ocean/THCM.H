@@ -269,7 +269,7 @@ public:
     void setLandMask(Teuchos::RCP<Epetra_IntVector> landmask, bool init = true);
 
     //! Set global landmask in THCM
-    void setLandMask(std::shared_ptr<std::vector<int> > landmask);
+    void setLandMask(std::shared_ptr<std::vector<int> > landmask, bool init = false);
 
     //! Create a map used for distributing the landmask
     Teuchos::RCP<Epetra_Map> createGatherMap();

@@ -620,10 +620,18 @@ Utils::MaskStruct Ocean::getLandMask(std::string const &fname, bool adjustMask)
 void Ocean::setLandMask(Utils::MaskStruct const &mask, bool global)
 {
     INFO("Ocean: set landmask " << mask.label << "...");
-    THCM::Instance().setLandMask(mask.local);
+    if (mask.local != Teuchos::null)
+    {
+        THCM::Instance().setLandMask(mask.local);
 
-    if (global)
-        THCM::Instance().setLandMask(mask.global);
+        if (global)
+            THCM::Instance().setLandMask(mask.global);
+    }
+    else if (global)
+    {
+        INFO("Ocean: Computing the local landmask from the global landmask");
+        THCM::Instance().setLandMask(mask.global, true);
+    }
 
     currentMask_ = mask.label;
     INFO("Ocean: set landmask " << mask.label << "... done");

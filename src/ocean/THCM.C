@@ -1359,8 +1359,34 @@ void THCM::setLandMask(Teuchos::RCP<Epetra_IntVector> landmask, bool init)
 
 //=============================================================================
 // Set global landmask in THCM
-void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask)
+void THCM::setLandMask(std::shared_ptr<std::vector<int> > landmask, bool init)
 {
+    if (init)
+    {
+        // We also need to set the local land mask
+        Teuchos::RCP<Epetra_Map> landmap_glb = createGatherMap();
+
+        // Create sequential landmask array on proc 0
+        Teuchos::RCP<Epetra_IntVector> landm_glb =
+            Teuchos::rcp(new Epetra_IntVector(*landmap_glb));
+
+        // Put the landmask into the IntVector
+        if (comm_->MyPID()==0)
+        {
+            assert((int)landmask->size() == landm_glb->MyLength());
+
+            int *landm;
+            CHECK_ZERO(landm_glb->ExtractView(&landm));
+            std::memcpy(landm, &(*landmask)[0], landm_glb->MyLength() * sizeof(int));
+        }
+
+        // Obtain the distributed landmask
+        Teuchos::RCP<Epetra_IntVector> landm_loc = distributeLandMask(landm_glb);
+
+        // Set the local landmask
+        setLandMask(landm_loc, init);
+    }
+
     if (comm_->MyPID() == 0)
         F90NAME(m_global, set_landm)(&(*landmask)[0]);
 }
