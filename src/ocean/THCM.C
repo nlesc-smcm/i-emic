@@ -360,17 +360,6 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
     // read topography data and convert it to a global land mask
     DEBUG("Initialize land mask...");
 
-    int I0 = 0; int I1 = n_+1;
-    int J0 = 0; int J1 = m_+1;
-    int K0 = 0; int K1 = l_+1;
-
-    int i0=0, i1=-1, j0=0, j1=-1,k0=0,k1=-1;
-    // global (gathered) map, all inds are on root proc, the ranges are
-    if (comm->MyPID()==0)
-    {
-        i1 = I1; j1 = J1; k1=K1;
-    }
-
 // the next part of this file is devoted to taking arrays from m_global that
 // have been read from files and putting them into m_usr, where they will be
 // distributed and have two layers of overlap. This is done for many different
@@ -386,9 +375,7 @@ THCM::THCM(Teuchos::ParameterList& params, Teuchos::RCP<Epetra_Comm> comm) :
 // temp: internal temperature forcing, double 3D
 // salt: internal salinity forcing, double 3D
 
-    DEBUG("Create gathered land map");
-    Teuchos::RCP<Epetra_Map> landmap_glb =
-        Utils::CreateMap(i0,i1,j0,j1,k0,k1,I0,I1,J0,J1,K0,K1,*comm);
+    Teuchos::RCP<Epetra_Map> landmap_glb = createGatherMap();
 
     // sequential landm array on proc 0
     Teuchos::RCP<Epetra_IntVector> landm_glb =
@@ -1284,20 +1271,7 @@ std::shared_ptr<std::vector<int> > THCM::getLandMask()
 Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
                                                  Teuchos::RCP<Epetra_Vector> fix)
 {
-    // Create gathered map for land mask
-    // All indices are on root process
-    int I0 = 0; int I1 = n_+1;
-    int J0 = 0; int J1 = m_+1;
-    int K0 = 0; int K1 = l_+1;
-
-    int i0 = 0, i1 = -1, j0 = 0, j1 = -1,k0 = 0,k1 = -1;
-    if (comm_->MyPID() == 0)
-    {
-        i1 = I1; j1 = J1; k1=K1;
-    }
-
-    Teuchos::RCP<Epetra_Map> landmap_glb =
-        Utils::CreateMap(i0,i1,j0,j1,k0,k1,I0,I1,J0,J1,K0,K1,*comm_);
+    Teuchos::RCP<Epetra_Map> landmap_glb = createGatherMap();
 
     // Create sequential landmask array on proc 0
     Teuchos::RCP<Epetra_IntVector> landm_glb =
@@ -1335,11 +1309,11 @@ Teuchos::RCP<Epetra_IntVector> THCM::getLandMask(std::string const &maskName,
         {
             int pos = 0;
             int idx = 0;
-            for (k = K0+1; k < K1; ++k)
+            for (k = 1; k < l_+1; ++k)
             {
-                for (j = J0+1; j < J1; ++j)
+                for (j = 1; j < m_+1; ++j)
                 {
-                    for (i = I0+1; i < I1; ++i)
+                    for (i = 1; i < n_+1; ++i)
                     {
                         idx = k*(m_+2)*(n_+2) + j*(n_+2) + i;
 
@@ -1973,6 +1947,24 @@ bool THCM::writeParams()
 {
     FNAME(writeparams)();
     return true;
+}
+
+//=============================================================================
+Teuchos::RCP<Epetra_Map> THCM::createGatherMap()
+{
+    int I0 = 0; int I1 = n_+1;
+    int J0 = 0; int J1 = m_+1;
+    int K0 = 0; int K1 = l_+1;
+
+    int i0=0, i1=-1, j0=0, j1=-1, k0=0, k1=-1;
+    // global (gathered) map, all inds are on root proc, the ranges are
+    if (comm_->MyPID()==0)
+    {
+        i1 = I1; j1 = J1; k1 = K1;
+    }
+
+    DEBUG("Create gathered land map");
+    return Utils::CreateMap(i0,i1,j0,j1,k0,k1,I0,I1,J0,J1,K0,K1,*comm_);
 }
 
 //=============================================================================
