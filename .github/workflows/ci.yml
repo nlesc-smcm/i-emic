@@ -81,7 +81,7 @@ jobs:
           mkdir build
           cd build
           cmake -DCMAKE_INSTALL_PREFIX=$HOME/local ..
-          make -j
+          make -j 8
           make install
           
       - name: Build I-EMIC
@@ -89,7 +89,7 @@ jobs:
           mkdir build
           cd build
           cmake -DCMAKE_INSTALL_PREFIX=$HOME/local ..
-          make -j
+          make -j 8
       
       - name: Test I-EMIC
         run: |
