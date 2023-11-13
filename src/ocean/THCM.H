@@ -172,6 +172,9 @@ public:
     //! Compute the forcing matrix used for the stochasic forcing
     bool computeStochasticForcing();
 
+    //! Compute the gradient of P
+    void computeGradP(const Epetra_Vector& solnVector);
+
     //! ------------------- I-EMIC couplings --------------------
     //!Flags enabling the coupling with the I-EMIC, separated into a
     //!heat and a salinity flux contribution.
@@ -280,6 +283,9 @@ public:
 
     //! Returns the forcing (Global/Solve form)
     Teuchos::RCP<Epetra_Vector> getForcing();
+
+    //! Returns the gradient of P
+    Teuchos::RCP<Epetra_Vector> getGradP();
 
     //! returns the Jacobian matrix (Global/Solve form)
     Teuchos::RCP<Epetra_CrsMatrix> getJacobian();
@@ -399,6 +405,9 @@ private:
 
     //! used to import the current forcing
     Teuchos::RCP<Epetra_Vector> localFrc_;
+
+    //! Gradient of P
+    Teuchos::RCP<Epetra_Vector> gradP_;
 
     //! used to import atmosphere temperature into THCM
     Teuchos::RCP<Epetra_Vector> localAtmosT_;
@@ -521,14 +530,18 @@ private:
     //! distribute land array after global initialization
     Teuchos::RCP<Epetra_IntVector> distributeLandMask(Teuchos::RCP<Epetra_IntVector> landm_glob);
 
+    //! Compute the local Jacobian and mass matrices that are used to assemble the global ones
+    void assembleLocalMatrix(Teuchos::RCP<Epetra_CrsMatrix> localJac, Teuchos::RCP<Epetra_Vector> localDiagB,
+                             bool applyIntCond);
+
     //! implement integral condition for S in Jacobian and B-matrix
-    void intcond_S(Epetra_CrsMatrix& A, Epetra_Vector& B);
+    void intcond_S(Teuchos::RCP<Epetra_CrsMatrix> A, Teuchos::RCP<Epetra_Vector> B);
 
     //! flag to switch Dirichlet values P=0 on/off
     bool fixPressurePoints_;
 
     //! implement Dirichlet values P=0 in cells rowPfix1_/2 (if >=0)
-    void fixPressurePoints(Epetra_CrsMatrix& A, Epetra_Vector& B);
+    void fixPressurePoints(Teuchos::RCP<Epetra_CrsMatrix> A, Teuchos::RCP<Epetra_Vector> B);
 
     //! this subroutine defines the maximal matrix graph (pattern of nonzeros in the jacobian
     //! if convective adjustment occurs in all cells).

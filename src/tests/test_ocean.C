@@ -323,6 +323,59 @@ TEST(Ocean, Integrals)
 }
 
 //------------------------------------------------------------------
+TEST(Ocean, GradP)
+{
+    Teuchos::RCP<Epetra_Vector> x = ocean->getState('V');
+    x->Random();
+
+    int dof = ocean->getDomain()->Dof();
+    int nz = ocean->getDomain()->GlobalL();
+    int ny = ocean->getDomain()->GlobalM();
+    int nx = ocean->getDomain()->GlobalN();
+
+    TRIOS::Grid const &grid = ocean->getDomain()->GetGlobalGrid();
+    double dx = grid.getXposEdge(1) - grid.getXposEdge(0);
+    double dy = grid.getYposEdge(1) - grid.getYposEdge(0);
+
+    for (int k = 0; k < nz; k++)
+        for (int j = 0; j < ny; j++)
+            for (int i = 0; i < nx; i++)
+            {
+                int d = 3;
+                int idx = d + i * dof + j * dof * nx + k * dof * nx * ny;
+                if (x->Map().MyGID(idx))
+                    (*x)[x->Map().LID(idx)] = i + j + k;
+            }
+
+    EXPECT_GE(Utils::norm(x), 1e-2);
+
+    Teuchos::RCP<Epetra_Vector> gradP = ocean->getGradP('V');
+    EXPECT_GE(Utils::norm(gradP), 1e-2);
+
+    for (int i = 0; i < gradP->MyLength(); i++)
+    {
+        int xpos, ypos, zpos, var;
+        Utils::ind2sub(nx, ny, nz, dof, i, xpos, ypos, zpos, var);
+
+        if (var > 2)
+        {
+            EXPECT_NEAR(std::abs((*gradP)[i]), 0.0, 1e-12);
+        }
+        else if ((*gradP)[i] != 0.0 and xpos < nx - 1 and ypos < ny - 1 and zpos < nz - 1)
+        {
+            if (var == 0)
+            {
+                EXPECT_NEAR((*gradP)[i], 1.0 / (cos(grid.getYposEdge(ypos+1)) * dx), 1e-12);
+            }
+            if (var == 1)
+            {
+                EXPECT_NEAR((*gradP)[i], 1.0 / dy, 1e-12);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------
 TEST(Ocean, CreateASecondOcean)
 {
     // First destroy the old Ocean since there can only be one
